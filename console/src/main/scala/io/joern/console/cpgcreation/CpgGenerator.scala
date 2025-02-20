@@ -1,9 +1,8 @@
 package io.joern.console.cpgcreation
 
 import better.files.File
+import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.shiftleft.codepropertygraph.generated.Cpg
-
-import scala.sys.process.*
 import scala.util.Try
 
 /** A CpgGenerator generates Code Property Graphs from code. Each supported language implements a Generator, e.g.,
@@ -43,7 +42,7 @@ abstract class CpgGenerator() {
            |""".stripMargin
       )
 
-      val exitValue = cmd.run().exitValue()
+      val exitValue = ExternalCommand.run(cmd, mergeStdErrInStdOut = false, extraEnv = Map.empty).exitCode
       assert(exitValue == 0, s"Error running shell command: exitValue=$exitValue; $cmd")
     }
 

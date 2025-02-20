@@ -1,6 +1,7 @@
 package io.joern.console.cpgcreation
 
 import io.joern.console.FrontendConfig
+import io.shiftleft.semanticcpg.utils.ExternalCommand
 
 import java.nio.file.Path
 import scala.sys.process.*
@@ -28,7 +29,13 @@ case class JavaCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgG
       println("found .apk ending - will first transform it to a jar using dex2jar.sh")
 
       val dex2jar = rootPath.resolve("dex2jar.sh").toString
-      s"$dex2jar $inputPath".run().exitValue()
+
+      ExternalCommand.run(
+        Seq(dex2jar, inputPath),
+        mergeStdErrInStdOut = false,
+        extraEnv = Map.empty,
+        isShellCommand = true
+      )
       val jarPath = s"$inputPath.jar"
       generateCommercial(jarPath, outputPath)
     } else {

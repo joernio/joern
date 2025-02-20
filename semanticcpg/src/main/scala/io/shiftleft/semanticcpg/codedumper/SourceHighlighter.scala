@@ -2,9 +2,8 @@ package io.shiftleft.semanticcpg.codedumper
 
 import better.files.File
 import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.slf4j.{Logger, LoggerFactory}
-
-import scala.sys.process.Process
 
 /** language must be one of io.shiftleft.codepropertygraph.generated.Languages TODO: generate enums instead of Strings
   * for the languages
@@ -25,7 +24,14 @@ object SourceHighlighter {
     val tmpSrcFile = File.newTemporaryFile("dump")
     tmpSrcFile.writeText(source.code)
     try {
-      val highlightedCode = Process(Seq("source-highlight-esc.sh", tmpSrcFile.path.toString, langFlag)).!!
+      val highlightedCode = ExternalCommand
+        .run(
+          (Seq("source-highlight-esc.sh", tmpSrcFile.path.toString, langFlag)),
+          mergeStdErrInStdOut = false,
+          extraEnv = Map.empty
+        )
+        .stdOut
+        .mkString("\n")
       Some(highlightedCode)
     } catch {
       case exception: Exception =>

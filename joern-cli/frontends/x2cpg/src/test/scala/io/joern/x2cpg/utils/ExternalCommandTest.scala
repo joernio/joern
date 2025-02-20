@@ -4,6 +4,8 @@ import better.files.File
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import io.shiftleft.semanticcpg.utils.ExternalCommand
+
 import scala.util.Properties.isWin
 import scala.util.{Failure, Success}
 

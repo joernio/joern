@@ -1,5 +1,3 @@
-import scala.sys.process.stringToProcess
-import scala.util.Try
 import com.typesafe.config.{Config, ConfigFactory}
 
 name := "swiftsrc2cpg"
@@ -37,7 +35,7 @@ lazy val astGenDlUrl = settingKey[String]("astgen download url")
 astGenDlUrl := s"https://github.com/joernio/swiftastgen/releases/download/v${astGenVersion.value}/"
 
 def hasCompatibleAstGenVersion(astGenVersion: String): Boolean = {
-  ExternalCommandUtil.run("SwiftAstGen -h").toTry.toOption match {
+  ExternalCommandUtil.run(Seq("SwiftAstGen", "-h")) match {
     case Some(x) if x.exitCode == 0 => true
     case _ => false
   }

@@ -37,7 +37,7 @@ lazy val goAstGenDlUrl = settingKey[String]("goastgen download url")
 goAstGenDlUrl := s"https://github.com/joernio/goastgen/releases/download/v${goAstGenVersion.value}/"
 
 def hasCompatibleAstGenVersion(goAstGenVersion: String): Boolean = {
-  ExternalCommandUtil.run("goastgen -version").toTry.toOption.map(x => x.stdOut.mkString("\n").strip()) match {
+  ExternalCommandUtil.run(Seq("goastgen", "-version")).map(x => x.stdOut.mkString("\n").strip()) match {
     case Some(installedVersion) if installedVersion != "unknown" =>
       VersionHelper.compare(installedVersion, goAstGenVersion) >= 0
     case _ => false

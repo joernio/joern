@@ -2,7 +2,7 @@ package io.joern.c2cpg.utils
 
 import better.files.File
 import io.joern.c2cpg.Config
-import io.joern.x2cpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Path

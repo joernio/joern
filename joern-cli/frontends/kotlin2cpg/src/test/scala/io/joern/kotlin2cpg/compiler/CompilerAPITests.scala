@@ -4,7 +4,7 @@ import better.files.File
 import io.joern.kotlin2cpg.Config
 import io.joern.kotlin2cpg.DefaultContentRootJarPath
 import io.joern.kotlin2cpg.Kotlin2Cpg
-import io.joern.x2cpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.joern.x2cpg.Defines
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.utils.ProjectRoot

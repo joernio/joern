@@ -1,6 +1,6 @@
 package io.joern.php2cpg.parser
 import better.files.File
-import io.joern.x2cpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
 import scala.io.Source

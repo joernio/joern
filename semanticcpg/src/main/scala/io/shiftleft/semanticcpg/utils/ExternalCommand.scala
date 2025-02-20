@@ -1,4 +1,4 @@
-package io.joern.x2cpg.utils
+package io.shiftleft.semanticcpg.utils
 
 import io.shiftleft.utils.IOUtils
 
@@ -21,8 +21,8 @@ object ExternalCommand {
       case nonZeroExitCode =>
         val allOutput = stdOut ++ stdErr
         val message = s"""Process exited with code $nonZeroExitCode. Output:
-           |${allOutput.mkString(System.lineSeparator())}
-           |""".stripMargin
+                         |${allOutput.mkString(System.lineSeparator())}
+                         |""".stripMargin
         Failure(new RuntimeException(message))
     }
   }
@@ -79,14 +79,24 @@ object ExternalCommand {
   def run(command: Seq[String], mergeStdErrInStdOut: Boolean, extraEnv: Map[String, String]): ExternalCommandResult =
     run(command, None, mergeStdErrInStdOut, extraEnv)
 
-  def run(command: String, mergeStdErrInStdOut: Boolean, extraEnv: Map[String, String]): ExternalCommandResult = {
+  def run(
+    command: Seq[String],
+    mergeStdErrInStdOut: Boolean,
+    extraEnv: Map[String, String],
+    isShellCommand: Boolean
+  ): ExternalCommandResult = {
     val shellCmd = if (scala.util.Properties.isWin) {
       Seq("cmd.exe", "/C")
     } else {
       Seq("sh", "-c")
     }
 
-    val cmd = shellCmd ++ command.split(" ")
+    val cmd = if (isShellCommand) {
+      shellCmd ++ command
+    } else {
+      command
+    }
+
     run(cmd, None, mergeStdErrInStdOut, extraEnv)
   }
 

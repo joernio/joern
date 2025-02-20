@@ -1,6 +1,6 @@
 package io.joern.c2cpg.utils
 
-import io.joern.x2cpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.ExternalCommand
 
 import scala.util.{Failure, Success, Try}
 
