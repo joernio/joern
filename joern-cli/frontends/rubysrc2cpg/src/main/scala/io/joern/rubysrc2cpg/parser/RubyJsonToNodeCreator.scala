@@ -612,9 +612,7 @@ class RubyJsonToNodeCreator(
     }
     if (isRegexMatch) {
       // For regex match that looks like "hello"[/h(el)lo/]
-      val newProps = obj.value
-      newProps.put(ParserKeys.Name, s"match${Defines.NeedsRegexLowering}")
-      visitSend(obj.copy(value = newProps))
+      visitRegexMatchingSend(obj)
     } else {
       IndexAccess(target, indices)(obj.toTextSpan)
     }
@@ -690,7 +688,7 @@ class RubyJsonToNodeCreator(
   private def visitMatchWithLocalVariableAssign(obj: Obj): RubyExpression = {
     val lhs = visit(obj(ParserKeys.Lhs))
     val rhs = visit(obj(ParserKeys.Rhs))
-    MemberCall(lhs, ".", RubyOperators.regexpMatch, rhs :: Nil)(obj.toTextSpan)
+    RegexMatchMemberCall(lhs, ".", RubyOperators.regexpMatch, rhs :: Nil)(obj.toTextSpan)
   }
 
   private def visitMethodAccessModifier(obj: Obj): RubyExpression = {
@@ -986,38 +984,48 @@ class RubyJsonToNodeCreator(
       case _ if BinaryOperators.isBinaryOperatorName(callName)                  => visitBinaryExpression(obj)
       case _ if UnaryOperators.isUnaryOperatorName(callName) =>
         UnaryExpression(callName, visit(obj(ParserKeys.Receiver)))(obj.toTextSpan)
-      case _ if RubyOperators.regexMethods.contains(callName) =>
-        val newProps = obj.value
-        newProps.put(ParserKeys.Name, s"$callName${Defines.NeedsRegexLowering}")
-        visitSend(obj.copy(value = newProps))
+      case _ if callName == RubyOperators.regexpMatch || RubyOperators.regexMethods.contains(callName) =>
+        visitRegexMatchingSend(obj)
       case s"$name=" if hasReceiver => visitFieldAssignmentSend(obj, name)
-      case _ =>
-        val target      = SimpleIdentifier()(obj.toTextSpan.spanStart(callName))
-        val argumentArr = obj.visitArray(ParserKeys.Arguments)
-        val arguments = argumentArr.flatMap {
-          case hashLiteral: HashLiteral   => hashLiteral.elements // a hash is likely named arguments
-          case assocList: AssociationList => assocList.elements   // same as above
-          case x                          => x :: Nil
-        }
-        val objSpan         = obj.toTextSpan
-        val hasArguments    = arguments.nonEmpty
-        val usesParenthesis = objSpan.text.endsWith(")")
-        if (obj.contains(ParserKeys.Receiver)) {
-          val base         = visit(obj(ParserKeys.Receiver))
-          val isMemberCall = usesParenthesis || callName == "<<" || hasArguments
-          val op = {
-            val dot = if objSpan.text.stripPrefix(base.text).startsWith("::") then "::" else "."
-            if isConditional then s"&$dot" else dot
-          }
-          if isMemberCall then MemberCall(base, op, callName, arguments)(obj.toTextSpan)
-          else MemberAccess(base, op, callName)(obj.toTextSpan)
-        } else if (hasArguments || usesParenthesis) {
-          SimpleCall(target, arguments)(obj.toTextSpan)
-        } else {
-          // The following allows the AstCreator to approximate when an identifier could be a call or not - puts less
-          //  strain on data-flow tracking for externally inherited accessor calls such as `params` in RubyOnRails
-          SimpleIdentifier()(obj.toTextSpan.spanStart(callName))
-        }
+      case _                        => createCallNode(obj, isConditional)
+    }
+  }
+
+  private def createCallNode(obj: Obj, isConditional: Boolean = false): RubyExpression = {
+    val callName    = obj(ParserKeys.Name).str
+    val target      = SimpleIdentifier()(obj.toTextSpan.spanStart(callName))
+    val argumentArr = obj.visitArray(ParserKeys.Arguments)
+    val arguments = argumentArr.flatMap {
+      case hashLiteral: HashLiteral   => hashLiteral.elements // a hash is likely named arguments
+      case assocList: AssociationList => assocList.elements   // same as above
+      case x                          => x :: Nil
+    }
+    val objSpan         = obj.toTextSpan
+    val hasArguments    = arguments.nonEmpty
+    val usesParenthesis = objSpan.text.endsWith(")")
+    if (obj.contains(ParserKeys.Receiver)) {
+      val base         = visit(obj(ParserKeys.Receiver))
+      val isMemberCall = usesParenthesis || callName == "<<" || hasArguments
+      val op = {
+        val dot = if objSpan.text.stripPrefix(base.text).startsWith("::") then "::" else "."
+        if isConditional then s"&$dot" else dot
+      }
+      if isMemberCall then MemberCall(base, op, callName, arguments)(obj.toTextSpan)
+      else MemberAccess(base, op, callName)(obj.toTextSpan)
+    } else if (hasArguments || usesParenthesis) {
+      SimpleCall(target, arguments)(obj.toTextSpan)
+    } else {
+      // The following allows the AstCreator to approximate when an identifier could be a call or not - puts less
+      //  strain on data-flow tracking for externally inherited accessor calls such as `params` in RubyOnRails
+      SimpleIdentifier()(obj.toTextSpan.spanStart(callName))
+    }
+  }
+
+  private def visitRegexMatchingSend(obj: Obj): RubyExpression = {
+    createCallNode(obj) match {
+      case memberCall @ MemberCall(target, op, methodName, arguments) =>
+        RegexMatchMemberCall(target, op, methodName, arguments)(memberCall.span)
+      case node => node
     }
   }
 
