@@ -563,14 +563,37 @@ object RubyIntermediateAst {
     def withoutBlock: SimpleCall = SimpleCall(target, arguments)(span)
   }
 
+  /** A Ruby call where the target is the `base`, and the `methodName` is the call.
+    */
+  trait RubyCallWithBase extends RubyCall {
+
+    def op: String
+
+    def methodName: String
+
+    def memberCallWithTarget(newTarget: RubyExpression): MemberCall =
+      MemberCall(newTarget, op, methodName, arguments)(span)
+
+    override def withBlock(block: Block): RubyCallWithBlock[?] =
+      MemberCallWithBlock(target, op, methodName, arguments, block)(span)
+  }
+
   /** Represents member calls, e.g. `x.y(z,w)` */
   final case class MemberCall(target: RubyExpression, op: String, methodName: String, arguments: List[RubyExpression])(
     span: TextSpan
   ) extends RubyExpression(span)
-      with RubyCall {
+      with RubyCallWithBase
 
-    def isRegexMatch: Boolean =
-      methodName == RubyOperators.regexpMatch || methodName.endsWith(Defines.NeedsRegexLowering)
+  /** Represents a member call that affects the global regex match variables
+    */
+  final case class RegexMatchMemberCall(
+    target: RubyExpression,
+    op: String,
+    methodName: String,
+    arguments: List[RubyExpression]
+  )(span: TextSpan)
+      extends RubyExpression(span)
+      with RubyCallWithBase {
 
     override def withBlock(block: Block): RubyCallWithBlock[?] =
       MemberCallWithBlock(target, op, methodName, arguments, block)(span)
