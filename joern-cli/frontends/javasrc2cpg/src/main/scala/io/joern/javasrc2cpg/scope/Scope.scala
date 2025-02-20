@@ -83,6 +83,25 @@ class Scope(implicit val withSchemaValidation: ValidationMode, val disableTypeFa
 
   def popBlockScope(): BlockScope = popScope[BlockScope]()
 
+  /** In the lowering for pattern match expressions, locals for pattern variables are hoisted into the enclosing block
+    * scope and these need to be kept track of to be able to tell when local names need to be mangled.
+    *
+    * In most cases, these pattern variable names need to be added to the block scope for more than one level.
+    *
+    * One example is when lowering `if (o instanceof Foo f)`, an extra block scope is pushed while processing the `o
+    * instanceof Foo f` condition to allow more control for where pattern locals are added to the scope. But, the `f`
+    * local is hoisted into the block containing the `if`, so this must be recorded both in the block scope for `o
+    * instanceof ...` and be propagated up into the enclosing block. This method is simply a helper method which takes
+    * care of the propagation.
+    */
+  def popBlockAndHoistPatternVariables(): BlockScope = {
+    val poppedScope = popScope[BlockScope]()
+    enclosingBlock.foreach { enclosingBlock =>
+      poppedScope.getHoistedPatternLocals.foreach(enclosingBlock.addHoistedPatternLocal)
+    }
+    poppedScope
+  }
+
   def popMethodScope(): MethodScope = popScope[MethodScope]()
 
   def popFieldDeclScope(): FieldDeclScope = popScope[FieldDeclScope]()
@@ -303,9 +322,23 @@ class Scope(implicit val withSchemaValidation: ValidationMode, val disableTypeFa
   }
 
   def addLocalsForPatternsToEnclosingBlock(patterns: List[TypePatternExpr]): Unit = {
-    patterns.flatMap(enclosingMethod.get.getLocalForPattern(_)).foreach(enclosingBlock.get.addLocal(_))
+    patterns.foreach { pattern =>
+      enclosingMethod.get.getLocalForPattern(pattern).foreach(enclosingBlock.get.addLocal(_, pattern.getNameAsString))
+    }
   }
 
+  def getHoistedPatternLocals: List[NewLocal] = {
+    scopeStack.collect { case blockScope: BlockScope => blockScope.getHoistedPatternLocals }.flatten
+  }
+
+  def getMangledName(variableName: String): String = {
+    val needsMangling = getHoistedPatternLocals.exists(_.name == variableName)
+
+    if (needsMangling)
+      enclosingMethod.get.mangleLocalName(variableName)
+    else
+      variableName
+  }
 }
 
 object Scope {
@@ -356,11 +389,13 @@ object Scope {
     def typeFullName: String
     def name: String
     def genericSignature: String
+    def mangledName: String = name
   }
-  final case class ScopeLocal(override val node: NewLocal) extends ScopeVariable {
-    val typeFullName: String     = node.typeFullName
-    val name: String             = node.name
-    val genericSignature: String = node.genericSignature
+  final case class ScopeLocal(override val node: NewLocal, originalName: String) extends ScopeVariable {
+    val typeFullName: String         = node.typeFullName
+    val name: String                 = originalName
+    val genericSignature: String     = node.genericSignature
+    override val mangledName: String = node.name
   }
   final case class ScopeParameter(override val node: NewMethodParameterIn, override val genericSignature: String)
       extends ScopeVariable {

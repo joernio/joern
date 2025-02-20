@@ -3245,4 +3245,411 @@ class PatternExprTests extends JavaSrcCode2CpgFixture {
       }
     }
   }
+
+  "locals with mangled names" when {
+    "the mangled local appears in a vardecl after the pattern" should {
+      val cpg = code("""
+                         |class Test {
+                         |  String source() { return "data"; }
+                         |  static boolean sink(String s) { return true; }
+                         |
+                         |  static void foo(Object o) {
+                         |    if (o instanceof String value) {
+                         |      sink(value);
+                         |    }
+                         |    int value = 2;
+                         |    sink(value);
+                         |  }
+                         |}
+                         |""".stripMargin)
+
+      "have the local name mangled" in {
+        inside(cpg.call.name("sink").l) { case List(firstSink, secondSink) =>
+          inside(firstSink.argument.argumentIndex(1).isIdentifier.l) { case List(firstValue) =>
+            firstValue.name shouldBe "value"
+            firstValue.refsTo.l shouldBe cpg.local.nameExact("value").l
+          }
+          inside(secondSink.argument.argumentIndex(1).isIdentifier.l) { case List(secondValue) =>
+            secondValue.name shouldBe "value$0"
+            secondValue.refsTo.l shouldBe cpg.local.nameExact("value$0").l
+          }
+        }
+      }
+    }
+
+    "the mangled local appears in a vardecl after the pattern in a while loop" should {
+      val cpg = code("""
+                         |class Test {
+                         |  String source() { return "data"; }
+                         |  static boolean sink(String s) { return true; }
+                         |
+                         |  static void foo(Object o) {
+                         |    while (o instanceof String value) {
+                         |      sink(value);
+                         |    }
+                         |    int value = 2;
+                         |    sink(value);
+                         |  }
+                         |}
+                         |""".stripMargin)
+
+      "have the local name mangled" in {
+        inside(cpg.call.name("sink").l) { case List(firstSink, secondSink) =>
+          inside(firstSink.argument.argumentIndex(1).isIdentifier.l) { case List(firstValue) =>
+            firstValue.name shouldBe "value"
+            firstValue.refsTo.l shouldBe cpg.local.nameExact("value").l
+          }
+          inside(secondSink.argument.argumentIndex(1).isIdentifier.l) { case List(secondValue) =>
+            secondValue.name shouldBe "value$0"
+            secondValue.refsTo.l shouldBe cpg.local.nameExact("value$0").l
+          }
+        }
+      }
+    }
+
+    "the mangled local appears in a vardecl after the pattern in a for loop" should {
+      val cpg = code("""
+                         |class Test {
+                         |  String source() { return "data"; }
+                         |  static boolean sink(String s) { return true; }
+                         |
+                         |  static void foo(Object o) {
+                         |    for (;o instanceof String value;) {
+                         |      sink(value);
+                         |    }
+                         |    int value = 2;
+                         |    sink(value);
+                         |  }
+                         |}
+                         |""".stripMargin)
+
+      "have the local name mangled" in {
+        inside(cpg.call.name("sink").l) { case List(firstSink, secondSink) =>
+          inside(firstSink.argument.argumentIndex(1).isIdentifier.l) { case List(firstValue) =>
+            firstValue.name shouldBe "value"
+            firstValue.refsTo.l shouldBe cpg.local.nameExact("value").l
+          }
+          inside(secondSink.argument.argumentIndex(1).isIdentifier.l) { case List(secondValue) =>
+            secondValue.name shouldBe "value$0"
+            secondValue.refsTo.l shouldBe cpg.local.nameExact("value$0").l
+          }
+        }
+      }
+    }
+
+    "the mangled local appears in a vardecl after the pattern in a do loop" should {
+      val cpg = code("""
+                         |class Test {
+                         |  String source() { return "data"; }
+                         |  static boolean sink(String s) { return true; }
+                         |
+                         |  static void foo(Object o) {
+                         |    do {} while (o instanceof String value);
+                         |    int value = 2;
+                         |    sink(value);
+                         |  }
+                         |}
+                         |""".stripMargin)
+
+      "have the local name mangled" in {
+        inside(cpg.call.name("sink").l) { case List(sink) =>
+          inside(sink.argument.argumentIndex(1).isIdentifier.l) { case List(valueIdentifier) =>
+            valueIdentifier.name shouldBe "value$0"
+            valueIdentifier.refsTo.l shouldBe cpg.local.nameExact("value$0").l
+          }
+        }
+      }
+    }
+
+    "a pattern variable name needs to be mangled" should {
+      val cpg = code("""
+                         |class Test {
+                         |  String source() { return "data"; }
+                         |  static boolean sink(String s) { return true; }
+                         |
+                         |  static void foo(Object o) {
+                         |    if (o instanceof String value) {
+                         |      sink(value);
+                         |    }
+                         |    if (o instanceof Integer value) {
+                         |      sink(value);
+                         |    }
+                         |  }
+                         |}
+                         |""".stripMargin)
+
+      "have the local name mangled" in {
+        inside(cpg.call.name("sink").l) { case List(firstSink, secondSink) =>
+          inside(firstSink.argument.argumentIndex(1).isIdentifier.l) { case List(firstValue) =>
+            firstValue.name shouldBe "value"
+            firstValue.refsTo.l shouldBe cpg.local.nameExact("value").l
+          }
+          inside(secondSink.argument.argumentIndex(1).isIdentifier.l) { case List(secondValue) =>
+            secondValue.name shouldBe "value$0"
+            secondValue.refsTo.l shouldBe cpg.local.nameExact("value$0").l
+          }
+        }
+      }
+    }
+
+    "a pattern variable name in a switch needs to be mangled" should {
+      val cpg = code("""
+                       |class Test {
+                       |  String source() { return "data"; }
+                       |  static boolean sink(String s) { return true; }
+                       |
+                       |  static void foo(Object o) {
+                       |    if (o instanceof String value) {
+                       |      sink(value);
+                       |    }
+                       |    switch (o) {
+                       |      case Integer value -> sink(value);
+                       |    }
+                       |  }
+                       |}
+                       |""".stripMargin)
+
+      "have the local name mangled" in {
+        inside(cpg.call.name("sink").l) { case List(firstSink, secondSink) =>
+          inside(firstSink.argument.argumentIndex(1).isIdentifier.l) { case List(firstValue) =>
+            firstValue.name shouldBe "value"
+            firstValue.refsTo.l shouldBe cpg.local.nameExact("value").l
+          }
+          inside(secondSink.argument.argumentIndex(1).isIdentifier.l) { case List(secondValue) =>
+            secondValue.name shouldBe "value$0"
+            secondValue.refsTo.l shouldBe cpg.local.nameExact("value$0").l
+          }
+        }
+      }
+    }
+
+    "a pattern variable name in a switch does not need to be mangled" should {
+      val cpg = code("""
+                       |class Test {
+                       |  String source() { return "data"; }
+                       |  static boolean sink(String s) { return true; }
+                       |
+                       |  static void foo(Object o) {
+                       |    switch (o) {
+                       |      case Integer value -> sink(value);
+                       |      case Boolean value -> sink(value);
+                       |    }
+                       |    if (o instanceof String value) {
+                       |      sink(value);
+                       |    }
+                       |  }
+                       |}
+                       |""".stripMargin)
+
+      "not have the local name mangled" in {
+        inside(cpg.call.name("sink").l) { case List(firstSink, secondSink, thirdSink) =>
+          inside(firstSink.argument.argumentIndex(1).isIdentifier.l) { case List(firstValue) =>
+            firstValue.name shouldBe "value"
+            firstValue.refsTo.l shouldBe cpg.local.nameExact("value").typeFullName("java.lang.Integer").l
+          }
+          inside(secondSink.argument.argumentIndex(1).isIdentifier.l) { case List(secondValue) =>
+            secondValue.name shouldBe "value"
+            secondValue.refsTo.l shouldBe cpg.local.nameExact("value").typeFullName("java.lang.Boolean").l
+          }
+          inside(thirdSink.argument.argumentIndex(1).isIdentifier.l) { case List(thirdValue) =>
+            thirdValue.name shouldBe "value"
+            thirdValue.refsTo.l shouldBe cpg.local.nameExact("value").typeFullName("java.lang.String").l
+          }
+        }
+      }
+
+      "have the locals located in the correct blocks" in {
+        inside(cpg.method.name("foo").body.astChildren.l) {
+          case List(switchStmt: ControlStructure, thirdValueLocal: Local, ifStmt: ControlStructure) =>
+            switchStmt.controlStructureType shouldBe ControlStructureTypes.SWITCH
+
+            inside(switchStmt.astChildren.l) { case List(_: Identifier, bodyBlock: Block) =>
+              inside(bodyBlock.astChildren.l) {
+                case List(_: JumpTarget, firstCaseBlock: Block, _: JumpTarget, secondCaseBlock: Block) =>
+                  inside(firstCaseBlock.astChildren.l) { case List(firstValueLocal: Local, _: ControlStructure) =>
+                    firstValueLocal.name shouldBe "value"
+                    firstValueLocal.typeFullName shouldBe "java.lang.Integer"
+                  }
+                  inside(secondCaseBlock.astChildren.l) { case List(secondValueLocal: Local, _: ControlStructure) =>
+                    secondValueLocal.name shouldBe "value"
+                    secondValueLocal.typeFullName shouldBe "java.lang.Boolean"
+                  }
+              }
+            }
+
+            thirdValueLocal.name shouldBe "value"
+            thirdValueLocal.typeFullName shouldBe "java.lang.String"
+
+            ifStmt.controlStructureType shouldBe ControlStructureTypes.IF
+        }
+      }
+    }
+
+    "a variable on the rhs of a binary expression should not have a mangled name" should {
+      val cpg = code("""
+                         |class Test {
+                         |  String source() { return "data"; }
+                         |  static boolean sink(String s) { return true; }
+                         |
+                         |  static void foo(Object o) {
+                         |    if (o instanceof String value && value.isEmpty()) {
+                         |      sink(value);
+                         |    }
+                         |    if (o instanceof Integer value) {
+                         |      sink(value);
+                         |    }
+                         |  }
+                         |}
+                         |""".stripMargin)
+
+      "not have the local name mangled" in {
+        inside(cpg.call.name("isEmpty").receiver.isIdentifier.l) { case List(valueIdentifier) =>
+          valueIdentifier.name shouldBe "value"
+          valueIdentifier.typeFullName shouldBe "java.lang.String"
+        }
+      }
+    }
+
+    "a variable on the rhs of a binary expression should have a mangled name" should {
+      val cpg = code("""
+                       |class Test {
+                       |  String source() { return "data"; }
+                       |  static boolean sink(String s) { return true; }
+                       |
+                       |  static void foo(Object o) {
+                       |    if (o instanceof Integer value) {
+                       |      sink(value);
+                       |    }
+                       |    if (o instanceof String value && value.isEmpty()) {
+                       |      sink(value);
+                       |    }
+                       |  }
+                       |}
+                       |""".stripMargin)
+
+      "not have the local name mangled" in {
+        inside(cpg.call.name("isEmpty").receiver.isIdentifier.l) { case List(valueIdentifier) =>
+          valueIdentifier.name shouldBe "value$0"
+          valueIdentifier.typeFullName shouldBe "java.lang.String"
+        }
+      }
+    }
+
+    "a local is defined in a sibling block" should {
+
+      val cpg = code("""
+                           |class Test {
+                           |  String source() { return "data"; }
+                           |  static boolean sink(String s) { return true; }
+                           |
+                           |  static void foo(Object o) {
+                           |    {
+                           |      if (o instanceof String value) {
+                           |        sink(value);
+                           |      }
+                           |    }
+                           |    {
+                           |      int value = 2;
+                           |      sink(value);
+                           |    }
+                           |  }
+                           |}
+                           |""".stripMargin)
+
+      "not have the local name mangled" in {
+        inside(cpg.call.name("sink").l) { case List(firstSink, secondSink) =>
+          inside(firstSink.argument.argumentIndex(1).isIdentifier.l) { case List(firstValue) =>
+            firstValue.name shouldBe "value"
+            firstValue.refsTo.l shouldBe cpg.local.nameExact("value").typeFullName("java.lang.String").l
+          }
+          inside(secondSink.argument.argumentIndex(1).isIdentifier.l) { case List(secondValue) =>
+            secondValue.name shouldBe "value"
+            secondValue.refsTo.l shouldBe cpg.local.nameExact("value").typeFullName("int").l
+          }
+        }
+      }
+    }
+
+    "a local is defined in a nested block" should {
+
+      val cpg = code("""
+                         |class Test {
+                         |  String source() { return "data"; }
+                         |  static boolean sink(String s) { return true; }
+                         |
+                         |  static void foo(Object o) {
+                         |
+                         |    if (o instanceof String value) {
+                         |      sink(value);
+                         |    }
+                         |
+                         |    {
+                         |      int value = 2;
+                         |      sink(value);
+                         |    }
+                         |  }
+                         |}
+                         |""".stripMargin)
+
+      "have the local name mangled" in {
+        inside(cpg.call.name("sink").l) { case List(firstSink, secondSink) =>
+          inside(firstSink.argument.argumentIndex(1).isIdentifier.l) { case List(firstValue) =>
+            firstValue.name shouldBe "value"
+            firstValue.refsTo.l shouldBe cpg.local.nameExact("value").l
+          }
+          inside(secondSink.argument.argumentIndex(1).isIdentifier.l) { case List(secondValue) =>
+            secondValue.name shouldBe "value$0"
+            secondValue.refsTo.l shouldBe cpg.local.nameExact("value$0").l
+          }
+        }
+      }
+    }
+
+    "a pattern and local variable share a name and a type" should {
+      val cpg = code("""
+                         |class Main {
+                         |    String source () { return "data"; }
+                         |    static boolean sink0 (String s){ return true; }
+                         |    static boolean sink1 (String s){ return true; }
+                         |    static boolean sink2 (String s){ return true; }
+                         |
+                         |    static void foo(Object o) {
+                         |        if (o instanceof String s) {
+                         |            sink0(s);
+                         |        }
+                         |        if (o instanceof String s) {
+                         |            sink1(s);
+                         |        }
+                         |        // This s must be initialized before using it, so it will always overwrite the value of the
+                         |        // pattern variable, hence avoiding false positives.
+                         |        String s = "safe";
+                         |        sink2(s);
+                         |    }
+                         |}
+                         |""".stripMargin)
+
+      "share the local" in {
+        val sLocal = inside(cpg.method.name("foo").local.l) { case List(sLocal) => sLocal }
+
+        sLocal.name shouldBe "s";
+        sLocal.typeFullName shouldBe "java.lang.String"
+
+        inside(cpg.call.name("sink0").argument.l) { case List(sIdentifier: Identifier) =>
+          sIdentifier.name shouldBe "s"
+          sIdentifier.typeFullName shouldBe "java.lang.String"
+          sIdentifier.refsTo.l shouldBe List(sLocal)
+        }
+        inside(cpg.call.name("sink1").argument.l) { case List(sIdentifier: Identifier) =>
+          sIdentifier.name shouldBe "s"
+          sIdentifier.typeFullName shouldBe "java.lang.String"
+          sIdentifier.refsTo.l shouldBe List(sLocal)
+        }
+        inside(cpg.call.name("sink2").argument.l) { case List(sIdentifier: Identifier) =>
+          sIdentifier.name shouldBe "s"
+          sIdentifier.typeFullName shouldBe "java.lang.String"
+          sIdentifier.refsTo.l shouldBe List(sLocal)
+        }
+      }
+    }
+  }
 }

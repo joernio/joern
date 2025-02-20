@@ -269,7 +269,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
         .code(idxName)
         .lineNumber(lineNo)
         .genericSignature(genericSignature)
-    scope.enclosingBlock.get.addLocal(idxLocal)
+    scope.enclosingBlock.get.addLocal(idxLocal, idxName)
     idxLocal
   }
 
@@ -355,15 +355,17 @@ trait AstForForLoopsCreator { this: AstCreator =>
 
     maybeVariable match {
       case Some(variable) =>
-        val name = variable.getNameAsString
+        val originalName = variable.getNameAsString
+        // TODO: Name mangling
+        val mangledName = originalName
         val typeFullName =
           tryWithSafeStackOverflow(variable.getType).toOption.flatMap(typeInfoCalc.fullName).getOrElse("ANY")
         val localNode = partialLocalNode
-          .name(name)
-          .code(variable.getNameAsString)
+          .name(mangledName)
+          .code(mangledName)
           .typeFullName(typeFullName)
 
-        scope.enclosingBlock.get.addLocal(localNode)
+        scope.enclosingBlock.get.addLocal(localNode, originalName)
         localNode
 
       case None =>

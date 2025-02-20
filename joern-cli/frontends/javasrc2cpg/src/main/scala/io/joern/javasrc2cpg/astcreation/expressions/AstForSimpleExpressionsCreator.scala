@@ -166,18 +166,12 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
     scope.pushBlockScope()
     val context = new BinaryExprContext(expr, new CombinedTypeSolver())
 
-    context
-      .typePatternExprsExposedToChild(expr.getRight)
-      .asScala
-      .flatMap(pattern => scope.enclosingMethod.flatMap(_.getLocalForPattern(pattern)))
-      .foreach { local =>
-        scope.enclosingBlock.foreach(_.addLocal(local))
-      }
+    scope.addLocalsForPatternsToEnclosingBlock(context.typePatternExprsExposedToChild(expr.getRight).asScala.toList)
 
     val rhsArgs = astsForExpression(expr.getRight, expectedType)
     // TODO Fix code
     // val rhsCode = rhsArgs.headOption.flatMap(_.rootCode).getOrElse("")
-    scope.popBlockScope()
+    scope.popBlockAndHoistPatternVariables()
 
     val args = lhsArgs ++ rhsArgs
 
@@ -266,12 +260,12 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
     scope.pushBlockScope()
     scope.addLocalsForPatternsToEnclosingBlock(patternsExposedToThen)
     val thenAst = astsForExpression(expr.getThenExpr, expectedType)
-    scope.popBlockScope()
+    scope.popBlockAndHoistPatternVariables()
 
     scope.pushBlockScope()
     scope.addLocalsForPatternsToEnclosingBlock(patternsExposedToElse)
     val elseAst = astsForExpression(expr.getElseExpr, expectedType)
-    scope.popBlockScope()
+    scope.popBlockAndHoistPatternVariables()
 
     val typeFullName =
       expressionReturnTypeFullName(expr)
