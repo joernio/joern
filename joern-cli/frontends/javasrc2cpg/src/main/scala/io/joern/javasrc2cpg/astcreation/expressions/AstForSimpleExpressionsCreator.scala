@@ -169,9 +169,9 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
     context
       .typePatternExprsExposedToChild(expr.getRight)
       .asScala
-      .flatMap(pattern => scope.enclosingMethod.flatMap(_.getPatternVariableInfo(pattern)))
-      .foreach { case PatternVariableInfo(pattern, local, _, _, _, _) =>
-        scope.enclosingBlock.foreach(_.addPatternLocal(local, pattern))
+      .flatMap(pattern => scope.enclosingMethod.flatMap(_.getLocalForPattern(pattern)))
+      .foreach { local =>
+        scope.enclosingBlock.foreach(_.addLocal(local))
       }
 
     val rhsArgs = astsForExpression(expr.getRight, expectedType)

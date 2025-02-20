@@ -22,7 +22,6 @@ import io.joern.javasrc2cpg.scope.Scope.{
   NotInScope,
   ScopeMember,
   ScopeParameter,
-  ScopePatternVariable,
   ScopeVariable,
   SimpleVariable
 }
@@ -56,16 +55,6 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
           variable.typeFullName
         )
 
-      case SimpleVariable(ScopePatternVariable(localNode, typePatternExpr)) =>
-        scope.enclosingMethod.flatMap(_.getPatternVariableInfo(typePatternExpr)) match {
-          case Some(PatternVariableInfo(typePatternExpr, _, initializerAst, _, false, _)) =>
-            scope.enclosingMethod.foreach(_.registerPatternVariableInitializerToBeAddedToGraph(typePatternExpr))
-            initializerAst
-          case _ =>
-            val identifier = identifierNode(nameExpr, localNode.name, localNode.name, localNode.typeFullName)
-            Ast(identifier).withRefEdge(identifier, localNode)
-        }
-
       case SimpleVariable(variable) =>
         val identifier = identifierNode(nameExpr, name, name, typeFullName.getOrElse(defaultTypeFallback()))
         val captured = variable.node match {
@@ -91,17 +80,20 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
   ): Ast = {
     val base =
       if (isStatic) {
-        NewTypeRef()
+        val typ = NewTypeRef()
           .code(baseTypeDeclName)
           .typeFullName(baseTypeDeclFullName)
           .lineNumber(line(node))
           .columnNumber(column(node))
+        Ast(typ)
       } else {
-        newIdentifierNode(NameConstants.This, baseTypeDeclFullName)
+        val identifier = newIdentifierNode(NameConstants.This, baseTypeDeclFullName)
+        val refsTo     = scope.lookupVariable(NameConstants.This).variableNode.toList
+        Ast(identifier).withRefEdges(identifier, refsTo)
       }
     fieldAccessAst(
-      Ast(base),
-      s"${base.code}.$fieldName",
+      base,
+      s"${base.rootCodeOrEmpty}.$fieldName",
       line(node),
       column(node),
       fieldName,

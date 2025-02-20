@@ -545,6 +545,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
 
   private def getStaticFieldInitializers(staticFields: List[FieldDeclaration]): List[Ast] = {
     scope.pushMethodScope(NewMethod(), ExpectedType.empty, isStatic = true)
+    scope.pushBlockScope()
     val fieldsAsts = staticFields.flatMap { field =>
       field.getVariables.asScala.toList.flatMap { variable =>
         scope.pushFieldDeclScope(isStatic = true, name = variable.getNameAsString)
@@ -553,9 +554,9 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
         assignment
       }
     }
+    scope.popBlockScope()
     val methodScope = scope.popMethodScope()
-    methodScope.getTemporaryLocals.map(Ast(_)) ++ methodScope
-      .getUnaddedPatternVariableAstsAndMarkAdded() ++ fieldsAsts
+    methodScope.getAndClearUnaddedPatternLocals().map(Ast(_)) ++ fieldsAsts
   }
 
   private[declarations] def astForAnnotationExpr(annotationExpr: AnnotationExpr): Ast = {
