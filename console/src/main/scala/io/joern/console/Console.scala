@@ -46,7 +46,6 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
         else { Seq(config.tools.imageViewer) }
         ExternalCommand
           .run(command :+ tmpFile.path.toAbsolutePath.toString, mergeStdErrInStdOut = false, extraEnv = Map.empty)
-          .toTry
       } match {
         case Success(_) =>
           // We never handle the actual result anywhere.
