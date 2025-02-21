@@ -2,12 +2,12 @@ package io.joern.c2cpg.astcreation
 
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
-import io.joern.x2cpg.Defines as X2CpgDefines
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodRef
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
+import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.internal.core.dom.parser.c.ICInternalBinding
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTQualifiedName
@@ -30,11 +30,9 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     val codeString = code(lit)
     val tpe        = registerType(cleanType(safeGetType(lit.getExpressionType)))
     if (codeString == "this") {
-      val thisIdentifier = identifierNode(lit, "this", "this", tpe)
-      scope.lookupVariable("this") match {
-        case Some((variable, _)) => Ast(thisIdentifier).withRefEdge(thisIdentifier, variable)
-        case _                   => Ast(identifierNode(lit, codeString, codeString, tpe))
-      }
+      val thisIdentifier = identifierNode(lit, codeString, codeString, tpe)
+      scope.addVariableReference(codeString, thisIdentifier, tpe, EvaluationStrategies.BY_REFERENCE)
+      Ast(thisIdentifier)
     } else {
       Ast(literalNode(lit, codeString, tpe))
     }
@@ -98,10 +96,12 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def nameForIdentifier(ident: IASTNode): String = {
     ident match {
-      case id: IASTIdExpression => ASTStringUtil.getSimpleName(id.getName)
+      case id: IASTElaboratedTypeSpecifier => ASTStringUtil.getSimpleName(id.getName)
+      case id: IASTNamedTypeSpecifier      => ASTStringUtil.getSimpleName(id.getName)
+      case id: IASTIdExpression            => ASTStringUtil.getSimpleName(id.getName)
       case id: IASTName =>
         val name = ASTStringUtil.getSimpleName(id)
-        if (name.isEmpty) safeGetBinding(id).map(_.getName).getOrElse(uniqueName("name", "", "")._1)
+        if (name.isEmpty) safeGetBinding(id).map(_.getName).getOrElse(uniqueName("", "")._1)
         else name
       case _ => code(ident)
     }
@@ -119,14 +119,15 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
         val ownerType    = registerType(s"$ownerTypeRaw$deref")
         if (isInCurrentScope(ident, ownerTypeRaw)) {
           scope.lookupVariable("this") match {
-            case Some((variable, _)) =>
+            case Some(_) =>
               val op             = Operators.indirectFieldAccess
               val code           = s"this->$identifierName"
               val thisIdentifier = identifierNode(ident, "this", "this", ownerType)
-              val member         = fieldIdentifierNode(ident, identifierName, identifierName)
-              val ma =
-                callNode(ident, code, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(cleanType(tpe))))
-              callAst(ma, Seq(Ast(thisIdentifier).withRefEdge(thisIdentifier, variable), Ast(member)))
+              scope.addVariableReference("this", thisIdentifier, ownerType, EvaluationStrategies.BY_REFERENCE)
+              val member  = fieldIdentifierNode(ident, identifierName, identifierName)
+              val callTpe = Some(registerType(cleanType(tpe)))
+              val ma      = callNode(ident, code, op, op, DispatchTypes.STATIC_DISPATCH, None, callTpe)
+              callAst(ma, Seq(Ast(thisIdentifier), Ast(member)))
             case None => tpe
           }
         } else tpe
@@ -163,11 +164,10 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
         val identifierName = nameForIdentifier(ident)
         typeNameForIdentifier(ident, identifierName) match {
           case identifierTypeName: String =>
-            val node = identifierNode(ident, identifierName, code(ident), registerType(cleanType(identifierTypeName)))
-            scope.lookupVariable(identifierName) match {
-              case Some((variable, _)) => Ast(node).withRefEdge(node, variable)
-              case _                   => Ast(node)
-            }
+            val tpe  = registerType(cleanType(identifierTypeName))
+            val node = identifierNode(ident, identifierName, code(ident), tpe)
+            scope.addVariableReference(identifierName, node, tpe, EvaluationStrategies.BY_REFERENCE)
+            Ast(node)
           case ast: Ast => ast
         }
     }
@@ -175,7 +175,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
 
   protected def astForFieldReference(fieldRef: IASTFieldReference): Ast = {
     val op     = if (fieldRef.isPointerDereference) Operators.indirectFieldAccess else Operators.fieldAccess
-    val ma     = callNode(fieldRef, code(fieldRef), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
+    val ma     = callNode(fieldRef, code(fieldRef), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
     val owner  = astForExpression(fieldRef.getFieldOwner)
     val member = fieldIdentifierNode(fieldRef, fieldRef.getFieldName.toString, fieldRef.getFieldName.toString)
     callAst(ma, List(owner, Ast(member)))
@@ -184,28 +184,9 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
   protected def astForArrayModifier(arrMod: IASTArrayModifier): Ast =
     astForNode(arrMod.getConstantExpression)
 
-  protected def astForInitializerList(l: IASTInitializerList): Ast = {
-    val op           = Operators.arrayInitializer
-    val initCallNode = callNode(l, code(l), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
-
-    val MAX_INITIALIZERS = 1000
-    val clauses          = l.getClauses.slice(0, MAX_INITIALIZERS)
-
-    val args = clauses.toList.map(x => astForNode(x))
-
-    val ast = callAst(initCallNode, args)
-    if (l.getClauses.length > MAX_INITIALIZERS) {
-      val placeholder =
-        literalNode(l, "<too-many-initializers>", Defines.Any).argumentIndex(MAX_INITIALIZERS)
-      ast.withChild(Ast(placeholder)).withArgEdge(initCallNode, placeholder)
-    } else {
-      ast
-    }
-  }
-
   protected def astForQualifiedName(qualId: CPPASTQualifiedName): Ast = {
     val op = Operators.fieldAccess
-    val ma = callNode(qualId, code(qualId), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
+    val ma = callNode(qualId, code(qualId), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
 
     def fieldAccesses(names: List[IASTNode], argIndex: Int = -1): Ast = names match {
       case Nil => Ast()
@@ -214,7 +195,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
       case head :: tail =>
         val codeString = s"${code(head)}::${tail.map(code).mkString("::")}"
         val callNode_ =
-          callNode(head, code(head), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
+          callNode(head, code(head), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
             .argumentIndex(argIndex)
         callNode_.code = codeString
         val arg1 = astForNode(head)

@@ -513,23 +513,23 @@ class AstCreationPassTests extends AstC2CpgSuite {
       inside(cpg.method.nameExact("method").controlStructure.l) { case List(forStmt) =>
         forStmt.controlStructureType shouldBe ControlStructureTypes.FOR
         forStmt.astChildren.isBlock.astChildren.isCall.code.l shouldBe List(
-          "anonymous_tmp_0 = foo",
-          "a = anonymous_tmp_0[0]",
-          "b = anonymous_tmp_0[1]"
+          "<tmp>0 = foo",
+          "a = <tmp>0[0]",
+          "b = <tmp>0[1]"
         )
       }
       cpg.local.map { l => (l.name, l.typeFullName) }.toMap shouldBe Map(
-        "foo"             -> "int[2]",
-        "anonymous_tmp_0" -> "int[2]",
-        "a"               -> "ANY",
-        "b"               -> "ANY"
+        "foo"    -> "int[2]",
+        "<tmp>0" -> "int[2]",
+        "a"      -> "ANY",
+        "b"      -> "ANY"
       )
       pendingUntilFixed {
         cpg.local.map { l => (l.name, l.typeFullName) }.toMap shouldBe Map(
-          "foo"             -> "int[2]",
-          "anonymous_tmp_0" -> "int[2]",
-          "a"               -> "int*",
-          "b"               -> "int*"
+          "foo"    -> "int[2]",
+          "<tmp>0" -> "int[2]",
+          "a"      -> "int*",
+          "b"      -> "int*"
         )
       }
     }
@@ -918,7 +918,11 @@ class AstCreationPassTests extends AstC2CpgSuite {
       val List(localMyFs) = cpg.local.nameExact("my_fs").l
       localMyFs.order shouldBe 4
       localMyFs.referencingIdentifiers.name.l shouldBe List("my_fs")
-      cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).fullName.l.distinct shouldBe List("filesystem")
+      cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).fullName.l.distinct shouldBe List(
+        "filesystem",
+        "my_open",
+        "main"
+      )
     }
 
     "be correct for typedef enum" in {
@@ -1533,8 +1537,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
       val cpg = code("""
         |bool x[2] = { TRUE, FALSE };
         |""".stripMargin)
-      inside(cpg.local.l) { case List(x) =>
-        x.name shouldBe "x"
+      inside(cpg.local.nameExact("x").l) { case List(x) =>
         x.typeFullName shouldBe "bool[2]"
       }
     }

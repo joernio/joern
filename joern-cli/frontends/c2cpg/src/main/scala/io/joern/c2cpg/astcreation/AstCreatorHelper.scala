@@ -3,14 +3,15 @@ package io.joern.c2cpg.astcreation
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.ValidationMode
-import io.joern.x2cpg.Defines as X2CpgDefines
+import io.joern.x2cpg.utils.IntervalKeyPool
+import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.newDependencyNode
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
+import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
 import io.shiftleft.utils.IOUtils
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
@@ -43,16 +44,18 @@ import scala.util.Try
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  private var usedVariablePostfix: Int = 0
+  private val nameKeyPool = new IntervalKeyPool(first = 0, last = Long.MaxValue)
 
   protected def isIncludedNode(node: IASTNode): Boolean = fileName(node) != filename
 
-  protected def uniqueName(target: String, name: String, fullName: String): (String, String) = {
+  protected def uniqueName(name: String, fullName: String, targetName: String = ""): (String, String) = {
     if (name.isEmpty && (fullName.isEmpty || fullName.endsWith("."))) {
-      val name              = s"anonymous_${target}_$usedVariablePostfix"
-      val resultingFullName = s"$fullName$name"
-      usedVariablePostfix = usedVariablePostfix + 1
-      (name, resultingFullName)
+      val newName = targetName match {
+        case ""    => s"<anonymous>${nameKeyPool.next}"
+        case other => s"<$other>${nameKeyPool.next}"
+      }
+      val resultingFullName = s"$fullName$newName"
+      (newName, resultingFullName)
     } else {
       (name, fullName)
     }
@@ -424,68 +427,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }
   }
 
-  private def astForDecltypeSpecifier(decl: ICPPASTDecltypeSpecifier): Ast = {
-    val op       = Defines.OperatorTypeOf
-    val cpgUnary = callNode(decl, code(decl), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
-    val operand  = nullSafeAst(decl.getDecltypeExpression)
-    callAst(cpgUnary, List(operand))
-  }
-
-  private def astForCASTDesignatedInitializer(d: ICASTDesignatedInitializer): Ast = {
-    val node = blockNode(d, Defines.Empty, Defines.Void)
-    scope.pushNewScope(node)
-    val op = Operators.assignment
-    val calls = withIndex(d.getDesignators) { (des, o) =>
-      val callNode_ =
-        callNode(d, code(d), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
-          .argumentIndex(o)
-      val left  = astForNode(des)
-      val right = astForNode(d.getOperand)
-      callAst(callNode_, List(left, right))
-    }
-    scope.popScope()
-    blockAst(node, calls.toList)
-  }
-
-  private def astForCPPASTDesignatedInitializer(d: ICPPASTDesignatedInitializer): Ast = {
-    val node = blockNode(d, Defines.Empty, Defines.Void)
-    scope.pushNewScope(node)
-    val op = Operators.assignment
-    val calls = withIndex(d.getDesignators) { (des, o) =>
-      val callNode_ =
-        callNode(d, code(d), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
-          .argumentIndex(o)
-      val left  = astForNode(des)
-      val right = astForNode(d.getOperand)
-      callAst(callNode_, List(left, right))
-    }
-    scope.popScope()
-    blockAst(node, calls.toList)
-  }
-
-  private def astForCPPASTConstructorInitializer(c: ICPPASTConstructorInitializer): Ast = {
-    val name      = Defines.OperatorConstructorInitializer
-    val callNode_ = callNode(c, code(c), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
-    val args      = c.getArguments.toList.map(a => astForNode(a))
-    callAst(callNode_, args)
-  }
-
-  private def astForCASTArrayRangeDesignator(des: CASTArrayRangeDesignator): Ast = {
-    val op         = Operators.arrayInitializer
-    val callNode_  = callNode(des, code(des), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
-    val floorAst   = nullSafeAst(des.getRangeFloor)
-    val ceilingAst = nullSafeAst(des.getRangeCeiling)
-    callAst(callNode_, List(floorAst, ceilingAst))
-  }
-
-  private def astForCPPASTArrayRangeDesignator(des: CPPASTArrayRangeDesignator): Ast = {
-    val op         = Operators.arrayInitializer
-    val callNode_  = callNode(des, code(des), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
-    val floorAst   = nullSafeAst(des.getRangeFloor)
-    val ceilingAst = nullSafeAst(des.getRangeCeiling)
-    callAst(callNode_, List(floorAst, ceilingAst))
-  }
-
   protected def astForNode(node: IASTNode): Ast = {
     node match {
       case expr: IASTExpression             => astForExpression(expr)
@@ -562,20 +503,16 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     base: Option[Ast] = None,
     receiver: Option[Ast] = None
   ): Ast = {
-
     setArgumentIndices(arguments)
 
     val baseRoot = base.flatMap(_.root).toList
-    val bse      = base.getOrElse(Ast())
     baseRoot match {
-      case List(x: ExpressionNew) =>
-        x.argumentIndex = 0
-      case _ =>
+      case List(x: ExpressionNew) => x.argumentIndex = 0
+      case _                      => // do nothing
     }
 
-    var ast =
-      Ast(callNode)
-        .withChild(bse)
+    val bse = base.getOrElse(Ast())
+    var ast = Ast(callNode).withChild(bse)
 
     if (receiver.isDefined && receiver != base) {
       receiver.get.root.get.asInstanceOf[ExpressionNew].argumentIndex = -1
@@ -590,7 +527,84 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     if (receiver.isDefined) {
       ast = ast.withReceiverEdge(callNode, receiver.get.root.get)
     }
-
     ast
   }
+
+  protected def createVariableReferenceLinks(): Unit = {
+    val resolvedReferenceIt = scope.resolve(createLocalForUnresolvedReference)
+    val capturedLocals      = mutable.HashMap.empty[String, NewNode]
+
+    resolvedReferenceIt.foreach { case C2CpgScope.ResolvedReference(variableNodeId, origin) =>
+      var currentScope           = origin.stack
+      var currentReference       = origin.referenceNode
+      var nextReference: NewNode = null
+      var done                   = false
+      while (!done) {
+        val localOrCapturedLocalNodeOption =
+          if (currentScope.get.nameToVariableNode.contains(origin.variableName)) {
+            done = true
+            Option(variableNodeId)
+          } else {
+            currentScope.flatMap {
+              case methodScope: C2CpgScope.MethodScopeElement if methodScope.needsEnclosingScope =>
+                currentScope = Option(C2CpgScope.getEnclosingMethodScopeElement(currentScope))
+                None
+              case methodScope: C2CpgScope.MethodScopeElement =>
+                val methodScopeNode          = methodScope.scopeNode
+                val closureBindingIdProperty = s"$filename:${methodScope.methodName}:${origin.variableName}"
+                capturedLocals.updateWith(closureBindingIdProperty) {
+                  case None =>
+                    val closureBindingNode = NodeBuilders.newClosureBindingNode(
+                      closureBindingIdProperty,
+                      origin.variableName,
+                      origin.evaluationStrategy
+                    )
+                    methodScope.capturingRefId.foreach(diffGraph.addEdge(_, closureBindingNode, EdgeTypes.CAPTURE))
+                    nextReference = closureBindingNode
+                    val localNode = createLocalForUnresolvedReference(methodScopeNode, origin.variableName, origin.tpe)
+                    Option(localNode.closureBindingId(closureBindingIdProperty))
+                  case someLocalNode =>
+                    // When there is already a LOCAL representing the capturing, we do not
+                    // need to process the surrounding scope element as this has already
+                    // been processed.
+                    done = true
+                    someLocalNode
+                }
+              case _: C2CpgScope.BlockScopeElement => None
+            }
+          }
+
+        localOrCapturedLocalNodeOption.foreach { localOrCapturedLocalNode =>
+          (currentReference, localOrCapturedLocalNode) match {
+            case (id: NewIdentifier, local: NewLocal) => transferLineAndColumnInfo(id, local)
+            case _                                    => // do nothing
+          }
+          diffGraph.addEdge(currentReference, localOrCapturedLocalNode, EdgeTypes.REF)
+          currentReference = nextReference
+        }
+        currentScope = currentScope.get.surroundingScope
+      }
+    }
+  }
+
+  private def transferLineAndColumnInfo(src: NewIdentifier, target: NewLocal): Unit = {
+    src.lineNumber match {
+      // If there are multiple occurrences and the local is already set, ignore later updates
+      case Some(srcLineNo) if target.lineNumber.isEmpty || !target.lineNumber.exists(_ < srcLineNo) =>
+        target.lineNumber(src.lineNumber)
+        target.columnNumber(src.columnNumber)
+      case _ => // do nothing
+    }
+  }
+
+  private def createLocalForUnresolvedReference(
+    methodScopeNodeId: NewNode,
+    variableName: String,
+    tpe: String
+  ): NewLocal = {
+    val local = NodeBuilders.newLocalNode(variableName, tpe).order(0)
+    diffGraph.addEdge(methodScopeNodeId, local, EdgeTypes.AST)
+    local
+  }
+
 }
