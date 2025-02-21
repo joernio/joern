@@ -25,11 +25,7 @@ object SourceHighlighter {
     tmpSrcFile.writeText(source.code)
     try {
       val highlightedCode = ExternalCommand
-        .run(
-          (Seq("source-highlight-esc.sh", tmpSrcFile.path.toString, langFlag)),
-          mergeStdErrInStdOut = false,
-          extraEnv = Map.empty
-        )
+        .run(Seq("source-highlight-esc.sh", tmpSrcFile.path.toString, langFlag))
         .stdOut
         .mkString("\n")
       Some(highlightedCode)

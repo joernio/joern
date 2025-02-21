@@ -25,7 +25,7 @@ class DataFlowBinToCpgSuite extends GhidraBinToCpgSuite {
   implicit val viewer: ImageViewer = (pathStr: String) =>
     Try {
       ExternalCommand
-        .run(Seq("xdg-open", pathStr), mergeStdErrInStdOut = false, extraEnv = Map.empty)
+        .run(Seq("xdg-open", pathStr))
         .stdOut
         .mkString("\n")
     }
