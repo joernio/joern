@@ -30,10 +30,7 @@ case class JavaCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgG
 
       val dex2jar = rootPath.resolve("dex2jar.sh").toString
 
-      ExternalCommand.run(
-        Seq(dex2jar, inputPath),
-        isShellCommand = true
-      )
+      ExternalCommand.run(Seq(dex2jar, inputPath), isShellCommand = true)
       val jarPath = s"$inputPath.jar"
       generateCommercial(jarPath, outputPath)
     } else {

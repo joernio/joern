@@ -317,7 +317,10 @@ class AstGenRunner(config: Config) {
     }
 
     val result =
-      ExternalCommand.run((astGenCommand +: executableArgs) ++ Seq("-t", "ts", "-o", out.toString), Some(out.toString()))
+      ExternalCommand.run(
+        (astGenCommand +: executableArgs) ++ Seq("-t", "ts", "-o", out.toString),
+        Some(out.toString())
+      )
 
     val jsons = SourceFiles.determine(out.toString(), Set(".json"))
     jsons.foreach { jsonPath =>

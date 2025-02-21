@@ -25,9 +25,7 @@ object Shared {
   private def createSvgFile(in: File, out: File): Try[String] = {
     Try {
       ExternalCommand
-        .run(
-          Seq("dot", "-Tsvg", in.path.toAbsolutePath.toString, "-o", out.path.toAbsolutePath.toString),
-        )
+        .run(Seq("dot", "-Tsvg", in.path.toAbsolutePath.toString, "-o", out.path.toAbsolutePath.toString))
         .stdOut
         .mkString("\n")
     } match {
