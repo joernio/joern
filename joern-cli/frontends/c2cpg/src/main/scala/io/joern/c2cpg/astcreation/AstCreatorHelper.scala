@@ -10,7 +10,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.AstNodeNew
+import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
 import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
 import io.shiftleft.utils.IOUtils
 import org.apache.commons.lang3.StringUtils
@@ -551,7 +551,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
                 None
               case methodScope: C2CpgScope.MethodScopeElement =>
                 val methodScopeNode          = methodScope.scopeNode
-                val closureBindingIdProperty = s"$filename:${methodScope.name}:${origin.variableName}"
+                val closureBindingIdProperty = s"$filename:${methodScope.methodName}:${origin.variableName}"
                 capturedLocals.updateWith(closureBindingIdProperty) {
                   case None =>
                     val closureBindingNode = NodeBuilders.newClosureBindingNode(
@@ -576,8 +576,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
         localOrCapturedLocalNodeOption.foreach { localOrCapturedLocalNode =>
           (currentReference, localOrCapturedLocalNode) match {
-            case (node: AstNodeNew, local: NewLocal) => transferLineAndColumnInfo(node, local)
-            case _                                   => // do nothing
+            case (id: NewIdentifier, local: NewLocal) => transferLineAndColumnInfo(id, local)
+            case _                                    => // do nothing
           }
           diffGraph.addEdge(currentReference, localOrCapturedLocalNode, EdgeTypes.REF)
           currentReference = nextReference
@@ -587,13 +587,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }
   }
 
-  private def transferLineAndColumnInfo(src: AstNodeNew, tgt: NewLocal): Unit = {
+  private def transferLineAndColumnInfo(src: NewIdentifier, target: NewLocal): Unit = {
     src.lineNumber match {
       // If there are multiple occurrences and the local is already set, ignore later updates
-      case Some(srcLineNo) if tgt.lineNumber.isEmpty || !tgt.lineNumber.exists(_ < srcLineNo) =>
-        tgt.lineNumber(src.lineNumber)
-        tgt.columnNumber(src.columnNumber)
-      case _ =>
+      case Some(srcLineNo) if target.lineNumber.isEmpty || !target.lineNumber.exists(_ < srcLineNo) =>
+        target.lineNumber(src.lineNumber)
+        target.columnNumber(src.columnNumber)
+      case _ => // do nothing
     }
   }
 
