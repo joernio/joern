@@ -43,7 +43,7 @@ object IncludeAutoDiscovery {
   private var systemIncludePathsCPP: mutable.LinkedHashSet[Path] = mutable.LinkedHashSet.empty
 
   private def checkForGcc(): Boolean = {
-    ExternalCommand.run(GccVersionCommand, ".").toTry match {
+    ExternalCommand.run(GccVersionCommand, Some(".")).toTry match {
       case Success(result) =>
         logger.debug(s"GCC is available: ${result.mkString(System.lineSeparator())}")
         true

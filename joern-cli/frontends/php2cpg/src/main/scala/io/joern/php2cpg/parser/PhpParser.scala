@@ -36,7 +36,7 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
 
     val command = phpParseCommand(inputPaths)
 
-    val result = ExternalCommand.run(command, ".", mergeStdErrInStdOut = true)
+    val result = ExternalCommand.run(command, Some("."), mergeStdErrInStdOut = true)
     result match {
       case ExternalCommand.ExternalCommandResult(0, stdOut, _) =>
         val asJson = linesToJsonValues(stdOut)

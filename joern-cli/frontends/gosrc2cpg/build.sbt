@@ -1,6 +1,9 @@
 import com.typesafe.config.{Config, ConfigFactory}
 import versionsort.VersionHelper
 
+import scala.sys.process.stringToProcess
+import scala.util.Try
+
 name := "gosrc2cpg"
 
 dependsOn(Projects.dataflowengineoss % "compile->compile;test->test", Projects.x2cpg % "compile->compile;test->test")
@@ -37,7 +40,7 @@ lazy val goAstGenDlUrl = settingKey[String]("goastgen download url")
 goAstGenDlUrl := s"https://github.com/joernio/goastgen/releases/download/v${goAstGenVersion.value}/"
 
 def hasCompatibleAstGenVersion(goAstGenVersion: String): Boolean = {
-  ExternalCommandUtil.run(Seq("goastgen", "-version")).map(x => x.stdOut.mkString("\n").strip()) match {
+  Try("goastgen -version".!!).toOption.map(_.strip()) match {
     case Some(installedVersion) if installedVersion != "unknown" =>
       VersionHelper.compare(installedVersion, goAstGenVersion) >= 0
     case _ => false

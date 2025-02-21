@@ -46,7 +46,7 @@ object DependencyResolver {
     configuration: String
   ): Option[collection.Seq[String]] = {
     val lines = ExternalCommand
-      .run(Seq("gradle", "dependencies", "--configuration,", configuration), projectDir.toString)
+      .run(Seq("gradle", "dependencies", "--configuration,", configuration), Some(projectDir.toString))
       .toTry match {
       case Success(lines) => lines
       case Failure(exception) =>

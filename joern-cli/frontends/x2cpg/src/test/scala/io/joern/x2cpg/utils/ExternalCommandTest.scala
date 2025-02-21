@@ -17,12 +17,12 @@ class ExternalCommandTest extends AnyWordSpec with Matchers {
     "be able to run `ls` successfully" in {
       File.usingTemporaryDirectory("sample") { sourceDir =>
         val cmd = Seq("ls", sourceDir.pathAsString)
-        ExternalCommand.run(cmd, sourceDir.pathAsString).toTry should be a Symbol("success")
+        ExternalCommand.run(cmd, Some(sourceDir.pathAsString)).toTry should be a Symbol("success")
       }
     }
 
     "report exit code and stdout/stderr for nonzero exit code" in {
-      ExternalCommand.run(Seq("ls", "/does/not/exist"), cwd).toTry match {
+      ExternalCommand.run(Seq("ls", "/does/not/exist"), Some(cwd)).toTry match {
         case result: Success[_] =>
           fail(s"expected failure, but got $result")
         case Failure(exception) =>
@@ -32,7 +32,7 @@ class ExternalCommandTest extends AnyWordSpec with Matchers {
     }
 
     "report error for io exception (e.g. for nonexisting command)" in {
-      ExternalCommand.run(Seq("/command/does/not/exist"), cwd).toTry match {
+      ExternalCommand.run(Seq("/command/does/not/exist"), Some(cwd)).toTry match {
         case result: Success[_] =>
           fail(s"expected failure, but got $result")
         case Failure(exception) =>

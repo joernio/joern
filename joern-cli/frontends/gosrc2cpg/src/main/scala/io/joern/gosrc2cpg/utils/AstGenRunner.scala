@@ -79,7 +79,7 @@ class AstGenRunner(config: Config, includeFileRegex: String = "") extends AstGen
     val excludeCommand = if (exclude.isEmpty) Seq.empty else Seq("-exclude", exclude)
     val includeCommand = if (include.isEmpty) Seq.empty else Seq("-include-packages", include)
     ExternalCommand
-      .run((astGenCommand +: excludeCommand) ++ includeCommand ++ Seq("-out", out.toString(), in), ".")
+      .run((astGenCommand +: excludeCommand) ++ includeCommand ++ Seq("-out", out.toString(), in), Some("."))
       .toTry
   }
 

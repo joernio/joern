@@ -27,8 +27,6 @@ object Shared {
       ExternalCommand
         .run(
           Seq("dot", "-Tsvg", in.path.toAbsolutePath.toString, "-o", out.path.toAbsolutePath.toString),
-          false,
-          Map.empty
         )
         .stdOut
         .mkString("\n")

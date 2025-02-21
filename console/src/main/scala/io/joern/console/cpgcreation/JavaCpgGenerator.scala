@@ -32,8 +32,6 @@ case class JavaCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgG
 
       ExternalCommand.run(
         Seq(dex2jar, inputPath),
-        mergeStdErrInStdOut = false,
-        extraEnv = Map.empty,
         isShellCommand = true
       )
       val jarPath = s"$inputPath.jar"

@@ -42,7 +42,7 @@ abstract class CpgGenerator() {
            |""".stripMargin
       )
 
-      val exitValue = ExternalCommand.run(cmd, mergeStdErrInStdOut = false, extraEnv = Map.empty).exitCode
+      val exitValue = ExternalCommand.run(cmd).exitCode
       assert(exitValue == 0, s"Error running shell command: exitValue=$exitValue; $cmd")
     }
 

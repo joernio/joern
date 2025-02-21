@@ -45,7 +45,7 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
         val command = if (scala.util.Properties.isWin) { Seq("cmd.exe", "/C", config.tools.imageViewer) }
         else { Seq(config.tools.imageViewer) }
         ExternalCommand
-          .run(command :+ tmpFile.path.toAbsolutePath.toString, mergeStdErrInStdOut = false, extraEnv = Map.empty)
+          .run(command :+ tmpFile.path.toAbsolutePath.toString, cwd = None, mergeStdErrInStdOut = false, extraEnv = Map.empty, isShellCommand = false)
       } match {
         case Success(_) =>
           // We never handle the actual result anywhere.

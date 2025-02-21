@@ -1,6 +1,9 @@
 import com.typesafe.config.{Config, ConfigFactory}
 import versionsort.VersionHelper
 
+import scala.sys.process.stringToProcess
+import scala.util.Try
+
 name := "csharpsrc2cpg"
 
 dependsOn(Projects.dataflowengineoss % "compile->compile;test->test", Projects.x2cpg % "compile->compile;test->test")
@@ -38,7 +41,7 @@ lazy val astGenDlUrl = settingKey[String]("astgen download url")
 astGenDlUrl := s"https://github.com/joernio/DotNetAstGen/releases/download/v${astGenVersion.value}/"
 
 def hasCompatibleAstGenVersion(astGenVersion: String): Boolean = {
-  ExternalCommandUtil.run(Seq("dotnetastgen", "--version")).map(x => x.stdOut.mkString("\n").strip()) match {
+  Try("dotnetastgen --version".!!).toOption.map(_.strip()) match {
     case Some(installedVersion) if installedVersion != "unknown" =>
       VersionHelper.compare(installedVersion, astGenVersion) >= 0
     case _ => false

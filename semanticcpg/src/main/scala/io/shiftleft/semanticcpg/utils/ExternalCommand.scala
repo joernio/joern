@@ -9,8 +9,7 @@ import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 import scala.util.control.NonFatal
 
-object ExternalCommand {
-
+trait ExternalCommandImpl {
   case class ExternalCommandResult(exitCode: Int, stdOut: Seq[String], stdErr: Seq[String]) {
     def successOption: Option[Seq[String]] = exitCode match {
       case 0 => Some(stdOut)
@@ -27,21 +26,34 @@ object ExternalCommand {
     }
   }
 
-  private def run(
+  def run(
     command: Seq[String],
-    cwd: Option[String],
-    mergeStdErrInStdOut: Boolean,
-    extraEnv: Map[String, String]
+    cwd: Option[String] = None,
+    mergeStdErrInStdOut: Boolean = false,
+    extraEnv: Map[String, String] = Map.empty,
+    isShellCommand: Boolean = false
   ): ExternalCommandResult = {
+    val shellCmd = if (scala.util.Properties.isWin) {
+      Seq("cmd.exe", "/C")
+    } else {
+      Seq("sh", "-c")
+    }
+
+    val cmd = if (isShellCommand) {
+      shellCmd ++ command
+    } else {
+      command
+    }
+
     val builder = cwd match {
       case Some(dir) =>
         new ProcessBuilder()
-          .command(command.toArray*)
+          .command(cmd.toArray*)
           .directory(new File(dir))
           .redirectErrorStream(mergeStdErrInStdOut)
       case _ =>
         new ProcessBuilder()
-          .command(command.toArray*)
+          .command(cmd.toArray*)
           .redirectErrorStream(mergeStdErrInStdOut)
     }
 
@@ -69,37 +81,6 @@ object ExternalCommand {
     }
   }
 
-  def run(
-    command: Seq[String],
-    cwd: String,
-    mergeStdErrInStdOut: Boolean = false,
-    extraEnv: Map[String, String] = Map.empty
-  ): ExternalCommandResult = run(command, Some(cwd), mergeStdErrInStdOut, extraEnv)
-
-  def run(command: Seq[String], mergeStdErrInStdOut: Boolean, extraEnv: Map[String, String]): ExternalCommandResult =
-    run(command, None, mergeStdErrInStdOut, extraEnv)
-
-  def run(
-    command: Seq[String],
-    mergeStdErrInStdOut: Boolean,
-    extraEnv: Map[String, String],
-    isShellCommand: Boolean
-  ): ExternalCommandResult = {
-    val shellCmd = if (scala.util.Properties.isWin) {
-      Seq("cmd.exe", "/C")
-    } else {
-      Seq("sh", "-c")
-    }
-
-    val cmd = if (isShellCommand) {
-      shellCmd ++ command
-    } else {
-      command
-    }
-
-    run(cmd, None, mergeStdErrInStdOut, extraEnv)
-  }
-
   /** Finds the absolute path to the executable directory (e.g. `/path/to/javasrc2cpg/bin`). Based on the package path
     * of a loaded classfile based on some (potentially flakey?) filename heuristics. Context: we want to be able to
     * invoke the x2cpg frontends from any directory, not just their install directory, and then invoke other
@@ -125,3 +106,5 @@ object ExternalCommand {
     fixedDir.resolve("bin/").toAbsolutePath
   }
 }
+
+object ExternalCommand extends ExternalCommandImpl

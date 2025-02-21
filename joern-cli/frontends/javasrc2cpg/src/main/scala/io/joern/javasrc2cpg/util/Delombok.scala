@@ -80,7 +80,7 @@ object Delombok {
     val inputDir = projectDir.resolve(relativePackageRoot)
     Try(delombokTempDir.createChild(relativeOutputPath, asDirectory = true)).flatMap { packageOutputDir =>
       ExternalCommand
-        .run(delombokToTempDirCommand(inputDir, packageOutputDir, analysisJavaHome), ".")
+        .run(delombokToTempDirCommand(inputDir, packageOutputDir, analysisJavaHome), Some("."))
         .toTry
         .map(_ => delombokTempDir.path.toAbsolutePath.toString)
     }

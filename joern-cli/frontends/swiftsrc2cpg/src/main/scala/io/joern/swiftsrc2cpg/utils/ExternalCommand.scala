@@ -9,7 +9,7 @@ object ExternalCommand {
   import io.shiftleft.semanticcpg.utils.ExternalCommand.ExternalCommandResult
 
   def run(command: Seq[String], cwd: String, extraEnv: Map[String, String] = Map.empty): Try[Seq[String]] = {
-    io.shiftleft.semanticcpg.utils.ExternalCommand.run(command, cwd, mergeStdErrInStdOut = true, extraEnv) match {
+    io.shiftleft.semanticcpg.utils.ExternalCommand.run(command, Some(cwd), mergeStdErrInStdOut = true, extraEnv) match {
       case ExternalCommandResult(0, stdOut, _) =>
         Success(stdOut)
       case ExternalCommandResult(_, stdOut, stdErr) if stdErr.isEmpty && stdOut.nonEmpty =>
