@@ -5,7 +5,7 @@ import io.joern.csharpsrc2cpg.Config
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, getClass}
 import io.joern.x2cpg.astgen.AstGenRunnerBase
-import io.joern.x2cpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
@@ -68,7 +68,7 @@ class DotNetAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
     metaData: AstGenProgramMetaData
   ): Try[Seq[String]] = {
     val excludeCommand = if (exclude.isEmpty) Seq.empty else Seq("-e", exclude)
-    ExternalCommand.run(Seq(astGenCommand, "-o", out.toString(), "-i", in) ++ excludeCommand, ".").toTry
+    ExternalCommand.run(Seq(astGenCommand, "-o", out.toString(), "-i", in) ++ excludeCommand, Some(".")).toTry
   }
 
 }

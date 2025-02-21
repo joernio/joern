@@ -1,4 +1,3 @@
-import better.files
 import com.typesafe.config.{Config, ConfigFactory}
 import versionsort.VersionHelper
 

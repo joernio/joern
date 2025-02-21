@@ -17,7 +17,7 @@ import io.joern.x2cpg.frontendspecific.rubysrc2cpg.*
 import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass, XTypeRecoveryConfig}
-import io.joern.x2cpg.utils.{ConcurrentTaskUtil, ExternalCommand}
+import io.joern.x2cpg.utils.ConcurrentTaskUtil
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import io.shiftleft.passes.CpgPassBase

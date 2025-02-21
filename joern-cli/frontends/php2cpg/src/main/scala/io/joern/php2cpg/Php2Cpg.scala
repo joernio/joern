@@ -5,7 +5,7 @@ import io.joern.php2cpg.passes.*
 import io.joern.php2cpg.utils.DependencyDownloader
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
-import io.joern.x2cpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import org.slf4j.LoggerFactory
@@ -22,7 +22,7 @@ class Php2Cpg extends X2CpgFrontend[Config] {
   private val PhpVersionRegex = new Regex("^PHP ([78]\\.[1-9]\\.[0-9]|[9-9]\\d\\.\\d\\.\\d)")
 
   private def isPhpVersionSupported: Boolean = {
-    val result = ExternalCommand.run(Seq("php", "--version"), ".").toTry
+    val result = ExternalCommand.run(Seq("php", "--version"), Some(".")).toTry
     result match {
       case Success(listString) =>
         val phpVersionStr = listString.headOption.getOrElse("")

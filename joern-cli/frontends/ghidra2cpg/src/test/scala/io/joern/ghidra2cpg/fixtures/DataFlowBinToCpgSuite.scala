@@ -3,6 +3,7 @@ package io.joern.ghidra2cpg.fixtures
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
+import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
@@ -10,7 +11,6 @@ import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
 import io.shiftleft.semanticcpg.layers.*
 
 import scala.compiletime.uninitialized
-import scala.sys.process.Process
 import scala.util.Try
 
 class DataFlowBinToCpgSuite extends GhidraBinToCpgSuite {
@@ -24,7 +24,10 @@ class DataFlowBinToCpgSuite extends GhidraBinToCpgSuite {
 
   implicit val viewer: ImageViewer = (pathStr: String) =>
     Try {
-      Process(Seq("xdg-open", pathStr)).!!
+      ExternalCommand
+        .run(Seq("xdg-open", pathStr))
+        .stdOut
+        .mkString("\n")
     }
 
   override def passes(cpg: Cpg): Unit = {

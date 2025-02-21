@@ -1,8 +1,8 @@
 package io.shiftleft.semanticcpg.language.dotextension
 
 import better.files.File
+import io.shiftleft.semanticcpg.utils.ExternalCommand
 
-import scala.sys.process.Process
 import scala.util.{Failure, Success, Try}
 
 trait ImageViewer {
@@ -24,7 +24,10 @@ object Shared {
 
   private def createSvgFile(in: File, out: File): Try[String] = {
     Try {
-      Process(Seq("dot", "-Tsvg", in.path.toAbsolutePath.toString, "-o", out.path.toAbsolutePath.toString)).!!
+      ExternalCommand
+        .run(Seq("dot", "-Tsvg", in.path.toAbsolutePath.toString, "-o", out.path.toAbsolutePath.toString))
+        .stdOut
+        .mkString("\n")
     } match {
       case Success(v) => Success(v)
       case Failure(exc) =>

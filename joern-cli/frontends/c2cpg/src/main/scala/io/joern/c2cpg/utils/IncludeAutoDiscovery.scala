@@ -2,7 +2,7 @@ package io.joern.c2cpg.utils
 
 import better.files.File
 import io.joern.c2cpg.Config
-import io.joern.x2cpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Path
@@ -43,7 +43,7 @@ object IncludeAutoDiscovery {
   private var systemIncludePathsCPP: mutable.LinkedHashSet[Path] = mutable.LinkedHashSet.empty
 
   private def checkForGcc(): Boolean = {
-    ExternalCommand.run(GccVersionCommand, ".").toTry match {
+    ExternalCommand.run(GccVersionCommand, Some(".")).toTry match {
       case Success(result) =>
         logger.debug(s"GCC is available: ${result.mkString(System.lineSeparator())}")
         true

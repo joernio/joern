@@ -1,6 +1,6 @@
 package io.joern.x2cpg.utils.dependency
 
-import io.joern.x2cpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

@@ -7,7 +7,7 @@ import io.joern.gosrc2cpg.model.{GoModDependency, GoModHelper}
 import io.joern.gosrc2cpg.parser.GoAstJsonParser
 import io.joern.gosrc2cpg.utils.AstGenRunner
 import io.joern.gosrc2cpg.utils.AstGenRunner.{GoAstGenRunnerResult, getClass}
-import io.joern.x2cpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.slf4j.LoggerFactory
 
@@ -27,13 +27,13 @@ class DownloadDependenciesPass(cpg: Cpg, parentGoMod: GoModHelper, goGlobal: GoG
       parentGoMod
         .getModMetaData()
         .foreach(mod => {
-          ExternalCommand.run(Seq("go", "mod", "init", "joern.io/temp"), projDir).toTry match {
+          ExternalCommand.run(Seq("go", "mod", "init", "joern.io/temp"), Option(projDir)).toTry match {
             case Success(_) =>
               mod.dependencies
                 .filter(dep => dep.beingUsed)
                 .map(dependency => {
                   val cmd     = Seq("go", "get", dependency.dependencyStr())
-                  val results = ExternalCommand.run(cmd, projDir).toTry
+                  val results = ExternalCommand.run(cmd, Option(projDir)).toTry
                   results match {
                     case Success(_) =>
                       print(". ")
