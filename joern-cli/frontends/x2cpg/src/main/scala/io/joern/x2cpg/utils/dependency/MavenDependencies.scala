@@ -48,7 +48,7 @@ object MavenDependencies {
   }
 
   private[dependency] def get(projectDir: Path): Option[collection.Seq[String]] = {
-    val lines = ExternalCommand.run(fetchCommandWithOpts, Some(projectDir.toString)).toTry match {
+    val lines = ExternalCommand.run(fetchCommandWithOpts, Option(projectDir.toString)).toTry match {
       case Success(lines) =>
         if (lines.contains("[INFO] Build failures were ignored.")) {
           logErrors(lines.mkString(System.lineSeparator()))

@@ -30,7 +30,7 @@ class ClassParser(targetDir: File) {
 
   def parse(): Try[List[ClassParserClass]] = Try {
     val inputDirectory = targetDir.parent.canonicalPath
-    ExternalCommand.run(phpClassParseCommand, Some(inputDirectory)).toTry.map(_.reverse) match {
+    ExternalCommand.run(phpClassParseCommand, Option(inputDirectory)).toTry.map(_.reverse) match {
       case Success(output) =>
         read[List[ClassParserClass]](output.mkString("\n"))
       case Failure(exception) =>

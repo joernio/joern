@@ -11,7 +11,7 @@ object GccSpecificExternalCommand {
   private val IsWin = scala.util.Properties.isWin
 
   def run(command: Seq[String], cwd: String, extraEnv: Map[String, String] = Map.empty): Try[Seq[String]] = {
-    ExternalCommand.run(command, Some(cwd), mergeStdErrInStdOut = true, extraEnv) match {
+    ExternalCommand.run(command, Option(cwd), mergeStdErrInStdOut = true, extraEnv) match {
       case ExternalCommandResult(0, stdOut, _) =>
         Success(stdOut)
       case ExternalCommandResult(1, stdOut, _) if IsWin && IncludeAutoDiscovery.gccAvailable() =>
