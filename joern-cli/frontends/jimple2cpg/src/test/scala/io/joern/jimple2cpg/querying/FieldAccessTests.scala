@@ -78,4 +78,66 @@ class FieldAccessTests extends JimpleCode2CpgFixture {
     identifier.typeFullName shouldBe "Foo"
     fieldIdentifier.canonicalName shouldBe "value"
   }
+
+  val cpg2 = code("""
+    |import java.util.Objects;
+    |class TestStaticFinal {
+    |    private static final String finalPrivateString = "PRIVATE_STATIC_FINAL";
+    |    public static final String finalPublicString = "PUBLIC_STATIC_FINAL";
+    |    public String publicString;
+    |    public static String staticString = "PUBLIC_STATIC";
+    |    private static final Object obj = new Object();
+    |    public static final int FLAG = 1;
+    | public static int staticInt = 100;
+    |    public TestStaticFinal(String publicString) {
+    |        if (Objects.equals(publicString, "")) {
+    |            this.publicString = finalPrivateString+"-"+ staticString+"-"+ finalPublicString;
+    |        }else{
+    |            this.publicString = publicString;
+    |        }
+    |    }
+    |    public void setPublicString(String publicString) {
+    |        this.publicString = publicString;
+    |    }
+    |    public String getFinal(){
+    |        return finalPublicString.concat(finalPrivateString.toLowerCase());
+    |    }
+    |    public String getPublicString(){
+    |        return publicString;
+    |    }
+    |}
+    |class Test {
+    |    public static void test(){
+    |        TestStaticFinal test = new TestStaticFinal("");
+    |        String x = test.getPublicString();
+    |        System.out.println(x);
+    |        test.setPublicString("Change");
+    |        String y = test.getPublicString() + "|" + TestStaticFinal.staticString+ "|"+ TestStaticFinal.finalPublicString;
+    |        System.out.println(y);
+    |        String finalS = test.getFinal();
+    |        System.out.println(finalS);
+    |    }
+    |}
+    |""".stripMargin).cpg
+
+  "should handle static final field access" in {
+    val staticFields = cpg2.typeDecl.name("TestStaticFinal").member.l
+    println("Static fields:")
+    staticFields.foreach(f => println(s"${f.name}: ${f.code}"))
+
+    val clinitAssignments = cpg2.method("<clinit>").call(".*assignment").code.l
+    println("Clinit assignments:")
+    clinitAssignments.foreach(println)
+    val staticStringAssignment = clinitAssignments.find(_.contains("staticString")).getOrElse(null)
+    staticStringAssignment shouldBe "TestStaticFinal.staticString = \"PUBLIC_STATIC\""
+
+    val finalPrivateStringField = staticFields.find(_.name == "finalPrivateString").get
+    finalPrivateStringField.code shouldBe "java.lang.String finalPrivateString = \"PRIVATE_STATIC_FINAL\""
+    val finalPublicStringField = staticFields.find(_.name == "finalPublicString").get
+    finalPublicStringField.code shouldBe "java.lang.String finalPublicString = \"PUBLIC_STATIC_FINAL\""
+    val staticStringField = staticFields.find(_.name == "staticString").get
+    staticStringField.code shouldBe "java.lang.String staticString"
+    val finalFLAGField = staticFields.find(_.name == "FLAG").get
+    finalFLAGField.code shouldBe "int FLAG = 1"
+  }
 }
