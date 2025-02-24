@@ -23,10 +23,15 @@ class Php2Cpg extends X2CpgFrontend[Config] {
     val result = ExternalCommand.run(Seq("php", "--version"), ".").toTry
     result match {
       case Success(listString) =>
-        val phpVersionStr = listString.headOption.getOrElse("")
-        logger.info(s"Checking PHP installation: $phpVersionStr")
         // PHP 7.1.0 and above is required by Composer, which is used by PHP Parser
-        VersionHelper.compare("7.1.0", phpVersionStr) >= 0
+        listString.headOption.getOrElse("") match {
+          case s"PHP $version ($_" =>
+            logger.info(s"Checking PHP installation: $version")
+            VersionHelper.compare("7.1.0", version) >= 0
+          case x =>
+            logger.info(s"Unable to determine PHP version string from '$x''")
+            false
+        }
       case Failure(exception) =>
         logger.error(s"Failed to run php --version: ${exception.getMessage}")
         false
