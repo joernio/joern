@@ -29,7 +29,7 @@ class Php2Cpg extends X2CpgFrontend[Config] {
             logger.info(s"Checking PHP installation: $version")
             VersionHelper.compare("7.1.0", version) >= 0
           case x =>
-            logger.info(s"Unable to determine PHP version string from '$x''")
+            logger.info(s"Unable to determine PHP version string from '$x'")
             false
         }
       case Failure(exception) =>
