@@ -30,7 +30,7 @@ class Php2Cpg extends X2CpgFrontend[Config] {
         logger.error(s"Failed to run php --version: ${exception.getMessage}")
         false
       case x =>
-        logger.info(s"Unable to determine PHP version string from '$x'")
+        logger.error(s"Unable to determine PHP version string from '$x'")
         false
     }
   }
