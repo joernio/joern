@@ -22,18 +22,15 @@ class Php2Cpg extends X2CpgFrontend[Config] {
   private def isPhpVersionSupported: Boolean = {
     val result = ExternalCommand.run(Seq("php", "--version"), ".").toTry
     result match {
-      case Success(listString) =>
+      case Success(s"PHP $version ($_" :: _) =>
         // PHP 7.1.0 and above is required by Composer, which is used by PHP Parser
-        listString.headOption.getOrElse("") match {
-          case s"PHP $version ($_" =>
-            logger.info(s"Checking PHP installation: $version")
-            VersionHelper.compare(version, "7.1.0") >= 0
-          case x =>
-            logger.info(s"Unable to determine PHP version string from '$x'")
-            false
-        }
+        logger.info(s"Checking PHP installation: $version")
+        VersionHelper.compare(version, "7.1.0") >= 0
       case Failure(exception) =>
         logger.error(s"Failed to run php --version: ${exception.getMessage}")
+        false
+      case x =>
+        logger.info(s"Unable to determine PHP version string from '$x'")
         false
     }
   }
