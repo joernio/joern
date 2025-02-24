@@ -27,7 +27,7 @@ class Php2Cpg extends X2CpgFrontend[Config] {
         listString.headOption.getOrElse("") match {
           case s"PHP $version ($_" =>
             logger.info(s"Checking PHP installation: $version")
-            VersionHelper.compare("7.1.0", version) >= 0
+            VersionHelper.compare(version, "7.1.0") >= 0
           case x =>
             logger.info(s"Unable to determine PHP version string from '$x'")
             false
