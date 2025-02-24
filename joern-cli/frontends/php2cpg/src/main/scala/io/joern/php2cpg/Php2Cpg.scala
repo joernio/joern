@@ -9,6 +9,7 @@ import io.joern.x2cpg.utils.ExternalCommand
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import org.slf4j.LoggerFactory
+import versionsort.VersionHelper
 
 import scala.collection.mutable
 import scala.util.matching.Regex
@@ -18,17 +19,14 @@ class Php2Cpg extends X2CpgFrontend[Config] {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  // PHP 7.1.0 and above is required by Composer, which is used by PHP Parser
-  private val PhpVersionRegex = new Regex("^PHP ([78]\\.[1-9]\\.[0-9]|[9-9]\\d\\.\\d\\.\\d)")
-
   private def isPhpVersionSupported: Boolean = {
     val result = ExternalCommand.run(Seq("php", "--version"), ".").toTry
     result match {
       case Success(listString) =>
         val phpVersionStr = listString.headOption.getOrElse("")
         logger.info(s"Checking PHP installation: $phpVersionStr")
-        val matchResult = PhpVersionRegex.findFirstIn(phpVersionStr)
-        matchResult.isDefined
+        // PHP 7.1.0 and above is required by Composer, which is used by PHP Parser
+        VersionHelper.compare("7.1.0", phpVersionStr) >= 0
       case Failure(exception) =>
         logger.error(s"Failed to run php --version: ${exception.getMessage}")
         false
