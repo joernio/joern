@@ -135,9 +135,24 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       callAst(callNode_, List(left, right))
     case i: ICPPASTConstructorInitializer =>
       val name = ASTStringUtil.getSimpleName(declarator.getName)
+      val (idAst, tpe) = scope.lookupVariable(name) match {
+        case Some((local, tpe)) =>
+          val idNode = identifierNode(declarator.getName, name, name, registerType(tpe))
+          (Ast(idNode).withRefEdge(idNode, local), tpe)
+        case None => (Ast(identifierNode(declarator.getName, name, name, Defines.Any)), Defines.Any)
+      }
+      val operatorName = Operators.assignment
       val callNode_ =
-        callNode(declarator, code(declarator), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
-      val args = i.getArguments.toList.map(x => astForNode(x))
+        callNode(
+          declarator,
+          s"$name = $tpe${code(i)}",
+          operatorName,
+          operatorName,
+          DispatchTypes.STATIC_DISPATCH,
+          None,
+          Some(tpe)
+        )
+      val args = List(idAst, astForNode(i))
       callAst(callNode_, args)
     case i: IASTInitializerList =>
       val operatorName = Operators.assignment
