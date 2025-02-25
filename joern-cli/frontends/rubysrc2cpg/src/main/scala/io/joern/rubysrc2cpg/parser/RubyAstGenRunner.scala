@@ -2,17 +2,17 @@ package io.joern.rubysrc2cpg.parser
 
 import better.files.File
 import io.joern.rubysrc2cpg.Config
-import io.joern.rubysrc2cpg.parser.RubyAstGenRunner.{ExecutionEnvironment, prepareExecutionEnvironment}
+import io.joern.rubysrc2cpg.parser.RubyAstGenRunner.ExecutionEnvironment
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, AstGenRunnerResult, DefaultAstGenRunnerResult}
 import io.joern.x2cpg.astgen.AstGenRunnerBase
 import org.jruby.RubyInstanceConfig
-import org.jruby.embed.{LocalContextScope, LocalVariableBehavior, ScriptingContainer}
+import org.jruby.embed.{LocalContextScope, LocalVariableBehavior, PathType, ScriptingContainer}
 import org.slf4j.LoggerFactory
 
 import java.io.File.separator
 import java.io.{ByteArrayOutputStream, InputStream, PrintStream}
-import java.nio.file.{Files, Path, Paths, StandardCopyOption}
+import java.nio.file.*
 import java.util
 import java.util.jar.JarFile
 import scala.collection.mutable
@@ -107,9 +107,9 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
   override def runAstGenNative(in: String, out: File, exclude: String, include: String)(implicit
     metaData: AstGenProgramMetaData
   ): Try[Seq[String]] = {
+    val scriptTarget = Files.createTempFile("ruby_driver", ".rb")
     try {
-      val cwd            = env.path
-      val rubyAstGenPath = cwd.resolve("lib").resolve("ruby_ast_gen.rb").toUri.toString
+      val requireFile = scriptTarget.relativize(env.path.resolve("lib").resolve("ruby_ast_gen.rb")).toString
       val mainScript =
         s"""
           |options = {
@@ -119,18 +119,22 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
           |  debug: false
           |}
           |
-          |options[:input] = "$in"
-          |options[:output] = "$out"
+          |options[:input] = "${in.replace("\\", "\\\\")}"
+          |options[:output] = "${out.toString.replace("\\", "\\\\")}"
           |${if exclude.isEmpty then "" else s"options[:exclude] = /$exclude/"}
           |
           |if defined?(RubyAstGen) != 'constant' || defined?(RubyAstGen::parse) != 'method' then
-          |  require "$rubyAstGenPath"
+          |  require_relative "$requireFile"
           |end
           |RubyAstGen::parse(options)
           |""".stripMargin
-      executeWithJRuby(mainScript)
+
+      Files.writeString(scriptTarget, mainScript, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE)
+      executeWithJRuby(scriptTarget)
     } catch {
       case tempPathException: Exception => Failure(tempPathException)
+    } finally {
+      scriptTarget.toFile.delete()
     }
   }
 
@@ -185,12 +189,12 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
     }
   }
 
-  private def executeWithJRuby(script: String): Try[Seq[String]] = {
+  private def executeWithJRuby(script: Path): Try[Seq[String]] = {
     Using.resources(new ByteArrayOutputStream(), new ByteArrayOutputStream()) { (outStream, errStream) =>
       container.setOutput(new PrintStream(outStream))
       container.setError(new PrintStream(errStream))
       Try {
-        container.runScriptlet(script)
+        container.runScriptlet(PathType.ABSOLUTE, script.toString)
         (outStream.toString.split("\n").toIndexedSeq ++ errStream.toString.split("\n")).filterNot(_.isBlank)
       }
     }

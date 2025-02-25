@@ -44,8 +44,6 @@ jobs:
             ~/.coursier
           key: ${{ runner.os }}-sbt-${{ hashfiles('**/build.sbt') }}
       - name: Compile and run tests
-        env:
-          JAVA_OPTS: "-Xms256m -Xmx5g"
         run: sbt clean test
   formatting:
     runs-on: ubuntu-latest
