@@ -5,7 +5,7 @@ import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, PropertyNames}
-import soot.{SootClass, SootMethod}
+import soot.{SootClass, SootMethod, SootField}
 import soot.tagkit.*
 
 import scala.collection.mutable
@@ -44,6 +44,16 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode)
       else None,
       if (methodDeclaration.isSynchronized) Some("SYNCHRONIZED") else None
     ).flatten.map(m => NodeBuilders.newModifierNode(m).code(m.toLowerCase))
+  }
+
+  protected def astsForModifiers(fieldDeclaration: SootField): Seq[Ast] = {
+    Seq(
+      if (fieldDeclaration.isPublic) Some(ModifierTypes.PUBLIC) else None,
+      if (fieldDeclaration.isPrivate) Some(ModifierTypes.PRIVATE) else None,
+      if (fieldDeclaration.isStatic) Some(ModifierTypes.STATIC) else None,
+      if (fieldDeclaration.isProtected) Some(ModifierTypes.PROTECTED) else None,
+      if (fieldDeclaration.isFinal) Some(ModifierTypes.FINAL) else None
+    ).flatten.map(m => Ast(NodeBuilders.newModifierNode(m).code(m.toLowerCase)))
   }
 
   protected def astsForHostTags(host: AbstractHost): Seq[Ast] = {

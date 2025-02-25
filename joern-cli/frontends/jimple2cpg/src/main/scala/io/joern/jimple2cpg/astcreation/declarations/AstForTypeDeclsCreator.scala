@@ -65,9 +65,10 @@ trait AstForTypeDeclsCreator(implicit withSchemaValidation: ValidationMode) { th
     val annotations = field.getTags.asScala
       .collect { case x: VisibilityAnnotationTag => x }
       .flatMap(_.getAnnotations.asScala)
-
+    val modifiers = astsForModifiers(field)
     Ast(memberNode(field, name, code, typeFullName))
       .withChildren(annotations.map(astsForAnnotations(_, field)).toSeq)
+      .withChildren(modifiers)
   }
 
   /** Creates a list of all inherited classes and implemented interfaces. If there are none then a list with a single
