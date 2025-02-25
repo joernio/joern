@@ -121,7 +121,7 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
           |
           |options[:input] = "${in.replace("\\", "\\\\")}"
           |options[:output] = "${out.toString.replace("\\", "\\\\")}"
-          |${if exclude.isEmpty then "" else s"options[:exclude] = /$exclude/"}
+          |${if exclude.isEmpty then "" else s"options[:exclude] = /${exclude.replace("/", "\\/")}/"}
           |
           |if defined?(RubyAstGen) != 'constant' || defined?(RubyAstGen::parse) != 'method' then
           |  require_relative "$requireFile"

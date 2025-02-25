@@ -21,9 +21,9 @@ final case class Config(downloadDependencies: Boolean = false, useTypeStubs: Boo
   override val astGenConfigPrefix: String       = "rubysrc2cpg"
   override val multiArchitectureBuilds: Boolean = true
 
-  this.defaultIgnoredFilesRegex = List("spec", "tests?", "vendor", "db(\\\\|\\/)([\\w_]*)migrate([_\\w]*)").flatMap {
+  this.defaultIgnoredFilesRegex = List("spec", "tests?", "vendor", "db(\\\\|/)([\\w_]*)migrate([_\\w]*)").flatMap {
     directory =>
-      List(s"(^|\\\\)$directory($$|\\\\)".r.unanchored, s"(^|\\/)$directory($$|\\/)".r.unanchored)
+      List(s"(^|\\\\)$directory($$|\\\\)".r.unanchored, s"(^|/)$directory($$|/)".r.unanchored)
   }
 
   override def withDownloadDependencies(value: Boolean): Config = {
@@ -59,12 +59,7 @@ object Main extends X2CpgMain(cmdLineParser, new RubySrc2Cpg()) with FrontendHTT
   override protected def newDefaultConfig(): Config = Config()
 
   def run(config: Config, rubySrc2Cpg: RubySrc2Cpg): Unit = {
-    if (config.serverMode) {
-      startup()
-    } else {
-      // HTTPServer impl uses non-server runs here once the server is up
-      frontend.run(config)
-    }
+    if (config.serverMode) { startup() }
+    else { rubySrc2Cpg.run(config) }
   }
-
 }

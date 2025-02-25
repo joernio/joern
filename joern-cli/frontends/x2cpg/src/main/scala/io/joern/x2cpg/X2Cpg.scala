@@ -245,11 +245,6 @@ trait X2CpgFrontend[T <: X2CpgConfig[T]] extends AutoCloseable {
     */
   def createCpg(inputName: String)(implicit defaultConfig: T): Try[Cpg] = createCpg(inputName, None)(defaultConfig)
 
-  /** For frontends that have a high overhead to initialize a parser between executions, this method provides a means
-    * for the frontend to cache the execution state.
-    */
-  def initializeReusableState(config: T): Unit = {}
-
   /** For frontends that create and manage resources during AST generation, they can clean up these resources here.
     */
   override def close(): Unit = {}
