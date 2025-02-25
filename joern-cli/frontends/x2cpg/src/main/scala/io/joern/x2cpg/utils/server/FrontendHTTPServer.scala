@@ -122,12 +122,14 @@ trait FrontendHTTPServer[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]] { this: X2C
     * This method checks if the `underlyingServer` is defined and, if so, stops the server. It also logs a debug message
     * indicating that the server has been stopped. If the server is not running, this method does nothing.
     */
-  def stop(): Unit = {
+  def stop(): Unit = try {
     underlyingServer.foreach { server =>
       executor.shutdown()
       server.stop()
       logger.debug("Server stopped.")
     }
+  } finally {
+    frontend.close()
   }
 
   private def randomPort(): Int = {
