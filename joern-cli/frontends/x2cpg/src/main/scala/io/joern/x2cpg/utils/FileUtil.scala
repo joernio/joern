@@ -1,8 +1,63 @@
 package io.joern.x2cpg.utils
 
+import java.io.{IOException, File as JFile}
+import java.nio.file.Files
+import java.nio.file.Path
+
 import better.files.File
 
 object FileUtil {
+  def newTemporaryDirectory(prefix: String = "", parent: Option[JFile] = None): JFile = {
+    parent match {
+      case Some(dir) => Files.createTempDirectory(dir.toPath, prefix).toFile
+      case _ => Files.createTempDirectory(prefix).toFile
+    }
+  }
+
+  def newTemporaryFile(prefix: String = "", suffix: String = "", parent: Option[JFile] = None): JFile = {
+    parent match {
+      case Some(dir) => Files.createTempFile(dir.toPath, prefix, suffix).toFile
+      case _         => Files.createTempFile(prefix, suffix).toFile
+    }
+  }
+
+  def usingTemporaryDirectory[U](prefix: String = "", parent: Option[JFile] = None)(f: JFile => U): Unit = {
+    val file = newTemporaryDirectory(prefix, parent)
+
+    try {
+      f(file)
+    } finally {
+      deleteFile(file)
+    }
+  }
+
+  def deleteFile(file: JFile, swallowIoExceptions: Boolean = false): Unit = {
+    try {
+      if (file.isDirectory) {
+        file.listFiles().foreach(x => deleteFile(x, swallowIoExceptions))
+      }
+
+      Files.delete(file.toPath)
+    } catch {
+      case _: IOException if swallowIoExceptions => //
+    }
+  }
+
+  implicit class JFileExt(f: JFile) {
+    def pathAsString: String = {
+      f.getPath
+    }
+
+    def /(child: String): JFile = {
+      f.toPath.resolve(child).toFile
+    }
+  }
+
+  implicit class PathExt(p: Path) {
+    def createDirectoryIfNotExists(): Unit = {
+      Files.createDirectories(p)
+    }
+  }
 
   implicit class FileExt(f: File) {
 
