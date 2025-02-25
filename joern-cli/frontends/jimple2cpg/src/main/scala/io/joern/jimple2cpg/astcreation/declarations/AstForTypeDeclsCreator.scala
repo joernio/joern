@@ -61,7 +61,19 @@ trait AstForTypeDeclsCreator(implicit withSchemaValidation: ValidationMode) { th
   private def astForField(field: SootField): Ast = {
     val typeFullName = registerType(field.getType.toQuotedString)
     val name         = field.getName
-    val code         = if (field.getDeclaration.contains("enum")) name else s"$typeFullName $name"
+    val code: String = if (field.getDeclaration.contains("enum")) {
+      name
+    } else if (field.isStatic && field.isFinal) {
+      val constantValue = field.getTags.asScala.collectFirst { case tag: ConstantValueTag =>
+        tag.getConstant.toString
+      }
+      constantValue match {
+        case Some(value) => s"$typeFullName $name = $value"
+        case None        => s"$typeFullName $name"
+      }
+    } else {
+      s"$typeFullName $name"
+    }
     val annotations = field.getTags.asScala
       .collect { case x: VisibilityAnnotationTag => x }
       .flatMap(_.getAnnotations.asScala)
