@@ -27,13 +27,12 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   protected def astForBlockStatement(blockStmt: IASTCompoundStatement, blockNode: NewBlock, order: Int = -1): Ast = {
     val codeString  = code(blockStmt)
-    val blockCode   = if (codeString == "{}" || codeString.isEmpty) Defines.Empty else codeString
     val blockLine   = line(blockStmt)
     val blockColumn = column(blockStmt)
     val node = blockNode
       .order(order)
       .argumentIndex(order)
-      .code(blockCode)
+      .code(codeString)
       .lineNumber(blockLine)
       .columnNumber(blockColumn)
       .typeFullName(registerType(Defines.Void))
