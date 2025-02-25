@@ -1,5 +1,3 @@
-import scala.sys.process._
-import scala.util.Properties.isWin
 import better.files.File
 
 name := "php2cpg"

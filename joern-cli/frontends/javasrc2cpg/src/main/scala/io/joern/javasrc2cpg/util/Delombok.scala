@@ -2,7 +2,7 @@ package io.joern.javasrc2cpg.util
 
 import better.files.File
 import io.joern.javasrc2cpg.util.Delombok.DelombokMode.*
-import io.joern.x2cpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Path
@@ -80,7 +80,7 @@ object Delombok {
     val inputDir = projectDir.resolve(relativePackageRoot)
     Try(delombokTempDir.createChild(relativeOutputPath, asDirectory = true)).flatMap { packageOutputDir =>
       ExternalCommand
-        .run(delombokToTempDirCommand(inputDir, packageOutputDir, analysisJavaHome), ".")
+        .run(delombokToTempDirCommand(inputDir, packageOutputDir, analysisJavaHome), Some("."))
         .toTry
         .map(_ => delombokTempDir.path.toAbsolutePath.toString)
     }

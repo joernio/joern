@@ -4,7 +4,7 @@ import better.files.File
 import io.joern.kotlin2cpg.Config
 import io.joern.kotlin2cpg.DefaultContentRootJarPath
 import io.joern.kotlin2cpg.Kotlin2Cpg
-import io.joern.x2cpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.joern.x2cpg.Defines
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.utils.ProjectRoot
@@ -79,7 +79,7 @@ class CompilerAPITests extends AnyFreeSpec with Matchers {
       val command =
         if (scala.util.Properties.isWin) Seq("cmd.exe", "/C", "gradlew.bat", "gatherDependencies")
         else Seq("./gradlew", "gatherDependencies")
-      ExternalCommand.run(command, projectDirPath).toTry shouldBe Symbol("success")
+      ExternalCommand.run(command, Option(projectDirPath)).toTry shouldBe Symbol("success")
       val config = Config(classpath = Set(projectDependenciesPath.toString))
       val cpg = new Kotlin2Cpg().createCpg(projectDirPath)(config).getOrElse {
         fail("Could not create a CPG!")

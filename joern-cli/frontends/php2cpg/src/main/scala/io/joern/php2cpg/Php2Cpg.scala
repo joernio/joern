@@ -5,7 +5,7 @@ import io.joern.php2cpg.passes.*
 import io.joern.php2cpg.utils.DependencyDownloader
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
-import io.joern.x2cpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import org.slf4j.LoggerFactory
@@ -20,7 +20,7 @@ class Php2Cpg extends X2CpgFrontend[Config] {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   private def isPhpVersionSupported: Boolean = {
-    val result = ExternalCommand.run(Seq("php", "--version"), ".").toTry
+    val result = ExternalCommand.run(Seq("php", "--version"), Some(".")).toTry
     result match {
       case Success(s"PHP $version ($_" :: _) =>
         // PHP 7.1.0 and above is required by Composer, which is used by PHP Parser

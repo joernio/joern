@@ -1,10 +1,5 @@
-import better.files
 import com.typesafe.config.{Config, ConfigFactory}
-import versionsort.VersionHelper
-
 import java.net.URI
-import scala.sys.process.stringToProcess
-import scala.util.{Failure, Success, Try}
 
 name := "rubysrc2cpg"
 
