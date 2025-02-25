@@ -128,6 +128,7 @@ trait FrontendHTTPServer[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]] { this: X2C
       server.stop()
       logger.debug("Server stopped.")
     }
+    frontend.close()
   }
 
   private def randomPort(): Int = {

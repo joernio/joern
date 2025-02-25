@@ -29,10 +29,10 @@ import java.nio.file.{Files, Paths}
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try, Using}
 
-class RubySrc2Cpg extends X2CpgFrontend[Config] with AutoCloseable {
+class RubySrc2Cpg extends X2CpgFrontend[Config] {
 
-  private val logger                                              = LoggerFactory.getLogger(this.getClass)
-  private var persistedRubyAstGenRunner: Option[RubyAstGenRunner] = None
+  private val logger                                     = LoggerFactory.getLogger(this.getClass)
+  private var rubyAstGenRunner: Option[RubyAstGenRunner] = None
 
   override def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
@@ -45,11 +45,13 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] with AutoCloseable {
 
   private def createCpgAction(cpg: Cpg, config: Config): Unit = {
     File.usingTemporaryDirectory("rubysrc2cpgOut") { tmpDir =>
-      val astGenResult = persistedRubyAstGenRunner match {
+      val astGenResult = rubyAstGenRunner match {
         case Some(astGenRunner) =>
           astGenRunner.execute(tmpDir, config)
         case None =>
-          Using.resource(RubyAstGenRunner(config))(_.execute(tmpDir))
+          val astGenRunner = RubyAstGenRunner(config)
+          rubyAstGenRunner = Option(astGenRunner)
+          astGenRunner.execute(tmpDir, config)
       }
 
       val astCreators = ConcurrentTaskUtil
@@ -90,12 +92,8 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] with AutoCloseable {
 
   }
 
-  override def initializeReusableState(config: Config): Unit = {
-    persistedRubyAstGenRunner = Option(RubyAstGenRunner(config))
-  }
-
   override def close(): Unit = {
-    val closeTask = Try(persistedRubyAstGenRunner.foreach(_.close))
+    val closeTask = Try(rubyAstGenRunner.foreach(_.close))
     if (closeTask.isFailure) {
       logger.error("Error occurred while cleaning up RubyAstGenRunner!", closeTask.failed.get)
     }

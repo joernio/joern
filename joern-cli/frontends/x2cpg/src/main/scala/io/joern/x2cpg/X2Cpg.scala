@@ -161,10 +161,7 @@ abstract class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]](
             ex.printStackTrace()
             System.exit(1)
         } finally {
-          frontend match {
-            case x2cpg: AutoCloseable => x2cpg.close()
-            case _                    => // do nothing
-          }
+          frontend.close()
         }
       case None =>
         println("Error parsing the command line")
@@ -176,7 +173,7 @@ abstract class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]](
 
 /** Trait that represents a CPG generator, where T is the frontend configuration class.
   */
-trait X2CpgFrontend[T <: X2CpgConfig[T]] {
+trait X2CpgFrontend[T <: X2CpgConfig[T]] extends AutoCloseable {
 
   /** Create a CPG according to given configuration. Returns CPG wrapped in a `Try`, making it possible to detect and
     * inspect exceptions in CPG generation. To be provided by the frontend.
@@ -252,6 +249,10 @@ trait X2CpgFrontend[T <: X2CpgConfig[T]] {
     * for the frontend to cache the execution state.
     */
   def initializeReusableState(config: T): Unit = {}
+
+  /** For frontends that create and manage resources during AST generation, they can clean up these resources here.
+    */
+  override def close(): Unit = {}
 
 }
 
