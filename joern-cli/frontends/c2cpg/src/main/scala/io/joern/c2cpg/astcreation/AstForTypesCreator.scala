@@ -3,12 +3,12 @@ package io.joern.c2cpg.astcreation
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.joern.x2cpg.Defines as X2CpgDefines
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTAliasDeclaration
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 import io.joern.x2cpg.datastructures.Stack.*
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import org.apache.commons.lang3.StringUtils
 
 trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -34,21 +34,28 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     templateParams.map(_.mkString("<", ",", ">"))
   }
 
+  protected def astForDecltypeSpecifier(decl: ICPPASTDecltypeSpecifier): Ast = {
+    val op       = Defines.OperatorTypeOf
+    val cpgUnary = callNode(decl, code(decl), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
+    val operand  = nullSafeAst(decl.getDecltypeExpression)
+    callAst(cpgUnary, List(operand))
+  }
+
   private def astForNamespaceDefinition(namespaceDefinition: ICPPASTNamespaceDefinition): Ast = {
     val TypeFullNameInfo(name, fullName) = typeFullNameInfo(namespaceDefinition)
     val codeString                       = code(namespaceDefinition)
-    val cpgNamespace =
-      newNamespaceBlockNode(namespaceDefinition, name, fullName, codeString, fileName(namespaceDefinition))
-    scope.pushNewScope(cpgNamespace)
-
+    val filename                         = fileName(namespaceDefinition)
+    val cpgNamespace = newNamespaceBlockNode(namespaceDefinition, name, fullName, codeString, filename)
+    methodAstParentStack.push(cpgNamespace)
+    scope.pushNewBlockScope(cpgNamespace)
     val childrenAsts = namespaceDefinition.getDeclarations.flatMap { decl =>
       val declAsts = astsForDeclaration(decl)
       declAsts
     }.toIndexedSeq
-
-    val namespaceAst = Ast(cpgNamespace).withChildren(childrenAsts)
+    methodAstParentStack.pop()
     scope.popScope()
-    namespaceAst
+    setArgumentIndices(childrenAsts)
+    Ast(cpgNamespace).withChildren(childrenAsts)
   }
 
   protected def astForNamespaceAlias(namespaceAlias: ICPPASTNamespaceAlias): Ast = {
@@ -101,7 +108,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         }
         val code = codeForDeclarator(declaration, declarator)
         val node = localNode(declarator, name, code, tpe)
-        scope.addToScope(name, (node, tpe))
+        scope.addVariable(name, node, tpe, C2CpgScope.ScopeType.BlockScope)
         Ast(node)
     }
   }
@@ -128,7 +135,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
           operatorName,
           DispatchTypes.STATIC_DISPATCH,
           None,
-          Some(X2CpgDefines.Any)
+          Some(Defines.Any)
         )
       val left  = astForNode(declarator.getName)
       val right = astForNode(i.getInitializerClause)
@@ -136,7 +143,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     case i: ICPPASTConstructorInitializer =>
       val name = ASTStringUtil.getSimpleName(declarator.getName)
       val callNode_ =
-        callNode(declarator, code(declarator), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
+        callNode(declarator, code(declarator), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
       val args = i.getArguments.toList.map(x => astForNode(x))
       callAst(callNode_, args)
     case i: IASTInitializerList =>
@@ -149,7 +156,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
           operatorName,
           DispatchTypes.STATIC_DISPATCH,
           None,
-          Some(X2CpgDefines.Any)
+          Some(Defines.Any)
         )
       val left  = astForNode(declarator.getName)
       val right = astForNode(i)
@@ -190,11 +197,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   protected def astForASMDeclaration(asm: IASTASMDeclaration): Ast = Ast(unknownNode(asm, code(asm)))
 
   private def astForStructuredBindingDeclaration(decl: ICPPASTStructuredBindingDeclaration): Ast = {
-    val node = blockNode(decl, Defines.Empty, Defines.Void)
-    scope.pushNewScope(node)
-    val childAsts = decl.getNames.toList.map { name =>
-      astForNode(name)
-    }
+    val node = blockNode(decl)
+    scope.pushNewBlockScope(node)
+    val childAsts = decl.getNames.toList.map(astForNode)
     scope.popScope()
     setArgumentIndices(childAsts)
     blockAst(node, childAsts)
@@ -253,7 +258,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
           case arrayDecl: IASTArrayDeclarator =>
             val op = Operators.arrayInitializer
             val initCallNode =
-              callNode(arrayDecl, code(arrayDecl), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
+              callNode(arrayDecl, code(arrayDecl), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
             val initArgs =
               arrayDecl.getArrayModifiers.toList.filter(m => m.getConstantExpression != null).map(astForNode)
             callAst(initCallNode, initArgs)
@@ -299,17 +304,20 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       case _ =>
         typeDeclNode(typeSpecifier, name, fullName, filename, codeString, alias = alias)
     }
+    val typeRefNode_ = typeRefNode(typeSpecifier, codeString, fullName)
 
     methodAstParentStack.push(typeDecl)
-    scope.pushNewScope(typeDecl)
+    typeRefIdStack.push(typeRefNode_)
+    scope.pushNewMethodScope(typeDecl.fullName, typeDecl.name, typeDecl, None)
 
     val memberAsts = typeSpecifier.getDeclarations(true).toList.flatMap(astsForDeclaration)
 
     methodAstParentStack.pop()
+    typeRefIdStack.pop()
     scope.popScope()
 
     val (calls, member) = memberAsts.partition(_.nodes.headOption.exists(_.isInstanceOf[NewCall]))
-    if (calls.isEmpty) {
+    val asts = if (calls.isEmpty) {
       Ast(typeDecl).withChildren(member) +: declAsts
     } else {
       val init = staticInitMethodAst(
@@ -323,6 +331,11 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       )
       Ast(typeDecl).withChildren(member).withChild(init) +: declAsts
     }
+    asts.foreach { ast =>
+      Ast.storeInDiffGraph(ast, diffGraph)
+      ast.root.foreach(r => diffGraph.addEdge(methodAstParentStack.head, r, EdgeTypes.AST))
+    }
+    Seq(Ast(typeRefNode_))
   }
 
   private def astsForElaboratedType(
@@ -364,7 +377,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
           operatorName,
           DispatchTypes.STATIC_DISPATCH,
           None,
-          Some(X2CpgDefines.Any)
+          Some(Defines.Any)
         )
       val left  = astForNode(enumerator.getName)
       val right = astForNode(enumerator.getValue)
@@ -386,9 +399,10 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val TypeFullNameInfo(name, fullName) = typeFullNameInfo(typeSpecifier)
     val nameAlias                        = decls.headOption.map(d => registerType(shortName(d))).filter(_.nonEmpty)
     val alias                            = filterNameAlias(nameAlias, None, fullName)
+    val codeString                       = code(typeSpecifier)
 
-    val (deAliasedName, deAliasedFullName, newAlias) = if (name.contains("anonymous_enum") && alias.isDefined) {
-      (alias.get, fullName.substring(0, fullName.indexOf("anonymous_enum")) + alias.get, None)
+    val (deAliasedName, deAliasedFullName, newAlias) = if (name.contains("<enum>") && alias.isDefined) {
+      (alias.get, fullName.substring(0, fullName.indexOf("<enum>")) + alias.get, None)
     } else { (name, fullName, alias) }
 
     val typeDecl =
@@ -397,20 +411,23 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         deAliasedName,
         registerType(deAliasedFullName),
         filename,
-        code(typeSpecifier),
+        codeString,
         alias = newAlias
       )
-    methodAstParentStack.push(typeDecl)
-    scope.pushNewScope(typeDecl)
+    val typeRefNode_ = typeRefNode(typeSpecifier, codeString, fullName)
 
+    methodAstParentStack.push(typeDecl)
+    typeRefIdStack.push(typeRefNode_)
+    scope.pushNewMethodScope(typeDecl.fullName, typeDecl.name, typeDecl, None)
     val memberAsts = typeSpecifier.getEnumerators.toList.flatMap { e =>
       astsForEnumerator(e)
     }
+    typeRefIdStack.pop()
     methodAstParentStack.pop()
     scope.popScope()
 
     val (calls, member) = memberAsts.partition(_.nodes.headOption.exists(_.isInstanceOf[NewCall]))
-    if (calls.isEmpty) {
+    val asts = if (calls.isEmpty) {
       Ast(typeDecl).withChildren(member) +: declAsts
     } else {
       val init = staticInitMethodAst(
@@ -424,6 +441,11 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       )
       Ast(typeDecl).withChildren(member).withChild(init) +: declAsts
     }
+    asts.foreach { ast =>
+      Ast.storeInDiffGraph(ast, diffGraph)
+      ast.root.foreach(r => diffGraph.addEdge(methodAstParentStack.head, r, EdgeTypes.AST))
+    }
+    Seq(Ast(typeRefNode_))
   }
 
 }

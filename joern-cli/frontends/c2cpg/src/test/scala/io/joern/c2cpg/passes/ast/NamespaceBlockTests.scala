@@ -49,7 +49,7 @@ class NamespaceBlockTests extends C2CpgSuite {
       .nameNot(NamespaceTraversal.globalNamespaceName)
       .name
       .l
-      .sorted shouldBe List("ANY", "int", "my_struct", "void")
+      .sorted shouldBe List("ANY", "foo", "int", "my_struct", "void")
   }
 
   "should allow traversing from namespace block to namespace" in {
