@@ -562,7 +562,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case delExpression: ICPPASTDeleteExpression      => astForDeleteExpression(delExpression)
       case typeIdInit: IASTTypeIdInitializerExpression => astForTypeIdInitExpression(typeIdInit)
       case c: ICPPASTSimpleTypeConstructorExpression   => astForConstructorExpression(c)
-      case lambdaExpression: ICPPASTLambdaExpression   => astForMethodRefForLambda(lambdaExpression)
+      case lambdaExpression: ICPPASTLambdaExpression   => astForLambdaExpression(lambdaExpression)
       case cExpr: IGNUASTCompoundStatementExpression   => astForCompoundStatementExpression(cExpr)
       case pExpr: ICPPASTPackExpansionExpression       => astForPackExpansionExpression(pExpr)
       case foldExpression: CPPASTFoldExpression        => astForFoldExpression(foldExpression)

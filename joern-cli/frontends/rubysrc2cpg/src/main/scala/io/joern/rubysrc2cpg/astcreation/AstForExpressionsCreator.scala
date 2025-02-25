@@ -34,7 +34,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     case node: UnaryExpression                  => astForUnary(node)
     case node: BinaryExpression                 => astForBinary(node)
     case node: MemberAccess                     => astForMemberAccess(node)
-    case node: MemberCall                       => astForMemberCall(node)
+    case node: RubyCallWithBase                 => astForMemberCall(node)
     case node: ObjectInstantiation              => astForObjectInstantiation(node)
     case node: IndexAccess                      => astForIndexAccess(node)
     case node: SingleAssignment                 => astForSingleAssignment(node)
@@ -74,13 +74,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   protected def astForHereDoc(node: HereDocNode): Ast = {
-    Ast(literalNode(node, code(node), prefixAsKernelDefined("String")))
+    Ast(literalNode(node, code(node), prefixAsCoreType(Defines.String)))
   }
 
   // Helper for nil literals to put in empty clauses
-  protected def astForNilLiteral: Ast = Ast(
-    NewLiteral().code("nil").typeFullName(prefixAsKernelDefined(Defines.NilClass))
-  )
+  protected def astForNilLiteral: Ast = Ast(NewLiteral().code("nil").typeFullName(prefixAsCoreType(Defines.NilClass)))
 
   protected def astForNilBlock: Ast = blockAst(NewBlock(), List(astForNilLiteral))
 
@@ -190,9 +188,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     Ast(typeRefNode(node, code(node), node.typeFullName))
   }
 
-  protected def astForMemberCall(node: MemberCall, isStatic: Boolean = false): Ast = {
+  protected def astForMemberCall(node: RubyCallWithBase, isStatic: Boolean = false): Ast = {
 
-    def createMemberCall(n: MemberCall): Ast = {
+    def createMemberCall(n: RubyCallWithBase): Ast = {
       val receiverAst = astForFieldAccess(MemberAccess(n.target, ".", n.methodName)(n.span), stripLeadingAt = true)
       val (baseAst, baseCode) = astForMemberAccessTarget(n.target)
       val builtinType = n.target match {
@@ -224,8 +222,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       } else {
         code(n)
       }
-      val call = if (n.isRegexMatch || RubyOperators.regexMethods(n.methodName)) {
-        callNode(n, callCode, n.methodName, s"${prefixAsCoreType(Defines.Regexp)}.match", dispatchType)
+
+      // Regex matches are one of the few dynamic dispatch calls we fully qualify because of the lowering mechanism
+      val call = if (methodFullName == s"${prefixAsCoreType(Defines.Regexp)}.match") {
+        callNode(n, callCode, n.methodName, methodFullName, dispatchType)
       } else {
         callNode(n, callCode, n.methodName, XDefines.DynamicCallUnknownFullName, dispatchType)
       }
@@ -254,7 +254,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     }
 
     node.target match {
-      case regex @ StaticLiteral(Defines.Regexp) if node.isRegexMatch =>
+      case regex @ StaticLiteral(Defines.Regexp) if node.isInstanceOf[RegexMatchMemberCall] =>
         val loweredRegex = node.arguments.headOption match {
           case Some(literal) => lowerRegexMatch(literal, regex, node.span)
           case None =>
@@ -264,7 +264,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         }
         astForExpression(loweredRegex)
       // Regex on the RHS is more idiomatic, so no need to check types here.
-      case literal: LiteralExpr if node.isRegexMatch =>
+      case literal: LiteralExpr if node.isInstanceOf[RegexMatchMemberCall] =>
         node.arguments.headOption match {
           case Some(regex) => astForExpression(lowerRegexMatch(literal, regex, node.span))
           case None =>
@@ -274,11 +274,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       case _: LiteralExpr =>
         createMemberCall(node)
       case x: SimpleIdentifier if isBundledClass(x.text) =>
-        createMemberCall(node.copy(target = TypeIdentifier(prefixAsCoreType(x.text))(x.span))(node.span))
+        createMemberCall(node.memberCallWithTarget(TypeIdentifier(prefixAsCoreType(x.text))(x.span)))
       case x: SimpleIdentifier =>
-        createMemberCall(node.copy(target = determineMemberAccessBase(x))(node.span))
+        createMemberCall(node.memberCallWithTarget(determineMemberAccessBase(x)))
       case memAccess: MemberAccess =>
-        createMemberCall(node.copy(target = determineMemberAccessBase(memAccess))(node.span))
+        createMemberCall(node.memberCallWithTarget(determineMemberAccessBase(memAccess)))
       case _ => createMemberCall(node)
     }
   }

@@ -45,86 +45,6 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  trait PatternInitTreeNode(val patternExpr: PatternExpr) {
-    def getAst: Ast
-
-    def typeFullName: Option[String]
-  }
-
-  class PatternInitRoot(patternExpr: PatternExpr, ast: PatternInitAndRefAsts) extends PatternInitTreeNode(patternExpr) {
-    override def getAst: Ast = ast.get
-
-    override def typeFullName: Option[String] = ast.rootType
-  }
-
-  class PatternInitNode(
-    parentNode: PatternInitTreeNode,
-    patternExpr: PatternExpr,
-    fieldName: String,
-    fieldTypeFullName: Option[String],
-    requiresTemporaryVariable: Boolean
-  ) extends PatternInitTreeNode(patternExpr) {
-    private var cachedResult: Option[PatternInitAndRefAsts] = None
-
-    override def typeFullName: Option[String] = fieldTypeFullName
-
-    override def getAst: Ast = {
-      cachedResult.map(_.get).getOrElse {
-        val parentAst = parentNode.getAst
-        val patternTypeFullName = tryWithSafeStackOverflow(patternExpr.getType).toOption
-          .map { typ =>
-            scope
-              .lookupScopeType(typ.asString())
-              .map(_.typeFullName)
-              .orElse(typeInfoCalc.fullName(typ))
-              .getOrElse(defaultTypeFallback(typ))
-          }
-          .getOrElse(defaultTypeFallback())
-
-        val parentPatternType = getPatternTypeFullName(parentNode.patternExpr)
-        val lhsAst            = castAstIfNecessary(parentNode.patternExpr, parentPatternType, parentAst)
-
-        val signature = composeSignature(fieldTypeFullName, Option(Nil), 0)
-        val typeDeclFullName =
-          if (isResolvedTypeFullName(parentPatternType))
-            parentPatternType
-          else
-            s"${Defines.UnresolvedNamespace}.${code(parentNode.patternExpr.getType)}"
-        val methodFullName = Util.composeMethodFullName(typeDeclFullName, fieldName, signature)
-        val methodCodePrefix = lhsAst.root match {
-          case Some(call: NewCall) if call.name.startsWith("<operator") => s"(${call.code})"
-          case Some(root: AstNodeNew)                                   => root.code
-          case _                                                        => ""
-
-        }
-        val methodCode = s"$methodCodePrefix.$fieldName()"
-
-        val fieldAccessorCall = callNode(
-          patternExpr,
-          methodCode,
-          fieldName,
-          methodFullName,
-          DispatchTypes.DYNAMIC_DISPATCH,
-          Option(signature),
-          fieldTypeFullName.orElse(Option(defaultTypeFallback()))
-        )
-
-        val fieldAccessorAst = callAst(fieldAccessorCall, Nil, Option(lhsAst))
-
-        val patternInitWithRef = if (requiresTemporaryVariable) {
-          val patternInitWithRef = initAndRefAstsForPatternInitializer(patternExpr, fieldAccessorAst)
-          patternInitWithRef
-        } else {
-          PatternInitAndRefAsts(fieldAccessorAst)
-        }
-
-        cachedResult = Option(patternInitWithRef)
-
-        patternInitWithRef.get
-      }
-    }
-  }
-
   /** In the lowering for instanceof expressions with patterns like `X instanceof Foo f`, the first argument to
     * `instanceof` (in this case `X`) appears in the CPG at least 2 times:
     *   - once for the `X instanceof Foo` check
@@ -174,7 +94,7 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
 
         // Don't need to add the local to the block scope since the only identifiers referencing it are created here
         // (so a lookup for the local will never be done)
-        scope.enclosingMethod.foreach(_.addTemporaryLocal(tmpLocal))
+        scope.enclosingMethod.foreach(_.registerLocalToAddToCpg(tmpLocal))
 
         val initAst =
           callAst(tmpAssignmentNode, Ast(tmpIdentifier) :: patternInitAst :: Nil).withRefEdge(tmpIdentifier, tmpLocal)
@@ -204,13 +124,15 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
     }
   }
 
-  private def createAndPushAssignmentForTypePattern(patternNode: PatternInitTreeNode): Unit = {
+  private def createAssignmentForTypePattern(patternNode: PatternInitTreeNode): Option[Ast] = {
     patternNode.patternExpr match {
       case recordPatternExpr: RecordPatternExpr =>
         logger.warn(s"Attempting to create assignment for record pattern expr ${code(recordPatternExpr)}")
+        None
 
       case typePatternExpr: TypePatternExpr =>
         val variableName = typePatternExpr.getNameAsString
+
         val variableType = {
           tryWithSafeStackOverflow(typePatternExpr.getType).toOption
             .map(typ =>
@@ -224,14 +146,28 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
         }
         val variableTypeCode = tryWithSafeStackOverflow(code(typePatternExpr.getType)).getOrElse(variableType)
         val genericSignature = binarySignatureCalculator.variableBinarySignature(typePatternExpr.getType)
-        val patternLocal = localNode(
-          typePatternExpr,
-          variableName,
-          code(typePatternExpr),
-          variableType,
-          genericSignature = Option(genericSignature)
-        )
-        val patternIdentifier = identifierNode(typePatternExpr, variableName, variableName, variableType)
+        val patternLocal = scope.getHoistedPatternLocals.find(local =>
+          local.name == variableName && local.typeFullName == variableType
+        ) match {
+          case Some(local) =>
+            scope.enclosingMethod.get.registerPatternLocal(typePatternExpr, local)
+            local
+          case None =>
+            val mangledName = scope.getMangledName(variableName)
+            val patternLocal = localNode(
+              typePatternExpr,
+              mangledName,
+              code(typePatternExpr),
+              variableType,
+              genericSignature = Option(genericSignature)
+            )
+            scope.enclosingBlock.get.addHoistedPatternLocal(patternLocal)
+            scope.enclosingMethod.get.registerLocalToAddToCpg(patternLocal)
+            scope.enclosingMethod.get.registerPatternLocal(typePatternExpr, patternLocal)
+            patternLocal
+        }
+
+        val patternIdentifier = identifierNode(typePatternExpr, patternLocal.name, patternLocal.name, variableType)
 
         val initializerAst = castAstIfNecessary(typePatternExpr, variableType, patternNode.getAst)
 
@@ -246,11 +182,21 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
           callAst(initializerAssignmentCall, Ast(patternIdentifier) :: initializerAst :: Nil)
             .withRefEdge(patternIdentifier, patternLocal)
 
-        scope.enclosingMethod.foreach { methodScope =>
-          methodScope.putPatternVariableInfo(typePatternExpr, patternLocal, initializerAssignmentAst)
-        }
-
+        Option(initializerAssignmentAst)
     }
+  }
+
+  private def createAssignmentBlockAst(patternExpr: PatternExpr, typePatterns: List[PatternInitTreeNode]): Ast = {
+    val assignmentAsts = typePatterns.flatMap(createAssignmentForTypePattern)
+    val trueAst        = Ast(literalNode(patternExpr, "true", TypeConstants.Boolean))
+
+    val blockChildren = assignmentAsts :+ trueAst
+
+    val blockCode = s"{ ${blockChildren.map(_.rootCodeOrEmpty).mkString("; ")}; }"
+
+    val block = blockNode(patternExpr, blockCode, TypeConstants.Boolean)
+
+    blockAst(block, blockChildren)
   }
 
   private[astcreation] def instanceOfAstForPattern(patternExpr: PatternExpr, lhsAst: Ast): Ast = {
@@ -261,8 +207,17 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
     }
     val typeCheckAst = typeCheckAstForPattern(patternExpr, patternTreeNode, typePatternBuffer).get
 
-    typePatternBuffer.foreach(createAndPushAssignmentForTypePattern)
-    typeCheckAst
+    val assignmentBlockAst = createAssignmentBlockAst(patternExpr, typePatternBuffer.toList)
+
+    val andNode = newOperatorCallNode(
+      Operators.logicalAnd,
+      s"(${typeCheckAst.rootCodeOrEmpty}) && ${assignmentBlockAst.rootCodeOrEmpty}",
+      Option(TypeConstants.Boolean),
+      line(patternExpr),
+      column(patternExpr)
+    )
+
+    callAst(andNode, typeCheckAst :: assignmentBlockAst :: Nil)
   }
 
   private def typeCheckAstForPattern(
@@ -383,5 +338,85 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
           .getOrElse(defaultTypeFallback(typ))
       )
       .getOrElse(defaultTypeFallback())
+  }
+
+  trait PatternInitTreeNode(val patternExpr: PatternExpr) {
+    def getAst: Ast
+
+    def typeFullName: Option[String]
+  }
+
+  class PatternInitRoot(patternExpr: PatternExpr, ast: PatternInitAndRefAsts) extends PatternInitTreeNode(patternExpr) {
+    override def getAst: Ast = ast.get
+
+    override def typeFullName: Option[String] = ast.rootType
+  }
+
+  class PatternInitNode(
+    parentNode: PatternInitTreeNode,
+    patternExpr: PatternExpr,
+    fieldName: String,
+    fieldTypeFullName: Option[String],
+    requiresTemporaryVariable: Boolean
+  ) extends PatternInitTreeNode(patternExpr) {
+    private var cachedResult: Option[PatternInitAndRefAsts] = None
+
+    override def typeFullName: Option[String] = fieldTypeFullName
+
+    override def getAst: Ast = {
+      cachedResult.map(_.get).getOrElse {
+        val parentAst = parentNode.getAst
+        val patternTypeFullName = tryWithSafeStackOverflow(patternExpr.getType).toOption
+          .map { typ =>
+            scope
+              .lookupScopeType(typ.asString())
+              .map(_.typeFullName)
+              .orElse(typeInfoCalc.fullName(typ))
+              .getOrElse(defaultTypeFallback(typ))
+          }
+          .getOrElse(defaultTypeFallback())
+
+        val parentPatternType = getPatternTypeFullName(parentNode.patternExpr)
+        val lhsAst            = castAstIfNecessary(parentNode.patternExpr, parentPatternType, parentAst)
+
+        val signature = composeSignature(fieldTypeFullName, Option(Nil), 0)
+        val typeDeclFullName =
+          if (isResolvedTypeFullName(parentPatternType))
+            parentPatternType
+          else
+            s"${Defines.UnresolvedNamespace}.${code(parentNode.patternExpr.getType)}"
+        val methodFullName = Util.composeMethodFullName(typeDeclFullName, fieldName, signature)
+        val methodCodePrefix = lhsAst.root match {
+          case Some(call: NewCall) if call.name.startsWith("<operator") => s"(${call.code})"
+          case Some(root: AstNodeNew)                                   => root.code
+          case _                                                        => ""
+
+        }
+        val methodCode = s"$methodCodePrefix.$fieldName()"
+
+        val fieldAccessorCall = callNode(
+          patternExpr,
+          methodCode,
+          fieldName,
+          methodFullName,
+          DispatchTypes.DYNAMIC_DISPATCH,
+          Option(signature),
+          fieldTypeFullName.orElse(Option(defaultTypeFallback()))
+        )
+
+        val fieldAccessorAst = callAst(fieldAccessorCall, Nil, Option(lhsAst))
+
+        val patternInitWithRef = if (requiresTemporaryVariable) {
+          val patternInitWithRef = initAndRefAstsForPatternInitializer(patternExpr, fieldAccessorAst)
+          patternInitWithRef
+        } else {
+          PatternInitAndRefAsts(fieldAccessorAst)
+        }
+
+        cachedResult = Option(patternInitWithRef)
+
+        patternInitWithRef.get
+      }
+    }
   }
 }

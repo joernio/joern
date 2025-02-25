@@ -11,6 +11,10 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPFunction
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPVariable
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 import io.joern.x2cpg.Defines as X2CpgDefines
+import io.joern.x2cpg.passes.frontend.MetaDataPass
+import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
+import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.c.CVariable
 
@@ -110,6 +114,28 @@ trait FullNameProvider { this: AstCreator =>
     StringUtils.normalizeSpace(name)
   }
 
+  private def fullNameForICPPASTLambdaExpression(): String = {
+    methodAstParentStack
+      .collectFirst {
+        case t: NewTypeDecl =>
+          if (t.name != NamespaceTraversal.globalNamespaceName) {
+            val globalFullName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(filename))
+            s"$globalFullName.${t.fullName}"
+          } else {
+            t.fullName
+          }
+        case m: NewMethod =>
+          val fullNameWithoutSignature = m.fullName.stripSuffix(s":${m.signature}")
+          if (!m.name.startsWith("<lambda>") && m.name != NamespaceTraversal.globalNamespaceName) {
+            val globalFullName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(filename))
+            s"$globalFullName.$fullNameWithoutSignature"
+          } else {
+            fullNameWithoutSignature
+          }
+      }
+      .mkString("")
+  }
+
   protected def fullName(node: IASTNode): String = {
     fullNameFromBinding(node) match {
       case Some(fullName) =>
@@ -127,6 +153,7 @@ trait FullNameProvider { this: AstCreator =>
           case d: IASTIdExpression                               => ASTStringUtil.getSimpleName(d.getName)
           case u: IASTUnaryExpression                            => code(u.getOperand)
           case x: ICPPASTQualifiedName                           => fixQualifiedName(ASTStringUtil.getQualifiedName(x))
+          case _: ICPPASTLambdaExpression                        => fullNameForICPPASTLambdaExpression()
           case other if other != null && other.getParent != null => fullName(other.getParent)
           case other if other != null                            => notHandledYet(other); ""
           case null                                              => ""
@@ -147,11 +174,11 @@ trait FullNameProvider { this: AstCreator =>
   ): String = {
     fullName match {
       case f if methodLike.isInstanceOf[ICPPASTLambdaExpression] && (f.contains("[") || f.contains("{")) =>
-        s"${X2CpgDefines.UnresolvedNamespace}.$name"
+        s"${X2CpgDefines.UnresolvedNamespace}.$name:$signature"
       case f if methodLike.isInstanceOf[ICPPASTLambdaExpression] && f.isEmpty =>
-        name
+        s"$name:$signature"
       case f if methodLike.isInstanceOf[ICPPASTLambdaExpression] =>
-        s"$f.$name"
+        s"$f.$name:$signature"
       case f if isCPPFunction(methodLike) && (f.isEmpty || f == s"${X2CpgDefines.UnresolvedNamespace}.") =>
         s"${X2CpgDefines.UnresolvedNamespace}.$name:$signature"
       case f if isCPPFunction(methodLike) && f.contains("?") =>
@@ -196,8 +223,8 @@ trait FullNameProvider { this: AstCreator =>
           .getOrElse(Defines.Any)
       case null =>
         safeGetEvaluation(lambda) match {
-          case Some(value) => cleanType(value.getType.toString)
-          case None        => Defines.Any
+          case Some(value) if !value.toString.endsWith(": <unknown>") => cleanType(value.getType.toString)
+          case _                                                      => Defines.Any
         }
     }
   }

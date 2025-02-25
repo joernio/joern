@@ -56,7 +56,7 @@ object Defines {
     val regexpMatch       = "=~"
     val regexpNotMatch    = "!~"
 
-    val regexMethods = Set("match", "sub", "gsub")
+    val regexMethods = Set("match") // TODO: Figure out how to model these, "sub", "gsub")
   }
 }
 
