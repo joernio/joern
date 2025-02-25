@@ -1,6 +1,6 @@
 package io.joern.x2cpg.utils.dependency
 
-import io.joern.x2cpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Path
@@ -48,7 +48,7 @@ object MavenDependencies {
   }
 
   private[dependency] def get(projectDir: Path): Option[collection.Seq[String]] = {
-    val lines = ExternalCommand.run(fetchCommandWithOpts, projectDir.toString).toTry match {
+    val lines = ExternalCommand.run(fetchCommandWithOpts, Option(projectDir.toString)).toTry match {
       case Success(lines) =>
         if (lines.contains("[INFO] Build failures were ignored.")) {
           logErrors(lines.mkString(System.lineSeparator()))

@@ -7,7 +7,8 @@ import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, AstGenRunnerRe
 import io.joern.x2cpg.astgen.AstGenRunnerBase
 import io.joern.x2cpg.utils.Environment.ArchitectureType.ArchitectureType
 import io.joern.x2cpg.utils.Environment.OperatingSystemType.OperatingSystemType
-import io.joern.x2cpg.utils.{Environment, ExternalCommand}
+import io.joern.x2cpg.utils.{Environment}
+import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
@@ -78,7 +79,7 @@ class AstGenRunner(config: Config, includeFileRegex: String = "") extends AstGen
     val excludeCommand = if (exclude.isEmpty) Seq.empty else Seq("-exclude", exclude)
     val includeCommand = if (include.isEmpty) Seq.empty else Seq("-include-packages", include)
     ExternalCommand
-      .run((astGenCommand +: excludeCommand) ++ includeCommand ++ Seq("-out", out.toString(), in), ".")
+      .run((astGenCommand +: excludeCommand) ++ includeCommand ++ Seq("-out", out.toString(), in), Some("."))
       .toTry
   }
 

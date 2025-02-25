@@ -1,6 +1,7 @@
+import com.typesafe.config.{Config, ConfigFactory}
+
 import scala.sys.process.stringToProcess
 import scala.util.Try
-import com.typesafe.config.{Config, ConfigFactory}
 
 name := "swiftsrc2cpg"
 
@@ -39,7 +40,7 @@ astGenDlUrl := s"https://github.com/joernio/swiftastgen/releases/download/v${ast
 def hasCompatibleAstGenVersion(astGenVersion: String): Boolean = {
   Try("SwiftAstGen -h".!).toOption match {
     case Some(0) => true
-    case _       => false
+    case _ => false
   }
 }
 
