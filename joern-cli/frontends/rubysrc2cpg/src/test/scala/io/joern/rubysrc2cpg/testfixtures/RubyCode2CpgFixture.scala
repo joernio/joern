@@ -2,7 +2,7 @@ package io.joern.rubysrc2cpg.testfixtures
 
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.language.Path
-import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
+import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, SemanticTestCpg}
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
 import io.joern.x2cpg.ValidationMode
@@ -12,8 +12,7 @@ import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 import org.scalatest.Inside
 
 import java.io.File
-import java.nio.file.Files
-import scala.jdk.CollectionConverters.*
+import scala.util.Using
 
 trait RubyFrontend(withDownloadDependencies: Boolean, disableFileContent: Boolean) extends LanguageFrontend {
   override val fileSuffix: String = ".rb"
@@ -26,7 +25,7 @@ trait RubyFrontend(withDownloadDependencies: Boolean, disableFileContent: Boolea
       .withDisableFileContent(disableFileContent)
 
   override def execute(sourceCodeFile: File): Cpg = {
-    new RubySrc2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get
+    Using.resource(new RubySrc2Cpg())(_.createCpg(sourceCodeFile.getAbsolutePath).get)
   }
 
 }

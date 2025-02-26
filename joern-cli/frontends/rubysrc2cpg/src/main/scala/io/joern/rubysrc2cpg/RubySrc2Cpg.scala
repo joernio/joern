@@ -31,7 +31,8 @@ import scala.util.{Failure, Success, Try, Using}
 
 class RubySrc2Cpg extends X2CpgFrontend[Config] {
 
-  private val logger = LoggerFactory.getLogger(this.getClass)
+  private val logger                                     = LoggerFactory.getLogger(this.getClass)
+  private var rubyAstGenRunner: Option[RubyAstGenRunner] = None
 
   override def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
@@ -44,7 +45,14 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
 
   private def createCpgAction(cpg: Cpg, config: Config): Unit = {
     File.usingTemporaryDirectory("rubysrc2cpgOut") { tmpDir =>
-      val astGenResult = RubyAstGenRunner(config).execute(tmpDir)
+      val astGenResult = rubyAstGenRunner match {
+        case Some(astGenRunner) =>
+          astGenRunner.execute(tmpDir, config)
+        case None =>
+          val astGenRunner = RubyAstGenRunner(config)
+          rubyAstGenRunner = Option(astGenRunner)
+          astGenRunner.execute(tmpDir, config)
+      }
 
       val astCreators = ConcurrentTaskUtil
         .runUsingThreadPool(
@@ -54,10 +62,10 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
           case Failure(exception)  => logger.warn(s"Unable to parse Ruby file, skipping -", exception); None
           case Success(astCreator) => Option(astCreator)
         }
-        .filter(x => {
+        .filter { x =>
           if x.fileContent.isBlank then logger.info(s"File content empty, skipping - ${x.fileName}")
           !x.fileContent.isBlank
-        })
+        }
 
       val internalProgramSummary = ConcurrentTaskUtil
         .runUsingThreadPool(astCreators.map(x => () => x.summarize()).iterator)
@@ -80,6 +88,14 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
         DependencySummarySolverPass(cpg, dependencySummary).createAndApply()
       }
       TypeNodePass.withTypesFromCpg(cpg).createAndApply()
+    }
+
+  }
+
+  override def close(): Unit = {
+    val closeTask = Try(rubyAstGenRunner.foreach(_.close))
+    if (closeTask.isFailure) {
+      logger.error("Error occurred while cleaning up RubyAstGenRunner!", closeTask.failed.get)
     }
   }
 
