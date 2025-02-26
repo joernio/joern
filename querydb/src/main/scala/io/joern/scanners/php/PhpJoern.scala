@@ -99,7 +99,7 @@ object PhpJoern extends QueryBundle {
       description = """
           |An attacker controlled parameter is used in an insecure uuf related func call.
           |
-          |If the parameter is not validated and sanitized, this is a remote code execution.
+          |If the parameter is not validated and sanitized, this may result in remote code execution.
           |""".stripMargin,
       score = 5,
       withStrRep({ cpg =>
