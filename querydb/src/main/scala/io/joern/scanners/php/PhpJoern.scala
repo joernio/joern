@@ -136,7 +136,7 @@ object PhpJoern extends QueryBundle {
 
         def sink = cpg.call.name("(assert|echo|exit|print|printf|vprintf|print_r|var_dump)").argument
 
-        sink.reachableBy(source).l.iterator
+        sink.reachableBy(source)
       }),
       tags = List(QueryTags.xss, QueryTags.default, PHPJOERN_TAG)
     )
