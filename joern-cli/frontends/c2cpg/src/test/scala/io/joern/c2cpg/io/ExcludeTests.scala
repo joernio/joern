@@ -4,12 +4,16 @@ import better.files.File
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.C2Cpg
 import io.joern.x2cpg.X2Cpg
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterAll
+
+import java.io.File as JFile
 
 import java.util.regex.Pattern
 
@@ -33,8 +37,8 @@ class ExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChe
       "CMakeFiles/sub/foo.c"
     )
 
-  private val projectUnderTest: File = {
-    val dir = File.newTemporaryDirectory("c2cpgTestsExcludeTest")
+  private val projectUnderTest: JFile = {
+    val dir = FileUtil.newTemporaryDirectory("c2cpgTestsExcludeTest")
     TestFiles.foreach { testFile =>
       val file = dir / testFile
       file.createIfNotExists(createParents = true)
@@ -42,7 +46,7 @@ class ExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChe
     dir
   }
 
-  override def afterAll(): Unit = projectUnderTest.delete(swallowIOExceptions = true)
+  override def afterAll(): Unit = FileUtil.deleteFile(projectUnderTest, swallowIoExceptions = true)
 
   private def testWithArguments(exclude: Seq[String], excludeRegex: String, expectedFiles: Set[String]): Unit = {
     val cpgOutFile = File.newTemporaryFile("c2cpg.bin")

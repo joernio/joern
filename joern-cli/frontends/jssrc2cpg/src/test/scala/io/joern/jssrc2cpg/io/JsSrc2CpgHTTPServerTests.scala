@@ -2,11 +2,17 @@ package io.joern.jssrc2cpg.io
 
 import better.files.File
 import io.joern.x2cpg.utils.server.FrontendHTTPClient
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import java.io.File as JFile
+import java.nio.file.Files
+import java.nio.charset.Charset
 
 import scala.util.Failure
 import scala.util.Success
@@ -16,18 +22,20 @@ class JsSrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndA
 
   private var port: Int = -1
 
-  private def newProjectUnderTest(index: Option[Int] = None): File = {
-    val dir  = File.newTemporaryDirectory("jssrc2cpgTestsHttpTest")
+  private def newProjectUnderTest(index: Option[Int] = None): JFile = {
+    val dir  = FileUtil.newTemporaryDirectory("jssrc2cpgTestsHttpTest")
     val file = dir / "main.js"
     file.createIfNotExists(createParents = true)
     val indexStr = index.map(_.toString).getOrElse("")
-    file.writeText(s"""
-      |function main$indexStr() {
-      |  console.log("Hello World!");
-      |}
-      |""".stripMargin)
+    val content = s"""
+                     |function main$indexStr() {
+                     |  console.log("Hello World!");
+                     |}
+                     |""".stripMargin
+    Files.write(file.toPath, content.getBytes(Charset.defaultCharset()))
     file.deleteOnExit()
     dir.deleteOnExit()
+    dir
   }
 
   override def beforeAll(): Unit = {
@@ -45,7 +53,7 @@ class JsSrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndA
       val cpgOutFile = File.newTemporaryFile("jssrc2cpg.bin")
       cpgOutFile.deleteOnExit()
       val projectUnderTest = newProjectUnderTest()
-      val input            = projectUnderTest.path.toAbsolutePath.toString
+      val input            = projectUnderTest.toPath.toAbsolutePath.toString
       val output           = cpgOutFile.toString
       val client           = FrontendHTTPClient(port)
       val req              = client.buildRequest(Array(s"input=$input", s"output=$output"))
@@ -64,7 +72,7 @@ class JsSrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndA
         val cpgOutFile = File.newTemporaryFile("jssrc2cpg.bin")
         cpgOutFile.deleteOnExit()
         val projectUnderTest = newProjectUnderTest(Some(index))
-        val input            = projectUnderTest.path.toAbsolutePath.toString
+        val input            = projectUnderTest.toPath.toAbsolutePath.toString
         val output           = cpgOutFile.toString
         val client           = FrontendHTTPClient(port)
         val req              = client.buildRequest(Array(s"input=$input", s"output=$output"))

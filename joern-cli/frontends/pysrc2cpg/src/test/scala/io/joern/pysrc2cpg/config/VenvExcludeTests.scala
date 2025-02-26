@@ -3,17 +3,17 @@ package io.joern.pysrc2cpg.config
 import better.files.File
 import io.joern.pysrc2cpg.Py2CpgOnFileSystem
 import io.joern.pysrc2cpg.Py2CpgOnFileSystemConfig
-import io.joern.x2cpg.ValidationMode
-import io.joern.x2cpg.X2Cpg.newEmptyCpg
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
+
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterAll
 
-import java.nio.file.Path
+import java.io.File as JFile
 import java.nio.file.Paths
-import java.util.regex.Pattern
 
 class VenvExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChecks with BeforeAndAfterAll {
 
@@ -29,8 +29,8 @@ class VenvExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropert
     "main.py"
   )
 
-  private val projectUnderTest: File = {
-    val dir = File.newTemporaryDirectory("pysrc2cpgTestsExcludeTest")
+  private val projectUnderTest: JFile = {
+    val dir = FileUtil.newTemporaryDirectory("pysrc2cpgTestsExcludeTest")
     testFiles.foreach { testFile =>
       val file = dir / testFile
       file.createIfNotExists(createParents = true)
@@ -38,7 +38,7 @@ class VenvExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropert
     dir
   }
 
-  override def afterAll(): Unit = projectUnderTest.delete(swallowIOExceptions = true)
+  override def afterAll(): Unit = FileUtil.deleteFile(projectUnderTest, swallowIoExceptions = true)
 
   private def testWithArguments(ignoreVenvDir: Boolean, venvDirs: Seq[String], expectedFiles: Set[String]): Unit = {
     File.usingTemporaryDirectory("pysrc2cpgTests") { tmpDir =>

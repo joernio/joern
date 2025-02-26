@@ -1,8 +1,11 @@
 package io.joern.console
 
 import better.files.File
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Languages
 
+import java.io.File as JFile
 import java.nio.file.Path
 import scala.collection.mutable
 import scala.util.Try
@@ -112,11 +115,11 @@ package object cpgcreation {
     }
   }
 
-  def withFileInTmpFile(inputPath: String)(f: File => Try[String]): Try[String] = {
-    val dir = File.newTemporaryDirectory("cpgcreation")
-    File(inputPath).copyToDirectory(dir)
+  def withFileInTmpFile(inputPath: String)(f: JFile => Try[String]): Try[String] = {
+    val dir = FileUtil.newTemporaryDirectory("cpgcreation")
+    new JFile(inputPath).copyToDirectory(dir)
     val result = f(dir)
-    dir.deleteOnExit(swallowIOExceptions = true)
+    FileUtil.deleteFileOnExit(dir, swallowIOExceptions = true)
     result
   }
 

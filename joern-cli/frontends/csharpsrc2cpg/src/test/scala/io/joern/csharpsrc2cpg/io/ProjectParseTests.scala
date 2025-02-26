@@ -7,52 +7,57 @@ import io.joern.csharpsrc2cpg.passes.AstCreationPass
 import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
 import io.joern.csharpsrc2cpg.utils.DotNetAstGenRunner
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
-import io.joern.x2cpg.utils.Report
+import io.joern.x2cpg.utils.{Report, FileUtil}
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
+
+import java.io.File as JFile
+import java.nio.file.Files
+import java.nio.charset.Charset
 
 class ProjectParseTests extends CSharpCode2CpgFixture with BeforeAndAfterAll {
 
   private val sep = java.io.File.separator
 
-  private val projectWithSubfolders: File = {
-    val dir = File.newTemporaryDirectory("csharpsrc2cpgTestsSubfolders")
+  private val projectWithSubfolders: JFile = {
+    val dir = FileUtil.newTemporaryDirectory("csharpsrc2cpgTestsSubfolders")
     List(s"sub${sep}c.cs", s"sub${sep}d.cs", "a.cs", "b.cs").foreach { testFile =>
       val file = dir / testFile
       file.createIfNotExists(createParents = true)
-      file.write(basicBoilerplate())
+      Files.write(file.toPath, basicBoilerplate().getBytes(Charset.defaultCharset()))
     }
     dir
   }
 
-  private val projectWithBrokenFile: File = {
-    val dir      = File.newTemporaryDirectory("csharpsrc2cpgTestsBroken")
+  private val projectWithBrokenFile: JFile = {
+    val dir      = FileUtil.newTemporaryDirectory("csharpsrc2cpgTestsBroken")
     val goodFile = dir / "good.cs"
     goodFile.createIfNotExists(createParents = true)
-    goodFile.write(basicBoilerplate("Console.WriteLine(\"Good\");"))
+    Files.write(goodFile.toPath, basicBoilerplate("Console.WriteLine(\"Good\");").getBytes(Charset.defaultCharset()))
     val brokenFile = dir / "broken.cs"
     brokenFile.createIfNotExists(createParents = true)
-    brokenFile.write(basicBoilerplate("Console.WriteLi\"Broken\""))
+    Files.write(brokenFile.toPath, basicBoilerplate("Console.WriteLi\"Broken\"").getBytes(Charset.defaultCharset()))
     dir
   }
 
-  private val projectWithUtf8: File = {
-    val dir  = File.newTemporaryDirectory("csharpsrc2cpgTestsUtf8")
+  private val projectWithUtf8: JFile = {
+    val dir  = FileUtil.newTemporaryDirectory("csharpsrc2cpgTestsUtf8")
     val file = dir / "utf8.cs"
     file.createIfNotExists(createParents = true)
-    file.write(basicBoilerplate("// 😼"))
+    Files.write(file.toPath, basicBoilerplate("// 😼").getBytes(Charset.defaultCharset()))
     dir
   }
 
   override def afterAll(): Unit = {
-    projectWithSubfolders.delete(swallowIOExceptions = true)
-    projectWithBrokenFile.delete(swallowIOExceptions = true)
-    projectWithUtf8.delete(swallowIOExceptions = true)
+    FileUtil.deleteFile(projectWithSubfolders, swallowIoExceptions = true)
+    FileUtil.deleteFile(projectWithBrokenFile, swallowIoExceptions = true)
+    FileUtil.deleteFile(projectWithUtf8, swallowIoExceptions = true)
   }
 
   private object ProjectParseTestsFixture {
-    def apply(projectDir: File)(f: Cpg => Unit): Unit = {
+    def apply(projectDir: JFile)(f: Cpg => Unit): Unit = {
       File.usingTemporaryDirectory("csharpsrc2cpgTests") { tmpDir =>
         val cpg          = newEmptyCpg()
         val config       = Config().withInputPath(projectDir.toString).withOutputPath(tmpDir.toString)

@@ -4,6 +4,7 @@ import better.files.File
 import io.joern.console.FrontendConfig
 import io.joern.x2cpg.frontendspecific.jssrc2cpg
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 
 import java.nio.file.Path

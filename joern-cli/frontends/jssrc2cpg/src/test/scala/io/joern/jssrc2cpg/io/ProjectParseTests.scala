@@ -7,70 +7,76 @@ import io.joern.jssrc2cpg.passes.AstCreationPass
 import io.joern.jssrc2cpg.utils.AstGenRunner
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
+import java.io.File as JFile
+import java.nio.file.Files
+import java.nio.charset.Charset
 
 class ProjectParseTests extends JsSrc2CpgSuite with BeforeAndAfterAll {
 
   private implicit val schemaValidationMode: ValidationMode = ValidationMode.Enabled
 
-  private val projectWithSubfolders: File = {
-    val dir = File.newTemporaryDirectory("jssrc2cpgTestsSubfolders")
+  private val projectWithSubfolders: JFile = {
+    val dir = FileUtil.newTemporaryDirectory("jssrc2cpgTestsSubfolders")
     List("sub/c.js", "sub/d.js", "a.js", "b.js").foreach { testFile =>
       val file = dir / testFile
       file.createIfNotExists(createParents = true)
-      file.write(s"""console.log("${file.canonicalPath}");""")
+      Files.write(file.toPath, s"""console.log("${file.getAbsolutePath}");""".getBytes(Charset.defaultCharset()))
     }
     dir
   }
 
-  private val projectWithBrokenFile: File = {
-    val dir      = File.newTemporaryDirectory("jssrc2cpgTestsBroken")
+  private val projectWithBrokenFile: JFile = {
+    val dir      = FileUtil.newTemporaryDirectory("jssrc2cpgTestsBroken")
     val goodFile = dir / "good.js"
     goodFile.createIfNotExists(createParents = true)
-    goodFile.write(s"""console.log("good");""")
+    Files.write(goodFile.toPath, s"""console.log("good");""".getBytes(Charset.defaultCharset()))
     val brokenFile = dir / "broken.js"
     brokenFile.createIfNotExists(createParents = true)
-    brokenFile.write(s"""console.log("broken""")
+    Files.write(brokenFile.toPath, s"""console.log("broken""".getBytes(Charset.defaultCharset()))
     dir
   }
 
-  private val projectWithUtf8: File = {
-    val dir  = File.newTemporaryDirectory("jssrc2cpgTestsUtf8")
+  private val projectWithUtf8: JFile = {
+    val dir  = FileUtil.newTemporaryDirectory("jssrc2cpgTestsUtf8")
     val file = dir / "utf8.js"
     file.createIfNotExists(createParents = true)
-    file.write("""
-        |// 😼
-        |logger.error()
-        |""".stripMargin)
+    val content = """
+                   |// 😼
+                   |logger.error()
+                   |""".stripMargin
+    Files.write(file.toPath, content.getBytes(Charset.defaultCharset()))
     dir
   }
 
-  private val projectWithStrangeFilenames: File = {
-    val dir = File.newTemporaryDirectory("jssrc2cpgTestsFilenames")
+  private val projectWithStrangeFilenames: JFile = {
+    val dir = FileUtil.newTemporaryDirectory("jssrc2cpgTestsFilenames")
     List("good_%component-name%_.js", "good_%component-name%_Foo.js").foreach { testFile =>
       val file = dir / testFile
       file.createIfNotExists(createParents = true)
-      file.write(s"""console.log("${file.canonicalPath}");""")
+      Files.write(file.toPath, s"""console.log("${file.getAbsolutePath}");""".getBytes(Charset.defaultCharset()))
     }
     List("broken_%component-name%_.js", "broken_%component-name%_Foo.js").foreach { testFile =>
       val file = dir / testFile
       file.createIfNotExists(createParents = true)
-      file.write(s"""const x = new <%ComponentName%>Foo();""")
+      Files.write(file.toPath, s"""const x = new <%ComponentName%>Foo();""".getBytes(Charset.defaultCharset()))
     }
     dir
   }
 
   override def afterAll(): Unit = {
-    projectWithSubfolders.delete(swallowIOExceptions = true)
-    projectWithBrokenFile.delete(swallowIOExceptions = true)
-    projectWithUtf8.delete(swallowIOExceptions = true)
-    projectWithStrangeFilenames.delete(swallowIOExceptions = true)
+    FileUtil.deleteFile(projectWithSubfolders, swallowIoExceptions = true)
+    FileUtil.deleteFile(projectWithBrokenFile, swallowIoExceptions = true)
+    FileUtil.deleteFile(projectWithUtf8, swallowIoExceptions = true)
+    FileUtil.deleteFile(projectWithStrangeFilenames, swallowIoExceptions = true)
   }
 
   private object ProjectParseTestsFixture {
-    def apply(projectDir: File)(f: Cpg => Unit): Unit = {
+    def apply(projectDir: JFile)(f: Cpg => Unit): Unit = {
       File.usingTemporaryDirectory("jssrc2cpgTests") { tmpDir =>
         val cpg          = newEmptyCpg()
         val config       = Config(tsTypes = false).withInputPath(projectDir.toString).withOutputPath(tmpDir.toString)

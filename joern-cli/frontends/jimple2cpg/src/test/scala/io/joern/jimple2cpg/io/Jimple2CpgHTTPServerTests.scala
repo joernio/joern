@@ -4,11 +4,17 @@ import better.files.File
 import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
 import io.joern.x2cpg.utils.server.FrontendHTTPClient
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import java.io.File as JFile
+import java.nio.file.Files
+import java.nio.charset.Charset
 
 import scala.collection.parallel.CollectionConverters.RangeIsParallelizable
 import scala.util.Failure
@@ -18,21 +24,23 @@ class Jimple2CpgHTTPServerTests extends JimpleCode2CpgFixture with BeforeAndAfte
 
   private var port: Int = -1
 
-  private def newProjectUnderTest(index: Option[Int] = None): File = {
-    val dir  = File.newTemporaryDirectory("jimple2cpgTestsHttpTest")
+  private def newProjectUnderTest(index: Option[Int] = None): JFile = {
+    val dir  = FileUtil.newTemporaryDirectory("jimple2cpgTestsHttpTest")
     val file = dir / "main.java"
     file.createIfNotExists(createParents = true)
     val indexStr = index.map(_.toString).getOrElse("")
-    file.writeText(s"""
-        |class Foo {
-        |  static void main$indexStr(int argc, char argv) {
-        |    System.out.println("Hello World!");
-        |  }
-        |}
-        |""".stripMargin)
-    JimpleCodeToCpgFixture.compileJava(dir.path, List(file.toJava))
+    val content = s"""
+                     |class Foo {
+                     |  static void main$indexStr(int argc, char argv) {
+                     |    System.out.println("Hello World!");
+                     |  }
+                     |}
+                     |""".stripMargin
+    Files.write(file.toPath, content.getBytes(Charset.defaultCharset()))
+    JimpleCodeToCpgFixture.compileJava(dir.toPath, List(file))
     file.deleteOnExit()
     dir.deleteOnExit()
+    dir
   }
 
   override def beforeAll(): Unit = {
@@ -50,7 +58,7 @@ class Jimple2CpgHTTPServerTests extends JimpleCode2CpgFixture with BeforeAndAfte
       val cpgOutFile = File.newTemporaryFile("jimple2cpg.bin")
       cpgOutFile.deleteOnExit()
       val projectUnderTest = newProjectUnderTest()
-      val input            = projectUnderTest.path.toAbsolutePath.toString
+      val input            = projectUnderTest.toPath.toAbsolutePath.toString
       val output           = cpgOutFile.toString
       val client           = FrontendHTTPClient(port)
       val req              = client.buildRequest(Array(s"input=$input", s"output=$output"))
@@ -69,7 +77,7 @@ class Jimple2CpgHTTPServerTests extends JimpleCode2CpgFixture with BeforeAndAfte
         val cpgOutFile = File.newTemporaryFile("jimple2cpg.bin")
         cpgOutFile.deleteOnExit()
         val projectUnderTest = newProjectUnderTest(Some(index))
-        val input            = projectUnderTest.path.toAbsolutePath.toString
+        val input            = projectUnderTest.toPath.toAbsolutePath.toString
         val output           = cpgOutFile.toString
         val client           = FrontendHTTPClient(port)
         val req              = client.buildRequest(Array(s"input=$input", s"output=$output"))

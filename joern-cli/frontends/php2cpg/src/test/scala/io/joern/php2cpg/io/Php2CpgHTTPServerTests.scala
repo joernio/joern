@@ -2,11 +2,17 @@ package io.joern.php2cpg.io
 
 import better.files.File
 import io.joern.x2cpg.utils.server.FrontendHTTPClient
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import java.io.File as JFile
+import java.nio.file.Files
+import java.nio.charset.Charset
 
 import scala.collection.parallel.CollectionConverters.RangeIsParallelizable
 import scala.util.Failure
@@ -16,16 +22,18 @@ class Php2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndAft
 
   private var port: Int = -1
 
-  private def newProjectUnderTest(index: Option[Int] = None): File = {
-    val dir  = File.newTemporaryDirectory("php2cpgTestsHttpTest")
+  private def newProjectUnderTest(index: Option[Int] = None): JFile = {
+    val dir  = FileUtil.newTemporaryDirectory("php2cpgTestsHttpTest")
     val file = dir / "main.php"
     file.createIfNotExists(createParents = true)
     val indexStr = index.map(_.toString).getOrElse(""""Hello, World!"""")
-    file.writeText(s"""<?php
-    |print($indexStr);
-    |""".stripMargin)
+    val content = s"""<?php
+                     |print($indexStr);
+                     |""".stripMargin
+    Files.write(file.toPath, content.getBytes(Charset.defaultCharset()))
     file.deleteOnExit()
     dir.deleteOnExit()
+    dir
   }
 
   override def beforeAll(): Unit = {
@@ -43,7 +51,7 @@ class Php2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndAft
       val cpgOutFile = File.newTemporaryFile("php2cpg.bin")
       cpgOutFile.deleteOnExit()
       val projectUnderTest = newProjectUnderTest()
-      val input            = projectUnderTest.path.toAbsolutePath.toString
+      val input            = projectUnderTest.toPath.toAbsolutePath.toString
       val output           = cpgOutFile.toString
       val client           = FrontendHTTPClient(port)
       val req              = client.buildRequest(Array(s"input=$input", s"output=$output"))
@@ -61,7 +69,7 @@ class Php2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndAft
         val cpgOutFile = File.newTemporaryFile("php2cpg.bin")
         cpgOutFile.deleteOnExit()
         val projectUnderTest = newProjectUnderTest(Some(index))
-        val input            = projectUnderTest.path.toAbsolutePath.toString
+        val input            = projectUnderTest.toPath.toAbsolutePath.toString
         val output           = cpgOutFile.toString
         val client           = FrontendHTTPClient(port)
         val req              = client.buildRequest(Array(s"input=$input", s"output=$output"))

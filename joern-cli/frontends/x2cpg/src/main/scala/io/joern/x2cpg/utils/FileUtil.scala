@@ -1,16 +1,16 @@
 package io.joern.x2cpg.utils
 
 import java.io.{IOException, File as JFile}
-import java.nio.file.Files
-import java.nio.file.Path
-
+import java.nio.file.{FileAlreadyExistsException, Files, Path, SimpleFileVisitor}
 import better.files.File
+
+import java.nio.file.attribute.BasicFileAttributes
 
 object FileUtil {
   def newTemporaryDirectory(prefix: String = "", parent: Option[JFile] = None): JFile = {
     parent match {
       case Some(dir) => Files.createTempDirectory(dir.toPath, prefix).toFile
-      case _ => Files.createTempDirectory(prefix).toFile
+      case _         => Files.createTempDirectory(prefix).toFile
     }
   }
 
@@ -31,6 +31,18 @@ object FileUtil {
     }
   }
 
+  def deleteFileOnExit(file: JFile, swallowIOExceptions: Boolean = false): Unit = {
+    try {
+      if (file.isDirectory) {
+        file.listFiles().foreach(x => deleteFileOnExit(x, swallowIOExceptions))
+      }
+
+      Files.delete(file.toPath)
+    } catch {
+      case _: IOException if swallowIOExceptions => //
+    }
+  }
+
   def deleteFile(file: JFile, swallowIoExceptions: Boolean = false): Unit = {
     try {
       if (file.isDirectory) {
@@ -45,11 +57,64 @@ object FileUtil {
 
   implicit class JFileExt(f: JFile) {
     def pathAsString: String = {
-      f.getPath
+      f.toPath.toString
     }
 
     def /(child: String): JFile = {
       f.toPath.resolve(child).toFile
+    }
+
+    def copyToDirectory(destination: JFile): Unit = {
+      require(Files.isDirectory(destination.toPath), s"${destination.getPath} must be a directory")
+      copyTo(destination / f.toPath.getFileName.toString)
+    }
+
+    def copyTo(destination: JFile): Unit = {
+      if (Files.isDirectory(f.toPath)) { // TODO: maxDepth?
+        Files.walkFileTree(
+          f.toPath,
+          new SimpleFileVisitor[Path] {
+            def newPath(subPath: Path): Path = destination.toPath.resolve(f.toPath.relativize(subPath))
+
+            override def preVisitDirectory(dir: Path, attrs: BasicFileAttributes) = {
+              Files.createDirectories(newPath(dir))
+              super.preVisitDirectory(dir, attrs)
+            }
+
+            override def visitFile(file: Path, attrs: BasicFileAttributes) = {
+              Files.copy(file, newPath(file))
+              super.visitFile(file, attrs)
+            }
+          }
+        )
+      } else {
+        Files.copy(f.toPath, destination.toPath)
+      }
+    }
+
+    def createIfNotExists(asDirectory: Boolean = false, createParents: Boolean = false): Unit = {
+      if (Files.exists(f.toPath)) {
+        // do nothing
+      } else if (asDirectory) {} else {
+        if (createParents) createDirectories(createParents)
+        try {
+          Files.createFile(f.toPath)
+        } catch {
+          case _: FileAlreadyExistsException if Files.isRegularFile(f.toPath) => // do nothing
+        }
+      }
+    }
+
+    def createDirectories(createParents: Boolean = false): Unit = {
+      try {
+        if (createParents) {
+          Files.createDirectories(f.toPath.getParent)
+        } else {
+          Files.createDirectories(f.toPath)
+        }
+      } catch {
+        case _: FileAlreadyExistsException if Files.isDirectory(f.toPath) => // Do nothing
+      }
     }
   }
 

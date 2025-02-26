@@ -1,13 +1,18 @@
 package io.joern.console
 
-import better.files.Dsl.*
 import better.files.*
 import io.shiftleft.utils.ProjectRoot
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.Ignore
 import org.scalatest.Tag
 
+import java.nio.file.Files
+import java.nio.charset.Charset
+
+import scala.jdk.CollectionConverters.*
 import java.nio.file.attribute.PosixFilePermission
 
 class PluginManagerTests extends AnyWordSpec with Matchers {
@@ -75,14 +80,17 @@ class PluginManagerTests extends AnyWordSpec with Matchers {
 object Fixture {
 
   def apply[T]()(f: PluginManager => T): T = {
-    val dir = File.newTemporaryDirectory("pluginmantests")
-    mkdir(dir / "lib")
-    mkdirs(dir / "schema-extender" / "schemas")
+    val dir = FileUtil.newTemporaryDirectory("pluginmantests")
+    Files.createDirectory((dir / "lib").toPath)
+    (dir / "schema-extender" / "schemas").createDirectories()
+
     val extender         = dir / "schema-extender.sh"
     val extenderContents = "#!/bin/sh\necho 'foo' > " + (dir / "out.txt")
-    extender.write(extenderContents)
-    chmod_+(PosixFilePermission.OWNER_EXECUTE, extender)
-    val result = f(new PluginManager(dir))
+
+    Files.write(extender.toPath, extenderContents.getBytes(Charset.defaultCharset()))
+    Files.setPosixFilePermissions(extender.toPath, Set(PosixFilePermission.OWNER_EXECUTE).asJava)
+
+    val result = f(new PluginManager(File(dir.toPath)))
     dir.delete()
     result
   }

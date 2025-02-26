@@ -1,6 +1,5 @@
 package io.joern.console.cpgcreation
 
-import better.files.File
 import io.joern.console.workspacehandling.Project
 import io.joern.console.{ConsoleException, FrontendConfig, Reporting}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -8,7 +7,13 @@ import io.shiftleft.codepropertygraph.generated.Languages
 import flatgraph.help.Table
 import flatgraph.help.Table.AvailableWidthProvider
 
-import java.nio.file.Path
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
+
+import java.io.File
+import java.nio.file.{Path, Files}
+import java.nio.charset.Charset
+
 import scala.util.{Failure, Success, Try}
 
 class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
@@ -21,7 +26,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
   protected val generatorFactory = new CpgGeneratorFactory(config)
 
   private def checkInputPath(inputPath: String): Unit = {
-    if (!File(inputPath).exists) {
+    if (!Files.exists(new File(inputPath).toPath)) {
       throw new ConsoleException(s"Input path does not exist: '$inputPath'")
     }
   }
@@ -106,7 +111,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
 
     protected def fromFile(inputPath: String, projectName: String = "", args: List[String] = List()): Cpg = {
       checkInputPath(inputPath)
-      if (File(inputPath).isDirectory) {
+      if (Files.isDirectory(new File(inputPath).toPath)) {
         throw new ConsoleException(s"Input path is a directory: '$inputPath'")
       }
       withFileInTmpFile(inputPath) { dir =>
@@ -144,7 +149,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
   class SwiftSrcFrontend(name: String, language: String, description: String, extension: String)
       extends SourceBasedFrontend(name, language, description, extension) {
     override def apply(inputPath: String, projectName: String, args: List[String]): Cpg = {
-      if (!File(inputPath).isDirectory) {
+      if (!Files.isDirectory(new File(inputPath).toPath)) {
         // The Swift frontend does not support importing a single file.
         // Hence, we have to copy it into a temporary folder with super.fromFile and import that folder.
         super.fromFile(inputPath, projectName, args)
@@ -157,7 +162,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
   class JsFrontend(name: String, language: String, description: String, extension: String)
       extends SourceBasedFrontend(name, language, description, extension) {
     override def apply(inputPath: String, projectName: String, args: List[String]): Cpg = {
-      if (!File(inputPath).isDirectory) {
+      if (!Files.isDirectory(new File(inputPath).toPath)) {
         // The JS frontend does not support importing a single file.
         // Hence, we have to copy it into a temporary folder with super.fromFile and import that folder.
         super.fromFile(inputPath, projectName, args)
@@ -171,22 +176,28 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
       extends SourceBasedFrontend(name, Languages.NEWC, "Eclipse CDT Based Frontend for C/C++", extension)
 
   private def withCodeInTmpFile(str: String, filename: String)(f: File => Cpg): Try[Cpg] = {
-    val dir = File.newTemporaryDirectory("console")
+    val dir = FileUtil.newTemporaryDirectory("console")
+
     val result = Try {
-      (dir / filename).write(str)
+      Files.write((dir / filename).toPath, str.getBytes(Charset.defaultCharset()))
       f(dir)
     }
-    dir.deleteOnExit(swallowIOExceptions = true)
+
+    FileUtil.deleteFile(dir, true)
     result
   }
 
   private def withFileInTmpFile(inputPath: String)(f: File => Cpg): Try[Cpg] = {
-    val dir = File.newTemporaryDirectory("console")
+    val dir = FileUtil.newTemporaryDirectory("console")
+
     val result = Try {
-      File(inputPath).copyToDirectory(dir)
+      new File(inputPath).copyToDirectory(dir)
       f(dir)
     }
-    dir.deleteOnExit(swallowIOExceptions = true)
+
+    FileUtil.deleteFileOnExit(dir, swallowIOExceptions = true)
+
+    dir.deleteOnExit()
     result
   }
 
