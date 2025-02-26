@@ -109,7 +109,7 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
   ): Try[Seq[String]] = {
     val scriptTarget = Files.createTempFile("ruby_driver", ".rb")
     try {
-      val requireFile = env.path.resolve("lib").resolve("ruby_ast_gen.rb").toAbsolutePath.toString
+      val requireFile = env.path.resolve("lib").resolve("ruby_ast_gen.rb").toUri.toString
       val mainScript =
         s"""
           |options = {
