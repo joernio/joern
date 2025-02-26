@@ -5,10 +5,11 @@ import io.joern.php2cpg.passes.*
 import io.joern.php2cpg.utils.DependencyDownloader
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
-import io.joern.x2cpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import org.slf4j.LoggerFactory
+import versionsort.VersionHelper
 
 import scala.collection.mutable
 import scala.util.matching.Regex
@@ -18,19 +19,18 @@ class Php2Cpg extends X2CpgFrontend[Config] {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  // PHP 7.1.0 and above is required by Composer, which is used by PHP Parser
-  private val PhpVersionRegex = new Regex("^PHP ([78]\\.[1-9]\\.[0-9]|[9-9]\\d\\.\\d\\.\\d)")
-
   private def isPhpVersionSupported: Boolean = {
-    val result = ExternalCommand.run(Seq("php", "--version"), ".").toTry
+    val result = ExternalCommand.run(Seq("php", "--version"), Some(".")).toTry
     result match {
-      case Success(listString) =>
-        val phpVersionStr = listString.headOption.getOrElse("")
-        logger.info(s"Checking PHP installation: $phpVersionStr")
-        val matchResult = PhpVersionRegex.findFirstIn(phpVersionStr)
-        matchResult.isDefined
+      case Success(s"PHP $version ($_" :: _) =>
+        // PHP 7.1.0 and above is required by Composer, which is used by PHP Parser
+        logger.info(s"Checking PHP installation: $version")
+        VersionHelper.compare(version, "7.1.0") >= 0
       case Failure(exception) =>
         logger.error(s"Failed to run php --version: ${exception.getMessage}")
+        false
+      case x =>
+        logger.error(s"Unable to determine PHP version string from '$x'")
         false
     }
   }

@@ -1,7 +1,8 @@
-import scala.sys.process.stringToProcess
-import scala.util.Try
 import versionsort.VersionHelper
 import com.typesafe.config.{Config, ConfigFactory}
+
+import scala.sys.process.stringToProcess
+import scala.util.Try
 
 name := "jssrc2cpg"
 
