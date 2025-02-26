@@ -31,7 +31,7 @@ object PhpJoern extends QueryBundle {
         // $_REQUEST["foo"], $_GET["foo"], $_POST["foo"]
         // are identifier (at the moment)
         def source =
-          cpg.call.name(Operators.assignment).argument.code(".*_(REQUEST|GET|POST).*")
+          cpg.assignment.source.code(".*_(REQUEST|GET|POST).*")
 
         def sink = cpg.call.name("(query|mysql_query|mysqli_query|mysqli_prepare|mysqli_execute|pg_query|pg_prepare)").argument
 
