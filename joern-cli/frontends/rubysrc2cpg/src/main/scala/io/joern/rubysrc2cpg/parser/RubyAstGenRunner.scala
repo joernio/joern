@@ -109,7 +109,7 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
   ): Try[Seq[String]] = {
     val scriptTarget = Files.createTempFile("ruby_driver", ".rb")
     try {
-      val requireFile = scriptTarget.relativize(env.path.resolve("lib").resolve("ruby_ast_gen.rb")).toString
+      val requireFile = env.path.resolve("lib").resolve("ruby_ast_gen.rb").toAbsolutePath.toString
       val mainScript =
         s"""
           |options = {
@@ -124,7 +124,7 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
           |${if exclude.isEmpty then "" else s"options[:exclude] = /${exclude.replace("/", "\\/")}/"}
           |
           |if defined?(RubyAstGen) != 'constant' || defined?(RubyAstGen::parse) != 'method' then
-          |  require_relative "$requireFile"
+          |  require "$requireFile"
           |end
           |RubyAstGen::parse(options)
           |""".stripMargin
