@@ -11,6 +11,7 @@ import io.shiftleft.semanticcpg.language.*
 object PhpJoern extends QueryBundle {
 
   private val PHPJOERN_TAG: String = "phpjoern"
+  private val PHPJOERN_EXT_AUT: String = "yichao"
 
   implicit val resolver: ICallResolver = NoResolve
 
@@ -18,8 +19,8 @@ object PhpJoern extends QueryBundle {
   def sqli()(implicit context: EngineContext): Query =
     Query.make(
       name = "phpjoern_sqli",
-      author = Crew.niko,
-      title = "SQL Injection: A parameter is used in an insecure sqli related func call.",
+      author = PHPJOERN_EXT_AUT,
+      title = "CWE-89(SQL Injection): A parameter is used in an insecure sqli related func call.",
       description = """
           |An attacker controlled parameter is used in an insecure sqli related func call.
           |
@@ -36,15 +37,15 @@ object PhpJoern extends QueryBundle {
 
         sink.reachableBy(source).l.iterator
       }),
-      tags = List(QueryTags.sqlInjection, PHPJOERN_TAG)
+      tags = List(QueryTags.sqlInjection, QueryTags.default, PHPJOERN_TAG)
     )
 
   @q
   def cmdi()(implicit context: EngineContext): Query =
     Query.make(
       name = "phpjoern_cmdi",
-      author = Crew.niko,
-      title = "Command Injection: A parameter is used in an insecure cmdi related func call.",
+      author = PHPJOERN_EXT_AUT,
+      title = "CWE-77(Command Injection): A parameter is used in an insecure cmdi related func call.",
       description = """
           |An attacker controlled parameter is used in an insecure cmdi related func call.
           |
@@ -61,15 +62,15 @@ object PhpJoern extends QueryBundle {
 
         sink.reachableBy(source).l.iterator
       }),
-      tags = List(QueryTags.xss, PHPJOERN_TAG)
+      tags = List(QueryTags.xss, QueryTags.default, PHPJOERN_TAG)
     ) 
     
   @q
   def codei()(implicit context: EngineContext): Query =
     Query.make(
       name = "phpjoern_codei",
-      author = Crew.niko,
-      title = "Code Injection: A parameter is used in an insecure codei related func call.",
+      author = PHPJOERN_EXT_AUT,
+      title = "CWE-94(Code Injection): A parameter is used in an insecure codei related func call.",
       description = """
           |An attacker controlled parameter is used in an insecure codei related func call.
           |
@@ -86,15 +87,15 @@ object PhpJoern extends QueryBundle {
 
         sink.reachableBy(source).l.iterator
       }),
-      tags = List(QueryTags.remoteCodeExecution, PHPJOERN_TAG)
+      tags = List(QueryTags.remoteCodeExecution, QueryTags.default, PHPJOERN_TAG)
     ) 
 
   @q
   def uuf()(implicit context: EngineContext): Query =
     Query.make(
       name = "phpjoern_uuf",
-      author = Crew.niko,
-      title = "Unrestricted Upload of File: A parameter is used in an insecure uuf related func call.",
+      author = PHPJOERN_EXT_AUT,
+      title = "CWE-434(Unrestricted Upload of File): A parameter is used in an insecure uuf related func call.",
       description = """
           |An attacker controlled parameter is used in an insecure uuf related func call.
           |
@@ -111,7 +112,7 @@ object PhpJoern extends QueryBundle {
 
         sink.reachableBy(source).l.iterator
       }),
-      tags = List(PHPJOERN_TAG)
+      tags = List(QueryTags.default, PHPJOERN_TAG)
     ) 
 
 
@@ -119,8 +120,8 @@ object PhpJoern extends QueryBundle {
   def xss()(implicit context: EngineContext): Query =
     Query.make(
       name = "phpjoern_xss",
-      author = Crew.niko,
-      title = "Cross-site Scription: A parameter is used in an insecure xss related func call.",
+      author = PHPJOERN_EXT_AUT,
+      title = "CWE-79(Cross-site Scription): A parameter is used in an insecure xss related func call.",
       description = """
           |An attacker controlled parameter is used in an insecure xss related func call.
           |
@@ -137,7 +138,7 @@ object PhpJoern extends QueryBundle {
 
         sink.reachableBy(source).l.iterator
       }),
-      tags = List(QueryTags.xss, PHPJOERN_TAG)
+      tags = List(QueryTags.xss, QueryTags.default, PHPJOERN_TAG)
     )
 
 }
