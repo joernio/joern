@@ -183,7 +183,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
       f(dir)
     }
 
-    FileUtil.deleteFile(dir, true)
+    FileUtil.delete(dir, true)
     result
   }
 
@@ -195,7 +195,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
       f(dir)
     }
 
-    FileUtil.deleteFileOnExit(dir, swallowIOExceptions = true)
+    FileUtil.deleteOnExit(dir, swallowIOExceptions = true)
 
     dir.deleteOnExit()
     result

@@ -38,7 +38,7 @@ class VenvExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropert
     dir
   }
 
-  override def afterAll(): Unit = FileUtil.deleteFile(projectUnderTest, swallowIoExceptions = true)
+  override def afterAll(): Unit = FileUtil.delete(projectUnderTest, swallowIoExceptions = true)
 
   private def testWithArguments(ignoreVenvDir: Boolean, venvDirs: Seq[String], expectedFiles: Set[String]): Unit = {
     File.usingTemporaryDirectory("pysrc2cpgTests") { tmpDir =>

@@ -51,9 +51,9 @@ class ProjectParseTests extends CSharpCode2CpgFixture with BeforeAndAfterAll {
   }
 
   override def afterAll(): Unit = {
-    FileUtil.deleteFile(projectWithSubfolders, swallowIoExceptions = true)
-    FileUtil.deleteFile(projectWithBrokenFile, swallowIoExceptions = true)
-    FileUtil.deleteFile(projectWithUtf8, swallowIoExceptions = true)
+    FileUtil.delete(projectWithSubfolders, swallowIoExceptions = true)
+    FileUtil.delete(projectWithBrokenFile, swallowIoExceptions = true)
+    FileUtil.delete(projectWithUtf8, swallowIoExceptions = true)
   }
 
   private object ProjectParseTestsFixture {

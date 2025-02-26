@@ -46,7 +46,7 @@ class ExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChe
     dir
   }
 
-  override def afterAll(): Unit = FileUtil.deleteFile(projectUnderTest, swallowIoExceptions = true)
+  override def afterAll(): Unit = FileUtil.delete(projectUnderTest, swallowIoExceptions = true)
 
   private def testWithArguments(exclude: Seq[String], excludeRegex: String, expectedFiles: Set[String]): Unit = {
     val cpgOutFile = File.newTemporaryFile("c2cpg.bin")

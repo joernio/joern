@@ -119,7 +119,7 @@ package object cpgcreation {
     val dir = FileUtil.newTemporaryDirectory("cpgcreation")
     new JFile(inputPath).copyToDirectory(dir)
     val result = f(dir)
-    FileUtil.deleteFileOnExit(dir, swallowIOExceptions = true)
+    FileUtil.deleteOnExit(dir, swallowIOExceptions = true)
     result
   }
 

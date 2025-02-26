@@ -14,6 +14,7 @@ object FileUtil {
     }
   }
 
+  // TODO: Replace better.files with this method
   def newTemporaryFile(prefix: String = "", suffix: String = "", parent: Option[JFile] = None): JFile = {
     parent match {
       case Some(dir) => Files.createTempFile(dir.toPath, prefix, suffix).toFile
@@ -21,20 +22,21 @@ object FileUtil {
     }
   }
 
+  // TODO: Replace better.files with this method
   def usingTemporaryDirectory[U](prefix: String = "", parent: Option[JFile] = None)(f: JFile => U): Unit = {
     val file = newTemporaryDirectory(prefix, parent)
 
     try {
       f(file)
     } finally {
-      deleteFile(file)
+      delete(file)
     }
   }
 
-  def deleteFileOnExit(file: JFile, swallowIOExceptions: Boolean = false): Unit = {
+  def deleteOnExit(file: JFile, swallowIOExceptions: Boolean = false): Unit = {
     try {
       if (file.isDirectory) {
-        file.listFiles().foreach(x => deleteFileOnExit(x, swallowIOExceptions))
+        file.listFiles().foreach(x => deleteOnExit(x, swallowIOExceptions))
       }
 
       Files.delete(file.toPath)
@@ -43,10 +45,10 @@ object FileUtil {
     }
   }
 
-  def deleteFile(file: JFile, swallowIoExceptions: Boolean = false): Unit = {
+  def delete(file: JFile, swallowIoExceptions: Boolean = false): Unit = {
     try {
       if (file.isDirectory) {
-        file.listFiles().foreach(x => deleteFile(x, swallowIoExceptions))
+        file.listFiles().foreach(x => delete(x, swallowIoExceptions))
       }
 
       Files.delete(file.toPath)
@@ -115,12 +117,6 @@ object FileUtil {
       } catch {
         case _: FileAlreadyExistsException if Files.isDirectory(f.toPath) => // Do nothing
       }
-    }
-  }
-
-  implicit class PathExt(p: Path) {
-    def createDirectoryIfNotExists(): Unit = {
-      Files.createDirectories(p)
     }
   }
 
