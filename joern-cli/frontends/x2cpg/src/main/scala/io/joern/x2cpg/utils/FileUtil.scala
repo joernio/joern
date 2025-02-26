@@ -1,7 +1,7 @@
 package io.joern.x2cpg.utils
 
 import java.io.{IOException, File as JFile}
-import java.nio.file.{FileAlreadyExistsException, Files, Path, SimpleFileVisitor}
+import java.nio.file.{FileAlreadyExistsException, Files, LinkOption, Path, SimpleFileVisitor}
 import better.files.File
 
 import java.nio.file.attribute.BasicFileAttributes
@@ -30,10 +30,15 @@ object FileUtil {
     }
   }
 
-  def delete(file: Path, swallowIoExceptions: Boolean = false): Unit = {
+  def delete(
+    file: Path,
+    swallowIoExceptions: Boolean = false,
+    linkOptions: LinkOption = LinkOption.NOFOLLOW_LINKS
+  ): Unit = {
+    println(file.toAbsolutePath)
     try {
-      if (Files.isDirectory(file)) {
-        file.toFile.listFiles().foreach(x => delete(x.toPath, swallowIoExceptions))
+      if (Files.isDirectory(file, linkOptions)) {
+        file.toFile.listFiles().foreach(x => delete(x.toPath, swallowIoExceptions, linkOptions))
       }
 
       Files.delete(file)
