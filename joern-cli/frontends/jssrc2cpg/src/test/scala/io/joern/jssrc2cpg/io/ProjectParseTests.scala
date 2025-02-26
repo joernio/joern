@@ -1,6 +1,6 @@
 package io.joern.jssrc2cpg.io
 
-import better.files.File
+import better.files.File as BetterFile
 import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgSuite
 import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.passes.AstCreationPass
@@ -12,36 +12,35 @@ import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
-import java.io.File as JFile
+import java.io.File
 import java.nio.file.Files
-import java.nio.charset.Charset
 
 class ProjectParseTests extends JsSrc2CpgSuite with BeforeAndAfterAll {
 
   private implicit val schemaValidationMode: ValidationMode = ValidationMode.Enabled
 
-  private val projectWithSubfolders: JFile = {
+  private val projectWithSubfolders: File = {
     val dir = FileUtil.newTemporaryDirectory("jssrc2cpgTestsSubfolders")
     List("sub/c.js", "sub/d.js", "a.js", "b.js").foreach { testFile =>
       val file = dir / testFile
       file.createIfNotExists(createParents = true)
-      Files.write(file.toPath, s"""console.log("${file.getAbsolutePath}");""".getBytes(Charset.defaultCharset()))
+      Files.writeString(file.toPath, s"""console.log("${file.getAbsolutePath}");""")
     }
     dir
   }
 
-  private val projectWithBrokenFile: JFile = {
+  private val projectWithBrokenFile: File = {
     val dir      = FileUtil.newTemporaryDirectory("jssrc2cpgTestsBroken")
     val goodFile = dir / "good.js"
     goodFile.createIfNotExists(createParents = true)
-    Files.write(goodFile.toPath, s"""console.log("good");""".getBytes(Charset.defaultCharset()))
+    Files.writeString(goodFile.toPath, s"""console.log("good");""")
     val brokenFile = dir / "broken.js"
     brokenFile.createIfNotExists(createParents = true)
-    Files.write(brokenFile.toPath, s"""console.log("broken""".getBytes(Charset.defaultCharset()))
+    Files.writeString(brokenFile.toPath, s"""console.log("broken""")
     dir
   }
 
-  private val projectWithUtf8: JFile = {
+  private val projectWithUtf8: File = {
     val dir  = FileUtil.newTemporaryDirectory("jssrc2cpgTestsUtf8")
     val file = dir / "utf8.js"
     file.createIfNotExists(createParents = true)
@@ -49,21 +48,21 @@ class ProjectParseTests extends JsSrc2CpgSuite with BeforeAndAfterAll {
                    |// 😼
                    |logger.error()
                    |""".stripMargin
-    Files.write(file.toPath, content.getBytes(Charset.defaultCharset()))
+    Files.writeString(file.toPath, content)
     dir
   }
 
-  private val projectWithStrangeFilenames: JFile = {
+  private val projectWithStrangeFilenames: File = {
     val dir = FileUtil.newTemporaryDirectory("jssrc2cpgTestsFilenames")
     List("good_%component-name%_.js", "good_%component-name%_Foo.js").foreach { testFile =>
       val file = dir / testFile
       file.createIfNotExists(createParents = true)
-      Files.write(file.toPath, s"""console.log("${file.getAbsolutePath}");""".getBytes(Charset.defaultCharset()))
+      Files.writeString(file.toPath, s"""console.log("${file.getAbsolutePath}");""")
     }
     List("broken_%component-name%_.js", "broken_%component-name%_Foo.js").foreach { testFile =>
       val file = dir / testFile
       file.createIfNotExists(createParents = true)
-      Files.write(file.toPath, s"""const x = new <%ComponentName%>Foo();""".getBytes(Charset.defaultCharset()))
+      Files.writeString(file.toPath, s"""const x = new <%ComponentName%>Foo();""")
     }
     dir
   }
@@ -76,8 +75,8 @@ class ProjectParseTests extends JsSrc2CpgSuite with BeforeAndAfterAll {
   }
 
   private object ProjectParseTestsFixture {
-    def apply(projectDir: JFile)(f: Cpg => Unit): Unit = {
-      File.usingTemporaryDirectory("jssrc2cpgTests") { tmpDir =>
+    def apply(projectDir: File)(f: Cpg => Unit): Unit = {
+      BetterFile.usingTemporaryDirectory("jssrc2cpgTests") { tmpDir =>
         val cpg          = newEmptyCpg()
         val config       = Config(tsTypes = false).withInputPath(projectDir.toString).withOutputPath(tmpDir.toString)
         val astGenResult = new AstGenRunner(config).execute(tmpDir)

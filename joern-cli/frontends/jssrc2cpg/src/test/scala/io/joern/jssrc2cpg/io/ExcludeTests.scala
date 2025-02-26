@@ -1,6 +1,6 @@
 package io.joern.jssrc2cpg.io
 
-import better.files.File
+import better.files.File as BetterFile
 import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.passes.AstCreationPass
 import io.joern.jssrc2cpg.utils.AstGenRunner
@@ -14,7 +14,7 @@ import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterAll
 
-import java.io.File as JFile
+import java.io.File
 import java.util.regex.Pattern
 
 class ExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChecks with BeforeAndAfterAll {
@@ -37,7 +37,7 @@ class ExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChe
     "index.js"
   )
 
-  private val projectUnderTest: JFile = {
+  private val projectUnderTest: File = {
     val dir = FileUtil.newTemporaryDirectory("jssrc2cpgTestsExcludeTest")
     testFiles.foreach { testFile =>
       val file = dir / testFile
@@ -49,7 +49,7 @@ class ExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChe
   override def afterAll(): Unit = FileUtil.delete(projectUnderTest, swallowIoExceptions = true)
 
   private def testWithArguments(exclude: Seq[String], excludeRegex: String, expectedFiles: Set[String]): Unit = {
-    File.usingTemporaryDirectory("jssrc2cpgTests") { tmpDir =>
+    BetterFile.usingTemporaryDirectory("jssrc2cpgTests") { tmpDir =>
       val cpg = newEmptyCpg()
       val config = Config(tsTypes = false)
         .withInputPath(projectUnderTest.toString)

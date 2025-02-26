@@ -1,6 +1,6 @@
 package io.joern.csharpsrc2cpg.io
 
-import better.files.File
+import better.files.File as BetterFile
 import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
 import io.joern.x2cpg.utils.server.FrontendHTTPClient
 import io.joern.x2cpg.utils.FileUtil
@@ -9,9 +9,8 @@ import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
 
-import java.io.File as JFile
+import java.io.File
 import java.nio.file.Files
-import java.nio.charset.Charset
 
 import scala.collection.parallel.CollectionConverters.RangeIsParallelizable
 import scala.util.Failure
@@ -21,13 +20,13 @@ class CSharp2CpgHTTPServerTests extends CSharpCode2CpgFixture with BeforeAndAfte
 
   private var port: Int = -1
 
-  private def newProjectUnderTest(index: Option[Int] = None): JFile = {
+  private def newProjectUnderTest(index: Option[Int] = None): File = {
     val dir  = FileUtil.newTemporaryDirectory("csharp2cpgTestsHttpTest")
     val file = dir / "main.cs"
     file.createIfNotExists(createParents = true)
     val indexStr = index.map(_.toString).getOrElse("")
     val content  = basicBoilerplate(s"Console.WriteLine($indexStr);")
-    Files.write(file.toPath, content.getBytes(Charset.defaultCharset()))
+    Files.writeString(file.toPath, content)
     file.deleteOnExit()
     dir.deleteOnExit()
     dir
@@ -45,7 +44,7 @@ class CSharp2CpgHTTPServerTests extends CSharpCode2CpgFixture with BeforeAndAfte
 
   "Using csharp2cpg in server mode" should {
     "build CPGs correctly (single test)" in {
-      val cpgOutFile = File.newTemporaryFile("csharp2cpg.bin")
+      val cpgOutFile = BetterFile.newTemporaryFile("csharp2cpg.bin")
       cpgOutFile.deleteOnExit()
       val projectUnderTest = newProjectUnderTest()
       val input            = projectUnderTest.toPath.toAbsolutePath.toString
@@ -64,7 +63,7 @@ class CSharp2CpgHTTPServerTests extends CSharpCode2CpgFixture with BeforeAndAfte
 
     "build CPGs correctly (multi-threaded test)" in {
       (0 until 10).par.foreach { index =>
-        val cpgOutFile = File.newTemporaryFile("csharp2cpg.bin")
+        val cpgOutFile = BetterFile.newTemporaryFile("csharp2cpg.bin")
         cpgOutFile.deleteOnExit()
         val projectUnderTest = newProjectUnderTest(Some(index))
         val input            = projectUnderTest.toPath.toAbsolutePath.toString

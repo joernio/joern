@@ -1,6 +1,6 @@
 package io.joern.swiftsrc2cpg.io
 
-import better.files.File
+import better.files.File as BetterFile
 import io.joern.swiftsrc2cpg.Config
 import io.joern.swiftsrc2cpg.passes.AstCreationPass
 import io.joern.swiftsrc2cpg.utils.AstGenRunner
@@ -14,7 +14,7 @@ import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterAll
 
-import java.io.File as JFile
+import java.io.File
 
 import java.util.regex.Pattern
 
@@ -34,7 +34,7 @@ class ExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChe
       "index.swift"
     )
 
-  private val projectUnderTest: JFile = {
+  private val projectUnderTest: File = {
     val dir = FileUtil.newTemporaryDirectory("swiftsrc2cpgTestsExcludeTest")
     testFiles.foreach { testFile =>
       val file = dir / testFile
@@ -46,7 +46,7 @@ class ExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChe
   override def afterAll(): Unit = FileUtil.delete(projectUnderTest, swallowIoExceptions = true)
 
   private def testWithArguments(exclude: Seq[String], excludeRegex: String, expectedFiles: Set[String]): Unit = {
-    File.usingTemporaryDirectory("swiftsrc2cpgTests") { tmpDir =>
+    BetterFile.usingTemporaryDirectory("swiftsrc2cpgTests") { tmpDir =>
       val cpg = newEmptyCpg()
       val config = Config()
         .withInputPath(projectUnderTest.toString)

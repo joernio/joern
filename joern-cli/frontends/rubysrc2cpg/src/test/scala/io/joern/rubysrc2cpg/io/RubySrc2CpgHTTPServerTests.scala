@@ -1,6 +1,6 @@
 package io.joern.rubysrc2cpg.io
 
-import better.files.File
+import better.files.File as BetterFile
 import io.joern.x2cpg.utils.server.FrontendHTTPClient
 import io.joern.x2cpg.utils.FileUtil
 import io.joern.x2cpg.utils.FileUtil.*
@@ -10,9 +10,8 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.io.File as JFile
+import java.io.File
 import java.nio.file.Files
-import java.nio.charset.Charset
 
 import scala.collection.parallel.CollectionConverters.RangeIsParallelizable
 import scala.util.Failure
@@ -22,7 +21,7 @@ class RubySrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAn
 
   private var port: Int = -1
 
-  private def newProjectUnderTest(index: Option[Int] = None): JFile = {
+  private def newProjectUnderTest(index: Option[Int] = None): File = {
     val dir  = FileUtil.newTemporaryDirectory("rubysrc2cpgTestsHttpTest")
     val file = dir / "main.rb"
     file.createIfNotExists(createParents = true)
@@ -32,7 +31,7 @@ class RubySrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAn
                      | puts $indexStr
                      |end
                      |""".stripMargin
-    Files.write(file.toPath, content.getBytes(Charset.defaultCharset()))
+    Files.writeString(file.toPath, content)
     file.deleteOnExit()
     dir.deleteOnExit()
     dir
@@ -50,7 +49,7 @@ class RubySrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAn
 
   "Using rubysrc2cpg in server mode" should {
     "build CPGs correctly (single test)" in {
-      val cpgOutFile = File.newTemporaryFile("rubysrc2cpg.bin")
+      val cpgOutFile = BetterFile.newTemporaryFile("rubysrc2cpg.bin")
       cpgOutFile.deleteOnExit()
       val projectUnderTest = newProjectUnderTest()
       val input            = projectUnderTest.toPath.toAbsolutePath.toString
@@ -69,7 +68,7 @@ class RubySrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAn
 
     "build CPGs correctly (multi-threaded test)" in {
       (0 until 10).par.foreach { index =>
-        val cpgOutFile = File.newTemporaryFile("rubysrc2cpg.bin")
+        val cpgOutFile = BetterFile.newTemporaryFile("rubysrc2cpg.bin")
         cpgOutFile.deleteOnExit()
         val projectUnderTest = newProjectUnderTest(Some(index))
         val input            = projectUnderTest.toPath.toAbsolutePath.toString

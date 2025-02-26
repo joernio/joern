@@ -11,8 +11,7 @@ import io.joern.x2cpg.utils.FileUtil
 import io.joern.x2cpg.utils.FileUtil.*
 
 import java.io.File
-import java.nio.file.{Path, Files}
-import java.nio.charset.Charset
+import java.nio.file.{Path, Files, Paths}
 
 import scala.util.{Failure, Success, Try}
 
@@ -26,7 +25,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
   protected val generatorFactory = new CpgGeneratorFactory(config)
 
   private def checkInputPath(inputPath: String): Unit = {
-    if (!Files.exists(new File(inputPath).toPath)) {
+    if (!Files.exists(Paths.get(inputPath))) {
       throw new ConsoleException(s"Input path does not exist: '$inputPath'")
     }
   }
@@ -179,7 +178,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
     val dir = FileUtil.newTemporaryDirectory("console")
 
     val result = Try {
-      Files.write((dir / filename).toPath, str.getBytes(Charset.defaultCharset()))
+      Files.writeString((dir / filename).toPath, str)
       f(dir)
     }
 

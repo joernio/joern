@@ -4,7 +4,7 @@ import io.joern.x2cpg.utils.FileUtil.*
 
 import java.io.File
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Files, Path}
 import scala.annotation.nowarn
 import scala.collection.mutable
 

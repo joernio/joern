@@ -1,6 +1,6 @@
 package io.joern.jimple2cpg.io
 
-import better.files.File
+import better.files.File as BetterFile
 import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
 import io.joern.x2cpg.utils.server.FrontendHTTPClient
@@ -9,12 +9,9 @@ import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
-import java.io.File as JFile
+import java.io.File
 import java.nio.file.Files
-import java.nio.charset.Charset
 
 import scala.collection.parallel.CollectionConverters.RangeIsParallelizable
 import scala.util.Failure
@@ -24,7 +21,7 @@ class Jimple2CpgHTTPServerTests extends JimpleCode2CpgFixture with BeforeAndAfte
 
   private var port: Int = -1
 
-  private def newProjectUnderTest(index: Option[Int] = None): JFile = {
+  private def newProjectUnderTest(index: Option[Int] = None): File = {
     val dir  = FileUtil.newTemporaryDirectory("jimple2cpgTestsHttpTest")
     val file = dir / "main.java"
     file.createIfNotExists(createParents = true)
@@ -36,7 +33,7 @@ class Jimple2CpgHTTPServerTests extends JimpleCode2CpgFixture with BeforeAndAfte
                      |  }
                      |}
                      |""".stripMargin
-    Files.write(file.toPath, content.getBytes(Charset.defaultCharset()))
+    Files.writeString(file.toPath, content)
     JimpleCodeToCpgFixture.compileJava(dir.toPath, List(file))
     file.deleteOnExit()
     dir.deleteOnExit()
@@ -55,7 +52,7 @@ class Jimple2CpgHTTPServerTests extends JimpleCode2CpgFixture with BeforeAndAfte
 
   "Using jimple2cpg in server mode" should {
     "build CPGs correctly (single test)" in {
-      val cpgOutFile = File.newTemporaryFile("jimple2cpg.bin")
+      val cpgOutFile = BetterFile.newTemporaryFile("jimple2cpg.bin")
       cpgOutFile.deleteOnExit()
       val projectUnderTest = newProjectUnderTest()
       val input            = projectUnderTest.toPath.toAbsolutePath.toString
@@ -74,7 +71,7 @@ class Jimple2CpgHTTPServerTests extends JimpleCode2CpgFixture with BeforeAndAfte
 
     "build CPGs correctly (multi-threaded test)" in {
       (0 until 10).par.foreach { index =>
-        val cpgOutFile = File.newTemporaryFile("jimple2cpg.bin")
+        val cpgOutFile = BetterFile.newTemporaryFile("jimple2cpg.bin")
         cpgOutFile.deleteOnExit()
         val projectUnderTest = newProjectUnderTest(Some(index))
         val input            = projectUnderTest.toPath.toAbsolutePath.toString

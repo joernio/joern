@@ -1,6 +1,6 @@
 package io.joern.pysrc2cpg.config
 
-import better.files.File
+import better.files.File as BetterFile
 import io.joern.pysrc2cpg.Py2CpgOnFileSystem
 import io.joern.pysrc2cpg.Py2CpgOnFileSystemConfig
 import io.joern.x2cpg.utils.FileUtil
@@ -12,7 +12,7 @@ import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterAll
 
-import java.io.File as JFile
+import java.io.File
 import java.nio.file.Paths
 
 class VenvExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChecks with BeforeAndAfterAll {
@@ -29,7 +29,7 @@ class VenvExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropert
     "main.py"
   )
 
-  private val projectUnderTest: JFile = {
+  private val projectUnderTest: File = {
     val dir = FileUtil.newTemporaryDirectory("pysrc2cpgTestsExcludeTest")
     testFiles.foreach { testFile =>
       val file = dir / testFile
@@ -41,7 +41,7 @@ class VenvExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropert
   override def afterAll(): Unit = FileUtil.delete(projectUnderTest, swallowIoExceptions = true)
 
   private def testWithArguments(ignoreVenvDir: Boolean, venvDirs: Seq[String], expectedFiles: Set[String]): Unit = {
-    File.usingTemporaryDirectory("pysrc2cpgTests") { tmpDir =>
+    BetterFile.usingTemporaryDirectory("pysrc2cpgTests") { tmpDir =>
       val config = Py2CpgOnFileSystemConfig()
         .withInputPath(projectUnderTest.toString)
         .withOutputPath(tmpDir.toString)

@@ -10,7 +10,6 @@ import org.scalatest.Ignore
 import org.scalatest.Tag
 
 import java.nio.file.Files
-import java.nio.charset.Charset
 
 import scala.jdk.CollectionConverters.*
 import java.nio.file.attribute.PosixFilePermission
@@ -87,7 +86,7 @@ object Fixture {
     val extender         = dir / "schema-extender.sh"
     val extenderContents = "#!/bin/sh\necho 'foo' > " + (dir / "out.txt")
 
-    Files.write(extender.toPath, extenderContents.getBytes(Charset.defaultCharset()))
+    Files.writeString(extender.toPath, extenderContents)
     Files.setPosixFilePermissions(extender.toPath, Set(PosixFilePermission.OWNER_EXECUTE).asJava)
 
     val result = f(new PluginManager(File(dir.toPath)))

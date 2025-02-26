@@ -1,6 +1,6 @@
 package io.joern.c2cpg.io
 
-import better.files.File
+import better.files.File as BetterFile
 import io.joern.c2cpg.parser.JSONCompilationDatabaseParser
 import io.joern.c2cpg.C2Cpg
 import io.joern.c2cpg.Config
@@ -11,13 +11,12 @@ import org.scalatest.wordspec.AnyWordSpec
 import io.joern.x2cpg.utils.FileUtil
 import io.joern.x2cpg.utils.FileUtil.*
 
-import java.io.File as JFile
-import java.nio.charset.Charset
-import java.nio.file.{Files, Path, Paths}
+import java.io.File
+import java.nio.file.{Files, Paths}
 
 class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
 
-  private def newProjectUnderTest(): JFile = {
+  private def newProjectUnderTest(): File = {
     val dir = FileUtil.newTemporaryDirectory("c2cpgJSONCompilationDatabaseParserTests")
     val mainText =
       """
@@ -34,17 +33,17 @@ class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
 
     val fileA = dir / "fileA.c"
     fileA.createIfNotExists(createParents = true)
-    Files.write(fileA.toPath, mainText.getBytes(Charset.defaultCharset()))
+    Files.writeString(fileA.toPath, mainText)
     fileA.deleteOnExit()
 
     val fileB = dir / "fileB.c"
     fileB.createIfNotExists(createParents = true)
-    Files.write(fileB.toPath, mainText.getBytes(Charset.defaultCharset()))
+    Files.writeString(fileB.toPath, mainText)
     fileB.deleteOnExit()
 
     val fileC = dir / "fileC.c"
     fileC.createIfNotExists(createParents = true)
-    Files.write(fileC.toPath, mainText.getBytes(Charset.defaultCharset()))
+    Files.writeString(fileC.toPath, mainText)
     fileC.deleteOnExit()
 
     val compilerCommands = dir / "compile_commands.json"
@@ -60,14 +59,14 @@ class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
          |    "file": "${fileB.pathAsString}" }
          |]""".stripMargin.replace("\\", "\\\\") // escape for tests under Windows
 
-    Files.write(compilerCommands.toPath, content.getBytes(Charset.defaultCharset()))
+    Files.writeString(compilerCommands.toPath, content)
     compilerCommands.deleteOnExit()
 
     dir.deleteOnExit()
     dir
   }
 
-  private def newBrokenProjectUnderTest(): JFile = {
+  private def newBrokenProjectUnderTest(): File = {
     val dir = FileUtil.newTemporaryDirectory("c2cpgJSONCompilationDatabaseParserTests")
 
     val mainText =
@@ -79,7 +78,7 @@ class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
 
     val fileA = dir / "fileA.c"
     fileA.createIfNotExists(createParents = true)
-    Files.write(fileA.toPath, mainText.getBytes(Charset.defaultCharset()))
+    Files.writeString(fileA.toPath, mainText)
     fileA.deleteOnExit()
 
     val compilerCommands = dir / "compile_commands.json"
@@ -94,7 +93,7 @@ class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
          |    "arguments": ["/usr/bin/clang++", "-c", "-o", "fileB.o", "name.cpp"],
          |    "file": "name.cpp" }
          |]""".stripMargin.replace("\\", "\\\\") // escape for tests under Windows
-    Files.write(compilerCommands.toPath, content.getBytes(Charset.defaultCharset()))
+    Files.writeString(compilerCommands.toPath, content)
     compilerCommands.deleteOnExit()
 
     dir.deleteOnExit()
@@ -114,7 +113,7 @@ class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
           |    "file": "file2.cc" }
           |]""".stripMargin
 
-      File.usingTemporaryFile("compile_commands.json") { commandJsonFile =>
+      BetterFile.usingTemporaryFile("compile_commands.json") { commandJsonFile =>
         commandJsonFile.writeText(content)
 
         val commandObjects = JSONCompilationDatabaseParser.parse(commandJsonFile.pathAsString)
@@ -134,7 +133,7 @@ class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
 
   "Using a simple compile_commands.json" should {
     "respect the files listed" in {
-      val cpgOutFile = File.newTemporaryFile("c2cpg.bin")
+      val cpgOutFile = BetterFile.newTemporaryFile("c2cpg.bin")
       cpgOutFile.deleteOnExit()
       val projectUnderTest = newProjectUnderTest()
       val input            = projectUnderTest.toPath.toAbsolutePath.toString
@@ -154,7 +153,7 @@ class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
     }
 
     "handle broken file paths" in {
-      val cpgOutFile = File.newTemporaryFile("c2cpg.bin")
+      val cpgOutFile = BetterFile.newTemporaryFile("c2cpg.bin")
       cpgOutFile.deleteOnExit()
       val projectUnderTest = newBrokenProjectUnderTest()
       val input            = projectUnderTest.toPath.toAbsolutePath.toString

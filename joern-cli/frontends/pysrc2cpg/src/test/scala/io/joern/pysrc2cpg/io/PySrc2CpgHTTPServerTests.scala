@@ -1,6 +1,6 @@
 package io.joern.pysrc2cpg.io
 
-import better.files.File
+import better.files.File as BetterFile
 import io.joern.x2cpg.utils.FileUtil
 import io.joern.x2cpg.utils.FileUtil.*
 import io.joern.x2cpg.utils.server.FrontendHTTPClient
@@ -14,15 +14,14 @@ import scala.collection.parallel.CollectionConverters.RangeIsParallelizable
 import scala.util.Failure
 import scala.util.Success
 
-import java.io.File as JFile
+import java.io.File
 import java.nio.file.Files
-import java.nio.charset.Charset
 
 class PySrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   private var port: Int = -1
 
-  private def newProjectUnderTest(index: Option[Int] = None): JFile = {
+  private def newProjectUnderTest(index: Option[Int] = None): File = {
     val dir  = FileUtil.newTemporaryDirectory("pysrc2cpgTestsHttpTest")
     val file = dir / "main.py"
     file.createIfNotExists(createParents = true)
@@ -31,7 +30,7 @@ class PySrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndA
                      |def main():
                      |  print($indexStr)
                      |""".stripMargin
-    Files.write(file.toPath, content.getBytes(Charset.defaultCharset()))
+    Files.writeString(file.toPath, content)
     file.deleteOnExit()
     dir.deleteOnExit()
     dir
@@ -49,7 +48,7 @@ class PySrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndA
 
   "Using pysrc2cpg in server mode" should {
     "build CPGs correctly (single test)" in {
-      val cpgOutFile = File.newTemporaryFile("pysrc2cpg.bin")
+      val cpgOutFile = BetterFile.newTemporaryFile("pysrc2cpg.bin")
       cpgOutFile.deleteOnExit()
       val projectUnderTest = newProjectUnderTest()
       val input            = projectUnderTest.toPath.toAbsolutePath.toString
@@ -68,7 +67,7 @@ class PySrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndA
 
     "build CPGs correctly (multi-threaded test)" in {
       (0 until 10).par.foreach { index =>
-        val cpgOutFile = File.newTemporaryFile("pysrc2cpg.bin")
+        val cpgOutFile = BetterFile.newTemporaryFile("pysrc2cpg.bin")
         cpgOutFile.deleteOnExit()
         val projectUnderTest = newProjectUnderTest(Some(index))
         val input            = projectUnderTest.toPath.toAbsolutePath.toString
