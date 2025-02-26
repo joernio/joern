@@ -12,8 +12,7 @@ import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterAll
 
-import java.io.File
-import java.nio.file.Paths
+import java.nio.file.{Paths, Files, Path}
 
 class VenvExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChecks with BeforeAndAfterAll {
 
@@ -29,8 +28,8 @@ class VenvExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropert
     "main.py"
   )
 
-  private val projectUnderTest: File = {
-    val dir = FileUtil.newTemporaryDirectory("pysrc2cpgTestsExcludeTest")
+  private val projectUnderTest: Path = {
+    val dir = Files.createTempDirectory("pysrc2cpgTestsExcludeTest")
     testFiles.foreach { testFile =>
       val file = dir / testFile
       file.createIfNotExists(createParents = true)

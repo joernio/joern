@@ -12,57 +12,57 @@ import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
-import java.io.File
-import java.nio.file.Files
+
+import java.nio.file.{Files, Path}
 
 class ProjectParseTests extends JsSrc2CpgSuite with BeforeAndAfterAll {
 
   private implicit val schemaValidationMode: ValidationMode = ValidationMode.Enabled
 
-  private val projectWithSubfolders: File = {
-    val dir = FileUtil.newTemporaryDirectory("jssrc2cpgTestsSubfolders")
+  private val projectWithSubfolders: Path = {
+    val dir = Files.createTempDirectory("jssrc2cpgTestsSubfolders")
     List("sub/c.js", "sub/d.js", "a.js", "b.js").foreach { testFile =>
       val file = dir / testFile
       file.createIfNotExists(createParents = true)
-      Files.writeString(file.toPath, s"""console.log("${file.getAbsolutePath}");""")
+      Files.writeString(file, s"""console.log("${file.toAbsolutePath.toString}");""")
     }
     dir
   }
 
-  private val projectWithBrokenFile: File = {
-    val dir      = FileUtil.newTemporaryDirectory("jssrc2cpgTestsBroken")
+  private val projectWithBrokenFile: Path = {
+    val dir      = Files.createTempDirectory("jssrc2cpgTestsBroken")
     val goodFile = dir / "good.js"
     goodFile.createIfNotExists(createParents = true)
-    Files.writeString(goodFile.toPath, s"""console.log("good");""")
+    Files.writeString(goodFile, s"""console.log("good");""")
     val brokenFile = dir / "broken.js"
     brokenFile.createIfNotExists(createParents = true)
-    Files.writeString(brokenFile.toPath, s"""console.log("broken""")
+    Files.writeString(brokenFile, s"""console.log("broken""")
     dir
   }
 
-  private val projectWithUtf8: File = {
-    val dir  = FileUtil.newTemporaryDirectory("jssrc2cpgTestsUtf8")
+  private val projectWithUtf8: Path = {
+    val dir  = Files.createTempDirectory("jssrc2cpgTestsUtf8")
     val file = dir / "utf8.js"
     file.createIfNotExists(createParents = true)
     val content = """
                    |// 😼
                    |logger.error()
                    |""".stripMargin
-    Files.writeString(file.toPath, content)
+    Files.writeString(file, content)
     dir
   }
 
-  private val projectWithStrangeFilenames: File = {
-    val dir = FileUtil.newTemporaryDirectory("jssrc2cpgTestsFilenames")
+  private val projectWithStrangeFilenames: Path = {
+    val dir = Files.createTempDirectory("jssrc2cpgTestsFilenames")
     List("good_%component-name%_.js", "good_%component-name%_Foo.js").foreach { testFile =>
       val file = dir / testFile
       file.createIfNotExists(createParents = true)
-      Files.writeString(file.toPath, s"""console.log("${file.getAbsolutePath}");""")
+      Files.writeString(file, s"""console.log("${file.toAbsolutePath.toString}");""")
     }
     List("broken_%component-name%_.js", "broken_%component-name%_Foo.js").foreach { testFile =>
       val file = dir / testFile
       file.createIfNotExists(createParents = true)
-      Files.writeString(file.toPath, s"""const x = new <%ComponentName%>Foo();""")
+      Files.writeString(file, s"""const x = new <%ComponentName%>Foo();""")
     }
     dir
   }
@@ -75,7 +75,7 @@ class ProjectParseTests extends JsSrc2CpgSuite with BeforeAndAfterAll {
   }
 
   private object ProjectParseTestsFixture {
-    def apply(projectDir: File)(f: Cpg => Unit): Unit = {
+    def apply(projectDir: Path)(f: Cpg => Unit): Unit = {
       BetterFile.usingTemporaryDirectory("jssrc2cpgTests") { tmpDir =>
         val cpg          = newEmptyCpg()
         val config       = Config(tsTypes = false).withInputPath(projectDir.toString).withOutputPath(tmpDir.toString)

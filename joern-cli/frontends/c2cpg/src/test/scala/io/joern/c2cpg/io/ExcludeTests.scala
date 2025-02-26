@@ -13,7 +13,7 @@ import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterAll
 
-import java.io.File
+import java.nio.file.{Path, Files}
 
 import java.util.regex.Pattern
 
@@ -37,8 +37,8 @@ class ExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChe
       "CMakeFiles/sub/foo.c"
     )
 
-  private val projectUnderTest: File = {
-    val dir = FileUtil.newTemporaryDirectory("c2cpgTestsExcludeTest")
+  private val projectUnderTest: Path = {
+    val dir = Files.createTempDirectory("c2cpgTestsExcludeTest")
     TestFiles.foreach { testFile =>
       val file = dir / testFile
       file.createIfNotExists(createParents = true)

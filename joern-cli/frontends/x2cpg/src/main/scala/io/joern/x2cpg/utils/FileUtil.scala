@@ -7,24 +7,9 @@ import better.files.File
 import java.nio.file.attribute.BasicFileAttributes
 
 object FileUtil {
-  def newTemporaryDirectory(prefix: String = "", parent: Option[JFile] = None): JFile = {
-    parent match {
-      case Some(dir) => Files.createTempDirectory(dir.toPath, prefix).toFile
-      case _         => Files.createTempDirectory(prefix).toFile
-    }
-  }
-
   // TODO: Replace better.files with this method
-  def newTemporaryFile(prefix: String = "", suffix: String = "", parent: Option[JFile] = None): JFile = {
-    parent match {
-      case Some(dir) => Files.createTempFile(dir.toPath, prefix, suffix).toFile
-      case _         => Files.createTempFile(prefix, suffix).toFile
-    }
-  }
-
-  // TODO: Replace better.files with this method
-  def usingTemporaryDirectory[U](prefix: String = "", parent: Option[JFile] = None)(f: JFile => U): Unit = {
-    val file = newTemporaryDirectory(prefix, parent)
+  def usingTemporaryDirectory[U](prefix: String = "")(f: Path => U): Unit = {
+    val file = Files.createTempDirectory(prefix)
 
     try {
       f(file)
@@ -33,50 +18,46 @@ object FileUtil {
     }
   }
 
-  def deleteOnExit(file: JFile, swallowIOExceptions: Boolean = false): Unit = {
+  def deleteOnExit(file: Path, swallowIOExceptions: Boolean = false): Unit = {
     try {
-      if (file.isDirectory) {
-        file.listFiles().foreach(x => deleteOnExit(x, swallowIOExceptions))
+      if (Files.isDirectory(file)) {
+        file.toFile.listFiles().foreach(x => deleteOnExit(x.toPath, swallowIOExceptions))
       }
 
-      Files.delete(file.toPath)
+      file.toFile.deleteOnExit()
     } catch {
       case _: IOException if swallowIOExceptions => //
     }
   }
 
-  def delete(file: JFile, swallowIoExceptions: Boolean = false): Unit = {
+  def delete(file: Path, swallowIoExceptions: Boolean = false): Unit = {
     try {
-      if (file.isDirectory) {
-        file.listFiles().foreach(x => delete(x, swallowIoExceptions))
+      if (Files.isDirectory(file)) {
+        file.toFile.listFiles().foreach(x => delete(x.toPath, swallowIoExceptions))
       }
 
-      Files.delete(file.toPath)
+      Files.delete(file)
     } catch {
       case _: IOException if swallowIoExceptions => //
     }
   }
 
-  implicit class JFileExt(f: JFile) {
-    def pathAsString: String = {
-      f.toPath.toString
+  implicit class PathExt(p: Path) {
+    def /(child: String): Path = {
+      p.resolve(child)
     }
 
-    def /(child: String): JFile = {
-      f.toPath.resolve(child).toFile
+    def copyToDirectory(destination: Path): Unit = {
+      require(Files.isDirectory(destination), s"${destination} must be a directory")
+      copyTo(destination / p.getFileName.toString)
     }
 
-    def copyToDirectory(destination: JFile): Unit = {
-      require(Files.isDirectory(destination.toPath), s"${destination.getPath} must be a directory")
-      copyTo(destination / f.toPath.getFileName.toString)
-    }
-
-    def copyTo(destination: JFile): Unit = {
-      if (Files.isDirectory(f.toPath)) { // TODO: maxDepth?
+    def copyTo(destination: Path): Unit = {
+      if (Files.isDirectory(p)) { // TODO: maxDepth?
         Files.walkFileTree(
-          f.toPath,
+          p,
           new SimpleFileVisitor[Path] {
-            def newPath(subPath: Path): Path = destination.toPath.resolve(f.toPath.relativize(subPath))
+            def newPath(subPath: Path): Path = destination.resolve(p.relativize(subPath))
 
             override def preVisitDirectory(dir: Path, attrs: BasicFileAttributes) = {
               Files.createDirectories(newPath(dir))
@@ -90,32 +71,20 @@ object FileUtil {
           }
         )
       } else {
-        Files.copy(f.toPath, destination.toPath)
+        Files.copy(p, destination)
       }
     }
 
     def createIfNotExists(asDirectory: Boolean = false, createParents: Boolean = false): Unit = {
-      if (Files.exists(f.toPath)) {
+      if (Files.exists(p)) {
         // do nothing
       } else if (asDirectory) {} else {
-        if (createParents) createDirectories(createParents)
+        if (createParents) Files.createDirectories(p.getParent)
         try {
-          Files.createFile(f.toPath)
+          Files.createFile(p)
         } catch {
-          case _: FileAlreadyExistsException if Files.isRegularFile(f.toPath) => // do nothing
+          case _: FileAlreadyExistsException if Files.isRegularFile(p) => // do nothing
         }
-      }
-    }
-
-    def createDirectories(createParents: Boolean = false): Unit = {
-      try {
-        if (createParents) {
-          Files.createDirectories(f.toPath.getParent)
-        } else {
-          Files.createDirectories(f.toPath)
-        }
-      } catch {
-        case _: FileAlreadyExistsException if Files.isDirectory(f.toPath) => // Do nothing
       }
     }
   }

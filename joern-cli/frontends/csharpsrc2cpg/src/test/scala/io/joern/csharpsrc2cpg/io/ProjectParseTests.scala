@@ -13,39 +13,38 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
 
-import java.io.File
-import java.nio.file.Files
+import java.nio.file.{Files, Path}
 
 class ProjectParseTests extends CSharpCode2CpgFixture with BeforeAndAfterAll {
 
   private val sep = java.io.File.separator
 
-  private val projectWithSubfolders: File = {
-    val dir = FileUtil.newTemporaryDirectory("csharpsrc2cpgTestsSubfolders")
+  private val projectWithSubfolders: Path = {
+    val dir = Files.createTempDirectory("csharpsrc2cpgTestsSubfolders")
     List(s"sub${sep}c.cs", s"sub${sep}d.cs", "a.cs", "b.cs").foreach { testFile =>
       val file = dir / testFile
       file.createIfNotExists(createParents = true)
-      Files.writeString(file.toPath, basicBoilerplate())
+      Files.writeString(file, basicBoilerplate())
     }
     dir
   }
 
-  private val projectWithBrokenFile: File = {
-    val dir      = FileUtil.newTemporaryDirectory("csharpsrc2cpgTestsBroken")
+  private val projectWithBrokenFile: Path = {
+    val dir      = Files.createTempDirectory("csharpsrc2cpgTestsBroken")
     val goodFile = dir / "good.cs"
     goodFile.createIfNotExists(createParents = true)
-    Files.writeString(goodFile.toPath, basicBoilerplate("Console.WriteLine(\"Good\");"))
+    Files.writeString(goodFile, basicBoilerplate("Console.WriteLine(\"Good\");"))
     val brokenFile = dir / "broken.cs"
     brokenFile.createIfNotExists(createParents = true)
-    Files.writeString(brokenFile.toPath, basicBoilerplate("Console.WriteLi\"Broken\""))
+    Files.writeString(brokenFile, basicBoilerplate("Console.WriteLi\"Broken\""))
     dir
   }
 
-  private val projectWithUtf8: File = {
-    val dir  = FileUtil.newTemporaryDirectory("csharpsrc2cpgTestsUtf8")
+  private val projectWithUtf8: Path = {
+    val dir  = Files.createTempDirectory("csharpsrc2cpgTestsUtf8")
     val file = dir / "utf8.cs"
     file.createIfNotExists(createParents = true)
-    Files.writeString(file.toPath, basicBoilerplate("// 😼"))
+    Files.writeString(file, basicBoilerplate("// 😼"))
     dir
   }
 
@@ -56,7 +55,7 @@ class ProjectParseTests extends CSharpCode2CpgFixture with BeforeAndAfterAll {
   }
 
   private object ProjectParseTestsFixture {
-    def apply(projectDir: File)(f: Cpg => Unit): Unit = {
+    def apply(projectDir: Path)(f: Cpg => Unit): Unit = {
       BetterFile.usingTemporaryDirectory("csharpsrc2cpgTests") { tmpDir =>
         val cpg          = newEmptyCpg()
         val config       = Config().withInputPath(projectDir.toString).withOutputPath(tmpDir.toString)

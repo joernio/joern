@@ -14,15 +14,14 @@ import scala.collection.parallel.CollectionConverters.RangeIsParallelizable
 import scala.util.Failure
 import scala.util.Success
 
-import java.io.File
-import java.nio.file.Files
+import java.nio.file.{Files, Path}
 
 class PySrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   private var port: Int = -1
 
-  private def newProjectUnderTest(index: Option[Int] = None): File = {
-    val dir  = FileUtil.newTemporaryDirectory("pysrc2cpgTestsHttpTest")
+  private def newProjectUnderTest(index: Option[Int] = None): Path = {
+    val dir  = Files.createTempDirectory("pysrc2cpgTestsHttpTest")
     val file = dir / "main.py"
     file.createIfNotExists(createParents = true)
     val indexStr = index.map(_.toString).getOrElse("")
@@ -30,9 +29,9 @@ class PySrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndA
                      |def main():
                      |  print($indexStr)
                      |""".stripMargin
-    Files.writeString(file.toPath, content)
-    file.deleteOnExit()
-    dir.deleteOnExit()
+    Files.writeString(file, content)
+    FileUtil.deleteOnExit(file)
+    FileUtil.deleteOnExit(dir)
     dir
   }
 
@@ -51,7 +50,7 @@ class PySrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndA
       val cpgOutFile = BetterFile.newTemporaryFile("pysrc2cpg.bin")
       cpgOutFile.deleteOnExit()
       val projectUnderTest = newProjectUnderTest()
-      val input            = projectUnderTest.toPath.toAbsolutePath.toString
+      val input            = projectUnderTest.toAbsolutePath.toString
       val output           = cpgOutFile.toString
       val client           = FrontendHTTPClient(port)
       val req              = client.buildRequest(Array(s"input=$input", s"output=$output"))
@@ -70,7 +69,7 @@ class PySrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndA
         val cpgOutFile = BetterFile.newTemporaryFile("pysrc2cpg.bin")
         cpgOutFile.deleteOnExit()
         val projectUnderTest = newProjectUnderTest(Some(index))
-        val input            = projectUnderTest.toPath.toAbsolutePath.toString
+        val input            = projectUnderTest.toAbsolutePath.toString
         val output           = cpgOutFile.toString
         val client           = FrontendHTTPClient(port)
         val req              = client.buildRequest(Array(s"input=$input", s"output=$output"))

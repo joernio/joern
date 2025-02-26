@@ -79,18 +79,18 @@ class PluginManagerTests extends AnyWordSpec with Matchers {
 object Fixture {
 
   def apply[T]()(f: PluginManager => T): T = {
-    val dir = FileUtil.newTemporaryDirectory("pluginmantests")
-    Files.createDirectory((dir / "lib").toPath)
-    (dir / "schema-extender" / "schemas").createDirectories()
+    val dir = Files.createTempDirectory("pluginmantests")
+    Files.createDirectory(dir / "lib")
+    Files.createDirectories(dir / "schema-extender" / "schemas")
 
     val extender         = dir / "schema-extender.sh"
     val extenderContents = "#!/bin/sh\necho 'foo' > " + (dir / "out.txt")
 
-    Files.writeString(extender.toPath, extenderContents)
-    Files.setPosixFilePermissions(extender.toPath, Set(PosixFilePermission.OWNER_EXECUTE).asJava)
+    Files.writeString(extender, extenderContents)
+    Files.setPosixFilePermissions(extender, Set(PosixFilePermission.OWNER_EXECUTE).asJava)
 
-    val result = f(new PluginManager(File(dir.toPath)))
-    dir.delete()
+    val result = f(new PluginManager(File(dir)))
+    FileUtil.delete(dir)
     result
   }
 }

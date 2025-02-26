@@ -9,8 +9,7 @@ import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
 
-import java.io.File
-import java.nio.file.Files
+import java.nio.file.{Files, Path}
 
 import scala.collection.parallel.CollectionConverters.RangeIsParallelizable
 import scala.util.Failure
@@ -20,15 +19,15 @@ class CSharp2CpgHTTPServerTests extends CSharpCode2CpgFixture with BeforeAndAfte
 
   private var port: Int = -1
 
-  private def newProjectUnderTest(index: Option[Int] = None): File = {
-    val dir  = FileUtil.newTemporaryDirectory("csharp2cpgTestsHttpTest")
+  private def newProjectUnderTest(index: Option[Int] = None): Path = {
+    val dir  = Files.createTempDirectory("csharp2cpgTestsHttpTest")
     val file = dir / "main.cs"
     file.createIfNotExists(createParents = true)
     val indexStr = index.map(_.toString).getOrElse("")
     val content  = basicBoilerplate(s"Console.WriteLine($indexStr);")
-    Files.writeString(file.toPath, content)
-    file.deleteOnExit()
-    dir.deleteOnExit()
+    Files.writeString(file, content)
+    FileUtil.deleteOnExit(file)
+    FileUtil.deleteOnExit(dir)
     dir
   }
 
@@ -47,7 +46,7 @@ class CSharp2CpgHTTPServerTests extends CSharpCode2CpgFixture with BeforeAndAfte
       val cpgOutFile = BetterFile.newTemporaryFile("csharp2cpg.bin")
       cpgOutFile.deleteOnExit()
       val projectUnderTest = newProjectUnderTest()
-      val input            = projectUnderTest.toPath.toAbsolutePath.toString
+      val input            = projectUnderTest.toAbsolutePath.toString
       val output           = cpgOutFile.toString
       val client           = FrontendHTTPClient(port)
       val req              = client.buildRequest(Array(s"input=$input", s"output=$output"))
@@ -66,7 +65,7 @@ class CSharp2CpgHTTPServerTests extends CSharpCode2CpgFixture with BeforeAndAfte
         val cpgOutFile = BetterFile.newTemporaryFile("csharp2cpg.bin")
         cpgOutFile.deleteOnExit()
         val projectUnderTest = newProjectUnderTest(Some(index))
-        val input            = projectUnderTest.toPath.toAbsolutePath.toString
+        val input            = projectUnderTest.toAbsolutePath.toString
         val output           = cpgOutFile.toString
         val client           = FrontendHTTPClient(port)
         val req              = client.buildRequest(Array(s"input=$input", s"output=$output"))

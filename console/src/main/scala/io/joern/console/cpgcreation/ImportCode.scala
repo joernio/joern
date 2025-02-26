@@ -10,7 +10,6 @@ import flatgraph.help.Table.AvailableWidthProvider
 import io.joern.x2cpg.utils.FileUtil
 import io.joern.x2cpg.utils.FileUtil.*
 
-import java.io.File
 import java.nio.file.{Path, Files, Paths}
 
 import scala.util.{Failure, Success, Try}
@@ -110,11 +109,11 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
 
     protected def fromFile(inputPath: String, projectName: String = "", args: List[String] = List()): Cpg = {
       checkInputPath(inputPath)
-      if (Files.isDirectory(new File(inputPath).toPath)) {
+      if (Files.isDirectory(Paths.get(inputPath))) {
         throw new ConsoleException(s"Input path is a directory: '$inputPath'")
       }
       withFileInTmpFile(inputPath) { dir =>
-        this.apply(dir.pathAsString, projectName, args)
+        this.apply(dir.toString, projectName, args)
       } match {
         case Failure(exception) =>
           throw new ConsoleException(s"unable to generate cpg from file '$inputPath'", exception)
@@ -137,7 +136,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
 
     def fromString(str: String, args: List[String] = List()): Cpg = {
       withCodeInTmpFile(str, s"tmp.$extension") { dir =>
-        super.apply(dir.pathAsString, args = args)
+        super.apply(dir.toString, args = args)
       } match {
         case Failure(exception) => throw new ConsoleException(s"unable to generate cpg from given String", exception)
         case Success(value)     => value
@@ -148,7 +147,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
   class SwiftSrcFrontend(name: String, language: String, description: String, extension: String)
       extends SourceBasedFrontend(name, language, description, extension) {
     override def apply(inputPath: String, projectName: String, args: List[String]): Cpg = {
-      if (!Files.isDirectory(new File(inputPath).toPath)) {
+      if (!Files.isDirectory(Paths.get(inputPath))) {
         // The Swift frontend does not support importing a single file.
         // Hence, we have to copy it into a temporary folder with super.fromFile and import that folder.
         super.fromFile(inputPath, projectName, args)
@@ -161,7 +160,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
   class JsFrontend(name: String, language: String, description: String, extension: String)
       extends SourceBasedFrontend(name, language, description, extension) {
     override def apply(inputPath: String, projectName: String, args: List[String]): Cpg = {
-      if (!Files.isDirectory(new File(inputPath).toPath)) {
+      if (!Files.isDirectory(Paths.get(inputPath))) {
         // The JS frontend does not support importing a single file.
         // Hence, we have to copy it into a temporary folder with super.fromFile and import that folder.
         super.fromFile(inputPath, projectName, args)
@@ -174,29 +173,27 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
   class CFrontend(name: String, extension: String = "c")
       extends SourceBasedFrontend(name, Languages.NEWC, "Eclipse CDT Based Frontend for C/C++", extension)
 
-  private def withCodeInTmpFile(str: String, filename: String)(f: File => Cpg): Try[Cpg] = {
-    val dir = FileUtil.newTemporaryDirectory("console")
+  private def withCodeInTmpFile(str: String, filename: String)(f: Path => Cpg): Try[Cpg] = {
+    val dir = Files.createTempDirectory("console")
 
     val result = Try {
-      Files.writeString((dir / filename).toPath, str)
-      f(dir)
-    }
-
-    FileUtil.delete(dir, true)
-    result
-  }
-
-  private def withFileInTmpFile(inputPath: String)(f: File => Cpg): Try[Cpg] = {
-    val dir = FileUtil.newTemporaryDirectory("console")
-
-    val result = Try {
-      new File(inputPath).copyToDirectory(dir)
+      Files.writeString((dir / filename), str)
       f(dir)
     }
 
     FileUtil.deleteOnExit(dir, swallowIOExceptions = true)
+    result
+  }
 
-    dir.deleteOnExit()
+  private def withFileInTmpFile(inputPath: String)(f: Path => Cpg): Try[Cpg] = {
+    val dir = Files.createTempDirectory("console")
+
+    val result = Try {
+      Paths.get(inputPath).copyToDirectory(dir)
+      f(dir)
+    }
+
+    FileUtil.deleteOnExit(dir, swallowIOExceptions = true)
     result
   }
 

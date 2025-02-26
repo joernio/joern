@@ -5,8 +5,7 @@ import io.joern.x2cpg.utils.FileUtil
 import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Languages
 
-import java.io.File
-import java.nio.file.Path
+import java.nio.file.{Path, Paths, Files}
 import scala.collection.mutable
 import scala.util.Try
 
@@ -115,9 +114,9 @@ package object cpgcreation {
     }
   }
 
-  def withFileInTmpFile(inputPath: String)(f: File => Try[String]): Try[String] = {
-    val dir = FileUtil.newTemporaryDirectory("cpgcreation")
-    new File(inputPath).copyToDirectory(dir)
+  def withFileInTmpFile(inputPath: String)(f: Path => Try[String]): Try[String] = {
+    val dir = Files.createTempDirectory("cpgcreation")
+    Paths.get(inputPath).copyToDirectory(dir)
     val result = f(dir)
     FileUtil.deleteOnExit(dir, swallowIOExceptions = true)
     result
