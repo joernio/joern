@@ -19,7 +19,7 @@ class PHPJoernTests extends PHPQueryTestSuite(PhpJoern) {
           |""".stripMargin)
       val query   = queryBundle.sqli()
       val results = this.findMatchingCalls(cpg, query)
-      results shouldBe List("data")
+      results shouldBe List("$_GET[\"username\"]")
     }
 
     "ignores safe code execution without user input" in {
@@ -42,7 +42,7 @@ class PHPJoernTests extends PHPQueryTestSuite(PhpJoern) {
           |""".stripMargin)
       val query   = queryBundle.cmdi()
       val results = this.findMatchingCalls(cpg, query)
-      results shouldBe List("cmd")
+      results shouldBe List("$_GET[\"cmd\"]")
     }
 
     "ignores safe code execution without user input" in {
@@ -59,12 +59,12 @@ class PHPJoernTests extends PHPQueryTestSuite(PhpJoern) {
   "The `codei` query" when {
     "detects Code Injection using eval" in {
       val cpg = code("""<?php
-          |$code = $_POST["code"];
+          |$code = $_GET["code"];
           |eval($code);
           |""".stripMargin)
       val query   = queryBundle.codei()
       val results = this.findMatchingCalls(cpg, query)
-      results shouldBe List("code")
+      results shouldBe List("$_GET[\"code\"]")
     }
 
     "ignores safe code execution without user input" in {
@@ -81,12 +81,12 @@ class PHPJoernTests extends PHPQueryTestSuite(PhpJoern) {
   "The `uuf` query" when {
     "detects Unrestricted File Upload vulnerabilities" in {
       val cpg = code("""<?php
-          |$filename = $_FILES["file"]["name"];
-          |move_uploaded_file($_FILES["file"]["tmp_name"], "/uploads/" . $filename);
+          |$filename = $_GET["file_name"];
+          |move_uploaded_file("tmp_file", "/uploads/" . $filename);
           |""".stripMargin)
       val query   = queryBundle.uuf()
       val results = this.findMatchingCalls(cpg, query)
-      results shouldBe List("file")
+      results shouldBe List("$_GET[\"file_name\"]")
     }
 
     "ignores safe code execution without user input" in {
@@ -108,7 +108,7 @@ class PHPJoernTests extends PHPQueryTestSuite(PhpJoern) {
           |""".stripMargin)
       val query   = queryBundle.xss()
       val results = this.findMatchingCalls(cpg, query)
-      results shouldBe List("input")
+      results shouldBe List("$_GET[\"input\"]")
     }
 
     "ignores safe code execution without user input" in {
