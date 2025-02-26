@@ -24,7 +24,7 @@ object PhpJoern extends QueryBundle {
       description = """
           |An attacker controlled parameter is used in an insecure sqli related func call.
           |
-          |If the parameter is not validated and sanitized, this is a sql injection.
+          |If the parameter is not validated and sanitized, this may result in a SQL injection.
           |""".stripMargin,
       score = 5,
       withStrRep({ cpg =>
