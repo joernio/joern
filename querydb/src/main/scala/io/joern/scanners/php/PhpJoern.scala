@@ -121,7 +121,7 @@ object PhpJoern extends QueryBundle {
     Query.make(
       name = "phpjoern_xss",
       author = PHPJOERN_EXT_AUT,
-      title = "CWE-79(Cross-site Scription): A parameter is used in an insecure xss related func call.",
+      title = "CWE-79(Cross-site Scripting): A parameter is used in an insecure xss related func call.",
       description = """
           |An attacker controlled parameter is used in an insecure xss related func call.
           |
