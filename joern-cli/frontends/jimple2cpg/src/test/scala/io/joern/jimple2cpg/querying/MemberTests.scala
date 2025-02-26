@@ -42,10 +42,10 @@ class MemberTests extends JimpleCode2CpgFixture {
   "should have modifiers for MEMBER" in {
     val members                 = cpg2.typeDecl.name("ModifiersTest").member.l
     val finalPrivateStringField = members.find(_.name == "finalPrivateString").get
-    finalPrivateStringField.modifier.map(_.code) shouldBe List("private", "static", "final")
+    finalPrivateStringField.modifier.map(_.code).l shouldBe List("private", "static", "final")
     val protectedField = members.find(_.name == "mInt").get
-    protectedField.modifier.map(_.code).mkString(" ") shouldBe "protected"
+    protectedField.modifier.modifierType.l shouldBe List("PROTECTED")
     val privateField = members.find(_.name == "mLong").get
-    privateField.modifier.map(_.code).mkString(" ") shouldBe ""
+    privateField.modifier.size shouldBe 0
   }
 }
