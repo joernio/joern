@@ -27,6 +27,9 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
   private val logger = LoggerFactory.getLogger(getClass)
 
   private val env: ExecutionEnvironment = RubyAstGenRunner.prepareExecutionEnvironment("ruby_ast_gen")
+  // The scripting container is re-used as it persists any previously imported definitions. The cost to import and
+  // construct class and method definitions is quite expensive, so it makes sense to persist and create the container
+  // on-demand.
   private val container: ScriptingContainer = {
     val cwd       = env.path.toAbsolutePath.toString
     val gemPath   = Seq(cwd, "vendor", "bundle", "jruby", "3.1.0").mkString(separator)
@@ -109,6 +112,7 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
   ): Try[Seq[String]] = {
     val scriptTarget = Files.createTempFile("ruby_driver", ".rb")
     try {
+      // We use the URI format as this is the best in terms of language agnostic importing
       val requireFile = env.path.resolve("lib").resolve("ruby_ast_gen.rb").toUri.toString
       val mainScript =
         s"""
@@ -129,6 +133,9 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
           |RubyAstGen::parse(options)
           |""".stripMargin
 
+      // We write this file to disk as Windows fails to resolve imports (`require` calls) when we execute the string/
+      // as an argument to `container.runScriptlet` directly. Additionally, this is written to temporary files
+      // as we expect that this may be called by multiple threads.
       Files.writeString(scriptTarget, mainScript, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE)
       executeWithJRuby(scriptTarget)
     } catch {
