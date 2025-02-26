@@ -23,7 +23,7 @@ class Php2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndAft
   private def newProjectUnderTest(index: Option[Int] = None): Path = {
     val dir  = Files.createTempDirectory("php2cpgTestsHttpTest")
     val file = dir / "main.php"
-    file.createIfNotExists(createParents = true)
+    file.createWithParentsIfNotExists(createParents = true)
     val indexStr = index.map(_.toString).getOrElse(""""Hello, World!"""")
     val content = s"""<?php
                      |print($indexStr);

@@ -75,15 +75,21 @@ object FileUtil {
       }
     }
 
-    def createIfNotExists(asDirectory: Boolean = false, createParents: Boolean = false): Unit = {
-      if (Files.exists(p)) {
-        // do nothing
-      } else if (asDirectory) {} else {
-        if (createParents) Files.createDirectories(p.getParent)
-        try {
-          Files.createFile(p)
-        } catch {
-          case _: FileAlreadyExistsException if Files.isRegularFile(p) => // do nothing
+    def createWithParentsIfNotExists(asDirectory: Boolean = false, createParents: Boolean = false): Unit = {
+      if (!Files.exists(p)) {
+        if (asDirectory) {
+          try {
+            Files.createDirectories(p)
+          } catch {
+            case _: FileAlreadyExistsException if Files.isDirectory(p) => // do nothing
+          }
+        } else {
+          if (createParents) Files.createDirectories(p.getParent)
+          try {
+            Files.createFile(p)
+          } catch {
+            case _: FileAlreadyExistsException if Files.isRegularFile(p) => // do nothing
+          }
         }
       }
     }

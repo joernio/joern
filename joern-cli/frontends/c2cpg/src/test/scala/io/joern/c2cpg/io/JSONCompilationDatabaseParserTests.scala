@@ -31,22 +31,22 @@ class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
         |""".stripMargin
 
     val fileA = dir / "fileA.c"
-    fileA.createIfNotExists(createParents = true)
+    fileA.createWithParentsIfNotExists(createParents = true)
     Files.writeString(fileA, mainText)
     FileUtil.deleteOnExit(fileA)
 
     val fileB = dir / "fileB.c"
-    fileB.createIfNotExists(createParents = true)
+    fileB.createWithParentsIfNotExists(createParents = true)
     Files.writeString(fileB, mainText)
     FileUtil.deleteOnExit(fileB)
 
     val fileC = dir / "fileC.c"
-    fileC.createIfNotExists(createParents = true)
+    fileC.createWithParentsIfNotExists(createParents = true)
     Files.writeString(fileC, mainText)
     FileUtil.deleteOnExit(fileC)
 
     val compilerCommands = dir / "compile_commands.json"
-    compilerCommands.createIfNotExists(createParents = true)
+    compilerCommands.createWithParentsIfNotExists(createParents = true)
     val content =
       s"""
          |[
@@ -75,12 +75,12 @@ class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
         |""".stripMargin
 
     val fileA = dir / "fileA.c"
-    fileA.createIfNotExists(createParents = true)
+    fileA.createWithParentsIfNotExists(createParents = true)
     Files.writeString(fileA, mainText)
     FileUtil.deleteOnExit(fileA)
 
     val compilerCommands = dir / "compile_commands.json"
-    compilerCommands.createIfNotExists(createParents = true)
+    compilerCommands.createWithParentsIfNotExists(createParents = true)
     val content =
       s"""
          |[

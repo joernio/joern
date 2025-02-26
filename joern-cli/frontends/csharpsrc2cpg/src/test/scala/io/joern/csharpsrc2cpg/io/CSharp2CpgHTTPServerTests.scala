@@ -22,7 +22,7 @@ class CSharp2CpgHTTPServerTests extends CSharpCode2CpgFixture with BeforeAndAfte
   private def newProjectUnderTest(index: Option[Int] = None): Path = {
     val dir  = Files.createTempDirectory("csharp2cpgTestsHttpTest")
     val file = dir / "main.cs"
-    file.createIfNotExists(createParents = true)
+    file.createWithParentsIfNotExists(createParents = true)
     val indexStr = index.map(_.toString).getOrElse("")
     val content  = basicBoilerplate(s"Console.WriteLine($indexStr);")
     Files.writeString(file, content)

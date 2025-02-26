@@ -41,7 +41,7 @@ class ExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChe
     val dir = Files.createTempDirectory("jssrc2cpgTestsExcludeTest")
     testFiles.foreach { testFile =>
       val file = dir / testFile
-      file.createIfNotExists(createParents = true)
+      file.createWithParentsIfNotExists(createParents = true)
     }
     dir
   }

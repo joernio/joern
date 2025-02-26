@@ -23,7 +23,7 @@ class RubySrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAn
   private def newProjectUnderTest(index: Option[Int] = None): Path = {
     val dir  = Files.createTempDirectory("rubysrc2cpgTestsHttpTest")
     val file = dir / "main.rb"
-    file.createIfNotExists(createParents = true)
+    file.createWithParentsIfNotExists(createParents = true)
     val indexStr = index.map(_.toString).getOrElse(""""Hello, World!"""")
     val content = s"""
                      |def main

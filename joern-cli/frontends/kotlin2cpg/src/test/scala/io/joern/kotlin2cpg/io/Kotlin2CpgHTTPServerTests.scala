@@ -23,7 +23,7 @@ class Kotlin2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAnd
   private def newProjectUnderTest(index: Option[Int] = None): Path = {
     val dir  = Files.createTempDirectory("kotlin2cpgTestsHttpTest")
     val file = dir / "main.kt"
-    file.createIfNotExists(createParents = true)
+    file.createWithParentsIfNotExists(createParents = true)
     val indexStr = index.map(_.toString).getOrElse("")
     val content = s"""
                      |package mypkg

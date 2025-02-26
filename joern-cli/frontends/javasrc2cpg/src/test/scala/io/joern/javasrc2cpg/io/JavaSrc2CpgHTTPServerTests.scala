@@ -23,7 +23,7 @@ class JavaSrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAn
   private def newProjectUnderTest(index: Option[Int] = None): Path = {
     val dir  = Files.createTempDirectory("javasrc2cpgTestsHttpTest")
     val file = dir / "Main.java"
-    file.createIfNotExists(createParents = true)
+    file.createWithParentsIfNotExists(createParents = true)
     val indexStr = index.map(_.toString).getOrElse("")
     val content = s"""
                      |class HelloWorld {

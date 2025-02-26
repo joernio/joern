@@ -32,7 +32,7 @@ class VenvExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropert
     val dir = Files.createTempDirectory("pysrc2cpgTestsExcludeTest")
     testFiles.foreach { testFile =>
       val file = dir / testFile
-      file.createIfNotExists(createParents = true)
+      file.createWithParentsIfNotExists(createParents = true)
     }
     dir
   }

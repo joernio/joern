@@ -23,7 +23,7 @@ class ProjectParseTests extends JsSrc2CpgSuite with BeforeAndAfterAll {
     val dir = Files.createTempDirectory("jssrc2cpgTestsSubfolders")
     List("sub/c.js", "sub/d.js", "a.js", "b.js").foreach { testFile =>
       val file = dir / testFile
-      file.createIfNotExists(createParents = true)
+      file.createWithParentsIfNotExists(createParents = true)
       Files.writeString(file, s"""console.log("${file.toAbsolutePath.toString}");""")
     }
     dir
@@ -32,10 +32,10 @@ class ProjectParseTests extends JsSrc2CpgSuite with BeforeAndAfterAll {
   private val projectWithBrokenFile: Path = {
     val dir      = Files.createTempDirectory("jssrc2cpgTestsBroken")
     val goodFile = dir / "good.js"
-    goodFile.createIfNotExists(createParents = true)
+    goodFile.createWithParentsIfNotExists(createParents = true)
     Files.writeString(goodFile, s"""console.log("good");""")
     val brokenFile = dir / "broken.js"
-    brokenFile.createIfNotExists(createParents = true)
+    brokenFile.createWithParentsIfNotExists(createParents = true)
     Files.writeString(brokenFile, s"""console.log("broken""")
     dir
   }
@@ -43,7 +43,7 @@ class ProjectParseTests extends JsSrc2CpgSuite with BeforeAndAfterAll {
   private val projectWithUtf8: Path = {
     val dir  = Files.createTempDirectory("jssrc2cpgTestsUtf8")
     val file = dir / "utf8.js"
-    file.createIfNotExists(createParents = true)
+    file.createWithParentsIfNotExists(createParents = true)
     val content = """
                    |// 😼
                    |logger.error()
@@ -56,12 +56,12 @@ class ProjectParseTests extends JsSrc2CpgSuite with BeforeAndAfterAll {
     val dir = Files.createTempDirectory("jssrc2cpgTestsFilenames")
     List("good_%component-name%_.js", "good_%component-name%_Foo.js").foreach { testFile =>
       val file = dir / testFile
-      file.createIfNotExists(createParents = true)
+      file.createWithParentsIfNotExists(createParents = true)
       Files.writeString(file, s"""console.log("${file.toAbsolutePath.toString}");""")
     }
     List("broken_%component-name%_.js", "broken_%component-name%_Foo.js").foreach { testFile =>
       val file = dir / testFile
-      file.createIfNotExists(createParents = true)
+      file.createWithParentsIfNotExists(createParents = true)
       Files.writeString(file, s"""const x = new <%ComponentName%>Foo();""")
     }
     dir

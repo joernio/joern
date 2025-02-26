@@ -24,7 +24,7 @@ class C2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndAfter
   private def newProjectUnderTest(index: Option[Int] = None): Path = {
     val dir  = Files.createTempDirectory("c2cpgTestsHttpTest")
     val file = dir / "main.c"
-    file.createIfNotExists(createParents = true)
+    file.createWithParentsIfNotExists(createParents = true)
     val indexStr = index.map(_.toString).getOrElse("")
     val content = s"""
                       |int main$indexStr(int argc, char *argv[]) {

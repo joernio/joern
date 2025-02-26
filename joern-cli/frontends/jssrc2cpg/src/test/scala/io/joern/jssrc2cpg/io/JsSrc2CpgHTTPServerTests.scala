@@ -23,7 +23,7 @@ class JsSrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndA
   private def newProjectUnderTest(index: Option[Int] = None): Path = {
     val dir  = Files.createTempDirectory("jssrc2cpgTestsHttpTest")
     val file = dir / "main.js"
-    file.createIfNotExists(createParents = true)
+    file.createWithParentsIfNotExists(createParents = true)
     val indexStr = index.map(_.toString).getOrElse("")
     val content = s"""
                      |function main$indexStr() {

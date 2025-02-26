@@ -23,7 +23,7 @@ class Jimple2CpgHTTPServerTests extends JimpleCode2CpgFixture with BeforeAndAfte
   private def newProjectUnderTest(index: Option[Int] = None): Path = {
     val dir  = Files.createTempDirectory("jimple2cpgTestsHttpTest")
     val file = dir / "main.java"
-    file.createIfNotExists(createParents = true)
+    file.createWithParentsIfNotExists(createParents = true)
     val indexStr = index.map(_.toString).getOrElse("")
     val content = s"""
                      |class Foo {

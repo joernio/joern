@@ -23,7 +23,7 @@ class SwiftSrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeA
   private def newProjectUnderTest(index: Option[Int] = None): Path = {
     val dir  = Files.createTempDirectory("swiftsrc2cpgTestsHttpTest")
     val file = dir / "main.swift"
-    file.createIfNotExists(createParents = true)
+    file.createWithParentsIfNotExists(createParents = true)
     val indexStr = index.map(_.toString).getOrElse("")
     val content = s"""
                      |func main() {

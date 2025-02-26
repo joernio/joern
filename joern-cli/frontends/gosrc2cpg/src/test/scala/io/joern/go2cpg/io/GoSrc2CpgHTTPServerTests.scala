@@ -23,7 +23,7 @@ class GoSrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndA
   private def newProjectUnderTest(index: Option[Int] = None): Path = {
     val dir  = Files.createTempDirectory("gosrc2cpgTestsHttpTest")
     val file = dir / "main.go"
-    file.createIfNotExists(createParents = true)
+    file.createWithParentsIfNotExists(createParents = true)
     val indexStr = index.map(_.toString).getOrElse("")
     val content = s"""
                      |package main

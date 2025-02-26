@@ -23,7 +23,7 @@ class ProjectParseTests extends CSharpCode2CpgFixture with BeforeAndAfterAll {
     val dir = Files.createTempDirectory("csharpsrc2cpgTestsSubfolders")
     List(s"sub${sep}c.cs", s"sub${sep}d.cs", "a.cs", "b.cs").foreach { testFile =>
       val file = dir / testFile
-      file.createIfNotExists(createParents = true)
+      file.createWithParentsIfNotExists(createParents = true)
       Files.writeString(file, basicBoilerplate())
     }
     dir
@@ -32,10 +32,10 @@ class ProjectParseTests extends CSharpCode2CpgFixture with BeforeAndAfterAll {
   private val projectWithBrokenFile: Path = {
     val dir      = Files.createTempDirectory("csharpsrc2cpgTestsBroken")
     val goodFile = dir / "good.cs"
-    goodFile.createIfNotExists(createParents = true)
+    goodFile.createWithParentsIfNotExists(createParents = true)
     Files.writeString(goodFile, basicBoilerplate("Console.WriteLine(\"Good\");"))
     val brokenFile = dir / "broken.cs"
-    brokenFile.createIfNotExists(createParents = true)
+    brokenFile.createWithParentsIfNotExists(createParents = true)
     Files.writeString(brokenFile, basicBoilerplate("Console.WriteLi\"Broken\""))
     dir
   }
@@ -43,7 +43,7 @@ class ProjectParseTests extends CSharpCode2CpgFixture with BeforeAndAfterAll {
   private val projectWithUtf8: Path = {
     val dir  = Files.createTempDirectory("csharpsrc2cpgTestsUtf8")
     val file = dir / "utf8.cs"
-    file.createIfNotExists(createParents = true)
+    file.createWithParentsIfNotExists(createParents = true)
     Files.writeString(file, basicBoilerplate("// 😼"))
     dir
   }
