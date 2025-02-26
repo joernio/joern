@@ -125,7 +125,7 @@ object PhpJoern extends QueryBundle {
       description = """
           |An attacker controlled parameter is used in an insecure xss related func call.
           |
-          |If the parameter is not validated and sanitized, this is a XSS.
+          |If the parameter is not validated and sanitized, this is may result in a cross-site scripting vulnerability.
           |""".stripMargin,
       score = 5,
       withStrRep({ cpg =>
