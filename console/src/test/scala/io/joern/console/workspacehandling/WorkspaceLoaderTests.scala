@@ -21,7 +21,7 @@ class WorkspaceLoaderTests extends AnyWordSpec with Matchers {
       try {
         Files.exists(dir) shouldBe true
       } finally {
-        Files.delete(dir)
+        FileUtil.delete(dir)
       }
     }
 
