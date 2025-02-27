@@ -90,7 +90,7 @@ object DependencyResolver {
 
     GradleDependencies.get(projectDir, maybeProjectNameOverride, maybeConfigurationOverride) match {
       case dependenciesMap if dependenciesMap.values.exists(_.nonEmpty) =>
-        Option(dependenciesMap.values.flatten.toSet.toSeq)
+        Option(dependenciesMap.values.flatten.toList.distinctBy(path => path.split(java.io.File.separatorChar).last))
 
       case _ =>
         logger.warn(s"Could not download Gradle dependencies for project at path `$projectDir`")

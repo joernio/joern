@@ -103,39 +103,39 @@ object GradleDependencies {
        |
        |  @TaskAction
        |  void fetch() {
-       |      def projectString = project.toString()
-       |      def projectFullName = projectString.substring("project ':".length(), projectString.length() - 1);
-       |      def destinationDir = Path.of(destinationDirString.get(), projectFullName.replace(':', '/'))
-       |      Files.createDirectories(destinationDir)
-       |      def selectedConfigs = project.configurations.findAll {
-       |        configuration -> selectedConfigNames.get().contains(configuration.getName())
-       |      }
+       |    def projectString = project.toString()
+       |    def projectFullName = ""
+       |    if (projectString.startsWith("root project")) {
+       |      projectFullName = projectString.substring("root project '".length(), projectString.length() - 1)
+       |    } else {
+       |      projectFullName = projectString.substring("project ':".length(), projectString.length() - 1)
+       |    }
        |
-       |      def componentIds = []
-       |      if (!selectedConfigs.isEmpty()) {
-       |        for (selectedConfig in selectedConfigs) {
-       |            componentIds = selectedConfig.incoming.resolutionResult.allDependencies.findAll {
-       |              dep -> dep instanceof org.gradle.api.internal.artifacts.result.DefaultResolvedDependencyResult
-       |            } .collect { it.selected.id }
+       |    def destinationDir = Path.of(destinationDirString.get(), projectFullName.replace(':', '/'))
+       |    Files.createDirectories(destinationDir)
+       |    def selectedConfigs = project.configurations.findAll {
+       |      configuration -> selectedConfigNames.get().contains(configuration.getName())
+       |    }
+       |
+       |    for (selectedConfig in selectedConfigs) {
+       |      // See https://docs.gradle.org/current/userguide/artifact_resolution.html#artifact-resolution for more information
+       |      for (artifactFiles in selectedConfig.incoming.artifacts.resolvedArtifacts.map{ it.collect { artifact -> artifact.file } }) {
+       |        for (file in artifactFiles.get()) {
+       |          try {
+       |            Files.createSymbolicLink(
+       |              destinationDir.resolve(file.name),
+       |              Path.of(file.getPath())
+       |            )
+       |          } catch (Exception e) {
+       |            Files.copy(
+       |              Path.of(file.getPath()),
+       |              destinationDir.resolve(file.name),
+       |              StandardCopyOption.REPLACE_EXISTING
+       |            )
+       |          }
        |        }
        |      }
-       |
-       |      def result = project
-       |          .dependencies
-       |          .createArtifactResolutionQuery()
-       |          .forComponents(componentIds)
-       |          .withArtifacts(JvmLibrary, SourcesArtifact)
-       |          .execute()
-       |
-       |      result.resolvedComponents.collect {
-       |        it.getArtifacts(SourcesArtifact).collect { it.file }
-       |      }.flatten().each { file ->
-       |        Files.copy(
-       |          Path.of(file.getPath()),
-       |          destinationDir.resolve(file.name),
-       |          StandardCopyOption.REPLACE_EXISTING
-       |        )
-       |      }
+       |    }
        |  }
        |}
        |
@@ -215,7 +215,6 @@ object GradleDependencies {
           try {
             val buildEnv = connection.getModel[BuildEnvironment](classOf[BuildEnvironment])
             val project  = connection.getModel[GradleProject](classOf[GradleProject])
-
 
             val availableProjectNames = ProjectNameInfo(project.getName, None) :: getSubprojectNames(project, "")
 
@@ -470,7 +469,11 @@ object GradleDependencies {
                     Using.resource(connection) { c =>
                       projectInfo.subprojects.keys.flatMap { projectNameInfo =>
                         val taskName = projectNameInfo.makeGradleTaskName(initScript.taskName)
-                        val destinationDir = initScript.destinationDir.resolve(projectNameInfo.toString.stripPrefix(":").replace(':', '/'))
+                        val destinationSubdir = projectNameInfo.parentName match {
+                          case None => projectNameInfo.projectName
+                          case _    => projectNameInfo.toString.stripPrefix(":").replace(':', '/')
+                        }
+                        val destinationDir = initScript.destinationDir.resolve(destinationSubdir)
 
                         runGradleTask(c, taskName, destinationDir, initScriptFile.pathAsString) map { deps =>
                           val depsOutput = deps.map { d =>
