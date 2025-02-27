@@ -26,15 +26,9 @@ class MemberTests extends JimpleCode2CpgFixture {
   }
 
   val cpg2 = code("""
-      |import java.util.Objects;
       |class ModifiersTest {
       |    private static final String finalPrivateString = "PRIVATE_STATIC_FINAL";
-      |    public static final String finalPublicString = "PUBLIC_STATIC_FINAL";
       |    public String publicString;
-      |    public static String staticString = "PUBLIC_STATIC";
-      |    private static final Object obj = new Object();
-      |    public static final int FLAG = 1;
-      |    public static int staticInt = 100;
       |    protected int mInt;
       |    long mLong;
       |}
@@ -43,6 +37,8 @@ class MemberTests extends JimpleCode2CpgFixture {
     val members                 = cpg2.typeDecl.name("ModifiersTest").member.l
     val finalPrivateStringField = members.find(_.name == "finalPrivateString").get
     finalPrivateStringField.modifier.map(_.code).l shouldBe List("private", "static", "final")
+    val publicStringField = members.find(_.name == "publicString").get
+    publicStringField.modifier.map(_.code).l shouldBe List("public")
     val protectedField = members.find(_.name == "mInt").get
     protectedField.modifier.modifierType.l shouldBe List("PROTECTED")
     val privateField = members.find(_.name == "mLong").get
