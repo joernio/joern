@@ -35,7 +35,6 @@ object FileUtil {
     swallowIoExceptions: Boolean = false,
     linkOptions: LinkOption = LinkOption.NOFOLLOW_LINKS
   ): Unit = {
-    println(file.toAbsolutePath)
     try {
       if (Files.isDirectory(file, linkOptions)) {
         file.toFile.listFiles().foreach(x => delete(x.toPath, swallowIoExceptions, linkOptions))
