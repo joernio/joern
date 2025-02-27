@@ -26,7 +26,7 @@ class Php2Cpg extends X2CpgFrontend[Config] {
         // PHP 7.1.0 and above is required by Composer, which is used by PHP Parser
         logger.info(s"Checking PHP installation: $version")
         val verPattern: Regex = """\b\d+\.\d+\.\d+\b""".r
-        val verStr = verPattern.findFirstIn(version).getOrElse(version) 
+        val verStr            = verPattern.findFirstIn(version).getOrElse(version)
         VersionHelper.compare(verStr, "7.1.0") >= 0
       case Failure(exception) =>
         logger.error(s"Failed to run php --version: ${exception.getMessage}")

@@ -28,7 +28,8 @@ object PhpJoern extends QueryBundle {
         // $_REQUEST["foo"], $_GET["foo"], $_POST["foo"]
         // are identifier (at the moment)
         def source = cpg.assignment.source.code(".*_(REQUEST|GET|POST).*")
-        def sink = cpg.call.name("(query|mysql_query|mysqli_query|mysqli_prepare|mysqli_execute|pg_query|pg_prepare)").argument
+        def sink =
+          cpg.call.name("(query|mysql_query|mysqli_query|mysqli_prepare|mysqli_execute|pg_query|pg_prepare)").argument
         sink.reachableBy(source)
       }),
       tags = List(QueryTags.sqlInjection, QueryTags.default)
@@ -50,13 +51,13 @@ object PhpJoern extends QueryBundle {
         // $_REQUEST["foo"], $_GET["foo"], $_POST["foo"]
         // are identifier (at the moment)
         def source = cpg.assignment.source.code(".*_(REQUEST|GET|POST).*")
-        def sink = cpg.call.name("(system|exec|shell_exec|passthru|popen|proc_open|backticks)").argument
+        def sink   = cpg.call.name("(system|exec|shell_exec|passthru|popen|proc_open|backticks)").argument
 
         sink.reachableBy(source)
       }),
       tags = List(QueryTags.xss, QueryTags.default)
-    ) 
-    
+    )
+
   @q
   def codei()(implicit context: EngineContext): Query =
     Query.make(
@@ -73,11 +74,15 @@ object PhpJoern extends QueryBundle {
         // $_REQUEST["foo"], $_GET["foo"], $_POST["foo"]
         // are identifier (at the moment)
         def source = cpg.assignment.source.code(".*_(REQUEST|GET|POST).*")
-        def sink = cpg.call.name("(eval|assert|create_function|include|include_once|require|require_once|call_user_func|call_user_func_array)").argument
+        def sink = cpg.call
+          .name(
+            "(eval|assert|create_function|include|include_once|require|require_once|call_user_func|call_user_func_array)"
+          )
+          .argument
         sink.reachableBy(source)
       }),
       tags = List(QueryTags.remoteCodeExecution, QueryTags.default)
-    ) 
+    )
 
   @q
   def uuf()(implicit context: EngineContext): Query =
@@ -95,12 +100,15 @@ object PhpJoern extends QueryBundle {
         // $_REQUEST["foo"], $_GET["foo"], $_POST["foo"]
         // are identifier (at the moment)
         def source = cpg.assignment.source.code(".*_(REQUEST|GET|POST).*")
-        def sink = cpg.call.name("(file_get_contents|readfile|fgets|file|fopen|file_put_contents|fwrite|move_uploaded_file|unlink|rename|chmod|chown)").argument
+        def sink = cpg.call
+          .name(
+            "(file_get_contents|readfile|fgets|file|fopen|file_put_contents|fwrite|move_uploaded_file|unlink|rename|chmod|chown)"
+          )
+          .argument
         sink.reachableBy(source)
       }),
       tags = List(QueryTags.default)
-    ) 
-
+    )
 
   @q
   def xss()(implicit context: EngineContext): Query =
@@ -118,7 +126,7 @@ object PhpJoern extends QueryBundle {
         // $_REQUEST["foo"], $_GET["foo"], $_POST["foo"]
         // are identifier (at the moment)
         def source = cpg.assignment.source.code(".*_(REQUEST|GET|POST).*")
-        def sink = cpg.call.name("(assert|echo|exit|print|printf|vprintf|print_r|var_dump)").argument
+        def sink   = cpg.call.name("(assert|echo|exit|print|printf|vprintf|print_r|var_dump)").argument
         sink.reachableBy(source)
       }),
       tags = List(QueryTags.xss, QueryTags.default)

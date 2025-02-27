@@ -3,10 +3,8 @@ import io.joern.suites.PHPQueryTestSuite
 import io.joern.console.Query
 import io.joern.console.scan.QueryWrapper
 
-/** 
-  * Test suite for PHP security vulnerabilities using PHPJoern queries.
-  * Validates detections of SQL Injection, Command Injection, Code Injection,
-  * Unrestricted File Upload, and Cross-Site Scripting vulnerabilities.
+/** Test suite for PHP security vulnerabilities using PHPJoern queries. Validates detections of SQL Injection, Command
+  * Injection, Code Injection, Unrestricted File Upload, and Cross-Site Scripting vulnerabilities.
   */
 class PHPJoernTests extends PHPQueryTestSuite(PhpJoern) {
 
