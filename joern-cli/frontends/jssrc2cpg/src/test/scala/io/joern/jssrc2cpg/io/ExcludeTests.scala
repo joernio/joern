@@ -1,17 +1,20 @@
 package io.joern.jssrc2cpg.io
 
-import better.files.File
+import better.files.File as BetterFile
 import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.passes.AstCreationPass
 import io.joern.jssrc2cpg.utils.AstGenRunner
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterAll
 
+import java.nio.file.{Files, Path}
 import java.util.regex.Pattern
 
 class ExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChecks with BeforeAndAfterAll {
@@ -34,19 +37,19 @@ class ExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChe
     "index.js"
   )
 
-  private val projectUnderTest: File = {
-    val dir = File.newTemporaryDirectory("jssrc2cpgTestsExcludeTest")
+  private val projectUnderTest: Path = {
+    val dir = Files.createTempDirectory("jssrc2cpgTestsExcludeTest")
     testFiles.foreach { testFile =>
       val file = dir / testFile
-      file.createIfNotExists(createParents = true)
+      file.createWithParentsIfNotExists(createParents = true)
     }
     dir
   }
 
-  override def afterAll(): Unit = projectUnderTest.delete(swallowIOExceptions = true)
+  override def afterAll(): Unit = FileUtil.delete(projectUnderTest, swallowIoExceptions = true)
 
   private def testWithArguments(exclude: Seq[String], excludeRegex: String, expectedFiles: Set[String]): Unit = {
-    File.usingTemporaryDirectory("jssrc2cpgTests") { tmpDir =>
+    BetterFile.usingTemporaryDirectory("jssrc2cpgTests") { tmpDir =>
       val cpg = newEmptyCpg()
       val config = Config(tsTypes = false)
         .withInputPath(projectUnderTest.toString)

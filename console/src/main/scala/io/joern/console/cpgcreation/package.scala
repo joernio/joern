@@ -1,9 +1,11 @@
 package io.joern.console
 
-import better.files.File
+import better.files.File as BetterFile
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Languages
 
-import java.nio.file.Path
+import java.nio.file.{Path, Paths, Files}
 import scala.collection.mutable
 import scala.util.Try
 
@@ -44,7 +46,7 @@ package object cpgcreation {
   /** Heuristically determines language by inspecting file/dir at path.
     */
   def guessLanguage(path: String): Option[String] = {
-    val file = File(path)
+    val file = BetterFile(path)
     if (file.isDirectory) {
       guessMajorityLanguageInDir(file)
     } else {
@@ -56,7 +58,7 @@ package object cpgcreation {
     * files. Rationale: many projects contain files from different languages, but most often one language is standing
     * out in numbers.
     */
-  private def guessMajorityLanguageInDir(directory: File): Option[String] = {
+  private def guessMajorityLanguageInDir(directory: BetterFile): Option[String] = {
     assert(directory.isDirectory, s"$directory must be a directory, but wasn't")
     val groupCount = mutable.Map.empty[String, Int].withDefaultValue(0)
 
@@ -93,7 +95,7 @@ package object cpgcreation {
   private def isCFile(filename: String): Boolean =
     Seq(".c", ".cc", ".cpp", ".h", ".hpp", ".hh").exists(filename.endsWith)
 
-  private def guessLanguageForRegularFile(file: File): Option[String] = {
+  private def guessLanguageForRegularFile(file: BetterFile): Option[String] = {
     file.name.toLowerCase match {
       case f if isJavaBinary(f)      => Some(Languages.JAVA)
       case f if isCsharpFile(f)      => Some(Languages.CSHARPSRC)
@@ -112,11 +114,11 @@ package object cpgcreation {
     }
   }
 
-  def withFileInTmpFile(inputPath: String)(f: File => Try[String]): Try[String] = {
-    val dir = File.newTemporaryDirectory("cpgcreation")
-    File(inputPath).copyToDirectory(dir)
+  def withFileInTmpFile(inputPath: String)(f: Path => Try[String]): Try[String] = {
+    val dir = Files.createTempDirectory("cpgcreation")
+    Paths.get(inputPath).copyToDirectory(dir)
     val result = f(dir)
-    dir.deleteOnExit(swallowIOExceptions = true)
+    FileUtil.deleteOnExit(dir, swallowIOExceptions = true)
     result
   }
 
