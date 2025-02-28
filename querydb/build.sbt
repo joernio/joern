@@ -9,7 +9,7 @@ dependsOn(
   Projects.javasrc2cpg % "test->test",
   Projects.kotlin2cpg  % "test->test",
   Projects.c2cpg       % "test->test",
-  Projects.kotlin2cpg  % "test->test"
+  Projects.php2cpg     % "test->test"
 )
 
 libraryDependencies ++= Seq("org.scalatest" %% "scalatest" % Versions.scalatest % Test)
