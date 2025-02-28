@@ -68,12 +68,11 @@ object ProgramHandlingUtil {
       */
     private def isValidZipFile(f: Path): Boolean =
       isValidZipFile(new ZipInputStream(new BufferedInputStream((new FileInputStream(f.toString)))))
-//      f.zipInputStream.apply(isValidZipFile)
 
     def isConfigFile: Boolean = {
       val configExt = Set(".xml", ".properties", ".yaml", ".yml", ".tf", ".tfvars", ".vm", ".jsp", ".conf", ".mf")
 
-      def hasConfigExt(f: Path): Boolean = configExt.exists(f.toString.contains(_))
+      def hasConfigExt(f: Path): Boolean = configExt.exists(f.extension.map(_.toLowerCase).contains(_))
 
       if (isDirectory) { false }
       else {
@@ -155,7 +154,7 @@ object ProgramHandlingUtil {
     // filter archive file unless recurse was enabled
     def shouldExtract(e: Entry) =
       !e.isZipSlip && e.maybeRegularFile() && ((isArchive(e) && recurse) || isClass(e) || isConfigFile(e))
-    val subOfSrc = Files.walk(src).iterator().asScala.filterNot(x => x == src).filterNot(Files.isDirectory(_)).toList
+    val subOfSrc = Files.walk(src).iterator().asScala.filterNot(_ == src).filterNot(Files.isDirectory(_)).toList
     unfoldArchives(
       src,
       {
@@ -164,7 +163,7 @@ object ProgramHandlingUtil {
         case f if isConfigFile(Entry(f)) =>
           Left(ConfigFile(f))
         case f if Files.isDirectory(f) =>
-          val files = Files.walk(f).iterator().asScala.filterNot(x => x == src).filterNot(Files.isDirectory(_)).toList
+          val files = Files.walk(f).iterator().asScala.filterNot(_ == src).filterNot(Files.isDirectory(_)).toList
           Right(Map(false -> files))
         case f if isArchive(Entry(f)) && (f == src || (Files.isDirectory(src) && subOfSrc.contains(f)) || recurse) =>
           val xTmp = Files.createTempDirectory(tmpDir, "extract-archive-")

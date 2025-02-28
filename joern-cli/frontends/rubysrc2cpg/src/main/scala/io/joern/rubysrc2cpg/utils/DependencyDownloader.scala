@@ -191,7 +191,7 @@ class DependencyDownloader(cpg: Cpg) {
           }
           FileUtil.delete(pkg, swallowIoExceptions = true)
         }
-        FileUtil.delete(pkg, swallowIoExceptions = true)
+        FileUtil.delete(pkgDir, swallowIoExceptions = true)
       }
     }
   }

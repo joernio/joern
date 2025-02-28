@@ -183,7 +183,7 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
       FileUtil.delete(fullPathPrefix, swallowIoExceptions = true)
     }
 
-    Files.list(targetDir).iterator().asScala.filterNot(x => Files.isDirectory(x)).foreach { pkg =>
+    Files.list(targetDir).iterator().asScala.filterNot(Files.isDirectory(_)).foreach { pkg =>
       pkg.unzipTo(targetDir, zipFilter)
       FileUtil.delete(pkg, swallowIoExceptions = true)
 

@@ -401,7 +401,7 @@ object GradleDependencies {
         .walk(outDir)
         .iterator()
         .asScala
-        .filterNot(x => x == outDir)
+        .filterNot(_ == outDir)
         .filter(_.getFileName.toString == jarInsideAarFileName)
         .toList
     if (classesJarEntries.size != 1) {
@@ -434,7 +434,7 @@ object GradleDependencies {
         Try(Files.createTempDirectory(tempDirPrefix)) match {
           case Success(destinationDir) =>
             FileUtil.deleteOnExit(destinationDir)
-            Try(Files.createTempDirectory(initScriptPrefix)) match {
+            Try(Files.createTempFile(initScriptPrefix, "")) match {
               case Success(initScriptFile) =>
                 FileUtil.deleteOnExit(initScriptFile)
                 val initScript = makeInitScript(destinationDir, projectInfo)
@@ -465,7 +465,6 @@ object GradleDependencies {
                     logger.debug(s"Full exception: ", ex)
                     Map.empty
                 }
-
               case Failure(ex) =>
                 logger.warn(s"Could not create temporary file for Gradle init script: ${ex.getMessage}")
                 logger.debug(s"Full exception: ", ex)
