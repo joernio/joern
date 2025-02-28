@@ -1,13 +1,20 @@
 package io.joern.jimple2cpg.util
 
+import io.joern.x2cpg.utils.FileUtil.*
+
+import java.io.{BufferedInputStream, FileInputStream}
+import java.nio.file.StandardCopyOption;
+
 import better.files.*
 import org.objectweb.asm.ClassReader.SKIP_CODE
 import org.objectweb.asm.{ClassReader, ClassVisitor, Opcodes}
 import org.slf4j.LoggerFactory
 
 import java.io.InputStream
+import java.nio.file.{Files, Path, Paths}
 import java.util.zip.{ZipEntry, ZipFile, ZipInputStream}
 import scala.util.{Failure, Left, Success, Try, Using}
+import scala.jdk.CollectionConverters._
 
 /** Responsible for handling JAR unpacking and handling the temporary build directory.
   */
@@ -18,15 +25,15 @@ object ProgramHandlingUtil {
   /** Common properties of a File and ZipEntry, used to determine whether a file in a directory or an entry in an
     * archive is worth emitting/extracting
     */
-  sealed class Entry(entry: Either[File, ZipEntry], parentArchive: Option[ZipFile] = None) {
+  sealed class Entry(entry: Either[Path, ZipEntry], parentArchive: Option[ZipFile] = None) {
 
-    def this(file: File) = this(Left(file))
+    def this(file: Path) = this(Left(file))
     def this(entry: ZipEntry, parentArchive: ZipFile) = this(Right(entry), Option(parentArchive))
-    private def file: File          = entry.fold(identity, e => File(e.getName))
-    def name: String                = file.name
+    private def file: Path          = entry.fold(identity, e => Paths.get(e.getName))
+    def name: String                = file.getFileName.toString
     def extension: Option[String]   = file.extension
-    def isDirectory: Boolean        = entry.fold(_.isDirectory, _.isDirectory)
-    def maybeRegularFile(): Boolean = entry.fold(_.isRegularFile, !_.isDirectory)
+    def isDirectory: Boolean        = entry.fold(Files.isDirectory(_), _.isDirectory)
+    def maybeRegularFile(): Boolean = entry.fold(Files.isRegularFile(_), !_.isDirectory)
 
     /** Determines whether a zip entry is potentially malicious.
       * @return
@@ -37,13 +44,13 @@ object ProgramHandlingUtil {
     def isZipSlip: Boolean = entry.fold(_ => false, _.getName.split("[/\\\\]").contains(".."))
 
     def isZipFile: Boolean = entry match {
-      case Left(file: File) => isValidZipFile(file)
+      case Left(file: Path) => isValidZipFile(file)
       case Right(zipEntry: ZipEntry) if !isZipSlip =>
         parentArchive.exists { f =>
           Using.resource(f.getInputStream(zipEntry)) { is =>
             File.temporaryFile("jimple2cpg-", ".zip").apply { f =>
               f.writeBytes(is.readAllBytes().iterator)
-              isValidZipFile(f)
+              isValidZipFile(f.path)
             }
           }
         }
@@ -59,19 +66,20 @@ object ProgramHandlingUtil {
       * @return
       *   true if the file is a valid and uncorrupted zip file, false if otherwise.
       */
-    private def isValidZipFile(f: File): Boolean =
-      f.zipInputStream.apply(isValidZipFile)
+    private def isValidZipFile(f: Path): Boolean =
+      isValidZipFile(new ZipInputStream(new BufferedInputStream((new FileInputStream(f.toString)))))
+//      f.zipInputStream.apply(isValidZipFile)
 
     def isConfigFile: Boolean = {
       val configExt = Set(".xml", ".properties", ".yaml", ".yml", ".tf", ".tfvars", ".vm", ".jsp", ".conf", ".mf")
 
-      def hasConfigExt(f: File): Boolean = configExt.exists(f.`extension`.map(_.toLowerCase).contains(_))
+      def hasConfigExt(f: Path): Boolean = configExt.exists(f.toString.contains(_))
 
       if (isDirectory) { false }
       else {
         entry match {
-          case Left(file: File)          => hasConfigExt(file)
-          case Right(zipEntry: ZipEntry) => hasConfigExt(File(zipEntry.getName))
+          case Left(file: Path)          => hasConfigExt(file)
+          case Right(zipEntry: ZipEntry) => hasConfigExt(Paths.get(zipEntry.getName))
         }
       }
     }
@@ -93,8 +101,8 @@ object ProgramHandlingUtil {
     *   The emitted values
     */
   private def unfoldArchives[A](
-    src: File,
-    emitOrUnpack: File => Either[A, Map[Boolean, List[File]]],
+    src: Path,
+    emitOrUnpack: Path => Either[A, Map[Boolean, List[Path]]],
     maxDepth: Int
   ): IterableOnce[A] = {
     if (maxDepth < -1)
@@ -135,8 +143,8 @@ object ProgramHandlingUtil {
     *   The list of class files found, which may either be in [[src]] or in an extracted archive under [[tmpDir]]
     */
   private def extractClassesToTmp(
-    src: File,
-    tmpDir: File,
+    src: Path,
+    tmpDir: Path,
     isArchive: Entry => Boolean,
     isClass: Entry => Boolean,
     isConfigFile: Entry => Boolean,
@@ -147,7 +155,7 @@ object ProgramHandlingUtil {
     // filter archive file unless recurse was enabled
     def shouldExtract(e: Entry) =
       !e.isZipSlip && e.maybeRegularFile() && ((isArchive(e) && recurse) || isClass(e) || isConfigFile(e))
-    val subOfSrc = src.listRecursively.filterNot(_.isDirectory).toList
+    val subOfSrc = Files.walk(src).iterator().asScala.filterNot(x => x == src).filterNot(Files.isDirectory(_)).toList
     unfoldArchives(
       src,
       {
@@ -155,17 +163,19 @@ object ProgramHandlingUtil {
           Left(ClassFile(f))
         case f if isConfigFile(Entry(f)) =>
           Left(ConfigFile(f))
-        case f if f.isDirectory() =>
-          val files = f.listRecursively.filterNot(_.isDirectory).toList
+        case f if Files.isDirectory(f) =>
+          val files = Files.walk(f).iterator().asScala.filterNot(x => x == src).filterNot(Files.isDirectory(_)).toList
           Right(Map(false -> files))
-        case f if isArchive(Entry(f)) && (f == src || (src.isDirectory() && subOfSrc.contains(f)) || recurse) =>
-          val xTmp = File.newTemporaryDirectory("extract-archive-", parent = Some(tmpDir))
-          val unzipDirs = Try(f.unzipTo(xTmp, e => shouldExtract(Entry(e, new ZipFile(f.toJava))))) match {
-            case Success(dir) => List(dir)
-            case Failure(e) =>
-              logger.warn(s"Failed to extract archive", e)
-              List.empty
-          }
+        case f if isArchive(Entry(f)) && (f == src || (Files.isDirectory(src) && subOfSrc.contains(f)) || recurse) =>
+          val xTmp = Files.createTempDirectory(tmpDir, "extract-archive-")
+
+          val unzipDirs =
+            Try(f.unzipTo(xTmp, e => shouldExtract(Entry(e, new ZipFile(f.toAbsolutePath.toString))))) match {
+              case Success(dir) => List(dir)
+              case Failure(e) =>
+                logger.warn(s"Failed to extract archive", e)
+                List.empty
+            }
           // This can always be true, since the archive file was filtered by shouldExtract if recurse options not enabled.
           Right(Map(true -> unzipDirs))
         case _ =>
@@ -203,10 +213,10 @@ object ProgramHandlingUtil {
       * @return
       *   The package path if successfully retrieved
       */
-    private def getPackagePathFromByteCode(file: File): Option[String] =
-      Try(file.fileInputStream.apply(getPackagePathFromByteCode))
+    private def getPackagePathFromByteCode(file: Path): Option[String] =
+      Try(getPackagePathFromByteCode(new FileInputStream(file.toAbsolutePath.toString)))
         .recover { case e: Throwable =>
-          logger.error(s"Error reading class file ${file.canonicalPath}", e)
+          logger.error(s"Error reading class file ${file.toAbsolutePath.toString}", e)
           None
         }
         .getOrElse(None)
@@ -214,7 +224,7 @@ object ProgramHandlingUtil {
 
   sealed trait EntryFile {
 
-    def file: File
+    def file: Path
 
     def packagePath: Option[String]
 
@@ -226,16 +236,16 @@ object ProgramHandlingUtil {
       * @return
       *   The class file at the destination if the package path could be retrieved from the its bytecode
       */
-    def copyToPackageLayoutIn(destDir: File): Option[EntryFile] = {
+    def copyToPackageLayoutIn(destDir: Path): Option[EntryFile] = {
       packagePath
         .map { path =>
           val destFile = this match {
             case _: ClassFile  => destDir / s"$path.class"
             case _: ConfigFile =>
               // The temporary file naming prefix can be used as keys to extract the path parts
-              val extractArchiveIdx = file.pathAsString.indexOf("extract-archive")
+              val extractArchiveIdx = file.toString.indexOf("extract-archive")
               if (extractArchiveIdx != -1) {
-                val relPath = file.parent.pathAsString
+                val relPath = file.getParent.toString
                   .substring(extractArchiveIdx)
                   .split(java.io.File.separatorChar)
                   .drop(1)
@@ -245,31 +255,34 @@ object ProgramHandlingUtil {
                 destDir / path
               }
           }
-          if (destFile.exists()) {
-            logger.warn(s"Overwriting class file: ${destFile.path.toAbsolutePath}")
+          if (Files.exists(destFile)) {
+            logger.warn(s"Overwriting class file: ${destFile.toAbsolutePath}")
           }
-          destFile.parent.createDirectories()
-          ClassFile(file.copyTo(destFile)(File.CopyOptions(overwrite = true)), packagePath)
+          Files.createDirectories(destFile.getParent)
+          file.copyTo(destFile)(StandardCopyOption.REPLACE_EXISTING)
+          ClassFile(destFile, packagePath)
         }
         .orElse {
-          logger.warn(s"Missing package path for ${file.canonicalPath}. Failed to copy to ${destDir.canonicalPath}")
+          logger.warn(
+            s"Missing package path for ${file.toAbsolutePath.toString}. Failed to copy to ${destDir.toAbsolutePath.toString}"
+          )
           None
         }
     }
 
-    override def toString: String = s"${getClass.getName}(${file.pathAsString})"
+    override def toString: String = s"${getClass.getName}(${file.toString})"
 
   }
 
-  private sealed class ConfigFile(val file: File) extends EntryFile {
+  private sealed class ConfigFile(val file: Path) extends EntryFile {
 
-    def packagePath: Option[String] = Option(file.name)
+    def packagePath: Option[String] = Option(file.getFileName.toString)
 
   }
 
-  sealed class ClassFile(val file: File, val packagePath: Option[String]) extends EntryFile {
+  sealed class ClassFile(val file: Path, val packagePath: Option[String]) extends EntryFile {
 
-    def this(file: File) = this(file, ClassFile.getPackagePathFromByteCode(file))
+    def this(file: Path) = this(file, ClassFile.getPackagePathFromByteCode(file))
 
     private val components: Option[Array[String]] = packagePath.map(_.split("/"))
 
@@ -298,8 +311,8 @@ object ProgramHandlingUtil {
     *   The copied class files in destDir
     */
   def extractClassesInPackageLayout(
-    src: File,
-    destDir: File,
+    src: Path,
+    destDir: Path,
     isClass: Entry => Boolean,
     isArchive: Entry => Boolean,
     isConfigFile: Entry => Boolean,
@@ -309,7 +322,7 @@ object ProgramHandlingUtil {
     File
       .temporaryDirectory("extract-classes-")
       .apply(tmpDir =>
-        extractClassesToTmp(src, tmpDir, isArchive, isClass, isConfigFile, recurse: Boolean, depth: Int).iterator
+        extractClassesToTmp(src, tmpDir.path, isArchive, isClass, isConfigFile, recurse: Boolean, depth: Int).iterator
           .flatMap(_.copyToPackageLayoutIn(destDir))
           .collect { case x: ClassFile => x }
           .toList

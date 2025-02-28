@@ -1,11 +1,12 @@
 package io.joern.rubysrc2cpg.utils
 
 import better.files.File
+import io.joern.x2cpg.utils.FileUtil.*
 import io.joern.rubysrc2cpg.datastructures.RubyProgramSummary
 import io.joern.rubysrc2cpg.parser.RubyAstGenRunner
 import io.joern.rubysrc2cpg.passes.{Defines, DependencyPass}
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg, parser}
-import io.joern.x2cpg.utils.ConcurrentTaskUtil
+import io.joern.x2cpg.utils.{ConcurrentTaskUtil, FileUtil}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Dependency
 import io.shiftleft.semanticcpg.language.*
@@ -15,8 +16,10 @@ import upickle.default.*
 
 import java.io.FileOutputStream
 import java.net.{HttpURLConnection, URI, URL, URLConnection}
+import java.nio.file.{Files, Path, Paths}
 import java.util.zip.{GZIPInputStream, InflaterInputStream}
 import scala.util.{Failure, Success, Try, Using}
+import scala.jdk.CollectionConverters._
 
 /** Queries Ruby Gems for the artifacts of a programs' dependencies, according to the V1 API.
   *
@@ -42,10 +45,10 @@ class DependencyDownloader(cpg: Cpg) {
         )
         .foreach { dependency =>
           Try(Thread.sleep(100)) // Rate limit
-          downloadDependency(dir, dependency)
+          downloadDependency(dir.path, dependency)
         }
-      untarDependencies(dir)
-      summarizeDependencies(dir / "lib")
+      untarDependencies(dir.path)
+      summarizeDependencies(dir.path / "lib")
     }
   }
 
@@ -60,7 +63,7 @@ class DependencyDownloader(cpg: Cpg) {
     * @return
     *   a disposable version of the directory where the dependencies live.
     */
-  private def downloadDependency(targetDir: File, dependency: Dependency): Unit = {
+  private def downloadDependency(targetDir: Path, dependency: Dependency): Unit = {
     def getVersion(packageName: String): Option[String] = {
       Using.resource(URI(s"$RESOLVER_BASE_URL/api/v1/versions/$packageName/latest.json").toURL.openStream()) { is =>
         Try(read[RubyGemLatestVersion](ujson.Readable.fromByteArray(is.readAllBytes()))).toOption
@@ -77,7 +80,7 @@ class DependencyDownloader(cpg: Cpg) {
 
     versionOpt match {
       case Some(version) =>
-        (targetDir / dependency.name).createDirectoryIfNotExists()
+        (targetDir / dependency.name).createWithParentsIfNotExists(asDirectory = true)
         downloadPackage(targetDir / dependency.name, dependency, createUrl(version))
       case None =>
         logger.error(s"Unable to determine package version for ${dependency.name}, skipping")
@@ -94,7 +97,7 @@ class DependencyDownloader(cpg: Cpg) {
     * @return
     *   the package version.
     */
-  private def downloadPackage(targetDir: File, dependency: Dependency, url: URL): Unit = {
+  private def downloadPackage(targetDir: Path, dependency: Dependency, url: URL): Unit = {
     var connection: Option[HttpURLConnection] = None
     try {
       connection = Option(url.openConnection()).collect { case x: HttpURLConnection => x }
@@ -112,7 +115,7 @@ class DependencyDownloader(cpg: Cpg) {
           }
 
           Try {
-            Using.resources(inputStream, new FileOutputStream(fileName.pathAsString)) { (is, fos) =>
+            Using.resources(inputStream, new FileOutputStream(fileName.toString)) { (is, fos) =>
               val buffer = new Array[Byte](4096)
               Iterator
                 .continually(is.read(buffer))
@@ -146,11 +149,11 @@ class DependencyDownloader(cpg: Cpg) {
     * @param targetDir
     *   the temporary directory containing all of the successfully downloaded dependencies.
     */
-  private def untarDependencies(targetDir: File): Unit = {
-    targetDir.list.foreach { pkgDir =>
-      pkgDir.list.foreach { pkg =>
+  private def untarDependencies(targetDir: Path): Unit = {
+    Files.list(targetDir).iterator().asScala.foreach { pkgDir =>
+      Files.list(pkgDir).iterator().asScala.foreach { pkg =>
         {
-          Using.resource(pkg.newInputStream) { pkgIs =>
+          Using.resource(Files.newInputStream(pkg)) { pkgIs =>
             // Will unzip to `targetDir/lib` and clean-up
             val tarGemStream = new TarArchiveInputStream(pkgIs)
             Iterator
@@ -169,10 +172,10 @@ class DependencyDownloader(cpg: Cpg) {
                   )
                   .foreach { rubyFile =>
                     try {
-                      val fName  = s"lib/${pkgDir.name}/${rubyFile.getName.stripPrefix("lib/")}"
+                      val fName  = s"lib/${pkgDir.getFileName.toString}/${rubyFile.getName.stripPrefix("lib/")}"
                       val target = targetDir / fName
-                      target.createIfNotExists(createParents = true)
-                      Using.resource(new FileOutputStream(target.pathAsString)) { fos =>
+                      target.createWithParentsIfNotExists(createParents = true)
+                      Using.resource(new FileOutputStream(target.toString)) { fos =>
                         val buffer = new Array[Byte](4096)
                         Iterator
                           .continually(dataTarStream.read(buffer))
@@ -186,9 +189,9 @@ class DependencyDownloader(cpg: Cpg) {
                   }
               }
           }
-          pkg.delete(swallowIOExceptions = true)
+          FileUtil.delete(pkg, swallowIoExceptions = true)
         }
-        pkgDir.delete(swallowIOExceptions = true)
+        FileUtil.delete(pkg, swallowIoExceptions = true)
       }
     }
   }
@@ -199,7 +202,7 @@ class DependencyDownloader(cpg: Cpg) {
     * @return
     *   a summary of all the dependencies.
     */
-  private def summarizeDependencies(targetDir: File): RubyProgramSummary = {
+  private def summarizeDependencies(targetDir: Path): RubyProgramSummary = {
 
     /** Map the path to a non-relative form as would be accessed from the application.
       * @param libSummary
@@ -210,7 +213,8 @@ class DependencyDownloader(cpg: Cpg) {
       RubyProgramSummary(libSummary.namespaceToType, pathMappings)
     }
 
-    val tmpDir = File.newTemporaryDirectory("rubysrc2cpgOut")
+    val tmpDir = Files.createTempDirectory("rubysrc2cpgOut")
+
     try {
       val config       = Config().withDisableFileContent(true)
       val astGenResult = RubyAstGenRunner(Config().withInputPath(targetDir.toString)).execute(tmpDir)
@@ -240,7 +244,7 @@ class DependencyDownloader(cpg: Cpg) {
 
       librarySummaries
     } finally {
-      tmpDir.delete(swallowIOExceptions = true)
+      FileUtil.delete(tmpDir, swallowIoExceptions = true)
     }
   }
 

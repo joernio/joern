@@ -33,7 +33,7 @@ class AstCreationPass(classFiles: List[ClassFile], cpg: Cpg, config: Config)
       val sootClass = Scene.v().loadClassAndSupport(classFile.fullyQualifiedClassName.get)
       sootClass.setApplicationClass()
 
-      val file = File(classFile.file.pathAsString.replace(".class", ".java"))
+      val file = File(classFile.file.toString.replace(".class", ".java"))
 
       val fileContent = Option
         .when(!config.disableFileContent && file.exists) {
@@ -45,12 +45,14 @@ class AstCreationPass(classFiles: List[ClassFile], cpg: Cpg, config: Config)
         .flatten
 
       val localDiff =
-        AstCreator(classFile.file.canonicalPath, sootClass, global, fileContent = fileContent)(config.schemaValidation)
+        AstCreator(classFile.file.toAbsolutePath.toString, sootClass, global, fileContent = fileContent)(
+          config.schemaValidation
+        )
           .createAst()
       builder.absorb(localDiff)
     } catch {
       case e: Exception =>
-        logger.warn(s"Exception on AST creation for ${classFile.file.canonicalPath}", e)
+        logger.warn(s"Exception on AST creation for ${classFile.file.toAbsolutePath.toString}", e)
         Iterator()
     }
   }
