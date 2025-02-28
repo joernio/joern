@@ -9,6 +9,7 @@ import java.nio.file.Path
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
+import scala.collection.parallel.CollectionConverters.*
 
 object Delombok {
 
@@ -99,6 +100,8 @@ object Delombok {
       case Success(tempDir) =>
         PackageRootFinder
           .packageRootsFromFiles(inputPath, fileInfo)
+          .toList
+          .par
           .foreach(delombokPackageRoot(inputPath, _, tempDir, analysisJavaHome))
         DelombokRunResult(tempDir.path, true)
     }
