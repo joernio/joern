@@ -163,7 +163,7 @@ object FileUtil {
 
     def extension: Option[String] = {
       if ((Files.isRegularFile(p) || Files.notExists(p)) && p.getFileName.toString.contains(".")) {
-        val dotIdx = p.getFileName.toString.lastIndexOf(".") + 1
+        val dotIdx = p.getFileName.toString.lastIndexOf(".")
         Some(p.getFileName.toString.substring(dotIdx).toLowerCase)
       } else {
         None
