@@ -141,7 +141,7 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
         val decompiledJavaSrc = decompiledJava.get(x.fullyQualifiedClassName.get)
         decompiledJavaSrc match {
           case Some(src) =>
-            val outputFile = Paths.get(s"${x.toString.replace(".class", ".java")}")
+            val outputFile = Paths.get(s"${x.file.toString.replace(".class", ".java")}")
             Files.writeString(outputFile, src, Charset.defaultCharset())
           case None => // Do Nothing
         }

@@ -84,7 +84,7 @@ object FileUtil {
           }
         )
       } else {
-        Files.copy(p, destination)
+        Files.copy(p, destination, copyOption)
       }
     }
 
