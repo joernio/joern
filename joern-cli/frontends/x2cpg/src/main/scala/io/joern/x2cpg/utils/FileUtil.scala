@@ -1,10 +1,13 @@
 package io.joern.x2cpg.utils
 
-import java.io.{IOException, File as JFile}
-import java.nio.file.{FileAlreadyExistsException, Files, LinkOption, Path, SimpleFileVisitor}
-import better.files.File
+import java.io.{IOException, InputStream, OutputStream}
+import java.nio.file.{FileAlreadyExistsException, Files, LinkOption, Path, SimpleFileVisitor, StandardCopyOption}
 
 import java.nio.file.attribute.BasicFileAttributes
+import java.nio.charset.Charset
+import java.util.zip.{ZipEntry, ZipFile}
+import scala.annotation.tailrec
+import scala.jdk.CollectionConverters.*
 
 object FileUtil {
   // TODO: Replace better.files with this method
@@ -18,10 +21,14 @@ object FileUtil {
     }
   }
 
-  def deleteOnExit(file: Path, swallowIOExceptions: Boolean = false): Unit = {
+  def deleteOnExit(
+    file: Path,
+    swallowIOExceptions: Boolean = false,
+    linkOptions: LinkOption = LinkOption.NOFOLLOW_LINKS
+  ): Unit = {
     try {
-      if (Files.isDirectory(file)) {
-        file.toFile.listFiles().foreach(x => deleteOnExit(x.toPath, swallowIOExceptions))
+      if (Files.isDirectory(file, linkOptions)) {
+        file.toFile.listFiles().foreach(x => deleteOnExit(x.toPath, swallowIOExceptions, linkOptions))
       }
 
       file.toFile.deleteOnExit()
@@ -56,7 +63,9 @@ object FileUtil {
       copyTo(destination / p.getFileName.toString)
     }
 
-    def copyTo(destination: Path): Unit = {
+    def copyTo(
+      destination: Path
+    )(implicit copyOption: StandardCopyOption = StandardCopyOption.COPY_ATTRIBUTES): Unit = {
       if (Files.isDirectory(p)) { // TODO: maxDepth?
         Files.walkFileTree(
           p,
@@ -69,17 +78,17 @@ object FileUtil {
             }
 
             override def visitFile(file: Path, attrs: BasicFileAttributes) = {
-              Files.copy(file, newPath(file))
+              Files.copy(file, newPath(file), copyOption)
               super.visitFile(file, attrs)
             }
           }
         )
       } else {
-        Files.copy(p, destination)
+        Files.copy(p, destination, copyOption)
       }
     }
 
-    def createWithParentsIfNotExists(asDirectory: Boolean = false, createParents: Boolean = false): Unit = {
+    def createWithParentsIfNotExists(asDirectory: Boolean = false, createParents: Boolean = false): Path = {
       if (!Files.exists(p)) {
         if (asDirectory) {
           try {
@@ -87,6 +96,7 @@ object FileUtil {
           } catch {
             case _: FileAlreadyExistsException if Files.isDirectory(p) => // do nothing
           }
+          p
         } else {
           if (createParents) Files.createDirectories(p.getParent)
           try {
@@ -94,35 +104,70 @@ object FileUtil {
           } catch {
             case _: FileAlreadyExistsException if Files.isRegularFile(p) => // do nothing
           }
+          p
+        }
+      } else {
+        p
+      }
+    }
+
+    def mergeDirectory(
+      directory: Path
+    )(implicit copyOptions: StandardCopyOption = StandardCopyOption.COPY_ATTRIBUTES): Unit = {
+      require(Files.isDirectory(directory), s"$directory must be a directory")
+
+      Files.walk(p).iterator().asScala.filter(Files.isRegularFile(_)).foreach { x =>
+        val relativePath = x.toString.stripPrefix(s"${p.toString}${java.io.File.separator}")
+        val target       = directory / relativePath
+        target.getParent.createWithParentsIfNotExists(asDirectory = true, createParents = true)
+        Files.move(x, target, copyOptions)
+      }
+    }
+
+    def unzipTo(
+      destination: Path,
+      zipFilter: ZipEntry => Boolean = _ => true,
+      bufferSize: Int = 8192
+    ): destination.type = {
+      val zipFile = new ZipFile(p.toAbsolutePath.toString, Charset.defaultCharset())
+      val entries = zipFile.entries().asScala.filter(zipFilter)
+
+      entries.foreach { entry =>
+        val entryName = entry.getName.replace("\\", "/") // see https://github.com/pathikrit/better-files/issues/262
+        val child =
+          (destination / entryName).createWithParentsIfNotExists(asDirectory = entry.isDirectory, createParents = true)
+
+        if (!entry.isDirectory) {
+          val inputStream  = zipFile.getInputStream(entry)
+          val outputStream = Files.newOutputStream(child)
+          pipeTo(inputStream, outputStream, Array.ofDim[Byte](bufferSize))
+
+          inputStream.close()
+          outputStream.close()
         }
       }
+      zipFile.close()
+      destination
     }
-  }
 
-  implicit class FileExt(f: File) {
-
-    /** Moves this file's contents, if it's a directory, or simply copies the file, and merges it with the given file,
-      * if it's a directory (will throw an exception otherwise). Performs a similar operation to
-      * [[java.nio.file.Files.move]], however, unlike the aforementioned function, will handle the case where the
-      * destination directory is non-empty.
-      *
-      * @param directory
-      *   the destination directory to move into.
-      */
-    def mergeDirectory(directory: File)(implicit
-      linkOptions: File.LinkOptions = File.LinkOptions.default,
-      copyOptions: File.CopyOptions = File.CopyOptions(overwrite = false)
-    ): Unit = {
-      require(directory.isDirectory(linkOptions), s"$directory must be a directory")
-
-      f.walk().filter(_.isRegularFile).foreach { x =>
-        val relativePath = x.pathAsString.stripPrefix(s"${f.pathAsString}${java.io.File.separator}")
-        val target       = directory / relativePath
-        target.parent.createDirectoryIfNotExists(createParents = true)
-        x.moveTo(target)(copyOptions)
+    // Taken from better.files implementation
+    @tailrec final def pipeTo(in: InputStream, out: OutputStream, buffer: Array[Byte]): OutputStream = {
+      val n = in.read(buffer)
+      if (n > 0) {
+        out.write(buffer, 0, n)
+        pipeTo(in, out, buffer)
+      } else {
+        out
       }
     }
 
+    def extension: Option[String] = {
+      if ((Files.isRegularFile(p) || Files.notExists(p)) && p.getFileName.toString.contains(".")) {
+        val dotIdx = p.getFileName.toString.lastIndexOf(".")
+        Some(p.getFileName.toString.substring(dotIdx).toLowerCase)
+      } else {
+        None
+      }
+    }
   }
-
 }
