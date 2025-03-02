@@ -53,22 +53,22 @@ class MethodTests extends C2CpgSuite {
     val cpg = code("int foo(); int bar() { return woo(); }")
 
     "should identify method as stub" in {
-      cpg.method.isStub.name.toSetMutable shouldBe Set(NamespaceTraversal.globalNamespaceName, "foo", "woo")
-      cpg.method.isNotStub.name.l shouldBe List("bar")
+      cpg.method.isStub.fullName.l shouldBe List("foo", "<includes>:<global>", "woo")
+      cpg.method.isNotStub.fullName.l shouldBe List("bar", "Test0.c:<global>")
     }
   }
 
   "MethodTest3" should {
     val cpg = code("void doFoo() {}")
 
-    "should not generate a type decl for method definitions" in {
+    "should generate a type decl for top level method definitions" in {
       inside(cpg.method.name("doFoo").l) { case List(x) =>
         x.name shouldBe "doFoo"
         x.fullName shouldBe "doFoo"
         x.astParentType shouldBe NodeTypes.TYPE_DECL
         x.astParentFullName should endWith(NamespaceTraversal.globalNamespaceName)
       }
-      cpg.typeDecl.fullName.l should not contain "doFoo"
+      cpg.typeDecl.fullName.l should contain("doFoo")
     }
   }
 

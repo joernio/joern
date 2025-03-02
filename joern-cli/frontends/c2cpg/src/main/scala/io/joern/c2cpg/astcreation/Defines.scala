@@ -1,14 +1,13 @@
 package io.joern.c2cpg.astcreation
 
 object Defines {
-  val Any: String                    = "ANY"
+  val Any: String                    = io.joern.x2cpg.Defines.Any
   val Void: String                   = "void"
   val Function: String               = "std.function"
   val Array: String                  = "std.array"
   val QualifiedNameSeparator: String = "::"
   val Empty                          = "<empty>"
   val Auto                           = "auto"
-
   val OperatorPointerCall            = "<operator>.pointerCall"
   val OperatorConstructorInitializer = "<operator>.constructorInitializer"
   val OperatorTypeOf                 = "<operator>.typeOf"

@@ -79,6 +79,8 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
             case result => fail(s"Expected return conditional, but got $result")
           }
           fallBack.name shouldBe "fallback"
+          fallBack.typeFullName shouldBe "string"
+          fallBack.closureBindingId shouldBe Some("Test0.cpp:<lambda>0:fallback")
         case result => fail(s"Expected lambda body with single return but got $result")
       }
     }
@@ -334,15 +336,24 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
 
       x1.typeFullName shouldBe "int*"
       x1.closureBindingId shouldBe Some("Test0.cpp:<lambda>0:x")
-      cpg.identifier.nameExact("x").lineNumber(5).refsTo.l shouldBe List(x1)
+      val List(x1Id) = cpg.identifier.nameExact("x").lineNumber(5).l
+      x1Id.lineNumber shouldBe x1.lineNumber
+      x1Id.columnNumber shouldBe x1.columnNumber
+      x1Id.refsTo.l shouldBe List(x1)
 
       x2.typeFullName shouldBe "float*"
       x2.closureBindingId shouldBe None
-      cpg.identifier.nameExact("x").lineNumber(7).refsTo.l shouldBe List(x2)
+      val List(x2Id) = cpg.identifier.nameExact("x").lineNumber(7).l
+      x2Id.refsTo.l shouldBe List(x2)
+      x2Id.lineNumber shouldBe x2.lineNumber
+      x2Id.columnNumber shouldBe x2.columnNumber
 
       x3.typeFullName shouldBe "double*"
       x3.closureBindingId shouldBe None
-      cpg.identifier.nameExact("x").lineNumber(9).refsTo.l shouldBe List(x3)
+      val List(x3Id) = cpg.identifier.nameExact("x").lineNumber(9).l
+      x3Id.refsTo.l shouldBe List(x3)
+      x3Id.lineNumber shouldBe x3.lineNumber
+      x3Id.columnNumber shouldBe x3.columnNumber
     }
   }
 
@@ -651,5 +662,4 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
       }
     }
   }
-
 }
