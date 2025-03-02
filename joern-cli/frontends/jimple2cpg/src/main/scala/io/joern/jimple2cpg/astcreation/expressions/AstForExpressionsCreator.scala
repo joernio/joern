@@ -60,6 +60,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
 
     val call = callNode(parentUnit, binOp.toString, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH)
+      .possibleTypes(List("Condition"))
 
     val args =
       astsForValue(binOp.getOp1, parentUnit) ++ astsForValue(binOp.getOp2, parentUnit)
