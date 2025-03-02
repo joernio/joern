@@ -6,7 +6,7 @@ import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.preprocessing.EjsPreprocessor
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.utils.Environment
-import io.joern.x2cpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 import versionsort.VersionHelper
@@ -125,7 +125,10 @@ object AstGenRunner {
     val astGenCommand = path.getOrElse("astgen")
     val localPath     = path.flatMap(File(_).parentOption.map(_.pathAsString)).getOrElse(".")
     val debugMsgPath  = path.getOrElse("PATH")
-    ExternalCommand.run(Seq(astGenCommand, "--version"), localPath).successOption.map(_.mkString.strip()) match {
+    ExternalCommand
+      .run(Seq(astGenCommand, "--version"), Option(localPath))
+      .successOption
+      .map(_.mkString.strip()) match {
       case Some(installedVersion)
           if installedVersion != "unknown" &&
             Try(VersionHelper.compare(installedVersion, astGenVersion)).toOption.getOrElse(-1) >= 0 =>
@@ -317,7 +320,10 @@ class AstGenRunner(config: Config) {
     }
 
     val result =
-      ExternalCommand.run((astGenCommand +: executableArgs) ++ Seq("-t", "ts", "-o", out.toString), out.toString())
+      ExternalCommand.run(
+        (astGenCommand +: executableArgs) ++ Seq("-t", "ts", "-o", out.toString),
+        Option(out.toString())
+      )
 
     val jsons = SourceFiles.determine(out.toString(), Set(".json"))
     jsons.foreach { jsonPath =>
@@ -360,7 +366,7 @@ class AstGenRunner(config: Config) {
     )
     if (files.nonEmpty) {
       ExternalCommand
-        .run((astGenCommand +: executableArgs) ++ Seq("-t", "vue", "-o", out.toString), in.toString())
+        .run((astGenCommand +: executableArgs) ++ Seq("-t", "vue", "-o", out.toString), Option(in.toString()))
         .toTry
     } else {
       Success(Seq.empty)
@@ -369,7 +375,7 @@ class AstGenRunner(config: Config) {
 
   private def jsFiles(in: File, out: File): Try[Seq[String]] = {
     ExternalCommand
-      .run((astGenCommand +: executableArgs) ++ Seq("-t", "ts", "-o", out.toString), in.toString())
+      .run((astGenCommand +: executableArgs) ++ Seq("-t", "ts", "-o", out.toString), Option(in.toString()))
       .toTry
   }
 

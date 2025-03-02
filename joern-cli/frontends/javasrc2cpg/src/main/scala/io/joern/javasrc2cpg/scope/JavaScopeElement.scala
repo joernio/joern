@@ -116,14 +116,20 @@ object JavaScopeElement {
   }
 
   class BlockScope(implicit disableTypeFallback: Boolean) extends JavaScopeElement(disableTypeFallback) {
+    private val hoistedPatternLocals: mutable.Set[NewLocal] = mutable.Set()
+
     val isStatic = false
 
-    def addLocal(local: NewLocal): Unit = {
-      addVariableToScope(ScopeLocal(local))
+    def addLocal(local: NewLocal, originalName: String): Unit = {
+      addVariableToScope(ScopeLocal(local, originalName))
     }
 
-    def addPatternLocal(local: NewLocal, typePatternExpr: TypePatternExpr): Unit = {
-      addVariableToScope(ScopePatternVariable(local, typePatternExpr))
+    def addHoistedPatternLocal(local: NewLocal): Unit = {
+      hoistedPatternLocals.addOne(local)
+    }
+
+    def getHoistedPatternLocals: Set[NewLocal] = {
+      hoistedPatternLocals.toSet
     }
   }
 
@@ -133,65 +139,34 @@ object JavaScopeElement {
   ) extends JavaScopeElement(disableTypeFallback)
       with AnonymousClassCounter {
 
-    private val temporaryLocals = mutable.ListBuffer[NewLocal]()
-    private val patternVariableInfoIdentityMap: mutable.Map[TypePatternExpr, PatternVariableInfo] =
-      new util.IdentityHashMap[TypePatternExpr, PatternVariableInfo]().asScala
-    // The insertion order should be preserved to ensure stable results when getting unadded variable asts
-    private var patternVariableIndex = 0
+    private val patternLocalsToAddToCpg: mutable.ListBuffer[NewLocal] = mutable.ListBuffer()
+    private val patternLocalMap       = new util.IdentityHashMap[TypePatternExpr, NewLocal]().asScala
+    private val mangledNameIdxKeyPool = IntervalKeyPool(0, Long.MaxValue)
 
     def addParameter(parameter: NewMethodParameterIn, genericSignature: String): Unit = {
       addVariableToScope(ScopeParameter(parameter, genericSignature))
     }
 
-    def addTemporaryLocal(local: NewLocal): Unit = {
-      temporaryLocals.addOne(local)
+    def registerPatternLocal(typePatternExpr: TypePatternExpr, local: NewLocal): Unit = {
+      patternLocalMap.put(typePatternExpr, local)
     }
 
-    def getTemporaryLocals: List[NewLocal] = temporaryLocals.toList
-
-    def putPatternVariableInfo(
-      typePatternExpr: TypePatternExpr,
-      typeVariableLocal: NewLocal,
-      typeVariableInitializer: Ast
-    ): Unit = {
-      patternVariableInfoIdentityMap.put(
-        typePatternExpr,
-        PatternVariableInfo(typePatternExpr, typeVariableLocal, typeVariableInitializer, index = patternVariableIndex)
-      )
-      patternVariableIndex += 1
+    def registerLocalToAddToCpg(local: NewLocal): Unit = {
+      patternLocalsToAddToCpg.addOne(local)
     }
 
-    def getPatternVariableInfo(typePatternExpr: TypePatternExpr): Option[PatternVariableInfo] = {
-      patternVariableInfoIdentityMap.get(typePatternExpr)
+    def getAndClearUnaddedPatternLocals(): List[NewLocal] = {
+      val ret = patternLocalsToAddToCpg.toList
+      patternLocalsToAddToCpg.clear()
+      ret
     }
 
-    def registerPatternVariableInitializerToBeAddedToGraph(typePatternExpr: TypePatternExpr): Unit = {
-      patternVariableInfoIdentityMap.get(typePatternExpr).foreach { patternVariableInfo =>
-        patternVariableInfoIdentityMap
-          .put(typePatternExpr, patternVariableInfo.copy(initializerAddedToAst = true))
-      }
+    def getLocalForPattern(typePatternExpr: TypePatternExpr): Option[NewLocal] = {
+      patternLocalMap.get(typePatternExpr)
     }
 
-    def registerPatternVariableLocalToBeAddedToGraph(typePatternExpr: TypePatternExpr): Unit = {
-      patternVariableInfoIdentityMap.get(typePatternExpr).foreach { patternVariableInfo =>
-        patternVariableInfoIdentityMap.put(typePatternExpr, patternVariableInfo.copy(localAddedToAst = true))
-      }
-    }
-
-    def getUnaddedPatternVariableAstsAndMarkAdded(): List[Ast] = {
-      val result = mutable.ListBuffer[Ast]()
-      patternVariableInfoIdentityMap.values.toArray.sortBy(_.index).foreach { patternInfo =>
-        if (!patternInfo.localAddedToAst) {
-          result.addOne(Ast(patternInfo.typeVariableLocal))
-          registerPatternVariableLocalToBeAddedToGraph(patternInfo.typePatternExpr)
-        }
-
-        if (!patternInfo.initializerAddedToAst) {
-          result.addOne(patternInfo.typeVariableInitializer)
-          registerPatternVariableInitializerToBeAddedToGraph(patternInfo.typePatternExpr)
-        }
-      }
-      result.toList
+    def mangleLocalName(originalName: String): String = {
+      s"$originalName$$${mangledNameIdxKeyPool.next}"
     }
   }
 
@@ -249,7 +224,7 @@ object JavaScopeElement {
       val outerScope = outerClassType.map(typ =>
         val localNode = NewLocal().name(NameConstants.OuterClass).typeFullName(typ).code(NameConstants.OuterClass)
         outerClassGenericSignature.foreach(localNode.genericSignature(_))
-        ScopeLocal(localNode)
+        ScopeLocal(localNode, NameConstants.OuterClass)
       )
 
       val sortedUsedCaptures = usedCaptureParams.toList.sortBy(_.name)

@@ -4,9 +4,10 @@ import better.files.File
 import io.joern.console.FrontendConfig
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 
-import java.nio.file.Path
+import java.nio.file.{Path, Paths, Files}
 import scala.util.Try
 
 case class SwiftSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGenerator {
@@ -18,11 +19,11 @@ case class SwiftSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends 
   /** Generate a CPG for the given input path. Returns the output path, or None, if no CPG was generated.
     */
   override def generate(inputPath: String, outputPath: String = "cpg.bin.zip"): Try[String] = {
-    if (File(inputPath).isDirectory) {
+    if (Files.isDirectory(Paths.get(inputPath))) {
       invoke(inputPath, outputPath)
     } else {
       withFileInTmpFile(inputPath) { dir =>
-        invoke(dir.pathAsString, outputPath)
+        invoke(dir.toString, outputPath)
       }
     }
   }

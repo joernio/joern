@@ -1,6 +1,6 @@
 package io.joern.c2cpg.io
 
-import better.files.File
+import better.files.File as BetterFile
 import io.joern.c2cpg.parser.JSONCompilationDatabaseParser
 import io.joern.c2cpg.C2Cpg
 import io.joern.c2cpg.Config
@@ -8,14 +8,15 @@ import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 
-import java.nio.file.Paths
+import java.nio.file.{Files, Paths, Path}
 
 class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
 
-  private def newProjectUnderTest(): File = {
-    val dir = File.newTemporaryDirectory("c2cpgJSONCompilationDatabaseParserTests")
-
+  private def newProjectUnderTest(): Path = {
+    val dir = Files.createTempDirectory("c2cpgJSONCompilationDatabaseParserTests")
     val mainText =
       """
         |int main(int argc, char *argv[]) {
@@ -30,38 +31,41 @@ class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
         |""".stripMargin
 
     val fileA = dir / "fileA.c"
-    fileA.createIfNotExists(createParents = true)
-    fileA.writeText(mainText)
-    fileA.deleteOnExit()
+    fileA.createWithParentsIfNotExists(createParents = true)
+    Files.writeString(fileA, mainText)
+    FileUtil.deleteOnExit(fileA)
+
     val fileB = dir / "fileB.c"
-    fileB.createIfNotExists(createParents = true)
-    fileB.writeText(mainText)
-    fileB.deleteOnExit()
+    fileB.createWithParentsIfNotExists(createParents = true)
+    Files.writeString(fileB, mainText)
+    FileUtil.deleteOnExit(fileB)
+
     val fileC = dir / "fileC.c"
-    fileC.createIfNotExists(createParents = true)
-    fileC.writeText(mainText)
-    fileC.deleteOnExit()
+    fileC.createWithParentsIfNotExists(createParents = true)
+    Files.writeString(fileC, mainText)
+    FileUtil.deleteOnExit(fileC)
 
     val compilerCommands = dir / "compile_commands.json"
-    compilerCommands.createIfNotExists(createParents = true)
+    compilerCommands.createWithParentsIfNotExists(createParents = true)
     val content =
       s"""
          |[
-         |  { "directory": "${dir.pathAsString}",
+         |  { "directory": "${dir.toString}",
          |    "arguments": ["/usr/bin/clang++", "-Irelative", "-DSOMEDEFA=With spaces, quotes and \\-es.", "-c", "-o", "fileA.o", "fileA.cc"],
          |    "file": "fileA.c" },
          |  { "directory": ".",
          |    "arguments": ["/usr/bin/clang++", "-Irelative", "-DSOMEDEFB=With spaces, quotes and \\-es.", "-c", "-o", "fileB.o", "fileB.cc"],
-         |    "file": "${fileB.pathAsString}" }
+         |    "file": "${fileB.toString}" }
          |]""".stripMargin.replace("\\", "\\\\") // escape for tests under Windows
-    compilerCommands.writeText(content)
-    compilerCommands.deleteOnExit()
 
-    dir.deleteOnExit()
+    Files.writeString(compilerCommands, content)
+    FileUtil.deleteOnExit(compilerCommands)
+    FileUtil.deleteOnExit(dir)
+    dir
   }
 
-  private def newBrokenProjectUnderTest(): File = {
-    val dir = File.newTemporaryDirectory("c2cpgJSONCompilationDatabaseParserTests")
+  private def newBrokenProjectUnderTest(): Path = {
+    val dir = Files.createTempDirectory("c2cpgJSONCompilationDatabaseParserTests")
 
     val mainText =
       """
@@ -71,26 +75,27 @@ class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
         |""".stripMargin
 
     val fileA = dir / "fileA.c"
-    fileA.createIfNotExists(createParents = true)
-    fileA.writeText(mainText)
-    fileA.deleteOnExit()
+    fileA.createWithParentsIfNotExists(createParents = true)
+    Files.writeString(fileA, mainText)
+    FileUtil.deleteOnExit(fileA)
 
     val compilerCommands = dir / "compile_commands.json"
-    compilerCommands.createIfNotExists(createParents = true)
+    compilerCommands.createWithParentsIfNotExists(createParents = true)
     val content =
       s"""
          |[
-         |  { "directory": "${dir.pathAsString}",
+         |  { "directory": "${dir.toString}",
          |    "arguments": ["/usr/bin/clang++", "-Irelative", "-DSOMEDEFA=With spaces, quotes and \\-es.", "-c", "-o", "fileA.o", "fileA.cc"],
          |    "file": "fileA.c" },
          |  { "directory": "/does/not/exist",
          |    "arguments": ["/usr/bin/clang++", "-c", "-o", "fileB.o", "name.cpp"],
          |    "file": "name.cpp" }
          |]""".stripMargin.replace("\\", "\\\\") // escape for tests under Windows
-    compilerCommands.writeText(content)
-    compilerCommands.deleteOnExit()
+    Files.writeString(compilerCommands, content)
+    FileUtil.deleteOnExit(compilerCommands)
 
-    dir.deleteOnExit()
+    FileUtil.deleteOnExit(dir)
+    dir
   }
 
   "Parsing a simple compile_commands.json" should {
@@ -106,7 +111,7 @@ class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
           |    "file": "file2.cc" }
           |]""".stripMargin
 
-      File.usingTemporaryFile("compile_commands.json") { commandJsonFile =>
+      BetterFile.usingTemporaryFile("compile_commands.json") { commandJsonFile =>
         commandJsonFile.writeText(content)
 
         val commandObjects = JSONCompilationDatabaseParser.parse(commandJsonFile.pathAsString)
@@ -126,15 +131,15 @@ class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
 
   "Using a simple compile_commands.json" should {
     "respect the files listed" in {
-      val cpgOutFile = File.newTemporaryFile("c2cpg.bin")
+      val cpgOutFile = BetterFile.newTemporaryFile("c2cpg.bin")
       cpgOutFile.deleteOnExit()
       val projectUnderTest = newProjectUnderTest()
-      val input            = projectUnderTest.path.toAbsolutePath.toString
+      val input            = projectUnderTest.toAbsolutePath.toString
       val output           = cpgOutFile.toString
       val config = Config()
         .withInputPath(input)
         .withOutputPath(output)
-        .withCompilationDatabase((File(input) / "compile_commands.json").pathAsString)
+        .withCompilationDatabase((Paths.get(input) / "compile_commands.json").toString)
       val c2cpg = new C2Cpg()
       val cpg   = c2cpg.createCpg(config).get
       cpg.file.nameNot(FileTraversal.UNKNOWN, "<includes>").name.sorted.l should contain theSameElementsAs List(
@@ -146,15 +151,15 @@ class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
     }
 
     "handle broken file paths" in {
-      val cpgOutFile = File.newTemporaryFile("c2cpg.bin")
+      val cpgOutFile = BetterFile.newTemporaryFile("c2cpg.bin")
       cpgOutFile.deleteOnExit()
       val projectUnderTest = newBrokenProjectUnderTest()
-      val input            = projectUnderTest.path.toAbsolutePath.toString
+      val input            = projectUnderTest.toAbsolutePath.toString
       val output           = cpgOutFile.toString
       val config = Config()
         .withInputPath(input)
         .withOutputPath(output)
-        .withCompilationDatabase((File(input) / "compile_commands.json").pathAsString)
+        .withCompilationDatabase((Paths.get(input) / "compile_commands.json").toString)
       val c2cpg = new C2Cpg()
       val cpg   = c2cpg.createCpg(config).get
       cpg.file.nameNot(FileTraversal.UNKNOWN, "<includes>").name.l shouldBe List("fileA.c")

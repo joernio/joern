@@ -327,7 +327,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
         .l shouldBe List(
         "std::lock_guard<std::mutex> lk(mx)",
         "if (std::lock_guard<std::mutex> lk(mx); v.empty()) { v.push_back(val); }",
-        "gadget(args)",
+        "gadget = Foo(args)",
         "s = gadget.status()",
         "switch (Foo gadget(args); auto s = gadget.status()) { case OK: gadget.zip(); break; case Bad: throw BadFoo(s.message()); }"
       )

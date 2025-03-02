@@ -1,11 +1,15 @@
 package io.joern.csharpsrc2cpg.io
 
-import better.files.File
+import better.files.File as BetterFile
 import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
 import io.joern.x2cpg.utils.server.FrontendHTTPClient
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
+
+import java.nio.file.{Files, Path}
 
 import scala.collection.parallel.CollectionConverters.RangeIsParallelizable
 import scala.util.Failure
@@ -15,14 +19,16 @@ class CSharp2CpgHTTPServerTests extends CSharpCode2CpgFixture with BeforeAndAfte
 
   private var port: Int = -1
 
-  private def newProjectUnderTest(index: Option[Int] = None): File = {
-    val dir  = File.newTemporaryDirectory("csharp2cpgTestsHttpTest")
+  private def newProjectUnderTest(index: Option[Int] = None): Path = {
+    val dir  = Files.createTempDirectory("csharp2cpgTestsHttpTest")
     val file = dir / "main.cs"
-    file.createIfNotExists(createParents = true)
+    file.createWithParentsIfNotExists(createParents = true)
     val indexStr = index.map(_.toString).getOrElse("")
-    file.writeText(basicBoilerplate(s"Console.WriteLine($indexStr);"))
-    file.deleteOnExit()
-    dir.deleteOnExit()
+    val content  = basicBoilerplate(s"Console.WriteLine($indexStr);")
+    Files.writeString(file, content)
+    FileUtil.deleteOnExit(file)
+    FileUtil.deleteOnExit(dir)
+    dir
   }
 
   override def beforeAll(): Unit = {
@@ -37,10 +43,10 @@ class CSharp2CpgHTTPServerTests extends CSharpCode2CpgFixture with BeforeAndAfte
 
   "Using csharp2cpg in server mode" should {
     "build CPGs correctly (single test)" in {
-      val cpgOutFile = File.newTemporaryFile("csharp2cpg.bin")
+      val cpgOutFile = BetterFile.newTemporaryFile("csharp2cpg.bin")
       cpgOutFile.deleteOnExit()
       val projectUnderTest = newProjectUnderTest()
-      val input            = projectUnderTest.path.toAbsolutePath.toString
+      val input            = projectUnderTest.toAbsolutePath.toString
       val output           = cpgOutFile.toString
       val client           = FrontendHTTPClient(port)
       val req              = client.buildRequest(Array(s"input=$input", s"output=$output"))
@@ -56,10 +62,10 @@ class CSharp2CpgHTTPServerTests extends CSharpCode2CpgFixture with BeforeAndAfte
 
     "build CPGs correctly (multi-threaded test)" in {
       (0 until 10).par.foreach { index =>
-        val cpgOutFile = File.newTemporaryFile("csharp2cpg.bin")
+        val cpgOutFile = BetterFile.newTemporaryFile("csharp2cpg.bin")
         cpgOutFile.deleteOnExit()
         val projectUnderTest = newProjectUnderTest(Some(index))
-        val input            = projectUnderTest.path.toAbsolutePath.toString
+        val input            = projectUnderTest.toAbsolutePath.toString
         val output           = cpgOutFile.toString
         val client           = FrontendHTTPClient(port)
         val req              = client.buildRequest(Array(s"input=$input", s"output=$output"))

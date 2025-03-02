@@ -18,6 +18,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   MemberCall,
   NextExpression,
   OperatorAssignment,
+  RegexMatchMemberCall,
   RescueExpression,
   RubyExpression,
   SimpleIdentifier,
@@ -261,7 +262,9 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
 
             val conditions = whenClause.matchExpressions.map {
               case regex: StaticLiteral if regex.typeFullName == prefixAsCoreType(Defines.Regexp) =>
-                expr.map(e => BinaryExpression(regex, RubyOperators.regexpMatch, e)(regex.span)).getOrElse(regex)
+                expr
+                  .map(e => RegexMatchMemberCall(regex, ".", RubyOperators.regexpMatch, e :: Nil)(regex.span))
+                  .getOrElse(regex)
               case mExpr =>
                 expr.map(e => BinaryExpression(mExpr, "===", e)(mExpr.span)).getOrElse(mExpr)
             } ++ whenClause.matchSplatExpression.iterator.flatMap {

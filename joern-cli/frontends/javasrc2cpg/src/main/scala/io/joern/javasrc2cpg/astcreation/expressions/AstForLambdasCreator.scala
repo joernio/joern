@@ -280,13 +280,13 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
         val scopeVariable = variables.head
         val capturedLocal = localNode(
           lambdaNode,
-          scopeVariable.name,
-          scopeVariable.name,
+          scopeVariable.mangledName,
+          scopeVariable.mangledName,
           scopeVariable.typeFullName,
           Option(closureBindingId),
           Option(scopeVariable.genericSignature)
         )
-        scope.enclosingBlock.foreach(_.addLocal(capturedLocal))
+        scope.enclosingBlock.foreach(_.addLocal(capturedLocal, scopeVariable.name))
 
         ClosureBindingEntry(scopeVariable, closureBindingNode) -> capturedLocal
       }
@@ -322,7 +322,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
     val bindingsToLocals      = defineCapturedVariables(lambdaExpr, lambdaMethodName, capturedVariables)
     val capturedLocalAsts     = bindingsToLocals.map(_._2).map(Ast(_))
     val closureBindingEntries = bindingsToLocals.map(_._1)
-    val temporaryLocalAsts    = scope.enclosingMethod.map(_.getTemporaryLocals).getOrElse(Nil).map(Ast(_))
+    val temporaryLocalAsts = scope.enclosingMethod.map(_.getAndClearUnaddedPatternLocals()).getOrElse(Nil).map(Ast(_))
 
     val blockAst = Ast(blockNode(body))
       .withChildren(temporaryLocalAsts)

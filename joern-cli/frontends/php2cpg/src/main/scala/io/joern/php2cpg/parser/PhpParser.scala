@@ -3,7 +3,7 @@ package io.joern.php2cpg.parser
 import better.files.File
 import io.joern.php2cpg.Config
 import io.joern.php2cpg.parser.Domain.PhpFile
-import io.joern.x2cpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Path
@@ -36,7 +36,7 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
 
     val command = phpParseCommand(inputPaths)
 
-    val result = ExternalCommand.run(command, ".", mergeStdErrInStdOut = true)
+    val result = ExternalCommand.run(command, Some("."), mergeStdErrInStdOut = true)
     result match {
       case ExternalCommand.ExternalCommandResult(0, stdOut, _) =>
         val asJson = linesToJsonValues(stdOut)

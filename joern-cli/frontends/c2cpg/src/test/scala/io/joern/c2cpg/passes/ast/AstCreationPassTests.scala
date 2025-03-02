@@ -241,6 +241,25 @@ class AstCreationPassTests extends AstC2CpgSuite {
       }
     }
 
+    "be correct for decl assignment with parentheses" in {
+      val cpg = code(
+        """
+          |void method() {
+          |  int *val (new int[3]);
+          |}
+          |""".stripMargin,
+        "test.cpp"
+      )
+      inside(cpg.method.nameExact("method").block.astChildren.isCall.l) { case List(assignment: Call) =>
+        val List(identifier) = assignment.argument.isIdentifier.l
+        identifier.argumentIndex shouldBe 1
+        identifier.name shouldBe "val"
+        val List(call) = assignment.argument.isCall.l
+        call.code shouldBe "(new int[3])"
+        call.argumentIndex shouldBe 2
+      }
+    }
+
     "be correct for decl assignment with typedecl" in {
       val cpg = code(
         """
@@ -1092,9 +1111,8 @@ class AstCreationPassTests extends AstC2CpgSuite {
         .fullNameExact("Foo")
         .l
         .size shouldBe 1
-      inside(cpg.call.codeExact("f1(0)").l) { case List(call: Call) =>
-        call.name shouldBe "f1"
-        call.argument(1).code shouldBe "0"
+      inside(cpg.call.codeExact("f1 = Foo(0)").l) { case List(call: Call) =>
+        call.name shouldBe Operators.assignment
       }
     }
 

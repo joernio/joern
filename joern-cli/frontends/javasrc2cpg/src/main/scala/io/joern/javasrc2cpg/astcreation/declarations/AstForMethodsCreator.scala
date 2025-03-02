@@ -257,15 +257,18 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   }
 
   private def astsForFieldInitializers(fieldDeclarations: List[FieldDeclaration]): List[Ast] = {
-    fieldDeclarations.flatMap { fieldDeclaration =>
+    scope.pushBlockScope()
+    val fieldInitializerAsts = fieldDeclarations.flatMap { fieldDeclaration =>
       fieldDeclaration.getVariables.asScala.filter(_.getInitializer.isPresent).toList.flatMap { variableDeclaration =>
         scope.pushFieldDeclScope(fieldDeclaration.isStatic, variableDeclaration.getNameAsString)
         val assignmentAsts = astsForVariableDeclarator(variableDeclaration, fieldDeclaration)
-        val patternAsts    = scope.enclosingMethod.get.getUnaddedPatternVariableAstsAndMarkAdded()
+        val patternAsts    = scope.enclosingMethod.get.getAndClearUnaddedPatternLocals().map(Ast(_))
         scope.popFieldDeclScope()
         patternAsts ++ assignmentAsts
       }
     }
+    scope.popBlockScope()
+    fieldInitializerAsts
   }
 
   def astForDefaultConstructor(originNode: Node, instanceFieldDeclarations: List[FieldDeclaration]): Ast = {
@@ -305,7 +308,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       .map(astForEponymousFieldAssignment(thisNode, _))
     val bodyStatementAsts =
       astsForFieldInitializers(instanceFieldDeclarations) ++ recordParameterAssignments
-    val temporaryLocalAsts = scope.enclosingMethod.map(_.getTemporaryLocals).getOrElse(Nil).map(Ast(_))
+    val patternLocalAsts = scope.enclosingMethod.map(_.getAndClearUnaddedPatternLocals()).getOrElse(Nil).map(Ast(_))
 
     val returnNode = newMethodReturnNode(TypeConstants.Void, line = None, column = None)
 
@@ -316,7 +319,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
         constructorNode,
         thisNode,
         explicitParameterAsts = parameterAsts,
-        bodyStatementAsts = temporaryLocalAsts ++ bodyStatementAsts,
+        bodyStatementAsts = patternLocalAsts ++ bodyStatementAsts,
         methodReturn = returnNode,
         annotationAsts = Nil,
         modifiers = modifiers,
@@ -544,7 +547,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
         if (bodyContainsThis)
           Nil
         else
-          scope.enclosingMethod.get.getTemporaryLocals.map(Ast(_)) ++ astsForFieldInitializers(
+          scope.enclosingMethod.get.getAndClearUnaddedPatternLocals().map(Ast(_)) ++ astsForFieldInitializers(
             instanceFieldDeclarations
           )
 

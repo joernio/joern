@@ -1,9 +1,9 @@
 package io.joern.x2cpg.utils
 
-import better.files.File
+import io.joern.x2cpg.utils.FileUtil.*
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Files, Path}
 import scala.annotation.nowarn
 import scala.collection.mutable
 
@@ -11,7 +11,7 @@ trait TestCodeWriter {
 
   private val codeFileNamePairs             = mutable.ArrayBuffer.empty[(String, Option[String])]
   private var fileNameCounter               = 0
-  private var outputDirectory: Option[File] = None
+  private var outputDirectory: Option[Path] = None
   @nowarn
   protected def codeFilePreProcessing(codeFile: Path): Unit = {}
 
@@ -32,9 +32,10 @@ trait TestCodeWriter {
     if (outputDirectory.nonEmpty) {
       throw new RuntimeException("TestCodeWriter may only be used to write code once")
     }
-    val tmpDir = File.newTemporaryDirectory("x2cpgTestTmpDir").deleteOnExit()
+    val tmpDir = Files.createTempDirectory("x2cpgTestTmpDir")
+    FileUtil.deleteOnExit(tmpDir)
     outputDirectory = Some(tmpDir)
-    val tmpPath = tmpDir.path
+    val tmpPath = tmpDir
     val codeFiles = codeFileNamePairs.map { case (code, explicitFileName) =>
       val fileName = explicitFileName.getOrElse {
         val filename = s"Test$fileNameCounter$extension"
@@ -56,6 +57,6 @@ trait TestCodeWriter {
   }
 
   def cleanupOutput(): Unit = {
-    outputDirectory.foreach(_.delete())
+    outputDirectory.foreach(FileUtil.delete(_))
   }
 }

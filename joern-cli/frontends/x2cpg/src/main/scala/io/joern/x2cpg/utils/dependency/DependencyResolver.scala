@@ -1,7 +1,7 @@
 package io.joern.x2cpg.utils.dependency
 
 import better.files.File
-import io.joern.x2cpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.joern.x2cpg.utils.dependency.GradleConfigKeys.GradleConfigKey
 import org.slf4j.LoggerFactory
 
@@ -46,7 +46,7 @@ object DependencyResolver {
     configuration: String
   ): Option[collection.Seq[String]] = {
     val lines = ExternalCommand
-      .run(Seq("gradle", "dependencies", "--configuration,", configuration), projectDir.toString)
+      .run(Seq("gradle", "dependencies", "--configuration,", configuration), Option(projectDir.toString))
       .toTry match {
       case Success(lines) => lines
       case Failure(exception) =>

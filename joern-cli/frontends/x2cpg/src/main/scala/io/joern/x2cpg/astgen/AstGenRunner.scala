@@ -4,7 +4,8 @@ import better.files.File
 import com.typesafe.config.ConfigFactory
 import io.joern.x2cpg.utils.Environment.ArchitectureType.ArchitectureType
 import io.joern.x2cpg.utils.Environment.OperatingSystemType.OperatingSystemType
-import io.joern.x2cpg.utils.{Environment, ExternalCommand}
+import io.joern.x2cpg.utils.{Environment}
+import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.joern.x2cpg.{SourceFiles, X2CpgConfig}
 import org.slf4j.LoggerFactory
 import versionsort.VersionHelper
@@ -53,7 +54,7 @@ object AstGenRunner {
       .toString
 
   def hasCompatibleAstGenVersion(compatibleVersion: String)(implicit metaData: AstGenProgramMetaData): Boolean = {
-    ExternalCommand.run(Seq(metaData.name, "-version"), ".").successOption.map(_.mkString.strip()) match {
+    ExternalCommand.run(Seq(metaData.name, "-version"), Some(".")).successOption.map(_.mkString.strip()) match {
       case Some(installedVersion)
           if installedVersion != "unknown" &&
             Try(VersionHelper.compare(installedVersion, compatibleVersion)).toOption.getOrElse(-1) >= 0 =>

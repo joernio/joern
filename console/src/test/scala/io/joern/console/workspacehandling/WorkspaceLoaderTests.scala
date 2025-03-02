@@ -2,6 +2,9 @@ package io.joern.console.workspacehandling
 
 import better.files.Dsl.mkdir
 import better.files.File
+import io.joern.x2cpg.utils.FileUtil
+
+import java.nio.file.Files
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -12,13 +15,13 @@ class WorkspaceLoaderTests extends AnyWordSpec with Matchers {
   "WorkspaceLoader" should {
 
     "create workspace and workspace directory if nonexistent" in {
-      val dir = File.newTemporaryDirectory(tmpDirPrefix)
-      dir.delete()
-      TestLoader().load(dir.path.toString)
+      val dir = Files.createTempDirectory(tmpDirPrefix)
+      FileUtil.delete(dir)
+      TestLoader().load(dir.toString)
       try {
-        dir.exists shouldBe true
+        Files.exists(dir) shouldBe true
       } finally {
-        dir.delete()
+        FileUtil.delete(dir)
       }
     }
 

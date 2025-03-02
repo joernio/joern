@@ -1,12 +1,16 @@
 package io.joern.rubysrc2cpg.io
 
-import better.files.File
+import better.files.File as BetterFile
 import io.joern.x2cpg.utils.server.FrontendHTTPClient
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import java.nio.file.{Files, Path}
 
 import scala.collection.parallel.CollectionConverters.RangeIsParallelizable
 import scala.util.Failure
@@ -16,18 +20,20 @@ class RubySrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAn
 
   private var port: Int = -1
 
-  private def newProjectUnderTest(index: Option[Int] = None): File = {
-    val dir  = File.newTemporaryDirectory("rubysrc2cpgTestsHttpTest")
+  private def newProjectUnderTest(index: Option[Int] = None): Path = {
+    val dir  = Files.createTempDirectory("rubysrc2cpgTestsHttpTest")
     val file = dir / "main.rb"
-    file.createIfNotExists(createParents = true)
+    file.createWithParentsIfNotExists(createParents = true)
     val indexStr = index.map(_.toString).getOrElse(""""Hello, World!"""")
-    file.writeText(s"""
-      |def main
-      | puts $indexStr
-      |end
-      |""".stripMargin)
-    file.deleteOnExit()
-    dir.deleteOnExit()
+    val content = s"""
+                     |def main
+                     | puts $indexStr
+                     |end
+                     |""".stripMargin
+    Files.writeString(file, content)
+    FileUtil.deleteOnExit(file)
+    FileUtil.deleteOnExit(dir)
+    dir
   }
 
   override def beforeAll(): Unit = {
@@ -42,10 +48,10 @@ class RubySrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAn
 
   "Using rubysrc2cpg in server mode" should {
     "build CPGs correctly (single test)" in {
-      val cpgOutFile = File.newTemporaryFile("rubysrc2cpg.bin")
+      val cpgOutFile = BetterFile.newTemporaryFile("rubysrc2cpg.bin")
       cpgOutFile.deleteOnExit()
       val projectUnderTest = newProjectUnderTest()
-      val input            = projectUnderTest.path.toAbsolutePath.toString
+      val input            = projectUnderTest.toAbsolutePath.toString
       val output           = cpgOutFile.toString
       val client           = FrontendHTTPClient(port)
       val req              = client.buildRequest(Array(s"input=$input", s"output=$output"))
@@ -61,10 +67,10 @@ class RubySrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAn
 
     "build CPGs correctly (multi-threaded test)" in {
       (0 until 10).par.foreach { index =>
-        val cpgOutFile = File.newTemporaryFile("rubysrc2cpg.bin")
+        val cpgOutFile = BetterFile.newTemporaryFile("rubysrc2cpg.bin")
         cpgOutFile.deleteOnExit()
         val projectUnderTest = newProjectUnderTest(Some(index))
-        val input            = projectUnderTest.path.toAbsolutePath.toString
+        val input            = projectUnderTest.toAbsolutePath.toString
         val output           = cpgOutFile.toString
         val client           = FrontendHTTPClient(port)
         val req              = client.buildRequest(Array(s"input=$input", s"output=$output"))

@@ -131,31 +131,32 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
       case _                                   => typeFullNameWithoutArgs
     }
 
-    val variableName = variableDeclarator.getNameAsString
-    val declarationNode: Option[NewVariableNode] = if (originNode.isInstanceOf[FieldDeclaration]) {
-      scope.lookupVariable(variableName).variableNode
-    } else {
-      // Use type name with generics for code
-      val localCode = s"${declaratorType.map(_.toString).getOrElse("")} ${variableDeclarator.getNameAsString}"
+    val originalName = variableDeclarator.getNameAsString
+    val declarationNodeFromPatterns =
+      scope.getHoistedPatternLocals.find(local => local.name == originalName && local.typeFullName == typeFullName)
+    val declarationNode: Option[NewVariableNode] =
+      if (originNode.isInstanceOf[FieldDeclaration]) {
+        scope.lookupVariable(originalName).variableNode
+      } else if (declarationNodeFromPatterns.isDefined) {
+        declarationNodeFromPatterns.foreach(local => scope.enclosingBlock.foreach(_.addLocal(local, originalName)))
+        declarationNodeFromPatterns
+      } else {
+        // Use type name with generics for code
+        val mangledName = scope.getMangledName(originalName)
+        val localCode   = s"${declaratorType.map(_.toString).getOrElse("")} ${mangledName}"
 
-      val genericSignature = binarySignatureCalculator.variableBinarySignature(variableDeclarator.getType)
-      val local =
-        localNode(
-          originNode,
-          variableDeclarator.getNameAsString,
-          localCode,
-          typeFullName,
-          genericSignature = Option(genericSignature)
-        )
+        val genericSignature = binarySignatureCalculator.variableBinarySignature(variableDeclarator.getType)
+        val local =
+          localNode(originNode, mangledName, localCode, typeFullName, genericSignature = Option(genericSignature))
 
-      scope.enclosingBlock.foreach(_.addLocal(local))
+        scope.enclosingBlock.foreach(_.addLocal(local, originalName))
 
-      Some(local)
-    }
+        Some(local)
+      }
 
     declarationNode match {
       case None =>
-        logger.warn(s"No declaration node found for declarator ${variableName}")
+        logger.warn(s"No declaration node found for declarator ${originalName}")
         Nil
 
       case Some(declarationNode) =>
@@ -166,7 +167,7 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
               scope.enclosingTypeDecl.name.get,
               scope.enclosingTypeDecl.fullName.get,
               originNode,
-              variableName,
+              originalName,
               declarationNode.typeFullName
             )
 
@@ -195,7 +196,9 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
           )
         }
 
-        val localAst = Option.when(declarationNode.isInstanceOf[NewLocal])(Ast(declarationNode))
+        val localAst = Option.when(declarationNode.isInstanceOf[NewLocal] && declarationNodeFromPatterns.isEmpty)(
+          Ast(declarationNode)
+        )
 
         localAst.toList ++ assignmentAsts
 
