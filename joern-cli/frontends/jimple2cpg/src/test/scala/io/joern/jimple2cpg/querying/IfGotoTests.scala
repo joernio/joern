@@ -42,5 +42,40 @@ class IfGotoTests extends JimpleCode2CpgFixture {
       .code
       .toSetMutable shouldBe Set("i < 11", "$stack6 >= x", "x <= y", "i >= 10")
   }
+  val cpg2: Cpg = code("""
+                         |  class IfTest {
+                         |      void foo(int x) {
+                         |        try{
+                         |          if (x < 33) {
+                         |              baz(bar(), 1);
+                         |          }else{
+                         |              baz(bar(), 2);
+                         |          }
+                         |        }catch(Exception e){
+                         |          baz(bar(), 3);
+                         |        }
+                         |      }
+                         |      Object bar() {
+                         |          return new Object();
+                         |      }
+                         |      void baz(Object o, int x) {
+                         |          if (o == null) {
+                         |              System.out.println("null");
+                         |          }else{
+                         |              System.out.println(x);
+                         |          }
+                         |      }
+                         |  }
+                         |""".stripMargin).cpg
 
+  "should have possibleTypes in condition calls" in {
+    val conditionCall = cpg2.call.code(".*33.*").head
+    conditionCall.name shouldBe "<operator>.greaterEqualsThan"
+    conditionCall.possibleTypes shouldBe List("Condition")
+    cpg2.call.code(".*null.*").head.possibleTypes shouldBe List("Condition")
+    val call1             = cpg2.call.code(".*this.baz\\(.*, 1\\).*").head
+    val call1ControlledBy = call1.controlledBy.isCall.l
+    call1ControlledBy.size shouldBe 2
+    call1ControlledBy.filter { (c: Call) => c.possibleTypes.contains("Condition") }.head shouldBe conditionCall
+  }
 }
