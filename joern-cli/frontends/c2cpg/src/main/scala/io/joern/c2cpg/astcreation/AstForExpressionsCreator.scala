@@ -432,7 +432,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val name = Operators.cast
     val cpgCastExpression =
       callNode(typeIdInit, code(typeIdInit), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
-
     val typeAst = unknownNode(typeIdInit.getTypeId, code(typeIdInit.getTypeId))
     val expr    = astForNode(typeIdInit.getInitializer)
     callAst(cpgCastExpression, List(Ast(typeAst), expr))

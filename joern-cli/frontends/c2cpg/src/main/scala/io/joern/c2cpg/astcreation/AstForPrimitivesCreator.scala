@@ -84,13 +84,14 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def isInCurrentScope(ident: CPPASTIdExpression, owner: String): Boolean = {
+    val ownerWithOutTemplateTags = owner.takeWhile(_ != '<')
     val isInMethodScope =
       Try(CPPVisitor.getContainingScope(ident).getScopeName.toString).toOption.exists(s =>
-        s.startsWith(s"$owner::") || s.contains(s"::$owner::")
+        s.startsWith(s"$ownerWithOutTemplateTags::") || s.contains(s"::$ownerWithOutTemplateTags::")
       )
     isInMethodScope || methodAstParentStack.collectFirst {
-      case typeDecl: NewTypeDecl if typeDecl.fullName == owner    => typeDecl
-      case method: NewMethod if method.fullName.startsWith(owner) => method
+      case typeDecl: NewTypeDecl if typeDecl.fullName == ownerWithOutTemplateTags    => typeDecl
+      case method: NewMethod if method.fullName.startsWith(ownerWithOutTemplateTags) => method
     }.nonEmpty
   }
 

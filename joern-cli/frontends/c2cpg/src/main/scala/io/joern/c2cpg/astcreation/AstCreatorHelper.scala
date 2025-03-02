@@ -144,13 +144,14 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       } else cur
     }
     replaceWhitespaceAfterKeyword(tpe) match {
-      case ""                                                                      => Defines.Any
-      case t if t.startsWith("[") && t.endsWith("]")                               => Defines.Array
-      case t if isThisLambdaCapture(t) || t.contains("->")                         => Defines.Function
-      case t if t.contains("?")                                                    => Defines.Any
-      case t if t.contains("#")                                                    => Defines.Any
-      case t if t.contains("::{") || t.contains("}::")                             => Defines.Any
-      case t if t.contains("{") || t.contains("}")                                 => Defines.Any
+      case ""                                              => Defines.Any
+      case t if t.startsWith("[") && t.endsWith("]")       => Defines.Array
+      case t if isThisLambdaCapture(t) || t.contains("->") => Defines.Function
+      case t if t.contains("<#0") && t.endsWith(">")       => fixQualifiedName(t.replaceAll("#\\d+", Defines.Any))
+      case t if t.contains("?")                            => Defines.Any
+      case t if t.contains("#")                            => Defines.Any
+      case t if t.contains("::{") || t.contains("}::")     => Defines.Any
+      case t if t.contains("{") || t.contains("}")         => Defines.Any
       case t if t.contains("org.eclipse.cdt.internal.core.dom.parser.ProblemType") => Defines.Any
       case t if t.contains("( ") => fixQualifiedName(t.substring(0, t.indexOf("( ")))
       case someType              => fixQualifiedName(someType)

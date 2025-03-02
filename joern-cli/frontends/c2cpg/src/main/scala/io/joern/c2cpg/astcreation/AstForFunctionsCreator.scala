@@ -8,8 +8,8 @@ import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
+import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTCompositeTypeSpecifier
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTFunctionDefinition
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTQualifiedName
@@ -215,6 +215,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
             Some(o.getOwner.asInstanceOf[CPPStructuredBindingComposite].getQualifiedName.mkString("."))
           case _ if cppFunc.getDeclarator.getName.isInstanceOf[ICPPASTQualifiedName] =>
             Some(cppFunc.getDeclarator.getName.asInstanceOf[CPPASTQualifiedName].getQualifier.mkString("."))
+          case _ if cppFunc.getParent.isInstanceOf[ICPPASTCompositeTypeSpecifier] =>
+            Some(fullName(cppFunc.getParent))
           case _ => None
         }
         maybeOwner.toSeq.map { owner =>
