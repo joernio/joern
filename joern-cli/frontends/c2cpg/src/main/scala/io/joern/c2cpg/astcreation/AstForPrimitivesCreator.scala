@@ -8,13 +8,15 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodRef
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
+import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
+import org.eclipse.cdt.core.dom.ast.cpp.ICPPFunction
 import org.eclipse.cdt.internal.core.dom.parser.c.ICInternalBinding
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTQualifiedName
-import org.eclipse.cdt.internal.core.dom.parser.cpp.ICPPInternalBinding
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTIdExpression
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTQualifiedName
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPField
+import org.eclipse.cdt.internal.core.dom.parser.cpp.ICPPInternalBinding
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.CPPVisitor
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalMemberAccess
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
@@ -186,38 +188,48 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     astForNode(arrMod.getConstantExpression)
 
   protected def astForQualifiedName(qualId: CPPASTQualifiedName): Ast = {
-    val op = Operators.fieldAccess
-    val ma = callNode(qualId, code(qualId), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
+    safeGetBinding(qualId) match {
+      case Some(function: ICPPFunction) =>
+        val name      = qualId.getLastName.toString
+        val signature = if function.isExternC then "" else functionTypeToSignature(function.getType)
+        val fullName = if (function.isExternC) {
+          StringUtils.normalizeSpace(name)
+        } else {
+          val fullNameNoSig = StringUtils.normalizeSpace(function.getQualifiedName.mkString("."))
+          s"$fullNameNoSig:$signature"
+        }
+        Ast(methodRefNode(qualId, name, fullName, registerType(cleanType(function.getType.toString))))
+      case _ =>
+        val op = Operators.fieldAccess
+        val ma = callNode(qualId, code(qualId), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
 
-    def fieldAccesses(names: List[IASTNode], argIndex: Int = -1): Ast = names match {
-      case Nil => Ast()
-      case head :: Nil =>
-        astForNode(head)
-      case head :: tail =>
-        val codeString = s"${code(head)}::${tail.map(code).mkString("::")}"
-        val callNode_ =
-          callNode(head, code(head), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
-            .argumentIndex(argIndex)
-        callNode_.code = codeString
-        val arg1 = astForNode(head)
-        val arg2 = fieldAccesses(tail)
-        callAst(callNode_, List(arg1, arg2))
+        def fieldAccesses(names: List[IASTNode], argIndex: Int = -1): Ast = names match {
+          case Nil => Ast()
+          case head :: Nil =>
+            astForNode(head)
+          case head :: tail =>
+            val codeString = s"${code(head)}::${tail.map(code).mkString("::")}"
+            val callNode_ =
+              callNode(head, code(head), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
+                .argumentIndex(argIndex)
+            callNode_.code = codeString
+            val arg1 = astForNode(head)
+            val arg2 = fieldAccesses(tail)
+            callAst(callNode_, List(arg1, arg2))
+        }
+        val qualifier = fieldAccesses(qualId.getQualifier.toIndexedSeq.toList)
+        val owner = if (qualifier != Ast()) {
+          qualifier
+        } else {
+          Ast(literalNode(qualId.getLastName, "<global>", Defines.Any))
+        }
+        val member = fieldIdentifierNode(
+          qualId.getLastName,
+          fixQualifiedName(qualId.getLastName.toString),
+          qualId.getLastName.toString
+        )
+        callAst(ma, List(owner, Ast(member)))
     }
-
-    val qualifier = fieldAccesses(qualId.getQualifier.toIndexedSeq.toList)
-
-    val owner = if (qualifier != Ast()) {
-      qualifier
-    } else {
-      Ast(literalNode(qualId.getLastName, "<global>", Defines.Any))
-    }
-
-    val member = fieldIdentifierNode(
-      qualId.getLastName,
-      fixQualifiedName(qualId.getLastName.toString),
-      qualId.getLastName.toString
-    )
-    callAst(ma, List(owner, Ast(member)))
   }
 
 }
