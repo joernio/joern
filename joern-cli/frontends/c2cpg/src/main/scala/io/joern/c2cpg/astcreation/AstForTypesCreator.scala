@@ -124,55 +124,53 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     normalizedCode.strip()
   }
 
-  protected def astForInitializer(declarator: IASTDeclarator, init: IASTInitializer): Ast = init match {
-    case i: IASTEqualsInitializer =>
-      val operatorName = Operators.assignment
-      val callNode_ =
-        callNode(
-          declarator,
-          code(declarator),
-          operatorName,
-          operatorName,
-          DispatchTypes.STATIC_DISPATCH,
-          None,
-          Some(Defines.Any)
-        )
-      val left  = astForNode(declarator.getName)
-      val right = astForNode(i.getInitializerClause)
-      callAst(callNode_, List(left, right))
-    case i: ICPPASTConstructorInitializer =>
-      val name         = ASTStringUtil.getSimpleName(declarator.getName)
-      val tpe          = scope.lookupVariable(name).map(_._2).getOrElse(Defines.Any)
-      val operatorName = Operators.assignment
-      val assignmentCallNode =
-        callNode(
-          declarator,
-          s"$name = $tpe${code(i)}",
-          operatorName,
-          operatorName,
-          DispatchTypes.STATIC_DISPATCH,
-          None,
-          Some(tpe)
-        )
-      val leftAst = astForNode(declarator.getName)
-      val args    = List(leftAst, astForNode(i))
-      callAst(assignmentCallNode, args)
-    case i: IASTInitializerList =>
-      val operatorName = Operators.assignment
-      val callNode_ =
-        callNode(
-          declarator,
-          code(declarator),
-          operatorName,
-          operatorName,
-          DispatchTypes.STATIC_DISPATCH,
-          None,
-          Some(Defines.Any)
-        )
-      val left  = astForNode(declarator.getName)
-      val right = astForNode(i)
-      callAst(callNode_, List(left, right))
-    case _ => astForNode(init)
+  protected def astForInitializer(declarator: IASTDeclarator, init: IASTInitializer): Ast = {
+    val name         = ASTStringUtil.getSimpleName(declarator.getName)
+    val tpe          = scope.lookupVariable(name).map(_._2).getOrElse(Defines.Any)
+    val operatorName = Operators.assignment
+    val leftAst      = astForNode(declarator.getName)
+    init match {
+      case i: IASTEqualsInitializer =>
+        val assignmentCallNode =
+          callNode(
+            declarator,
+            code(declarator),
+            operatorName,
+            operatorName,
+            DispatchTypes.STATIC_DISPATCH,
+            None,
+            Some(tpe)
+          )
+        val right = astForNode(i.getInitializerClause)
+        callAst(assignmentCallNode, List(leftAst, right))
+      case i: ICPPASTConstructorInitializer =>
+        val assignmentCallNode =
+          callNode(
+            declarator,
+            s"$name = $tpe${code(i)}",
+            operatorName,
+            operatorName,
+            DispatchTypes.STATIC_DISPATCH,
+            None,
+            Some(tpe)
+          )
+        val args = List(leftAst, astForNode(i))
+        callAst(assignmentCallNode, args)
+      case i: IASTInitializerList =>
+        val assignmentCallNode =
+          callNode(
+            declarator,
+            code(declarator),
+            operatorName,
+            operatorName,
+            DispatchTypes.STATIC_DISPATCH,
+            None,
+            Some(tpe)
+          )
+        val right = astForNode(i)
+        callAst(assignmentCallNode, List(leftAst, right))
+      case _ => astForNode(init)
+    }
   }
 
   protected def handleUsingDeclaration(usingDecl: ICPPASTUsingDeclaration): Seq[Ast] = {
