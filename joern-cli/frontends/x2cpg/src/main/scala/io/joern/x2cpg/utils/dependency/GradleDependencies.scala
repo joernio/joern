@@ -14,19 +14,13 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Random, Success, Try, Using}
 
-case class ProjectNameInfo(projectName: String, isSubproject: Boolean) {
+case class ProjectNameInfo(projectName: String, parentName: Option[String]) {
   override def toString: String = {
-    if (isSubproject)
-      s":$projectName"
-    else
-      projectName
+    parentName.map(parentName => s"$parentName:$projectName").getOrElse(projectName)
   }
 
   def makeGradleTaskName(taskName: String): String = {
-    if (isSubproject)
-      s"$projectName:$taskName"
-    else
-      taskName
+    parentName.map(parentName => s"$parentName:$projectName:$taskName").getOrElse(taskName)
   }
 }
 
@@ -81,49 +75,85 @@ object GradleDependencies {
     val androidTaskDefinition = Option.when(projectInfo.hasAndroidSubproject)(s"""
            |def androidDepsCopyTaskName = taskName + "_androidDeps"
            |      $taskCreationFunction(androidDepsCopyTaskName, Copy) {
+           |        def paths = project.configurations.find { it.name.equals("androidApis") }
+           |        if (paths == null) paths = []
            |        duplicatesStrategy = 'include'
            |        into destinationDir
-           |        from project.configurations.find { it.name.equals("androidApis") }
+           |        from paths
            |      }
            |""".stripMargin)
 
     val dependsOnAndroidTask = Option.when(projectInfo.hasAndroidSubproject)("dependsOn androidDepsCopyTaskName")
 
-    s"""
+    s"""import java.nio.file.Path
+       |import java.nio.file.Files
+       |import java.nio.file.StandardCopyOption
+       |
+       |abstract class FetchDependencies extends DefaultTask {
+       |
+       |  FetchDependencies() {
+       |    outputs.upToDateWhen { false }
+       |  }
+       |
+       |  @Input
+       |  abstract ListProperty<String> getSelectedConfigNames()
+       |
+       |  @OutputDirectory
+       |  abstract Property<String> getDestinationDirString()
+       |
+       |  @TaskAction
+       |  void fetch() {
+       |    def projectString = project.toString()
+       |    def projectFullName = ""
+       |    if (projectString.startsWith("root project")) {
+       |      projectFullName = projectString.substring("root project '".length(), projectString.length() - 1)
+       |    } else {
+       |      projectFullName = projectString.substring("project ':".length(), projectString.length() - 1)
+       |    }
+       |
+       |    def destinationDir = Path.of(destinationDirString.get(), projectFullName.replace(':', '/'))
+       |    Files.createDirectories(destinationDir)
+       |    def selectedConfigs = project.configurations.findAll {
+       |      configuration -> selectedConfigNames.get().contains(configuration.getName())
+       |    }
+       |
+       |    for (selectedConfig in selectedConfigs) {
+       |      // See https://docs.gradle.org/current/userguide/artifact_resolution.html#artifact-resolution for more information
+       |      for (artifactFiles in selectedConfig.incoming.artifacts.resolvedArtifacts.map{ it.collect { artifact -> artifact.file } }) {
+       |        for (file in artifactFiles.get()) {
+       |          try {
+       |            Files.createSymbolicLink(
+       |              destinationDir.resolve(file.name),
+       |              Path.of(file.getPath())
+       |            )
+       |          } catch (Exception e) {
+       |            Files.copy(
+       |              Path.of(file.getPath()),
+       |              destinationDir.resolve(file.name),
+       |              StandardCopyOption.REPLACE_EXISTING
+       |            )
+       |          }
+       |        }
+       |      }
+       |    }
+       |  }
+       |}
+       |
        |allprojects { project ->
        |  def taskName = "$taskName"
+       |  def compileDepsCopyTaskName = taskName + "_compileDeps"
        |  def destinationDir = "${destination.replaceAll("\\\\", "/")}"
        |  def gradleProjectConfigurations = [$projectConfigurationString]
        |
        |  if (gradleProjectConfigurations.containsKey(project.name)) {
-       |    def gradleConfigurationNames = gradleProjectConfigurations.get(project.name)
-       |
-       |    def compileDepsCopyTaskName = taskName + "_compileDeps"
-       |    $taskCreationFunction(compileDepsCopyTaskName, Copy) {
-       |
-       |      def selectedConfigs = project.configurations.findAll {
-       |        configuration -> gradleConfigurationNames.contains(configuration.getName())
-       |      }
-       |
-       |      def componentIds = []
-       |      if (!selectedConfigs.isEmpty()) {
-       |        for (selectedConfig in selectedConfigs) {
-       |          componentIds = selectedConfig.incoming.resolutionResult.allDependencies.findAll {
-       |            dep -> dep instanceof org.gradle.api.internal.artifacts.result.DefaultResolvedDependencyResult
-       |          } .collect { it.selected.id }
-       |        }
-       |      }
-       |
-       |      def result = dependencies.createArtifactResolutionQuery()
-       |                               .forComponents(componentIds)
-       |                               .withArtifacts(JvmLibrary, SourcesArtifact)
-       |                               .execute()
-       |      duplicatesStrategy = 'include'
-       |      into destinationDir
-       |      from result.resolvedComponents.collect { it.getArtifacts(SourcesArtifact).collect { it.file } }
+       |    $taskCreationFunction(compileDepsCopyTaskName, FetchDependencies) {
+       |      selectedConfigNames = gradleProjectConfigurations.get(project.name)
+       |      destinationDirString = destinationDir
        |    }
+       |
        |    ${androidTaskDefinition.getOrElse("")}
-       |    $taskCreationFunction(taskName, Copy) {
+       |
+       |    $taskCreationFunction(taskName) {
        |      ${dependsOnAndroidTask.getOrElse("")}
        |      dependsOn compileDepsCopyTaskName
        |    }
@@ -167,6 +197,13 @@ object GradleDependencies {
     results.filterNot(_.toLowerCase.contains("test")).toList
   }
 
+  private def getSubprojectNames(project: GradleProject, parentName: String): List[ProjectNameInfo] = {
+    project.getChildren.asScala.flatMap { childProject =>
+      val childNameInfo = ProjectNameInfo(childProject.getName, Option(parentName))
+      childNameInfo :: getSubprojectNames(childProject, childNameInfo.toString)
+    }.toList
+  }
+
   private def getGradleProjectInfo(
     projectDir: Path,
     projectNameOverride: Option[String],
@@ -179,9 +216,7 @@ object GradleDependencies {
             val buildEnv = connection.getModel[BuildEnvironment](classOf[BuildEnvironment])
             val project  = connection.getModel[GradleProject](classOf[GradleProject])
 
-            val availableProjectNames = ProjectNameInfo(project.getName, false) :: project.getChildren.asScala
-              .map(child => ProjectNameInfo(child.getName, true))
-              .toList
+            val availableProjectNames = ProjectNameInfo(project.getName, None) :: getSubprojectNames(project, "")
 
             val availableProjectNamesString = availableProjectNames.mkString(" ")
 
@@ -362,6 +397,7 @@ object GradleDependencies {
               .list(destinationDir)
               .collect(Collectors.toList[Path])
               .asScala
+              .filterNot(File(_).isDirectory)
               .map(_.toAbsolutePath.toString)
           logger.info(s"Task $taskName resolved `${result.size}` dependency files.")
           Some(result)
@@ -375,9 +411,6 @@ object GradleDependencies {
           }
           if (stderrStream.toString.contains("Could not compile initialization script")) {
             val scriptContents = File(initScriptPath).contentAsString
-            logger.debug(
-              s"########## INITIALIZATION_SCRIPT ##########\n$scriptContents\n###########################################"
-            )
           }
           logger.debug(s"Gradle task execution stdout: \n$stdoutStream")
           logger.debug(s"Gradle task execution stderr: \n$stderrStream")
@@ -436,8 +469,13 @@ object GradleDependencies {
                     Using.resource(connection) { c =>
                       projectInfo.subprojects.keys.flatMap { projectNameInfo =>
                         val taskName = projectNameInfo.makeGradleTaskName(initScript.taskName)
+                        val destinationSubdir = projectNameInfo.parentName match {
+                          case None => projectNameInfo.projectName
+                          case _    => projectNameInfo.toString.stripPrefix(":").replace(':', '/')
+                        }
+                        val destinationDir = initScript.destinationDir.resolve(destinationSubdir)
 
-                        runGradleTask(c, taskName, initScript.destinationDir, initScriptFile.pathAsString) map { deps =>
+                        runGradleTask(c, taskName, destinationDir, initScriptFile.pathAsString) map { deps =>
                           val depsOutput = deps.map { d =>
                             if (!d.endsWith(aarFileExtension)) d
                             else
@@ -446,7 +484,6 @@ object GradleDependencies {
                                 case None       => d
                               }
                           }
-
                           projectNameInfo.projectName -> depsOutput
                         }
                       }.toMap
