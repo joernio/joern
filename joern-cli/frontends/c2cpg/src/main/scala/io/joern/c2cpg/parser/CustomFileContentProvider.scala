@@ -21,6 +21,10 @@ class CustomFileContentProvider(headerFileFinder: HeaderFileFinder) extends Inte
 
   private val logger = LoggerFactory.getLogger(classOf[CustomFileContentProvider])
 
+  override def getContentForInclusion(path: String, macroDictionary: IMacroDictionary): InternalFileContent = {
+    loadContent(path)
+  }
+
   private def loadContent(path: String): InternalFileContent = {
     val maybeFullPath = if (!getInclusionExists(path)) { headerFileFinder.find(path) }
     else { Option(path) }
@@ -37,10 +41,8 @@ class CustomFileContentProvider(headerFileFinder: HeaderFileFinder) extends Inte
     }.orNull
   }
 
-  override def getContentForInclusion(path: String, macroDictionary: IMacroDictionary): InternalFileContent =
-    loadContent(path)
-
-  override def getContentForInclusion(ifl: IIndexFileLocation, astPath: String): InternalFileContent =
+  override def getContentForInclusion(ifl: IIndexFileLocation, astPath: String): InternalFileContent = {
     loadContent(astPath)
+  }
 
 }

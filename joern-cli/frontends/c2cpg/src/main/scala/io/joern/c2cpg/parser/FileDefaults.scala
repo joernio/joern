@@ -29,9 +29,7 @@ object FileDefaults {
   def hasCppFileExtension(filePath: String): Boolean =
     CppFileExtensions.exists(ext => StringUtils.endsWithIgnoreCase(filePath, ext))
 
-  def hasSourceFileExtension(filePath: String): Boolean =
-    SourceFileExtensions.exists(ext => StringUtils.endsWithIgnoreCase(filePath, ext))
-
   def hasPreprocessedFileExtension(filePath: String): Boolean =
     StringUtils.endsWithIgnoreCase(filePath, PreprocessedExt)
+
 }

@@ -25,6 +25,14 @@ object C2CpgScope {
       .flatMap(_.nameToVariableNode.get(variableName))
   }
 
+  abstract class ScopeElement(val scopeNode: NewNode, val surroundingScope: Option[ScopeElement]) {
+    val nameToVariableNode: mutable.Map[String, (NewNode, String, String)] = mutable.HashMap.empty
+
+    def addVariable(variableName: String, variableNode: NewNode, tpe: String, evaluationStrategy: String): Unit = {
+      nameToVariableNode(variableName) = (variableNode, tpe, evaluationStrategy)
+    }
+  }
+
   case class ResolvedReference(variableNodeId: NewNode, origin: PendingReference)
 
   case class PendingReference(
@@ -43,13 +51,6 @@ object C2CpgScope {
 
   enum ScopeType {
     case MethodScope, BlockScope
-  }
-
-  abstract class ScopeElement(val scopeNode: NewNode, val surroundingScope: Option[ScopeElement]) {
-    val nameToVariableNode: mutable.Map[String, (NewNode, String, String)] = mutable.HashMap.empty
-
-    def addVariable(variableName: String, variableNode: NewNode, tpe: String, evaluationStrategy: String): Unit =
-      nameToVariableNode(variableName) = (variableNode, tpe, evaluationStrategy)
   }
 
   class MethodScopeElement(

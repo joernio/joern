@@ -1009,7 +1009,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
         "file.cpp"
       )
       inside(cpg.call.codeExact("static_assert ( a == 0 , \"not 0!\");").l) { case List(call: Call) =>
-        call.name shouldBe "static_assert"
+        call.name shouldBe "<operator>.staticAssert"
         call.argument(1).code shouldBe "a == 0"
         call.argument(2).code shouldBe "\"not 0!\""
       }

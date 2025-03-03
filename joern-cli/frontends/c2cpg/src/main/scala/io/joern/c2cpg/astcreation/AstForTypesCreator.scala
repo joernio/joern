@@ -13,49 +13,11 @@ import org.apache.commons.lang3.StringUtils
 
 trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  private def parentIsClassDef(node: IASTNode): Boolean = Option(node.getParent) match {
-    case Some(_: IASTCompositeTypeSpecifier) => true
-    case _                                   => false
-  }
-
-  private def isTypeDef(decl: IASTSimpleDeclaration): Boolean = decl.getRawSignature.startsWith("typedef")
-
-  private def templateParameters(e: IASTNode): Option[String] = {
-    val templateDeclaration = e match {
-      case _: IASTElaboratedTypeSpecifier | _: IASTFunctionDeclarator | _: IASTCompositeTypeSpecifier
-          if e.getParent != null =>
-        Option(e.getParent.getParent)
-      case _: IASTFunctionDefinition if e.getParent != null => Option(e.getParent)
-      case _                                                => None
-    }
-
-    val decl           = templateDeclaration.collect { case t: ICPPASTTemplateDeclaration => t }
-    val templateParams = decl.map(d => ASTStringUtil.getTemplateParameterArray(d.getTemplateParameters))
-    templateParams.map(_.mkString("<", ",", ">"))
-  }
-
   protected def astForDecltypeSpecifier(decl: ICPPASTDecltypeSpecifier): Ast = {
     val op       = Defines.OperatorTypeOf
     val cpgUnary = callNode(decl, code(decl), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
     val operand  = nullSafeAst(decl.getDecltypeExpression)
     callAst(cpgUnary, List(operand))
-  }
-
-  private def astForNamespaceDefinition(namespaceDefinition: ICPPASTNamespaceDefinition): Ast = {
-    val TypeFullNameInfo(name, fullName) = typeFullNameInfo(namespaceDefinition)
-    val codeString                       = code(namespaceDefinition)
-    val filename                         = fileName(namespaceDefinition)
-    val cpgNamespace = newNamespaceBlockNode(namespaceDefinition, name, fullName, codeString, filename)
-    methodAstParentStack.push(cpgNamespace)
-    scope.pushNewBlockScope(cpgNamespace)
-    val childrenAsts = namespaceDefinition.getDeclarations.flatMap { decl =>
-      val declAsts = astsForDeclaration(decl)
-      declAsts
-    }.toIndexedSeq
-    methodAstParentStack.pop()
-    scope.popScope()
-    setArgumentIndices(childrenAsts)
-    Ast(cpgNamespace).withChildren(childrenAsts)
   }
 
   protected def astForNamespaceAlias(namespaceAlias: ICPPASTNamespaceAlias): Ast = {
@@ -67,10 +29,6 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val cpgNamespace = newNamespaceBlockNode(namespaceAlias, name, fullName, codeString, fileName(namespaceAlias))
     Ast(cpgNamespace)
   }
-
-  private def isAssignmentFromBrokenMacro(declaration: IASTSimpleDeclaration, declarator: IASTDeclarator): Boolean =
-    declaration.getParent.isInstanceOf[IASTTranslationUnit] &&
-      declarator.getInitializer.isInstanceOf[IASTEqualsInitializer]
 
   protected def astForDeclarator(declaration: IASTSimpleDeclaration, declarator: IASTDeclarator, index: Int): Ast = {
     val name = shortName(declarator)
@@ -111,17 +69,6 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         scope.addVariable(name, node, tpe, C2CpgScope.ScopeType.BlockScope)
         Ast(node)
     }
-  }
-
-  private def codeForDeclarator(declaration: IASTSimpleDeclaration, declarator: IASTDeclarator): String = {
-    val specCode    = declaration.getDeclSpecifier.getRawSignature
-    val declCodeRaw = declarator.getRawSignature
-    val declCode = declarator.getInitializer match {
-      case null => declCodeRaw
-      case _    => declCodeRaw.replace(declarator.getInitializer.getRawSignature, "")
-    }
-    val normalizedCode = StringUtils.normalizeSpace(s"$specCode $declCode")
-    normalizedCode.strip()
   }
 
   protected def astForInitializer(declarator: IASTDeclarator, init: IASTInitializer): Ast = {
@@ -205,15 +152,6 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
   protected def astForASMDeclaration(asm: IASTASMDeclaration): Ast = Ast(unknownNode(asm, code(asm)))
 
-  private def astForStructuredBindingDeclaration(decl: ICPPASTStructuredBindingDeclaration): Ast = {
-    val node = blockNode(decl)
-    scope.pushNewBlockScope(node)
-    val childAsts = decl.getNames.toList.map(astForNode)
-    scope.popScope()
-    setArgumentIndices(childAsts)
-    blockAst(node, childAsts)
-  }
-
   protected def astsForDeclaration(decl: IASTDeclaration): Seq[Ast] = {
     val declAsts = decl match {
       case sb: ICPPASTStructuredBindingDeclaration => Seq(astForStructuredBindingDeclaration(sb))
@@ -278,10 +216,72 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     declAsts ++ initAsts
   }
 
-  private def astsForLinkageSpecification(l: ICPPASTLinkageSpecification): Seq[Ast] =
-    l.getDeclarations.toList.flatMap { d =>
-      astsForDeclaration(d)
+  private def parentIsClassDef(node: IASTNode): Boolean = Option(node.getParent) match {
+    case Some(_: IASTCompositeTypeSpecifier) => true
+    case _                                   => false
+  }
+
+  private def isTypeDef(decl: IASTSimpleDeclaration): Boolean = decl.getRawSignature.startsWith("typedef")
+
+  private def templateParameters(e: IASTNode): Option[String] = {
+    val templateDeclaration = e match {
+      case _: IASTElaboratedTypeSpecifier | _: IASTFunctionDeclarator | _: IASTCompositeTypeSpecifier
+          if e.getParent != null =>
+        Option(e.getParent.getParent)
+      case _: IASTFunctionDefinition if e.getParent != null => Option(e.getParent)
+      case _                                                => None
     }
+
+    val decl           = templateDeclaration.collect { case t: ICPPASTTemplateDeclaration => t }
+    val templateParams = decl.map(d => ASTStringUtil.getTemplateParameterArray(d.getTemplateParameters))
+    templateParams.map(_.mkString("<", ",", ">"))
+  }
+
+  private def astForNamespaceDefinition(namespaceDefinition: ICPPASTNamespaceDefinition): Ast = {
+    val TypeFullNameInfo(name, fullName) = typeFullNameInfo(namespaceDefinition)
+    val codeString                       = code(namespaceDefinition)
+    val filename                         = fileName(namespaceDefinition)
+    val cpgNamespace = newNamespaceBlockNode(namespaceDefinition, name, fullName, codeString, filename)
+    methodAstParentStack.push(cpgNamespace)
+    scope.pushNewBlockScope(cpgNamespace)
+    val childrenAsts = namespaceDefinition.getDeclarations.flatMap { decl =>
+      val declAsts = astsForDeclaration(decl)
+      declAsts
+    }.toIndexedSeq
+    methodAstParentStack.pop()
+    scope.popScope()
+    setArgumentIndices(childrenAsts)
+    Ast(cpgNamespace).withChildren(childrenAsts)
+  }
+
+  private def isAssignmentFromBrokenMacro(declaration: IASTSimpleDeclaration, declarator: IASTDeclarator): Boolean = {
+    declaration.getParent.isInstanceOf[IASTTranslationUnit] &&
+    declarator.getInitializer.isInstanceOf[IASTEqualsInitializer]
+  }
+
+  private def codeForDeclarator(declaration: IASTSimpleDeclaration, declarator: IASTDeclarator): String = {
+    val specCode    = declaration.getDeclSpecifier.getRawSignature
+    val declCodeRaw = declarator.getRawSignature
+    val declCode = declarator.getInitializer match {
+      case null => declCodeRaw
+      case _    => declCodeRaw.replace(declarator.getInitializer.getRawSignature, "")
+    }
+    val normalizedCode = StringUtils.normalizeSpace(s"$specCode $declCode")
+    normalizedCode.strip()
+  }
+
+  private def astForStructuredBindingDeclaration(decl: ICPPASTStructuredBindingDeclaration): Ast = {
+    val node = blockNode(decl)
+    scope.pushNewBlockScope(node)
+    val childAsts = decl.getNames.toList.map(astForNode)
+    scope.popScope()
+    setArgumentIndices(childAsts)
+    blockAst(node, childAsts)
+  }
+
+  private def astsForLinkageSpecification(l: ICPPASTLinkageSpecification): Seq[Ast] = {
+    l.getDeclarations.toIndexedSeq.flatMap(astsForDeclaration)
+  }
 
   private def filterNameAlias(
     nameAlias: Option[String],

@@ -27,17 +27,17 @@ object CdtParser {
 
   private val logger = LoggerFactory.getLogger(classOf[CdtParser])
 
+  private def readFileAsFileContent(file: File, lines: Option[Array[Char]] = None): FileContent = {
+    val codeLines = lines.getOrElse(IOUtils.readLinesInFile(file.path).mkString("\n").toArray)
+    FileContent.create(file.pathAsString, true, codeLines)
+  }
+
   private case class ParseResult(
     translationUnit: Option[IASTTranslationUnit],
     preprocessorErrorCount: Int = 0,
     problems: Int = 0,
     failure: Option[Throwable] = None
   )
-
-  private def readFileAsFileContent(file: File, lines: Option[Array[Char]] = None): FileContent = {
-    val codeLines = lines.getOrElse(IOUtils.readLinesInFile(file.path).mkString("\n").toArray)
-    FileContent.create(file.pathAsString, true, codeLines)
-  }
 
 }
 
@@ -62,46 +62,22 @@ class CdtParser(
   // performance optimization, allows the parser not to create image-locations
   if (config.noImageLocations) opts |= ILanguage.OPTION_NO_IMAGE_LOCATIONS
 
-  private def preprocessedFileIsFromCPPFile(file: Path, code: String): Boolean = {
-    if (config.withPreprocessedFiles && FileDefaults.hasPreprocessedFileExtension(file.toString)) {
-      val fileWithoutExt  = file.toString.substring(0, file.toString.lastIndexOf("."))
-      val filesWithCPPExt = FileDefaults.CppFileExtensions.map(ext => File(s"$fileWithoutExt$ext").name)
-      code.linesIterator.exists(line => filesWithCPPExt.exists(f => line.contains(s"\"$f\"")))
-    } else {
-      false
+  def preprocessorStatements(file: Path): Iterable[IASTPreprocessorStatement] = {
+    parse(file).map(t => preprocessorStatements(t)).getOrElse(Iterable.empty)
+  }
+
+  def parse(file: Path): Option[IASTTranslationUnit] = {
+    val parseResult = parseInternal(file)
+    parseResult match {
+      case ParseResult(Some(t), c, p, _) =>
+        logger.info(s"Parsed '${t.getFilePath}' ($c preprocessor error(s), $p problems)")
+        Option(t)
+      case ParseResult(_, _, _, maybeThrowable) =>
+        logger.warn(
+          s"Failed to parse '$file': ${maybeThrowable.map(extractParseException).getOrElse("Unknown parse error!")}"
+        )
+        None
     }
-  }
-
-  private def createParseLanguage(file: Path, code: String): ILanguage = {
-    if (FileDefaults.hasCppFileExtension(file.toString) || preprocessedFileIsFromCPPFile(file, code)) {
-      GPPLanguage.getDefault
-    } else {
-      GCCLanguage.getDefault
-    }
-  }
-
-  private def createScannerInfo(file: Path): ScannerInfo = {
-    val additionalIncludes =
-      if (FileDefaults.hasCppFileExtension(file.toString)) parserConfig.systemIncludePathsCPP
-      else parserConfig.systemIncludePathsC
-    val fileSpecificDefines  = parserConfig.definedSymbolsPerFile.getOrElse(file.toString, Map.empty)
-    val fileSpecificIncludes = parserConfig.includesPerFile.getOrElse(file.toString, mutable.LinkedHashSet.empty)
-    new ScannerInfo(
-      (definedSymbols ++ fileSpecificDefines).asJava,
-      fileSpecificIncludes.toArray ++ (includePaths ++ additionalIncludes).map(_.toString).toArray
-    )
-  }
-
-  private def parseInternal(code: String, inFile: File): IASTTranslationUnit = {
-    val fileContent         = FileContent.create(inFile.toString, true, code.toCharArray)
-    val fileContentProvider = new CustomFileContentProvider(headerFileFinder)
-    val lang                = createParseLanguage(inFile.path, code)
-    val scannerInfo         = createScannerInfo(inFile.path)
-    val translationUnit     = lang.getASTTranslationUnit(fileContent, scannerInfo, fileContentProvider, null, opts, log)
-    val problems            = CPPVisitor.getProblems(translationUnit)
-    if (parserConfig.logProblems) logProblems(problems.toList)
-    if (parserConfig.logPreprocessor) logPreprocessorStatements(translationUnit)
-    translationUnit
   }
 
   private def parseInternal(file: File): ParseResult = {
@@ -137,8 +113,34 @@ class CdtParser(
     }
   }
 
-  def preprocessorStatements(file: Path): Iterable[IASTPreprocessorStatement] = {
-    parse(file).map(t => preprocessorStatements(t)).getOrElse(Iterable.empty)
+  private def createParseLanguage(file: Path, code: String): ILanguage = {
+    if (FileDefaults.hasCppFileExtension(file.toString) || preprocessedFileIsFromCPPFile(file, code)) {
+      GPPLanguage.getDefault
+    } else {
+      GCCLanguage.getDefault
+    }
+  }
+
+  private def preprocessedFileIsFromCPPFile(file: Path, code: String): Boolean = {
+    if (config.withPreprocessedFiles && FileDefaults.hasPreprocessedFileExtension(file.toString)) {
+      val fileWithoutExt  = file.toString.substring(0, file.toString.lastIndexOf("."))
+      val filesWithCPPExt = FileDefaults.CppFileExtensions.map(ext => File(s"$fileWithoutExt$ext").name)
+      code.linesIterator.exists(line => filesWithCPPExt.exists(f => line.contains(s"\"$f\"")))
+    } else {
+      false
+    }
+  }
+
+  private def createScannerInfo(file: Path): ScannerInfo = {
+    val additionalIncludes =
+      if (FileDefaults.hasCppFileExtension(file.toString)) parserConfig.systemIncludePathsCPP
+      else parserConfig.systemIncludePathsC
+    val fileSpecificDefines  = parserConfig.definedSymbolsPerFile.getOrElse(file.toString, Map.empty)
+    val fileSpecificIncludes = parserConfig.includesPerFile.getOrElse(file.toString, mutable.LinkedHashSet.empty)
+    new ScannerInfo(
+      (definedSymbols ++ fileSpecificDefines).asJava,
+      fileSpecificIncludes.toArray ++ (includePaths ++ additionalIncludes).map(_.toString).toArray
+    )
   }
 
   def parse(code: String, inFile: Path): Option[IASTTranslationUnit] = {
@@ -151,18 +153,16 @@ class CdtParser(
     }
   }
 
-  def parse(file: Path): Option[IASTTranslationUnit] = {
-    val parseResult = parseInternal(file)
-    parseResult match {
-      case ParseResult(Some(t), c, p, _) =>
-        logger.info(s"Parsed '${t.getFilePath}' ($c preprocessor error(s), $p problems)")
-        Option(t)
-      case ParseResult(_, _, _, maybeThrowable) =>
-        logger.warn(
-          s"Failed to parse '$file': ${maybeThrowable.map(extractParseException).getOrElse("Unknown parse error!")}"
-        )
-        None
-    }
+  private def parseInternal(code: String, inFile: File): IASTTranslationUnit = {
+    val fileContent         = FileContent.create(inFile.toString, true, code.toCharArray)
+    val fileContentProvider = new CustomFileContentProvider(headerFileFinder)
+    val lang                = createParseLanguage(inFile.path, code)
+    val scannerInfo         = createScannerInfo(inFile.path)
+    val translationUnit     = lang.getASTTranslationUnit(fileContent, scannerInfo, fileContentProvider, null, opts, log)
+    val problems            = CPPVisitor.getProblems(translationUnit)
+    if (parserConfig.logProblems) logProblems(problems.toList)
+    if (parserConfig.logPreprocessor) logPreprocessorStatements(translationUnit)
+    translationUnit
   }
 
 }

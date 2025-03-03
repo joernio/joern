@@ -40,23 +40,20 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     }
   }
 
-  private def namesForBinding(binding: ICInternalBinding | ICPPInternalBinding): (Option[String], Option[String]) = {
-    val definition = binding match {
-      // sadly, there is no common interface
-      case b: ICInternalBinding if b.getDefinition.isInstanceOf[IASTFunctionDeclarator] =>
-        Some(b.getDefinition.asInstanceOf[IASTFunctionDeclarator])
-      case b: ICPPInternalBinding if b.getDefinition.isInstanceOf[IASTFunctionDeclarator] =>
-        Some(b.getDefinition.asInstanceOf[IASTFunctionDeclarator])
-      case b: ICInternalBinding   => b.getDeclarations.find(_.isInstanceOf[IASTFunctionDeclarator])
-      case b: ICPPInternalBinding => b.getDeclarations.find(_.isInstanceOf[IASTFunctionDeclarator])
-      case null                   => None
+  protected def astForIdentifier(ident: IASTNode): Ast = {
+    maybeMethodRefForIdentifier(ident) match {
+      case Some(ref) => Ast(ref)
+      case None =>
+        val identifierName = nameForIdentifier(ident)
+        typeNameForIdentifier(ident, identifierName) match {
+          case identifierTypeName: String =>
+            val tpe  = registerType(cleanType(identifierTypeName))
+            val node = identifierNode(ident, identifierName, code(ident), tpe)
+            scope.addVariableReference(identifierName, node, tpe, EvaluationStrategies.BY_REFERENCE)
+            Ast(node)
+          case ast: Ast => ast
+        }
     }
-    val typeFullName = definition.map(_.getParent) match {
-      case Some(d: IASTFunctionDefinition) => Some(typeForDeclSpecifier(d.getDeclSpecifier))
-      case Some(d: IASTSimpleDeclaration)  => Some(typeForDeclSpecifier(d.getDeclSpecifier))
-      case _                               => None
-    }
-    (definition.map(fullName), typeFullName)
   }
 
   private def maybeMethodRefForIdentifier(ident: IASTNode): Option[NewMethodRef] = {
@@ -85,16 +82,23 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     }
   }
 
-  private def isInCurrentScope(ident: CPPASTIdExpression, owner: String): Boolean = {
-    val ownerWithOutTemplateTags = owner.takeWhile(_ != '<')
-    val isInMethodScope =
-      Try(CPPVisitor.getContainingScope(ident).getScopeName.toString).toOption.exists(s =>
-        s.startsWith(s"$ownerWithOutTemplateTags::") || s.contains(s"::$ownerWithOutTemplateTags::")
-      )
-    isInMethodScope || methodAstParentStack.collectFirst {
-      case typeDecl: NewTypeDecl if typeDecl.fullName == ownerWithOutTemplateTags    => typeDecl
-      case method: NewMethod if method.fullName.startsWith(ownerWithOutTemplateTags) => method
-    }.nonEmpty
+  private def namesForBinding(binding: ICInternalBinding | ICPPInternalBinding): (Option[String], Option[String]) = {
+    val definition = binding match {
+      // sadly, there is no common interface
+      case b: ICInternalBinding if b.getDefinition.isInstanceOf[IASTFunctionDeclarator] =>
+        Some(b.getDefinition.asInstanceOf[IASTFunctionDeclarator])
+      case b: ICPPInternalBinding if b.getDefinition.isInstanceOf[IASTFunctionDeclarator] =>
+        Some(b.getDefinition.asInstanceOf[IASTFunctionDeclarator])
+      case b: ICInternalBinding   => b.getDeclarations.find(_.isInstanceOf[IASTFunctionDeclarator])
+      case b: ICPPInternalBinding => b.getDeclarations.find(_.isInstanceOf[IASTFunctionDeclarator])
+      case null                   => None
+    }
+    val typeFullName = definition.map(_.getParent) match {
+      case Some(d: IASTFunctionDefinition) => Some(typeForDeclSpecifier(d.getDeclSpecifier))
+      case Some(d: IASTSimpleDeclaration)  => Some(typeForDeclSpecifier(d.getDeclSpecifier))
+      case _                               => None
+    }
+    (definition.map(fullName), typeFullName)
   }
 
   private def nameForIdentifier(ident: IASTNode): String = {
@@ -107,6 +111,28 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
         if (name.isEmpty) safeGetBinding(id).map(_.getName).getOrElse(uniqueName("", "")._1)
         else name
       case _ => code(ident)
+    }
+  }
+
+  private def typeNameForIdentifier(ident: IASTNode, identifierName: String): String | Ast = {
+    val variableOption = scope.lookupVariable(identifierName)
+    variableOption match {
+      case Some((_, variableTypeName)) => variableTypeName
+      case None if ident.isInstanceOf[IASTName] && ident.asInstanceOf[IASTName].getBinding != null =>
+        val id = ident.asInstanceOf[IASTName]
+        id.getBinding match {
+          case v: IVariable =>
+            v.getType match {
+              case f: IFunctionType => f.getReturnType.toString
+              case other            => other.toString
+            }
+          case other => other.getName
+        }
+      case None if ident.isInstanceOf[IASTName] =>
+        typeFor(ident.getParent)
+      case None if ident.isInstanceOf[CPPASTIdExpression] =>
+        syntheticThisAccess(ident.asInstanceOf[CPPASTIdExpression], identifierName)
+      case None => typeFor(ident)
     }
   }
 
@@ -138,42 +164,16 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     }
   }
 
-  private def typeNameForIdentifier(ident: IASTNode, identifierName: String): String | Ast = {
-    val variableOption = scope.lookupVariable(identifierName)
-    variableOption match {
-      case Some((_, variableTypeName)) => variableTypeName
-      case None if ident.isInstanceOf[IASTName] && ident.asInstanceOf[IASTName].getBinding != null =>
-        val id = ident.asInstanceOf[IASTName]
-        id.getBinding match {
-          case v: IVariable =>
-            v.getType match {
-              case f: IFunctionType => f.getReturnType.toString
-              case other            => other.toString
-            }
-          case other => other.getName
-        }
-      case None if ident.isInstanceOf[IASTName] =>
-        typeFor(ident.getParent)
-      case None if ident.isInstanceOf[CPPASTIdExpression] =>
-        syntheticThisAccess(ident.asInstanceOf[CPPASTIdExpression], identifierName)
-      case None => typeFor(ident)
-    }
-  }
-
-  protected def astForIdentifier(ident: IASTNode): Ast = {
-    maybeMethodRefForIdentifier(ident) match {
-      case Some(ref) => Ast(ref)
-      case None =>
-        val identifierName = nameForIdentifier(ident)
-        typeNameForIdentifier(ident, identifierName) match {
-          case identifierTypeName: String =>
-            val tpe  = registerType(cleanType(identifierTypeName))
-            val node = identifierNode(ident, identifierName, code(ident), tpe)
-            scope.addVariableReference(identifierName, node, tpe, EvaluationStrategies.BY_REFERENCE)
-            Ast(node)
-          case ast: Ast => ast
-        }
-    }
+  private def isInCurrentScope(ident: CPPASTIdExpression, owner: String): Boolean = {
+    val ownerWithOutTemplateTags = owner.takeWhile(_ != '<')
+    val isInMethodScope =
+      Try(CPPVisitor.getContainingScope(ident).getScopeName.toString).toOption.exists(s =>
+        s.startsWith(s"$ownerWithOutTemplateTags::") || s.contains(s"::$ownerWithOutTemplateTags::")
+      )
+    isInMethodScope || methodAstParentStack.collectFirst {
+      case typeDecl: NewTypeDecl if typeDecl.fullName == ownerWithOutTemplateTags    => typeDecl
+      case method: NewMethod if method.fullName.startsWith(ownerWithOutTemplateTags) => method
+    }.nonEmpty
   }
 
   protected def astForFieldReference(fieldRef: IASTFieldReference): Ast = {
@@ -184,8 +184,9 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     callAst(ma, List(owner, Ast(member)))
   }
 
-  protected def astForArrayModifier(arrMod: IASTArrayModifier): Ast =
+  protected def astForArrayModifier(arrMod: IASTArrayModifier): Ast = {
     astForNode(arrMod.getConstantExpression)
+  }
 
   protected def astForQualifiedName(qualId: CPPASTQualifiedName): Ast = {
     safeGetBinding(qualId) match {

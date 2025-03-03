@@ -42,6 +42,32 @@ object IncludeAutoDiscovery {
   private var systemIncludePathsC: mutable.LinkedHashSet[Path]   = mutable.LinkedHashSet.empty
   private var systemIncludePathsCPP: mutable.LinkedHashSet[Path] = mutable.LinkedHashSet.empty
 
+  def discoverIncludePathsC(config: Config): mutable.LinkedHashSet[Path] = {
+    if (!config.includePathsAutoDiscovery) return mutable.LinkedHashSet.empty
+    if (systemIncludePathsC.nonEmpty) return systemIncludePathsC
+
+    if (isMSVCProject(config)) {
+      systemIncludePathsCPP = discoverMSVCPaths() // discovers paths for both languages
+      systemIncludePathsC = systemIncludePathsCPP
+      reportIncludePaths(systemIncludePathsC, "MSVC")
+    }
+    if (systemIncludePathsC.isEmpty && gccAvailable()) {
+      systemIncludePathsC = discoverPaths(CIncludeCommand)
+      reportIncludePaths(systemIncludePathsC, "C")
+    }
+    systemIncludePathsC
+  }
+
+  def gccAvailable(): Boolean = {
+    isGccAvailable match {
+      case Some(value) =>
+        value
+      case None =>
+        isGccAvailable = Option(checkForGcc())
+        isGccAvailable.get
+    }
+  }
+
   private def checkForGcc(): Boolean = {
     ExternalCommand.run(GccVersionCommand, Some(".")).toTry match {
       case Success(result) =>
@@ -53,13 +79,13 @@ object IncludeAutoDiscovery {
     }
   }
 
-  def gccAvailable(): Boolean = isGccAvailable match {
-    case Some(value) =>
-      value
-    case None =>
-      isGccAvailable = Option(checkForGcc())
-      isGccAvailable.get
-  }
+  private def discoverPaths(command: Seq[String]): mutable.LinkedHashSet[Path] =
+    GccSpecificExternalCommand.run(command, ".") match {
+      case Success(output) => extractPaths(output)
+      case Failure(exception) =>
+        logger.warn(s"Unable to discover system include paths. Running '$command' failed.", exception)
+        mutable.LinkedHashSet.empty
+    }
 
   private def extractPaths(output: Seq[String]): mutable.LinkedHashSet[Path] = {
     val startIndex =
@@ -70,13 +96,9 @@ object IncludeAutoDiscovery {
     mutable.LinkedHashSet.from(output.slice(startIndex, endIndex).map(p => Paths.get(p.trim).toRealPath()))
   }
 
-  private def discoverPaths(command: Seq[String]): mutable.LinkedHashSet[Path] =
-    GccSpecificExternalCommand.run(command, ".") match {
-      case Success(output) => extractPaths(output)
-      case Failure(exception) =>
-        logger.warn(s"Unable to discover system include paths. Running '$command' failed.", exception)
-        mutable.LinkedHashSet.empty
-    }
+  private def discoverMSVCPaths(): mutable.LinkedHashSet[Path] = {
+    discoverMSVCInstallPath().map(extractMSVCIncludePaths).getOrElse(mutable.LinkedHashSet.empty)
+  }
 
   private def discoverMSVCInstallPath(): Option[String] = {
     GccSpecificExternalCommand.run(VsWhereCommand, ".") match {
@@ -103,31 +125,11 @@ object IncludeAutoDiscovery {
     }
   }
 
-  private def discoverMSVCPaths(): mutable.LinkedHashSet[Path] = {
-    discoverMSVCInstallPath().map(extractMSVCIncludePaths).getOrElse(mutable.LinkedHashSet.empty)
-  }
-
   private def reportIncludePaths(paths: mutable.LinkedHashSet[Path], lang: String): Unit = {
     if (paths.nonEmpty) {
       val ls = System.lineSeparator()
       logger.info(s"Using the following $lang system include paths:${paths.mkString(s"$ls- ", s"$ls- ", ls)}")
     }
-  }
-
-  def discoverIncludePathsC(config: Config): mutable.LinkedHashSet[Path] = {
-    if (!config.includePathsAutoDiscovery) return mutable.LinkedHashSet.empty
-    if (systemIncludePathsC.nonEmpty) return systemIncludePathsC
-
-    if (isMSVCProject(config)) {
-      systemIncludePathsCPP = discoverMSVCPaths() // discovers paths for both languages
-      systemIncludePathsC = systemIncludePathsCPP
-      reportIncludePaths(systemIncludePathsC, "MSVC")
-    }
-    if (systemIncludePathsC.isEmpty && gccAvailable()) {
-      systemIncludePathsC = discoverPaths(CIncludeCommand)
-      reportIncludePaths(systemIncludePathsC, "C")
-    }
-    systemIncludePathsC
   }
 
   private def isMSVCProject(config: Config): Boolean = {

@@ -47,8 +47,36 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     blockAst(node, childAsts.toList)
   }
 
-  private def hasValidArrayModifier(arrayDecl: IASTArrayDeclarator): Boolean =
+  protected def astsForStatement(statement: IASTStatement, argIndex: Int = -1): Seq[Ast] = {
+    val r = statement match {
+      case expr: IASTExpressionStatement          => Seq(astForExpression(expr.getExpression))
+      case block: IASTCompoundStatement           => Seq(astForBlockStatement(block, blockNode(block), argIndex))
+      case ifStmt: IASTIfStatement                => astForIf(ifStmt)
+      case whileStmt: IASTWhileStatement          => Seq(astForWhile(whileStmt))
+      case forStmt: IASTForStatement              => Seq(astForFor(forStmt))
+      case forStmt: ICPPASTRangeBasedForStatement => Seq(astForRangedFor(forStmt))
+      case doStmt: IASTDoStatement                => Seq(astForDoStatement(doStmt))
+      case switchStmt: IASTSwitchStatement        => astForSwitchStatement(switchStmt)
+      case ret: IASTReturnStatement               => Seq(astForReturnStatement(ret))
+      case br: IASTBreakStatement                 => Seq(astForBreakStatement(br))
+      case cont: IASTContinueStatement            => Seq(astForContinueStatement(cont))
+      case goto: IASTGotoStatement                => Seq(astForGotoStatement(goto))
+      case goto: IGNUASTGotoStatement             => astsForGnuGotoStatement(goto)
+      case defStmt: IASTDefaultStatement          => Seq(astForDefaultStatement(defStmt))
+      case tryStmt: ICPPASTTryBlockStatement      => Seq(astForTryStatement(tryStmt))
+      case caseStmt: IASTCaseStatement            => astsForCaseStatement(caseStmt)
+      case decl: IASTDeclarationStatement         => astsForDeclarationStatement(decl)
+      case label: IASTLabelStatement              => astsForLabelStatement(label)
+      case problem: IASTProblemStatement          => astsForProblemStatement(problem)
+      case _: IASTNullStatement                   => Seq.empty
+      case _                                      => Seq(astForNode(statement))
+    }
+    r.map(x => asChildOfMacroCall(statement, x))
+  }
+
+  private def hasValidArrayModifier(arrayDecl: IASTArrayDeclarator): Boolean = {
     arrayDecl.getArrayModifiers.nonEmpty && arrayDecl.getArrayModifiers.forall(_.getConstantExpression != null)
+  }
 
   private def astsForStructuredBindingDeclaration(
     struct: ICPPASTStructuredBindingDeclaration,
@@ -244,12 +272,17 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def astForTryStatement(tryStmt: ICPPASTTryBlockStatement): Ast = {
     val tryNode = controlStructureNode(tryStmt, ControlStructureTypes.TRY, "try")
-    val bodyAst = nullSafeAst(tryStmt.getTryBody) match {
-      case Nil         => Ast()
-      case elem :: Nil => elem
-      case elements =>
-        setArgumentIndices(elements)
-        blockAst(blockNode(tryStmt.getTryBody)).withChildren(elements)
+    val bodyAst = tryStmt.getTryBody match {
+      case block: IASTCompoundStatement =>
+        astForBlockStatement(block, blockNode(block))
+      case other if other != null =>
+        val bNode = blockNode(other)
+        scope.pushNewBlockScope(bNode)
+        val a = astsForStatement(other)
+        setArgumentIndices(a)
+        scope.popScope()
+        blockAst(bNode, a.toList)
+      case _ => Ast()
     }
     val catchAsts = tryStmt.getCatchHandlers.toSeq.map(astForCatchHandler)
     tryCatchAst(tryNode, bodyAst, catchAsts, None)
@@ -260,33 +293,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val declAst   = nullSafeAst(catchHandler.getDeclaration)
     val bodyAst   = nullSafeAst(catchHandler.getCatchBody)
     Ast(catchNode).withChildren(declAst).withChildren(bodyAst)
-  }
-
-  protected def astsForStatement(statement: IASTStatement, argIndex: Int = -1): Seq[Ast] = {
-    val r = statement match {
-      case expr: IASTExpressionStatement          => Seq(astForExpression(expr.getExpression))
-      case block: IASTCompoundStatement           => Seq(astForBlockStatement(block, blockNode(block), argIndex))
-      case ifStmt: IASTIfStatement                => astForIf(ifStmt)
-      case whileStmt: IASTWhileStatement          => Seq(astForWhile(whileStmt))
-      case forStmt: IASTForStatement              => Seq(astForFor(forStmt))
-      case forStmt: ICPPASTRangeBasedForStatement => Seq(astForRangedFor(forStmt))
-      case doStmt: IASTDoStatement                => Seq(astForDoStatement(doStmt))
-      case switchStmt: IASTSwitchStatement        => astForSwitchStatement(switchStmt)
-      case ret: IASTReturnStatement               => Seq(astForReturnStatement(ret))
-      case br: IASTBreakStatement                 => Seq(astForBreakStatement(br))
-      case cont: IASTContinueStatement            => Seq(astForContinueStatement(cont))
-      case goto: IASTGotoStatement                => Seq(astForGotoStatement(goto))
-      case goto: IGNUASTGotoStatement             => astsForGnuGotoStatement(goto)
-      case defStmt: IASTDefaultStatement          => Seq(astForDefaultStatement(defStmt))
-      case tryStmt: ICPPASTTryBlockStatement      => Seq(astForTryStatement(tryStmt))
-      case caseStmt: IASTCaseStatement            => astsForCaseStatement(caseStmt)
-      case decl: IASTDeclarationStatement         => astsForDeclarationStatement(decl)
-      case label: IASTLabelStatement              => astsForLabelStatement(label)
-      case problem: IASTProblemStatement          => astsForProblemStatement(problem)
-      case _: IASTNullStatement                   => Seq.empty
-      case _                                      => Seq(astForNode(statement))
-    }
-    r.map(x => asChildOfMacroCall(statement, x))
   }
 
   private def astsForProblemStatement(statement: IASTProblemStatement): Seq[Ast] = {

@@ -86,28 +86,11 @@ trait MacroHandler(implicit withSchemaValidation: ValidationMode) { this: AstCre
 
   /** Determine whether `node` is expanded from the macro expansion at `loc`.
     */
-  private def isExpandedFrom(node: IASTNode, loc: IASTMacroExpansionLocation): Boolean =
+  private def isExpandedFrom(node: IASTNode, loc: IASTMacroExpansionLocation): Boolean = {
     expandedFromMacro(node).map(_.getExpansion.getMacroDefinition).contains(loc.getExpansion.getMacroDefinition)
-
-  private def argumentTrees(arguments: List[String], ast: Ast): List[Option[Ast]] = {
-    arguments.zipWithIndex.map { case (arg, i) =>
-      val rootNode = argForCode(arg, ast)
-      rootNode.map(x => ast.subTreeCopy(x.asInstanceOf[AstNodeNew], i + 1))
-    }
   }
 
-  private def argForCode(code: String, ast: Ast): Option[NewNode] = {
-    val normalizedCode = code.replace(" ", "")
-    if (normalizedCode == "") {
-      None
-    } else {
-      ast.nodes.collectFirst {
-        case x: ExpressionNew if !x.isInstanceOf[NewFieldIdentifier] && x.code == normalizedCode => x
-      }
-    }
-  }
-
-  /** Create an AST that represents a macro expansion as a call. The AST is rooted in a CALL node and contains sub trees
+  /** Create an AST that represents a macro expansion as a call. The AST is rooted in a CALL node and contains subtrees
     * for arguments. These are also connected to the AST via ARGUMENT edges. We include line number information in the
     * CALL node that is picked up by the MethodStubCreator.
     */
@@ -136,6 +119,24 @@ trait MacroHandler(implicit withSchemaValidation: ValidationMode) { this: AstCre
     callAst(callNode, argAsts)
   }
 
+  private def argumentTrees(arguments: List[String], ast: Ast): List[Option[Ast]] = {
+    arguments.zipWithIndex.map { case (arg, i) =>
+      val rootNode = argForCode(arg, ast)
+      rootNode.map(x => ast.subTreeCopy(x.asInstanceOf[AstNodeNew], i + 1))
+    }
+  }
+
+  private def argForCode(code: String, ast: Ast): Option[NewNode] = {
+    val normalizedCode = code.replace(" ", "")
+    if (normalizedCode == "") {
+      None
+    } else {
+      ast.nodes.collectFirst {
+        case x: ExpressionNew if !x.isInstanceOf[NewFieldIdentifier] && x.code == normalizedCode => x
+      }
+    }
+  }
+
   /** Create a full name field that encodes line information that can be picked up by the MethodStubCreator in order to
     * create a METHOD node with the correct location information.
     */
@@ -145,6 +146,23 @@ trait MacroHandler(implicit withSchemaValidation: ValidationMode) { this: AstCre
     val lineNo: Integer    = line(macroDef).getOrElse(-1)
     val lineNoEnd: Integer = lineEnd(macroDef).getOrElse(-1)
     s"$filename:$lineNo:$lineNoEnd:$name:${argAsts.size}"
+  }
+
+  private def isExpandedFromMacro(node: IASTNode): Boolean = expandedFromMacro(node).nonEmpty
+
+  private def expandedFromMacro(node: IASTNode): Option[IASTMacroExpansionLocation] = {
+    val locations = node.getNodeLocations.toList
+    val locationsSorted = node match {
+      // For binary expressions the expansion locations may occur in any order.
+      // We manually sort them here to ignore this.
+      // TODO: This may also happen with other expressions that allow for multiple sub elements.
+      case _: IASTBinaryExpression => locations.sortBy(_.isInstanceOf[IASTMacroExpansionLocation])
+      case _                       => locations
+    }
+    locationsSorted match {
+      case (head: IASTMacroExpansionLocation) :: _ => Option(head)
+      case _                                       => None
+    }
   }
 
   /** The CDT utility method is unfortunately in a class that is marked as deprecated, however, this is because the CDT
@@ -162,23 +180,6 @@ trait MacroHandler(implicit withSchemaValidation: ValidationMode) { this: AstCre
       }
     } else {
       node.getRawSignature
-    }
-  }
-
-  private def isExpandedFromMacro(node: IASTNode): Boolean = expandedFromMacro(node).nonEmpty
-
-  private def expandedFromMacro(node: IASTNode): Option[IASTMacroExpansionLocation] = {
-    val locations = node.getNodeLocations.toList
-    val locationsSorted = node match {
-      // For binary expressions the expansion locations may occur in any order.
-      // We manually sort them here to ignore this.
-      // TODO: This may also happen with other expressions that allow for multiple sub elements.
-      case _: IASTBinaryExpression => locations.sortBy(_.isInstanceOf[IASTMacroExpansionLocation])
-      case _                       => locations
-    }
-    locationsSorted match {
-      case (head: IASTMacroExpansionLocation) :: _ => Option(head)
-      case _                                       => None
     }
   }
 
