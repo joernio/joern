@@ -100,7 +100,6 @@ object Delombok {
       case Success(tempDir) =>
         PackageRootFinder
           .packageRootsFromFiles(inputPath, fileInfo)
-          .toList
           .par
           .foreach(delombokPackageRoot(inputPath, _, tempDir, analysisJavaHome))
         DelombokRunResult(tempDir.path, true)
