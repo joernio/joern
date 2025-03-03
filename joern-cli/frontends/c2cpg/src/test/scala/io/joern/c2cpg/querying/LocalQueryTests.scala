@@ -80,17 +80,20 @@ class LocalQueryTests extends C2CpgSuite {
         | """.stripMargin)
 
     "should allow to query for all locals" in {
-      cpg.local.name.toSetMutable shouldBe Set("a", "b", "c", "e", "d", "z", "x", "q", "p", "foo")
+      cpg.local.name.sorted.l shouldBe List("NULL", "a", "a", "b", "b", "c", "c", "d", "e", "foo", "p", "q", "x", "z")
     }
 
     "should prove correct (name, type) pairs for locals" in {
-      inside(cpg.method.name("free_list").local.l) { case List(q, p) =>
+      inside(cpg.method.name("free_list").local.l) { case List(q, p, nullLocal) =>
         q.name shouldBe "q"
         q.typeFullName shouldBe "node*"
         q.code shouldBe "struct node *q"
         p.name shouldBe "p"
         p.typeFullName shouldBe "node*"
         p.code shouldBe "struct node *p"
+        nullLocal.name shouldBe "NULL"
+        nullLocal.typeFullName shouldBe "ANY"
+        nullLocal.code shouldBe "NULL"
       }
     }
 
@@ -121,6 +124,39 @@ class LocalQueryTests extends C2CpgSuite {
       val filename = cpg.local.name("a*").file.name.headOption
       filename should not be empty
       filename.head.endsWith(".c") shouldBe true
+    }
+  }
+  "local query example 4" should {
+    "be correct for global variable bindings" in {
+      val cpg = code(
+        """
+        |int x = 1;
+        |void foo() {
+        |  x = 2;
+        |}""".stripMargin,
+        "Test0.cpp"
+      )
+      val List(x1, x2) = cpg.local.sortBy(_.lineNumber.get).l
+      x1.name shouldBe "x"
+      x1.closureBindingId shouldBe None
+      val List(methodRef) = cpg.methodRef.methodFullNameExact("foo:void()").l
+      methodRef.containsIn.l shouldBe cpg.method.fullNameExact("Test0.cpp:<global>").l
+      val List(binding) = x1.closureBinding.l
+      binding.closureBindingId shouldBe Some("Test0.cpp:foo:x")
+      binding.closureOriginalName shouldBe Some("x")
+      binding._captureIn.l shouldBe List(methodRef)
+      val List(id1) = x1.referencingIdentifiers.l
+      id1.name shouldBe "x"
+      id1.typeFullName shouldBe "int"
+      id1.lineNumber shouldBe Some(2)
+
+      x2.name shouldBe "x"
+      x2.closureBindingId shouldBe Some("Test0.cpp:foo:x")
+      x2.closureBinding shouldBe empty
+      val List(id2) = x2.referencingIdentifiers.l
+      id2.name shouldBe "x"
+      id2.typeFullName shouldBe "int"
+      id2.lineNumber shouldBe Some(4)
     }
   }
 }

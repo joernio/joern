@@ -50,7 +50,7 @@ class FileTests extends C2CpgSuite {
         .nameNot(NamespaceTraversal.globalNamespaceName)
         .name
         .l
-        .sorted shouldBe List("ANY", "int", "my_struct", "void")
+        .sorted shouldBe List("ANY", "bar", "foo", "int", "my_struct", "void")
     }
 
     "allow traversing to namespaces" in {

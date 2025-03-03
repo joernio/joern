@@ -28,9 +28,9 @@ class AstCreator(
     with AstForTypesCreator
     with AstForFunctionsCreator
     with AstForPrimitivesCreator
+    with AstForInitializersCreator
     with AstForStatementsCreator
     with AstForExpressionsCreator
-    with AstForLambdasCreator
     with AstNodeBuilder
     with AstCreatorHelper
     with FullNameProvider
@@ -47,6 +47,7 @@ class AstCreator(
   // where the respective nodes are defined. Instead, we put them under the parent TYPE_DECL in which they are defined.
   // To achieve this we need this extra stack.
   protected val methodAstParentStack: Stack[NewNode] = new Stack()
+  protected val typeRefIdStack                       = new Stack[NewTypeRef]
 
   def createAst(): DiffGraphBuilder = {
     val fileContent = if (!config.disableFileContent) Option(cdtAst.getRawSignature) else None
@@ -54,6 +55,7 @@ class AstCreator(
     fileContent.foreach(fileNode.content(_))
     val ast = Ast(fileNode).withChild(astForTranslationUnit(cdtAst))
     Ast.storeInDiffGraph(ast, diffGraph)
+    createVariableReferenceLinks()
     diffGraph
   }
 
@@ -82,12 +84,12 @@ class AstCreator(
     val fakeGlobalMethod =
       methodNode(iASTTranslationUnit, name, name, fullName, None, path, Option(NodeTypes.TYPE_DECL), Option(fullName))
     methodAstParentStack.push(fakeGlobalMethod)
-    scope.pushNewScope(fakeGlobalMethod)
 
     val blockNode_ = blockNode(iASTTranslationUnit)
-
+    scope.pushNewMethodScope(fakeGlobalMethod.fullName, fakeGlobalMethod.name, blockNode_, None)
     val declsAsts = allDecls.flatMap(astsForDeclaration)
     setArgumentIndices(declsAsts)
+    scope.popScope()
 
     val methodReturn = methodReturnNode(iASTTranslationUnit, Defines.Any)
     Ast(fakeGlobalTypeDecl).withChild(
@@ -95,7 +97,9 @@ class AstCreator(
     )
   }
 
-  override protected def code(node: IASTNode): String = shortenCode(nodeSignature(node))
+  override protected def code(node: IASTNode): String = {
+    shortenCode(nodeSignature(node))
+  }
 
   override protected def line(node: IASTNode): Option[Int] = {
     nullSafeFileLocation(node).map(_.getStartingLineNumber)
@@ -125,11 +129,7 @@ class AstCreator(
   }
 
   override protected def offset(node: IASTNode): Option[(Int, Int)] = {
-    Option
-      .when(!config.disableFileContent) {
-        nodeOffsets(node)
-      }
-      .flatten
+    Option.when(!config.disableFileContent) { nodeOffsets(node) }.flatten
   }
 
 }

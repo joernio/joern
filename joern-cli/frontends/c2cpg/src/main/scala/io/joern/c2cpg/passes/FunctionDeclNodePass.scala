@@ -25,6 +25,30 @@ class FunctionDeclNodePass(cpg: Cpg, methodDeclarations: Map[String, CGlobal.Met
   withSchemaValidation: ValidationMode
 ) extends CpgPass(cpg) {
 
+  override def run(dstGraph: DiffGraphBuilder): Unit = {
+    methodDeclarations.foreach { case (fullName, methodNodeInfo) =>
+      val methodNode_    = methodNode(fullName, methodNodeInfo)
+      val parameterNodes = methodNodeInfo.parameter.map(p => Ast(parameterInNode(p)))
+      val stubAst =
+        methodStubAst(
+          methodNode_,
+          parameterNodes,
+          methodReturnNode(methodNodeInfo.returnType, methodNodeInfo.lineNumber, methodNodeInfo.columnNumber),
+          methodNodeInfo.modifier.map(m => Ast(NewModifier().modifierType(m)))
+        )
+      val typeDeclAst = createFunctionTypeAndTypeDecl(
+        methodNodeInfo,
+        methodNode_,
+        methodNodeInfo.name,
+        fullName,
+        methodNodeInfo.signature,
+        dstGraph
+      )
+      val ast = stubAst.merge(typeDeclAst)
+      Ast.storeInDiffGraph(ast, dstGraph)
+    }
+  }
+
   private def methodNode(fullName: String, methodNodeInfo: CGlobal.MethodInfo): NewMethod = {
     val node_ =
       NewMethod()
@@ -66,33 +90,6 @@ class FunctionDeclNodePass(cpg: Cpg, methodDeclarations: Map[String, CGlobal.Met
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
       .lineNumber(line)
       .columnNumber(column)
-
-  private def typeDeclNode(
-    name: String,
-    fullName: String,
-    filename: String,
-    code: String,
-    astParentType: String,
-    astParentFullName: String,
-    line: Option[Int],
-    column: Option[Int],
-    offset: Option[(Int, Int)]
-  ): NewTypeDecl = {
-    val node_ = NewTypeDecl()
-      .name(name)
-      .fullName(fullName)
-      .code(code)
-      .isExternal(false)
-      .filename(filename)
-      .astParentType(astParentType)
-      .astParentFullName(astParentFullName)
-      .lineNumber(line)
-      .columnNumber(column)
-    offset.foreach { case (offset, offsetEnd) =>
-      node_.offset(offset).offsetEnd(offsetEnd)
-    }
-    node_
-  }
 
   private def methodStubAst(
     method: NewMethod,
@@ -147,28 +144,31 @@ class FunctionDeclNodePass(cpg: Cpg, methodDeclarations: Map[String, CGlobal.Met
     }
   }
 
-  override def run(dstGraph: DiffGraphBuilder): Unit = {
-    methodDeclarations.foreach { case (fullName, methodNodeInfo) =>
-      val methodNode_    = methodNode(fullName, methodNodeInfo)
-      val parameterNodes = methodNodeInfo.parameter.map(p => Ast(parameterInNode(p)))
-      val stubAst =
-        methodStubAst(
-          methodNode_,
-          parameterNodes,
-          methodReturnNode(methodNodeInfo.returnType, methodNodeInfo.lineNumber, methodNodeInfo.columnNumber),
-          methodNodeInfo.modifier.map(m => Ast(NewModifier().modifierType(m)))
-        )
-      val typeDeclAst = createFunctionTypeAndTypeDecl(
-        methodNodeInfo,
-        methodNode_,
-        methodNodeInfo.name,
-        fullName,
-        methodNodeInfo.signature,
-        dstGraph
-      )
-      val ast = stubAst.merge(typeDeclAst)
-      Ast.storeInDiffGraph(ast, dstGraph)
+  private def typeDeclNode(
+    name: String,
+    fullName: String,
+    filename: String,
+    code: String,
+    astParentType: String,
+    astParentFullName: String,
+    line: Option[Int],
+    column: Option[Int],
+    offset: Option[(Int, Int)]
+  ): NewTypeDecl = {
+    val node_ = NewTypeDecl()
+      .name(name)
+      .fullName(fullName)
+      .code(code)
+      .isExternal(false)
+      .filename(filename)
+      .astParentType(astParentType)
+      .astParentFullName(astParentFullName)
+      .lineNumber(line)
+      .columnNumber(column)
+    offset.foreach { case (offset, offsetEnd) =>
+      node_.offset(offset).offsetEnd(offsetEnd)
     }
+    node_
   }
 
 }

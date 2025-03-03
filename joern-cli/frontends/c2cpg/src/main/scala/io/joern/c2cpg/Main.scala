@@ -125,8 +125,6 @@ private object Frontend {
 
 object Main extends X2CpgMain(cmdLineParser, new C2Cpg()) with FrontendHTTPServer[Config, C2Cpg] {
 
-  override protected def newDefaultConfig(): Config = Config()
-
   override def run(config: Config, c2cpg: C2Cpg): Unit = {
     config match {
       case c if c.serverMode      => startup()
@@ -134,5 +132,7 @@ object Main extends X2CpgMain(cmdLineParser, new C2Cpg()) with FrontendHTTPServe
       case _                      => c2cpg.run(config)
     }
   }
+
+  override protected def newDefaultConfig(): Config = Config()
 
 }

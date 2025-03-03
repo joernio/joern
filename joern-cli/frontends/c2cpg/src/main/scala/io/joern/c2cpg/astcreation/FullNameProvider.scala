@@ -38,8 +38,9 @@ trait FullNameProvider { this: AstCreator =>
     }
   }
 
-  protected def isQualifiedName(name: String): Boolean =
+  protected def isQualifiedName(name: String): Boolean = {
     name.startsWith(Defines.QualifiedNameSeparator)
+  }
 
   protected def lastNameOfQualifiedName(name: String): String = {
     val normalizedName = StringUtils.normalizeSpace(replaceOperator(name))
@@ -69,12 +70,12 @@ trait FullNameProvider { this: AstCreator =>
       case e: IASTEnumerationSpecifier =>
         val name_                              = shortName(e)
         val fullName_                          = fullName(e)
-        val (uniqueName_, uniqueNameFullName_) = uniqueName("enum", name_, fullName_)
+        val (uniqueName_, uniqueNameFullName_) = uniqueName(name_, fullName_, "enum")
         TypeFullNameInfo(uniqueName_, uniqueNameFullName_)
       case n: ICPPASTNamespaceDefinition =>
         val name_                              = shortName(n)
         val fullName_                          = fullName(n)
-        val (uniqueName_, uniqueNameFullName_) = uniqueName("namespace", name_, fullName_)
+        val (uniqueName_, uniqueNameFullName_) = uniqueName(name_, fullName_, "namespace")
         TypeFullNameInfo(uniqueName_, uniqueNameFullName_)
       case a: ICPPASTNamespaceAlias =>
         val name_     = shortName(a)
@@ -114,28 +115,6 @@ trait FullNameProvider { this: AstCreator =>
     StringUtils.normalizeSpace(name)
   }
 
-  private def fullNameForICPPASTLambdaExpression(): String = {
-    methodAstParentStack
-      .collectFirst {
-        case t: NewTypeDecl =>
-          if (t.name != NamespaceTraversal.globalNamespaceName) {
-            val globalFullName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(filename))
-            s"$globalFullName.${t.fullName}"
-          } else {
-            t.fullName
-          }
-        case m: NewMethod =>
-          val fullNameWithoutSignature = m.fullName.stripSuffix(s":${m.signature}")
-          if (!m.name.startsWith("<lambda>") && m.name != NamespaceTraversal.globalNamespaceName) {
-            val globalFullName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(filename))
-            s"$globalFullName.$fullNameWithoutSignature"
-          } else {
-            fullNameWithoutSignature
-          }
-      }
-      .mkString("")
-  }
-
   protected def fullName(node: IASTNode): String = {
     fullNameFromBinding(node) match {
       case Some(fullName) =>
@@ -160,6 +139,28 @@ trait FullNameProvider { this: AstCreator =>
         }
         fixQualifiedName(qualifiedName).stripPrefix(".")
     }
+  }
+
+  private def fullNameForICPPASTLambdaExpression(): String = {
+    methodAstParentStack
+      .collectFirst {
+        case t: NewTypeDecl =>
+          if (t.name != NamespaceTraversal.globalNamespaceName) {
+            val globalFullName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(filename))
+            s"$globalFullName.${t.fullName}"
+          } else {
+            t.fullName
+          }
+        case m: NewMethod =>
+          val fullNameWithoutSignature = m.fullName.stripSuffix(s":${m.signature}")
+          if (!m.name.startsWith("<lambda>") && m.name != NamespaceTraversal.globalNamespaceName) {
+            val globalFullName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(filename))
+            s"$globalFullName.$fullNameWithoutSignature"
+          } else {
+            fullNameWithoutSignature
+          }
+      }
+      .mkString("")
   }
 
   private def isCPPFunction(methodLike: MethodLike): Boolean = {
@@ -416,8 +417,8 @@ trait FullNameProvider { this: AstCreator =>
         case decl: IASTSimpleDeclaration =>
           decl.getDeclarators.headOption
             .map(n => ASTStringUtil.getSimpleName(n.getName))
-            .getOrElse(uniqueName("composite_type", "", "")._1)
-        case _ => uniqueName("composite_type", "", "")._1
+            .getOrElse(uniqueName("", "", "type")._1)
+        case _ => uniqueName("", "", "type")._1
       }
       s"${fullName(compType.getParent)}.$name"
     }

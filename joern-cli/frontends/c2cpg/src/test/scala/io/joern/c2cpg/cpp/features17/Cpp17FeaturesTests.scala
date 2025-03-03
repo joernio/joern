@@ -50,12 +50,14 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |// Type is deduced to be `int`.
           |auto seq2 = my_integer_sequence<0, 1, 2>();
           |""".stripMargin)
-      val List(seq, seq2) = cpg.local.l
+      val List(seq, seq2, ints) = cpg.local.l
       seq.name shouldBe "seq"
       // CDT is unable to deduce the type of the template argument
       seq.typeFullName shouldBe "integer_sequence<int,int0,int1,int2>"
       seq2.name shouldBe "seq2"
       seq2.typeFullName shouldBe "my_integer_sequence<int0,int1,int2>"
+      ints.name shouldBe "Ints"
+      ints.typeFullName shouldBe "ANY"
     }
 
     "handle folding expressions (binary)" in {
@@ -178,13 +180,13 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |                      // .L_ZZ4mainE2x2: .long 123
           |
           |struct S2 {
+          |  static inline int count{0}; // declare and initialize count to 0 within the class
           |  S2() : id{count++} {}
           |  ~S2() { count--; }
           |  int id;
-          |  static inline int count{0}; // declare and initialize count to 0 within the class
           |};
           |""".stripMargin)
-      cpg.local.map(l => (l.name, l.typeFullName)).toMap shouldBe Map("x1" -> "S1", "x2" -> "S1")
+      cpg.local.map(l => (l.name, l.typeFullName)).toMap shouldBe Map("x1" -> "S1", "x2" -> "S1", "count" -> "int")
       cpg.typeDecl.member.nameExact("count").typeFullName.l shouldBe List("int")
     }
 
@@ -243,27 +245,27 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       cpg.call.code.l should contain theSameElementsAs List(
         "Coordinate{0, 0}",
         "{0, 0}",
-        "anonymous_tmp_0 = = origin()",
+        "<tmp>0 = = origin()",
         "origin()",
-        "x = anonymous_tmp_0.x",
-        "y = anonymous_tmp_0.y",
-        "anonymous_tmp_0.x",
-        "anonymous_tmp_0.y",
-        "anonymous_tmp_1 = mapping",
-        "key = anonymous_tmp_1.key",
-        "value = anonymous_tmp_1.value",
-        "anonymous_tmp_1.key",
-        "anonymous_tmp_1.value"
+        "x = <tmp>0.x",
+        "y = <tmp>0.y",
+        "<tmp>0.x",
+        "<tmp>0.y",
+        "<tmp>1 = mapping",
+        "key = <tmp>1.key",
+        "value = <tmp>1.value",
+        "<tmp>1.key",
+        "<tmp>1.value"
       )
       cpg.local.map(l => (l.name, l.typeFullName)).toMap shouldBe Map(
-        "x"               -> "int",
-        "y"               -> "int",
-        "anonymous_tmp_0" -> "pair<int,int>",
-        "mapping"         -> "std.unordered_map<std.string,int>",
+        "x"       -> "int",
+        "y"       -> "int",
+        "<tmp>0"  -> "pair<int,int>",
+        "mapping" -> "std.unordered_map<std.string,int>",
         // fails to resolve the type of the structured bindings without C++ header files
-        "anonymous_tmp_1" -> "ANY",
-        "key"             -> "ANY",
-        "value"           -> "ANY"
+        "<tmp>1" -> "ANY",
+        "key"    -> "ANY",
+        "value"  -> "ANY"
       )
       cpg.controlStructure
         .controlStructureTypeExact(ControlStructureTypes.FOR)
@@ -272,19 +274,19 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
         .map(l => (l.name, l.typeFullName))
         .toMap shouldBe Map(
         // fails to resolve the type of the structured bindings without C++ header files
-        "anonymous_tmp_1" -> "ANY",
-        "key"             -> "ANY",
-        "value"           -> "ANY"
+        "<tmp>1" -> "ANY",
+        "key"    -> "ANY",
+        "value"  -> "ANY"
       )
       pendingUntilFixed {
         cpg.local.map(l => (l.name, l.typeFullName)).toMap shouldBe Map(
-          "x"               -> "int",
-          "y"               -> "int",
-          "anonymous_tmp_0" -> "pair<int,int>",
-          "mapping"         -> "std.unordered_map<std.string,int>",
-          "anonymous_tmp_1" -> "std.unordered_map<std.string,int>",
-          "key"             -> "int",
-          "value"           -> "int"
+          "x"       -> "int",
+          "y"       -> "int",
+          "<tmp>0"  -> "pair<int,int>",
+          "mapping" -> "std.unordered_map<std.string,int>",
+          "<tmp>1"  -> "std.unordered_map<std.string,int>",
+          "key"     -> "int",
+          "value"   -> "int"
         )
         cpg.controlStructure
           .controlStructureTypeExact(ControlStructureTypes.FOR)
@@ -294,9 +296,9 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           .map(l => (l.name, l.typeFullName))
           .toMap shouldBe Map(
           // fails to resolve the type of the structured bindings without C++ header files
-          "anonymous_tmp_1" -> "std.unordered_map<std.string,int>",
-          "key"             -> "int",
-          "value"           -> "int"
+          "<tmp>1" -> "std.unordered_map<std.string,int>",
+          "key"    -> "int",
+          "value"  -> "int"
         )
       }
     }

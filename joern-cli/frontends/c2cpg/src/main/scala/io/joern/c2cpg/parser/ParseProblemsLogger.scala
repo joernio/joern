@@ -9,6 +9,10 @@ trait ParseProblemsLogger {
 
   private val logger = LoggerFactory.getLogger(classOf[ParseProblemsLogger])
 
+  protected def logProblems(problems: List[IASTProblem]): Unit = {
+    problems.foreach(logProblemNode)
+  }
+
   private def logProblemNode(node: IASTProblem): Unit = {
     val text = s"""Parse problem '${node.getClass.getSimpleName}' occurred!
                   |  Code: '${node.getRawSignature}'
@@ -16,10 +20,6 @@ trait ParseProblemsLogger {
                   |  Line: ${node.getFileLocation.getStartingLineNumber}
                   |  """.stripMargin
     logger.info(text)
-  }
-
-  protected def logProblems(problems: List[IASTProblem]): Unit = {
-    problems.foreach(logProblemNode)
   }
 
   /** The exception message might be null for parse failures due to ambiguous nodes that can't be resolved successfully.

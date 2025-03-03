@@ -13,11 +13,27 @@ import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 
 class TypeDeclNodePass(cpg: Cpg)(implicit withSchemaValidation: ValidationMode) extends CpgPass(cpg) {
 
-  private val filename: String   = "<includes>"
-  private val globalName: String = NamespaceTraversal.globalNamespaceName
-  private val fullName: String   = MetaDataPass.getGlobalNamespaceBlockFullName(Option(filename))
-
+  private val filename: String               = "<includes>"
+  private val globalName: String             = NamespaceTraversal.globalNamespaceName
+  private val fullName: String               = MetaDataPass.getGlobalNamespaceBlockFullName(Option(filename))
   private val typeDeclFullNames: Set[String] = cpg.typeDecl.fullName.toSetImmutable
+
+  override def run(dstGraph: DiffGraphBuilder): Unit = {
+    var hadMissingTypeDecl = false
+    cpg.typ.filter(typeNeedsTypeDeclStub).foreach { t =>
+      val newTypeDecl = NewTypeDecl()
+        .name(t.name)
+        .fullName(t.typeDeclFullName)
+        .code(t.name)
+        .isExternal(true)
+        .filename(filename)
+        .astParentType(NodeTypes.NAMESPACE_BLOCK)
+        .astParentFullName(fullName)
+      dstGraph.addNode(newTypeDecl)
+      hadMissingTypeDecl = true
+    }
+    if (hadMissingTypeDecl) Ast.storeInDiffGraph(createGlobalAst(), dstGraph)
+  }
 
   private def createGlobalAst(): Ast = {
     val includesFile = NewFile().name(filename)
@@ -42,24 +58,8 @@ class TypeDeclNodePass(cpg: Cpg)(implicit withSchemaValidation: ValidationMode) 
     )
   }
 
-  private def typeNeedsTypeDeclStub(t: Type): Boolean =
+  private def typeNeedsTypeDeclStub(t: Type): Boolean = {
     !typeDeclFullNames.contains(t.typeDeclFullName)
-
-  override def run(dstGraph: DiffGraphBuilder): Unit = {
-    var hadMissingTypeDecl = false
-    cpg.typ.filter(typeNeedsTypeDeclStub).foreach { t =>
-      val newTypeDecl = NewTypeDecl()
-        .name(t.name)
-        .fullName(t.typeDeclFullName)
-        .code(t.name)
-        .isExternal(true)
-        .filename(filename)
-        .astParentType(NodeTypes.NAMESPACE_BLOCK)
-        .astParentFullName(fullName)
-      dstGraph.addNode(newTypeDecl)
-      hadMissingTypeDecl = true
-    }
-    if (hadMissingTypeDecl) Ast.storeInDiffGraph(createGlobalAst(), dstGraph)
   }
 
 }

@@ -30,50 +30,20 @@ object JSONCompilationDatabaseParser {
     */
   private val includeInCommandPattern = """-I(\S+)""".r
 
-  case class CommandObject(
-    directory: String,
-    arguments: mutable.LinkedHashSet[String],
-    command: mutable.LinkedHashSet[String],
-    file: String
-  ) {
-
-    /** @return
-      *   the file path (guaranteed to be absolute)
-      */
-    def compiledFile(): String = SourceFiles.toAbsolutePath(file, directory)
-
-    private def nameValuePairFromDefine(define: String): (String, String) = {
-      val s = define.stripPrefix("-D")
-      if (s.contains("=")) {
-        val split = s.split("=")
-        (split.head, split(1))
-      } else {
-        (s, "")
+  def parse(compileCommandsJson: String): mutable.LinkedHashSet[CommandObject] = {
+    try {
+      val jsonContent       = IOUtils.readEntireFile(Paths.get(compileCommandsJson))
+      val json              = ujson.read(jsonContent)
+      val allCommandObjects = mutable.LinkedHashSet.from(json.arr)
+      allCommandObjects.map { obj =>
+        CommandObject(obj("directory").str, safeArguments(obj), safeCommand(obj), obj("file").str)
       }
-    }
-
-    private def pathFromInclude(include: String): String = include.stripPrefix("-I")
-
-    def includes(): mutable.LinkedHashSet[String] = {
-      val includesFromArguments = arguments.filter(a => a.startsWith("-I")).map(pathFromInclude)
-      val includesFromCommand = command.flatMap { c =>
-        val includes = includeInCommandPattern.findAllIn(c).toList
-        includes.map(pathFromInclude)
-      }
-      includesFromArguments ++ includesFromCommand
-    }
-
-    def defines(): mutable.LinkedHashSet[(String, String)] = {
-      val definesFromArguments = arguments.filter(a => a.startsWith("-D")).map(nameValuePairFromDefine)
-      val definesFromCommand = command.flatMap { c =>
-        val defines = defineInCommandPattern.findAllIn(c).toList
-        defines.map(nameValuePairFromDefine)
-      }
-      definesFromArguments ++ definesFromCommand
+    } catch {
+      case t: Throwable =>
+        logger.warn(s"Could not parse '$compileCommandsJson'", t)
+        mutable.LinkedHashSet.empty
     }
   }
-
-  private def hasKey(node: Value, key: String): Boolean = Try(node(key)).isSuccess
 
   private def safeArguments(obj: Value): mutable.LinkedHashSet[String] = {
     if (hasKey(obj, "arguments"))
@@ -88,18 +58,50 @@ object JSONCompilationDatabaseParser {
     else mutable.LinkedHashSet.empty
   }
 
-  def parse(compileCommandsJson: String): mutable.LinkedHashSet[CommandObject] = {
-    try {
-      val jsonContent       = IOUtils.readEntireFile(Paths.get(compileCommandsJson))
-      val json              = ujson.read(jsonContent)
-      val allCommandObjects = mutable.LinkedHashSet.from(json.arr)
-      allCommandObjects.map { obj =>
-        CommandObject(obj("directory").str, safeArguments(obj), safeCommand(obj), obj("file").str)
+  private def hasKey(node: Value, key: String): Boolean = {
+    Try(node(key)).isSuccess
+  }
+
+  case class CommandObject(
+    directory: String,
+    arguments: mutable.LinkedHashSet[String],
+    command: mutable.LinkedHashSet[String],
+    file: String
+  ) {
+
+    /** @return
+      *   the file path (guaranteed to be absolute)
+      */
+    def compiledFile(): String = SourceFiles.toAbsolutePath(file, directory)
+
+    def includes(): mutable.LinkedHashSet[String] = {
+      val includesFromArguments = arguments.filter(a => a.startsWith("-I")).map(pathFromInclude)
+      val includesFromCommand = command.flatMap { c =>
+        val includes = includeInCommandPattern.findAllIn(c).toList
+        includes.map(pathFromInclude)
       }
-    } catch {
-      case t: Throwable =>
-        logger.warn(s"Could not parse '$compileCommandsJson'", t)
-        mutable.LinkedHashSet.empty
+      includesFromArguments ++ includesFromCommand
+    }
+
+    private def pathFromInclude(include: String): String = include.stripPrefix("-I")
+
+    def defines(): mutable.LinkedHashSet[(String, String)] = {
+      val definesFromArguments = arguments.filter(a => a.startsWith("-D")).map(nameValuePairFromDefine)
+      val definesFromCommand = command.flatMap { c =>
+        val defines = defineInCommandPattern.findAllIn(c).toList
+        defines.map(nameValuePairFromDefine)
+      }
+      definesFromArguments ++ definesFromCommand
+    }
+
+    private def nameValuePairFromDefine(define: String): (String, String) = {
+      val s = define.stripPrefix("-D")
+      if (s.contains("=")) {
+        val split = s.split("=")
+        (split.head, split(1))
+      } else {
+        (s, "")
+      }
     }
   }
 
