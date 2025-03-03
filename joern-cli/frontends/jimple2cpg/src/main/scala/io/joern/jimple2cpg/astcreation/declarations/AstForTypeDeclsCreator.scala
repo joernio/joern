@@ -66,7 +66,14 @@ trait AstForTypeDeclsCreator(implicit withSchemaValidation: ValidationMode) { th
       .collect { case x: VisibilityAnnotationTag => x }
       .flatMap(_.getAnnotations.asScala)
     val modifiers = astsForModifiers(field)
-    Ast(memberNode(field, name, code, typeFullName))
+    val constantValue = field.getTags.asScala.collectFirst { case tag: ConstantValueTag =>
+      tag.getConstant.toString
+    }
+    val m = constantValue match {
+      case Some(value) => memberNode(field, name, code, typeFullName).possibleTypes(List(value))
+      case None        => memberNode(field, name, code, typeFullName)
+    }
+    Ast(m)
       .withChildren(annotations.map(astsForAnnotations(_, field)).toSeq)
       .withChildren(modifiers)
   }
