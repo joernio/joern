@@ -164,7 +164,7 @@ object ProgramHandlingUtil {
     // filter archive file unless recurse was enabled
     def shouldExtract(e: Entry) =
       !e.isZipSlip && e.maybeRegularFile() && ((isArchive(e) && recurse) || isClass(e) || isConfigFile(e))
-    val subOfSrc = Files.walk(src).iterator().asScala.filterNot(_ == src).filterNot(Files.isDirectory(_)).toList
+    val subOfSrc = src.walk().filterNot(_ == src).filterNot(Files.isDirectory(_)).toList
     unfoldArchives(
       src,
       {
@@ -173,13 +173,13 @@ object ProgramHandlingUtil {
         case f if isConfigFile(Entry(f)) =>
           Left(ConfigFile(f))
         case f if Files.isDirectory(f) =>
-          val files = Files.walk(f).iterator().asScala.filterNot(_ == src).filterNot(Files.isDirectory(_)).toList
+          val files = f.walk().filterNot(_ == src).filterNot(Files.isDirectory(_)).toList
           Right(Map(false -> files))
         case f if isArchive(Entry(f)) && (f == src || (Files.isDirectory(src) && subOfSrc.contains(f)) || recurse) =>
           val xTmp = Files.createTempDirectory(tmpDir, "extract-archive-")
 
           val unzipDirs =
-            Using.resource(new ZipFile(f.toAbsolutePath.toString)) { zipFile =>
+            Using.resource(new ZipFile(f.absolutePathAsString)) { zipFile =>
               Try(f.unzipTo(xTmp, e => shouldExtract(Entry(e, zipFile)))) match {
                 case Success(dir) => List(dir)
                 case Failure(e) =>
@@ -225,10 +225,10 @@ object ProgramHandlingUtil {
       *   The package path if successfully retrieved
       */
     private def getPackagePathFromByteCode(file: Path): Option[String] =
-      Using.resource(new FileInputStream(file.toAbsolutePath.toString)) { fis =>
+      Using.resource(new FileInputStream(file.absolutePathAsString)) { fis =>
         Try(getPackagePathFromByteCode(fis))
           .recover { case e: Throwable =>
-            logger.error(s"Error reading class file ${file.toAbsolutePath.toString}", e)
+            logger.error(s"Error reading class file ${file.absolutePathAsString}", e)
             None
           }
           .getOrElse(None)
@@ -277,7 +277,7 @@ object ProgramHandlingUtil {
         }
         .orElse {
           logger.warn(
-            s"Missing package path for ${file.toAbsolutePath.toString}. Failed to copy to ${destDir.toAbsolutePath.toString}"
+            s"Missing package path for ${file.absolutePathAsString}. Failed to copy to ${destDir.absolutePathAsString}"
           )
           None
         }

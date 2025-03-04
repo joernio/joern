@@ -35,7 +35,7 @@ object Delombok {
         val javaExecutable = Paths.get(javaHome, "bin", "java")
 
         Option.when(Files.exists(javaExecutable) && Files.isExecutable(javaExecutable)) {
-          javaExecutable.toAbsolutePath.toString
+          javaExecutable.absolutePathAsString
         }
       }
       .getOrElse("java")
@@ -63,9 +63,9 @@ object Delombok {
         classPathArg,
         "lombok.launch.Main",
         "delombok",
-        inputPath.toAbsolutePath.toString,
+        inputPath.absolutePathAsString,
         "-d",
-        outputDir.toAbsolutePath.toString
+        outputDir.absolutePathAsString
       )
     logger.debug(s"Executing delombok with command ${command.mkString(" ")}")
     command
@@ -89,7 +89,7 @@ object Delombok {
       ExternalCommand
         .run(delombokToTempDirCommand(inputDir, packageOutputDir, analysisJavaHome), Some("."))
         .toTry
-        .map(_ => delombokTempDir.toAbsolutePath.toString)
+        .map(_ => delombokTempDir.absolutePathAsString)
     }
   }
 

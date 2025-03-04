@@ -34,7 +34,7 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
   private val logger = LoggerFactory.getLogger(classOf[Jimple2Cpg])
 
   private def sootLoadApk(input: Path, framework: Option[String] = None): Unit = {
-    Options.v().set_process_dir(List(input.toAbsolutePath.toString).asJava)
+    Options.v().set_process_dir(List(input.absolutePathAsString).asJava)
     framework match {
       case Some(value) if value.nonEmpty =>
         Options.v().set_src_prec(Options.src_prec_apk)
@@ -80,12 +80,12 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
     *   Maximum depth of recursion
     */
   private def sootLoad(input: Path, tmpDir: Path, recurse: Boolean, depth: Int): List[ClassFile] = {
-    Options.v().set_soot_classpath(tmpDir.toAbsolutePath.toString)
+    Options.v().set_soot_classpath(tmpDir.absolutePathAsString)
     Options.v().set_prepend_classpath(true)
     val classFiles               = loadClassFiles(input, tmpDir, recurse, depth)
     val fullyQualifiedClassNames = classFiles.flatMap(_.fullyQualifiedClassName)
     logger.info(s"Loading ${classFiles.size} program files")
-    logger.debug(s"Source files are: ${classFiles.map(_.file.toAbsolutePath.toString)}")
+    logger.debug(s"Source files are: ${classFiles.map(_.file.absolutePathAsString)}")
     fullyQualifiedClassNames.foreach { fqcn =>
       Scene.v().addBasicClass(fqcn)
       Scene.v().loadClassAndSupport(fqcn)
@@ -178,7 +178,7 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
     Options.v().set_omit_excepting_unit_edges(false)
     // output jimple
     Options.v().set_output_format(Options.output_format_jimple)
-    Options.v().set_output_dir(outDir.toAbsolutePath.toString)
+    Options.v().set_output_dir(outDir.absolutePathAsString)
 
     Options.v().set_dynamic_dir(config.dynamicDirs.asJava)
     Options.v().set_dynamic_package(config.dynamicPkgs.asJava)

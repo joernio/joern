@@ -1,6 +1,7 @@
 package io.joern.php2cpg.parser
 import better.files.File
 import io.shiftleft.semanticcpg.utils.ExternalCommand
+import io.joern.x2cpg.utils.FileUtil.*
 import org.slf4j.LoggerFactory
 
 import scala.io.Source
@@ -30,7 +31,7 @@ class ClassParser(targetDir: Path) {
     Seq("php", classParserScript.pathAsString, targetDir.toString)
 
   def parse(): Try[List[ClassParserClass]] = Try {
-    val inputDirectory = targetDir.getParent.toAbsolutePath.toString
+    val inputDirectory = targetDir.getParent.absolutePathAsString
     ExternalCommand.run(phpClassParseCommand, Option(inputDirectory)).toTry.map(_.reverse) match {
       case Success(output) =>
         read[List[ClassParserClass]](output.mkString("\n"))

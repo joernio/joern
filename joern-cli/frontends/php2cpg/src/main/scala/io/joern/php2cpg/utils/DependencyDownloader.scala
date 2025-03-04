@@ -183,25 +183,21 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
       FileUtil.delete(fullPathPrefix, swallowIoExceptions = true)
     }
 
-    Files.list(targetDir).iterator().asScala.filterNot(Files.isDirectory(_)).foreach { pkg =>
+    targetDir.listFiles().filterNot(Files.isDirectory(_)).foreach { pkg =>
       pkg.unzipTo(targetDir, zipFilter)
       FileUtil.delete(pkg, swallowIoExceptions = true)
 
-      Files
-        .list(targetDir)
-        .iterator()
-        .asScala
+      targetDir
+        .listFiles()
         .filter(f => Files.isDirectory(f) && f.getFileName.toString.startsWith(vendor.replace("\\", "-")))
         .foreach { unpackedDest =>
-          unpackedDest.mergeDirectory(targetDir)(copyOptions = StandardCopyOption.REPLACE_EXISTING)
+          unpackedDest.mergeDirectory(targetDir, copyOptions = StandardCopyOption.REPLACE_EXISTING)
           FileUtil.delete(unpackedDest, swallowIoExceptions = true)
         }
     }
 
-    Files
-      .list(targetDir)
-      .iterator()
-      .asScala
+    targetDir
+      .walk()
       .collectFirst {
         case x if x.getFileName.toString == "composer.json" =>
           Using.resource(Files.newInputStream(x)) { is =>
@@ -220,10 +216,8 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
       }
 
     // Clean up `.json` files
-    Files
-      .list(targetDir)
-      .iterator()
-      .asScala
+    targetDir
+      .listFiles()
       .filter(_.toString.endsWith(".json"))
       .foreach(FileUtil.delete(_, swallowIoExceptions = true))
   }

@@ -4,6 +4,7 @@ import io.joern.jimple2cpg.Config
 import io.joern.jimple2cpg.astcreation.AstCreator
 import io.joern.jimple2cpg.util.ProgramHandlingUtil.ClassFile
 import io.joern.x2cpg.datastructures.Global
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
@@ -45,14 +46,14 @@ class AstCreationPass(classFiles: List[ClassFile], cpg: Cpg, config: Config)
         .flatten
 
       val localDiff =
-        AstCreator(classFile.file.toAbsolutePath.toString, sootClass, global, fileContent = fileContent)(
+        AstCreator(classFile.file.absolutePathAsString, sootClass, global, fileContent = fileContent)(
           config.schemaValidation
         )
           .createAst()
       builder.absorb(localDiff)
     } catch {
       case e: Exception =>
-        logger.warn(s"Exception on AST creation for ${classFile.file.toAbsolutePath.toString}", e)
+        logger.warn(s"Exception on AST creation for ${classFile.file.absolutePathAsString}", e)
         Iterator()
     }
   }

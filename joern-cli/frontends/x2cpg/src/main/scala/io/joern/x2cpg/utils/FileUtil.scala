@@ -65,6 +65,8 @@ object FileUtil {
   }
 
   implicit class PathExt(p: Path) {
+    def absolutePathAsString: String = p.toAbsolutePath.toString
+
     def /(child: String): Path = {
       p.resolve(child)
     }
@@ -122,12 +124,10 @@ object FileUtil {
       }
     }
 
-    def mergeDirectory(
-      directory: Path
-    )(implicit copyOptions: StandardCopyOption = StandardCopyOption.COPY_ATTRIBUTES): Unit = {
+    def mergeDirectory(directory: Path, copyOptions: StandardCopyOption = StandardCopyOption.COPY_ATTRIBUTES): Unit = {
       require(Files.isDirectory(directory), s"$directory must be a directory")
 
-      Files.walk(p).iterator().asScala.filter(Files.isRegularFile(_)).foreach { x =>
+      p.walk().filter(Files.isRegularFile(_)).foreach { x =>
         val relativePath = x.toString.stripPrefix(s"${p.toString}${java.io.File.separator}")
         val target       = directory / relativePath
         target.getParent.createWithParentsIfNotExists(asDirectory = true, createParents = true)
@@ -162,6 +162,22 @@ object FileUtil {
       destination
     }
 
+    def listFiles(): Iterator[Path] = {
+      Files.list(p).iterator().asScala
+    }
+
+    def walk(): Iterator[Path] = {
+      Files.walk(p).iterator().asScala
+    }
+
+    def extension: Option[String] = {
+      if ((Files.isRegularFile(p) || Files.notExists(p)) && p.getFileName.toString.contains(".")) {
+        val dotIdx = p.getFileName.toString.lastIndexOf(".")
+        Some(p.getFileName.toString.substring(dotIdx).toLowerCase)
+      } else {
+        None
+      }
+    }
     // Taken from better.files implementation
     @tailrec final def pipeTo(in: InputStream, out: OutputStream, buffer: Array[Byte]): OutputStream = {
       val n = in.read(buffer)
@@ -173,13 +189,5 @@ object FileUtil {
       }
     }
 
-    def extension: Option[String] = {
-      if ((Files.isRegularFile(p) || Files.notExists(p)) && p.getFileName.toString.contains(".")) {
-        val dotIdx = p.getFileName.toString.lastIndexOf(".")
-        Some(p.getFileName.toString.substring(dotIdx).toLowerCase)
-      } else {
-        None
-      }
-    }
   }
 }
