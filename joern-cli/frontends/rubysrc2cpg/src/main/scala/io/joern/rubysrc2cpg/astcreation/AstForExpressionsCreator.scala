@@ -70,7 +70,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       astForUnknown(node)
 
   protected def astForStaticLiteral(node: StaticLiteral): Ast = {
-    Ast(literalNode(node, code(node), node.typeFullName))
+    Ast(literalNode(node, code(node), node.typeFullName, node.typeFullName :: Nil))
   }
 
   protected def astForHereDoc(node: HereDocNode): Ast = {
@@ -223,12 +223,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         code(n)
       }
 
-      // Regex matches are one of the few dynamic dispatch calls we fully qualify because of the lowering mechanism
-      val call = if (methodFullName == s"${prefixAsCoreType(Defines.Regexp)}.match") {
-        callNode(n, callCode, n.methodName, methodFullName, dispatchType)
-      } else {
-        callNode(n, callCode, n.methodName, XDefines.DynamicCallUnknownFullName, dispatchType)
-      }
+      val call = callNode(n, callCode, n.methodName, XDefines.DynamicCallUnknownFullName, dispatchType)
       if methodFullName != XDefines.DynamicCallUnknownFullName then call.possibleTypes(Seq(methodFullName))
       if (isStatic) {
         callAst(call, argumentAsts, base = Option(baseAst)).copy(receiverEdges = Nil)
