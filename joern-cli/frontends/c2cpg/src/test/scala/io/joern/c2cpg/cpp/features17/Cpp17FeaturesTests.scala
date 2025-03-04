@@ -149,7 +149,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |struct MyObj {
           |  int value {123};
           |  auto getValueCopy() {
-          |    return [*this] { return value; };
+          |    return [*this] (string a) -> int { return value; };
           |  }
           |  auto getValueRef() {
           |    return [this] { return value; };
@@ -162,10 +162,9 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |valueCopy(); // 123
           |valueRef(); // 321
           |""".stripMargin)
-      // TODO: we can not express these lambda types in the current schema
-      // We would need to add a new type for lambdas that capture `this` by value copy/ref.
-      cpg.method.nameExact("getValueCopy").methodReturn.typeFullName.l shouldBe List(Defines.Function)
-      cpg.method.nameExact("getValueRef").methodReturn.typeFullName.l shouldBe List(Defines.Function)
+      cpg.method.nameExact("getValueCopy").methodReturn.typeFullName.l shouldBe List("std.function<int,string>")
+      // with the include for std::function, the actual return type can not be resolved
+      cpg.method.nameExact("getValueRef").methodReturn.typeFullName.l shouldBe List("std.function<ANY>")
     }
 
     "handle inline variables" in {

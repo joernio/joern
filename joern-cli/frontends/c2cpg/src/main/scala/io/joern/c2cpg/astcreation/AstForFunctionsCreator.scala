@@ -450,7 +450,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       lambdaMethodNode.fullName,
       astParentType,
       astParentFullName,
-      Seq(registerType(Defines.Function))
+      Seq(registerType(typeForCPPClosureType(lambdaExpression)))
     )
 
     val functionBinding = NewBinding()

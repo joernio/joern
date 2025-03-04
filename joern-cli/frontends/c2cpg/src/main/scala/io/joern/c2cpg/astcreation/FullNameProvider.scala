@@ -17,6 +17,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.c.CVariable
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPClosureType
 
 import scala.util.Try
 
@@ -141,6 +142,24 @@ trait FullNameProvider { this: AstCreator =>
     }
   }
 
+  protected def typeForCPPClosureType(lambdaExpression: ICPPASTLambdaExpression): String = {
+    val returnTpe = returnType(lambdaExpression)
+    val strippedSignature = signature("", lambdaExpression) match {
+      case "()"  => ""
+      case other => s""",${other.stripPrefix("(").stripSuffix(")")}"""
+    }
+    // that is how C++ std::function is templated (https://en.cppreference.com/w/cpp/utility/functional/function)
+    cleanType(s"${Defines.Function}<$returnTpe$strippedSignature>")
+  }
+
+  protected def returnType(methodLike: MethodLike): String = {
+    methodLike match {
+      case declarator: IASTFunctionDeclarator => returnTypeForIASTFunctionDeclarator(declarator)
+      case definition: IASTFunctionDefinition => returnTypeForIASTFunctionDefinition(definition)
+      case lambda: ICPPASTLambdaExpression    => returnTypeForICPPASTLambdaExpression(lambda)
+    }
+  }
+
   private def fullNameForICPPASTLambdaExpression(): String = {
     methodAstParentStack
       .collectFirst {
@@ -209,7 +228,11 @@ trait FullNameProvider { this: AstCreator =>
     } else {
       safeGetBinding(definition.getDeclarator.getName) match {
         case Some(value: ICPPMethod) =>
-          cleanType(value.getType.getReturnType.toString)
+          value.getType.getReturnType match {
+            case t: CPPClosureType if t.getDefinition.isInstanceOf[ICPPASTLambdaExpression] =>
+              typeForCPPClosureType(t.getDefinition.asInstanceOf[ICPPASTLambdaExpression])
+            case other => cleanType(other.toString)
+          }
         case _ =>
           typeForDeclSpecifier(definition.getDeclSpecifier)
       }
@@ -227,14 +250,6 @@ trait FullNameProvider { this: AstCreator =>
           case Some(value) if !value.toString.endsWith(": <unknown>") => cleanType(value.getType.toString)
           case _                                                      => Defines.Any
         }
-    }
-  }
-
-  private def returnType(methodLike: MethodLike): String = {
-    methodLike match {
-      case declarator: IASTFunctionDeclarator => returnTypeForIASTFunctionDeclarator(declarator)
-      case definition: IASTFunctionDefinition => returnTypeForIASTFunctionDefinition(definition)
-      case lambda: ICPPASTLambdaExpression    => returnTypeForICPPASTLambdaExpression(lambda)
     }
   }
 

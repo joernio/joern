@@ -124,7 +124,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
         case List(lambdaDecl) =>
           lambdaDecl.name shouldBe "<lambda>0"
           lambdaDecl.fullName shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:string(string)"
-          lambdaDecl.inheritsFromTypeFullName should contain theSameElementsAs List("std.function")
+          lambdaDecl.inheritsFromTypeFullName should contain theSameElementsAs List("std.function<string,string>")
         case result => fail(s"Expected a single typeDecl for the lambda but got $result")
       }
     }

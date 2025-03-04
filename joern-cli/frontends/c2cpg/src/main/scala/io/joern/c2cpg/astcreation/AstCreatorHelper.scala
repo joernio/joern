@@ -176,13 +176,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case t if t.contains("?")                                                    => Defines.Any
       case t if t.contains("#") && !t.contains("<#0")                              => Defines.Any
       case t if t.contains("::{") || t.contains("}::")                             => Defines.Any
-      case t if (t.contains("{") || t.contains("}")) && !isThisLambdaCapture(t)    => Defines.Any
+      case t if (t.contains("{") || t.contains("}"))                               => Defines.Any
       case t if t.contains("org.eclipse.cdt.internal.core.dom.parser.ProblemType") => Defines.Any
       // Special patterns with specific handling
-      case t if t.startsWith("[") && t.endsWith("]")       => Defines.Array
-      case t if isThisLambdaCapture(t) || t.contains("->") => Defines.Function
-      case t if t.contains("<#0") && t.endsWith(">")       => fixQualifiedName(t.replaceAll("#\\d+", Defines.Any))
-      case t if t.contains("( ")                           => fixQualifiedName(t.substring(0, t.indexOf("( ")))
+      case t if t.startsWith("[") && t.endsWith("]") => Defines.Array
+      case t if t.contains("->")                     => Defines.Function
+      case t if t.contains("<#0") && t.endsWith(">") => fixQualifiedName(t.replaceAll("#\\d+", Defines.Any))
+      case t if t.contains("( ")                     => fixQualifiedName(t.substring(0, t.indexOf("( ")))
       // Default case
       case typeStr => fixQualifiedName(typeStr)
     }
@@ -465,10 +465,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     } else {
       tpe.replace(" ", "")
     }
-  }
-
-  private def isThisLambdaCapture(tpe: String): Boolean = {
-    tpe.startsWith("[*this]") || tpe.startsWith("[this]") || (tpe.startsWith("[") && tpe.contains("this]"))
   }
 
   private def safeGetNodeType(node: IASTNode): String = {
