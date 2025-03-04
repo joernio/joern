@@ -597,11 +597,25 @@ class CppCfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg(FileD
       succOf("d") should contain theSameElementsAs expected(("RET", AlwaysEdge))
     }
 
+    "be correct for try with multiple returns" in {
+      implicit val cpg: Cpg = code("""
+          |try {
+          |  if (1+1) {
+          |    return foo();
+          |  }
+          |  return bar();
+          |} catch (int x) {}
+          |""".stripMargin)
+      succOf("foo()") should contain theSameElementsAs expected(("return foo();", AlwaysEdge))
+      succOf("return foo();") should contain theSameElementsAs expected(("RET", AlwaysEdge))
+      succOf("bar()") should contain theSameElementsAs expected(("return bar();", AlwaysEdge), ("RET", AlwaysEdge))
+    }
+
     "be correct for throw statement" in {
       implicit val cpg: Cpg = code("""
-                                     |throw foo();
-                                     |bar();
-                                     |""".stripMargin)
+       |throw foo();
+       |bar();
+       |""".stripMargin)
       succOf("func") should contain theSameElementsAs expected(("foo()", AlwaysEdge))
       succOf("foo()") should contain theSameElementsAs expected(("throw foo()", AlwaysEdge))
       succOf("throw foo()") should contain theSameElementsAs expected(("RET", AlwaysEdge))
@@ -610,9 +624,9 @@ class CppCfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg(FileD
 
     "be correct for throw statement in if-else" in {
       implicit val cpg: Cpg = code("""
-                                     |if (true) throw foo();
-                                     |else bar();
-                                     |""".stripMargin)
+       |if (true) throw foo();
+       |else bar();
+       |""".stripMargin)
       succOf("func") should contain theSameElementsAs expected(("true", AlwaysEdge))
       succOf("true") should contain theSameElementsAs expected(("foo()", TrueEdge), ("bar()", FalseEdge))
       succOf("foo()") should contain theSameElementsAs expected(("throw foo()", AlwaysEdge))
