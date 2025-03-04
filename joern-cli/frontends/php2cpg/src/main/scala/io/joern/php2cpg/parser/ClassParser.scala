@@ -1,17 +1,19 @@
 package io.joern.php2cpg.parser
 import better.files.File
 import io.shiftleft.semanticcpg.utils.ExternalCommand
+import io.joern.x2cpg.utils.FileUtil.*
 import org.slf4j.LoggerFactory
 
 import scala.io.Source
 import scala.util.{Failure, Success, Try, Using}
+import java.nio.file.Path
 import upickle.default.*
 
 import scala.collection.mutable
 
 /** Parses the high-level symbol information of a project.
   */
-class ClassParser(targetDir: File) {
+class ClassParser(targetDir: Path) {
 
   import ClassParser.*
 
@@ -26,10 +28,10 @@ class ClassParser(targetDir: File) {
   }
 
   private lazy val phpClassParseCommand: Seq[String] =
-    Seq("php", classParserScript.pathAsString, targetDir.pathAsString)
+    Seq("php", classParserScript.pathAsString, targetDir.toString)
 
   def parse(): Try[List[ClassParserClass]] = Try {
-    val inputDirectory = targetDir.parent.canonicalPath
+    val inputDirectory = targetDir.getParent.absolutePathAsString
     ExternalCommand.run(phpClassParseCommand, Option(inputDirectory)).toTry.map(_.reverse) match {
       case Success(output) =>
         read[List[ClassParserClass]](output.mkString("\n"))

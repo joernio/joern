@@ -35,7 +35,7 @@ trait TestCodeWriter {
     val tmpDir = Files.createTempDirectory("x2cpgTestTmpDir")
     FileUtil.deleteOnExit(tmpDir)
     outputDirectory = Some(tmpDir)
-    val tmpPath = tmpDir
+
     val codeFiles = codeFileNamePairs.map { case (code, explicitFileName) =>
       val fileName = explicitFileName.getOrElse {
         val filename = s"Test$fileNameCounter$extension"
@@ -44,16 +44,16 @@ trait TestCodeWriter {
       }
       val filePath = Path.of(fileName)
       if (filePath.getParent != null) {
-        Files.createDirectories(tmpPath.resolve(filePath.getParent))
+        Files.createDirectories(tmpDir.resolve(filePath.getParent))
       }
       val codeAsBytes = code.getBytes(StandardCharsets.UTF_8)
-      val codeFile    = tmpPath.resolve(filePath)
+      val codeFile    = tmpDir.resolve(filePath)
       Files.write(codeFile, codeAsBytes)
       codeFilePreProcessing(codeFile)
       codeFile
     }.toList
-    codeDirPreProcessing(tmpPath, codeFiles)
-    tmpPath
+    codeDirPreProcessing(tmpDir, codeFiles)
+    tmpDir
   }
 
   def cleanupOutput(): Unit = {

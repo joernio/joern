@@ -1,13 +1,17 @@
 package io.joern.x2cpg.utils.dependency
 
-import better.files.*
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
+
+import java.nio.charset.Charset
+
 import org.gradle.tooling.{GradleConnector, ProjectConnection}
 import org.gradle.tooling.model.{GradleProject, ProjectIdentifier, Task}
 import org.gradle.tooling.model.build.BuildEnvironment
 import org.slf4j.LoggerFactory
 
 import java.io.ByteArrayOutputStream
-import java.nio.file.{Files, Path}
+import java.nio.file.{Files, Path, Paths}
 import java.io.File as JFile
 import java.util.stream.Collectors
 import scala.collection.mutable
@@ -397,7 +401,7 @@ object GradleDependencies {
               .list(destinationDir)
               .collect(Collectors.toList[Path])
               .asScala
-              .filterNot(File(_).isDirectory)
+              .filterNot(Files.isDirectory(_))
               .map(_.toAbsolutePath.toString)
           logger.info(s"Task $taskName resolved `${result.size}` dependency files.")
           Some(result)
@@ -410,7 +414,11 @@ object GradleDependencies {
             )
           }
           if (stderrStream.toString.contains("Could not compile initialization script")) {
-            val scriptContents = File(initScriptPath).contentAsString
+
+            val scriptContents = new String(Files.readAllBytes(Paths.get(initScriptPath)), Charset.defaultCharset())
+            logger.debug(
+              s"########## INITIALIZATION_SCRIPT ##########\n$scriptContents\n###########################################"
+            )
           }
           logger.debug(s"Gradle task execution stdout: \n$stdoutStream")
           logger.debug(s"Gradle task execution stderr: \n$stderrStream")
@@ -419,27 +427,31 @@ object GradleDependencies {
     }
   }
 
-  private def extractClassesJarFromAar(aar: File): Option[Path] = {
-    val newPath           = aar.path.toString.replaceFirst(aarFileExtension + "$", "jar")
+  private def extractClassesJarFromAar(aar: Path): Option[Path] = {
+    val newPath           = aar.toString.replaceFirst(aarFileExtension + "$", "jar")
     val aarUnzipDirSuffix = ".unzipped"
-    val outDir            = File(aar.path.toString + aarUnzipDirSuffix)
+    val outDir            = Paths.get(aar.toString + aarUnzipDirSuffix)
     aar.unzipTo(outDir, _.getName == jarInsideAarFileName)
-    val outFile = File(newPath)
+    val outFile = Paths.get(newPath)
     val classesJarEntries =
-      outDir.listRecursively
-        .filter(_.path.getFileName.toString == jarInsideAarFileName)
+      Files
+        .walk(outDir)
+        .iterator()
+        .asScala
+        .filterNot(_ == outDir)
+        .filter(_.getFileName.toString == jarInsideAarFileName)
         .toList
     if (classesJarEntries.size != 1) {
-      logger.warn(s"Found aar file without `classes.jar` inside at path ${aar.path}")
-      outDir.delete()
+      logger.warn(s"Found aar file without `classes.jar` inside at path ${aar}")
+      FileUtil.delete(outDir)
       None
     } else {
       val classesJar = classesJarEntries.head
-      logger.trace(s"Copying `classes.jar` for aar at `${aar.path.toString}` into `$newPath`")
+      logger.trace(s"Copying `classes.jar` for aar at `${aar.toString}` into `$newPath`")
       classesJar.copyTo(outFile)
-      outDir.delete()
-      aar.delete()
-      Some(outFile.path)
+      FileUtil.delete(outDir)
+      FileUtil.delete(aar)
+      Some(outFile)
     }
   }
 
@@ -455,14 +467,15 @@ object GradleDependencies {
       case Some(projectInfo) if projectInfo.gradleVersionMajorMinor()._1 < 5 =>
         logger.warn(s"Unsupported Gradle version `${projectInfo.gradleVersion}`")
         Map.empty
-
       case Some(projectInfo) =>
-        Try(File.newTemporaryDirectory(tempDirPrefix).deleteOnExit()) match {
+        Try(Files.createTempDirectory(tempDirPrefix)) match {
           case Success(destinationDir) =>
-            Try(File.newTemporaryFile(initScriptPrefix).deleteOnExit()) match {
+            FileUtil.deleteOnExit(destinationDir)
+            Try(Files.createTempFile(initScriptPrefix, "")) match {
               case Success(initScriptFile) =>
-                val initScript = makeInitScript(destinationDir.path, projectInfo)
-                initScriptFile.write(initScript.contents)
+                FileUtil.deleteOnExit(initScriptFile)
+                val initScript = makeInitScript(destinationDir, projectInfo)
+                Files.writeString(initScriptFile, initScript.contents)
 
                 Try(makeConnection(projectDir.toFile)) match {
                   case Success(connection) =>
@@ -475,11 +488,11 @@ object GradleDependencies {
                         }
                         val destinationDir = initScript.destinationDir.resolve(destinationSubdir)
 
-                        runGradleTask(c, taskName, destinationDir, initScriptFile.pathAsString) map { deps =>
+                        runGradleTask(c, taskName, destinationDir, initScriptFile.toString) map { deps =>
                           val depsOutput = deps.map { d =>
                             if (!d.endsWith(aarFileExtension)) d
                             else
-                              extractClassesJarFromAar(File(d)) match {
+                              extractClassesJarFromAar(Paths.get(d)) match {
                                 case Some(path) => path.toString
                                 case None       => d
                               }

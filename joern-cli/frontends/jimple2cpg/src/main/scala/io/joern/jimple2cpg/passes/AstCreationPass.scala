@@ -4,6 +4,7 @@ import io.joern.jimple2cpg.Config
 import io.joern.jimple2cpg.astcreation.AstCreator
 import io.joern.jimple2cpg.util.ProgramHandlingUtil.ClassFile
 import io.joern.x2cpg.datastructures.Global
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
@@ -33,7 +34,7 @@ class AstCreationPass(classFiles: List[ClassFile], cpg: Cpg, config: Config)
       val sootClass = Scene.v().loadClassAndSupport(classFile.fullyQualifiedClassName.get)
       sootClass.setApplicationClass()
 
-      val file = File(classFile.file.pathAsString.replace(".class", ".java"))
+      val file = File(classFile.file.toString.replace(".class", ".java"))
 
       val fileContent = Option
         .when(!config.disableFileContent && file.exists) {
@@ -45,12 +46,14 @@ class AstCreationPass(classFiles: List[ClassFile], cpg: Cpg, config: Config)
         .flatten
 
       val localDiff =
-        AstCreator(classFile.file.canonicalPath, sootClass, global, fileContent = fileContent)(config.schemaValidation)
+        AstCreator(classFile.file.absolutePathAsString, sootClass, global, fileContent = fileContent)(
+          config.schemaValidation
+        )
           .createAst()
       builder.absorb(localDiff)
     } catch {
       case e: Exception =>
-        logger.warn(s"Exception on AST creation for ${classFile.file.canonicalPath}", e)
+        logger.warn(s"Exception on AST creation for ${classFile.file.absolutePathAsString}", e)
         Iterator()
     }
   }
