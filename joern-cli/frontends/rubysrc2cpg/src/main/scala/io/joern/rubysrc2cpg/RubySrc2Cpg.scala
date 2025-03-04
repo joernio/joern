@@ -1,6 +1,5 @@
 package io.joern.rubysrc2cpg
 
-import better.files.File
 import io.joern.rubysrc2cpg.astcreation.AstCreator
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.StatementList
 import io.joern.rubysrc2cpg.datastructures.RubyProgramSummary
@@ -17,7 +16,7 @@ import io.joern.x2cpg.frontendspecific.rubysrc2cpg.*
 import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass, XTypeRecoveryConfig}
-import io.joern.x2cpg.utils.ConcurrentTaskUtil
+import io.joern.x2cpg.utils.{ConcurrentTaskUtil, FileUtil}
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import io.shiftleft.passes.CpgPassBase
@@ -25,6 +24,7 @@ import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import upickle.default.*
 
+import java.nio.charset.Charset
 import java.nio.file.{Files, Paths}
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try, Using}
@@ -44,7 +44,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
   }
 
   private def createCpgAction(cpg: Cpg, config: Config): Unit = {
-    File.usingTemporaryDirectory("rubysrc2cpgOut") { tmpDir =>
+    FileUtil.usingTemporaryDirectory("rubysrc2cpgOut") { tmpDir =>
       val astGenResult = rubyAstGenRunner match {
         case Some(astGenRunner) =>
           astGenRunner.execute(tmpDir, config)
@@ -121,7 +121,7 @@ object RubySrc2Cpg {
       val parserResult   = RubyJsonParser.readFile(Paths.get(fileName))
       val rubyProgram    = new RubyJsonToNodeCreator().visitProgram(parserResult.json)
       val sourceFileName = parserResult.fullPath
-      val fileContent    = File(sourceFileName).contentAsString
+      val fileContent    = new String(Files.readAllBytes(Paths.get(fileName)), Charset.defaultCharset())
       new AstCreator(
         sourceFileName,
         projectRoot,

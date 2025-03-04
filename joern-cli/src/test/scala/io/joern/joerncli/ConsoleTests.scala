@@ -1,9 +1,12 @@
 package io.joern.joerncli
 
-import better.files.Dsl.mkdir
-import better.files.File
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import java.nio.file.{Files, Path}
+import java.nio.charset.Charset
 
 class ConsoleTests extends AnyWordSpec with Matchers {
 
@@ -25,14 +28,22 @@ class ConsoleTests extends AnyWordSpec with Matchers {
     }
   }
 
-  def withTestCode(fun: File => Unit): Unit = {
-    File.usingTemporaryDirectory("console") { workspaceDir =>
-      File.usingTemporaryDirectory("console") { codeDir =>
-        mkdir(codeDir / "dir1")
-        mkdir(codeDir / "dir2")
-        (codeDir / "dir1" / "foo.c")
-          .write("int main(int argc, char **argv) { char *ptr = 0x1 + argv; return argc; }")
-        (codeDir / "dir2" / "bar.c").write("int bar(int x) { return x; }")
+  def withTestCode(fun: Path => Unit): Unit = {
+    FileUtil.usingTemporaryDirectory("console") { workspaceDir =>
+      FileUtil.usingTemporaryDirectory("console") { codeDir =>
+        Files.createDirectory(codeDir / "dir1")
+        Files.createDirectory(codeDir / "dir2")
+
+        val fooDir     = (codeDir / "dir1" / "foo.c")
+        val fooContent = "int main(int argc, char **argv) { char *ptr = 0x1 + argv; return argc; }"
+
+        Files.writeString(fooDir, fooContent, Charset.defaultCharset())
+
+        val barDir     = (codeDir / "dir2" / "bar.c")
+        val barContent = "int bar(int x) { return x; }"
+
+        Files.writeString(barDir, barContent, Charset.defaultCharset())
+
         fun(codeDir)
       }
     }

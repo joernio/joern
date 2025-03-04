@@ -7,23 +7,33 @@ import io.joern.console.workspacehandling.{Project, ProjectFile, WorkspaceLoader
 import io.joern.console.{Console, ConsoleConfig, FrontendConfig, InstallConfig}
 import io.joern.console.cpgcreation.{JsSrcCpgGenerator, SwiftSrcCpgGenerator}
 import io.joern.console.cpgcreation.guessLanguage
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.utils.ProjectRoot
 
-import java.nio.file.Path
+import java.nio.charset.Charset
+import java.nio.file.{Files, Path}
 import scala.util.Try
 
 object ConsoleFixture {
   def apply[T <: Console[Project]](constructor: String => T = { x =>
     new TestConsole(x)
-  })(fun: (T, File) => Unit): Unit = {
-    File.usingTemporaryDirectory("console") { workspaceDir =>
-      File.usingTemporaryDirectory("console") { codeDir =>
-        mkdir(codeDir / "dir1")
-        mkdir(codeDir / "dir2")
-        (codeDir / "dir1" / "foo.c")
-          .write("int main(int argc, char **argv) { char *ptr = 0x1 + argv; return argc; }")
-        (codeDir / "dir2" / "bar.c").write("int bar(int x) { return x; }")
+  })(fun: (T, Path) => Unit): Unit = {
+    FileUtil.usingTemporaryDirectory("console") { workspaceDir =>
+      FileUtil.usingTemporaryDirectory("console") { codeDir =>
+        Files.createDirectory(codeDir / "dir1")
+        Files.createDirectory(codeDir / "dir2")
+
+        val fooPath    = (codeDir / "dir1" / "foo.c")
+        val fooContent = "int main(int argc, char **argv) { char *ptr = 0x1 + argv; return argc; }"
+
+        val barPath    = (codeDir / "dir2" / "bar.c")
+        val barContent = "int bar(int x) { return x; }"
+
+        Files.writeString(fooPath, fooContent, Charset.defaultCharset())
+        Files.writeString(barPath, barContent, Charset.defaultCharset())
+
         val console = constructor(workspaceDir.toString)
         fun(console, codeDir)
         Try(console.cpgs.foreach(cpg => cpg.close()))

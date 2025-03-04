@@ -1,6 +1,6 @@
 package io.joern.x2cpg.utils
 
-import java.io.{IOException, InputStream, OutputStream}
+import java.io.{BufferedOutputStream, IOException, InputStream, OutputStream}
 import java.nio.file.{FileAlreadyExistsException, Files, LinkOption, Path, SimpleFileVisitor, StandardCopyOption}
 import java.nio.file.attribute.{BasicFileAttributes, FileTime}
 import java.nio.charset.Charset
@@ -8,13 +8,16 @@ import java.time.Instant
 import java.util.zip.{ZipEntry, ZipFile}
 import scala.annotation.tailrec
 import scala.jdk.CollectionConverters.*
+import scala.util.Using
 
 object FileUtil {
-  def newTemporaryFile(prefix: String = "", suffix: String = ""): Path = {
-    Files.createTempFile(prefix, suffix)
+  def newTemporaryFile(prefix: String = "", suffix: String = "", parent: Option[Path] = None): Path = {
+    parent match {
+      case Some(dir) => Files.createTempFile(dir, prefix, suffix)
+      case _         => Files.createTempFile(prefix, suffix)
+    }
   }
 
-  // TODO: Replace better.files with this method
   def usingTemporaryDirectory[U](prefix: String = "")(f: Path => U): Unit = {
     val file = Files.createTempDirectory(prefix)
 
@@ -22,6 +25,26 @@ object FileUtil {
       f(file)
     } finally {
       delete(file)
+    }
+  }
+
+  def usingTemporaryFile[U](prefix: String = "", suffix: String = "", parent: Option[Path] = None)(
+    f: Path => U
+  ): Unit = {
+    val file = newTemporaryFile(prefix, suffix, parent)
+
+    try {
+      f(file)
+    } finally {
+      delete(file)
+    }
+  }
+
+  def copyFiles(from: Path, to: Path): Unit = {
+    if (Files.isDirectory(to)) {
+      from.copyToDirectory(to)
+    } else {
+      from.copyTo(to)
     }
   }
 
@@ -65,6 +88,16 @@ object FileUtil {
       Files.deleteIfExists(file)
     } catch {
       case _: IOException if swallowIoExceptions => //
+    }
+  }
+
+  def writeBytes(file: Path, content: Iterator[Byte], bufferSize: Int = 8192): Unit = {
+    Using.Manager { use =>
+      val fos = use(Files.newOutputStream(file))
+      val bos = use(new BufferedOutputStream(fos))
+
+      content.grouped(bufferSize).foreach(buffer => bos.write(buffer.toArray))
+      bos.flush()
     }
   }
 

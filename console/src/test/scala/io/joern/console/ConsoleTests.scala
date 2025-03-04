@@ -1,10 +1,10 @@
 package io.joern.console
 
-import better.files.Dsl.*
-import better.files.*
 import io.joern.console.testing.*
 import io.joern.x2cpg.X2Cpg.defaultOverlayCreators
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import org.scalatest.matchers.should.Matchers
@@ -12,16 +12,19 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.Ignore
 import org.scalatest.Tag
 
-import java.io.FileOutputStream
+import java.nio.file.{Files, Path, Paths}
+import java.nio.charset.Charset
+import java.io.{BufferedInputStream, BufferedOutputStream, FileOutputStream, StreamTokenizer}
 import java.util.zip.ZipOutputStream
-import scala.util.Try
+import scala.util.{Properties, Try, Using, Success, Failure}
 
 class ConsoleTests extends AnyWordSpec with Matchers {
 
   // Some tests here are are copying stuff within TEMP which is not allowed within the Windows GITHUB actions runners.
   private object NotInWindowsRunners
       extends Tag(
-        if (!File.temp.toString().contains(":\\Users\\RUNNER~1\\AppData\\Local\\Temp")) "" else classOf[Ignore].getName
+        if (!Paths.get(Properties.tmpDir).toString.contains(":\\Users\\RUNNER~1\\AppData\\Local\\Temp")) ""
+        else classOf[Ignore].getName
       )
 
   "importCode" should {
@@ -79,8 +82,8 @@ class ConsoleTests extends AnyWordSpec with Matchers {
           |int foo() {};
           |#endif
           |""".stripMargin
-        File.usingTemporaryFile("console", suffix = ".c", parent = Option(codeDir)) { file =>
-          file.write(code)
+        FileUtil.usingTemporaryFile("console", suffix = ".c", parent = Option(codeDir)) { file =>
+          Files.writeString(file, code, Charset.defaultCharset())
           console.importCode.c(inputPath = codeDir.toString)
           // importing without args should not yield foo
           Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe false
@@ -110,27 +113,27 @@ class ConsoleTests extends AnyWordSpec with Matchers {
 
     "allow importing code from file with JS frontend via apply" in ConsoleFixture() { (console, _) =>
       val code = "function foo() {};"
-      File.usingTemporaryFile("consoleTests", ".js") { tmpFile =>
-        tmpFile.write(code)
-        console.importCode(tmpFile.pathAsString)
+      FileUtil.usingTemporaryFile("consoleTests", ".js") { tmpFile =>
+        Files.writeString(tmpFile, code, Charset.defaultCharset())
+        console.importCode(tmpFile.toString)
         Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe true
       }
     }
 
     "allow importing code from file with JS frontend" taggedAs NotInWindowsRunners in ConsoleFixture() { (console, _) =>
       val code = "function foo() {};"
-      File.usingTemporaryFile("consoleTests", ".js") { tmpFile =>
-        tmpFile.write(code)
-        console.importCode.jssrc(tmpFile.pathAsString)
+      FileUtil.usingTemporaryFile("consoleTests", ".js") { tmpFile =>
+        Files.writeString(tmpFile, code, Charset.defaultCharset())
+        console.importCode.jssrc(tmpFile.toString)
         Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe true
       }
     }
 
     "allow importing code from file with Swift frontend via apply" in ConsoleFixture() { (console, _) =>
       val code = "func foo() {};"
-      File.usingTemporaryFile("consoleTests", ".swift") { tmpFile =>
-        tmpFile.write(code)
-        console.importCode(tmpFile.pathAsString)
+      FileUtil.usingTemporaryFile("consoleTests", ".swift") { tmpFile =>
+        Files.writeString(tmpFile, code, Charset.defaultCharset())
+        console.importCode(tmpFile.toString)
         Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe true
       }
     }
@@ -138,9 +141,9 @@ class ConsoleTests extends AnyWordSpec with Matchers {
     "allow importing code from file with Swift frontend" taggedAs NotInWindowsRunners in ConsoleFixture() {
       (console, _) =>
         val code = "func foo() {};"
-        File.usingTemporaryFile("consoleTests", ".swift") { tmpFile =>
-          tmpFile.write(code)
-          console.importCode.swiftsrc(tmpFile.pathAsString)
+        FileUtil.usingTemporaryFile("consoleTests", ".swift") { tmpFile =>
+          Files.writeString(tmpFile, code, Charset.defaultCharset())
+          console.importCode.swiftsrc(tmpFile.toString)
           Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe true
         }
     }
@@ -197,7 +200,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
     }
 
     "convert legacy CPGs on import" in ConsoleFixture() { (console, _) =>
-      File.usingTemporaryFile("console") { file =>
+      FileUtil.usingTemporaryFile("console") { file =>
         new ZipOutputStream(new FileOutputStream(file.toString)).close()
         val projectName = "myproject"
         val cpg         = console.importCpg(file.toString, projectName)
@@ -208,15 +211,15 @@ class ConsoleTests extends AnyWordSpec with Matchers {
     }
 
     "handle broken legacy CPG gracefully" in ConsoleFixture() { (console, _) =>
-      File.usingTemporaryFile("console") { file =>
-        file.write("PK")
+      FileUtil.usingTemporaryFile("console") { file =>
+        Files.writeString(file, "PK", Charset.defaultCharset())
         console.importCpg(file.toString)
       }
     }
 
     "gracefully handle broken CPGs" in ConsoleFixture() { (console, _) =>
-      File.usingTemporaryFile("console") { file =>
-        file.writeBytes(List[Byte]('F', 'O').iterator)
+      FileUtil.usingTemporaryFile("console") { file =>
+        FileUtil.writeBytes(file, List[Byte]('F', 'O').iterator)
         console.importCpg(file.toString)
         console.workspace.numberOfProjects shouldBe 0
       }
@@ -249,15 +252,15 @@ class ConsoleTests extends AnyWordSpec with Matchers {
     "allow importing two CPGs with the same filename but different paths" taggedAs NotInWindowsRunners in ConsoleFixture() {
       (console, codeDir) =>
         WithStandaloneCpg(console, codeDir) { tmpCpg =>
-          File.usingTemporaryDirectory("console") { dir1 =>
-            File.usingTemporaryDirectory("console") { dir2 =>
-              File.usingTemporaryDirectory("console") { dir3 =>
-                val cpg1Path = dir1.path.resolve("cpg.bin")
-                val cpg2Path = dir2.path.resolve("cpg.bin")
-                val cpg3Path = dir3.path.resolve("cpg.bin")
-                cp(tmpCpg, cpg1Path)
-                cp(tmpCpg, cpg2Path)
-                cp(tmpCpg, cpg3Path)
+          FileUtil.usingTemporaryDirectory("console") { dir1 =>
+            FileUtil.usingTemporaryDirectory("console") { dir2 =>
+              FileUtil.usingTemporaryDirectory("console") { dir3 =>
+                val cpg1Path = dir1.resolve("cpg.bin")
+                val cpg2Path = dir2.resolve("cpg.bin")
+                val cpg3Path = dir3.resolve("cpg.bin")
+                FileUtil.copyFiles(tmpCpg, cpg1Path)
+                FileUtil.copyFiles(tmpCpg, cpg2Path)
+                FileUtil.copyFiles(tmpCpg, cpg3Path)
                 console.importCpg(cpg1Path.toString)
                 console.importCpg(cpg2Path.toString)
                 console.importCpg(cpg3Path.toString)
@@ -293,7 +296,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
     "allow opening an already open project to make it active" in ConsoleFixture() { (console, codeDir) =>
       val projectName = "myproject"
       console.importCode(codeDir.toString, projectName)
-      console.importCpg(codeDir.path.resolve("cpg.bin").toString, "foo")
+      console.importCpg(codeDir.resolve("cpg.bin").toString, "foo")
       val project = console.open(projectName)
       project match {
         case Some(p) =>
@@ -380,20 +383,29 @@ class ConsoleTests extends AnyWordSpec with Matchers {
 
       val overlayDirs = overlayParentDir.toFile.listFiles()
       overlayDirs.foreach { dir =>
-        File(dir.getPath).isDirectory shouldBe true
-        File(dir.getPath).list.toList.foreach { file =>
-          Try { file.name.split("_").head.toInt }.isSuccess shouldBe true
+        Files.isDirectory(Paths.get(dir.getPath)) shouldBe true
+        Paths.get(dir.getPath).listFiles().foreach { file =>
+          Try { file.getFileName.toString.split("_").head.toInt }.isSuccess shouldBe true
           isZipFile(file) shouldBe true
         }
       }
     }
   }
 
-  private def isZipFile(file: File): Boolean = {
-    val bytes = file.bytes
-    Try {
-      bytes.next() == 'P' && bytes.next() == 'K'
-    }.getOrElse(false)
+  private def isZipFile(file: Path): Boolean = {
+    Using.Manager { use =>
+      val fis = use(Files.newInputStream(file))
+      val bis = use(new BufferedInputStream(fis))
+
+      Iterator.continually(bis.read()).takeWhile(_ != StreamTokenizer.TT_EOF).map(_.toByte)
+    } match {
+      case Success(bytes) =>
+        Try {
+          bytes.next() == 'P' && bytes.next() == 'K'
+        }.getOrElse(false)
+      case Failure(_) =>
+        false
+    }
   }
 
   class MockLayerCreator extends LayerCreator {
@@ -453,29 +465,29 @@ class ConsoleTests extends AnyWordSpec with Matchers {
   "switchWorkspace" should {
 
     "create workspace if directory does not exist" in ConsoleFixture() { (console, _) =>
-      val otherWorkspaceDir = File.temp / "workspace-doesNotExist"
+      val otherWorkspaceDir = Paths.get(Properties.tmpDir) / "workspace-doesNotExist"
       try {
-        otherWorkspaceDir.exists shouldBe false
-        console.switchWorkspace(otherWorkspaceDir.path.toString)
-        otherWorkspaceDir.exists shouldBe true
+        Files.exists(otherWorkspaceDir) shouldBe false
+        console.switchWorkspace(otherWorkspaceDir.toString)
+        Files.exists(otherWorkspaceDir) shouldBe true
       } finally {
-        otherWorkspaceDir.delete()
-        otherWorkspaceDir.exists shouldBe false
+        FileUtil.delete(otherWorkspaceDir)
+        Files.exists(otherWorkspaceDir) shouldBe false
       }
     }
 
     "allow changing workspaces" taggedAs NotInWindowsRunners in ConsoleFixture() { (console, codeDir) =>
-      val firstWorkspace = File(console.workspace.getPath)
-      File.usingTemporaryDirectory("console") { otherWorkspaceDir =>
+      val firstWorkspace = Paths.get(console.workspace.getPath)
+      FileUtil.usingTemporaryDirectory("console") { otherWorkspaceDir =>
         console.importCode(codeDir.toString, "projectInFirstWorkspace")
         console.workspace.numberOfProjects shouldBe 1
-        console.switchWorkspace(otherWorkspaceDir.path.toString)
+        console.switchWorkspace(otherWorkspaceDir.toString)
         console.workspace.numberOfProjects shouldBe 0
 
         console.importCode(codeDir.toString, "projectInSecondWorkspace")
         console.workspace.numberOfProjects shouldBe 1
         console.project.name shouldBe "projectInSecondWorkspace"
-        console.switchWorkspace(firstWorkspace.path.toString)
+        console.switchWorkspace(firstWorkspace.toString)
         console.workspace.numberOfProjects shouldBe 1
         console.open("projectInFirstWorkspace")
         console.project.name shouldBe "projectInFirstWorkspace"
