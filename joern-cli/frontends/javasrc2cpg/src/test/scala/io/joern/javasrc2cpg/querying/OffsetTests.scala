@@ -51,7 +51,7 @@ class OffsetTests extends JavaSrcCode2CpgFixture {
       cpg.file.name(".*Foo.java").content.l shouldBe List(source)
     }
 
-    "have the method be retrievable via the offset fields" in {
+    "have the method's source representation be retrievable via the offset fields" in {
       def method    = cpg.method.name("foo").head
       val offset    = method.offset.get
       val offsetEnd = method.offsetEnd.get
@@ -89,7 +89,16 @@ class OffsetTests extends JavaSrcCode2CpgFixture {
       fileName = "Foo.java"
     ).withConfig(contentEnabled)
 
-    "have the first method retrievable via the offset fields" in {
+    "have the first method's source representation retrievable via the sourceCode property" in {
+      def method = cpg.method.name("method1").head
+      method.sourceCode shouldBe method1
+    }
+
+    "have the second method's source representation retrievable via the sourceCode property" in {
+      inside(cpg.method.name("method2").sourceCode.l) { case List(sourceCode) => sourceCode shouldBe method2 }
+    }
+
+    "have the first method's source representation retrievable via the offset fields" in {
       def method    = cpg.method.name("method1").head
       val offset    = method.offset.get
       val offsetEnd = method.offsetEnd.get
@@ -97,7 +106,7 @@ class OffsetTests extends JavaSrcCode2CpgFixture {
       cpg.file.name(".*Foo.java").content.head.substring(offset, offsetEnd) shouldBe method1
     }
 
-    "have the second method retrievable via the offset fields" in {
+    "have the second method's source representation retrievable via the offset fields" in {
       def method    = cpg.method.name("method2").head
       val offset    = method.offset.get
       val offsetEnd = method.offsetEnd.get
@@ -138,7 +147,7 @@ class OffsetTests extends JavaSrcCode2CpgFixture {
       fileName = "Foo.java"
     ).withConfig(contentEnabled)
 
-    "have the first method retrievable via the offset fields" in {
+    "have the first method's source representation retrievable via the offset fields" in {
       def method    = cpg.method.name("method1").head
       val offset    = method.offset.get
       val offsetEnd = method.offsetEnd.get
@@ -146,7 +155,7 @@ class OffsetTests extends JavaSrcCode2CpgFixture {
       cpg.file.name(".*Foo.java").content.head.substring(offset, offsetEnd) shouldBe method1
     }
 
-    "have the second method retrievable via the offset fields" in {
+    "have the second method's source representation retrievable via the offset fields" in {
       def method    = cpg.method.name("method2").head
       val offset    = method.offset.get
       val offsetEnd = method.offsetEnd.get
@@ -154,7 +163,7 @@ class OffsetTests extends JavaSrcCode2CpgFixture {
       cpg.file.name(".*Foo.java").content.head.substring(offset, offsetEnd) shouldBe method2
     }
 
-    "have the constructor be retrievable via the offset fields" in {
+    "have the constructor's source representation be retrievable via the offset fields" in {
       def method    = cpg.method.nameExact("<init>").head
       val offset    = method.offset.get
       val offsetEnd = method.offsetEnd.get

@@ -2,6 +2,7 @@ package io.shiftleft.semanticcpg.language.nodemethods
 
 import io.shiftleft.Implicits.IterableOnceDeco
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.nodes.AstNode.PropertyDefaults
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.nodemethods.AstNodeMethods.lastExpressionInBlock
@@ -92,6 +93,15 @@ class AstNodeMethods(val node: AstNode) extends AnyVal with NodeExtension {
       case expr: Expression                           => expr.code
       case call: CallRepr if !call.isInstanceOf[Call] => call.code
     }
+
+  def sourceCode: String = {
+    val maybeSourceCode = for {
+      offset      <- node.offset
+      offsetEnd   <- node.offsetEnd
+      fileContent <- node.file.headOption.map(_.content)
+    } yield fileContent.substring(offset, offsetEnd)
+    maybeSourceCode.getOrElse(AstNode.PropertyDefaults.Code)
+  }
 
   def statement: AstNode =
     statementInternal(node, _.parentExpression.get)
