@@ -23,6 +23,7 @@ class RegexTests extends RubyCode2CpgFixture(withPostProcessing = false) {
       tmpSource.code shouldBe s"/h(el)lo/.match($expectedSubject)"
       tmpSource.name shouldBe "match"
       tmpSource.methodFullName shouldBe Defines.DynamicCallUnknownFullName
+      tmpSource.argument(0).asInstanceOf[Literal].dynamicTypeHintFullName shouldBe "__core.Regexp" :: Nil
 
       // Now test for the lowered global variable assignments
       val ifStmt = cpg.controlStructure.last
