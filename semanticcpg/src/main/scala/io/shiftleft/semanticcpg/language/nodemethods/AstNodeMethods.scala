@@ -100,7 +100,7 @@ class AstNodeMethods(val node: AstNode) extends AnyVal with NodeExtension {
       offsetEnd   <- node.offsetEnd
       fileContent <- node.file.headOption.map(_.content)
     } yield fileContent.substring(offset, offsetEnd)
-    maybeSourceCode.getOrElse(PropertyDefaults.Code)
+    maybeSourceCode.getOrElse(AstNode.PropertyDefaults.Code)
   }
 
   def statement: AstNode =
