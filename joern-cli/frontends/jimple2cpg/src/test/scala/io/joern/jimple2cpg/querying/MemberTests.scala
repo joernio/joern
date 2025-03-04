@@ -28,9 +28,10 @@ class MemberTests extends JimpleCode2CpgFixture {
   val cpg2 = code("""
       |class ModifiersTest {
       |    private static final String finalPrivateString = "PRIVATE_STATIC_FINAL";
-      |    public String publicString;
+      |    public String publicString = "PS";
       |    protected int mInt;
       |    long mLong;
+      |    public final int FLAG = 1;
       |}
       |""".stripMargin).cpg
   "should have modifiers for MEMBER" in {
@@ -43,5 +44,18 @@ class MemberTests extends JimpleCode2CpgFixture {
     protectedField.modifier.modifierType.l shouldBe List("PROTECTED")
     val privateField = members.find(_.name == "mLong").get
     privateField.modifier.size shouldBe 0
+
   }
+  "should have constantValue in code for final or final static MEMBER" in {
+    val members                 = cpg2.typeDecl.name("ModifiersTest").member.l
+    val finalPrivateStringField = members.find(_.name == "finalPrivateString").get
+    val publicStringField       = members.find(_.name == "publicString").get
+    val methodInit              = cpg2.method.name("<init>").head
+    methodInit.ast.code.l.contains("this.publicString = \"PS\"") shouldBe true
+    publicStringField.code shouldBe "java.lang.String publicString"
+    finalPrivateStringField.code shouldBe "java.lang.String finalPrivateString = \"PRIVATE_STATIC_FINAL\""
+    val flag = members.find(_.name == "FLAG").get
+    flag.code shouldBe "int FLAG = 1"
+  }
+
 }
