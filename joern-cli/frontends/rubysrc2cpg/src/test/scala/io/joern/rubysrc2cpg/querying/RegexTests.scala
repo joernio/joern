@@ -1,6 +1,7 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.semanticcpg.language.*
@@ -21,7 +22,7 @@ class RegexTests extends RubyCode2CpgFixture(withPostProcessing = false) {
       val tmpSource = tmpInit.source.asInstanceOf[Call]
       tmpSource.code shouldBe s"/h(el)lo/.match($expectedSubject)"
       tmpSource.name shouldBe "match"
-      tmpSource.methodFullName shouldBe "__core.Regexp.match"
+      tmpSource.methodFullName shouldBe Defines.DynamicCallUnknownFullName
 
       // Now test for the lowered global variable assignments
       val ifStmt = cpg.controlStructure.last
