@@ -229,6 +229,13 @@ package object language
 
   // EvalType accessors ~
 
+  // ~ SourceCode accessors
+  implicit def singleToSourceCodeAccessorsLocal[A <: AstNode](a: A): SourceCodeAccessors[A] =
+    new SourceCodeAccessors[A](Iterator.single(a))
+  implicit def iterOnceToSourceCodeAccessorsLocal[A <: AstNode](a: IterableOnce[A]): SourceCodeAccessors[A] =
+    new SourceCodeAccessors[A](a.iterator)
+  // SourceCode accessors ~
+
   // ~ Modifier accessors
   implicit def singleToModifierAccessorsMember[A <: Member](a: A): ModifierAccessors[A] =
     new ModifierAccessors[A](Iterator.single(a))
