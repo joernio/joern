@@ -14,8 +14,11 @@ import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import io.shiftleft.codepropertygraph.generated.help.Doc
 import flatgraph.help.Table.AvailableWidthProvider
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 
+import java.nio.file.{Paths, StandardCopyOption}
 import scala.util.control.NoStackTrace
 import scala.util.{Failure, Success, Try}
 
@@ -39,13 +42,15 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
     def view(imagePathStr: String): Try[String] = {
       // We need to copy the file as the original one is only temporary
       // and gets removed immediately after running this viewer instance asynchronously via .run().
-      val tmpFile = File(imagePathStr).copyTo(File.newTemporaryFile(suffix = ".svg"), overwrite = true)
-      tmpFile.deleteOnExit(swallowIOExceptions = true)
+      val tmpFile = FileUtil.newTemporaryFile(suffix = ".svg")
+      Paths.get(imagePathStr).copyTo(tmpFile, copyOption = StandardCopyOption.REPLACE_EXISTING)
+
+      FileUtil.deleteOnExit(tmpFile, swallowIOExceptions = true)
       Try {
         val command = if (scala.util.Properties.isWin) { Seq("cmd.exe", "/C", config.tools.imageViewer) }
         else { Seq(config.tools.imageViewer) }
         ExternalCommand
-          .run(command :+ tmpFile.path.toAbsolutePath.toString)
+          .run(command :+ tmpFile.absolutePathAsString)
       } match {
         case Success(_) =>
           // We never handle the actual result anywhere.

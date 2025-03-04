@@ -2,8 +2,12 @@ package io.joern.console.workspacehandling
 
 import better.files.*
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import java.nio.file.Paths
 
 class WorkspaceManagerTests extends AnyWordSpec with Matchers {
 
@@ -13,12 +17,12 @@ class WorkspaceManagerTests extends AnyWordSpec with Matchers {
 
     "create project in correct location" in {
       File.usingTemporaryDirectory(tmpDirPrefix) { workspaceFile =>
-        val inputFile     = File.newTemporaryFile("workspaceman").touch()
+        val inputFile     = FileUtil.createTempFileIfNotExistsAndSetLastModificationDate("workspaceman")
         val workspacePath = workspaceFile.path
         val manager       = new WorkspaceManager(workspacePath.toString)
         val pathToProject = manager.createProject(inputFile.toString, "aprojectname")
         pathToProject shouldBe Some(workspacePath.resolve("aprojectname"))
-        inputFile.delete()
+        FileUtil.delete(inputFile)
         manager.numberOfProjects shouldBe 1
       }
     }
@@ -27,14 +31,14 @@ class WorkspaceManagerTests extends AnyWordSpec with Matchers {
       File.usingTemporaryDirectory(tmpDirPrefix) { workspaceFile =>
         val workspacePath = workspaceFile.path
         val manager       = new WorkspaceManager(workspacePath.toString)
-        val inputFile1    = File.newTemporaryFile("workspaceman").touch()
-        val inputFile2    = File.newTemporaryFile("workspaceman").touch()
+        val inputFile1    = FileUtil.createTempFileIfNotExistsAndSetLastModificationDate("workspaceman")
+        val inputFile2    = FileUtil.createTempFileIfNotExistsAndSetLastModificationDate("workspaceman")
         manager.createProject(inputFile1.toString, "aprojectname")
         val pathToProject = manager.createProject(inputFile2.toString, "aprojectname")
         val project       = pathToProject.flatMap(TestLoader().loadProject(_)).get
-        inputFile1.delete()
-        inputFile2.delete()
-        File(project.inputPath).name shouldBe inputFile2.name
+        FileUtil.delete(inputFile1)
+        FileUtil.delete(inputFile2)
+        Paths.get(project.inputPath).getFileName.toString shouldBe inputFile2.getFileName.toString
         manager.numberOfProjects shouldBe 1
       }
     }
