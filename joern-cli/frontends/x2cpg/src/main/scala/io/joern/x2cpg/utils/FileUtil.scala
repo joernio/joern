@@ -1,7 +1,15 @@
 package io.joern.x2cpg.utils
 
-import java.io.{BufferedOutputStream, IOException, InputStream, OutputStream}
-import java.nio.file.{FileAlreadyExistsException, Files, LinkOption, Path, SimpleFileVisitor, StandardCopyOption}
+import java.io.{BufferedOutputStream, FileNotFoundException, IOException, InputStream, OutputStream}
+import java.nio.file.{
+  FileAlreadyExistsException,
+  Files,
+  LinkOption,
+  NoSuchFileException,
+  Path,
+  SimpleFileVisitor,
+  StandardCopyOption
+}
 import java.nio.file.attribute.{BasicFileAttributes, FileTime}
 import java.nio.charset.Charset
 import java.time.Instant
@@ -195,6 +203,23 @@ object FileUtil {
 
       zipFile.close()
       destination
+    }
+
+    /** @return
+      *   size of the directory or file
+      */
+    def size: Long = {
+      p.walk()
+        .map { f =>
+          {
+            try {
+              Files.size(f)
+            } catch {
+              case (_: FileNotFoundException | _: NoSuchFileException) if Files.isDirectory(f) => 0L
+            }
+          }
+        }
+        .sum
     }
 
     def listFiles(): Iterator[Path] = {

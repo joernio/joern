@@ -214,17 +214,7 @@ object JoernScan extends BridgeBase {
 
     FileUtil.writeBytes(queryDbZip, r.bytes.iterator)
 
-    val size = queryDbZip.walk().map { f =>
-      {
-        try {
-          Files.size(f)
-        } catch {
-          case (_: FileNotFoundException | _: NoSuchFileException) if Files.isDirectory(f) => 0L
-        }
-      }
-    }
-
-    println(s"Wrote: ${size} bytes to $absPath")
+    println(s"Wrote: ${queryDbZip.size} bytes to $absPath")
     absPath
   }
 
