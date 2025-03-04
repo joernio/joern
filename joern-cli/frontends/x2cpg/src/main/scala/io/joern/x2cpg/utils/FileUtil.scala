@@ -28,7 +28,12 @@ object FileUtil {
   ): Unit = {
     try {
       if (Files.isDirectory(file, linkOptions)) {
-        file.toFile.listFiles().foreach(x => deleteOnExit(x.toPath, swallowIOExceptions, linkOptions))
+        val dirStream = Files.newDirectoryStream(file)
+        val children  = dirStream.iterator().asScala.toList
+        dirStream.close()
+        children.foreach { x =>
+          deleteOnExit(x, swallowIOExceptions, linkOptions)
+        }
       }
 
       file.toFile.deleteOnExit()
@@ -44,10 +49,16 @@ object FileUtil {
   ): Unit = {
     try {
       if (Files.isDirectory(file, linkOptions)) {
-        file.toFile.listFiles().foreach(x => delete(x.toPath, swallowIoExceptions, linkOptions))
+        val dirStream = Files.newDirectoryStream(file)
+        val children  = dirStream.iterator().asScala.toList
+        dirStream.close()
+        children.foreach { x =>
+          delete(x, swallowIoExceptions, linkOptions)
+        }
+
       }
 
-      Files.delete(file)
+      Files.deleteIfExists(file)
     } catch {
       case _: IOException if swallowIoExceptions => //
     }
@@ -146,6 +157,7 @@ object FileUtil {
           outputStream.close()
         }
       }
+
       zipFile.close()
       destination
     }

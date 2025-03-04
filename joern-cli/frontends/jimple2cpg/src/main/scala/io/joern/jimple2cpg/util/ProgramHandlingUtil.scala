@@ -66,8 +66,18 @@ object ProgramHandlingUtil {
       * @return
       *   true if the file is a valid and uncorrupted zip file, false if otherwise.
       */
-    private def isValidZipFile(f: Path): Boolean =
-      isValidZipFile(new ZipInputStream(new BufferedInputStream((new FileInputStream(f.toString)))))
+    private def isValidZipFile(f: Path): Boolean = {
+      Using.Manager { use =>
+        val fis = use(new FileInputStream(f.toString))
+        val bis = use(new BufferedInputStream(fis))
+        val zis = use(new ZipInputStream(bis))
+
+        isValidZipFile(zis)
+      } match {
+        case Success(isValid) => isValid
+        case Failure(_)       => false
+      }
+    }
 
     def isConfigFile: Boolean = {
       val configExt = Set(".xml", ".properties", ".yaml", ".yml", ".tf", ".tfvars", ".vm", ".jsp", ".conf", ".mf")
@@ -169,11 +179,13 @@ object ProgramHandlingUtil {
           val xTmp = Files.createTempDirectory(tmpDir, "extract-archive-")
 
           val unzipDirs =
-            Try(f.unzipTo(xTmp, e => shouldExtract(Entry(e, new ZipFile(f.toAbsolutePath.toString))))) match {
-              case Success(dir) => List(dir)
-              case Failure(e) =>
-                logger.warn(s"Failed to extract archive", e)
-                List.empty
+            Using.resource(new ZipFile(f.toAbsolutePath.toString)) { zipFile =>
+              Try(f.unzipTo(xTmp, e => shouldExtract(Entry(e, zipFile)))) match {
+                case Success(dir) => List(dir)
+                case Failure(e) =>
+                  logger.warn(s"Failed to extract archive", e)
+                  List.empty
+              }
             }
           // This can always be true, since the archive file was filtered by shouldExtract if recurse options not enabled.
           Right(Map(true -> unzipDirs))
@@ -213,12 +225,14 @@ object ProgramHandlingUtil {
       *   The package path if successfully retrieved
       */
     private def getPackagePathFromByteCode(file: Path): Option[String] =
-      Try(getPackagePathFromByteCode(new FileInputStream(file.toAbsolutePath.toString)))
-        .recover { case e: Throwable =>
-          logger.error(s"Error reading class file ${file.toAbsolutePath.toString}", e)
-          None
-        }
-        .getOrElse(None)
+      Using.resource(new FileInputStream(file.toAbsolutePath.toString)) { fis =>
+        Try(getPackagePathFromByteCode(fis))
+          .recover { case e: Throwable =>
+            logger.error(s"Error reading class file ${file.toAbsolutePath.toString}", e)
+            None
+          }
+          .getOrElse(None)
+      }
   }
 
   sealed trait EntryFile {
