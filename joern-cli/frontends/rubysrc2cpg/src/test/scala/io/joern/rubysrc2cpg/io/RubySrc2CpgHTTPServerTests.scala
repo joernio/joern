@@ -1,6 +1,5 @@
 package io.joern.rubysrc2cpg.io
 
-import better.files.File as BetterFile
 import io.joern.x2cpg.utils.server.FrontendHTTPClient
 import io.joern.x2cpg.utils.FileUtil
 import io.joern.x2cpg.utils.FileUtil.*
@@ -48,8 +47,8 @@ class RubySrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAn
 
   "Using rubysrc2cpg in server mode" should {
     "build CPGs correctly (single test)" in {
-      val cpgOutFile = BetterFile.newTemporaryFile("rubysrc2cpg.bin")
-      cpgOutFile.deleteOnExit()
+      val cpgOutFile = FileUtil.newTemporaryFile("rubysrc2cpg.bin")
+      FileUtil.deleteOnExit(cpgOutFile)
       val projectUnderTest = newProjectUnderTest()
       val input            = projectUnderTest.toAbsolutePath.toString
       val output           = cpgOutFile.toString
@@ -67,8 +66,8 @@ class RubySrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAn
 
     "build CPGs correctly (multi-threaded test)" in {
       (0 until 10).par.foreach { index =>
-        val cpgOutFile = BetterFile.newTemporaryFile("rubysrc2cpg.bin")
-        cpgOutFile.deleteOnExit()
+        val cpgOutFile = FileUtil.newTemporaryFile("rubysrc2cpg.bin")
+        FileUtil.deleteOnExit(cpgOutFile)
         val projectUnderTest = newProjectUnderTest(Some(index))
         val input            = projectUnderTest.toAbsolutePath.toString
         val output           = cpgOutFile.toString

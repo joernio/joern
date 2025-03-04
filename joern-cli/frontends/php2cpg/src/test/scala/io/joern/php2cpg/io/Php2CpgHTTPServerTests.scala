@@ -1,6 +1,5 @@
 package io.joern.php2cpg.io
 
-import better.files.File as BetterFile
 import io.joern.x2cpg.utils.server.FrontendHTTPClient
 import io.joern.x2cpg.utils.FileUtil
 import io.joern.x2cpg.utils.FileUtil.*
@@ -46,8 +45,8 @@ class Php2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndAft
 
   "Using php2cpg in server mode" should {
     "build CPGs correctly (single test)" in {
-      val cpgOutFile = BetterFile.newTemporaryFile("php2cpg.bin")
-      cpgOutFile.deleteOnExit()
+      val cpgOutFile = FileUtil.newTemporaryFile("php2cpg.bin")
+      FileUtil.deleteOnExit(cpgOutFile)
       val projectUnderTest = newProjectUnderTest()
       val input            = projectUnderTest.toAbsolutePath.toString
       val output           = cpgOutFile.toString
@@ -64,8 +63,8 @@ class Php2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndAft
 
     "build CPGs correctly (multi-threaded test)" in {
       (0 until 10).par.foreach { index =>
-        val cpgOutFile = BetterFile.newTemporaryFile("php2cpg.bin")
-        cpgOutFile.deleteOnExit()
+        val cpgOutFile = FileUtil.newTemporaryFile("php2cpg.bin")
+        FileUtil.deleteOnExit(cpgOutFile)
         val projectUnderTest = newProjectUnderTest(Some(index))
         val input            = projectUnderTest.toAbsolutePath.toString
         val output           = cpgOutFile.toString

@@ -2,14 +2,27 @@ package io.joern.x2cpg.utils
 
 import java.io.{IOException, InputStream, OutputStream}
 import java.nio.file.{FileAlreadyExistsException, Files, LinkOption, Path, SimpleFileVisitor, StandardCopyOption}
-
-import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.attribute.{BasicFileAttributes, FileTime}
 import java.nio.charset.Charset
+import java.time.Instant
 import java.util.zip.{ZipEntry, ZipFile}
 import scala.annotation.tailrec
 import scala.jdk.CollectionConverters.*
 
 object FileUtil {
+  def newTemporaryFile(prefix: String = "", suffix: String = ""): Path = {
+    Files.createTempFile(prefix, suffix)
+  }
+
+  // Similar to `.touch` from better.files
+  def createTempFileIfNotExistsAndSetLastModificationDate(tmpDirName: String): Path = {
+    val dir = newTemporaryFile(tmpDirName)
+    dir.createWithParentsIfNotExists()
+    Files.setLastModifiedTime(dir, FileTime.from(Instant.now()))
+
+    dir
+  }
+
   // TODO: Replace better.files with this method
   def usingTemporaryDirectory[U](prefix: String = "")(f: Path => U): Unit = {
     val file = Files.createTempDirectory(prefix)
@@ -76,9 +89,7 @@ object FileUtil {
       copyTo(destination / p.getFileName.toString)
     }
 
-    def copyTo(
-      destination: Path
-    )(implicit copyOption: StandardCopyOption = StandardCopyOption.COPY_ATTRIBUTES): Unit = {
+    def copyTo(destination: Path, copyOption: StandardCopyOption = StandardCopyOption.COPY_ATTRIBUTES): Unit = {
       if (Files.isDirectory(p)) { // TODO: maxDepth?
         Files.walkFileTree(
           p,

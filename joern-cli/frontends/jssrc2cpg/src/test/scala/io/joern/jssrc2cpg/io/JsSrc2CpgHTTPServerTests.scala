@@ -48,10 +48,10 @@ class JsSrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndA
 
   "Using jssrc2cpg in server mode" should {
     "build CPGs correctly (single test)" in {
-      val cpgOutFile = BetterFile.newTemporaryFile("jssrc2cpg.bin")
-      cpgOutFile.deleteOnExit()
+      val cpgOutFile = FileUtil.newTemporaryFile("jssrc2cpg.bin")
+      FileUtil.deleteOnExit(cpgOutFile)
       val projectUnderTest = newProjectUnderTest()
-      val input            = projectUnderTest.toAbsolutePath.toString
+      val input            = projectUnderTest.absolutePathAsString
       val output           = cpgOutFile.toString
       val client           = FrontendHTTPClient(port)
       val req              = client.buildRequest(Array(s"input=$input", s"output=$output"))
@@ -67,10 +67,10 @@ class JsSrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndA
 
     "build CPGs correctly (multi-threaded test)" in {
       (0 until 10).par.foreach { index =>
-        val cpgOutFile = BetterFile.newTemporaryFile("jssrc2cpg.bin")
-        cpgOutFile.deleteOnExit()
+        val cpgOutFile = FileUtil.newTemporaryFile("jssrc2cpg.bin")
+        FileUtil.deleteOnExit(cpgOutFile)
         val projectUnderTest = newProjectUnderTest(Some(index))
-        val input            = projectUnderTest.toAbsolutePath.toString
+        val input            = projectUnderTest.absolutePathAsString
         val output           = cpgOutFile.toString
         val client           = FrontendHTTPClient(port)
         val req              = client.buildRequest(Array(s"input=$input", s"output=$output"))

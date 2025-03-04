@@ -8,13 +8,14 @@ import io.joern.swiftsrc2cpg.utils.AstGenRunner
 import io.joern.x2cpg.testfixtures.LanguageFrontend
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
+import io.joern.x2cpg.utils.FileUtil
 import io.shiftleft.codepropertygraph.generated.Cpg
 
 trait AstSwiftSrc2CpgFrontend extends LanguageFrontend {
   def execute(sourceCodePath: java.io.File): Cpg = {
-    val cpgOutFile = File.newTemporaryFile(suffix = "cpg.bin")
-    cpgOutFile.deleteOnExit()
-    val cpg          = newEmptyCpg(Option(cpgOutFile.pathAsString))
+    val cpgOutFile = FileUtil.newTemporaryFile(suffix = "cpg.bin")
+    FileUtil.deleteOnExit(cpgOutFile)
+    val cpg          = newEmptyCpg(Option(cpgOutFile.toString))
     val pathAsString = sourceCodePath.getAbsolutePath
     var config = Config()
       .withInputPath(pathAsString)

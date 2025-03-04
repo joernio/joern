@@ -1,6 +1,5 @@
 package io.joern.jimple2cpg.io
 
-import better.files.File as BetterFile
 import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.joern.jimple2cpg.testfixtures.JimpleCodeToCpgFixture
 import io.joern.x2cpg.utils.server.FrontendHTTPClient
@@ -51,8 +50,8 @@ class Jimple2CpgHTTPServerTests extends JimpleCode2CpgFixture with BeforeAndAfte
 
   "Using jimple2cpg in server mode" should {
     "build CPGs correctly (single test)" in {
-      val cpgOutFile = BetterFile.newTemporaryFile("jimple2cpg.bin")
-      cpgOutFile.deleteOnExit()
+      val cpgOutFile = FileUtil.newTemporaryFile("jimple2cpg.bin")
+      FileUtil.deleteOnExit(cpgOutFile)
       val projectUnderTest = newProjectUnderTest()
       val input            = projectUnderTest.toAbsolutePath.toString
       val output           = cpgOutFile.toString
@@ -70,8 +69,8 @@ class Jimple2CpgHTTPServerTests extends JimpleCode2CpgFixture with BeforeAndAfte
 
     "build CPGs correctly (multi-threaded test)" in {
       (0 until 10).par.foreach { index =>
-        val cpgOutFile = BetterFile.newTemporaryFile("jimple2cpg.bin")
-        cpgOutFile.deleteOnExit()
+        val cpgOutFile = FileUtil.newTemporaryFile("jimple2cpg.bin")
+        FileUtil.deleteOnExit(cpgOutFile)
         val projectUnderTest = newProjectUnderTest(Some(index))
         val input            = projectUnderTest.toAbsolutePath.toString
         val output           = cpgOutFile.toString

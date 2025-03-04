@@ -131,8 +131,8 @@ class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
 
   "Using a simple compile_commands.json" should {
     "respect the files listed" in {
-      val cpgOutFile = BetterFile.newTemporaryFile("c2cpg.bin")
-      cpgOutFile.deleteOnExit()
+      val cpgOutFile = FileUtil.newTemporaryFile("c2cpg.bin")
+      FileUtil.deleteOnExit(cpgOutFile)
       val projectUnderTest = newProjectUnderTest()
       val input            = projectUnderTest.toAbsolutePath.toString
       val output           = cpgOutFile.toString
@@ -151,8 +151,8 @@ class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
     }
 
     "handle broken file paths" in {
-      val cpgOutFile = BetterFile.newTemporaryFile("c2cpg.bin")
-      cpgOutFile.deleteOnExit()
+      val cpgOutFile = FileUtil.newTemporaryFile("c2cpg.bin")
+      FileUtil.deleteOnExit(cpgOutFile)
       val projectUnderTest = newBrokenProjectUnderTest()
       val input            = projectUnderTest.toAbsolutePath.toString
       val output           = cpgOutFile.toString

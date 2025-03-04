@@ -1,6 +1,5 @@
 package io.joern.go2cpg.io
 
-import better.files.File as BetterFile
 import io.joern.x2cpg.utils.server.FrontendHTTPClient
 import io.joern.x2cpg.utils.FileUtil
 import io.joern.x2cpg.utils.FileUtil.*
@@ -49,8 +48,8 @@ class GoSrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndA
 
   "Using gosrc2cpg in server mode" should {
     "build CPGs correctly (single test)" in {
-      val cpgOutFile = BetterFile.newTemporaryFile("gosrc2cpg.bin")
-      cpgOutFile.deleteOnExit()
+      val cpgOutFile = FileUtil.newTemporaryFile("gosrc2cpg.bin")
+      FileUtil.deleteOnExit(cpgOutFile)
       val projectUnderTest = newProjectUnderTest()
       val input            = projectUnderTest.toAbsolutePath.toString
       val output           = cpgOutFile.toString
@@ -68,8 +67,8 @@ class GoSrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndA
 
     "build CPGs correctly (multi-threaded test)" in {
       (0 until 10).par.foreach { index =>
-        val cpgOutFile = BetterFile.newTemporaryFile("gosrc2cpg.bin")
-        cpgOutFile.deleteOnExit()
+        val cpgOutFile = FileUtil.newTemporaryFile("gosrc2cpg.bin")
+        FileUtil.deleteOnExit(cpgOutFile)
         val projectUnderTest = newProjectUnderTest(Some(index))
         val input            = projectUnderTest.toAbsolutePath.toString
         val output           = cpgOutFile.toString

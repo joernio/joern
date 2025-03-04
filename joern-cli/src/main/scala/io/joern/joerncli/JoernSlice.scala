@@ -5,6 +5,7 @@ import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOpti
 import io.joern.joerncli.JoernParse.ParserConfig
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.layers.Base
+import io.joern.x2cpg.utils.FileUtil
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
@@ -154,17 +155,18 @@ object JoernSlice {
   }
 
   private def generateTempCpg(config: BaseConfig[?]): Try[String] = {
-    val tmpFile = File.newTemporaryFile("joern-slice", ".bin")
+    val tmpFile = FileUtil.newTemporaryFile("joern-slice", ".bin")
     println(s"Generating CPG from code at ${config.inputPath.pathAsString}")
 
     JoernParse
       .run(
-        ParserConfig(config.inputPath.pathAsString, outputCpgFile = tmpFile.pathAsString),
+        ParserConfig(config.inputPath.pathAsString, outputCpgFile = tmpFile.toString),
         if (config.dummyTypesEnabled) List.empty else List("--no-dummyTypes")
       )
       .map { _ =>
-        println(s"Temporary CPG has been successfully generated at ${tmpFile.pathAsString}")
-        tmpFile.deleteOnExit(swallowIOExceptions = true).pathAsString
+        println(s"Temporary CPG has been successfully generated at ${tmpFile.toString}")
+        FileUtil.deleteOnExit(tmpFile, swallowIOExceptions = true)
+        tmpFile.toString
       }
   }
 

@@ -1,6 +1,5 @@
 package io.joern.pysrc2cpg.io
 
-import better.files.File as BetterFile
 import io.joern.x2cpg.utils.FileUtil
 import io.joern.x2cpg.utils.FileUtil.*
 import io.joern.x2cpg.utils.server.FrontendHTTPClient
@@ -47,8 +46,8 @@ class PySrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndA
 
   "Using pysrc2cpg in server mode" should {
     "build CPGs correctly (single test)" in {
-      val cpgOutFile = BetterFile.newTemporaryFile("pysrc2cpg.bin")
-      cpgOutFile.deleteOnExit()
+      val cpgOutFile = FileUtil.newTemporaryFile("pysrc2cpg.bin")
+      FileUtil.deleteOnExit(cpgOutFile)
       val projectUnderTest = newProjectUnderTest()
       val input            = projectUnderTest.toAbsolutePath.toString
       val output           = cpgOutFile.toString
@@ -66,8 +65,8 @@ class PySrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndA
 
     "build CPGs correctly (multi-threaded test)" in {
       (0 until 10).par.foreach { index =>
-        val cpgOutFile = BetterFile.newTemporaryFile("pysrc2cpg.bin")
-        cpgOutFile.deleteOnExit()
+        val cpgOutFile = FileUtil.newTemporaryFile("pysrc2cpg.bin")
+        FileUtil.deleteOnExit(cpgOutFile)
         val projectUnderTest = newProjectUnderTest(Some(index))
         val input            = projectUnderTest.toAbsolutePath.toString
         val output           = cpgOutFile.toString

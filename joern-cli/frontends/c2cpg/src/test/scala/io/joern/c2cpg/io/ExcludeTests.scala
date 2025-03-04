@@ -1,6 +1,5 @@
 package io.joern.c2cpg.io
 
-import better.files.File as BetterFile
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.C2Cpg
 import io.joern.x2cpg.X2Cpg
@@ -49,8 +48,8 @@ class ExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChe
   override def afterAll(): Unit = FileUtil.delete(projectUnderTest, swallowIoExceptions = true)
 
   private def testWithArguments(exclude: Seq[String], excludeRegex: String, expectedFiles: Set[String]): Unit = {
-    val cpgOutFile = BetterFile.newTemporaryFile("c2cpg.bin")
-    cpgOutFile.deleteOnExit()
+    val cpgOutFile = FileUtil.newTemporaryFile("c2cpg.bin")
+    FileUtil.deleteOnExit(cpgOutFile)
 
     val config = Config()
       .withInputPath(projectUnderTest.toString)

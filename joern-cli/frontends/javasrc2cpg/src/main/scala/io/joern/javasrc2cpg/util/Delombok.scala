@@ -1,12 +1,12 @@
 package io.joern.javasrc2cpg.util
 
-import better.files.File
 import io.joern.javasrc2cpg.util.Delombok.DelombokMode.*
 import io.joern.x2cpg.utils.FileUtil
 import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
+import java.nio.charset.Charset
 import java.nio.file.{Files, Path, Paths}
 import scala.util.Failure
 import scala.util.Success
@@ -43,11 +43,12 @@ object Delombok {
 
   private def delombokToTempDirCommand(inputPath: Path, outputDir: Path, analysisJavaHome: Option[String]) = {
     val javaPath = analysisJavaHome.getOrElse(systemJavaPath)
-    val classPathArg = Try(File.newTemporaryFile("classpath").deleteOnExit()) match {
+    val classPathArg = Try(FileUtil.newTemporaryFile("classpath")) match {
       case Success(file) =>
+        FileUtil.deleteOnExit(file)
         // Write classpath to a file to work around Windows length limits.
-        file.write(System.getProperty("java.class.path"))
-        s"@${file.canonicalPath}"
+        Files.writeString(file, System.getProperty("java.class.path"), Charset.defaultCharset())
+        s"@${file.absolutePathAsString}"
 
       case Failure(t) =>
         logger.warn(
