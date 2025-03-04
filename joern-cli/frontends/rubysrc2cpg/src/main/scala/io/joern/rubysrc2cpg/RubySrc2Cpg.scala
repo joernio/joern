@@ -121,7 +121,7 @@ object RubySrc2Cpg {
       val parserResult   = RubyJsonParser.readFile(Paths.get(fileName))
       val rubyProgram    = new RubyJsonToNodeCreator().visitProgram(parserResult.json)
       val sourceFileName = parserResult.fullPath
-      val fileContent    = new String(Files.readAllBytes(Paths.get(fileName)), Charset.defaultCharset())
+      val fileContent    = new String(Files.readAllBytes(Paths.get(sourceFileName)), Charset.defaultCharset())
       new AstCreator(
         sourceFileName,
         projectRoot,
