@@ -46,14 +46,16 @@ class MemberTests extends JimpleCode2CpgFixture {
     privateField.modifier.size shouldBe 0
 
   }
-  "should have possibleTypes for final or static MEMBER" in {
+  "should have constantValue in code for final or final static MEMBER" in {
     val members                 = cpg2.typeDecl.name("ModifiersTest").member.l
     val finalPrivateStringField = members.find(_.name == "finalPrivateString").get
     val publicStringField       = members.find(_.name == "publicString").get
-    publicStringField.possibleTypes.size shouldBe 0
-    finalPrivateStringField.possibleTypes.l shouldBe List("\"PRIVATE_STATIC_FINAL\"")
+    val methodInit              = cpg2.method.name("<init>").head
+    methodInit.ast.code.l.contains("this.publicString = \"PS\"") shouldBe true
+    publicStringField.code shouldBe "java.lang.String publicString"
+    finalPrivateStringField.code shouldBe "java.lang.String finalPrivateString = \"PRIVATE_STATIC_FINAL\""
     val flag = members.find(_.name == "FLAG").get
-    flag.possibleTypes.l shouldBe List("1")
+    flag.code shouldBe "int FLAG = 1"
   }
 
 }
