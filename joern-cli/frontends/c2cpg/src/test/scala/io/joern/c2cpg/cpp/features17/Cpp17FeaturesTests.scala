@@ -163,7 +163,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |valueRef(); // 321
           |""".stripMargin)
       cpg.method.nameExact("getValueCopy").methodReturn.typeFullName.l shouldBe List("std.function<int,string>")
-      // with the include for std::function, the actual return type can not be resolved
+      // without the include for std::function the actual return type can not be resolved
       cpg.method.nameExact("getValueRef").methodReturn.typeFullName.l shouldBe List("std.function<ANY>")
     }
 
