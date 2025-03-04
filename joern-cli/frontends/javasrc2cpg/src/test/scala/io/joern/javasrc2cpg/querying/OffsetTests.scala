@@ -90,19 +90,12 @@ class OffsetTests extends JavaSrcCode2CpgFixture {
     ).withConfig(contentEnabled)
 
     "have the first method retrievable via the offset fields" in {
-      def method    = cpg.method.name("method1").head
-      val offset    = method.offset.get
-      val offsetEnd = method.offsetEnd.get
-
-      cpg.file.name(".*Foo.java").content.head.substring(offset, offsetEnd) shouldBe method1
+      def method = cpg.method.name("method1").head
+      method.sourceCode shouldBe method1
     }
 
     "have the second method retrievable via the offset fields" in {
-      def method    = cpg.method.name("method2").head
-      val offset    = method.offset.get
-      val offsetEnd = method.offsetEnd.get
-
-      cpg.file.name(".*Foo.java").content.head.substring(offset, offsetEnd) shouldBe method2
+      inside(cpg.method.name("method2").sourceCode.l) { case List(sourceCode) => sourceCode shouldBe method2 }
     }
 
     "not have offsets set for the default constructor" in {
