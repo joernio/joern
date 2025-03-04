@@ -17,7 +17,7 @@ class WorkspaceManagerTests extends AnyWordSpec with Matchers {
 
     "create project in correct location" in {
       File.usingTemporaryDirectory(tmpDirPrefix) { workspaceFile =>
-        val inputFile     = FileUtil.createTempFileIfNotExistsAndSetLastModificationDate("workspaceman")
+        val inputFile     = FileUtil.newTemporaryFile("workspaceman")
         val workspacePath = workspaceFile.path
         val manager       = new WorkspaceManager(workspacePath.toString)
         val pathToProject = manager.createProject(inputFile.toString, "aprojectname")
@@ -31,8 +31,8 @@ class WorkspaceManagerTests extends AnyWordSpec with Matchers {
       File.usingTemporaryDirectory(tmpDirPrefix) { workspaceFile =>
         val workspacePath = workspaceFile.path
         val manager       = new WorkspaceManager(workspacePath.toString)
-        val inputFile1    = FileUtil.createTempFileIfNotExistsAndSetLastModificationDate("workspaceman")
-        val inputFile2    = FileUtil.createTempFileIfNotExistsAndSetLastModificationDate("workspaceman")
+        val inputFile1    = FileUtil.newTemporaryFile("workspaceman")
+        val inputFile2    = FileUtil.newTemporaryFile("workspaceman")
         manager.createProject(inputFile1.toString, "aprojectname")
         val pathToProject = manager.createProject(inputFile2.toString, "aprojectname")
         val project       = pathToProject.flatMap(TestLoader().loadProject(_)).get

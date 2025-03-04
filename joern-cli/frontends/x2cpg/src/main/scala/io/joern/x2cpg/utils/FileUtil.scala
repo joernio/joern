@@ -14,15 +14,6 @@ object FileUtil {
     Files.createTempFile(prefix, suffix)
   }
 
-  // Similar to `.touch` from better.files
-  def createTempFileIfNotExistsAndSetLastModificationDate(tmpDirName: String): Path = {
-    val dir = newTemporaryFile(tmpDirName)
-    dir.createWithParentsIfNotExists()
-    Files.setLastModifiedTime(dir, FileTime.from(Instant.now()))
-
-    dir
-  }
-
   // TODO: Replace better.files with this method
   def usingTemporaryDirectory[U](prefix: String = "")(f: Path => U): Unit = {
     val file = Files.createTempDirectory(prefix)
