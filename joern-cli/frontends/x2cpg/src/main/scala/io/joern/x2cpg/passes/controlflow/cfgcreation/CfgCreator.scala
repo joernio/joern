@@ -85,8 +85,12 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
 
   /** Returns true if this node is a child to some `try` control structure, false if otherwise.
     */
-  private def withinATryBlock(x: AstNode): Boolean =
-    x.inAst.isControlStructure.exists(_.controlStructureType == ControlStructureTypes.TRY)
+  private def withinATryBlock(x: AstNode): Boolean = {
+    if (x._astIn.hasNext) {
+      val parentNode = x.parentBlock.astParent
+      parentNode.isControlStructure.isTry.nonEmpty
+    } else false
+  }
 
   /** This method dispatches AST nodes by type and calls corresponding conversion methods.
     */
