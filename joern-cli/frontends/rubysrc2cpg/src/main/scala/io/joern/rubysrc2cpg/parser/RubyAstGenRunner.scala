@@ -33,7 +33,7 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
   private val container: ScriptingContainer = {
     val cwd       = env.path.toAbsolutePath.toString
     val gemPath   = Seq(cwd, "vendor", "bundle", "jruby", "3.1.0").mkString(separator)
-    val container = new ScriptingContainer(LocalContextScope.SINGLETON, LocalVariableBehavior.TRANSIENT)
+    val container = new ScriptingContainer(LocalContextScope.THREADSAFE, LocalVariableBehavior.TRANSIENT)
     val config    = container.getProvider.getRubyInstanceConfig
     container.setCompileMode(RubyInstanceConfig.CompileMode.OFF)
     container.setNativeEnabled(false)

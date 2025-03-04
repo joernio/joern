@@ -40,10 +40,20 @@ class AstCreationPass(cpg: Cpg, config: Config, report: Report = new Report())
 
   private val parser: CdtParser = new CdtParser(config, headerFileFinder, compilationDatabase)
 
-  def typesSeen(): List[String] = global.usedTypes.keys().asScala.toList
+  def typesSeen(): List[String] = {
+    global.usedTypes.keys().asScala.toList
+  }
 
   def unhandledMethodDeclarations(): Map[String, CGlobal.MethodInfo] = {
     global.methodDeclarations.asScala.toMap -- global.methodDefinitions.asScala.keys
+  }
+
+  override def generateParts(): Array[String] = {
+    if (config.compilationDatabase.isEmpty) {
+      sourceFilesFromDirectory()
+    } else {
+      sourceFilesFromCompilationDatabase(config.compilationDatabase.get)
+    }
   }
 
   private def sourceFilesFromDirectory(): Array[String] = {
@@ -85,14 +95,6 @@ class AstCreationPass(cpg: Cpg, config: Config, report: Report = new Report())
         ignoredFilesPath = Option(config.ignoredFiles)
       )
       .toArray
-  }
-
-  override def generateParts(): Array[String] = {
-    if (config.compilationDatabase.isEmpty) {
-      sourceFilesFromDirectory()
-    } else {
-      sourceFilesFromCompilationDatabase(config.compilationDatabase.get)
-    }
   }
 
   override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {

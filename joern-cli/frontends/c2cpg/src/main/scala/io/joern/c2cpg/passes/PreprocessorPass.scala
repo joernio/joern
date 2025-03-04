@@ -29,6 +29,15 @@ class PreprocessorPass(config: Config) {
   private val headerFileFinder = new HeaderFileFinder(config)
   private val parser           = new CdtParser(config, headerFileFinder, compilationDatabase)
 
+  def run(): ParIterable[String] = {
+    if (config.compilationDatabase.isEmpty) {
+      sourceFilesFromDirectory()
+    } else {
+      sourceFilesFromCompilationDatabase(config.compilationDatabase.get)
+    }
+
+  }
+
   private def sourceFilesFromDirectory(): ParIterable[String] = {
     SourceFiles
       .determine(
@@ -58,24 +67,18 @@ class PreprocessorPass(config: Config) {
       .flatMap(runOnPart)
   }
 
-  def run(): ParIterable[String] = {
-    if (config.compilationDatabase.isEmpty) {
-      sourceFilesFromDirectory()
-    } else {
-      sourceFilesFromCompilationDatabase(config.compilationDatabase.get)
+  private def preprocessorStatement2String(stmt: IASTPreprocessorStatement): Option[String] = {
+    stmt match {
+      case s: IASTPreprocessorIfStatement =>
+        Option(s"${s.getCondition.mkString}${if (s.taken()) "=true" else ""}")
+      case s: IASTPreprocessorIfdefStatement =>
+        Option(s"${s.getCondition.mkString}${if (s.taken()) "=true" else ""}")
+      case _ => None
     }
-
   }
 
-  private def preprocessorStatement2String(stmt: IASTPreprocessorStatement): Option[String] = stmt match {
-    case s: IASTPreprocessorIfStatement =>
-      Option(s"${s.getCondition.mkString}${if (s.taken()) "=true" else ""}")
-    case s: IASTPreprocessorIfdefStatement =>
-      Option(s"${s.getCondition.mkString}${if (s.taken()) "=true" else ""}")
-    case _ => None
-  }
-
-  private def runOnPart(filename: String): Iterable[String] =
+  private def runOnPart(filename: String): Iterable[String] = {
     parser.preprocessorStatements(Paths.get(filename)).flatMap(preprocessorStatement2String).toSet
+  }
 
 }

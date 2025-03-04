@@ -11,6 +11,7 @@ import java.nio.file.{Files, Path, Paths}
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
+import scala.collection.parallel.CollectionConverters.*
 
 object Delombok {
 
@@ -106,6 +107,7 @@ object Delombok {
         FileUtil.deleteOnExit(tempDir)
         PackageRootFinder
           .packageRootsFromFiles(inputPath, fileInfo)
+          .par
           .foreach(delombokPackageRoot(inputPath, _, tempDir, analysisJavaHome))
         DelombokRunResult(tempDir, true)
     }

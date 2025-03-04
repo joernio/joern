@@ -104,8 +104,8 @@ class JavaConfigFileCreationPass(cpg: Cpg, rootDir: Option[String] = None)
     // MYBATIS
     mybatisFilter,
     // BUILD SYSTEM
-    pathEndFilter("build.gradle"),
-    pathEndFilter("build.gradle.kts"),
+    extensionFilter(".gradle"),
+    pathEndFilter(".gradle.kts"),
     // ANDROID
     pathEndFilter("AndroidManifest.xml"),
     // SPRING

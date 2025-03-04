@@ -135,7 +135,7 @@ class EnumTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
          |    f
          |};""".stripMargin)
       inside(cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).internal.l) { case List(anon) =>
-        anon.name shouldBe "anonymous_enum_0"
+        anon.name shouldBe "<enum>0"
         anon.code should startWith("enum")
         inside(anon.member.l) { case List(d, e, f) =>
           d.name shouldBe "d"

@@ -15,6 +15,10 @@ trait PreprocessorStatementsLogger {
 
   private val logger = LoggerFactory.getLogger(classOf[PreprocessorStatementsLogger])
 
+  protected def logPreprocessorStatements(translationUnit: IASTTranslationUnit): Unit = {
+    preprocessorStatements(translationUnit).foreach(logPreprocessorStatement)
+  }
+
   private def logPreprocessorStatement(node: IASTPreprocessorStatement): Unit = {
     val text = s"""Preprocessor statement '${node.getClass.getSimpleName}' found!
                   |  Code: '${node.getRawSignature}'
@@ -36,11 +40,8 @@ trait PreprocessorStatementsLogger {
     logger.info(s"$text$additionalInfo")
   }
 
-  protected def preprocessorStatements(translationUnit: IASTTranslationUnit): Iterable[IASTPreprocessorStatement] =
+  protected def preprocessorStatements(translationUnit: IASTTranslationUnit): Iterable[IASTPreprocessorStatement] = {
     translationUnit.getAllPreprocessorStatements
-
-  protected def logPreprocessorStatements(translationUnit: IASTTranslationUnit): Unit = {
-    preprocessorStatements(translationUnit).foreach(logPreprocessorStatement)
   }
 
 }

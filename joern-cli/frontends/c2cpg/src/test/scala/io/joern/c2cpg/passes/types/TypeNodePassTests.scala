@@ -42,7 +42,7 @@ class TypeNodePassTests extends C2CpgSuite {
           |""".stripMargin,
         "unknown.cpp"
       )
-      cpg.local.typeFullName.l shouldBe List("unknown*")
+      cpg.local.nameExact("val").typeFullName.l shouldBe List("unknown*")
     }
 
     "be correct for static decl assignment" in {
@@ -119,7 +119,7 @@ class TypeNodePassTests extends C2CpgSuite {
         |int main() {
         |  int x;
         |}""".stripMargin)
-      cpg.typ.name.toSetMutable shouldBe Set("int", "void", "ANY")
+      cpg.typ.name.toSetMutable shouldBe Set("ANY", "int", "main", "void")
     }
 
     "create correct types for locals" in {
@@ -157,12 +157,20 @@ class TypeNodePassTests extends C2CpgSuite {
           tpe.fullName shouldBe "test*"
           tpe.name shouldBe "test*"
         }
-        inside(cpg.local.l) { case List(ptr) =>
+        inside(cpg.local.l) { case List(ptr, kernel, test) =>
           ptr.name shouldBe "ptr"
           ptr.typeFullName shouldBe "test*"
           ptr.code shouldBe "struct test *ptr"
+
+          kernel.name shouldBe "GFP_KERNEL"
+          kernel.typeFullName shouldBe "ANY"
+          kernel.code shouldBe "GFP_KERNEL"
+
+          test.name shouldBe "test"
+          test.typeFullName shouldBe "test"
+          test.code shouldBe "test"
         }
-        inside(cpg.local.typ.referencedTypeDecl.l) { case List(tpe) =>
+        inside(cpg.local.nameExact("ptr").typ.referencedTypeDecl.l) { case List(tpe) =>
           tpe.name shouldBe "test*"
           tpe.fullName shouldBe "test*"
         }
@@ -248,10 +256,13 @@ class TypeNodePassTests extends C2CpgSuite {
           |  struct flex *ptr = malloc(sizeof(struct flex));
           |  struct flex value = {0};
           |}""".stripMargin)
-      val List(value) = cpg.typeDecl.fullNameExact("flex").referencingType.fullNameExact("flex").localOfType.l
+      val List(value, flex) = cpg.typeDecl.fullNameExact("flex").referencingType.fullNameExact("flex").localOfType.l
       value.name shouldBe "value"
       value.typeFullName shouldBe "flex"
       value.code shouldBe "struct flex value"
+      flex.name shouldBe "flex" // from the argument to sizeof in sizeof(struct flex)
+      flex.typeFullName shouldBe "flex"
+      flex.code shouldBe "flex"
     }
   }
 

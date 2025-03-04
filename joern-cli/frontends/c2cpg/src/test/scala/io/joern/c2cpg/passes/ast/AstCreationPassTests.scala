@@ -241,6 +241,25 @@ class AstCreationPassTests extends AstC2CpgSuite {
       }
     }
 
+    "be correct for decl assignment with parentheses" in {
+      val cpg = code(
+        """
+          |void method() {
+          |  int *val (new int[3]);
+          |}
+          |""".stripMargin,
+        "test.cpp"
+      )
+      inside(cpg.method.nameExact("method").block.astChildren.isCall.l) { case List(assignment: Call) =>
+        val List(identifier) = assignment.argument.isIdentifier.l
+        identifier.argumentIndex shouldBe 1
+        identifier.name shouldBe "val"
+        val List(call) = assignment.argument.isCall.l
+        call.code shouldBe "(new int[3])"
+        call.argumentIndex shouldBe 2
+      }
+    }
+
     "be correct for decl assignment with typedecl" in {
       val cpg = code(
         """
@@ -513,23 +532,23 @@ class AstCreationPassTests extends AstC2CpgSuite {
       inside(cpg.method.nameExact("method").controlStructure.l) { case List(forStmt) =>
         forStmt.controlStructureType shouldBe ControlStructureTypes.FOR
         forStmt.astChildren.isBlock.astChildren.isCall.code.l shouldBe List(
-          "anonymous_tmp_0 = foo",
-          "a = anonymous_tmp_0[0]",
-          "b = anonymous_tmp_0[1]"
+          "<tmp>0 = foo",
+          "a = <tmp>0[0]",
+          "b = <tmp>0[1]"
         )
       }
       cpg.local.map { l => (l.name, l.typeFullName) }.toMap shouldBe Map(
-        "foo"             -> "int[2]",
-        "anonymous_tmp_0" -> "int[2]",
-        "a"               -> "ANY",
-        "b"               -> "ANY"
+        "foo"    -> "int[2]",
+        "<tmp>0" -> "int[2]",
+        "a"      -> "ANY",
+        "b"      -> "ANY"
       )
       pendingUntilFixed {
         cpg.local.map { l => (l.name, l.typeFullName) }.toMap shouldBe Map(
-          "foo"             -> "int[2]",
-          "anonymous_tmp_0" -> "int[2]",
-          "a"               -> "int*",
-          "b"               -> "int*"
+          "foo"    -> "int[2]",
+          "<tmp>0" -> "int[2]",
+          "a"      -> "int*",
+          "b"      -> "int*"
         )
       }
     }
@@ -918,7 +937,11 @@ class AstCreationPassTests extends AstC2CpgSuite {
       val List(localMyFs) = cpg.local.nameExact("my_fs").l
       localMyFs.order shouldBe 4
       localMyFs.referencingIdentifiers.name.l shouldBe List("my_fs")
-      cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).fullName.l.distinct shouldBe List("filesystem")
+      cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).fullName.l.distinct shouldBe List(
+        "filesystem",
+        "my_open",
+        "main"
+      )
     }
 
     "be correct for typedef enum" in {
@@ -986,7 +1009,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
         "file.cpp"
       )
       inside(cpg.call.codeExact("static_assert ( a == 0 , \"not 0!\");").l) { case List(call: Call) =>
-        call.name shouldBe "static_assert"
+        call.name shouldBe "<operator>.staticAssert"
         call.argument(1).code shouldBe "a == 0"
         call.argument(2).code shouldBe "\"not 0!\""
       }
@@ -1088,9 +1111,8 @@ class AstCreationPassTests extends AstC2CpgSuite {
         .fullNameExact("Foo")
         .l
         .size shouldBe 1
-      inside(cpg.call.codeExact("f1(0)").l) { case List(call: Call) =>
-        call.name shouldBe "f1"
-        call.argument(1).code shouldBe "0"
+      inside(cpg.call.codeExact("f1 = Foo(0)").l) { case List(call: Call) =>
+        call.name shouldBe Operators.assignment
       }
     }
 
@@ -1533,8 +1555,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
       val cpg = code("""
         |bool x[2] = { TRUE, FALSE };
         |""".stripMargin)
-      inside(cpg.local.l) { case List(x) =>
-        x.name shouldBe "x"
+      inside(cpg.local.nameExact("x").l) { case List(x) =>
         x.typeFullName shouldBe "bool[2]"
       }
     }
