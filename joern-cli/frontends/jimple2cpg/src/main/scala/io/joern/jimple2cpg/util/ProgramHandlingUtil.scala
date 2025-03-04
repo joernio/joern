@@ -272,7 +272,7 @@ object ProgramHandlingUtil {
             logger.warn(s"Overwriting class file: ${destFile.toAbsolutePath}")
           }
           Files.createDirectories(destFile.getParent)
-          file.copyTo(destFile)(StandardCopyOption.REPLACE_EXISTING)
+          file.copyTo(destFile, StandardCopyOption.REPLACE_EXISTING)
           ClassFile(destFile, packagePath)
         }
         .orElse {

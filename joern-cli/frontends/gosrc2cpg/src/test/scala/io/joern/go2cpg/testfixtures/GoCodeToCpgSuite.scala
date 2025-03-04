@@ -8,6 +8,7 @@ import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.model.GoModHelper
 import io.joern.gosrc2cpg.{Config, GoSrc2Cpg}
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg}
+import io.joern.x2cpg.utils.FileUtil
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 import org.scalatest.Inside
@@ -33,14 +34,14 @@ class DefaultTestCpgWithGo(val fileSuffix: String) extends DefaultTestCpg with S
   }
 
   def execute(sourceCodePath: java.io.File): Cpg = {
-    val cpgOutFile = File.newTemporaryFile("go2cpg.bin")
-    cpgOutFile.deleteOnExit()
+    val cpgOutFile = FileUtil.newTemporaryFile("go2cpg.bin")
+    FileUtil.deleteOnExit(cpgOutFile)
     goSrc2Cpg = Some(new GoSrc2Cpg(this.goGlobal))
     val config = getConfig()
       .collectFirst { case x: Config => x }
       .getOrElse(Config())
       .withInputPath(sourceCodePath.getAbsolutePath)
-      .withOutputPath(cpgOutFile.pathAsString)
+      .withOutputPath(cpgOutFile.toString)
     goSrc2Cpg.get.createCpg(config).get
   }
 

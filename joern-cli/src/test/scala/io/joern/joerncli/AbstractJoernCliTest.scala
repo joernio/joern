@@ -5,6 +5,7 @@ import io.joern.console.FrontendConfig
 import io.joern.console.cpgcreation.{CCpgGenerator, JsSrcCpgGenerator}
 import io.joern.x2cpg.frontendspecific.jssrc2cpg
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
+import io.joern.x2cpg.utils.FileUtil
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.utils.ProjectRoot
@@ -19,9 +20,9 @@ trait AbstractJoernCliTest {
   }
 
   private def loadTestCpg(file: File, language: String = Languages.C): (Cpg, String) = {
-    val tmpFile        = File.newTemporaryFile("cpg", "bin")
-    val cpgOutFileName = tmpFile.pathAsString
-    tmpFile.delete()
+    val tmpFile        = FileUtil.newTemporaryFile("cpg", "bin")
+    val cpgOutFileName = tmpFile.toString
+    FileUtil.delete(tmpFile)
 
     val cpgGenerator = language match {
       case Languages.C | Languages.CSHARP         => CCpgGenerator(new FrontendConfig(), relativePath("c2cpg"))

@@ -1,13 +1,14 @@
 package io.joern.php2cpg.parser
 
-import better.files.File
 import io.joern.php2cpg.Config
 import io.joern.php2cpg.parser.Domain.PhpFile
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
-import java.nio.file.Path
-import java.nio.file.Paths
+import java.nio.charset.Charset
+import java.nio.file.{Files, Path, Paths}
 import java.util.regex.Pattern
 import scala.collection.mutable
 import scala.io.Source
@@ -164,9 +165,10 @@ object PhpParser {
 
   private def defaultPhpIni: String = {
     val iniContents = Source.fromResource("php.ini").getLines().mkString(System.lineSeparator())
-    val tmpIni      = File.newTemporaryFile(suffix = "-php.ini").deleteOnExit()
-    tmpIni.writeText(iniContents)
-    tmpIni.canonicalPath
+    val tmpIni      = FileUtil.newTemporaryFile(suffix = "-php.ini")
+    FileUtil.deleteOnExit(tmpIni)
+    Files.writeString(tmpIni, iniContents, Charset.defaultCharset())
+    tmpIni.absolutePathAsString
   }
 
   private def defaultPhpParserBin: String = {
@@ -191,8 +193,8 @@ object PhpParser {
         defaultValue
     }
 
-    File(pathString) match {
-      case file if file.exists() && file.isRegularFile() => Some(file.canonicalPath)
+    Paths.get(pathString) match {
+      case file if Files.exists(file) && Files.isRegularFile(file) => Some(file.absolutePathAsString)
       case _ =>
         logger.error(s"Invalid path for $identifier: $pathString")
         None
