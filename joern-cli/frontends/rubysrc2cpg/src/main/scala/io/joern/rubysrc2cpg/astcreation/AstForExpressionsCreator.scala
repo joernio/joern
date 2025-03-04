@@ -223,7 +223,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         code(n)
       }
 
-      // Regex matches are one of the few dynamic dispatch calls we fully qualify because of the lowering mechanism
       val call = callNode(n, callCode, n.methodName, XDefines.DynamicCallUnknownFullName, dispatchType)
       if methodFullName != XDefines.DynamicCallUnknownFullName then call.possibleTypes(Seq(methodFullName))
       if (isStatic) {
