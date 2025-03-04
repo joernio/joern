@@ -488,7 +488,7 @@ object GradleDependencies {
                         }
                         val destinationDir = initScript.destinationDir.resolve(destinationSubdir)
 
-                        runGradleTask(c, taskName, initScript.destinationDir, initScriptFile.toString) map { deps =>
+                        runGradleTask(c, taskName, destinationDir, initScriptFile.toString) map { deps =>
                           val depsOutput = deps.map { d =>
                             if (!d.endsWith(aarFileExtension)) d
                             else

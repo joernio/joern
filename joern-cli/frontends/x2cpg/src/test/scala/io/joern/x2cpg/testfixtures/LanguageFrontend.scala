@@ -5,8 +5,6 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import java.io.File
 import io.joern.x2cpg.X2CpgConfig
 
-import java.nio.file.Path
-
 /** LanguageFrontend encapsulates the logic that translates the source code directory into CPGs
   */
 trait LanguageFrontend {
