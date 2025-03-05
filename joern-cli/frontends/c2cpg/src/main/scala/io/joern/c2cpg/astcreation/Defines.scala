@@ -18,4 +18,5 @@ object Defines {
   val OperatorExpressionList: String         = "<operator>.expressionList"
   val OperatorNew: String                    = "<operator>.new"
   val OperatorBracketedPrimary: String       = "<operator>.bracketedPrimary"
+  val DuplicateSuffix                        = "<duplicate>"
 }

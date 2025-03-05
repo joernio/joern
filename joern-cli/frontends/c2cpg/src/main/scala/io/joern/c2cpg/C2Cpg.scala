@@ -2,6 +2,7 @@ package io.joern.c2cpg
 
 import io.joern.c2cpg.passes.{AstCreationPass, PreprocessorPass, TypeDeclNodePass}
 import io.joern.c2cpg.passes.FunctionDeclNodePass
+import io.joern.c2cpg.passes.MethodFullNameUniquenessPass
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
@@ -25,10 +26,11 @@ class C2Cpg extends X2CpgFrontend[Config] {
       new MetaDataPass(cpg, Languages.NEWC, config.inputPath).createAndApply()
       val astCreationPass = new AstCreationPass(cpg, config, report)
       astCreationPass.createAndApply()
-      new FunctionDeclNodePass(cpg, astCreationPass.unhandledMethodDeclarations())(config.schemaValidation)
+      new FunctionDeclNodePass(cpg, astCreationPass.unhandledMethodDeclarations(), config)
         .createAndApply()
       TypeNodePass.withRegisteredTypes(astCreationPass.typesSeen(), cpg).createAndApply()
-      new TypeDeclNodePass(cpg)(config.schemaValidation).createAndApply()
+      new TypeDeclNodePass(cpg, config).createAndApply()
+      new MethodFullNameUniquenessPass(cpg).createAndApply()
       report.print()
     }
   }
