@@ -44,11 +44,6 @@ object FileUtil {
       f(file)
     } finally {
       try {
-        // On Windows, force GC to help release file handles
-        if (scala.util.Properties.isWin) {
-          System.gc()
-          Thread.sleep(100)
-        }
         delete(file, swallowIoExceptions = true)
       } catch {
         case _: Exception => // Ensure we don't throw from finally
@@ -86,31 +81,34 @@ object FileUtil {
   }
 
   def delete(
-              file: Path,
-              swallowIoExceptions: Boolean = false,
-              linkOptions: LinkOption = LinkOption.NOFOLLOW_LINKS,
-              maxAttempts: Int = 3,
-              delayMs: Int = 100
-            ): Unit = {
+    file: Path,
+    swallowIoExceptions: Boolean = false,
+    linkOptions: LinkOption = LinkOption.NOFOLLOW_LINKS,
+    maxAttempts: Int = 3,
+    delayMs: Int = 100
+  ): Unit = {
     @tailrec
     def attemptDelete(file: Path, remainingAttempts: Int, currentDelay: Int): Unit = {
       try {
         if (Files.isDirectory(file, linkOptions)) {
-          using(Files.newDirectoryStream(file)) { dirStream =>
-            val children = dirStream.iterator().asScala.toList
-            children.foreach { x =>
-              delete(x, swallowIoExceptions, linkOptions, maxAttempts, delayMs)
-            }
+          // Use try-with-resources pattern to ensure directory stream is closed
+          // Force eager evaluation with toList to close the stream immediately
+          val children = using(Files.newDirectoryStream(file)) { dirStream =>
+            dirStream.iterator().asScala.toList
+          }
+
+          // Delete all children first
+          children.foreach { child =>
+            delete(child, swallowIoExceptions, linkOptions, maxAttempts, delayMs)
           }
         }
+        
+        // After all children are deleted, delete the file/directory itself
         Files.deleteIfExists(file)
       } catch {
         case e: IOException if remainingAttempts > 1 =>
-          // On Windows, force GC to help release file handles
-          if (scala.util.Properties.isWin) {
-            System.gc()
-            Thread.sleep(currentDelay)
-          }
+          // Use exponential backoff with a small delay
+          Thread.sleep(currentDelay)
           attemptDelete(file, remainingAttempts - 1, currentDelay * 2)
         case e: IOException if swallowIoExceptions => // Swallow exception
         case e: IOException => throw e
@@ -120,28 +118,6 @@ object FileUtil {
     attemptDelete(file, maxAttempts, delayMs)
   }
 
-//  def delete(
-//    file: Path,
-//    swallowIoExceptions: Boolean = false,
-//    linkOptions: LinkOption = LinkOption.NOFOLLOW_LINKS
-//  ): Unit = {
-//    try {
-//      if (Files.isDirectory(file, linkOptions)) {
-//        val dirStream = Files.newDirectoryStream(file)
-//        val children  = dirStream.iterator().asScala.toList
-//        dirStream.close()
-//        children.foreach { x =>
-//          delete(x, swallowIoExceptions, linkOptions)
-//        }
-//
-//      }
-//
-//      Files.deleteIfExists(file)
-//    } catch {
-//      case _: IOException if swallowIoExceptions => //
-//    }
-//  }
-
   def writeBytes(file: Path, content: Iterator[Byte], bufferSize: Int = 8192): Unit = {
     using(Files.newOutputStream(file)) { fos =>
       using(new BufferedOutputStream(fos)) { bos =>
@@ -150,16 +126,6 @@ object FileUtil {
       }
     }
   }
-
-//  def writeBytes(file: Path, content: Iterator[Byte], bufferSize: Int = 8192): Unit = {
-//    Using.Manager { use =>
-//      val fos = use(Files.newOutputStream(file))
-//      val bos = use(new BufferedOutputStream(fos))
-//
-//      content.grouped(bufferSize).foreach(buffer => bos.write(buffer.toArray))
-//      bos.flush()
-//    }
-//  }
 
   implicit class PathExt(p: Path) {
     def absolutePathAsString: String = p.toAbsolutePath.toString
@@ -235,55 +201,27 @@ object FileUtil {
       zipFilter: ZipEntry => Boolean = _ => true,
       bufferSize: Int = 8192
     ): destination.type = {
-      val zipFile = new ZipFile(p.toAbsolutePath.toString, Charset.defaultCharset())
-      val entries = zipFile.entries().asScala.filter(zipFilter)
-
-      entries.foreach { entry =>
-        val entryName = entry.getName.replace("\\", "/") // see https://github.com/pathikrit/better-files/issues/262
-        val child =
-          (destination / entryName).createWithParentsIfNotExists(asDirectory = entry.isDirectory, createParents = true)
-
-        if (!entry.isDirectory) {
-          val inputStream  = zipFile.getInputStream(entry)
-          val outputStream = Files.newOutputStream(child)
-          pipeTo(inputStream, outputStream, Array.ofDim[Byte](bufferSize))
-
-          inputStream.close()
-          outputStream.close()
+      using(new ZipFile(p.toAbsolutePath.toString, Charset.defaultCharset())) { zipFile =>
+        val entries = zipFile.entries().asScala.filter(zipFilter)
+        
+        entries.foreach { entry =>
+          val entryName = entry.getName.replace("\\", "/")
+          val child = (destination / entryName).createWithParentsIfNotExists(
+            asDirectory = entry.isDirectory, 
+            createParents = true
+          )
+          
+          if (!entry.isDirectory) {
+            using(zipFile.getInputStream(entry)) { inputStream =>
+              using(Files.newOutputStream(child)) { outputStream =>
+                pipeTo(inputStream, outputStream, Array.ofDim[Byte](bufferSize))
+              }
+            }
+          }
         }
+        destination
       }
-
-      zipFile.close()
-      destination
     }
-
-//    def unzipTo(
-//                 destination: Path,
-//                 zipFilter: ZipEntry => Boolean = _ => true,
-//                 bufferSize: Int = 8192
-//               ): Path = {
-//      using(new ZipFile(p.toAbsolutePath.toString, Charset.defaultCharset())) { zipFile =>
-//        val entries = zipFile.entries().asScala.filter(zipFilter)
-//
-//        entries.foreach { entry =>
-//          val entryName = entry.getName.replace("\\", "/")
-//          val child = (destination / entryName).createWithParentsIfNotExists(
-//            asDirectory = entry.isDirectory,
-//            createParents = true
-//          )
-//
-//          if (!entry.isDirectory) {
-//            using(zipFile.getInputStream(entry)) { inputStream =>
-//              using(Files.newOutputStream(child)) { outputStream =>
-//                pipeTo(inputStream, outputStream, Array.ofDim[Byte](bufferSize))
-//              }
-//            }
-//          }
-//        }
-//      }
-//
-//      destination
-//    }
 
     /** @return
       *   size of the directory or file
@@ -330,16 +268,25 @@ object FileUtil {
     }
   }
 
-  def using[R <: AutoCloseable, T](resource: => R)(f: R => T): T = {
-    val r = resource
+  /**
+   * Ensures that a resource is properly closed after use, even if an exception occurs.
+   * Similar to Java's try-with-resources but with more control.
+   *
+   * @param resource The resource to use
+   * @param f The function to apply to the resource
+   * @tparam R The resource type
+   * @tparam A The return type
+   * @return The result of applying f to the resource
+   */
+  def using[R <: AutoCloseable, A](resource: R)(f: R => A): A = {
     try {
-      f(r)
+      f(resource)
     } finally {
-      if (r != null) {
+      if (resource != null) {
         try {
-          r.close()
+          resource.close()
         } catch {
-          case _: Exception => // Swallow close exceptions
+          case _: Exception => // Swallow exceptions during close
         }
       }
     }
