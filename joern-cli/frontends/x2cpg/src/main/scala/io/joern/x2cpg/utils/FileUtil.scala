@@ -26,16 +26,6 @@ object FileUtil {
     }
   }
 
-  def usingTemporaryDirectory[U](prefix: String = "")(f: Path => U): Unit = {
-    val file = Files.createTempDirectory(prefix)
-
-    try {
-      f(file)
-    } finally {
-      delete(file)
-    }
-  }
-
   def usingTemporaryFile[U](prefix: String = "", suffix: String = "", parent: Option[Path] = None)(
     f: Path => U
   ): Unit = {
@@ -44,7 +34,25 @@ object FileUtil {
     try {
       f(file)
     } finally {
-      delete(file)
+      delete(file, swallowIoExceptions = true)
+    }
+  }
+
+  def usingTemporaryDirectory[T](prefix: String = "")(f: Path => T): T = {
+    val file = Files.createTempDirectory(prefix)
+    try {
+      f(file)
+    } finally {
+      try {
+        // On Windows, force GC to help release file handles
+        if (scala.util.Properties.isWin) {
+          System.gc()
+          Thread.sleep(100)
+        }
+        delete(file, swallowIoExceptions = true)
+      } catch {
+        case _: Exception => // Ensure we don't throw from finally
+      }
     }
   }
 
@@ -52,7 +60,7 @@ object FileUtil {
     if (Files.isDirectory(to)) {
       from.copyToDirectory(to)
     } else {
-      from.copyTo(to)
+      from.copyTo(to, StandardCopyOption.REPLACE_EXISTING)
     }
   }
 
@@ -78,36 +86,80 @@ object FileUtil {
   }
 
   def delete(
-    file: Path,
-    swallowIoExceptions: Boolean = false,
-    linkOptions: LinkOption = LinkOption.NOFOLLOW_LINKS
-  ): Unit = {
-    try {
-      if (Files.isDirectory(file, linkOptions)) {
-        val dirStream = Files.newDirectoryStream(file)
-        val children  = dirStream.iterator().asScala.toList
-        dirStream.close()
-        children.foreach { x =>
-          delete(x, swallowIoExceptions, linkOptions)
+              file: Path,
+              swallowIoExceptions: Boolean = false,
+              linkOptions: LinkOption = LinkOption.NOFOLLOW_LINKS,
+              maxAttempts: Int = 3,
+              delayMs: Int = 100
+            ): Unit = {
+    @tailrec
+    def attemptDelete(file: Path, remainingAttempts: Int, currentDelay: Int): Unit = {
+      try {
+        if (Files.isDirectory(file, linkOptions)) {
+          using(Files.newDirectoryStream(file)) { dirStream =>
+            val children = dirStream.iterator().asScala.toList
+            children.foreach { x =>
+              delete(x, swallowIoExceptions, linkOptions, maxAttempts, delayMs)
+            }
+          }
         }
-
+        Files.deleteIfExists(file)
+      } catch {
+        case e: IOException if remainingAttempts > 1 =>
+          // On Windows, force GC to help release file handles
+          if (scala.util.Properties.isWin) {
+            System.gc()
+            Thread.sleep(currentDelay)
+          }
+          attemptDelete(file, remainingAttempts - 1, currentDelay * 2)
+        case e: IOException if swallowIoExceptions => // Swallow exception
+        case e: IOException => throw e
       }
-
-      Files.deleteIfExists(file)
-    } catch {
-      case _: IOException if swallowIoExceptions => //
     }
+
+    attemptDelete(file, maxAttempts, delayMs)
   }
+
+//  def delete(
+//    file: Path,
+//    swallowIoExceptions: Boolean = false,
+//    linkOptions: LinkOption = LinkOption.NOFOLLOW_LINKS
+//  ): Unit = {
+//    try {
+//      if (Files.isDirectory(file, linkOptions)) {
+//        val dirStream = Files.newDirectoryStream(file)
+//        val children  = dirStream.iterator().asScala.toList
+//        dirStream.close()
+//        children.foreach { x =>
+//          delete(x, swallowIoExceptions, linkOptions)
+//        }
+//
+//      }
+//
+//      Files.deleteIfExists(file)
+//    } catch {
+//      case _: IOException if swallowIoExceptions => //
+//    }
+//  }
 
   def writeBytes(file: Path, content: Iterator[Byte], bufferSize: Int = 8192): Unit = {
-    Using.Manager { use =>
-      val fos = use(Files.newOutputStream(file))
-      val bos = use(new BufferedOutputStream(fos))
-
-      content.grouped(bufferSize).foreach(buffer => bos.write(buffer.toArray))
-      bos.flush()
+    using(Files.newOutputStream(file)) { fos =>
+      using(new BufferedOutputStream(fos)) { bos =>
+        content.grouped(bufferSize).foreach(buffer => bos.write(buffer.toArray))
+        bos.flush()
+      }
     }
   }
+
+//  def writeBytes(file: Path, content: Iterator[Byte], bufferSize: Int = 8192): Unit = {
+//    Using.Manager { use =>
+//      val fos = use(Files.newOutputStream(file))
+//      val bos = use(new BufferedOutputStream(fos))
+//
+//      content.grouped(bufferSize).foreach(buffer => bos.write(buffer.toArray))
+//      bos.flush()
+//    }
+//  }
 
   implicit class PathExt(p: Path) {
     def absolutePathAsString: String = p.toAbsolutePath.toString
@@ -205,6 +257,34 @@ object FileUtil {
       destination
     }
 
+//    def unzipTo(
+//                 destination: Path,
+//                 zipFilter: ZipEntry => Boolean = _ => true,
+//                 bufferSize: Int = 8192
+//               ): Path = {
+//      using(new ZipFile(p.toAbsolutePath.toString, Charset.defaultCharset())) { zipFile =>
+//        val entries = zipFile.entries().asScala.filter(zipFilter)
+//
+//        entries.foreach { entry =>
+//          val entryName = entry.getName.replace("\\", "/")
+//          val child = (destination / entryName).createWithParentsIfNotExists(
+//            asDirectory = entry.isDirectory,
+//            createParents = true
+//          )
+//
+//          if (!entry.isDirectory) {
+//            using(zipFile.getInputStream(entry)) { inputStream =>
+//              using(Files.newOutputStream(child)) { outputStream =>
+//                pipeTo(inputStream, outputStream, Array.ofDim[Byte](bufferSize))
+//              }
+//            }
+//          }
+//        }
+//      }
+//
+//      destination
+//    }
+
     /** @return
       *   size of the directory or file
       */
@@ -248,6 +328,20 @@ object FileUtil {
         out
       }
     }
+  }
 
+  def using[R <: AutoCloseable, T](resource: => R)(f: R => T): T = {
+    val r = resource
+    try {
+      f(r)
+    } finally {
+      if (r != null) {
+        try {
+          r.close()
+        } catch {
+          case _: Exception => // Swallow close exceptions
+        }
+      }
+    }
   }
 }

@@ -1,5 +1,6 @@
 package io.joern.console
 
+import better.files.File
 import io.joern.console.testing.*
 import io.joern.x2cpg.X2Cpg.defaultOverlayCreators
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
@@ -471,6 +472,8 @@ class ConsoleTests extends AnyWordSpec with Matchers {
         console.switchWorkspace(otherWorkspaceDir.toString)
         Files.exists(otherWorkspaceDir) shouldBe true
       } finally {
+//        otherWorkspaceDir.delete()
+//        otherWorkspaceDir.exists shouldBe false
         FileUtil.delete(otherWorkspaceDir)
         Files.exists(otherWorkspaceDir) shouldBe false
       }
@@ -478,7 +481,8 @@ class ConsoleTests extends AnyWordSpec with Matchers {
 
     "allow changing workspaces" taggedAs NotInWindowsRunners in ConsoleFixture() { (console, codeDir) =>
       val firstWorkspace = Paths.get(console.workspace.getPath)
-      FileUtil.usingTemporaryDirectory("console") { otherWorkspaceDir =>
+//      val firstWorkspace = File(console.workspace.getPath)
+      File.usingTemporaryDirectory("console") { otherWorkspaceDir =>
         console.importCode(codeDir.toString, "projectInFirstWorkspace")
         console.workspace.numberOfProjects shouldBe 1
         console.switchWorkspace(otherWorkspaceDir.toString)

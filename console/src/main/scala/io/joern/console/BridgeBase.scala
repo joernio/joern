@@ -169,9 +169,9 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
 
       note("Misc")
 
-      arg[java.io.File]("<cpg.bin>")
+      arg[java.nio.file.Path]("<cpg.bin>")
         .optional()
-        .action((x, c) => c.copy(cpgToLoad = Some(x.toPath)))
+        .action((x, c) => c.copy(cpgToLoad = Some(x)))
         .text("CPG to load")
 
       opt[String]("for-input-path")
