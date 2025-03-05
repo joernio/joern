@@ -55,7 +55,7 @@ object ConsoleFixtureFile {
 
         (codeDir / "dir1" / "foo.c")
           .write("int main(int argc, char **argv) { char *ptr = 0x1 + argv; return argc; }")
-          
+
         (codeDir / "dir2" / "bar.c").write("int bar(int x) { return x; }")
 
         val console = constructor(workspaceDir.toString)

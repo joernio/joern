@@ -102,7 +102,7 @@ object FileUtil {
             delete(child, swallowIoExceptions, linkOptions, maxAttempts, delayMs)
           }
         }
-        
+
         // After all children are deleted, delete the file/directory itself
         Files.deleteIfExists(file)
       } catch {
@@ -111,7 +111,7 @@ object FileUtil {
           Thread.sleep(currentDelay)
           attemptDelete(file, remainingAttempts - 1, currentDelay * 2)
         case e: IOException if swallowIoExceptions => // Swallow exception
-        case e: IOException => throw e
+        case e: IOException                        => throw e
       }
     }
 
@@ -203,14 +203,14 @@ object FileUtil {
     ): destination.type = {
       using(new ZipFile(p.toAbsolutePath.toString, Charset.defaultCharset())) { zipFile =>
         val entries = zipFile.entries().asScala.filter(zipFilter)
-        
+
         entries.foreach { entry =>
           val entryName = entry.getName.replace("\\", "/")
           val child = (destination / entryName).createWithParentsIfNotExists(
-            asDirectory = entry.isDirectory, 
+            asDirectory = entry.isDirectory,
             createParents = true
           )
-          
+
           if (!entry.isDirectory) {
             using(zipFile.getInputStream(entry)) { inputStream =>
               using(Files.newOutputStream(child)) { outputStream =>
@@ -268,16 +268,20 @@ object FileUtil {
     }
   }
 
-  /**
-   * Ensures that a resource is properly closed after use, even if an exception occurs.
-   * Similar to Java's try-with-resources but with more control.
-   *
-   * @param resource The resource to use
-   * @param f The function to apply to the resource
-   * @tparam R The resource type
-   * @tparam A The return type
-   * @return The result of applying f to the resource
-   */
+  /** Ensures that a resource is properly closed after use, even if an exception occurs. Similar to Java's
+    * try-with-resources but with more control.
+    *
+    * @param resource
+    *   The resource to use
+    * @param f
+    *   The function to apply to the resource
+    * @tparam R
+    *   The resource type
+    * @tparam A
+    *   The return type
+    * @return
+    *   The result of applying f to the resource
+    */
   def using[R <: AutoCloseable, A](resource: R)(f: R => A): A = {
     try {
       f(resource)

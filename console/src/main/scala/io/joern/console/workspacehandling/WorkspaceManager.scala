@@ -94,7 +94,7 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
     // val content = jsonWrite(projectFile)
     implicit val formats: DefaultFormats.type = DefaultFormats
     val PROJECTFILE_NAME                      = "project.json"
-    val content = jsonWrite(Map("inputPath" -> projectFile.inputPath, "name" -> projectFile.name))
+    val content     = jsonWrite(Map("inputPath" -> projectFile.inputPath, "name" -> projectFile.name))
     val projectPath = dirPath.resolve(PROJECTFILE_NAME)
     Files.writeString(projectPath, content, Charset.defaultCharset())
     projectPath
@@ -406,7 +406,9 @@ object WorkspaceManager {
   private val BASE_CPG_FILENAME = "cpg.bin"
 
   def overlayFilesForDir(dirName: String): List[Path] = {
-    Paths.get(dirName).listFiles()
+    Paths
+      .get(dirName)
+      .listFiles()
       .filter(f => Files.isRegularFile(f) && f.getFileName.toString != BASE_CPG_FILENAME)
       .toList
       .sortBy(_.getFileName.toString)
