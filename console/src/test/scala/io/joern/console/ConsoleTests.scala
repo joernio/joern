@@ -481,8 +481,8 @@ class ConsoleTests extends AnyWordSpec with Matchers {
 
     "allow changing workspaces" taggedAs NotInWindowsRunners in ConsoleFixture() { (console, codeDir) =>
       val firstWorkspace = Paths.get(console.workspace.getPath)
-//      val firstWorkspace = File(console.workspace.getPath)
-      File.usingTemporaryDirectory("console") { otherWorkspaceDir =>
+
+      FileUtil.usingTemporaryDirectory("console") { otherWorkspaceDir =>
         console.importCode(codeDir.toString, "projectInFirstWorkspace")
         console.workspace.numberOfProjects shouldBe 1
         console.switchWorkspace(otherWorkspaceDir.toString)
