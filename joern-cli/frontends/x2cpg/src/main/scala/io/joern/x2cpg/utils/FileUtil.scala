@@ -104,44 +104,6 @@ object FileUtil {
     }
   }
 
-//  def delete(
-//    file: Path,
-//    swallowIoExceptions: Boolean = false,
-//    linkOptions: LinkOption = LinkOption.NOFOLLOW_LINKS,
-//    maxAttempts: Int = 3,
-//    delayMs: Int = 100
-//  ): Unit = {
-//    @tailrec
-//    def attemptDelete(file: Path, remainingAttempts: Int, currentDelay: Int): Unit = {
-//      try {
-//        if (Files.isDirectory(file, linkOptions)) {
-//          // Use try-with-resources pattern to ensure directory stream is closed
-//          // Force eager evaluation with toList to close the stream immediately
-//          val children = Using.resource(Files.newDirectoryStream(file)) { dirStream =>
-//            dirStream.iterator().asScala.toList
-//          }
-//
-//          // Delete all children first
-//          children.foreach { child =>
-//            delete(child, swallowIoExceptions, linkOptions, maxAttempts, delayMs)
-//          }
-//        }
-//
-//        // After all children are deleted, delete the file/directory itself
-//        Files.deleteIfExists(file)
-//      } catch {
-//        case e: IOException if remainingAttempts > 1 =>
-//          // Use exponential backoff with a small delay
-//          Thread.sleep(currentDelay)
-//          attemptDelete(file, remainingAttempts - 1, currentDelay * 2)
-//        case e: IOException if swallowIoExceptions => // Swallow exception
-//        case e: IOException                        => throw e
-//      }
-//    }
-//
-//    attemptDelete(file, maxAttempts, delayMs)
-//  }
-
   def writeBytes(file: Path, content: Iterable[Byte], bufferSize: Int = 8192): Unit = {
     Using.Manager { use =>
       val fos = use(Files.newOutputStream(file))

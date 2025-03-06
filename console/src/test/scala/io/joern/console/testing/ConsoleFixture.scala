@@ -1,7 +1,5 @@
 package io.joern.console.testing
 
-import better.files.File
-import better.files.Dsl.mkdir
 import io.joern.console.cpgcreation.{CCpgGenerator, CpgGenerator, CpgGeneratorFactory, ImportCode}
 import io.joern.console.workspacehandling.{Project, ProjectFile, WorkspaceLoader}
 import io.joern.console.{Console, ConsoleConfig, FrontendConfig, InstallConfig}
@@ -41,29 +39,6 @@ object ConsoleFixture {
     }
   }
 
-}
-
-object ConsoleFixtureFile {
-  def apply[T <: Console[Project]](constructor: String => T = { x =>
-    new TestConsole(x)
-  })(fun: (T, File) => Unit): Unit = {
-    File.usingTemporaryDirectory("console") { workspaceDir =>
-      File.usingTemporaryDirectory("console") { codeDir =>
-        mkdir(codeDir / "dir1")
-        mkdir(codeDir / "dir2")
-
-        (codeDir / "dir1" / "foo.c")
-          .write("int main(int argc, char **argv) { char *ptr = 0x1 + argv; return argc; }")
-
-        (codeDir / "dir2" / "bar.c").write("int bar(int x) { return x; }")
-
-        val console = constructor(workspaceDir.toString)
-        fun(console, codeDir)
-        Try(console.cpgs.foreach(cpg => cpg.close()))
-        Try(console.workspace.reset)
-      }
-    }
-  }
 }
 
 object TestWorkspaceLoader extends WorkspaceLoader[Project] {
