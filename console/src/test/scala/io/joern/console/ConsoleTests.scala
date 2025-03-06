@@ -220,7 +220,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
 
     "gracefully handle broken CPGs" in ConsoleFixture() { (console, _) =>
       FileUtil.usingTemporaryFile("console") { file =>
-        FileUtil.writeBytes(file, List[Byte]('F', 'O').iterator)
+        FileUtil.writeBytes(file, List[Byte]('F', 'O'))
         console.importCpg(file.toString)
         console.workspace.numberOfProjects shouldBe 0
       }

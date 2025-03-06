@@ -212,7 +212,7 @@ object JoernScan extends BridgeBase {
     val queryDbZip = outDir / "querydb.zip"
     val absPath    = queryDbZip.absolutePathAsString
 
-    FileUtil.writeBytes(queryDbZip, r.bytes.iterator)
+    FileUtil.writeBytes(queryDbZip, r.bytes)
 
     println(s"Wrote: ${queryDbZip.size} bytes to $absPath")
     absPath

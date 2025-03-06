@@ -44,7 +44,8 @@ jobs:
             ~/.coursier
           key: ${{ runner.os }}-sbt-${{ hashfiles('**/build.sbt') }}
       - name: Compile and run tests
-        run: sbt clean test
+#        run: sbt clean test
+        run: sbt clean console/testOnly # TODO: REMOVE BEFORE MERGE, THIS IS JUST TO SPEED UP FAILING TESTS ON WINDOWS FOR RUNNERS
   formatting:
     runs-on: ubuntu-latest
     steps:

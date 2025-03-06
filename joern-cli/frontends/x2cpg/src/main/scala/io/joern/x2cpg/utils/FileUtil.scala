@@ -93,7 +93,7 @@ object FileUtil {
         if (Files.isDirectory(file, linkOptions)) {
           // Use try-with-resources pattern to ensure directory stream is closed
           // Force eager evaluation with toList to close the stream immediately
-          val children = using(Files.newDirectoryStream(file)) { dirStream =>
+          val children = Using.resource(Files.newDirectoryStream(file)) { dirStream =>
             dirStream.iterator().asScala.toList
           }
 
@@ -118,12 +118,12 @@ object FileUtil {
     attemptDelete(file, maxAttempts, delayMs)
   }
 
-  def writeBytes(file: Path, content: Iterator[Byte], bufferSize: Int = 8192): Unit = {
-    using(Files.newOutputStream(file)) { fos =>
-      using(new BufferedOutputStream(fos)) { bos =>
-        content.grouped(bufferSize).foreach(buffer => bos.write(buffer.toArray))
-        bos.flush()
-      }
+  def writeBytes(file: Path, content: Iterable[Byte], bufferSize: Int = 8192): Unit = {
+    Using.Manager { use =>
+      val fos = use(Files.newOutputStream(file))
+      val bos = use(new BufferedOutputStream(fos))
+      content.grouped(bufferSize).foreach(buffer => bos.write(buffer.toArray))
+      bos.flush()
     }
   }
 
@@ -201,7 +201,8 @@ object FileUtil {
       zipFilter: ZipEntry => Boolean = _ => true,
       bufferSize: Int = 8192
     ): destination.type = {
-      using(new ZipFile(p.toAbsolutePath.toString, Charset.defaultCharset())) { zipFile =>
+      Using.Manager { use =>
+        val zipFile = use(new ZipFile(p.absolutePathAsString, Charset.defaultCharset()))
         val entries = zipFile.entries().asScala.filter(zipFilter)
 
         entries.foreach { entry =>
@@ -212,15 +213,14 @@ object FileUtil {
           )
 
           if (!entry.isDirectory) {
-            using(zipFile.getInputStream(entry)) { inputStream =>
-              using(Files.newOutputStream(child)) { outputStream =>
-                pipeTo(inputStream, outputStream, Array.ofDim[Byte](bufferSize))
-              }
-            }
+            val zipStream = use(zipFile.getInputStream(entry))
+            val outputStream = use(Files.newOutputStream(child))
+            pipeTo(zipStream, outputStream, Array.ofDim[Byte](bufferSize))
           }
         }
-        destination
       }
+
+      destination
     }
 
     /** @return
@@ -282,17 +282,17 @@ object FileUtil {
     * @return
     *   The result of applying f to the resource
     */
-  def using[R <: AutoCloseable, A](resource: R)(f: R => A): A = {
-    try {
-      f(resource)
-    } finally {
-      if (resource != null) {
-        try {
-          resource.close()
-        } catch {
-          case _: Exception => // Swallow exceptions during close
-        }
-      }
-    }
-  }
+//  def using[R <: AutoCloseable, A](resource: R)(f: R => A): A = {
+//    try {
+//      f(resource)
+//    } finally {
+//      if (resource != null) {
+//        try {
+//          resource.close()
+//        } catch {
+//          case _: Exception => // Swallow exceptions during close
+//        }
+//      }
+//    }
+//  }
 }
