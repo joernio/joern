@@ -59,6 +59,57 @@ class MethodFullNameUniquenessPassTests extends C2CpgSuite {
       call1.methodFullName shouldBe "Foo.foo:int(int)"
       call2.methodFullName shouldBe "Foo.foo<const>:int(int)"
     }
+
+    "fix calls to static function in the same file correctly" in {
+      val cpg = code(
+        """
+          |void f(void);
+          |static void sf() { }
+          |void a() {
+          |  f();
+          |  sf();
+          |}
+          |""".stripMargin,
+        "a.c"
+      ).moreCode(
+        """
+          |void a(void);
+          |void f() {}
+          |static void sf() {}
+          |void m() {
+          |  f();
+          |  sf();
+          |}
+          |void main() {
+          |  m();
+          |  a();
+          |}
+          |""".stripMargin,
+        "main.c"
+      )
+      cpg.method.fullName.size shouldBe cpg.method.fullName.toSet.size
+      cpg.method.nameNot("<global>").map(m => (m.fullName, m.filename)).sorted.l shouldBe List(
+        ("a", "a.c"),
+        ("f", "main.c"),
+        ("m", "main.c"),
+        ("main", "main.c"),
+        ("sf", "a.c"),
+        ("sf<duplicate>0", "main.c")
+      )
+      cpg.call
+        .map(c =>
+          s"${c.name} in ${c.file.map(_.name).head} -> CALL -> ${c.methodFullName} in ${c.callOut.filename.head}"
+        )
+        .sorted
+        .l shouldBe List(
+        "a in main.c -> CALL -> a in a.c",
+        "f in a.c -> CALL -> f in main.c",
+        "f in main.c -> CALL -> f in main.c",
+        "m in main.c -> CALL -> m in main.c",
+        "sf in a.c -> CALL -> sf in a.c",
+        "sf in main.c -> CALL -> sf<duplicate>0 in main.c" // fixed call here
+      )
+    }
   }
 
 }
