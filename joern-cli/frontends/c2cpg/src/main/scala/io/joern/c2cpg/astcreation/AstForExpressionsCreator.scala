@@ -7,6 +7,7 @@ import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Dispatch
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast
 import org.eclipse.cdt.core.dom.ast.*
+import org.eclipse.cdt.core.dom.ast.c.ICArrayType
 import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.core.dom.ast.gnu.IGNUASTCompoundStatementExpression
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTFunctionCallExpression
@@ -18,7 +19,6 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTQualifiedName
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPClosureType
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalFunctionCall
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFoldExpression
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPMethod
 
 import scala.annotation.tailrec
 import scala.util.Try
@@ -133,9 +133,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   private def isConstType(tpe: IType): Boolean = {
     tpe match {
       case t: ICPPFunctionType  => t.isConst
-      case t: ICPPReferenceType => isConstType(t.getType)
-      case t: IPointerType      => isConstType(t.getType)
+      case t: IPointerType      => t.isConst
       case t: IQualifierType    => t.isConst
+      case t: ICArrayType       => t.isConst
+      case t: ICPPReferenceType => isConstType(t.getType)
       case _                    => false
     }
   }
