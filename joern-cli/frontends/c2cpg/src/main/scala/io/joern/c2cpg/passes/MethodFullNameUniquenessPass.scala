@@ -2,10 +2,11 @@ package io.joern.c2cpg.passes
 
 import io.joern.c2cpg.astcreation.Defines
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.PropertyNames
+import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
+import org.slf4j.LoggerFactory
 
 /** Ensures that method fullNames are unique across the CPG. In C and C ++ code, function names can appear multiple
   * times across different translation units, particularly with static functions in different files sharing the same
@@ -27,6 +28,8 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
   */
 class MethodFullNameUniquenessPass(cpg: Cpg) extends CpgPass(cpg) {
 
+  private val logger = LoggerFactory.getLogger(classOf[MethodFullNameUniquenessPass])
+
   override def run(dstGraph: DiffGraphBuilder): Unit = {
     val methodFullNameMap = cpg.method
       .nameNot(NamespaceTraversal.globalNamespaceName)
@@ -35,18 +38,18 @@ class MethodFullNameUniquenessPass(cpg: Cpg) extends CpgPass(cpg) {
       // sort for stable output
       .sortBy(_._1)
     methodFullNameMap.foreach { case (fullName, methods) =>
-      methods.sortBy(_.code).zipWithIndex.foreach { case (method, index) =>
-        if (index > 0) { // first method found keeps its fullName
-          val signature   = method.signature
-          val isCFunction = !fullName.endsWith(s":$signature")
-          val newFullName = if (isCFunction) {
-            s"$fullName${Defines.DuplicateSuffix}$index"
-          } else {
-            val fullNameWithoutSignature = fullName.stripSuffix(s":$signature")
-            s"$fullNameWithoutSignature${Defines.DuplicateSuffix}$index:$signature"
-          }
-          dstGraph.setNodeProperty(method, PropertyNames.FULL_NAME, newFullName)
+      val fromFiles = methods.map(_.filename).mkString("[", ", ", "]")
+      logger.debug(s"Found ${methods.size} duplicate method fullNames for '$fullName' in: $fromFiles")
+      methods.sortBy(_.code).tail.zipWithIndex.foreach { case (method, index) =>
+        val signature   = method.signature
+        val isCFunction = !fullName.endsWith(s":$signature")
+        val newFullName = if (isCFunction) {
+          s"$fullName${Defines.DuplicateSuffix}$index"
+        } else {
+          val fullNameWithoutSignature = fullName.stripSuffix(s":$signature")
+          s"$fullNameWithoutSignature${Defines.DuplicateSuffix}$index:$signature"
         }
+        dstGraph.setNodeProperty(method, Method.PropertyNames.FullName, newFullName)
       }
     }
   }
