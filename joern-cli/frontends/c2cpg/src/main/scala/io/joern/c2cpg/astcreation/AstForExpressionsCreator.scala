@@ -18,7 +18,9 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTQualifiedName
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPClosureType
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalFunctionCall
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFoldExpression
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPMethod
 
+import scala.annotation.tailrec
 import scala.util.Try
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -127,6 +129,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     callAst(callNode_, childAsts.toIndexedSeq)
   }
 
+  @tailrec
+  private def isConstType(tpe: IType): Boolean = {
+    tpe match {
+      case t: ICPPFunctionType  => t.isConst
+      case t: ICPPReferenceType => isConstType(t.getType)
+      case t: IPointerType      => isConstType(t.getType)
+      case t: IQualifierType    => t.isConst
+      case _                    => false
+    }
+  }
+
   private def astForCppCallExpression(call: ICPPASTFunctionCallExpression): Ast = {
     val functionNameExpr = call.getFunctionNameExpression
     Try(functionNameExpr.getExpressionType).toOption match {
@@ -159,14 +172,15 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
             val instanceAst = astForExpression(fieldRefExpr.getFieldOwner)
             val args        = call.getArguments.toList.map(a => astForNode(a))
 
+            val method    = fieldRefExpr.getFieldName.getBinding.asInstanceOf[ICPPMethod]
+            val constFlag = if isConstType(method.getType) then Defines.ConstSuffix else ""
+
             // TODO This wont do if the name is a reference.
-            val name      = fieldRefExpr.getFieldName.toString
-            val signature = functionTypeToSignature(functionType)
-
+            val name          = fieldRefExpr.getFieldName.toString
+            val signature     = functionTypeToSignature(functionType)
             val classFullName = cleanType(safeGetType(fieldRefExpr.getFieldOwnerType))
-            val fullName      = s"$classFullName.$name:$signature"
+            val fullName      = s"$classFullName.$name$constFlag:$signature"
 
-            val method = fieldRefExpr.getFieldName.getBinding.asInstanceOf[ICPPMethod]
             val (dispatchType, receiver) =
               if (method.isVirtual || method.isPureVirtual) {
                 (DispatchTypes.DYNAMIC_DISPATCH, Some(instanceAst))

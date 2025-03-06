@@ -35,24 +35,29 @@ class MethodFullNameUniquenessPassTests extends C2CpgSuite {
       )
     }
 
-    "create truly unique method fullnames for const C++ functions" in {
+    "respect  method fullnames for const C++ functions" in {
       val cpg = code(
         """
           |class Foo {
           |  public:
-          |    int foo(int a) {}
-          |    int foo(int a) const {}
+          |    int foo(int a) { return 0; }
+          |    int foo(int a) const { return 0; }
+          |}
+          |
+          |void main() {
+          |  Foo f1 = new Foo();
+          |  const Foo f2 = new Foo();
+          |  f1.foo(1);
+          |  f2.foo(2);
           |}
           |""".stripMargin,
         "main.cpp"
       )
       cpg.method.fullName.size shouldBe cpg.method.fullName.toSet.size
-      cpg.method.nameNot(NamespaceTraversal.globalNamespaceName).fullName.sorted.l shouldBe List(
-        // We can not distinguish between the two methods as they have the same signature.
-        // `const` is not part of the signature.
-        "Foo.foo:int(int)",
-        "Foo.foo<duplicate>0:int(int)"
-      )
+      cpg.method.nameExact("foo").fullName.sorted.l shouldBe List("Foo.foo:int(int)", "Foo.foo<const>:int(int)")
+      val List(call1, call2) = cpg.call.name("foo").sortBy(_.lineNumber).l
+      call1.methodFullName shouldBe "Foo.foo:int(int)"
+      call2.methodFullName shouldBe "Foo.foo<const>:int(int)"
     }
   }
 

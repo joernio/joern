@@ -19,4 +19,5 @@ object Defines {
   val OperatorNew: String                    = "<operator>.new"
   val OperatorBracketedPrimary: String       = "<operator>.bracketedPrimary"
   val DuplicateSuffix                        = "<duplicate>"
+  val ConstSuffix                            = "<const>"
 }

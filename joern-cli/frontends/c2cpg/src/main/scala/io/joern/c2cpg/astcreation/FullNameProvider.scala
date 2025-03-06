@@ -325,6 +325,7 @@ trait FullNameProvider { this: AstCreator =>
           case _ => None
         }
       case declarator: CPPASTFunctionDeclarator =>
+        val constFlag = if declarator.isConst then Defines.ConstSuffix else ""
         safeGetBinding(declarator.getName) match {
           case Some(function: ICPPFunction) if declarator.getName.isInstanceOf[ICPPASTConversionName] =>
             val tpe = cleanType(typeFor(declarator.getName.asInstanceOf[ICPPASTConversionName].getTypeId))
@@ -334,7 +335,7 @@ trait FullNameProvider { this: AstCreator =>
             val fn = if (function.isExternC) {
               tpe
             } else {
-              s"$fullNameNoSig.$tpe:${functionTypeToSignature(function.getType)}"
+              s"$fullNameNoSig.$tpe$constFlag:${functionTypeToSignature(function.getType)}"
             }
             Option(fn)
           case Some(function: ICPPFunction) =>
@@ -347,7 +348,7 @@ trait FullNameProvider { this: AstCreator =>
                 case _ => safeGetType(function.getType.getReturnType)
               }
               val sig = signature(cleanType(returnTpe), declarator)
-              s"$fullNameNoSig:$sig"
+              s"$fullNameNoSig$constFlag:$sig"
             }
             Option(fn)
           case Some(x @ (_: ICPPField | _: CPPVariable)) =>
@@ -355,7 +356,7 @@ trait FullNameProvider { this: AstCreator =>
             val fn = if (x.isExternC) {
               x.getName
             } else {
-              s"$fullNameNoSig:${cleanType(safeGetType(x.getType))}"
+              s"$fullNameNoSig$constFlag:${cleanType(safeGetType(x.getType))}"
             }
             Option(fn)
           case Some(_: IProblemBinding) =>
@@ -369,7 +370,7 @@ trait FullNameProvider { this: AstCreator =>
             if (fixedFullName.isEmpty) {
               Option(s"${X2CpgDefines.UnresolvedNamespace}:$signature_")
             } else {
-              Option(s"$fixedFullName:$signature_")
+              Option(s"$fixedFullName$constFlag:$signature_")
             }
           case _ => None
         }
@@ -433,11 +434,24 @@ trait FullNameProvider { this: AstCreator =>
   }
 
   private def fullNameForIASTFunctionDeclarator(f: IASTFunctionDeclarator): String = {
-    Try(fixQualifiedName(ASTStringUtil.getQualifiedName(f.getName))).getOrElse(nextClosureName())
+    val fullName = Try(fixQualifiedName(ASTStringUtil.getQualifiedName(f.getName))).getOrElse(nextClosureName())
+    f match {
+      case declarator: ICPPASTFunctionDeclarator =>
+        val constFlag = if declarator.isConst then Defines.ConstSuffix else ""
+        s"$fullName$constFlag"
+      case _ => fullName
+    }
   }
 
   private def fullNameForIASTFunctionDefinition(f: IASTFunctionDefinition): String = {
-    Try(fixQualifiedName(ASTStringUtil.getQualifiedName(f.getDeclarator.getName))).getOrElse(nextClosureName())
+    val fullName =
+      Try(fixQualifiedName(ASTStringUtil.getQualifiedName(f.getDeclarator.getName))).getOrElse(nextClosureName())
+    f.getDeclarator match {
+      case declarator: ICPPASTFunctionDeclarator =>
+        val constFlag = if declarator.isConst then Defines.ConstSuffix else ""
+        s"$fullName$constFlag"
+      case _ => fullName
+    }
   }
 
   protected final case class MethodFullNameInfo(name: String, fullName: String, signature: String, returnType: String)
