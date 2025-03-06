@@ -2,45 +2,49 @@ package io.joern.jssrc2cpg.passes
 
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
-import better.files.File
 import io.joern.jssrc2cpg.utils.PackageJsonParser
 import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgSuite
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
+
+import java.nio.file.{Files, Path}
 
 class DependenciesPassTests extends JsSrc2CpgSuite {
 
   "DependenciesPass" should {
 
     "ignore empty package.json" in {
-      File.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
+      FileUtil.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
         val json = dir / PackageJsonParser.PackageJsonFilename
-        json.write("")
-        PackageJsonParser.isValidProjectPackageJson(json.path) shouldBe false
+        Files.writeString(json, "")
+        PackageJsonParser.isValidProjectPackageJson(json) shouldBe false
       }
     }
 
     "ignore package.json without any useful content" in {
-      File.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
+      FileUtil.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
         val json = dir / PackageJsonParser.PackageJsonFilename
-        json.write("""
-            |{
-            |  "name": "something",
-            |  "version": "0.1.0",
-            |  "description": "foobar",
-            |  "main": "./target_node/index.js",
-            |  "private": true
-            |}
-            |""".stripMargin)
-        PackageJsonParser.isValidProjectPackageJson(json.path) shouldBe false
+        val content = """
+                        |{
+                        |  "name": "something",
+                        |  "version": "0.1.0",
+                        |  "description": "foobar",
+                        |  "main": "./target_node/index.js",
+                        |  "private": true
+                        |}
+                        |""".stripMargin
+        Files.writeString(json, content)
+        PackageJsonParser.isValidProjectPackageJson(json) shouldBe false
       }
     }
 
     "ignore package.json without dependencies" in {
-      File.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
+      FileUtil.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
         val json = dir / PackageJsonParser.PackageJsonFilename
-        json.write("{}")
-        PackageJsonParser.isValidProjectPackageJson(json.path) shouldBe false
+        Files.writeString(json, "{}")
+        PackageJsonParser.isValidProjectPackageJson(json) shouldBe false
       }
     }
 

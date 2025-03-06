@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory
 import soot.options.Options
 import soot.{G, Scene}
 
-import java.nio.charset.Charset
 import java.nio.file.{Files, Path, Paths}
 import scala.jdk.CollectionConverters.{EnumerationHasAsScala, SeqHasAsJava}
 import scala.language.postfixOps
@@ -142,7 +141,7 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
         decompiledJavaSrc match {
           case Some(src) =>
             val outputFile = Paths.get(s"${x.file.toString.replace(".class", ".java")}")
-            Files.writeString(outputFile, src, Charset.defaultCharset())
+            Files.writeString(outputFile, src)
           case None => // Do Nothing
         }
       })

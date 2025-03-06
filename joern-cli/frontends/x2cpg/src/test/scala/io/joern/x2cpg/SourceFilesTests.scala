@@ -1,16 +1,18 @@
 package io.joern.x2cpg
 
-import better.files.*
-import io.joern.x2cpg.utils.IgnoreInWindows
+import io.joern.x2cpg.utils.{IgnoreInWindows, FileUtil}
+import io.joern.x2cpg.utils.FileUtil.*
+
 import io.shiftleft.utils.ProjectRoot
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.Inside
 
 import java.nio.file.attribute.PosixFilePermissions
-import scala.jdk.CollectionConverters.*
 import scala.util.Try
 import java.io.FileNotFoundException
+
+import java.nio.file.{Files, Path, Paths}
 
 class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
 
@@ -46,7 +48,7 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
         .determine(
           s"$resourcesRoot/testcode",
           cSourceFileExtensions,
-          ignoredFilesPath = Some(Seq(File(s"$resourcesRoot/testcode").pathAsString))
+          ignoredFilesPath = Some(Seq(Paths.get(s"$resourcesRoot/testcode").toString))
         )
         .size shouldBe 0
     }
@@ -55,15 +57,20 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
 
   "do not throw an exception" when {
     "one of the input files is a broken symlink" in {
-      File.usingTemporaryDirectory() { tmpDir =>
-        (tmpDir / "a.c").touch()
-        val symlink = (tmpDir / "broken.c").symbolicLinkTo(File("does/not/exist.c"))
-        symlink.exists shouldBe false
-        symlink.isReadable shouldBe false
-        val ignored = (tmpDir / "ignored.c").touch()
+      FileUtil.usingTemporaryDirectory() { tmpDir =>
+        (tmpDir / "a.c").createWithParentsIfNotExists()
+        val symlink = Files.createSymbolicLink((tmpDir / "broken.c"), Paths.get("does/not/exist.c"))
+        Files.exists(symlink) shouldBe false
+        Files.isReadable(symlink) shouldBe false
+
+        val ignored = (tmpDir / "ignored.c").createWithParentsIfNotExists()
         val result = Try(
           SourceFiles
-            .determine(tmpDir.canonicalPath, cSourceFileExtensions, ignoredFilesPath = Some(Seq(ignored.pathAsString)))
+            .determine(
+              tmpDir.absolutePathAsString,
+              cSourceFileExtensions,
+              ignoredFilesPath = Some(Seq(ignored.toString))
+            )
         )
         result.isFailure shouldBe false
         result.getOrElse(List.empty).size shouldBe 1
@@ -80,12 +87,12 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
     }
 
     "the input file exists, but is not readable" taggedAs IgnoreInWindows in {
-      File.usingTemporaryFile() { tmpFile =>
-        tmpFile.setPermissions(PosixFilePermissions.fromString("-wx-w--w-").asScala.toSet)
-        tmpFile.exists shouldBe true
-        tmpFile.isReadable shouldBe false
+      FileUtil.usingTemporaryFile() { tmpFile =>
+        Files.setPosixFilePermissions(tmpFile, PosixFilePermissions.fromString("-wx-w--w-"))
+        Files.exists(tmpFile) shouldBe true
+        Files.isReadable(tmpFile) shouldBe false
 
-        val result = Try(SourceFiles.determine(tmpFile.canonicalPath, cSourceFileExtensions))
+        val result = Try(SourceFiles.determine(tmpFile.absolutePathAsString, cSourceFileExtensions))
         result.isFailure shouldBe true
         result.failed.get shouldBe a[FileNotFoundException]
       }

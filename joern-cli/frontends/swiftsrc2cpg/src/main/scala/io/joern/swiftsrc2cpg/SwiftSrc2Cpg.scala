@@ -1,6 +1,5 @@
 package io.joern.swiftsrc2cpg
 
-import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.swiftsrc2cpg.passes.*
 import io.joern.swiftsrc2cpg.utils.AstGenRunner
@@ -8,10 +7,11 @@ import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
-import io.joern.x2cpg.utils.{HashUtil, Report}
+import io.joern.x2cpg.utils.{FileUtil, HashUtil, Report}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
+import java.nio.file.Paths
 import scala.util.Try
 
 class SwiftSrc2Cpg extends X2CpgFrontend[Config] {
@@ -20,9 +20,9 @@ class SwiftSrc2Cpg extends X2CpgFrontend[Config] {
 
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
-      File.usingTemporaryDirectory("swiftsrc2cpgOut") { tmpDir =>
+      FileUtil.usingTemporaryDirectory("swiftsrc2cpgOut") { tmpDir =>
         val astGenResult = new AstGenRunner(config).execute(tmpDir)
-        val hash         = HashUtil.sha256(astGenResult.parsedFiles.map(file => File(file).path))
+        val hash         = HashUtil.sha256(astGenResult.parsedFiles.map(file => Paths.get(file)))
 
         val astCreationPass = new AstCreationPass(cpg, astGenResult, config, report)(config.schemaValidation)
         astCreationPass.createAndApply()

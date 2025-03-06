@@ -1,6 +1,5 @@
 package io.joern.console.cpgcreation
 
-import better.files.File
 import io.joern.console.FrontendConfig
 import io.joern.x2cpg.frontendspecific.jssrc2cpg
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig

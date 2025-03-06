@@ -1,20 +1,22 @@
 package io.joern.joerncli
 
-import better.files.*
 import io.joern.console.scan.{ScanPass, outputFindings}
 import io.joern.console.{BridgeBase, DefaultArgumentProvider, Query, QueryDatabase}
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
-import io.joern.dataflowengineoss.semanticsloader.{Semantics, NoSemantics}
+import io.joern.dataflowengineoss.semanticsloader.{NoSemantics, Semantics}
 import io.joern.joerncli.JoernScan.getQueriesFromQueryDb
 import io.joern.joerncli.Scan.{allTag, defaultTag}
 import io.joern.joerncli.console.ReplBridge
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
-
 import org.json4s.native.Serialization
 import org.json4s.{Formats, NoTypeHints}
 
+import java.io.FileNotFoundException
+import java.nio.file.{Files, NoSuchFileException, Path}
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
@@ -197,19 +199,21 @@ object JoernScan extends BridgeBase {
 
   def downloadAndInstallQueryDatabase(version: String = ""): Unit = {
     val actualVersion = Option(version).filter(_ != "").getOrElse(JoernScanConfig.defaultDbVersion)
-    File.usingTemporaryDirectory("joern-scan") { dir =>
+    FileUtil.usingTemporaryDirectory("joern-scan") { dir =>
       val queryDbZipPath = downloadDefaultQueryDatabase(actualVersion, dir)
       addQueryDatabase(queryDbZipPath)
     }
   }
 
-  private def downloadDefaultQueryDatabase(version: String, outDir: File): String = {
+  private def downloadDefaultQueryDatabase(version: String, outDir: Path): String = {
     val url = urlForVersion(version)
     println(s"Downloading default query bundle from: $url")
     val r          = requests.get(url)
     val queryDbZip = outDir / "querydb.zip"
-    val absPath    = queryDbZip.path.toAbsolutePath.toString
-    queryDbZip.writeBytes(r.bytes.iterator)
+    val absPath    = queryDbZip.absolutePathAsString
+
+    FileUtil.writeBytes(queryDbZip, r.bytes)
+
     println(s"Wrote: ${queryDbZip.size} bytes to $absPath")
     absPath
   }

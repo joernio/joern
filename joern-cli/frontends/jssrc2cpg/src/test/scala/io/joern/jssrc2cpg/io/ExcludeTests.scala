@@ -1,6 +1,5 @@
 package io.joern.jssrc2cpg.io
 
-import better.files.File as BetterFile
 import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.passes.AstCreationPass
 import io.joern.jssrc2cpg.utils.AstGenRunner
@@ -49,7 +48,7 @@ class ExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChe
   override def afterAll(): Unit = FileUtil.delete(projectUnderTest, swallowIoExceptions = true)
 
   private def testWithArguments(exclude: Seq[String], excludeRegex: String, expectedFiles: Set[String]): Unit = {
-    BetterFile.usingTemporaryDirectory("jssrc2cpgTests") { tmpDir =>
+    FileUtil.usingTemporaryDirectory("jssrc2cpgTests") { tmpDir =>
       val cpg = newEmptyCpg()
       val config = Config(tsTypes = false)
         .withInputPath(projectUnderTest.toString)

@@ -1,11 +1,13 @@
 package io.joern.console
 
-import better.files.Dsl.*
-import better.files.*
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.joern.console.cpgcreation.{guessLanguage, LlvmCpgGenerator}
+import io.joern.console.cpgcreation.{LlvmCpgGenerator, guessLanguage}
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import java.nio.file.{Files, Path, Paths}
 
 class LanguageHelperTests extends AnyWordSpec with Matchers {
 
@@ -26,69 +28,69 @@ class LanguageHelperTests extends AnyWordSpec with Matchers {
     }
 
     "guess `JavaSrc` for a directory containing `.java`" in {
-      File.usingTemporaryDirectory("oculartests") { tmpDir =>
-        val subdir = mkdir(tmpDir / "subdir")
-        touch(subdir / "ServiceIdentifierComposerVisitorBasedStrategy.java")
-        guessLanguage(tmpDir.pathAsString) shouldBe Some(Languages.JAVASRC)
+      FileUtil.usingTemporaryDirectory("oculartests") { tmpDir =>
+        val subdir = Files.createDirectory(tmpDir / "subdir")
+        (subdir / "ServiceIdentifierComposerVisitorBasedStrategy.java").createWithParentsIfNotExists()
+        guessLanguage(tmpDir.toString) shouldBe Some(Languages.JAVASRC)
       }
     }
 
     "guess `Go` for a directory containing `Gopkg.lock`" in {
-      File.usingTemporaryDirectory("oculartests") { tmpDir =>
-        val subdir = mkdir(tmpDir / "subdir")
-        touch(subdir / "Gopkg.lock")
-        guessLanguage(tmpDir.pathAsString) shouldBe Some(Languages.GOLANG)
+      FileUtil.usingTemporaryDirectory("oculartests") { tmpDir =>
+        val subdir = Files.createDirectory(tmpDir / "subdir")
+        (subdir / "Gopkg.lock").createWithParentsIfNotExists()
+        guessLanguage(tmpDir.toString) shouldBe Some(Languages.GOLANG)
       }
     }
 
     "guess `Go` for a directory containing `Gopkg.toml`" in {
-      File.usingTemporaryDirectory("oculartests") { tmpDir =>
-        val subdir = mkdir(tmpDir / "subdir")
-        touch(subdir / "Gopkg.toml")
-        guessLanguage(tmpDir.pathAsString) shouldBe Some(Languages.GOLANG)
+      FileUtil.usingTemporaryDirectory("oculartests") { tmpDir =>
+        val subdir = Files.createDirectory(tmpDir / "subdir")
+        (subdir / "Gopkg.toml").createWithParentsIfNotExists()
+        guessLanguage(tmpDir.toString) shouldBe Some(Languages.GOLANG)
       }
     }
 
     "guess `Javascript` for a directory containing `package.json`" in {
-      File.usingTemporaryDirectory("oculartests") { tmpDir =>
-        val subdir = mkdir(tmpDir / "subdir")
-        touch(subdir / "package.json")
-        guessLanguage(tmpDir.pathAsString) shouldBe Some(Languages.JSSRC)
+      FileUtil.usingTemporaryDirectory("oculartests") { tmpDir =>
+        val subdir = Files.createDirectory(tmpDir / "subdir")
+        (subdir / "package.json").createWithParentsIfNotExists()
+        guessLanguage(tmpDir.toString) shouldBe Some(Languages.JSSRC)
       }
     }
 
     "guess `Swift` for a directory containing `.swift`" in {
-      File.usingTemporaryDirectory("oculartests") { tmpDir =>
-        val subdir = mkdir(tmpDir / "subdir")
-        touch(subdir / "main.swift")
-        guessLanguage(tmpDir.pathAsString) shouldBe Some(Languages.SWIFTSRC)
+      FileUtil.usingTemporaryDirectory("oculartests") { tmpDir =>
+        val subdir = Files.createDirectory(tmpDir / "subdir")
+        (subdir / "main.swift").createWithParentsIfNotExists()
+        guessLanguage(tmpDir.toString) shouldBe Some(Languages.SWIFTSRC)
       }
     }
 
     "guess `C` for a directory containing .ll (LLVM) file" in {
-      File.usingTemporaryDirectory("oculartests") { tmpDir =>
-        val subdir = mkdir(tmpDir / "subdir")
-        touch(subdir / "foobar.ll")
-        guessLanguage(tmpDir.pathAsString) shouldBe Some(Languages.LLVM)
+      FileUtil.usingTemporaryDirectory("oculartests") { tmpDir =>
+        val subdir = Files.createDirectory(tmpDir / "subdir")
+        (subdir / "foobar.ll").createWithParentsIfNotExists()
+        guessLanguage(tmpDir.toString) shouldBe Some(Languages.LLVM)
       }
     }
 
     "guess the language with the largest number of files" in {
-      File.usingTemporaryDirectory("oculartests") { tmpDir =>
-        val subdir = mkdir(tmpDir / "subdir")
-        touch(subdir / "source.c")
-        touch(subdir / "source.java")
-        touch(subdir / "source.py")
-        touch(subdir / "source.js")
-        touch(subdir / "package.json") // also counts towards javascript
-        touch(subdir / "source.py")
-        guessLanguage(tmpDir.pathAsString) shouldBe Some(Languages.JSSRC)
+      FileUtil.usingTemporaryDirectory("oculartests") { tmpDir =>
+        val subdir = Files.createDirectory(tmpDir / "subdir")
+        (subdir / "source.c").createWithParentsIfNotExists()
+        (subdir / "source.java").createWithParentsIfNotExists()
+        (subdir / "source.py").createWithParentsIfNotExists()
+        (subdir / "source.js").createWithParentsIfNotExists()
+        (subdir / "package.json").createWithParentsIfNotExists() // also counts towards javascript
+        (subdir / "source.py").createWithParentsIfNotExists()
+        guessLanguage(tmpDir.toString) shouldBe Some(Languages.JSSRC)
       }
     }
 
     "not find anything for an empty directory" in {
-      File.usingTemporaryDirectory("oculartests") { tmpDir =>
-        guessLanguage(tmpDir.pathAsString) shouldBe None
+      FileUtil.usingTemporaryDirectory("oculartests") { tmpDir =>
+        guessLanguage(tmpDir.toString) shouldBe None
       }
     }
 
@@ -98,7 +100,7 @@ class LanguageHelperTests extends AnyWordSpec with Matchers {
 
     "select LLVM frontend for directories containing ll files" in {
       val frontend =
-        io.joern.console.cpgcreation.cpgGeneratorForLanguage(Languages.LLVM, FrontendConfig(), File(".").path, Nil)
+        io.joern.console.cpgcreation.cpgGeneratorForLanguage(Languages.LLVM, FrontendConfig(), Paths.get("."), Nil)
       frontend.get.isInstanceOf[LlvmCpgGenerator] shouldBe true
     }
   }

@@ -188,13 +188,17 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
   private def withFileInTmpFile(inputPath: String)(f: Path => Cpg): Try[Cpg] = {
     val dir = Files.createTempDirectory("console")
 
-    val result = Try {
-      Paths.get(inputPath).copyToDirectory(dir)
-      f(dir)
-    }
+    try {
+      val result = Try {
+        Paths.get(inputPath).copyToDirectory(dir)
+        f(dir)
+      }
 
-    FileUtil.deleteOnExit(dir, swallowIOExceptions = true)
-    result
+      result
+    } finally {
+      // Always attempt to clean up, regardless of success or failure
+      FileUtil.deleteOnExit(dir)
+    }
   }
 
   /** Provide an overview of the available CPG generators (frontends)
