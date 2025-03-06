@@ -84,7 +84,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
           |#endif
           |""".stripMargin
         FileUtil.usingTemporaryFile("console", suffix = ".c", parent = Option(codeDir)) { file =>
-          Files.writeString(file, code, Charset.defaultCharset())
+          Files.writeString(file, code)
           console.importCode.c(inputPath = codeDir.toString)
           // importing without args should not yield foo
           Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe false
@@ -115,7 +115,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
     "allow importing code from file with JS frontend via apply" in ConsoleFixture() { (console, _) =>
       val code = "function foo() {};"
       FileUtil.usingTemporaryFile("consoleTests", ".js") { tmpFile =>
-        Files.writeString(tmpFile, code, Charset.defaultCharset())
+        Files.writeString(tmpFile, code)
         console.importCode(tmpFile.toString)
         Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe true
       }
@@ -124,7 +124,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
     "allow importing code from file with JS frontend" taggedAs NotInWindowsRunners in ConsoleFixture() { (console, _) =>
       val code = "function foo() {};"
       FileUtil.usingTemporaryFile("consoleTests", ".js") { tmpFile =>
-        Files.writeString(tmpFile, code, Charset.defaultCharset())
+        Files.writeString(tmpFile, code)
         console.importCode.jssrc(tmpFile.toString)
         Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe true
       }
@@ -133,7 +133,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
     "allow importing code from file with Swift frontend via apply" in ConsoleFixture() { (console, _) =>
       val code = "func foo() {};"
       FileUtil.usingTemporaryFile("consoleTests", ".swift") { tmpFile =>
-        Files.writeString(tmpFile, code, Charset.defaultCharset())
+        Files.writeString(tmpFile, code)
         console.importCode(tmpFile.toString)
         Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe true
       }
@@ -143,7 +143,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       (console, _) =>
         val code = "func foo() {};"
         FileUtil.usingTemporaryFile("consoleTests", ".swift") { tmpFile =>
-          Files.writeString(tmpFile, code, Charset.defaultCharset())
+          Files.writeString(tmpFile, code)
           console.importCode.swiftsrc(tmpFile.toString)
           Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe true
         }
@@ -213,7 +213,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
 
     "handle broken legacy CPG gracefully" in ConsoleFixture() { (console, _) =>
       FileUtil.usingTemporaryFile("console") { file =>
-        Files.writeString(file, "PK", Charset.defaultCharset())
+        Files.writeString(file, "PK")
         console.importCpg(file.toString)
       }
     }

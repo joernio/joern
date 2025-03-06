@@ -393,7 +393,7 @@ trait PluginHandling { this: BridgeBase =>
   private def withTemporaryScript(code: String)(f: Path => Unit): Unit = {
     FileUtil.usingTemporaryDirectory(applicationName + "-bundle") { dir =>
       val file = dir / "script.sc"
-      Files.writeString(file, code, Charset.defaultCharset())
+      Files.writeString(file, code)
       f(file)
     }
   }

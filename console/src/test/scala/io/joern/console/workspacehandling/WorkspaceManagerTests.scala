@@ -131,7 +131,7 @@ class WorkspaceManagerTests extends AnyWordSpec with Matchers {
         val projectName = "myproject"
         WorkspaceTests.createFakeProject(workspaceFile, projectName)
         val cpgPath = (workspaceFile / projectName / "cpg.bin")
-        Files.writeString(cpgPath, "corrupt", Charset.defaultCharset())
+        Files.writeString(cpgPath, "corrupt")
         val manager = new WorkspaceManager(workspaceFile.toString)
         manager.openProject(projectName) shouldBe None
         manager.numberOfProjects shouldBe 1

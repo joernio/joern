@@ -23,7 +23,7 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
         FileUtil.usingTemporaryDirectory("DependencyResolverTests") { tmpDir =>
           val outFile = tmpDir / fileName
           outFile.createWithParentsIfNotExists(createParents = true)
-          Files.writeString(outFile, content, Charset.defaultCharset())
+          Files.writeString(outFile, content)
           val dependenciesResult = DependencyResolver.getDependencies(tmpDir, params)
           testFunc(dependenciesResult)
         }

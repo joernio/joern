@@ -267,32 +267,4 @@ object FileUtil {
       }
     }
   }
-
-  /** Ensures that a resource is properly closed after use, even if an exception occurs. Similar to Java's
-    * try-with-resources but with more control.
-    *
-    * @param resource
-    *   The resource to use
-    * @param f
-    *   The function to apply to the resource
-    * @tparam R
-    *   The resource type
-    * @tparam A
-    *   The return type
-    * @return
-    *   The result of applying f to the resource
-    */
-//  def using[R <: AutoCloseable, A](resource: R)(f: R => A): A = {
-//    try {
-//      f(resource)
-//    } finally {
-//      if (resource != null) {
-//        try {
-//          resource.close()
-//        } catch {
-//          case _: Exception => // Swallow exceptions during close
-//        }
-//      }
-//    }
-//  }
 }

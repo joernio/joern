@@ -112,7 +112,7 @@ class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
           |]""".stripMargin
 
       FileUtil.usingTemporaryFile("compile_commands.json") { commandJsonFile =>
-        Files.writeString(commandJsonFile, content, Charset.defaultCharset())
+        Files.writeString(commandJsonFile, content)
 
         val commandObjects = JSONCompilationDatabaseParser.parse(commandJsonFile.toString)
         commandObjects.map(_.compiledFile()) shouldBe Set(

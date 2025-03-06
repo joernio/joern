@@ -21,8 +21,8 @@ class ConfigPassTests extends AnyWordSpec with Matchers {
         val fileA = dir / "a.vue"
         val fileB = dir / "b.vue"
 
-        Files.writeString(fileA, "someCodeA();", Charset.defaultCharset())
-        Files.writeString(fileB, "someCodeB();", Charset.defaultCharset())
+        Files.writeString(fileA, "someCodeA();")
+        Files.writeString(fileB, "someCodeB();")
 
         val cpg = Cpg.empty
         new ConfigPass(cpg, Config().withInputPath(dir.toString)).createAndApply()
@@ -45,9 +45,9 @@ class ConfigPassTests extends AnyWordSpec with Matchers {
         val fileB = dir / "b.config.js"
         val fileC = dir / "c.json"
 
-        Files.writeString(fileA, "a", Charset.defaultCharset())
-        Files.writeString(fileB, "b", Charset.defaultCharset())
-        Files.writeString(fileC, "c", Charset.defaultCharset())
+        Files.writeString(fileA, "a")
+        Files.writeString(fileB, "b")
+        Files.writeString(fileC, "c")
 
         val cpg = Cpg.empty
         new ConfigPass(cpg, Config().withInputPath(dir.toString)).createAndApply()
@@ -68,13 +68,13 @@ class ConfigPassTests extends AnyWordSpec with Matchers {
         val fileB = dir / "b.config.js"
         val fileC = dir / "c.json"
 
-        Files.writeString(fileA, "a", Charset.defaultCharset())
-        Files.writeString(fileB, "b", Charset.defaultCharset())
-        Files.writeString(fileC, "c", Charset.defaultCharset())
+        Files.writeString(fileA, "a")
+        Files.writeString(fileB, "b")
+        Files.writeString(fileC, "c")
 
         // should be ignored
         val d = (dir / Defines.NodeModulesFolder).createWithParentsIfNotExists(asDirectory = true)
-        Files.writeString((d / "d.json"), "d", Charset.defaultCharset())
+        Files.writeString((d / "d.json"), "d")
 
         val cpg = Cpg.empty
         new ConfigPass(cpg, Config().withInputPath(dir.toString)).createAndApply()
@@ -97,8 +97,8 @@ class ConfigPassTests extends AnyWordSpec with Matchers {
       FileUtil.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
         val fileA = dir / "a.html"
         val fileB = dir / "b.html"
-        Files.writeString(fileA, "a", Charset.defaultCharset())
-        Files.writeString(fileB, "b", Charset.defaultCharset())
+        Files.writeString(fileA, "a")
+        Files.writeString(fileB, "b")
 
         val cpg = Cpg.empty
         new ConfigPass(cpg, Config().withInputPath(dir.toString)).createAndApply()
@@ -123,8 +123,8 @@ class ConfigPassTests extends AnyWordSpec with Matchers {
         val fileB         = dir / "b.key"
         val fileBContents = "-----BEGIN SOME OTHER KEY-----\nthis is fine\n-----END SOME OTHER KEY-----"
 
-        Files.writeString(fileA, fileAContents, Charset.defaultCharset())
-        Files.writeString(fileB, fileBContents, Charset.defaultCharset())
+        Files.writeString(fileA, fileAContents)
+        Files.writeString(fileB, fileBContents)
 
         val cpg = Cpg.empty
         new PrivateKeyFilePass(cpg, Config().withInputPath(dir.toString)).createAndApply()
@@ -141,7 +141,7 @@ class ConfigPassTests extends AnyWordSpec with Matchers {
         val fileA        = d / "a.key"
         val fileAContent = "-----BEGIN RSA PRIVATE KEY-----\n123456789\n-----END RSA PRIVATE KEY-----"
 
-        Files.writeString(fileA, fileAContent, Charset.defaultCharset())
+        Files.writeString(fileA, fileAContent)
 
         val cpg = Cpg.empty
         new PrivateKeyFilePass(cpg, Config().withInputPath(dir.toString)).createAndApply()

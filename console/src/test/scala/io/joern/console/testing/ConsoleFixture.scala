@@ -31,8 +31,8 @@ object ConsoleFixture {
         val barPath    = (codeDir / "dir2" / "bar.c")
         val barContent = "int bar(int x) { return x; }"
 
-        Files.writeString(fooPath, fooContent, Charset.defaultCharset())
-        Files.writeString(barPath, barContent, Charset.defaultCharset())
+        Files.writeString(fooPath, fooContent)
+        Files.writeString(barPath, barContent)
 
         val console = constructor(workspaceDir.toString)
         fun(console, codeDir)

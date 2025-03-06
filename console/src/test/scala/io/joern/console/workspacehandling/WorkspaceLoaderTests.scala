@@ -30,7 +30,7 @@ class WorkspaceLoaderTests extends AnyWordSpec with Matchers {
       FileUtil.usingTemporaryDirectory(tmpDirPrefix) { tmpDir =>
         Files.createDirectory(tmpDir / "1")
         val jsonPath = (tmpDir / "1" / "project.json")
-        Files.writeString(jsonPath, "{foo", Charset.defaultCharset())
+        Files.writeString(jsonPath, "{foo")
         TestLoader().load(tmpDir.toString).numberOfProjects shouldBe 0
       }
     }

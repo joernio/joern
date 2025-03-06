@@ -37,12 +37,12 @@ class ConsoleTests extends AnyWordSpec with Matchers {
         val fooDir     = (codeDir / "dir1" / "foo.c")
         val fooContent = "int main(int argc, char **argv) { char *ptr = 0x1 + argv; return argc; }"
 
-        Files.writeString(fooDir, fooContent, Charset.defaultCharset())
+        Files.writeString(fooDir, fooContent)
 
         val barDir     = (codeDir / "dir2" / "bar.c")
         val barContent = "int bar(int x) { return x; }"
 
-        Files.writeString(barDir, barContent, Charset.defaultCharset())
+        Files.writeString(barDir, barContent)
 
         fun(codeDir)
       }

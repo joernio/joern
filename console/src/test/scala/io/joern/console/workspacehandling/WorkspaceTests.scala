@@ -53,7 +53,7 @@ object WorkspaceTests {
 
     val projectJson = (workspaceFile / projectName / "project.json")
     val jsonContent = s"""{"inputPath":"foo","name":"$projectName"}"""
-    Files.writeString(projectJson, jsonContent, Charset.defaultCharset())
+    Files.writeString(projectJson, jsonContent)
 
     (workspaceFile / projectName / "cpg.bin").createWithParentsIfNotExists()
   }

@@ -19,7 +19,7 @@ class DependenciesPassTests extends JsSrc2CpgSuite {
     "ignore empty package.json" in {
       FileUtil.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
         val json = dir / PackageJsonParser.PackageJsonFilename
-        Files.writeString(json, "", Charset.defaultCharset())
+        Files.writeString(json, "")
         PackageJsonParser.isValidProjectPackageJson(json) shouldBe false
       }
     }
@@ -36,7 +36,7 @@ class DependenciesPassTests extends JsSrc2CpgSuite {
                         |  "private": true
                         |}
                         |""".stripMargin
-        Files.writeString(json, content, Charset.defaultCharset())
+        Files.writeString(json, content)
         PackageJsonParser.isValidProjectPackageJson(json) shouldBe false
       }
     }
@@ -44,7 +44,7 @@ class DependenciesPassTests extends JsSrc2CpgSuite {
     "ignore package.json without dependencies" in {
       FileUtil.usingTemporaryDirectory("jssrc2cpgTest") { dir =>
         val json = dir / PackageJsonParser.PackageJsonFilename
-        Files.writeString(json, "{}", Charset.defaultCharset())
+        Files.writeString(json, "{}")
         PackageJsonParser.isValidProjectPackageJson(json) shouldBe false
       }
     }

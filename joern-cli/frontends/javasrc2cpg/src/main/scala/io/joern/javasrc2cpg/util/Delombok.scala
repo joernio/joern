@@ -47,7 +47,7 @@ object Delombok {
       case Success(file) =>
         FileUtil.deleteOnExit(file)
         // Write classpath to a file to work around Windows length limits.
-        Files.writeString(file, System.getProperty("java.class.path"), Charset.defaultCharset())
+        Files.writeString(file, System.getProperty("java.class.path"))
         s"@${file.absolutePathAsString}"
 
       case Failure(t) =>

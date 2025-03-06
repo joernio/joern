@@ -96,7 +96,7 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
     val PROJECTFILE_NAME                      = "project.json"
     val content     = jsonWrite(Map("inputPath" -> projectFile.inputPath, "name" -> projectFile.name))
     val projectPath = dirPath.resolve(PROJECTFILE_NAME)
-    Files.writeString(projectPath, content, Charset.defaultCharset())
+    Files.writeString(projectPath, content)
     projectPath
   }
 

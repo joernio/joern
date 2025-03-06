@@ -25,7 +25,7 @@ class ClassParser(targetDir: Path) {
     FileUtil.deleteOnExit(f, swallowIOExceptions = true)
 
     Using(Source.fromResource("ClassParser.php")) { br =>
-      Files.writeString(f, br.getLines().mkString("\n"), Charset.defaultCharset())
+      Files.writeString(f, br.getLines().mkString("\n"))
     }
     f
   }
