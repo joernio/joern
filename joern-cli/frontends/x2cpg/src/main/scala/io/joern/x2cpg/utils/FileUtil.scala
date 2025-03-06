@@ -213,7 +213,7 @@ object FileUtil {
           )
 
           if (!entry.isDirectory) {
-            val zipStream = use(zipFile.getInputStream(entry))
+            val zipStream    = use(zipFile.getInputStream(entry))
             val outputStream = use(Files.newOutputStream(child))
             pipeTo(zipStream, outputStream, Array.ofDim[Byte](bufferSize))
           }
