@@ -14,7 +14,6 @@ import org.scalatest.Ignore
 import org.scalatest.Tag
 
 import java.nio.file.{Files, Path, Paths}
-import java.nio.charset.Charset
 import java.io.{BufferedInputStream, BufferedOutputStream, FileOutputStream, StreamTokenizer}
 import java.util.zip.ZipOutputStream
 import scala.util.{Properties, Try, Using, Success, Failure}

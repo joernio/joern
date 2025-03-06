@@ -7,7 +7,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 import java.nio.file.Files
-import java.nio.charset.Charset
 
 class PreprocessorPassTests extends AnyWordSpec with Matchers {
 

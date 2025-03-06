@@ -7,7 +7,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 import java.nio.file.{Files, Path, Paths}
-import java.nio.charset.Charset
 
 class WorkspaceManagerTests extends AnyWordSpec with Matchers {
 

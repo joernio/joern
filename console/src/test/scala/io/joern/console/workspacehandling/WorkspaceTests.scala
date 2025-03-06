@@ -9,7 +9,6 @@ import io.shiftleft.semanticcpg.testing.MockCpg
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.nio.charset.Charset
 import java.nio.file.{Files, Path}
 import scala.collection.mutable.ListBuffer
 

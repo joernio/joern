@@ -7,7 +7,6 @@ import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
-import java.nio.charset.Charset
 import java.nio.file.{Files, Path, Paths}
 import java.util.regex.Pattern
 import scala.collection.mutable

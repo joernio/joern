@@ -9,7 +9,6 @@ import scala.util.{Failure, Success, Try, Using}
 import java.nio.file.{Files, Path}
 import upickle.default.*
 
-import java.nio.charset.Charset
 import scala.collection.mutable
 
 /** Parses the high-level symbol information of a project.

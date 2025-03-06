@@ -7,7 +7,6 @@ import org.apache.commons.text.StringEscapeUtils
 import replpp.scripting.ScriptRunner
 
 import java.nio.file.{Files, Path}
-import java.nio.charset.Charset
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.util.Try

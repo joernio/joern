@@ -11,7 +11,6 @@ import io.joern.x2cpg.utils.FileUtil
 import io.joern.x2cpg.utils.FileUtil.*
 
 import java.nio.file.{Files, Paths, Path}
-import java.nio.charset.Charset
 
 class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
 

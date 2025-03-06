@@ -6,7 +6,6 @@ import io.joern.x2cpg.utils.FileUtil.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.nio.charset.Charset
 import java.nio.file.Files
 import scala.annotation.nowarn
 

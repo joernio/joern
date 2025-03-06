@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory
 import soot.options.Options
 import soot.{G, Scene}
 
-import java.nio.charset.Charset
 import java.nio.file.{Files, Path, Paths}
 import scala.jdk.CollectionConverters.{EnumerationHasAsScala, SeqHasAsJava}
 import scala.language.postfixOps

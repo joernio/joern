@@ -7,8 +7,6 @@ import java.nio.file.Files
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.nio.charset.Charset
-
 class WorkspaceLoaderTests extends AnyWordSpec with Matchers {
 
   private val tmpDirPrefix = "workspace-tests"

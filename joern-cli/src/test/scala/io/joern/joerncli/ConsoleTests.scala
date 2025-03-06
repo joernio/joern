@@ -6,7 +6,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 import java.nio.file.{Files, Path}
-import java.nio.charset.Charset
 
 class ConsoleTests extends AnyWordSpec with Matchers {
 

@@ -12,7 +12,6 @@ import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.utils.ProjectRoot
 
-import java.nio.charset.Charset
 import java.nio.file.{Files, Path, Paths}
 import scala.util.Try
 

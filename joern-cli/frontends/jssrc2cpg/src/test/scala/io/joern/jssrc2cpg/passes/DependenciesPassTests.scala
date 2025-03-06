@@ -10,7 +10,6 @@ import io.joern.x2cpg.utils.FileUtil
 import io.joern.x2cpg.utils.FileUtil.*
 
 import java.nio.file.{Files, Path}
-import java.nio.charset.Charset
 
 class DependenciesPassTests extends JsSrc2CpgSuite {
 
