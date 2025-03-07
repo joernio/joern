@@ -8,7 +8,6 @@ import io.joern.javasrc2cpg.typesolvers.JdkJarTypeSolver.*
 import io.joern.x2cpg.SourceFiles
 import javassist.{ClassPath, CtClass}
 import org.slf4j.LoggerFactory
-import better.files.File.VisitOptions
 
 import java.io.IOException
 import java.util.jar.JarFile
@@ -142,7 +141,7 @@ object JdkJarTypeSolver {
   private def determineJarPaths(jdkPath: String): List[String] = {
     // not following symlinks, because some setups might have a loop, e.g. AWS's Corretto
     // see https://github.com/joernio/joern/pull/3871
-    val jarPaths = SourceFiles.determine(jdkPath, Set(JarExtension, JmodExtension))(VisitOptions.default)
+    val jarPaths = SourceFiles.determine(jdkPath, Set(JarExtension, JmodExtension))(Seq.empty)
     if (jarPaths.isEmpty) {
       throw new IllegalArgumentException(s"No .jar or .jmod files found at JDK path ${jdkPath}")
     }

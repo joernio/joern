@@ -1,6 +1,5 @@
 package io.joern.php2cpg.passes
 
-import better.files.File
 import io.joern.php2cpg.parser.ClassParser
 import io.joern.php2cpg.parser.ClassParser.*
 import io.joern.x2cpg.ValidationMode.Disabled

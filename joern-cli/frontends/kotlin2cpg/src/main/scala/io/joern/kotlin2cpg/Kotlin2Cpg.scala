@@ -1,6 +1,5 @@
 package io.joern.kotlin2cpg
 
-import better.files.File
 import io.joern.kotlin2cpg.compiler.CompilerAPI
 import io.joern.kotlin2cpg.compiler.ErrorLoggingMessageCollector
 import io.joern.kotlin2cpg.files.SourceFilesPicker
@@ -16,6 +15,8 @@ import io.joern.x2cpg.passes.frontend.TypeNodePass
 import io.joern.x2cpg.utils.dependency.DependencyResolver
 import io.joern.x2cpg.utils.dependency.DependencyResolverParams
 import io.joern.x2cpg.utils.dependency.GradleConfigKeys
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import io.joern.x2cpg.SourceFiles.filterFile
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
@@ -30,6 +31,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
+import scala.jdk.StreamConverters.StreamHasToScala
 import scala.util.Try
 import scala.util.matching.Regex
 
@@ -242,7 +244,10 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
   }
 
   private def importNamesForFilesAtPaths(paths: Seq[String]): Seq[String] = {
-    paths.flatMap(File(_).lines.filter(_.startsWith("import")).toSeq).map(ImportPattern.replaceAllIn(_, "$1").trim)
+    paths.flatMap { x =>
+      val file = Paths.get(x)
+      Files.lines(file).filter(_.startsWith("import")).toScala(Seq).map(ImportPattern.replaceAllIn(_, "$1").trim)
+    }
   }
 
   private def gatherGradleParams(config: Config) = {
@@ -284,9 +289,10 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
 
   private def findJarsIn(dirs: Set[String]) = {
     dirs.foldLeft(Seq[String]())((acc, classpathEntry) => {
-      val f = File(classpathEntry)
+      val f = Paths.get(classpathEntry)
       val files =
-        if (f.isDirectory) f.listRecursively.filter(_.extension.getOrElse("") == JarExtension).map(_.toString)
+        if (Files.isDirectory(f))
+          f.walk().filterNot(_ == f).filter(_.extension().getOrElse("") == JarExtension).map(_.toString)
         else Seq()
       acc ++ files
     })

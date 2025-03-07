@@ -1,6 +1,5 @@
 package io.joern.console.cpgcreation
 
-import better.files.File
 import io.joern.console.FrontendConfig
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
@@ -34,7 +33,7 @@ case class SwiftSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends 
   }
 
   override def isAvailable: Boolean =
-    command.toFile.exists
+    Files.exists(command)
 
   override def applyPostProcessingPasses(cpg: Cpg): Cpg = {
     swiftsrc2cpg.postProcessingPasses(cpg, typeRecoveryConfig).foreach(_.createAndApply())

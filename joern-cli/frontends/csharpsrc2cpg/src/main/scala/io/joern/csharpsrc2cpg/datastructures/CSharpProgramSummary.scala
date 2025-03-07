@@ -1,6 +1,5 @@
 package io.joern.csharpsrc2cpg.datastructures
 
-import better.files.File.VisitOptions
 import io.joern.csharpsrc2cpg.Constants
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.datastructures.{FieldLike, MethodLike, OverloadableMethod, ProgramSummary, TypeLike}
@@ -115,7 +114,7 @@ object CSharpProgramSummary {
     CSharpProgramSummary(fromExternalJsons(paths))
 
   private def fromExternalJsons(paths: Set[String]): NamespaceToTypeMap = {
-    val jsonFiles = paths.flatMap(SourceFiles.determine(_, Set(".json"))(VisitOptions.default)).toList
+    val jsonFiles = paths.flatMap(SourceFiles.determine(_, Set(".json"))(Seq.empty)).toList
     val inputStreams = jsonFiles.flatMap { path =>
       Try(java.io.FileInputStream(path)) match {
         case Success(stream) => Some(stream)

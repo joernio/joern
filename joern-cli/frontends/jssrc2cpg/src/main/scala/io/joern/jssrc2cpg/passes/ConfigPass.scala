@@ -1,6 +1,5 @@
 package io.joern.jssrc2cpg.passes
 
-import better.files.File
 import io.joern.jssrc2cpg.Config
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
@@ -11,28 +10,30 @@ import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.utils.IOUtils
 import org.slf4j.{Logger, LoggerFactory}
 
-class ConfigPass(cpg: Cpg, config: Config, report: Report = new Report()) extends ForkJoinParallelCpgPass[File](cpg) {
+import java.nio.file.{Files, Path, Paths}
+
+class ConfigPass(cpg: Cpg, config: Config, report: Report = new Report()) extends ForkJoinParallelCpgPass[Path](cpg) {
 
   private val logger: Logger = LoggerFactory.getLogger(getClass)
 
   protected val allExtensions: Set[String]      = Set(".json", ".js", ".vue", ".html", ".pug")
   protected val selectedExtensions: Set[String] = Set(".json", ".config.js", ".conf.js", ".vue", ".html", ".pug")
 
-  override def generateParts(): Array[File] =
+  override def generateParts(): Array[Path] =
     configFiles(config, allExtensions).toArray
 
-  protected def fileContent(file: File): Seq[String] =
-    IOUtils.readLinesInFile(file.path)
+  protected def fileContent(file: Path): Seq[String] =
+    IOUtils.readLinesInFile(file)
 
-  protected def configFiles(config: Config, extensions: Set[String]): Seq[File] =
+  protected def configFiles(config: Config, extensions: Set[String]): Seq[Path] =
     SourceFiles
       .determine(config.inputPath, extensions)
       .filterNot(_.contains(Defines.NodeModulesFolder))
       .filter(f => selectedExtensions.exists(f.endsWith))
-      .map(File(_))
+      .map(Paths.get(_))
 
-  override def runOnPart(diffGraph: DiffGraphBuilder, file: File): Unit = {
-    val path = File(config.inputPath).path.toAbsolutePath.relativize(file.path).toString
+  override def runOnPart(diffGraph: DiffGraphBuilder, file: Path): Unit = {
+    val path = Paths.get(config.inputPath).toAbsolutePath.relativize(file).toString
     logger.debug(s"Adding file '$path' as config.")
     val (gotCpg, duration) = TimeUtils.time {
       val localDiff  = Cpg.newDiffGraphBuilder

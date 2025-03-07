@@ -397,7 +397,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       overlayDirs.foreach { dir =>
         Files.isDirectory(Paths.get(dir.getPath)) shouldBe true
         Paths.get(dir.getPath).listFiles().foreach { file =>
-          Try { file.getFileName.toString.split("_").head.toInt }.isSuccess shouldBe true
+          Try { file.fileName.split("_").head.toInt }.isSuccess shouldBe true
           isZipFile(file) shouldBe true
         }
       }

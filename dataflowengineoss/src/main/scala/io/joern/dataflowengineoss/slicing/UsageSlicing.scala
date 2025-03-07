@@ -7,6 +7,7 @@ import io.shiftleft.codepropertygraph.generated.{Operators, Properties}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 
+import java.nio.file.{Files, Paths}
 import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.regex.Pattern
@@ -71,7 +72,7 @@ object UsageSlicing {
       .map { case (method, slices) =>
         MethodUsageSlice(
           code =
-            if (config.excludeMethodSource || !better.files.File(method.filename).exists) ""
+            if (config.excludeMethodSource || !Files.exists(Paths.get(method.filename))) ""
             else Try(dump(method.location, language, root, highlight = false, withArrow = false)).getOrElse(""),
           fullName = method.fullName,
           fileName = method.filename,

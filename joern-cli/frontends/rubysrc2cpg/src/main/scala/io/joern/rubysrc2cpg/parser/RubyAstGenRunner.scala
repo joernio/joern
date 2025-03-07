@@ -1,6 +1,5 @@
 package io.joern.rubysrc2cpg.parser
 
-import better.files.File
 import io.joern.rubysrc2cpg.Config
 import io.joern.rubysrc2cpg.parser.RubyAstGenRunner.ExecutionEnvironment
 import io.joern.x2cpg.SourceFiles
@@ -58,8 +57,8 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
     }
   }
 
-  override def fileFilter(file: String, out: File): Boolean = {
-    file.stripSuffix(".json").replace(out.pathAsString, config.inputPath) match {
+  override def fileFilter(file: String, out: Path): Boolean = {
+    file.stripSuffix(".json").replace(out.toString, config.inputPath) match {
       case filePath if isIgnoredByUserConfig(filePath)   => false
       case filePath if isIgnoredByDefaultRegex(filePath) => false
       case filePath if filePath.endsWith(".csproj")      => false
@@ -71,7 +70,7 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
     config.defaultIgnoredFilesRegex.exists(_.matches(filePath))
   }
 
-  override def skippedFiles(in: File, astGenOut: List[String]): List[String] = {
+  override def skippedFiles(in: Path, astGenOut: List[String]): List[String] = {
     val diagnosticMap = mutable.LinkedHashMap.empty[String, Seq[String]]
 
     def addReason(reason: String, lastFile: Option[String] = None) = {
@@ -107,7 +106,7 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
     }.toList
   }
 
-  override def runAstGenNative(in: String, out: File, exclude: String, include: String)(implicit
+  override def runAstGenNative(in: String, out: Path, exclude: String, include: String)(implicit
     metaData: AstGenProgramMetaData
   ): Try[Seq[String]] = {
     val scriptTarget = Files.createTempFile("ruby_driver", ".rb")
@@ -145,16 +144,16 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
     }
   }
 
-  override def execute(out: File): AstGenRunnerResult = {
+  override def execute(out: Path): AstGenRunnerResult = {
     execute(out, config)
   }
 
   /** Extends the interfaces' `execute` function to account for possibly varying configurations when running this runner
     * for multiple executions.
     */
-  def execute(out: File, specifiedConfig: Config): AstGenRunnerResult = {
+  def execute(out: Path, specifiedConfig: Config): AstGenRunnerResult = {
     implicit val metaData: AstGenProgramMetaData = specifiedConfig.astGenMetaData
-    val in                                       = File(config.inputPath)
+    val in                                       = Paths.get(config.inputPath)
     logger.info(s"Running ${metaData.name} on '${specifiedConfig.inputPath}'")
 
     val combineIgnoreRegex =
