@@ -13,6 +13,7 @@ import java.io.{ByteArrayOutputStream, IOException, File as JFile}
 import java.nio.file.{Files, Path, Paths}
 import java.util.stream.Collectors
 import scala.collection.mutable
+import scala.io.Source
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Random, Success, Try, Using}
 
@@ -58,249 +59,19 @@ object GradleDependencies {
     }
 
     def addSurroundingQuotes(input: String): String = s"\"$input\""
-    val projectNameOverrideString                   = projectNameOverride.map(addSurroundingQuotes).getOrElse("")
-    val configurationNameOverrideString             = configurationNameOverride.map(addSurroundingQuotes).getOrElse("")
+    val projectNameOverrideString       = s"[${projectNameOverride.map(addSurroundingQuotes).getOrElse("")}]"
+    val configurationNameOverrideString = s"[${configurationNameOverride.map(addSurroundingQuotes).getOrElse("")}]"
 
-    s"""
-       |import java.nio.file.Path
-       |import java.nio.file.Files
-       |import java.nio.file.StandardCopyOption
-       |
-       |abstract class FetchDependencies extends DefaultTask {
-       |
-       |  FetchDependencies() {
-       |    outputs.upToDateWhen { false }
-       |  }
-       |
-       |  @Input
-       |  abstract SetProperty<String> getConfigurationNameOverrides()
-       |
-       |  @Input
-       |  abstract SetProperty<String> getProjectNameOverrides()
-       |
-       |  @OutputDirectory
-       |  abstract Property<String> getDestinationDirString()
-       |
-       |  /**
-       |   * If one project in the build has a different project in the build as a dependency,
-       |   * then fetching jars for all dependencies will include the packaged jar for that
-       |   * subproject. Since the source for that subproject is already used for dependency
-       |   * information, those dependency jars should be excluded. This is done by traversing
-       |   * the dependency graph and only adding dependencies with names/descriptors not starting
-       |   * with `project` or `root project` to the list of dependencies to fetch.
-       |   *
-       |   * This is a modified version of an example from the documentation without the
-       |   * rootVariant parameter as this is not supported in Gradle 7.
-       |   * See https://docs.gradle.org/current/userguide/dependency_graph_resolution.html
-       |   */
-       |  HashSet<String> getExternalDependencyNames(
-       |    ResolvedComponentResult rootComponent,
-       |    String configurationName
-       |  ) {
-       |    Set<String> artifactsToFetch = new HashSet<>()
-       |    Set<ResolvedVariantResult> seen = new HashSet<>()
-       |    def maybeRootVariant =
-       |      rootComponent.getVariants().stream()
-       |        .filter(variant -> variant.getDisplayName() == configurationName)
-       |        .findFirst()
-       |
-       |    if (maybeRootVariant.isPresent()) {
-       |      def rootVariant = maybeRootVariant.get()
-       |      seen.add(rootVariant)
-       |
-       |      def stack = new ArrayDeque<Tuple2<ResolvedVariantResult, ResolvedComponentResult>>()
-       |      stack.addFirst(new Tuple2(rootVariant, rootComponent))
-       |
-       |      while (!stack.isEmpty()) {
-       |        def entry = stack.removeFirst()
-       |        def variant = entry.v1
-       |        def component = entry.v2
-       |        def variantId = variant.owner.displayName
-       |        if (!(variantId.startsWith("project") || variantId.startsWith("root project"))) {
-       |          artifactsToFetch.add(variantId)
-       |        }
-       |
-       |        // Traverse this variant's dependencies
-       |        for (dependency in component.getDependenciesForVariant(variant)) {
-       |          if (dependency instanceof UnresolvedDependencyResult) {
-       |            System.err.println("Unresolved dependency $$dependency")
-       |            continue
-       |          }
-       |          if ((!dependency instanceof ResolvedDependencyResult)) {
-       |            System.err.println("Unknown dependency type: $$dependency")
-       |            continue
-       |          }
-       |
-       |          def resolved = dependency as ResolvedDependencyResult
-       |          if (!dependency.constraint) {
-       |            def toVariant = resolved.resolvedVariant
-       |
-       |            if (seen.add(toVariant)) {
-       |              stack.addFirst(new Tuple2(toVariant, resolved.selected))
-       |            }
-       |          }
-       |        }
-       |      }
-       |    }
-       |
-       |    return artifactsToFetch
-       |  }
-       |
-       |
-       |
-       |  String getProjectFullName(Project project) {
-       |    def projectString = project.toString()
-       |    if (projectString.startsWith("root project")) {
-       |      return ""
-       |    } else {
-       |      return projectString.substring("project ':".length(), projectString.length() - 1)
-       |    }
-       |  }
-       |
-       |  /**
-       |   * Checking if a configuration is valid:
-       |   *  - If configuration overrides are set, then the configuration name must appear in the overrides list
-       |   *  - If no overrides are set, the configuration name must start with release or runtime
-       |   */
-       |  List<Configuration> getValidConfigurations(Project project) {
-       |    def configurationOverrides = configurationNameOverrides.get()
-       |    def validConfigurations = []
-       |
-       |    for (configuration in project.configurations) {
-       |      if (configuration.canBeResolved) {
-       |        def configurationName = configuration.name
-       |        if (configurationOverrides.isEmpty()) {
-       |          if (configurationName.startsWith("release") || configurationName.startsWith("runtime")) {
-       |            validConfigurations << configuration
-       |          }
-       |        } else if (configurationOverrides.contains(configurationName)) {
-       |          validConfigurations << configuration
-       |        }
-       |      }
-       |    }
-       |
-       |    return validConfigurations
-       |  }
-       |
-       |  void linkOrCopyFileToDestination(File artifactFile, Path destinationDir) {
-       |    try {
-       |      Files.createSymbolicLink(
-       |        destinationDir.resolve(artifactFile.name),
-       |        Path.of(artifactFile.getPath())
-       |      )
-       |    } catch (Exception e) {
-       |      Files.copy(
-       |        Path.of(artifactFile.getPath()),
-       |        destinationDir.resolve(artifactFile.name),
-       |        StandardCopyOption.REPLACE_EXISTING
-       |      )
-       |    }
-       |  }
-       |
-       |  // See https://docs.gradle.org/current/userguide/artifact_views.html
-       |  // See https://docs.gradle.org/current/userguide/artifact_resolution.html#artifact-resolution for more information
-       |  void fetchArtifactsForConfiguration(Configuration configuration, Path destinationDir) {
-       |    for (resolvedArtifacts in configuration.incoming.getResolutionResult()) {
-       |      def artifactsToFetch = getExternalDependencyNames(
-       |        resolvedArtifacts.rootComponent.get(),
-       |        configuration.name
-       |      )
-       |
-       |      def filteredArtifacts = configuration.incoming.artifactView {
-       |        componentFilter {
-       |          artifactsToFetch.contains(it.toString())
-       |        }
-       |      }
-       |
-       |      for (artifactFile in filteredArtifacts.files) {
-       |        linkOrCopyFileToDestination(artifactFile, destinationDir)
-       |      }
-       |    }
-       |  }
-       |
-       |  boolean shouldFetchDependencies(String projectFullName) {
-       |    return projectNameOverrides.get().isEmpty() ||
-       |      projectFullName.isEmpty() ||
-       |      projectNameOverrides.get().contains(projectFullName)
-       |  }
-       |
-       |  @TaskAction
-       |  void fetch() {
-       |    // TODO Need to update direct project access for gradle 9:
-       |    //      See https://docs.gradle.org/8.12.1/userguide/upgrading_version_7.html#task_project
-       |    def project_ = project
-       |    def projectFullName = getProjectFullName(project_)
-       |
-       |    if (shouldFetchDependencies(projectFullName)) {
-       |      def validConfigurations = getValidConfigurations(project_)
-       |
-       |      if (!validConfigurations.isEmpty()) {
-       |        def destinationDir =
-       |          projectFullName.isEmpty() ? Path.of(destinationDirString.get()) : Path.of(destinationDirString.get(), projectFullName.replace(':', '/'))
-       |        Files.createDirectories(destinationDir)
-       |
-       |        validConfigurations.forEach { fetchArtifactsForConfiguration(it, destinationDir) }
-       |      }
-       |    }
-       |  }
-       |}
-       |
-       |allprojects { project ->
-       |  def taskName = "$taskName"
-       |  def compileDepsCopyTaskName = taskName + "_compileDeps"
-       |  def androidDepsCopyTaskName = taskName + "_androidDeps"
-       |  def destinationDir = "$destinationDir"
-       |  def defaultProjectName = "$defaultGradleAppName"
-       |  // If these overrides are non-empty, only fetch dependencies for the given names
-       |  Set<String> projectNameOverrides_ = [$projectNameOverrideString]
-       |  Set<String> configurationNameOverrides_ = [$configurationNameOverrideString]
-       |
-       |  def hasAndroidProperty = false
-       |  for (property in project.properties.keySet()) {
-       |    if (property.startsWith("android") || property.startsWith(".android")) {
-       |      hasAndroidProperty = true
-       |      break
-       |    }
-       |  }
-       |
-       |  if (hasAndroidProperty) {
-       |    $taskCreationFunction(androidDepsCopyTaskName, Copy) {
-       |      def paths = project.configurations.find { it.name.equals("androidApis") }
-       |      if (paths == null) paths = []
-       |      duplicatesStrategy = 'include'
-       |      into destinationDir
-       |      from paths
-       |    }
-       |  }
-       |
-       |  $taskCreationFunction(compileDepsCopyTaskName, FetchDependencies) {
-       |    projectNameOverrides = projectNameOverrides_
-       |    configurationNameOverrides = configurationNameOverrides_
-       |    destinationDirString = destinationDir
-       |  }
-       |
-       |  if (project == project.rootProject) {
-       |    def defaultSubproject = project.subprojects.stream()
-       |      .filter { it.name == defaultProjectName }
-       |      .findFirst()
-       |
-       |    if (projectNameOverrides_.isEmpty() && defaultSubproject.isPresent()) {
-       |      def subproj = defaultSubproject.get()
-       |      println("Only fetching dependecies for default subproject $$defaultProjectName since it is present with no overrides")
-       |      $taskCreationFunction(taskName) {
-       |          dependsOn subproj.getTasksByName(androidDepsCopyTaskName, false)
-       |          dependsOn subproj.getTasksByName(compileDepsCopyTaskName, false)
-       |      }
-       |    } else {
-       |      $taskCreationFunction(taskName) {
-       |          dependsOn project.getTasksByName(androidDepsCopyTaskName, true)
-       |          dependsOn project.getTasksByName(compileDepsCopyTaskName, true)
-       |      }
-       |    }
-       |  }
-       |}
-       |
-       |""".stripMargin
+    Source
+      .fromResource("io/joern/x2cpg/utils/dependency/dependency-fetcher-init.gradle")
+      .getLines()
+      .mkString(System.lineSeparator())
+      .replaceAll("__projectNameOverrides__", projectNameOverrideString)
+      .replaceAll("__configurationNameOverrides__", configurationNameOverrideString)
+      .replaceAll("__taskNameString__", addSurroundingQuotes(taskName))
+      .replaceAll("__destinationDirString__", addSurroundingQuotes(destinationDir))
+      .replaceAll("__defaultProjectNameString__", addSurroundingQuotes(defaultGradleAppName))
+      .replaceAll("tasks.register", taskCreationFunction)
   }
 
   private def getGradleVersionMajorMinor(connection: ProjectConnection): GradleVersion = {
