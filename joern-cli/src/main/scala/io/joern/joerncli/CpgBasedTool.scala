@@ -1,12 +1,13 @@
 package io.joern.joerncli
 
-import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
+
+import java.nio.file.{Files, Paths}
 
 object CpgBasedTool {
 
@@ -36,7 +37,7 @@ object CpgBasedTool {
   /** Create an informational string for the user that informs of a successfully generated CPG.
     */
   def newCpgCreatedString(path: String): String = {
-    val absolutePath = File(path).path.toAbsolutePath
+    val absolutePath = Paths.get(path).toAbsolutePath
     s"Successfully wrote graph to: $absolutePath\n" +
       s"To load the graph, type `joern $absolutePath`"
   }
@@ -55,9 +56,9 @@ object CpgBasedTool {
   }
 
   def exitIfInvalid(outDir: String, cpgFileName: String): Unit = {
-    if (File(outDir).exists)
+    if (Files.exists(Paths.get(outDir)))
       exitWithError(s"Output directory `$outDir` already exists.")
-    if (File(cpgFileName).notExists)
+    if (Files.notExists(Paths.get(cpgFileName)))
       exitWithError(s"CPG at $cpgFileName does not exist.")
   }
 

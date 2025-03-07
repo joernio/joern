@@ -1,8 +1,9 @@
 package io.joern.c2cpg.parser
 
-import better.files.File
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.parser.JSONCompilationDatabaseParser.CommandObject
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.utils.IOUtils
 import org.eclipse.cdt.core.dom.ast.IASTPreprocessorStatement
 import org.eclipse.cdt.core.dom.ast.IASTTranslationUnit
@@ -15,8 +16,7 @@ import org.eclipse.cdt.core.parser.ScannerInfo
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.CPPVisitor
 import org.slf4j.LoggerFactory
 
-import java.nio.file.NoSuchFileException
-import java.nio.file.Path
+import java.nio.file.{Files, NoSuchFileException, Path, Paths}
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.util.Failure
@@ -27,9 +27,9 @@ object CdtParser {
 
   private val logger = LoggerFactory.getLogger(classOf[CdtParser])
 
-  private def readFileAsFileContent(file: File, lines: Option[Array[Char]] = None): FileContent = {
-    val codeLines = lines.getOrElse(IOUtils.readLinesInFile(file.path).mkString("\n").toArray)
-    FileContent.create(file.pathAsString, true, codeLines)
+  private def readFileAsFileContent(file: Path, lines: Option[Array[Char]] = None): FileContent = {
+    val codeLines = lines.getOrElse(IOUtils.readLinesInFile(file).mkString("\n").toArray)
+    FileContent.create(file.toString, true, codeLines)
   }
 
   private case class ParseResult(
@@ -80,13 +80,13 @@ class CdtParser(
     }
   }
 
-  private def parseInternal(file: File): ParseResult = {
-    if (file.isRegularFile) { // handling potentially broken symlinks
+  private def parseInternal(file: Path): ParseResult = {
+    if (Files.isRegularFile(file)) { // handling potentially broken symlinks
       try {
-        val fileContent         = readFileAsFileContent(file.path)
+        val fileContent         = readFileAsFileContent(file)
         val fileContentProvider = new CustomFileContentProvider(headerFileFinder)
-        val lang                = createParseLanguage(file.path, fileContent.toString)
-        val scannerInfo         = createScannerInfo(file.path)
+        val lang                = createParseLanguage(file, fileContent.toString)
+        val scannerInfo         = createScannerInfo(file)
         val translationUnit = lang.getASTTranslationUnit(fileContent, scannerInfo, fileContentProvider, null, opts, log)
         val problems        = CPPVisitor.getProblems(translationUnit)
         if (parserConfig.logProblems) logProblems(problems.toList)
@@ -107,8 +107,7 @@ class CdtParser(
     } else {
       ParseResult(
         None,
-        failure =
-          Option(new NoSuchFileException(s"File '${file.pathAsString}' does not exist. Check for broken symlinks!"))
+        failure = Option(new NoSuchFileException(s"File '${file.toString}' does not exist. Check for broken symlinks!"))
       )
     }
   }
@@ -124,7 +123,7 @@ class CdtParser(
   private def preprocessedFileIsFromCPPFile(file: Path, code: String): Boolean = {
     if (config.withPreprocessedFiles && FileDefaults.hasPreprocessedFileExtension(file.toString)) {
       val fileWithoutExt  = file.toString.substring(0, file.toString.lastIndexOf("."))
-      val filesWithCPPExt = FileDefaults.CppFileExtensions.map(ext => File(s"$fileWithoutExt$ext").name)
+      val filesWithCPPExt = FileDefaults.CppFileExtensions.map(ext => Paths.get(s"$fileWithoutExt$ext").fileName)
       code.linesIterator.exists(line => filesWithCPPExt.exists(f => line.contains(s"\"$f\"")))
     } else {
       false
@@ -153,11 +152,11 @@ class CdtParser(
     }
   }
 
-  private def parseInternal(code: String, inFile: File): IASTTranslationUnit = {
+  private def parseInternal(code: String, inFile: Path): IASTTranslationUnit = {
     val fileContent         = FileContent.create(inFile.toString, true, code.toCharArray)
     val fileContentProvider = new CustomFileContentProvider(headerFileFinder)
-    val lang                = createParseLanguage(inFile.path, code)
-    val scannerInfo         = createScannerInfo(inFile.path)
+    val lang                = createParseLanguage(inFile, code)
+    val scannerInfo         = createScannerInfo(inFile)
     val translationUnit     = lang.getASTTranslationUnit(fileContent, scannerInfo, fileContentProvider, null, opts, log)
     val problems            = CPPVisitor.getProblems(translationUnit)
     if (parserConfig.logProblems) logProblems(problems.toList)

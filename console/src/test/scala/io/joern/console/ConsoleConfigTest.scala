@@ -1,9 +1,10 @@
 package io.joern.console
 
-import better.files.File
 import io.shiftleft.utils.ProjectRoot
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import java.nio.file.Paths
 
 class ConsoleConfigTest extends AnyWordSpec with Matchers {
   "An InstallConfig" should {
@@ -14,7 +15,7 @@ class ConsoleConfigTest extends AnyWordSpec with Matchers {
 
     "set the rootPath to SHIFTLEFT_OCULAR_INSTALL_DIR if it is defined" in {
       val config = new InstallConfig(environment = Map("SHIFTLEFT_OCULAR_INSTALL_DIR" -> "/tmp"))
-      config.rootPath shouldBe File("/tmp")
+      config.rootPath shouldBe Paths.get("/tmp")
     }
 
     "copy config with params correctly" in {

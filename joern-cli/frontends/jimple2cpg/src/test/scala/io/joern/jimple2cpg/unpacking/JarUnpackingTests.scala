@@ -1,8 +1,7 @@
 package io.joern.jimple2cpg.unpacking
 
-import better.files.File
 import io.joern.jimple2cpg.{Config, Jimple2Cpg}
-import io.joern.jimple2cpg.util.ProgramHandlingUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.utils.ProjectRoot
@@ -47,10 +46,11 @@ class JarUnpackingTests extends AnyWordSpec with Matchers with BeforeAndAfterAll
 
   "'resources/unpacking' should contain 'HelloWorld.jar' and 'NestedHelloWorld.jar'" in {
     val targetDir = ProjectRoot.relativise("joern-cli/frontends/jimple2cpg/src/test/resources/unpacking")
-    File(targetDir)
+    Paths
+      .get(targetDir)
       .walk()
-      .filter(f => f.isRegularFile && f.extension.exists(_ == ".jar"))
-      .map(_.name)
+      .filter(f => Files.isRegularFile(f) && f.extension().exists(_ == ".jar"))
+      .map(_.fileName)
       .toSet shouldBe Set("HelloWorld.jar", "NestedHelloWorld.jar")
   }
 

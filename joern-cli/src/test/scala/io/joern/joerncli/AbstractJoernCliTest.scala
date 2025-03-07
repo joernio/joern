@@ -1,6 +1,5 @@
 package io.joern.joerncli
 
-import better.files.File
 import io.joern.console.FrontendConfig
 import io.joern.console.cpgcreation.{CCpgGenerator, JsSrcCpgGenerator}
 import io.joern.x2cpg.frontendspecific.jssrc2cpg
@@ -15,11 +14,11 @@ import scala.util.Failure
 
 trait AbstractJoernCliTest {
 
-  protected def withTestCpg[T](file: File, language: String = Languages.C)(f: ((Cpg, String)) => T): T = {
+  protected def withTestCpg[T](file: Path, language: String = Languages.C)(f: ((Cpg, String)) => T): T = {
     f(loadTestCpg(file, language))
   }
 
-  private def loadTestCpg(file: File, language: String = Languages.C): (Cpg, String) = {
+  private def loadTestCpg(file: Path, language: String = Languages.C): (Cpg, String) = {
     val tmpFile        = FileUtil.newTemporaryFile("cpg", "bin")
     val cpgOutFileName = tmpFile.toString
     FileUtil.delete(tmpFile)
@@ -28,7 +27,7 @@ trait AbstractJoernCliTest {
       case Languages.C | Languages.CSHARP         => CCpgGenerator(new FrontendConfig(), relativePath("c2cpg"))
       case Languages.JSSRC | Languages.JAVASCRIPT => JsSrcCpgGenerator(new FrontendConfig(), relativePath("jssrc2cpg"))
     }
-    cpgGenerator.generate(inputPath = file.pathAsString, outputPath = cpgOutFileName) match {
+    cpgGenerator.generate(inputPath = file.toString, outputPath = cpgOutFileName) match {
       case Failure(exception) => throw new AssertionError("error while invoking cpgGenerator", exception)
       case _                  =>
     }

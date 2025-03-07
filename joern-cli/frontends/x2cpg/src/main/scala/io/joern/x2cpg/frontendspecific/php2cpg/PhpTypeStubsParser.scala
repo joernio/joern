@@ -1,6 +1,5 @@
 package io.joern.x2cpg.frontendspecific.php2cpg
 
-import better.files.File
 import io.joern.x2cpg.X2CpgConfig
 import io.joern.x2cpg.passes.frontend.{TypeStubsParserConfig, XTypeStubsParserConfig}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators, PropertyNames}
@@ -11,8 +10,6 @@ import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import org.slf4j.{Logger, LoggerFactory}
 import scopt.OParser
 
-import java.io.File as JFile
-import java.nio.file.Paths
 import scala.io.Source
 
 // Corresponds to a parsed row in the known functions file

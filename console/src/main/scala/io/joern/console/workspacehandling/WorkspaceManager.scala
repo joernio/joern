@@ -335,7 +335,7 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
   }
 
   private def unloadCpgIfExists(name: String): Unit = {
-    projectByName(projectDir(name).getFileName.toString)
+    projectByName(projectDir(name).fileName)
       .flatMap(_.cpg)
       .foreach { c =>
         try {
@@ -409,9 +409,9 @@ object WorkspaceManager {
     Paths
       .get(dirName)
       .listFiles()
-      .filter(f => Files.isRegularFile(f) && f.getFileName.toString != BASE_CPG_FILENAME)
+      .filter(f => Files.isRegularFile(f) && f.fileName != BASE_CPG_FILENAME)
       .toList
-      .sortBy(_.getFileName.toString)
+      .sortBy(_.fileName)
   }
 
 }

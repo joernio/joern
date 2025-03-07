@@ -1,6 +1,5 @@
 package io.joern.console
 
-import better.files.*
 import io.shiftleft.utils.ProjectRoot
 import io.joern.x2cpg.utils.FileUtil
 import io.joern.x2cpg.utils.FileUtil.*
@@ -9,8 +8,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.Ignore
 import org.scalatest.Tag
 
-import java.nio.file.Files
-
+import java.nio.file.{Files, Paths}
 import scala.jdk.CollectionConverters.*
 import java.nio.file.attribute.PosixFilePermission
 
@@ -52,10 +50,10 @@ class PluginManagerTests extends AnyWordSpec with Matchers {
     "remove existing plugin" taggedAs OnlyUnderUnix in Fixture() { manager =>
       val testZipFileName = ProjectRoot.relativise("console/src/test/resources/test.zip")
       manager.add(testZipFileName)
-      manager.rm("test").map(x => File(x).name).toSet shouldBe Set("joernext-test-foo.jar")
+      manager.rm("test").map(x => Paths.get(x).fileName).toSet shouldBe Set("joernext-test-foo.jar")
       manager.listPlugins() shouldBe List()
       manager.add(testZipFileName)
-      manager.rm("test").map(x => File(x).name).toSet shouldBe Set("joernext-test-foo.jar")
+      manager.rm("test").map(x => Paths.get(x).fileName).toSet shouldBe Set("joernext-test-foo.jar")
       manager.listPlugins() shouldBe List()
     }
 
@@ -89,7 +87,7 @@ object Fixture {
     Files.writeString(extender, extenderContents)
     Files.setPosixFilePermissions(extender, Set(PosixFilePermission.OWNER_EXECUTE).asJava)
 
-    val result = f(new PluginManager(File(dir)))
+    val result = f(new PluginManager(dir))
     FileUtil.delete(dir)
     result
   }

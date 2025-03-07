@@ -1,6 +1,5 @@
 package io.joern.console
 
-import better.files.File
 import dotty.tools.repl.State
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
@@ -18,11 +17,11 @@ import io.joern.x2cpg.utils.FileUtil
 import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 
-import java.nio.file.{Paths, StandardCopyOption}
+import java.nio.file.{Files, Path, Paths, StandardCopyOption}
 import scala.util.control.NoStackTrace
 import scala.util.{Failure, Success, Try}
 
-class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.currentWorkingDirectory)(implicit
+class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: Path = Paths.get(""))(implicit
   availableWidthProvider: AvailableWidthProvider
 ) extends Reporting {
 
@@ -33,7 +32,7 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
   def console: Console[T]   = this
 
   protected var workspaceManager: WorkspaceManager[T] = scala.compiletime.uninitialized
-  switchWorkspace(baseDir.path.resolve("workspace").toString)
+  switchWorkspace(baseDir.resolve("workspace").toString)
   protected def workspacePathName: String = workspaceManager.getPath
 
   private val nameOfCpgInProject = "cpg.bin"
@@ -200,7 +199,7 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
                  |"""
   )
   def openForInputPath(inputPath: String): Option[Project] = {
-    val absInputPath = File(inputPath).path.toAbsolutePath.toString
+    val absInputPath = Paths.get(inputPath).absolutePathAsString
     workspace.projects
       .filter(x => x.inputPath == absInputPath)
       .map(_.name)
@@ -337,9 +336,9 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
   def importCpg(inputPath: String, projectName: String = "", enhance: Boolean = true): Option[Cpg] = {
     val name =
       Option(projectName).filter(_.nonEmpty).getOrElse(deriveNameFromInputPath(inputPath, workspace))
-    val cpgFile = File(inputPath)
+    val cpgFile = Paths.get(inputPath)
 
-    if (!cpgFile.exists) {
+    if (!Files.exists(cpgFile)) {
       report(s"CPG at $inputPath does not exist. Bailing out.")
       return None
     }
@@ -355,13 +354,13 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
 
     val cpgDestinationPath = cpgDestinationPathOpt.get
 
-    val isProtoFormat      = CpgLoader.isProtoFormat(cpgFile.path)
-    val isOverflowDbFormat = CpgLoader.isOverflowDbFormat(cpgFile.path)
+    val isProtoFormat      = CpgLoader.isProtoFormat(cpgFile)
+    val isOverflowDbFormat = CpgLoader.isOverflowDbFormat(cpgFile)
     if (isProtoFormat || isOverflowDbFormat) {
       if (isProtoFormat) report("You have provided a legacy proto CPG. Attempting conversion.")
       else if (isOverflowDbFormat) report("You have provided a legacy overflowdb CPG. Attempting conversion.")
       try {
-        val cpg = CpgLoader.load(cpgFile.path, cpgDestinationPath)
+        val cpg = CpgLoader.load(cpgFile, cpgDestinationPath)
         cpg.close()
       } catch {
         case exc: Exception =>
@@ -369,7 +368,7 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
           return None
       }
     } else {
-      cpgFile.copyTo(cpgDestinationPath, overwrite = true)
+      cpgFile.copyTo(cpgDestinationPath, StandardCopyOption.REPLACE_EXISTING)
     }
 
     val cpgOpt = open(name).flatMap(_.cpg)
@@ -440,7 +439,8 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
       if (projectOpt.get.appliedOverlays.contains(creator.overlayName)) {
         report(s"Overlay ${creator.overlayName} already exists - skipping")
       } else {
-        File(overlayDirName).createDirectories()
+        val overlayDir = Paths.get(overlayDirName)
+        Files.createDirectories(overlayDir)
         runCreator(creator, Some(overlayDirName))
       }
     }
@@ -475,7 +475,7 @@ object Console {
   val nameOfLegacyCpgInProject = "cpg.bin.zip"
 
   def deriveNameFromInputPath[T <: Project](inputPath: String, workspace: WorkspaceManager[T]): String = {
-    val name    = File(inputPath).name
+    val name    = Paths.get(inputPath).fileName
     val project = workspace.project(name)
     if (project.isDefined && project.exists(_.inputPath != inputPath)) {
       var i = 1

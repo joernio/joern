@@ -1,6 +1,5 @@
 package io.joern.jimple2cpg
 
-import better.files.File
 import io.joern.jimple2cpg.passes.{AstCreationPass, DeclarationRefPass, SootAstCreationPass}
 import io.joern.jimple2cpg.util.Decompiler
 import io.joern.jimple2cpg.util.ProgramHandlingUtil.{ClassFile, extractClassesInPackageLayout}
@@ -100,7 +99,7 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
     val input = Paths.get(config.inputPath)
     configureSoot(config, tmpDir)
     new MetaDataPass(cpg, language, config.inputPath).createAndApply()
-    val globalFromAstCreation: () => Global = input.extension match {
+    val globalFromAstCreation: () => Global = input.extension() match {
       case Some(".apk" | ".dex") if Files.isRegularFile(input) =>
         sootLoadApk(input, config.android)
         { () =>
@@ -151,8 +150,8 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
   override def createCpg(config: Config): Try[Cpg] =
     try {
       withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
-        File.temporaryDirectory("jimple2cpg-").apply { tmpDir =>
-          cpgApplyPasses(cpg, config, tmpDir.path)
+        FileUtil.usingTemporaryDirectory("jimple2cpg-") { tmpDir =>
+          cpgApplyPasses(cpg, config, tmpDir)
         }
       }
     } finally {

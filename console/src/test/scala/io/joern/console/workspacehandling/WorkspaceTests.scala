@@ -1,7 +1,5 @@
 package io.joern.console.workspacehandling
 
-import better.files.Dsl.*
-import better.files.File
 import io.joern.console.testing.availableWidthProvider
 import io.joern.x2cpg.utils.FileUtil
 import io.joern.x2cpg.utils.FileUtil.*
@@ -25,13 +23,13 @@ class WorkspaceTests extends AnyWordSpec with Matchers {
       FileUtil.usingTemporaryDirectory("project") { project =>
         Files.createDirectory(project / "overlays")
         val inputPath   = "/input/path"
-        val projectFile = ProjectFile(inputPath, project.getFileName.toString)
+        val projectFile = ProjectFile(inputPath, project.fileName)
         val cpg         = MockCpg().withMetaData("C", List("foo", "bar")).cpg
         val projects    = ListBuffer(Project(projectFile, project, Some(cpg)))
         val workspace   = new Workspace(projects)
         val output      = workspace.toString
 
-        output should include(project.getFileName.toString)
+        output should include(project.fileName)
         output should include(inputPath)
 
         // This relies on the file system and only works in a staged joern environment, not our workspace
@@ -46,7 +44,7 @@ class WorkspaceTests extends AnyWordSpec with Matchers {
 
 object WorkspaceTests {
 
-  def createFakeProject(workspaceFile: Path, projectName: String): File = {
+  def createFakeProject(workspaceFile: Path, projectName: String): Path = {
     Files.createDirectory(workspaceFile / projectName)
     Files.createDirectory(workspaceFile / projectName / "overlays")
 

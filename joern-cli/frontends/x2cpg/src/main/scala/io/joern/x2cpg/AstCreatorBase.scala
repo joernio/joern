@@ -3,9 +3,12 @@ package io.joern.x2cpg
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.utils.NodeBuilders.{newFieldIdentifierNode, newMethodReturnNode, newOperatorCallNode}
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Cpg, DiffGraphBuilder, ModifierTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
+
+import java.nio.file.Paths
 
 abstract class AstCreatorBase(filename: String)(implicit withSchemaValidation: ValidationMode) {
   val diffGraph: DiffGraphBuilder = Cpg.newDiffGraphBuilder
@@ -374,7 +377,7 @@ abstract class AstCreatorBase(filename: String)(implicit withSchemaValidation: V
   /** Absolute path for the given file name
     */
   def absolutePath(filename: String): String =
-    better.files.File(filename).path.toAbsolutePath.normalize().toString
+    Paths.get(filename).absolutePathAsString
 
   /** @return
     *   the next available name for a closure in this context

@@ -1,6 +1,5 @@
 package io.joern.go2cpg.testfixtures
 
-import better.files.File
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
 import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, SemanticTestCpg}

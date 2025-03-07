@@ -1,16 +1,11 @@
 package io.joern.x2cpg
 
-import better.files.*
-import better.files.File.VisitOptions
+import io.joern.x2cpg.utils.FileUtil.*
 import org.slf4j.LoggerFactory
 
 import java.io.FileNotFoundException
-import java.nio.file.FileVisitor
-import java.nio.file.FileVisitResult
-import java.nio.file.Path
-import java.nio.file.Paths
+import java.nio.file.{FileVisitOption, FileVisitResult, FileVisitor, Files, Path, Paths}
 import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.Files
 import scala.jdk.CollectionConverters.SetHasAsJava
 import scala.util.matching.Regex
 
@@ -47,7 +42,7 @@ object SourceFiles {
 
     private val seenFiles = scala.collection.mutable.ArrayBuffer.empty[Path]
 
-    def files(): Array[File] = seenFiles.map(File(_)).toArray
+    def files(): Array[Path] = seenFiles.toArray
 
     override def preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult = {
       if (filterFile(dir.toString, inputPath, ignoredDefaultRegex, ignoredFilesRegex, ignoredFilesPath)) {
@@ -77,15 +72,17 @@ object SourceFiles {
   }
 
   private def isIgnoredByFileList(filePath: String, ignoredFiles: Seq[String]): Boolean = {
-    val filePathFile = File(filePath)
-    if (!filePathFile.exists || !filePathFile.isReadable) {
+    val filePathFile = Paths.get(filePath)
+    if (!Files.exists(filePathFile) || !Files.isReadable(filePathFile)) {
       logger.debug(s"'$filePath' ignored (not readable or broken symlink)")
       return true
     }
     val isInIgnoredFiles = ignoredFiles.exists { ignorePath =>
-      val ignorePathFile = File(ignorePath)
-      ignorePathFile.exists &&
-      (ignorePathFile.contains(filePathFile, strict = false) || ignorePathFile.isSameFileAs(filePathFile))
+      val ignorePathFile = Paths.get(ignorePath)
+      val containsIgnoreFilePath =
+        Files.isDirectory(ignorePathFile) && filePathFile.startsWith(ignorePathFile) && ignorePathFile != filePathFile
+
+      Files.exists(ignorePathFile) && (containsIgnoreFilePath || Files.isSameFile(ignorePathFile, filePathFile))
     }
     if (isInIgnoredFiles) {
       logger.debug(s"'$filePath' ignored (--exclude)")
@@ -170,8 +167,8 @@ object SourceFiles {
     ignoredFilesPath: Option[Seq[String]] = None
   ): List[String] = files.filter(filterFile(_, inputPath, ignoredDefaultRegex, ignoredFilesRegex, ignoredFilesPath))
 
-  private def hasSourceFileExtension(file: File, sourceFileExtensions: Set[String]): Boolean =
-    sourceFileExtensions.exists(ext => file.pathAsString.endsWith(ext))
+  private def hasSourceFileExtension(file: Path, sourceFileExtensions: Set[String]): Boolean =
+    sourceFileExtensions.exists(ext => file.toString.endsWith(ext))
 
   /** Determines a sorted list of file paths in a directory that match the specified criteria.
     *
@@ -220,18 +217,18 @@ object SourceFiles {
     ignoredDefaultRegex: Option[Seq[Regex]] = None,
     ignoredFilesRegex: Option[Regex] = None,
     ignoredFilesPath: Option[Seq[String]] = None
-  )(implicit visitOptions: VisitOptions = VisitOptions.follow): List[String] = {
-    val dir = File(inputPath)
+  )(implicit visitOptions: Seq[FileVisitOption] = Seq(FileVisitOption.FOLLOW_LINKS)): List[String] = {
+    val dir = Paths.get(inputPath)
     assertExists(dir)
     val visitor = new FailsafeFileVisitor(
-      dir.pathAsString,
+      dir.toString,
       sourceFileExtensions,
       ignoredDefaultRegex,
       ignoredFilesRegex,
       ignoredFilesPath
     )
-    Files.walkFileTree(dir.path, visitOptions.toSet.asJava, Int.MaxValue, visitor)
-    val matchingFiles = visitor.files().map(_.pathAsString)
+    Files.walkFileTree(dir, visitOptions.toSet.asJava, Int.MaxValue, visitor)
+    val matchingFiles = visitor.files().map(_.toString)
     matchingFiles.toList.sorted
   }
 
@@ -245,13 +242,13 @@ object SourceFiles {
     * @throws FileNotFoundException
     *   if the file does not exist or is not readable.
     */
-  private def assertExists(file: File): Unit = {
-    if (!file.exists) {
-      logger.error(s"Source input path does not exist: ${file.pathAsString}")
+  private def assertExists(file: Path): Unit = {
+    if (!Files.exists(file)) {
+      logger.error(s"Source input path does not exist: ${file.toString}")
       throw FileNotFoundException("Invalid source path provided!")
     }
-    if (!file.isReadable) {
-      logger.error(s"Source input path exists, but is not readable: ${file.pathAsString}")
+    if (!Files.isReadable(file)) {
+      logger.error(s"Source input path exists, but is not readable: ${file.toString}")
       throw FileNotFoundException("Invalid source path provided!")
     }
   }
@@ -276,7 +273,7 @@ object SourceFiles {
       val absolutePath = Paths.get(path).toAbsolutePath
       val projectPath  = Paths.get(rootPath).toAbsolutePath
       if (absolutePath.compareTo(projectPath) == 0) {
-        absolutePath.getFileName.toString
+        absolutePath.fileName
       } else {
         projectPath.relativize(absolutePath).toString
       }

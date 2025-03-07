@@ -1,6 +1,5 @@
 package io.joern.c2cpg.io
 
-import better.files.File
 import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.dataflowengineoss.layers.dataflows.DdgDumpOptions
 import io.joern.dataflowengineoss.layers.dataflows.DumpDdg

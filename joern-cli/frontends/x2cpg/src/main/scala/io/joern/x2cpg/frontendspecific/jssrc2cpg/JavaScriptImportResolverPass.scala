@@ -8,6 +8,7 @@ import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.importresolver.*
 
 import java.io.File as JFile
+import java.nio.file.Paths
 import java.util.regex.{Matcher, Pattern}
 import scala.util.{Failure, Success, Try}
 
@@ -36,9 +37,9 @@ class JavaScriptImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
     //  this tries to recover the string but does not perform string constant propagation
     val entity = if (matcher.find()) matcher.group(1) else rawEntity
     val resolvedPath = Try(
-      better.files
-        .File(currentFile.stripSuffix(currentFile.split(sep).last), entity.split(pathSep).head)
-        .pathAsString
+      Paths
+        .get(currentFile.stripSuffix(currentFile.split(sep).last), entity.split(pathSep).head)
+        .toString
         .stripPrefix(root)
     ).getOrElse(entity)
 

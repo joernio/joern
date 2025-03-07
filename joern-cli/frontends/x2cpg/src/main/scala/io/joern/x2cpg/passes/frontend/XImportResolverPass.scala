@@ -1,6 +1,5 @@
 package io.joern.x2cpg.passes.frontend
 
-import better.files.File
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Import, Tag}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
@@ -10,16 +9,16 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import java.io.File as JFile
 import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Paths}
 import java.util.Base64
 
 abstract class XImportResolverPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Import](cpg) {
 
   protected val logger: Logger = LoggerFactory.getLogger(this.getClass)
-  protected val codeRootDir: String = File(
-    cpg.metaData.root.headOption.getOrElse(JFile.separator).stripSuffix(JFile.separator)
-  ) match
-    case f if f.isDirectory => f.pathAsString
-    case f                  => f.parent.pathAsString
+  protected val codeRootDir: String =
+    Paths.get(cpg.metaData.root.headOption.getOrElse(JFile.separator).stripSuffix(JFile.separator)) match
+      case f if Files.isDirectory(f) => f.toString
+      case f                         => f.getParent.toString
 
   override def generateParts(): Array[Import] = cpg.imports.toArray
 

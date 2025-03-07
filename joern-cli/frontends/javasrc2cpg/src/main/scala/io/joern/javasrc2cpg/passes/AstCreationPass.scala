@@ -1,6 +1,5 @@
 package io.joern.javasrc2cpg.passes
 
-import better.files.File
 import com.github.javaparser.{JavaParser, ParserConfiguration}
 import com.github.javaparser.ParserConfiguration.LanguageLevel
 import com.github.javaparser.ast.CompilationUnit
@@ -22,6 +21,8 @@ import io.joern.javasrc2cpg.util.{Delombok, SourceParser}
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.datastructures.Global
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
 import io.joern.x2cpg.utils.dependency.DependencyResolver
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -29,7 +30,7 @@ import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
 
 import java.net.URLClassLoader
-import java.nio.file.{Path, Paths}
+import java.nio.file.{Files, Path, Paths}
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.parallel.CollectionConverters.*
 import scala.collection.concurrent
@@ -167,15 +168,17 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
   }
 
   private def recursiveJarsFromPath(path: String): List[String] = {
-    Try(File(path)) match {
-      case Success(file) if file.isDirectory =>
-        file.listRecursively
-          .map(_.canonicalPath)
+    Try(Paths.get(path)) match {
+      case Success(file) if Files.isDirectory(file) =>
+        file
+          .walk()
+          .filterNot(_ == file)
+          .map(_.absolutePathAsString)
           .filter(_.endsWith(".jar"))
           .toList
 
-      case Success(file) if file.canonicalPath.endsWith(".jar") =>
-        List(file.canonicalPath)
+      case Success(file) if file.absolutePathAsString.endsWith(".jar") =>
+        List(file.absolutePathAsString)
 
       case _ =>
         Nil

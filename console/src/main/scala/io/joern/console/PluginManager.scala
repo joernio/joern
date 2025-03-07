@@ -1,9 +1,9 @@
 package io.joern.console
-import better.files.Dsl.*
-import better.files.File
-import better.files.File.apply
 
-import java.nio.file.Path
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
+
+import java.nio.file.{Path, Paths, Files}
 import scala.util.{Failure, Success, Try}
 
 /** Plugin management component
@@ -15,15 +15,15 @@ import scala.util.{Failure, Success, Try}
   * @param installDir
   *   the Joern/Ocular installation dir
   */
-class PluginManager(val installDir: File) {
+class PluginManager(val installDir: Path) {
 
   /** Generate a sorted list of all installed plugins by examining the plugin directory.
     */
   def listPlugins(): List[String] = {
     val installedPluginNames = pluginDir.toList
       .flatMap { dir =>
-        File(dir).list.toList.flatMap { f =>
-          "^joernext-(.*?)-.*$".r.findAllIn(f.name).matchData.map { m =>
+        (dir).listFiles().toList.flatMap { f =>
+          "^joernext-(.*?)-.*$".r.findAllIn(f.fileName).matchData.map { m =>
             m.group(1)
           }
         }
@@ -41,34 +41,37 @@ class PluginManager(val installDir: File) {
       println("Plugin directory does not exist")
       return
     }
-    val file = File(filename)
-    if (!file.exists) {
+    val file = Paths.get(filename)
+    if (!Files.exists(file)) {
       println(s"The file $filename does not exist")
     } else {
       addExisting(file)
     }
   }
 
-  private def addExisting(file: File): Unit = {
-    val pluginName = file.name.replace(".zip", "")
+  private def addExisting(file: Path): Unit = {
+    val pluginName = file.fileName.replace(".zip", "")
     val tmpDir     = extractToTemporaryDir(file)
     tmpDir.foreach(dir => addExistingUnzipped(dir, pluginName))
   }
 
-  private def addExistingUnzipped(file: File, pluginName: String): Unit = {
-    file.listRecursively.filter(_.name.endsWith(".jar")).foreach { jar =>
+  private def addExistingUnzipped(file: Path, pluginName: String): Unit = {
+    file.walk().filterNot(_ == file).filter(_.fileName.endsWith(".jar")).foreach { jar =>
       pluginDir.foreach { pDir =>
-        if (!(pDir / jar.name).exists) {
-          val dstFileName = s"joernext-$pluginName-${jar.name}"
+        if (!Files.exists((pDir / jar.fileName))) {
+          val dstFileName = s"joernext-$pluginName-${jar.fileName}"
           val dstFile     = pDir / dstFileName
-          cp(jar, dstFile)
+          FileUtil.copyFiles(jar, dstFile)
         }
       }
     }
   }
 
-  private def extractToTemporaryDir(file: File) = {
-    Try { file.unzip() } match {
+  private def extractToTemporaryDir(file: Path) = {
+    Try {
+      val unzipFolder = Files.createTempDirectory(file.fileName.stripSuffix(".zip"))
+      file.unzipTo(unzipFolder)
+    } match {
       case Success(dir) =>
         Some(dir)
       case Failure(exc) =>
@@ -84,19 +87,19 @@ class PluginManager(val installDir: File) {
       List()
     } else {
       val filesToRemove = pluginDir.toList.flatMap { dir =>
-        dir.list.filter { f =>
-          f.name.startsWith(s"joernext-$name")
+        dir.listFiles().filter { f =>
+          f.fileName.startsWith(s"joernext-$name")
         }
       }
-      filesToRemove.foreach(f => f.delete())
-      filesToRemove.map(_.pathAsString)
+      filesToRemove.foreach(f => FileUtil.delete(f))
+      filesToRemove.map(_.toString)
     }
   }
 
   /** Return the path to the plugin directory or None if the plugin directory does not exist.
     */
   def pluginDir: Option[Path] = {
-    val pathToPluginDir = installDir.path.resolve("lib")
+    val pathToPluginDir = installDir.resolve("lib")
     if (pathToPluginDir.toFile.exists()) {
       Some(pathToPluginDir)
     } else {

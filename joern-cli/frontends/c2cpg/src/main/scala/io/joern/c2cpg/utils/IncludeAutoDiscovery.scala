@@ -1,12 +1,12 @@
 package io.joern.c2cpg.utils
 
-import better.files.File
 import io.joern.c2cpg.Config
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
-import java.nio.file.Path
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths, Files}
 import scala.collection.mutable
 import scala.util.Failure
 import scala.util.Success
@@ -134,9 +134,9 @@ object IncludeAutoDiscovery {
 
   private def isMSVCProject(config: Config): Boolean = {
     if (!IsWin) return false
-    val projectDir = File(config.inputPath)
-    List(projectDir / ".vs", projectDir / ".vscode").exists(_.exists) ||
-    projectDir.list.exists(_.`extension`(includeDot = false).exists(ext => ext == "sln" || ext == "vcxproj"))
+    val projectDir = Paths.get(config.inputPath)
+    List(projectDir / ".vs", projectDir / ".vscode").exists(Files.exists(_)) ||
+    projectDir.listFiles().exists(_.extension(includeDot = false).exists(ext => ext == "sln" || ext == "vcxproj"))
   }
 
   def discoverIncludePathsCPP(config: Config): mutable.LinkedHashSet[Path] = {

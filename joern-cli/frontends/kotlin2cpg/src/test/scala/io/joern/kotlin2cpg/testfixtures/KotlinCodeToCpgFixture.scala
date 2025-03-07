@@ -1,6 +1,5 @@
 package io.joern.kotlin2cpg.testfixtures
 
-import better.files.File as BFile
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
@@ -11,20 +10,22 @@ import io.joern.kotlin2cpg.Kotlin2Cpg
 import io.joern.x2cpg.testfixtures.Code2CpgFixture
 import io.joern.x2cpg.testfixtures.DefaultTestCpg
 import io.joern.x2cpg.testfixtures.LanguageFrontend
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.utils.ProjectRoot
 
 import java.io.File
+import java.nio.file.Paths
 
 trait KotlinFrontend extends LanguageFrontend {
   protected val withTestResourcePaths: Boolean
 
   override val fileSuffix: String = ".kt"
   private lazy val defaultContentRoot =
-    BFile(ProjectRoot.relativise("joern-cli/frontends/kotlin2cpg/src/test/resources/jars/"))
+    Paths.get(ProjectRoot.relativise("joern-cli/frontends/kotlin2cpg/src/test/resources/jars/"))
   private lazy val defaultConfig: Config =
     Config(
-      classpath = if (withTestResourcePaths) Set(defaultContentRoot.path.toAbsolutePath.toString) else Set(),
+      classpath = if (withTestResourcePaths) Set(defaultContentRoot.absolutePathAsString) else Set(),
       includeJavaSourceFiles = true
     )
 

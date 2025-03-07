@@ -6,7 +6,7 @@ import io.shiftleft.codepropertygraph.generated.Languages
 import org.apache.commons.text.StringEscapeUtils
 import replpp.scripting.ScriptRunner
 
-import java.nio.file.{Files, Path}
+import java.nio.file.{Files, Path, Paths}
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.util.Try
@@ -335,7 +335,7 @@ trait PluginHandling { this: BridgeBase =>
   private def loadOrCreateCpg(config: Config, productName: String): String = {
 
     val bundleName = config.pluginToRun.get
-    val srcRaw     = better.files.File(config.src.get).path.toAbsolutePath.toString
+    val srcRaw     = Paths.get(config.src.get).absolutePathAsString
     val src        = StringEscapeUtils.escapeJava(srcRaw)
     val language   = languageFromConfig(config, src)
 

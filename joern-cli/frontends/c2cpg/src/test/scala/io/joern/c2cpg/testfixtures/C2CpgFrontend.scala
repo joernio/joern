@@ -1,6 +1,5 @@
 package io.joern.c2cpg.testfixtures
 
-import better.files.File
 import io.joern.c2cpg.C2Cpg
 import io.joern.c2cpg.Config
 import io.joern.x2cpg.testfixtures.LanguageFrontend

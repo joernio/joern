@@ -1,6 +1,5 @@
 package io.joern.console
 
-import better.files.File
 import io.joern.console.testing.*
 import io.joern.x2cpg.X2Cpg.defaultOverlayCreators
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
@@ -385,7 +384,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       overlayDirs.foreach { dir =>
         Files.isDirectory(Paths.get(dir.getPath)) shouldBe true
         Paths.get(dir.getPath).listFiles().foreach { file =>
-          Try { file.getFileName.toString.split("_").head.toInt }.isSuccess shouldBe true
+          Try { file.fileName.split("_").head.toInt }.isSuccess shouldBe true
           isZipFile(file) shouldBe true
         }
       }

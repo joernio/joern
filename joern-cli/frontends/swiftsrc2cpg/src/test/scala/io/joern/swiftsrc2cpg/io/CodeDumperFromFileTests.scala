@@ -1,10 +1,13 @@
 package io.joern.swiftsrc2cpg.io
 
-import better.files.File
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
+import io.joern.x2cpg.utils.FileUtil
 import io.shiftleft.semanticcpg.codedumper.CodeDumper
 import io.shiftleft.semanticcpg.language.*
 
+import java.nio.file.{Files, Paths}
 import java.util.regex.Pattern
 
 class CodeDumperFromFileTests extends SwiftSrc2CpgSuite {
@@ -19,19 +22,19 @@ class CodeDumperFromFileTests extends SwiftSrc2CpgSuite {
 
   private val cpg = code(codeString, "test.swift")
 
-  private val path = File(cpg.metaData.root.head) / "test.swift"
+  private val path = Paths.get(cpg.metaData.root.head) / "test.swift"
 
   override def beforeAll(): Unit = {
     super.beforeAll()
     // we have to restore the input file because CPG creation in SwiftSrc2CpgSuite
     // deletes it right after the CPG is ready.
-    path.createFileIfNotExists(createParents = true)
-    path.writeText(codeString)
+    path.createWithParentsIfNotExists(createParents = true)
+    Files.writeString(path, codeString)
   }
 
   override def afterAll(): Unit = {
     super.afterAll()
-    path.delete(swallowIOExceptions = true)
+    FileUtil.delete(path, swallowIoExceptions = true)
   }
 
   "dumping code from file" should {
