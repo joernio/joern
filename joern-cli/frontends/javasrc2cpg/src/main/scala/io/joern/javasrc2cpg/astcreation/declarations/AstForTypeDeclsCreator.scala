@@ -639,19 +639,19 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
   }
 
   private def astForAnnotationLiteralExpr(literalExpr: LiteralExpr): Ast = {
-    val valueNode =
+    val name =
       literalExpr match {
-        case literal: StringLiteralExpr    => newAnnotationLiteralNode(literal.getValue)
-        case literal: IntegerLiteralExpr   => newAnnotationLiteralNode(literal.getValue)
-        case literal: BooleanLiteralExpr   => newAnnotationLiteralNode(java.lang.Boolean.toString(literal.getValue))
-        case literal: CharLiteralExpr      => newAnnotationLiteralNode(literal.getValue)
-        case literal: DoubleLiteralExpr    => newAnnotationLiteralNode(literal.getValue)
-        case literal: LongLiteralExpr      => newAnnotationLiteralNode(literal.getValue)
-        case _: NullLiteralExpr            => newAnnotationLiteralNode("null")
-        case literal: TextBlockLiteralExpr => newAnnotationLiteralNode(literal.getValue)
+        case literal: StringLiteralExpr    => literal.getValue
+        case literal: IntegerLiteralExpr   => literal.getValue
+        case literal: BooleanLiteralExpr   => java.lang.Boolean.toString(literal.getValue)
+        case literal: CharLiteralExpr      => literal.getValue
+        case literal: DoubleLiteralExpr    => literal.getValue
+        case literal: LongLiteralExpr      => literal.getValue
+        case _: NullLiteralExpr            => "null"
+        case literal: TextBlockLiteralExpr => literal.getValue
       }
 
-    Ast(valueNode)
+    Ast(annotationLiteralNode(literalExpr, name))
   }
 
   private def modifiersForTypeDecl(typ: TypeDeclaration[?], isInterface: Boolean): List[NewModifier] = {
