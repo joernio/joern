@@ -1,6 +1,7 @@
 package io.joern.c2cpg.passes
 
 import io.joern.c2cpg.astcreation.CGlobal
+import io.joern.c2cpg.Config
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.ValidationMode
@@ -21,9 +22,10 @@ import org.apache.commons.lang3.StringUtils
 
 import scala.collection.immutable.Map
 
-class FunctionDeclNodePass(cpg: Cpg, methodDeclarations: Map[String, CGlobal.MethodInfo])(implicit
-  withSchemaValidation: ValidationMode
-) extends CpgPass(cpg) {
+class FunctionDeclNodePass(cpg: Cpg, methodDeclarations: Map[String, CGlobal.MethodInfo], config: Config)
+    extends CpgPass(cpg) {
+
+  private implicit val schemaValidation: ValidationMode = config.schemaValidation
 
   override def run(dstGraph: DiffGraphBuilder): Unit = {
     methodDeclarations.foreach { case (fullName, methodNodeInfo) =>

@@ -32,6 +32,10 @@ object NodeBuilders {
     s"$typeDeclPrefix$name:$signature"
   }
 
+  @deprecated(
+    "Deprecated in favour of the corresponding method io.joern.x2cpg.AstNodeBuilder and will be removed in a future version",
+    "4.0.280"
+  )
   def newAnnotationLiteralNode(name: String): NewAnnotationLiteral =
     NewAnnotationLiteral()
       .name(name)

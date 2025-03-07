@@ -19,10 +19,10 @@ trait AstC2CpgFrontend extends LanguageFrontend {
       .fold(Config())(_.asInstanceOf[Config])
       .withInputPath(pathAsString)
       .withOutputPath(pathAsString)
+      .withSchemaValidation(ValidationMode.Enabled)
     val astCreationPass = new AstCreationPass(cpg, config)
     astCreationPass.createAndApply()
-    new FunctionDeclNodePass(cpg, astCreationPass.unhandledMethodDeclarations())(ValidationMode.Enabled)
-      .createAndApply()
+    new FunctionDeclNodePass(cpg, astCreationPass.unhandledMethodDeclarations(), config).createAndApply()
     cpg
   }
 }

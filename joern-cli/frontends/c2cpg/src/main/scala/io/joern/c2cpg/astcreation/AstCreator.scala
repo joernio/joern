@@ -23,8 +23,7 @@ class AstCreator(
   val cdtAst: IASTTranslationUnit,
   val headerFileFinder: HeaderFileFinder,
   val file2OffsetTable: ConcurrentHashMap[String, Array[Int]]
-)(implicit withSchemaValidation: ValidationMode)
-    extends AstCreatorBase(filename)
+) extends AstCreatorBase(filename)(config.schemaValidation)
     with AstForTypesCreator
     with AstForFunctionsCreator
     with AstForPrimitivesCreator
@@ -36,6 +35,8 @@ class AstCreator(
     with FullNameProvider
     with MacroHandler
     with X2CpgAstNodeBuilder[IASTNode, AstCreator] {
+
+  protected implicit val schemaValidation: ValidationMode = config.schemaValidation
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
 
@@ -74,8 +75,9 @@ class AstCreator(
   /** Creates an AST of all declarations found in the translation unit - wrapped in a fake method.
     */
   private def astInFakeMethod(fullName: String, path: String, iASTTranslationUnit: IASTTranslationUnit): Ast = {
-    val allDecls = iASTTranslationUnit.getDeclarations.toList.filterNot(isIncludedNode)
-    val name     = NamespaceTraversal.globalNamespaceName
+    val includeInactive = config.compilationDatabase.isEmpty && config.defines.isEmpty
+    val allDecls        = iASTTranslationUnit.getDeclarations(includeInactive).toList.filterNot(isIncludedNode)
+    val name            = NamespaceTraversal.globalNamespaceName
 
     val fakeGlobalTypeDecl =
       typeDeclNode(iASTTranslationUnit, name, fullName, filename, name, NodeTypes.NAMESPACE_BLOCK, fullName)
@@ -89,7 +91,6 @@ class AstCreator(
     scope.pushNewMethodScope(fakeGlobalMethod.fullName, fakeGlobalMethod.name, blockNode_, None)
     val declsAsts = allDecls.flatMap(astsForDeclaration)
     setArgumentIndices(declsAsts)
-    scope.popScope()
 
     val methodReturn = methodReturnNode(iASTTranslationUnit, Defines.Any)
     Ast(fakeGlobalTypeDecl).withChild(
@@ -115,17 +116,17 @@ class AstCreator(
     }
   }
 
-  protected def columnEnd(node: IASTNode): Option[Int] = {
-    nodeOffsets(node).map { case (_, endOffset) =>
-      offsetToColumn(node, endOffset - 1)
-    }
-  }
-
   private def nodeOffsets(node: IASTNode): Option[(Int, Int)] = {
     for {
       startOffset <- nullSafeFileLocation(node).map(l => l.getNodeOffset)
       endOffset   <- nullSafeFileLocation(node).map(l => l.getNodeOffset + l.getNodeLength)
     } yield (startOffset, endOffset)
+  }
+
+  protected def columnEnd(node: IASTNode): Option[Int] = {
+    nodeOffsets(node).map { case (_, endOffset) =>
+      offsetToColumn(node, endOffset - 1)
+    }
   }
 
   override protected def offset(node: IASTNode): Option[(Int, Int)] = {

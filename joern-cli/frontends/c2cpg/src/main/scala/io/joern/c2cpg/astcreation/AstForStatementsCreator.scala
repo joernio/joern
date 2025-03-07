@@ -2,10 +2,8 @@ package io.joern.c2cpg.astcreation
 
 import io.joern.c2cpg.parser.CdtParser
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.ValidationMode
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.nodes.AstNodeNew
-import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
@@ -23,7 +21,7 @@ import org.eclipse.cdt.internal.core.model.ASTStringUtil
 import java.nio.file.Paths
 import scala.collection.mutable
 
-trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+trait AstForStatementsCreator { this: AstCreator =>
 
   protected def astForBlockStatement(blockStmt: IASTCompoundStatement, blockNode: NewBlock, order: Int = -1): Ast = {
     val codeString  = code(blockStmt)
@@ -316,25 +314,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case _ => // do nothing
     }
     asts
-  }
-
-  private def astForConditionExpression(expression: IASTExpression, explicitArgumentIndex: Option[Int] = None): Ast = {
-    val ast = expression match {
-      case exprList: IASTExpressionList =>
-        val compareAstBlock = blockNode(expression)
-        scope.pushNewBlockScope(compareAstBlock)
-        val compareBlockAstChildren = exprList.getExpressions.toList.map(nullSafeAst)
-        setArgumentIndices(compareBlockAstChildren)
-        scope.popScope()
-        val compareBlockAst = blockAst(compareAstBlock, compareBlockAstChildren)
-        compareBlockAst
-      case other =>
-        nullSafeAst(other)
-    }
-    explicitArgumentIndex.foreach { i =>
-      ast.root.foreach { case expr: ExpressionNew => expr.argumentIndex = i }
-    }
-    ast
   }
 
   private def astForFor(forStmt: IASTForStatement): Ast = {
