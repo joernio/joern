@@ -1,26 +1,37 @@
 package io.joern.console
 
-import better.files.File
 import io.joern.console.testing.*
 import io.joern.x2cpg.X2Cpg.defaultOverlayCreators
-import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
+import io.joern.x2cpg.layers.Base
+import io.joern.x2cpg.layers.CallGraph
+import io.joern.x2cpg.layers.ControlFlow
+import io.joern.x2cpg.layers.TypeRelations
 import io.joern.x2cpg.utils.FileUtil
 import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
+import io.shiftleft.semanticcpg.layers.LayerCreator
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.Ignore
 import org.scalatest.Tag
 
-import java.nio.file.{Files, Path, Paths}
-import java.io.{BufferedInputStream, BufferedOutputStream, FileOutputStream, StreamTokenizer}
+import java.io.BufferedInputStream
+import java.io.FileOutputStream
+import java.io.StreamTokenizer
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.zip.ZipOutputStream
-import scala.util.{Properties, Try, Using, Success, Failure}
+import scala.util.Failure
+import scala.util.Properties
+import scala.util.Success
+import scala.util.Try
+import scala.util.Using
 
 class ConsoleTests extends AnyWordSpec with Matchers {
 
-  // Some tests here are are copying stuff within TEMP which is not allowed within the Windows GITHUB actions runners.
+  // Some tests here are copying stuff within TEMP which is not allowed within the Windows GITHUB actions runners.
   private object NotInWindowsRunners
       extends Tag(
         if (!Paths.get(Properties.tmpDir).toString.contains(":\\Users\\RUNNER~1\\AppData\\Local\\Temp")) ""
@@ -85,11 +96,11 @@ class ConsoleTests extends AnyWordSpec with Matchers {
         FileUtil.usingTemporaryFile("console", suffix = ".c", parent = Option(codeDir)) { file =>
           Files.writeString(file, code)
           console.importCode.c(inputPath = codeDir.toString)
-          // importing without args should not yield foo
-          Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe false
+          // importing without args will yield foo because we parse behind inactive defines
+          Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe true
 
           // importing with args should yield foo
-          console.importCode.c(inputPath = codeDir.toString(), args = List("--define", "D"))
+          console.importCode.c(inputPath = codeDir.toString, args = List("--define", "D"))
           Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe true
         }
     }
@@ -104,7 +115,8 @@ class ConsoleTests extends AnyWordSpec with Matchers {
           |""".stripMargin
         // importing without args should not yield foo
         console.importCode.c.fromString(code)
-        Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe false
+        // importing without args will yield foo because we parse behind inactive defines
+        Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe true
 
         // importing with args should yield foo
         console.importCode.c.fromString(code, List("--define", "D"))
@@ -440,8 +452,8 @@ class ConsoleTests extends AnyWordSpec with Matchers {
   "cpg" should {
     "provide .help command" in ConsoleFixture() { (console, codeDir) =>
       // part of Predefined.shared, which makes the below work in the repl without separate import
-      import io.shiftleft.semanticcpg.language.docSearchPackages
       import io.joern.console.testing.availableWidthProvider
+      import io.shiftleft.semanticcpg.language.docSearchPackages
 
       console.importCode(codeDir.toString)
       val nodeStartersHelp = console.cpg.help

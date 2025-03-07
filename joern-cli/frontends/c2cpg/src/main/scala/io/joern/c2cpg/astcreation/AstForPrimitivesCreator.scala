@@ -1,7 +1,6 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.ValidationMode
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
@@ -23,7 +22,7 @@ import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import scala.util.Try
 
-trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+trait AstForPrimitivesCreator { this: AstCreator =>
 
   protected def astForComment(comment: IASTComment): Ast =
     Ast(newCommentNode(comment, code(comment), fileName(comment)))

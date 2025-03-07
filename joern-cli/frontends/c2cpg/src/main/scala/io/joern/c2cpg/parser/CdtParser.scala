@@ -3,6 +3,7 @@ package io.joern.c2cpg.parser
 import better.files.File
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.parser.JSONCompilationDatabaseParser.CommandObject
+import io.joern.x2cpg.SourceFiles
 import io.shiftleft.utils.IOUtils
 import org.eclipse.cdt.core.dom.ast.IASTPreprocessorStatement
 import org.eclipse.cdt.core.dom.ast.IASTTranslationUnit
@@ -34,8 +35,7 @@ object CdtParser {
 
   private case class ParseResult(
     translationUnit: Option[IASTTranslationUnit],
-    preprocessorErrorCount: Int = 0,
-    problems: Int = 0,
+    relativeFilePath: Option[String] = None,
     failure: Option[Throwable] = None
   )
 
@@ -55,12 +55,13 @@ class CdtParser(
   private val includePaths   = parserConfig.userIncludePaths
   private val log            = new DefaultLogService
 
-  // enables parsing of code behind disabled preprocessor defines:
-  private var opts: Int = ILanguage.OPTION_PARSE_INACTIVE_CODE
+  private var opts: Int =
+    ILanguage.OPTION_NO_IMAGE_LOCATIONS | // performance optimization, allows the parser not to create image-locations
+      ILanguage.OPTION_SKIP_TRIVIAL_EXPRESSIONS_IN_AGGREGATE_INITIALIZERS // performance optimization, skips trivial expressions in aggregate initializers
   // instructs the parser to skip function and method bodies
   if (config.skipFunctionBodies) opts |= ILanguage.OPTION_SKIP_FUNCTION_BODIES
-  // performance optimization, allows the parser not to create image-locations
-  if (config.noImageLocations) opts |= ILanguage.OPTION_NO_IMAGE_LOCATIONS
+  // enables parsing of code behind disabled preprocessor defines
+  if (config.compilationDatabase.isEmpty && config.defines.isEmpty) opts |= ILanguage.OPTION_PARSE_INACTIVE_CODE
 
   def preprocessorStatements(file: Path): Iterable[IASTPreprocessorStatement] = {
     parse(file).map(t => preprocessorStatements(t)).getOrElse(Iterable.empty)
@@ -69,12 +70,12 @@ class CdtParser(
   def parse(file: Path): Option[IASTTranslationUnit] = {
     val parseResult = parseInternal(file)
     parseResult match {
-      case ParseResult(Some(t), c, p, _) =>
-        logger.info(s"Parsed '${t.getFilePath}' ($c preprocessor error(s), $p problems)")
+      case ParseResult(Some(t), Some(relativeFilePath), _) =>
+        logger.info(s"Parsed '$relativeFilePath'")
         Option(t)
-      case ParseResult(_, _, _, maybeThrowable) =>
+      case ParseResult(_, maybeRelativePath, maybeThrowable) =>
         logger.warn(
-          s"Failed to parse '$file': ${maybeThrowable.map(extractParseException).getOrElse("Unknown parse error!")}"
+          s"Failed to parse '${maybeRelativePath.getOrElse(file.toString)}': ${maybeThrowable.map(extractParseException).getOrElse("Unknown parse error!")}"
         )
         None
     }
@@ -83,6 +84,7 @@ class CdtParser(
   private def parseInternal(file: File): ParseResult = {
     if (file.isRegularFile) { // handling potentially broken symlinks
       try {
+        val relativeFilePath    = SourceFiles.toRelativePath(file.pathAsString, config.inputPath)
         val fileContent         = readFileAsFileContent(file.path)
         val fileContentProvider = new CustomFileContentProvider(headerFileFinder)
         val lang                = createParseLanguage(file.path, fileContent.toString)
@@ -91,11 +93,7 @@ class CdtParser(
         val problems        = CPPVisitor.getProblems(translationUnit)
         if (parserConfig.logProblems) logProblems(problems.toList)
         if (parserConfig.logPreprocessor) logPreprocessorStatements(translationUnit)
-        ParseResult(
-          Option(translationUnit),
-          preprocessorErrorCount = translationUnit.getPreprocessorProblemsCount,
-          problems = problems.length
-        )
+        ParseResult(Option(translationUnit), Some(relativeFilePath))
       } catch {
         case u: UnsupportedClassVersionError =>
           logger.error("c2cpg requires at least JRE-17 to run. Please check your Java Runtime Environment!", u)
@@ -146,7 +144,8 @@ class CdtParser(
   def parse(code: String, inFile: Path): Option[IASTTranslationUnit] = {
     Try(parseInternal(code, inFile)) match {
       case Failure(exception) =>
-        logger.warn(s"Failed to parse '$code' in file '$inFile': ${extractParseException(exception)}")
+        val relativePath = SourceFiles.toRelativePath(inFile.toString, config.inputPath)
+        logger.warn(s"Failed to parse '$code' in file '$relativePath': ${extractParseException(exception)}")
         None
       case Success(translationUnit) =>
         Some(translationUnit)
