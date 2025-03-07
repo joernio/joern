@@ -4,6 +4,7 @@ import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.Defines as X2CpgDefines
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast
 import org.eclipse.cdt.core.dom.ast.*
@@ -61,19 +62,18 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   )
 
   private val UnaryOperatorMap: Map[Int, String] = Map(
-    IASTUnaryExpression.op_prefixIncr       -> Operators.preIncrement,
-    IASTUnaryExpression.op_prefixDecr       -> Operators.preDecrement,
-    IASTUnaryExpression.op_plus             -> Operators.plus,
-    IASTUnaryExpression.op_minus            -> Operators.minus,
-    IASTUnaryExpression.op_star             -> Operators.indirection,
-    IASTUnaryExpression.op_amper            -> Operators.addressOf,
-    IASTUnaryExpression.op_tilde            -> Operators.not,
-    IASTUnaryExpression.op_not              -> Operators.logicalNot,
-    IASTUnaryExpression.op_sizeof           -> Operators.sizeOf,
-    IASTUnaryExpression.op_postFixIncr      -> Operators.postIncrement,
-    IASTUnaryExpression.op_postFixDecr      -> Operators.postDecrement,
-    IASTUnaryExpression.op_typeid           -> Defines.OperatorTypeOf,
-    IASTUnaryExpression.op_bracketedPrimary -> Defines.OperatorBracketedPrimary
+    IASTUnaryExpression.op_prefixIncr  -> Operators.preIncrement,
+    IASTUnaryExpression.op_prefixDecr  -> Operators.preDecrement,
+    IASTUnaryExpression.op_plus        -> Operators.plus,
+    IASTUnaryExpression.op_minus       -> Operators.minus,
+    IASTUnaryExpression.op_star        -> Operators.indirection,
+    IASTUnaryExpression.op_amper       -> Operators.addressOf,
+    IASTUnaryExpression.op_tilde       -> Operators.not,
+    IASTUnaryExpression.op_not         -> Operators.logicalNot,
+    IASTUnaryExpression.op_sizeof      -> Operators.sizeOf,
+    IASTUnaryExpression.op_postFixIncr -> Operators.postIncrement,
+    IASTUnaryExpression.op_postFixDecr -> Operators.postDecrement,
+    IASTUnaryExpression.op_typeid      -> Defines.OperatorTypeOf
   )
 
   protected def astForExpression(expression: IASTExpression): Ast = {
@@ -119,12 +119,32 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     callAst(callNode_, List(left, right))
   }
 
+  protected def astForConditionExpression(
+    expression: IASTExpression,
+    explicitArgumentIndex: Option[Int] = None
+  ): Ast = {
+    val ast = expression match {
+      case exprList: IASTExpressionList => astForExpressionList(exprList)
+      case other                        => nullSafeAst(other)
+    }
+    explicitArgumentIndex.foreach { i =>
+      ast.root.foreach { case expr: ExpressionNew => expr.argumentIndex = i }
+    }
+    ast
+  }
+
   private def astForExpressionList(exprList: IASTExpressionList): Ast = {
-    val name = Defines.OperatorExpressionList
-    val callNode_ =
-      callNode(exprList, code(exprList), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
-    val childAsts = exprList.getExpressions.map(nullSafeAst)
-    callAst(callNode_, childAsts.toIndexedSeq)
+    exprList.getExpressions.toSeq match {
+      case Nil         => blockAst(blockNode(exprList))
+      case expr :: Nil => nullSafeAst(expr)
+      case other =>
+        val blockNode_ = blockNode(exprList)
+        scope.pushNewBlockScope(blockNode_)
+        val childAsts = other.map(nullSafeAst)
+        setArgumentIndices(childAsts)
+        scope.popScope()
+        blockAst(blockNode(exprList), childAsts.toList)
+    }
   }
 
   private def astForCppCallExpression(call: ICPPASTFunctionCallExpression): Ast = {
@@ -331,10 +351,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   private def astForUnaryExpression(unary: IASTUnaryExpression): Ast = {
     val operatorMethod = UnaryOperatorMap.getOrElse(unary.getOperator, Defines.OperatorUnknown)
-    if (
-      unary.getOperator == IASTUnaryExpression.op_bracketedPrimary &&
-      !unary.getOperand.isInstanceOf[IASTExpressionList]
-    ) {
+    if (unary.getOperator == IASTUnaryExpression.op_bracketedPrimary) {
       nullSafeAst(unary.getOperand)
     } else {
       val cpgUnary = callNode(

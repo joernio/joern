@@ -1903,25 +1903,10 @@ class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
       val source = cpg.identifier("v2").l
       val sink   = cpg.method("foo").methodReturn.l
       sink.reachableByFlows(source).l.map(flowToResultPairs).toSet shouldBe Set(
+        List(("v2 <= 3", 4), ("(v1 = 1, v2 == 2) || v2 <= 3", 4), ("RET", 2)),
+        List(("v2 == 2", 4), ("v2 <= 3", 4), ("(v1 = 1, v2 == 2) || v2 <= 3", 4), ("RET", 2)),
         List(("return v2;", 4), ("RET", 2)),
-        List(
-          ("v2 == 2", 4),
-          ("v1 = 1", 4),
-          ("v1 = 1, v2 == 2", 4),
-          ("(v1 = 1, v2 == 2)", 4),
-          ("(v1 = 1, v2 == 2) || v2 <= 3", 4),
-          ("RET", 2)
-        ),
-        List(
-          ("v2 = 0", 3),
-          ("v2 == 2", 4),
-          ("v1 = 1", 4),
-          ("v1 = 1, v2 == 2", 4),
-          ("(v1 = 1, v2 == 2)", 4),
-          ("(v1 = 1, v2 == 2) || v2 <= 3", 4),
-          ("RET", 2)
-        ),
-        List(("v2 <= 3", 4), ("(v1 = 1, v2 == 2)", 4), ("(v1 = 1, v2 == 2) || v2 <= 3", 4), ("RET", 2))
+        List(("v2 = 0", 3), ("v2 == 2", 4), ("v2 <= 3", 4), ("(v1 = 1, v2 == 2) || v2 <= 3", 4), ("RET", 2))
       )
     }
   }
