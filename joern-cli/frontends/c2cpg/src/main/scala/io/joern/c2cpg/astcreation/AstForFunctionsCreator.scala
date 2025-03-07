@@ -1,7 +1,6 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
@@ -32,7 +31,7 @@ import org.eclipse.cdt.internal.core.model.ASTStringUtil
 import scala.annotation.tailrec
 import scala.util.Try
 
-trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+trait AstForFunctionsCreator { this: AstCreator =>
 
   final protected def parameters(functionNode: IASTNode): Seq[IASTNode] = functionNode match {
     case arr: IASTArrayDeclarator       => parameters(arr.getNestedDeclarator)

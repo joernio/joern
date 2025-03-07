@@ -1,7 +1,6 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.Defines as X2CpgDefines
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
@@ -24,7 +23,7 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFoldExpression
 import scala.annotation.tailrec
 import scala.util.Try
 
-trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+trait AstForExpressionsCreator { this: AstCreator =>
 
   private val OperatorMap: Map[Int, String] = Map(
     IASTBinaryExpression.op_multiply         -> Operators.multiplication,

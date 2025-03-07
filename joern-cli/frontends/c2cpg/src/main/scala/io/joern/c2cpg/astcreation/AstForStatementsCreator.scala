@@ -2,7 +2,6 @@ package io.joern.c2cpg.astcreation
 
 import io.joern.c2cpg.parser.CdtParser
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.ValidationMode
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.nodes.AstNodeNew
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
@@ -22,7 +21,7 @@ import org.eclipse.cdt.internal.core.model.ASTStringUtil
 import java.nio.file.Paths
 import scala.collection.mutable
 
-trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+trait AstForStatementsCreator { this: AstCreator =>
 
   protected def astForBlockStatement(blockStmt: IASTCompoundStatement, blockNode: NewBlock, order: Int = -1): Ast = {
     val codeString  = code(blockStmt)
