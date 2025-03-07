@@ -75,7 +75,7 @@ class AstCreator(
   /** Creates an AST of all declarations found in the translation unit - wrapped in a fake method.
     */
   private def astInFakeMethod(fullName: String, path: String, iASTTranslationUnit: IASTTranslationUnit): Ast = {
-    val includeInactive = config.compilationDatabase.nonEmpty || config.defines.nonEmpty
+    val includeInactive = config.compilationDatabase.isEmpty && config.defines.isEmpty
     val allDecls        = iASTTranslationUnit.getDeclarations(includeInactive).toList.filterNot(isIncludedNode)
     val name            = NamespaceTraversal.globalNamespaceName
 
@@ -91,7 +91,6 @@ class AstCreator(
     scope.pushNewMethodScope(fakeGlobalMethod.fullName, fakeGlobalMethod.name, blockNode_, None)
     val declsAsts = allDecls.flatMap(astsForDeclaration)
     setArgumentIndices(declsAsts)
-    scope.popScope()
 
     val methodReturn = methodReturnNode(iASTTranslationUnit, Defines.Any)
     Ast(fakeGlobalTypeDecl).withChild(
