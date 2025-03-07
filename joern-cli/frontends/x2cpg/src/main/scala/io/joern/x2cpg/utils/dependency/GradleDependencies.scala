@@ -58,8 +58,8 @@ object GradleDependencies {
     }
 
     def addSurroundingQuotes(input: String): String = s"\"$input\""
-    val projectNameOverrideString = projectNameOverride.map(addSurroundingQuotes).getOrElse("")
-    val configurationNameOverrideString = configurationNameOverride.map(addSurroundingQuotes).getOrElse("")
+    val projectNameOverrideString                   = projectNameOverride.map(addSurroundingQuotes).getOrElse("")
+    val configurationNameOverrideString             = configurationNameOverride.map(addSurroundingQuotes).getOrElse("")
 
     s"""
        |import java.nio.file.Path
@@ -89,52 +89,64 @@ object GradleDependencies {
        |   * the dependency graph and only adding dependencies with names/descriptors not starting
        |   * with `project` or `root project` to the list of dependencies to fetch.
        |   *
-       |   * This is a modified version of an example from the documentation.
+       |   * This is a modified version of an example from the documentation without the
+       |   * rootVariant parameter as this is not supported in Gradle 7.
        |   * See https://docs.gradle.org/current/userguide/dependency_graph_resolution.html
        |   */
        |  HashSet<String> getExternalDependencyNames(
        |    ResolvedComponentResult rootComponent,
-       |    ResolvedVariantResult rootVariant
+       |    String configurationName
        |  ) {
        |    Set<String> artifactsToFetch = new HashSet<>()
        |    Set<ResolvedVariantResult> seen = new HashSet<>()
-       |    seen.add(rootVariant)
+       |    def maybeRootVariant =
+       |      rootComponent.getVariants().stream()
+       |        .filter(variant -> variant.getDisplayName() == configurationName)
+       |        .findFirst()
        |
-       |    def stack = new ArrayDeque<Tuple2<ResolvedVariantResult, ResolvedComponentResult>>()
-       |    stack.addFirst(new Tuple2(rootVariant, rootComponent))
+       |    if (maybeRootVariant.isPresent()) {
+       |      def rootVariant = maybeRootVariant.get()
+       |      seen.add(rootVariant)
        |
-       |    while (!stack.isEmpty()) {
-       |      def entry = stack.removeFirst()
-       |      def variant = entry.v1
-       |      def component = entry.v2
-       |      def variantId = variant.owner.displayName
-       |      if (!(variantId.startsWith("project") || variantId.startsWith("root project"))) {
-       |        artifactsToFetch.add(variantId)
-       |      }
+       |      def stack = new ArrayDeque<Tuple2<ResolvedVariantResult, ResolvedComponentResult>>()
+       |      stack.addFirst(new Tuple2(rootVariant, rootComponent))
        |
-       |      // Traverse this variant's dependencies
-       |      for (dependency in component.getDependenciesForVariant(variant)) {
-       |        if (dependency instanceof UnresolvedDependencyResult) {
-       |          System.err.println("Unresolved dependency $$dependency")
-       |          continue
-       |        }
-       |        if ((!dependency instanceof ResolvedDependencyResult)) {
-       |          System.err.println("Unknown dependency type: $$dependency")
-       |          continue
+       |      while (!stack.isEmpty()) {
+       |        def entry = stack.removeFirst()
+       |        def variant = entry.v1
+       |        def component = entry.v2
+       |        def variantId = variant.owner.displayName
+       |        if (!(variantId.startsWith("project") || variantId.startsWith("root project"))) {
+       |          artifactsToFetch.add(variantId)
        |        }
        |
-       |        def resolved = dependency as ResolvedDependencyResult
-       |        if (!dependency.constraint) {
-       |          def toVariant = resolved.resolvedVariant
+       |        // Traverse this variant's dependencies
+       |        for (dependency in component.getDependenciesForVariant(variant)) {
+       |          if (dependency instanceof UnresolvedDependencyResult) {
+       |            System.err.println("Unresolved dependency $$dependency")
+       |            continue
+       |          }
+       |          if ((!dependency instanceof ResolvedDependencyResult)) {
+       |            System.err.println("Unknown dependency type: $$dependency")
+       |            continue
+       |          }
        |
-       |          if (seen.add(toVariant)) {
-       |            stack.addFirst(new Tuple2(toVariant, resolved.selected))
+       |          def resolved = dependency as ResolvedDependencyResult
+       |          if (!dependency.constraint) {
+       |            def toVariant = resolved.resolvedVariant
+       |
+       |            if (seen.add(toVariant)) {
+       |              stack.addFirst(new Tuple2(toVariant, resolved.selected))
+       |            }
        |          }
        |        }
        |      }
        |    }
+       |
        |    return artifactsToFetch
        |  }
+       |
+       |
        |
        |  String getProjectFullName(Project project) {
        |    def projectString = project.toString()
@@ -191,7 +203,7 @@ object GradleDependencies {
        |    for (resolvedArtifacts in configuration.incoming.getResolutionResult()) {
        |      def artifactsToFetch = getExternalDependencyNames(
        |        resolvedArtifacts.rootComponent.get(),
-       |        resolvedArtifacts.rootVariant.get()
+       |        configuration.name
        |      )
        |
        |      def filteredArtifacts = configuration.incoming.artifactView {
@@ -434,7 +446,6 @@ object GradleDependencies {
                   val initScript =
                     makeInitScript(destinationDir, gradleVersion, projectNameOverride, configurationNameOverride)
                   Files.writeString(initScriptFile, initScript.contents)
-                  println(s"## INIT SCRIPT ##\n${initScript.contents}\n########")
                   runGradleTask(c, initScript.taskName, initScript.destinationDir, initScriptFile.toString).map {
                     case (projectName, dependencies) =>
                       projectName -> dependencies.map { dependency =>
