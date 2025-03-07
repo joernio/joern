@@ -250,6 +250,7 @@ object GradleDependencies {
        |  def compileDepsCopyTaskName = taskName + "_compileDeps"
        |  def androidDepsCopyTaskName = taskName + "_androidDeps"
        |  def destinationDir = "$destinationDir"
+       |  def defaultProjectName = "$defaultGradleAppName"
        |  // If these overrides are non-empty, only fetch dependencies for the given names
        |  Set<String> projectNameOverrides_ = [$projectNameOverrideString]
        |  Set<String> configurationNameOverrides_ = [$configurationNameOverrideString]
@@ -279,9 +280,22 @@ object GradleDependencies {
        |  }
        |
        |  if (project == project.rootProject) {
-       |    $taskCreationFunction(taskName) {
-       |      dependsOn project.getTasksByName(androidDepsCopyTaskName, true)
-       |      dependsOn project.getTasksByName(compileDepsCopyTaskName, true)
+       |    def defaultSubproject = project.subprojects.stream()
+       |      .filter { it.name == defaultProjectName }
+       |      .findFirst()
+       |
+       |    if (projectNameOverrides_.isEmpty() && defaultSubproject.isPresent()) {
+       |      def subproj = defaultSubproject.get()
+       |      println("Only fetching dependecies for default subproject $$defaultProjectName since it is present with no overrides")
+       |      $taskCreationFunction(taskName) {
+       |          dependsOn subproj.getTasksByName(androidDepsCopyTaskName, false)
+       |          dependsOn subproj.getTasksByName(compileDepsCopyTaskName, false)
+       |      }
+       |    } else {
+       |      $taskCreationFunction(taskName) {
+       |          dependsOn project.getTasksByName(androidDepsCopyTaskName, true)
+       |          dependsOn project.getTasksByName(compileDepsCopyTaskName, true)
+       |      }
        |    }
        |  }
        |}
@@ -443,6 +457,7 @@ object GradleDependencies {
               case Success(connection) =>
                 Using.resource(connection) { c =>
                   val gradleVersion = getGradleVersionMajorMinor(connection)
+                  // TODO Filter for only `app` project
                   val initScript =
                     makeInitScript(destinationDir, gradleVersion, projectNameOverride, configurationNameOverride)
                   Files.writeString(initScriptFile, initScript.contents)
