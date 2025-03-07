@@ -433,7 +433,7 @@ trait AstCreatorHelper { this: AstCreator =>
     variableName: String,
     tpe: String
   ): NewLocal = {
-    val local = NodeBuilders.newLocalNode(variableName, tpe).order(0)
+    val local = localNodeWithExplicitPositionInfo(variableName, variableName, tpe).order(0)
     diffGraph.addEdge(methodScopeNodeId, local, EdgeTypes.AST)
     local
   }
