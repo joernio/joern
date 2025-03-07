@@ -31,7 +31,6 @@ class ExtensionFnsTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
             ("AClass(p)", Some(8)),
             ("<init>(this, p1)", Some(3)),
             ("this.p1 = p1", Some(3)),
-            ("this.p1 = p1", None),
             ("RET", None),
             ("AClass(p)", Some(8)),
             ("a.doSomething()", Some(9)),

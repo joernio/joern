@@ -23,7 +23,7 @@ import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.{NameConstants, Util}
 import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, composeMethodLikeSignature, composeUnresolvedSignature}
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
-import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode}
+import io.joern.x2cpg.utils.NodeBuilders.newIdentifierNode
 import io.joern.x2cpg.{Ast, Defines}
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.{
@@ -123,15 +123,12 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
         thisAst
 
       case typeDeclChain =>
-        val lineNumber   = line(call)
-        val columnNumber = column(call)
         typeDeclChain.foldLeft(thisAst) { case (accAst, typeDecl) =>
-          val rootNode = newOperatorCallNode(
-            Operators.fieldAccess,
+          val rootNode = operatorCallNode(
+            call,
             s"${accAst.rootCodeOrEmpty}.${NameConstants.OuterClass}",
-            Some(typeDecl.fullName),
-            lineNumber,
-            columnNumber
+            Operators.fieldAccess,
+            Some(typeDecl.fullName)
           )
 
           val outerClassIdentifier = fieldIdentifierNode(call, NameConstants.OuterClass, NameConstants.OuterClass)
@@ -236,13 +233,8 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
 
     val argumentTypes = argumentTypesForMethodLike(maybeResolvedExpr.toOption)
 
-    val allocNode = newOperatorCallNode(
-      Operators.alloc,
-      expr.toString,
-      typeFullName.orElse(Some(defaultTypeFallback())),
-      line(expr),
-      column(expr)
-    )
+    val allocNode =
+      operatorCallNode(expr, expr.toString, Operators.alloc, typeFullName.orElse(Some(defaultTypeFallback())))
 
     val initCall = initNode(
       typeFullName.orElse(Some(defaultTypeFallback())),
@@ -298,13 +290,8 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
       case Success(_) if hasVariadicParameter =>
         val expectedVariadicTypeFullName = getTypeFullName(getExpectedParamType(tryResolvedDecl, paramCount - 1))
         val (regularArgs, varargs)       = argsAsts.splitAt(paramCount - 1)
-        val arrayInitializer = newOperatorCallNode(
-          Operators.arrayInitializer,
-          Operators.arrayInitializer,
-          expectedVariadicTypeFullName,
-          line(call),
-          column(call)
-        )
+        val arrayInitializer =
+          operatorCallNode(call, Operators.arrayInitializer, Operators.arrayInitializer, expectedVariadicTypeFullName)
 
         val arrayInitializerAst = callAst(arrayInitializer, varargs)
 

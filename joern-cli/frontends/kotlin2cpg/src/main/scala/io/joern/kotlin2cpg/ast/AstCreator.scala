@@ -470,13 +470,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, bindingContext: BindingContext, g
     val componentNAst =
       callAst(componentNCallNode, Seq(), Option(rhsBaseAst))
 
-    val assignmentCallNode = NodeBuilders.newOperatorCallNode(
-      Operators.assignment,
-      s"${entry.getText} = $componentNCallCode",
-      None,
-      line(entry),
-      column(entry)
-    )
+    val assignmentCallNode =
+      operatorCallNode(entry, s"${entry.getText} = $componentNCallCode", Operators.assignment, None)
     callAst(assignmentCallNode, List(assignmentLHSAst, componentNAst))
   }
 
