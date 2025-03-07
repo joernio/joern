@@ -56,11 +56,12 @@ class CdtParser(
   private val log            = new DefaultLogService
 
   private var opts: Int =
-    ILanguage.OPTION_PARSE_INACTIVE_CODE |  // enables parsing of code behind disabled preprocessor defines
-      ILanguage.OPTION_NO_IMAGE_LOCATIONS | // performance optimization, allows the parser not to create image-locations
+    ILanguage.OPTION_NO_IMAGE_LOCATIONS | // performance optimization, allows the parser not to create image-locations
       ILanguage.OPTION_SKIP_TRIVIAL_EXPRESSIONS_IN_AGGREGATE_INITIALIZERS // performance optimization, skips trivial expressions in aggregate initializers
-    // instructs the parser to skip function and method bodies
+  // instructs the parser to skip function and method bodies
   if (config.skipFunctionBodies) opts |= ILanguage.OPTION_SKIP_FUNCTION_BODIES
+  // enables parsing of code behind disabled preprocessor defines
+  if (config.compilationDatabase.isEmpty && config.defines.isEmpty) opts |= ILanguage.OPTION_PARSE_INACTIVE_CODE
 
   def preprocessorStatements(file: Path): Iterable[IASTPreprocessorStatement] = {
     parse(file).map(t => preprocessorStatements(t)).getOrElse(Iterable.empty)

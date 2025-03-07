@@ -75,8 +75,9 @@ class AstCreator(
   /** Creates an AST of all declarations found in the translation unit - wrapped in a fake method.
     */
   private def astInFakeMethod(fullName: String, path: String, iASTTranslationUnit: IASTTranslationUnit): Ast = {
-    val allDecls = iASTTranslationUnit.getDeclarations.toList.filterNot(isIncludedNode)
-    val name     = NamespaceTraversal.globalNamespaceName
+    val includeInactive = config.compilationDatabase.nonEmpty || config.defines.nonEmpty
+    val allDecls        = iASTTranslationUnit.getDeclarations(includeInactive).toList.filterNot(isIncludedNode)
+    val name            = NamespaceTraversal.globalNamespaceName
 
     val fakeGlobalTypeDecl =
       typeDeclNode(iASTTranslationUnit, name, fullName, filename, name, NodeTypes.NAMESPACE_BLOCK, fullName)
