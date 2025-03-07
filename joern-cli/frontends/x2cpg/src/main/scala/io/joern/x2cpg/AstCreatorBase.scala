@@ -377,7 +377,7 @@ abstract class AstCreatorBase(filename: String)(implicit withSchemaValidation: V
   /** Absolute path for the given file name
     */
   def absolutePath(filename: String): String =
-    Paths.get(filename).absolutePathAsString
+    Paths.get(filename).toAbsolutePath.normalize().toString
 
   /** @return
     *   the next available name for a closure in this context

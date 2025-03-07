@@ -10,7 +10,7 @@ class ConsoleConfigTest extends AnyWordSpec with Matchers {
   "An InstallConfig" should {
     "set the rootPath to directory containing `.installation_root` by default" in {
       val config = new InstallConfig(environment = Map.empty)
-      config.rootPath shouldBe ProjectRoot.find
+      config.rootPath shouldBe ProjectRoot.find.path
     }
 
     "set the rootPath to SHIFTLEFT_OCULAR_INSTALL_DIR if it is defined" in {

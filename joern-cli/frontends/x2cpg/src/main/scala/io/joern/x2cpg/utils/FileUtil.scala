@@ -114,7 +114,7 @@ object FileUtil {
     def absolutePathAsString: String = p.toAbsolutePath.toString
 
     def /(child: String): Path = {
-      p.resolve(child)
+      p.resolve(child).toAbsolutePath.normalize()
     }
 
     def copyToDirectory(destination: Path): Unit = {

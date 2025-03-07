@@ -42,7 +42,7 @@ object SourceFiles {
 
     private val seenFiles = scala.collection.mutable.ArrayBuffer.empty[Path]
 
-    def files(): Array[Path] = seenFiles.toArray
+    def files(): Array[Path] = seenFiles.map(_.toAbsolutePath.normalize()).toArray
 
     override def preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult = {
       if (filterFile(dir.toString, inputPath, ignoredDefaultRegex, ignoredFilesRegex, ignoredFilesPath)) {

@@ -23,7 +23,7 @@ object TypeStubUtil {
         "."
       }
     }
-    Paths.get(fixedDir, "/type_stubs").toAbsolutePath
+    Paths.get(fixedDir, "/type_stubs").toAbsolutePath.normalize()
   }
 
 }
