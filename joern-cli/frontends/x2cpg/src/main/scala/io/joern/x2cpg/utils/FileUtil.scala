@@ -7,10 +7,11 @@ import java.nio.file.{
   LinkOption,
   NoSuchFileException,
   Path,
+  Paths,
   SimpleFileVisitor,
   StandardCopyOption
 }
-import java.nio.file.attribute.{BasicFileAttributes}
+import java.nio.file.attribute.BasicFileAttributes
 import java.nio.charset.Charset
 import java.util.zip.{ZipEntry, ZipFile}
 import scala.annotation.tailrec
@@ -18,6 +19,8 @@ import scala.jdk.CollectionConverters.*
 import scala.util.Using
 
 object FileUtil {
+  def currentWorkingDirectory: Path = Paths.get("").toAbsolutePath.normalize()
+
   def newTemporaryFile(prefix: String = "", suffix: String = "", parent: Option[Path] = None): Path = {
     parent match {
       case Some(dir) => Files.createTempFile(dir, prefix, suffix)
@@ -223,35 +226,21 @@ object FileUtil {
         .sum
     }
 
-    def listFiles(): Iterator[Path] = {
-      Files.list(p).iterator().asScala
-    }
+    def listFiles(): Iterator[Path] = Files.list(p).iterator().asScala
 
-    def walk(): Iterator[Path] = {
-      Files.walk(p).iterator().asScala
-    }
+    def walk(): Iterator[Path] = Files.walk(p).iterator().asScala
 
-    def hasExtension: Boolean = {
-      (Files.isRegularFile(p) || Files.notExists(p)) && p.fileName.contains(".")
-    }
+    def hasExtension: Boolean = (Files.isRegularFile(p) || Files.notExists(p)) && p.fileName.contains(".")
 
-    def fileName: String = {
-      p.getFileName.toString
-    }
+    def fileName: String = p.getFileName.toString
 
     def fileContent: String = fileContent()
 
-    def fileContent(charset: Charset = Charset.defaultCharset()): String = {
-      new String(Files.readAllBytes(p), charset)
-    }
+    def fileContent(charset: Charset = Charset.defaultCharset()): String = new String(Files.readAllBytes(p), charset)
 
-    def nameOption: Option[String] = {
-      Option(p.fileName)
-    }
+    def nameOption: Option[String] = Option(p.fileName)
 
-    def parentOption: Option[Path] = {
-      Option(p.getParent)
-    }
+    def parentOption: Option[Path] = Option(p.getParent)
 
     def nameWithoutExtension(includeAll: Boolean = true): String =
       if (hasExtension) p.fileName.substring(0, indexOfExtension(includeAll)) else p.fileName
@@ -266,9 +255,8 @@ object FileUtil {
       }
     }
 
-    private def indexOfExtension(includeAll: Boolean): Int = {
+    private def indexOfExtension(includeAll: Boolean): Int =
       if (includeAll) p.fileName.indexOf(".") else p.fileName.lastIndexOf(".")
-    }
 
     // Taken from better.files implementation
     @tailrec final def pipeTo(in: InputStream, out: OutputStream, buffer: Array[Byte]): OutputStream = {

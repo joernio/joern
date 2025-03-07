@@ -21,7 +21,7 @@ import java.nio.file.{Files, Path, Paths, StandardCopyOption}
 import scala.util.control.NoStackTrace
 import scala.util.{Failure, Success, Try}
 
-class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: Path = Paths.get(""))(implicit
+class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: Path = FileUtil.currentWorkingDirectory)(implicit
   availableWidthProvider: AvailableWidthProvider
 ) extends Reporting {
 

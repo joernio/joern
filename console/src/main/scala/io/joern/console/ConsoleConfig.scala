@@ -1,5 +1,6 @@
 package io.joern.console
 
+import io.joern.x2cpg.utils.FileUtil
 import io.joern.x2cpg.utils.FileUtil.*
 
 import java.nio.file.{Path, Paths}
@@ -28,7 +29,7 @@ class InstallConfig(environment: Map[String, String] = sys.env) {
       val uriToLibDir  = classOf[io.joern.console.InstallConfig].getProtectionDomain.getCodeSource.getLocation.toURI
       val pathToLibDir = Paths.get(uriToLibDir).getParent
       findRootDirectory(pathToLibDir).getOrElse {
-        val cwd = Paths.get("")
+        val cwd = FileUtil.currentWorkingDirectory
         findRootDirectory(cwd).getOrElse(throw new AssertionError(s"""unable to find root installation directory
                                    | context: tried to find marker file `$rootDirectoryMarkerFilename`
                                    | started search in both $pathToLibDir and $cwd and searched 

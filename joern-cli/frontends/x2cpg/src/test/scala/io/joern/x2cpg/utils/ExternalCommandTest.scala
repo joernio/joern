@@ -10,7 +10,7 @@ import scala.util.{Failure, Success}
 
 class ExternalCommandTest extends AnyWordSpec with Matchers {
 
-  private def cwd = Paths.get("").toString
+  private def cwd = FileUtil.currentWorkingDirectory.toString
 
   "ExternalCommand.run" should {
     "be able to run `ls` successfully" in {
