@@ -11,7 +11,7 @@ import io.joern.x2cpg.datastructures.Stack.*
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import org.apache.commons.lang3.StringUtils
 
-trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+trait AstForTypesCreator { this: AstCreator =>
 
   protected def astForDecltypeSpecifier(decl: ICPPASTDecltypeSpecifier): Ast = {
     val op       = Defines.OperatorTypeOf

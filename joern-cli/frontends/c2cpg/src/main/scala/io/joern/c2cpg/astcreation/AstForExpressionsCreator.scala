@@ -21,7 +21,7 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFoldExpression
 
 import scala.util.Try
 
-trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+trait AstForExpressionsCreator { this: AstCreator =>
 
   private val OperatorMap: Map[Int, String] = Map(
     IASTBinaryExpression.op_multiply         -> Operators.multiplication,

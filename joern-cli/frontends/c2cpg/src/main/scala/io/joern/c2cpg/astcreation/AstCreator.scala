@@ -23,8 +23,7 @@ class AstCreator(
   val cdtAst: IASTTranslationUnit,
   val headerFileFinder: HeaderFileFinder,
   val file2OffsetTable: ConcurrentHashMap[String, Array[Int]]
-)(implicit withSchemaValidation: ValidationMode)
-    extends AstCreatorBase(filename)
+) extends AstCreatorBase(filename)(config.schemaValidation)
     with AstForTypesCreator
     with AstForFunctionsCreator
     with AstForPrimitivesCreator
@@ -36,6 +35,8 @@ class AstCreator(
     with FullNameProvider
     with MacroHandler
     with X2CpgAstNodeBuilder[IASTNode, AstCreator] {
+
+  protected implicit val schemaValidation: ValidationMode = config.schemaValidation
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
 
@@ -115,17 +116,17 @@ class AstCreator(
     }
   }
 
-  protected def columnEnd(node: IASTNode): Option[Int] = {
-    nodeOffsets(node).map { case (_, endOffset) =>
-      offsetToColumn(node, endOffset - 1)
-    }
-  }
-
   private def nodeOffsets(node: IASTNode): Option[(Int, Int)] = {
     for {
       startOffset <- nullSafeFileLocation(node).map(l => l.getNodeOffset)
       endOffset   <- nullSafeFileLocation(node).map(l => l.getNodeOffset + l.getNodeLength)
     } yield (startOffset, endOffset)
+  }
+
+  protected def columnEnd(node: IASTNode): Option[Int] = {
+    nodeOffsets(node).map { case (_, endOffset) =>
+      offsetToColumn(node, endOffset - 1)
+    }
   }
 
   override protected def offset(node: IASTNode): Option[(Int, Int)] = {

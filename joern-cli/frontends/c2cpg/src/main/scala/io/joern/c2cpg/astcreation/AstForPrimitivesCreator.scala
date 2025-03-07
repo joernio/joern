@@ -23,7 +23,7 @@ import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import scala.util.Try
 
-trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+trait AstForPrimitivesCreator { this: AstCreator =>
 
   protected def astForComment(comment: IASTComment): Ast =
     Ast(newCommentNode(comment, code(comment), fileName(comment)))

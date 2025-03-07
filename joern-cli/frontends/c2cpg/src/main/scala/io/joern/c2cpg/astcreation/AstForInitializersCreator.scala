@@ -11,7 +11,7 @@ import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTDesignatedInitializer
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTArrayRangeDesignator
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTArrayRangeDesignator
 
-trait AstForInitializersCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+trait AstForInitializersCreator { this: AstCreator =>
 
   protected def astForInitializerList(l: IASTInitializerList): Ast = {
     val MAX_INITIALIZERS = 1000

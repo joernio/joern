@@ -23,7 +23,7 @@ import org.eclipse.cdt.internal.core.model.ASTStringUtil
 import java.nio.file.Paths
 import scala.collection.mutable
 
-trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+trait AstForStatementsCreator { this: AstCreator =>
 
   protected def astForBlockStatement(blockStmt: IASTCompoundStatement, blockNode: NewBlock, order: Int = -1): Ast = {
     val codeString  = code(blockStmt)
