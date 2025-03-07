@@ -283,15 +283,46 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     closureBindingId: Option[String] = None,
     genericSignature: Option[String] = None
   ): NewLocal = {
-    val local = NewLocal()
+    val (nodeOffset, nodeOffsetEnd) =
+      offset(node).map((offset, offsetEnd) => (Option(offset), Option(offsetEnd))).getOrElse((None, None))
+    localNodeWithExplicitPositionInfo(
+      name,
+      code,
+      typeFullName,
+      closureBindingId,
+      genericSignature,
+      line(node),
+      column(node),
+      nodeOffset,
+      nodeOffsetEnd
+    )
+  }
+
+  /** It is useful (perhaps necessary) to be able to create locals without an "origin node" in some cases, so allow that
+    * but make it clear that positional information (line/col number and offsets) must be specified explicitly.
+    */
+  protected def localNodeWithExplicitPositionInfo(
+    name: String,
+    code: String,
+    typeFullName: String,
+    closureBindingId: Option[String] = None,
+    genericSignature: Option[String] = None,
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None,
+    offset: Option[Int] = None,
+    offsetEnd: Option[Int] = None
+  ): NewLocal = {
+    val node_ = NewLocal()
       .name(name)
       .code(code)
       .typeFullName(typeFullName)
       .closureBindingId(closureBindingId)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-    genericSignature.foreach(local.genericSignature(_))
-    local
+      .lineNumber(lineNumber)
+      .columnNumber(columnNumber)
+      .offset(offset)
+      .offsetEnd(offsetEnd)
+    genericSignature.foreach(node_.genericSignature(_))
+    node_
   }
 
   protected def identifierNode(

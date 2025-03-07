@@ -3,13 +3,7 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{ConstructorScope, MethodScope}
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.x2cpg.utils.NodeBuilders.{
-  newBindingNode,
-  newClosureBindingNode,
-  newLocalNode,
-  newModifierNode,
-  newThisParameterNode
-}
+import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newClosureBindingNode, newModifierNode, newThisParameterNode}
 import io.joern.x2cpg.{Ast, AstEdge, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{
@@ -107,7 +101,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     // Consider which variables are captured from the outer scope
     val stmtBlockAst = if (isClosure || isSingletonObjectMethod) {
       val baseStmtBlockAst = astForMethodBody(node.body, optionalStatementList)
-      transformAsClosureBody(refs, baseStmtBlockAst)
+      transformAsClosureBody(node.body, refs, baseStmtBlockAst)
     } else {
       if (methodName == Defines.TypeDeclBody) {
         val stmtList = node.body.asInstanceOf[StatementList]
@@ -217,7 +211,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     methodAst
   }
 
-  private def transformAsClosureBody(refs: List[Ast], baseStmtBlockAst: Ast) = {
+  private def transformAsClosureBody(originNode: RubyExpression, refs: List[Ast], baseStmtBlockAst: Ast) = {
     // Determine which locals are captured
     val capturedLocalNodes = baseStmtBlockAst.nodes
       .collect { case x: NewIdentifier if x.name != Defines.Self => x } // Self identifiers are handled separately
@@ -252,7 +246,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       }
       .collect { case (capturedLocal, name, code, Some(closureBindingId)) =>
         val capturingLocal =
-          newLocalNode(name = name, typeFullName = Defines.Any, closureBindingId = Option(closureBindingId))
+          localNode(originNode, name, name, Defines.Any, closureBindingId = Option(closureBindingId))
 
         val closureBinding = newClosureBindingNode(
           closureBindingId = closureBindingId,
