@@ -16,12 +16,8 @@ class HeaderFileFinder(config: Config) {
       ignoredFilesRegex = Option(config.ignoredFilesRegex),
       ignoredFilesPath = Option(config.ignoredFiles)
     )
-    .map { p =>
-      val file = File(p)
-      (file.name, file.pathAsString)
-    }
-    .groupBy(_._1)
-    .map(x => (x._1, x._2.map(_._2)))
+    .map(p => File(p))
+    .groupMap(_.name)(_.pathAsString)
 
   /** Given an unresolved header file, given as a non-existing absolute path, determine whether a header file with the
     * same name can be found anywhere in the code base.

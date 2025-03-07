@@ -1,15 +1,20 @@
 package io.joern.x2cpg.passes.callgraph
 
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method, StoredNode, Type, TypeDecl}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.nodes.Method
+import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
+import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
-import scala.jdk.CollectionConverters.*
 
 /** We compute the set of possible call-targets for each dynamic call, and add them as CALL edges to the graph, based on
   * call.methodFullName, method.name and method.signature, the inheritance hierarchy and the AST of typedecls and
@@ -23,7 +28,7 @@ import scala.jdk.CollectionConverters.*
   */
 class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
 
-  import DynamicCallLinker._
+  import DynamicCallLinker.*
   // Used to track potential method candidates for a given method fullname. Since our method full names contain the type
   // decl we don't need to specify an addition map to wrap this in. LinkedHashSets are used here to preserve order in
   // the best interest of reproducibility during debugging.

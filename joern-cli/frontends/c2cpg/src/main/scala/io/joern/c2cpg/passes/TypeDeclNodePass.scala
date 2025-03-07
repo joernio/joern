@@ -1,6 +1,7 @@
 package io.joern.c2cpg.passes
 
 import io.joern.c2cpg.astcreation.Defines
+import io.joern.c2cpg.Config
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.NodeTypes
@@ -11,12 +12,13 @@ import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 
-class TypeDeclNodePass(cpg: Cpg)(implicit withSchemaValidation: ValidationMode) extends CpgPass(cpg) {
+class TypeDeclNodePass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
 
-  private val filename: String               = "<includes>"
-  private val globalName: String             = NamespaceTraversal.globalNamespaceName
-  private val fullName: String               = MetaDataPass.getGlobalNamespaceBlockFullName(Option(filename))
-  private val typeDeclFullNames: Set[String] = cpg.typeDecl.fullName.toSetImmutable
+  private val filename: String                          = "<includes>"
+  private val globalName: String                        = NamespaceTraversal.globalNamespaceName
+  private val fullName: String                          = MetaDataPass.getGlobalNamespaceBlockFullName(Option(filename))
+  private val typeDeclFullNames: Set[String]            = cpg.typeDecl.fullName.toSetImmutable
+  private implicit val schemaValidation: ValidationMode = config.schemaValidation
 
   override def run(dstGraph: DiffGraphBuilder): Unit = {
     var hadMissingTypeDecl = false

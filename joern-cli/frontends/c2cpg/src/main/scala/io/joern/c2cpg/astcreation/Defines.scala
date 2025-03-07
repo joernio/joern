@@ -16,4 +16,6 @@ object Defines {
   val OperatorUnknown: String                = "<operator>.unknown"
   val OperatorCall: String                   = "<operator>()"
   val OperatorNew: String                    = "<operator>.new"
+  val DuplicateSuffix                        = "<duplicate>"
+  val ConstSuffix                            = "<const>"
 }
