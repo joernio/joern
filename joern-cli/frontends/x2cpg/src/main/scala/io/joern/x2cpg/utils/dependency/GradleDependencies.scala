@@ -446,7 +446,6 @@ object GradleDependencies {
     configurationNameOverride: Option[String]
   ): Map[String, collection.Seq[String]] = {
     logger.info(s"Fetching Gradle project information at path `$projectDir`.")
-    // TODO Get gradle version
     Try(Files.createTempDirectory(tempDirPrefix)) match {
       case Success(destinationDir) =>
         FileUtil.deleteOnExit(destinationDir)
@@ -457,7 +456,6 @@ object GradleDependencies {
               case Success(connection) =>
                 Using.resource(connection) { c =>
                   val gradleVersion = getGradleVersionMajorMinor(connection)
-                  // TODO Filter for only `app` project
                   val initScript =
                     makeInitScript(destinationDir, gradleVersion, projectNameOverride, configurationNameOverride)
                   Files.writeString(initScriptFile, initScript.contents)
