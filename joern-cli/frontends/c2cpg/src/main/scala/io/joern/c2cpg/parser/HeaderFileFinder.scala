@@ -21,7 +21,6 @@ class HeaderFileFinder(config: Config) {
     .map(p => Paths.get(p))
     .groupMap(_.fileName)(_.toString)
 
-
   /** Given an unresolved header file, given as a non-existing absolute path, determine whether a header file with the
     * same name can be found anywhere in the code base.
     */
