@@ -15,9 +15,7 @@ object Defines {
   val OperatorEllipses: String               = "<operator>.op_ellipses"
   val OperatorUnknown: String                = "<operator>.unknown"
   val OperatorCall: String                   = "<operator>()"
-  val OperatorExpressionList: String         = "<operator>.expressionList"
   val OperatorNew: String                    = "<operator>.new"
-  val OperatorBracketedPrimary: String       = "<operator>.bracketedPrimary"
   val DuplicateSuffix                        = "<duplicate>"
   val ConstSuffix                            = "<const>"
 }

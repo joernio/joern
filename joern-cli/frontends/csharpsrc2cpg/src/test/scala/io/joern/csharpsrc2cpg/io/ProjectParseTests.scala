@@ -1,6 +1,5 @@
 package io.joern.csharpsrc2cpg.io
 
-import better.files.File as BetterFile
 import io.joern.csharpsrc2cpg.CSharpSrc2Cpg
 import io.joern.csharpsrc2cpg.Config
 import io.joern.csharpsrc2cpg.passes.AstCreationPass
@@ -56,7 +55,7 @@ class ProjectParseTests extends CSharpCode2CpgFixture with BeforeAndAfterAll {
 
   private object ProjectParseTestsFixture {
     def apply(projectDir: Path)(f: Cpg => Unit): Unit = {
-      BetterFile.usingTemporaryDirectory("csharpsrc2cpgTests") { tmpDir =>
+      FileUtil.usingTemporaryDirectory("csharpsrc2cpgTests") { tmpDir =>
         val cpg          = newEmptyCpg()
         val config       = Config().withInputPath(projectDir.toString).withOutputPath(tmpDir.toString)
         val astGenResult = new DotNetAstGenRunner(config).execute(tmpDir)

@@ -1,6 +1,5 @@
 package io.joern.jssrc2cpg.io
 
-import better.files.File as BetterFile
 import io.joern.x2cpg.utils.server.FrontendHTTPClient
 import io.joern.x2cpg.utils.FileUtil
 import io.joern.x2cpg.utils.FileUtil.*

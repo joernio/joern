@@ -1,6 +1,5 @@
 package io.joern.csharpsrc2cpg
 
-import better.files.File
 import io.joern.csharpsrc2cpg.CSharpSrc2Cpg.findBuildFiles
 import io.joern.csharpsrc2cpg.astcreation.AstCreator
 import io.joern.csharpsrc2cpg.datastructures.CSharpProgramSummary
@@ -17,7 +16,7 @@ import io.joern.x2cpg.astgen.AstGenRunner.AstGenRunnerResult
 import io.joern.x2cpg.astgen.ParserResult
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
-import io.joern.x2cpg.utils.{ConcurrentTaskUtil, Environment, HashUtil, Report}
+import io.joern.x2cpg.utils.{ConcurrentTaskUtil, Environment, FileUtil, HashUtil, Report}
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
@@ -38,7 +37,7 @@ class CSharpSrc2Cpg extends X2CpgFrontend[Config] {
 
   override def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
-      File.usingTemporaryDirectory("csharpsrc2cpgOut") { tmpDir =>
+      FileUtil.usingTemporaryDirectory("csharpsrc2cpgOut") { tmpDir =>
         val astGenResult = new DotNetAstGenRunner(config).execute(tmpDir)
         val astCreators  = CSharpSrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config)
         val buildFiles   = findBuildFiles(config)

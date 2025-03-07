@@ -1,6 +1,5 @@
 package io.joern.jssrc2cpg.io
 
-import better.files.File as BetterFile
 import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgSuite
 import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.passes.AstCreationPass
@@ -76,7 +75,7 @@ class ProjectParseTests extends JsSrc2CpgSuite with BeforeAndAfterAll {
 
   private object ProjectParseTestsFixture {
     def apply(projectDir: Path)(f: Cpg => Unit): Unit = {
-      BetterFile.usingTemporaryDirectory("jssrc2cpgTests") { tmpDir =>
+      FileUtil.usingTemporaryDirectory("jssrc2cpgTests") { tmpDir =>
         val cpg          = newEmptyCpg()
         val config       = Config(tsTypes = false).withInputPath(projectDir.toString).withOutputPath(tmpDir.toString)
         val astGenResult = new AstGenRunner(config).execute(tmpDir)

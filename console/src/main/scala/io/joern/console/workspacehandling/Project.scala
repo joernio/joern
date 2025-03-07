@@ -2,6 +2,7 @@ package io.joern.console.workspacehandling
 
 import better.files.Dsl.*
 import better.files.File
+import io.joern.x2cpg.utils.FileUtil
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.Overlays
 
@@ -60,7 +61,7 @@ case class Project(projectFile: ProjectFile, var path: Path, var cpg: Option[Cpg
       System.err.println(s"closing/saving project `$name`")
       val workingCopy = path.resolve(workCpgFileName)
       val persistent  = path.resolve(persistentCpgFileName)
-      cp(workingCopy, persistent)
+      FileUtil.copyFiles(workingCopy, persistent)
     }
     cpg = None
     this

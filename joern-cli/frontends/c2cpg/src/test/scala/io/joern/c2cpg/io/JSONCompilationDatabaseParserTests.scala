@@ -1,6 +1,5 @@
 package io.joern.c2cpg.io
 
-import better.files.File as BetterFile
 import io.joern.c2cpg.parser.JSONCompilationDatabaseParser
 import io.joern.c2cpg.C2Cpg
 import io.joern.c2cpg.Config
@@ -111,10 +110,10 @@ class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
           |    "file": "file2.cc" }
           |]""".stripMargin
 
-      BetterFile.usingTemporaryFile("compile_commands.json") { commandJsonFile =>
-        commandJsonFile.writeText(content)
+      FileUtil.usingTemporaryFile("compile_commands.json") { commandJsonFile =>
+        Files.writeString(commandJsonFile, content)
 
-        val commandObjects = JSONCompilationDatabaseParser.parse(commandJsonFile.pathAsString)
+        val commandObjects = JSONCompilationDatabaseParser.parse(commandJsonFile.toString)
         commandObjects.map(_.compiledFile()) shouldBe Set(
           Paths.get("/home/user/llvm/build/file.cc").toString,
           Paths.get("/home/user/llvm/build/file2.cc").toString

@@ -10,7 +10,9 @@ import io.joern.gosrc2cpg.utils.AstGenRunner.GoAstGenRunnerResult
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.passes.frontend.MetaDataPass
-import io.joern.x2cpg.utils.Report
+import io.joern.x2cpg.utils.{Report, FileUtil}
+import io.joern.x2cpg.utils.FileUtil.*
+
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 
 import java.nio.file.Paths
@@ -22,7 +24,7 @@ class GoSrc2Cpg(goGlobalOption: Option[GoGlobal] = Option(GoGlobal())) extends X
   private var goMod: Option[GoModHelper] = None
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
-      File.usingTemporaryDirectory("gosrc2cpgOut") { tmpDir =>
+      FileUtil.usingTemporaryDirectory("gosrc2cpgOut") { tmpDir =>
         MetaDataPass(cpg, Languages.GOLANG, config.inputPath).createAndApply()
         val astGenResults = new AstGenRunner(config).executeForGo(tmpDir)
         astGenResults.foreach(astGenResult => {

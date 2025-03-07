@@ -1,27 +1,61 @@
 package io.joern.x2cpg.utils
 
-import java.io.{IOException, InputStream, OutputStream}
-import java.nio.file.{FileAlreadyExistsException, Files, LinkOption, Path, SimpleFileVisitor, StandardCopyOption}
+import java.io.{BufferedOutputStream, FileNotFoundException, IOException, InputStream, OutputStream}
+import java.nio.file.{
+  FileAlreadyExistsException,
+  Files,
+  LinkOption,
+  NoSuchFileException,
+  Path,
+  SimpleFileVisitor,
+  StandardCopyOption
+}
 import java.nio.file.attribute.{BasicFileAttributes, FileTime}
 import java.nio.charset.Charset
 import java.time.Instant
 import java.util.zip.{ZipEntry, ZipFile}
 import scala.annotation.tailrec
 import scala.jdk.CollectionConverters.*
+import scala.util.Using
 
 object FileUtil {
-  def newTemporaryFile(prefix: String = "", suffix: String = ""): Path = {
-    Files.createTempFile(prefix, suffix)
+  def newTemporaryFile(prefix: String = "", suffix: String = "", parent: Option[Path] = None): Path = {
+    parent match {
+      case Some(dir) => Files.createTempFile(dir, prefix, suffix)
+      case _         => Files.createTempFile(prefix, suffix)
+    }
   }
 
-  // TODO: Replace better.files with this method
-  def usingTemporaryDirectory[U](prefix: String = "")(f: Path => U): Unit = {
-    val file = Files.createTempDirectory(prefix)
+  def usingTemporaryFile[U](prefix: String = "", suffix: String = "", parent: Option[Path] = None)(
+    f: Path => U
+  ): Unit = {
+    val file = newTemporaryFile(prefix, suffix, parent)
 
     try {
       f(file)
     } finally {
-      delete(file)
+      delete(file, swallowIoExceptions = true)
+    }
+  }
+
+  def usingTemporaryDirectory[T](prefix: String = "")(f: Path => T): T = {
+    val file = Files.createTempDirectory(prefix)
+    try {
+      f(file)
+    } finally {
+      try {
+        delete(file, swallowIoExceptions = true)
+      } catch {
+        case _: Exception => // Ensure we don't throw from finally
+      }
+    }
+  }
+
+  def copyFiles(from: Path, to: Path): Unit = {
+    if (Files.isDirectory(to)) {
+      from.copyToDirectory(to)
+    } else {
+      from.copyTo(to, StandardCopyOption.REPLACE_EXISTING)
     }
   }
 
@@ -32,9 +66,10 @@ object FileUtil {
   ): Unit = {
     try {
       if (Files.isDirectory(file, linkOptions)) {
-        val dirStream = Files.newDirectoryStream(file)
-        val children  = dirStream.iterator().asScala.toList
-        dirStream.close()
+        val children = Using.resource(Files.newDirectoryStream(file)) { dirStream =>
+          dirStream.iterator().asScala.toList
+        }
+
         children.foreach { x =>
           deleteOnExit(x, swallowIOExceptions, linkOptions)
         }
@@ -53,18 +88,28 @@ object FileUtil {
   ): Unit = {
     try {
       if (Files.isDirectory(file, linkOptions)) {
-        val dirStream = Files.newDirectoryStream(file)
-        val children  = dirStream.iterator().asScala.toList
-        dirStream.close()
-        children.foreach { x =>
-          delete(x, swallowIoExceptions, linkOptions)
+        val children = Using.resource(Files.newDirectoryStream(file)) { dirStream =>
+          dirStream.iterator().asScala.toList
         }
 
+        // Delete all children first
+        children.foreach { child =>
+          delete(child, swallowIoExceptions, linkOptions)
+        }
       }
 
       Files.deleteIfExists(file)
     } catch {
-      case _: IOException if swallowIoExceptions => //
+      case _: IOException if swallowIoExceptions => // do nothing
+    }
+  }
+
+  def writeBytes(file: Path, content: Iterable[Byte], bufferSize: Int = 8192): Unit = {
+    Using.Manager { use =>
+      val fos = use(Files.newOutputStream(file))
+      val bos = use(new BufferedOutputStream(fos))
+      content.grouped(bufferSize).foreach(buffer => bos.write(buffer.toArray))
+      bos.flush()
     }
   }
 
@@ -142,26 +187,43 @@ object FileUtil {
       zipFilter: ZipEntry => Boolean = _ => true,
       bufferSize: Int = 8192
     ): destination.type = {
-      val zipFile = new ZipFile(p.toAbsolutePath.toString, Charset.defaultCharset())
-      val entries = zipFile.entries().asScala.filter(zipFilter)
+      Using.Manager { use =>
+        val zipFile = use(new ZipFile(p.absolutePathAsString, Charset.defaultCharset()))
+        val entries = zipFile.entries().asScala.filter(zipFilter)
 
-      entries.foreach { entry =>
-        val entryName = entry.getName.replace("\\", "/") // see https://github.com/pathikrit/better-files/issues/262
-        val child =
-          (destination / entryName).createWithParentsIfNotExists(asDirectory = entry.isDirectory, createParents = true)
+        entries.foreach { entry =>
+          val entryName = entry.getName.replace("\\", "/")
+          val child = (destination / entryName).createWithParentsIfNotExists(
+            asDirectory = entry.isDirectory,
+            createParents = true
+          )
 
-        if (!entry.isDirectory) {
-          val inputStream  = zipFile.getInputStream(entry)
-          val outputStream = Files.newOutputStream(child)
-          pipeTo(inputStream, outputStream, Array.ofDim[Byte](bufferSize))
-
-          inputStream.close()
-          outputStream.close()
+          if (!entry.isDirectory) {
+            val zipStream    = use(zipFile.getInputStream(entry))
+            val outputStream = use(Files.newOutputStream(child))
+            pipeTo(zipStream, outputStream, Array.ofDim[Byte](bufferSize))
+          }
         }
       }
 
-      zipFile.close()
       destination
+    }
+
+    /** @return
+      *   size of the directory or file
+      */
+    def size: Long = {
+      p.walk()
+        .map { f =>
+          {
+            try {
+              Files.size(f)
+            } catch {
+              case (_: FileNotFoundException | _: NoSuchFileException) if Files.isDirectory(f) => 0L
+            }
+          }
+        }
+        .sum
     }
 
     def listFiles(): Iterator[Path] = {
@@ -190,6 +252,5 @@ object FileUtil {
         out
       }
     }
-
   }
 }

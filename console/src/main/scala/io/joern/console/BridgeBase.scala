@@ -1,8 +1,8 @@
 package io.joern.console
 
-import better.files.*
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.semanticcpg.sarif.SarifConfig
 import org.apache.commons.text.StringEscapeUtils
 import replpp.scripting.ScriptRunner
 
@@ -32,7 +32,7 @@ case class Config(
   serverAuthUsername: Option[String] = None,
   serverAuthPassword: Option[String] = None,
   nocolors: Boolean = false,
-  cpgToLoad: Option[File] = None,
+  cpgToLoad: Option[Path] = None,
   forInputPath: Option[String] = None,
   frontendArgs: Array[String] = Array.empty,
   verbose: Boolean = false,
@@ -168,9 +168,9 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
 
       note("Misc")
 
-      arg[java.io.File]("<cpg.bin>")
+      arg[java.nio.file.Path]("<cpg.bin>")
         .optional()
-        .action((x, c) => c.copy(cpgToLoad = Some(x.toScala)))
+        .action((x, c) => c.copy(cpgToLoad = Some(x)))
         .text("CPG to load")
 
       opt[String]("for-input-path")
@@ -307,7 +307,7 @@ trait PluginHandling { this: BridgeBase =>
     println("Available layer creators")
     println()
     withTemporaryScript(codeToListPlugins()) { file =>
-      runScript(config.copy(scriptFile = Some(file.path))).get
+      runScript(config.copy(scriptFile = Some(file))).get
     }
   }
 
@@ -326,7 +326,7 @@ trait PluginHandling { this: BridgeBase =>
     }
     val code = loadOrCreateCpg(config, applicationName)
     withTemporaryScript(code) { file =>
-      runScript(config.copy(scriptFile = Some(file.path))).get
+      runScript(config.copy(scriptFile = Some(file))).get
     }
   }
 
@@ -389,10 +389,10 @@ trait PluginHandling { this: BridgeBase =>
     }
   }
 
-  private def withTemporaryScript(code: String)(f: File => Unit): Unit = {
-    File.usingTemporaryDirectory(applicationName + "-bundle") { dir =>
+  private def withTemporaryScript(code: String)(f: Path => Unit): Unit = {
+    FileUtil.usingTemporaryDirectory(applicationName + "-bundle") { dir =>
       val file = dir / "script.sc"
-      file.write(code)
+      Files.writeString(file, code)
       f(file)
     }
   }
