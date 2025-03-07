@@ -1,9 +1,12 @@
 package io.joern.x2cpg
 
 import io.joern.x2cpg.utils.NodeBuilders.{newMethodReturnNode, newOperatorCallNode}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
 import io.shiftleft.codepropertygraph.generated.nodes.Block.PropertyDefaults as BlockDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewAnnotation,
+  NewAnnotationLiteral,
+  NewBinding,
   NewBlock,
   NewCall,
   NewControlStructure,
@@ -18,6 +21,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewMethodParameterIn,
   NewMethodRef,
   NewMethodReturn,
+  NewModifier,
+  NewNamespaceBlock,
   NewReturn,
   NewTypeDecl,
   NewTypeRef,
@@ -58,6 +63,14 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .code(code)
       .name(name)
       .fullName(fullName)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+  }
+
+  protected def annotationLiteralNode(node: Node, name: String): NewAnnotationLiteral = {
+    NewAnnotationLiteral()
+      .name(name)
+      .code(name)
       .lineNumber(line(node))
       .columnNumber(column(node))
   }
