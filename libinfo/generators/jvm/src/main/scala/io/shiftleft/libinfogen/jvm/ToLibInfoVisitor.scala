@@ -1,11 +1,10 @@
-package io.shiftleft.libinfogenjvm
+package io.shiftleft.libinfogen.jvm
 
-import io.shiftleft.libinfo.{JavaAccessBits, JavaClass, JavaField, JavaInnerClass, JavaMethod, LibInfoWriter}
+import io.shiftleft.libinfo.*
+import org.objectweb.asm.signature.SignatureWriter
 import org.objectweb.asm.{ClassVisitor, FieldVisitor, MethodVisitor, Opcodes}
 
 import scala.collection.mutable
-import io.shiftleft.libinfo.JavaAccessBits.`|`
-import org.objectweb.asm.signature.SignatureWriter
 
 class ToLibInfoVisitor(libInfoWriter: LibInfoWriter) extends ClassVisitor(Opcodes.ASM9) {
   private var name         = Option.empty[String]
