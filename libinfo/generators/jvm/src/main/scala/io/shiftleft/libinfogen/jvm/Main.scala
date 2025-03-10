@@ -1,4 +1,4 @@
-package io.shiftleft.libinfogenjvm
+package io.shiftleft.libinfogen.jvm
 
 import io.shiftleft.libinfo.LibInfoWriter
 import org.objectweb.asm.ClassReader
@@ -7,10 +7,10 @@ import scopt.OParser
 import java.io.{InputStream, OutputStream}
 import java.nio.file.{Files, Path}
 import java.util.jar.JarFile
-import scala.util.Using
 import scala.jdk.CollectionConverters.*
+import scala.util.Using
 
-object LibInfoGeneratorJvm {
+object Main {
   def main(argv: Array[String]): Unit = {
     val options = parseCmdLine(argv).getOrElse(sys.exit(1))
 
@@ -18,42 +18,7 @@ object LibInfoGeneratorJvm {
     val classFiles = options.inputClassFiles.getOrElse(Nil)
     val jarFiles   = options.inputJarFiles.getOrElse(Nil)
 
-    convert(classFiles, jarFiles, outStream)
-  }
-
-  def convert(
-    classFiles: collection.Seq[String],
-    jarFiles: collection.Seq[String],
-    libInfoOutStream: OutputStream
-  ): Unit = {
-    Using.resource(LibInfoWriter(libInfoOutStream)) { writer =>
-      classFiles.foreach { classFile =>
-        println(s"Handling $classFile")
-        Using.resource(Files.newInputStream(Path.of(classFile))) { classFileInStream =>
-          convertInputStream(writer, classFileInStream)
-        }
-      }
-
-      jarFiles.foreach { jarFile =>
-        Using.resource(JarFile(jarFile)) { jar =>
-          jar.entries().asIterator().asScala.foreach { entry =>
-            if (entry.getName.endsWith(".class")) {
-              println(s"Handling ${entry.getName}")
-              Using.resource(jar.getInputStream(entry)) { classFileInStream =>
-                convertInputStream(writer, classFileInStream)
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  private def convertInputStream(writer: LibInfoWriter, classFileInStream: InputStream): Unit = {
-    val reader  = new ClassReader(classFileInStream)
-    val visitor = new ToLibInfoVisitor(writer)
-
-    reader.accept(visitor, ClassReader.SKIP_CODE)
+    new LibInfoGenJvm().convert(classFiles, jarFiles, outStream)
   }
 
   case class CmdLineOptions(
@@ -65,11 +30,7 @@ object LibInfoGeneratorJvm {
   private def parseCmdLine(argv: Array[String]): Option[CmdLineOptions] = {
     val cmdLineParser: OParser[Unit, CmdLineOptions] = {
       val builder = OParser.builder[CmdLineOptions]
-      import builder.programName
-      import builder.opt
-      import builder.checkConfig
-      import builder.failure
-      import builder.success
+      import builder.*
       OParser.sequence(
         programName(getClass.getSimpleName),
         opt[String]("output")
