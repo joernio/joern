@@ -1,6 +1,5 @@
 package io.joern.gosrc2cpg.passes
 
-import better.files.File
 import io.joern.gosrc2cpg.Config
 import io.joern.gosrc2cpg.astcreation.AstCreator
 import io.joern.gosrc2cpg.datastructures.GoGlobal
@@ -14,7 +13,7 @@ import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.utils.IOUtils
 import org.slf4j.{Logger, LoggerFactory}
 
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths}
 import scala.util.{Failure, Success, Try}
 
 class AstCreationPass(
@@ -23,7 +22,7 @@ class AstCreationPass(
   config: Config,
   goMod: GoModHelper,
   goGlobal: GoGlobal,
-  tmpDir: File,
+  tmpDir: Path,
   report: Report
 ) extends BasePassForAstProcessing(cpg, astFiles, config, goMod, goGlobal, tmpDir) {
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])

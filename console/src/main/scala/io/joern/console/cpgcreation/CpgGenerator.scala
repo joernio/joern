@@ -1,8 +1,9 @@
 package io.joern.console.cpgcreation
 
-import better.files.File
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.shiftleft.codepropertygraph.generated.Cpg
+
+import java.nio.file.{Files, Paths}
 import scala.util.Try
 
 /** A CpgGenerator generates Code Property Graphs from code. Each supported language implements a Generator, e.g.,
@@ -26,7 +27,7 @@ abstract class CpgGenerator() {
 
   protected def runShellCommand(program: String, arguments: Seq[String]): Try[Unit] =
     Try {
-      assert(File(program).exists, s"CPG generator does not exist at: $program")
+      assert(Files.exists(Paths.get(program)), s"CPG generator does not exist at: $program")
 
       val cmd       = Seq(program) ++ maxMemoryParameter ++ arguments
       val cmdString = cmd.mkString(" ")

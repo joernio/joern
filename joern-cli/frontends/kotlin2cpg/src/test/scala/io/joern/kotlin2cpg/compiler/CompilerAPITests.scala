@@ -1,11 +1,12 @@
 package io.joern.kotlin2cpg.compiler
 
-import better.files.File
 import io.joern.kotlin2cpg.Config
 import io.joern.kotlin2cpg.DefaultContentRootJarPath
 import io.joern.kotlin2cpg.Kotlin2Cpg
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.joern.x2cpg.Defines
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.utils.ProjectRoot
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
@@ -49,10 +50,11 @@ class CompilerAPITests extends AnyFreeSpec with Matchers {
         DefaultContentRootJarPath("jars/kotlin-stdlib-jdk8-1.9.0.jar", isResource = true)
       )
 
-      val defaultContentRootJarsDir = File(projectDependenciesPath)
-      val contentRoots = defaultContentRootJarsDir.listRecursively
-        .filter(_.pathAsString.endsWith("jar"))
-        .map { f => DefaultContentRootJarPath(f.pathAsString, false) }
+      val contentRoots = projectDependenciesPath
+        .walk()
+        .filterNot(_ == projectDependenciesPath)
+        .filter(_.toString.endsWith("jar"))
+        .map { f => DefaultContentRootJarPath(f.toString, false) }
         .toSeq ++ jarResources
       val messageCollector = new ErrorCountMessageCollector()
       val environment      = CompilerAPI.makeEnvironment(Seq(projectDirPath), Seq(), contentRoots, messageCollector)

@@ -1,6 +1,5 @@
 package io.joern.x2cpg
 
-import better.files.File
 import io.joern.x2cpg.utils.FileUtil
 import io.joern.x2cpg.utils.FileUtil.*
 import org.scalatest.matchers.should.Matchers

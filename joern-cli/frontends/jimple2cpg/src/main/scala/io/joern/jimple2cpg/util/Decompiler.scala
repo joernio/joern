@@ -1,6 +1,5 @@
 package io.joern.jimple2cpg.util
 
-import better.files.File
 import org.benf.cfr.reader.api.OutputSinkFactory.{Sink, SinkClass, SinkType}
 import org.benf.cfr.reader.api.SinkReturns.Decompiled
 import org.benf.cfr.reader.api.{CfrDriver, OutputSinkFactory}
@@ -8,10 +7,11 @@ import org.slf4j.LoggerFactory
 
 import java.util
 import java.util.{Collection, Collections}
+import java.nio.file.{Files, Path, Paths}
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
-class Decompiler(classFile: List[File]) {
+class Decompiler(classFile: List[Path]) {
 
   private val logger                                                   = LoggerFactory.getLogger(getClass)
   private val classToDecompiledSource: mutable.HashMap[String, String] = mutable.HashMap.empty;
@@ -20,7 +20,7 @@ class Decompiler(classFile: List[File]) {
     */
   def decompile(): mutable.HashMap[String, String] = {
     val driver = new CfrDriver.Builder().withOutputSink(outputSink).build()
-    driver.analyse(SeqHasAsJava(classFile.map(_.pathAsString)).asJava)
+    driver.analyse(SeqHasAsJava(classFile.map(_.toString)).asJava)
     classToDecompiledSource
   }
 

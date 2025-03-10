@@ -1,10 +1,7 @@
 package io.joern.javasrc2cpg.util
 
-import better.files.File
-
 import java.nio.file.Path
 import scala.collection.mutable
-import scala.util.matching.Regex
 
 object PackageRootFinder {
 

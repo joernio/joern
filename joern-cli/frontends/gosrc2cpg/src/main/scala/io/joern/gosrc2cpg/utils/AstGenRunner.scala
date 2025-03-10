@@ -1,17 +1,17 @@
 package io.joern.gosrc2cpg.utils
 
-import better.files.File
 import io.joern.gosrc2cpg.Config
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, AstGenRunnerResult}
 import io.joern.x2cpg.astgen.AstGenRunnerBase
 import io.joern.x2cpg.utils.Environment.ArchitectureType.ArchitectureType
 import io.joern.x2cpg.utils.Environment.OperatingSystemType.OperatingSystemType
-import io.joern.x2cpg.utils.{Environment}
+import io.joern.x2cpg.utils.{Environment, FileUtil}
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths}
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.*
 import scala.util.matching.Regex
@@ -42,7 +42,7 @@ class AstGenRunner(config: Config, includeFileRegex: String = "") extends AstGen
     Environment.OperatingSystemType.Mac     -> Environment.ArchitectureType.ARMv8
   )
 
-  override def skippedFiles(in: File, astGenOut: List[String]): List[String] = {
+  override def skippedFiles(in: Path, astGenOut: List[String]): List[String] = {
     val skipped = astGenOut.collect {
       case out if !out.startsWith("Converted") =>
         val filename = out.substring(0, out.indexOf(" "))
@@ -56,41 +56,41 @@ class AstGenRunner(config: Config, includeFileRegex: String = "") extends AstGen
     skipped.flatten
   }
 
-  override def fileFilter(file: String, out: File): Boolean = {
-    file.stripSuffix(".json").replace(out.pathAsString, config.inputPath) match {
+  override def fileFilter(file: String, out: Path): Boolean = {
+    file.stripSuffix(".json").replace(out.toString, config.inputPath) match {
       case filePath if isIgnoredByUserConfig(filePath) => false
       case filePath if filePath.endsWith(".mod")       => false
       case _                                           => true
     }
   }
 
-  private def filterModFile(files: List[String], out: File): List[String] = {
+  private def filterModFile(files: List[String], out: Path): List[String] = {
     files.filter { file =>
-      file.stripSuffix(".json").replace(out.pathAsString, config.inputPath) match {
+      file.stripSuffix(".json").replace(out.toString, config.inputPath) match {
         case filePath if filePath.endsWith(".mod") => true
         case _                                     => false
       }
     }
   }
 
-  override def runAstGenNative(in: String, out: File, exclude: String, include: String)(implicit
+  override def runAstGenNative(in: String, out: Path, exclude: String, include: String)(implicit
     metaData: AstGenProgramMetaData
   ): Try[Seq[String]] = {
     val excludeCommand = if (exclude.isEmpty) Seq.empty else Seq("-exclude", exclude)
     val includeCommand = if (include.isEmpty) Seq.empty else Seq("-include-packages", include)
     ExternalCommand
-      .run((astGenCommand +: excludeCommand) ++ includeCommand ++ Seq("-out", out.toString(), in), Some("."))
+      .run((astGenCommand +: excludeCommand) ++ includeCommand ++ Seq("-out", out.toString, in), Some("."))
       .toTry
   }
 
-  def executeForGo(out: File): List[GoAstGenRunnerResult] = {
+  def executeForGo(out: Path): List[GoAstGenRunnerResult] = {
     implicit val metaData: AstGenProgramMetaData = config.astGenMetaData
-    val in                                       = File(config.inputPath)
+    val in                                       = Paths.get(config.inputPath)
     logger.info(s"Running goastgen in '$config.inputPath' ...")
     runAstGenNative(config.inputPath, out, config.ignoredFilesRegex.toString(), includeFileRegex) match {
       case Success(result) =>
         val srcFiles = SourceFiles.determine(
-          out.toString(),
+          out.toString,
           Set(".json"),
           ignoredFilesRegex = Option(config.ignoredFilesRegex),
           ignoredFilesPath = Option(config.ignoredFiles)

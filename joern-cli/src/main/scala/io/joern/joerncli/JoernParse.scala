@@ -1,12 +1,12 @@
 package io.joern.joerncli
 
-import better.files.File
 import io.joern.console.cpgcreation.{CpgGenerator, cpgGeneratorForLanguage, guessLanguage}
 import io.joern.console.{FrontendConfig, InstallConfig}
 import io.joern.joerncli.CpgBasedTool.newCpgCreatedString
 import io.joern.x2cpg.frontendspecific.FrontendArgsDelimitor
 import io.shiftleft.codepropertygraph.generated.Languages
 
+import java.nio.file.{Files, Paths}
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
@@ -96,7 +96,7 @@ object JoernParse {
       if (config.inputPath == "") {
         println(optionParser.usage)
         throw new AssertionError(s"Input path required")
-      } else if (!File(config.inputPath).exists)
+      } else if (!Files.exists(Paths.get(config.inputPath)))
         throw new AssertionError(s"Input path does not exist at `${config.inputPath}`, exiting.")
       else ()
     }
@@ -136,12 +136,7 @@ object JoernParse {
       println(s"Parsing code at: ${config.inputPath} - language: `$language`")
       println("[+] Running language frontend")
       Try {
-        cpgGeneratorForLanguage(
-          language.toUpperCase,
-          FrontendConfig(),
-          installConfig.rootPath.path,
-          frontendArgs.toList
-        ).get
+        cpgGeneratorForLanguage(language.toUpperCase, FrontendConfig(), installConfig.rootPath, frontendArgs.toList).get
       }.flatMap { newGenerator =>
         generator = newGenerator
         generator

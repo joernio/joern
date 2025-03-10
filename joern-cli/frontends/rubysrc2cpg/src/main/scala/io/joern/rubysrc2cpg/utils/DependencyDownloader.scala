@@ -1,6 +1,5 @@
 package io.joern.rubysrc2cpg.utils
 
-import better.files.File
 import io.joern.x2cpg.utils.FileUtil.*
 import io.joern.rubysrc2cpg.datastructures.RubyProgramSummary
 import io.joern.rubysrc2cpg.parser.RubyAstGenRunner
@@ -37,7 +36,7 @@ class DependencyDownloader(cpg: Cpg) {
     *   the dependencies' summary combined with the given internal program summary.
     */
   def download(): RubyProgramSummary = {
-    File.temporaryDirectory("joern-rubysrc2cpg").apply { dir =>
+    FileUtil.usingTemporaryDirectory("joern-rubysrc2cpg") { dir =>
       cpg.dependency
         .filterNot(dep =>
           dep.name == Defines.Resolver ||
@@ -45,10 +44,10 @@ class DependencyDownloader(cpg: Cpg) {
         )
         .foreach { dependency =>
           Try(Thread.sleep(100)) // Rate limit
-          downloadDependency(dir.path, dependency)
+          downloadDependency(dir, dependency)
         }
-      untarDependencies(dir.path)
-      summarizeDependencies(dir.path / "lib")
+      untarDependencies(dir)
+      summarizeDependencies(dir / "lib")
     }
   }
 
@@ -172,7 +171,7 @@ class DependencyDownloader(cpg: Cpg) {
                   )
                   .foreach { rubyFile =>
                     try {
-                      val fName  = s"lib/${pkgDir.getFileName.toString}/${rubyFile.getName.stripPrefix("lib/")}"
+                      val fName  = s"lib/${pkgDir.fileName}/${rubyFile.getName.stripPrefix("lib/")}"
                       val target = targetDir / fName
                       target.createWithParentsIfNotExists(createParents = true)
                       Using.resource(new FileOutputStream(target.toString)) { fos =>

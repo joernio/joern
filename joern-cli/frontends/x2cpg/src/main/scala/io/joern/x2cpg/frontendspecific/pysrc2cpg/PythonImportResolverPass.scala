@@ -1,13 +1,15 @@
 package io.joern.x2cpg.frontendspecific.pysrc2cpg
 
-import better.files.File
 import io.joern.x2cpg.passes.frontend.XImportResolverPass
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.importresolver.*
 
 import java.io.File as JFile
+import java.nio.file.{Files, Paths}
 import java.util.regex.Matcher
 import scala.collection.mutable
 
@@ -57,15 +59,15 @@ class PythonImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
     importedAs: String,
     diffGraph: DiffGraphBuilder
   ): Unit = {
-    val currDir = File(codeRootDir) / fileName match
-      case x if x.isDirectory => x
-      case x                  => x.parent
+    val currDir = Paths.get(codeRootDir) / fileName match
+      case x if Files.isDirectory(x) => x
+      case x                         => x.getParent
 
     val importedEntityAsFullyQualifiedImport =
       // If the path/entity uses Python's `from .import x` syntax, we will need to remove these
       fileToPythonImportNotation(importedEntity.replaceFirst("^\\.+", ""))
     val importedEntityAsRelativeImport = Seq(
-      fileToPythonImportNotation(currDir.pathAsString.stripPrefix(codeRootDir).stripPrefix(JFile.separator)),
+      fileToPythonImportNotation(currDir.toString.stripPrefix(codeRootDir).stripPrefix(JFile.separator)),
       importedEntityAsFullyQualifiedImport
     ).filterNot(_.isBlank).mkString(".")
 

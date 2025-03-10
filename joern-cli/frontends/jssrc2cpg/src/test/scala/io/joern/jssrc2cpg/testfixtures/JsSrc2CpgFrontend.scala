@@ -1,6 +1,5 @@
 package io.joern.jssrc2cpg.testfixtures
 
-import better.files.File
 import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.JsSrc2Cpg
 import io.joern.x2cpg.testfixtures.LanguageFrontend

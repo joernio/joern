@@ -1,11 +1,10 @@
 package io.joern.c2cpg.io
 
-import better.files.File
 import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.CDefaultTestCpg
 import io.joern.dataflowengineoss.DefaultSemantics
-import io.joern.dataflowengineoss.semanticsloader.NoSemantics
 import io.joern.x2cpg.testfixtures.Code2CpgFixture
+import io.joern.x2cpg.utils.FileUtil
 import io.shiftleft.semanticcpg.language.*
 
 import java.nio.file.Files
@@ -22,12 +21,14 @@ class FileHandlingTests
       new CDefaultTestCpg(FileDefaults.CExt) {
         override def codeFilePreProcessing(codeFile: Path): Unit = {
           if (codeFile.toString.endsWith(FileHandlingTests.brokenLinkedFile)) {
-            File(codeFile).delete().symbolicLinkTo(File("does/not/exist.c"))
+            FileUtil.delete(codeFile)
+            Files.createSymbolicLink(codeFile, Paths.get("does/not/exist.c"))
           }
           if (codeFile.toString.endsWith(FileHandlingTests.cyclicLinkedFile)) {
-            val dir         = File(codeFile).delete().parent
-            val folderA     = Paths.get(dir.toString(), "FolderA")
-            val folderB     = Paths.get(dir.toString(), "FolderB")
+            FileUtil.delete(codeFile)
+            val dir         = codeFile.getParent
+            val folderA     = Paths.get(dir.toString, "FolderA")
+            val folderB     = Paths.get(dir.toString, "FolderB")
             val symlinkAtoB = folderA.resolve("LinkToB")
             val symlinkBtoA = folderB.resolve("LinkToA")
             Files.createDirectory(folderA)

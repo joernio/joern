@@ -1,6 +1,5 @@
 package io.joern.x2cpg.frontendspecific.rubysrc2cpg
 
-import better.files.File
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg.Constants.*
 import io.joern.x2cpg.passes.frontend.XImportResolverPass
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -10,6 +9,7 @@ import io.shiftleft.semanticcpg.language.importresolver.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import java.io.File as JFile
+import java.nio.file.Paths
 import java.util.regex.{Matcher, Pattern}
 class RubyImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
 
@@ -78,12 +78,12 @@ class RubyImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
     val root        = s"$codeRootDir${JFile.separator}"
     val currentFile = s"$root$fileName"
     val entity      = if (matcher.find()) matcher.group(1) else rawEntity
-    val resolvedPath = better.files
-      .File(
+    val resolvedPath = Paths
+      .get(
         currentFile.stripSuffix(currentFile.split(sep).lastOption.getOrElse("")),
         entity.split("\\.").headOption.getOrElse(entity)
       )
-      .pathAsString match {
+      .toString match {
       case resPath if entity.endsWith(".rb") => s"$resPath.rb"
       case resPath                           => resPath
     }

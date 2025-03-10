@@ -1,14 +1,15 @@
 package io.joern.php2cpg.passes
 
-import better.files.File
 import io.joern.php2cpg.Config
 import io.joern.php2cpg.astcreation.AstCreator
 import io.joern.php2cpg.parser.PhpParser
 import io.joern.x2cpg.{SourceFiles, ValidationMode}
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
 
+import java.nio.file.Paths
 import scala.jdk.CollectionConverters.*
 
 class AstCreationPass(config: Config, cpg: Cpg, parser: PhpParser)(implicit withSchemaValidation: ValidationMode)
@@ -48,9 +49,9 @@ class AstCreationPass(config: Config, cpg: Cpg, parser: PhpParser)(implicit with
       parseResult match {
         case Some(parseResult) =>
           val relativeFilename = if (filename == config.inputPath) {
-            File(filename).name
+            Paths.get(filename).fileName
           } else {
-            File(config.inputPath).relativize(File(filename)).toString
+            Paths.get(config.inputPath).relativize(Paths.get(filename)).toString
           }
           diffGraph.absorb(
             new AstCreator(relativeFilename, filename, parseResult, config.disableFileContent)(config.schemaValidation)

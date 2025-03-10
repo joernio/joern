@@ -1,11 +1,12 @@
 package io.joern.x2cpg.utils.dependency
 
-import better.files.File
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.joern.x2cpg.utils.dependency.GradleConfigKeys.GradleConfigKey
+import io.joern.x2cpg.utils.FileUtil
+import io.joern.x2cpg.utils.FileUtil.*
 import org.slf4j.LoggerFactory
 
-import java.nio.file.Path
+import java.nio.file.{Files, Path}
 import scala.util.{Failure, Success}
 
 object GradleConfigKeys extends Enumeration {
@@ -98,27 +99,27 @@ object DependencyResolver {
     }
   }
 
-  private def isGradleBuildFile(file: File): Boolean = {
-    val pathString = file.pathAsString
+  private def isGradleBuildFile(file: Path): Boolean = {
+    val pathString = file.toString
     pathString.endsWith(".gradle") || pathString.endsWith(".gradle.kts")
   }
 
-  private def isMavenBuildFile(file: File): Boolean = {
-    file.pathAsString.endsWith("pom.xml")
+  private def isMavenBuildFile(file: Path): Boolean = {
+    file.toString.endsWith("pom.xml")
   }
 
-  private def findSupportedBuildFiles(currentDir: File, depth: Int = 0): List[Path] = {
+  private def findSupportedBuildFiles(currentDir: Path, depth: Int = 0): List[Path] = {
     if (depth >= MaxSearchDepth) {
       logger.info("findSupportedBuildFiles reached max depth before finding build files")
       Nil
     } else {
-      val (childDirectories, childFiles) = currentDir.children.partition(_.isDirectory)
+      val (childDirectories, childFiles) = currentDir.listFiles().partition(Files.isDirectory(_))
       // Only fetch dependencies once for projects with both a build.gradle and a pom.xml file
       val childFileList = childFiles.toList
       childFileList
         .find(isGradleBuildFile)
         .orElse(childFileList.find(isMavenBuildFile)) match {
-        case Some(buildFile) => buildFile.path :: Nil
+        case Some(buildFile) => buildFile :: Nil
 
         case None if childDirectories.isEmpty => Nil
 

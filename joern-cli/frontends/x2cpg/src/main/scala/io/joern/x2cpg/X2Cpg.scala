@@ -1,9 +1,9 @@
 package io.joern.x2cpg
 
-import better.files.File
 import io.joern.x2cpg.X2Cpg.{applyDefaultOverlays, withErrorsToConsole}
 import io.joern.x2cpg.frontendspecific.FrontendArgsDelimitor
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
+import io.joern.x2cpg.utils.FileUtil
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import org.slf4j.LoggerFactory
@@ -141,7 +141,7 @@ abstract class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]](
     if (X2CpgConfig.defaultOutputPath == outputPath) {
       // We only log the output path of no explicit path was given by the user.
       // Otherwise, the user obviously knows the path.
-      logger.info(s"The resulting CPG will be stored at ${File(outputPath)}")
+      logger.info(s"The resulting CPG will be stored at ${Paths.get(outputPath).toString}")
     }
   }
 
@@ -328,12 +328,12 @@ object X2Cpg {
   def newEmptyCpg(optionalOutputPath: Option[String] = None): Cpg = {
     optionalOutputPath match {
       case Some(outputPath) =>
-        lazy val outFile = File(outputPath)
-        if (outputPath != "" && outFile.exists) {
+        lazy val outFile = Paths.get(outputPath)
+        if (outputPath != "" && Files.exists(outFile)) {
           logger.info("Output file exists, removing: " + outputPath)
-          outFile.delete()
+          FileUtil.delete(outFile)
         }
-        Cpg.withStorage(outFile.path)
+        Cpg.withStorage(outFile)
       case None => Cpg.empty
     }
   }

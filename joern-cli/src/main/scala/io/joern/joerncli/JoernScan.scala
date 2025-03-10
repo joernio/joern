@@ -16,7 +16,7 @@ import org.json4s.native.Serialization
 import org.json4s.{Formats, NoTypeHints}
 
 import java.io.FileNotFoundException
-import java.nio.file.{Files, NoSuchFileException, Path}
+import java.nio.file.{Files, NoSuchFileException, Path, Paths}
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
@@ -134,9 +134,8 @@ object JoernScan extends BridgeBase {
     implicit val engineContext: EngineContext = EngineContext(NoSemantics)
     implicit val formats: AnyRef & Formats    = Serialization.formats(NoTypeHints)
     val queryDb                               = new QueryDatabase(new JoernDefaultArgumentProvider(0))
-    better.files
-      .File(outFileName)
-      .write(Serialization.write(queryDb.allQueries))
+    val outFile                               = Paths.get(outFileName)
+    Files.writeString(outFile, Serialization.write(queryDb.allQueries))
     println(s"Queries written to: $outFileName")
   }
 

@@ -1,18 +1,18 @@
 package io.joern.javasrc2cpg.typesolvers
 
-import better.files.File
 import io.joern.javasrc2cpg.typesolvers.JmodClassPath.*
 import javassist.ClassPath
 
 import scala.jdk.CollectionConverters.*
 import scala.util.Try
 import java.io.InputStream
+import java.nio.file.{Files, Path, Paths}
 import java.net.URL
 import java.util.jar.{JarEntry, JarFile}
 
 class JmodClassPath(jmodPath: String) extends ClassPath {
   private val jarfile    = new JarFile(jmodPath)
-  private val jarfileURL = File(jmodPath).url.toString
+  private val jarfileURL = Paths.get(jmodPath).toUri.toURL.toString
   private val entries    = getEntriesMap(jarfile)
 
   private def entryToClassName(entry: JarEntry): String = {

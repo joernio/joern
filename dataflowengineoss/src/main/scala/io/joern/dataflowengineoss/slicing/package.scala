@@ -1,6 +1,5 @@
 package io.joern.dataflowengineoss
 
-import better.files.File
 import io.shiftleft.codepropertygraph.generated.Properties
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
@@ -10,13 +9,15 @@ import upickle.default.*
 import java.util.concurrent.{ExecutorService, Executors}
 import java.util.regex.Pattern
 
+import java.nio.file.{Files, Path, Paths}
+
 package object slicing {
 
   trait BaseConfig[T <: BaseConfig[T]] {
 
-    var inputPath: File = File("cpg.bin")
+    var inputPath: Path = Paths.get("cpg.bin")
 
-    var outputSliceFile: File = File("slices")
+    var outputSliceFile: Path = Paths.get("slices")
 
     var dummyTypesEnabled: Boolean = false
 
@@ -30,12 +31,12 @@ package object slicing {
 
     var parallelism: Option[Int] = None
 
-    def withInputPath(x: File): T = {
+    def withInputPath(x: Path): T = {
       this.inputPath = x
       this.asInstanceOf[T]
     }
 
-    def withOutputSliceFile(x: File): T = {
+    def withOutputSliceFile(x: Path): T = {
       this.outputSliceFile = x
       this.asInstanceOf[T]
     }

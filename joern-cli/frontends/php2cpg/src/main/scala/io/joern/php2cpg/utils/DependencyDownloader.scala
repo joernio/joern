@@ -1,6 +1,5 @@
 package io.joern.php2cpg.utils
 
-import better.files.File
 import com.github.sh4869.semver_parser.{Range, SemVer}
 import io.joern.php2cpg.Config
 import io.joern.php2cpg.parser.Domain.PhpOperators
@@ -14,7 +13,7 @@ import org.slf4j.LoggerFactory
 import upickle.default.*
 
 import java.io.{FileOutputStream, IOException}
-import java.nio.file.{CopyOption, Files, Path, Paths, StandardCopyOption}
+import java.nio.file.{CopyOption, Files, Path, StandardCopyOption}
 import java.net.{HttpURLConnection, URI, URL, URLConnection}
 import java.util.zip.ZipEntry
 import javax.json.JsonException
@@ -178,7 +177,7 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
       val fullPathPrefix = targetDir / pathPrefix.replace("/", java.io.File.separator)
 
       Files.list(fullPathPrefix).forEach { x =>
-        Files.move(x, fullTargetNamespace / x.getFileName.toString)
+        Files.move(x, fullTargetNamespace / x.fileName)
       }
       FileUtil.delete(fullPathPrefix, swallowIoExceptions = true)
     }
@@ -189,7 +188,7 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
 
       targetDir
         .listFiles()
-        .filter(f => Files.isDirectory(f) && f.getFileName.toString.startsWith(vendor.replace("\\", "-")))
+        .filter(f => Files.isDirectory(f) && f.fileName.startsWith(vendor.replace("\\", "-")))
         .foreach { unpackedDest =>
           unpackedDest.mergeDirectory(targetDir, copyOptions = StandardCopyOption.REPLACE_EXISTING)
           FileUtil.delete(unpackedDest, swallowIoExceptions = true)
@@ -199,7 +198,7 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
     targetDir
       .walk()
       .collectFirst {
-        case x if x.getFileName.toString == "composer.json" =>
+        case x if x.fileName == "composer.json" =>
           Using.resource(Files.newInputStream(x)) { is =>
             read[Composer](ujson.Readable.fromByteArray(is.readAllBytes()))
           }

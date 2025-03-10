@@ -1,17 +1,14 @@
 package io.joern.gosrc2cpg
 
-import better.files.File
 import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.model.GoModHelper
 import io.joern.gosrc2cpg.parser.GoAstJsonParser
 import io.joern.gosrc2cpg.passes.*
 import io.joern.gosrc2cpg.utils.AstGenRunner
-import io.joern.gosrc2cpg.utils.AstGenRunner.GoAstGenRunnerResult
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.utils.{Report, FileUtil}
-import io.joern.x2cpg.utils.FileUtil.*
 
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 

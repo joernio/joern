@@ -1,6 +1,5 @@
 package io.joern.php2cpg.passes
 
-import better.files.File
 import io.joern.php2cpg.parser.Domain.PhpOperators
 import io.shiftleft.codepropertygraph.generated.nodes.{NewDependency, NewTag}
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
@@ -8,22 +7,25 @@ import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
 import upickle.default.*
 
+import java.nio.file.{Files, Path, Paths}
 import scala.annotation.targetName
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success, Try, Using}
 
 /** Parses the `composer.json` file for all `require` dependencies.
   */
-class DependencyPass(cpg: Cpg, composerPaths: List[String]) extends ForkJoinParallelCpgPass[File](cpg) {
+class DependencyPass(cpg: Cpg, composerPaths: List[String]) extends ForkJoinParallelCpgPass[Path](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  override def generateParts(): Array[File] = composerPaths.map(File(_)).toArray
+  override def generateParts(): Array[Path] = composerPaths.map(Paths.get(_)).toArray
 
-  override def runOnPart(builder: DiffGraphBuilder, composerFile: File): Unit = {
+  override def runOnPart(builder: DiffGraphBuilder, composerFile: Path): Unit = {
     val composer =
-      composerFile.inputStream.apply(is => Try(read[Composer](ujson.Readable.fromByteArray(is.readAllBytes())))) match {
+      Using.resource(Files.newInputStream(composerFile)) { is =>
+        Try(read[Composer](ujson.Readable.fromByteArray(is.readAllBytes())))
+      } match {
         case Failure(exception) =>
-          logger.error(s"Unable to deserialize `${composerFile.pathAsString}`", exception)
+          logger.error(s"Unable to deserialize `${composerFile.toString}`", exception)
           Composer()
         case Success(composer) => composer
       }
