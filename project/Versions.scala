@@ -40,6 +40,7 @@ object Versions {
   val log4j                  = "2.20.0"
   val upickle                = "4.0.2"
   val zeroTurnaround         = "1.17"
+  val http4s                 = "0.23.30"
 
   // Shared with `projects/meta-build.sbt`, which needs to be updated there directly
   val betterFiles    = "3.9.2"
