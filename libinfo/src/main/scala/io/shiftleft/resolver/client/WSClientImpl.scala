@@ -128,8 +128,10 @@ class WSClientImpl[F[_]: Async] extends WSClient[F] {
 
   private def makeHttpClientResource(): Resource[F, HttpClient] = {
     Resource.make(Async[F].delay(HttpClient.newHttpClient()))(client => Async[F].delay {
-      client.shutdownNow()
-      client.close();
+      //Proper shutdown and close is only supported from java21 on which we
+      //do not want to rely on yet.
+      //client.shutdownNow()
+      //client.close();
     })
   }
 

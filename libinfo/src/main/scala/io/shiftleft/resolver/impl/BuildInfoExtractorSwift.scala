@@ -6,7 +6,7 @@ import io.shiftleft.resolver.api.{BuildInfoExtractor, BuildTarget, Coordinate, M
 
 import java.nio.file.Path
 
-class BuildInfoExtractorSwift[F[_]: {Sync, Parallel}] extends BuildInfoExtractor[F, IdGeneric] {
+class BuildInfoExtractorSwift[F[_]: Sync: Parallel] extends BuildInfoExtractor[F, IdGeneric] {
 
   override def fileRelevant(path: Path): Boolean = ???
 
