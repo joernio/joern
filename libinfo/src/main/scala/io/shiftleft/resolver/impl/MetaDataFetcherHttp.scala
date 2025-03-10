@@ -10,7 +10,7 @@ import org.http4s.{Method, Request, Status, Uri}
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 
-abstract class MetaDataFetcherHttp[F[_]: {Async, Parallel}, I <: Id](httpClient: Client[F])
+abstract class MetaDataFetcherHttp[F[_]: Async: Parallel, I <: Id](httpClient: Client[F])
   extends MetaDataFetcher[F, I] {
   private given Logger[F] = Slf4jLogger.getLogger[F]()
 

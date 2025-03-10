@@ -13,7 +13,7 @@ import scala.collection.immutable.VectorMap
 // mvn - smallest distance to root wins
 // ivy - latest revision wins
 // gradle - highest version wins
-class DefaultResolver[F[_]: {Sync, Parallel}, I <: Id](metaDataFetcher: MetaDataFetcher[F, I],
+class DefaultResolver[F[_]: Sync: Parallel, I <: Id](metaDataFetcher: MetaDataFetcher[F, I],
                                               metaDataCalculator: MetaDataCalculator[F, I],
                                               resolutionModel: ResolutionModel[F, I]) extends Resolver[F, I] {
   private given Logger[F] = Slf4jLogger.getLogger[F]()

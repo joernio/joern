@@ -9,7 +9,7 @@ import org.http4s.client.Client
 
 import scala.xml.Elem
 
-class MetaDataFetcherMaven[F[_]: {Async, Parallel}](httpClient: Client[F],
+class MetaDataFetcherMaven[F[_]: Async: Parallel](httpClient: Client[F],
                                                     serverUrl: String)
   extends MetaDataFetcherHttp[F, IdMaven](httpClient) {
   

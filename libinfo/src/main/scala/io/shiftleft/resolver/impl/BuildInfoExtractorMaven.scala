@@ -8,7 +8,7 @@ import io.shiftleft.resolver.util.{PomContext, PomUtil}
 
 import java.nio.file.{Files, Path}
 
-class BuildInfoExtractorMaven[F[_]: Sync, Parallel] extends BuildInfoExtractor[F, IdMaven] {
+class BuildInfoExtractorMaven[F[_]: Sync: Parallel] extends BuildInfoExtractor[F, IdMaven] {
 
   override def fileRelevant(path: Path): Boolean = {
     path.endsWith("pom.xml")
