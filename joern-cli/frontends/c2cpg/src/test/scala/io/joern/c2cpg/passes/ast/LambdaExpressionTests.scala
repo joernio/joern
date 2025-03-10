@@ -593,6 +593,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
 
   "be correct when calling a lambda" in {
     val cpg = code("""
+        |void foo() {
         |auto x = [](int n) -> int
         |{
         |  return 32 + n;
@@ -603,14 +604,16 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
         |{
         |  return 32 + n;
         |}(10);
+        |}
         |""".stripMargin)
     val signature       = "int(int)"
     val lambda1Name     = "<lambda>0"
-    val lambda1FullName = s"Test0.cpp:<global>.$lambda1Name:$signature"
+    val lambda1FullName = s"Test0.cpp:<global>.foo.$lambda1Name:$signature"
     val lambda2Name     = "<lambda>1"
-    val lambda2FullName = s"Test0.cpp:<global>.$lambda2Name:$signature"
+    val lambda2FullName = s"Test0.cpp:<global>.foo.$lambda2Name:$signature"
 
     cpg.local.nameExact("x").order.l shouldBe List(1)
+    cpg.local.nameExact("x").typeFullName.l shouldBe List(Defines.Function)
     cpg.local.nameExact("foo1").order.l shouldBe List(3)
     cpg.local.nameExact("foo2").order.l shouldBe List(5)
 
@@ -633,6 +636,9 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
       lambda1call.name shouldBe "<operator>()"
       lambda1call.methodFullName shouldBe "<operator>():int(int)"
       lambda1call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      val List(rec) = lambda1call.receiver.collectAll[Identifier].l
+      rec.name shouldBe "x"
+      rec.typeFullName shouldBe Defines.Function
       inside(lambda1call.astChildren.l) { case List(id: Identifier, lit: Literal) =>
         id.code shouldBe "x"
         lit.code shouldBe "10"

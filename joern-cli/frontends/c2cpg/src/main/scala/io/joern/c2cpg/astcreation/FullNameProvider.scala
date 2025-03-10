@@ -230,7 +230,7 @@ trait FullNameProvider { this: AstCreator =>
     }
   }
 
-  private def returnType(methodLike: MethodLike): String = {
+  protected def returnType(methodLike: MethodLike): String = {
     methodLike match {
       case declarator: IASTFunctionDeclarator => returnTypeForIASTFunctionDeclarator(declarator)
       case definition: IASTFunctionDefinition => returnTypeForIASTFunctionDefinition(definition)
@@ -247,7 +247,7 @@ trait FullNameProvider { this: AstCreator =>
     s"(${elements.mkString(",")}$variadic)"
   }
 
-  private def signature(returnType: String, methodLike: MethodLike): String = {
+  protected def signature(returnType: String, methodLike: MethodLike): String = {
     StringUtils.normalizeSpace(s"$returnType${parameterListSignature(methodLike)}")
   }
 
