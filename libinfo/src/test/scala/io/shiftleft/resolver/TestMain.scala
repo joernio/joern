@@ -32,8 +32,10 @@ object TestMain extends IOApp {
       val calculator =
         new MetaDataCalculatorLocal(MetaDataFetcherMaven[IO](httpClient, serverUrl), MetaDataStoreGit(repoDir, metaDataConverter))
 
+      val libInfoFetcher = new LibInfoFetcherMaven[IO](httpClient, serverUrl)
+
       val extractors = Vector(
-        (BuildInfoExtractorMaven[IO](), new DefaultResolver[IO, IdMaven](fetcher, calculator, new NaiveResolutionModel())),
+        (BuildInfoExtractorMaven[IO](), new DefaultResolver[IO, IdMaven](fetcher, calculator, new NaiveResolutionModel()), libInfoFetcher),
         //SwiftBuildInfoExtractor[IO](null, null, null)
       )
 
@@ -45,17 +47,21 @@ object TestMain extends IOApp {
 
 }
 
-class TestMain[I <: Id](extractors: Vector[(BuildInfoExtractor[IO, I], Resolver[IO, I])],
-               ) {
+type ExtractorTupleType[F[_], I <: Id] = (BuildInfoExtractor[F, I], Resolver[F, I], LibInfoFetcher[F, I])
+
+class TestMain[I <: Id](extractors: Vector[ExtractorTupleType[IO, I]]) {
 
   def run(): IO[ExitCode] = {
     val stream = 
-    associateBuildFiles(Files[IO].walk(Path("/tmp/testData")), extractors).flatMap { case ((extractor, resolver), buildFiles) =>
+    associateBuildFiles(Files[IO].walk(Path("/tmp/testData")), extractors).flatMap {
+      case ((extractor, resolver, libInfoFetcher), buildFiles) =>
       Stream.evalSeq(extractor.extractBuildTargets(buildFiles.map(_.toNioPath))).parEvalMapUnbounded {
         case buildTarget =>
           resolver.resolve(buildTarget.directDependencies).flatMap { case resolvedDeps =>
-            val x = IO.println(s"${buildTarget.id} $resolvedDeps")
-            x
+            IO.println(s"${buildTarget.id} $resolvedDeps") >>
+            libInfoFetcher.fetch(resolvedDeps).flatMap { case (missing, libInfos) =>
+              IO.println(libInfos.map(_.libInfo))
+            }
           }
       }
     }
@@ -75,21 +81,14 @@ class TestMain[I <: Id](extractors: Vector[(BuildInfoExtractor[IO, I], Resolver[
     }
   }
 
-  private def resolveBuildTargets[I <: Id](buildTargets: Vector[BuildTarget[I]],
-                                           resolver: Resolver[IO, I]
-                                          ): IO[Vector[(BuildTarget[I], Vector[Coordinate[I]])]] = {
-    buildTargets.map { buildTarget =>
-      resolver.resolve(buildTarget.directDependencies).map(resolvedDeps => (buildTarget, resolvedDeps))
-    }.parSequence
-  }
-
   private def associateBuildFiles[F[_]: Sync, I <: Id](fileStream: Stream[F, Path],
-                                                               extractors: Vector[(BuildInfoExtractor[F, I], Resolver[F, I])])
-  : Stream[F, ((BuildInfoExtractor[F, I], Resolver[F, I]), List[Path])] = {
-    fileStream.fold(Map.empty[(BuildInfoExtractor[F, I], Resolver[F, I]), List[Path]]) {
+                                                               extractors: Vector[ExtractorTupleType[F, I]])
+  : Stream[F, (ExtractorTupleType[F, I], List[Path])] = {
+    fileStream.fold(Map.empty[ExtractorTupleType[F, I], List[Path]]) {
       case (groupedFiles, file) =>
-        extractors.filter(_._1.fileRelevant(file.toNioPath)).foldLeft(groupedFiles) { case (groupedFiles, extractorResolverPair) =>
-          groupedFiles.updated(extractorResolverPair, file :: groupedFiles.getOrElse(extractorResolverPair, Nil))
+        extractors.filter(_._1.fileRelevant(file.toNioPath)).foldLeft(groupedFiles) {
+          case (groupedFiles, extractorTuple) =>
+            groupedFiles.updated(extractorTuple, file :: groupedFiles.getOrElse(extractorTuple, Nil))
         }
     }.flatMap(map => Stream.fromIterator[F](map.iterator, 10))
   }

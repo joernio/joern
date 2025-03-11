@@ -1,18 +1,24 @@
-package io.shiftleft.libinfogen.jvm
+package io.shiftleft.libinfo.generator.jvm
 
 import io.shiftleft.libinfo.*
 import org.objectweb.asm.signature.SignatureWriter
-import org.objectweb.asm.{ClassVisitor, FieldVisitor, MethodVisitor, Opcodes}
+import org.objectweb.asm.*
 
+import java.io.InputStream
 import scala.collection.mutable
 
-class ToLibInfoVisitor(libInfoWriter: LibInfoWriter) extends ClassVisitor(Opcodes.ASM9) {
+class LibInfoGenJvm(libInfoWriter: LibInfoWriter) extends ClassVisitor(Opcodes.ASM9) {
   private var name         = Option.empty[String]
   private var signature    = Option.empty[String]
   private var access       = Option.empty[JavaAccessBits]
   private val fields       = mutable.ArrayBuffer.empty[JavaField]
   private val methods      = mutable.ArrayBuffer.empty[JavaMethod]
   private val innerClasses = mutable.ArrayBuffer.empty[JavaInnerClass]
+
+  def convertInputStream(classFileInStream: InputStream): Unit = {
+    val reader  = new ClassReader(classFileInStream)
+    reader.accept(this, ClassReader.SKIP_CODE)
+  }
 
   private def signatureFromSuperAndInterfaces(superName: String, interfaces: Array[String]): String = {
     val writer = SignatureWriter()

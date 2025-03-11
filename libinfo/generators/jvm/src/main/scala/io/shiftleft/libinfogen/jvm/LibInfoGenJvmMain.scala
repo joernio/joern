@@ -1,6 +1,7 @@
 package io.shiftleft.libinfogen.jvm
 
 import io.shiftleft.libinfo.LibInfoWriter
+import io.shiftleft.libinfo.generator.jvm.LibInfoGenJvm
 import org.objectweb.asm.ClassReader
 import scopt.OParser
 
@@ -10,7 +11,7 @@ import java.util.jar.JarFile
 import scala.jdk.CollectionConverters.*
 import scala.util.Using
 
-object Main {
+object LibInfoGenJvmMain {
   def main(argv: Array[String]): Unit = {
     val options = parseCmdLine(argv).getOrElse(sys.exit(1))
 
@@ -18,7 +19,35 @@ object Main {
     val classFiles = options.inputClassFiles.getOrElse(Nil)
     val jarFiles   = options.inputJarFiles.getOrElse(Nil)
 
-    new LibInfoGenJvm().convert(classFiles, jarFiles, outStream)
+    convert(classFiles, jarFiles, outStream)
+  }
+
+  def convert(
+               classFiles: collection.Seq[String],
+               jarFiles: collection.Seq[String],
+               libInfoOutStream: OutputStream
+             ): Unit = {
+    Using.resource(LibInfoWriter(libInfoOutStream)) { writer =>
+      classFiles.foreach { classFile =>
+        println(s"Handling $classFile")
+        Using.resource(Files.newInputStream(Path.of(classFile))) { classFileInStream =>
+          new LibInfoGenJvm(writer).convertInputStream(classFileInStream)
+        }
+      }
+
+      jarFiles.foreach { jarFile =>
+        Using.resource(JarFile(jarFile)) { jar =>
+          jar.entries().asIterator().asScala.foreach { entry =>
+            if (entry.getName.endsWith(".class")) {
+              println(s"Handling ${entry.getName}")
+              Using.resource(jar.getInputStream(entry)) { classFileInStream =>
+                new LibInfoGenJvm(writer).convertInputStream(classFileInStream)
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   case class CmdLineOptions(
@@ -32,7 +61,7 @@ object Main {
       val builder = OParser.builder[CmdLineOptions]
       import builder.*
       OParser.sequence(
-        programName(getClass.getSimpleName),
+        programName("libInfoGenJvm"),
         opt[String]("output")
           .abbr("o")
           .text(s"Output ion file to store the library information in. Default: '${CmdLineOptions().outputFile}''")
