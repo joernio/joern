@@ -24,6 +24,9 @@ lazy val gosrc2cpg         = Projects.gosrc2cpg
 lazy val swiftsrc2cpg      = Projects.swiftsrc2cpg
 lazy val csharpsrc2cpg     = Projects.csharpsrc2cpg
 
+lazy val projectLinter = Projects.projectLinter
+lazy val projectLinterRules = Projects.projectLinterRules
+
 ThisBuild / libraryDependencies ++= Seq(
   "org.slf4j"                % "slf4j-api"         % Versions.slf4j,
   "org.apache.logging.log4j" % "log4j-slf4j2-impl" % Versions.log4j % Optional,
@@ -46,7 +49,7 @@ ThisBuild / scalacOptions ++= Seq(
   "-deprecation", // Emit warning and location for usages of deprecated APIs.
   "--release",
   "11",
-  "-Wshadow:type-parameter-shadow",
+  "-Wshadow:type-parameter-shadow"
 )
 
 lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
@@ -73,12 +76,12 @@ ThisBuild / Test / fork := true
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
 // publishing info for sonatype / maven central
-ThisBuild / publishTo  := sonatypePublishToBundle.value
+ThisBuild / publishTo              := sonatypePublishToBundle.value
 ThisBuild / sonatypeCredentialHost := xerial.sbt.Sonatype.sonatypeCentralHost
 
-ThisBuild / scmInfo    := Some(ScmInfo(url("https://github.com/joernio/joern"), "scm:git@github.com:joernio/joern.git"))
-ThisBuild / homepage   := Some(url("https://joern.io/"))
-ThisBuild / licenses   := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
+ThisBuild / scmInfo  := Some(ScmInfo(url("https://github.com/joernio/joern"), "scm:git@github.com:joernio/joern.git"))
+ThisBuild / homepage := Some(url("https://joern.io/"))
+ThisBuild / licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
 ThisBuild / developers := List(
   /* sonatype requires this to be non-empty */
   Developer("fabsx00", "Fabian Yamaguchi", "fabs@shiftleft.io", url("https://github.com/fabsx00"))
