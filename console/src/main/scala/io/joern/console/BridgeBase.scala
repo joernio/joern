@@ -17,6 +17,7 @@ case class Config(
   params: Map[String, String] = Map.empty,
   predefFiles: Seq[Path] = Nil,
   runBefore: Seq[String] = Nil,
+  runAfter: Seq[String] = Nil,
   additionalClasspathEntries: Seq[String] = Seq.empty,
   addPlugin: Option[String] = None,
   rmPlugin: Option[String] = None,
@@ -82,6 +83,13 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
         .optional()
         .action((x, c) => c.copy(runBefore = c.runBefore :+ x))
         .text("given code will be executed on startup - this may be passed multiple times")
+
+      opt[String]("runAfter")
+        .valueName("""println("bye!")""")
+        .unbounded()
+        .optional()
+        .action((x, c) => c.copy(runAfter = c.runAfter :+ x))
+        .text("given code will be executed on shutdown - this may be passed multiple times")
 
       opt[String]("classpathEntry")
         .valueName("path/to/classpath")
@@ -237,11 +245,14 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
     builder.result()
   }
 
+  protected def buildRunAfterCode(config: Config): Seq[String] =
+    config.runAfter :+ runAfterCode
+
   protected def greeting: String
 
   protected def promptStr: String
 
-  protected def onExitCode: String
+  def runAfterCode: String = "workspace.projects.foreach(_.close)"
 }
 
 trait InteractiveShell { this: BridgeBase =>
@@ -250,6 +261,7 @@ trait InteractiveShell { this: BridgeBase =>
       replpp.Config(
         predefFiles = config.predefFiles,
         runBefore = buildRunBeforeCode(config),
+        runAfter = buildRunAfterCode(config),
         nocolors = config.nocolors,
         verbose = config.verbose,
         classpathConfig = replpp.Config
@@ -261,7 +273,6 @@ trait InteractiveShell { this: BridgeBase =>
           ),
         greeting = Option(greeting),
         prompt = Option(promptStr),
-        onExitCode = Option(onExitCode),
         maxHeight = config.maxHeight
       )
     )
@@ -280,6 +291,7 @@ trait ScriptExecution { this: BridgeBase =>
         replpp.Config(
           predefFiles = config.predefFiles,
           runBefore = buildRunBeforeCode(config),
+          runAfter = buildRunAfterCode(config),
           scriptFile = Option(scriptFile),
           command = config.command,
           params = config.params,
@@ -405,6 +417,7 @@ trait ServerHandling { this: BridgeBase =>
     val baseConfig = replpp.Config(
       predefFiles = config.predefFiles,
       runBefore = buildRunBeforeCode(config),
+      runAfter = buildRunAfterCode(config),
       verbose = true, // always print what's happening - helps debugging
       classpathConfig = replpp.Config
         .ForClasspath(inheritClasspath = true, dependencies = config.dependencies, resolvers = config.resolvers)

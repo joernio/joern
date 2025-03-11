@@ -9,6 +9,8 @@ import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.core.dom.ast.gnu.IGNUASTGotoStatement
@@ -334,25 +336,201 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   private def astForRangedFor(forStmt: ICPPASTRangeBasedForStatement): Ast = {
+    forStmt.getDeclaration match {
+      case declaration: ICPPASTStructuredBindingDeclaration => astForForEachStatementWithBinding(forStmt, declaration)
+      case _                                                => astForForEachStatementWithIdentifier(forStmt)
+    }
+  }
+
+  private def astForForEachStatementWithBinding(
+    forStmt: ICPPASTRangeBasedForStatement,
+    declaration: ICPPASTStructuredBindingDeclaration
+  ): Ast = {
     val codeDecl = nullSafeCode(forStmt.getDeclaration)
     val codeInit = nullSafeCode(forStmt.getInitializerClause)
     val code     = s"for ($codeDecl:$codeInit)"
     val forNode  = controlStructureNode(forStmt, ControlStructureTypes.FOR, code)
-    forStmt.getDeclaration match {
-      case declaration: ICPPASTStructuredBindingDeclaration =>
-        val (localAsts, initAsts) = astsForStructuredBindingDeclaration(declaration, Some(forStmt.getInitializerClause))
-          .partition(_.root.exists(_.isInstanceOf[NewLocal]))
-        setArgumentIndices(initAsts)
-        val bodyAst = nullSafeAst(forStmt.getBody)
-        forAst(forNode, localAsts, initAsts.filterNot(_.nodes.isEmpty), Seq.empty, Seq.empty, bodyAst)
+    val (localAsts, initAsts) = astsForStructuredBindingDeclaration(declaration, Some(forStmt.getInitializerClause))
+      .partition(_.root.exists(_.isInstanceOf[NewLocal]))
+    setArgumentIndices(initAsts)
+    val bodyAst = nullSafeAst(forStmt.getBody)
+    forAst(forNode, localAsts, initAsts.filterNot(_.nodes.isEmpty), Seq.empty, Seq.empty, bodyAst)
+  }
+
+  /** De-sugaring from:
+    *
+    * for (type i : arr) { body }
+    *
+    * to:
+    *
+    * { var _iterator = <operator>.iterator(arr); var _result; var i; while (!(_result = _iterator.next()).done) { i =
+    * _result.value; body } }
+    */
+  private def astForForEachStatementWithIdentifier(forStmt: ICPPASTRangeBasedForStatement): Ast = {
+    // surrounding block:
+    val blockNode = this.blockNode(forStmt)
+    scope.pushNewBlockScope(blockNode)
+
+    val collection     = forStmt.getInitializerClause
+    val collectionName = code(collection)
+    val collectionType = registerType(typeFor(forStmt.getInitializerClause))
+    val idType         = registerType(typeFor(forStmt.getDeclaration))
+
+    // iterator assignment:
+    val iteratorName      = uniqueName("", "", "iterator")._1
+    val iteratorLocalNode = localNode(forStmt, iteratorName, iteratorName, registerType(Defines.Iterator)).order(0)
+    val iteratorNode      = this.identifierNode(forStmt, iteratorName, iteratorName, Defines.Iterator)
+    diffGraph.addEdge(blockNode, iteratorLocalNode, EdgeTypes.AST)
+    scope.addVariableReference(iteratorName, iteratorNode, Defines.Iterator, EvaluationStrategies.BY_REFERENCE)
+
+    val iteratorCall =
+      // TODO: add operator to schema
+      callNode(
+        forStmt,
+        s"<operator>.iterator($collectionName)",
+        "<operator>.iterator",
+        "<operator>.iterator",
+        DispatchTypes.STATIC_DISPATCH
+      )
+
+    val objectKeysCallArgs = List(astForNode(collection))
+    val objectKeysCallAst  = callAst(iteratorCall, objectKeysCallArgs)
+
+    val iteratorAssignmentNode =
+      callNode(
+        forStmt,
+        s"$iteratorName = <operator>.iterator($collectionName)",
+        Operators.assignment,
+        Operators.assignment,
+        DispatchTypes.STATIC_DISPATCH
+      )
+
+    val iteratorAssignmentArgs = List(Ast(iteratorNode), objectKeysCallAst)
+    val iteratorAssignmentAst  = callAst(iteratorAssignmentNode, iteratorAssignmentArgs)
+
+    // result:
+    val resultName      = uniqueName("", "", "result")._1
+    val resultLocalNode = localNode(forStmt, resultName, resultName, idType).order(0)
+    val resultNode      = identifierNode(forStmt, resultName, resultName, idType)
+    diffGraph.addEdge(blockNode, resultLocalNode, EdgeTypes.AST)
+    scope.addVariableReference(resultName, resultNode, idType, EvaluationStrategies.BY_REFERENCE)
+
+    // loop variable:
+    val loopVariableName = forStmt.getDeclaration match {
+      case decl: IASTSimpleDeclaration =>
+        decl.getDeclarators.headOption.map(shortName).getOrElse(code(forStmt.getDeclaration))
       case _ =>
-        val init     = astForNode(forStmt.getInitializerClause)
-        val declAsts = astsForDeclaration(forStmt.getDeclaration)
-        setArgumentIndices(init +: declAsts)
-        val (localAsts, initAsts) = (init +: declAsts).partition(_.root.exists(_.isInstanceOf[NewLocal]))
-        val bodyAst               = nullSafeAst(forStmt.getBody)
-        forAst(forNode, localAsts, initAsts.filterNot(_.nodes.isEmpty), Seq.empty, Seq.empty, bodyAst)
+        code(forStmt.getDeclaration)
     }
+
+    val loopVariableLocalNode = localNode(forStmt, loopVariableName, loopVariableName, idType).order(0)
+    val loopVariableNode      = identifierNode(forStmt, loopVariableName, loopVariableName, idType)
+    diffGraph.addEdge(blockNode, loopVariableLocalNode, EdgeTypes.AST)
+    scope.addVariableReference(loopVariableName, loopVariableNode, idType, EvaluationStrategies.BY_REFERENCE)
+
+    // while loop:
+    val whileLoopNode = controlStructureNode(forStmt, ControlStructureTypes.WHILE, code(forStmt))
+
+    // while loop test:
+    val testCallNode =
+      callNode(
+        forStmt,
+        s"!($resultName = $iteratorName.next()).done",
+        Operators.not,
+        Operators.not,
+        DispatchTypes.STATIC_DISPATCH
+      )
+
+    val doneBaseNode =
+      callNode(
+        forStmt,
+        s"($resultName = $iteratorName.next())",
+        Operators.assignment,
+        Operators.assignment,
+        DispatchTypes.STATIC_DISPATCH
+      )
+
+    val lhsNode = identifierNode(forStmt, resultName, resultName, idType)
+
+    val rhsNode =
+      callNode(forStmt, s"$iteratorName.next()", "next", s"${Defines.Iterator}.next", DispatchTypes.DYNAMIC_DISPATCH)
+
+    val nextBaseNode = identifierNode(forStmt, iteratorName, iteratorName, collectionType)
+
+    val nextMemberNode = fieldIdentifierNode(forStmt, "next", "next")
+
+    val op     = Operators.fieldAccess
+    val nextMa = callNode(forStmt, s"$iteratorName.next", op, op, DispatchTypes.STATIC_DISPATCH, None, Some(idType))
+    val nextReceiverNode = callAst(nextMa, List(Ast(nextBaseNode), Ast(nextMemberNode)))
+
+    val thisNextNode = identifierNode(forStmt, iteratorName, iteratorName, collectionType)
+
+    val rhsArgs = List(Ast(thisNextNode))
+    val rhsAst  = callAst(rhsNode, rhsArgs, receiver = Option(nextReceiverNode))
+
+    val doneBaseArgs = List(Ast(lhsNode), rhsAst)
+    val doneBaseAst  = callAst(doneBaseNode, doneBaseArgs)
+    Ast.storeInDiffGraph(doneBaseAst, diffGraph)
+
+    val doneMemberNode = fieldIdentifierNode(forStmt, "done", "done")
+
+    val doneMa = callNode(
+      forStmt,
+      s"${doneBaseNode.code}.done",
+      op,
+      op,
+      DispatchTypes.STATIC_DISPATCH,
+      None,
+      Some(registerType("bool"))
+    )
+    val testNode = callAst(doneMa, List(Ast(doneBaseNode), Ast(doneMemberNode)))
+
+    val testCallArgs = List(testNode)
+    val testCallAst  = callAst(testCallNode, testCallArgs)
+
+    val whileLoopAst = Ast(whileLoopNode).withChild(testCallAst).withConditionEdge(whileLoopNode, testCallNode)
+
+    // while loop variable assignment:
+    val whileLoopVariableNode = identifierNode(forStmt, loopVariableName, loopVariableName, idType)
+
+    val baseNode = identifierNode(forStmt, resultName, resultName, idType)
+
+    val memberNode = fieldIdentifierNode(forStmt, "value", "value")
+
+    val valueMa =
+      callNode(forStmt, s"$iteratorName.value", op, op, DispatchTypes.STATIC_DISPATCH, None, Some(idType))
+    val accessAst = callAst(valueMa, List(Ast(baseNode), Ast(memberNode)))
+
+    val loopVariableAssignmentNode = callNode(
+      forStmt,
+      s"$loopVariableName = $resultName.value",
+      Operators.assignment,
+      Operators.assignment,
+      DispatchTypes.STATIC_DISPATCH
+    )
+
+    val loopVariableAssignmentArgs = List(Ast(whileLoopVariableNode), accessAst)
+    val loopVariableAssignmentAst  = callAst(loopVariableAssignmentNode, loopVariableAssignmentArgs)
+
+    // while loop block:
+    val whileLoopBlockNode = this.blockNode(forStmt)
+    scope.pushNewBlockScope(whileLoopBlockNode)
+
+    val bodyAst                = nullSafeAst(forStmt.getBody)
+    val whileLoopBlockChildren = loopVariableAssignmentAst +: bodyAst
+    setArgumentIndices(whileLoopBlockChildren)
+    val whileLoopBlockAst = blockAst(whileLoopBlockNode, whileLoopBlockChildren.toList)
+
+    // end while loop block:
+    scope.popScope()
+
+    // end surrounding block:
+    scope.popScope()
+
+    val blockChildren =
+      List(iteratorAssignmentAst, Ast(resultNode), Ast(loopVariableNode), whileLoopAst.withChild(whileLoopBlockAst))
+    setArgumentIndices(blockChildren)
+    blockAst(blockNode, blockChildren)
   }
 
   private def astForWhile(whileStmt: IASTWhileStatement): Ast = {

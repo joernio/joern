@@ -5,6 +5,7 @@ object Defines {
   val Void: String                           = "void"
   val Function: String                       = "std.function"
   val Array: String                          = "std.array"
+  val Iterator: String                       = "std.iterator"
   val QualifiedNameSeparator: String         = "::"
   val Auto: String                           = "auto"
   val OperatorPointerCall: String            = "<operator>.pointerCall"
