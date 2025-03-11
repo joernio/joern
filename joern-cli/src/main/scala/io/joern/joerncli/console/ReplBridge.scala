@@ -17,7 +17,4 @@ object ReplBridge extends BridgeBase {
   override def greeting = JoernConsole.banner()
 
   override def promptStr: String = "joern"
-
-  override def onExitCode: String = "workspace.projects.foreach(_.close)"
-
 }
