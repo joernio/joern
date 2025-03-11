@@ -1,6 +1,5 @@
 package io.joern.joerncli
 
-import better.files.File
 import java.nio.file.{Files, Path, Paths}
 import io.joern.console.Config
 import io.joern.joerncli.console.ReplBridge
