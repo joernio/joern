@@ -227,6 +227,7 @@ trait AstCreatorHelper { this: AstCreator =>
       case s: IASTElaboratedTypeSpecifier => cleanType(ASTStringUtil.getReturnTypeString(s, null))
       case l: IASTLiteralExpression       => cleanType(safeGetType(l.getExpressionType))
       case e: IASTExpression              => cleanType(safeGetNodeType(e))
+      case d: IASTSimpleDeclaration       => cleanType(typeForDeclSpecifier(d.getDeclSpecifier))
       case _                              => cleanType(getNodeSignature(node))
     }
   }
@@ -433,7 +434,7 @@ trait AstCreatorHelper { this: AstCreator =>
     variableName: String,
     tpe: String
   ): NewLocal = {
-    val local = NodeBuilders.newLocalNode(variableName, tpe).order(0)
+    val local = localNodeWithExplicitPositionInfo(variableName, variableName, tpe).order(0)
     diffGraph.addEdge(methodScopeNodeId, local, EdgeTypes.AST)
     local
   }

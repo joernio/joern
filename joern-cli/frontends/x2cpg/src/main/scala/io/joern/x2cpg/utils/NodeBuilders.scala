@@ -48,6 +48,10 @@ object NodeBuilders {
       .signature(signature)
   }
 
+  @deprecated(
+    "Deprecated in favour of the corresponding method io.joern.x2cpg.AstNodeBuilder and will be removed in a future version",
+    "4.0.280"
+  )
   def newLocalNode(name: String, typeFullName: String, closureBindingId: Option[String] = None): NewLocal = {
     NewLocal()
       .code(name)

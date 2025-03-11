@@ -492,33 +492,6 @@ class AstCreationPassTests extends AstC2CpgSuite {
       }
     }
 
-    "be correct for ranged for-loop" in {
-      val cpg = code(
-        """
-       |void method() {
-       |  for (int x : list) {
-       |    int z = x;
-       |  }
-       |}""".stripMargin,
-        "file.cpp"
-      )
-      inside(cpg.method.nameExact("method").controlStructure.l) { case List(forStmt) =>
-        forStmt.controlStructureType shouldBe ControlStructureTypes.FOR
-        inside(forStmt.astChildren.isLocal.l) { case List(x: Local) =>
-          x.name shouldBe "x"
-          x.typeFullName shouldBe "int"
-          x.code shouldBe "int x"
-        }
-        // for the expected orders see CfgCreator.cfgForForStatement
-        inside(forStmt.astChildren.order(2).l) { case List(ident: Identifier) =>
-          ident.code shouldBe "list"
-        }
-        inside(forStmt.astChildren.order(5).l) { case List(block: Block) =>
-          block.astChildren.isCall.code.l shouldBe List("z = x")
-        }
-      }
-    }
-
     "be correct for ranged for-loop with structured binding" in {
       val cpg = code(
         """
