@@ -1,6 +1,12 @@
 name := "joern-cli"
 
-dependsOn(Projects.console, Projects.console % "test->test", Projects.dataflowengineoss, Projects.x2cpg)
+dependsOn(
+  Projects.console,
+  Projects.console % "test->test",
+  Projects.dataflowengineoss,
+  Projects.x2cpg,
+  Projects.projectLinterRules % ScalafixConfig
+)
 
 libraryDependencies ++= Seq(
   "io.shiftleft"     %% "codepropertygraph" % Versions.cpg,
@@ -129,20 +135,22 @@ generateScaladocs := {
   out
 }
 
-Universal/mappings ++= sbt.Path.directory(new File("joern-cli/src/main/resources/scripts"))
+Universal / mappings ++= sbt.Path.directory(new File("joern-cli/src/main/resources/scripts"))
 
 // remove module-info.class from dependency jars - a hacky workaround for a scala3 compiler bug
 // see https://github.com/scala/scala3/issues/20421
 val moduleInfoLocation = "module-info.class"
-Universal/mappings := (Universal/mappings).value.collect {
+Universal / mappings := (Universal / mappings).value.collect {
   case (jar, location)
       if location.startsWith("lib")
-      && location.endsWith(".jar")
-      && FileUtils.jarContainsEntryInRoot(jar, moduleInfoLocation) =>
+        && location.endsWith(".jar")
+        && FileUtils.jarContainsEntryInRoot(jar, moduleInfoLocation) =>
     val newJar = target.value / "without-module-info" / jar.getName()
     IO.copyFile(jar, newJar)
     FileUtils.removeJarEntryFromRoot(newJar, moduleInfoLocation)
-    streams.value.log.info(s"workaround for scala completion bug: including a modified version of $jar without the $moduleInfoLocation entry: $newJar")
+    streams.value.log.info(
+      s"workaround for scala completion bug: including a modified version of $jar without the $moduleInfoLocation entry: $newJar"
+    )
     newJar -> location
   case other =>
     other // no need to change anything

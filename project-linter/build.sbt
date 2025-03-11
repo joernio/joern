@@ -5,9 +5,8 @@ lazy val scala3Version      = "3.5.2"
 
 ThisBuild / name              := "project-linter"
 ThisBuild / organization      := "io.joern"
-ThisBuild / semanticdbEnabled := true
-ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
-ThisBuild / crossSbtVersions  := Seq("2.13", "2.12")
+ThisBuild / semanticdbEnabled := false
+//ThisBuild / crossSbtVersions  := Seq("2.13", "2.12")
 
 publish / skip := true
 
@@ -21,4 +20,4 @@ lazy val rules = projectMatrix
     libraryDependencies += "ch.epfl.scala" % "scalafix-core_2.13" % V.scalafixVersion
   )
   .defaultAxes(VirtualAxis.jvm)
-  .jvmPlatform(rulesCrossVersions)
+//  .jvmPlatform(rulesCrossVersions)

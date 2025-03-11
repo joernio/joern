@@ -6,7 +6,11 @@ import scala.util.Try
 
 name := "gosrc2cpg"
 
-dependsOn(Projects.dataflowengineoss % "compile->compile;test->test", Projects.x2cpg % "compile->compile;test->test")
+dependsOn(
+  Projects.dataflowengineoss  % "compile->compile;test->test",
+  Projects.x2cpg              % "compile->compile;test->test",
+  Projects.projectLinterRules % ScalafixConfig
+)
 
 libraryDependencies ++= Seq(
   "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,

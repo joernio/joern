@@ -24,8 +24,10 @@ lazy val gosrc2cpg         = Projects.gosrc2cpg
 lazy val swiftsrc2cpg      = Projects.swiftsrc2cpg
 lazy val csharpsrc2cpg     = Projects.csharpsrc2cpg
 
-lazy val projectLinter = Projects.projectLinter
+//lazy val projectLinter = Projects.projectLinter
 lazy val projectLinterRules = Projects.projectLinterRules
+
+dependsOn(Projects.projectLinterRules % ScalafixConfig)
 
 ThisBuild / libraryDependencies ++= Seq(
   "org.slf4j"                % "slf4j-api"         % Versions.slf4j,

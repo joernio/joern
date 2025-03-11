@@ -5,11 +5,12 @@ enablePlugins(JavaAppPackaging)
 dependsOn(
   Projects.console,
   Projects.macros,
-  Projects.ghidra2cpg  % "test->test",
-  Projects.javasrc2cpg % "test->test",
-  Projects.kotlin2cpg  % "test->test",
-  Projects.c2cpg       % "test->test",
-  Projects.php2cpg     % "test->test"
+  Projects.ghidra2cpg         % "test->test",
+  Projects.javasrc2cpg        % "test->test",
+  Projects.kotlin2cpg         % "test->test",
+  Projects.c2cpg              % "test->test",
+  Projects.php2cpg            % "test->test",
+  Projects.projectLinterRules % ScalafixConfig
 )
 
 libraryDependencies ++= Seq("org.scalatest" %% "scalatest" % Versions.scalatest % Test)
