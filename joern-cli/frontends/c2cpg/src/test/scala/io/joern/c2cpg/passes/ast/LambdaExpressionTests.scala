@@ -144,10 +144,10 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
     "have the correct fullname" in {
       val List(l0, l1, l2, l3, l4) = cpg.method.name(".*lambda.*").sortBy(_.name).l
       l0.fullName shouldBe "Test0.cpp:<global>.foo.<lambda>0:int()"
-      l1.fullName shouldBe "Test0.cpp:<global>.foo.<lambda>1:ANY()" // CDT is unable to infer the type here; needs to be fixed
+      l1.fullName shouldBe "Test0.cpp:<global>.foo.<lambda>1:int()"
       l2.fullName shouldBe "Test0.cpp:<global>.foo.<lambda>2:unknown()"
       l3.fullName shouldBe "Test0.cpp:<global>.foo.<lambda>3:int()"
-      l4.fullName shouldBe "Test0.cpp:<global>.foo.<lambda>4:ANY()"
+      l4.fullName shouldBe "Test0.cpp:<global>.foo.<lambda>4:int()"
     }
   }
 
@@ -164,7 +164,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
 
     "ref this correctly" in {
       val List(lambda) = cpg.method.name(".*lambda.*").l
-      lambda.fullName shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:ANY()"
+      lambda.fullName shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:bool()"
       cpg.all.collectAll[ClosureBinding].l match {
         case List(thisClosureBinding) =>
           val thisLocal = cpg.method.name(".*lambda.*").local.nameExact("this").head
