@@ -4,7 +4,7 @@ val kotlinVersion = "1.9.23"
 
 dependsOn(
   Projects.dataflowengineoss  % "compile->compile;test->test",
-  Projects.x2cpg2              % "compile->compile;test->test",
+  Projects.x2cpg              % "compile->compile;test->test",
   Projects.javasrc2cpg        % "compile->compile;test->test",
 )
 
