@@ -6,4 +6,7 @@ object NameConstants {
   val WildcardImportName: String = "*"
   val Unknown                    = "<unknown>"
   val OuterClass                 = "outerClass"
+  val NextCallName: String       = "next"
+  val IteratorCallName: String   = "iterator"
+  val HasNextCallName: String    = "hasNext"
 }
