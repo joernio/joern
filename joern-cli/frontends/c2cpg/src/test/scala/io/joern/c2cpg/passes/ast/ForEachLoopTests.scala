@@ -30,6 +30,7 @@ class ForEachLoopTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt) {
       val List(method)      = cpg.method.nameExact("foo").l
       val List(methodBlock) = method.astChildren.isBlock.l
       val List(loopBlock)   = methodBlock.astChildren.isBlock.l
+      cpg.controlStructure.isWhile.code.l shouldBe List("for (const char* item:items)")
       checkForInOrOf(loopBlock, "char*")
     }
   }
@@ -51,6 +52,7 @@ class ForEachLoopTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt) {
       val List(method)      = cpg.method.nameExact("foo").l
       val List(methodBlock) = method.astChildren.isBlock.l
       val List(loopBlock)   = methodBlock.astChildren.isBlock.l
+      cpg.controlStructure.isWhile.code.l shouldBe List("for (const char* item:items)")
       checkForInOrOf(loopBlock, "char*")
     }
   }
@@ -72,6 +74,7 @@ class ForEachLoopTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt) {
       val List(method)      = cpg.method.nameExact("foo").l
       val List(methodBlock) = method.astChildren.isBlock.l
       val List(loopBlock)   = methodBlock.astChildren.isBlock.l
+      cpg.controlStructure.isWhile.code.l shouldBe List("for (const std::string& item:items)")
       checkForInOrOf(loopBlock, "std.string&")
     }
   }
