@@ -27,25 +27,6 @@ class LibInfoFetcherMaven[F[_]: Async: Parallel](httpClient: Client[F],
     s"$serverUrl/$groupPart/$artifactId/$version/$artifactId-$version.jar"
   }
 
-  override def fetch(deps: Vector[Coordinate[IdMaven]]): F[(Vector[Coordinate[IdMaven]], Vector[LibInfoHandle])] = {
-    val pairsF =
-      deps.map { dep =>
-        fetchAsLibInfoHandle(dep).map(libInfoHandle => (dep, Some(libInfoHandle)))
-          .handleErrorWith { throwable =>
-            Logger[F].debug(throwable)(s"Error while fetching $dep") >>
-              Async[F].pure((dep, None))
-          }
-      }.parSequence
-
-    pairsF.map { pairs =>
-      val (failedFetch, successfulFetch) = pairs.partition(_._2.isEmpty)
-      (
-        failedFetch.map(_._1),
-        successfulFetch.map(_._2.get)
-      )
-    }
-  }
-  
   private def fetchAsLibInfoHandle(dep: Coordinate[IdMaven]): F[LibInfoHandle] = {
     HttpUtil.fetch(httpClient, uri(dep)).use { bodyStream =>
       bodyStream.through(fs2.io.toInputStream).evalMap { inputStream =>
@@ -53,7 +34,7 @@ class LibInfoFetcherMaven[F[_]: Async: Parallel](httpClient: Client[F],
       }.compile.onlyOrError
     }
   }
-  
+
   private def createLibInfoHandle(inputStream: InputStream): F[LibInfoHandle] = {
     Async[F].blocking {
       val outputStream = new ByteArrayOutputStream()
@@ -70,6 +51,16 @@ class LibInfoFetcherMaven[F[_]: Async: Parallel](httpClient: Client[F],
         }
         new LibInfoHandle(outputStream.toString)
       }
+    }
+  }
+
+  override def fetch2(deps: fs2.Stream[F, Coordinate[IdMaven]]
+                     ): fs2.Stream[F, (Coordinate[IdMaven], Option[LibInfoHandle])] = {
+    deps.evalMap { dep =>
+      fetchAsLibInfoHandle(dep).map(Some.apply).handleErrorWith { throwable =>
+        Logger[F].debug(throwable)(s"Error while fetching $dep") >>
+          Async[F].pure(None)
+      }.map((dep, _))
     }
   }
 }

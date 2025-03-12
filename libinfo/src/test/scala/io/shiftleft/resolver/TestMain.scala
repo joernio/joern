@@ -4,9 +4,10 @@ import cats.effect.*
 import cats.effect.std.Console
 import cats.syntax.all.*
 import fs2.Stream
-import fs2.io.file.{Files, Path, writeAll}
+import fs2.io.file.{Files, Path}
 import io.shiftleft.resolver.api.*
 import io.shiftleft.resolver.impl.*
+import io.shiftleft.resolver.util.GitStorage
 import org.apache.logging.log4j.Level
 import org.apache.logging.log4j.core.config.Configurator
 import org.http4s.client.middleware.FollowRedirect
@@ -14,6 +15,7 @@ import org.http4s.ember.client.EmberClientBuilder
 
 import java.io.{PrintWriter, StringWriter}
 import java.nio.file.Path as JPath
+import java.nio.file.Files as JFiles
 
 object TestMain extends IOApp {
 
@@ -59,9 +61,16 @@ class TestMain[I <: Id](extractors: Vector[ExtractorTupleType[IO, I]]) {
         case buildTarget =>
           resolver.resolve(buildTarget.directDependencies).flatMap { case resolvedDeps =>
             IO.println(s"${buildTarget.id} $resolvedDeps") >>
-            libInfoFetcher.fetch(resolvedDeps).flatMap { case (missing, libInfos) =>
-              Stream.emits(libInfos.map(_.libInfo)).through(Files[IO].writeUtf8(Path("/tmp/testData/libInfo"))).compile.drain
-            }
+              Stream.emits(resolvedDeps).through(libInfoFetcher.fetch2).evalMap { case (dep, libInfoOption) =>
+                libInfoOption match {
+                  case Some(libInfo) =>
+                    val path = GitStorage.calcLibInfoPath(JPath.of("/tmp/testData/libInfo"), dep.id.value, dep.version)
+                    IO.blocking(JFiles.createDirectories(path.getParent)) >>
+                    IO.blocking(JFiles.writeString(path, libInfo.libInfo))
+                  case None =>
+                    IO.println(s"Failed to fetch lib info for $dep")
+                }
+              }.compile.drain
           }
       }
     }

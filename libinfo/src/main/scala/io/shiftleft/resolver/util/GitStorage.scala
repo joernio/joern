@@ -11,6 +11,12 @@ object GitStorage {
     basePath.resolve(escId).resolve(escVersion).resolve("metadata").resolve("metadata.ion")
   }
   
+  def calcLibInfoPath(basePath: Path, idValue: String, version: String): Path = {
+    val escId = escapedIdValue(idValue)
+    val escVersion = escapedVersion(version)
+    basePath.resolve(escId).resolve(escVersion).resolve("libinfo.ion")
+  }
+  
   private def escapedIdValue(idValue: String): String = {
     // TODO extend this as some characters are not allowed on certain file systems
     idValue.replace(':', '-')
