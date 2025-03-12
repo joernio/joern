@@ -159,7 +159,7 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     // NB: Tracking whatever has been added to $LOADER is dynamic and requires post-processing step!
     val resolvedPath =
       if (isRelative) {
-        Try((Paths.get(currentFilePath).getParent / path).toString).toOption
+        Try((Paths.get(currentFilePath).getParent / path).toAbsolutePath.normalize().toString).toOption
           .map(_.stripPrefix(s"$projectRoot${JFile.separator}"))
           .getOrElse(path)
       } else {
