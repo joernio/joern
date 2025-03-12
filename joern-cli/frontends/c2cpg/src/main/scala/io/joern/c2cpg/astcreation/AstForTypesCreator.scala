@@ -10,6 +10,7 @@ import org.eclipse.cdt.internal.core.model.ASTStringUtil
 import io.joern.x2cpg.datastructures.Stack.*
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import org.apache.commons.lang3.StringUtils
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPClosureType
 
 trait AstForTypesCreator { this: AstCreator =>
 
@@ -30,16 +31,30 @@ trait AstForTypesCreator { this: AstCreator =>
     Ast(cpgNamespace)
   }
 
+  private def typeForIASTDeclarator(
+    declaration: IASTSimpleDeclaration,
+    declarator: IASTDeclarator,
+    index: Int
+  ): String = {
+    declarator match {
+      case arrayDecl: IASTArrayDeclarator => registerType(cleanType(typeFor(arrayDecl)))
+      case _ =>
+        safeGetBinding(declarator.getName) match {
+          case Some(variable: ICPPVariable) if variable.getType.isInstanceOf[CPPClosureType] =>
+            registerType(Defines.Function)
+          case _ =>
+            registerType(cleanType(typeForDeclSpecifier(declaration.getDeclSpecifier, index = index)))
+        }
+    }
+  }
+
   protected def astForDeclarator(declaration: IASTSimpleDeclaration, declarator: IASTDeclarator, index: Int): Ast = {
     val name = shortName(declarator)
     declaration match {
       case d if isTypeDef(d) && shortName(d.getDeclSpecifier).nonEmpty =>
         val filename = fileName(declaration)
-        val typeDefName = if (name.isEmpty) {
-          safeGetBinding(declarator.getName).map(b => registerType(b.getName))
-        } else {
-          Option(registerType(name))
-        }
+        val typeDefName = if (name.isEmpty) { safeGetBinding(declarator.getName).map(b => registerType(b.getName)) }
+        else { Option(registerType(name)) }
         val tpe = registerType(typeFor(declarator))
         Ast(
           typeDeclNode(
@@ -52,18 +67,12 @@ trait AstForTypesCreator { this: AstCreator =>
           )
         )
       case d if parentIsClassDef(d) =>
-        val tpe = declarator match {
-          case _: IASTArrayDeclarator => registerType(cleanType(typeFor(declarator)))
-          case _ => registerType(cleanType(typeForDeclSpecifier(declaration.getDeclSpecifier, index = index)))
-        }
+        val tpe = typeForIASTDeclarator(declaration, declarator, index)
         Ast(memberNode(declarator, name, code(declarator), tpe))
       case d if isAssignmentFromBrokenMacro(d, declarator) && scope.lookupVariable(name).nonEmpty =>
         Ast()
       case _ =>
-        val tpe = declarator match {
-          case arrayDecl: IASTArrayDeclarator => registerType(cleanType(typeFor(arrayDecl)))
-          case _ => registerType(cleanType(typeForDeclSpecifier(declaration.getDeclSpecifier, index = index)))
-        }
+        val tpe  = typeForIASTDeclarator(declaration, declarator, index)
         val code = codeForDeclarator(declaration, declarator)
         val node = localNode(declarator, name, code, tpe)
         scope.addVariable(name, node, tpe, C2CpgScope.ScopeType.BlockScope)

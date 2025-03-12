@@ -221,20 +221,24 @@ trait AstForExpressionsCreator { this: AstCreator =>
             astForCppCallExpressionUntyped(call)
         }
       case Some(classType: ICPPClassType) if safeGetEvaluation(call).exists(_.isInstanceOf[EvalFunctionCall]) =>
-        val evaluation   = call.getEvaluation.asInstanceOf[EvalFunctionCall]
-        val functionType = Try(evaluation.getOverload.getType).toOption
-        val signature    = functionType.map(functionTypeToSignature).getOrElse(X2CpgDefines.UnresolvedSignature)
-        val name         = Defines.OperatorCall
+        val evaluation        = call.getEvaluation.asInstanceOf[EvalFunctionCall]
+        val functionType      = Try(evaluation.getOverload.getType).toOption
+        val functionSignature = functionType.map(functionTypeToSignature).getOrElse(X2CpgDefines.UnresolvedSignature)
+        val name              = Defines.OperatorCall
         classType match {
-          case _: CPPClosureType =>
-            val fullName = s"$name:$signature"
+          case lambdaType: CPPClosureType =>
+            val lambdaSignature = lambdaType.getDefinition match {
+              case l: ICPPASTLambdaExpression => signature(returnType(l), l)
+              case _                          => functionSignature
+            }
+            val fullName = s"$name:$lambdaSignature"
             val callCpgNode = callNode(
               call,
               code(call),
               name,
               fullName,
               DispatchTypes.DYNAMIC_DISPATCH,
-              Some(signature),
+              Some(lambdaSignature),
               Some(registerType(cleanType(safeGetType(call.getExpressionType))))
             )
             val receiverAst = astForExpression(functionNameExpr)
@@ -242,7 +246,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
             createCallAst(callCpgNode, args, receiver = Some(receiverAst))
           case _ =>
             val classFullName = cleanType(safeGetType(classType))
-            val fullName      = s"$classFullName.$name:$signature"
+            val fullName      = s"$classFullName.$name:$functionSignature"
             val dispatchType = evaluation.getOverload match {
               case method: ICPPMethod =>
                 if (method.isVirtual || method.isPureVirtual) {
@@ -259,7 +263,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
               name,
               fullName,
               dispatchType,
-              Some(signature),
+              Some(functionSignature),
               Some(registerType(cleanType(safeGetType(call.getExpressionType))))
             )
             val instanceAst = astForExpression(functionNameExpr)

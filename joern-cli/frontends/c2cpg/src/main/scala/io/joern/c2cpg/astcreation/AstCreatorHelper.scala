@@ -227,6 +227,7 @@ trait AstCreatorHelper { this: AstCreator =>
       case s: IASTElaboratedTypeSpecifier => cleanType(ASTStringUtil.getReturnTypeString(s, null))
       case l: IASTLiteralExpression       => cleanType(safeGetType(l.getExpressionType))
       case e: IASTExpression              => cleanType(safeGetNodeType(e))
+      case d: IASTSimpleDeclaration       => cleanType(typeForDeclSpecifier(d.getDeclSpecifier))
       case _                              => cleanType(getNodeSignature(node))
     }
   }
