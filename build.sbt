@@ -12,6 +12,7 @@ lazy val macros            = Projects.macros
 lazy val semanticcpg       = Projects.semanticcpg
 lazy val c2cpg             = Projects.c2cpg
 lazy val ghidra2cpg        = Projects.ghidra2cpg
+lazy val x2cpg             = Projects.x2cpg
 lazy val x2cpg2             = Projects.x2cpg2
 lazy val pysrc2cpg         = Projects.pysrc2cpg
 lazy val php2cpg           = Projects.php2cpg
