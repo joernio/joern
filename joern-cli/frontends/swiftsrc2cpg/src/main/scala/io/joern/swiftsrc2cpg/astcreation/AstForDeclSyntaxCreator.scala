@@ -164,13 +164,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val modifiers   = Seq(NewModifier().modifierType(ModifierTypes.CONSTRUCTOR))
 
     methodAstParentStack.push(methodNode_)
-    val methodReturnNode =
-      newMethodReturnNode(
-        typeDeclNode.fullName,
-        dynamicTypeHintFullName = None,
-        line = line(node),
-        column = column(node)
-      )
+    val methodReturnNode_ = methodReturnNode(node, typeDeclNode.fullName)
 
     methodAstParentStack.pop()
 
@@ -178,11 +172,11 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       createFunctionTypeAndTypeDeclAst(node, methodNode_, constructorName, methodFullName)
 
     val (mAst, bAst) = if (methodBlockContent.isEmpty) {
-      (methodStubAst(methodNode_, Seq.empty, methodReturnNode, modifiers), Ast())
+      (methodStubAst(methodNode_, Seq.empty, methodReturnNode_, modifiers), Ast())
     } else {
       setArgumentIndices(methodBlockContent)
       val bodyAst = blockAst(NewBlock(), methodBlockContent)
-      (methodAstWithAnnotations(methodNode_, Seq.empty, bodyAst, methodReturnNode, modifiers), bodyAst)
+      (methodAstWithAnnotations(methodNode_, Seq.empty, bodyAst, methodReturnNode_, modifiers), bodyAst)
     }
 
     Ast.storeInDiffGraph(mAst, diffGraph)
@@ -382,6 +376,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     if (staticMemberInitCalls.nonEmpty) {
       val init = staticInitMethodAstAndBlock(
+        node,
         staticMemberInitCalls,
         s"$typeFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}",
         None,
@@ -530,6 +525,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     if (staticMemberInitCalls.nonEmpty) {
       val init = staticInitMethodAstAndBlock(
+        node,
         staticMemberInitCalls,
         s"$typeFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}",
         None,
@@ -739,8 +735,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         List.empty[Ast]
     }
 
-    val methodReturnNode =
-      newMethodReturnNode(returnType, dynamicTypeHintFullName = None, line = line(node), column = column(node))
+    val methodReturnNode_ = methodReturnNode(node, returnType)
 
     val bodyAsts = methodBlockContent ++ bodyStmtAsts
     setArgumentIndices(bodyAsts)
@@ -750,7 +745,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         methodNode_,
         parameterAsts,
         blockAst_,
-        methodReturnNode,
+        methodReturnNode_,
         modifiers = modifiers,
         annotations = attributes
       )

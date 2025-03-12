@@ -187,8 +187,10 @@ object NodeBuilders {
       .order(0)
   }
 
-  /** Create a method return node
-    */
+  @deprecated(
+    "Deprecated in favour of the corresponding method io.joern.x2cpg.AstNodeBuilder and will be removed in a future version",
+    "4.0.286"
+  )
   def newMethodReturnNode(
     typeFullName: String,
     dynamicTypeHintFullName: Option[String] = None,

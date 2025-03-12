@@ -26,11 +26,10 @@ class AstCreator(
   global: Global,
   fileContent: Option[String] = None
 )(implicit withSchemaValidation: ValidationMode)
-    extends AstCreatorBase(filename)
+    extends AstCreatorBase[Host, AstCreator](filename)
     with AstForDeclarationsCreator
     with AstForStatementsCreator
-    with AstForExpressionsCreator
-    with AstNodeBuilder[Host, AstCreator] {
+    with AstForExpressionsCreator {
 
   private val logger = LoggerFactory.getLogger(getClass)
 

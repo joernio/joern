@@ -1,6 +1,5 @@
 package io.joern.x2cpg
 
-import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
 import io.shiftleft.codepropertygraph.generated.nodes.Block.PropertyDefaults as BlockDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.{
@@ -382,8 +381,18 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     node_
   }
 
-  protected def methodReturnNode(node: Node, typeFullName: String): NewMethodReturn = {
-    newMethodReturnNode(typeFullName, None, line(node), column(node))
+  protected def methodReturnNode(
+    node: Node,
+    typeFullName: String,
+    dynamicTypeHintFullName: Option[String] = None
+  ): NewMethodReturn = {
+    NewMethodReturn()
+      .typeFullName(typeFullName)
+      .dynamicTypeHintFullName(dynamicTypeHintFullName)
+      .code("RET")
+      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
   }
 
   protected def jumpTargetNode(

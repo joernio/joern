@@ -266,7 +266,13 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       Ast.storeInDiffGraph(Ast(typeDeclNode_).withChildren(member), diffGraph)
     } else {
       val init =
-        staticInitMethodAst(calls, s"$typeFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}", None, Defines.Any)
+        staticInitMethodAst(
+          tsEnum,
+          calls,
+          s"$typeFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}",
+          None,
+          Defines.Any
+        )
       Ast.storeInDiffGraph(Ast(typeDeclNode_).withChildren(member).withChild(init), diffGraph)
     }
 
@@ -379,6 +385,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     if (staticMemberInitCalls.nonEmpty || staticInitBlockAsts.nonEmpty) {
       val init = staticInitMethodAst(
+        clazz,
         staticMemberInitCalls ++ staticInitBlockAsts,
         s"$typeFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}",
         None,

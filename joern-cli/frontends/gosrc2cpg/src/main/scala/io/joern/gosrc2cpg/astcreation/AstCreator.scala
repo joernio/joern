@@ -4,7 +4,7 @@ import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.model.GoModHelper
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{GoAstJsonParser, ParserKeys, ParserNodeInfo}
-import io.joern.x2cpg.astgen.AstGenNodeBuilder
+import io.joern.x2cpg.astgen.{AstGenNodeBuilder, BaseNodeInfo}
 import io.joern.x2cpg.datastructures.Scope
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
@@ -24,7 +24,7 @@ class AstCreator(
   val goMod: GoModHelper,
   val goGlobal: GoGlobal
 )(implicit withSchemaValidation: ValidationMode)
-    extends AstCreatorBase(relPathFileName)
+    extends AstCreatorBase[BaseNodeInfo[?], AstCreator](relPathFileName)
     with AstCreatorHelper
     with AstForGenDeclarationCreator
     with AstForExpressionCreator

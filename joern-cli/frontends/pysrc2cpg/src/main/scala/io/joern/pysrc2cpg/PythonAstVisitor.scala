@@ -4,7 +4,7 @@ import PythonAstVisitor.{logger, metaClassSuffix, noLineAndColumn}
 import io.joern.pysrc2cpg.memop.*
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants.builtinPrefix
 import io.joern.pythonparser.ast
-import io.joern.pythonparser.ast.{Arguments, iexpr, istmt}
+import io.joern.pythonparser.ast.{Arguments, iast, iexpr, istmt}
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants
 import io.joern.x2cpg.{AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
@@ -32,7 +32,7 @@ class PythonAstVisitor(
   version: PythonVersion,
   enableFileContent: Boolean
 )(implicit withSchemaValidation: ValidationMode)
-    extends AstCreatorBase(relFileName)
+    extends AstCreatorBase[ast.iast, PythonAstVisitor](relFileName)
     with PythonAstVisitorHelpers {
 
   private val redefintionSuffix = "$redefinition"
@@ -2159,6 +2159,12 @@ class PythonAstVisitor(
       relFileName + ":" + name
     }
   }
+
+  override protected def line(node: iast): Option[Int]         = None
+  override protected def column(node: iast): Option[Int]       = None
+  override protected def lineEnd(node: iast): Option[Int]      = None
+  override protected def columnEnd(element: iast): Option[Int] = None
+  override protected def code(node: iast): String              = node.toString
 }
 
 object PythonAstVisitor {
