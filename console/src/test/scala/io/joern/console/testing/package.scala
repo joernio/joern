@@ -2,7 +2,7 @@ package io.joern.console
 
 import io.joern.console.workspacehandling.Project
 import flatgraph.help.Table.{AvailableWidthProvider, ConstantWidth}
-import io.joern.x2cpg.utils.FileUtil
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 import java.nio.file.Path
 import scala.util.Try

@@ -1,14 +1,15 @@
 package io.joern.rubysrc2cpg.utils
 
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.joern.rubysrc2cpg.datastructures.RubyProgramSummary
 import io.joern.rubysrc2cpg.parser.RubyAstGenRunner
 import io.joern.rubysrc2cpg.passes.{Defines, DependencyPass}
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg, parser}
-import io.joern.x2cpg.utils.{ConcurrentTaskUtil, FileUtil}
+import io.joern.x2cpg.utils.ConcurrentTaskUtil
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Dependency
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.utils.FileUtil
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.slf4j.LoggerFactory
 import upickle.default.*

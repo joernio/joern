@@ -7,8 +7,8 @@ import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 import java.nio.file.{Files, Paths, Path}
 

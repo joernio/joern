@@ -2,7 +2,7 @@ package io.joern.x2cpg.layers
 
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 
 import java.nio.file.{Files, Path, Paths}
 

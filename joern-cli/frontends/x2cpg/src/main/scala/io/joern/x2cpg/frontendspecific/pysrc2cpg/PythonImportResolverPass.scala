@@ -1,12 +1,12 @@
 package io.joern.x2cpg.frontendspecific.pysrc2cpg
 
 import io.joern.x2cpg.passes.frontend.XImportResolverPass
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.importresolver.*
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 import java.io.File as JFile
 import java.nio.file.{Files, Paths}

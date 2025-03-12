@@ -3,10 +3,10 @@ package io.joern.console.workspacehandling
 import io.joern.console
 import io.joern.console.defaultAvailableWidthProvider
 import io.joern.console.Reporting
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
+import io.shiftleft.semanticcpg.utils.FileUtil
 import org.json4s.DefaultFormats
 import org.json4s.native.Serialization.write as jsonWrite
 

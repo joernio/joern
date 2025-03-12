@@ -4,7 +4,7 @@ import io.joern.jimple2cpg.Config
 import io.joern.jimple2cpg.astcreation.AstCreator
 import io.joern.jimple2cpg.util.ProgramHandlingUtil.ClassFile
 import io.joern.x2cpg.datastructures.Global
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory

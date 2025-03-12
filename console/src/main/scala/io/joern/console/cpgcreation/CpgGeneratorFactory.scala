@@ -1,10 +1,10 @@
 package io.joern.console.cpgcreation
 
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.joern.console.{ConsoleConfig, CpgConverter}
-import io.joern.x2cpg.utils.FileUtil
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 import java.nio.file.{Files, Path, Paths, StandardCopyOption}
 import scala.util.Try

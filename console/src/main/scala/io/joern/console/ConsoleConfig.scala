@@ -1,7 +1,7 @@
 package io.joern.console
 
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 import java.nio.file.{Path, Paths}
 import scala.annotation.tailrec

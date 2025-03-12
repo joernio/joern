@@ -1,9 +1,10 @@
 package io.shiftleft.semanticcpg.codedumper
 
-import better.files.File
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.semanticcpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import org.slf4j.{Logger, LoggerFactory}
+
+import java.nio.file.Files
 
 /** language must be one of io.shiftleft.codepropertygraph.generated.Languages TODO: generate enums instead of Strings
   * for the languages
@@ -21,11 +22,11 @@ object SourceHighlighter {
       case other => throw new RuntimeException(s"Attempting to call highlighter on unsupported language: $other")
     }
 
-    val tmpSrcFile = File.newTemporaryFile("dump")
-    tmpSrcFile.writeText(source.code)
+    val tmpSrcFile = FileUtil.newTemporaryFile("dump")
+    Files.writeString(tmpSrcFile, source.code)
     try {
       val highlightedCode = ExternalCommand
-        .run(Seq("source-highlight-esc.sh", tmpSrcFile.path.toString, langFlag))
+        .run(Seq("source-highlight-esc.sh", tmpSrcFile.toString, langFlag))
         .stdOut
         .mkString("\n")
       Some(highlightedCode)
@@ -34,7 +35,7 @@ object SourceHighlighter {
         logger.info("syntax highlighting not working. Is `source-highlight` installed?", exception)
         Some(source.code)
     } finally {
-      tmpSrcFile.delete()
+      FileUtil.delete(tmpSrcFile)
     }
   }
 

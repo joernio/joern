@@ -1,6 +1,6 @@
 package io.joern.jssrc2cpg.passes
 
-import io.joern.x2cpg.utils.FileUtil.PathExt
+import io.shiftleft.semanticcpg.utils.FileUtil.PathExt
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewMetaData
 import io.shiftleft.codepropertygraph.generated.Languages

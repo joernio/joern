@@ -15,11 +15,11 @@ import io.joern.x2cpg.passes.frontend.TypeNodePass
 import io.joern.x2cpg.utils.dependency.DependencyResolver
 import io.joern.x2cpg.utils.dependency.DependencyResolverParams
 import io.joern.x2cpg.utils.dependency.GradleConfigKeys
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.joern.x2cpg.SourceFiles.filterFile
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.utils.IOUtils
 import org.jetbrains.kotlin.cli.jvm.compiler.{KotlinCoreEnvironment, KotlinToJVMBytecodeCompiler}
 import org.jetbrains.kotlin.com.intellij.openapi.util.Disposer

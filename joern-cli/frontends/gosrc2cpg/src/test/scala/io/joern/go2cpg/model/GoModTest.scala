@@ -2,11 +2,11 @@ package io.joern.go2cpg.model;
 
 import io.joern.gosrc2cpg.Config
 import io.joern.gosrc2cpg.model.{GoMod, GoModDependency, GoModHelper, GoModModule}
-import io.joern.x2cpg.utils.FileUtil
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 import java.io.File as JFile
 import java.nio.file.{Files, Path, Paths}

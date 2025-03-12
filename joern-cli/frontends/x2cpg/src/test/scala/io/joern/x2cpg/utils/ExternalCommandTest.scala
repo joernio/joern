@@ -2,7 +2,7 @@ package io.joern.x2cpg.utils
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import io.shiftleft.semanticcpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 
 import java.nio.file.Paths
 import scala.util.Properties.isWin

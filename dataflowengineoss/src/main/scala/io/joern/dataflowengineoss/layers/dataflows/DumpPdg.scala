@@ -1,12 +1,12 @@
 package io.joern.dataflowengineoss.layers.dataflows
 
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 import java.nio.file.{Files, Paths}
 

@@ -1,6 +1,7 @@
 package io.joern.x2cpg.utils
 
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path}

@@ -1,7 +1,7 @@
 package io.joern.jimple2cpg.unpacking
 
 import io.joern.jimple2cpg.{Config, Jimple2Cpg}
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.utils.ProjectRoot

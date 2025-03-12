@@ -7,9 +7,9 @@ import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.passes.frontend.{JavaConfigFileCreationPass, MetaDataPass, TypeNodePass}
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.semanticcpg.utils.FileUtil
 import org.slf4j.LoggerFactory
 import soot.options.Options
 import soot.{G, Scene}

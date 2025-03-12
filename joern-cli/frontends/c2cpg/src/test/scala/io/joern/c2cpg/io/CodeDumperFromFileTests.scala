@@ -1,10 +1,10 @@
 package io.joern.c2cpg.io
 
 import io.joern.c2cpg.testfixtures.C2CpgSuite
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.codedumper.CodeDumper
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 import java.nio.file.{Files, Paths}
 import java.util.regex.Pattern

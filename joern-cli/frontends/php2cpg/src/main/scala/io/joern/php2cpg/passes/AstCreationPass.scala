@@ -4,7 +4,7 @@ import io.joern.php2cpg.Config
 import io.joern.php2cpg.astcreation.AstCreator
 import io.joern.php2cpg.parser.PhpParser
 import io.joern.x2cpg.{SourceFiles, ValidationMode}
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory

@@ -3,9 +3,9 @@ package io.joern.x2cpg
 import io.joern.x2cpg.X2Cpg.{applyDefaultOverlays, withErrorsToConsole}
 import io.joern.x2cpg.frontendspecific.FrontendArgsDelimitor
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
-import io.joern.x2cpg.utils.FileUtil
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
+import io.shiftleft.semanticcpg.utils.FileUtil
 import org.slf4j.LoggerFactory
 import scopt.OParser
 

@@ -3,7 +3,7 @@ package io.joern.joerncli
 import java.nio.file.{Files, Path, Paths}
 import io.joern.console.Config
 import io.joern.joerncli.console.ReplBridge
-import io.joern.x2cpg.utils.FileUtil
+import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.utils.ProjectRoot
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

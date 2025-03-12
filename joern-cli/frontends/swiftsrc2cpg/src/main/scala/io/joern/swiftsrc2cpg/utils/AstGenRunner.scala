@@ -2,8 +2,9 @@ package io.joern.swiftsrc2cpg.utils
 
 import io.joern.swiftsrc2cpg.Config
 import io.joern.x2cpg.SourceFiles
-import io.joern.x2cpg.utils.{Environment, FileUtil}
-import io.joern.x2cpg.utils.FileUtil.*
+import io.joern.x2cpg.utils.Environment
+import io.shiftleft.semanticcpg.utils.FileUtil
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{Files, Path, Paths}

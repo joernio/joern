@@ -1,7 +1,7 @@
 package io.joern.csharpsrc2cpg.parser
 
 import io.joern.x2cpg.astgen.ParserResult
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 import ujson.Value.Value

@@ -3,10 +3,9 @@ package io.joern.kotlin2cpg.compiler
 import io.joern.kotlin2cpg.Config
 import io.joern.kotlin2cpg.DefaultContentRootJarPath
 import io.joern.kotlin2cpg.Kotlin2Cpg
-import io.shiftleft.semanticcpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import io.joern.x2cpg.Defines
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import FileUtil.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.utils.ProjectRoot
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity

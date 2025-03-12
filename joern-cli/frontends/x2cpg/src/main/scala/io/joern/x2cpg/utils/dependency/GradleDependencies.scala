@@ -1,7 +1,7 @@
 package io.joern.x2cpg.utils.dependency
 
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 import java.nio.charset.Charset
 import org.gradle.tooling.{GradleConnector, ProjectConnection}

@@ -4,9 +4,9 @@ import io.joern.console.FrontendConfig
 import io.joern.console.cpgcreation.{CCpgGenerator, JsSrcCpgGenerator}
 import io.joern.x2cpg.frontendspecific.jssrc2cpg
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
-import io.joern.x2cpg.utils.FileUtil
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.utils.ProjectRoot
 
 import java.nio.file.Path

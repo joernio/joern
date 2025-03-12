@@ -16,11 +16,12 @@ import io.joern.x2cpg.astgen.AstGenRunner.AstGenRunnerResult
 import io.joern.x2cpg.astgen.ParserResult
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
-import io.joern.x2cpg.utils.{ConcurrentTaskUtil, Environment, FileUtil, HashUtil, Report}
+import io.joern.x2cpg.utils.{ConcurrentTaskUtil, Environment, HashUtil, Report}
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.passes.CpgPassBase
+import io.shiftleft.semanticcpg.utils.FileUtil
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths

@@ -4,8 +4,8 @@ import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.CDefaultTestCpg
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.x2cpg.testfixtures.Code2CpgFixture
-import io.joern.x2cpg.utils.FileUtil
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 import java.nio.file.Files
 import java.nio.file.Path

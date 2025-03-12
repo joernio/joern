@@ -1,6 +1,6 @@
 package io.joern.c2cpg.parser
 
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.joern.c2cpg.C2Cpg.DefaultIgnoredFolders
 import io.joern.c2cpg.Config
 import io.joern.x2cpg.SourceFiles

@@ -1,6 +1,6 @@
 package io.joern.dataflowengineoss.layers.dataflows
 
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.semanticsloader.Semantics

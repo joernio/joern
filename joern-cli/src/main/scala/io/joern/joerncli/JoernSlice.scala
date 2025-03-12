@@ -4,11 +4,11 @@ import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOpti
 import io.joern.joerncli.JoernParse.ParserConfig
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.layers.Base
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 import java.nio.file.{Files, Path, Paths}
 import scala.language.postfixOps

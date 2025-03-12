@@ -2,7 +2,7 @@ package io.joern.csharpsrc2cpg.utils
 
 import io.joern.semanticcpg.utils.SecureXmlParsing
 
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 
 import java.nio.file.Paths
 import scala.xml.{Elem, Node}

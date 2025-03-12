@@ -6,9 +6,9 @@ import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, AstGenRunnerRe
 import io.joern.x2cpg.astgen.AstGenRunnerBase
 import io.joern.x2cpg.utils.Environment.ArchitectureType.ArchitectureType
 import io.joern.x2cpg.utils.Environment.OperatingSystemType.OperatingSystemType
-import io.joern.x2cpg.utils.{Environment, FileUtil}
-import io.joern.x2cpg.utils.FileUtil.*
-import io.shiftleft.semanticcpg.utils.ExternalCommand
+import io.joern.x2cpg.utils.Environment
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{Path, Paths}

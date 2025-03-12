@@ -3,7 +3,7 @@ package io.joern.x2cpg
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.utils.NodeBuilders.{newFieldIdentifierNode, newMethodReturnNode, newOperatorCallNode}
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Cpg, DiffGraphBuilder, ModifierTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal

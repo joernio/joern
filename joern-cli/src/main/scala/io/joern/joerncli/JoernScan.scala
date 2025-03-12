@@ -7,11 +7,11 @@ import io.joern.dataflowengineoss.semanticsloader.{NoSemantics, Semantics}
 import io.joern.joerncli.JoernScan.getQueriesFromQueryDb
 import io.joern.joerncli.Scan.{allTag, defaultTag}
 import io.joern.joerncli.console.ReplBridge
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
+import io.shiftleft.semanticcpg.utils.FileUtil
 import org.json4s.native.Serialization
 import org.json4s.{Formats, NoTypeHints}
 

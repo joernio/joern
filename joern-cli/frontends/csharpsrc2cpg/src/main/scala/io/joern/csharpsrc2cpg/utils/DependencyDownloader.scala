@@ -2,11 +2,11 @@ package io.joern.csharpsrc2cpg.utils
 
 import io.joern.csharpsrc2cpg.Config
 import io.joern.csharpsrc2cpg.datastructures.CSharpProgramSummary
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Dependency
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.utils.FileUtil
 import org.slf4j.LoggerFactory
 import upickle.default.*
 

@@ -1,9 +1,8 @@
 package io.joern.x2cpg.utils.dependency
 
-import io.shiftleft.semanticcpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import io.joern.x2cpg.utils.dependency.GradleConfigKeys.GradleConfigKey
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import FileUtil.*
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{Files, Path}

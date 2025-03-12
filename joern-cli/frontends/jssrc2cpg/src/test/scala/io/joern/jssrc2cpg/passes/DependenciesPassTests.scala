@@ -6,8 +6,8 @@ import io.joern.jssrc2cpg.utils.PackageJsonParser
 import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgSuite
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 import java.nio.file.{Files, Path}
 

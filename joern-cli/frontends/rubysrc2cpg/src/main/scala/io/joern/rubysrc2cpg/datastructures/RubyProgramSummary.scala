@@ -3,10 +3,10 @@ package io.joern.rubysrc2cpg.datastructures
 import io.joern.x2cpg.Defines as XDefines
 import io.joern.x2cpg.datastructures.{FieldLike, MethodLike, ProgramSummary, StubbedType, TypeLike}
 import io.joern.x2cpg.typestub.{TypeStubMetaData, TypeStubUtil}
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import org.slf4j.LoggerFactory
 import io.joern.rubysrc2cpg.passes.Defines
+import io.shiftleft.semanticcpg.utils.FileUtil
 import upickle.default.*
 
 import java.io.{ByteArrayInputStream, FileInputStream, InputStream}

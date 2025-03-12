@@ -5,9 +5,9 @@ import io.joern.jssrc2cpg.passes.AstCreationPass
 import io.joern.jssrc2cpg.utils.AstGenRunner
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.utils.FileUtil
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.wordspec.AnyWordSpec

@@ -13,9 +13,8 @@ import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import io.shiftleft.codepropertygraph.generated.help.Doc
 import flatgraph.help.Table.AvailableWidthProvider
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
-import io.shiftleft.semanticcpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 
 import java.nio.file.{Files, Path, Paths, StandardCopyOption}
 import scala.util.control.NoStackTrace

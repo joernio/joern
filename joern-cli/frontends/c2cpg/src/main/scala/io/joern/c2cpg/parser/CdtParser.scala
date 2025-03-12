@@ -2,9 +2,9 @@ package io.joern.c2cpg.parser
 
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.parser.JSONCompilationDatabaseParser.CommandObject
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.joern.x2cpg.SourceFiles
+import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.utils.IOUtils
 import org.eclipse.cdt.core.dom.ast.IASTPreprocessorStatement
 import org.eclipse.cdt.core.dom.ast.IASTTranslationUnit

@@ -1,7 +1,7 @@
 package io.joern.jimple2cpg.util
 
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 import java.io.{BufferedInputStream, FileInputStream}
 import java.nio.file.StandardCopyOption

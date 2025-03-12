@@ -1,10 +1,10 @@
 package io.joern.rubysrc2cpg.passes
 
 import io.joern.x2cpg.passes.frontend.XConfigFileCreationPass
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 import java.nio.file.{Path, Paths}
 

@@ -8,8 +8,8 @@ import io.joern.javasrc2cpg.util.Delombok.DelombokMode
 import io.joern.javasrc2cpg.util.SourceParser.fileIfExists
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.SourceFiles
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 

@@ -1,8 +1,8 @@
 package io.joern.console
 
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 import java.nio.file.{Path, Paths, Files}
 import scala.collection.mutable

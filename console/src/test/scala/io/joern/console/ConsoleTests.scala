@@ -6,11 +6,11 @@ import io.joern.x2cpg.layers.Base
 import io.joern.x2cpg.layers.CallGraph
 import io.joern.x2cpg.layers.ControlFlow
 import io.joern.x2cpg.layers.TypeRelations
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreator
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
+import io.shiftleft.semanticcpg.utils.FileUtil
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.Ignore

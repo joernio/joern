@@ -3,11 +3,11 @@ package io.joern.rubysrc2cpg.datastructures
 import io.joern.rubysrc2cpg.passes.{GlobalTypes, Defines as RubyDefines}
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.datastructures.*
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{DeclarationNew, NewLocal, NewMethodParameterIn}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 import java.io.File as JFile
 import java.nio.file.{Files, Paths}

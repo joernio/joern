@@ -6,8 +6,8 @@ import io.joern.c2cpg.passes.FunctionDeclNodePass
 import io.joern.x2cpg.testfixtures.LanguageFrontend
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
-import io.joern.x2cpg.utils.FileUtil
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 trait AstC2CpgFrontend extends LanguageFrontend {
   def execute(sourceCodePath: java.io.File): Cpg = {

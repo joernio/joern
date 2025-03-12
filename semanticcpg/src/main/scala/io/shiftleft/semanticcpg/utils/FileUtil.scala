@@ -1,18 +1,9 @@
-package io.joern.x2cpg.utils
+package io.shiftleft.semanticcpg.utils
 
-import java.io.{BufferedOutputStream, FileNotFoundException, IOException, InputStream, OutputStream}
-import java.nio.file.{
-  FileAlreadyExistsException,
-  Files,
-  LinkOption,
-  NoSuchFileException,
-  Path,
-  Paths,
-  SimpleFileVisitor,
-  StandardCopyOption
-}
-import java.nio.file.attribute.BasicFileAttributes
+import java.io.*
 import java.nio.charset.Charset
+import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.*
 import java.util.zip.{ZipEntry, ZipFile}
 import scala.annotation.tailrec
 import scala.jdk.CollectionConverters.*

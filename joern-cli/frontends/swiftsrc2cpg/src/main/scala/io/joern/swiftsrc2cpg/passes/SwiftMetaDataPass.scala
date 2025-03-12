@@ -4,7 +4,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewMetaData
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.passes.CpgPass
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import java.nio.file.Paths
 class SwiftMetaDataPass(cpg: Cpg, hash: String, inputPath: String) extends CpgPass(cpg) {
 

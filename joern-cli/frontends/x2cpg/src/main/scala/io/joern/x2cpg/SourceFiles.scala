@@ -1,6 +1,6 @@
 package io.joern.x2cpg
 
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import org.slf4j.LoggerFactory
 
 import java.io.FileNotFoundException

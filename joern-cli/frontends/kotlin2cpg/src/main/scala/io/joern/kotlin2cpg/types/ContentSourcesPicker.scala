@@ -1,8 +1,8 @@
 package io.joern.kotlin2cpg.types
 
 import java.nio.file.{Files, Paths}
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 object ContentSourcesPicker {
 

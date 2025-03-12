@@ -4,7 +4,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{NewMetaData, NewNamespaceBlock}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.types.structure.{FileTraversal, NamespaceTraversal}
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 
 import java.nio.file.Paths
 

@@ -7,8 +7,8 @@ import io.joern.swiftsrc2cpg.utils.AstGenRunner
 import io.joern.x2cpg.testfixtures.LanguageFrontend
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
-import io.joern.x2cpg.utils.FileUtil
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 import java.nio.file.Paths
 
