@@ -15,7 +15,7 @@ object RestrictedImports {
   private val rules: Map[String, ImportRule] = Seq(
     ImportRule(
       "BetterFiles",
-      "Avoid the 'Better Files' library, use `io.joern.x2cpg.utils.FileUtil` or `java.nio.file` instead.",
+      "Avoid the 'Better Files' library, use `io.shiftleft.semanticcpg.utils.FileUtil`, `os-lib` or `java.nio.file` instead.",
       "better.files"
     ),
     ImportRule(
