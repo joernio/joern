@@ -1,6 +1,5 @@
 package io.joern.javasrc2cpg.util
 
-import better.files.File
 import com.github.javaparser.{JavaParser, ParserConfiguration}
 import com.github.javaparser.ParserConfiguration.LanguageLevel
 import com.github.javaparser.ast.CompilationUnit
@@ -9,11 +8,13 @@ import io.joern.javasrc2cpg.util.Delombok.DelombokMode
 import io.joern.javasrc2cpg.util.SourceParser.fileIfExists
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.SourceFiles
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 
 import java.nio.charset.{Charset, StandardCharsets}
-import java.nio.file.Path
+import java.nio.file.{Files, Path, Paths}
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
 import scala.util.Try
@@ -45,9 +46,9 @@ class SourceParser(
       val compilationUnit = parse(file, storeTokens = true)
       val fileContent = Option
         .when(saveFileContent) {
-          Try(IOUtils.readEntireFile(file.path))
-            .orElse(Try(file.contentAsString(Charset.defaultCharset())))
-            .orElse(Try(file.contentAsString(StandardCharsets.ISO_8859_1)))
+          Try(IOUtils.readEntireFile(file))
+            .orElse(Try(file.fileContent(Charset.defaultCharset())))
+            .orElse(Try(file.fileContent(StandardCharsets.ISO_8859_1)))
             .toOption
         }
         .flatten
@@ -67,17 +68,17 @@ class SourceParser(
     fileIfExists(typesFilename).flatMap(parse(_, storeTokens = false))
   }
 
-  private def parse(file: File, storeTokens: Boolean): Option[CompilationUnit] = {
+  private def parse(file: Path, storeTokens: Boolean): Option[CompilationUnit] = {
     val javaParserConfig =
       new ParserConfiguration()
         .setLanguageLevel(LanguageLevel.BLEEDING_EDGE)
         .setStoreTokens(storeTokens)
-    val parseResult = new JavaParser(javaParserConfig).parse(file.toJava)
+    val parseResult = new JavaParser(javaParserConfig).parse(file)
 
     parseResult.getProblems.asScala.toList match {
       case Nil => // Just carry on as usual
       case problems =>
-        logger.warn(s"Encountered problems while parsing file ${file.name}:")
+        logger.warn(s"Encountered problems while parsing file ${file.fileName}:")
         problems.foreach { problem =>
           logger.warn(s"- ${problem.getMessage}")
         }
@@ -86,13 +87,13 @@ class SourceParser(
     parseResult.getResult.toScala match {
       case Some(result) if result.getParsed == Parsedness.PARSED => Some(result)
       case _ =>
-        logger.warn(s"Failed to parse file ${file.name}")
+        logger.warn(s"Failed to parse file ${file.fileName}")
         None
     }
   }
 
   def cleanupDelombokOutput(): Unit = {
-    dirToDelete.foreach(path => File(path).delete())
+    dirToDelete.foreach(FileUtil.delete(_))
   }
 
 }
@@ -107,7 +108,7 @@ object SourceParser {
     def getFileInfo(inputDir: Path, filename: String): Option[FileInfo] = {
       fileIfExists(filename).map { file =>
         val relativePath = inputDir.relativize(Path.of(filename))
-        val content      = file.contentAsString
+        val content      = file.fileContent
 
         val packageName = PackageNameRegex.findFirstMatchIn(content).map(_.group(1))
 
@@ -120,21 +121,20 @@ object SourceParser {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  private def checkExists(file: File): Option[File] = {
-    if (file.exists) {
+  private def checkExists(file: Path): Option[Path] = {
+    if (Files.exists(file)) {
       Option(file)
     } else {
-      logger.warn(s"Attempting to open file, but it does not exist: ${file.pathAsString}")
+      logger.warn(s"Attempting to open file, but it does not exist: ${file.toString}")
       None
     }
   }
-  private[util] def fileIfExists(path: Path): Option[File] = {
-    val file = File(path)
-    checkExists(file)
+  private[util] def fileIfExists(path: Path): Option[Path] = {
+    checkExists(path)
   }
 
-  private[util] def fileIfExists(filename: String): Option[File] = {
-    val file = File(filename)
+  private[util] def fileIfExists(filename: String): Option[Path] = {
+    val file = Paths.get(filename)
     checkExists(file)
   }
 

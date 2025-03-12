@@ -1,7 +1,7 @@
 package io.joern.x2cpg.utils.dependency
 
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 import java.nio.charset.Charset
 import org.gradle.tooling.{GradleConnector, ProjectConnection}
@@ -193,7 +193,7 @@ object GradleDependencies {
         .iterator()
         .asScala
         .filterNot(_ == outDir)
-        .filter(_.getFileName.toString == jarInsideAarFileName)
+        .filter(_.fileName == jarInsideAarFileName)
         .toList
     if (classesJarEntries.size != 1) {
       logger.warn(s"Found aar file without `classes.jar` inside at path ${aar}")

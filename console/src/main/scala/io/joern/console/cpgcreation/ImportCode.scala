@@ -6,9 +6,8 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import flatgraph.help.Table
 import flatgraph.help.Table.AvailableWidthProvider
-
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 import java.nio.file.{Path, Files, Paths}
 
@@ -105,7 +104,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
       io.joern.console.cpgcreation.cpgGeneratorForLanguage(language, config, rootPath, args)
 
     def isAvailable: Boolean =
-      cpgGeneratorForLanguage(language, config.frontend, config.install.rootPath.path, args = Nil).exists(_.isAvailable)
+      cpgGeneratorForLanguage(language, config.frontend, config.install.rootPath, args = Nil).exists(_.isAvailable)
 
     protected def fromFile(inputPath: String, projectName: String = "", args: List[String] = List()): Cpg = {
       checkInputPath(inputPath)
@@ -122,7 +121,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
     }
 
     def apply(inputPath: String, projectName: String = "", args: List[String] = List()): Cpg = {
-      val frontend = cpgGeneratorForLanguage(language, config.frontend, config.install.rootPath.path, args)
+      val frontend = cpgGeneratorForLanguage(language, config.frontend, config.install.rootPath, args)
         .getOrElse(throw new ConsoleException(s"no cpg generator for language=$language available!"))
       new ImportCode(console).apply(frontend, inputPath, projectName)
     }

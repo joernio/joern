@@ -1,7 +1,7 @@
 package io.joern.console.workspacehandling
 
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 import java.nio.file.Files
 import org.scalatest.matchers.should.Matchers

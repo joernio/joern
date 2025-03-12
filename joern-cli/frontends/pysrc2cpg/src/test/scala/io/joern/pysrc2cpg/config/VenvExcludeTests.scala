@@ -2,10 +2,10 @@ package io.joern.pysrc2cpg.config
 
 import io.joern.pysrc2cpg.Py2CpgOnFileSystem
 import io.joern.pysrc2cpg.Py2CpgOnFileSystemConfig
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.utils.FileUtil
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.wordspec.AnyWordSpec

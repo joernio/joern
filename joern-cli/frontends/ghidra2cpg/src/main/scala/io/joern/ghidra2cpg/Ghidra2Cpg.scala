@@ -20,10 +20,10 @@ import io.joern.ghidra2cpg.passes.x86.{ReturnEdgesPass, X86FunctionPass}
 import io.joern.ghidra2cpg.utils.Decompiler
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.{X2Cpg, X2CpgFrontend}
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.semanticcpg.utils.FileUtil
 import utilities.util.FileUtilities
 
 import java.io.File

@@ -1,24 +1,17 @@
-package io.joern.x2cpg.utils
+package io.shiftleft.semanticcpg.utils
 
-import java.io.{BufferedOutputStream, FileNotFoundException, IOException, InputStream, OutputStream}
-import java.nio.file.{
-  FileAlreadyExistsException,
-  Files,
-  LinkOption,
-  NoSuchFileException,
-  Path,
-  SimpleFileVisitor,
-  StandardCopyOption
-}
-import java.nio.file.attribute.{BasicFileAttributes, FileTime}
+import java.io.*
 import java.nio.charset.Charset
-import java.time.Instant
+import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.*
 import java.util.zip.{ZipEntry, ZipFile}
 import scala.annotation.tailrec
 import scala.jdk.CollectionConverters.*
 import scala.util.Using
 
 object FileUtil {
+  def currentWorkingDirectory: Path = Paths.get("").toAbsolutePath.normalize()
+
   def newTemporaryFile(prefix: String = "", suffix: String = "", parent: Option[Path] = None): Path = {
     parent match {
       case Some(dir) => Files.createTempFile(dir, prefix, suffix)
@@ -26,9 +19,7 @@ object FileUtil {
     }
   }
 
-  def usingTemporaryFile[U](prefix: String = "", suffix: String = "", parent: Option[Path] = None)(
-    f: Path => U
-  ): Unit = {
+  def usingTemporaryFile[U](prefix: String = "", suffix: String = "", parent: Option[Path] = None)(f: Path => U): U = {
     val file = newTemporaryFile(prefix, suffix, parent)
 
     try {
@@ -122,7 +113,7 @@ object FileUtil {
 
     def copyToDirectory(destination: Path): Unit = {
       require(Files.isDirectory(destination), s"${destination} must be a directory")
-      copyTo(destination / p.getFileName.toString)
+      copyTo(destination / p.fileName)
     }
 
     def copyTo(destination: Path, copyOption: StandardCopyOption = StandardCopyOption.COPY_ATTRIBUTES): Unit = {
@@ -226,22 +217,38 @@ object FileUtil {
         .sum
     }
 
-    def listFiles(): Iterator[Path] = {
-      Files.list(p).iterator().asScala
-    }
+    def listFiles(): Iterator[Path] = Files.list(p).iterator().asScala
 
-    def walk(): Iterator[Path] = {
-      Files.walk(p).iterator().asScala
-    }
+    def walk(): Iterator[Path] = Files.walk(p).iterator().asScala
 
-    def extension: Option[String] = {
-      if ((Files.isRegularFile(p) || Files.notExists(p)) && p.getFileName.toString.contains(".")) {
-        val dotIdx = p.getFileName.toString.lastIndexOf(".")
-        Some(p.getFileName.toString.substring(dotIdx).toLowerCase)
+    def hasExtension: Boolean = (Files.isRegularFile(p) || Files.notExists(p)) && p.fileName.contains(".")
+
+    def fileName: String = p.getFileName.toString
+
+    def fileContent: String = fileContent()
+
+    def fileContent(charset: Charset = Charset.defaultCharset()): String = new String(Files.readAllBytes(p), charset)
+
+    def nameOption: Option[String] = Option(p.fileName)
+
+    def parentOption: Option[Path] = Option(p.getParent)
+
+    def nameWithoutExtension(includeAll: Boolean = true): String =
+      if (hasExtension) p.fileName.substring(0, indexOfExtension(includeAll)) else p.fileName
+
+    def extension(includeDot: Boolean = true): Option[String] = {
+      if (hasExtension) {
+        val idx    = p.fileName.lastIndexOf(".")
+        val dotIdx = if includeDot then idx else idx + 1
+        Some(p.fileName.substring(dotIdx).toLowerCase)
       } else {
         None
       }
     }
+
+    private def indexOfExtension(includeAll: Boolean): Int =
+      if (includeAll) p.fileName.indexOf(".") else p.fileName.lastIndexOf(".")
+
     // Taken from better.files implementation
     @tailrec final def pipeTo(in: InputStream, out: OutputStream, buffer: Array[Byte]): OutputStream = {
       val n = in.read(buffer)

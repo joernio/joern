@@ -5,9 +5,9 @@ import io.joern.console.workspacehandling.{Project, ProjectFile, WorkspaceLoader
 import io.joern.console.{Console, ConsoleConfig, FrontendConfig, InstallConfig}
 import io.joern.console.cpgcreation.{JsSrcCpgGenerator, SwiftSrcCpgGenerator}
 import io.joern.console.cpgcreation.guessLanguage
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.utils.ProjectRoot
 
 import java.nio.file.{Files, Path, Paths}
