@@ -7,9 +7,11 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSol
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.scope.NodeTypeInfo
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
-import io.joern.x2cpg.Ast
+import io.joern.javasrc2cpg.util.NameConstants
+import io.joern.javasrc2cpg.util.Util.composeMethodFullName
+import io.joern.x2cpg.{Ast, Defines}
 import io.joern.x2cpg.utils.IntervalKeyPool
-import io.joern.x2cpg.utils.NodeBuilders.{newCallNode, newFieldIdentifierNode, newIdentifierNode}
+import io.joern.x2cpg.utils.NodeBuilders.{newFieldIdentifierNode, newIdentifierNode}
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewBlock,
@@ -121,8 +123,8 @@ trait AstForForLoopsCreator { this: AstCreator =>
 
     val iteratorLocalNode = iteratorLocalForForEach(lineNo)
     val iteratorAssignAst =
-      iteratorAssignAstForForEach(stmt.getIterable, iteratorLocalNode, iterableType, lineNo)
-    val iteratorHasNextCallAst = hasNextCallAstForForEach(iteratorLocalNode, lineNo)
+      iteratorAssignAstForForEach(stmt.getIterable, iteratorLocalNode, iterableType)
+    val iteratorHasNextCallAst = hasNextCallAstForForEach(stmt, iteratorLocalNode)
     val variableLocal          = variableLocalForForEachBody(stmt)
     val variableAssignAst      = astForIterableForEachItemAssign(stmt, iteratorLocalNode, variableLocal)
 
@@ -162,13 +164,18 @@ trait AstForForLoopsCreator { this: AstCreator =>
       operatorCallNode(stmt, PropertyDefaults.Code, Operators.assignment, Some(forVariableType))
     val varLocalAssignIdentifier = newIdentifierNode(variableLocal.name, variableLocal.typeFullName)
 
+    val iterNextCallSignature = composeSignature(Option(TypeConstants.Object), Option(Nil), 0)
+    val iterNextCallMethodFullName =
+      composeMethodFullName(TypeConstants.Iterator, NameConstants.NextCallName, iterNextCallSignature)
     val iterNextCallNode =
-      newCallNode(
-        "next",
-        Some(TypeConstants.Iterator),
-        TypeConstants.Object,
+      callNode(
+        stmt,
+        code(stmt),
+        NameConstants.NextCallName,
+        iterNextCallMethodFullName,
         DispatchTypes.DYNAMIC_DISPATCH,
-        lineNumber = lineNo
+        Option(iterNextCallSignature),
+        Option(TypeConstants.Object)
       )
     val iterNextCallReceiver = newIdentifierNode(iteratorLocalNode.name, iteratorLocalNode.typeFullName)
     val iterNextCallAst =
@@ -380,16 +387,29 @@ trait AstForForLoopsCreator { this: AstCreator =>
   private def iteratorAssignAstForForEach(
     iterExpr: Expression,
     iteratorLocalNode: NewLocal,
-    iterableType: Option[String],
-    lineNo: Option[Int]
+    iterableType: Option[String]
   ): Ast = {
     val iteratorAssignNode =
       operatorCallNode(iterExpr, code(iterExpr), Operators.assignment, Some(TypeConstants.Iterator))
     val iteratorAssignIdentifier =
       identifierNode(iterExpr, iteratorLocalNode.name, iteratorLocalNode.name, iteratorLocalNode.typeFullName)
 
+    val iteratorCallSignature = composeSignature(Option(TypeConstants.Iterator), Option(Nil), 0)
+    val iteratorCallMethodName = composeMethodFullName(
+      iterableType.getOrElse(Defines.UnresolvedNamespace),
+      NameConstants.IteratorCallName,
+      iteratorCallSignature
+    )
     val iteratorCallNode =
-      newCallNode("iterator", iterableType, TypeConstants.Iterator, DispatchTypes.DYNAMIC_DISPATCH, lineNumber = lineNo)
+      callNode(
+        iterExpr,
+        code(iterExpr),
+        NameConstants.IteratorCallName,
+        iteratorCallMethodName,
+        DispatchTypes.DYNAMIC_DISPATCH,
+        Option(iteratorCallSignature),
+        Option(TypeConstants.Iterator)
+      )
 
     val actualIteratorAst = astsForExpression(iterExpr, expectedType = ExpectedType.empty).toList match {
       case Nil =>
@@ -410,14 +430,18 @@ trait AstForForLoopsCreator { this: AstCreator =>
       .withRefEdge(iteratorAssignIdentifier, iteratorLocalNode)
   }
 
-  private def hasNextCallAstForForEach(iteratorLocalNode: NewLocal, lineNo: Option[Int]): Ast = {
+  private def hasNextCallAstForForEach(stmt: ForEachStmt, iteratorLocalNode: NewLocal): Ast = {
+    val signature      = composeSignature(Option(TypeConstants.Boolean), Option(Nil), 0)
+    val methodFullName = composeMethodFullName(TypeConstants.Iterator, NameConstants.HasNextCallName, signature)
     val iteratorHasNextCallNode =
-      newCallNode(
-        "hasNext",
-        Some(TypeConstants.Iterator),
-        TypeConstants.Boolean,
+      callNode(
+        stmt,
+        code(stmt),
+        NameConstants.HasNextCallName,
+        methodFullName,
         DispatchTypes.DYNAMIC_DISPATCH,
-        lineNumber = lineNo
+        Option(signature),
+        Option(TypeConstants.Boolean)
       )
     val iteratorHasNextCallReceiver =
       newIdentifierNode(iteratorLocalNode.name, iteratorLocalNode.typeFullName)

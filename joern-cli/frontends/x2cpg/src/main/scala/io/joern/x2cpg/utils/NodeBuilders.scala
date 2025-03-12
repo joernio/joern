@@ -71,6 +71,10 @@ object NodeBuilders {
       .evaluationStrategy(evaluationStrategy)
   }
 
+  @deprecated(
+    "Deprecated in favour of the corresponding method io.joern.x2cpg.AstNodeBuilder and will be removed in a future version",
+    "4.0.285"
+  )
   def newCallNode(
     methodName: String,
     typeDeclFullName: Option[String],

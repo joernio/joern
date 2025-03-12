@@ -7,7 +7,7 @@ import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.csharpsrc2cpg.utils.Utils.{composeMethodFullName, composeMethodLikeSignature}
 import io.joern.csharpsrc2cpg.{CSharpOperators, Constants}
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootPropertiesOnSeq
-import io.joern.x2cpg.utils.NodeBuilders.{newCallNode, newIdentifierNode}
+import io.joern.x2cpg.utils.NodeBuilders.newIdentifierNode
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewLiteral, NewTypeRef}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
@@ -540,29 +540,31 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     accessExpr: DotNetNodeInfo
   ): Seq[Ast] = {
     if (getter.isStatic) {
+      val signature      = composeMethodLikeSignature(getter.returnType, Nil)
+      val methodFullName = composeMethodFullName(baseTypeFullName, getter.name, signature)
       callAst(
-        newCallNode(
-          getter.name,
-          Some(baseTypeFullName),
-          getter.returnType,
-          DispatchTypes.STATIC_DISPATCH,
-          Nil,
+        callNode(
+          accessExpr,
           code(accessExpr),
-          line(accessExpr),
-          column(accessExpr)
+          getter.name,
+          methodFullName,
+          DispatchTypes.STATIC_DISPATCH,
+          Option(signature),
+          Option(getter.returnType)
         )
       ) :: Nil
     } else {
+      val signature      = composeMethodLikeSignature(getter.returnType, baseTypeFullName :: Nil)
+      val methodFullName = composeMethodFullName(baseTypeFullName, getter.name, signature)
       callAst(
-        newCallNode(
-          getter.name,
-          Some(baseTypeFullName),
-          getter.returnType,
-          DispatchTypes.DYNAMIC_DISPATCH,
-          baseTypeFullName :: Nil,
+        callNode(
+          accessExpr,
           code(accessExpr),
-          line(accessExpr),
-          column(accessExpr)
+          getter.name,
+          methodFullName,
+          DispatchTypes.DYNAMIC_DISPATCH,
+          Option(signature),
+          Option(getter.returnType)
         ),
         base = Some(baseAst)
       ) :: Nil
