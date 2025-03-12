@@ -29,7 +29,6 @@ import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
 import scala.util.{Failure, Success, Try}
 import io.joern.javasrc2cpg.scope.JavaScopeElement.PartialInit
-import io.joern.x2cpg.utils.NodeBuilders.newIdentifierNode
 
 trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
   private val logger = LoggerFactory.getLogger(this.getClass())
