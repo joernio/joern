@@ -31,7 +31,7 @@ trait AstForLambdaCreator(implicit withSchemaValidation: ValidationMode) { this:
         astForMethodParameter(params, genericTypeMethodMap),
         astForMethodBody(funcLiteral.json(ParserKeys.Body)),
         methodReturn,
-        newModifierNode(ModifierTypes.LAMBDA) :: Nil
+        modifierNode(funcLiteral, ModifierTypes.LAMBDA) :: Nil
       )
     scope.popScope()
     methodAstParentStack.pop()

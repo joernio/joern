@@ -4,7 +4,6 @@ import io.joern.csharpsrc2cpg.CSharpOperators
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewIdentifier, NewLiteral, NewLocal}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators}
 
@@ -283,7 +282,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       // Denotes a top-level method declaration. These shall be added to the fictitious "main" created
       // by `astForTopLevelStatements`.
       case LocalFunctionStatement =>
-        astForMethodDeclaration(stmtNodeInfo, extraModifiers = newModifierNode(ModifierTypes.STATIC) :: Nil)
+        astForMethodDeclaration(stmtNodeInfo, extraModifiers = modifierNode(stmtNodeInfo, ModifierTypes.STATIC) :: Nil)
       case _ => astForNode(stmtNodeInfo)
   }
 

@@ -15,7 +15,7 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
     val (name, fullName, memberAsts) = processTypeSepc(createParserNodeInfo(typeSpecNode.json))
     val typeDeclNode_ =
       typeDeclNode(typeSpecNode, name, fullName, relPathFileName, typeSpecNode.code)
-    val modifier = addModifier(typeDeclNode_, name)
+    val modifier = addModifier(typeSpecNode, typeDeclNode_, name)
     Seq(Ast(typeDeclNode_).withChild(Ast(modifier)).withChildren(memberAsts))
   }
 

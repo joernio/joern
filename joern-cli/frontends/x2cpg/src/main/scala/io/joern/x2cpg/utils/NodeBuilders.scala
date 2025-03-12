@@ -116,6 +116,10 @@ object NodeBuilders {
       .columnNumber(column)
   }
 
+  @deprecated(
+    "Deprecated in favour of the corresponding method io.joern.x2cpg.AstNodeBuilder and will be removed in a future version",
+    "4.0.286"
+  )
   def newModifierNode(modifierType: String): NewModifier = NewModifier().modifierType(modifierType)
 
   @deprecated(

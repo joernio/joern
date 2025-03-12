@@ -2,7 +2,6 @@ package io.joern.c2cpg.astcreation
 
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -249,23 +248,23 @@ trait AstForFunctionsCreator { this: AstCreator =>
     }
   }
 
-  private def modifierFromString(image: String): List[NewModifier] = {
+  private def modifierFromString(funcDef: IASTNode, image: String): List[NewModifier] = {
     image match {
-      case "static" => List(newModifierNode(ModifierTypes.STATIC))
+      case "static" => List(modifierNode(funcDef, ModifierTypes.STATIC))
       case _        => Nil
     }
   }
 
   private def modifierFor(funcDef: IASTFunctionDefinition): List[NewModifier] = {
     val constructorModifier = if (isCppConstructor(funcDef)) {
-      List(newModifierNode(ModifierTypes.CONSTRUCTOR), newModifierNode(ModifierTypes.PUBLIC))
+      List(modifierNode(funcDef, ModifierTypes.CONSTRUCTOR), modifierNode(funcDef, ModifierTypes.PUBLIC))
     } else Nil
-    val visibilityModifier = Try(modifierFromString(funcDef.getSyntax.getImage)).getOrElse(Nil)
+    val visibilityModifier = Try(modifierFromString(funcDef, funcDef.getSyntax.getImage)).getOrElse(Nil)
     constructorModifier ++ visibilityModifier
   }
 
   private def modifierFor(funcDecl: IASTFunctionDeclarator): List[NewModifier] = {
-    Try(modifierFromString(funcDecl.getParent.getSyntax.getImage)).getOrElse(Nil)
+    Try(modifierFromString(funcDecl, funcDecl.getParent.getSyntax.getImage)).getOrElse(Nil)
   }
 
   private def thisForCPPFunctions(func: IASTNode): Seq[CGlobal.ParameterInfo] = {
@@ -415,10 +414,10 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
     val isStatic        = !lambdaExpression.getCaptures.exists(c => c.capturesThisPointer())
     val returnNode      = methodReturnNode(lambdaExpression, registerType(returnType))
-    val virtualModifier = Some(newModifierNode(ModifierTypes.VIRTUAL))
-    val staticModifier  = Option.when(isStatic)(newModifierNode(ModifierTypes.STATIC))
-    val privateModifier = Some(newModifierNode(ModifierTypes.PRIVATE))
-    val lambdaModifier  = Some(newModifierNode(ModifierTypes.LAMBDA))
+    val virtualModifier = Some(modifierNode(lambdaExpression, ModifierTypes.VIRTUAL))
+    val staticModifier  = Option.when(isStatic)(modifierNode(lambdaExpression, ModifierTypes.STATIC))
+    val privateModifier = Some(modifierNode(lambdaExpression, ModifierTypes.PRIVATE))
+    val lambdaModifier  = Some(modifierNode(lambdaExpression, ModifierTypes.LAMBDA))
     val modifiers       = List(virtualModifier, staticModifier, privateModifier, lambdaModifier).flatten.map(Ast(_))
 
     val lambdaMethodAst = Ast(lambdaMethodNode)
