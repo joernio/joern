@@ -8,7 +8,7 @@ object RestrictedImports {
 
   /** If a file is within any of the packages defined below, it will not be checked for restricted imports.
     */
-  private val ignoredPackages: Seq[String] = Seq("io.shiftleft.semanticcp")
+  private val ignoredPackages: Seq[String] = Seq()
 
   /** The rules for restricted imports.
     */
