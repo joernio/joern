@@ -12,6 +12,8 @@ dependsOn(
   Projects.x2cpg              % "compile->compile;test->test",
 )
 
+// projectDependencies += Projectsk
+
 libraryDependencies ++= Seq(
   "com.lihaoyi"       %% "upickle"             % Versions.upickle,
   "com.lihaoyi"       %% "ujson"               % Versions.upickle,
