@@ -11,7 +11,7 @@ import org.http4s.client.Client
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream}
 import java.util.jar.{JarEntry, JarInputStream}
 import scala.util.Using
 
@@ -47,21 +47,29 @@ class LibInfoFetcherMaven[F[_]: Async: Parallel](httpClient: Client[F],
   }
   
   private def fetchAsLibInfoHandle(dep: Coordinate[IdMaven]): F[LibInfoHandle] = {
-    HttpUtil.fetchAsBytes(httpClient, uri(dep))
-      .flatMap { byteArray =>
-        val inputStream = new ByteArrayInputStream(byteArray)
-        val outputStream = new ByteArrayOutputStream()
-        val libInfoWriter = new LibInfoWriter(outputStream)
-        Async[F].delay(new JarInputStream(inputStream)).map { jarInputStream =>
-          var jarEntry: JarEntry = null
-          while ({jarEntry = jarInputStream.getNextJarEntry; jarEntry != null}) {
-            if (jarEntry.getName.endsWith(".class")) {
-              new LibInfoGenJvm(libInfoWriter).convertInputStream(jarInputStream)
-            }
+    HttpUtil.fetch(httpClient, uri(dep)).use { bodyStream =>
+      bodyStream.through(fs2.io.toInputStream).evalMap { inputStream =>
+        createLibInfoHandle(inputStream)
+      }.compile.onlyOrError
+    }
+  }
+  
+  private def createLibInfoHandle(inputStream: InputStream): F[LibInfoHandle] = {
+    Async[F].blocking {
+      val outputStream = new ByteArrayOutputStream()
+      Using.resource(new LibInfoWriter(outputStream)) { libInfoWriter =>
+        val jarInputStream = new JarInputStream(inputStream)
+        var jarEntry: JarEntry = null
+        while ( {
+          jarEntry = jarInputStream.getNextJarEntry;
+          jarEntry != null
+        }) {
+          if (jarEntry.getName.endsWith(".class")) {
+            new LibInfoGenJvm(libInfoWriter).convertInputStream(jarInputStream)
           }
-          libInfoWriter.close
-          new LibInfoHandle(outputStream.toString)
         }
+        new LibInfoHandle(outputStream.toString)
       }
+    }
   }
 }
