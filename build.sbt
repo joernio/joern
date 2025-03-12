@@ -23,8 +23,30 @@ lazy val rubysrc2cpg       = Projects.rubysrc2cpg
 lazy val gosrc2cpg         = Projects.gosrc2cpg
 lazy val swiftsrc2cpg      = Projects.swiftsrc2cpg
 lazy val csharpsrc2cpg     = Projects.csharpsrc2cpg
+lazy val linterRules       = Projects.linterRules
 
-lazy val projectLinterRules = Projects.projectLinterRules
+// aggregate project which doesn't include the helper project `linterRules` - we don't want to include it in any standard task
+lazy val root = project.in(file(".")).aggregate(
+  joerncli,
+  querydb,
+  console,
+  dataflowengineoss,
+  macros,
+  semanticcpg,
+  c2cpg,
+  ghidra2cpg,
+  x2cpg,
+  pysrc2cpg,
+  php2cpg,
+  jssrc2cpg,
+  javasrc2cpg,
+  jimple2cpg,
+  kotlin2cpg,
+  rubysrc2cpg,
+  gosrc2cpg,
+  swiftsrc2cpg,
+  csharpsrc2cpg,
+).dependsOn(linterRules % ScalafixConfig)
 
 
 ThisBuild / libraryDependencies ++= Seq(

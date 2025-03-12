@@ -1,9 +1,6 @@
 name := "x2cpg"
 
-dependsOn(
-  Projects.semanticcpg,
-  Projects.projectLinterRules % ScalafixConfig
-)
+dependsOn(Projects.semanticcpg, Projects.linterRules % ScalafixConfig)
 
 libraryDependencies ++= Seq(
   /* Start: AST Gen Dependencies */

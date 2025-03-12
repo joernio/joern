@@ -5,6 +5,7 @@ dependsOn(
   Projects.console % "test->test",
   Projects.dataflowengineoss,
   Projects.x2cpg,
+  Projects.linterRules % ScalafixConfig
 )
 
 libraryDependencies ++= Seq(

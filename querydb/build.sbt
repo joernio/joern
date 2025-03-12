@@ -10,6 +10,7 @@ dependsOn(
   Projects.kotlin2cpg         % "test->test",
   Projects.c2cpg              % "test->test",
   Projects.php2cpg            % "test->test",
+  Projects.linterRules % ScalafixConfig
 )
 
 libraryDependencies ++= Seq("org.scalatest" %% "scalatest" % Versions.scalatest % Test)

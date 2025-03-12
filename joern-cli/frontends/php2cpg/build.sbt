@@ -10,9 +10,8 @@ val phpParserDlUrl =
 dependsOn(
   Projects.dataflowengineoss  % "compile->compile;test->test",
   Projects.x2cpg              % "compile->compile;test->test",
+  Projects.linterRules % ScalafixConfig
 )
-
-// projectDependencies += Projectsk
 
 libraryDependencies ++= Seq(
   "com.lihaoyi"       %% "upickle"             % Versions.upickle,

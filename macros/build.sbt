@@ -1,6 +1,6 @@
 name := "macros"
 
-dependsOn(Projects.semanticcpg % Test)
+dependsOn(Projects.semanticcpg % Test, Projects.linterRules % ScalafixConfig)
 
 libraryDependencies ++= Seq(
   "io.shiftleft"              %% "codepropertygraph" % Versions.cpg,

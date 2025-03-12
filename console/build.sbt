@@ -7,6 +7,7 @@ dependsOn(
   Projects.macros,
   Projects.rubysrc2cpg,
   Projects.x2cpg              % "compile->compile;test->test",
+  Projects.linterRules % ScalafixConfig
 )
 
 libraryDependencies ++= Seq(
