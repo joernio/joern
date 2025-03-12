@@ -342,19 +342,20 @@ class AstCreator(fileWithMeta: KtFileWithMeta, bindingContext: BindingContext, g
       for {
         node <- importAsts.flatMap(_.root.collectAll[NewImport])
         name = getName(node)
-      } yield Ast(NodeBuilders.newNamespaceBlockNode(name, name, relativizedPath))
+      } yield Ast(namespaceBlockNode(fileWithMeta.f, name, name, relativizedPath))
 
     val packageName = ktFile.getPackageFqName.toString
     val node =
       if (packageName == Constants.Root) {
-        NodeBuilders.newNamespaceBlockNode(
+        namespaceBlockNode(
+          fileWithMeta.f,
           NamespaceTraversal.globalNamespaceName,
           NamespaceTraversal.globalNamespaceName,
           relativizedPath
         )
       } else {
         val name = packageName.split("\\.").lastOption.getOrElse("")
-        NodeBuilders.newNamespaceBlockNode(name, packageName, relativizedPath)
+        namespaceBlockNode(fileWithMeta.f, name, packageName, relativizedPath)
       }
     methodAstParentStack.push(node)
 
