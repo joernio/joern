@@ -11,8 +11,8 @@ import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.InitializerDeclSyntax
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.SwiftNode
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.utils.IntervalKeyPool
-import io.joern.x2cpg.{Ast, ValidationMode}
-import io.joern.x2cpg.utils.NodeBuilders.{newClosureBindingNode}
+import io.joern.x2cpg.{Ast, AstNodeBuilder, ValidationMode}
+import io.joern.x2cpg.utils.NodeBuilders.newClosureBindingNode
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies}
 import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
@@ -178,12 +178,14 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
                 capturedLocals.updateWith(closureBindingIdProperty) {
                   case None =>
                     val methodScopeNode = methodScope.scopeNode
-                    val localNode_ = localNodeWithExplicitPositionInfo(
-                      origin.variableName,
-                      origin.variableName,
-                      Defines.Any,
-                      Option(closureBindingIdProperty)
-                    ).order(0)
+                    val localNode_ = AstNodeBuilder
+                      .localNodeWithExplicitPositionInfo(
+                        origin.variableName,
+                        origin.variableName,
+                        Defines.Any,
+                        Option(closureBindingIdProperty)
+                      )
+                      .order(0)
                     diffGraph.addEdge(methodScopeNode, localNode_, EdgeTypes.AST)
                     val closureBindingNode = newClosureBindingNode(
                       closureBindingIdProperty,
@@ -220,7 +222,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     methodScopeNodeId: NewNode,
     variableName: String
   ): (NewNode, ScopeType) = {
-    val local = localNodeWithExplicitPositionInfo(variableName, variableName, Defines.Any).order(0)
+    val local = AstNodeBuilder.localNodeWithExplicitPositionInfo(variableName, variableName, Defines.Any).order(0)
     diffGraph.addEdge(methodScopeNodeId, local, EdgeTypes.AST)
     (local, MethodScope)
   }
