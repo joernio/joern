@@ -1,6 +1,6 @@
 name := "ghidra2cpg"
 
-dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
+dependsOn(Projects.dataflowengineoss, Projects.x2cpg2 % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
   "io.joern"          % "ghidra"                   % Versions.ghidra,

@@ -36,7 +36,8 @@ object Projects {
 
   lazy val c2cpg         = newFrontendProject("c2cpg")
   lazy val ghidra2cpg    = newFrontendProject("ghidra2cpg")
-  lazy val x2cpg         = newFrontendProject("x2cpg")
+  // lazy val x2cpg         = newFrontendProject("x2cpg")
+  lazy val x2cpg2         = newFrontendProject("x2cpg2")
   lazy val pysrc2cpg     = newFrontendProject("pysrc2cpg")
   lazy val php2cpg       = newFrontendProject("php2cpg")
   lazy val jssrc2cpg     = newFrontendProject("jssrc2cpg")
@@ -52,6 +53,9 @@ object Projects {
 
   private def newProject(name: String) = 
     Project(name, file(name)).dependsOn(projectLinterRules % ScalafixConfig)
+
+  // private def newProject(name: String, base: File) = 
+  //   Project(name, file(name)).dependsOn(projectLinterRules % ScalafixConfig)
 
   private def newFrontendProject(name: String) = 
     Project(name, frontendsRoot / name).dependsOn(projectLinterRules % ScalafixConfig)

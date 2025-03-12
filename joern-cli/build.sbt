@@ -4,7 +4,7 @@ dependsOn(
   Projects.console,
   Projects.console % "test->test",
   Projects.dataflowengineoss,
-  Projects.x2cpg,
+  Projects.x2cpg2,
 )
 
 libraryDependencies ++= Seq(
