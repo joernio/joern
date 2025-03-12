@@ -797,15 +797,6 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     codeBuilder.toString()
   }
 
-  private def identifierForResolvedTypeParameter(typeParameter: ResolvedTypeParameterDeclaration): NewIdentifier = {
-    val name = typeParameter.getName
-    val typeFullName = Try(typeParameter.getUpperBound).toOption
-      .flatMap(typeInfoCalc.fullName)
-      .getOrElse(TypeConstants.Object)
-    typeInfoCalc.registerType(typeFullName)
-    newIdentifierNode(name, typeFullName)
-  }
-
   private def addTypeDeclTypeParamsToScope(typ: TypeDeclaration[?]): Unit = {
     val typeParameters = typ match {
       case classOrInterfaceDeclaration: ClassOrInterfaceDeclaration =>

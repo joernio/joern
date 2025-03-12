@@ -25,7 +25,7 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSol
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.util.NameConstants
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newModifierNode}
+import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewControlStructure, NewJumpTarget, NewReturn}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes}
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
@@ -87,7 +87,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
 
     val callRoot = initNode(Option(typeFullName), argTypes, args.size, stmt.toString, line(stmt), column(stmt))
 
-    val thisNode = newIdentifierNode(NameConstants.This, typeFullName)
+    val thisNode = identifierNode(stmt, NameConstants.This, NameConstants.This, typeFullName)
     scope.lookupVariable(NameConstants.This).variableNode.foreach { thisParam =>
       diffGraph.addEdge(thisNode, thisParam, EdgeTypes.REF)
     }
@@ -95,7 +95,6 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
 
     val initAst = Ast(callRoot)
 
-    // callAst(callRoot, args, Some(thisAst))
     scope.enclosingTypeDecl.foreach(
       _.registerInitToComplete(PartialInit(typeFullName, initAst, thisAst, args.toList, None))
     )

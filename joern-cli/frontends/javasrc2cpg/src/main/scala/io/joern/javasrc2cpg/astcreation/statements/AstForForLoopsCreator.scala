@@ -11,7 +11,6 @@ import io.joern.javasrc2cpg.util.NameConstants
 import io.joern.javasrc2cpg.util.Util.composeMethodFullName
 import io.joern.x2cpg.{Ast, Defines}
 import io.joern.x2cpg.utils.IntervalKeyPool
-import io.joern.x2cpg.utils.NodeBuilders.newIdentifierNode
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewBlock,
@@ -158,11 +157,11 @@ trait AstForForLoopsCreator { this: AstCreator =>
     iteratorLocalNode: NewLocal,
     variableLocal: NewLocal
   ): Ast = {
-    val lineNo          = variableLocal.lineNumber
     val forVariableType = variableLocal.typeFullName
     val varLocalAssignNode =
       operatorCallNode(stmt, PropertyDefaults.Code, Operators.assignment, Some(forVariableType))
-    val varLocalAssignIdentifier = newIdentifierNode(variableLocal.name, variableLocal.typeFullName)
+    val varLocalAssignIdentifier =
+      identifierNode(stmt, variableLocal.name, variableLocal.name, variableLocal.typeFullName)
 
     val iterNextCallSignature = composeSignature(Option(TypeConstants.Object), Option(Nil), 0)
     val iterNextCallMethodFullName =
@@ -177,7 +176,8 @@ trait AstForForLoopsCreator { this: AstCreator =>
         Option(iterNextCallSignature),
         Option(TypeConstants.Object)
       )
-    val iterNextCallReceiver = newIdentifierNode(iteratorLocalNode.name, iteratorLocalNode.typeFullName)
+    val iterNextCallReceiver =
+      identifierNode(stmt, iteratorLocalNode.name, iteratorLocalNode.name, iteratorLocalNode.typeFullName)
     val iterNextCallAst =
       callAst(iterNextCallNode, base = Some(Ast(iterNextCallReceiver)))
         .withRefEdge(iterNextCallReceiver, iteratorLocalNode)
@@ -288,7 +288,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
     val idxName = idxLocal.name
     val idxInitializerCallNode =
       operatorCallNode(stmt, s"int $idxName = 0", Operators.assignment, Some(TypeConstants.Int))
-    val idxIdentifierArg      = newIdentifierNode(idxName, idxLocal.typeFullName)
+    val idxIdentifierArg      = identifierNode(stmt, idxName, idxName, idxLocal.typeFullName)
     val zeroLiteral           = literalNode(stmt, "0", TypeConstants.Int)
     val idxInitializerArgAsts = List(Ast(idxIdentifierArg), Ast(zeroLiteral))
     callAst(idxInitializerCallNode, idxInitializerArgAsts)
@@ -304,14 +304,15 @@ trait AstForForLoopsCreator { this: AstCreator =>
       Operators.lessThan,
       typeFullName = Some(TypeConstants.Boolean)
     )
-    val comparisonIdxIdentifier = newIdentifierNode(idxName, idxLocal.typeFullName)
+    val comparisonIdxIdentifier = identifierNode(stmt, idxName, idxName, idxLocal.typeFullName)
     val comparisonFieldAccess = operatorCallNode(
       stmt,
       code = s"${iterableSource.name}.${NameConstants.Length}",
       Operators.fieldAccess,
       typeFullName = Some(TypeConstants.Int)
     )
-    val fieldAccessIdentifier = newIdentifierNode(iterableSource.name, iterableSource.typeFullName.getOrElse("ANY"))
+    val fieldAccessIdentifier =
+      identifierNode(stmt, iterableSource.name, iterableSource.name, iterableSource.typeFullName.getOrElse("ANY"))
     val fieldAccessFieldIdentifier = fieldIdentifierNode(stmt, NameConstants.Length, NameConstants.Length)
     val fieldAccessArgs            = List(fieldAccessIdentifier, fieldAccessFieldIdentifier).map(Ast(_))
     val fieldAccessAst             = callAst(comparisonFieldAccess, fieldAccessArgs)
@@ -328,7 +329,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
   private def nativeForEachIncrementAst(stmt: ForEachStmt, idxLocal: NewLocal): Ast = {
     val incrementNode =
       operatorCallNode(stmt, s"${idxLocal.name}++", Operators.postIncrement, typeFullName = Some(TypeConstants.Int))
-    val incrementArg    = newIdentifierNode(idxLocal.name, idxLocal.typeFullName)
+    val incrementArg    = identifierNode(stmt, idxLocal.name, idxLocal.name, idxLocal.typeFullName)
     val incrementArgAst = Ast(incrementArg)
     callAst(incrementNode, List(incrementArgAst))
       .withRefEdge(incrementArg, idxLocal)
@@ -444,7 +445,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
         Option(TypeConstants.Boolean)
       )
     val iteratorHasNextCallReceiver =
-      newIdentifierNode(iteratorLocalNode.name, iteratorLocalNode.typeFullName)
+      identifierNode(stmt, iteratorLocalNode.name, iteratorLocalNode.name, iteratorLocalNode.typeFullName)
 
     callAst(iteratorHasNextCallNode, base = Some(Ast(iteratorHasNextCallReceiver)))
       .withRefEdge(iteratorHasNextCallReceiver, iteratorLocalNode)
@@ -462,14 +463,15 @@ trait AstForForLoopsCreator { this: AstCreator =>
     val varAssignNode =
       operatorCallNode(stmt, PropertyDefaults.Code, Operators.assignment, Option(variableLocal.typeFullName))
 
-    val targetNode = newIdentifierNode(variableLocal.name, variableLocal.typeFullName)
+    val targetNode = identifierNode(stmt, variableLocal.name, variableLocal.name, variableLocal.typeFullName)
 
     val indexAccessTypeFullName = iterable.typeFullName.map(_.replaceAll(raw"\[]", ""))
     val indexAccess =
       operatorCallNode(stmt, PropertyDefaults.Code, Operators.indexAccess, indexAccessTypeFullName)
 
-    val indexAccessIdentifier = newIdentifierNode(iterable.name, iterable.typeFullName.getOrElse("ANY"))
-    val indexAccessIndex      = newIdentifierNode(idxLocal.name, idxLocal.typeFullName)
+    val indexAccessIdentifier =
+      identifierNode(stmt, iterable.name, iterable.name, iterable.typeFullName.getOrElse("ANY"))
+    val indexAccessIndex = identifierNode(stmt, idxLocal.name, idxLocal.name, idxLocal.typeFullName)
 
     val indexAccessArgsAsts = List(indexAccessIdentifier, indexAccessIndex).map(Ast(_))
     val indexAccessAst      = callAst(indexAccess, indexAccessArgsAsts)

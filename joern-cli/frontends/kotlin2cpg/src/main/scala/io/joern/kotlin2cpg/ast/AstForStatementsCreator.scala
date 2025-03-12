@@ -4,8 +4,6 @@ import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.types.TypeConstants
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
-import io.joern.x2cpg.utils.NodeBuilders
-import io.joern.x2cpg.utils.NodeBuilders.newIdentifierNode
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
@@ -61,12 +59,12 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     val loopRangeText         = expr.getLoopRange.getText
     val iteratorName          = s"${Constants.IteratorPrefix}${iteratorKeyPool.next}"
     val localForIterator      = localNode(expr, iteratorName, iteratorName, TypeConstants.Any)
-    val iteratorAssignmentLhs = newIdentifierNode(iteratorName, TypeConstants.Any)
+    val iteratorAssignmentLhs = identifierNode(expr, iteratorName, iteratorName, TypeConstants.Any)
     val iteratorLocalAst      = Ast(localForIterator).withRefEdge(iteratorAssignmentLhs, localForIterator)
 
     // TODO: maybe use a different method here, one which does not translate `kotlin.collections.List` to `java.util.List`
     val loopRangeExprTypeFullName = registerType(exprTypeFullName(expr.getLoopRange).getOrElse(TypeConstants.Any))
-    val iteratorAssignmentRhsIdentifier = newIdentifierNode(loopRangeText, loopRangeExprTypeFullName)
+    val iteratorAssignmentRhsIdentifier = identifierNode(expr, loopRangeText, loopRangeText, loopRangeExprTypeFullName)
       .argumentIndex(0)
     val iteratorAssignmentRhs = callNode(
       expr.getLoopRange,
@@ -85,8 +83,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
       operatorCallNode(expr, s"$iteratorName = ${iteratorAssignmentRhs.code}", Operators.assignment, None)
     val iteratorAssignmentAst = callAst(iteratorAssignment, List(Ast(iteratorAssignmentLhs), iteratorAssignmentRhsAst))
 
-    val controlStructure    = controlStructureNode(expr, ControlStructureTypes.WHILE, expr.getText)
-    val conditionIdentifier = newIdentifierNode(loopRangeText, loopRangeExprTypeFullName).argumentIndex(0)
+    val controlStructure = controlStructureNode(expr, ControlStructureTypes.WHILE, expr.getText)
+    val conditionIdentifier =
+      identifierNode(expr, loopRangeText, loopRangeText, loopRangeExprTypeFullName).argumentIndex(0)
 
     val hasNextFullName =
       s"${Constants.CollectionsIteratorName}.${Constants.HasNextIteratorMethodName}:${TypeConstants.JavaLangBoolean}()"
@@ -110,9 +109,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     scope.addToScope(localForTmp.name, localForTmp)
     val localForTmpAst = Ast(localForTmp)
 
-    val tmpIdentifier             = newIdentifierNode(tmpName, TypeConstants.Any)
+    val tmpIdentifier             = identifierNode(expr, tmpName, tmpName, TypeConstants.Any)
     val tmpIdentifierAst          = Ast(tmpIdentifier).withRefEdge(tmpIdentifier, localForTmp)
-    val iteratorNextIdentifier    = newIdentifierNode(iteratorName, TypeConstants.Any).argumentIndex(0)
+    val iteratorNextIdentifier    = identifierNode(expr, iteratorName, iteratorName, TypeConstants.Any).argumentIndex(0)
     val iteratorNextIdentifierAst = Ast(iteratorNextIdentifier).withRefEdge(iteratorNextIdentifier, localForIterator)
 
     val iteratorNextCall = callNode(
@@ -177,12 +176,12 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     val loopRangeText         = expr.getLoopRange.getText
     val iteratorName          = s"${Constants.IteratorPrefix}${iteratorKeyPool.next}"
     val iteratorLocal         = localNode(expr, iteratorName, iteratorName, TypeConstants.Any)
-    val iteratorAssignmentLhs = newIdentifierNode(iteratorName, TypeConstants.Any)
+    val iteratorAssignmentLhs = identifierNode(expr, iteratorName, iteratorName, TypeConstants.Any)
     val iteratorLocalAst      = Ast(iteratorLocal).withRefEdge(iteratorAssignmentLhs, iteratorLocal)
 
     val loopRangeExprTypeFullName = registerType(exprTypeFullName(expr.getLoopRange).getOrElse(TypeConstants.Any))
 
-    val iteratorAssignmentRhsIdentifier = newIdentifierNode(loopRangeText, loopRangeExprTypeFullName)
+    val iteratorAssignmentRhsIdentifier = identifierNode(expr, loopRangeText, loopRangeText, loopRangeExprTypeFullName)
       .argumentIndex(0)
     val iteratorAssignmentRhs = callNode(
       expr.getLoopRange,
@@ -202,7 +201,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     val iteratorAssignmentAst = callAst(iteratorAssignment, List(Ast(iteratorAssignmentLhs), iteratorAssignmentRhsAst))
     val controlStructure      = controlStructureNode(expr, ControlStructureTypes.WHILE, expr.getText)
 
-    val conditionIdentifier = newIdentifierNode(loopRangeText, loopRangeExprTypeFullName).argumentIndex(0)
+    val conditionIdentifier =
+      identifierNode(expr, loopRangeText, loopRangeText, loopRangeExprTypeFullName).argumentIndex(0)
 
     val hasNextFullName =
       s"${Constants.CollectionsIteratorName}.${Constants.HasNextIteratorMethodName}:${TypeConstants.JavaLangBoolean}()"
@@ -228,10 +228,10 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     val loopParameterLocal = localNode(expr, loopParameterName, loopParameterName, loopParameterTypeFullName)
     scope.addToScope(loopParameterName, loopParameterLocal)
 
-    val loopParameterIdentifier = newIdentifierNode(loopParameterName, TypeConstants.Any)
+    val loopParameterIdentifier = identifierNode(expr, loopParameterName, loopParameterName, TypeConstants.Any)
     val loopParameterAst        = Ast(loopParameterLocal).withRefEdge(loopParameterIdentifier, loopParameterLocal)
 
-    val iteratorNextIdentifier    = newIdentifierNode(iteratorName, TypeConstants.Any).argumentIndex(0)
+    val iteratorNextIdentifier    = identifierNode(expr, iteratorName, iteratorName, TypeConstants.Any).argumentIndex(0)
     val iteratorNextIdentifierAst = Ast(iteratorNextIdentifier).withRefEdge(iteratorNextIdentifier, iteratorLocal)
 
     val iteratorNextCall = callNode(

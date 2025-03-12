@@ -13,7 +13,6 @@ import io.joern.javasrc2cpg.scope.Scope.{CapturedVariable, NotInScope, ScopeMemb
 import org.slf4j.LoggerFactory
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.joern.x2cpg.utils.NodeBuilders.newIdentifierNode
 
 trait AstForNameExpressionsCreator { this: AstCreator =>
 
@@ -73,7 +72,7 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
           .columnNumber(column(node))
         Ast(typ)
       } else {
-        val identifier = newIdentifierNode(NameConstants.This, baseTypeDeclFullName)
+        val identifier = identifierNode(node, NameConstants.This, NameConstants.This, baseTypeDeclFullName)
         val refsTo     = scope.lookupVariable(NameConstants.This).variableNode.toList
         Ast(identifier).withRefEdges(identifier, refsTo)
       }

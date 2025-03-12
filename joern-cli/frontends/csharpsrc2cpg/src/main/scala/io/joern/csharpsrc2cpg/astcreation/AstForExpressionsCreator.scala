@@ -7,7 +7,6 @@ import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.csharpsrc2cpg.utils.Utils.{composeMethodFullName, composeMethodLikeSignature}
 import io.joern.csharpsrc2cpg.{CSharpOperators, Constants}
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootPropertiesOnSeq
-import io.joern.x2cpg.utils.NodeBuilders.newIdentifierNode
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewLiteral, NewTypeRef}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
@@ -277,9 +276,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   private def createImplicitBaseFieldAccess(fieldNode: DotNetNodeInfo, field: FieldDecl): Seq[Ast] = {
     // TODO: Maybe this should be a TypeRef, like we recently started doing for javasrc?
     val baseNode = if (field.isStatic) {
-      newIdentifierNode(scope.surroundingTypeDeclFullName.getOrElse(Defines.Any), field.typeFullName)
+      val name = scope.surroundingTypeDeclFullName.getOrElse(Defines.Any)
+      identifierNode(fieldNode, name, name, field.typeFullName)
     } else {
-      newIdentifierNode(Constants.This, field.typeFullName)
+      identifierNode(fieldNode, Constants.This, Constants.This, field.typeFullName)
     }
 
     fieldAccessAst(

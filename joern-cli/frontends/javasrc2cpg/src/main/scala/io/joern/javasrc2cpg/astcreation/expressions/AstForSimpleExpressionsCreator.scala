@@ -31,7 +31,6 @@ import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.{NameConstants, Util}
 import io.joern.x2cpg.{Ast, Defines}
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
-import io.joern.x2cpg.utils.NodeBuilders.newIdentifierNode
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, NewCall, NewFieldIdentifier, NewLiteral, NewTypeRef}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 

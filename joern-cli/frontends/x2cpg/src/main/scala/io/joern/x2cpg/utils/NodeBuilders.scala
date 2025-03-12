@@ -118,10 +118,18 @@ object NodeBuilders {
 
   def newModifierNode(modifierType: String): NewModifier = NewModifier().modifierType(modifierType)
 
+  @deprecated(
+    "Deprecated in favour of the corresponding method io.joern.x2cpg.AstNodeBuilder and will be removed in a future version",
+    "4.0.285"
+  )
   def newIdentifierNode(name: String, typeFullName: String, dynamicTypeHints: Seq[String] = Seq()): NewIdentifier = {
     newIdentifierNode(name, typeFullName, dynamicTypeHints, None)
   }
 
+  @deprecated(
+    "Deprecated in favour of the corresponding method io.joern.x2cpg.AstNodeBuilder and will be removed in a future version",
+    "4.0.285"
+  )
   def newIdentifierNode(
     name: String,
     typeFullName: String,

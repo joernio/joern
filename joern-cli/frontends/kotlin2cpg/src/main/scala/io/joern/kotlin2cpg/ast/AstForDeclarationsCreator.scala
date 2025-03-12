@@ -10,7 +10,6 @@ import io.joern.x2cpg.Defines
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.newBindingNode
-import io.joern.x2cpg.utils.NodeBuilders.newIdentifierNode
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes, Operators}
@@ -120,8 +119,9 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
           if (initializerAsts.size == 1) initializerAsts.head
           else Ast(unknownNode(decl, "<empty>"))
 
-        val thisIdentifier = newIdentifierNode(Constants.ThisName, classFullName, Seq(classFullName))
-        val thisAst        = astWithRefEdgeMaybe(Constants.ThisName, thisIdentifier)
+        val thisIdentifier =
+          identifierNode(decl, Constants.ThisName, Constants.ThisName, classFullName, Seq(classFullName))
+        val thisAst = astWithRefEdgeMaybe(Constants.ThisName, thisIdentifier)
 
         val fieldIdentifier = fieldIdentifierNode(decl, decl.getName, decl.getName)
         val fieldAccessCall =
@@ -261,8 +261,9 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val paramName          = param.getName
     val paramIdentifier    = identifierNode(param, paramName, paramName, typeFullName)
     val paramIdentifierAst = astWithRefEdgeMaybe(paramName, paramIdentifier)
-    val thisIdentifier     = newIdentifierNode(Constants.ThisName, classFullName, Seq(classFullName))
-    val thisAst            = astWithRefEdgeMaybe(Constants.ThisName, thisIdentifier)
+    val thisIdentifier =
+      identifierNode(param, Constants.ThisName, Constants.ThisName, classFullName, Seq(classFullName))
+    val thisAst = astWithRefEdgeMaybe(Constants.ThisName, thisIdentifier)
 
     val fieldIdentifier = fieldIdentifierNode(param, paramName, paramName)
     val fieldAccessCall =
@@ -435,8 +436,9 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
       val thisParam =
         NodeBuilders.newThisParameterNode(typeFullName = typeDecl.fullName, dynamicTypeHintFullName = Seq())
-      val thisIdentifier = newIdentifierNode(Constants.ThisName, typeDecl.fullName, Seq(typeDecl.fullName))
-      val thisAst        = Ast(thisIdentifier).withRefEdge(thisIdentifier, thisParam)
+      val thisIdentifier =
+        identifierNode(valueParam, Constants.ThisName, Constants.ThisName, typeDecl.fullName, Seq(typeDecl.fullName))
+      val thisAst = Ast(thisIdentifier).withRefEdge(thisIdentifier, thisParam)
 
       val fieldIdentifier = fieldIdentifierNode(valueParam, valueParam.getName, valueParam.getName)
       val fieldAccessCall = operatorCallNode(

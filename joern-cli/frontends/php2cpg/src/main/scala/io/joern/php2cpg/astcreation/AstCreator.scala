@@ -173,10 +173,9 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     Ast(thisNode)
   }
 
-  private def thisIdentifier(lineNumber: Option[Int]): NewIdentifier = {
+  private def thisIdentifier(originNode: PhpNode): NewIdentifier = {
     val typ = scope.getEnclosingTypeDeclTypeName
-    newIdentifierNode(NameConstants.This, typ.getOrElse("ANY"), typ.toList, lineNumber)
-      .code(s"$$${NameConstants.This}")
+    identifierNode(originNode, NameConstants.This, s"$$${NameConstants.This}", typ.getOrElse("ANY"), typ.toList)
   }
 
   private def setParamIndices(asts: Seq[Ast]): Seq[Ast] = {
@@ -896,7 +895,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     val targetAst = if (isField) {
       val code            = s"$$this->${memberNode.name}"
       val fieldAccessNode = operatorCallNode(originNode, code, Operators.fieldAccess, None)
-      val identifier      = thisIdentifier(memberNode.lineNumber)
+      val identifier      = thisIdentifier(originNode)
       val thisParam       = scope.lookupVariable(NameConstants.This)
       val fieldIdentifier = fieldIdentifierNode(originNode, memberNode.name, memberNode.name)
       callAst(fieldAccessNode, List(identifier, fieldIdentifier).map(Ast(_))).withRefEdges(identifier, thisParam.toList)

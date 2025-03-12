@@ -9,7 +9,6 @@ import io.joern.x2cpg.datastructures.Stack.StackWrapper
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.newBindingNode
 import io.joern.x2cpg.utils.NodeBuilders.newClosureBindingNode
-import io.joern.x2cpg.utils.NodeBuilders.newIdentifierNode
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
@@ -206,7 +205,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       val local = localNode(decl, tmpName, tmpName, TypeConstants.Any)
       localForTmp = Some(local)
       scope.addToScope(tmpName, local)
-      val tmpIdentifier      = newIdentifierNode(tmpName, TypeConstants.Any)
+      val tmpIdentifier      = identifierNode(param, tmpName, tmpName, TypeConstants.Any)
       val tmpIdentifierAst   = Ast(tmpIdentifier).withRefEdge(tmpIdentifier, local)
       val assignmentCallNode = operatorCallNode(init, s"$tmpName = ${init.getText}", Operators.assignment, None)
       callAst(assignmentCallNode, List(tmpIdentifierAst, initAst))
@@ -219,9 +218,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       )
       val localForIt = localNode(decl, "it", "it", typeFullName)
       additionalLocals.addOne(Ast(localForIt))
-      val identifierForIt = newIdentifierNode("it", typeFullName)
+      val identifierForIt = identifierNode(param, "it", "it", typeFullName)
       val initAst         = Ast(identifierForIt).withRefEdge(identifierForIt, localForIt)
-      val tmpIdentifier   = newIdentifierNode(tmpName, typeFullName)
+      val tmpIdentifier   = identifierNode(param, tmpName, tmpName, typeFullName)
       val local           = localNode(decl, tmpName, tmpName, typeFullName)
       localForTmp = Some(local)
       scope.addToScope(tmpName, local)
