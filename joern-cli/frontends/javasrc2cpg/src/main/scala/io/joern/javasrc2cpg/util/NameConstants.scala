@@ -9,4 +9,5 @@ object NameConstants {
   val NextCallName: String       = "next"
   val IteratorCallName: String   = "iterator"
   val HasNextCallName: String    = "hasNext"
+  val Length: String             = "length"
 }
