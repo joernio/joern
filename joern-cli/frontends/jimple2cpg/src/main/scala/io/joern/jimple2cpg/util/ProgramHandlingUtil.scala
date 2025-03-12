@@ -1,11 +1,10 @@
 package io.joern.jimple2cpg.util
 
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 import java.io.{BufferedInputStream, FileInputStream}
-import java.nio.file.StandardCopyOption;
-
-import better.files.*
+import java.nio.file.StandardCopyOption
 import org.objectweb.asm.ClassReader.SKIP_CODE
 import org.objectweb.asm.{ClassReader, ClassVisitor, Opcodes}
 import org.slf4j.LoggerFactory
@@ -14,7 +13,7 @@ import java.io.InputStream
 import java.nio.file.{Files, Path, Paths}
 import java.util.zip.{ZipEntry, ZipFile, ZipInputStream}
 import scala.util.{Failure, Left, Success, Try, Using}
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 /** Responsible for handling JAR unpacking and handling the temporary build directory.
   */
@@ -30,8 +29,8 @@ object ProgramHandlingUtil {
     def this(file: Path) = this(Left(file))
     def this(entry: ZipEntry, parentArchive: ZipFile) = this(Right(entry), Option(parentArchive))
     private def file: Path          = entry.fold(identity, e => Paths.get(e.getName))
-    def name: String                = file.getFileName.toString
-    def extension: Option[String]   = file.extension
+    def name: String                = file.fileName
+    def extension: Option[String]   = file.extension()
     def isDirectory: Boolean        = entry.fold(Files.isDirectory(_), _.isDirectory)
     def maybeRegularFile(): Boolean = entry.fold(Files.isRegularFile(_), !_.isDirectory)
 
@@ -48,9 +47,9 @@ object ProgramHandlingUtil {
       case Right(zipEntry: ZipEntry) if !isZipSlip =>
         parentArchive.exists { f =>
           Using.resource(f.getInputStream(zipEntry)) { is =>
-            File.temporaryFile("jimple2cpg-", ".zip").apply { f =>
-              f.writeBytes(is.readAllBytes().iterator)
-              isValidZipFile(f.path)
+            FileUtil.usingTemporaryFile("jimple2cpg-", ".zip") { f =>
+              FileUtil.writeBytes(f, is.readAllBytes())
+              isValidZipFile(f)
             }
           }
         }
@@ -82,7 +81,7 @@ object ProgramHandlingUtil {
     def isConfigFile: Boolean = {
       val configExt = Set(".xml", ".properties", ".yaml", ".yml", ".tf", ".tfvars", ".vm", ".jsp", ".conf", ".mf")
 
-      def hasConfigExt(f: Path): Boolean = configExt.exists(f.extension.map(_.toLowerCase).contains(_))
+      def hasConfigExt(f: Path): Boolean = configExt.exists(f.extension().map(_.toLowerCase).contains(_))
 
       if (isDirectory) { false }
       else {
@@ -289,7 +288,7 @@ object ProgramHandlingUtil {
 
   private sealed class ConfigFile(val file: Path) extends EntryFile {
 
-    def packagePath: Option[String] = Option(file.getFileName.toString)
+    def packagePath: Option[String] = Option(file.fileName)
 
   }
 
@@ -332,13 +331,12 @@ object ProgramHandlingUtil {
     recurse: Boolean,
     depth: Int
   ): List[ClassFile] =
-    File
-      .temporaryDirectory("extract-classes-")
-      .apply(tmpDir =>
-        extractClassesToTmp(src, tmpDir.path, isArchive, isClass, isConfigFile, recurse: Boolean, depth: Int).iterator
+    FileUtil
+      .usingTemporaryDirectory("extract-classes-") { tmpDir =>
+        extractClassesToTmp(src, tmpDir, isArchive, isClass, isConfigFile, recurse: Boolean, depth: Int).iterator
           .flatMap(_.copyToPackageLayoutIn(destDir))
           .collect { case x: ClassFile => x }
           .toList
-      )
+      }
 
 }

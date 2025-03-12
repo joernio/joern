@@ -6,6 +6,8 @@ import io.joern.dataflowengineoss.semanticsloader.NoSemantics
 import org.json4s.{Formats, NoTypeHints}
 import org.json4s.native.Serialization
 
+import java.nio.file.{Files, Paths}
+
 object Main {
 
   def main(args: Array[String]) = {
@@ -19,9 +21,7 @@ object Main {
     val queryDb = new QueryDatabase(new JoernDefaultArgumentProvider(0))
     // TODO allow specifying file from the outside and make this portable
     val outFileName = "/tmp/querydb.json"
-    better.files
-      .File(outFileName)
-      .write(Serialization.write(queryDb.allQueries))
+    Files.writeString(Paths.get(outFileName), Serialization.write(queryDb.allQueries))
     println(s"Queries written to: $outFileName")
   }
 

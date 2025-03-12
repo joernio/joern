@@ -1,6 +1,7 @@
 package io.joern.csharpsrc2cpg.parser
 
 import io.joern.x2cpg.astgen.ParserResult
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 import ujson.Value.Value
@@ -15,7 +16,7 @@ object DotNetJsonParser {
     val fullFilePath      = json(ParserKeys.FileName).str
     val filePath          = Paths.get(fullFilePath)
     val sourceFileContent = IOUtils.readEntireFile(filePath)
-    ParserResult(filePath.getFileName.toString, fullFilePath, json, sourceFileContent)
+    ParserResult(filePath.fileName, fullFilePath, json, sourceFileContent)
   }
 
 }

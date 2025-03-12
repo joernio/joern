@@ -1,12 +1,14 @@
 package io.joern.joerncli
 
-import better.files._
-import java.nio.file.Paths
+import java.nio.file.{Files, Path, Paths}
 import io.joern.console.Config
 import io.joern.joerncli.console.ReplBridge
+import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.utils.ProjectRoot
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import scala.jdk.CollectionConverters.*
 
 class RunScriptTests extends AnyWordSpec with Matchers {
   import RunScriptTests._
@@ -30,54 +32,61 @@ class RunScriptTests extends AnyWordSpec with Matchers {
     }
 
     "execute a simple script" in new Fixture {
-      def test(scriptFile: File, outputFile: File) = {
-        val escScriptPath = outputFile.pathAsString.replace("\\", "\\\\")
-        scriptFile.write(s"""
+      def test(scriptFile: Path, outputFile: Path) = {
+        val escScriptPath = outputFile.toString.replace("\\", "\\\\")
+        Files.writeString(
+          scriptFile,
+          s"""
         |val fw = new java.io.FileWriter("$escScriptPath", true)
         |fw.write("michael was here")
-        |fw.close() 
-        """.stripMargin)
+        |fw.close()
+        """.stripMargin
+        )
 
-        ReplBridge.main(Array("--script", scriptFile.pathAsString))
+        ReplBridge.main(Array("--script", scriptFile.toString))
 
         withClue(s"$outputFile content: ") {
-          outputFile.lines.head shouldBe "michael was here"
+          Files.readAllLines(outputFile).asScala.head shouldBe "michael was here"
         }
       }
     }
 
     "pass parameters to script" in new Fixture {
-      def test(scriptFile: File, outputFile: File) = {
-        scriptFile.write(s"""
+      def test(scriptFile: Path, outputFile: Path) = {
+        Files.writeString(
+          scriptFile,
+          s"""
           |@main def foo(outFile: String, magicNumber: Int) = {
           |  val fw = new java.io.FileWriter(outFile, true)
           |  fw.write(magicNumber.toString)
           |  fw.close() 
           |}
-          """.stripMargin)
+          """.stripMargin
+        )
 
         ReplBridge.main(
           Array(
             "--script",
-            scriptFile.pathAsString,
+            scriptFile.toString,
             "--param",
-            s"outFile=${outputFile.pathAsString}",
+            s"outFile=${outputFile.toString}",
             "--param",
             "magicNumber=42"
           )
         )
 
         withClue(s"$outputFile content: ") {
-          outputFile.lines.head shouldBe "42"
+          Files.readAllLines(outputFile).asScala.head shouldBe "42"
         }
       }
     }
 
     "script with multiple @main methods" in new Fixture {
-      def test(scriptFile: File, outputFile: File) = {
-        val escScriptPath = outputFile.pathAsString.replace("\\", "\\\\")
-
-        scriptFile.write(s"""
+      def test(scriptFile: Path, outputFile: Path) = {
+        val escScriptPath = outputFile.toString.replace("\\", "\\\\")
+        Files.writeString(
+          scriptFile,
+          s"""
           |@main def foo() = {
           |  val fw = new java.io.FileWriter("$escScriptPath", true)
           |  fw.write("foo was called")
@@ -88,51 +97,56 @@ class RunScriptTests extends AnyWordSpec with Matchers {
           |  fw.write("bar was called")
           |  fw.close() 
           |}
-          """.stripMargin)
+          """.stripMargin
+        )
 
-        ReplBridge.main(Array("--script", scriptFile.pathAsString, "--command", "bar"))
+        ReplBridge.main(Array("--script", scriptFile.toString, "--command", "bar"))
 
         withClue(s"$outputFile content: ") {
-          outputFile.lines.head shouldBe "bar was called"
+          Files.readAllLines(outputFile).asScala.head shouldBe "bar was called"
         }
       }
     }
 
     "use additional import script: //> using file directive" in new Fixture {
-      def test(scriptFile: File, outputFile: File) = {
-        val escScriptPath        = outputFile.pathAsString.replace("\\", "\\\\")
+      def test(scriptFile: Path, outputFile: Path) = {
+        val escScriptPath        = outputFile.toString.replace("\\", "\\\\")
         val additionalImportFile = Paths.get("joern-cli/src/test/resources/additional-import.sc").toAbsolutePath
-
-        scriptFile.write(s"""
+        Files.writeString(
+          scriptFile,
+          s"""
           |//> using file $additionalImportFile
           |val fw = new java.io.FileWriter("$escScriptPath", true)
           |fw.write(sayHello("michael")) //function defined in additionalImportFile
           |fw.close() 
-          """.stripMargin)
+          """.stripMargin
+        )
 
-        ReplBridge.main(Array("--script", scriptFile.pathAsString))
+        ReplBridge.main(Array("--script", scriptFile.toString))
 
         withClue(s"$outputFile content: ") {
-          outputFile.lines.head shouldBe "hello, michael"
+          Files.readAllLines(outputFile).asScala.head shouldBe "hello, michael"
         }
       }
     }
 
     "use additional import script: --import parameter" in new Fixture {
-      def test(scriptFile: File, outputFile: File) = {
-        val escScriptPath        = outputFile.pathAsString.replace("\\", "\\\\")
+      def test(scriptFile: Path, outputFile: Path) = {
+        val escScriptPath        = outputFile.toString.replace("\\", "\\\\")
         val additionalImportFile = Paths.get("joern-cli/src/test/resources/additional-import.sc").toAbsolutePath
-
-        scriptFile.write(s"""
+        Files.writeString(
+          scriptFile,
+          s"""
           |val fw = new java.io.FileWriter("$escScriptPath", true)
           |fw.write(sayHello("michael")) //function defined in additionalImportFile
           |fw.close() 
-          """.stripMargin)
+          """.stripMargin
+        )
 
-        ReplBridge.main(Array("--script", scriptFile.pathAsString, "--import", additionalImportFile.toString))
+        ReplBridge.main(Array("--script", scriptFile.toString, "--import", additionalImportFile.toString))
 
         withClue(s"$outputFile content: ") {
-          outputFile.lines.head shouldBe "hello, michael"
+          Files.readAllLines(outputFile).asScala.head shouldBe "hello, michael"
         }
       }
     }
@@ -165,10 +179,20 @@ object RunScriptTests {
   }
 
   trait Fixture {
-    def test(scriptFile: File, outputFile: File): Unit
-    for {
-      scriptFile <- File.temporaryFile()
-      outputFile <- File.temporaryFile()
-    } test(scriptFile, outputFile)
+    def test(scriptFile: Path, outputFile: Path): Unit
+
+    def withTemporaryFiles[T](f: (Path, Path) => T): T = {
+      val scriptFile = FileUtil.newTemporaryFile()
+      val outputFile = FileUtil.newTemporaryFile()
+
+      try {
+        f(scriptFile, outputFile)
+      } finally {
+        FileUtil.delete(scriptFile)
+        FileUtil.delete(outputFile)
+      }
+    }
+
+    withTemporaryFiles(test)
   }
 }

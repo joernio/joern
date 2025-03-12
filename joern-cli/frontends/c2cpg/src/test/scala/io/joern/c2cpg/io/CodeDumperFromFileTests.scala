@@ -1,10 +1,12 @@
 package io.joern.c2cpg.io
 
-import better.files.File
 import io.joern.c2cpg.testfixtures.C2CpgSuite
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.codedumper.CodeDumper
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.utils.FileUtil
 
+import java.nio.file.{Files, Paths}
 import java.util.regex.Pattern
 
 class CodeDumperFromFileTests extends C2CpgSuite {
@@ -20,19 +22,19 @@ class CodeDumperFromFileTests extends C2CpgSuite {
 
   private val cpg = code(codeString, "test.c")
 
-  private val path = File(cpg.metaData.root.head) / "test.c"
+  private val path = Paths.get(cpg.metaData.root.head) / "test.c"
 
   override def beforeAll(): Unit = {
     super.beforeAll()
     // we have to restore the input file because CPG creation in C2CpgSuite
     // deletes it right after the CPG is ready.
-    path.createFileIfNotExists(createParents = true)
-    path.writeText(codeString)
+    path.createWithParentsIfNotExists(createParents = true)
+    Files.writeString(path, codeString)
   }
 
   override def afterAll(): Unit = {
     super.afterAll()
-    path.delete(swallowIOExceptions = true)
+    FileUtil.delete(path, swallowIoExceptions = true)
   }
 
   "dumping code" should {

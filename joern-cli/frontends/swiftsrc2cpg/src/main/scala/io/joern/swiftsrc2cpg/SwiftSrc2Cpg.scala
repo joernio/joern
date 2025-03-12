@@ -7,9 +7,10 @@ import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
-import io.joern.x2cpg.utils.{FileUtil, HashUtil, Report}
+import io.joern.x2cpg.utils.{HashUtil, Report}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 import java.nio.file.Paths
 import scala.util.Try

@@ -1,6 +1,5 @@
 package io.joern.joerncli.console
 
-import better.files.*
 import io.joern.console.defaultAvailableWidthProvider
 import io.joern.console.workspacehandling.{ProjectFile, WorkspaceLoader}
 import io.joern.console.{Console, ConsoleConfig, InstallConfig}

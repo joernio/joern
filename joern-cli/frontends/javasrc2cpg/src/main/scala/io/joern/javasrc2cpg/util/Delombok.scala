@@ -1,9 +1,8 @@
 package io.joern.javasrc2cpg.util
 
 import io.joern.javasrc2cpg.util.Delombok.DelombokMode.*
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
-import io.shiftleft.semanticcpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{Files, Path, Paths}
@@ -83,7 +82,7 @@ object Delombok {
       else relativePackageRoot.toString
     val inputDir = projectDir.resolve(relativePackageRoot)
 
-    val childPath = delombokTempDir / relativeOutputPath
+    val childPath = (delombokTempDir / relativeOutputPath).toAbsolutePath.normalize()
 
     Try(childPath.createWithParentsIfNotExists(asDirectory = true)).flatMap { packageOutputDir =>
       ExternalCommand

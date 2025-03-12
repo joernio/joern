@@ -6,10 +6,11 @@ import io.joern.csharpsrc2cpg.passes.AstCreationPass
 import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
 import io.joern.csharpsrc2cpg.utils.DotNetAstGenRunner
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
-import io.joern.x2cpg.utils.{Report, FileUtil}
-import io.joern.x2cpg.utils.FileUtil.*
+import io.joern.x2cpg.utils.Report
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.utils.FileUtil
 import org.scalatest.BeforeAndAfterAll
 
 import java.nio.file.{Files, Path}

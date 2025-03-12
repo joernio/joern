@@ -2,9 +2,8 @@ package io.joern.php2cpg.parser
 
 import io.joern.php2cpg.Config
 import io.joern.php2cpg.parser.Domain.PhpFile
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
-import io.shiftleft.semanticcpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{Files, Path, Paths}

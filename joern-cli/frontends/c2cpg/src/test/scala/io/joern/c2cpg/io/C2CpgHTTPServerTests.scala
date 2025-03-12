@@ -1,11 +1,11 @@
 package io.joern.c2cpg.io
 
 import io.joern.x2cpg.utils.server.FrontendHTTPClient
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.utils.FileUtil
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

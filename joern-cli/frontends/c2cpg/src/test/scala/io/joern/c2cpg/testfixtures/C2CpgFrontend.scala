@@ -1,11 +1,10 @@
 package io.joern.c2cpg.testfixtures
 
-import better.files.File
 import io.joern.c2cpg.C2Cpg
 import io.joern.c2cpg.Config
 import io.joern.x2cpg.testfixtures.LanguageFrontend
-import io.joern.x2cpg.utils.FileUtil
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 trait C2CpgFrontend extends LanguageFrontend {
   def execute(sourceCodePath: java.io.File): Cpg = {

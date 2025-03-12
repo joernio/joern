@@ -6,7 +6,7 @@ import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, Semantic
 import io.joern.jimple2cpg.{Config, Jimple2Cpg}
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg, LanguageFrontend, TestCpg}
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 
 import java.io.File

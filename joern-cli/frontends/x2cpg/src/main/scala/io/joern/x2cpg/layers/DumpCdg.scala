@@ -1,8 +1,10 @@
 package io.joern.x2cpg.layers
 
-import better.files.File
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+
+import java.nio.file.{Files, Path, Paths}
 
 case class CdgDumpOptions(var outDir: String) extends LayerCreatorOptions {}
 
@@ -23,8 +25,9 @@ class DumpCdg(options: CdgDumpOptions) extends LayerCreator {
   override def create(context: LayerCreatorContext): Unit = {
     val cpg = context.cpg
     cpg.method.zipWithIndex.foreach { case (method, i) =>
-      val str = method.dotCdg.head
-      (File(options.outDir) / s"$i-cdg.dot").write(str)
+      val str        = method.dotCdg.head
+      val outputPath = Paths.get(options.outDir) / s"$i-cdg.dot"
+      Files.writeString(outputPath, str)
     }
   }
 }

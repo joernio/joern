@@ -1,14 +1,16 @@
 package io.joern.rubysrc2cpg.datastructures
 
-import better.files.File
 import io.joern.rubysrc2cpg.passes.{GlobalTypes, Defines as RubyDefines}
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.datastructures.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{DeclarationNew, NewLocal, NewMethodParameterIn}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 import java.io.File as JFile
+import java.nio.file.{Files, Paths}
 import scala.collection.mutable
 import scala.reflect.ClassTag
 import scala.collection.mutable
@@ -157,7 +159,7 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     // NB: Tracking whatever has been added to $LOADER is dynamic and requires post-processing step!
     val resolvedPath =
       if (isRelative) {
-        Try((File(currentFilePath).parent / path).pathAsString).toOption
+        Try((Paths.get(currentFilePath).getParent / path).toAbsolutePath.normalize().toString).toOption
           .map(_.stripPrefix(s"$projectRoot${JFile.separator}"))
           .getOrElse(path)
       } else {
@@ -166,12 +168,11 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
 
     val pathsToImport =
       if (isWildCard) {
-        val dir = File(projectRoot) / resolvedPath
-        if (dir.isDirectory)
-          dir.list
-            .map(
-              _.pathAsString.stripPrefix(s"$projectRoot${JFile.separator}").stripSuffix(".rb").replaceAll("\\\\", "/")
-            )
+        val dir = Paths.get(projectRoot) / resolvedPath
+        if (Files.isDirectory(dir))
+          dir
+            .listFiles()
+            .map(_.toString.stripPrefix(s"$projectRoot${JFile.separator}").stripSuffix(".rb").replaceAll("\\\\", "/"))
             .toList
         else Nil
       } else {

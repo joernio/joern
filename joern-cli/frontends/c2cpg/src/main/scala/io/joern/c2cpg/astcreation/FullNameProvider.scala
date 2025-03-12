@@ -17,6 +17,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.c.CVariable
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPClosureType
 
 import scala.util.Try
 
@@ -218,19 +219,27 @@ trait FullNameProvider { this: AstCreator =>
 
   private def returnTypeForICPPASTLambdaExpression(lambda: ICPPASTLambdaExpression): String = {
     lambda.getDeclarator match {
-      case declarator: IASTDeclarator =>
-        Option(declarator.getTrailingReturnType)
-          .map(id => typeForDeclSpecifier(id.getDeclSpecifier))
-          .getOrElse(Defines.Any)
-      case null =>
+      case declarator: IASTDeclarator if declarator.getTrailingReturnType != null =>
+        typeForDeclSpecifier(declarator.getTrailingReturnType.getDeclSpecifier)
+      case _ =>
         safeGetEvaluation(lambda) match {
           case Some(value) if !value.toString.endsWith(": <unknown>") => cleanType(value.getType.toString)
-          case _                                                      => Defines.Any
+          case Some(value) if value.getType.isInstanceOf[CPPClosureType] =>
+            val closureType = value.getType.asInstanceOf[CPPClosureType]
+            closureType.getMethods
+              .find(_.toString.startsWith("operator ()"))
+              .map(_.getType)
+              .collect {
+                case t: ICPPFunctionType if t.getReturnType.isInstanceOf[CPPClosureType] => Defines.Function
+                case t: ICPPFunctionType => cleanType(safeGetType(t.getReturnType))
+              }
+              .getOrElse(Defines.Any)
+          case _ => Defines.Any
         }
     }
   }
 
-  private def returnType(methodLike: MethodLike): String = {
+  protected def returnType(methodLike: MethodLike): String = {
     methodLike match {
       case declarator: IASTFunctionDeclarator => returnTypeForIASTFunctionDeclarator(declarator)
       case definition: IASTFunctionDefinition => returnTypeForIASTFunctionDefinition(definition)
@@ -247,7 +256,7 @@ trait FullNameProvider { this: AstCreator =>
     s"(${elements.mkString(",")}$variadic)"
   }
 
-  private def signature(returnType: String, methodLike: MethodLike): String = {
+  protected def signature(returnType: String, methodLike: MethodLike): String = {
     StringUtils.normalizeSpace(s"$returnType${parameterListSignature(methodLike)}")
   }
 

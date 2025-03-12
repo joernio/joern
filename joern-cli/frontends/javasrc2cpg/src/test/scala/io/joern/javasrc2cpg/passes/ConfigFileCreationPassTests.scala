@@ -1,9 +1,9 @@
 package io.joern.javasrc2cpg.passes
 
-import better.files.File
 import flatgraph.misc.TestUtils.*
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.joern.x2cpg.passes.frontend.JavaConfigFileCreationPass
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewMetaData
 import io.shiftleft.semanticcpg.language.*
@@ -19,8 +19,8 @@ class ConfigFileCreationPassTests extends JavaSrcCode2CpgFixture {
   "it should find the correct config files" in {
     val cpg = Cpg.from(_.addNode(NewMetaData().root(testConfigDir)))
 
-    val foundFiles        = new JavaConfigFileCreationPass(cpg).generateParts().map(_.canonicalPath)
-    val absoluteConfigDir = File(testConfigDir).canonicalPath
+    val foundFiles        = new JavaConfigFileCreationPass(cpg).generateParts().map(_.absolutePathAsString)
+    val absoluteConfigDir = Paths.get(testConfigDir).absolutePathAsString
     foundFiles should contain theSameElementsAs Array(
       Paths.get(absoluteConfigDir, "application.conf").toString,
       Paths.get(absoluteConfigDir, "basic.jsp").toString,

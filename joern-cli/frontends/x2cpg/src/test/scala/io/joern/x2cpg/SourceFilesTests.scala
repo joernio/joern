@@ -1,7 +1,8 @@
 package io.joern.x2cpg
 
-import io.joern.x2cpg.utils.{IgnoreInWindows, FileUtil}
-import io.joern.x2cpg.utils.FileUtil.*
+import io.joern.x2cpg.utils.IgnoreInWindows
+import io.shiftleft.semanticcpg.utils.FileUtil
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 
 import io.shiftleft.utils.ProjectRoot
 import org.scalatest.matchers.should.Matchers
