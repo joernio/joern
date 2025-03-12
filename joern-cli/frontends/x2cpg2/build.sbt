@@ -1,4 +1,4 @@
-name := "x2cpg"
+name := "x2cpg2"
 
 dependsOn(Projects.semanticcpg)
 

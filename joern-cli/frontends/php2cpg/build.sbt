@@ -9,7 +9,7 @@ val phpParserDlUrl =
 
 dependsOn(
   Projects.dataflowengineoss  % "compile->compile;test->test",
-  Projects.x2cpg              % "compile->compile;test->test",
+  Projects.x2cpg2              % "compile->compile;test->test",
 )
 
 // projectDependencies += Projectsk
