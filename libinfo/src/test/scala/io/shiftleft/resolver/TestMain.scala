@@ -4,7 +4,7 @@ import cats.effect.*
 import cats.effect.std.Console
 import cats.syntax.all.*
 import fs2.Stream
-import fs2.io.file.{Files, Path}
+import fs2.io.file.{Files, Path, writeAll}
 import io.shiftleft.resolver.api.*
 import io.shiftleft.resolver.impl.*
 import org.apache.logging.log4j.Level
@@ -60,7 +60,7 @@ class TestMain[I <: Id](extractors: Vector[ExtractorTupleType[IO, I]]) {
           resolver.resolve(buildTarget.directDependencies).flatMap { case resolvedDeps =>
             IO.println(s"${buildTarget.id} $resolvedDeps") >>
             libInfoFetcher.fetch(resolvedDeps).flatMap { case (missing, libInfos) =>
-              IO.println(libInfos.map(_.libInfo))
+              Stream.emits(libInfos.map(_.libInfo)).through(Files[IO].writeUtf8(Path("/tmp/testData/libInfo"))).compile.drain
             }
           }
       }
