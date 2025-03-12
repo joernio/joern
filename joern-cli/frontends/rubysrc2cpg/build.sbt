@@ -3,7 +3,11 @@ import java.net.URI
 
 name := "rubysrc2cpg"
 
-dependsOn(Projects.dataflowengineoss % "compile->compile;test->test", Projects.x2cpg % "compile->compile;test->test")
+dependsOn(
+  Projects.dataflowengineoss  % "compile->compile;test->test",
+  Projects.x2cpg              % "compile->compile;test->test",
+  Projects.linterRules % ScalafixConfig
+)
 
 lazy val appProperties = settingKey[Config]("App Properties")
 appProperties := {
