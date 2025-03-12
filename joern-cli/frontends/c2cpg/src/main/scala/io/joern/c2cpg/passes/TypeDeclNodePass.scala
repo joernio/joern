@@ -53,7 +53,7 @@ class TypeDeclNodePass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
         .astParentType(NodeTypes.NAMESPACE_BLOCK)
         .astParentFullName(fullName)
     val blockNode    = NewBlock().typeFullName(Defines.Any)
-    val methodReturn = AstNodeBuilder.methodReturnNodeWithExplicitPositionInfo(Defines.Any, line = None, column = None)
+    val methodReturn = AstNodeBuilder.methodReturnNodeWithExplicitPositionInfo(Defines.Any, lineNumber = Option(1))
     Ast(includesFile).withChild(
       Ast(namespaceBlock)
         .withChild(Ast(fakeGlobalIncludesMethod).withChild(Ast(blockNode)).withChild(Ast(methodReturn)))
