@@ -3,7 +3,7 @@ package io.joern.csharpsrc2cpg.astcreation
 import io.joern.csharpsrc2cpg.datastructures.FieldDecl
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetJsonAst, DotNetNodeInfo, ParserKeys}
-import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode}
+import io.joern.x2cpg.utils.NodeBuilders.newIdentifierNode
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{DeclarationNew, NewCall, NewFieldIdentifier, NewLocal}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
@@ -41,13 +41,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def astForFieldIdentifier(baseTypeFullName: String, baseIdentifierName: String, field: FieldDecl) = {
     val fieldAccess =
-      newOperatorCallNode(
-        Operators.fieldAccess,
-        field.node.code,
-        Some(field.typeFullName),
-        field.node.lineNumber,
-        field.node.columnNumber
-      )
+      operatorCallNode(field.node, field.node.code, Operators.fieldAccess, Some(field.typeFullName))
     val identifierAst = Ast(newIdentifierNode(baseIdentifierName, baseTypeFullName))
     val fieldIdentifier = Ast(
       NewFieldIdentifier()

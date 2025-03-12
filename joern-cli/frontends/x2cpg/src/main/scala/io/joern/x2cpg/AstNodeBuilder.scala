@@ -1,6 +1,6 @@
 package io.joern.x2cpg
 
-import io.joern.x2cpg.utils.NodeBuilders.{newMethodReturnNode, newOperatorCallNode}
+import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
 import io.shiftleft.codepropertygraph.generated.nodes.Block.PropertyDefaults as BlockDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.{
@@ -236,7 +236,12 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
   }
 
   protected def operatorCallNode(node: Node, name: String, typeFullName: Option[String]): NewCall = {
-    newOperatorCallNode(name, code(node), typeFullName, line(node), column(node))
+    callNode(node, code(node), name, name, DispatchTypes.STATIC_DISPATCH, Option(""), typeFullName)
+  }
+
+  protected def operatorCallNode(node: Node, code: String, name: String, typeFullName: Option[String]): NewCall = {
+    val typeOrAny = typeFullName.getOrElse("ANY")
+    callNode(node, code, name, name, DispatchTypes.STATIC_DISPATCH, Option(""), Option(typeOrAny))
   }
 
   protected def returnNode(node: Node, code: String): NewReturn = {

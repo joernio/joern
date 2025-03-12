@@ -30,7 +30,6 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
             ("AClass(p)", Some(6)),
             ("<init>(this, x)", Some(2)),
             ("this.x = x", Some(2)),
-            ("this.x = x", None),
             ("RET", None),
             ("AClass(p)", Some(6)),
             ("aClass.printX()", Some(7)),

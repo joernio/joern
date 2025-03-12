@@ -206,15 +206,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       val local = localNode(decl, tmpName, tmpName, TypeConstants.Any)
       localForTmp = Some(local)
       scope.addToScope(tmpName, local)
-      val tmpIdentifier    = newIdentifierNode(tmpName, TypeConstants.Any)
-      val tmpIdentifierAst = Ast(tmpIdentifier).withRefEdge(tmpIdentifier, local)
-      val assignmentCallNode = NodeBuilders.newOperatorCallNode(
-        Operators.assignment,
-        s"$tmpName = ${init.getText}",
-        None,
-        line(init),
-        column(init)
-      )
+      val tmpIdentifier      = newIdentifierNode(tmpName, TypeConstants.Any)
+      val tmpIdentifierAst   = Ast(tmpIdentifier).withRefEdge(tmpIdentifier, local)
+      val assignmentCallNode = operatorCallNode(init, s"$tmpName = ${init.getText}", Operators.assignment, None)
       callAst(assignmentCallNode, List(tmpIdentifierAst, initAst))
     } else {
       val explicitTypeName = Option(param.getTypeReference)
@@ -233,7 +227,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       scope.addToScope(tmpName, local)
       val tmpIdentifierAst = Ast(tmpIdentifier).withRefEdge(tmpIdentifier, local)
       val assignmentCallNode =
-        NodeBuilders.newOperatorCallNode(Operators.assignment, s"$tmpName = it", None, line(decl), column(decl))
+        operatorCallNode(decl, s"$tmpName = it", Operators.assignment, None)
       callAst(assignmentCallNode, List(tmpIdentifierAst, initAst))
     }
 

@@ -128,6 +128,10 @@ object NodeBuilders {
       .lineNumber(line)
   }
 
+  @deprecated(
+    "Deprecated in favour of the corresponding method io.joern.x2cpg.AstNodeBuilder and will be removed in a future version",
+    "4.0.285"
+  )
   def newOperatorCallNode(
     name: String,
     code: String,

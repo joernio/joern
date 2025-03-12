@@ -46,7 +46,7 @@ class CallsToFieldAccessTests extends KotlinCode2CpgFixture(withOssDataflow = fa
       cpg.call(Operators.fieldAccess).size shouldBe 2
       val List(println, ctor) = cpg.call(Operators.fieldAccess).l
       // The one created representing initialisation of member variable inside constructor
-      ctor.lineNumber shouldBe None
+      ctor.lineNumber shouldBe Some(4)
       // The one created for member access inside println method
       println.lineNumber shouldBe Some(6)
     }
@@ -68,7 +68,7 @@ class CallsToFieldAccessTests extends KotlinCode2CpgFixture(withOssDataflow = fa
       cpg.call(Operators.fieldAccess).size shouldBe 2
       val List(ctor, insidemain) = cpg.call(Operators.fieldAccess).l
       // The one created representing initialisation of member variable inside constructor
-      ctor.lineNumber shouldBe None
+      ctor.lineNumber shouldBe Some(3)
       // The one created for member access inside println method
       insidemain.lineNumber shouldBe Some(8)
     }

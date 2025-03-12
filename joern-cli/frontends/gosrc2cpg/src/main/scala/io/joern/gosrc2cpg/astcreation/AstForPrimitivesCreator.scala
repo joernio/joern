@@ -2,7 +2,7 @@ package io.joern.gosrc2cpg.astcreation
 
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
-import io.joern.x2cpg.utils.NodeBuilders.newOperatorCallNode
+import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFieldIdentifier}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
@@ -90,7 +90,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
   ): Ast = {
     val identifierAsts = Seq(Ast(identifierNode(ident, declaredPackageName, ident.code, fullyQualifiedPackage)))
     callAst(
-      newOperatorCallNode(Operators.fieldAccess, ident.code, Some(fieldTypeFullName), line(ident), column(ident)),
+      operatorCallNode(ident, ident.code, Operators.fieldAccess, Some(fieldTypeFullName)),
       identifierAsts ++: Seq(
         Ast(
           NewFieldIdentifier()

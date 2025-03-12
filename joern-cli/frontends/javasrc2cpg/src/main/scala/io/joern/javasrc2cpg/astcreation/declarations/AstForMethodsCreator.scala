@@ -169,12 +169,11 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     val thisIdentifierAst = Ast(thisIdentifier).withRefEdge(thisIdentifier, thisParameter)
     val fieldIdentifier   = fieldIdentifierNode(parameter, parameterName, parameterName)
 
-    val fieldAccessNode = newOperatorCallNode(
-      Operators.fieldAccess,
+    val fieldAccessNode = operatorCallNode(
+      parameter,
       s"${thisIdentifier.code}.${fieldIdentifier.code}",
-      Option(parameterTypeFullName),
-      line(parameter),
-      column(parameter)
+      Operators.fieldAccess,
+      Option(parameterTypeFullName)
     )
     val fieldAccessCall = callAst(fieldAccessNode, thisIdentifierAst :: Ast(fieldIdentifier) :: Nil)
 
@@ -305,7 +304,8 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     val recordParameterAssignments = parameterAsts
       .flatMap(_.nodes)
       .collect { case param: nodes.NewMethodParameterIn => param }
-      .map(astForEponymousFieldAssignment(thisNode, _))
+      .zipWithIndex
+      .map((paramNode, idx) => astForEponymousFieldAssignment(parameters(idx), thisNode, paramNode))
     val bodyStatementAsts =
       astsForFieldInitializers(instanceFieldDeclarations) ++ recordParameterAssignments
     val patternLocalAsts = scope.enclosingMethod.map(_.getAndClearUnaddedPatternLocals()).getOrElse(Nil).map(Ast(_))
@@ -332,6 +332,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   }
 
   private def astForEponymousFieldAssignment(
+    paramNode: Parameter,
     thisParam: NewMethodParameterIn,
     recordParameter: NewMethodParameterIn
   ): Ast = {
@@ -348,12 +349,11 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       .canonicalName(recordParameter.name)
       .code(recordParameter.name)
 
-    val fieldAccessNode = newOperatorCallNode(
-      Operators.fieldAccess,
+    val fieldAccessNode = operatorCallNode(
+      paramNode,
       s"${thisIdentifier.code}.${fieldIdentifier.code}",
-      Option(recordParameter.typeFullName),
-      recordParameter.lineNumber,
-      recordParameter.columnNumber
+      Operators.fieldAccess,
+      Option(recordParameter.typeFullName)
     )
     val fieldAccessAst = callAst(fieldAccessNode, thisIdentifierAst :: Ast(fieldIdentifier) :: Nil)
 
@@ -366,12 +366,11 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       .dynamicTypeHintFullName(recordParameter.dynamicTypeHintFullName)
     val recordParamIdentifierAst = Ast(recordParamIdentifier).withRefEdge(recordParamIdentifier, recordParameter)
 
-    val assignmentNode = newOperatorCallNode(
-      Operators.assignment,
+    val assignmentNode = operatorCallNode(
+      paramNode,
       s"${fieldAccessNode.code} = ${recordParamIdentifier.code}",
-      Option(recordParameter.typeFullName),
-      recordParameter.lineNumber,
-      recordParameter.columnNumber
+      Operators.assignment,
+      Option(recordParameter.typeFullName)
     )
 
     callAst(assignmentNode, fieldAccessAst :: recordParamIdentifierAst :: Nil)
@@ -531,10 +530,13 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       scope.pushBlockScope()
       val recordParameterAssignments = constructorDeclaration match {
         case constructor: CompactConstructorDeclaration =>
-          parameterAsts
-            .flatMap(_.nodes)
-            .collect { case param: nodes.NewMethodParameterIn => param }
-            .map(astForEponymousFieldAssignment(thisNode, _))
+          parameterAsts.zipWithIndex
+            .collect { case (ast, idx) =>
+              (ast.nodes.collectFirst { case node: NewMethodParameterIn => node }.head, idx)
+            }
+            .map { case (newMethodParameterIn, idx) =>
+              astForEponymousFieldAssignment(parameters(idx), thisNode, newMethodParameterIn)
+            }
         case _ => Nil
       }
 
@@ -585,20 +587,14 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     thisParam: NewMethodParameterIn
   ): Ast = {
     val assignment =
-      newOperatorCallNode(
-        Operators.assignment,
+      operatorCallNode(
+        originNode,
         s"this.${parameter.name} = ${parameter.name}",
-        Some(parameter.typeFullName),
-        parameter.lineNumber,
-        parameter.columnNumber
+        Operators.assignment,
+        Some(parameter.typeFullName)
       )
-    val fieldAccess = newOperatorCallNode(
-      Operators.fieldAccess,
-      s"this.${parameter.name}",
-      Some(thisParam.typeFullName),
-      parameter.lineNumber,
-      parameter.columnNumber
-    )
+    val fieldAccess =
+      operatorCallNode(originNode, s"this.${parameter.name}", Operators.fieldAccess, Some(thisParam.typeFullName))
 
     val fieldAccessTarget =
       identifierNode(originNode, "this", "this", thisParam.typeFullName, List(thisParam.typeFullName))
