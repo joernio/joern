@@ -1,7 +1,5 @@
 name := "semanticcpg"
 
-dependsOn(Projects.projectLinterRules % ScalafixConfig)
-
 libraryDependencies ++= Seq(
   "io.shiftleft"           %% "codepropertygraph" % Versions.cpg,
   "com.michaelpollmeier"   %% "scala-repl-pp"     % Versions.scalaReplPP,

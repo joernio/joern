@@ -4,6 +4,7 @@ import io.joern.console.FrontendConfig
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 
 import java.nio.file.Path
+import scala.sys.process.*
 import scala.util.{Failure, Try}
 
 /** Language frontend for Java archives (JAR files). Translates Java archives into code property graphs.

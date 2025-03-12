@@ -3,7 +3,6 @@ name := "dataflowengineoss"
 dependsOn(
   Projects.semanticcpg,
   Projects.x2cpg              % "compile->compile;test->test",
-  Projects.projectLinterRules % ScalafixConfig
 )
 
 libraryDependencies ++= Seq(

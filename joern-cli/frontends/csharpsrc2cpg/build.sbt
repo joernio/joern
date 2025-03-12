@@ -9,7 +9,6 @@ name := "csharpsrc2cpg"
 dependsOn(
   Projects.dataflowengineoss  % "compile->compile;test->test",
   Projects.x2cpg              % "compile->compile;test->test",
-  Projects.projectLinterRules % ScalafixConfig
 )
 
 lazy val appProperties = settingKey[Config]("App Properties")
