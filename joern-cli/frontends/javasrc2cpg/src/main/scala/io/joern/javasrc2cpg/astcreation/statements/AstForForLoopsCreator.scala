@@ -11,7 +11,7 @@ import io.joern.javasrc2cpg.util.NameConstants
 import io.joern.javasrc2cpg.util.Util.composeMethodFullName
 import io.joern.x2cpg.{Ast, Defines}
 import io.joern.x2cpg.utils.IntervalKeyPool
-import io.joern.x2cpg.utils.NodeBuilders.{newFieldIdentifierNode, newIdentifierNode}
+import io.joern.x2cpg.utils.NodeBuilders.newIdentifierNode
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewBlock,
@@ -300,19 +300,19 @@ trait AstForForLoopsCreator { this: AstCreator =>
 
     val compareNode = operatorCallNode(
       stmt,
-      code = s"$idxName < ${iterableSource.name}.length",
+      code = s"$idxName < ${iterableSource.name}.${NameConstants.Length}",
       Operators.lessThan,
       typeFullName = Some(TypeConstants.Boolean)
     )
     val comparisonIdxIdentifier = newIdentifierNode(idxName, idxLocal.typeFullName)
     val comparisonFieldAccess = operatorCallNode(
       stmt,
-      code = s"${iterableSource.name}.length",
+      code = s"${iterableSource.name}.${NameConstants.Length}",
       Operators.fieldAccess,
       typeFullName = Some(TypeConstants.Int)
     )
     val fieldAccessIdentifier = newIdentifierNode(iterableSource.name, iterableSource.typeFullName.getOrElse("ANY"))
-    val fieldAccessFieldIdentifier = newFieldIdentifierNode("length", line(stmt))
+    val fieldAccessFieldIdentifier = fieldIdentifierNode(stmt, NameConstants.Length, NameConstants.Length)
     val fieldAccessArgs            = List(fieldAccessIdentifier, fieldAccessFieldIdentifier).map(Ast(_))
     val fieldAccessAst             = callAst(comparisonFieldAccess, fieldAccessArgs)
     val compareArgs                = List(Ast(comparisonIdxIdentifier), fieldAccessAst)

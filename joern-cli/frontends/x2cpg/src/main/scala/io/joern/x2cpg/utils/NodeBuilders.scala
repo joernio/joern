@@ -104,6 +104,10 @@ object NodeBuilders {
       .dependencyGroupId(groupId)
       .version(version)
 
+  @deprecated(
+    "Deprecated in favour of the corresponding method io.joern.x2cpg.AstNodeBuilder and will be removed in a future version",
+    "4.0.285"
+  )
   def newFieldIdentifierNode(name: String, line: Option[Int] = None, column: Option[Int] = None): NewFieldIdentifier = {
     NewFieldIdentifier()
       .canonicalName(name)

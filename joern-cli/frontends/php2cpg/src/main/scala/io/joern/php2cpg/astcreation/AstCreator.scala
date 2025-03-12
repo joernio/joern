@@ -898,7 +898,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
       val fieldAccessNode = operatorCallNode(originNode, code, Operators.fieldAccess, None)
       val identifier      = thisIdentifier(memberNode.lineNumber)
       val thisParam       = scope.lookupVariable(NameConstants.This)
-      val fieldIdentifier = newFieldIdentifierNode(memberNode.name, memberNode.lineNumber)
+      val fieldIdentifier = fieldIdentifierNode(originNode, memberNode.name, memberNode.name)
       callAst(fieldAccessNode, List(identifier, fieldIdentifier).map(Ast(_))).withRefEdges(identifier, thisParam.toList)
     } else {
       val selfIdentifier = {
@@ -906,7 +906,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
         val typ  = scope.getEnclosingTypeDeclTypeName
         newIdentifierNode(name, typ.getOrElse(Defines.Any), typ.toList, memberNode.lineNumber).code(name)
       }
-      val fieldIdentifier = newFieldIdentifierNode(memberNode.name, memberNode.lineNumber)
+      val fieldIdentifier = fieldIdentifierNode(originNode, memberNode.name, memberNode.name)
       val code            = s"self::${memberNode.code.replaceAll("(static|case|const) ", "")}"
       val fieldAccessNode = operatorCallNode(originNode, code, Operators.fieldAccess, None)
       callAst(fieldAccessNode, List(selfIdentifier, fieldIdentifier).map(Ast(_)))
@@ -1811,7 +1811,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     val objExprAst = astForExpr(expr.expr)
 
     val fieldAst = expr.name match {
-      case name: PhpNameExpr => Ast(newFieldIdentifierNode(name.name, line(expr)))
+      case name: PhpNameExpr => Ast(fieldIdentifierNode(expr, name.name, name.name))
       case other             => astForExpr(other)
     }
 
@@ -1871,7 +1871,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
       case _ =>
         val targetAst           = astForExpr(expr.className)
         val fieldIdentifierName = expr.constantName.map(_.name).getOrElse(NameConstants.Unknown)
-        val fieldIdentifier     = newFieldIdentifierNode(fieldIdentifierName, line(expr))
+        val fieldIdentifier     = fieldIdentifierNode(expr, fieldIdentifierName, fieldIdentifierName)
         val fieldAccessCode     = s"${targetAst.rootCodeOrEmpty}::${fieldIdentifier.code}"
         val fieldAccessCall     = operatorCallNode(expr, fieldAccessCode, Operators.fieldAccess, None)
         callAst(fieldAccessCall, List(targetAst, Ast(fieldIdentifier)))
@@ -1888,7 +1888,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     } else {
       val namespaceName   = NamespaceTraversal.globalNamespaceName
       val identifier      = identifierNode(expr, namespaceName, namespaceName, "ANY")
-      val fieldIdentifier = newFieldIdentifierNode(constName, line = line(expr))
+      val fieldIdentifier = fieldIdentifierNode(expr, constName, constName)
 
       val fieldAccessNode = operatorCallNode(expr, code = constName, Operators.fieldAccess, None)
       val args            = List(identifier, fieldIdentifier).map(Ast(_))
