@@ -440,7 +440,9 @@ trait AstForStatementsCreator { this: AstCreator =>
       )
 
     val hasNextReceiverNode = identifierNode(forStmt, iteratorName, iteratorName, Defines.Iterator)
-    val testAst             = callAst(testCallNode, base = Option(Ast(hasNextReceiverNode)))
+    scope.addVariableReference(iteratorName, hasNextReceiverNode, Defines.Iterator, EvaluationStrategies.BY_REFERENCE)
+
+    val testAst = callAst(testCallNode, base = Option(Ast(hasNextReceiverNode)))
 
     val whileLoopAst = Ast(whileLoopNode).withChild(testAst).withConditionEdge(whileLoopNode, testCallNode)
 
@@ -459,7 +461,9 @@ trait AstForStatementsCreator { this: AstCreator =>
       )
 
     val nextReceiverNode = identifierNode(forStmt, iteratorName, iteratorName, Defines.Iterator)
-    val nextCallAst      = callAst(nextCallNode, receiver = Option(Ast(nextReceiverNode)))
+    scope.addVariableReference(iteratorName, nextReceiverNode, Defines.Iterator, EvaluationStrategies.BY_REFERENCE)
+
+    val nextCallAst = callAst(nextCallNode, receiver = Option(Ast(nextReceiverNode)))
 
     val loopVariableAssignmentNode = callNode(
       forStmt,
