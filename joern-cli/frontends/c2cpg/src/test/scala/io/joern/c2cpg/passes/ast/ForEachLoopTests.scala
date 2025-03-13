@@ -84,10 +84,6 @@ class ForEachLoopTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt) {
     localIterator.code shouldBe "<iterator>0"
     localIterator.typeFullName shouldBe Defines.Iterator
 
-    val List(localResult) = node.astChildren.isLocal.nameExact("<result>1").l
-    localResult.code shouldBe "<result>1"
-    localResult.typeFullName shouldBe expectedItemType
-
     val List(localI) = node.astChildren.isLocal.nameExact("item").l
     localI.code shouldBe "item"
     localI.typeFullName shouldBe expectedItemType
@@ -114,9 +110,6 @@ class ForEachLoopTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt) {
     objectKeysCallArg.name shouldBe "items"
     objectKeysCallArg.order shouldBe 1
 
-    val List(varResult) = node.astChildren.isIdentifier.nameExact("<result>1").l
-    varResult.code shouldBe "<result>1"
-
     val List(varI) = node.astChildren.isIdentifier.nameExact("item").l
     varI.code shouldBe "item"
     varI.typeFullName shouldBe expectedItemType
@@ -124,38 +117,23 @@ class ForEachLoopTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt) {
     val List(loop) = node.astChildren.isControlStructure.l
     loop.controlStructureType shouldBe ControlStructureTypes.WHILE
 
-    val List(loopTestCall) = loop.astChildren.isCall.codeExact("!(<result>1 = <iterator>0.next()).done").l
-    loopTestCall.name shouldBe Operators.not
+    val List(loopTestCall) = loop.astChildren.isCall.codeExact("<iterator>0.hasNext()").l
+    loopTestCall.name shouldBe "hasNext"
+    loopTestCall.methodFullName shouldBe s"${Defines.Iterator}.hasNext:bool()"
     loopTestCall.order shouldBe 1
-
-    val List(doneMaCall) = loopTestCall.astChildren.isCall.codeExact("(<result>1 = <iterator>0.next()).done").l
-    doneMaCall.name shouldBe Operators.fieldAccess
-
-    val List(doneMaBase) = doneMaCall.astChildren.isCall.codeExact("(<result>1 = <iterator>0.next())").l
-    doneMaBase.name shouldBe Operators.assignment
-    doneMaBase.order shouldBe 1
-    doneMaBase.argumentIndex shouldBe 1
-
-    val List(doneMaBaseLhs) = doneMaBase.astChildren.isIdentifier.order(1).l
-    doneMaBaseLhs.name shouldBe "<result>1"
-    doneMaBaseLhs.argumentIndex shouldBe 1
-    doneMaBaseLhs.typeFullName shouldBe expectedItemType
-
-    val List(doneMaBaseRhs) = doneMaBase.astChildren.isCall.order(2).l
-    doneMaBaseRhs.code shouldBe "<iterator>0.next()"
-    doneMaBaseRhs.argumentIndex shouldBe 2
-    doneMaBaseRhs.methodFullName shouldBe s"${Defines.Iterator}.next"
-
-    val List(doneMember) = doneMaCall.astChildren.isFieldIdentifier.canonicalNameExact("done").l
-    doneMember.order shouldBe 2
-    doneMember.argumentIndex shouldBe 2
+    loopTestCall.receiver.isIdentifier.typeFullName.l shouldBe List(Defines.Iterator)
 
     val List(whileLoopBlock) = loop.astChildren.isBlock.l
     whileLoopBlock.order shouldBe 2
 
-    val List(loopVarAssignmentCall) = whileLoopBlock.astChildren.isCall.codeExact("item = <result>1.value").l
+    val List(loopVarAssignmentCall) = whileLoopBlock.astChildren.isCall.codeExact("item = <iterator>0.next()").l
     loopVarAssignmentCall.name shouldBe Operators.assignment
     loopVarAssignmentCall.order shouldBe 1
+
+    val List(loopNextCall) = loopVarAssignmentCall.argument.isCall.codeExact("<iterator>0.next()").l
+    loopNextCall.name shouldBe "next"
+    loopNextCall.methodFullName shouldBe s"${Defines.Iterator}.next"
+    loopNextCall.receiver.isIdentifier.typeFullName.l shouldBe List(Defines.Iterator)
 
     val List(sinkCall) = whileLoopBlock.astChildren.isBlock.astChildren.isCall.codeExact("sink(item)").l
     sinkCall.name shouldBe "sink"
