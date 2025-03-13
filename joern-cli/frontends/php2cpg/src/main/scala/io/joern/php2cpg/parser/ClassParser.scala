@@ -1,7 +1,6 @@
 package io.joern.php2cpg.parser
-import io.joern.x2cpg.utils.FileUtil
-import io.shiftleft.semanticcpg.utils.ExternalCommand
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
+import FileUtil.*
 import org.slf4j.LoggerFactory
 
 import scala.io.Source
@@ -9,7 +8,6 @@ import scala.util.{Failure, Success, Try, Using}
 import java.nio.file.{Files, Path}
 import upickle.default.*
 
-import java.nio.charset.Charset
 import scala.collection.mutable
 
 /** Parses the high-level symbol information of a project.
@@ -25,7 +23,7 @@ class ClassParser(targetDir: Path) {
     FileUtil.deleteOnExit(f, swallowIOExceptions = true)
 
     Using(Source.fromResource("ClassParser.php")) { br =>
-      Files.writeString(f, br.getLines().mkString("\n"), Charset.defaultCharset())
+      Files.writeString(f, br.getLines().mkString("\n"))
     }
     f
   }

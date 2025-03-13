@@ -1,16 +1,16 @@
 package io.joern.csharpsrc2cpg.io
 
-import better.files.File as BetterFile
 import io.joern.csharpsrc2cpg.CSharpSrc2Cpg
 import io.joern.csharpsrc2cpg.Config
 import io.joern.csharpsrc2cpg.passes.AstCreationPass
 import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
 import io.joern.csharpsrc2cpg.utils.DotNetAstGenRunner
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
-import io.joern.x2cpg.utils.{Report, FileUtil}
-import io.joern.x2cpg.utils.FileUtil.*
+import io.joern.x2cpg.utils.Report
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.utils.FileUtil
 import org.scalatest.BeforeAndAfterAll
 
 import java.nio.file.{Files, Path}
@@ -56,7 +56,7 @@ class ProjectParseTests extends CSharpCode2CpgFixture with BeforeAndAfterAll {
 
   private object ProjectParseTestsFixture {
     def apply(projectDir: Path)(f: Cpg => Unit): Unit = {
-      BetterFile.usingTemporaryDirectory("csharpsrc2cpgTests") { tmpDir =>
+      FileUtil.usingTemporaryDirectory("csharpsrc2cpgTests") { tmpDir =>
         val cpg          = newEmptyCpg()
         val config       = Config().withInputPath(projectDir.toString).withOutputPath(tmpDir.toString)
         val astGenResult = new DotNetAstGenRunner(config).execute(tmpDir)

@@ -5,6 +5,14 @@ import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.*
 
 class LiteralMethods(val literal: Literal) extends AnyVal with NodeExtension with HasLocation {
+  def value(typeFullName: String): String = {
+    if (literal.typeFullName == typeFullName) {
+      return "asd"
+    }
+
+    return ""
+  }
+
   override def location: NewLocation = {
     LocationCreator.defaultCreateLocation(literal)
 

@@ -2,6 +2,7 @@ package io.joern.gosrc2cpg.parser
 
 import io.joern.gosrc2cpg.model.GoMod
 import io.joern.x2cpg.astgen.ParserResult
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 import ujson.Value.Value
@@ -20,7 +21,7 @@ object GoAstJsonParser {
     val fullFilePath      = json(ParserKeys.NodeFileName).str
     val filePath          = Paths.get(fullFilePath)
     val sourceFileContent = IOUtils.readEntireFile(filePath)
-    ParserResult(filePath.getFileName.toString, fullFilePath, json, sourceFileContent)
+    ParserResult(filePath.fileName, fullFilePath, json, sourceFileContent)
   }
 
   def readModFile(file: Path): Option[GoMod] = {

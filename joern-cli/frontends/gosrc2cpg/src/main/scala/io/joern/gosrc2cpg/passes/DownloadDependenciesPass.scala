@@ -1,13 +1,12 @@
 package io.joern.gosrc2cpg.passes
 
-import better.files.File
 import io.joern.gosrc2cpg.Config
 import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.model.{GoModDependency, GoModHelper}
 import io.joern.gosrc2cpg.parser.GoAstJsonParser
 import io.joern.gosrc2cpg.utils.AstGenRunner
 import io.joern.gosrc2cpg.utils.AstGenRunner.{GoAstGenRunnerResult, getClass}
-import io.shiftleft.semanticcpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.slf4j.LoggerFactory
 
@@ -22,8 +21,8 @@ class DownloadDependenciesPass(cpg: Cpg, parentGoMod: GoModHelper, goGlobal: GoG
     val processor       = new DependencyProcessorQueue()
     val processorThread = new Thread(processor)
     processorThread.start()
-    File.usingTemporaryDirectory("go-temp-download") { tmpDir =>
-      val projDir = tmpDir.pathAsString
+    FileUtil.usingTemporaryDirectory("go-temp-download") { tmpDir =>
+      val projDir = tmpDir.toString
       parentGoMod
         .getModMetaData()
         .foreach(mod => {
@@ -77,7 +76,7 @@ class DownloadDependenciesPass(cpg: Cpg, parentGoMod: GoModHelper, goGlobal: GoG
       val gopath = Try(sys.env("GOPATH")).getOrElse(Seq(os.home, "go").mkString(JFile.separator))
       val dependencyLocation =
         (Seq(gopath, "pkg", "mod") ++ dependency.dependencyStr().split("/")).mkString(JFile.separator)
-      File.usingTemporaryDirectory("godep") { astLocation =>
+      FileUtil.usingTemporaryDirectory("godep") { astLocation =>
         val depConfig = Config()
           .withInputPath(dependencyLocation)
           .withIgnoredFilesRegex(config.ignoredFilesRegex.toString())

@@ -1,12 +1,13 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.Defines as X2CpgDefines
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast
 import org.eclipse.cdt.core.dom.ast.*
+import org.eclipse.cdt.core.dom.ast.c.ICArrayType
 import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.core.dom.ast.gnu.IGNUASTCompoundStatementExpression
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTFunctionCallExpression
@@ -19,9 +20,10 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPClosureType
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalFunctionCall
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFoldExpression
 
+import scala.annotation.tailrec
 import scala.util.Try
 
-trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+trait AstForExpressionsCreator { this: AstCreator =>
 
   private val OperatorMap: Map[Int, String] = Map(
     IASTBinaryExpression.op_multiply         -> Operators.multiplication,
@@ -61,19 +63,18 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   )
 
   private val UnaryOperatorMap: Map[Int, String] = Map(
-    IASTUnaryExpression.op_prefixIncr       -> Operators.preIncrement,
-    IASTUnaryExpression.op_prefixDecr       -> Operators.preDecrement,
-    IASTUnaryExpression.op_plus             -> Operators.plus,
-    IASTUnaryExpression.op_minus            -> Operators.minus,
-    IASTUnaryExpression.op_star             -> Operators.indirection,
-    IASTUnaryExpression.op_amper            -> Operators.addressOf,
-    IASTUnaryExpression.op_tilde            -> Operators.not,
-    IASTUnaryExpression.op_not              -> Operators.logicalNot,
-    IASTUnaryExpression.op_sizeof           -> Operators.sizeOf,
-    IASTUnaryExpression.op_postFixIncr      -> Operators.postIncrement,
-    IASTUnaryExpression.op_postFixDecr      -> Operators.postDecrement,
-    IASTUnaryExpression.op_typeid           -> Defines.OperatorTypeOf,
-    IASTUnaryExpression.op_bracketedPrimary -> Defines.OperatorBracketedPrimary
+    IASTUnaryExpression.op_prefixIncr  -> Operators.preIncrement,
+    IASTUnaryExpression.op_prefixDecr  -> Operators.preDecrement,
+    IASTUnaryExpression.op_plus        -> Operators.plus,
+    IASTUnaryExpression.op_minus       -> Operators.minus,
+    IASTUnaryExpression.op_star        -> Operators.indirection,
+    IASTUnaryExpression.op_amper       -> Operators.addressOf,
+    IASTUnaryExpression.op_tilde       -> Operators.not,
+    IASTUnaryExpression.op_not         -> Operators.logicalNot,
+    IASTUnaryExpression.op_sizeof      -> Operators.sizeOf,
+    IASTUnaryExpression.op_postFixIncr -> Operators.postIncrement,
+    IASTUnaryExpression.op_postFixDecr -> Operators.postDecrement,
+    IASTUnaryExpression.op_typeid      -> Defines.OperatorTypeOf
   )
 
   protected def astForExpression(expression: IASTExpression): Ast = {
@@ -119,12 +120,44 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     callAst(callNode_, List(left, right))
   }
 
+  protected def astForConditionExpression(
+    expression: IASTExpression,
+    explicitArgumentIndex: Option[Int] = None
+  ): Ast = {
+    val ast = expression match {
+      case exprList: IASTExpressionList => astForExpressionList(exprList)
+      case other                        => nullSafeAst(other)
+    }
+    explicitArgumentIndex.foreach { i =>
+      ast.root.foreach { case expr: ExpressionNew => expr.argumentIndex = i }
+    }
+    ast
+  }
+
   private def astForExpressionList(exprList: IASTExpressionList): Ast = {
-    val name = Defines.OperatorExpressionList
-    val callNode_ =
-      callNode(exprList, code(exprList), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
-    val childAsts = exprList.getExpressions.map(nullSafeAst)
-    callAst(callNode_, childAsts.toIndexedSeq)
+    exprList.getExpressions.toSeq match {
+      case Nil         => blockAst(blockNode(exprList))
+      case expr :: Nil => nullSafeAst(expr)
+      case other =>
+        val blockNode_ = blockNode(exprList)
+        scope.pushNewBlockScope(blockNode_)
+        val childAsts = other.map(nullSafeAst)
+        setArgumentIndices(childAsts)
+        scope.popScope()
+        blockAst(blockNode(exprList), childAsts.toList)
+    }
+  }
+
+  @tailrec
+  private def isConstType(tpe: IType): Boolean = {
+    tpe match {
+      case t: ICPPFunctionType  => t.isConst
+      case t: IPointerType      => t.isConst
+      case t: IQualifierType    => t.isConst
+      case t: ICArrayType       => t.isConst
+      case t: ICPPReferenceType => isConstType(t.getType)
+      case _                    => false
+    }
   }
 
   private def astForCppCallExpression(call: ICPPASTFunctionCallExpression): Ast = {
@@ -159,14 +192,15 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
             val instanceAst = astForExpression(fieldRefExpr.getFieldOwner)
             val args        = call.getArguments.toList.map(a => astForNode(a))
 
+            val method    = fieldRefExpr.getFieldName.getBinding.asInstanceOf[ICPPMethod]
+            val constFlag = if isConstType(method.getType) then Defines.ConstSuffix else ""
+
             // TODO This wont do if the name is a reference.
-            val name      = fieldRefExpr.getFieldName.toString
-            val signature = functionTypeToSignature(functionType)
-
+            val name          = fieldRefExpr.getFieldName.toString
+            val signature     = functionTypeToSignature(functionType)
             val classFullName = cleanType(safeGetType(fieldRefExpr.getFieldOwnerType))
-            val fullName      = s"$classFullName.$name:$signature"
+            val fullName      = s"$classFullName.$name$constFlag:$signature"
 
-            val method = fieldRefExpr.getFieldName.getBinding.asInstanceOf[ICPPMethod]
             val (dispatchType, receiver) =
               if (method.isVirtual || method.isPureVirtual) {
                 (DispatchTypes.DYNAMIC_DISPATCH, Some(instanceAst))
@@ -187,20 +221,24 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
             astForCppCallExpressionUntyped(call)
         }
       case Some(classType: ICPPClassType) if safeGetEvaluation(call).exists(_.isInstanceOf[EvalFunctionCall]) =>
-        val evaluation   = call.getEvaluation.asInstanceOf[EvalFunctionCall]
-        val functionType = Try(evaluation.getOverload.getType).toOption
-        val signature    = functionType.map(functionTypeToSignature).getOrElse(X2CpgDefines.UnresolvedSignature)
-        val name         = Defines.OperatorCall
+        val evaluation        = call.getEvaluation.asInstanceOf[EvalFunctionCall]
+        val functionType      = Try(evaluation.getOverload.getType).toOption
+        val functionSignature = functionType.map(functionTypeToSignature).getOrElse(X2CpgDefines.UnresolvedSignature)
+        val name              = Defines.OperatorCall
         classType match {
-          case _: CPPClosureType =>
-            val fullName = s"$name:$signature"
+          case lambdaType: CPPClosureType =>
+            val lambdaSignature = lambdaType.getDefinition match {
+              case l: ICPPASTLambdaExpression => signature(returnType(l), l)
+              case _                          => functionSignature
+            }
+            val fullName = s"$name:$lambdaSignature"
             val callCpgNode = callNode(
               call,
               code(call),
               name,
               fullName,
               DispatchTypes.DYNAMIC_DISPATCH,
-              Some(signature),
+              Some(lambdaSignature),
               Some(registerType(cleanType(safeGetType(call.getExpressionType))))
             )
             val receiverAst = astForExpression(functionNameExpr)
@@ -208,7 +246,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
             createCallAst(callCpgNode, args, receiver = Some(receiverAst))
           case _ =>
             val classFullName = cleanType(safeGetType(classType))
-            val fullName      = s"$classFullName.$name:$signature"
+            val fullName      = s"$classFullName.$name:$functionSignature"
             val dispatchType = evaluation.getOverload match {
               case method: ICPPMethod =>
                 if (method.isVirtual || method.isPureVirtual) {
@@ -225,7 +263,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
               name,
               fullName,
               dispatchType,
-              Some(signature),
+              Some(functionSignature),
               Some(registerType(cleanType(safeGetType(call.getExpressionType))))
             )
             val instanceAst = astForExpression(functionNameExpr)
@@ -331,10 +369,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   private def astForUnaryExpression(unary: IASTUnaryExpression): Ast = {
     val operatorMethod = UnaryOperatorMap.getOrElse(unary.getOperator, Defines.OperatorUnknown)
-    if (
-      unary.getOperator == IASTUnaryExpression.op_bracketedPrimary &&
-      !unary.getOperand.isInstanceOf[IASTExpressionList]
-    ) {
+    if (unary.getOperator == IASTUnaryExpression.op_bracketedPrimary) {
       nullSafeAst(unary.getOperand)
     } else {
       val cpgUnary = callNode(

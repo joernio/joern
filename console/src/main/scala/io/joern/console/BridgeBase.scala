@@ -1,12 +1,12 @@
 package io.joern.console
 
-import better.files.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.semanticcpg.sarif.SarifConfig
+import io.shiftleft.semanticcpg.utils.FileUtil
 import org.apache.commons.text.StringEscapeUtils
 import replpp.scripting.ScriptRunner
 
-import java.nio.file.{Files, Path}
+import java.nio.file.{Files, Path, Paths}
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.util.Try
@@ -17,6 +17,7 @@ case class Config(
   params: Map[String, String] = Map.empty,
   predefFiles: Seq[Path] = Nil,
   runBefore: Seq[String] = Nil,
+  runAfter: Seq[String] = Nil,
   additionalClasspathEntries: Seq[String] = Seq.empty,
   addPlugin: Option[String] = None,
   rmPlugin: Option[String] = None,
@@ -32,7 +33,7 @@ case class Config(
   serverAuthUsername: Option[String] = None,
   serverAuthPassword: Option[String] = None,
   nocolors: Boolean = false,
-  cpgToLoad: Option[File] = None,
+  cpgToLoad: Option[Path] = None,
   forInputPath: Option[String] = None,
   frontendArgs: Array[String] = Array.empty,
   verbose: Boolean = false,
@@ -82,6 +83,13 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
         .optional()
         .action((x, c) => c.copy(runBefore = c.runBefore :+ x))
         .text("given code will be executed on startup - this may be passed multiple times")
+
+      opt[String]("runAfter")
+        .valueName("""println("bye!")""")
+        .unbounded()
+        .optional()
+        .action((x, c) => c.copy(runAfter = c.runAfter :+ x))
+        .text("given code will be executed on shutdown - this may be passed multiple times")
 
       opt[String]("classpathEntry")
         .valueName("path/to/classpath")
@@ -168,9 +176,9 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
 
       note("Misc")
 
-      arg[java.io.File]("<cpg.bin>")
+      arg[java.nio.file.Path]("<cpg.bin>")
         .optional()
-        .action((x, c) => c.copy(cpgToLoad = Some(x.toScala)))
+        .action((x, c) => c.copy(cpgToLoad = Some(x)))
         .text("CPG to load")
 
       opt[String]("for-input-path")
@@ -237,11 +245,14 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
     builder.result()
   }
 
+  protected def buildRunAfterCode(config: Config): Seq[String] =
+    config.runAfter :+ runAfterCode
+
   protected def greeting: String
 
   protected def promptStr: String
 
-  protected def onExitCode: String
+  def runAfterCode: String = "workspace.projects.foreach(_.close)"
 }
 
 trait InteractiveShell { this: BridgeBase =>
@@ -250,6 +261,7 @@ trait InteractiveShell { this: BridgeBase =>
       replpp.Config(
         predefFiles = config.predefFiles,
         runBefore = buildRunBeforeCode(config),
+        runAfter = buildRunAfterCode(config),
         nocolors = config.nocolors,
         verbose = config.verbose,
         classpathConfig = replpp.Config
@@ -261,7 +273,6 @@ trait InteractiveShell { this: BridgeBase =>
           ),
         greeting = Option(greeting),
         prompt = Option(promptStr),
-        onExitCode = Option(onExitCode),
         maxHeight = config.maxHeight
       )
     )
@@ -280,6 +291,7 @@ trait ScriptExecution { this: BridgeBase =>
         replpp.Config(
           predefFiles = config.predefFiles,
           runBefore = buildRunBeforeCode(config),
+          runAfter = buildRunAfterCode(config),
           scriptFile = Option(scriptFile),
           command = config.command,
           params = config.params,
@@ -307,7 +319,7 @@ trait PluginHandling { this: BridgeBase =>
     println("Available layer creators")
     println()
     withTemporaryScript(codeToListPlugins()) { file =>
-      runScript(config.copy(scriptFile = Some(file.path))).get
+      runScript(config.copy(scriptFile = Some(file))).get
     }
   }
 
@@ -326,7 +338,7 @@ trait PluginHandling { this: BridgeBase =>
     }
     val code = loadOrCreateCpg(config, applicationName)
     withTemporaryScript(code) { file =>
-      runScript(config.copy(scriptFile = Some(file.path))).get
+      runScript(config.copy(scriptFile = Some(file))).get
     }
   }
 
@@ -335,7 +347,7 @@ trait PluginHandling { this: BridgeBase =>
   private def loadOrCreateCpg(config: Config, productName: String): String = {
 
     val bundleName = config.pluginToRun.get
-    val srcRaw     = better.files.File(config.src.get).path.toAbsolutePath.toString
+    val srcRaw     = Paths.get(config.src.get).absolutePathAsString
     val src        = StringEscapeUtils.escapeJava(srcRaw)
     val language   = languageFromConfig(config, src)
 
@@ -389,10 +401,10 @@ trait PluginHandling { this: BridgeBase =>
     }
   }
 
-  private def withTemporaryScript(code: String)(f: File => Unit): Unit = {
-    File.usingTemporaryDirectory(applicationName + "-bundle") { dir =>
+  private def withTemporaryScript(code: String)(f: Path => Unit): Unit = {
+    FileUtil.usingTemporaryDirectory(applicationName + "-bundle") { dir =>
       val file = dir / "script.sc"
-      file.write(code)
+      Files.writeString(file, code)
       f(file)
     }
   }
@@ -405,6 +417,7 @@ trait ServerHandling { this: BridgeBase =>
     val baseConfig = replpp.Config(
       predefFiles = config.predefFiles,
       runBefore = buildRunBeforeCode(config),
+      runAfter = buildRunAfterCode(config),
       verbose = true, // always print what's happening - helps debugging
       classpathConfig = replpp.Config
         .ForClasspath(inheritClasspath = true, dependencies = config.dependencies, resolvers = config.resolvers)

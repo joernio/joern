@@ -13,7 +13,6 @@ import io.joern.javasrc2cpg.scope.Scope.{CapturedVariable, NotInScope, ScopeMemb
 import org.slf4j.LoggerFactory
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode}
 
 trait AstForNameExpressionsCreator { this: AstCreator =>
 
@@ -73,7 +72,7 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
           .columnNumber(column(node))
         Ast(typ)
       } else {
-        val identifier = newIdentifierNode(NameConstants.This, baseTypeDeclFullName)
+        val identifier = identifierNode(node, NameConstants.This, NameConstants.This, baseTypeDeclFullName)
         val refsTo     = scope.lookupVariable(NameConstants.This).variableNode.toList
         Ast(identifier).withRefEdges(identifier, refsTo)
       }
@@ -123,27 +122,23 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
           identifierNode(nameExpr, scopeVariable.mangledName, scopeVariable.mangledName, scopeVariable.typeFullName)
         val thisAst = Ast(thisIdentifier).withRefEdge(thisIdentifier, scopeVariable.node)
 
-        val lineNumber   = line(nameExpr)
-        val columnNumber = column(nameExpr)
         val outerClassChain = typeDeclChain.foldLeft(thisAst) { case (accAst, typeDecl) =>
-          val rootNode = newOperatorCallNode(
-            Operators.fieldAccess,
+          val rootNode = operatorCallNode(
+            nameExpr,
             s"${accAst.rootCodeOrEmpty}.${NameConstants.OuterClass}",
-            Some(typeDecl.fullName),
-            lineNumber,
-            columnNumber
+            Operators.fieldAccess,
+            Some(typeDecl.fullName)
           )
 
           val outerClassIdentifier = fieldIdentifierNode(nameExpr, NameConstants.OuterClass, NameConstants.OuterClass)
           callAst(rootNode, List(accAst, Ast(outerClassIdentifier)))
         }
 
-        val finalFieldAccess = newOperatorCallNode(
-          Operators.fieldAccess,
+        val finalFieldAccess = operatorCallNode(
+          nameExpr,
           s"${outerClassChain.rootCodeOrEmpty}.${variable.mangledName}",
-          Some(variable.typeFullName),
-          lineNumber,
-          columnNumber
+          Operators.fieldAccess,
+          Some(variable.typeFullName)
         )
 
         val captureFieldIdentifier = fieldIdentifierNode(nameExpr, variable.mangledName, variable.name)

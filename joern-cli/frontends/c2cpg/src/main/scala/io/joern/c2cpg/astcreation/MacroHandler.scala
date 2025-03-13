@@ -20,7 +20,7 @@ import org.eclipse.cdt.internal.core.model.ASTStringUtil
 import scala.annotation.nowarn
 import scala.collection.mutable
 
-trait MacroHandler(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+trait MacroHandler { this: AstCreator =>
 
   private val nodeOffsetMacroPairs: mutable.Stack[(Int, IASTPreprocessorMacroDefinition)] = {
     mutable.Stack.from(

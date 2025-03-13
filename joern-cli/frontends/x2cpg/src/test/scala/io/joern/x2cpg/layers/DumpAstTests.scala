@@ -1,8 +1,9 @@
 package io.joern.x2cpg.layers
 
-import better.files.File
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import io.shiftleft.semanticcpg.testing.MockCpg
+import io.shiftleft.semanticcpg.utils.FileUtil
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -21,13 +22,13 @@ class DumpAstTests extends AnyWordSpec with Matchers {
 
       val context = new LayerCreatorContext(cpg)
       new Base().run(context)
-      File.usingTemporaryDirectory("dumpast") { tmpDir =>
-        val opts = AstDumpOptions(tmpDir.path.toString)
+      FileUtil.usingTemporaryDirectory("dumpast") { tmpDir =>
+        val opts = AstDumpOptions(tmpDir.toString)
         new DumpAst(opts).run(context)
-        (tmpDir / "0-ast.dot").exists shouldBe true
-        (tmpDir / "1-ast.dot").exists shouldBe true
-        Files.size((tmpDir / "0-ast.dot").path) should not be 0
-        Files.size((tmpDir / "1-ast.dot").path) should not be 0
+        Files.exists(tmpDir / "0-ast.dot") shouldBe true
+        Files.exists(tmpDir / "1-ast.dot") shouldBe true
+        Files.size(tmpDir / "0-ast.dot") should not be 0
+        Files.size(tmpDir / "1-ast.dot") should not be 0
       }
     }
 

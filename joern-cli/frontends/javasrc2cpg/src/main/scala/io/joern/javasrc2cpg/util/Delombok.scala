@@ -1,12 +1,10 @@
 package io.joern.javasrc2cpg.util
 
 import io.joern.javasrc2cpg.util.Delombok.DelombokMode.*
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
-import io.shiftleft.semanticcpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import org.slf4j.LoggerFactory
 
-import java.nio.charset.Charset
 import java.nio.file.{Files, Path, Paths}
 import scala.util.Failure
 import scala.util.Success
@@ -47,7 +45,7 @@ object Delombok {
       case Success(file) =>
         FileUtil.deleteOnExit(file)
         // Write classpath to a file to work around Windows length limits.
-        Files.writeString(file, System.getProperty("java.class.path"), Charset.defaultCharset())
+        Files.writeString(file, System.getProperty("java.class.path"))
         s"@${file.absolutePathAsString}"
 
       case Failure(t) =>
@@ -84,7 +82,7 @@ object Delombok {
       else relativePackageRoot.toString
     val inputDir = projectDir.resolve(relativePackageRoot)
 
-    val childPath = delombokTempDir / relativeOutputPath
+    val childPath = (delombokTempDir / relativeOutputPath).toAbsolutePath.normalize()
 
     Try(childPath.createWithParentsIfNotExists(asDirectory = true)).flatMap { packageOutputDir =>
       ExternalCommand

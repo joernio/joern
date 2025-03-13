@@ -1,8 +1,6 @@
 package io.joern.x2cpg.typestub
 
-import better.files.File
-
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths}
 
 object TypeStubUtil {
 
@@ -12,7 +10,7 @@ object TypeStubUtil {
     * @return
     *   the directory where type stubs are.
     */
-  def typeStubDir(implicit metaData: TypeStubMetaData): File = {
+  def typeStubDir(implicit metaData: TypeStubMetaData): Path = {
     val dir        = metaData.packagePath.toString
     val indexOfLib = dir.lastIndexOf("lib")
     val fixedDir = if (indexOfLib != -1) {
@@ -25,7 +23,7 @@ object TypeStubUtil {
         "."
       }
     }
-    File(Paths.get(fixedDir, "/type_stubs").toAbsolutePath)
+    Paths.get(fixedDir, "type_stubs")
   }
 
 }

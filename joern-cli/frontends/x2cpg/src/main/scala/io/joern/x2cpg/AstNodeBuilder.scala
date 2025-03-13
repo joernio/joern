@@ -1,9 +1,12 @@
 package io.joern.x2cpg
 
-import io.joern.x2cpg.utils.NodeBuilders.{newMethodReturnNode, newOperatorCallNode}
+import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
 import io.shiftleft.codepropertygraph.generated.nodes.Block.PropertyDefaults as BlockDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewAnnotation,
+  NewAnnotationLiteral,
+  NewBinding,
   NewBlock,
   NewCall,
   NewControlStructure,
@@ -18,6 +21,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewMethodParameterIn,
   NewMethodRef,
   NewMethodReturn,
+  NewModifier,
+  NewNamespaceBlock,
   NewReturn,
   NewTypeDecl,
   NewTypeRef,
@@ -58,6 +63,14 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .code(code)
       .name(name)
       .fullName(fullName)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+  }
+
+  protected def annotationLiteralNode(node: Node, name: String): NewAnnotationLiteral = {
+    NewAnnotationLiteral()
+      .name(name)
+      .code(name)
       .lineNumber(line(node))
       .columnNumber(column(node))
   }
@@ -223,7 +236,12 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
   }
 
   protected def operatorCallNode(node: Node, name: String, typeFullName: Option[String]): NewCall = {
-    newOperatorCallNode(name, code(node), typeFullName, line(node), column(node))
+    callNode(node, code(node), name, name, DispatchTypes.STATIC_DISPATCH, Option(""), typeFullName)
+  }
+
+  protected def operatorCallNode(node: Node, code: String, name: String, typeFullName: Option[String]): NewCall = {
+    val typeOrAny = typeFullName.getOrElse("ANY")
+    callNode(node, code, name, name, DispatchTypes.STATIC_DISPATCH, Option(""), Option(typeOrAny))
   }
 
   protected def returnNode(node: Node, code: String): NewReturn = {
@@ -270,15 +288,46 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     closureBindingId: Option[String] = None,
     genericSignature: Option[String] = None
   ): NewLocal = {
-    val local = NewLocal()
+    val (nodeOffset, nodeOffsetEnd) =
+      offset(node).map((offset, offsetEnd) => (Option(offset), Option(offsetEnd))).getOrElse((None, None))
+    localNodeWithExplicitPositionInfo(
+      name,
+      code,
+      typeFullName,
+      closureBindingId,
+      genericSignature,
+      line(node),
+      column(node),
+      nodeOffset,
+      nodeOffsetEnd
+    )
+  }
+
+  /** It is useful (perhaps necessary) to be able to create locals without an "origin node" in some cases, so allow that
+    * but make it clear that positional information (line/col number and offsets) must be specified explicitly.
+    */
+  protected def localNodeWithExplicitPositionInfo(
+    name: String,
+    code: String,
+    typeFullName: String,
+    closureBindingId: Option[String] = None,
+    genericSignature: Option[String] = None,
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None,
+    offset: Option[Int] = None,
+    offsetEnd: Option[Int] = None
+  ): NewLocal = {
+    val node_ = NewLocal()
       .name(name)
       .code(code)
       .typeFullName(typeFullName)
       .closureBindingId(closureBindingId)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-    genericSignature.foreach(local.genericSignature(_))
-    local
+      .lineNumber(lineNumber)
+      .columnNumber(columnNumber)
+      .offset(offset)
+      .offsetEnd(offsetEnd)
+    genericSignature.foreach(node_.genericSignature(_))
+    node_
   }
 
   protected def identifierNode(

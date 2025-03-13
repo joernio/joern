@@ -5,6 +5,7 @@ object Defines {
   val Void: String                           = "void"
   val Function: String                       = "std.function"
   val Array: String                          = "std.array"
+  val Iterator: String                       = "std.iterator"
   val QualifiedNameSeparator: String         = "::"
   val Auto: String                           = "auto"
   val OperatorPointerCall: String            = "<operator>.pointerCall"
@@ -15,7 +16,7 @@ object Defines {
   val OperatorEllipses: String               = "<operator>.op_ellipses"
   val OperatorUnknown: String                = "<operator>.unknown"
   val OperatorCall: String                   = "<operator>()"
-  val OperatorExpressionList: String         = "<operator>.expressionList"
   val OperatorNew: String                    = "<operator>.new"
-  val OperatorBracketedPrimary: String       = "<operator>.bracketedPrimary"
+  val DuplicateSuffix                        = "<duplicate>"
+  val ConstSuffix                            = "<const>"
 }

@@ -2,12 +2,10 @@ package io.joern.php2cpg.parser
 
 import io.joern.php2cpg.Config
 import io.joern.php2cpg.parser.Domain.PhpFile
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
-import io.shiftleft.semanticcpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import org.slf4j.LoggerFactory
 
-import java.nio.charset.Charset
 import java.nio.file.{Files, Path, Paths}
 import java.util.regex.Pattern
 import scala.collection.mutable
@@ -167,7 +165,7 @@ object PhpParser {
     val iniContents = Source.fromResource("php.ini").getLines().mkString(System.lineSeparator())
     val tmpIni      = FileUtil.newTemporaryFile(suffix = "-php.ini")
     FileUtil.deleteOnExit(tmpIni)
-    Files.writeString(tmpIni, iniContents, Charset.defaultCharset())
+    Files.writeString(tmpIni, iniContents)
     tmpIni.absolutePathAsString
   }
 

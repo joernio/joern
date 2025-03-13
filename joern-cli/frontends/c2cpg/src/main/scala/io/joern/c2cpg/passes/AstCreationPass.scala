@@ -100,26 +100,24 @@ class AstCreationPass(cpg: Cpg, config: Config, report: Report = new Report())
   override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {
     val path    = Paths.get(filename).toAbsolutePath
     val relPath = SourceFiles.toRelativePath(path.toString, config.inputPath)
-    val fileLOC = io.shiftleft.utils.IOUtils.readLinesInFile(path).size
     val (gotCpg, duration) = TimeUtils.time {
       val parseResult = parser.parse(path)
       parseResult match {
         case Some(translationUnit) =>
+          val fileLOC = translationUnit.getRawSignature.linesIterator.size
           report.addReportInfo(relPath, fileLOC, parsed = true)
           Try {
             val localDiff =
-              new AstCreator(relPath, global, config, translationUnit, headerFileFinder, file2OffsetTable)(
-                config.schemaValidation
-              ).createAst()
+              new AstCreator(relPath, global, config, translationUnit, headerFileFinder, file2OffsetTable).createAst()
             diffGraph.absorb(localDiff)
           } match {
             case Failure(exception) =>
-              logger.warn(s"Failed to generate a CPG for: '$filename'", exception)
+              logger.warn(s"Failed to generate a CPG for: '$relPath'", exception)
               false
             case Success(_) => true
           }
         case None =>
-          report.addReportInfo(relPath, fileLOC)
+          report.addReportInfo(relPath, -1)
           false
       }
     }

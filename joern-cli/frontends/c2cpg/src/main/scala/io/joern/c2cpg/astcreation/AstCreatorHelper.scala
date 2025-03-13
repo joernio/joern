@@ -2,7 +2,6 @@ package io.joern.c2cpg.astcreation
 
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.SourceFiles
-import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.newDependencyNode
@@ -12,7 +11,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
 import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
-import io.shiftleft.utils.IOUtils
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.c.ICASTArrayDesignator
@@ -36,13 +34,11 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPFunction
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPVariable
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
-import java.nio.file.Path
-import java.nio.file.Paths
 import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.util.Try
 
-trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+trait AstCreatorHelper { this: AstCreator =>
 
   private val nameKeyPool = new IntervalKeyPool(first = 0, last = Long.MaxValue)
 
@@ -131,16 +127,11 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   private def fileOffsetTable(node: IASTNode): Array[Int] = {
     val path = SourceFiles.toAbsolutePath(fileName(node), config.inputPath)
-    file2OffsetTable.computeIfAbsent(path, _ => genFileOffsetTable(Paths.get(path)))
+    file2OffsetTable.computeIfAbsent(path, _ => genFileOffsetTable())
   }
 
-  private def genFileOffsetTable(absolutePath: Path): Array[Int] = {
-    IOUtils
-      .readLinesInFile(absolutePath)
-      .mkString("\n")
-      .toCharArray
-      .zipWithIndex
-      .collect { case ('\n', idx) => idx + 1 }
+  private def genFileOffsetTable(): Array[Int] = {
+    cdtAst.getRawSignature.linesWithSeparators.mkString.toCharArray.zipWithIndex.collect { case ('\n', idx) => idx + 1 }
   }
 
   protected def fileName(node: IASTNode): String = {
@@ -236,6 +227,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case s: IASTElaboratedTypeSpecifier => cleanType(ASTStringUtil.getReturnTypeString(s, null))
       case l: IASTLiteralExpression       => cleanType(safeGetType(l.getExpressionType))
       case e: IASTExpression              => cleanType(safeGetNodeType(e))
+      case d: IASTSimpleDeclaration       => cleanType(typeForDeclSpecifier(d.getDeclSpecifier))
       case _                              => cleanType(getNodeSignature(node))
     }
   }
@@ -442,7 +434,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     variableName: String,
     tpe: String
   ): NewLocal = {
-    val local = NodeBuilders.newLocalNode(variableName, tpe).order(0)
+    val local = localNodeWithExplicitPositionInfo(variableName, variableName, tpe).order(0)
     diffGraph.addEdge(methodScopeNodeId, local, EdgeTypes.AST)
     local
   }

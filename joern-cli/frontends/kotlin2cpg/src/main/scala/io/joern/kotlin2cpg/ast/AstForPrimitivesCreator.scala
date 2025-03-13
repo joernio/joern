@@ -61,24 +61,17 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
       if (expr.hasInterpolation) {
         val args = expr.getEntries.filter(_.getExpression != null).zipWithIndex.map { case (entry, idx) =>
           val entryTypeFullName = registerType(exprTypeFullName(entry.getExpression).getOrElse(TypeConstants.Any))
-          val valueCallNode = NodeBuilders.newOperatorCallNode(
-            Operators.formattedValue,
+          val valueCallNode = operatorCallNode(
+            entry.getExpression,
             entry.getExpression.getText,
-            Option(entryTypeFullName),
-            line(entry.getExpression),
-            column(entry.getExpression)
+            Operators.formattedValue,
+            Option(entryTypeFullName)
           )
           val valueArgs = astsForExpression(entry.getExpression, Some(idx + 1))
           callAst(valueCallNode, valueArgs.toList)
         }
         val node =
-          NodeBuilders.newOperatorCallNode(
-            Operators.formatString,
-            expr.getText,
-            Option(typeFullName),
-            line(expr),
-            column(expr)
-          )
+          operatorCallNode(expr, expr.getText, Operators.formatString, Option(typeFullName))
         callAst(withArgumentName(withArgumentIndex(node, argIdx), argName), args.toIndexedSeq.toList)
       } else {
         val node = literalNode(expr, expr.getText, typeFullName)
@@ -116,13 +109,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
         identifierNode(expr, expr.getIdentifier.getText, expr.getIdentifier.getText, typeFullName),
         fieldIdentifierNode(expr, Constants.CompanionObjectMemberName, Constants.CompanionObjectMemberName)
       ).map(Ast(_))
-      val node = NodeBuilders.newOperatorCallNode(
-        Operators.fieldAccess,
-        expr.getText,
-        Option(typeFullName),
-        line(expr),
-        column(expr)
-      )
+      val node = operatorCallNode(expr, expr.getText, Operators.fieldAccess, Option(typeFullName))
       callAst(withArgumentIndex(node, argIdx), argAsts)
     } else {
       val node = typeRefNode(expr.getIdentifier, expr.getIdentifier.getText, typeFullName)
@@ -145,12 +132,11 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     val thisNode             = identifierNode(expr, Constants.ThisName, Constants.ThisName, baseTypeFullName)
     val thisAst              = astWithRefEdgeMaybe(Constants.ThisName, thisNode)
     val _fieldIdentifierNode = fieldIdentifierNode(expr, expr.getReferencedName, expr.getReferencedName)
-    val node = NodeBuilders.newOperatorCallNode(
-      Operators.fieldAccess,
+    val node = operatorCallNode(
+      expr,
       s"${Constants.ThisName}.${expr.getReferencedName}",
-      Option(typeFullName),
-      line(expr),
-      column(expr)
+      Operators.fieldAccess,
+      Option(typeFullName)
     )
     callAst(withArgumentIndex(node, argIdx), List(thisAst, Ast(_fieldIdentifierNode)))
   }

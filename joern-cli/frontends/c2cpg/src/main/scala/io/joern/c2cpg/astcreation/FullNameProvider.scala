@@ -17,6 +17,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.c.CVariable
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPClosureType
 
 import scala.util.Try
 
@@ -218,19 +219,27 @@ trait FullNameProvider { this: AstCreator =>
 
   private def returnTypeForICPPASTLambdaExpression(lambda: ICPPASTLambdaExpression): String = {
     lambda.getDeclarator match {
-      case declarator: IASTDeclarator =>
-        Option(declarator.getTrailingReturnType)
-          .map(id => typeForDeclSpecifier(id.getDeclSpecifier))
-          .getOrElse(Defines.Any)
-      case null =>
+      case declarator: IASTDeclarator if declarator.getTrailingReturnType != null =>
+        typeForDeclSpecifier(declarator.getTrailingReturnType.getDeclSpecifier)
+      case _ =>
         safeGetEvaluation(lambda) match {
           case Some(value) if !value.toString.endsWith(": <unknown>") => cleanType(value.getType.toString)
-          case _                                                      => Defines.Any
+          case Some(value) if value.getType.isInstanceOf[CPPClosureType] =>
+            val closureType = value.getType.asInstanceOf[CPPClosureType]
+            closureType.getMethods
+              .find(_.toString.startsWith("operator ()"))
+              .map(_.getType)
+              .collect {
+                case t: ICPPFunctionType if t.getReturnType.isInstanceOf[CPPClosureType] => Defines.Function
+                case t: ICPPFunctionType => cleanType(safeGetType(t.getReturnType))
+              }
+              .getOrElse(Defines.Any)
+          case _ => Defines.Any
         }
     }
   }
 
-  private def returnType(methodLike: MethodLike): String = {
+  protected def returnType(methodLike: MethodLike): String = {
     methodLike match {
       case declarator: IASTFunctionDeclarator => returnTypeForIASTFunctionDeclarator(declarator)
       case definition: IASTFunctionDefinition => returnTypeForIASTFunctionDefinition(definition)
@@ -247,7 +256,7 @@ trait FullNameProvider { this: AstCreator =>
     s"(${elements.mkString(",")}$variadic)"
   }
 
-  private def signature(returnType: String, methodLike: MethodLike): String = {
+  protected def signature(returnType: String, methodLike: MethodLike): String = {
     StringUtils.normalizeSpace(s"$returnType${parameterListSignature(methodLike)}")
   }
 
@@ -325,6 +334,7 @@ trait FullNameProvider { this: AstCreator =>
           case _ => None
         }
       case declarator: CPPASTFunctionDeclarator =>
+        val constFlag = if declarator.isConst then Defines.ConstSuffix else ""
         safeGetBinding(declarator.getName) match {
           case Some(function: ICPPFunction) if declarator.getName.isInstanceOf[ICPPASTConversionName] =>
             val tpe = cleanType(typeFor(declarator.getName.asInstanceOf[ICPPASTConversionName].getTypeId))
@@ -334,7 +344,7 @@ trait FullNameProvider { this: AstCreator =>
             val fn = if (function.isExternC) {
               tpe
             } else {
-              s"$fullNameNoSig.$tpe:${functionTypeToSignature(function.getType)}"
+              s"$fullNameNoSig.$tpe$constFlag:${functionTypeToSignature(function.getType)}"
             }
             Option(fn)
           case Some(function: ICPPFunction) =>
@@ -347,7 +357,7 @@ trait FullNameProvider { this: AstCreator =>
                 case _ => safeGetType(function.getType.getReturnType)
               }
               val sig = signature(cleanType(returnTpe), declarator)
-              s"$fullNameNoSig:$sig"
+              s"$fullNameNoSig$constFlag:$sig"
             }
             Option(fn)
           case Some(x @ (_: ICPPField | _: CPPVariable)) =>
@@ -355,7 +365,7 @@ trait FullNameProvider { this: AstCreator =>
             val fn = if (x.isExternC) {
               x.getName
             } else {
-              s"$fullNameNoSig:${cleanType(safeGetType(x.getType))}"
+              s"$fullNameNoSig$constFlag:${cleanType(safeGetType(x.getType))}"
             }
             Option(fn)
           case Some(_: IProblemBinding) =>
@@ -369,7 +379,7 @@ trait FullNameProvider { this: AstCreator =>
             if (fixedFullName.isEmpty) {
               Option(s"${X2CpgDefines.UnresolvedNamespace}:$signature_")
             } else {
-              Option(s"$fixedFullName:$signature_")
+              Option(s"$fixedFullName$constFlag:$signature_")
             }
           case _ => None
         }
@@ -433,11 +443,24 @@ trait FullNameProvider { this: AstCreator =>
   }
 
   private def fullNameForIASTFunctionDeclarator(f: IASTFunctionDeclarator): String = {
-    Try(fixQualifiedName(ASTStringUtil.getQualifiedName(f.getName))).getOrElse(nextClosureName())
+    val fullName = Try(fixQualifiedName(ASTStringUtil.getQualifiedName(f.getName))).getOrElse(nextClosureName())
+    f match {
+      case declarator: ICPPASTFunctionDeclarator =>
+        val constFlag = if declarator.isConst then Defines.ConstSuffix else ""
+        s"$fullName$constFlag"
+      case _ => fullName
+    }
   }
 
   private def fullNameForIASTFunctionDefinition(f: IASTFunctionDefinition): String = {
-    Try(fixQualifiedName(ASTStringUtil.getQualifiedName(f.getDeclarator.getName))).getOrElse(nextClosureName())
+    val fullName =
+      Try(fixQualifiedName(ASTStringUtil.getQualifiedName(f.getDeclarator.getName))).getOrElse(nextClosureName())
+    f.getDeclarator match {
+      case declarator: ICPPASTFunctionDeclarator =>
+        val constFlag = if declarator.isConst then Defines.ConstSuffix else ""
+        s"$fullName$constFlag"
+      case _ => fullName
+    }
   }
 
   protected final case class MethodFullNameInfo(name: String, fullName: String, signature: String, returnType: String)

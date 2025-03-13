@@ -1,7 +1,5 @@
 package io.joern.joerncli
 
-import better.files.Dsl.*
-import better.files.File
 import flatgraph.{Accessors, Edge, GNode}
 import flatgraph.formats.ExportResult
 import flatgraph.formats.dot.DotExporter
@@ -18,9 +16,8 @@ import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.*
 
-import java.nio.file.{Path, Paths}
+import java.nio.file.{Files, Path, Paths}
 import scala.collection.mutable
-import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.util.Using
 
 object JoernExport {
@@ -62,10 +59,11 @@ object JoernExport {
     parseConfig(args).foreach { config =>
       val outDir = config.outDir
       exitIfInvalid(outDir, config.cpgFileName)
-      mkdir(File(outDir))
+      val outDirPath = Paths.get(outDir)
+      Files.createDirectory(outDirPath)
 
       Using.resource(CpgBasedTool.loadFromFile(config.cpgFileName)) { cpg =>
-        exportCpg(cpg, config.repr, config.format, Paths.get(outDir).toAbsolutePath)
+        exportCpg(cpg, config.repr, config.format, outDirPath.toAbsolutePath)
       }
     }
   }

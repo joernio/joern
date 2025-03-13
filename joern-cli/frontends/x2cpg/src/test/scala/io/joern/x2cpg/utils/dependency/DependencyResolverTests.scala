@@ -1,10 +1,11 @@
 package io.joern.x2cpg.utils.dependency
 
-import io.shiftleft.semanticcpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
+import FileUtil.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import better.files.File
+import java.nio.file.Files
 import scala.annotation.nowarn
 
 class DependencyResolverTests extends AnyWordSpec with Matchers {
@@ -17,11 +18,11 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
       if (runningOnWindowsGitHubAction) {
         info("tests were cancelled because github actions windows doesn't support them for some unknown reason...")
       } else {
-        File.usingTemporaryDirectory("DependencyResolverTests") { tmpDir =>
+        FileUtil.usingTemporaryDirectory("DependencyResolverTests") { tmpDir =>
           val outFile = tmpDir / fileName
-          outFile.createIfNotExists(createParents = true)
-          outFile.write(content)
-          val dependenciesResult = DependencyResolver.getDependencies(tmpDir.path, params)
+          outFile.createWithParentsIfNotExists(createParents = true)
+          Files.writeString(outFile, content)
+          val dependenciesResult = DependencyResolver.getDependencies(tmpDir, params)
           testFunc(dependenciesResult)
         }
       }

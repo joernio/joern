@@ -12,7 +12,7 @@ import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.SwiftNode
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.joern.x2cpg.utils.NodeBuilders.{newClosureBindingNode, newLocalNode}
+import io.joern.x2cpg.utils.NodeBuilders.{newClosureBindingNode}
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies}
 import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
@@ -178,9 +178,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
                 capturedLocals.updateWith(closureBindingIdProperty) {
                   case None =>
                     val methodScopeNode = methodScope.scopeNode
-                    val localNode =
-                      newLocalNode(origin.variableName, Defines.Any, Option(closureBindingIdProperty)).order(0)
-                    diffGraph.addEdge(methodScopeNode, localNode, EdgeTypes.AST)
+                    val localNode_ = localNodeWithExplicitPositionInfo(
+                      origin.variableName,
+                      origin.variableName,
+                      Defines.Any,
+                      Option(closureBindingIdProperty)
+                    ).order(0)
+                    diffGraph.addEdge(methodScopeNode, localNode_, EdgeTypes.AST)
                     val closureBindingNode = newClosureBindingNode(
                       closureBindingIdProperty,
                       origin.variableName,
@@ -190,7 +194,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
                       diffGraph.addEdge(ref, closureBindingNode, EdgeTypes.CAPTURE)
                     )
                     nextReference = closureBindingNode
-                    Option(localNode)
+                    Option(localNode_)
                   case someLocalNode =>
                     // When there is already a LOCAL representing the capturing, we do not
                     // need to process the surrounding scope element as this has already
@@ -216,7 +220,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     methodScopeNodeId: NewNode,
     variableName: String
   ): (NewNode, ScopeType) = {
-    val local = newLocalNode(variableName, Defines.Any).order(0)
+    val local = localNodeWithExplicitPositionInfo(variableName, variableName, Defines.Any).order(0)
     diffGraph.addEdge(methodScopeNodeId, local, EdgeTypes.AST)
     (local, MethodScope)
   }

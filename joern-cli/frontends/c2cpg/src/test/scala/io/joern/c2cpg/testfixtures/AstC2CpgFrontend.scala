@@ -6,8 +6,8 @@ import io.joern.c2cpg.passes.FunctionDeclNodePass
 import io.joern.x2cpg.testfixtures.LanguageFrontend
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
-import io.joern.x2cpg.utils.FileUtil
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 trait AstC2CpgFrontend extends LanguageFrontend {
   def execute(sourceCodePath: java.io.File): Cpg = {
@@ -19,10 +19,10 @@ trait AstC2CpgFrontend extends LanguageFrontend {
       .fold(Config())(_.asInstanceOf[Config])
       .withInputPath(pathAsString)
       .withOutputPath(pathAsString)
+      .withSchemaValidation(ValidationMode.Enabled)
     val astCreationPass = new AstCreationPass(cpg, config)
     astCreationPass.createAndApply()
-    new FunctionDeclNodePass(cpg, astCreationPass.unhandledMethodDeclarations())(ValidationMode.Enabled)
-      .createAndApply()
+    new FunctionDeclNodePass(cpg, astCreationPass.unhandledMethodDeclarations(), config).createAndApply()
     cpg
   }
 }

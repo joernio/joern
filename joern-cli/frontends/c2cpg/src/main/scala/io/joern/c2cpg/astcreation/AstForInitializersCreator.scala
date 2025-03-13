@@ -1,7 +1,6 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.ValidationMode
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 import org.eclipse.cdt.core.dom.ast.*
@@ -11,7 +10,7 @@ import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTDesignatedInitializer
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTArrayRangeDesignator
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTArrayRangeDesignator
 
-trait AstForInitializersCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+trait AstForInitializersCreator { this: AstCreator =>
 
   protected def astForInitializerList(l: IASTInitializerList): Ast = {
     val MAX_INITIALIZERS = 1000

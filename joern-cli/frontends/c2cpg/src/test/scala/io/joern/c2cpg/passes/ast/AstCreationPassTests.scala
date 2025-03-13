@@ -46,9 +46,9 @@ class AstCreationPassTests extends AstC2CpgSuite {
       // We can however manually reconstruct the signature from the params and return type without
       // relying on the resolved function binding signature.
       val List(foo1, foo2) = cpg.method.nameExact("foo").l
-      foo1.fullName shouldBe "tpe<wchar_t>.foo:char(char_type,char)"
+      foo1.fullName shouldBe "tpe<wchar_t>.foo<const>:char(char_type,char)"
       foo1.signature shouldBe "char(char_type,char)"
-      foo2.fullName shouldBe "tpe<wchar_t>.foo:const wchar_t*(char_type*,char_type*,char,char*)"
+      foo2.fullName shouldBe "tpe<wchar_t>.foo<const>:const wchar_t*(char_type*,char_type*,char,char*)"
       foo2.signature shouldBe "const wchar_t*(char_type*,char_type*,char,char*)"
     }
 
@@ -492,33 +492,6 @@ class AstCreationPassTests extends AstC2CpgSuite {
       }
     }
 
-    "be correct for ranged for-loop" in {
-      val cpg = code(
-        """
-       |void method() {
-       |  for (int x : list) {
-       |    int z = x;
-       |  }
-       |}""".stripMargin,
-        "file.cpp"
-      )
-      inside(cpg.method.nameExact("method").controlStructure.l) { case List(forStmt) =>
-        forStmt.controlStructureType shouldBe ControlStructureTypes.FOR
-        inside(forStmt.astChildren.isLocal.l) { case List(x: Local) =>
-          x.name shouldBe "x"
-          x.typeFullName shouldBe "int"
-          x.code shouldBe "int x"
-        }
-        // for the expected orders see CfgCreator.cfgForForStatement
-        inside(forStmt.astChildren.order(2).l) { case List(ident: Identifier) =>
-          ident.code shouldBe "list"
-        }
-        inside(forStmt.astChildren.order(5).l) { case List(block: Block) =>
-          block.astChildren.isCall.code.l shouldBe List("z = x")
-        }
-      }
-    }
-
     "be correct for ranged for-loop with structured binding" in {
       val cpg = code(
         """
@@ -603,14 +576,8 @@ class AstCreationPassTests extends AstC2CpgSuite {
         |  return (__sync_synchronize(), foo(x));
         |}
       """.stripMargin)
-      val List(bracketedPrimaryCall) = cpg.call("<operator>.bracketedPrimary").l
-      val List(expressionListCall)   = bracketedPrimaryCall.argument.isCall.l
-      expressionListCall.name shouldBe "<operator>.expressionList"
-
-      val List(arg1) = expressionListCall.argument(1).start.collectAll[Call].l
-      arg1.code shouldBe "__sync_synchronize()"
-      val List(arg2) = expressionListCall.argument(2).start.collectAll[Call].l
-      arg2.code shouldBe "foo(x)"
+      val List(exprListBlock) = cpg.method.nameExact("method").ast.isReturn.astChildren.isBlock.l
+      exprListBlock.astChildren.isCall.code.l shouldBe List("__sync_synchronize()", "foo(x)")
     }
 
     "not create an expression list for comma operator" in {
