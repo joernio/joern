@@ -377,6 +377,15 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .lineNumber(line(node))
       .columnNumber(column(node))
   }
+
+  protected def namespaceBlockNode(node: Node, name: String, fullName: String, fileName: String): NewNamespaceBlock = {
+    NewNamespaceBlock()
+      .name(name)
+      .fullName(fullName)
+      .filename(fileName)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+  }
 }
 
 /** It is sometimes necessary to create nodes without an origin node to use as a reference for positional information
