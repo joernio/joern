@@ -233,7 +233,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
 
     val iterableAst = astsForExpression(iterableExpression, expectedType = expectedType) match {
       case Nil =>
-        logger.error(s"Could not create AST for iterable expr $iterableExpression: $filename:l$lineNo")
+        logger.warn(s"Could not create AST for iterable expr $iterableExpression: $filename:l$lineNo")
         Ast()
       case iterableAstHead :: Nil => iterableAstHead
       case iterableAsts =>
@@ -340,7 +340,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
     // Create item local
     val maybeVariable = stmt.getVariable.getVariables.asScala.toList match {
       case Nil =>
-        logger.error(s"ForEach statement has empty variable list: $filename$lineNo")
+        logger.warn(s"ForEach statement has empty variable list: $filename$lineNo")
         None
       case variable :: Nil => Some(variable)
       case variable :: _ =>
