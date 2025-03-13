@@ -43,5 +43,5 @@ class CallMethods(val node: Call) extends AnyVal with NodeExtension with HasLoca
   }
 
   override def location: NewLocation =
-    LocationCreator(node, node.code, node.label, node.lineNumber, node.method)
+    LocationCreator.defaultCreateLocation(node)
 }

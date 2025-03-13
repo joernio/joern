@@ -10,6 +10,9 @@ import scala.annotation.tailrec
  * all (and only) steps extending DataFlowObject should/must have `newSink`, `newSource` and `newLocation` */
 object LocationCreator {
 
+  // the default value of Location.symbol. Fixne: Export that in a nicer way
+  private val LocationSymbolDefault = NewLocation.apply().symbol
+
   private val logger: Logger = LoggerFactory.getLogger(getClass)
 
   def apply(node: StoredNode)(implicit finder: NodeExtensionFinder): NewLocation = {
@@ -29,7 +32,66 @@ object LocationCreator {
     }
   }
 
-  def apply(node: StoredNode, symbol: String, label: String, lineNumber: Option[Int], method: Method): NewLocation = {
+  def defaultCreateLocation(node: StoredNode, method: Method = null): NewLocation = {
+    import io.shiftleft.codepropertygraph.generated.Properties
+    val res = NewLocation()
+      .node(node)
+      .nodeLabel(node.label)
+      .lineNumber(node.property(Properties.LineNumber))
+      .columnNumber(node.property(Properties.ColumnNumber))
+
+    node match {
+      case _: Call | _: Literal | _: MethodRef => res.symbol(node.property(Properties.Code))
+      case _: Identifier | _: Local | _: MethodParameterIn | _: MethodParameterOut | _: Method =>
+        res.symbol(node.property(Properties.Name))
+      case _: MethodReturn => res.symbol("$ret")
+      case _               =>
+    }
+
+    var m = method
+    if (m == null) try {
+      node match {
+        case cfg: CfgNode =>
+          m = cfg.method
+        case loc: Local =>
+          m = loc.method.head
+        case _ =>
+      }
+    } catch {
+      case _: Throwable =>
+    }
+    if (m != null) {
+      val typeOption    = methodToTypeDecl(m)
+      val typeName      = typeOption.map(_.fullName).getOrElse("")
+      val typeShortName = typeOption.map(_.name).getOrElse("")
+
+      val namespaceOption = for {
+        tpe            <- typeOption
+        namespaceBlock <- tpe.namespaceBlock
+        namespace      <- namespaceBlock._namespaceViaRefOut.nextOption()
+      } yield namespace.name
+      val namespaceName = namespaceOption.getOrElse("")
+
+      res
+        .methodFullName(m.fullName)
+        .methodShortName(m.name)
+        .packageName(namespaceName)
+        .className(typeName)
+        .classShortName(typeShortName)
+        .filename(if (m.filename.isEmpty) "N/A" else m.filename)
+    }
+
+    res
+  }
+
+  def apply(
+    node: StoredNode,
+    symbol: String,
+    label: String,
+    lineNumber: Option[Int],
+    method: Method,
+    columnNumber: Option[Int] = None
+  ): NewLocation = {
 
     if (method == null) {
       NewLocation().node(node)
