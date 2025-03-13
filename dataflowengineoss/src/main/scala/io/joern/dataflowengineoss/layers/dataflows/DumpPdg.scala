@@ -1,11 +1,14 @@
 package io.joern.dataflowengineoss.layers.dataflows
 
-import better.files.File
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
+import io.shiftleft.semanticcpg.utils.FileUtil
+
+import java.nio.file.{Files, Paths}
 
 case class PdgDumpOptions(var outDir: String) extends LayerCreatorOptions {}
 
@@ -26,8 +29,9 @@ class DumpPdg(options: PdgDumpOptions)(implicit semantics: Semantics = DefaultSe
   override def create(context: LayerCreatorContext): Unit = {
     val cpg = context.cpg
     cpg.method.zipWithIndex.foreach { case (method, i) =>
-      val str = method.dotPdg.head
-      (File(options.outDir) / s"$i-pdg.dot").write(str)
+      val str        = method.dotPdg.head
+      val outputPath = Paths.get(options.outDir) / s"$i-pdg.dot"
+      Files.writeString(outputPath, str)
     }
   }
 }

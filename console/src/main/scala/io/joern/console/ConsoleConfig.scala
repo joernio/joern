@@ -1,7 +1,9 @@
 package io.joern.console
 
-import better.files.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil
 
+import java.nio.file.{Path, Paths}
 import scala.annotation.tailrec
 import scala.collection.mutable
 
@@ -20,14 +22,14 @@ class InstallConfig(environment: Map[String, String] = sys.env) {
     *     joern-cli/target/universal/stage; ./joern`)
     *   - running a unit/integration test (note: the jars would be in the local cache, e.g. in ~/.coursier/cache)
     */
-  lazy val rootPath: File = {
+  lazy val rootPath: Path = {
     if (environment.contains("SHIFTLEFT_OCULAR_INSTALL_DIR")) {
-      environment("SHIFTLEFT_OCULAR_INSTALL_DIR").toFile
+      Paths.get(environment("SHIFTLEFT_OCULAR_INSTALL_DIR"))
     } else {
       val uriToLibDir  = classOf[io.joern.console.InstallConfig].getProtectionDomain.getCodeSource.getLocation.toURI
-      val pathToLibDir = File(uriToLibDir).parent
+      val pathToLibDir = Paths.get(uriToLibDir).getParent
       findRootDirectory(pathToLibDir).getOrElse {
-        val cwd = File.currentWorkingDirectory
+        val cwd = FileUtil.currentWorkingDirectory
         findRootDirectory(cwd).getOrElse(throw new AssertionError(s"""unable to find root installation directory
                                    | context: tried to find marker file `$rootDirectoryMarkerFilename`
                                    | started search in both $pathToLibDir and $cwd and searched 
@@ -40,11 +42,11 @@ class InstallConfig(environment: Map[String, String] = sys.env) {
   private val maxSearchDepth              = 10
 
   @tailrec
-  private def findRootDirectory(currentSearchDir: File, currentSearchDepth: Int = 0): Option[File] = {
-    if (currentSearchDir.list.map(_.name).contains(rootDirectoryMarkerFilename))
+  private def findRootDirectory(currentSearchDir: Path, currentSearchDepth: Int = 0): Option[Path] = {
+    if (currentSearchDir.listFiles().map(_.fileName).contains(rootDirectoryMarkerFilename))
       Some(currentSearchDir)
     else if (currentSearchDepth < maxSearchDepth && currentSearchDir.parentOption.isDefined)
-      findRootDirectory(currentSearchDir.parent)
+      findRootDirectory(currentSearchDir.getParent)
     else
       None
   }

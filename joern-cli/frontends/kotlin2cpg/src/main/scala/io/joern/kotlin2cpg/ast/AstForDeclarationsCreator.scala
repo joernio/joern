@@ -10,17 +10,13 @@ import io.joern.x2cpg.Defines
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.newBindingNode
-import io.joern.x2cpg.utils.NodeBuilders.newIdentifierNode
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.semanticcpg.language.*
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.psi.*
@@ -123,16 +119,21 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
           if (initializerAsts.size == 1) initializerAsts.head
           else Ast(unknownNode(decl, "<empty>"))
 
-        val thisIdentifier = newIdentifierNode(Constants.ThisName, classFullName, Seq(classFullName))
-        val thisAst        = astWithRefEdgeMaybe(Constants.ThisName, thisIdentifier)
+        val thisIdentifier =
+          identifierNode(decl, Constants.ThisName, Constants.ThisName, classFullName, Seq(classFullName))
+        val thisAst = astWithRefEdgeMaybe(Constants.ThisName, thisIdentifier)
 
         val fieldIdentifier = fieldIdentifierNode(decl, decl.getName, decl.getName)
-        val fieldAccessCall = NodeBuilders
-          .newOperatorCallNode(Operators.fieldAccess, s"${Constants.ThisName}.${fieldIdentifier.canonicalName}", None)
+        val fieldAccessCall =
+          operatorCallNode(decl, s"${Constants.ThisName}.${fieldIdentifier.canonicalName}", Operators.fieldAccess, None)
         val fieldAccessCallAst = callAst(fieldAccessCall, List(thisAst, Ast(fieldIdentifier)))
 
-        val assignmentNode = NodeBuilders
-          .newOperatorCallNode(Operators.assignment, s"${fieldAccessCall.code} = ${decl.getInitializer.getText}")
+        val assignmentNode = operatorCallNode(
+          decl,
+          s"${fieldAccessCall.code} = ${decl.getInitializer.getText}",
+          Operators.assignment,
+          None
+        )
         callAst(assignmentNode, List(fieldAccessCallAst, rhsAst))
       }
 
@@ -260,16 +261,17 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val paramName          = param.getName
     val paramIdentifier    = identifierNode(param, paramName, paramName, typeFullName)
     val paramIdentifierAst = astWithRefEdgeMaybe(paramName, paramIdentifier)
-    val thisIdentifier     = newIdentifierNode(Constants.ThisName, classFullName, Seq(classFullName))
-    val thisAst            = astWithRefEdgeMaybe(Constants.ThisName, thisIdentifier)
+    val thisIdentifier =
+      identifierNode(param, Constants.ThisName, Constants.ThisName, classFullName, Seq(classFullName))
+    val thisAst = astWithRefEdgeMaybe(Constants.ThisName, thisIdentifier)
 
     val fieldIdentifier = fieldIdentifierNode(param, paramName, paramName)
     val fieldAccessCall =
-      NodeBuilders.newOperatorCallNode(Operators.fieldAccess, s"${Constants.ThisName}.$paramName", Option(typeFullName))
+      operatorCallNode(param, s"${Constants.ThisName}.$paramName", Operators.fieldAccess, Option(typeFullName))
     val fieldAccessCallAst = callAst(fieldAccessCall, List(thisAst, Ast(fieldIdentifier)))
 
     val assignmentNode =
-      NodeBuilders.newOperatorCallNode(Operators.assignment, s"${fieldAccessCall.code} = ${paramIdentifier.code}")
+      operatorCallNode(param, s"${fieldAccessCall.code} = ${paramIdentifier.code}", Operators.assignment, None)
     callAst(assignmentNode, List(fieldAccessCallAst, paramIdentifierAst))
   }
 
@@ -306,15 +308,10 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val assignmentLhsAst  = Ast(assignmentLhsNode).withRefEdge(assignmentLhsNode, localForTmpNode)
     val tmpAssignmentAst =
       if (isCtor) {
-        val assignmentRhsNode = NodeBuilders.newOperatorCallNode(
-          Operators.alloc,
-          Constants.Alloc,
-          Option(localForTmpNode.typeFullName),
-          line(expr),
-          column(expr)
-        )
+        val assignmentRhsNode =
+          operatorCallNode(expr, Constants.Alloc, Operators.alloc, Option(localForTmpNode.typeFullName))
         val assignmentNode =
-          NodeBuilders.newOperatorCallNode(Operators.assignment, s"$tmpName  = ${Constants.Alloc}", None)
+          operatorCallNode(expr, s"$tmpName  = ${Constants.Alloc}", Operators.assignment, None)
         callAst(assignmentNode, List(assignmentLhsAst, Ast(assignmentRhsNode)))
       } else {
         expr.getInitializer match {
@@ -328,7 +325,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
             astForIfAsExpression(expression, None, None)
           case _ =>
             val assignmentNode =
-              NodeBuilders.newOperatorCallNode(Operators.assignment, s"$tmpName = ${rhsCall.getText}", None)
+              operatorCallNode(expr.getInitializer, s"$tmpName = ${rhsCall.getText}", Operators.assignment, None)
             val assignmentRhsAst =
               astsForExpression(rhsCall, None).headOption.getOrElse(Ast(unknownNode(rhsCall, Constants.Empty)))
             callAst(assignmentNode, List(assignmentLhsAst, assignmentRhsAst))
@@ -439,13 +436,15 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
       val thisParam =
         NodeBuilders.newThisParameterNode(typeFullName = typeDecl.fullName, dynamicTypeHintFullName = Seq())
-      val thisIdentifier = newIdentifierNode(Constants.ThisName, typeDecl.fullName, Seq(typeDecl.fullName))
-      val thisAst        = Ast(thisIdentifier).withRefEdge(thisIdentifier, thisParam)
+      val thisIdentifier =
+        identifierNode(valueParam, Constants.ThisName, Constants.ThisName, typeDecl.fullName, Seq(typeDecl.fullName))
+      val thisAst = Ast(thisIdentifier).withRefEdge(thisIdentifier, thisParam)
 
       val fieldIdentifier = fieldIdentifierNode(valueParam, valueParam.getName, valueParam.getName)
-      val fieldAccessCall = NodeBuilders.newOperatorCallNode(
-        Operators.fieldAccess,
+      val fieldAccessCall = operatorCallNode(
+        valueParam,
         s"${Constants.ThisName}.${valueParam.getName}",
+        Operators.fieldAccess,
         Option(typeFullName)
       )
       val fieldAccessCallAst = callAst(fieldAccessCall, List(thisAst, Ast(fieldIdentifier)))
@@ -544,18 +543,12 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     scope.addToScope(tmpName, localForTmp)
     val localAst = Ast(localForTmp)
 
-    val rhsAst = Ast(NodeBuilders.newOperatorCallNode(Operators.alloc, Operators.alloc, None))
+    val rhsAst = Ast(operatorCallNode(expr, Operators.alloc, Operators.alloc, None))
 
     val identifier    = identifierNode(expr, tmpName, tmpName, localForTmp.typeFullName)
     val identifierAst = astWithRefEdgeMaybe(identifier.name, identifier)
 
-    val assignmentNode = NodeBuilders.newOperatorCallNode(
-      Operators.assignment,
-      s"${identifier.name} = <alloc>",
-      None,
-      line(expr),
-      column(expr)
-    )
+    val assignmentNode    = operatorCallNode(expr, s"${identifier.name} = <alloc>", Operators.assignment, None)
     val assignmentCallAst = callAst(assignmentNode, List(identifierAst) ++ List(rhsAst))
     val initSignature     = s"${TypeConstants.Void}()"
     val initFullName      = s"$typeDeclFullName.${Defines.ConstructorMethodName}:$initSignature"
@@ -623,13 +616,13 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       val typeFullName = registerType(
         exprTypeFullName(expr.getDelegateExpressionOrInitializer).getOrElse(Defines.UnresolvedNamespace)
       )
-      val rhsAst = Ast(NodeBuilders.newOperatorCallNode(Operators.alloc, Operators.alloc, Option(typeFullName)))
+      val rhsAst = Ast(operatorCallNode(expr, Operators.alloc, Operators.alloc, Option(typeFullName)))
 
       val identifier    = identifierNode(elem, elem.getText, elem.getText, local.typeFullName)
       val identifierAst = astWithRefEdgeMaybe(identifier.name, identifier)
 
       val assignmentNode =
-        NodeBuilders.newOperatorCallNode(Operators.assignment, expr.getText, None, line(expr), column(expr))
+        operatorCallNode(expr, expr.getText, Operators.assignment, None)
       val assignmentCallAst = callAst(assignmentNode, List(identifierAst) ++ List(rhsAst))
 
       val (fullName, signature) =
@@ -676,13 +669,12 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       val typeFullName = registerType(
         exprTypeFullName(expr.getDelegateExpressionOrInitializer).getOrElse(Defines.UnresolvedNamespace)
       )
-      val rhsAst = Ast(NodeBuilders.newOperatorCallNode(Operators.alloc, Operators.alloc, None))
+      val rhsAst = Ast(operatorCallNode(expr, Operators.alloc, Operators.alloc, None))
 
       val identifier    = identifierNode(elem, elem.getText, elem.getText, node.typeFullName)
       val identifierAst = astWithRefEdgeMaybe(identifier.name, identifier)
 
-      val assignmentNode =
-        NodeBuilders.newOperatorCallNode(Operators.assignment, expr.getText, None, line(expr), column(expr))
+      val assignmentNode    = operatorCallNode(expr, expr.getText, Operators.assignment, None)
       val assignmentCallAst = callAst(assignmentNode, List(identifierAst) ++ List(rhsAst))
       val initSignature     = s"${TypeConstants.Void}()"
       val initFullName      = s"$typeFullName${Defines.ConstructorMethodName}:$initSignature"
@@ -714,11 +706,10 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       val localAst = Ast(node)
 
       if (expr.getDelegateExpressionOrInitializer != null) {
-        val rhsAsts       = astsForExpression(expr.getDelegateExpressionOrInitializer, Some(2))
-        val identifier    = identifierNode(elem, elem.getText, elem.getText, typeFullName)
-        val identifierAst = astWithRefEdgeMaybe(identifier.name, identifier)
-        val assignmentNode =
-          NodeBuilders.newOperatorCallNode(Operators.assignment, expr.getText, None, line(expr), column(expr))
+        val rhsAsts        = astsForExpression(expr.getDelegateExpressionOrInitializer, Some(2))
+        val identifier     = identifierNode(elem, elem.getText, elem.getText, typeFullName)
+        val identifierAst  = astWithRefEdgeMaybe(identifier.name, identifier)
+        val assignmentNode = operatorCallNode(expr, expr.getText, Operators.assignment, None)
         val call =
           callAst(assignmentNode, List(identifierAst) ++ rhsAsts)
             .withChildren(annotations.map(astForAnnotationEntry))

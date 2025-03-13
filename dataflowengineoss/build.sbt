@@ -1,6 +1,10 @@
 name := "dataflowengineoss"
 
-dependsOn(Projects.semanticcpg, Projects.x2cpg % "compile->compile;test->test")
+dependsOn(
+  Projects.semanticcpg,
+  Projects.x2cpg              % "compile->compile;test->test",
+  Projects.linterRules % ScalafixConfig
+)
 
 libraryDependencies ++= Seq(
   "org.antlr"               % "antlr4"                     % Versions.antlr,

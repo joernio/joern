@@ -1,17 +1,16 @@
 package io.joern.x2cpg.astgen
 
-import better.files.File
 import com.typesafe.config.ConfigFactory
 import io.joern.x2cpg.utils.Environment.ArchitectureType.ArchitectureType
 import io.joern.x2cpg.utils.Environment.OperatingSystemType.OperatingSystemType
-import io.joern.x2cpg.utils.{Environment}
+import io.joern.x2cpg.utils.Environment
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.joern.x2cpg.{SourceFiles, X2CpgConfig}
 import org.slf4j.LoggerFactory
 import versionsort.VersionHelper
 
 import java.net.URL
-import java.nio.file.Paths
+import java.nio.file.{Files, Path, Paths}
 import scala.util.{Failure, Success, Try}
 
 object AstGenRunner {
@@ -131,8 +130,8 @@ trait AstGenRunnerBase(config: X2CpgConfig[?] & AstGenConfig[?]) {
 
   protected def isIgnoredByUserConfig(filePath: String): Boolean = {
     lazy val isInIgnoredFiles = config.ignoredFiles.exists {
-      case ignorePath if File(ignorePath).isDirectory => filePath.startsWith(ignorePath)
-      case ignorePath                                 => filePath == ignorePath
+      case ignorePath if Files.isDirectory(Paths.get(ignorePath)) => filePath.startsWith(ignorePath)
+      case ignorePath                                             => filePath == ignorePath
     }
     lazy val isInIgnoredFileRegex = config.ignoredFilesRegex.matches(filePath)
     if (isInIgnoredFiles || isInIgnoredFileRegex) {
@@ -143,18 +142,18 @@ trait AstGenRunnerBase(config: X2CpgConfig[?] & AstGenConfig[?]) {
     }
   }
 
-  protected def filterFiles(files: List[String], out: File): List[String] = files.filter(fileFilter(_, out))
+  protected def filterFiles(files: List[String], out: Path): List[String] = files.filter(fileFilter(_, out))
 
-  protected def fileFilter(file: String, out: File): Boolean = {
-    file.stripSuffix(".json").replace(out.pathAsString, config.inputPath) match {
+  protected def fileFilter(file: String, out: Path): Boolean = {
+    file.stripSuffix(".json").replace(out.toString, config.inputPath) match {
       case filePath if isIgnoredByUserConfig(filePath) => false
       case _                                           => true
     }
   }
 
-  protected def skippedFiles(in: File, astGenOut: List[String]): List[String]
+  protected def skippedFiles(in: Path, astGenOut: List[String]): List[String]
 
-  protected def runAstGenNative(in: String, out: File, exclude: String, include: String)(implicit
+  protected def runAstGenNative(in: String, out: Path, exclude: String, include: String)(implicit
     metaData: AstGenProgramMetaData
   ): Try[Seq[String]]
 
@@ -168,14 +167,14 @@ trait AstGenRunnerBase(config: X2CpgConfig[?] & AstGenConfig[?]) {
     }
   }
 
-  def execute(out: File): AstGenRunnerResult = {
+  def execute(out: Path): AstGenRunnerResult = {
     implicit val metaData: AstGenProgramMetaData = config.astGenMetaData
-    val in                                       = File(config.inputPath)
+    val in                                       = Paths.get(config.inputPath)
     logger.info(s"Running ${metaData.name} on '${config.inputPath}'")
     runAstGenNative(config.inputPath, out, config.ignoredFilesRegex.toString(), "") match {
       case Success(result) =>
         val srcFiles = SourceFiles.determine(
-          out.toString(),
+          out.toString,
           Set(".json"),
           ignoredFilesRegex = Option(config.ignoredFilesRegex),
           ignoredFilesPath = Option(config.ignoredFiles)

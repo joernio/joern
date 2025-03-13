@@ -1,8 +1,8 @@
 package io.joern.console.workspacehandling
 
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -35,7 +35,7 @@ class WorkspaceManagerTests extends AnyWordSpec with Matchers {
         val project       = pathToProject.flatMap(TestLoader().loadProject(_)).get
         FileUtil.delete(inputFile1)
         FileUtil.delete(inputFile2)
-        Paths.get(project.inputPath).getFileName.toString shouldBe inputFile2.getFileName.toString
+        Paths.get(project.inputPath).fileName shouldBe inputFile2.fileName
         manager.numberOfProjects shouldBe 1
       }
     }

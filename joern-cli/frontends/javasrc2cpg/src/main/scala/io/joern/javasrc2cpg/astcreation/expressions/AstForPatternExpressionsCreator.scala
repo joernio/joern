@@ -84,12 +84,11 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
         val tmpIdentifier = identifierNode(rootNode, tmpName, tmpName, tmpType)
 
         val tmpAssignmentNode =
-          newOperatorCallNode(
-            Operators.assignment,
+          operatorCallNode(
+            rootNode,
             s"$tmpName = ${patternInitAst.rootCodeOrEmpty}",
-            Option(tmpType),
-            line(rootNode),
-            column(rootNode)
+            Operators.assignment,
+            Option(tmpType)
           )
 
         // Don't need to add the local to the block scope since the only identifiers referencing it are created here
@@ -113,12 +112,11 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
     } else {
       val castType = typeRefNode(patternExpr, code(patternExpr.getType), patternType)
       val castNode =
-        newOperatorCallNode(
-          Operators.cast,
+        operatorCallNode(
+          patternExpr,
           s"(${castType.code}) ${initializerAst.rootCodeOrEmpty}",
-          Option(patternType),
-          line(patternExpr),
-          column(patternExpr)
+          Operators.cast,
+          Option(patternType)
         )
       callAst(castNode, Ast(castType) :: initializerAst :: Nil)
     }
@@ -171,12 +169,11 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
 
         val initializerAst = castAstIfNecessary(typePatternExpr, variableType, patternNode.getAst)
 
-        val initializerAssignmentCall = newOperatorCallNode(
-          Operators.assignment,
+        val initializerAssignmentCall = operatorCallNode(
+          typePatternExpr,
           s"$variableName = ${initializerAst.rootCodeOrEmpty}",
-          Option(variableType),
-          line(typePatternExpr),
-          column(typePatternExpr)
+          Operators.assignment,
+          Option(variableType)
         )
         val initializerAssignmentAst =
           callAst(initializerAssignmentCall, Ast(patternIdentifier) :: initializerAst :: Nil)
@@ -209,12 +206,11 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
 
     val assignmentBlockAst = createAssignmentBlockAst(patternExpr, typePatternBuffer.toList)
 
-    val andNode = newOperatorCallNode(
-      Operators.logicalAnd,
+    val andNode = operatorCallNode(
+      patternExpr,
       s"(${typeCheckAst.rootCodeOrEmpty}) && ${assignmentBlockAst.rootCodeOrEmpty}",
-      Option(TypeConstants.Boolean),
-      line(patternExpr),
-      column(patternExpr)
+      Operators.logicalAnd,
+      Option(TypeConstants.Boolean)
     )
 
     callAst(andNode, typeCheckAst :: assignmentBlockAst :: Nil)
@@ -257,12 +253,11 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
 
           case accumulator :: rest =>
             val result = rest.foldLeft(accumulator._2) { case (accumulatorAst, (childPattern, astToAdd)) =>
-              val andNode = newOperatorCallNode(
-                Operators.logicalAnd,
+              val andNode = operatorCallNode(
+                childPattern,
                 s"(${astToAdd.rootCodeOrEmpty}) && (${accumulatorAst.rootCodeOrEmpty})",
-                Option(TypeConstants.Boolean),
-                line(childPattern),
-                column(childPattern)
+                Operators.logicalAnd,
+                Option(TypeConstants.Boolean)
               )
 
               callAst(andNode, astToAdd :: accumulatorAst :: Nil)
@@ -320,9 +315,10 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
       case Some(astNodeNew: AstNodeNew)                              => s"(${astNodeNew.code})"
       case _                                                         => ""
     }
-    val instanceOfCall = newOperatorCallNode(
-      Operators.instanceOf,
+    val instanceOfCall = operatorCallNode(
+      patternExpr,
       s"$lhsCode instanceof ${code(patternExpr.getType)}",
+      Operators.instanceOf,
       Option(TypeConstants.Boolean)
     )
     callAst(instanceOfCall, initializerAst :: Ast(patternTypeRef) :: Nil)

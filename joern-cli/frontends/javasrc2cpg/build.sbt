@@ -1,6 +1,10 @@
 name := "javasrc2cpg"
 
-dependsOn(Projects.dataflowengineoss % "compile->compile;test->test", Projects.x2cpg % "compile->compile;test->test")
+dependsOn(
+  Projects.dataflowengineoss  % "compile->compile;test->test",
+  Projects.x2cpg              % "compile->compile;test->test",
+  Projects.linterRules % ScalafixConfig
+)
 
 libraryDependencies ++= Seq(
   "io.shiftleft"           %% "codepropertygraph"             % Versions.cpg,
@@ -11,7 +15,7 @@ libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-parallel-collections"    % Versions.scalaParallel,
   "org.scala-lang.modules" %% "scala-parser-combinators"      % Versions.scalaParserCombinators,
   "net.lingala.zip4j"       % "zip4j"                         % Versions.zip4j,
-  "org.ow2.asm"             % "asm"                           % Versions.asm,
+  "org.ow2.asm"             % "asm"                           % Versions.asm
 )
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)

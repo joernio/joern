@@ -3,7 +3,6 @@ import io.joern.gosrc2cpg.datastructures.LambdaTypeInfo
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg
-import io.joern.x2cpg.utils.NodeBuilders.{newFieldIdentifierNode, newOperatorCallNode}
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.Operators
 import ujson.Value
@@ -90,9 +89,7 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
     val (identifierAsts, fieldTypeFullName) = processReceiver(info)
     val fieldIdentifier                     = info.json(ParserKeys.Sel)(ParserKeys.Name).str
     val callNode =
-      newOperatorCallNode(Operators.fieldAccess, info.code, Some(fieldTypeFullName), line(info), column(info))
-    Seq(
-      callAst(callNode, identifierAsts ++ Seq(Ast(newFieldIdentifierNode(fieldIdentifier, line(info), column(info)))))
-    )
+      operatorCallNode(info, info.code, Operators.fieldAccess, Some(fieldTypeFullName))
+    Seq(callAst(callNode, identifierAsts ++ Seq(Ast(fieldIdentifierNode(info, fieldIdentifier, fieldIdentifier)))))
   }
 }

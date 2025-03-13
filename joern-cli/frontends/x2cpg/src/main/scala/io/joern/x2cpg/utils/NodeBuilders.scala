@@ -71,6 +71,10 @@ object NodeBuilders {
       .evaluationStrategy(evaluationStrategy)
   }
 
+  @deprecated(
+    "Deprecated in favour of the corresponding method io.joern.x2cpg.AstNodeBuilder and will be removed in a future version",
+    "4.0.285"
+  )
   def newCallNode(
     methodName: String,
     typeDeclFullName: Option[String],
@@ -100,6 +104,10 @@ object NodeBuilders {
       .dependencyGroupId(groupId)
       .version(version)
 
+  @deprecated(
+    "Deprecated in favour of the corresponding method io.joern.x2cpg.AstNodeBuilder and will be removed in a future version",
+    "4.0.285"
+  )
   def newFieldIdentifierNode(name: String, line: Option[Int] = None, column: Option[Int] = None): NewFieldIdentifier = {
     NewFieldIdentifier()
       .canonicalName(name)
@@ -110,10 +118,18 @@ object NodeBuilders {
 
   def newModifierNode(modifierType: String): NewModifier = NewModifier().modifierType(modifierType)
 
+  @deprecated(
+    "Deprecated in favour of the corresponding method io.joern.x2cpg.AstNodeBuilder and will be removed in a future version",
+    "4.0.285"
+  )
   def newIdentifierNode(name: String, typeFullName: String, dynamicTypeHints: Seq[String] = Seq()): NewIdentifier = {
     newIdentifierNode(name, typeFullName, dynamicTypeHints, None)
   }
 
+  @deprecated(
+    "Deprecated in favour of the corresponding method io.joern.x2cpg.AstNodeBuilder and will be removed in a future version",
+    "4.0.285"
+  )
   def newIdentifierNode(
     name: String,
     typeFullName: String,
@@ -128,6 +144,10 @@ object NodeBuilders {
       .lineNumber(line)
   }
 
+  @deprecated(
+    "Deprecated in favour of the corresponding method io.joern.x2cpg.AstNodeBuilder and will be removed in a future version",
+    "4.0.285"
+  )
   def newOperatorCallNode(
     name: String,
     code: String,

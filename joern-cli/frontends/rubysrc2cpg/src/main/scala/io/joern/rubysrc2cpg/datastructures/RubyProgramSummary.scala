@@ -1,19 +1,21 @@
 package io.joern.rubysrc2cpg.datastructures
 
-import better.files.File
 import io.joern.x2cpg.Defines as XDefines
 import io.joern.x2cpg.datastructures.{FieldLike, MethodLike, ProgramSummary, StubbedType, TypeLike}
 import io.joern.x2cpg.typestub.{TypeStubMetaData, TypeStubUtil}
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import org.slf4j.LoggerFactory
 import io.joern.rubysrc2cpg.passes.Defines
+import io.shiftleft.semanticcpg.utils.FileUtil
 import upickle.default.*
 
-import java.io.{ByteArrayInputStream, InputStream}
+import java.io.{ByteArrayInputStream, FileInputStream, InputStream}
 import java.util.zip.ZipInputStream
 import scala.annotation.targetName
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success, Try, Using}
+import java.nio.file.{Files, Path, Paths}
 
 type NamespaceToTypeMap = mutable.Map[String, mutable.Set[RubyType]]
 
@@ -38,8 +40,8 @@ object RubyProgramSummary {
   private val logger = LoggerFactory.getLogger(getClass)
 
   def BuiltinTypes(implicit typeStubMetaData: TypeStubMetaData): NamespaceToTypeMap = {
-    val typeStubDir = File(typeStubMetaData.packagePath)
-    if (!typeStubDir.exists || !typeStubDir.isDirectory) {
+    val typeStubDir = Paths.get(typeStubMetaData.packagePath.toURI)
+    if (!Files.exists(typeStubDir) || !Files.isDirectory(typeStubDir)) {
       logger.warn("No builtin type stubs provided, continuing with types provided by the project")
       mutable.Map.empty
     } else if (typeStubMetaData.useTypeStubs) {
@@ -60,10 +62,10 @@ object RubyProgramSummary {
     val classLoader = getClass.getClassLoader
     val typeStubDir = TypeStubUtil.typeStubDir
 
-    val typeStubFiles: Seq[File] =
+    val typeStubFiles: Seq[Path] =
       typeStubDir
         .walk()
-        .filter(f => f.isRegularFile && f.name.startsWith("rubysrc") && f.`extension`.contains(".zip"))
+        .filter(f => Files.isRegularFile(f) && f.fileName.startsWith("rubysrc") && f.extension().contains(".zip"))
         .toSeq
 
     if (typeStubFiles.isEmpty) {
@@ -72,8 +74,9 @@ object RubyProgramSummary {
     } else {
       val mergedMpksObj = ListBuffer[collection.mutable.Map[String, Set[RubyStubbedType]]]()
       typeStubFiles.foreach { f =>
-        f.fileInputStream { fis =>
-          val zis = new ZipInputStream(fis)
+        Using.Manager { use =>
+          val fis = use(new FileInputStream(new java.io.File(f.absolutePathAsString)))
+          val zis = use(new ZipInputStream(fis))
 
           LazyList.continually(zis.getNextEntry).takeWhile(_ != null).foreach { file =>
             val mpkObj =

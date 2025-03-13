@@ -25,7 +25,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
         Set(
           List(
             ("f1(p)", Some(4)),
-            ("tmp_1 = it", None),
+            ("tmp_1 = it", Some(6)),
             ("tmp_1.component1()", Some(6)),
             ("k = tmp_1.component1()", Some(6)),
             ("println(k)", Some(6))

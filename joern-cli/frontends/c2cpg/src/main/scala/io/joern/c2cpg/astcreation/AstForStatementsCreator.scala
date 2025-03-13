@@ -429,7 +429,10 @@ trait AstForStatementsCreator { this: AstCreator =>
     scope.addVariableReference(loopVariableName, loopVariableNode, idType, EvaluationStrategies.BY_REFERENCE)
 
     // while loop:
-    val whileLoopNode = controlStructureNode(forStmt, ControlStructureTypes.WHILE, code(forStmt))
+    val codeDecl      = code(forStmt.getDeclaration)
+    val codeInit      = code(forStmt.getInitializerClause)
+    val whileLoopCode = s"for ($codeDecl:$codeInit)"
+    val whileLoopNode = controlStructureNode(forStmt, ControlStructureTypes.WHILE, whileLoopCode)
 
     // while loop test:
     val testCallNode =

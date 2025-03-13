@@ -3,9 +3,9 @@ package io.joern.c2cpg.io
 import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.dataflowengineoss.layers.dataflows.DumpPdg
 import io.joern.dataflowengineoss.layers.dataflows.PdgDumpOptions
-import io.joern.x2cpg.utils.FileUtil
-import io.joern.x2cpg.utils.FileUtil.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 import java.nio.file.Files
 

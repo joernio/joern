@@ -150,7 +150,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
   private def astForEchoStmt(echoStmt: PhpEchoStmt): Ast = {
     val args     = echoStmt.exprs.map(astForExpr)
     val code     = s"echo ${args.map(_.rootCodeOrEmpty).mkString(",")}"
-    val callNode = newOperatorCallNode("echo", code, line = line(echoStmt))
+    val callNode = operatorCallNode(echoStmt, code, "echo", None)
     callAst(callNode, args)
   }
 
@@ -173,10 +173,9 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     Ast(thisNode)
   }
 
-  private def thisIdentifier(lineNumber: Option[Int]): NewIdentifier = {
+  private def thisIdentifier(originNode: PhpNode): NewIdentifier = {
     val typ = scope.getEnclosingTypeDeclTypeName
-    newIdentifierNode(NameConstants.This, typ.getOrElse("ANY"), typ.toList, lineNumber)
-      .code(s"$$${NameConstants.This}")
+    identifierNode(originNode, NameConstants.This, s"$$${NameConstants.This}", typ.getOrElse("ANY"), typ.toList)
   }
 
   private def setParamIndices(asts: Seq[Ast]): Seq[Ast] = {
@@ -500,7 +499,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
   private def astForDeclareStmt(stmt: PhpDeclareStmt): Ast = {
     val declareAssignAsts = stmt.declares.map(astForDeclareItem)
     val declareCode       = s"${PhpOperators.declareFunc}(${declareAssignAsts.map(_.rootCodeOrEmpty).mkString(",")})"
-    val declareNode       = newOperatorCallNode(PhpOperators.declareFunc, declareCode, line = line(stmt))
+    val declareNode       = operatorCallNode(stmt, declareCode, PhpOperators.declareFunc, None)
     val declareAst        = callAst(declareNode, declareAssignAsts)
 
     stmt.stmts match {
@@ -519,18 +518,13 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     val value = astForExpr(item.value)
     val code  = s"${key.name}=${value.rootCodeOrEmpty}"
 
-    val declareAssignment = newOperatorCallNode(Operators.assignment, code, line = line(item))
+    val declareAssignment = operatorCallNode(item, code, Operators.assignment, None)
     callAst(declareAssignment, Ast(key) :: value :: Nil)
   }
 
   private def astForHaltCompilerStmt(stmt: PhpHaltCompilerStmt): Ast = {
-    val call = newOperatorCallNode(
-      NameConstants.HaltCompiler,
-      s"${NameConstants.HaltCompiler}()",
-      Some(TypeConstants.Void),
-      line(stmt),
-      column(stmt)
-    )
+    val call =
+      operatorCallNode(stmt, s"${NameConstants.HaltCompiler}()", NameConstants.HaltCompiler, Some(TypeConstants.Void))
 
     Ast(call)
   }
@@ -539,7 +533,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     val name = PhpOperators.unset
     val args = stmt.vars.map(astForExpr)
     val code = s"$name(${args.map(_.rootCodeOrEmpty).mkString(", ")})"
-    val callNode = newOperatorCallNode(name, code, typeFullName = Some(TypeConstants.Void), line = line(stmt))
+    val callNode = operatorCallNode(stmt, code, name, Some(TypeConstants.Void))
       .methodFullName(PhpOperators.unset)
     callAst(callNode, args)
   }
@@ -551,7 +545,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     val varsAsts = stmt.vars.map(astForExpr)
     val code     = s"${PhpOperators.global} ${varsAsts.map(_.rootCodeOrEmpty).mkString(", ")}"
 
-    val globalCallNode = newOperatorCallNode(PhpOperators.global, code, Some(TypeConstants.Void), line(stmt))
+    val globalCallNode = operatorCallNode(stmt, code, PhpOperators.global, Some(TypeConstants.Void))
 
     callAst(globalCallNode, varsAsts)
   }
@@ -569,12 +563,12 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     wrapMultipleInBlock(imports, line(stmt))
   }
 
-  private def astForKeyValPair(key: PhpExpr, value: PhpExpr, lineNo: Option[Int]): Ast = {
+  private def astForKeyValPair(origin: PhpNode, key: PhpExpr, value: PhpExpr): Ast = {
     val keyAst   = astForExpr(key)
     val valueAst = astForExpr(value)
 
     val code     = s"${keyAst.rootCodeOrEmpty} => ${valueAst.rootCodeOrEmpty}"
-    val callNode = newOperatorCallNode(PhpOperators.doubleArrow, code, line = lineNo)
+    val callNode = operatorCallNode(origin, code, PhpOperators.doubleArrow, None)
     callAst(callNode, keyAst :: valueAst :: Nil)
   }
 
@@ -583,14 +577,14 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
 
     // keep this just used to construct the `code` field
     val assignItemTargetAst = stmt.keyVar match {
-      case Some(key) => astForKeyValPair(key, stmt.valueVar, line(stmt))
+      case Some(key) => astForKeyValPair(stmt, key, stmt.valueVar)
       case None      => astForExpr(stmt.valueVar)
     }
 
     // Initializer asts
     // - Iterator assign
     val iterValue         = astForExpr(stmt.iterExpr)
-    val iteratorAssignAst = simpleAssignAst(Ast(iterIdentifier), iterValue, line(stmt))
+    val iteratorAssignAst = simpleAssignAst(stmt, Ast(iterIdentifier), iterValue)
 
     // - Assigned item assign
     val itemInitAst = getItemAssignAstForForeach(stmt, iterIdentifier.copy)
@@ -599,9 +593,9 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     val isNullName = PhpOperators.isNull
     val valueAst   = astForExpr(stmt.valueVar)
     val isNullCode = s"$isNullName(${valueAst.rootCodeOrEmpty})"
-    val isNullCall = newOperatorCallNode(isNullName, isNullCode, Some(TypeConstants.Bool), line(stmt))
+    val isNullCall = operatorCallNode(stmt, isNullCode, isNullName, Some(TypeConstants.Bool))
       .methodFullName(PhpOperators.isNull)
-    val notIsNull    = newOperatorCallNode(Operators.logicalNot, s"!$isNullCode", line = line(stmt))
+    val notIsNull    = operatorCallNode(stmt, s"!$isNullCode", Operators.logicalNot, None)
     val isNullAst    = callAst(isNullCall, valueAst :: Nil)
     val conditionAst = callAst(notIsNull, isNullAst :: Nil)
 
@@ -660,12 +654,12 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
 
       val valueAst = if (stmt.assignByRef) {
         val addressOfCode = s"&${currentCallAst.rootCodeOrEmpty}"
-        val addressOfCall = newOperatorCallNode(Operators.addressOf, addressOfCode, line = line(stmt))
+        val addressOfCall = operatorCallNode(stmt, addressOfCode, Operators.addressOf, None)
         callAst(addressOfCall, currentCallAst :: Nil)
       } else {
         currentCallAst
       }
-      simpleAssignAst(astForExpr(stmt.valueVar), valueAst, line(stmt))
+      simpleAssignAst(stmt, astForExpr(stmt.valueVar), valueAst)
     }
 
     // try to create assignment for key-part
@@ -685,7 +679,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
         Some(TypeConstants.Any)
       )
       val keyCallAst = callAst(keyCallNode, base = Option(iteratorIdentifierAst))
-      simpleAssignAst(astForExpr(keyVar), keyCallAst, line(stmt))
+      simpleAssignAst(stmt, astForExpr(keyVar), keyCallAst)
     )
 
     keyAssignOption match {
@@ -698,9 +692,9 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     }
   }
 
-  private def simpleAssignAst(target: Ast, source: Ast, lineNo: Option[Int]): Ast = {
+  private def simpleAssignAst(origin: PhpNode, target: Ast, source: Ast): Ast = {
     val code     = s"${target.rootCodeOrEmpty} = ${source.rootCodeOrEmpty}"
-    val callNode = newOperatorCallNode(Operators.assignment, code, line = lineNo)
+    val callNode = operatorCallNode(origin, code, Operators.assignment, None)
     callAst(callNode, target :: source :: Nil)
   }
 
@@ -745,7 +739,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
             val variableAst  = Ast(variableNode).withRefEdge(variableNode, local)
 
             val assignCode = s"$code = ${defaultValue.rootCodeOrEmpty}"
-            val assignNode = newOperatorCallNode(Operators.assignment, assignCode, line = line(stmt))
+            val assignNode = operatorCallNode(stmt, assignCode, Operators.assignment, None)
 
             callAst(assignNode, variableAst :: defaultValue :: Nil)
           }
@@ -892,13 +886,18 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     methodAstWithAnnotations(method, thisParam :: Nil, methodBody, methodReturn, modifiers)
   }
 
-  private def astForMemberAssignment(memberNode: NewMember, valueExpr: PhpExpr, isField: Boolean): Ast = {
+  private def astForMemberAssignment(
+    originNode: PhpNode,
+    memberNode: NewMember,
+    valueExpr: PhpExpr,
+    isField: Boolean
+  ): Ast = {
     val targetAst = if (isField) {
       val code            = s"$$this->${memberNode.name}"
-      val fieldAccessNode = newOperatorCallNode(Operators.fieldAccess, code, line = memberNode.lineNumber)
-      val identifier      = thisIdentifier(memberNode.lineNumber)
+      val fieldAccessNode = operatorCallNode(originNode, code, Operators.fieldAccess, None)
+      val identifier      = thisIdentifier(originNode)
       val thisParam       = scope.lookupVariable(NameConstants.This)
-      val fieldIdentifier = newFieldIdentifierNode(memberNode.name, memberNode.lineNumber)
+      val fieldIdentifier = fieldIdentifierNode(originNode, memberNode.name, memberNode.name)
       callAst(fieldAccessNode, List(identifier, fieldIdentifier).map(Ast(_))).withRefEdges(identifier, thisParam.toList)
     } else {
       val selfIdentifier = {
@@ -906,15 +905,15 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
         val typ  = scope.getEnclosingTypeDeclTypeName
         newIdentifierNode(name, typ.getOrElse(Defines.Any), typ.toList, memberNode.lineNumber).code(name)
       }
-      val fieldIdentifier = newFieldIdentifierNode(memberNode.name, memberNode.lineNumber)
+      val fieldIdentifier = fieldIdentifierNode(originNode, memberNode.name, memberNode.name)
       val code            = s"self::${memberNode.code.replaceAll("(static|case|const) ", "")}"
-      val fieldAccessNode = newOperatorCallNode(Operators.fieldAccess, code, line = memberNode.lineNumber)
+      val fieldAccessNode = operatorCallNode(originNode, code, Operators.fieldAccess, None)
       callAst(fieldAccessNode, List(selfIdentifier, fieldIdentifier).map(Ast(_)))
     }
     val value = astForExpr(valueExpr)
 
     val assignmentCode = s"${targetAst.rootCodeOrEmpty} = ${value.rootCodeOrEmpty}"
-    val callNode       = newOperatorCallNode(Operators.assignment, assignmentCode, line = memberNode.lineNumber)
+    val callNode       = operatorCallNode(originNode, assignmentCode, Operators.assignment, None)
 
     callAst(callNode, List(targetAst, value))
   }
@@ -979,7 +978,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
 
     value match {
       case Some(v) =>
-        val assignAst = astForMemberAssignment(member, v, isField)
+        val assignAst = astForMemberAssignment(originNode, member, v, isField)
         addToScope(assignAst)
       case None => // Nothing to do here
     }
@@ -1080,7 +1079,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
 
     val receiverAst = (targetAst, nameAst) match {
       case (Some(target), Some(n)) =>
-        val fieldAccess = newOperatorCallNode(Operators.fieldAccess, codePrefix, line = line(call))
+        val fieldAccess = operatorCallNode(call, codePrefix, Operators.fieldAccess, None)
         Option(callAst(fieldAccess, target :: n :: Nil))
       case (Some(target), None) => Option(target)
       case (None, Some(n))      => Option(n)
@@ -1184,12 +1183,10 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
       val dimensionAst    = astForExpr(dimension)
       val indexAccessCode = s"${sourceAst.rootCodeOrEmpty}[${dimensionAst.rootCodeOrEmpty}]"
       // <operator>.indexAccess(sourceAst, index)
-      val indexAccessNode = callAst(
-        newOperatorCallNode(Operators.indexAccess, indexAccessCode, line = line(item)),
-        sourceAst :: dimensionAst :: Nil
-      )
+      val indexAccessNode =
+        callAst(operatorCallNode(item, indexAccessCode, Operators.indexAccess, None), sourceAst :: dimensionAst :: Nil)
       val assignCode = s"${targetAst.rootCodeOrEmpty} = $indexAccessCode"
-      val assignNode = newOperatorCallNode(Operators.assignment, assignCode, line = line(item))
+      val assignNode = operatorCallNode(item, assignCode, Operators.assignment, None)
       // targetAst = <operator>.indexAccess(sourceAst, index)
       callAst(assignNode, targetAst :: indexAccessNode :: Nil)
     }
@@ -1206,7 +1203,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
       val sourceAliasName       = getNewTmpName()
       val sourceAliasIdentifier = createIdentifier(sourceAliasName)
       val assignCode            = s"${sourceAliasIdentifier.rootCodeOrEmpty} = ${sourceAst.rootCodeOrEmpty}"
-      val assignNode            = newOperatorCallNode(Operators.assignment, assignCode, line = line(assignment))
+      val assignNode            = operatorCallNode(assignment, assignCode, Operators.assignment, None)
       loweredAssignNodes += callAst(assignNode, sourceAliasIdentifier :: sourceAst :: Nil)
 
       itemsOf(target).foreach {
@@ -1269,7 +1266,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
         val symbol    = operatorSymbols.getOrElse(assignment.assignOp, assignment.assignOp)
         val code      = s"${targetAst.rootCodeOrEmpty} $symbol $refSymbol${sourceAst.rootCodeOrEmpty}"
 
-        val callNode = newOperatorCallNode(operatorName, code, line = line(assignment))
+        val callNode = operatorCallNode(assignment, code, operatorName, None)
         callAst(callNode, List(targetAst, sourceAst))
     }
   }
@@ -1281,7 +1278,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     args match {
       case singleArg :: Nil => singleArg
       case _ =>
-        val callNode = newOperatorCallNode(PhpOperators.encaps, code, Some(TypeConstants.String), line(encapsed))
+        val callNode = operatorCallNode(encapsed, code, PhpOperators.encaps, Some(TypeConstants.String))
         callAst(callNode, args)
     }
   }
@@ -1303,7 +1300,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     val symbol = operatorSymbols.getOrElse(binOp.operator, binOp.operator)
     val code   = s"${leftAst.rootCodeOrEmpty} $symbol ${rightAst.rootCodeOrEmpty}"
 
-    val callNode = newOperatorCallNode(binOp.operator, code, line = line(binOp))
+    val callNode = operatorCallNode(binOp, code, binOp.operator, None)
 
     callAst(callNode, List(leftAst, rightAst))
   }
@@ -1322,7 +1319,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
       else
         s"$symbol${exprAst.rootCodeOrEmpty}"
 
-    val callNode = newOperatorCallNode(unaryOp.operator, code, line = line(unaryOp))
+    val callNode = operatorCallNode(unaryOp, code, unaryOp.operator, None)
 
     callAst(callNode, exprAst :: Nil)
   }
@@ -1334,7 +1331,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     val expr    = astForExpr(castExpr.expr)
     val codeStr = s"($typeFullName) ${expr.rootCodeOrEmpty}"
 
-    val callNode = newOperatorCallNode(name = Operators.cast, codeStr, Some(typeFullName), line(castExpr))
+    val callNode = operatorCallNode(castExpr, codeStr, Operators.cast, Some(typeFullName))
 
     callAst(callNode, Ast(typ) :: expr :: Nil)
   }
@@ -1345,7 +1342,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     val code = s"$name(${args.map(_.rootCodeOrEmpty).mkString(",")})"
 
     val callNode =
-      newOperatorCallNode(name, code, typeFullName = Some(TypeConstants.Bool), line = line(isSetExpr))
+      operatorCallNode(isSetExpr, code, name, Some(TypeConstants.Bool))
         .methodFullName(PhpOperators.issetFunc)
 
     callAst(callNode, args)
@@ -1356,7 +1353,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     val code = s"$name(${arg.rootCodeOrEmpty})"
 
     val callNode =
-      newOperatorCallNode(name, code, typeFullName = Some(TypeConstants.Int), line = line(printExpr))
+      operatorCallNode(printExpr, code, name, typeFullName = Some(TypeConstants.Int))
         .methodFullName(PhpOperators.printFunc)
 
     callAst(callNode, arg :: Nil)
@@ -1373,7 +1370,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
       case None          => s"${conditionAst.rootCodeOrEmpty} ?: ${elseAst.rootCodeOrEmpty}"
     }
 
-    val callNode = newOperatorCallNode(operatorName, code, line = line(ternaryOp))
+    val callNode = operatorCallNode(ternaryOp, code, operatorName, None)
 
     val args = List(Option(conditionAst), maybeThenAst, Option(elseAst)).flatten
     callAst(callNode, args)
@@ -1394,7 +1391,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     val argType = argAst.rootType.orElse(Some(TypeConstants.Any))
     val code    = s"$name ${argAst.rootCodeOrEmpty}"
 
-    val callNode = newOperatorCallNode(name, code, argType, line(expr))
+    val callNode = operatorCallNode(expr, code, name, argType)
       .methodFullName(PhpOperators.cloneFunc)
 
     callAst(callNode, argAst :: Nil)
@@ -1406,7 +1403,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     val code   = s"$name(${argAst.rootCodeOrEmpty})"
 
     val callNode =
-      newOperatorCallNode(name, code, typeFullName = Some(TypeConstants.Bool), line = line(expr))
+      operatorCallNode(expr, code, name, Some(TypeConstants.Bool))
         .methodFullName(PhpOperators.emptyFunc)
 
     callAst(callNode, argAst :: Nil)
@@ -1418,7 +1415,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     val code   = s"$name(${argAst.rootCodeOrEmpty})"
 
     val callNode =
-      newOperatorCallNode(name, code, typeFullName = Some(TypeConstants.Bool), line = line(expr))
+      operatorCallNode(expr, code, name, Some(TypeConstants.Bool))
         .methodFullName(PhpOperators.evalFunc)
 
     callAst(callNode, argAst :: Nil)
@@ -1429,7 +1426,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     val args = expr.expr.map(astForExpr)
     val code = s"$name(${args.map(_.rootCodeOrEmpty).getOrElse("")})"
 
-    val callNode = newOperatorCallNode(name, code, Some(TypeConstants.Void), line(expr))
+    val callNode = operatorCallNode(expr, code, name, Some(TypeConstants.Void))
       .methodFullName(PhpOperators.exitFunc)
 
     callAst(callNode, args.toList)
@@ -1466,7 +1463,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
       val initArrayCallAst = callAst(initArrayNode)
 
       val assignCode = s"$$$tmpName = ${initArrayCallAst.rootCodeOrEmpty}"
-      val assignNode = newOperatorCallNode(Operators.assignment, assignCode, line = line(expr))
+      val assignNode = operatorCallNode(expr, assignCode, Operators.assignment, None)
       callAst(assignNode, newTmpIdentifier :: initArrayCallAst :: Nil)
     }
 
@@ -1511,7 +1508,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     val name     = PhpOperators.listFunc
     val args     = expr.items.flatten.map { item => astForExpr(item.value) }
     val listCode = s"$name(${args.map(_.rootCodeOrEmpty).mkString(",")})"
-    val listNode = newOperatorCallNode(name, listCode, line = line(expr))
+    val listNode = operatorCallNode(expr, listCode, name, None)
       .methodFullName(PhpOperators.listFunc)
 
     callAst(listNode, args)
@@ -1682,10 +1679,10 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
 
     // Alloc assign
     val allocCode       = s"$className.<alloc>()"
-    val allocNode       = newOperatorCallNode(Operators.alloc, allocCode, Option(className), line(expr))
+    val allocNode       = operatorCallNode(expr, allocCode, Operators.alloc, Option(className))
     val allocAst        = callAst(allocNode, base = maybeNameAst)
     val allocAssignCode = s"${tmpIdentifier.code} = ${allocAst.rootCodeOrEmpty}"
-    val allocAssignNode = newOperatorCallNode(Operators.assignment, allocAssignCode, Option(className), line(expr))
+    val allocAssignNode = operatorCallNode(expr, allocAssignCode, Operators.assignment, Option(className))
     val allocAssignAst  = callAst(allocAssignNode, Ast(tmpIdentifier) :: allocAst :: Nil)
 
     // Init node
@@ -1751,7 +1748,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
 
     val assignCode = s"${dimFetchAst.rootCodeOrEmpty} = ${valueAst.rootCodeOrEmpty}"
 
-    val assignNode = newOperatorCallNode(Operators.assignment, assignCode, line = line(item))
+    val assignNode = operatorCallNode(item, assignCode, Operators.assignment, None)
 
     callAst(assignNode, dimFetchAst :: valueAst :: Nil)
   }
@@ -1761,10 +1758,10 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     val valueCode = exprAst.rootCodeOrEmpty
 
     if (item.byRef) {
-      val parentCall = newOperatorCallNode(Operators.addressOf, s"&$valueCode", line = line(item))
+      val parentCall = operatorCallNode(item, s"&$valueCode", Operators.addressOf, None)
       callAst(parentCall, exprAst :: Nil)
     } else if (item.unpack) {
-      val parentCall = newOperatorCallNode(PhpOperators.unpack, s"...$valueCode", line = line(item))
+      val parentCall = operatorCallNode(item, s"...$valueCode", PhpOperators.unpack, None)
       callAst(parentCall, exprAst :: Nil)
     } else {
       exprAst
@@ -1779,7 +1776,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
       case Some(dimension) =>
         val dimensionAst = astForExpr(dimension)
         val code         = s"$variableCode[${dimensionAst.rootCodeOrEmpty}]"
-        val accessNode   = newOperatorCallNode(Operators.indexAccess, code, line = line(expr))
+        val accessNode   = operatorCallNode(expr, code, Operators.indexAccess, None)
         callAst(accessNode, variableAst :: dimensionAst :: Nil)
 
       case None =>
@@ -1793,7 +1790,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     val childAst = astForExpr(expr.expr)
 
     val code         = s"@${childAst.rootCodeOrEmpty}"
-    val suppressNode = newOperatorCallNode(PhpOperators.errorSuppress, code, line = line(expr))
+    val suppressNode = operatorCallNode(expr, code, PhpOperators.errorSuppress, None)
     childAst.rootType.foreach(typ => suppressNode.typeFullName(typ))
 
     callAst(suppressNode, childAst :: Nil)
@@ -1804,7 +1801,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     val classAst = astForExpr(expr.className)
 
     val code           = s"${exprAst.rootCodeOrEmpty} instanceof ${classAst.rootCodeOrEmpty}"
-    val instanceOfNode = newOperatorCallNode(Operators.instanceOf, code, Some(TypeConstants.Bool), line(expr))
+    val instanceOfNode = operatorCallNode(expr, code, Operators.instanceOf, Some(TypeConstants.Bool))
 
     callAst(instanceOfNode, exprAst :: classAst :: Nil)
   }
@@ -1813,7 +1810,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     val objExprAst = astForExpr(expr.expr)
 
     val fieldAst = expr.name match {
-      case name: PhpNameExpr => Ast(newFieldIdentifierNode(name.name, line(expr)))
+      case name: PhpNameExpr => Ast(fieldIdentifierNode(expr, name.name, name.name))
       case other             => astForExpr(other)
     }
 
@@ -1826,7 +1823,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
         "->"
 
     val code            = s"${objExprAst.rootCodeOrEmpty}$accessSymbol${fieldAst.rootCodeOrEmpty}"
-    val fieldAccessNode = newOperatorCallNode(Operators.fieldAccess, code, line = line(expr))
+    val fieldAccessNode = operatorCallNode(expr, code, Operators.fieldAccess, None)
 
     callAst(fieldAccessNode, objExprAst :: fieldAst :: Nil)
   }
@@ -1834,7 +1831,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
   private def astForIncludeExpr(expr: PhpIncludeExpr): Ast = {
     val exprAst  = astForExpr(expr.expr)
     val code     = s"${expr.includeType} ${exprAst.rootCodeOrEmpty}"
-    val callNode = newOperatorCallNode(expr.includeType, code, line = line(expr))
+    val callNode = operatorCallNode(expr, code, expr.includeType, None)
 
     callAst(callNode, exprAst :: Nil)
   }
@@ -1843,7 +1840,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     val args = astForEncapsed(expr.parts)
     val code = "`" + args.rootCodeOrEmpty + "`"
 
-    val callNode = newOperatorCallNode(PhpOperators.shellExec, code, line = line(expr))
+    val callNode = operatorCallNode(expr, code, PhpOperators.shellExec, None)
 
     callAst(callNode, args :: Nil)
   }
@@ -1873,9 +1870,9 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
       case _ =>
         val targetAst           = astForExpr(expr.className)
         val fieldIdentifierName = expr.constantName.map(_.name).getOrElse(NameConstants.Unknown)
-        val fieldIdentifier     = newFieldIdentifierNode(fieldIdentifierName, line(expr))
+        val fieldIdentifier     = fieldIdentifierNode(expr, fieldIdentifierName, fieldIdentifierName)
         val fieldAccessCode     = s"${targetAst.rootCodeOrEmpty}::${fieldIdentifier.code}"
-        val fieldAccessCall     = newOperatorCallNode(Operators.fieldAccess, fieldAccessCode, line = line(expr))
+        val fieldAccessCall     = operatorCallNode(expr, fieldAccessCode, Operators.fieldAccess, None)
         callAst(fieldAccessCall, List(targetAst, Ast(fieldIdentifier)))
     }
   }
@@ -1890,9 +1887,9 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     } else {
       val namespaceName   = NamespaceTraversal.globalNamespaceName
       val identifier      = identifierNode(expr, namespaceName, namespaceName, "ANY")
-      val fieldIdentifier = newFieldIdentifierNode(constName, line = line(expr))
+      val fieldIdentifier = fieldIdentifierNode(expr, constName, constName)
 
-      val fieldAccessNode = newOperatorCallNode(Operators.fieldAccess, code = constName, line = line(expr))
+      val fieldAccessNode = operatorCallNode(expr, code = constName, Operators.fieldAccess, None)
       val args            = List(identifier, fieldIdentifier).map(Ast(_))
 
       callAst(fieldAccessNode, args)

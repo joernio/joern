@@ -1,8 +1,10 @@
 package io.joern.csharpsrc2cpg.utils
 
-import better.files.File
 import io.joern.semanticcpg.utils.SecureXmlParsing
 
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+
+import java.nio.file.Paths
 import scala.xml.{Elem, Node}
 
 /** Depending on the project type defined in `.csproj` files, different sets of global usings are turned on by default.
@@ -19,7 +21,7 @@ object ImplicitUsingsCollector {
     */
   def collect(buildFiles: List[String]): List[String] = {
     buildFiles.flatMap { csproj =>
-      SecureXmlParsing.parseXml(File(csproj).contentAsString) match
+      SecureXmlParsing.parseXml(Paths.get(csproj).fileContent) match
         case Some(xml) => from(xml)
         case None      => List.empty
     }

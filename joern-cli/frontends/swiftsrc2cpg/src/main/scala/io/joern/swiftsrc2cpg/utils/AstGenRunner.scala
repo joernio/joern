@@ -1,12 +1,13 @@
 package io.joern.swiftsrc2cpg.utils
 
-import better.files.File
 import io.joern.swiftsrc2cpg.Config
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.utils.Environment
+import io.shiftleft.semanticcpg.utils.FileUtil
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import org.slf4j.LoggerFactory
 
-import java.nio.file.Paths
+import java.nio.file.{Files, Path, Paths}
 import java.util.regex.Pattern
 import scala.util.Failure
 import scala.util.Success
@@ -31,9 +32,9 @@ object AstGenRunner {
 
   // full path to the SwiftAstGen binary from the env var SWIFTASTGEN_BIN
   private val AstGenBin: Option[String] = scala.util.Properties.envOrNone("SWIFTASTGEN_BIN").flatMap {
-    case path if File(path).isDirectory => Option((File(path) / "SwiftAstGen").pathAsString)
-    case path if File(path).exists      => Option(File(path).pathAsString)
-    case _                              => None
+    case path if Files.isDirectory(Paths.get(path)) => Option((Paths.get(path) / "SwiftAstGen").toString)
+    case path if Files.exists(Paths.get(path))      => Option(Paths.get(path).toString)
+    case _                                          => None
   }
 
   lazy private val executableName = Environment.operatingSystem match {
@@ -63,7 +64,7 @@ object AstGenRunner {
 
   private def hasCompatibleAstGenVersionAtPath(path: Option[String]): Boolean = {
     val astGenCommand = path.getOrElse("SwiftAstGen")
-    val localPath     = path.flatMap(File(_).parentOption.map(_.pathAsString)).getOrElse(".")
+    val localPath     = path.flatMap(Paths.get(_).parentOption.map(_.toString)).getOrElse(".")
     val debugMsgPath  = path.getOrElse("PATH")
     ExternalCommand.run(Seq(astGenCommand, "-h"), localPath).toOption match {
       case Some(_) =>
@@ -118,8 +119,8 @@ class AstGenRunner(config: Config) {
 
   private def isIgnoredByUserConfig(filePath: String): Boolean = {
     lazy val isInIgnoredFiles = config.ignoredFiles.exists {
-      case ignorePath if File(ignorePath).isDirectory => filePath.startsWith(ignorePath)
-      case ignorePath                                 => filePath == ignorePath
+      case ignorePath if Files.isDirectory(Paths.get(ignorePath)) => filePath.startsWith(ignorePath)
+      case ignorePath                                             => filePath == ignorePath
     }
     lazy val isInIgnoredFileRegex = config.ignoredFilesRegex.matches(filePath)
     if (isInIgnoredFiles || isInIgnoredFileRegex) {
@@ -130,34 +131,34 @@ class AstGenRunner(config: Config) {
     }
   }
 
-  private def filterFiles(files: List[String], out: File): List[String] = {
+  private def filterFiles(files: List[String], out: Path): List[String] = {
     files.filter { file =>
-      file.stripSuffix(".json").replace(out.pathAsString, config.inputPath) match {
+      file.stripSuffix(".json").replace(out.toString, config.inputPath) match {
         case filePath if isIgnoredByUserConfig(filePath) => false
         case _                                           => true
       }
     }
   }
 
-  private def runAstGenNative(in: File, out: File): Try[Seq[String]] =
-    ExternalCommand.run(Seq(astGenCommand, "-o", out.toString), in.toString())
+  private def runAstGenNative(in: Path, out: Path): Try[Seq[String]] =
+    ExternalCommand.run(Seq(astGenCommand, "-o", out.toString), in.toString)
 
-  private def checkParsedFiles(files: List[String], in: File): List[String] = {
+  private def checkParsedFiles(files: List[String], in: Path): List[String] = {
     val numOfParsedFiles = files.size
     logger.info(s"Parsed $numOfParsedFiles files.")
     if (numOfParsedFiles == 0) {
       logger.warn("You may want to check the DEBUG logs for a list of files that are ignored by default.")
-      SourceFiles.determine(in.pathAsString, Set(".swift"), ignoredDefaultRegex = Option(AstGenDefaultIgnoreRegex))
+      SourceFiles.determine(in.toString, Set(".swift"), ignoredDefaultRegex = Option(AstGenDefaultIgnoreRegex))
     }
     files
   }
 
-  def execute(out: File): AstGenRunnerResult = {
-    val in = File(config.inputPath)
+  def execute(out: Path): AstGenRunnerResult = {
+    val in = Paths.get(config.inputPath)
     logger.info(s"Running SwiftAstGen in '$in' ...")
     runAstGenNative(in, out) match {
       case Success(result) =>
-        val parsed  = checkParsedFiles(filterFiles(SourceFiles.determine(out.toString(), Set(".json")), out), in)
+        val parsed  = checkParsedFiles(filterFiles(SourceFiles.determine(out.toString, Set(".json")), out), in)
         val skipped = skippedFiles(result.toList)
         AstGenRunnerResult(parsed, skipped)
       case Failure(f) =>

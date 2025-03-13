@@ -1,10 +1,8 @@
 package io.joern.console.workspacehandling
 
-import better.files.Dsl.mkdirs
-import better.files.File
 import flatgraph.help.Table.AvailableWidthProvider
 
-import java.nio.file.Path
+import java.nio.file.{Files, Path, Paths}
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 
@@ -17,10 +15,11 @@ abstract class WorkspaceLoader[ProjectType <: Project](implicit availableWidthPr
     *   path to the directory
     */
   def load(path: String): Workspace[ProjectType] = {
-    val dirFile = File(path)
-    val dirPath = dirFile.path.toAbsolutePath
+    val dirFile = Paths.get(path)
+    val dirPath = dirFile.toAbsolutePath
 
-    mkdirs(dirFile)
+    Files.createDirectories(Paths.get(path))
+
     new Workspace(ListBuffer.from(loadProjectsFromFs(dirPath)))
   }
 

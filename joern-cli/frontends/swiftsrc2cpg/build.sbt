@@ -5,7 +5,11 @@ import scala.util.Try
 
 name := "swiftsrc2cpg"
 
-dependsOn(Projects.dataflowengineoss % "compile->compile;test->test", Projects.x2cpg % "compile->compile;test->test")
+dependsOn(
+  Projects.dataflowengineoss  % "compile->compile;test->test",
+  Projects.x2cpg              % "compile->compile;test->test",
+  Projects.linterRules % ScalafixConfig
+)
 
 lazy val appProperties = settingKey[Config]("App Properties")
 appProperties := {
@@ -40,7 +44,7 @@ astGenDlUrl := s"https://github.com/joernio/swiftastgen/releases/download/v${ast
 def hasCompatibleAstGenVersion(astGenVersion: String): Boolean = {
   Try("SwiftAstGen -h".!).toOption match {
     case Some(0) => true
-    case _ => false
+    case _       => false
   }
 }
 
