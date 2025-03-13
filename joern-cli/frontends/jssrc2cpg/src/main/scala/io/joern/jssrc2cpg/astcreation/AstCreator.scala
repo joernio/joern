@@ -9,11 +9,9 @@ import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.AstCreatorBase
 import io.joern.x2cpg.ValidationMode
-import io.joern.x2cpg.AstNodeBuilder as X2CpgAstNodeBuilder
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
-import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
@@ -32,7 +30,7 @@ import scala.collection.mutable
 
 class AstCreator(val config: Config, val global: Global, val parserResult: ParseResult)(implicit
   withSchemaValidation: ValidationMode
-) extends AstCreatorBase(parserResult.filename)
+) extends AstCreatorBase[BabelNodeInfo, AstCreator](parserResult.filename)
     with AstForExpressionsCreator
     with AstForPrimitivesCreator
     with AstForTypesCreator
@@ -42,8 +40,7 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
     with AstForTemplateDomCreator
     with AstNodeBuilder
     with TypeHelper
-    with AstCreatorHelper
-    with X2CpgAstNodeBuilder[BabelNodeInfo, AstCreator] {
+    with AstCreatorHelper {
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
 
@@ -107,7 +104,7 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
     val methodChildren = astsForFile(astNodeInfo)
     setArgumentIndices(methodChildren)
 
-    val methodReturn = newMethodReturnNode(Defines.Any, line = None, column = None)
+    val methodReturn = methodReturnNode(astNodeInfo, Defines.Any)
 
     localAstParentStack.pop()
     scope.popScope()

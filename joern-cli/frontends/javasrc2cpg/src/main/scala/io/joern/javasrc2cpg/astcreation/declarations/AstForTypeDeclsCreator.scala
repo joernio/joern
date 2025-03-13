@@ -384,7 +384,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     val (staticFields, instanceFields) = fields.partition(_.isStatic)
     val staticFieldInitializers        = getStaticFieldInitializers(staticFields)
 
-    val clinitAst = clinitAstFromStaticInits(staticFieldInitializers)
+    val clinitAst = clinitAstFromStaticInits(originNode, staticFieldInitializers)
 
     val membersAstPairs: List[(Node, List[Ast])] = members.map { member =>
       val memberAsts = member match {

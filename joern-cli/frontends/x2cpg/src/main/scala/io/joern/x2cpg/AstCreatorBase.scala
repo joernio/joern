@@ -2,7 +2,7 @@ package io.joern.x2cpg
 
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.utils.IntervalKeyPool
-import io.joern.x2cpg.utils.NodeBuilders.{newFieldIdentifierNode, newMethodReturnNode, newOperatorCallNode}
+import io.joern.x2cpg.utils.NodeBuilders.{newFieldIdentifierNode, newOperatorCallNode}
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Cpg, DiffGraphBuilder, ModifierTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -10,7 +10,8 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import java.nio.file.Paths
 
-abstract class AstCreatorBase(filename: String)(implicit withSchemaValidation: ValidationMode) {
+abstract class AstCreatorBase[Node, NodeProcessor](filename: String)(implicit withSchemaValidation: ValidationMode)
+    extends AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
   val diffGraph: DiffGraphBuilder = Cpg.newDiffGraphBuilder
 
   private val closureKeyPool = new IntervalKeyPool(first = 0, last = Long.MaxValue)
@@ -94,19 +95,19 @@ abstract class AstCreatorBase(filename: String)(implicit withSchemaValidation: V
       .withChild(Ast(methodReturn))
 
   def staticInitMethodAst(
+    node: Node,
     initAsts: List[Ast],
     fullName: String,
     signature: Option[String],
     returnType: String,
-    fileName: Option[String] = None,
-    lineNumber: Option[Int] = None,
-    columnNumber: Option[Int] = None
+    fileName: Option[String] = None
   ): Ast = {
+    // TODO Use methodNode builder method
     val methodNode = NewMethod()
       .name(Defines.StaticInitMethodName)
       .fullName(fullName)
-      .lineNumber(lineNumber)
-      .columnNumber(columnNumber)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
     if (signature.isDefined) {
       methodNode.signature(signature.get)
     }
@@ -115,7 +116,7 @@ abstract class AstCreatorBase(filename: String)(implicit withSchemaValidation: V
     }
     val staticModifier = NewModifier().modifierType(ModifierTypes.STATIC)
     val body           = blockAst(NewBlock().typeFullName(Defines.Any), initAsts)
-    val methodReturn   = newMethodReturnNode(returnType, None, None, None)
+    val methodReturn   = methodReturnNode(node, returnType)
     methodAst(methodNode, Nil, body, methodReturn, List(staticModifier))
   }
 

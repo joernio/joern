@@ -115,11 +115,9 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       case Failure(_)   => (line(methodDeclaration), column(methodDeclaration))
     }
     val methodReturn =
-      newMethodReturnNode(
-        returnTypeFullName.getOrElse(defaultTypeFallback(methodDeclaration.getType)),
-        None,
-        lineNr,
-        columnNr
+      methodReturnNode(
+        methodDeclaration.getType,
+        returnTypeFullName.getOrElse(defaultTypeFallback(methodDeclaration.getType))
       )
 
     val annotationAsts = methodDeclaration.getAnnotations.asScala.map(astForAnnotationExpr).toSeq
@@ -146,7 +144,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     val methodFullName = composeMethodFullName(recordTypeFullName, parameterName, signature)
 
     val methodReturn =
-      newMethodReturnNode(parameterTypeFullName, line = line(parameter), column = column(parameter))
+      methodReturnNode(parameter, parameterTypeFullName)
 
     val genericSignature = binarySignatureCalculator.recordParameterAccessorBinarySignature(parameter)
     val methodRoot = methodNode(
@@ -246,12 +244,12 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     }.toList
   }
 
-  def clinitAstFromStaticInits(staticInits: Seq[Ast]): Option[Ast] = {
+  def clinitAstFromStaticInits(node: Node, staticInits: Seq[Ast]): Option[Ast] = {
     Option.when(staticInits.nonEmpty) {
       val signature         = composeMethodLikeSignature(TypeConstants.Void, Nil)
       val enclosingDeclName = scope.enclosingTypeDecl.fullName.getOrElse(Defines.UnresolvedNamespace)
       val fullName          = composeMethodFullName(enclosingDeclName, Defines.StaticInitMethodName, signature)
-      staticInitMethodAst(staticInits.toList, fullName, Some(signature), TypeConstants.Void)
+      staticInitMethodAst(node, staticInits.toList, fullName, Some(signature), TypeConstants.Void)
     }
   }
 
@@ -310,7 +308,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       astsForFieldInitializers(instanceFieldDeclarations) ++ recordParameterAssignments
     val patternLocalAsts = scope.enclosingMethod.map(_.getAndClearUnaddedPatternLocals()).getOrElse(Nil).map(Ast(_))
 
-    val returnNode = newMethodReturnNode(TypeConstants.Void, line = None, column = None)
+    val returnNode = methodReturnNode(originNode, TypeConstants.Void)
 
     val modifiers = List(newModifierNode(ModifierTypes.CONSTRUCTOR), newModifierNode(ModifierTypes.PUBLIC))
     val partialConstructor =
@@ -658,9 +656,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   private def constructorReturnNode(
     constructorDeclaration: ConstructorDeclaration | CompactConstructorDeclaration
   ): NewMethodReturn = {
-    val line   = constructorDeclaration.getEnd.map(_.line).toScala
-    val column = constructorDeclaration.getEnd.map(_.column).toScala
-    newMethodReturnNode(TypeConstants.Void, None, line, column)
+    methodReturnNode(constructorDeclaration, TypeConstants.Void)
   }
 
   private def astForConstructorBody(originNode: Node, bodyStmts: List[Ast], captureInitializers: List[Ast]): Ast = {

@@ -1,6 +1,6 @@
 package io.joern.x2cpg
 
-import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
+import io.joern.x2cpg.AstNodeBuilder.methodReturnNodeWithExplicitPositionInfo
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
 import io.shiftleft.codepropertygraph.generated.nodes.Block.PropertyDefaults as BlockDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.{
@@ -290,7 +290,7 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
   ): NewLocal = {
     val (nodeOffset, nodeOffsetEnd) =
       offset(node).map((offset, offsetEnd) => (Option(offset), Option(offsetEnd))).getOrElse((None, None))
-    localNodeWithExplicitPositionInfo(
+    AstNodeBuilder.localNodeWithExplicitPositionInfo(
       name,
       code,
       typeFullName,
@@ -301,33 +301,6 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       nodeOffset,
       nodeOffsetEnd
     )
-  }
-
-  /** It is useful (perhaps necessary) to be able to create locals without an "origin node" in some cases, so allow that
-    * but make it clear that positional information (line/col number and offsets) must be specified explicitly.
-    */
-  protected def localNodeWithExplicitPositionInfo(
-    name: String,
-    code: String,
-    typeFullName: String,
-    closureBindingId: Option[String] = None,
-    genericSignature: Option[String] = None,
-    lineNumber: Option[Int] = None,
-    columnNumber: Option[Int] = None,
-    offset: Option[Int] = None,
-    offsetEnd: Option[Int] = None
-  ): NewLocal = {
-    val node_ = NewLocal()
-      .name(name)
-      .code(code)
-      .typeFullName(typeFullName)
-      .closureBindingId(closureBindingId)
-      .lineNumber(lineNumber)
-      .columnNumber(columnNumber)
-      .offset(offset)
-      .offsetEnd(offsetEnd)
-    genericSignature.foreach(node_.genericSignature(_))
-    node_
   }
 
   protected def identifierNode(
@@ -382,8 +355,13 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     node_
   }
 
-  protected def methodReturnNode(node: Node, typeFullName: String): NewMethodReturn = {
-    newMethodReturnNode(typeFullName, None, line(node), column(node))
+  protected def methodReturnNode(
+    node: Node,
+    typeFullName: String,
+    dynamicTypeHintFullName: Option[String] = None
+  ): NewMethodReturn = {
+    // TODO: Add offsets
+    methodReturnNodeWithExplicitPositionInfo(typeFullName, dynamicTypeHintFullName, line(node), column(node))
   }
 
   protected def jumpTargetNode(
@@ -398,5 +376,55 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .code(code)
       .lineNumber(line(node))
       .columnNumber(column(node))
+  }
+}
+
+/** It is sometimes necessary to create nodes without an origin node to use as a reference for positional information
+  * (for example in passes after AST creation). These methods provide a way to do that, but the AstNodeBuilder trait
+  * methods are STRONGLY preferred and should be used instead of these static methods whenever possible.
+  */
+object AstNodeBuilder {
+
+  private[joern] def localNodeWithExplicitPositionInfo(
+    name: String,
+    code: String,
+    typeFullName: String,
+    closureBindingId: Option[String] = None,
+    genericSignature: Option[String] = None,
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None,
+    offset: Option[Int] = None,
+    offsetEnd: Option[Int] = None
+  ): NewLocal = {
+    val node_ = NewLocal()
+      .name(name)
+      .code(code)
+      .typeFullName(typeFullName)
+      .closureBindingId(closureBindingId)
+      .lineNumber(lineNumber)
+      .columnNumber(columnNumber)
+      .offset(offset)
+      .offsetEnd(offsetEnd)
+    genericSignature.foreach(node_.genericSignature(_))
+    node_
+  }
+
+  private[joern] def methodReturnNodeWithExplicitPositionInfo(
+    typeFullName: String,
+    dynamicTypeHintFullName: Option[String] = None,
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None,
+    offset: Option[Int] = None,
+    offsetEnd: Option[Int] = None
+  ): NewMethodReturn = {
+    NewMethodReturn()
+      .typeFullName(typeFullName)
+      .dynamicTypeHintFullName(dynamicTypeHintFullName)
+      .code("RET")
+      .evaluationStrategy(EvaluationStrategies.BY_VALUE)
+      .lineNumber(lineNumber)
+      .columnNumber(columnNumber)
+      .offset(offset)
+      .offsetEnd(offsetEnd)
   }
 }

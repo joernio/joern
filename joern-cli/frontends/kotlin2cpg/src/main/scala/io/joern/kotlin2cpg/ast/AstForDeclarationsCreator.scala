@@ -10,7 +10,6 @@ import io.joern.x2cpg.Defines
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.newBindingNode
-import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
@@ -140,12 +139,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val anonymousInitExpressions = ktClass.getAnonymousInitializers.asScala
     val anonymousInitAsts        = anonymousInitExpressions.flatMap(astsForExpression(_, None))
 
-    val constructorMethodReturn = newMethodReturnNode(
-      TypeConstants.Void,
-      None,
-      line(ktClass.getPrimaryConstructor),
-      column(ktClass.getPrimaryConstructor)
-    )
+    val constructorMethodReturn = methodReturnNode(ktClass.getPrimaryConstructor, TypeConstants.Void)
     val constructorAst = methodAst(
       primaryCtorMethodNode,
       constructorParamsAsts,
@@ -461,7 +455,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         methodNode(valueParam, componentName, fullName, signature, relativizedPath),
         Seq(Ast(thisParam)),
         methodBlockAst,
-        newMethodReturnNode(typeFullName, None, None, None)
+        methodReturnNode(valueParam, typeFullName)
       )
     }
   }
@@ -505,7 +499,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       scope.popScope()
 
       val ctorMethodReturnNode =
-        newMethodReturnNode(TypeConstants.Void, None, line(ctor), column(ctor))
+        methodReturnNode(ctor, TypeConstants.Void)
 
       // TODO: see if necessary to take the other asts for the ctorMethodBlock
       methodAst(

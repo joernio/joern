@@ -306,8 +306,6 @@ trait AstForTypesCreator { this: AstCreator =>
       astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d, i)
     }
 
-    val lineNumber                       = line(typeSpecifier)
-    val columnNumber                     = column(typeSpecifier)
     val TypeFullNameInfo(name, fullName) = typeFullNameInfo(typeSpecifier)
     val codeString                       = code(typeSpecifier)
     val nameAlias                        = decls.headOption.map(d => registerType(shortName(d))).filter(_.nonEmpty)
@@ -339,13 +337,12 @@ trait AstForTypesCreator { this: AstCreator =>
       Ast(typeDecl).withChildren(member) +: declAsts
     } else {
       val init = staticInitMethodAst(
+        typeSpecifier,
         calls,
         s"$fullName.${io.joern.x2cpg.Defines.StaticInitMethodName}",
         None,
         Defines.Any,
-        Some(filename),
-        lineNumber,
-        columnNumber
+        Some(filename)
       )
       Ast(typeDecl).withChildren(member).withChild(init) +: declAsts
     }
@@ -412,8 +409,6 @@ trait AstForTypesCreator { this: AstCreator =>
       astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d, i)
     }
 
-    val lineNumber                       = line(typeSpecifier)
-    val columnNumber                     = column(typeSpecifier)
     val TypeFullNameInfo(name, fullName) = typeFullNameInfo(typeSpecifier)
     val nameAlias                        = decls.headOption.map(d => registerType(shortName(d))).filter(_.nonEmpty)
     val alias                            = filterNameAlias(nameAlias, None, fullName)
@@ -449,13 +444,12 @@ trait AstForTypesCreator { this: AstCreator =>
       Ast(typeDecl).withChildren(member) +: declAsts
     } else {
       val init = staticInitMethodAst(
+        typeSpecifier,
         calls,
         s"$deAliasedFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}",
         None,
         Defines.Any,
-        Some(filename),
-        lineNumber,
-        columnNumber
+        Some(filename)
       )
       Ast(typeDecl).withChildren(member).withChild(init) +: declAsts
     }

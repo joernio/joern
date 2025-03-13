@@ -5,7 +5,6 @@ import io.joern.swiftsrc2cpg.datastructures.Scope
 import io.joern.swiftsrc2cpg.parser.SwiftJsonParser.ParseResult
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, AstNodeBuilder as X2CpgAstNodeBuilder}
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
@@ -27,7 +26,7 @@ import scala.collection.mutable
 
 class AstCreator(val config: Config, val global: Global, val parserResult: ParseResult)(implicit
   withSchemaValidation: ValidationMode
-) extends AstCreatorBase(parserResult.filename)
+) extends AstCreatorBase[SwiftNode, AstCreator](parserResult.filename)
     with AstForSwiftTokenCreator
     with AstForSyntaxCreator
     with AstForExprSyntaxCreator
@@ -37,8 +36,7 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
     with AstForStmtSyntaxCreator
     with AstForSyntaxCollectionCreator
     with AstCreatorHelper
-    with AstNodeBuilder
-    with X2CpgAstNodeBuilder[SwiftNode, AstCreator] {
+    with AstNodeBuilder {
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
 
@@ -84,7 +82,7 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
     methodAstParentStack.push(fakeGlobalMethod)
     scope.pushNewMethodScope(fullName, name, fakeGlobalMethod, None)
     val sourceFileAst = astForNode(ast)
-    val methodReturn  = newMethodReturnNode(Defines.Any, None, line(ast), column(ast))
+    val methodReturn  = methodReturnNode(ast, Defines.Any)
     val modifiers = Seq(newModifierNode(ModifierTypes.VIRTUAL).order(0), newModifierNode(ModifierTypes.MODULE).order(1))
     Ast(fakeGlobalTypeDecl).withChild(
       methodAst(fakeGlobalMethod, Seq.empty, sourceFileAst, methodReturn, modifiers = modifiers)
