@@ -387,7 +387,7 @@ trait AstForStatementsCreator { this: AstCreator =>
         forStmt,
         s"$collectionName.iterator()",
         "iterator",
-        s"$collectionType.iterator:${Defines.Iterator}()",
+        s"${Defines.UnresolvedNamespace}.iterator:${Defines.Iterator}()",
         DispatchTypes.DYNAMIC_DISPATCH,
         Some(s"${Defines.Iterator}()"),
         Some(Defines.Iterator)

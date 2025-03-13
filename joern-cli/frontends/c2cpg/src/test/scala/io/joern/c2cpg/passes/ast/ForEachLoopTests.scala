@@ -100,7 +100,7 @@ class ForEachLoopTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt) {
     iteratorAssignmentRhs.order shouldBe 2
     iteratorAssignmentRhs.argumentIndex shouldBe 2
     iteratorAssignmentRhs.name shouldBe "iterator"
-    iteratorAssignmentRhs.methodFullName shouldBe s"$expectedCollectionType.iterator:std.iterator()"
+    iteratorAssignmentRhs.methodFullName shouldBe s"${Defines.UnresolvedNamespace}.iterator:std.iterator()"
     iteratorAssignmentRhs.signature shouldBe "std.iterator()"
     iteratorAssignmentRhs.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
