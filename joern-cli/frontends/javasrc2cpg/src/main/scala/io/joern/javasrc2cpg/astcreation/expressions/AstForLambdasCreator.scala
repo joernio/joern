@@ -369,7 +369,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
     }
 
     if (paramTypesList.sizeIs != lambdaParameters.size) {
-      logger.error(s"Found different number lambda params and param types for $expr. Some parameters will be missing.")
+      logger.debug(s"Found different number lambda params and param types for $expr. Some parameters will be missing.")
     }
 
     val parameterNodes = lambdaParameters
