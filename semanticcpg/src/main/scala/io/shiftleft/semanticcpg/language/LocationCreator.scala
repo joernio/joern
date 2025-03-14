@@ -9,10 +9,6 @@ import scala.annotation.tailrec
 /* TODO MP: this should be part of the normal steps, rather than matching on the type at runtime
  * all (and only) steps extending DataFlowObject should/must have `newSink`, `newSource` and `newLocation` */
 object LocationCreator {
-
-  // the default value of Location.symbol. Fixne: Export that in a nicer way
-  private val LocationSymbolDefault = NewLocation.apply().symbol
-
   private val logger: Logger = LoggerFactory.getLogger(getClass)
 
   def apply(node: StoredNode)(implicit finder: NodeExtensionFinder): NewLocation = {
