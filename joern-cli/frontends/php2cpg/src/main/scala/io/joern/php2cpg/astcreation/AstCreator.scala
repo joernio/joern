@@ -23,8 +23,7 @@ import scala.collection.mutable
 
 class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, disableFileContent: Boolean)(implicit
   withSchemaValidation: ValidationMode
-) extends AstCreatorBase(relativeFileName)
-    with AstNodeBuilder[PhpNode, AstCreator] {
+) extends AstCreatorBase[PhpNode, AstCreator](relativeFileName) {
 
   private val logger          = LoggerFactory.getLogger(AstCreator.getClass)
   private val scope           = new Scope()(() => nextClosureName())
@@ -244,7 +243,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     val returnType = decl.returnType.map(_.name).getOrElse(TypeConstants.Any)
 
     val methodBodyStmts = bodyPrefixAsts ++ decl.stmts.flatMap(astsForStmt)
-    val methodReturn    = newMethodReturnNode(returnType, line = line(decl), column = None)
+    val methodReturn    = methodReturnNode(decl, returnType)
 
     val attributeAsts = decl.attributeGroups.flatMap(astForAttributeGroup)
     val methodBody    = blockAst(blockNode(decl), methodBodyStmts)
@@ -796,7 +795,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     Ast(typeDecl).withChildren(modifiers).withChildren(bodyStmts).withChildren(annotationAsts)
   }
 
-  private def astForStaticAndConstInits: Option[Ast] = {
+  private def astForStaticAndConstInits(node: PhpNode): Option[Ast] = {
     scope.getConstAndStaticInits match {
       case Nil => None
 
@@ -804,7 +803,14 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
         val signature = s"${TypeConstants.Void}()"
         val fullName  = composeMethodFullName(StaticInitMethodName, isStatic = true)
         val ast =
-          staticInitMethodAst(inits, fullName, Option(signature), TypeConstants.Void, fileName = Some(relativeFileName))
+          staticInitMethodAst(
+            node,
+            inits,
+            fullName,
+            Option(signature),
+            TypeConstants.Void,
+            fileName = Some(relativeFileName)
+          )
 
         for {
           method  <- ast.root.collect { case method: NewMethod => method }
@@ -845,7 +851,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
       case stmt => astsForStmt(stmt)
     }
 
-    val clinitAst           = astForStaticAndConstInits
+    val clinitAst           = astForStaticAndConstInits(classLike)
     val anonymousMethodAsts = scope.getAndClearAnonymousMethods
 
     List(classConsts, properties, clinitAst, constructorAst, anonymousMethodAsts, otherBodyStmts).flatten
@@ -881,7 +887,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
 
     val methodBody = blockAst(blockNode(originNode), scope.getFieldInits)
 
-    val methodReturn = newMethodReturnNode(TypeConstants.Any, line = None, column = None)
+    val methodReturn = methodReturnNode(originNode, TypeConstants.Any)
 
     methodAstWithAnnotations(method, thisParam :: Nil, methodBody, methodReturn, modifiers)
   }

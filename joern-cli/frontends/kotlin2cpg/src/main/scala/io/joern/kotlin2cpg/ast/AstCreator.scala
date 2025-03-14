@@ -8,14 +8,12 @@ import io.joern.kotlin2cpg.types.TypeConstants
 import io.joern.kotlin2cpg.types.TypeInfoProvider
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.AstCreatorBase
-import io.joern.x2cpg.AstNodeBuilder
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.utils.NodeBuilders
-import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
@@ -46,13 +44,12 @@ object AstCreator {
 
 class AstCreator(fileWithMeta: KtFileWithMeta, bindingContext: BindingContext, global: Global)(implicit
   withSchemaValidation: ValidationMode
-) extends AstCreatorBase(fileWithMeta.filename)
+) extends AstCreatorBase[PsiElement, AstCreator](fileWithMeta.filename)
     with AstForDeclarationsCreator
     with AstForPrimitivesCreator
     with AstForFunctionsCreator
     with AstForStatementsCreator
-    with AstForExpressionsCreator
-    with AstNodeBuilder[PsiElement, AstCreator] {
+    with AstForExpressionsCreator {
 
   import AstCreator.BindingInfo
   import AstCreator.ClosureBindingDef
@@ -345,19 +342,20 @@ class AstCreator(fileWithMeta: KtFileWithMeta, bindingContext: BindingContext, g
       for {
         node <- importAsts.flatMap(_.root.collectAll[NewImport])
         name = getName(node)
-      } yield Ast(NodeBuilders.newNamespaceBlockNode(name, name, relativizedPath))
+      } yield Ast(namespaceBlockNode(fileWithMeta.f, name, name, relativizedPath))
 
     val packageName = ktFile.getPackageFqName.toString
     val node =
       if (packageName == Constants.Root) {
-        NodeBuilders.newNamespaceBlockNode(
+        namespaceBlockNode(
+          fileWithMeta.f,
           NamespaceTraversal.globalNamespaceName,
           NamespaceTraversal.globalNamespaceName,
           relativizedPath
         )
       } else {
         val name = packageName.split("\\.").lastOption.getOrElse("")
-        NodeBuilders.newNamespaceBlockNode(name, packageName, relativizedPath)
+        namespaceBlockNode(fileWithMeta.f, name, packageName, relativizedPath)
       }
     methodAstParentStack.push(node)
 
@@ -373,7 +371,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, bindingContext: BindingContext, g
     scope.pushNewScope(fakeGlobalMethod)
 
     val blockNode_   = blockNode(ktFile, "<empty>", registerType(TypeConstants.Any))
-    val methodReturn = newMethodReturnNode(TypeConstants.Any, None, None, None)
+    val methodReturn = methodReturnNode(ktFile, TypeConstants.Any)
 
     val declarationsAsts = ktFile.getDeclarations.asScala.flatMap(astsForDeclaration)
     val fileNode         = NewFile().name(fileWithMeta.relativizedPath)

@@ -94,8 +94,7 @@ class AstCreator(
   protected val keepTypeArguments: Boolean,
   val loggedExceptionCounts: scala.collection.concurrent.Map[Class[?], Int]
 )(implicit val withSchemaValidation: ValidationMode, val disableTypeFallback: Boolean)
-    extends AstCreatorBase(filename)
-    with AstNodeBuilder[Node, AstCreator]
+    extends AstCreatorBase[Node, AstCreator](filename)
     with AstForDeclarationsCreator
     with AstForExpressionsCreator
     with AstForStatementsCreator {

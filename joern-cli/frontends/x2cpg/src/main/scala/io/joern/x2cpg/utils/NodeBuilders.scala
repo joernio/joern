@@ -187,8 +187,10 @@ object NodeBuilders {
       .order(0)
   }
 
-  /** Create a method return node
-    */
+  @deprecated(
+    "Deprecated in favour of the corresponding method io.joern.x2cpg.AstNodeBuilder and will be removed in a future version",
+    "4.0.286"
+  )
   def newMethodReturnNode(
     typeFullName: String,
     dynamicTypeHintFullName: Option[String] = None,
@@ -203,6 +205,10 @@ object NodeBuilders {
       .lineNumber(line)
       .columnNumber(column)
 
+  @deprecated(
+    "Deprecated in favour of the corresponding method io.joern.x2cpg.AstNodeBuilder and will be removed in a future version",
+    "4.0.288"
+  )
   def newNamespaceBlockNode(name: String, fullName: String, fileName: String): NewNamespaceBlock = {
     NewNamespaceBlock()
       .name(name)

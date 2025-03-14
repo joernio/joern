@@ -36,7 +36,6 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
             ("tmp_1.component1()", Some(6)),
             ("component1(this)", None),
             ("RET", Some(4)),
-            ("RET", None),
             ("tmp_1.component1()", Some(6)),
             ("name = tmp_1.component1()", Some(6)),
             ("println(name)", Some(7))
@@ -64,7 +63,6 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
             ("tmp_1.component2()", Some(6)),
             ("component2(this)", None),
             ("RET", Some(4)),
-            ("RET", None),
             ("tmp_1.component2()", Some(6)),
             ("id = tmp_1.component2()", Some(6)),
             ("println(id)", Some(8))

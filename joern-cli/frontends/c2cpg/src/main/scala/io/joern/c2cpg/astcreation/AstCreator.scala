@@ -23,7 +23,7 @@ class AstCreator(
   val cdtAst: IASTTranslationUnit,
   val headerFileFinder: HeaderFileFinder,
   val file2OffsetTable: ConcurrentHashMap[String, Array[Int]]
-) extends AstCreatorBase(filename)(config.schemaValidation)
+) extends AstCreatorBase[IASTNode, AstCreator](filename)(config.schemaValidation)
     with AstForTypesCreator
     with AstForFunctionsCreator
     with AstForPrimitivesCreator
@@ -33,8 +33,7 @@ class AstCreator(
     with AstNodeBuilder
     with AstCreatorHelper
     with FullNameProvider
-    with MacroHandler
-    with X2CpgAstNodeBuilder[IASTNode, AstCreator] {
+    with MacroHandler {
 
   protected implicit val schemaValidation: ValidationMode = config.schemaValidation
 

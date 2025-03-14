@@ -2,6 +2,7 @@ package io.joern.c2cpg.astcreation
 
 object Defines {
   val Any: String                            = io.joern.x2cpg.Defines.Any
+  val UnresolvedNamespace: String            = io.joern.x2cpg.Defines.UnresolvedNamespace
   val Void: String                           = "void"
   val Function: String                       = "std.function"
   val Array: String                          = "std.array"

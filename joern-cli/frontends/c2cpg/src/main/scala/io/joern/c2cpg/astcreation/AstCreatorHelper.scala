@@ -1,7 +1,6 @@
 package io.joern.c2cpg.astcreation
 
-import io.joern.x2cpg.Ast
-import io.joern.x2cpg.SourceFiles
+import io.joern.x2cpg.{Ast, AstNodeBuilder, SourceFiles}
 import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.newDependencyNode
@@ -434,7 +433,7 @@ trait AstCreatorHelper { this: AstCreator =>
     variableName: String,
     tpe: String
   ): NewLocal = {
-    val local = localNodeWithExplicitPositionInfo(variableName, variableName, tpe).order(0)
+    val local = AstNodeBuilder.localNodeWithExplicitPositionInfo(variableName, variableName, tpe).order(0)
     diffGraph.addEdge(methodScopeNodeId, local, EdgeTypes.AST)
     local
   }

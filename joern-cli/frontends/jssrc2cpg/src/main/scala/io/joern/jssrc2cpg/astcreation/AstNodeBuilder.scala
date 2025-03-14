@@ -4,7 +4,6 @@ import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
-import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, PropertyNames}
 
@@ -13,7 +12,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     val tpe           = typeFor(func)
     val possibleTypes = Seq(tpe)
     val typeFullName  = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
-    newMethodReturnNode(typeFullName, line = func.lineNumber, column = func.columnNumber).possibleTypes(possibleTypes)
+    methodReturnNode(func, typeFullName).possibleTypes(possibleTypes)
   }
 
   protected def setOrderExplicitly(ast: Ast, order: Int): Unit = {

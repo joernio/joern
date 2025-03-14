@@ -183,13 +183,13 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
     dynamicTypeHintFullName: Option[String],
     lineAndColumn: LineAndColumn
   ): nodes.NewMethodReturn = {
-    val methodReturnNode = NodeBuilders
-      .newMethodReturnNode(
-        staticTypeHint.getOrElse(Constants.ANY),
-        dynamicTypeHintFullName,
-        Some(lineAndColumn.line),
-        Some(lineAndColumn.column)
-      )
+    val methodReturnNode = nodes
+      .NewMethodReturn()
+      .typeFullName(staticTypeHint.getOrElse(Constants.ANY))
+      .dynamicTypeHintFullName(dynamicTypeHintFullName)
+      .lineNumber(lineAndColumn.line)
+      .columnNumber(lineAndColumn.column)
+      .code("RET")
       .evaluationStrategy(EvaluationStrategies.BY_SHARING)
 
     addNodeToDiff(methodReturnNode)

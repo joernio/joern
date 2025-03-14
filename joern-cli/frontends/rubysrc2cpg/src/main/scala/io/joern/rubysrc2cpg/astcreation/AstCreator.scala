@@ -21,15 +21,14 @@ class AstCreator(
   val fileContent: String = "",
   val rootNode: StatementList
 )(implicit withSchemaValidation: ValidationMode)
-    extends AstCreatorBase(fileName)
+    extends AstCreatorBase[RubyExpression, AstCreator](fileName)
     with AstCreatorHelper
     with AstForStatementsCreator
     with AstForExpressionsCreator
     with AstForControlStructuresCreator
     with AstForFunctionsCreator
     with AstForTypesCreator
-    with AstSummaryVisitor
-    with AstNodeBuilder[RubyExpression, AstCreator] {
+    with AstSummaryVisitor {
 
   val tmpGen: FreshNameGenerator[String]                      = FreshNameGenerator(i => s"<tmp-$i>")
   val procParamGen: FreshNameGenerator[Left[String, Nothing]] = FreshNameGenerator(i => Left(s"<proc-param-$i>"))
