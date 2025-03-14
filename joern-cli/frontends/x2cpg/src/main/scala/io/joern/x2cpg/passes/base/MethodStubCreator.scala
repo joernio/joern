@@ -28,6 +28,7 @@ class MethodStubCreator(cpg: Cpg) extends CpgPass(cpg) {
 
   // Since the method fullNames for fuzzyc are not unique, we do not have
   // a 1to1 relation and may overwrite some values. This is ok for now.
+  // NEWC has unique method fullNames now, so we can use this to create the stubs anyway.
   private val methodToParameterCount = mutable.LinkedHashMap[String, mutable.LinkedHashSet[CallSummary]]()
 
   override def run(dstGraph: DiffGraphBuilder): Unit = {
@@ -45,45 +46,48 @@ class MethodStubCreator(cpg: Cpg) extends CpgPass(cpg) {
             call.signature,
             call.methodFullName,
             call.dispatchType,
-            call.argument.argumentIndex.min,
-            call.argument.argumentIndex.max,
+            call.argument.argumentIndex.minOption.getOrElse(0),
+            call.argument.argumentIndex.maxOption.getOrElse(0),
             call.argument.size
           )
         )
     }
-    for ((k, v) <- methodToParameterCount) {
+    for ((fullName, callSummaries) <- methodToParameterCount) {
       var done = false
-      if (v.size == 1) {
-        val cs = v.head
-        if (cs.numArg == cs.maxArg - cs.minArg + 1 && (cs.minArg == 0 || cs.minArg == 1)) {
+      if (callSummaries.size == 1) {
+        val callSummary = callSummaries.head
+        if (
+          callSummary.numArg == callSummary.maxArg - callSummary.minArg + 1 &&
+          (callSummary.minArg == 0 || callSummary.minArg == 1)
+        ) {
           done = true
           createMethodStub(
-            cs.name,
-            cs.fullName,
-            cs.signature,
-            cs.dispatchType,
-            cs.numArg,
+            callSummary.name,
+            callSummary.fullName,
+            callSummary.signature,
+            callSummary.dispatchType,
+            callSummary.numArg,
             dstGraph,
-            startWithInst = Some(cs.minArg == 0)
+            startWithInst = Some(callSummary.minArg == 0)
           )
         }
       }
       if (!done) {
         // something is broken :(
         logger.info(
-          s"Inconsistent/erroneous callInfo on calls to method fullname ${k} (we have ${v.size} many variants)"
+          s"Inconsistent/erroneous callInfo on calls to method fullname $fullName (we have ${callSummaries.size} many variants)"
         )
         // let's reconcile.
-        val cs     = v.head
-        val min    = Math.max(0, v.iterator.map(_.minArg).min)
-        val max    = v.iterator.map(_.maxArg).max
-        val numarg = if (min == 0) max + 1 else max
+        val cs     = callSummaries.head
+        val min    = Math.max(0, callSummaries.iterator.map(_.minArg).min)
+        val max    = callSummaries.iterator.map(_.maxArg).max
+        val numArg = if (min == 0) max + 1 else max
         createMethodStub(
           cs.name,
           cs.fullName,
           cs.signature,
           cs.dispatchType,
-          numarg,
+          numArg,
           dstGraph,
           startWithInst = Some(min == 0)
         )
