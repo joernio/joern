@@ -52,7 +52,8 @@ lazy val root = project.in(file(".")).aggregate(
 ThisBuild / libraryDependencies ++= Seq(
   "org.slf4j"                % "slf4j-api"         % Versions.slf4j,
   "org.apache.logging.log4j" % "log4j-slf4j2-impl" % Versions.log4j % Optional,
-  "org.apache.logging.log4j" % "log4j-core"        % Versions.log4j % Optional
+  "org.apache.logging.log4j" % "log4j-core"        % Versions.log4j % Optional,
+  "org.xerial"               % "sqlite-jdbc"       % Versions.sqliteJDBC % Optional
   // `Optional` means "not transitive", but still included in "stage/lib"
 )
 
