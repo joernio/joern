@@ -106,7 +106,8 @@ class ForEachLoopTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt) {
 
     val List(iteratorCallReceiver) = iteratorAssignmentRhs.receiver.isIdentifier.l
     iteratorCallReceiver.name shouldBe "items"
-    iteratorCallReceiver.order shouldBe 1
+    iteratorCallReceiver.argumentIndex shouldBe 0
+    iteratorAssignmentRhs.argument(0) shouldBe iteratorCallReceiver
     iteratorCallReceiver.typeFullName shouldBe expectedCollectionType
 
     val List(varI) = node.astChildren.isIdentifier.nameExact("item").l
