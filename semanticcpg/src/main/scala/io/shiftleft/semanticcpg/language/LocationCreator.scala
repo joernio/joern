@@ -37,10 +37,12 @@ object LocationCreator {
       .columnNumber(node.property(Properties.ColumnNumber))
 
     node match {
-      case _: Call | _: Literal | _: MethodRef => res.symbol(node.property(Properties.Code))
+      case _: Call | _: Literal | _: MethodRef =>
+        res.symbol(node.property(Properties.Code))
       case _: Identifier | _: Local | _: MethodParameterIn | _: MethodParameterOut | _: Method =>
         res.symbol(node.property(Properties.Name))
-      case _: MethodReturn => res.symbol("$ret")
+      case _: MethodReturn =>
+        res.symbol("$ret")
       case _               =>
     }
 
