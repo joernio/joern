@@ -8,7 +8,6 @@ import org.slf4j.{Logger, LoggerFactory}
 import scala.annotation.tailrec
 import scala.util.Try
 
-
 /* TODO MP: this should be part of the normal steps, rather than matching on the type at runtime
  * all (and only) steps extending DataFlowObject should/must have `newSink`, `newSource` and `newLocation` */
 object LocationCreator {
@@ -45,18 +44,19 @@ object LocationCreator {
         location.symbol(node.property(Properties.Name))
       case _: MethodReturn =>
         location.symbol("$ret")
-      case _               =>
+      case _ =>
     }
 
     val method0 = Option(method) match {
-      case method@Some(_) => method
-      case None => node match {
-        case cfg: CfgNode => Try(cfg.method).toOption
-        case loc: Local => Try(loc.method.head).toOption
-        case _ => None
-      }
+      case method @ Some(_) => method
+      case None =>
+        node match {
+          case cfg: CfgNode => Try(cfg.method).toOption
+          case loc: Local   => Try(loc.method.head).toOption
+          case _            => None
+        }
     }
-    
+
     method0.foreach { method =>
       val typeOption    = methodToTypeDecl(method)
       val typeName      = typeOption.map(_.fullName).getOrElse("")
