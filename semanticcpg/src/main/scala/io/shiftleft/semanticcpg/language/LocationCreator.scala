@@ -46,20 +46,20 @@ object LocationCreator {
       case _               =>
     }
 
-    var m = method
-    if (m == null) try {
+    var method0 = method
+    if (method0 == null) try {
       node match {
         case cfg: CfgNode =>
-          m = cfg.method
+          method0 = cfg.method
         case loc: Local =>
-          m = loc.method.head
+          method0 = loc.method.head
         case _ =>
       }
     } catch {
       case _: Throwable =>
     }
-    if (m != null) {
-      val typeOption    = methodToTypeDecl(m)
+    if (method0 != null) {
+      val typeOption    = methodToTypeDecl(method0)
       val typeName      = typeOption.map(_.fullName).getOrElse("")
       val typeShortName = typeOption.map(_.name).getOrElse("")
 
@@ -71,12 +71,12 @@ object LocationCreator {
       val namespaceName = namespaceOption.getOrElse("")
 
       location
-        .methodFullName(m.fullName)
-        .methodShortName(m.name)
+        .methodFullName(method0.fullName)
+        .methodShortName(method0.name)
         .packageName(namespaceName)
         .className(typeName)
         .classShortName(typeShortName)
-        .filename(if (m.filename.isEmpty) "N/A" else m.filename)
+        .filename(if (method0.filename.isEmpty) "N/A" else method0.filename)
     }
 
     location
