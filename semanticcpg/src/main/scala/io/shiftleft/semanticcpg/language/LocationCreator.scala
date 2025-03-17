@@ -6,6 +6,8 @@ import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.annotation.tailrec
+import scala.util.Try
+
 
 /* TODO MP: this should be part of the normal steps, rather than matching on the type at runtime
  * all (and only) steps extending DataFlowObject should/must have `newSink`, `newSource` and `newLocation` */
@@ -46,20 +48,17 @@ object LocationCreator {
       case _               =>
     }
 
-    var method0 = method
-    if (method0 == null) try {
-      node match {
-        case cfg: CfgNode =>
-          method0 = cfg.method
-        case loc: Local =>
-          method0 = loc.method.head
-        case _ =>
+    val method0 = Option(method) match {
+      case method@Some(_) => method
+      case None => node match {
+        case cfg: CfgNode => Try(cfg.method).toOption
+        case loc: Local => Try(loc.method.head).toOption
+        case _ => None
       }
-    } catch {
-      case _: Throwable =>
     }
-    if (method0 != null) {
-      val typeOption    = methodToTypeDecl(method0)
+    
+    method0.foreach { method =>
+      val typeOption    = methodToTypeDecl(method)
       val typeName      = typeOption.map(_.fullName).getOrElse("")
       val typeShortName = typeOption.map(_.name).getOrElse("")
 
@@ -71,12 +70,12 @@ object LocationCreator {
       val namespaceName = namespaceOption.getOrElse("")
 
       location
-        .methodFullName(method0.fullName)
-        .methodShortName(method0.name)
+        .methodFullName(method.fullName)
+        .methodShortName(method.name)
         .packageName(namespaceName)
         .className(typeName)
         .classShortName(typeShortName)
-        .filename(if (method0.filename.isEmpty) "N/A" else method0.filename)
+        .filename(if (method.filename.isEmpty) "N/A" else method.filename)
     }
 
     location
