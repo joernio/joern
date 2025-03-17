@@ -61,4 +61,29 @@ class LiteralTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       cpg.literal("0b010101").typeFullName.head shouldBe "int"
     }
   }
+
+  "inner text in literal strings" in {
+    val tripQuote = "\"\"\""
+    val cpg = code(s"""
+         |class Foo {
+         | val a: String = "abc";
+         | val b: String = "\\\"abc";
+         | val c: String = "abc\\\"";
+         | val d: String = ${tripQuote}
+         |abc
+         |def
+         |${tripQuote};
+         |}
+         |""".stripMargin)
+
+    cpg.literal.innerText.l shouldBe List(
+      Some("abc"),
+      Some("\\\"abc"),
+      Some("abc\\\""),
+      Some("""
+          |abc
+          |def
+          |""".stripMargin)
+    )
+  }
 }

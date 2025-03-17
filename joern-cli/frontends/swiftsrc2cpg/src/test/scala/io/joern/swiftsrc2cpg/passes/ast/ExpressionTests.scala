@@ -426,6 +426,28 @@ class ExpressionTests extends AstSwiftSrc2CpgSuite {
       ???
     }
 
+    "inner text in literal strings" in {
+      val tripQuote = "\"\"\""
+      val cpg = code(s"""
+           |class Foo {
+           | var a = "abc";
+           | var b = "\\\"abc";
+           | var c = "abc\\\"";
+           | var d = ${tripQuote}
+           |abc
+           |def
+           |${tripQuote};
+           |}
+           |""".stripMargin)
+
+      cpg.literal.innerText.l shouldBe List(
+        Some("abc"),
+        Some("\\\"abc"),
+        Some("abc\\\""),
+        Some("abc"), // Multiline strings are split into single strings in Swift
+        Some("def")
+      )
+    }
   }
 
 }

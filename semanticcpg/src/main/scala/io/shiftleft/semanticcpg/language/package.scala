@@ -96,9 +96,10 @@ package object language
   ): AnnotationParameterAssignTraversal =
     new AnnotationParameterAssignTraversal(a.iterator)
 
-  implicit def toMember(traversal: IterableOnce[Member]): MemberTraversal = new MemberTraversal(traversal.iterator)
-  implicit def toLocal(traversal: IterableOnce[Local]): LocalTraversal    = new LocalTraversal(traversal.iterator)
-  implicit def toMethod(traversal: IterableOnce[Method]): OriginalMethod  = new OriginalMethod(traversal.iterator)
+  implicit def toMember(traversal: IterableOnce[Member]): MemberTraversal    = new MemberTraversal(traversal.iterator)
+  implicit def toLocal(traversal: IterableOnce[Local]): LocalTraversal       = new LocalTraversal(traversal.iterator)
+  implicit def toMethod(traversal: IterableOnce[Method]): OriginalMethod     = new OriginalMethod(traversal.iterator)
+  implicit def toLiteral(traversal: IterableOnce[Literal]): LiteralTraversal = new LiteralTraversal(traversal.iterator)
 
   implicit def singleToMethodParameterInTrav[A <: MethodParameterIn](a: A): MethodParameterTraversal =
     new MethodParameterTraversal(Iterator.single(a))

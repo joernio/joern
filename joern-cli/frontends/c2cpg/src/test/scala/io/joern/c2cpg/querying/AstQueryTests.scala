@@ -192,4 +192,31 @@ class AstQueryTests extends C2CpgSuite {
     }
   }
 
+  "inner text in string literals" in {
+    val cpg = code("""
+        |void foo() {
+        | char a[] = "abc";
+        | char b[] = "\"abc";
+        | char c[] = "abc\"";
+        | char d[] = 'abc';
+        | char e[] = '\'abc';
+        | char f[] = 'abc\'';
+        | char g[] = '"abc"';
+        | char h[] = "'abc'";
+        | char i[] = "'abc\"";
+        |}
+        |""".stripMargin)
+
+    cpg.literal.innerText.l shouldBe List(
+      Some("abc"),
+      Some("\\\"abc"),
+      Some("abc\\\""),
+      Some("abc"),
+      Some("\\'abc"),
+      Some("abc\\'"),
+      Some("\"abc\""),
+      Some("'abc'"),
+      Some("'abc\\\"")
+    )
+  }
 }

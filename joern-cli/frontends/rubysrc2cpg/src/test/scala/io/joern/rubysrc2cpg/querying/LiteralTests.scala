@@ -275,4 +275,23 @@ class LiteralTests extends RubyCode2CpgFixture {
     }
   }
 
+  "inner text" in {
+    val cpg = code("""
+        |"abc"
+        |'abc'
+        |"\"a"
+        |"'a'"
+        |'"a"'
+        |"\"a'"
+        |""".stripMargin)
+
+    cpg.literal.innerText.l shouldBe List(
+      Some("abc"),
+      Some("abc"),
+      Some("\\\"a"),
+      Some("'a'"),
+      Some("\"a\""),
+      Some("\\\"a'")
+    )
+  }
 }

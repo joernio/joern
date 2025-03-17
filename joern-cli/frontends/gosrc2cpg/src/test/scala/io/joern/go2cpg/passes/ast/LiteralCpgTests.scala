@@ -42,4 +42,19 @@ class LiteralCpgTests extends GoCodeToCpgSuite {
     literalNode.code.size shouldBe 1000
     literalNode.code.endsWith("...") shouldBe true
   }
+
+  "inner text for string literals" in {
+    val cpg = code("""
+         |package main
+         |func foo() {
+         |  a := "abc"
+         |  b := "\"abc"
+         |  c := "abc\""
+         |  d := `abc`
+         |}
+         |""".stripMargin)
+
+    cpg.literal.innerText.l shouldBe List(Some("abc"), Some("\\\"abc"), Some("abc\\\""), Some("abc"))
+
+  }
 }
