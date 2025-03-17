@@ -1,6 +1,7 @@
 package io.shiftleft.semanticcpg.language
 
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.Properties
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -29,7 +30,6 @@ object LocationCreator {
   }
 
   def defaultCreateLocation(node: StoredNode, method: Method = null): NewLocation = {
-    import io.shiftleft.codepropertygraph.generated.Properties
     val res = NewLocation()
       .node(node)
       .nodeLabel(node.label)
