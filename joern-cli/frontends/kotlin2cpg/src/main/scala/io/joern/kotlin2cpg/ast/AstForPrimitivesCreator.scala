@@ -16,6 +16,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewMember
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
+import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.ValueDescriptor
@@ -233,17 +234,18 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   @unused
-  def astForPackageDeclaration(packageName: String): Ast = {
+  def astForPackageDeclaration(originNode: PsiElement, packageName: String): Ast = {
     val node =
       if (packageName == Constants.Root)
-        NodeBuilders.newNamespaceBlockNode(
+        namespaceBlockNode(
+          originNode,
           NamespaceTraversal.globalNamespaceName,
           NamespaceTraversal.globalNamespaceName,
           relativizedPath
         )
       else {
         val name = packageName.split("\\.").lastOption.getOrElse("")
-        NodeBuilders.newNamespaceBlockNode(name, packageName, relativizedPath)
+        namespaceBlockNode(originNode, name, packageName, relativizedPath)
       }
     Ast(node)
   }

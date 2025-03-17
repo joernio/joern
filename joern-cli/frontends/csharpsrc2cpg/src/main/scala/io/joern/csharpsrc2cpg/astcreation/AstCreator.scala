@@ -5,7 +5,7 @@ import io.joern.csharpsrc2cpg.datastructures.{CSharpProgramSummary, CSharpScope,
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.csharpsrc2cpg.utils.Utils.*
-import io.joern.x2cpg.astgen.{AstGenNodeBuilder, ParserResult}
+import io.joern.x2cpg.astgen.{AstGenNodeBuilder, BaseNodeInfo, ParserResult}
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, ModifierTypes, NodeTypes}
@@ -29,7 +29,7 @@ class AstCreator(
   val parserResult: ParserResult,
   val programSummary: CSharpProgramSummary = CSharpProgramSummary()
 )(implicit withSchemaValidation: ValidationMode)
-    extends AstCreatorBase(relativeFileName)
+    extends AstCreatorBase[BaseNodeInfo[?], AstCreator](relativeFileName)
     with AstCreatorHelper
     with AstForDeclarationsCreator
     with AstForPrimitivesCreator

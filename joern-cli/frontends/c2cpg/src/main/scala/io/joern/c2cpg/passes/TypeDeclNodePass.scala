@@ -1,5 +1,6 @@
 package io.joern.c2cpg.passes
 
+import io.joern.x2cpg.AstNodeBuilder
 import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.Config
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -10,7 +11,6 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.shiftleft.semanticcpg.language.*
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 
 class TypeDeclNodePass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
 
@@ -53,7 +53,7 @@ class TypeDeclNodePass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
         .astParentType(NodeTypes.NAMESPACE_BLOCK)
         .astParentFullName(fullName)
     val blockNode    = NewBlock().typeFullName(Defines.Any)
-    val methodReturn = newMethodReturnNode(Defines.Any, line = None, column = None)
+    val methodReturn = AstNodeBuilder.methodReturnNodeWithExplicitPositionInfo(Defines.Any, lineNumber = Option(1))
     Ast(includesFile).withChild(
       Ast(namespaceBlock)
         .withChild(Ast(fakeGlobalIncludesMethod).withChild(Ast(blockNode)).withChild(Ast(methodReturn)))

@@ -5,7 +5,6 @@ import io.joern.x2cpg
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
-import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
@@ -242,19 +241,18 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
   }
 
   def staticInitMethodAstAndBlock(
+    node: SwiftNode,
     initAsts: List[Ast],
     fullName: String,
     signature: Option[String],
     returnType: String,
-    fileName: Option[String] = None,
-    lineNumber: Option[Int] = None,
-    columnNumber: Option[Int] = None
+    fileName: Option[String] = None
   ): AstAndMethod = {
     val methodNode = NewMethod()
       .name(io.joern.x2cpg.Defines.StaticInitMethodName)
       .fullName(fullName)
-      .lineNumber(lineNumber)
-      .columnNumber(columnNumber)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
     if (signature.isDefined) {
       methodNode.signature(signature.get)
     }
@@ -263,7 +261,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     }
     val staticModifier = NewModifier().modifierType(ModifierTypes.STATIC)
     val body           = blockAst(NewBlock(), initAsts)
-    val methodReturn   = newMethodReturnNode(returnType, None, None, None)
+    val methodReturn   = methodReturnNode(node, returnType)
     AstAndMethod(methodAst(methodNode, Nil, body, methodReturn, List(staticModifier)), methodNode, body)
   }
 

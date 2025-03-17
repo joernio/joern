@@ -9,7 +9,6 @@ import io.joern.x2cpg.datastructures.Stack.StackWrapper
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.newBindingNode
 import io.joern.x2cpg.utils.NodeBuilders.newClosureBindingNode
-import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
@@ -152,7 +151,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     val otherBodyAsts     = bodyAsts.drop(1)
     val explicitTypeName  = Option(ktFn.getTypeReference).map(_.getText).getOrElse(TypeConstants.Any)
     val typeFullName      = registerType(nameRenderer.typeFullName(funcDesc.getReturnType).getOrElse(explicitTypeName))
-    val _methodReturnNode = newMethodReturnNode(typeFullName, None, line(ktFn), column(ktFn))
+    val _methodReturnNode = methodReturnNode(ktFn, typeFullName)
 
     val visibilityModifierType =
       modifierTypeForVisibility(funcDesc.getVisibility)
@@ -343,7 +342,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       lambdaMethodNode,
       parametersAsts,
       bodyAst,
-      newMethodReturnNode(returnTypeFullName, None, line(fn), column(fn)),
+      methodReturnNode(fn, returnTypeFullName),
       NodeBuilders.newModifierNode(ModifierTypes.VIRTUAL) :: NodeBuilders.newModifierNode(ModifierTypes.LAMBDA) :: Nil
     )
 
@@ -480,7 +479,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       lambdaMethodNode,
       paramAsts.toSeq,
       bodyAst,
-      newMethodReturnNode(returnTypeFullName, None, line(expr), column(expr)),
+      methodReturnNode(expr, returnTypeFullName),
       newModifierNode(ModifierTypes.VIRTUAL) :: newModifierNode(ModifierTypes.LAMBDA) :: Nil
     )
 

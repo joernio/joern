@@ -13,7 +13,7 @@ import io.joern.csharpsrc2cpg.utils.Utils.{
   composeSetterName,
   withoutSignature
 }
-import io.joern.x2cpg.utils.NodeBuilders.{newMethodReturnNode, newModifierNode}
+import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -78,8 +78,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     scope.pushNewScope(TypeScope(fullName))
     val modifiers = astForModifiers(classDecl)
     val members = astForMembers(classDecl.json(ParserKeys.Members).arr.map(createDotNetNodeInfo).toSeq)
-      ++ addConstructorWithFieldInitializationsIfNeeded(fullName)
-      ++ addStaticConstructorWithFieldInitializationsIfNeeded(fullName)
+      ++ addConstructorWithFieldInitializationsIfNeeded(classDecl, fullName)
+      ++ addStaticConstructorWithFieldInitializationsIfNeeded(classDecl, fullName)
 
     scope.popScope()
     val typeDeclAst = Ast(typeDecl)
@@ -89,7 +89,10 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     Seq(typeDeclAst)
   }
 
-  private def addConstructorWithFieldInitializationsIfNeeded(typeDeclFullName: String): Seq[Ast] = {
+  private def addConstructorWithFieldInitializationsIfNeeded(
+    node: DotNetNodeInfo,
+    typeDeclFullName: String
+  ): Seq[Ast] = {
     val dynamicFields = scope.getFieldsInScope.filter(f => !f.isStatic && f.isInitialized)
     val hasExplicitCtor =
       scope.tryResolveTypeReference(typeDeclFullName).exists(_.methods.exists(_.name == Defines.ConstructorMethodName))
@@ -98,7 +101,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val shouldBuildCtor = dynamicFields.nonEmpty && !hasExplicitCtor && parseLevel == FULL_AST
 
     if (shouldBuildCtor) {
-      val methodReturn = newMethodReturnNode(DotNetTypeMap(BuiltinTypes.Void), None, None, None)
+      val methodReturn = methodReturnNode(node, DotNetTypeMap(BuiltinTypes.Void))
       val signature    = composeMethodLikeSignature(methodReturn.typeFullName)
       val modifiers    = Seq(newModifierNode(ModifierTypes.CONSTRUCTOR), newModifierNode(ModifierTypes.INTERNAL))
       val name         = Defines.ConstructorMethodName
@@ -133,14 +136,17 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  private def addStaticConstructorWithFieldInitializationsIfNeeded(typeDeclFullname: String): Seq[Ast] = {
+  private def addStaticConstructorWithFieldInitializationsIfNeeded(
+    node: DotNetNodeInfo,
+    typeDeclFullname: String
+  ): Seq[Ast] = {
     val staticFields = scope.getFieldsInScope.filter(f => f.isStatic && f.isInitialized)
     val hasExplicitCtor =
       scope.tryResolveTypeReference(typeDeclFullname).exists(_.methods.exists(_.name == Defines.StaticInitMethodName))
     val shouldBuildCtor = staticFields.nonEmpty && !hasExplicitCtor && parseLevel == FULL_AST
 
     if (shouldBuildCtor) {
-      val methodReturn = newMethodReturnNode(DotNetTypeMap(BuiltinTypes.Void), None, None, None)
+      val methodReturn = methodReturnNode(node, DotNetTypeMap(BuiltinTypes.Void))
       val signature    = composeMethodLikeSignature(methodReturn.typeFullName)
       val modifiers = Seq(
         newModifierNode(ModifierTypes.CONSTRUCTOR),
@@ -361,7 +367,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       .toSeq
     // TODO: Decide on proper return type for constructors. No `ReturnType` key in C# JSON for constructors so just
     //  defaulted to void (same as java) for now
-    val methodReturn     = newMethodReturnNode(DotNetTypeMap(BuiltinTypes.Void), None, None, None)
+    val methodReturn     = methodReturnNode(constructorDecl, DotNetTypeMap(BuiltinTypes.Void))
     val signature        = composeMethodLikeSignature(DotNetTypeMap(BuiltinTypes.Void), params)
     val typeDeclFullName = scope.surroundingTypeDeclFullName.getOrElse(Defines.UnresolvedNamespace);
 

@@ -93,7 +93,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
       .collect { case identifier: NewIdentifier => identifier }
       .filter { identifier => lambdaParameterNamesToNodes.contains(identifier.name) }
 
-    val returnNode = newMethodReturnNode(returnType.getOrElse(defaultTypeFallback()), None, line(expr), column(expr))
+    val returnNode      = methodReturnNode(expr, returnType.getOrElse(defaultTypeFallback()))
     val virtualModifier = Some(newModifierNode(ModifierTypes.VIRTUAL))
     val staticModifier  = Option.when(thisParam.isEmpty)(newModifierNode(ModifierTypes.STATIC))
     val privateModifier = Some(newModifierNode(ModifierTypes.PRIVATE))
@@ -369,7 +369,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
     }
 
     if (paramTypesList.sizeIs != lambdaParameters.size) {
-      logger.error(s"Found different number lambda params and param types for $expr. Some parameters will be missing.")
+      logger.debug(s"Found different number lambda params and param types for $expr. Some parameters will be missing.")
     }
 
     val parameterNodes = lambdaParameters
