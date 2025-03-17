@@ -30,7 +30,7 @@ object LocationCreator {
   }
 
   def defaultCreateLocation(node: StoredNode, method: Method = null): NewLocation = {
-    val res = NewLocation()
+    val location = NewLocation()
       .node(node)
       .nodeLabel(node.label)
       .lineNumber(node.property(Properties.LineNumber))
@@ -38,11 +38,11 @@ object LocationCreator {
 
     node match {
       case _: Call | _: Literal | _: MethodRef =>
-        res.symbol(node.property(Properties.Code))
+        location.symbol(node.property(Properties.Code))
       case _: Identifier | _: Local | _: MethodParameterIn | _: MethodParameterOut | _: Method =>
-        res.symbol(node.property(Properties.Name))
+        location.symbol(node.property(Properties.Name))
       case _: MethodReturn =>
-        res.symbol("$ret")
+        location.symbol("$ret")
       case _               =>
     }
 
@@ -70,7 +70,7 @@ object LocationCreator {
       } yield namespace.name
       val namespaceName = namespaceOption.getOrElse("")
 
-      res
+      location
         .methodFullName(m.fullName)
         .methodShortName(m.name)
         .packageName(namespaceName)
@@ -79,7 +79,7 @@ object LocationCreator {
         .filename(if (m.filename.isEmpty) "N/A" else m.filename)
     }
 
-    res
+    location
   }
 
   def apply(
