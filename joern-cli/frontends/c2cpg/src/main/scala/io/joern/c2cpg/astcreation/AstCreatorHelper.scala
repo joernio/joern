@@ -1,5 +1,6 @@
 package io.joern.c2cpg.astcreation
 
+import io.joern.c2cpg.astcreation.C2CpgScope.PendingReference
 import io.joern.x2cpg.{Ast, AstNodeBuilder, SourceFiles}
 import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.utils.NodeBuilders
@@ -392,7 +393,7 @@ trait AstCreatorHelper { this: AstCreator =>
                     )
                     methodScope.capturingRefId.foreach(diffGraph.addEdge(_, closureBindingNode, EdgeTypes.CAPTURE))
                     nextReference = closureBindingNode
-                    val localNode = createLocalForUnresolvedReference(methodScopeNode, origin.variableName, origin.tpe)
+                    val localNode = createLocalForUnresolvedReference(methodScopeNode, origin)
                     Option(localNode.closureBindingId(closureBindingIdProperty))
                   case someLocalNode =>
                     // When there is already a LOCAL representing the capturing, we do not
@@ -430,10 +431,15 @@ trait AstCreatorHelper { this: AstCreator =>
 
   private def createLocalForUnresolvedReference(
     methodScopeNodeId: NewNode,
-    variableName: String,
-    tpe: String
+    pendingReference: PendingReference
   ): NewLocal = {
-    val local = AstNodeBuilder.localNodeWithExplicitPositionInfo(variableName, variableName, tpe).order(0)
+    val name = pendingReference.variableName
+    val tpe  = pendingReference.tpe
+    val code = pendingReference.referenceNode match {
+      case id: NewIdentifier => id.code
+      case _                 => pendingReference.variableName
+    }
+    val local = AstNodeBuilder.localNodeWithExplicitPositionInfo(name, code, tpe).order(0)
     diffGraph.addEdge(methodScopeNodeId, local, EdgeTypes.AST)
     local
   }
