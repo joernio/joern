@@ -10,6 +10,7 @@ import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPFunction
+import org.eclipse.cdt.internal.core.dom.parser.c.CVariable
 import org.eclipse.cdt.internal.core.dom.parser.c.ICInternalBinding
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTIdExpression
@@ -18,6 +19,9 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPField
 import org.eclipse.cdt.internal.core.dom.parser.cpp.ICPPInternalBinding
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.CPPVisitor
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalMemberAccess
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPNamespaceScope
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPVariable
+import org.eclipse.cdt.internal.core.dom.parser.IASTInternalScope
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import scala.util.Try
@@ -39,6 +43,24 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     }
   }
 
+  private def isFromGlobalDefinition(ident: IASTNode): Boolean = {
+    ident match {
+      case id: IASTIdExpression =>
+        safeGetBinding(id) match {
+          case Some(binding: CPPVariable) =>
+            val declarationParentMaybe =
+              Option(binding.getScope).collect { case n: IASTInternalScope => n.getPhysicalNode }
+            declarationParentMaybe.exists(_.isInstanceOf[IASTTranslationUnit])
+          case Some(binding: CVariable) =>
+            val declarationParentMaybe =
+              Option(binding.getScope).collect { case n: IASTInternalScope => n.getPhysicalNode }
+            declarationParentMaybe.exists(_.isInstanceOf[IASTTranslationUnit])
+          case _ => false
+        }
+      case _ => false
+    }
+  }
+
   protected def astForIdentifier(ident: IASTNode): Ast = {
     maybeMethodRefForIdentifier(ident) match {
       case Some(ref) => Ast(ref)
@@ -46,8 +68,9 @@ trait AstForPrimitivesCreator { this: AstCreator =>
         val identifierName = nameForIdentifier(ident)
         typeNameForIdentifier(ident, identifierName) match {
           case identifierTypeName: String =>
-            val tpe  = registerType(cleanType(identifierTypeName))
-            val node = identifierNode(ident, identifierName, code(ident), tpe)
+            val tpe       = registerType(cleanType(identifierTypeName))
+            val globalTag = if (isFromGlobalDefinition(ident)) "<global> " else ""
+            val node      = identifierNode(ident, identifierName, s"$globalTag${code(ident)}", tpe)
             scope.addVariableReference(identifierName, node, tpe, EvaluationStrategies.BY_REFERENCE)
             Ast(node)
           case ast: Ast => ast
