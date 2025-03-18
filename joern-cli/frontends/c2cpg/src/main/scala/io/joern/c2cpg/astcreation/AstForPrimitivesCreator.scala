@@ -19,7 +19,6 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPField
 import org.eclipse.cdt.internal.core.dom.parser.cpp.ICPPInternalBinding
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.CPPVisitor
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalMemberAccess
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPNamespaceScope
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPVariable
 import org.eclipse.cdt.internal.core.dom.parser.IASTInternalScope
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
@@ -47,14 +46,10 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     ident match {
       case id: IASTIdExpression =>
         safeGetBinding(id) match {
-          case Some(binding: CPPVariable) =>
-            val declarationParentMaybe =
-              Option(binding.getScope).collect { case n: IASTInternalScope => n.getPhysicalNode }
-            declarationParentMaybe.exists(_.isInstanceOf[IASTTranslationUnit])
-          case Some(binding: CVariable) =>
-            val declarationParentMaybe =
-              Option(binding.getScope).collect { case n: IASTInternalScope => n.getPhysicalNode }
-            declarationParentMaybe.exists(_.isInstanceOf[IASTTranslationUnit])
+          case Some(binding: (CPPVariable | CVariable)) =>
+            Try(binding.getScope).toOption
+              .collect { case n: IASTInternalScope => n.getPhysicalNode }
+              .exists(_.isInstanceOf[IASTTranslationUnit])
           case _ => false
         }
       case _ => false
