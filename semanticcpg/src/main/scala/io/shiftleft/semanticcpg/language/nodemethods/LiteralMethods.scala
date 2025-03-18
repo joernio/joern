@@ -12,7 +12,14 @@ class LiteralMethods(val literal: Literal) extends AnyVal with NodeExtension wit
   def innerText: Option[String] = {
     delimiters(literal)
       .filter(literal.code.startsWith(_))
-      .map(StringUtils.strip(literal.code, _))
+      .map(delimiter =>
+        val start =
+          if (delimiter == "\"\"\"" || delimiter == "'''") then literal.code.indexOf(delimiter) + 3
+          else literal.code.indexOf(delimiter) + 1
+        val end = literal.code.lastIndexOf(delimiter)
+
+        literal.code.substring(start, end)
+      )
       .headOption
   }
 
