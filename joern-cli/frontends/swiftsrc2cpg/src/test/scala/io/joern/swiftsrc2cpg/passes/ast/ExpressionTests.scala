@@ -440,7 +440,7 @@ class ExpressionTests extends AstSwiftSrc2CpgSuite {
            |}
            |""".stripMargin)
 
-      cpg.literal.innerText.l shouldBe List(
+      cpg.literal.strippedCode.l shouldBe List(
         Some("abc"),
         Some("\\\"abc"),
         Some("abc\\\""),

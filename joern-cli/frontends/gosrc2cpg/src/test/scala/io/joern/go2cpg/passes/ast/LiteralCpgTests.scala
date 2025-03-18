@@ -54,7 +54,7 @@ class LiteralCpgTests extends GoCodeToCpgSuite {
          |}
          |""".stripMargin)
 
-    cpg.literal.innerText.l shouldBe List(Some("abc"), Some("\\\"abc"), Some("abc\\\""), Some("abc"))
+    cpg.literal.strippedCode.l shouldBe List(Some("abc"), Some("\\\"abc"), Some("abc\\\""), Some("abc"))
 
   }
 }
