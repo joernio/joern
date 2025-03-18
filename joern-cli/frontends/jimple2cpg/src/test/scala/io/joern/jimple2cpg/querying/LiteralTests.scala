@@ -18,6 +18,6 @@ class LiteralTests extends JimpleCode2CpgFixture {
          |}
          |""".stripMargin)
 
-    cpg.literal.strippedCode.l shouldBe List(Some("abc"), Some("\\\"abc"), Some("abc\\\""), Some("abc\\ndef\\n"))
+    cpg.literal.strippedCode.l shouldBe List("abc", "\\\"abc", "abc\\\"", "abc\\ndef\\n")
   }
 }

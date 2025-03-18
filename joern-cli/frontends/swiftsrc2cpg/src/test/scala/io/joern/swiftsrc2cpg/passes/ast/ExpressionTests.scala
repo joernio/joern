@@ -441,11 +441,11 @@ class ExpressionTests extends AstSwiftSrc2CpgSuite {
            |""".stripMargin)
 
       cpg.literal.strippedCode.l shouldBe List(
-        Some("abc"),
-        Some("\\\"abc"),
-        Some("abc\\\""),
-        Some("abc"), // Multiline strings are split into single strings in Swift
-        Some("def")
+        "abc",
+        "\\\"abc",
+        "abc\\\"",
+        "abc", // Multiline strings are split into single strings in Swift
+        "def"
       )
     }
   }

@@ -77,13 +77,13 @@ class LiteralTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
          |""".stripMargin)
 
     cpg.literal.strippedCode.l shouldBe List(
-      Some("abc"),
-      Some("\\\"abc"),
-      Some("abc\\\""),
-      Some("""
+      "abc",
+      "\\\"abc",
+      "abc\\\"",
+      """
           |abc
           |def
-          |""".stripMargin)
+          |""".stripMargin
     )
   }
 }

@@ -13,12 +13,6 @@ class LiteralTests extends CSharpCode2CpgFixture {
         |var e = "a\"b\"c";
         |""".stripMargin))
 
-    cpg.literal.strippedCode.l shouldBe List(
-      Some("abc"),
-      Some("\\\"abc"),
-      Some("abc\\\""),
-      Some("\\\"abc\\\""),
-      Some("a\\\"b\\\"c")
-    )
+    cpg.literal.strippedCode.l shouldBe List("abc", "\\\"abc", "abc\\\"", "\\\"abc\\\"", "a\\\"b\\\"c")
   }
 }

@@ -37,20 +37,20 @@ class StrLiteralCpgTests extends AnyFreeSpec with Matchers {
         |""".stripMargin)
 
     cpg2.literal.strippedCode.l shouldBe List(
-      Some("abc"),
-      Some("\\\"abc"),
-      Some("abc\\\""),
-      Some("abc"),
-      Some("\\'abc"),
-      Some("abc\\'"),
-      Some("""
+      "abc",
+      "\\\"abc",
+      "abc\\\"",
+      "abc",
+      "\\'abc",
+      "abc\\'",
+      """
           |abc
           |def
-          |""".stripMargin),
-      Some("""
+          |""".stripMargin,
+      """
           |abc
           |def
-          |""".stripMargin)
+          |""".stripMargin
     )
   }
 }

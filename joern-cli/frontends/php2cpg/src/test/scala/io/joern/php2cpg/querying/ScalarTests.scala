@@ -111,15 +111,15 @@ class ScalarTests extends PhpCode2CpgFixture {
         |""".stripMargin)
 
     cpg.literal.strippedCode.l shouldBe List(
-      Some("abc"),
-      Some("\\\"abc"),
-      Some("abc\\\""),
-      Some("abc"),
-      Some("\\'abc"),
-      Some("abc\\'"),
-      Some("\\'abc\\'"),
-      Some("\\\"abc\\\""),
-      Some("\\'abc\\'")
+      "abc",
+      "\\\"abc",
+      "abc\\\"",
+      "abc",
+      "\\'abc",
+      "abc\\'",
+      "\\'abc\\'",
+      "\\\"abc\\\"",
+      "\\'abc\\'"
     )
   }
 }

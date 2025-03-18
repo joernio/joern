@@ -285,13 +285,6 @@ class LiteralTests extends RubyCode2CpgFixture {
         |"\"a'"
         |""".stripMargin)
 
-    cpg.literal.strippedCode.l shouldBe List(
-      Some("abc"),
-      Some("abc"),
-      Some("\\\"a"),
-      Some("'a'"),
-      Some("\"a\""),
-      Some("\\\"a'")
-    )
+    cpg.literal.strippedCode.l shouldBe List("abc", "abc", "\\\"a", "'a'", "\"a\"", "\\\"a'")
   }
 }
