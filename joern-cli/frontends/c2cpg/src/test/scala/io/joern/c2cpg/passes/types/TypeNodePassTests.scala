@@ -168,7 +168,7 @@ class TypeNodePassTests extends C2CpgSuite {
 
           test.name shouldBe "test"
           test.typeFullName shouldBe "test"
-          test.code shouldBe "test"
+          test.code shouldBe "struct test"
         }
         inside(cpg.local.nameExact("ptr").typ.referencedTypeDecl.l) { case List(tpe) =>
           tpe.name shouldBe "test*"
@@ -262,7 +262,7 @@ class TypeNodePassTests extends C2CpgSuite {
       value.code shouldBe "struct flex value"
       flex.name shouldBe "flex" // from the argument to sizeof in sizeof(struct flex)
       flex.typeFullName shouldBe "flex"
-      flex.code shouldBe "flex"
+      flex.code shouldBe "struct flex"
     }
   }
 

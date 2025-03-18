@@ -133,12 +133,12 @@ class C2CpgScope {
     pendingReferences.find(_.referenceNode == referenceNode).foreach(r => r.evaluationStrategy = evaluationStrategy)
   }
 
-  def resolve(unresolvedHandler: (NewNode, String, String) => NewLocal): Iterator[ResolvedReference] = {
+  def resolve(unresolvedHandler: (NewNode, PendingReference) => NewLocal): Iterator[ResolvedReference] = {
     pendingReferences.iterator.map { pendingReference =>
       val resolvedReferenceOption = pendingReference.tryResolve()
       resolvedReferenceOption.getOrElse {
         val methodScope     = getEnclosingMethodScopeElement(pendingReference.stack).scopeNode
-        val newVariableNode = unresolvedHandler(methodScope, pendingReference.variableName, pendingReference.tpe)
+        val newVariableNode = unresolvedHandler(methodScope, pendingReference)
         addVariable(
           pendingReference.stack,
           pendingReference.variableName,
