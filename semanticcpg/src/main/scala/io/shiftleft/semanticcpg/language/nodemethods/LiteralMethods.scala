@@ -25,7 +25,10 @@ class LiteralMethods(val literal: Literal) extends AnyVal with NodeExtension wit
           else literal.code.indexOf(delimiter) + 1
         val end = literal.code.lastIndexOf(delimiter)
 
-        literal.code.substring(start, end)
+        /* Windows uses `\r\n` for new line characters, but this can cause issues on different operating systems. So
+        we replace all `\r\n` to have consistency across all OS
+         */
+        literal.code.substring(start, end).replaceAll("\r\n", "\n")
       )
       .headOption
   }
