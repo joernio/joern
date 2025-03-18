@@ -167,7 +167,7 @@ class AstCreator(
   protected def column(node: Node): Option[Int]    = node.getBegin.map(_.column).toScala
   protected def lineEnd(node: Node): Option[Int]   = node.getEnd.map(_.line).toScala
   protected def columnEnd(node: Node): Option[Int] = node.getEnd.map(_.column).toScala
-  protected def code(node: Node): String           = node.toString(codePrinterOptions)
+  protected def code(node: Node): String           = node.toString(codePrinterOptions).replaceAll("\r\n", "\n")
 
   private val lineOffsetTable = OffsetUtils.getLineOffsetTable(fileContent)
 
