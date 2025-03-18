@@ -8,9 +8,16 @@ import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.nodemethods.LiteralMethods.delimiters
 import org.apache.commons.lang3.StringUtils
 
+import scala.collection.immutable.HashMap
+
 class LiteralMethods(val literal: Literal) extends AnyVal with NodeExtension with HasLocation {
   def innerText: Option[String] = {
-    delimiters(literal)
+    val stringDelimiter = Cpg(literal.graph).metaData.language.headOption match {
+      case Some(language) => delimiters.getOrElse(language, List("\""))
+      case _              => "\"" :: Nil
+    }
+
+    stringDelimiter
       .filter(literal.code.startsWith(_))
       .map(delimiter =>
         val start =
@@ -30,22 +37,21 @@ class LiteralMethods(val literal: Literal) extends AnyVal with NodeExtension wit
 }
 
 object LiteralMethods {
-  def delimiters(literal: Literal): List[String] = Cpg(literal.graph).metaData.language.headOption match {
-    case Some(Languages.JAVASRC | Languages.JAVA | Languages.KOTLIN | Languages.SWIFTSRC) =>
-      "\"\"\"" :: "\"" :: Nil
-    case Some(Languages.C | Languages.NEWC | Languages.PHP) =>
-      "\"" :: "'" :: Nil
-    case Some(Languages.JAVASCRIPT | Languages.JSSRC) =>
-      "\"" :: "'" :: "`" :: Nil
-    case Some(Languages.GOLANG) =>
-      "\"" :: "`" :: Nil
-    case Some(Languages.CSHARP | Languages.CSHARPSRC) =>
-      "\"" :: Nil
-    case Some(Languages.RUBYSRC) =>
-      "\"" :: "'" :: Nil
-    case Some(Languages.PYTHON | Languages.PYTHONSRC) =>
-      "\"\"\"" :: "'''" :: "\"" :: "'" :: Nil
-    case _ =>
-      "\"" :: Nil
-  }
+  val delimiters: Map[String, List[String]] = HashMap[String, List[String]](
+    Languages.JAVASRC    -> List("\"\"\"", "\""),
+    Languages.JAVA       -> List("\"\"\"", "\""),
+    Languages.KOTLIN     -> List("\"\"\"", "\""),
+    Languages.SWIFTSRC   -> List("\"\"\"", "\""),
+    Languages.C          -> List("\"", "'"),
+    Languages.NEWC       -> List("\"", "'"),
+    Languages.PHP        -> List("\"", "'"),
+    Languages.JAVASCRIPT -> List("\"", "'", "`"),
+    Languages.JSSRC      -> List("\"", "'", "`"),
+    Languages.GOLANG     -> List("\"", "`"),
+    Languages.CSHARP     -> List("\""),
+    Languages.CSHARPSRC  -> List("\""),
+    Languages.RUBYSRC    -> List("\"", "'"),
+    Languages.PYTHON     -> List("\"\"\"", "'''", "\"", "'"),
+    Languages.PYTHONSRC  -> List("\"\"\"", "'''", "\"", "'")
+  )
 }
