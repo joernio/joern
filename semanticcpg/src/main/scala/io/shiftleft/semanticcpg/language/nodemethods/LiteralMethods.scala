@@ -13,14 +13,10 @@ import scala.collection.immutable.HashMap
 
 class LiteralMethods(val literal: Literal) extends AnyVal with NodeExtension with HasLocation {
   def strippedCode: String = {
-    val stringDelimiter = Cpg(literal.graph).metaData.language.headOption match {
-      case Some(language) => delimiters(language)
-      case _ =>
-        logger.warn("Language must be defined for literal")
-        return literal.code
-    }
+    val language         = Cpg(literal.graph).metaData.language.head
+    val stringDelimiters = delimiters(language)
 
-    stringDelimiter
+    stringDelimiters
       .filter(literal.code.startsWith(_))
       .map(delimiter =>
         val delimiterLength = delimiter.length
