@@ -25,11 +25,8 @@ class LiteralMethods(val literal: Literal) extends AnyVal with NodeExtension wit
     stringDelimiters
       .filter(literal.code.startsWith(_))
       .map(delimiter =>
-        val delimiterLength = delimiter.length
-        val start =
-          if (delimiter == "\"\"\"" || delimiter == "'''") then literal.code.indexOf(delimiter) + delimiterLength
-          else literal.code.indexOf(delimiter) + delimiterLength
-        val end = literal.code.lastIndexOf(delimiter)
+        val start = literal.code.indexOf(delimiter) + delimiter.length
+        val end   = literal.code.lastIndexOf(delimiter)
 
         literal.code.substring(start, end)
       )
