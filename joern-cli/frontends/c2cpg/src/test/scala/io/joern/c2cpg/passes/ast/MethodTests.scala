@@ -330,6 +330,27 @@ class MethodTests extends C2CpgSuite {
       method.fullName shouldBe "method"
     }
 
+    "be correct for C++ method with long int types" in {
+      val cpg = code(
+        """
+          |long methodA(long int a, long int b) { return a *  b; }
+          |long int methodB(long a, long b) { return a *  b; }
+          |int main() {
+          |  methodA(1.9, 2.9);
+          |  methodB(1.9, 2.9);
+          |  return 0;
+          |}
+          |""".stripMargin,
+        "test.cpp"
+      )
+      val List(methodA) = cpg.method.nameExact("methodA").l
+      methodA.signature shouldBe "long(long,long)"
+      methodA.fullName shouldBe "methodA:long(long,long)"
+      val List(methodB) = cpg.method.nameExact("methodB").l
+      methodB.signature shouldBe "long(long,long)"
+      methodB.fullName shouldBe "methodB:long(long,long)"
+    }
+
     "be correct for C function pointer" in {
       val cpg = code(
         """

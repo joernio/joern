@@ -30,6 +30,7 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFoldExpression
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalBinary
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalFoldExpression
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTEqualsInitializer
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPClosureType
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPFunction
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPVariable
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
@@ -204,8 +205,13 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   protected def safeGetType(tpe: IType): String = {
-    // In case of unresolved includes etc. this may fail throwing an unrecoverable exception
-    Try(ASTTypeUtil.getType(tpe)).getOrElse(Defines.Any)
+    tpe match {
+      case _: CPPClosureType                                  => Defines.Function
+      case cppBasicType: ICPPBasicType if cppBasicType.isLong => "long"
+      case _                                                  =>
+        // In case of unresolved includes etc. this may fail throwing an unrecoverable exception
+        Try(ASTTypeUtil.getType(tpe)).getOrElse(Defines.Any)
+    }
   }
 
   @nowarn
@@ -581,6 +587,7 @@ trait AstCreatorHelper { this: AstCreator =>
   private def pointersAsString(spec: IASTDeclSpecifier, parentDecl: IASTDeclarator): String = {
     val tpe = typeFor(spec) match {
       case Defines.Auto => typeFor(parentDecl)
+      case "longint"    => "long"
       case t            => t
     }
     val pointers = parentDecl.getPointerOperators
