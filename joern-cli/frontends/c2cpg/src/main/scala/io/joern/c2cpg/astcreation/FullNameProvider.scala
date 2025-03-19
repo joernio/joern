@@ -194,8 +194,12 @@ trait FullNameProvider { this: AstCreator =>
 
   private def returnTypeForIASTFunctionDeclarator(declarator: IASTFunctionDeclarator): String = {
     safeGetBinding(declarator.getName) match {
-      case Some(value: ICPPMethod) =>
-        cleanType(value.getType.getReturnType.toString)
+      case Some(_: ICPPFunctionTemplate) if declarator.getParent.isInstanceOf[IASTFunctionDefinition] =>
+        cleanType(typeForDeclSpecifier(declarator.getParent.asInstanceOf[IASTFunctionDefinition].getDeclSpecifier))
+      case Some(value: ICPPMethod) if !value.getType.toString.startsWith("?") =>
+        cleanType(safeGetType(value.getType.getReturnType))
+      case Some(value: ICPPFunction) if !value.getType.toString.startsWith("?") =>
+        cleanType(safeGetType(value.getType.getReturnType))
       case _ if declarator.getParent.isInstanceOf[IASTSimpleDeclaration] =>
         cleanType(typeForDeclSpecifier(declarator.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclSpecifier))
       case _ if declarator.getParent.isInstanceOf[IASTFunctionDefinition] =>
@@ -209,8 +213,12 @@ trait FullNameProvider { this: AstCreator =>
       typeFor(definition.asInstanceOf[CPPASTFunctionDefinition].getMemberInitializers.head.getInitializer)
     } else {
       safeGetBinding(definition.getDeclarator.getName) match {
-        case Some(value: ICPPMethod) =>
-          cleanType(value.getType.getReturnType.toString)
+        case Some(_: ICPPFunctionTemplate) =>
+          typeForDeclSpecifier(definition.getDeclSpecifier)
+        case Some(value: ICPPMethod) if !value.getType.toString.startsWith("?") =>
+          cleanType(safeGetType(value.getType.getReturnType))
+        case Some(value: ICPPFunction) if !value.getType.toString.startsWith("?") =>
+          cleanType(safeGetType(value.getType.getReturnType))
         case _ =>
           typeForDeclSpecifier(definition.getDeclSpecifier)
       }

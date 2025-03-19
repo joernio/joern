@@ -330,6 +330,97 @@ class MethodTests extends C2CpgSuite {
       method.fullName shouldBe "method"
     }
 
+    "be correct for C++ method with long int types" in {
+      val cpg = code(
+        """
+          |long methodA(long int a, long int b) { return a *  b; }
+          |long int methodB(long a, long b) { return a *  b; }
+          |int main() {
+          |  methodA(1.9, 2.9);
+          |  methodB(1.9, 2.9);
+          |  return 0;
+          |}
+          |""".stripMargin,
+        "test.cpp"
+      )
+      val List(methodA) = cpg.method.nameExact("methodA").l
+      methodA.signature shouldBe "long(long,long)"
+      methodA.fullName shouldBe "methodA:long(long,long)"
+      val List(methodB) = cpg.method.nameExact("methodB").l
+      methodB.signature shouldBe "long(long,long)"
+      methodB.fullName shouldBe "methodB:long(long,long)"
+    }
+
+    "be correct for C++ method with long long int types" in {
+      val cpg = code(
+        """
+          |long long methodA(long long int a, long long int b) { return a *  b; }
+          |long long int methodB(long long a, long long b) { return a *  b; }
+          |int main() {
+          |  methodA(1.9, 2.9);
+          |  methodB(1.9, 2.9);
+          |  return 0;
+          |}
+          |""".stripMargin,
+        "test.cpp"
+      )
+      val List(methodA) = cpg.method.nameExact("methodA").l
+      methodA.signature shouldBe "longlong(longlong,longlong)"
+      methodA.fullName shouldBe "methodA:longlong(longlong,longlong)"
+      val List(methodB) = cpg.method.nameExact("methodB").l
+      methodB.signature shouldBe "longlong(longlong,longlong)"
+      methodB.fullName shouldBe "methodB:longlong(longlong,longlong)"
+    }
+
+    "be correct for C++ method with short int types" in {
+      val cpg = code(
+        """
+          |short methodA(short int a, short int b) { return a *  b; }
+          |short int methodB(short a, short b) { return a *  b; }
+          |int main() {
+          |  methodA(1, 2);
+          |  methodB(1, 2);
+          |  return 0;
+          |}
+          |""".stripMargin,
+        "test.cpp"
+      )
+      val List(methodA) = cpg.method.nameExact("methodA").l
+      methodA.signature shouldBe "short(short,short)"
+      methodA.fullName shouldBe "methodA:short(short,short)"
+      val List(methodB) = cpg.method.nameExact("methodB").l
+      methodB.signature shouldBe "short(short,short)"
+      methodB.fullName shouldBe "methodB:short(short,short)"
+    }
+
+    "be correct for C++ method in class" in {
+      val cpg = code(
+        """
+          |#include <vector>
+          |
+          |class A {
+          |  public:
+          |    int foo1(void) { return 0; }
+          |    std::vector<int> foo2(void) {
+          |      std::vector<int> v;
+          |      return v;
+          |    }
+          |}
+          |
+          |std::vector<int> foo3(void) {
+          |  std::vector<int> v;
+          |  return v;
+          |}
+          |""".stripMargin,
+        "test.cpp"
+      )
+      cpg.method.filter(_.name.contains("foo")).methodReturn.typeFullName.l shouldBe List(
+        "int",
+        "vector<int>",
+        "vector<int>"
+      )
+    }
+
     "be correct for C function pointer" in {
       val cpg = code(
         """
