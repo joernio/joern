@@ -17,4 +17,40 @@ class StrLiteralCpgTests extends AnyFreeSpec with Matchers {
     literal.lineNumber shouldBe Some(1)
     literal.columnNumber shouldBe Some(1)
   }
+
+  "inner text in string literal" in {
+    val cpg2 = Py2CpgTestContext.buildCpg(s"""
+        |a = "abc"
+        |b = "\\\"abc"
+        |c = "abc\\\""
+        |d = 'abc'
+        |e = '\\'abc'
+        |f = 'abc\\''
+        |g = \"\"\"
+        |abc
+        |def
+        |\"\"\"
+        |h = '''
+        |abc
+        |def
+        |'''
+        |""".stripMargin)
+
+    cpg2.literal.strippedCode.l shouldBe List(
+      "abc",
+      "\\\"abc",
+      "abc\\\"",
+      "abc",
+      "\\'abc",
+      "abc\\'",
+      """
+          |abc
+          |def
+          |""".stripMargin,
+      """
+          |abc
+          |def
+          |""".stripMargin
+    )
+  }
 }

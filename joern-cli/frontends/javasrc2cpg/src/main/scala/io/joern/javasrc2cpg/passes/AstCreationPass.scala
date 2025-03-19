@@ -53,7 +53,7 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     sourceParser.parseAnalysisFile(filename, !config.disableFileContent) match {
       case Some(compilationUnit, fileContent) =>
         symbolSolver.inject(compilationUnit)
-        val contentToUse = if (!config.disableFileContent) fileContent else None
+        val contentToUse = if (!config.disableFileContent) fileContent.map(_.replaceAll("\r\n", "\n")) else None
 
         diffGraph.absorb(
           new AstCreator(

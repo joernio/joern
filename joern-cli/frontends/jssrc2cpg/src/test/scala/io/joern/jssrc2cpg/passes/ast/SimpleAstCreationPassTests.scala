@@ -89,6 +89,38 @@ class SimpleAstCreationPassTests extends AstJsSrc2CpgSuite {
       z.typeFullName shouldBe Defines.Boolean
     }
 
+    "have correct inner text for string literals" in {
+      val cpg = code("""
+          |let a = "abc";
+          |let b = "\"abc";
+          |let c = "abc\"";
+          |let d = 'abc';
+          |let e = '\'abc';
+          |let f = 'abc\'';
+          |let g = "'abc'";
+          |let h = '"abc"';
+          |let i = '\'abc\'';
+          |let j = `abc
+          |def
+          |`
+          |""".stripMargin)
+
+      cpg.literal.strippedCode.l shouldBe List(
+        "abc",
+        "\"abc",
+        "abc\"",
+        "abc",
+        "'abc",
+        "abc'",
+        "'abc'",
+        "\"abc\"",
+        "'abc'",
+        """abc
+            |def
+            |""".stripMargin
+      )
+    }
+
     "have correct structure for multiple declarators in one place" in {
       val cpg                                         = code("let x = 1, y = 2, z = 3;")
       val List(xAssignment, yAssignment, zAssignment) = cpg.call.l.sortBy(_.code)

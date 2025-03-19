@@ -96,4 +96,30 @@ class ScalarTests extends PhpCode2CpgFixture {
       nullLiteral.typeFullName shouldBe "null"
     }
   }
+
+  "inner text in string literals" in {
+    val cpg = code("""<?php
+        |$a = "abc"
+        |$b = "\"abc"
+        |$c = "abc\""
+        |$d = 'abc'
+        |$e = '\'abc'
+        |$f = 'abc\''
+        |$g = '\'abc\''
+        |$h = '"abc"'
+        |$i = "'abc'"
+        |""".stripMargin)
+
+    cpg.literal.strippedCode.l shouldBe List(
+      "abc",
+      "\\\"abc",
+      "abc\\\"",
+      "abc",
+      "\\'abc",
+      "abc\\'",
+      "\\'abc\\'",
+      "\\\"abc\\\"",
+      "\\'abc\\'"
+    )
+  }
 }
