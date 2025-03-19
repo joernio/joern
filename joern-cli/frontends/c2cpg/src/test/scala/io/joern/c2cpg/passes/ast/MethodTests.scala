@@ -365,11 +365,11 @@ class MethodTests extends C2CpgSuite {
         "test.cpp"
       )
       val List(methodA) = cpg.method.nameExact("methodA").l
-      methodA.signature shouldBe "long(long,long)"
-      methodA.fullName shouldBe "methodA:long(long,long)"
+      methodA.signature shouldBe "longlong(longlong,longlong)"
+      methodA.fullName shouldBe "methodA:longlong(longlong,longlong)"
       val List(methodB) = cpg.method.nameExact("methodB").l
-      methodB.signature shouldBe "long(long,long)"
-      methodB.fullName shouldBe "methodB:long(long,long)"
+      methodB.signature shouldBe "longlong(longlong,longlong)"
+      methodB.fullName shouldBe "methodB:longlong(longlong,longlong)"
     }
 
     "be correct for C++ method with short int types" in {

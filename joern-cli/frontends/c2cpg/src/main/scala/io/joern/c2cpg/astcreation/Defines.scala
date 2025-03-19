@@ -9,7 +9,6 @@ object Defines {
   val Iterator: String                       = "std.iterator"
   val QualifiedNameSeparator: String         = "::"
   val Auto: String                           = "auto"
-  val LongInt: String                        = "(long)+(int)?"
   val OperatorPointerCall: String            = "<operator>.pointerCall"
   val OperatorConstructorInitializer: String = "<operator>.constructorInitializer"
   val OperatorTypeOf: String                 = "<operator>.typeOf"
