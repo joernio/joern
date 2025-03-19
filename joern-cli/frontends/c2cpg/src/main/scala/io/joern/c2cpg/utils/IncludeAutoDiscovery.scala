@@ -34,6 +34,8 @@ object IncludeAutoDiscovery {
 
   private val VcVarsCommand = Seq("cmd.exe", "/C", "VC\\Auxiliary\\Build\\vcvars64.bat")
 
+  private val LanguageSetting = Map("LC_ALL" -> "C")
+
   // Only check once
   private var isGccAvailable: Option[Boolean] = None
 
@@ -79,7 +81,7 @@ object IncludeAutoDiscovery {
   }
 
   private def discoverPaths(command: Seq[String]): mutable.LinkedHashSet[Path] =
-    GccSpecificExternalCommand.run(command, ".") match {
+    GccSpecificExternalCommand.run(command, ".", LanguageSetting) match {
       case Success(output) => extractPaths(output)
       case Failure(exception) =>
         logger.warn(s"Unable to discover system include paths. Running '$command' failed.", exception)
@@ -87,12 +89,15 @@ object IncludeAutoDiscovery {
     }
 
   private def extractPaths(output: Seq[String]): mutable.LinkedHashSet[Path] = {
-    val startIndex =
-      output.indexWhere(_.contains("#include")) + 2
-    val endIndex =
-      if (IsWin) output.indexWhere(_.startsWith("End of search list.")) - 1
-      else output.indexWhere(_.startsWith("COMPILER_PATH")) - 1
-    mutable.LinkedHashSet.from(output.slice(startIndex, endIndex).map(p => Paths.get(p.trim).toRealPath()))
+    val startIndex = output.indexWhere(_.contains("#include")) + 2
+    val endIndex   = output.indexWhere(_.startsWith("End of search list.")) - 1
+    mutable.LinkedHashSet.from(output.slice(startIndex, endIndex).map { pathString =>
+      val trimmedPathString = pathString.trim
+      val macSpecificFix = if (trimmedPathString.contains(" (") && trimmedPathString.endsWith(")")) {
+        trimmedPathString.substring(0, trimmedPathString.indexOf(" ("))
+      } else trimmedPathString
+      Paths.get(macSpecificFix).toRealPath()
+    })
   }
 
   private def discoverMSVCPaths(): mutable.LinkedHashSet[Path] = {
