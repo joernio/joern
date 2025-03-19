@@ -206,9 +206,10 @@ trait AstCreatorHelper { this: AstCreator =>
 
   protected def safeGetType(tpe: IType): String = {
     tpe match {
-      case _: CPPClosureType                                  => Defines.Function
-      case cppBasicType: ICPPBasicType if cppBasicType.isLong => "long"
-      case _                                                  =>
+      case _: CPPClosureType                                                             => Defines.Function
+      case cppBasicType: ICPPBasicType if cppBasicType.isLong || cppBasicType.isLongLong => "long"
+      case cppBasicType: ICPPBasicType if cppBasicType.isShort                           => "short"
+      case _                                                                             =>
         // In case of unresolved includes etc. this may fail throwing an unrecoverable exception
         Try(ASTTypeUtil.getType(tpe)).getOrElse(Defines.Any)
     }
@@ -586,9 +587,10 @@ trait AstCreatorHelper { this: AstCreator =>
 
   private def pointersAsString(spec: IASTDeclSpecifier, parentDecl: IASTDeclarator): String = {
     val tpe = typeFor(spec) match {
-      case Defines.Auto => typeFor(parentDecl)
-      case "longint"    => "long"
-      case t            => t
+      case Defines.Auto          => typeFor(parentDecl)
+      case Defines.LongInt.r(_*) => "long"
+      case "shortint"            => "short"
+      case t                     => t
     }
     val pointers = parentDecl.getPointerOperators
     val arr = parentDecl match {
