@@ -749,6 +749,35 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
   }
 
+  "CPG for code with lambda used as argument to generic function" should {
+    val cpg = code("""
+                     |package mypkg
+                     |val someList: List<(Int) -> Int> = listOf(
+                     |  { x -> x },
+                     |)
+                     |""".stripMargin)
+
+    "contain correct lambda, bindings and type decl nodes" in {
+      val List(lambdaMethod) = cpg.method.fullName(".*lambda.*").l
+      lambdaMethod.fullName shouldBe s"mypkg.someList.${Defines.ClosurePrefix}0:int(int)"
+      lambdaMethod.signature shouldBe "int(int)"
+
+      val List(lambdaTypeDecl) = lambdaMethod.bindingTypeDecl.dedup.l
+      lambdaTypeDecl.fullName shouldBe s"mypkg.someList.${Defines.ClosurePrefix}0"
+      lambdaTypeDecl.inheritsFromTypeFullName should contain theSameElementsAs (List("kotlin.Function1"))
+
+      val List(binding1, binding2) = lambdaMethod.referencingBinding.l
+      binding1.name shouldBe "invoke"
+      binding1.signature shouldBe "int(int)"
+      binding1.methodFullName shouldBe s"mypkg.someList.${Defines.ClosurePrefix}0:int(int)"
+      binding1.bindingTypeDecl shouldBe lambdaTypeDecl
+      binding2.name shouldBe "invoke"
+      binding2.signature shouldBe "java.lang.Object(java.lang.Object)"
+      binding2.methodFullName shouldBe s"mypkg.someList.${Defines.ClosurePrefix}0:int(int)"
+      binding2.bindingTypeDecl shouldBe lambdaTypeDecl
+    }
+  }
+
   "CPG for code with lambda wrapped in label" should {
     val cpg = code("""
                      |package mypkg
