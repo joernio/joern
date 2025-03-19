@@ -21,7 +21,7 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.resolve.calls.model.ResolvedCallArgument
+import org.jetbrains.kotlin.resolve.calls.model.KotlinCallArgument
 import org.jetbrains.kotlin.resolve.calls.tower.NewAbstractResolvedCall
 import org.jetbrains.kotlin.resolve.calls.tower.PSIFunctionKotlinCallArgument
 import org.jetbrains.kotlin.resolve.sam.SamConstructorDescriptor
@@ -549,20 +549,18 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
               samConstructorDesc.getBaseDescriptorForSynthetic
             case _ =>
               // Lambda/anon function is directly used as call argument e.g. `someCall(obj -> obj)`
-              val directCallArgumentForLookup =
-                expr match {
-                  case _: KtNamedFunction =>
-                    // This is the anonymous function case.
-                    // So far it does not seem like those could be wrapped so they are always the direct argument.
-                    expr
-                  case _ =>
-                    // The lambda function case.
-                    getDirectLambdaArgument(expr).get
-                }
-              callAtom.getArgumentMappingByOriginal.asScala.collectFirst {
-                case (paramDesc, resolvedArgument) if isExprIncluded(resolvedArgument, directCallArgumentForLookup) =>
-                  paramDesc.getType.getConstructor.getDeclarationDescriptor.asInstanceOf[ClassDescriptor]
-              }.get
+              val samInterfaceViaConversion = callAtom.getArgumentsWithConversion.asScala.collectFirst {
+                case (arg, samConversion) if argMatchesExpr(arg, expr) =>
+                  samConversion.getOriginalParameterType.getConstructor.getDeclarationDescriptor
+                    .asInstanceOf[ClassDescriptor]
+              }
+
+              val samInterface = samInterfaceViaConversion.getOrElse {
+                val expectedExprType = bindingUtils.getExpectedExprType(expr).get
+                expectedExprType.getConstructor.getDeclarationDescriptor.asInstanceOf[ClassDescriptor]
+              }
+
+              samInterface
           }
         }
       case None =>
@@ -573,25 +571,12 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  private def getDirectLambdaArgument(element: KtElement): Option[KtExpression] = {
-    var context: PsiElement       = element
-    var parentContext: PsiElement = null
-
-    // KtCallExpression wrap their arguments in KtValueArgument which is why we look for those.
-    // KtBinaryExpressions do not do such a wrapping.
-    while ({
-      parentContext = context.getContext
-      parentContext != null &&
-      !parentContext.isInstanceOf[KtValueArgument] &&
-      !parentContext.isInstanceOf[KtBinaryExpression]
-    }) {
-      context = parentContext
-    }
-
-    if (parentContext != null) {
-      Some(context.asInstanceOf[KtExpression])
-    } else {
-      None
+  private def argMatchesExpr(arg: KotlinCallArgument, expr: KtElement): Boolean = {
+    arg match {
+      case arg: PSIFunctionKotlinCallArgument =>
+        arg.getExpression == expr
+      case _ =>
+        false
     }
   }
 
@@ -611,16 +596,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
         Some(binaryExpr.getOperationReference)
       case null =>
         None
-    }
-  }
-
-  private def isExprIncluded(resolvedArgument: ResolvedCallArgument, expr: KtExpression): Boolean = {
-    // getArguments returns multiple arguments in case of varargs
-    resolvedArgument.getArguments.asScala.exists {
-      case psi: PSIFunctionKotlinCallArgument =>
-        psi.getExpression == expr
-      case _ =>
-        false
     }
   }
 

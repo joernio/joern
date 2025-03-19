@@ -1,5 +1,7 @@
 package io.joern.kotlin2cpg.ast
 
+import org.jetbrains.kotlin.cli.jvm.compiler.NoScopeRecordCliBindingTrace
+import org.jetbrains.kotlin.com.intellij.util.keyFMap.KeyFMap
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.{
   ClassDescriptor,
@@ -10,10 +12,12 @@ import org.jetbrains.kotlin.descriptors.{
   VariableDescriptor
 }
 import org.jetbrains.kotlin.psi.{
+  Call,
   KtAnnotationEntry,
   KtClassOrObject,
   KtConstructor,
   KtDestructuringDeclarationEntry,
+  KtElement,
   KtExpression,
   KtFunctionLiteral,
   KtNamedFunction,
@@ -100,10 +104,38 @@ class BindingContextUtils(val bindingContext: BindingContext) {
       .flatMap(typeInfo => Option(typeInfo.getType))
   }
 
+  def getExpectedExprType(expr: KtExpression): Option[KotlinType] = {
+    Option(bindingContext.get(BindingContext.EXPECTED_EXPRESSION_TYPE, expr))
+  }
+
   def getTypeRefType(typeRef: KtTypeReference): Option[KotlinType] = {
     Option(bindingContext.get(BindingContext.TYPE, typeRef)) match {
       case Some(_: ErrorType) => None
       case other              => other
+    }
+  }
+
+  // This function is here for debug purposes.
+  // It shows all bindings associated with a certain entity.
+  def debugBindingsForEntity(entity: KtElement | Call): KeyFMap = {
+    try {
+      val thisField = bindingContext.getClass.getDeclaredField("this$0")
+      thisField.setAccessible(true)
+      val bindingTrace = thisField.get(bindingContext).asInstanceOf[NoScopeRecordCliBindingTrace]
+
+      val mapField = bindingTrace.getClass.getSuperclass.getSuperclass.getDeclaredField("map")
+      mapField.setAccessible(true)
+      val map = mapField.get(bindingTrace)
+
+      val mapMapField = map.getClass.getDeclaredField("map")
+      mapMapField.setAccessible(true)
+      val mapMap = mapMapField.get(map).asInstanceOf[java.util.Map[Object, KeyFMap]]
+
+      val mapForEntity = mapMap.get(entity)
+      mapForEntity
+    } catch {
+      case _ =>
+        KeyFMap.EMPTY_MAP
     }
   }
 }
