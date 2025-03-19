@@ -351,6 +351,34 @@ class MethodTests extends C2CpgSuite {
       methodB.fullName shouldBe "methodB:long(long,long)"
     }
 
+    "be correct for C++ method in class" in {
+      val cpg = code(
+        """
+          |#include <vector>
+          |
+          |class A {
+          |  public:
+          |    int foo1(void) { return; }
+          |    std::vector<int> foo2(void) {
+          |      std::vector<int> v;
+          |      return v;
+          |    }
+          |}
+          |
+          |std::vector<int> foo3(void) {
+          |  std::vector<int> v;
+          |  return v;
+          |}
+          |""".stripMargin,
+        "test.cpp"
+      )
+      cpg.method.filter(_.name.contains("foo")).methodReturn.typeFullName.l shouldBe List(
+        "int",
+        "vector<int>",
+        "vector<int>"
+      )
+    }
+
     "be correct for C function pointer" in {
       val cpg = code(
         """
