@@ -100,6 +100,7 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 // publishing info for sonatype / maven central
 ThisBuild / publishTo              := sonatypePublishToBundle.value
 ThisBuild / sonatypeCredentialHost := xerial.sbt.Sonatype.sonatypeCentralHost
+sonatypeTimeoutMillis  := 43200000 // temporarily set read timeout to an extremely high value (12 hours), mostly to see if this has any effect at all...
 
 ThisBuild / scmInfo  := Some(ScmInfo(url("https://github.com/joernio/joern"), "scm:git@github.com:joernio/joern.git"))
 ThisBuild / homepage := Some(url("https://joern.io/"))
