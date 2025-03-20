@@ -131,16 +131,19 @@ class LocalQueryTests extends C2CpgSuite {
       val cpg = code(
         """
         |int x = 1;
-        |void foo() {
-        |  x = 2;
+        |namespace Foo {
+        |  void foo() {
+        |    x = 2;
+        |  }
         |}""".stripMargin,
         "Test0.cpp"
       )
       val List(x1, x2) = cpg.local.sortBy(_.lineNumber.get).l
       x1.name shouldBe "x"
       x1.closureBindingId shouldBe None
-      val List(methodRef) = cpg.methodRef.methodFullNameExact("foo:void()").l
+      val List(methodRef) = cpg.methodRef.methodFullNameExact("Foo.foo:void()").l
       methodRef.containsIn.l shouldBe cpg.method.fullNameExact("Test0.cpp:<global>").l
+      methodRef.parentExpression.l shouldBe cpg.namespaceBlock("Foo").astChildren.isBlock.l
       val List(binding) = x1.closureBinding.l
       binding.closureBindingId shouldBe Some("Test0.cpp:foo:x")
       binding.closureOriginalName shouldBe Some("x")
@@ -156,7 +159,7 @@ class LocalQueryTests extends C2CpgSuite {
       val List(id2) = x2.referencingIdentifiers.l
       id2.name shouldBe "x"
       id2.typeFullName shouldBe "int"
-      id2.lineNumber shouldBe Some(4)
+      id2.lineNumber shouldBe Some(5)
     }
   }
 }
