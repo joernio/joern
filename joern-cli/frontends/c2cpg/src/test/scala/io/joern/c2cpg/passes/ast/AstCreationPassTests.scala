@@ -516,7 +516,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
       }
     }
 
-    "be correct for ranged for-loop with structured binding" in {
+    "be correct for ranged for-loop with structured binding with array type" in {
       val cpg = code(
         """
         |void method() {
@@ -548,6 +548,30 @@ class AstCreationPassTests extends AstC2CpgSuite {
           "b"      -> "int*"
         )
       }
+    }
+
+    "be correct for ranged for-loop with structured binding with reference type" in {
+      val cpg = code(
+        """
+          |void method() {
+          |  auto foo = bar();
+          |  for(const auto& [a, b] : foo) {};
+          |}
+          |""".stripMargin,
+        "test.cpp"
+      )
+      inside(cpg.method.nameExact("method").controlStructure.l) { case List(forStmt) =>
+        forStmt.controlStructureType shouldBe ControlStructureTypes.FOR
+        forStmt.astChildren.isBlock.astChildren.isCall.code.l shouldBe List(
+          "<tmp>0 = foo",
+          "a = <tmp>0.a",
+          "b = <tmp>0.b"
+        )
+      }
+      val List(fieldAccessCall) = cpg.call.codeExact("<tmp>0.a").l
+      fieldAccessCall.name shouldBe Operators.fieldAccess
+      fieldAccessCall.argument(1).isIdentifier shouldBe true
+      fieldAccessCall.argument(2).isFieldIdentifier shouldBe true
     }
 
     "be correct for for-loop with multiple initializations" in {
