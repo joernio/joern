@@ -250,9 +250,10 @@ trait AstForTypesCreator { this: AstCreator =>
     val TypeFullNameInfo(name, fullName) = typeFullNameInfo(namespaceDefinition)
     val codeString                       = code(namespaceDefinition)
     val filename                         = fileName(namespaceDefinition)
-    val cpgNamespace = newNamespaceBlockNode(namespaceDefinition, name, fullName, codeString, filename)
-    methodAstParentStack.push(cpgNamespace)
-    scope.pushNewBlockScope(cpgNamespace)
+    val cpgNamespace       = newNamespaceBlockNode(namespaceDefinition, name, fullName, codeString, filename)
+    val namespaceBlockNode = blockNode(namespaceDefinition)
+    methodAstParentStack.push(namespaceBlockNode)
+    scope.pushNewBlockScope(namespaceBlockNode)
     val childrenAsts = namespaceDefinition.getDeclarations.flatMap { decl =>
       val declAsts = astsForDeclaration(decl)
       declAsts
@@ -260,7 +261,7 @@ trait AstForTypesCreator { this: AstCreator =>
     methodAstParentStack.pop()
     scope.popScope()
     setArgumentIndices(childrenAsts)
-    Ast(cpgNamespace).withChildren(childrenAsts)
+    Ast(cpgNamespace).withChild(Ast(namespaceBlockNode).withChildren(childrenAsts))
   }
 
   private def isAssignmentFromBrokenMacro(declaration: IASTSimpleDeclaration, declarator: IASTDeclarator): Boolean = {

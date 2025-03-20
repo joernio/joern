@@ -43,12 +43,12 @@ class NamespaceTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
         q.fullName shouldBe "Q"
         v.fullName shouldBe "Q.V"
 
-        inside(v.typeDecl.l) { case List(c) =>
+        inside(v.ast.isTypeDecl.l) { case List(c) =>
           c.name shouldBe "C"
           c.fullName shouldBe "Q.V.C"
         }
 
-        inside(q.method.l) { case List(f, m) =>
+        inside(q.ast.isMethod.l) { case List(f, m) =>
           f.name shouldBe "f"
           f.fullName shouldBe "Q.V.f:int()"
           m.name shouldBe "m"
@@ -87,7 +87,7 @@ class NamespaceTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
         q.fullName shouldBe "Q"
         v.fullName shouldBe "Q.V"
 
-        inside(v.typeDecl.l) { case List(c) =>
+        inside(v.ast.isTypeDecl.l) { case List(c) =>
           c.name shouldBe "C"
           c.fullName shouldBe "Q.V.C"
         }
