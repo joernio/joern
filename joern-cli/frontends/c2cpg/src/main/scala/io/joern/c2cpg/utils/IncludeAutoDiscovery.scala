@@ -90,7 +90,7 @@ object IncludeAutoDiscovery {
 
   private def extractPaths(output: Seq[String]): mutable.LinkedHashSet[Path] = {
     val startIndex = output.indexWhere(_.contains("#include")) + 2
-    val endIndex   = output.indexWhere(_.startsWith("End of search list.")) - 1
+    val endIndex   = output.indexWhere(_.startsWith("End of search list."))
     mutable.LinkedHashSet.from(output.slice(startIndex, endIndex).map { pathString =>
       val trimmedPathString = pathString.trim
       val macSpecificFix = if (trimmedPathString.contains(" (") && trimmedPathString.endsWith(")")) {
