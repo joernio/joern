@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.language.*
 
 class IdentifierMethods(val identifier: Identifier) extends AnyVal with NodeExtension with HasLocation {
   override def location: NewLocation = {
-    LocationCreator(identifier, identifier.name, identifier.label, identifier.lineNumber, identifier.method)
+    LocationCreator.defaultCreateLocation(identifier)
   }
 
   def isModuleVariable: Boolean = identifier.refOut.collectAll[Declaration].method.isModule.nonEmpty
