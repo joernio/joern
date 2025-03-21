@@ -54,7 +54,7 @@ class LibInfoFetcherMaven[F[_]: Async: Parallel](httpClient: Client[F],
     }
   }
 
-  override def fetch2(deps: fs2.Stream[F, Coordinate[IdMaven]]
+  override def fetch(deps: fs2.Stream[F, Coordinate[IdMaven]]
                      ): fs2.Stream[F, (Coordinate[IdMaven], Option[LibInfoHandle])] = {
     deps.evalMap { dep =>
       fetchAsLibInfoHandle(dep).map(Some.apply).handleErrorWith { throwable =>

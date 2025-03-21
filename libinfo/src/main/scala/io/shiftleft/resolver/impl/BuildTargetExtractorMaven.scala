@@ -3,12 +3,12 @@ package io.shiftleft.resolver.impl
 import cats.Parallel
 import cats.effect.*
 import cats.syntax.all.*
-import io.shiftleft.resolver.api.{BuildInfoExtractor, BuildTarget, Coordinate, MetaData, MetaDataCalculator, MetaDataFetcher, ResolutionModel}
+import io.shiftleft.resolver.api.{BuildTargetExtractor, BuildTarget, Coordinate, MetaData, MetaDataCalculator, MetaDataFetcher, ResolutionModel}
 import io.shiftleft.resolver.util.{PomContext, PomUtil}
 
 import java.nio.file.{Files, Path}
 
-class BuildInfoExtractorMaven[F[_]: Sync: Parallel] extends BuildInfoExtractor[F, IdMaven] {
+class BuildTargetExtractorMaven[F[_]: Sync: Parallel] extends BuildTargetExtractor[F, IdMaven] {
 
   override def fileRelevant(path: Path): Boolean = {
     path.endsWith("pom.xml")
