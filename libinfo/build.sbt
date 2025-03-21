@@ -13,3 +13,5 @@ libraryDependencies ++= Seq(
   "org.http4s"             %% "http4s-dsl"          % Versions.http4s,
   "org.scalatest"          %% "scalatest"           % Versions.scalatest % Test,
 )
+
+enablePlugins(JavaAppPackaging)

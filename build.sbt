@@ -35,6 +35,8 @@ lazy val root = project.in(file(".")).aggregate(
   dataflowengineoss,
   macros,
   semanticcpg,
+  libinfo,
+  libinfogenjvm,
   c2cpg,
   ghidra2cpg,
   x2cpg,
