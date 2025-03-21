@@ -1,6 +1,6 @@
 package io.shiftleft.resolver
 
-import io.shiftleft.resolver.impl.BuildInfoExtractorMaven
+import io.shiftleft.resolver.impl.BuildTargetExtractorMaven
 import io.shiftleft.resolver.util.{PomContext, PomUtil}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
