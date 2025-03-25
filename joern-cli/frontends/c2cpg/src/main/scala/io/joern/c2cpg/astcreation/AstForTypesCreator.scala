@@ -24,7 +24,7 @@ trait AstForTypesCreator { this: AstCreator =>
   protected def astForNamespaceAlias(namespaceAlias: ICPPASTNamespaceAlias): Ast = {
     val TypeFullNameInfo(name, fullName) = typeFullNameInfo(namespaceAlias)
     val codeString                       = code(namespaceAlias)
-    Ast(newNamespaceBlockNode(namespaceAlias, name, fullName, codeString, fileName(namespaceAlias)))
+    Ast(newNamespaceBlockNode(namespaceAlias, name, s"$fullName<alias>", codeString, fileName(namespaceAlias)))
   }
 
   private def typeForIASTDeclarator(
