@@ -23,12 +23,8 @@ trait AstForTypesCreator { this: AstCreator =>
 
   protected def astForNamespaceAlias(namespaceAlias: ICPPASTNamespaceAlias): Ast = {
     val TypeFullNameInfo(name, fullName) = typeFullNameInfo(namespaceAlias)
-    if (!isQualifiedName(name)) {
-      usingDeclarationMappings.put(name, fullName)
-    }
-    val codeString   = code(namespaceAlias)
-    val cpgNamespace = newNamespaceBlockNode(namespaceAlias, name, fullName, codeString, fileName(namespaceAlias))
-    Ast(cpgNamespace)
+    val codeString                       = code(namespaceAlias)
+    Ast(newNamespaceBlockNode(namespaceAlias, name, fullName, codeString, fileName(namespaceAlias)))
   }
 
   private def typeForIASTDeclarator(
@@ -129,21 +125,6 @@ trait AstForTypesCreator { this: AstCreator =>
     }
   }
 
-  protected def handleUsingDeclaration(usingDecl: ICPPASTUsingDeclaration): Seq[Ast] = {
-    val simpleName = ASTStringUtil.getSimpleName(usingDecl.getName)
-    val mappedName = lastNameOfQualifiedName(simpleName)
-    // we only do the mapping if the declaration is not global because this is already handled by the parser itself
-    if (!isQualifiedName(simpleName)) {
-      usingDecl.getParent match {
-        case ns: ICPPASTNamespaceDefinition =>
-          usingDeclarationMappings.put(s"${fullName(ns)}.$mappedName", fixQualifiedName(simpleName))
-        case _ =>
-          usingDeclarationMappings.put(mappedName, fixQualifiedName(simpleName))
-      }
-    }
-    Seq.empty
-  }
-
   protected def astForAliasDeclaration(aliasDeclaration: ICPPASTAliasDeclaration): Ast = {
     val name       = aliasDeclaration.getAlias.toString
     val mappedName = registerType(typeFor(aliasDeclaration.getMappingTypeId))
@@ -191,19 +172,18 @@ trait AstForTypesCreator { this: AstCreator =>
             Seq.empty // dangling decls from unresolved macros; we ignore them
           case _ if declaration.getDeclarators.isEmpty => Seq(astForNode(declaration))
         }
-      case alias: CPPASTAliasDeclaration                   => Seq(astForAliasDeclaration(alias))
-      case functionDefinition: IASTFunctionDefinition      => Seq(astForFunctionDefinition(functionDefinition))
-      case namespaceAlias: ICPPASTNamespaceAlias           => Seq(astForNamespaceAlias(namespaceAlias))
-      case namespaceDefinition: ICPPASTNamespaceDefinition => Seq(astForNamespaceDefinition(namespaceDefinition))
-      case a: ICPPASTStaticAssertDeclaration               => Seq(astForStaticAssert(a))
-      case asm: IASTASMDeclaration                         => Seq(astForASMDeclaration(asm))
-      case t: ICPPASTTemplateDeclaration                   => astsForDeclaration(t.getDeclaration)
-      case l: ICPPASTLinkageSpecification                  => astsForLinkageSpecification(l)
-      case u: ICPPASTUsingDeclaration                      => handleUsingDeclaration(u)
-      case _: ICPPASTVisibilityLabel                       => Seq.empty
-      case _: ICPPASTUsingDirective                        => Seq.empty
-      case _: ICPPASTExplicitTemplateInstantiation         => Seq.empty
-      case _                                               => Seq(astForNode(decl))
+      case alias: CPPASTAliasDeclaration                         => Seq(astForAliasDeclaration(alias))
+      case functionDefinition: IASTFunctionDefinition            => Seq(astForFunctionDefinition(functionDefinition))
+      case namespaceAlias: ICPPASTNamespaceAlias                 => Seq(astForNamespaceAlias(namespaceAlias))
+      case namespaceDefinition: ICPPASTNamespaceDefinition       => Seq(astForNamespaceDefinition(namespaceDefinition))
+      case a: ICPPASTStaticAssertDeclaration                     => Seq(astForStaticAssert(a))
+      case asm: IASTASMDeclaration                               => Seq(astForASMDeclaration(asm))
+      case t: ICPPASTTemplateDeclaration                         => astsForDeclaration(t.getDeclaration)
+      case l: ICPPASTLinkageSpecification                        => astsForLinkageSpecification(l)
+      case _: ICPPASTUsingDeclaration | _: ICPPASTUsingDirective => Seq.empty // handled by CDT itself
+      case _: ICPPASTVisibilityLabel                             => Seq.empty
+      case _: ICPPASTExplicitTemplateInstantiation               => Seq.empty
+      case _                                                     => Seq(astForNode(decl))
     }
 
     val initAsts = decl match {
