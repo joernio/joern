@@ -9,6 +9,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
+import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTNamespaceDefinition
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPFunction
 import org.eclipse.cdt.internal.core.dom.parser.c.CVariable
 import org.eclipse.cdt.internal.core.dom.parser.c.ICInternalBinding
@@ -49,7 +50,11 @@ trait AstForPrimitivesCreator { this: AstCreator =>
           case Some(binding: (CPPVariable | CVariable)) =>
             Try(binding.getScope).toOption
               .collect { case n: IASTInternalScope => n.getPhysicalNode }
-              .exists(_.isInstanceOf[IASTTranslationUnit])
+              .exists {
+                case _: IASTTranslationUnit        => true
+                case n: ICPPASTNamespaceDefinition => n.getParent.isInstanceOf[IASTTranslationUnit]
+                case _                             => false
+              }
           case _ => false
         }
       case _ => false
@@ -125,7 +130,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
       case id: IASTIdExpression            => ASTStringUtil.getSimpleName(id.getName)
       case id: IASTName =>
         val name = ASTStringUtil.getSimpleName(id)
-        if (name.isEmpty) safeGetBinding(id).map(_.getName).getOrElse(uniqueName("", "")._1)
+        if (name.isEmpty) safeGetBinding(id).map(_.getName).getOrElse(fileLocalUniqueName("", "")._1)
         else name
       case _ => code(ident)
     }
@@ -243,7 +248,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
         }
         val member = fieldIdentifierNode(
           qualId.getLastName,
-          fixQualifiedName(qualId.getLastName.toString),
+          replaceQualifiedNameSeparator(qualId.getLastName.toString),
           qualId.getLastName.toString
         )
         callAst(ma, List(owner, Ast(member)))

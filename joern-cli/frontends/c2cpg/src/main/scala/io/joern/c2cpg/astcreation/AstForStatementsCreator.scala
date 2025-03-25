@@ -94,7 +94,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     }
 
     val initializer  = init.getOrElse(struct.getInitializer)
-    val tmpName      = uniqueName("", "", "tmp")._1
+    val tmpName      = fileLocalUniqueName("", "", "tmp")._1
     val tpe          = registerType(typeFor(initializer))
     val localTmpNode = localNode(struct, tmpName, tmpName, tpe)
     scope.addVariable(tmpName, localTmpNode, tpe, C2CpgScope.ScopeType.BlockScope)
@@ -187,12 +187,11 @@ trait AstForStatementsCreator { this: AstCreator =>
       case declStmt: CPPASTSimpleDeclaration if isCoroutineCall(declStmt) => Seq(astForCoroutineCall(declStmt))
       case simpleDecl: IASTSimpleDeclaration                              => astsForIASTSimpleDeclaration(simpleDecl)
       case s: ICPPASTStaticAssertDeclaration                              => Seq(astForStaticAssert(s))
-      case usingDeclaration: ICPPASTUsingDeclaration                      => handleUsingDeclaration(usingDeclaration)
       case alias: ICPPASTAliasDeclaration                                 => Seq(astForAliasDeclaration(alias))
       case func: IASTFunctionDefinition                                   => Seq(astForFunctionDefinition(func))
       case alias: CPPASTNamespaceAlias                                    => Seq(astForNamespaceAlias(alias))
       case asm: IASTASMDeclaration                                        => Seq(astForASMDeclaration(asm))
-      case _: ICPPASTUsingDirective                                       => Seq.empty
+      case _: ICPPASTUsingDeclaration | _: ICPPASTUsingDirective          => Seq.empty // handled by CDT itself
       case declaration                                                    => astsForDeclaration(declaration)
     }
 
@@ -375,7 +374,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val idType         = registerType(typeFor(forStmt.getDeclaration))
 
     // iterator assignment:
-    val iteratorName      = uniqueName("", "", "iterator")._1
+    val iteratorName      = fileLocalUniqueName("", "", "iterator")._1
     val iteratorLocalNode = localNode(forStmt, iteratorName, iteratorName, registerType(Defines.Iterator)).order(0)
     val iteratorNode      = identifierNode(forStmt, iteratorName, iteratorName, Defines.Iterator)
     diffGraph.addEdge(blockNode, iteratorLocalNode, EdgeTypes.AST)
