@@ -293,6 +293,37 @@ class AstCreationPassTests extends AstC2CpgSuite {
       localFromMain.code shouldBe "<global> global"
     }
 
+    "be correct for locals from decl in global nested namespace from header file" in {
+      val cpg = code(
+        """
+          |#include "a.hpp"
+          |
+          |using namespace Foo;
+          |using namespace Bar;
+          |
+          |int main() {
+          |    printf("%d\n", global);
+          |    return 0;
+          |}
+          |""".stripMargin,
+        "main.cpp"
+      ).moreCode(
+        """
+          |namespace Foo {
+          |  namespace Bar {
+          |    int global;
+          |  }
+          |}
+          |""".stripMargin,
+        "a.hpp"
+      )
+      val List(localFromHeader, localFromMain) = cpg.local.sortBy(_.lineNumber.get).l
+      localFromHeader.name shouldBe "global"
+      localFromHeader.code shouldBe "int global"
+      localFromMain.name shouldBe "global"
+      localFromMain.code shouldBe "<global> global"
+    }
+
     "be correct for decl assignment with parentheses" in {
       val cpg = code(
         """

@@ -24,6 +24,7 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPVariable
 import org.eclipse.cdt.internal.core.dom.parser.IASTInternalScope
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
+import scala.annotation.tailrec
 import scala.util.Try
 
 trait AstForPrimitivesCreator { this: AstCreator =>
@@ -44,17 +45,21 @@ trait AstForPrimitivesCreator { this: AstCreator =>
   }
 
   private def isFromGlobalDefinition(ident: IASTNode): Boolean = {
+    @tailrec
+    def isGlobal(node: IASTNode): Boolean = {
+      node match {
+        case _: IASTTranslationUnit        => true
+        case n: ICPPASTNamespaceDefinition => isGlobal(n.getParent)
+        case _                             => false
+      }
+    }
     ident match {
       case id: IASTIdExpression =>
         safeGetBinding(id) match {
           case Some(binding: (CPPVariable | CVariable)) =>
             Try(binding.getScope).toOption
               .collect { case n: IASTInternalScope => n.getPhysicalNode }
-              .exists {
-                case _: IASTTranslationUnit        => true
-                case n: ICPPASTNamespaceDefinition => n.getParent.isInstanceOf[IASTTranslationUnit]
-                case _                             => false
-              }
+              .exists(isGlobal)
           case _ => false
         }
       case _ => false
