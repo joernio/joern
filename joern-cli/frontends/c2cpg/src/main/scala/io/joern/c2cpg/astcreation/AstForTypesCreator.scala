@@ -49,19 +49,12 @@ trait AstForTypesCreator { this: AstCreator =>
     declaration match {
       case d if isTypeDef(d) && shortName(d.getDeclSpecifier).nonEmpty =>
         val filename = fileName(declaration)
-        val typeDefName = if (name.isEmpty) { safeGetBinding(declarator.getName).map(b => registerType(b.getName)) }
-        else { Option(registerType(name)) }
-        val tpe = registerType(typeFor(declarator))
-        Ast(
-          typeDeclNode(
-            declarator,
-            typeDefName.getOrElse(name),
-            typeDefName.getOrElse(name),
-            filename,
-            code(d),
-            alias = Option(tpe)
-          )
-        )
+        val typeDefName = if (name.isEmpty) { safeGetBinding(declarator.getName).map(_.getName).getOrElse("") }
+        else { name }
+        val tpe                = registerType(typeFor(declarator))
+        val (name_, fullName_) = fileLocalUniqueName(typeDefName, fullName(declarator))
+        val fixedFullName      = if (fullName_.isEmpty) name else s"$fullName_.$name"
+        Ast(typeDeclNode(declarator, name_, registerType(fixedFullName), filename, code(d), alias = Option(tpe)))
       case d if parentIsClassDef(d) =>
         val tpe = typeForIASTDeclarator(declaration, declarator, index)
         Ast(memberNode(declarator, name, code(declarator), tpe))
@@ -126,13 +119,14 @@ trait AstForTypesCreator { this: AstCreator =>
   }
 
   protected def astForAliasDeclaration(aliasDeclaration: ICPPASTAliasDeclaration): Ast = {
-    val name       = aliasDeclaration.getAlias.toString
-    val mappedName = registerType(typeFor(aliasDeclaration.getMappingTypeId))
+    val (name, fullName_) = fileLocalUniqueName(aliasDeclaration.getAlias.toString, fullName(aliasDeclaration))
+    val fixedFullName     = if (fullName_.isEmpty) name else s"$fullName_.$name"
+    val mappedName        = registerType(typeFor(aliasDeclaration.getMappingTypeId))
     val typeDeclNode_ =
       typeDeclNode(
         aliasDeclaration,
         name,
-        registerType(name),
+        registerType(fixedFullName),
         fileName(aliasDeclaration),
         code(aliasDeclaration),
         alias = Option(mappedName)

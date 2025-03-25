@@ -2,6 +2,7 @@ package io.joern.c2cpg.passes
 
 import io.joern.c2cpg.astcreation.Defines
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.Binding
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.codepropertygraph.generated.nodes.NamespaceBlock
@@ -49,6 +50,7 @@ class FullNameUniquenessPass(cpg: Cpg) extends CpgPass(cpg) {
       val sortedMethods = sortNodesByLocation(methods)
       lazy val callsAffected =
         cpg.call.methodFullNameExact(fullName).filterNot(_.file.exists(_.name == sortedMethods.head.filename)).l
+      lazy val bindingsAffected = cpg.binding.methodFullNameExact(fullName).l
       sortedMethods.tail.zipWithIndex.foreach { case (method, index) =>
         val signature   = method.signature
         val isCFunction = !fullName.endsWith(s":$signature")
@@ -59,6 +61,10 @@ class FullNameUniquenessPass(cpg: Cpg) extends CpgPass(cpg) {
           s"$fullNameWithoutSignature${Defines.DuplicateSuffix}$index:$signature"
         }
         dstGraph.setNodeProperty(method, Method.PropertyNames.FullName, newFullName)
+        // fixup bindings
+        bindingsAffected.filter(_.refOut.contains(method)).foreach { binding =>
+          dstGraph.setNodeProperty(binding, Binding.PropertyNames.MethodFullName, newFullName)
+        }
         // fixup calls to static methods in the same compilation unit via the naive namespace-by-filename approach
         if (method.isStatic.nonEmpty) {
           val callCandidates = callsAffected.filter(_.file.exists(_.name == method.filename))
