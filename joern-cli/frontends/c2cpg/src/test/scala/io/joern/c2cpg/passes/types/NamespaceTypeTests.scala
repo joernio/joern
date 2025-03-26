@@ -196,7 +196,7 @@ class NamespaceTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
       inside(cpg.namespaceBlock.nameNot("<global>").l) { case List(a1, a2) =>
         // TODO: how to handle namespace extension?
         a1.fullName shouldBe "A"
-        a2.fullName shouldBe "A"
+        a2.fullName shouldBe "A<duplicate>0"
       }
 
       inside(cpg.method.internal.nameNot("<global>").l) { case List(foo, bar, f1, f2) =>
@@ -245,7 +245,7 @@ class NamespaceTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
         }
 
         fbz.name shouldBe "fbz"
-        fbz.fullName shouldBe "foo.bar.baz"
+        fbz.fullName shouldBe "foo.bar.baz<alias>"
       }
 
       inside(cpg.call.l) { case List(c1, c2, c3) =>
@@ -271,13 +271,13 @@ class NamespaceTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
        |int main() {
        |  namespace x = foo::bar;
        |};""".stripMargin)
-      inside(cpg.namespaceBlock.nameNot("<global>").sortBy(_.fullName).l) { case List(foo, x, bar) =>
+      inside(cpg.namespaceBlock.nameNot("<global>").sortBy(_.fullName).l) { case List(foo, bar, x) =>
         foo.name shouldBe "foo"
         foo.fullName shouldBe "foo"
-        x.name shouldBe "x"
-        x.fullName shouldBe "foo.bar"
         bar.name shouldBe "bar"
         bar.fullName shouldBe "foo.bar"
+        x.name shouldBe "x"
+        x.fullName shouldBe "foo.bar<alias>"
       }
     }
 

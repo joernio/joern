@@ -2,7 +2,7 @@ package io.joern.c2cpg
 
 import io.joern.c2cpg.passes.{AstCreationPass, PreprocessorPass, TypeDeclNodePass}
 import io.joern.c2cpg.passes.FunctionDeclNodePass
-import io.joern.c2cpg.passes.MethodFullNameUniquenessPass
+import io.joern.c2cpg.passes.FullNameUniquenessPass
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
@@ -30,7 +30,7 @@ class C2Cpg extends X2CpgFrontend[Config] {
         .createAndApply()
       TypeNodePass.withRegisteredTypes(astCreationPass.typesSeen(), cpg).createAndApply()
       new TypeDeclNodePass(cpg, config).createAndApply()
-      new MethodFullNameUniquenessPass(cpg).createAndApply()
+      new FullNameUniquenessPass(cpg).createAndApply()
       report.print()
     }
   }

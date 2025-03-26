@@ -192,14 +192,14 @@ trait AstForExpressionsCreator { this: AstCreator =>
             val instanceAst = astForExpression(fieldRefExpr.getFieldOwner)
             val args        = call.getArguments.toList.map(a => astForNode(a))
 
-            val method    = fieldRefExpr.getFieldName.getBinding.asInstanceOf[ICPPMethod]
-            val constFlag = if isConstType(method.getType) then Defines.ConstSuffix else ""
-
+            val method = fieldRefExpr.getFieldName.getBinding.asInstanceOf[ICPPMethod]
+            val constFlag = if (isConstType(method.getType)) { Defines.ConstSuffix }
+            else { "" }
             // TODO This wont do if the name is a reference.
             val name          = fieldRefExpr.getFieldName.toString
-            val signature     = functionTypeToSignature(functionType)
+            val signature     = s"${functionTypeToSignature(functionType)}$constFlag"
             val classFullName = cleanType(safeGetType(fieldRefExpr.getFieldOwnerType))
-            val fullName      = s"$classFullName.$name$constFlag:$signature"
+            val fullName      = s"$classFullName.$name:$signature"
 
             val (dispatchType, receiver) =
               if (method.isVirtual || method.isPureVirtual) {
