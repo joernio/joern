@@ -132,7 +132,7 @@ class FullNameUniquenessPassTests extends C2CpgSuite {
         "f in main.c -> CALL -> f in main.c",
         "m in main.c -> CALL -> m in main.c",
         "sf in a.c -> CALL -> sf in a.c",
-        "sf in main.c -> CALL -> sf<duplicate>0 in main.c" // fixed call here
+        "sf<duplicate>0 in main.c -> CALL -> sf<duplicate>0 in main.c" // fixed call here
       )
     }
   }

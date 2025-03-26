@@ -71,6 +71,7 @@ class FullNameUniquenessPass(cpg: Cpg) extends CpgPass(cpg) {
         if (method.isStatic.nonEmpty) {
           val callCandidates = callsAffected.filter(_.file.exists(_.name == method.filename))
           callCandidates.foreach { call =>
+            dstGraph.setNodeProperty(call, Call.PropertyNames.Name, s"${call.name}$suffix")
             dstGraph.setNodeProperty(call, Call.PropertyNames.MethodFullName, newFullName)
           }
         }
