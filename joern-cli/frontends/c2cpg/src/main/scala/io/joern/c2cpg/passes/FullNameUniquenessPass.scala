@@ -52,23 +52,26 @@ class FullNameUniquenessPass(cpg: Cpg) extends CpgPass(cpg) {
         cpg.call.methodFullNameExact(fullName).filterNot(_.file.exists(_.name == sortedMethods.head.filename)).l
       lazy val bindingsAffected = cpg.binding.methodFullNameExact(fullName).l
       sortedMethods.tail.zipWithIndex.foreach { case (method, index) =>
+        val suffix      = s"${Defines.DuplicateSuffix}$index"
         val signature   = method.signature
         val isCFunction = !fullName.endsWith(s":$signature")
         val newFullName = if (isCFunction) {
-          s"$fullName${Defines.DuplicateSuffix}$index"
+          s"$fullName$suffix"
         } else {
           val fullNameWithoutSignature = fullName.stripSuffix(s":$signature")
-          s"$fullNameWithoutSignature${Defines.DuplicateSuffix}$index:$signature"
+          s"$fullNameWithoutSignature$suffix:$signature"
         }
         dstGraph.setNodeProperty(method, Method.PropertyNames.FullName, newFullName)
         // fixup bindings
         bindingsAffected.filter(_.refOut.contains(method)).foreach { binding =>
+          dstGraph.setNodeProperty(binding, Binding.PropertyNames.Name, s"${binding.name}$suffix")
           dstGraph.setNodeProperty(binding, Binding.PropertyNames.MethodFullName, newFullName)
         }
         // fixup calls to static methods in the same compilation unit via the naive namespace-by-filename approach
         if (method.isStatic.nonEmpty) {
           val callCandidates = callsAffected.filter(_.file.exists(_.name == method.filename))
           callCandidates.foreach { call =>
+            dstGraph.setNodeProperty(call, Call.PropertyNames.Name, s"${call.name}$suffix")
             dstGraph.setNodeProperty(call, Call.PropertyNames.MethodFullName, newFullName)
           }
         }
@@ -127,7 +130,8 @@ class FullNameUniquenessPass(cpg: Cpg) extends CpgPass(cpg) {
       logDuplicates(nodesList, fullName)
       val sortedNodes = sortNodesByLocation(nodesList)
       sortedNodes.tail.zipWithIndex.foreach { case (node, index) =>
-        val newFullName = s"${node.fullName}${Defines.DuplicateSuffix}$index"
+        val suffix      = s"${Defines.DuplicateSuffix}$index"
+        val newFullName = s"${node.fullName}$suffix"
         dstGraph.setNodeProperty(node, fullNameProperty, newFullName)
       }
     }

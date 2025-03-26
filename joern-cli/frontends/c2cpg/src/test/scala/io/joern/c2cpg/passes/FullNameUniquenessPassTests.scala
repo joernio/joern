@@ -4,9 +4,9 @@ import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
-class MethodFullNameUniquenessPassTests extends C2CpgSuite {
+class FullNameUniquenessPassTests extends C2CpgSuite {
 
-  "the MethodUniquenessPass" should {
+  "the FullNameUniquenessPass" should {
     "create truly unique method fullnames for multiple C functions" in {
       val cpg = code(
         """
@@ -32,6 +32,31 @@ class MethodFullNameUniquenessPassTests extends C2CpgSuite {
         "foo",
         "foo<duplicate>0",
         "main"
+      )
+    }
+
+    "create truly unique method fullnames and bindings for templated C++ functions" in {
+      val cpg = code(
+        """
+          |class Foo {
+          |  public:
+          |    template<typename Bar, Kind k>
+          |    bool foo(Bar x) { return true; }
+          |
+          |    template<typename Bar>
+          |    bool foo(Bar x) { return false; }
+          |}
+          |""".stripMargin,
+        "main.cpp"
+      )
+      cpg.method.fullName.size shouldBe cpg.method.fullName.toSet.size
+      cpg.method.nameNot(NamespaceTraversal.globalNamespaceName).fullName.sorted.l shouldBe List(
+        "Foo.foo:bool(Bar)",
+        "Foo.foo<duplicate>0:bool(Bar)"
+      )
+      cpg.binding.l.map(b => (b.methodFullName, b.name, b.signature)) shouldBe List(
+        ("Foo.foo:bool(Bar)", "foo", "bool(Bar)"),
+        ("Foo.foo<duplicate>0:bool(Bar)", "foo<duplicate>0", "bool(Bar)")
       )
     }
 
@@ -107,7 +132,7 @@ class MethodFullNameUniquenessPassTests extends C2CpgSuite {
         "f in main.c -> CALL -> f in main.c",
         "m in main.c -> CALL -> m in main.c",
         "sf in a.c -> CALL -> sf in a.c",
-        "sf in main.c -> CALL -> sf<duplicate>0 in main.c" // fixed call here
+        "sf<duplicate>0 in main.c -> CALL -> sf<duplicate>0 in main.c" // fixed call here
       )
     }
   }
