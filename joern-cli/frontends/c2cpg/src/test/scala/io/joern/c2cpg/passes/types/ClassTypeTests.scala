@@ -220,7 +220,7 @@ class ClassTypeTests extends C2CpgSuite(FileDefaults.CppExt) {
           |""".stripMargin)
       val List(k) = cpg.typeDecl.nameExact("Foo").method.l
       k.name shouldBe "Kind"
-      k.fullName shouldBe "Foo.Kind<const>:Foo.Kind()<const>"
+      k.fullName shouldBe "Foo.Kind:Foo.Kind()<const>"
     }
   }
 

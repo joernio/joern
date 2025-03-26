@@ -362,10 +362,10 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |}
           |""".stripMargin)
       cpg.method.nameNot("<global>").fullName.sorted.l shouldBe List(
-        "X1.f<const>:int()<const>",
-        "X2.f<const>:int()<const>",
-        "X3.f<const>:int()<const>",
-        "X4.f<const>:int()<const>",
+        "X1.f:int()<const>",
+        "X2.f:int()<const>",
+        "X3.f:int()<const>",
+        "X4.f:int()<const>",
         "foo:void()"
       )
       cpg.method.nameExact("foo").local.typeFullName.l shouldBe List("X4")

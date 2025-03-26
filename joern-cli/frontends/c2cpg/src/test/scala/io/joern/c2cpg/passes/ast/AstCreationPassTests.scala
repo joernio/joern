@@ -46,9 +46,9 @@ class AstCreationPassTests extends AstC2CpgSuite {
       // We can however manually reconstruct the signature from the params and return type without
       // relying on the resolved function binding signature.
       val List(foo1, foo2) = cpg.method.nameExact("foo").l
-      foo1.fullName shouldBe "tpe<wchar_t>.foo<const>:char(char_type,char)<const>"
+      foo1.fullName shouldBe "tpe<wchar_t>.foo:char(char_type,char)<const>"
       foo1.signature shouldBe "char(char_type,char)<const>"
-      foo2.fullName shouldBe "tpe<wchar_t>.foo<const>:const wchar_t*(char_type*,char_type*,char,char*)<const>"
+      foo2.fullName shouldBe "tpe<wchar_t>.foo:const wchar_t*(char_type*,char_type*,char,char*)<const>"
       foo2.signature shouldBe "const wchar_t*(char_type*,char_type*,char,char*)<const>"
     }
 

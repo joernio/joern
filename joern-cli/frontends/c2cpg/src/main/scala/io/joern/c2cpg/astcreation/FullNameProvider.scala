@@ -44,14 +44,11 @@ trait FullNameProvider { this: AstCreator =>
   }
 
   protected def methodFullNameInfo(methodLike: MethodLike): MethodFullNameInfo = {
-    val name_     = shortName(methodLike)
-    val fullName_ = fullName(methodLike)
-    val constSuffix = if (fullName_.contains(Defines.ConstSuffix)) {
-      Defines.ConstSuffix
-    } else { "" }
+    val name_             = shortName(methodLike)
+    val fullName_         = fullName(methodLike)
     val returnType_       = returnType(methodLike)
-    val signature_        = s"${signature(returnType_, methodLike)}$constSuffix"
-    val sanitizedFullName = sanitizeMethodLikeFullName(name_, s"$fullName_$constSuffix", signature_, methodLike)
+    val signature_        = signature(returnType_, methodLike)
+    val sanitizedFullName = sanitizeMethodLikeFullName(name_, fullName_, signature_, methodLike)
     MethodFullNameInfo(name_, sanitizedFullName, signature_, returnType_)
   }
 
@@ -259,7 +256,9 @@ trait FullNameProvider { this: AstCreator =>
   }
 
   protected def signature(returnType: String, methodLike: MethodLike): String = {
-    StringUtils.normalizeSpace(s"$returnType${parameterListSignature(methodLike)}")
+    val constFlag = if (isConst(methodLike)) { Defines.ConstSuffix }
+    else { "" }
+    StringUtils.normalizeSpace(s"$returnType${parameterListSignature(methodLike)}$constFlag")
   }
 
   private def shortNameForIASTDeclarator(declarator: IASTDeclarator): String = {
@@ -320,6 +319,15 @@ trait FullNameProvider { this: AstCreator =>
       .replace("operator ", "")
   }
 
+  private def isConst(node: IASTNode): Boolean = {
+    node match {
+      case lambdaExpression: ICPPASTLambdaExpression => isConst(lambdaExpression.getDeclarator)
+      case definition: ICPPASTFunctionDefinition     => isConst(definition.getDeclarator)
+      case declarator: ICPPASTFunctionDeclarator     => declarator.isConst
+      case _                                         => false
+    }
+  }
+
   private def fullNameFromBinding(node: IASTNode): Option[String] = {
     node match {
       case id: CPPASTIdExpression =>
@@ -336,19 +344,15 @@ trait FullNameProvider { this: AstCreator =>
           case _ => None
         }
       case declarator: CPPASTFunctionDeclarator =>
-        val constFlag = if (declarator.isConst) { Defines.ConstSuffix }
-        else { "" }
         safeGetBinding(declarator.getName) match {
           case Some(function: ICPPFunction) if declarator.getName.isInstanceOf[ICPPASTConversionName] =>
-            val tpe = cleanType(typeFor(declarator.getName.asInstanceOf[ICPPASTConversionName].getTypeId))
+            val tpe        = cleanType(typeFor(declarator.getName.asInstanceOf[ICPPASTConversionName].getTypeId))
+            val returnType = cleanType(safeGetType(function.getType.getReturnType))
             val fullNameNoSig = replaceQualifiedNameSeparator(
               function.getQualifiedName.takeWhile(!_.startsWith("operator ")).mkString(".")
             )
-            val fn = if (function.isExternC) {
-              tpe
-            } else {
-              s"$fullNameNoSig.$tpe$constFlag:${functionTypeToSignature(function.getType)}"
-            }
+            val fn = if (function.isExternC) { tpe }
+            else { s"$fullNameNoSig.$tpe:${signature(returnType, declarator)}" }
             Option(fn)
           case Some(function: ICPPFunction) =>
             val fullNameNoSig = replaceQualifiedNameSeparator(replaceOperator(function.getQualifiedName.mkString(".")))
@@ -360,16 +364,13 @@ trait FullNameProvider { this: AstCreator =>
                 case _ => safeGetType(function.getType.getReturnType)
               }
               val sig = signature(cleanType(returnTpe), declarator)
-              s"$fullNameNoSig$constFlag:$sig"
+              s"$fullNameNoSig:$sig"
             }
             Option(fn)
           case Some(x @ (_: ICPPField | _: CPPVariable)) =>
             val fullNameNoSig = replaceQualifiedNameSeparator(x.getQualifiedName.mkString("."))
-            val fn = if (x.isExternC) {
-              x.getName
-            } else {
-              s"$fullNameNoSig$constFlag:${cleanType(safeGetType(x.getType))}"
-            }
+            val fn = if (x.isExternC) { x.getName }
+            else { s"$fullNameNoSig:${cleanType(safeGetType(x.getType))}" }
             Option(fn)
           case Some(_: IProblemBinding) =>
             val fullNameNoSig = replaceOperator(ASTStringUtil.getQualifiedName(declarator.getName))
@@ -379,11 +380,8 @@ trait FullNameProvider { this: AstCreator =>
               case _                                                                      => returnType(declarator)
             }
             val signature_ = signature(returnTpe, declarator)
-            if (fixedFullName.isEmpty) {
-              Option(s"${X2CpgDefines.UnresolvedNamespace}:$signature_")
-            } else {
-              Option(s"$fixedFullName$constFlag:$signature_")
-            }
+            if (fixedFullName.isEmpty) { Option(s"${X2CpgDefines.UnresolvedNamespace}:$signature_") }
+            else { Option(s"$fixedFullName:$signature_") }
           case _ => None
         }
       case declarator: CASTFunctionDeclarator =>
@@ -446,28 +444,12 @@ trait FullNameProvider { this: AstCreator =>
   }
 
   private def fullNameForIASTFunctionDeclarator(f: IASTFunctionDeclarator): String = {
-    val fullName =
-      Try(replaceQualifiedNameSeparator(ASTStringUtil.getQualifiedName(f.getName))).getOrElse(nextClosureName())
-    f match {
-      case declarator: ICPPASTFunctionDeclarator =>
-        val constFlag = if (declarator.isConst) { Defines.ConstSuffix }
-        else { "" }
-        s"$fullName$constFlag"
-      case _ => fullName
-    }
+    Try(replaceQualifiedNameSeparator(ASTStringUtil.getQualifiedName(f.getName))).getOrElse(nextClosureName())
   }
 
   private def fullNameForIASTFunctionDefinition(f: IASTFunctionDefinition): String = {
-    val fullName =
-      Try(replaceQualifiedNameSeparator(ASTStringUtil.getQualifiedName(f.getDeclarator.getName)))
-        .getOrElse(nextClosureName())
-    f.getDeclarator match {
-      case declarator: ICPPASTFunctionDeclarator =>
-        val constFlag = if (declarator.isConst) { Defines.ConstSuffix }
-        else { "" }
-        s"$fullName$constFlag"
-      case _ => fullName
-    }
+    Try(replaceQualifiedNameSeparator(ASTStringUtil.getQualifiedName(f.getDeclarator.getName)))
+      .getOrElse(nextClosureName())
   }
 
   protected final case class MethodFullNameInfo(name: String, fullName: String, signature: String, returnType: String)

@@ -199,7 +199,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
             val name          = fieldRefExpr.getFieldName.toString
             val signature     = s"${functionTypeToSignature(functionType)}$constFlag"
             val classFullName = cleanType(safeGetType(fieldRefExpr.getFieldOwnerType))
-            val fullName      = s"$classFullName.$name$constFlag:$signature"
+            val fullName      = s"$classFullName.$name:$signature"
 
             val (dispatchType, receiver) =
               if (method.isVirtual || method.isPureVirtual) {

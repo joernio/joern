@@ -54,10 +54,10 @@ class MethodFullNameUniquenessPassTests extends C2CpgSuite {
         "main.cpp"
       )
       cpg.method.fullName.size shouldBe cpg.method.fullName.toSet.size
-      cpg.method.nameExact("foo").fullName.sorted.l shouldBe List("Foo.foo:int(int)", "Foo.foo<const>:int(int)<const>")
+      cpg.method.nameExact("foo").fullName.sorted.l shouldBe List("Foo.foo:int(int)", "Foo.foo:int(int)<const>")
       val List(call1, call2) = cpg.call.name("foo").sortBy(_.lineNumber).l
       call1.methodFullName shouldBe "Foo.foo:int(int)"
-      call2.methodFullName shouldBe "Foo.foo<const>:int(int)<const>"
+      call2.methodFullName shouldBe "Foo.foo:int(int)<const>"
     }
 
     "fix calls to static function in the same file correctly" in {
