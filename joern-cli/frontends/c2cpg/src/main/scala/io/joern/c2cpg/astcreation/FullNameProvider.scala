@@ -44,9 +44,11 @@ trait FullNameProvider { this: AstCreator =>
   }
 
   protected def methodFullNameInfo(methodLike: MethodLike): MethodFullNameInfo = {
-    val name_             = shortName(methodLike)
-    val fullName_         = fullName(methodLike)
-    val constSuffix       = if fullName_.contains(Defines.ConstSuffix) then Defines.ConstSuffix else ""
+    val name_     = shortName(methodLike)
+    val fullName_ = fullName(methodLike)
+    val constSuffix = if (fullName_.contains(Defines.ConstSuffix)) {
+      Defines.ConstSuffix
+    } else { "" }
     val returnType_       = returnType(methodLike)
     val signature_        = s"${signature(returnType_, methodLike)}$constSuffix"
     val sanitizedFullName = sanitizeMethodLikeFullName(name_, s"$fullName_$constSuffix", signature_, methodLike)
