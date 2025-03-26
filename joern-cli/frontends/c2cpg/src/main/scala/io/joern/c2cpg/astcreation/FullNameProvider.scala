@@ -333,7 +333,8 @@ trait FullNameProvider { this: AstCreator =>
           case _ => None
         }
       case declarator: CPPASTFunctionDeclarator =>
-        val constFlag = if declarator.isConst then Defines.ConstSuffix else ""
+        val constFlag = if (declarator.isConst) { Defines.ConstSuffix }
+        else { "" }
         safeGetBinding(declarator.getName) match {
           case Some(function: ICPPFunction) if declarator.getName.isInstanceOf[ICPPASTConversionName] =>
             val tpe = cleanType(typeFor(declarator.getName.asInstanceOf[ICPPASTConversionName].getTypeId))
@@ -446,7 +447,8 @@ trait FullNameProvider { this: AstCreator =>
       Try(replaceQualifiedNameSeparator(ASTStringUtil.getQualifiedName(f.getName))).getOrElse(nextClosureName())
     f match {
       case declarator: ICPPASTFunctionDeclarator =>
-        val constFlag = if declarator.isConst then Defines.ConstSuffix else ""
+        val constFlag = if (declarator.isConst) { Defines.ConstSuffix }
+        else { "" }
         s"$fullName$constFlag"
       case _ => fullName
     }
@@ -458,7 +460,8 @@ trait FullNameProvider { this: AstCreator =>
         .getOrElse(nextClosureName())
     f.getDeclarator match {
       case declarator: ICPPASTFunctionDeclarator =>
-        val constFlag = if declarator.isConst then Defines.ConstSuffix else ""
+        val constFlag = if (declarator.isConst) { Defines.ConstSuffix }
+        else { "" }
         s"$fullName$constFlag"
       case _ => fullName
     }

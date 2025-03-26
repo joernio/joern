@@ -89,14 +89,16 @@ class FullNameUniquenessPass(cpg: Cpg) extends CpgPass(cpg) {
       val fileName = node.filename
       val lineNr   = node.lineNumber.getOrElse(-1)
       val columnNr = node.columnNumber.getOrElse(-1)
-      s"$fileName:$lineNr:$columnNr"
+      (fileName, lineNr, columnNr)
     }
   }
 
   private def logDuplicates[T <: AffectedNodeType](nodes: List[T], fullName: String): Unit = {
-    val fromFiles = nodes.map(_.filename).mkString("[", ", ", "]")
-    val nodeLabel = nodes.headOption.map(_.label).getOrElse("")
-    logger.debug(s"Found ${nodes.size} duplicate $nodeLabel fullNames for '$fullName' in: $fromFiles")
+    if (logger.isDebugEnabled) {
+      val fromFiles = nodes.map(_.filename).mkString("[", ", ", "]")
+      val nodeLabel = nodes.headOption.map(_.label).getOrElse("")
+      logger.debug(s"Found ${nodes.size} duplicate $nodeLabel fullNames for '$fullName' in: $fromFiles")
+    }
   }
 
   private def handleTypeDecls(dstGraph: DiffGraphBuilder): Unit = {
