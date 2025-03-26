@@ -197,7 +197,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
             else { "" }
             // TODO This wont do if the name is a reference.
             val name          = fieldRefExpr.getFieldName.toString
-            val signature     = functionTypeToSignature(functionType)
+            val signature     = s"${functionTypeToSignature(functionType)}$constFlag"
             val classFullName = cleanType(safeGetType(fieldRefExpr.getFieldOwnerType))
             val fullName      = s"$classFullName.$name$constFlag:$signature"
 
