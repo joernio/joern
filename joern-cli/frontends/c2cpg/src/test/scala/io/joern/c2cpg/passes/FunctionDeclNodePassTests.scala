@@ -71,7 +71,13 @@ class FunctionDeclNodePassTests extends C2CpgSuite {
           |""".stripMargin,
         "main.cpp"
       )
-      cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).fullName.sorted.l shouldBe List("ANY", "Foo", "Foo*", "int", "void")
+      cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).fullName.sorted.l shouldBe List(
+        "ANY",
+        "Foo",
+        "Foo*",
+        "int",
+        "void"
+      )
       cpg.binding.methodFullName.sorted.l shouldBe List(
         "Foo.fooA:int(int)",
         "Foo.fooA<duplicate>0:int(int)",
