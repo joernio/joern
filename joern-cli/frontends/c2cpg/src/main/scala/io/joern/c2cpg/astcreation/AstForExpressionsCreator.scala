@@ -173,7 +173,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
             val fullName = if (function.isExternC) {
               StringUtils.normalizeSpace(name)
             } else {
-              val fullNameNoSig = StringUtils.normalizeSpace(function.getQualifiedName.mkString("."))
+              val fullNameNoSig = stripTemplateTags(StringUtils.normalizeSpace(function.getQualifiedName.mkString(".")))
               s"$fullNameNoSig:$signature"
             }
             val callCpgNode = callNode(
@@ -196,7 +196,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
             val constFlag = if (isConstType(method.getType)) { Defines.ConstSuffix }
             else { "" }
             // TODO This wont do if the name is a reference.
-            val name          = fieldRefExpr.getFieldName.toString
+            val name          = stripTemplateTags(fieldRefExpr.getFieldName.toString)
             val signature     = s"${functionTypeToSignature(functionType)}$constFlag"
             val classFullName = safeGetType(fieldRefExpr.getFieldOwnerType)
             val fullName      = s"$classFullName.$name:$signature"
@@ -279,7 +279,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
       case fieldRefExpr: ICPPASTFieldReference =>
         val instanceAst = astForExpression(fieldRefExpr.getFieldOwner)
         val args        = call.getArguments.toList.map(a => astForNode(a))
-        val name        = StringUtils.normalizeSpace(fieldRefExpr.getFieldName.toString)
+        val name        = stripTemplateTags(StringUtils.normalizeSpace(fieldRefExpr.getFieldName.toString))
         val signature   = X2CpgDefines.UnresolvedSignature
         val fullName    = s"${X2CpgDefines.UnresolvedNamespace}.$name:$signature(${args.size})"
         val callCpgNode =
@@ -287,7 +287,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
         createCallAst(callCpgNode, args, base = Some(instanceAst), receiver = Some(instanceAst))
       case idExpr: CPPASTIdExpression =>
         val args      = call.getArguments.toList.map(a => astForNode(a))
-        val name      = StringUtils.normalizeSpace(idExpr.getName.getLastName.toString)
+        val name      = stripTemplateTags(StringUtils.normalizeSpace(idExpr.getName.getLastName.toString))
         val signature = X2CpgDefines.UnresolvedSignature
         val fullName  = s"${X2CpgDefines.UnresolvedNamespace}.$name:$signature(${args.size})"
         val callCpgNode =
@@ -506,7 +506,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
   }
 
   private def astForConstructorExpression(c: ICPPASTSimpleTypeConstructorExpression): Ast = {
-    val name = c.getDeclSpecifier.toString
+    val name = stripTemplateTags(c.getDeclSpecifier.toString)
     c.getInitializer match {
       case l: ICPPASTInitializerList if l.getClauses.forall(_.isInstanceOf[ICPPASTDesignatedInitializer]) =>
         val node = blockNode(c)
