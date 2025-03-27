@@ -22,12 +22,119 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPClosureType
 import scala.annotation.tailrec
 import scala.util.Try
 
-trait FullNameProvider { this: AstCreator =>
-
+object FullNameProvider {
   private type MethodLike = IASTFunctionDeclarator | IASTFunctionDefinition | ICPPASTLambdaExpression
 
   private type TypeLike = IASTEnumerationSpecifier | ICPPASTNamespaceDefinition | ICPPASTNamespaceAlias |
     IASTCompositeTypeSpecifier | IASTElaboratedTypeSpecifier
+
+  // Data structure to track segments and their positions during stripTemplateTags
+  private case class Segment(text: String, start: Int, isTag: Boolean)
+
+  private val TagsToKeepInFullName = List(
+    "<anonymous>",
+    "<iterator>",
+    "<lambda>",
+    "<global>",
+    "<param>",
+    "<const>",
+    "<alias>",
+    "<type>",
+    "<enum>",
+    "<tmp>"
+    // Sort tags by length (descending) to handle overlapping tags correctly in case there are any
+  ).sortBy(-_.length)
+
+  /** Removes template type parameters from qualified names while preserving special tags.
+    *
+    * This method strips the angle brackets and their contents from type names, which is useful for simplifying complex
+    * templated type names. It preserves certain special tags that are enclosed in angle brackets (like &lt;lambda&gt;,
+    * &lt;const&gt;, etc.) to maintain semantic meaning.
+    *
+    * Examples:
+    * {{{
+    *  stripTemplateTags("std::vector<int>") == "std::vector"
+    *  stripTemplateTags("Foo.Bar<T>.<lambda>1") == "Foo.Bar.<lambda>1" // preserves the special <lambda> tag
+    *  stripTemplateTags("std::map<std::string, std::vector<int>>") == "std::map" // removes nested template parameters
+    * }}}
+    *
+    * @param input
+    *   The input string that may contain template tags
+    * @return
+    *   The string with template tags removed but special tags preserved
+    */
+  def stripTemplateTags(input: String): String = {
+    if (input.isEmpty || !input.contains("<")) {
+      return input
+    }
+
+    // Start with the entire string as one non-tag segment
+    var segments = List(Segment(input, 0, false))
+
+    // For each tag, split any matching segments further
+    for (tag <- TagsToKeepInFullName) {
+      segments = segments.flatMap { segment =>
+        if (segment.isTag) {
+          // Don't split tags
+          List(segment)
+        } else {
+          // Find tag positions in this segment
+          val segmentText = segment.text
+          val matches     = tag.r.findAllMatchIn(segmentText).toList
+
+          if (matches.isEmpty) {
+            // No matches in this segment
+            List(segment)
+          } else {
+            // Split segment at tag positions
+            var result  = List[Segment]()
+            var lastEnd = 0
+
+            for (m <- matches) {
+              // Add text before tag
+              if (m.start > lastEnd) {
+                result = result :+ Segment(segmentText.substring(lastEnd, m.start), segment.start + lastEnd, false)
+              }
+
+              // Add tag
+              result = result :+ Segment(tag, segment.start + m.start, true)
+              lastEnd = m.end
+            }
+
+            // Add remaining text after last tag
+            if (lastEnd < segmentText.length) {
+              result = result :+ Segment(segmentText.substring(lastEnd), segment.start + lastEnd, false)
+            }
+
+            result
+          }
+        }
+      }
+    }
+
+    // Apply template tag removal to non-tag segments only
+    segments.map { segment =>
+      if (segment.isTag) {
+        segment.text
+      } else {
+        val firstIndex = segment.text.indexOf("<")
+        val lastIndex  = segment.text.lastIndexOf(">")
+        if (firstIndex != -1 && lastIndex != -1 && firstIndex < lastIndex) {
+          val prefix = segment.text.substring(0, firstIndex)
+          val suffix = segment.text.substring(lastIndex + 1)
+          prefix + suffix
+        } else {
+          segment.text
+        }
+      }
+    }.mkString
+  }
+
+}
+
+trait FullNameProvider { this: AstCreator =>
+
+  import FullNameProvider.*
 
   protected def replaceQualifiedNameSeparator(name: String): String = {
     if (name.isEmpty) return name
@@ -141,108 +248,6 @@ trait FullNameProvider { this: AstCreator =>
     val constFlag = if (isConst(methodLike)) { Defines.ConstSuffix }
     else { "" }
     StringUtils.normalizeSpace(s"$returnType${parameterListSignature(methodLike)}$constFlag")
-  }
-
-  // Data structure to track segments and their positions during stripTemplateTags
-  private case class Segment(text: String, start: Int, isTag: Boolean)
-
-  private val TagsToKeepInFullName = List(
-    "<anonymous>",
-    "<iterator>",
-    "<lambda>",
-    "<global>",
-    "<param>",
-    "<const>",
-    "<alias>",
-    "<type>",
-    "<enum>",
-    "<tmp>"
-    // Sort tags by length (descending) to handle overlapping tags correctly in case there are any
-  ).sortBy(-_.length)
-
-  /** Removes template type parameters from qualified names while preserving special tags.
-    *
-    * This method strips the angle brackets and their contents from type names, which is useful for simplifying complex
-    * templated type names. It preserves certain special tags that are enclosed in angle brackets (like &lt;lambda&gt;,
-    * &lt;const&gt;, etc.) to maintain semantic meaning.
-    *
-    * Examples:
-    * {{{
-    *  stripTemplateTags("std::vector<int>") == "std::vector"
-    *  stripTemplateTags("Foo.Bar<T>.<lambda>1") == "Foo.Bar.<lambda>1" // preserves the special <lambda> tag
-    *  stripTemplateTags("std::map<std::string, std::vector<int>>") == "std::map" // removes nested template parameters
-    * }}}
-    *
-    * @param input
-    *   The input string that may contain template tags
-    * @return
-    *   The string with template tags removed but special tags preserved
-    */
-  protected def stripTemplateTags(input: String): String = {
-    if (input.isEmpty || !input.contains("<")) {
-      return input
-    }
-
-    // Start with the entire string as one non-tag segment
-    var segments = List(Segment(input, 0, false))
-
-    // For each tag, split any matching segments further
-    for (tag <- TagsToKeepInFullName) {
-      segments = segments.flatMap { segment =>
-        if (segment.isTag) {
-          // Don't split tags
-          List(segment)
-        } else {
-          // Find tag positions in this segment
-          val segmentText = segment.text
-          val matches     = tag.r.findAllMatchIn(segmentText).toList
-
-          if (matches.isEmpty) {
-            // No matches in this segment
-            List(segment)
-          } else {
-            // Split segment at tag positions
-            var result  = List[Segment]()
-            var lastEnd = 0
-
-            for (m <- matches) {
-              // Add text before tag
-              if (m.start > lastEnd) {
-                result = result :+ Segment(segmentText.substring(lastEnd, m.start), segment.start + lastEnd, false)
-              }
-
-              // Add tag
-              result = result :+ Segment(tag, segment.start + m.start, true)
-              lastEnd = m.end
-            }
-
-            // Add remaining text after last tag
-            if (lastEnd < segmentText.length) {
-              result = result :+ Segment(segmentText.substring(lastEnd), segment.start + lastEnd, false)
-            }
-
-            result
-          }
-        }
-      }
-    }
-
-    // Apply template tag removal to non-tag segments only
-    segments.map { segment =>
-      if (segment.isTag) {
-        segment.text
-      } else {
-        val firstIndex = segment.text.indexOf("<")
-        val lastIndex  = segment.text.lastIndexOf(">")
-        if (firstIndex != -1 && lastIndex != -1 && firstIndex < lastIndex) {
-          val prefix = segment.text.substring(0, firstIndex)
-          val suffix = segment.text.substring(lastIndex + 1)
-          prefix + suffix
-        } else {
-          segment.text
-        }
-      }
-    }.mkString
   }
 
   private def lastNameOfQualifiedName(name: String): String = {

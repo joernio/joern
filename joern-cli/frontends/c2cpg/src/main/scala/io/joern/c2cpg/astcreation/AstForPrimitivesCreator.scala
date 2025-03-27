@@ -29,6 +29,8 @@ import scala.util.Try
 
 trait AstForPrimitivesCreator { this: AstCreator =>
 
+  import FullNameProvider.stripTemplateTags
+
   protected def astForComment(comment: IASTComment): Ast =
     Ast(newCommentNode(comment, code(comment), fileName(comment)))
 

@@ -13,6 +13,8 @@ import scala.util.Try
 
 trait TypeNameProvider { this: AstCreator =>
 
+  import FullNameProvider.stripTemplateTags
+
   // Sadly, there is no predefined List / Enum of this within Eclipse CDT:
   private val ReservedKeywordsAtTypes: List[String] =
     List(

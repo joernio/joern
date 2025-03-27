@@ -25,6 +25,8 @@ import scala.util.Try
 
 trait AstForExpressionsCreator { this: AstCreator =>
 
+  import FullNameProvider.stripTemplateTags
+
   private val OperatorMap: Map[Int, String] = Map(
     IASTBinaryExpression.op_multiply         -> Operators.multiplication,
     IASTBinaryExpression.op_divide           -> Operators.division,
