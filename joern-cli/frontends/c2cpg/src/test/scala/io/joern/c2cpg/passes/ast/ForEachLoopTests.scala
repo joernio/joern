@@ -72,7 +72,7 @@ class ForEachLoopTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt) {
       val List(methodBlock) = method.astChildren.isBlock.l
       val List(loopBlock)   = methodBlock.astChildren.isBlock.l
       cpg.controlStructure.isWhile.code.l shouldBe List("for (const std::string& item:items)")
-      checkForEachForLoop(loopBlock, "std.string&", "std.vector<std.string>&")
+      checkForEachForLoop(loopBlock, "std.string&", "std.vector&")
     }
   }
 

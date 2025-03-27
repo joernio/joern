@@ -163,7 +163,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
   private def astForCppCallExpression(call: ICPPASTFunctionCallExpression): Ast = {
     val functionNameExpr = call.getFunctionNameExpression
     Try(functionNameExpr.getExpressionType).toOption match {
-      case Some(_: IPointerType) => createPointerCallAst(call, cleanType(safeGetType(call.getExpressionType)))
+      case Some(_: IPointerType) => createPointerCallAst(call, safeGetType(call.getExpressionType))
       case Some(functionType: ICPPFunctionType) =>
         functionNameExpr match {
           case idExpr: CPPASTIdExpression if safeGetBinding(idExpr).exists(_.isInstanceOf[ICPPFunction]) =>
@@ -183,7 +183,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
               fullName,
               DispatchTypes.STATIC_DISPATCH,
               Some(signature),
-              Some(registerType(cleanType(safeGetType(call.getExpressionType))))
+              Some(registerType(safeGetType(call.getExpressionType)))
             )
             val args = call.getArguments.toList.map(a => astForNode(a))
             createCallAst(callCpgNode, args)
@@ -198,7 +198,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
             // TODO This wont do if the name is a reference.
             val name          = fieldRefExpr.getFieldName.toString
             val signature     = s"${functionTypeToSignature(functionType)}$constFlag"
-            val classFullName = cleanType(safeGetType(fieldRefExpr.getFieldOwnerType))
+            val classFullName = safeGetType(fieldRefExpr.getFieldOwnerType)
             val fullName      = s"$classFullName.$name:$signature"
 
             val (dispatchType, receiver) =
@@ -214,7 +214,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
               fullName,
               dispatchType,
               Some(signature),
-              Some(registerType(cleanType(safeGetType(call.getExpressionType))))
+              Some(registerType(safeGetType(call.getExpressionType)))
             )
             createCallAst(callCpgNode, args, base = Some(instanceAst), receiver)
           case _ =>
@@ -239,13 +239,13 @@ trait AstForExpressionsCreator { this: AstCreator =>
               fullName,
               DispatchTypes.DYNAMIC_DISPATCH,
               Some(lambdaSignature),
-              Some(registerType(cleanType(safeGetType(call.getExpressionType))))
+              Some(registerType(safeGetType(call.getExpressionType)))
             )
             val receiverAst = astForExpression(functionNameExpr)
             val args        = call.getArguments.toList.map(a => astForNode(a))
             createCallAst(callCpgNode, args, receiver = Some(receiverAst))
           case _ =>
-            val classFullName = cleanType(safeGetType(classType))
+            val classFullName = safeGetType(classType)
             val fullName      = s"$classFullName.$name:$functionSignature"
             val dispatchType = evaluation.getOverload match {
               case method: ICPPMethod =>
@@ -264,7 +264,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
               fullName,
               dispatchType,
               Some(functionSignature),
-              Some(registerType(cleanType(safeGetType(call.getExpressionType))))
+              Some(registerType(safeGetType(call.getExpressionType)))
             )
             val instanceAst = astForExpression(functionNameExpr)
             val args        = call.getArguments.toList.map(a => astForNode(a))
@@ -311,13 +311,13 @@ trait AstForExpressionsCreator { this: AstCreator =>
     val functionNameExpr = call.getFunctionNameExpression
     Try(functionNameExpr.getExpressionType).toOption match {
       case Some(_: CPointerType) =>
-        createPointerCallAst(call, cleanType(safeGetType(call.getExpressionType)))
+        createPointerCallAst(call, safeGetType(call.getExpressionType))
       case Some(_: CFunctionType) =>
         functionNameExpr match {
           case idExpr: CASTIdExpression =>
-            createCFunctionCallAst(call, idExpr, cleanType(safeGetType(call.getExpressionType)))
+            createCFunctionCallAst(call, idExpr, safeGetType(call.getExpressionType))
           case _ =>
-            createPointerCallAst(call, cleanType(safeGetType(call.getExpressionType)))
+            createPointerCallAst(call, safeGetType(call.getExpressionType))
         }
       case _ =>
         astForCCallExpressionUntyped(call)
@@ -521,7 +521,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
           designatorIds.map { memberId =>
             val rhsAst = astForNode(init.getOperand)
             val specifierId =
-              identifierNode(c.getDeclSpecifier, name, name, registerType(cleanType(typeFor(c.getDeclSpecifier))))
+              identifierNode(c.getDeclSpecifier, name, name, registerType(typeFor(c.getDeclSpecifier)))
             val op         = Operators.fieldAccess
             val accessCode = s"$name.${memberId.code}"
             val ma         = callNode(init, accessCode, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
@@ -566,7 +566,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     }
 
     val op  = "<operator>.fold"
-    val tpe = typeFor(foldExpression)
+    val tpe = registerType(typeFor(foldExpression))
     val callNode_ =
       callNode(foldExpression, code(foldExpression), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
 
