@@ -19,6 +19,7 @@ import org.eclipse.cdt.internal.core.dom.parser.c.CASTFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.c.CVariable
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPClosureType
 
+import scala.annotation.tailrec
 import scala.util.Try
 
 trait FullNameProvider { this: AstCreator =>
@@ -319,6 +320,7 @@ trait FullNameProvider { this: AstCreator =>
       .replace("operator ", "")
   }
 
+  @tailrec
   private def isConst(node: IASTNode): Boolean = {
     node match {
       case lambdaExpression: ICPPASTLambdaExpression => isConst(lambdaExpression.getDeclarator)

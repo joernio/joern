@@ -53,8 +53,8 @@ class MethodTests extends C2CpgSuite {
     val cpg = code("int foo(); int bar() { return woo(); }")
 
     "should identify method as stub" in {
-      cpg.method.isStub.fullName.l shouldBe List("foo", "<includes>:<global>", "woo")
-      cpg.method.isNotStub.fullName.l shouldBe List("bar", "Test0.c:<global>")
+      cpg.method.isStub.fullName.sorted.l shouldBe List("<includes>:<global>", "foo", "woo")
+      cpg.method.isNotStub.fullName.sorted.l shouldBe List("Test0.c:<global>", "bar")
     }
   }
 
