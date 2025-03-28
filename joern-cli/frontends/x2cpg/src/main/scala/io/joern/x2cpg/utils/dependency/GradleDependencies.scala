@@ -192,7 +192,8 @@ object GradleDependencies {
         .filterNot(_ == outDir)
         .filter(_.fileName == jarInsideAarFileName)
         .toList
-    if (classesJarEntries.size != 1) {[logger.warn(s"Found aar file without `classes.jar` inside at path $aar")
+    if (classesJarEntries.size != 1) {
+      logger.warn(s"Found aar file without `classes.jar` inside at path $aar")
       FileUtil.delete(outDir)
       None
     } else {
