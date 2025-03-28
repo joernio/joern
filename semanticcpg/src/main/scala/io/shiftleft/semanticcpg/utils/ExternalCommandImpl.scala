@@ -73,6 +73,7 @@ trait ExternalCommandImpl {
       if (timeout.isFinite) {
         val finished = process.waitFor(timeout.toMillis, TimeUnit.MILLISECONDS)
         if (!finished) {
+          process.destroy()
           throw new TimeoutException(s"command '${command.mkString(" ")}' with timeout='$timeout' has timed out")
         }
       } else {
