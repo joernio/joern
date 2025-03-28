@@ -45,7 +45,7 @@ class ExternalCommandTest extends AnyWordSpec with Matchers {
     }
 
     "support a timeout" in {
-      ExternalCommand.run(Seq("sleep", "5s"), timeout = 100.millis).toTry match {
+      ExternalCommand.run(Seq("sleep", "5"), timeout = 100.millis).toTry match {
         case result: Success[_] =>
           fail(s"expected failure, but got $result")
         case Failure(exception) =>
