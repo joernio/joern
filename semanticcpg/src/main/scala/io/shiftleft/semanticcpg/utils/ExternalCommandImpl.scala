@@ -4,6 +4,8 @@ import io.shiftleft.utils.IOUtils
 
 import java.io.File
 import java.nio.file.{Path, Paths}
+import java.util.concurrent.{TimeUnit, TimeoutException}
+import scala.concurrent.duration.Duration
 import scala.jdk.CollectionConverters.*
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
@@ -31,7 +33,8 @@ trait ExternalCommandImpl {
     cwd: Option[String] = None,
     mergeStdErrInStdOut: Boolean = false,
     extraEnv: Map[String, String] = Map.empty,
-    isShellCommand: Boolean = false
+    isShellCommand: Boolean = false,
+    timeout: Duration = Duration.Inf
   ): ExternalCommandResult = {
     val shellCmd = if (scala.util.Properties.isWin) {
       Seq("cmd.exe", "/C")
@@ -66,15 +69,20 @@ trait ExternalCommandImpl {
       builder.redirectOutput(stdOutFile)
       stdErrFile.foreach(f => builder.redirectError(f))
 
-      val process     = builder.start()
-      val returnValue = process.waitFor()
+      val process   = builder.start()
+      val hasExited = process.waitFor(timeout.toMillis, TimeUnit.MILLISECONDS)
+      if (!hasExited) {
+        throw new TimeoutException(s"command '${command.mkString(" ")}' with timeout='$timeout' has timed out")
+      }
 
       val stdOut = IOUtils.readLinesInFile(stdOutFile.toPath)
       val stdErr = stdErrFile.map(f => IOUtils.readLinesInFile(f.toPath)).getOrElse(Seq.empty)
-      ExternalCommandResult(returnValue, stdOut, stdErr)
+      ExternalCommandResult(process.exitValue(), stdOut, stdErr)
     } catch {
       case NonFatal(exception) =>
-        ExternalCommandResult(1, Seq.empty, stdErr = Seq(exception.getMessage))
+        val stdOut = IOUtils.readLinesInFile(stdOutFile.toPath)
+        val stdErr = stdErrFile.map(f => IOUtils.readLinesInFile(f.toPath)).getOrElse(Seq.empty) :+ exception.getMessage
+        ExternalCommandResult(1, stdOut, stdErr)
     } finally {
       stdOutFile.delete()
       stdErrFile.foreach(_.delete())
