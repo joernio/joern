@@ -534,7 +534,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
 
   // SAM stands for: single abstraction method
   private def getSamInterface(expr: KtLambdaExpression | KtNamedFunction): Option[ClassDescriptor] = {
-    getSurroundingCallTarget(expr) match {
+    val res = getSurroundingCallTarget(expr) match {
       case Some(callTarget) =>
         val resolvedCallAtom = bindingUtils
           .getResolvedCallDesc(callTarget)
@@ -569,6 +569,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
         val lambdaExprType = bindingUtils.getExprType(expr)
         lambdaExprType.map(_.getConstructor.getDeclarationDescriptor.asInstanceOf[ClassDescriptor])
     }
+    // if there type info fails, we may otherwise end up with Some(null), which wreaks havoc
+    Option(res.orNull)
   }
 
   private def argMatchesExpr(arg: KotlinCallArgument, expr: KtElement): Boolean = {
