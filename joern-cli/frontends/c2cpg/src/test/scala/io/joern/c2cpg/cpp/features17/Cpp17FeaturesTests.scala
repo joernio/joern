@@ -25,9 +25,9 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |""".stripMargin)
       val List(c1, c2) = cpg.local.l
       c1.name shouldBe "c1"
-      c1.typeFullName shouldBe "MyContainer<int>"
+      c1.typeFullName shouldBe "MyContainer"
       c2.name shouldBe "c2"
-      c2.typeFullName shouldBe "MyContainer<float>"
+      c2.typeFullName shouldBe "MyContainer"
       // We are unable to express this template argument deduction in the current schema
       cpg.typeDecl.member.nameExact("val").typeFullName.l shouldBe List("T")
     }
@@ -52,11 +52,11 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |""".stripMargin)
       val List(seq, seq2, ints) = cpg.local.l
       seq.name shouldBe "seq"
-      // CDT is unable to deduce the type of the template argument
-      seq.typeFullName shouldBe "integer_sequence<int,int0,int1,int2>"
+      seq.typeFullName shouldBe "integer_sequence"
       seq2.name shouldBe "seq2"
-      seq2.typeFullName shouldBe "my_integer_sequence<int0,int1,int2>"
+      seq2.typeFullName shouldBe "my_integer_sequence"
       ints.name shouldBe "Ints"
+      // CDT is unable to deduce the type of the template argument
       ints.typeFullName shouldBe "ANY"
     }
 
@@ -259,8 +259,8 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       cpg.local.map(l => (l.name, l.typeFullName)).toMap shouldBe Map(
         "x"       -> "int",
         "y"       -> "int",
-        "<tmp>0"  -> "pair<int,int>",
-        "mapping" -> "std.unordered_map<std.string,int>",
+        "<tmp>0"  -> "pair",
+        "mapping" -> "std.unordered_map",
         // fails to resolve the type of the structured bindings without C++ header files
         "<tmp>1" -> "ANY",
         "key"    -> "ANY",
@@ -281,9 +281,9 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
         cpg.local.map(l => (l.name, l.typeFullName)).toMap shouldBe Map(
           "x"       -> "int",
           "y"       -> "int",
-          "<tmp>0"  -> "pair<int,int>",
-          "mapping" -> "std.unordered_map<std.string,int>",
-          "<tmp>1"  -> "std.unordered_map<std.string,int>",
+          "<tmp>0"  -> "pair",
+          "mapping" -> "std.unordered_map",
+          "<tmp>1"  -> "std.unordered_map",
           "key"     -> "int",
           "value"   -> "int"
         )
@@ -295,7 +295,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           .map(l => (l.name, l.typeFullName))
           .toMap shouldBe Map(
           // fails to resolve the type of the structured bindings without C++ header files
-          "<tmp>1" -> "std.unordered_map<std.string,int>",
+          "<tmp>1" -> "std.unordered_map",
           "key"    -> "int",
           "value"  -> "int"
         )
@@ -494,16 +494,13 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |  auto b = container{ v.begin(), v.end() }; // OK: deduces container<double>
           |}
           |""".stripMargin)
-      cpg.local.nameExact("a").typeFullName.l shouldBe List("container<int>")
-      cpg.local.nameExact("v").typeFullName.l shouldBe List(
-        "std.vector", // generic types are not deduced
-        "std.vector<double>"
-      )
+      cpg.local.nameExact("a").typeFullName.l shouldBe List("container")
+      cpg.local.nameExact("v").typeFullName.l shouldBe List("std.vector", "std.vector")
       pendingUntilFixed {
         // CDT deduces them to ProblemType as there are no includes for std::
-        cpg.local.nameExact("p").typeFullName.l shouldBe List("std.pair<double,double>*")
-        cpg.local.nameExact("lck").typeFullName.l shouldBe List("std.lock_guard<std.mutex>")
-        cpg.local.nameExact("b").typeFullName.l shouldBe List("container<double>")
+        cpg.local.nameExact("p").typeFullName.l shouldBe List("std.pair*")
+        cpg.local.nameExact("lck").typeFullName.l shouldBe List("std.lock_guard")
+        cpg.local.nameExact("b").typeFullName.l shouldBe List("container")
       }
     }
 

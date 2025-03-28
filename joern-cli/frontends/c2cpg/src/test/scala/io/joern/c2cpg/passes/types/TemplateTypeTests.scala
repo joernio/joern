@@ -20,16 +20,16 @@ class TemplateTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
         case List(typeDeclX, typeDeclY, typeDeclA, typeDeclB) =>
           typeDeclX.name shouldBe "X"
           typeDeclX.fullName shouldBe "X"
-          typeDeclX.aliasTypeFullName shouldBe Option("X<T>")
+          typeDeclX.aliasTypeFullName shouldBe empty
           typeDeclY.name shouldBe "Y"
           typeDeclY.fullName shouldBe "Y"
-          typeDeclY.aliasTypeFullName shouldBe Option("Y<A,B>")
+          typeDeclY.aliasTypeFullName shouldBe empty
           typeDeclA.name shouldBe "A"
           typeDeclA.fullName shouldBe "A"
-          typeDeclA.aliasTypeFullName shouldBe Option("X<int>")
+          typeDeclA.aliasTypeFullName shouldBe Option("X")
           typeDeclB.name shouldBe "B"
           typeDeclB.fullName shouldBe "B"
-          typeDeclB.aliasTypeFullName shouldBe Option("Y<int,char>")
+          typeDeclB.aliasTypeFullName shouldBe Option("Y")
       }
     }
 
@@ -43,11 +43,9 @@ class TemplateTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
       ) { case List(x, y) =>
         x.name shouldBe "X"
         x.fullName shouldBe "X"
-        x.aliasTypeFullName shouldBe Option("X<T>")
         y.name shouldBe "Y"
         y.fullName shouldBe "Y"
-        y.aliasTypeFullName shouldBe Option("Y<A,B>")
-        y.inheritsFromTypeFullName shouldBe Seq("X<A>")
+        y.inheritsFromTypeFullName shouldBe Seq("X")
       }
     }
 
@@ -59,7 +57,6 @@ class TemplateTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
         case List(foo) =>
           foo.name shouldBe "Foo"
           foo.fullName shouldBe "Foo"
-          foo.aliasTypeFullName shouldBe Option("Foo<A,B>")
       }
     }
 

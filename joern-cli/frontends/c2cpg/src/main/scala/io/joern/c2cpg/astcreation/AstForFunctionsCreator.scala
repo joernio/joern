@@ -12,7 +12,6 @@ import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTCompositeTypeSpecifier
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTFunctionDefinition
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression.CaptureDefault
-import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTQualifiedName
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPBinding
 import org.eclipse.cdt.core.dom.ast.gnu.c.ICASTKnRFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTFunctionDeclarator
@@ -85,16 +84,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
         )
         registerMethodDeclaration(fullName, methodInfo)
         Ast()
-      case Some(cVariable: CVariable) =>
+      case Some(variable: (CVariable | CPPVariable)) =>
         val name       = shortName(funcDecl)
-        val tpe        = cleanType(safeGetType(cVariable.getType))
-        val codeString = code(funcDecl.getParent)
-        val node       = localNode(funcDecl, name, codeString, registerType(tpe))
-        scope.addVariable(name, node, tpe, C2CpgScope.ScopeType.BlockScope)
-        Ast(node)
-      case Some(cppVariable: CPPVariable) =>
-        val name       = shortName(funcDecl)
-        val tpe        = cleanType(safeGetType(cppVariable.getType))
+        val tpe        = safeGetType(variable.getType)
         val codeString = code(funcDecl.getParent)
         val node       = localNode(funcDecl, name, codeString, registerType(tpe))
         scope.addVariable(name, node, tpe, C2CpgScope.ScopeType.BlockScope)
@@ -278,7 +270,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
             Some(o.getOwner.asInstanceOf[CPPEnumeration].getQualifiedName.mkString("."))
           case Some(o: ICPPBinding) if o.getOwner.isInstanceOf[CPPStructuredBindingComposite] =>
             Some(o.getOwner.asInstanceOf[CPPStructuredBindingComposite].getQualifiedName.mkString("."))
-          case _ if cppFunc.getDeclarator.getName.isInstanceOf[ICPPASTQualifiedName] =>
+          case _ if cppFunc.getDeclarator.getName.isInstanceOf[CPPASTQualifiedName] =>
             Some(cppFunc.getDeclarator.getName.asInstanceOf[CPPASTQualifiedName].getQualifier.mkString("."))
           case _ if cppFunc.getParent.isInstanceOf[ICPPASTCompositeTypeSpecifier] =>
             Some(fullName(cppFunc.getParent))
@@ -293,7 +285,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
             EvaluationStrategies.BY_VALUE,
             line(cppFunc),
             column(cppFunc),
-            registerType(s"$owner*")
+            registerType(s"${cleanType(owner)}*")
           )
         }
       case _ => Seq.empty
@@ -303,12 +295,12 @@ trait AstForFunctionsCreator { this: AstCreator =>
   private def parameterNodeInfo(parameter: IASTNode, paramIndex: Int): CGlobal.ParameterInfo = {
     val (name, codeString, tpe, variadic) = parameter match {
       case p: CASTParameterDeclaration =>
-        (shortName(p.getDeclarator), code(p), cleanType(typeForDeclSpecifier(p.getDeclSpecifier)), false)
+        (shortName(p.getDeclarator), code(p), typeForDeclSpecifier(p.getDeclSpecifier), false)
       case p: CPPASTParameterDeclaration =>
         (
           shortName(p.getDeclarator),
           code(p),
-          cleanType(typeForDeclSpecifier(p.getDeclSpecifier)),
+          typeForDeclSpecifier(p.getDeclSpecifier),
           p.getDeclarator.declaresParameterPack()
         )
       case s: IASTSimpleDeclaration =>
@@ -317,11 +309,11 @@ trait AstForFunctionsCreator { this: AstCreator =>
             .map(n => ASTStringUtil.getSimpleName(n.getName))
             .getOrElse(fileLocalUniqueName("", "", "param")._1),
           code(s),
-          cleanType(typeForDeclSpecifier(s)),
+          typeForDeclSpecifier(s),
           false
         )
       case other =>
-        (code(other), code(other), cleanType(typeForDeclSpecifier(other)), false)
+        (code(other), code(other), typeForDeclSpecifier(other), false)
     }
     new CGlobal.ParameterInfo(
       name,
