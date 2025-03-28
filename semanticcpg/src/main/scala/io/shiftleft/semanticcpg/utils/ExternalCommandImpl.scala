@@ -69,10 +69,14 @@ trait ExternalCommandImpl {
       builder.redirectOutput(stdOutFile)
       stdErrFile.foreach(f => builder.redirectError(f))
 
-      val process   = builder.start()
-      val hasExited = process.waitFor(timeout.toMillis, TimeUnit.MILLISECONDS)
-      if (!hasExited) {
-        throw new TimeoutException(s"command '${command.mkString(" ")}' with timeout='$timeout' has timed out")
+      val process = builder.start()
+      if (timeout.isFinite) {
+        val finished = process.waitFor(timeout.toMillis, TimeUnit.MILLISECONDS)
+        if (!finished) {
+          throw new TimeoutException(s"command '${command.mkString(" ")}' with timeout='$timeout' has timed out")
+        }
+      } else {
+        process.waitFor()
       }
 
       val stdOut = IOUtils.readLinesInFile(stdOutFile.toPath)
