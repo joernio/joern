@@ -7,6 +7,7 @@ import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import java.nio.file.Paths
 import scala.util.Properties.isWin
 import scala.util.{Failure, Success}
+import concurrent.duration.*
 
 class ExternalCommandTest extends AnyWordSpec with Matchers {
 
@@ -41,6 +42,17 @@ class ExternalCommandTest extends AnyWordSpec with Matchers {
           else
             exception.getMessage should include("No such file or directory")
       }
+    }
+
+    "support a timeout" in {
+      ExternalCommand.run(Seq("sleep", "5"), timeout = 100.millis).toTry match {
+        case result: Success[_] =>
+          fail(s"expected failure, but got $result")
+        case Failure(exception) =>
+          exception.getMessage should include("Process exited with code 1")
+          exception.getMessage should include("has timed out")
+      }
+
     }
   }
 
