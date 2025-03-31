@@ -15,9 +15,12 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewBinding
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.codepropertygraph.generated.nodes.NewModifier
+import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.apache.commons.lang3.StringUtils
 
 import scala.collection.immutable.Map
@@ -28,6 +31,42 @@ class FunctionDeclNodePass(cpg: Cpg, methodDeclarations: Map[String, CGlobal.Met
   private implicit val schemaValidation: ValidationMode = config.schemaValidation
 
   override def run(dstGraph: DiffGraphBuilder): Unit = {
+    stubMethods(dstGraph)
+    createMissingCppBindings(dstGraph)
+  }
+
+  private def nameAndSignature(method: Method): String = s".${method.name}:${method.signature}"
+
+  private def parentTypeDeclForMethod(method: Method): Option[TypeDecl] = {
+    val typeDeclFullName = method.fullName.substring(0, method.fullName.indexOf(nameAndSignature(method)))
+    cpg.typeDecl.fullNameExact(typeDeclFullName).headOption
+  }
+
+  private def isCppMethod(method: Method): Boolean = {
+    !method.name.startsWith(io.joern.x2cpg.Defines.ClosurePrefix) &&
+    method.signature.nonEmpty &&
+    method.fullName.endsWith(nameAndSignature(method))
+  }
+
+  private def createMissingCppBindings(dstGraph: DiffGraphBuilder): Unit = {
+    for {
+      method <- cpg.method
+        .nameNot(NamespaceTraversal.globalNamespaceName)
+        .where(_.parameter.index(0))
+        .not(_.isPrivate)
+        .filter(isCppMethod)
+      parentTypeDecl <- parentTypeDeclForMethod(method)
+      if !parentTypeDecl.bindsOut.refOut.contains(method)
+    } {
+      // create new binding at proper typeDecl
+      val functionBinding = NewBinding().name(method.name).methodFullName(method.fullName).signature(method.signature)
+      dstGraph.addNode(functionBinding)
+      dstGraph.addEdge(parentTypeDecl, functionBinding, EdgeTypes.BINDS)
+      dstGraph.addEdge(functionBinding, method, EdgeTypes.REF)
+    }
+  }
+
+  private def stubMethods(dstGraph: DiffGraphBuilder): Unit = {
     methodDeclarations.foreach { case (fullName, methodNodeInfo) =>
       val methodNode_    = methodNode(fullName, methodNodeInfo)
       val parameterNodes = methodNodeInfo.parameter.map(p => Ast(parameterInNode(p)))
