@@ -28,6 +28,11 @@ class FullNameProviderTest extends AnyWordSpec with Matchers {
       stripTemplateTags("std.map<std.string, std.vector<int>>") shouldBe "std.map"
       stripTemplateTags("std.function<int(std.vector<int>)>") shouldBe "std.function"
       stripTemplateTags("Foo<std.vector<int>>.bar") shouldBe "Foo.bar"
+      stripTemplateTags("Foo<std.vector<int>>.bar<Bar<int>>") shouldBe "Foo.bar"
+      stripTemplateTags("Foo<std.vector<int>>.bar<Bar<int>>()<const>") shouldBe "Foo.bar()<const>"
+      stripTemplateTags(
+        "Foo<std.vector<int>>.bar<Bar<int>>.<lambda>1:string(Param<int>,Param<Bar<int>>)"
+      ) shouldBe "Foo.bar.<lambda>1:string(Param,Param)"
     }
 
     "handle edge cases" in {

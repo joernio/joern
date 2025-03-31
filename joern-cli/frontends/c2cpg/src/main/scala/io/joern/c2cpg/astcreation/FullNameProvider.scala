@@ -28,9 +28,6 @@ object FullNameProvider {
   private type TypeLike = IASTEnumerationSpecifier | ICPPASTNamespaceDefinition | ICPPASTNamespaceAlias |
     IASTCompositeTypeSpecifier | IASTElaboratedTypeSpecifier
 
-  // Data structure to track segments and their positions during stripTemplateTags
-  private case class Segment(text: String, start: Int, isTag: Boolean)
-
   private val TagsToKeepInFullName = List(
     "<anonymous>",
     "<iterator>",
@@ -42,8 +39,7 @@ object FullNameProvider {
     "<type>",
     "<enum>",
     "<tmp>"
-    // Sort tags by length (descending) to handle overlapping tags correctly in case there are any
-  ).sortBy(-_.length)
+  )
 
   /** Removes template type parameters from qualified names while preserving special tags.
     *
@@ -64,74 +60,32 @@ object FullNameProvider {
     *   The string with template tags removed but special tags preserved
     */
   def stripTemplateTags(input: String): String = {
-    if (input.isEmpty || !input.contains("<")) {
+    if (input.isEmpty || !input.contains("<") || !input.contains(">")) {
       return input
     }
 
-    // Start with the entire string as one non-tag segment
-    var segments = List(Segment(input, 0, false))
-
-    // For each tag, split any matching segments further
-    for (tag <- TagsToKeepInFullName) {
-      segments = segments.flatMap { segment =>
-        if (segment.isTag) {
-          // Don't split tags
-          List(segment)
-        } else {
-          // Find tag positions in this segment
-          val segmentText = segment.text
-          val matches     = tag.r.findAllMatchIn(segmentText).toList
-
-          if (matches.isEmpty) {
-            // No matches in this segment
-            List(segment)
-          } else {
-            // Split segment at tag positions
-            var result  = List[Segment]()
-            var lastEnd = 0
-
-            for (m <- matches) {
-              // Add text before tag
-              if (m.start > lastEnd) {
-                result = result :+ Segment(segmentText.substring(lastEnd, m.start), segment.start + lastEnd, false)
-              }
-
-              // Add tag
-              result = result :+ Segment(tag, segment.start + m.start, true)
-              lastEnd = m.end
-            }
-
-            // Add remaining text after last tag
-            if (lastEnd < segmentText.length) {
-              result = result :+ Segment(segmentText.substring(lastEnd), segment.start + lastEnd, false)
-            }
-
-            result
-          }
-        }
-      }
+    val firstOpenIndex = input.indexOf("<")
+    // Find matching closing bracket, accounting for nesting
+    var nesting    = 1
+    var closeIndex = firstOpenIndex + 1
+    while (closeIndex < input.length && nesting > 0) {
+      if (input(closeIndex) == '<') nesting += 1
+      else if (input(closeIndex) == '>') nesting -= 1
+      closeIndex += 1
     }
+    closeIndex -= 1 // Adjust to point at the closing bracket
 
-    // Apply template tag removal to non-tag segments only
-    segments.map { segment =>
-      if (segment.isTag) {
-        segment.text
-      } else {
-        // We do not need to handle a second pair of angle brackets here,
-        // as the that one in the name is already removed as e.g., in "foo<X>.bar<y>()"
-        val firstIndex = segment.text.indexOf("<")
-        val lastIndex  = segment.text.lastIndexOf(">")
-        if (firstIndex != -1 && lastIndex != -1 && firstIndex < lastIndex) {
-          val prefix = segment.text.substring(0, firstIndex)
-          val suffix = segment.text.substring(lastIndex + 1)
-          prefix + suffix
-        } else {
-          segment.text
-        }
-      }
-    }.mkString
+    val prefix = input.substring(0, firstOpenIndex)
+    val tag    = input.substring(firstOpenIndex, closeIndex + 1)
+    val suffix = input.substring(closeIndex + 1)
+
+    // Keep special tags, remove others
+    if (TagsToKeepInFullName.contains(tag)) {
+      s"$prefix$tag${stripTemplateTags(suffix)}"
+    } else {
+      s"$prefix${stripTemplateTags(suffix)}"
+    }
   }
-
 }
 
 trait FullNameProvider { this: AstCreator =>
