@@ -50,21 +50,14 @@ class FunctionDeclNodePass(cpg: Cpg, methodDeclarations: Map[String, CGlobal.Met
 
   private def createMissingCppBindings(dstGraph: DiffGraphBuilder): Unit = {
     for {
-      method         <- cpg.method.nameNot(NamespaceTraversal.globalNamespaceName).filter(isCppMethod)
+      method <- cpg.method
+        .nameNot(NamespaceTraversal.globalNamespaceName)
+        .where(_.parameter.index(0))
+        .not(_.isPrivate)
+        .filter(isCppMethod)
       parentTypeDecl <- parentTypeDeclForMethod(method)
       if !parentTypeDecl.bindsOut.refOut.contains(method)
     } {
-      for {
-        methodTypeDecl <- cpg.typeDecl.fullNameExact(method.fullName)
-        methodTpe      <- cpg.typ.fullNameExact(method.fullName)
-        methodBinding  <- methodTypeDecl.bindsOut
-      } {
-        // remove old bindings and types
-        dstGraph.removeNode(methodTypeDecl)
-        dstGraph.removeNode(methodTpe)
-        dstGraph.removeNode(methodBinding)
-      }
-
       // create new binding at proper typeDecl
       val functionBinding = NewBinding().name(method.name).methodFullName(method.fullName).signature(method.signature)
       dstGraph.addNode(functionBinding)

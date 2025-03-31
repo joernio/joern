@@ -117,6 +117,8 @@ object FullNameProvider {
       if (segment.isTag) {
         segment.text
       } else {
+        // We do not need to handle a second pair of angle brackets here,
+        // as the that one in the name is already removed as e.g., in "foo<X>.bar<y>()"
         val firstIndex = segment.text.indexOf("<")
         val lastIndex  = segment.text.lastIndexOf(">")
         if (firstIndex != -1 && lastIndex != -1 && firstIndex < lastIndex) {

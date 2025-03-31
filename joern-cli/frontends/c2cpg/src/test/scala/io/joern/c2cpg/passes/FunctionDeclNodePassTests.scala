@@ -35,15 +35,30 @@ class FunctionDeclNodePassTests extends C2CpgSuite {
       )
       val List(fooA) = cpg.method.nameExact("fooA").l
       fooA.fullName shouldBe "Foo.fooA:int(int)"
-      cpg.binding.methodFullNameExact("Foo.fooA:int(int)").boundMethod.l shouldBe List(fooA)
+      cpg.typeDecl.nameExact("Foo").methodBinding.methodFullNameExact("Foo.fooA:int(int)").boundMethod.l shouldBe List(
+        fooA
+      )
+      cpg.typeDecl
+        .fullNameExact("Foo.fooA:int(int)")
+        .methodBinding
+        .methodFullNameExact("Foo.fooA:int(int)")
+        .boundMethod
+        .l shouldBe List(fooA)
 
       val List(fooB) = cpg.method.nameExact("fooB").l
       fooB.fullName shouldBe "Foo.fooB:int(int)"
-      cpg.binding.methodFullNameExact("Foo.fooB:int(int)").boundMethod.l shouldBe List(fooB)
+      cpg.typeDecl.nameExact("Foo").methodBinding.methodFullNameExact("Foo.fooB:int(int)").boundMethod.l shouldBe List(
+        fooB
+      )
 
       val List(fooC) = cpg.method.nameExact("fooC").l
       fooC.fullName shouldBe "Foo.fooC:int(int)"
-      cpg.binding.methodFullNameExact("Foo.fooC:int(int)").boundMethod.l shouldBe List(fooC)
+      cpg.typeDecl
+        .nameExact("Foo")
+        .methodBinding
+        .methodFullNameExact("Foo.fooC:int(int)")
+        .boundMethod
+        .l shouldBe List(fooC)
     }
 
     "create proper bindings for forward-declared C++ functions with templates" in {
@@ -75,15 +90,10 @@ class FunctionDeclNodePassTests extends C2CpgSuite {
         "ANY",
         "Foo",
         "Foo*",
+        "Foo.fooA:int(int)",
         "int",
         "void"
       )
-      cpg.binding.methodFullName.sorted.l shouldBe List(
-        "Foo.fooA:int(int)",
-        "Foo.fooA<duplicate>0:int(int)",
-        "Foo.fooC:int(int)"
-      )
-
       cpg.typeDecl.nameExact("Foo").methodBinding.sortBy(_.methodFullName).l.map { b =>
         (b.methodFullName, b.name, b.signature)
       } shouldBe List(
@@ -94,16 +104,25 @@ class FunctionDeclNodePassTests extends C2CpgSuite {
       val List(fooA) = cpg.method.fullNameExact("Foo.fooA:int(int)").l
       fooA.file.name.l shouldBe List("main.cpp")
       fooA.code shouldBe "int Foo::fooA(int a) { return 0; }"
-      cpg.binding.methodFullNameExact("Foo.fooA:int(int)").boundMethod.l shouldBe List(fooA)
+      cpg.typeDecl.nameExact("Foo").methodBinding.methodFullNameExact("Foo.fooA:int(int)").boundMethod.l shouldBe List(
+        fooA
+      )
 
       val List(fooADuplicate) = cpg.method.fullNameExact("Foo.fooA<duplicate>0:int(int)").l
       fooADuplicate.file.name.l shouldBe List("main.hpp")
       fooADuplicate.code shouldBe "int fooA(int a) { return 0; }"
-      cpg.binding.methodFullNameExact("Foo.fooA<duplicate>0:int(int)").boundMethod.l shouldBe List(fooADuplicate)
+      cpg.typeDecl
+        .nameExact("Foo")
+        .methodBinding
+        .methodFullNameExact("Foo.fooA<duplicate>0:int(int)")
+        .boundMethod
+        .l shouldBe List(fooADuplicate)
 
       val List(fooC) = cpg.method.nameExact("fooC").l
       fooC.fullName shouldBe "Foo.fooC:int(int)"
-      cpg.binding.methodFullNameExact("Foo.fooC:int(int)").boundMethod.l shouldBe List(fooC)
+      cpg.typeDecl.nameExact("Foo").methodBinding.methodFullNameExact("Foo.fooC:int(int)").boundMethod.l shouldBe List(
+        fooC
+      )
     }
   }
 
