@@ -28,6 +28,20 @@ class CustomFileContentProvider(headerFileFinder: HeaderFileFinder, sourceFile: 
     loadContent(path)
   }
 
+  override def getContentForInclusion(ifl: IIndexFileLocation, astPath: String): InternalFileContent = {
+    loadContent(astPath)
+  }
+
+  private def loadContent(path: String): InternalFileContent = {
+    val maybeFullPath = if (!getInclusionExists(path)) { headerFileFinder.find(path) }
+    else { Option(path) }
+    maybeFullPath.map { foundPath =>
+      updateHeaderFileParserLanguage(foundPath)
+      val content = contentFromCache(foundPath)
+      FileContent.create(path, false, content).asInstanceOf[InternalFileContent]
+    }.orNull
+  }
+
   private def contentFromCache(foundPath: String): Array[Char] = {
     headerContentCache.computeIfAbsent(
       foundPath,
@@ -43,15 +57,15 @@ class CustomFileContentProvider(headerFileFinder: HeaderFileFinder, sourceFile: 
     * This method tracks which language parser (C, C++, or both) should be used for each header file based on where the
     * header is included from. The logic follows:
     *   - If first time seen: Use C parser for headers included from C files, C++ parser for others
-    *   - If previously seen in C files only: Keep C parser or upgrade to Both if included from C++
-    *   - If previously seen in C++ files only: Keep C++ parser or upgrade to Both if included from C
-    *   - If already seen in both C and C++ files: Keep using Both parsers
+    *   - If previously seen in C files only: Keep C parser or upgrade to both parsers if included from C++
+    *   - If previously seen in C++ files only: Keep C++ parser or upgrade to both parsers if included from C
+    *   - If already seen in both C and C++ files: Keep using both parsers
     *
     * @param foundPath
     *   The full path to the header file being processed
     */
   private def updateHeaderFileParserLanguage(foundPath: String): Unit = {
-    if (FileDefaults.hasCHeaderFileExtension(foundPath) && !FileDefaults.hasCHeaderFileExtension(sourceFile)) {
+    if (FileDefaults.hasCHeaderFileExtension(foundPath) && FileDefaults.hasSourceFileExtension(sourceFile)) {
       global.headerIncludes.compute(
         foundPath,
         {
@@ -71,20 +85,6 @@ class CustomFileContentProvider(headerFileFinder: HeaderFileFinder, sourceFile: 
         }
       )
     }
-  }
-
-  private def loadContent(path: String): InternalFileContent = {
-    val maybeFullPath = if (!getInclusionExists(path)) { headerFileFinder.find(path) }
-    else { Option(path) }
-    maybeFullPath.map { foundPath =>
-      updateHeaderFileParserLanguage(foundPath)
-      val content = contentFromCache(foundPath)
-      FileContent.create(path, false, content).asInstanceOf[InternalFileContent]
-    }.orNull
-  }
-
-  override def getContentForInclusion(ifl: IIndexFileLocation, astPath: String): InternalFileContent = {
-    loadContent(astPath)
   }
 
 }
