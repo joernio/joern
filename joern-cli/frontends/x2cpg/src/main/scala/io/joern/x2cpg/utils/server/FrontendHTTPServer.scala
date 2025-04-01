@@ -8,9 +8,11 @@ import net.freeutils.httpserver.HTTPServer
 import net.freeutils.httpserver.HTTPServer.Context
 import org.slf4j.LoggerFactory
 
-import java.util.concurrent.Executors
-import java.util.concurrent.ExecutorService
+import java.net.ServerSocket
+import java.util.concurrent.{ExecutorService, Executors, Phaser, Semaphore, TimeUnit}
 import scala.annotation.tailrec
+import scala.concurrent.TimeoutException
+import scala.concurrent.duration.Duration
 import scala.jdk.CollectionConverters.ListHasAsScala
 import scala.util.Failure
 import scala.util.Random
@@ -90,29 +92,42 @@ trait FrontendHTTPServer[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]] { this: X2C
       */
     @Context(value = "/run", methods = Array("POST"))
     def run(req: server.Request, resp: server.Response): Int = {
-      resp.getHeaders.add("Content-Type", "text/plain")
-      resp.getHeaders.add("Connection", "close")
-
-      val params = req.getParamsList.asScala
-      val outputDir = params
-        .collectFirst { case Array(arg, value) if arg == "output" => value }
-        .getOrElse(X2CpgConfig.defaultOutputPath)
-      val arguments = params.collect {
-        case Array(arg, value) if arg == "input"        => Array(value)
-        case Array(arg, value) if value.strip().isEmpty => Array(s"--$arg")
-        case Array(arg, value)                          => Array(s"--$arg", value)
-      }.flatten
-      logger.debug("Got POST with arguments: " + arguments.mkString(" "))
-
-      val config = X2Cpg
-        .parseCommandLine(arguments.toArray, cmdLineParser, newDefaultConfig())
-        .getOrElse(newDefaultConfig())
-      Try(frontend.run(config)) match {
-        case Failure(exception) =>
-          resp.send(400, exception.getMessage)
-        case Success(_) =>
-          resp.send(200, outputDir)
+      synchronized {
+        runningRequests += 1
       }
+
+      try {
+        resp.getHeaders.add("Content-Type", "text/plain")
+        resp.getHeaders.add("Connection", "close")
+
+        val params = req.getParamsList.asScala
+        val outputDir = params
+          .collectFirst { case Array(arg, value) if arg == "output" => value }
+          .getOrElse(X2CpgConfig.defaultOutputPath)
+        val arguments = params.collect {
+          case Array(arg, value) if arg == "input"        => Array(value)
+          case Array(arg, value) if value.strip().isEmpty => Array(s"--$arg")
+          case Array(arg, value)                          => Array(s"--$arg", value)
+        }.flatten
+        logger.debug("Got POST with arguments: " + arguments.mkString(" "))
+
+        val config = X2Cpg
+          .parseCommandLine(arguments.toArray, cmdLineParser, newDefaultConfig())
+          .getOrElse(newDefaultConfig())
+        Try(frontend.run(config)) match {
+          case Failure(exception) =>
+            resp.send(400, exception.getMessage)
+          case Success(_) =>
+            resp.send(200, outputDir)
+        }
+      } finally {
+        synchronized {
+          runningRequests -= 1
+          lastRequest = System.nanoTime()
+          notifyAll()
+        }
+      }
+
       0
     }
   }
@@ -122,51 +137,21 @@ trait FrontendHTTPServer[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]] { this: X2C
     * This method checks if the `underlyingServer` is defined and, if so, stops the server. It also logs a debug message
     * indicating that the server has been stopped. If the server is not running, this method does nothing.
     */
-  def stop(): Unit = try {
-    underlyingServer.foreach { server =>
-      executor.shutdown()
-      server.stop()
-      logger.debug("Server stopped.")
-    }
-  } finally {
-    frontend.close()
-  }
-
-  private def randomPort(): Int = {
-    val random = new Random()
-    10000 + random.nextInt(65000)
-  }
-
-  private def internalServerStart(): Try[Int] = {
-    val port = randomPort()
+  def stop(): Unit = {
     try {
-      val server = new HTTPServer(port)
-      val host   = server.getVirtualHost(null)
-      host.addContexts(new FrontendHTTPHandler(server))
-      server.setExecutor(executor)
-      server.start()
-      underlyingServer = Some(server)
-      Success(port)
-    } catch {
-      case exception: Throwable => Failure(exception)
+      underlyingServer.foreach { server =>
+        executor.shutdown()
+        server.stop()
+        logger.debug("Server stopped.")
+      }
+      underlyingServer = None
     } finally {
-      Runtime.getRuntime.addShutdownHook(new Thread(() => {
-        stop()
-      }))
+      frontend.close()
     }
   }
 
-  private def retryUntilSuccess[F](f: () => Try[F], maxAttempts: Int): F = {
-    @tailrec
-    def attempt(remainingAttempts: Int): F = {
-      f() match {
-        case Success(port)                       => port
-        case Failure(_) if remainingAttempts > 1 => attempt(remainingAttempts - 1)
-        case Failure(exception)                  => throw exception
-      }
-    }
-    attempt(maxAttempts)
-  }
+  private var runningRequests = 0
+  private var lastRequest     = System.nanoTime()
 
   /** Starts the HTTP server.
     *
@@ -175,12 +160,33 @@ trait FrontendHTTPServer[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]] { this: X2C
     * hook is added to ensure that the server is properly stopped when the application is terminated.
     *
     * @return
-    *   The port this server is bound to which is chosen randomly until success (default number of attempts: 10)
+    *   The port this server is bound to which is chosen randomly
     */
   def startup(): Int = {
-    val port = retryUntilSuccess(internalServerStart, maxAttempts = 10)
-    println(s"FrontendHTTPServer started on port $port")
-    port
+    object server extends HTTPServer(0 /* port 0 means the OS chooses a random open port for us */ ) {
+      def chosenPort: Int = serv.getLocalPort
+    }
+    val host = server.getVirtualHost(null)
+    host.addContexts(new FrontendHTTPHandler(server))
+    server.setExecutor(executor)
+    server.start()
+    underlyingServer = Some(server)
+
+    println(s"FrontendHTTPServer started on port ${server.chosenPort}")
+    server.chosenPort
+  }
+
+  /** Stops the server, once it hasn't served any new requests for longer than timeout seconds
+    */
+  def serveUntilTimeout(timeoutSeconds: Long): Unit = {
+    synchronized {
+      while (underlyingServer.isDefined) {
+        wait(TimeUnit.SECONDS.toMillis(timeoutSeconds))
+        if (runningRequests == 0 && System.nanoTime() > lastRequest + TimeUnit.SECONDS.toNanos(timeoutSeconds)) {
+          stop()
+        }
+      }
+    }
   }
 
 }

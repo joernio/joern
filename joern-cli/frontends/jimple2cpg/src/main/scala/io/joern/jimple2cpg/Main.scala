@@ -84,7 +84,7 @@ object Main extends X2CpgMain(cmdLineParser, new Jimple2Cpg()) with FrontendHTTP
   override protected val executor: ExecutorService = FrontendHTTPServer.singleThreadExecutor()
 
   def run(config: Config, jimple2Cpg: Jimple2Cpg): Unit = {
-    if (config.serverMode) { startup() }
+    if (config.serverMode) { startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout) }
     else { jimple2Cpg.run(config) }
   }
 }

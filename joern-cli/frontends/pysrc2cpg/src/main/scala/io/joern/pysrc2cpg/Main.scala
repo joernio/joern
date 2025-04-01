@@ -46,7 +46,7 @@ object NewMain
   override protected def newDefaultConfig(): Py2CpgOnFileSystemConfig = Py2CpgOnFileSystemConfig()
 
   def run(config: Py2CpgOnFileSystemConfig, frontend: Py2CpgOnFileSystem): Unit = {
-    if (config.serverMode) { startup() }
+    if (config.serverMode) { startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout) }
     else { frontend.run(config) }
   }
 

@@ -59,7 +59,7 @@ object Main extends X2CpgMain(cmdLineParser, new RubySrc2Cpg()) with FrontendHTT
   override protected def newDefaultConfig(): Config = Config()
 
   def run(config: Config, rubySrc2Cpg: RubySrc2Cpg): Unit = {
-    if (config.serverMode) { startup() }
+    if (config.serverMode) { startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout) }
     else { rubySrc2Cpg.run(config) }
   }
 }
