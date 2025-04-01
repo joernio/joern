@@ -20,9 +20,10 @@ object X2CpgConfig {
 }
 
 trait X2CpgConfig[R <: X2CpgConfig[R]] {
-  var inputPath: String   = X2CpgConfig.defaultInputPath
-  var outputPath: String  = X2CpgConfig.defaultOutputPath
-  var serverMode: Boolean = false
+  var inputPath: String                  = X2CpgConfig.defaultInputPath
+  var outputPath: String                 = X2CpgConfig.defaultOutputPath
+  var serverMode: Boolean                = false
+  var serverTimeoutSeconds: Option[Long] = None
 
   def withInputPath(inputPath: String): R = {
     this.inputPath = Paths.get(inputPath).toAbsolutePath.normalize().toString
@@ -37,6 +38,11 @@ trait X2CpgConfig[R <: X2CpgConfig[R]] {
   def withServerMode(x: Boolean): R = {
     this.serverMode = x
     this.asInstanceOf[R]
+  }
+
+  def withServerTimeoutSeconds(x: Long): this.type = {
+    this.serverTimeoutSeconds = Some(x)
+    this
   }
 
   var defaultIgnoredFilesRegex: Seq[Regex] = Seq.empty
@@ -314,6 +320,10 @@ object X2Cpg {
         .action((_, c) => c.withServerMode(true))
         .hidden()
         .text("runs this frontend in server mode (disabled by default)"),
+      opt[Long]("server-timeout-minutes")
+        .action((secs, c) => c.withServerTimeoutSeconds(secs * 60))
+        .hidden()
+        .text("timeout after which the server should terminate (use with --server)"),
       opt[Unit]("disable-file-content")
         .action((_, c) => c.withDisableFileContent(true))
         .hidden()

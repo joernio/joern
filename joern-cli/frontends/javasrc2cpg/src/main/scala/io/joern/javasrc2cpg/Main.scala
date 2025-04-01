@@ -164,7 +164,7 @@ object Main extends X2CpgMain(cmdLineParser, new JavaSrc2Cpg()) with FrontendHTT
 
   def run(config: Config, javasrc2Cpg: JavaSrc2Cpg): Unit = {
     config match {
-      case c if c.serverMode         => startup()
+      case c if c.serverMode         => startup(); c.serverTimeoutSeconds.foreach(serveUntilTimeout)
       case c if c.showEnv            => JavaSrc2Cpg.showEnv()
       case c if c.dumpJavaparserAsts => JavaParserAstPrinter.printJpAsts(c)
       case _                         => javasrc2Cpg.run(config)

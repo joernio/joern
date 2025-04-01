@@ -102,7 +102,7 @@ object Main extends X2CpgMain(cmdLineParser, new Kotlin2Cpg()) with FrontendHTTP
   override protected def newDefaultConfig(): Config = Config()
 
   def run(config: Config, kotlin2cpg: Kotlin2Cpg): Unit = {
-    if (config.serverMode) { startup() }
+    if (config.serverMode) { startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout) }
     else { kotlin2cpg.run(config) }
   }
 }
