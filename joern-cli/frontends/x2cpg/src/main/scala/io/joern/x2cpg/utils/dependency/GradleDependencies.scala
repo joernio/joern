@@ -1,46 +1,39 @@
 package io.joern.x2cpg.utils.dependency
 
-import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.utils.FileUtil
-
-import java.nio.charset.Charset
-import org.gradle.tooling.{GradleConnector, ProjectConnection}
-import org.gradle.tooling.model.{GradleProject, ProjectIdentifier, Task}
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+import org.gradle.tooling.GradleConnector
+import org.gradle.tooling.ProjectConnection
 import org.gradle.tooling.model.build.BuildEnvironment
 import org.slf4j.LoggerFactory
 
-import java.io.{ByteArrayOutputStream, IOException, File as JFile}
-import java.nio.file.{Files, Path, Paths}
+import java.io.ByteArrayOutputStream
+import java.io.File as JFile
+import java.nio.charset.Charset
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.stream.Collectors
 import scala.collection.mutable
 import scala.io.Source
 import scala.jdk.CollectionConverters.*
-import scala.util.{Failure, Random, Success, Try, Using}
-
-case class ProjectNameInfo(projectName: String, parentName: Option[String]) {
-  override def toString: String = {
-    parentName.map(parentName => s"$parentName:$projectName").getOrElse(projectName)
-  }
-
-  def makeGradleTaskName(taskName: String): String = {
-    parentName.map(parentName => s"$parentName:$projectName:$taskName").getOrElse(taskName)
-  }
-}
+import scala.util.Failure
+import scala.util.Random
+import scala.util.Success
+import scala.util.Try
+import scala.util.Using
 
 case class GradleVersion(major: Int, minor: Int)
 
 case class GradleDepsInitScript(contents: String, taskName: String, destinationDir: Path)
 
 object GradleDependencies {
-  private val aarFileExtension            = "aar"
-  private val gradleAndroidPropertyPrefix = "android"
-  private val gradlePropertiesTaskName    = "properties"
-  private val jarInsideAarFileName        = "classes.jar"
-  private val defaultConfigurationName    = "releaseRuntimeClasspath"
-  private val initScriptPrefix            = "x2cpg.init.gradle"
-  private val taskNamePrefix              = "x2cpgCopyDeps"
-  private val tempDirPrefix               = "x2cpgDependencies"
-  private val defaultGradleAppName        = "app"
+  private val aarFileExtension     = "aar"
+  private val jarInsideAarFileName = "classes.jar"
+  private val initScriptPrefix     = "x2cpg.init.gradle"
+  private val taskNamePrefix       = "x2cpgCopyDeps"
+  private val tempDirPrefix        = "x2cpgDependencies"
+  private val defaultGradleAppName = "app"
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -144,7 +137,7 @@ object GradleDependencies {
     initScriptPath: String
   ): Map[String, List[String]] = {
     Using.resources(new ByteArrayOutputStream, new ByteArrayOutputStream) { case (stdoutStream, stderrStream) =>
-      logger.debug(s"Executing gradle task '${taskName}'...")
+      logger.debug(s"Executing gradle task '$taskName'...")
       Try(
         connection
           .newBuild()
@@ -152,6 +145,11 @@ object GradleDependencies {
           .withArguments("--init-script", initScriptPath)
           .setStandardOutput(stdoutStream)
           .setStandardError(stderrStream)
+          .setEnvironmentVariables(
+            // pass through environment variables or otherwise no valid SDK
+            // location from the ANDROID_HOME environment variable may be found
+            System.getenv()
+          )
           .run()
       ) match {
         case Success(_) =>
@@ -168,7 +166,6 @@ object GradleDependencies {
             )
           }
           if (stderrStream.toString.contains("Could not compile initialization script")) {
-
             val scriptContents = new String(Files.readAllBytes(Paths.get(initScriptPath)), Charset.defaultCharset())
             logger.debug(
               s"########## INITIALIZATION_SCRIPT ##########\n$scriptContents\n###########################################"
@@ -196,7 +193,7 @@ object GradleDependencies {
         .filter(_.fileName == jarInsideAarFileName)
         .toList
     if (classesJarEntries.size != 1) {
-      logger.warn(s"Found aar file without `classes.jar` inside at path ${aar}")
+      logger.warn(s"Found aar file without `classes.jar` inside at path $aar")
       FileUtil.delete(outDir)
       None
     } else {
