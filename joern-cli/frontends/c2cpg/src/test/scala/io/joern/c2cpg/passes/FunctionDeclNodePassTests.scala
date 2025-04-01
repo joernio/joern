@@ -7,6 +7,7 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 class FunctionDeclNodePassTests extends C2CpgSuite {
 
   "the FunctionDeclNodePass" should {
+
     "create proper bindings for forward-declared C++ functions" in {
       val cpg = code(
         """

@@ -25,8 +25,42 @@ import org.apache.commons.lang3.StringUtils
 
 import scala.collection.immutable.Map
 
-class FunctionDeclNodePass(cpg: Cpg, methodDeclarations: Map[String, CGlobal.MethodInfo], config: Config)
+object FunctionDeclNodePass {
+
+  final case class MethodInfo(
+    name: String,
+    code: String,
+    fileName: String,
+    returnType: String,
+    astParentType: String,
+    astParentFullName: String,
+    lineNumber: Option[Int],
+    columnNumber: Option[Int],
+    lineNumberEnd: Option[Int],
+    columnNumberEnd: Option[Int],
+    signature: String,
+    offset: Option[(Int, Int)],
+    parameter: Seq[ParameterInfo],
+    modifier: Seq[String]
+  )
+
+  final class ParameterInfo(
+    val name: String,
+    var code: String,
+    val index: Int,
+    var isVariadic: Boolean,
+    val evaluationStrategy: String,
+    val lineNumber: Option[Int],
+    val columnNumber: Option[Int],
+    val typeFullName: String
+  )
+
+}
+
+class FunctionDeclNodePass(cpg: Cpg, methodDeclarations: Map[String, FunctionDeclNodePass.MethodInfo], config: Config)
     extends CpgPass(cpg) {
+
+  import FunctionDeclNodePass.*
 
   private implicit val schemaValidation: ValidationMode = config.schemaValidation
 
@@ -90,7 +124,7 @@ class FunctionDeclNodePass(cpg: Cpg, methodDeclarations: Map[String, CGlobal.Met
     }
   }
 
-  private def methodNode(fullName: String, methodNodeInfo: CGlobal.MethodInfo): NewMethod = {
+  private def methodNode(fullName: String, methodNodeInfo: MethodInfo): NewMethod = {
     val node_ =
       NewMethod()
         .name(StringUtils.normalizeSpace(methodNodeInfo.name))
@@ -111,7 +145,7 @@ class FunctionDeclNodePass(cpg: Cpg, methodDeclarations: Map[String, CGlobal.Met
     node_
   }
 
-  private def parameterInNode(parameterNodeInfo: CGlobal.ParameterInfo): NewMethodParameterIn = {
+  private def parameterInNode(parameterNodeInfo: ParameterInfo): NewMethodParameterIn = {
     NewMethodParameterIn()
       .name(parameterNodeInfo.name)
       .code(parameterNodeInfo.code)
@@ -145,7 +179,7 @@ class FunctionDeclNodePass(cpg: Cpg, methodDeclarations: Map[String, CGlobal.Met
       .withChild(Ast(methodReturn))
 
   private def createFunctionTypeAndTypeDecl(
-    methodInfo: CGlobal.MethodInfo,
+    methodInfo: MethodInfo,
     method: NewMethod,
     methodName: String,
     methodFullName: String,

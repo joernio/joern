@@ -1,6 +1,7 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.c2cpg.astcreation.C2CpgScope.PendingReference
+import io.joern.c2cpg.passes.FunctionDeclNodePass
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.AstNodeBuilder
 import io.joern.x2cpg.SourceFiles
@@ -113,7 +114,7 @@ trait AstCreatorHelper { this: AstCreator =>
     fixedTypeName
   }
 
-  protected def registerMethodDeclaration(fullName: String, methodInfo: CGlobal.MethodInfo): Unit = {
+  protected def registerMethodDeclaration(fullName: String, methodInfo: FunctionDeclNodePass.MethodInfo): Unit = {
     global.methodDeclarations.putIfAbsent(fullName, methodInfo)
   }
 
