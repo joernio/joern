@@ -88,6 +88,7 @@ trait X2CpgConfig[R <: X2CpgConfig[R]] {
     this.inputPath = config.inputPath
     this.outputPath = config.outputPath
     this.serverMode = config.serverMode
+    this.serverTimeoutSeconds = config.serverTimeoutSeconds
     this.defaultIgnoredFilesRegex = config.defaultIgnoredFilesRegex
     this.ignoredFilesRegex = config.ignoredFilesRegex
     this.ignoredFiles = config.ignoredFiles
