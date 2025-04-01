@@ -53,8 +53,8 @@ class MethodTests extends C2CpgSuite {
     val cpg = code("int foo(); int bar() { return woo(); }")
 
     "should identify method as stub" in {
-      cpg.method.isStub.fullName.l shouldBe List("foo", "<includes>:<global>", "woo")
-      cpg.method.isNotStub.fullName.l shouldBe List("bar", "Test0.c:<global>")
+      cpg.method.isStub.fullName.sorted.l shouldBe List("<includes>:<global>", "foo", "woo")
+      cpg.method.isNotStub.fullName.sorted.l shouldBe List("Test0.c:<global>", "bar")
     }
   }
 
@@ -113,7 +113,7 @@ class MethodTests extends C2CpgSuite {
     "should be correct for methods with line breaks / whitespace" in {
       inside(cpg.method("foo").l) { case List(foo) =>
         foo.name shouldBe "foo"
-        foo.fullName shouldBe "foo<A, B, C>:void()"
+        foo.fullName shouldBe "foo:void()"
         foo.signature shouldBe "void()"
       }
     }
@@ -414,11 +414,7 @@ class MethodTests extends C2CpgSuite {
           |""".stripMargin,
         "test.cpp"
       )
-      cpg.method.filter(_.name.contains("foo")).methodReturn.typeFullName.l shouldBe List(
-        "int",
-        "vector<int>",
-        "vector<int>"
-      )
+      cpg.method.filter(_.name.contains("foo")).methodReturn.typeFullName.l shouldBe List("int", "vector", "vector")
     }
 
     "be correct for C function pointer" in {

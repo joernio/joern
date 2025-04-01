@@ -106,7 +106,7 @@ trait MacroHandler { this: AstCreator =>
 
     val callName     = StringUtils.normalizeSpace(name)
     val callFullName = StringUtils.normalizeSpace(fullName(macroDef, argAsts))
-    val typeFullName = registerType(cleanType(typeFor(node)))
+    val typeFullName = registerType(typeFor(node))
     val callNode =
       NewCall()
         .name(callName)

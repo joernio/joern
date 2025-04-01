@@ -26,10 +26,10 @@ class C2Cpg extends X2CpgFrontend[Config] {
       new MetaDataPass(cpg, Languages.NEWC, config.inputPath).createAndApply()
       val astCreationPass = new AstCreationPass(cpg, config, report)
       astCreationPass.createAndApply()
-      new FunctionDeclNodePass(cpg, astCreationPass.unhandledMethodDeclarations(), config)
-        .createAndApply()
       TypeNodePass.withRegisteredTypes(astCreationPass.typesSeen(), cpg).createAndApply()
       new TypeDeclNodePass(cpg, config).createAndApply()
+      new FunctionDeclNodePass(cpg, astCreationPass.unhandledMethodDeclarations(), config)
+        .createAndApply()
       new FullNameUniquenessPass(cpg).createAndApply()
       report.print()
     }

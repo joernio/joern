@@ -60,7 +60,7 @@ class FullNameUniquenessPassTests extends C2CpgSuite {
       )
     }
 
-    "respect  method fullnames for const C++ functions" in {
+    "respect method fullnames for const C++ functions" in {
       val cpg = code(
         """
           |class Foo {

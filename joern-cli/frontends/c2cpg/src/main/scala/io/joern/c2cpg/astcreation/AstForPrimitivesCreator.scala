@@ -29,12 +29,14 @@ import scala.util.Try
 
 trait AstForPrimitivesCreator { this: AstCreator =>
 
+  import FullNameProvider.stripTemplateTags
+
   protected def astForComment(comment: IASTComment): Ast =
     Ast(newCommentNode(comment, code(comment), fileName(comment)))
 
   protected def astForLiteral(lit: IASTLiteralExpression): Ast = {
     val codeString = code(lit)
-    val tpe        = registerType(cleanType(safeGetType(lit.getExpressionType)))
+    val tpe        = registerType(safeGetType(lit.getExpressionType))
     if (codeString == "this") {
       val thisIdentifier = identifierNode(lit, codeString, codeString, tpe)
       scope.addVariableReference(codeString, thisIdentifier, tpe, EvaluationStrategies.BY_REFERENCE)
@@ -73,7 +75,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
         val identifierName = nameForIdentifier(ident)
         typeNameForIdentifier(ident, identifierName) match {
           case identifierTypeName: String =>
-            val tpe       = registerType(cleanType(identifierTypeName))
+            val tpe       = registerType(identifierTypeName)
             val globalTag = if (isFromGlobalDefinition(ident)) "<global> " else ""
             val node      = identifierNode(ident, identifierName, s"$globalTag${code(ident)}", tpe)
             scope.addVariableReference(identifierName, node, tpe, EvaluationStrategies.BY_REFERENCE)
@@ -104,7 +106,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
         for {
           fullName     <- mayBeFullName
           typeFullName <- mayBeTypeFullName
-        } yield methodRefNode(ident, code(ident), fullName, registerType(cleanType(typeFullName)))
+        } yield methodRefNode(ident, code(ident), fullName, registerType(typeFullName))
       case _ => None
     }
   }
@@ -130,11 +132,11 @@ trait AstForPrimitivesCreator { this: AstCreator =>
 
   private def nameForIdentifier(ident: IASTNode): String = {
     ident match {
-      case id: IASTElaboratedTypeSpecifier => ASTStringUtil.getSimpleName(id.getName)
-      case id: IASTNamedTypeSpecifier      => ASTStringUtil.getSimpleName(id.getName)
-      case id: IASTIdExpression            => ASTStringUtil.getSimpleName(id.getName)
+      case id: IASTElaboratedTypeSpecifier => shortName(id)
+      case id: IASTNamedTypeSpecifier      => shortName(id)
+      case id: IASTIdExpression            => shortName(id)
       case id: IASTName =>
-        val name = ASTStringUtil.getSimpleName(id)
+        val name = stripTemplateTags(ASTStringUtil.getSimpleName(id))
         if (name.isEmpty) safeGetBinding(id).map(_.getName).getOrElse(fileLocalUniqueName("", "")._1)
         else name
       case _ => code(ident)
@@ -150,10 +152,10 @@ trait AstForPrimitivesCreator { this: AstCreator =>
         id.getBinding match {
           case v: IVariable =>
             v.getType match {
-              case f: IFunctionType => f.getReturnType.toString
-              case other            => other.toString
+              case f: IFunctionType => cleanType(f.getReturnType.toString)
+              case other            => cleanType(other.toString)
             }
-          case other => other.getName
+          case other => cleanType(other.getName)
         }
       case None if ident.isInstanceOf[IASTName] =>
         typeFor(ident.getParent)
@@ -170,7 +172,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     }
     Try(ident.getEvaluation).toOption match {
       case Some(e: EvalMemberAccess) =>
-        val ownerTypeRaw = cleanType(safeGetType(e.getOwnerType))
+        val ownerTypeRaw = safeGetType(e.getOwnerType)
         val deref        = if (e.isPointerDeref) "*" else ""
         val ownerType    = registerType(s"$ownerTypeRaw$deref")
         if (isInCurrentScope(ident, ownerTypeRaw)) {
@@ -181,7 +183,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
               val thisIdentifier = identifierNode(ident, "this", "this", ownerType)
               scope.addVariableReference("this", thisIdentifier, ownerType, EvaluationStrategies.BY_REFERENCE)
               val member  = fieldIdentifierNode(ident, identifierName, identifierName)
-              val callTpe = Some(registerType(cleanType(tpe)))
+              val callTpe = Some(registerType(tpe))
               val ma      = callNode(ident, code, op, op, DispatchTypes.STATIC_DISPATCH, None, callTpe)
               callAst(ma, Seq(Ast(thisIdentifier), Ast(member)))
             case None => tpe
@@ -226,7 +228,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
           val fullNameNoSig = StringUtils.normalizeSpace(function.getQualifiedName.mkString("."))
           s"$fullNameNoSig:$signature"
         }
-        Ast(methodRefNode(qualId, name, fullName, registerType(cleanType(function.getType.toString))))
+        Ast(methodRefNode(qualId, name, fullName, registerType(function.getType.toString)))
       case _ =>
         val op = Operators.fieldAccess
         val ma = callNode(qualId, code(qualId), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
