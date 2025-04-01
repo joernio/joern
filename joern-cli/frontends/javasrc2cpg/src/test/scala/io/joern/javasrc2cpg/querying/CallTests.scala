@@ -9,6 +9,48 @@ import io.shiftleft.semanticcpg.language.NoResolve
 import io.shiftleft.semanticcpg.language.*
 
 class NewCallTests extends JavaSrcCode2CpgFixture {
+  "calls to super methods" when {
+    "there is an explicit super scope" should {
+      val cpg = code("""
+          |class Foo {
+          |    void foo() {}
+          |}
+          |
+          |class Bar extends Foo {
+          |    void test() {
+          |        super.foo();
+          |    }
+          |}
+          |""".stripMargin)
+
+      "have a ref edge to the this parameter of the parent for the receiver" in {
+        inside(cpg.call.name("foo").receiver.l) { case List(receiver: Identifier) =>
+          receiver.refsTo.l shouldBe cpg.method.name("test").parameter.name("this").l
+        }
+      }
+    }
+
+    "there is an implicit super scope" should {
+      val cpg = code("""
+          |class Foo {
+          |    void foo() {}
+          |}
+          |
+          |class Bar extends Foo {
+          |    void test() {
+          |        foo();
+          |    }
+          |}
+          |""".stripMargin)
+
+      "have a ref edge to the this parameter of the parent for the receiver" in {
+        inside(cpg.call.name("foo").receiver.l) { case List(receiver: Identifier) =>
+          receiver.refsTo.l shouldBe cpg.method.name("test").parameter.name("this").l
+        }
+      }
+    }
+  }
+
   "calls to imported methods" when {
     "they are static methods imported from java.lang.* should be resolved" in {
       val cpg = code("""
