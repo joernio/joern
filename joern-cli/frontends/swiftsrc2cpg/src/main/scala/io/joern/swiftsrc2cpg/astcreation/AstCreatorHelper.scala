@@ -9,10 +9,10 @@ import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.FunctionDeclSyntax
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.GuardStmtSyntax
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.InitializerDeclSyntax
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.SwiftNode
+import io.joern.x2cpg.AstNodeBuilder.closureBindingNode
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.{Ast, AstNodeBuilder, ValidationMode}
-import io.joern.x2cpg.utils.NodeBuilders.newClosureBindingNode
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies}
 import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
@@ -187,15 +187,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
                       )
                       .order(0)
                     diffGraph.addEdge(methodScopeNode, localNode_, EdgeTypes.AST)
-                    val closureBindingNode = newClosureBindingNode(
+                    val closureBinding = closureBindingNode(
                       closureBindingIdProperty,
                       origin.variableName,
                       EvaluationStrategies.BY_REFERENCE
                     )
-                    methodScope.capturingRefId.foreach(ref =>
-                      diffGraph.addEdge(ref, closureBindingNode, EdgeTypes.CAPTURE)
-                    )
-                    nextReference = closureBindingNode
+                    methodScope.capturingRefId.foreach(ref => diffGraph.addEdge(ref, closureBinding, EdgeTypes.CAPTURE))
+                    nextReference = closureBinding
                     Option(localNode_)
                   case someLocalNode =>
                     // When there is already a LOCAL representing the capturing, we do not

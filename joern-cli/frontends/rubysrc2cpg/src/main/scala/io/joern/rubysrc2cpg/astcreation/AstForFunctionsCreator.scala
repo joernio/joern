@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{ConstructorScope, MethodScope}
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.x2cpg.utils.NodeBuilders.{newClosureBindingNode, newModifierNode, newThisParameterNode}
+import io.joern.x2cpg.utils.NodeBuilders.{newModifierNode, newThisParameterNode}
 import io.joern.x2cpg.{Ast, AstEdge, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{
@@ -15,7 +15,7 @@ import io.shiftleft.codepropertygraph.generated.{
   Operators
 }
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
-import io.joern.x2cpg.AstNodeBuilder.bindingNode
+import io.joern.x2cpg.AstNodeBuilder.{bindingNode, closureBindingNode}
 
 import scala.collection.mutable
 
@@ -249,7 +249,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         val capturingLocal =
           localNode(originNode, name, name, Defines.Any, closureBindingId = Option(closureBindingId))
 
-        val closureBinding = newClosureBindingNode(
+        val closureBinding = closureBindingNode(
           closureBindingId = closureBindingId,
           originalName = name,
           evaluationStrategy = EvaluationStrategies.BY_REFERENCE
