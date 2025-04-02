@@ -9,6 +9,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewBinding,
   NewBlock,
   NewCall,
+  NewClosureBinding,
   NewControlStructure,
   NewFieldIdentifier,
   NewIdentifier,
@@ -442,5 +443,16 @@ object AstNodeBuilder {
       .name(name)
       .methodFullName(methodFullName)
       .signature(signature)
+  }
+
+  private[joern] def closureBindingNode(
+    closureBindingId: String,
+    originalName: String,
+    evaluationStrategy: String
+  ): NewClosureBinding = {
+    NewClosureBinding()
+      .closureBindingId(closureBindingId)
+      .closureOriginalName(originalName)
+      .evaluationStrategy(evaluationStrategy)
   }
 }
