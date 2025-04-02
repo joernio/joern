@@ -63,8 +63,7 @@ class C2Cpg extends X2CpgFrontend[Config] {
 
   def printIfDefsOnly(config: Config): Unit = {
     try {
-      val stmts = new PreprocessorPass(config).run().mkString(",")
-      println(stmts)
+      new PreprocessorPass(config).run().foreach(stmt => print(s"$stmt,"))
     } catch {
       case NonFatal(ex) =>
         logger.error("Failed to print preprocessor statements.", ex)
