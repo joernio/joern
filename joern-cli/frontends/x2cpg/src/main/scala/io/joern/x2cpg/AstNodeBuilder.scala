@@ -436,4 +436,11 @@ object AstNodeBuilder {
       .offset(offset)
       .offsetEnd(offsetEnd)
   }
+
+  private[joern] def bindingNode(name: String, signature: String, methodFullName: String): NewBinding = {
+    NewBinding()
+      .name(name)
+      .methodFullName(methodFullName)
+      .signature(signature)
+  }
 }

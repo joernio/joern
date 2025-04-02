@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{ConstructorScope, MethodScope}
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newClosureBindingNode, newModifierNode, newThisParameterNode}
+import io.joern.x2cpg.utils.NodeBuilders.{newClosureBindingNode, newModifierNode, newThisParameterNode}
 import io.joern.x2cpg.{Ast, AstEdge, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{
@@ -15,6 +15,7 @@ import io.shiftleft.codepropertygraph.generated.{
   Operators
 }
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
+import io.joern.x2cpg.AstNodeBuilder.bindingNode
 
 import scala.collection.mutable
 
@@ -271,9 +272,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   /** Creates the bindings between the method and its types. This is useful for resolving function pointers and imports.
     */
   protected def createMethodTypeBindings(method: NewMethod, typeDecl: NewTypeDecl): Unit = {
-    val bindingNode = newBindingNode("", "", method.fullName)
-    diffGraph.addEdge(typeDecl, bindingNode, EdgeTypes.BINDS)
-    diffGraph.addEdge(bindingNode, method, EdgeTypes.REF)
+    val binding = bindingNode("", "", method.fullName)
+    diffGraph.addEdge(typeDecl, binding, EdgeTypes.BINDS)
+    diffGraph.addEdge(binding, method, EdgeTypes.REF)
   }
 
   // TODO: remaining cases

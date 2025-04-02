@@ -5,11 +5,11 @@ import io.joern.kotlin2cpg.psi.PsiUtils
 import io.joern.kotlin2cpg.psi.PsiUtils.nonUnderscoreDestructuringEntries
 import io.joern.kotlin2cpg.types.TypeConstants
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.AstNodeBuilder.bindingNode
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.utils.NodeBuilders
-import io.joern.x2cpg.utils.NodeBuilders.newBindingNode
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
@@ -151,7 +151,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       Seq(newModifierNode(ModifierTypes.CONSTRUCTOR))
     )
     val node =
-      newBindingNode(primaryCtorMethodNode.name, primaryCtorMethodNode.signature, primaryCtorMethodNode.fullName)
+      bindingNode(primaryCtorMethodNode.name, primaryCtorMethodNode.signature, primaryCtorMethodNode.fullName)
     val ctorBindingInfo =
       BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, primaryCtorMethodNode, EdgeTypes.REF)))
 
@@ -184,7 +184,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       case _ => Seq()
     }
     val componentNBindingsInfo = _componentNMethodAsts.flatMap(_.root.collectAll[NewMethod]).map { methodNode =>
-      val node = newBindingNode(methodNode.name, methodNode.signature, methodNode.fullName)
+      val node = bindingNode(methodNode.name, methodNode.signature, methodNode.fullName)
       BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, methodNode, EdgeTypes.REF)))
     }
 
@@ -202,7 +202,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       astsForMethod(classFn, withVirtualModifier = true)
     }
     val bindingsInfo = methodAsts.flatMap(_.root.collectAll[NewMethod]).map { _methodNode =>
-      val node = newBindingNode(_methodNode.name, _methodNode.signature, _methodNode.fullName)
+      val node = bindingNode(_methodNode.name, _methodNode.signature, _methodNode.fullName)
       BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, _methodNode, EdgeTypes.REF)))
     }
 

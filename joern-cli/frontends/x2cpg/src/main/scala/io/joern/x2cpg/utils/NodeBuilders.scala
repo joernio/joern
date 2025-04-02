@@ -41,6 +41,10 @@ object NodeBuilders {
       .name(name)
       .code(name)
 
+  @deprecated(
+    "Deprecated in favour of the corresponding method io.joern.x2cpg.AstNodeBuilder and will be removed in a future version",
+    "4.0.314"
+  )
   def newBindingNode(name: String, signature: String, methodFullName: String): NewBinding = {
     NewBinding()
       .name(name)
