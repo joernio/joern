@@ -16,6 +16,7 @@ import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.{ObjectMethodSignatur
 import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
 import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, composeMethodLikeSignature, composeUnresolvedSignature}
 import io.joern.javasrc2cpg.util.{BindingTable, BindingTableAdapterForLambdas, LambdaBindingInfo, NameConstants}
+import io.joern.x2cpg.AstNodeBuilder.bindingNode
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.joern.x2cpg.utils.{IntervalKeyPool, NodeBuilders}
 import io.joern.x2cpg.utils.NodeBuilders.*
@@ -239,7 +240,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
     addClosureBindingsToDiffGraph(lambdaBody.capturedVariables, methodRef)
 
     val interfaceBinding = implementedInfo.implementedMethod.map { implementedMethod =>
-      newBindingNode(implementedMethod.getName, lambdaMethodNode.signature, lambdaMethodNode.fullName)
+      bindingNode(implementedMethod.getName, lambdaMethodNode.signature, lambdaMethodNode.fullName)
     }
 
     val bindingTable = getLambdaBindingTable(

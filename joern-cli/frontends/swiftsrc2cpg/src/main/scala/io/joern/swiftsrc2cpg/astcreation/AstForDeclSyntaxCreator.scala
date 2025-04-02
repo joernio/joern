@@ -4,6 +4,7 @@ import io.joern.swiftsrc2cpg.datastructures.BlockScope
 import io.joern.swiftsrc2cpg.datastructures.MethodScope
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.AstNodeBuilder.bindingNode
 import io.joern.x2cpg.utils.NodeBuilders.*
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Stack.*
@@ -223,10 +224,10 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val typeFullName = typeNameForDeclSyntax(node)
     node match {
       case d: FunctionDeclLike =>
-        val function    = astForFunctionLike(d).method
-        val bindingNode = newBindingNode("", "", "")
-        diffGraph.addEdge(typeDeclNode, bindingNode, EdgeTypes.BINDS)
-        diffGraph.addEdge(bindingNode, function, EdgeTypes.REF)
+        val function = astForFunctionLike(d).method
+        val binding  = bindingNode("", "", "")
+        diffGraph.addEdge(typeDeclNode, binding, EdgeTypes.BINDS)
+        diffGraph.addEdge(binding, function, EdgeTypes.REF)
         val memberNode_ = memberNode(d, function.name, code(d), typeFullName, Seq(function.fullName))
         diffGraph.addEdge(typeDeclNode, memberNode_, EdgeTypes.AST)
         Ast()
