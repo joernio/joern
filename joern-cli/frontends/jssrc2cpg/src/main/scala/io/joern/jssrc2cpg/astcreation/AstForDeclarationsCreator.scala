@@ -3,10 +3,10 @@ package io.joern.jssrc2cpg.astcreation
 import io.joern.jssrc2cpg.datastructures.{BlockScope, MethodScope, ScopeType}
 import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
+import io.joern.x2cpg.AstNodeBuilder.dependencyNode
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
-import io.joern.x2cpg.utils.NodeBuilders.newDependencyNode
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewImport}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes}
 import ujson.Value
@@ -230,7 +230,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val declAsts = declAstAndNames.toList.flatMap { case (ast, names) =>
       ast +: names.map { name =>
         if (exportName != ExportKeyword)
-          diffGraph.addNode(newDependencyNode(name, exportName.stripPrefix("_"), RequireKeyword))
+          diffGraph.addNode(dependencyNode(name, exportName.stripPrefix("_"), RequireKeyword))
         val exportCallAst = createExportCallAst(name, exportName, declaration)
         createExportAssignmentCallAst(name, exportCallAst, declaration, None)
       }
@@ -241,13 +241,13 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         val strippedCode  = cleanImportName(exportName).stripPrefix("_")
         val exportCallAst = createExportCallAst(alias.code, ExportKeyword, declaration)
         if (exportName != ExportKeyword) {
-          diffGraph.addNode(newDependencyNode(alias.code, exportName.stripPrefix("_"), RequireKeyword))
+          diffGraph.addNode(dependencyNode(alias.code, exportName.stripPrefix("_"), RequireKeyword))
           createExportAssignmentCallAst(name.code, exportCallAst, declaration, Option(s"_$strippedCode"))
         } else {
           createExportAssignmentCallAst(name.code, exportCallAst, declaration, None)
         }
       case (None, Some(alias)) =>
-        diffGraph.addNode(newDependencyNode(alias.code, exportName.stripPrefix("_"), RequireKeyword))
+        diffGraph.addNode(dependencyNode(alias.code, exportName.stripPrefix("_"), RequireKeyword))
         val exportCallAst = createExportCallAst(alias.code, ExportKeyword, declaration)
         createExportAssignmentCallAst(exportName, exportCallAst, declaration, None)
       case _ => Ast()
@@ -288,7 +288,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val depGroupId = stripQuotes(code(declaration.json("source")))
     val name       = cleanImportName(depGroupId)
     if (exportName != ExportKeyword) {
-      diffGraph.addNode(newDependencyNode(name, depGroupId, RequireKeyword))
+      diffGraph.addNode(dependencyNode(name, depGroupId, RequireKeyword))
     }
 
     val fromCallAst       = createAstForFrom(exportName, declaration)
@@ -330,7 +330,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       case _             => List(code(lhs))
     }
     names.foreach { name =>
-      val _dependencyNode = newDependencyNode(name, groupId, RequireKeyword)
+      val _dependencyNode = dependencyNode(name, groupId, RequireKeyword)
       diffGraph.addNode(_dependencyNode)
       val importNode = createImportNodeAndAttachToCall(declarator, groupId, name, call)
       diffGraph.addEdge(importNode, _dependencyNode, EdgeTypes.IMPORTS)
@@ -399,7 +399,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       case TSExternalModuleReference => referenceNode.json("expression")("value").str
       case _                         => referenceNode.code
     }
-    val _dependencyNode = newDependencyNode(name, referenceName, ImportKeyword)
+    val _dependencyNode = dependencyNode(name, referenceName, ImportKeyword)
     diffGraph.addNode(_dependencyNode)
     val assignment = astForRequireCallFromImport(name, None, referenceName, isImportN = false, impDecl)
     val call       = assignment.nodes.collectFirst { case x: NewCall if x.name == "require" => x }
@@ -464,7 +464,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val specifiers = impDecl.json("specifiers").arr
 
     if (specifiers.isEmpty) {
-      val _dependencyNode = newDependencyNode(source, source, ImportKeyword)
+      val _dependencyNode = dependencyNode(source, source, ImportKeyword)
       diffGraph.addNode(_dependencyNode)
       val assignment = astForRequireCallFromImport(source, None, source, isImportN = false, impDecl)
       val call       = assignment.nodes.collectFirst { case x: NewCall if x.name == "require" => x }
@@ -484,7 +484,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         val importedName     = importSpecifier("local")("name").str
         val call             = assignment.nodes.collectFirst { case x: NewCall if x.name == "require" => x }
         val importNode       = createImportNodeAndAttachToCall(impDecl, s"$source:$reqName", importedName, call)
-        val _dependencyNode  = newDependencyNode(importedName, source, ImportKeyword)
+        val _dependencyNode  = dependencyNode(importedName, source, ImportKeyword)
         diffGraph.addEdge(importNode, _dependencyNode, EdgeTypes.IMPORTS)
         diffGraph.addNode(_dependencyNode)
         assignment
