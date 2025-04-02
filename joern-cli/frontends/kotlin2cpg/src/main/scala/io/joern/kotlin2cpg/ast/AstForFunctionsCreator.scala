@@ -8,7 +8,6 @@ import io.joern.x2cpg.Defines
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Stack.StackWrapper
 import io.joern.x2cpg.utils.NodeBuilders
-import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -154,14 +153,14 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val visibilityModifierType =
       modifierTypeForVisibility(funcDesc.getVisibility)
-    val visibilityModifier = NodeBuilders.newModifierNode(visibilityModifierType)
+    val visibilityModifier = modifierNode(ktFn, visibilityModifierType)
 
     val modifierNodes =
-      if (withVirtualModifier) Seq(NodeBuilders.newModifierNode(ModifierTypes.VIRTUAL))
+      if (withVirtualModifier) Seq(modifierNode(ktFn, ModifierTypes.VIRTUAL))
       else Seq()
 
     val modifiers = if (funcDesc.getModality == Modality.ABSTRACT) {
-      List(visibilityModifier) ++ modifierNodes :+ NodeBuilders.newModifierNode(ModifierTypes.ABSTRACT)
+      List(visibilityModifier) ++ modifierNodes :+ modifierNode(ktFn, ModifierTypes.ABSTRACT)
     } else {
       List(visibilityModifier) ++ modifierNodes
     }
@@ -342,7 +341,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       parametersAsts,
       bodyAst,
       methodReturnNode(fn, returnTypeFullName),
-      NodeBuilders.newModifierNode(ModifierTypes.VIRTUAL) :: NodeBuilders.newModifierNode(ModifierTypes.LAMBDA) :: Nil
+      modifierNode(fn, ModifierTypes.VIRTUAL) :: modifierNode(fn, ModifierTypes.LAMBDA) :: Nil
     )
 
     val _methodRefNode =
@@ -479,7 +478,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       paramAsts.toSeq,
       bodyAst,
       methodReturnNode(expr, returnTypeFullName),
-      newModifierNode(ModifierTypes.VIRTUAL) :: newModifierNode(ModifierTypes.LAMBDA) :: Nil
+      modifierNode(expr, ModifierTypes.VIRTUAL) :: modifierNode(expr, ModifierTypes.LAMBDA) :: Nil
     )
 
     val _methodRefNode =

@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{ConstructorScope, MethodScope}
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.x2cpg.utils.NodeBuilders.{newModifierNode, newThisParameterNode}
+import io.joern.x2cpg.utils.NodeBuilders.newThisParameterNode
 import io.joern.x2cpg.{Ast, AstEdge, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{
@@ -129,7 +129,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       astParentType.foreach(typeDeclNode_.astParentType(_))
       astParentFullName.foreach(typeDeclNode_.astParentFullName(_))
       createMethodTypeBindings(method, typeDeclNode_)
-      if isClosure then Ast(typeDeclNode_).withChild(Ast(newModifierNode(ModifierTypes.LAMBDA)))
+      if isClosure then Ast(typeDeclNode_).withChild(Ast(modifierNode(node, ModifierTypes.LAMBDA)))
       else Ast(typeDeclNode_)
     }
 
@@ -174,7 +174,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         parameterAsts ++ anonProcParam,
         stmtBlockAst,
         methodReturn,
-        modifiers.map(newModifierNode).toSeq
+        modifiers.map(modifierNode(node, _)).toSeq
       )
       mAst
     }
@@ -474,7 +474,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
             parameterAsts ++ anonProcParam,
             stmtBlockAst,
             methodReturnNode(node, Defines.Any),
-            newModifierNode(ModifierTypes.VIRTUAL) :: newModifierNode(currentAccessModifier) :: Nil
+            modifierNode(node, ModifierTypes.VIRTUAL) :: modifierNode(node, currentAccessModifier) :: Nil
           )
 
         _methodAst :: methodTypeDeclAst :: Nil foreach (Ast.storeInDiffGraph(_, diffGraph))

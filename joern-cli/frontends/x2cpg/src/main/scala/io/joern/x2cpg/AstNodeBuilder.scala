@@ -388,6 +388,13 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .lineNumber(line(node))
       .columnNumber(column(node))
   }
+
+  protected def modifierNode(node: Node, modifierType: String): NewModifier = {
+    NewModifier()
+      .modifierType(modifierType)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+  }
 }
 
 /** It is sometimes necessary to create nodes without an origin node to use as a reference for positional information

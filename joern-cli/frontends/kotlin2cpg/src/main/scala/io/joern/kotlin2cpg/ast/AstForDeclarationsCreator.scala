@@ -10,7 +10,6 @@ import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.utils.NodeBuilders
-import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
@@ -148,7 +147,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         memberSetCalls ++ memberInitializerSetCalls ++ anonymousInitAsts
       ),
       constructorMethodReturn,
-      Seq(newModifierNode(ModifierTypes.CONSTRUCTOR))
+      Seq(modifierNode(primaryCtor, ModifierTypes.CONSTRUCTOR))
     )
     val node =
       bindingNode(primaryCtorMethodNode.name, primaryCtorMethodNode.signature, primaryCtorMethodNode.fullName)
@@ -209,7 +208,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val annotationAsts = ktClass.getAnnotationEntries.asScala.map(astForAnnotationEntry).toSeq
 
     val modifiers = if (classDesc.getModality == Modality.ABSTRACT) {
-      List(Ast(NodeBuilders.newModifierNode(ModifierTypes.ABSTRACT)))
+      List(Ast(modifierNode(ktClass, ModifierTypes.ABSTRACT)))
     } else {
       Nil
     }
@@ -507,7 +506,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         constructorParamsAsts,
         ctorMethodBlockAsts.headOption.getOrElse(Ast(unknownNode(ctor.getBodyExpression, Constants.Empty))),
         ctorMethodReturnNode,
-        Seq(newModifierNode(ModifierTypes.CONSTRUCTOR))
+        Seq(modifierNode(ctor, ModifierTypes.CONSTRUCTOR))
       )
     }
   }

@@ -5,7 +5,6 @@ import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
-import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier as _, *}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
@@ -343,11 +342,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val (methodName, methodFullName) = calcMethodNameAndFullName(func)
     val methodNode_ = methodNode(func, methodName, func.code, methodFullName, None, parserResult.filename)
     val lambdaModifier = if (methodName.startsWith(io.joern.x2cpg.Defines.ClosurePrefix)) {
-      newModifierNode(ModifierTypes.LAMBDA) :: Nil
+      modifierNode(func, ModifierTypes.LAMBDA) :: Nil
     } else {
       Nil
     }
-    val modifiers = newModifierNode(ModifierTypes.VIRTUAL) :: lambdaModifier
+    val modifiers = modifierNode(func, ModifierTypes.VIRTUAL) :: lambdaModifier
     methodAstParentStack.push(methodNode_)
 
     val thisNode =
@@ -423,11 +422,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val methodNode_ = methodNode(func, methodName, func.code, methodFullName, None, parserResult.filename)
     val lambdaModifier = if (methodName.startsWith(io.joern.x2cpg.Defines.ClosurePrefix)) {
-      newModifierNode(ModifierTypes.LAMBDA) :: Nil
+      modifierNode(func, ModifierTypes.LAMBDA) :: Nil
     } else {
       Nil
     }
-    val modifierNodes = newModifierNode(ModifierTypes.VIRTUAL) :: lambdaModifier
+    val modifierNodes = modifierNode(func, ModifierTypes.VIRTUAL) :: lambdaModifier
 
     methodAstParentStack.push(methodNode_)
 

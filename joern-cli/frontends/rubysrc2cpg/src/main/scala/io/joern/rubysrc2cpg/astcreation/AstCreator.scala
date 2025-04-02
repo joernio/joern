@@ -4,7 +4,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, NamespaceScope, RubyProgramSummary, RubyScope}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
-import io.joern.x2cpg.utils.NodeBuilders.{newModifierNode, newThisParameterNode}
+import io.joern.x2cpg.utils.NodeBuilders.newThisParameterNode
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, ModifierTypes}
@@ -125,7 +125,7 @@ class AstCreator(
           thisParameterAst :: Nil,
           bodyAst,
           methodReturn,
-          newModifierNode(ModifierTypes.MODULE) :: newModifierNode(ModifierTypes.VIRTUAL) :: Nil
+          modifierNode(rootNode, ModifierTypes.MODULE) :: modifierNode(rootNode, ModifierTypes.VIRTUAL) :: Nil
         )
       }
       .getOrElse(Ast())

@@ -95,10 +95,10 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
       .filter { identifier => lambdaParameterNamesToNodes.contains(identifier.name) }
 
     val returnNode      = methodReturnNode(expr, returnType.getOrElse(defaultTypeFallback()))
-    val virtualModifier = Some(newModifierNode(ModifierTypes.VIRTUAL))
-    val staticModifier  = Option.when(thisParam.isEmpty)(newModifierNode(ModifierTypes.STATIC))
-    val privateModifier = Some(newModifierNode(ModifierTypes.PRIVATE))
-    val lambdaModifier  = Some(newModifierNode(ModifierTypes.LAMBDA))
+    val virtualModifier = Some(modifierNode(expr, ModifierTypes.VIRTUAL))
+    val staticModifier  = Option.when(thisParam.isEmpty)(modifierNode(expr, ModifierTypes.STATIC))
+    val privateModifier = Some(modifierNode(expr, ModifierTypes.PRIVATE))
+    val lambdaModifier  = Some(modifierNode(expr, ModifierTypes.LAMBDA))
 
     val modifiers = List(virtualModifier, staticModifier, privateModifier, lambdaModifier).flatten.map(Ast(_))
 
