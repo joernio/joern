@@ -215,7 +215,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     }
 
     val children = methodAsts ++ List(constructorAst) ++ membersFromPrimaryCtorAsts ++ secondaryConstructorAsts ++
-      _componentNMethodAsts.toList ++ memberAsts ++ annotationAsts ++ modifiers
+      _componentNMethodAsts.toList ++ memberAsts ++ annotationAsts ++ modifiers ++ innerTypeDeclAsts
     val ast = Ast(typeDecl).withChildren(children)
 
     (List(ctorBindingInfo) ++ bindingsInfo ++ componentNBindingsInfo).foreach(bindingInfoQueue.prepend)
@@ -242,7 +242,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     methodAstParentStack.pop()
     scope.popScope()
 
-    Seq(finalAst.withChildren(annotations.map(astForAnnotationEntry))) ++ companionObjectAsts ++ innerTypeDeclAsts
+    Seq(finalAst.withChildren(annotations.map(astForAnnotationEntry))) ++ companionObjectAsts
   }
 
   private def memberSetCallAst(param: KtParameter, classFullName: String): Ast = {
