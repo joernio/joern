@@ -32,7 +32,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
   import FullNameProvider.stripTemplateTags
 
   protected def astForComment(comment: IASTComment): Ast =
-    Ast(newCommentNode(comment, code(comment), fileName(comment)))
+    Ast(commentNode(comment, code(comment), fileName(comment)))
 
   protected def astForLiteral(lit: IASTLiteralExpression): Ast = {
     val codeString = code(lit)

@@ -228,9 +228,11 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   private def astsForLabelStatement(label: IASTLabelStatement): Seq[Ast] = {
-    val cpgLabel    = newJumpTargetNode(label)
+    val codeString  = code(label)
+    val name        = shortName(label)
+    val labelNode   = jumpTargetNode(label, name, codeString)
     val nestedStmts = nullSafeAst(label.getNestedStatement)
-    Ast(cpgLabel) +: nestedStmts
+    Ast(labelNode) +: nestedStmts
   }
 
   private def astForDoStatement(doStmt: IASTDoStatement): Ast = {
@@ -260,13 +262,14 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   private def astsForCaseStatement(caseStmt: IASTCaseStatement): Seq[Ast] = {
-    val labelNode = newJumpTargetNode(caseStmt)
-    val stmt      = astForConditionExpression(caseStmt.getExpression)
-    Seq(Ast(labelNode), stmt)
+    val jumpTargetNode_ = jumpTargetNode(caseStmt, "case", code(caseStmt))
+    val stmt            = astForConditionExpression(caseStmt.getExpression)
+    Seq(Ast(jumpTargetNode_), stmt)
   }
 
   private def astForDefaultStatement(caseStmt: IASTDefaultStatement): Ast = {
-    Ast(newJumpTargetNode(caseStmt))
+    val jumpTargetNode_ = jumpTargetNode(caseStmt, "default", code(caseStmt))
+    Ast(jumpTargetNode_)
   }
 
   private def astForTryStatement(tryStmt: ICPPASTTryBlockStatement): Ast = {

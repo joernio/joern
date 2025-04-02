@@ -33,6 +33,8 @@ import scala.util.Try
 
 trait AstForFunctionsCreator { this: AstCreator =>
 
+  import FullNameProvider.*
+
   final protected def parameters(functionNode: IASTNode): Seq[IASTNode] = functionNode match {
     case arr: IASTArrayDeclarator       => parameters(arr.getNestedDeclarator)
     case decl: CPPASTFunctionDeclarator => decl.getParameters.toIndexedSeq ++ parameters(decl.getNestedDeclarator)

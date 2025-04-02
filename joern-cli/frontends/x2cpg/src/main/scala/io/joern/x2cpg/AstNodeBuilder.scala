@@ -1,33 +1,31 @@
 package io.joern.x2cpg
 
 import io.joern.x2cpg.AstNodeBuilder.methodReturnNodeWithExplicitPositionInfo
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
+import io.shiftleft.codepropertygraph.generated.nodes.NewAnnotation
+import io.shiftleft.codepropertygraph.generated.nodes.NewAnnotationLiteral
+import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
+import io.shiftleft.codepropertygraph.generated.nodes.NewCall
+import io.shiftleft.codepropertygraph.generated.nodes.NewControlStructure
+import io.shiftleft.codepropertygraph.generated.nodes.NewFieldIdentifier
+import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
+import io.shiftleft.codepropertygraph.generated.nodes.NewImport
+import io.shiftleft.codepropertygraph.generated.nodes.NewJumpTarget
+import io.shiftleft.codepropertygraph.generated.nodes.NewLiteral
+import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
+import io.shiftleft.codepropertygraph.generated.nodes.NewMember
+import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
+import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
+import io.shiftleft.codepropertygraph.generated.nodes.NewMethodRef
+import io.shiftleft.codepropertygraph.generated.nodes.NewMethodReturn
+import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
+import io.shiftleft.codepropertygraph.generated.nodes.NewReturn
+import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
+import io.shiftleft.codepropertygraph.generated.nodes.NewTypeRef
+import io.shiftleft.codepropertygraph.generated.nodes.NewUnknown
 import io.shiftleft.codepropertygraph.generated.nodes.Block.PropertyDefaults as BlockDefaults
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewAnnotation,
-  NewAnnotationLiteral,
-  NewBinding,
-  NewBlock,
-  NewCall,
-  NewControlStructure,
-  NewFieldIdentifier,
-  NewIdentifier,
-  NewImport,
-  NewJumpTarget,
-  NewLiteral,
-  NewLocal,
-  NewMember,
-  NewMethod,
-  NewMethodParameterIn,
-  NewMethodRef,
-  NewMethodReturn,
-  NewModifier,
-  NewNamespaceBlock,
-  NewReturn,
-  NewTypeDecl,
-  NewTypeRef,
-  NewUnknown
-}
+import io.shiftleft.codepropertygraph.generated.nodes.NewComment
 import org.apache.commons.lang3.StringUtils
 
 import scala.util.Try
@@ -73,6 +71,10 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .code(name)
       .lineNumber(line(node))
       .columnNumber(column(node))
+  }
+
+  protected def commentNode(node: Node, code: String, filename: String): NewComment = {
+    NewComment().code(code).filename(filename).lineNumber(line(node)).columnNumber(column(node))
   }
 
   protected def methodRefNode(node: Node, code: String, methodFullName: String, typeFullName: String): NewMethodRef = {

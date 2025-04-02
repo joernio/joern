@@ -1,11 +1,7 @@
 package io.joern.c2cpg.astcreation
 
-import io.joern.c2cpg.astcreation.C2CpgScope.MethodScopeElement
-import io.joern.c2cpg.astcreation.C2CpgScope.ScopeElement
-import io.joern.c2cpg.astcreation.C2CpgScope.ScopeElementIterator
 import io.joern.x2cpg.Defines as X2CpgDefines
 import io.joern.x2cpg.passes.frontend.MetaDataPass
-import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.*
@@ -15,7 +11,6 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTIdExpression
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalBinding
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDefinition
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPClosureType
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPFunction
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPVariable
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
@@ -24,10 +19,8 @@ import scala.annotation.tailrec
 import scala.util.Try
 
 object FullNameProvider {
-  private type MethodLike = IASTFunctionDeclarator | IASTFunctionDefinition | ICPPASTLambdaExpression
 
-  private type TypeLike = IASTEnumerationSpecifier | ICPPASTNamespaceDefinition | ICPPASTNamespaceAlias |
-    IASTCompositeTypeSpecifier | IASTElaboratedTypeSpecifier
+  type MethodLike = IASTFunctionDeclarator | IASTFunctionDefinition | ICPPASTLambdaExpression
 
   private val TagsToKeepInFullName = List(
     "<anonymous>",
@@ -87,6 +80,10 @@ object FullNameProvider {
       s"$prefix${stripTemplateTags(suffix)}"
     }
   }
+
+  final case class MethodFullNameInfo(name: String, fullName: String, signature: String, returnType: String)
+
+  final case class TypeFullNameInfo(name: String, fullName: String)
 }
 
 trait FullNameProvider { this: AstCreator =>
@@ -96,10 +93,7 @@ trait FullNameProvider { this: AstCreator =>
   protected def replaceQualifiedNameSeparator(name: String): String = {
     if (name.isEmpty) return name
     val normalizedName = StringUtils.normalizeSpace(name)
-    normalizedName
-      .stripPrefix(Defines.QualifiedNameSeparator)
-      .replace(Defines.QualifiedNameSeparator, ".")
-      .stripPrefix(".")
+    normalizedName.replace(Defines.QualifiedNameSeparator, ".").stripPrefix(".")
   }
 
   protected def methodFullNameInfo(methodLike: MethodLike): MethodFullNameInfo = {
@@ -111,58 +105,28 @@ trait FullNameProvider { this: AstCreator =>
     MethodFullNameInfo(name_, sanitizedFullName, signature_, returnType_)
   }
 
-  protected def typeFullNameInfo(typeLike: TypeLike): TypeFullNameInfo = {
-    typeLike match {
-      case _: IASTElaboratedTypeSpecifier =>
-        val name_     = shortName(typeLike)
-        val fullName_ = registerType(cleanType(fullName(typeLike)))
-        TypeFullNameInfo(name_, fullName_)
-      case e: IASTEnumerationSpecifier =>
-        val name_                              = shortName(e)
-        val fullName_                          = fullName(e)
-        val (uniqueName_, uniqueNameFullName_) = fileLocalUniqueName(name_, fullName_, "enum")
-        TypeFullNameInfo(uniqueName_, uniqueNameFullName_)
-      case n: ICPPASTNamespaceDefinition =>
-        val name_                              = shortName(n)
-        val fullName_                          = fullName(n)
-        val (uniqueName_, uniqueNameFullName_) = fileLocalUniqueName(name_, fullName_, "namespace")
-        TypeFullNameInfo(uniqueName_, uniqueNameFullName_)
-      case a: ICPPASTNamespaceAlias =>
-        val name_     = shortName(a)
-        val fullName_ = fullName(a)
-        TypeFullNameInfo(name_, fullName_)
-      case s: IASTCompositeTypeSpecifier =>
-        val fullName_ = registerType(cleanType(fullName(s)))
-        val name_ = shortName(s) match {
-          case n if n.isEmpty => lastNameOfQualifiedName(fullName_)
-          case other          => other
-        }
-        TypeFullNameInfo(name_, fullName_)
-    }
-  }
-
   protected def shortName(node: IASTNode): String = {
     val name = node match {
-      case s: IASTSimpleDeclSpecifier     => s.getRawSignature
+      case n: IASTName                    => shortNameForIASTName(n)
       case d: IASTDeclarator              => shortNameForIASTDeclarator(d)
       case f: ICPPASTFunctionDefinition   => shortNameForICPPASTFunctionDefinition(f)
       case f: IASTFunctionDefinition      => shortNameForIASTFunctionDefinition(f)
+      case d: CPPASTIdExpression          => shortNameForCPPASTIdExpression(d)
       case u: IASTUnaryExpression         => shortName(u.getOperand)
       case c: IASTFunctionCallExpression  => shortName(c.getFunctionNameExpression)
-      case d: CPPASTIdExpression          => shortNameForCPPASTIdExpression(d)
-      case d: IASTIdExpression            => shortNameForIASTIdExpression(d)
-      case a: ICPPASTNamespaceAlias       => ASTStringUtil.getSimpleName(a.getAlias)
-      case n: ICPPASTNamespaceDefinition  => ASTStringUtil.getSimpleName(n.getName)
-      case e: IASTEnumerationSpecifier    => ASTStringUtil.getSimpleName(e.getName)
-      case c: IASTCompositeTypeSpecifier  => ASTStringUtil.getSimpleName(c.getName)
-      case e: IASTElaboratedTypeSpecifier => ASTStringUtil.getSimpleName(e.getName)
-      case s: IASTNamedTypeSpecifier      => ASTStringUtil.getSimpleName(s.getName)
+      case d: IASTIdExpression            => shortName(d.getName)
+      case a: ICPPASTNamespaceAlias       => shortName(a.getAlias)
+      case n: ICPPASTNamespaceDefinition  => shortName(n.getName)
+      case e: IASTEnumerationSpecifier    => shortName(e.getName)
+      case c: IASTCompositeTypeSpecifier  => shortName(c.getName)
+      case e: IASTElaboratedTypeSpecifier => shortName(e.getName)
+      case s: IASTNamedTypeSpecifier      => shortName(s.getName)
+      case l: IASTLabelStatement          => shortName(l.getName)
+      case s: IASTSimpleDeclSpecifier     => s.getRawSignature
       case _: ICPPASTLambdaExpression     => nextClosureName()
-      case other =>
-        notHandledYet(other)
-        nextClosureName()
+      case other                          => notHandledYet(other); nextClosureName()
     }
-    stripTemplateTags(StringUtils.normalizeSpace(name))
+    stripTemplateTags(replaceOperator(StringUtils.normalizeSpace(name)))
   }
 
   protected def fullName(node: IASTNode): String = {
@@ -192,6 +156,25 @@ trait FullNameProvider { this: AstCreator =>
     }
   }
 
+  protected def signature(returnType: String, methodLike: MethodLike): String = {
+    val constFlag = if (isConst(methodLike)) { Defines.ConstSuffix }
+    else { "" }
+    StringUtils.normalizeSpace(s"$returnType${parameterListSignature(methodLike)}$constFlag")
+  }
+
+  private def shortNameForIASTName(node: IASTName): String = {
+    node match {
+      case c: ICPPASTConversionName =>
+        val name = replaceOperator(ASTStringUtil.getSimpleName(c))
+        if (name.contains(Defines.QualifiedNameSeparator)) {
+          name.split(Defines.QualifiedNameSeparator).last
+        } else {
+          name
+        }
+      case otherName => ASTStringUtil.getSimpleName(otherName)
+    }
+  }
+
   private def fullNameForIASTIdExpression(id: IASTIdExpression): String = {
     Try(ASTStringUtil.getQualifiedName(id.getName)).getOrElse(nextClosureName())
   }
@@ -200,40 +183,13 @@ trait FullNameProvider { this: AstCreator =>
     Try(ASTStringUtil.getQualifiedName(qfn)).getOrElse(nextClosureName())
   }
 
-  protected def returnType(methodLike: MethodLike): String = {
-    methodLike match {
-      case declarator: IASTFunctionDeclarator => returnTypeForIASTFunctionDeclarator(declarator)
-      case definition: IASTFunctionDefinition => returnTypeForIASTFunctionDefinition(definition)
-      case lambda: ICPPASTLambdaExpression    => returnTypeForICPPASTLambdaExpression(lambda)
-    }
-  }
-
-  protected def signature(returnType: String, methodLike: MethodLike): String = {
-    val constFlag = if (isConst(methodLike)) { Defines.ConstSuffix }
-    else { "" }
-    StringUtils.normalizeSpace(s"$returnType${parameterListSignature(methodLike)}$constFlag")
-  }
-
-  private def computeScopePath(stack: Option[ScopeElement]): String =
-    new ScopeElementIterator(stack)
-      .to(Seq)
-      .reverse
-      .collect { case m: MethodScopeElement if m.methodName != NamespaceTraversal.globalNamespaceName => m.methodName }
-      .mkString(".")
-
   private def fullNameForICPPASTNamespaceAlias(alias: ICPPASTNamespaceAlias): String = {
     ASTStringUtil.getQualifiedName(alias.getMappingName)
   }
 
-  private def lastNameOfQualifiedName(name: String): String = {
-    val normalizedName = StringUtils.normalizeSpace(replaceOperator(name))
-    val cleanedName    = normalizedName.takeWhile(_ != '<')
-    cleanedName.split(Defines.QualifiedNameSeparator).lastOption.getOrElse(cleanedName)
-  }
-
   private def fullNameForICPPASTLambdaExpression(): String = {
     val globalFullName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(filename))
-    val fullName = computeScopePath(scope.getScopeHead) match {
+    val fullName = scope.computeScopePath match {
       case ""    => ""
       case other => s".$other"
     }
@@ -268,61 +224,6 @@ trait FullNameProvider { this: AstCreator =>
     }
   }
 
-  private def returnTypeForIASTFunctionDeclarator(declarator: IASTFunctionDeclarator): String = {
-    safeGetBinding(declarator.getName) match {
-      case Some(_: ICPPFunctionTemplate) if declarator.getParent.isInstanceOf[IASTFunctionDefinition] =>
-        cleanType(typeForDeclSpecifier(declarator.getParent.asInstanceOf[IASTFunctionDefinition].getDeclSpecifier))
-      case Some(value: ICPPMethod) if !value.getType.toString.startsWith("?") =>
-        cleanType(safeGetType(value.getType.getReturnType))
-      case Some(value: ICPPFunction) if !value.getType.toString.startsWith("?") =>
-        cleanType(safeGetType(value.getType.getReturnType))
-      case _ if declarator.getParent.isInstanceOf[IASTSimpleDeclaration] =>
-        cleanType(typeForDeclSpecifier(declarator.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclSpecifier))
-      case _ if declarator.getParent.isInstanceOf[IASTFunctionDefinition] =>
-        cleanType(typeForDeclSpecifier(declarator.getParent.asInstanceOf[IASTFunctionDefinition].getDeclSpecifier))
-      case _ => Defines.Any
-    }
-  }
-
-  private def returnTypeForIASTFunctionDefinition(definition: IASTFunctionDefinition): String = {
-    if (isCppConstructor(definition)) {
-      cleanType(typeFor(definition.asInstanceOf[CPPASTFunctionDefinition].getMemberInitializers.head.getInitializer))
-    } else {
-      safeGetBinding(definition.getDeclarator.getName) match {
-        case Some(_: ICPPFunctionTemplate) =>
-          typeForDeclSpecifier(definition.getDeclSpecifier)
-        case Some(value: ICPPMethod) if !value.getType.toString.startsWith("?") =>
-          cleanType(safeGetType(value.getType.getReturnType))
-        case Some(value: ICPPFunction) if !value.getType.toString.startsWith("?") =>
-          cleanType(safeGetType(value.getType.getReturnType))
-        case _ =>
-          typeForDeclSpecifier(definition.getDeclSpecifier)
-      }
-    }
-  }
-
-  private def returnTypeForICPPASTLambdaExpression(lambda: ICPPASTLambdaExpression): String = {
-    lambda.getDeclarator match {
-      case declarator: IASTDeclarator if declarator.getTrailingReturnType != null =>
-        typeForDeclSpecifier(declarator.getTrailingReturnType.getDeclSpecifier)
-      case _ =>
-        safeGetEvaluation(lambda) match {
-          case Some(value) if !value.toString.endsWith(": <unknown>") => cleanType(value.getType.toString)
-          case Some(value) if value.getType.isInstanceOf[CPPClosureType] =>
-            val closureType = value.getType.asInstanceOf[CPPClosureType]
-            closureType.getMethods
-              .find(_.toString.startsWith("operator ()"))
-              .map(_.getType)
-              .collect {
-                case t: ICPPFunctionType if t.getReturnType.isInstanceOf[CPPClosureType] => Defines.Function
-                case t: ICPPFunctionType => cleanType(safeGetType(t.getReturnType))
-              }
-              .getOrElse(Defines.Any)
-          case _ => Defines.Any
-        }
-    }
-  }
-
   private def parameterListSignature(func: IASTNode): String = {
     val variadic = if (isVariadic(func)) "..." else ""
     val elements = parameters(func).map {
@@ -349,7 +250,7 @@ trait FullNameProvider { this: AstCreator =>
     ) {
       shortName(definition.getDeclarator.getNestedDeclarator)
     } else {
-      lastNameOfQualifiedName(ASTStringUtil.getSimpleName(definition.getDeclarator.getName))
+      shortName(definition.getDeclarator.getName)
     }
   }
 
@@ -360,26 +261,23 @@ trait FullNameProvider { this: AstCreator =>
     ) {
       shortName(definition.getDeclarator.getNestedDeclarator)
     } else {
-      ASTStringUtil.getSimpleName(definition.getDeclarator.getName)
+      shortName(definition.getDeclarator.getName)
     }
   }
 
   private def shortNameForCPPASTIdExpression(d: CPPASTIdExpression): String = {
-    val name = safeGetEvaluation(d) match {
+    safeGetEvaluation(d) match {
       case Some(evalBinding: EvalBinding) =>
         evalBinding.getBinding match {
           case f: CPPFunction if f.getDeclarations != null =>
-            f.getDeclarations.headOption.map(n => ASTStringUtil.getSimpleName(n.getName)).getOrElse(f.getName)
-          case f: CPPFunction if f.getDefinition != null => ASTStringUtil.getSimpleName(f.getDefinition.getName)
-          case other                                     => other.getName
+            f.getDeclarations.headOption.map(shortName).getOrElse(f.getName)
+          case f: CPPFunction if f.getDefinition != null =>
+            shortName(f.getDefinition)
+          case other =>
+            other.getName
         }
-      case _ => ASTStringUtil.getSimpleName(d.getName)
+      case _ => shortName(d.getName)
     }
-    lastNameOfQualifiedName(name)
-  }
-
-  private def shortNameForIASTIdExpression(d: IASTIdExpression): String = {
-    lastNameOfQualifiedName(ASTStringUtil.getSimpleName(d.getName))
   }
 
   private def replaceOperator(name: String): String = {
@@ -490,50 +388,46 @@ trait FullNameProvider { this: AstCreator =>
 
   private def fullNameForICPPASTNamespaceDefinition(namespace: ICPPASTNamespaceDefinition): String = {
     val name = shortName(namespace)
-    s"${computeScopePath(scope.getScopeHead)}.$name"
+    s"${scope.computeScopePath}.$name"
   }
 
-  private def fullNameForIASTCompositeTypeSpecifier(compType: IASTCompositeTypeSpecifier): String = {
-    val name = shortName(compType)
+  private def fullNameForIASTCompositeTypeSpecifier(compositeTypeSpecifier: IASTCompositeTypeSpecifier): String = {
+    val name = shortName(compositeTypeSpecifier)
     if (name.nonEmpty) {
-      s"${computeScopePath(scope.getScopeHead)}.$name"
+      s"${scope.computeScopePath}.$name"
     } else {
-      val name = compType.getParent match {
+      val name = compositeTypeSpecifier.getParent match {
         case decl: IASTSimpleDeclaration =>
           decl.getDeclarators.headOption
-            .map(n => ASTStringUtil.getSimpleName(n.getName))
+            .map(shortName)
             .getOrElse(fileLocalUniqueName("", "", "type")._1)
         case _ => fileLocalUniqueName("", "", "type")._1
       }
-      s"${computeScopePath(scope.getScopeHead)}.$name"
+      s"${scope.computeScopePath}.$name"
     }
   }
 
-  private def fullNameForIASTEnumerationSpecifier(enumSpecifier: IASTEnumerationSpecifier): String = {
-    val name = shortName(enumSpecifier)
-    s"${computeScopePath(scope.getScopeHead)}.$name"
+  private def fullNameForIASTEnumerationSpecifier(enumerationSpecifier: IASTEnumerationSpecifier): String = {
+    val name = shortName(enumerationSpecifier)
+    s"${scope.computeScopePath}.$name"
   }
 
-  private def fullNameForIASTNamedTypeSpecifier(typeSpecifier: IASTNamedTypeSpecifier): String = {
-    val name = shortName(typeSpecifier)
-    s"${computeScopePath(scope.getScopeHead)}.$name"
+  private def fullNameForIASTNamedTypeSpecifier(namedTypeSpecifier: IASTNamedTypeSpecifier): String = {
+    val name = shortName(namedTypeSpecifier)
+    s"${scope.computeScopePath}.$name"
   }
 
-  private def fullNameForIASTElaboratedTypeSpecifier(e: IASTElaboratedTypeSpecifier): String = {
-    val name = shortName(e)
-    s"${computeScopePath(scope.getScopeHead)}.$name"
+  private def fullNameForIASTElaboratedTypeSpecifier(elaboratedTypeSpecifier: IASTElaboratedTypeSpecifier): String = {
+    val name = shortName(elaboratedTypeSpecifier)
+    s"${scope.computeScopePath}.$name"
   }
 
-  private def fullNameForIASTFunctionDeclarator(f: IASTFunctionDeclarator): String = {
-    Try(ASTStringUtil.getQualifiedName(f.getName)).getOrElse(nextClosureName())
+  private def fullNameForIASTFunctionDeclarator(functionDeclarator: IASTFunctionDeclarator): String = {
+    Try(ASTStringUtil.getQualifiedName(functionDeclarator.getName)).getOrElse(nextClosureName())
   }
 
-  private def fullNameForIASTFunctionDefinition(f: IASTFunctionDefinition): String = {
-    Try(ASTStringUtil.getQualifiedName(f.getDeclarator.getName)).getOrElse(nextClosureName())
+  private def fullNameForIASTFunctionDefinition(functionDefinition: IASTFunctionDefinition): String = {
+    Try(ASTStringUtil.getQualifiedName(functionDefinition.getDeclarator.getName)).getOrElse(nextClosureName())
   }
-
-  protected final case class MethodFullNameInfo(name: String, fullName: String, signature: String, returnType: String)
-
-  protected final case class TypeFullNameInfo(name: String, fullName: String)
 
 }

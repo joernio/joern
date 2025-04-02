@@ -109,7 +109,7 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   protected def registerType(typeName: String): String = {
-    val fixedTypeName = replaceQualifiedNameSeparator(StringUtils.normalizeSpace(typeName))
+    val fixedTypeName = replaceQualifiedNameSeparator(typeName)
     global.usedTypes.putIfAbsent(fixedTypeName, true)
     fixedTypeName
   }
