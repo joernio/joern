@@ -69,19 +69,21 @@ class CustomFileContentProvider(headerFileFinder: HeaderFileFinder, sourceFile: 
       global.headerIncludes.compute(
         foundPath,
         {
-          case (_, v) if v == HeaderFileParserLanguage.Unknown.ordinal =>
-            // never seen; initial value
-            if (FileDefaults.hasCFileExtension(sourceFile)) { HeaderFileParserLanguage.C.ordinal }
-            else { HeaderFileParserLanguage.Cpp.ordinal }
-          case (_, v) if v == HeaderFileParserLanguage.C.ordinal =>
-            // only seen in C source files
-            if (FileDefaults.hasCFileExtension(sourceFile)) { v }
-            else { HeaderFileParserLanguage.Both.ordinal }
-          case (_, v) if v == HeaderFileParserLanguage.Cpp.ordinal =>
-            // only seen in C++ source files
-            if (FileDefaults.hasCFileExtension(sourceFile)) { HeaderFileParserLanguage.Both.ordinal }
-            else { v }
-          case (_, v) => v // already seen both in C and C++ source files
+          case (_, null) =>
+            // First time seeing header: use C parser for C files, otherwise C++
+            if (FileDefaults.hasCFileExtension(sourceFile)) { HeaderFileParserLanguage.C }
+            else { HeaderFileParserLanguage.Cpp }
+          case (_, HeaderFileParserLanguage.C) =>
+            // Header previously seen in C files only
+            if (FileDefaults.hasCFileExtension(sourceFile)) { HeaderFileParserLanguage.C }
+            else { HeaderFileParserLanguage.Both }
+          case (_, HeaderFileParserLanguage.Cpp) =>
+            // Header previously seen in C++ files only
+            if (FileDefaults.hasCFileExtension(sourceFile)) { HeaderFileParserLanguage.Both }
+            else { HeaderFileParserLanguage.Cpp }
+          case (_, _) =>
+            // Already seen in both C and C++ files
+            HeaderFileParserLanguage.Both
         }
       )
     }

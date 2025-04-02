@@ -70,9 +70,9 @@ object CdtParser {
         Seq((p, CdtParser.createParseLanguage(p, IOUtils.readLinesInFile(p).mkString("\n"), config)))
       case p if !global.headerIncludes.containsKey(p.toString) =>
         Seq((p, GCCLanguage.getDefault))
-      case p if global.headerIncludes.get(p.toString) == HeaderFileParserLanguage.C.ordinal =>
+      case p if global.headerIncludes.get(p.toString) == HeaderFileParserLanguage.C =>
         Seq((p, GCCLanguage.getDefault))
-      case p if global.headerIncludes.get(p.toString) == HeaderFileParserLanguage.Cpp.ordinal =>
+      case p if global.headerIncludes.get(p.toString) == HeaderFileParserLanguage.Cpp =>
         Seq((p, GPPLanguage.getDefault))
       case p =>
         Seq((p, GCCLanguage.getDefault), (p, GPPLanguage.getDefault))
