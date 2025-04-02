@@ -68,7 +68,7 @@ object C2CpgScope {
   class BlockScopeElement(override val scopeNode: NewNode, override val surroundingScope: Option[ScopeElement])
       extends ScopeElement(scopeNode, surroundingScope)
 
-  private class ScopeElementIterator(start: Option[ScopeElement]) extends Iterator[ScopeElement] {
+  class ScopeElementIterator(start: Option[ScopeElement]) extends Iterator[ScopeElement] {
     private var currentScopeElement = start
 
     override def hasNext: Boolean = {
@@ -90,6 +90,8 @@ class C2CpgScope {
 
   private val pendingReferences: mutable.Buffer[PendingReference] = mutable.ListBuffer.empty
   private var stack: Option[ScopeElement]                         = Option.empty
+
+  def getScopeHead: Option[ScopeElement] = stack
 
   def lookupVariable(identifier: String): Option[(NewNode, String)] = {
     variableFromStack(stack, identifier).map { case (variableNodeId, tpe, _) => (variableNodeId, tpe) }

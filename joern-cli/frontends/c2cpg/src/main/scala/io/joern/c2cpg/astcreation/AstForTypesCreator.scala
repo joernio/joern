@@ -215,12 +215,14 @@ trait AstForTypesCreator { this: AstCreator =>
     val cpgNamespace       = newNamespaceBlockNode(namespaceDefinition, name, fullName, codeString, filename)
     val namespaceBlockNode = blockNode(namespaceDefinition)
     methodAstParentStack.push(namespaceBlockNode)
+    scope.pushNewMethodScope(fullName, name, cpgNamespace, None)
     scope.pushNewBlockScope(namespaceBlockNode)
     val childrenAsts = namespaceDefinition.getDeclarations.flatMap { decl =>
       val declAsts = astsForDeclaration(decl)
       declAsts
     }.toIndexedSeq
     methodAstParentStack.pop()
+    scope.popScope()
     scope.popScope()
     setArgumentIndices(childrenAsts)
     Ast(cpgNamespace).withChild(Ast(namespaceBlockNode).withChildren(childrenAsts))
