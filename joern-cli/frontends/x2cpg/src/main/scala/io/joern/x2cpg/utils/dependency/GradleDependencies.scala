@@ -137,6 +137,10 @@ object GradleDependencies {
     initScriptPath: String
   ): Map[String, List[String]] = {
     Using.resources(new ByteArrayOutputStream, new ByteArrayOutputStream) { case (stdoutStream, stderrStream) =>
+      Option(System.getenv("ANDROID_HOME")) match {
+        case Some(androidHome) => logger.debug(s"Found ANDROID_HOME set to $androidHome")
+        case None              => logger.debug("ANDROID_HOME not set")
+      }
       logger.debug(s"Executing gradle task '$taskName'...")
       Try(
         connection
