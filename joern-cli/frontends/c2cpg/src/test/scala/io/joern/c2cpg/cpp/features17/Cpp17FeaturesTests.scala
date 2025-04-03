@@ -122,24 +122,49 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
 
     "handle constexpr lambda" in {
       val cpg = code("""
-          |auto identity = [](int n) constexpr { return n; };
-          |constexpr auto add = [](int x, int y) {
-          |  auto L = [=] { return x; };
-          |  auto R = [=] { return y; };
-          |  return [=] { return L() + R(); };
-          |};
+          |void main() {
+          |  auto identity = [](int n) constexpr { return n; };
+          |  constexpr auto add = [](int x, int y) {
+          |    auto L = [=] { return x; };
+          |    auto R = [=] { return y; };
+          |    return [=] { return L() + R(); };
+          |  };
+          |}
           |constexpr int addOne(int n) {
           |  return [n] { return n + 1; }();
           |}
           |""".stripMargin)
       cpg.method.nameNot("<global>").fullName.sorted shouldBe List(
-        "Test0.cpp:<global>.<lambda>0:int(int)",
-        "Test0.cpp:<global>.<lambda>1.<lambda>2:int()",
-        "Test0.cpp:<global>.<lambda>1.<lambda>3:int()",
-        "Test0.cpp:<global>.<lambda>1.<lambda>4:int()",
-        "Test0.cpp:<global>.<lambda>1:std.function(int,int)",
         "Test0.cpp:<global>.addOne.<lambda>5:int()",
-        "addOne:int(int)"
+        "Test0.cpp:<global>.main.<lambda>0:int(int)",
+        "Test0.cpp:<global>.main.<lambda>1.<lambda>2:int()",
+        "Test0.cpp:<global>.main.<lambda>1.<lambda>3:int()",
+        "Test0.cpp:<global>.main.<lambda>1.<lambda>4:int()",
+        "Test0.cpp:<global>.main.<lambda>1:std.function(int,int)",
+        "addOne:int(int)",
+        "main:void()"
+      )
+    }
+
+    "handle constexpr lambda in class function" in {
+      val cpg = code("""
+          |class Foo {};
+          |void Foo::foo() {
+          |  auto identity = [](int n) constexpr { return n; };
+          |  constexpr auto add = [](int x, int y) {
+          |    auto L = [=] { return x; };
+          |    auto R = [=] { return y; };
+          |    return [=] { return L() + R(); };
+          |  };
+          |}
+          |""".stripMargin)
+      cpg.method.nameNot("<global>").fullName.sorted shouldBe List(
+        "Foo.foo:void()",
+        "Test0.cpp:<global>.Foo.foo.<lambda>0:int(int)",
+        "Test0.cpp:<global>.Foo.foo.<lambda>1.<lambda>2:int()",
+        "Test0.cpp:<global>.Foo.foo.<lambda>1.<lambda>3:int()",
+        "Test0.cpp:<global>.Foo.foo.<lambda>1.<lambda>4:int()",
+        "Test0.cpp:<global>.Foo.foo.<lambda>1:std.function(int,int)"
       )
     }
 
