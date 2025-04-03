@@ -11,9 +11,17 @@ import org.eclipse.cdt.internal.core.model.ASTStringUtil
 import scala.annotation.nowarn
 import scala.util.Try
 
+object TypeNameProvider {
+
+  private type TypeLike = IASTEnumerationSpecifier | ICPPASTNamespaceDefinition | ICPPASTNamespaceAlias |
+    IASTCompositeTypeSpecifier | IASTElaboratedTypeSpecifier
+
+}
+
 trait TypeNameProvider { this: AstCreator =>
 
-  import FullNameProvider.stripTemplateTags
+  import TypeNameProvider.TypeLike
+  import FullNameProvider.*
 
   // Sadly, there is no predefined List / Enum of this within Eclipse CDT:
   private val ReservedKeywordsAtTypes: List[String] =
@@ -108,9 +116,9 @@ trait TypeNameProvider { this: AstCreator =>
   protected def safeGetType(tpe: IType): String = {
     val tpeString = tpe match {
       case _: CPPClosureType                                      => Defines.Function
-      case cppBasicType: ICPPBasicType if cppBasicType.isLong     => "long"
-      case cppBasicType: ICPPBasicType if cppBasicType.isLongLong => "longlong"
-      case cppBasicType: ICPPBasicType if cppBasicType.isShort    => "short"
+      case cppBasicType: ICPPBasicType if cppBasicType.isLong     => Defines.Long
+      case cppBasicType: ICPPBasicType if cppBasicType.isLongLong => Defines.LongLong
+      case cppBasicType: ICPPBasicType if cppBasicType.isShort    => Defines.Short
       case _                                                      =>
         // In case of unresolved includes etc. this may fail throwing an unrecoverable exception
         Try(ASTTypeUtil.getType(tpe)).getOrElse(Defines.Any)
@@ -122,6 +130,37 @@ trait TypeNameProvider { this: AstCreator =>
     val returnType     = cleanType(safeGetType(typ.getReturnType))
     val parameterTypes = typ.getParameterTypes.map(t => cleanType(safeGetType(t)))
     StringUtils.normalizeSpace(s"$returnType(${parameterTypes.mkString(",")})")
+  }
+
+  protected def typeFullNameInfo(typeLike: TypeLike): TypeFullNameInfo = {
+    typeLike match {
+      case _: IASTElaboratedTypeSpecifier =>
+        val name_     = shortName(typeLike)
+        val fullName_ = registerType(cleanType(fullName(typeLike)))
+        TypeFullNameInfo(name_, fullName_)
+      case e: IASTEnumerationSpecifier =>
+        val name_                              = shortName(e)
+        val fullName_                          = fullName(e)
+        val (uniqueName_, uniqueNameFullName_) = fileLocalUniqueName(name_, fullName_, "enum")
+        TypeFullNameInfo(uniqueName_, uniqueNameFullName_)
+      case n: ICPPASTNamespaceDefinition =>
+        val name_                              = shortName(n)
+        val fullName_                          = fullName(n)
+        val (uniqueName_, uniqueNameFullName_) = fileLocalUniqueName(name_, fullName_, "namespace")
+        TypeFullNameInfo(uniqueName_, uniqueNameFullName_)
+      case a: ICPPASTNamespaceAlias =>
+        val name_     = shortName(a)
+        val fullName_ = fullName(a)
+        TypeFullNameInfo(name_, fullName_)
+      case s: IASTCompositeTypeSpecifier =>
+        val fullName_ = registerType(cleanType(fullName(s)))
+        val name_ = shortName(s) match {
+          case n if n.isEmpty && fullName_.contains(".") => fullName_.substring(fullName_.lastIndexOf("."))
+          case n if n.isEmpty                            => fullName_
+          case other                                     => other
+        }
+        TypeFullNameInfo(name_, fullName_)
+    }
   }
 
   @nowarn
@@ -147,6 +186,69 @@ trait TypeNameProvider { this: AstCreator =>
       case _                                                     => getNodeSignature(node)
     }
     cleanType(tpeString)
+  }
+
+  protected def returnType(methodLike: FullNameProvider.MethodLike): String = {
+    methodLike match {
+      case declarator: IASTFunctionDeclarator => returnTypeForIASTFunctionDeclarator(declarator)
+      case definition: IASTFunctionDefinition => returnTypeForIASTFunctionDefinition(definition)
+      case lambda: ICPPASTLambdaExpression    => returnTypeForICPPASTLambdaExpression(lambda)
+    }
+  }
+
+  private def returnTypeForIASTFunctionDeclarator(declarator: IASTFunctionDeclarator): String = {
+    safeGetBinding(declarator.getName) match {
+      case Some(_: ICPPFunctionTemplate) if declarator.getParent.isInstanceOf[IASTFunctionDefinition] =>
+        cleanType(typeForDeclSpecifier(declarator.getParent.asInstanceOf[IASTFunctionDefinition].getDeclSpecifier))
+      case Some(value: ICPPMethod) if !value.getType.toString.startsWith("?") =>
+        cleanType(safeGetType(value.getType.getReturnType))
+      case Some(value: ICPPFunction) if !value.getType.toString.startsWith("?") =>
+        cleanType(safeGetType(value.getType.getReturnType))
+      case _ if declarator.getParent.isInstanceOf[IASTSimpleDeclaration] =>
+        cleanType(typeForDeclSpecifier(declarator.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclSpecifier))
+      case _ if declarator.getParent.isInstanceOf[IASTFunctionDefinition] =>
+        cleanType(typeForDeclSpecifier(declarator.getParent.asInstanceOf[IASTFunctionDefinition].getDeclSpecifier))
+      case _ => Defines.Any
+    }
+  }
+
+  private def returnTypeForIASTFunctionDefinition(definition: IASTFunctionDefinition): String = {
+    if (isCppConstructor(definition)) {
+      cleanType(typeFor(definition.asInstanceOf[CPPASTFunctionDefinition].getMemberInitializers.head.getInitializer))
+    } else {
+      safeGetBinding(definition.getDeclarator.getName) match {
+        case Some(_: ICPPFunctionTemplate) =>
+          typeForDeclSpecifier(definition.getDeclSpecifier)
+        case Some(value: ICPPMethod) if !value.getType.toString.startsWith("?") =>
+          cleanType(safeGetType(value.getType.getReturnType))
+        case Some(value: ICPPFunction) if !value.getType.toString.startsWith("?") =>
+          cleanType(safeGetType(value.getType.getReturnType))
+        case _ =>
+          typeForDeclSpecifier(definition.getDeclSpecifier)
+      }
+    }
+  }
+
+  private def returnTypeForICPPASTLambdaExpression(lambda: ICPPASTLambdaExpression): String = {
+    lambda.getDeclarator match {
+      case declarator: IASTDeclarator if declarator.getTrailingReturnType != null =>
+        typeForDeclSpecifier(declarator.getTrailingReturnType.getDeclSpecifier)
+      case _ =>
+        safeGetEvaluation(lambda) match {
+          case Some(value) if !value.toString.endsWith(": <unknown>") => cleanType(value.getType.toString)
+          case Some(value) if value.getType.isInstanceOf[CPPClosureType] =>
+            val closureType = value.getType.asInstanceOf[CPPClosureType]
+            closureType.getMethods
+              .find(_.toString.startsWith("operator ()"))
+              .map(_.getType)
+              .collect {
+                case t: ICPPFunctionType if t.getReturnType.isInstanceOf[CPPClosureType] => Defines.Function
+                case t: ICPPFunctionType => cleanType(safeGetType(t.getReturnType))
+              }
+              .getOrElse(Defines.Any)
+          case _ => Defines.Any
+        }
+    }
   }
 
   private def replaceWhitespaceAfterKeyword(tpe: String): String = {
@@ -176,9 +278,9 @@ trait TypeNameProvider { this: AstCreator =>
   private def pointersAsString(spec: IASTDeclSpecifier, parentDecl: IASTDeclarator): String = {
     val tpe = typeFor(spec) match {
       case Defines.Auto  => typeFor(parentDecl)
-      case "longlongint" => "longlong"
-      case "longint"     => "long"
-      case "shortint"    => "short"
+      case "longlongint" => Defines.LongLong
+      case "longint"     => Defines.Long
+      case "shortint"    => Defines.Short
       case t             => t
     }
     val pointers = parentDecl.getPointerOperators

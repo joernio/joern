@@ -1,5 +1,6 @@
 package io.joern.c2cpg.astcreation
 
+import io.joern.c2cpg.passes.FunctionDeclNodePass
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
@@ -31,6 +32,8 @@ import scala.annotation.tailrec
 import scala.util.Try
 
 trait AstForFunctionsCreator { this: AstCreator =>
+
+  import FullNameProvider.*
 
   final protected def parameters(functionNode: IASTNode): Seq[IASTNode] = functionNode match {
     case arr: IASTArrayDeclarator       => parameters(arr.getNestedDeclarator)
@@ -66,7 +69,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
         setVariadicParameterInfo(parameterNodeInfos, funcDecl)
 
         val (astParentType, astParentFullName) = methodDeclarationParentInfo()
-        val methodInfo = CGlobal.MethodInfo(
+        val methodInfo = FunctionDeclNodePass.MethodInfo(
           name,
           code = codeString,
           fileName = filename,
@@ -232,9 +235,12 @@ trait AstForFunctionsCreator { this: AstCreator =>
     }
   }
 
-  private def setVariadicParameterInfo(parameterNodeInfos: Seq[CGlobal.ParameterInfo], func: IASTNode): Unit = {
+  private def setVariadicParameterInfo(
+    parameterNodeInfos: Seq[FunctionDeclNodePass.ParameterInfo],
+    func: IASTNode
+  ): Unit = {
     parameterNodeInfos.lastOption.foreach {
-      case p: CGlobal.ParameterInfo if isVariadic(func) =>
+      case p: FunctionDeclNodePass.ParameterInfo if isVariadic(func) =>
         p.isVariadic = true
         p.code = s"${p.code}..."
       case _ =>
@@ -260,7 +266,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     Try(modifierFromString(funcDecl.getParent.getSyntax.getImage)).getOrElse(Nil)
   }
 
-  private def thisForCPPFunctions(func: IASTNode): Seq[CGlobal.ParameterInfo] = {
+  private def thisForCPPFunctions(func: IASTNode): Seq[FunctionDeclNodePass.ParameterInfo] = {
     func match {
       case cppFunc: ICPPASTFunctionDefinition if !modifierFor(cppFunc).exists(_.modifierType == ModifierTypes.STATIC) =>
         val maybeOwner = safeGetBinding(cppFunc.getDeclarator.getName) match {
@@ -277,7 +283,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
           case _ => None
         }
         maybeOwner.toSeq.map { owner =>
-          new CGlobal.ParameterInfo(
+          new FunctionDeclNodePass.ParameterInfo(
             "this",
             "this",
             0,
@@ -292,7 +298,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     }
   }
 
-  private def parameterNodeInfo(parameter: IASTNode, paramIndex: Int): CGlobal.ParameterInfo = {
+  private def parameterNodeInfo(parameter: IASTNode, paramIndex: Int): FunctionDeclNodePass.ParameterInfo = {
     val (name, codeString, tpe, variadic) = parameter match {
       case p: CASTParameterDeclaration =>
         (shortName(p.getDeclarator), code(p), typeForDeclSpecifier(p.getDeclSpecifier), false)
@@ -315,7 +321,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
       case other =>
         (code(other), code(other), typeForDeclSpecifier(other), false)
     }
-    new CGlobal.ParameterInfo(
+    new FunctionDeclNodePass.ParameterInfo(
       name,
       codeString,
       paramIndex,

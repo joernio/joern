@@ -1,6 +1,7 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.c2cpg.astcreation.C2CpgScope.PendingReference
+import io.joern.c2cpg.passes.FunctionDeclNodePass
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.AstNodeBuilder
 import io.joern.x2cpg.AstNodeBuilder.{closureBindingNode, dependencyNode}
@@ -107,12 +108,12 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   protected def registerType(typeName: String): String = {
-    val fixedTypeName = replaceQualifiedNameSeparator(StringUtils.normalizeSpace(typeName))
+    val fixedTypeName = replaceQualifiedNameSeparator(typeName)
     global.usedTypes.putIfAbsent(fixedTypeName, true)
     fixedTypeName
   }
 
-  protected def registerMethodDeclaration(fullName: String, methodInfo: CGlobal.MethodInfo): Unit = {
+  protected def registerMethodDeclaration(fullName: String, methodInfo: FunctionDeclNodePass.MethodInfo): Unit = {
     global.methodDeclarations.putIfAbsent(fullName, methodInfo)
   }
 

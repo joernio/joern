@@ -1,9 +1,13 @@
 package io.joern.c2cpg.testfixtures
 
 import io.joern.c2cpg.Config
+import io.joern.c2cpg.astcreation.CGlobal
+import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.passes.AstCreationPass
 import io.joern.c2cpg.passes.FunctionDeclNodePass
+import io.joern.c2cpg.C2Cpg.DefaultIgnoredFolders
 import io.joern.x2cpg.testfixtures.LanguageFrontend
+import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -20,9 +24,24 @@ trait AstC2CpgFrontend extends LanguageFrontend {
       .withInputPath(pathAsString)
       .withOutputPath(pathAsString)
       .withSchemaValidation(ValidationMode.Enabled)
-    val astCreationPass = new AstCreationPass(cpg, config)
-    astCreationPass.createAndApply()
-    new FunctionDeclNodePass(cpg, astCreationPass.unhandledMethodDeclarations(), config).createAndApply()
+    val global = new CGlobal()
+
+    val preprocessedFiles = if (config.withPreprocessedFiles) {
+      SourceFiles
+        .determine(
+          config.inputPath,
+          Set(FileDefaults.PreprocessedExt),
+          ignoredDefaultRegex = Option(DefaultIgnoredFolders),
+          ignoredFilesRegex = Option(config.ignoredFilesRegex),
+          ignoredFilesPath = Option(config.ignoredFiles)
+        )
+    } else List.empty
+
+    val sourceFileExtensions = FileDefaults.SourceFileExtensions ++
+      Option.when(config.withPreprocessedFiles)(FileDefaults.PreprocessedExt).toList
+    new AstCreationPass(cpg, preprocessedFiles, sourceFileExtensions, config, global).createAndApply()
+    new AstCreationPass(cpg, preprocessedFiles, FileDefaults.HeaderFileExtensions, config, global).createAndApply()
+    new FunctionDeclNodePass(cpg, global.unhandledMethodDeclarations(), config).createAndApply()
     cpg
   }
 }

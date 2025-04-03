@@ -14,6 +14,8 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPClosureType
 
 trait AstForTypesCreator { this: AstCreator =>
 
+  import FullNameProvider.*
+
   protected def astForDecltypeSpecifier(decl: ICPPASTDecltypeSpecifier): Ast = {
     val op       = Defines.OperatorTypeOf
     val cpgUnary = callNode(decl, code(decl), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
@@ -24,7 +26,8 @@ trait AstForTypesCreator { this: AstCreator =>
   protected def astForNamespaceAlias(namespaceAlias: ICPPASTNamespaceAlias): Ast = {
     val TypeFullNameInfo(name, fullName) = typeFullNameInfo(namespaceAlias)
     val codeString                       = code(namespaceAlias)
-    Ast(newNamespaceBlockNode(namespaceAlias, name, s"$fullName<alias>", codeString, fileName(namespaceAlias)))
+    val filename                         = fileName(namespaceAlias)
+    Ast(namespaceBlockNode(namespaceAlias, name, s"$fullName<alias>", filename).code(codeString))
   }
 
   private def typeForIASTDeclarator(
@@ -211,18 +214,20 @@ trait AstForTypesCreator { this: AstCreator =>
     val TypeFullNameInfo(name, fullName) = typeFullNameInfo(namespaceDefinition)
     val codeString                       = code(namespaceDefinition)
     val filename                         = fileName(namespaceDefinition)
-    val cpgNamespace       = newNamespaceBlockNode(namespaceDefinition, name, fullName, codeString, filename)
-    val namespaceBlockNode = blockNode(namespaceDefinition)
-    methodAstParentStack.push(namespaceBlockNode)
-    scope.pushNewBlockScope(namespaceBlockNode)
+    val namespaceBlockNode_ = namespaceBlockNode(namespaceDefinition, name, fullName, filename).code(codeString)
+    val blockNode_          = blockNode(namespaceDefinition)
+    methodAstParentStack.push(blockNode_)
+    scope.pushNewMethodScope(fullName, name, namespaceBlockNode_, None)
+    scope.pushNewBlockScope(blockNode_)
     val childrenAsts = namespaceDefinition.getDeclarations.flatMap { decl =>
       val declAsts = astsForDeclaration(decl)
       declAsts
     }.toIndexedSeq
     methodAstParentStack.pop()
     scope.popScope()
+    scope.popScope()
     setArgumentIndices(childrenAsts)
-    Ast(cpgNamespace).withChild(Ast(namespaceBlockNode).withChildren(childrenAsts))
+    Ast(namespaceBlockNode_).withChild(Ast(blockNode_).withChildren(childrenAsts))
   }
 
   private def isAssignmentFromBrokenMacro(declaration: IASTSimpleDeclaration, declarator: IASTDeclarator): Boolean = {
