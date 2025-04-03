@@ -16,6 +16,7 @@ import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.{ObjectMethodSignatur
 import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
 import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, composeMethodLikeSignature, composeUnresolvedSignature}
 import io.joern.javasrc2cpg.util.{BindingTable, BindingTableAdapterForLambdas, LambdaBindingInfo, NameConstants}
+import io.joern.x2cpg.AstNodeBuilder.{bindingNode, closureBindingNode}
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.joern.x2cpg.utils.{IntervalKeyPool, NodeBuilders}
 import io.joern.x2cpg.utils.NodeBuilders.*
@@ -239,7 +240,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
     addClosureBindingsToDiffGraph(lambdaBody.capturedVariables, methodRef)
 
     val interfaceBinding = implementedInfo.implementedMethod.map { implementedMethod =>
-      newBindingNode(implementedMethod.getName, lambdaMethodNode.signature, lambdaMethodNode.fullName)
+      bindingNode(implementedMethod.getName, lambdaMethodNode.signature, lambdaMethodNode.fullName)
     }
 
     val bindingTable = getLambdaBindingTable(
@@ -274,8 +275,8 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
     capturedVariables
       .groupBy(_.name)
       .map { case (name, variables) =>
-        val closureBindingId   = s"$filename:$lambdaMethodName:$name"
-        val closureBindingNode = newClosureBindingNode(closureBindingId, name, EvaluationStrategies.BY_SHARING)
+        val closureBindingId = s"$filename:$lambdaMethodName:$name"
+        val closureBinding   = closureBindingNode(closureBindingId, name, EvaluationStrategies.BY_SHARING)
 
         val scopeVariable = variables.head
         val capturedLocal = localNode(
@@ -288,7 +289,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
         )
         scope.enclosingBlock.foreach(_.addLocal(capturedLocal, scopeVariable.name))
 
-        ClosureBindingEntry(scopeVariable, closureBindingNode) -> capturedLocal
+        ClosureBindingEntry(scopeVariable, closureBinding) -> capturedLocal
       }
       .toSeq
   }

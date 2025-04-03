@@ -3,32 +3,12 @@ package io.joern.x2cpg
 import io.joern.x2cpg.AstNodeBuilder.methodReturnNodeWithExplicitPositionInfo
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
-import io.shiftleft.codepropertygraph.generated.nodes.NewAnnotation
-import io.shiftleft.codepropertygraph.generated.nodes.NewAnnotationLiteral
-import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
-import io.shiftleft.codepropertygraph.generated.nodes.NewCall
-import io.shiftleft.codepropertygraph.generated.nodes.NewControlStructure
-import io.shiftleft.codepropertygraph.generated.nodes.NewFieldIdentifier
-import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
-import io.shiftleft.codepropertygraph.generated.nodes.NewImport
-import io.shiftleft.codepropertygraph.generated.nodes.NewJumpTarget
-import io.shiftleft.codepropertygraph.generated.nodes.NewLiteral
-import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
-import io.shiftleft.codepropertygraph.generated.nodes.NewMember
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethodRef
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethodReturn
-import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
-import io.shiftleft.codepropertygraph.generated.nodes.NewReturn
-import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
-import io.shiftleft.codepropertygraph.generated.nodes.NewTypeRef
-import io.shiftleft.codepropertygraph.generated.nodes.NewUnknown
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.nodes.Block.PropertyDefaults as BlockDefaults
-import io.shiftleft.codepropertygraph.generated.nodes.NewComment
 import org.apache.commons.lang3.StringUtils
 
 import scala.util.Try
+
 trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
   protected def line(node: Node): Option[Int]
   protected def column(node: Node): Option[Int]
@@ -437,5 +417,30 @@ object AstNodeBuilder {
       .columnNumber(columnNumber)
       .offset(offset)
       .offsetEnd(offsetEnd)
+  }
+
+  private[joern] def bindingNode(name: String, signature: String, methodFullName: String): NewBinding = {
+    NewBinding()
+      .name(name)
+      .methodFullName(methodFullName)
+      .signature(signature)
+  }
+
+  private[joern] def closureBindingNode(
+    closureBindingId: String,
+    originalName: String,
+    evaluationStrategy: String
+  ): NewClosureBinding = {
+    NewClosureBinding()
+      .closureBindingId(closureBindingId)
+      .closureOriginalName(originalName)
+      .evaluationStrategy(evaluationStrategy)
+  }
+
+  private[joern] def dependencyNode(name: String, groupId: String, version: String): NewDependency = {
+    NewDependency()
+      .name(name)
+      .dependencyGroupId(groupId)
+      .version(version)
   }
 }

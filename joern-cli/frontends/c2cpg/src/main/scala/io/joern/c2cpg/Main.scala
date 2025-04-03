@@ -120,7 +120,7 @@ object Main extends X2CpgMain(cmdLineParser, new C2Cpg()) with FrontendHTTPServe
 
   override def run(config: Config, c2cpg: C2Cpg): Unit = {
     config match {
-      case c if c.serverMode      => startup()
+      case c if c.serverMode      => startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout)
       case c if c.printIfDefsOnly => c2cpg.printIfDefsOnly(config)
       case _                      => c2cpg.run(config)
     }

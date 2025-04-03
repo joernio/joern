@@ -65,7 +65,7 @@ object Main extends X2CpgMain(cmdLineParser, new CSharpSrc2Cpg()) with FrontendH
   override protected def newDefaultConfig(): Config = Config()
 
   def run(config: Config, csharpsrc2cpg: CSharpSrc2Cpg): Unit = {
-    if (config.serverMode) { startup() }
+    if (config.serverMode) { startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout) }
     else {
       val absPath = Paths.get(config.inputPath).toAbsolutePath.toString
       if (Environment.pathExists(absPath)) {

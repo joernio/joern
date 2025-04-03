@@ -57,7 +57,7 @@ object Main extends X2CpgMain(cmdLineParser, new Php2Cpg()) with FrontendHTTPSer
   override protected def newDefaultConfig(): Config = Config()
 
   def run(config: Config, php2Cpg: Php2Cpg): Unit = {
-    if (config.serverMode) { startup() }
+    if (config.serverMode) { startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout) }
     else { php2Cpg.run(config) }
   }
 }

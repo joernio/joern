@@ -3,9 +3,9 @@ package io.joern.jssrc2cpg.astcreation
 import io.joern.jssrc2cpg.datastructures.*
 import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
+import io.joern.x2cpg.AstNodeBuilder.closureBindingNode
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.joern.x2cpg.utils.IntervalKeyPool
-import io.joern.x2cpg.utils.NodeBuilders.newClosureBindingNode
 import io.joern.x2cpg.{Ast, AstNodeBuilder, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies}
@@ -270,15 +270,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
                       )
                       .order(0)
                     diffGraph.addEdge(methodScopeNode, localNode_, EdgeTypes.AST)
-                    val closureBindingNode = newClosureBindingNode(
+                    val closureBinding = closureBindingNode(
                       closureBindingIdProperty,
                       origin.variableName,
                       EvaluationStrategies.BY_REFERENCE
                     )
-                    methodScope.capturingRefId.foreach(ref =>
-                      diffGraph.addEdge(ref, closureBindingNode, EdgeTypes.CAPTURE)
-                    )
-                    nextReference = closureBindingNode
+                    methodScope.capturingRefId.foreach(ref => diffGraph.addEdge(ref, closureBinding, EdgeTypes.CAPTURE))
+                    nextReference = closureBinding
                     Option(localNode_)
                   case someLocalNode =>
                     // When there is already a LOCAL representing the capturing, we do not

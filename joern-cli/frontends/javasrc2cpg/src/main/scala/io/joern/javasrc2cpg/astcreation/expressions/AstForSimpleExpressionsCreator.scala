@@ -336,7 +336,10 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
         .getOrElse(defaultTypeFallback())
 
     val identifier = identifierNode(superExpr, NameConstants.This, NameConstants.Super, typeFullName)
-    Ast(identifier)
+
+    val refsTo = scope.lookupVariable(NameConstants.This).variableNode.toList
+
+    Ast(identifier).withRefEdges(identifier, refsTo)
   }
 
   private[expressions] def astForThisExpr(expr: ThisExpr, expectedType: ExpectedType): Ast = {

@@ -4,10 +4,9 @@ import io.joern.c2cpg.astcreation.C2CpgScope.PendingReference
 import io.joern.c2cpg.passes.FunctionDeclNodePass
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.AstNodeBuilder
+import io.joern.x2cpg.AstNodeBuilder.{closureBindingNode, dependencyNode}
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.utils.IntervalKeyPool
-import io.joern.x2cpg.utils.NodeBuilders
-import io.joern.x2cpg.utils.NodeBuilders.newDependencyNode
 import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
@@ -184,11 +183,11 @@ trait AstCreatorHelper { this: AstCreator =>
   protected def astsForDependenciesAndImports(iASTTranslationUnit: IASTTranslationUnit): Seq[Ast] = {
     val allIncludes = iASTTranslationUnit.getIncludeDirectives.toList.filterNot(isIncludedNode)
     allIncludes.map { include =>
-      val name           = include.getName.toString
-      val dependencyNode = newDependencyNode(name, name, "include")
-      val importNode     = newImportNode(code(include), name, name, include)
-      diffGraph.addNode(dependencyNode)
-      diffGraph.addEdge(importNode, dependencyNode, EdgeTypes.IMPORTS)
+      val name       = include.getName.toString
+      val dependency = dependencyNode(name, name, "include")
+      val importNode = newImportNode(code(include), name, name, include)
+      diffGraph.addNode(dependency)
+      diffGraph.addEdge(importNode, dependency, EdgeTypes.IMPORTS)
       Ast(importNode)
     }
   }
@@ -249,13 +248,10 @@ trait AstCreatorHelper { this: AstCreator =>
                 val closureBindingIdProperty = s"$filename:${methodScope.methodName}:${origin.variableName}"
                 capturedLocals.updateWith(closureBindingIdProperty) {
                   case None =>
-                    val closureBindingNode = NodeBuilders.newClosureBindingNode(
-                      closureBindingIdProperty,
-                      origin.variableName,
-                      origin.evaluationStrategy
-                    )
-                    methodScope.capturingRefId.foreach(diffGraph.addEdge(_, closureBindingNode, EdgeTypes.CAPTURE))
-                    nextReference = closureBindingNode
+                    val closureBinding =
+                      closureBindingNode(closureBindingIdProperty, origin.variableName, origin.evaluationStrategy)
+                    methodScope.capturingRefId.foreach(diffGraph.addEdge(_, closureBinding, EdgeTypes.CAPTURE))
+                    nextReference = closureBinding
                     val localNode = createLocalForUnresolvedReference(methodScopeNode, origin)
                     Option(localNode.closureBindingId(closureBindingIdProperty))
                   case someLocalNode =>

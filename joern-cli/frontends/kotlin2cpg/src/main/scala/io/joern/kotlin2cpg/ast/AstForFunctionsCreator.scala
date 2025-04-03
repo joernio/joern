@@ -3,12 +3,11 @@ package io.joern.kotlin2cpg.ast
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.types.TypeConstants
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.AstNodeBuilder.{bindingNode, closureBindingNode}
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Stack.StackWrapper
 import io.joern.x2cpg.utils.NodeBuilders
-import io.joern.x2cpg.utils.NodeBuilders.newBindingNode
-import io.joern.x2cpg.utils.NodeBuilders.newClosureBindingNode
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
@@ -297,19 +296,19 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       .map { capturedNodeContext =>
         val uuidBytes        = stringForUUID(fn, capturedNodeContext.name, capturedNodeContext.typeFullName)
         val closureBindingId = nameUUIDFromBytes(uuidBytes.getBytes).toString
-        val closureBindingNode =
-          newClosureBindingNode(closureBindingId, capturedNodeContext.name, EvaluationStrategies.BY_REFERENCE)
-        (closureBindingNode, capturedNodeContext)
+        val closureBinding =
+          closureBindingNode(closureBindingId, capturedNodeContext.name, EvaluationStrategies.BY_REFERENCE)
+        (closureBinding, capturedNodeContext)
       }
 
-    val localsForCaptured = closureBindingEntriesForCaptured.map { case (closureBindingNode, capturedNodeContext) =>
+    val localsForCaptured = closureBindingEntriesForCaptured.map { case (closureBinding, capturedNodeContext) =>
       val node =
         localNode(
           fn,
           capturedNodeContext.name,
           capturedNodeContext.name,
           capturedNodeContext.typeFullName,
-          closureBindingNode.closureBindingId
+          closureBinding.closureBindingId
         )
       scope.addToScope(capturedNodeContext.name, node)
       node
@@ -402,19 +401,19 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       .map { capturedNodeContext =>
         val uuidBytes        = stringForUUID(expr, capturedNodeContext.name, capturedNodeContext.typeFullName)
         val closureBindingId = nameUUIDFromBytes(uuidBytes.getBytes).toString
-        val closureBindingNode =
-          newClosureBindingNode(closureBindingId, capturedNodeContext.name, EvaluationStrategies.BY_REFERENCE)
-        (closureBindingNode, capturedNodeContext)
+        val closureBinding =
+          closureBindingNode(closureBindingId, capturedNodeContext.name, EvaluationStrategies.BY_REFERENCE)
+        (closureBinding, capturedNodeContext)
       }
 
-    val localsForCaptured = closureBindingEntriesForCaptured.map { case (closureBindingNode, capturedNodeContext) =>
+    val localsForCaptured = closureBindingEntriesForCaptured.map { case (closureBinding, capturedNodeContext) =>
       val node =
         localNode(
           expr,
           capturedNodeContext.name,
           capturedNodeContext.name,
           capturedNodeContext.typeFullName,
-          closureBindingNode.closureBindingId
+          closureBinding.closureBindingId
         )
       scope.addToScope(capturedNodeContext.name, node)
       node
@@ -611,11 +610,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     val samMethodSignature = samMethod.flatMap(nameRenderer.funcDescSignature)
 
     if (samMethodSignature.isDefined) {
-      val interfaceLambdaBinding = newBindingNode(samMethodName, samMethodSignature.get, lambdaMethodNode.fullName)
+      val interfaceLambdaBinding = bindingNode(samMethodName, samMethodSignature.get, lambdaMethodNode.fullName)
       addToLambdaBindingInfoQueue(interfaceLambdaBinding, lambdaTypeDecl, lambdaMethodNode)
     }
 
-    val nativeLambdaBinding = newBindingNode(samMethodName, lambdaMethodNode.signature, lambdaMethodNode.fullName)
+    val nativeLambdaBinding = bindingNode(samMethodName, lambdaMethodNode.signature, lambdaMethodNode.fullName)
     addToLambdaBindingInfoQueue(nativeLambdaBinding, lambdaTypeDecl, lambdaMethodNode)
   }
 
