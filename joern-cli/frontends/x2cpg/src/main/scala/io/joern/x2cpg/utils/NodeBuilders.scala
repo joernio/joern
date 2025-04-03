@@ -106,6 +106,10 @@ object NodeBuilders {
       .columnNumber(columnNumber)
   }
 
+  @deprecated(
+    "Deprecated in favour of the corresponding method io.joern.x2cpg.AstNodeBuilder and will be removed in a future version",
+    "4.0.314"
+  )
   def newDependencyNode(name: String, groupId: String, version: String): NewDependency =
     NewDependency()
       .name(name)

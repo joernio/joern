@@ -3,11 +3,9 @@ package io.joern.c2cpg.astcreation
 import io.joern.c2cpg.astcreation.C2CpgScope.PendingReference
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.AstNodeBuilder
-import io.joern.x2cpg.AstNodeBuilder.closureBindingNode
+import io.joern.x2cpg.AstNodeBuilder.{closureBindingNode, dependencyNode}
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.utils.IntervalKeyPool
-import io.joern.x2cpg.utils.NodeBuilders
-import io.joern.x2cpg.utils.NodeBuilders.newDependencyNode
 import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
@@ -184,11 +182,11 @@ trait AstCreatorHelper { this: AstCreator =>
   protected def astsForDependenciesAndImports(iASTTranslationUnit: IASTTranslationUnit): Seq[Ast] = {
     val allIncludes = iASTTranslationUnit.getIncludeDirectives.toList.filterNot(isIncludedNode)
     allIncludes.map { include =>
-      val name           = include.getName.toString
-      val dependencyNode = newDependencyNode(name, name, "include")
-      val importNode     = newImportNode(code(include), name, name, include)
-      diffGraph.addNode(dependencyNode)
-      diffGraph.addEdge(importNode, dependencyNode, EdgeTypes.IMPORTS)
+      val name       = include.getName.toString
+      val dependency = dependencyNode(name, name, "include")
+      val importNode = newImportNode(code(include), name, name, include)
+      diffGraph.addNode(dependency)
+      diffGraph.addEdge(importNode, dependency, EdgeTypes.IMPORTS)
       Ast(importNode)
     }
   }

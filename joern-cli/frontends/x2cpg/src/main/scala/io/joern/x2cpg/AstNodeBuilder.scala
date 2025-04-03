@@ -11,6 +11,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewCall,
   NewClosureBinding,
   NewControlStructure,
+  NewDependency,
   NewFieldIdentifier,
   NewIdentifier,
   NewImport,
@@ -454,5 +455,12 @@ object AstNodeBuilder {
       .closureBindingId(closureBindingId)
       .closureOriginalName(originalName)
       .evaluationStrategy(evaluationStrategy)
+  }
+
+  private[joern] def dependencyNode(name: String, groupId: String, version: String): NewDependency = {
+    NewDependency()
+      .name(name)
+      .dependencyGroupId(groupId)
+      .version(version)
   }
 }

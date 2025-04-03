@@ -4,7 +4,7 @@ import io.joern.swiftsrc2cpg.datastructures.BlockScope
 import io.joern.swiftsrc2cpg.datastructures.MethodScope
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.AstNodeBuilder.bindingNode
+import io.joern.x2cpg.AstNodeBuilder.{bindingNode, dependencyNode}
 import io.joern.x2cpg.utils.NodeBuilders.*
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Stack.*
@@ -811,7 +811,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     if (name.isEmpty && groupName.isEmpty) {
       Ast()
     } else {
-      val _dependencyNode = newDependencyNode(name.get, groupName.get, "import")
+      val _dependencyNode = dependencyNode(name.get, groupName.get, "import")
       val importNode      = newImportNode(code(node), groupName.get, name.get, node)
       diffGraph.addNode(_dependencyNode)
       diffGraph.addEdge(importNode, _dependencyNode, EdgeTypes.IMPORTS)
