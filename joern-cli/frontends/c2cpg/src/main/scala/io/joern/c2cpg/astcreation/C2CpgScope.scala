@@ -92,12 +92,12 @@ class C2CpgScope {
   private val pendingReferences: mutable.Buffer[PendingReference] = mutable.ListBuffer.empty
   private var stack: Option[ScopeElement]                         = Option.empty
 
-  def computeScopePath: String =
-    new ScopeElementIterator(stack)
-      .to(Seq)
-      .reverse
-      .collect { case m: MethodScopeElement if m.methodName != NamespaceTraversal.globalNamespaceName => m.methodName }
-      .mkString(".")
+  def computeScopePath: String = {
+    val m = getEnclosingMethodScopeElement(stack)
+    if (m.methodName.startsWith(io.joern.x2cpg.Defines.ClosurePrefix)) { m.methodName }
+    else if (m.methodName != NamespaceTraversal.globalNamespaceName) { m.methodFullName.takeWhile(_ != ':') }
+    else { "" }
+  }
 
   def lookupVariable(identifier: String): Option[(NewNode, String)] = {
     variableFromStack(stack, identifier).map { case (variableNodeId, tpe, _) => (variableNodeId, tpe) }
