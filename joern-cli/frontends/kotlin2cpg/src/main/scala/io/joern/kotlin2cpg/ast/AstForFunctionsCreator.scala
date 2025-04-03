@@ -600,9 +600,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  private def safeFunctionDescriptorName(f: FunctionDescriptor): String = {
+  private def safeFunctionDescriptorName(f: FunctionDescriptor): Option[String] = {
     // if some type info fails, we may otherwise end up with some NPE at the getName call
-    scala.util.Try(f.getName.toString).toOption.getOrElse(Constants.UnknownLambdaBindingName)
+    scala.util.Try(f.getName.toString).toOption
   }
 
   private def safeFunctionDescriptorSignature(f: FunctionDescriptor): Option[String] = {
@@ -616,7 +616,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     samInterface: Option[ClassDescriptor]
   ): Unit = {
     val samMethod          = samInterface.map(SamConversionResolverImplKt.getSingleAbstractMethodOrNull)
-    val samMethodName      = samMethod.map(safeFunctionDescriptorName).getOrElse(Constants.UnknownLambdaBindingName)
+    val samMethodName      = samMethod.flatMap(safeFunctionDescriptorName).getOrElse(Constants.UnknownLambdaBindingName)
     val samMethodSignature = samMethod.flatMap(safeFunctionDescriptorSignature)
 
     if (samMethodSignature.isDefined) {
