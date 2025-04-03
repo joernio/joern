@@ -12,7 +12,6 @@ import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
-import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.NodeTypes
@@ -116,7 +115,7 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
         Ast(thisParam) :: Nil,
         blockAst(blockNode, methodChildren),
         methodReturn,
-        newModifierNode(ModifierTypes.MODULE) :: Nil
+        modifierNode(astNodeInfo, ModifierTypes.MODULE) :: Nil
       )
     )
   }

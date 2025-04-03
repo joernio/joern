@@ -228,7 +228,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
     val defaultAccessModifier = Option.unless(containsAccessModifier(decl.modifiers))(ModifierTypes.PUBLIC)
 
     val allModifiers      = constructorModifier ++: defaultAccessModifier ++: decl.modifiers
-    val modifiers         = allModifiers.map(newModifierNode)
+    val modifiers         = allModifiers.map(modifierNode(decl, _))
     val excludedModifiers = Set(ModifierTypes.MODULE, ModifierTypes.LAMBDA)
     val modifierString = decl.modifiers.filterNot(excludedModifiers.contains) match {
       case Nil  => ""
@@ -788,7 +788,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
 
     scope.pushNewScope(typeDecl)
     val bodyStmts      = astsForClassLikeBody(stmt, stmt.stmts, createDefaultConstructor)
-    val modifiers      = stmt.modifiers.map(newModifierNode).map(Ast(_))
+    val modifiers      = stmt.modifiers.map(modifierNode(stmt, _)).map(Ast(_))
     val annotationAsts = stmt.attributeGroups.flatMap(astForAttributeGroup)
     scope.popScope()
 
@@ -879,7 +879,8 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
 
     val signature = s"$UnresolvedSignature(0)"
 
-    val modifiers = List(ModifierTypes.VIRTUAL, ModifierTypes.PUBLIC, ModifierTypes.CONSTRUCTOR).map(newModifierNode)
+    val modifiers =
+      List(ModifierTypes.VIRTUAL, ModifierTypes.PUBLIC, ModifierTypes.CONSTRUCTOR).map(modifierNode(originNode, _))
 
     val thisParam = thisParamAstForMethod(originNode)
 
@@ -926,9 +927,9 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
 
   private def astsForConstStmt(stmt: PhpConstStmt): List[Ast] = {
     stmt.consts.map { constDecl =>
-      val finalModifier = Ast(newModifierNode(ModifierTypes.FINAL))
+      val finalModifier = Ast(modifierNode(stmt, ModifierTypes.FINAL))
       // `final const` is not allowed, so this is a safe way to represent constants in the CPG
-      val modifierAsts = finalModifier :: stmt.modifiers.map(newModifierNode).map(Ast(_))
+      val modifierAsts = finalModifier :: stmt.modifiers.map(modifierNode(stmt, _)).map(Ast(_))
 
       val name      = constDecl.name.name
       val code      = s"const $name"
@@ -939,7 +940,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
   }
 
   private def astForEnumCase(stmt: PhpEnumCaseStmt): Ast = {
-    val finalModifier = Ast(newModifierNode(ModifierTypes.FINAL))
+    val finalModifier = Ast(modifierNode(stmt, ModifierTypes.FINAL))
 
     val name = stmt.name.name
     val code = s"case $name"
@@ -951,7 +952,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
   private def astsForPropertyStmt(stmt: PhpPropertyStmt): List[Ast] = {
     stmt.variables.map { varDecl =>
       val modifiers    = stmt.modifiers
-      val modifierAsts = modifiers.map(newModifierNode).map(Ast(_))
+      val modifierAsts = modifiers.map(modifierNode(stmt, _)).map(Ast(_))
 
       val name = varDecl.name.name
       val ast = if (modifiers.contains(ModifierTypes.STATIC)) {

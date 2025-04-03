@@ -159,7 +159,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       genericSignature = Option(genericSignature)
     )
 
-    val modifier = newModifierNode(ModifierTypes.PUBLIC)
+    val modifier = modifierNode(parameter, ModifierTypes.PUBLIC)
 
     val thisParameter = thisNodeForMethod(Option(recordTypeFullName), line(parameter), column(parameter))
 
@@ -190,7 +190,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     callableDeclaration match {
       case methodDeclaration: MethodDeclaration =>
         Option.when(methodDeclaration.isAbstract || (isInterfaceMethod && !methodDeclaration.isDefault)) {
-          newModifierNode(ModifierTypes.ABSTRACT)
+          modifierNode(callableDeclaration, ModifierTypes.ABSTRACT)
         }
 
       case _ => None
@@ -213,7 +213,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       if (methodDeclaration.isCallableDeclaration && methodDeclaration.asCallableDeclaration().isStatic)
         ModifierTypes.STATIC
       else ModifierTypes.VIRTUAL
-    val staticVirtualModifier = Some(newModifierNode(staticVirtualModifierType))
+    val staticVirtualModifier = Some(modifierNode(methodDeclaration, staticVirtualModifierType))
 
     val accessModifierType = if (methodDeclaration.isPublic) {
       Some(ModifierTypes.PUBLIC)
@@ -227,7 +227,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     } else {
       None
     }
-    val accessModifier = accessModifierType.map(newModifierNode)
+    val accessModifier = accessModifierType.map(modifierNode(methodDeclaration, _))
 
     List(accessModifier, abstractModifier, staticVirtualModifier).flatten
   }
@@ -310,7 +310,8 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
 
     val returnNode = methodReturnNode(originNode, TypeConstants.Void)
 
-    val modifiers = List(newModifierNode(ModifierTypes.CONSTRUCTOR), newModifierNode(ModifierTypes.PUBLIC))
+    val modifiers =
+      List(modifierNode(originNode, ModifierTypes.CONSTRUCTOR), modifierNode(originNode, ModifierTypes.PUBLIC))
     val partialConstructor =
       PartialConstructorDeclaration(
         originNode,
