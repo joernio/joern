@@ -65,7 +65,7 @@ class CustomFileContentProvider(headerFileFinder: HeaderFileFinder, sourceFile: 
     *   The full path to the header file being processed
     */
   private def updateHeaderFileParserLanguage(foundPath: String): Unit = {
-    if (FileDefaults.hasCHeaderFileExtension(foundPath) && FileDefaults.hasSourceFileExtension(sourceFile)) {
+    if (FileDefaults.hasCHeaderFileExtension(foundPath)) {
       global.headerIncludes.compute(
         foundPath,
         {

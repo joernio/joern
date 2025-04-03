@@ -37,9 +37,36 @@ class HeaderFileParserDetectionTests extends C2CpgSuite {
         ("Foo", "main.h"),
         ("Foo.fooA:int(int)", "main.cpp"),
         ("fooA", "main.c"),
-        // parsed the first time as C code because it's included in a .c file (main.c):
+        // parsed the first time as C code because it's included in a .c file (main.c -> util.h):
         ("utilFunc", "util.h"),
         // parsed the second time as C++ code because it's included in a .cpp file (main.cpp -> main.h -> util.h):
+        ("utilFunc:int(int)", "util.h")
+      )
+    }
+
+    "work for includes in other header files" in {
+      val cpg = code(
+        """
+          |int utilFunc(int a) { return 0; }
+          |""".stripMargin,
+        "util.h"
+      ).moreCode(
+        """
+          |#include "util.h"
+          |int fooA(int a) { return 0; }
+          |""".stripMargin,
+        "main.c"
+      ).moreCode(
+        """
+          |#include "util.h"
+          |""".stripMargin,
+        "header.hpp"
+      )
+      cpg.typeDecl.nameNot("<global>").internal.map(t => (t.fullName, t.file.name.head)).sorted.l shouldBe List(
+        ("fooA", "main.c"),
+        // parsed the first time as C code because it's included in a .c file (main.c -> util.h):
+        ("utilFunc", "util.h"),
+        // parsed the second time as C++ code because it's included in a .hpp file (header.hpp -> util.h):
         ("utilFunc:int(int)", "util.h")
       )
     }

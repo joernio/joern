@@ -8,9 +8,9 @@ object FileDefaults {
   val CppExt: String          = ".cpp"
   val PreprocessedExt: String = ".i"
 
-  private val CHeaderFileExtension: String = ".h"
+  val CHeaderFileExtension: String = ".h"
 
-  private val CppHeaderFileExtensions: Set[String] =
+  val CppHeaderFileExtensions: Set[String] =
     Set(".hpp", ".hh", ".hp", ".hxx", ".h++", ".tcc")
 
   val HeaderFileExtensions: Set[String] =
@@ -27,9 +27,6 @@ object FileDefaults {
 
   def hasCppFileExtension(filePath: String): Boolean =
     CppFileExtensions.exists(ext => StringUtils.endsWithIgnoreCase(filePath, ext))
-
-  def hasSourceFileExtension(filePath: String): Boolean =
-    SourceFileExtensions.exists(ext => StringUtils.endsWithIgnoreCase(filePath, ext))
 
   def hasPreprocessedFileExtension(filePath: String): Boolean =
     StringUtils.endsWithIgnoreCase(filePath, PreprocessedExt)

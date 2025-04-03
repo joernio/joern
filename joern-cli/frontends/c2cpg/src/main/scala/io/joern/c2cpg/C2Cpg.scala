@@ -31,9 +31,9 @@ class C2Cpg extends X2CpgFrontend[Config] {
       val global            = new CGlobal()
       val preprocessedFiles = allPreprocessedFiles(config)
 
-      new AstCreationPass(cpg, preprocessedFiles, allSourceFileExtensions(config), config, global, report)
+      new AstCreationPass(cpg, preprocessedFiles, gatherFileExtensions(config), config, global, report)
         .createAndApply()
-      new AstCreationPass(cpg, preprocessedFiles, FileDefaults.HeaderFileExtensions, config, global, report)
+      new AstCreationPass(cpg, preprocessedFiles, Set(FileDefaults.CHeaderFileExtension), config, global, report)
         .createAndApply()
 
       TypeNodePass.withRegisteredTypes(global.typesSeen(), cpg).createAndApply()
@@ -44,8 +44,10 @@ class C2Cpg extends X2CpgFrontend[Config] {
     }
   }
 
-  private def allSourceFileExtensions(config: Config): Set[String] = {
-    FileDefaults.SourceFileExtensions ++ Option.when(config.withPreprocessedFiles)(FileDefaults.PreprocessedExt).toList
+  private def gatherFileExtensions(config: Config): Set[String] = {
+    FileDefaults.SourceFileExtensions ++
+      FileDefaults.CppHeaderFileExtensions ++
+      Option.when(config.withPreprocessedFiles)(FileDefaults.PreprocessedExt).toList
   }
 
   private def allPreprocessedFiles(config: Config): List[String] = {
