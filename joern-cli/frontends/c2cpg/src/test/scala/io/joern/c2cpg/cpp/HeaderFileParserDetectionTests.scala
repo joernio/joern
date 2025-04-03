@@ -33,7 +33,7 @@ class HeaderFileParserDetectionTests extends C2CpgSuite {
         "main.c"
       )
       cpg.typeDecl.nameNot("<global>").internal.map(t => (t.fullName, t.file.name.head)).sorted.l shouldBe List(
-        // even class Foo is defined in a .h file we parse it as C++ because it's included in a .cpp file:
+        // even though class Foo is defined in a .h file we parse it as C++ because it's included in a .cpp file:
         ("Foo", "main.h"),
         ("Foo.fooA:int(int)", "main.cpp"),
         ("fooA", "main.c"),
