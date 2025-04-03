@@ -94,9 +94,13 @@ class C2CpgScope {
 
   def computeScopePath: String = {
     val m = getEnclosingMethodScopeElement(stack)
-    if (m.methodName.startsWith(io.joern.x2cpg.Defines.ClosurePrefix)) { m.methodName }
-    else if (m.methodName != NamespaceTraversal.globalNamespaceName) { m.methodFullName.takeWhile(_ != ':') }
-    else { "" }
+    if (m.methodName.startsWith(io.joern.x2cpg.Defines.ClosurePrefix)) {
+      val offset = NamespaceTraversal.globalNamespaceName.length + 1
+      val index  = m.methodFullName.indexOf(NamespaceTraversal.globalNamespaceName) + offset
+      m.methodFullName.substring(index).takeWhile(_ != ':')
+    } else if (m.methodName != NamespaceTraversal.globalNamespaceName) {
+      m.methodFullName.takeWhile(_ != ':')
+    } else { "" }
   }
 
   def lookupVariable(identifier: String): Option[(NewNode, String)] = {
