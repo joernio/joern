@@ -27,12 +27,12 @@ of the build process. To build c2cpg issue the command `sbt stage`.
 ## Running
 
 To produce a code property graph  issue the command:
-```shell script
+```
 ./c2cpg.sh <path/to/sourceCodeDirectory> --output <path/to/outputCpg>
 `````
 
 Additional options are available:
-```shell script
+```
 ./c2cpg.sh <path/to/sourceCodeDirectory> \
                 --output <path/to/outputCpg> \
                 --include <path/to/include/dir1>,<path/to/include/dir2>
@@ -40,39 +40,41 @@ Additional options are available:
                 --define DEF_VAL=2
 ```
 
+## CLI Arguments
+
 Run the following to see a complete list of available options:
-```shell script
+```
 ./c2cpg.sh --help
 ```
 
-## Parser Benchmarks
-
-When run on [the linux kernel sources](https://github.com/torvalds/linux) we got:
-
 ```
-Overall time: 43 sec for 51805 file(s)
-Total parse failures: 0
-Number of files with problems: 32940 // those are files with unsupported C or C++ statements (see below) or unresolvable includes
-```
+Usage: C2Cpg [options] input-dir
 
-on this machine:
-
-```
-Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz
-RAM 32,0 GB (24 GB for the JVM)
-Samsung SSD 970 EVO Plus 1TB
-```
-
-Includes for the linux kernel are partly unresolvable. These are files actually not contained in the linux GitHub repository, e.g., stuff in:
-  - `drivers/` for `gpu/` and/or `drm/`
-  - `fs/` for specific filesystems like `xfs/`
-
-On a smaller system (`Intel(R) Core(TM) i7-8665U CPU @ 1.90GHz, 16GB RAM`) with `-Xmx8GB` we got:
-
-```
-Overall time: 2.082 min for 51805 file(s)
-Total parse failures: 0
-Number of files with problems: 32940
+  input-dir                source directory
+  -o, --output <value>     output filename
+  --exclude <file1>        files or folders to exclude during CPG generation (paths relative to <input-dir> or absolute paths)
+  --exclude-regex <value>  a regex specifying files to exclude during CPG generation (paths relative to <input-dir> are matched)
+  --enable-early-schema-checking
+                           enables early schema validation during AST creation (disabled by default)
+  --enable-file-content    add the raw source code to the content field of FILE nodes to allow for method source retrieval via offset fields (disabled by default)
+  --help                   display this help message
+  --include-comments       includes all comments into the CPG
+  --log-problems           enables logging of all parse problems while generating the CPG
+  --log-preprocessor       enables logging of all preprocessor statements while generating the CPG
+  --print-ifdef-only       prints a comma-separated list of all preprocessor ifdef and if statements; does not create a CPG
+  --include <value>        header include paths
+  --with-include-auto-discovery
+                           enables auto discovery of system header include paths
+  --skip-function-bodies   instructs the parser to skip function and method bodies.
+  --with-preprocessed-files
+                           includes *.i files and gives them priority over their unprocessed origin source files.
+  --define <value>         define a name
+  --compilation-database <value>
+                           enables the processing of compilation database files (e.g., compile_commands.json).
+ This allows to automatically extract compiler options, source files, and other build information from the specified database
+ and ensuring consistency with the build configuration.
+ For a cmake based build such a file is generated with the environment variable CMAKE_EXPORT_COMPILE_COMMANDS being present.
+ Clang based build are supported e.g., with https://github.com/rizsotto/Bear
 ```
 
 ## Dealing with Parser problems:
