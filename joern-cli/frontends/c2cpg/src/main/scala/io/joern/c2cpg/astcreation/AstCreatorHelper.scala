@@ -4,7 +4,8 @@ import io.joern.c2cpg.astcreation.C2CpgScope.PendingReference
 import io.joern.c2cpg.passes.FunctionDeclNodePass
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.AstNodeBuilder
-import io.joern.x2cpg.AstNodeBuilder.{closureBindingNode, dependencyNode}
+import io.joern.x2cpg.AstNodeBuilder.closureBindingNode
+import io.joern.x2cpg.AstNodeBuilder.dependencyNode
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.utils.IntervalKeyPool
 import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
@@ -13,7 +14,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
 import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
-import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.c.ICASTArrayDesignator
 import org.eclipse.cdt.core.dom.ast.c.ICASTDesignatedInitializer
@@ -28,7 +28,8 @@ import scala.util.Try
 
 trait AstCreatorHelper { this: AstCreator =>
 
-  private val fileLocalNameKeyPool = new IntervalKeyPool(first = 0, last = Long.MaxValue)
+  private val fileLocalNameKeyPool         = new IntervalKeyPool(first = 0, last = Long.MaxValue)
+  private val file2OffsetTable: Array[Int] = genFileOffsetTable()
 
   // We use our own call ast creation function since the version in x2cpg treats
   // base as receiver if no receiver is given which does not fit the needs of this
@@ -85,21 +86,15 @@ trait AstCreatorHelper { this: AstCreator =>
   protected def nullSafeFileLocationLast(node: IASTNode): Option[IASTFileLocation] =
     Option(cdtAst.flattenLocationsToFile(node.getNodeLocations.lastOption.toArray)).map(_.asFileLocation())
 
-  protected def offsetToColumn(node: IASTNode, offset: Int): Int = {
-    val table           = fileOffsetTable(node)
-    val index           = java.util.Arrays.binarySearch(table, offset)
+  protected def offsetToColumn(offset: Int): Int = {
+    val index           = java.util.Arrays.binarySearch(file2OffsetTable, offset)
     val tableIndex      = if index < 0 then -(index + 1) else index + 1
-    val lineStartOffset = if tableIndex == 0 then 0 else table(tableIndex - 1)
+    val lineStartOffset = if tableIndex == 0 then 0 else file2OffsetTable(tableIndex - 1)
     offset - lineStartOffset + 1
   }
 
-  private def fileOffsetTable(node: IASTNode): Array[Int] = {
-    val path = SourceFiles.toAbsolutePath(fileName(node), config.inputPath)
-    file2OffsetTable.computeIfAbsent(path, _ => genFileOffsetTable())
-  }
-
   private def genFileOffsetTable(): Array[Int] = {
-    cdtAst.getRawSignature.linesWithSeparators.mkString.toCharArray.zipWithIndex.collect { case ('\n', idx) => idx + 1 }
+    cdtAst.getRawSignature.toCharArray.zipWithIndex.collect { case ('\n', idx) => idx + 1 }
   }
 
   protected def fileName(node: IASTNode): String = {
