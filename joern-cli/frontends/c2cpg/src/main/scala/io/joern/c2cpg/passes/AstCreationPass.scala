@@ -21,7 +21,6 @@ import org.slf4j.LoggerFactory
 
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
 import scala.util.Failure
 import scala.util.Success
@@ -38,12 +37,10 @@ class AstCreationPass(
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
-  private val headerFileFinder                                        = new HeaderFileFinder(config)
-  private val file2OffsetTable: ConcurrentHashMap[String, Array[Int]] = new ConcurrentHashMap()
-
   private val compilationDatabase: mutable.LinkedHashSet[CommandObject] =
     config.compilationDatabase.map(JSONCompilationDatabaseParser.parse).getOrElse(mutable.LinkedHashSet.empty)
 
+  private val headerFileFinder  = new HeaderFileFinder(config)
   private val parser: CdtParser = new CdtParser(config, headerFileFinder, compilationDatabase, global)
 
   override def generateParts(): Array[(Path, ILanguage)] = {
@@ -110,8 +107,7 @@ class AstCreationPass(
           val fileLOC = translationUnit.getRawSignature.linesIterator.size
           report.addReportInfo(relPath, fileLOC, parsed = true)
           Try {
-            val localDiff =
-              new AstCreator(relPath, global, config, translationUnit, headerFileFinder, file2OffsetTable).createAst()
+            val localDiff = new AstCreator(relPath, global, config, translationUnit, headerFileFinder).createAst()
             diffGraph.absorb(localDiff)
           } match {
             case Failure(exception) =>
