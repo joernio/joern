@@ -213,8 +213,9 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       Nil
     }
 
+    val companionObjectAsts = ktClass.getCompanionObjects.asScala.flatMap(astsForClassOrObject(_, None))
     val children = methodAsts ++ List(constructorAst) ++ membersFromPrimaryCtorAsts ++ secondaryConstructorAsts ++
-      _componentNMethodAsts.toList ++ memberAsts ++ annotationAsts ++ modifiers ++ innerTypeDeclAsts
+      _componentNMethodAsts.toList ++ memberAsts ++ annotationAsts ++ modifiers ++ innerTypeDeclAsts ++ companionObjectAsts
     val ast = Ast(typeDecl).withChildren(children)
 
     (List(ctorBindingInfo) ++ bindingsInfo ++ componentNBindingsInfo).foreach(bindingInfoQueue.prepend)
@@ -237,11 +238,10 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     } else {
       ast
     }
-    val companionObjectAsts = ktClass.getCompanionObjects.asScala.flatMap(astsForClassOrObject(_, None))
     methodAstParentStack.pop()
     scope.popScope()
 
-    Seq(finalAst.withChildren(annotations.map(astForAnnotationEntry))) ++ companionObjectAsts
+    Seq(finalAst.withChildren(annotations.map(astForAnnotationEntry)))
   }
 
   private def memberSetCallAst(param: KtParameter, classFullName: String): Ast = {
