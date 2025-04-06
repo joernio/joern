@@ -570,14 +570,12 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
       } else (Seq(), None)
 
     if (pushToScope) scope.popScope()
-    Seq(
-      blockAst(
-        node,
-        localsForCaptures.map(Ast(_)) ++ preStatements
-          .getOrElse(Seq()) ++ allStatementsButLastAsts ++ lastStatementAstWithTail._1 ++ lastStatementAstWithTail._2
-          .map(Seq(_))
-          .getOrElse(Seq())
-      )
-    ) ++ declarationAsts
+    val childrenAsts = localsForCaptures.map(Ast(_)) ++
+      preStatements.getOrElse(Seq()) ++
+      declarationAsts ++
+      allStatementsButLastAsts ++
+      lastStatementAstWithTail._1 ++
+      lastStatementAstWithTail._2.map(Seq(_)).getOrElse(Seq())
+    Seq(blockAst(node, childrenAsts))
   }
 }
