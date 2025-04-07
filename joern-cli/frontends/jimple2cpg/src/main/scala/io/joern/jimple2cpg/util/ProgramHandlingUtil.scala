@@ -240,7 +240,7 @@ object ProgramHandlingUtil {
 
     def packagePath: Option[String]
 
-    /** Copy the class file to its package path relative to [[destDir]]. This will overwrite a class file at the
+    /** Copy the class file to its package path relative to `destDir`. This will overwrite a class file at the
       * destination if it exists.
       *
       * @param destDir
@@ -302,8 +302,8 @@ object ProgramHandlingUtil {
 
   }
 
-  /** Find <pre>.class</pre> files, including those inside archives and copy them to their package path location
-    * relative to [[destDir]]
+  /** Find `.class` files, including those inside archives and copy them to their package path location relative to
+    * `destDir`.
     *
     * @param src
     *   The file/directory to search.
