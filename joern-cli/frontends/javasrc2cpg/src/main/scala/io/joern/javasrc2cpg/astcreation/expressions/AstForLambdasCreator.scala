@@ -77,7 +77,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
       .find { identifier => identifier.name == NameConstants.This || identifier.name == NameConstants.Super }
       .map { _ =>
         val typeFullName = scope.enclosingTypeDecl.fullName
-        Ast(thisNodeForMethod(typeFullName, line(expr), column(expr)))
+        Ast(thisNodeForMethod(expr, typeFullName))
       }
       .toList
 

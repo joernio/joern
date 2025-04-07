@@ -10,7 +10,13 @@ import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.utils.NodeBuilders
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{
+  DispatchTypes,
+  EdgeTypes,
+  EvaluationStrategies,
+  ModifierTypes,
+  Operators
+}
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
@@ -94,7 +100,16 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val primaryCtorMethodNode =
       methodNode(primaryCtor, Defines.ConstructorMethodName, fullName, signature, relativizedPath)
     val ctorThisParam =
-      NodeBuilders.newThisParameterNode(typeFullName = classFullName, dynamicTypeHintFullName = Seq(classFullName))
+      parameterInNode(
+        primaryCtor,
+        Constants.ThisName,
+        Constants.ThisName,
+        index = 0,
+        isVariadic = false,
+        typeFullName = Option(classFullName),
+        dynamicTypeHintFullName = Seq(classFullName),
+        evaluationStrategy = EvaluationStrategies.BY_SHARING
+      )
     scope.addToScope(Constants.ThisName, ctorThisParam)
 
     val constructorParamsAsts = Seq(Ast(ctorThisParam)) ++ withIndex(constructorParams) { (p, idx) =>
@@ -179,7 +194,11 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       secondaryCtorAsts(ktClass.getSecondaryConstructors.asScala.toSeq, classFullName, primaryCtorCall)
     val _componentNMethodAsts = ktClass match {
       case typedExpr: KtClass if typedExpr.isData =>
-        componentNMethodAsts(typeDecl, ktClass.getPrimaryConstructor.getValueParameters.asScala.toSeq)
+        componentNMethodAsts(
+          ktClass.getPrimaryConstructor,
+          typeDecl,
+          ktClass.getPrimaryConstructor.getValueParameters.asScala.toSeq
+        )
       case _ => Seq()
     }
     val componentNBindingsInfo = _componentNMethodAsts.flatMap(_.root.collectAll[NewMethod]).map { methodNode =>
@@ -418,7 +437,11 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     else astsForDestructuringDeclarationWithVarRHS(expr)
   }
 
-  private def componentNMethodAsts(typeDecl: NewTypeDecl, parameters: Seq[KtParameter]): Seq[Ast] = {
+  private def componentNMethodAsts(
+    originNode: KtPrimaryConstructor,
+    typeDecl: NewTypeDecl,
+    parameters: Seq[KtParameter]
+  ): Seq[Ast] = {
     parameters.zipWithIndex.map { case (valueParam, idx) =>
       val typeFullName = registerType(
         bindingUtils
@@ -428,7 +451,16 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       )
 
       val thisParam =
-        NodeBuilders.newThisParameterNode(typeFullName = typeDecl.fullName, dynamicTypeHintFullName = Seq())
+        parameterInNode(
+          originNode,
+          Constants.ThisName,
+          Constants.ThisName,
+          index = 0,
+          isVariadic = false,
+          typeFullName = Option(typeDecl.fullName),
+          dynamicTypeHintFullName = Seq(),
+          evaluationStrategy = EvaluationStrategies.BY_SHARING
+        )
       val thisIdentifier =
         identifierNode(valueParam, Constants.ThisName, Constants.ThisName, typeDecl.fullName, Seq(typeDecl.fullName))
       val thisAst = Ast(thisIdentifier).withRefEdge(thisIdentifier, thisParam)
@@ -481,7 +513,16 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       scope.pushNewScope(secondaryCtorMethodNode)
 
       val ctorThisParam =
-        NodeBuilders.newThisParameterNode(typeFullName = classFullName, dynamicTypeHintFullName = Seq(classFullName))
+        parameterInNode(
+          ctor,
+          Constants.ThisName,
+          Constants.ThisName,
+          index = 0,
+          isVariadic = false,
+          typeFullName = Option(classFullName),
+          dynamicTypeHintFullName = Seq(classFullName),
+          evaluationStrategy = EvaluationStrategies.BY_SHARING
+        )
       scope.addToScope(Constants.ThisName, ctorThisParam)
 
       val constructorParamsAsts = Seq(Ast(ctorThisParam)) ++

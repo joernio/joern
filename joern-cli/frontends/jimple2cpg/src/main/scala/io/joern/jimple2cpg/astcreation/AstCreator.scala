@@ -18,6 +18,7 @@ import soot.{Unit as SUnit, Local as _, *}
 
 import scala.collection.immutable.Seq
 import scala.collection.mutable
+import scala.jdk.CollectionConverters.*
 import scala.util.Try
 
 class AstCreator(
@@ -173,10 +174,15 @@ class AstCreator(
             .typeFullName(parentType)
             .dynamicTypeHintFullName(Seq(parentType))
         case _: NewMethodParameterIn =>
-          NodeBuilders.newThisParameterNode(
-            typeFullName = parentType,
+          parameterInNode(
+            Try(method.tryResolve()).getOrElse(new SootMethod("", Nil.asJava, null)),
+            "this",
+            "this",
+            index = 0,
+            isVariadic = false,
+            typeFullName = Option(parentType),
             dynamicTypeHintFullName = Seq(parentType),
-            line = line(Try(method.tryResolve()).getOrElse(null))
+            evaluationStrategy = EvaluationStrategies.BY_SHARING
           )
         case x => x
       })

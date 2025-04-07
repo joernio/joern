@@ -178,7 +178,8 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     index: Int,
     isVariadic: Boolean,
     evaluationStrategy: String,
-    typeFullName: Option[String] = None
+    typeFullName: Option[String] = None,
+    dynamicTypeHintFullName: Seq[String] = Nil
   ): NewMethodParameterIn = {
     NewMethodParameterIn()
       .name(name)
@@ -190,6 +191,7 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .lineNumber(line(node))
       .columnNumber(column(node))
       .typeFullName(typeFullName.getOrElse("ANY"))
+      .dynamicTypeHintFullName(dynamicTypeHintFullName)
   }
 
   def callNode(node: Node, code: String, name: String, methodFullName: String, dispatchType: String): NewCall =

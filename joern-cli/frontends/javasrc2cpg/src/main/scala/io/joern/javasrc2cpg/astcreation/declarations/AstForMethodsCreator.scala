@@ -99,7 +99,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
 
     val thisNode = Option.when(!methodDeclaration.isStatic) {
       val typeFullName = scope.enclosingTypeDecl.fullName
-      thisNodeForMethod(typeFullName, line(methodDeclaration), column(methodDeclaration))
+      thisNodeForMethod(methodDeclaration, typeFullName)
     }
     val thisAst = thisNode.map(Ast(_)).toList
 
@@ -161,7 +161,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
 
     val modifier = modifierNode(parameter, ModifierTypes.PUBLIC)
 
-    val thisParameter = thisNodeForMethod(Option(recordTypeFullName), line(parameter), column(parameter))
+    val thisParameter = thisNodeForMethod(parameter, Option(recordTypeFullName))
 
     val thisIdentifier    = identifierNode(parameter, thisParameter.name, thisParameter.code, recordTypeFullName)
     val thisIdentifierAst = Ast(thisIdentifier).withRefEdge(thisIdentifier, thisParameter)
@@ -297,7 +297,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     constructorNode.fullName(fullName)
     constructorNode.signature(signature)
 
-    val thisNode = thisNodeForMethod(typeFullName, lineNumber = None, columnNumber = None)
+    val thisNode = thisNodeForMethod(originNode, typeFullName)
     scope.enclosingMethod.foreach(_.addParameter(thisNode, scope.enclosingTypeDecl.get.typeDecl.genericSignature))
     val recordParameterAssignments = parameterAsts
       .flatMap(_.nodes)
@@ -523,7 +523,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
         }
       }
 
-      val thisNode = thisNodeForMethod(typeFullName, line(constructorDeclaration), column(constructorDeclaration))
+      val thisNode = thisNodeForMethod(constructorDeclaration, typeFullName)
       scope.enclosingMethod.get.addParameter(thisNode, scope.enclosingTypeDecl.get.typeDecl.genericSignature)
 
       scope.pushBlockScope()
@@ -709,17 +709,17 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     )
   }
 
-  def thisNodeForMethod(
-    maybeTypeFullName: Option[String],
-    lineNumber: Option[Int],
-    columnNumber: Option[Int]
-  ): NewMethodParameterIn = {
+  def thisNodeForMethod(originNode: Node, maybeTypeFullName: Option[String]): NewMethodParameterIn = {
     val typeFullName = typeInfoCalc.registerType(maybeTypeFullName.getOrElse(defaultTypeFallback()))
-    NodeBuilders.newThisParameterNode(
-      typeFullName = typeFullName,
+    parameterInNode(
+      originNode,
+      NameConstants.This,
+      NameConstants.This,
+      index = 0,
+      isVariadic = false,
+      typeFullName = Option(typeFullName),
       dynamicTypeHintFullName = maybeTypeFullName.toSeq,
-      line = lineNumber,
-      column = columnNumber
+      evaluationStrategy = EvaluationStrategies.BY_SHARING
     )
   }
 }
