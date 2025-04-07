@@ -522,7 +522,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     Ast(node)
   }
 
-  def astsForBlock(
+  def astForBlock(
     expr: KtBlockExpression,
     argIdxMaybe: Option[Int],
     argNameMaybe: Option[String],
@@ -530,7 +530,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     localsForCaptures: List[NewLocal] = List(),
     implicitReturnAroundLastStatement: Boolean = false,
     preStatements: Option[Seq[Ast]] = None
-  ): Seq[Ast] = {
+  ): Ast = {
     val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
     val node =
       withArgumentIndex(
@@ -576,6 +576,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
       allStatementsButLastAsts ++
       lastStatementAstWithTail._1 ++
       lastStatementAstWithTail._2.map(Seq(_)).getOrElse(Seq())
-    Seq(blockAst(node, childrenAsts))
+    blockAst(node, childrenAsts)
   }
 }

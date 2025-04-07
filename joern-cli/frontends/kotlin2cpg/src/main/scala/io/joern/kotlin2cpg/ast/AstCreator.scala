@@ -13,7 +13,6 @@ import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.IntervalKeyPool
-import io.joern.x2cpg.utils.NodeBuilders
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
@@ -268,13 +267,13 @@ class AstCreator(fileWithMeta: KtFileWithMeta, bindingContext: BindingContext, g
         Seq(astForArrayAccess(typedExpr, argIdxMaybe, argNameMaybe, annotations))
       case typedExpr: KtAnonymousInitializer => astsForExpression(typedExpr.getBody, argIdxMaybe)
       case typedExpr: KtBinaryExpression     => astsForBinaryExpr(typedExpr, argIdxMaybe, argNameMaybe, annotations)
-      case typedExpr: KtBlockExpression      => astsForBlock(typedExpr, argIdxMaybe, argNameMaybe)
+      case typedExpr: KtBlockExpression      => Seq(astForBlock(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtBinaryExpressionWithTypeRHS =>
         Seq(astForBinaryExprWithTypeRHS(typedExpr, argIdxMaybe, argNameMaybe, annotations))
       case typedExpr: KtBreakExpression    => Seq(astForBreak(typedExpr))
       case typedExpr: KtCallExpression     => astsForCall(typedExpr, argIdxMaybe, argNameMaybe, annotations)
       case typedExpr: KtConstantExpression => Seq(astForLiteral(typedExpr, argIdxMaybe, argNameMaybe, annotations))
-      case typedExpr: KtClass              => astsForClassOrObject(typedExpr, None, annotations)
+      case typedExpr: KtClass              => Seq(astForClassOrObject(typedExpr, None, annotations))
       case typedExpr: KtClassLiteralExpression =>
         Seq(astForClassLiteral(typedExpr, argIdxMaybe, argNameMaybe, annotations))
       case typedExpr: KtSafeQualifiedExpression =>
@@ -395,9 +394,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, bindingContext: BindingContext, g
     val result =
       try {
         decl match {
-          case c: KtClass                => astsForClassOrObject(c)
-          case o: KtObjectDeclaration    => astsForClassOrObject(o)
-          case n: KtNamedFunction        => astsForMethod(n)
+          case c: KtClass                => Seq(astForClassOrObject(c))
+          case o: KtObjectDeclaration    => Seq(astForClassOrObject(o))
+          case n: KtNamedFunction        => Seq(astForMethod(n))
           case t: KtTypeAlias            => Seq(astForTypeAlias(t))
           case s: KtSecondaryConstructor => Seq(astForUnknown(s, None, None))
           case p: KtProperty             => astsForProperty(p)
