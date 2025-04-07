@@ -29,11 +29,11 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   import AstCreator.AnonymousObjectContext
   import AstCreator.BindingInfo
 
-  def astsForClassOrObject(
+  def astForClassOrObject(
     ktClass: KtClassOrObject,
     ctx: Option[AnonymousObjectContext] = None,
     annotations: Seq[KtAnnotationEntry] = Seq()
-  ): Seq[Ast] = {
+  ): Ast = {
     val className = ctx match {
       case Some(_) => "anonymous_obj"
       case None    => ktClass.getName
@@ -197,8 +197,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val classFunctions = Option(ktClass.getBody)
       .map(_.getFunctions.asScala.collect { case f: KtNamedFunction => f })
       .getOrElse(List())
-    val methodAsts = classFunctions.toSeq.flatMap { classFn =>
-      astsForMethod(classFn, withVirtualModifier = true)
+    val methodAsts = classFunctions.toSeq.map { classFn =>
+      astForMethod(classFn, withVirtualModifier = true)
     }
     val bindingsInfo = methodAsts.flatMap(_.root.collectAll[NewMethod]).map { _methodNode =>
       val node = bindingNode(_methodNode.name, _methodNode.signature, _methodNode.fullName)
@@ -213,8 +213,9 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       Nil
     }
 
+    val companionObjectAsts = ktClass.getCompanionObjects.asScala.map(astForClassOrObject(_, None))
     val children = methodAsts ++ List(constructorAst) ++ membersFromPrimaryCtorAsts ++ secondaryConstructorAsts ++
-      _componentNMethodAsts.toList ++ memberAsts ++ annotationAsts ++ modifiers ++ innerTypeDeclAsts
+      _componentNMethodAsts.toList ++ memberAsts ++ annotationAsts ++ modifiers ++ innerTypeDeclAsts ++ companionObjectAsts
     val ast = Ast(typeDecl).withChildren(children)
 
     (List(ctorBindingInfo) ++ bindingsInfo ++ componentNBindingsInfo).foreach(bindingInfoQueue.prepend)
@@ -237,11 +238,10 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     } else {
       ast
     }
-    val companionObjectAsts = ktClass.getCompanionObjects.asScala.flatMap(astsForClassOrObject(_, None))
     methodAstParentStack.pop()
     scope.popScope()
 
-    Seq(finalAst.withChildren(annotations.map(astForAnnotationEntry))) ++ companionObjectAsts
+    finalAst.withChildren(annotations.map(astForAnnotationEntry))
   }
 
   private def memberSetCallAst(param: KtParameter, classFullName: String): Ast = {
@@ -487,24 +487,23 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       val constructorParamsAsts = Seq(Ast(ctorThisParam)) ++
         withIndex(constructorParams) { (p, idx) => astForParameter(p, idx) }
 
-      val ctorMethodBlockAsts =
+      val ctorMethodBlockAst =
         ctor.getBodyExpression match {
           case b: KtBlockExpression =>
-            astsForBlock(b, None, None, preStatements = Option(primaryCtorCallAst))
+            astForBlock(b, None, None, preStatements = Option(primaryCtorCallAst))
           case null =>
             val node = NewBlock().code(Constants.Empty).typeFullName(TypeConstants.Any)
-            Seq(blockAst(node, primaryCtorCallAst))
+            blockAst(node, primaryCtorCallAst)
         }
       scope.popScope()
 
-      val ctorMethodReturnNode =
-        methodReturnNode(ctor, TypeConstants.Void)
+      val ctorMethodReturnNode = methodReturnNode(ctor, TypeConstants.Void)
 
       // TODO: see if necessary to take the other asts for the ctorMethodBlock
       methodAst(
         secondaryCtorMethodNode,
         constructorParamsAsts,
-        ctorMethodBlockAsts.headOption.getOrElse(Ast(unknownNode(ctor.getBodyExpression, Constants.Empty))),
+        ctorMethodBlockAst,
         ctorMethodReturnNode,
         Seq(modifierNode(ctor, ModifierTypes.CONSTRUCTOR))
       )
@@ -528,8 +527,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val idx     = idxOpt.getOrElse(Random.nextInt())
     val tmpName = s"tmp_obj_$idx"
 
-    val typeDeclAsts = astsForClassOrObject(expr.getObjectDeclaration, Some(ctx))
-    val typeDeclAst  = typeDeclAsts.headOption.getOrElse(Ast(unknownNode(expr.getObjectDeclaration, Constants.Empty)))
+    val typeDeclAst      = astForClassOrObject(expr.getObjectDeclaration, Some(ctx))
     val typeDeclFullName = typeDeclAst.root.get.asInstanceOf[NewTypeDecl].fullName
 
     val localForTmp = localNode(expr, tmpName, tmpName, typeDeclFullName)
@@ -650,9 +648,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
           .map(AnonymousObjectContext(_))
           .getOrElse(AnonymousObjectContext(expr.getContainingKtFile))
 
-      val typeDeclAsts = astsForClassOrObject(typedExpr.getObjectDeclaration, Some(ctx))
-      val typeDeclAst =
-        typeDeclAsts.headOption.getOrElse(Ast(unknownNode(typedExpr.getObjectDeclaration, Constants.Empty)))
+      val typeDeclAst      = astForClassOrObject(typedExpr.getObjectDeclaration, Some(ctx))
       val typeDeclFullName = typeDeclAst.root.get.asInstanceOf[NewTypeDecl].fullName
 
       val node = localNode(expr, expr.getName, expr.getName, typeDeclFullName)

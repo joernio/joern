@@ -522,7 +522,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     Ast(node)
   }
 
-  def astsForBlock(
+  def astForBlock(
     expr: KtBlockExpression,
     argIdxMaybe: Option[Int],
     argNameMaybe: Option[String],
@@ -530,7 +530,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     localsForCaptures: List[NewLocal] = List(),
     implicitReturnAroundLastStatement: Boolean = false,
     preStatements: Option[Seq[Ast]] = None
-  ): Seq[Ast] = {
+  ): Ast = {
     val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
     val node =
       withArgumentIndex(
@@ -570,14 +570,12 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
       } else (Seq(), None)
 
     if (pushToScope) scope.popScope()
-    Seq(
-      blockAst(
-        node,
-        localsForCaptures.map(Ast(_)) ++ preStatements
-          .getOrElse(Seq()) ++ allStatementsButLastAsts ++ lastStatementAstWithTail._1 ++ lastStatementAstWithTail._2
-          .map(Seq(_))
-          .getOrElse(Seq())
-      )
-    ) ++ declarationAsts
+    val childrenAsts = localsForCaptures.map(Ast(_)) ++
+      preStatements.getOrElse(Seq()) ++
+      declarationAsts ++
+      allStatementsButLastAsts ++
+      lastStatementAstWithTail._1 ++
+      lastStatementAstWithTail._2.map(Seq(_)).getOrElse(Seq())
+    blockAst(node, childrenAsts)
   }
 }

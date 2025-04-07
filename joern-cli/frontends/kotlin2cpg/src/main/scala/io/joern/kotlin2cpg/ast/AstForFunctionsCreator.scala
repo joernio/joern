@@ -67,7 +67,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  def astsForMethod(ktFn: KtNamedFunction, withVirtualModifier: Boolean = false): Seq[Ast] = {
+  def astForMethod(ktFn: KtNamedFunction, withVirtualModifier: Boolean = false): Ast = {
     val funcDesc = bindingUtils.getFunctionDesc(ktFn)
     val descFullName = nameRenderer
       .descFullName(funcDesc)
@@ -121,8 +121,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       withIndex(ktFn.getValueParameters.asScala.toSeq) { (p, idx) =>
         astForParameter(p, valueParamStartIndex + idx - 1)
       }
-    val bodyAsts = Option(ktFn.getBodyBlockExpression) match {
-      case Some(bodyBlockExpression) => astsForBlock(bodyBlockExpression, None, None)
+    val bodyAst = Option(ktFn.getBodyBlockExpression) match {
+      case Some(bodyBlockExpression) => astForBlock(bodyBlockExpression, None, None)
       case None =>
         Option(ktFn.getBodyExpression)
           .map { expr =>
@@ -135,18 +135,16 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
                 val returnAst_           = returnAst(returnNode(expr, Constants.RetCode), Seq(lastStatementAst))
                 (allStatementsButLast ++ Seq(returnAst_)).toList
               } else List()
-            Seq(blockAst(bodyBlock, blockChildAsts))
+            blockAst(bodyBlock, blockChildAsts)
           }
           .getOrElse {
             val bodyBlock = blockNode(ktFn, "<empty>", TypeConstants.Any)
-            Seq(blockAst(bodyBlock, List[Ast]()))
+            blockAst(bodyBlock, List[Ast]())
           }
     }
     methodAstParentStack.pop()
     scope.popScope()
 
-    val bodyAst           = bodyAsts.headOption.getOrElse(Ast(unknownNode(ktFn, Constants.Empty)))
-    val otherBodyAsts     = bodyAsts.drop(1)
     val explicitTypeName  = Option(ktFn.getTypeReference).map(_.getText).getOrElse(TypeConstants.Any)
     val typeFullName      = registerType(nameRenderer.typeFullName(funcDesc.getReturnType).getOrElse(explicitTypeName))
     val _methodReturnNode = methodReturnNode(ktFn, typeFullName)
@@ -177,11 +175,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     Ast.storeInDiffGraph(functionTypeAndTypeDeclAst, diffGraph)
 
     val annotationEntries = ktFn.getAnnotationEntries.asScala.map(astForAnnotationEntry).toSeq
-    Seq(
-      methodAst(_methodNode, thisParameterAsts ++ methodParametersAsts, bodyAst, _methodReturnNode, modifiers)
-        .withChildren(otherBodyAsts)
-        .withChildren(annotationEntries)
-    )
+    methodAst(_methodNode, thisParameterAsts ++ methodParametersAsts, bodyAst, _methodReturnNode, modifiers)
+      .withChildren(annotationEntries)
   }
 
   private def astsForDestructuring(param: KtParameter): Seq[Ast] = {
@@ -316,26 +311,25 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       withIndex(fn.getValueParameters.asScala.toSeq) { (p, idx) =>
         astForParameter(p, idx)
       }
-    val bodyAsts = Option(fn.getBodyBlockExpression) match {
+    val bodyAst = Option(fn.getBodyBlockExpression) match {
       case Some(bodyBlockExpression) =>
-        astsForBlock(bodyBlockExpression, None, None, localsForCaptures = localsForCaptured)
+        astForBlock(bodyBlockExpression, None, None, localsForCaptures = localsForCaptured)
       case None =>
         Option(fn.getBodyExpression)
           .map { expr =>
             val bodyBlock  = blockNode(expr, expr.getText, TypeConstants.Any)
             val returnAst_ = returnAst(returnNode(expr, Constants.RetCode), astsForExpression(expr, Some(1)))
-            Seq(blockAst(bodyBlock, localsForCaptured.map(Ast(_)) ++ List(returnAst_)))
+            blockAst(bodyBlock, localsForCaptured.map(Ast(_)) ++ List(returnAst_))
           }
           .getOrElse {
             val bodyBlock = blockNode(fn, "<empty>", TypeConstants.Any)
-            Seq(blockAst(bodyBlock, List[Ast]()))
+            blockAst(bodyBlock, List[Ast]())
           }
     }
 
     val returnTypeFullName     = TypeConstants.JavaLangObject
     val lambdaTypeDeclFullName = fullName.split(":").head
 
-    val bodyAst = bodyAsts.headOption.getOrElse(Ast(unknownNode(fn, Constants.Empty)))
     val lambdaMethodAst = methodAst(
       lambdaMethodNode,
       parametersAsts,
@@ -447,9 +441,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val lastChildNotReturnExpression = !expr.getBodyExpression.getLastChild.isInstanceOf[KtReturnExpression]
     val needsReturnExpression        = lastChildNotReturnExpression
-    val bodyAsts = Option(expr.getBodyExpression)
+    val bodyAst = Option(expr.getBodyExpression)
       .map(
-        astsForBlock(
+        astForBlock(
           _,
           None,
           None,
@@ -459,20 +453,12 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
           Some(destructedParamAsts.toSeq)
         )
       )
-      .getOrElse(Seq(Ast(NewBlock())))
+      .getOrElse(Ast(blockNode(expr)))
 
     val returnTypeFullName = registerType(
       nameRenderer.typeFullName(funcDesc.getReturnType).getOrElse(TypeConstants.JavaLangObject)
     )
     val lambdaTypeDeclFullName = fullName.split(":").head
-
-    val (bodyAst, nestedLambdaDecls) = bodyAsts.toList match {
-      case body :: nestedLambdaDecls =>
-        if (nestedLambdaDecls.exists(_.root.exists(x => !x.isInstanceOf[NewMethod])))
-          logger.warn("Detected non-method related AST nodes under lambda expression. This is unexpected.")
-        body -> nestedLambdaDecls
-      case Nil => Ast(unknownNode(expr, Constants.Empty)) -> Nil
-    }
     val lambdaMethodAst = methodAst(
       lambdaMethodNode,
       paramAsts.toSeq,
@@ -506,9 +492,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     }
     closureBindingDefs.foreach(closureBindingDefQueue.prepend)
     lambdaAstQueue.prepend(lambdaMethodAst)
-    nestedLambdaDecls.foreach(lambdaAstQueue.prepend)
-    Ast(_methodRefNode)
-      .withChildren(annotations.map(astForAnnotationEntry))
+    Ast(_methodRefNode).withChildren(annotations.map(astForAnnotationEntry))
   }
 
   private def createImplicitParamNode(
