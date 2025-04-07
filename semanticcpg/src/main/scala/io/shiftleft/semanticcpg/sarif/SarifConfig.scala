@@ -25,8 +25,7 @@ import java.net.URI
   * @param resultConverter
   *   A transformer class to map from Finding nodes to a SARIF `Result`.
   * @param customSerializers
-  *   Additional JSON serializers for any additional properties for [[io.shiftleft.semanticcpg.sarif.Sarif]] derived
-  *   classes.
+  *   Additional JSON serializers for any additional properties for `Sarif` derived classes.
   */
 case class SarifConfig(
   toolName: String = "Joern",
