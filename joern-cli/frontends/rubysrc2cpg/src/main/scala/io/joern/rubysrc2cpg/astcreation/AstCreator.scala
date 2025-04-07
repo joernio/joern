@@ -4,10 +4,9 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, NamespaceScope, RubyProgramSummary, RubyScope}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
-import io.joern.x2cpg.utils.NodeBuilders.newThisParameterNode
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, ModifierTypes}
+import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, EvaluationStrategies, ModifierTypes}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -100,12 +99,14 @@ class AstCreator(
       signature = None,
       fileName = relativeFileName
     )
-    val thisParameterNode = newThisParameterNode(
+    val thisParameterNode = parameterInNode(
+      rootNode,
       name = Defines.Self,
       code = Defines.Self,
-      typeFullName = Defines.Any,
-      line = methodNode_.lineNumber,
-      column = methodNode_.columnNumber
+      index = 0,
+      isVariadic = false,
+      typeFullName = Option(Defines.Any),
+      evaluationStrategy = EvaluationStrategies.BY_SHARING
     )
     val thisParameterAst = Ast(thisParameterNode)
     scope.addToScope(Defines.Self, thisParameterNode)

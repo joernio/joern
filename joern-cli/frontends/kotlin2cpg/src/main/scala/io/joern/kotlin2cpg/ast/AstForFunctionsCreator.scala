@@ -96,9 +96,15 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
 
       registerType(typeDeclFullName)
 
-      val thisParam = NodeBuilders.newThisParameterNode(
-        typeFullName = typeDeclFullName,
-        dynamicTypeHintFullName = Seq(typeDeclFullName)
+      val thisParam = parameterInNode(
+        ktFn,
+        Constants.ThisName,
+        Constants.ThisName,
+        index = 0,
+        isVariadic = false,
+        typeFullName = Option(typeDeclFullName),
+        dynamicTypeHintFullName = Seq(typeDeclFullName),
+        evaluationStrategy = EvaluationStrategies.BY_SHARING
       )
       if (isExtensionMethod) {
         thisParam.order(1)

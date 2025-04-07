@@ -3,7 +3,6 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{ConstructorScope, MethodScope}
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.x2cpg.utils.NodeBuilders.newThisParameterNode
 import io.joern.x2cpg.{Ast, AstEdge, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{
@@ -77,12 +76,14 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     if (isConstructor) scope.pushNewScope(ConstructorScope(fullName, this.procParamGen.fresh))
     else scope.pushNewScope(MethodScope(fullName, this.procParamGen.fresh))
 
-    val thisParameterNode = newThisParameterNode(
+    val thisParameterNode = parameterInNode(
+      node,
       name = Defines.Self,
       code = Defines.Self,
-      typeFullName = scope.surroundingTypeFullName.getOrElse(Defines.Any),
-      line = method.lineNumber,
-      column = method.columnNumber
+      index = 0,
+      isVariadic = false,
+      typeFullName = Option(scope.surroundingTypeFullName.getOrElse(Defines.Any)),
+      evaluationStrategy = EvaluationStrategies.BY_SHARING
     )
     val thisParameterAst = Ast(thisParameterNode)
     scope.addToScope(Defines.Self, thisParameterNode)
@@ -432,12 +433,14 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           case None     => Defines.Any
         }
 
-        val thisNode = newThisParameterNode(
+        val thisNode = parameterInNode(
+          node,
           name = Defines.Self,
           code = thisParamCode,
-          typeFullName = thisNodeTypeFullName,
-          line = method.lineNumber,
-          column = method.columnNumber
+          index = 0,
+          isVariadic = false,
+          typeFullName = Option(thisNodeTypeFullName),
+          evaluationStrategy = EvaluationStrategies.BY_SHARING
         )
         val thisParameterAst = Ast(thisNode)
         scope.addToScope(Defines.Self, thisNode)
