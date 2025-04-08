@@ -283,14 +283,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
 
     fieldAccessAst(
+      fieldNode,
+      fieldNode,
       base = Ast(baseNode),
       code = s"${baseNode.code}.${field.name}",
-      lineNo = fieldNode.lineNumber,
-      columnNo = fieldNode.columnNumber,
       fieldName = field.name,
-      fieldTypeFullName = field.typeFullName,
-      fieldLineNo = fieldNode.lineNumber,
-      fieldColumnNo = fieldNode.columnNumber
+      fieldTypeFullName = field.typeFullName
     ) :: Nil
   }
 
@@ -596,16 +594,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     if (isGetter) {
       astForMemberAccessGetterExpression(byPropertyName.get, baseAst, baseTypeFullName, accessExpr)
     } else {
-      fieldAccessAst(
-        baseAst,
-        code(accessExpr),
-        line(accessExpr),
-        column(accessExpr),
-        fieldIdentifierName,
-        typeFullName,
-        line(accessExpr),
-        column(accessExpr)
-      ) :: Nil
+      fieldAccessAst(accessExpr, accessExpr, baseAst, code(accessExpr), fieldIdentifierName, typeFullName) :: Nil
     }
   }
 

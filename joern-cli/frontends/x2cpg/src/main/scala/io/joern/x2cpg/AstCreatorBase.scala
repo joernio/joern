@@ -2,9 +2,15 @@ package io.joern.x2cpg
 
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.utils.IntervalKeyPool
-import io.joern.x2cpg.utils.NodeBuilders.{newFieldIdentifierNode, newOperatorCallNode}
 import io.shiftleft.semanticcpg.utils.FileUtil.*
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Cpg, DiffGraphBuilder, ModifierTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{
+  ControlStructureTypes,
+  Cpg,
+  DiffGraphBuilder,
+  DispatchTypes,
+  ModifierTypes,
+  Operators
+}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
@@ -337,18 +343,24 @@ abstract class AstCreatorBase[Node, NodeProcessor](filename: String)(implicit wi
   }
 
   def fieldAccessAst(
+    originNode: Node,
+    fieldIdentifierOrigin: Node,
     base: Ast,
     code: String,
-    lineNo: Option[Int],
-    columnNo: Option[Int],
     fieldName: String,
-    fieldTypeFullName: String,
-    fieldLineNo: Option[Int],
-    fieldColumnNo: Option[Int]
+    fieldTypeFullName: String
   ): Ast = {
-    val callNode = newOperatorCallNode(Operators.fieldAccess, code, Some(fieldTypeFullName), lineNo, columnNo)
-    val fieldIdentifierNode = newFieldIdentifierNode(fieldName, fieldLineNo, fieldColumnNo)
-    callAst(callNode, Seq(base, Ast(fieldIdentifierNode)))
+    val callNode_ = callNode(
+      originNode,
+      code,
+      Operators.fieldAccess,
+      Operators.fieldAccess,
+      DispatchTypes.STATIC_DISPATCH,
+      None,
+      Some(fieldTypeFullName)
+    )
+    val fieldIdentifierNode_ = fieldIdentifierNode(fieldIdentifierOrigin, fieldName, fieldName)
+    callAst(callNode_, Seq(base, Ast(fieldIdentifierNode_)))
   }
 
   def withIndex[T, X](nodes: Seq[T])(f: (T, Int) => X): Seq[X] =

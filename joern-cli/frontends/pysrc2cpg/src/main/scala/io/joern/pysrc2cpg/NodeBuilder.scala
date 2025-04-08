@@ -5,7 +5,6 @@ import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants.builtinPrefix
 import io.joern.pythonparser.ast
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants
-import io.joern.x2cpg.utils.NodeBuilders
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, nodes}
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 

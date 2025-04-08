@@ -5,7 +5,6 @@ import io.joern.jimple2cpg.astcreation.expressions.AstForExpressionsCreator
 import io.joern.jimple2cpg.astcreation.statements.AstForStatementsCreator
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
-import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.*
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*

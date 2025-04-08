@@ -18,8 +18,6 @@ import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, composeMethodLikeS
 import io.joern.javasrc2cpg.util.{BindingTable, BindingTableAdapterForLambdas, LambdaBindingInfo, NameConstants}
 import io.joern.x2cpg.AstNodeBuilder.{bindingNode, closureBindingNode}
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
-import io.joern.x2cpg.utils.{IntervalKeyPool, NodeBuilders}
-import io.joern.x2cpg.utils.NodeBuilders.*
 import io.joern.x2cpg.{Ast, Defines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn.PropertyDefaults as ParameterDefaults

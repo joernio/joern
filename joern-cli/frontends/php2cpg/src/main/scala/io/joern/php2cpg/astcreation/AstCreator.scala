@@ -9,7 +9,6 @@ import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.Defines.{StaticInitMethodName, UnresolvedNamespace, UnresolvedSignature}
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.utils.IntervalKeyPool
-import io.joern.x2cpg.utils.NodeBuilders.*
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -910,7 +909,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
       val selfIdentifier = {
         val name = "self"
         val typ  = scope.getEnclosingTypeDeclTypeName
-        newIdentifierNode(name, typ.getOrElse(Defines.Any), typ.toList, memberNode.lineNumber).code(name)
+        identifierNode(originNode, name, name, typ.getOrElse(Defines.Any), typ.toList)
       }
       val fieldIdentifier = fieldIdentifierNode(originNode, memberNode.name, memberNode.name)
       val code            = s"self::${memberNode.code.replaceAll("(static|case|const) ", "")}"

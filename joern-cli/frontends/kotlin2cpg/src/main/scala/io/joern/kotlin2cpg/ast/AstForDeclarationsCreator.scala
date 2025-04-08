@@ -9,7 +9,6 @@ import io.joern.x2cpg.AstNodeBuilder.bindingNode
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.ValidationMode
-import io.joern.x2cpg.utils.NodeBuilders
 import io.shiftleft.codepropertygraph.generated.{
   DispatchTypes,
   EdgeTypes,
