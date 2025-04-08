@@ -186,7 +186,7 @@ object GradleDependencies {
     val newPath           = aar.toString.replaceFirst(aarFileExtension + "$", "jar")
     val aarUnzipDirSuffix = ".unzipped"
     val outDir            = Paths.get(aar.toString + aarUnzipDirSuffix)
-    aar.unzipTo(outDir, _.getName == jarInsideAarFileName)
+    aar.unzipTo(outDir)
     val outFile = Paths.get(newPath)
     val classesJarEntries =
       Files
@@ -197,7 +197,7 @@ object GradleDependencies {
         .filter(_.fileName == jarInsideAarFileName)
         .toList
     if (classesJarEntries.size != 1) {
-      logger.warn(s"Found aar file without `classes.jar` inside at path $aar")
+      logger.debug(s"Found aar file without `classes.jar` inside at path $aar")
       FileUtil.delete(outDir)
       None
     } else {
