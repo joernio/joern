@@ -226,9 +226,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           param
         case Identifier =>
           // Handle types declared as `credentials: { username: string; password: string; }`
-          val tpe           = typeFor(nodeInfo)
-          var typeFullName  = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
-          val possibleTypes = Seq(tpe)
+          val tpe          = typeFor(nodeInfo)
+          var typeFullName = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
           val possibleType = Try(createBabelNodeInfo(nodeInfo.json("typeAnnotation")("typeAnnotation")))
             .map(x =>
               x.node match {
