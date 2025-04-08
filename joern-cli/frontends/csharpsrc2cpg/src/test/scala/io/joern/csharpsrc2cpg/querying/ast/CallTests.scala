@@ -196,4 +196,49 @@ class CallTests extends CSharpCode2CpgFixture {
     }
   }
 
+  "call expression statements with surrounding comments" should {
+    val cpg = code("""
+        |/* Hey! */
+        |System.Console.WriteLine("Foo");
+        |// Hey2!
+        |System.Console.WriteLine("Bar");
+        |System.Console.WriteLine(0);
+        |// Hey3!
+        |
+        |System.Console.WriteLine(1); // Hey4!
+        |""".stripMargin)
+
+    "have correct code for call with block comment above it" in {
+      cpg.call.nameExact("WriteLine").code.headOption shouldBe Some("System.Console.WriteLine(\"Foo\")")
+    }
+
+    "have correct code for call with line comment above it" in {
+      cpg.literal("\"Bar\"").inCall.nameExact("WriteLine").code.headOption shouldBe Some(
+        "System.Console.WriteLine(\"Bar\")"
+      )
+    }
+
+    "have correct code for call with line comment below it" in {
+      cpg.literal("0").inCall.nameExact("WriteLine").code.headOption shouldBe Some("System.Console.WriteLine(0)")
+    }
+
+    "have correct code for call with line comment immediately after it (same-line)" in {
+      cpg.literal("1").inCall.nameExact("WriteLine").code.headOption shouldBe Some("System.Console.WriteLine(1)")
+    }
+  }
+
+  "call expression split into multiple statements" should {
+    val cpg = code("""
+        |System.
+        |  Code.
+        |    WriteLine("Foo");
+        |""".stripMargin)
+
+    "have correct code" in {
+      cpg.call.nameExact("WriteLine").code.headOption shouldBe Some("""System.
+        |  Code.
+        |    WriteLine("Foo")""".stripMargin)
+    }
+  }
+
 }

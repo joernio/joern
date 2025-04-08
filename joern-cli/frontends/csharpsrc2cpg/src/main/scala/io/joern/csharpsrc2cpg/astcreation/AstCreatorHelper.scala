@@ -2,7 +2,7 @@ package io.joern.csharpsrc2cpg.astcreation
 
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetJsonAst, DotNetNodeInfo, ParserKeys}
-import io.joern.csharpsrc2cpg.utils.Utils.{withoutSignature}
+import io.joern.csharpsrc2cpg.utils.Utils.withoutSignature
 import io.joern.csharpsrc2cpg.{CSharpDefines, Constants, astcreation}
 import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
@@ -208,12 +208,8 @@ object AstCreatorHelper {
     val lnEnd    = metaData(ParserKeys.LineEnd).numOpt.map(_.toInt)
     val cnEnd    = metaData(ParserKeys.ColumnEnd).numOpt.map(_.toInt)
     val node     = nodeType(metaData, relativeFileName)
-    val c = node.toString match
-      case "Attribute" =>
-        metaData(ParserKeys.Code).strOpt.map(x => x.takeWhile(x => x != '\n')).getOrElse("<empty>").strip()
-      case _ =>
-        metaData(ParserKeys.Code).strOpt.map(x => x.takeWhile(x => x != '\n' && x != '{')).getOrElse("<empty>").strip()
-    DotNetNodeInfo(node, json, c, ln, cn, lnEnd, cnEnd)
+    val code     = metaData(ParserKeys.Code).strOpt.getOrElse("<empty>").strip()
+    DotNetNodeInfo(node, json, code, ln, cn, lnEnd, cnEnd)
   }
 
   private def nodeType(node: Value, relativeFileName: Option[String] = None): DotNetParserNode =

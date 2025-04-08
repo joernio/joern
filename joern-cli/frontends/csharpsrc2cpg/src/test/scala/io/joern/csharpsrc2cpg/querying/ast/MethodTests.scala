@@ -16,8 +16,11 @@ class MethodTests extends CSharpCode2CpgFixture {
       x.fullName shouldBe "HelloWorld.Program.Main:System.Void(System.String[])"
       x.signature shouldBe "System.Void(System.String[])"
       x.filename shouldBe "Program.cs"
-      x.code shouldBe "static void Main(string[] args)"
-
+      x.code shouldBe
+        """static void Main(string[] args)
+          |    {
+          |      Console.WriteLine("Hello, world!");
+          |    }""".stripMargin
       x.typeDecl match
         case Some(typeDecl) => typeDecl.name shouldBe "Program"
         case None           => fail("No TYPE_DECL parent found!")

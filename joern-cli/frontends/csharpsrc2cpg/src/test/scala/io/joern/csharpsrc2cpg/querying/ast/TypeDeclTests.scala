@@ -1,11 +1,11 @@
 package io.joern.csharpsrc2cpg.querying.ast
 
-import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
-import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.joern.csharpsrc2cpg.astcreation.BuiltinTypes
 import io.joern.csharpsrc2cpg.astcreation.BuiltinTypes.DotNetTypeMap
+import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
 import io.joern.x2cpg.Defines
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
+import io.shiftleft.semanticcpg.language.*
 
 class TypeDeclTests extends CSharpCode2CpgFixture {
 
@@ -14,7 +14,7 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
 
     "generate a type declaration with the correct properties" in {
       val x = cpg.typeDecl.nameExact("Container").head
-      x.code shouldBe "public class Container"
+      x.code shouldBe "public class Container {  }"
       x.fullName shouldBe "Container"
       x.filename shouldBe "Container.cs"
       x.aliasTypeFullName shouldBe None
@@ -39,7 +39,7 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
 
     "generate a type declaration with the correct properties" in {
       val x = cpg.typeDecl.nameExact("SampleClass").head
-      x.code shouldBe "private class SampleClass"
+      x.code shouldBe "private class SampleClass { }"
       x.fullName shouldBe "SampleNamespace.SampleClass"
       x.filename shouldBe "SampleClass.cs"
       x.aliasTypeFullName shouldBe None
@@ -258,7 +258,11 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
       inside(cpg.typeDecl.name("ISampleInterface").headOption) {
         case Some(typeDecl) =>
           typeDecl.fullName shouldBe "Foo.ISampleInterface"
-          typeDecl.code shouldBe "interface ISampleInterface"
+          typeDecl.code shouldBe
+            """interface ISampleInterface
+              | {
+              |     void SampleMethod();
+              | }""".stripMargin
         case None => fail("No interface type declaration node found!")
       }
     }
