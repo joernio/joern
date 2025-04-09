@@ -120,6 +120,19 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
     )
   }
 
+  private def astsForFile(file: BabelNodeInfo): List[Ast] = astsForProgram(createBabelNodeInfo(file.json("program")))
+
+  private def astsForProgram(program: BabelNodeInfo): List[Ast] = createBlockStatementAsts(program.json("body"))
+
+  protected def astForNodeWithFunctionReferenceAndCall(json: Value): Ast = {
+    val nodeInfo = createBabelNodeInfo(json)
+    nodeInfo.node match {
+      case _: FunctionLike =>
+        astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
+      case _ => astForNode(json)
+    }
+  }
+
   protected def astForNode(json: Value): Ast = {
     val nodeInfo = createBabelNodeInfo(json)
     nodeInfo.node match {
@@ -218,6 +231,8 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
     }
   }
 
+  protected def astForNodes(jsons: List[Value]): List[Ast] = jsons.map(astForNodeWithFunctionReference)
+
   protected def astForNodeWithFunctionReference(json: Value): Ast = {
     val nodeInfo = createBabelNodeInfo(json)
     nodeInfo.node match {
@@ -226,33 +241,11 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
     }
   }
 
-  protected def astForNodeWithFunctionReferenceAndCall(json: Value): Ast = {
-    val nodeInfo = createBabelNodeInfo(json)
-    nodeInfo.node match {
-      case _: FunctionLike =>
-        astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
-      case _ => astForNode(json)
-    }
-  }
-
-  protected def astForNodes(jsons: List[Value]): List[Ast] = jsons.map(astForNodeWithFunctionReference)
-
-  private def astsForFile(file: BabelNodeInfo): List[Ast] = astsForProgram(createBabelNodeInfo(file.json("program")))
-
-  private def astsForProgram(program: BabelNodeInfo): List[Ast] = createBlockStatementAsts(program.json("body"))
-
   protected def line(node: BabelNodeInfo): Option[Int]      = node.lineNumber
   protected def column(node: BabelNodeInfo): Option[Int]    = node.columnNumber
   protected def lineEnd(node: BabelNodeInfo): Option[Int]   = node.lineNumberEnd
   protected def columnEnd(node: BabelNodeInfo): Option[Int] = node.columnNumberEnd
   protected def code(node: BabelNodeInfo): String           = node.code
-
-  protected def nodeOffsets(node: Value): Option[(Int, Int)] = {
-    for {
-      startOffset <- start(node)
-      endOffset   <- end(node)
-    } yield (math.max(startOffset, 0), math.min(endOffset, parserResult.fileContent.length))
-  }
 
   override protected def offset(node: BabelNodeInfo): Option[(Int, Int)] = {
     Option
@@ -260,5 +253,12 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
         nodeOffsets(node.json)
       }
       .flatten
+  }
+
+  protected def nodeOffsets(node: Value): Option[(Int, Int)] = {
+    for {
+      startOffset <- start(node)
+      endOffset   <- end(node)
+    } yield (math.max(startOffset, 0), math.min(endOffset, parserResult.fileContent.length))
   }
 }

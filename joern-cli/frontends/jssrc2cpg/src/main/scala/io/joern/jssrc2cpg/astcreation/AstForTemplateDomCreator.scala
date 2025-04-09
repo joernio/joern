@@ -8,25 +8,20 @@ import ujson.Obj
 trait AstForTemplateDomCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForJsxElement(jsxElem: BabelNodeInfo): Ast = {
-    val domNode = createTemplateDomNode(jsxElem.node.toString, jsxElem.code, jsxElem.lineNumber, jsxElem.columnNumber)
+    val domNode      = templateDomNode(jsxElem.node.toString, jsxElem.code, jsxElem.lineNumber, jsxElem.columnNumber)
     val openingAst   = astForNodeWithFunctionReference(jsxElem.json("openingElement"))
     val childrenAsts = astForNodes(jsxElem.json("children").arr.toList)
-    val closingAst =
-      safeObj(jsxElem.json, "closingElement")
-        .map(e => astForNodeWithFunctionReference(Obj(e)))
-        .getOrElse(Ast())
+    val closingAst = safeObj(jsxElem.json, "closingElement")
+      .map(e => astForNodeWithFunctionReference(Obj(e)))
+      .getOrElse(Ast())
     val allChildrenAsts = openingAst +: childrenAsts :+ closingAst
     setArgumentIndices(allChildrenAsts)
     Ast(domNode).withChildren(allChildrenAsts)
   }
 
   protected def astForJsxFragment(jsxFragment: BabelNodeInfo): Ast = {
-    val domNode = createTemplateDomNode(
-      jsxFragment.node.toString,
-      jsxFragment.code,
-      jsxFragment.lineNumber,
-      jsxFragment.columnNumber
-    )
+    val name         = jsxFragment.node.toString
+    val domNode      = templateDomNode(name, jsxFragment.code, jsxFragment.lineNumber, jsxFragment.columnNumber)
     val childrenAsts = astForNodes(jsxFragment.json("children").arr.toList)
     setArgumentIndices(childrenAsts)
     Ast(domNode).withChildren(childrenAsts)
@@ -43,7 +38,7 @@ trait AstForTemplateDomCreator(implicit withSchemaValidation: ValidationMode) { 
       }
       .getOrElse("")
     val domNode =
-      createTemplateDomNode(
+      templateDomNode(
         jsxAttr.node.toString,
         s"$colon${jsxAttr.code}",
         jsxAttr.lineNumber,
@@ -57,7 +52,7 @@ trait AstForTemplateDomCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   protected def astForJsxOpeningElement(jsxOpeningElem: BabelNodeInfo): Ast = {
-    val domNode = createTemplateDomNode(
+    val domNode = templateDomNode(
       jsxOpeningElem.node.toString,
       jsxOpeningElem.code,
       jsxOpeningElem.lineNumber,
@@ -69,7 +64,7 @@ trait AstForTemplateDomCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   protected def astForJsxClosingElement(jsxClosingElem: BabelNodeInfo): Ast = {
-    val domNode = createTemplateDomNode(
+    val domNode = templateDomNode(
       jsxClosingElem.node.toString,
       jsxClosingElem.code,
       jsxClosingElem.lineNumber,
@@ -79,10 +74,10 @@ trait AstForTemplateDomCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   protected def astForJsxText(jsxText: BabelNodeInfo): Ast =
-    Ast(createTemplateDomNode(jsxText.node.toString, jsxText.code, jsxText.lineNumber, jsxText.columnNumber))
+    Ast(templateDomNode(jsxText.node.toString, jsxText.code, jsxText.lineNumber, jsxText.columnNumber))
 
   protected def astForJsxExprContainer(jsxExprContainer: BabelNodeInfo): Ast = {
-    val domNode = createTemplateDomNode(
+    val domNode = templateDomNode(
       jsxExprContainer.node.toString,
       jsxExprContainer.code,
       jsxExprContainer.lineNumber,
@@ -98,7 +93,7 @@ trait AstForTemplateDomCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   protected def astForJsxSpreadAttribute(jsxSpreadAttr: BabelNodeInfo): Ast = {
-    val domNode = createTemplateDomNode(
+    val domNode = templateDomNode(
       jsxSpreadAttr.node.toString,
       jsxSpreadAttr.code,
       jsxSpreadAttr.lineNumber,
