@@ -400,7 +400,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
       // return a synthetic assignment to enable tracing of the implicitly created identifier for
       // the class definition assigned to its constructor
-      val classIdNode = identifierNode(clazz, typeName, Seq(constructorNode.fullName))
+      val classIdNode = identifierNode(clazz, typeName, typeName, Defines.Any, Seq(constructorNode.fullName))
       val constructorRefNode =
         methodRefNode(clazz, constructorNode.code, constructorNode.fullName, constructorNode.fullName)
 

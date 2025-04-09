@@ -47,9 +47,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def astForWithStatement(withStatement: BabelNodeInfo): Ast = {
-    val blockNode = createBlockNode(withStatement)
-    scope.pushNewBlockScope(blockNode)
-    localAstParentStack.push(blockNode)
+    val blockNode_ = blockNode(withStatement, withStatement.code, Defines.Any)
+    scope.pushNewBlockScope(blockNode_)
+    localAstParentStack.push(blockNode_)
     val objectAst    = astForNodeWithFunctionReferenceAndCall(withStatement.json("object"))
     val bodyNodeInfo = createBabelNodeInfo(withStatement.json("body"))
     val bodyAsts = bodyNodeInfo.node match {
@@ -60,18 +60,18 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     setArgumentIndices(blockStatementAsts)
     localAstParentStack.pop()
     scope.popScope()
-    blockAst(blockNode, blockStatementAsts)
+    blockAst(blockNode_, blockStatementAsts)
   }
 
   protected def astForBlockStatement(block: BabelNodeInfo): Ast = {
-    val blockNode = createBlockNode(block)
-    scope.pushNewBlockScope(blockNode)
-    localAstParentStack.push(blockNode)
+    val blockNode_ = blockNode(block, block.code, Defines.Any)
+    scope.pushNewBlockScope(blockNode_)
+    localAstParentStack.push(blockNode_)
     val blockStatementAsts = createBlockStatementAsts(block.json("body"))
     setArgumentIndices(blockStatementAsts)
     localAstParentStack.pop()
     scope.popScope()
-    blockAst(blockNode, blockStatementAsts)
+    blockAst(blockNode_, blockStatementAsts)
   }
 
   protected def astForReturnStatement(ret: BabelNodeInfo): Ast = {
@@ -86,9 +86,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astForCatchClause(catchClause: BabelNodeInfo): Ast = {
-    val blockNode = createBlockNode(catchClause)
-    scope.pushNewBlockScope(blockNode)
-    localAstParentStack.push(blockNode)
+    val blockNode_ = blockNode(catchClause, catchClause.code, Defines.Any)
+    scope.pushNewBlockScope(blockNode_)
+    localAstParentStack.push(blockNode_)
     val paramAst = safeObj(catchClause.json, "param")
       .map { param => astForNodeWithFunctionReference(Obj(param)) }
       .getOrElse(Ast())
@@ -97,7 +97,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     setArgumentIndices(blockStatementAsts)
     localAstParentStack.pop()
     scope.popScope()
-    blockAst(blockNode, blockStatementAsts)
+    blockAst(blockNode_, blockStatementAsts)
   }
 
   protected def astForTryStatement(tryStmt: BabelNodeInfo): Ast = {
@@ -198,16 +198,16 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val labelName   = code(labelStmt.json("label"))
     val labeledNode = jumpTargetNode(labelStmt, labelName, s"$labelName:", Option(labelStmt.node.toString))
 
-    val blockNode = createBlockNode(labelStmt)
-    scope.pushNewBlockScope(blockNode)
-    localAstParentStack.push(blockNode)
+    val blockNode_ = blockNode(labelStmt, labelStmt.code, Defines.Any)
+    scope.pushNewBlockScope(blockNode_)
+    localAstParentStack.push(blockNode_)
     val bodyAst = astForNodeWithFunctionReference(labelStmt.json("body"))
     scope.popScope()
     localAstParentStack.pop()
 
     val labelAsts = List(Ast(labeledNode), bodyAst)
     setArgumentIndices(labelAsts)
-    blockAst(blockNode, labelAsts)
+    blockAst(blockNode_, labelAsts)
   }
 
   protected def astForBreakStatement(breakStmt: BabelNodeInfo): Ast = {
@@ -254,7 +254,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astsForSwitchCase(switchCase: BabelNodeInfo): List[Ast] = {
-    val labelAst       = Ast(createJumpTarget(switchCase))
+    val labelAst       = Ast(jumpTargetNode(switchCase))
     val testAsts       = safeObj(switchCase.json, "test").map(t => astForNodeWithFunctionReference(Obj(t))).toList
     val consequentAsts = astForNodes(switchCase.json("consequent").arr.toList)
     labelAst +: (testAsts ++ consequentAsts)
@@ -269,9 +269,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val switchExpressionAst = astForNodeWithFunctionReference(switchStmt.json("discriminant"))
     setOrderExplicitly(switchExpressionAst, 1)
 
-    val blockNode = createBlockNode(switchStmt).order(2)
-    scope.pushNewBlockScope(blockNode)
-    localAstParentStack.push(blockNode)
+    val blockNode_ = blockNode(switchStmt, switchStmt.code, Defines.Any).order(2)
+    scope.pushNewBlockScope(blockNode_)
+    localAstParentStack.push(blockNode_)
     val casesAsts = switchStmt.json("cases").arr.flatMap(c => astsForSwitchCase(createBabelNodeInfo(c)))
     setArgumentIndices(casesAsts.toList)
     scope.popScope()
@@ -280,7 +280,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     Ast(switchNode)
       .withChild(switchExpressionAst)
       .withConditionEdge(switchNode, switchExpressionAst.nodes.head)
-      .withChild(blockAst(blockNode, casesAsts.toList))
+      .withChild(blockAst(blockNode_, casesAsts.toList))
   }
 
   /** De-sugaring from:
@@ -294,9 +294,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     */
   private def astForInOfStatementWithIdentifier(forInOfStmt: BabelNodeInfo, idNodeInfo: BabelNodeInfo): Ast = {
     // surrounding block:
-    val blockNode = createBlockNode(forInOfStmt)
-    scope.pushNewBlockScope(blockNode)
-    localAstParentStack.push(blockNode)
+    val blockNode_ = blockNode(forInOfStmt, forInOfStmt.code, Defines.Any)
+    scope.pushNewBlockScope(blockNode_)
+    localAstParentStack.push(blockNode_)
 
     val collection     = forInOfStmt.json("right")
     val collectionName = code(collection)
@@ -367,7 +367,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
     val nextBaseNode = identifierNode(forInOfStmt, iteratorName)
 
-    val nextMemberNode = createFieldIdentifierNode("next", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+    val nextMemberNode = fieldIdentifierNode(forInOfStmt, "next", "next")
 
     val nextReceiverNode =
       createFieldAccessCallAst(nextBaseNode, nextMemberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
@@ -381,7 +381,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val doneBaseAst  = callAst(doneBaseNode, doneBaseArgs)
     Ast.storeInDiffGraph(doneBaseAst, diffGraph)
 
-    val doneMemberNode = createFieldIdentifierNode("done", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+    val doneMemberNode = fieldIdentifierNode(forInOfStmt, "done", "done")
 
     val testNode =
       createFieldAccessCallAst(doneBaseNode, doneMemberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
@@ -396,7 +396,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
     val baseNode = identifierNode(forInOfStmt, resultName)
 
-    val memberNode = createFieldIdentifierNode("value", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+    val memberNode = fieldIdentifierNode(forInOfStmt, "value", "value")
 
     val accessAst = createFieldAccessCallAst(baseNode, memberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
 
@@ -410,7 +410,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val loopVariableAssignmentArgs = List(Ast(whileLoopVariableNode), accessAst)
     val loopVariableAssignmentAst  = callAst(loopVariableAssignmentNode, loopVariableAssignmentArgs)
 
-    val whileLoopBlockNode = createBlockNode(forInOfStmt)
+    val whileLoopBlockNode = blockNode(forInOfStmt, forInOfStmt.code, Defines.Any)
     scope.pushNewBlockScope(whileLoopBlockNode)
     localAstParentStack.push(whileLoopBlockNode)
 
@@ -431,7 +431,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val blockChildren =
       List(iteratorAssignmentAst, Ast(resultNode), Ast(loopVariableNode), whileLoopAst.withChild(whileLoopBlockAst))
     setArgumentIndices(blockChildren)
-    blockAst(blockNode, blockChildren)
+    blockAst(blockNode_, blockChildren)
   }
 
   /** De-sugaring from:
@@ -445,9 +445,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     */
   private def astForInOfStatementWithExpression(forInOfStmt: BabelNodeInfo, idNodeInfo: BabelNodeInfo): Ast = {
     // surrounding block:
-    val blockNode = createBlockNode(forInOfStmt)
-    scope.pushNewBlockScope(blockNode)
-    localAstParentStack.push(blockNode)
+    val blockNode_ = blockNode(forInOfStmt, forInOfStmt.code, Defines.Any)
+    scope.pushNewBlockScope(blockNode_)
+    localAstParentStack.push(blockNode_)
 
     val collection     = forInOfStmt.json("right")
     val collectionName = code(collection)
@@ -510,7 +510,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
     val nextBaseNode = identifierNode(forInOfStmt, iteratorName)
 
-    val nextMemberNode = createFieldIdentifierNode("next", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+    val nextMemberNode = fieldIdentifierNode(forInOfStmt, "next", "next")
 
     val nextReceiverNode =
       createFieldAccessCallAst(nextBaseNode, nextMemberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
@@ -524,7 +524,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val doneBaseAst  = callAst(doneBaseNode, doneBaseArgs)
     Ast.storeInDiffGraph(doneBaseAst, diffGraph)
 
-    val doneMemberNode = createFieldIdentifierNode("done", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+    val doneMemberNode = fieldIdentifierNode(forInOfStmt, "done", "done")
 
     val testNode =
       createFieldAccessCallAst(doneBaseNode, doneMemberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
@@ -539,7 +539,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
     val baseNode = identifierNode(forInOfStmt, resultName)
 
-    val memberNode = createFieldIdentifierNode("value", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+    val memberNode = fieldIdentifierNode(forInOfStmt, "value", "value")
 
     val accessAst = createFieldAccessCallAst(baseNode, memberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
 
@@ -553,7 +553,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val loopVariableAssignmentArgs = List(whileLoopVariableNode, accessAst)
     val loopVariableAssignmentAst  = callAst(loopVariableAssignmentNode, loopVariableAssignmentArgs)
 
-    val whileLoopBlockNode = createBlockNode(forInOfStmt)
+    val whileLoopBlockNode = blockNode(forInOfStmt, forInOfStmt.code, Defines.Any)
     scope.pushNewBlockScope(whileLoopBlockNode)
     localAstParentStack.push(whileLoopBlockNode)
 
@@ -573,7 +573,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
     val blockChildren = List(iteratorAssignmentAst, Ast(resultNode), whileLoopAst.withChild(whileLoopBlockAst))
     setArgumentIndices(blockChildren)
-    blockAst(blockNode, blockChildren)
+    blockAst(blockNode_, blockChildren)
   }
 
   /** De-sugaring from:
@@ -587,9 +587,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     */
   private def astForInOfStatementWithObject(forInOfStmt: BabelNodeInfo, idNodeInfo: BabelNodeInfo): Ast = {
     // surrounding block:
-    val blockNode = createBlockNode(forInOfStmt)
-    scope.pushNewBlockScope(blockNode)
-    localAstParentStack.push(blockNode)
+    val blockNode_ = blockNode(forInOfStmt, forInOfStmt.code, Defines.Any)
+    scope.pushNewBlockScope(blockNode_)
+    localAstParentStack.push(blockNode_)
 
     val collection     = forInOfStmt.json("right")
     val collectionName = code(collection)
@@ -631,7 +631,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.addVariableReference(resultName, resultNode)
 
     // loop variable:
-    val loopVariableNames = idNodeInfo.json("properties").arr.toList.map(code)
+    val loopVariableNames = idNodeInfo.json("properties").arr.toList.map(p => stripQuotes(code(p)))
 
     val loopVariableLocalNodes = loopVariableNames.map(varName => localNode(forInOfStmt, varName, varName, Defines.Any))
     val loopVariableNodes      = loopVariableNames.map(identifierNode(forInOfStmt, _))
@@ -660,7 +660,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
     val nextBaseNode = identifierNode(forInOfStmt, iteratorName)
 
-    val nextMemberNode = createFieldIdentifierNode("next", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+    val nextMemberNode = fieldIdentifierNode(forInOfStmt, "next", "next")
 
     val nextReceiverNode =
       createFieldAccessCallAst(nextBaseNode, nextMemberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
@@ -674,7 +674,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val doneBaseAst  = callAst(doneBaseNode, doneBaseArgs)
     Ast.storeInDiffGraph(doneBaseAst, diffGraph)
 
-    val doneMemberNode = createFieldIdentifierNode("done", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+    val doneMemberNode = fieldIdentifierNode(forInOfStmt, "done", "done")
 
     val testNode =
       createFieldAccessCallAst(doneBaseNode, doneMemberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
@@ -688,10 +688,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val loopVariableAssignmentAsts = loopVariableNames.map { loopVariableName =>
       val whileLoopVariableNode = identifierNode(forInOfStmt, loopVariableName)
       val baseNode              = identifierNode(forInOfStmt, resultName)
-      val memberNode            = createFieldIdentifierNode("value", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+      val memberNode            = fieldIdentifierNode(forInOfStmt, "value", "value")
       val accessAst = createFieldAccessCallAst(baseNode, memberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
-      val variableMemberNode =
-        createFieldIdentifierNode(loopVariableName, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+      val variableMemberNode = fieldIdentifierNode(forInOfStmt, loopVariableName, loopVariableName)
       val variableAccessAst =
         createFieldAccessCallAst(accessAst, variableMemberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
       val loopVariableAssignmentNode = callNode(
@@ -704,7 +703,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       callAst(loopVariableAssignmentNode, loopVariableAssignmentArgs)
     }
 
-    val whileLoopBlockNode = createBlockNode(forInOfStmt)
+    val whileLoopBlockNode = blockNode(forInOfStmt, forInOfStmt.code, Defines.Any)
     scope.pushNewBlockScope(whileLoopBlockNode)
     localAstParentStack.push(whileLoopBlockNode)
 
@@ -727,7 +726,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         whileLoopBlockAst
       )
     setArgumentIndices(blockNodeChildren)
-    blockAst(blockNode, blockNodeChildren)
+    blockAst(blockNode_, blockNodeChildren)
   }
 
   /** De-sugaring from:
@@ -741,9 +740,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     */
   private def astForInOfStatementWithArray(forInOfStmt: BabelNodeInfo, idNodeInfo: BabelNodeInfo): Ast = {
     // surrounding block:
-    val blockNode = createBlockNode(forInOfStmt)
-    scope.pushNewBlockScope(blockNode)
-    localAstParentStack.push(blockNode)
+    val blockNode_ = blockNode(forInOfStmt, forInOfStmt.code, Defines.Any)
+    scope.pushNewBlockScope(blockNode_)
+    localAstParentStack.push(blockNode_)
 
     val collection     = forInOfStmt.json("right")
     val collectionName = code(collection)
@@ -813,7 +812,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
     val nextBaseNode = identifierNode(forInOfStmt, iteratorName)
 
-    val nextMemberNode = createFieldIdentifierNode("next", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+    val nextMemberNode = fieldIdentifierNode(forInOfStmt, "next", "next")
 
     val nextReceiverNode =
       createFieldAccessCallAst(nextBaseNode, nextMemberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
@@ -827,7 +826,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val doneBaseAst  = callAst(doneBaseNode, doneBaseArgs)
     Ast.storeInDiffGraph(doneBaseAst, diffGraph)
 
-    val doneMemberNode = createFieldIdentifierNode("done", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+    val doneMemberNode = fieldIdentifierNode(forInOfStmt, "done", "done")
 
     val testNode =
       createFieldAccessCallAst(doneBaseNode, doneMemberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
@@ -841,7 +840,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val loopVariableAssignmentAsts = loopVariableNames.zipWithIndex.map { case (loopVariableName, index) =>
       val whileLoopVariableNode = identifierNode(forInOfStmt, loopVariableName)
       val baseNode              = identifierNode(forInOfStmt, resultName)
-      val memberNode            = createFieldIdentifierNode("value", forInOfStmt.lineNumber, forInOfStmt.columnNumber)
+      val memberNode            = fieldIdentifierNode(forInOfStmt, "value", "value")
       val accessAst = createFieldAccessCallAst(baseNode, memberNode, forInOfStmt.lineNumber, forInOfStmt.columnNumber)
       val variableMemberNode = literalNode(forInOfStmt, index.toString, dynamicTypeOption = Some(Defines.Number))
       val variableAccessAst =
@@ -856,7 +855,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       callAst(loopVariableAssignmentNode, loopVariableAssignmentArgs)
     }
 
-    val whileLoopBlockNode = createBlockNode(forInOfStmt)
+    val whileLoopBlockNode = blockNode(forInOfStmt, forInOfStmt.code, Defines.Any)
     scope.pushNewBlockScope(whileLoopBlockNode)
     localAstParentStack.push(whileLoopBlockNode)
 
@@ -879,7 +878,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         whileLoopBlockAst
       )
     setArgumentIndices(blockNodeChildren)
-    blockAst(blockNode, blockNodeChildren)
+    blockAst(blockNode_, blockNodeChildren)
   }
 
   private def extractLoopVariableNodeInfo(nodeInfo: BabelNodeInfo): Option[BabelNodeInfo] =
