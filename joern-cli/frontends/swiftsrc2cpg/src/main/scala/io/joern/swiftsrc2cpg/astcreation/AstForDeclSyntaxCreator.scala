@@ -5,7 +5,6 @@ import io.joern.swiftsrc2cpg.datastructures.MethodScope
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.AstNodeBuilder.{bindingNode, dependencyNode}
-import io.joern.x2cpg.utils.NodeBuilders.*
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines

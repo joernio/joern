@@ -6,7 +6,6 @@ import io.joern.kotlin2cpg.types.TypeConstants
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.ValidationMode
-import io.joern.x2cpg.utils.NodeBuilders
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodRef

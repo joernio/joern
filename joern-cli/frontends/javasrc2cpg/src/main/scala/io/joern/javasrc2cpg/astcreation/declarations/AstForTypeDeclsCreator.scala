@@ -44,7 +44,6 @@ import com.github.javaparser.resolution.declarations.{
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.{BindingTable, BindingTableEntry, NameConstants, Util}
-import io.joern.x2cpg.utils.NodeBuilders.*
 import io.joern.x2cpg.{Ast, Defines}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewArrayInitializer,

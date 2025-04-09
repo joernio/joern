@@ -76,16 +76,7 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
         val refsTo     = scope.lookupVariable(NameConstants.This).variableNode.toList
         Ast(identifier).withRefEdges(identifier, refsTo)
       }
-    fieldAccessAst(
-      base,
-      s"${base.rootCodeOrEmpty}.$fieldName",
-      line(node),
-      column(node),
-      fieldName,
-      fieldTypeFullName,
-      line(node),
-      column(node)
-    )
+    fieldAccessAst(node, node, base, s"${base.rootCodeOrEmpty}.$fieldName", fieldName, fieldTypeFullName)
   }
 
   private def astForStaticImportOrUnknown(nameExpr: NameExpr, name: String, typeFullName: Option[String]): Ast = {

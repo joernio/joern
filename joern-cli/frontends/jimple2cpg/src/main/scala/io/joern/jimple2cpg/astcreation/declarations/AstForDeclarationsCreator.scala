@@ -1,7 +1,6 @@
 package io.joern.jimple2cpg.astcreation.declarations
 
 import io.joern.jimple2cpg.astcreation.{AstCreator, JvmStringOpts}
-import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, PropertyNames}
