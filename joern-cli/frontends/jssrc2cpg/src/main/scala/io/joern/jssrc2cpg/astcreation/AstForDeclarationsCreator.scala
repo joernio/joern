@@ -200,9 +200,10 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         declaration.columnNumber
       )
     } else {
+      val fieldName = stripQuotes(name)
       createFieldAccessCallAst(
         identifierNode(declaration, exportName),
-        fieldIdentifierNode(declaration, name, name),
+        fieldIdentifierNode(declaration, fieldName, fieldName),
         declaration.lineNumber,
         declaration.columnNumber
       )
@@ -232,9 +233,10 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       case Some(value) =>
         val identNode = identifierNode(declaration, value)
         scope.addVariableReference(name, identNode)
+        val fieldName = stripQuotes(name)
         val call = createFieldAccessCallAst(
           identNode,
-          fieldIdentifierNode(declaration, name, name),
+          fieldIdentifierNode(declaration, fieldName, fieldName),
           declaration.lineNumber,
           declaration.columnNumber
         )
@@ -638,7 +640,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     scope.addVariable(element.code, nLocalNode, MethodScope)
 
     val fieldAccessTmpNode = identifierNode(element, localTmpName)
-    val keyNode            = fieldIdentifierNode(key, key.code, key.code)
+    val keyName            = stripQuotes(key.code)
+    val keyNode            = fieldIdentifierNode(key, keyName, keyName)
     val accessAst = createFieldAccessCallAst(fieldAccessTmpNode, keyNode, element.lineNumber, element.columnNumber)
     createAssignmentCallAst(
       valueAst,
@@ -726,17 +729,17 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       case _ => astForNodeWithFunctionReference(lhsElement)
     }
 
+    val keyName = stripQuotes(key.code)
     val testAst = {
       val fieldAccessTmpNode = identifierNode(element, localTmpName)
-      val keyNode            = fieldIdentifierNode(key, key.code, key.code)
-      val accessAst =
-        createFieldAccessCallAst(fieldAccessTmpNode, keyNode, element.lineNumber, element.columnNumber)
+      val keyNode            = fieldIdentifierNode(key, keyName, keyName)
+      val accessAst = createFieldAccessCallAst(fieldAccessTmpNode, keyNode, element.lineNumber, element.columnNumber)
       val voidCallNode_ = voidCallNode(element.lineNumber, element.columnNumber)
       createEqualsCallAst(accessAst, Ast(voidCallNode_), element.lineNumber, element.columnNumber)
     }
     val falseAst = {
       val fieldAccessTmpNode = identifierNode(element, localTmpName)
-      val keyNode            = fieldIdentifierNode(key, key.code, key.code)
+      val keyNode            = fieldIdentifierNode(key, keyName, keyName)
       createFieldAccessCallAst(fieldAccessTmpNode, keyNode, element.lineNumber, element.columnNumber)
     }
     val ternaryNodeAst =

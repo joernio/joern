@@ -24,7 +24,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   ): Ast = {
     val ast         = astForNodeWithFunctionReferenceAndCall(elementNodeInfo.json("argument"))
     val defaultName = codeForNodes(ast.nodes.toSeq)
-    val restName    = nameForBabelNodeInfo(paramNodeInfo, defaultName)
+    val restName    = stripQuotes(nameForBabelNodeInfo(paramNodeInfo, defaultName))
     ast.root match {
       case Some(_: NewIdentifier) =>
         val keyNode   = fieldIdentifierNode(elementNodeInfo, restName, restName)
@@ -118,7 +118,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
               val elementNodeInfo = createBabelNodeInfo(element)
               elementNodeInfo.node match {
                 case Identifier =>
-                  val elemName       = code(elementNodeInfo.json)
+                  val elemName       = stripQuotes(elementNodeInfo.code)
                   val tpe            = typeFor(elementNodeInfo)
                   val typeFullName   = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
                   val possibleTypes  = Seq(tpe)

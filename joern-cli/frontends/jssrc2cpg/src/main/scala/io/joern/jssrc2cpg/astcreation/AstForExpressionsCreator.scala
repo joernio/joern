@@ -77,7 +77,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
             val code    = s"(${codeOf(baseTmpNode)} = ${base.code})"
             val tmpAssignmentAst =
               createAssignmentCallAst(Ast(baseTmpNode), baseAst, code, base.lineNumber, base.columnNumber)
-            val memberNode = fieldIdentifierNode(member, member.code, member.code)
+            val fieldName  = stripQuotes(member.code)
+            val memberNode = fieldIdentifierNode(member, fieldName, fieldName)
             val fieldAccessAst =
               createFieldAccessCallAst(tmpAssignmentAst, memberNode, callLike.lineNumber, callLike.columnNumber)
             val thisTmpNode = identifierNode(callLike, tmpVarName)
@@ -149,7 +150,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForMetaProperty(metaProperty: BabelNodeInfo): Ast = {
     val metaAst        = astForIdentifier(createBabelNodeInfo(metaProperty.json("meta")))
     val memberNodeInfo = createBabelNodeInfo(metaProperty.json("property"))
-    val memberAst      = Ast(fieldIdentifierNode(memberNodeInfo, memberNodeInfo.code, memberNodeInfo.code))
+    val fieldName      = stripQuotes(memberNodeInfo.code)
+    val memberAst      = Ast(fieldIdentifierNode(memberNodeInfo, fieldName, fieldName))
     createFieldAccessCallAst(metaAst, memberAst.nodes.head, metaProperty.lineNumber, metaProperty.columnNumber)
   }
 
@@ -161,7 +163,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       val memberAst = astForNode(memberNodeInfo.json)
       createIndexAccessCallAst(baseAst, memberAst, memberExpr.lineNumber, memberExpr.columnNumber)
     } else {
-      val memberAst = Ast(fieldIdentifierNode(memberNodeInfo, memberNodeInfo.code, memberNodeInfo.code))
+      val fieldName = stripQuotes(memberNodeInfo.code)
+      val memberAst = Ast(fieldIdentifierNode(memberNodeInfo, fieldName, fieldName))
       createFieldAccessCallAst(baseAst, memberAst.nodes.head, memberExpr.lineNumber, memberExpr.columnNumber)
     }
   }
@@ -454,10 +457,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         case _ =>
           val (lhsNode, rhsAst) = nodeInfo.node match {
             case ObjectMethod =>
-              val keyName =
-                if (hasKey(nodeInfo.json("key"), "name")) nodeInfo.json("key")("name").str
-                else code(nodeInfo.json("key"))
-              val keyNode = fieldIdentifierNode(nodeInfo, keyName, keyName)
+              val keyName = if (hasKey(nodeInfo.json("key"), "name")) { nodeInfo.json("key")("name").str }
+              else { code(nodeInfo.json("key")) }
+              val fieldName = stripQuotes(keyName)
+              val keyNode   = fieldIdentifierNode(nodeInfo, fieldName, fieldName)
               (keyNode, astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true))
             case ObjectProperty =>
               val key = createBabelNodeInfo(nodeInfo.json("key"))
@@ -468,8 +471,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
                   generateUnusedVariableName(usedVariableNames, "_computed_object_property")
                 case _ => key.code
               }
-              val keyNode = fieldIdentifierNode(nodeInfo, keyName, keyName)
-              val ast     = astForNodeWithFunctionReference(nodeInfo.json("value"))
+              val fieldName = stripQuotes(keyName)
+              val keyNode   = fieldIdentifierNode(nodeInfo, fieldName, fieldName)
+              val ast       = astForNodeWithFunctionReference(nodeInfo.json("value"))
               (keyNode, ast)
             case _ =>
               // can't happen as per https://github.com/babel/babel/blob/main/packages/babel-types/src/ast-types/generated/index.ts#L573
