@@ -4,9 +4,14 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Local, Method, NewLocatio
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.*
 
-class LocalMethods(val local: Local) extends AnyVal with NodeExtension with HasLocation {
+class LocalMethods(val local: Local) extends AnyVal with NodeExtension with HasLocation with HasLoc {
+  @deprecated("Prefer .loc to .location")
   override def location: NewLocation = {
     LocationCreator(local, local.name, local.label, local.lineNumber, method.head)
+  }
+
+  override def loc: Loc = {
+    Loc(local)
   }
 
   /** The method hosting this local variable

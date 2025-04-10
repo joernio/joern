@@ -6,10 +6,17 @@ import io.shiftleft.semanticcpg.language.*
 
 class NodeMethods(val node: AbstractNode) extends AnyVal with NodeExtension {
 
+  @deprecated("Prefer the .loc node step which lazily computes location information.")
   def location(implicit finder: NodeExtensionFinder): NewLocation =
     node match {
       case storedNode: StoredNode => LocationCreator(storedNode)
       case _                      => LocationCreator.emptyLocation("", None)
     }
+
+  def loc: Loc = {
+    node match {
+      case storedNode: StoredNode => Loc(storedNode)
+    }
+  }
 
 }

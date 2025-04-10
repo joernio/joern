@@ -8,6 +8,7 @@ import scala.annotation.tailrec
 
 /* TODO MP: this should be part of the normal steps, rather than matching on the type at runtime
  * all (and only) steps extending DataFlowObject should/must have `newSink`, `newSource` and `newLocation` */
+@deprecated("Prefer the .loc node step which lazily computes location information.")
 object LocationCreator {
 
   private val logger: Logger = LoggerFactory.getLogger(getClass)
