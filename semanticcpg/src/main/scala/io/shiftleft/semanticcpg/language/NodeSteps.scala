@@ -44,7 +44,7 @@ class NodeSteps[NodeType <: StoredNode](val traversal: Iterator[NodeType]) exten
       |on the user's side.
       |"""
   )
-  def location(implicit finder: NodeExtensionFinder): Iterator[NewLocation] =
+  def location(implicit locationCreator: LocationCreator): Iterator[LocationInfo] =
     traversal.map(_.location)
 
   @Doc(
@@ -56,7 +56,7 @@ class NodeSteps[NodeType <: StoredNode](val traversal: Iterator[NodeType]) exten
       |This only works for source frontends.
       |"""
   )
-  def dump(implicit finder: NodeExtensionFinder): List[String] =
+  def dump(implicit locationCreator: LocationCreator): List[String] =
     _dump(highlight = true)
 
   @Doc(
@@ -67,10 +67,10 @@ class NodeSteps[NodeType <: StoredNode](val traversal: Iterator[NodeType]) exten
       |to the expression. No color highlighting.
       |"""
   )
-  def dumpRaw(implicit finder: NodeExtensionFinder): List[String] =
+  def dumpRaw(implicit locationCreator: LocationCreator): List[String] =
     _dump(highlight = false)
 
-  private def _dump(highlight: Boolean)(implicit finder: NodeExtensionFinder): List[String] = {
+  private def _dump(highlight: Boolean)(implicit locationCreator: LocationCreator): List[String] = {
     // initialized on first element as we need the graph for retrieving the metaData node.
     // TODO: there should be a step to retrieve the metaData node for any node
     //  so we could avoid instantiating a new Cpg everytime using dump
