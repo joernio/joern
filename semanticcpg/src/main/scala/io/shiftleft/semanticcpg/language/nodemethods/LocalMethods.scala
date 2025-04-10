@@ -1,13 +1,10 @@
 package io.shiftleft.semanticcpg.language.nodemethods
 
-import io.shiftleft.codepropertygraph.generated.nodes.{Local, Method, NewLocation}
+import io.shiftleft.codepropertygraph.generated.nodes.{Local, Method}
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.*
 
-class LocalMethods(val local: Local) extends AnyVal with NodeExtension with HasLocation {
-  override def location: NewLocation = {
-    LocationCreator.defaultCreateLocation(local)
-  }
+class LocalMethods(val local: Local) extends AnyVal with NodeExtension {
 
   /** The method hosting this local variable
     */
