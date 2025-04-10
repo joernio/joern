@@ -5,7 +5,7 @@ import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.*
 
-class CallMethods(val node: Call) extends AnyVal with NodeExtension with HasLocation {
+class CallMethods(val node: Call) extends AnyVal with NodeExtension with HasLocation with HasLoc {
 
   def isStatic: Boolean =
     node.dispatchType == DispatchTypes.STATIC_DISPATCH
@@ -45,6 +45,9 @@ class CallMethods(val node: Call) extends AnyVal with NodeExtension with HasLoca
     node.astChildren.isBlock.maxByOption(_.order).iterator.expressionDown
   }
 
+  @deprecated("Prefer .loc to .location")
   override def location: NewLocation =
-    LocationCreator.defaultCreateLocation(node)
+    LocationCreator(node, node.code, node.label, node.lineNumber, node.method)
+
+  override def loc: Loc = Loc(node)
 }

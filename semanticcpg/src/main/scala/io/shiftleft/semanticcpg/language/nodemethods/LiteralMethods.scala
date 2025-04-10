@@ -11,7 +11,7 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.immutable.HashMap
 
-class LiteralMethods(val literal: Literal) extends AnyVal with NodeExtension with HasLocation {
+class LiteralMethods(val literal: Literal) extends AnyVal with NodeExtension with HasLocation with HasLoc {
   def strippedCode: String = {
     val language         = Cpg(literal.graph).metaData.language.head
     val stringDelimiters = delimiters(language)
@@ -28,9 +28,14 @@ class LiteralMethods(val literal: Literal) extends AnyVal with NodeExtension wit
       .getOrElse(literal.code)
   }
 
+  @deprecated("Prefer .loc to .location")
   override def location: NewLocation = {
     LocationCreator.defaultCreateLocation(literal)
 
+  }
+
+  override def loc: Loc = {
+    Loc(literal)
   }
 }
 

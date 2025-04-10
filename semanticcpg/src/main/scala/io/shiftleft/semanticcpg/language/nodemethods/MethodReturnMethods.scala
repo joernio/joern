@@ -4,9 +4,14 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, MethodReturn, NewLo
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.*
 
-class MethodReturnMethods(val node: MethodReturn) extends AnyVal with NodeExtension with HasLocation {
+class MethodReturnMethods(val node: MethodReturn) extends AnyVal with NodeExtension with HasLocation with HasLoc {
+  @deprecated("Prefer .loc to .location")
   override def location: NewLocation = {
     LocationCreator.defaultCreateLocation(node)
+  }
+
+  override def loc: Loc = {
+    Loc(node)
   }
 
   def returnUser(implicit callResolver: ICallResolver): Iterator[Call] = {

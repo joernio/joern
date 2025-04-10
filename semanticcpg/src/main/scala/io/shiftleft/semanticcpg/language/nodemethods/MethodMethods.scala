@@ -4,7 +4,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.*
 
-class MethodMethods(val method: Method) extends AnyVal with NodeExtension with HasLocation {
+class MethodMethods(val method: Method) extends AnyVal with NodeExtension with HasLocation with HasLoc {
 
   /** Traverse to annotations of method
     */
@@ -68,8 +68,13 @@ class MethodMethods(val method: Method) extends AnyVal with NodeExtension with H
   def body: Block =
     method.block
 
+  @deprecated("Prefer .loc to .location")
   override def location: NewLocation = {
     LocationCreator.defaultCreateLocation(method, method)
+  }
+
+  override def loc: Loc = {
+    Loc(method)
   }
 
   def content: Option[String] = {

@@ -4,8 +4,17 @@ import io.shiftleft.codepropertygraph.generated.nodes.{MethodParameterIn, NewLoc
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.*
 
-class MethodParameterInMethods(val paramIn: MethodParameterIn) extends AnyVal with NodeExtension with HasLocation {
+class MethodParameterInMethods(val paramIn: MethodParameterIn)
+    extends AnyVal
+    with NodeExtension
+    with HasLocation
+    with HasLoc {
+  @deprecated("Prefer .loc to .location")
   override def location: NewLocation = {
     LocationCreator.defaultCreateLocation(paramIn)
+  }
+
+  override def loc: Loc = {
+    Loc(paramIn)
   }
 }
