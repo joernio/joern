@@ -35,7 +35,7 @@ class AstCreationPass(
 ) extends ForkJoinParallelCpgPass[(Path, ILanguage)](cpg) {
 
   private val compilationDatabase: Option[CompilationDatabase] =
-    config.compilationDatabaseFile.flatMap(JSONCompilationDatabaseParser.parse)
+    config.compilationDatabaseFilename.flatMap(JSONCompilationDatabaseParser.parse)
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
@@ -43,10 +43,10 @@ class AstCreationPass(
   private val parser: CdtParser                  = new CdtParser(config, headerFileFinder, compilationDatabase, global)
 
   override def generateParts(): Array[(Path, ILanguage)] = {
-    val sourceFiles = if (config.compilationDatabaseFile.isEmpty) {
+    val sourceFiles = if (config.compilationDatabaseFilename.isEmpty) {
       sourceFilesFromDirectory()
     } else {
-      sourceFilesFromCompilationDatabase(config.compilationDatabaseFile.get)
+      sourceFilesFromCompilationDatabase(config.compilationDatabaseFilename.get)
     }
     sourceFiles.flatMap { file =>
       val path = Paths.get(file).toAbsolutePath

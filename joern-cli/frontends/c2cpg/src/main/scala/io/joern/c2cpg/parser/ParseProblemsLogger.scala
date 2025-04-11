@@ -28,15 +28,11 @@ trait ParseProblemsLogger {
     * We extract better log messages for this case here.
     */
   protected def extractParseException(exception: Throwable): String = {
-    Option(exception.getMessage) match {
-      case Some(message) => message
-      case None =>
-        exception.getStackTrace
-          .collectFirst {
-            case stackTraceElement: StackTraceElement if stackTraceElement.getClassName.endsWith("ASTAmbiguousNode") =>
-              "Could not resolve ambiguous node!"
-          }
-          .getOrElse(exception.getStackTrace.mkString(System.lineSeparator()))
+    Option(exception.getMessage).getOrElse {
+      exception.getStackTrace
+        .find(_.getClassName.endsWith("ASTAmbiguousNode"))
+        .map(_ => "Could not resolve ambiguous node!")
+        .getOrElse(exception.getStackTrace.mkString(System.lineSeparator()))
     }
   }
 

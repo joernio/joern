@@ -23,17 +23,17 @@ class PreprocessorPass(config: Config) {
   private val logger = LoggerFactory.getLogger(classOf[PreprocessorPass])
 
   private val compilationDatabase: Option[CompilationDatabase] =
-    config.compilationDatabaseFile.flatMap(JSONCompilationDatabaseParser.parse)
+    config.compilationDatabaseFilename.flatMap(JSONCompilationDatabaseParser.parse)
 
   private val headerFileFinder = new HeaderFileFinder(config)
   private val global: CGlobal  = new CGlobal()
   private val parser           = new CdtParser(config, headerFileFinder, compilationDatabase, global)
 
   def run(): Iterable[String] = {
-    val sourceFiles = if (config.compilationDatabaseFile.isEmpty) {
+    val sourceFiles = if (config.compilationDatabaseFilename.isEmpty) {
       sourceFilesFromDirectory()
     } else {
-      sourceFilesFromCompilationDatabase(config.compilationDatabaseFile.get)
+      sourceFilesFromCompilationDatabase(config.compilationDatabaseFilename.get)
     }
     sourceFiles
       .flatMap { file =>

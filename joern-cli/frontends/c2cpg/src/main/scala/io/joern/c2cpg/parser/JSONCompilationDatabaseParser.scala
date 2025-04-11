@@ -7,6 +7,7 @@ import ujson.Value
 
 import java.nio.file.Paths
 import scala.collection.mutable
+import scala.util.control.NonFatal
 import scala.util.Try
 
 object JSONCompilationDatabaseParser {
@@ -39,8 +40,8 @@ object JSONCompilationDatabaseParser {
         CommandObject(obj("directory").str, safeArguments(obj), safeCommand(obj), obj("file").str)
       }))
     } catch {
-      case t: Throwable =>
-        logger.warn(s"Could not parse '$compileCommandsJson'", t)
+      case NonFatal(e) =>
+        logger.warn(s"Could not parse '$compileCommandsJson'", e)
         None
     }
   }

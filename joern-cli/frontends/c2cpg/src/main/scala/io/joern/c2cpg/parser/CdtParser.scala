@@ -2,7 +2,6 @@ package io.joern.c2cpg.parser
 
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.astcreation.CGlobal
-import io.joern.c2cpg.parser.JSONCompilationDatabaseParser.CommandObject
 import io.joern.c2cpg.parser.JSONCompilationDatabaseParser.CompilationDatabase
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.semanticcpg.utils.FileUtil
@@ -23,6 +22,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
+import scala.util.control.NonFatal
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -117,7 +117,7 @@ class CdtParser(
   // instructs the parser to skip function and method bodies
   if (config.skipFunctionBodies) opts |= ILanguage.OPTION_SKIP_FUNCTION_BODIES
   // enables parsing of code behind disabled preprocessor defines
-  if (config.compilationDatabaseFile.isEmpty && config.defines.isEmpty) opts |= ILanguage.OPTION_PARSE_INACTIVE_CODE
+  if (config.compilationDatabaseFilename.isEmpty && config.defines.isEmpty) opts |= ILanguage.OPTION_PARSE_INACTIVE_CODE
 
   def preprocessorStatements(file: Path, language: ILanguage): Iterable[IASTPreprocessorStatement] = {
     parse(file, language).map(t => preprocessorStatements(t)).getOrElse(Iterable.empty)
@@ -151,7 +151,7 @@ class CdtParser(
         logger.error("c2cpg requires at least JRE-17 to run. Please check your Java Runtime Environment!", u)
         System.exit(1)
         ParseResult(None, failure = Option(u)) // return value to make the compiler happy
-      case e: Throwable =>
+      case NonFatal(e) =>
         ParseResult(None, failure = Option(e))
     }
   }
