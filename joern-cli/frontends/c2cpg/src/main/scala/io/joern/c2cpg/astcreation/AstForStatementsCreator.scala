@@ -303,7 +303,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     // We only handle un-parsable macros here for now
     val isFromMacroExpansion = statement.getProblem.getNodeLocations.exists(_.isInstanceOf[IASTMacroExpansionLocation])
     val asts = if (isFromMacroExpansion) {
-      new CdtParser(config, headerFileFinder, mutable.LinkedHashSet.empty, global)
+      new CdtParser(config, headerFileFinder, None, global)
         .parse(statement.getRawSignature, Paths.get(statement.getContainingFilename)) match
         case Some(node) => node.getDeclarations.toIndexedSeq.flatMap(astsForDeclaration)
         case None       => Seq.empty

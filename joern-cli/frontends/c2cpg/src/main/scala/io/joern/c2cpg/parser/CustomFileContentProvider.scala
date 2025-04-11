@@ -66,24 +66,14 @@ class CustomFileContentProvider(headerFileFinder: HeaderFileFinder, sourceFile: 
     */
   private def updateHeaderFileParserLanguage(foundPath: String): Unit = {
     if (FileDefaults.hasCHeaderFileExtension(foundPath)) {
+      val currentLanguage = if (FileDefaults.hasCFileExtension(sourceFile)) { HeaderFileParserLanguage.C }
+      else { HeaderFileParserLanguage.Cpp }
       global.headerIncludes.compute(
         foundPath,
-        {
-          case (_, null) =>
-            // First time seeing header: use C parser for C files, otherwise C++
-            if (FileDefaults.hasCFileExtension(sourceFile)) { HeaderFileParserLanguage.C }
-            else { HeaderFileParserLanguage.Cpp }
-          case (_, HeaderFileParserLanguage.C) =>
-            // Header previously seen in C files only
-            if (FileDefaults.hasCFileExtension(sourceFile)) { HeaderFileParserLanguage.C }
-            else { HeaderFileParserLanguage.Both }
-          case (_, HeaderFileParserLanguage.Cpp) =>
-            // Header previously seen in C++ files only
-            if (FileDefaults.hasCFileExtension(sourceFile)) { HeaderFileParserLanguage.Both }
-            else { HeaderFileParserLanguage.Cpp }
-          case (_, _) =>
-            // Already seen in both C and C++ files
-            HeaderFileParserLanguage.Both
+        (_, previousLanguage) => {
+          if (previousLanguage == null) { currentLanguage }
+          else if (previousLanguage != currentLanguage) { HeaderFileParserLanguage.Both }
+          else { previousLanguage }
         }
       )
     }

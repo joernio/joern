@@ -17,7 +17,7 @@ final case class Config(
   includePathsAutoDiscovery: Boolean = false,
   skipFunctionBodies: Boolean = false,
   withPreprocessedFiles: Boolean = false,
-  compilationDatabase: Option[String] = None
+  compilationDatabaseFilename: Option[String] = None
 ) extends X2CpgConfig[Config] {
   def withIncludePaths(includePaths: Set[String]): Config = {
     this.copy(includePaths = includePaths).withInheritedFields(this)
@@ -56,7 +56,7 @@ final case class Config(
   }
 
   def withCompilationDatabase(value: String): Config = {
-    this.copy(compilationDatabase = Some(value)).withInheritedFields(this)
+    this.copy(compilationDatabaseFilename = Option(value)).withInheritedFields(this)
   }
 }
 

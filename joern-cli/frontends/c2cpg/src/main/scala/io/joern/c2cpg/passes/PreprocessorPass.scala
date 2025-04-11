@@ -3,39 +3,37 @@ package io.joern.c2cpg.passes
 import io.joern.c2cpg.C2Cpg.DefaultIgnoredFolders
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.astcreation.CGlobal
-import io.joern.c2cpg.parser.{CdtParser, FileDefaults}
+import io.joern.c2cpg.parser.CdtParser
+import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.parser.HeaderFileFinder
 import io.joern.c2cpg.parser.JSONCompilationDatabaseParser
-import io.joern.c2cpg.parser.JSONCompilationDatabaseParser.CommandObject
+import io.joern.c2cpg.parser.JSONCompilationDatabaseParser.CompilationDatabase
 import io.joern.x2cpg.SourceFiles
-import org.eclipse.cdt.core.dom.ast.{
-  IASTPreprocessorIfdefStatement,
-  IASTPreprocessorIfStatement,
-  IASTPreprocessorStatement
-}
+import org.eclipse.cdt.core.dom.ast.IASTPreprocessorIfStatement
+import org.eclipse.cdt.core.dom.ast.IASTPreprocessorIfdefStatement
+import org.eclipse.cdt.core.dom.ast.IASTPreprocessorStatement
 import org.eclipse.cdt.core.model.ILanguage
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Path
 import java.nio.file.Paths
-import scala.collection.mutable
 
 class PreprocessorPass(config: Config) {
 
   private val logger = LoggerFactory.getLogger(classOf[PreprocessorPass])
 
-  private val compilationDatabase: mutable.LinkedHashSet[CommandObject] =
-    config.compilationDatabase.map(JSONCompilationDatabaseParser.parse).getOrElse(mutable.LinkedHashSet.empty)
+  private val compilationDatabase: Option[CompilationDatabase] =
+    config.compilationDatabaseFilename.flatMap(JSONCompilationDatabaseParser.parse)
 
   private val headerFileFinder = new HeaderFileFinder(config)
   private val global: CGlobal  = new CGlobal()
   private val parser           = new CdtParser(config, headerFileFinder, compilationDatabase, global)
 
   def run(): Iterable[String] = {
-    val sourceFiles = if (config.compilationDatabase.isEmpty) {
+    val sourceFiles = if (config.compilationDatabaseFilename.isEmpty) {
       sourceFilesFromDirectory()
     } else {
-      sourceFilesFromCompilationDatabase(config.compilationDatabase.get)
+      sourceFilesFromCompilationDatabase(config.compilationDatabaseFilename.get)
     }
     sourceFiles
       .flatMap { file =>
@@ -57,17 +55,20 @@ class PreprocessorPass(config: Config) {
   }
 
   private def sourceFilesFromCompilationDatabase(compilationDatabaseFile: String): Iterable[String] = {
-    if (compilationDatabase.isEmpty) {
-      logger.warn(s"'$compilationDatabaseFile' contains no source files.")
+    compilationDatabase match {
+      case Some(db) =>
+        SourceFiles
+          .filterFiles(
+            db.commands.map(_.compiledFile()).toList,
+            config.inputPath,
+            ignoredDefaultRegex = Option(DefaultIgnoredFolders),
+            ignoredFilesRegex = Option(config.ignoredFilesRegex),
+            ignoredFilesPath = Option(config.ignoredFiles)
+          )
+      case None =>
+        logger.warn(s"'$compilationDatabaseFile' contains no source files. CPG will be empty.")
+        Iterable.empty
     }
-    SourceFiles
-      .filterFiles(
-        compilationDatabase.map(_.compiledFile()).toList,
-        config.inputPath,
-        ignoredDefaultRegex = Option(DefaultIgnoredFolders),
-        ignoredFilesRegex = Option(config.ignoredFilesRegex),
-        ignoredFilesPath = Option(config.ignoredFiles)
-      )
   }
 
   private def preprocessorStatement2String(stmt: IASTPreprocessorStatement): Option[String] = {
