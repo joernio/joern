@@ -3,6 +3,7 @@ package io.joern.c2cpg.parser
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.astcreation.CGlobal
 import io.joern.c2cpg.parser.JSONCompilationDatabaseParser.CommandObject
+import io.joern.c2cpg.parser.JSONCompilationDatabaseParser.CompilationDatabase
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.utils.FileUtil.*
@@ -61,20 +62,19 @@ object CdtParser {
     *   empty sequence for non-existent files.
     */
   def languageMappingForSourceFile(path: Path, global: CGlobal, config: Config): Seq[(Path, ILanguage)] = {
-    path match {
-      case p if !Files.isRegularFile(p) =>
-        logger.warn(s"File '${p.toString}' does not exist. Check for broken symlinks!")
-        Seq.empty
-      case p if !FileDefaults.hasCHeaderFileExtension(p.toString) =>
-        Seq((p, CdtParser.createParseLanguage(p, IOUtils.readLinesInFile(p).mkString("\n"), config)))
-      case p if !global.headerIncludes.containsKey(p.toString) =>
-        Seq((p, GCCLanguage.getDefault))
-      case p if global.headerIncludes.get(p.toString) == HeaderFileParserLanguage.C =>
-        Seq((p, GCCLanguage.getDefault))
-      case p if global.headerIncludes.get(p.toString) == HeaderFileParserLanguage.Cpp =>
-        Seq((p, GPPLanguage.getDefault))
-      case p =>
-        Seq((p, GCCLanguage.getDefault), (p, GPPLanguage.getDefault))
+    if (!Files.isRegularFile(path)) {
+      logger.warn(s"File '${path.toString}' does not exist. Check for broken symlinks!")
+      return Seq.empty
+    }
+    val filePath = path.toString
+    if (!FileDefaults.hasCHeaderFileExtension(filePath)) {
+      val code = IOUtils.readLinesInFile(path).mkString("\n")
+      return Seq((path, createParseLanguage(path, code, config)))
+    }
+    global.headerIncludes.get(filePath) match {
+      case null | HeaderFileParserLanguage.C => Seq((path, GCCLanguage.getDefault))
+      case HeaderFileParserLanguage.Cpp      => Seq((path, GPPLanguage.getDefault))
+      case _                                 => Seq((path, GCCLanguage.getDefault), (path, GPPLanguage.getDefault))
     }
   }
 
@@ -101,17 +101,15 @@ object CdtParser {
 class CdtParser(
   config: Config,
   headerFileFinder: HeaderFileFinder,
-  compilationDatabase: mutable.LinkedHashSet[CommandObject],
+  compilationDatabase: Option[CompilationDatabase],
   global: CGlobal
 ) extends ParseProblemsLogger
     with PreprocessorStatementsLogger {
 
   import io.joern.c2cpg.parser.CdtParser.*
 
-  private val parserConfig   = ParserConfig.fromConfig(config, compilationDatabase)
-  private val definedSymbols = parserConfig.definedSymbols
-  private val includePaths   = parserConfig.userIncludePaths
-  private val log            = new DefaultLogService
+  private val parserConfig = ParserConfig.fromConfig(config, compilationDatabase)
+  private val log          = new DefaultLogService
 
   private var opts: Int =
     ILanguage.OPTION_NO_IMAGE_LOCATIONS | // performance optimization, allows the parser not to create image-locations
@@ -119,7 +117,7 @@ class CdtParser(
   // instructs the parser to skip function and method bodies
   if (config.skipFunctionBodies) opts |= ILanguage.OPTION_SKIP_FUNCTION_BODIES
   // enables parsing of code behind disabled preprocessor defines
-  if (config.compilationDatabase.isEmpty && config.defines.isEmpty) opts |= ILanguage.OPTION_PARSE_INACTIVE_CODE
+  if (config.compilationDatabaseFile.isEmpty && config.defines.isEmpty) opts |= ILanguage.OPTION_PARSE_INACTIVE_CODE
 
   def preprocessorStatements(file: Path, language: ILanguage): Iterable[IASTPreprocessorStatement] = {
     parse(file, language).map(t => preprocessorStatements(t)).getOrElse(Iterable.empty)
@@ -131,9 +129,9 @@ class CdtParser(
         logger.info(s"Parsed '$relativeFilePath'")
         translationUnit
       case ParseResult(_, maybeRelativePath, maybeThrowable) =>
-        logger.warn(
-          s"Failed to parse '${maybeRelativePath.getOrElse(file.toString)}': ${maybeThrowable.map(extractParseException).getOrElse("Unknown parse error!")}"
-        )
+        val relativePath  = maybeRelativePath.getOrElse(file.toString)
+        val throwableText = maybeThrowable.map(extractParseException).getOrElse("Unknown parse error!")
+        logger.warn(s"Failed to parse '$relativePath': $throwableText")
         None
     }
   }
@@ -145,8 +143,8 @@ class CdtParser(
       val scInfo              = createScannerInfo(file)
       val fContent            = readFileAsFileContent(file)
       val translationUnit     = language.getASTTranslationUnit(fContent, scInfo, fileContentProvider, null, opts, log)
-      if (parserConfig.logProblems) logProblems(translationUnit)
-      if (parserConfig.logPreprocessor) logPreprocessorStatements(translationUnit)
+      if (config.logProblems) logProblems(translationUnit)
+      if (config.logPreprocessor) logPreprocessorStatements(translationUnit)
       ParseResult(Option(translationUnit), Some(relativeFilePath))
     } catch {
       case u: UnsupportedClassVersionError =>
@@ -159,14 +157,13 @@ class CdtParser(
   }
 
   private def createScannerInfo(file: Path): ScannerInfo = {
-    val additionalIncludes =
-      if (FileDefaults.hasCppFileExtension(file.toString)) parserConfig.systemIncludePathsCPP
-      else parserConfig.systemIncludePathsC
+    val additionalIncludes = if (FileDefaults.hasCppFileExtension(file.toString)) { parserConfig.systemIncludePathsCPP }
+    else { parserConfig.systemIncludePathsC }
     val fileSpecificDefines  = parserConfig.definedSymbolsPerFile.getOrElse(file.toString, Map.empty)
     val fileSpecificIncludes = parserConfig.includesPerFile.getOrElse(file.toString, mutable.LinkedHashSet.empty)
     new ScannerInfo(
-      (definedSymbols ++ fileSpecificDefines).asJava,
-      fileSpecificIncludes.toArray ++ (includePaths ++ additionalIncludes).map(_.toString).toArray
+      (parserConfig.definedSymbols ++ fileSpecificDefines).asJava,
+      fileSpecificIncludes.toArray ++ (parserConfig.userIncludePaths ++ additionalIncludes).map(_.toString).toArray
     )
   }
 
@@ -187,8 +184,8 @@ class CdtParser(
     val lang                = CdtParser.createParseLanguage(inFile, code, config)
     val scannerInfo         = createScannerInfo(inFile)
     val translationUnit     = lang.getASTTranslationUnit(fileContent, scannerInfo, fileContentProvider, null, opts, log)
-    if (parserConfig.logProblems) logProblems(translationUnit)
-    if (parserConfig.logPreprocessor) logPreprocessorStatements(translationUnit)
+    if (config.logProblems) logProblems(translationUnit)
+    if (config.logPreprocessor) logPreprocessorStatements(translationUnit)
     translationUnit
   }
 

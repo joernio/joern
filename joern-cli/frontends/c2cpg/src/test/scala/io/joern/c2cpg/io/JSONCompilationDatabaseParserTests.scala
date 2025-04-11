@@ -113,7 +113,7 @@ class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
       FileUtil.usingTemporaryFile("compile_commands.json") { commandJsonFile =>
         Files.writeString(commandJsonFile, content)
 
-        val commandObjects = JSONCompilationDatabaseParser.parse(commandJsonFile.toString)
+        val commandObjects = JSONCompilationDatabaseParser.parse(commandJsonFile.toString).get.commands
         commandObjects.map(_.compiledFile()) shouldBe Set(
           Paths.get("/home/user/llvm/build/file.cc").toString,
           Paths.get("/home/user/llvm/build/file2.cc").toString

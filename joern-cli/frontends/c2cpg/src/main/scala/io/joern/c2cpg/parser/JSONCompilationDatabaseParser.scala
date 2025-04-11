@@ -30,18 +30,18 @@ object JSONCompilationDatabaseParser {
     */
   private val includeInCommandPattern = """-I(\S+)""".r
 
-  def parse(compileCommandsJson: String): mutable.LinkedHashSet[CommandObject] = {
+  def parse(compileCommandsJson: String): Option[CompilationDatabase] = {
     try {
       val jsonContent       = IOUtils.readEntireFile(Paths.get(compileCommandsJson))
       val json              = ujson.read(jsonContent)
       val allCommandObjects = mutable.LinkedHashSet.from(json.arr)
-      allCommandObjects.map { obj =>
+      Some(CompilationDatabase(allCommandObjects.map { obj =>
         CommandObject(obj("directory").str, safeArguments(obj), safeCommand(obj), obj("file").str)
-      }
+      }))
     } catch {
       case t: Throwable =>
         logger.warn(s"Could not parse '$compileCommandsJson'", t)
-        mutable.LinkedHashSet.empty
+        None
     }
   }
 
@@ -61,6 +61,8 @@ object JSONCompilationDatabaseParser {
   private def hasKey(node: Value, key: String): Boolean = {
     Try(node(key)).isSuccess
   }
+
+  case class CompilationDatabase(commands: mutable.LinkedHashSet[CommandObject])
 
   case class CommandObject(
     directory: String,

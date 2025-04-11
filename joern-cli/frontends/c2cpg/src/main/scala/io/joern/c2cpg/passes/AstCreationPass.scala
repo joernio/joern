@@ -7,7 +7,7 @@ import io.joern.c2cpg.parser.CdtParser
 import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.parser.HeaderFileFinder
 import io.joern.c2cpg.parser.JSONCompilationDatabaseParser
-import io.joern.c2cpg.parser.JSONCompilationDatabaseParser.CommandObject
+import io.joern.c2cpg.parser.JSONCompilationDatabaseParser.CompilationDatabase
 import io.joern.c2cpg.C2Cpg
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.utils.Report
@@ -21,7 +21,6 @@ import org.slf4j.LoggerFactory
 
 import java.nio.file.Path
 import java.nio.file.Paths
-import scala.collection.mutable
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -35,19 +34,19 @@ class AstCreationPass(
   report: Report = new Report()
 ) extends ForkJoinParallelCpgPass[(Path, ILanguage)](cpg) {
 
+  private val compilationDatabase: Option[CompilationDatabase] =
+    config.compilationDatabaseFile.flatMap(JSONCompilationDatabaseParser.parse)
+
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
-  private val compilationDatabase: mutable.LinkedHashSet[CommandObject] =
-    config.compilationDatabase.map(JSONCompilationDatabaseParser.parse).getOrElse(mutable.LinkedHashSet.empty)
-
-  private val headerFileFinder  = new HeaderFileFinder(config)
-  private val parser: CdtParser = new CdtParser(config, headerFileFinder, compilationDatabase, global)
+  private val headerFileFinder: HeaderFileFinder = new HeaderFileFinder(config)
+  private val parser: CdtParser                  = new CdtParser(config, headerFileFinder, compilationDatabase, global)
 
   override def generateParts(): Array[(Path, ILanguage)] = {
-    val sourceFiles = if (config.compilationDatabase.isEmpty) {
+    val sourceFiles = if (config.compilationDatabaseFile.isEmpty) {
       sourceFilesFromDirectory()
     } else {
-      sourceFilesFromCompilationDatabase(config.compilationDatabase.get)
+      sourceFilesFromCompilationDatabase(config.compilationDatabaseFile.get)
     }
     sourceFiles.flatMap { file =>
       val path = Paths.get(file).toAbsolutePath
@@ -78,23 +77,23 @@ class AstCreationPass(
   }
 
   private def sourceFilesFromCompilationDatabase(compilationDatabaseFile: String): Array[String] = {
-    if (compilationDatabase.isEmpty) {
-      logger.warn(s"'$compilationDatabaseFile' contains no source files. CPG will be empty.")
-      return Array.empty
+    compilationDatabase match {
+      case Some(db) =>
+        val files         = db.commands.map(_.compiledFile()).toList
+        val filteredFiles = files.filter(f => fileExtensions.exists(StringUtils.endsWithIgnoreCase(f, _)))
+        SourceFiles
+          .filterFiles(
+            filteredFiles,
+            config.inputPath,
+            ignoredDefaultRegex = Option(C2Cpg.DefaultIgnoredFolders),
+            ignoredFilesRegex = Option(config.ignoredFilesRegex),
+            ignoredFilesPath = Option(config.ignoredFiles)
+          )
+          .toArray
+      case None =>
+        logger.warn(s"'$compilationDatabaseFile' contains no source files. CPG will be empty.")
+        Array.empty
     }
-    val allSourceFiles =
-      compilationDatabase.map(_.compiledFile()).toList
-    val filteredSourceFiles =
-      allSourceFiles.filter(file => fileExtensions.exists(StringUtils.endsWithIgnoreCase(file, _)))
-    SourceFiles
-      .filterFiles(
-        filteredSourceFiles,
-        config.inputPath,
-        ignoredDefaultRegex = Option(C2Cpg.DefaultIgnoredFolders),
-        ignoredFilesRegex = Option(config.ignoredFilesRegex),
-        ignoredFilesPath = Option(config.ignoredFiles)
-      )
-      .toArray
   }
 
   override def runOnPart(diffGraph: DiffGraphBuilder, fileAndLanguage: (Path, ILanguage)): Unit = {
