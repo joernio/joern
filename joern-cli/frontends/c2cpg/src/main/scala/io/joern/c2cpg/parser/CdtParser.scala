@@ -15,7 +15,6 @@ import org.eclipse.cdt.core.model.ILanguage
 import org.eclipse.cdt.core.parser.DefaultLogService
 import org.eclipse.cdt.core.parser.FileContent
 import org.eclipse.cdt.core.parser.ScannerInfo
-import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.CPPVisitor
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Files
@@ -127,11 +126,10 @@ class CdtParser(
   }
 
   def parse(file: Path, language: ILanguage): Option[IASTTranslationUnit] = {
-    val parseResult = parseInternal(file, language)
-    parseResult match {
-      case ParseResult(Some(t), Some(relativeFilePath), _) =>
+    parseInternal(file, language) match {
+      case ParseResult(translationUnit @ Some(_), Some(relativeFilePath), _) =>
         logger.info(s"Parsed '$relativeFilePath'")
-        Option(t)
+        translationUnit
       case ParseResult(_, maybeRelativePath, maybeThrowable) =>
         logger.warn(
           s"Failed to parse '${maybeRelativePath.getOrElse(file.toString)}': ${maybeThrowable.map(extractParseException).getOrElse("Unknown parse error!")}"
@@ -147,8 +145,7 @@ class CdtParser(
       val scInfo              = createScannerInfo(file)
       val fContent            = readFileAsFileContent(file)
       val translationUnit     = language.getASTTranslationUnit(fContent, scInfo, fileContentProvider, null, opts, log)
-      val problems            = CPPVisitor.getProblems(translationUnit)
-      if (parserConfig.logProblems) logProblems(problems.toList)
+      if (parserConfig.logProblems) logProblems(translationUnit)
       if (parserConfig.logPreprocessor) logPreprocessorStatements(translationUnit)
       ParseResult(Option(translationUnit), Some(relativeFilePath))
     } catch {
@@ -180,7 +177,7 @@ class CdtParser(
         logger.warn(s"Failed to parse '$code' in file '$relativePath': ${extractParseException(exception)}")
         None
       case Success(translationUnit) =>
-        Some(translationUnit)
+        Option(translationUnit)
     }
   }
 
@@ -190,8 +187,7 @@ class CdtParser(
     val lang                = CdtParser.createParseLanguage(inFile, code, config)
     val scannerInfo         = createScannerInfo(inFile)
     val translationUnit     = lang.getASTTranslationUnit(fileContent, scannerInfo, fileContentProvider, null, opts, log)
-    val problems            = CPPVisitor.getProblems(translationUnit)
-    if (parserConfig.logProblems) logProblems(problems.toList)
+    if (parserConfig.logProblems) logProblems(translationUnit)
     if (parserConfig.logPreprocessor) logPreprocessorStatements(translationUnit)
     translationUnit
   }

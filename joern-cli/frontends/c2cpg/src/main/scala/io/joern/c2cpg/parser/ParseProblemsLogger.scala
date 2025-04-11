@@ -1,6 +1,8 @@
 package io.joern.c2cpg.parser
 
 import org.eclipse.cdt.core.dom.ast.IASTProblem
+import org.eclipse.cdt.core.dom.ast.IASTTranslationUnit
+import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.CPPVisitor
 import org.slf4j.LoggerFactory
 
 trait ParseProblemsLogger {
@@ -9,8 +11,8 @@ trait ParseProblemsLogger {
 
   private val logger = LoggerFactory.getLogger(classOf[ParseProblemsLogger])
 
-  protected def logProblems(problems: List[IASTProblem]): Unit = {
-    problems.foreach(logProblemNode)
+  protected def logProblems(translationUnit: IASTTranslationUnit): Unit = {
+    CPPVisitor.getProblems(translationUnit).foreach(logProblemNode)
   }
 
   private def logProblemNode(node: IASTProblem): Unit = {
