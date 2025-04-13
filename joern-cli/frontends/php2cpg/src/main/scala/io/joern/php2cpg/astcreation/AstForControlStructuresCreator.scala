@@ -1,0 +1,310 @@
+package io.joern.php2cpg.astcreation
+
+import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
+import io.joern.php2cpg.parser.Domain.*
+import io.joern.x2cpg.Defines.UnresolvedSignature
+import io.joern.x2cpg.{Ast, ValidationMode}
+import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
+
+trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+
+  protected def astForBreakStmt(breakStmt: PhpBreakStmt): Ast = {
+    val code      = breakStmt.num.map(num => s"break($num)").getOrElse("break")
+    val breakNode = controlStructureNode(breakStmt, ControlStructureTypes.BREAK, code)
+
+    val argument = breakStmt.num.map(intToLiteralAst)
+
+    controlStructureAst(breakNode, None, argument.toList)
+  }
+
+  protected def astForContinueStmt(continueStmt: PhpContinueStmt): Ast = {
+    val code         = continueStmt.num.map(num => s"continue($num)").getOrElse("continue")
+    val continueNode = controlStructureNode(continueStmt, ControlStructureTypes.CONTINUE, code)
+
+    val argument = continueStmt.num.map(intToLiteralAst)
+
+    controlStructureAst(continueNode, None, argument.toList)
+  }
+
+  protected def astForWhileStmt(whileStmt: PhpWhileStmt): Ast = {
+    val condition  = astForExpr(whileStmt.cond)
+    val lineNumber = line(whileStmt)
+    val code       = s"while (${condition.rootCodeOrEmpty})"
+    val body       = stmtBodyBlockAst(whileStmt)
+
+    whileAst(Option(condition), List(body), Option(code), lineNumber)
+  }
+
+  protected def astForDoStmt(doStmt: PhpDoStmt): Ast = {
+    val condition  = astForExpr(doStmt.cond)
+    val lineNumber = line(doStmt)
+    val code       = s"do {...} while (${condition.rootCodeOrEmpty})"
+    val body       = stmtBodyBlockAst(doStmt)
+
+    doWhileAst(Option(condition), List(body), Option(code), lineNumber)
+  }
+
+  protected def astForForStmt(stmt: PhpForStmt): Ast = {
+    val initAsts      = stmt.inits.map(astForExpr)
+    val conditionAsts = stmt.conditions.map(astForExpr)
+    val loopExprAsts  = stmt.loopExprs.map(astForExpr)
+
+    val bodyAst = stmtBodyBlockAst(stmt)
+
+    val initCode      = initAsts.map(_.rootCodeOrEmpty).mkString(",")
+    val conditionCode = conditionAsts.map(_.rootCodeOrEmpty).mkString(",")
+    val loopExprCode  = loopExprAsts.map(_.rootCodeOrEmpty).mkString(",")
+    val forCode       = s"for ($initCode;$conditionCode;$loopExprCode)"
+
+    val forNode = controlStructureNode(stmt, ControlStructureTypes.FOR, forCode)
+    forAst(forNode, Nil, initAsts, conditionAsts, loopExprAsts, bodyAst)
+  }
+
+  protected def astForIfStmt(ifStmt: PhpIfStmt): Ast = {
+    val condition = astForExpr(ifStmt.cond)
+
+    val thenAst = stmtBodyBlockAst(ifStmt)
+
+    val elseAst = ifStmt.elseIfs match {
+      case Nil => ifStmt.elseStmt.map(els => stmtBodyBlockAst(els)).toList
+
+      case elseIf :: rest =>
+        val newIfStmt     = PhpIfStmt(elseIf.cond, elseIf.stmts, rest, ifStmt.elseStmt, elseIf.attributes)
+        val wrappingBlock = blockNode(elseIf)
+        val wrappedAst    = Ast(wrappingBlock).withChild(astForIfStmt(newIfStmt)) :: Nil
+        wrappedAst
+    }
+
+    val conditionCode = condition.rootCodeOrEmpty
+    val ifNode        = controlStructureNode(ifStmt, ControlStructureTypes.IF, s"if ($conditionCode)")
+
+    controlStructureAst(ifNode, Option(condition), thenAst :: elseAst)
+  }
+
+  protected def astForSwitchStmt(stmt: PhpSwitchStmt): Ast = {
+    val conditionAst = astForExpr(stmt.condition)
+
+    val switchNode =
+      controlStructureNode(stmt, ControlStructureTypes.SWITCH, s"switch (${conditionAst.rootCodeOrEmpty})")
+
+    val switchBodyBlock = blockNode(stmt)
+    val entryAsts       = stmt.cases.flatMap(astsForSwitchCase)
+    val switchBody      = Ast(switchBodyBlock).withChildren(entryAsts)
+
+    controlStructureAst(switchNode, Option(conditionAst), switchBody :: Nil)
+  }
+
+  private def astsForSwitchCase(caseStmt: PhpCaseStmt): List[Ast] = {
+    val maybeConditionAst = caseStmt.condition.map(astForExpr)
+    val jumpTarget = maybeConditionAst match {
+      case Some(conditionAst) => NewJumpTarget().name("case").code(s"case ${conditionAst.rootCodeOrEmpty}")
+      case None               => NewJumpTarget().name("default").code("default")
+    }
+    jumpTarget.lineNumber(line(caseStmt))
+
+    val stmtAsts = caseStmt.stmts.flatMap(astsForStmt)
+
+    Ast(jumpTarget) :: maybeConditionAst.toList ++ stmtAsts
+  }
+
+  protected def astForTryStmt(stmt: PhpTryStmt): Ast = {
+    val tryBody = stmtBodyBlockAst(stmt)
+
+    val catches = stmt.catches.map { catchStmt =>
+      val catchNode = controlStructureNode(catchStmt, ControlStructureTypes.CATCH, "catch")
+      Ast(catchNode).withChild(astForCatchStmt(catchStmt))
+    }
+
+    val finallyBody = stmt.finallyStmt.map { fin =>
+      val finallyNode = controlStructureNode(fin, ControlStructureTypes.FINALLY, "finally")
+      Ast(finallyNode).withChild(stmtBodyBlockAst(fin))
+    }
+
+    val tryNode = controlStructureNode(stmt, ControlStructureTypes.TRY, "try { ... }")
+    tryCatchAst(tryNode, tryBody, catches, finallyBody)
+  }
+
+  private def astForCatchStmt(stmt: PhpCatchStmt): Ast = {
+    // TODO Add variable at some point. Current implementation is consistent with C++.
+    stmtBodyBlockAst(stmt)
+  }
+
+  protected def astForReturnStmt(stmt: PhpReturnStmt): Ast = {
+    val maybeExprAst = stmt.expr.map(astForExpr)
+    val code         = s"return ${maybeExprAst.map(_.rootCodeOrEmpty).getOrElse("")}"
+
+    val node = returnNode(stmt, code)
+
+    returnAst(node, maybeExprAst.toList)
+  }
+
+  protected def astForForeachStmt(stmt: PhpForeachStmt): Ast = {
+    val iterIdentifier = getTmpIdentifier(stmt, maybeTypeFullName = None, prefix = "iter_")
+
+    // keep this just used to construct the `code` field
+    val assignItemTargetAst = stmt.keyVar match {
+      case Some(key) => astForKeyValPair(stmt, key, stmt.valueVar)
+      case None      => astForExpr(stmt.valueVar)
+    }
+
+    // Initializer asts
+    // - Iterator assign
+    val iterValue         = astForExpr(stmt.iterExpr)
+    val iteratorAssignAst = simpleAssignAst(stmt, Ast(iterIdentifier), iterValue)
+
+    // - Assigned item assign
+    val itemInitAst = getItemAssignAstForForeach(stmt, iterIdentifier.copy)
+
+    // Condition ast
+    val isNullName = PhpOperators.isNull
+    val valueAst   = astForExpr(stmt.valueVar)
+    val isNullCode = s"$isNullName(${valueAst.rootCodeOrEmpty})"
+    val isNullCall = operatorCallNode(stmt, isNullCode, isNullName, Some(TypeConstants.Bool))
+      .methodFullName(PhpOperators.isNull)
+    val notIsNull    = operatorCallNode(stmt, s"!$isNullCode", Operators.logicalNot, None)
+    val isNullAst    = callAst(isNullCall, valueAst :: Nil)
+    val conditionAst = callAst(notIsNull, isNullAst :: Nil)
+
+    // Update asts
+    val nextIterIdent = Ast(iterIdentifier.copy)
+    val nextSignature = "void()"
+    val nextCallCode  = s"${nextIterIdent.rootCodeOrEmpty}->next()"
+    val nextCallNode = callNode(
+      stmt,
+      nextCallCode,
+      "next",
+      "Iterator.next",
+      DispatchTypes.DYNAMIC_DISPATCH,
+      Some(nextSignature),
+      Some(TypeConstants.Any)
+    )
+    val nextCallAst = callAst(nextCallNode, base = Option(nextIterIdent))
+    val itemUpdateAst = itemInitAst.root match {
+      case Some(initRoot: AstNodeNew) => itemInitAst.subTreeCopy(initRoot)
+      case _ =>
+        logger.warn(s"Could not copy foreach init ast in $relativeFileName")
+        Ast()
+    }
+
+    val bodyAst = stmtBodyBlockAst(stmt)
+
+    val ampPrefix   = if (stmt.assignByRef) "&" else ""
+    val foreachCode = s"foreach (${iterValue.rootCodeOrEmpty} as $ampPrefix${assignItemTargetAst.rootCodeOrEmpty})"
+    val foreachNode = controlStructureNode(stmt, ControlStructureTypes.FOR, foreachCode)
+    Ast(foreachNode)
+      .withChild(wrapMultipleInBlock(iteratorAssignAst :: itemInitAst :: Nil, line(stmt)))
+      .withChild(conditionAst)
+      .withChild(wrapMultipleInBlock(nextCallAst :: itemUpdateAst :: Nil, line(stmt)))
+      .withChild(bodyAst)
+      .withConditionEdges(foreachNode, conditionAst.root.toList)
+  }
+
+  private def getItemAssignAstForForeach(stmt: PhpForeachStmt, iteratorIdentifier: NewIdentifier): Ast = {
+    // create assignment for value-part
+    val valueAssign = {
+      val iteratorIdentifierAst = Ast(iteratorIdentifier)
+      val currentCallSignature  = s"$UnresolvedSignature(0)"
+      val currentCallCode       = s"${iteratorIdentifierAst.rootCodeOrEmpty}->current()"
+      // `current` function is used to get the current element of given array
+      // see https://www.php.net/manual/en/function.current.php & https://www.php.net/manual/en/iterator.current.php
+      val currentCallNode = callNode(
+        stmt,
+        currentCallCode,
+        "current",
+        "Iterator.current",
+        DispatchTypes.DYNAMIC_DISPATCH,
+        Some(currentCallSignature),
+        Some(TypeConstants.Any)
+      )
+      val currentCallAst = callAst(currentCallNode, base = Option(iteratorIdentifierAst))
+
+      val valueAst = if (stmt.assignByRef) {
+        val addressOfCode = s"&${currentCallAst.rootCodeOrEmpty}"
+        val addressOfCall = operatorCallNode(stmt, addressOfCode, Operators.addressOf, None)
+        callAst(addressOfCall, currentCallAst :: Nil)
+      } else {
+        currentCallAst
+      }
+      simpleAssignAst(stmt, astForExpr(stmt.valueVar), valueAst)
+    }
+
+    // try to create assignment for key-part
+    val keyAssignOption = stmt.keyVar.map(keyVar =>
+      val iteratorIdentifierAst = Ast(iteratorIdentifier.copy)
+      val keyCallSignature      = s"$UnresolvedSignature(0)"
+      val keyCallCode           = s"${iteratorIdentifierAst.rootCodeOrEmpty}->key()"
+      // `key` function is used to get the key of the current element
+      // see https://www.php.net/manual/en/function.key.php & https://www.php.net/manual/en/iterator.key.php
+      val keyCallNode = callNode(
+        stmt,
+        keyCallCode,
+        "key",
+        "Iterator.key",
+        DispatchTypes.DYNAMIC_DISPATCH,
+        Some(keyCallSignature),
+        Some(TypeConstants.Any)
+      )
+      val keyCallAst = callAst(keyCallNode, base = Option(iteratorIdentifierAst))
+      simpleAssignAst(stmt, astForExpr(keyVar), keyCallAst)
+    )
+
+    keyAssignOption match {
+      case Some(keyAssign) =>
+        Ast(blockNode(stmt))
+          .withChild(keyAssign)
+          .withChild(valueAssign)
+      case None =>
+        valueAssign
+    }
+  }
+
+  protected def astForThrow(expr: PhpThrowExpr): Ast = {
+    val thrownExpr = astForExpr(expr.expr)
+    val code       = s"throw ${thrownExpr.rootCodeOrEmpty}"
+
+    val throwNode = controlStructureNode(expr, ControlStructureTypes.THROW, code)
+
+    Ast(throwNode).withChild(thrownExpr)
+  }
+
+  protected def astForYieldFromExpr(expr: PhpYieldFromExpr): Ast = {
+    // TODO This is currently only distinguishable from yield by the code field. Decide whether to treat YIELD_FROM
+    //  separately or whether to lower this to a foreach with regular yields.
+    val exprAst = astForExpr(expr.expr)
+
+    val code = s"yield from ${exprAst.rootCodeOrEmpty}"
+
+    val yieldNode = controlStructureNode(expr, ControlStructureTypes.YIELD, code)
+
+    Ast(yieldNode)
+      .withChild(exprAst)
+  }
+
+  protected def astForGotoStmt(stmt: PhpGotoStmt): Ast = {
+    val label = stmt.label.name
+    val code  = s"goto $label"
+
+    val gotoNode = controlStructureNode(stmt, ControlStructureTypes.GOTO, code)
+
+    val jumpLabel = NewJumpLabel()
+      .name(label)
+      .code(label)
+      .lineNumber(line(stmt))
+
+    controlStructureAst(gotoNode, condition = None, children = Ast(jumpLabel) :: Nil)
+  }
+
+  protected def astForLabelStmt(stmt: PhpLabelStmt): Ast = {
+    val label = stmt.label.name
+
+    val jumpTarget = NewJumpTarget()
+      .name(label)
+      .code(label)
+      .lineNumber(line(stmt))
+
+    Ast(jumpTarget)
+  }
+
+}
