@@ -153,7 +153,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val typ = scope.getEnclosingTypeDeclTypeName
     identifierNode(originNode, NameConstants.This, s"$$${NameConstants.This}", typ.getOrElse("ANY"), typ.toList)
   }
-  
+
   protected def astForConstructor(constructorDecl: PhpMethodDecl): Ast = {
     val fieldInits = scope.getFieldInits
     astForMethodDecl(constructorDecl, fieldInits, isConstructor = true)
