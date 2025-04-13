@@ -204,7 +204,7 @@ class AstCreator(
 
   private def astforTraitUseStmt(stmt: PhpTraitUseStmt): Ast = {
     // TODO Actually implement this
-    logger.warn(
+    logger.debug(
       s"Trait use statement encountered. This is not yet supported. Location: $relativeFileName:${line(stmt)}"
     )
     Ast(unknownNode(stmt, code(stmt)))

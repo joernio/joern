@@ -16,7 +16,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   }
 
   private def astForAnonymousClass(stmt: PhpClassLikeStmt): Ast = {
-    logger.warn(s"Anonymous class encountered. This is not yet supported. Location: $relativeFileName:${line(stmt)}")
+    logger.debug(s"Anonymous class encountered. This is not yet supported. Location: $relativeFileName:${line(stmt)}")
     Ast(unknownNode(stmt, code(stmt)))
   }
 

@@ -814,7 +814,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   private def astForAnonymousClassInstantiation(expr: PhpNewExpr, classLikeStmt: PhpClassLikeStmt): Ast = {
     // TODO Do this along with other anonymous class support
-    logger.warn(
+    logger.debug(
       s"Anonymous class instantiation encountered. This is not yet supported. Location: $relativeFileName:${line(expr)}"
     )
     Ast(unknownNode(expr, code(expr)))
