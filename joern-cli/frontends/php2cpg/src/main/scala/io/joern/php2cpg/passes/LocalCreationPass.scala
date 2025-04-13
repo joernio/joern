@@ -1,24 +1,13 @@
 package io.joern.php2cpg.passes
 
-import io.shiftleft.passes.ForkJoinParallelCpgPass
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  AstNode,
-  Call,
-  Identifier,
-  Method,
-  NamespaceBlock,
-  NewLocal,
-  NewNode,
-  TypeDecl
-}
-import io.shiftleft.semanticcpg.language.*
 import io.joern.php2cpg.astcreation.AstCreator
 import io.joern.php2cpg.parser.Domain
 import io.joern.php2cpg.parser.Domain.PhpOperators
-import io.joern.x2cpg.AstNodeBuilder
-import io.shiftleft.codepropertygraph.generated.PropertyNames
+import io.joern.x2cpg.{AstNodeBuilder, Defines}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.passes.ForkJoinParallelCpgPass
+import io.shiftleft.semanticcpg.language.*
 
 object LocalCreationPass {
   def allLocalCreationPasses(cpg: Cpg): Iterator[LocalCreationPass[? <: AstNode]] =
@@ -54,7 +43,7 @@ abstract class LocalCreationPass[ScopeType <: AstNode](cpg: Cpg)
       .map { case identifierName -> identifiers =>
         val code = s"$$$identifierName"
         val local =
-          localNode(identifiers.head, identifierName, code, AstCreator.TypeConstants.Any, closureBindingId = None)
+          localNode(identifiers.head, identifierName, code, Defines.Any, closureBindingId = None)
         (local -> identifiers)
       }
       .toList

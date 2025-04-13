@@ -4,13 +4,12 @@ import io.joern.php2cpg.Config
 import io.joern.php2cpg.astcreation.AstCreator
 import io.joern.php2cpg.parser.PhpParser
 import io.joern.x2cpg.{SourceFiles, ValidationMode}
-import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
-import scala.jdk.CollectionConverters.*
 
 class AstCreationPass(config: Config, cpg: Cpg, parser: PhpParser)(implicit withSchemaValidation: ValidationMode)
     extends ForkJoinParallelCpgPass[Array[String]](cpg) {

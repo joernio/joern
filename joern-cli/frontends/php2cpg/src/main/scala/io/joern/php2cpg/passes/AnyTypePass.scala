@@ -1,6 +1,7 @@
 package io.joern.php2cpg.passes
 
 import io.joern.php2cpg.astcreation.AstCreator
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode
@@ -17,6 +18,6 @@ class AnyTypePass(cpg: Cpg) extends ForkJoinParallelCpgPass[AstNode](cpg) {
   }
 
   override def runOnPart(diffGraph: DiffGraphBuilder, node: AstNode): Unit = {
-    diffGraph.setNodeProperty(node, PropertyNames.TYPE_FULL_NAME, AstCreator.TypeConstants.Any)
+    diffGraph.setNodeProperty(node, PropertyNames.TYPE_FULL_NAME, Defines.Any)
   }
 }
