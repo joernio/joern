@@ -111,7 +111,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     // Use method signature for methods that can be linked to avoid varargs issue.
     val signature = s"$UnresolvedSignature(${call.args.size})"
-    val callRoot  = callNode(call, code, name, fullName, dispatchType, Some(signature), Some(TypeConstants.Any))
+    val callRoot  = callNode(call, code, name, fullName, dispatchType, Some(signature), Some(Defines.Any))
 
     val receiverAst = (targetAst, nameAst) match {
       case (Some(target), Some(n)) =>
@@ -229,7 +229,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val loweredAssignNodes = mutable.ListBuffer.empty[Ast]
 
     // create a Identifier ast for given name
-    def createIdentifier(name: String): Ast = Ast(identifierNode(assignment, name, s"$$$name", TypeConstants.Any))
+    def createIdentifier(name: String): Ast = Ast(identifierNode(assignment, name, s"$$$name", Defines.Any))
 
     def createIndexAccessChain(
       targetAst: Ast,
@@ -444,7 +444,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForNameExpr(expr: PhpNameExpr): Ast = {
-    val identifier = identifierNode(expr, expr.name, expr.name, TypeConstants.Any)
+    val identifier = identifierNode(expr, expr.name, expr.name, Defines.Any)
 
     val declaringNode = scope.lookupVariable(identifier.name)
 
@@ -528,7 +528,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   private def astForClone(expr: PhpCloneExpr): Ast = {
     val name    = PhpOperators.cloneFunc
     val argAst  = astForExpr(expr.expr)
-    val argType = argAst.rootType.orElse(Some(TypeConstants.Any))
+    val argType = argAst.rootType.orElse(Some(Defines.Any))
     val code    = s"$name ${argAst.rootCodeOrEmpty}"
 
     val callNode = operatorCallNode(expr, code, name, argType)
@@ -802,7 +802,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       Ast(literalNode(expr, constName, TypeConstants.NullType))
     } else {
       val namespaceName   = NamespaceTraversal.globalNamespaceName
-      val identifier      = identifierNode(expr, namespaceName, namespaceName, "ANY")
+      val identifier      = identifierNode(expr, namespaceName, namespaceName, Defines.Any)
       val fieldIdentifier = fieldIdentifierNode(expr, constName, constName)
 
       val fieldAccessNode = operatorCallNode(expr, code = constName, Operators.fieldAccess, None)
@@ -814,7 +814,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   private def astForAnonymousClassInstantiation(expr: PhpNewExpr, classLikeStmt: PhpClassLikeStmt): Ast = {
     // TODO Do this along with other anonymous class support
-    Ast()
+    logger.warn(
+      s"Anonymous class instantiation encountered. This is not yet supported. Location: $relativeFileName:${line(expr)}"
+    )
+    Ast(unknownNode(expr, code(expr)))
   }
 
   private def astForSimpleNewExpr(expr: PhpNewExpr, classNameExpr: PhpExpr): Ast = {
@@ -851,7 +854,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       initFullName,
       DispatchTypes.DYNAMIC_DISPATCH,
       Some(initSignature),
-      Some(TypeConstants.Any)
+      Some(Defines.Any)
     )
     val initReceiver = Ast(tmpIdentifier.copy)
     val initCallAst  = callAst(initCallNode, initArgs, base = Option(initReceiver))
@@ -859,7 +862,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     // Return identifier
     val returnIdentifierAst = Ast(tmpIdentifier.copy)
 
-    Ast(blockNode(expr, "", TypeConstants.Any))
+    Ast(blockNode(expr, "", Defines.Any))
       .withChild(allocAssignAst)
       .withChild(initCallAst)
       .withChild(returnIdentifierAst)

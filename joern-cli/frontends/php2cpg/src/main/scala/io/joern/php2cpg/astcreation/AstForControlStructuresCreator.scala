@@ -3,8 +3,8 @@ package io.joern.php2cpg.astcreation
 import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
 import io.joern.php2cpg.parser.Domain.*
 import io.joern.x2cpg.Defines.UnresolvedSignature
-import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
+import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 
@@ -178,7 +178,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
       "Iterator.next",
       DispatchTypes.DYNAMIC_DISPATCH,
       Some(nextSignature),
-      Some(TypeConstants.Any)
+      Some(Defines.Any)
     )
     val nextCallAst = callAst(nextCallNode, base = Option(nextIterIdent))
     val itemUpdateAst = itemInitAst.root match {
@@ -216,7 +216,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
         "Iterator.current",
         DispatchTypes.DYNAMIC_DISPATCH,
         Some(currentCallSignature),
-        Some(TypeConstants.Any)
+        Some(Defines.Any)
       )
       val currentCallAst = callAst(currentCallNode, base = Option(iteratorIdentifierAst))
 
@@ -244,7 +244,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
         "Iterator.key",
         DispatchTypes.DYNAMIC_DISPATCH,
         Some(keyCallSignature),
-        Some(TypeConstants.Any)
+        Some(Defines.Any)
       )
       val keyCallAst = callAst(keyCallNode, base = Option(iteratorIdentifierAst))
       simpleAssignAst(stmt, astForExpr(keyVar), keyCallAst)

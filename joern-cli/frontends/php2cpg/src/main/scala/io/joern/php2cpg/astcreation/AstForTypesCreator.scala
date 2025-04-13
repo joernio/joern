@@ -2,7 +2,7 @@ package io.joern.php2cpg.astcreation
 
 import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
 import io.joern.php2cpg.parser.Domain.*
-import io.joern.x2cpg.{Ast, ValidationMode}
+import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
@@ -16,8 +16,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   }
 
   private def astForAnonymousClass(stmt: PhpClassLikeStmt): Ast = {
-    // TODO
-    Ast()
+    logger.warn(s"Anonymous class encountered. This is not yet supported. Location: $relativeFileName:${line(stmt)}")
+    Ast(unknownNode(stmt, code(stmt)))
   }
 
   private def astForNamedClass(stmt: PhpClassLikeStmt, name: PhpNameExpr): Ast = {
@@ -148,7 +148,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     addToScope: Ast => Unit,
     isField: Boolean
   ): Ast = {
-    val member = memberNode(originNode, name, code, TypeConstants.Any)
+    val member = memberNode(originNode, name, code, Defines.Any)
 
     value match {
       case Some(v) =>

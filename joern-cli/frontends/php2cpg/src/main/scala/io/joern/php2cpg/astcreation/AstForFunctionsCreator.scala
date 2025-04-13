@@ -1,19 +1,19 @@
 package io.joern.php2cpg.astcreation
 
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
-import io.joern.php2cpg.parser.Domain.PhpModifiers.containsAccessModifier
 import io.joern.php2cpg.parser.Domain.*
+import io.joern.php2cpg.parser.Domain.PhpModifiers.containsAccessModifier
 import io.joern.x2cpg.Defines.UnresolvedSignature
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes, PropertyNames}
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForClosureExpr(closureExpr: PhpClosureExpr): Ast = {
     val methodName = scope.getScopedClosureName
-    val methodRef  = methodRefNode(closureExpr, methodName, methodName, TypeConstants.Any)
+    val methodRef  = methodRefNode(closureExpr, methodName, methodName, Defines.Any)
 
     val localsForUses = closureExpr.uses.flatMap { closureUse =>
       closureUse.variable match {
@@ -21,7 +21,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           val typeFullName = scope
             .lookupVariable(name)
             .flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME).map(_.toString))
-            .getOrElse(TypeConstants.Any)
+            .getOrElse(Defines.Any)
           val byRefPrefix = if (closureUse.byRef) "&" else ""
 
           Some(localNode(closureExpr, name, s"$byRefPrefix$$$name", typeFullName))
@@ -118,7 +118,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     scope.pushNewScope(method)
 
-    val returnType = decl.returnType.map(_.name).getOrElse(TypeConstants.Any)
+    val returnType = decl.returnType.map(_.name).getOrElse(Defines.Any)
 
     val methodBodyStmts = bodyPrefixAsts ++ decl.stmts.flatMap(astsForStmt)
     val methodReturn    = methodReturnNode(decl, returnType)
@@ -131,7 +131,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   private def thisParamAstForMethod(originNode: PhpNode): Ast = {
-    val typeFullName = scope.getEnclosingTypeDeclTypeFullName.getOrElse(TypeConstants.Any)
+    val typeFullName = scope.getEnclosingTypeDeclTypeFullName.getOrElse(Defines.Any)
 
     val thisNode = parameterInNode(
       originNode,
@@ -151,7 +151,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
   protected def thisIdentifier(originNode: PhpNode): NewIdentifier = {
     val typ = scope.getEnclosingTypeDeclTypeName
-    identifierNode(originNode, NameConstants.This, s"$$${NameConstants.This}", typ.getOrElse("ANY"), typ.toList)
+    identifierNode(originNode, NameConstants.This, s"$$${NameConstants.This}", typ.getOrElse(Defines.Any), typ.toList)
   }
 
   protected def astForConstructor(constructorDecl: PhpMethodDecl): Ast = {
@@ -173,7 +173,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val methodBody = blockAst(blockNode(originNode), scope.getFieldInits)
 
-    val methodReturn = methodReturnNode(originNode, TypeConstants.Any)
+    val methodReturn = methodReturnNode(originNode, Defines.Any)
 
     methodAstWithAnnotations(method, thisParam :: Nil, methodBody, methodReturn, modifiers)
   }
@@ -198,7 +198,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       else
         EvaluationStrategies.BY_VALUE
 
-    val typeFullName = param.paramType.map(_.name).getOrElse(TypeConstants.Any)
+    val typeFullName = param.paramType.map(_.name).getOrElse(Defines.Any)
 
     val byRefCodePrefix = if (param.byRef) "&" else ""
     val code            = s"$byRefCodePrefix$$${param.name}"

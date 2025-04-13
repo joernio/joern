@@ -6,7 +6,7 @@ import io.joern.php2cpg.parser.Domain.*
 import io.joern.x2cpg.Defines.UnresolvedNamespace
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.utils.IntervalKeyPool
-import io.joern.x2cpg.{Ast, ValidationMode}
+import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewIdentifier, NewLiteral, NewNamespaceBlock}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
@@ -49,7 +49,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     prefix: String = ""
   ): NewIdentifier = {
     val name         = s"$prefix${getNewTmpName()}"
-    val typeFullName = maybeTypeFullName.getOrElse(TypeConstants.Any)
+    val typeFullName = maybeTypeFullName.getOrElse(Defines.Any)
     identifierNode(originNode, name, s"$$$name", typeFullName)
   }
 

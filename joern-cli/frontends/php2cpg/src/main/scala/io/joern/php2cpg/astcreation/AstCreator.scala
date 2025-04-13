@@ -204,7 +204,10 @@ class AstCreator(
 
   private def astforTraitUseStmt(stmt: PhpTraitUseStmt): Ast = {
     // TODO Actually implement this
-    Ast()
+    logger.warn(
+      s"Trait use statement encountered. This is not yet supported. Location: $relativeFileName:${line(stmt)}"
+    )
+    Ast(unknownNode(stmt, code(stmt)))
   }
 
   private def astForUseUse(stmt: PhpUseUse, namePrefix: String = ""): Ast = {
@@ -233,7 +236,7 @@ class AstCreator(
           val maybeDefaultValueAst = staticVarDecl.defaultValue.map(astForExpr)
 
           val code         = s"static $$$name"
-          val typeFullName = maybeDefaultValueAst.flatMap(_.rootType).getOrElse(TypeConstants.Any)
+          val typeFullName = maybeDefaultValueAst.flatMap(_.rootType).getOrElse(Defines.Any)
 
           val local = localNode(stmt, name, code, typeFullName)
           scope.addToScope(local.name, local)
@@ -266,7 +269,6 @@ object AstCreator {
     val Float: String               = "float"
     val Bool: String                = "bool"
     val Void: String                = "void"
-    val Any: String                 = "ANY"
     val Array: String               = "array"
     val NullType: String            = "null"
     val VariadicPlaceholder: String = "PhpVariadicPlaceholder"
