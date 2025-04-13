@@ -2,6 +2,7 @@ package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal}
 import io.shiftleft.semanticcpg.language.*
@@ -44,7 +45,7 @@ class PocTest extends PhpCode2CpgFixture {
           val List(param) = method.parameter.l
           param.name shouldBe "name"
           param.code shouldBe "$name"
-          method.methodReturn.typeFullName shouldBe TypeConstants.Any
+          method.methodReturn.typeFullName shouldBe Defines.Any
 
           val List(echoCall) = method.body.astChildren.collectAll[Call].l
           echoCall.name shouldBe "echo"
