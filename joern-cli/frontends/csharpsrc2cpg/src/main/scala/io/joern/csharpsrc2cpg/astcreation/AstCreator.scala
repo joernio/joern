@@ -6,7 +6,6 @@ import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.csharpsrc2cpg.utils.Utils.*
 import io.joern.x2cpg.astgen.{AstGenNodeBuilder, BaseNodeInfo, ParserResult}
-import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, ModifierTypes, NodeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{
@@ -74,13 +73,13 @@ class AstCreator(
     // Note: there can only be one such file in a given project, but we are currently
     // not checking this.
     if (globalStatements.nonEmpty) {
-      importAsts ++ astForTopLevelStatements(globalStatements) ++ nonGlobalStatementAsts
+      importAsts ++ astForTopLevelStatements(cu, globalStatements) ++ nonGlobalStatementAsts
     } else {
       importAsts ++ nonGlobalStatementAsts
     }
   }
 
-  private def astForTopLevelStatements(topLevelStmts: Seq[DotNetNodeInfo]): Seq[Ast] = {
+  private def astForTopLevelStatements(cu: DotNetNodeInfo, topLevelStmts: Seq[DotNetNodeInfo]): Seq[Ast] = {
     val className      = composeTopLevelClassName(relativeFileName)
     val classFullName  = className
     val mainName       = Constants.TopLevelMainMethodName
@@ -94,14 +93,14 @@ class AstCreator(
       .fullName(classFullName)
       .filename(relativeFileName)
 
-    val classModifiers = newModifierNode(ModifierTypes.INTERNAL) :: Nil
+    val classModifiers = modifierNode(cu, ModifierTypes.INTERNAL) :: Nil
     val methodNode = NewMethod()
       .name(mainName)
       .fullName(mainFullName)
       .filename(relativeFileName)
       .signature(mainSignature)
 
-    val methodModifiers = newModifierNode(ModifierTypes.STATIC) :: newModifierNode(ModifierTypes.PRIVATE) :: Nil
+    val methodModifiers = modifierNode(cu, ModifierTypes.STATIC) :: modifierNode(cu, ModifierTypes.PRIVATE) :: Nil
     val argsParameters  = mainParameters.map(x => NewMethodParameterIn().name(x._1).typeFullName(x._2))
     val methodBlock     = NewBlock().typeFullName(voidType)
     val methodReturn    = NewMethodReturn().typeFullName(methodBlock.typeFullName)

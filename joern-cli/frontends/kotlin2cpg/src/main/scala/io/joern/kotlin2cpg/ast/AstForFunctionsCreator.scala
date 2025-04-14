@@ -3,13 +3,10 @@ package io.joern.kotlin2cpg.ast
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.types.TypeConstants
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.AstNodeBuilder.{bindingNode, closureBindingNode}
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Stack.StackWrapper
-import io.joern.x2cpg.utils.NodeBuilders
-import io.joern.x2cpg.utils.NodeBuilders.newBindingNode
-import io.joern.x2cpg.utils.NodeBuilders.newClosureBindingNode
-import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -69,7 +66,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  def astsForMethod(ktFn: KtNamedFunction, withVirtualModifier: Boolean = false): Seq[Ast] = {
+  def astForMethod(ktFn: KtNamedFunction, withVirtualModifier: Boolean = false): Ast = {
     val funcDesc = bindingUtils.getFunctionDesc(ktFn)
     val descFullName = nameRenderer
       .descFullName(funcDesc)
@@ -98,9 +95,15 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
 
       registerType(typeDeclFullName)
 
-      val thisParam = NodeBuilders.newThisParameterNode(
-        typeFullName = typeDeclFullName,
-        dynamicTypeHintFullName = Seq(typeDeclFullName)
+      val thisParam = parameterInNode(
+        ktFn,
+        Constants.ThisName,
+        Constants.ThisName,
+        index = 0,
+        isVariadic = false,
+        typeFullName = Option(typeDeclFullName),
+        dynamicTypeHintFullName = Seq(typeDeclFullName),
+        evaluationStrategy = EvaluationStrategies.BY_SHARING
       )
       if (isExtensionMethod) {
         thisParam.order(1)
@@ -123,8 +126,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       withIndex(ktFn.getValueParameters.asScala.toSeq) { (p, idx) =>
         astForParameter(p, valueParamStartIndex + idx - 1)
       }
-    val bodyAsts = Option(ktFn.getBodyBlockExpression) match {
-      case Some(bodyBlockExpression) => astsForBlock(bodyBlockExpression, None, None)
+    val bodyAst = Option(ktFn.getBodyBlockExpression) match {
+      case Some(bodyBlockExpression) => astForBlock(bodyBlockExpression, None, None)
       case None =>
         Option(ktFn.getBodyExpression)
           .map { expr =>
@@ -137,32 +140,30 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
                 val returnAst_           = returnAst(returnNode(expr, Constants.RetCode), Seq(lastStatementAst))
                 (allStatementsButLast ++ Seq(returnAst_)).toList
               } else List()
-            Seq(blockAst(bodyBlock, blockChildAsts))
+            blockAst(bodyBlock, blockChildAsts)
           }
           .getOrElse {
             val bodyBlock = blockNode(ktFn, "<empty>", TypeConstants.Any)
-            Seq(blockAst(bodyBlock, List[Ast]()))
+            blockAst(bodyBlock, List[Ast]())
           }
     }
     methodAstParentStack.pop()
     scope.popScope()
 
-    val bodyAst           = bodyAsts.headOption.getOrElse(Ast(unknownNode(ktFn, Constants.Empty)))
-    val otherBodyAsts     = bodyAsts.drop(1)
     val explicitTypeName  = Option(ktFn.getTypeReference).map(_.getText).getOrElse(TypeConstants.Any)
     val typeFullName      = registerType(nameRenderer.typeFullName(funcDesc.getReturnType).getOrElse(explicitTypeName))
     val _methodReturnNode = methodReturnNode(ktFn, typeFullName)
 
     val visibilityModifierType =
       modifierTypeForVisibility(funcDesc.getVisibility)
-    val visibilityModifier = NodeBuilders.newModifierNode(visibilityModifierType)
+    val visibilityModifier = modifierNode(ktFn, visibilityModifierType)
 
     val modifierNodes =
-      if (withVirtualModifier) Seq(NodeBuilders.newModifierNode(ModifierTypes.VIRTUAL))
+      if (withVirtualModifier) Seq(modifierNode(ktFn, ModifierTypes.VIRTUAL))
       else Seq()
 
     val modifiers = if (funcDesc.getModality == Modality.ABSTRACT) {
-      List(visibilityModifier) ++ modifierNodes :+ NodeBuilders.newModifierNode(ModifierTypes.ABSTRACT)
+      List(visibilityModifier) ++ modifierNodes :+ modifierNode(ktFn, ModifierTypes.ABSTRACT)
     } else {
       List(visibilityModifier) ++ modifierNodes
     }
@@ -179,11 +180,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     Ast.storeInDiffGraph(functionTypeAndTypeDeclAst, diffGraph)
 
     val annotationEntries = ktFn.getAnnotationEntries.asScala.map(astForAnnotationEntry).toSeq
-    Seq(
-      methodAst(_methodNode, thisParameterAsts ++ methodParametersAsts, bodyAst, _methodReturnNode, modifiers)
-        .withChildren(otherBodyAsts)
-        .withChildren(annotationEntries)
-    )
+    methodAst(_methodNode, thisParameterAsts ++ methodParametersAsts, bodyAst, _methodReturnNode, modifiers)
+      .withChildren(annotationEntries)
   }
 
   private def astsForDestructuring(param: KtParameter): Seq[Ast] = {
@@ -297,19 +295,19 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       .map { capturedNodeContext =>
         val uuidBytes        = stringForUUID(fn, capturedNodeContext.name, capturedNodeContext.typeFullName)
         val closureBindingId = nameUUIDFromBytes(uuidBytes.getBytes).toString
-        val closureBindingNode =
-          newClosureBindingNode(closureBindingId, capturedNodeContext.name, EvaluationStrategies.BY_REFERENCE)
-        (closureBindingNode, capturedNodeContext)
+        val closureBinding =
+          closureBindingNode(closureBindingId, capturedNodeContext.name, EvaluationStrategies.BY_REFERENCE)
+        (closureBinding, capturedNodeContext)
       }
 
-    val localsForCaptured = closureBindingEntriesForCaptured.map { case (closureBindingNode, capturedNodeContext) =>
+    val localsForCaptured = closureBindingEntriesForCaptured.map { case (closureBinding, capturedNodeContext) =>
       val node =
         localNode(
           fn,
           capturedNodeContext.name,
           capturedNodeContext.name,
           capturedNodeContext.typeFullName,
-          closureBindingNode.closureBindingId
+          closureBinding.closureBindingId
         )
       scope.addToScope(capturedNodeContext.name, node)
       node
@@ -318,32 +316,31 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       withIndex(fn.getValueParameters.asScala.toSeq) { (p, idx) =>
         astForParameter(p, idx)
       }
-    val bodyAsts = Option(fn.getBodyBlockExpression) match {
+    val bodyAst = Option(fn.getBodyBlockExpression) match {
       case Some(bodyBlockExpression) =>
-        astsForBlock(bodyBlockExpression, None, None, localsForCaptures = localsForCaptured)
+        astForBlock(bodyBlockExpression, None, None, localsForCaptures = localsForCaptured)
       case None =>
         Option(fn.getBodyExpression)
           .map { expr =>
             val bodyBlock  = blockNode(expr, expr.getText, TypeConstants.Any)
             val returnAst_ = returnAst(returnNode(expr, Constants.RetCode), astsForExpression(expr, Some(1)))
-            Seq(blockAst(bodyBlock, localsForCaptured.map(Ast(_)) ++ List(returnAst_)))
+            blockAst(bodyBlock, localsForCaptured.map(Ast(_)) ++ List(returnAst_))
           }
           .getOrElse {
             val bodyBlock = blockNode(fn, "<empty>", TypeConstants.Any)
-            Seq(blockAst(bodyBlock, List[Ast]()))
+            blockAst(bodyBlock, List[Ast]())
           }
     }
 
     val returnTypeFullName     = TypeConstants.JavaLangObject
     val lambdaTypeDeclFullName = fullName.split(":").head
 
-    val bodyAst = bodyAsts.headOption.getOrElse(Ast(unknownNode(fn, Constants.Empty)))
     val lambdaMethodAst = methodAst(
       lambdaMethodNode,
       parametersAsts,
       bodyAst,
       methodReturnNode(fn, returnTypeFullName),
-      NodeBuilders.newModifierNode(ModifierTypes.VIRTUAL) :: NodeBuilders.newModifierNode(ModifierTypes.LAMBDA) :: Nil
+      modifierNode(fn, ModifierTypes.VIRTUAL) :: modifierNode(fn, ModifierTypes.LAMBDA) :: Nil
     )
 
     val _methodRefNode =
@@ -402,19 +399,19 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       .map { capturedNodeContext =>
         val uuidBytes        = stringForUUID(expr, capturedNodeContext.name, capturedNodeContext.typeFullName)
         val closureBindingId = nameUUIDFromBytes(uuidBytes.getBytes).toString
-        val closureBindingNode =
-          newClosureBindingNode(closureBindingId, capturedNodeContext.name, EvaluationStrategies.BY_REFERENCE)
-        (closureBindingNode, capturedNodeContext)
+        val closureBinding =
+          closureBindingNode(closureBindingId, capturedNodeContext.name, EvaluationStrategies.BY_REFERENCE)
+        (closureBinding, capturedNodeContext)
       }
 
-    val localsForCaptured = closureBindingEntriesForCaptured.map { case (closureBindingNode, capturedNodeContext) =>
+    val localsForCaptured = closureBindingEntriesForCaptured.map { case (closureBinding, capturedNodeContext) =>
       val node =
         localNode(
           expr,
           capturedNodeContext.name,
           capturedNodeContext.name,
           capturedNodeContext.typeFullName,
-          closureBindingNode.closureBindingId
+          closureBinding.closureBindingId
         )
       scope.addToScope(capturedNodeContext.name, node)
       node
@@ -449,9 +446,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val lastChildNotReturnExpression = !expr.getBodyExpression.getLastChild.isInstanceOf[KtReturnExpression]
     val needsReturnExpression        = lastChildNotReturnExpression
-    val bodyAsts = Option(expr.getBodyExpression)
+    val bodyAst = Option(expr.getBodyExpression)
       .map(
-        astsForBlock(
+        astForBlock(
           _,
           None,
           None,
@@ -461,26 +458,18 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
           Some(destructedParamAsts.toSeq)
         )
       )
-      .getOrElse(Seq(Ast(NewBlock())))
+      .getOrElse(Ast(blockNode(expr)))
 
     val returnTypeFullName = registerType(
       nameRenderer.typeFullName(funcDesc.getReturnType).getOrElse(TypeConstants.JavaLangObject)
     )
     val lambdaTypeDeclFullName = fullName.split(":").head
-
-    val (bodyAst, nestedLambdaDecls) = bodyAsts.toList match {
-      case body :: nestedLambdaDecls =>
-        if (nestedLambdaDecls.exists(_.root.exists(x => !x.isInstanceOf[NewMethod])))
-          logger.warn("Detected non-method related AST nodes under lambda expression. This is unexpected.")
-        body -> nestedLambdaDecls
-      case Nil => Ast(unknownNode(expr, Constants.Empty)) -> Nil
-    }
     val lambdaMethodAst = methodAst(
       lambdaMethodNode,
       paramAsts.toSeq,
       bodyAst,
       methodReturnNode(expr, returnTypeFullName),
-      newModifierNode(ModifierTypes.VIRTUAL) :: newModifierNode(ModifierTypes.LAMBDA) :: Nil
+      modifierNode(expr, ModifierTypes.VIRTUAL) :: modifierNode(expr, ModifierTypes.LAMBDA) :: Nil
     )
 
     val _methodRefNode =
@@ -508,9 +497,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     }
     closureBindingDefs.foreach(closureBindingDefQueue.prepend)
     lambdaAstQueue.prepend(lambdaMethodAst)
-    nestedLambdaDecls.foreach(lambdaAstQueue.prepend)
-    Ast(_methodRefNode)
-      .withChildren(annotations.map(astForAnnotationEntry))
+    Ast(_methodRefNode).withChildren(annotations.map(astForAnnotationEntry))
   }
 
   private def createImplicitParamNode(
@@ -601,21 +588,31 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
+  private def safeFunctionDescriptorName(f: FunctionDescriptor): Option[String] = {
+    // if some type info fails, we may otherwise end up with some NPE at the getName call
+    scala.util.Try(f.getName.toString).toOption
+  }
+
+  private def safeFunctionDescriptorSignature(f: FunctionDescriptor): Option[String] = {
+    // if some type info fails, we may otherwise end up with some NPE in funcDescSignature
+    scala.util.Try(nameRenderer.funcDescSignature(f)).toOption.flatten
+  }
+
   private def createLambdaBindings(
     lambdaMethodNode: NewMethod,
     lambdaTypeDecl: NewTypeDecl,
     samInterface: Option[ClassDescriptor]
   ): Unit = {
     val samMethod          = samInterface.map(SamConversionResolverImplKt.getSingleAbstractMethodOrNull)
-    val samMethodName      = samMethod.map(_.getName.toString).getOrElse(Constants.UnknownLambdaBindingName)
-    val samMethodSignature = samMethod.flatMap(nameRenderer.funcDescSignature)
+    val samMethodName      = samMethod.flatMap(safeFunctionDescriptorName).getOrElse(Constants.UnknownLambdaBindingName)
+    val samMethodSignature = samMethod.flatMap(safeFunctionDescriptorSignature)
 
     if (samMethodSignature.isDefined) {
-      val interfaceLambdaBinding = newBindingNode(samMethodName, samMethodSignature.get, lambdaMethodNode.fullName)
+      val interfaceLambdaBinding = bindingNode(samMethodName, samMethodSignature.get, lambdaMethodNode.fullName)
       addToLambdaBindingInfoQueue(interfaceLambdaBinding, lambdaTypeDecl, lambdaMethodNode)
     }
 
-    val nativeLambdaBinding = newBindingNode(samMethodName, lambdaMethodNode.signature, lambdaMethodNode.fullName)
+    val nativeLambdaBinding = bindingNode(samMethodName, lambdaMethodNode.signature, lambdaMethodNode.fullName)
     addToLambdaBindingInfoQueue(nativeLambdaBinding, lambdaTypeDecl, lambdaMethodNode)
   }
 

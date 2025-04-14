@@ -5,6 +5,7 @@ import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
 import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import scala.collection.mutable
 
@@ -91,6 +92,17 @@ class C2CpgScope {
   private val pendingReferences: mutable.Buffer[PendingReference] = mutable.ListBuffer.empty
   private var stack: Option[ScopeElement]                         = Option.empty
 
+  def computeScopePath: String = {
+    val m = getEnclosingMethodScopeElement(stack)
+    if (m.methodName.startsWith(io.joern.x2cpg.Defines.ClosurePrefix)) {
+      val offset = NamespaceTraversal.globalNamespaceName.length + 1
+      val index  = m.methodFullName.indexOf(NamespaceTraversal.globalNamespaceName) + offset
+      m.methodFullName.substring(index).takeWhile(_ != ':')
+    } else if (m.methodName != NamespaceTraversal.globalNamespaceName) {
+      m.methodFullName.takeWhile(_ != ':')
+    } else { "" }
+  }
+
   def lookupVariable(identifier: String): Option[(NewNode, String)] = {
     variableFromStack(stack, identifier).map { case (variableNodeId, tpe, _) => (variableNodeId, tpe) }
   }
@@ -118,6 +130,21 @@ class C2CpgScope {
 
   def addVariable(variableName: String, variableNode: NewNode, tpe: String, scopeType: ScopeType): Unit = {
     addVariable(stack, variableName, variableNode, tpe, EvaluationStrategies.BY_REFERENCE, scopeType)
+  }
+
+  private def addVariable(
+    stack: Option[ScopeElement],
+    variableName: String,
+    variableNode: NewNode,
+    tpe: String,
+    evaluationStrategy: String,
+    scopeType: ScopeType
+  ): Unit = {
+    val scopeToAddTo = scopeType match {
+      case ScopeType.MethodScope => getEnclosingMethodScopeElement(stack)
+      case _                     => stack.get
+    }
+    scopeToAddTo.addVariable(variableName, variableNode, tpe, evaluationStrategy)
   }
 
   def addVariableReference(
@@ -150,21 +177,6 @@ class C2CpgScope {
         pendingReference.tryResolve().get
       }
     }
-  }
-
-  private def addVariable(
-    stack: Option[ScopeElement],
-    variableName: String,
-    variableNode: NewNode,
-    tpe: String,
-    evaluationStrategy: String,
-    scopeType: ScopeType
-  ): Unit = {
-    val scopeToAddTo = scopeType match {
-      case ScopeType.MethodScope => getEnclosingMethodScopeElement(stack)
-      case _                     => stack.get
-    }
-    scopeToAddTo.addVariable(variableName, variableNode, tpe, evaluationStrategy)
   }
 
 }

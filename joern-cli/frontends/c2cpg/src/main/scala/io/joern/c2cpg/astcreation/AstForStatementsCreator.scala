@@ -106,7 +106,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val assignmentCallNode = callNode(struct, assignmentCode, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
     val assignmentCallAst  = callAst(assignmentCallNode, List(Ast(idNode).withRefEdge(idNode, localTmpNode), rhsAst))
 
-    val accessAsts = if typeFor(initializer).endsWith("]") then {
+    val accessAsts = if (typeFor(initializer).endsWith("]")) {
       struct.getNames.zipWithIndex.flatMap { case (astName, index) =>
         val localName                               = code(astName)
         val tpe                                     = registerType(typeFor(astName))
@@ -228,9 +228,11 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   private def astsForLabelStatement(label: IASTLabelStatement): Seq[Ast] = {
-    val cpgLabel    = newJumpTargetNode(label)
+    val codeString  = code(label)
+    val name        = shortName(label)
+    val labelNode   = jumpTargetNode(label, name, codeString)
     val nestedStmts = nullSafeAst(label.getNestedStatement)
-    Ast(cpgLabel) +: nestedStmts
+    Ast(labelNode) +: nestedStmts
   }
 
   private def astForDoStatement(doStmt: IASTDoStatement): Ast = {
@@ -260,13 +262,14 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   private def astsForCaseStatement(caseStmt: IASTCaseStatement): Seq[Ast] = {
-    val labelNode = newJumpTargetNode(caseStmt)
-    val stmt      = astForConditionExpression(caseStmt.getExpression)
-    Seq(Ast(labelNode), stmt)
+    val jumpTargetNode_ = jumpTargetNode(caseStmt, "case", code(caseStmt))
+    val stmt            = astForConditionExpression(caseStmt.getExpression)
+    Seq(Ast(jumpTargetNode_), stmt)
   }
 
   private def astForDefaultStatement(caseStmt: IASTDefaultStatement): Ast = {
-    Ast(newJumpTargetNode(caseStmt))
+    val jumpTargetNode_ = jumpTargetNode(caseStmt, "default", code(caseStmt))
+    Ast(jumpTargetNode_)
   }
 
   private def astForTryStatement(tryStmt: ICPPASTTryBlockStatement): Ast = {
@@ -300,7 +303,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     // We only handle un-parsable macros here for now
     val isFromMacroExpansion = statement.getProblem.getNodeLocations.exists(_.isInstanceOf[IASTMacroExpansionLocation])
     val asts = if (isFromMacroExpansion) {
-      new CdtParser(config, headerFileFinder, mutable.LinkedHashSet.empty)
+      new CdtParser(config, headerFileFinder, None, global)
         .parse(statement.getRawSignature, Paths.get(statement.getContainingFilename)) match
         case Some(node) => node.getDeclarations.toIndexedSeq.flatMap(astsForDeclaration)
         case None       => Seq.empty

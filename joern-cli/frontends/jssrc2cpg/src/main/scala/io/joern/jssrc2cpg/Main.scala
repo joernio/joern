@@ -40,7 +40,7 @@ object Main extends X2CpgMain(cmdLineParser, new JsSrc2Cpg()) with FrontendHTTPS
   override protected def newDefaultConfig(): Config = Config()
 
   def run(config: Config, jssrc2cpg: JsSrc2Cpg): Unit = {
-    if (config.serverMode) { startup() }
+    if (config.serverMode) { startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout) }
     else {
       val absPath = Paths.get(config.inputPath).toAbsolutePath.toString
       if (Environment.pathExists(absPath)) {

@@ -16,9 +16,8 @@ import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.{ObjectMethodSignatur
 import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
 import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, composeMethodLikeSignature, composeUnresolvedSignature}
 import io.joern.javasrc2cpg.util.{BindingTable, BindingTableAdapterForLambdas, LambdaBindingInfo, NameConstants}
+import io.joern.x2cpg.AstNodeBuilder.{bindingNode, closureBindingNode}
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
-import io.joern.x2cpg.utils.{IntervalKeyPool, NodeBuilders}
-import io.joern.x2cpg.utils.NodeBuilders.*
 import io.joern.x2cpg.{Ast, Defines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn.PropertyDefaults as ParameterDefaults
@@ -76,7 +75,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
       .find { identifier => identifier.name == NameConstants.This || identifier.name == NameConstants.Super }
       .map { _ =>
         val typeFullName = scope.enclosingTypeDecl.fullName
-        Ast(thisNodeForMethod(typeFullName, line(expr), column(expr)))
+        Ast(thisNodeForMethod(expr, typeFullName))
       }
       .toList
 
@@ -94,10 +93,10 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
       .filter { identifier => lambdaParameterNamesToNodes.contains(identifier.name) }
 
     val returnNode      = methodReturnNode(expr, returnType.getOrElse(defaultTypeFallback()))
-    val virtualModifier = Some(newModifierNode(ModifierTypes.VIRTUAL))
-    val staticModifier  = Option.when(thisParam.isEmpty)(newModifierNode(ModifierTypes.STATIC))
-    val privateModifier = Some(newModifierNode(ModifierTypes.PRIVATE))
-    val lambdaModifier  = Some(newModifierNode(ModifierTypes.LAMBDA))
+    val virtualModifier = Some(modifierNode(expr, ModifierTypes.VIRTUAL))
+    val staticModifier  = Option.when(thisParam.isEmpty)(modifierNode(expr, ModifierTypes.STATIC))
+    val privateModifier = Some(modifierNode(expr, ModifierTypes.PRIVATE))
+    val lambdaModifier  = Some(modifierNode(expr, ModifierTypes.LAMBDA))
 
     val modifiers = List(virtualModifier, staticModifier, privateModifier, lambdaModifier).flatten.map(Ast(_))
 
@@ -239,7 +238,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
     addClosureBindingsToDiffGraph(lambdaBody.capturedVariables, methodRef)
 
     val interfaceBinding = implementedInfo.implementedMethod.map { implementedMethod =>
-      newBindingNode(implementedMethod.getName, lambdaMethodNode.signature, lambdaMethodNode.fullName)
+      bindingNode(implementedMethod.getName, lambdaMethodNode.signature, lambdaMethodNode.fullName)
     }
 
     val bindingTable = getLambdaBindingTable(
@@ -274,8 +273,8 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
     capturedVariables
       .groupBy(_.name)
       .map { case (name, variables) =>
-        val closureBindingId   = s"$filename:$lambdaMethodName:$name"
-        val closureBindingNode = newClosureBindingNode(closureBindingId, name, EvaluationStrategies.BY_SHARING)
+        val closureBindingId = s"$filename:$lambdaMethodName:$name"
+        val closureBinding   = closureBindingNode(closureBindingId, name, EvaluationStrategies.BY_SHARING)
 
         val scopeVariable = variables.head
         val capturedLocal = localNode(
@@ -288,7 +287,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
         )
         scope.enclosingBlock.foreach(_.addLocal(capturedLocal, scopeVariable.name))
 
-        ClosureBindingEntry(scopeVariable, closureBindingNode) -> capturedLocal
+        ClosureBindingEntry(scopeVariable, closureBinding) -> capturedLocal
       }
       .toSeq
   }

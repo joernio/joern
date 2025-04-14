@@ -25,7 +25,6 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSol
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.util.NameConstants
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewControlStructure, NewJumpTarget, NewReturn}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes}
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
@@ -293,7 +292,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
         .lineNumber(line(stmt))
         .columnNumber(column(stmt))
 
-    val modifier = Ast(newModifierNode("SYNCHRONIZED"))
+    val modifier = Ast(modifierNode(stmt, "SYNCHRONIZED"))
 
     val exprAsts = astsForExpression(stmt.getExpression, ExpectedType.empty)
     val bodyAst  = astForBlockStatement(stmt.getBody)

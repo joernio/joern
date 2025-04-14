@@ -1,36 +1,14 @@
 package io.joern.x2cpg
 
 import io.joern.x2cpg.AstNodeBuilder.methodReturnNodeWithExplicitPositionInfo
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.nodes.Block.PropertyDefaults as BlockDefaults
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewAnnotation,
-  NewAnnotationLiteral,
-  NewBinding,
-  NewBlock,
-  NewCall,
-  NewControlStructure,
-  NewFieldIdentifier,
-  NewIdentifier,
-  NewImport,
-  NewJumpTarget,
-  NewLiteral,
-  NewLocal,
-  NewMember,
-  NewMethod,
-  NewMethodParameterIn,
-  NewMethodRef,
-  NewMethodReturn,
-  NewModifier,
-  NewNamespaceBlock,
-  NewReturn,
-  NewTypeDecl,
-  NewTypeRef,
-  NewUnknown
-}
 import org.apache.commons.lang3.StringUtils
 
 import scala.util.Try
+
 trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
   protected def line(node: Node): Option[Int]
   protected def column(node: Node): Option[Int]
@@ -43,6 +21,14 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
   private lazy val MaxCodeLength: Int =
     sys.env.get("JOERN_MAX_CODE_LENGTH").flatMap(_.toIntOption).getOrElse(DefaultMaxCodeLength)
 
+  private def setOffset[T <: AstNodeNew](node: Node, astNode: T): T = {
+    offset(node).foreach { case (offset, offsetEnd) =>
+      astNode.offset(offset).offsetEnd(offsetEnd)
+    }
+
+    astNode
+  }
+
   protected def code(node: Node): String
 
   protected def shortenCode(code: String): String =
@@ -51,37 +37,46 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
   protected def offset(node: Node): Option[(Int, Int)] = None
 
   protected def unknownNode(node: Node, code: String): NewUnknown = {
-    NewUnknown()
+    val node_ = NewUnknown()
       .parserTypeName(Try(node.getClass.getSimpleName).toOption.getOrElse(Defines.Unknown))
       .code(code)
       .lineNumber(line(node))
       .columnNumber(column(node))
+    setOffset(node, node_)
   }
 
   protected def annotationNode(node: Node, code: String, name: String, fullName: String): NewAnnotation = {
-    NewAnnotation()
+    val node_ = NewAnnotation()
       .code(code)
       .name(name)
       .fullName(fullName)
       .lineNumber(line(node))
       .columnNumber(column(node))
+    setOffset(node, node_)
   }
 
   protected def annotationLiteralNode(node: Node, name: String): NewAnnotationLiteral = {
-    NewAnnotationLiteral()
+    val node_ = NewAnnotationLiteral()
       .name(name)
       .code(name)
       .lineNumber(line(node))
       .columnNumber(column(node))
+    setOffset(node, node_)
+  }
+
+  protected def commentNode(node: Node, code: String, filename: String): NewComment = {
+    val node_ = NewComment().code(code).filename(filename).lineNumber(line(node)).columnNumber(column(node))
+    setOffset(node, node_)
   }
 
   protected def methodRefNode(node: Node, code: String, methodFullName: String, typeFullName: String): NewMethodRef = {
-    NewMethodRef()
+    val node_ = NewMethodRef()
       .code(code)
       .methodFullName(methodFullName)
       .typeFullName(typeFullName)
       .lineNumber(line(node))
       .columnNumber(column(node))
+    setOffset(node, node_)
   }
 
   protected def memberNode(node: Node, name: String, code: String, typeFullName: String): NewMember =
@@ -95,24 +90,25 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     dynamicTypeHints: Seq[String] = Seq(),
     genericSignature: Option[String] = None
   ): NewMember = {
-    val member = NewMember()
+    val node_ = NewMember()
       .code(code)
       .name(name)
       .typeFullName(typeFullName)
       .dynamicTypeHintFullName(dynamicTypeHints)
       .lineNumber(line(node))
       .columnNumber(column(node))
-    genericSignature.foreach(member.genericSignature(_))
-    member
+    genericSignature.foreach(node_.genericSignature(_))
+    setOffset(node, node_)
   }
 
   protected def newImportNode(code: String, importedEntity: String, importedAs: String, include: Node): NewImport = {
-    NewImport()
+    val node_ = NewImport()
       .code(code)
       .importedEntity(importedEntity)
       .importedAs(importedAs)
       .lineNumber(line(include))
       .columnNumber(column(include))
+    setOffset(include, node_)
   }
 
   protected def literalNode(
@@ -121,20 +117,22 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     typeFullName: String,
     dynamicTypeHints: Seq[String] = Seq()
   ): NewLiteral = {
-    NewLiteral()
+    val node_ = NewLiteral()
       .code(code)
       .typeFullName(typeFullName)
       .dynamicTypeHintFullName(dynamicTypeHints)
       .lineNumber(line(node))
       .columnNumber(column(node))
+    setOffset(node, node_)
   }
 
   protected def typeRefNode(node: Node, code: String, typeFullName: String): NewTypeRef = {
-    NewTypeRef()
+    val node_ = NewTypeRef()
       .code(code)
       .typeFullName(typeFullName)
       .lineNumber(line(node))
       .columnNumber(column(node))
+    setOffset(node, node_)
   }
 
   def typeDeclNode(
@@ -171,11 +169,8 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .aliasTypeFullName(alias)
       .lineNumber(line(node))
       .columnNumber(column(node))
-    offset(node).foreach { case (offset, offsetEnd) =>
-      node_.offset(offset).offsetEnd(offsetEnd)
-    }
     genericSignature.foreach(node_.genericSignature(_))
-    node_
+    setOffset(node, node_)
   }
 
   protected def parameterInNode(
@@ -196,9 +191,10 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     index: Int,
     isVariadic: Boolean,
     evaluationStrategy: String,
-    typeFullName: Option[String] = None
+    typeFullName: Option[String] = None,
+    dynamicTypeHintFullName: Seq[String] = Nil
   ): NewMethodParameterIn = {
-    NewMethodParameterIn()
+    val node_ = NewMethodParameterIn()
       .name(name)
       .code(code)
       .index(index)
@@ -208,6 +204,8 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .lineNumber(line(node))
       .columnNumber(column(node))
       .typeFullName(typeFullName.getOrElse("ANY"))
+      .dynamicTypeHintFullName(dynamicTypeHintFullName)
+    setOffset(node, node_)
   }
 
   def callNode(node: Node, code: String, name: String, methodFullName: String, dispatchType: String): NewCall =
@@ -222,7 +220,7 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     signature: Option[String],
     typeFullName: Option[String]
   ): NewCall = {
-    val out =
+    val node_ =
       NewCall()
         .code(code)
         .name(name)
@@ -230,9 +228,9 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
         .dispatchType(dispatchType)
         .lineNumber(line(node))
         .columnNumber(column(node))
-    signature.foreach { s => out.signature(s) }
-    typeFullName.foreach { t => out.typeFullName(t) }
-    out
+    signature.foreach { s => node_.signature(s) }
+    typeFullName.foreach { t => node_.typeFullName(t) }
+    setOffset(node, node_)
   }
 
   protected def operatorCallNode(node: Node, name: String, typeFullName: Option[String]): NewCall = {
@@ -245,19 +243,21 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
   }
 
   protected def returnNode(node: Node, code: String): NewReturn = {
-    NewReturn()
+    val node_ = NewReturn()
       .code(code)
       .lineNumber(line(node))
       .columnNumber(column(node))
+    setOffset(node, node_)
   }
 
   protected def controlStructureNode(node: Node, controlStructureType: String, code: String): NewControlStructure = {
-    NewControlStructure()
+    val node_ = NewControlStructure()
       .parserTypeName(node.getClass.getSimpleName)
       .controlStructureType(controlStructureType)
       .code(code)
       .lineNumber(line(node))
       .columnNumber(column(node))
+    setOffset(node, node_)
   }
 
   protected def blockNode(node: Node): NewBlock = {
@@ -265,19 +265,21 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
   }
 
   protected def blockNode(node: Node, code: String, typeFullName: String): NewBlock = {
-    NewBlock()
+    val node_ = NewBlock()
       .code(code)
       .typeFullName(typeFullName)
       .lineNumber(line(node))
       .columnNumber(column(node))
+    setOffset(node, node_)
   }
 
   protected def fieldIdentifierNode(node: Node, name: String, code: String): NewFieldIdentifier = {
-    NewFieldIdentifier()
+    val node_ = NewFieldIdentifier()
       .canonicalName(name)
       .code(code)
       .lineNumber(line(node))
       .columnNumber(column(node))
+    setOffset(node, node_)
   }
 
   protected def localNode(
@@ -288,19 +290,16 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     closureBindingId: Option[String] = None,
     genericSignature: Option[String] = None
   ): NewLocal = {
-    val (nodeOffset, nodeOffsetEnd) =
-      offset(node).map((offset, offsetEnd) => (Option(offset), Option(offsetEnd))).getOrElse((None, None))
-    AstNodeBuilder.localNodeWithExplicitPositionInfo(
+    val node_ = AstNodeBuilder.localNodeWithExplicitPositionInfo(
       name,
       code,
       typeFullName,
       closureBindingId,
       genericSignature,
       line(node),
-      column(node),
-      nodeOffset,
-      nodeOffsetEnd
+      column(node)
     )
+    setOffset(node, node_)
   }
 
   protected def identifierNode(
@@ -310,13 +309,14 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     typeFullName: String,
     dynamicTypeHints: Seq[String] = Seq()
   ): NewIdentifier = {
-    NewIdentifier()
+    val node_ = NewIdentifier()
       .name(name)
       .typeFullName(typeFullName)
       .code(code)
       .dynamicTypeHintFullName(dynamicTypeHints)
       .lineNumber(line(node))
       .columnNumber(column(node))
+    setOffset(node, node_)
   }
 
   def methodNode(node: Node, name: String, fullName: String, signature: String, fileName: String): NewMethod = {
@@ -349,10 +349,7 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
         .columnNumberEnd(columnEnd(node))
     signature.foreach { s => node_.signature(StringUtils.normalizeSpace(s)) }
     genericSignature.foreach(node_.genericSignature(_))
-    offset(node).foreach { case (offset, offsetEnd) =>
-      node_.offset(offset).offsetEnd(offsetEnd)
-    }
-    node_
+    setOffset(node, node_)
   }
 
   protected def methodReturnNode(
@@ -360,8 +357,9 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     typeFullName: String,
     dynamicTypeHintFullName: Option[String] = None
   ): NewMethodReturn = {
-    // TODO: Add offsets
-    methodReturnNodeWithExplicitPositionInfo(typeFullName, dynamicTypeHintFullName, line(node), column(node))
+    val node_ =
+      methodReturnNodeWithExplicitPositionInfo(typeFullName, dynamicTypeHintFullName, line(node), column(node))
+    setOffset(node, node_)
   }
 
   protected def jumpTargetNode(
@@ -370,21 +368,31 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     code: String,
     parserTypeName: Option[String] = None
   ): NewJumpTarget = {
-    NewJumpTarget()
+    val node_ = NewJumpTarget()
       .parserTypeName(parserTypeName.getOrElse(node.getClass.getSimpleName))
       .name(name)
       .code(code)
       .lineNumber(line(node))
       .columnNumber(column(node))
+    setOffset(node, node_)
   }
 
   protected def namespaceBlockNode(node: Node, name: String, fullName: String, fileName: String): NewNamespaceBlock = {
-    NewNamespaceBlock()
+    val node_ = NewNamespaceBlock()
       .name(name)
       .fullName(fullName)
       .filename(fileName)
       .lineNumber(line(node))
       .columnNumber(column(node))
+    setOffset(node, node_)
+  }
+
+  protected def modifierNode(node: Node, modifierType: String): NewModifier = {
+    val node_ = NewModifier()
+      .modifierType(modifierType)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+    setOffset(node, node_)
   }
 }
 
@@ -435,5 +443,30 @@ object AstNodeBuilder {
       .columnNumber(columnNumber)
       .offset(offset)
       .offsetEnd(offsetEnd)
+  }
+
+  private[joern] def bindingNode(name: String, signature: String, methodFullName: String): NewBinding = {
+    NewBinding()
+      .name(name)
+      .methodFullName(methodFullName)
+      .signature(signature)
+  }
+
+  private[joern] def closureBindingNode(
+    closureBindingId: String,
+    originalName: String,
+    evaluationStrategy: String
+  ): NewClosureBinding = {
+    NewClosureBinding()
+      .closureBindingId(closureBindingId)
+      .closureOriginalName(originalName)
+      .evaluationStrategy(evaluationStrategy)
+  }
+
+  private[joern] def dependencyNode(name: String, groupId: String, version: String): NewDependency = {
+    NewDependency()
+      .name(name)
+      .dependencyGroupId(groupId)
+      .version(version)
   }
 }

@@ -1,8 +1,8 @@
 package io.joern.c2cpg.astcreation
 
+import io.joern.c2cpg.passes.FunctionDeclNodePass
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -31,6 +31,8 @@ import scala.annotation.tailrec
 import scala.util.Try
 
 trait AstForFunctionsCreator { this: AstCreator =>
+
+  import FullNameProvider.*
 
   final protected def parameters(functionNode: IASTNode): Seq[IASTNode] = functionNode match {
     case arr: IASTArrayDeclarator       => parameters(arr.getNestedDeclarator)
@@ -66,7 +68,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
         setVariadicParameterInfo(parameterNodeInfos, funcDecl)
 
         val (astParentType, astParentFullName) = methodDeclarationParentInfo()
-        val methodInfo = CGlobal.MethodInfo(
+        val methodInfo = FunctionDeclNodePass.MethodInfo(
           name,
           code = codeString,
           fileName = filename,
@@ -232,35 +234,38 @@ trait AstForFunctionsCreator { this: AstCreator =>
     }
   }
 
-  private def setVariadicParameterInfo(parameterNodeInfos: Seq[CGlobal.ParameterInfo], func: IASTNode): Unit = {
+  private def setVariadicParameterInfo(
+    parameterNodeInfos: Seq[FunctionDeclNodePass.ParameterInfo],
+    func: IASTNode
+  ): Unit = {
     parameterNodeInfos.lastOption.foreach {
-      case p: CGlobal.ParameterInfo if isVariadic(func) =>
+      case p: FunctionDeclNodePass.ParameterInfo if isVariadic(func) =>
         p.isVariadic = true
         p.code = s"${p.code}..."
       case _ =>
     }
   }
 
-  private def modifierFromString(image: String): List[NewModifier] = {
+  private def modifierFromString(node: IASTNode, image: String): List[NewModifier] = {
     image match {
-      case "static" => List(newModifierNode(ModifierTypes.STATIC))
+      case "static" => List(modifierNode(node, ModifierTypes.STATIC))
       case _        => Nil
     }
   }
 
   private def modifierFor(funcDef: IASTFunctionDefinition): List[NewModifier] = {
     val constructorModifier = if (isCppConstructor(funcDef)) {
-      List(newModifierNode(ModifierTypes.CONSTRUCTOR), newModifierNode(ModifierTypes.PUBLIC))
+      List(modifierNode(funcDef, ModifierTypes.CONSTRUCTOR), modifierNode(funcDef, ModifierTypes.PUBLIC))
     } else Nil
-    val visibilityModifier = Try(modifierFromString(funcDef.getSyntax.getImage)).getOrElse(Nil)
+    val visibilityModifier = Try(modifierFromString(funcDef, funcDef.getSyntax.getImage)).getOrElse(Nil)
     constructorModifier ++ visibilityModifier
   }
 
   private def modifierFor(funcDecl: IASTFunctionDeclarator): List[NewModifier] = {
-    Try(modifierFromString(funcDecl.getParent.getSyntax.getImage)).getOrElse(Nil)
+    Try(modifierFromString(funcDecl, funcDecl.getParent.getSyntax.getImage)).getOrElse(Nil)
   }
 
-  private def thisForCPPFunctions(func: IASTNode): Seq[CGlobal.ParameterInfo] = {
+  private def thisForCPPFunctions(func: IASTNode): Seq[FunctionDeclNodePass.ParameterInfo] = {
     func match {
       case cppFunc: ICPPASTFunctionDefinition if !modifierFor(cppFunc).exists(_.modifierType == ModifierTypes.STATIC) =>
         val maybeOwner = safeGetBinding(cppFunc.getDeclarator.getName) match {
@@ -277,7 +282,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
           case _ => None
         }
         maybeOwner.toSeq.map { owner =>
-          new CGlobal.ParameterInfo(
+          new FunctionDeclNodePass.ParameterInfo(
             "this",
             "this",
             0,
@@ -292,7 +297,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     }
   }
 
-  private def parameterNodeInfo(parameter: IASTNode, paramIndex: Int): CGlobal.ParameterInfo = {
+  private def parameterNodeInfo(parameter: IASTNode, paramIndex: Int): FunctionDeclNodePass.ParameterInfo = {
     val (name, codeString, tpe, variadic) = parameter match {
       case p: CASTParameterDeclaration =>
         (shortName(p.getDeclarator), code(p), typeForDeclSpecifier(p.getDeclSpecifier), false)
@@ -315,7 +320,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
       case other =>
         (code(other), code(other), typeForDeclSpecifier(other), false)
     }
-    new CGlobal.ParameterInfo(
+    new FunctionDeclNodePass.ParameterInfo(
       name,
       codeString,
       paramIndex,
@@ -407,10 +412,10 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
     val isStatic        = !lambdaExpression.getCaptures.exists(c => c.capturesThisPointer())
     val returnNode      = methodReturnNode(lambdaExpression, registerType(returnType))
-    val virtualModifier = Some(newModifierNode(ModifierTypes.VIRTUAL))
-    val staticModifier  = Option.when(isStatic)(newModifierNode(ModifierTypes.STATIC))
-    val privateModifier = Some(newModifierNode(ModifierTypes.PRIVATE))
-    val lambdaModifier  = Some(newModifierNode(ModifierTypes.LAMBDA))
+    val virtualModifier = Some(modifierNode(lambdaExpression, ModifierTypes.VIRTUAL))
+    val staticModifier  = Option.when(isStatic)(modifierNode(lambdaExpression, ModifierTypes.STATIC))
+    val privateModifier = Some(modifierNode(lambdaExpression, ModifierTypes.PRIVATE))
+    val lambdaModifier  = Some(modifierNode(lambdaExpression, ModifierTypes.LAMBDA))
     val modifiers       = List(virtualModifier, staticModifier, privateModifier, lambdaModifier).flatten.map(Ast(_))
 
     val lambdaMethodAst = Ast(lambdaMethodNode)

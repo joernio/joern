@@ -7,7 +7,6 @@ import io.joern.gosrc2cpg.parser.{GoAstJsonParser, ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.astgen.{AstGenNodeBuilder, BaseNodeInfo}
 import io.joern.x2cpg.datastructures.Scope
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
@@ -90,7 +89,7 @@ class AstCreator(
       Seq.empty,
       blockAst(blockNode_, declsAsts),
       methodReturn,
-      newModifierNode(ModifierTypes.MODULE) :: Nil
+      modifierNode(rootNode, ModifierTypes.MODULE) :: Nil
     )
   }
 

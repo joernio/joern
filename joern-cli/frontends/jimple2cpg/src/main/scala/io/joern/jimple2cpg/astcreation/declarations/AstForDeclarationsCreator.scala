@@ -1,7 +1,6 @@
 package io.joern.jimple2cpg.astcreation.declarations
 
 import io.joern.jimple2cpg.astcreation.{AstCreator, JvmStringOpts}
-import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, PropertyNames}
@@ -28,7 +27,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode)
         Some(ModifierTypes.VIRTUAL)
       else None,
       if (classDeclaration.isSynchronized) Some("SYNCHRONIZED") else None
-    ).flatten.map(m => Ast(NodeBuilders.newModifierNode(m).code(m.toLowerCase)))
+    ).flatten.map(m => Ast(modifierNode(classDeclaration, m).code(m.toLowerCase)))
   }
 
   protected def astsForModifiers(methodDeclaration: SootMethod): Seq[NewModifier] = {
@@ -43,7 +42,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode)
         Some(ModifierTypes.VIRTUAL)
       else None,
       if (methodDeclaration.isSynchronized) Some("SYNCHRONIZED") else None
-    ).flatten.map(m => NodeBuilders.newModifierNode(m).code(m.toLowerCase))
+    ).flatten.map(m => modifierNode(methodDeclaration, m).code(m.toLowerCase))
   }
 
   protected def astsForModifiers(fieldDeclaration: SootField): Seq[Ast] = {
@@ -53,7 +52,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode)
       if (fieldDeclaration.isStatic) Some(ModifierTypes.STATIC) else None,
       if (fieldDeclaration.isProtected) Some(ModifierTypes.PROTECTED) else None,
       if (fieldDeclaration.isFinal) Some(ModifierTypes.FINAL) else None
-    ).flatten.map(m => Ast(NodeBuilders.newModifierNode(m).code(m.toLowerCase)))
+    ).flatten.map(m => Ast(modifierNode(fieldDeclaration, m).code(m.toLowerCase)))
   }
 
   protected def astsForHostTags(host: AbstractHost): Seq[Ast] = {

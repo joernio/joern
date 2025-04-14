@@ -1,8 +1,9 @@
 package io.joern.javasrc2cpg.util
 
+import io.joern.x2cpg.AstNodeBuilder.bindingNode
+
 import scala.collection.mutable
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
-import io.joern.x2cpg.utils.NodeBuilders.newBindingNode
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 
@@ -43,10 +44,10 @@ object BindingTable {
       bindingTable.getEntries.toBuffer.sortBy((entry: BindingTableEntry) => s"${entry.name}${entry.signature}")
 
     sortedEntries.foreach { entry =>
-      val bindingNode = newBindingNode(entry.name, entry.signature, entry.implementingMethodFullName)
+      val binding = bindingNode(entry.name, entry.signature, entry.implementingMethodFullName)
 
-      diffGraph.addNode(bindingNode)
-      diffGraph.addEdge(typeDeclNode, bindingNode, EdgeTypes.BINDS)
+      diffGraph.addNode(binding)
+      diffGraph.addEdge(typeDeclNode, binding, EdgeTypes.BINDS)
     }
   }
 

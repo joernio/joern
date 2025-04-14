@@ -2,15 +2,13 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  Binding,
-  Call,
-  FieldIdentifier,
-  Identifier,
-  Method,
-  MethodParameterIn
-}
+import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.nodes.FieldIdentifier
+import io.shiftleft.codepropertygraph.generated.nodes.Identifier
+import io.shiftleft.codepropertygraph.generated.nodes.Method
+import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.nodes.MethodReturn
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 
@@ -451,4 +449,40 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       firstCallOfSecondaryCtor.methodFullName shouldBe "mypkg.QClass.<init>:void()"
     }
   }
+
+  "CPG for code with an anonymous object and an inner class nested inside" should {
+    val cpg = code("""
+        |package foo
+        |class Foo constructor(val a: Context, b: String) {
+        |    private val callback = object : Callback() {
+        |        inner class Bar(val a: Long, val b: String, val c: String)
+        |    }
+        |}
+        |""".stripMargin)
+
+    "have correct ast structure for anonymous object" in {
+      val List(anonymousObjTypeDecl) = cpg.typeDecl("anonymous_obj").l
+
+      anonymousObjTypeDecl.name shouldBe "anonymous_obj"
+      anonymousObjTypeDecl.fullName shouldBe "foo.Foo.callback.object$0"
+
+      val constructorMethod = anonymousObjTypeDecl.astChildren.isMethod.l
+      constructorMethod.fullName.l shouldBe List("foo.Foo.callback.object$0.<init>:void()")
+      constructorMethod.ast.isParameter.size shouldBe 1
+      constructorMethod.ast.count(_.isInstanceOf[MethodReturn]) shouldBe 1
+    }
+
+    "have correct ast structure for the inner class" in {
+      val List(innerClassTypeDecl) = cpg.typeDecl("Bar").l
+      innerClassTypeDecl.fullName shouldBe "foo.Foo.callback.object$0$Bar"
+
+      val constructorMethod = innerClassTypeDecl.astChildren.isMethod.l
+      constructorMethod.fullName.l shouldBe List(
+        "foo.Foo.callback.object$0$Bar.<init>:void(long,java.lang.String,java.lang.String)"
+      )
+      constructorMethod.ast.isParameter.size shouldBe 4
+      constructorMethod.ast.count(_.isInstanceOf[MethodReturn]) shouldBe 1
+    }
+  }
+
 }

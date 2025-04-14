@@ -28,9 +28,12 @@ object AstGenRunner {
 
   private val MinifiedPathRegex: Regex = ".*([.-]min\\..*js|bundle\\.js)".r
 
+  private val SourceFileExtensions =
+    Set(".js", ".jsx", ".cjs", ".mjs", ".xsjs", ".xsjslib", ".ts", ".tsx", ".vue", ".ejs")
+
   private val AstGenDefaultIgnoreRegex: Seq[Regex] =
     List(
-      "(conf|test|spec|[.-]min|\\.d)\\.(js|ts|jsx|tsx)$".r,
+      "(conf|test|spec|[.-]min|\\.d)\\.(js|jsx|cjs|mjs|xsjs|xsjslib|ts|tsx)$".r,
       s"node_modules${Pattern.quote(java.io.File.separator)}.*".r,
       s"venv${Pattern.quote(java.io.File.separator)}.*".r,
       s"docs${Pattern.quote(java.io.File.separator)}.*".r,
@@ -335,7 +338,7 @@ class AstGenRunner(config: Config) {
         Option(out.toString)
       )
 
-    val jsons = SourceFiles.determine(out.toString(), Set(".json"))
+    val jsons = SourceFiles.determine(out.toString, Set(".json"))
     jsons.foreach { jsonPath =>
       val jsonFile        = Paths.get(jsonPath)
       val jsonContent     = IOUtils.readEntireFile(jsonFile)
@@ -400,11 +403,7 @@ class AstGenRunner(config: Config) {
     logger.info(s"Parsed $numOfParsedFiles files.")
     if (numOfParsedFiles == 0) {
       logger.warn("You may want to check the DEBUG logs for a list of files that are ignored by default.")
-      SourceFiles.determine(
-        in.toString,
-        Set(".js", ".ts", ".vue", ".ejs", ".jsx", ".cjs", ".mjs", ".tsx"),
-        ignoredDefaultRegex = Option(AstGenDefaultIgnoreRegex)
-      )
+      SourceFiles.determine(in.toString, SourceFileExtensions, ignoredDefaultRegex = Option(AstGenDefaultIgnoreRegex))
     }
     files
   }

@@ -3,7 +3,6 @@ package io.joern.gosrc2cpg.astcreation
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
 import ujson.Value
@@ -54,12 +53,13 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   private def astForReceiver(receiverInfo: Option[(String, String, String, ParserNodeInfo)]): Seq[Ast] = {
     receiverInfo match
       case Some(recName, typeFullName, evaluationStrategy, recNode) =>
-        val recParamNode = NodeBuilders.newThisParameterNode(
-          name = recName,
-          code = recNode.code,
+        val recParamNode = parameterInNode(
+          recNode,
+          recName,
+          recNode.code,
+          index = 0,
+          isVariadic = false,
           typeFullName = typeFullName,
-          line = line(recNode),
-          column = column(recNode),
           evaluationStrategy = evaluationStrategy
         )
         scope.addToScope(recName, (recParamNode, typeFullName))

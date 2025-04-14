@@ -3,7 +3,6 @@ package io.joern.gosrc2cpg.astcreation
 import io.joern.gosrc2cpg.datastructures.{LambdaTypeInfo, MethodCacheMetaData}
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.datastructures.Stack.StackWrapper
-import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewMethodReturn}
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
@@ -31,7 +30,7 @@ trait AstForLambdaCreator(implicit withSchemaValidation: ValidationMode) { this:
         astForMethodParameter(params, genericTypeMethodMap),
         astForMethodBody(funcLiteral.json(ParserKeys.Body)),
         methodReturn,
-        newModifierNode(ModifierTypes.LAMBDA) :: Nil
+        modifierNode(funcLiteral, ModifierTypes.LAMBDA) :: Nil
       )
     scope.popScope()
     methodAstParentStack.pop()

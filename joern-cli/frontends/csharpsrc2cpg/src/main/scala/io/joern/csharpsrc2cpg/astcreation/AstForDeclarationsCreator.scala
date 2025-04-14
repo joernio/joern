@@ -13,7 +13,6 @@ import io.joern.csharpsrc2cpg.utils.Utils.{
   composeSetterName,
   withoutSignature
 }
-import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -103,7 +102,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     if (shouldBuildCtor) {
       val methodReturn = methodReturnNode(node, DotNetTypeMap(BuiltinTypes.Void))
       val signature    = composeMethodLikeSignature(methodReturn.typeFullName)
-      val modifiers    = Seq(newModifierNode(ModifierTypes.CONSTRUCTOR), newModifierNode(ModifierTypes.INTERNAL))
+      val modifiers    = Seq(modifierNode(node, ModifierTypes.CONSTRUCTOR), modifierNode(node, ModifierTypes.INTERNAL))
       val name         = Defines.ConstructorMethodName
       val fullName     = composeMethodFullName(typeDeclFullName, name, signature)
 
@@ -149,9 +148,9 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       val methodReturn = methodReturnNode(node, DotNetTypeMap(BuiltinTypes.Void))
       val signature    = composeMethodLikeSignature(methodReturn.typeFullName)
       val modifiers = Seq(
-        newModifierNode(ModifierTypes.CONSTRUCTOR),
-        newModifierNode(ModifierTypes.INTERNAL),
-        newModifierNode(ModifierTypes.STATIC)
+        modifierNode(node, ModifierTypes.CONSTRUCTOR),
+        modifierNode(node, ModifierTypes.INTERNAL),
+        modifierNode(node, ModifierTypes.STATIC)
       )
       val name     = Defines.StaticInitMethodName
       val fullName = composeMethodFullName(typeDeclFullname, name, signature)
@@ -371,7 +370,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val signature        = composeMethodLikeSignature(DotNetTypeMap(BuiltinTypes.Void), params)
     val typeDeclFullName = scope.surroundingTypeDeclFullName.getOrElse(Defines.UnresolvedNamespace);
 
-    val modifiers = (modifiersForNode(constructorDecl) :+ newModifierNode(ModifierTypes.CONSTRUCTOR))
+    val modifiers = (modifiersForNode(constructorDecl) :+ modifierNode(constructorDecl, ModifierTypes.CONSTRUCTOR))
       .filter(_.modifierType != ModifierTypes.INTERNAL)
 
     val isStaticConstructor = modifiers.exists(_.modifierType == ModifierTypes.STATIC)
@@ -504,7 +503,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def modifiersForNode(node: DotNetNodeInfo): Seq[NewModifier] = {
-    val explicitModifiers = node.json(ParserKeys.Modifiers).arr.flatMap(readModifier).toList
+    val explicitModifiers = node.json(ParserKeys.Modifiers).arr.flatMap(readModifier(node, _)).toList
     val accessModifiers = explicitModifiers.map(_.modifierType) intersect List(
       ModifierTypes.PUBLIC,
       ModifierTypes.PRIVATE,
@@ -514,34 +513,30 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     )
     val implicitAccessModifier = accessModifiers match
       // Internal is default for top-level definitions
-      case Nil if scope.isTopLevel => newModifierNode(ModifierTypes.INTERNAL) :: Nil
+      case Nil if scope.isTopLevel => modifierNode(node, ModifierTypes.INTERNAL) :: Nil
       // Private is default for nested definitions
-      case Nil => newModifierNode(ModifierTypes.PRIVATE) :: Nil
+      case Nil => modifierNode(node, ModifierTypes.PRIVATE) :: Nil
       case _   => Nil
 
     implicitAccessModifier ++ explicitModifiers
   }
 
-  private def readModifier(modifier: ujson.Value): Option[NewModifier] = {
+  private def readModifier(node: DotNetNodeInfo, modifier: ujson.Value): Option[NewModifier] = {
     Option {
       modifier(ParserKeys.Value).str match
-        case "public"    => newModifierNode(ModifierTypes.PUBLIC)
-        case "private"   => newModifierNode(ModifierTypes.PRIVATE)
-        case "internal"  => newModifierNode(ModifierTypes.INTERNAL)
-        case "static"    => newModifierNode(ModifierTypes.STATIC)
-        case "readonly"  => newModifierNode(ModifierTypes.READONLY)
-        case "virtual"   => newModifierNode(ModifierTypes.VIRTUAL)
-        case "const"     => newModifierNode(CSharpModifiers.CONST)
-        case "abstract"  => newModifierNode(ModifierTypes.ABSTRACT)
-        case "protected" => newModifierNode(ModifierTypes.PROTECTED)
+        case "public"    => modifierNode(node, ModifierTypes.PUBLIC)
+        case "private"   => modifierNode(node, ModifierTypes.PRIVATE)
+        case "internal"  => modifierNode(node, ModifierTypes.INTERNAL)
+        case "static"    => modifierNode(node, ModifierTypes.STATIC)
+        case "readonly"  => modifierNode(node, ModifierTypes.READONLY)
+        case "virtual"   => modifierNode(node, ModifierTypes.VIRTUAL)
+        case "const"     => modifierNode(node, CSharpModifiers.CONST)
+        case "abstract"  => modifierNode(node, ModifierTypes.ABSTRACT)
+        case "protected" => modifierNode(node, ModifierTypes.PROTECTED)
         case x =>
           logger.warn(s"Unhandled modifier name '$x'")
           null
     }
-  }
-
-  private def astForModifier(modifier: ujson.Value): Option[Ast] = {
-    readModifier(modifier).map(Ast(_))
   }
 
   protected def astVariableDeclarationForInitializedFields(fieldDecls: Seq[FieldDecl]): Seq[Ast] = {

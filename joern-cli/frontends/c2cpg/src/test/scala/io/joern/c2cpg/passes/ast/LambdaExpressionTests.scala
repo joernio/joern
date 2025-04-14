@@ -399,6 +399,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
 
     "ref this correctly" in {
       val List(lambda) = cpg.method.name(".*lambda.*").l
+      lambda.fullName shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:bool()"
       cpg.all.collectAll[ClosureBinding].l match {
         case List(thisClosureBinding) =>
           val thisLocal = cpg.method.name(".*lambda.*").local.nameExact("this").head

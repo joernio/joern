@@ -147,8 +147,8 @@ class CSharpScope(summary: CSharpProgramSummary)
     m.isStatic && m.name == name && m.parameterTypes.map(_._2).headOption.contains(thisType)
   }
 
-  /** Tries to find an extension method for [[baseTypeFullName]] with the given [[callName]] and [[argTypes]] in the
-    * types currently in scope.
+  /** Tries to find an extension method for `baseTypeFullName` with the given `callName` and `argTypes` in the types
+    * currently in scope.
     *
     * @param baseTypeFullName
     *   the extension method's `this` argument.

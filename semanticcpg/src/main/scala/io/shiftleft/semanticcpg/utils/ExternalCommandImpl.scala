@@ -1,6 +1,7 @@
 package io.shiftleft.semanticcpg.utils
 
 import io.shiftleft.utils.IOUtils
+import org.slf4j.LoggerFactory
 
 import java.io.File
 import java.nio.file.{Path, Paths}
@@ -10,8 +11,11 @@ import scala.jdk.CollectionConverters.*
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 import scala.util.control.NonFatal
+import scala.util.Properties.isWin
 
 trait ExternalCommandImpl {
+  private val logger = LoggerFactory.getLogger(getClass)
+
   case class ExternalCommandResult(exitCode: Int, stdOut: Seq[String], stdErr: Seq[String]) {
     def successOption: Option[Seq[String]] = exitCode match {
       case 0 => Some(stdOut)
@@ -30,63 +34,60 @@ trait ExternalCommandImpl {
 
   def run(
     command: Seq[String],
-    cwd: Option[String] = None,
+    workingDir: Option[String] = None,
     mergeStdErrInStdOut: Boolean = false,
     extraEnv: Map[String, String] = Map.empty,
     isShellCommand: Boolean = false,
     timeout: Duration = Duration.Inf
   ): ExternalCommandResult = {
-    val shellCmd = if (scala.util.Properties.isWin) {
-      Seq("cmd.exe", "/C")
-    } else {
-      Seq("sh", "-c")
-    }
+    val cmd =
+      if (isShellCommand) {
+        val invokeShell =
+          if (isWin) Seq("cmd.exe", "/C")
+          else Seq("sh", "-c")
+        invokeShell ++ command
+      } else {
+        command
+      }
 
-    val cmd = if (isShellCommand) {
-      shellCmd ++ command
-    } else {
-      command
-    }
-
-    val builder = cwd match {
-      case Some(dir) =>
-        new ProcessBuilder()
-          .command(cmd.toArray*)
-          .directory(new File(dir))
-          .redirectErrorStream(mergeStdErrInStdOut)
-      case _ =>
-        new ProcessBuilder()
-          .command(cmd.toArray*)
-          .redirectErrorStream(mergeStdErrInStdOut)
-    }
-
+    val builder = new ProcessBuilder().command(cmd.toArray*)
     builder.environment().putAll(extraEnv.asJava)
+    builder.redirectErrorStream(mergeStdErrInStdOut)
+    workingDir.map(new File(_)).foreach(builder.directory)
 
     val stdOutFile = File.createTempFile("x2cpg", "stdout")
     val stdErrFile = Option.when(!mergeStdErrInStdOut)(File.createTempFile("x2cpg", "stderr"))
+    builder.redirectOutput(stdOutFile)
+    stdErrFile.foreach(builder.redirectError)
 
+    val commandInfo = s"""cmd: `${cmd.mkString(" ")}`, workingDir: ${workingDir.getOrElse(
+        System.getProperty("user.dir")
+      )}, extraEnv: $extraEnv"""
     try {
-      builder.redirectOutput(stdOutFile)
-      stdErrFile.foreach(f => builder.redirectError(f))
-
+      logger.debug(s"executing command: $commandInfo")
       val process = builder.start()
       if (timeout.isFinite) {
+        logger.debug(s"waiting until command completes (but max $timeout)")
         val finished = process.waitFor(timeout.toMillis, TimeUnit.MILLISECONDS)
         if (!finished) {
+          logger.warn(s"timeout reached - will now kill the external command")
           process.destroy()
           throw new TimeoutException(s"command '${command.mkString(" ")}' with timeout='$timeout' has timed out")
         }
       } else {
+        logger.debug("waiting (indefinitely) until command completes")
         process.waitFor()
       }
 
+      logger.debug(s"command finished successfully")
       val stdOut = IOUtils.readLinesInFile(stdOutFile.toPath)
-      val stdErr = stdErrFile.map(f => IOUtils.readLinesInFile(f.toPath)).getOrElse(Seq.empty)
+      val stdErr = stdErrFile.map(_.toPath).map(IOUtils.readLinesInFile).getOrElse(Seq.empty)
       ExternalCommandResult(process.exitValue(), stdOut, stdErr)
     } catch {
       case NonFatal(exception) =>
         val stdOut = IOUtils.readLinesInFile(stdOutFile.toPath)
         val stdErr = stdErrFile.map(f => IOUtils.readLinesInFile(f.toPath)).getOrElse(Seq.empty) :+ exception.getMessage
+        logger.warn(s"command did not finish successfully. Input was: $commandInfo")
         ExternalCommandResult(1, stdOut, stdErr)
     } finally {
       stdOutFile.delete()

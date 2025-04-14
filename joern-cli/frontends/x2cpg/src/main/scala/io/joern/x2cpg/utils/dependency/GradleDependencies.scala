@@ -137,6 +137,10 @@ object GradleDependencies {
     initScriptPath: String
   ): Map[String, List[String]] = {
     Using.resources(new ByteArrayOutputStream, new ByteArrayOutputStream) { case (stdoutStream, stderrStream) =>
+      Option(System.getenv("ANDROID_HOME")) match {
+        case Some(androidHome) => logger.debug(s"Found ANDROID_HOME set to $androidHome")
+        case None              => logger.debug("ANDROID_HOME not set")
+      }
       logger.debug(s"Executing gradle task '$taskName'...")
       Try(
         connection
@@ -182,7 +186,7 @@ object GradleDependencies {
     val newPath           = aar.toString.replaceFirst(aarFileExtension + "$", "jar")
     val aarUnzipDirSuffix = ".unzipped"
     val outDir            = Paths.get(aar.toString + aarUnzipDirSuffix)
-    aar.unzipTo(outDir, _.getName == jarInsideAarFileName)
+    aar.unzipTo(outDir)
     val outFile = Paths.get(newPath)
     val classesJarEntries =
       Files
@@ -193,7 +197,7 @@ object GradleDependencies {
         .filter(_.fileName == jarInsideAarFileName)
         .toList
     if (classesJarEntries.size != 1) {
-      logger.warn(s"Found aar file without `classes.jar` inside at path $aar")
+      logger.debug(s"Found aar file without `classes.jar` inside at path $aar")
       FileUtil.delete(outDir)
       None
     } else {

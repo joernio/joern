@@ -2,6 +2,7 @@ package io.joern.c2cpg.parser
 
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.parser.JSONCompilationDatabaseParser.CommandObject
+import io.joern.c2cpg.parser.JSONCompilationDatabaseParser.CompilationDatabase
 import io.joern.c2cpg.utils.IncludeAutoDiscovery
 
 import java.nio.file.{Path, Paths}
@@ -16,34 +17,32 @@ object ParserConfig {
       mutable.LinkedHashSet.empty,
       Map.empty,
       Map.empty,
-      Map.empty,
-      logProblems = false,
-      logPreprocessor = false
+      Map.empty
     )
 
-  def fromConfig(config: Config, compilationDatabase: mutable.LinkedHashSet[CommandObject]): ParserConfig = {
-    val compilationDatabaseDefines = compilationDatabase.map { c =>
+  def fromConfig(config: Config, compilationDatabase: Option[CompilationDatabase]): ParserConfig = {
+    val commands = compilationDatabase.map(_.commands).getOrElse(Set.empty)
+    val compilationDatabaseDefines = commands.map { c =>
       c.compiledFile() -> c.defines().toMap
     }.toMap
-    val includes = compilationDatabase.map { c =>
+    val includes = commands.map { c =>
       c.compiledFile() -> c.includes()
     }.toMap
+    val definedSymbols = config.defines.map { define =>
+      if (define.contains("=")) {
+        val split = define.split("=")
+        split.head -> split(1)
+      } else {
+        define -> ""
+      }
+    }.toMap ++ DefaultDefines.DEFAULT_CALL_CONVENTIONS
     ParserConfig(
       mutable.LinkedHashSet.from(config.includePaths.map(Paths.get(_).toAbsolutePath)),
       IncludeAutoDiscovery.discoverIncludePathsC(config),
       IncludeAutoDiscovery.discoverIncludePathsCPP(config),
-      config.defines.map { define =>
-        if (define.contains("=")) {
-          val split = define.split("=")
-          split.head -> split(1)
-        } else {
-          define -> ""
-        }
-      }.toMap ++ DefaultDefines.DEFAULT_CALL_CONVENTIONS,
+      definedSymbols,
       compilationDatabaseDefines,
-      includes,
-      config.logProblems,
-      config.logPreprocessor
+      includes
     )
   }
 
@@ -55,7 +54,5 @@ case class ParserConfig(
   systemIncludePathsCPP: mutable.LinkedHashSet[Path],
   definedSymbols: Map[String, String],
   definedSymbolsPerFile: Map[String, Map[String, String]],
-  includesPerFile: Map[String, mutable.LinkedHashSet[String]],
-  logProblems: Boolean,
-  logPreprocessor: Boolean
+  includesPerFile: Map[String, mutable.LinkedHashSet[String]]
 )

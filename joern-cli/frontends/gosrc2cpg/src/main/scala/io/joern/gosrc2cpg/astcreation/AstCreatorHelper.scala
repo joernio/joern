@@ -2,7 +2,6 @@ package io.joern.gosrc2cpg.astcreation
 
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserAst, ParserKeys, ParserNodeInfo}
-import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.{Ast, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewModifier, NewNode}
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes, PropertyNames}
@@ -87,15 +86,15 @@ trait AstCreatorHelper { this: AstCreator =>
       .getOrElse(Defines.anyTypeName)
   }
 
-  protected def addModifier(node: NewNode, name: String): NewModifier = {
+  protected def addModifier(originNode: ParserNodeInfo, node: NewNode, name: String): NewModifier = {
     // NOTE: In golang, the access modifiers are exported and un-exported.
     // If the first letter of the node (function, typeDecl, etc) is uppercase, then it is exported.
     // Else, it is un-exported
     // The scope of the node is the package it is defined in.
     if (name.headOption.exists(_.isUpper)) {
-      newModifierNode(ModifierTypes.PUBLIC)
+      modifierNode(originNode, ModifierTypes.PUBLIC)
     } else {
-      newModifierNode(ModifierTypes.PRIVATE)
+      modifierNode(originNode, ModifierTypes.PRIVATE)
     }
   }
 

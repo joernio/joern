@@ -22,8 +22,6 @@ import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParame
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.Util.*
-import io.joern.x2cpg.utils.NodeBuilders
-import io.joern.x2cpg.utils.NodeBuilders.*
 import io.joern.x2cpg.{Ast, Defines}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   AstNodeNew,
@@ -99,7 +97,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
 
     val thisNode = Option.when(!methodDeclaration.isStatic) {
       val typeFullName = scope.enclosingTypeDecl.fullName
-      thisNodeForMethod(typeFullName, line(methodDeclaration), column(methodDeclaration))
+      thisNodeForMethod(methodDeclaration, typeFullName)
     }
     val thisAst = thisNode.map(Ast(_)).toList
 
@@ -159,9 +157,9 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       genericSignature = Option(genericSignature)
     )
 
-    val modifier = newModifierNode(ModifierTypes.PUBLIC)
+    val modifier = modifierNode(parameter, ModifierTypes.PUBLIC)
 
-    val thisParameter = thisNodeForMethod(Option(recordTypeFullName), line(parameter), column(parameter))
+    val thisParameter = thisNodeForMethod(parameter, Option(recordTypeFullName))
 
     val thisIdentifier    = identifierNode(parameter, thisParameter.name, thisParameter.code, recordTypeFullName)
     val thisIdentifierAst = Ast(thisIdentifier).withRefEdge(thisIdentifier, thisParameter)
@@ -190,7 +188,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     callableDeclaration match {
       case methodDeclaration: MethodDeclaration =>
         Option.when(methodDeclaration.isAbstract || (isInterfaceMethod && !methodDeclaration.isDefault)) {
-          newModifierNode(ModifierTypes.ABSTRACT)
+          modifierNode(callableDeclaration, ModifierTypes.ABSTRACT)
         }
 
       case _ => None
@@ -213,7 +211,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       if (methodDeclaration.isCallableDeclaration && methodDeclaration.asCallableDeclaration().isStatic)
         ModifierTypes.STATIC
       else ModifierTypes.VIRTUAL
-    val staticVirtualModifier = Some(newModifierNode(staticVirtualModifierType))
+    val staticVirtualModifier = Some(modifierNode(methodDeclaration, staticVirtualModifierType))
 
     val accessModifierType = if (methodDeclaration.isPublic) {
       Some(ModifierTypes.PUBLIC)
@@ -227,7 +225,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     } else {
       None
     }
-    val accessModifier = accessModifierType.map(newModifierNode)
+    val accessModifier = accessModifierType.map(modifierNode(methodDeclaration, _))
 
     List(accessModifier, abstractModifier, staticVirtualModifier).flatten
   }
@@ -297,7 +295,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     constructorNode.fullName(fullName)
     constructorNode.signature(signature)
 
-    val thisNode = thisNodeForMethod(typeFullName, lineNumber = None, columnNumber = None)
+    val thisNode = thisNodeForMethod(originNode, typeFullName)
     scope.enclosingMethod.foreach(_.addParameter(thisNode, scope.enclosingTypeDecl.get.typeDecl.genericSignature))
     val recordParameterAssignments = parameterAsts
       .flatMap(_.nodes)
@@ -310,7 +308,8 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
 
     val returnNode = methodReturnNode(originNode, TypeConstants.Void)
 
-    val modifiers = List(newModifierNode(ModifierTypes.CONSTRUCTOR), newModifierNode(ModifierTypes.PUBLIC))
+    val modifiers =
+      List(modifierNode(originNode, ModifierTypes.CONSTRUCTOR), modifierNode(originNode, ModifierTypes.PUBLIC))
     val partialConstructor =
       PartialConstructorDeclaration(
         originNode,
@@ -522,7 +521,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
         }
       }
 
-      val thisNode = thisNodeForMethod(typeFullName, line(constructorDeclaration), column(constructorDeclaration))
+      val thisNode = thisNodeForMethod(constructorDeclaration, typeFullName)
       scope.enclosingMethod.get.addParameter(thisNode, scope.enclosingTypeDecl.get.typeDecl.genericSignature)
 
       scope.pushBlockScope()
@@ -708,17 +707,17 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     )
   }
 
-  def thisNodeForMethod(
-    maybeTypeFullName: Option[String],
-    lineNumber: Option[Int],
-    columnNumber: Option[Int]
-  ): NewMethodParameterIn = {
+  def thisNodeForMethod(originNode: Node, maybeTypeFullName: Option[String]): NewMethodParameterIn = {
     val typeFullName = typeInfoCalc.registerType(maybeTypeFullName.getOrElse(defaultTypeFallback()))
-    NodeBuilders.newThisParameterNode(
-      typeFullName = typeFullName,
+    parameterInNode(
+      originNode,
+      NameConstants.This,
+      NameConstants.This,
+      index = 0,
+      isVariadic = false,
+      typeFullName = Option(typeFullName),
       dynamicTypeHintFullName = maybeTypeFullName.toSeq,
-      line = lineNumber,
-      column = columnNumber
+      evaluationStrategy = EvaluationStrategies.BY_SHARING
     )
   }
 }

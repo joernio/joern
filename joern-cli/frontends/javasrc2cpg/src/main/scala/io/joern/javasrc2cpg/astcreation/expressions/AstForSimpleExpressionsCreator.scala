@@ -275,16 +275,7 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
     val fieldIdentifier = expr.getName
     val identifierAsts  = astsForExpression(expr.getScope, ExpectedType.empty)
 
-    fieldAccessAst(
-      identifierAsts.head,
-      expr.toString,
-      line(expr),
-      column(expr),
-      fieldIdentifier.toString,
-      typeFullName,
-      line(fieldIdentifier),
-      column(fieldIdentifier)
-    )
+    fieldAccessAst(expr, fieldIdentifier, identifierAsts.head, expr.toString, fieldIdentifier.toString, typeFullName)
   }
 
   private[expressions] def astForInstanceOfExpr(expr: InstanceOfExpr): Ast = {

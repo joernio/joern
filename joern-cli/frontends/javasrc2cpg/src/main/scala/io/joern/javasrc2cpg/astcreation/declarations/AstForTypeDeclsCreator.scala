@@ -44,7 +44,6 @@ import com.github.javaparser.resolution.declarations.{
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.{BindingTable, BindingTableEntry, NameConstants, Util}
-import io.joern.x2cpg.utils.NodeBuilders.*
 import io.joern.x2cpg.{Ast, Defines}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewArrayInitializer,
@@ -294,7 +293,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
         parameterTypeFullName,
         genericSignature = Option(genericSignature)
       )
-      val privateModifier = newModifierNode(ModifierTypes.PRIVATE)
+      val privateModifier = modifierNode(parameter, ModifierTypes.PRIVATE)
       val memberAst       = Ast(parameterMember).withChild(Ast(privateModifier))
 
       val accessorMethodAst = Option.unless(explicitMethodNames.contains(parameterName))(
@@ -664,10 +663,10 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     } else {
       None
     }
-    val accessModifier = accessModifierType.map(newModifierNode)
+    val accessModifier = accessModifierType.map(modifierNode(typ, _))
 
     val abstractModifier =
-      Option.when(isInterface || typ.getMethods.asScala.exists(_.isAbstract))(newModifierNode(ModifierTypes.ABSTRACT))
+      Option.when(isInterface || typ.getMethods.asScala.exists(_.isAbstract))(modifierNode(typ, ModifierTypes.ABSTRACT))
 
     List(accessModifier, abstractModifier).flatten
   }
@@ -705,7 +704,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
 
   private def modifiersForFieldDeclaration(decl: FieldDeclaration): Seq[Ast] = {
     val staticModifier =
-      Option.when(decl.isStatic)(newModifierNode(ModifierTypes.STATIC))
+      Option.when(decl.isStatic)(modifierNode(decl, ModifierTypes.STATIC))
 
     val accessModifierType =
       if (decl.isPublic)
@@ -717,7 +716,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
       else
         None
 
-    val accessModifier = accessModifierType.map(newModifierNode)
+    val accessModifier = accessModifierType.map(modifierNode(decl, _))
 
     List(staticModifier, accessModifier).flatten.map(Ast(_))
   }

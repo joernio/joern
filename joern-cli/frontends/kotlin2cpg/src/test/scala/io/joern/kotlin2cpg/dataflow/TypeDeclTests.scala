@@ -30,10 +30,10 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
             ("AClass(p)", Some(6)),
             ("<init>(this, x)", Some(2)),
             ("this.x = x", Some(2)),
-            ("RET", None),
+            ("RET", Some(2)),
             ("AClass(p)", Some(6)),
             ("aClass.printX()", Some(7)),
-            ("printX(this)", None),
+            ("printX(this)", Some(3)),
             ("println(this.x)", Some(3))
           )
         )
@@ -68,10 +68,10 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
             ("AnAlias(p)", Some(11)),
             ("<init>(this, q)", Some(5)),
             ("this.x = q", Some(6)),
-            ("RET", None),
+            ("RET", Some(5)),
             ("AnAlias(p)", Some(11)),
             ("aClass.printX()", Some(12)),
-            ("printX(this)", None),
+            ("printX(this)", Some(8)),
             ("println(this.x)", Some(8))
           )
         )
@@ -104,10 +104,10 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
             ("AClass(p)", Some(10)),
             ("<init>(this, q)", Some(4)),
             ("this.x = q", Some(5)),
-            ("RET", None),
+            ("RET", Some(4)),
             ("AClass(p)", Some(10)),
             ("aClass.printX()", Some(11)),
-            ("printX(this)", None),
+            ("printX(this)", Some(7)),
             ("println(this.x)", Some(7))
           )
         )

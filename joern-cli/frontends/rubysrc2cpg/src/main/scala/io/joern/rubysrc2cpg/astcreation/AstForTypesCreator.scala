@@ -3,7 +3,6 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{TypeDeclaration, *}
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, MethodScope, ModuleScope, NamespaceScope, TypeScope}
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{
@@ -129,14 +128,14 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       case _: ModuleDeclaration =>
         scope.pushNewScope(ModuleScope(classFullName))
         (
-          ModifierTypes.VIRTUAL :: Nil map newModifierNode map Ast.apply,
-          ModifierTypes.VIRTUAL :: ModifierTypes.FINAL :: Nil map newModifierNode map Ast.apply
+          ModifierTypes.VIRTUAL :: Nil map (modifierNode(node, _)) map Ast.apply,
+          ModifierTypes.VIRTUAL :: ModifierTypes.FINAL :: Nil map (modifierNode(node, _)) map Ast.apply
         )
       case _: TypeDeclaration =>
         scope.pushNewScope(TypeScope(classFullName, List.empty))
         (
-          ModifierTypes.VIRTUAL :: Nil map newModifierNode map Ast.apply,
-          ModifierTypes.VIRTUAL :: Nil map newModifierNode map Ast.apply
+          ModifierTypes.VIRTUAL :: Nil map (modifierNode(node, _)) map Ast.apply,
+          ModifierTypes.VIRTUAL :: Nil map (modifierNode(node, _)) map Ast.apply
         )
     }
 

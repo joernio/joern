@@ -21,6 +21,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
   * appropriate; for example, in cases in which the node's line and column are _not_ set from the base ASTNode type of a
   * specific frontend.
   */
+@deprecated("Deprecated in favour of io.joern.x2cpg.AstNodeBuilder", "4.0.323")
 object NodeBuilders {
 
   private def composeCallSignature(returnType: String, argumentTypes: Iterable[String]): String = {
@@ -41,6 +42,10 @@ object NodeBuilders {
       .name(name)
       .code(name)
 
+  @deprecated(
+    "Deprecated in favour of the corresponding method io.joern.x2cpg.AstNodeBuilder and will be removed in a future version",
+    "4.0.314"
+  )
   def newBindingNode(name: String, signature: String, methodFullName: String): NewBinding = {
     NewBinding()
       .name(name)
@@ -60,6 +65,10 @@ object NodeBuilders {
       .closureBindingId(closureBindingId)
   }
 
+  @deprecated(
+    "Deprecated in favour of the corresponding method io.joern.x2cpg.AstNodeBuilder and will be removed in a future version",
+    "4.0.314"
+  )
   def newClosureBindingNode(
     closureBindingId: String,
     originalName: String,
@@ -98,6 +107,10 @@ object NodeBuilders {
       .columnNumber(columnNumber)
   }
 
+  @deprecated(
+    "Deprecated in favour of the corresponding method io.joern.x2cpg.AstNodeBuilder and will be removed in a future version",
+    "4.0.314"
+  )
   def newDependencyNode(name: String, groupId: String, version: String): NewDependency =
     NewDependency()
       .name(name)
@@ -116,6 +129,10 @@ object NodeBuilders {
       .columnNumber(column)
   }
 
+  @deprecated(
+    "Deprecated in favour of the corresponding method io.joern.x2cpg.AstNodeBuilder and will be removed in a future version",
+    "4.0.316"
+  )
   def newModifierNode(modifierType: String): NewModifier = NewModifier().modifierType(modifierType)
 
   @deprecated(
@@ -166,6 +183,10 @@ object NodeBuilders {
       .columnNumber(column)
   }
 
+  @deprecated(
+    "Deprecated in favour of the corresponding method io.joern.x2cpg.AstNodeBuilder and will be removed in a future version",
+    "4.0.322"
+  )
   def newThisParameterNode(
     name: String = "this",
     code: String = "this",

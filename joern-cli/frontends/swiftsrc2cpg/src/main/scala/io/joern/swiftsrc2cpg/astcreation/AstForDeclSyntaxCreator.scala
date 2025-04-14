@@ -4,7 +4,7 @@ import io.joern.swiftsrc2cpg.datastructures.BlockScope
 import io.joern.swiftsrc2cpg.datastructures.MethodScope
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.utils.NodeBuilders.*
+import io.joern.x2cpg.AstNodeBuilder.{bindingNode, dependencyNode}
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
@@ -223,10 +223,10 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val typeFullName = typeNameForDeclSyntax(node)
     node match {
       case d: FunctionDeclLike =>
-        val function    = astForFunctionLike(d).method
-        val bindingNode = newBindingNode("", "", "")
-        diffGraph.addEdge(typeDeclNode, bindingNode, EdgeTypes.BINDS)
-        diffGraph.addEdge(bindingNode, function, EdgeTypes.REF)
+        val function = astForFunctionLike(d).method
+        val binding  = bindingNode("", "", "")
+        diffGraph.addEdge(typeDeclNode, binding, EdgeTypes.BINDS)
+        diffGraph.addEdge(binding, function, EdgeTypes.REF)
         val memberNode_ = memberNode(d, function.name, code(d), typeFullName, Seq(function.fullName))
         diffGraph.addEdge(typeDeclNode, memberNode_, EdgeTypes.AST)
         Ast()
@@ -810,7 +810,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     if (name.isEmpty && groupName.isEmpty) {
       Ast()
     } else {
-      val _dependencyNode = newDependencyNode(name.get, groupName.get, "import")
+      val _dependencyNode = dependencyNode(name.get, groupName.get, "import")
       val importNode      = newImportNode(code(node), groupName.get, name.get, node)
       diffGraph.addNode(_dependencyNode)
       diffGraph.addEdge(importNode, _dependencyNode, EdgeTypes.IMPORTS)

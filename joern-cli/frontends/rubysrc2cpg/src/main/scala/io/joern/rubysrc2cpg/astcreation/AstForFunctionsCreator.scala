@@ -3,7 +3,6 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{ConstructorScope, MethodScope}
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newClosureBindingNode, newModifierNode, newThisParameterNode}
 import io.joern.x2cpg.{Ast, AstEdge, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{
@@ -15,6 +14,7 @@ import io.shiftleft.codepropertygraph.generated.{
   Operators
 }
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
+import io.joern.x2cpg.AstNodeBuilder.{bindingNode, closureBindingNode}
 
 import scala.collection.mutable
 
@@ -76,12 +76,14 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     if (isConstructor) scope.pushNewScope(ConstructorScope(fullName, this.procParamGen.fresh))
     else scope.pushNewScope(MethodScope(fullName, this.procParamGen.fresh))
 
-    val thisParameterNode = newThisParameterNode(
+    val thisParameterNode = parameterInNode(
+      node,
       name = Defines.Self,
       code = Defines.Self,
-      typeFullName = scope.surroundingTypeFullName.getOrElse(Defines.Any),
-      line = method.lineNumber,
-      column = method.columnNumber
+      index = 0,
+      isVariadic = false,
+      typeFullName = Option(scope.surroundingTypeFullName.getOrElse(Defines.Any)),
+      evaluationStrategy = EvaluationStrategies.BY_SHARING
     )
     val thisParameterAst = Ast(thisParameterNode)
     scope.addToScope(Defines.Self, thisParameterNode)
@@ -128,7 +130,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       astParentType.foreach(typeDeclNode_.astParentType(_))
       astParentFullName.foreach(typeDeclNode_.astParentFullName(_))
       createMethodTypeBindings(method, typeDeclNode_)
-      if isClosure then Ast(typeDeclNode_).withChild(Ast(newModifierNode(ModifierTypes.LAMBDA)))
+      if isClosure then Ast(typeDeclNode_).withChild(Ast(modifierNode(node, ModifierTypes.LAMBDA)))
       else Ast(typeDeclNode_)
     }
 
@@ -173,7 +175,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         parameterAsts ++ anonProcParam,
         stmtBlockAst,
         methodReturn,
-        modifiers.map(newModifierNode).toSeq
+        modifiers.map(modifierNode(node, _)).toSeq
       )
       mAst
     }
@@ -248,7 +250,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         val capturingLocal =
           localNode(originNode, name, name, Defines.Any, closureBindingId = Option(closureBindingId))
 
-        val closureBinding = newClosureBindingNode(
+        val closureBinding = closureBindingNode(
           closureBindingId = closureBindingId,
           originalName = name,
           evaluationStrategy = EvaluationStrategies.BY_REFERENCE
@@ -271,9 +273,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   /** Creates the bindings between the method and its types. This is useful for resolving function pointers and imports.
     */
   protected def createMethodTypeBindings(method: NewMethod, typeDecl: NewTypeDecl): Unit = {
-    val bindingNode = newBindingNode("", "", method.fullName)
-    diffGraph.addEdge(typeDecl, bindingNode, EdgeTypes.BINDS)
-    diffGraph.addEdge(bindingNode, method, EdgeTypes.REF)
+    val binding = bindingNode("", "", method.fullName)
+    diffGraph.addEdge(typeDecl, binding, EdgeTypes.BINDS)
+    diffGraph.addEdge(binding, method, EdgeTypes.REF)
   }
 
   // TODO: remaining cases
@@ -431,12 +433,14 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           case None     => Defines.Any
         }
 
-        val thisNode = newThisParameterNode(
+        val thisNode = parameterInNode(
+          node,
           name = Defines.Self,
           code = thisParamCode,
-          typeFullName = thisNodeTypeFullName,
-          line = method.lineNumber,
-          column = method.columnNumber
+          index = 0,
+          isVariadic = false,
+          typeFullName = Option(thisNodeTypeFullName),
+          evaluationStrategy = EvaluationStrategies.BY_SHARING
         )
         val thisParameterAst = Ast(thisNode)
         scope.addToScope(Defines.Self, thisNode)
@@ -473,7 +477,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
             parameterAsts ++ anonProcParam,
             stmtBlockAst,
             methodReturnNode(node, Defines.Any),
-            newModifierNode(ModifierTypes.VIRTUAL) :: newModifierNode(currentAccessModifier) :: Nil
+            modifierNode(node, ModifierTypes.VIRTUAL) :: modifierNode(node, currentAccessModifier) :: Nil
           )
 
         _methodAst :: methodTypeDeclAst :: Nil foreach (Ast.storeInDiffGraph(_, diffGraph))

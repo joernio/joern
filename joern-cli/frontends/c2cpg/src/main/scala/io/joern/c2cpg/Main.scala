@@ -17,7 +17,7 @@ final case class Config(
   includePathsAutoDiscovery: Boolean = false,
   skipFunctionBodies: Boolean = false,
   withPreprocessedFiles: Boolean = false,
-  compilationDatabase: Option[String] = None
+  compilationDatabaseFilename: Option[String] = None
 ) extends X2CpgConfig[Config] {
   def withIncludePaths(includePaths: Set[String]): Config = {
     this.copy(includePaths = includePaths).withInheritedFields(this)
@@ -56,7 +56,7 @@ final case class Config(
   }
 
   def withCompilationDatabase(value: String): Config = {
-    this.copy(compilationDatabase = Some(value)).withInheritedFields(this)
+    this.copy(compilationDatabaseFilename = Option(value)).withInheritedFields(this)
   }
 }
 
@@ -120,7 +120,7 @@ object Main extends X2CpgMain(cmdLineParser, new C2Cpg()) with FrontendHTTPServe
 
   override def run(config: Config, c2cpg: C2Cpg): Unit = {
     config match {
-      case c if c.serverMode      => startup()
+      case c if c.serverMode      => startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout)
       case c if c.printIfDefsOnly => c2cpg.printIfDefsOnly(config)
       case _                      => c2cpg.run(config)
     }

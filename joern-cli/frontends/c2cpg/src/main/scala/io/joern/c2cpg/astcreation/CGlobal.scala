@@ -1,43 +1,30 @@
 package io.joern.c2cpg.astcreation
 
+import io.joern.c2cpg.parser.CdtParser.HeaderFileParserLanguage
 import io.joern.x2cpg.datastructures.Global
+
 import java.util.concurrent.ConcurrentHashMap
-
-object CGlobal {
-
-  final case class MethodInfo(
-    name: String,
-    code: String,
-    fileName: String,
-    returnType: String,
-    astParentType: String,
-    astParentFullName: String,
-    lineNumber: Option[Int],
-    columnNumber: Option[Int],
-    lineNumberEnd: Option[Int],
-    columnNumberEnd: Option[Int],
-    signature: String,
-    offset: Option[(Int, Int)],
-    parameter: Seq[ParameterInfo],
-    modifier: Seq[String]
-  )
-  final class ParameterInfo(
-    val name: String,
-    var code: String,
-    val index: Int,
-    var isVariadic: Boolean,
-    val evaluationStrategy: String,
-    val lineNumber: Option[Int],
-    val columnNumber: Option[Int],
-    val typeFullName: String
-  )
-
-}
+import scala.jdk.CollectionConverters.*
 
 class CGlobal extends Global {
-  import io.joern.c2cpg.astcreation.CGlobal.MethodInfo
+
+  import io.joern.c2cpg.passes.FunctionDeclNodePass.MethodInfo
 
   val methodDeclarations: ConcurrentHashMap[String, MethodInfo] = new ConcurrentHashMap()
   val methodDefinitions: ConcurrentHashMap[String, Boolean]     = new ConcurrentHashMap()
+
+  // 1) not in this map at all -> not included from any source file; we will parse it based on the header files extension
+  // 2) in this map with value HeaderFileParserLanguage.C -> included from at least one C source file
+  // 3) in this map with value HeaderFileParserLanguage.Cpp -> included from at least one C++ source file
+  // 4) in this map with value HeaderFileParserLanguage.Both -> included from at least one C and one C++ source file, so we will have to parse it twice
+  val headerIncludes: ConcurrentHashMap[String, HeaderFileParserLanguage] = new ConcurrentHashMap()
+
+  def typesSeen(): List[String] = {
+    usedTypes.keys().asScala.toList
+  }
+
+  def unhandledMethodDeclarations(): Map[String, MethodInfo] = {
+    methodDeclarations.asScala.toMap -- methodDefinitions.asScala.keys
+  }
 
 }

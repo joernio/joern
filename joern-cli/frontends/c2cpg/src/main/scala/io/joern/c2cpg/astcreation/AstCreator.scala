@@ -15,7 +15,6 @@ import org.eclipse.cdt.core.dom.ast.IASTTranslationUnit
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
 
 /** Translates the Eclipse CDT AST into a CPG AST.
@@ -25,8 +24,7 @@ class AstCreator(
   val global: CGlobal,
   val config: Config,
   val cdtAst: IASTTranslationUnit,
-  val headerFileFinder: HeaderFileFinder,
-  val file2OffsetTable: ConcurrentHashMap[String, Array[Int]]
+  val headerFileFinder: HeaderFileFinder
 ) extends AstCreatorBase[IASTNode, AstCreator](filename)(config.schemaValidation)
     with AstForTypesCreator
     with AstForFunctionsCreator
@@ -34,7 +32,6 @@ class AstCreator(
     with AstForInitializersCreator
     with AstForStatementsCreator
     with AstForExpressionsCreator
-    with AstNodeBuilder
     with AstCreatorHelper
     with FullNameProvider
     with TypeNameProvider
@@ -77,7 +74,7 @@ class AstCreator(
   /** Creates an AST of all declarations found in the translation unit - wrapped in a fake method.
     */
   private def astInFakeMethod(fullName: String, path: String, iASTTranslationUnit: IASTTranslationUnit): Ast = {
-    val includeInactive = config.compilationDatabase.isEmpty && config.defines.isEmpty
+    val includeInactive = config.compilationDatabaseFilename.isEmpty && config.defines.isEmpty
     val allDecls        = iASTTranslationUnit.getDeclarations(includeInactive).toList.filterNot(isIncludedNode)
     val name            = NamespaceTraversal.globalNamespaceName
 
@@ -114,7 +111,7 @@ class AstCreator(
 
   protected def column(node: IASTNode): Option[Int] = {
     nodeOffsets(node).map { case (startOffset, _) =>
-      offsetToColumn(node, startOffset)
+      offsetToColumn(startOffset)
     }
   }
 
@@ -127,7 +124,7 @@ class AstCreator(
 
   protected def columnEnd(node: IASTNode): Option[Int] = {
     nodeOffsets(node).map { case (_, endOffset) =>
-      offsetToColumn(node, endOffset - 1)
+      offsetToColumn(endOffset - 1)
     }
   }
 
