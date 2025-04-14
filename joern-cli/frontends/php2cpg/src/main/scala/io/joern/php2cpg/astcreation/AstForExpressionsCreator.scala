@@ -87,7 +87,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
       // Use method signature for methods that can be linked to avoid varargs issue.
       val signature = s"$UnresolvedSignature(${call.args.size})"
-      val callRoot  = callNode(call, code, name, fullName, dispatchType, Some(signature), Some(TypeConstants.Any))
+      val callRoot  = callNode(call, code, name, fullName, dispatchType, Some(signature), Some(Defines.Any))
 
       val receiverAst = (targetAst, nameAst) match {
         case (Some(target), Some(n)) =>
@@ -120,7 +120,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         val signature = s"$UnresolvedSignature(${call.args.size})"
 
         val callN =
-          callNode(call, code, name, mfn, DispatchTypes.DYNAMIC_DISPATCH, Some(signature), Some(TypeConstants.Any))
+          callNode(call, code, name, mfn, DispatchTypes.DYNAMIC_DISPATCH, Some(signature), Some(Defines.Any))
         callAst(callN, argumentAsts, base = Option(baseAst), receiver = Option(receiverAst))
       case _ =>
         Ast()
@@ -208,7 +208,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       callAst(fieldAccessNode, List(identifier, fieldIdentifier).map(Ast(_))).withRefEdges(identifier, thisParam.toList)
     } else {
       val selfIdentifier = {
-        val name = "self"
+        val name = NameConstants.Self
         val typ  = scope.getEnclosingTypeDeclTypeName
         identifierNode(originNode, name, name, typ.getOrElse(Defines.Any), typ.toList)
       }
@@ -880,5 +880,5 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         handleTmpGen(target, astForExpr(target))
     }
   }
-  
+
 }
