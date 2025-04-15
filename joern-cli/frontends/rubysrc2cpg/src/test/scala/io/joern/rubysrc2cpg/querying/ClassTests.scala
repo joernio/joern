@@ -362,6 +362,8 @@ class ClassTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
+    cpg.method.name(RubyDefines.Main).dotAst.l.foreach(println)
+
     "generate a type decl with the associated members" in {
       inside(cpg.typeDecl.nameExact("<anon-class-0>").l) {
         case anonClass :: Nil =>

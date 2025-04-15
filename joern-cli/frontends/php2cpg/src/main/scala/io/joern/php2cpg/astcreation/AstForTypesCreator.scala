@@ -3,21 +3,120 @@ package io.joern.php2cpg.astcreation
 import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
 import io.joern.php2cpg.parser.Domain.*
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewCall,
+  NewFieldIdentifier,
+  NewIdentifier,
+  NewMember,
+  NewTypeDecl,
+  NewTypeRef
+}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, NodeTypes, Operators}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForClassLikeStmt(stmt: PhpClassLikeStmt): Ast = {
     stmt.name match {
-      case None       => astForAnonymousClass(stmt)
-      case Some(name) => astForNamedClass(stmt, name)
+      case None                                             => astForAnonymousClass(stmt)
+      case Some(name) if name.name.startsWith("anon-class") => astForAnonymousClass(stmt)
+      case Some(name)                                       => astForNamedClass(stmt, name)
     }
   }
 
   private def astForAnonymousClass(stmt: PhpClassLikeStmt): Ast = {
-    logger.debug(s"Anonymous class encountered. This is not yet supported. Location: $relativeFileName:${line(stmt)}")
-    Ast(unknownNode(stmt, code(stmt)))
+    val inheritsFrom = (stmt.extendsNames ++ stmt.implementedInterfaces).map(_.name)
+
+    val className = stmt.name match {
+      case Some(name) => name.name
+      case None       => this.classGen.fresh
+    }
+
+    val classFullName = prependNamespacePrefix(className)
+
+    val code = codeForClassStmt(stmt, PhpNameExpr(className, stmt.attributes))
+
+    val typeDeclTemp = typeDeclNode(
+      node = stmt,
+      name = className,
+      fullName = classFullName,
+      filename = relativeFileName,
+      code = s"$code",
+      inherits = inheritsFrom,
+      alias = None
+    )
+
+    scope.surroundingAstLabel.foreach(typeDeclTemp.astParentType(_))
+    scope.surroundingScopeFulLName.foreach(typeDeclTemp.astParentFullName(_))
+    scope.pushNewScope(typeDeclTemp)
+
+    val bodyStmts      = astsForClassLikeBody(stmt, stmt.stmts, stmt.hasConstructor)
+    val modifiers      = stmt.modifiers.map(modifierNode(stmt, _)).map(Ast(_))
+    val annotationAsts = stmt.attributeGroups.flatMap(astForAttributeGroup)
+
+    scope.popScope()
+    if scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL) then {
+      val typeDeclMember = NewMember()
+        .name(className)
+        .code(className)
+        .dynamicTypeHintFullName(Seq(s"$classFullName<class>"))
+
+      scope.getEnclosingTypeDeclTypeFullName.map(x => s"$x<class>").foreach { tfn =>
+        typeDeclMember.astParentFullName(tfn)
+        typeDeclMember.astParentType(NodeTypes.TYPE_DECL)
+      }
+
+      diffGraph.addNode(typeDeclMember)
+    }
+
+    val prefixAst = createTypeRefPointer(typeDeclTemp)
+    val typeDeclAst = Ast(typeDeclTemp)
+      .withChildren(modifiers)
+      .withChildren(bodyStmts)
+      .withChildren(annotationAsts)
+
+    Ast.storeInDiffGraph(typeDeclAst, diffGraph)
+    prefixAst
+  }
+
+  private def createTypeRefPointer(typeDecl: NewTypeDecl): Ast = {
+    val typeRefNode = Ast(
+      NewTypeRef()
+        .code(typeDecl.code)
+        .typeFullName(typeDecl.fullName)
+        .lineNumber(typeDecl.lineNumber)
+        .columnNumber(typeDecl.columnNumber)
+    )
+
+    val typeRefIdent = {
+      val thisIdent = NewIdentifier().name("this").code("this").typeFullName(Defines.Any)
+      val fi = NewFieldIdentifier()
+        .code(typeDecl.name)
+        .canonicalName(typeDecl.name)
+        .lineNumber(typeDecl.lineNumber)
+        .columnNumber(typeDecl.columnNumber)
+      val fieldAccess = NewCall()
+        .name(Operators.fieldAccess)
+        .code(s"this.${typeDecl.name}")
+        .methodFullName(Operators.fieldAccess)
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .typeFullName(Defines.Any)
+      val thisAst = scope
+        .lookupVariable("this")
+        .map(thisParam => Ast(thisIdent).withRefEdge(thisIdent, thisParam))
+        .getOrElse(Ast(thisIdent))
+      callAst(fieldAccess, Seq(thisAst, Ast(fi)))
+    }
+
+    val assignment = NewCall()
+      .name(Operators.assignment)
+      .methodFullName(Operators.assignment)
+      .code(s"this.${typeDecl.name} = ${typeDecl.code}")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .lineNumber(typeDecl.lineNumber)
+      .columnNumber(typeDecl.columnNumber)
+
+    callAst(assignment, Seq(typeRefIdent, typeRefNode))
   }
 
   private def astForNamedClass(stmt: PhpClassLikeStmt, name: PhpNameExpr): Ast = {

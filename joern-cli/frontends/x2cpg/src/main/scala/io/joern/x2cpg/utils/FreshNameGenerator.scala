@@ -1,4 +1,4 @@
-package io.joern.rubysrc2cpg.utils
+package io.joern.x2cpg.utils
 
 class FreshNameGenerator[T](template: Int => T) {
   private var counter: Int = 0

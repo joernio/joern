@@ -3,7 +3,8 @@ package io.joern.php2cpg.utils
 import io.joern.php2cpg.astcreation.AstCreator.NameConstants
 import io.joern.php2cpg.utils.PhpScopeElement
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.datastructures.{Scope => X2CpgScope}
+import io.joern.x2cpg.datastructures.{ScopeElement, NamespaceLikeScope, Scope as X2CpgScope}
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
@@ -34,6 +35,26 @@ class Scope(implicit nextClosureName: () => String) extends X2CpgScope[String, N
       case invalid =>
         logger.warn(s"pushNewScope called with invalid node $invalid. Ignoring!")
     }
+  }
+
+  def surroundingAstLabel: Option[String] = stack.collectFirst {
+    case ScopeElement(_: NamespaceLikeScope, _) => NodeTypes.NAMESPACE_BLOCK
+    case ScopeElement(scopeNode: PhpScopeElement, _) =>
+      scopeNode.node match {
+        case _: NewTypeDecl       => NodeTypes.TYPE_DECL
+        case _: NewNamespaceBlock => NodeTypes.NAMESPACE_BLOCK
+        case _: NewMethod         => NodeTypes.METHOD
+      }
+  }
+
+  def surroundingScopeFulLName: Option[String] = stack.collectFirst {
+    case ScopeElement(x: NamespaceLikeScope, _) => x.fullName
+    case ScopeElement(scopeNode: PhpScopeElement, _) =>
+      scopeNode.node match {
+        case x: NewTypeDecl       => x.fullName
+        case x: NewMethod         => x.fullName
+        case x: NewNamespaceBlock => x.fullName
+      }
   }
 
   override def popScope(): Option[PhpScopeElement] = {

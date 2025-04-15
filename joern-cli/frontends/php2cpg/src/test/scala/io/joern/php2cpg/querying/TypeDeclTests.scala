@@ -81,6 +81,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         |}
         |""".stripMargin)
 
+    cpg.method.name("foo").dotAst.l.foreach(println)
+
     inside(cpg.method.name("foo").body.astChildren.l) { case List(tmpLocal: Local, constructorBlock: Block) =>
       tmpLocal.name shouldBe "tmp0"
       tmpLocal.code shouldBe "$tmp0"
@@ -347,6 +349,121 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
           bLiteral.code shouldBe "\"B\""
         }
+      }
+    }
+  }
+
+  "anonymous classes" should {
+    val cpg = code("""<?php
+        |new class(10) {
+        |  private int $x;
+        |  function __construct($x) {
+        |    $this->x = $x;
+        |  }
+        |}
+        |
+        |new class(30) {
+        |          private int $y;
+        |          function __construct($y) {
+        |            $this->y = $y;
+        |          }
+        |        }
+        |""".stripMargin)
+
+    "parse methods in classes correctly" in {
+      inside(cpg.typeDecl.name("anon-class-\\d+").l) {
+        case anonClass0 :: anonClass1 :: Nil =>
+          val List(memberX) = anonClass0.member.l
+          memberX.code shouldBe "$x"
+
+          val List(anonConstructor0) = anonClass0.method.name("__construct").l
+          anonConstructor0.fullName shouldBe "anon-class-0->__construct"
+
+          val List(anonClass0ThisParam, paramX) = anonConstructor0.parameter.l
+          anonClass0ThisParam.code shouldBe "this"
+          paramX.code shouldBe "$x"
+
+          inside(anonConstructor0.body.astChildren.isCall.name(Operators.assignment).l) {
+            case assignmentCall :: Nil =>
+              val List(lhs, rhs) = assignmentCall.argument.l
+              lhs.code shouldBe "$this->x"
+              rhs.code shouldBe "$x"
+            case xs => fail(s"Expected assignment call, got ${xs.code.mkString("[", ",", "]")}")
+          }
+
+          val List(memberY) = anonClass1.member.l
+          memberY.code shouldBe "$y"
+
+          val List(anonConstructor1) = anonClass1.method.name("__construct").l
+          anonConstructor1.fullName shouldBe "anon-class-1->__construct"
+
+          val List(anonClass1ThisParam, paramY) = anonConstructor1.parameter.l
+          anonClass1ThisParam.code shouldBe "this"
+          paramY.code shouldBe "$y"
+
+          inside(anonConstructor1.body.astChildren.isCall.name(Operators.assignment).l) {
+            case assignmentCall :: Nil =>
+              val List(lhs, rhs) = assignmentCall.argument.l
+              lhs.code shouldBe "$this->y"
+              rhs.code shouldBe "$y"
+            case xs => fail(s"Expected assignment call, got ${xs.code.mkString("[", ",", "]")}")
+          }
+
+        case xs => fail(s"Expected two anonymous type-decls, instead got ${xs.code.mkString("[", ",", "]")}")
+      }
+    }
+
+    "generate locals with correct types" in {
+      inside(cpg.method.name("<global>").body.astChildren.isLocal.l) {
+        case tmp0Local :: tmp1Local :: Nil =>
+          tmp0Local.typeFullName shouldBe "anon-class-0"
+          tmp1Local.typeFullName shouldBe "anon-class-1"
+        case xs => fail(s"Expected two locals, got ${xs.code.mkString("[", ",", "]")}")
+      }
+    }
+
+    "generate __construct calls" in {
+      inside(cpg.call.name("__construct").l) {
+        case constructAnonClass0 :: constructAnonClass1 :: Nil =>
+          constructAnonClass0.code shouldBe "anon-class-0->__construct(10)"
+          val List(anonClass0Param1: Identifier, anonClass0Param2: Literal) = constructAnonClass0.argument.l: @unchecked
+          anonClass0Param1.code shouldBe "$tmp-0"
+          anonClass0Param2.code shouldBe "10"
+
+          constructAnonClass1.code shouldBe "anon-class-1->__construct(30)"
+          val List(anonClass1Param1: Identifier, anonClass1Param2: Literal) = constructAnonClass1.argument.l: @unchecked
+          anonClass1Param1.code shouldBe "$tmp-1"
+          anonClass1Param2.code shouldBe "30"
+        case xs => fail(s"Expected two construct calls, got ${xs.code.mkString("[", ",", "]")}")
+      }
+    }
+
+    "generate `alloc` calls and assignments" in {
+      inside(cpg.method.name("<global>").body.astChildren.isBlock.l) {
+        case constructBlock1 :: constructBlock2 :: Nil =>
+          inside(constructBlock1.astChildren.assignment.l) {
+            case allocAssignment :: Nil =>
+              val Seq(allocTarget: Identifier, allocSource: Call) =
+                List(allocAssignment.target, allocAssignment.source): @unchecked
+              allocTarget.code shouldBe "$tmp-0"
+              allocSource.code shouldBe "anon-class-0.<alloc>()"
+              allocSource.methodFullName shouldBe Operators.alloc
+              allocTarget.typeFullName shouldBe "anon-class-0"
+            case xs => fail(s"Expected one assignment, got ${xs.code.mkString("[", ",", "]")}")
+          }
+
+          inside(constructBlock2.astChildren.assignment.l) {
+            case allocAssignment :: Nil =>
+              val Seq(allocTarget: Identifier, allocSource: Call) =
+                List(allocAssignment.target, allocAssignment.source): @unchecked
+              allocTarget.code shouldBe "$tmp-1"
+              allocSource.code shouldBe "anon-class-1.<alloc>()"
+              allocSource.methodFullName shouldBe Operators.alloc
+              allocTarget.typeFullName shouldBe "anon-class-1"
+            case xs => fail(s"Expected some things")
+          }
+
+        case xs => fail(s"Expected one assignment, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
   }

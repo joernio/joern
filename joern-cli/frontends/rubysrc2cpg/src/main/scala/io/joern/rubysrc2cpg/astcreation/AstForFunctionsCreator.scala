@@ -13,8 +13,8 @@ import io.shiftleft.codepropertygraph.generated.{
   NodeTypes,
   Operators
 }
-import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 import io.joern.x2cpg.AstNodeBuilder.{bindingNode, closureBindingNode}
+import io.joern.x2cpg.utils.FreshNameGenerator
 
 import scala.collection.mutable
 
