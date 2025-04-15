@@ -284,8 +284,6 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
    */
   private def visitUnresolvedDynamicCall(c: Call): Option[String] = {
 
-    println(s"${c.name} => [${c.argument.map(x => x.argumentIndex -> x.code).mkString(",")}]")
-
     def setNodeFullName(tgt: CfgNode, newFullName: String): Option[String] = {
       if (tgt.isCall) builder.setNodeProperty(tgt, PropertyNames.METHOD_FULL_NAME, newFullName)
       builder.setNodeProperty(
