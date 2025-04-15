@@ -1,7 +1,7 @@
-package io.shiftleft.resolver.client
+package io.shiftleft.http4s
 
 import cats.effect.{ExitCode, IO, IOApp}
-import io.shiftleft.resolver.client.WSClientImpl
+import io.shiftleft.http4s.WSClientImpl
 import io.shiftleft.resolver.impl.{CoordinateConverterIon, IdConverterIonMaven, MetaDataCalculatorRemote}
 import org.apache.logging.log4j.Level
 import org.apache.logging.log4j.core.config.Configurator

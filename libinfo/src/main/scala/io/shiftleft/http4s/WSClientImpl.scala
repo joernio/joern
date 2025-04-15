@@ -1,14 +1,11 @@
-package io.shiftleft.resolver.client
+package io.shiftleft.http4s
 
 import cats.Foldable
 import cats.effect.kernel.DeferredSource
 import cats.effect.std.{Dispatcher, Queue}
 import cats.effect.{Async, Deferred, Resource}
 import cats.syntax.all.*
-import fs2.Stream
 import org.http4s.client.websocket.*
-import org.typelevel.log4cats.Logger
-import org.typelevel.log4cats.slf4j.Slf4jLogger
 import scodec.bits.ByteVector
 
 import java.net.URI
@@ -16,8 +13,10 @@ import java.net.http.{HttpClient, WebSocket}
 import java.nio.ByteBuffer
 import java.util.concurrent.{CompletableFuture, CompletionStage}
 
+// There does not appear to be a WebSocket client implementation for the http4s interface for the JVM yet.
+// So this is our own, but it just wraps/adapts the WebSocket client implementation coming with the java
+// standard library.
 class WSClientImpl[F[_]: Async] extends WSClient[F] {
-  private given Logger[F] = Slf4jLogger.getLogger[F]()
 
   private case class WebSocketQueuePair(webSocket: WebSocket,
                                         queue: Queue[F, Option[WSFrame]])
