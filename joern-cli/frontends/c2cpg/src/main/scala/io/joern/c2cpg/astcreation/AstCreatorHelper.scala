@@ -224,19 +224,19 @@ trait AstCreatorHelper { this: AstCreator =>
     val capturedLocals      = mutable.HashMap.empty[String, NewNode]
 
     resolvedReferenceIt.foreach { case C2CpgScope.ResolvedReference(variableNodeId, origin) =>
-      var currentScope           = origin.stack
+      var maybeScopeElement      = origin.stack
       var currentReference       = origin.referenceNode
       var nextReference: NewNode = null
       var done                   = false
       while (!done) {
         val localOrCapturedLocalNodeOption =
-          if (currentScope.get.nameToVariableNode.contains(origin.variableName)) {
+          if (maybeScopeElement.get.nameToVariableNode.contains(origin.variableName)) {
             done = true
             Option(variableNodeId)
           } else {
-            currentScope.flatMap {
+            maybeScopeElement.flatMap {
               case methodScope: C2CpgScope.MethodScopeElement if methodScope.needsEnclosingScope =>
-                currentScope = Option(C2CpgScope.getEnclosingMethodScopeElement(currentScope))
+                maybeScopeElement = Option(scope.getEnclosingMethodScopeElement(maybeScopeElement))
                 None
               case methodScope: C2CpgScope.MethodScopeElement =>
                 val methodScopeNode          = methodScope.scopeNode
@@ -268,7 +268,7 @@ trait AstCreatorHelper { this: AstCreator =>
           diffGraph.addEdge(currentReference, localOrCapturedLocalNode, EdgeTypes.REF)
           currentReference = nextReference
         }
-        currentScope = currentScope.get.surroundingScope
+        maybeScopeElement = maybeScopeElement.get.surroundingScope
       }
     }
   }
