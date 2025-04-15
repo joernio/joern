@@ -1,6 +1,6 @@
 package io.joern.php2cpg.astcreation
 
-import io.joern.php2cpg.astcreation.AstCreator.{TypeConstants, operatorSymbols}
+import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants, operatorSymbols}
 import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*
 import io.joern.x2cpg.Defines.UnresolvedNamespace
@@ -168,14 +168,14 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
       })
   }
 
-  protected def getMfn(call: PhpCallExpr, name: String, codePrefix: String): String = {
+  protected def getMfn(call: PhpCallExpr, name: String): String = {
     call.target match {
       // Static method call with a known class name
       case Some(nameExpr: PhpNameExpr) if call.isStatic =>
-        if (nameExpr.name == "self") composeMethodFullName(name, call.isStatic)
+        if (nameExpr.name == NameConstants.Self) composeMethodFullName(name, call.isStatic)
         else s"${nameExpr.name}$StaticMethodDelimiter$name"
-      case Some(expr) =>
-        s"$UnresolvedNamespace\\$codePrefix"
+      case Some(_) =>
+        s"$UnresolvedNamespace\\$name"
       case None if PhpBuiltins.FuncNames.contains(name) =>
         // No signature/namespace for MFN for builtin functions to ensure stable names as type info improves.
         name

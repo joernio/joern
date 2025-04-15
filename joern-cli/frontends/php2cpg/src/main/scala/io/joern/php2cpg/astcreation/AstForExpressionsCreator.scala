@@ -83,7 +83,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         else
           DispatchTypes.DYNAMIC_DISPATCH
 
-      val fullName = getMfn(call, name, codePrefix)
+      val fullName = getMfn(call, name)
 
       // Use method signature for methods that can be linked to avoid varargs issue.
       val signature = s"$UnresolvedSignature(${call.args.size})"
@@ -102,20 +102,20 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
   }
 
-  protected def astForChainCall(call: PhpCallExpr, name: String): Ast = {
+  private def astForChainCall(call: PhpCallExpr, name: String): Ast = {
     call.target match {
       case Some(target) if target.isInstanceOf[PhpPropertyFetchExpr] || target.isInstanceOf[PhpCallExpr] =>
         val expr = PhpPropertyFetchExpr(target, PhpNameExpr(name, call.attributes), false, false, call.attributes)
-        val receiverAst         = astForPropertyFetchExpr(expr)
-        val (baseAst, baseCode) = astForPhpPropertyFetchTarget(target)
-        val targetAst           = astForExpr(target)
+        val receiverAst  = astForPropertyFetchExpr(expr)
+        val (baseAst, _) = astForPhpPropertyFetchTarget(target)
+        val targetAst    = astForExpr(target)
 
         val codePrefix = codeForMethodCall(call, targetAst, name)
 
         val argumentAsts = call.args.map(astForCallArg)
         val argsCode     = getArgsCode(call, argumentAsts)
         val code         = s"$codePrefix($argsCode)"
-        val mfn          = getMfn(call, name, codePrefix)
+        val mfn          = getMfn(call, name)
 
         val signature = s"$UnresolvedSignature(${call.args.size})"
 
