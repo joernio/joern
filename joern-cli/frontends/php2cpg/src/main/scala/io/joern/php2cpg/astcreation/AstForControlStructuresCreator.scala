@@ -1,12 +1,14 @@
 package io.joern.php2cpg.astcreation
 
+import io.joern.php2cpg.utils.PhpScopeElement
 import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
 import io.joern.php2cpg.parser.Domain.*
 import io.joern.x2cpg.Defines.UnresolvedSignature
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, Operators}
+import io.shiftleft.proto.cpg.Cpg.CpgStruct.Edge.EdgeType
 
 trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -114,7 +116,22 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
 
     val catches = stmt.catches.map { catchStmt =>
       val catchNode = controlStructureNode(catchStmt, ControlStructureTypes.CATCH, "catch")
-      Ast(catchNode).withChild(astForCatchStmt(catchStmt))
+
+      val local = catchStmt.variable.collectFirst { case variable @ PhpVariable(name: PhpNameExpr, _) =>
+        val local = localNode(variable, name.name, name.name, Defines.Any)
+        scope.addToScope(name.name, local) match {
+          case PhpScopeElement(node: NewBlock) => diffGraph.addEdge(node, local, EdgeTypes.AST)
+          case _                               =>
+        }
+        local.dynamicTypeHintFullName(catchStmt.types.map(_.name))
+        Ast(local)
+      }
+
+      val catchAst = Ast(catchNode).withChild(astForCatchStmt(catchStmt))
+      local match {
+        case Some(localN) => catchAst.withChild(localN)
+        case None         => catchAst
+      }
     }
 
     val finallyBody = stmt.finallyStmt.map { fin =>

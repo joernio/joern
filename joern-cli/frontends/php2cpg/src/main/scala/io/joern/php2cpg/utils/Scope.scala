@@ -3,8 +3,8 @@ package io.joern.php2cpg.utils
 import io.joern.php2cpg.astcreation.AstCreator.NameConstants
 import io.joern.php2cpg.utils.PhpScopeElement
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.datastructures.{Scope => X2CpgScope}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
+import io.joern.x2cpg.datastructures.Scope as X2CpgScope
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
 
@@ -20,6 +20,10 @@ class Scope(implicit nextClosureName: () => String) extends X2CpgScope[String, N
 
   def pushNewScope(scopeNode: NewNode): Unit = {
     scopeNode match {
+      case block: NewBlock =>
+        val scopeName = stack.headOption.map(_.scopeNode.getName)
+        super.pushNewScope(PhpScopeElement(block, scopeName.getOrElse("")))
+
       case method: NewMethod =>
         super.pushNewScope(PhpScopeElement(method))
 

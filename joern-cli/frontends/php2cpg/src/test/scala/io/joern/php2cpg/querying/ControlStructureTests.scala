@@ -730,7 +730,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
     val cpg = code("""<?php
         |try {
         |  $body1;
-        |} catch (A $a) {
+        |} catch (A | D $a) {
         |  $body2;
         |} catch (B $b) {
         |  $body3;
@@ -749,8 +749,16 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
     "create the catch blocks correctly" in {
       val List(catchA, catchB) = tryNode.astChildren.isControlStructure.isCatch.l
+
+      val List(catchALocal) = catchA.astChildren.isLocal.l
+      catchALocal.code shouldBe "a"
+      catchALocal.dynamicTypeHintFullName shouldBe IndexedSeq("A", "D")
       catchA.astChildren.isBlock.astChildren.code.l shouldBe List("$body2")
       catchA.lineNumber shouldBe Some(4)
+
+      val List(catchBLocal) = catchB.astChildren.isLocal.l
+      catchBLocal.code shouldBe "b"
+      catchBLocal.dynamicTypeHintFullName shouldBe IndexedSeq("B")
       catchB.astChildren.isBlock.astChildren.code.l shouldBe List("$body3")
       catchB.lineNumber shouldBe Some(6)
     }
