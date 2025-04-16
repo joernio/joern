@@ -49,13 +49,15 @@ class ErbTests extends RubyCode2CpgFixture {
                 fmtStringCall.argument.l: @unchecked
 
               fmtVal1.methodFullName shouldBe Operators.formattedValue
-              fmtVal1.code shouldBe "redis:host:"
+              fmtVal1.code shouldBe
+                """redis:
+                  |  host: """.stripMargin
 
               fmtVal2.methodFullName shouldBe Operators.formattedValue
               fmtVal2.code shouldBe "#{ENV['REDIS_HOST']}"
 
               fmtVal3.methodFullName shouldBe Operators.formattedValue
-              fmtVal3.code shouldBe "port:"
+              fmtVal3.code shouldBe "  port: "
 
               fmtVal4.methodFullName shouldBe Operators.formattedValue
               fmtVal4.code shouldBe "#{ENV['REDIS_PORT']}"
@@ -67,10 +69,6 @@ class ErbTests extends RubyCode2CpgFixture {
 
     "Contains calls to formattedValue" in {
       cpg.call.name(Operators.formattedValue).l.size shouldBe 14
-      inside(cpg.call.name(Operators.formattedValue).l) {
-        case _ :: _ :: _ :: _ :: _ :: _ :: _ :: _ :: _ :: _ :: _ :: _ :: _ :: _ :: Nil =>
-        case xs => fail(s"Expected 14 calls to `formattedValue`, got ${xs.size} instead")
-      }
     }
   }
 
@@ -115,13 +113,15 @@ class ErbTests extends RubyCode2CpgFixture {
             val List(fmtVal1: Call, fmtVal2: Call, fmtVal3: Call, fmtVal4: Call) = fmtStringCall.argument.l: @unchecked
 
             fmtVal1.methodFullName shouldBe Operators.formattedValue
-            fmtVal1.code shouldBe "redis:host:"
+            fmtVal1.code shouldBe
+              """redis:
+                |  host: """.stripMargin
 
             fmtVal2.methodFullName shouldBe Operators.formattedValue
             fmtVal2.code shouldBe "#{ENV['REDIS_HOST']}"
 
             fmtVal3.methodFullName shouldBe Operators.formattedValue
-            fmtVal3.code shouldBe "port:"
+            fmtVal3.code shouldBe """  port: """
 
             fmtVal4.methodFullName shouldBe Operators.formattedValue
             fmtVal4.code shouldBe "#{ENV['REDIS_PORT']}"
@@ -148,13 +148,15 @@ class ErbTests extends RubyCode2CpgFixture {
                   fmtStringCall.argument.l: @unchecked
 
                 fmtVal1.methodFullName shouldBe Operators.formattedValue
-                fmtVal1.code shouldBe "rabbitmq:host:"
+                fmtVal1.code shouldBe
+                  """rabbitmq:
+                    |  host: """.stripMargin
 
                 fmtVal2.methodFullName shouldBe Operators.formattedValue
                 fmtVal2.code shouldBe "#{ENV['RABBITMQ_HOST']}"
 
                 fmtVal3.methodFullName shouldBe Operators.formattedValue
-                fmtVal3.code shouldBe "port:"
+                fmtVal3.code shouldBe "  port: "
 
                 fmtVal4.methodFullName shouldBe Operators.formattedValue
                 fmtVal4.code shouldBe "#{ENV['RABBITMQ_PORT']}"
