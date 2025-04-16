@@ -82,16 +82,16 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         |""".stripMargin)
 
     inside(cpg.method.name("foo").body.astChildren.l) { case List(tmpLocal: Local, constructorBlock: Block) =>
-      tmpLocal.name shouldBe "tmp0"
-      tmpLocal.code shouldBe "$tmp0"
+      tmpLocal.name shouldBe "tmp-0"
+      tmpLocal.code shouldBe "$tmp-0"
 
       constructorBlock.lineNumber shouldBe Some(3)
 
       inside(constructorBlock.astChildren.l) { case List(allocAssign: Call, initCall: Call, tmpVar: Identifier) =>
         allocAssign.methodFullName shouldBe Operators.assignment
         inside(allocAssign.astChildren.l) { case List(tmpIdentifier: Identifier, allocCall: Call) =>
-          tmpIdentifier.name shouldBe "tmp0"
-          tmpIdentifier.code shouldBe "$tmp0"
+          tmpIdentifier.name shouldBe "tmp-0"
+          tmpIdentifier.code shouldBe "$tmp-0"
           tmpIdentifier._localViaRefOut should contain(tmpLocal)
 
           allocCall.name shouldBe Operators.alloc
@@ -105,8 +105,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         initCall.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
         initCall.code shouldBe "Foo->__construct(42)"
         inside(initCall.argument.l) { case List(tmpIdentifier: Identifier, literal: Literal) =>
-          tmpIdentifier.name shouldBe "tmp0"
-          tmpIdentifier.code shouldBe "$tmp0"
+          tmpIdentifier.name shouldBe "tmp-0"
+          tmpIdentifier.code shouldBe "$tmp-0"
           tmpIdentifier.argumentIndex shouldBe 0
           tmpIdentifier._localViaRefOut should contain(tmpLocal)
           literal.code shouldBe "42"

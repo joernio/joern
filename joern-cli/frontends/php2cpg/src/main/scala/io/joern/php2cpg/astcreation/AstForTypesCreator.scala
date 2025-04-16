@@ -1,6 +1,6 @@
 package io.joern.php2cpg.astcreation
 
-import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
+import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
 import io.joern.php2cpg.parser.Domain.*
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{
@@ -41,7 +41,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       name = className,
       fullName = classFullName,
       filename = relativeFileName,
-      code = s"$code",
+      code = code,
       inherits = inheritsFrom,
       alias = None
     )
@@ -59,9 +59,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       val typeDeclMember = NewMember()
         .name(className)
         .code(className)
-        .dynamicTypeHintFullName(Seq(s"$classFullName<class>"))
+        .dynamicTypeHintFullName(Seq(classFullName))
 
-      scope.getEnclosingTypeDeclTypeFullName.map(x => s"$x<class>").foreach { tfn =>
+      scope.getEnclosingTypeDeclTypeFullName.foreach { tfn =>
         typeDeclMember.astParentFullName(tfn)
         typeDeclMember.astParentType(NodeTypes.TYPE_DECL)
       }
@@ -89,7 +89,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     )
 
     val typeRefIdent = {
-      val thisIdent = NewIdentifier().name("this").code("this").typeFullName(Defines.Any)
+      val thisIdent = NewIdentifier().name(NameConstants.This).code(s"$$$NameConstants.This").typeFullName(Defines.Any)
       val fi = NewFieldIdentifier()
         .code(typeDecl.name)
         .canonicalName(typeDecl.name)
@@ -97,12 +97,12 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         .columnNumber(typeDecl.columnNumber)
       val fieldAccess = NewCall()
         .name(Operators.fieldAccess)
-        .code(s"this.${typeDecl.name}")
+        .code(s"$$this.${typeDecl.name}")
         .methodFullName(Operators.fieldAccess)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .typeFullName(Defines.Any)
       val thisAst = scope
-        .lookupVariable("this")
+        .lookupVariable(NameConstants.This)
         .map(thisParam => Ast(thisIdent).withRefEdge(thisIdent, thisParam))
         .getOrElse(Ast(thisIdent))
       callAst(fieldAccess, Seq(thisAst, Ast(fi)))
@@ -111,7 +111,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val assignment = NewCall()
       .name(Operators.assignment)
       .methodFullName(Operators.assignment)
-      .code(s"this.${typeDecl.name} = ${typeDecl.code}")
+      .code(s"$$this.${typeDecl.name} = ${typeDecl.code}")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .lineNumber(typeDecl.lineNumber)
       .columnNumber(typeDecl.columnNumber)
