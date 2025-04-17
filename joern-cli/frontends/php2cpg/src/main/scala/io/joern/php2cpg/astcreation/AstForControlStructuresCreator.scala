@@ -114,25 +114,25 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
   protected def astForTryStmt(stmt: PhpTryStmt): Ast = {
     val tryBody = stmtBodyBlockAst(stmt)
 
+    scope.pushNewScope(NewBlock())
     val catches = stmt.catches.map { catchStmt =>
       val catchNode = controlStructureNode(catchStmt, ControlStructureTypes.CATCH, "catch")
 
-      val local = catchStmt.variable.collectFirst { case variable @ PhpVariable(name: PhpNameExpr, _) =>
-        val local = localNode(variable, name.name, name.name, Defines.Any)
-        scope.addToScope(name.name, local) match {
-          case PhpScopeElement(node: NewBlock) => diffGraph.addEdge(node, local, EdgeTypes.AST)
-          case _                               =>
+      val localCatchVariable = catchStmt.variable
+        .collectFirst { case variable @ PhpVariable(name: PhpNameExpr, _) =>
+          val local = localNode(variable, name.name, name.name, Defines.Any)
+          scope.addToScope(name.name, local) match {
+            case PhpScopeElement(node: NewBlock) => diffGraph.addEdge(node, local, EdgeTypes.AST)
+            case _                               =>
+          }
+          local.dynamicTypeHintFullName(catchStmt.types.map(_.name))
+          Ast(local)
         }
-        local.dynamicTypeHintFullName(catchStmt.types.map(_.name))
-        Ast(local)
-      }
+        .getOrElse(Ast())
 
-      val catchAst = Ast(catchNode).withChild(astForCatchStmt(catchStmt))
-      local match {
-        case Some(localN) => catchAst.withChild(localN)
-        case None         => catchAst
-      }
+      Ast(catchNode).withChild(astForCatchStmt(catchStmt)).withChild(localCatchVariable)
     }
+    scope.popScope()
 
     val finallyBody = stmt.finallyStmt.map { fin =>
       val finallyNode = controlStructureNode(fin, ControlStructureTypes.FINALLY, "finally")
