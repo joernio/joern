@@ -120,11 +120,9 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
 
       val localCatchVariable = catchStmt.variable
         .collectFirst { case variable @ PhpVariable(name: PhpNameExpr, _) =>
-          val local = localNode(variable, name.name, name.name, Defines.Any)
-          scope.addToScope(name.name, local) match {
-            case PhpScopeElement(node: NewBlock) => diffGraph.addEdge(node, local, EdgeTypes.AST)
-            case _                               =>
-          }
+          val local           = localNode(variable, name.name, name.name, Defines.Any)
+          val phpScopeElement = scope.addToScope(name.name, local)
+          diffGraph.addEdge(phpScopeElement.node, local, EdgeTypes.AST)
           local.dynamicTypeHintFullName(catchStmt.types.map(_.name))
           Ast(local)
         }
@@ -144,7 +142,6 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
   }
 
   private def astForCatchStmt(stmt: PhpCatchStmt): Ast = {
-    // TODO Add variable at some point. Current implementation is consistent with C++.
     stmtBodyBlockAst(stmt)
   }
 
