@@ -116,7 +116,6 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
 
     scope.pushNewScope(NewBlock())
     val catches = stmt.catches.map { catchStmt =>
-      val catchNode = controlStructureNode(catchStmt, ControlStructureTypes.CATCH, "catch")
 
       val localCatchVariable = catchStmt.variable
         .collectFirst { case variable @ PhpVariable(name: PhpNameExpr, _) =>
@@ -127,6 +126,15 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
           Ast(local)
         }
         .getOrElse(Ast())
+
+      val variableName = localCatchVariable.rootCode match {
+        case Some(code) if code != "" =>
+          s" $$$code"
+        case _ => ""
+      }
+
+      val catchNodeCode = s"catch (${catchStmt.types.map(_.name).mkString(" | ")}$variableName)";
+      val catchNode     = controlStructureNode(catchStmt, ControlStructureTypes.CATCH, catchNodeCode)
 
       Ast(catchNode).withChild(astForCatchStmt(catchStmt)).withChild(localCatchVariable)
     }

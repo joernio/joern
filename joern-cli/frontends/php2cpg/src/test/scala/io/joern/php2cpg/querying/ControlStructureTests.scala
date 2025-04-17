@@ -749,6 +749,8 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
     "create the catch blocks correctly" in {
       val List(catchA, catchB) = tryNode.astChildren.isControlStructure.isCatch.l
+      catchA.code shouldBe "catch (A | D $a)"
+      catchB.code shouldBe "catch (B $b)"
 
       val List(catchALocal) = catchA.astChildren.isLocal.l
       catchALocal.code shouldBe "a"
