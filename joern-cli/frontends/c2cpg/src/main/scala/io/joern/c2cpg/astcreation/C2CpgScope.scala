@@ -7,12 +7,12 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
-import scala.annotation.tailrec
 import scala.collection.mutable
 
 object C2CpgScope {
 
-  abstract class ScopeElement(val scopeNode: NewNode, val surroundingScope: Option[ScopeElement]) {
+  sealed trait ScopeElement(scopeNode: NewNode) {
+    val surroundingScope: Option[ScopeElement]
     val nameToVariableNode: mutable.Map[String, (NewNode, String, String)] = mutable.HashMap.empty
 
     def addVariable(variableName: String, variableNode: NewNode, tpe: String, evaluationStrategy: String): Unit = {
@@ -34,20 +34,20 @@ object C2CpgScope {
     case MethodScope, BlockScope
   }
 
-  class MethodScopeElement(
-    val methodFullName: String,
-    val methodName: String,
-    val capturingRefId: Option[NewNode],
-    override val scopeNode: NewNode,
-    override val surroundingScope: Option[ScopeElement]
-  ) extends ScopeElement(scopeNode, surroundingScope) {
+  case class MethodScopeElement(
+    methodFullName: String,
+    methodName: String,
+    capturingRefId: Option[NewNode],
+    scopeNode: NewNode,
+    surroundingScope: Option[ScopeElement]
+  ) extends ScopeElement(scopeNode) {
     def needsEnclosingScope: Boolean = {
       scopeNode.isInstanceOf[NewTypeDecl] || scopeNode.isInstanceOf[NewNamespaceBlock]
     }
   }
 
-  class BlockScopeElement(override val scopeNode: NewNode, override val surroundingScope: Option[ScopeElement])
-      extends ScopeElement(scopeNode, surroundingScope)
+  private case class BlockScopeElement(scopeNode: NewNode, surroundingScope: Option[ScopeElement])
+      extends ScopeElement(scopeNode)
 
 }
 
@@ -58,24 +58,23 @@ class C2CpgScope {
   private val pendingReferences: mutable.Buffer[PendingReference] = mutable.ListBuffer.empty
   private var stack: Option[ScopeElement]                         = Option.empty
 
-  def getEnclosingMethodScopeElement(scopeHead: Option[ScopeElement]): MethodScopeElement = {
-    // There are no references outside of methods. Meaning we always find a MethodScope here.
-    // Outermost method scope is the synthetic <global> method scope.
-    scopeHead.get match {
-      case methodScopeElement: MethodScopeElement => methodScopeElement
-      case blockScopeElement: BlockScopeElement   => getEnclosingMethodScopeElement(blockScopeElement.surroundingScope)
+  def getEnclosingMethodScopeElement(scopeHead: Option[ScopeElement]): Option[MethodScopeElement] = {
+    scopeHead.flatMap {
+      case methodScope: MethodScopeElement => Some(methodScope)
+      case blockScope: BlockScopeElement   => getEnclosingMethodScopeElement(blockScope.surroundingScope)
     }
   }
 
   def computeScopePath: String = {
-    val m = getEnclosingMethodScopeElement(stack)
-    if (m.methodName.startsWith(io.joern.x2cpg.Defines.ClosurePrefix)) {
-      val offset = NamespaceTraversal.globalNamespaceName.length + 1
-      val index  = m.methodFullName.indexOf(NamespaceTraversal.globalNamespaceName) + offset
-      m.methodFullName.substring(index).takeWhile(_ != ':')
-    } else if (m.methodName != NamespaceTraversal.globalNamespaceName) {
-      m.methodFullName.takeWhile(_ != ':')
-    } else { "" }
+    getEnclosingMethodScopeElement(stack) match {
+      case Some(methodScope) if methodScope.methodName.startsWith(io.joern.x2cpg.Defines.ClosurePrefix) =>
+        val offset = NamespaceTraversal.globalNamespaceName.length + 1
+        val index  = methodScope.methodFullName.indexOf(NamespaceTraversal.globalNamespaceName) + offset
+        methodScope.methodFullName.substring(index).takeWhile(_ != ':')
+      case Some(methodScope) if methodScope.methodName != NamespaceTraversal.globalNamespaceName =>
+        methodScope.methodFullName.takeWhile(_ != ':')
+      case _ => ""
+    }
   }
 
   def lookupVariable(identifier: String): Option[(NewNode, String)] = {
@@ -83,7 +82,7 @@ class C2CpgScope {
   }
 
   def variableIsInMethodScope(identifier: String): Boolean = {
-    getEnclosingMethodScopeElement(stack).nameToVariableNode.contains(identifier)
+    getEnclosingMethodScopeElement(stack).exists(_.nameToVariableNode.contains(identifier))
   }
 
   def pushNewMethodScope(
@@ -92,15 +91,15 @@ class C2CpgScope {
     scopeNode: NewNode,
     capturingRefId: Option[NewNode]
   ): Unit = {
-    stack = Option(new MethodScopeElement(methodFullName, methodName, capturingRefId, scopeNode, stack))
+    stack = Option(MethodScopeElement(methodFullName, methodName, capturingRefId, scopeNode, stack))
   }
 
   def pushNewBlockScope(scopeNode: NewNode): Unit = {
-    stack = Option(new BlockScopeElement(scopeNode, stack))
+    stack = Option(BlockScopeElement(scopeNode, stack))
   }
 
   def popScope(): Unit = {
-    stack = stack.get.surroundingScope
+    stack = stack.flatMap(_.surroundingScope)
   }
 
   def addVariable(variableName: String, variableNode: NewNode, tpe: String, scopeType: ScopeType): Unit = {
@@ -121,33 +120,31 @@ class C2CpgScope {
   }
 
   def resolve(unresolvedHandler: (NewNode, PendingReference) => NewLocal): Iterator[ResolvedReference] = {
-    pendingReferences.iterator.map { pendingReference =>
-      val resolvedReferenceOption = tryResolve(pendingReference)
-      resolvedReferenceOption.getOrElse {
-        val methodScope     = getEnclosingMethodScopeElement(pendingReference.stack).scopeNode
-        val newVariableNode = unresolvedHandler(methodScope, pendingReference)
-        addVariable(
-          pendingReference.stack,
-          pendingReference.variableName,
-          newVariableNode,
-          pendingReference.tpe,
-          pendingReference.evaluationStrategy,
-          ScopeType.MethodScope
-        )
-        tryResolve(pendingReference).get
+    pendingReferences.iterator.flatMap { pendingReference =>
+      tryResolve(pendingReference).orElse {
+        getEnclosingMethodScopeElement(pendingReference.stack).flatMap { methodScopeElement =>
+          val newVariableNode = unresolvedHandler(methodScopeElement.scopeNode, pendingReference)
+          addVariable(
+            pendingReference.stack,
+            pendingReference.variableName,
+            newVariableNode,
+            pendingReference.tpe,
+            pendingReference.evaluationStrategy,
+            ScopeType.MethodScope
+          )
+          tryResolve(pendingReference)
+        }
       }
     }
   }
 
-  @tailrec
   private def variableFromStack(
     stack: Option[ScopeElement],
     variableName: String
   ): Option[(NewNode, String, String)] = {
-    stack match {
-      case Some(scope) if scope.nameToVariableNode.contains(variableName) => scope.nameToVariableNode.get(variableName)
-      case Some(scope) => variableFromStack(scope.surroundingScope, variableName)
-      case None        => None
+    stack.flatMap { stackElement =>
+      if (stackElement.nameToVariableNode.contains(variableName)) { stackElement.nameToVariableNode.get(variableName) }
+      else { variableFromStack(stackElement.surroundingScope, variableName) }
     }
   }
 
@@ -161,9 +158,9 @@ class C2CpgScope {
   ): Unit = {
     val scopeToAddTo = scopeType match {
       case ScopeType.MethodScope => getEnclosingMethodScopeElement(stack)
-      case _                     => stack.get
+      case _                     => stack
     }
-    scopeToAddTo.addVariable(variableName, variableNode, tpe, evaluationStrategy)
+    scopeToAddTo.foreach(_.addVariable(variableName, variableNode, tpe, evaluationStrategy))
   }
 
   private def tryResolve(pendingReference: PendingReference): Option[ResolvedReference] = {
