@@ -83,7 +83,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   protected def astForNilBlock: Ast = blockAst(NewBlock(), List(astForNilLiteral))
 
   protected def astForDynamicLiteral(node: DynamicLiteral): Ast = {
-    val fmtValueAsts = node.expressions.map {
+    val fmtValueAsts = node.expressions.collect {
       case stmtList: StatementList if stmtList.size == 1 =>
         val expressionAst = astForExpression(stmtList.statements.head)
         val call = callNode(
@@ -101,7 +101,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
           s"Interpolations containing multiple statements are not supported yet: ${stmtList.text} ($relativeFileName), skipping"
         )
         astForUnknown(stmtList)
-      case node =>
+      case node if (!isLineFeed(node.text)) =>
         val call = callNode(
           node = node,
           code = node.text,
@@ -1087,4 +1087,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   private def getUnaryOperatorName(op: String): Option[String] = UnaryOperatorNames.get(op)
 
   private def getAssignmentOperatorName(op: String): Option[String] = AssignmentOperatorNames.get(op)
+
+  private def isLineFeed(text: String): Boolean = text == "\n" || text == "\r" || text == "\r\n"
 }
