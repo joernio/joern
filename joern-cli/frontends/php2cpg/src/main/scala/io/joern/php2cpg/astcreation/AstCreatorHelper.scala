@@ -5,7 +5,6 @@ import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*
 import io.joern.x2cpg.Defines.UnresolvedNamespace
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
-import io.joern.x2cpg.utils.FreshNameGenerator
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewIdentifier, NewLiteral, NewNamespaceBlock}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
@@ -15,9 +14,6 @@ import java.nio.charset.StandardCharsets
 trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected val globalNamespace: NewNamespaceBlock = globalNamespaceBlock()
-
-  protected val tmpGen: FreshNameGenerator[String]   = FreshNameGenerator[String](i => s"tmp-$i")
-  protected val classGen: FreshNameGenerator[String] = FreshNameGenerator[String](i => s"anon-class-$i")
 
   protected def line(phpNode: PhpNode): Option[Int] = phpNode.attributes.lineNumber
 
@@ -48,7 +44,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     maybeTypeFullName: Option[String],
     prefix: String = ""
   ): NewIdentifier = {
-    val name         = s"$prefix${this.tmpGen.fresh}"
+    val name         = s"$prefix${this.scope.getNewVarTmp}"
     val typeFullName = maybeTypeFullName.getOrElse(Defines.Any)
     identifierNode(originNode, name, s"$$$name", typeFullName)
   }

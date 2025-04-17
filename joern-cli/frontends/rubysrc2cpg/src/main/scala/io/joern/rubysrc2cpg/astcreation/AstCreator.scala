@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, NamespaceScope, RubyProgramSummary, RubyScope}
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.x2cpg.utils.FreshNameGenerator
+import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, EvaluationStrategies, ModifierTypes}

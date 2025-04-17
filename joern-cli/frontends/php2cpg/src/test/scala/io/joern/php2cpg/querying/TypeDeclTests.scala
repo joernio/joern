@@ -369,13 +369,13 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         |""".stripMargin)
 
     "parse methods in classes correctly" in {
-      inside(cpg.typeDecl.name("anon-class-\\d+").l) {
+      inside(cpg.typeDecl.name("Test0.php:<global>@anon-class-\\d+").l) {
         case anonClass0 :: anonClass1 :: Nil =>
           val List(memberX) = anonClass0.member.l
           memberX.code shouldBe "$x"
 
           val List(anonConstructor0) = anonClass0.method.name("__construct").l
-          anonConstructor0.fullName shouldBe "anon-class-0->__construct"
+          anonConstructor0.fullName shouldBe "Test0.php:<global>@anon-class-0->__construct"
 
           val List(anonClass0ThisParam, paramX) = anonConstructor0.parameter.l
           anonClass0ThisParam.code shouldBe "this"
@@ -393,7 +393,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
           memberY.code shouldBe "$y"
 
           val List(anonConstructor1) = anonClass1.method.name("__construct").l
-          anonConstructor1.fullName shouldBe "anon-class-1->__construct"
+          anonConstructor1.fullName shouldBe "Test0.php:<global>@anon-class-1->__construct"
 
           val List(anonClass1ThisParam, paramY) = anonConstructor1.parameter.l
           anonClass1ThisParam.code shouldBe "this"
@@ -414,8 +414,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
     "generate locals with correct types" in {
       inside(cpg.method.name("<global>").body.astChildren.isLocal.l) {
         case tmp0Local :: tmp1Local :: Nil =>
-          tmp0Local.typeFullName shouldBe "anon-class-0"
-          tmp1Local.typeFullName shouldBe "anon-class-1"
+          tmp0Local.typeFullName shouldBe "Test0.php:<global>@anon-class-0"
+          tmp1Local.typeFullName shouldBe "Test0.php:<global>@anon-class-1"
         case xs => fail(s"Expected two locals, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
@@ -423,14 +423,14 @@ class TypeDeclTests extends PhpCode2CpgFixture {
     "generate __construct calls" in {
       inside(cpg.call.name("__construct").l) {
         case constructAnonClass0 :: constructAnonClass1 :: Nil =>
-          constructAnonClass0.code shouldBe "anon-class-0->__construct(10)"
+          constructAnonClass0.code shouldBe "Test0.php:<global>@anon-class-0->__construct(10)"
           val List(anonClass0Param1: Identifier, anonClass0Param2: Literal) = constructAnonClass0.argument.l: @unchecked
-          anonClass0Param1.code shouldBe "$tmp-0"
+          anonClass0Param1.code shouldBe "$Test0.php:<global>@tmp-0"
           anonClass0Param2.code shouldBe "10"
 
-          constructAnonClass1.code shouldBe "anon-class-1->__construct(30)"
+          constructAnonClass1.code shouldBe "Test0.php:<global>@anon-class-1->__construct(30)"
           val List(anonClass1Param1: Identifier, anonClass1Param2: Literal) = constructAnonClass1.argument.l: @unchecked
-          anonClass1Param1.code shouldBe "$tmp-1"
+          anonClass1Param1.code shouldBe "$Test0.php:<global>@tmp-1"
           anonClass1Param2.code shouldBe "30"
         case xs => fail(s"Expected two construct calls, got ${xs.code.mkString("[", ",", "]")}")
       }
@@ -443,8 +443,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
             case allocAssignment :: Nil =>
               val Seq(allocTarget: Identifier, allocSource: Call) =
                 List(allocAssignment.target, allocAssignment.source): @unchecked
-              allocTarget.code shouldBe "$tmp-0"
-              allocSource.code shouldBe "anon-class-0.<alloc>()"
+              allocTarget.code shouldBe "$Test0.php:<global>@tmp-0"
+              allocSource.code shouldBe "Test0.php:<global>@anon-class-0.<alloc>()"
               allocSource.methodFullName shouldBe Operators.alloc
               allocTarget.typeFullName shouldBe "anon-class-0"
             case xs => fail(s"Expected one assignment, got ${xs.code.mkString("[", ",", "]")}")
@@ -454,8 +454,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
             case allocAssignment :: Nil =>
               val Seq(allocTarget: Identifier, allocSource: Call) =
                 List(allocAssignment.target, allocAssignment.source): @unchecked
-              allocTarget.code shouldBe "$tmp-1"
-              allocSource.code shouldBe "anon-class-1.<alloc>()"
+              allocTarget.code shouldBe "$Test0.php:<global>@tmp-1"
+              allocSource.code shouldBe "$Test0.php:<global>@anon-class-1.<alloc>()"
               allocSource.methodFullName shouldBe Operators.alloc
               allocTarget.typeFullName shouldBe "anon-class-1"
             case xs => fail(s"Expected some things")
@@ -463,6 +463,45 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
         case xs => fail(s"Expected one assignment, got ${xs.code.mkString("[", ",", "]")}")
       }
+    }
+  }
+
+  "Anonymous class nested in class" in {
+    val cpg = code("""<?php
+        |class C {
+        |  function D() {
+        |     new class("foo") {
+        |       private int $x;
+        |     }
+        |  }
+        |}
+        |""".stripMargin)
+
+    inside(cpg.typeDecl.name("C->D@anon-class-\\d+").l) {
+      case anonClass :: Nil =>
+        anonClass.fullName shouldBe s"C->D@anon-class-0"
+        anonClass.member.code.l shouldBe List("$x")
+      case xs => fail(s"Expected one anonymous class, got ${xs.code.mkString("[", ",", "]")}")
+    }
+
+    inside(cpg.method.name("D").body.astChildren.l) {
+      case (localNode: Local) :: (bodyBlock: Block) :: Nil =>
+        localNode.code shouldBe "$C->D@tmp-0"
+        localNode.typeFullName shouldBe "C->D@anon-class-0"
+
+        inside(bodyBlock.astChildren.l) {
+          case (assignmentCall: Call) :: (constructCall: Call) :: (tmpIdentifier: Identifier) :: Nil =>
+            assignmentCall.methodFullName shouldBe Operators.assignment
+            val List(lhs: Identifier, rhs: Call) = assignmentCall.argument.l: @unchecked
+            lhs.typeFullName shouldBe "C->D@anon-class-0"
+            rhs.methodFullName shouldBe Operators.alloc
+
+            constructCall.methodFullName shouldBe "C->D@anon-class-0->__construct"
+
+            tmpIdentifier.code shouldBe "$C->D@tmp-0"
+          case xs => fail(s"Expected three children, got ${xs.code.mkString("[", ",", "]")}")
+        }
+      case xs => fail(s"expected localNode and body, got ${xs.code.mkString("[", ",", "]")}")
     }
   }
 }

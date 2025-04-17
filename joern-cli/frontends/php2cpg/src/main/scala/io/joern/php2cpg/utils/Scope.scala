@@ -18,6 +18,8 @@ class Scope(implicit nextClosureName: () => String) extends X2CpgScope[String, N
   private var constAndStaticInits: List[mutable.ArrayBuffer[Ast]] = Nil
   private var fieldInits: List[mutable.ArrayBuffer[Ast]]          = Nil
   private val anonymousMethods                                    = mutable.ArrayBuffer[Ast]()
+  private var tmpVarCounter                                       = 0
+  private var tmpClassCounter                                     = 0
 
   def pushNewScope(scopeNode: NewNode): Unit = {
     scopeNode match {
@@ -70,6 +72,25 @@ class Scope(implicit nextClosureName: () => String) extends X2CpgScope[String, N
     }
 
     scopeNode
+  }
+
+  def getNewClassTmp: String = {
+    stack.headOption match {
+      case Some(node) =>
+        s"${this.surroundingScopeFulLName.getOrElse("<global>")}@${node.scopeNode.getNextClassTmp}"
+      case None =>
+        logger.warn(s"Stack is empty - using global counter ")
+        s"${this.surroundingScopeFulLName.getOrElse("<global>")}@${this.getNextClassTmp}"
+    }
+  }
+
+  def getNewVarTmp: String = {
+    stack.headOption match {
+      case Some(node) =>
+        s"${this.surroundingScopeFulLName.getOrElse("<global>")}@${node.scopeNode.getNextVarTmp}"
+      case None =>
+        s"${this.surroundingScopeFulLName.getOrElse("<global>")}@${this.getNextVarTmp}"
+    }
   }
 
   override def addToScope(identifier: String, variable: NewNode): PhpScopeElement = {
@@ -130,5 +151,19 @@ class Scope(implicit nextClosureName: () => String) extends X2CpgScope[String, N
     // These ASTs should only be added once to avoid aliasing issues.
     initList.head.clear()
     ret
+  }
+
+  private def getNextClassTmp: String = {
+    val returnString = s"anon-class-${tmpClassCounter}"
+    tmpClassCounter += 1
+
+    returnString
+  }
+
+  private def getNextVarTmp: String = {
+    val returnString = s"tmp-${tmpVarCounter}"
+    tmpVarCounter += 1
+
+    returnString
   }
 }

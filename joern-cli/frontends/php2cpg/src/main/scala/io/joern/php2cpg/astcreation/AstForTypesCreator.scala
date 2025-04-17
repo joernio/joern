@@ -18,9 +18,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
   protected def astForClassLikeStmt(stmt: PhpClassLikeStmt): Ast = {
     stmt.name match {
-      case None                                             => astForAnonymousClass(stmt)
-      case Some(name) if name.name.startsWith("anon-class") => astForAnonymousClass(stmt)
-      case Some(name)                                       => astForNamedClass(stmt, name)
+      case None                                           => astForAnonymousClass(stmt)
+      case Some(name) if name.name.contains("anon-class") => astForAnonymousClass(stmt)
+      case Some(name)                                     => astForNamedClass(stmt, name)
     }
   }
 
@@ -29,7 +29,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     val className = stmt.name match {
       case Some(name) => name.name
-      case None       => this.classGen.fresh
+      case None       => this.scope.getNewClassTmp
     }
 
     val classFullName = prependNamespacePrefix(className)

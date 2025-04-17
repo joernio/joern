@@ -6,9 +6,9 @@ import io.joern.rubysrc2cpg.parser.RubyJsonHelpers.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.{NilClass, RubyOperators}
 import io.joern.rubysrc2cpg.passes.GlobalTypes.corePrefix
+import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg.ImportsPass
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg.ImportsPass.ImportCallNames
-import io.joern.x2cpg.utils.FreshNameGenerator
 import org.slf4j.LoggerFactory
 import ujson.*
 
