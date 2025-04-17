@@ -44,7 +44,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     maybeTypeFullName: Option[String],
     prefix: String = ""
   ): NewIdentifier = {
-    val name         = s"$prefix${this.scope.getNewVarTmp}"
+    val name         = s"${this.scope.getNewVarTmp(prefix)}"
     val typeFullName = maybeTypeFullName.getOrElse(Defines.Any)
     identifierNode(originNode, name, s"$$$name", typeFullName)
   }

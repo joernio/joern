@@ -82,16 +82,16 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         |""".stripMargin)
 
     inside(cpg.method.name("foo").body.astChildren.l) { case List(tmpLocal: Local, constructorBlock: Block) =>
-      tmpLocal.name shouldBe "tmp-0"
-      tmpLocal.code shouldBe "$tmp-0"
+      tmpLocal.name shouldBe "foo@tmp-0"
+      tmpLocal.code shouldBe "$foo@tmp-0"
 
       constructorBlock.lineNumber shouldBe Some(3)
 
       inside(constructorBlock.astChildren.l) { case List(allocAssign: Call, initCall: Call, tmpVar: Identifier) =>
         allocAssign.methodFullName shouldBe Operators.assignment
         inside(allocAssign.astChildren.l) { case List(tmpIdentifier: Identifier, allocCall: Call) =>
-          tmpIdentifier.name shouldBe "tmp-0"
-          tmpIdentifier.code shouldBe "$tmp-0"
+          tmpIdentifier.name shouldBe "foo@tmp-0"
+          tmpIdentifier.code shouldBe "$foo@tmp-0"
           tmpIdentifier._localViaRefOut should contain(tmpLocal)
 
           allocCall.name shouldBe Operators.alloc
@@ -105,8 +105,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         initCall.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
         initCall.code shouldBe "Foo->__construct(42)"
         inside(initCall.argument.l) { case List(tmpIdentifier: Identifier, literal: Literal) =>
-          tmpIdentifier.name shouldBe "tmp-0"
-          tmpIdentifier.code shouldBe "$tmp-0"
+          tmpIdentifier.name shouldBe "foo@tmp-0"
+          tmpIdentifier.code shouldBe "$foo@tmp-0"
           tmpIdentifier.argumentIndex shouldBe 0
           tmpIdentifier._localViaRefOut should contain(tmpLocal)
           literal.code shouldBe "42"
@@ -415,7 +415,9 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       inside(cpg.method.name("<global>").body.astChildren.isLocal.l) {
         case tmp0Local :: tmp1Local :: Nil =>
           tmp0Local.typeFullName shouldBe "Test0.php:<global>@anon-class-0"
+          tmp0Local.name shouldBe "Test0.php:<global>@tmp-0"
           tmp1Local.typeFullName shouldBe "Test0.php:<global>@anon-class-1"
+          tmp1Local.name shouldBe "Test0.php:<global>@tmp-1"
         case xs => fail(s"Expected two locals, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
@@ -446,7 +448,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
               allocTarget.code shouldBe "$Test0.php:<global>@tmp-0"
               allocSource.code shouldBe "Test0.php:<global>@anon-class-0.<alloc>()"
               allocSource.methodFullName shouldBe Operators.alloc
-              allocTarget.typeFullName shouldBe "anon-class-0"
+              allocTarget.typeFullName shouldBe "Test0.php:<global>@anon-class-0"
             case xs => fail(s"Expected one assignment, got ${xs.code.mkString("[", ",", "]")}")
           }
 
@@ -455,9 +457,9 @@ class TypeDeclTests extends PhpCode2CpgFixture {
               val Seq(allocTarget: Identifier, allocSource: Call) =
                 List(allocAssignment.target, allocAssignment.source): @unchecked
               allocTarget.code shouldBe "$Test0.php:<global>@tmp-1"
-              allocSource.code shouldBe "$Test0.php:<global>@anon-class-1.<alloc>()"
+              allocSource.code shouldBe "Test0.php:<global>@anon-class-1.<alloc>()"
               allocSource.methodFullName shouldBe Operators.alloc
-              allocTarget.typeFullName shouldBe "anon-class-1"
+              allocTarget.typeFullName shouldBe "Test0.php:<global>@anon-class-1"
             case xs => fail(s"Expected some things")
           }
 
@@ -487,6 +489,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
     inside(cpg.method.name("D").body.astChildren.l) {
       case (localNode: Local) :: (bodyBlock: Block) :: Nil =>
         localNode.code shouldBe "$C->D@tmp-0"
+        localNode.name shouldBe "C->D@tmp-0"
         localNode.typeFullName shouldBe "C->D@anon-class-0"
 
         inside(bodyBlock.astChildren.l) {

@@ -1,7 +1,7 @@
 package io.joern.php2cpg.utils
 
 import io.joern.php2cpg.parser.Domain.InstanceMethodDelimiter
-import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
 
 class PhpScopeElement private (val node: NewNode, scopeName: String)(implicit nextClosureName: () => String) {
   private var tmpVarCounter   = 0
@@ -20,6 +20,8 @@ class PhpScopeElement private (val node: NewNode, scopeName: String)(implicit ne
 
     returnString
   }
+  
+  def getName: String = scopeName
 
   def getClosureMethodName: String = {
     s"$scopeName$InstanceMethodDelimiter${nextClosureName()}"
@@ -27,6 +29,10 @@ class PhpScopeElement private (val node: NewNode, scopeName: String)(implicit ne
 }
 
 object PhpScopeElement {
+  def apply(block: NewBlock, scopeName: String)(implicit nextClosureName: () => String): PhpScopeElement = {
+    new PhpScopeElement(block, scopeName)
+  }
+
   def apply(method: NewMethod)(implicit nextClosureName: () => String): PhpScopeElement = {
     new PhpScopeElement(method, method.fullName)
   }

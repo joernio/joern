@@ -1,12 +1,10 @@
 package io.joern.php2cpg.utils
 
 import io.joern.php2cpg.astcreation.AstCreator.NameConstants
-import io.joern.php2cpg.utils.PhpScopeElement
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.{ScopeElement, NamespaceLikeScope, Scope as X2CpgScope}
 import io.shiftleft.codepropertygraph.generated.NodeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
-import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
@@ -23,6 +21,10 @@ class Scope(implicit nextClosureName: () => String) extends X2CpgScope[String, N
 
   def pushNewScope(scopeNode: NewNode): Unit = {
     scopeNode match {
+      case block: NewBlock =>
+        val scopeName = stack.headOption.map(_.scopeNode.getName)
+        super.pushNewScope(PhpScopeElement(block, scopeName.getOrElse("")))
+
       case method: NewMethod =>
         super.pushNewScope(PhpScopeElement(method))
 
@@ -84,12 +86,12 @@ class Scope(implicit nextClosureName: () => String) extends X2CpgScope[String, N
     }
   }
 
-  def getNewVarTmp: String = {
+  def getNewVarTmp(varPrefix: String = ""): String = {
     stack.headOption match {
       case Some(node) =>
-        s"${this.surroundingScopeFulLName.getOrElse("<global>")}@${node.scopeNode.getNextVarTmp}"
+        s"${this.surroundingScopeFulLName.getOrElse("<global>")}@$varPrefix${node.scopeNode.getNextVarTmp}"
       case None =>
-        s"${this.surroundingScopeFulLName.getOrElse("<global>")}@${this.getNextVarTmp}"
+        s"${this.surroundingScopeFulLName.getOrElse("<global>")}@$varPrefix${this.getNextVarTmp}"
     }
   }
 

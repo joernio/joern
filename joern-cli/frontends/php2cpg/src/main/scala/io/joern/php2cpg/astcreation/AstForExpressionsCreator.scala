@@ -263,7 +263,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       val idxTracker = new ArrayIndexTracker
 
       // create an alias identifier of $arr
-      val sourceAliasName       = this.scope.getNewVarTmp
+      val sourceAliasName       = this.scope.getNewVarTmp()
       val sourceAliasIdentifier = createIdentifier(sourceAliasName)
       val assignCode            = s"${sourceAliasIdentifier.rootCodeOrEmpty} = ${sourceAst.rootCodeOrEmpty}"
       val assignNode            = operatorCallNode(assignment, assignCode, Operators.assignment, None)
@@ -274,7 +274,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           item.value match {
             case nested: (PhpArrayExpr | PhpListExpr) => // item is [$a, $b]
               // create tmp variable for [$a, $b] to receive the result of <operator>.indexAccess($arr, 0)
-              val tmpIdentifierName = this.scope.getNewVarTmp
+              val tmpIdentifierName = this.scope.getNewVarTmp()
               // tmpVar = <operator>.indexAccess($arr, 0)
               val targetAssignNode =
                 createIndexAccessChain(
@@ -575,7 +575,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   private def astForArrayExpr(expr: PhpArrayExpr): Ast = {
     val idxTracker = new ArrayIndexTracker
 
-    val tmpName = this.scope.getNewVarTmp
+    val tmpName = this.scope.getNewVarTmp()
 
     def newTmpIdentifier: Ast = Ast(identifierNode(expr, tmpName, s"$$$tmpName", TypeConstants.Array))
 

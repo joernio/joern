@@ -176,7 +176,6 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   }
 
   private def codeForClassStmt(stmt: PhpClassLikeStmt, name: PhpNameExpr): String = {
-    // TODO Extend for anonymous classes
     val extendsString = stmt.extendsNames match {
       case Nil   => ""
       case names => s" extends ${names.map(_.name).mkString(", ")}"

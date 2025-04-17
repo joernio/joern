@@ -74,22 +74,22 @@ class ArrayTests extends PhpCode2CpgFixture {
         |""".stripMargin)
 
     inside(cpg.method.internal.body.astChildren.l) { case List(tmpLocal: Local, arrayBlock: Block) =>
-      tmpLocal.name shouldBe "tmp-0"
-      tmpLocal.code shouldBe "$tmp-0"
+      tmpLocal.name shouldBe "Test0.php:<global>@tmp-0"
+      tmpLocal.code shouldBe "$Test0.php:<global>@tmp-0"
 
       inside(arrayBlock.astChildren.l) {
         case List(initAssign: Call, aAssign: Call, bAssign: Call, tmpIdent: Identifier) =>
-          initAssign.code shouldBe "$tmp-0 = array()"
+          initAssign.code shouldBe "$Test0.php:<global>@tmp-0 = array()"
           initAssign.lineNumber shouldBe Some(2)
 
-          aAssign.code shouldBe "$tmp-0[\"A\"] = 1"
+          aAssign.code shouldBe "$Test0.php:<global>@tmp-0[\"A\"] = 1"
           aAssign.lineNumber shouldBe Some(3)
 
-          bAssign.code shouldBe "$tmp-0[\"B\"] = 2"
+          bAssign.code shouldBe "$Test0.php:<global>@tmp-0[\"B\"] = 2"
           bAssign.lineNumber shouldBe Some(4)
 
-          tmpIdent.name shouldBe "tmp-0"
-          tmpIdent.code shouldBe "$tmp-0"
+          tmpIdent.name shouldBe "Test0.php:<global>@tmp-0"
+          tmpIdent.code shouldBe "$Test0.php:<global>@tmp-0"
           tmpIdent._localViaRefOut should contain(tmpLocal)
       }
     }
@@ -104,22 +104,22 @@ class ArrayTests extends PhpCode2CpgFixture {
         |""".stripMargin)
 
     inside(cpg.method.internal.body.astChildren.l) { case List(tmpLocal: Local, arrayBlock: Block) =>
-      tmpLocal.name shouldBe "tmp-0"
-      tmpLocal.code shouldBe "$tmp-0"
+      tmpLocal.name shouldBe "Test0.php:<global>@tmp-0"
+      tmpLocal.code shouldBe "$Test0.php:<global>@tmp-0"
 
       inside(arrayBlock.astChildren.l) {
         case List(initAssign: Call, aAssign: Call, bAssign: Call, tmpIdent: Identifier) =>
-          initAssign.code shouldBe "$tmp-0 = array()"
+          initAssign.code shouldBe "$Test0.php:<global>@tmp-0 = array()"
           initAssign.lineNumber shouldBe Some(2)
 
-          aAssign.code shouldBe "$tmp-0[0] = \"A\""
+          aAssign.code shouldBe "$Test0.php:<global>@tmp-0[0] = \"A\""
           aAssign.lineNumber shouldBe Some(3)
 
-          bAssign.code shouldBe "$tmp-0[1] = \"B\""
+          bAssign.code shouldBe "$Test0.php:<global>@tmp-0[1] = \"B\""
           bAssign.lineNumber shouldBe Some(4)
 
-          tmpIdent.name shouldBe "tmp-0"
-          tmpIdent.code shouldBe "$tmp-0"
+          tmpIdent.name shouldBe "Test0.php:<global>@tmp-0"
+          tmpIdent.code shouldBe "$Test0.php:<global>@tmp-0"
           tmpIdent._localViaRefOut should contain(tmpLocal)
       }
     }
@@ -133,24 +133,24 @@ class ArrayTests extends PhpCode2CpgFixture {
         |""".stripMargin)
 
     inside(cpg.method.internal.body.astChildren.l) { case List(tmpLocal: Local, arrayBlock: Block) =>
-      tmpLocal.name shouldBe "tmp-0"
-      tmpLocal.code shouldBe "$tmp-0"
+      tmpLocal.name shouldBe "Test0.php:<global>@tmp-0"
+      tmpLocal.code shouldBe "$Test0.php:<global>@tmp-0"
 
       inside(arrayBlock.astChildren.l) { case List(initAssign: Call, assign: Call, tmpIdent: Identifier) =>
-        initAssign.code shouldBe "$tmp-0 = array()"
+        initAssign.code shouldBe "$Test0.php:<global>@tmp-0 = array()"
         initAssign.lineNumber shouldBe Some(2)
 
-        assign.code shouldBe "$tmp-0[2] = \"A\""
+        assign.code shouldBe "$Test0.php:<global>@tmp-0[2] = \"A\""
         inside(assign.argument.collectAll[Call].argument.l) { case List(array: Identifier, index: Literal) =>
-          array.name shouldBe "tmp-0"
-          array.code shouldBe "$tmp-0"
+          array.name shouldBe "Test0.php:<global>@tmp-0"
+          array.code shouldBe "$Test0.php:<global>@tmp-0"
 
           index.code shouldBe "2"
           index.typeFullName shouldBe "int"
         }
 
-        tmpIdent.name shouldBe "tmp-0"
-        tmpIdent.code shouldBe "$tmp-0"
+        tmpIdent.name shouldBe "Test0.php:<global>@tmp-0"
+        tmpIdent.code shouldBe "$Test0.php:<global>@tmp-0"
         tmpIdent._localViaRefOut should contain(tmpLocal)
       }
     }
@@ -170,8 +170,8 @@ class ArrayTests extends PhpCode2CpgFixture {
         |""".stripMargin)
 
     inside(cpg.method.internal.body.astChildren.l) { case List(tmpLocal: Local, arrayBlock: Block) =>
-      tmpLocal.name shouldBe "tmp-0"
-      tmpLocal.code shouldBe "$tmp-0"
+      tmpLocal.name shouldBe "Test0.php:<global>@tmp-0"
+      tmpLocal.code shouldBe "$Test0.php:<global>@tmp-0"
 
       inside(arrayBlock.astChildren.l) {
         case List(
@@ -185,19 +185,19 @@ class ArrayTests extends PhpCode2CpgFixture {
               eightAssign: Call,
               tmpIdent: Identifier
             ) =>
-          initAssign.code shouldBe "$tmp-0 = array()"
+          initAssign.code shouldBe "$Test0.php:<global>@tmp-0 = array()"
           initAssign.lineNumber shouldBe Some(2)
 
-          aAssign.code shouldBe "$tmp-0[\"A\"] = \"B\""
-          cAssign.code shouldBe "$tmp-0[0] = \"C\""
-          fourAssign.code shouldBe "$tmp-0[4] = \"D\""
-          eAssign.code shouldBe "$tmp-0[5] = \"E\""
-          tenAssign.code shouldBe "$tmp-0[10] = \"F\""
-          gAssign.code shouldBe "$tmp-0[11] = \"G\""
-          eightAssign.code shouldBe "$tmp-0[8] = \"H\""
+          aAssign.code shouldBe "$Test0.php:<global>@tmp-0[\"A\"] = \"B\""
+          cAssign.code shouldBe "$Test0.php:<global>@tmp-0[0] = \"C\""
+          fourAssign.code shouldBe "$Test0.php:<global>@tmp-0[4] = \"D\""
+          eAssign.code shouldBe "$Test0.php:<global>@tmp-0[5] = \"E\""
+          tenAssign.code shouldBe "$Test0.php:<global>@tmp-0[10] = \"F\""
+          gAssign.code shouldBe "$Test0.php:<global>@tmp-0[11] = \"G\""
+          eightAssign.code shouldBe "$Test0.php:<global>@tmp-0[8] = \"H\""
 
-          tmpIdent.name shouldBe "tmp-0"
-          tmpIdent.code shouldBe "$tmp-0"
+          tmpIdent.name shouldBe "Test0.php:<global>@tmp-0"
+          tmpIdent.code shouldBe "$Test0.php:<global>@tmp-0"
           tmpIdent._localViaRefOut should contain(tmpLocal)
       }
     }

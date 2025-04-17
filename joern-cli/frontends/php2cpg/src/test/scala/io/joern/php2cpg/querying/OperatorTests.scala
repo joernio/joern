@@ -718,50 +718,50 @@ class OperatorTests extends PhpCode2CpgFixture {
     // finds the block containing the assignments
     val block = cpg.all.collect { case block: Block if block.lineNumber.contains(2) => block }.head
     inside(block.astChildren.assignment.l) { case tmp0 :: tmp1 :: tmp2 :: a :: b :: c :: d :: Nil =>
-      tmp0.code shouldBe "$tmp-0 = $arr"
+      tmp0.code shouldBe "$Test0.php:<global>@tmp-0 = $arr"
       tmp0.source.label shouldBe NodeTypes.IDENTIFIER
       tmp0.source.code shouldBe "$arr"
       tmp0.target.label shouldBe NodeTypes.IDENTIFIER
-      tmp0.target.code shouldBe "$tmp-0"
+      tmp0.target.code shouldBe "$Test0.php:<global>@tmp-0"
 
-      tmp1.code shouldBe "$tmp-1 = $tmp-0[0]"
+      tmp1.code shouldBe "$Test0.php:<global>@tmp-1 = $Test0.php:<global>@tmp-0[0]"
       tmp1.source.label shouldBe NodeTypes.CALL
       tmp1.source.asInstanceOf[Call].name shouldBe Operators.indexAccess
-      tmp1.source.code shouldBe "$tmp-0[0]"
+      tmp1.source.code shouldBe "$Test0.php:<global>@tmp-0[0]"
       tmp1.target.label shouldBe NodeTypes.IDENTIFIER
-      tmp1.target.code shouldBe "$tmp-1"
+      tmp1.target.code shouldBe "$Test0.php:<global>@tmp-1"
 
-      tmp2.code shouldBe "$tmp-2 = $tmp-1"
+      tmp2.code shouldBe "$Test0.php:<global>@tmp-2 = $Test0.php:<global>@tmp-1"
       tmp2.source.label shouldBe NodeTypes.IDENTIFIER
-      tmp2.source.code shouldBe "$tmp-1"
+      tmp2.source.code shouldBe "$Test0.php:<global>@tmp-1"
       tmp2.target.label shouldBe NodeTypes.IDENTIFIER
-      tmp2.target.code shouldBe "$tmp-2"
+      tmp2.target.code shouldBe "$Test0.php:<global>@tmp-2"
 
-      a.code shouldBe "$a = $tmp-2[0]"
+      a.code shouldBe "$a = $Test0.php:<global>@tmp-2[0]"
       a.source.label shouldBe NodeTypes.CALL
       a.source.asInstanceOf[Call].name shouldBe Operators.indexAccess
-      a.source.code shouldBe "$tmp-2[0]"
+      a.source.code shouldBe "$Test0.php:<global>@tmp-2[0]"
       a.target.label shouldBe NodeTypes.IDENTIFIER
       a.target.code shouldBe "$a"
 
-      b.code shouldBe "$b = $tmp-2[1]"
+      b.code shouldBe "$b = $Test0.php:<global>@tmp-2[1]"
       b.source.label shouldBe NodeTypes.CALL
       b.source.asInstanceOf[Call].name shouldBe Operators.indexAccess
-      b.source.code shouldBe "$tmp-2[1]"
+      b.source.code shouldBe "$Test0.php:<global>@tmp-2[1]"
       b.target.label shouldBe NodeTypes.IDENTIFIER
       b.target.code shouldBe "$b"
 
-      c.code shouldBe "$c = $tmp-0[1]"
+      c.code shouldBe "$c = $Test0.php:<global>@tmp-0[1]"
       c.source.label shouldBe NodeTypes.CALL
       c.source.asInstanceOf[Call].name shouldBe Operators.indexAccess
-      c.source.code shouldBe "$tmp-0[1]"
+      c.source.code shouldBe "$Test0.php:<global>@tmp-0[1]"
       c.target.label shouldBe NodeTypes.IDENTIFIER
       c.target.code shouldBe "$c"
 
-      d.code shouldBe "$d = $tmp-0[\"d\"]"
+      d.code shouldBe "$d = $Test0.php:<global>@tmp-0[\"d\"]"
       d.source.label shouldBe NodeTypes.CALL
       d.source.asInstanceOf[Call].name shouldBe Operators.indexAccess
-      d.source.code shouldBe "$tmp-0[\"d\"]"
+      d.source.code shouldBe "$Test0.php:<global>@tmp-0[\"d\"]"
       d.target.label shouldBe NodeTypes.IDENTIFIER
       d.target.code shouldBe "$d"
     }
