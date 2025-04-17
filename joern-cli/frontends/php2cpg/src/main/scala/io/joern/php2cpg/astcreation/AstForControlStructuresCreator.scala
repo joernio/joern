@@ -1,12 +1,14 @@
 package io.joern.php2cpg.astcreation
 
+import io.joern.php2cpg.utils.PhpScopeElement
 import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
 import io.joern.php2cpg.parser.Domain.*
 import io.joern.x2cpg.Defines.UnresolvedSignature
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, Operators}
+import io.shiftleft.proto.cpg.Cpg.CpgStruct.Edge.EdgeType
 
 trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -112,10 +114,31 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
   protected def astForTryStmt(stmt: PhpTryStmt): Ast = {
     val tryBody = stmtBodyBlockAst(stmt)
 
+    scope.pushNewScope(NewBlock())
     val catches = stmt.catches.map { catchStmt =>
-      val catchNode = controlStructureNode(catchStmt, ControlStructureTypes.CATCH, "catch")
-      Ast(catchNode).withChild(astForCatchStmt(catchStmt))
+
+      val localCatchVariable = catchStmt.variable
+        .collectFirst { case variable @ PhpVariable(name: PhpNameExpr, _) =>
+          val local           = localNode(variable, name.name, name.name, Defines.Any)
+          val phpScopeElement = scope.addToScope(name.name, local)
+          diffGraph.addEdge(phpScopeElement.node, local, EdgeTypes.AST)
+          local.dynamicTypeHintFullName(catchStmt.types.map(_.name))
+          Ast(local)
+        }
+        .getOrElse(Ast())
+
+      val variableName = localCatchVariable.rootCode match {
+        case Some(code) if code != "" =>
+          s" $$$code"
+        case _ => ""
+      }
+
+      val catchNodeCode = s"catch (${catchStmt.types.map(_.name).mkString(" | ")}$variableName)";
+      val catchNode     = controlStructureNode(catchStmt, ControlStructureTypes.CATCH, catchNodeCode)
+
+      Ast(catchNode).withChild(astForCatchStmt(catchStmt)).withChild(localCatchVariable)
     }
+    scope.popScope()
 
     val finallyBody = stmt.finallyStmt.map { fin =>
       val finallyNode = controlStructureNode(fin, ControlStructureTypes.FINALLY, "finally")
@@ -127,7 +150,6 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
   }
 
   private def astForCatchStmt(stmt: PhpCatchStmt): Ast = {
-    // TODO Add variable at some point. Current implementation is consistent with C++.
     stmtBodyBlockAst(stmt)
   }
 
