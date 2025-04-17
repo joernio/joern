@@ -20,7 +20,7 @@ class PhpScopeElement private (val node: NewNode, scopeName: String)(implicit ne
 
     returnString
   }
-  
+
   def getName: String = scopeName
 
   def getClosureMethodName: String = {
