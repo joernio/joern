@@ -34,6 +34,7 @@ class AstCreator(
     with AstForFunctionsCreator
     with AstForTypesCreator {
 
+  protected val baseAstCache   = mutable.Map.empty[PhpExpr, String]
   protected val logger: Logger = LoggerFactory.getLogger(AstCreator.getClass)
   protected val scope          = new Scope()(() => nextClosureName())
   protected var fileContent    = Option.empty[String]
@@ -278,6 +279,7 @@ object AstCreator {
     val Default: String      = "default"
     val HaltCompiler: String = "__halt_compiler"
     val This: String         = "this"
+    val Self: String         = "self"
     val Unknown: String      = "UNKNOWN"
     val Closure: String      = "__closure"
     val Class: String        = "class"

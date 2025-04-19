@@ -1,13 +1,14 @@
 package io.joern.php2cpg.astcreation
 
-import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
+import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants, operatorSymbols}
 import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*
 import io.joern.x2cpg.Defines.UnresolvedNamespace
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewIdentifier, NewLiteral, NewNamespaceBlock}
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.{NewIdentifier, NewLiteral, NewLocal, NewNamespaceBlock}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import java.nio.charset.StandardCharsets
@@ -113,4 +114,74 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     }
   }
 
+  protected def handleTmpGen(target: PhpExpr, targetAst: Ast): (Ast, String) = {
+    val createAssignmentToTmp = !baseAstCache.contains(target)
+    val tmpName = baseAstCache
+      .updateWith(target) {
+        case Some(tmpName) =>
+          Option(tmpName)
+        case None =>
+          val tmpName     = getNewTmpName()
+          val tmpGenLocal = NewLocal().name(tmpName).code(tmpName).typeFullName(Defines.Any)
+          scope.addToScope(tmpName, tmpGenLocal)
+          Option(tmpName)
+      }
+      .get
+
+    val tmpNameExpr = PhpNameExpr(tmpName, target.attributes)
+    val tmpAst      = astForExpr(tmpNameExpr)
+
+    if (createAssignmentToTmp) {
+      val assignment = PhpAssignment(Operators.assignment, target, tmpNameExpr, false, target.attributes)
+
+      val symbol = operatorSymbols.getOrElse(Operators.assignment, Operators.assignment)
+      val code   = s"${tmpAst.rootCodeOrEmpty} $symbol ${targetAst.rootCodeOrEmpty}"
+
+      val callNode      = operatorCallNode(assignment, code, Operators.assignment, None)
+      val assignmentAst = callAst(callNode, List(tmpAst, targetAst))
+
+      assignmentAst -> assignmentAst.rootCodeOrEmpty
+    } else {
+      val code = s"$tmpName = ${targetAst.rootCodeOrEmpty}"
+      tmpAst -> s"$code"
+    }
+  }
+
+  protected def getArgsCode(call: PhpCallExpr, arguments: Seq[Ast]): String = {
+    arguments
+      .zip(call.args.collect { case x: PhpArg => x.unpack })
+      .map {
+        case (arg, true)  => s"...${arg.rootCodeOrEmpty}"
+        case (arg, false) => arg.rootCodeOrEmpty
+      }
+      .mkString(",")
+  }
+
+  protected def getCallName(call: PhpCallExpr, nameAst: Option[Ast]): String = {
+    nameAst
+      .map(_.rootCodeOrEmpty)
+      .getOrElse(call.methodName match {
+        case nameExpr: PhpNameExpr => nameExpr.name
+        case other =>
+          logger.error(s"Found unexpected call target type: Crash for now to handle properly later: $other")
+          ???
+      })
+  }
+
+  protected def getMfn(call: PhpCallExpr, name: String): String = {
+    call.target match {
+      // Static method call with a known class name
+      case Some(nameExpr: PhpNameExpr) if call.isStatic =>
+        if (nameExpr.name == NameConstants.Self) composeMethodFullName(name, call.isStatic)
+        else s"${nameExpr.name}$StaticMethodDelimiter$name"
+      case Some(_) =>
+        s"$UnresolvedNamespace\\$name"
+      case None if PhpBuiltins.FuncNames.contains(name) =>
+        // No signature/namespace for MFN for builtin functions to ensure stable names as type info improves.
+        name
+      // Function call
+      case None =>
+        composeMethodFullName(name, call.isStatic)
+    }
+  }
 }
