@@ -1,5 +1,6 @@
 package io.joern.rubysrc2cpg.querying
 
+import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg.Constants
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
@@ -12,20 +13,29 @@ class ErbTests extends RubyCode2CpgFixture {
     val cpg = code(
       """
         |app_name: <%= ENV['APP_NAME'] %>
-        |version: <%= ENV['APP_VERSION'] %>
+        |version: <%== ENV['APP_VERSION'] %>
         |
         |database:
         |  host: <%= ENV['DB_HOST'] %>
-        |  port: <%= ENV['DB_PORT'] %>
+        |  port: <%== ENV['DB_PORT'] %>
         |
         |<% if ENV['USE_REDIS'] == 'true' %>
         |redis:
         |  host: <%= ENV['REDIS_HOST'] %>
-        |  port: <%= ENV['REDIS_PORT'] %>
+        |  port: <%== ENV['REDIS_PORT'] %>
         |<% end %>
         |""".stripMargin,
       "test.erb"
     )
+
+    "Contain a RETURN node" in {
+      inside(cpg.method.name(Constants.Main).methodReturn.toReturn.l) {
+        case erbReturn :: Nil =>
+          val List(formatStringReturn: Call) = erbReturn.astChildren.l: @unchecked
+          formatStringReturn.methodFullName shouldBe Operators.formatString
+        case xs => fail(s"Expected one method return, got ${xs.code.mkString("[", ",", "]")}")
+      }
+    }
 
     "Contain a call to <operator>.conditional" in {
       inside(cpg.call.name(Operators.conditional).l) {
@@ -45,7 +55,7 @@ class ErbTests extends RubyCode2CpgFixture {
             case fmtStringCall :: Nil =>
               fmtStringCall.methodFullName shouldBe Operators.formatString
               fmtStringCall.argument.l.size shouldBe 4
-              val List(fmtVal1: Call, fmtVal2: Call, fmtVal3: Call, fmtVal4: Call) =
+              val List(fmtVal1: Call, templateOutEscapeCall: Call, fmtVal3: Call, templateOutRawCall: Call) =
                 fmtStringCall.argument.l: @unchecked
 
               fmtVal1.methodFullName shouldBe Operators.formattedValue
@@ -53,14 +63,14 @@ class ErbTests extends RubyCode2CpgFixture {
                 """redis:
                   |  host: """.stripMargin
 
-              fmtVal2.methodFullName shouldBe Operators.formattedValue
-              fmtVal2.code shouldBe "#{ENV['REDIS_HOST']}"
+              templateOutEscapeCall.methodFullName shouldBe RubyOperators.templateOutEscape
+              templateOutEscapeCall.code shouldBe "<%= ENV['REDIS_HOST'] %>"
 
               fmtVal3.methodFullName shouldBe Operators.formattedValue
               fmtVal3.code shouldBe "  port: "
 
-              fmtVal4.methodFullName shouldBe Operators.formattedValue
-              fmtVal4.code shouldBe "#{ENV['REDIS_PORT']}"
+              templateOutRawCall.methodFullName shouldBe RubyOperators.templateOutRaw
+              templateOutRawCall.code shouldBe "<%== ENV['REDIS_PORT'] %>"
             case xs => fail(s"Expected one call to fmtString, got [${xs.mkString(",")}]")
           }
         case xs => fail(s"Expected three arguments, got ${xs.size}: [${xs.mkString(",")}] instead")
@@ -68,7 +78,15 @@ class ErbTests extends RubyCode2CpgFixture {
     }
 
     "Contains calls to formattedValue" in {
-      cpg.call.name(Operators.formattedValue).l.size shouldBe 14
+      cpg.call.name(Operators.formattedValue).l.size shouldBe 8
+    }
+
+    "Contains calls to templateOutRaw" in {
+      cpg.call.name(RubyOperators.templateOutRaw).l.size shouldBe 3
+    }
+
+    "Contains calls to templateOutEscape" in {
+      cpg.call.name(RubyOperators.templateOutEscape).l
     }
   }
 
@@ -76,11 +94,11 @@ class ErbTests extends RubyCode2CpgFixture {
     val cpg = code(
       """
         |app_name: <%= ENV['APP_NAME'] %>
-        |version: <%= ENV['APP_VERSION'] %>
+        |version: <%== ENV['APP_VERSION'] %>
         |
         |database:
         |  host: <%= ENV['DB_HOST'] %>
-        |  port: <%= ENV['DB_PORT'] %>
+        |  port: <%== ENV['DB_PORT'] %>
         |
         |<% if ENV['USE_REDIS'] == 'true' %>
         |redis:
@@ -89,7 +107,7 @@ class ErbTests extends RubyCode2CpgFixture {
         |<% elsif ENV['USE_RABBITMQ'] == 'true' %>
         |rabbitmq:
         |  host: <%= ENV['RABBITMQ_HOST'] %>
-        |  port: <%= ENV['RABBITMQ_PORT'] %>
+        |  port: <%== ENV['RABBITMQ_PORT'] %>
         |<% end %>
         |""".stripMargin,
       "test.erb"
@@ -110,21 +128,22 @@ class ErbTests extends RubyCode2CpgFixture {
           case fmtStringCall :: Nil =>
             fmtStringCall.methodFullName shouldBe Operators.formatString
             fmtStringCall.argument.l.size shouldBe 4
-            val List(fmtVal1: Call, fmtVal2: Call, fmtVal3: Call, fmtVal4: Call) = fmtStringCall.argument.l: @unchecked
+            val List(fmtVal1: Call, templateOutEscapeOne: Call, fmtVal3: Call, templateOutEscapeTwo: Call) =
+              fmtStringCall.argument.l: @unchecked
 
             fmtVal1.methodFullName shouldBe Operators.formattedValue
             fmtVal1.code shouldBe
               """redis:
                 |  host: """.stripMargin
 
-            fmtVal2.methodFullName shouldBe Operators.formattedValue
-            fmtVal2.code shouldBe "#{ENV['REDIS_HOST']}"
+            templateOutEscapeOne.methodFullName shouldBe RubyOperators.templateOutEscape
+            templateOutEscapeOne.code shouldBe "<%= ENV['REDIS_HOST'] %>"
 
             fmtVal3.methodFullName shouldBe Operators.formattedValue
             fmtVal3.code shouldBe """  port: """
 
-            fmtVal4.methodFullName shouldBe Operators.formattedValue
-            fmtVal4.code shouldBe "#{ENV['REDIS_PORT']}"
+            templateOutEscapeTwo.methodFullName shouldBe RubyOperators.templateOutEscape
+            templateOutEscapeTwo.code shouldBe "<%= ENV['REDIS_PORT'] %>"
 
           case xs => fail(s"Expected one body for true branch, got [${xs.code.mkString(",")}]")
         }
@@ -144,7 +163,7 @@ class ErbTests extends RubyCode2CpgFixture {
               case fmtStringCall :: Nil =>
                 fmtStringCall.methodFullName shouldBe Operators.formatString
                 fmtStringCall.argument.l.size shouldBe 4
-                val List(fmtVal1: Call, fmtVal2: Call, fmtVal3: Call, fmtVal4: Call) =
+                val List(fmtVal1: Call, templateOutEscape: Call, fmtVal3: Call, templateOutRaw: Call) =
                   fmtStringCall.argument.l: @unchecked
 
                 fmtVal1.methodFullName shouldBe Operators.formattedValue
@@ -152,14 +171,14 @@ class ErbTests extends RubyCode2CpgFixture {
                   """rabbitmq:
                     |  host: """.stripMargin
 
-                fmtVal2.methodFullName shouldBe Operators.formattedValue
-                fmtVal2.code shouldBe "#{ENV['RABBITMQ_HOST']}"
+                templateOutEscape.methodFullName shouldBe RubyOperators.templateOutEscape
+                templateOutEscape.code shouldBe "<%= ENV['RABBITMQ_HOST'] %>"
 
                 fmtVal3.methodFullName shouldBe Operators.formattedValue
                 fmtVal3.code shouldBe "  port: "
 
-                fmtVal4.methodFullName shouldBe Operators.formattedValue
-                fmtVal4.code shouldBe "#{ENV['RABBITMQ_PORT']}"
+                templateOutRaw.methodFullName shouldBe RubyOperators.templateOutRaw
+                templateOutRaw.code shouldBe "<%== ENV['RABBITMQ_PORT'] %>"
               case xs => fail(s"Expected one body with call for true branch, got [${xs.code.mkString(",")}]")
             }
           case _ => fail(s"Expected one IF struct in false branch")
