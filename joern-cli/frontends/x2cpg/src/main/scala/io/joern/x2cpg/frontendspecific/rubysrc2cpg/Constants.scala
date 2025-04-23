@@ -7,6 +7,10 @@ object Constants {
   val Initialize    = "initialize"
   val Main          = "<main>"
 
+  val joernErbTemplatePrefix        = "joern__"
+  val joernErbTemplateOutRawName    = s"${joernErbTemplatePrefix}template_out_raw"
+  val joernErbTemplateOutEscapeName = s"${joernErbTemplatePrefix}template_out_escape"
+
   /* Source: https://ruby-doc.org/3.2.2/Kernel.html
    *
    * We comment-out methods that require an explicit "receiver" (target of member access.)

@@ -87,12 +87,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val fmtValueAsts = node.expressions.collect {
       case stmtList: StatementList if stmtList.size == 1 =>
         stmtList.statements.head match {
-          case x: SimpleCall if x.span.text.startsWith("joern__") =>
+          case x: SimpleCall if x.span.text.startsWith(Constants.joernErbTemplatePrefix) =>
             val argAsts = x.arguments.map(astForExpression)
-            val (opName, callCode) = if (x.span.text.startsWith("joern__template_out_escape")) {
-              (RubyOperators.templateOutEscape, s"<%= ${x.arguments.headOption.map(_.span.text).getOrElse("")} %>")
+            val (opName, callCode) = if (x.span.text.startsWith(Constants.joernErbTemplateOutEscapeName)) {
+              (RubyOperators.templateOutEscape, s"<%= ${x.arguments.map(_.span.text).mkString} %>")
             } else {
-              (RubyOperators.templateOutRaw, s"<%== ${x.arguments.headOption.map(_.span.text).getOrElse("")} %>")
+              (RubyOperators.templateOutRaw, s"<%== ${x.arguments.map(_.span.text).mkString} %>")
             }
             val opNode = callNode(x, callCode, opName, opName, DispatchTypes.STATIC_DISPATCH)
             callAst(opNode, argAsts)
@@ -114,7 +114,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
           s"Interpolations containing multiple statements are not supported yet: ${stmtList.text} ($relativeFileName), skipping"
         )
         astForUnknown(stmtList)
-      case node if (!isLineFeed(node.text)) =>
+      case node if !isLineFeed(node.text) =>
         val call = callNode(
           node = node,
           code = node.text,
