@@ -27,6 +27,8 @@ class ConfigFileCreationPass(cpg: Cpg, config: Config) extends XConfigFileCreati
     extensionFilter(".yaml"),
     extensionFilter(".yml"),
     // XML files
-    extensionFilter(".xml")
+    extensionFilter(".xml"),
+    // HTML.ERB files
+    pathEndFilter(".html.erb")
   )
 }
