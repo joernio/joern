@@ -261,8 +261,8 @@ class MipsFunctionPass(
     val localDiffGraph = Cpg.newDiffGraphBuilder
     // we need it just once with default settings
     val blockNode: NewBlock = nodes.NewBlock().code("").order(0)
-    val methodNode = createMethodNode(decompiler, function, filename, checkIfExternal(currentProgram, function.getName))
-    val methodReturn = createReturnNode()
+    val methodNode          = createMethodNode(decompiler, function, filename)
+    val methodReturn        = createReturnNode()
     localDiffGraph.addNode(methodNode)
     localDiffGraph.addNode(blockNode)
     localDiffGraph.addEdge(methodNode, blockNode, EdgeTypes.AST)
