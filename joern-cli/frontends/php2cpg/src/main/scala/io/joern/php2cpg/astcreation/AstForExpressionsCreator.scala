@@ -10,6 +10,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
+import scala.annotation.tailrec
 import scala.collection.mutable
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -117,17 +118,20 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForChainedCall(call: PhpCallExpr, name: String, target: PhpPropertyFetchExpr | PhpCallExpr): Ast = {
-    val expr         = PhpPropertyFetchExpr(target, PhpNameExpr(name, call.attributes), false, false, call.attributes)
-    val receiverAst  = astForPropertyFetchExpr(expr)
-    val (baseAst, _) = astForPhpPropertyFetchTarget(target)
-    val targetAst    = astForExpr(target)
+    val expr        = PhpPropertyFetchExpr(target, PhpNameExpr(name, call.attributes), false, false, call.attributes)
+    val receiverAst = astForPropertyFetchExpr(expr)
+    val (baseAst, baseCode) = astForPhpPropertyFetchTarget(target)
+    val targetAst           = astForExpr(target)
 
     val codePrefix = codeForMethodCall(call, targetAst, name)
 
     val argumentAsts = call.args.map(astForCallArg)
     val argsCode     = getArgsCode(call, argumentAsts)
-    val code         = s"$codePrefix($argsCode)"
-    val mfn          = getMfn(call, name)
+
+    val tmpName :: aliasedCallCode :: Nil =
+      baseCode.split(" = ").toList: @unchecked // this code is generated, so is "safe"
+    val code = s"$tmpName${codePrefix.stripPrefix(aliasedCallCode)}($argsCode)"
+    val mfn  = getMfn(call, name)
 
     val signature = s"$UnresolvedSignature(${call.args.size})"
 
@@ -498,9 +502,20 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForPropertyFetchExpr(expr: PhpPropertyFetchExpr): Ast = {
-    val fieldAst = expr.name match {
-      case name: PhpNameExpr => Ast(fieldIdentifierNode(expr, name.name, name.name))
-      case other             => astForExpr(other)
+
+    def fieldNodeAndName(nameExpr: PhpExpr): (PhpExpr, String) = nameExpr match {
+      case name: PhpNameExpr => name -> name.name
+      case variable: PhpVariable =>
+        val (expr, name) = fieldNodeAndName(variable.value)
+        (expr, s"$$$name")
+      case other => other -> ""
+    }
+
+    val fieldAst = fieldNodeAndName(expr.name) match {
+      case (other, "") =>
+        logger.warn(s"Unable to determine field identifier node from ${other.getClass} (parent node $expr)")
+        astForExpr(other)
+      case (expr, name) => Ast(fieldIdentifierNode(expr, name.stripPrefix("$"), name))
     }
 
     val accessSymbol =
@@ -512,9 +527,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         "->"
 
     val (targetAst, _code) = astForPhpPropertyFetchTarget(expr.expr)
-    val b                  = fieldAst.rootCodeOrEmpty
-    val code               = s"$_code$accessSymbol${fieldAst.rootCodeOrEmpty}"
-    val fieldAccessNode    = operatorCallNode(expr, code, Operators.fieldAccess, None)
+    val code =
+      if _code.startsWith("tmp") then s"${_code.split(" = ").head}$accessSymbol${fieldAst.rootCodeOrEmpty}"
+      else s"$_code$accessSymbol${fieldAst.rootCodeOrEmpty}"
+    val fieldAccessNode = operatorCallNode(expr, code, Operators.fieldAccess, None)
     callAst(fieldAccessNode, Seq(targetAst, fieldAst))
   }
 

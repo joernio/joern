@@ -219,4 +219,38 @@ class CallTests extends PhpCode2CpgFixture {
     val call = cpg.call("test").head
     call.code shouldBe "test(...$args)"
   }
+
+  "chained calls should alias calls in receivers and bases" in {
+    val cpg = code("""
+        |<?php
+        |function test($obj) {
+        | return $obj->foo()->bar();
+        |}
+        |""".stripMargin)
+
+    // These calls should only happen once, as per the code
+    cpg.call("foo").size shouldBe 1
+    cpg.call("bar").size shouldBe 1
+
+    val foo = cpg.call("foo").head
+    foo.inAssignment.code.head shouldBe "tmp0 = $obj->foo()"
+    foo.code shouldBe "$obj->foo()"
+    inside(cpg.call("foo").astChildren.l) { case (fa: Call) :: (recv: Identifier) :: Nil =>
+      fa.name shouldBe Operators.fieldAccess
+      fa.code shouldBe "$obj->foo"
+
+      recv.name shouldBe "obj"
+      recv.code shouldBe "$obj"
+    }
+
+    val bar = cpg.call("bar").head
+    bar.code shouldBe "tmp0->bar()"
+    inside(cpg.call("bar").astChildren.l) { case (fa: Call) :: (recv: Identifier) :: Nil =>
+      fa.name shouldBe Operators.fieldAccess
+      fa.code shouldBe "tmp0->bar"
+
+      recv.name shouldBe "tmp0"
+      recv.code shouldBe "tmp0"
+    }
+  }
 }
