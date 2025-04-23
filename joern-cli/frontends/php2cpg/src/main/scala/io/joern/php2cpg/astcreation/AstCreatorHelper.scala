@@ -12,6 +12,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{NewIdentifier, NewLiteral
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import java.nio.charset.StandardCharsets
+import scala.io.Source
 
 trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -85,12 +86,11 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
   }
 
   protected def codeForStaticMethodCall(call: PhpCallExpr, name: String): String = {
-    val className =
-      call.target
-        .map(astForExpr)
-        .map(_.rootCode.getOrElse(UnresolvedNamespace))
-        .getOrElse(UnresolvedNamespace)
-    s"$className::$name"
+    call.target
+      .map(astForExpr)
+      .flatMap(_.rootCode)
+      .map(className => s"$className::$name")
+      .getOrElse(name)
   }
 
   protected def dimensionFromSimpleScalar(scalar: PhpSimpleScalar, idxTracker: ArrayIndexTracker): PhpExpr = {
@@ -184,4 +184,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
         composeMethodFullName(name, call.isStatic)
     }
   }
+
+  protected def isBuiltinFunc(name: String): Boolean = PhpBuiltins.FuncNames.contains(name)
+
 }

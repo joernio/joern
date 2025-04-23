@@ -1,8 +1,7 @@
 package io.joern.php2cpg.querying
 
-import io.joern.php2cpg.parser.Domain.PhpOperators
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, JumpTarget}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, JumpTarget}
 import io.shiftleft.semanticcpg.language.*
 
 class CfgTests extends PhpCode2CpgFixture {
@@ -19,23 +18,23 @@ class CfgTests extends PhpCode2CpgFixture {
           |""".stripMargin)
       "find that the jump targets and sink call are CFG successors of cond call" in {
         inside(cpg.call.name("cond").cfgNext.l) {
-          case List(xTarget: JumpTarget, yTarget: JumpTarget, zTarget: JumpTarget, sink: Call) =>
+          case List(xTarget: JumpTarget, yTarget: JumpTarget, zTarget: JumpTarget, sinkRecv: Identifier) =>
             xTarget.name shouldBe "case \"X\""
             yTarget.name shouldBe "case \"Y\""
             zTarget.name shouldBe "case \"Z\""
-            sink.code shouldBe "sink()"
+            sinkRecv.name shouldBe "sink"
         }
       }
 
       "find that the sink call is the CFG successor of the body1 call" in {
-        inside(cpg.call.name("body1").cfgNext.l) { case List(sinkCall: Call) =>
-          sinkCall.code shouldBe "sink()"
+        inside(cpg.call.name("body1").cfgNext.l) { case List(sinkRecv: Identifier) =>
+          sinkRecv.name shouldBe "sink"
         }
       }
 
       "find that the sink call is the CFG successor of the body2 call" in {
-        inside(cpg.call.name("body2").cfgNext.l) { case List(sinkCall: Call) =>
-          sinkCall.code shouldBe "sink()"
+        inside(cpg.call.name("body2").cfgNext.l) { case List(sinkRecv: Identifier) =>
+          sinkRecv.name shouldBe "sink"
         }
       }
     }
@@ -63,20 +62,20 @@ class CfgTests extends PhpCode2CpgFixture {
       }
 
       "find that the sink call is the CFG successor of the body1 call" in {
-        inside(cpg.call.name("body1").cfgNext.l) { case List(sinkCall: Call) =>
-          sinkCall.code shouldBe "sink()"
+        inside(cpg.call.name("body1").cfgNext.l) { case List(sinkRecv: Identifier) =>
+          sinkRecv.name shouldBe "sink"
         }
       }
 
       "find that the sink call is the CFG successor of the body2 call" in {
-        inside(cpg.call.name("body2").cfgNext.l) { case List(sinkCall: Call) =>
-          sinkCall.code shouldBe "sink()"
+        inside(cpg.call.name("body2").cfgNext.l) { case List(sinkRecv: Identifier) =>
+          sinkRecv.name shouldBe "sink"
         }
       }
 
       "find that the sink call is the CFG successor of the body3 call" in {
-        inside(cpg.call.name("body3").cfgNext.l) { case List(sinkCall: Call) =>
-          sinkCall.code shouldBe "sink()"
+        inside(cpg.call.name("body3").cfgNext.l) { case List(sinkRecv: Identifier) =>
+          sinkRecv.name shouldBe "sink"
         }
       }
     }
@@ -123,7 +122,7 @@ class CfgTests extends PhpCode2CpgFixture {
     }
 
     "find that echo post dominates all" in {
-      cpg.call("echo").postDominates.size shouldBe 11
+      cpg.call("echo").postDominates.size shouldBe 14
     }
 
     "find that the method does not post dominate anything" in {

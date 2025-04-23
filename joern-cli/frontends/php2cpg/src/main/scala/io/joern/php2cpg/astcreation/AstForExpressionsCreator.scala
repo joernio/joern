@@ -55,76 +55,85 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForCall(call: PhpCallExpr): Ast = {
+    val nameAst   = Option.unless(call.methodName.isInstanceOf[PhpNameExpr])(astForExpr(call.methodName))
+    val name      = getCallName(call, nameAst)
     val arguments = call.args.map(astForCallArg)
 
-    val nameAst  = Option.unless(call.methodName.isInstanceOf[PhpNameExpr])(astForExpr(call.methodName))
-    val name     = getCallName(call, nameAst)
-    val argsCode = getArgsCode(call, arguments)
-
-    val chainAccesses = call.target.exists(x => x.isInstanceOf[PhpPropertyFetchExpr] || x.isInstanceOf[PhpCallExpr])
-
-    if (!call.isStatic && call.target.isDefined && chainAccesses) {
-      astForChainCall(call, name)
-    } else {
-      val targetAst = Option.unless(call.isStatic)(call.target.map(astForExpr)).flatten
-      val codePrefix =
-        if (!call.isStatic && targetAst.isDefined)
-          codeForMethodCall(call, targetAst.get, name)
-        else if (call.isStatic)
-          codeForStaticMethodCall(call, name)
-        else
-          name
-
-      val code = s"$codePrefix($argsCode)"
-
-      val dispatchType =
-        if (call.isStatic || call.target.isEmpty)
-          DispatchTypes.STATIC_DISPATCH
-        else
-          DispatchTypes.DYNAMIC_DISPATCH
-
-      val fullName = getMfn(call, name)
-
-      // Use method signature for methods that can be linked to avoid varargs issue.
-      val signature = s"$UnresolvedSignature(${call.args.size})"
-      val callRoot  = callNode(call, code, name, fullName, dispatchType, Some(signature), Some(Defines.Any))
-
-      val receiverAst = (targetAst, nameAst) match {
-        case (Some(target), Some(n)) =>
-          val fieldAccess = operatorCallNode(call, codePrefix, Operators.fieldAccess, None)
-          Option(callAst(fieldAccess, target :: n :: Nil))
-        case (Some(target), None) => Option(target)
-        case (None, Some(n))      => Option(n)
-        case (None, None)         => None
-      }
-
-      callAst(callRoot, arguments, base = receiverAst)
+    call.target match {
+      case Some(target: (PhpPropertyFetchExpr | PhpCallExpr)) => astForChainedCall(call, name, target)
+      case _ if call.isStatic || isBuiltinFunc(name)          => astForStaticCall(call, name, arguments)
+      case maybeTarget                                        => astForDynamicCall(call, name, arguments, maybeTarget)
     }
   }
 
-  private def astForChainCall(call: PhpCallExpr, name: String): Ast = {
-    call.target match {
-      case Some(target) if target.isInstanceOf[PhpPropertyFetchExpr] || target.isInstanceOf[PhpCallExpr] =>
-        val expr = PhpPropertyFetchExpr(target, PhpNameExpr(name, call.attributes), false, false, call.attributes)
-        val receiverAst  = astForPropertyFetchExpr(expr)
-        val (baseAst, _) = astForPhpPropertyFetchTarget(target)
-        val targetAst    = astForExpr(target)
+  private def astForDynamicCall(
+    call: PhpCallExpr,
+    name: String,
+    arguments: Seq[Ast],
+    maybeTarget: Option[PhpExpr]
+  ): Ast = {
+    val argsCode   = getArgsCode(call, arguments)
+    def targetAst  = maybeTarget.map(astForExpr)
+    val codePrefix = targetAst.map(codeForMethodCall(call, _, name)).getOrElse(name)
+    val code       = s"$codePrefix($argsCode)"
 
-        val codePrefix = codeForMethodCall(call, targetAst, name)
+    val dispatchType = DispatchTypes.DYNAMIC_DISPATCH
 
-        val argumentAsts = call.args.map(astForCallArg)
-        val argsCode     = getArgsCode(call, argumentAsts)
-        val code         = s"$codePrefix($argsCode)"
-        val mfn          = getMfn(call, name)
+    val fullName = getMfn(call, name)
 
-        val signature = s"$UnresolvedSignature(${call.args.size})"
+    // Use method signature for methods that can be linked to avoid varargs issue.
+    val signature = s"$UnresolvedSignature(${call.args.size})"
+    val callRoot  = callNode(call, code, name, fullName, dispatchType, Some(signature), Some(Defines.Any))
 
-        val callN =
-          callNode(call, code, name, mfn, DispatchTypes.DYNAMIC_DISPATCH, Some(signature), Some(Defines.Any))
-        callAst(callN, argumentAsts, base = Option(baseAst), receiver = Option(receiverAst))
-      case _ =>
-        Ast()
+    val receiverAst = targetAst match {
+      case Some(target) =>
+        val fieldAccess     = operatorCallNode(call, codePrefix, Operators.fieldAccess, None)
+        val fieldIdentifier = Ast(fieldIdentifierNode(call.methodName, name.stripPrefix("$"), name))
+        Option(callAst(fieldAccess, target :: fieldIdentifier :: Nil))
+      case None if !scope.getEnclosingTypeDeclTypeName.forall(_ == NamespaceTraversal.globalNamespaceName) =>
+        // if dynamic call is under some type decl, $this is the receiver
+        call.target.map(thisIdentifier).orElse(Option(thisIdentifier(call))).map(Ast(_))
+      case None =>
+        // if dynamic call is on "global" level, the variable itself is the receiver
+        Option(astForExpr(call.methodName))
     }
+
+    callAst(callRoot, arguments, base = targetAst, receiver = receiverAst)
+  }
+
+  private def astForStaticCall(call: PhpCallExpr, name: String, arguments: Seq[Ast]): Ast = {
+    val argsCode   = getArgsCode(call, arguments)
+    val codePrefix = codeForStaticMethodCall(call, name)
+    val code       = s"$codePrefix($argsCode)"
+
+    val dispatchType = DispatchTypes.STATIC_DISPATCH
+    val fullName     = getMfn(call, name)
+
+    // Use method signature for methods that can be linked to avoid varargs issue.
+    val signature = s"$UnresolvedSignature(${call.args.size})"
+    val callRoot  = callNode(call, code, name, fullName, dispatchType, Some(signature), Some(Defines.Any))
+
+    callAst(callRoot, arguments)
+  }
+
+  private def astForChainedCall(call: PhpCallExpr, name: String, target: PhpPropertyFetchExpr | PhpCallExpr): Ast = {
+    val expr         = PhpPropertyFetchExpr(target, PhpNameExpr(name, call.attributes), false, false, call.attributes)
+    val receiverAst  = astForPropertyFetchExpr(expr)
+    val (baseAst, _) = astForPhpPropertyFetchTarget(target)
+    val targetAst    = astForExpr(target)
+
+    val codePrefix = codeForMethodCall(call, targetAst, name)
+
+    val argumentAsts = call.args.map(astForCallArg)
+    val argsCode     = getArgsCode(call, argumentAsts)
+    val code         = s"$codePrefix($argsCode)"
+    val mfn          = getMfn(call, name)
+
+    val signature = s"$UnresolvedSignature(${call.args.size})"
+
+    val callN =
+      callNode(call, code, name, mfn, DispatchTypes.DYNAMIC_DISPATCH, Some(signature), Some(Defines.Any))
+    callAst(callN, argumentAsts, base = Option(baseAst), receiver = Option(receiverAst))
   }
 
   protected def simpleAssignAst(origin: PhpNode, target: Ast, source: Ast): Ast = {

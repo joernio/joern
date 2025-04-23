@@ -698,7 +698,7 @@ class OperatorTests extends PhpCode2CpgFixture {
     }
   }
 
-  "calls to builtins defined in resources/builtin_functions.txt should be handled correctly" in {
+  "calls to builtins defined in resources/php_builtin_functions.txt should be handled correctly" in {
     val cpg = code("""<?php
       |abs($a);
       |""".stripMargin)
