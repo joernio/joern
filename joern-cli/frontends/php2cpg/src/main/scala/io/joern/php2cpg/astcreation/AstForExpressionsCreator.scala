@@ -263,7 +263,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       val idxTracker = new ArrayIndexTracker
 
       // create an alias identifier of $arr
-      val sourceAliasName       = getNewTmpName()
+      val sourceAliasName       = this.scope.getNewVarTmp()
       val sourceAliasIdentifier = createIdentifier(sourceAliasName)
       val assignCode            = s"${sourceAliasIdentifier.rootCodeOrEmpty} = ${sourceAst.rootCodeOrEmpty}"
       val assignNode            = operatorCallNode(assignment, assignCode, Operators.assignment, None)
@@ -274,7 +274,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           item.value match {
             case nested: (PhpArrayExpr | PhpListExpr) => // item is [$a, $b]
               // create tmp variable for [$a, $b] to receive the result of <operator>.indexAccess($arr, 0)
-              val tmpIdentifierName = getNewTmpName()
+              val tmpIdentifierName = this.scope.getNewVarTmp()
               // tmpVar = <operator>.indexAccess($arr, 0)
               val targetAssignNode =
                 createIndexAccessChain(
@@ -575,7 +575,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   private def astForArrayExpr(expr: PhpArrayExpr): Ast = {
     val idxTracker = new ArrayIndexTracker
 
-    val tmpName = getNewTmpName()
+    val tmpName = this.scope.getNewVarTmp()
 
     def newTmpIdentifier: Ast = Ast(identifierNode(expr, tmpName, s"$$$tmpName", TypeConstants.Array))
 
@@ -813,11 +813,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForAnonymousClassInstantiation(expr: PhpNewExpr, classLikeStmt: PhpClassLikeStmt): Ast = {
-    // TODO Do this along with other anonymous class support
-    logger.debug(
-      s"Anonymous class instantiation encountered. This is not yet supported. Location: $relativeFileName:${line(expr)}"
-    )
-    Ast(unknownNode(expr, code(expr)))
+    val tmpClassNameExpr = PhpNameExpr(this.scope.getNewClassTmp, expr.attributes)
+
+    astForClassLikeStmt(classLikeStmt.copy(name = Some(tmpClassNameExpr)))
+    astForSimpleNewExpr(expr, tmpClassNameExpr)
   }
 
   private def astForSimpleNewExpr(expr: PhpNewExpr, classNameExpr: PhpExpr): Ast = {
