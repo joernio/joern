@@ -133,11 +133,13 @@ class MethodTests extends PhpCode2CpgFixture {
   }
 
   "methods with unicode characters in source" should {
-    val cpg = code("""<?php
+    val sourceCode = """<?php
         |function foo() {
         |  // ⦝
         |  $x = "🙂⨌🙂𐇐🙂🙂🙂🙂";
-        |}""".stripMargin).withConfig(Config().withDisableFileContent(false))
+        |}""".stripMargin
+
+    val cpg = code(sourceCode).withConfig(Config().withDisableFileContent(false))
 
     "set the content field correctly" in {
       inside(cpg.method.nameExact("foo").l) { case List(fooMethod) =>
@@ -148,6 +150,12 @@ class MethodTests extends PhpCode2CpgFixture {
             |  // ⦝
             |  $x = "🙂⨌🙂𐇐🙂🙂🙂🙂";
             |}""".stripMargin
+      }
+    }
+
+    "set the content field correctly for the <global> method" in {
+      inside(cpg.method.nameExact("<global>").l) { case List(globalMethod) =>
+        globalMethod.sourceCode shouldBe sourceCode.stripPrefix("<?php").trim
       }
     }
   }
