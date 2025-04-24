@@ -111,11 +111,11 @@ Thank you for taking time to contribute to Joern! Here are a few guidelines to e
 #### VSCode
 - Install VSCode and Docker
 - Install the plugin `ms-vscode-remote.remote-containers`
-- Open Joern project folder in [VSCode](https://docs.microsoft.com/en-us/azure-sphere/app-development/container-build-vscode#build-and-debug-the-project)
-  Visual Studio Code detects the new files and opens a message box saying: `Folder contains a Dev Container configuration file. Reopen to folder to develop in a container.`
-- Select the `Reopen in Container` button to reopen the folder in the container created by the `.devcontainer/Dockerfile` file
-- Switch to `scalameta.metals` sidebar in VSCode, and select `import build` in `BUILD COMMANDS`
-- After `import build` succeeds, you are ready to start writing code for Joern
+- Open Joern project folder in VSCode
+  - [Option 1](https://docs.microsoft.com/en-us/azure-sphere/app-development/container-build-vscode#build-and-debug-the-project): Visual Studio Code detects the new files and opens a message box saying: `Folder contains a Dev Container configuration file. Reopen to folder to develop in a container.`. Select the `Reopen in Container` button to reopen the folder in the container created by the `.devcontainer/Dockerfile` file.
+  - Option 2: press `Ctrl + Shift + P` then select `Dev Containers: Reopen in Container`
+- Press `Ctrl + Shift + P` then select `Metals: Import build`
+- After `Metals: Import build` succeeds, you are ready to start writing code for Joern
 
 ## QueryDB (queries plugin)
 Quick way to develop and test QueryDB:
