@@ -69,7 +69,7 @@ class MethodMethods(val method: Method) extends AnyVal with NodeExtension with H
     method.block
 
   override def location: NewLocation = {
-    LocationCreator(method, method.name, method.label, method.lineNumber, method)
+    LocationCreator.defaultCreateLocation(method, method)
   }
 
   def content: Option[String] = {
