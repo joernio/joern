@@ -1,11 +1,10 @@
 package io.joern.php2cpg.utils
 
 import io.joern.php2cpg.astcreation.AstCreator.NameConstants
-import io.joern.php2cpg.utils.PhpScopeElement
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.datastructures.Scope as X2CpgScope
+import io.joern.x2cpg.datastructures.{ScopeElement, NamespaceLikeScope, Scope as X2CpgScope}
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
-import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
@@ -17,6 +16,8 @@ class Scope(implicit nextClosureName: () => String) extends X2CpgScope[String, N
   private var constAndStaticInits: List[mutable.ArrayBuffer[Ast]] = Nil
   private var fieldInits: List[mutable.ArrayBuffer[Ast]]          = Nil
   private val anonymousMethods                                    = mutable.ArrayBuffer[Ast]()
+  private var tmpVarCounter                                       = 0
+  private var tmpClassCounter                                     = 0
 
   def pushNewScope(scopeNode: NewNode): Unit = {
     scopeNode match {
@@ -40,6 +41,26 @@ class Scope(implicit nextClosureName: () => String) extends X2CpgScope[String, N
     }
   }
 
+  def surroundingAstLabel: Option[String] = stack.collectFirst {
+    case ScopeElement(_: NamespaceLikeScope, _) => NodeTypes.NAMESPACE_BLOCK
+    case ScopeElement(scopeNode: PhpScopeElement, _) =>
+      scopeNode.node match {
+        case _: NewTypeDecl       => NodeTypes.TYPE_DECL
+        case _: NewNamespaceBlock => NodeTypes.NAMESPACE_BLOCK
+        case _: NewMethod         => NodeTypes.METHOD
+      }
+  }
+
+  def surroundingScopeFulLName: Option[String] = stack.collectFirst {
+    case ScopeElement(x: NamespaceLikeScope, _) => x.fullName
+    case ScopeElement(scopeNode: PhpScopeElement, _) =>
+      scopeNode.node match {
+        case x: NewTypeDecl       => x.fullName
+        case x: NewMethod         => x.fullName
+        case x: NewNamespaceBlock => x.fullName
+      }
+  }
+
   override def popScope(): Option[PhpScopeElement] = {
     val scopeNode = super.popScope()
 
@@ -53,6 +74,25 @@ class Scope(implicit nextClosureName: () => String) extends X2CpgScope[String, N
     }
 
     scopeNode
+  }
+
+  def getNewClassTmp: String = {
+    stack.headOption match {
+      case Some(node) =>
+        s"${this.surroundingScopeFulLName.getOrElse("<global>")}@${node.scopeNode.getNextClassTmp}"
+      case None =>
+        logger.warn(s"Stack is empty - using global counter ")
+        s"${this.surroundingScopeFulLName.getOrElse("<global>")}@${this.getNextClassTmp}"
+    }
+  }
+
+  def getNewVarTmp(varPrefix: String = ""): String = {
+    stack.headOption match {
+      case Some(node) =>
+        s"${this.surroundingScopeFulLName.getOrElse("<global>")}@$varPrefix${node.scopeNode.getNextVarTmp}"
+      case None =>
+        s"${this.surroundingScopeFulLName.getOrElse("<global>")}@$varPrefix${this.getNextVarTmp}"
+    }
   }
 
   override def addToScope(identifier: String, variable: NewNode): PhpScopeElement = {
@@ -113,5 +153,19 @@ class Scope(implicit nextClosureName: () => String) extends X2CpgScope[String, N
     // These ASTs should only be added once to avoid aliasing issues.
     initList.head.clear()
     ret
+  }
+
+  private def getNextClassTmp: String = {
+    val returnString = s"anon-class-${tmpClassCounter}"
+    tmpClassCounter += 1
+
+    returnString
+  }
+
+  private def getNextVarTmp: String = {
+    val returnString = s"tmp-${tmpVarCounter}"
+    tmpVarCounter += 1
+
+    returnString
   }
 }

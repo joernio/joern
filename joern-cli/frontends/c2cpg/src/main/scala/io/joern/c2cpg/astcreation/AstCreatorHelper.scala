@@ -220,35 +220,33 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   protected def createVariableReferenceLinks(): Unit = {
-    val resolvedReferenceIt = scope.resolve(createLocalForUnresolvedReference)
-    val capturedLocals      = mutable.HashMap.empty[String, NewNode]
+    val resolvedReferences = scope.resolve(createLocalForUnresolvedReference)
+    val capturedLocals     = mutable.HashMap.empty[String, NewNode]
 
-    resolvedReferenceIt.foreach { case C2CpgScope.ResolvedReference(variableNodeId, origin) =>
+    resolvedReferences.foreach { case C2CpgScope.ResolvedReference(variableNodeId, origin) =>
       var maybeScopeElement      = origin.stack
       var currentReference       = origin.referenceNode
       var nextReference: NewNode = null
       var done                   = false
       while (!done) {
         val localOrCapturedLocalNodeOption =
-          if (maybeScopeElement.get.nameToVariableNode.contains(origin.variableName)) {
+          if (maybeScopeElement.exists(_.nameToVariableNode.contains(origin.variableName))) {
             done = true
             Option(variableNodeId)
           } else {
             maybeScopeElement.flatMap {
               case methodScope: C2CpgScope.MethodScopeElement if methodScope.needsEnclosingScope =>
-                maybeScopeElement = Option(scope.getEnclosingMethodScopeElement(maybeScopeElement))
+                maybeScopeElement = scope.getEnclosingMethodScopeElement(maybeScopeElement)
                 None
               case methodScope: C2CpgScope.MethodScopeElement =>
-                val methodScopeNode          = methodScope.scopeNode
-                val closureBindingIdProperty = s"$filename:${methodScope.methodName}:${origin.variableName}"
-                capturedLocals.updateWith(closureBindingIdProperty) {
+                val id = s"$filename:${methodScope.methodName}:${origin.variableName}"
+                capturedLocals.updateWith(id) {
                   case None =>
-                    val closureBinding =
-                      closureBindingNode(closureBindingIdProperty, origin.variableName, origin.evaluationStrategy)
+                    val closureBinding = closureBindingNode(id, origin.variableName, origin.evaluationStrategy)
                     methodScope.capturingRefId.foreach(diffGraph.addEdge(_, closureBinding, EdgeTypes.CAPTURE))
                     nextReference = closureBinding
-                    val localNode = createLocalForUnresolvedReference(methodScopeNode, origin)
-                    Option(localNode.closureBindingId(closureBindingIdProperty))
+                    val localNode = createLocalForUnresolvedReference(methodScope.scopeNode, origin)
+                    Option(localNode.closureBindingId(id))
                   case someLocalNode =>
                     // When there is already a LOCAL representing the capturing, we do not
                     // need to process the surrounding scope element as this has already
@@ -256,7 +254,7 @@ trait AstCreatorHelper { this: AstCreator =>
                     done = true
                     someLocalNode
                 }
-              case _: C2CpgScope.BlockScopeElement => None
+              case _ => None
             }
           }
 
@@ -268,7 +266,7 @@ trait AstCreatorHelper { this: AstCreator =>
           diffGraph.addEdge(currentReference, localOrCapturedLocalNode, EdgeTypes.REF)
           currentReference = nextReference
         }
-        maybeScopeElement = maybeScopeElement.get.surroundingScope
+        maybeScopeElement = maybeScopeElement.flatMap(_.surroundingScope)
       }
     }
   }

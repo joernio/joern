@@ -136,7 +136,12 @@ object Domain {
   }
 
   final case class PhpFile(children: List[PhpStmt]) extends PhpNode {
-    override val attributes: PhpAttributes = PhpAttributes.Empty
+    override val attributes: PhpAttributes = PhpAttributes(
+      children.headOption.flatMap(_.attributes.lineNumber),
+      None,
+      children.headOption.map(_.attributes.startFilePos).getOrElse(0),
+      children.lastOption.map(_.attributes.endFilePos).getOrElse(0)
+    )
   }
 
   final case class PhpParam(

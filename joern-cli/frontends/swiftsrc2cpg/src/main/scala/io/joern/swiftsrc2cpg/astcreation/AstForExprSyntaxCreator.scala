@@ -19,7 +19,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def astForListLikeExpr(node: SwiftNode, elements: Seq[SwiftNode]): Ast = {
     val op           = Operators.arrayInitializer
-    val initCallNode = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH)
+    val initCallNode = callNode(node, code(node), op, DispatchTypes.STATIC_DISPATCH)
 
     val MAX_INITIALIZERS = 1000
     val clauses          = elements.slice(0, MAX_INITIALIZERS)
@@ -481,7 +481,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def astForTernaryExprSyntax(node: TernaryExprSyntax): Ast = {
     val name = Operators.conditional
-    val call = callNode(node, code(node), name, name, DispatchTypes.STATIC_DISPATCH)
+    val call = callNode(node, code(node), name, DispatchTypes.STATIC_DISPATCH)
 
     val condAst = astForNodeWithFunctionReference(node.condition)
     val posAst  = astForNodeWithFunctionReference(node.thenExpression)

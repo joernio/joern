@@ -5,7 +5,6 @@ import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*
 import io.joern.x2cpg.Defines.UnresolvedNamespace
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
-import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{NewIdentifier, NewLiteral, NewLocal, NewNamespaceBlock}
@@ -17,9 +16,6 @@ import scala.io.Source
 trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected val globalNamespace: NewNamespaceBlock = globalNamespaceBlock()
-  private val tmpKeyPool                           = new IntervalKeyPool(first = 0, last = Long.MaxValue)
-
-  protected def getNewTmpName(prefix: String = "tmp"): String = s"$prefix${tmpKeyPool.next.toString}"
 
   protected def line(phpNode: PhpNode): Option[Int] = phpNode.attributes.lineNumber
 
@@ -50,7 +46,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     maybeTypeFullName: Option[String],
     prefix: String = ""
   ): NewIdentifier = {
-    val name         = s"$prefix${getNewTmpName()}"
+    val name         = s"${this.scope.getNewVarTmp(prefix)}"
     val typeFullName = maybeTypeFullName.getOrElse(Defines.Any)
     identifierNode(originNode, name, s"$$$name", typeFullName)
   }

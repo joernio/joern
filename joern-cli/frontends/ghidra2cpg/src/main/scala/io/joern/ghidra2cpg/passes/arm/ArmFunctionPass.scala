@@ -4,7 +4,7 @@ import ghidra.program.model.listing.{Function, Program}
 import io.joern.ghidra2cpg.utils.Decompiler
 import io.joern.ghidra2cpg.passes.FunctionPass
 import io.joern.ghidra2cpg.processors.ArmProcessor
-import io.joern.ghidra2cpg.utils.Utils.{checkIfExternal, createMethodNode, createReturnNode}
+import io.joern.ghidra2cpg.utils.Utils.{createMethodNode, createReturnNode}
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, nodes}
 
@@ -22,7 +22,7 @@ class ArmFunctionPass(
     val blockNode: NewBlock = nodes.NewBlock().code("").order(0)
     try {
       val methodNode =
-        createMethodNode(decompiler, function, filename, checkIfExternal(currentProgram, function.getName))
+        createMethodNode(decompiler, function, filename)
       val methodReturn = createReturnNode()
       localDiffGraph.addNode(methodNode)
       localDiffGraph.addNode(blockNode)
