@@ -11,7 +11,7 @@ import scala.collection.mutable
 
 object C2CpgScope {
 
-  sealed trait ScopeElement(scopeNode: NewNode) {
+  sealed trait ScopeElement {
     val surroundingScope: Option[ScopeElement]
     val nameToVariableNode: mutable.Map[String, (NewNode, String, String)] = mutable.HashMap.empty
 
@@ -40,14 +40,13 @@ object C2CpgScope {
     capturingRefId: Option[NewNode],
     scopeNode: NewNode,
     surroundingScope: Option[ScopeElement]
-  ) extends ScopeElement(scopeNode) {
+  ) extends ScopeElement {
     def needsEnclosingScope: Boolean = {
       scopeNode.isInstanceOf[NewTypeDecl] || scopeNode.isInstanceOf[NewNamespaceBlock]
     }
   }
 
-  private case class BlockScopeElement(scopeNode: NewNode, surroundingScope: Option[ScopeElement])
-      extends ScopeElement(scopeNode)
+  private case class BlockScopeElement(scopeNode: NewNode, surroundingScope: Option[ScopeElement]) extends ScopeElement
 
 }
 
