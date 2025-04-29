@@ -16,6 +16,7 @@ import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
 import io.shiftleft.codepropertygraph.generated.nodes.File.PropertyDefaults
 
 import scala.annotation.unused
@@ -259,12 +260,12 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForKeyPathSubscriptComponentSyntax(node: KeyPathSubscriptComponentSyntax): Ast = notHandledYet(node)
 
   private def astForLabeledExprSyntax(node: LabeledExprSyntax): Ast = {
-    // TODO: check if handling Labels like that fits the Swift semantics:
     node.label match {
       case Some(label) =>
-        val dstAst = astForNode(label)
-        val srcAst = astForNodeWithFunctionReference(node.expression)
-        createAssignmentCallAst(dstAst, srcAst, code(node), line(node), column(node))
+        val name = code(label)
+        val ast  = astForNodeWithFunctionReference(node.expression)
+        ast.root.collect { case i: ExpressionNew => i.argumentName(name) }
+        ast
       case None => astForNodeWithFunctionReference(node.expression)
     }
   }
