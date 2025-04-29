@@ -21,7 +21,6 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTSimpleDeclaration
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import java.nio.file.Paths
-import scala.collection.mutable
 
 trait AstForStatementsCreator { this: AstCreator =>
 

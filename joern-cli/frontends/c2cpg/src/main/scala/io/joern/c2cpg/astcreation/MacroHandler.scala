@@ -1,7 +1,6 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.ValidationMode
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes.AstNodeNew
 import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
