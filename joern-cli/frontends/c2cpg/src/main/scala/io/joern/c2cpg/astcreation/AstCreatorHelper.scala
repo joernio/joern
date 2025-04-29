@@ -24,6 +24,7 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTArrayRangeDesignator
 import org.eclipse.cdt.internal.core.dom.parser.cpp.ICPPEvaluation
 
 import scala.collection.mutable
+import scala.util.Success
 import scala.util.Try
 
 trait AstCreatorHelper { this: AstCreator =>
@@ -98,7 +99,10 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   protected def fileName(node: IASTNode): String = {
-    val path = Try(node.getContainingFilename).getOrElse(filename)
+    val path = Try(node.getContainingFilename) match {
+      case Success(value) if value.nonEmpty => value
+      case _                                => filename
+    }
     SourceFiles.toRelativePath(path, config.inputPath)
   }
 
@@ -118,7 +122,7 @@ trait AstCreatorHelper { this: AstCreator =>
 
   protected def safeGetEvaluation(expr: ICPPASTExpression): Option[ICPPEvaluation] = {
     // In case of unresolved includes etc. this may fail throwing an unrecoverable exception
-    Try(expr.getEvaluation).toOption
+    Try(expr.getEvaluation).toOption.filter(_ != null)
   }
 
   protected def safeGetBinding(idExpression: IASTIdExpression): Option[IBinding] = {
@@ -130,7 +134,7 @@ trait AstCreatorHelper { this: AstCreator =>
 
   protected def safeGetBinding(name: IASTName): Option[IBinding] = {
     // In case of unresolved includes etc. this may fail throwing an unrecoverable exception
-    Try(name.resolveBinding()).toOption
+    Try(name.resolveBinding()).toOption.filter(_ != null)
   }
 
   protected def safeGetBinding(spec: IASTNamedTypeSpecifier): Option[IBinding] = {
