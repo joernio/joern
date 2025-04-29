@@ -46,13 +46,13 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       implicit val callResolver: NoResolve.type = NoResolve
       val source                                = cpg.identifier
       val sink                                  = cpg.method.name("free").parameter.argument
-      sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.size shouldBe 5
+      sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.size shouldBe 4
     }
 
     "find flows to `free`" in {
       val source = cpg.identifier
       val sink   = cpg.call.name("free")
-      sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.size shouldBe 5
+      sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.size shouldBe 4
     }
 
     "find flows from identifiers to return values of `flow`" in {
@@ -695,7 +695,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       val source = cpg.call("source")
       val sink   = cpg.call("sink").argument(1)
       sink.reachableByFlows(source).map(flowToResultPairs).toSetMutable shouldBe Set(
-        List(("source()", 3), ("var x: Int = source()", 3), ("y: x", 4), ("foo(y: Int)", 7), ("sink(y)", 8))
+        List(("source()", 3), ("var x: Int = source()", 3), ("foo(y: x)", 4), ("foo(y: Int)", 7), ("sink(y)", 8))
       )
     }
   }

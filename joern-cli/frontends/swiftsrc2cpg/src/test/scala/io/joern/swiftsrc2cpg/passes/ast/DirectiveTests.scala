@@ -79,8 +79,7 @@ class DirectiveTests extends AstSwiftSrc2CpgSuite {
         "(_tmp_0 = foo.bar()).oneMore",
         "(_tmp_0 = foo.bar())",
         "foo.bar()",
-        "foo.bar",
-        "x: 1"
+        "foo.bar"
       )
     }
 

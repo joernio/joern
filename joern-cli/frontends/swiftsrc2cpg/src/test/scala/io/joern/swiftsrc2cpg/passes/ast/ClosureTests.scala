@@ -14,7 +14,7 @@ class ClosureTests extends AstSwiftSrc2CpgSuite {
       val cpg = code("""
         |reversedNames = names.sorted(by: { (s1: String, s2: String) -> Bool in return s1 > s2 } )
         |""".stripMargin)
-      val List(closureRef) = cpg.call("sorted").argument(1).isCall.argument.isMethodRef.l
+      val List(closureRef) = cpg.call("sorted").argument.isMethodRef.l
       closureRef.methodFullName shouldBe "Test0.swift:<global>:<lambda>0:Bool(String,String)"
       val List(closureMethod) = cpg.method.nameExact("<lambda>0").l
       closureMethod.fullName shouldBe "Test0.swift:<global>:<lambda>0:Bool(String,String)"
@@ -35,7 +35,7 @@ class ClosureTests extends AstSwiftSrc2CpgSuite {
         |// implicit return
         |reversedNames = names.sorted(by: { s1, s2 in s1 > s2 } )
         |""".stripMargin)
-      val List(closureRef) = cpg.call("sorted").argument(1).isCall.argument.isMethodRef.l
+      val List(closureRef) = cpg.call("sorted").argument.isMethodRef.l
       closureRef.methodFullName shouldBe "Test0.swift:<global>:<lambda>0:ANY(ANY,ANY)"
       val List(closureMethod) = cpg.method.nameExact("<lambda>0").l
       closureMethod.fullName shouldBe "Test0.swift:<global>:<lambda>0:ANY(ANY,ANY)"
@@ -56,7 +56,7 @@ class ClosureTests extends AstSwiftSrc2CpgSuite {
         |someFunctionThatTakesAClosure(closure: { foo() })
         |""".stripMargin)
       val List(call)       = cpg.call.nameExact("someFunctionThatTakesAClosure").l
-      val List(closureRef) = call.argument.isCall.argument(2).isMethodRef.l
+      val List(closureRef) = call.argument.isMethodRef.l
       closureRef.methodFullName shouldBe "Test0.swift:<global>:<lambda>0:ANY()"
       val List(closureMethod) = cpg.method.nameExact("<lambda>0").l
       closureMethod.fullName shouldBe "Test0.swift:<global>:<lambda>0:ANY()"
