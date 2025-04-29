@@ -112,7 +112,7 @@ object JoernExport {
         exportWithFlatgraphFormat(cpg, representation, outDir, GraphMLExporter)
       case Format.Graphson =>
         exportWithFlatgraphFormat(cpg, representation, outDir, GraphSONExporter)
-      case other =>
+      case _ =>
         throw new NotImplementedError(s"repr=$representation not yet supported for format=$format")
     }
   }
@@ -127,7 +127,7 @@ object JoernExport {
       case Cdg   => new DumpCdg(CdgDumpOptions(outDirStr)).create(context)
       case Pdg   => new DumpPdg(PdgDumpOptions(outDirStr)).create(context)
       case Cpg14 => new DumpCpg14(Cpg14DumpOptions(outDirStr)).create(context)
-      case other => throw new NotImplementedError(s"repr=$repr not yet supported for this format")
+      case _     => throw new NotImplementedError(s"repr=$repr not yet supported for this format")
     }
   }
 
@@ -140,25 +140,23 @@ object JoernExport {
     val ExportResult(nodeCount, edgeCount, _, additionalInfo) = repr match {
       case Representation.All =>
         exporter.runExport(cpg.graph, outDir)
+      case Representation.Cpg if cpg.graph.nodeCount(NodeTypes.METHOD) == 0 =>
+        emptyExportResult
       case Representation.Cpg =>
-        if (cpg.graph.nodeCount(NodeTypes.METHOD) > 0) {
-          val windowsFilenameDeduplicationHelper = mutable.Set.empty[String]
-          splitByMethod(cpg).iterator
-            .map { case subGraph @ MethodSubGraph(methodName, methodFilename, nodes) =>
-              val relativeFilename = sanitizedFileName(
-                methodName,
-                methodFilename,
-                exporter.defaultFileExtension,
-                windowsFilenameDeduplicationHelper
-              )
-              val outFileName = outDir.resolve(relativeFilename)
-              exporter.runExport(cpg.graph.schema, nodes, subGraph.edges, outFileName)
-            }
-            .reduce(plus)
-        } else {
-          emptyExportResult
-        }
-      case other =>
+        val windowsFilenameDeduplicationHelper = mutable.Set.empty[String]
+        splitByMethod(cpg)
+          .map { case subGraph @ MethodSubGraph(methodName, methodFilename, nodes) =>
+            val relativeFilename = sanitizedFileName(
+              methodName,
+              methodFilename,
+              exporter.defaultFileExtension,
+              windowsFilenameDeduplicationHelper
+            )
+            val outFileName = outDir.resolve(relativeFilename)
+            exporter.runExport(cpg.graph.schema, nodes, subGraph.edges, outFileName)
+          }
+          .reduce(plus)
+      case _ =>
         throw new NotImplementedError(s"repr=$repr not yet supported for this format")
     }
 
@@ -169,7 +167,7 @@ object JoernExport {
   /** for each method in the cpg: recursively traverse all AST edges to get the subgraph of nodes within this method add
     * the method and this subgraph to the export add all edges between all of these nodes to the export
     */
-  private def splitByMethod(cpg: Cpg): IterableOnce[MethodSubGraph] = {
+  private def splitByMethod(cpg: Cpg): Iterator[MethodSubGraph] = {
     cpg.method.map { method =>
       MethodSubGraph(methodName = method.name, methodFilename = method.filename, nodes = method.ast.toSet)
     }
@@ -178,7 +176,7 @@ object JoernExport {
   /** @param windowsFilenameDeduplicationHelper
     *   utility map to ensure we don't override output files for identical method names
     */
-  private def sanitizedFileName(
+  private[joerncli] def sanitizedFileName(
     methodName: String,
     methodFilename: String,
     fileExtension: String,
@@ -199,7 +197,8 @@ object JoernExport {
       } else { // non-windows
         // handle leading `/` to ensure we're not writing outside of the output directory
         val sanitizedPath =
-          if (methodFilename.startsWith("/")) s"_root_/$methodFilename"
+          if (methodFilename.isEmpty) "_root_"
+          else if (methodFilename.startsWith("/")) s"_root_/$methodFilename"
           else methodFilename
         s"$sanitizedPath/$sanitizedMethodName"
       }
