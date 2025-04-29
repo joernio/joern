@@ -47,7 +47,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     )
 
     scope.surroundingAstLabel.foreach(typeDeclTemp.astParentType(_))
-    scope.surroundingScopeFulLName.foreach(typeDeclTemp.astParentFullName(_))
+    scope.surroundingScopeFullName.foreach(typeDeclTemp.astParentFullName(_))
     scope.pushNewScope(typeDeclTemp)
 
     val bodyStmts      = astsForClassLikeBody(stmt, stmt.stmts, stmt.hasConstructor)
