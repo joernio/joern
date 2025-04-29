@@ -110,39 +110,6 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     }
   }
 
-  protected def handleTmpGen(target: PhpExpr, targetAst: Ast): (Ast, String) = {
-    val createAssignmentToTmp = !baseAstCache.contains(target)
-    val tmpName = baseAstCache
-      .updateWith(target) {
-        case Some(tmpName) =>
-          Option(tmpName)
-        case None =>
-          val tmpName     = getNewTmpName()
-          val tmpGenLocal = NewLocal().name(tmpName).code(tmpName).typeFullName(Defines.Any)
-          scope.addToScope(tmpName, tmpGenLocal)
-          Option(tmpName)
-      }
-      .get
-
-    val tmpNameExpr = PhpNameExpr(tmpName, target.attributes)
-    val tmpAst      = astForExpr(tmpNameExpr)
-
-    if (createAssignmentToTmp) {
-      val assignment = PhpAssignment(Operators.assignment, target, tmpNameExpr, false, target.attributes)
-
-      val symbol = operatorSymbols.getOrElse(Operators.assignment, Operators.assignment)
-      val code   = s"${tmpAst.rootCodeOrEmpty} $symbol ${targetAst.rootCodeOrEmpty}"
-
-      val callNode      = operatorCallNode(assignment, code, Operators.assignment, None)
-      val assignmentAst = callAst(callNode, List(tmpAst, targetAst))
-
-      assignmentAst -> assignmentAst.rootCodeOrEmpty
-    } else {
-      val code = s"$tmpName = ${targetAst.rootCodeOrEmpty}"
-      tmpAst -> s"$code"
-    }
-  }
-
   protected def getArgsCode(call: PhpCallExpr, arguments: Seq[Ast]): String = {
     arguments
       .zip(call.args.collect { case x: PhpArg => x.unpack })

@@ -27,13 +27,9 @@ class CallTests extends PhpCode2CpgFixture {
     val contentsCall = cpg.call.nameExact("contents").head
     contentsCall.code shouldBe "$a->contents()"
     contentsCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-    inside(contentsCall.astChildren.l) { case (base: Call) :: (receiver: Identifier) :: Nil =>
-      base.name shouldBe Operators.fieldAccess
-      base.code shouldBe "$a->contents"
-      base.argumentIndex shouldBe -1
-
-      receiver.name shouldBe "a"
-      receiver.code shouldBe "$a"
+    inside(contentsCall.astChildren.l) { case (receiver: Call) :: Nil =>
+      receiver.name shouldBe Operators.fieldAccess
+      receiver.code shouldBe "$a->contents"
       receiver.argumentIndex shouldBe 0
     }
 

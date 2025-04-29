@@ -74,7 +74,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     maybeTarget: Option[PhpExpr]
   ): Ast = {
     val argsCode   = getArgsCode(call, arguments)
-    def targetAst  = maybeTarget.map(astForExpr)
+    val targetAst  = maybeTarget.map(astForExpr)
     val codePrefix = targetAst.map(codeForMethodCall(call, _, name)).getOrElse(name)
     val code       = s"$codePrefix($argsCode)"
 
@@ -99,7 +99,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         Option(astForExpr(call.methodName))
     }
 
-    callAst(callRoot, arguments, base = targetAst, receiver = receiverAst)
+    callAst(callRoot, arguments, receiverAst)
   }
 
   private def astForStaticCall(call: PhpCallExpr, name: String, arguments: Seq[Ast]): Ast = {
@@ -120,24 +120,22 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   private def astForChainedCall(call: PhpCallExpr, name: String, target: PhpPropertyFetchExpr | PhpCallExpr): Ast = {
     val expr        = PhpPropertyFetchExpr(target, PhpNameExpr(name, call.attributes), false, false, call.attributes)
     val receiverAst = astForPropertyFetchExpr(expr)
-    val (baseAst, baseCode) = astForPhpPropertyFetchTarget(target)
-    val targetAst           = astForExpr(target)
+    val targetAst   = astForExpr(target)
+    val targetCode  = targetAst.rootCodeOrEmpty
 
     val codePrefix = codeForMethodCall(call, targetAst, name)
 
     val argumentAsts = call.args.map(astForCallArg)
     val argsCode     = getArgsCode(call, argumentAsts)
 
-    val tmpName :: aliasedCallCode :: Nil =
-      baseCode.split(" = ").toList: @unchecked // this code is generated, so is "safe"
-    val code = s"$tmpName${codePrefix.stripPrefix(aliasedCallCode)}($argsCode)"
+    val code = s"$targetCode$codePrefix($argsCode)"
     val mfn  = getMfn(call, name)
 
     val signature = s"$UnresolvedSignature(${call.args.size})"
 
     val callN =
       callNode(call, code, name, mfn, DispatchTypes.DYNAMIC_DISPATCH, Some(signature), Some(Defines.Any))
-    callAst(callN, argumentAsts, base = Option(baseAst), receiver = Option(receiverAst))
+    callAst(callN, argumentAsts, Option(receiverAst))
   }
 
   protected def simpleAssignAst(origin: PhpNode, target: Ast, source: Ast): Ast = {
@@ -526,10 +524,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       else
         "->"
 
-    val (targetAst, _code) = astForPhpPropertyFetchTarget(expr.expr)
-    val code =
-      if _code.startsWith("tmp") then s"${_code.split(" = ").head}$accessSymbol${fieldAst.rootCodeOrEmpty}"
-      else s"$_code$accessSymbol${fieldAst.rootCodeOrEmpty}"
+    val targetAst       = astForExpr(expr.expr)
+    val targetCode      = targetAst.rootCodeOrEmpty
+    val code            = s"$targetCode$accessSymbol${fieldAst.rootCodeOrEmpty}"
     val fieldAccessNode = operatorCallNode(expr, code, Operators.fieldAccess, None)
     callAst(fieldAccessNode, Seq(targetAst, fieldAst))
   }
@@ -891,18 +888,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .withChild(allocAssignAst)
       .withChild(initCallAst)
       .withChild(returnIdentifierAst)
-  }
-
-  private def astForPhpPropertyFetchTarget(target: PhpExpr): (Ast, String) = {
-    target match {
-      case target: (PhpNameExpr | PhpVariable) =>
-        val targetAst = astForExpr(target)
-        (targetAst, targetAst.rootCodeOrEmpty)
-      case target: PhpPropertyFetchExpr =>
-        handleTmpGen(target, astForPropertyFetchExpr(target))
-      case target =>
-        handleTmpGen(target, astForExpr(target))
-    }
   }
 
 }
