@@ -6,9 +6,9 @@ import scala.util.Try
 name := "swiftsrc2cpg"
 
 dependsOn(
-  Projects.dataflowengineoss  % "compile->compile;test->test",
-  Projects.x2cpg              % "compile->compile;test->test",
-  Projects.linterRules % ScalafixConfig
+  Projects.dataflowengineoss % "compile->compile;test->test",
+  Projects.x2cpg             % "compile->compile;test->test",
+  Projects.linterRules       % ScalafixConfig
 )
 
 lazy val appProperties = settingKey[Config]("App Properties")
@@ -34,9 +34,10 @@ Test / fork := false
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
-lazy val AstgenWin   = "SwiftAstGen-win.exe"
-lazy val AstgenLinux = "SwiftAstGen-linux"
-lazy val AstgenMac   = "SwiftAstGen-mac"
+lazy val AstgenWin      = "SwiftAstGen-win.exe"
+lazy val AstgenLinux    = "SwiftAstGen-linux"
+lazy val AstgenLinuxArm = "SwiftAstGen-linux-arm64"
+lazy val AstgenMac      = "SwiftAstGen-mac"
 
 lazy val astGenDlUrl = settingKey[String]("astgen download url")
 astGenDlUrl := s"https://github.com/joernio/swiftastgen/releases/download/v${astGenVersion.value}/"
@@ -53,13 +54,16 @@ astGenBinaryNames := {
   if (hasCompatibleAstGenVersion(astGenVersion.value)) {
     Seq.empty
   } else if (sys.props.get("ALL_PLATFORMS").contains("TRUE")) {
-    Seq(AstgenWin, AstgenLinux, AstgenMac)
+    Seq(AstgenWin, AstgenLinux, AstgenLinuxArm, AstgenMac)
   } else {
     Environment.operatingSystem match {
       case Environment.OperatingSystemType.Windows =>
         Seq(AstgenWin)
       case Environment.OperatingSystemType.Linux =>
-        Seq(AstgenLinux)
+        Environment.architecture match {
+          case Environment.ArchitectureType.X86   => Seq(AstgenLinux)
+          case Environment.ArchitectureType.ARMv8 => Seq(AstgenLinuxArm)
+        }
       case Environment.OperatingSystemType.Mac =>
         Seq(AstgenMac)
       case Environment.OperatingSystemType.Unknown =>
