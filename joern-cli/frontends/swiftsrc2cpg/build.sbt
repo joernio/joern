@@ -67,7 +67,7 @@ astGenBinaryNames := {
       case Environment.OperatingSystemType.Mac =>
         Seq(AstgenMac)
       case Environment.OperatingSystemType.Unknown =>
-        Seq(AstgenWin, AstgenLinux, AstgenMac)
+        Seq(AstgenWin, AstgenLinux, AstgenLinuxArm, AstgenMac)
     }
   }
 }
