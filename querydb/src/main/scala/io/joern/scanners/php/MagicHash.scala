@@ -39,9 +39,9 @@ object MagicHash extends QueryBundle {
           ) ++
           cpg.call.name("(?i)(md5|md5_file|sha1|sha1_file)")
 
-        def sink = cpg.call.name(Operators.equals, Operators.notEquals)
+        def sink = cpg.call.name(Operators.equals, Operators.notEquals).argument
 
-        sink.reachableBy(hash).reachableBy(source).l.iterator
+        sink.reachableBy(hash).argument(2).reachableBy(source)
       }),
       tags = List(QueryTags.magicHash, QueryTags.default)
     )
