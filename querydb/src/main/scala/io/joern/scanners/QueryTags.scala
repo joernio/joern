@@ -24,5 +24,6 @@ object QueryTags {
   val pathTraversal          = "path-traversal"
   val cryptography           = "cryptography"
   val remoteCodeExecution    = "remote-code-execution"
+  val magicHash              = "magic-hash"
 
 }
