@@ -36,12 +36,13 @@ object MagicHash extends QueryBundle {
             _.argument(1).isLiteral.code(
               "\"(?i)(md2|md4|md5|sha1|sha224|sha256|ripemd128|ripemd160|tiger128,3|tiger128,4|tiger160,3|tiger160,4|tiger192,3|haval128,3|haval160,3|haval128,4|haval160,4|haval128,5|haval160,5|adler32|crc32|crc32b|crc32c|fnv132|fnv1a32|fnv164|fnv1a64|joaat|murmur3a|murmur3c|murmur3f|xxh32|xxh64|xxh128)\""
             )
-          ) ++
-          cpg.call.name("(?i)(md5|md5_file|sha1|sha1_file)")
+          )
+          .argument(2) ++
+          cpg.call.name("(?i)(md5|md5_file|sha1|sha1_file)").argument(1)
 
         def sink = cpg.call.name(Operators.equals, Operators.notEquals).argument
 
-        sink.reachableBy(hash).argument(2).reachableBy(source)
+        sink.reachableBy(hash).reachableBy(source)
       }),
       tags = List(QueryTags.magicHash, QueryTags.default)
     )
