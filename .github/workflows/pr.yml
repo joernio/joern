@@ -29,8 +29,9 @@ jobs:
         if: matrix.os == 'windows-latest'
         uses: SwiftyLab/setup-swift@latest
         with:
+          check-latest: true
           development: true
-          swift-version: "5.10"
+          swift-version: "6.1"
       - name: Delete `.rustup` directory
         run: rm -rf /home/runner/.rustup # to save disk space
         if: runner.os == 'Linux'
