@@ -4,12 +4,12 @@ import io.joern.swiftsrc2cpg.Config
 import io.joern.swiftsrc2cpg.datastructures.Scope
 import io.joern.swiftsrc2cpg.parser.SwiftJsonParser.ParseResult
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
-import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, AstNodeBuilder as X2CpgAstNodeBuilder}
+import io.joern.x2cpg.Ast
+import io.joern.x2cpg.AstCreatorBase
+import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Global
+import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
-import io.joern.x2cpg.utils.OffsetUtils
-import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewFile
@@ -18,8 +18,10 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeRef
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.File.PropertyDefaults
-import org.slf4j.{Logger, LoggerFactory}
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
@@ -124,19 +126,11 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
   override protected def lineEnd(node: SwiftNode): Option[Int]   = node.endLine
   override protected def columnEnd(node: SwiftNode): Option[Int] = node.endColumn
 
-  private val lineOffsetTable =
-    OffsetUtils.getLineOffsetTable(Option(parserResult.fileContent))
-    // we add one last offset as the swift-syntax parser always expects one EOF newline
-      :+ 0
-
   private def nodeOffsets(node: SwiftNode): Option[(Int, Int)] = {
-    val offsets = for {
-      lineNr      <- line(node)
-      columnNr    <- column(node)
-      lineEndNr   <- lineEnd(node)
-      columnEndNr <- columnEnd(node)
-    } yield OffsetUtils.coordinatesToOffset(lineOffsetTable, lineNr - 1, columnNr - 1, lineEndNr - 1, columnEndNr - 1)
-    offsets.map { case (offset, offsetEnd) => (offset, offsetEnd - 1) }
+    for {
+      startOffset <- node.startOffset
+      endOffset   <- node.endOffset
+    } yield (math.max(startOffset, 0), math.min(endOffset, parserResult.fileContent.length))
   }
 
   override protected def offset(node: SwiftNode): Option[(Int, Int)] = {
@@ -147,6 +141,8 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
     (nodeOffsets(node), node) match {
       case (Some((startOffset, endOffset)), _: TypeSyntax) =>
         parserResult.fileContent.substring(startOffset, endOffset).trim.stripSuffix("?").stripSuffix("!")
+      case (Some((startOffset, endOffset)), _: identifier) =>
+        parserResult.fileContent.substring(startOffset, endOffset).trim.stripSuffix("()")
       case (Some((startOffset, endOffset)), _) =>
         shortenCode(parserResult.fileContent.substring(startOffset, endOffset).trim)
       case _ =>
