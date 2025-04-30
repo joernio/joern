@@ -1,18 +1,13 @@
 package io.joern.ghidra2cpg
 
 import ghidra.GhidraJarApplicationLayout
-import ghidra.app.plugin.core.analysis.AutoAnalysisManager
-import ghidra.app.util.importer.{AutoImporter, MessageLog}
-import ghidra.app.util.opinion.{Loaded, LoadResults}
-import ghidra.framework.model.{Project, ProjectLocator}
-import ghidra.framework.project.{DefaultProject, DefaultProjectManager}
-import ghidra.framework.protocol.ghidra.{GhidraURLConnection, Handler}
+import ghidra.base.project.GhidraProject
+import ghidra.framework.protocol.ghidra.Handler
 import ghidra.framework.{Application, HeadlessGhidraApplicationConfiguration}
 import ghidra.program.flatapi.FlatProgramAPI
 import ghidra.program.model.listing.Program
 import ghidra.program.util.{DefinedDataIterator, GhidraProgramUtilities}
 import ghidra.util.exception.InvalidInputException
-import ghidra.util.task.TaskMonitor
 import io.joern.ghidra2cpg.passes.*
 import io.joern.ghidra2cpg.passes.arm.ArmFunctionPass
 import io.joern.ghidra2cpg.passes.mips.{LoHiPass, MipsFunctionPass}
@@ -24,7 +19,6 @@ import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.utils.FileUtil
-import utilities.util.FileUtilities
 
 import java.io.File
 import scala.collection.mutable
@@ -45,36 +39,22 @@ class Ghidra2Cpg extends X2CpgFrontend[Config] {
     X2Cpg.withNewEmptyCpg(config.outputPath, config) { (cpg, _) =>
       FileUtil.usingTemporaryDirectory("ghidra2cpg_tmp") { tempWorkingDir =>
         initGhidra()
-        val locator          = new ProjectLocator(tempWorkingDir.absolutePathAsString, CommandLineConfig.projectName)
-        var program: Program = null
-        var project: Project = null
+        var program: Program       = null
+        var project: GhidraProject = null;
 
         try {
-          val projectManager = new HeadlessGhidraProjectManager
-          project = projectManager.createProject(locator, null, false)
-          val programResults = AutoImporter.importByUsingBestGuess(
-            inputFile,
-            null,
-            tempWorkingDir.absolutePathAsString,
-            this,
-            new MessageLog,
-            TaskMonitor.DUMMY
-          )
-          if (programResults != null && programResults.size() > 0) {
-            program = programResults.getPrimary().getDomainObject();
-            addProgramToCpg(program, inputFile.getCanonicalPath, cpg)
-          }
+          // The 'true' parameter indicates this is a temporary project
+          project =
+            GhidraProject.createProject(tempWorkingDir.absolutePathAsString, CommandLineConfig.projectName, true)
+          program = project.importProgram(inputFile)
+          addProgramToCpg(program, inputFile.getCanonicalPath, cpg)
         } catch {
           case e: Exception =>
             e.printStackTrace()
         } finally {
-          if (program != null) {
-            AutoAnalysisManager.getAnalysisManager(program).dispose()
-            program.release(this)
-          }
+          // Closing deletes the project (since we created a temporary project)
+          // Closing also releases the program
           project.close()
-          FileUtilities.deleteDir(locator.getProjectDir)
-          locator.getMarkerFile.delete
         }
       }
     }
@@ -93,12 +73,9 @@ class Ghidra2Cpg extends X2CpgFrontend[Config] {
   }
 
   private def addProgramToCpg(program: Program, fileAbsolutePath: String, cpg: Cpg): Unit = {
-    val autoAnalysisManager: AutoAnalysisManager = AutoAnalysisManager.getAnalysisManager(program)
-    val transactionId: Int                       = program.startTransaction("Analysis")
+    val transactionId: Int = program.startTransaction("Analysis")
     try {
-      autoAnalysisManager.initializeOptions()
-      autoAnalysisManager.reAnalyzeAll(null)
-      autoAnalysisManager.startAnalysis(TaskMonitor.DUMMY)
+      GhidraProject.analyze(program);
       GhidraProgramUtilities.markProgramAnalyzed(program)
       handleProgram(program, fileAbsolutePath, cpg)
     } catch {
@@ -150,8 +127,6 @@ class Ghidra2Cpg extends X2CpgFrontend[Config] {
     new JumpPass(cpg).createAndApply()
     new LiteralPass(cpg, flatProgramAPI).createAndApply()
   }
-
-  private class HeadlessGhidraProjectManager extends DefaultProjectManager {}
 }
 
 object Types {
