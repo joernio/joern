@@ -1,7 +1,7 @@
-package io.joern.php2cpg.utils
+package io.joern.php2cpg.datastructures
 
 import io.joern.php2cpg.parser.Domain.InstanceMethodDelimiter
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.*
 
 class PhpScopeElement private (val node: NewNode, scopeName: String)(implicit nextClosureName: () => String) {
   private var tmpVarCounter   = 0

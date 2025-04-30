@@ -1,38 +1,34 @@
 package io.joern.php2cpg.astcreation
 
-import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants, operatorSymbols}
-import io.joern.php2cpg.datastructures.ArrayIndexTracker
+import io.joern.php2cpg.datastructures.{PhpProgramSummary, Scope}
 import io.joern.php2cpg.parser.Domain.*
-import io.joern.php2cpg.parser.Domain.PhpModifiers.containsAccessModifier
-import io.joern.php2cpg.utils.Scope
 import io.joern.x2cpg.Ast.storeInDiffGraph
-import io.joern.x2cpg.Defines.{StaticInitMethodName, UnresolvedNamespace, UnresolvedSignature}
-import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
-import io.joern.x2cpg.utils.IntervalKeyPool
-import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, Defines, ValidationMode}
+import io.joern.x2cpg.datastructures.AstParseLevel
+import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.shiftleft.utils.IOUtils
 import org.slf4j.{Logger, LoggerFactory}
 
-import java.nio.charset.StandardCharsets
 import java.nio.file.Path
-import scala.collection.mutable
 
 class AstCreator(
   protected val relativeFileName: String,
-  fileName: String,
-  phpAst: PhpFile,
-  disableFileContent: Boolean
+  val fileName: String,
+  protected val phpAst: PhpFile,
+  protected val disableFileContent: Boolean,
+  protected val programSummary: PhpProgramSummary = PhpProgramSummary(),
+  protected val parseLevel: AstParseLevel = AstParseLevel.FULL_AST
 )(implicit withSchemaValidation: ValidationMode)
     extends AstCreatorBase[PhpNode, AstCreator](relativeFileName)
-    with AstCreatorHelper(disableFileContent)
+    with AstCreatorHelper
     with AstForExpressionsCreator
     with AstForControlStructuresCreator
     with AstForDeclarationsCreator
     with AstForFunctionsCreator
-    with AstForTypesCreator {
+    with AstForTypesCreator
+    with AstSummaryVisitor {
 
   protected val logger: Logger = LoggerFactory.getLogger(AstCreator.getClass)
   protected val scope          = new Scope()(() => nextClosureName())
@@ -73,7 +69,7 @@ class AstCreator(
     )
   }
 
-  private def astForPhpFile(file: PhpFile): Ast = {
+  protected def astForPhpFile(file: PhpFile): Ast = {
     val fileNode = NewFile().name(relativeFileName)
     fileContent.foreach(fileNode.content(_))
 
@@ -130,133 +126,12 @@ class AstCreator(
       case useStmt: PhpUseStmt             => astForUseStmt(useStmt) :: Nil
       case groupUseStmt: PhpGroupUseStmt   => astForGroupUseStmt(groupUseStmt) :: Nil
       case foreachStmt: PhpForeachStmt     => astForForeachStmt(foreachStmt) :: Nil
-      case traitUseStmt: PhpTraitUseStmt   => astforTraitUseStmt(traitUseStmt) :: Nil
+      case traitUseStmt: PhpTraitUseStmt   => astForTraitUseStmt(traitUseStmt) :: Nil
       case enumCase: PhpEnumCaseStmt       => astForEnumCase(enumCase) :: Nil
       case staticStmt: PhpStaticStmt       => astsForStaticStmt(staticStmt)
       case unhandled =>
         logger.error(s"Unhandled stmt $unhandled in $relativeFileName")
         ???
-    }
-  }
-
-  private def astForEchoStmt(echoStmt: PhpEchoStmt): Ast = {
-    val args     = echoStmt.exprs.map(astForExpr)
-    val code     = s"echo ${args.map(_.rootCodeOrEmpty).mkString(",")}"
-    val callNode = operatorCallNode(echoStmt, code, "echo", None)
-    callAst(callNode, args)
-  }
-
-  private def astForNamespaceStmt(stmt: PhpNamespaceStmt): Ast = {
-    val name     = stmt.name.map(_.name).getOrElse(NameConstants.Unknown)
-    val fullName = s"$relativeFileName:$name"
-
-    val namespaceBlock = NewNamespaceBlock()
-      .name(name)
-      .fullName(fullName)
-
-    scope.pushNewScope(namespaceBlock)
-    val bodyStmts = astsForClassLikeBody(stmt, stmt.stmts, createDefaultConstructor = false)
-    scope.popScope()
-
-    Ast(namespaceBlock).withChildren(bodyStmts)
-  }
-
-  private def astForHaltCompilerStmt(stmt: PhpHaltCompilerStmt): Ast = {
-    val call =
-      operatorCallNode(stmt, s"${NameConstants.HaltCompiler}()", NameConstants.HaltCompiler, Some(TypeConstants.Void))
-
-    Ast(call)
-  }
-
-  private def astForUnsetStmt(stmt: PhpUnsetStmt): Ast = {
-    val name = PhpOperators.unset
-    val args = stmt.vars.map(astForExpr)
-    val code = s"$name(${args.map(_.rootCodeOrEmpty).mkString(", ")})"
-    val callNode = operatorCallNode(stmt, code, name, Some(TypeConstants.Void))
-      .methodFullName(PhpOperators.unset)
-    callAst(callNode, args)
-  }
-
-  private def astForGlobalStmt(stmt: PhpGlobalStmt): Ast = {
-    // This isn't an accurater representation of what `global` does, but with things like `global $$x` being possible,
-    // it's very difficult to figure out correct scopes for global variables.
-
-    val varsAsts = stmt.vars.map(astForExpr)
-    val code     = s"${PhpOperators.global} ${varsAsts.map(_.rootCodeOrEmpty).mkString(", ")}"
-
-    val globalCallNode = operatorCallNode(stmt, code, PhpOperators.global, Some(TypeConstants.Void))
-
-    callAst(globalCallNode, varsAsts)
-  }
-
-  private def astForUseStmt(stmt: PhpUseStmt): Ast = {
-    // TODO Use useType + scope to get better name info
-    val imports = stmt.uses.map(astForUseUse(_))
-    wrapMultipleInBlock(imports, line(stmt))
-  }
-
-  private def astForGroupUseStmt(stmt: PhpGroupUseStmt): Ast = {
-    // TODO Use useType + scope to get better name info
-    val groupPrefix = s"${stmt.prefix.name}\\"
-    val imports     = stmt.uses.map(astForUseUse(_, groupPrefix))
-    wrapMultipleInBlock(imports, line(stmt))
-  }
-
-  private def astforTraitUseStmt(stmt: PhpTraitUseStmt): Ast = {
-    // TODO Actually implement this
-    logger.debug(
-      s"Trait use statement encountered. This is not yet supported. Location: $relativeFileName:${line(stmt)}"
-    )
-    Ast(unknownNode(stmt, code(stmt)))
-  }
-
-  private def astForUseUse(stmt: PhpUseUse, namePrefix: String = ""): Ast = {
-    val originalName = s"$namePrefix${stmt.originalName.name}"
-    val aliasCode    = stmt.alias.map(alias => s" as ${alias.name}").getOrElse("")
-    val typeCode = stmt.useType match {
-      case PhpUseType.Function => s"function "
-      case PhpUseType.Constant => s"const "
-      case _                   => ""
-    }
-    val code = s"use $typeCode$originalName$aliasCode"
-
-    val importNode = NewImport()
-      .importedEntity(originalName)
-      .importedAs(stmt.alias.map(_.name))
-      .isExplicit(true)
-      .code(code)
-
-    Ast(importNode)
-  }
-
-  private def astsForStaticStmt(stmt: PhpStaticStmt): List[Ast] = {
-    stmt.vars.flatMap { staticVarDecl =>
-      staticVarDecl.variable match {
-        case PhpVariable(PhpNameExpr(name, _), _) =>
-          val maybeDefaultValueAst = staticVarDecl.defaultValue.map(astForExpr)
-
-          val code         = s"static $$$name"
-          val typeFullName = maybeDefaultValueAst.flatMap(_.rootType).getOrElse(Defines.Any)
-
-          val local = localNode(stmt, name, code, typeFullName)
-          scope.addToScope(local.name, local)
-
-          val assignmentAst = maybeDefaultValueAst.map { defaultValue =>
-            val variableNode = identifierNode(stmt, name, s"$$$name", typeFullName)
-            val variableAst  = Ast(variableNode).withRefEdge(variableNode, local)
-
-            val assignCode = s"$code = ${defaultValue.rootCodeOrEmpty}"
-            val assignNode = operatorCallNode(stmt, assignCode, Operators.assignment, None)
-
-            callAst(assignNode, variableAst :: defaultValue :: Nil)
-          }
-
-          Ast(local) :: assignmentAst.toList
-
-        case other =>
-          logger.warn(s"Unexpected static variable type $other in $relativeFileName")
-          Nil
-      }
     }
   }
 

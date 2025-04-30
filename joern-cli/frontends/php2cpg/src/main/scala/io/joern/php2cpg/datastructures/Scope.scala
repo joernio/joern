@@ -1,10 +1,10 @@
-package io.joern.php2cpg.utils
+package io.joern.php2cpg.datastructures
 
 import io.joern.php2cpg.astcreation.AstCreator.NameConstants
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.datastructures.{ScopeElement, NamespaceLikeScope, Scope as X2CpgScope}
+import io.joern.x2cpg.datastructures.{NamespaceLikeScope, ScopeElement, Scope as X2CpgScope}
 import io.shiftleft.codepropertygraph.generated.NodeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
