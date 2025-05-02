@@ -1,8 +1,6 @@
 package io.joern.jssrc2cpg.astcreation
 
 import io.joern.jssrc2cpg.Config
-import io.joern.jssrc2cpg.datastructures.MethodScope
-import io.joern.jssrc2cpg.datastructures.Scope
 import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelJsonParser.ParseResult
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
@@ -11,6 +9,7 @@ import io.joern.x2cpg.AstCreatorBase
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.datastructures.Stack.*
+import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
@@ -43,10 +42,10 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
 
-  protected val scope = new Scope()
+  protected val scope = new VariableScopeManager()
 
   // TypeDecls with their bindings (with their refs) for lambdas and methods are not put in the AST
-  // where the respective nodes are defined. Instead we put them under the parent TYPE_DECL in which they are defined.
+  // where the respective nodes are defined. Instead, we put them under the parent TYPE_DECL in which they are defined.
   // To achieve this we need this extra stack.
   protected val methodAstParentStack          = new Stack[NewNode]()
   protected val typeRefIdStack                = new Stack[NewTypeRef]
@@ -71,7 +70,7 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
     methodAstParentStack.push(namespaceBlock)
     val ast = Ast(fileNode).withChild(Ast(namespaceBlock).withChild(createProgramMethod()))
     Ast.storeInDiffGraph(ast, diffGraph)
-    createVariableReferenceLinks()
+    scope.createVariableReferenceLinks(diffGraph, parserResult.filename)
     diffGraph
   }
 
@@ -98,7 +97,7 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
     val thisParam =
       parameterInNode(astNodeInfo, "this", "this", 0, false, EvaluationStrategies.BY_VALUE)
         .dynamicTypeHintFullName(typeHintForThisExpression())
-    scope.addVariable("this", thisParam, MethodScope)
+    scope.addVariable("this", thisParam, Defines.Any, VariableScopeManager.ScopeType.MethodScope)
 
     val methodChildren = astsForFile(astNodeInfo)
     setArgumentIndices(methodChildren)

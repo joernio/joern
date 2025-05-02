@@ -80,7 +80,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
           }
           fallBack.name shouldBe "fallback"
           fallBack.typeFullName shouldBe "string"
-          fallBack.closureBindingId shouldBe Some("Test0.cpp:<lambda>0:fallback")
+          fallBack.closureBindingId shouldBe Some("Test0.cpp:<global>.Foo.foo.<lambda>0:string(string):fallback")
         case result => fail(s"Expected lambda body with single return but got $result")
       }
     }
@@ -272,7 +272,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
       val List(x1, x2, x3) = cpg.method.name(".*lambda.*").ast.isLocal.sortBy(_.lineNumber.get).nameExact("x").l
 
       x1.typeFullName shouldBe "int*"
-      x1.closureBindingId shouldBe Some("Test0.cpp:<lambda>0:x")
+      x1.closureBindingId shouldBe Some("Test0.cpp:<global>.foo.<lambda>0:void():x")
       cpg.identifier.nameExact("x").lineNumber(4).refsTo.l shouldBe List(x1)
 
       x2.typeFullName shouldBe "float*"
@@ -304,7 +304,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
       val List(x1, x2) = cpg.method.name(".*lambda.*").ast.isLocal.sortBy(_.lineNumber.get).nameExact("x").l
 
       x1.typeFullName shouldBe "int*"
-      x1.closureBindingId shouldBe Some("Test0.cpp:<lambda>0:x")
+      x1.closureBindingId shouldBe Some("Test0.cpp:<global>.foo.<lambda>0:void():x")
       cpg.identifier.nameExact("x").lineNumber(4).refsTo.l shouldBe List(x1)
 
       x2.typeFullName shouldBe "float*"
@@ -335,7 +335,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
       val List(x1, x2, x3) = cpg.method.name(".*lambda.*").ast.isLocal.sortBy(_.lineNumber.get).nameExact("x").l
 
       x1.typeFullName shouldBe "int*"
-      x1.closureBindingId shouldBe Some("Test0.cpp:<lambda>0:x")
+      x1.closureBindingId shouldBe Some("Test0.cpp:<global>.foo.<lambda>0:void():x")
       val List(x1Id) = cpg.identifier.nameExact("x").lineNumber(5).l
       x1Id.lineNumber shouldBe x1.lineNumber
       x1Id.columnNumber shouldBe x1.columnNumber
@@ -384,7 +384,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
       cpg.identifier.nameExact("x").lineNumber(6).refsTo.l shouldBe List(x2)
 
       x3.typeFullName shouldBe "double*"
-      x3.closureBindingId shouldBe Some("Test0.cpp:<lambda>0:x")
+      x3.closureBindingId shouldBe Some("Test0.cpp:<global>.foo.<lambda>0:void():x")
       cpg.identifier.nameExact("x").lineNumber(8).refsTo.l shouldBe List(x3)
     }
   }

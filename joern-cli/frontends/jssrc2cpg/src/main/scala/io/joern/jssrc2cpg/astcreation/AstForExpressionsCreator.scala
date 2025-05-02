@@ -13,6 +13,7 @@ import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 
 import scala.util.Try
 
@@ -62,17 +63,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           case ThisExpression =>
             val receiverAst = astForNodeWithFunctionReference(callLike.json)
             val baseNode    = identifierNode(base, base.code).dynamicTypeHintFullName(typeHintForThisExpression())
-            scope.addVariableReference(base.code, baseNode)
+            scope.addVariableReference(base.code, baseNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
             CallExpressionInfo(receiverAst, baseNode, member.code)
           case Identifier =>
             val receiverAst = astForNodeWithFunctionReference(callLike.json)
             val baseNode    = identifierNode(base, base.code)
-            scope.addVariableReference(base.code, baseNode)
+            scope.addVariableReference(base.code, baseNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
             CallExpressionInfo(receiverAst, baseNode, member.code)
           case _ =>
             val tmpVarName  = generateUnusedVariableName(usedVariableNames, "_tmp")
             val baseTmpNode = identifierNode(base, tmpVarName)
-            scope.addVariableReference(tmpVarName, baseTmpNode)
+            scope.addVariableReference(tmpVarName, baseTmpNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
             val baseAst = astForNodeWithFunctionReference(base.json)
             val code    = s"(${codeOf(baseTmpNode)} = ${base.code})"
             val tmpAssignmentAst =
@@ -82,13 +83,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
             val fieldAccessAst =
               createFieldAccessCallAst(tmpAssignmentAst, memberNode, callLike.lineNumber, callLike.columnNumber)
             val thisTmpNode = identifierNode(callLike, tmpVarName)
-            scope.addVariableReference(tmpVarName, thisTmpNode)
+            scope.addVariableReference(tmpVarName, thisTmpNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
             CallExpressionInfo(fieldAccessAst, thisTmpNode, member.code)
         }
       case _ =>
         val receiverAst = astForNodeWithFunctionReference(callLike.json)
         val thisNode    = identifierNode(callLike, "this").dynamicTypeHintFullName(typeHintForThisExpression())
-        scope.addVariableReference(thisNode.name, thisNode)
+        scope.addVariableReference(thisNode.name, thisNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
         CallExpressionInfo(receiverAst, thisNode, callLike.code)
     }
   }
@@ -107,7 +108,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForThisExpression(thisExpr: BabelNodeInfo): Ast = {
     val dynamicTypeOption = typeHintForThisExpression(Option(thisExpr)).headOption
     val thisNode = identifierNode(thisExpr, thisExpr.code, thisExpr.code, Defines.Any, dynamicTypeOption.toList)
-    scope.addVariableReference(thisExpr.code, thisNode)
+    scope.addVariableReference(thisExpr.code, thisNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
     Ast(thisNode)
   }
 
@@ -122,7 +123,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val localTmpAllocNode = localNode(newExpr, tmpAllocName, tmpAllocName, Defines.Any).order(0)
     val tmpAllocNode1     = identifierNode(newExpr, tmpAllocName)
     diffGraph.addEdge(localAstParentStack.head, localTmpAllocNode, EdgeTypes.AST)
-    scope.addVariableReference(tmpAllocName, tmpAllocNode1)
+    scope.addVariableReference(tmpAllocName, tmpAllocNode1, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
     val allocCallNode = callNode(newExpr, ".alloc", Operators.alloc, DispatchTypes.STATIC_DISPATCH)
     val assignmentTmpAllocCallNode =
@@ -355,7 +356,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       val localTmpNode = localNode(arrExpr, tmpName, tmpName, Defines.Any).order(0)
       val tmpArrayNode = identifierNode(arrExpr, tmpName)
       diffGraph.addEdge(localAstParentStack.head, localTmpNode, EdgeTypes.AST)
-      scope.addVariableReference(tmpName, tmpArrayNode)
+      scope.addVariableReference(tmpName, tmpArrayNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
       val arrayCallNode =
         callNode(arrExpr, s"${EcmaBuiltins.arrayFactory}()", EcmaBuiltins.arrayFactory, DispatchTypes.STATIC_DISPATCH)

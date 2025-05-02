@@ -11,6 +11,7 @@ import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 
 import scala.annotation.unused
 
@@ -90,7 +91,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForDeclReferenceExprSyntax(node: DeclReferenceExprSyntax): Ast = {
     val name      = code(node)
     val identNode = identifierNode(node, name)
-    scope.addVariableReference(name, identNode)
+    scope.addVariableReference(name, identNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
     Ast(identNode)
   }
 
@@ -104,7 +105,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForDiscardAssignmentExprSyntax(node: DiscardAssignmentExprSyntax): Ast = {
     val name   = generateUnusedVariableName(usedVariableNames, "wildcard")
     val idNode = identifierNode(node, name)
-    scope.addVariableReference(name, idNode)
+    scope.addVariableReference(name, idNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
     Ast(idNode)
   }
 
@@ -178,22 +179,22 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
               // referencing implicit this
               val receiverAst = astForNodeWithFunctionReference(callee)
               val baseNode    = identifierNode(m, "this")
-              scope.addVariableReference("this", baseNode)
+              scope.addVariableReference("this", baseNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
               (receiverAst, baseNode, code(member))
             case Some(d: DeclReferenceExprSyntax) if code(d) == "this" || code(d) == "self" =>
               val receiverAst = astForNodeWithFunctionReference(callee)
               val baseNode    = identifierNode(d, code(d))
-              scope.addVariableReference(code(d), baseNode)
+              scope.addVariableReference(code(d), baseNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
               (receiverAst, baseNode, code(member))
             case Some(d: DeclReferenceExprSyntax) =>
               val receiverAst = astForNodeWithFunctionReference(callee)
               val baseNode    = identifierNode(d, code(d))
-              scope.addVariableReference(code(d), baseNode)
+              scope.addVariableReference(code(d), baseNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
               (receiverAst, baseNode, code(member))
             case Some(otherBase) =>
               val tmpVarName  = generateUnusedVariableName(usedVariableNames, "_tmp")
               val baseTmpNode = identifierNode(otherBase, tmpVarName)
-              scope.addVariableReference(tmpVarName, baseTmpNode)
+              scope.addVariableReference(tmpVarName, baseTmpNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
               val baseAst   = astForNodeWithFunctionReference(otherBase)
               val codeField = s"(${codeOf(baseTmpNode)} = ${codeOf(baseAst.nodes.head)})"
               val tmpAssignmentAst =
@@ -207,7 +208,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         case _ =>
           val receiverAst = astForNodeWithFunctionReference(callee)
           val thisNode    = identifierNode(callee, "this").dynamicTypeHintFullName(typeHintForThisExpression())
-          scope.addVariableReference(thisNode.name, thisNode)
+          scope.addVariableReference(thisNode.name, thisNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
           (receiverAst, thisNode, calleeCode)
       }
       handleCallNodeArgs(node, receiverAst, baseNode, callName)
@@ -281,11 +282,11 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case None =>
         // referencing implicit this
         val baseNode = identifierNode(node, "this")
-        scope.addVariableReference("this", baseNode)
+        scope.addVariableReference("this", baseNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
         Ast(baseNode)
       case Some(d: DeclReferenceExprSyntax) if code(d) == "this" || code(d) == "self" =>
         val baseNode = identifierNode(d, code(d))
-        scope.addVariableReference(code(d), baseNode)
+        scope.addVariableReference(code(d), baseNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
         Ast(baseNode)
       case Some(otherBase) =>
         astForNodeWithFunctionReference(otherBase)

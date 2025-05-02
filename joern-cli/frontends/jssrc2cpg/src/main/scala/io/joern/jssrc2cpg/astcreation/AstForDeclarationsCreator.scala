@@ -1,15 +1,16 @@
 package io.joern.jssrc2cpg.astcreation
 
-import io.joern.jssrc2cpg.datastructures.{BlockScope, MethodScope, ScopeType}
 import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.AstNodeBuilder.dependencyNode
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.datastructures.Stack.*
+import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewImport}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.Operators
 import ujson.Value
 
@@ -232,7 +233,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     from match {
       case Some(value) =>
         val identNode = identifierNode(declaration, value)
-        scope.addVariableReference(name, identNode)
+        scope.addVariableReference(name, identNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
         val fieldName = stripQuotes(name)
         val call = createFieldAccessCallAst(
           identNode,
@@ -249,7 +250,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         )
       case None =>
         val identNode = identifierNode(declaration, name)
-        scope.addVariableReference(name, identNode)
+        scope.addVariableReference(name, identNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
         createAssignmentCallAst(
           exportCallAst,
           Ast(identNode),
@@ -278,8 +279,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       val strippedCode = cleanImportName(fromName).stripPrefix("_")
       val id           = identifierNode(declaration, s"_$strippedCode")
       val nLocalNode   = localNode(declaration, id.code, id.code, Defines.Any).order(0)
-      scope.addVariable(id.code, nLocalNode, BlockScope)
-      scope.addVariableReference(id.code, id)
+      scope.addVariable(id.code, nLocalNode, Defines.Any, VariableScopeManager.ScopeType.BlockScope)
+      scope.addVariableReference(id.code, id, Defines.Any, EvaluationStrategies.BY_REFERENCE)
       diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
 
       val sourceCallArgNode = literalNode(declaration, s"\"${fromName.stripPrefix("_")}\"", None)
@@ -305,11 +306,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
   protected def astForVariableDeclaration(declaration: BabelNodeInfo): Ast = {
     val kind = declaration.json("kind").str
-    val scopeType = if (kind == "let") {
-      BlockScope
-    } else {
-      MethodScope
-    }
+    val scopeType = if (kind == "let") { VariableScopeManager.ScopeType.BlockScope }
+    else { VariableScopeManager.ScopeType.MethodScope }
     val declAsts = declaration.json("declarations").arr.toList.map(astForVariableDeclarator(_, scopeType, kind))
     declAsts match {
       case Nil         => Ast()
@@ -385,8 +383,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val destName   = alias.getOrElse(name)
     val destNode   = identifierNode(nodeInfo, destName)
     val nLocalNode = localNode(nodeInfo, destName, destName, Defines.Any).order(0)
-    scope.addVariable(destName, nLocalNode, BlockScope)
-    scope.addVariableReference(destName, destNode)
+    scope.addVariable(destName, nLocalNode, Defines.Any, VariableScopeManager.ScopeType.BlockScope)
+    scope.addVariableReference(destName, destNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
     diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
 
     val destAst           = Ast(destNode)
@@ -396,7 +394,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val receiverNode = identifierNode(nodeInfo, RequireKeyword)
     val thisNode     = identifierNode(nodeInfo, "this").dynamicTypeHintFullName(typeHintForThisExpression())
-    scope.addVariableReference(thisNode.name, thisNode)
+    scope.addVariableReference(thisNode.name, thisNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
     val cAst = callAst(
       sourceCall,
       List(Ast(sourceCallArgNode)),
@@ -474,8 +472,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val nLocalNode = localNode(pattern, localTmpName, localTmpName, Defines.Any).order(0)
     val tmpNode    = identifierNode(pattern, localTmpName)
     diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
-    scope.addVariable(localTmpName, nLocalNode, BlockScope)
-    scope.addVariableReference(localTmpName, tmpNode)
+    scope.addVariable(localTmpName, nLocalNode, Defines.Any, VariableScopeManager.ScopeType.BlockScope)
+    scope.addVariableReference(localTmpName, tmpNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
     val rhsAssignmentAst = paramName.map(createParamAst(pattern, _, sourceAst)).getOrElse(sourceAst)
     val assignmentTmpCallAst =
@@ -577,7 +575,11 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  private def astForVariableDeclarator(declarator: Value, scopeType: ScopeType, kind: String): Ast = {
+  private def astForVariableDeclarator(
+    declarator: Value,
+    scopeType: VariableScopeManager.ScopeType,
+    kind: String
+  ): Ast = {
     val idNodeInfo     = createBabelNodeInfo(declarator("id"))
     val declNodeInfo   = createBabelNodeInfo(declarator)
     val initNodeInfo   = Try(createBabelNodeInfo(declarator("init"))).toOption
@@ -590,7 +592,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       case _          => idNodeInfo.code
     }
     val nLocalNode = localNode(declNodeInfo, idName, idName, typeFullName).order(0).possibleTypes(Seq(tpe))
-    scope.addVariable(idName, nLocalNode, scopeType)
+    scope.addVariable(idName, nLocalNode, typeFullName, scopeType)
     diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
 
     if (initNodeInfo.isEmpty) {
@@ -637,7 +639,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val nLocalNode = localNode(element, element.code, element.code, Defines.Any).order(0)
     diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
-    scope.addVariable(element.code, nLocalNode, MethodScope)
+    scope.addVariable(element.code, nLocalNode, Defines.Any, VariableScopeManager.ScopeType.MethodScope)
 
     val fieldAccessTmpNode = identifierNode(element, localTmpName)
     val keyName            = stripQuotes(key.code)
@@ -657,7 +659,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val nLocalNode = localNode(element, element.code, element.code, Defines.Any).order(0)
     diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
-    scope.addVariable(element.code, nLocalNode, MethodScope)
+    scope.addVariable(element.code, nLocalNode, Defines.Any, VariableScopeManager.ScopeType.MethodScope)
 
     val fieldAccessTmpNode = identifierNode(element, localTmpName)
     val keyNode            = literalNode(element, index.toString, Option(Defines.Number))
@@ -756,7 +758,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   private def createParamAst(pattern: BabelNodeInfo, keyName: String, sourceAst: Ast): Ast = {
     val testAst = {
       val lhsNode = identifierNode(pattern, keyName)
-      scope.addVariableReference(keyName, lhsNode)
+      scope.addVariableReference(keyName, lhsNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
       val rhsNode =
         callNode(pattern, "void 0", "<operator>.void", DispatchTypes.STATIC_DISPATCH)
       createEqualsCallAst(Ast(lhsNode), Ast(rhsNode), pattern.lineNumber, pattern.columnNumber)
@@ -764,7 +766,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val falseNode = {
       val initNode = identifierNode(pattern, keyName)
-      scope.addVariableReference(keyName, initNode)
+      scope.addVariableReference(keyName, initNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
       initNode
     }
     createTernaryCallAst(testAst, sourceAst, Ast(falseNode), pattern.lineNumber, pattern.columnNumber)

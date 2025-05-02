@@ -1,7 +1,6 @@
 package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.swiftsrc2cpg.Config
-import io.joern.swiftsrc2cpg.datastructures.Scope
 import io.joern.swiftsrc2cpg.parser.SwiftJsonParser.ParseResult
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.x2cpg.Ast
@@ -9,6 +8,7 @@ import io.joern.x2cpg.AstCreatorBase
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.datastructures.Stack.*
+import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
@@ -41,7 +41,7 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
 
-  protected val scope = new Scope()
+  protected val scope = new VariableScopeManager()
 
   protected val methodAstParentStack          = new Stack[NewNode]()
   protected val typeRefIdStack                = new Stack[NewTypeRef]
@@ -70,7 +70,7 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
       astInFakeMethod(namespaceBlock.fullName, parserResult.filename, parserResult.ast)
     val ast = Ast(fileNode).withChild(Ast(namespaceBlock).withChild(astForFakeMethod))
     Ast.storeInDiffGraph(ast, diffGraph)
-    createVariableReferenceLinks()
+    scope.createVariableReferenceLinks(diffGraph, parserResult.filename)
     diffGraph
   }
 
