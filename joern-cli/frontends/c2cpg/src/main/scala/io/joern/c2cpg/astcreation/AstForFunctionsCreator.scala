@@ -146,7 +146,12 @@ trait AstForFunctionsCreator { this: AstCreator =>
         thisParam.evaluationStrategy,
         thisParam.typeFullName
       )
-      scope.addVariable(thisParam.name, parameterNode, thisParam.typeFullName, VariableScopeManager.ScopeType.MethodScope)
+      scope.addVariable(
+        thisParam.name,
+        parameterNode,
+        thisParam.typeFullName,
+        VariableScopeManager.ScopeType.MethodScope
+      )
       parameterNode
     }
     val parameterNodes = implicitThisParam ++ withIndex(parameters(funcDef)) { (p, i) =>
@@ -345,7 +350,12 @@ trait AstForFunctionsCreator { this: AstCreator =>
         parameterInfo.evaluationStrategy,
         parameterInfo.typeFullName
       )
-    scope.addVariable(parameterInfo.name, parameterNode, parameterInfo.typeFullName, VariableScopeManager.ScopeType.MethodScope)
+    scope.addVariable(
+      parameterInfo.name,
+      parameterNode,
+      parameterInfo.typeFullName,
+      VariableScopeManager.ScopeType.MethodScope
+    )
     parameterNode
   }
 
