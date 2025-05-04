@@ -5,6 +5,10 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 class CVariableScopeManager extends VariableScopeManager {
 
+  /** Overrides the parent class implementation to handle C-specific scope path computation. Since for c2cpg we do not
+    * handle include directives (like we might for other frontends), we need to strip the global namespace prefix from
+    * scope paths to ensure correct fullname resolution across translation units.
+    */
   override def computeScopePath: String = {
     getEnclosingMethodScopeElement(stack) match {
       case Some(methodScope) if methodScope.methodName.startsWith(io.joern.x2cpg.Defines.ClosurePrefix) =>
