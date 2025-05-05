@@ -6,6 +6,7 @@ import io.joern.x2cpg.Ast
 import io.joern.x2cpg.AstCreatorBase
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Stack.*
+import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
@@ -41,7 +42,7 @@ class AstCreator(
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
 
-  protected val scope: C2CpgScope = new C2CpgScope()
+  protected val scope: VariableScopeManager = new CVariableScopeManager()
 
   // TypeDecls with their bindings (with their refs) for lambdas and methods are not put in the AST
   // where the respective nodes are defined. Instead, we put them under the parent TYPE_DECL in which they are defined.
@@ -55,7 +56,7 @@ class AstCreator(
     fileContent.foreach(fileNode.content(_))
     val ast = Ast(fileNode).withChild(astForTranslationUnit(cdtAst))
     Ast.storeInDiffGraph(ast, diffGraph)
-    createVariableReferenceLinks()
+    scope.createVariableReferenceLinks(diffGraph, filename)
     diffGraph
   }
 

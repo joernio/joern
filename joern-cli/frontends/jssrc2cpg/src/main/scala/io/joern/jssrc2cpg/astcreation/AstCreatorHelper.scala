@@ -1,20 +1,20 @@
 package io.joern.jssrc2cpg.astcreation
 
-import io.joern.jssrc2cpg.datastructures.*
 import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
-import io.joern.x2cpg.AstNodeBuilder.closureBindingNode
+import io.joern.x2cpg.Ast
+import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.joern.x2cpg.utils.IntervalKeyPool
-import io.joern.x2cpg.{Ast, AstNodeBuilder, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies}
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.File.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import ujson.Value
 
-import scala.collection.{mutable, SortedMap}
-import scala.util.{Success, Try}
+import scala.collection.SortedMap
+import scala.collection.mutable
+import scala.util.Try
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -136,12 +136,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def safeBool(node: Value, key: String): Option[Boolean] =
     if (hasKey(node, key)) Try(node(key).bool).toOption else None
 
-  protected def safeObj(node: Value, key: String): Option[upickle.core.LinkedHashMap[String, Value]] = Try(
-    node(key).obj
-  ) match {
-    case Success(value) if value.nonEmpty => Option(value)
-    case _                                => None
-  }
+  protected def safeObj(node: Value, key: String): Option[upickle.core.LinkedHashMap[String, Value]] =
+    Try(node(key).obj).toOption.filter(_.nonEmpty)
 
   protected def pos(node: Value): Option[Int] = Try(node("start").num.toInt).toOption
 
@@ -178,7 +174,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case Some(nameAndFullName) => nameAndFullName
       case None =>
         val intendedName   = calcMethodName(func)
-        val fullNamePrefix = s"${parserResult.filename}:${computeScopePath(scope.getScopeHead)}:"
+        val fullNamePrefix = s"${parserResult.filename}:${scope.computeScopePath}:"
         var name           = intendedName
         var fullName       = ""
         var isUnique       = false
@@ -238,17 +234,10 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     preCalculatedName: Option[String] = None
   ): (String, String) = {
     val name           = preCalculatedName.getOrElse(calcTypeName(classNode))
-    val fullNamePrefix = s"${parserResult.filename}:${computeScopePath(scope.getScopeHead)}:"
+    val fullNamePrefix = s"${parserResult.filename}:${scope.computeScopePath}:"
     val fullName       = s"$fullNamePrefix$name"
     (name, fullName)
   }
-
-  private def computeScopePath(stack: Option[ScopeElement]): String =
-    new ScopeElementIterator(stack)
-      .to(Seq)
-      .reverse
-      .collect { case methodScopeElement: MethodScopeElement => methodScopeElement.name }
-      .mkString(":")
 
   /** In JS it is possible to create anonymous classes. We have to handle this here.
     */
@@ -268,84 +257,5 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def hasKey(node: Value, key: String): Boolean = Try(node(key)).isSuccess
 
   protected def nextAnonClassName(): String = s"<anon-class>${anonClassKeyPool.next}"
-
-  protected def createVariableReferenceLinks(): Unit = {
-    val resolvedReferenceIt = scope.resolve(createMethodLocalForUnresolvedReference)
-    val capturedLocals      = mutable.HashMap.empty[String, NewNode]
-
-    resolvedReferenceIt.foreach { case ResolvedReference(variableNodeId, origin) =>
-      var currentScope           = origin.stack
-      var currentReference       = origin.referenceNode
-      var nextReference: NewNode = null
-
-      var done = false
-      while (!done) {
-        val localOrCapturedLocalNodeOption =
-          if (currentScope.get.nameToVariableNode.contains(origin.variableName)) {
-            done = true
-            Option(variableNodeId)
-          } else {
-            currentScope.flatMap {
-              case methodScope: MethodScopeElement
-                  if methodScope.scopeNode.isInstanceOf[NewTypeDecl] || methodScope.scopeNode
-                    .isInstanceOf[NewNamespaceBlock] =>
-                currentScope = Option(Scope.getEnclosingMethodScopeElement(currentScope))
-                None
-              case methodScope: MethodScopeElement =>
-                // We have reached a MethodScope and still did not find a local variable to link to.
-                // For all non local references the CPG format does not allow us to link
-                // directly. Instead we need to create a fake local variable in method
-                // scope and link to this local which itself carries the information
-                // that it is a captured variable. This needs to be done for each
-                // method scope until we reach the originating scope.
-                val closureBindingIdProperty = s"${methodScope.methodFullName}:${origin.variableName}"
-                capturedLocals.updateWith(closureBindingIdProperty) {
-                  case None =>
-                    val methodScopeNode = methodScope.scopeNode
-                    val localNode_ = AstNodeBuilder
-                      .localNodeWithExplicitPositionInfo(
-                        origin.variableName,
-                        origin.variableName,
-                        Defines.Any,
-                        Option(closureBindingIdProperty)
-                      )
-                      .order(0)
-                    diffGraph.addEdge(methodScopeNode, localNode_, EdgeTypes.AST)
-                    val closureBinding = closureBindingNode(
-                      closureBindingIdProperty,
-                      origin.variableName,
-                      EvaluationStrategies.BY_REFERENCE
-                    )
-                    methodScope.capturingRefId.foreach(ref => diffGraph.addEdge(ref, closureBinding, EdgeTypes.CAPTURE))
-                    nextReference = closureBinding
-                    Option(localNode_)
-                  case someLocalNode =>
-                    // When there is already a LOCAL representing the capturing, we do not
-                    // need to process the surrounding scope element as this has already
-                    // been processed.
-                    done = true
-                    someLocalNode
-                }
-              case _: BlockScopeElement => None
-            }
-          }
-
-        localOrCapturedLocalNodeOption.foreach { localOrCapturedLocalNode =>
-          diffGraph.addEdge(currentReference, localOrCapturedLocalNode, EdgeTypes.REF)
-          currentReference = nextReference
-        }
-        currentScope = currentScope.get.surroundingScope
-      }
-    }
-  }
-
-  private def createMethodLocalForUnresolvedReference(
-    methodScopeNodeId: NewNode,
-    variableName: String
-  ): (NewNode, ScopeType) = {
-    val local = AstNodeBuilder.localNodeWithExplicitPositionInfo(variableName, variableName, Defines.Any).order(0)
-    diffGraph.addEdge(methodScopeNodeId, local, EdgeTypes.AST)
-    (local, MethodScope)
-  }
 
 }

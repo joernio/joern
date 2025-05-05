@@ -1,12 +1,11 @@
 package io.joern.swiftsrc2cpg.astcreation
 
-import io.joern.swiftsrc2cpg.datastructures.BlockScope
-import io.joern.swiftsrc2cpg.datastructures.MethodScope
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.AstNodeBuilder.{bindingNode, dependencyNode}
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Stack.*
+import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.NewModifier
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
@@ -18,6 +17,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes.File.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
+import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 
 import scala.annotation.unused
 
@@ -398,12 +398,11 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForEnumCaseDeclSyntax(node: EnumCaseDeclSyntax): Ast = {
     val attributeAsts = node.attributes.children.map(astForNode)
     val modifiers     = modifiersForDecl(node)
-    val scopeType     = BlockScope
 
     val bindingAsts = node.elements.children.map { binding =>
       val name       = code(binding.name)
       val nLocalNode = localNode(binding, name, name, Defines.Any).order(0)
-      scope.addVariable(name, nLocalNode, scopeType)
+      scope.addVariable(name, nLocalNode, Defines.Any, VariableScopeManager.ScopeType.BlockScope)
       diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
 
       val initAsts = binding.rawValue.map(astForNode).toList
@@ -653,8 +652,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       val idNode  = identifierNode(node, methodName)
       val idLocal = localNode(node, methodName, methodName, methodFullNameAndSignature).order(0)
       diffGraph.addEdge(localAstParentStack.head, idLocal, EdgeTypes.AST)
-      scope.addVariable(methodName, idLocal, BlockScope)
-      scope.addVariableReference(methodName, idNode)
+      scope.addVariable(methodName, idLocal, Defines.Any, VariableScopeManager.ScopeType.BlockScope)
+      scope.addVariableReference(methodName, idNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
       val assignmentCode = s"func $methodName = ${code(node)}"
       val assignment     = createAssignmentCallAst(idNode, methodRefNode_.get, assignmentCode, line(node), column(node))
       assignment
@@ -902,11 +901,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val attributeAsts = node.attributes.children.map(astForNode)
     val modifiers     = node.modifiers.children.flatMap(c => astForNode(c).root.map(_.asInstanceOf[NewModifier]))
     val kind          = code(node.bindingSpecifier)
-    val scopeType = if (kind == "let") {
-      BlockScope
-    } else {
-      MethodScope
-    }
+    val scopeType = if (kind == "let") { VariableScopeManager.ScopeType.BlockScope }
+    else { VariableScopeManager.ScopeType.MethodScope }
 
     val bindingAsts = node.bindings.children.map { binding =>
       val names = binding.pattern match {
@@ -932,7 +928,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         val typeFullName = binding.typeAnnotation.fold(Defines.Any)(t => code(t.`type`))
         registerType(typeFullName)
         val nLocalNode = localNode(binding, name, name, typeFullName).order(0)
-        scope.addVariable(name, nLocalNode, scopeType)
+        scope.addVariable(name, nLocalNode, typeFullName, scopeType)
         diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
 
         val initAsts = binding.initializer.map(astForNode) ++ binding.accessorBlock.map(astForNode)
@@ -940,7 +936,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           Ast()
         } else {
           val patternIdentifier = identifierNode(binding.pattern, name).typeFullName(typeFullName)
-          scope.addVariableReference(name, patternIdentifier)
+          scope.addVariableReference(name, patternIdentifier, typeFullName, EvaluationStrategies.BY_REFERENCE)
           val patternAst = Ast(patternIdentifier)
           modifiers.foreach { mod =>
             diffGraph.addEdge(patternIdentifier, mod, EdgeTypes.AST)

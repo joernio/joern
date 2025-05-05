@@ -3,6 +3,7 @@ package io.joern.c2cpg.astcreation
 import io.joern.c2cpg.passes.FunctionDeclNodePass
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack.*
+import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -91,7 +92,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
         val tpe        = safeGetType(variable.getType)
         val codeString = code(funcDecl.getParent)
         val node       = localNode(funcDecl, name, codeString, registerType(tpe))
-        scope.addVariable(name, node, tpe, C2CpgScope.ScopeType.BlockScope)
+        scope.addVariable(name, node, tpe, VariableScopeManager.ScopeType.BlockScope)
         Ast(node)
       case Some(field: IField) =>
         // TODO create a member for the field
@@ -145,7 +146,12 @@ trait AstForFunctionsCreator { this: AstCreator =>
         thisParam.evaluationStrategy,
         thisParam.typeFullName
       )
-      scope.addVariable(thisParam.name, parameterNode, thisParam.typeFullName, C2CpgScope.ScopeType.MethodScope)
+      scope.addVariable(
+        thisParam.name,
+        parameterNode,
+        thisParam.typeFullName,
+        VariableScopeManager.ScopeType.MethodScope
+      )
       parameterNode
     }
     val parameterNodes = implicitThisParam ++ withIndex(parameters(funcDef)) { (p, i) =>
@@ -344,7 +350,12 @@ trait AstForFunctionsCreator { this: AstCreator =>
         parameterInfo.evaluationStrategy,
         parameterInfo.typeFullName
       )
-    scope.addVariable(parameterInfo.name, parameterNode, parameterInfo.typeFullName, C2CpgScope.ScopeType.MethodScope)
+    scope.addVariable(
+      parameterInfo.name,
+      parameterNode,
+      parameterInfo.typeFullName,
+      VariableScopeManager.ScopeType.MethodScope
+    )
     parameterNode
   }
 

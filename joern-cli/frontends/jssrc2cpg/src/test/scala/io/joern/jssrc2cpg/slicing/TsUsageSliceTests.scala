@@ -107,7 +107,7 @@ class TsUsageSliceTests extends DataFlowCodeToCpgSuite {
     "extract 'loader' object slice from the main program" in {
       val slice = programSlice.objectSlices.find(x => x.fullName == "main.ts::program").flatMap(_.slices.headOption).get
       slice.definedBy shouldBe Option(CallDef("new Loader", "Loader", Option("Loader"), Option(24), Option(21)))
-      slice.targetObj shouldBe LocalDef("loader", "loader:Loader")
+      slice.targetObj shouldBe LocalDef("loader", "loader:Loader", Option(24), Option(4))
 
       val inv1 = slice.invokedCalls.find(_.callName == "Loader").get
 

@@ -1,11 +1,11 @@
 package io.joern.jssrc2cpg.astcreation
 
-import io.joern.jssrc2cpg.datastructures.{BlockScope, MethodScope}
 import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
+import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier as _, *}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
 import ujson.Value
@@ -86,7 +86,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
                 isVariadic = false,
                 EvaluationStrategies.BY_VALUE
               )
-              scope.addVariable(paramName, param, MethodScope)
+              scope.addVariable(paramName, param, Defines.Any, VariableScopeManager.ScopeType.MethodScope)
 
               val rhsAst = astForNodeWithFunctionReference(rhsElement)
               additionalBlockStatements.addOne(
@@ -127,10 +127,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
                     .order(0)
                     .possibleTypes(possibleTypes)
                   diffGraph.addEdge(localAstParentStack.head, localTmpNode, EdgeTypes.AST)
-                  scope.addVariable(elemName, localTmpNode, MethodScope)
+                  scope.addVariable(elemName, localTmpNode, Defines.Any, VariableScopeManager.ScopeType.MethodScope)
 
                   val paramNode = identifierNode(elementNodeInfo, paramName)
-                  scope.addVariableReference(paramName, paramNode)
+                  scope.addVariableReference(paramName, paramNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
                   val keyNode = fieldIdentifierNode(elementNodeInfo, elemName, elemName)
                   val accessAst = createFieldAccessCallAst(
@@ -179,7 +179,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
             EvaluationStrategies.BY_VALUE,
             typeFullName
           ).possibleTypes(possibleTypes)
-          scope.addVariable(paramName, param, MethodScope)
+          scope.addVariable(paramName, param, typeFullName, VariableScopeManager.ScopeType.MethodScope)
 
           additionalBlockStatements.addAll(nodeInfo.json("properties").arr.toList.map { element =>
             val elementNodeInfo = createBabelNodeInfo(element)
@@ -196,10 +196,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
                 val localTmpNode =
                   localNode(elementNodeInfo, elemName, elemName, typeFullName).order(0).possibleTypes(possibleTypes)
                 diffGraph.addEdge(localAstParentStack.head, localTmpNode, EdgeTypes.AST)
-                scope.addVariable(elemName, localTmpNode, MethodScope)
+                scope.addVariable(elemName, localTmpNode, typeFullName, VariableScopeManager.ScopeType.MethodScope)
 
                 val paramNode = identifierNode(elementNodeInfo, paramName)
-                scope.addVariableReference(paramName, paramNode)
+                scope.addVariableReference(paramName, paramNode, typeFullName, EvaluationStrategies.BY_REFERENCE)
 
                 val keyNode = fieldIdentifierNode(elementNodeInfo, elemName, elemName)
                 val accessAst =
@@ -246,7 +246,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           val node =
             parameterInNode(nodeInfo, name, nodeInfo.code, index, false, EvaluationStrategies.BY_VALUE, typeFullName)
               .possibleTypes(Seq(possibleType))
-          scope.addVariable(name, node, MethodScope)
+          scope.addVariable(name, node, typeFullName, VariableScopeManager.ScopeType.MethodScope)
           node
         case TSParameterProperty =>
           val unpackedParam = createBabelNodeInfo(nodeInfo.json("parameter"))
@@ -262,7 +262,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           val node =
             parameterInNode(nodeInfo, name, nodeInfo.code, index, false, EvaluationStrategies.BY_VALUE, typeFullName)
               .possibleTypes(possibleTypes)
-          scope.addVariable(name, node, MethodScope)
+          scope.addVariable(name, node, typeFullName, VariableScopeManager.ScopeType.MethodScope)
           node
         case _ =>
           val tpe           = typeFor(nodeInfo)
@@ -278,7 +278,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
               EvaluationStrategies.BY_VALUE,
               typeFullName
             ).possibleTypes(possibleTypes)
-          scope.addVariable(nodeInfo.code, node, MethodScope)
+          scope.addVariable(nodeInfo.code, node, typeFullName, VariableScopeManager.ScopeType.MethodScope)
           node
       }
       val decoratorAsts = astsForDecorators(nodeInfo)
@@ -348,7 +348,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val thisNode =
       parameterInNode(func, "this", "this", 0, false, EvaluationStrategies.BY_VALUE)
         .dynamicTypeHintFullName(typeHintForThisExpression())
-    scope.addVariable("this", thisNode, MethodScope)
+    scope.addVariable("this", thisNode, Defines.Any, VariableScopeManager.ScopeType.MethodScope)
 
     val paramNodes = if (hasKey(func.json, "parameters")) {
       handleParameters(func.json("parameters").arr.toSeq, mutable.ArrayBuffer.empty[Ast], createLocals = false)
@@ -407,8 +407,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       val idNode  = identifierNode(func, methodName)
       val idLocal = localNode(func, methodName, methodName, methodFullName).order(0)
       diffGraph.addEdge(localAstParentStack.head, idLocal, EdgeTypes.AST)
-      scope.addVariable(methodName, idLocal, BlockScope)
-      scope.addVariableReference(methodName, idNode)
+      scope.addVariable(methodName, idLocal, Defines.Any, VariableScopeManager.ScopeType.BlockScope)
+      scope.addVariableReference(methodName, idNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
       val code       = s"function $methodName = ${func.code}"
       val assignment = createAssignmentCallAst(idNode, methodRefNode_.get, code, func.lineNumber, func.columnNumber)
       assignment
@@ -439,7 +439,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val thisNode = parameterInNode(func, "this", "this", 0, false, EvaluationStrategies.BY_VALUE)
       .dynamicTypeHintFullName(typeHintForThisExpression())
-    scope.addVariable("this", thisNode, MethodScope)
+    scope.addVariable("this", thisNode, Defines.Any, VariableScopeManager.ScopeType.MethodScope)
 
     val paramNodes = handleParameters(func.json("params").arr.toSeq, additionalBlockStatements)
 

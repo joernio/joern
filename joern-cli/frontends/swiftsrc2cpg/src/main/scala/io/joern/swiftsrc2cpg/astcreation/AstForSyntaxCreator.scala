@@ -1,11 +1,10 @@
 package io.joern.swiftsrc2cpg.astcreation
 
-import io.joern.swiftsrc2cpg.datastructures.BlockScope
-import io.joern.swiftsrc2cpg.datastructures.MethodScope
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.nodes.NewModifier
@@ -40,7 +39,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
         false,
         EvaluationStrategies.BY_VALUE
       )
-    scope.addVariable(name, parameterNode, MethodScope)
+    scope.addVariable(name, parameterNode, Defines.Any, VariableScopeManager.ScopeType.MethodScope)
     Ast(parameterNode)
   }
 
@@ -111,7 +110,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
         EvaluationStrategies.BY_VALUE,
         Option(tpe)
       )
-    scope.addVariable(name, parameterNode, MethodScope)
+    scope.addVariable(name, parameterNode, tpe, VariableScopeManager.ScopeType.MethodScope)
     Ast(parameterNode)
   }
 
@@ -129,7 +128,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
         EvaluationStrategies.BY_VALUE,
         Option(tpe)
       )
-    scope.addVariable(name, parameterNode, MethodScope)
+    scope.addVariable(name, parameterNode, Defines.Any, VariableScopeManager.ScopeType.MethodScope)
     Ast(parameterNode)
   }
 
@@ -229,7 +228,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
         EvaluationStrategies.BY_VALUE,
         Option(tpe)
       )
-    scope.addVariable(name, parameterNode, MethodScope)
+    scope.addVariable(name, parameterNode, tpe, VariableScopeManager.ScopeType.MethodScope)
     Ast(parameterNode)
   }
 
@@ -297,14 +296,11 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     typeFullName: String
   ): Unit = {
     val kind = code(node.bindingSpecifier)
-    val scopeType = if (kind == "let") {
-      BlockScope
-    } else {
-      MethodScope
-    }
+    val scopeType = if (kind == "let") { VariableScopeManager.ScopeType.BlockScope }
+    else { VariableScopeManager.ScopeType.MethodScope }
     val nLocalNode = localNode(node, name, name, typeFullName).order(0)
     registerType(typeFullName)
-    scope.addVariable(name, nLocalNode, scopeType)
+    scope.addVariable(name, nLocalNode, typeFullName, scopeType)
     diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
   }
 
