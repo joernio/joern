@@ -75,9 +75,9 @@ class DirectiveTests extends AstSwiftSrc2CpgSuite {
         |.oneMore(x: 1)
         |""".stripMargin).withConfig(Config(Set("CONFIG1")))
       cpg.call.code.l shouldBe List(
-        "(_tmp_0 = foo.bar()).oneMore(x: 1)",
-        "(_tmp_0 = foo.bar()).oneMore",
-        "(_tmp_0 = foo.bar())",
+        "(<tmp>0 = foo.bar()).oneMore(x: 1)",
+        "(<tmp>0 = foo.bar()).oneMore",
+        "(<tmp>0 = foo.bar())",
         "foo.bar()",
         "foo.bar"
       )

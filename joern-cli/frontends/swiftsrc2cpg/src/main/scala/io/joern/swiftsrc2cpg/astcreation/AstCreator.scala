@@ -43,13 +43,11 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
 
   protected val scope = new VariableScopeManager()
 
-  protected val methodAstParentStack          = new Stack[NewNode]()
-  protected val typeRefIdStack                = new Stack[NewTypeRef]
-  protected val dynamicInstanceTypeStack      = new Stack[String]
-  protected val localAstParentStack           = new Stack[NewBlock]()
-  protected val functionNodeToNameAndFullName = mutable.HashMap.empty[SwiftNode, (String, String)]
-  protected val usedVariableNames             = mutable.HashMap.empty[String, Int]
-  protected val seenAliasTypes                = mutable.HashSet.empty[NewTypeDecl]
+  protected val methodAstParentStack     = new Stack[NewNode]()
+  protected val typeRefIdStack           = new Stack[NewTypeRef]
+  protected val dynamicInstanceTypeStack = new Stack[String]
+  protected val localAstParentStack      = new Stack[NewBlock]()
+  protected val seenAliasTypes           = mutable.HashSet.empty[NewTypeDecl]
 
   protected lazy val definedSymbols: Map[String, String] = {
     config.defines.map {

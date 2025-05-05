@@ -30,9 +30,7 @@ object AstCreatorHelper {
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  private val anonClassKeyPool = new IntervalKeyPool(first = 0, last = Long.MaxValue)
-
-  protected def nextAnonClassName(): String = s"<anon-class>${anonClassKeyPool.next}"
+  private val fileLocalNameKeyPool = new IntervalKeyPool(first = 0, last = Long.MaxValue)
 
   protected def notHandledYet(node: SwiftNode): Ast = {
     val text =
@@ -98,14 +96,30 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     global.usedTypes.putIfAbsent(typeFullName, true)
   }
 
-  protected def generateUnusedVariableName(
-    usedVariableNames: mutable.HashMap[String, Int],
-    variableName: String
-  ): String = {
-    val counter             = usedVariableNames.get(variableName).fold(0)(_ + 1)
-    val currentVariableName = s"${variableName}_$counter"
-    usedVariableNames.put(variableName, counter)
-    currentVariableName
+  protected def calcTypeNameAndFullName(name: String): (String, String) = {
+    val fullNamePrefix = s"${parserResult.filename}:${scope.computeScopePath}:"
+    val fullName       = s"$fullNamePrefix$name"
+    (name, fullName)
+  }
+
+  protected def fileLocalUniqueName(name: String, fullName: String, targetName: String = ""): (String, String) = {
+    if (name.isEmpty && (fullName.isEmpty || fullName.endsWith("."))) {
+      val newName = targetName match {
+        case ""    => s"<anonymous>${fileLocalNameKeyPool.next}"
+        case other => s"<$other>${fileLocalNameKeyPool.next}"
+      }
+      val resultingFullName = s"$fullName$newName"
+      (newName, resultingFullName)
+    } else {
+      (name, fullName)
+    }
+  }
+
+  protected def calcMethodNameAndFullName(func: SwiftNode): (String, String) = {
+    val name           = calcMethodName(func)
+    val fullNamePrefix = s"${parserResult.filename}:${scope.computeScopePath}:"
+    val fullName       = s"$fullNamePrefix$name"
+    (name, fullName)
   }
 
   private def calcMethodName(func: SwiftNode): String = func match {
@@ -114,23 +128,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     case d: DeinitializerDeclSyntax => code(d.deinitKeyword)
     case i: InitializerDeclSyntax   => code(i.initKeyword)
     case _                          => nextClosureName()
-  }
-
-  protected def calcTypeNameAndFullName(name: String): (String, String) = {
-    val fullNamePrefix = s"${parserResult.filename}:${scope.computeScopePath}:"
-    val fullName       = s"$fullNamePrefix$name"
-    (name, fullName)
-  }
-
-  protected def calcMethodNameAndFullName(func: SwiftNode): (String, String) = {
-    functionNodeToNameAndFullName.get(func) match {
-      case Some(nameAndFullName) => nameAndFullName
-      case None =>
-        val name           = calcMethodName(func)
-        val fullNamePrefix = s"${parserResult.filename}:${scope.computeScopePath}:"
-        val fullName       = s"$fullNamePrefix$name"
-        (name, fullName)
-    }
   }
 
 }
