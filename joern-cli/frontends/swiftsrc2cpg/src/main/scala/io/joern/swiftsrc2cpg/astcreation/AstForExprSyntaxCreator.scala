@@ -103,7 +103,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForDiscardAssignmentExprSyntax(node: DiscardAssignmentExprSyntax): Ast = {
-    val name   = fileLocalUniqueName("", "", "wildcard")._1
+    val name   = scopeLocalUniqueName("wildcard")
     val idNode = identifierNode(node, name)
     scope.addVariableReference(name, idNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
     Ast(idNode)
@@ -186,7 +186,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
               scope.addVariableReference(code(d), baseNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
               (receiverAst, baseNode, code(member))
             case Some(otherBase) =>
-              val tmpVarName  = fileLocalUniqueName("", "", "tmp")._1
+              val tmpVarName  = scopeLocalUniqueName("tmp")
               val baseTmpNode = identifierNode(otherBase, tmpVarName)
               scope.addVariableReference(tmpVarName, baseTmpNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
               val baseAst   = astForNodeWithFunctionReference(otherBase)

@@ -47,6 +47,7 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
   protected val typeRefIdStack           = new Stack[NewTypeRef]
   protected val dynamicInstanceTypeStack = new Stack[String]
   protected val localAstParentStack      = new Stack[NewBlock]()
+  protected val scopeLocalUniqueNames    = mutable.HashMap.empty[String, Int]
   protected val seenAliasTypes           = mutable.HashSet.empty[NewTypeDecl]
 
   protected lazy val definedSymbols: Map[String, String] = {

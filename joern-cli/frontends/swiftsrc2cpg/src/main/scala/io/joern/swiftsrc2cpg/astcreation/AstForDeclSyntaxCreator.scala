@@ -916,7 +916,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         case valueBinding: ValueBindingPatternSyntax =>
           Seq(code(valueBinding.pattern))
         case _: WildcardPatternSyntax =>
-          Seq(fileLocalUniqueName("", "", "wildcard")._1)
+          Seq(scopeLocalUniqueName("wildcard"))
       }
 
       names.map { name =>

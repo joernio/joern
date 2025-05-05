@@ -10,12 +10,9 @@ import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.InitializerDeclSyntax
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.SwiftNode
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
-import io.joern.x2cpg.utils.IntervalKeyPool
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.PropertyNames
-
-import scala.collection.mutable
 
 object AstCreatorHelper {
 
@@ -29,8 +26,6 @@ object AstCreatorHelper {
 }
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
-
-  private val fileLocalNameKeyPool = new IntervalKeyPool(first = 0, last = Long.MaxValue)
 
   protected def notHandledYet(node: SwiftNode): Ast = {
     val text =
@@ -96,23 +91,19 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     global.usedTypes.putIfAbsent(typeFullName, true)
   }
 
+  protected def scopeLocalUniqueName(targetName: String): String = {
+    val name = if (targetName.nonEmpty) { s"<$targetName>" }
+    else { "<anonymous>" }
+    val key = s"${scope.computeScopePath}:$name"
+    val idx = scopeLocalUniqueNames.getOrElseUpdate(key, 0)
+    scopeLocalUniqueNames.update(key, idx + 1)
+    s"$name$idx"
+  }
+
   protected def calcTypeNameAndFullName(name: String): (String, String) = {
     val fullNamePrefix = s"${parserResult.filename}:${scope.computeScopePath}:"
     val fullName       = s"$fullNamePrefix$name"
     (name, fullName)
-  }
-
-  protected def fileLocalUniqueName(name: String, fullName: String, targetName: String = ""): (String, String) = {
-    if (name.isEmpty && (fullName.isEmpty || fullName.endsWith("."))) {
-      val newName = targetName match {
-        case ""    => s"<anonymous>${fileLocalNameKeyPool.next}"
-        case other => s"<$other>${fileLocalNameKeyPool.next}"
-      }
-      val resultingFullName = s"$fullName$newName"
-      (newName, resultingFullName)
-    } else {
-      (name, fullName)
-    }
   }
 
   protected def calcMethodNameAndFullName(func: SwiftNode): (String, String) = {

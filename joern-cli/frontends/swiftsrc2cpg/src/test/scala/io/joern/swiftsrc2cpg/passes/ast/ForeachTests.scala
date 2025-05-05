@@ -69,8 +69,8 @@ class ForeachTests extends AstSwiftSrc2CpgSuite {
     val List(localIterator) = node.astChildren.isLocal.nameExact("<iterator>0").l
     localIterator.code shouldBe "<iterator>0"
 
-    val List(localResult) = node.astChildren.isLocal.nameExact("<result>1").l
-    localResult.code shouldBe "<result>1"
+    val List(localResult) = node.astChildren.isLocal.nameExact("<result>0").l
+    localResult.code shouldBe "<result>0"
 
     val List(localI) = node.astChildren.isLocal.nameExact("elem").l
     localI.code shouldBe "elem"
@@ -96,8 +96,8 @@ class ForeachTests extends AstSwiftSrc2CpgSuite {
     objectKeysCallArg.name shouldBe "elements"
     objectKeysCallArg.order shouldBe 1
 
-    val List(varResult) = node.astChildren.isIdentifier.nameExact("<result>1").l
-    varResult.code shouldBe "<result>1"
+    val List(varResult) = node.astChildren.isIdentifier.nameExact("<result>0").l
+    varResult.code shouldBe "<result>0"
 
     val List(varI) = node.astChildren.isIdentifier.nameExact("elem").l
     varI.code shouldBe "elem"
@@ -105,20 +105,20 @@ class ForeachTests extends AstSwiftSrc2CpgSuite {
     val List(loop) = node.astChildren.isControlStructure.l
     loop.controlStructureType shouldBe ControlStructureTypes.WHILE
 
-    val List(loopTestCall) = loop.astChildren.isCall.codeExact("!(<result>1 = <iterator>0.next()).done").l
+    val List(loopTestCall) = loop.astChildren.isCall.codeExact("!(<result>0 = <iterator>0.next()).done").l
     loopTestCall.name shouldBe Operators.not
     loopTestCall.order shouldBe 1
 
-    val List(doneMaCall) = loopTestCall.astChildren.isCall.codeExact("(<result>1 = <iterator>0.next()).done").l
+    val List(doneMaCall) = loopTestCall.astChildren.isCall.codeExact("(<result>0 = <iterator>0.next()).done").l
     doneMaCall.name shouldBe Operators.fieldAccess
 
-    val List(doneMaBase) = doneMaCall.astChildren.isCall.codeExact("(<result>1 = <iterator>0.next())").l
+    val List(doneMaBase) = doneMaCall.astChildren.isCall.codeExact("(<result>0 = <iterator>0.next())").l
     doneMaBase.name shouldBe Operators.assignment
     doneMaBase.order shouldBe 1
     doneMaBase.argumentIndex shouldBe 1
 
     val List(doneMaBaseLhs) = doneMaBase.astChildren.isIdentifier.order(1).l
-    doneMaBaseLhs.name shouldBe "<result>1"
+    doneMaBaseLhs.name shouldBe "<result>0"
     doneMaBaseLhs.argumentIndex shouldBe 1
 
     val List(doneMaBaseRhs) = doneMaBase.astChildren.isCall.order(2).l
@@ -132,7 +132,7 @@ class ForeachTests extends AstSwiftSrc2CpgSuite {
     val List(whileLoopBlock) = loop.astChildren.isBlock.l
     whileLoopBlock.order shouldBe 2
 
-    val List(loopVarAssignmentCall) = whileLoopBlock.astChildren.isCall.codeExact("elem = <result>1.value").l
+    val List(loopVarAssignmentCall) = whileLoopBlock.astChildren.isCall.codeExact("elem = <result>0.value").l
     loopVarAssignmentCall.name shouldBe Operators.assignment
     loopVarAssignmentCall.order shouldBe 1
 
@@ -153,8 +153,8 @@ class ForeachTests extends AstSwiftSrc2CpgSuite {
     val List(localIterator) = node.astChildren.isLocal.nameExact("<iterator>0").l
     localIterator.code shouldBe "<iterator>0"
 
-    val List(localResult) = node.astChildren.isLocal.nameExact("<result>1").l
-    localResult.code shouldBe "<result>1"
+    val List(localResult) = node.astChildren.isLocal.nameExact("<result>0").l
+    localResult.code shouldBe "<result>0"
 
     val List(localA) = node.astChildren.isLocal.nameExact("a").l
     localA.code shouldBe "a"
@@ -184,8 +184,8 @@ class ForeachTests extends AstSwiftSrc2CpgSuite {
     objectKeysCallArg.name shouldBe "elements"
     objectKeysCallArg.order shouldBe 1
 
-    val List(varResult) = node.astChildren.isIdentifier.nameExact("<result>1").l
-    varResult.code shouldBe "<result>1"
+    val List(varResult) = node.astChildren.isIdentifier.nameExact("<result>0").l
+    varResult.code shouldBe "<result>0"
 
     val List(varA) = node.astChildren.isIdentifier.nameExact("a").l
     varA.code shouldBe "a"
@@ -197,20 +197,20 @@ class ForeachTests extends AstSwiftSrc2CpgSuite {
     val List(loop) = node.astChildren.isControlStructure.l
     loop.controlStructureType shouldBe ControlStructureTypes.WHILE
 
-    val List(loopTestCall) = loop.astChildren.isCall.codeExact("!(<result>1 = <iterator>0.next()).done").l
+    val List(loopTestCall) = loop.astChildren.isCall.codeExact("!(<result>0 = <iterator>0.next()).done").l
     loopTestCall.name shouldBe Operators.not
     loopTestCall.order shouldBe 1
 
-    val List(doneMaCall) = loopTestCall.astChildren.isCall.codeExact("(<result>1 = <iterator>0.next()).done").l
+    val List(doneMaCall) = loopTestCall.astChildren.isCall.codeExact("(<result>0 = <iterator>0.next()).done").l
     doneMaCall.name shouldBe Operators.fieldAccess
 
-    val List(doneMaBase) = doneMaCall.astChildren.isCall.codeExact("(<result>1 = <iterator>0.next())").l
+    val List(doneMaBase) = doneMaCall.astChildren.isCall.codeExact("(<result>0 = <iterator>0.next())").l
     doneMaBase.name shouldBe Operators.assignment
     doneMaBase.order shouldBe 1
     doneMaBase.argumentIndex shouldBe 1
 
     val List(doneMaBaseLhs) = doneMaBase.astChildren.isIdentifier.order(1).l
-    doneMaBaseLhs.name shouldBe "<result>1"
+    doneMaBaseLhs.name shouldBe "<result>0"
     doneMaBaseLhs.argumentIndex shouldBe 1
 
     val List(doneMaBaseRhs) = doneMaBase.astChildren.isCall.order(2).l
@@ -224,13 +224,13 @@ class ForeachTests extends AstSwiftSrc2CpgSuite {
     val List(whileLoopBlock) = loop.astChildren.isBlock.l
     whileLoopBlock.order shouldBe 2
 
-    val List(loopVarAssignmentCallA) = whileLoopBlock.astChildren.isCall.codeExact("a = <result>1.value._1").l
+    val List(loopVarAssignmentCallA) = whileLoopBlock.astChildren.isCall.codeExact("a = <result>0.value._1").l
     loopVarAssignmentCallA.name shouldBe Operators.assignment
     loopVarAssignmentCallA.order shouldBe 1
-    val List(loopVarAssignmentCallB) = whileLoopBlock.astChildren.isCall.codeExact("b = <result>1.value._2").l
+    val List(loopVarAssignmentCallB) = whileLoopBlock.astChildren.isCall.codeExact("b = <result>0.value._2").l
     loopVarAssignmentCallB.name shouldBe Operators.assignment
     loopVarAssignmentCallB.order shouldBe 2
-    val List(loopVarAssignmentCallC) = whileLoopBlock.astChildren.isCall.codeExact("c = <result>1.value._3").l
+    val List(loopVarAssignmentCallC) = whileLoopBlock.astChildren.isCall.codeExact("c = <result>0.value._3").l
     loopVarAssignmentCallC.name shouldBe Operators.assignment
     loopVarAssignmentCallC.order shouldBe 3
 
