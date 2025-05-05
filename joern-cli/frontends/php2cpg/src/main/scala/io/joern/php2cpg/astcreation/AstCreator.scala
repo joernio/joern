@@ -18,7 +18,7 @@ class AstCreator(
   val fileName: String,
   protected val phpAst: PhpFile,
   protected val disableFileContent: Boolean,
-  protected val programSummary: PhpProgramSummary = PhpProgramSummary(),
+  protected[php2cpg] val programSummary: PhpProgramSummary = PhpProgramSummary(),
   protected val parseLevel: AstParseLevel = AstParseLevel.FULL_AST
 )(implicit withSchemaValidation: ValidationMode)
     extends AstCreatorBase[PhpNode, AstCreator](relativeFileName)

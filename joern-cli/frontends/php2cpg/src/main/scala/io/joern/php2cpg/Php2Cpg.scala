@@ -102,7 +102,7 @@ class Php2Cpg extends X2CpgFrontend[Config] {
     *   1. The argument length to the php executable has system dependent limits 2. We want to make use of multiple CPU
     *      cores for the rest of the CPG creation.
     */
-  private def parseFiles(config: Config, maybeParser: Option[PhpParser]): List[AstCreator] = {
+  private[php2cpg] def parseFiles(config: Config, maybeParser: Option[PhpParser]): List[AstCreator] = {
 
     def parseResultToAstCreator(parseResult: PhpParseResult): Option[AstCreator] = {
       parseResult match {

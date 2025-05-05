@@ -1,7 +1,7 @@
 package io.joern.php2cpg.testfixtures
 
 import io.joern.dataflowengineoss.DefaultSemantics
-import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
+import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, SemanticTestCpg}
 import io.joern.php2cpg.{Config, Php2Cpg}
 import io.joern.x2cpg.frontendspecific.php2cpg
