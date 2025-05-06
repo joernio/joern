@@ -141,12 +141,12 @@ trait TypeNameProvider { this: AstCreator =>
       case e: IASTEnumerationSpecifier =>
         val name_                              = shortName(e)
         val fullName_                          = fullName(e)
-        val (uniqueName_, uniqueNameFullName_) = fileLocalUniqueName(name_, fullName_, "enum")
+        val (uniqueName_, uniqueNameFullName_) = scopeLocalUniqueName(name_, fullName_, "enum")
         TypeFullNameInfo(uniqueName_, uniqueNameFullName_)
       case n: ICPPASTNamespaceDefinition =>
         val name_                              = shortName(n)
         val fullName_                          = fullName(n)
-        val (uniqueName_, uniqueNameFullName_) = fileLocalUniqueName(name_, fullName_, "namespace")
+        val (uniqueName_, uniqueNameFullName_) = scopeLocalUniqueName(name_, fullName_, "namespace")
         TypeFullNameInfo(uniqueName_, uniqueNameFullName_)
       case a: ICPPASTNamespaceAlias =>
         val name_     = shortName(a)

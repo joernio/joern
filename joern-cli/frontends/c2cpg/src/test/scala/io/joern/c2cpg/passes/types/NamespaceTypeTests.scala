@@ -121,7 +121,7 @@ class NamespaceTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
       inside(cpg.namespaceBlock.nameNot("<global>").sortBy(_.fullName).l) { case List(unnamed1, namespaceA, unnamed2) =>
         unnamed1.fullName shouldBe "<namespace>0"
         namespaceA.fullName shouldBe "A"
-        unnamed2.fullName shouldBe "A.<namespace>1"
+        unnamed2.fullName shouldBe "A.<namespace>0"
       }
 
       inside(cpg.method.internal.nameNot("<global>").fullName.l) { case List(f, g, h) =>

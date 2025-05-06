@@ -388,8 +388,8 @@ trait FullNameProvider { this: AstCreator =>
         case decl: IASTSimpleDeclaration =>
           decl.getDeclarators.headOption
             .map(shortName)
-            .getOrElse(fileLocalUniqueName("", "", "type")._1)
-        case _ => fileLocalUniqueName("", "", "type")._1
+            .getOrElse(scopeLocalUniqueName("", "", "type")._1)
+        case _ => scopeLocalUniqueName("", "", "type")._1
       }
       s"${scope.computeScopePath}.$name"
     }

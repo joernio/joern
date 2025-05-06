@@ -56,7 +56,7 @@ trait AstForTypesCreator { this: AstCreator =>
         val typeDefName = if (name.isEmpty) { safeGetBinding(declarator.getName).map(_.getName).getOrElse("") }
         else { name }
         val tpe                = registerType(typeFor(declarator))
-        val (name_, fullName_) = fileLocalUniqueName(cleanType(typeDefName), fullName(declarator))
+        val (name_, fullName_) = scopeLocalUniqueName(cleanType(typeDefName), fullName(declarator))
         val fixedFullName      = if (fullName_.isEmpty) name else s"$fullName_.$name"
         Ast(typeDeclNode(declarator, name_, registerType(fixedFullName), filename, code(d), alias = Option(tpe)))
       case d if parentIsClassDef(d) =>
@@ -123,7 +123,7 @@ trait AstForTypesCreator { this: AstCreator =>
   }
 
   protected def astForAliasDeclaration(aliasDeclaration: ICPPASTAliasDeclaration): Ast = {
-    val (name, fullName_) = fileLocalUniqueName(aliasDeclaration.getAlias.toString, fullName(aliasDeclaration))
+    val (name, fullName_) = scopeLocalUniqueName(aliasDeclaration.getAlias.toString, fullName(aliasDeclaration))
     val fixedFullName     = if (fullName_.isEmpty) name else s"$fullName_.$name"
     val mappedName        = registerType(typeFor(aliasDeclaration.getMappingTypeId))
     val typeDeclNode_ =

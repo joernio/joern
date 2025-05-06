@@ -137,7 +137,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
       case id: IASTIdExpression            => shortName(id)
       case id: IASTName =>
         val name = stripTemplateTags(ASTStringUtil.getSimpleName(id))
-        if (name.isEmpty) safeGetBinding(id).map(_.getName).getOrElse(fileLocalUniqueName("", "")._1)
+        if (name.isEmpty) safeGetBinding(id).map(_.getName).getOrElse(scopeLocalUniqueName("", "")._1)
         else name
       case _ => code(ident)
     }
