@@ -48,7 +48,7 @@ class AstCreator(
   // where the respective nodes are defined. Instead, we put them under the parent TYPE_DECL in which they are defined.
   // To achieve this we need this extra stack.
   protected val methodAstParentStack: Stack[NewNode] = new Stack()
-  protected val typeRefIdStack                       = new Stack[NewTypeRef]
+  protected val typeRefIdStack: Stack[NewTypeRef]    = new Stack()
 
   def createAst(): DiffGraphBuilder = {
     val fileContent = if (!config.disableFileContent) Option(cdtAst.getRawSignature) else None
