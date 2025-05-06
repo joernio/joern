@@ -76,7 +76,7 @@ trait AstCreatorHelper { this: AstCreator =>
 
   protected def scopeLocalUniqueName(name: String, fullName: String, targetName: String): (String, String) = {
     if (name.isEmpty && (fullName.isEmpty || fullName.endsWith("."))) {
-      val newName           = scopeLocalUniqueName(targetName)
+      val newName           = scopeLocalUniqueName(targetName, fullName)
       val resultingFullName = s"$fullName$newName"
       (newName, resultingFullName)
     } else {
