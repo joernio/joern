@@ -10,6 +10,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
+import scala.annotation.tailrec
 import scala.collection.mutable
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -55,74 +56,86 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForCall(call: PhpCallExpr): Ast = {
+    val nameAst   = Option.unless(call.methodName.isInstanceOf[PhpNameExpr])(astForExpr(call.methodName))
+    val name      = getCallName(call, nameAst)
     val arguments = call.args.map(astForCallArg)
 
-    val targetAst = Option.unless(call.isStatic)(call.target.map(astForExpr)).flatten
-
-    val nameAst = Option.unless(call.methodName.isInstanceOf[PhpNameExpr])(astForExpr(call.methodName))
-    val name =
-      nameAst
-        .map(_.rootCodeOrEmpty)
-        .getOrElse(call.methodName match {
-          case nameExpr: PhpNameExpr => nameExpr.name
-          case other =>
-            logger.error(s"Found unexpected call target type: Crash for now to handle properly later: $other")
-            ???
-        })
-
-    val argsCode = arguments
-      .zip(call.args.collect { case x: PhpArg => x.unpack })
-      .map {
-        case (arg, true)  => s"...${arg.rootCodeOrEmpty}"
-        case (arg, false) => arg.rootCodeOrEmpty
-      }
-      .mkString(",")
-
-    val codePrefix =
-      if (!call.isStatic && targetAst.isDefined)
-        codeForMethodCall(call, targetAst.get, name)
-      else if (call.isStatic)
-        codeForStaticMethodCall(call, name)
-      else
-        name
-
-    val code = s"$codePrefix($argsCode)"
-
-    val dispatchType =
-      if (call.isStatic || call.target.isEmpty)
-        DispatchTypes.STATIC_DISPATCH
-      else
-        DispatchTypes.DYNAMIC_DISPATCH
-
-    val fullName = call.target match {
-      // Static method call with a known class name
-      case Some(nameExpr: PhpNameExpr) if call.isStatic =>
-        if (nameExpr.name == "self") composeMethodFullName(name, call.isStatic)
-        else s"${nameExpr.name}$StaticMethodDelimiter$name"
-      case Some(expr) =>
-        s"$UnresolvedNamespace\\$codePrefix"
-      case None if PhpBuiltins.FuncNames.contains(name) =>
-        // No signature/namespace for MFN for builtin functions to ensure stable names as type info improves.
-        name
-      // Function call
-      case None =>
-        composeMethodFullName(name, call.isStatic)
+    call.target match {
+      case Some(target: (PhpPropertyFetchExpr | PhpCallExpr)) => astForChainedCall(call, name, target)
+      case _ if call.isStatic || isBuiltinFunc(name)          => astForStaticCall(call, name, arguments)
+      case maybeTarget                                        => astForDynamicCall(call, name, arguments, maybeTarget)
     }
+  }
+
+  private def astForDynamicCall(
+    call: PhpCallExpr,
+    name: String,
+    arguments: Seq[Ast],
+    maybeTarget: Option[PhpExpr]
+  ): Ast = {
+    val argsCode   = getArgsCode(call, arguments)
+    val targetAst  = maybeTarget.map(astForExpr)
+    val codePrefix = targetAst.map(codeForMethodCall(call, _, name)).getOrElse(name)
+    val code       = s"$codePrefix($argsCode)"
+
+    val dispatchType = DispatchTypes.DYNAMIC_DISPATCH
+
+    val fullName = getMfn(call, name)
 
     // Use method signature for methods that can be linked to avoid varargs issue.
     val signature = s"$UnresolvedSignature(${call.args.size})"
     val callRoot  = callNode(call, code, name, fullName, dispatchType, Some(signature), Some(Defines.Any))
 
-    val receiverAst = (targetAst, nameAst) match {
-      case (Some(target), Some(n)) =>
-        val fieldAccess = operatorCallNode(call, codePrefix, Operators.fieldAccess, None)
-        Option(callAst(fieldAccess, target :: n :: Nil))
-      case (Some(target), None) => Option(target)
-      case (None, Some(n))      => Option(n)
-      case (None, None)         => None
+    val receiverAst = targetAst match {
+      case Some(target) =>
+        val fieldAccess     = operatorCallNode(call, codePrefix, Operators.fieldAccess, None)
+        val fieldIdentifier = Ast(fieldIdentifierNode(call.methodName, name.stripPrefix("$"), name))
+        Option(callAst(fieldAccess, target :: fieldIdentifier :: Nil))
+      case None if !scope.getEnclosingTypeDeclTypeName.forall(_ == NamespaceTraversal.globalNamespaceName) =>
+        // if dynamic call is under some type decl, $this is the receiver
+        call.target.map(thisIdentifier).orElse(Option(thisIdentifier(call))).map(Ast(_))
+      case None =>
+        // if dynamic call is on "global" level, the variable itself is the receiver
+        Option(astForExpr(call.methodName))
     }
 
-    callAst(callRoot, arguments, base = receiverAst)
+    callAst(callRoot, arguments, receiverAst)
+  }
+
+  private def astForStaticCall(call: PhpCallExpr, name: String, arguments: Seq[Ast]): Ast = {
+    val argsCode   = getArgsCode(call, arguments)
+    val codePrefix = codeForStaticMethodCall(call, name)
+    val code       = s"$codePrefix($argsCode)"
+
+    val dispatchType = DispatchTypes.STATIC_DISPATCH
+    val fullName     = getMfn(call, name)
+
+    // Use method signature for methods that can be linked to avoid varargs issue.
+    val signature = s"$UnresolvedSignature(${call.args.size})"
+    val callRoot  = callNode(call, code, name, fullName, dispatchType, Some(signature), Some(Defines.Any))
+
+    callAst(callRoot, arguments)
+  }
+
+  private def astForChainedCall(call: PhpCallExpr, name: String, target: PhpPropertyFetchExpr | PhpCallExpr): Ast = {
+    val expr        = PhpPropertyFetchExpr(target, PhpNameExpr(name, call.attributes), false, false, call.attributes)
+    val receiverAst = astForPropertyFetchExpr(expr)
+    val targetAst   = astForExpr(target)
+    val targetCode  = targetAst.rootCodeOrEmpty
+
+    val codePrefix = codeForMethodCall(call, targetAst, name)
+
+    val argumentAsts = call.args.map(astForCallArg)
+    val argsCode     = getArgsCode(call, argumentAsts)
+
+    val code = s"$targetCode$codePrefix($argsCode)"
+    val mfn  = getMfn(call, name)
+
+    val signature = s"$UnresolvedSignature(${call.args.size})"
+
+    val callN =
+      callNode(call, code, name, mfn, DispatchTypes.DYNAMIC_DISPATCH, Some(signature), Some(Defines.Any))
+    callAst(callN, argumentAsts, Option(receiverAst))
   }
 
   protected def simpleAssignAst(origin: PhpNode, target: Ast, source: Ast): Ast = {
@@ -206,7 +219,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       callAst(fieldAccessNode, List(identifier, fieldIdentifier).map(Ast(_))).withRefEdges(identifier, thisParam.toList)
     } else {
       val selfIdentifier = {
-        val name = "self"
+        val name = NameConstants.Self
         val typ  = scope.getEnclosingTypeDeclTypeName
         identifierNode(originNode, name, name, typ.getOrElse(Defines.Any), typ.toList)
       }
@@ -487,11 +500,20 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForPropertyFetchExpr(expr: PhpPropertyFetchExpr): Ast = {
-    val objExprAst = astForExpr(expr.expr)
 
-    val fieldAst = expr.name match {
-      case name: PhpNameExpr => Ast(fieldIdentifierNode(expr, name.name, name.name))
-      case other             => astForExpr(other)
+    def fieldNodeAndName(nameExpr: PhpExpr): (PhpExpr, String) = nameExpr match {
+      case name: PhpNameExpr => name -> name.name
+      case variable: PhpVariable =>
+        val (expr, name) = fieldNodeAndName(variable.value)
+        (expr, s"$$$name")
+      case other => other -> ""
+    }
+
+    val fieldAst = fieldNodeAndName(expr.name) match {
+      case (other, "") =>
+        logger.warn(s"Unable to determine field identifier node from ${other.getClass} (parent node $expr)")
+        astForExpr(other)
+      case (expr, name) => Ast(fieldIdentifierNode(expr, name.stripPrefix("$"), name))
     }
 
     val accessSymbol =
@@ -502,10 +524,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       else
         "->"
 
-    val code            = s"${objExprAst.rootCodeOrEmpty}$accessSymbol${fieldAst.rootCodeOrEmpty}"
+    val targetAst       = astForExpr(expr.expr)
+    val targetCode      = targetAst.rootCodeOrEmpty
+    val code            = s"$targetCode$accessSymbol${fieldAst.rootCodeOrEmpty}"
     val fieldAccessNode = operatorCallNode(expr, code, Operators.fieldAccess, None)
-
-    callAst(fieldAccessNode, objExprAst :: fieldAst :: Nil)
+    callAst(fieldAccessNode, Seq(targetAst, fieldAst))
   }
 
   private def astForIncludeExpr(expr: PhpIncludeExpr): Ast = {
