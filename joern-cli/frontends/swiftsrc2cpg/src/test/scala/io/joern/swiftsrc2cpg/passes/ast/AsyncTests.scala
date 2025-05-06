@@ -108,9 +108,9 @@ class AsyncTests extends AstSwiftSrc2CpgSuite {
         "MyFuture()",
         "asyncGlobal1()",
         "await asyncGlobal1()",
+        "let <wildcard>0 = await asyncGlobal1()",
+        "let <wildcard>1 = myFuture.await()",
         "let myFuture = MyFuture()",
-        "let wildcard_0 = await asyncGlobal1()",
-        "let wildcard_1 = myFuture.await()",
         "myFuture.await",
         "myFuture.await()"
       )

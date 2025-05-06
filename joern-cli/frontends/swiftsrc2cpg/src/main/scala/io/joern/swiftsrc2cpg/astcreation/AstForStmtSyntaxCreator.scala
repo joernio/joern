@@ -129,7 +129,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val collectionName = code(collection)
 
     // _iterator assignment:
-    val iteratorName      = generateUnusedVariableName(usedVariableNames, "_iterator")
+    val iteratorName      = scopeLocalUniqueName("iterator")
     val iteratorLocalNode = localNode(node, iteratorName, iteratorName, Defines.Any).order(0)
     val iteratorNode      = identifierNode(node, iteratorName)
     diffGraph.addEdge(localAstParentStack.head, iteratorLocalNode, EdgeTypes.AST)
@@ -154,7 +154,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val iteratorAssignmentAst  = callAst(iteratorAssignmentNode, iteratorAssignmentArgs)
 
     // _result:
-    val resultName      = generateUnusedVariableName(usedVariableNames, "_result")
+    val resultName      = scopeLocalUniqueName("result")
     val resultLocalNode = localNode(node, resultName, resultName, Defines.Any).order(0)
     val resultNode      = identifierNode(node, resultName)
     diffGraph.addEdge(localAstParentStack.head, resultLocalNode, EdgeTypes.AST)
@@ -265,7 +265,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val collectionName = code(collection)
 
     // _iterator assignment:
-    val iteratorName      = generateUnusedVariableName(usedVariableNames, "_iterator")
+    val iteratorName      = scopeLocalUniqueName("iterator")
     val iteratorLocalNode = localNode(node, iteratorName, iteratorName, Defines.Any).order(0)
     val iteratorNode      = identifierNode(node, iteratorName)
     diffGraph.addEdge(localAstParentStack.head, iteratorLocalNode, EdgeTypes.AST)
@@ -290,7 +290,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val iteratorAssignmentAst  = callAst(iteratorAssignmentNode, iteratorAssignmentArgs)
 
     // _result:
-    val resultName      = generateUnusedVariableName(usedVariableNames, "_result")
+    val resultName      = scopeLocalUniqueName("result")
     val resultLocalNode = localNode(node, resultName, resultName, Defines.Any).order(0)
     val resultNode      = identifierNode(node, resultName)
     diffGraph.addEdge(localAstParentStack.head, resultLocalNode, EdgeTypes.AST)
@@ -393,7 +393,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val collectionName = code(collection)
 
     // _iterator assignment:
-    val iteratorName      = generateUnusedVariableName(usedVariableNames, "_iterator")
+    val iteratorName      = scopeLocalUniqueName("iterator")
     val iteratorLocalNode = localNode(node, iteratorName, iteratorName, Defines.Any).order(0)
     val iteratorNode      = identifierNode(node, iteratorName)
     diffGraph.addEdge(localAstParentStack.head, iteratorLocalNode, EdgeTypes.AST)
@@ -417,7 +417,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val iteratorAssignmentAst  = callAst(iteratorAssignmentNode, iteratorAssignmentArgs)
 
     // _result:
-    val resultName      = generateUnusedVariableName(usedVariableNames, "_result")
+    val resultName      = scopeLocalUniqueName("result")
     val resultLocalNode = localNode(node, resultName, resultName, Defines.Any).order(0)
     val resultNode      = identifierNode(node, resultName)
     diffGraph.addEdge(localAstParentStack.head, resultLocalNode, EdgeTypes.AST)
