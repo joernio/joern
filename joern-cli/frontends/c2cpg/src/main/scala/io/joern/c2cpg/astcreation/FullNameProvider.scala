@@ -136,6 +136,7 @@ trait FullNameProvider { this: AstCreator =>
         val qualifiedName = node match {
           case _: IASTTranslationUnit                            => ""
           case alias: ICPPASTNamespaceAlias                      => fullNameForICPPASTNamespaceAlias(alias)
+          case aliasDecl: ICPPASTAliasDeclaration                => fullNameForICPPASTAliasDeclaration(aliasDecl)
           case namespace: ICPPASTNamespaceDefinition             => fullNameForICPPASTNamespaceDefinition(namespace)
           case compType: IASTCompositeTypeSpecifier              => fullNameForIASTCompositeTypeSpecifier(compType)
           case enumSpecifier: IASTEnumerationSpecifier           => fullNameForIASTEnumerationSpecifier(enumSpecifier)
@@ -146,6 +147,7 @@ trait FullNameProvider { this: AstCreator =>
           case _: ICPPASTLambdaExpression                        => fullNameForICPPASTLambdaExpression()
           case qfn: ICPPASTQualifiedName                         => fullNameForICPPASTQualifiedName(qfn)
           case id: IASTIdExpression                              => fullNameForIASTIdExpression(id)
+          case decl: IASTDeclarator                              => fullNameForIASTDeclarator(decl)
           case u: IASTUnaryExpression                            => code(u.getOperand)
           case other if other != null && other.getParent != null => fullName(other.getParent)
           case other if other != null                            => notHandledYet(other); ""
@@ -174,6 +176,10 @@ trait FullNameProvider { this: AstCreator =>
     }
   }
 
+  private def fullNameForIASTDeclarator(decl: IASTDeclarator): String = {
+    Try(ASTStringUtil.getQualifiedName(decl.getName)).getOrElse(nextClosureName())
+  }
+
   private def fullNameForIASTIdExpression(id: IASTIdExpression): String = {
     Try(ASTStringUtil.getQualifiedName(id.getName)).getOrElse(nextClosureName())
   }
@@ -184,6 +190,10 @@ trait FullNameProvider { this: AstCreator =>
 
   private def fullNameForICPPASTNamespaceAlias(alias: ICPPASTNamespaceAlias): String = {
     ASTStringUtil.getQualifiedName(alias.getMappingName)
+  }
+
+  private def fullNameForICPPASTAliasDeclaration(alias: ICPPASTAliasDeclaration): String = {
+    ASTStringUtil.getQualifiedName(alias.getAlias)
   }
 
   private def fullNameForICPPASTLambdaExpression(): String = {
@@ -367,6 +377,16 @@ trait FullNameProvider { this: AstCreator =>
         }
       case e: IASTElaboratedTypeSpecifier =>
         safeGetBinding(e.getName) match {
+          case Some(b: ICPPBinding) if b.getName.nonEmpty => Option(b.getQualifiedName.mkString("."))
+          case _                                          => None
+        }
+      case e: IASTDeclarator =>
+        safeGetBinding(e.getName) match {
+          case Some(b: ICPPBinding) if b.getName.nonEmpty => Option(b.getQualifiedName.mkString("."))
+          case _                                          => None
+        }
+      case e: ICPPASTAliasDeclaration =>
+        safeGetBinding(e.getAlias) match {
           case Some(b: ICPPBinding) if b.getName.nonEmpty => Option(b.getQualifiedName.mkString("."))
           case _                                          => None
         }

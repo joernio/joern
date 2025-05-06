@@ -63,16 +63,18 @@ trait AstCreatorHelper { this: AstCreator =>
     ast
   }
 
-  protected def scopeLocalUniqueName(targetName: String): String = {
-    val name = if (targetName.nonEmpty) { s"<$targetName>" }
-    else { "<anonymous>" }
-    val key = s"${scope.computeScopePath}:$name"
+  protected def scopeLocalUniqueName(targetName: String, fullName: String = ""): String = {
+    val name = if (targetName.isEmpty) { "<anonymous>" }
+    else { s"<$targetName>" }
+    val scopePath = if (fullName.isEmpty) { scope.computeScopePath }
+    else { fullName.stripSuffix(".") }
+    val key = s"$scopePath:$name"
     val idx = scopeLocalUniqueNames.getOrElseUpdate(key, 0)
     scopeLocalUniqueNames.update(key, idx + 1)
     s"$name$idx"
   }
 
-  protected def scopeLocalUniqueName(name: String, fullName: String, targetName: String = ""): (String, String) = {
+  protected def scopeLocalUniqueName(name: String, fullName: String, targetName: String): (String, String) = {
     if (name.isEmpty && (fullName.isEmpty || fullName.endsWith("."))) {
       val newName           = scopeLocalUniqueName(targetName)
       val resultingFullName = s"$fullName$newName"
