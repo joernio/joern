@@ -318,7 +318,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
         (
           s.getDeclarators.headOption
             .map(n => ASTStringUtil.getSimpleName(n.getName))
-            .getOrElse(scopeLocalUniqueName("", "", "param")._1),
+            .getOrElse(scopeLocalUniqueName("param")),
           code(s),
           typeForDeclSpecifier(s),
           false

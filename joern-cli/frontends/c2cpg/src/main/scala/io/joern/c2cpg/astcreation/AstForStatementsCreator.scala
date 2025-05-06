@@ -94,7 +94,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     }
 
     val initializer  = init.getOrElse(struct.getInitializer)
-    val tmpName      = scopeLocalUniqueName("", "", "tmp")._1
+    val tmpName      = scopeLocalUniqueName("tmp")
     val tpe          = registerType(typeFor(initializer))
     val localTmpNode = localNode(struct, tmpName, tmpName, tpe)
     scope.addVariable(tmpName, localTmpNode, tpe, VariableScopeManager.ScopeType.BlockScope)
@@ -377,7 +377,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val idType         = registerType(typeFor(forStmt.getDeclaration))
 
     // iterator assignment:
-    val iteratorName      = scopeLocalUniqueName("", "", "iterator")._1
+    val iteratorName      = scopeLocalUniqueName("iterator")
     val iteratorLocalNode = localNode(forStmt, iteratorName, iteratorName, registerType(Defines.Iterator)).order(0)
     val iteratorNode      = identifierNode(forStmt, iteratorName, iteratorName, Defines.Iterator)
     diffGraph.addEdge(blockNode, iteratorLocalNode, EdgeTypes.AST)
