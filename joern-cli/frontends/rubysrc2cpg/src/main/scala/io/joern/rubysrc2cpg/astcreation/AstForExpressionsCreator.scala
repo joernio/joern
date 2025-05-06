@@ -6,6 +6,7 @@ import io.joern.rubysrc2cpg.parser.RubyJsonHelpers
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.GlobalTypes
 import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, prefixAsKernelDefined}
+import io.joern.x2cpg.frontendspecific.rubysrc2cpg.Constants
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{
@@ -83,25 +84,37 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   protected def astForNilBlock: Ast = blockAst(NewBlock(), List(astForNilLiteral))
 
   protected def astForDynamicLiteral(node: DynamicLiteral): Ast = {
-    val fmtValueAsts = node.expressions.map {
+    val fmtValueAsts = node.expressions.collect {
       case stmtList: StatementList if stmtList.size == 1 =>
-        val expressionAst = astForExpression(stmtList.statements.head)
-        val call = callNode(
-          node = stmtList,
-          code = stmtList.text,
-          name = Operators.formattedValue,
-          methodFullName = Operators.formattedValue,
-          dispatchType = DispatchTypes.STATIC_DISPATCH,
-          signature = None,
-          typeFullName = Some(node.typeFullName)
-        )
-        callAst(call, Seq(expressionAst))
+        stmtList.statements.head match {
+          case x: SimpleCall if x.span.text.startsWith(Constants.joernErbTemplatePrefix) =>
+            val argAsts = x.arguments.map(astForExpression)
+            val (opName, callCode) = if (x.span.text.startsWith(Constants.joernErbTemplateOutEscapeName)) {
+              (RubyOperators.templateOutEscape, s"<%= ${x.arguments.map(_.span.text).mkString} %>")
+            } else {
+              (RubyOperators.templateOutRaw, s"<%== ${x.arguments.map(_.span.text).mkString} %>")
+            }
+            val opNode = callNode(x, callCode, opName, opName, DispatchTypes.STATIC_DISPATCH)
+            callAst(opNode, argAsts)
+          case x =>
+            val expressionAst = astForExpression(stmtList.statements.head)
+            val call = callNode(
+              node = stmtList,
+              code = stmtList.text,
+              name = Operators.formattedValue,
+              methodFullName = Operators.formattedValue,
+              dispatchType = DispatchTypes.STATIC_DISPATCH,
+              signature = None,
+              typeFullName = Some(node.typeFullName)
+            )
+            callAst(call, Seq(expressionAst))
+        }
       case stmtList: StatementList if stmtList.size > 1 =>
         logger.warn(
           s"Interpolations containing multiple statements are not supported yet: ${stmtList.text} ($relativeFileName), skipping"
         )
         astForUnknown(stmtList)
-      case node =>
+      case node if !isLineFeed(node.text) =>
         val call = callNode(
           node = node,
           code = node.text,
@@ -1087,4 +1100,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   private def getUnaryOperatorName(op: String): Option[String] = UnaryOperatorNames.get(op)
 
   private def getAssignmentOperatorName(op: String): Option[String] = AssignmentOperatorNames.get(op)
+
+  private def isLineFeed(text: String): Boolean = text == "\n" || text == "\r" || text == "\r\n"
 }

@@ -55,6 +55,8 @@ object Defines {
     val splat             = "<operator>.splat"
     val regexpMatch       = "=~"
     val regexpNotMatch    = "!~"
+    val templateOutRaw    = "<operator>.templateOutRaw"
+    val templateOutEscape = "<operator>.templateOutEscape"
 
     val regexMethods = Set("match") // TODO: Figure out how to model these, "sub", "gsub")
   }
