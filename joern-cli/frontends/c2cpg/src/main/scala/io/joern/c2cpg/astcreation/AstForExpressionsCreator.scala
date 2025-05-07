@@ -567,14 +567,19 @@ trait AstForExpressionsCreator { this: AstCreator =>
       }.toOption
     }
 
-    val op  = "<operator>.fold"
-    val tpe = registerType(typeFor(foldExpression))
+    val foldOp = "<operator>.fold"
+    val tpe    = registerType(typeFor(foldExpression))
     val callNode_ =
-      callNode(foldExpression, code(foldExpression), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
+      callNode(foldExpression, code(foldExpression), foldOp, foldOp, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
 
     val left  = valueFromField[ICPPASTExpression](foldExpression, "fLhs").map(nullSafeAst).getOrElse(Ast())
     val right = valueFromField[ICPPASTExpression](foldExpression, "fRhs").map(nullSafeAst).getOrElse(Ast())
-    callAst(callNode_, List(left, right))
+
+    val op = valueFromField[Int](foldExpression, "fOperator")
+      .map(operatorId => OperatorMap.getOrElse(operatorId, Defines.OperatorUnknown))
+      .getOrElse(Defines.OperatorUnknown)
+    val opRef = methodRefNode(foldExpression, op, op, tpe)
+    callAst(callNode_, List(Ast(opRef), left, right))
   }
 
   private def astForIdExpression(idExpression: IASTIdExpression): Ast = idExpression.getName match {

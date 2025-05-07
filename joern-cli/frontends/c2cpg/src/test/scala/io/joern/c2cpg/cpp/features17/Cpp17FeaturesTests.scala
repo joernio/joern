@@ -3,7 +3,7 @@ package io.joern.c2cpg.cpp.features17
 import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.AstC2CpgSuite
-import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 import org.apache.commons.lang3.StringUtils
 
@@ -78,7 +78,13 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       retExpr.name shouldBe "<operator>.fold"
       retExpr.typeFullName shouldBe "bool"
       retExpr.code shouldBe "(true && ... && args)"
-      retExpr.argument.code.l shouldBe List("true", "args")
+      val List(andRef) = retExpr.argument.isMethodRef.l
+      andRef.code shouldBe Operators.logicalAnd
+      andRef.methodFullName shouldBe Operators.logicalAnd
+      andRef.typeFullName shouldBe "bool"
+      andRef.argumentIndex shouldBe 1
+      retExpr.argument(2).code shouldBe "true"
+      retExpr.argument(3).code shouldBe "args"
     }
 
     "handle folding expressions (unary)" in {
@@ -97,7 +103,12 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       retExpr.name shouldBe "<operator>.fold"
       retExpr.typeFullName shouldBe "Args"
       retExpr.code shouldBe "(... + args)"
-      retExpr.argument.code.l shouldBe List("args")
+      val List(andRef) = retExpr.argument.isMethodRef.l
+      andRef.code shouldBe Operators.addition
+      andRef.methodFullName shouldBe Operators.addition
+      andRef.typeFullName shouldBe "Args"
+      andRef.argumentIndex shouldBe 1
+      retExpr.argument(2).code shouldBe "args"
     }
 
     "handle new rules for auto deduction from braced-init-list" in {
