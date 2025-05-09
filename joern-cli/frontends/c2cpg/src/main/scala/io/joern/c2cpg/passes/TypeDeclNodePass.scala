@@ -38,7 +38,7 @@ class TypeDeclNodePass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
   }
 
   private def createOperatorBinding(typeDecl: NewTypeDecl, dstGraph: DiffGraphBuilder): Unit = {
-    if (typeDecl.fullName.startsWith("<operator>.") && typeDecl.fullName != Defines.OperatorUnknown) {
+    if (typeDecl.fullName.startsWith("<operator") && typeDecl.fullName != Defines.OperatorUnknown) {
       val functionBinding = NewBinding().name("").methodFullName(typeDecl.fullName).signature("")
       dstGraph.addNode(functionBinding)
       dstGraph.addEdge(typeDecl, functionBinding, EdgeTypes.BINDS)
