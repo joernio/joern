@@ -564,17 +564,29 @@ trait AstForExpressionsCreator { this: AstCreator =>
         val field = obj.getClass.getDeclaredField(fieldName)
         field.setAccessible(true)
         field.get(obj).asInstanceOf[T]
-      }.toOption
+      }.toOption.filter(_ != null)
     }
 
-    val op  = "<operator>.fold"
-    val tpe = registerType(typeFor(foldExpression))
+    val foldOp = "<operator>.fold"
+    val tpe    = registerType(typeFor(foldExpression))
     val callNode_ =
-      callNode(foldExpression, code(foldExpression), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
+      callNode(foldExpression, code(foldExpression), foldOp, foldOp, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
 
-    val left  = valueFromField[ICPPASTExpression](foldExpression, "fLhs").map(nullSafeAst).getOrElse(Ast())
-    val right = valueFromField[ICPPASTExpression](foldExpression, "fRhs").map(nullSafeAst).getOrElse(Ast())
-    callAst(callNode_, List(left, right))
+    val left  = valueFromField[ICPPASTExpression](foldExpression, "fLhs")
+    val right = valueFromField[ICPPASTExpression](foldExpression, "fRhs")
+
+    val args = (left, right) match {
+      case (Some(l), None) => List(astForNode(l), astForNode(l))
+      case (None, Some(r)) => List(astForNode(r), astForNode(r))
+      case _               => List(left.map(astForNode).getOrElse(Ast()), right.map(astForNode).getOrElse(Ast()))
+    }
+
+    val op = valueFromField[Int](foldExpression, "fOperator")
+      .map(operatorId => OperatorMap.getOrElse(operatorId, Defines.OperatorUnknown))
+      .getOrElse(Defines.OperatorUnknown)
+    registerType(op)
+    val opRef = methodRefNode(foldExpression, op, op, op)
+    callAst(callNode_, Ast(opRef) +: args)
   }
 
   private def astForIdExpression(idExpression: IASTIdExpression): Ast = idExpression.getName match {
