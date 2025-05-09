@@ -41,7 +41,7 @@ jobs:
           cd joern-cli/target/universal/stage
           ./schema-extender/test.sh
           cd -
-      - run: sbt ciReleaseTagNextVersion ciReleaseSonatype createDistribution
+      - run: sbt ciReleaseSkipIfAlreadyReleased ciReleaseTagNextVersion ciReleaseSonatype createDistribution
         env:
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
