@@ -3,9 +3,8 @@ package io.joern.c2cpg.passes
 import io.joern.x2cpg.AstNodeBuilder
 import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.Config
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, NodeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.shiftleft.semanticcpg.language.*
@@ -32,9 +31,18 @@ class TypeDeclNodePass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
         .astParentType(NodeTypes.NAMESPACE_BLOCK)
         .astParentFullName(fullName)
       dstGraph.addNode(newTypeDecl)
+      createOperatorBinding(newTypeDecl, dstGraph)
       hadMissingTypeDecl = true
     }
     if (hadMissingTypeDecl) Ast.storeInDiffGraph(createGlobalAst(), dstGraph)
+  }
+
+  private def createOperatorBinding(typeDecl: NewTypeDecl, dstGraph: DiffGraphBuilder): Unit = {
+    if (typeDecl.fullName.startsWith("<operator>.") && typeDecl.fullName != Defines.OperatorUnknown) {
+      val functionBinding = NewBinding().name("").methodFullName(typeDecl.fullName).signature("")
+      dstGraph.addNode(functionBinding)
+      dstGraph.addEdge(typeDecl, functionBinding, EdgeTypes.BINDS)
+    }
   }
 
   private def createGlobalAst(): Ast = {

@@ -81,7 +81,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       val List(andRef) = retExpr.argument.isMethodRef.l
       andRef.code shouldBe Operators.logicalAnd
       andRef.methodFullName shouldBe Operators.logicalAnd
-      andRef.typeFullName shouldBe "bool"
+      andRef.typeFullName shouldBe Operators.logicalAnd
       andRef.argumentIndex shouldBe 1
       retExpr.argument(2).code shouldBe "true"
       retExpr.argument(3).code shouldBe "args"
@@ -106,9 +106,10 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       val List(andRef) = retExpr.argument.isMethodRef.l
       andRef.code shouldBe Operators.addition
       andRef.methodFullName shouldBe Operators.addition
-      andRef.typeFullName shouldBe "Args"
+      andRef.typeFullName shouldBe Operators.addition
       andRef.argumentIndex shouldBe 1
       retExpr.argument(2).code shouldBe "args"
+      retExpr.argument(3).code shouldBe "args"
     }
 
     "handle new rules for auto deduction from braced-init-list" in {
