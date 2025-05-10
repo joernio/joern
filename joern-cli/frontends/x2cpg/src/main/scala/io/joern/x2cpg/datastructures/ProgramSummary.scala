@@ -62,9 +62,8 @@ object ProgramSummary {
   ): mutable.Map[String, mutable.Set[T]] = {
 
     def dedupTypesInPlace(m: mutable.Map[String, mutable.Set[T]]): Unit = {
-      val newMap = m
-        .map { case (namespace, ts) => namespace -> ts.groupBy(_.name) }
-        .map { case (namespace, typMap) =>
+      m.map { case (namespace, ts) => namespace -> ts.groupBy(_.name) }
+        .foreach { case (namespace, typMap) =>
           val dedupedTypes = mutable.Set.from(
             typMap
               .map { case (name, ts) => name -> ts.reduce((u, v) => (u + v).asInstanceOf[T]) }
@@ -72,10 +71,8 @@ object ProgramSummary {
               .toSet
           )
           m.put(namespace, dedupedTypes)
-          namespace -> dedupedTypes
         }
-        .toMap
-      assert(m.flatMap { case (name, ts) => ts.groupBy(_.name).map(_._2.size) }.forall(_ == 1))
+      assert(m.flatMap { case (_, ts) => ts.groupBy(_.name).map(_._2.size) }.forall(_ == 1))
     }
 
     // Handle duplicate types sharing the same namespace. This can be introduced from serialized type stubs.
@@ -105,6 +102,19 @@ object ProgramSummary {
     a
   }
 
+}
+
+/** Determines till what depth the AST creator will parse until.
+  */
+enum AstParseLevel {
+
+  /** This level will parse all types and methods signatures, but exclude method bodies.
+    */
+  case SIGNATURES
+
+  /** This level will parse the full AST.
+    */
+  case FULL_AST
 }
 
 /** Extends the capability of the scope object to track types in scope as provide type resolution.

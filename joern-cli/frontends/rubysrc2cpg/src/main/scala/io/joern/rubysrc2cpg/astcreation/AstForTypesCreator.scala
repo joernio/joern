@@ -3,6 +3,7 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{TypeDeclaration, *}
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, MethodScope, ModuleScope, NamespaceScope, TypeScope}
 import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.x2cpg.datastructures.AstParseLevel
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{

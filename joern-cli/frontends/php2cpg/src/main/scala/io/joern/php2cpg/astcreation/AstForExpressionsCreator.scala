@@ -867,4 +867,27 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .withChild(returnIdentifierAst)
   }
 
+  protected def astForEchoStmt(echoStmt: PhpEchoStmt): Ast = {
+    val args     = echoStmt.exprs.map(astForExpr)
+    val code     = s"echo ${args.map(_.rootCodeOrEmpty).mkString(",")}"
+    val callNode = operatorCallNode(echoStmt, code, "echo", None)
+    callAst(callNode, args)
+  }
+
+  protected def astForHaltCompilerStmt(stmt: PhpHaltCompilerStmt): Ast = {
+    val call =
+      operatorCallNode(stmt, s"${NameConstants.HaltCompiler}()", NameConstants.HaltCompiler, Some(TypeConstants.Void))
+
+    Ast(call)
+  }
+
+  protected def astForUnsetStmt(stmt: PhpUnsetStmt): Ast = {
+    val name = PhpOperators.unset
+    val args = stmt.vars.map(astForExpr)
+    val code = s"$name(${args.map(_.rootCodeOrEmpty).mkString(", ")})"
+    val callNode = operatorCallNode(stmt, code, name, Some(TypeConstants.Void))
+      .methodFullName(PhpOperators.unset)
+    callAst(callNode, args)
+  }
+
 }

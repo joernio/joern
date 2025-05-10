@@ -1,10 +1,11 @@
-package io.joern.php2cpg.utils
+package io.joern.php2cpg.datastructures
 
 import io.joern.php2cpg.astcreation.AstCreator.NameConstants
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.datastructures.{ScopeElement, NamespaceLikeScope, Scope as X2CpgScope}
+import io.joern.x2cpg.datastructures.{NamespaceLikeScope, ScopeElement, Scope as X2CpgScope}
 import io.shiftleft.codepropertygraph.generated.NodeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
@@ -69,6 +70,13 @@ class Scope(implicit nextClosureName: () => String) extends X2CpgScope[String, N
 
     scopeNode
   }
+
+  /** @return
+    *   true if the current scope is top-level, i.e., a direct child of the PHP script.
+    */
+  def isTopLevel: Boolean = stack.collectFirst { case ScopeElement(PhpScopeElement(x: NewTypeDecl), _) =>
+    x.name.endsWith(NamespaceTraversal.globalNamespaceName)
+  }.isDefined
 
   def getNewClassTmp: String = {
     stack.headOption match {

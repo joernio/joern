@@ -4,6 +4,7 @@ import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
 import io.joern.php2cpg.parser.Domain.*
 import io.joern.php2cpg.parser.Domain.PhpModifiers.containsAccessModifier
 import io.joern.x2cpg.Defines.UnresolvedSignature
+import io.joern.x2cpg.datastructures.AstParseLevel.{FULL_AST, SIGNATURES}
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -114,7 +115,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     }
     val methodCode = s"${modifierString}function $methodName(${parameters.map(_.rootCodeOrEmpty).mkString(",")})"
 
-    val method = methodNode(decl, methodName, methodCode, fullName, Some(signature), relativeFileName)
+    val method     = methodNode(decl, methodName, methodCode, fullName, Some(signature), relativeFileName)
+    val isTopLevel = scope.isTopLevel
 
     scope.pushNewScope(method)
 
@@ -124,7 +126,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val methodReturn    = methodReturnNode(decl, returnType)
 
     val attributeAsts = decl.attributeGroups.flatMap(astForAttributeGroup)
-    val methodBody    = blockAst(blockNode(decl), methodBodyStmts)
+    val methodBody = parseLevel match {
+      case SIGNATURES if !isTopLevel => blockAst(blockNode(decl), Nil)
+      case _                         => blockAst(blockNode(decl), methodBodyStmts)
+    }
 
     scope.popScope()
     methodAstWithAnnotations(method, parameters, methodBody, methodReturn, modifiers, attributeAsts)

@@ -1,13 +1,11 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import flatgraph.DiffGraphApplier
-import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{RubyExpression, StatementList}
-import io.joern.rubysrc2cpg.datastructures.{RubyField, RubyMethod, RubyProgramSummary, RubyStubbedType, RubyType}
+import io.joern.rubysrc2cpg.datastructures.*
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.x2cpg.layers.Base
-import io.joern.x2cpg.passes.base.{AstLinkerPass, FileCreationPass}
+import io.joern.x2cpg.datastructures.AstParseLevel
+import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Local, Member, Method, TypeDecl}
 import io.shiftleft.semanticcpg.language.*

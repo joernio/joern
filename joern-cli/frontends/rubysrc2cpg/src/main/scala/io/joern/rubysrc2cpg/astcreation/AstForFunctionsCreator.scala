@@ -15,6 +15,7 @@ import io.shiftleft.codepropertygraph.generated.{
   Operators
 }
 import io.joern.x2cpg.AstNodeBuilder.{bindingNode, closureBindingNode}
+import io.joern.x2cpg.datastructures.AstParseLevel
 
 import scala.collection.mutable
 

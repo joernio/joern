@@ -11,54 +11,20 @@ import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
 
-class AstCreationPass(config: Config, cpg: Cpg, parser: PhpParser)(implicit withSchemaValidation: ValidationMode)
-    extends ForkJoinParallelCpgPass[Array[String]](cpg) {
+class AstCreationPass(cpg: Cpg, astCreators: List[AstCreator]) extends ForkJoinParallelCpgPass[AstCreator](cpg) {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  val PhpSourceFileExtensions: Set[String] = Set(".php")
+  override def generateParts(): Array[AstCreator] = astCreators.toArray
 
-  override def generateParts(): Array[Array[String]] = {
-    val sourceFiles = SourceFiles
-      .determine(
-        config.inputPath,
-        PhpSourceFileExtensions,
-        ignoredFilesRegex = Option(config.ignoredFilesRegex),
-        ignoredFilesPath = Option(config.ignoredFiles)
-      )
-      .toArray
-
-    // We need to feed the php parser big groups of file in order
-    // to speed up the parsing. Apparently it is some sort of slow
-    // startup phase which makes single file processing prohibitively
-    // slow.
-    // On the other hand we need to be careful to not choose too big
-    // chunks because:
-    //   1. The argument length to the php executable has system
-    //      dependent limits
-    //   2. We want to make use of multiple CPU cores for the rest
-    //      of the CPG creation.
-    //
-    val parts = sourceFiles.grouped(20).toArray
-    parts
-  }
-
-  override def runOnPart(diffGraph: DiffGraphBuilder, filenames: Array[String]): Unit = {
-    parser.parseFiles(filenames).foreach { case (filename, parseResult, infoLines) =>
-      parseResult match {
-        case Some(parseResult) =>
-          val relativeFilename = if (filename == config.inputPath) {
-            Paths.get(filename).fileName
-          } else {
-            Paths.get(config.inputPath).relativize(Paths.get(filename)).toString
-          }
-          diffGraph.absorb(
-            new AstCreator(relativeFilename, filename, parseResult, config.disableFileContent)(config.schemaValidation)
-              .createAst()
-          )
-        case None =>
-          logger.warn(s"Could not parse file $filename. Results will be missing!")
-      }
+  override def runOnPart(diffGraph: DiffGraphBuilder, astCreator: AstCreator): Unit = {
+    try {
+      val ast = astCreator.createAst()
+      diffGraph.absorb(ast)
+    } catch {
+      case ex: Exception =>
+        logger.error(s"Error while processing AST for file - ${astCreator.fileName} - ", ex)
     }
   }
+
 }

@@ -12,6 +12,8 @@ import scala.collection.mutable
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
+case class PhpParseResult(fileName: String, parseResult: Option[PhpFile], infoLines: String)
+
 class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileContent: Boolean) {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -21,7 +23,7 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
     Seq("php", "--php-ini", phpIniPath, phpParserPath) ++ phpParserCommands ++ filenames
   }
 
-  def parseFiles(inputPaths: collection.Seq[String]): collection.Seq[(String, Option[PhpFile], String)] = {
+  def parseFiles(inputPaths: collection.Seq[String]): collection.Seq[PhpParseResult] = {
     // We need to keep a map between the input path and its canonical representation in
     // order to map back the canonical file name we get from the php parser.
     // Otherwise later on file name/path processing might get confused because the returned
@@ -43,7 +45,7 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
           (filename, jsonToPhpFile(jsonObjectOption, filename), infoLines)
         }
         val withRemappedFileName = asPhpFile.map { case (filename, phpFileOption, infoLines) =>
-          (canonicalToInputPath.apply(filename), phpFileOption, infoLines)
+          PhpParseResult(canonicalToInputPath.apply(filename), phpFileOption, infoLines)
         }
         withRemappedFileName
       case ExternalCommand.ExternalCommandResult(exitCode, _, _) =>

@@ -1,7 +1,7 @@
 package io.joern.php2cpg.astcreation
 
-import io.joern.php2cpg.utils.PhpScopeElement
 import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
+import io.joern.php2cpg.datastructures.PhpScopeElement
 import io.joern.php2cpg.parser.Domain.*
 import io.joern.x2cpg.Defines.UnresolvedSignature
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
