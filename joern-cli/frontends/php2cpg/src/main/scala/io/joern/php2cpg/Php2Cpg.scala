@@ -2,6 +2,7 @@ package io.joern.php2cpg
 
 import io.joern.php2cpg.parser.PhpParser
 import io.joern.php2cpg.passes.*
+import io.joern.php2cpg.passes.SymbolSummaryPass.SymbolSummary
 import io.joern.php2cpg.utils.DependencyDownloader
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
@@ -14,6 +15,7 @@ import versionsort.VersionHelper
 import scala.collection.mutable
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
+import scala.jdk.CollectionConverters.*
 
 class Php2Cpg extends X2CpgFrontend[Config] {
 
@@ -58,7 +60,17 @@ class Php2Cpg extends X2CpgFrontend[Config] {
           // Parse dependencies and add high-level nodes to the CPG
           new DependencySymbolsPass(cpg, dependencyDir).createAndApply()
         }
-        new AstCreationPass(config, cpg, parser.get)(config.schemaValidation).createAndApply()
+        parser.foreach { parser =>
+          val summary = new java.util.concurrent.ConcurrentLinkedQueue[SymbolSummary]()
+          new SymbolSummaryPass(config, cpg, parser, summary.add).createAndApply()
+          val reducedSummary = summary.asScala.foldLeft(Seq.empty[SymbolSummary])((acc, next) =>
+            acc match {
+              case Nil          => next :: Nil
+              case head :: tail => head + next ++ tail
+            }
+          )
+          new AstCreationPass(config, cpg, parser, reducedSummary).createAndApply()
+        }
         new AstParentInfoPass(cpg).createAndApply()
         new AnyTypePass(cpg).createAndApply()
         TypeNodePass.withTypesFromCpg(cpg).createAndApply()
