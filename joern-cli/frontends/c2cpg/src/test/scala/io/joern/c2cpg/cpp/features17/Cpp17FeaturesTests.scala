@@ -30,6 +30,19 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       c2.typeFullName shouldBe "MyContainer"
       // We are unable to express this template argument deduction in the current schema
       cpg.typeDecl.member.nameExact("val").typeFullName.l shouldBe List("T")
+
+      cpg.typeDecl.nameExact("MyContainer").astChildren.isMethod.isConstructor.fullName.l shouldBe List(
+        "MyContainer.MyContainer:ANY()",
+        "MyContainer.MyContainer:ANY(T)"
+      )
+
+      cpg.call.isAssignment.code.l shouldBe List("c1 = MyContainer.MyContainer(1)")
+      cpg.call.isAssignment.argument(1).isIdentifier.typeFullName.l shouldBe List("MyContainer")
+      val List(c1Constructor) = cpg.call.isAssignment.argument(2).isCall.l
+      c1Constructor.methodFullName shouldBe "MyContainer.MyContainer:ANY(int)"
+      c1Constructor.name shouldBe "MyContainer"
+      c1Constructor.signature shouldBe "ANY(int)"
+      c1Constructor.argument(1).code shouldBe "1"
     }
 
     "handle declaring non-type template parameters with auto" in {
@@ -363,7 +376,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
         .l shouldBe List(
         "std::lock_guard<std::mutex> lk(mx)",
         "if (std::lock_guard<std::mutex> lk(mx); v.empty()) { v.push_back(val); }",
-        "gadget = Foo(args)",
+        "gadget = Foo.Foo(args)",
         "s = gadget.status()",
         "switch (Foo gadget(args); auto s = gadget.status()) { case OK: gadget.zip(); break; case Bad: throw BadFoo(s.message()); }"
       )

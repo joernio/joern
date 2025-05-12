@@ -111,10 +111,14 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
   }
 
-  protected def isCppConstructor(funcDef: IASTFunctionDefinition): Boolean = {
+  protected def isCppConstructor(funcDef: IASTFunctionDefinition, name: String = "", fullName: String = ""): Boolean = {
     funcDef match {
-      case cppFunc: CPPASTFunctionDefinition => cppFunc.getMemberInitializers.nonEmpty
-      case _                                 => false
+      case cppFunc: CPPASTFunctionDefinition =>
+        cppFunc.getMemberInitializers.nonEmpty
+        || scope.computeScopePath.endsWith(s".$name")
+        || (scope.computeScopePath.nonEmpty && scope.computeScopePath == name)
+        || fullName.startsWith(s"$name.$name")
+      case _ => false
     }
   }
 
@@ -122,7 +126,6 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val filename                                                  = fileName(funcDef)
     val MethodFullNameInfo(name, fullName, signature, returnType) = methodFullNameInfo(funcDef)
     registerMethodDefinition(fullName)
-
     val shouldCreateFunctionReference = typeRefIdStack.headOption.isEmpty
     val methodRefNode_ = if (!shouldCreateFunctionReference) { None }
     else { Option(methodRefNode(funcDef, name, fullName, fullName)) }
@@ -158,23 +161,29 @@ trait AstForFunctionsCreator { this: AstCreator =>
       parameterNode(p, i)
     }
     setVariadic(parameterNodes, funcDef)
+    val methodBodyAst = astForMethodBody(Option(funcDef.getBody), methodBlockNode)
+
+    scope.popScope()
+    methodAstParentStack.pop()
 
     val astForMethod = methodAst(
       methodNode_,
       parameterNodes.map(Ast(_)),
-      astForMethodBody(Option(funcDef.getBody), methodBlockNode),
+      methodBodyAst,
       methodReturnNode(funcDef, registerType(returnType)),
-      modifiers = modifierFor(funcDef)
+      modifiers = modifierFor(funcDef, name, fullName)
     )
-
-    scope.popScope()
-    methodAstParentStack.pop()
 
     methodRefNode_ match {
       case Some(ref) =>
         createFunctionTypeAndTypeDecl(funcDef, methodNode_)
         Ast.storeInDiffGraph(astForMethod, diffGraph)
-        diffGraph.addEdge(methodAstParentStack.head, methodNode_, EdgeTypes.AST)
+        if (isCppConstructor(funcDef, name, fullName) && fullName.contains(s".$name:")) {
+          methodNode_.astParentType = TypeDecl.Label
+          methodNode_.astParentFullName = fullName.substring(0, fullName.lastIndexOf(s".$name:"))
+        } else {
+          diffGraph.addEdge(methodAstParentStack.head, methodNode_, EdgeTypes.AST)
+        }
         Ast(ref)
       case None =>
         val typeDeclAst = createFunctionTypeAndTypeDecl(methodNode_)
@@ -259,8 +268,12 @@ trait AstForFunctionsCreator { this: AstCreator =>
     }
   }
 
-  private def modifierFor(funcDef: IASTFunctionDefinition): List[NewModifier] = {
-    val constructorModifier = if (isCppConstructor(funcDef)) {
+  private def modifierFor(
+    funcDef: IASTFunctionDefinition,
+    name: String = "",
+    fullName: String = ""
+  ): List[NewModifier] = {
+    val constructorModifier = if (isCppConstructor(funcDef, name, fullName)) {
       List(modifierNode(funcDef, ModifierTypes.CONSTRUCTOR), modifierNode(funcDef, ModifierTypes.PUBLIC))
     } else Nil
     val visibilityModifier = Try(modifierFromString(funcDef, funcDef.getSyntax.getImage)).getOrElse(Nil)

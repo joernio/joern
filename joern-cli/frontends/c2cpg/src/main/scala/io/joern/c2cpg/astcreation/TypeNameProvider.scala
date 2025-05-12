@@ -20,8 +20,8 @@ object TypeNameProvider {
 
 trait TypeNameProvider { this: AstCreator =>
 
-  import TypeNameProvider.TypeLike
   import FullNameProvider.*
+  import TypeNameProvider.TypeLike
 
   // Sadly, there is no predefined List / Enum of this within Eclipse CDT:
   private val ReservedKeywordsAtTypes: List[String] =
@@ -163,6 +163,37 @@ trait TypeNameProvider { this: AstCreator =>
     }
   }
 
+  private val FundamentalTypeKeywords = List(
+    "void",
+    "bool",
+    "true",
+    "false",
+    "char",
+    "char8_t",
+    "char16_t",
+    "char32_t",
+    "wchar_t",
+    "int",
+    "short",
+    "long",
+    "signed",
+    "unsigned",
+    "float",
+    "double"
+  )
+
+  /** https://en.cppreference.com/w/cpp/language/types */
+  protected def isFundamentalTypeKeywords(tpe: String): Boolean =
+    FundamentalTypeKeywords.contains(tpe.replace("*", "").replace("&", ""))
+
+  /** https://www.w3schools.com/cpp/cpp_variables_identifiers.asp */
+  protected def isValidFullNameChar(char: Char): Boolean = char match {
+    case c if c.isLetterOrDigit => true
+    case c if c == '_'          => true
+    case c if c == '.'          => true
+    case _                      => false
+  }
+
   @nowarn
   protected def typeFor(node: IASTNode): String = {
     import org.eclipse.cdt.core.dom.ast.ASTSignatureUtil.getNodeSignature
@@ -213,19 +244,21 @@ trait TypeNameProvider { this: AstCreator =>
   }
 
   private def returnTypeForIASTFunctionDefinition(definition: IASTFunctionDefinition): String = {
-    if (isCppConstructor(definition)) {
-      cleanType(typeFor(definition.asInstanceOf[CPPASTFunctionDefinition].getMemberInitializers.head.getInitializer))
-    } else {
-      safeGetBinding(definition.getDeclarator.getName) match {
-        case Some(_: ICPPFunctionTemplate) =>
-          typeForDeclSpecifier(definition.getDeclSpecifier)
-        case Some(value: ICPPMethod) if !value.getType.toString.startsWith("?") =>
-          cleanType(safeGetType(value.getType.getReturnType))
-        case Some(value: ICPPFunction) if !value.getType.toString.startsWith("?") =>
-          cleanType(safeGetType(value.getType.getReturnType))
-        case _ =>
-          typeForDeclSpecifier(definition.getDeclSpecifier)
-      }
+    definition match {
+      case cppFunctionDefinition: ICPPASTFunctionDefinition
+          if isCppConstructor(cppFunctionDefinition) && cppFunctionDefinition.getMemberInitializers.nonEmpty =>
+        cleanType(typeFor(cppFunctionDefinition.getMemberInitializers.head.getInitializer))
+      case other =>
+        safeGetBinding(other.getDeclarator.getName) match {
+          case Some(_: ICPPFunctionTemplate) =>
+            typeForDeclSpecifier(other.getDeclSpecifier)
+          case Some(value: ICPPMethod) if !value.getType.toString.startsWith("?") =>
+            cleanType(safeGetType(value.getType.getReturnType))
+          case Some(value: ICPPFunction) if !value.getType.toString.startsWith("?") =>
+            cleanType(safeGetType(value.getType.getReturnType))
+          case _ =>
+            typeForDeclSpecifier(other.getDeclSpecifier)
+        }
     }
   }
 

@@ -7,12 +7,15 @@ import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.c.CVariable
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTIdExpression
+import org.eclipse.cdt.internal.core.dom.parser.cpp.{
+  CPPASTFunctionDeclarator,
+  CPPASTFunctionDefinition,
+  CPPASTIdExpression,
+  CPPASTNamedTypeSpecifier,
+  CPPFunction,
+  CPPVariable
+}
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalBinding
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDeclarator
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDefinition
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPFunction
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPVariable
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import scala.annotation.tailrec
@@ -360,6 +363,16 @@ trait FullNameProvider { this: AstCreator =>
         }
       case definition: ICPPASTFunctionDefinition =>
         Some(fullName(definition.getDeclarator))
+      case typeSpecifier: CPPASTNamedTypeSpecifier if typeSpecifier.isFriend =>
+        safeGetBinding(typeSpecifier.getName) match {
+          case Some(b: ICPPBinding) if b.getName.nonEmpty => Option(s"${scope.computeScopePath}.${b.getName}")
+          case _                                          => None
+        }
+      case typeSpecifier: IASTNamedTypeSpecifier =>
+        safeGetBinding(typeSpecifier.getName) match {
+          case Some(b: ICPPBinding) if b.getName.nonEmpty => Option(b.getQualifiedName.mkString("."))
+          case _                                          => None
+        }
       case namespace: ICPPASTNamespaceDefinition =>
         safeGetBinding(namespace.getName) match {
           case Some(b: ICPPBinding) if b.getName.nonEmpty => Option(b.getQualifiedName.mkString("."))
@@ -420,11 +433,6 @@ trait FullNameProvider { this: AstCreator =>
     s"${scope.computeScopePath}.$name"
   }
 
-  private def fullNameForIASTNamedTypeSpecifier(namedTypeSpecifier: IASTNamedTypeSpecifier): String = {
-    val name = shortName(namedTypeSpecifier)
-    s"${scope.computeScopePath}.$name"
-  }
-
   private def fullNameForIASTElaboratedTypeSpecifier(elaboratedTypeSpecifier: IASTElaboratedTypeSpecifier): String = {
     val name = shortName(elaboratedTypeSpecifier)
     s"${scope.computeScopePath}.$name"
@@ -436,6 +444,16 @@ trait FullNameProvider { this: AstCreator =>
 
   private def fullNameForIASTFunctionDefinition(functionDefinition: IASTFunctionDefinition): String = {
     Try(ASTStringUtil.getQualifiedName(functionDefinition.getDeclarator.getName)).getOrElse(nextClosureName())
+  }
+
+  private def fullNameForIASTNamedTypeSpecifier(typeSpecifier: IASTNamedTypeSpecifier): String = {
+    typeSpecifier match {
+      case typeSpecifier: CPPASTNamedTypeSpecifier if typeSpecifier.isFriend =>
+        s"${scope.computeScopePath}.${typeSpecifier.getName}"
+      case _ =>
+        Try(ASTStringUtil.getQualifiedName(typeSpecifier.getName)).getOrElse(shortName(typeSpecifier))
+    }
+
   }
 
 }

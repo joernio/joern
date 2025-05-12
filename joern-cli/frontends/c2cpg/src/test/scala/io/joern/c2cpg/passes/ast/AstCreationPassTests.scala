@@ -1186,7 +1186,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
         .fullNameExact("Foo")
         .l
         .size shouldBe 1
-      inside(cpg.call.codeExact("f1 = Foo(0)").l) { case List(call: Call) =>
+      inside(cpg.call.codeExact("f1 = Foo.Foo(0)").l) { case List(call: Call) =>
         call.name shouldBe Operators.assignment
       }
     }
@@ -1384,8 +1384,10 @@ class AstCreationPassTests extends AstC2CpgSuite {
         |""".stripMargin,
         "file.cpp"
       )
-      // TODO: "<operator>.new" is not part of Operators
-      cpg.call.nameExact("<operator>.new").code("new int\\[n\\]").argument.code("int").size shouldBe 1
+      val List(constructorCall) = cpg.call.codeExact("new int[n]").l
+      constructorCall.methodFullName shouldBe Operators.alloc
+      constructorCall.typeFullName shouldBe Defines.Any
+      constructorCall.argument.code.l shouldBe List("int")
     }
 
     "be correct for 'new' with explicit identifier" in {
@@ -1398,15 +1400,53 @@ class AstCreationPassTests extends AstC2CpgSuite {
         |""".stripMargin,
         "file.cpp"
       )
-      // TODO: "<operator>.new" is not part of Operators
-      val List(newCall)         = cpg.call.nameExact("<operator>.new").l
-      val List(string, hi, buf) = newCall.argument.l
-      string.argumentIndex shouldBe 1
-      string.code shouldBe "string"
-      hi.argumentIndex shouldBe 2
-      hi.code shouldBe "\"hi\""
-      buf.argumentIndex shouldBe 3
-      buf.code shouldBe "buf"
+      val List(constructorCall) = cpg.call.codeExact("""new (buf) string("hi")""").l
+      constructorCall.methodFullName shouldBe "string.string:ANY(char[3],char[80])"
+      constructorCall.signature shouldBe "ANY(char[3],char[80])"
+      constructorCall.typeFullName shouldBe Defines.Any
+      constructorCall.argument.code.l shouldBe List(""""hi"""", "buf")
+    }
+
+    "be correct for externally defined constructor" in {
+      val cpg = code(
+        """
+          |class Foo {
+          |  public:
+          |    Foo(int i) {};
+          |};
+          |
+          |Foo::Foo(int i, int j) {};
+          |Bar::Bar(float x) {};
+          |
+          |void method() {
+          |   Foo f1(0);
+          |   Foo f2(0, 1);
+          |   Bar b1(0.0f);
+          |
+          |   Foo f3 = new Foo(0);
+          |   Foo f4 = new Foo(0, 1);
+          |   Bar b2 = new Bar(0.0f);
+          |}
+          |""".stripMargin,
+        "file.cpp"
+      )
+      val List(fileGlobalMethod) = cpg.method.fullNameExact("file.cpp:<global>").l
+      val List(fooTypeDecl)      = cpg.typeDecl.fullNameExact("Foo").l
+      val List(c1, c2, c3)       = cpg.method.isConstructor.l
+      c1.fullName shouldBe "Foo.Foo:ANY(int)"
+      c2.fullName shouldBe "Foo.Foo:ANY(int,int)"
+      c3.fullName shouldBe "Bar.Bar:ANY(float)"
+      c1.astIn.l shouldBe List(fooTypeDecl)
+      c2.astIn.l shouldBe List(fooTypeDecl)
+      c3.astIn.l shouldBe List(fileGlobalMethod)
+      val List(f1Call, f2Call, b1Call, f3Call, f4Call, b2Call) =
+        cpg.method.nameExact("method").ast.isCall.isAssignment.argument(2).isCall.l
+      f1Call.methodFullName shouldBe "Foo.Foo:ANY(int)"
+      f2Call.methodFullName shouldBe "Foo.Foo:ANY(int,int)"
+      b1Call.methodFullName shouldBe "Bar.Bar:ANY(float)"
+      f3Call.methodFullName shouldBe "Foo.Foo:ANY(int)"
+      f4Call.methodFullName shouldBe "Foo.Foo:ANY(int,int)"
+      b2Call.methodFullName shouldBe "Bar.Bar:ANY(float)"
     }
 
     // for: https://github.com/ShiftLeftSecurity/codepropertygraph/issues/1526
@@ -1698,6 +1738,10 @@ class AstCreationPassTests extends AstC2CpgSuite {
     "be correct for 'new' object" in {
       val cpg = code(
         """
+        |class Foo {
+        |  public:
+        |    Foo(int i, int j) {};
+        |}
         |Foo* alloc(int n) {
         |   Foo* foo = new Foo(n, 42);
         |   return foo;
@@ -1705,7 +1749,12 @@ class AstCreationPassTests extends AstC2CpgSuite {
         |""".stripMargin,
         "file.cpp"
       )
-      cpg.call.nameExact("<operator>.new").codeExact("new Foo(n, 42)").argument.code("Foo").size shouldBe 1
+      val List(constructorCall) = cpg.call.codeExact("new Foo(n, 42)").l
+      constructorCall.methodFullName shouldBe "Foo.Foo:ANY(int,int)"
+      constructorCall.signature shouldBe "ANY(int,int)"
+      constructorCall.typeFullName shouldBe Defines.Any
+      constructorCall.argument.code.l shouldBe List("n", "42")
+      cpg.typeDecl.nameExact("Foo").astChildren.isMethod.isConstructor.fullName.l shouldBe List("Foo.Foo:ANY(int,int)")
     }
 
     "be correct for simple 'delete'" in {

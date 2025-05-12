@@ -73,52 +73,115 @@ trait AstForTypesCreator { this: AstCreator =>
   }
 
   protected def astForInitializer(declarator: IASTDeclarator, init: IASTInitializer): Ast = {
-    val name         = ASTStringUtil.getSimpleName(declarator.getName)
-    val tpe          = scope.lookupVariable(name).map(_._2).getOrElse(Defines.Any)
-    val operatorName = Operators.assignment
-    val leftAst      = astForNode(declarator.getName)
+    val name                = ASTStringUtil.getSimpleName(declarator.getName)
+    val tpe                 = scope.lookupVariable(name).map(_._2.takeWhile(isValidFullNameChar)).getOrElse(Defines.Any)
+    val constructorCallName = tpe.split(".").lastOption.getOrElse(tpe)
+    val assignmentOperatorName = Operators.assignment
+    val initCode               = code(init).stripPrefix("{").stripSuffix("}").stripPrefix("(").stripSuffix(")")
+    val signature              = s"${Defines.Any}(${initializerSignature(init)})"
+    val fullNameWithSig        = s"$tpe.$constructorCallName:$signature"
+
+    val leftAst = astForNode(declarator.getName)
     init match {
       case i: IASTEqualsInitializer =>
         val assignmentCallNode =
           callNode(
             declarator,
             code(declarator),
-            operatorName,
-            operatorName,
+            assignmentOperatorName,
+            assignmentOperatorName,
             DispatchTypes.STATIC_DISPATCH,
             None,
             Some(tpe)
           )
         val right = astForNode(i.getInitializerClause)
         callAst(assignmentCallNode, List(leftAst, right))
+      case i: ICPPASTConstructorInitializer if !isFundamentalTypeKeywords(tpe) =>
+        val constructorCallNode = callNode(
+          i,
+          s"$tpe.$constructorCallName($initCode)",
+          tpe,
+          fullNameWithSig,
+          DispatchTypes.STATIC_DISPATCH,
+          Some(signature),
+          Some(registerType(Defines.Any))
+        )
+        val args               = astsForConstructorInitializer(i)
+        val constructorCallAst = callAst(constructorCallNode, args)
+
+        val assignmentCallNode =
+          callNode(
+            declarator,
+            s"$name = $tpe.$constructorCallName($initCode)",
+            assignmentOperatorName,
+            assignmentOperatorName,
+            DispatchTypes.STATIC_DISPATCH,
+            None,
+            Some(tpe)
+          )
+        callAst(assignmentCallNode, List(leftAst, constructorCallAst))
       case i: ICPPASTConstructorInitializer =>
         val assignmentCallNode =
           callNode(
             declarator,
             s"$name = $tpe${code(i)}",
-            operatorName,
-            operatorName,
+            assignmentOperatorName,
+            assignmentOperatorName,
             DispatchTypes.STATIC_DISPATCH,
             None,
             Some(tpe)
           )
         val args = List(leftAst, astForNode(i))
         callAst(assignmentCallNode, args)
-      case i: IASTInitializerList =>
+      case i: IASTInitializerList if isFundamentalTypeKeywords(tpe) =>
         val assignmentCallNode =
           callNode(
             declarator,
             code(declarator),
-            operatorName,
-            operatorName,
+            assignmentOperatorName,
+            assignmentOperatorName,
             DispatchTypes.STATIC_DISPATCH,
             None,
             Some(tpe)
           )
         val right = astForNode(i)
         callAst(assignmentCallNode, List(leftAst, right))
+      case i: IASTInitializerList =>
+        val constructorCallNode = callNode(
+          i,
+          s"$tpe.$constructorCallName($initCode)",
+          tpe,
+          fullNameWithSig,
+          DispatchTypes.STATIC_DISPATCH,
+          Some(signature),
+          Some(registerType(Defines.Any))
+        )
+        val args               = astsForInitializerClauses(i.getClauses)
+        val constructorCallAst = callAst(constructorCallNode, args)
+
+        val assignmentCallNode = callNode(
+          declarator,
+          s"$name = $tpe.$constructorCallName($initCode)",
+          assignmentOperatorName,
+          assignmentOperatorName,
+          DispatchTypes.STATIC_DISPATCH,
+          None,
+          Some(tpe)
+        )
+        callAst(assignmentCallNode, List(leftAst, constructorCallAst))
       case _ => astForNode(init)
     }
+  }
+
+  private def initializerSignature(init: IASTInitializer): String = {
+    val argTypes = init match {
+      case c: ICPPASTConstructorInitializer =>
+        c.getArguments.collect { case e: IASTExpression => e }.map(t => cleanType(safeGetType(t.getExpressionType)))
+      case list: IASTInitializerList =>
+        list.getClauses.collect { case e: IASTExpression => e }.map(t => cleanType(safeGetType(t.getExpressionType)))
+      case _ => Array.empty[String]
+    }
+    StringUtils.normalizeSpace(argTypes.mkString(","))
   }
 
   protected def astForAliasDeclaration(aliasDeclaration: ICPPASTAliasDeclaration): Ast = {
