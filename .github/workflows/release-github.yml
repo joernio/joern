@@ -31,6 +31,7 @@ jobs:
       - name: Delete `.cargo` directory # to save disk space
         run: rm -rf /home/runner/.cargo
         if: runner.os == 'Linux'
+      - run: sbt createDistribution
       - run: |
           cd joern-cli/target/universal/stage
           ./schema-extender/test.sh
