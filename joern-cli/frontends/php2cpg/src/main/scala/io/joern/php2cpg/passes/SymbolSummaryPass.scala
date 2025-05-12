@@ -3,19 +3,22 @@ package io.joern.php2cpg.passes
 import io.joern.php2cpg.Config
 import io.joern.php2cpg.parser.Domain.*
 import io.joern.php2cpg.parser.{Domain, PhpParser}
-import io.joern.php2cpg.passes.SymbolSummaryPass.PhpNamespace
+import io.joern.php2cpg.passes.SymbolSummaryPass.{PhpNamespace, SymbolSummary}
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
+import scala.jdk.CollectionConverters.*
 
 /** Gathers all the symbols from types and methods one can import from each PHP script and namespace.
   *
-  * @param captureResult
-  *   when a task has finished summarizing a file, this method captures the result. This is not thread safe.
+  * @param captureSummary
+  *   when the pass has finished summarizing all files, this method captures the result. This is thread safe.
   */
-class SymbolSummaryPass(config: Config, cpg: Cpg, parser: PhpParser, captureResult: PhpNamespace => Unit)
+class SymbolSummaryPass(config: Config, cpg: Cpg, parser: PhpParser, captureSummary: Seq[SymbolSummary] => Unit)
     extends ForkJoinParallelCpgPass[BatchOfPhpScripts](cpg)
     with AstParsingPass(config, parser) {
+
+  private val summary = new java.util.concurrent.ConcurrentLinkedQueue[SymbolSummary]()
 
   import io.joern.php2cpg.passes.SymbolSummaryPass.*
 
@@ -25,7 +28,12 @@ class SymbolSummaryPass(config: Config, cpg: Cpg, parser: PhpParser, captureResu
       case namespace: PhpNamespaceStmt if namespace.name.isEmpty => namespace.stmts.flatMap(visit)
       case stmt                                                  => visit(stmt).toList
     }
-    captureResult(PhpNamespace(fullName, children))
+    summary.add(PhpNamespace(fullName, children))
+  }
+
+  override def finish(): Unit = {
+    val dedupSummary = SymbolSummaryPass.deduplicateSummary(summary.asScala.toSeq)
+    captureSummary(dedupSummary)
   }
 
   private def visit(node: PhpNode): Seq[SymbolSummary] = {

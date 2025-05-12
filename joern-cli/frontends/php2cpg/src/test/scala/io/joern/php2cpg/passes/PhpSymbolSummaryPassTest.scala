@@ -10,7 +10,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 import java.nio.file.Files
-import scala.collection.mutable
 
 class PhpSymbolSummaryPassTest extends AnyWordSpec with Matchers {
 
@@ -126,7 +125,7 @@ object PhpSymbolSummaryPassTest {
 
   def assertAgainstTempFile(code: Seq[String], assertion: Seq[SymbolSummary] => Unit): Unit = {
     FileUtil.usingTemporaryDirectory("php-test") { tmpDirPath =>
-      code.zipWithIndex.map { (content, idx) =>
+      code.zipWithIndex.foreach { (content, idx) =>
         val tmpFilePath = tmpDirPath / s"Test$idx.php"
         Files.createFile(tmpFilePath)
         FileUtil.writeBytes(tmpFilePath, content.getBytes)
@@ -134,9 +133,9 @@ object PhpSymbolSummaryPassTest {
       val config = Config().withInputPath(tmpDirPath.toString)
       PhpParser.getParser(config) match {
         case Some(parser) =>
-          val buffer = mutable.Buffer.empty[SymbolSummary]
-          new SymbolSummaryPass(config, Cpg.empty, parser, buffer.append).createAndApply()
-          assertion(SymbolSummaryPass.deduplicateSummary(buffer.toSeq))
+          var buffer = Option.empty[Seq[SymbolSummary]]
+          new SymbolSummaryPass(config, Cpg.empty, parser, summary => buffer = Option(summary)).createAndApply()
+          buffer.foreach(assertion)
         case None => Matchers.fail(s"Unable to create a PHP parser! See logs for details.")
       }
     }
