@@ -42,8 +42,13 @@ class SymbolSummaryPass(config: Config, cpg: Cpg, parser: PhpParser, captureResu
   private def visitNamespaceStmt(stmt: PhpNamespaceStmt): Seq[SymbolSummary] = {
     val children = stmt.stmts.flatMap(visit)
     stmt.name match {
-      case None       => children
-      case Some(name) => PhpNamespace(name.name, children) :: Nil
+      case None => children
+      case Some(name) =>
+        val nameParts = name.name.split("\\\\")
+        nameParts.tail.foldLeft(PhpNamespace(nameParts.head, children))((acc, name) =>
+          val nextNamespace = PhpNamespace(name, acc.children)
+          acc.copy(children = nextNamespace :: Nil)
+        ) :: Nil
     }
   }
 
@@ -62,6 +67,15 @@ class SymbolSummaryPass(config: Config, cpg: Cpg, parser: PhpParser, captureResu
 }
 
 object SymbolSummaryPass {
+
+  def deduplicateSummary(summary: Seq[SymbolSummary]): Seq[SymbolSummary] = {
+    summary.foldLeft(Seq.empty[SymbolSummary])((acc, next) =>
+      acc match {
+        case Nil          => next :: Nil
+        case head :: tail => head + next ++ tail
+      }
+    )
+  }
 
   sealed trait SymbolSummary {
 

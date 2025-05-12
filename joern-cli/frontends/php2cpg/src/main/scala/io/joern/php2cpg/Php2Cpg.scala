@@ -63,13 +63,8 @@ class Php2Cpg extends X2CpgFrontend[Config] {
         parser.foreach { parser =>
           val summary = new java.util.concurrent.ConcurrentLinkedQueue[SymbolSummary]()
           new SymbolSummaryPass(config, cpg, parser, summary.add).createAndApply()
-          val reducedSummary = summary.asScala.foldLeft(Seq.empty[SymbolSummary])((acc, next) =>
-            acc match {
-              case Nil          => next :: Nil
-              case head :: tail => head + next ++ tail
-            }
-          )
-          new AstCreationPass(config, cpg, parser, reducedSummary).createAndApply()
+          val dedupSummary = SymbolSummaryPass.deduplicateSummary(summary.asScala.toSeq)
+          new AstCreationPass(config, cpg, parser, dedupSummary).createAndApply()
         }
         new AstParentInfoPass(cpg).createAndApply()
         new AnyTypePass(cpg).createAndApply()
