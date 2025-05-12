@@ -36,9 +36,6 @@ jobs:
           ./schema-extender/test.sh
           cd -
       - run: sha512sum target/joern-cli.zip > target/joern-cli.zip.sha512
-      - name: Export ENV vars
-        run:
-          echo "LATEST_TAG=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
       - run: sbt "querydb/runMain io.joern.dumpq.Main"
       - name: Create Release
         id: create_release
@@ -46,8 +43,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ env.LATEST_TAG }}
-          release_name: ${{ env.LATEST_TAG }}
+          tag_name: ${{ github.ref_name }}
+          release_name: ${{ github.ref_name }}
           draft: false
           prerelease: false
       - name: Upload joern-install.sh
