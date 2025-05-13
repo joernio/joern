@@ -1449,6 +1449,27 @@ class AstCreationPassTests extends AstC2CpgSuite {
       b2Call.methodFullName shouldBe "Bar.Bar:ANY(float)"
     }
 
+    "be correct for externally defined constructor with class in different file" in {
+      val cpg = code(
+        """
+          |Bar::Bar(float x) {};
+          |
+          |void method() {
+          |   Bar b1(0.0f);
+          |   Bar b2 = new Bar(0.0f);
+          |}
+          |""".stripMargin,
+        "file.cpp"
+      ).moreCode("class Bar {};", "Bar.cpp")
+      val List(barTypeDecl) = cpg.typeDecl.fullNameExact("Bar").l
+      val List(c)           = cpg.method.isConstructor.l
+      c.fullName shouldBe "Bar.Bar:ANY(float)"
+      c.astIn.l shouldBe List(barTypeDecl)
+      val List(b1Call, b2Call) = cpg.method.nameExact("method").ast.isCall.isAssignment.argument(2).isCall.l
+      b1Call.methodFullName shouldBe "Bar.Bar:ANY(float)"
+      b2Call.methodFullName shouldBe "Bar.Bar:ANY(float)"
+    }
+
     // for: https://github.com/ShiftLeftSecurity/codepropertygraph/issues/1526
     "be correct for array size" in {
       val cpg = code("""
