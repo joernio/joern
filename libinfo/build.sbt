@@ -12,6 +12,10 @@ libraryDependencies ++= Seq(
   "org.http4s"             %% "http4s-ember-server" % Versions.http4s,
   "org.http4s"             %% "http4s-dsl"          % Versions.http4s,
   "org.scalatest"          %% "scalatest"           % Versions.scalatest % Test,
+  "org.apache.maven"        % "maven-core"          % "3.9.9",
+  "org.apache.maven"        % "maven-compat"        % "3.9.9",
+  "org.apache.maven.resolver" % "maven-resolver-transport-http" % "1.9.22",
+  "org.apache.maven.resolver" % "maven-resolver-connector-basic" % "1.9.22",
 )
 
 enablePlugins(JavaAppPackaging)

@@ -15,14 +15,14 @@ import scala.collection.immutable.VectorMap
 // gradle - highest version wins
 class DefaultResolver[F[_]: Sync: Parallel, I <: Id](metaDataFetcher: MetaDataFetcher[F, I],
                                               metaDataCalculator: MetaDataCalculator[F, I],
-                                              resolutionModel: ResolutionModel[F, I]) extends Resolver[F, I] {
+                                              resolutionModel: ResolutionModel[F, I]) extends Resolver[F, I, BuildTarget[I]] {
   private given Logger[F] = Slf4jLogger.getLogger[F]()
   type CoordT = Coordinate[I]
   type MetaDataT = MetaData[I]
 
-  override def resolve(directDeps: Vector[CoordT]): F[Vector[CoordT]] = {
+  override def resolve(buildTarget: BuildTarget[I]): F[Vector[CoordT]] = {
     for {
-      resolvedDepsMap <- resolve(VectorMap.empty, directDeps, "<root>")
+      resolvedDepsMap <- resolve(VectorMap.empty, buildTarget.directDependencies, "<root>")
       resolvedDeps = resolvedDepsMap.values.toVector
     } yield resolvedDeps
   }

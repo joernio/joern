@@ -138,6 +138,11 @@ object PomUtil {
       return None
     }
 
+    val optional = getChildAsTextInterpolated(dep, "optional", context)
+    if (optional.isDefined && optional.get.toLowerCase == "true") {
+      return None
+    }
+
     val groupId = getChildAsTextInterpolated(dep, "groupId", context)
     val artifactId = getChildAsTextInterpolated(dep, "artifactId", context)
     val version = getChildAsTextInterpolated(dep, "version", context)

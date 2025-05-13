@@ -32,13 +32,14 @@ class ResolveTests extends AnyWordSpec with Matchers {
       Coordinate(IdGeneric("a"), "v1"),
       Coordinate(IdGeneric("b"), "v2"),
     )
+    val buildTarget = BuildTarget(IdGeneric("SomeId"), directDeps)
 
 
     val metaDataFetcher = new DummyMetaDataFetcher[IO](map)
     val resolver = new DefaultResolver(metaDataFetcher, new FailMetaDataCalculator, new NaiveResolutionModel)
 
     import cats.effect.unsafe.IORuntime
-    val resolvedDeps = resolver.resolve(directDeps).unsafeRunSync()(IORuntime.global)
+    val resolvedDeps = resolver.resolve(buildTarget).unsafeRunSync()(IORuntime.global)
 
     resolvedDeps should contain theSameElementsAs(
       Vector(
