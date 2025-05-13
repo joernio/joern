@@ -393,7 +393,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       callNode(nodeInfo, s"$RequireKeyword(${sourceCallArgNode.code})", RequireKeyword, DispatchTypes.DYNAMIC_DISPATCH)
 
     val receiverNode = identifierNode(nodeInfo, RequireKeyword)
-    val thisNode     = identifierNode(nodeInfo, "this").dynamicTypeHintFullName(typeHintForThisExpression())
+    val thisNode     = identifierNode(nodeInfo, "this")
     scope.addVariableReference(thisNode.name, thisNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
     val cAst = callAst(
       sourceCall,

@@ -10,6 +10,31 @@ class TsClassesAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
 
   "AST generation for TS classes" should {
 
+    "have correct structure for parameter properties" in {
+      val cpg = code("""
+          |class Params {
+          |  constructor(
+          |    public readonly x: number,
+          |    protected y: number,
+          |    private z: number
+          |  ) {}
+          |}
+          |""".stripMargin)
+      val List(x, y, z) = cpg.typeDecl.nameExact("Params").member.l
+      x.name shouldBe "x"
+      x.typeFullName shouldBe Defines.Number
+      x.modifier.modifierType.l shouldBe List(ModifierTypes.READONLY, ModifierTypes.PUBLIC)
+      y.name shouldBe "y"
+      y.typeFullName shouldBe Defines.Number
+      y.modifier.modifierType.l shouldBe List(ModifierTypes.PROTECTED)
+      z.name shouldBe "z"
+      z.typeFullName shouldBe Defines.Number
+      z.modifier.modifierType.l shouldBe List(ModifierTypes.PRIVATE)
+      val List(constructor) = cpg.typeDecl.nameExact("Params").method.isConstructor.l
+      constructor.parameter.name.l shouldBe List("this", "x", "y", "z")
+      constructor.block.assignment.code.l shouldBe List("this.x = x", "this.y = y", "this.z = z")
+    }
+
     "have correct structure for constructor parameter assignment" in {
       val cpg = code("""
         |class D {
