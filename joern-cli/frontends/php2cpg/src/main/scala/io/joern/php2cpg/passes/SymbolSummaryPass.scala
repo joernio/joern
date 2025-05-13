@@ -94,8 +94,8 @@ object SymbolSummaryPass {
     def dedup: Seq[SymbolSummary] = {
       xs.foldLeft(Seq.empty[SymbolSummary])((acc, next) =>
         acc match {
-          case Nil => next :: Nil
-          case xs  => xs.flatMap(_ + next)
+          case Nil          => next :: Nil
+          case head :: tail => head + next ++ tail
         }
       )
     }
@@ -120,8 +120,8 @@ object SymbolSummaryPass {
     protected def combineChildren(o: SymbolSummary & HasChildren): Seq[SymbolSummary] = {
       (this.children ++ o.children).foldLeft(Seq.empty[SymbolSummary])((acc, next) =>
         acc match {
-          case Nil => next :: Nil
-          case xs  => xs.flatMap(_ + next)
+          case Nil          => next :: Nil
+          case head :: tail => head + next ++ tail
         }
       )
     }
