@@ -9,10 +9,10 @@ import fs2.Stream
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 
-class Orchestrator[F[_]: Async, I <: Id](extractor: BuildTargetExtractor[F, I],
-                                         resolver: Resolver[F, I],
-                                         libInfoFetcher: LibInfoFetcher[F, I],
-                                         libInfoStore: LibInfoStore[F]
+class Orchestrator[F[_]: Async, I <: Id, InOut](extractor: BuildTargetExtractor[F, InOut],
+                                                resolver: Resolver[F, I, InOut],
+                                                libInfoFetcher: LibInfoFetcher[F, I],
+                                                libInfoStore: LibInfoStore[F]
                                         ) {
   private given Logger[F] = Slf4jLogger.getLogger[F]()
 
@@ -21,9 +21,9 @@ class Orchestrator[F[_]: Async, I <: Id](extractor: BuildTargetExtractor[F, I],
   }
 
   def run(buildFiles: List[Path]): Stream[F, Unit] = {
-    Stream.evalSeq(extractor.extractBuildTargets(buildFiles)).parEvalMapUnbounded { buildTarget =>
-        resolver.resolve(buildTarget.directDependencies).flatMap { resolvedDeps =>
-          Logger[F].debug(s"${buildTarget.id} $resolvedDeps") >>
+    Stream.evalSeq(extractor.extractBuildTargets(buildFiles)).parEvalMapUnbounded { inOut =>
+        resolver.resolve(inOut).flatMap { resolvedDeps =>
+          Logger[F].debug(s"$inOut $resolvedDeps") >>
             Stream.emits(resolvedDeps).through(libInfoFetcher.fetch).evalMap { case (dep, libInfoOption) =>
               libInfoOption match {
                 case Some(libInfo) =>
