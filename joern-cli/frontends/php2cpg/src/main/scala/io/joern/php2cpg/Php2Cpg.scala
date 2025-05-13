@@ -2,6 +2,7 @@ package io.joern.php2cpg
 
 import io.joern.php2cpg.parser.PhpParser
 import io.joern.php2cpg.passes.*
+import io.joern.php2cpg.passes.SymbolSummaryPass.SymbolSummary
 import io.joern.php2cpg.utils.DependencyDownloader
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
@@ -14,6 +15,7 @@ import versionsort.VersionHelper
 import scala.collection.mutable
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
+import scala.jdk.CollectionConverters.*
 
 class Php2Cpg extends X2CpgFrontend[Config] {
 
@@ -58,7 +60,15 @@ class Php2Cpg extends X2CpgFrontend[Config] {
           // Parse dependencies and add high-level nodes to the CPG
           new DependencySymbolsPass(cpg, dependencyDir).createAndApply()
         }
-        new AstCreationPass(config, cpg, parser.get)(config.schemaValidation).createAndApply()
+        parser.foreach { parser =>
+          // The following block parses the code twice, once to summarize all symbols across various namespaces, and
+          // twice to build the AST. This helps resolve symbols during the latter parse. Compared to parsing once, and
+          // holding the AST in-memory, it was decided that parsing did not incur a significant speed impact, and lower
+          // memory was prioritized.
+          var buffer = Option.empty[Seq[SymbolSummary]]
+          new SymbolSummaryPass(config, cpg, parser, summary => buffer = Option(summary)).createAndApply()
+          new AstCreationPass(config, cpg, parser, buffer.getOrElse(Nil)).createAndApply()
+        }
         new AstParentInfoPass(cpg).createAndApply()
         new AnyTypePass(cpg).createAndApply()
         TypeNodePass.withTypesFromCpg(cpg).createAndApply()

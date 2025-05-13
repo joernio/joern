@@ -71,18 +71,16 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   }
 
   private def classMembers(clazz: BabelNodeInfo, withConstructor: Boolean = true): Seq[Value] = {
-    val allMembers = Try(clazz.json("body")("body").arr).toOption.toSeq.flatten
-    val dynamicallyDeclaredMembers =
-      allMembers
-        .find(isConstructor)
-        .flatMap(c => Try(c("body")("body").arr).toOption)
-        .toSeq
-        .flatten
-        .filter(isInitializedMember)
+    val allMembers                 = Try(clazz.json("body")("body").arr).toOption.toSeq.flatten
+    val constructor                = allMembers.find(isConstructor)
+    val constructorBody            = constructor.flatMap(c => Try(c("body")("body").arr).toOption)
+    val constructorParameters      = constructor.flatMap(c => Try(c("params").arr).toOption)
+    val dynamicallyDeclaredMembers = constructorBody.toSeq.flatten.filter(isInitializedMember)
+    val parameterProperties        = constructorParameters.toSeq.flatten.filter(isParameterProperty)
     if (withConstructor) {
-      allMembers ++ dynamicallyDeclaredMembers
+      parameterProperties ++ allMembers ++ dynamicallyDeclaredMembers
     } else {
-      allMembers.filterNot(isConstructor) ++ dynamicallyDeclaredMembers
+      parameterProperties ++ allMembers.diff(constructor.toSeq) ++ dynamicallyDeclaredMembers
     }
   }
 
@@ -203,6 +201,12 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         val name = nodeInfo.node match {
           case ClassProperty        => code(nodeInfo.json("key"))
           case ClassPrivateProperty => code(nodeInfo.json("key")("id"))
+          case TSParameterProperty =>
+            val unpackedParam = createBabelNodeInfo(nodeInfo.json("parameter"))
+            unpackedParam.node match {
+              case AssignmentPattern => createBabelNodeInfo(unpackedParam.json("left")).code
+              case _                 => unpackedParam.json("name").str
+            }
           // TODO: name field most likely needs adjustment for other Babel AST types
           case _ => nodeInfo.code
         }
@@ -222,10 +226,22 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       val callNode_ =
         callNode(nodeInfo, nodeInfo.code, Operators.assignment, DispatchTypes.STATIC_DISPATCH)
       val argAsts = List(lhsAst, rhsAst)
-      callAst(callNode_, argAsts)
-    } else {
-      Ast()
+      return callAst(callNode_, argAsts)
     }
+
+    if (!ignoreInitCalls && nodeInfo.node == TSParameterProperty) {
+      val name       = memberNode_.name
+      val memberNode = fieldIdentifierNode(nodeInfo, name, name)
+      val thisNode   = identifierNode(nodeInfo, "this")
+      scope.addVariableReference(thisNode.name, thisNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+      val fieldAccessAst = createFieldAccessCallAst(thisNode, memberNode, nodeInfo.lineNumber, nodeInfo.columnNumber)
+      val rhsAst         = Ast(identifierNode(nodeInfo, name, name, tpe).possibleTypes(possibleTypes))
+      val callNode_ = callNode(nodeInfo, s"this.$name = $name", Operators.assignment, DispatchTypes.STATIC_DISPATCH)
+      val argAsts   = List(fieldAccessAst, rhsAst)
+      return callAst(callNode_, argAsts)
+    }
+
+    Ast()
   }
 
   protected def astForEnum(tsEnum: BabelNodeInfo): Ast = {
@@ -300,6 +316,10 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     hasInitializedValue || isAssignment
   }
 
+  private def isParameterProperty(json: Value): Boolean = {
+    createBabelNodeInfo(json).node == TSParameterProperty
+  }
+
   private def isStaticInitBlock(json: Value): Boolean = createBabelNodeInfo(json).node == StaticBlock
 
   private def isClassMethodOrUninitializedMember(json: Value): Boolean = {
@@ -359,7 +379,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     // adding all other members and retrieving their initialization calls
     val memberInitCalls = allClassMembers
-      .filter(m => !isStaticMember(m) && isInitializedMember(m))
+      .filter(m => !isStaticMember(m) && (isInitializedMember(m) || isParameterProperty(m)))
       .map(m => astForClassMember(m, typeDeclNode_))
 
     val constructor     = createClassConstructor(clazz, memberInitCalls)
@@ -367,7 +387,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     // adding all class methods / functions and uninitialized, non-static members
     allClassMembers
-      .filter(member => isClassMethodOrUninitializedMember(member) && !isStaticMember(member))
+      .filter(m => isClassMethodOrUninitializedMember(m) && !isStaticMember(m) && !isParameterProperty(m))
       .map(m => astForClassMember(m, typeDeclNode_))
 
     // adding all static members and retrieving their initialization calls
@@ -430,6 +450,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         diffGraph.addEdge(node, NewModifier().modifierType(ModifierTypes.ABSTRACT), EdgeTypes.AST)
       if (safeBool(json, "static").contains(true))
         diffGraph.addEdge(node, NewModifier().modifierType(ModifierTypes.STATIC), EdgeTypes.AST)
+      if (safeBool(json, "readonly").contains(true))
+        diffGraph.addEdge(node, NewModifier().modifierType(ModifierTypes.READONLY), EdgeTypes.AST)
       if (safeStr(json, "accessibility").contains("public"))
         diffGraph.addEdge(node, NewModifier().modifierType(ModifierTypes.PUBLIC), EdgeTypes.AST)
       if (safeStr(json, "accessibility").contains("private"))
