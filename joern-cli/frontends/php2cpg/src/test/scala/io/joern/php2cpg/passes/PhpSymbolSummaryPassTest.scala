@@ -115,6 +115,85 @@ class PhpSymbolSummaryPassTest extends AnyWordSpec with Matchers {
     )
   }
 
+  "pre-parsing a file with a nested namespace declaration should be summarized and deduplicated accordingly" in {
+    assertAgainstTempFile(
+      """<?php
+        |namespace Foo {
+        |    class Faz {}
+        |    namespace Foo\Bar {
+        |        class Baz {}
+        |    }
+        |}
+        |""".stripMargin :: Nil,
+      {
+        case PhpNamespace(
+              globalName,
+              PhpNamespace(
+                fooName,
+                PhpClass(fazName, _) ::
+                PhpNamespace(barName, PhpClass(bazName, _) :: Nil) :: Nil
+              ) :: Nil
+            ) :: Nil =>
+          globalName shouldBe NamespaceTraversal.globalNamespaceName
+          fooName shouldBe "Foo"
+          barName shouldBe "Bar"
+          bazName shouldBe "Baz"
+          fazName shouldBe "Faz"
+      }
+    )
+  }
+
+  "pre-parsing a file with a nested function within a nested namespace should be summarized accordingly" in {
+    assertAgainstTempFile(
+      """<?php
+        |namespace Foo {
+        |    namespace Foo\Bar {
+        |        function baz() {}
+        |    }
+        |}
+        |""".stripMargin :: Nil,
+      {
+        case PhpNamespace(
+              globalName,
+              PhpNamespace(fooName, PhpNamespace(barName, PhpFunction(bazName) :: Nil) :: Nil) :: Nil
+            ) :: Nil =>
+          globalName shouldBe NamespaceTraversal.globalNamespaceName
+          fooName shouldBe "Foo"
+          barName shouldBe "Bar"
+          bazName shouldBe "baz"
+      }
+    )
+  }
+
+  "pre-parsing a file with separated namespaces should be summarized and deduplicated accordingly" in {
+    assertAgainstTempFile(
+      """<?php
+        |namespace Foo {
+        |    class Faz {}
+        |}
+        |
+        |namespace Foo\Bar {
+        |     class Baz {}
+        |}
+        |""".stripMargin :: Nil,
+      {
+        case PhpNamespace(
+              globalName,
+              PhpNamespace(
+                fooName,
+                PhpClass(fazName, _) ::
+                PhpNamespace(barName, PhpClass(bazName, _) :: Nil) :: Nil
+              ) :: Nil
+            ) :: Nil =>
+          globalName shouldBe NamespaceTraversal.globalNamespaceName
+          fooName shouldBe "Foo"
+          barName shouldBe "Bar"
+          bazName shouldBe "Baz"
+          fazName shouldBe "Faz"
+      }
+    )
+  }
+
 }
 
 object PhpSymbolSummaryPassTest {

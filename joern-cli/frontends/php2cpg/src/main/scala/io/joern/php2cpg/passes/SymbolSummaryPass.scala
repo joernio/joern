@@ -23,40 +23,48 @@ class SymbolSummaryPass(config: Config, cpg: Cpg, parser: PhpParser, captureSumm
   import io.joern.php2cpg.passes.SymbolSummaryPass.*
 
   override def processPart(builder: DiffGraphBuilder, fileName: String, result: Domain.PhpFile): Unit = {
-    val fullName = MetaDataPass.getGlobalNamespaceBlockFullName(None)
+    val fullName                   = MetaDataPass.getGlobalNamespaceBlockFullName(None)
+    val stack: NamespaceScopeStack = Seq(fullName)
+
     val children = result.children.flatMap {
-      case namespace: PhpNamespaceStmt if namespace.name.isEmpty => namespace.stmts.flatMap(visit)
-      case stmt                                                  => visit(stmt).toList
-    }
+      case namespace: PhpNamespaceStmt if namespace.name.isEmpty => namespace.stmts.flatMap(visit(_, stack))
+      case stmt                                                  => visit(stmt, stack).toList
+    }.dedup
     summary.add(PhpNamespace(fullName, children))
   }
 
   override def finish(): Unit = {
-    val dedupSummary = SymbolSummaryPass.deduplicateSummary(summary.asScala.toSeq)
+    val dedupSummary = summary.asScala.toSeq.dedup
     captureSummary(dedupSummary)
   }
 
-  private def visit(node: PhpNode): Seq[SymbolSummary] = {
+  private def visit(node: PhpNode, stack: NamespaceScopeStack): Seq[SymbolSummary] = {
     node match {
-      case stmt: PhpNamespaceStmt                                  => visitNamespaceStmt(stmt)
+      case stmt: PhpNamespaceStmt                                  => visitNamespaceStmt(stmt, stack)
       case method: PhpMethodDecl                                   => visitMethodDecl(method)
-      case classLike: PhpClassLikeStmt if classLike.name.isDefined => visitClassDecl(classLike)
+      case classLike: PhpClassLikeStmt if classLike.name.isDefined => visitClassDecl(classLike, stack)
       case cs: PhpConstStmt                                        => cs.consts.map(c => PhpMember(c.name.name))
       case cp: PhpPropertyStmt                                     => cp.variables.map(c => PhpMember(c.name.name))
       case _                                                       => Nil
     }
   }
 
-  private def visitNamespaceStmt(stmt: PhpNamespaceStmt): Seq[SymbolSummary] = {
-    val children = stmt.stmts.flatMap(visit)
+  private def visitNamespaceStmt(stmt: PhpNamespaceStmt, stack: NamespaceScopeStack): Seq[SymbolSummary] = {
     stmt.name match {
-      case None => children
-      case Some(name) =>
-        val nameParts = name.name.split("\\\\")
-        nameParts.tail.foldLeft(PhpNamespace(nameParts.head, children))((acc, name) =>
-          val nextNamespace = PhpNamespace(name, acc.children)
-          acc.copy(children = nextNamespace :: Nil)
+      case None                            => stmt.stmts.flatMap(visit(_, stack)).dedup
+      case Some(name) if stack.sizeIs == 1 =>
+        // We are the first namespace declaration in a possibly nested namespace, so this name should be fully separated
+        val nameParts               = name.name.split("\\\\")
+        val namespaceScopeToPrepend = (nameParts.reverse ++ stack).toSeq
+        val children                = stmt.stmts.flatMap(stmt => visit(stmt, namespaceScopeToPrepend)).dedup
+        nameParts.reverse.tail.foldLeft(PhpNamespace(nameParts.last, children))((acc, name) =>
+          PhpNamespace(name, acc :: Nil)
         ) :: Nil
+      case Some(name) =>
+        // We are not the first namespace in a possibly nested namespace, thus we should only use the last part
+        val nameParts = name.name.split("\\\\")
+        val children  = stmt.stmts.flatMap(stmt => visit(stmt, nameParts.last +: stack)).dedup
+        PhpNamespace(nameParts.last, children) :: Nil
     }
   }
 
@@ -65,10 +73,10 @@ class SymbolSummaryPass(config: Config, cpg: Cpg, parser: PhpParser, captureSumm
     PhpFunction(name) :: Nil
   }
 
-  private def visitClassDecl(classLike: PhpClassLikeStmt): Seq[SymbolSummary] = {
+  private def visitClassDecl(classLike: PhpClassLikeStmt, stack: NamespaceScopeStack): Seq[SymbolSummary] = {
     val name        = classLike.name.map(_.name).get
     val constructor = if !classLike.hasConstructor then Nil else PhpFunction(Domain.ConstructorMethodName) :: Nil
-    val children    = constructor ++ classLike.stmts.flatMap(visit)
+    val children    = constructor ++ classLike.stmts.flatMap(visit(_, stack))
     PhpClass(name, children) :: Nil
   }
 
@@ -76,13 +84,22 @@ class SymbolSummaryPass(config: Config, cpg: Cpg, parser: PhpParser, captureSumm
 
 object SymbolSummaryPass {
 
-  def deduplicateSummary(summary: Seq[SymbolSummary]): Seq[SymbolSummary] = {
-    summary.foldLeft(Seq.empty[SymbolSummary])((acc, next) =>
-      acc match {
-        case Nil          => next :: Nil
-        case head :: tail => head + next ++ tail
-      }
-    )
+  private type NamespaceScopeStack = Seq[String]
+
+  private implicit class SummarySeqExt(xs: Seq[SymbolSummary]) {
+
+    /** Deduplicates a sequence of summaries at a specific namespace level. Particularly useful for namespaces declared
+      * adjacent to one another.
+      */
+    def dedup: Seq[SymbolSummary] = {
+      xs.foldLeft(Seq.empty[SymbolSummary])((acc, next) =>
+        acc match {
+          case Nil => next :: Nil
+          case xs  => xs.flatMap(_ + next)
+        }
+      )
+    }
+
   }
 
   sealed trait SymbolSummary {
@@ -103,8 +120,8 @@ object SymbolSummaryPass {
     protected def combineChildren(o: SymbolSummary & HasChildren): Seq[SymbolSummary] = {
       (this.children ++ o.children).foldLeft(Seq.empty[SymbolSummary])((acc, next) =>
         acc match {
-          case Nil          => next :: Nil
-          case head :: tail => head + next ++ tail
+          case Nil => next :: Nil
+          case xs  => xs.flatMap(_ + next)
         }
       )
     }
