@@ -61,6 +61,10 @@ class Php2Cpg extends X2CpgFrontend[Config] {
           new DependencySymbolsPass(cpg, dependencyDir).createAndApply()
         }
         parser.foreach { parser =>
+          // The following block parses the code twice, once to summarize all symbols across various namespaces, and
+          // twice to build the AST. This helps resolve symbols during the latter parse. Compared to parsing once, and
+          // holding the AST in-memory, it was decided that parsing did not incur a significant speed impact, and lower
+          // memory was prioritized.
           var buffer = Option.empty[Seq[SymbolSummary]]
           new SymbolSummaryPass(config, cpg, parser, summary => buffer = Option(summary)).createAndApply()
           new AstCreationPass(config, cpg, parser, buffer.getOrElse(Nil)).createAndApply()
