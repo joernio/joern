@@ -214,7 +214,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
   }
 
   protected def astForArrayModifier(arrMod: IASTArrayModifier): Ast = {
-    astForNode(arrMod.getConstantExpression)
+    nullSafeAst(arrMod.getConstantExpression)
   }
 
   protected def astForQualifiedName(qualId: CPPASTQualifiedName): Ast = {

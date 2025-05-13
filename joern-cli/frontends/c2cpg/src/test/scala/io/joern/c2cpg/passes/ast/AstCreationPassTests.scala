@@ -1387,7 +1387,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
       val List(constructorCall) = cpg.call.codeExact("new int[n]").l
       constructorCall.methodFullName shouldBe Operators.alloc
       constructorCall.typeFullName shouldBe Defines.Any
-      constructorCall.argument.code.l shouldBe List("int")
+      constructorCall.argument.code.l shouldBe List("int", "n")
     }
 
     "be correct for 'new' with explicit identifier" in {

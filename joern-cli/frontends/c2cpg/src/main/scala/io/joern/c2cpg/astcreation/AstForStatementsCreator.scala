@@ -74,7 +74,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     r.map(x => asChildOfMacroCall(statement, x))
   }
 
-  private def hasValidArrayModifier(arrayDecl: IASTArrayDeclarator): Boolean = {
+  protected def hasValidArrayModifier(arrayDecl: IASTArrayDeclarator): Boolean = {
     arrayDecl.getArrayModifiers.nonEmpty && arrayDecl.getArrayModifiers.forall(_.getConstantExpression != null)
   }
 
@@ -165,8 +165,9 @@ trait AstForStatementsCreator { this: AstCreator =>
         val name          = Operators.alloc
         val tpe           = registerType(typeFor(d))
         val codeString    = code(d)
+        val idNode        = identifierNode(d, tpe, tpe, tpe)
         val allocCallNode = callNode(d, codeString, name, name, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
-        val allocCallAst  = callAst(allocCallNode, d.getArrayModifiers.toIndexedSeq.map(astForNode))
+        val allocCallAst  = callAst(allocCallNode, Ast(idNode) +: d.getArrayModifiers.toIndexedSeq.map(astForNode))
         val operatorName  = Operators.assignment
         val assignmentCallNode =
           callNode(d, codeString, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))

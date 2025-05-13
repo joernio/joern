@@ -490,11 +490,26 @@ trait AstForExpressionsCreator { this: AstCreator =>
   private def astForNewExpression(newExpression: ICPPASTNewExpression): Ast = {
     val typeId = newExpression.getTypeId
     if (newExpression.isArrayAllocation) {
-      val name = Operators.alloc
-      val cpgNewExpression =
-        callNode(newExpression, code(newExpression), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
-      val cpgTypeId = astForIdentifier(typeId.getDeclSpecifier)
-      Ast(cpgNewExpression).withChild(cpgTypeId).withArgEdge(cpgNewExpression, cpgTypeId.root.get)
+      val name  = Operators.alloc
+      val idAst = astForIdentifier(typeId.getDeclSpecifier)
+      val allocCallNode =
+        callNode(
+          newExpression,
+          code(newExpression),
+          name,
+          name,
+          DispatchTypes.STATIC_DISPATCH,
+          None,
+          Some(registerType(typeFor(newExpression)))
+        )
+      val arrayModArgs = typeId.getAbstractDeclarator match {
+        case arr: IASTArrayDeclarator if hasValidArrayModifier(arr) =>
+          arr.getArrayModifiers.toIndexedSeq.map(astForNode)
+        case _ => Seq.empty
+      }
+      val args = astsForConstructorInitializer(newExpression.getInitializer) ++ arrayModArgs ++
+        astsForInitializerClauses(newExpression.getPlacementArguments)
+      callAst(allocCallNode, idAst +: args)
     } else {
       val constructorCallName = shortName(typeId.getDeclSpecifier)
       val typeFullName        = fullName(typeId.getDeclSpecifier)
