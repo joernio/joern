@@ -287,9 +287,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
         val code           = s"this->$identifierName"
         val thisIdentifier = identifierNode(ident, "this", "this", tpe)
         scope.addVariableReference("this", thisIdentifier, tpe, EvaluationStrategies.BY_REFERENCE)
-        val member  = fieldIdentifierNode(ident, identifierName, identifierName)
-        val callTpe = Some(registerType(tpe))
-        val ma      = callNode(ident, code, op, op, DispatchTypes.STATIC_DISPATCH, None, callTpe)
+        val member = fieldIdentifierNode(ident, identifierName, identifierName)
+        val ma     = callNode(ident, code, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
         callAst(ma, Seq(Ast(thisIdentifier), Ast(member)))
       case None =>
         val idNode = identifierNode(ident, identifierName, identifierName, tpe)
@@ -369,7 +368,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
             "this",
             0,
             false,
-            EvaluationStrategies.BY_SHARING,
+            EvaluationStrategies.BY_REFERENCE,
             line(cppFunc),
             column(cppFunc),
             registerType(s"${cleanType(owner)}*")

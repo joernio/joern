@@ -1,30 +1,15 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethodRef
-import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewMethodRef, NewTypeDecl}
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
-import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTNamespaceDefinition
-import org.eclipse.cdt.core.dom.ast.cpp.ICPPFunction
-import org.eclipse.cdt.internal.core.dom.parser.c.CVariable
-import org.eclipse.cdt.internal.core.dom.parser.c.ICInternalBinding
-import org.eclipse.cdt.internal.core.dom.parser.cpp.{
-  CPPASTFunctionDeclarator,
-  CPPASTIdExpression,
-  CPPASTName,
-  CPPASTQualifiedName,
-  CPPField,
-  CPPVariable,
-  ICPPInternalBinding
-}
-import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.CPPVisitor
-import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalMemberAccess
+import org.eclipse.cdt.core.dom.ast.cpp.{ICPPASTNamespaceDefinition, ICPPFunction}
 import org.eclipse.cdt.internal.core.dom.parser.IASTInternalScope
+import org.eclipse.cdt.internal.core.dom.parser.c.{CVariable, ICInternalBinding}
+import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.{CPPVisitor, EvalMemberAccess}
+import org.eclipse.cdt.internal.core.dom.parser.cpp.*
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import scala.annotation.tailrec
@@ -181,8 +166,8 @@ trait AstForPrimitivesCreator { this: AstCreator =>
         if (isInCurrentScope(ident, ownerTypeRaw)) {
           scope.lookupVariable("this") match {
             case Some(_) =>
-              val op             = Operators.indirectFieldAccess
-              val code           = s"this->$identifierName"
+              val op             = if (e.isPointerDeref) Operators.indirectFieldAccess else Operators.fieldAccess
+              val code           = if (e.isPointerDeref) s"this->$identifierName" else s"this.$identifierName"
               val thisIdentifier = identifierNode(ident, "this", "this", ownerType)
               scope.addVariableReference("this", thisIdentifier, ownerType, EvaluationStrategies.BY_REFERENCE)
               val member  = fieldIdentifierNode(ident, identifierName, identifierName)
