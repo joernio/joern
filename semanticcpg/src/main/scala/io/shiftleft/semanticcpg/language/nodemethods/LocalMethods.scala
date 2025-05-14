@@ -10,7 +10,7 @@ class LocalMethods(val local: Local) extends AnyVal with NodeExtension with HasL
     LocationCreator.defaultCreateLocation(local)
   }
 
-  override def loc: Loc = {
+  override def loc: LocationInfo = {
     Loc(local)
   }
 

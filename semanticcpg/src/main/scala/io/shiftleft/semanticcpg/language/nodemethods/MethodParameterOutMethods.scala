@@ -14,7 +14,7 @@ class MethodParameterOutMethods(val paramOut: MethodParameterOut)
     LocationCreator.defaultCreateLocation(paramOut)
   }
 
-  override def loc: Loc = {
+  override def loc: LocationInfo = {
     Loc(paramOut)
   }
 }

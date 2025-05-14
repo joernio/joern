@@ -10,7 +10,7 @@ class MethodReturnMethods(val node: MethodReturn) extends AnyVal with NodeExtens
     LocationCreator.defaultCreateLocation(node)
   }
 
-  override def loc: Loc = {
+  override def loc: LocationInfo = {
     Loc(node)
   }
 

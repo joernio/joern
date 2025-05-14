@@ -10,7 +10,7 @@ class MethodRefMethods(val methodRef: MethodRef) extends AnyVal with NodeExtensi
     LocationCreator.defaultCreateLocation(methodRef)
   }
 
-  override def loc: Loc = {
+  override def loc: LocationInfo = {
     Loc(methodRef)
   }
 }
