@@ -189,7 +189,7 @@ class LiteralTests extends RubyCode2CpgFixture {
         |>
         |""".stripMargin)
 
-    val List(xyz, one23) = cpg.literal.l
+    val List(_, xyz, one23) = cpg.literal.l
     xyz.code.trim shouldBe "xyz"
     xyz.lineNumber shouldBe Some(3)
     xyz.typeFullName shouldBe RubyDefines.prefixAsCoreType("String")
