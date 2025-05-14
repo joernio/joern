@@ -92,15 +92,15 @@ class LazyLoc(storedNode: StoredNode) extends LocationInfo {
 
   protected val defaultString = "<empty>";
 
-  protected lazy val typeOption = findAncestor[TypeDecl](method)
+  private lazy val typeOption = findAncestor[TypeDecl](method)
 
-  protected lazy val namespaceOption = for {
+  private lazy val namespaceOption = for {
     tpe            <- typeOption
     namespaceBlock <- tpe.namespaceBlock
     namespace      <- namespaceBlock._namespaceViaRefOut.nextOption()
   } yield namespace.name
 
-  protected lazy val method: Method = storedNode match {
+  private lazy val method: Method = storedNode match {
     case cfgNode: CfgNode => cfgNode.method
     case local: Local     => local.method.head
   }
