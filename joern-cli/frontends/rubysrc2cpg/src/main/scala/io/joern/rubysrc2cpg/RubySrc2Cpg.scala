@@ -67,7 +67,7 @@ class RubySrc2Cpg extends X2CpgFrontend {
         }
         .filter { x =>
           if x.fileContent.isBlank then logger.info(s"File content empty, skipping - ${x.fileName}")
-          !x.fileContent.isBlank
+          !x.fileContent.isBlank || x.fileName.endsWith(".html.erb")
         }
 
       val internalProgramSummary = ConcurrentTaskUtil
