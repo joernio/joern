@@ -18,6 +18,15 @@ trait LocationInfo {
   def filename: String
 }
 
+// Trait defining an implicit for generating location 
+// info for abstract nodes
+
+// This design: 1) lets implementors put all logic for 
+// determining how to fill out `LocationInfo` for each 
+// type of node in one central place, and 2) allow consumers 
+// of joern, which may also provide different node types 
+// or location information, to provide alternate or 
+// extended implementations of LocCreator.
 trait LocCreator {
   implicit def apply(node: AbstractNode): LocationInfo
 }
