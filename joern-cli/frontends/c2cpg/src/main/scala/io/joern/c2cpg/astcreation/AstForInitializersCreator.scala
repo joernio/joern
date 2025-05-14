@@ -41,7 +41,7 @@ trait AstForInitializersCreator { this: AstCreator =>
     val op = Operators.assignment
     val calls = withIndex(d.getDesignators) { (des, o) =>
       val callNode_ =
-        callNode(d, code(d), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
+        callNode(d, code(d), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Void))
           .argumentIndex(o)
       val left  = astForNode(des)
       val right = astForNode(d.getOperand)
@@ -57,7 +57,7 @@ trait AstForInitializersCreator { this: AstCreator =>
     val op = Operators.assignment
     val calls = withIndex(d.getDesignators) { (des, o) =>
       val callNode_ =
-        callNode(d, code(d), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
+        callNode(d, code(d), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Void))
           .argumentIndex(o)
       val left  = astForNode(des)
       val right = astForNode(d.getOperand)

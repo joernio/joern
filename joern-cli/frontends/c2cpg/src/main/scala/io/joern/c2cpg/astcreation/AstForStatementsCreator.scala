@@ -83,10 +83,11 @@ trait AstForStatementsCreator { this: AstCreator =>
     init: Option[IASTInitializerClause] = None
   ): Seq[Ast] = {
     def leftAst(astName: IASTNode, localName: String, codeString: String, tpe: String): (NewCall, NewLocal, Ast) = {
-      val op                 = Operators.assignment
-      val assignmentCode     = s"$localName = $codeString"
-      val assignmentCallNode = callNode(astName, assignmentCode, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
-      val localNameNode      = localNode(astName, localName, localName, tpe)
+      val op             = Operators.assignment
+      val assignmentCode = s"$localName = $codeString"
+      val assignmentCallNode =
+        callNode(astName, assignmentCode, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Void))
+      val localNameNode = localNode(astName, localName, localName, tpe)
       scope.addVariable(localName, localNameNode, tpe, VariableScopeManager.ScopeType.BlockScope)
       val localId = identifierNode(astName, code(astName), code(astName), tpe)
       val leftAst = Ast(localId).withRefEdge(localId, localNameNode)
@@ -99,12 +100,13 @@ trait AstForStatementsCreator { this: AstCreator =>
     val localTmpNode = localNode(struct, tmpName, tmpName, tpe)
     scope.addVariable(tmpName, localTmpNode, tpe, VariableScopeManager.ScopeType.BlockScope)
 
-    val idNode             = identifierNode(struct, tmpName, tmpName, tpe)
-    val rhsAst             = astForNode(initializer)
-    val op                 = Operators.assignment
-    val assignmentCode     = s"$tmpName = ${code(initializer)}"
-    val assignmentCallNode = callNode(struct, assignmentCode, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
-    val assignmentCallAst  = callAst(assignmentCallNode, List(Ast(idNode).withRefEdge(idNode, localTmpNode), rhsAst))
+    val idNode         = identifierNode(struct, tmpName, tmpName, tpe)
+    val rhsAst         = astForNode(initializer)
+    val op             = Operators.assignment
+    val assignmentCode = s"$tmpName = ${code(initializer)}"
+    val assignmentCallNode =
+      callNode(struct, assignmentCode, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Void))
+    val assignmentCallAst = callAst(assignmentCallNode, List(Ast(idNode).withRefEdge(idNode, localTmpNode), rhsAst))
 
     val accessAsts = if (typeFor(initializer).endsWith("]")) {
       struct.getNames.zipWithIndex.flatMap { case (astName, index) =>
@@ -170,7 +172,7 @@ trait AstForStatementsCreator { this: AstCreator =>
         val allocCallAst  = callAst(allocCallNode, Ast(idNode) +: d.getArrayModifiers.toIndexedSeq.map(astForNode))
         val operatorName  = Operators.assignment
         val assignmentCallNode =
-          callNode(d, codeString, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
+          callNode(d, codeString, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Void))
         val left = astForNode(d.getName)
         callAst(assignmentCallNode, List(left, allocCallAst))
       }

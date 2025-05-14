@@ -31,33 +31,21 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       // We are unable to express this template argument deduction in the current schema
       cpg.typeDecl.member.nameExact("val").typeFullName.l shouldBe List("T")
 
-      cpg.typeDecl.nameExact("MyContainer").astChildren.isMethod.isConstructor.fullName.l shouldBe List(
-        "MyContainer.MyContainer:ANY()",
-        "MyContainer.MyContainer:ANY(T)"
-      )
-
-      cpg.method
-        .fullNameExact("MyContainer.MyContainer:ANY()")
-        .body
-        .astChildren
-        .size shouldBe 0
-
-      cpg.method
-        .fullNameExact("MyContainer.MyContainer:ANY(T)")
-        .body
-        .astChildren
-        .isCall
-        .isAssignment
-        .code
-        .l shouldBe List("this->val = val")
+      val List(c1Method, c2Method) = cpg.typeDecl.nameExact("MyContainer").astChildren.isMethod.isConstructor.l
+      c1Method.fullName shouldBe "MyContainer.MyContainer:void()"
+      c1Method.signature shouldBe "void()"
+      c1Method.body.astChildren.size shouldBe 0
+      c2Method.fullName shouldBe "MyContainer.MyContainer:void(T)"
+      c2Method.signature shouldBe "void(T)"
+      c2Method.body.astChildren.isCall.isAssignment.code.l shouldBe List("this->val = val")
 
       cpg.call.isAssignment.code.l shouldBe List("this->val = val", "c1 = MyContainer.MyContainer(1)")
       cpg.call.isAssignment.argument(1).isIdentifier.typeFullName.l shouldBe List("MyContainer")
-      val List(c1Constructor) = cpg.call.isAssignment.argument(2).isCall.l
-      c1Constructor.methodFullName shouldBe "MyContainer.MyContainer:ANY(int)"
-      c1Constructor.name shouldBe "MyContainer"
-      c1Constructor.signature shouldBe "ANY(int)"
-      c1Constructor.argument(1).code shouldBe "1"
+      val List(c1ConstructorCall) = cpg.call.isAssignment.argument(2).isCall.l
+      c1ConstructorCall.methodFullName shouldBe "MyContainer.MyContainer:void(int)"
+      c1ConstructorCall.name shouldBe "MyContainer"
+      c1ConstructorCall.signature shouldBe "void(int)"
+      c1ConstructorCall.argument(1).code shouldBe "1"
     }
 
     "handle declaring non-type template parameters with auto" in {

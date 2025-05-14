@@ -1401,9 +1401,9 @@ class AstCreationPassTests extends AstC2CpgSuite {
         "file.cpp"
       )
       val List(constructorCall) = cpg.call.codeExact("""new (buf) string("hi")""").l
-      constructorCall.methodFullName shouldBe "string.string:ANY(char[3],char[80])"
-      constructorCall.signature shouldBe "ANY(char[3],char[80])"
-      constructorCall.typeFullName shouldBe Defines.Any
+      constructorCall.methodFullName shouldBe "string.string:void(char[3],char[80])"
+      constructorCall.signature shouldBe "void(char[3],char[80])"
+      constructorCall.typeFullName shouldBe Defines.Void
       constructorCall.argument.code.l shouldBe List(""""hi"""", "buf")
     }
 
@@ -1433,20 +1433,20 @@ class AstCreationPassTests extends AstC2CpgSuite {
       val List(fileGlobalMethod) = cpg.method.fullNameExact("file.cpp:<global>").l
       val List(fooTypeDecl)      = cpg.typeDecl.fullNameExact("Foo").l
       val List(c1, c2, c3)       = cpg.method.isConstructor.l
-      c1.fullName shouldBe "Foo.Foo:ANY(int)"
-      c2.fullName shouldBe "Foo.Foo:ANY(int,int)"
-      c3.fullName shouldBe "Bar.Bar:ANY(float)"
+      c1.fullName shouldBe "Foo.Foo:void(int)"
+      c2.fullName shouldBe "Foo.Foo:void(int,int)"
+      c3.fullName shouldBe "Bar.Bar:void(float)"
       c1.astIn.l shouldBe List(fooTypeDecl)
       c2.astIn.l shouldBe List(fooTypeDecl)
       c3.astIn.l shouldBe List(fileGlobalMethod)
       val List(f1Call, f2Call, b1Call, f3Call, f4Call, b2Call) =
         cpg.method.nameExact("method").ast.isCall.isAssignment.argument(2).isCall.l
-      f1Call.methodFullName shouldBe "Foo.Foo:ANY(int)"
-      f2Call.methodFullName shouldBe "Foo.Foo:ANY(int,int)"
-      b1Call.methodFullName shouldBe "Bar.Bar:ANY(float)"
-      f3Call.methodFullName shouldBe "Foo.Foo:ANY(int)"
-      f4Call.methodFullName shouldBe "Foo.Foo:ANY(int,int)"
-      b2Call.methodFullName shouldBe "Bar.Bar:ANY(float)"
+      f1Call.methodFullName shouldBe "Foo.Foo:void(int)"
+      f2Call.methodFullName shouldBe "Foo.Foo:void(int,int)"
+      b1Call.methodFullName shouldBe "Bar.Bar:void(float)"
+      f3Call.methodFullName shouldBe "Foo.Foo:void(int)"
+      f4Call.methodFullName shouldBe "Foo.Foo:void(int,int)"
+      b2Call.methodFullName shouldBe "Bar.Bar:void(float)"
     }
 
     "be correct for externally defined constructor with class in different file" in {
@@ -1463,11 +1463,11 @@ class AstCreationPassTests extends AstC2CpgSuite {
       ).moreCode("class Bar {};", "Bar.cpp")
       val List(barTypeDecl) = cpg.typeDecl.fullNameExact("Bar").l
       val List(c)           = cpg.method.isConstructor.l
-      c.fullName shouldBe "Bar.Bar:ANY(float)"
+      c.fullName shouldBe "Bar.Bar:void(float)"
       c.astIn.l shouldBe List(barTypeDecl)
       val List(b1Call, b2Call) = cpg.method.nameExact("method").ast.isCall.isAssignment.argument(2).isCall.l
-      b1Call.methodFullName shouldBe "Bar.Bar:ANY(float)"
-      b2Call.methodFullName shouldBe "Bar.Bar:ANY(float)"
+      b1Call.methodFullName shouldBe "Bar.Bar:void(float)"
+      b2Call.methodFullName shouldBe "Bar.Bar:void(float)"
     }
 
     // for: https://github.com/ShiftLeftSecurity/codepropertygraph/issues/1526
@@ -1771,11 +1771,11 @@ class AstCreationPassTests extends AstC2CpgSuite {
         "file.cpp"
       )
       val List(constructorCall) = cpg.call.codeExact("new Foo(n, 42)").l
-      constructorCall.methodFullName shouldBe "Foo.Foo:ANY(int,int)"
-      constructorCall.signature shouldBe "ANY(int,int)"
-      constructorCall.typeFullName shouldBe Defines.Any
+      constructorCall.methodFullName shouldBe "Foo.Foo:void(int,int)"
+      constructorCall.signature shouldBe "void(int,int)"
+      constructorCall.typeFullName shouldBe Defines.Void
       constructorCall.argument.code.l shouldBe List("n", "42")
-      cpg.typeDecl.nameExact("Foo").astChildren.isMethod.isConstructor.fullName.l shouldBe List("Foo.Foo:ANY(int,int)")
+      cpg.typeDecl.nameExact("Foo").astChildren.isMethod.isConstructor.fullName.l shouldBe List("Foo.Foo:void(int,int)")
     }
 
     "be correct for simple 'delete'" in {

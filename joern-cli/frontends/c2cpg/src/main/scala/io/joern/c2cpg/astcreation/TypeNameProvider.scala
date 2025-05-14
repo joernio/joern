@@ -242,6 +242,7 @@ trait TypeNameProvider { this: AstCreator =>
 
   private def returnTypeForIASTFunctionDeclarator(declarator: IASTFunctionDeclarator): String = {
     safeGetBinding(declarator.getName) match {
+      case Some(_: ICPPConstructor) => Defines.Void
       case Some(_: ICPPFunctionTemplate) if declarator.getParent.isInstanceOf[IASTFunctionDefinition] =>
         cleanType(typeForDeclSpecifier(declarator.getParent.asInstanceOf[IASTFunctionDefinition].getDeclSpecifier))
       case Some(value: ICPPMethod) if !value.getType.toString.startsWith("?") =>
@@ -252,27 +253,13 @@ trait TypeNameProvider { this: AstCreator =>
         cleanType(typeForDeclSpecifier(declarator.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclSpecifier))
       case _ if declarator.getParent.isInstanceOf[IASTFunctionDefinition] =>
         cleanType(typeForDeclSpecifier(declarator.getParent.asInstanceOf[IASTFunctionDefinition].getDeclSpecifier))
-      case _ => Defines.Any
+      case Some(_: IProblemBinding) if bindsToConstructor(declarator.getName) => Defines.Void
+      case _                                                                  => Defines.Any
     }
   }
 
   private def returnTypeForIASTFunctionDefinition(definition: IASTFunctionDefinition): String = {
-    definition match {
-      case cppFunctionDefinition: ICPPASTFunctionDefinition
-          if isCppConstructor(cppFunctionDefinition) && cppFunctionDefinition.getMemberInitializers.nonEmpty =>
-        cleanType(typeFor(cppFunctionDefinition.getMemberInitializers.head.getInitializer))
-      case other =>
-        safeGetBinding(other.getDeclarator.getName) match {
-          case Some(_: ICPPFunctionTemplate) =>
-            typeForDeclSpecifier(other.getDeclSpecifier)
-          case Some(value: ICPPMethod) if !value.getType.toString.startsWith("?") =>
-            cleanType(safeGetType(value.getType.getReturnType))
-          case Some(value: ICPPFunction) if !value.getType.toString.startsWith("?") =>
-            cleanType(safeGetType(value.getType.getReturnType))
-          case _ =>
-            typeForDeclSpecifier(other.getDeclSpecifier)
-        }
-    }
+    returnTypeForIASTFunctionDeclarator(definition.getDeclarator)
   }
 
   private def returnTypeForICPPASTLambdaExpression(lambda: ICPPASTLambdaExpression): String = {

@@ -78,22 +78,19 @@ trait AstForTypesCreator { this: AstCreator =>
     val constructorCallName = tpe.split(".").lastOption.getOrElse(tpe)
     val assignmentOperatorName = Operators.assignment
     val initCode               = code(init).stripPrefix("{").stripSuffix("}").stripPrefix("(").stripSuffix(")")
-    val signature              = s"${Defines.Any}(${initializerSignature(init)})"
+    val signature              = s"${Defines.Void}(${initializerSignature(init)})"
     val fullNameWithSig        = s"$tpe.$constructorCallName:$signature"
 
     val leftAst = astForNode(declarator.getName)
     init match {
       case i: IASTEqualsInitializer =>
-        val assignmentCallNode =
-          callNode(
-            declarator,
-            code(declarator),
-            assignmentOperatorName,
-            assignmentOperatorName,
-            DispatchTypes.STATIC_DISPATCH,
-            None,
-            Some(tpe)
-          )
+        val assignmentCallNode = callNode(
+          declarator,
+          code(declarator),
+          assignmentOperatorName,
+          assignmentOperatorName,
+          DispatchTypes.STATIC_DISPATCH
+        )
         val right = astForNode(i.getInitializerClause)
         callAst(assignmentCallNode, List(leftAst, right))
       case i: ICPPASTConstructorInitializer if !isFundamentalTypeKeywords(tpe) =>
@@ -104,7 +101,7 @@ trait AstForTypesCreator { this: AstCreator =>
           fullNameWithSig,
           DispatchTypes.STATIC_DISPATCH,
           Some(signature),
-          Some(registerType(Defines.Any))
+          Some(registerType(Defines.Void))
         )
         val args               = astsForConstructorInitializer(i)
         val constructorCallAst = callAst(constructorCallNode, args)
@@ -115,9 +112,7 @@ trait AstForTypesCreator { this: AstCreator =>
             s"$name = $tpe.$constructorCallName($initCode)",
             assignmentOperatorName,
             assignmentOperatorName,
-            DispatchTypes.STATIC_DISPATCH,
-            None,
-            Some(tpe)
+            DispatchTypes.STATIC_DISPATCH
           )
         callAst(assignmentCallNode, List(leftAst, constructorCallAst))
       case i: ICPPASTConstructorInitializer =>
@@ -127,9 +122,7 @@ trait AstForTypesCreator { this: AstCreator =>
             s"$name = $tpe${code(i)}",
             assignmentOperatorName,
             assignmentOperatorName,
-            DispatchTypes.STATIC_DISPATCH,
-            None,
-            Some(tpe)
+            DispatchTypes.STATIC_DISPATCH
           )
         val args = List(leftAst, astForNode(i))
         callAst(assignmentCallNode, args)
@@ -140,9 +133,7 @@ trait AstForTypesCreator { this: AstCreator =>
             code(declarator),
             assignmentOperatorName,
             assignmentOperatorName,
-            DispatchTypes.STATIC_DISPATCH,
-            None,
-            Some(tpe)
+            DispatchTypes.STATIC_DISPATCH
           )
         val right = astForNode(i)
         callAst(assignmentCallNode, List(leftAst, right))
@@ -154,7 +145,7 @@ trait AstForTypesCreator { this: AstCreator =>
           fullNameWithSig,
           DispatchTypes.STATIC_DISPATCH,
           Some(signature),
-          Some(registerType(Defines.Any))
+          Some(registerType(Defines.Void))
         )
         val args               = astsForInitializerClauses(i.getClauses)
         val constructorCallAst = callAst(constructorCallNode, args)
@@ -164,9 +155,7 @@ trait AstForTypesCreator { this: AstCreator =>
           s"$name = $tpe.$constructorCallName($initCode)",
           assignmentOperatorName,
           assignmentOperatorName,
-          DispatchTypes.STATIC_DISPATCH,
-          None,
-          Some(tpe)
+          DispatchTypes.STATIC_DISPATCH
         )
         callAst(assignmentCallNode, List(leftAst, constructorCallAst))
       case _ => astForNode(init)
@@ -406,19 +395,10 @@ trait AstForTypesCreator { this: AstCreator =>
 
     if (enumerator.getValue != null) {
       val operatorName = Operators.assignment
-      val callNode_ =
-        callNode(
-          enumerator,
-          code(enumerator),
-          operatorName,
-          operatorName,
-          DispatchTypes.STATIC_DISPATCH,
-          None,
-          Some(Defines.Any)
-        )
-      val left  = astForNode(enumerator.getName)
-      val right = astForNode(enumerator.getValue)
-      val ast   = callAst(callNode_, List(left, right))
+      val callNode_ = callNode(enumerator, code(enumerator), operatorName, operatorName, DispatchTypes.STATIC_DISPATCH)
+      val left      = astForNode(enumerator.getName)
+      val right     = astForNode(enumerator.getValue)
+      val ast       = callAst(callNode_, List(left, right))
       Seq(Ast(cpgMember), ast)
     } else {
       Seq(Ast(cpgMember))

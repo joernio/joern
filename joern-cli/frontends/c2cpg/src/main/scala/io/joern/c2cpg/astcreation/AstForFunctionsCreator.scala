@@ -99,7 +99,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
   protected def isCppConstructor(funcDef: IASTFunctionDefinition, name: String = "", fullName: String = ""): Boolean = {
     funcDef match {
-      case cppFunc: CPPASTFunctionDefinition =>
+      case cppFunc: ICPPASTFunctionDefinition =>
         cppFunc.getMemberInitializers.nonEmpty
         || scope.computeScopePath.endsWith(s".$name")
         || (scope.computeScopePath.nonEmpty && scope.computeScopePath == name)
@@ -112,6 +112,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val filename                                                  = fileName(funcDef)
     val MethodFullNameInfo(name, fullName, signature, returnType) = methodFullNameInfo(funcDef)
     registerMethodDefinition(fullName)
+    val isConstructor                 = isCppConstructor(funcDef, name, fullName) && fullName.contains(s".$name:")
     val shouldCreateFunctionReference = typeRefIdStack.headOption.isEmpty
     val methodRefNode_ = if (!shouldCreateFunctionReference) { None }
     else { Option(methodRefNode(funcDef, name, fullName, fullName)) }
@@ -169,7 +170,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
       case Some(ref) =>
         createFunctionTypeAndTypeDecl(funcDef, methodNode_)
         Ast.storeInDiffGraph(astForMethod, diffGraph)
-        if (isCppConstructor(funcDef, name, fullName) && fullName.contains(s".$name:")) {
+        if (isConstructor) {
           methodNode_.astParentType = TypeDecl.Label
           methodNode_.astParentFullName = fullName.substring(0, fullName.lastIndexOf(s".$name:"))
         } else {
@@ -301,6 +302,22 @@ trait AstForFunctionsCreator { this: AstCreator =>
     init.getInitializer match {
       case l: IASTInitializerList if l.getClauses == null || l.getClauses.isEmpty || l.getClauses.forall(_ == null) =>
         Ast()
+      case c: ICPPASTConstructorInitializer =>
+        val constructorCallName = shortName(init.getMemberInitializerId)
+        val typeFullName        = fullName(init.getMemberInitializerId)
+        val signature           = s"${Defines.Void}(${initializerSignature(c)})"
+        val fullNameWithSig     = s"$typeFullName.$constructorCallName:$signature"
+        val constructorCallNode = callNode(
+          c,
+          code(init),
+          typeFullName,
+          fullNameWithSig,
+          DispatchTypes.STATIC_DISPATCH,
+          Some(signature),
+          Some(registerType(Defines.Void))
+        )
+        val args = astsForConstructorInitializer(c)
+        callAst(constructorCallNode, args)
       case _ =>
         val leftAst = syntheticThisAccess(init.getMemberInitializerId, nameForIdentifier(init.getMemberInitializerId))
         val rightAst = init.getInitializer match {
@@ -316,7 +333,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
         val codeString =
           s"${codeFromAst(leftAst).getOrElse(code(init.getMemberInitializerId))} = ${codeFromAst(rightAst)
               .getOrElse(code(init.getInitializer))}"
-        val assignmentCall = callNode(init, codeString, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
+        val assignmentCall = callNode(init, codeString, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Void))
         callAst(assignmentCall, List(leftAst, rightAst))
     }
   }
@@ -352,7 +369,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
             "this",
             0,
             false,
-            EvaluationStrategies.BY_VALUE,
+            EvaluationStrategies.BY_SHARING,
             line(cppFunc),
             column(cppFunc),
             registerType(s"${cleanType(owner)}*")

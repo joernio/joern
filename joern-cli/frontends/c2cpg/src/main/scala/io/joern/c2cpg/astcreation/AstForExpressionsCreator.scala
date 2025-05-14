@@ -473,6 +473,12 @@ trait AstForExpressionsCreator { this: AstCreator =>
     else Nil
   }
 
+  protected def initializerSignature(init: ICPPASTConstructorInitializer): String = {
+    val initParamTypes =
+      init.getArguments.collect { case e: IASTExpression => e }.map(t => cleanType(safeGetType(t.getExpressionType)))
+    StringUtils.normalizeSpace(initParamTypes.mkString(","))
+  }
+
   protected def initializerSignature(newExpression: ICPPASTNewExpression): String = {
     val initParamTypes = newExpression.getInitializer match {
       case init: ICPPASTConstructorInitializer =>
@@ -513,7 +519,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     } else {
       val constructorCallName = shortName(typeId.getDeclSpecifier)
       val typeFullName        = fullName(typeId.getDeclSpecifier)
-      val signature           = s"${Defines.Any}(${initializerSignature(newExpression)})"
+      val signature           = s"${Defines.Void}(${initializerSignature(newExpression)})"
       val fullNameWithSig     = s"$typeFullName.$constructorCallName:$signature"
       val constructorCallNode = callNode(
         newExpression,
@@ -522,7 +528,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
         fullNameWithSig,
         DispatchTypes.STATIC_DISPATCH,
         Some(signature),
-        Some(registerType(Defines.Any))
+        Some(registerType(Defines.Void))
       )
       val args = astsForConstructorInitializer(newExpression.getInitializer) ++
         astsForInitializerClauses(newExpression.getPlacementArguments)
@@ -576,7 +582,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
                 Operators.assignment,
                 DispatchTypes.STATIC_DISPATCH,
                 None,
-                Some(Defines.Any)
+                Some(Defines.Void)
               )
             callAst(assignmentCallNode, List(maAst, rhsAst))
           }

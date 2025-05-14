@@ -299,6 +299,14 @@ trait FullNameProvider { this: AstCreator =>
     }
   }
 
+  protected def bindsToConstructor(name: IASTName): Boolean = {
+    val fullName_ = ASTStringUtil.getQualifiedName(name)
+    val name_     = ASTStringUtil.getSimpleName(name)
+    scope.computeScopePath.endsWith(s".$name_")
+    || (scope.computeScopePath.nonEmpty && scope.computeScopePath == name_)
+    || fullName_.startsWith(s"$name_::$name_")
+  }
+
   private def fullNameFromBinding(node: IASTNode): Option[String] = {
     node match {
       case id: CPPASTIdExpression =>
@@ -325,6 +333,17 @@ trait FullNameProvider { this: AstCreator =>
             val fn = if (function.isExternC) { tpe }
             else { s"${stripTemplateTags(fullNameNoSig)}.$tpe:${signature(returnType, declarator)}" }
             Option(fn)
+          case Some(constructor: ICPPConstructor) =>
+            val fullNameNoSig = replaceQualifiedNameSeparator(
+              replaceOperator(constructor.getQualifiedName.mkString("."))
+            )
+            val fn = if (constructor.isExternC) {
+              replaceOperator(constructor.getName)
+            } else {
+              val sig = signature(Defines.Void, declarator)
+              s"${stripTemplateTags(fullNameNoSig)}:$sig"
+            }
+            Option(fn)
           case Some(function: ICPPFunction) =>
             val fullNameNoSig = replaceQualifiedNameSeparator(replaceOperator(function.getQualifiedName.mkString(".")))
             val fn = if (function.isExternC) {
@@ -342,6 +361,13 @@ trait FullNameProvider { this: AstCreator =>
             val fullNameNoSig = replaceQualifiedNameSeparator(x.getQualifiedName.mkString("."))
             val fn = if (x.isExternC) { x.getName }
             else { s"${stripTemplateTags(fullNameNoSig)}:${cleanType(safeGetType(x.getType))}" }
+            Option(fn)
+          case Some(_: IProblemBinding) if bindsToConstructor(declarator.getName) =>
+            val fullNameNoSig = replaceQualifiedNameSeparator(
+              replaceOperator(ASTStringUtil.getQualifiedName(declarator.getName))
+            )
+            val sig = signature(Defines.Void, declarator)
+            val fn  = s"${stripTemplateTags(fullNameNoSig)}:$sig"
             Option(fn)
           case Some(_: IProblemBinding) =>
             val fullNameNoSig = replaceOperator(ASTStringUtil.getQualifiedName(declarator.getName))
