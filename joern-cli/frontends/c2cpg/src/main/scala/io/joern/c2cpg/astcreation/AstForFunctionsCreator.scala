@@ -148,12 +148,12 @@ trait AstForFunctionsCreator { this: AstCreator =>
       parameterNode(p, i)
     }
     setVariadic(parameterNodes, funcDef)
-    val methodBodyAst = astForMethodBody(Option(funcDef.getBody), methodBlockNode)
 
     memberInitializations(funcDef).foreach { callAst =>
       Ast.storeInDiffGraph(callAst, diffGraph)
       callAst.root.foreach(r => diffGraph.addEdge(methodBlockNode, r, EdgeTypes.AST))
     }
+    val methodBodyAst = astForMethodBody(Option(funcDef.getBody), methodBlockNode)
 
     scope.popScope()
     methodAstParentStack.pop()
@@ -436,10 +436,15 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
   private def astForMethodBody(body: Option[IASTStatement], blockNode: NewBlock): Ast = body match {
     case Some(b: IASTCompoundStatement) =>
-      astForBlockStatement(b, blockNode)
+      methodAstParentStack.push(blockNode)
+      val ast = astForBlockStatement(b, blockNode)
+      methodAstParentStack.pop()
+      ast
     case Some(b) =>
       scope.pushNewBlockScope(blockNode)
+      methodAstParentStack.push(blockNode)
       val childAst = astForNode(b)
+      methodAstParentStack.pop()
       scope.popScope()
       blockAst(blockNode).withChild(childAst)
     case None =>
