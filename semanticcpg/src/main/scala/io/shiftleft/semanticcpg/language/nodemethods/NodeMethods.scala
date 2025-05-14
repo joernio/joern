@@ -14,9 +14,6 @@ class NodeMethods(val node: AbstractNode) extends AnyVal with NodeExtension {
     }
 
   def loc: LocationInfo = {
-    node match {
-      case storedNode: StoredNode => Loc(storedNode)
-    }
+    Loc(node)
   }
-
 }
