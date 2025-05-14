@@ -47,7 +47,7 @@ class NodeSteps[NodeType <: StoredNode](val traversal: Iterator[NodeType]) exten
   @deprecated("Prefer the .loc node step which lazily computes location information")
   def location(implicit finder: NodeExtensionFinder): Iterator[NewLocation] =
     traversal.map(_.location)
-  
+
   @Doc(
     info = "Location, including filename and line number",
     longInfo = """
