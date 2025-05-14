@@ -26,27 +26,27 @@ implicit object Loc extends LocCreator {
   implicit def apply(node: AbstractNode): LocationInfo = {
     node match {
       case storedNode: StoredNode => LazyLoc(storedNode)
-      case _ => EmptyLoc
+      case _                      => EmptyLoc
     }
   }
 }
 
 object EmptyLoc extends LocationInfo {
   override def node: Option[AbstractNode] = None
-  override def symbol: String = "<empty>"
-  override def nodeLabel: String = "<empty>"
-  override def lineNumber: Option[Int] = None
-  override def methodFullName: String = "<empty>"
-  override def methodShortName: String = "<empty>"
-  override def packageName: String = "<empty>"
-  override def className: String = "<empty>"
-  override def classShortName: String = "<empty>"
-  override def filename: String = "<empty>"
+  override def symbol: String             = "<empty>"
+  override def nodeLabel: String          = "<empty>"
+  override def lineNumber: Option[Int]    = None
+  override def methodFullName: String     = "<empty>"
+  override def methodShortName: String    = "<empty>"
+  override def packageName: String        = "<empty>"
+  override def className: String          = "<empty>"
+  override def classShortName: String     = "<empty>"
+  override def filename: String           = "<empty>"
 }
 
 class LazyLoc(storedNode: StoredNode) extends LocationInfo {
   def node: Option[AbstractNode] = Some(storedNode)
-  
+
   def symbol: String = {
     storedNode match {
       case call: Call                   => call.code
