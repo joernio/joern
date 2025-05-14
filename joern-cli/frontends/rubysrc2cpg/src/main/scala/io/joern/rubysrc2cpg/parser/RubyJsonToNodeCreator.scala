@@ -1011,7 +1011,7 @@ class RubyJsonToNodeCreator(
         if isConditional then s"&$dot" else dot
       }
 
-      // This is specifically an ERB call that appends to the ERB buffer
+      // This is specifically for ERB lowering, where we append some ERBTemplateCall to a buffer
       if (callName == "<<" && arguments.exists(_.isInstanceOf[ErbTemplateCall])) {
         val argumentText = arguments
           .map {
@@ -1034,6 +1034,7 @@ class RubyJsonToNodeCreator(
         MemberAccess(base, op, callName)(obj.toTextSpan)
       }
     } else if (hasArguments || usesParenthesis) {
+      // This handles ONLY the ErbTemplateCall from the ERB lowering
       callName match {
         case Constants.joernErbTemplateOutRawName =>
           val code = s"<%== ${arguments.map(_.span.text).mkString(",")} %>"
