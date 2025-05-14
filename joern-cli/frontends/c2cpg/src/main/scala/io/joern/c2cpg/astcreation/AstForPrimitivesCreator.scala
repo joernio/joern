@@ -27,7 +27,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     val tpe        = registerType(safeGetType(lit.getExpressionType))
     if (codeString == "this") {
       val thisIdentifier = identifierNode(lit, codeString, codeString, tpe)
-      scope.addVariableReference(codeString, thisIdentifier, tpe, EvaluationStrategies.BY_REFERENCE)
+      scope.addVariableReference(codeString, thisIdentifier, tpe, EvaluationStrategies.BY_SHARING)
       Ast(thisIdentifier)
     } else {
       Ast(literalNode(lit, codeString, tpe))
@@ -169,7 +169,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
               val op             = if (e.isPointerDeref) Operators.indirectFieldAccess else Operators.fieldAccess
               val code           = if (e.isPointerDeref) s"this->$identifierName" else s"this.$identifierName"
               val thisIdentifier = identifierNode(ident, "this", "this", ownerType)
-              scope.addVariableReference("this", thisIdentifier, ownerType, EvaluationStrategies.BY_REFERENCE)
+              scope.addVariableReference("this", thisIdentifier, ownerType, EvaluationStrategies.BY_SHARING)
               val member  = fieldIdentifierNode(ident, identifierName, identifierName)
               val callTpe = Some(registerType(tpe))
               val ma      = callNode(ident, code, op, op, DispatchTypes.STATIC_DISPATCH, None, callTpe)
