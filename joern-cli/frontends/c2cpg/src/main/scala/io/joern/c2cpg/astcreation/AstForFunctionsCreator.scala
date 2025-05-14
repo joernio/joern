@@ -4,28 +4,14 @@ import io.joern.c2cpg.passes.FunctionDeclNodePass
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.datastructures.VariableScopeManager
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.*
 import org.eclipse.cdt.core.dom.ast.*
-import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTCompositeTypeSpecifier
-import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTFunctionDefinition
-import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression.CaptureDefault
-import org.eclipse.cdt.core.dom.ast.cpp.ICPPBinding
+import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.core.dom.ast.gnu.c.ICASTKnRFunctionDeclarator
-import org.eclipse.cdt.internal.core.dom.parser.c.CASTFunctionDeclarator
-import org.eclipse.cdt.internal.core.dom.parser.c.CASTParameterDeclaration
-import org.eclipse.cdt.internal.core.dom.parser.c.CVariable
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDeclarator
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDefinition
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTParameterDeclaration
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTQualifiedName
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPClassType
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPEnumeration
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPStructuredBindingComposite
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPVariable
+import org.eclipse.cdt.internal.core.dom.parser.c.{CASTFunctionDeclarator, CASTParameterDeclaration, CVariable}
+import org.eclipse.cdt.internal.core.dom.parser.cpp.*
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import scala.annotation.tailrec
@@ -163,6 +149,11 @@ trait AstForFunctionsCreator { this: AstCreator =>
     setVariadic(parameterNodes, funcDef)
     val methodBodyAst = astForMethodBody(Option(funcDef.getBody), methodBlockNode)
 
+    memberInitializations(funcDef).foreach { callAst =>
+      Ast.storeInDiffGraph(callAst, diffGraph)
+      callAst.root.foreach(r => diffGraph.addEdge(methodBlockNode, r, EdgeTypes.AST))
+    }
+
     scope.popScope()
     methodAstParentStack.pop()
 
@@ -282,6 +273,61 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
   private def modifierFor(funcDecl: IASTFunctionDeclarator): List[NewModifier] = {
     Try(modifierFromString(funcDecl, funcDecl.getParent.getSyntax.getImage)).getOrElse(Nil)
+  }
+
+  private def syntheticThisAccess(ident: IASTName, identifierName: String): Ast = {
+    val tpe = ident.getBinding match {
+      case f: CPPField => safeGetType(f.getType)
+      case _           => typeFor(ident)
+    }
+    scope.lookupVariable("this") match {
+      case Some((_, tpe)) =>
+        val op             = Operators.indirectFieldAccess
+        val code           = s"this->$identifierName"
+        val thisIdentifier = identifierNode(ident, "this", "this", tpe)
+        scope.addVariableReference("this", thisIdentifier, tpe, EvaluationStrategies.BY_REFERENCE)
+        val member  = fieldIdentifierNode(ident, identifierName, identifierName)
+        val callTpe = Some(registerType(tpe))
+        val ma      = callNode(ident, code, op, op, DispatchTypes.STATIC_DISPATCH, None, callTpe)
+        callAst(ma, Seq(Ast(thisIdentifier), Ast(member)))
+      case None =>
+        val idNode = identifierNode(ident, identifierName, identifierName, tpe)
+        scope.addVariableReference(identifierName, idNode, tpe, EvaluationStrategies.BY_REFERENCE)
+        Ast(idNode)
+    }
+  }
+
+  private def astForICPPASTConstructorChainInitializer(init: ICPPASTConstructorChainInitializer): Ast = {
+    init.getInitializer match {
+      case l: IASTInitializerList if l.getClauses == null || l.getClauses.isEmpty || l.getClauses.forall(_ == null) =>
+        Ast()
+      case _ =>
+        val leftAst = syntheticThisAccess(init.getMemberInitializerId, nameForIdentifier(init.getMemberInitializerId))
+        val rightAst = init.getInitializer match {
+          case l: IASTInitializerList => astForNode(l.getClauses.head)
+          case _ =>
+            val name   = nameForIdentifier(init.getMemberInitializerId)
+            val tpe    = registerType(typeFor(init.getMemberInitializerId))
+            val idNode = identifierNode(init.getMemberInitializerId, name, name, tpe)
+            scope.addVariableReference(name, idNode, tpe, EvaluationStrategies.BY_REFERENCE)
+            Ast(idNode)
+        }
+        val op = Operators.assignment
+        val codeString =
+          s"${codeFromAst(leftAst).getOrElse(code(init.getMemberInitializerId))} = ${codeFromAst(rightAst)
+              .getOrElse(code(init.getInitializer))}"
+        val assignmentCall = callNode(init, codeString, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
+        callAst(assignmentCall, List(leftAst, rightAst))
+    }
+  }
+
+  private def memberInitializations(func: IASTNode): Seq[Ast] = {
+    func match {
+      case f: ICPPASTFunctionDefinition =>
+        f.getMemberInitializers.toIndexedSeq.map(astForICPPASTConstructorChainInitializer)
+      case _ =>
+        Seq.empty
+    }
   }
 
   private def thisForCPPFunctions(func: IASTNode): Seq[FunctionDeclNodePass.ParameterInfo] = {

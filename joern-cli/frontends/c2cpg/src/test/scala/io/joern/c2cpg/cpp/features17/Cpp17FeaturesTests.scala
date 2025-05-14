@@ -36,7 +36,22 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
         "MyContainer.MyContainer:ANY(T)"
       )
 
-      cpg.call.isAssignment.code.l shouldBe List("c1 = MyContainer.MyContainer(1)")
+      cpg.method
+        .fullNameExact("MyContainer.MyContainer:ANY()")
+        .body
+        .astChildren
+        .size shouldBe 0
+
+      cpg.method
+        .fullNameExact("MyContainer.MyContainer:ANY(T)")
+        .body
+        .astChildren
+        .isCall
+        .isAssignment
+        .code
+        .l shouldBe List("this->val = val")
+
+      cpg.call.isAssignment.code.l shouldBe List("this->val = val", "c1 = MyContainer.MyContainer(1)")
       cpg.call.isAssignment.argument(1).isIdentifier.typeFullName.l shouldBe List("MyContainer")
       val List(c1Constructor) = cpg.call.isAssignment.argument(2).isCall.l
       c1Constructor.methodFullName shouldBe "MyContainer.MyContainer:ANY(int)"

@@ -198,25 +198,38 @@ trait TypeNameProvider { this: AstCreator =>
   protected def typeFor(node: IASTNode): String = {
     import org.eclipse.cdt.core.dom.ast.ASTSignatureUtil.getNodeSignature
     val tpeString = node match {
-      case f: CPPASTFoldExpression                               => typeForCPPASTFoldExpression(f)
-      case f: CPPASTFieldReference                               => typeForCPPASTFieldReference(f)
-      case s: CPPASTIdExpression                                 => typeForCPPASTIdExpression(s)
-      case s: ICPPASTNamedTypeSpecifier                          => typeForCPPAstNamedTypeSpecifier(s)
-      case a: IASTArrayDeclarator                                => typeForIASTArrayDeclarator(a)
-      case c: ICPPASTConstructorInitializer                      => typeForICPPASTConstructorInitializer(c)
-      case c: CPPASTEqualsInitializer                            => typeForCPPASTEqualsInitializer(c)
-      case _: IASTIdExpression | _: IASTName | _: IASTDeclarator => safeGetNodeType(node)
-      case f: IASTFieldReference                                 => safeGetType(f.getFieldOwner.getExpressionType)
-      case s: IASTNamedTypeSpecifier                             => ASTStringUtil.getReturnTypeString(s, null)
-      case s: IASTCompositeTypeSpecifier                         => ASTStringUtil.getReturnTypeString(s, null)
-      case s: IASTEnumerationSpecifier                           => ASTStringUtil.getReturnTypeString(s, null)
-      case s: IASTElaboratedTypeSpecifier                        => ASTStringUtil.getReturnTypeString(s, null)
-      case l: IASTLiteralExpression                              => safeGetType(l.getExpressionType)
-      case e: IASTExpression                                     => safeGetNodeType(e)
-      case d: IASTSimpleDeclaration                              => typeForDeclSpecifier(d.getDeclSpecifier)
-      case _                                                     => getNodeSignature(node)
+      case f: CPPASTFoldExpression          => typeForCPPASTFoldExpression(f)
+      case f: CPPASTFieldReference          => typeForCPPASTFieldReference(f)
+      case s: CPPASTIdExpression            => typeForCPPASTIdExpression(s)
+      case s: ICPPASTNamedTypeSpecifier     => typeForCPPAstNamedTypeSpecifier(s)
+      case a: IASTArrayDeclarator           => typeForIASTArrayDeclarator(a)
+      case c: ICPPASTConstructorInitializer => typeForICPPASTConstructorInitializer(c)
+      case c: CPPASTEqualsInitializer       => typeForCPPASTEqualsInitializer(c)
+      case n: IASTName                      => typeForIASTName(n)
+      case id: IASTIdExpression             => typeForIASTName(id.getName)
+      case d: IASTDeclarator                => typeForIASTName(d.getName)
+      case f: IASTFieldReference            => safeGetType(f.getFieldOwner.getExpressionType)
+      case s: IASTNamedTypeSpecifier        => ASTStringUtil.getReturnTypeString(s, null)
+      case s: IASTCompositeTypeSpecifier    => ASTStringUtil.getReturnTypeString(s, null)
+      case s: IASTEnumerationSpecifier      => ASTStringUtil.getReturnTypeString(s, null)
+      case s: IASTElaboratedTypeSpecifier   => ASTStringUtil.getReturnTypeString(s, null)
+      case l: IASTLiteralExpression         => safeGetType(l.getExpressionType)
+      case e: IASTExpression                => safeGetNodeType(e)
+      case d: IASTSimpleDeclaration         => typeForDeclSpecifier(d.getDeclSpecifier)
+      case _                                => getNodeSignature(node)
     }
     cleanType(tpeString)
+  }
+
+  private def typeForIASTName(name: IASTName): String = {
+    safeGetBinding(name) match {
+      case Some(v: IVariable) =>
+        v.getType match {
+          case f: IFunctionType => f.getReturnType.toString
+          case other            => other.toString
+        }
+      case _ => safeGetNodeType(name)
+    }
   }
 
   protected def returnType(methodLike: FullNameProvider.MethodLike): String = {

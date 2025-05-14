@@ -13,14 +13,17 @@ import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTNamespaceDefinition
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPFunction
 import org.eclipse.cdt.internal.core.dom.parser.c.CVariable
 import org.eclipse.cdt.internal.core.dom.parser.c.ICInternalBinding
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDeclarator
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTIdExpression
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTQualifiedName
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPField
-import org.eclipse.cdt.internal.core.dom.parser.cpp.ICPPInternalBinding
+import org.eclipse.cdt.internal.core.dom.parser.cpp.{
+  CPPASTFunctionDeclarator,
+  CPPASTIdExpression,
+  CPPASTName,
+  CPPASTQualifiedName,
+  CPPField,
+  CPPVariable,
+  ICPPInternalBinding
+}
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.CPPVisitor
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalMemberAccess
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPVariable
 import org.eclipse.cdt.internal.core.dom.parser.IASTInternalScope
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
@@ -130,7 +133,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     (definition.map(fullName), typeFullName)
   }
 
-  private def nameForIdentifier(ident: IASTNode): String = {
+  protected def nameForIdentifier(ident: IASTNode): String = {
     ident match {
       case id: IASTElaboratedTypeSpecifier => shortName(id)
       case id: IASTNamedTypeSpecifier      => shortName(id)
