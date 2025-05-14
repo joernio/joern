@@ -7,7 +7,7 @@ import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.{NilClass, RubyOperators}
 import io.joern.rubysrc2cpg.passes.GlobalTypes.corePrefix
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
-import io.joern.x2cpg.frontendspecific.rubysrc2cpg.ImportsPass
+import io.joern.x2cpg.frontendspecific.rubysrc2cpg.{Constants, ImportsPass}
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg.ImportsPass.ImportCallNames
 import org.slf4j.LoggerFactory
 import ujson.*
@@ -1010,10 +1010,39 @@ class RubyJsonToNodeCreator(
         val dot = if objSpan.text.stripPrefix(base.text).startsWith("::") then "::" else "."
         if isConditional then s"&$dot" else dot
       }
-      if isMemberCall then MemberCall(base, op, callName, arguments)(obj.toTextSpan)
-      else MemberAccess(base, op, callName)(obj.toTextSpan)
+
+      // This is specifically an ERB call that appends to the ERB buffer
+      if (callName == "<<" && arguments.exists(_.isInstanceOf[ErbTemplateCall])) {
+        val argumentText = arguments
+          .map {
+            case x: ErbTemplateCall =>
+              if (x.target.text == Constants.joernErbTemplateOutEscapeName) {
+                s"<%= ${x.arguments.map(_.span.text).mkString(",")} %>"
+              } else {
+                s"<%== ${x.arguments.map(_.span.text).mkString(",")} %>"
+              }
+            case x => x.span.text
+          }
+          .mkString(",")
+
+        MemberCall(base, op, callName, arguments)(
+          obj.toTextSpan.spanStart(s"${base.span.text} ${callName} ${argumentText}")
+        )
+      } else if (isMemberCall) {
+        MemberCall(base, op, callName, arguments)(obj.toTextSpan)
+      } else {
+        MemberAccess(base, op, callName)(obj.toTextSpan)
+      }
     } else if (hasArguments || usesParenthesis) {
-      SimpleCall(target, arguments)(obj.toTextSpan)
+      callName match {
+        case Constants.joernErbTemplateOutRawName =>
+          val code = s"<%== ${arguments.map(_.span.text).mkString(",")} %>"
+          ErbTemplateCall(target, arguments)(obj.toTextSpan.spanStart(code))
+        case Constants.joernErbTemplateOutEscapeName =>
+          val code = s"<%= ${arguments.map(_.span.text).mkString(",")} %>"
+          ErbTemplateCall(target, arguments)(obj.toTextSpan.spanStart(code))
+        case _ => SimpleCall(target, arguments)(obj.toTextSpan)
+      }
     } else {
       // The following allows the AstCreator to approximate when an identifier could be a call or not - puts less
       //  strain on data-flow tracking for externally inherited accessor calls such as `params` in RubyOnRails

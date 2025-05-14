@@ -43,6 +43,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     case node: TypeIdentifier                   => astForTypeIdentifier(node)
     case node: RubyIdentifier                   => astForSimpleIdentifier(node)
     case node: SimpleCall                       => astForSimpleCall(node)
+    case node: ErbTemplateCall                  => astForErbTemplateCall(node)
     case node: RequireCall                      => astForRequireCall(node)
     case node: IncludeCall                      => astForIncludeCall(node)
     case node: RaiseCall                        => astForRaiseCall(node)
@@ -84,37 +85,25 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   protected def astForNilBlock: Ast = blockAst(NewBlock(), List(astForNilLiteral))
 
   protected def astForDynamicLiteral(node: DynamicLiteral): Ast = {
-    val fmtValueAsts = node.expressions.collect {
+    val fmtValueAsts = node.expressions.map {
       case stmtList: StatementList if stmtList.size == 1 =>
-        stmtList.statements.head match {
-          case x: SimpleCall if x.span.text.startsWith(Constants.joernErbTemplatePrefix) =>
-            val argAsts = x.arguments.map(astForExpression)
-            val (opName, callCode) = if (x.span.text.startsWith(Constants.joernErbTemplateOutEscapeName)) {
-              (RubyOperators.templateOutEscape, s"<%= ${x.arguments.map(_.span.text).mkString} %>")
-            } else {
-              (RubyOperators.templateOutRaw, s"<%== ${x.arguments.map(_.span.text).mkString} %>")
-            }
-            val opNode = callNode(x, callCode, opName, opName, DispatchTypes.STATIC_DISPATCH)
-            callAst(opNode, argAsts)
-          case x =>
-            val expressionAst = astForExpression(stmtList.statements.head)
-            val call = callNode(
-              node = stmtList,
-              code = stmtList.text,
-              name = Operators.formattedValue,
-              methodFullName = Operators.formattedValue,
-              dispatchType = DispatchTypes.STATIC_DISPATCH,
-              signature = None,
-              typeFullName = Some(node.typeFullName)
-            )
-            callAst(call, Seq(expressionAst))
-        }
+        val expressionAst = astForExpression(stmtList.statements.head)
+        val call = callNode(
+          node = stmtList,
+          code = stmtList.text,
+          name = Operators.formattedValue,
+          methodFullName = Operators.formattedValue,
+          dispatchType = DispatchTypes.STATIC_DISPATCH,
+          signature = None,
+          typeFullName = Some(node.typeFullName)
+        )
+        callAst(call, Seq(expressionAst))
       case stmtList: StatementList if stmtList.size > 1 =>
         logger.warn(
           s"Interpolations containing multiple statements are not supported yet: ${stmtList.text} ($relativeFileName), skipping"
         )
         astForUnknown(stmtList)
-      case node if !isLineFeed(node.text) =>
+      case node =>
         val call = callNode(
           node = node,
           code = node.text,
@@ -675,6 +664,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         astForUnknown(targetNode)
   }
 
+  protected def astForErbTemplateCall(node: ErbTemplateCall): Ast = {
+    val argAsts = node.arguments.map(astForExpression)
+    val opName  = ErbTemplateCallNames(node.target.text)
+    val opNode  = callNode(node, node.span.text, opName, opName, DispatchTypes.STATIC_DISPATCH)
+    callAst(opNode, argAsts)
+  }
+
   protected def astForRequireCall(node: RequireCall): Ast = {
     val pathOpt = node.argument match {
       case arg: StaticLiteral if arg.isString => Option(arg.innerText)
@@ -983,7 +979,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForMethodCallWithoutBlock(node: SimpleCall, methodIdentifier: SimpleIdentifier): Ast = {
-    val methodName         = methodIdentifier.text
+    val methodName =
+      if (isErbCall(methodIdentifier.text)) ErbTemplateCallNames(methodIdentifier.text) else methodIdentifier.text
     lazy val defaultResult = Defines.Any -> XDefines.DynamicCallUnknownFullName
 
     val (receiverType, methodFullNameHint) =
