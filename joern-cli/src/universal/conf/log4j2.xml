@@ -2,7 +2,7 @@
 <Configuration status="WARN">
     <Appenders>
         <Console name="Console" target="SYSTEM_ERR">
-            <PatternLayout pattern="%d{yyy-MM-dd HH:mm:ss.SSS} %p %c{0}: %msg%n"/>
+            <PatternLayout pattern="%d{yyy-MM-dd HH:mm:ss.SSS} %highlight{%-5p} %-25c{0} %msg%n" noConsoleNoAnsi="true" />
         </Console>
     </Appenders>
     <Loggers>
@@ -11,7 +11,6 @@
         <Logger name="org.reflections" level="off" />
         <Logger name="org.reflections8" level="off" />
         <Logger name="ghidra.app.plugin.core.analysis" level="off" />
-        <Logger name="io.shiftleft.overflowdb" level="warn" />
         <Root level="${env:SL_LOGGING_LEVEL:-WARN}">
             <AppenderRef ref="Console" />
         </Root>
