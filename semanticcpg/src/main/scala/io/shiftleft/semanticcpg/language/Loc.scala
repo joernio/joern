@@ -5,9 +5,50 @@ import io.shiftleft.semanticcpg.language.*
 
 import scala.annotation.tailrec
 
-class Loc(val node: StoredNode) {
-  def symbol: String = {
+trait LocationInfo {
+  def node: Option[AbstractNode]
+  def symbol: String
+  def nodeLabel: String
+  def lineNumber: Option[Int]
+  def methodFullName: String
+  def methodShortName: String
+  def packageName: String
+  def className: String
+  def classShortName: String
+  def filename: String
+}
+
+trait LocCreator {
+  implicit def apply(node: AbstractNode): LocationInfo
+}
+
+implicit object Loc extends LocCreator {
+  implicit def apply(node: AbstractNode): LocationInfo = {
     node match {
+      case storedNode: StoredNode => LazyLoc(storedNode)
+      case _ => EmptyLoc
+    }
+  }
+}
+
+object EmptyLoc extends LocationInfo {
+  override def node: Option[AbstractNode] = None
+  override def symbol: String = "<empty>"
+  override def nodeLabel: String = "<empty>"
+  override def lineNumber: Option[Int] = None
+  override def methodFullName: String = "<empty>"
+  override def methodShortName: String = "<empty>"
+  override def packageName: String = "<empty>"
+  override def className: String = "<empty>"
+  override def classShortName: String = "<empty>"
+  override def filename: String = "<empty>"
+}
+
+class LazyLoc(storedNode: StoredNode) extends LocationInfo {
+  def node: Option[AbstractNode] = Some(storedNode)
+  
+  def symbol: String = {
+    storedNode match {
       case call: Call                   => call.code
       case method: Method               => method.name
       case inParam: MethodParameterIn   => inParam.name
@@ -21,9 +62,9 @@ class Loc(val node: StoredNode) {
     }
   }
 
-  def nodeLabel: String = node.label
+  def nodeLabel: String = storedNode.label
 
-  def lineNumber: Option[Int] = node match {
+  def lineNumber: Option[Int] = storedNode match {
     case astNode: AstNode => astNode.lineNumber
     case cfgNode: CfgNode => cfgNode.lineNumber
   }
@@ -40,17 +81,17 @@ class Loc(val node: StoredNode) {
 
   def filename: String = if (method.filename.isEmpty) "N/A" else method.filename
 
-  private val defaultString = "<empty>";
+  protected val defaultString = "<empty>";
 
-  private lazy val typeOption = findAncestor[TypeDecl](method)
+  protected lazy val typeOption = findAncestor[TypeDecl](method)
 
-  private lazy val namespaceOption = for {
+  protected lazy val namespaceOption = for {
     tpe            <- typeOption
     namespaceBlock <- tpe.namespaceBlock
     namespace      <- namespaceBlock._namespaceViaRefOut.nextOption()
   } yield namespace.name
 
-  private lazy val method: Method = node match {
+  protected lazy val method: Method = storedNode match {
     case cfgNode: CfgNode => cfgNode.method
     case local: Local     => local.method.head
   }

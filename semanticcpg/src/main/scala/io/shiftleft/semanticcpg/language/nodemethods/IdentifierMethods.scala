@@ -10,7 +10,7 @@ class IdentifierMethods(val identifier: Identifier) extends AnyVal with NodeExte
     LocationCreator(identifier, identifier.name, identifier.label, identifier.lineNumber, identifier.method)
   }
 
-  override def loc: Loc = {
+  override def loc: LocationInfo = {
     Loc(identifier)
   }
 

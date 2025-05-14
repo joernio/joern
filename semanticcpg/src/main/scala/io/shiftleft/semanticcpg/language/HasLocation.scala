@@ -8,5 +8,5 @@ trait HasLocation extends Any {
 }
 
 trait HasLoc extends Any {
-  def loc: Loc
+  def loc: LocationInfo
 }

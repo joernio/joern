@@ -73,7 +73,7 @@ class MethodMethods(val method: Method) extends AnyVal with NodeExtension with H
     LocationCreator(method, method.name, method.label, method.lineNumber, method)
   }
 
-  override def loc: Loc = {
+  override def loc: LocationInfo = {
     Loc(method)
   }
 

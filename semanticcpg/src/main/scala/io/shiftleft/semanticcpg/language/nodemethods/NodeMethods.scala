@@ -13,7 +13,7 @@ class NodeMethods(val node: AbstractNode) extends AnyVal with NodeExtension {
       case _                      => LocationCreator.emptyLocation("", None)
     }
 
-  def loc: Loc = {
+  def loc: LocationInfo = {
     node match {
       case storedNode: StoredNode => Loc(storedNode)
     }

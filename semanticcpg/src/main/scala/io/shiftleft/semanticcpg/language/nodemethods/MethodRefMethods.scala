@@ -16,7 +16,7 @@ class MethodRefMethods(val methodRef: MethodRef) extends AnyVal with NodeExtensi
     )
   }
 
-  override def loc: Loc = {
+  override def loc: LocationInfo = {
     Loc(methodRef)
   }
 }

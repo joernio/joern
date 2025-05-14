@@ -34,7 +34,7 @@ class LiteralMethods(val literal: Literal) extends AnyVal with NodeExtension wit
 
   }
 
-  override def loc: Loc = {
+  override def loc: LocationInfo = {
     Loc(literal)
   }
 }
