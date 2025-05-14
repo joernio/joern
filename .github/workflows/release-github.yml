@@ -1,5 +1,6 @@
 name: release to github
 on:
+  workflow_dispatch: # triggered by 'release' workflow
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
