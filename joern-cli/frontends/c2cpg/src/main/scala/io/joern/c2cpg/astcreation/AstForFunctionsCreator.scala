@@ -155,6 +155,17 @@ trait AstForFunctionsCreator { this: AstCreator =>
     }
     val methodBodyAst = astForMethodBody(Option(funcDef.getBody), methodBlockNode)
 
+    if (isConstructor) {
+      implicitThisParam.foreach { param =>
+        val thisIdentifier = identifierNode(funcDef, "this", "this", param.typeFullName)
+        scope.addVariableReference("this", thisIdentifier, param.typeFullName, EvaluationStrategies.BY_SHARING)
+        val cpgReturn = returnNode(funcDef, "return this")
+        val returnAst = Ast(cpgReturn).withChild(Ast(thisIdentifier)).withArgEdge(cpgReturn, thisIdentifier)
+        Ast.storeInDiffGraph(returnAst, diffGraph)
+        diffGraph.addEdge(methodBlockNode, cpgReturn, EdgeTypes.AST)
+      }
+    }
+
     scope.popScope()
     methodAstParentStack.pop()
 

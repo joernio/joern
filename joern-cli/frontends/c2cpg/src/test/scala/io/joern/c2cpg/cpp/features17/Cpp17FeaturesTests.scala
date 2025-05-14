@@ -34,7 +34,6 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       val List(c1Method, c2Method) = cpg.typeDecl.nameExact("MyContainer").astChildren.isMethod.isConstructor.l
       c1Method.fullName shouldBe "MyContainer.MyContainer:void()"
       c1Method.signature shouldBe "void()"
-      c1Method.body.astChildren.size shouldBe 0
       c2Method.fullName shouldBe "MyContainer.MyContainer:void(T)"
       c2Method.signature shouldBe "void(T)"
       c2Method.body.astChildren.isCall.isAssignment.code.l shouldBe List("this->val = val")
