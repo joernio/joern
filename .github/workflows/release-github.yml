@@ -1,12 +1,8 @@
 name: release to github
 on:
-  workflow_dispatch: # triggered by 'release' workflow
-  push:
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch: # triggered by 'release' workflow via github REST api
 jobs:
   release-github:
-    if: github.repository_owner == 'joernio'
     concurrency: release
     runs-on: ubuntu-latest
     steps:
@@ -32,7 +28,7 @@ jobs:
       - name: Delete `.cargo` directory # to save disk space
         run: rm -rf /home/runner/.cargo
         if: runner.os == 'Linux'
-      - run: sbt createDistribution
+      - run: sbt stage createDistribution
       - run: |
           cd joern-cli/target/universal/stage
           ./schema-extender/test.sh
