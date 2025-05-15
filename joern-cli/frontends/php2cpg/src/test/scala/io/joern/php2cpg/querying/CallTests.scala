@@ -4,18 +4,37 @@ import io.joern.php2cpg.astcreation.AstCreator.NameConstants
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, Literal}
 import io.shiftleft.semanticcpg.language.*
 
 class CallTests extends PhpCode2CpgFixture {
+
   "variable call arguments with names matching methods should not have a methodref" in {
     val cpg = code("""<?php
       |$a = file("ABC");
-      |$file = $a.contents();
+      |$file = $a->contents();
       |foo($file);
       |""".stripMargin)
 
-    inside(cpg.call.name("foo").argument.l) { case List(fileArg: Identifier) =>
+    val fileCall = cpg.call.nameExact("file").head
+    fileCall.code shouldBe "file(\"ABC\")"
+    fileCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    inside(fileCall.astChildren.l) { case (arg: Literal) :: Nil =>
+      arg.code shouldBe "\"ABC\""
+      arg.argumentIndex shouldBe 1
+    }
+
+    val contentsCall = cpg.call.nameExact("contents").head
+    contentsCall.code shouldBe "$a->contents()"
+    contentsCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+    inside(contentsCall.astChildren.l) { case (receiver: Call) :: Nil =>
+      receiver.name shouldBe Operators.fieldAccess
+      receiver.code shouldBe "$a->contents"
+      receiver.argumentIndex shouldBe 0
+    }
+
+    inside(cpg.call.name("foo").argument.l) { case List(foo: Identifier, fileArg: Identifier) =>
+      foo.code shouldBe "foo"
       fileArg.name shouldBe "file"
     }
   }
@@ -52,12 +71,19 @@ class CallTests extends PhpCode2CpgFixture {
       fooCall.name shouldBe "foo"
       fooCall.methodFullName shouldBe s"foo"
       fooCall.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
-      fooCall.receiver.isEmpty shouldBe true
-      fooCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      fooCall.receiver.isEmpty shouldBe false
+      fooCall.receiver.foreach { recvNode =>
+        val recv = recvNode.asInstanceOf[Identifier]
+        recv.code shouldBe "foo"
+        recv.name shouldBe "foo"
+      }
+
+      fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       fooCall.lineNumber shouldBe Some(2)
       fooCall.code shouldBe "foo($x)"
 
-      inside(fooCall.argument.l) { case List(xArg: Identifier) =>
+      inside(fooCall.argument.l) { case List(foo: Identifier, xArg: Identifier) =>
+        foo.name shouldBe "foo"
         xArg.name shouldBe "x"
         xArg.code shouldBe "$x"
       }
@@ -129,17 +155,24 @@ class CallTests extends PhpCode2CpgFixture {
         |$f->foo($x);
         |""".stripMargin)
 
-    inside(cpg.call.l) { case List(fooCall) =>
+    inside(cpg.call.nameExact("foo").l) { case List(fooCall) =>
       fooCall.name shouldBe "foo"
-      fooCall.methodFullName shouldBe """<unresolvedNamespace>\$f->foo"""
+      fooCall.methodFullName shouldBe """<unresolvedNamespace>\foo"""
       fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       fooCall.lineNumber shouldBe Some(2)
       fooCall.code shouldBe "$f->foo($x)"
 
-      inside(fooCall.argument.l) { case List(fRecv: Identifier, xArg: Identifier) =>
-        fRecv.name shouldBe "f"
-        fRecv.code shouldBe "$f"
+      inside(fooCall.argument.l) { case List(fRecv: Call, xArg: Identifier) =>
+        fRecv.name shouldBe Operators.fieldAccess
+        fRecv.code shouldBe "$f->foo"
         fRecv.lineNumber shouldBe Some(2)
+        inside(fRecv.argument.l) { case List(fBase: Identifier, foo: FieldIdentifier) =>
+          fBase.name shouldBe "f"
+          fBase.code shouldBe "$f"
+
+          foo.canonicalName shouldBe "foo"
+        }
+
         xArg.name shouldBe "x"
         xArg.code shouldBe "$x"
       }
@@ -153,21 +186,22 @@ class CallTests extends PhpCode2CpgFixture {
 
     inside(cpg.call.filter(_.name != Operators.fieldAccess).l) { case List(fooCall) =>
       fooCall.name shouldBe "$foo"
-      fooCall.methodFullName shouldBe """<unresolvedNamespace>\$$f->$foo"""
+      fooCall.methodFullName shouldBe """<unresolvedNamespace>\$foo"""
       fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       fooCall.lineNumber shouldBe Some(2)
       fooCall.code shouldBe "$$f->$foo($x)"
 
-      inside(fooCall.argument.l) { case List(fRecv: Call, xArg: Identifier) =>
-        fRecv.name shouldBe Operators.fieldAccess
-        fRecv.code shouldBe "$$f->$foo"
-        fRecv.lineNumber shouldBe Some(2)
+      inside(fooCall.astChildren.l) { case (fBase: Call) :: (xArg: Identifier) :: Nil =>
+        fBase.name shouldBe Operators.fieldAccess
+        fBase.code shouldBe "$$f->$foo"
+        fBase.lineNumber shouldBe Some(2)
+        fBase.argumentIndex shouldBe 0
 
-        inside(fRecv.argument.l) { case List(fVar: Identifier, fooVar: Identifier) =>
+        inside(fBase.argument.l) { case List(fVar: Identifier, fooVar: FieldIdentifier) =>
           fVar.name shouldBe "f"
           fVar.code shouldBe "$$f"
 
-          fooVar.name shouldBe "foo"
+          fooVar.canonicalName shouldBe "foo"
           fooVar.code shouldBe "$foo"
         }
 
@@ -186,5 +220,32 @@ class CallTests extends PhpCode2CpgFixture {
         |""".stripMargin)
     val call = cpg.call("test").head
     call.code shouldBe "test(...$args)"
+  }
+
+  "chained calls should alias calls in receivers and bases" in {
+    val cpg = code("""
+        |<?php
+        |function test($obj) {
+        | return $obj->foo()->bar();
+        |}
+        |""".stripMargin)
+
+    // These calls should only happen once, as per the code
+    cpg.call("foo").size shouldBe 1
+    cpg.call("bar").size shouldBe 1
+
+    val foo = cpg.call("foo").head
+    foo.code shouldBe "$obj->foo()"
+    inside(cpg.call("foo").astChildren.l) { case (fa: Call) :: Nil =>
+      fa.name shouldBe Operators.fieldAccess
+      fa.code shouldBe "$obj->foo"
+    }
+
+    val bar = cpg.call("bar").head
+    bar.code shouldBe "$obj->foo()->bar()"
+    inside(cpg.call("bar").astChildren.l) { case (fa: Call) :: Nil =>
+      fa.name shouldBe Operators.fieldAccess
+      fa.code shouldBe "$obj->foo()->bar"
+    }
   }
 }

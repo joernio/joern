@@ -1,15 +1,17 @@
 package io.joern.php2cpg.astcreation
 
-import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
+import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants, operatorSymbols}
 import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*
 import io.joern.x2cpg.Defines.UnresolvedNamespace
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewIdentifier, NewLiteral, NewNamespaceBlock}
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.{NewIdentifier, NewLiteral, NewLocal, NewNamespaceBlock}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import java.nio.charset.StandardCharsets
+import scala.io.Source
 
 trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -80,12 +82,11 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
   }
 
   protected def codeForStaticMethodCall(call: PhpCallExpr, name: String): String = {
-    val className =
-      call.target
-        .map(astForExpr)
-        .map(_.rootCode.getOrElse(UnresolvedNamespace))
-        .getOrElse(UnresolvedNamespace)
-    s"$className::$name"
+    call.target
+      .map(astForExpr)
+      .flatMap(_.rootCode)
+      .map(className => s"$className::$name")
+      .getOrElse(name)
   }
 
   protected def dimensionFromSimpleScalar(scalar: PhpSimpleScalar, idxTracker: ArrayIndexTracker): PhpExpr = {
@@ -108,5 +109,45 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
         scalar
     }
   }
+
+  protected def getArgsCode(call: PhpCallExpr, arguments: Seq[Ast]): String = {
+    arguments
+      .zip(call.args.collect { case x: PhpArg => x.unpack })
+      .map {
+        case (arg, true)  => s"...${arg.rootCodeOrEmpty}"
+        case (arg, false) => arg.rootCodeOrEmpty
+      }
+      .mkString(",")
+  }
+
+  protected def getCallName(call: PhpCallExpr, nameAst: Option[Ast]): String = {
+    nameAst
+      .map(_.rootCodeOrEmpty)
+      .getOrElse(call.methodName match {
+        case nameExpr: PhpNameExpr => nameExpr.name
+        case other =>
+          logger.error(s"Found unexpected call target type: Crash for now to handle properly later: $other")
+          ???
+      })
+  }
+
+  protected def getMfn(call: PhpCallExpr, name: String): String = {
+    call.target match {
+      // Static method call with a known class name
+      case Some(nameExpr: PhpNameExpr) if call.isStatic =>
+        if (nameExpr.name == NameConstants.Self) composeMethodFullName(name, call.isStatic)
+        else s"${nameExpr.name}$StaticMethodDelimiter$name"
+      case Some(_) =>
+        s"$UnresolvedNamespace\\$name"
+      case None if PhpBuiltins.FuncNames.contains(name) =>
+        // No signature/namespace for MFN for builtin functions to ensure stable names as type info improves.
+        name
+      // Function call
+      case None =>
+        composeMethodFullName(name, call.isStatic)
+    }
+  }
+
+  protected def isBuiltinFunc(name: String): Boolean = PhpBuiltins.FuncNames.contains(name)
 
 }
