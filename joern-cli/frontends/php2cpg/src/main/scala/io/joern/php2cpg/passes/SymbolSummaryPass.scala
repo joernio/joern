@@ -111,6 +111,12 @@ object SymbolSummaryPass {
       *   two separate objects if they cannot be combined, or a single combined object if otherwise.
       */
     def +(o: SymbolSummary): Seq[SymbolSummary]
+
+    /** @return
+      *   the identifier of the symbol.
+      */
+    def name: String
+
   }
 
   sealed trait HasChildren { this: SymbolSummary =>
@@ -162,6 +168,15 @@ object SymbolSummaryPass {
       o match {
         case f: PhpMember if f.name == this.name => this :: Nil
         case _                                   => this :: o :: Nil
+      }
+    }
+  }
+
+  case class PhpExternal(name: String) extends SymbolSummary {
+    override def +(o: SymbolSummary): Seq[SymbolSummary] = {
+      o match {
+        case f: PhpExternal if f.name == this.name => this :: Nil
+        case _                                     => this :: o :: Nil
       }
     }
   }

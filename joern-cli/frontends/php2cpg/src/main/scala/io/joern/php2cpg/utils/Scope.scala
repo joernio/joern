@@ -1,15 +1,24 @@
 package io.joern.php2cpg.utils
 
 import io.joern.php2cpg.astcreation.AstCreator.NameConstants
+import io.joern.php2cpg.passes.SymbolSummaryPass.*
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.datastructures.{ScopeElement, NamespaceLikeScope, Scope as X2CpgScope}
+import io.joern.x2cpg.datastructures.{NamespaceLikeScope, ScopeElement, Scope as X2CpgScope}
 import io.shiftleft.codepropertygraph.generated.NodeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewBlock,
+  NewImport,
+  NewMethod,
+  NewNamespaceBlock,
+  NewNode,
+  NewTypeDecl
+}
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
-class Scope(implicit nextClosureName: () => String) extends X2CpgScope[String, NewNode, PhpScopeElement] {
+class Scope(summary: Seq[SymbolSummary] = Nil)(implicit nextClosureName: () => String)
+    extends X2CpgScope[String, NewNode, PhpScopeElement] {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -18,6 +27,8 @@ class Scope(implicit nextClosureName: () => String) extends X2CpgScope[String, N
   private val anonymousMethods                                    = mutable.ArrayBuffer[Ast]()
   private var tmpVarCounter                                       = 0
   private var tmpClassCounter                                     = 0
+  // Maps imported strings to the most likely symbol
+  private val importedSymbols = mutable.Map.empty[String, SymbolSummary]
 
   def pushNewScope(scopeNode: NewNode): Unit = {
     scopeNode match {
@@ -162,4 +173,51 @@ class Scope(implicit nextClosureName: () => String) extends X2CpgScope[String, N
 
     returnString
   }
+
+  def useImport(imports: Seq[NewImport]): Unit = {
+
+    def findImport(next: String, worklist: Seq[String], summary: SymbolSummary): SymbolSummary = {
+      lazy val default = PhpExternal(next)
+
+      if (worklist.isEmpty) {
+        // TODO: Check if this matches PHP's import precedence
+        summary match {
+          case namespace @ PhpNamespace(name, _) if next == name => namespace
+          case func @ PhpFunction(name) if next == name          => func
+          case clazz @ PhpClass(name, _) if next == name         => clazz
+          case member @ PhpMember(name) if next == name          => member
+          case _                                                 => default
+        }
+      } else {
+        summary match {
+          case x: HasChildren if next == x.name =>
+            x.children.map(findImport(worklist.head, worklist.tail, _)).headOption.getOrElse(default)
+          case _ => default
+        }
+      }
+    }
+
+    summary.headOption.foreach { globalSummarySymbol =>
+      imports.foreach { imporT =>
+        imporT.importedEntity.foreach { importName =>
+          importName.split("\\\\").toList match {
+            case Nil         => // ignore
+            case importParts =>
+              // TODO: We should be a building a rooted tree.
+              val matchingSymbol = findImport(globalSummarySymbol.name, importParts, summary.head)
+              importedSymbols.put(importName, matchingSymbol)
+          }
+        }
+      }
+    }
+  }
+
+  /** Attempts to resolve a fully or partially qualified symbol
+    * @param symbol
+    * @return
+    */
+  def resolveImportedSymbol(symbol: String): Option[SymbolSummary] = {
+    summary.headOption
+  }
+
 }
