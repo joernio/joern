@@ -30,22 +30,22 @@ class CallTraversal(val traversal: Iterator[Call]) extends AnyVal {
   def receiver: Iterator[Expression] =
     traversal.flatMap(_.receiver)
 
-  /** Arguments of the call
+  /** Arguments of the calls
     */
   def argument: Iterator[Expression] =
     traversal.flatMap(_.argument)
 
-  /** `i'th` arguments of the call
+  /** `i'th` arguments of the calls
     */
   def argument(i: Integer): Iterator[Expression] =
     traversal.flatMap(_.arguments(i))
 
-  /** argument of the call with matching name
+  /** argument of the calls with matching name
     */
   def argument(pattern: String): Iterator[Expression] =
     traversal.flatMap(_.arguments(pattern))
 
-  /** `i'th` arguments of the call
+  /** arguments of the calls with this exact name
     */
   def argumentExact(name: String): Iterator[Expression] =
     traversal.flatMap(_.argumentsExact(name))
