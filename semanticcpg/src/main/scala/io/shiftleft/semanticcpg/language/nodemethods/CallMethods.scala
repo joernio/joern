@@ -20,7 +20,9 @@ class CallMethods(val node: Call) extends AnyVal with NodeExtension with HasLoca
     node.receiverOut.collectAll[Expression]
 
   def arguments(index: Int): Iterator[Expression] =
-    argument.filter { expr => expr.argumentName.isEmpty && expr.argumentIndex == index }
+    node._argumentOut.collect {
+      case expr: Expression if expr.argumentIndex == index => expr
+    }
 
   def arguments(pattern: String): Iterator[Expression] =
     argument.where { _.argumentName(pattern) }
