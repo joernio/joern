@@ -146,8 +146,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
     if (isConstructor) {
       implicitThisParam.foreach { param =>
-        val thisIdentifier = identifierNode(funcDef, "this", "this", param.typeFullName)
-        scope.addVariableReference("this", thisIdentifier, param.typeFullName, EvaluationStrategies.BY_SHARING)
+        val thisIdentifier = identifierNode(funcDef, Defines.This, Defines.This, param.typeFullName)
+        scope.addVariableReference(Defines.This, thisIdentifier, param.typeFullName, EvaluationStrategies.BY_SHARING)
         val cpgReturn = returnNode(funcDef, "return this")
         val returnAst = Ast(cpgReturn).withChild(Ast(thisIdentifier)).withArgEdge(cpgReturn, thisIdentifier)
         Ast.storeInDiffGraph(returnAst, diffGraph)
@@ -277,12 +277,12 @@ trait AstForFunctionsCreator { this: AstCreator =>
       case f: CPPField => safeGetType(f.getType)
       case _           => typeFor(ident)
     }
-    scope.lookupVariable("this") match {
+    scope.lookupVariable(Defines.This) match {
       case Some((_, tpe)) =>
         val op             = Operators.fieldAccess
-        val code           = s"this.$identifierName"
-        val thisIdentifier = identifierNode(ident, "this", "this", tpe)
-        scope.addVariableReference("this", thisIdentifier, tpe, EvaluationStrategies.BY_SHARING)
+        val code           = s"${Defines.This}.$identifierName"
+        val thisIdentifier = identifierNode(ident, Defines.This, Defines.This, tpe)
+        scope.addVariableReference(Defines.This, thisIdentifier, tpe, EvaluationStrategies.BY_SHARING)
         val member = fieldIdentifierNode(ident, identifierName, identifierName)
         val ma     = callNode(ident, code, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
         callAst(ma, Seq(Ast(thisIdentifier), Ast(member)))
@@ -325,10 +325,14 @@ trait AstForFunctionsCreator { this: AstCreator =>
             Ast(idNode)
         }
         val op = Operators.assignment
-        val codeString =
-          s"${codeFromAst(leftAst).getOrElse(code(init.getMemberInitializerId))} = ${codeFromAst(rightAst)
-              .getOrElse(code(init.getInitializer))}"
-        val assignmentCall = callNode(init, codeString, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Void))
+        val leftCode =
+          leftAst.root.collect { case expr: ExpressionNew => expr.code }.getOrElse(code(init.getMemberInitializerId))
+        val rightCode =
+          rightAst.root.collect { case expr: ExpressionNew => expr.code }.getOrElse(code(init.getInitializer))
+
+        val codeString = s"$leftCode = $rightCode"
+        val assignmentCall =
+          callNode(init, codeString, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Void)))
         callAst(assignmentCall, List(leftAst, rightAst))
     }
   }
@@ -359,10 +363,11 @@ trait AstForFunctionsCreator { this: AstCreator =>
           case _ => None
         }
         maybeOwner.toSeq.map { owner =>
-          val tpe = if isConstructor then cleanType(owner) else s"${cleanType(owner)}*"
+          val tpe = if (isConstructor) { cleanType(owner) }
+          else { s"${cleanType(owner)}*" }
           new FunctionDeclNodePass.ParameterInfo(
-            "this",
-            "this",
+            Defines.This,
+            Defines.This,
             0,
             false,
             EvaluationStrategies.BY_SHARING,

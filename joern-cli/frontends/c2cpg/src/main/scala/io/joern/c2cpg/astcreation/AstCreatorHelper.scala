@@ -200,10 +200,6 @@ trait AstCreatorHelper { this: AstCreator =>
     SourceFiles.toRelativePath(path, config.inputPath)
   }
 
-  protected def codeFromAst(ast: Ast): Option[String] = {
-    ast.root.collect { case expr: ExpressionNew => expr.code }
-  }
-
   protected def astForNode(node: IASTNode): Ast = {
     node match {
       case expr: IASTExpression             => astForExpression(expr)

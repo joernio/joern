@@ -15,10 +15,11 @@ trait AstForInitializersCreator { this: AstCreator =>
   protected def astForInitializerList(l: IASTInitializerList): Ast = {
     val MAX_INITIALIZERS = 1000
     val op               = Operators.arrayInitializer
-    val initCallNode     = callNode(l, code(l), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
-    val clauses          = l.getClauses.slice(0, MAX_INITIALIZERS)
-    val args             = clauses.toList.map(x => astForNode(x))
-    val ast              = callAst(initCallNode, args)
+    val initCallNode =
+      callNode(l, code(l), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
+    val clauses = l.getClauses.slice(0, MAX_INITIALIZERS)
+    val args    = clauses.toList.map(x => astForNode(x))
+    val ast     = callAst(initCallNode, args)
     if (l.getClauses.length > MAX_INITIALIZERS) {
       val placeholder =
         literalNode(l, "<too-many-initializers>", Defines.Any).argumentIndex(MAX_INITIALIZERS)
@@ -29,9 +30,10 @@ trait AstForInitializersCreator { this: AstCreator =>
   }
 
   protected def astForCPPASTConstructorInitializer(c: ICPPASTConstructorInitializer): Ast = {
-    val name      = Defines.OperatorConstructorInitializer
-    val callNode_ = callNode(c, code(c), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
-    val args      = c.getArguments.toList.map(a => astForNode(a))
+    val name = Defines.OperatorConstructorInitializer
+    val callNode_ =
+      callNode(c, code(c), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
+    val args = c.getArguments.toList.map(a => astForNode(a))
     callAst(callNode_, args)
   }
 
@@ -41,7 +43,7 @@ trait AstForInitializersCreator { this: AstCreator =>
     val op = Operators.assignment
     val calls = withIndex(d.getDesignators) { (des, o) =>
       val callNode_ =
-        callNode(d, code(d), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Void))
+        callNode(d, code(d), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Void)))
           .argumentIndex(o)
       val left  = astForNode(des)
       val right = astForNode(d.getOperand)
@@ -57,7 +59,7 @@ trait AstForInitializersCreator { this: AstCreator =>
     val op = Operators.assignment
     val calls = withIndex(d.getDesignators) { (des, o) =>
       val callNode_ =
-        callNode(d, code(d), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Void))
+        callNode(d, code(d), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Void)))
           .argumentIndex(o)
       val left  = astForNode(des)
       val right = astForNode(d.getOperand)
@@ -68,16 +70,18 @@ trait AstForInitializersCreator { this: AstCreator =>
   }
 
   protected def astForCASTArrayRangeDesignator(des: CASTArrayRangeDesignator): Ast = {
-    val op         = Operators.arrayInitializer
-    val callNode_  = callNode(des, code(des), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
+    val op = Operators.arrayInitializer
+    val callNode_ =
+      callNode(des, code(des), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
     val floorAst   = nullSafeAst(des.getRangeFloor)
     val ceilingAst = nullSafeAst(des.getRangeCeiling)
     callAst(callNode_, List(floorAst, ceilingAst))
   }
 
   protected def astForCPPASTArrayRangeDesignator(des: CPPASTArrayRangeDesignator): Ast = {
-    val op         = Operators.arrayInitializer
-    val callNode_  = callNode(des, code(des), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
+    val op = Operators.arrayInitializer
+    val callNode_ =
+      callNode(des, code(des), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
     val floorAst   = nullSafeAst(des.getRangeFloor)
     val ceilingAst = nullSafeAst(des.getRangeCeiling)
     callAst(callNode_, List(floorAst, ceilingAst))

@@ -94,7 +94,7 @@ trait FullNameProvider { this: AstCreator =>
   import FullNameProvider.*
 
   protected def replaceQualifiedNameSeparator(name: String): String = {
-    if (name.isEmpty) return name
+    if (name.isEmpty || name == Defines.Any || name == Defines.Void) return name
     val normalizedName = StringUtils.normalizeSpace(name)
     normalizedName.replace(Defines.QualifiedNameSeparator, ".").stripPrefix(".")
   }

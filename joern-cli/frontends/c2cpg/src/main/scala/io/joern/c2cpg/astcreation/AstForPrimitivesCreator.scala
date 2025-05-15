@@ -25,7 +25,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
   protected def astForLiteral(lit: IASTLiteralExpression): Ast = {
     val codeString = code(lit)
     val tpe        = registerType(safeGetType(lit.getExpressionType))
-    if (codeString == "this") {
+    if (codeString == Defines.This) {
       val thisIdentifier = identifierNode(lit, codeString, codeString, tpe)
       scope.addVariableReference(codeString, thisIdentifier, tpe, EvaluationStrategies.BY_SHARING)
       Ast(thisIdentifier)
@@ -161,15 +161,17 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     Try(ident.getEvaluation).toOption match {
       case Some(e: EvalMemberAccess) =>
         val ownerTypeRaw = safeGetType(e.getOwnerType)
-        val deref        = if (e.isPointerDeref) "*" else ""
-        val ownerType    = registerType(s"$ownerTypeRaw$deref")
+        val deref = if (e.isPointerDeref) { "*" }
+        else { "" }
+        val ownerType = registerType(s"$ownerTypeRaw$deref")
         if (isInCurrentScope(ident, ownerTypeRaw)) {
-          scope.lookupVariable("this") match {
+          scope.lookupVariable(Defines.This) match {
             case Some(_) =>
-              val op             = if (e.isPointerDeref) Operators.indirectFieldAccess else Operators.fieldAccess
-              val code           = if (e.isPointerDeref) s"this->$identifierName" else s"this.$identifierName"
-              val thisIdentifier = identifierNode(ident, "this", "this", ownerType)
-              scope.addVariableReference("this", thisIdentifier, ownerType, EvaluationStrategies.BY_SHARING)
+              val (op, code) = if (e.isPointerDeref) {
+                (Operators.indirectFieldAccess, s"${Defines.This}->$identifierName")
+              } else { (Operators.fieldAccess, s"${Defines.This}.$identifierName") }
+              val thisIdentifier = identifierNode(ident, Defines.This, Defines.This, ownerType)
+              scope.addVariableReference(Defines.This, thisIdentifier, ownerType, EvaluationStrategies.BY_SHARING)
               val member  = fieldIdentifierNode(ident, identifierName, identifierName)
               val callTpe = Some(registerType(tpe))
               val ma      = callNode(ident, code, op, op, DispatchTypes.STATIC_DISPATCH, None, callTpe)
@@ -194,8 +196,9 @@ trait AstForPrimitivesCreator { this: AstCreator =>
   }
 
   protected def astForFieldReference(fieldRef: IASTFieldReference): Ast = {
-    val op     = if (fieldRef.isPointerDereference) Operators.indirectFieldAccess else Operators.fieldAccess
-    val ma     = callNode(fieldRef, code(fieldRef), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
+    val op = if (fieldRef.isPointerDereference) Operators.indirectFieldAccess else Operators.fieldAccess
+    val ma =
+      callNode(fieldRef, code(fieldRef), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
     val owner  = astForExpression(fieldRef.getFieldOwner)
     val member = fieldIdentifierNode(fieldRef, fieldRef.getFieldName.toString, fieldRef.getFieldName.toString)
     callAst(ma, List(owner, Ast(member)))
@@ -219,7 +222,8 @@ trait AstForPrimitivesCreator { this: AstCreator =>
         Ast(methodRefNode(qualId, name, fullName, registerType(function.getType.toString)))
       case _ =>
         val op = Operators.fieldAccess
-        val ma = callNode(qualId, code(qualId), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
+        val ma =
+          callNode(qualId, code(qualId), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
 
         def fieldAccesses(names: List[IASTNode], argIndex: Int = -1): Ast = names match {
           case Nil => Ast()
@@ -228,7 +232,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
           case head :: tail =>
             val codeString = s"${code(head)}::${tail.map(code).mkString("::")}"
             val callNode_ =
-              callNode(head, code(head), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
+              callNode(head, code(head), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
                 .argumentIndex(argIndex)
             callNode_.code = codeString
             val arg1 = astForNode(head)

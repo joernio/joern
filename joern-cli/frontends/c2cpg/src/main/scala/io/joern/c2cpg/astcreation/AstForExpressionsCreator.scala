@@ -108,17 +108,18 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
   protected def astForStaticAssert(a: ICPPASTStaticAssertDeclaration): Ast = {
     val name    = "<operator>.staticAssert"
-    val call    = callNode(a, code(a), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
+    val call    = callNode(a, code(a), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
     val cond    = nullSafeAst(a.getCondition)
     val message = nullSafeAst(a.getMessage)
     callAst(call, List(cond, message))
   }
 
   private def astForBinaryExpression(bin: IASTBinaryExpression): Ast = {
-    val op        = OperatorMap.getOrElse(bin.getOperator, Defines.OperatorUnknown)
-    val callNode_ = callNode(bin, code(bin), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
-    val left      = nullSafeAst(bin.getOperand1)
-    val right     = nullSafeAst(bin.getOperand2)
+    val op = OperatorMap.getOrElse(bin.getOperator, Defines.OperatorUnknown)
+    val callNode_ =
+      callNode(bin, code(bin), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
+    val left  = nullSafeAst(bin.getOperand1)
+    val right = nullSafeAst(bin.getOperand2)
     callAst(callNode_, List(left, right))
   }
 
@@ -285,7 +286,15 @@ trait AstForExpressionsCreator { this: AstCreator =>
         val signature   = X2CpgDefines.UnresolvedSignature
         val fullName    = s"${X2CpgDefines.UnresolvedNamespace}.$name:$signature(${args.size})"
         val callCpgNode =
-          callNode(call, code(call), name, fullName, DispatchTypes.STATIC_DISPATCH, Some(signature), Some(Defines.Any))
+          callNode(
+            call,
+            code(call),
+            name,
+            fullName,
+            DispatchTypes.STATIC_DISPATCH,
+            Some(signature),
+            Some(registerType(Defines.Any))
+          )
         createCallAst(callCpgNode, args, base = Some(instanceAst), receiver = Some(instanceAst))
       case idExpr: CPPASTIdExpression =>
         val args      = call.getArguments.toList.map(a => astForNode(a))
@@ -293,7 +302,15 @@ trait AstForExpressionsCreator { this: AstCreator =>
         val signature = X2CpgDefines.UnresolvedSignature
         val fullName  = s"${X2CpgDefines.UnresolvedNamespace}.$name:$signature(${args.size})"
         val callCpgNode =
-          callNode(call, code(call), name, fullName, DispatchTypes.STATIC_DISPATCH, Some(signature), Some(Defines.Any))
+          callNode(
+            call,
+            code(call),
+            name,
+            fullName,
+            DispatchTypes.STATIC_DISPATCH,
+            Some(signature),
+            Some(registerType(Defines.Any))
+          )
         createCallAst(callCpgNode, args)
       case otherExpr =>
         // This could either be a pointer or an operator() call we do not know at this point
@@ -303,7 +320,15 @@ trait AstForExpressionsCreator { this: AstCreator =>
         val signature = X2CpgDefines.UnresolvedSignature
         val fullName  = s"${X2CpgDefines.UnresolvedNamespace}.$name:$signature(${args.size})"
         val callCpgNode =
-          callNode(call, code(call), name, fullName, DispatchTypes.STATIC_DISPATCH, Some(signature), Some(Defines.Any))
+          callNode(
+            call,
+            code(call),
+            name,
+            fullName,
+            DispatchTypes.STATIC_DISPATCH,
+            Some(signature),
+            Some(registerType(Defines.Any))
+          )
         val instanceAst = astForExpression(otherExpr)
         createCallAst(callCpgNode, args, base = Some(instanceAst), receiver = Some(instanceAst))
     }
@@ -381,7 +406,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
         operatorMethod,
         DispatchTypes.STATIC_DISPATCH,
         None,
-        Some(Defines.Any)
+        Some(registerType(Defines.Any))
       )
       val operand = nullSafeAst(unary.getOperand)
       callAst(cpgUnary, List(operand))
@@ -404,7 +429,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
             Operators.sizeOf,
             DispatchTypes.STATIC_DISPATCH,
             None,
-            Some(Defines.Any)
+            Some(registerType(Defines.Any))
           )
         val arg = astForNode(typeId.getTypeId.getDeclSpecifier)
         callAst(call, List(arg))
@@ -414,7 +439,8 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
   private def astForConditionalExpression(expr: IASTConditionalExpression): Ast = {
     val name = Operators.conditional
-    val call = callNode(expr, code(expr), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
+    val call =
+      callNode(expr, code(expr), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
 
     val condAst = nullSafeAst(expr.getLogicalConditionExpression)
     val posAst  = nullSafeAst(expr.getPositiveResultExpression)
@@ -434,7 +460,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
         name,
         DispatchTypes.STATIC_DISPATCH,
         None,
-        Some(Defines.Any)
+        Some(registerType(Defines.Any))
       )
 
     val expr = astForExpression(arrayIndexExpression.getArrayExpression)
@@ -443,6 +469,8 @@ trait AstForExpressionsCreator { this: AstCreator =>
   }
 
   private def astForCastExpression(castExpression: IASTCastExpression): Ast = {
+    val argNode = castExpression.getTypeId
+    val tpe     = registerType(typeFor(argNode))
     val cpgCastExpression =
       callNode(
         castExpression,
@@ -451,13 +479,10 @@ trait AstForExpressionsCreator { this: AstCreator =>
         Operators.cast,
         DispatchTypes.STATIC_DISPATCH,
         None,
-        Some(Defines.Any)
+        Some(tpe)
       )
-
-    val expr    = astForExpression(castExpression.getOperand)
-    val argNode = castExpression.getTypeId
-    val arg     = unknownNode(argNode, code(argNode))
-
+    val expr = astForExpression(castExpression.getOperand)
+    val arg  = unknownNode(argNode, code(argNode))
     callAst(cpgCastExpression, List(Ast(arg), expr))
   }
 
@@ -496,7 +521,15 @@ trait AstForExpressionsCreator { this: AstCreator =>
   private def astForNewExpression(newExpression: ICPPASTNewExpression): Ast = {
     val name = Defines.OperatorNew
     val newCallNode =
-      callNode(newExpression, code(newExpression), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
+      callNode(
+        newExpression,
+        code(newExpression),
+        name,
+        name,
+        DispatchTypes.STATIC_DISPATCH,
+        None,
+        Some(registerType(Defines.Any))
+      )
 
     val typeId = newExpression.getTypeId
     val newCallArgAst =
@@ -545,7 +578,15 @@ trait AstForExpressionsCreator { this: AstCreator =>
   private def astForDeleteExpression(delExpression: ICPPASTDeleteExpression): Ast = {
     val name = Operators.delete
     val cpgDeleteNode =
-      callNode(delExpression, code(delExpression), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
+      callNode(
+        delExpression,
+        code(delExpression),
+        name,
+        name,
+        DispatchTypes.STATIC_DISPATCH,
+        None,
+        Some(registerType(Defines.Any))
+      )
     val arg = astForExpression(delExpression.getOperand)
     callAst(cpgDeleteNode, List(arg))
   }
@@ -553,7 +594,15 @@ trait AstForExpressionsCreator { this: AstCreator =>
   private def astForTypeIdInitExpression(typeIdInit: IASTTypeIdInitializerExpression): Ast = {
     val name = Operators.cast
     val cpgCastExpression =
-      callNode(typeIdInit, code(typeIdInit), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
+      callNode(
+        typeIdInit,
+        code(typeIdInit),
+        name,
+        name,
+        DispatchTypes.STATIC_DISPATCH,
+        None,
+        Some(registerType(Defines.Any))
+      )
     val typeAst = unknownNode(typeIdInit.getTypeId, code(typeIdInit.getTypeId))
     val expr    = astForNode(typeIdInit.getInitializer)
     callAst(cpgCastExpression, List(Ast(typeAst), expr))
@@ -578,8 +627,9 @@ trait AstForExpressionsCreator { this: AstCreator =>
               identifierNode(c.getDeclSpecifier, name, name, registerType(typeFor(c.getDeclSpecifier)))
             val op         = Operators.fieldAccess
             val accessCode = s"$name.${memberId.code}"
-            val ma         = callNode(init, accessCode, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
-            val maAst      = callAst(ma, List(Ast(specifierId), Ast(memberId)))
+            val ma =
+              callNode(init, accessCode, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
+            val maAst = callAst(ma, List(Ast(specifierId), Ast(memberId)))
             val assignmentCallNode =
               callNode(
                 c,
@@ -588,7 +638,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
                 Operators.assignment,
                 DispatchTypes.STATIC_DISPATCH,
                 None,
-                Some(Defines.Void)
+                Some(registerType(Defines.Void))
               )
             callAst(assignmentCallNode, List(maAst, rhsAst))
           }
@@ -597,8 +647,9 @@ trait AstForExpressionsCreator { this: AstCreator =>
         scope.popScope()
         blockAst(node, calls.toList)
       case other =>
-        val callNode_ = callNode(c, code(c), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
-        val arg       = astForNode(other)
+        val callNode_ =
+          callNode(c, code(c), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
+        val arg = astForNode(other)
         callAst(callNode_, List(arg))
     }
   }

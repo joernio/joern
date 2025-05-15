@@ -86,7 +86,7 @@ trait AstForStatementsCreator { this: AstCreator =>
       val op             = Operators.assignment
       val assignmentCode = s"$localName = $codeString"
       val assignmentCallNode =
-        callNode(astName, assignmentCode, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Void))
+        callNode(astName, assignmentCode, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Void)))
       val localNameNode = localNode(astName, localName, localName, tpe)
       scope.addVariable(localName, localNameNode, tpe, VariableScopeManager.ScopeType.BlockScope)
       val localId = identifierNode(astName, code(astName), code(astName), tpe)
@@ -105,7 +105,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val op             = Operators.assignment
     val assignmentCode = s"$tmpName = ${code(initializer)}"
     val assignmentCallNode =
-      callNode(struct, assignmentCode, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Void))
+      callNode(struct, assignmentCode, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Void)))
     val assignmentCallAst = callAst(assignmentCallNode, List(Ast(idNode).withRefEdge(idNode, localTmpNode), rhsAst))
 
     val accessAsts = if (typeFor(initializer).endsWith("]")) {
@@ -151,7 +151,7 @@ trait AstForStatementsCreator { this: AstCreator =>
       case s if s.startsWith("co_yield ") => "<operator>.yield"
       case _                              => "<operator>.await"
     }
-    val node    = callNode(decl, code(decl), op, op, DispatchTypes.STATIC_DISPATCH)
+    val node = callNode(decl, code(decl), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
     val argAsts = decl.getDeclarators.zipWithIndex.map { case (d, i) => astForDeclarator(decl, d, i) }
     callAst(node, argAsts.toSeq)
   }
@@ -172,7 +172,15 @@ trait AstForStatementsCreator { this: AstCreator =>
         val allocCallAst  = callAst(allocCallNode, Ast(idNode) +: d.getArrayModifiers.toIndexedSeq.map(astForNode))
         val operatorName  = Operators.assignment
         val assignmentCallNode =
-          callNode(d, codeString, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Void))
+          callNode(
+            d,
+            codeString,
+            operatorName,
+            operatorName,
+            DispatchTypes.STATIC_DISPATCH,
+            None,
+            Some(registerType(Defines.Void))
+          )
         val left = astForNode(d.getName)
         callAst(assignmentCallNode, List(left, allocCallAst))
       }
@@ -394,7 +402,7 @@ trait AstForStatementsCreator { this: AstCreator =>
         s"${Defines.UnresolvedNamespace}.iterator:${Defines.Iterator}()",
         DispatchTypes.DYNAMIC_DISPATCH,
         Some(s"${Defines.Iterator}()"),
-        Some(Defines.Iterator)
+        Some(registerType(Defines.Iterator))
       )
 
     val iteratorCallBase = astForNode(collection)
@@ -406,7 +414,9 @@ trait AstForStatementsCreator { this: AstCreator =>
         s"$iteratorName = ${iteratorCall.code}",
         Operators.assignment,
         Operators.assignment,
-        DispatchTypes.STATIC_DISPATCH
+        DispatchTypes.STATIC_DISPATCH,
+        None,
+        Some(registerType(Defines.Void))
       )
 
     val iteratorAssignmentArgs = List(Ast(iteratorNode), iteratorCallAst)
@@ -462,7 +472,7 @@ trait AstForStatementsCreator { this: AstCreator =>
         s"${Defines.Iterator}.next:${Defines.Any}()",
         DispatchTypes.DYNAMIC_DISPATCH,
         Some(s"${Defines.Any}()"),
-        Some(Defines.Any)
+        Some(registerType(Defines.Any))
       )
 
     val nextReceiverNode = identifierNode(forStmt, iteratorName, iteratorName, Defines.Iterator)
@@ -476,7 +486,9 @@ trait AstForStatementsCreator { this: AstCreator =>
       s"$loopVariableName = ${nextCallNode.code}",
       Operators.assignment,
       Operators.assignment,
-      DispatchTypes.STATIC_DISPATCH
+      DispatchTypes.STATIC_DISPATCH,
+      None,
+      Some(registerType(Defines.Void))
     )
 
     val loopVariableAssignmentArgs = List(Ast(whileLoopVariableNode), nextCallAst)
