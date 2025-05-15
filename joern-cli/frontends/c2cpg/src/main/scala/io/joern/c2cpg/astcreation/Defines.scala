@@ -20,6 +20,7 @@ object Defines {
   val OperatorEllipses: String               = "<operator>.op_ellipses"
   val OperatorUnknown: String                = "<operator>.unknown"
   val OperatorCall: String                   = "<operator>()"
+  val OperatorNew: String                    = "<operator>.new"
   val DuplicateSuffix                        = "<duplicate>"
   val ConstSuffix                            = "<const>"
 }
