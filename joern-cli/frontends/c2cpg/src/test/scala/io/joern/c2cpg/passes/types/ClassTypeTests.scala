@@ -176,7 +176,7 @@ class ClassTypeTests extends C2CpgSuite(FileDefaults.CppExt) {
       constructor.block.astChildren.isCall.code.l shouldBe List("Bar::Foo(a, b)")
       val List(thisP, p1, p2) = constructor.parameter.l
       thisP.name shouldBe "this"
-      thisP.typeFullName shouldBe "FooT*"
+      thisP.typeFullName shouldBe "FooT"
       thisP.index shouldBe 0
       p1.typ.fullName shouldBe "std.string&"
       p1.index shouldBe 1

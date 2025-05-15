@@ -49,7 +49,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
         val codeString                                                = code(funcDecl.getParent)
         val filename                                                  = fileName(funcDecl)
 
-        val parameterNodeInfos = thisForCPPFunctions(funcDecl) ++ withIndex(parameters(funcDecl)) { (p, i) =>
+        val parameterNodeInfos = thisForCPPFunctions(funcDecl, false) ++ withIndex(parameters(funcDecl)) { (p, i) =>
           parameterNodeInfo(p, i)
         }
         setVariadicParameterInfo(parameterNodeInfos, funcDecl)
@@ -115,7 +115,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     methodAstParentStack.push(methodNode_)
     scope.pushNewMethodScope(fullName, name, methodBlockNode, capturingRefNode)
 
-    val implicitThisParam = thisForCPPFunctions(funcDef).map { thisParam =>
+    val implicitThisParam = thisForCPPFunctions(funcDef, isConstructor).map { thisParam =>
       val parameterNode = parameterInNode(
         funcDef,
         thisParam.name,
@@ -279,8 +279,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
     }
     scope.lookupVariable("this") match {
       case Some((_, tpe)) =>
-        val op             = Operators.indirectFieldAccess
-        val code           = s"this->$identifierName"
+        val op             = Operators.fieldAccess
+        val code           = s"this.$identifierName"
         val thisIdentifier = identifierNode(ident, "this", "this", tpe)
         scope.addVariableReference("this", thisIdentifier, tpe, EvaluationStrategies.BY_SHARING)
         val member = fieldIdentifierNode(ident, identifierName, identifierName)
@@ -342,7 +342,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     }
   }
 
-  private def thisForCPPFunctions(func: IASTNode): Seq[FunctionDeclNodePass.ParameterInfo] = {
+  private def thisForCPPFunctions(func: IASTNode, isConstructor: Boolean): Seq[FunctionDeclNodePass.ParameterInfo] = {
     func match {
       case cppFunc: ICPPASTFunctionDefinition if !modifierFor(cppFunc).exists(_.modifierType == ModifierTypes.STATIC) =>
         val maybeOwner = safeGetBinding(cppFunc.getDeclarator.getName) match {
@@ -359,6 +359,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
           case _ => None
         }
         maybeOwner.toSeq.map { owner =>
+          val tpe = if isConstructor then cleanType(owner) else s"${cleanType(owner)}*"
           new FunctionDeclNodePass.ParameterInfo(
             "this",
             "this",
@@ -367,7 +368,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
             EvaluationStrategies.BY_SHARING,
             line(cppFunc),
             column(cppFunc),
-            registerType(s"${cleanType(owner)}*")
+            registerType(tpe)
           )
         }
       case _ => Seq.empty
