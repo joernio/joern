@@ -25,9 +25,9 @@ class CallMethods(val node: Call) extends AnyVal with NodeExtension with HasLoca
     }
 
   def arguments(pattern: String): Iterator[Expression] =
-    argument.where { _.argumentName(pattern) }
+    argument.argumentName(pattern)
   def argumentsExact(name: String): Iterator[Expression] =
-    argument.filter { expr => expr.argumentName.contains(name) }
+    argument.argumentNameExact(name)
 
   // TODO define as named step in the schema
   def argument: Iterator[Expression] =
