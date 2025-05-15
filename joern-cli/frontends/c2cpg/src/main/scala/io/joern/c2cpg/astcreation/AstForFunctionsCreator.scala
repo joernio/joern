@@ -101,7 +101,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val filename                                                  = fileName(funcDef)
     val MethodFullNameInfo(name, fullName, signature, returnType) = methodFullNameInfo(funcDef)
     registerMethodDefinition(fullName)
-    val isConstructor                 = bindsToConstructor(funcDef)
+    val isConstructor                 = bindsToConstructor(funcDef) && fullName.contains(s".$name:")
     val shouldCreateFunctionReference = typeRefIdStack.headOption.isEmpty
     val methodRefNode_ = if (!shouldCreateFunctionReference) { None }
     else { Option(methodRefNode(funcDef, name, fullName, fullName)) }
