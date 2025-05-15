@@ -104,15 +104,27 @@ trait AstForTypesCreator { this: AstCreator =>
         val args               = astsForConstructorInitializer(i)
         val constructorCallAst = callAst(constructorCallNode, args)
 
+        val newCallNode =
+          callNode(
+            i,
+            s"new ${constructorCallNode.code}",
+            Defines.OperatorNew,
+            Defines.OperatorNew,
+            DispatchTypes.STATIC_DISPATCH,
+            None,
+            Some(Defines.Any)
+          )
+        val newCallAst = callAst(newCallNode, List(constructorCallAst))
+
         val assignmentCallNode =
           callNode(
             declarator,
-            s"$name = $tpe.$constructorCallName($initCode)",
+            s"$name = ${newCallNode.code}",
             assignmentOperatorName,
             assignmentOperatorName,
             DispatchTypes.STATIC_DISPATCH
           )
-        callAst(assignmentCallNode, List(leftAst, constructorCallAst))
+        callAst(assignmentCallNode, List(leftAst, newCallAst))
       case i: ICPPASTConstructorInitializer =>
         val assignmentCallNode =
           callNode(
@@ -148,14 +160,26 @@ trait AstForTypesCreator { this: AstCreator =>
         val args               = astsForInitializerClauses(i.getClauses)
         val constructorCallAst = callAst(constructorCallNode, args)
 
+        val newCallNode =
+          callNode(
+            i,
+            s"new ${constructorCallNode.code}",
+            Defines.OperatorNew,
+            Defines.OperatorNew,
+            DispatchTypes.STATIC_DISPATCH,
+            None,
+            Some(Defines.Any)
+          )
+        val newCallAst = callAst(newCallNode, List(constructorCallAst))
+
         val assignmentCallNode = callNode(
           declarator,
-          s"$name = $tpe.$constructorCallName($initCode)",
+          s"$name = ${newCallNode.code}",
           assignmentOperatorName,
           assignmentOperatorName,
           DispatchTypes.STATIC_DISPATCH
         )
-        callAst(assignmentCallNode, List(leftAst, constructorCallAst))
+        callAst(assignmentCallNode, List(leftAst, newCallAst))
       case _ => astForNode(init)
     }
   }

@@ -1186,7 +1186,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
         .fullNameExact("Foo")
         .l
         .size shouldBe 1
-      inside(cpg.call.codeExact("f1 = Foo.Foo(0)").l) { case List(call: Call) =>
+      inside(cpg.call.codeExact("f1 = new Foo.Foo(0)").l) { case List(call: Call) =>
         call.name shouldBe Operators.assignment
       }
     }
@@ -1445,13 +1445,20 @@ class AstCreationPassTests extends AstC2CpgSuite {
       c3.astIn.l shouldBe List(fileGlobalMethod)
       val List(f1Call, f2Call, b1Call, f3Call, f4Call, b2Call) =
         cpg.method.nameExact("method").ast.isCall.isAssignment.argument(2).isCall.l
-      f1Call.methodFullName shouldBe "Foo.Foo:void(int)"
-      f2Call.methodFullName shouldBe "Foo.Foo:void(int,int)"
-      b1Call.methodFullName shouldBe "Bar.Bar:void(float)"
 
+      f1Call.methodFullName shouldBe Defines.OperatorNew
+      f2Call.methodFullName shouldBe Defines.OperatorNew
+      b1Call.methodFullName shouldBe Defines.OperatorNew
       f3Call.methodFullName shouldBe Defines.OperatorNew
       f4Call.methodFullName shouldBe Defines.OperatorNew
       b2Call.methodFullName shouldBe Defines.OperatorNew
+
+      val List(f1ConstructorCall) = f1Call.argument.isCall.l
+      f1ConstructorCall.methodFullName shouldBe "Foo.Foo:void(int)"
+      val List(f2ConstructorCall) = f2Call.argument.isCall.l
+      f2ConstructorCall.methodFullName shouldBe "Foo.Foo:void(int,int)"
+      val List(b1ConstructorCall) = b1Call.argument.isCall.l
+      b1ConstructorCall.methodFullName shouldBe "Bar.Bar:void(float)"
 
       val List(f3ConstructorCall) = f3Call.argument.isCall.l
       f3ConstructorCall.methodFullName shouldBe "Foo.Foo:void(int)"
@@ -1478,8 +1485,9 @@ class AstCreationPassTests extends AstC2CpgSuite {
       c.fullName shouldBe "Bar.Bar:void(float)"
       c.astIn.l shouldBe List(barTypeDecl)
       val List(b1Call, b2Call) = cpg.method.nameExact("method").ast.isCall.isAssignment.argument(2).isCall.l
-      b1Call.methodFullName shouldBe "Bar.Bar:void(float)"
-
+      b1Call.methodFullName shouldBe Defines.OperatorNew
+      val List(b1ConstructorCall) = b1Call.argument.isCall.l
+      b1ConstructorCall.methodFullName shouldBe "Bar.Bar:void(float)"
       b2Call.methodFullName shouldBe Defines.OperatorNew
       val List(b2ConstructorCall) = b2Call.argument.isCall.l
       b2ConstructorCall.methodFullName shouldBe "Bar.Bar:void(float)"

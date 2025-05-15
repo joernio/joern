@@ -38,9 +38,13 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       c2Method.signature shouldBe "void(T)"
       c2Method.body.astChildren.isCall.isAssignment.code.l shouldBe List("this.val = val")
 
-      cpg.call.isAssignment.code.l shouldBe List("this.val = val", "c1 = MyContainer.MyContainer(1)")
+      cpg.call.isAssignment.code.l shouldBe List("this.val = val", "c1 = new MyContainer.MyContainer(1)")
       cpg.call.isAssignment.argument(1).isIdentifier.typeFullName.l shouldBe List("MyContainer")
-      val List(c1ConstructorCall) = cpg.call.isAssignment.argument(2).isCall.l
+
+      val List(c1NewCall) = cpg.call.isAssignment.argument(2).isCall.l
+      c1NewCall.code shouldBe "new MyContainer.MyContainer(1)"
+      c1NewCall.methodFullName shouldBe Defines.OperatorNew
+      val List(c1ConstructorCall) = c1NewCall.argument.isCall.l
       c1ConstructorCall.methodFullName shouldBe "MyContainer.MyContainer:void(int)"
       c1ConstructorCall.name shouldBe "MyContainer"
       c1ConstructorCall.signature shouldBe "void(int)"
@@ -378,7 +382,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
         .l shouldBe List(
         "std::lock_guard<std::mutex> lk(mx)",
         "if (std::lock_guard<std::mutex> lk(mx); v.empty()) { v.push_back(val); }",
-        "gadget = Foo.Foo(args)",
+        "gadget = new Foo.Foo(args)",
         "s = gadget.status()",
         "switch (Foo gadget(args); auto s = gadget.status()) { case OK: gadget.zip(); break; case Bad: throw BadFoo(s.message()); }"
       )
