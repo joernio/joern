@@ -299,8 +299,8 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
     "should contain a CALL node with arguments that have the argument name set" in {
       val List(c) = cpg.call.code("Person.*").l
-      c.argument(1).argumentName shouldBe Some("lastName")
-      c.argument(2).argumentName shouldBe Some("firstName")
+      c.argumentsExact("lastName").size shouldBe 1
+      c.argumentsExact("firstName").size shouldBe 1
     }
   }
 
@@ -316,8 +316,8 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
     "should contain a CALL node with arguments that have the argument name set" in {
       val List(c) = cpg.call.code("printNextLineRm.*").l
-      c.argument(1).argumentName shouldBe Some("line")
-      c.argument(2).argumentName shouldBe Some("file")
+      c.arguments("line").size shouldBe 1
+      c.arguments("file").size shouldBe 1
     }
   }
 

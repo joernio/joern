@@ -59,14 +59,20 @@ class ExpressionMethods(val node: Expression) extends AnyVal with NodeExtension 
     }
 
   def parameter(implicit callResolver: ICallResolver): Iterator[MethodParameterIn] = {
-    // Expressions can have incoming argument edges not just from CallRepr nodes but also
-    // from Return nodes for which an expansion to parameter makes no sense. So we filter
-    // for CallRepr.
+    val predicate: MethodParameterIn => Boolean = node.argumentName match {
+      case Some(name) => _.name == name
+      case None       => _.index == node.argumentIndex
+    }
+
     for {
-      call          <- node._argumentIn if call.isInstanceOf[CallRepr]
-      calledMethods <- callResolver.getCalledMethods(call.asInstanceOf[CallRepr])
-      paramIn       <- calledMethods._astOut.collectAll[MethodParameterIn]
-      if paramIn.index == node.argumentIndex
+      // Expressions can have incoming argument edges not just from CallRepr nodes but also
+      // from Return nodes for which an expansion to parameter makes no sense. So we match
+      // on CallRepr.
+      case call: CallRepr <- node._argumentIn
+
+      calledMethods <- callResolver.getCalledMethods(call)
+      paramIn       <- calledMethods.parameter
+      if predicate(paramIn)
     } yield paramIn
   }
 

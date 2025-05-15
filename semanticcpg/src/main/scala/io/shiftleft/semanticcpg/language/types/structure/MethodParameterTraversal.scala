@@ -3,6 +3,7 @@ package io.shiftleft.semanticcpg.language.types.structure
 import io.shiftleft.codepropertygraph.generated.help.{Doc, Traversal}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.nodemethods.MethodParameterInMethods
 
 import scala.jdk.CollectionConverters.*
 
@@ -28,11 +29,6 @@ class MethodParameterTraversal(val traversal: Iterator[MethodParameterIn]) exten
   /** Traverse to arguments (actual parameters) associated with this formal parameter */
   @Doc(info = "Traverse to arguments (actual parameters) associated with this formal parameter")
   def argument(implicit callResolver: ICallResolver): Iterator[Expression] =
-    for {
-      paramIn <- traversal
-      call    <- callResolver.getMethodCallsites(paramIn.method)
-      arg     <- call._argumentOut.collectAll[Expression]
-      if arg.argumentIndex == paramIn.index
-    } yield arg
+    traversal.flatMap(param => MethodParameterInMethods(param).argument)
 
 }

@@ -40,6 +40,16 @@ class CallTraversal(val traversal: Iterator[Call]) extends AnyVal {
   def argument(i: Integer): Iterator[Expression] =
     traversal.flatMap(_.arguments(i))
 
+  /** argument of the call with matching name
+    */
+  def argument(pattern: String): Iterator[Expression] =
+    traversal.flatMap(_.arguments(pattern))
+
+  /** `i'th` arguments of the call
+    */
+  def argumentExact(name: String): Iterator[Expression] =
+    traversal.flatMap(_.argumentsExact(name))
+
   /** To formal method return parameter
     */
   def toMethodReturn(implicit callResolver: ICallResolver): Iterator[MethodReturn] =
