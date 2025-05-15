@@ -4,9 +4,11 @@ import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend.*
 import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.*
+import io.shiftleft.codepropertygraph.generated.{Cpg, DispatchTypes, Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
+import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 
 import scala.collection.mutable
 
@@ -306,7 +308,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
     c.argumentOption(0).flatMap {
       case rc: Call if rc.methodFullName.startsWith("<operator")                 => None // ignore operators
       case rc: Call if rc.methodFullName.startsWith(Defines.UnresolvedNamespace) =>
-        // Helps deal with long call chains by attempting to perform an immediate resolve
+        // Helps deal with with long call chains by attempting to perform an immediate resolve
         visitUnresolvedDynamicCall(rc).flatMap { rcFullName =>
           val newFullName = s"$rcFullName->${c.name}"
           setNodeFullName(c, newFullName)
