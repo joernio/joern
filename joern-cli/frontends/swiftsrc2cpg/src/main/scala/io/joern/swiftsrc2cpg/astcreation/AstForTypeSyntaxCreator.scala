@@ -13,7 +13,7 @@ trait AstForTypeSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
   private def typeDeclForTypeSyntax(node: TypeSyntax): NewTypeDecl = {
-    val name                     = nextAnonClassName()
+    val name                     = scopeLocalUniqueName("anon-class")
     val (typeName, typeFullName) = calcTypeNameAndFullName(name)
     registerType(typeFullName)
 

@@ -103,7 +103,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForDiscardAssignmentExprSyntax(node: DiscardAssignmentExprSyntax): Ast = {
-    val name   = generateUnusedVariableName(usedVariableNames, "wildcard")
+    val name   = scopeLocalUniqueName("wildcard")
     val idNode = identifierNode(node, name)
     scope.addVariableReference(name, idNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
     Ast(idNode)
@@ -155,12 +155,6 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case _ => callExprCode
     }
     val callNode_ = callNode(callExpr, callCode, callName, DispatchTypes.DYNAMIC_DISPATCH)
-    // If the callee is a function itself, e.g. closure, then resolve this locally, if possible
-    if (callExpr.calledExpression.isInstanceOf[ClosureExprSyntax]) {
-      functionNodeToNameAndFullName.get(callExpr.calledExpression).foreach { case (name, fullName) =>
-        callNode_.name(name).methodFullName(fullName)
-      }
-    }
     callAst(callNode_, args, receiver = Option(receiverAst), base = Option(Ast(baseNode)))
   }
 
@@ -192,7 +186,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
               scope.addVariableReference(code(d), baseNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
               (receiverAst, baseNode, code(member))
             case Some(otherBase) =>
-              val tmpVarName  = generateUnusedVariableName(usedVariableNames, "_tmp")
+              val tmpVarName  = scopeLocalUniqueName("tmp")
               val baseTmpNode = identifierNode(otherBase, tmpVarName)
               scope.addVariableReference(tmpVarName, baseTmpNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
               val baseAst   = astForNodeWithFunctionReference(otherBase)

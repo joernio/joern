@@ -33,7 +33,7 @@ class SuperTests extends AstSwiftSrc2CpgSuite {
         |  }
         |}""".stripMargin)
       cpg.typeDecl.nameExact("D").method.isConstructor.block.astChildren.isCall.code.sorted.l shouldBe List(
-        "let wildcard_0: () -> D = self.init"
+        "let <wildcard>0: () -> D = self.init"
       )
     }
 

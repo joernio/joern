@@ -10,12 +10,9 @@ import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.InitializerDeclSyntax
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.SwiftNode
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
-import io.joern.x2cpg.utils.IntervalKeyPool
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.PropertyNames
-
-import scala.collection.mutable
 
 object AstCreatorHelper {
 
@@ -29,10 +26,6 @@ object AstCreatorHelper {
 }
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
-
-  private val anonClassKeyPool = new IntervalKeyPool(first = 0, last = Long.MaxValue)
-
-  protected def nextAnonClassName(): String = s"<anon-class>${anonClassKeyPool.next}"
 
   protected def notHandledYet(node: SwiftNode): Ast = {
     val text =
@@ -98,22 +91,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     global.usedTypes.putIfAbsent(typeFullName, true)
   }
 
-  protected def generateUnusedVariableName(
-    usedVariableNames: mutable.HashMap[String, Int],
-    variableName: String
-  ): String = {
-    val counter             = usedVariableNames.get(variableName).fold(0)(_ + 1)
-    val currentVariableName = s"${variableName}_$counter"
-    usedVariableNames.put(variableName, counter)
-    currentVariableName
-  }
-
-  private def calcMethodName(func: SwiftNode): String = func match {
-    case f: FunctionDeclSyntax      => code(f.name)
-    case a: AccessorDeclSyntax      => code(a.accessorSpecifier)
-    case d: DeinitializerDeclSyntax => code(d.deinitKeyword)
-    case i: InitializerDeclSyntax   => code(i.initKeyword)
-    case _                          => nextClosureName()
+  protected def scopeLocalUniqueName(targetName: String): String = {
+    val name = if (targetName.nonEmpty) { s"<$targetName>" }
+    else { "<anonymous>" }
+    val key = s"${scope.computeScopePath}:$name"
+    val idx = scopeLocalUniqueNames.getOrElseUpdate(key, 0)
+    scopeLocalUniqueNames.update(key, idx + 1)
+    s"$name$idx"
   }
 
   protected def calcTypeNameAndFullName(name: String): (String, String) = {
@@ -123,14 +107,18 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   protected def calcMethodNameAndFullName(func: SwiftNode): (String, String) = {
-    functionNodeToNameAndFullName.get(func) match {
-      case Some(nameAndFullName) => nameAndFullName
-      case None =>
-        val name           = calcMethodName(func)
-        val fullNamePrefix = s"${parserResult.filename}:${scope.computeScopePath}:"
-        val fullName       = s"$fullNamePrefix$name"
-        (name, fullName)
-    }
+    val name           = calcMethodName(func)
+    val fullNamePrefix = s"${parserResult.filename}:${scope.computeScopePath}:"
+    val fullName       = s"$fullNamePrefix$name"
+    (name, fullName)
+  }
+
+  private def calcMethodName(func: SwiftNode): String = func match {
+    case f: FunctionDeclSyntax      => code(f.name)
+    case a: AccessorDeclSyntax      => code(a.accessorSpecifier)
+    case d: DeinitializerDeclSyntax => code(d.deinitKeyword)
+    case i: InitializerDeclSyntax   => code(i.initKeyword)
+    case _                          => nextClosureName()
   }
 
 }

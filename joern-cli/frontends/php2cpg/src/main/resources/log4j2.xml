@@ -2,7 +2,7 @@
 <Configuration>
     <Appenders>
         <Console name="STDOUT" target="SYSTEM_OUT">
-            <PatternLayout pattern="[%-5p] %m%n" />
+            <PatternLayout pattern="%highlight{[%-5p]} %m%n" noConsoleNoAnsi="true" />
         </Console>
     </Appenders>
     <Loggers>

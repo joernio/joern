@@ -640,13 +640,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     }
     registerType(returnType)
     val methodFullNameAndSignature = s"$methodFullName:$signature"
-    functionNodeToNameAndFullName(node) = (methodName, methodFullNameAndSignature)
-
-    val methodRefNode_ = if (!shouldCreateFunctionReference) {
-      None
-    } else {
-      Option(methodRefNode(node, methodName, methodFullNameAndSignature, methodFullNameAndSignature))
-    }
+    val methodRefNode_ = if (!shouldCreateFunctionReference) { None }
+    else { Option(methodRefNode(node, methodName, methodFullNameAndSignature, methodFullNameAndSignature)) }
 
     val callAst = if (shouldCreateAssignmentCall && shouldCreateFunctionReference) {
       val idNode  = identifierNode(node, methodName)
@@ -921,7 +916,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         case valueBinding: ValueBindingPatternSyntax =>
           Seq(code(valueBinding.pattern))
         case _: WildcardPatternSyntax =>
-          Seq(generateUnusedVariableName(usedVariableNames, "wildcard"))
+          Seq(scopeLocalUniqueName("wildcard"))
       }
 
       names.map { name =>

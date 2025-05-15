@@ -5,7 +5,6 @@ import io.joern.x2cpg.Ast
 import io.joern.x2cpg.AstNodeBuilder
 import io.joern.x2cpg.AstNodeBuilder.dependencyNode
 import io.joern.x2cpg.SourceFiles
-import io.joern.x2cpg.utils.IntervalKeyPool
 import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
@@ -19,13 +18,14 @@ import org.eclipse.cdt.internal.core.dom.parser.c.CASTArrayRangeDesignator
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTArrayRangeDesignator
 import org.eclipse.cdt.internal.core.dom.parser.cpp.ICPPEvaluation
 
+import scala.collection.mutable
 import scala.util.Success
 import scala.util.Try
 
 trait AstCreatorHelper { this: AstCreator =>
 
-  private val fileLocalNameKeyPool         = new IntervalKeyPool(first = 0, last = Long.MaxValue)
-  private val file2OffsetTable: Array[Int] = genFileOffsetTable()
+  private val scopeLocalUniqueNames: mutable.Map[String, Int] = mutable.HashMap.empty
+  private val file2OffsetTable: Array[Int]                    = genFileOffsetTable()
 
   // We use our own call ast creation function since the version in x2cpg treats
   // base as receiver if no receiver is given which does not fit the needs of this
@@ -63,12 +63,20 @@ trait AstCreatorHelper { this: AstCreator =>
     ast
   }
 
-  protected def fileLocalUniqueName(name: String, fullName: String, targetName: String = ""): (String, String) = {
+  protected def scopeLocalUniqueName(targetName: String, fullName: String = ""): String = {
+    val name = if (targetName.isEmpty) { "<anonymous>" }
+    else { s"<$targetName>" }
+    val scopePath = if (fullName.isEmpty) { scope.computeScopePath }
+    else { fullName.stripSuffix(".") }
+    val key = s"$scopePath:$name"
+    val idx = scopeLocalUniqueNames.getOrElseUpdate(key, 0)
+    scopeLocalUniqueNames.update(key, idx + 1)
+    s"$name$idx"
+  }
+
+  protected def scopeLocalUniqueName(name: String, fullName: String, targetName: String): (String, String) = {
     if (name.isEmpty && (fullName.isEmpty || fullName.endsWith("."))) {
-      val newName = targetName match {
-        case ""    => s"<anonymous>${fileLocalNameKeyPool.next}"
-        case other => s"<$other>${fileLocalNameKeyPool.next}"
-      }
+      val newName           = scopeLocalUniqueName(targetName, fullName)
       val resultingFullName = s"$fullName$newName"
       (newName, resultingFullName)
     } else {
@@ -87,18 +95,6 @@ trait AstCreatorHelper { this: AstCreator =>
     val tableIndex      = if index < 0 then -(index + 1) else index + 1
     val lineStartOffset = if tableIndex == 0 then 0 else file2OffsetTable(tableIndex - 1)
     offset - lineStartOffset + 1
-  }
-
-  private def genFileOffsetTable(): Array[Int] = {
-    cdtAst.getRawSignature.toCharArray.zipWithIndex.collect { case ('\n', idx) => idx + 1 }
-  }
-
-  protected def fileName(node: IASTNode): String = {
-    val path = Try(node.getContainingFilename) match {
-      case Success(value) if value.nonEmpty => value
-      case _                                => filename
-    }
-    SourceFiles.toRelativePath(path, config.inputPath)
   }
 
   protected def registerType(typeName: String): String = {
@@ -127,16 +123,16 @@ trait AstCreatorHelper { this: AstCreator =>
     }
   }
 
-  protected def safeGetBinding(name: IASTName): Option[IBinding] = {
-    // In case of unresolved includes etc. this may fail throwing an unrecoverable exception
-    Try(name.resolveBinding()).toOption.filter(_ != null)
-  }
-
   protected def safeGetBinding(spec: IASTNamedTypeSpecifier): Option[IBinding] = {
     // In case of unresolved includes etc. this may fail throwing an unrecoverable exception
     safeGetBinding(spec.getName).collect {
       case binding: IBinding if !binding.isInstanceOf[IProblemBinding] => binding
     }
+  }
+
+  protected def safeGetBinding(name: IASTName): Option[IBinding] = {
+    // In case of unresolved includes etc. this may fail throwing an unrecoverable exception
+    Try(name.resolveBinding()).toOption.filter(_ != null)
   }
 
   protected def notHandledYet(node: IASTNode): Ast = {
@@ -186,14 +182,22 @@ trait AstCreatorHelper { this: AstCreator =>
     }
   }
 
-  protected def isIncludedNode(node: IASTNode): Boolean = fileName(node) != filename
-
   protected def astsForComments(iASTTranslationUnit: IASTTranslationUnit): Seq[Ast] = {
     if (config.includeComments) {
       iASTTranslationUnit.getComments.toList.filterNot(isIncludedNode).map(comment => astForComment(comment))
     } else {
       Seq.empty
     }
+  }
+
+  protected def isIncludedNode(node: IASTNode): Boolean = fileName(node) != filename
+
+  protected def fileName(node: IASTNode): String = {
+    val path = Try(node.getContainingFilename) match {
+      case Success(value) if value.nonEmpty => value
+      case _                                => filename
+    }
+    SourceFiles.toRelativePath(path, config.inputPath)
   }
 
   protected def astForNode(node: IASTNode): Ast = {
@@ -216,6 +220,10 @@ trait AstCreatorHelper { this: AstCreator =>
       case arrMod: IASTArrayModifier        => astForArrayModifier(arrMod)
       case _                                => notHandledYet(node)
     }
+  }
+
+  private def genFileOffsetTable(): Array[Int] = {
+    cdtAst.getRawSignature.toCharArray.zipWithIndex.collect { case ('\n', idx) => idx + 1 }
   }
 
   private def notHandledText(node: IASTNode): String = {
