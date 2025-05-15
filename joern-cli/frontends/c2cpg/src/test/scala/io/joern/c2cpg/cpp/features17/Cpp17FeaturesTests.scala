@@ -38,10 +38,15 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       c2Method.signature shouldBe "void(T)"
       c2Method.body.astChildren.isCall.isAssignment.code.l shouldBe List("this.val = val")
 
-      cpg.call.isAssignment.code.l shouldBe List("this.val = val", "c1 = new MyContainer.MyContainer(1)")
-      cpg.call.isAssignment.argument(1).isIdentifier.typeFullName.l shouldBe List("MyContainer")
+      cpg.call.isAssignment.code.l shouldBe List(
+        "this.val = val",
+        "c1 = new MyContainer.MyContainer(1)",
+        "c2 = new MyContainer.MyContainer()"
+      )
+      cpg.call.isAssignment.argument(1).isIdentifier.typeFullName.l shouldBe List("MyContainer", "MyContainer")
 
-      val List(c1NewCall) = cpg.call.isAssignment.argument(2).isCall.l
+      val List(c1NewCall, c2NewCall) = cpg.call.isAssignment.argument(2).isCall.l
+
       c1NewCall.code shouldBe "new MyContainer.MyContainer(1)"
       c1NewCall.methodFullName shouldBe Defines.OperatorNew
       val List(c1ConstructorCall) = c1NewCall.argument.isCall.l
@@ -49,6 +54,14 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       c1ConstructorCall.name shouldBe "MyContainer"
       c1ConstructorCall.signature shouldBe "void(int)"
       c1ConstructorCall.argument(1).code shouldBe "1"
+
+      c2NewCall.code shouldBe "new MyContainer.MyContainer()"
+      c2NewCall.methodFullName shouldBe Defines.OperatorNew
+      val List(c2ConstructorCall) = c2NewCall.argument.isCall.l
+      c2ConstructorCall.methodFullName shouldBe "MyContainer.MyContainer:void()"
+      c2ConstructorCall.name shouldBe "MyContainer"
+      c2ConstructorCall.signature shouldBe "void()"
+      c2ConstructorCall.argument shouldBe empty
     }
 
     "handle declaring non-type template parameters with auto" in {

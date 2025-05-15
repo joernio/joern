@@ -8,7 +8,7 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Opera
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.*
-import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTAliasDeclaration, CPPClosureType}
+import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTAliasDeclaration, CPPClassType, CPPClosureType}
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 trait AstForTypesCreator { this: AstCreator =>
@@ -72,7 +72,7 @@ trait AstForTypesCreator { this: AstCreator =>
   }
 
   private def astForIASTInitializer(
-    init: IASTInitializer,
+    init: IASTNode,
     declarator: IASTDeclarator,
     leftAst: Ast,
     args: List[Ast],
@@ -186,6 +186,27 @@ trait AstForTypesCreator { this: AstCreator =>
     }
   }
 
+  protected def astForInitializer(declarator: ICPPASTDeclarator): Ast = {
+    val name = ASTStringUtil.getSimpleName(declarator.getName)
+    val tpe  = registerType(scope.lookupVariable(name).map(_._2.takeWhile(isValidFullNameChar)).getOrElse(Defines.Any))
+    val constructorCallName = tpe.split(".").lastOption.getOrElse(tpe)
+    val signature           = s"${Defines.Void}()"
+    val fullNameWithSig     = s"$tpe.$constructorCallName:$signature"
+    val leftAst             = astForNode(declarator.getName)
+    astForIASTInitializer(
+      declarator,
+      declarator,
+      leftAst,
+      List.empty,
+      name,
+      tpe,
+      signature,
+      fullNameWithSig,
+      constructorCallName,
+      ""
+    )
+  }
+
   private def astForIASTEqualsInitializer(declarator: IASTDeclarator, leftAst: Ast, rightAst: Ast) = {
     val assignmentCallNode = callNode(
       declarator,
@@ -226,6 +247,16 @@ trait AstForTypesCreator { this: AstCreator =>
   }
 
   protected def astForASMDeclaration(asm: IASTASMDeclaration): Ast = Ast(unknownNode(asm, code(asm)))
+
+  private def isCPPClass(decl: IASTSimpleDeclaration): Boolean = {
+    decl.getDeclSpecifier match {
+      case t: ICPPASTNamedTypeSpecifier =>
+        safeGetBinding(t.getName).exists { binding =>
+          binding.isInstanceOf[ICPPClassSpecialization] || binding.isInstanceOf[CPPClassType]
+        }
+      case _ => false
+    }
+  }
 
   protected def astsForDeclaration(decl: IASTDeclaration): Seq[Ast] = {
     val declAsts = decl match {
@@ -275,6 +306,8 @@ trait AstForTypesCreator { this: AstCreator =>
     val initAsts = decl match {
       case declaration: IASTSimpleDeclaration if declaration.getDeclarators.nonEmpty =>
         declaration.getDeclarators.toList.map {
+          case d: ICPPASTDeclarator if d.getInitializer == null && isCPPClass(declaration) =>
+            astForInitializer(d)
           case d: IASTDeclarator if d.getInitializer != null =>
             astForInitializer(d, d.getInitializer)
           case arrayDecl: IASTArrayDeclarator =>
