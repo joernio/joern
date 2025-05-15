@@ -33,7 +33,8 @@ class CallTests extends PhpCode2CpgFixture {
       receiver.argumentIndex shouldBe 0
     }
 
-    inside(cpg.call.name("foo").argument.l) { case List(fileArg: Identifier) =>
+    inside(cpg.call.name("foo").argument.l) { case List(foo: Identifier, fileArg: Identifier) =>
+      foo.code shouldBe "foo"
       fileArg.name shouldBe "file"
     }
   }
@@ -81,7 +82,8 @@ class CallTests extends PhpCode2CpgFixture {
       fooCall.lineNumber shouldBe Some(2)
       fooCall.code shouldBe "foo($x)"
 
-      inside(fooCall.argument.l) { case List(xArg: Identifier) =>
+      inside(fooCall.argument.l) { case List(foo: Identifier, xArg: Identifier) =>
+        foo.name shouldBe "foo"
         xArg.name shouldBe "x"
         xArg.code shouldBe "$x"
       }
@@ -160,10 +162,17 @@ class CallTests extends PhpCode2CpgFixture {
       fooCall.lineNumber shouldBe Some(2)
       fooCall.code shouldBe "$f->foo($x)"
 
-      inside(fooCall.argument.l) { case List(fRecv: Identifier, xArg: Identifier) =>
-        fRecv.name shouldBe "f"
-        fRecv.code shouldBe "$f"
+      inside(fooCall.argument.l) { case List(fRecv: Call, xArg: Identifier) =>
+        fRecv.name shouldBe Operators.fieldAccess
+        fRecv.code shouldBe "$f->foo"
         fRecv.lineNumber shouldBe Some(2)
+        inside(fRecv.argument.l) { case List(fBase: Identifier, foo: FieldIdentifier) =>
+          fBase.name shouldBe "f"
+          fBase.code shouldBe "$f"
+
+          foo.canonicalName shouldBe "foo"
+        }
+
         xArg.name shouldBe "x"
         xArg.code shouldBe "$x"
       }
@@ -182,11 +191,11 @@ class CallTests extends PhpCode2CpgFixture {
       fooCall.lineNumber shouldBe Some(2)
       fooCall.code shouldBe "$$f->$foo($x)"
 
-      inside(fooCall.astChildren.l) { case (fBase: Call) :: (fRecv: Identifier) :: (xArg: Identifier) :: Nil =>
+      inside(fooCall.astChildren.l) { case (fBase: Call) :: (xArg: Identifier) :: Nil =>
         fBase.name shouldBe Operators.fieldAccess
         fBase.code shouldBe "$$f->$foo"
         fBase.lineNumber shouldBe Some(2)
-        fBase.argumentIndex shouldBe -1
+        fBase.argumentIndex shouldBe 0
 
         inside(fBase.argument.l) { case List(fVar: Identifier, fooVar: FieldIdentifier) =>
           fVar.name shouldBe "f"
@@ -195,9 +204,6 @@ class CallTests extends PhpCode2CpgFixture {
           fooVar.canonicalName shouldBe "foo"
           fooVar.code shouldBe "$foo"
         }
-
-        fRecv.name shouldBe "f"
-        fRecv.argumentIndex shouldBe 0
 
         xArg.name shouldBe "x"
         xArg.code shouldBe "$x"
@@ -229,24 +235,17 @@ class CallTests extends PhpCode2CpgFixture {
     cpg.call("bar").size shouldBe 1
 
     val foo = cpg.call("foo").head
-    foo.inAssignment.code.head shouldBe "tmp0 = $obj->foo()"
     foo.code shouldBe "$obj->foo()"
-    inside(cpg.call("foo").astChildren.l) { case (fa: Call) :: (recv: Identifier) :: Nil =>
+    inside(cpg.call("foo").astChildren.l) { case (fa: Call) :: Nil =>
       fa.name shouldBe Operators.fieldAccess
       fa.code shouldBe "$obj->foo"
-
-      recv.name shouldBe "obj"
-      recv.code shouldBe "$obj"
     }
 
     val bar = cpg.call("bar").head
-    bar.code shouldBe "tmp0->bar()"
-    inside(cpg.call("bar").astChildren.l) { case (fa: Call) :: (recv: Identifier) :: Nil =>
+    bar.code shouldBe "$obj->foo()->bar()"
+    inside(cpg.call("bar").astChildren.l) { case (fa: Call) :: Nil =>
       fa.name shouldBe Operators.fieldAccess
-      fa.code shouldBe "tmp0->bar"
-
-      recv.name shouldBe "tmp0"
-      recv.code shouldBe "tmp0"
+      fa.code shouldBe "$obj->foo()->bar"
     }
   }
 }

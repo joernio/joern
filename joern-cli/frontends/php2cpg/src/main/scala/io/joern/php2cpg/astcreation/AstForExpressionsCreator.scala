@@ -3,14 +3,13 @@ package io.joern.php2cpg.astcreation
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants, operatorSymbols}
 import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*
-import io.joern.x2cpg.Defines.{UnresolvedNamespace, UnresolvedSignature}
+import io.joern.x2cpg.Defines.UnresolvedSignature
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
-import scala.annotation.tailrec
 import scala.collection.mutable
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -121,14 +120,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val expr        = PhpPropertyFetchExpr(target, PhpNameExpr(name, call.attributes), false, false, call.attributes)
     val receiverAst = astForPropertyFetchExpr(expr)
     val targetAst   = astForExpr(target)
-    val targetCode  = targetAst.rootCodeOrEmpty
 
     val codePrefix = codeForMethodCall(call, targetAst, name)
 
     val argumentAsts = call.args.map(astForCallArg)
     val argsCode     = getArgsCode(call, argumentAsts)
 
-    val code = s"$targetCode$codePrefix($argsCode)"
+    val code = s"$codePrefix($argsCode)"
     val mfn  = getMfn(call, name)
 
     val signature = s"$UnresolvedSignature(${call.args.size})"

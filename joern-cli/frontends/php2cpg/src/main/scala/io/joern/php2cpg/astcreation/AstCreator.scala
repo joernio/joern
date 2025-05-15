@@ -1,24 +1,18 @@
 package io.joern.php2cpg.astcreation
 
-import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants, operatorSymbols}
-import io.joern.php2cpg.datastructures.ArrayIndexTracker
+import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
 import io.joern.php2cpg.parser.Domain.*
-import io.joern.php2cpg.parser.Domain.PhpModifiers.containsAccessModifier
 import io.joern.php2cpg.utils.Scope
 import io.joern.x2cpg.Ast.storeInDiffGraph
-import io.joern.x2cpg.Defines.{StaticInitMethodName, UnresolvedNamespace, UnresolvedSignature}
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
-import io.joern.x2cpg.utils.IntervalKeyPool
-import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, Defines, ValidationMode}
+import io.joern.x2cpg.{Ast, AstCreatorBase, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.shiftleft.utils.IOUtils
 import org.slf4j.{Logger, LoggerFactory}
 
-import java.nio.charset.StandardCharsets
 import java.nio.file.Path
-import scala.collection.mutable
 
 class AstCreator(
   protected val relativeFileName: String,
