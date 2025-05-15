@@ -4,6 +4,7 @@ import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 
 trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -18,7 +19,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     val typeFullName = if (Defines.isBuiltinType(possibleType)) possibleType else Defines.Any
     identNode.typeFullName(typeFullName)
     identNode.possibleTypes(Seq(possibleType))
-    scope.addVariableReference(name, identNode)
+    scope.addVariableReference(name, identNode, typeFullName, EvaluationStrategies.BY_REFERENCE)
     Ast(identNode)
   }
 

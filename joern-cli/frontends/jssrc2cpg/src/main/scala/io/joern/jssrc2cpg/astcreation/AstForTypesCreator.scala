@@ -1,13 +1,14 @@
 package io.joern.jssrc2cpg.astcreation
 
-import io.joern.jssrc2cpg.datastructures.BlockScope
 import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.datastructures.Stack.*
+import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import ujson.Value
 
 import scala.util.Try
@@ -406,8 +407,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
       val idLocal = localNode(clazz, typeName, typeName, Defines.Any).order(0)
       diffGraph.addEdge(localAstParentStack.head, idLocal, EdgeTypes.AST)
-      scope.addVariable(typeName, idLocal, BlockScope)
-      scope.addVariableReference(typeName, classIdNode)
+      scope.addVariable(typeName, idLocal, Defines.Any, VariableScopeManager.ScopeType.BlockScope)
+      scope.addVariableReference(typeName, classIdNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
       createAssignmentCallAst(
         classIdNode,

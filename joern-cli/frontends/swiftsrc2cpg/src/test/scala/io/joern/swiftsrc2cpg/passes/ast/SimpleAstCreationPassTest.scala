@@ -155,9 +155,26 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
         paramFoo.code shouldBe "argument"
         paramFoo.order shouldBe 1
         val List(paramValueFoo) = paramAssignFoo.value.l
-        paramValueFoo.code shouldBe """x: "y""""
+        paramValueFoo.code shouldBe """"y""""
         paramValueFoo.order shouldBe 2
         paramValueFoo.argumentIndex shouldBe 2
+        paramValueFoo.argumentName shouldBe Some("x")
+      }
+    }
+
+    "have correct structure for named call arguments" in {
+      val cpg = code("""
+          |func logMessage(message: String, prefix: String, suffix: String) {
+          |  print("\(prefix)-\(message)-\(suffix)")
+          |}
+          |logMessage("error message", prefix: ">>>", suffix: "<<<")
+          |""".stripMargin)
+      inside(cpg.call.nameExact("logMessage").argument.l) { case List(_, message, prefix, suffix) =>
+        message.code shouldBe "\"error message\""
+        prefix.code shouldBe "\">>>\""
+        prefix.argumentName shouldBe Some("prefix")
+        suffix.code shouldBe "\"<<<\""
+        suffix.argumentName shouldBe Some("suffix")
       }
     }
   }

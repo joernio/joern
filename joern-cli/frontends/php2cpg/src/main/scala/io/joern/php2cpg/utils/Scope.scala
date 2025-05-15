@@ -42,23 +42,17 @@ class Scope(implicit nextClosureName: () => String) extends X2CpgScope[String, N
   }
 
   def surroundingAstLabel: Option[String] = stack.collectFirst {
-    case ScopeElement(_: NamespaceLikeScope, _) => NodeTypes.NAMESPACE_BLOCK
-    case ScopeElement(scopeNode: PhpScopeElement, _) =>
-      scopeNode.node match {
-        case _: NewTypeDecl       => NodeTypes.TYPE_DECL
-        case _: NewNamespaceBlock => NodeTypes.NAMESPACE_BLOCK
-        case _: NewMethod         => NodeTypes.METHOD
-      }
+    case ScopeElement(_: NamespaceLikeScope, _)                 => NodeTypes.NAMESPACE_BLOCK
+    case ScopeElement(PhpScopeElement(x: NewNamespaceBlock), _) => NodeTypes.NAMESPACE_BLOCK
+    case ScopeElement(PhpScopeElement(x: NewTypeDecl), _)       => NodeTypes.TYPE_DECL
+    case ScopeElement(PhpScopeElement(x: NewMethod), _)         => NodeTypes.METHOD
   }
 
-  def surroundingScopeFulLName: Option[String] = stack.collectFirst {
-    case ScopeElement(x: NamespaceLikeScope, _) => x.fullName
-    case ScopeElement(scopeNode: PhpScopeElement, _) =>
-      scopeNode.node match {
-        case x: NewTypeDecl       => x.fullName
-        case x: NewMethod         => x.fullName
-        case x: NewNamespaceBlock => x.fullName
-      }
+  def surroundingScopeFullName: Option[String] = stack.collectFirst {
+    case ScopeElement(x: NamespaceLikeScope, _)                 => x.fullName
+    case ScopeElement(PhpScopeElement(x: NewTypeDecl), _)       => x.fullName
+    case ScopeElement(PhpScopeElement(x: NewMethod), _)         => x.fullName
+    case ScopeElement(PhpScopeElement(x: NewNamespaceBlock), _) => x.fullName
   }
 
   override def popScope(): Option[PhpScopeElement] = {
@@ -79,19 +73,19 @@ class Scope(implicit nextClosureName: () => String) extends X2CpgScope[String, N
   def getNewClassTmp: String = {
     stack.headOption match {
       case Some(node) =>
-        s"${this.surroundingScopeFulLName.getOrElse("<global>")}@${node.scopeNode.getNextClassTmp}"
+        s"${this.surroundingScopeFullName.getOrElse("<global>")}@${node.scopeNode.getNextClassTmp}"
       case None =>
         logger.warn(s"Stack is empty - using global counter ")
-        s"${this.surroundingScopeFulLName.getOrElse("<global>")}@${this.getNextClassTmp}"
+        s"${this.surroundingScopeFullName.getOrElse("<global>")}@${this.getNextClassTmp}"
     }
   }
 
   def getNewVarTmp(varPrefix: String = ""): String = {
     stack.headOption match {
       case Some(node) =>
-        s"${this.surroundingScopeFulLName.getOrElse("<global>")}@$varPrefix${node.scopeNode.getNextVarTmp}"
+        s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${node.scopeNode.getNextVarTmp}"
       case None =>
-        s"${this.surroundingScopeFulLName.getOrElse("<global>")}@$varPrefix${this.getNextVarTmp}"
+        s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${this.getNextVarTmp}"
     }
   }
 

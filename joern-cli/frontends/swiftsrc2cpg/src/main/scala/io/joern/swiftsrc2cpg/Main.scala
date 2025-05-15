@@ -1,9 +1,11 @@
 package io.joern.swiftsrc2cpg
 
 import io.joern.swiftsrc2cpg.Frontend.*
-import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery, XTypeRecoveryConfig}
+import io.joern.x2cpg.X2CpgConfig
+import io.joern.x2cpg.X2CpgMain
+import io.joern.x2cpg.passes.frontend.TypeRecoveryParserConfig
+import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
 import io.joern.x2cpg.utils.Environment
-import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import io.joern.x2cpg.utils.server.FrontendHTTPServer
 import scopt.OParser
 

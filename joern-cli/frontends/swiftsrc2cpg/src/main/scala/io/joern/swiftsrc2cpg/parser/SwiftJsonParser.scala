@@ -16,7 +16,7 @@ object SwiftJsonParser {
     val json              = ujson.read(jsonContent)
     val filename          = json("relativeFilePath").str
     val fullPath          = Paths.get(json("fullFilePath").str)
-    val sourceFileContent = IOUtils.readEntireFile(fullPath)
+    val sourceFileContent = json("content").str
     val ast               = SwiftNodeSyntax.createSwiftNode(json)
     ParseResult(filename, fullPath.toString, ast, sourceFileContent)
   }

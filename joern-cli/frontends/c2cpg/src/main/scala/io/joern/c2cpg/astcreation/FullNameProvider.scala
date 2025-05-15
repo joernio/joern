@@ -109,7 +109,6 @@ trait FullNameProvider { this: AstCreator =>
     val name = node match {
       case n: IASTName                    => shortNameForIASTName(n)
       case d: IASTDeclarator              => shortNameForIASTDeclarator(d)
-      case f: ICPPASTFunctionDefinition   => shortNameForICPPASTFunctionDefinition(f)
       case f: IASTFunctionDefinition      => shortNameForIASTFunctionDefinition(f)
       case d: CPPASTIdExpression          => shortNameForCPPASTIdExpression(d)
       case u: IASTUnaryExpression         => shortName(u.getOperand)
@@ -235,22 +234,11 @@ trait FullNameProvider { this: AstCreator =>
 
   private def shortNameForIASTDeclarator(declarator: IASTDeclarator): String = {
     safeGetBinding(declarator.getName).map(_.getName).getOrElse {
-      if (ASTStringUtil.getSimpleName(declarator.getName).isEmpty && declarator.getNestedDeclarator != null) {
-        shortName(declarator.getNestedDeclarator)
-      } else {
-        ASTStringUtil.getSimpleName(declarator.getName)
-      }
-    }
-  }
-
-  private def shortNameForICPPASTFunctionDefinition(definition: ICPPASTFunctionDefinition): String = {
-    if (
-      ASTStringUtil.getSimpleName(definition.getDeclarator.getName).isEmpty
-      && definition.getDeclarator.getNestedDeclarator != null
-    ) {
-      shortName(definition.getDeclarator.getNestedDeclarator)
-    } else {
-      shortName(definition.getDeclarator.getName)
+      if (
+        (declarator.getName == null || ASTStringUtil.getSimpleName(declarator.getName).isEmpty)
+        && declarator.getNestedDeclarator != null
+      ) { shortName(declarator.getNestedDeclarator) }
+      else { ASTStringUtil.getSimpleName(declarator.getName) }
     }
   }
 

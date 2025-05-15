@@ -39,8 +39,12 @@ object AstGenRunner {
 
   lazy private val executableName = Environment.operatingSystem match {
     case Environment.OperatingSystemType.Windows => "SwiftAstGen-win.exe"
-    case Environment.OperatingSystemType.Linux   => "SwiftAstGen-linux"
-    case Environment.OperatingSystemType.Mac     => "SwiftAstGen-mac"
+    case Environment.OperatingSystemType.Linux =>
+      Environment.architecture match {
+        case Environment.ArchitectureType.X86   => "SwiftAstGen-linux"
+        case Environment.ArchitectureType.ARMv8 => "SwiftAstGen-linux-arm64"
+      }
+    case Environment.OperatingSystemType.Mac => "SwiftAstGen-mac"
     case Environment.OperatingSystemType.Unknown =>
       logger.warn("Could not detect OS version! Defaulting to 'Linux'.")
       "SwiftAstGen-linux"
