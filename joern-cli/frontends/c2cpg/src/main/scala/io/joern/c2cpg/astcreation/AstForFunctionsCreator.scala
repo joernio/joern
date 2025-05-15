@@ -97,22 +97,11 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
   }
 
-  protected def isCppConstructor(funcDef: IASTFunctionDefinition, name: String = "", fullName: String = ""): Boolean = {
-    funcDef match {
-      case cppFunc: ICPPASTFunctionDefinition =>
-        cppFunc.getMemberInitializers.nonEmpty
-        || scope.computeScopePath.endsWith(s".$name")
-        || (scope.computeScopePath.nonEmpty && scope.computeScopePath == name)
-        || fullName.startsWith(s"$name.$name")
-      case _ => false
-    }
-  }
-
   protected def astForFunctionDefinition(funcDef: IASTFunctionDefinition): Ast = {
     val filename                                                  = fileName(funcDef)
     val MethodFullNameInfo(name, fullName, signature, returnType) = methodFullNameInfo(funcDef)
     registerMethodDefinition(fullName)
-    val isConstructor                 = isCppConstructor(funcDef, name, fullName) && fullName.contains(s".$name:")
+    val isConstructor                 = bindsToConstructor(funcDef)
     val shouldCreateFunctionReference = typeRefIdStack.headOption.isEmpty
     val methodRefNode_ = if (!shouldCreateFunctionReference) { None }
     else { Option(methodRefNode(funcDef, name, fullName, fullName)) }
@@ -174,7 +163,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
       parameterNodes.map(Ast(_)),
       methodBodyAst,
       methodReturnNode(funcDef, registerType(returnType)),
-      modifiers = modifierFor(funcDef, name, fullName)
+      modifiers = modifierFor(funcDef)
     )
 
     methodRefNode_ match {
@@ -271,12 +260,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
     }
   }
 
-  private def modifierFor(
-    funcDef: IASTFunctionDefinition,
-    name: String = "",
-    fullName: String = ""
-  ): List[NewModifier] = {
-    val constructorModifier = if (isCppConstructor(funcDef, name, fullName)) {
+  private def modifierFor(funcDef: IASTFunctionDefinition): List[NewModifier] = {
+    val constructorModifier = if (bindsToConstructor(funcDef)) {
       List(modifierNode(funcDef, ModifierTypes.CONSTRUCTOR), modifierNode(funcDef, ModifierTypes.PUBLIC))
     } else Nil
     val visibilityModifier = Try(modifierFromString(funcDef, funcDef.getSyntax.getImage)).getOrElse(Nil)

@@ -299,6 +299,14 @@ trait FullNameProvider { this: AstCreator =>
     }
   }
 
+  protected def bindsToConstructor(funcDef: IASTFunctionDefinition): Boolean = {
+    safeGetBinding(funcDef.getDeclarator.getName) match {
+      case Some(_: ICPPConstructor) => true
+      case _                        => bindsToConstructor(funcDef.getDeclarator.getName)
+    }
+
+  }
+
   protected def bindsToConstructor(name: IASTName): Boolean = {
     val fullName_ = ASTStringUtil.getQualifiedName(name)
     val name_     = ASTStringUtil.getSimpleName(name)
@@ -350,7 +358,7 @@ trait FullNameProvider { this: AstCreator =>
               replaceOperator(function.getName)
             } else {
               val returnTpe = declarator.getParent match {
-                case definition: ICPPASTFunctionDefinition if !isCppConstructor(definition) => returnType(definition)
+                case definition: ICPPASTFunctionDefinition if !bindsToConstructor(definition) => returnType(definition)
                 case _ => safeGetType(function.getType.getReturnType)
               }
               val sig = signature(cleanType(returnTpe), declarator)
@@ -373,8 +381,8 @@ trait FullNameProvider { this: AstCreator =>
             val fullNameNoSig = replaceOperator(ASTStringUtil.getQualifiedName(declarator.getName))
             val fixedFullName = replaceQualifiedNameSeparator(fullNameNoSig)
             val returnTpe = declarator.getParent match {
-              case definition: ICPPASTFunctionDefinition if !isCppConstructor(definition) => returnType(definition)
-              case _                                                                      => returnType(declarator)
+              case definition: ICPPASTFunctionDefinition if !bindsToConstructor(definition) => returnType(definition)
+              case _                                                                        => returnType(declarator)
             }
             val signature_ = signature(returnTpe, declarator)
             if (fixedFullName.isEmpty) { Option(s"${X2CpgDefines.UnresolvedNamespace}:$signature_") }
