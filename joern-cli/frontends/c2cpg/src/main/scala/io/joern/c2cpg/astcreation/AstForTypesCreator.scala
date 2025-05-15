@@ -248,7 +248,7 @@ trait AstForTypesCreator { this: AstCreator =>
 
   protected def astForASMDeclaration(asm: IASTASMDeclaration): Ast = Ast(unknownNode(asm, code(asm)))
 
-  private def isCPPClass(decl: IASTSimpleDeclaration): Boolean = {
+  protected def isCPPClass(decl: IASTSimpleDeclaration): Boolean = {
     decl.getDeclSpecifier match {
       case t: ICPPASTNamedTypeSpecifier =>
         safeGetBinding(t.getName).exists { binding =>

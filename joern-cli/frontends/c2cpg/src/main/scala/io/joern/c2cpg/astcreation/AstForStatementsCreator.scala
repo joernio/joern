@@ -184,8 +184,10 @@ trait AstForStatementsCreator { this: AstCreator =>
         val left = astForNode(d.getName)
         callAst(assignmentCallNode, List(left, allocCallAst))
       }
-    val initCallsAsts = simpleDecl.getDeclarators.filter(_.getInitializer != null).map { d =>
-      astForInitializer(d, d.getInitializer)
+    val initCallsAsts = simpleDecl.getDeclarators.map {
+      case d: ICPPASTDeclarator if d.getInitializer == null && isCPPClass(simpleDecl) => astForInitializer(d)
+      case d if d.getInitializer != null => astForInitializer(d, d.getInitializer)
+      case _                             => Ast()
     }
     val asts = Seq.from(declAsts ++ arrayModCallsAsts ++ initCallsAsts)
     setArgumentIndices(asts)
