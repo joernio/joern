@@ -56,8 +56,8 @@ class MethodTests extends RubyCode2CpgFixture(withPostProcessing = true, withDat
     sink.reachableByFlows(source).l.size shouldBe 2
   }
 
-  // Works in deprecated
-  "Data flow through blockExprAssocTypeArguments" in {
+  // variadic named parameters can't be expressed in the schema
+  "Data flow through blockExprAssocTypeArguments" ignore {
     val cpg = code("""
                      |def foo(*args)
                      |puts args

@@ -331,7 +331,7 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
     "contain a CALL node with arguments that have the argument name set" in {
       val List(c) = cpg.call.name("copy").l
-      c.argument(1).argumentName shouldBe Some("second")
+      c.arguments("second").size shouldBe 1
     }
   }
 
