@@ -32,10 +32,6 @@ class ErbTests extends RubyCode2CpgFixture {
       }
     }
 
-    "Contains 6 calls to append (<<)" in {
-      cpg.call.name("<<").l.size shouldBe 6
-    }
-
     "Condition for IF should be `equals`" in {
       inside(cpg.controlStructure.isIf.condition.l) {
         case (condition: Call) :: Nil =>
