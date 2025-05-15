@@ -297,7 +297,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     init.getInitializer match {
       case l: IASTInitializerList if l.getClauses == null || l.getClauses.isEmpty || l.getClauses.forall(_ == null) =>
         Ast()
-      case c: ICPPASTConstructorInitializer =>
+      case c: ICPPASTConstructorInitializer if init.getMemberInitializerId.isInstanceOf[ICPPASTQualifiedName] =>
         val constructorCallName = shortName(init.getMemberInitializerId)
         val typeFullName        = fullName(init.getMemberInitializerId)
         val signature           = s"${Defines.Void}(${initializerSignature(c)})"
@@ -316,7 +316,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
       case _ =>
         val leftAst = syntheticThisAccess(init.getMemberInitializerId, nameForIdentifier(init.getMemberInitializerId))
         val rightAst = init.getInitializer match {
-          case l: IASTInitializerList => astForNode(l.getClauses.head)
+          case l: IASTInitializerList           => astForNode(l.getClauses.head)
+          case c: ICPPASTConstructorInitializer => c.getArguments.headOption.map(astForNode).getOrElse(Ast())
           case _ =>
             val name   = nameForIdentifier(init.getMemberInitializerId)
             val tpe    = registerType(typeFor(init.getMemberInitializerId))

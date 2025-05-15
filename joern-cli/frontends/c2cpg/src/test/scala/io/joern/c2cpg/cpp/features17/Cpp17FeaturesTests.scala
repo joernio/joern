@@ -11,6 +11,30 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
 
   "C++17 feature support" should {
 
+    "handle member initializer lists" in {
+      val cpg = code("""
+          |class X
+          |{
+          |    int a, b, i, j;
+          |public:
+          |    const int& r;
+          |    X(int i)
+          |      : r(a) // initializes X::r to refer to X::a
+          |      , b{i} // initializes X::b to the value of the parameter i
+          |      , i(i) // initializes X::i to the value of the parameter i
+          |      , j(this->i) // initializes X::j to the value of X::i
+          |    {}
+          |};
+          |""".stripMargin)
+      val List(xConstructor) = cpg.typeDecl.nameExact("X").astChildren.isMethod.isConstructor.l
+      xConstructor.block.astChildren.isCall.isAssignment.code.l shouldBe List(
+        "this.r = this->a",
+        "this.b = i",
+        "this.i = i",
+        "this.j = this->i"
+      )
+    }
+
     "handle template argument deduction for class templates" in {
       val cpg = code("""
           |template <typename T = float>
