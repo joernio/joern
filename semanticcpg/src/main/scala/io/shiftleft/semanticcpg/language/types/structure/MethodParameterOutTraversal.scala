@@ -1,5 +1,6 @@
 package io.shiftleft.semanticcpg.language.types.structure
 
+import flatgraph.help.Doc
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -7,7 +8,7 @@ class MethodParameterOutTraversal(val traversal: Iterator[MethodParameterOut]) e
 
   def paramIn: Iterator[MethodParameterIn] = {
     // TODO define a named step in schema
-    traversal.flatMap(_.parameterLinkIn.collectAll[MethodParameterIn])
+    traversal.flatMap(_.parameterLinkIn)
   }
 
   /* method parameter indexes are  based, i.e. first parameter has index  (that's how java2cpg generates it) */
@@ -24,14 +25,7 @@ class MethodParameterOutTraversal(val traversal: Iterator[MethodParameterOut]) e
   def indexTo(num: Int): Iterator[MethodParameterOut] =
     traversal.filter(_.index <= num)
 
-  def argument: Iterator[Expression] =
-    for {
-      paramOut <- traversal
-      method = paramOut.method
-      call <- method._callIn
-      arg  <- call._argumentOut.collectAll[Expression]
-      // TODO define 'parameterLinkIn' as named step in schema
-      if paramOut.parameterLinkIn.collectAll[MethodParameterIn].index.headOption.contains(arg.argumentIndex)
-    } yield arg
-
+  @Doc(info = "Traverse to arguments (actual parameters) associated with this formal parameter")
+  def argument(implicit callResolver: ICallResolver): Iterator[Expression] =
+    paramIn.argument
 }

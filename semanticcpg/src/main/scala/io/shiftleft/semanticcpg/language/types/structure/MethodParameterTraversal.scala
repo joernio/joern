@@ -27,12 +27,16 @@ class MethodParameterTraversal(val traversal: Iterator[MethodParameterIn]) exten
 
   /** Traverse to arguments (actual parameters) associated with this formal parameter */
   @Doc(info = "Traverse to arguments (actual parameters) associated with this formal parameter")
-  def argument(implicit callResolver: ICallResolver): Iterator[Expression] =
+  def argument(implicit callResolver: ICallResolver): Iterator[Expression] = {
     for {
       paramIn <- traversal
       call    <- callResolver.getMethodCallsites(paramIn.method)
-      arg     <- call._argumentOut.collectAll[Expression]
-      if arg.argumentIndex == paramIn.index
+      case (arg: Expression) <- call._argumentOut
+      if arg.argumentName match {
+        case Some(name) => name == paramIn.name
+        case None => arg.argumentIndex == paramIn.index || (paramIn.isVariadic && arg.argumentIndex > paramIn.index)
+      }
     } yield arg
+  }
 
 }
