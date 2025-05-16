@@ -11,6 +11,30 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
 
   "C++17 feature support" should {
 
+    "handle member initializer lists" in {
+      val cpg = code("""
+          |class X
+          |{
+          |    int a, b, i, j;
+          |public:
+          |    const int& r;
+          |    X(int i)
+          |      : r(a) // initializes X::r to refer to X::a
+          |      , b{i} // initializes X::b to the value of the parameter i
+          |      , i(i) // initializes X::i to the value of the parameter i
+          |      , j(this->i) // initializes X::j to the value of X::i
+          |    {}
+          |};
+          |""".stripMargin)
+      val List(xConstructor) = cpg.typeDecl.nameExact("X").astChildren.isMethod.isConstructor.l
+      xConstructor.block.astChildren.isCall.isAssignment.code.l shouldBe List(
+        "this->r = this->a",
+        "this->b = i",
+        "this->i = i",
+        "this->j = this->i"
+      )
+    }
+
     "handle template argument deduction for class templates" in {
       val cpg = code("""
           |template <typename T = float>
@@ -30,6 +54,38 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       c2.typeFullName shouldBe "MyContainer"
       // We are unable to express this template argument deduction in the current schema
       cpg.typeDecl.member.nameExact("val").typeFullName.l shouldBe List("T")
+
+      val List(c1Method, c2Method) = cpg.typeDecl.nameExact("MyContainer").astChildren.isMethod.isConstructor.l
+      c1Method.fullName shouldBe "MyContainer.MyContainer:void()"
+      c1Method.signature shouldBe "void()"
+      c2Method.fullName shouldBe "MyContainer.MyContainer:void(T)"
+      c2Method.signature shouldBe "void(T)"
+      c2Method.body.astChildren.isCall.isAssignment.code.l shouldBe List("this->val = val")
+
+      cpg.call.isAssignment.code.l shouldBe List(
+        "this->val = val",
+        "c1 = new MyContainer.MyContainer(1)",
+        "c2 = new MyContainer.MyContainer()"
+      )
+      cpg.call.isAssignment.argument(1).isIdentifier.typeFullName.l shouldBe List("MyContainer", "MyContainer")
+
+      val List(c1NewCall, c2NewCall) = cpg.call.isAssignment.argument(2).isCall.l
+
+      c1NewCall.code shouldBe "new MyContainer.MyContainer(1)"
+      c1NewCall.methodFullName shouldBe Defines.OperatorNew
+      val List(c1ConstructorCall) = c1NewCall.argument.isCall.l
+      c1ConstructorCall.methodFullName shouldBe "MyContainer.MyContainer:void(int)"
+      c1ConstructorCall.name shouldBe "MyContainer"
+      c1ConstructorCall.signature shouldBe "void(int)"
+      c1ConstructorCall.argument(1).code shouldBe "1"
+
+      c2NewCall.code shouldBe "new MyContainer.MyContainer()"
+      c2NewCall.methodFullName shouldBe Defines.OperatorNew
+      val List(c2ConstructorCall) = c2NewCall.argument.isCall.l
+      c2ConstructorCall.methodFullName shouldBe "MyContainer.MyContainer:void()"
+      c2ConstructorCall.name shouldBe "MyContainer"
+      c2ConstructorCall.signature shouldBe "void()"
+      c2ConstructorCall.argument shouldBe empty
     }
 
     "handle declaring non-type template parameters with auto" in {
@@ -363,7 +419,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
         .l shouldBe List(
         "std::lock_guard<std::mutex> lk(mx)",
         "if (std::lock_guard<std::mutex> lk(mx); v.empty()) { v.push_back(val); }",
-        "gadget = Foo(args)",
+        "gadget = new Foo.Foo(args)",
         "s = gadget.status()",
         "switch (Foo gadget(args); auto s = gadget.status()) { case OK: gadget.zip(); break; case Bad: throw BadFoo(s.message()); }"
       )

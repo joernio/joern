@@ -74,7 +74,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     r.map(x => asChildOfMacroCall(statement, x))
   }
 
-  private def hasValidArrayModifier(arrayDecl: IASTArrayDeclarator): Boolean = {
+  protected def hasValidArrayModifier(arrayDecl: IASTArrayDeclarator): Boolean = {
     arrayDecl.getArrayModifiers.nonEmpty && arrayDecl.getArrayModifiers.forall(_.getConstantExpression != null)
   }
 
@@ -83,10 +83,11 @@ trait AstForStatementsCreator { this: AstCreator =>
     init: Option[IASTInitializerClause] = None
   ): Seq[Ast] = {
     def leftAst(astName: IASTNode, localName: String, codeString: String, tpe: String): (NewCall, NewLocal, Ast) = {
-      val op                 = Operators.assignment
-      val assignmentCode     = s"$localName = $codeString"
-      val assignmentCallNode = callNode(astName, assignmentCode, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
-      val localNameNode      = localNode(astName, localName, localName, tpe)
+      val op             = Operators.assignment
+      val assignmentCode = s"$localName = $codeString"
+      val assignmentCallNode =
+        callNode(astName, assignmentCode, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Void)))
+      val localNameNode = localNode(astName, localName, localName, tpe)
       scope.addVariable(localName, localNameNode, tpe, VariableScopeManager.ScopeType.BlockScope)
       val localId = identifierNode(astName, code(astName), code(astName), tpe)
       val leftAst = Ast(localId).withRefEdge(localId, localNameNode)
@@ -99,12 +100,13 @@ trait AstForStatementsCreator { this: AstCreator =>
     val localTmpNode = localNode(struct, tmpName, tmpName, tpe)
     scope.addVariable(tmpName, localTmpNode, tpe, VariableScopeManager.ScopeType.BlockScope)
 
-    val idNode             = identifierNode(struct, tmpName, tmpName, tpe)
-    val rhsAst             = astForNode(initializer)
-    val op                 = Operators.assignment
-    val assignmentCode     = s"$tmpName = ${code(initializer)}"
-    val assignmentCallNode = callNode(struct, assignmentCode, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
-    val assignmentCallAst  = callAst(assignmentCallNode, List(Ast(idNode).withRefEdge(idNode, localTmpNode), rhsAst))
+    val idNode         = identifierNode(struct, tmpName, tmpName, tpe)
+    val rhsAst         = astForNode(initializer)
+    val op             = Operators.assignment
+    val assignmentCode = s"$tmpName = ${code(initializer)}"
+    val assignmentCallNode =
+      callNode(struct, assignmentCode, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Void)))
+    val assignmentCallAst = callAst(assignmentCallNode, List(Ast(idNode).withRefEdge(idNode, localTmpNode), rhsAst))
 
     val accessAsts = if (typeFor(initializer).endsWith("]")) {
       struct.getNames.zipWithIndex.flatMap { case (astName, index) =>
@@ -149,7 +151,7 @@ trait AstForStatementsCreator { this: AstCreator =>
       case s if s.startsWith("co_yield ") => "<operator>.yield"
       case _                              => "<operator>.await"
     }
-    val node    = callNode(decl, code(decl), op, op, DispatchTypes.STATIC_DISPATCH)
+    val node = callNode(decl, code(decl), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
     val argAsts = decl.getDeclarators.zipWithIndex.map { case (d, i) => astForDeclarator(decl, d, i) }
     callAst(node, argAsts.toSeq)
   }
@@ -165,16 +167,27 @@ trait AstForStatementsCreator { this: AstCreator =>
         val name          = Operators.alloc
         val tpe           = registerType(typeFor(d))
         val codeString    = code(d)
+        val idNode        = identifierNode(d, tpe, tpe, tpe)
         val allocCallNode = callNode(d, codeString, name, name, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
-        val allocCallAst  = callAst(allocCallNode, d.getArrayModifiers.toIndexedSeq.map(astForNode))
+        val allocCallAst  = callAst(allocCallNode, Ast(idNode) +: d.getArrayModifiers.toIndexedSeq.map(astForNode))
         val operatorName  = Operators.assignment
         val assignmentCallNode =
-          callNode(d, codeString, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
+          callNode(
+            d,
+            codeString,
+            operatorName,
+            operatorName,
+            DispatchTypes.STATIC_DISPATCH,
+            None,
+            Some(registerType(Defines.Void))
+          )
         val left = astForNode(d.getName)
         callAst(assignmentCallNode, List(left, allocCallAst))
       }
-    val initCallsAsts = simpleDecl.getDeclarators.filter(_.getInitializer != null).map { d =>
-      astForInitializer(d, d.getInitializer)
+    val initCallsAsts = simpleDecl.getDeclarators.map {
+      case d: ICPPASTDeclarator if d.getInitializer == null && isCPPClass(simpleDecl) => astForInitializer(d)
+      case d if d.getInitializer != null => astForInitializer(d, d.getInitializer)
+      case _                             => Ast()
     }
     val asts = Seq.from(declAsts ++ arrayModCallsAsts ++ initCallsAsts)
     setArgumentIndices(asts)
@@ -391,7 +404,7 @@ trait AstForStatementsCreator { this: AstCreator =>
         s"${Defines.UnresolvedNamespace}.iterator:${Defines.Iterator}()",
         DispatchTypes.DYNAMIC_DISPATCH,
         Some(s"${Defines.Iterator}()"),
-        Some(Defines.Iterator)
+        Some(registerType(Defines.Iterator))
       )
 
     val iteratorCallBase = astForNode(collection)
@@ -403,7 +416,9 @@ trait AstForStatementsCreator { this: AstCreator =>
         s"$iteratorName = ${iteratorCall.code}",
         Operators.assignment,
         Operators.assignment,
-        DispatchTypes.STATIC_DISPATCH
+        DispatchTypes.STATIC_DISPATCH,
+        None,
+        Some(registerType(Defines.Void))
       )
 
     val iteratorAssignmentArgs = List(Ast(iteratorNode), iteratorCallAst)
@@ -459,7 +474,7 @@ trait AstForStatementsCreator { this: AstCreator =>
         s"${Defines.Iterator}.next:${Defines.Any}()",
         DispatchTypes.DYNAMIC_DISPATCH,
         Some(s"${Defines.Any}()"),
-        Some(Defines.Any)
+        Some(registerType(Defines.Any))
       )
 
     val nextReceiverNode = identifierNode(forStmt, iteratorName, iteratorName, Defines.Iterator)
@@ -473,7 +488,9 @@ trait AstForStatementsCreator { this: AstCreator =>
       s"$loopVariableName = ${nextCallNode.code}",
       Operators.assignment,
       Operators.assignment,
-      DispatchTypes.STATIC_DISPATCH
+      DispatchTypes.STATIC_DISPATCH,
+      None,
+      Some(registerType(Defines.Void))
     )
 
     val loopVariableAssignmentArgs = List(Ast(whileLoopVariableNode), nextCallAst)

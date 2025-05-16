@@ -18,8 +18,7 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
-/** Translates the Eclipse CDT AST into a CPG AST.
-  */
+/** Translates the Eclipse CDT AST into a CPG AST. */
 class AstCreator(
   val filename: String,
   val global: CGlobal,
