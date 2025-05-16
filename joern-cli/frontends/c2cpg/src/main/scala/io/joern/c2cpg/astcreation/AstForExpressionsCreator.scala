@@ -368,8 +368,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     val functionNameExpr = call.getFunctionNameExpression
     val name             = Defines.OperatorPointerCall
     val dispatchType     = DispatchTypes.DYNAMIC_DISPATCH
-    val callCpgNode =
-      callNode(call, code(call), name, name, dispatchType, Some(""), Some(registerType(callTypeFullName)))
+    val callCpgNode = callNode(call, code(call), name, name, dispatchType, None, Some(registerType(callTypeFullName)))
     val args        = call.getArguments.toList.map(a => astForNode(a))
     val receiverAst = astForExpression(functionNameExpr)
     createCallAst(callCpgNode, args, receiver = Some(receiverAst))
@@ -518,7 +517,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     StringUtils.normalizeSpace((initParamTypes ++ placementsArgTypes).mkString(","))
   }
 
-  private def astForNewExpression(newExpression: ICPPASTNewExpression): Ast = {
+  protected def astForNewExpression(newExpression: ICPPASTNewExpression): Ast = {
     val name = Defines.OperatorNew
     val newCallNode =
       callNode(

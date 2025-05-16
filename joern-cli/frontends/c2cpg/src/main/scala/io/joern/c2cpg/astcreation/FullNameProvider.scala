@@ -5,17 +5,9 @@ import io.joern.x2cpg.passes.frontend.MetaDataPass
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.*
-import org.eclipse.cdt.internal.core.dom.parser.c.CASTFunctionDeclarator
-import org.eclipse.cdt.internal.core.dom.parser.c.CVariable
-import org.eclipse.cdt.internal.core.dom.parser.cpp.{
-  CPPASTFunctionDeclarator,
-  CPPASTFunctionDefinition,
-  CPPASTIdExpression,
-  CPPASTNamedTypeSpecifier,
-  CPPFunction,
-  CPPVariable
-}
-import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalBinding
+import org.eclipse.cdt.internal.core.dom.parser.c.{CASTFunctionDeclarator, CVariable}
+import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.{CPPVisitor, EvalBinding}
+import org.eclipse.cdt.internal.core.dom.parser.cpp.*
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import scala.annotation.tailrec

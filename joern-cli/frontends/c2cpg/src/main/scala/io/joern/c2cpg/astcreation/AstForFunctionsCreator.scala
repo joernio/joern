@@ -280,7 +280,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     scope.lookupVariable(Defines.This) match {
       case Some((_, tpe)) =>
         val op             = Operators.fieldAccess
-        val code           = s"${Defines.This}.$identifierName"
+        val code           = s"${Defines.This}->$identifierName"
         val thisIdentifier = identifierNode(ident, Defines.This, Defines.This, tpe)
         scope.addVariableReference(Defines.This, thisIdentifier, tpe, EvaluationStrategies.BY_SHARING)
         val member = fieldIdentifierNode(ident, identifierName, identifierName)

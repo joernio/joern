@@ -8,7 +8,7 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Opera
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.*
-import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTAliasDeclaration, CPPClassType, CPPClosureType}
+import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTAliasDeclaration, CPPClosureType}
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 trait AstForTypesCreator { this: AstCreator =>
@@ -142,7 +142,9 @@ trait AstForTypesCreator { this: AstCreator =>
 
   protected def astForInitializer(declarator: IASTDeclarator, init: IASTInitializer): Ast = {
     val name = ASTStringUtil.getSimpleName(declarator.getName)
-    val tpe  = registerType(scope.lookupVariable(name).map(_._2.takeWhile(isValidFullNameChar)).getOrElse(Defines.Any))
+    val tpe = registerType(
+      scope.lookupVariable(name).map(_._2.takeWhile(isValidFullNameChar)).getOrElse(typeFor(declarator))
+    )
     val constructorCallName = tpe.split(".").lastOption.getOrElse(tpe)
     val initCode            = code(init).stripPrefix("{").stripSuffix("}").stripPrefix("(").stripSuffix(")")
     val signature           = s"${Defines.Void}(${initializerSignature(init)})"
@@ -150,6 +152,12 @@ trait AstForTypesCreator { this: AstCreator =>
     val leftAst             = astForNode(declarator.getName)
 
     init match {
+      case i: IASTEqualsInitializer if i.getInitializerClause.isInstanceOf[ICPPASTNewExpression] =>
+        astForIASTEqualsInitializer(
+          declarator,
+          leftAst,
+          astForNewExpression(i.getInitializerClause.asInstanceOf[ICPPASTNewExpression])
+        )
       case i: IASTEqualsInitializer =>
         astForIASTEqualsInitializer(declarator, leftAst, astForNode(i.getInitializerClause))
       case i: ICPPASTConstructorInitializer if isFundamentalTypeKeywords(tpe) =>
@@ -251,9 +259,7 @@ trait AstForTypesCreator { this: AstCreator =>
   protected def isCPPClass(decl: IASTSimpleDeclaration): Boolean = {
     decl.getDeclSpecifier match {
       case t: ICPPASTNamedTypeSpecifier =>
-        safeGetBinding(t.getName).exists { binding =>
-          binding.isInstanceOf[ICPPClassSpecialization] || binding.isInstanceOf[CPPClassType]
-        }
+        safeGetBinding(t.getName).exists { binding => binding.isInstanceOf[ICPPClassType] }
       case _ => false
     }
   }

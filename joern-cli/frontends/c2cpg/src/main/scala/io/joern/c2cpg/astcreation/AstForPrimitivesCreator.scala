@@ -1,15 +1,15 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewMethodRef, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, Operators}
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
-import org.eclipse.cdt.core.dom.ast.cpp.{ICPPASTNamespaceDefinition, ICPPFunction}
+import org.eclipse.cdt.core.dom.ast.cpp.{ICPPASTNamespaceDefinition, ICPPConstructor, ICPPFunction}
 import org.eclipse.cdt.internal.core.dom.parser.IASTInternalScope
 import org.eclipse.cdt.internal.core.dom.parser.c.{CVariable, ICInternalBinding}
-import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.{CPPVisitor, EvalMemberAccess}
 import org.eclipse.cdt.internal.core.dom.parser.cpp.*
+import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.{CPPVisitor, EvalMemberAccess}
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import scala.annotation.tailrec
@@ -154,6 +154,8 @@ trait AstForPrimitivesCreator { this: AstCreator =>
   }
 
   private def syntheticThisAccess(ident: CPPASTIdExpression, identifierName: String): String | Ast = {
+    val isInConstructor =
+      Try(CPPVisitor.findEnclosingFunctionOrClass(ident)).toOption.exists(_.isInstanceOf[ICPPConstructor])
     val tpe = ident.getName.getBinding match {
       case f: CPPField => safeGetType(f.getType)
       case _           => typeFor(ident)
@@ -161,15 +163,19 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     Try(ident.getEvaluation).toOption match {
       case Some(e: EvalMemberAccess) =>
         val ownerTypeRaw = safeGetType(e.getOwnerType)
-        val deref = if (e.isPointerDeref) { "*" }
+        val deref = if (e.isPointerDeref && !isInConstructor) { "*" }
         else { "" }
         val ownerType = registerType(s"$ownerTypeRaw$deref")
         if (isInCurrentScope(ident, ownerTypeRaw)) {
           scope.lookupVariable(Defines.This) match {
             case Some(_) =>
-              val (op, code) = if (e.isPointerDeref) {
+              val (op, code) = if (isInConstructor) {
+                (Operators.fieldAccess, s"${Defines.This}->$identifierName")
+              } else if (e.isPointerDeref) {
                 (Operators.indirectFieldAccess, s"${Defines.This}->$identifierName")
-              } else { (Operators.fieldAccess, s"${Defines.This}.$identifierName") }
+              } else {
+                (Operators.fieldAccess, s"${Defines.This}.$identifierName")
+              }
               val thisIdentifier = identifierNode(ident, Defines.This, Defines.This, ownerType)
               scope.addVariableReference(Defines.This, thisIdentifier, ownerType, EvaluationStrategies.BY_SHARING)
               val member  = fieldIdentifierNode(ident, identifierName, identifierName)
@@ -196,7 +202,10 @@ trait AstForPrimitivesCreator { this: AstCreator =>
   }
 
   protected def astForFieldReference(fieldRef: IASTFieldReference): Ast = {
-    val op = if (fieldRef.isPointerDereference) Operators.indirectFieldAccess else Operators.fieldAccess
+    val isInConstructor =
+      Try(CPPVisitor.findEnclosingFunctionOrClass(fieldRef)).toOption.exists(_.isInstanceOf[ICPPConstructor])
+    val op = if (fieldRef.isPointerDereference && !isInConstructor) { Operators.indirectFieldAccess }
+    else { Operators.fieldAccess }
     val ma =
       callNode(fieldRef, code(fieldRef), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
     val owner  = astForExpression(fieldRef.getFieldOwner)

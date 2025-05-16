@@ -28,10 +28,10 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |""".stripMargin)
       val List(xConstructor) = cpg.typeDecl.nameExact("X").astChildren.isMethod.isConstructor.l
       xConstructor.block.astChildren.isCall.isAssignment.code.l shouldBe List(
-        "this.r = this->a",
-        "this.b = i",
-        "this.i = i",
-        "this.j = this->i"
+        "this->r = this->a",
+        "this->b = i",
+        "this->i = i",
+        "this->j = this->i"
       )
     }
 
@@ -60,10 +60,10 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       c1Method.signature shouldBe "void()"
       c2Method.fullName shouldBe "MyContainer.MyContainer:void(T)"
       c2Method.signature shouldBe "void(T)"
-      c2Method.body.astChildren.isCall.isAssignment.code.l shouldBe List("this.val = val")
+      c2Method.body.astChildren.isCall.isAssignment.code.l shouldBe List("this->val = val")
 
       cpg.call.isAssignment.code.l shouldBe List(
-        "this.val = val",
+        "this->val = val",
         "c1 = new MyContainer.MyContainer(1)",
         "c2 = new MyContainer.MyContainer()"
       )
