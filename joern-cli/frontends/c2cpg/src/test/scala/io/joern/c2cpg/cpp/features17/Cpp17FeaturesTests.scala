@@ -85,7 +85,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       c2ConstructorCall.methodFullName shouldBe "MyContainer.MyContainer:void()"
       c2ConstructorCall.name shouldBe "MyContainer"
       c2ConstructorCall.signature shouldBe "void()"
-      c2ConstructorCall.argument shouldBe empty
+      c2ConstructorCall.argument.code.l shouldBe List("c2")
     }
 
     "handle declaring non-type template parameters with auto" in {
@@ -469,7 +469,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |byte d = byte{1};
           |""".stripMargin)
       cpg.local.nameExact("b").typeFullName.l shouldBe List("byte")
-      cpg.identifier.nameExact("b").typeFullName.l shouldBe List("byte")
+      cpg.identifier.nameExact("b").typeFullName.l shouldBe List("byte", "byte")
       cpg.local.nameExact("d").typeFullName.l shouldBe List("byte")
       cpg.identifier.nameExact("d").typeFullName.l shouldBe List("byte")
     }

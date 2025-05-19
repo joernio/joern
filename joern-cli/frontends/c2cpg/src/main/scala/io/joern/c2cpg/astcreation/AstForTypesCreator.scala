@@ -92,7 +92,8 @@ trait AstForTypesCreator { this: AstCreator =>
       Some(signature),
       Some(registerType(Defines.Void))
     )
-    val constructorCallAst = callAst(constructorCallNode, args)
+    val base               = leftAst.root.collect { case c: AstNodeNew => leftAst.subTreeCopy(c) }
+    val constructorCallAst = callAst(constructorCallNode, args, base = base)
 
     val newCallNode =
       callNode(
@@ -153,10 +154,11 @@ trait AstForTypesCreator { this: AstCreator =>
 
     init match {
       case i: IASTEqualsInitializer if i.getInitializerClause.isInstanceOf[ICPPASTNewExpression] =>
+        val base = leftAst.root.collect { case c: AstNodeNew => leftAst.subTreeCopy(c) }
         astForIASTEqualsInitializer(
           declarator,
           leftAst,
-          astForNewExpression(i.getInitializerClause.asInstanceOf[ICPPASTNewExpression])
+          astForNewExpression(i.getInitializerClause.asInstanceOf[ICPPASTNewExpression], base)
         )
       case i: IASTEqualsInitializer =>
         astForIASTEqualsInitializer(declarator, leftAst, astForNode(i.getInitializerClause))

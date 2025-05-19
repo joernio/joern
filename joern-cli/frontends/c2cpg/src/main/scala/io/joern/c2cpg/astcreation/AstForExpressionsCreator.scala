@@ -517,7 +517,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     StringUtils.normalizeSpace((initParamTypes ++ placementsArgTypes).mkString(","))
   }
 
-  protected def astForNewExpression(newExpression: ICPPASTNewExpression): Ast = {
+  protected def astForNewExpression(newExpression: ICPPASTNewExpression, base: Option[Ast] = None): Ast = {
     val name = Defines.OperatorNew
     val newCallNode =
       callNode(
@@ -569,7 +569,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
         )
         val args = astsForConstructorInitializer(newExpression.getInitializer) ++
           astsForInitializerClauses(newExpression.getPlacementArguments)
-        callAst(constructorCallNode, args)
+        callAst(constructorCallNode, args, base = base)
       }
     callAst(newCallNode, List(newCallArgAst))
   }

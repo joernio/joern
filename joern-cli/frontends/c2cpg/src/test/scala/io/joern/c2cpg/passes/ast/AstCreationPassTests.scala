@@ -1798,7 +1798,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
       constructorCall.methodFullName shouldBe "Foo.Foo:void(int,int)"
       constructorCall.signature shouldBe "void(int,int)"
       constructorCall.typeFullName shouldBe Defines.Void
-      constructorCall.argument.code.l shouldBe List("n", "42")
+      constructorCall.argument.code.l shouldBe List("foo", "n", "42")
       cpg.typeDecl.nameExact("Foo").astChildren.isMethod.isConstructor.fullName.l shouldBe List("Foo.Foo:void(int,int)")
     }
 
