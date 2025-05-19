@@ -468,21 +468,21 @@ trait AstForExpressionsCreator { this: AstCreator =>
   }
 
   private def astForCastExpression(castExpression: IASTCastExpression): Ast = {
-    val argNode = castExpression.getTypeId
-    val tpe     = registerType(typeFor(argNode))
-    val cpgCastExpression =
-      callNode(
-        castExpression,
-        code(castExpression),
-        Operators.cast,
-        Operators.cast,
-        DispatchTypes.STATIC_DISPATCH,
-        None,
-        Some(tpe)
-      )
-    val expr = astForExpression(castExpression.getOperand)
-    val arg  = unknownNode(argNode, code(argNode))
-    callAst(cpgCastExpression, List(Ast(arg), expr))
+    val op  = Operators.cast
+    val tpe = typeFor(castExpression.getTypeId.getDeclSpecifier)
+    val cpgCastExpression = callNode(
+      castExpression,
+      code(castExpression),
+      op,
+      op,
+      DispatchTypes.STATIC_DISPATCH,
+      None,
+      Some(registerType(tpe))
+    )
+    val expr         = astForExpression(castExpression.getOperand)
+    val typeRefNode_ = typeRefNode(castExpression.getTypeId, code(castExpression.getTypeId), tpe)
+    val arg          = Ast(typeRefNode_)
+    callAst(cpgCastExpression, List(arg, expr))
   }
 
   protected def astsForConstructorInitializer(initializer: IASTInitializer): List[Ast] = {
@@ -591,20 +591,13 @@ trait AstForExpressionsCreator { this: AstCreator =>
   }
 
   private def astForTypeIdInitExpression(typeIdInit: IASTTypeIdInitializerExpression): Ast = {
-    val name = Operators.cast
+    val op  = Operators.cast
+    val tpe = typeFor(typeIdInit.getTypeId.getDeclSpecifier)
     val cpgCastExpression =
-      callNode(
-        typeIdInit,
-        code(typeIdInit),
-        name,
-        name,
-        DispatchTypes.STATIC_DISPATCH,
-        None,
-        Some(registerType(Defines.Any))
-      )
-    val typeAst = unknownNode(typeIdInit.getTypeId, code(typeIdInit.getTypeId))
-    val expr    = astForNode(typeIdInit.getInitializer)
-    callAst(cpgCastExpression, List(Ast(typeAst), expr))
+      callNode(typeIdInit, code(typeIdInit), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(tpe)))
+    val typeRefAst = Ast(typeRefNode(typeIdInit.getTypeId, code(typeIdInit.getTypeId), tpe))
+    val expr       = astForNode(typeIdInit.getInitializer)
+    callAst(cpgCastExpression, List(typeRefAst, expr))
   }
 
   private def astForConstructorExpression(c: ICPPASTSimpleTypeConstructorExpression): Ast = {
