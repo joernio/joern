@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
-class Scope(summary: Seq[SymbolSummary] = Nil)(implicit nextClosureName: () => String)
+class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextClosureName: () => String)
     extends X2CpgScope[String, NewNode, PhpScopeElement] {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -29,7 +29,7 @@ class Scope(summary: Seq[SymbolSummary] = Nil)(implicit nextClosureName: () => S
   private var tmpVarCounter                                       = 0
   private var tmpClassCounter                                     = 0
   // Builds a tree of imported symbols, which is essentially a subset of `summary`
-  private var importedSymbols = Seq.empty[SymbolSummary]
+  private var importedSymbols = Map.empty[String, Seq[SymbolSummary]]
 
   def pushNewScope(scopeNode: NewNode): Unit = {
     scopeNode match {
@@ -176,19 +176,12 @@ class Scope(summary: Seq[SymbolSummary] = Nil)(implicit nextClosureName: () => S
   }
 
   def useImport(imports: Seq[NewImport]): Unit = {
-    summary.headOption.foreach { globalSummarySymbol =>
-      imports.foreach { imporT =>
-        imporT.importedEntity.foreach { importName =>
-          importName.split("\\\\").toList match {
-            case Nil => // ignore
-            case importParts =>
-              val matchingSymbol = findImport(globalSummarySymbol.name, importParts, summary.head)
-              val sparseTree     = matchingSymbol.sparseTree
-              importedSymbols = importedSymbols match {
-                case head :: _ => head + sparseTree
-                case Nil       => sparseTree :: Nil
-              }
-          }
+    imports.foreach { imporT =>
+      imporT.importedEntity.foreach { importName =>
+        summary.get(importName).foreach { hits =>
+          val name  = importName.split("\\\\").last
+          val alias = imporT.importedAs.getOrElse(name)
+          importedSymbols = importedSymbols + (alias -> hits)
         }
       }
     }
@@ -197,43 +190,9 @@ class Scope(summary: Seq[SymbolSummary] = Nil)(implicit nextClosureName: () => S
   /** Attempts to resolve a fully or partially qualified symbol
     */
   def resolveImportedSymbol(symbol: String): Option[SymbolSummary] = {
-    importedSymbols.headOption.flatMap(resolveSymbol(symbol, _))
-  }
-  
-  private def resolveSymbol(symbol: String, summary: SymbolSummary): Option[SymbolSummary] = {
-    summary match {
-      case x if x.alias == symbol => Option(x)
-      case x: HasChildren => x.children.map(resolveSymbol(symbol, _)).collectFirst {
-        case Some(x) => x
-      }
-      case _ => Option(PhpExternal(symbol)) // TODO: Might be undesired
-    }
-  }
-
-  private def findImport(worklist: Seq[String], summary: SymbolSummary): SymbolSummary =
-    findImport(NamespaceTraversal.globalNamespaceName, worklist, summary)
-
-  private def findImport(next: String, worklist: Seq[String], summary: SymbolSummary): SymbolSummary = {
-    lazy val default = PhpExternal(next)
-
-    if (worklist.isEmpty) {
-      // TODO: Check if this matches PHP's import precedence
-      summary match {
-        case namespace @ PhpNamespace(name, _) if next == name => namespace
-        case func @ PhpFunction(name) if next == name          => func
-        case clazz @ PhpClass(name, _) if next == name         => clazz
-        case member @ PhpMember(name) if next == name          => member
-        case _                                                 => default
-      }
-    } else {
-      summary match {
-        case x: HasChildren if next == x.name =>
-          x.children
-            .map(findImport(worklist.head, worklist.tail, _))
-            .headOption
-            .getOrElse(default.copy(_parent = Option(x)))
-        case _ => default
-      }
+    importedSymbols.get(symbol) match {
+      case Some(xs) => xs.headOption // TODO: Handle multiple options
+      case None     => None
     }
   }
 
