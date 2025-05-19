@@ -1,5 +1,6 @@
 package io.joern.php2cpg.datastructures
 
+import io.joern.php2cpg.passes.SymbolSummaryPass
 import io.joern.php2cpg.passes.SymbolSummaryPass.*
 import io.joern.php2cpg.utils.Scope
 import io.shiftleft.codepropertygraph.generated.nodes.NewImport
@@ -21,12 +22,22 @@ class PhpScopeTests extends AnyWordSpec with Matchers {
     }
   }
 
+  "a nested function in the summary should resolve when imported" in {
+    val scope = scopeFrom(PhpNamespace("Foo", PhpFunction("bar"):: Nil))
+    scope.imporT("Foo\\foo")
+    scope.testResolve("foo") {
+      case PhpFunction(name) if name == "foo" => succeed
+      case symbol => fail(s"Unable to resolve correct symbol (given $symbol)")
+    }
+  }
+
 }
 
 object PhpScopeTests {
 
   def scopeFrom(symbols: SymbolSummary*): Scope = {
-    Scope(symbols)(() => "nan")
+    val summary = SymbolSummaryPass.globalNamespace(symbols) :: Nil
+    Scope(summary)(() => "nan")
   }
 
   implicit class ScopeExt(scope: Scope) {
