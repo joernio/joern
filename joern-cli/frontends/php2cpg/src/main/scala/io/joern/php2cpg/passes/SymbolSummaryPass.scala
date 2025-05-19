@@ -82,13 +82,8 @@ class SymbolSummaryPass(
     classLike.name match {
       case None => Nil
       case Some(nameExpr) =>
-        val name          = nameExpr.name
         val classFullName = nameExpr.fullName(stack)
-        val constructor =
-          if !classLike.hasConstructor then Nil
-          else PhpFunction(s"$classFullName\\${Domain.ConstructorMethodName}") :: Nil
-        val children = constructor ++ classLike.stmts.flatMap(visit(_, name +: stack))
-        PhpClass(classFullName) :: children
+        PhpClass(classFullName) :: Nil // children are ignored, as they cannot be imported directly
     }
 
 }

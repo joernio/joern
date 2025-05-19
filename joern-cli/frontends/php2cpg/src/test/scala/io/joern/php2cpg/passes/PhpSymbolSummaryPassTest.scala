@@ -35,13 +35,8 @@ class PhpSymbolSummaryPassTest extends AnyWordSpec with Matchers {
         |  }
         |}
         |""".stripMargin :: Nil,
-      {
-        case Seq(
-              "Foo" -> (PhpClass("Foo") :: Nil),
-              "Foo\\__construct" -> (PhpFunction("Foo\\__construct") :: Nil),
-              "Foo\\foo" -> (PhpFunction("Foo\\foo") :: Nil)
-            ) =>
-          succeed
+      { case Seq("Foo" -> (PhpClass("Foo") :: Nil)) =>
+        succeed
       }
     )
   }
@@ -56,8 +51,7 @@ class PhpSymbolSummaryPassTest extends AnyWordSpec with Matchers {
         case Seq(
               "Foo" -> (PhpNamespace("Foo") :: Nil),
               "Foo\\Bar" -> (PhpNamespace("Foo\\Bar") :: Nil),
-              "Foo\\Bar\\Baz" -> (PhpClass("Foo\\Bar\\Baz") :: Nil),
-              "Foo\\Bar\\Baz\\__construct" -> (PhpFunction("Foo\\Bar\\Baz\\__construct") :: Nil)
+              "Foo\\Bar\\Baz" -> (PhpClass("Foo\\Bar\\Baz") :: Nil)
             ) =>
           succeed
       }
@@ -79,9 +73,7 @@ class PhpSymbolSummaryPassTest extends AnyWordSpec with Matchers {
               "Foo" -> (PhpNamespace("Foo") :: Nil),
               "Foo\\Bar" -> (PhpNamespace("Foo\\Bar") :: Nil),
               "Foo\\Bar\\Baz" -> (PhpClass("Foo\\Bar\\Baz") :: Nil),
-              "Foo\\Bar\\Baz\\__construct" -> (PhpFunction("Foo\\Bar\\Baz\\__construct") :: Nil),
-              "Foo\\Bar\\Faz" -> (PhpClass("Foo\\Bar\\Faz") :: Nil),
-              "Foo\\Bar\\Faz\\__construct" -> (PhpFunction("Foo\\Bar\\Faz\\__construct") :: Nil)
+              "Foo\\Bar\\Faz" -> (PhpClass("Foo\\Bar\\Faz") :: Nil)
             ) =>
           succeed
       }
@@ -103,9 +95,7 @@ class PhpSymbolSummaryPassTest extends AnyWordSpec with Matchers {
               "Foo" -> (PhpNamespace("Foo") :: Nil),
               "Foo\\Bar" -> (PhpNamespace("Foo\\Bar") :: Nil),
               "Foo\\Bar\\Baz" -> (PhpClass("Foo\\Bar\\Baz") :: Nil),
-              "Foo\\Bar\\Baz\\__construct" -> (PhpFunction("Foo\\Bar\\Baz\\__construct") :: Nil),
-              "Foo\\Faz" -> (PhpClass("Foo\\Faz") :: Nil),
-              "Foo\\Faz\\__construct" -> (PhpFunction("Foo\\Faz\\__construct") :: Nil)
+              "Foo\\Faz" -> (PhpClass("Foo\\Faz") :: Nil)
             ) =>
           succeed
       }
@@ -148,9 +138,7 @@ class PhpSymbolSummaryPassTest extends AnyWordSpec with Matchers {
               "Foo" -> (PhpNamespace("Foo") :: Nil),
               "Foo\\Bar" -> (PhpNamespace("Foo\\Bar") :: Nil),
               "Foo\\Bar\\Baz" -> (PhpClass("Foo\\Bar\\Baz") :: Nil),
-              "Foo\\Bar\\Baz\\__construct" -> (PhpFunction("Foo\\Bar\\Baz\\__construct") :: Nil),
-              "Foo\\Faz" -> (PhpClass("Foo\\Faz") :: Nil),
-              "Foo\\Faz\\__construct" -> (PhpFunction("Foo\\Faz\\__construct") :: Nil)
+              "Foo\\Faz" -> (PhpClass("Foo\\Faz") :: Nil)
             ) =>
           succeed
       }
