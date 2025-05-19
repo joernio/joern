@@ -6,6 +6,7 @@ import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 
 class TypeDeclTests extends PhpCode2CpgFixture {
 
@@ -39,7 +40,6 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         |  }
         |}
         |""".stripMargin).withConfig(Config().withDisableFileContent(false))
-
     "be created correctly" in {
       inside(cpg.method.name("foo").l) { case List(fooMethod) =>
         fooMethod.fullName shouldBe s"Foo->foo"
@@ -237,40 +237,62 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         bMember.code shouldBe "case B"
         bMember.lineNumber shouldBe Some(4)
       }
+    }
 
-      inside(fooDecl.method.l) { case List(clinitMethod: Method) =>
-        clinitMethod.name shouldBe Defines.StaticInitMethodName
-        clinitMethod.fullName shouldBe s"Foo::${Defines.StaticInitMethodName}"
-        clinitMethod.signature shouldBe "void()"
-        clinitMethod.filename shouldBe "foo.php"
-        clinitMethod.file.name.l shouldBe List("foo.php")
+    inside(cpg.typeDecl.name("Foo.<class>").l) {
+      case fooTypeDecl :: Nil =>
+        inside(fooTypeDecl.method.l) { case List(clinitMethod: Method) =>
+          clinitMethod.name shouldBe Defines.StaticInitMethodName
+          clinitMethod.fullName shouldBe s"Foo.<class>::${Defines.StaticInitMethodName}"
+          clinitMethod.signature shouldBe "void()"
+          clinitMethod.filename shouldBe "foo.php"
+          clinitMethod.file.name.l shouldBe List("foo.php")
 
-        inside(clinitMethod.body.astChildren.l) { case List(self: Local, aAssign: Call, bAssign: Call) =>
-          aAssign.code shouldBe "self::A = \"A\""
-          inside(aAssign.astChildren.l) { case List(aCall: Call, aLiteral: Literal) =>
-            inside(aCall.argument.l) { case List(aSelf: Identifier, aField: FieldIdentifier) =>
-              aSelf.name shouldBe "self"
-              aField.code shouldBe "A"
+          inside(clinitMethod.body.astChildren.l) { case List(self: Local, aAssign: Call, bAssign: Call) =>
+            aAssign.code shouldBe "self::A = \"A\""
+            inside(aAssign.astChildren.l) { case List(aCall: Call, aLiteral: Literal) =>
+              inside(aCall.argument.l) { case List(aSelf: Identifier, aField: FieldIdentifier) =>
+                aSelf.name shouldBe "self"
+                aField.code shouldBe "A"
+              }
+              aCall.name shouldBe Operators.fieldAccess
+              aCall.code shouldBe "self::A"
+
+              aLiteral.code shouldBe "\"A\""
             }
-            aCall.name shouldBe Operators.fieldAccess
-            aCall.code shouldBe "self::A"
 
-            aLiteral.code shouldBe "\"A\""
-          }
+            bAssign.code shouldBe "self::B = \"B\""
+            inside(bAssign.astChildren.l) { case List(bCall: Call, bLiteral: Literal) =>
+              inside(bCall.argument.l) { case List(bSelf: Identifier, bField: FieldIdentifier) =>
+                bSelf.name shouldBe "self"
+                bField.code shouldBe "B"
+              }
+              bCall.name shouldBe Operators.fieldAccess
+              bCall.code shouldBe "self::B"
 
-          bAssign.code shouldBe "self::B = \"B\""
-          inside(bAssign.astChildren.l) { case List(bCall: Call, bLiteral: Literal) =>
-            inside(bCall.argument.l) { case List(bSelf: Identifier, bField: FieldIdentifier) =>
-              bSelf.name shouldBe "self"
-              bField.code shouldBe "B"
+              bLiteral.code shouldBe "\"B\""
             }
-            bCall.name shouldBe Operators.fieldAccess
-            bCall.code shouldBe "self::B"
-
-            bLiteral.code shouldBe "\"B\""
           }
         }
-      }
+      case xs => fail(s"Expected one type decl, got ${xs.name.mkString("[", ",", "]")}")
+    }
+  }
+
+  "Enums with static methods" in {
+    val cpg = code("""<?php
+        |enum Foo {
+        |  case A;
+        |  case B;
+        |
+        |  public static function foo() {}
+        |}
+        |""".stripMargin)
+
+    inside(cpg.typeDecl.name("Foo.<class>").method.name("foo").l) {
+      case fooMethod :: Nil =>
+        fooMethod.name shouldBe "foo"
+        fooMethod.fullName shouldBe "Foo.<class>::foo"
+      case xs => fail(s"Expected one typeDecl, got ${xs.name.mkString("[", ",", "]")}")
     }
   }
 
@@ -505,6 +527,130 @@ class TypeDeclTests extends PhpCode2CpgFixture {
           case xs => fail(s"Expected three children, got ${xs.code.mkString("[", ",", "]")}")
         }
       case xs => fail(s"expected localNode and body, got ${xs.code.mkString("[", ",", "]")}")
+    }
+  }
+
+  "Singleton type decl for a normal class" should {
+    val cpg = code("""<?php
+        |class Foo {
+        |  public static $foo = 'foo';
+        |  public $baz = 'baz';
+        |  const BAZZ = 'bazz';
+        |  public static function bar() {}
+        |}
+        |""".stripMargin)
+
+    "create a singleton type decl" in {
+      inside(cpg.typeDecl.name("Foo.<class>").l) {
+        case fooTypeDecl :: Nil =>
+          fooTypeDecl.modifier.modifierType.l shouldBe List(ModifierTypes.STATIC)
+        case xs => fail(s"Expected one singleton type decl, got ${xs.code.mkString("[", ",", "]")}")
+      }
+    }
+
+    "contain static methods" in {
+      inside(cpg.typeDecl.name("Foo.<class>").method.name("bar").l) {
+        case barMethod :: Nil =>
+          barMethod.modifier.modifierType.sorted.l shouldBe List(ModifierTypes.PUBLIC, ModifierTypes.STATIC)
+        case xs => fail(s"Expected one method, got ${xs.code.mkString("[", ",", "]")}")
+      }
+    }
+
+    "contain members for static variables and consts" in {
+      inside(cpg.typeDecl.name("Foo.<class>").member.l) {
+        case bazzMember :: fooMember :: Nil =>
+          bazzMember.name shouldBe "BAZZ"
+          fooMember.name shouldBe "foo"
+        case xs => fail(s"Expected two members, got ${xs.code.mkString("[", ",", "]")}")
+      }
+    }
+
+    "contain the <clinit> static constructor" in {
+      inside(cpg.typeDecl.name("Foo.<class>").method.name(Defines.StaticInitMethodName).l) {
+        case staticConstructor :: Nil =>
+          inside(staticConstructor.body.astChildren.l) {
+            case (self: Local) :: (assignmentBazz: Call) :: (assignmentFoo: Call) :: Nil =>
+              // TODO: Self in <clinit> is existing behavior
+              self.code shouldBe "$self"
+
+              val List(bazzLhs: FieldAccess, bazzRhs: Literal) = assignmentBazz.argument.l: @unchecked
+              bazzLhs.code shouldBe "self::BAZZ"
+              bazzRhs.code shouldBe "\"bazz\""
+
+              val List(fooLhs, fooRhs) = assignmentFoo.argument.l: @unchecked
+              fooLhs.code shouldBe "self::$foo"
+              fooRhs.code shouldBe "\"foo\""
+
+            case xs => fail(s"Expected three children, got ${xs.code.mkString("[", ",", "]")}")
+          }
+        case xs => fail(s"Expected one static constructor, got ${xs.code.mkString("[", ",", "]")}")
+      }
+    }
+
+  }
+
+  "Singleton type decl for an anonymous class" should {
+    val cpg = code("""<?php
+        |new class(10) {
+        |  public static $foo = 'foo';
+        |  public $baz = 'baz';
+        |  const BAZZ = 'bazz';
+        |  public static function bar() {}
+        |};
+        |""".stripMargin)
+
+    "Create .<class> type decl" in {
+      inside(cpg.typeDecl.name("Test0.php:<global>@anon-class-0.<class>").l) {
+        case anonTypeDecl :: Nil =>
+          anonTypeDecl.fullName shouldBe "Test0.php:<global>@anon-class-0.<class>"
+          anonTypeDecl.modifier.map(_.modifierType).contains(ModifierTypes.STATIC) shouldBe true
+        case xs => fail(s"Expected one anon type-decl, got ${xs.code.mkString("[", ",", "]")}")
+      }
+    }
+
+    "Contains required consts and static vars" in {
+      inside(cpg.typeDecl.name("Test0.php:<global>@anon-class-0.<class>").member.l) {
+        case bazzMember :: fooMember :: Nil =>
+          bazzMember.code shouldBe "const BAZZ"
+          bazzMember.modifier.modifierType.l.contains(ModifierTypes.FINAL) shouldBe true
+
+          fooMember.code shouldBe "static $foo"
+          fooMember.modifier.modifierType.l.contains(ModifierTypes.STATIC) shouldBe true
+        case xs => fail(s"Expected one anon type-decl, got ${xs.code.mkString("[", ",", "]")}")
+      }
+    }
+
+    "Contains the required static method" in {
+      inside(cpg.typeDecl.name("Test0.php:<global>@anon-class-0.<class>").method.name("bar").l) {
+        case barMethod :: Nil =>
+          barMethod.name shouldBe "bar"
+          barMethod.modifier.modifierType.l.contains(ModifierTypes.STATIC) shouldBe true
+
+        case xs => fail(s"Expected one method, got ${xs.name.mkString("[", ",", "]")}")
+      }
+    }
+
+    "Contains static constructor" in {
+      inside(cpg.typeDecl.name("Test0.php:<global>@anon-class-0.<class>").method.name(Defines.StaticInitMethodName).l) {
+        case staticConstructor :: Nil =>
+          staticConstructor.name shouldBe Defines.StaticInitMethodName
+          staticConstructor.fullName shouldBe "Test0.php:<global>@anon-class-0.<class>::<clinit>"
+
+          inside(staticConstructor.body.astChildren.l) {
+            case (self: Local) :: (bazzAssignment: Call) :: (fooAssignment: Call) :: Nil =>
+              self.code shouldBe "$self"
+
+              val List(bazzLhs: FieldAccess, bazzRhs: Literal) = bazzAssignment.argument.l: @unchecked
+              bazzLhs.code shouldBe "self::BAZZ"
+              bazzRhs.code shouldBe "\"bazz\""
+
+              val List(fooLhs, fooRhs) = fooAssignment.argument.l: @unchecked
+              fooLhs.code shouldBe "self::$foo"
+              fooRhs.code shouldBe "\"foo\""
+            case xs => fail(s"Expected three astChildren, got ${xs.code.mkString("[", ",", "]")}")
+          }
+        case xs => fail(s"Expected one method, got ${xs.name.mkString("[", ",", "]")}")
+      }
     }
   }
 }

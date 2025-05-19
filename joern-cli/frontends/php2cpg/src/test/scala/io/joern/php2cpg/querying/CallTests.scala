@@ -72,7 +72,7 @@ class CallTests extends PhpCode2CpgFixture {
     "have the correct method node defined" in {
       inside(cpg.call.l) { case List(fooCall) =>
         fooCall.name shouldBe "foo"
-        fooCall.methodFullName shouldBe s"Foo::foo"
+        fooCall.methodFullName shouldBe s"Foo.<class>::foo"
         fooCall.receiver.isEmpty shouldBe true
         fooCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         fooCall.lineNumber shouldBe Some(2)
@@ -117,7 +117,7 @@ class CallTests extends PhpCode2CpgFixture {
     "resolve the correct method full name" in {
       val List(barCall) = cpg.call("bar").take(1).l
       barCall.name shouldBe "bar"
-      barCall.methodFullName shouldBe s"ClassA::bar"
+      barCall.methodFullName shouldBe s"ClassA.<class>::bar"
       barCall.receiver.isEmpty shouldBe true
       barCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       barCall.code shouldBe "self::bar($x)"

@@ -15,11 +15,47 @@ class TypeNodeTests extends PhpCode2CpgFixture {
      |""".stripMargin)
 
     "have type nodes created for the TypeDecl and inherited types" in {
-      cpg.typ.fullName.toSet shouldEqual Set("ANY", "foo\\A", "foo\\B", "foo\\C", "foo\\D")
+      cpg.typ.fullName.toSet shouldEqual Set(
+        "ANY",
+        "foo\\B",
+        "foo\\B.<class>",
+        "foo\\C",
+        "foo\\D",
+        "foo\\A",
+        "foo\\A.<class>",
+        "foo\\C.<class>",
+        "foo\\D.<class>"
+      )
     }
 
     "have TypeDecl stubs created for inherited types" in {
-      cpg.typeDecl.external.fullName.toSet shouldEqual Set("ANY", "foo\\B", "foo\\C", "foo\\D")
+      cpg.typeDecl.external.fullName.toSet shouldEqual Set(
+        "ANY",
+        "foo\\B",
+        "foo\\B.<class>",
+        "foo\\C",
+        "foo\\C.<class>",
+        "foo\\D",
+        "foo\\D.<class>"
+      )
+    }
+  }
+
+  "TypeDecls with inheritsFrom edges" should {
+    val cpg = code("""<?php
+        |interface Foo {}
+        |class Bar {}
+        |class Baz extends Bar implements Foo {}
+        |""".stripMargin)
+
+    "have baseTypeDecl for dynamic TYPE_DECL" in {
+      cpg.typeDecl.name("Baz").baseTypeDecl.l.map(_.name) shouldBe List("Bar", "Foo")
+      cpg.typeDecl.name("Baz").baseTypeDeclTransitive.l.map(_.name) shouldBe List("Bar", "Foo")
+    }
+
+    "have baseTypeDecl steps for meta TYPE_DECL (.<class>)" in {
+      cpg.typeDecl.name("Baz.<class>").baseTypeDecl.l.map(_.name) shouldBe List("Bar.<class>", "Foo.<class>")
+      cpg.typeDecl.name("Baz.<class>").baseTypeDeclTransitive.l.map(_.name) shouldBe List("Bar.<class>", "Foo.<class>")
     }
   }
 

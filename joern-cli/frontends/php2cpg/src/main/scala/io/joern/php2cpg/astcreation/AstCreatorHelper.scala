@@ -49,11 +49,16 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     identifierNode(originNode, name, s"$$$name", typeFullName)
   }
 
-  protected def composeMethodFullName(methodName: String, isStatic: Boolean): String = {
+  protected def composeMethodFullName(methodName: String, isStatic: Boolean, appendClass: Boolean = false): String = {
     if (methodName == NamespaceTraversal.globalNamespaceName) {
       globalNamespace.fullName
     } else {
-      val className       = getTypeDeclPrefix
+      val className = if (appendClass) {
+        getTypeDeclPrefix.map(name => s"${name}.<class>")
+      } else {
+        getTypeDeclPrefix
+      }
+
       val methodDelimiter = if (isStatic) StaticMethodDelimiter else InstanceMethodDelimiter
 
       val nameWithClass = List(className, Some(methodName)).flatten.mkString(methodDelimiter)
