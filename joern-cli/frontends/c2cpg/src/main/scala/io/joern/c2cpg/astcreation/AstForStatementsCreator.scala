@@ -100,10 +100,11 @@ trait AstForStatementsCreator { this: AstCreator =>
     val localTmpNode = localNode(struct, tmpName, tmpName, tpe)
     scope.addVariable(tmpName, localTmpNode, tpe, VariableScopeManager.ScopeType.BlockScope)
 
-    val idNode         = identifierNode(struct, tmpName, tmpName, tpe)
-    val rhsAst         = astForNode(initializer)
-    val op             = Operators.assignment
-    val assignmentCode = s"$tmpName = ${code(initializer)}"
+    val idNode = identifierNode(struct, tmpName, tmpName, tpe)
+    val rhsAst = astForNode(initializer)
+    val op     = Operators.assignment
+    val assignmentCode =
+      s"$tmpName = ${code(initializer).strip().stripPrefix("=").strip()}"
     val assignmentCallNode =
       callNode(struct, assignmentCode, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Void)))
     val assignmentCallAst = callAst(assignmentCallNode, List(Ast(idNode).withRefEdge(idNode, localTmpNode), rhsAst))

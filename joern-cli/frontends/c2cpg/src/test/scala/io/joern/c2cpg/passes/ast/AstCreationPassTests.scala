@@ -1178,19 +1178,35 @@ class AstCreationPassTests extends AstC2CpgSuite {
         """
         |class Foo {
         |public:
-        | Foo(int i){};
+        |  Foo(int i){};
+        |  class Bar {
+        |    public:
+        |      Bar(float j){};
+        |  };
         |};
         |Foo f1(0);
+        |Foo::Bar f2(0.0f);
       """.stripMargin,
         "file.cpp"
       )
-      cpg.typeDecl
-        .fullNameExact("Foo")
-        .l
-        .size shouldBe 1
-      inside(cpg.call.codeExact("f1 = new Foo.Foo(0)").l) { case List(call: Call) =>
-        call.name shouldBe Operators.assignment
-      }
+      val List(fooTypeDecl, barTypeDecl) =
+        cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).sortBy(_.lineNumber).l
+      fooTypeDecl.name shouldBe "Foo"
+      barTypeDecl.name shouldBe "Bar"
+
+      barTypeDecl.astParent shouldBe fooTypeDecl
+
+      val List(fooConstructor) = fooTypeDecl.method.isConstructor.l
+      fooConstructor.fullName shouldBe "Foo.Foo:void(int)"
+
+      val List(barConstructor) = barTypeDecl.method.isConstructor.l
+      barConstructor.fullName shouldBe "Foo.Bar.Bar:void(float)"
+
+      cpg.call.codeExact("f1 = new Foo.Foo(0)").name.l shouldBe List(Operators.assignment)
+      cpg.call.codeExact("f2 = new Foo.Bar.Bar(0.0f)").name.l shouldBe List(Operators.assignment)
+
+      cpg.call.codeExact("Foo.Foo(0)").methodFullName.l shouldBe List("Foo.Foo:void(int)")
+      cpg.call.codeExact("Foo.Bar.Bar(0.0f)").methodFullName.l shouldBe List("Foo.Bar.Bar:void(float)")
     }
 
     "be correct for template class" in {
@@ -1242,14 +1258,14 @@ class AstCreationPassTests extends AstC2CpgSuite {
       """.stripMargin,
         "file.cpp"
       )
-      cpg.typeDecl
-        .fullNameExact("Foo")
-        .l
-        .size shouldBe 1
-      inside(cpg.call.codeExact("Foo{0}").l) { case List(call: Call) =>
-        call.name shouldBe "Foo"
-        call.argument(1).code shouldBe "{0}"
-      }
+      val List(fooTypeDecl) =
+        cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).sortBy(_.lineNumber).l
+      fooTypeDecl.name shouldBe "Foo"
+      val List(fooConstructor) = fooTypeDecl.method.isConstructor.l
+      fooConstructor.fullName shouldBe "Foo.Foo:void(int)"
+      cpg.call.codeExact("x = Foo{0}").name.l shouldBe List(Operators.assignment)
+      cpg.call.codeExact("Foo{0}").methodFullName.l shouldBe List("Foo.Foo:void(int)")
+      cpg.call.codeExact("Foo{0}").argument.code.l shouldBe List("x", "0")
     }
 
     "be correct for method calls" in {

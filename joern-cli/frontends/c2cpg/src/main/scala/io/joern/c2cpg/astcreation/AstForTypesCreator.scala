@@ -146,7 +146,7 @@ trait AstForTypesCreator { this: AstCreator =>
     val tpe = registerType(
       scope.lookupVariable(name).map(_._2.takeWhile(isValidFullNameChar)).getOrElse(typeFor(declarator))
     )
-    val constructorCallName = tpe.split(".").lastOption.getOrElse(tpe)
+    val constructorCallName = tpe.split("\\.").lastOption.getOrElse(tpe)
     val initCode            = code(init).stripPrefix("{").stripSuffix("}").stripPrefix("(").stripSuffix(")")
     val signature           = s"${Defines.Void}(${initializerSignature(init)})"
     val fullNameWithSig     = s"$tpe.$constructorCallName:$signature"
@@ -159,6 +159,13 @@ trait AstForTypesCreator { this: AstCreator =>
           declarator,
           leftAst,
           astForNewExpression(i.getInitializerClause.asInstanceOf[ICPPASTNewExpression], base)
+        )
+      case i: IASTEqualsInitializer if i.getInitializerClause.isInstanceOf[ICPPASTSimpleTypeConstructorExpression] =>
+        val base = leftAst.root.collect { case c: AstNodeNew => leftAst.subTreeCopy(c) }
+        astForIASTEqualsInitializer(
+          declarator,
+          leftAst,
+          astForConstructorExpression(i.getInitializerClause.asInstanceOf[ICPPASTSimpleTypeConstructorExpression], base)
         )
       case i: IASTEqualsInitializer =>
         astForIASTEqualsInitializer(declarator, leftAst, astForNode(i.getInitializerClause))
@@ -199,7 +206,7 @@ trait AstForTypesCreator { this: AstCreator =>
   protected def astForInitializer(declarator: ICPPASTDeclarator): Ast = {
     val name = ASTStringUtil.getSimpleName(declarator.getName)
     val tpe  = registerType(scope.lookupVariable(name).map(_._2.takeWhile(isValidFullNameChar)).getOrElse(Defines.Any))
-    val constructorCallName = tpe.split(".").lastOption.getOrElse(tpe)
+    val constructorCallName = tpe.split("\\.").lastOption.getOrElse(tpe)
     val signature           = s"${Defines.Void}()"
     val fullNameWithSig     = s"$tpe.$constructorCallName:$signature"
     val leftAst             = astForNode(declarator.getName)

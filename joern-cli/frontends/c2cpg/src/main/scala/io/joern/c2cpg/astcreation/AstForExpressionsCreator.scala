@@ -488,6 +488,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
   protected def astsForConstructorInitializer(initializer: IASTInitializer): List[Ast] = {
     initializer match {
       case init: ICPPASTConstructorInitializer => astsForInitializerClauses(init.getArguments)
+      case init: ICPPASTInitializerList        => astsForInitializerClauses(init.getClauses)
       case _                                   => Nil // null or unexpected type
     }
   }
@@ -500,6 +501,15 @@ trait AstForExpressionsCreator { this: AstCreator =>
   protected def initializerSignature(init: ICPPASTConstructorInitializer): String = {
     val initParamTypes =
       init.getArguments.collect { case e: IASTExpression => e }.map(t => cleanType(safeGetType(t.getExpressionType)))
+    StringUtils.normalizeSpace(initParamTypes.mkString(","))
+  }
+
+  protected def initializerSignature(init: ICPPASTSimpleTypeConstructorExpression): String = {
+    val initParamTypes = init.getInitializer match {
+      case init: ICPPASTInitializerList =>
+        init.getClauses.collect { case e: IASTExpression => e }.map(t => cleanType(safeGetType(t.getExpressionType)))
+      case _ => Array.empty[String]
+    }
     StringUtils.normalizeSpace(initParamTypes.mkString(","))
   }
 
@@ -600,11 +610,14 @@ trait AstForExpressionsCreator { this: AstCreator =>
     callAst(cpgCastExpression, List(typeRefAst, expr))
   }
 
-  private def astForConstructorExpression(c: ICPPASTSimpleTypeConstructorExpression): Ast = {
-    val name = stripTemplateTags(c.getDeclSpecifier.toString)
-    c.getInitializer match {
+  protected def astForConstructorExpression(
+    constructorExpression: ICPPASTSimpleTypeConstructorExpression,
+    base: Option[Ast] = None
+  ): Ast = {
+    constructorExpression.getInitializer match {
       case l: ICPPASTInitializerList if l.getClauses.forall(_.isInstanceOf[ICPPASTDesignatedInitializer]) =>
-        val node = blockNode(c)
+        val name = stripTemplateTags(constructorExpression.getDeclSpecifier.toString)
+        val node = blockNode(constructorExpression)
         scope.pushNewBlockScope(node)
 
         val inits = l.getClauses.collect { case i: ICPPASTDesignatedInitializer => i }.toSeq
@@ -615,8 +628,12 @@ trait AstForExpressionsCreator { this: AstCreator =>
           }
           designatorIds.map { memberId =>
             val rhsAst = astForNode(init.getOperand)
-            val specifierId =
-              identifierNode(c.getDeclSpecifier, name, name, registerType(typeFor(c.getDeclSpecifier)))
+            val specifierId = identifierNode(
+              constructorExpression.getDeclSpecifier,
+              name,
+              name,
+              registerType(typeFor(constructorExpression.getDeclSpecifier))
+            )
             val op         = Operators.fieldAccess
             val accessCode = s"$name.${memberId.code}"
             val ma =
@@ -624,7 +641,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
             val maAst = callAst(ma, List(Ast(specifierId), Ast(memberId)))
             val assignmentCallNode =
               callNode(
-                c,
+                constructorExpression,
                 s"$accessCode = ${code(init.getOperand)}",
                 Operators.assignment,
                 Operators.assignment,
@@ -638,11 +655,38 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
         scope.popScope()
         blockAst(node, calls.toList)
-      case other =>
-        val callNode_ =
-          callNode(c, code(c), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
-        val arg = astForNode(other)
-        callAst(callNode_, List(arg))
+      case _ =>
+        val name = Defines.OperatorNew
+        val newCallNode =
+          callNode(
+            constructorExpression,
+            s"new ${code(constructorExpression)}",
+            name,
+            name,
+            DispatchTypes.STATIC_DISPATCH,
+            None,
+            Some(registerType(Defines.Any))
+          )
+
+        val typeId = constructorExpression.getDeclSpecifier
+
+        val constructorCallName = shortName(typeId)
+        val typeFullName        = typeForDeclSpecifier(typeId)
+
+        val signature       = s"${Defines.Void}(${initializerSignature(constructorExpression)})"
+        val fullNameWithSig = s"$typeFullName.$constructorCallName:$signature"
+        val constructorCallNode = callNode(
+          constructorExpression,
+          code(constructorExpression),
+          typeFullName,
+          fullNameWithSig,
+          DispatchTypes.STATIC_DISPATCH,
+          Some(signature),
+          Some(registerType(Defines.Void))
+        )
+        val args          = astsForConstructorInitializer(constructorExpression.getInitializer)
+        val newCallArgAst = callAst(constructorCallNode, args, base = base)
+        callAst(newCallNode, List(newCallArgAst))
     }
   }
 

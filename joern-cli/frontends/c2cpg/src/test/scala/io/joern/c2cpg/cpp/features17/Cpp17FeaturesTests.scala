@@ -335,18 +335,18 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |}
           |""".stripMargin)
       cpg.call.code.l should contain theSameElementsAs List(
+        "new Coordinate{0, 0}",
         "Coordinate{0, 0}",
-        "{0, 0}",
-        "<tmp>0 = = origin()",
+        "<tmp>0 = origin()",
         "origin()",
         "x = <tmp>0.x",
-        "y = <tmp>0.y",
         "<tmp>0.x",
+        "y = <tmp>0.y",
         "<tmp>0.y",
         "<tmp>1 = mapping",
         "key = <tmp>1.key",
-        "value = <tmp>1.value",
         "<tmp>1.key",
+        "value = <tmp>1.value",
         "<tmp>1.value"
       )
       cpg.local.map(l => (l.name, l.typeFullName)).toMap shouldBe Map(
@@ -471,7 +471,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       cpg.local.nameExact("b").typeFullName.l shouldBe List("byte")
       cpg.identifier.nameExact("b").typeFullName.l shouldBe List("byte", "byte")
       cpg.local.nameExact("d").typeFullName.l shouldBe List("byte")
-      cpg.identifier.nameExact("d").typeFullName.l shouldBe List("byte")
+      cpg.identifier.nameExact("d").typeFullName.l shouldBe List("byte", "byte")
     }
 
     "handle fallthrough, nodiscard, maybe_unused attributes" in {
