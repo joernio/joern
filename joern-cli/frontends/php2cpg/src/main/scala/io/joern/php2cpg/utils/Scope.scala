@@ -166,6 +166,10 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
     returnString
   }
 
+  /** Declares imports to load into this scope.
+    * @param imports
+    *   the import nodes generated from parsing PhpUseStmt and PhpGroupUseStmt nodes.
+    */
   def useImport(imports: Seq[NewImport]): Unit = {
     imports.foreach { imporT =>
       imporT.importedEntity.foreach { importName =>
@@ -178,14 +182,13 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
     }
   }
 
-  /** Attempts to resolve a fully or partially qualified symbol
+  /** Attempts to resolve a simple symbol.
     */
   def resolveImportedSymbol(symbol: String): Option[SymbolSummary] = {
     importedSymbols.get(symbol) match {
       case Some(x :: Nil) => Option(x)
-      case Some(xs) =>
-        xs.sorted.headOption // incorporates import precedence
-      case None => None
+      case Some(xs)       => xs.sorted.headOption // incorporates import precedence
+      case None           => None
     }
   }
 
