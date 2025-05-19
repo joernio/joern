@@ -1069,7 +1069,9 @@ class AstCreationPassTests extends AstC2CpgSuite {
       )
       inside(cpg.call.nameExact(Operators.cast).l) { case List(call: Call) =>
         call.argument(2).code shouldBe "{ 1 }"
-        call.argument(1).code shouldBe "int"
+        val List(typeRef) = call.argument(1).isTypeRef.l
+        typeRef.typeFullName shouldBe "int"
+        typeRef.code shouldBe "int"
       }
     }
 
@@ -1310,10 +1312,11 @@ class AstCreationPassTests extends AstC2CpgSuite {
         |      return end ? (int)(end - str) : max;
         |    }
         |""".stripMargin)
-      inside(cpg.call.nameExact(Operators.cast).astChildren.l) { case List(tpe: Unknown, call: Call) =>
+      inside(cpg.call.nameExact(Operators.cast).astChildren.l) { case List(tpe: TypeRef, call: Call) =>
         call.code shouldBe "end - str"
         call.argumentIndex shouldBe 2
         tpe.code shouldBe "int"
+        tpe.typeFullName shouldBe "int"
         tpe.argumentIndex shouldBe 1
       }
     }
@@ -1366,12 +1369,31 @@ class AstCreationPassTests extends AstC2CpgSuite {
     }
 
     "be correct for type casts" in {
-      val cpg = code("""
-        |int trunc(long x) {
-        |  return (int) x;
+      val cpg = code(
+        """
+        |namespace A {
+        |  class Foo {}
         |}
-        |""".stripMargin)
-      cpg.call.nameExact(Operators.cast).argument.code.l shouldBe List("int", "x")
+        |namespace B {
+        |  class Bar {}
+        |}
+        |
+        |using namespace A;
+        |using namespace B;
+        |
+        |Bar cast(Foo f) {
+        |  return (Bar) f;
+        |}
+        |""".stripMargin,
+        "file.cpp"
+      )
+      val List(cast)    = cpg.call.nameExact(Operators.cast).l
+      val List(typeRef) = cast.argument(1).isTypeRef.l
+      typeRef.code shouldBe "Bar"
+      typeRef.typeFullName shouldBe "B.Bar"
+      val List(id) = cast.argument(2).start.isIdentifier.l
+      id.name shouldBe "f"
+      id.typeFullName shouldBe "A.Foo"
     }
 
     "be correct for 'new' array" in {
@@ -1735,53 +1757,81 @@ class AstCreationPassTests extends AstC2CpgSuite {
     "be correct for const_cast" in {
       val cpg = code(
         """
-        |void foo() {
+        |void foo(float n) {
         |  int y = const_cast<int>(n);
         |  return;
         |}
         |""".stripMargin,
         "file.cpp"
       )
-      cpg.call.nameExact(Operators.cast).codeExact("const_cast<int>(n)").argument.code.l shouldBe List("int", "n")
+      val List(cast) = cpg.call.nameExact(Operators.cast).l
+      cast.code shouldBe "const_cast<int>(n)"
+      val List(typeRef) = cast.argument(1).isTypeRef.l
+      typeRef.code shouldBe "int"
+      typeRef.typeFullName shouldBe "int"
+      val List(id) = cast.argument(2).start.isIdentifier.l
+      id.name shouldBe "n"
+      id.typeFullName shouldBe "float"
     }
 
     "be correct for static_cast" in {
       val cpg = code(
         """
-        |void foo() {
+        |void foo(float n) {
         |  int y = static_cast<int>(n);
         |  return;
         |}
         |""".stripMargin,
         "file.cpp"
       )
-      cpg.call.nameExact(Operators.cast).codeExact("static_cast<int>(n)").argument.code.l shouldBe List("int", "n")
+      val List(cast) = cpg.call.nameExact(Operators.cast).l
+      cast.code shouldBe "static_cast<int>(n)"
+      val List(typeRef) = cast.argument(1).isTypeRef.l
+      typeRef.code shouldBe "int"
+      typeRef.typeFullName shouldBe "int"
+      val List(id) = cast.argument(2).start.isIdentifier.l
+      id.name shouldBe "n"
+      id.typeFullName shouldBe "float"
     }
 
     "be correct for dynamic_cast" in {
       val cpg = code(
         """
-        |void foo() {
+        |void foo(float n) {
         |  int y = dynamic_cast<int>(n);
         |  return;
         |}
         |""".stripMargin,
         "file.cpp"
       )
-      cpg.call.nameExact(Operators.cast).codeExact("dynamic_cast<int>(n)").argument.code.l shouldBe List("int", "n")
+      val List(cast) = cpg.call.nameExact(Operators.cast).l
+      cast.code shouldBe "dynamic_cast<int>(n)"
+      val List(typeRef) = cast.argument(1).isTypeRef.l
+      typeRef.code shouldBe "int"
+      typeRef.typeFullName shouldBe "int"
+      val List(id) = cast.argument(2).start.isIdentifier.l
+      id.name shouldBe "n"
+      id.typeFullName shouldBe "float"
     }
 
     "be correct for reinterpret_cast" in {
       val cpg = code(
         """
-        |void foo() {
+        |void foo(float n) {
         |  int y = reinterpret_cast<int>(n);
         |  return;
         |}
         |""".stripMargin,
         "file.cpp"
       )
-      cpg.call.nameExact(Operators.cast).codeExact("reinterpret_cast<int>(n)").argument.code.l shouldBe List("int", "n")
+      val List(cast) = cpg.call.nameExact(Operators.cast).l
+      cast.code shouldBe "reinterpret_cast<int>(n)"
+      val List(typeRef) = cast.argument(1).isTypeRef.l
+      typeRef.code shouldBe "int"
+      typeRef.typeFullName shouldBe "int"
+      val List(id) = cast.argument(2).start.isIdentifier.l
+      id.name shouldBe "n"
+      id.typeFullName shouldBe "float"
     }
 
     "be correct for designated initializers in plain C" in {
