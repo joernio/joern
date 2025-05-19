@@ -55,6 +55,33 @@ class PhpScopeTests extends AnyWordSpec with Matchers {
     scope.testResolveFailure("Bar")
   }
 
+  "when namespace and class share the same path, the class should be selected over the namespace" in {
+    val scope = scopeFrom(PhpNamespace("Foo"), PhpClass("Foo"))
+    scope.imporT("Foo")
+    scope.testResolve("Foo") {
+      case PhpClass(name) if name == "Foo" => succeed
+      case symbol                          => fail(s"Unable to resolve correct symbol (given $symbol)")
+    }
+  }
+
+  "when namespace, class, and function share the same path, the class should be selected over the namespace" in {
+    val scope = scopeFrom(PhpNamespace("Foo"), PhpClass("Foo"), PhpFunction("Foo"))
+    scope.imporT("Foo")
+    scope.testResolve("Foo") {
+      case PhpClass(name) if name == "Foo" => succeed
+      case symbol                          => fail(s"Unable to resolve correct symbol (given $symbol)")
+    }
+  }
+
+  "when namespace and function share the same path, the function should be selected over the namespace" in {
+    val scope = scopeFrom(PhpNamespace("Foo"), PhpFunction("Foo"))
+    scope.imporT("Foo")
+    scope.testResolve("Foo") {
+      case PhpFunction(name) if name == "Foo" => succeed
+      case symbol                             => fail(s"Unable to resolve correct symbol (given $symbol)")
+    }
+  }
+
 }
 
 object PhpScopeTests {

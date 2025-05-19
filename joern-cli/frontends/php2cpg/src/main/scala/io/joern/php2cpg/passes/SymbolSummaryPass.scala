@@ -98,12 +98,34 @@ object SymbolSummaryPass {
 
   }
 
-  sealed trait SymbolSummary {
+  sealed trait SymbolSummary extends Ordered[SymbolSummary] {
 
     /** @return
       *   the fully qualified identifier of the symbol as per its definition.
       */
     def name: String
+
+    /** Allows symbols to be compared. When resolving imports, the order of precedence is: Classes, Functions,
+      * Constants, Namespaces.
+      * @param that
+      *   the other symbol.
+      * @return
+      *   the outcome of the comparison.
+      */
+    def compare(that: SymbolSummary): Int = {
+      val typeOrder = (this, that) match {
+        case (_: PhpNamespace, _: PhpFunction) => 1
+        case (_: PhpNamespace, _: PhpClass)    => 1
+        case (_: PhpFunction, _: PhpClass)     => 1
+        case (_: PhpFunction, _: PhpNamespace) => -1
+        case (_: PhpClass, _: PhpNamespace)    => -1
+        case (_: PhpClass, _: PhpFunction)     => -1
+        case _                                 => 0
+      }
+
+      if (typeOrder != 0) typeOrder
+      else this.name.compare(that.name)
+    }
 
   }
 
@@ -112,7 +134,5 @@ object SymbolSummaryPass {
   case class PhpFunction(name: String) extends SymbolSummary
 
   case class PhpClass(name: String) extends SymbolSummary
-
-  case class PhpExternal(name: String) extends SymbolSummary
 
 }

@@ -5,15 +5,7 @@ import io.joern.php2cpg.passes.SymbolSummaryPass.*
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.{NamespaceLikeScope, ScopeElement, Scope as X2CpgScope}
 import io.shiftleft.codepropertygraph.generated.NodeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewBlock,
-  NewImport,
-  NewMethod,
-  NewNamespaceBlock,
-  NewNode,
-  NewTypeDecl
-}
-import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
@@ -28,8 +20,7 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
   private val anonymousMethods                                    = mutable.ArrayBuffer[Ast]()
   private var tmpVarCounter                                       = 0
   private var tmpClassCounter                                     = 0
-  // Builds a tree of imported symbols, which is essentially a subset of `summary`
-  private var importedSymbols = Map.empty[String, Seq[SymbolSummary]]
+  private var importedSymbols                                     = Map.empty[String, Seq[SymbolSummary]]
 
   def pushNewScope(scopeNode: NewNode): Unit = {
     scopeNode match {
@@ -191,8 +182,10 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
     */
   def resolveImportedSymbol(symbol: String): Option[SymbolSummary] = {
     importedSymbols.get(symbol) match {
-      case Some(xs) => xs.headOption // TODO: Handle multiple options
-      case None     => None
+      case Some(x :: Nil) => Option(x)
+      case Some(xs) =>
+        xs.sorted.headOption // incorporates import precedence
+      case None => None
     }
   }
 
