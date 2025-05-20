@@ -49,7 +49,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
         val codeString                                                = code(funcDecl.getParent)
         val filename                                                  = fileName(funcDecl)
 
-        val parameterNodeInfos = thisForCPPFunctions(funcDecl, false) ++ withIndex(parameters(funcDecl)) { (p, i) =>
+        val parameterNodeInfos = thisForCPPFunctions(funcDecl) ++ withIndex(parameters(funcDecl)) { (p, i) =>
           parameterNodeInfo(p, i)
         }
         setVariadicParameterInfo(parameterNodeInfos, funcDecl)
@@ -115,7 +115,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     methodAstParentStack.push(methodNode_)
     scope.pushNewMethodScope(fullName, name, methodBlockNode, capturingRefNode)
 
-    val implicitThisParam = thisForCPPFunctions(funcDef, isConstructor).map { thisParam =>
+    val implicitThisParam = thisForCPPFunctions(funcDef).map { thisParam =>
       val parameterNode = parameterInNode(
         funcDef,
         thisParam.name,
@@ -143,17 +143,6 @@ trait AstForFunctionsCreator { this: AstCreator =>
       callAst.root.foreach(r => diffGraph.addEdge(methodBlockNode, r, EdgeTypes.AST))
     }
     val methodBodyAst = astForMethodBody(Option(funcDef.getBody), methodBlockNode)
-
-    if (isConstructor) {
-      implicitThisParam.foreach { param =>
-        val thisIdentifier = identifierNode(funcDef, Defines.This, Defines.This, param.typeFullName)
-        scope.addVariableReference(Defines.This, thisIdentifier, param.typeFullName, EvaluationStrategies.BY_SHARING)
-        val cpgReturn = returnNode(funcDef, "return this")
-        val returnAst = Ast(cpgReturn).withChild(Ast(thisIdentifier)).withArgEdge(cpgReturn, thisIdentifier)
-        Ast.storeInDiffGraph(returnAst, diffGraph)
-        diffGraph.addEdge(methodBlockNode, cpgReturn, EdgeTypes.AST)
-      }
-    }
 
     scope.popScope()
     methodAstParentStack.pop()
@@ -273,20 +262,20 @@ trait AstForFunctionsCreator { this: AstCreator =>
   }
 
   private def syntheticThisAccess(ident: IASTName, identifierName: String): Ast = {
-    val tpe = ident.getBinding match {
-      case f: CPPField => safeGetType(f.getType)
-      case _           => typeFor(ident)
-    }
     scope.lookupVariable(Defines.This) match {
-      case Some((_, tpe)) =>
-        val op             = Operators.fieldAccess
+      case Some((_, thisTpe)) =>
+        val op             = Operators.indirectFieldAccess
         val code           = s"${Defines.This}->$identifierName"
-        val thisIdentifier = identifierNode(ident, Defines.This, Defines.This, tpe)
-        scope.addVariableReference(Defines.This, thisIdentifier, tpe, EvaluationStrategies.BY_SHARING)
+        val thisIdentifier = identifierNode(ident, Defines.This, Defines.This, thisTpe)
+        scope.addVariableReference(Defines.This, thisIdentifier, thisTpe, EvaluationStrategies.BY_SHARING)
         val member = fieldIdentifierNode(ident, identifierName, identifierName)
-        val ma     = callNode(ident, code, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
+        val ma     = callNode(ident, code, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(thisTpe))
         callAst(ma, Seq(Ast(thisIdentifier), Ast(member)))
       case None =>
+        val tpe = ident.getBinding match {
+          case f: CPPField => safeGetType(f.getType)
+          case _           => typeFor(ident)
+        }
         val idNode = identifierNode(ident, identifierName, identifierName, tpe)
         scope.addVariableReference(identifierName, idNode, tpe, EvaluationStrategies.BY_REFERENCE)
         Ast(idNode)
@@ -298,10 +287,32 @@ trait AstForFunctionsCreator { this: AstCreator =>
       case l: IASTInitializerList if l.getClauses == null || l.getClauses.isEmpty || l.getClauses.forall(_ == null) =>
         Ast()
       case c: ICPPASTConstructorInitializer if init.getMemberInitializerId.isInstanceOf[ICPPASTQualifiedName] =>
+        val blockNode_ = blockNode(init)
+        scope.pushNewBlockScope(blockNode_)
+
         val constructorCallName = shortName(init.getMemberInitializerId)
         val typeFullName        = fullName(init.getMemberInitializerId)
         val signature           = s"${Defines.Void}(${initializerSignature(c)})"
         val fullNameWithSig     = s"$typeFullName.$constructorCallName:$signature"
+
+        val tmpNodeName  = scopeLocalUniqueName("tmp")
+        val tmpNode      = identifierNode(init, tmpNodeName, tmpNodeName, typeFullName)
+        val localTmpNode = localNode(init, tmpNodeName, tmpNodeName, typeFullName)
+        scope.addVariable(tmpNodeName, localTmpNode, typeFullName, VariableScopeManager.ScopeType.BlockScope)
+
+        val allocOp          = Operators.alloc
+        val allocCallNode    = callNode(init, allocOp, allocOp, allocOp, DispatchTypes.STATIC_DISPATCH)
+        val assignmentCallOp = Operators.assignment
+        val assignmentCallNode =
+          callNode(init, s"$tmpNodeName = $allocOp", assignmentCallOp, assignmentCallOp, DispatchTypes.STATIC_DISPATCH)
+        val assignmentAst = callAst(assignmentCallNode, List(Ast(tmpNode), Ast(allocCallNode)))
+
+        val baseNode = identifierNode(init, tmpNodeName, tmpNodeName, typeFullName)
+        scope.addVariableReference(tmpNodeName, baseNode, typeFullName, EvaluationStrategies.BY_SHARING)
+        val addrOp       = Operators.addressOf
+        val addrCallNode = callNode(init, s"&$tmpNodeName", addrOp, addrOp, DispatchTypes.STATIC_DISPATCH)
+        val addrCallAst  = callAst(addrCallNode, List(Ast(baseNode)))
+
         val constructorCallNode = callNode(
           c,
           code(init),
@@ -311,8 +322,15 @@ trait AstForFunctionsCreator { this: AstCreator =>
           Some(signature),
           Some(registerType(Defines.Void))
         )
-        val args = astsForConstructorInitializer(c)
-        callAst(constructorCallNode, args)
+        val args               = astsForConstructorInitializer(c)
+        val constructorCallAst = createCallAst(constructorCallNode, args, base = Some(addrCallAst))
+
+        val retNode = identifierNode(init, tmpNodeName, tmpNodeName, typeFullName)
+        scope.addVariableReference(tmpNodeName, retNode, typeFullName, EvaluationStrategies.BY_SHARING)
+        val retAst = Ast(retNode)
+
+        scope.popScope()
+        Ast(blockNode_).withChildren(Seq(assignmentAst, constructorCallAst, retAst))
       case _ =>
         val leftAst = syntheticThisAccess(init.getMemberInitializerId, nameForIdentifier(init.getMemberInitializerId))
         val rightAst = init.getInitializer match {
@@ -347,7 +365,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     }
   }
 
-  private def thisForCPPFunctions(func: IASTNode, isConstructor: Boolean): Seq[FunctionDeclNodePass.ParameterInfo] = {
+  private def thisForCPPFunctions(func: IASTNode): Seq[FunctionDeclNodePass.ParameterInfo] = {
     func match {
       case cppFunc: ICPPASTFunctionDefinition if !modifierFor(cppFunc).exists(_.modifierType == ModifierTypes.STATIC) =>
         val maybeOwner = safeGetBinding(cppFunc.getDeclarator.getName) match {
@@ -364,8 +382,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
           case _ => None
         }
         maybeOwner.toSeq.map { owner =>
-          val tpe = if (isConstructor) { cleanType(owner) }
-          else { s"${cleanType(owner)}*" }
+          val tpe = s"${cleanType(owner)}*"
           new FunctionDeclNodePass.ParameterInfo(
             Defines.This,
             Defines.This,

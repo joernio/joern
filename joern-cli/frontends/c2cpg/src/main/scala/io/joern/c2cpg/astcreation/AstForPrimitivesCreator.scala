@@ -154,8 +154,6 @@ trait AstForPrimitivesCreator { this: AstCreator =>
   }
 
   private def syntheticThisAccess(ident: CPPASTIdExpression, identifierName: String): String | Ast = {
-    val isInConstructor =
-      Try(CPPVisitor.findEnclosingFunctionOrClass(ident)).toOption.exists(_.isInstanceOf[ICPPConstructor])
     val tpe = ident.getName.getBinding match {
       case f: CPPField => safeGetType(f.getType)
       case _           => typeFor(ident)
@@ -163,15 +161,13 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     Try(ident.getEvaluation).toOption match {
       case Some(e: EvalMemberAccess) =>
         val ownerTypeRaw = safeGetType(e.getOwnerType)
-        val deref = if (e.isPointerDeref && !isInConstructor) { "*" }
+        val deref = if (e.isPointerDeref) { "*" }
         else { "" }
         val ownerType = registerType(s"$ownerTypeRaw$deref")
         if (isInCurrentScope(ident, ownerTypeRaw)) {
           scope.lookupVariable(Defines.This) match {
             case Some(_) =>
-              val (op, code) = if (isInConstructor) {
-                (Operators.fieldAccess, s"${Defines.This}->$identifierName")
-              } else if (e.isPointerDeref) {
+              val (op, code) = if (e.isPointerDeref) {
                 (Operators.indirectFieldAccess, s"${Defines.This}->$identifierName")
               } else {
                 (Operators.fieldAccess, s"${Defines.This}.$identifierName")

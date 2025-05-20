@@ -1,8 +1,10 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.Defines as X2CpgDefines
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
+import io.joern.x2cpg.datastructures.VariableScopeManager
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EvaluationStrategies, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast
@@ -107,9 +109,9 @@ trait AstForExpressionsCreator { this: AstCreator =>
   }
 
   protected def astForStaticAssert(a: ICPPASTStaticAssertDeclaration): Ast = {
-    val name    = "<operator>.staticAssert"
-    val call    = callNode(a, code(a), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
-    val cond    = nullSafeAst(a.getCondition)
+    val name = "<operator>.staticAssert"
+    val call = callNode(a, code(a), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Void)))
+    val cond = nullSafeAst(a.getCondition)
     val message = nullSafeAst(a.getMessage)
     callAst(call, List(cond, message))
   }
@@ -527,7 +529,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     StringUtils.normalizeSpace((initParamTypes ++ placementsArgTypes).mkString(","))
   }
 
-  protected def astForNewExpression(newExpression: ICPPASTNewExpression, base: Option[Ast] = None): Ast = {
+  protected def astForNewExpression(newExpression: ICPPASTNewExpression): Ast = {
     val name = Defines.OperatorNew
     val newCallNode =
       callNode(
@@ -564,10 +566,38 @@ trait AstForExpressionsCreator { this: AstCreator =>
           astsForInitializerClauses(newExpression.getPlacementArguments)
         callAst(allocCallNode, idAst +: args)
       } else {
+        val blockNode_ = blockNode(newExpression)
+        scope.pushNewBlockScope(blockNode_)
+
         val constructorCallName = shortName(typeId.getDeclSpecifier)
         val typeFullName        = fullName(typeId.getDeclSpecifier)
         val signature           = s"${Defines.Void}(${initializerSignature(newExpression)})"
         val fullNameWithSig     = s"$typeFullName.$constructorCallName:$signature"
+
+        val tmpNodeName  = scopeLocalUniqueName("tmp")
+        val tmpNode      = identifierNode(newExpression, tmpNodeName, tmpNodeName, typeFullName)
+        val localTmpNode = localNode(newExpression, tmpNodeName, tmpNodeName, typeFullName)
+        scope.addVariable(tmpNodeName, localTmpNode, typeFullName, VariableScopeManager.ScopeType.BlockScope)
+
+        val allocOp          = Operators.alloc
+        val allocCallNode    = callNode(newExpression, allocOp, allocOp, allocOp, DispatchTypes.STATIC_DISPATCH)
+        val assignmentCallOp = Operators.assignment
+        val assignmentCallNode =
+          callNode(
+            newExpression,
+            s"$tmpNodeName = $allocOp",
+            assignmentCallOp,
+            assignmentCallOp,
+            DispatchTypes.STATIC_DISPATCH
+          )
+        val assignmentAst = callAst(assignmentCallNode, List(Ast(tmpNode), Ast(allocCallNode)))
+
+        val baseNode = identifierNode(newExpression, tmpNodeName, tmpNodeName, typeFullName)
+        scope.addVariableReference(tmpNodeName, baseNode, typeFullName, EvaluationStrategies.BY_SHARING)
+        val addrOp       = Operators.addressOf
+        val addrCallNode = callNode(newExpression, s"&$tmpNodeName", addrOp, addrOp, DispatchTypes.STATIC_DISPATCH)
+        val addrCallAst  = callAst(addrCallNode, List(Ast(baseNode)))
+
         val constructorCallNode = callNode(
           newExpression,
           code(newExpression),
@@ -579,7 +609,14 @@ trait AstForExpressionsCreator { this: AstCreator =>
         )
         val args = astsForConstructorInitializer(newExpression.getInitializer) ++
           astsForInitializerClauses(newExpression.getPlacementArguments)
-        callAst(constructorCallNode, args, base = base)
+        val constructorCallAst = createCallAst(constructorCallNode, args, base = Some(addrCallAst))
+
+        val retNode = identifierNode(newExpression, tmpNodeName, tmpNodeName, typeFullName)
+        scope.addVariableReference(tmpNodeName, retNode, typeFullName, EvaluationStrategies.BY_SHARING)
+        val retAst = Ast(retNode)
+
+        scope.popScope()
+        Ast(blockNode_).withChildren(Seq(assignmentAst, constructorCallAst, retAst))
       }
     callAst(newCallNode, List(newCallArgAst))
   }
@@ -594,7 +631,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
         name,
         DispatchTypes.STATIC_DISPATCH,
         None,
-        Some(registerType(Defines.Any))
+        Some(registerType(Defines.Void))
       )
     val arg = astForExpression(delExpression.getOperand)
     callAst(cpgDeleteNode, List(arg))
@@ -610,10 +647,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     callAst(cpgCastExpression, List(typeRefAst, expr))
   }
 
-  protected def astForConstructorExpression(
-    constructorExpression: ICPPASTSimpleTypeConstructorExpression,
-    base: Option[Ast] = None
-  ): Ast = {
+  protected def astForConstructorExpression(constructorExpression: ICPPASTSimpleTypeConstructorExpression): Ast = {
     constructorExpression.getInitializer match {
       case l: ICPPASTInitializerList if l.getClauses.forall(_.isInstanceOf[ICPPASTDesignatedInitializer]) =>
         val name = stripTemplateTags(constructorExpression.getDeclSpecifier.toString)
@@ -656,25 +690,40 @@ trait AstForExpressionsCreator { this: AstCreator =>
         scope.popScope()
         blockAst(node, calls.toList)
       case _ =>
-        val name = Defines.OperatorNew
-        val newCallNode =
-          callNode(
-            constructorExpression,
-            s"new ${code(constructorExpression)}",
-            name,
-            name,
-            DispatchTypes.STATIC_DISPATCH,
-            None,
-            Some(registerType(Defines.Any))
-          )
+        val blockNode_ = blockNode(constructorExpression)
+        scope.pushNewBlockScope(blockNode_)
 
-        val typeId = constructorExpression.getDeclSpecifier
-
+        val typeId              = constructorExpression.getDeclSpecifier
         val constructorCallName = shortName(typeId)
         val typeFullName        = typeForDeclSpecifier(typeId)
+        val signature           = s"${Defines.Void}(${initializerSignature(constructorExpression)})"
+        val fullNameWithSig     = s"$typeFullName.$constructorCallName:$signature"
 
-        val signature       = s"${Defines.Void}(${initializerSignature(constructorExpression)})"
-        val fullNameWithSig = s"$typeFullName.$constructorCallName:$signature"
+        val tmpNodeName  = scopeLocalUniqueName("tmp")
+        val tmpNode      = identifierNode(constructorExpression, tmpNodeName, tmpNodeName, typeFullName)
+        val localTmpNode = localNode(constructorExpression, tmpNodeName, tmpNodeName, typeFullName)
+        scope.addVariable(tmpNodeName, localTmpNode, typeFullName, VariableScopeManager.ScopeType.BlockScope)
+
+        val allocOp          = Operators.alloc
+        val allocCallNode    = callNode(constructorExpression, allocOp, allocOp, allocOp, DispatchTypes.STATIC_DISPATCH)
+        val assignmentCallOp = Operators.assignment
+        val assignmentCallNode =
+          callNode(
+            constructorExpression,
+            s"$tmpNodeName = $allocOp",
+            assignmentCallOp,
+            assignmentCallOp,
+            DispatchTypes.STATIC_DISPATCH
+          )
+        val assignmentAst = callAst(assignmentCallNode, List(Ast(tmpNode), Ast(allocCallNode)))
+
+        val baseNode = identifierNode(constructorExpression, tmpNodeName, tmpNodeName, typeFullName)
+        scope.addVariableReference(tmpNodeName, baseNode, typeFullName, EvaluationStrategies.BY_SHARING)
+        val addrOp = Operators.addressOf
+        val addrCallNode =
+          callNode(constructorExpression, s"&$tmpNodeName", addrOp, addrOp, DispatchTypes.STATIC_DISPATCH)
+        val addrCallAst = callAst(addrCallNode, List(Ast(baseNode)))
+
         val constructorCallNode = callNode(
           constructorExpression,
           code(constructorExpression),
@@ -684,9 +733,15 @@ trait AstForExpressionsCreator { this: AstCreator =>
           Some(signature),
           Some(registerType(Defines.Void))
         )
-        val args          = astsForConstructorInitializer(constructorExpression.getInitializer)
-        val newCallArgAst = callAst(constructorCallNode, args, base = base)
-        callAst(newCallNode, List(newCallArgAst))
+        val args               = astsForConstructorInitializer(constructorExpression.getInitializer)
+        val constructorCallAst = createCallAst(constructorCallNode, args, base = Some(addrCallAst))
+
+        val retNode = identifierNode(constructorExpression, tmpNodeName, tmpNodeName, typeFullName)
+        scope.addVariableReference(tmpNodeName, retNode, typeFullName, EvaluationStrategies.BY_SHARING)
+        val retAst = Ast(retNode)
+
+        scope.popScope()
+        Ast(blockNode_).withChildren(Seq(assignmentAst, constructorCallAst, retAst))
     }
   }
 

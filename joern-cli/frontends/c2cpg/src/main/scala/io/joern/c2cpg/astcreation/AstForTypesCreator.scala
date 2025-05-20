@@ -4,7 +4,7 @@ import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, Operators}
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.*
@@ -83,6 +83,28 @@ trait AstForTypesCreator { this: AstCreator =>
     constructorCallName: String,
     initCode: String
   ): Ast = {
+    val blockNode_ = blockNode(init)
+    scope.pushNewBlockScope(blockNode_)
+
+    val tmpNodeName  = scopeLocalUniqueName("tmp")
+    val tmpNode      = identifierNode(init, tmpNodeName, tmpNodeName, tpe)
+    val localTmpNode = localNode(init, tmpNodeName, tmpNodeName, tpe)
+    scope.addVariable(tmpNodeName, localTmpNode, tpe, VariableScopeManager.ScopeType.BlockScope)
+
+    val allocOp          = Operators.alloc
+    val allocCallNode    = callNode(init, allocOp, allocOp, allocOp, DispatchTypes.STATIC_DISPATCH)
+    val assignmentCallOp = Operators.assignment
+    val assignmentCallNode =
+      callNode(init, s"$tmpNodeName = $allocOp", assignmentCallOp, assignmentCallOp, DispatchTypes.STATIC_DISPATCH)
+    val assignmentAst = callAst(assignmentCallNode, List(Ast(tmpNode), Ast(allocCallNode)))
+
+    val baseNode = identifierNode(init, tmpNodeName, tmpNodeName, tpe)
+    scope.addVariableReference(tmpNodeName, baseNode, tpe, EvaluationStrategies.BY_SHARING)
+    val addrOp = Operators.addressOf
+    val addrCallNode =
+      callNode(init, s"&$tmpNodeName", addrOp, addrOp, DispatchTypes.STATIC_DISPATCH)
+    val addrCallAst = callAst(addrCallNode, List(Ast(baseNode)))
+
     val constructorCallNode = callNode(
       init,
       s"$tpe.$constructorCallName($initCode)",
@@ -92,35 +114,29 @@ trait AstForTypesCreator { this: AstCreator =>
       Some(signature),
       Some(registerType(Defines.Void))
     )
-    val base               = leftAst.root.collect { case c: AstNodeNew => leftAst.subTreeCopy(c) }
-    val constructorCallAst = callAst(constructorCallNode, args, base = base)
+    val constructorCallAst = createCallAst(constructorCallNode, args, base = Some(addrCallAst))
 
-    val newCallNode =
-      callNode(
-        init,
-        s"new ${constructorCallNode.code}",
-        Defines.OperatorNew,
-        Defines.OperatorNew,
-        DispatchTypes.STATIC_DISPATCH,
-        None,
-        Some(tpe)
-      )
-    val newCallAst = callAst(newCallNode, List(constructorCallAst))
+    val retNode = identifierNode(init, tmpNodeName, tmpNodeName, tpe)
+    scope.addVariableReference(tmpNodeName, retNode, tpe, EvaluationStrategies.BY_SHARING)
+    val retAst = Ast(retNode)
 
-    val assignmentCallNode =
+    scope.popScope()
+    val rightAst = Ast(blockNode_).withChildren(Seq(assignmentAst, constructorCallAst, retAst))
+
+    val finalAssignmentCallNode =
       callNode(
         declarator,
-        s"$name = ${newCallNode.code}",
+        s"$name = ${constructorCallNode.code}",
         Operators.assignment,
         Operators.assignment,
         DispatchTypes.STATIC_DISPATCH,
         None,
         Some(registerType(Defines.Void))
       )
-    callAst(assignmentCallNode, List(leftAst, newCallAst))
+    callAst(finalAssignmentCallNode, List(leftAst, rightAst))
   }
 
-  private def astForICPPASTConstructorInitializer(
+  private def astForFundamentalKeyWordInit(
     init: ICPPASTConstructorInitializer,
     declarator: IASTDeclarator,
     leftAst: Ast,
@@ -153,24 +169,10 @@ trait AstForTypesCreator { this: AstCreator =>
     val leftAst             = astForNode(declarator.getName)
 
     init match {
-      case i: IASTEqualsInitializer if i.getInitializerClause.isInstanceOf[ICPPASTNewExpression] =>
-        val base = leftAst.root.collect { case c: AstNodeNew => leftAst.subTreeCopy(c) }
-        astForIASTEqualsInitializer(
-          declarator,
-          leftAst,
-          astForNewExpression(i.getInitializerClause.asInstanceOf[ICPPASTNewExpression], base)
-        )
-      case i: IASTEqualsInitializer if i.getInitializerClause.isInstanceOf[ICPPASTSimpleTypeConstructorExpression] =>
-        val base = leftAst.root.collect { case c: AstNodeNew => leftAst.subTreeCopy(c) }
-        astForIASTEqualsInitializer(
-          declarator,
-          leftAst,
-          astForConstructorExpression(i.getInitializerClause.asInstanceOf[ICPPASTSimpleTypeConstructorExpression], base)
-        )
       case i: IASTEqualsInitializer =>
         astForIASTEqualsInitializer(declarator, leftAst, astForNode(i.getInitializerClause))
       case i: ICPPASTConstructorInitializer if isFundamentalTypeKeywords(tpe) =>
-        astForICPPASTConstructorInitializer(i, declarator, leftAst, name, tpe)
+        astForFundamentalKeyWordInit(i, declarator, leftAst, name, tpe)
       case i: ICPPASTConstructorInitializer =>
         astForIASTInitializer(
           i,
@@ -203,25 +205,70 @@ trait AstForTypesCreator { this: AstCreator =>
     }
   }
 
-  protected def astForInitializer(declarator: ICPPASTDeclarator): Ast = {
+  protected def astForConstructorCall(declarator: ICPPASTDeclarator): Ast = {
+    val leftAst = astForNode(declarator.getName)
+
+    val blockNode_ = blockNode(declarator)
+    scope.pushNewBlockScope(blockNode_)
+
     val name = ASTStringUtil.getSimpleName(declarator.getName)
     val tpe  = registerType(scope.lookupVariable(name).map(_._2.takeWhile(isValidFullNameChar)).getOrElse(Defines.Any))
     val constructorCallName = tpe.split("\\.").lastOption.getOrElse(tpe)
     val signature           = s"${Defines.Void}()"
     val fullNameWithSig     = s"$tpe.$constructorCallName:$signature"
-    val leftAst             = astForNode(declarator.getName)
-    astForIASTInitializer(
+
+    val tmpNodeName  = scopeLocalUniqueName("tmp")
+    val tmpNode      = identifierNode(declarator, tmpNodeName, tmpNodeName, tpe)
+    val localTmpNode = localNode(declarator, tmpNodeName, tmpNodeName, tpe)
+    scope.addVariable(tmpNodeName, localTmpNode, tpe, VariableScopeManager.ScopeType.BlockScope)
+
+    val allocOp          = Operators.alloc
+    val allocCallNode    = callNode(declarator, allocOp, allocOp, allocOp, DispatchTypes.STATIC_DISPATCH)
+    val assignmentCallOp = Operators.assignment
+    val assignmentCallNode =
+      callNode(
+        declarator,
+        s"$tmpNodeName = $allocOp",
+        assignmentCallOp,
+        assignmentCallOp,
+        DispatchTypes.STATIC_DISPATCH
+      )
+    val assignmentAst = callAst(assignmentCallNode, List(Ast(tmpNode), Ast(allocCallNode)))
+
+    val baseNode = identifierNode(declarator, tmpNodeName, tmpNodeName, tpe)
+    scope.addVariableReference(tmpNodeName, baseNode, tpe, EvaluationStrategies.BY_SHARING)
+    val addrOp       = Operators.addressOf
+    val addrCallNode = callNode(declarator, s"&$tmpNodeName", addrOp, addrOp, DispatchTypes.STATIC_DISPATCH)
+    val addrCallAst  = callAst(addrCallNode, List(Ast(baseNode)))
+
+    val constructorCallNode = callNode(
       declarator,
-      declarator,
-      leftAst,
-      List.empty,
-      name,
+      s"$tpe.$constructorCallName()",
       tpe,
-      signature,
       fullNameWithSig,
-      constructorCallName,
-      ""
+      DispatchTypes.STATIC_DISPATCH,
+      Some(signature),
+      Some(registerType(Defines.Void))
     )
+    val constructorCallAst = createCallAst(constructorCallNode, List.empty, base = Some(addrCallAst))
+
+    val retNode = identifierNode(declarator, tmpNodeName, tmpNodeName, tpe)
+    scope.addVariableReference(tmpNodeName, retNode, tpe, EvaluationStrategies.BY_SHARING)
+    val retAst = Ast(retNode)
+
+    scope.popScope()
+    val rightAst = Ast(blockNode_).withChildren(Seq(assignmentAst, constructorCallAst, retAst))
+
+    val finalAssignmentCallNode = callNode(
+      declarator,
+      s"${code(declarator)} = ${constructorCallNode.code}",
+      Operators.assignment,
+      Operators.assignment,
+      DispatchTypes.STATIC_DISPATCH,
+      None,
+      Some(registerType(Defines.Void))
+    )
+    callAst(finalAssignmentCallNode, List(leftAst, rightAst))
   }
 
   private def astForIASTEqualsInitializer(declarator: IASTDeclarator, leftAst: Ast, rightAst: Ast) = {
@@ -268,7 +315,7 @@ trait AstForTypesCreator { this: AstCreator =>
   protected def isCPPClass(decl: IASTSimpleDeclaration): Boolean = {
     decl.getDeclSpecifier match {
       case t: ICPPASTNamedTypeSpecifier =>
-        safeGetBinding(t.getName).exists { binding => binding.isInstanceOf[ICPPClassType] }
+        safeGetBinding(t.getName).exists { binding => binding.isInstanceOf[ICompositeType] }
       case _ => false
     }
   }
@@ -322,29 +369,24 @@ trait AstForTypesCreator { this: AstCreator =>
       case declaration: IASTSimpleDeclaration if declaration.getDeclarators.nonEmpty =>
         declaration.getDeclarators.toList.map {
           case d: ICPPASTDeclarator if d.getInitializer == null && isCPPClass(declaration) =>
-            astForInitializer(d)
+            astForConstructorCall(d)
           case d: IASTDeclarator if d.getInitializer != null =>
             astForInitializer(d, d.getInitializer)
           case arrayDecl: IASTArrayDeclarator =>
-            val op = Operators.arrayInitializer
-            val initCallNode =
-              callNode(
-                arrayDecl,
-                code(arrayDecl),
-                op,
-                op,
-                DispatchTypes.STATIC_DISPATCH,
-                None,
-                Some(registerType(Defines.Any))
-              )
-            val initArgs =
-              arrayDecl.getArrayModifiers.toList.filter(m => m.getConstantExpression != null).map(astForNode)
-            callAst(initCallNode, initArgs)
+            astForIASTArrayDeclarator(arrayDecl)
           case _ => Ast()
         }
       case _ => Nil
     }
     declAsts ++ initAsts
+  }
+
+  private def astForIASTArrayDeclarator(arrayDecl: IASTArrayDeclarator): Ast = {
+    val op = Operators.arrayInitializer
+    val initCallNode =
+      callNode(arrayDecl, code(arrayDecl), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
+    val initArgs = arrayDecl.getArrayModifiers.toList.filter(m => m.getConstantExpression != null).map(astForNode)
+    callAst(initCallNode, initArgs)
   }
 
   private def parentIsClassDef(node: IASTNode): Boolean = Option(node.getParent) match {

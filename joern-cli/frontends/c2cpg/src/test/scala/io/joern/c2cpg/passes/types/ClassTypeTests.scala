@@ -174,10 +174,13 @@ class ClassTypeTests extends C2CpgSuite(FileDefaults.CppExt) {
           |}""".stripMargin)
       val List(constructor) = cpg.typeDecl.nameExact("FooT").method.isConstructor.l
       constructor.signature shouldBe "void(std.string&,Bar.SomeClass&)"
-      constructor.block.astChildren.isCall.code.l shouldBe List("Bar::Foo(a, b)")
+      constructor.block.astChildren.isBlock.astChildren.isCall.code.l shouldBe List(
+        "<tmp>0 = <operator>.alloc",
+        "Bar::Foo(a, b)"
+      )
       val List(thisP, p1, p2) = constructor.parameter.l
       thisP.name shouldBe Defines.This
-      thisP.typeFullName shouldBe "FooT"
+      thisP.typeFullName shouldBe "FooT*"
       thisP.index shouldBe 0
       p1.typ.fullName shouldBe "std.string&"
       p1.index shouldBe 1

@@ -47,11 +47,15 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |MyContainer c1 {1}; // OK MyContainer<int>
           |MyContainer c2; // OK MyContainer<float>
           |""".stripMargin)
-      val List(c1, c2) = cpg.local.l
+      val List(c1, c2, tmp1, tmp0) = cpg.local.l
       c1.name shouldBe "c1"
       c1.typeFullName shouldBe "MyContainer"
       c2.name shouldBe "c2"
       c2.typeFullName shouldBe "MyContainer"
+      tmp1.name shouldBe "<tmp>1"
+      tmp1.typeFullName shouldBe "MyContainer"
+      tmp0.name shouldBe "<tmp>0"
+      tmp0.typeFullName shouldBe "MyContainer"
       // We are unable to express this template argument deduction in the current schema
       cpg.typeDecl.member.nameExact("val").typeFullName.l shouldBe List("T")
 
@@ -64,28 +68,26 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
 
       cpg.call.isAssignment.code.l shouldBe List(
         "this->val = val",
-        "c1 = new MyContainer.MyContainer(1)",
-        "c2 = new MyContainer.MyContainer()"
+        "c1 = MyContainer.MyContainer(1)",
+        "<tmp>0 = <operator>.alloc",
+        "c2 = MyContainer.MyContainer()",
+        "<tmp>1 = <operator>.alloc"
       )
-      cpg.call.isAssignment.argument(1).isIdentifier.typeFullName.l shouldBe List("MyContainer", "MyContainer")
+      cpg.call.isAssignment.argument(1).isIdentifier.typeFullName.distinct.l shouldBe List("MyContainer")
 
-      val List(c1NewCall, c2NewCall) = cpg.call.isAssignment.argument(2).isCall.l
+      val List(c1Block, c2Block) = cpg.call.argument(2).isBlock.l
 
-      c1NewCall.code shouldBe "new MyContainer.MyContainer(1)"
-      c1NewCall.methodFullName shouldBe Defines.OperatorNew
-      val List(c1ConstructorCall) = c1NewCall.argument.isCall.l
+      val List(c1ConstructorCall) = c1Block.astChildren.isCall.nameNot(Operators.assignment).l
       c1ConstructorCall.methodFullName shouldBe "MyContainer.MyContainer:void(int)"
       c1ConstructorCall.name shouldBe "MyContainer"
       c1ConstructorCall.signature shouldBe "void(int)"
-      c1ConstructorCall.argument(1).code shouldBe "1"
+      c1ConstructorCall.argument.code.l shouldBe List("&<tmp>0", "1")
 
-      c2NewCall.code shouldBe "new MyContainer.MyContainer()"
-      c2NewCall.methodFullName shouldBe Defines.OperatorNew
-      val List(c2ConstructorCall) = c2NewCall.argument.isCall.l
+      val List(c2ConstructorCall) = c2Block.astChildren.isCall.nameNot(Operators.assignment).l
       c2ConstructorCall.methodFullName shouldBe "MyContainer.MyContainer:void()"
       c2ConstructorCall.name shouldBe "MyContainer"
       c2ConstructorCall.signature shouldBe "void()"
-      c2ConstructorCall.argument.code.l shouldBe List("c2")
+      c2ConstructorCall.argument.code.l shouldBe List("&<tmp>1")
     }
 
     "handle declaring non-type template parameters with auto" in {
@@ -278,7 +280,13 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |  int id;
           |};
           |""".stripMargin)
-      cpg.local.map(l => (l.name, l.typeFullName)).toMap shouldBe Map("x1" -> "S1", "x2" -> "S1", "count" -> "int")
+      cpg.local.map(l => (l.name, l.typeFullName)).toMap shouldBe Map(
+        "count"  -> "int",
+        "<tmp>0" -> "S",
+        "x2"     -> "S1",
+        "<tmp>1" -> "S1",
+        "x1"     -> "S1"
+      )
       cpg.typeDecl.member.nameExact("count").typeFullName.l shouldBe List("int")
     }
 
@@ -335,8 +343,10 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |}
           |""".stripMargin)
       cpg.call.code.l should contain theSameElementsAs List(
-        "new Coordinate{0, 0}",
+        "<tmp>0 = <operator>.alloc",
+        "<operator>.alloc",
         "Coordinate{0, 0}",
+        "&<tmp>0",
         "<tmp>0 = origin()",
         "origin()",
         "x = <tmp>0.x",
@@ -352,7 +362,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       cpg.local.map(l => (l.name, l.typeFullName)).toMap shouldBe Map(
         "x"       -> "int",
         "y"       -> "int",
-        "<tmp>0"  -> "pair",
+        "<tmp>0"  -> "Coordinate",
         "mapping" -> "std.unordered_map",
         // fails to resolve the type of the structured bindings without C++ header files
         "<tmp>1" -> "ANY",
@@ -419,7 +429,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
         .l shouldBe List(
         "std::lock_guard<std::mutex> lk(mx)",
         "if (std::lock_guard<std::mutex> lk(mx); v.empty()) { v.push_back(val); }",
-        "gadget = new Foo.Foo(args)",
+        "gadget = Foo.Foo(args)",
         "s = gadget.status()",
         "switch (Foo gadget(args); auto s = gadget.status()) { case OK: gadget.zip(); break; case Bad: throw BadFoo(s.message()); }"
       )
@@ -469,9 +479,9 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |byte d = byte{1};
           |""".stripMargin)
       cpg.local.nameExact("b").typeFullName.l shouldBe List("byte")
-      cpg.identifier.nameExact("b").typeFullName.l shouldBe List("byte", "byte")
+      cpg.identifier.nameExact("b").typeFullName.l shouldBe List("byte")
       cpg.local.nameExact("d").typeFullName.l shouldBe List("byte")
-      cpg.identifier.nameExact("d").typeFullName.l shouldBe List("byte", "byte")
+      cpg.identifier.nameExact("d").typeFullName.l shouldBe List("byte")
     }
 
     "handle fallthrough, nodiscard, maybe_unused attributes" in {
