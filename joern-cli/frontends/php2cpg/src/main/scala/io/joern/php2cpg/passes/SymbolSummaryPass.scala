@@ -9,13 +9,18 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import scala.jdk.CollectionConverters.*
 
-/** Gathers all the symbols from types and methods one can import from each PHP script and namespace.
+/** Gathers all the symbols from namespaces, types, and methods one can import from each PHP script and namespace. Class
+  * constants cannot be imported directly, thus we do not handle them.
   *
   * @param captureSummary
   *   when the pass has finished summarizing all files, this method captures the result. This is thread safe.
   */
-class SymbolSummaryPass(config: Config, cpg: Cpg, parser: PhpParser, captureSummary: Seq[SymbolSummary] => Unit)
-    extends ForkJoinParallelCpgPass[BatchOfPhpScripts](cpg)
+class SymbolSummaryPass(
+  config: Config,
+  cpg: Cpg,
+  parser: PhpParser,
+  captureSummary: Map[String, Seq[SymbolSummary]] => Unit
+) extends ForkJoinParallelCpgPass[BatchOfPhpScripts](cpg)
     with AstParsingPass(config, parser) {
 
   private val summary = new java.util.concurrent.ConcurrentLinkedQueue[SymbolSummary]()
@@ -23,62 +28,63 @@ class SymbolSummaryPass(config: Config, cpg: Cpg, parser: PhpParser, captureSumm
   import io.joern.php2cpg.passes.SymbolSummaryPass.*
 
   override def processPart(builder: DiffGraphBuilder, fileName: String, result: Domain.PhpFile): Unit = {
-    val fullName                   = MetaDataPass.getGlobalNamespaceBlockFullName(None)
-    val stack: NamespaceScopeStack = Seq(fullName)
+    val stack: NamespaceScopeStack = Seq.empty
 
-    val children = result.children.flatMap {
+    val summaries = result.children.flatMap {
       case namespace: PhpNamespaceStmt if namespace.name.isEmpty => namespace.stmts.flatMap(visit(_, stack))
       case stmt                                                  => visit(stmt, stack).toList
-    }.dedup
-    summary.add(PhpNamespace(fullName, children))
+    }.distinct
+    summary.addAll(summaries.asJava)
   }
 
   override def finish(): Unit = {
-    val dedupSummary = summary.asScala.toSeq.dedup
-    captureSummary(dedupSummary)
+    val summaryMap = summary.asScala.toSeq.distinct.groupBy(_.name)
+    captureSummary(summaryMap)
   }
 
   private def visit(node: PhpNode, stack: NamespaceScopeStack): Seq[SymbolSummary] = {
     node match {
       case stmt: PhpNamespaceStmt                                  => visitNamespaceStmt(stmt, stack)
-      case method: PhpMethodDecl                                   => visitMethodDecl(method)
+      case method: PhpMethodDecl                                   => visitMethodDecl(method, stack)
       case classLike: PhpClassLikeStmt if classLike.name.isDefined => visitClassDecl(classLike, stack)
-      case cs: PhpConstStmt                                        => cs.consts.map(c => PhpMember(c.name.name))
-      case cp: PhpPropertyStmt                                     => cp.variables.map(c => PhpMember(c.name.name))
       case _                                                       => Nil
     }
   }
 
   private def visitNamespaceStmt(stmt: PhpNamespaceStmt, stack: NamespaceScopeStack): Seq[SymbolSummary] = {
-    stmt.name match {
-      case None                            => stmt.stmts.flatMap(visit(_, stack)).dedup
-      case Some(name) if stack.sizeIs == 1 =>
+    stmt.name.map(_.name) match {
+      case None                            => stmt.stmts.flatMap(visit(_, stack))
+      case Some(fullName) if stack.isEmpty =>
         // We are the first namespace declaration in a possibly nested namespace, so this name should be fully separated
-        val nameParts               = name.name.split("\\\\")
-        val namespaceScopeToPrepend = (nameParts.reverse ++ stack).toSeq
-        val children                = stmt.stmts.flatMap(stmt => visit(stmt, namespaceScopeToPrepend)).dedup
-        nameParts.reverse.tail.foldLeft(PhpNamespace(nameParts.last, children))((acc, name) =>
-          PhpNamespace(name, acc :: Nil)
-        ) :: Nil
-      case Some(name) =>
+        val nameParts = fullName.split("\\\\")
+        val name      = nameParts.head
+        val newStack  = (nameParts.reverse ++ stack).toSeq
+        val children  = stmt.stmts.flatMap(stmt => visit(stmt, newStack)).distinct
+        val namespaces = nameParts.tail.foldRight(PhpNamespace(name) :: Nil)((name, acc) => {
+          val newName = acc.lastOption.map(_.name).toList :+ name mkString "\\"
+          PhpNamespace(newName) :: acc
+        })
+        namespaces ++ children
+      case Some(fullName) =>
         // We are not the first namespace in a possibly nested namespace, thus we should only use the last part
-        val nameParts = name.name.split("\\\\")
-        val children  = stmt.stmts.flatMap(stmt => visit(stmt, nameParts.last +: stack)).dedup
-        PhpNamespace(nameParts.last, children) :: Nil
+        val nameParts = fullName.split("\\\\")
+        val children  = stmt.stmts.flatMap(stmt => visit(stmt, nameParts.last +: stack)).distinct
+        PhpNamespace(fullName) :: children
     }
   }
 
-  private def visitMethodDecl(method: PhpMethodDecl): Seq[SymbolSummary] = {
-    val name = method.name.name
+  private def visitMethodDecl(method: PhpMethodDecl, stack: NamespaceScopeStack): Seq[SymbolSummary] = {
+    val name = method.name.fullName(stack)
     PhpFunction(name) :: Nil
   }
 
-  private def visitClassDecl(classLike: PhpClassLikeStmt, stack: NamespaceScopeStack): Seq[SymbolSummary] = {
-    val name        = classLike.name.map(_.name).get
-    val constructor = if !classLike.hasConstructor then Nil else PhpFunction(Domain.ConstructorMethodName) :: Nil
-    val children    = constructor ++ classLike.stmts.flatMap(visit(_, stack))
-    PhpClass(name, children) :: Nil
-  }
+  private def visitClassDecl(classLike: PhpClassLikeStmt, stack: NamespaceScopeStack): Seq[SymbolSummary] =
+    classLike.name match {
+      case None => Nil
+      case Some(nameExpr) =>
+        val classFullName = nameExpr.fullName(stack)
+        PhpClass(classFullName) :: Nil // children are ignored, as they cannot be imported directly
+    }
 
 }
 
@@ -86,84 +92,47 @@ object SymbolSummaryPass {
 
   private type NamespaceScopeStack = Seq[String]
 
-  private implicit class SummarySeqExt(xs: Seq[SymbolSummary]) {
+  private implicit class NameExprExt(nameExpr: PhpNameExpr) {
 
-    /** Deduplicates a sequence of summaries at a specific namespace level. Particularly useful for namespaces declared
-      * adjacent to one another.
-      */
-    def dedup: Seq[SymbolSummary] = {
-      xs.foldLeft(Seq.empty[SymbolSummary])((acc, next) =>
-        acc match {
-          case Nil          => next :: Nil
-          case head :: tail => head + next ++ tail
-        }
-      )
-    }
+    def fullName(stack: NamespaceScopeStack): String = stack.reverse :+ nameExpr.name mkString "\\"
 
   }
 
-  sealed trait SymbolSummary {
+  sealed trait SymbolSummary extends Ordered[SymbolSummary] {
 
-    /** Combines two symbol summary objects at the same namespace/AST level.
-      * @param o
-      *   the object to combine with.
+    /** @return
+      *   the fully qualified identifier of the symbol as per its definition.
+      */
+    def name: String
+
+    /** Allows symbols to be compared. When resolving imports, the order of precedence is: Classes, Functions,
+      * Constants, Namespaces.
+      * @param that
+      *   the other symbol.
       * @return
-      *   two separate objects if they cannot be combined, or a single combined object if otherwise.
+      *   the outcome of the comparison.
       */
-    def +(o: SymbolSummary): Seq[SymbolSummary]
-  }
-
-  sealed trait HasChildren { this: SymbolSummary =>
-
-    def children: Seq[SymbolSummary]
-
-    protected def combineChildren(o: SymbolSummary & HasChildren): Seq[SymbolSummary] = {
-      (this.children ++ o.children).foldLeft(Seq.empty[SymbolSummary])((acc, next) =>
-        acc match {
-          case Nil          => next :: Nil
-          case head :: tail => head + next ++ tail
-        }
-      )
-    }
-
-  }
-
-  case class PhpNamespace(name: String, children: Seq[SymbolSummary]) extends SymbolSummary with HasChildren {
-    override def +(o: SymbolSummary): Seq[SymbolSummary] = {
-      o match {
-        case n: PhpNamespace if n.name == this.name =>
-          PhpNamespace(name, combineChildren(n)) :: Nil
-        case _ => this :: o :: Nil
+    def compare(that: SymbolSummary): Int = {
+      val typeOrder = (this, that) match {
+        case (_: PhpNamespace, _: PhpFunction) => 1
+        case (_: PhpNamespace, _: PhpClass)    => 1
+        case (_: PhpFunction, _: PhpClass)     => 1
+        case (_: PhpFunction, _: PhpNamespace) => -1
+        case (_: PhpClass, _: PhpNamespace)    => -1
+        case (_: PhpClass, _: PhpFunction)     => -1
+        case _                                 => 0
       }
+
+      if (typeOrder != 0) typeOrder
+      else this.name.compare(that.name)
     }
+
   }
 
-  case class PhpFunction(name: String) extends SymbolSummary {
-    override def +(o: SymbolSummary): Seq[SymbolSummary] = {
-      o match {
-        case f: PhpFunction if f.name == this.name => this :: Nil
-        case _                                     => this :: o :: Nil
-      }
-    }
-  }
+  case class PhpNamespace(name: String) extends SymbolSummary
 
-  case class PhpClass(name: String, children: Seq[SymbolSummary]) extends SymbolSummary with HasChildren {
-    override def +(o: SymbolSummary): Seq[SymbolSummary] = {
-      o match {
-        case c: PhpClass if c.name == this.name =>
-          PhpClass(name, combineChildren(c)) :: Nil
-        case _ => this :: o :: Nil
-      }
-    }
-  }
+  case class PhpFunction(name: String) extends SymbolSummary
 
-  case class PhpMember(name: String) extends SymbolSummary {
-    override def +(o: SymbolSummary): Seq[SymbolSummary] = {
-      o match {
-        case f: PhpMember if f.name == this.name => this :: Nil
-        case _                                   => this :: o :: Nil
-      }
-    }
-  }
+  case class PhpClass(name: String) extends SymbolSummary
 
 }

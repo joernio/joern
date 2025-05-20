@@ -39,7 +39,7 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
 
     val result = ExternalCommand.run(command, Some("."), mergeStdErrInStdOut = true)
     result match {
-      case ExternalCommand.ExternalCommandResult(0, stdOut, _) =>
+      case ExternalCommand.ExternalCommandResult(0, stdOut, _, _) =>
         val asJson = linesToJsonValues(stdOut)
         val asPhpFile = asJson.map { case (filename, jsonObjectOption, infoLines) =>
           (filename, jsonToPhpFile(jsonObjectOption, filename), infoLines)
@@ -48,7 +48,7 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
           PhpParseResult(canonicalToInputPath.apply(filename), phpFileOption, infoLines)
         }
         withRemappedFileName
-      case ExternalCommand.ExternalCommandResult(exitCode, _, _) =>
+      case ExternalCommand.ExternalCommandResult(exitCode, _, _, _) =>
         logger.error(s"Failure running php-parser with ${command.mkString(" ")}, exit code $exitCode")
         Nil
     }

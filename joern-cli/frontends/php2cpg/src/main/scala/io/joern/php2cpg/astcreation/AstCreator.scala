@@ -1,30 +1,26 @@
 package io.joern.php2cpg.astcreation
 
-import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants, operatorSymbols}
-import io.joern.php2cpg.datastructures.ArrayIndexTracker
+import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
 import io.joern.php2cpg.parser.Domain.*
-import io.joern.php2cpg.parser.Domain.PhpModifiers.containsAccessModifier
+import io.joern.php2cpg.passes.SymbolSummaryPass.SymbolSummary
 import io.joern.php2cpg.utils.Scope
 import io.joern.x2cpg.Ast.storeInDiffGraph
-import io.joern.x2cpg.Defines.{StaticInitMethodName, UnresolvedNamespace, UnresolvedSignature}
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
-import io.joern.x2cpg.utils.IntervalKeyPool
-import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, Defines, ValidationMode}
+import io.joern.x2cpg.{Ast, AstCreatorBase, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.shiftleft.utils.IOUtils
 import org.slf4j.{Logger, LoggerFactory}
 
-import java.nio.charset.StandardCharsets
 import java.nio.file.Path
-import scala.collection.mutable
 
 class AstCreator(
   protected val relativeFileName: String,
   fileName: String,
   phpAst: PhpFile,
-  disableFileContent: Boolean
+  disableFileContent: Boolean,
+  summary: Map[String, Seq[SymbolSummary]]
 )(implicit withSchemaValidation: ValidationMode)
     extends AstCreatorBase[PhpNode, AstCreator](relativeFileName)
     with AstCreatorHelper(disableFileContent)
@@ -35,7 +31,7 @@ class AstCreator(
     with AstForTypesCreator {
 
   protected val logger: Logger = LoggerFactory.getLogger(AstCreator.getClass)
-  protected val scope          = new Scope()(() => nextClosureName())
+  protected val scope          = new Scope(summary)(() => nextClosureName())
   protected var fileContent    = Option.empty[String]
 
   override def createAst(): DiffGraphBuilder = {
@@ -190,15 +186,15 @@ class AstCreator(
   }
 
   private def astForUseStmt(stmt: PhpUseStmt): Ast = {
-    // TODO Use useType + scope to get better name info
     val imports = stmt.uses.map(astForUseUse(_))
+    scope.useImport(imports.flatMap(_.nodes).collect { case x: NewImport => x })
     wrapMultipleInBlock(imports, line(stmt))
   }
 
   private def astForGroupUseStmt(stmt: PhpGroupUseStmt): Ast = {
-    // TODO Use useType + scope to get better name info
     val groupPrefix = s"${stmt.prefix.name}\\"
     val imports     = stmt.uses.map(astForUseUse(_, groupPrefix))
+    scope.useImport(imports.flatMap(_.nodes).collect { case x: NewImport => x })
     wrapMultipleInBlock(imports, line(stmt))
   }
 

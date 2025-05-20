@@ -6,6 +6,8 @@ import io.joern.php2cpg.passes.SymbolSummaryPass.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.shiftleft.semanticcpg.utils.FileUtil
+import org.scalatest.Assertion
+import org.scalatest.Assertions.fail
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -20,10 +22,7 @@ class PhpSymbolSummaryPassTest extends AnyWordSpec with Matchers {
       """<?php
         |function foo($a, string $b): int {}
         |""".stripMargin :: Nil,
-      { case PhpNamespace(name, (fooMethod: PhpFunction) :: Nil) :: Nil =>
-        name shouldBe NamespaceTraversal.globalNamespaceName
-        fooMethod.name shouldBe "foo"
-      }
+      { case PhpFunction("foo") :: Nil => succeed }
     )
   }
 
@@ -36,35 +35,8 @@ class PhpSymbolSummaryPassTest extends AnyWordSpec with Matchers {
         |  }
         |}
         |""".stripMargin :: Nil,
-      {
-        case PhpNamespace(
-              name,
-              PhpClass(className, (constr: PhpFunction) :: (fooMethod: PhpFunction) :: Nil) :: Nil
-            ) :: Nil =>
-          name shouldBe NamespaceTraversal.globalNamespaceName
-          className shouldBe "Foo"
-          constr.name shouldBe Domain.ConstructorMethodName
-          fooMethod.name shouldBe "foo"
-      }
-    )
-  }
-
-  "pre-parsing a file with a top-level class with a nested constant should provide a summary of that class" in {
-    assertAgainstTempFile(
-      """<?php
-        |class Foo {
-        |  const B = "B";
-        |}
-        |""".stripMargin :: Nil,
-      {
-        case PhpNamespace(
-              name,
-              PhpClass(className, (constr: PhpFunction) :: (bConst: PhpMember) :: Nil) :: Nil
-            ) :: Nil =>
-          name shouldBe NamespaceTraversal.globalNamespaceName
-          className shouldBe "Foo"
-          constr.name shouldBe Domain.ConstructorMethodName
-          bConst.name shouldBe "B"
+      { case PhpClass("Foo") :: Nil =>
+        succeed
       }
     )
   }
@@ -76,14 +48,10 @@ class PhpSymbolSummaryPassTest extends AnyWordSpec with Matchers {
         |class Baz {}
         |""".stripMargin :: Nil,
       {
-        case PhpNamespace(
-              globalName,
-              PhpNamespace(fooName, PhpNamespace(barName, PhpClass(bazName, _) :: Nil) :: Nil) :: Nil
-            ) :: Nil =>
-          globalName shouldBe NamespaceTraversal.globalNamespaceName
-          fooName shouldBe "Foo"
-          barName shouldBe "Bar"
-          bazName shouldBe "Baz"
+        case PhpNamespace("Foo") ::
+            PhpNamespace("Foo\\Bar") ::
+            PhpClass("Foo\\Bar\\Baz") :: Nil =>
+          succeed
       }
     )
   }
@@ -99,18 +67,11 @@ class PhpSymbolSummaryPassTest extends AnyWordSpec with Matchers {
         |class Faz {}
         |""".stripMargin :: Nil,
       {
-        case PhpNamespace(
-              globalName,
-              PhpNamespace(
-                fooName,
-                PhpNamespace(barName, PhpClass(bazName, _) :: PhpClass(fazName, _) :: Nil) :: Nil
-              ) :: Nil
-            ) :: Nil =>
-          globalName shouldBe NamespaceTraversal.globalNamespaceName
-          fooName shouldBe "Foo"
-          barName shouldBe "Bar"
-          bazName shouldBe "Baz"
-          fazName shouldBe "Faz"
+        case PhpNamespace("Foo") ::
+            PhpNamespace("Foo\\Bar") ::
+            PhpClass("Foo\\Bar\\Baz") ::
+            PhpClass("Foo\\Bar\\Faz") :: Nil =>
+          succeed
       }
     )
   }
@@ -126,19 +87,11 @@ class PhpSymbolSummaryPassTest extends AnyWordSpec with Matchers {
         |}
         |""".stripMargin :: Nil,
       {
-        case PhpNamespace(
-              globalName,
-              PhpNamespace(
-                fooName,
-                PhpClass(fazName, _) ::
-                PhpNamespace(barName, PhpClass(bazName, _) :: Nil) :: Nil
-              ) :: Nil
-            ) :: Nil =>
-          globalName shouldBe NamespaceTraversal.globalNamespaceName
-          fooName shouldBe "Foo"
-          barName shouldBe "Bar"
-          bazName shouldBe "Baz"
-          fazName shouldBe "Faz"
+        case PhpNamespace("Foo") ::
+            PhpNamespace("Foo\\Bar") ::
+            PhpClass("Foo\\Bar\\Baz") ::
+            PhpClass("Foo\\Faz") :: Nil =>
+          succeed
       }
     )
   }
@@ -153,14 +106,10 @@ class PhpSymbolSummaryPassTest extends AnyWordSpec with Matchers {
         |}
         |""".stripMargin :: Nil,
       {
-        case PhpNamespace(
-              globalName,
-              PhpNamespace(fooName, PhpNamespace(barName, PhpFunction(bazName) :: Nil) :: Nil) :: Nil
-            ) :: Nil =>
-          globalName shouldBe NamespaceTraversal.globalNamespaceName
-          fooName shouldBe "Foo"
-          barName shouldBe "Bar"
-          bazName shouldBe "baz"
+        case PhpNamespace("Foo") ::
+            PhpNamespace("Foo\\Bar") ::
+            PhpFunction("Foo\\Bar\\baz") :: Nil =>
+          succeed
       }
     )
   }
@@ -177,19 +126,11 @@ class PhpSymbolSummaryPassTest extends AnyWordSpec with Matchers {
         |}
         |""".stripMargin :: Nil,
       {
-        case PhpNamespace(
-              globalName,
-              PhpNamespace(
-                fooName,
-                PhpClass(fazName, _) ::
-                PhpNamespace(barName, PhpClass(bazName, _) :: Nil) :: Nil
-              ) :: Nil
-            ) :: Nil =>
-          globalName shouldBe NamespaceTraversal.globalNamespaceName
-          fooName shouldBe "Foo"
-          barName shouldBe "Bar"
-          bazName shouldBe "Baz"
-          fazName shouldBe "Faz"
+        case PhpNamespace("Foo") ::
+            PhpNamespace("Foo\\Bar") ::
+            PhpClass("Foo\\Bar\\Baz") ::
+            PhpClass("Foo\\Faz") :: Nil =>
+          succeed
       }
     )
   }
@@ -202,7 +143,7 @@ object PhpSymbolSummaryPassTest {
 
   case class ConfigAndParser(config: Config, parser: PhpParser)
 
-  def assertAgainstTempFile(code: Seq[String], assertion: Seq[SymbolSummary] => Unit): Unit = {
+  def assertAgainstTempFile(code: Seq[String], assertion: Seq[SymbolSummary] => Assertion): Unit = {
     FileUtil.usingTemporaryDirectory("php-test") { tmpDirPath =>
       code.zipWithIndex.foreach { (content, idx) =>
         val tmpFilePath = tmpDirPath / s"Test$idx.php"
@@ -212,9 +153,15 @@ object PhpSymbolSummaryPassTest {
       val config = Config().withInputPath(tmpDirPath.toString)
       PhpParser.getParser(config) match {
         case Some(parser) =>
-          var buffer = Option.empty[Seq[SymbolSummary]]
+          var buffer = Option.empty[Map[String, Seq[SymbolSummary]]]
           new SymbolSummaryPass(config, Cpg.empty, parser, summary => buffer = Option(summary)).createAndApply()
-          buffer.foreach(assertion)
+          buffer.map(_.valuesIterator.flatten.toSeq.sortBy(_.name)).foreach { x =>
+            try {
+              assertion(x)
+            } catch {
+              case _: Exception => fail(s"Unexpected summary: $x")
+            }
+          }
         case None => Matchers.fail(s"Unable to create a PHP parser! See logs for details.")
       }
     }
