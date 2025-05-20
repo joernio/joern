@@ -278,6 +278,7 @@ object AstCreator {
     val Default: String      = "default"
     val HaltCompiler: String = "__halt_compiler"
     val This: String         = "this"
+    val Self: String         = "self"
     val Unknown: String      = "UNKNOWN"
     val Closure: String      = "__closure"
     val Class: String        = "class"

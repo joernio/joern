@@ -41,7 +41,7 @@ abstract class LocalCreationPass[ScopeType <: AstNode](cpg: Cpg)
   ): List[(NewLocal, List[Identifier])] = {
     identifierMap
       .map { case identifierName -> identifiers =>
-        val code = s"$$$identifierName"
+        val code = if identifierName == "self" then s"$identifierName" else s"$$$identifierName"
         val local =
           localNode(identifiers.head, identifierName, code, Defines.Any, closureBindingId = None)
         (local -> identifiers)

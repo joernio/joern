@@ -98,7 +98,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       // Static method call with a known class name
       case Some(nameExpr: PhpNameExpr) if call.isStatic =>
         if (nameExpr.name == "self") composeMethodFullName(name, call.isStatic, appendClass = true)
-        else s"${nameExpr.name}.<class>$StaticMethodDelimiter$name"
+        else s"${nameExpr.name}$MetaTypeDeclExtension$StaticMethodDelimiter$name"
       case Some(expr) =>
         s"$UnresolvedNamespace\\$codePrefix"
       case None if PhpBuiltins.FuncNames.contains(name) =>

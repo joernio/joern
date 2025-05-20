@@ -1,11 +1,8 @@
 package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
-import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, Local, Member, Method}
+import io.joern.php2cpg.parser.Domain
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.codepropertygraph.generated.nodes.Block
 
 class TypeNodeTests extends PhpCode2CpgFixture {
   "TypeDecls with inheritsFrom types" should {
@@ -17,14 +14,14 @@ class TypeNodeTests extends PhpCode2CpgFixture {
     "have type nodes created for the TypeDecl and inherited types" in {
       cpg.typ.fullName.toSet shouldEqual Set(
         "ANY",
-        "foo\\B",
-        "foo\\B.<class>",
-        "foo\\C",
-        "foo\\D",
         "foo\\A",
-        "foo\\A.<class>",
-        "foo\\C.<class>",
-        "foo\\D.<class>"
+        "foo\\B",
+        "foo\\C",
+        s"foo\\B${Domain.MetaTypeDeclExtension}",
+        s"foo\\D${Domain.MetaTypeDeclExtension}",
+        "foo\\D",
+        s"foo\\A${Domain.MetaTypeDeclExtension}",
+        s"foo\\C${Domain.MetaTypeDeclExtension}"
       )
     }
 
@@ -32,11 +29,11 @@ class TypeNodeTests extends PhpCode2CpgFixture {
       cpg.typeDecl.external.fullName.toSet shouldEqual Set(
         "ANY",
         "foo\\B",
-        "foo\\B.<class>",
+        s"foo\\B${Domain.MetaTypeDeclExtension}",
         "foo\\C",
-        "foo\\C.<class>",
+        s"foo\\C${Domain.MetaTypeDeclExtension}",
         "foo\\D",
-        "foo\\D.<class>"
+        s"foo\\D${Domain.MetaTypeDeclExtension}"
       )
     }
   }
@@ -53,9 +50,15 @@ class TypeNodeTests extends PhpCode2CpgFixture {
       cpg.typeDecl.name("Baz").baseTypeDeclTransitive.l.map(_.name) shouldBe List("Bar", "Foo")
     }
 
-    "have baseTypeDecl steps for meta TYPE_DECL (.<class>)" in {
-      cpg.typeDecl.name("Baz.<class>").baseTypeDecl.l.map(_.name) shouldBe List("Bar.<class>", "Foo.<class>")
-      cpg.typeDecl.name("Baz.<class>").baseTypeDeclTransitive.l.map(_.name) shouldBe List("Bar.<class>", "Foo.<class>")
+    "have baseTypeDecl steps for meta TYPE_DECL (<metaclass>)" in {
+      cpg.typeDecl.name(s"Baz${Domain.MetaTypeDeclExtension}").baseTypeDecl.l.map(_.name) shouldBe List(
+        s"Bar${Domain.MetaTypeDeclExtension}",
+        s"Foo${Domain.MetaTypeDeclExtension}"
+      )
+      cpg.typeDecl.name(s"Baz${Domain.MetaTypeDeclExtension}").baseTypeDeclTransitive.l.map(_.name) shouldBe List(
+        s"Bar${Domain.MetaTypeDeclExtension}",
+        s"Foo${Domain.MetaTypeDeclExtension}"
+      )
     }
   }
 

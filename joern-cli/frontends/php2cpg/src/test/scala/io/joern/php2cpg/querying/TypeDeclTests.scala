@@ -2,6 +2,7 @@ package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.Config
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
+import io.joern.php2cpg.parser.Domain
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
@@ -239,11 +240,11 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       }
     }
 
-    inside(cpg.typeDecl.name("Foo.<class>").l) {
+    inside(cpg.typeDecl.name(s"Foo${Domain.MetaTypeDeclExtension}").l) {
       case fooTypeDecl :: Nil =>
         inside(fooTypeDecl.method.l) { case List(clinitMethod: Method) =>
           clinitMethod.name shouldBe Defines.StaticInitMethodName
-          clinitMethod.fullName shouldBe s"Foo.<class>::${Defines.StaticInitMethodName}"
+          clinitMethod.fullName shouldBe s"Foo${Domain.MetaTypeDeclExtension}::${Defines.StaticInitMethodName}"
           clinitMethod.signature shouldBe "void()"
           clinitMethod.filename shouldBe "foo.php"
           clinitMethod.file.name.l shouldBe List("foo.php")
@@ -288,10 +289,10 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    inside(cpg.typeDecl.name("Foo.<class>").method.name("foo").l) {
+    inside(cpg.typeDecl.name(s"Foo${Domain.MetaTypeDeclExtension}").method.name("foo").l) {
       case fooMethod :: Nil =>
         fooMethod.name shouldBe "foo"
-        fooMethod.fullName shouldBe "Foo.<class>::foo"
+        fooMethod.fullName shouldBe s"Foo${Domain.MetaTypeDeclExtension}::foo"
       case xs => fail(s"Expected one typeDecl, got ${xs.name.mkString("[", ",", "]")}")
     }
   }
@@ -391,6 +392,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         |""".stripMargin)
 
     "parse methods in classes correctly" in {
+      cpg.method.name("<global>").dotAst.l.foreach(println)
       inside(cpg.typeDecl.name("Test0.php:<global>@anon-class-\\d+").l) {
         case anonClass0 :: anonClass1 :: Nil =>
           val List(memberX) = anonClass0.member.l
@@ -490,6 +492,27 @@ class TypeDeclTests extends PhpCode2CpgFixture {
     }
   }
 
+  "Members for anonymous class directly under class created" in {
+    val cpg = code("""<?php
+        |class Foo {
+        |  public $foo = new class(10) {
+        |   private int $x;
+        |  };
+        |}
+        |""".stripMargin)
+    inside(cpg.typeDecl.name("Foo").member.l) {
+      case _ :: fooAnonMem :: Nil =>
+        fooAnonMem.name shouldBe "Foo@anon-class-0"
+      case xs => fail(s"Expected two members, got ${xs.code.mkString("[", ",", "]")}")
+    }
+
+    inside(cpg.typeDecl.name(s"Foo${Domain.MetaTypeDeclExtension}").member.l) {
+      case anonTypeDeclMem :: Nil =>
+        anonTypeDeclMem.name shouldBe s"Foo@anon-class-0${Domain.MetaTypeDeclExtension}"
+      case xs => fail(s"Expected one member for metaclass type decl, got ${xs.name.mkString("[", ",", "]")}")
+    }
+  }
+
   "Anonymous class nested in class" in {
     val cpg = code("""<?php
         |class C {
@@ -501,6 +524,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         |}
         |""".stripMargin)
 
+    cpg.method.name("<global>").dotAst.l.foreach(println)
     inside(cpg.typeDecl.name("C->D@anon-class-\\d+").l) {
       case anonClass :: Nil =>
         anonClass.fullName shouldBe s"C->D@anon-class-0"
@@ -541,7 +565,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         |""".stripMargin)
 
     "create a singleton type decl" in {
-      inside(cpg.typeDecl.name("Foo.<class>").l) {
+      inside(cpg.typeDecl.name(s"Foo${Domain.MetaTypeDeclExtension}").l) {
         case fooTypeDecl :: Nil =>
           fooTypeDecl.modifier.modifierType.l shouldBe List(ModifierTypes.STATIC)
         case xs => fail(s"Expected one singleton type decl, got ${xs.code.mkString("[", ",", "]")}")
@@ -549,7 +573,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
     }
 
     "contain static methods" in {
-      inside(cpg.typeDecl.name("Foo.<class>").method.name("bar").l) {
+      inside(cpg.typeDecl.name(s"Foo${Domain.MetaTypeDeclExtension}").method.name("bar").l) {
         case barMethod :: Nil =>
           barMethod.modifier.modifierType.sorted.l shouldBe List(ModifierTypes.PUBLIC, ModifierTypes.STATIC)
         case xs => fail(s"Expected one method, got ${xs.code.mkString("[", ",", "]")}")
@@ -557,7 +581,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
     }
 
     "contain members for static variables and consts" in {
-      inside(cpg.typeDecl.name("Foo.<class>").member.l) {
+      inside(cpg.typeDecl.name(s"Foo${Domain.MetaTypeDeclExtension}").member.l) {
         case bazzMember :: fooMember :: Nil =>
           bazzMember.name shouldBe "BAZZ"
           fooMember.name shouldBe "foo"
@@ -566,12 +590,12 @@ class TypeDeclTests extends PhpCode2CpgFixture {
     }
 
     "contain the <clinit> static constructor" in {
-      inside(cpg.typeDecl.name("Foo.<class>").method.name(Defines.StaticInitMethodName).l) {
+      inside(cpg.typeDecl.name(s"Foo${Domain.MetaTypeDeclExtension}").method.name(Defines.StaticInitMethodName).l) {
         case staticConstructor :: Nil =>
           inside(staticConstructor.body.astChildren.l) {
             case (self: Local) :: (assignmentBazz: Call) :: (assignmentFoo: Call) :: Nil =>
               // TODO: Self in <clinit> is existing behavior
-              self.code shouldBe "$self"
+              self.code shouldBe "self"
 
               val List(bazzLhs: FieldAccess, bazzRhs: Literal) = assignmentBazz.argument.l: @unchecked
               bazzLhs.code shouldBe "self::BAZZ"
@@ -599,17 +623,16 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         |};
         |""".stripMargin)
 
-    "Create .<class> type decl" in {
-      inside(cpg.typeDecl.name("Test0.php:<global>@anon-class-0.<class>").l) {
+    "Create <metaclass> type decl" in {
+      inside(cpg.typeDecl.name(s"Test0.php:<global>@anon-class-0${Domain.MetaTypeDeclExtension}").l) {
         case anonTypeDecl :: Nil =>
-          anonTypeDecl.fullName shouldBe "Test0.php:<global>@anon-class-0.<class>"
-          anonTypeDecl.modifier.map(_.modifierType).contains(ModifierTypes.STATIC) shouldBe true
+          anonTypeDecl.fullName shouldBe s"Test0.php:<global>@anon-class-0${Domain.MetaTypeDeclExtension}"
         case xs => fail(s"Expected one anon type-decl, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
     "Contains required consts and static vars" in {
-      inside(cpg.typeDecl.name("Test0.php:<global>@anon-class-0.<class>").member.l) {
+      inside(cpg.typeDecl.name(s"Test0.php:<global>@anon-class-0${Domain.MetaTypeDeclExtension}").member.l) {
         case bazzMember :: fooMember :: Nil =>
           bazzMember.code shouldBe "const BAZZ"
           bazzMember.modifier.modifierType.l.contains(ModifierTypes.FINAL) shouldBe true
@@ -621,7 +644,9 @@ class TypeDeclTests extends PhpCode2CpgFixture {
     }
 
     "Contains the required static method" in {
-      inside(cpg.typeDecl.name("Test0.php:<global>@anon-class-0.<class>").method.name("bar").l) {
+      inside(
+        cpg.typeDecl.name(s"Test0.php:<global>@anon-class-0${Domain.MetaTypeDeclExtension}").method.name("bar").l
+      ) {
         case barMethod :: Nil =>
           barMethod.name shouldBe "bar"
           barMethod.modifier.modifierType.l.contains(ModifierTypes.STATIC) shouldBe true
@@ -631,14 +656,20 @@ class TypeDeclTests extends PhpCode2CpgFixture {
     }
 
     "Contains static constructor" in {
-      inside(cpg.typeDecl.name("Test0.php:<global>@anon-class-0.<class>").method.name(Defines.StaticInitMethodName).l) {
+      inside(
+        cpg.typeDecl
+          .name(s"Test0.php:<global>@anon-class-0${Domain.MetaTypeDeclExtension}")
+          .method
+          .name(Defines.StaticInitMethodName)
+          .l
+      ) {
         case staticConstructor :: Nil =>
           staticConstructor.name shouldBe Defines.StaticInitMethodName
-          staticConstructor.fullName shouldBe "Test0.php:<global>@anon-class-0.<class>::<clinit>"
+          staticConstructor.fullName shouldBe s"Test0.php:<global>@anon-class-0${Domain.MetaTypeDeclExtension}::<clinit>"
 
           inside(staticConstructor.body.astChildren.l) {
             case (self: Local) :: (bazzAssignment: Call) :: (fooAssignment: Call) :: Nil =>
-              self.code shouldBe "$self"
+              self.code shouldBe "self"
 
               val List(bazzLhs: FieldAccess, bazzRhs: Literal) = bazzAssignment.argument.l: @unchecked
               bazzLhs.code shouldBe "self::BAZZ"

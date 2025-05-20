@@ -54,7 +54,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
       globalNamespace.fullName
     } else {
       val className = if (appendClass) {
-        getTypeDeclPrefix.map(name => s"${name}.<class>")
+        getTypeDeclPrefix.map(name => s"${name}$MetaTypeDeclExtension")
       } else {
         getTypeDeclPrefix
       }

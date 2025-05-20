@@ -56,8 +56,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     dynamicStmts: List[PhpStmt],
     staticStmts: List[PhpStmt]
   ): Ast = {
-    val inheritsFrom     = (stmt.extendsNames ++ stmt.implementedInterfaces).map(_.name)
-    val inheritsFromMeta = (stmt.extendsNames ++ stmt.implementedInterfaces).map(name => s"${name.name}.<class>")
+    val inheritsFrom = (stmt.extendsNames ++ stmt.implementedInterfaces).map(_.name)
+    val inheritsFromMeta =
+      (stmt.extendsNames ++ stmt.implementedInterfaces).map(name => s"${name.name}$MetaTypeDeclExtension")
 
     val className = stmt.name match {
       case Some(name) => name.name
@@ -78,10 +79,10 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       alias = None
     )
 
-    val metaTypeDeclTemp = typeDeclNode(
+    val metaTypeDecl = typeDeclNode(
       node = stmt,
-      name = s"${className}.<class>",
-      fullName = s"${classFullName}.<class>",
+      name = s"${className}$MetaTypeDeclExtension",
+      fullName = s"${classFullName}$MetaTypeDeclExtension",
       filename = relativeFileName,
       code = code,
       inherits = inheritsFromMeta,
@@ -98,11 +99,19 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     scope.popScope()
 
-    scope.surroundingAstLabel.foreach(metaTypeDeclTemp.astParentType(_))
-    scope.surroundingScopeFullName.foreach(metaTypeDeclTemp.astParentFullName(_))
-    scope.pushNewScope(metaTypeDeclTemp)
+    (scope.surroundingAstLabel, scope.surroundingScopeFullName) match {
+      case (Some(astLabel), Some(sfn)) =>
+        metaTypeDecl.astParentType(astLabel)
+        metaTypeDecl.astParentFullName(sfn)
+      case _ =>
+        logger.warn(
+          s"Expected values for `surroundingAstLabel` and `surroundingScopeFullName` in `astForAnonymousClass`"
+        )
+    }
 
-    val metaTypeDeclAst = astForMetaTypeDecl(stmt, staticStmts, metaTypeDeclTemp)
+    scope.pushNewScope(metaTypeDecl)
+
+    val metaTypeDeclAst = astForMetaTypeDecl(stmt, staticStmts, metaTypeDecl)
     scope.popScope()
 
     if scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL) then {
@@ -117,9 +126,14 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       }
 
       val metaTypeDeclMember = NewMember()
-        .name(s"${className}.<class>")
-        .code(s"${className}.<class>")
-        .dynamicTypeHintFullName(Seq(s"${classFullName}.<class>"))
+        .name(s"${className}$MetaTypeDeclExtension")
+        .code(s"${className}$MetaTypeDeclExtension")
+        .dynamicTypeHintFullName(Seq(s"${classFullName}${MetaTypeDeclExtension}"))
+
+      scope.getEnclosingTypeDeclTypeFullName.foreach { tfn =>
+        metaTypeDeclMember.astParentFullName(s"$tfn$MetaTypeDeclExtension")
+        metaTypeDeclMember.astParentType(NodeTypes.TYPE_DECL)
+      }
 
       diffGraph.addNode(typeDeclMember)
       diffGraph.addNode(metaTypeDeclMember)
@@ -182,9 +196,10 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     dynamicStmts: List[PhpStmt],
     staticStmts: List[PhpStmt]
   ): List[Ast] = {
-    val inheritsFrom     = (stmt.extendsNames ++ stmt.implementedInterfaces).map(_.name)
-    val inheritsFromMeta = (stmt.extendsNames ++ stmt.implementedInterfaces).map(name => s"${name.name}.<class>")
-    val code             = codeForClassStmt(stmt, name)
+    val inheritsFrom = (stmt.extendsNames ++ stmt.implementedInterfaces).map(_.name)
+    val inheritsFromMeta =
+      (stmt.extendsNames ++ stmt.implementedInterfaces).map(name => s"${name.name}$MetaTypeDeclExtension")
+    val code = codeForClassStmt(stmt, name)
 
     val fullName =
       if (name.name == NamespaceTraversal.globalNamespaceName)
@@ -196,8 +211,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val typeDecl = typeDeclNode(stmt, name.name, fullName, relativeFileName, code, inherits = inheritsFrom)
     val metaTypeDeclNode = typeDeclNode(
       stmt,
-      s"${name.name}.<class>",
-      s"${fullName}.<class>",
+      s"${name.name}$MetaTypeDeclExtension",
+      s"${fullName}$MetaTypeDeclExtension",
       relativeFileName,
       code,
       inherits = inheritsFromMeta
@@ -221,16 +236,11 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     val classTypeDeclAst = Ast(typeDecl).withChildren(modifiers).withChildren(bodyStmts).withChildren(annotationAsts)
 
-    // Ignore the metaTypeDecl when we are in the <global> method / type
-    if (!name.name.equals(NamespaceTraversal.globalNamespaceName)) {
-      scope.pushNewScope(metaTypeDeclNode)
-      staticConsts.foreach(scope.addConstOrStaticInitToScope)
-      val metaTypeDeclAst = astForMetaTypeDecl(stmt, staticStmts, metaTypeDeclNode)
-      scope.popScope()
-      List(classTypeDeclAst, metaTypeDeclAst)
-    } else {
-      List(classTypeDeclAst)
-    }
+    scope.pushNewScope(metaTypeDeclNode)
+    staticConsts.foreach(scope.addConstOrStaticInitToScope)
+    val metaTypeDeclAst = astForMetaTypeDecl(stmt, staticStmts, metaTypeDeclNode)
+    scope.popScope()
+    List(classTypeDeclAst, metaTypeDeclAst)
   }
 
   private def astForMetaTypeDecl(
@@ -245,9 +255,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val clinitAst = astForStaticAndConstInits(stmt)
 
     val metaTypeDeclBodyStmts = List(classConsts, properties, methodStmts, clinitAst).flatten
-    val metaTypeDeclModifiers = List(ModifierTypes.STATIC).map(modifierNode(stmt, _)).map(Ast(_))
 
-    Ast(metaTypeDeclNode).withChildren(metaTypeDeclModifiers).withChildren(metaTypeDeclBodyStmts)
+    Ast(metaTypeDeclNode).withChildren(metaTypeDeclBodyStmts)
   }
 
   protected def astsForClassLikeBody(
