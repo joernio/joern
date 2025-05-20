@@ -287,7 +287,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
       case l: IASTInitializerList if l.getClauses == null || l.getClauses.isEmpty || l.getClauses.forall(_ == null) =>
         Ast()
       case c: ICPPASTConstructorInitializer if init.getMemberInitializerId.isInstanceOf[ICPPASTQualifiedName] =>
-        val blockNode_ = blockNode(init)
+        val blockNode_ = blockNode(init, code(init), registerType(Defines.Any))
         scope.pushNewBlockScope(blockNode_)
 
         val constructorCallName = shortName(init.getMemberInitializerId)

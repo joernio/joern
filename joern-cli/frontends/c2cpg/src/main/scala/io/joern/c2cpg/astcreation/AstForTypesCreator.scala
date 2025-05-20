@@ -123,16 +123,18 @@ trait AstForTypesCreator { this: AstCreator =>
     scope.popScope()
     val rightAst = Ast(blockNode_).withChildren(Seq(assignmentAst, constructorCallAst, retAst))
 
+    val codeString = s"$name = ${constructorCallNode.code}"
     val finalAssignmentCallNode =
       callNode(
         declarator,
-        s"$name = ${constructorCallNode.code}",
+        codeString,
         Operators.assignment,
         Operators.assignment,
         DispatchTypes.STATIC_DISPATCH,
         None,
         Some(registerType(Defines.Void))
       )
+    blockNode_.code(codeString)
     callAst(finalAssignmentCallNode, List(leftAst, rightAst))
   }
 
@@ -259,15 +261,17 @@ trait AstForTypesCreator { this: AstCreator =>
     scope.popScope()
     val rightAst = Ast(blockNode_).withChildren(Seq(assignmentAst, constructorCallAst, retAst))
 
+    val codeString = s"${code(declarator)} = ${constructorCallNode.code}"
     val finalAssignmentCallNode = callNode(
       declarator,
-      s"${code(declarator)} = ${constructorCallNode.code}",
+      codeString,
       Operators.assignment,
       Operators.assignment,
       DispatchTypes.STATIC_DISPATCH,
       None,
       Some(registerType(Defines.Void))
     )
+    blockNode_.code(codeString)
     callAst(finalAssignmentCallNode, List(leftAst, rightAst))
   }
 

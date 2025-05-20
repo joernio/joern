@@ -566,7 +566,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
           astsForInitializerClauses(newExpression.getPlacementArguments)
         callAst(allocCallNode, idAst +: args)
       } else {
-        val blockNode_ = blockNode(newExpression)
+        val blockNode_ = blockNode(newExpression, code(newExpression), registerType(Defines.Any))
         scope.pushNewBlockScope(blockNode_)
 
         val constructorCallName = shortName(typeId.getDeclSpecifier)
@@ -690,7 +690,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
         scope.popScope()
         blockAst(node, calls.toList)
       case _ =>
-        val blockNode_ = blockNode(constructorExpression)
+        val blockNode_ = blockNode(constructorExpression, code(constructorExpression), registerType(Defines.Any))
         scope.pushNewBlockScope(blockNode_)
 
         val typeId              = constructorExpression.getDeclSpecifier
