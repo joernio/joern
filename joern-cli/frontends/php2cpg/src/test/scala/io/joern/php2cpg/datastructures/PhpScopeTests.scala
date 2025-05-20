@@ -16,37 +16,25 @@ class PhpScopeTests extends AnyWordSpec with Matchers {
   "a function in the summary should resolve when imported" in {
     val scope = scopeFrom(PhpFunction("foo"))
     scope.imporT("foo")
-    scope.testResolve("foo") {
-      case PhpFunction(name) if name == "foo" => succeed
-      case symbol                             => fail(s"Unable to resolve correct symbol (given $symbol)")
-    }
+    scope.testResolve[PhpFunction]("foo")(_.name shouldBe "foo")
   }
 
   "a nested function in the summary should resolve when imported" in {
     val scope = scopeFrom(PhpNamespace("Foo"), PhpFunction("Foo\\foo"))
     scope.imporT("Foo\\foo")
-    scope.testResolve("foo") {
-      case PhpFunction(name) if name == "Foo\\foo" => succeed
-      case symbol                                  => fail(s"Unable to resolve correct symbol (given $symbol)")
-    }
+    scope.testResolve[PhpFunction]("foo")(_.name shouldBe "Foo\\foo")
   }
 
   "a nested function in the summary should resolve when imported via alias" in {
     val scope = scopeFrom(PhpNamespace("Foo"), PhpFunction("Foo\\foo"))
     scope.imporT("Foo\\foo" `as` "bar")
-    scope.testResolve("bar") {
-      case PhpFunction(name) if name == "Foo\\foo" => succeed
-      case symbol                                  => fail(s"Unable to resolve correct symbol (given $symbol)")
-    }
+    scope.testResolve[PhpFunction]("bar")(_.name shouldBe "Foo\\foo")
   }
 
   "a nested class in the summary should resolve when imported via alias" in {
     val scope = scopeFrom(PhpNamespace("Foo"), PhpNamespace("Foo\\Bar"), PhpClass("Foo\\Bar\\C1"))
     scope.imporT("Foo\\Bar\\C1" `as` "Class1")
-    scope.testResolve("Class1") {
-      case PhpClass(name) if name == "Foo\\Bar\\C1" => succeed
-      case symbol                                   => fail(s"Unable to resolve correct symbol (given $symbol)")
-    }
+    scope.testResolve[PhpClass]("Class1")(_.name shouldBe "Foo\\Bar\\C1")
   }
 
   "an external symbol that is not in scope" in {
@@ -58,28 +46,19 @@ class PhpScopeTests extends AnyWordSpec with Matchers {
   "when namespace and class share the same path, the class should be selected over the namespace" in {
     val scope = scopeFrom(PhpNamespace("Foo"), PhpClass("Foo"))
     scope.imporT("Foo")
-    scope.testResolve("Foo") {
-      case PhpClass(name) if name == "Foo" => succeed
-      case symbol                          => fail(s"Unable to resolve correct symbol (given $symbol)")
-    }
+    scope.testResolve[PhpClass]("Foo")(_.name shouldBe "Foo")
   }
 
   "when namespace, class, and function share the same path, the class should be selected over the namespace" in {
     val scope = scopeFrom(PhpNamespace("Foo"), PhpClass("Foo"), PhpFunction("Foo"))
     scope.imporT("Foo")
-    scope.testResolve("Foo") {
-      case PhpClass(name) if name == "Foo" => succeed
-      case symbol                          => fail(s"Unable to resolve correct symbol (given $symbol)")
-    }
+    scope.testResolve[PhpClass]("Foo")(_.name shouldBe "Foo")
   }
 
   "when namespace and function share the same path, the function should be selected over the namespace" in {
     val scope = scopeFrom(PhpNamespace("Foo"), PhpFunction("Foo"))
     scope.imporT("Foo")
-    scope.testResolve("Foo") {
-      case PhpFunction(name) if name == "Foo" => succeed
-      case symbol                             => fail(s"Unable to resolve correct symbol (given $symbol)")
-    }
+    scope.testResolve[PhpFunction]("Foo")(_.name shouldBe "Foo")
   }
 
 }
@@ -91,13 +70,13 @@ object PhpScopeTests {
     Scope(summary)(() => "nan")
   }
 
-  implicit class StringImportExt(path: String) {
+  extension (path: String) {
 
     def as(alias: String): NewImport = NewImport().importedEntity(path).importedAs(alias)
 
   }
 
-  implicit class ScopeExt(scope: Scope) {
+  extension (scope: Scope) {
 
     def imporT(path: String): Scope = {
       scope.useImport(NewImport().importedEntity(path) :: Nil)
@@ -109,9 +88,13 @@ object PhpScopeTests {
       scope
     }
 
-    def testResolve(symbol: String)(expectation: SymbolSummary => Assertion): Assertion = {
+    def testResolve[T <: SymbolSummary](symbol: String)(expectation: T => Assertion): Assertion = {
       scope.resolveImportedSymbol(symbol) match {
-        case Some(symbol) => expectation(symbol)
+        case Some(symbol) => try {
+          expectation(symbol.asInstanceOf[T])
+        } catch {
+          case _: Exception => fail(s"Unable to resolve correct symbol (given $symbol)")
+        }
         case None         => fail("Unable to resolve imported symbol")
       }
     }
