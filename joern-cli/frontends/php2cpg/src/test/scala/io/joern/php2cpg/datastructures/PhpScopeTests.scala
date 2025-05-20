@@ -89,18 +89,19 @@ object PhpScopeTests {
     }
 
     def testResolve[T <: SymbolSummary](symbol: String)(expectation: T => Assertion): Assertion = {
-      scope.resolveImportedSymbol(symbol) match {
-        case Some(symbol) => try {
-          expectation(symbol.asInstanceOf[T])
-        } catch {
-          case _: Exception => fail(s"Unable to resolve correct symbol (given $symbol)")
-        }
-        case None         => fail("Unable to resolve imported symbol")
+      scope.resolveIdentifier(symbol) match {
+        case Some(symbol) =>
+          try {
+            expectation(symbol.asInstanceOf[T])
+          } catch {
+            case _: Exception => fail(s"Unable to resolve correct symbol (given $symbol)")
+          }
+        case None => fail("Unable to resolve imported symbol")
       }
     }
 
     def testResolveFailure(symbol: String): Assertion = {
-      scope.resolveImportedSymbol(symbol) match {
+      scope.resolveIdentifier(symbol) match {
         case Some(symbol) => fail(s"Incorrectly resolved '$symbol'")
         case None         => succeed
       }

@@ -38,7 +38,7 @@ class SymbolSummaryPass(
   }
 
   override def finish(): Unit = {
-    val summaryMap = summary.asScala.toSeq.distinct.groupBy(_.name)
+    val summaryMap = summary.asScala.toSeq.distinct.groupBy(_.name).view.mapValues(xs => xs.sorted).toMap
     captureSummary(summaryMap)
   }
 

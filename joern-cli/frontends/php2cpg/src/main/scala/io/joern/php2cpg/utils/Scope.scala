@@ -174,21 +174,25 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
     imports.foreach { imporT =>
       imporT.importedEntity.foreach { importName =>
         summary.get(importName).foreach { hits =>
-          val name  = importName.split("\\\\").last
-          val alias = imporT.importedAs.getOrElse(name)
-          importedSymbols = importedSymbols + (alias -> hits)
+          imporT.importedAs match {
+            case Some(alias) => importedSymbols = importedSymbols + (alias -> hits)
+            case None =>
+              val name = importName.split("\\\\").last
+              importedSymbols = importedSymbols + (name -> hits)
+          }
         }
       }
     }
   }
 
   /** Attempts to resolve a simple symbol.
+    *
+    * Note: This will be extended to notify the caller if this identifier is instead a local variable.
     */
-  def resolveImportedSymbol(symbol: String): Option[SymbolSummary] = {
+  def resolveIdentifier(symbol: String): Option[SymbolSummary] = {
     importedSymbols.get(symbol) match {
-      case Some(x :: Nil) => Option(x)
-      case Some(xs)       => xs.sorted.headOption // incorporates import precedence
-      case None           => None
+      case Some(xs) => xs.headOption // this is already sorted by precedence, with head being the correct option
+      case None     => None
     }
   }
 
