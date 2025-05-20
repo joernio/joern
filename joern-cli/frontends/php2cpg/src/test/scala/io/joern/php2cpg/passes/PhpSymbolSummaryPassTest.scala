@@ -22,7 +22,7 @@ class PhpSymbolSummaryPassTest extends AnyWordSpec with Matchers {
       """<?php
         |function foo($a, string $b): int {}
         |""".stripMargin :: Nil,
-      { case Seq("foo" -> (PhpFunction("foo") :: Nil)) => succeed }
+      { case PhpFunction("foo") :: Nil => succeed }
     )
   }
 
@@ -35,7 +35,7 @@ class PhpSymbolSummaryPassTest extends AnyWordSpec with Matchers {
         |  }
         |}
         |""".stripMargin :: Nil,
-      { case Seq("Foo" -> (PhpClass("Foo") :: Nil)) =>
+      { case PhpClass("Foo") :: Nil =>
         succeed
       }
     )
@@ -48,11 +48,9 @@ class PhpSymbolSummaryPassTest extends AnyWordSpec with Matchers {
         |class Baz {}
         |""".stripMargin :: Nil,
       {
-        case Seq(
-              "Foo" -> (PhpNamespace("Foo") :: Nil),
-              "Foo\\Bar" -> (PhpNamespace("Foo\\Bar") :: Nil),
-              "Foo\\Bar\\Baz" -> (PhpClass("Foo\\Bar\\Baz") :: Nil)
-            ) =>
+        case PhpNamespace("Foo") ::
+            PhpNamespace("Foo\\Bar") ::
+            PhpClass("Foo\\Bar\\Baz") :: Nil =>
           succeed
       }
     )
@@ -69,12 +67,10 @@ class PhpSymbolSummaryPassTest extends AnyWordSpec with Matchers {
         |class Faz {}
         |""".stripMargin :: Nil,
       {
-        case Seq(
-              "Foo" -> (PhpNamespace("Foo") :: Nil),
-              "Foo\\Bar" -> (PhpNamespace("Foo\\Bar") :: Nil),
-              "Foo\\Bar\\Baz" -> (PhpClass("Foo\\Bar\\Baz") :: Nil),
-              "Foo\\Bar\\Faz" -> (PhpClass("Foo\\Bar\\Faz") :: Nil)
-            ) =>
+        case PhpNamespace("Foo") ::
+            PhpNamespace("Foo\\Bar") ::
+            PhpClass("Foo\\Bar\\Baz") ::
+            PhpClass("Foo\\Bar\\Faz") :: Nil =>
           succeed
       }
     )
@@ -91,12 +87,10 @@ class PhpSymbolSummaryPassTest extends AnyWordSpec with Matchers {
         |}
         |""".stripMargin :: Nil,
       {
-        case Seq(
-              "Foo" -> (PhpNamespace("Foo") :: Nil),
-              "Foo\\Bar" -> (PhpNamespace("Foo\\Bar") :: Nil),
-              "Foo\\Bar\\Baz" -> (PhpClass("Foo\\Bar\\Baz") :: Nil),
-              "Foo\\Faz" -> (PhpClass("Foo\\Faz") :: Nil)
-            ) =>
+        case PhpNamespace("Foo") ::
+            PhpNamespace("Foo\\Bar") ::
+            PhpClass("Foo\\Bar\\Baz") ::
+            PhpClass("Foo\\Faz") :: Nil =>
           succeed
       }
     )
@@ -112,11 +106,9 @@ class PhpSymbolSummaryPassTest extends AnyWordSpec with Matchers {
         |}
         |""".stripMargin :: Nil,
       {
-        case Seq(
-              "Foo" -> (PhpNamespace("Foo") :: Nil),
-              "Foo\\Bar" -> (PhpNamespace("Foo\\Bar") :: Nil),
-              "Foo\\Bar\\baz" -> (PhpFunction("Foo\\Bar\\baz") :: Nil)
-            ) =>
+        case PhpNamespace("Foo") ::
+            PhpNamespace("Foo\\Bar") ::
+            PhpFunction("Foo\\Bar\\baz") :: Nil =>
           succeed
       }
     )
@@ -134,12 +126,10 @@ class PhpSymbolSummaryPassTest extends AnyWordSpec with Matchers {
         |}
         |""".stripMargin :: Nil,
       {
-        case Seq(
-              "Foo" -> (PhpNamespace("Foo") :: Nil),
-              "Foo\\Bar" -> (PhpNamespace("Foo\\Bar") :: Nil),
-              "Foo\\Bar\\Baz" -> (PhpClass("Foo\\Bar\\Baz") :: Nil),
-              "Foo\\Faz" -> (PhpClass("Foo\\Faz") :: Nil)
-            ) =>
+        case PhpNamespace("Foo") ::
+            PhpNamespace("Foo\\Bar") ::
+            PhpClass("Foo\\Bar\\Baz") ::
+            PhpClass("Foo\\Faz") :: Nil =>
           succeed
       }
     )
@@ -153,7 +143,7 @@ object PhpSymbolSummaryPassTest {
 
   case class ConfigAndParser(config: Config, parser: PhpParser)
 
-  def assertAgainstTempFile(code: Seq[String], assertion: Seq[(String, Seq[SymbolSummary])] => Assertion): Unit = {
+  def assertAgainstTempFile(code: Seq[String], assertion: Seq[SymbolSummary] => Assertion): Unit = {
     FileUtil.usingTemporaryDirectory("php-test") { tmpDirPath =>
       code.zipWithIndex.foreach { (content, idx) =>
         val tmpFilePath = tmpDirPath / s"Test$idx.php"
@@ -165,7 +155,7 @@ object PhpSymbolSummaryPassTest {
         case Some(parser) =>
           var buffer = Option.empty[Map[String, Seq[SymbolSummary]]]
           new SymbolSummaryPass(config, Cpg.empty, parser, summary => buffer = Option(summary)).createAndApply()
-          buffer.map(_.toSeq.sortBy(_._1)).foreach { x =>
+          buffer.map(_.valuesIterator.flatten.toSeq.sortBy(_.name)).foreach { x =>
             try {
               assertion(x)
             } catch {
