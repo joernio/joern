@@ -16,7 +16,7 @@ import scala.util.Properties.isWin
 trait ExternalCommandImpl {
   private val logger = LoggerFactory.getLogger(getClass)
 
-  case class ExternalCommandResult(exitCode: Int, stdOut: Seq[String], stdErr: Seq[String]) {
+  case class ExternalCommandResult(exitCode: Int, stdOut: Seq[String], stdErr: Seq[String], commandInfo: String) {
     def successOption: Option[Seq[String]] = exitCode match {
       case 0 => Some(stdOut)
       case _ => None
@@ -25,7 +25,9 @@ trait ExternalCommandImpl {
       case 0 => Success(stdOut)
       case nonZeroExitCode =>
         val allOutput = stdOut ++ stdErr
-        val message = s"""Process exited with code $nonZeroExitCode. Output:
+        val message = s"""Process exited with code $nonZeroExitCode. 
+                         |Input: $commandInfo
+                         |Output:
                          |${allOutput.mkString(System.lineSeparator())}
                          |""".stripMargin
         Failure(new RuntimeException(message))
@@ -82,13 +84,13 @@ trait ExternalCommandImpl {
       logger.debug(s"command finished successfully")
       val stdOut = IOUtils.readLinesInFile(stdOutFile.toPath)
       val stdErr = stdErrFile.map(_.toPath).map(IOUtils.readLinesInFile).getOrElse(Seq.empty)
-      ExternalCommandResult(process.exitValue(), stdOut, stdErr)
+      ExternalCommandResult(process.exitValue(), stdOut, stdErr, commandInfo)
     } catch {
       case NonFatal(exception) =>
         val stdOut = IOUtils.readLinesInFile(stdOutFile.toPath)
         val stdErr = stdErrFile.map(f => IOUtils.readLinesInFile(f.toPath)).getOrElse(Seq.empty) :+ exception.getMessage
         logger.warn(s"command did not finish successfully. Input was: $commandInfo")
-        ExternalCommandResult(1, stdOut, stdErr)
+        ExternalCommandResult(1, stdOut, stdErr, commandInfo)
     } finally {
       stdOutFile.delete()
       stdErrFile.foreach(_.delete())

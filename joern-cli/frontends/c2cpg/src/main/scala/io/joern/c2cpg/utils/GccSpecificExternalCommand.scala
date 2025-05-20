@@ -12,13 +12,13 @@ object GccSpecificExternalCommand {
 
   def run(command: Seq[String], cwd: String, extraEnv: Map[String, String] = Map.empty): Try[Seq[String]] = {
     ExternalCommand.run(command, Option(cwd), mergeStdErrInStdOut = true, extraEnv) match {
-      case ExternalCommandResult(0, stdOut, _) =>
+      case ExternalCommandResult(0, stdOut, _, _) =>
         Success(stdOut)
-      case ExternalCommandResult(1, stdOut, _) if IsWin && IncludeAutoDiscovery.gccAvailable() =>
+      case ExternalCommandResult(1, stdOut, _, _) if IsWin && IncludeAutoDiscovery.gccAvailable() =>
         // the command to query the system header file locations within a Windows
         // environment always returns Success(1) for whatever reason...
         Success(stdOut)
-      case ExternalCommandResult(_, stdOut, _) =>
+      case ExternalCommandResult(_, stdOut, _, _) =>
         Failure(new RuntimeException(stdOut.mkString(System.lineSeparator())))
     }
   }
