@@ -11,7 +11,7 @@ import io.shiftleft.semanticcpg.utils.FileUtil.*
 
 import java.nio.file.Paths
 
-class AstCreationPass(config: Config, cpg: Cpg, parser: PhpParser, summary: Seq[SymbolSummary])
+class AstCreationPass(config: Config, cpg: Cpg, parser: PhpParser, summary: Map[String, Seq[SymbolSummary]])
     extends ForkJoinParallelCpgPass[Array[String]](cpg)
     with AstParsingPass(config, parser) {
 
@@ -22,7 +22,7 @@ class AstCreationPass(config: Config, cpg: Cpg, parser: PhpParser, summary: Seq[
       Paths.get(config.inputPath).relativize(Paths.get(fileName)).toString
     }
     builder.absorb(
-      new AstCreator(relativeFilename, fileName, result, config.disableFileContent)(config.schemaValidation)
+      new AstCreator(relativeFilename, fileName, result, config.disableFileContent, summary)(config.schemaValidation)
         .createAst()
     )
   }
