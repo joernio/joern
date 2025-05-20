@@ -20,7 +20,7 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
   private val anonymousMethods                                    = mutable.ArrayBuffer[Ast]()
   private var tmpVarCounter                                       = 0
   private var tmpClassCounter                                     = 0
-  private var importedSymbols                                     = Map.empty[String, Seq[SymbolSummary]]
+  private var importedSymbols                                     = Map.empty[String, SymbolSummary]
 
   def pushNewScope(scopeNode: NewNode): Unit = {
     scopeNode match {
@@ -173,14 +173,17 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
   def useImport(imports: Seq[NewImport]): Unit = {
     imports.foreach { imporT =>
       imporT.importedEntity.foreach { importName =>
-        summary.get(importName).foreach { hits =>
-          imporT.importedAs match {
-            case Some(alias) => importedSymbols = importedSymbols + (alias -> hits)
-            case None =>
-              val name = importName.split("\\\\").last
-              importedSymbols = importedSymbols + (name -> hits)
+        summary
+          .get(importName)
+          .flatMap(_.sorted.headOption) // use ordering to set precedence
+          .foreach { hit =>
+            imporT.importedAs match {
+              case Some(alias) => importedSymbols = importedSymbols + (alias -> hit)
+              case None =>
+                val name = importName.split("\\\\").last
+                importedSymbols = importedSymbols + (name -> hit)
+            }
           }
-        }
       }
     }
   }
@@ -190,10 +193,7 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
     * Note: This will be extended to notify the caller if this identifier is instead a local variable.
     */
   def resolveIdentifier(symbol: String): Option[SymbolSummary] = {
-    importedSymbols.get(symbol) match {
-      case Some(xs) => xs.headOption // this is already sorted by precedence, with head being the correct option
-      case None     => None
-    }
+    importedSymbols.get(symbol)
   }
 
 }
