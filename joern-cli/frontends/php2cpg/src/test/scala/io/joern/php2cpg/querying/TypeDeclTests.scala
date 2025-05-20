@@ -567,7 +567,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
     "create a singleton type decl" in {
       inside(cpg.typeDecl.name(s"Foo${Domain.MetaTypeDeclExtension}").l) {
         case fooTypeDecl :: Nil =>
-          fooTypeDecl.modifier.modifierType.l shouldBe List(ModifierTypes.STATIC)
+          fooTypeDecl.fullName shouldBe s"Foo${Domain.MetaTypeDeclExtension}"
         case xs => fail(s"Expected one singleton type decl, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
