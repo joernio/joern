@@ -97,7 +97,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val fullName = call.target match {
       // Static method call with a known class name
       case Some(nameExpr: PhpNameExpr) if call.isStatic =>
-        if (nameExpr.name == "self") composeMethodFullName(name, call.isStatic, appendClass = true)
+        if (nameExpr.name == NameConstants.Self) composeMethodFullName(name, call.isStatic, appendClass = true)
         else s"${nameExpr.name}$MetaTypeDeclExtension$StaticMethodDelimiter$name"
       case Some(expr) =>
         s"$UnresolvedNamespace\\$codePrefix"
@@ -206,12 +206,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       callAst(fieldAccessNode, List(identifier, fieldIdentifier).map(Ast(_))).withRefEdges(identifier, thisParam.toList)
     } else {
       val selfIdentifier = {
-        val name = "self"
+        val name = NameConstants.Self
         val typ  = scope.getEnclosingTypeDeclTypeName
         identifierNode(originNode, name, name, typ.getOrElse(Defines.Any), typ.toList)
       }
       val fieldIdentifier = fieldIdentifierNode(originNode, memberNode.name, memberNode.name)
-      val code            = s"self::${memberNode.code.replaceAll("(static|case|const) ", "")}"
+      val code            = s"${NameConstants.Self}::${memberNode.code.replaceAll("(static|case|const) ", "")}"
       val fieldAccessNode = operatorCallNode(originNode, code, Operators.fieldAccess, None)
       callAst(fieldAccessNode, List(selfIdentifier, fieldIdentifier).map(Ast(_)))
     }
