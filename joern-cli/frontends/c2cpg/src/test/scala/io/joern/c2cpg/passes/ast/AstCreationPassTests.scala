@@ -1440,14 +1440,19 @@ class AstCreationPassTests extends AstC2CpgSuite {
         |""".stripMargin,
         "file.cpp"
       )
-      val List(newCall)                          = cpg.call.methodFullNameExact(Defines.OperatorNew).l
-      val List(allocAssignment, constructorCall) = newCall.argument.isBlock.astChildren.isCall.l
+      val List(newCall)          = cpg.call.methodFullNameExact(Defines.OperatorNew).l
+      val List(constructorBlock) = newCall.argument.isBlock.l
+      constructorBlock.argumentIndex shouldBe 1
+      val List(allocAssignment, constructorCall) = constructorBlock.astChildren.isCall.l
       allocAssignment.code shouldBe "<tmp>0 = <operator>.alloc"
       constructorCall.code shouldBe """new (buf) Foo("hi")"""
-      constructorCall.methodFullName shouldBe "Foo.Foo:void(char[3],char[80])"
-      constructorCall.signature shouldBe "void(char[3],char[80])"
+      constructorCall.methodFullName shouldBe "Foo.Foo:void(char[3])"
+      constructorCall.signature shouldBe "void(char[3])"
       constructorCall.typeFullName shouldBe Defines.Void
-      constructorCall.argument.code.l shouldBe List("&<tmp>0", """"hi"""", "buf")
+      constructorCall.argument.code.l shouldBe List("&<tmp>0", """"hi"""")
+      val List(buf) = newCall.argument.isIdentifier.l
+      buf.argumentIndex shouldBe 2
+      buf.typeFullName shouldBe "char[80]"
     }
 
     "be correct for externally defined constructor" in {

@@ -521,15 +521,10 @@ trait AstForExpressionsCreator { this: AstCreator =>
         init.getArguments.collect { case e: IASTExpression => e }.map(t => cleanType(safeGetType(t.getExpressionType)))
       case _ => Array.empty[String]
     }
-    val placementsArgTypes = newExpression.getPlacementArguments match {
-      case args if args != null =>
-        args.collect { case e: IASTExpression => e }.map(t => cleanType(safeGetType(t.getExpressionType)))
-      case _ => Array.empty[String]
-    }
-    StringUtils.normalizeSpace((initParamTypes ++ placementsArgTypes).mkString(","))
+    StringUtils.normalizeSpace(initParamTypes.mkString(","))
   }
 
-  protected def astForNewExpression(newExpression: ICPPASTNewExpression): Ast = {
+  private def astForNewExpression(newExpression: ICPPASTNewExpression): Ast = {
     val name = Defines.OperatorNew
     val newCallNode =
       callNode(
@@ -562,8 +557,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
             arr.getArrayModifiers.toIndexedSeq.map(astForNode)
           case _ => Seq.empty
         }
-        val args = astsForConstructorInitializer(newExpression.getInitializer) ++ arrayModArgs ++
-          astsForInitializerClauses(newExpression.getPlacementArguments)
+        val args = astsForConstructorInitializer(newExpression.getInitializer) ++ arrayModArgs
         callAst(allocCallNode, idAst +: args)
       } else {
         val blockNode_ = blockNode(newExpression, code(newExpression), registerType(Defines.Any))
@@ -607,8 +601,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
           Some(signature),
           Some(registerType(Defines.Void))
         )
-        val args = astsForConstructorInitializer(newExpression.getInitializer) ++
-          astsForInitializerClauses(newExpression.getPlacementArguments)
+        val args               = astsForConstructorInitializer(newExpression.getInitializer)
         val constructorCallAst = createCallAst(constructorCallNode, args, base = Some(addrCallAst))
 
         val retNode = identifierNode(newExpression, tmpNodeName, tmpNodeName, typeFullName)
@@ -618,7 +611,8 @@ trait AstForExpressionsCreator { this: AstCreator =>
         scope.popScope()
         Ast(blockNode_).withChildren(Seq(assignmentAst, constructorCallAst, retAst))
       }
-    callAst(newCallNode, List(newCallArgAst))
+    val placementArgs = astsForInitializerClauses(newExpression.getPlacementArguments)
+    callAst(newCallNode, newCallArgAst +: placementArgs)
   }
 
   private def astForDeleteExpression(delExpression: ICPPASTDeleteExpression): Ast = {
@@ -647,7 +641,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     callAst(cpgCastExpression, List(typeRefAst, expr))
   }
 
-  protected def astForConstructorExpression(constructorExpression: ICPPASTSimpleTypeConstructorExpression): Ast = {
+  private def astForConstructorExpression(constructorExpression: ICPPASTSimpleTypeConstructorExpression): Ast = {
     constructorExpression.getInitializer match {
       case l: ICPPASTInitializerList if l.getClauses.forall(_.isInstanceOf[ICPPASTDesignatedInitializer]) =>
         val name = stripTemplateTags(constructorExpression.getDeclSpecifier.toString)
