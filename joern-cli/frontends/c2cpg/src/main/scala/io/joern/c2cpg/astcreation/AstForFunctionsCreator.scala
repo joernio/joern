@@ -291,7 +291,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
         val typeFullName        = fullName(init.getMemberInitializerId)
         val signature           = s"${Defines.Void}(${initializerSignature(c)})"
         val fullNameWithSig     = s"$typeFullName.$constructorCallName:$signature"
-        val constructorCallCode           = code(init)
+        val constructorCallCode = code(init)
         val args                = astsForConstructorInitializer(c)
         constructorInvocationBlockAst(init, typeFullName, fullNameWithSig, signature, constructorCallCode, args)
       case _ =>
