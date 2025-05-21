@@ -24,6 +24,11 @@ class CallMethods(val node: Call) extends AnyVal with NodeExtension with HasLoca
       case expr: Expression if expr.argumentIndex == index => expr
     }
 
+  def arguments(pattern: String): Iterator[Expression] =
+    argument.argumentName(pattern)
+  def argumentsExact(name: String): Iterator[Expression] =
+    argument.argumentNameExact(name)
+
   // TODO define as named step in the schema
   def argument: Iterator[Expression] =
     node._argumentOut.collectAll[Expression]
@@ -32,9 +37,7 @@ class CallMethods(val node: Call) extends AnyVal with NodeExtension with HasLoca
     arguments(index).next
 
   def argumentOption(index: Int): Option[Expression] =
-    node._argumentOut.collectFirst {
-      case expr: Expression if expr.argumentIndex == index => expr
-    }
+    arguments(index).nextOption
 
   def macroExpansion: Iterator[Expression] = {
     if (node.dispatchType != DispatchTypes.INLINED) return Iterator.empty
