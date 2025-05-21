@@ -1,4 +1,4 @@
-package io.joern.x2cpg.utils
+package io.shiftleft.semanticcpg.utils
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

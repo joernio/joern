@@ -1,12 +1,11 @@
 package io.joern.swiftsrc2cpg.utils
 
+import io.shiftleft.semanticcpg.utils.ExternalCommand.ExternalCommandResult
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
 object ExternalCommand {
-
-  import io.shiftleft.semanticcpg.utils.ExternalCommand.ExternalCommandResult
 
   def run(command: Seq[String], cwd: String, extraEnv: Map[String, String] = Map.empty): Try[Seq[String]] = {
     io.shiftleft.semanticcpg.utils.ExternalCommand

@@ -1,12 +1,10 @@
 package io.joern.c2cpg.utils
 
 import io.shiftleft.semanticcpg.utils.ExternalCommand
-
+import io.shiftleft.semanticcpg.utils.ExternalCommand.ExternalCommandResult
 import scala.util.{Failure, Success, Try}
 
 object GccSpecificExternalCommand {
-
-  import ExternalCommand.ExternalCommandResult
 
   private val IsWin = scala.util.Properties.isWin
 
