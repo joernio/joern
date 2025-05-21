@@ -66,7 +66,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
         val parameterNodeInfos = thisForCPPFunctions(funcDecl) ++ withIndex(parameters(funcDecl)) { (p, i) =>
           parameterNodeInfo(p, i)
         }
-        setVariadicParameterInfo(parameterNodeInfos, funcDecl)
+        val variadicParams = variadicParamsForCPPFunctionFromInfo(funcDecl, parameterNodeInfos)
 
         val (astParentType, astParentFullName) = methodDeclarationParentInfo()
         val methodInfo = FunctionDeclNodePass.MethodInfo(
@@ -82,7 +82,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
           columnNumberEnd = columnEnd(funcDecl),
           signature = signature,
           offset(funcDecl),
-          parameter = parameterNodeInfos,
+          parameter = parameterNodeInfos ++ variadicParams,
           modifier = modifierFor(funcDecl).map(_.modifierType)
         )
         registerMethodDeclaration(fullName, methodInfo)
@@ -157,11 +157,21 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val parameterNodes = implicitThisParam ++ withIndex(parameters(funcDef)) { (p, i) =>
       parameterNode(p, i)
     }
-    setVariadic(parameterNodes, funcDef)
+    val variadicParams = variadicParamsForCPPFunctionFromParam(funcDef, parameterNodes).map { param =>
+      parameterInNode(
+        funcDef,
+        param.name,
+        param.code,
+        param.index,
+        param.isVariadic,
+        param.evaluationStrategy,
+        param.typeFullName
+      )
+    }
 
     val astForMethod = methodAst(
       methodNode_,
-      parameterNodes.map(Ast(_)),
+      (parameterNodes ++ variadicParams).map(Ast(_)),
       astForMethodBody(Option(funcDef.getBody), methodBlockNode),
       methodReturnNode(funcDef, registerType(returnType)),
       modifiers = modifierFor(funcDef)
@@ -231,27 +241,6 @@ trait AstForFunctionsCreator { this: AstCreator =>
     Ast.storeInDiffGraph(functionBindAst, diffGraph)
   }
 
-  private def setVariadic(parameterNodes: Seq[NewMethodParameterIn], func: IASTNode): Unit = {
-    parameterNodes.lastOption.foreach {
-      case p: NewMethodParameterIn if isVariadic(func) =>
-        p.isVariadic = true
-        p.code = s"${p.code}..."
-      case _ =>
-    }
-  }
-
-  private def setVariadicParameterInfo(
-    parameterNodeInfos: Seq[FunctionDeclNodePass.ParameterInfo],
-    func: IASTNode
-  ): Unit = {
-    parameterNodeInfos.lastOption.foreach {
-      case p: FunctionDeclNodePass.ParameterInfo if isVariadic(func) =>
-        p.isVariadic = true
-        p.code = s"${p.code}..."
-      case _ =>
-    }
-  }
-
   private def modifierFromString(node: IASTNode, image: String): List[NewModifier] = {
     image match {
       case "static" => List(modifierNode(node, ModifierTypes.STATIC))
@@ -269,6 +258,44 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
   private def modifierFor(funcDecl: IASTFunctionDeclarator): List[NewModifier] = {
     Try(modifierFromString(funcDecl, funcDecl.getParent.getSyntax.getImage)).getOrElse(Nil)
+  }
+
+  private def parameterInfoForVariadicParam(
+    func: IASTNode,
+    hasVariadicParamAlready: Boolean,
+    index: Int
+  ): Seq[FunctionDeclNodePass.ParameterInfo] = {
+    if (!hasVariadicParamAlready && isVariadic(func)) {
+      val paramName = scopeLocalUniqueName("param")
+      Seq(
+        new FunctionDeclNodePass.ParameterInfo(
+          paramName,
+          s"$paramName...",
+          index,
+          true,
+          EvaluationStrategies.BY_REFERENCE,
+          line(func),
+          column(func),
+          registerType(Defines.Any)
+        )
+      )
+    } else Seq.empty
+  }
+
+  private def variadicParamsForCPPFunctionFromInfo(
+    func: IASTNode,
+    otherParams: Seq[FunctionDeclNodePass.ParameterInfo]
+  ): Seq[FunctionDeclNodePass.ParameterInfo] = {
+    val hasVariadicParamAlready = otherParams.exists(_.isVariadic)
+    parameterInfoForVariadicParam(func, hasVariadicParamAlready, otherParams.size + 1)
+  }
+
+  private def variadicParamsForCPPFunctionFromParam(
+    func: IASTNode,
+    otherParams: Seq[NewMethodParameterIn]
+  ): Seq[FunctionDeclNodePass.ParameterInfo] = {
+    val hasVariadicParamAlready = otherParams.exists(_.isVariadic)
+    parameterInfoForVariadicParam(func, hasVariadicParamAlready, otherParams.size + 1)
   }
 
   private def thisForCPPFunctions(func: IASTNode): Seq[FunctionDeclNodePass.ParameterInfo] = {
@@ -303,17 +330,28 @@ trait AstForFunctionsCreator { this: AstCreator =>
     }
   }
 
+  protected def paramIsVariadic(parameter: IASTNode): Boolean = {
+    parameter match {
+      case p: CPPASTParameterDeclaration =>
+        val paramName = shortName(p.getDeclarator)
+        p.getDeclarator.declaresParameterPack()
+        || Try(parameter.getParent.getRawSignature.contains(s"$paramName...")).toOption.contains(true)
+      case _ => false
+    }
+  }
+
   private def parameterNodeInfo(parameter: IASTNode, paramIndex: Int): FunctionDeclNodePass.ParameterInfo = {
     val (name, codeString, tpe, variadic) = parameter match {
       case p: CASTParameterDeclaration =>
         (shortName(p.getDeclarator), code(p), typeForDeclSpecifier(p.getDeclSpecifier), false)
       case p: CPPASTParameterDeclaration =>
-        (
-          shortName(p.getDeclarator),
-          code(p),
-          typeForDeclSpecifier(p.getDeclSpecifier),
-          p.getDeclarator.declaresParameterPack()
-        )
+        val paramName  = shortName(p.getDeclarator)
+        val tpe        = typeForDeclSpecifier(p.getDeclSpecifier)
+        val isVariadic = p.getDeclarator.declaresParameterPack() || paramIsVariadic(p)
+        val rawCode    = code(p)
+        val codeString = if (isVariadic && !rawCode.contains("...")) { s"$rawCode..." }
+        else { rawCode }
+        (paramName, codeString, tpe, isVariadic)
       case s: IASTSimpleDeclaration =>
         (
           s.getDeclarators.headOption
@@ -413,8 +451,20 @@ trait AstForFunctionsCreator { this: AstCreator =>
     scope.pushNewMethodScope(fullName, name, lambdaMethodBlockNode, Some(methodRef))
 
     val parameterNodes = withIndex(parameters(lambdaExpression.getDeclarator)) { (p, i) => parameterNode(p, i) }
-    setVariadic(parameterNodes, lambdaExpression)
-    val parameterAsts = parameterNodes.map(Ast(_))
+    val variadicParams = variadicParamsForCPPFunctionFromParam(lambdaExpression.getDeclarator, parameterNodes).map {
+      param =>
+        parameterInNode(
+          lambdaExpression.getDeclarator,
+          param.name,
+          param.code,
+          param.index,
+          param.isVariadic,
+          param.evaluationStrategy,
+          param.typeFullName
+        )
+    }
+
+    val parameterAsts = (parameterNodes ++ variadicParams).map(Ast(_))
     val lambdaBodyAst = astForMethodBody(Option(lambdaExpression.getBody), lambdaMethodBlockNode)
     setEvaluationStrategyForCaptures(lambdaExpression, lambdaBodyAst)
 

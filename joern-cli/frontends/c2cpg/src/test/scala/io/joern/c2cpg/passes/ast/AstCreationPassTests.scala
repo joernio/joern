@@ -30,6 +30,24 @@ class AstCreationPassTests extends AstC2CpgSuite {
       }
     }
 
+    "be correct for method signature with variadic parameter (ellipsis)" in {
+      val cpg       = code("int foo(const char *a, ...){ return 0; }", "foo.cpp")
+      val List(foo) = cpg.method("foo").l
+      foo.fullName shouldBe "foo:int(char*,ANY...)"
+      foo.signature shouldBe "int(char*,ANY...)"
+      val List(a, ellipsis) = foo.parameter.l
+      a.name shouldBe "a"
+      a.code shouldBe "const char *a"
+      a.typeFullName shouldBe "char*"
+      a.index shouldBe 1
+      a.isVariadic shouldBe false
+      ellipsis.name shouldBe "<param>0"
+      ellipsis.code shouldBe "<param>0..."
+      ellipsis.typeFullName shouldBe Defines.Any
+      ellipsis.index shouldBe 2
+      ellipsis.isVariadic shouldBe true
+    }
+
     "be correct for full names and signatures for method problem bindings" in {
       val cpg = code(
         """
@@ -53,14 +71,9 @@ class AstCreationPassTests extends AstC2CpgSuite {
     }
 
     "be correct for packed args" in {
-      val cpg = code(
-        """
-       |void foo(int x, int*... args) {};
-       |""".stripMargin,
-        "test.cpp"
-      )
+      val cpg = code("void foo(int x, int*... args) {};", "test.cpp")
       inside(cpg.method("foo").l) { case List(m) =>
-        m.signature shouldBe "void(int,int*)"
+        m.signature shouldBe "void(int,int*...)"
         inside(m.parameter.l) { case List(x, args) =>
           x.name shouldBe "x"
           x.code shouldBe "int x"
@@ -77,13 +90,9 @@ class AstCreationPassTests extends AstC2CpgSuite {
     }
 
     "be correct for varargs" in {
-      val cpg = code(
-        """
-       |void foo(int x, int args...) {};
-       |""".stripMargin,
-        "test.cpp"
-      )
+      val cpg = code("void foo(int x, int args...) {};", "test.cpp")
       inside(cpg.method("foo").l) { case List(m) =>
+        m.fullName shouldBe "foo:void(int,int...)"
         inside(m.parameter.l) { case List(x, args) =>
           x.name shouldBe "x"
           x.code shouldBe "int x"

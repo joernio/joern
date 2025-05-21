@@ -454,8 +454,8 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |    return [&...args = std::forward<Args>(args)] {};
           |}
           |""".stripMargin)
-      cpg.method.nameNot("<global>").fullName.sorted.l shouldBe List("f1:ANY(Args&&)", "f2:ANY(Args&&)")
-      cpg.method.nameNot("<global>").signature.sorted.l shouldBe List("ANY(Args&&)", "ANY(Args&&)")
+      cpg.method.nameNot("<global>").fullName.sorted.l shouldBe List("f1:ANY(Args&&...)", "f2:ANY(Args&&...)")
+      cpg.method.nameNot("<global>").signature.sorted.l shouldBe List("ANY(Args&&...)", "ANY(Args&&...)")
       pendingUntilFixed {
         // the actual return value (i.e., the lambda defined at the return) can not be parsed by CDT
         cpg.method.nameExact("f1").ast.isReturn.astChildren.isMethodRef.code.l shouldBe List(
