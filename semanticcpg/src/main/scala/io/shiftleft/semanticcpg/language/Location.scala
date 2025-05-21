@@ -18,8 +18,20 @@ trait LocationInfo {
   def filename: String
 }
 
-// Trait defining an implicit for generating location 
-// info for abstract nodes
+// Previously, the non-stored Location node generated
+// from the CPG schema was named NewLocation. The
+// addition of lazily computed location info in this
+// file brought the deletion of these CPG nodes. This
+// is not directly used in joern, but intended to not
+// break usage in users of the API. Users directly
+// importing NewLocation from the CPG package rather
+// will still have a break.
+@deprecated("NewLocation is deprecated, prefer LocationInfo")
+type NewLocation = LocationInfo
+
+trait HasLocation extends Any {
+  def location: LocationInfo
+}
 
 // This design: 1) lets implementors put all logic for 
 // determining how to fill out `LocationInfo` for each 
@@ -27,20 +39,20 @@ trait LocationInfo {
 // of joern, which may also provide different node types 
 // or location information, to provide alternate or 
 // extended implementations of LocCreator.
-trait LocCreator {
+trait LocationCreator {
   implicit def apply(node: AbstractNode): LocationInfo
 }
 
-implicit object Loc extends LocCreator {
+implicit object Location extends LocationCreator {
   implicit def apply(node: AbstractNode): LocationInfo = {
     node match {
-      case storedNode: StoredNode => LazyLoc(storedNode)
-      case _                      => EmptyLoc
+      case storedNode: StoredNode => LazyLocation(storedNode)
+      case _                      => EmptyLocation
     }
   }
 }
 
-object EmptyLoc extends LocationInfo {
+object EmptyLocation extends LocationInfo {
   override def node: Option[AbstractNode] = None
   override def symbol: String             = "<empty>"
   override def nodeLabel: String          = "<empty>"
@@ -53,7 +65,7 @@ object EmptyLoc extends LocationInfo {
   override def filename: String           = "<empty>"
 }
 
-class LazyLoc(storedNode: StoredNode) extends LocationInfo {
+class LazyLocation(storedNode: StoredNode) extends LocationInfo {
   def node: Option[AbstractNode] = Some(storedNode)
 
   def symbol: String = {
@@ -75,7 +87,7 @@ class LazyLoc(storedNode: StoredNode) extends LocationInfo {
 
   def lineNumber: Option[Int] = storedNode match {
     case astNode: AstNode => astNode.lineNumber
-    case cfgNode: CfgNode => cfgNode.lineNumber
+    case _ => None
   }
 
   def methodFullName: String = method.fullName
@@ -92,7 +104,7 @@ class LazyLoc(storedNode: StoredNode) extends LocationInfo {
 
   protected val defaultString = "<empty>";
 
-  private lazy val typeOption = findAncestor[TypeDecl](method)
+  private lazy val typeOption = findParentTypeDecl(method)
 
   private lazy val namespaceOption = for {
     tpe            <- typeOption
@@ -106,10 +118,10 @@ class LazyLoc(storedNode: StoredNode) extends LocationInfo {
   }
 
   @tailrec
-  private def findAncestor[TargetNodeType <: StoredNode](node: StoredNode): Option[TargetNodeType] = {
+  private def findParentTypeDecl(node: StoredNode): Option[TypeDecl] = {
     node._astIn.iterator.nextOption() match {
-      case Some(head) if head.isInstanceOf[TargetNodeType] => Some(head.asInstanceOf[TargetNodeType])
-      case Some(head)                                      => findAncestor[TargetNodeType](head)
+      case Some(head) if head.isInstanceOf[TypeDecl] => Some(head.asInstanceOf[TypeDecl])
+      case Some(head)                                      => findParentTypeDecl(head)
       case None                                            => None
     }
   }

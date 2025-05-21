@@ -44,22 +44,9 @@ class NodeSteps[NodeType <: StoredNode](val traversal: Iterator[NodeType]) exten
       |on the user's side.
       |"""
   )
-  @deprecated("Prefer the .loc node step which lazily computes location information")
-  def location(implicit finder: NodeExtensionFinder): Iterator[NewLocation] =
+  def location(implicit finder: NodeExtensionFinder): Iterator[LocationInfo] =
     traversal.map(_.location)
-
-  @Doc(
-    info = "Location, including filename and line number",
-    longInfo = """
-      |Provides equivalent location information with `.location`
-      |but lazily computes and stores less data. This can be
-      |more efficient if you plan to not use all location
-      |information computed by `.location`.
-      |"""
-  )
-  def loc(implicit locCreator: LocCreator): Iterator[LocationInfo] =
-    traversal.map(storedNode => locCreator(storedNode.asInstanceOf[AbstractNode]))
-
+  
   @Doc(
     info = "Display code (with syntax highlighting)",
     longInfo = """
