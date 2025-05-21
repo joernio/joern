@@ -22,6 +22,7 @@ object ExternalCommand {
     def verifySuccess(): Unit =
       toTry.get
 
+    /** Lines of standard output, if successful. */
     def successOption: Option[Seq[String]] = exitCode match {
       case 0 => Some(stdOut)
       case _ => None
