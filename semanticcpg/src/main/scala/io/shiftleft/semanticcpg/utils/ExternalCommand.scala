@@ -19,7 +19,7 @@ object ExternalCommand {
   case class ExternalCommandResult(exitCode: Int, stdOut: Seq[String], stdErr: Seq[String], commandInfo: String) {
 
     /** convenience method: verify that the result is a success, throws an exception otherwise */
-    def verifySuccess(): Unit = 
+    def verifySuccess(): Unit =
       toTry.get()
 
     def successOption: Option[Seq[String]] = exitCode match {
@@ -41,13 +41,13 @@ object ExternalCommand {
   }
 
   def run(
-           command: Seq[String],
-           workingDir: Option[String] = None,
-           mergeStdErrInStdOut: Boolean = false,
-           extraEnv: Map[String, String] = Map.empty,
-           isShellCommand: Boolean = false,
-           timeout: Duration = Duration.Inf
-         ): ExternalCommandResult = {
+    command: Seq[String],
+    workingDir: Option[String] = None,
+    mergeStdErrInStdOut: Boolean = false,
+    extraEnv: Map[String, String] = Map.empty,
+    isShellCommand: Boolean = false,
+    timeout: Duration = Duration.Inf
+  ): ExternalCommandResult = {
     val cmd =
       if (isShellCommand) {
         val invokeShell =
@@ -69,8 +69,8 @@ object ExternalCommand {
     stdErrFile.foreach(builder.redirectError)
 
     val commandInfo = s"""cmd: `${cmd.mkString(" ")}`, workingDir: ${workingDir.getOrElse(
-      System.getProperty("user.dir")
-    )}, extraEnv: $extraEnv"""
+        System.getProperty("user.dir")
+      )}, extraEnv: $extraEnv"""
     try {
       logger.debug(s"executing command: $commandInfo")
       val process = builder.start()
@@ -104,10 +104,10 @@ object ExternalCommand {
   }
 
   /** Finds the absolute path to the executable directory (e.g. `/path/to/javasrc2cpg/bin`). Based on the package path
-   * of a loaded classfile based on some (potentially flakey?) filename heuristics. Context: we want to be able to
-   * invoke the x2cpg frontends from any directory, not just their install directory, and then invoke other
-   * executables, like astgen, php-parser et al.
-   */
+    * of a loaded classfile based on some (potentially flakey?) filename heuristics. Context: we want to be able to
+    * invoke the x2cpg frontends from any directory, not just their install directory, and then invoke other
+    * executables, like astgen, php-parser et al.
+    */
   def executableDir(packagePath: Path): Path = {
     val packagePathAbsolute = packagePath.toAbsolutePath
     val fixedDir =
