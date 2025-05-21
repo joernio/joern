@@ -93,7 +93,7 @@ class AstCreator(
       Seq.empty[PhpAttributeGroup]
     )
 
-    val globalTypeDeclAst = astForClassLikeStmt(globalTypeDeclStmt)
+    val globalTypeDeclAst = astForGlobalDecl(globalTypeDeclStmt, globalTypeDeclStmt.name.get)
 
     scope.popScope() // globalNamespace
 
@@ -114,7 +114,7 @@ class AstCreator(
       case switchStmt: PhpSwitchStmt       => astForSwitchStmt(switchStmt) :: Nil
       case tryStmt: PhpTryStmt             => astForTryStmt(tryStmt) :: Nil
       case returnStmt: PhpReturnStmt       => astForReturnStmt(returnStmt) :: Nil
-      case classLikeStmt: PhpClassLikeStmt => astForClassLikeStmt(classLikeStmt) :: Nil
+      case classLikeStmt: PhpClassLikeStmt => astForClassLikeStmt(classLikeStmt)
       case gotoStmt: PhpGotoStmt           => astForGotoStmt(gotoStmt) :: Nil
       case labelStmt: PhpLabelStmt         => astForLabelStmt(labelStmt) :: Nil
       case namespace: PhpNamespaceStmt     => astForNamespaceStmt(namespace) :: Nil
@@ -274,6 +274,7 @@ object AstCreator {
     val Default: String      = "default"
     val HaltCompiler: String = "__halt_compiler"
     val This: String         = "this"
+    val Self: String         = "self"
     val Unknown: String      = "UNKNOWN"
     val Closure: String      = "__closure"
     val Class: String        = "class"
