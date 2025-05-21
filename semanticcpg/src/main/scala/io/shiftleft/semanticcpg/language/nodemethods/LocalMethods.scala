@@ -8,7 +8,7 @@ class LocalMethods(val local: Local) extends AnyVal with NodeExtension with HasL
   override def location: LocationInfo = {
     Location(local)
   }
-  
+
   /** The method hosting this local variable
     */
   def method: Iterator[Method] =

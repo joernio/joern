@@ -33,11 +33,11 @@ trait HasLocation extends Any {
   def location: LocationInfo
 }
 
-// This design: 1) lets implementors put all logic for 
-// determining how to fill out `LocationInfo` for each 
-// type of node in one central place, and 2) allow consumers 
-// of joern, which may also provide different node types 
-// or location information, to provide alternate or 
+// This design: 1) lets implementors put all logic for
+// determining how to fill out `LocationInfo` for each
+// type of node in one central place, and 2) allow consumers
+// of joern, which may also provide different node types
+// or location information, to provide alternate or
 // extended implementations of LocCreator.
 trait LocationCreator {
   implicit def apply(node: AbstractNode): LocationInfo
@@ -70,16 +70,12 @@ class LazyLocation(storedNode: StoredNode) extends LocationInfo {
 
   def symbol: String = {
     storedNode match {
-      case call: Call                   => call.code
-      case method: Method               => method.name
-      case inParam: MethodParameterIn   => inParam.name
-      case ident: Identifier            => ident.name
-      case lit: Literal                 => lit.code
-      case local: Local                 => local.name
-      case outParam: MethodParameterOut => outParam.name
-      case methodRef: MethodRef         => methodRef.code
-      case methodReturn: MethodReturn   => "$ret"
-      case _                            => defaultString
+      case _: Call | _: Literal | _: MethodRef =>
+        storedNode.property(Properties.Ċode)
+      case _: Identifier | _: Local | _: MethodParameterIn | _: MethodParameterOut | _: Method =>
+        storedNode.property(Properties.Name)
+      case _: MethodReturn => "$ret"
+      case _               => defaultString
     }
   }
 
@@ -87,7 +83,7 @@ class LazyLocation(storedNode: StoredNode) extends LocationInfo {
 
   def lineNumber: Option[Int] = storedNode match {
     case astNode: AstNode => astNode.lineNumber
-    case _ => None
+    case _                => None
   }
 
   def methodFullName: String = method.fullName
@@ -121,8 +117,8 @@ class LazyLocation(storedNode: StoredNode) extends LocationInfo {
   private def findParentTypeDecl(node: StoredNode): Option[TypeDecl] = {
     node._astIn.iterator.nextOption() match {
       case Some(head) if head.isInstanceOf[TypeDecl] => Some(head.asInstanceOf[TypeDecl])
-      case Some(head)                                      => findParentTypeDecl(head)
-      case None                                            => None
+      case Some(head)                                => findParentTypeDecl(head)
+      case None                                      => None
     }
   }
 }

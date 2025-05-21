@@ -71,7 +71,7 @@ class MethodMethods(val method: Method) extends AnyVal with NodeExtension with H
   override def location: LocationInfo = {
     Location(method)
   }
-  
+
   def content: Option[String] = {
     for {
       content <- method.file.content.headOption

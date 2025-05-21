@@ -46,7 +46,7 @@ class NodeSteps[NodeType <: StoredNode](val traversal: Iterator[NodeType]) exten
   )
   def location(implicit finder: NodeExtensionFinder): Iterator[LocationInfo] =
     traversal.map(_.location)
-  
+
   @Doc(
     info = "Display code (with syntax highlighting)",
     longInfo = """
