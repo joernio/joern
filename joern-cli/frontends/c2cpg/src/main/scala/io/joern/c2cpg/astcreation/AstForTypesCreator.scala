@@ -83,59 +83,20 @@ trait AstForTypesCreator { this: AstCreator =>
     constructorCallName: String,
     initCode: String
   ): Ast = {
-    val blockNode_ = blockNode(init)
-    scope.pushNewBlockScope(blockNode_)
+    val constructorCallCode = s"$tpe.$constructorCallName($initCode)"
+    val rightAst = constructorInvocationBlockAst(init, tpe, fullNameWithSig, signature, constructorCallCode, args)
 
-    val tmpNodeName  = scopeLocalUniqueName("tmp")
-    val tmpNode      = identifierNode(init, tmpNodeName, tmpNodeName, tpe)
-    val localTmpNode = localNode(init, tmpNodeName, tmpNodeName, tpe)
-    scope.addVariable(tmpNodeName, localTmpNode, tpe, VariableScopeManager.ScopeType.BlockScope)
-
-    val allocOp          = Operators.alloc
-    val allocCallNode    = callNode(init, allocOp, allocOp, allocOp, DispatchTypes.STATIC_DISPATCH)
-    val assignmentCallOp = Operators.assignment
     val assignmentCallNode =
-      callNode(init, s"$tmpNodeName = $allocOp", assignmentCallOp, assignmentCallOp, DispatchTypes.STATIC_DISPATCH)
-    val assignmentAst = callAst(assignmentCallNode, List(Ast(tmpNode), Ast(allocCallNode)))
-
-    val baseNode = identifierNode(init, tmpNodeName, tmpNodeName, tpe)
-    scope.addVariableReference(tmpNodeName, baseNode, tpe, EvaluationStrategies.BY_SHARING)
-    val addrOp = Operators.addressOf
-    val addrCallNode =
-      callNode(init, s"&$tmpNodeName", addrOp, addrOp, DispatchTypes.STATIC_DISPATCH)
-    val addrCallAst = callAst(addrCallNode, List(Ast(baseNode)))
-
-    val constructorCallNode = callNode(
-      init,
-      s"$tpe.$constructorCallName($initCode)",
-      tpe,
-      fullNameWithSig,
-      DispatchTypes.STATIC_DISPATCH,
-      Some(signature),
-      Some(registerType(Defines.Void))
-    )
-    val constructorCallAst = createCallAst(constructorCallNode, args, base = Some(addrCallAst))
-
-    val retNode = identifierNode(init, tmpNodeName, tmpNodeName, tpe)
-    scope.addVariableReference(tmpNodeName, retNode, tpe, EvaluationStrategies.BY_SHARING)
-    val retAst = Ast(retNode)
-
-    scope.popScope()
-    val rightAst = Ast(blockNode_).withChildren(Seq(assignmentAst, constructorCallAst, retAst))
-
-    val codeString = s"$name = ${constructorCallNode.code}"
-    val finalAssignmentCallNode =
       callNode(
         declarator,
-        codeString,
+        s"$name = $constructorCallCode",
         Operators.assignment,
         Operators.assignment,
         DispatchTypes.STATIC_DISPATCH,
         None,
         Some(registerType(Defines.Void))
       )
-    blockNode_.code(codeString)
-    callAst(finalAssignmentCallNode, List(leftAst, rightAst))
+    callAst(assignmentCallNode, List(leftAst, rightAst))
   }
 
   private def astForFundamentalKeyWordInit(
@@ -210,69 +171,25 @@ trait AstForTypesCreator { this: AstCreator =>
   protected def astForConstructorCall(declarator: ICPPASTDeclarator): Ast = {
     val leftAst = astForNode(declarator.getName)
 
-    val blockNode_ = blockNode(declarator)
-    scope.pushNewBlockScope(blockNode_)
-
     val name = ASTStringUtil.getSimpleName(declarator.getName)
     val tpe  = registerType(scope.lookupVariable(name).map(_._2.takeWhile(isValidFullNameChar)).getOrElse(Defines.Any))
     val constructorCallName = tpe.split("\\.").lastOption.getOrElse(tpe)
     val signature           = s"${Defines.Void}()"
     val fullNameWithSig     = s"$tpe.$constructorCallName:$signature"
+    val constructorCallCode = s"$tpe.$constructorCallName()"
+    val rightAst =
+      constructorInvocationBlockAst(declarator, tpe, fullNameWithSig, signature, constructorCallCode, List.empty)
 
-    val tmpNodeName  = scopeLocalUniqueName("tmp")
-    val tmpNode      = identifierNode(declarator, tmpNodeName, tmpNodeName, tpe)
-    val localTmpNode = localNode(declarator, tmpNodeName, tmpNodeName, tpe)
-    scope.addVariable(tmpNodeName, localTmpNode, tpe, VariableScopeManager.ScopeType.BlockScope)
-
-    val allocOp          = Operators.alloc
-    val allocCallNode    = callNode(declarator, allocOp, allocOp, allocOp, DispatchTypes.STATIC_DISPATCH)
-    val assignmentCallOp = Operators.assignment
-    val assignmentCallNode =
-      callNode(
-        declarator,
-        s"$tmpNodeName = $allocOp",
-        assignmentCallOp,
-        assignmentCallOp,
-        DispatchTypes.STATIC_DISPATCH
-      )
-    val assignmentAst = callAst(assignmentCallNode, List(Ast(tmpNode), Ast(allocCallNode)))
-
-    val baseNode = identifierNode(declarator, tmpNodeName, tmpNodeName, tpe)
-    scope.addVariableReference(tmpNodeName, baseNode, tpe, EvaluationStrategies.BY_SHARING)
-    val addrOp       = Operators.addressOf
-    val addrCallNode = callNode(declarator, s"&$tmpNodeName", addrOp, addrOp, DispatchTypes.STATIC_DISPATCH)
-    val addrCallAst  = callAst(addrCallNode, List(Ast(baseNode)))
-
-    val constructorCallNode = callNode(
+    val assignmentCallNode = callNode(
       declarator,
-      s"$tpe.$constructorCallName()",
-      tpe,
-      fullNameWithSig,
-      DispatchTypes.STATIC_DISPATCH,
-      Some(signature),
-      Some(registerType(Defines.Void))
-    )
-    val constructorCallAst = createCallAst(constructorCallNode, List.empty, base = Some(addrCallAst))
-
-    val retNode = identifierNode(declarator, tmpNodeName, tmpNodeName, tpe)
-    scope.addVariableReference(tmpNodeName, retNode, tpe, EvaluationStrategies.BY_SHARING)
-    val retAst = Ast(retNode)
-
-    scope.popScope()
-    val rightAst = Ast(blockNode_).withChildren(Seq(assignmentAst, constructorCallAst, retAst))
-
-    val codeString = s"${code(declarator)} = ${constructorCallNode.code}"
-    val finalAssignmentCallNode = callNode(
-      declarator,
-      codeString,
+      s"${code(declarator)} = $constructorCallCode",
       Operators.assignment,
       Operators.assignment,
       DispatchTypes.STATIC_DISPATCH,
       None,
       Some(registerType(Defines.Void))
     )
-    blockNode_.code(codeString)
-    callAst(finalAssignmentCallNode, List(leftAst, rightAst))
+    callAst(assignmentCallNode, List(leftAst, rightAst))
   }
 
   private def astForIASTEqualsInitializer(declarator: IASTDeclarator, leftAst: Ast, rightAst: Ast) = {

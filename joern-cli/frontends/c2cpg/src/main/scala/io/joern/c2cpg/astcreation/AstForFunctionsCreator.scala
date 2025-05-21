@@ -287,50 +287,13 @@ trait AstForFunctionsCreator { this: AstCreator =>
       case l: IASTInitializerList if l.getClauses == null || l.getClauses.isEmpty || l.getClauses.forall(_ == null) =>
         Ast()
       case c: ICPPASTConstructorInitializer if init.getMemberInitializerId.isInstanceOf[ICPPASTQualifiedName] =>
-        val blockNode_ = blockNode(init, code(init), registerType(Defines.Any))
-        scope.pushNewBlockScope(blockNode_)
-
         val constructorCallName = shortName(init.getMemberInitializerId)
         val typeFullName        = fullName(init.getMemberInitializerId)
         val signature           = s"${Defines.Void}(${initializerSignature(c)})"
         val fullNameWithSig     = s"$typeFullName.$constructorCallName:$signature"
-
-        val tmpNodeName  = scopeLocalUniqueName("tmp")
-        val tmpNode      = identifierNode(init, tmpNodeName, tmpNodeName, typeFullName)
-        val localTmpNode = localNode(init, tmpNodeName, tmpNodeName, typeFullName)
-        scope.addVariable(tmpNodeName, localTmpNode, typeFullName, VariableScopeManager.ScopeType.BlockScope)
-
-        val allocOp          = Operators.alloc
-        val allocCallNode    = callNode(init, allocOp, allocOp, allocOp, DispatchTypes.STATIC_DISPATCH)
-        val assignmentCallOp = Operators.assignment
-        val assignmentCallNode =
-          callNode(init, s"$tmpNodeName = $allocOp", assignmentCallOp, assignmentCallOp, DispatchTypes.STATIC_DISPATCH)
-        val assignmentAst = callAst(assignmentCallNode, List(Ast(tmpNode), Ast(allocCallNode)))
-
-        val baseNode = identifierNode(init, tmpNodeName, tmpNodeName, typeFullName)
-        scope.addVariableReference(tmpNodeName, baseNode, typeFullName, EvaluationStrategies.BY_SHARING)
-        val addrOp       = Operators.addressOf
-        val addrCallNode = callNode(init, s"&$tmpNodeName", addrOp, addrOp, DispatchTypes.STATIC_DISPATCH)
-        val addrCallAst  = callAst(addrCallNode, List(Ast(baseNode)))
-
-        val constructorCallNode = callNode(
-          c,
-          code(init),
-          typeFullName,
-          fullNameWithSig,
-          DispatchTypes.STATIC_DISPATCH,
-          Some(signature),
-          Some(registerType(Defines.Void))
-        )
-        val args               = astsForConstructorInitializer(c)
-        val constructorCallAst = createCallAst(constructorCallNode, args, base = Some(addrCallAst))
-
-        val retNode = identifierNode(init, tmpNodeName, tmpNodeName, typeFullName)
-        scope.addVariableReference(tmpNodeName, retNode, typeFullName, EvaluationStrategies.BY_SHARING)
-        val retAst = Ast(retNode)
-
-        scope.popScope()
-        Ast(blockNode_).withChildren(Seq(assignmentAst, constructorCallAst, retAst))
+        val constructorCallCode           = code(init)
+        val args                = astsForConstructorInitializer(c)
+        constructorInvocationBlockAst(init, typeFullName, fullNameWithSig, signature, constructorCallCode, args)
       case _ =>
         val leftAst = syntheticThisAccess(init.getMemberInitializerId, nameForIdentifier(init.getMemberInitializerId))
         val rightAst = init.getInitializer match {
