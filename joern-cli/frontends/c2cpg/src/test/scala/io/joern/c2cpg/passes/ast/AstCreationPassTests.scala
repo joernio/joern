@@ -30,6 +30,24 @@ class AstCreationPassTests extends AstC2CpgSuite {
       }
     }
 
+    "be correct for method signature with variadic parameter (ellipsis)" in {
+      val cpg       = code("int foo(const char *a, ...){ return 0; }", "foo.cpp")
+      val List(foo) = cpg.method("foo").l
+      foo.fullName shouldBe "foo:int(char*,...)"
+      foo.signature shouldBe "int(char*,...)"
+      val List(a, ellipsis) = foo.parameter.l
+      a.name shouldBe "a"
+      a.code shouldBe "const char *a"
+      a.typeFullName shouldBe "char*"
+      a.index shouldBe 1
+      a.isVariadic shouldBe false
+      ellipsis.name shouldBe "<param>2"
+      ellipsis.code shouldBe "<param>2..."
+      ellipsis.typeFullName shouldBe "char*"
+      ellipsis.index shouldBe 2
+      ellipsis.isVariadic shouldBe true
+    }
+
     "be correct for full names and signatures for method problem bindings" in {
       val cpg = code(
         """
@@ -53,12 +71,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
     }
 
     "be correct for packed args" in {
-      val cpg = code(
-        """
-       |void foo(int x, int*... args) {};
-       |""".stripMargin,
-        "test.cpp"
-      )
+      val cpg = code("void foo(int x, int*... args) {};", "test.cpp")
       inside(cpg.method("foo").l) { case List(m) =>
         m.signature shouldBe "void(int,int*)"
         inside(m.parameter.l) { case List(x, args) =>
@@ -66,35 +79,36 @@ class AstCreationPassTests extends AstC2CpgSuite {
           x.code shouldBe "int x"
           x.typeFullName shouldBe "int"
           x.isVariadic shouldBe false
-          x.order shouldBe 1
+          x.index shouldBe 1
           args.name shouldBe "args"
           args.code shouldBe "int*... args"
           args.typeFullName shouldBe "int*"
           args.isVariadic shouldBe true
-          args.order shouldBe 2
+          args.index shouldBe 2
         }
       }
     }
 
     "be correct for varargs" in {
-      val cpg = code(
-        """
-       |void foo(int x, int args...) {};
-       |""".stripMargin,
-        "test.cpp"
-      )
+      val cpg = code("void foo(int x, int args...) {};", "test.cpp")
       inside(cpg.method("foo").l) { case List(m) =>
-        inside(m.parameter.l) { case List(x, args) =>
+        m.fullName shouldBe "foo:void(int,int,...)"
+        inside(m.parameter.l) { case List(x, args, param3) =>
           x.name shouldBe "x"
           x.code shouldBe "int x"
           x.typeFullName shouldBe "int"
           x.isVariadic shouldBe false
-          x.order shouldBe 1
+          x.index shouldBe 1
           args.name shouldBe "args"
-          args.code shouldBe "int args..."
+          args.code shouldBe "int args"
           args.typeFullName shouldBe "int"
-          args.isVariadic shouldBe true
-          args.order shouldBe 2
+          args.isVariadic shouldBe false
+          args.index shouldBe 2
+          param3.name shouldBe "<param>3"
+          param3.code shouldBe "<param>3..."
+          param3.typeFullName shouldBe "int"
+          param3.isVariadic shouldBe true
+          param3.index shouldBe 3
         }
       }
     }

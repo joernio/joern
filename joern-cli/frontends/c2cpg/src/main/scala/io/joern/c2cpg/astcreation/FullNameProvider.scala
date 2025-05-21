@@ -234,12 +234,14 @@ trait FullNameProvider { this: AstCreator =>
   }
 
   private def parameterListSignature(func: IASTNode): String = {
-    val variadic = if (isVariadic(func)) "..." else ""
-    val elements = parameters(func).map {
+    val parameter = parameters(func)
+    val elements = parameter.map {
       case p: IASTParameterDeclaration => typeForDeclSpecifier(p.getDeclSpecifier)
       case other                       => typeForDeclSpecifier(other)
     }
-    s"(${elements.mkString(",")}$variadic)"
+    val variadicString = if (isVariadic(func) || parameter.lastOption.exists(paramIsVariadic)) { ",..." }
+    else { "" }
+    s"(${elements.mkString(",")}$variadicString)"
   }
 
   private def shortNameForIASTDeclarator(declarator: IASTDeclarator): String = {
