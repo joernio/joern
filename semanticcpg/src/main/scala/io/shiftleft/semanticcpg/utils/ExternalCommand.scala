@@ -96,7 +96,7 @@ object ExternalCommand {
       case NonFatal(exception) =>
         val stdOut = IOUtils.readLinesInFile(stdOutFile.toPath)
         val stdErr = stdErrFile.map(f => IOUtils.readLinesInFile(f.toPath)).getOrElse(Seq.empty) :+ exception.getMessage
-        logger.warn(s"command did not finish successfully. Input was: $commandInfo")
+        logger.debug(s"command did not finish successfully. Input was: $commandInfo")
         ExternalCommandResult(1, stdOut, stdErr, commandInfo)
     } finally {
       stdOutFile.delete()
