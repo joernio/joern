@@ -17,10 +17,16 @@ object ExternalCommand {
   private val logger = LoggerFactory.getLogger(getClass)
 
   case class ExternalCommandResult(exitCode: Int, stdOut: Seq[String], stdErr: Seq[String], commandInfo: String) {
+
+    /** convenience method: verify that the result is a success, throws an exception otherwise */
+    def verifySuccess(): Unit = 
+      toTry.get()
+
     def successOption: Option[Seq[String]] = exitCode match {
       case 0 => Some(stdOut)
       case _ => None
     }
+
     def toTry: Try[Seq[String]] = exitCode match {
       case 0 => Success(stdOut)
       case nonZeroExitCode =>
