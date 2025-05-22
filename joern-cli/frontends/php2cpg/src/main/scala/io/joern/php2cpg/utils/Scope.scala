@@ -105,7 +105,7 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
   }
 
   def isSurroundedByMetaclassTypeDecl: Boolean =
-    stack.map(_.scopeNode.node).collectFirst { case td: NewTypeDecl if td.name.endsWith("<metaclass>") => td }.isDefined
+    stack.map(_.scopeNode.node).collectFirst { case td: NewTypeDecl => td }.exists(_.name.endsWith("<metaclass>"))
 
   def getEnclosingNamespaceNames: List[String] =
     stack.map(_.scopeNode.node).collect { case ns: NewNamespaceBlock => ns.name }.reverse
