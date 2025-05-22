@@ -321,7 +321,10 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
     c.receiver.headOption.flatMap {
       case rc: Call if rc.methodFullName == Operators.fieldAccess =>
         rc.argumentOption(1)
-          .flatMap(_.getKnownTypes.headOption)
+          .flatMap {
+            case n if symbolTable.get(n).nonEmpty => symbolTable.get(n).headOption
+            case n                                => n.getKnownTypes.headOption
+          }
           .flatMap(rt => setNodeFullName(c, s"$rt$pathSep${c.name}"))
       case rc: Call if rc.methodFullName.startsWith("<operator") =>
         None // ignore operators
