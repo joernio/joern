@@ -74,6 +74,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       argsParam.name shouldBe "args"
       argsParam.typeFullName shouldBe "Args"
       argsParam.isVariadic shouldBe true
+      argsParam.index shouldBe 1
       val List(retExpr) = cpg.method.nameExact("logicalAnd").ast.isReturn.astChildren.isCall.l
       retExpr.name shouldBe "<operator>.fold"
       retExpr.typeFullName shouldBe "bool"
@@ -99,6 +100,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       argsParam.name shouldBe "args"
       argsParam.typeFullName shouldBe "Args"
       argsParam.isVariadic shouldBe true
+      argsParam.index shouldBe 1
       val List(retExpr) = cpg.method.nameExact("sum").ast.isReturn.astChildren.isCall.l
       retExpr.name shouldBe "<operator>.fold"
       retExpr.typeFullName shouldBe "Args"
