@@ -188,6 +188,20 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
     }
   }
 
+  /** Declares that the following type declaration has been defined and should now be considered in scope and resolvable
+    * by its name.
+    * @param name
+    *   the type decl name.
+    * @param fullName
+    *   the type decl full name.
+    */
+  def useTypeDecl(name: String, fullName: String): Unit = {
+    summary
+      .get(fullName)
+      .flatMap(_.sorted.headOption)
+      .foreach(hit => importedSymbols = importedSymbols + (name -> hit))
+  }
+
   /** Attempts to resolve a simple symbol.
     *
     * Note: This will be extended to notify the caller if this identifier is instead a local variable.

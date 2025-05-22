@@ -52,20 +52,19 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
   }
 
   protected def composeMethodFullName(methodName: String, isStatic: Boolean, appendClass: Boolean = false): String = {
-    if (methodName == NamespaceTraversal.globalNamespaceName) {
-      globalNamespace.fullName
-    } else {
-      val className = if (appendClass) {
-        getTypeDeclPrefix.map(name => s"${name}$MetaTypeDeclExtension")
-      } else {
-        getTypeDeclPrefix
-      }
+    scope.resolveIdentifier(methodName) match {
+      case Some(importedMethod)                                         => importedMethod.name
+      case None if methodName == NamespaceTraversal.globalNamespaceName => globalNamespace.fullName
+      case None =>
+        val className = if (appendClass) {
+          getTypeDeclPrefix.map(name => s"${name}$MetaTypeDeclExtension")
+        } else {
+          getTypeDeclPrefix
+        }
 
-      val methodDelimiter = if (isStatic) StaticMethodDelimiter else InstanceMethodDelimiter
-
-      val nameWithClass = List(className, Some(methodName)).flatten.mkString(methodDelimiter)
-
-      prependNamespacePrefix(nameWithClass)
+        val methodDelimiter = if (isStatic) StaticMethodDelimiter else InstanceMethodDelimiter
+        val nameWithClass   = List(className, Some(methodName)).flatten.mkString(methodDelimiter)
+        prependNamespacePrefix(nameWithClass)
     }
   }
 
@@ -137,13 +136,15 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
   }
 
   protected def getMfn(call: PhpCallExpr, name: String): String = {
+    lazy val default = s"$UnresolvedNamespace\\$name"
     call.target match {
       // Static method call with a known class name
       case Some(nameExpr: PhpNameExpr) if call.isStatic =>
-        if (nameExpr.name == NameConstants.Self) composeMethodFullName(name, call.isStatic)
+        if (nameExpr.name == NameConstants.Self) composeMethodFullName(name, call.isStatic, appendClass = true)
         else s"${nameExpr.name}$MetaTypeDeclExtension$StaticMethodDelimiter$name"
-      case Some(_) =>
-        s"$UnresolvedNamespace\\$name"
+      case Some(nameExpr: PhpNameExpr) =>
+        scope.resolveIdentifier(nameExpr.name).map(x => s"${x.name}\\$name").getOrElse(default)
+      case Some(_)                                      => default
       case None if PhpBuiltins.FuncNames.contains(name) =>
         // No signature/namespace for MFN for builtin functions to ensure stable names as type info improves.
         name

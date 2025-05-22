@@ -868,6 +868,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val initSignature = s"$UnresolvedSignature(${initArgs.size})"
     val initFullName  = s"$className$InstanceMethodDelimiter$ConstructorMethodName"
     val initCode      = s"$initFullName(${initArgs.map(_.rootCodeOrEmpty).mkString(",")})"
+    val maybeTypeHint = scope.resolveIdentifier(className).map(_.name) // consider imported or defined types
     val initCallNode = callNode(
       expr,
       initCode,
@@ -875,7 +876,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       initFullName,
       DispatchTypes.DYNAMIC_DISPATCH,
       Some(initSignature),
-      Some(Defines.Any)
+      maybeTypeHint.orElse(Some(Defines.Any)) // TODO Review Note: Should the hint be under dynamicTypeHintFullName?
     )
     val initReceiver = Ast(tmpIdentifier.copy)
     val initCallAst  = callAst(initCallNode, initArgs, base = Option(initReceiver))
