@@ -1,15 +1,17 @@
 package io.joern.php2cpg.utils
 
 import io.joern.php2cpg.astcreation.AstCreator.NameConstants
+import io.joern.php2cpg.passes.SymbolSummaryPass.*
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.datastructures.{ScopeElement, NamespaceLikeScope, Scope as X2CpgScope}
+import io.joern.x2cpg.datastructures.{NamespaceLikeScope, ScopeElement, Scope as X2CpgScope}
 import io.shiftleft.codepropertygraph.generated.NodeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
-class Scope(implicit nextClosureName: () => String) extends X2CpgScope[String, NewNode, PhpScopeElement] {
+class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextClosureName: () => String)
+    extends X2CpgScope[String, NewNode, PhpScopeElement] {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -18,6 +20,7 @@ class Scope(implicit nextClosureName: () => String) extends X2CpgScope[String, N
   private val anonymousMethods                                    = mutable.ArrayBuffer[Ast]()
   private var tmpVarCounter                                       = 0
   private var tmpClassCounter                                     = 0
+  private var importedSymbols                                     = Map.empty[String, SymbolSummary]
 
   def pushNewScope(scopeNode: NewNode): Unit = {
     scopeNode match {
@@ -162,4 +165,35 @@ class Scope(implicit nextClosureName: () => String) extends X2CpgScope[String, N
 
     returnString
   }
+
+  /** Declares imports to load into this scope.
+    * @param imports
+    *   the import nodes generated from parsing PhpUseStmt and PhpGroupUseStmt nodes.
+    */
+  def useImport(imports: Seq[NewImport]): Unit = {
+    imports.foreach { imporT =>
+      imporT.importedEntity.foreach { importName =>
+        summary
+          .get(importName)
+          .flatMap(_.sorted.headOption) // use ordering to set precedence
+          .foreach { hit =>
+            imporT.importedAs match {
+              case Some(alias) => importedSymbols = importedSymbols + (alias -> hit)
+              case None =>
+                val name = importName.split("\\\\").last
+                importedSymbols = importedSymbols + (name -> hit)
+            }
+          }
+      }
+    }
+  }
+
+  /** Attempts to resolve a simple symbol.
+    *
+    * Note: This will be extended to notify the caller if this identifier is instead a local variable.
+    */
+  def resolveIdentifier(symbol: String): Option[SymbolSummary] = {
+    importedSymbols.get(symbol)
+  }
+
 }

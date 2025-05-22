@@ -51,11 +51,16 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     identifierNode(originNode, name, s"$$$name", typeFullName)
   }
 
-  protected def composeMethodFullName(methodName: String, isStatic: Boolean): String = {
+  protected def composeMethodFullName(methodName: String, isStatic: Boolean, appendClass: Boolean = false): String = {
     if (methodName == NamespaceTraversal.globalNamespaceName) {
       globalNamespace.fullName
     } else {
-      val className       = getTypeDeclPrefix
+      val className = if (appendClass) {
+        getTypeDeclPrefix.map(name => s"${name}$MetaTypeDeclExtension")
+      } else {
+        getTypeDeclPrefix
+      }
+
       val methodDelimiter = if (isStatic) StaticMethodDelimiter else InstanceMethodDelimiter
 
       val nameWithClass = List(className, Some(methodName)).flatten.mkString(methodDelimiter)
@@ -136,7 +141,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
       // Static method call with a known class name
       case Some(nameExpr: PhpNameExpr) if call.isStatic =>
         if (nameExpr.name == NameConstants.Self) composeMethodFullName(name, call.isStatic)
-        else s"${nameExpr.name}$StaticMethodDelimiter$name"
+        else s"${nameExpr.name}$MetaTypeDeclExtension$StaticMethodDelimiter$name"
       case Some(_) =>
         s"$UnresolvedNamespace\\$name"
       case None if PhpBuiltins.FuncNames.contains(name) =>

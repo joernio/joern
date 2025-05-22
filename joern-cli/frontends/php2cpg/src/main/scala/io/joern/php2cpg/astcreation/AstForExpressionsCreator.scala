@@ -107,7 +107,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val code       = s"$codePrefix($argsCode)"
 
     val dispatchType = DispatchTypes.STATIC_DISPATCH
-    val fullName     = getMfn(call, name)
+
+    val fullName = getMfn(call, name)
 
     // Use method signature for methods that can be linked to avoid varargs issue.
     val signature = s"$UnresolvedSignature(${call.args.size})"
@@ -222,7 +223,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         identifierNode(originNode, name, name, typ.getOrElse(Defines.Any), typ.toList)
       }
       val fieldIdentifier = fieldIdentifierNode(originNode, memberNode.name, memberNode.name)
-      val code            = s"self::${memberNode.code.replaceAll("(static|case|const) ", "")}"
+      val code            = s"${NameConstants.Self}::${memberNode.code.replaceAll("(static|case|const) ", "")}"
       val fieldAccessNode = operatorCallNode(originNode, code, Operators.fieldAccess, None)
       callAst(fieldAccessNode, List(selfIdentifier, fieldIdentifier).map(Ast(_)))
     }

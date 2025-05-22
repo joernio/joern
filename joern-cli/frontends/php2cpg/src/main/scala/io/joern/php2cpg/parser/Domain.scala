@@ -81,6 +81,7 @@ object Domain {
   val InstanceMethodDelimiter = "->"
   // Used for creating the default constructor.
   val ConstructorMethodName = "__construct"
+  val MetaTypeDeclExtension = "<metaclass>"
 
   final case class PhpAttributes(lineNumber: Option[Int], kind: Option[Int], startFilePos: Int, endFilePos: Int)
   object PhpAttributes {
