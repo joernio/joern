@@ -97,7 +97,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val fullName = call.target match {
       // Static method call with a known class name
       case Some(nameExpr: PhpNameExpr) if call.isStatic =>
-        if (nameExpr.name == NameConstants.Self) composeMethodFullName(name, call.isStatic, appendClass = true)
+        if (nameExpr.name == NameConstants.Self)
+          composeMethodFullName(name, call.isStatic, appendMetaTypeDeclExt = !scope.isSurroundedByMetaclassTypeDecl)
         else s"${nameExpr.name}$MetaTypeDeclExtension$StaticMethodDelimiter$name"
       case Some(expr) =>
         s"$UnresolvedNamespace\\$codePrefix"

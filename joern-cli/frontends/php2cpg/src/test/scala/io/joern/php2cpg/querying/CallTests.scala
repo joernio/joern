@@ -188,4 +188,52 @@ class CallTests extends PhpCode2CpgFixture {
     val call = cpg.call("test").head
     call.code shouldBe "test(...$args)"
   }
+
+  "static call in a static function to a static function" in {
+    val cpg = code("""<?php
+        |class Foo {
+        |  static function foo() {
+        |    self::bar();
+        |
+        |    new class(10) {
+        |       function foz() {
+        |         self::boz();
+        |       }
+        |
+        |       static function boz() {}
+        |    }
+        |  }
+        |
+        |  private static function bar() {}
+        |}
+        |
+        |Foo::bar();
+        |""".stripMargin)
+
+    cpg.method.name("foo").call.name("bar").methodFullName.l shouldBe List("Foo<metaclass>::bar")
+    cpg.method.name("foz").call.name("boz").methodFullName.l shouldBe List(
+      "Foo<metaclass>::foo@anon-class-0<metaclass>::boz"
+    )
+  }
+
+  "static call in a dynamic function" in {
+    val cpg = code("""<?php
+         |class Foo {
+         |  function foo() {
+         |    self::bar();
+         |
+         |    new class(10) {
+         |       function foz() {
+         |         self::boz();
+         |       }
+         |
+         |       static function boz() {}
+         |    }
+         |  }
+         |
+         |  private static function bar() {}
+         |}
+         |""".stripMargin)
+    cpg.method.name("foz").call.name("boz").methodFullName.l shouldBe List("Foo->foo@anon-class-0<metaclass>::boz")
+  }
 }
