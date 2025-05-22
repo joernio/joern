@@ -188,4 +188,18 @@ class CallTests extends PhpCode2CpgFixture {
     val call = cpg.call("test").head
     call.code shouldBe "test(...$args)"
   }
+
+  "static call in a static function to a static function" in {
+    val cpg = code("""<?php
+        |class Foo {
+        |  static function foo() {
+        |    self::bar();
+        |  }
+        |
+        |  private static function bar() {}
+        |}
+        |""".stripMargin)
+
+    cpg.method.name("foo").call.name("bar").methodFullName.l shouldBe List("Foo<metaclass>::bar")
+  }
 }
