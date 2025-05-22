@@ -239,8 +239,11 @@ trait FullNameProvider { this: AstCreator =>
       case p: IASTParameterDeclaration => typeForDeclSpecifier(p.getDeclSpecifier)
       case other                       => typeForDeclSpecifier(other)
     }
-    val variadicString = if (isVariadic(func) || parameter.lastOption.exists(paramIsVariadic)) { ",..." }
-    else { "" }
+    val variadicString = if (isVariadic(func) || parameter.lastOption.exists(paramIsVariadic)) {
+      // See: https://en.cppreference.com/w/cpp/language/variadic_arguments
+      // `...` and `,...` are the same but `...` is deprecated since C++26 so we settle for the newer one
+      ",..."
+    } else { "" }
     s"(${elements.mkString(",")}$variadicString)"
   }
 

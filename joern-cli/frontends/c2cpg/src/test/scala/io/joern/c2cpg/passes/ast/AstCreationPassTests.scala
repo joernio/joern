@@ -30,22 +30,79 @@ class AstCreationPassTests extends AstC2CpgSuite {
       }
     }
 
-    "be correct for method signature with variadic parameter (ellipsis)" in {
-      val cpg       = code("int foo(const char *a, ...){ return 0; }", "foo.cpp")
+    "be correct for method signature with variadic parameter in plain C (ellipsis)" in {
+      val cpg = code("""
+          |int foo(const char *a, ...){ return 0; }
+          |int bar(const char *a...){ return 0; }
+          |""".stripMargin)
+      val List(foo) = cpg.method("foo").l
+      foo.fullName shouldBe "foo"
+      foo.signature shouldBe "int(char*,...)"
+      val List(a1, ellipsis1) = foo.parameter.l
+      a1.name shouldBe "a"
+      a1.code shouldBe "const char *a"
+      a1.typeFullName shouldBe "char*"
+      a1.index shouldBe 1
+      a1.isVariadic shouldBe false
+      ellipsis1.name shouldBe "<param>2"
+      ellipsis1.code shouldBe "<param>2..."
+      ellipsis1.typeFullName shouldBe "char*"
+      ellipsis1.index shouldBe 2
+      ellipsis1.isVariadic shouldBe true
+
+      val List(bar) = cpg.method("bar").l
+      bar.fullName shouldBe "bar"
+      bar.signature shouldBe "int(char*,...)"
+      val List(a2, ellipsis2) = bar.parameter.l
+      a2.name shouldBe "a"
+      a2.code shouldBe "const char *a"
+      a2.typeFullName shouldBe "char*"
+      a2.index shouldBe 1
+      a2.isVariadic shouldBe false
+      ellipsis2.name shouldBe "<param>2"
+      ellipsis2.code shouldBe "<param>2..."
+      ellipsis2.typeFullName shouldBe "char*"
+      ellipsis2.index shouldBe 2
+      ellipsis2.isVariadic shouldBe true
+    }
+
+    "be correct for method signature with variadic parameter in C++ (ellipsis)" in {
+      val cpg = code(
+        """
+          |int foo(const char *a, ...){ return 0; }
+          |int bar(const char *a...){ return 0; }
+          |""".stripMargin,
+        "foo.cpp"
+      )
       val List(foo) = cpg.method("foo").l
       foo.fullName shouldBe "foo:int(char*,...)"
       foo.signature shouldBe "int(char*,...)"
-      val List(a, ellipsis) = foo.parameter.l
-      a.name shouldBe "a"
-      a.code shouldBe "const char *a"
-      a.typeFullName shouldBe "char*"
-      a.index shouldBe 1
-      a.isVariadic shouldBe false
-      ellipsis.name shouldBe "<param>2"
-      ellipsis.code shouldBe "<param>2..."
-      ellipsis.typeFullName shouldBe "char*"
-      ellipsis.index shouldBe 2
-      ellipsis.isVariadic shouldBe true
+      val List(a1, ellipsis1) = foo.parameter.l
+      a1.name shouldBe "a"
+      a1.code shouldBe "const char *a"
+      a1.typeFullName shouldBe "char*"
+      a1.index shouldBe 1
+      a1.isVariadic shouldBe false
+      ellipsis1.name shouldBe "<param>2"
+      ellipsis1.code shouldBe "<param>2..."
+      ellipsis1.typeFullName shouldBe "char*"
+      ellipsis1.index shouldBe 2
+      ellipsis1.isVariadic shouldBe true
+
+      val List(bar) = cpg.method("bar").l
+      bar.fullName shouldBe "bar:int(char*,...)"
+      bar.signature shouldBe "int(char*,...)"
+      val List(a2, ellipsis2) = foo.parameter.l
+      a2.name shouldBe "a"
+      a2.code shouldBe "const char *a"
+      a2.typeFullName shouldBe "char*"
+      a2.index shouldBe 1
+      a2.isVariadic shouldBe false
+      ellipsis2.name shouldBe "<param>2"
+      ellipsis2.code shouldBe "<param>2..."
+      ellipsis2.typeFullName shouldBe "char*"
+      ellipsis2.index shouldBe 2
+      ellipsis2.isVariadic shouldBe true
     }
 
     "be correct for full names and signatures for method problem bindings" in {
