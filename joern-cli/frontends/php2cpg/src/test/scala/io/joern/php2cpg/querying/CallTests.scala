@@ -2,6 +2,7 @@ package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.astcreation.AstCreator.NameConstants
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
+import io.joern.php2cpg.parser.Domain
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier}
@@ -72,7 +73,7 @@ class CallTests extends PhpCode2CpgFixture {
     "have the correct method node defined" in {
       inside(cpg.call.l) { case List(fooCall) =>
         fooCall.name shouldBe "foo"
-        fooCall.methodFullName shouldBe s"Foo::foo"
+        fooCall.methodFullName shouldBe s"Foo${Domain.MetaTypeDeclExtension}::foo"
         fooCall.receiver.isEmpty shouldBe true
         fooCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         fooCall.lineNumber shouldBe Some(2)
@@ -117,7 +118,7 @@ class CallTests extends PhpCode2CpgFixture {
     "resolve the correct method full name" in {
       val List(barCall) = cpg.call("bar").take(1).l
       barCall.name shouldBe "bar"
-      barCall.methodFullName shouldBe s"ClassA::bar"
+      barCall.methodFullName shouldBe s"ClassA${Domain.MetaTypeDeclExtension}::bar"
       barCall.receiver.isEmpty shouldBe true
       barCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       barCall.code shouldBe "self::bar($x)"

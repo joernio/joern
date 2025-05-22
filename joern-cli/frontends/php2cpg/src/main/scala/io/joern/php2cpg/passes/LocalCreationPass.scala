@@ -1,6 +1,6 @@
 package io.joern.php2cpg.passes
 
-import io.joern.php2cpg.astcreation.AstCreator
+import io.joern.php2cpg.astcreation.AstCreator.NameConstants
 import io.joern.php2cpg.parser.Domain
 import io.joern.php2cpg.parser.Domain.PhpOperators
 import io.joern.x2cpg.{AstNodeBuilder, Defines}
@@ -41,7 +41,7 @@ abstract class LocalCreationPass[ScopeType <: AstNode](cpg: Cpg)
   ): List[(NewLocal, List[Identifier])] = {
     identifierMap
       .map { case identifierName -> identifiers =>
-        val code = s"$$$identifierName"
+        val code = if identifierName == NameConstants.Self then s"$identifierName" else s"$$$identifierName"
         val local =
           localNode(identifiers.head, identifierName, code, Defines.Any, closureBindingId = None)
         (local -> identifiers)
