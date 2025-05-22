@@ -51,7 +51,7 @@ class PreprocessorPass(config: Config) {
         ignoredDefaultRegex = Option(DefaultIgnoredFolders),
         ignoredFilesRegex = Option(config.ignoredFilesRegex),
         ignoredFilesPath = Option(config.ignoredFiles)
-      )
+      )(config.fileVisitOptions)
   }
 
   private def sourceFilesFromCompilationDatabase(compilationDatabaseFile: String): Iterable[String] = {

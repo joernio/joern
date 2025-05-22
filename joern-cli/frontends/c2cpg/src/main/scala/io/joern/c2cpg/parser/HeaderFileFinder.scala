@@ -17,7 +17,7 @@ class HeaderFileFinder(config: Config) {
       ignoredDefaultRegex = Option(DefaultIgnoredFolders),
       ignoredFilesRegex = Option(config.ignoredFilesRegex),
       ignoredFilesPath = Option(config.ignoredFiles)
-    )
+    )(config.fileVisitOptions)
     .map(p => Paths.get(p))
     .groupMap(_.fileName)(_.toString)
 

@@ -178,7 +178,7 @@ trait AstGenRunnerBase(config: X2CpgConfig[?] & AstGenConfig[?]) {
           Set(".json"),
           ignoredFilesRegex = Option(config.ignoredFilesRegex),
           ignoredFilesPath = Option(config.ignoredFiles)
-        )
+        )(config.fileVisitOptions)
         val parsed  = filterFiles(srcFiles, out)
         val skipped = skippedFiles(in, result.toList)
         DefaultAstGenRunnerResult(parsed, skipped)

@@ -84,7 +84,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
       Set(".kt"),
       ignoredFilesRegex = Option(config.ignoredFilesRegex),
       ignoredFilesPath = Option(config.ignoredFiles)
-    )
+    )(config.fileVisitOptions)
     if (filesWithKtExtension.isEmpty) {
       println(s"The provided input directory does not contain files ending in '.kt' `$sourceDir`. Exiting.")
       System.exit(1)
@@ -98,7 +98,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
       Set(".java"),
       ignoredFilesRegex = Option(config.ignoredFilesRegex),
       ignoredFilesPath = Option(config.ignoredFiles)
-    )
+    )(config.fileVisitOptions)
     if (filesWithJavaExtension.nonEmpty) {
       logger.info(s"Found ${filesWithJavaExtension.size} files with the `.java` extension.")
     }

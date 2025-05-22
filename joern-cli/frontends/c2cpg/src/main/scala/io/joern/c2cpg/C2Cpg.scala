@@ -59,7 +59,7 @@ class C2Cpg extends X2CpgFrontend[Config] {
           ignoredDefaultRegex = Option(C2Cpg.DefaultIgnoredFolders),
           ignoredFilesRegex = Option(config.ignoredFilesRegex),
           ignoredFilesPath = Option(config.ignoredFiles)
-        )
+        )(config.fileVisitOptions)
     } else { List.empty }
   }
 

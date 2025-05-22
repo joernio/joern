@@ -185,7 +185,7 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
           ignoredDefaultRegex = Option(specifiedConfig.defaultIgnoredFilesRegex),
           ignoredFilesRegex = Option(specifiedConfig.ignoredFilesRegex),
           ignoredFilesPath = Option(specifiedConfig.ignoredFiles)
-        )
+        )(config.fileVisitOptions)
         val parsed  = filterFiles(srcFiles, out)
         val skipped = skippedFiles(in, result.toList)
         DefaultAstGenRunnerResult(parsed, skipped)

@@ -338,7 +338,7 @@ class AstGenRunner(config: Config) {
         Option(out.toString)
       )
 
-    val jsons = SourceFiles.determine(out.toString, Set(".json"))
+    val jsons = SourceFiles.determine(out.toString, Set(".json"))(config.fileVisitOptions)
     jsons.foreach { jsonPath =>
       val jsonFile        = Paths.get(jsonPath)
       val jsonContent     = IOUtils.readEntireFile(jsonFile)
@@ -364,7 +364,7 @@ class AstGenRunner(config: Config) {
         ignoredDefaultRegex = Some(AstGenDefaultIgnoreRegex),
         ignoredFilesRegex = Some(config.ignoredFilesRegex),
         ignoredFilesPath = Some(config.ignoredFiles)
-      )
+      )(config.fileVisitOptions)
     if (files.nonEmpty) processEjsFiles(in, out, files)
     else Success(Seq.empty)
   }
@@ -376,7 +376,7 @@ class AstGenRunner(config: Config) {
       ignoredDefaultRegex = Some(AstGenDefaultIgnoreRegex),
       ignoredFilesRegex = Some(config.ignoredFilesRegex),
       ignoredFilesPath = Some(config.ignoredFiles)
-    )
+    )(config.fileVisitOptions)
     if (files.nonEmpty) {
       ExternalCommand
         .run((astGenCommand +: executableArgs) ++ Seq("-t", "vue", "-o", out.toString), Option(in.toString))
@@ -403,7 +403,9 @@ class AstGenRunner(config: Config) {
     logger.info(s"Parsed $numOfParsedFiles files.")
     if (numOfParsedFiles == 0) {
       logger.warn("You may want to check the DEBUG logs for a list of files that are ignored by default.")
-      SourceFiles.determine(in.toString, SourceFileExtensions, ignoredDefaultRegex = Option(AstGenDefaultIgnoreRegex))
+      SourceFiles.determine(in.toString, SourceFileExtensions, ignoredDefaultRegex = Option(AstGenDefaultIgnoreRegex))(
+        config.fileVisitOptions
+      )
     }
     files
   }
@@ -412,12 +414,18 @@ class AstGenRunner(config: Config) {
     val in = Paths.get(config.inputPath)
     runAstGenNative(in, out) match {
       case Success(result) =>
-        val parsed  = checkParsedFiles(filterFiles(SourceFiles.determine(out.toString, Set(".json")), out), in)
+        val parsed = checkParsedFiles(
+          filterFiles(SourceFiles.determine(out.toString, Set(".json"))(config.fileVisitOptions), out),
+          in
+        )
         val skipped = skippedFiles(result.toList)
         AstGenRunnerResult(parsed.map((in.toString, _)), skipped.map((in.toString, _)))
       case Failure(f) =>
         logger.error("\t- running astgen failed!", f)
-        val parsed  = checkParsedFiles(filterFiles(SourceFiles.determine(out.toString, Set(".json")), out), in)
+        val parsed = checkParsedFiles(
+          filterFiles(SourceFiles.determine(out.toString, Set(".json"))(config.fileVisitOptions), out),
+          in
+        )
         val skipped = List.empty
         AstGenRunnerResult(parsed.map((in.toString, _)), skipped.map((in.toString, _)))
     }

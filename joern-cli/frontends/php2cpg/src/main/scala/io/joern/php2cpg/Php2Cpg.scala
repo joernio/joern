@@ -96,7 +96,7 @@ class Php2Cpg extends X2CpgFrontend[Config] {
         Option(config.defaultIgnoredFilesRegex),
         Option(config.ignoredFilesRegex),
         Option(config.ignoredFiles)
-      )
+      )(config.fileVisitOptions)
       .filter(_.endsWith("composer.json"))
   }
 }

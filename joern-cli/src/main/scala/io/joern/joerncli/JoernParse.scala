@@ -142,6 +142,7 @@ object JoernParse {
         generator
           .generate(config.inputPath, outputPath = config.outputCpgFile)
           .recover { case exception =>
+            exception.printStackTrace()
             throw new RuntimeException(
               s"Could not generate CPG with language = $language and input = ${config.inputPath}",
               exception

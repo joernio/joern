@@ -16,7 +16,7 @@ class DependenciesPass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
 
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     val packagesJsons = SourceFiles
-      .determine(config.inputPath, Set(".json"))
+      .determine(config.inputPath, Set(".json"))(config.fileVisitOptions)
       .filterNot(_.contains(Defines.NodeModulesFolder))
       .filter(f =>
         f.endsWith(PackageJsonParser.PackageJsonFilename) || f.endsWith(PackageJsonParser.PackageJsonLockFilename)

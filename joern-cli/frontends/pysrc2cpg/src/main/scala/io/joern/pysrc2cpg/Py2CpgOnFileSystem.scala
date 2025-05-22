@@ -71,7 +71,7 @@ class Py2CpgOnFileSystem extends X2CpgFrontend[Py2CpgOnFileSystemConfig] {
           Set(".py"),
           ignoredFilesRegex = Option(config.ignoredFilesRegex),
           ignoredFilesPath = Option(config.ignoredFiles)
-        )
+        )(config.fileVisitOptions)
         .map(x => Path.of(x))
         .filterNot { file =>
           isAutoDetectedVenv(config, file, inputPath) ||

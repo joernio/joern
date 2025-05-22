@@ -23,7 +23,7 @@ trait AstParsingPass(config: Config, parser: PhpParser) { this: ForkJoinParallel
         PhpSourceFileExtensions,
         ignoredFilesRegex = Option(config.ignoredFilesRegex),
         ignoredFilesPath = Option(config.ignoredFiles)
-      )
+      )(config.fileVisitOptions)
       .toArray
     // We need to feed the php parser big groups of file in order
     // to speed up the parsing. Apparently it is some sort of slow

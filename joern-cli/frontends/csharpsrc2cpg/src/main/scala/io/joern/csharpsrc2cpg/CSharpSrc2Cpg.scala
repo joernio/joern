@@ -99,7 +99,7 @@ object CSharpSrc2Cpg {
       Option(config.defaultIgnoredFilesRegex),
       Option(config.ignoredFilesRegex),
       Option(config.ignoredFiles)
-    )
+    )(config.fileVisitOptions)
   }
 
   /** Addresses behaviour in Windows where a user-specific temp folder is used: parserResult.fullPath =

@@ -149,7 +149,7 @@ object SourceParser {
           ignoredDefaultRegex = Option(JavaSrc2Cpg.DefaultIgnoredFilesRegex),
           ignoredFilesRegex = Option(config.ignoredFilesRegex),
           ignoredFilesPath = Option(config.ignoredFiles)
-        )
+        )(config.fileVisitOptions)
       )
       .flatMap(FileInfo.getFileInfo(inputPath, _))
 

@@ -62,7 +62,7 @@ class AstCreationPass(
         ignoredDefaultRegex = Option(C2Cpg.DefaultIgnoredFolders),
         ignoredFilesRegex = Option(config.ignoredFilesRegex),
         ignoredFilesPath = Option(config.ignoredFiles)
-      )
+      )(config.fileVisitOptions)
       .toArray
     if (config.withPreprocessedFiles) {
       allSourceFiles.filter {

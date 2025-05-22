@@ -34,7 +34,7 @@ trait AstC2CpgFrontend extends LanguageFrontend {
           ignoredDefaultRegex = Option(DefaultIgnoredFolders),
           ignoredFilesRegex = Option(config.ignoredFilesRegex),
           ignoredFilesPath = Option(config.ignoredFiles)
-        )
+        )(config.fileVisitOptions)
     } else List.empty
 
     val sourceFileExtensions = FileDefaults.SourceFileExtensions ++

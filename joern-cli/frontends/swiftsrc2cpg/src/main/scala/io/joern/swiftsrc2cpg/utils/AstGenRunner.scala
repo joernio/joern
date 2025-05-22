@@ -152,7 +152,9 @@ class AstGenRunner(config: Config) {
     logger.info(s"Parsed $numOfParsedFiles files.")
     if (numOfParsedFiles == 0) {
       logger.warn("You may want to check the DEBUG logs for a list of files that are ignored by default.")
-      SourceFiles.determine(in.toString, Set(".swift"), ignoredDefaultRegex = Option(AstGenDefaultIgnoreRegex))
+      SourceFiles.determine(in.toString, Set(".swift"), ignoredDefaultRegex = Option(AstGenDefaultIgnoreRegex))(
+        config.fileVisitOptions
+      )
     }
     files
   }
@@ -162,7 +164,10 @@ class AstGenRunner(config: Config) {
     logger.info(s"Running SwiftAstGen in '$in' ...")
     runAstGenNative(in, out) match {
       case Success(result) =>
-        val parsed  = checkParsedFiles(filterFiles(SourceFiles.determine(out.toString, Set(".json")), out), in)
+        val parsed = checkParsedFiles(
+          filterFiles(SourceFiles.determine(out.toString, Set(".json"))(config.fileVisitOptions), out),
+          in
+        )
         val skipped = skippedFiles(result.toList)
         AstGenRunnerResult(parsed, skipped)
       case Failure(f) =>

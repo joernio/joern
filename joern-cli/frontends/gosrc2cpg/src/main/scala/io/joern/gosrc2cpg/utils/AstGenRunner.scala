@@ -94,7 +94,7 @@ class AstGenRunner(config: Config, includeFileRegex: String = "") extends AstGen
           Set(".json"),
           ignoredFilesRegex = Option(config.ignoredFilesRegex),
           ignoredFilesPath = Option(config.ignoredFiles)
-        )
+        )(config.fileVisitOptions)
         val parsedModFile = filterModFile(srcFiles, out)
         val parsed        = filterFiles(srcFiles, out)
         val skipped       = skippedFiles(in, result.toList)

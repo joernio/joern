@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory
 import scopt.OParser
 
 import java.io.PrintWriter
-import java.nio.file.{Files, Paths}
+import java.nio.file.{FileVisitOption, Files, Paths}
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
@@ -45,9 +45,10 @@ trait X2CpgConfig[R <: X2CpgConfig[R]] {
     this
   }
 
-  var defaultIgnoredFilesRegex: Seq[Regex] = Seq.empty
-  var ignoredFilesRegex: Regex             = "".r
-  var ignoredFiles: Seq[String]            = Seq.empty
+  var defaultIgnoredFilesRegex: Seq[Regex]   = Seq.empty
+  var ignoredFilesRegex: Regex               = "".r
+  var ignoredFiles: Seq[String]              = Seq.empty
+  var fileVisitOptions: Seq[FileVisitOption] = Seq(FileVisitOption.FOLLOW_LINKS)
 
   def withDefaultIgnoredFilesRegex(x: Seq[Regex]): R = {
     this.defaultIgnoredFilesRegex = x
@@ -68,6 +69,11 @@ trait X2CpgConfig[R <: X2CpgConfig[R]] {
     val path = Paths.get(ignore)
     if (path.isAbsolute) { path.toString }
     else { Paths.get(inputPath, ignore).toAbsolutePath.normalize().toString }
+  }
+
+  def withFileVisitOptions(options: Seq[FileVisitOption]): R = {
+    this.fileVisitOptions = options
+    this.asInstanceOf[R]
   }
 
   var schemaValidation: ValidationMode = ValidationMode.Disabled
@@ -309,6 +315,21 @@ object X2Cpg {
           c
         }
         .text("a regex specifying files to exclude during CPG generation (paths relative to <input-dir> are matched)"),
+      opt[Seq[String]]("visit-options")
+        .text(
+          "a list of `FileVisitOption` enums to incorporate when walking for source files to parse. If no options are desired, simply leave the entry blank (\"\"). Default `FOLLOW_LINKS`."
+        )
+        .valueName("<option>")
+        .unbounded()
+        .validate { xs =>
+          val validOptions = FileVisitOption.values().map(_.name()).toSet
+          val givenOptions = xs.filterNot(_.isEmpty).map(_.toUpperCase).toSet
+          (givenOptions diff validOptions).toList match {
+            case Nil            => success
+            case invalidOptions => failure(s"Invalid visit options given: [${invalidOptions.mkString(",")}]")
+          }
+        }
+        .action((xs, c) => c.withFileVisitOptions(xs.filterNot(_.isEmpty).map(FileVisitOption.valueOf))),
       opt[Unit]("enable-early-schema-checking")
         .action((_, c) => c.withSchemaValidation(ValidationMode.Enabled))
         .text("enables early schema validation during AST creation (disabled by default)"),
