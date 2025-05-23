@@ -75,11 +75,9 @@ object Domain {
     val unset  = "unset"
   }
 
-  private val logger          = LoggerFactory.getLogger(Domain.getClass)
-  val NamespaceDelimiter      = "\\"
-  val StaticMethodDelimiter   = "::"
-  val InstanceMethodDelimiter = "->"
-  val MethodDelimiter = "."
+  private val logger     = LoggerFactory.getLogger(Domain.getClass)
+  val NamespaceDelimiter = "\\"
+  val MethodDelimiter    = "."
   // Used for creating the default constructor.
   val ConstructorMethodName = "__construct"
   val MetaTypeDeclExtension = "<metaclass>"

@@ -211,8 +211,8 @@ trait TypeRecoveryParserConfig[R <: X2CpgConfig[R]] { this: R =>
 abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, state: XTypeRecoveryState, iteration: Int)
     extends ForkJoinParallelCpgPass[CompilationUnitType](cpg) {
 
-  // fixme: neable or disable?
-  override def isParallel: Boolean = false
+  // fixme: enable or disable?
+  override def isParallel: Boolean = true
   override def init(): Unit = {
     super.init()
     state.currentIteration = iteration

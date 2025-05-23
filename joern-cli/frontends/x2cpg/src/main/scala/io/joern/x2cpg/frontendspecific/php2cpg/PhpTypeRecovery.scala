@@ -158,17 +158,29 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
       if (typeName.startsWith(Defines.UnresolvedNamespace)) {
         true
       } else if (typeName.endsWith(XTypeRecovery.DummyReturnType)) {
-        typeName.split(pathSep).toList.reverse match {
-          case _ :: methodFullName :: Nil =>
-            val methodReturns = methodReturnValues(Seq(methodFullName))
-              .filterNot(_.endsWith(s"${XTypeRecovery.DummyReturnType}"))
-            methodReturns.nonEmpty
-          case _ :: methodName :: typeFullName =>
-            val methodFullName = Seq(s"${typeFullName.mkString(pathSep)}$pathSep$methodName")
-            val methodReturns = methodReturnValues(methodFullName)
-              .filterNot(_.endsWith(s"${XTypeRecovery.DummyReturnType}"))
-            methodReturns.nonEmpty
-          case _ => false
+        if (typeName.contains("<metaclass>")) {
+          typeName.split("<metaclass>").toList.reverse match {
+            case methodNameWithReturn :: className :: Nil =>
+              val methodName     = methodNameWithReturn.split("\\.").dropRight(1).mkString(".")
+              val methodFullName = s"$className<metaclass>$methodName"
+              val methodReturns =
+                methodReturnValues(Seq(methodFullName)).filterNot(_.endsWith(s"${XTypeRecovery.DummyReturnType}"))
+              methodReturns.nonEmpty
+            case _ => false
+          }
+        } else {
+          typeName.split(s"\\$pathSep").toList.reverse match {
+            case _ :: methodFullName :: Nil =>
+              val methodReturns = methodReturnValues(Seq(methodFullName))
+                .filterNot(_.endsWith(s"${XTypeRecovery.DummyReturnType}"))
+              methodReturns.nonEmpty
+            case _ :: methodName :: typeFullName =>
+              val methodFullName = Seq(s"${typeFullName.mkString(pathSep)}$pathSep$methodName")
+              val methodReturns = methodReturnValues(methodFullName)
+                .filterNot(_.endsWith(s"${XTypeRecovery.DummyReturnType}"))
+              methodReturns.nonEmpty
+            case _ => false
+          }
         }
       } else {
         false

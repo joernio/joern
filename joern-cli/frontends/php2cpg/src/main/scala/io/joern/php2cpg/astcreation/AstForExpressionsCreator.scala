@@ -212,7 +212,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         identifierNode(originNode, name, name, typ.getOrElse(Defines.Any), typ.toList)
       }
       val fieldIdentifier = fieldIdentifierNode(originNode, memberNode.name, memberNode.name)
-      val code            = s"${NameConstants.Self}$MethodDelimiter${memberNode.code.replaceAll("(static|case|const) ", "")}"
+      val code = s"${NameConstants.Self}$MethodDelimiter${memberNode.code.replaceAll("(static|case|const) ", "")}"
       val fieldAccessNode = operatorCallNode(originNode, code, Operators.fieldAccess, None)
       callAst(fieldAccessNode, List(selfIdentifier, fieldIdentifier).map(Ast(_)))
     }
