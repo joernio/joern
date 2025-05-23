@@ -233,7 +233,7 @@ trait AstForTypesCreator { this: AstCreator =>
 
   protected def astForASMDeclaration(asm: IASTASMDeclaration): Ast = Ast(unknownNode(asm, code(asm)))
 
-  protected def isCPPClass(decl: IASTSimpleDeclaration): Boolean = {
+  protected def isCPPClassLike(decl: IASTSimpleDeclaration): Boolean = {
     decl.getDeclSpecifier match {
       case t: ICPPASTNamedTypeSpecifier =>
         safeGetBinding(t.getName).exists { binding => binding.isInstanceOf[ICompositeType] }
@@ -289,7 +289,7 @@ trait AstForTypesCreator { this: AstCreator =>
     val initAsts = decl match {
       case declaration: IASTSimpleDeclaration if declaration.getDeclarators.nonEmpty =>
         declaration.getDeclarators.toList.map {
-          case d: ICPPASTDeclarator if d.getInitializer == null && isCPPClass(declaration) =>
+          case d: ICPPASTDeclarator if d.getInitializer == null && isCPPClassLike(declaration) =>
             astForConstructorCall(d)
           case d: IASTDeclarator if d.getInitializer != null =>
             astForInitializer(d, d.getInitializer)

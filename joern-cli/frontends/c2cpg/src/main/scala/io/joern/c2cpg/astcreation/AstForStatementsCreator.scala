@@ -180,7 +180,7 @@ trait AstForStatementsCreator { this: AstCreator =>
         callAst(assignmentCallNode, List(left, allocCallAst))
       }
     val initCallsAsts = simpleDecl.getDeclarators.map {
-      case d: ICPPASTDeclarator if d.getInitializer == null && isCPPClass(simpleDecl) => astForConstructorCall(d)
+      case d: ICPPASTDeclarator if d.getInitializer == null && isCPPClassLike(simpleDecl) => astForConstructorCall(d)
       case d if d.getInitializer != null => astForInitializer(d, d.getInitializer)
       case _                             => Ast()
     }
