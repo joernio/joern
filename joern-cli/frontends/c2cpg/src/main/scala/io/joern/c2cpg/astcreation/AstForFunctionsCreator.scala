@@ -274,7 +274,17 @@ trait AstForFunctionsCreator { this: AstCreator =>
   private def astForICPPASTConstructorChainInitializer(init: ICPPASTConstructorChainInitializer): Ast = {
     init.getInitializer match {
       case l: IASTInitializerList if l.getClauses == null || l.getClauses.isEmpty || l.getClauses.forall(_ == null) =>
-        Ast()
+        val leftAst = syntheticThisAccess(init.getMemberInitializerId, nameForIdentifier(init.getMemberInitializerId))
+        // TODO: figure out the actual initialization (as it depends of the type).
+        val rightAst = Ast(unknownNode(init, code(l)))
+        val op       = Operators.assignment
+        val leftCode =
+          leftAst.root.collect { case expr: ExpressionNew => expr.code }.getOrElse(code(init.getMemberInitializerId))
+        val rightCode  = code(l)
+        val codeString = s"$leftCode = $rightCode"
+        val assignmentCall =
+          callNode(init, codeString, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Void)))
+        callAst(assignmentCall, List(leftAst, rightAst))
       case c: ICPPASTConstructorInitializer if init.getMemberInitializerId.isInstanceOf[ICPPASTQualifiedName] =>
         val constructorCallName = shortName(init.getMemberInitializerId)
         val typeFullName        = fullName(init.getMemberInitializerId)
