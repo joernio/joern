@@ -48,7 +48,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
 
   protected val methodTypesTable = mutable.Map[Method, mutable.HashSet[String]]()
 
-  override val pathSep: String = "->"
+  override val pathSep: String = "."
 
   override def hasTypes(node: AstNode): Boolean = {
     node match {
@@ -252,7 +252,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
     // Check inheritance for resolved method full name patterns
     val fullNames = {
       val foundMethodFullNames = methodFullNames.flatMap {
-        case s"${typeFullName}->${methodName}" =>
+        case s"${typeFullName}$pathSep${methodName}" =>
           val targetTypes = cpg.typeDecl.fullNameExact(typeFullName).l
           val transtypes  = targetTypes.baseTypeDeclTransitive.l
           val methods     = transtypes.method.nameExact(methodName).l
@@ -300,7 +300,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
     def setFromKnownTypes(i: CfgNode, tgt: CfgNode): Option[String] = {
       i.getKnownTypes.l match {
         case Nil      => None
-        case t :: Nil => setNodeFullName(tgt, s"$t->${c.name}")
+        case t :: Nil => setNodeFullName(tgt, s"$t$pathSep${c.name}")
         case x        => None /* TODO: case where multiple possible types are identified */
       }
     }
@@ -310,7 +310,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
       case rc: Call if rc.methodFullName.startsWith(Defines.UnresolvedNamespace) =>
         // Helps deal with with long call chains by attempting to perform an immediate resolve
         visitUnresolvedDynamicCall(rc).flatMap { rcFullName =>
-          val newFullName = s"$rcFullName->${c.name}"
+          val newFullName = s"$rcFullName$pathSep${c.name}"
           setNodeFullName(c, newFullName)
         }
       case p: Identifier if p.name == "this" =>
@@ -319,7 +319,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
           .where(_.method.nameExact(c.name))
           .fullName
           .headOption
-          .flatMap(tfn => setNodeFullName(c, s"$tfn->${c.name}"))
+          .flatMap(tfn => setNodeFullName(c, s"$tfn$pathSep${c.name}"))
       case p: Identifier => setFromKnownTypes(p, c)
       case rc: Call      => setFromKnownTypes(rc, c)
       case _             => None

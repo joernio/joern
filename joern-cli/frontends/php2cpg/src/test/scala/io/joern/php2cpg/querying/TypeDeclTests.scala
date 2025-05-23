@@ -43,7 +43,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         |""".stripMargin).withConfig(Config().withDisableFileContent(false))
     "be created correctly" in {
       inside(cpg.method.name("foo").l) { case List(fooMethod) =>
-        fooMethod.fullName shouldBe s"Foo->foo"
+        fooMethod.fullName shouldBe s"Foo.foo"
         fooMethod.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
         fooMethod.modifier.map(_.modifierType).toSet shouldBe Set(ModifierTypes.FINAL, ModifierTypes.PUBLIC)
         fooMethod.methodReturn.typeFullName shouldBe "int"
@@ -102,9 +102,9 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         }
 
         initCall.name shouldBe "__construct"
-        initCall.methodFullName shouldBe s"Foo->__construct"
+        initCall.methodFullName shouldBe s"Foo.__construct"
         initCall.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
-        initCall.code shouldBe "Foo->__construct(42)"
+        initCall.code shouldBe "Foo.__construct(42)"
         inside(initCall.argument.l) { case List(tmpIdentifier: Identifier, literal: Literal) =>
           tmpIdentifier.name shouldBe "foo@tmp-0"
           tmpIdentifier.code shouldBe "$foo@tmp-0"
@@ -149,7 +149,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
       inside(fooDecl.astChildren.l) { case List(fooMethod: Method) =>
         fooMethod.name shouldBe "foo"
-        fooMethod.fullName shouldBe s"Foo->foo"
+        fooMethod.fullName shouldBe s"Foo.foo"
         fooMethod.signature shouldBe s"${Defines.UnresolvedSignature}(0)"
       }
     }
@@ -184,7 +184,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
       inside(fooDecl.astChildren.l) { case List(fooMethod: Method) =>
         fooMethod.name shouldBe "foo"
-        fooMethod.fullName shouldBe s"Foo->foo"
+        fooMethod.fullName shouldBe s"Foo.foo"
         fooMethod.signature shouldBe s"${Defines.UnresolvedSignature}(0)"
       }
     }
@@ -244,32 +244,32 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       case fooTypeDecl :: Nil =>
         inside(fooTypeDecl.method.l) { case List(clinitMethod: Method) =>
           clinitMethod.name shouldBe Defines.StaticInitMethodName
-          clinitMethod.fullName shouldBe s"Foo${Domain.MetaTypeDeclExtension}::${Defines.StaticInitMethodName}"
+          clinitMethod.fullName shouldBe s"Foo${Domain.MetaTypeDeclExtension}.${Defines.StaticInitMethodName}"
           clinitMethod.signature shouldBe "void()"
           clinitMethod.filename shouldBe "foo.php"
           clinitMethod.file.name.l shouldBe List("foo.php")
 
           inside(clinitMethod.body.astChildren.l) { case List(self: Local, aAssign: Call, bAssign: Call) =>
-            aAssign.code shouldBe "self::A = \"A\""
+            aAssign.code shouldBe "self.A = \"A\""
             inside(aAssign.astChildren.l) { case List(aCall: Call, aLiteral: Literal) =>
               inside(aCall.argument.l) { case List(aSelf: Identifier, aField: FieldIdentifier) =>
                 aSelf.name shouldBe "self"
                 aField.code shouldBe "A"
               }
               aCall.name shouldBe Operators.fieldAccess
-              aCall.code shouldBe "self::A"
+              aCall.code shouldBe "self.A"
 
               aLiteral.code shouldBe "\"A\""
             }
 
-            bAssign.code shouldBe "self::B = \"B\""
+            bAssign.code shouldBe "self.B = \"B\""
             inside(bAssign.astChildren.l) { case List(bCall: Call, bLiteral: Literal) =>
               inside(bCall.argument.l) { case List(bSelf: Identifier, bField: FieldIdentifier) =>
                 bSelf.name shouldBe "self"
                 bField.code shouldBe "B"
               }
               bCall.name shouldBe Operators.fieldAccess
-              bCall.code shouldBe "self::B"
+              bCall.code shouldBe "self.B"
 
               bLiteral.code shouldBe "\"B\""
             }
@@ -292,7 +292,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
     inside(cpg.typeDecl.name(s"Foo${Domain.MetaTypeDeclExtension}").method.name("foo").l) {
       case fooMethod :: Nil =>
         fooMethod.name shouldBe "foo"
-        fooMethod.fullName shouldBe s"Foo${Domain.MetaTypeDeclExtension}::foo"
+        fooMethod.fullName shouldBe s"Foo${Domain.MetaTypeDeclExtension}.foo"
       case xs => fail(s"Expected one typeDecl, got ${xs.name.mkString("[", ",", "]")}")
     }
   }
@@ -355,7 +355,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
             aField.code shouldBe "A"
           }
           aCall.name shouldBe Operators.fieldAccess
-          aCall.code shouldBe "self::$A"
+          aCall.code shouldBe "self.$A"
 
           aLiteral.code shouldBe "\"A\""
         }
@@ -366,7 +366,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
             bField.code shouldBe "B"
           }
           bCall.name shouldBe Operators.fieldAccess
-          bCall.code shouldBe "self::B" // Notice there is no `$` in front of the const member
+          bCall.code shouldBe "self.B" // Notice there is no `$` in front of the const member
 
           bLiteral.code shouldBe "\"B\""
         }
@@ -399,7 +399,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
           memberX.code shouldBe "$x"
 
           val List(anonConstructor0) = anonClass0.method.name("__construct").l
-          anonConstructor0.fullName shouldBe "Test0.php:<global>@anon-class-0->__construct"
+          anonConstructor0.fullName shouldBe "Test0.php:<global>@anon-class-0.__construct"
 
           val List(anonClass0ThisParam, paramX) = anonConstructor0.parameter.l
           anonClass0ThisParam.code shouldBe "this"
@@ -408,7 +408,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
           inside(anonConstructor0.body.astChildren.isCall.name(Operators.assignment).l) {
             case assignmentCall :: Nil =>
               val List(lhs, rhs) = assignmentCall.argument.l
-              lhs.code shouldBe "$this->x"
+              lhs.code shouldBe "$this.x"
               rhs.code shouldBe "$x"
             case xs => fail(s"Expected assignment call, got ${xs.code.mkString("[", ",", "]")}")
           }
@@ -417,7 +417,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
           memberY.code shouldBe "$y"
 
           val List(anonConstructor1) = anonClass1.method.name("__construct").l
-          anonConstructor1.fullName shouldBe "Test0.php:<global>@anon-class-1->__construct"
+          anonConstructor1.fullName shouldBe "Test0.php:<global>@anon-class-1.__construct"
 
           val List(anonClass1ThisParam, paramY) = anonConstructor1.parameter.l
           anonClass1ThisParam.code shouldBe "this"
@@ -426,7 +426,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
           inside(anonConstructor1.body.astChildren.isCall.name(Operators.assignment).l) {
             case assignmentCall :: Nil =>
               val List(lhs, rhs) = assignmentCall.argument.l
-              lhs.code shouldBe "$this->y"
+              lhs.code shouldBe "$this.y"
               rhs.code shouldBe "$y"
             case xs => fail(s"Expected assignment call, got ${xs.code.mkString("[", ",", "]")}")
           }
@@ -449,12 +449,12 @@ class TypeDeclTests extends PhpCode2CpgFixture {
     "generate __construct calls" in {
       inside(cpg.call.name("__construct").l) {
         case constructAnonClass0 :: constructAnonClass1 :: Nil =>
-          constructAnonClass0.code shouldBe "Test0.php:<global>@anon-class-0->__construct(10)"
+          constructAnonClass0.code shouldBe "Test0.php:<global>@anon-class-0.__construct(10)"
           val List(anonClass0Param1: Identifier, anonClass0Param2: Literal) = constructAnonClass0.argument.l: @unchecked
           anonClass0Param1.code shouldBe "$Test0.php:<global>@tmp-0"
           anonClass0Param2.code shouldBe "10"
 
-          constructAnonClass1.code shouldBe "Test0.php:<global>@anon-class-1->__construct(30)"
+          constructAnonClass1.code shouldBe "Test0.php:<global>@anon-class-1.__construct(30)"
           val List(anonClass1Param1: Identifier, anonClass1Param2: Literal) = constructAnonClass1.argument.l: @unchecked
           anonClass1Param1.code shouldBe "$Test0.php:<global>@tmp-1"
           anonClass1Param2.code shouldBe "30"
@@ -525,29 +525,29 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         |""".stripMargin)
 
     cpg.method.name("<global>").dotAst.l.foreach(println)
-    inside(cpg.typeDecl.name("C->D@anon-class-\\d+").l) {
+    inside(cpg.typeDecl.name("C.D@anon-class-\\d+").l) {
       case anonClass :: Nil =>
-        anonClass.fullName shouldBe s"C->D@anon-class-0"
+        anonClass.fullName shouldBe s"C.D@anon-class-0"
         anonClass.member.code.l shouldBe List("$x")
       case xs => fail(s"Expected one anonymous class, got ${xs.code.mkString("[", ",", "]")}")
     }
 
     inside(cpg.method.name("D").body.astChildren.l) {
       case (localNode: Local) :: (bodyBlock: Block) :: Nil =>
-        localNode.code shouldBe "$C->D@tmp-0"
-        localNode.name shouldBe "C->D@tmp-0"
-        localNode.typeFullName shouldBe "C->D@anon-class-0"
+        localNode.code shouldBe "$C.D@tmp-0"
+        localNode.name shouldBe "C.D@tmp-0"
+        localNode.typeFullName shouldBe "C.D@anon-class-0"
 
         inside(bodyBlock.astChildren.l) {
           case (assignmentCall: Call) :: (constructCall: Call) :: (tmpIdentifier: Identifier) :: Nil =>
             assignmentCall.methodFullName shouldBe Operators.assignment
             val List(lhs: Identifier, rhs: Call) = assignmentCall.argument.l: @unchecked
-            lhs.typeFullName shouldBe "C->D@anon-class-0"
+            lhs.typeFullName shouldBe "C.D@anon-class-0"
             rhs.methodFullName shouldBe Operators.alloc
 
-            constructCall.methodFullName shouldBe "C->D@anon-class-0->__construct"
+            constructCall.methodFullName shouldBe "C.D@anon-class-0.__construct"
 
-            tmpIdentifier.code shouldBe "$C->D@tmp-0"
+            tmpIdentifier.code shouldBe "$C.D@tmp-0"
           case xs => fail(s"Expected three children, got ${xs.code.mkString("[", ",", "]")}")
         }
       case xs => fail(s"expected localNode and body, got ${xs.code.mkString("[", ",", "]")}")
@@ -598,11 +598,11 @@ class TypeDeclTests extends PhpCode2CpgFixture {
               self.code shouldBe "self"
 
               val List(bazzLhs: FieldAccess, bazzRhs: Literal) = assignmentBazz.argument.l: @unchecked
-              bazzLhs.code shouldBe "self::BAZZ"
+              bazzLhs.code shouldBe "self.BAZZ"
               bazzRhs.code shouldBe "\"bazz\""
 
               val List(fooLhs, fooRhs) = assignmentFoo.argument.l: @unchecked
-              fooLhs.code shouldBe "self::$foo"
+              fooLhs.code shouldBe "self.$foo"
               fooRhs.code shouldBe "\"foo\""
 
             case xs => fail(s"Expected three children, got ${xs.code.mkString("[", ",", "]")}")
@@ -665,18 +665,18 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       ) {
         case staticConstructor :: Nil =>
           staticConstructor.name shouldBe Defines.StaticInitMethodName
-          staticConstructor.fullName shouldBe s"Test0.php:<global>@anon-class-0${Domain.MetaTypeDeclExtension}::<clinit>"
+          staticConstructor.fullName shouldBe s"Test0.php:<global>@anon-class-0${Domain.MetaTypeDeclExtension}.<clinit>"
 
           inside(staticConstructor.body.astChildren.l) {
             case (self: Local) :: (bazzAssignment: Call) :: (fooAssignment: Call) :: Nil =>
               self.code shouldBe "self"
 
               val List(bazzLhs: FieldAccess, bazzRhs: Literal) = bazzAssignment.argument.l: @unchecked
-              bazzLhs.code shouldBe "self::BAZZ"
+              bazzLhs.code shouldBe "self.BAZZ"
               bazzRhs.code shouldBe "\"bazz\""
 
               val List(fooLhs, fooRhs) = fooAssignment.argument.l: @unchecked
-              fooLhs.code shouldBe "self::$foo"
+              fooLhs.code shouldBe "self.$foo"
               fooRhs.code shouldBe "\"foo\""
             case xs => fail(s"Expected three astChildren, got ${xs.code.mkString("[", ",", "]")}")
           }

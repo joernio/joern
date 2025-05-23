@@ -212,7 +212,7 @@ abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, state: XT
     extends ForkJoinParallelCpgPass[CompilationUnitType](cpg) {
 
   // fixme: neable or disable?
-  override def isParallel: Boolean = true
+  override def isParallel: Boolean = false
   override def init(): Unit = {
     super.init()
     state.currentIteration = iteration
