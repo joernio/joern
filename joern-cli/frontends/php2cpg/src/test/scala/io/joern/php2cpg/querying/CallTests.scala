@@ -212,7 +212,7 @@ class CallTests extends PhpCode2CpgFixture {
 
     cpg.method.name("foo").call.name("bar").methodFullName.l shouldBe List("Foo<metaclass>.bar")
     cpg.method.name("foz").call.name("boz").methodFullName.l shouldBe List(
-      "Foo<metaclass>.foo@anon-class-0<metaclass>.boz"
+      "Foo<metaclass>.foo.anon-class-0<metaclass>.boz"
     )
   }
 
@@ -234,6 +234,6 @@ class CallTests extends PhpCode2CpgFixture {
          |  private static function bar() {}
          |}
          |""".stripMargin)
-    cpg.method.name("foz").call.name("boz").methodFullName.l shouldBe List("Foo.foo@anon-class-0<metaclass>.boz")
+    cpg.method.name("foz").call.name("boz").methodFullName.l shouldBe List("Foo.foo.anon-class-0<metaclass>.boz")
   }
 }

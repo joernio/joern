@@ -774,7 +774,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         val targetAst           = astForExpr(expr.className)
         val fieldIdentifierName = expr.constantName.map(_.name).getOrElse(NameConstants.Unknown)
         val fieldIdentifier     = fieldIdentifierNode(expr, fieldIdentifierName, fieldIdentifierName)
-        val fieldAccessCode     = s"${targetAst.rootCodeOrEmpty}$MethodDelimiter${fieldIdentifier.code}"
+        val fieldAccessCode     = s"${targetAst.rootCodeOrEmpty}$StaticMethodDelimiter${fieldIdentifier.code}"
         val fieldAccessCall     = operatorCallNode(expr, fieldAccessCode, Operators.fieldAccess, None)
         callAst(fieldAccessCall, List(targetAst, Ast(fieldIdentifier)))
     }

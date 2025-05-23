@@ -146,7 +146,7 @@ class MemberTests extends PhpCode2CpgFixture {
       |""".stripMargin)
 
     inside(cpg.call.nameExact(Operators.fieldAccess).l) { case List(fieldAccess) =>
-      fieldAccess.code shouldBe "Foo.X"
+      fieldAccess.code shouldBe "Foo::X"
       fieldAccess.lineNumber shouldBe Some(2)
 
       inside(fieldAccess.argument.l) { case List(fooArg: Identifier, xArg: FieldIdentifier) =>
