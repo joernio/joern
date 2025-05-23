@@ -250,26 +250,26 @@ class TypeDeclTests extends PhpCode2CpgFixture {
           clinitMethod.file.name.l shouldBe List("foo.php")
 
           inside(clinitMethod.body.astChildren.l) { case List(self: Local, aAssign: Call, bAssign: Call) =>
-            aAssign.code shouldBe "self.A = \"A\""
+            aAssign.code shouldBe "self::A = \"A\""
             inside(aAssign.astChildren.l) { case List(aCall: Call, aLiteral: Literal) =>
               inside(aCall.argument.l) { case List(aSelf: Identifier, aField: FieldIdentifier) =>
                 aSelf.name shouldBe "self"
                 aField.code shouldBe "A"
               }
               aCall.name shouldBe Operators.fieldAccess
-              aCall.code shouldBe "self.A"
+              aCall.code shouldBe "self::A"
 
               aLiteral.code shouldBe "\"A\""
             }
 
-            bAssign.code shouldBe "self.B = \"B\""
+            bAssign.code shouldBe "self::B = \"B\""
             inside(bAssign.astChildren.l) { case List(bCall: Call, bLiteral: Literal) =>
               inside(bCall.argument.l) { case List(bSelf: Identifier, bField: FieldIdentifier) =>
                 bSelf.name shouldBe "self"
                 bField.code shouldBe "B"
               }
               bCall.name shouldBe Operators.fieldAccess
-              bCall.code shouldBe "self.B"
+              bCall.code shouldBe "self::B"
 
               bLiteral.code shouldBe "\"B\""
             }
@@ -355,7 +355,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
             aField.code shouldBe "A"
           }
           aCall.name shouldBe Operators.fieldAccess
-          aCall.code shouldBe "self.$A"
+          aCall.code shouldBe "self::$A"
 
           aLiteral.code shouldBe "\"A\""
         }
@@ -366,7 +366,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
             bField.code shouldBe "B"
           }
           bCall.name shouldBe Operators.fieldAccess
-          bCall.code shouldBe "self.B" // Notice there is no `$` in front of the const member
+          bCall.code shouldBe "self::B" // Notice there is no `$` in front of the const member
 
           bLiteral.code shouldBe "\"B\""
         }
@@ -408,7 +408,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
           inside(anonConstructor0.body.astChildren.isCall.name(Operators.assignment).l) {
             case assignmentCall :: Nil =>
               val List(lhs, rhs) = assignmentCall.argument.l
-              lhs.code shouldBe "$this.x"
+              lhs.code shouldBe "$this->x"
               rhs.code shouldBe "$x"
             case xs => fail(s"Expected assignment call, got ${xs.code.mkString("[", ",", "]")}")
           }
@@ -426,7 +426,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
           inside(anonConstructor1.body.astChildren.isCall.name(Operators.assignment).l) {
             case assignmentCall :: Nil =>
               val List(lhs, rhs) = assignmentCall.argument.l
-              lhs.code shouldBe "$this.y"
+              lhs.code shouldBe "$this->y"
               rhs.code shouldBe "$y"
             case xs => fail(s"Expected assignment call, got ${xs.code.mkString("[", ",", "]")}")
           }
@@ -598,11 +598,11 @@ class TypeDeclTests extends PhpCode2CpgFixture {
               self.code shouldBe "self"
 
               val List(bazzLhs: FieldAccess, bazzRhs: Literal) = assignmentBazz.argument.l: @unchecked
-              bazzLhs.code shouldBe "self.BAZZ"
+              bazzLhs.code shouldBe "self::BAZZ"
               bazzRhs.code shouldBe "\"bazz\""
 
               val List(fooLhs, fooRhs) = assignmentFoo.argument.l: @unchecked
-              fooLhs.code shouldBe "self.$foo"
+              fooLhs.code shouldBe "self::$foo"
               fooRhs.code shouldBe "\"foo\""
 
             case xs => fail(s"Expected three children, got ${xs.code.mkString("[", ",", "]")}")
@@ -672,11 +672,11 @@ class TypeDeclTests extends PhpCode2CpgFixture {
               self.code shouldBe "self"
 
               val List(bazzLhs: FieldAccess, bazzRhs: Literal) = bazzAssignment.argument.l: @unchecked
-              bazzLhs.code shouldBe "self.BAZZ"
+              bazzLhs.code shouldBe "self::BAZZ"
               bazzRhs.code shouldBe "\"bazz\""
 
               val List(fooLhs, fooRhs) = fooAssignment.argument.l: @unchecked
-              fooLhs.code shouldBe "self.$foo"
+              fooLhs.code shouldBe "self::$foo"
               fooRhs.code shouldBe "\"foo\""
             case xs => fail(s"Expected three astChildren, got ${xs.code.mkString("[", ",", "]")}")
           }

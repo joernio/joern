@@ -15,7 +15,7 @@ class FieldAccessTests extends PhpCode2CpgFixture {
     inside(cpg.call.l) { case List(fieldAccess) =>
       fieldAccess.name shouldBe Operators.fieldAccess
       fieldAccess.methodFullName shouldBe Operators.fieldAccess
-      fieldAccess.code shouldBe "$obj.field"
+      fieldAccess.code shouldBe "$obj->field"
       fieldAccess.lineNumber shouldBe Some(2)
 
       inside(fieldAccess.argument.l) { case List(objIdentifier: Identifier, fieldIdentifier: FieldIdentifier) =>
@@ -38,7 +38,7 @@ class FieldAccessTests extends PhpCode2CpgFixture {
     inside(cpg.call.l) { case List(fieldAccess) =>
       fieldAccess.name shouldBe Operators.fieldAccess
       fieldAccess.methodFullName shouldBe Operators.fieldAccess
-      fieldAccess.code shouldBe "$$obj.$field"
+      fieldAccess.code shouldBe "$$obj->$field"
       fieldAccess.lineNumber shouldBe Some(2)
 
       inside(fieldAccess.argument.l) { case List(objIdentifier: Identifier, field: Identifier) =>
@@ -61,7 +61,7 @@ class FieldAccessTests extends PhpCode2CpgFixture {
     inside(cpg.call.l) { case List(fieldAccess) =>
       fieldAccess.name shouldBe Operators.fieldAccess
       fieldAccess.methodFullName shouldBe Operators.fieldAccess
-      fieldAccess.code shouldBe "$obj?.field"
+      fieldAccess.code shouldBe "$obj?->field"
       fieldAccess.lineNumber shouldBe Some(2)
 
       inside(fieldAccess.argument.l) { case List(objIdentifier: Identifier, fieldIdentifier: FieldIdentifier) =>
@@ -84,7 +84,7 @@ class FieldAccessTests extends PhpCode2CpgFixture {
     inside(cpg.call.l) { case List(fieldAccess) =>
       fieldAccess.name shouldBe Operators.fieldAccess
       fieldAccess.methodFullName shouldBe Operators.fieldAccess
-      fieldAccess.code shouldBe "className.$field"
+      fieldAccess.code shouldBe "className::$field"
       fieldAccess.lineNumber shouldBe Some(2)
 
       inside(fieldAccess.argument.l) { case List(classIdentifier: Identifier, fieldIdentifier: Identifier) =>

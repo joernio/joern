@@ -233,7 +233,7 @@ class MemberTests extends PhpCode2CpgFixture {
       }
 
       target.name shouldBe Operators.fieldAccess
-      target.code shouldBe s"self.$expectedValue"
+      target.code shouldBe s"self::$expectedValue"
       target.argumentIndex shouldBe 1
 
       source.code shouldBe s"\"$expectedValue\""

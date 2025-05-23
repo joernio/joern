@@ -101,7 +101,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           composeMethodFullName(name, call.isStatic, appendMetaTypeDeclExt = !scope.isSurroundedByMetaclassTypeDecl)
         else s"${nameExpr.name}$MetaTypeDeclExtension$MethodDelimiter$name"
       case Some(expr) =>
-        s"$UnresolvedNamespace\\$codePrefix"
+        val methodName = composeMethodName(call, targetAst, name)
+        s"$UnresolvedNamespace\\$methodName"
       case None if PhpBuiltins.FuncNames.contains(name) =>
         // No signature/namespace for MFN for builtin functions to ensure stable names as type info improves.
         name
@@ -199,7 +200,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     isField: Boolean
   ): Ast = {
     val targetAst = if (isField) {
-      val code            = s"$$this$MethodDelimiter${memberNode.name}"
+      val code            = s"$$this$InstanceMethodDelimiter${memberNode.name}"
       val fieldAccessNode = operatorCallNode(originNode, code, Operators.fieldAccess, None)
       val identifier      = thisIdentifier(originNode)
       val thisParam       = scope.lookupVariable(NameConstants.This)
@@ -212,7 +213,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         identifierNode(originNode, name, name, typ.getOrElse(Defines.Any), typ.toList)
       }
       val fieldIdentifier = fieldIdentifierNode(originNode, memberNode.name, memberNode.name)
-      val code = s"${NameConstants.Self}$MethodDelimiter${memberNode.code.replaceAll("(static|case|const) ", "")}"
+      val code = s"${NameConstants.Self}$StaticMethodDelimiter${memberNode.code.replaceAll("(static|case|const) ", "")}"
       val fieldAccessNode = operatorCallNode(originNode, code, Operators.fieldAccess, None)
       callAst(fieldAccessNode, List(selfIdentifier, fieldIdentifier).map(Ast(_)))
     }
@@ -496,10 +497,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
 
     val accessSymbol = {
-      if (expr.isNullsafe)
-        s"?${MethodDelimiter}"
+      if (expr.isStatic)
+        StaticMethodDelimiter
+      else if (expr.isNullsafe)
+        s"?$InstanceMethodDelimiter"
       else
-        MethodDelimiter
+        InstanceMethodDelimiter
     }
 
     val code            = s"${objExprAst.rootCodeOrEmpty}$accessSymbol${fieldAst.rootCodeOrEmpty}"

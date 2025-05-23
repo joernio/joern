@@ -1147,7 +1147,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       }
 
       valInit.name shouldBe Operators.assignment
-      valInit.code shouldBe "$val = $foo@iter_tmp-0.current()"
+      valInit.code shouldBe "$val = $foo@iter_tmp-0->current()"
       inside(valInit.argument.l) { case List(valId: Identifier, currentCall: Call) =>
         valId.name shouldBe "val"
         valId.code shouldBe "$val"
@@ -1155,7 +1155,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
         currentCall.name shouldBe "current"
         currentCall.methodFullName shouldBe s"Iterator.current"
-        currentCall.code shouldBe "$foo@iter_tmp-0.current()"
+        currentCall.code shouldBe "$foo@iter_tmp-0->current()"
         inside(currentCall.argument(0).start.l) { case List(iterRecv: Identifier) =>
           iterRecv.name shouldBe "foo@iter_tmp-0"
           iterRecv.argumentIndex shouldBe 0
@@ -1173,7 +1173,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
     inside(updateAsts.astChildren.l) { case List(nextCall: Call, valAssign: Call) =>
       nextCall.name shouldBe "next"
       nextCall.methodFullName shouldBe "Iterator.next"
-      nextCall.code shouldBe "$foo@iter_tmp-0.next()"
+      nextCall.code shouldBe "$foo@iter_tmp-0->next()"
       inside(nextCall.argument(0).start.l) { case List(iterTmp: Identifier) =>
         iterTmp.name shouldBe "foo@iter_tmp-0"
         iterTmp.code shouldBe "$foo@iter_tmp-0"
@@ -1181,7 +1181,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       }
 
       valAssign.name shouldBe Operators.assignment
-      valAssign.code shouldBe "$val = $foo@iter_tmp-0.current()"
+      valAssign.code shouldBe "$val = $foo@iter_tmp-0->current()"
     }
 
     inside(body.astChildren.l) { case List(echoCall: Call) =>
@@ -1215,19 +1215,19 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
     inside(initAsts.astChildren.l) { case List(_: Call, valInit: Call) =>
       valInit.name shouldBe Operators.assignment
-      valInit.code shouldBe "$val = &$foo@iter_tmp-0.current()"
+      valInit.code shouldBe "$val = &$foo@iter_tmp-0->current()"
       inside(valInit.argument.l) { case List(valId: Identifier, addressOfCall: Call) =>
         valId.name shouldBe "val"
         valId.code shouldBe "$val"
         valId.argumentIndex shouldBe 1
 
         addressOfCall.name shouldBe Operators.addressOf
-        addressOfCall.code shouldBe "&$foo@iter_tmp-0.current()"
+        addressOfCall.code shouldBe "&$foo@iter_tmp-0->current()"
 
         inside(addressOfCall.argument.l) { case List(currentCall: Call) =>
           currentCall.name shouldBe "current"
           currentCall.methodFullName shouldBe s"Iterator.current"
-          currentCall.code shouldBe "$foo@iter_tmp-0.current()"
+          currentCall.code shouldBe "$foo@iter_tmp-0->current()"
           inside(currentCall.argument(0).start.l) { case List(iterRecv: Identifier) =>
             iterRecv.name shouldBe "foo@iter_tmp-0"
             iterRecv.argumentIndex shouldBe 0
@@ -1238,7 +1238,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
     inside(updateAsts.astChildren.l) { case List(_: Call, valAssign: Call) =>
       valAssign.name shouldBe Operators.assignment
-      valAssign.code shouldBe "$val = &$foo@iter_tmp-0.current()"
+      valAssign.code shouldBe "$val = &$foo@iter_tmp-0->current()"
     }
 
     inside(body.astChildren.l) { case List(echoCall: Call) =>
@@ -1273,12 +1273,12 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
     inside(initAsts.assignment.l) { case List(_: Call, keyInit: Call, valInit: Call) =>
       keyInit.name shouldBe Operators.assignment
-      keyInit.code shouldBe "$key = $foo@iter_tmp-0.key()"
+      keyInit.code shouldBe "$key = $foo@iter_tmp-0->key()"
       inside(keyInit.argument.l) { case List(target: Identifier, keyCall: Call) =>
         target.name shouldBe "key"
         keyCall.name shouldBe "key"
         keyCall.methodFullName shouldBe s"Iterator.key"
-        keyCall.code shouldBe "$foo@iter_tmp-0.key()"
+        keyCall.code shouldBe "$foo@iter_tmp-0->key()"
         inside(keyCall.argument(0).start.l) { case List(iterRecv: Identifier) =>
           iterRecv.name shouldBe "foo@iter_tmp-0"
           iterRecv.argumentIndex shouldBe 0
@@ -1286,12 +1286,12 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       }
 
       valInit.name shouldBe Operators.assignment
-      valInit.code shouldBe "$val = $foo@iter_tmp-0.current()"
+      valInit.code shouldBe "$val = $foo@iter_tmp-0->current()"
       inside(valInit.argument.l) { case List(target: Identifier, currentCall: Call) =>
         target.name shouldBe "val"
         currentCall.name shouldBe "current"
         currentCall.methodFullName shouldBe s"Iterator.current"
-        currentCall.code shouldBe "$foo@iter_tmp-0.current()"
+        currentCall.code shouldBe "$foo@iter_tmp-0->current()"
         inside(currentCall.argument(0).start.l) { case List(iterRecv: Identifier) =>
           iterRecv.name shouldBe "foo@iter_tmp-0"
           iterRecv.argumentIndex shouldBe 0
@@ -1302,8 +1302,8 @@ class ControlStructureTests extends PhpCode2CpgFixture {
     inside(updateAsts.astChildren.l) { case List(_: Call, updateBlock: Block) =>
       val tmp = updateBlock.astChildren.l
       inside(updateBlock.assignment.l) { case List(keyInit: Call, valInit: Call) =>
-        keyInit.code shouldBe "$key = $foo@iter_tmp-0.key()"
-        valInit.code shouldBe "$val = $foo@iter_tmp-0.current()"
+        keyInit.code shouldBe "$key = $foo@iter_tmp-0->key()"
+        valInit.code shouldBe "$val = $foo@iter_tmp-0->current()"
       }
     }
 

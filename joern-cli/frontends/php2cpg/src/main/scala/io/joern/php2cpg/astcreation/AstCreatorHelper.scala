@@ -63,8 +63,6 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
         getTypeDeclPrefix
       }
 
-//      val methodDelimiter = if (isStatic) StaticMethodDelimiter else InstanceMethodDelimiter
-
       val nameWithClass = List(className, Some(methodName)).flatten.mkString(MethodDelimiter)
 
       prependNamespacePrefix(nameWithClass)
@@ -84,7 +82,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
   }
 
   protected def codeForMethodCall(call: PhpCallExpr, targetAst: Ast, name: String): String = {
-    val callOperator = if (call.isNullSafe) s"?$MethodDelimiter" else MethodDelimiter
+    val callOperator = if (call.isNullSafe) s"?$InstanceMethodDelimiter" else InstanceMethodDelimiter
     s"${targetAst.rootCodeOrEmpty}$callOperator$name"
   }
 
@@ -94,7 +92,23 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
         .map(astForExpr)
         .map(_.rootCode.getOrElse(UnresolvedNamespace))
         .getOrElse(UnresolvedNamespace)
-    s"$className$MethodDelimiter$name"
+    s"$className$StaticMethodDelimiter$name"
+  }
+
+  protected def composeMethodName(call: PhpCallExpr, targetAst: Option[Ast], name: String): String = {
+    if (call.isStatic) {
+      val className =
+        call.target
+          .map(astForExpr)
+          .map(_.rootCode.getOrElse(UnresolvedNamespace))
+          .getOrElse(UnresolvedNamespace)
+      s"$className$MethodDelimiter$name"
+    } else if (targetAst.isDefined) {
+      val callOperator = if (call.isNullSafe) s"?$MethodDelimiter" else MethodDelimiter
+      s"${targetAst.get.rootCodeOrEmpty}$callOperator$name"
+    } else {
+      name
+    }
   }
 
   protected def dimensionFromSimpleScalar(scalar: PhpSimpleScalar, idxTracker: ArrayIndexTracker): PhpExpr = {

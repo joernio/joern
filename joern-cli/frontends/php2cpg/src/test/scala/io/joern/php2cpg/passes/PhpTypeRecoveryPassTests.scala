@@ -374,7 +374,7 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture() {
     }
 
     "be properly resolved when called through class with known type" in {
-      val List(fooCall) = cpg.method("baz").ast.isCall.filter(_.code == "$a.foo()").take(1).l
+      val List(fooCall) = cpg.method("baz").ast.isCall.filter(_.code == "$a->foo()").take(1).l
       fooCall.methodFullName shouldBe "ClassA.foo"
     }
 
