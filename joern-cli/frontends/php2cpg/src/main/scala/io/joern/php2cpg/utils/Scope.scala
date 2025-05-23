@@ -21,6 +21,7 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
   private var tmpVarCounter                                       = 0
   private var tmpClassCounter                                     = 0
   private var importedSymbols                                     = Map.empty[String, SymbolSummary]
+  private val methodParamNames: mutable.ArrayBuffer[String]       = mutable.ArrayBuffer[String]()
 
   def pushNewScope(scopeNode: NewNode): Unit = {
     scopeNode match {
@@ -66,7 +67,8 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
         // TODO This is unsafe to catch errors for now
         constAndStaticInits = constAndStaticInits.tail
         fieldInits = fieldInits.tail
-
+      case Some(_: NewMethod) =>
+        this.methodParamNames.clear()
       case _ => // Nothing to do here
     }
 
@@ -106,6 +108,11 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
 
   def isSurroundedByMetaclassTypeDecl: Boolean =
     stack.map(_.scopeNode.node).collectFirst { case td: NewTypeDecl => td }.exists(_.name.endsWith("<metaclass>"))
+
+  def addMethodParamNames(methodParamNames: List[String]): Unit =
+    this.methodParamNames.addAll(methodParamNames)
+
+  def getMethodParamNames: List[String] = this.methodParamNames.toList
 
   def getEnclosingNamespaceNames: List[String] =
     stack.map(_.scopeNode.node).collect { case ns: NewNamespaceBlock => ns.name }.reverse

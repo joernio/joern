@@ -10,8 +10,11 @@ import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.*
 
 object LocalCreationPass {
-  def allLocalCreationPasses(cpg: Cpg): Iterator[LocalCreationPass[? <: AstNode]] =
-    Iterator(new NamespaceLocalPass(cpg), new MethodLocalPass(cpg))
+  def allLocalCreationPasses(cpg: Cpg): Iterator[LocalCreationPass[? <: AstNode]] = {
+//    Iterator(new NamespaceLocalPass(cpg), new MethodLocalPass(cpg))
+//    Iterator(new MethodLocalPass(cpg))
+    Iterator()
+  }
 }
 
 abstract class LocalCreationPass[ScopeType <: AstNode](cpg: Cpg)

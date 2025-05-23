@@ -102,6 +102,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       astForParam(param, idx + 1)
     }
 
+    val paramNames = decl.params.map(_.name)
+
     val constructorModifier   = Option.when(isConstructor)(ModifierTypes.CONSTRUCTOR)
     val defaultAccessModifier = Option.unless(containsAccessModifier(decl.modifiers))(ModifierTypes.PUBLIC)
 
@@ -117,6 +119,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val method = methodNode(decl, methodName, methodCode, fullName, Some(signature), relativeFileName)
 
     scope.pushNewScope(method)
+    scope.addMethodParamNames(paramNames.toList)
 
     val returnType = decl.returnType.map(_.name).getOrElse(Defines.Any)
 

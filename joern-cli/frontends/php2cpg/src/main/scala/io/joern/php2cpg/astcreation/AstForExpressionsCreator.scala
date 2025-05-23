@@ -7,7 +7,14 @@ import io.joern.x2cpg.Defines.{UnresolvedNamespace, UnresolvedSignature}
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{
+  ControlStructureTypes,
+  DispatchTypes,
+  EdgeTypes,
+  NodeTypes,
+  Operators,
+  PropertyNames
+}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import scala.collection.mutable
@@ -447,9 +454,19 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   private def astForNameExpr(expr: PhpNameExpr): Ast = {
     val identifier = identifierNode(expr, expr.name, expr.name, Defines.Any)
 
-    val declaringNode = scope.lookupVariable(identifier.name)
+    val declaringNode         = scope.lookupVariable(identifier.name)
+    val shouldCreateLocalNode = declaringNode.isEmpty && !scope.getMethodParamNames.contains(expr.name)
 
-    Ast(identifier).withRefEdges(identifier, declaringNode.toList)
+    scope.surroundingAstLabel match {
+      case Some(label) if label == NodeTypes.METHOD && shouldCreateLocalNode =>
+        val local = localNode(expr, identifier.name, expr.name, Defines.Any, None)
+        Ast.storeInDiffGraph(Ast(local), diffGraph)
+        Ast(identifier).withRefEdges(identifier, List(local))
+      case _ =>
+        Ast(identifier).withRefEdges(identifier, declaringNode.toList)
+    }
+//    Ast(identifier).withRefEdges(identifier, declaringNode.toList)
+
   }
 
   protected def stmtBodyBlockAst(stmt: PhpStmtWithBody): Ast = {
