@@ -11,6 +11,30 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
 
   "C++17 feature support" should {
 
+    "handle member initializer lists" in {
+      val cpg = code("""
+          |class X
+          |{
+          |    int a, b, i, j;
+          |public:
+          |    const int& r;
+          |    X(int i)
+          |      : r(a) // initializes X::r to refer to X::a
+          |      , b{i} // initializes X::b to the value of the parameter i
+          |      , i(i) // initializes X::i to the value of the parameter i
+          |      , j(this->i) // initializes X::j to the value of X::i
+          |    {}
+          |};
+          |""".stripMargin)
+      val List(xConstructor) = cpg.typeDecl.nameExact("X").astChildren.isMethod.isConstructor.l
+      xConstructor.block.astChildren.isCall.isAssignment.code.l shouldBe List(
+        "this->r = this->a",
+        "this->b = i",
+        "this->i = i",
+        "this->j = this->i"
+      )
+    }
+
     "handle template argument deduction for class templates" in {
       val cpg = code("""
           |template <typename T = float>
@@ -23,13 +47,50 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |MyContainer c1 {1}; // OK MyContainer<int>
           |MyContainer c2; // OK MyContainer<float>
           |""".stripMargin)
-      val List(c1, c2) = cpg.local.l
+      val List(c1, c2, tmp1, tmp0) = cpg.local.l
       c1.name shouldBe "c1"
       c1.typeFullName shouldBe "MyContainer"
       c2.name shouldBe "c2"
       c2.typeFullName shouldBe "MyContainer"
+      tmp1.name shouldBe "<tmp>1"
+      tmp1.typeFullName shouldBe "MyContainer"
+      tmp0.name shouldBe "<tmp>0"
+      tmp0.typeFullName shouldBe "MyContainer"
       // We are unable to express this template argument deduction in the current schema
       cpg.typeDecl.member.nameExact("val").typeFullName.l shouldBe List("T")
+
+      val List(c1Method, c2Method) = cpg.typeDecl.nameExact("MyContainer").astChildren.isMethod.isConstructor.l
+      c1Method.fullName shouldBe "MyContainer.MyContainer:void()"
+      c1Method.signature shouldBe "void()"
+      c1Method.body.astChildren.isCall.isAssignment.code.l shouldBe List("this->val = {}")
+
+      c2Method.fullName shouldBe "MyContainer.MyContainer:void(T)"
+      c2Method.signature shouldBe "void(T)"
+      c2Method.body.astChildren.isCall.isAssignment.code.l shouldBe List("this->val = val")
+
+      cpg.call.isAssignment.code.l shouldBe List(
+        "this->val = {}",
+        "this->val = val",
+        "c1 = MyContainer.MyContainer(1)",
+        "<tmp>0 = <operator>.alloc",
+        "c2 = MyContainer.MyContainer()",
+        "<tmp>1 = <operator>.alloc"
+      )
+      cpg.call.isAssignment.argument(1).isIdentifier.typeFullName.distinct.l shouldBe List("MyContainer")
+
+      val List(c1Block, c2Block) = cpg.call.argument(2).isBlock.l
+
+      val List(c1ConstructorCall) = c1Block.astChildren.isCall.nameNot(Operators.assignment).l
+      c1ConstructorCall.methodFullName shouldBe "MyContainer.MyContainer:void(int)"
+      c1ConstructorCall.name shouldBe "MyContainer"
+      c1ConstructorCall.signature shouldBe "void(int)"
+      c1ConstructorCall.argument.code.l shouldBe List("&<tmp>0", "1")
+
+      val List(c2ConstructorCall) = c2Block.astChildren.isCall.nameNot(Operators.assignment).l
+      c2ConstructorCall.methodFullName shouldBe "MyContainer.MyContainer:void()"
+      c2ConstructorCall.name shouldBe "MyContainer"
+      c2ConstructorCall.signature shouldBe "void()"
+      c2ConstructorCall.argument.code.l shouldBe List("&<tmp>1")
     }
 
     "handle declaring non-type template parameters with auto" in {
@@ -224,7 +285,13 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |  int id;
           |};
           |""".stripMargin)
-      cpg.local.map(l => (l.name, l.typeFullName)).toMap shouldBe Map("x1" -> "S1", "x2" -> "S1", "count" -> "int")
+      cpg.local.map(l => (l.name, l.typeFullName)).toMap shouldBe Map(
+        "count"  -> "int",
+        "<tmp>0" -> "S",
+        "x2"     -> "S1",
+        "<tmp>1" -> "S1",
+        "x1"     -> "S1"
+      )
       cpg.typeDecl.member.nameExact("count").typeFullName.l shouldBe List("int")
     }
 
@@ -281,28 +348,37 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |}
           |""".stripMargin)
       cpg.call.code.l should contain theSameElementsAs List(
+        "<tmp>0 = <operator>.alloc",
+        "<operator>.alloc",
         "Coordinate{0, 0}",
-        "{0, 0}",
-        "<tmp>0 = = origin()",
+        "&<tmp>0",
+        "<tmp>0 = origin()",
         "origin()",
         "x = <tmp>0.x",
-        "y = <tmp>0.y",
         "<tmp>0.x",
+        "y = <tmp>0.y",
         "<tmp>0.y",
-        "<tmp>1 = mapping",
-        "key = <tmp>1.key",
-        "value = <tmp>1.value",
-        "<tmp>1.key",
-        "<tmp>1.value"
+        "mapping = std.unordered_map.unordered_map()",
+        "<tmp>1 = <operator>.alloc",
+        "<operator>.alloc",
+        "std.unordered_map.unordered_map()",
+        "&<tmp>1",
+        "<tmp>2 = mapping",
+        "key = <tmp>2.key",
+        "<tmp>2.key",
+        "value = <tmp>2.value",
+        "<tmp>2.value"
       )
+
       cpg.local.map(l => (l.name, l.typeFullName)).toMap shouldBe Map(
         "x"       -> "int",
         "y"       -> "int",
-        "<tmp>0"  -> "pair",
+        "<tmp>0"  -> "Coordinate",
         "mapping" -> "std.unordered_map",
+        "<tmp>1"  -> "std.unordered_map",
         // fails to resolve the type of the structured bindings without C++ header files
-        "<tmp>1" -> "ANY",
         "key"    -> "ANY",
+        "<tmp>2" -> "ANY",
         "value"  -> "ANY"
       )
       cpg.controlStructure
@@ -312,7 +388,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
         .map(l => (l.name, l.typeFullName))
         .toMap shouldBe Map(
         // fails to resolve the type of the structured bindings without C++ header files
-        "<tmp>1" -> "ANY",
+        "<tmp>2" -> "ANY",
         "key"    -> "ANY",
         "value"  -> "ANY"
       )
@@ -323,6 +399,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           "<tmp>0"  -> "pair",
           "mapping" -> "std.unordered_map",
           "<tmp>1"  -> "std.unordered_map",
+          "<tmp>2"  -> "std.unordered_map",
           "key"     -> "int",
           "value"   -> "int"
         )
@@ -335,6 +412,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           .toMap shouldBe Map(
           // fails to resolve the type of the structured bindings without C++ header files
           "<tmp>1" -> "std.unordered_map",
+          "<tmp>2" -> "std.unordered_map",
           "key"    -> "int",
           "value"  -> "int"
         )
@@ -365,7 +443,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
         .l shouldBe List(
         "std::lock_guard<std::mutex> lk(mx)",
         "if (std::lock_guard<std::mutex> lk(mx); v.empty()) { v.push_back(val); }",
-        "gadget = Foo(args)",
+        "gadget = Foo.Foo(args)",
         "s = gadget.status()",
         "switch (Foo gadget(args); auto s = gadget.status()) { case OK: gadget.zip(); break; case Bad: throw BadFoo(s.message()); }"
       )

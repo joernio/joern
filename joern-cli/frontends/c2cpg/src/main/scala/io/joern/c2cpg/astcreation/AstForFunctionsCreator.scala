@@ -4,28 +4,14 @@ import io.joern.c2cpg.passes.FunctionDeclNodePass
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.datastructures.VariableScopeManager
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.*
 import org.eclipse.cdt.core.dom.ast.*
-import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTCompositeTypeSpecifier
-import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTFunctionDefinition
-import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression.CaptureDefault
-import org.eclipse.cdt.core.dom.ast.cpp.ICPPBinding
+import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.core.dom.ast.gnu.c.ICASTKnRFunctionDeclarator
-import org.eclipse.cdt.internal.core.dom.parser.c.CASTFunctionDeclarator
-import org.eclipse.cdt.internal.core.dom.parser.c.CASTParameterDeclaration
-import org.eclipse.cdt.internal.core.dom.parser.c.CVariable
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDeclarator
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDefinition
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTParameterDeclaration
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTQualifiedName
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPClassType
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPEnumeration
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPStructuredBindingComposite
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPVariable
+import org.eclipse.cdt.internal.core.dom.parser.c.{CASTFunctionDeclarator, CASTParameterDeclaration, CVariable}
+import org.eclipse.cdt.internal.core.dom.parser.cpp.*
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import scala.annotation.tailrec
@@ -111,18 +97,11 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
   }
 
-  protected def isCppConstructor(funcDef: IASTFunctionDefinition): Boolean = {
-    funcDef match {
-      case cppFunc: CPPASTFunctionDefinition => cppFunc.getMemberInitializers.nonEmpty
-      case _                                 => false
-    }
-  }
-
   protected def astForFunctionDefinition(funcDef: IASTFunctionDefinition): Ast = {
     val filename                                                  = fileName(funcDef)
     val MethodFullNameInfo(name, fullName, signature, returnType) = methodFullNameInfo(funcDef)
     registerMethodDefinition(fullName)
-
+    val isConstructor                 = bindsToConstructor(funcDef) && fullName.contains(s".$name:")
     val shouldCreateFunctionReference = typeRefIdStack.headOption.isEmpty
     val methodRefNode_ = if (!shouldCreateFunctionReference) { None }
     else { Option(methodRefNode(funcDef, name, fullName, fullName)) }
@@ -169,22 +148,33 @@ trait AstForFunctionsCreator { this: AstCreator =>
       )
     }
 
-    val astForMethod = methodAst(
-      methodNode_,
-      (parameterNodes ++ variadicParams).map(Ast(_)),
-      astForMethodBody(Option(funcDef.getBody), methodBlockNode),
-      methodReturnNode(funcDef, registerType(returnType)),
-      modifiers = modifierFor(funcDef)
-    )
+    memberInitializations(funcDef).foreach { callAst =>
+      Ast.storeInDiffGraph(callAst, diffGraph)
+      callAst.root.foreach(r => diffGraph.addEdge(methodBlockNode, r, EdgeTypes.AST))
+    }
+    val methodBodyAst = astForMethodBody(Option(funcDef.getBody), methodBlockNode)
 
     scope.popScope()
     methodAstParentStack.pop()
+
+    val astForMethod = methodAst(
+      methodNode_,
+      (parameterNodes ++ variadicParams).map(Ast(_)),
+      methodBodyAst,
+      methodReturnNode(funcDef, registerType(returnType)),
+      modifiers = modifierFor(funcDef)
+    )
 
     methodRefNode_ match {
       case Some(ref) =>
         createFunctionTypeAndTypeDecl(funcDef, methodNode_)
         Ast.storeInDiffGraph(astForMethod, diffGraph)
-        diffGraph.addEdge(methodAstParentStack.head, methodNode_, EdgeTypes.AST)
+        if (isConstructor) {
+          methodNode_.astParentType = TypeDecl.Label
+          methodNode_.astParentFullName = fullName.substring(0, fullName.lastIndexOf(s".$name:"))
+        } else {
+          diffGraph.addEdge(methodAstParentStack.head, methodNode_, EdgeTypes.AST)
+        }
         Ast(ref)
       case None =>
         val typeDeclAst = createFunctionTypeAndTypeDecl(methodNode_)
@@ -249,7 +239,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
   }
 
   private def modifierFor(funcDef: IASTFunctionDefinition): List[NewModifier] = {
-    val constructorModifier = if (isCppConstructor(funcDef)) {
+    val constructorModifier = if (bindsToConstructor(funcDef)) {
       List(modifierNode(funcDef, ModifierTypes.CONSTRUCTOR), modifierNode(funcDef, ModifierTypes.PUBLIC))
     } else Nil
     val visibilityModifier = Try(modifierFromString(funcDef, funcDef.getSyntax.getImage)).getOrElse(Nil)
@@ -258,6 +248,83 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
   private def modifierFor(funcDecl: IASTFunctionDeclarator): List[NewModifier] = {
     Try(modifierFromString(funcDecl, funcDecl.getParent.getSyntax.getImage)).getOrElse(Nil)
+  }
+
+  private def syntheticThisAccess(ident: IASTName, identifierName: String): Ast = {
+    scope.lookupVariable(Defines.This) match {
+      case Some((_, thisTpe)) =>
+        val op             = Operators.indirectFieldAccess
+        val code           = s"${Defines.This}->$identifierName"
+        val thisIdentifier = identifierNode(ident, Defines.This, Defines.This, thisTpe)
+        scope.addVariableReference(Defines.This, thisIdentifier, thisTpe, EvaluationStrategies.BY_SHARING)
+        val member = fieldIdentifierNode(ident, identifierName, identifierName)
+        val ma     = callNode(ident, code, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(thisTpe))
+        callAst(ma, Seq(Ast(thisIdentifier), Ast(member)))
+      case None =>
+        val tpe = ident.getBinding match {
+          case f: CPPField => safeGetType(f.getType)
+          case _           => typeFor(ident)
+        }
+        val idNode = identifierNode(ident, identifierName, identifierName, tpe)
+        scope.addVariableReference(identifierName, idNode, tpe, EvaluationStrategies.BY_REFERENCE)
+        Ast(idNode)
+    }
+  }
+
+  private def astForICPPASTConstructorChainInitializer(init: ICPPASTConstructorChainInitializer): Ast = {
+    init.getInitializer match {
+      case l: IASTInitializerList if l.getClauses == null || l.getClauses.isEmpty || l.getClauses.forall(_ == null) =>
+        val leftAst = syntheticThisAccess(init.getMemberInitializerId, nameForIdentifier(init.getMemberInitializerId))
+        // TODO: figure out the actual initialization (as it depends of the type).
+        val rightAst = Ast(unknownNode(init, code(l)))
+        val op       = Operators.assignment
+        val leftCode =
+          leftAst.root.collect { case expr: ExpressionNew => expr.code }.getOrElse(code(init.getMemberInitializerId))
+        val rightCode  = code(l)
+        val codeString = s"$leftCode = $rightCode"
+        val assignmentCall =
+          callNode(init, codeString, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Void)))
+        callAst(assignmentCall, List(leftAst, rightAst))
+      case c: ICPPASTConstructorInitializer if init.getMemberInitializerId.isInstanceOf[ICPPASTQualifiedName] =>
+        val constructorCallName = shortName(init.getMemberInitializerId)
+        val typeFullName        = fullName(init.getMemberInitializerId)
+        val signature           = s"${Defines.Void}(${initializerSignature(c)})"
+        val fullNameWithSig     = s"$typeFullName.$constructorCallName:$signature"
+        val constructorCallCode = code(init)
+        val args                = astsForConstructorInitializer(c)
+        constructorInvocationBlockAst(init, typeFullName, fullNameWithSig, signature, constructorCallCode, args)
+      case _ =>
+        val leftAst = syntheticThisAccess(init.getMemberInitializerId, nameForIdentifier(init.getMemberInitializerId))
+        val rightAst = init.getInitializer match {
+          case l: IASTInitializerList           => astForNode(l.getClauses.head)
+          case c: ICPPASTConstructorInitializer => c.getArguments.headOption.map(astForNode).getOrElse(Ast())
+          case _ =>
+            val name   = nameForIdentifier(init.getMemberInitializerId)
+            val tpe    = registerType(typeFor(init.getMemberInitializerId))
+            val idNode = identifierNode(init.getMemberInitializerId, name, name, tpe)
+            scope.addVariableReference(name, idNode, tpe, EvaluationStrategies.BY_REFERENCE)
+            Ast(idNode)
+        }
+        val op = Operators.assignment
+        val leftCode =
+          leftAst.root.collect { case expr: ExpressionNew => expr.code }.getOrElse(code(init.getMemberInitializerId))
+        val rightCode =
+          rightAst.root.collect { case expr: ExpressionNew => expr.code }.getOrElse(code(init.getInitializer))
+
+        val codeString = s"$leftCode = $rightCode"
+        val assignmentCall =
+          callNode(init, codeString, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Void)))
+        callAst(assignmentCall, List(leftAst, rightAst))
+    }
+  }
+
+  private def memberInitializations(func: IASTNode): Seq[Ast] = {
+    func match {
+      case f: ICPPASTFunctionDefinition =>
+        f.getMemberInitializers.toIndexedSeq.map(astForICPPASTConstructorChainInitializer)
+      case _ =>
+        Seq.empty
+    }
   }
 
   private def variadicParamsForCPPFunctionFromInfo(
@@ -327,15 +394,16 @@ trait AstForFunctionsCreator { this: AstCreator =>
           case _ => None
         }
         maybeOwner.toSeq.map { owner =>
+          val tpe = s"${cleanType(owner)}*"
           new FunctionDeclNodePass.ParameterInfo(
-            "this",
-            "this",
+            Defines.This,
+            Defines.This,
             0,
             false,
-            EvaluationStrategies.BY_VALUE,
+            EvaluationStrategies.BY_SHARING,
             line(cppFunc),
             column(cppFunc),
-            registerType(s"${cleanType(owner)}*")
+            registerType(tpe)
           )
         }
       case _ => Seq.empty
@@ -415,10 +483,15 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
   private def astForMethodBody(body: Option[IASTStatement], blockNode: NewBlock): Ast = body match {
     case Some(b: IASTCompoundStatement) =>
-      astForBlockStatement(b, blockNode)
+      methodAstParentStack.push(blockNode)
+      val ast = astForBlockStatement(b, blockNode)
+      methodAstParentStack.pop()
+      ast
     case Some(b) =>
       scope.pushNewBlockScope(blockNode)
+      methodAstParentStack.push(blockNode)
       val childAst = astForNode(b)
+      methodAstParentStack.pop()
       scope.popScope()
       blockAst(blockNode).withChild(childAst)
     case None =>

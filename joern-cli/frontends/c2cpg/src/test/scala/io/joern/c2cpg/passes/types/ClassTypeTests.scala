@@ -1,5 +1,6 @@
 package io.joern.c2cpg.passes.types
 
+import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.semanticcpg.language.*
@@ -172,9 +173,13 @@ class ClassTypeTests extends C2CpgSuite(FileDefaults.CppExt) {
           |    ): Bar::Foo(a, b) {}
           |}""".stripMargin)
       val List(constructor) = cpg.typeDecl.nameExact("FooT").method.isConstructor.l
-      constructor.signature shouldBe "Bar.Foo(std.string&,Bar.SomeClass&)"
+      constructor.signature shouldBe "void(std.string&,Bar.SomeClass&)"
+      constructor.block.astChildren.isBlock.astChildren.isCall.code.l shouldBe List(
+        "<tmp>0 = <operator>.alloc",
+        "Bar::Foo(a, b)"
+      )
       val List(thisP, p1, p2) = constructor.parameter.l
-      thisP.name shouldBe "this"
+      thisP.name shouldBe Defines.This
       thisP.typeFullName shouldBe "FooT*"
       thisP.index shouldBe 0
       p1.typ.fullName shouldBe "std.string&"

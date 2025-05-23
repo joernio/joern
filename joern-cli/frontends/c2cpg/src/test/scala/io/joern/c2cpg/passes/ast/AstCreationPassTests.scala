@@ -771,9 +771,9 @@ class AstCreationPassTests extends AstC2CpgSuite {
       val List(conditionBlock) = forLoop.condition.collectAll[Block].l
       conditionBlock.order shouldBe 2
       val List(assignmentCall, greaterCall) = conditionBlock.astChildren.collectAll[Call].l
-      assignmentCall.argumentIndex shouldBe 1
+      assignmentCall.order shouldBe 1
       assignmentCall.code shouldBe "b = something()"
-      greaterCall.argumentIndex shouldBe 2
+      greaterCall.order shouldBe 2
       greaterCall.code shouldBe "b > c"
     }
 
@@ -1249,19 +1249,35 @@ class AstCreationPassTests extends AstC2CpgSuite {
         """
         |class Foo {
         |public:
-        | Foo(int i){};
+        |  Foo(int i){};
+        |  class Bar {
+        |    public:
+        |      Bar(float j){};
+        |  };
         |};
         |Foo f1(0);
+        |Foo::Bar f2(0.0f);
       """.stripMargin,
         "file.cpp"
       )
-      cpg.typeDecl
-        .fullNameExact("Foo")
-        .l
-        .size shouldBe 1
-      inside(cpg.call.codeExact("f1 = Foo(0)").l) { case List(call: Call) =>
-        call.name shouldBe Operators.assignment
-      }
+      val List(fooTypeDecl, barTypeDecl) =
+        cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).sortBy(_.lineNumber).l
+      fooTypeDecl.name shouldBe "Foo"
+      barTypeDecl.name shouldBe "Bar"
+
+      barTypeDecl.astParent shouldBe fooTypeDecl
+
+      val List(fooConstructor) = fooTypeDecl.method.isConstructor.l
+      fooConstructor.fullName shouldBe "Foo.Foo:void(int)"
+
+      val List(barConstructor) = barTypeDecl.method.isConstructor.l
+      barConstructor.fullName shouldBe "Foo.Bar.Bar:void(float)"
+
+      cpg.call.codeExact("f1 = Foo.Foo(0)").name.l shouldBe List(Operators.assignment)
+      cpg.call.codeExact("f2 = Foo.Bar.Bar(0.0f)").name.l shouldBe List(Operators.assignment)
+
+      cpg.call.codeExact("Foo.Foo(0)").methodFullName.l shouldBe List("Foo.Foo:void(int)")
+      cpg.call.codeExact("Foo.Bar.Bar(0.0f)").methodFullName.l shouldBe List("Foo.Bar.Bar:void(float)")
     }
 
     "be correct for template class" in {
@@ -1313,14 +1329,14 @@ class AstCreationPassTests extends AstC2CpgSuite {
       """.stripMargin,
         "file.cpp"
       )
-      cpg.typeDecl
-        .fullNameExact("Foo")
-        .l
-        .size shouldBe 1
-      inside(cpg.call.codeExact("Foo{0}").l) { case List(call: Call) =>
-        call.name shouldBe "Foo"
-        call.argument(1).code shouldBe "{0}"
-      }
+      val List(fooTypeDecl) =
+        cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).sortBy(_.lineNumber).l
+      fooTypeDecl.name shouldBe "Foo"
+      val List(fooConstructor) = fooTypeDecl.method.isConstructor.l
+      fooConstructor.fullName shouldBe "Foo.Foo:void(int)"
+      cpg.call.codeExact("x = Foo{0}").name.l shouldBe List(Operators.assignment)
+      cpg.call.codeExact("Foo{0}").methodFullName.l shouldBe List("Foo.Foo:void(int)")
+      cpg.call.codeExact("Foo{0}").argument.code.l shouldBe List("&<tmp>0", "0")
     }
 
     "be correct for method calls" in {
@@ -1477,29 +1493,126 @@ class AstCreationPassTests extends AstC2CpgSuite {
         |""".stripMargin,
         "file.cpp"
       )
-      // TODO: "<operator>.new" is not part of Operators
-      cpg.call.nameExact("<operator>.new").code("new int\\[n\\]").argument.code("int").size shouldBe 1
+      val List(newCall)         = cpg.call.methodFullNameExact(Defines.OperatorNew).l
+      val List(constructorCall) = newCall.argument.isCall.l
+      constructorCall.code shouldBe "new int[n]"
+      constructorCall.methodFullName shouldBe Operators.alloc
+      constructorCall.typeFullName shouldBe Defines.Any
+      constructorCall.argument.code.l shouldBe List("int", "n")
     }
 
-    "be correct for 'new' with explicit identifier" in {
+    "be correct for 'placement new'" in {
       val cpg = code(
         """
         |void a() {
         |  char buf[80];
-        |  new (buf) string("hi");
+        |  new (buf) Foo("hi");
         |}
         |""".stripMargin,
         "file.cpp"
       )
-      // TODO: "<operator>.new" is not part of Operators
-      val List(newCall)         = cpg.call.nameExact("<operator>.new").l
-      val List(string, hi, buf) = newCall.argument.l
-      string.argumentIndex shouldBe 1
-      string.code shouldBe "string"
-      hi.argumentIndex shouldBe 2
-      hi.code shouldBe "\"hi\""
-      buf.argumentIndex shouldBe 3
-      buf.code shouldBe "buf"
+      val List(newCall)          = cpg.call.methodFullNameExact(Defines.OperatorNew).l
+      val List(constructorBlock) = newCall.argument.isBlock.l
+      constructorBlock.argumentIndex shouldBe 1
+      val List(allocAssignment, constructorCall) = constructorBlock.astChildren.isCall.l
+      allocAssignment.code shouldBe "<tmp>0 = <operator>.alloc"
+      constructorCall.code shouldBe """new (buf) Foo("hi")"""
+      constructorCall.methodFullName shouldBe "Foo.Foo:void(char[3])"
+      constructorCall.signature shouldBe "void(char[3])"
+      constructorCall.typeFullName shouldBe Defines.Void
+      constructorCall.argument.code.l shouldBe List("&<tmp>0", """"hi"""")
+      val List(buf) = newCall.argument.isIdentifier.l
+      buf.argumentIndex shouldBe 2
+      buf.typeFullName shouldBe "char[80]"
+    }
+
+    "be correct for externally defined constructor" in {
+      val cpg = code(
+        """
+          |class Foo {
+          |  public:
+          |    Foo(int i) {};
+          |};
+          |
+          |Foo::Foo(int i, int j) {};
+          |Bar::Bar(float x) {};
+          |
+          |void method() {
+          |   Foo f1(0);
+          |   Foo f2(0, 1);
+          |   Bar b1(0.0f);
+          |
+          |   Foo f3 = new Foo(0);
+          |   Foo f4 = new Foo(0, 1);
+          |   Bar b2 = new Bar(0.0f);
+          |}
+          |""".stripMargin,
+        "file.cpp"
+      )
+      val List(fileGlobalMethod) = cpg.method.fullNameExact("file.cpp:<global>").l
+      val List(fooTypeDecl)      = cpg.typeDecl.fullNameExact("Foo").l
+      val List(c1, c2, c3)       = cpg.method.isConstructor.l
+      c1.fullName shouldBe "Foo.Foo:void(int)"
+      c2.fullName shouldBe "Foo.Foo:void(int,int)"
+      c3.fullName shouldBe "Bar.Bar:void(float)"
+      c1.astIn.l shouldBe List(fooTypeDecl)
+      c2.astIn.l shouldBe List(fooTypeDecl)
+      c3.astIn.l shouldBe List(fileGlobalMethod)
+
+      val constructorCallElements = cpg.method.nameExact("method").block.astChildren.isCall.isAssignment.argument(2).l
+      val List(f1Block, f2Block, b1Block) = constructorCallElements.isBlock.l
+      val List(f3Call, f4Call, b2Call)    = constructorCallElements.isCall.l
+
+      f3Call.methodFullName shouldBe Defines.OperatorNew
+      f4Call.methodFullName shouldBe Defines.OperatorNew
+      b2Call.methodFullName shouldBe Defines.OperatorNew
+
+      val List(f1ConstructorCall) = f1Block.astChildren.isCall.nameNot(Operators.assignment).l
+      f1ConstructorCall.methodFullName shouldBe "Foo.Foo:void(int)"
+      val List(f2ConstructorCall) = f2Block.astChildren.isCall.nameNot(Operators.assignment).l
+      f2ConstructorCall.methodFullName shouldBe "Foo.Foo:void(int,int)"
+      val List(b1ConstructorCall) = b1Block.astChildren.isCall.nameNot(Operators.assignment).l
+      b1ConstructorCall.methodFullName shouldBe "Bar.Bar:void(float)"
+
+      val List(f3ConstructorCall) = f3Call.argument.isBlock.astChildren.isCall.nameNot(Operators.assignment).l
+      f3ConstructorCall.methodFullName shouldBe "Foo.Foo:void(int)"
+      val List(f4ConstructorCall) = f4Call.argument.isBlock.astChildren.isCall.nameNot(Operators.assignment).l
+      f4ConstructorCall.methodFullName shouldBe "Foo.Foo:void(int,int)"
+      val List(b2ConstructorCall) = b2Call.argument.isBlock.astChildren.isCall.nameNot(Operators.assignment).l
+      b2ConstructorCall.methodFullName shouldBe "Bar.Bar:void(float)"
+    }
+
+    "be correct for externally defined constructor with class in different file" in {
+      val cpg = code(
+        """
+          |Bar::Bar(float x) {};
+          |
+          |void method() {
+          |   Bar b1(0.0f);
+          |   Bar b2 = new Bar(0.0f);
+          |}
+          |""".stripMargin,
+        "file.cpp"
+      ).moreCode("class Bar {};", "Bar.cpp")
+      val List(barTypeDecl) = cpg.typeDecl.fullNameExact("Bar").l
+      val List(c)           = cpg.method.isConstructor.l
+      c.fullName shouldBe "Bar.Bar:void(float)"
+      c.astIn.l shouldBe List(barTypeDecl)
+
+      val constructorElements = cpg.method.nameExact("method").block.astChildren.isCall.argument(2).l
+
+      val List(b1ConstructorCall) = constructorElements.isBlock.astChildren.isCall.nameNot(Operators.assignment).l
+      b1ConstructorCall.methodFullName shouldBe "Bar.Bar:void(float)"
+
+      val List(b2ConstructorCall) = constructorElements.isCall
+        .nameExact(Defines.OperatorNew)
+        .astChildren
+        .isBlock
+        .astChildren
+        .isCall
+        .nameNot(Operators.assignment)
+        .l
+      b2ConstructorCall.methodFullName shouldBe "Bar.Bar:void(float)"
     }
 
     // for: https://github.com/ShiftLeftSecurity/codepropertygraph/issues/1526
@@ -1791,6 +1904,10 @@ class AstCreationPassTests extends AstC2CpgSuite {
     "be correct for 'new' object" in {
       val cpg = code(
         """
+        |class Foo {
+        |  public:
+        |    Foo(int i, int j) {};
+        |}
         |Foo* alloc(int n) {
         |   Foo* foo = new Foo(n, 42);
         |   return foo;
@@ -1798,7 +1915,13 @@ class AstCreationPassTests extends AstC2CpgSuite {
         |""".stripMargin,
         "file.cpp"
       )
-      cpg.call.nameExact("<operator>.new").codeExact("new Foo(n, 42)").argument.code("Foo").size shouldBe 1
+      val List(constructorCall) =
+        cpg.call.methodFullName(Defines.OperatorNew).argument.isBlock.astChildren.isCall.codeExact("new Foo(n, 42)").l
+      constructorCall.methodFullName shouldBe "Foo.Foo:void(int,int)"
+      constructorCall.signature shouldBe "void(int,int)"
+      constructorCall.typeFullName shouldBe Defines.Void
+      constructorCall.argument.code.l shouldBe List("&<tmp>0", "n", "42")
+      cpg.typeDecl.nameExact("Foo").astChildren.isMethod.isConstructor.fullName.l shouldBe List("Foo.Foo:void(int,int)")
     }
 
     "be correct for simple 'delete'" in {
