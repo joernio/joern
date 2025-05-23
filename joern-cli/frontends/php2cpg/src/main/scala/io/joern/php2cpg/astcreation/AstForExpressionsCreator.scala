@@ -86,16 +86,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val callRoot  = callNode(call, code, name, fullName, dispatchType, Some(signature), Some(Defines.Any))
 
     val receiverAst = targetAst match {
-      case Some(target) =>
-        val fieldAccess     = operatorCallNode(call, codePrefix, Operators.fieldAccess, None)
-        val fieldIdentifier = Ast(fieldIdentifierNode(call.methodName, name.stripPrefix("$"), name))
-        Option(callAst(fieldAccess, target :: fieldIdentifier :: Nil))
       case None if !scope.getEnclosingTypeDeclTypeName.forall(_ == NamespaceTraversal.globalNamespaceName) =>
         // if dynamic call is under some type decl, $this is the receiver
         call.target.map(thisIdentifier).orElse(Option(thisIdentifier(call))).map(Ast(_))
       case None =>
         // if dynamic call is on "global" level, the variable itself is the receiver
         Option(astForExpr(call.methodName))
+      case someTarget => someTarget
     }
 
     callAst(callRoot, arguments, receiverAst)

@@ -541,11 +541,10 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture(withPostProcessing = t
       }
     }
 
-    // TODO: Fix
-    "resolve the correct full name for `setParameter` based on the QueryBuilder return value" ignore {
+    "resolve the correct full name for `setParameter` based on the QueryBuilder return value" in {
       inside(cpg.call.nameExact("setParameter").l) {
         case setParamCall :: Nil =>
-          setParamCall.methodFullName shouldBe "Doctrine\\ORM\\QueryBuilder->leftJoin-><returnValue>->setParameter"
+          setParamCall.methodFullName shouldBe "Doctrine\\ORM\\QueryBuilder->leftJoin->setParameter"
         case xs => fail(s"Expected one call, instead got [$xs]")
       }
     }
@@ -641,24 +640,6 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture(withPostProcessing = t
       inside(cpg.method("findSomethingElse").ast.isIdentifier.nameExact("queryBuilder").take(1).l) {
         case queryBuilder :: Nil =>
           queryBuilder.typeFullName shouldBe "Doctrine\\ORM\\QueryBuilder"
-        case xs => fail(s"Expected one identifier, instead got [$xs]")
-      }
-    }
-
-    // TODO: Fix
-    "resolve the correct full name for first `queryBuilder->leftJoin` temp variable" ignore {
-      inside(
-        cpg
-          .method("findSomethingElse")
-          .assignment
-          .where(_.source.isCall.nameExact("leftJoin"))
-          .target
-          .isIdentifier
-          .take(1)
-          .l
-      ) {
-        case queryBuilder :: Nil =>
-          queryBuilder.typeFullName shouldBe "Doctrine\\ORM\\QueryBuilder-><returnValue>"
         case xs => fail(s"Expected one identifier, instead got [$xs]")
       }
     }
