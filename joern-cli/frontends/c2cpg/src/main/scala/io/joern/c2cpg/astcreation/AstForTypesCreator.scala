@@ -4,7 +4,7 @@ import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, Operators}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.*
@@ -236,7 +236,15 @@ trait AstForTypesCreator { this: AstCreator =>
   protected def isCPPClassLike(decl: IASTSimpleDeclaration): Boolean = {
     decl.getDeclSpecifier match {
       case t: ICPPASTNamedTypeSpecifier =>
-        safeGetBinding(t.getName).exists { binding => binding.isInstanceOf[ICompositeType] }
+        safeGetBinding(t.getName).exists {
+          case binding: ICompositeType =>
+            true
+          case binding: IProblemBinding =>
+            binding.getASTNode.isInstanceOf[IASTCompositeTypeSpecifier]
+            binding.getASTNode.isInstanceOf[ICPPASTTemplateId]
+          case other =>
+            false
+        }
       case _ => false
     }
   }

@@ -355,20 +355,27 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
         "<tmp>0.x",
         "y = <tmp>0.y",
         "<tmp>0.y",
-        "<tmp>1 = mapping",
-        "key = <tmp>1.key",
-        "<tmp>1.key",
-        "value = <tmp>1.value",
-        "<tmp>1.value"
+        "mapping = std.unordered_map.unordered_map()",
+        "<tmp>1 = <operator>.alloc",
+        "<operator>.alloc",
+        "std.unordered_map.unordered_map()",
+        "&<tmp>1",
+        "<tmp>2 = mapping",
+        "key = <tmp>2.key",
+        "<tmp>2.key",
+        "value = <tmp>2.value",
+        "<tmp>2.value"
       )
+
       cpg.local.map(l => (l.name, l.typeFullName)).toMap shouldBe Map(
         "x"       -> "int",
         "y"       -> "int",
         "<tmp>0"  -> "Coordinate",
         "mapping" -> "std.unordered_map",
+        "<tmp>1"  -> "std.unordered_map",
         // fails to resolve the type of the structured bindings without C++ header files
-        "<tmp>1" -> "ANY",
         "key"    -> "ANY",
+        "<tmp>2" -> "ANY",
         "value"  -> "ANY"
       )
       cpg.controlStructure
@@ -378,7 +385,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
         .map(l => (l.name, l.typeFullName))
         .toMap shouldBe Map(
         // fails to resolve the type of the structured bindings without C++ header files
-        "<tmp>1" -> "ANY",
+        "<tmp>2" -> "ANY",
         "key"    -> "ANY",
         "value"  -> "ANY"
       )
@@ -389,6 +396,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           "<tmp>0"  -> "pair",
           "mapping" -> "std.unordered_map",
           "<tmp>1"  -> "std.unordered_map",
+          "<tmp>2"  -> "std.unordered_map",
           "key"     -> "int",
           "value"   -> "int"
         )
@@ -401,6 +409,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           .toMap shouldBe Map(
           // fails to resolve the type of the structured bindings without C++ header files
           "<tmp>1" -> "std.unordered_map",
+          "<tmp>2" -> "std.unordered_map",
           "key"    -> "int",
           "value"  -> "int"
         )
