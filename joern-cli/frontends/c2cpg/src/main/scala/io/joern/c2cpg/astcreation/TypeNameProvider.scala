@@ -166,8 +166,6 @@ trait TypeNameProvider { this: AstCreator =>
   private val FundamentalTypeKeywords = List(
     "void",
     "bool",
-    "true",
-    "false",
     "char",
     "char8_t",
     "char16_t",
