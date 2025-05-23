@@ -5,9 +5,7 @@ import io.joern.x2cpg.Ast
 import io.joern.x2cpg.AstNodeBuilder
 import io.joern.x2cpg.AstNodeBuilder.dependencyNode
 import io.joern.x2cpg.SourceFiles
-import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
-import io.shiftleft.codepropertygraph.generated.nodes.NewCall
-import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, ExpressionNew, NewCall, NewNode}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.c.ICASTArrayDesignator
@@ -166,8 +164,8 @@ trait AstCreatorHelper { this: AstCreator =>
   protected def nullSafeAst(node: IASTDeclaration): Seq[Ast] =
     Option(node).map(astsForDeclaration).getOrElse(Seq.empty)
 
-  protected def nullSafeAst(node: IASTStatement, argIndex: Int = -1): Seq[Ast] = {
-    Option(node).map(astsForStatement(_, argIndex)).getOrElse(Seq.empty)
+  protected def nullSafeAst(node: IASTStatement): Seq[Ast] = {
+    Option(node).map(astsForStatement).getOrElse(Seq.empty)
   }
 
   protected def astsForDependenciesAndImports(iASTTranslationUnit: IASTTranslationUnit): Seq[Ast] = {
@@ -219,6 +217,20 @@ trait AstCreatorHelper { this: AstCreator =>
       case decl: ICPPASTDecltypeSpecifier   => astForDecltypeSpecifier(decl)
       case arrMod: IASTArrayModifier        => astForArrayModifier(arrMod)
       case _                                => notHandledYet(node)
+    }
+  }
+
+  protected def setOrder(asts: Seq[Ast]): Unit = {
+    var order = 1
+    asts.foreach { a =>
+      a.root match {
+        case Some(x: AstNodeNew) =>
+          x.order = order
+          order = order + 1
+        case None => // do nothing
+        case _ =>
+          order = order + 1
+      }
     }
   }
 

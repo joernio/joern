@@ -1,5 +1,6 @@
 package io.joern.c2cpg.passes.ast
 
+import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.NodeTypes
@@ -493,13 +494,13 @@ class MethodTests extends C2CpgSuite {
         "test.cpp"
       )
       val List(implicitThisParam) = cpg.method.name("meth").parameter.l
-      implicitThisParam.name shouldBe "this"
+      implicitThisParam.name shouldBe Defines.This
       implicitThisParam.typeFullName shouldBe "A*"
       val List(trueVarAccess) = cpg.call.name(Operators.equals).argument.argumentIndex(1).isCall.l
       trueVarAccess.code shouldBe "this->var"
       trueVarAccess.name shouldBe Operators.indirectFieldAccess
       val List(trueThisId, trueVarFieldIdent) = trueVarAccess.argument.l
-      trueThisId.code shouldBe "this"
+      trueThisId.code shouldBe Defines.This
       trueThisId.isIdentifier shouldBe true
       trueThisId.asInstanceOf[Identifier].typeFullName shouldBe "A*"
       trueThisId._refOut.l shouldBe List(implicitThisParam)
@@ -510,7 +511,7 @@ class MethodTests extends C2CpgSuite {
       varAccess.code shouldBe "this->var"
       varAccess.name shouldBe Operators.indirectFieldAccess
       val List(thisId, varFieldIdent) = varAccess.argument.l
-      thisId.code shouldBe "this"
+      thisId.code shouldBe Defines.This
       thisId.isIdentifier shouldBe true
       thisId.asInstanceOf[Identifier].typeFullName shouldBe "A*"
       thisId._refOut.l shouldBe List(implicitThisParam)

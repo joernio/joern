@@ -167,14 +167,14 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
       lambda.fullName shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:bool()"
       cpg.all.collectAll[ClosureBinding].l match {
         case List(thisClosureBinding) =>
-          val thisLocal = cpg.method.name(".*lambda.*").local.nameExact("this").head
+          val thisLocal = cpg.method.name(".*lambda.*").local.nameExact(Defines.This).head
           thisClosureBinding.closureBindingId shouldBe thisLocal.closureBindingId
 
-          cpg.identifier.nameExact("this").refsTo.l shouldBe List(thisLocal)
+          cpg.identifier.nameExact(Defines.This).refsTo.l shouldBe List(thisLocal)
 
           thisClosureBinding._refOut.l match {
             case List(capturedThisParam: MethodParameterIn) =>
-              capturedThisParam.name shouldBe "this"
+              capturedThisParam.name shouldBe Defines.This
               capturedThisParam.typeFullName shouldBe "Foo*"
               capturedThisParam.method.fullName shouldBe "Foo.foo:void()"
             case result => fail(s"Expected single capturedParam but got $result")
@@ -402,14 +402,14 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
       lambda.fullName shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:bool()"
       cpg.all.collectAll[ClosureBinding].l match {
         case List(thisClosureBinding) =>
-          val thisLocal = cpg.method.name(".*lambda.*").local.nameExact("this").head
+          val thisLocal = cpg.method.name(".*lambda.*").local.nameExact(Defines.This).head
           thisClosureBinding.closureBindingId shouldBe thisLocal.closureBindingId
 
-          cpg.identifier.nameExact("this").refsTo.l shouldBe List(thisLocal)
+          cpg.identifier.nameExact(Defines.This).refsTo.l shouldBe List(thisLocal)
 
           thisClosureBinding._refOut.l match {
             case List(capturedThisParam: MethodParameterIn) =>
-              capturedThisParam.name shouldBe "this"
+              capturedThisParam.name shouldBe Defines.This
               capturedThisParam.typeFullName shouldBe "Foo*"
               capturedThisParam.method.fullName shouldBe "Foo.foo:void()"
             case result => fail(s"Expected single capturedParam but got $result")
