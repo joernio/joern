@@ -147,7 +147,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
         val blockNode_ = blockNode(exprList)
         scope.pushNewBlockScope(blockNode_)
         val childAsts = other.map(nullSafeAst)
-        setArgumentIndices(childAsts)
+        setOrder(childAsts)
         scope.popScope()
         blockAst(blockNode(exprList), childAsts.toList)
     }

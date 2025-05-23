@@ -771,9 +771,9 @@ class AstCreationPassTests extends AstC2CpgSuite {
       val List(conditionBlock) = forLoop.condition.collectAll[Block].l
       conditionBlock.order shouldBe 2
       val List(assignmentCall, greaterCall) = conditionBlock.astChildren.collectAll[Call].l
-      assignmentCall.argumentIndex shouldBe 1
+      assignmentCall.order shouldBe 1
       assignmentCall.code shouldBe "b = something()"
-      greaterCall.argumentIndex shouldBe 2
+      greaterCall.order shouldBe 2
       greaterCall.code shouldBe "b > c"
     }
 

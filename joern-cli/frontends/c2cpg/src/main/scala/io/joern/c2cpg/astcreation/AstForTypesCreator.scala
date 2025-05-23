@@ -326,14 +326,11 @@ trait AstForTypesCreator { this: AstCreator =>
     methodAstParentStack.push(blockNode_)
     scope.pushNewMethodScope(fullName, name, namespaceBlockNode_, None)
     scope.pushNewBlockScope(blockNode_)
-    val childrenAsts = namespaceDefinition.getDeclarations.flatMap { decl =>
-      val declAsts = astsForDeclaration(decl)
-      declAsts
-    }.toIndexedSeq
+    val childrenAsts = namespaceDefinition.getDeclarations.flatMap(astsForDeclaration).toIndexedSeq
+    setOrder(childrenAsts)
     methodAstParentStack.pop()
     scope.popScope()
     scope.popScope()
-    setArgumentIndices(childrenAsts)
     Ast(namespaceBlockNode_).withChild(Ast(blockNode_).withChildren(childrenAsts))
   }
 
@@ -358,7 +355,7 @@ trait AstForTypesCreator { this: AstCreator =>
     scope.pushNewBlockScope(node)
     val childAsts = decl.getNames.toList.map(astForNode)
     scope.popScope()
-    setArgumentIndices(childAsts)
+    setOrder(childAsts)
     blockAst(node, childAsts)
   }
 

@@ -25,32 +25,26 @@ import java.nio.file.Paths
 
 trait AstForStatementsCreator { this: AstCreator =>
 
-  protected def astForBlockStatement(blockStmt: IASTCompoundStatement, blockNode: NewBlock, order: Int = -1): Ast = {
+  protected def astForBlockStatement(blockStmt: IASTCompoundStatement, blockNode: NewBlock): Ast = {
     val codeString  = code(blockStmt)
     val blockLine   = line(blockStmt)
     val blockColumn = column(blockStmt)
     val node = blockNode
-      .order(order)
-      .argumentIndex(order)
       .code(codeString)
       .lineNumber(blockLine)
       .columnNumber(blockColumn)
       .typeFullName(registerType(Defines.Void))
     scope.pushNewBlockScope(node)
-    var currOrder = 1
-    val childAsts = blockStmt.getStatements.flatMap { stmt =>
-      val r = astsForStatement(stmt, currOrder)
-      currOrder = currOrder + r.length
-      r
-    }
+    val childAsts = blockStmt.getStatements.flatMap(astsForStatement).toList
+    setOrder(childAsts)
     scope.popScope()
-    blockAst(node, childAsts.toList)
+    blockAst(node, childAsts)
   }
 
-  protected def astsForStatement(statement: IASTStatement, argIndex: Int = -1): Seq[Ast] = {
+  protected def astsForStatement(statement: IASTStatement): Seq[Ast] = {
     val r = statement match {
       case expr: IASTExpressionStatement          => Seq(astForExpression(expr.getExpression))
-      case block: IASTCompoundStatement           => Seq(astForBlockStatement(block, blockNode(block), argIndex))
+      case block: IASTCompoundStatement           => Seq(astForBlockStatement(block, blockNode(block)))
       case ifStmt: IASTIfStatement                => astForIf(ifStmt)
       case whileStmt: IASTWhileStatement          => Seq(astForWhile(whileStmt))
       case forStmt: IASTForStatement              => Seq(astForFor(forStmt))
@@ -190,9 +184,7 @@ trait AstForStatementsCreator { this: AstCreator =>
       case d if d.getInitializer != null => astForInitializer(d, d.getInitializer)
       case _                             => Ast()
     }
-    val asts = Seq.from(declAsts ++ arrayModCallsAsts ++ initCallsAsts)
-    setArgumentIndices(asts)
-    asts
+    Seq.from(declAsts ++ arrayModCallsAsts ++ initCallsAsts)
   }
 
   private def astsForDeclarationStatement(decl: IASTDeclarationStatement): Seq[Ast] =
@@ -269,10 +261,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val switchNode   = controlStructureNode(switchStmt, ControlStructureTypes.SWITCH, codeString)
     val conditionAst = astForConditionExpression(switchStmt.getControllerExpression)
     val stmtAsts     = nullSafeAst(switchStmt.getBody)
-
-    val finalAsts = initAsts :+ controlStructureAst(switchNode, Option(conditionAst), stmtAsts)
-    setArgumentIndices(finalAsts)
-    finalAsts
+    initAsts :+ controlStructureAst(switchNode, Option(conditionAst), stmtAsts)
   }
 
   private def astsForCaseStatement(caseStmt: IASTCaseStatement): Seq[Ast] = {
@@ -295,7 +284,7 @@ trait AstForStatementsCreator { this: AstCreator =>
         val bNode = blockNode(other)
         scope.pushNewBlockScope(bNode)
         val a = astsForStatement(other)
-        setArgumentIndices(a)
+        setOrder(a)
         scope.popScope()
         blockAst(bNode, a.toList)
       case _ => Ast()
@@ -503,7 +492,7 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     val bodyAst                = nullSafeAst(forStmt.getBody)
     val whileLoopBlockChildren = loopVariableAssignmentAst +: bodyAst
-    setArgumentIndices(whileLoopBlockChildren)
+    setOrder(whileLoopBlockChildren)
     val whileLoopBlockAst = blockAst(whileLoopBlockNode, whileLoopBlockChildren.toList)
 
     // end while loop block:
@@ -514,7 +503,7 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     val blockChildren =
       List(iteratorAssignmentAst, Ast(loopVariableNode), whileLoopAst.withChild(whileLoopBlockAst))
-    setArgumentIndices(blockChildren)
+    setOrder(blockChildren)
     blockAst(blockNode, blockChildren)
   }
 
@@ -543,7 +532,7 @@ trait AstForStatementsCreator { this: AstCreator =>
         val exprBlock = blockNode(s.getConditionDeclaration)
         scope.pushNewBlockScope(exprBlock)
         val a = astsForDeclaration(s.getConditionDeclaration)
-        setArgumentIndices(a)
+        setOrder(a)
         scope.popScope()
         blockAst(exprBlock, a.toList)
     }
@@ -556,7 +545,7 @@ trait AstForStatementsCreator { this: AstCreator =>
         val thenBlock = blockNode(other)
         scope.pushNewBlockScope(thenBlock)
         val a = astsForStatement(other)
-        setArgumentIndices(a)
+        setOrder(a)
         scope.popScope()
         blockAst(thenBlock, a.toList)
       case _ => Ast()
@@ -572,14 +561,11 @@ trait AstForStatementsCreator { this: AstCreator =>
         val elseBlock = blockNode(other)
         scope.pushNewBlockScope(elseBlock)
         val a = astsForStatement(other)
-        setArgumentIndices(a)
+        setOrder(a)
         scope.popScope()
         Ast(elseNode).withChild(blockAst(elseBlock, a.toList))
       case _ => Ast()
     }
-
-    val finalAsts = initAsts :+ controlStructureAst(ifNode, Option(conditionAst), Seq(thenAst, elseAst))
-    setArgumentIndices(finalAsts)
-    finalAsts
+    initAsts :+ controlStructureAst(ifNode, Option(conditionAst), Seq(thenAst, elseAst))
   }
 }

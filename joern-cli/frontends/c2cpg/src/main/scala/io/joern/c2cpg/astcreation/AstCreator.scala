@@ -67,7 +67,7 @@ class AstCreator(
     val depsAndImportsAsts = astsForDependenciesAndImports(iASTTranslationUnit)
     val commentsAsts       = astsForComments(iASTTranslationUnit)
     val childrenAsts       = depsAndImportsAsts ++ Seq(translationUnitAst) ++ commentsAsts
-    setArgumentIndices(childrenAsts)
+    setOrder(childrenAsts)
     Ast(namespaceBlock).withChildren(childrenAsts)
   }
 
@@ -89,7 +89,7 @@ class AstCreator(
     val blockNode_ = blockNode(iASTTranslationUnit)
     scope.pushNewMethodScope(fakeGlobalMethod.fullName, fakeGlobalMethod.name, blockNode_, None)
     val declsAsts = allDecls.flatMap(astsForDeclaration)
-    setArgumentIndices(declsAsts)
+    setOrder(declsAsts)
 
     val methodReturn = methodReturnNode(iASTTranslationUnit, Defines.Any)
     Ast(fakeGlobalTypeDecl).withChild(
