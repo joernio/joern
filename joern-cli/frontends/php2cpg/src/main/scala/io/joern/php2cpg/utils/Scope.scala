@@ -76,10 +76,10 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
   def getNewClassTmp: String = {
     stack.headOption match {
       case Some(node) =>
-        s"${this.surroundingScopeFullName.getOrElse("<global>")}@${node.scopeNode.getNextClassTmp}"
+        s"${this.surroundingScopeFullName.getOrElse("<global>")}.${node.scopeNode.getNextClassTmp}"
       case None =>
         logger.warn(s"Stack is empty - using global counter ")
-        s"${this.surroundingScopeFullName.getOrElse("<global>")}@${this.getNextClassTmp}"
+        s"${this.surroundingScopeFullName.getOrElse("<global>")}.${this.getNextClassTmp}"
     }
   }
 

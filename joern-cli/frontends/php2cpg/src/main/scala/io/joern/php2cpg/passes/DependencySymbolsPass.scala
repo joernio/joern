@@ -2,6 +2,7 @@ package io.joern.php2cpg.passes
 
 import io.joern.php2cpg.parser.ClassParser
 import io.joern.php2cpg.parser.ClassParser.*
+import io.joern.php2cpg.parser.Domain.MethodDelimiter
 import io.joern.x2cpg.ValidationMode.Disabled
 import io.joern.x2cpg.passes.base.MethodStubCreator
 import io.joern.x2cpg.{Ast, ValidationMode}
@@ -46,7 +47,7 @@ class DependencySymbolsPass(cpg: Cpg, dependencyDir: Path) extends ForkJoinParal
       .map { case ClassParserFunction(name, modifiers) =>
         MethodStubCreator.createMethodStub(
           name = name,
-          fullName = s"$classFullName->$name",
+          fullName = s"$classFullName$MethodDelimiter$name",
           signature = "<empty>",
           dispatchType = DispatchTypes.DYNAMIC_DISPATCH,
           parameterCount = 0,

@@ -117,8 +117,8 @@ class NamespaceTests extends PhpCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    cpg.method.name("foo").fullName.l shouldBe List("A->foo")
-    cpg.method.name("bar").fullName.l shouldBe List(s"A${Domain.MetaTypeDeclExtension}::bar")
+    cpg.method.name("foo").fullName.l shouldBe List("A.foo")
+    cpg.method.name("bar").fullName.l shouldBe List(s"A${Domain.MetaTypeDeclExtension}.bar")
   }
 
   "static and instance methods in namespaced code should be correct" in {
@@ -131,8 +131,8 @@ class NamespaceTests extends PhpCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    cpg.method.name("foo").fullName.l shouldBe List("ns\\A->foo")
-    cpg.method.name("bar").fullName.l shouldBe List(s"ns\\A${Domain.MetaTypeDeclExtension}::bar")
+    cpg.method.name("foo").fullName.l shouldBe List("ns\\A.foo")
+    cpg.method.name("bar").fullName.l shouldBe List(s"ns\\A${Domain.MetaTypeDeclExtension}.bar")
   }
 
   "global namespace block should have the relative filename prepended to fullName" in {
