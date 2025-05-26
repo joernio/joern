@@ -805,10 +805,14 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     }
 
     typeParameters.foreach { case typeParam =>
-      // TODO: Use typeParam.getTypeBound list to calculate this instead to allow better fallback.
-      val typeFullName = tryWithSafeStackOverflow(typeParam.resolve().asTypeParameter().getUpperBound).toOption
-        .flatMap(typeInfoCalc.fullName)
-        .getOrElse(TypeConstants.Object)
+      val typeFullName = typeParam.getTypeBound.asScala.toList match {
+        case Nil        => TypeConstants.Object
+        case bound :: _ =>
+          // TODO: Create a new type that extends all the bounds if the type has multiple?
+          tryWithSafeStackOverflow(bound.resolve()).toOption
+            .flatMap(typeInfoCalc.fullName)
+            .getOrElse(TypeConstants.Object)
+      }
       typeInfoCalc.registerType(typeFullName)
 
       scope.addTypeParameter(typeParam.getNameAsString, typeFullName)
