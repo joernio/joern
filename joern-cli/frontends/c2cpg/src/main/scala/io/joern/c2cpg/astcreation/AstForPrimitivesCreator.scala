@@ -34,7 +34,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     }
   }
 
-  private def isFromGlobalDefinition(ident: IASTNode): Boolean = {
+  private def globalTagFromDefinition(ident: IASTNode): String = {
     @tailrec
     def isGlobal(node: IASTNode): Boolean = {
       node match {
@@ -45,14 +45,23 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     }
     ident match {
       case id: IASTIdExpression =>
-        safeGetBinding(id) match {
+        safeGetBinding(id.getName) match {
           case Some(binding: (CPPVariable | CVariable)) =>
             Try(binding.getScope).toOption
-              .collect { case n: IASTInternalScope => n.getPhysicalNode }
-              .exists(isGlobal)
-          case _ => false
+              .collect {
+                case n: IASTInternalScope if isGlobal(n.getPhysicalNode) => s"${Defines.GlobalTag} "
+              }
+              .getOrElse("")
+          case Some(p: IProblemBinding)
+              if p.getID == ISemanticProblem.BINDING_NOT_FOUND ||
+                p.getID == ISemanticProblem.BINDING_AMBIGUOUS_LOOKUP ||
+                p.getID == ISemanticProblem.BINDING_BAD_SCOPE ||
+                p.getID == ISemanticProblem.BINDING_MEMBER_DECLARATION_NOT_FOUND ||
+                p.getID == ISemanticProblem.BINDING_DEFINITION_NOT_FOUND =>
+            s"${Defines.UnknownTag} "
+          case _ => ""
         }
-      case _ => false
+      case _ => ""
     }
   }
 
@@ -64,7 +73,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
         typeNameForIdentifier(ident, identifierName) match {
           case identifierTypeName: String =>
             val tpe       = registerType(identifierTypeName)
-            val globalTag = if (isFromGlobalDefinition(ident)) "<global> " else ""
+            val globalTag = globalTagFromDefinition(ident)
             val node      = identifierNode(ident, identifierName, s"$globalTag${code(ident)}", tpe)
             scope.addVariableReference(identifierName, node, tpe, EvaluationStrategies.BY_REFERENCE)
             Ast(node)

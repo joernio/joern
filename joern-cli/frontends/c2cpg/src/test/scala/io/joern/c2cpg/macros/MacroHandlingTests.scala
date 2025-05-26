@@ -1,5 +1,6 @@
 package io.joern.c2cpg.macros
 
+import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.dataflowengineoss.language.*
@@ -386,7 +387,7 @@ class CfgMacroTests extends DataFlowCodeToCpgSuite {
   "should create correct CFG for macro expansion and find data flow" in {
     val List(callToMacro) = cpg.method("foo").call.dispatchType(DispatchTypes.INLINED).l
     callToMacro.argument.code.l shouldBe List("x")
-    callToMacro.cfgNext.code.toSetMutable shouldBe Set("x", "i_read")
+    callToMacro.cfgNext.code.toSetMutable shouldBe Set("x", s"${Defines.UnknownTag} i_read")
 
     val source = cpg.method("foo").call.name("MP4_GET4BYTES").argument(1).l
     val sink   = cpg.method("foo").call.name("sink").argument(1).l

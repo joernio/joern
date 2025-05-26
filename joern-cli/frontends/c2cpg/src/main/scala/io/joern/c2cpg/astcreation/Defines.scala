@@ -24,4 +24,6 @@ object Defines {
   val OperatorNew: String                    = "<operator>.new"
   val DuplicateSuffix                        = "<duplicate>"
   val ConstSuffix                            = "<const>"
+  val GlobalTag                              = "<global>"
+  val UnknownTag                             = "<unknown>"
 }

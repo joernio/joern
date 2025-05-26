@@ -14,7 +14,7 @@ abstract class CfgTestCpg extends TestCpg {
 
 class CfgTestFixture[T <: CfgTestCpg](testCpgFactory: () => T) extends Code2CpgFixture(testCpgFactory) {
 
-  private def matchCode(node: CfgNode, code: String): Boolean = node match {
+  protected def matchCode(node: CfgNode, code: String): Boolean = node match {
     case method: Method => method.name == code
     case other          => other.code == code
   }
