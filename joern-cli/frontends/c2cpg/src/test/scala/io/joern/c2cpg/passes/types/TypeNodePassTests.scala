@@ -1,5 +1,6 @@
 package io.joern.c2cpg.passes.types
 
+import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.Operators
@@ -164,7 +165,7 @@ class TypeNodePassTests extends C2CpgSuite {
 
           kernel.name shouldBe "GFP_KERNEL"
           kernel.typeFullName shouldBe "ANY"
-          kernel.code shouldBe "GFP_KERNEL"
+          kernel.code shouldBe s"${Defines.UnknownTag} GFP_KERNEL"
 
           test.name shouldBe "test"
           test.typeFullName shouldBe "test"

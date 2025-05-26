@@ -318,8 +318,8 @@ class AstCreationPassTests extends AstC2CpgSuite {
           |#include "a.h"
           |
           |int main() {
-          |    printf("%d\n", global);
-          |    return 0;
+          |  printf("%d\n", global);
+          |  return 0;
           |}
           |""".stripMargin,
         "main.cc"
@@ -334,6 +334,48 @@ class AstCreationPassTests extends AstC2CpgSuite {
       localFromHeader.code shouldBe "int global"
       localFromMain.name shouldBe "global"
       localFromMain.code shouldBe "<global> global"
+    }
+
+    "be correct for locals from decl from missing header file" in {
+      val cpg = code(
+        """
+          |#include "a.h"
+          |
+          |int localId = 0;
+          |
+          |int main() {
+          |  printf("%d\n", localId);
+          |  printf("%d\n", global);
+          |  printf("%d\n", unknown);
+          |  return 0;
+          |}
+          |""".stripMargin,
+        "main.cc"
+      ).moreCode(
+        """
+          |int global;
+          |""".stripMargin,
+        "a.h"
+      )
+      val List(localFromHeader, localId, globalLocalId, localFromMain, unknown) = cpg.local.sortBy(_.lineNumber.get).l
+      localFromHeader.name shouldBe "global"
+      localFromHeader.code shouldBe "int global"
+      localFromHeader.typeFullName shouldBe "int"
+
+      localId.name shouldBe "localId"
+      localId.code shouldBe "int localId"
+      localId.typeFullName shouldBe "int"
+
+      globalLocalId.name shouldBe "localId"
+      globalLocalId.code shouldBe "<global> localId"
+      globalLocalId.typeFullName shouldBe "int"
+
+      localFromMain.name shouldBe "global"
+      localFromMain.code shouldBe "<global> global"
+      localFromMain.typeFullName shouldBe "int"
+
+      unknown.name shouldBe "unknown"
+      unknown.code shouldBe "<unknown> unknown"
     }
 
     "be correct for locals from decl in global namespace from header file" in {
@@ -639,7 +681,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
           condition.argumentIndex shouldBe 1
           condition.code shouldBe "foo == 1"
           trueBranch.argumentIndex shouldBe 2
-          trueBranch.code shouldBe "bar"
+          trueBranch.code shouldBe s"${Defines.UnknownTag} bar"
           falseBranch.argumentIndex shouldBe 3
           falseBranch.code shouldBe "0"
         }
@@ -1205,16 +1247,16 @@ class AstCreationPassTests extends AstC2CpgSuite {
       inside(cpg.controlStructure.isTry.l) { case List(t) =>
         val List(tryBlock) = t.astChildren.isBlock.l
         tryBlock.order shouldBe 1
-        tryBlock.astChildren.isIdentifier.order(1).code.l shouldBe List("a")
+        tryBlock.astChildren.isIdentifier.order(1).code.l shouldBe List(s"${Defines.UnknownTag} a")
         val List(catchX, catchY, catchZ) = t.astChildren.isControlStructure.isCatch.l
         catchX.order shouldBe 2
-        catchX.ast.isIdentifier.code.l shouldBe List("b")
+        catchX.ast.isIdentifier.code.l shouldBe List(s"${Defines.UnknownTag} b")
         catchX.ast.isLocal.code.l shouldBe List("short x")
         catchY.order shouldBe 3
-        catchY.ast.isIdentifier.code.l shouldBe List("c")
+        catchY.ast.isIdentifier.code.l shouldBe List(s"${Defines.UnknownTag} c")
         catchY.ast.isLocal.code.l shouldBe List("int y")
         catchZ.order shouldBe 4
-        catchZ.ast.isIdentifier.code.l shouldBe List("d")
+        catchZ.ast.isIdentifier.code.l shouldBe List(s"${Defines.UnknownTag} d")
         catchZ.ast.isLocal.code.l shouldBe List("long z")
       }
     }

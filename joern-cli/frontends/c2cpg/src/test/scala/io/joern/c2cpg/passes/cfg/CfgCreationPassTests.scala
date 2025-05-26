@@ -1,14 +1,22 @@
 package io.joern.c2cpg.passes.cfg
 
+import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.CCfgTestCpg
 import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.*
 import io.joern.x2cpg.testfixtures.CfgTestFixture
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Method}
+import io.shiftleft.semanticcpg.language.*
 
 class CfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg) {
   override def code(code: String): CCfgTestCpg = {
     super.code(s"RET func() { $code }")
+  }
+
+  override def matchCode(node: CfgNode, code: String): Boolean = node match {
+    case method: Method => method.name == code
+    case other          => other.code.stripPrefix(Defines.GlobalTag).stripPrefix(Defines.UnknownTag).strip() == code
   }
 
   "Cfg" should {
@@ -560,6 +568,11 @@ class CfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg) {
 class CppCfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg(FileDefaults.CppExt)) {
   override def code(code: String): CCfgTestCpg = {
     super.code(s"RET func() { $code }")
+  }
+
+  override def matchCode(node: CfgNode, code: String): Boolean = node match {
+    case method: Method => method.name == code
+    case other          => other.code.stripPrefix(Defines.GlobalTag).stripPrefix(Defines.UnknownTag).strip() == code
   }
 
   "Cfg for try" should {
