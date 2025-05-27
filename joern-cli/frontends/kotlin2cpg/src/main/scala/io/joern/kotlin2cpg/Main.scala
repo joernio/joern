@@ -100,7 +100,7 @@ private object Frontend {
 object Main extends X2CpgMain(cmdLineParser, new Kotlin2Cpg()) with FrontendHTTPServer[Config, Kotlin2Cpg] {
 
   override protected def newDefaultConfig(): Config =
-    Frontend.defaultConfig
+    Frontend.defaultConfig.copy()
 
   def run(config: Config, kotlin2cpg: Kotlin2Cpg): Unit = {
     if (config.serverMode) { startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout) }

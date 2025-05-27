@@ -183,7 +183,8 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
         entry.filename,
         config.inputPath,
         ignoredFilesRegex = Option(config.ignoredFilesRegex),
-        ignoredFilesPath = Option(config.ignoredFiles)
+        ignoredFilesPath = Option(config.ignoredFiles),
+        ignoredDefaultRegex = Option(config.defaultIgnoredFilesRegex)
       )
     )
     sourceFiles
@@ -213,7 +214,6 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       val sourceDir = config.inputPath
       logger.info(s"Starting CPG generation for input directory `$sourceDir`.")
-
       checkSourceDir(sourceDir)
       logMaxHeapSize()
 
