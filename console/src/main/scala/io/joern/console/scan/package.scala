@@ -100,7 +100,7 @@ package object scan {
 
   /** Print human readable list of findings to standard out.
     */
-  def outputFindings(cpg: Cpg)(implicit finder: NodeExtensionFinder): Unit = {
+  def outputFindings(cpg: Cpg)(implicit locationCreator: LocationCreator): Unit = {
     cpg.finding.sortBy(_.score.toInt).foreach { finding =>
       val evidence = finding.evidence.headOption
         .map { e =>

@@ -6,6 +6,6 @@ import io.shiftleft.semanticcpg.language.*
 
 class MethodRefMethods(val methodRef: MethodRef) extends AnyVal with NodeExtension with HasLocation {
   override def location: LocationInfo = {
-    Location(methodRef)
+    methodRef.location
   }
 }

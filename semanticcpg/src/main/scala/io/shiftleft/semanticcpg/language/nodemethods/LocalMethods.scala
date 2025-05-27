@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.language.*
 
 class LocalMethods(val local: Local) extends AnyVal with NodeExtension with HasLocation {
   override def location: LocationInfo = {
-    Location(local)
+    local.location
   }
 
   /** The method hosting this local variable

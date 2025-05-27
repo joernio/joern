@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.language.*
 
 class MethodReturnMethods(val node: MethodReturn) extends AnyVal with NodeExtension with HasLocation {
   override def location: LocationInfo = {
-    Location(node)
+    node.location
   }
 
   def returnUser(implicit callResolver: ICallResolver): Iterator[Call] = {

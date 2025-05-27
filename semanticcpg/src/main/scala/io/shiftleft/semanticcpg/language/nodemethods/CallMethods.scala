@@ -46,6 +46,6 @@ class CallMethods(val node: Call) extends AnyVal with NodeExtension with HasLoca
   }
 
   override def location: LocationInfo = {
-    Location(node)
+    node.location
   }
 }

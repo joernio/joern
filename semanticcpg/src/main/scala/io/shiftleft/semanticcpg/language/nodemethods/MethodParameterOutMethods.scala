@@ -6,6 +6,6 @@ import io.shiftleft.semanticcpg.language.*
 
 class MethodParameterOutMethods(val paramOut: MethodParameterOut) extends AnyVal with NodeExtension with HasLocation {
   override def location: LocationInfo = {
-    Location(paramOut)
+    paramOut.location
   }
 }

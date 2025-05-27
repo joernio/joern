@@ -38,19 +38,10 @@ trait HasLocation extends Any {
 // determining how to fill out `LocationInfo` for each
 // type of node in one central place, and 2) allow consumers
 // of joern, which may also provide different node types
-// or location information, to provide alternate or
-// extended implementations of LocCreator.
+// and/or location information, to provide alternate or
+// extended implementations of LocationCreator.
 trait LocationCreator {
-  implicit def apply(node: AbstractNode): LocationInfo
-}
-
-implicit object Location extends LocationCreator {
-  implicit def apply(node: AbstractNode): LocationInfo = {
-    node match {
-      case storedNode: StoredNode => LazyLocation(storedNode)
-      case _                      => EmptyLocation
-    }
-  }
+  implicit def apply(node: StoredNode): LocationInfo
 }
 
 object EmptyLocation extends LocationInfo {
@@ -65,6 +56,14 @@ object EmptyLocation extends LocationInfo {
   override def classShortName: String     = "<empty>"
   override def filename: String           = "<empty>"
 }
+
+object LazyLocation extends LocationCreator {
+  implicit def apply(node: StoredNode): LocationInfo = {
+    new LazyLocation(node)
+  }
+}
+
+implicit val locationCreator: LocationCreator = LazyLocation
 
 class LazyLocation(storedNode: StoredNode) extends LocationInfo {
   def node: Option[AbstractNode] = Some(storedNode)
