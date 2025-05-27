@@ -146,7 +146,7 @@ object SourceParser {
         SourceFiles.determine(
           config.inputPath,
           JavaSrc2Cpg.sourceFileExtensions,
-          ignoredDefaultRegex = Option(JavaSrc2Cpg.DefaultIgnoredFilesRegex),
+          ignoredDefaultRegex = Option(config.defaultIgnoredFilesRegex),
           ignoredFilesRegex = Option(config.ignoredFilesRegex),
           ignoredFilesPath = Option(config.ignoredFiles)
         )

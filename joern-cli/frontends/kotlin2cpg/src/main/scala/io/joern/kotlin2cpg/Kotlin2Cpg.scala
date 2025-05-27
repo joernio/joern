@@ -1,5 +1,6 @@
 package io.joern.kotlin2cpg
 
+import io.joern.javasrc2cpg.JavaSrc2Cpg
 import io.joern.kotlin2cpg.compiler.CompilerAPI
 import io.joern.kotlin2cpg.compiler.ErrorLoggingMessageCollector
 import io.joern.kotlin2cpg.files.SourceFilesPicker
@@ -29,6 +30,7 @@ import org.slf4j.LoggerFactory
 
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.util.regex.Pattern
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 import scala.jdk.StreamConverters.StreamHasToScala
@@ -37,9 +39,10 @@ import scala.util.matching.Regex
 
 object Kotlin2Cpg {
 
-  private val logger               = LoggerFactory.getLogger(getClass)
-  private val JarExtension: String = ".jar"
-  private val ImportPattern: Regex = ".*import([^;]*).*".r
+  private val logger                        = LoggerFactory.getLogger(getClass)
+  private val JarExtension: String          = ".jar"
+  private val ImportPattern: Regex          = ".*import([^;]*).*".r
+  val DefaultIgnoredFilesRegex: List[Regex] = JavaSrc2Cpg.DefaultIgnoredFilesRegex
 
   private val defaultKotlinStdlibContentRootJarPaths = Seq(
     DefaultContentRootJarPath("jars/kotlin-stdlib-1.9.0.jar", isResource = true),
@@ -83,7 +86,8 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
       sourceDir,
       Set(".kt"),
       ignoredFilesRegex = Option(config.ignoredFilesRegex),
-      ignoredFilesPath = Option(config.ignoredFiles)
+      ignoredFilesPath = Option(config.ignoredFiles),
+      ignoredDefaultRegex = Option(config.defaultIgnoredFilesRegex)
     )
     if (filesWithKtExtension.isEmpty) {
       println(s"The provided input directory does not contain files ending in '.kt' `$sourceDir`. Exiting.")
@@ -97,7 +101,8 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
       sourceDir,
       Set(".java"),
       ignoredFilesRegex = Option(config.ignoredFilesRegex),
-      ignoredFilesPath = Option(config.ignoredFiles)
+      ignoredFilesPath = Option(config.ignoredFiles),
+      ignoredDefaultRegex = Option(config.defaultIgnoredFilesRegex)
     )
     if (filesWithJavaExtension.nonEmpty) {
       logger.info(s"Found ${filesWithJavaExtension.size} files with the `.java` extension.")
