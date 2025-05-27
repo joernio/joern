@@ -58,7 +58,7 @@ final case class Config(
 }
 
 private object Frontend {
-  implicit val defaultConfig: Config = Config()
+  implicit val defaultConfig: Config = Config().withDefaultIgnoredFilesRegex(Kotlin2Cpg.DefaultIgnoredFilesRegex)
 
   val cmdLineParser: OParser[Unit, Config] = {
     val builder = OParser.builder[Config]
@@ -100,7 +100,7 @@ private object Frontend {
 object Main extends X2CpgMain(cmdLineParser, new Kotlin2Cpg()) with FrontendHTTPServer[Config, Kotlin2Cpg] {
 
   override protected def newDefaultConfig(): Config =
-    Config().withDefaultIgnoredFilesRegex(Kotlin2Cpg.DefaultIgnoredFilesRegex)
+    Frontend.defaultConfig
 
   def run(config: Config, kotlin2cpg: Kotlin2Cpg): Unit = {
     if (config.serverMode) { startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout) }

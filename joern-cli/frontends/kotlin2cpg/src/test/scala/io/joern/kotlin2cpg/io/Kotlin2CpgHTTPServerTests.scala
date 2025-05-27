@@ -73,7 +73,7 @@ class Kotlin2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAnd
         val input            = projectUnderTest.absolutePathAsString
         val output           = cpgOutFile.toString
         val client           = FrontendHTTPClient(port)
-        val req              = client.buildRequest(Array(s"input=$input", s"output=$output"))
+        val req              = client.buildRequest(Array(s"input=$input", s"output=$output", "no-default-exclude"))
         client.sendRequest(req) match {
           case Failure(exception) => fail(exception.getMessage)
           case Success(out) =>
