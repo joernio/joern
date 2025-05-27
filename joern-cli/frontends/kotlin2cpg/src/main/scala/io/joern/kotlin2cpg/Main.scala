@@ -58,7 +58,7 @@ final case class Config(
 }
 
 private object Frontend {
-  implicit val defaultConfig: Config = Config().withDefaultIgnoredFilesRegex(Kotlin2Cpg.DefaultIgnoredFilesRegex)
+  implicit val defaultConfig: Config = Config()
 
   val cmdLineParser: OParser[Unit, Config] = {
     val builder = OParser.builder[Config]

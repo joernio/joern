@@ -14,8 +14,7 @@ import scala.collection.parallel.CollectionConverters.*
 object Delombok {
 
   enum DelombokMode {
-    // Don't run delombok at all.
-    case NoDelombok  extends DelombokMode
+    case NoDelombok  extends DelombokMode // Don't run delombok at all.
     case Default     extends DelombokMode
     case TypesOnly   extends DelombokMode
     case RunDelombok extends DelombokMode

@@ -214,6 +214,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       val sourceDir = config.inputPath
       logger.info(s"Starting CPG generation for input directory `$sourceDir`.")
+
       checkSourceDir(sourceDir)
       logMaxHeapSize()
 
