@@ -1,6 +1,7 @@
 package io.shiftleft.semanticcpg.language
 
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.Properties
 import io.shiftleft.semanticcpg.language.*
 
 import scala.annotation.tailrec
@@ -71,7 +72,7 @@ class LazyLocation(storedNode: StoredNode) extends LocationInfo {
   def symbol: String = {
     storedNode match {
       case _: Call | _: Literal | _: MethodRef =>
-        storedNode.property(Properties.Ċode)
+        storedNode.property(Properties.Code)
       case _: Identifier | _: Local | _: MethodParameterIn | _: MethodParameterOut | _: Method =>
         storedNode.property(Properties.Name)
       case _: MethodReturn => "$ret"
@@ -98,7 +99,7 @@ class LazyLocation(storedNode: StoredNode) extends LocationInfo {
 
   def filename: String = if (method.filename.isEmpty) "N/A" else method.filename
 
-  protected val defaultString = "<empty>";
+  final protected val defaultString = "<empty>";
 
   private lazy val typeOption = findParentTypeDecl(method)
 
