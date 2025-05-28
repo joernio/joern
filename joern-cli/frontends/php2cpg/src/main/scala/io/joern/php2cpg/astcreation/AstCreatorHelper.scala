@@ -49,23 +49,17 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     identifierNode(originNode, name, s"$$$name", typeFullName)
   }
 
-  protected def composeMethodFullName(
-    methodName: String,
-    isStatic: Boolean,
-    appendMetaTypeDeclExt: Boolean = false
-  ): String = {
+  protected def composeMethodFullName(methodName: String, appendMetaTypeDeclExt: Boolean = false): String = {
     if (methodName == NamespaceTraversal.globalNamespaceName) {
       globalNamespace.fullName
     } else {
       val className = if (appendMetaTypeDeclExt) {
-        getTypeDeclPrefix.map(name => s"${name}$MetaTypeDeclExtension")
+        getTypeDeclPrefix.map(name => s"$name$MetaTypeDeclExtension")
       } else {
         getTypeDeclPrefix
       }
 
-      val methodDelimiter = if (isStatic) StaticMethodDelimiter else InstanceMethodDelimiter
-
-      val nameWithClass = List(className, Some(methodName)).flatten.mkString(methodDelimiter)
+      val nameWithClass = List(className, Some(methodName)).flatten.mkString(MethodDelimiter)
 
       prependNamespacePrefix(nameWithClass)
     }
@@ -84,7 +78,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
   }
 
   protected def codeForMethodCall(call: PhpCallExpr, targetAst: Ast, name: String): String = {
-    val callOperator = if (call.isNullSafe) "?->" else "->"
+    val callOperator = if (call.isNullSafe) s"?$InstanceMethodDelimiter" else InstanceMethodDelimiter
     s"${targetAst.rootCodeOrEmpty}$callOperator$name"
   }
 
@@ -94,7 +88,22 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
         .map(astForExpr)
         .map(_.rootCode.getOrElse(UnresolvedNamespace))
         .getOrElse(UnresolvedNamespace)
-    s"$className::$name"
+    s"$className$StaticMethodDelimiter$name"
+  }
+
+  protected def composeMethodName(call: PhpCallExpr, targetAst: Option[Ast], name: String): String = {
+    if (call.isStatic) {
+      val className =
+        call.target
+          .map(astForExpr)
+          .map(_.rootCode.getOrElse(UnresolvedNamespace))
+          .getOrElse(UnresolvedNamespace)
+      s"$className$MethodDelimiter$name"
+    } else if (targetAst.isDefined) {
+      s"${targetAst.get.rootCodeOrEmpty}$MethodDelimiter$name"
+    } else {
+      name
+    }
   }
 
   protected def dimensionFromSimpleScalar(scalar: PhpSimpleScalar, idxTracker: ArrayIndexTracker): PhpExpr = {

@@ -21,7 +21,7 @@ class ComposerAutoloadPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg
     cpg.typeDecl.filter(x => x.name != x.fullName && x.isExternal).foreach { t =>
       typeMap.put(t.name, t.fullName)
       t.method.foreach { m =>
-        methodMap.put(s"${t.name}->${m.name}", m.fullName)
+        methodMap.put(s"${t.name}.${m.name}", m.fullName)
       }
     }
   }

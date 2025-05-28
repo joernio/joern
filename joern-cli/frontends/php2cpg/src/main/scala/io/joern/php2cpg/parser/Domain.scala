@@ -79,6 +79,7 @@ object Domain {
   val NamespaceDelimiter      = "\\"
   val StaticMethodDelimiter   = "::"
   val InstanceMethodDelimiter = "->"
+  val MethodDelimiter         = "."
   // Used for creating the default constructor.
   val ConstructorMethodName = "__construct"
   val MetaTypeDeclExtension = "<metaclass>"

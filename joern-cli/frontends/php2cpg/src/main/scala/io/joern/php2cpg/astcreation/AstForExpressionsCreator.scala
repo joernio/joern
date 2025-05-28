@@ -98,16 +98,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       // Static method call with a known class name
       case Some(nameExpr: PhpNameExpr) if call.isStatic =>
         if (nameExpr.name == NameConstants.Self)
-          composeMethodFullName(name, call.isStatic, appendMetaTypeDeclExt = !scope.isSurroundedByMetaclassTypeDecl)
-        else s"${nameExpr.name}$MetaTypeDeclExtension$StaticMethodDelimiter$name"
-      case Some(expr) =>
-        s"$UnresolvedNamespace\\$codePrefix"
+          composeMethodFullName(name, appendMetaTypeDeclExt = !scope.isSurroundedByMetaclassTypeDecl)
+        else s"${nameExpr.name}$MetaTypeDeclExtension$MethodDelimiter$name"
+      case Some(_) =>
+        val methodName = composeMethodName(call, targetAst, name)
+        s"$UnresolvedNamespace\\$methodName"
       case None if PhpBuiltins.FuncNames.contains(name) =>
         // No signature/namespace for MFN for builtin functions to ensure stable names as type info improves.
         name
       // Function call
       case None =>
-        composeMethodFullName(name, call.isStatic)
+        composeMethodFullName(name)
     }
 
     // Use method signature for methods that can be linked to avoid varargs issue.
@@ -199,7 +200,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     isField: Boolean
   ): Ast = {
     val targetAst = if (isField) {
-      val code            = s"$$this->${memberNode.name}"
+      val code            = s"$$this$InstanceMethodDelimiter${memberNode.name}"
       val fieldAccessNode = operatorCallNode(originNode, code, Operators.fieldAccess, None)
       val identifier      = thisIdentifier(originNode)
       val thisParam       = scope.lookupVariable(NameConstants.This)
@@ -212,7 +213,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         identifierNode(originNode, name, name, typ.getOrElse(Defines.Any), typ.toList)
       }
       val fieldIdentifier = fieldIdentifierNode(originNode, memberNode.name, memberNode.name)
-      val code            = s"${NameConstants.Self}::${memberNode.code.replaceAll("(static|case|const) ", "")}"
+      val code = s"${NameConstants.Self}$StaticMethodDelimiter${memberNode.code.replaceAll("(static|case|const) ", "")}"
       val fieldAccessNode = operatorCallNode(originNode, code, Operators.fieldAccess, None)
       callAst(fieldAccessNode, List(selfIdentifier, fieldIdentifier).map(Ast(_)))
     }
@@ -495,13 +496,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case other             => astForExpr(other)
     }
 
-    val accessSymbol =
+    val accessSymbol = {
       if (expr.isStatic)
-        "::"
+        StaticMethodDelimiter
       else if (expr.isNullsafe)
-        "?->"
+        s"?$InstanceMethodDelimiter"
       else
-        "->"
+        InstanceMethodDelimiter
+    }
 
     val code            = s"${objExprAst.rootCodeOrEmpty}$accessSymbol${fieldAst.rootCodeOrEmpty}"
     val fieldAccessNode = operatorCallNode(expr, code, Operators.fieldAccess, None)
@@ -772,7 +774,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         val targetAst           = astForExpr(expr.className)
         val fieldIdentifierName = expr.constantName.map(_.name).getOrElse(NameConstants.Unknown)
         val fieldIdentifier     = fieldIdentifierNode(expr, fieldIdentifierName, fieldIdentifierName)
-        val fieldAccessCode     = s"${targetAst.rootCodeOrEmpty}::${fieldIdentifier.code}"
+        val fieldAccessCode     = s"${targetAst.rootCodeOrEmpty}$StaticMethodDelimiter${fieldIdentifier.code}"
         val fieldAccessCall     = operatorCallNode(expr, fieldAccessCode, Operators.fieldAccess, None)
         callAst(fieldAccessCall, List(targetAst, Ast(fieldIdentifier)))
     }
@@ -791,7 +793,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         NameConstants.Unknown
     }
 
-    Ast(typeRefNode(expr, s"$typeFullName::class", typeFullName))
+    Ast(typeRefNode(expr, s"$typeFullName${MethodDelimiter}class", typeFullName))
   }
 
   private def astForConstFetchExpr(expr: PhpConstFetchExpr): Ast = {
@@ -845,7 +847,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     // Init node
     val initArgs      = expr.args.map(astForCallArg)
     val initSignature = s"$UnresolvedSignature(${initArgs.size})"
-    val initFullName  = s"$className$InstanceMethodDelimiter$ConstructorMethodName"
+    val initFullName  = s"$className$MethodDelimiter$ConstructorMethodName"
     val initCode      = s"$initFullName(${initArgs.map(_.rootCodeOrEmpty).mkString(",")})"
     val initCallNode = callNode(
       expr,

@@ -192,7 +192,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     // Update asts
     val nextIterIdent = Ast(iterIdentifier.copy)
     val nextSignature = "void()"
-    val nextCallCode  = s"${nextIterIdent.rootCodeOrEmpty}->next()"
+    val nextCallCode  = s"${nextIterIdent.rootCodeOrEmpty}${InstanceMethodDelimiter}next()"
     val nextCallNode = callNode(
       stmt,
       nextCallCode,
@@ -228,7 +228,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     val valueAssign = {
       val iteratorIdentifierAst = Ast(iteratorIdentifier)
       val currentCallSignature  = s"$UnresolvedSignature(0)"
-      val currentCallCode       = s"${iteratorIdentifierAst.rootCodeOrEmpty}->current()"
+      val currentCallCode       = s"${iteratorIdentifierAst.rootCodeOrEmpty}${InstanceMethodDelimiter}current()"
       // `current` function is used to get the current element of given array
       // see https://www.php.net/manual/en/function.current.php & https://www.php.net/manual/en/iterator.current.php
       val currentCallNode = callNode(
@@ -256,7 +256,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     val keyAssignOption = stmt.keyVar.map(keyVar =>
       val iteratorIdentifierAst = Ast(iteratorIdentifier.copy)
       val keyCallSignature      = s"$UnresolvedSignature(0)"
-      val keyCallCode           = s"${iteratorIdentifierAst.rootCodeOrEmpty}->key()"
+      val keyCallCode           = s"${iteratorIdentifierAst.rootCodeOrEmpty}${InstanceMethodDelimiter}key()"
       // `key` function is used to get the key of the current element
       // see https://www.php.net/manual/en/function.key.php & https://www.php.net/manual/en/iterator.key.php
       val keyCallNode = callNode(

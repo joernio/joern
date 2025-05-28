@@ -1,6 +1,6 @@
 package io.joern.php2cpg.utils
 
-import io.joern.php2cpg.parser.Domain.InstanceMethodDelimiter
+import io.joern.php2cpg.parser.Domain.MethodDelimiter
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
 
 class PhpScopeElement private (val node: NewNode, scopeName: String)(implicit nextClosureName: () => String) {
@@ -24,7 +24,7 @@ class PhpScopeElement private (val node: NewNode, scopeName: String)(implicit ne
   def getName: String = scopeName
 
   def getClosureMethodName: String = {
-    s"$scopeName$InstanceMethodDelimiter${nextClosureName()}"
+    s"$scopeName$MethodDelimiter${nextClosureName()}"
   }
 }
 

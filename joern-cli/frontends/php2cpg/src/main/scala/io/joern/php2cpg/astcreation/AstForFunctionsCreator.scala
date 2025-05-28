@@ -94,7 +94,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     }
 
     val methodName = decl.name.name
-    val fullName   = fullNameOverride.getOrElse(composeMethodFullName(methodName, isStatic))
+    val fullName   = fullNameOverride.getOrElse(composeMethodFullName(methodName))
 
     val signature = s"$UnresolvedSignature(${decl.params.size})"
 
@@ -160,7 +160,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   protected def defaultConstructorAst(originNode: PhpNode): Ast = {
-    val fullName = composeMethodFullName(ConstructorMethodName, isStatic = false)
+    val fullName = composeMethodFullName(ConstructorMethodName)
 
     val signature = s"$UnresolvedSignature(0)"
 
@@ -216,7 +216,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
       case inits =>
         val signature = s"${TypeConstants.Void}()"
-        val fullName  = composeMethodFullName(Defines.StaticInitMethodName, isStatic = true)
+        val fullName  = composeMethodFullName(Defines.StaticInitMethodName)
         val ast =
           staticInitMethodAst(
             node,

@@ -8,7 +8,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.Call
 
 class PhpTypeHintCallLinker(cpg: Cpg) extends XTypeHintCallLinker(cpg) {
 
-  override protected val pathSep = "->"
+  override protected val pathSep = "."
 
   override protected def calls: Iterator[Call] = {
     cpg.call
