@@ -2,7 +2,7 @@ package io.shiftleft.semanticcpg.language.nodemethods
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.codepropertygraph.generated.nodes.{Literal, NewLocation}
+import io.shiftleft.codepropertygraph.generated.nodes.Literal
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.nodemethods.LiteralMethods.{delimiters, logger}
@@ -28,9 +28,8 @@ class LiteralMethods(val literal: Literal) extends AnyVal with NodeExtension wit
       .getOrElse(literal.code)
   }
 
-  override def location: NewLocation = {
-    LocationCreator.defaultCreateLocation(literal)
-
+  override def location: LocationInfo = {
+    literal.location
   }
 }
 
