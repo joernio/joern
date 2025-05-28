@@ -13,13 +13,11 @@ import scala.collection.parallel.CollectionConverters.*
 
 object Delombok {
 
-  sealed trait DelombokMode
-  // Don't run delombok at all.
-  object DelombokMode {
-    case object NoDelombok  extends DelombokMode
-    case object Default     extends DelombokMode
-    case object TypesOnly   extends DelombokMode
-    case object RunDelombok extends DelombokMode
+  enum DelombokMode {
+    case NoDelombok  extends DelombokMode // Don't run delombok at all.
+    case Default     extends DelombokMode
+    case TypesOnly   extends DelombokMode
+    case RunDelombok extends DelombokMode
   }
 
   case class DelombokRunResult(path: Path, isDelombokedPath: Boolean)
