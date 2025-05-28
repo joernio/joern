@@ -294,7 +294,7 @@ class AstGenRunner(config: Config) {
         case Success(result)    => result
         case Failure(exception) =>
           // Log the exception for debugging purposes
-          logger.error("An error occurred while processing the file path during filtering file stage : ", exception)
+          logger.warn(s"An error occurred while processing file path $file during filtering stage : ", exception)
           false
       }
     }
