@@ -92,15 +92,27 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
   }
 
   protected def composeMethodName(call: PhpCallExpr, targetAst: Option[Ast], name: String): String = {
+
+    /** The code property may contain "?", "::", or "->", so this needs to be replaced before composing a full name.
+      */
+    def normalizeMethodCode(code: String): String =
+      code
+        .filterNot(c => c == '?' || c == ' ')
+        .replaceAll(s"($StaticMethodDelimiter|$InstanceMethodDelimiter)", MethodDelimiter)
+
     if (call.isStatic) {
       val className =
         call.target
           .map(astForExpr)
-          .map(_.rootCode.getOrElse(UnresolvedNamespace))
+          .map(_.rootCode.map(normalizeMethodCode).getOrElse(UnresolvedNamespace))
           .getOrElse(UnresolvedNamespace)
       s"$className$MethodDelimiter$name"
     } else if (targetAst.isDefined) {
-      s"${targetAst.get.rootCodeOrEmpty}$MethodDelimiter$name"
+      val prefix = targetAst
+        .map(_.rootCodeOrEmpty)
+        .map(normalizeMethodCode)
+        .get
+      s"$prefix$MethodDelimiter$name"
     } else {
       name
     }

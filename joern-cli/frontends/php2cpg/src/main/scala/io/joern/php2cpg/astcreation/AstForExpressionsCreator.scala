@@ -62,9 +62,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val nameAst = Option.unless(call.methodName.isInstanceOf[PhpNameExpr])(astForExpr(call.methodName))
     val name =
       nameAst
-        .map(_.rootCodeOrEmpty)
+        .map(_.rootCodeOrEmpty.toLowerCase)
         .getOrElse(call.methodName match {
-          case nameExpr: PhpNameExpr => nameExpr.name
+          case nameExpr: PhpNameExpr => nameExpr.name.toLowerCase
           case other =>
             logger.error(s"Found unexpected call target type: Crash for now to handle properly later: $other")
             ???

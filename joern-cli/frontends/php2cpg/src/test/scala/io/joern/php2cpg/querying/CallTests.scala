@@ -236,4 +236,16 @@ class CallTests extends PhpCode2CpgFixture {
          |""".stripMargin)
     cpg.method.name("foz").call.name("boz").methodFullName.l shouldBe List("Foo.foo.anon-class-0<metaclass>.boz")
   }
+
+  "a chained call from an external namespace should have normalized '.' method delimiters, and name should be lower-cased" in {
+    val cpg = code("""
+        |<?
+        |use Foo\Bar\Http;
+        |
+        |Http::retry(3)->tiMeOut(10);
+        |""".stripMargin)
+
+    cpg.call("timeout").methodFullName.head shouldBe "Foo\\Bar\\Http<metaclass>.retry.timeout"
+  }
+
 }
