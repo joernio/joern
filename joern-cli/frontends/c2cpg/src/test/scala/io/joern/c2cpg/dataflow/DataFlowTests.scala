@@ -2171,4 +2171,36 @@ class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
       )
     }
   }
+
+  "DataFlowTest81" should {
+    val cpg = code("""int a = 1;
+        |int b = 2;
+        |int c = 3;
+        |
+        |void foo() {
+        |  bar(a, b, c);
+        |}
+        |""".stripMargin)
+
+    "not find a flow from top-level identifiers to call inside function" in {
+      import io.joern.dataflowengineoss.language.*
+      val one   = cpg.literal.code("1").l
+      val two   = cpg.literal.code("2").l
+      val three = cpg.literal.code("3").l
+      one.size shouldBe 1
+      two.size shouldBe 1
+      three.size shouldBe 1
+
+      val sink = cpg.call("bar").argument.argumentIndexGte(1).l
+      sink.size shouldBe 3
+
+      def flows(source: Iterator[CfgNode]): Set[List[(String, Integer)]] =
+        sink.reachableByFlows(source).map(flowToResultPairs).toSet
+
+      flows(one) shouldBe Set(("a = 1", 1) :: ("bar(a, b, c)", 6) :: Nil)
+      flows(two) shouldBe Set(("b = 2", 2) :: ("bar(a, b, c)", 6) :: Nil)
+      flows(three) shouldBe Set(("c = 3", 3) :: ("bar(a, b, c)", 6) :: Nil)
+    }
+  }
+
 }
