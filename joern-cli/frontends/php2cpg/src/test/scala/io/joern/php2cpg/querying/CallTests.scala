@@ -5,7 +5,7 @@ import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.php2cpg.parser.Domain
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier}
 import io.shiftleft.semanticcpg.language.*
 
 class CallTests extends PhpCode2CpgFixture {
@@ -164,11 +164,11 @@ class CallTests extends PhpCode2CpgFixture {
         fRecv.code shouldBe "$$f->$foo"
         fRecv.lineNumber shouldBe Some(2)
 
-        inside(fRecv.argument.l) { case List(fVar: Identifier, fooVar: Identifier) =>
+        inside(fRecv.argument.l) { case List(fVar: Identifier, fooVar: FieldIdentifier) =>
           fVar.name shouldBe "f"
           fVar.code shouldBe "$$f"
 
-          fooVar.name shouldBe "foo"
+          fooVar.canonicalName shouldBe "foo"
           fooVar.code shouldBe "$foo"
         }
 

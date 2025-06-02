@@ -117,8 +117,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val receiverAst = (targetAst, nameAst) match {
       case (Some(target), Some(n)) =>
-        val fieldAccess = operatorCallNode(call, codePrefix, Operators.fieldAccess, None)
-        Option(callAst(fieldAccess, target :: n :: Nil))
+        val fieldAccess     = operatorCallNode(call, codePrefix, Operators.fieldAccess, None)
+        val fieldIdentifier = Ast(fieldIdentifierNode(call, n.rootCodeOrEmpty.stripPrefix("$"), n.rootCodeOrEmpty))
+        Option(callAst(fieldAccess, target :: fieldIdentifier :: Nil))
       case (Some(target), None) => Option(target)
       case (None, Some(n))      => Option(n)
       case (None, None)         => None
@@ -489,26 +490,35 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForPropertyFetchExpr(expr: PhpPropertyFetchExpr): Ast = {
-    val objExprAst = astForExpr(expr.expr)
 
-    val fieldAst = expr.name match {
-      case name: PhpNameExpr => Ast(fieldIdentifierNode(expr, name.name, name.name))
-      case other             => astForExpr(other)
+    def fieldNodeAndName(nameExpr: PhpExpr): (PhpExpr, String) = nameExpr match {
+      case name: PhpNameExpr => name -> name.name
+      case variable: PhpVariable =>
+        val (expr, name) = fieldNodeAndName(variable.value)
+        (expr, s"$$$name")
+      case other => other -> ""
     }
 
-    val accessSymbol = {
+    val fieldAst = fieldNodeAndName(expr.name) match {
+      case (other, "") =>
+        logger.warn(s"Unable to determine field identifier node from ${other.getClass} (parent node $expr)")
+        astForExpr(other)
+      case (expr, name) => Ast(fieldIdentifierNode(expr, name.stripPrefix("$"), name))
+    }
+
+    val accessSymbol =
       if (expr.isStatic)
-        StaticMethodDelimiter
+        "::"
       else if (expr.isNullsafe)
-        s"?$InstanceMethodDelimiter"
+        "?->"
       else
-        InstanceMethodDelimiter
-    }
+        "->"
 
-    val code            = s"${objExprAst.rootCodeOrEmpty}$accessSymbol${fieldAst.rootCodeOrEmpty}"
+    val targetAst       = astForExpr(expr.expr)
+    val targetCode      = targetAst.rootCodeOrEmpty
+    val code            = s"$targetCode$accessSymbol${fieldAst.rootCodeOrEmpty}"
     val fieldAccessNode = operatorCallNode(expr, code, Operators.fieldAccess, None)
-
-    callAst(fieldAccessNode, objExprAst :: fieldAst :: Nil)
+    callAst(fieldAccessNode, Seq(targetAst, fieldAst))
   }
 
   private def astForIncludeExpr(expr: PhpIncludeExpr): Ast = {
