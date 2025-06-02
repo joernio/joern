@@ -98,7 +98,8 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     def normalizeMethodCode(code: String): String =
       code
         .filterNot(c => c == '?' || c == ' ')
-        .replaceAll(s"($StaticMethodDelimiter|$InstanceMethodDelimiter)", MethodDelimiter)
+        .replace(StaticMethodDelimiter, MethodDelimiter)
+        .replace(InstanceMethodDelimiter, MethodDelimiter)
 
     if (call.isStatic) {
       val className =
