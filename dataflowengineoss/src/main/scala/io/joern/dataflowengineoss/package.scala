@@ -40,9 +40,8 @@ package object dataflowengineoss {
   def firstIdentifierFromCapturedScopes(i: Declaration): List[Identifier] =
     i.capturedByMethodRef.referencedMethod
       .flatMap(m =>
-        m.local
+        m.ast.isIdentifier // this includes closures defined under method
           .nameExact(i.name)
-          .referencingIdentifiers
           .sortBy(x => (x.lineNumber, x.columnNumber))
           .headOption
       )
