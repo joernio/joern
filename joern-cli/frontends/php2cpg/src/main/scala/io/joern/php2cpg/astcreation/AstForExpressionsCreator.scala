@@ -116,9 +116,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val callRoot  = callNode(call, code, name, fullName, dispatchType, Some(signature), Some(Defines.Any))
 
     val receiverAst = (targetAst, nameAst) match {
-      case (Some(target), Some(n)) =>
+      case (Some(target), Some(_)) =>
         val fieldAccess     = operatorCallNode(call, codePrefix, Operators.fieldAccess, None)
-        val fieldIdentifier = Ast(fieldIdentifierNode(call, n.rootCodeOrEmpty.stripPrefix("$"), n.rootCodeOrEmpty))
+        val fieldIdentifier = Ast(fieldIdentifierNode(call, name.stripPrefix("$"), name))
         Option(callAst(fieldAccess, target :: fieldIdentifier :: Nil))
       case (Some(target), None) => Option(target)
       case (None, Some(n))      => Option(n)
@@ -491,28 +491,25 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   private def astForPropertyFetchExpr(expr: PhpPropertyFetchExpr): Ast = {
 
-    def fieldNodeAndName(nameExpr: PhpExpr): (PhpExpr, String) = nameExpr match {
-      case name: PhpNameExpr => name -> name.name
+    def fieldNodeAndName(nameExpr: PhpExpr): (PhpExpr, Option[String]) = nameExpr match {
+      case name: PhpNameExpr => (name, Option(name.name))
       case variable: PhpVariable =>
-        val (expr, name) = fieldNodeAndName(variable.value)
-        (expr, s"$$$name")
-      case other => other -> ""
+        val (expr, maybeName) = fieldNodeAndName(variable.value)
+        (expr, maybeName.map(name => s"$$$name"))
+      case other => (other, None)
     }
 
     val fieldAst = fieldNodeAndName(expr.name) match {
-      case (other, "") =>
+      case (other, None) =>
         logger.warn(s"Unable to determine field identifier node from ${other.getClass} (parent node $expr)")
         astForExpr(other)
-      case (expr, name) => Ast(fieldIdentifierNode(expr, name.stripPrefix("$"), name))
+      case (expr, Some(name)) => Ast(fieldIdentifierNode(expr, name.stripPrefix("$"), name))
     }
 
     val accessSymbol =
-      if (expr.isStatic)
-        "::"
-      else if (expr.isNullsafe)
-        "?->"
-      else
-        "->"
+      if (expr.isStatic) StaticMethodDelimiter
+      else if (expr.isNullsafe) s"?$InstanceMethodDelimiter"
+      else InstanceMethodDelimiter
 
     val targetAst       = astForExpr(expr.expr)
     val targetCode      = targetAst.rootCodeOrEmpty
