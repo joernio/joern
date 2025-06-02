@@ -2183,7 +2183,6 @@ class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
         |""".stripMargin)
 
     "not find a flow from top-level identifiers to call inside function" in {
-      import io.joern.dataflowengineoss.language.*
       val one   = cpg.literal.code("1").l
       val two   = cpg.literal.code("2").l
       val three = cpg.literal.code("3").l
