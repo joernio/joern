@@ -50,7 +50,6 @@ class Engine(context: EngineContext) {
     reset()
     val sourcesSet = sources.toSet
     val tasks      = createOneTaskPerSink(sinks)
-    val parents    = sourcesSet.map(_.astParent.propertiesMap.get("CODE"))
     solveTasks(tasks, sourcesSet, sinks)
   }
 
@@ -146,9 +145,8 @@ class Engine(context: EngineContext) {
   private def extractResultsFromTable(sinks: List[CfgNode]): List[TableEntry] = {
     sinks.flatMap { sink =>
       mainResultTable.get(TaskFingerprint(sink, List(), 0)) match {
-        case Some(results) =>
-          results
-        case _ => Vector()
+        case Some(results) => results
+        case _             => Vector()
       }
     }
   }
