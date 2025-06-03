@@ -1652,7 +1652,6 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       val src  = cpg.call("fgets").argument(1).l
       val sink = cpg.call("system").argument(1).l
       val flow = sink.reachableByFlows(src)
-      println(flow.map(flowToResultPairs).toSetMutable)
       sink.reachableByFlows(src).size shouldBe 0
     }
   }
