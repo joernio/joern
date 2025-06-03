@@ -1184,9 +1184,9 @@ class RegexDefinedFlowsDataFlowTests
         |print(Foo.func())
         |""".stripMargin)
     "be found" in {
-      val src = cpg.identifier("Foo").l
+      val src = cpg.call("func").receiver.l
       val snk = cpg.call("print").argument(1).l
-      snk.reachableByFlows(src).size shouldBe 3
+      snk.reachableByFlows(src).size shouldBe 1
     }
   }
   "Import statement with method ref sample four" in {
