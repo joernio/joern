@@ -2,7 +2,7 @@ package io.joern.dataflowengineoss.queryengine
 
 import io.joern.dataflowengineoss.globalFromLiteral
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.allAssignmentTypes
@@ -226,6 +226,7 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
 
   private def withFieldAndIndexAccesses(nodes: List[CfgNode]): List[CfgNode] =
     nodes.flatMap {
+      case identifier: Identifier if identifier.isArgument.nonEmpty => identifier :: Nil
       case moduleVar: Identifier if moduleVar.isModuleVariable =>
         moduleVar :: moduleVariableToFirstUsagesAcrossProgram(moduleVar)
       case identifier: Identifier => identifier :: fieldAndIndexAccesses(identifier)
