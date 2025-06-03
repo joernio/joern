@@ -41,14 +41,14 @@ class FieldAccessTests extends PhpCode2CpgFixture {
       fieldAccess.code shouldBe "$$obj->$field"
       fieldAccess.lineNumber shouldBe Some(2)
 
-      inside(fieldAccess.argument.l) { case List(objIdentifier: Identifier, field: Identifier) =>
+      inside(fieldAccess.argument.l) { case List(objIdentifier: Identifier, fieldIdentifier: FieldIdentifier) =>
         objIdentifier.name shouldBe "obj"
         objIdentifier.code shouldBe "$$obj"
         objIdentifier.lineNumber shouldBe Some(2)
 
-        field.name shouldBe "field"
-        field.code shouldBe "$field"
-        field.lineNumber shouldBe Some(2)
+        fieldIdentifier.canonicalName shouldBe "field"
+        fieldIdentifier.code shouldBe "$field"
+        fieldIdentifier.lineNumber shouldBe Some(2)
       }
     }
   }
@@ -87,12 +87,12 @@ class FieldAccessTests extends PhpCode2CpgFixture {
       fieldAccess.code shouldBe "className::$field"
       fieldAccess.lineNumber shouldBe Some(2)
 
-      inside(fieldAccess.argument.l) { case List(classIdentifier: Identifier, fieldIdentifier: Identifier) =>
+      inside(fieldAccess.argument.l) { case List(classIdentifier: Identifier, fieldIdentifier: FieldIdentifier) =>
         classIdentifier.name shouldBe "className"
         classIdentifier.code shouldBe "className"
         classIdentifier.lineNumber shouldBe Some(2)
 
-        fieldIdentifier.name shouldBe "field"
+        fieldIdentifier.canonicalName shouldBe "field"
         fieldIdentifier.code shouldBe "$field"
         fieldIdentifier.lineNumber shouldBe Some(2)
       }
