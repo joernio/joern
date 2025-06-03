@@ -68,8 +68,8 @@ class MethodMethods(val method: Method) extends AnyVal with NodeExtension with H
   def body: Block =
     method.block
 
-  override def location: NewLocation = {
-    LocationCreator.defaultCreateLocation(method, method)
+  override def location: LocationInfo = {
+    method.location
   }
 
   def content: Option[String] = {

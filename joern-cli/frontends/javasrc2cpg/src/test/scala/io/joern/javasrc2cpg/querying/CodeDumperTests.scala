@@ -7,9 +7,6 @@ import io.shiftleft.semanticcpg.language.*
 class CodeDumperTests extends JavaSrcCode2CpgFixture {
 
   "a Java source code CPG" should {
-
-    implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
-
     val cpg = code("""
         |public class Foo {
         |
