@@ -159,7 +159,7 @@ class ClassTests extends RubyCode2CpgFixture(withPostProcessing = true, withData
 
     val source = cpg.identifier.name("x").l
     val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).size shouldBe 2
+    sink.reachableByFlows(source).size shouldBe 1
   }
 
   // TODO:

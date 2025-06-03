@@ -34,12 +34,17 @@ package object dataflowengineoss {
       .target
   }
 
-  def identifierToFirstUsages(node: Identifier): List[Identifier] = node.refsTo.flatMap(identifiersFromCapturedScopes).l
+  def identifierToFirstUsages(node: Identifier): List[Identifier] =
+    node.refsTo.flatMap(firstIdentifierFromCapturedScopes).l
 
-  def identifiersFromCapturedScopes(i: Declaration): List[Identifier] =
-    i.capturedByMethodRef.referencedMethod.ast.isIdentifier
-      .nameExact(i.name)
-      .sortBy(x => (x.lineNumber, x.columnNumber))
+  def firstIdentifierFromCapturedScopes(i: Declaration): List[Identifier] =
+    i.capturedByMethodRef.referencedMethod
+      .flatMap(m =>
+        m.ast.isIdentifier // this includes closures defined under method
+          .nameExact(i.name)
+          .sortBy(x => (x.lineNumber, x.columnNumber))
+          .headOption
+      )
       .l
 
 }
