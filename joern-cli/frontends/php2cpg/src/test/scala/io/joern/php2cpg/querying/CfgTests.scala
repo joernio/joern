@@ -1,7 +1,8 @@
 package io.joern.php2cpg.querying
 
+import io.joern.php2cpg.parser.Domain.PhpOperators
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, JumpTarget}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, JumpTarget}
 import io.shiftleft.semanticcpg.language.*
 
 class CfgTests extends PhpCode2CpgFixture {
@@ -27,14 +28,14 @@ class CfgTests extends PhpCode2CpgFixture {
       }
 
       "find that the sink call is the CFG successor of the body1 call" in {
-        inside(cpg.call.name("body1").cfgNext.l) { case List(sink: Call) =>
-          sink.code shouldBe "sink()"
+        inside(cpg.call.name("body1").cfgNext.l) { case List(sinkCall: Call) =>
+          sinkCall.code shouldBe "sink()"
         }
       }
 
       "find that the sink call is the CFG successor of the body2 call" in {
-        inside(cpg.call.name("body2").cfgNext.l) { case List(sink: Call) =>
-          sink.code shouldBe "sink()"
+        inside(cpg.call.name("body2").cfgNext.l) { case List(sinkCall: Call) =>
+          sinkCall.code shouldBe "sink()"
         }
       }
     }
@@ -62,20 +63,20 @@ class CfgTests extends PhpCode2CpgFixture {
       }
 
       "find that the sink call is the CFG successor of the body1 call" in {
-        inside(cpg.call.name("body1").cfgNext.l) { case List(sink: Call) =>
-          sink.code shouldBe "sink()"
+        inside(cpg.call.name("body1").cfgNext.l) { case List(sinkCall: Call) =>
+          sinkCall.code shouldBe "sink()"
         }
       }
 
       "find that the sink call is the CFG successor of the body2 call" in {
-        inside(cpg.call.name("body2").cfgNext.l) { case List(sink: Call) =>
-          sink.code shouldBe "sink()"
+        inside(cpg.call.name("body2").cfgNext.l) { case List(sinkCall: Call) =>
+          sinkCall.code shouldBe "sink()"
         }
       }
 
       "find that the sink call is the CFG successor of the body3 call" in {
-        inside(cpg.call.name("body3").cfgNext.l) { case List(sink: Call) =>
-          sink.code shouldBe "sink()"
+        inside(cpg.call.name("body3").cfgNext.l) { case List(sinkCall: Call) =>
+          sinkCall.code shouldBe "sink()"
         }
       }
     }
