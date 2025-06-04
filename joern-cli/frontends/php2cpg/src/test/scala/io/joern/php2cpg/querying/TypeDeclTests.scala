@@ -392,7 +392,6 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         |""".stripMargin)
 
     "parse methods in classes correctly" in {
-      cpg.method.name("<global>").dotAst.l.foreach(println)
       inside(cpg.typeDecl.name("Test0.php:<global>.anon-class-\\d+").l) {
         case anonClass0 :: anonClass1 :: Nil =>
           val List(memberX) = anonClass0.member.l
@@ -524,7 +523,6 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    cpg.method.name("<global>").dotAst.l.foreach(println)
     inside(cpg.typeDecl.name("C.D.anon-class-\\d+").l) {
       case anonClass :: Nil =>
         anonClass.fullName shouldBe s"C.D.anon-class-0"

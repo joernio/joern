@@ -61,7 +61,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     call.target match {
       case Some(target: (PhpPropertyFetchExpr | PhpCallExpr)) => astForChainedCall(call, name, target)
-      case _ if call.isStatic || isBuiltinFunc(name)          => astForStaticCall(call, name, arguments)
+      case None if scope.isTopLevel || isBuiltinFunc(name)    => astForStaticCall(call, name, arguments)
+      case _ if call.isStatic                                 => astForStaticCall(call, name, arguments)
       case maybeTarget                                        => astForDynamicCall(call, name, arguments, maybeTarget)
     }
   }
@@ -86,7 +87,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val callRoot  = callNode(call, code, name, fullName, dispatchType, Some(signature), Some(Defines.Any))
 
     val receiverAst = targetAst match {
-      case None if !scope.getEnclosingTypeDeclTypeName.forall(_ == NamespaceTraversal.globalNamespaceName) =>
+      case None if !scope.isTopLevel =>
         // if dynamic call is under some type decl, $this is the receiver
         call.target.map(thisIdentifier).orElse(Option(thisIdentifier(call))).map(Ast(_))
       case None =>

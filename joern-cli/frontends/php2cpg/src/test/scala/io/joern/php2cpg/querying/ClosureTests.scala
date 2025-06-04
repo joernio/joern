@@ -89,8 +89,7 @@ class ClosureTests extends PhpCode2CpgFixture {
         valueParam.name shouldBe "value"
       }
 
-      inside(closureMethod.body.astChildren.l) { case List(sink: Local, use1: Local, use2: Local, echoCall: Call) =>
-        sink.name shouldBe "sink" // FIXME: This is due to the way locals are handled, but this shouldn't exist
+      inside(closureMethod.body.astChildren.l) { case List(use1: Local, use2: Local, echoCall: Call) =>
         use1.name shouldBe "use1"
         use1.code shouldBe "$use1"
         use1.closureBindingId shouldBe Some(s"foo.php:$expectedName:use1")

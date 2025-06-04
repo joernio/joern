@@ -142,7 +142,9 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
         if (nameExpr.name == NameConstants.Self)
           composeMethodFullName(name, appendMetaTypeDeclExt = !scope.isSurroundedByMetaclassTypeDecl)
         else s"${nameExpr.name}$MetaTypeDeclExtension$MethodDelimiter$name"
-      case Some(_)                                      => default
+      case Some(_) =>
+        // As soon as we have a dynamic component to the call, we can't truly define a method full name
+        default
       case None if PhpBuiltins.FuncNames.contains(name) =>
         // No signature/namespace for MFN for builtin functions to ensure stable names as type info improves.
         name

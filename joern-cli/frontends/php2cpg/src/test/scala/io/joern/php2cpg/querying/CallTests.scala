@@ -34,8 +34,10 @@ class CallTests extends PhpCode2CpgFixture {
       receiver.argumentIndex shouldBe 0
     }
 
-    inside(cpg.call.name("foo").argument.l) { case List(foo: Identifier, fileArg: Identifier) =>
-      foo.code shouldBe "foo"
+    val fooCall = cpg.call.name("foo").head
+    fooCall.name shouldBe "foo"
+    fooCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    inside(cpg.call.name("foo").argument.l) { case List(fileArg: Identifier) =>
       fileArg.name shouldBe "file"
     }
   }
@@ -72,19 +74,12 @@ class CallTests extends PhpCode2CpgFixture {
       fooCall.name shouldBe "foo"
       fooCall.methodFullName shouldBe s"foo"
       fooCall.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
-      fooCall.receiver.isEmpty shouldBe false
-      fooCall.receiver.foreach { recvNode =>
-        val recv = recvNode.asInstanceOf[Identifier]
-        recv.code shouldBe "foo"
-        recv.name shouldBe "foo"
-      }
-
-      fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      fooCall.receiver.isEmpty shouldBe true
+      fooCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       fooCall.lineNumber shouldBe Some(2)
       fooCall.code shouldBe "foo($x)"
 
-      inside(fooCall.argument.l) { case List(foo: Identifier, xArg: Identifier) =>
-        foo.name shouldBe "foo"
+      inside(fooCall.argument.l) { case List(xArg: Identifier) =>
         xArg.name shouldBe "x"
         xArg.code shouldBe "$x"
       }
