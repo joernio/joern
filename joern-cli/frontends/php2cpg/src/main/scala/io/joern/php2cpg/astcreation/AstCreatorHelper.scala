@@ -85,40 +85,11 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
   }
 
   protected def codeForStaticMethodCall(call: PhpCallExpr, name: String): String = {
-    val className =
-      call.target
-        .map(astForExpr)
-        .map(_.rootCode.getOrElse(UnresolvedNamespace))
-        .getOrElse(UnresolvedNamespace)
-    s"$className$StaticMethodDelimiter$name"
-  }
-
-  protected def composeMethodName(call: PhpCallExpr, targetAst: Option[Ast], name: String): String = {
-
-    /** The code property may contain "?", "::", or "->", so this needs to be replaced before composing a full name.
-      */
-    def normalizeMethodCode(code: String): String =
-      code
-        .filterNot(c => c == '?' || c == ' ')
-        .replace(StaticMethodDelimiter, MethodDelimiter)
-        .replace(InstanceMethodDelimiter, MethodDelimiter)
-
-    if (call.isStatic) {
-      val className =
-        call.target
-          .map(astForExpr)
-          .map(_.rootCode.map(normalizeMethodCode).getOrElse(UnresolvedNamespace))
-          .getOrElse(UnresolvedNamespace)
-      s"$className$MethodDelimiter$name"
-    } else if (targetAst.isDefined) {
-      val prefix = targetAst
-        .map(_.rootCodeOrEmpty)
-        .map(normalizeMethodCode)
-        .get
-      s"$prefix$MethodDelimiter$name"
-    } else {
-      name
-    }
+    call.target
+      .map(astForExpr)
+      .flatMap(_.rootCode)
+      .map(className => s"$className$StaticMethodDelimiter$name")
+      .getOrElse(name)
   }
 
   protected def dimensionFromSimpleScalar(scalar: PhpSimpleScalar, idxTracker: ArrayIndexTracker): PhpExpr = {
@@ -164,10 +135,10 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
   }
 
   protected def getMfn(call: PhpCallExpr, name: String): String = {
-    lazy val default = s"$UnresolvedNamespace\\$name"
+    lazy val default = s"$UnresolvedNamespace$MethodDelimiter$name"
     call.target match {
-      // Static method call with a known class name
       case Some(nameExpr: PhpNameExpr) if call.isStatic =>
+        // Static method call with a simple receiver
         if (nameExpr.name == NameConstants.Self)
           composeMethodFullName(name, appendMetaTypeDeclExt = !scope.isSurroundedByMetaclassTypeDecl)
         else s"${nameExpr.name}$MetaTypeDeclExtension$MethodDelimiter$name"
@@ -179,6 +150,17 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
       case None =>
         composeMethodFullName(name, call.isStatic)
     }
+  }
+
+  private def composeStaticMethodFullName(call: PhpCallExpr, name: String): String = {
+
+    /** The code property may contain "?", "::", or "->", so this needs to be replaced before composing a full name.
+      */
+    val callPrefix = codeForStaticMethodCall(call, name)
+      .filterNot(c => c == '?' || c == ' ')
+      .replace(StaticMethodDelimiter, MethodDelimiter)
+      .replace(InstanceMethodDelimiter, MethodDelimiter)
+    s"$callPrefix$MethodDelimiter$name"
   }
 
   protected def isBuiltinFunc(name: String): Boolean = PhpBuiltins.FuncNames.contains(name)

@@ -158,7 +158,7 @@ class CallTests extends PhpCode2CpgFixture {
 
     inside(cpg.call.nameExact("foo").l) { case List(fooCall) =>
       fooCall.name shouldBe "foo"
-      fooCall.methodFullName shouldBe """<unresolvedNamespace>\$f.foo"""
+      fooCall.methodFullName shouldBe """<unresolvedNamespace>.foo"""
       fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       fooCall.lineNumber shouldBe Some(2)
       fooCall.code shouldBe "$f->foo($x)"
@@ -181,23 +181,15 @@ class CallTests extends PhpCode2CpgFixture {
 
     inside(cpg.call.filter(_.name != Operators.fieldAccess).l) { case List(fooCall) =>
       fooCall.name shouldBe "$foo"
-      fooCall.methodFullName shouldBe """<unresolvedNamespace>\$$f.$foo"""
+      fooCall.methodFullName shouldBe """<unresolvedNamespace>.$foo"""
       fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       fooCall.lineNumber shouldBe Some(2)
       fooCall.code shouldBe "$$f->$foo($x)"
 
-      inside(fooCall.argument.l) { case List(fRecv: Call, xArg: Identifier) =>
-        fRecv.name shouldBe Operators.fieldAccess
-        fRecv.code shouldBe "$$f->$foo"
+      inside(fooCall.argument.l) { case List(fRecv: Identifier, xArg: Identifier) =>
+        fRecv.name shouldBe "f"
+        fRecv.code shouldBe "$$f"
         fRecv.lineNumber shouldBe Some(2)
-
-        inside(fRecv.argument.l) { case List(fVar: Identifier, fooVar: FieldIdentifier) =>
-          fVar.name shouldBe "f"
-          fVar.code shouldBe "$$f"
-
-          fooVar.canonicalName shouldBe "foo"
-          fooVar.code shouldBe "$foo"
-        }
 
         xArg.name shouldBe "x"
         xArg.code shouldBe "$x"
@@ -272,7 +264,8 @@ class CallTests extends PhpCode2CpgFixture {
         |Http::retry(3)->timeout(10);
         |""".stripMargin)
 
-    cpg.call("timeout").methodFullName.head shouldBe "Foo\\Bar\\Http<metaclass>.retry.timeout"
+    cpg.call("retry").methodFullName.head shouldBe "Foo\\Bar\\Http<metaclass>.retry"
+    cpg.call("timeout").methodFullName.head shouldBe s"${Defines.UnresolvedNamespace}.timeout"
   }
 
   "chained calls should alias calls in receivers and bases" in {

@@ -111,15 +111,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val signature = s"$UnresolvedSignature(${call.args.size})"
     val callRoot  = callNode(call, code, name, fullName, dispatchType, Some(signature), Some(Defines.Any))
 
-    val receiverAst = (targetAst, nameAst) match {
-      case (Some(target), Some(_)) =>
-        val fieldAccess     = operatorCallNode(call, codePrefix, Operators.fieldAccess, None)
-        val fieldIdentifier = Ast(fieldIdentifierNode(call, name.stripPrefix("$"), name))
-        Option(callAst(fieldAccess, target :: fieldIdentifier :: Nil))
-      case (Some(target), None) => Option(target)
-      case (None, Some(n))      => Option(n)
-      case (None, None)         => None
-    }
     callAst(callRoot, arguments)
   }
 
