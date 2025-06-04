@@ -50,10 +50,10 @@ trait MacroHandler { this: AstCreator =>
         val childAst = ast.root match {
           case Some(_: NewBlock) => ast
           case _ =>
-            setArgumentIndices(List(ast))
+            setOrder(List(ast))
             blockAst(blockNode(node), List(ast))
         }
-        setArgumentIndices(List(childAst))
+        setArgumentIndices(List(childAst), callAst.argEdges.size + 1)
         callAst.withChild(childAst)
       case None => ast
     }

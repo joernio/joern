@@ -51,19 +51,18 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     identifierNode(originNode, name, s"$$$name", typeFullName)
   }
 
-  protected def composeMethodFullName(methodName: String, isStatic: Boolean, appendClass: Boolean = false): String = {
+  protected def composeMethodFullName(methodName: String, appendMetaTypeDeclExt: Boolean = false): String = {
     scope.resolveIdentifier(methodName) match {
       case Some(importedMethod)                                         => importedMethod.name
       case None if methodName == NamespaceTraversal.globalNamespaceName => globalNamespace.fullName
       case None =>
-        val className = if (appendClass) {
-          getTypeDeclPrefix.map(name => s"${name}$MetaTypeDeclExtension")
+        val className = if (appendMetaTypeDeclExt) {
+          getTypeDeclPrefix.map(name => s"$name$MetaTypeDeclExtension")
         } else {
           getTypeDeclPrefix
         }
 
-        val methodDelimiter = if (isStatic) StaticMethodDelimiter else InstanceMethodDelimiter
-        val nameWithClass   = List(className, Some(methodName)).flatten.mkString(methodDelimiter)
+        val nameWithClass = List(className, Some(methodName)).flatten.mkString(MethodDelimiter)
         prependNamespacePrefix(nameWithClass)
     }
   }
@@ -81,16 +80,45 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
   }
 
   protected def codeForMethodCall(call: PhpCallExpr, targetAst: Ast, name: String): String = {
-    val callOperator = if (call.isNullSafe) "?->" else "->"
+    val callOperator = if (call.isNullSafe) s"?$InstanceMethodDelimiter" else InstanceMethodDelimiter
     s"${targetAst.rootCodeOrEmpty}$callOperator$name"
   }
 
   protected def codeForStaticMethodCall(call: PhpCallExpr, name: String): String = {
-    call.target
-      .map(astForExpr)
-      .flatMap(_.rootCode)
-      .map(className => s"$className::$name")
-      .getOrElse(name)
+    val className =
+      call.target
+        .map(astForExpr)
+        .map(_.rootCode.getOrElse(UnresolvedNamespace))
+        .getOrElse(UnresolvedNamespace)
+    s"$className$StaticMethodDelimiter$name"
+  }
+
+  protected def composeMethodName(call: PhpCallExpr, targetAst: Option[Ast], name: String): String = {
+
+    /** The code property may contain "?", "::", or "->", so this needs to be replaced before composing a full name.
+      */
+    def normalizeMethodCode(code: String): String =
+      code
+        .filterNot(c => c == '?' || c == ' ')
+        .replace(StaticMethodDelimiter, MethodDelimiter)
+        .replace(InstanceMethodDelimiter, MethodDelimiter)
+
+    if (call.isStatic) {
+      val className =
+        call.target
+          .map(astForExpr)
+          .map(_.rootCode.map(normalizeMethodCode).getOrElse(UnresolvedNamespace))
+          .getOrElse(UnresolvedNamespace)
+      s"$className$MethodDelimiter$name"
+    } else if (targetAst.isDefined) {
+      val prefix = targetAst
+        .map(_.rootCodeOrEmpty)
+        .map(normalizeMethodCode)
+        .get
+      s"$prefix$MethodDelimiter$name"
+    } else {
+      name
+    }
   }
 
   protected def dimensionFromSimpleScalar(scalar: PhpSimpleScalar, idxTracker: ArrayIndexTracker): PhpExpr = {
@@ -140,10 +168,9 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     call.target match {
       // Static method call with a known class name
       case Some(nameExpr: PhpNameExpr) if call.isStatic =>
-        if (nameExpr.name == NameConstants.Self) composeMethodFullName(name, call.isStatic, appendClass = true)
-        else s"${nameExpr.name}$MetaTypeDeclExtension$StaticMethodDelimiter$name"
-      case Some(nameExpr: PhpNameExpr) =>
-        scope.resolveIdentifier(nameExpr.name).map(x => s"${x.name}\\$name").getOrElse(default)
+        if (nameExpr.name == NameConstants.Self)
+          composeMethodFullName(name, appendMetaTypeDeclExt = !scope.isSurroundedByMetaclassTypeDecl)
+        else s"${nameExpr.name}$MetaTypeDeclExtension$MethodDelimiter$name"
       case Some(_)                                      => default
       case None if PhpBuiltins.FuncNames.contains(name) =>
         // No signature/namespace for MFN for builtin functions to ensure stable names as type info improves.

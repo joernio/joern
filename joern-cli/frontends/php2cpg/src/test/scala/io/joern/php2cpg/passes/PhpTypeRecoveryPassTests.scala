@@ -370,12 +370,12 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture(withPostProcessing = t
 
     "be properly resolved when called with $this" in {
       val List(fooCall) = cpg.method("bar").ast.isCall.take(1).l
-      fooCall.methodFullName shouldBe "ClassA->foo"
+      fooCall.methodFullName shouldBe "ClassA.foo"
     }
 
     "be properly resolved when called through class with known type" in {
       val List(fooCall) = cpg.method("baz").ast.isCall.filter(_.code == "$a->foo()").take(1).l
-      fooCall.methodFullName shouldBe "ClassA->foo"
+      fooCall.methodFullName shouldBe "ClassA.foo"
     }
 
     "propagate type information to calling method" in {
@@ -436,13 +436,13 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture(withPostProcessing = t
 
     "resolve all types and calls for `$client`" in {
       cpg.identifier("client").typeFullName.toSet shouldBe Set("Curler\\Client")
-      cpg.call("__construct").methodFullName.toSet shouldBe Set("Curler\\Client->__construct")
-      cpg.call("get").methodFullName.toSet shouldBe Set("Curler\\Client->get")
+      cpg.call("__construct").methodFullName.toSet shouldBe Set("Curler\\Client.__construct")
+      cpg.call("get").methodFullName.toSet shouldBe Set("Curler\\Client.get")
     }
 
     "resolve all types and calls for `$response`, where the call should have some dummy type" in {
-      cpg.identifier("response").typeFullName.toSet shouldBe Set("Curler\\Client->get-><returnValue>")
-      cpg.call("getBody").methodFullName.toSet shouldBe Set("Curler\\Client->get-><returnValue>->getBody")
+      cpg.identifier("response").typeFullName.toSet shouldBe Set("Curler\\Client.get.<returnValue>")
+      cpg.call("getBody").methodFullName.toSet shouldBe Set("Curler\\Client.get.<returnValue>.getBody")
     }
   }
 
@@ -514,11 +514,10 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture(withPostProcessing = t
       "User.php"
     )
 
-    // TODO: Fix
-    "resolve the correct full name for the wrapped QueryBuilder call off the fields debug" ignore {
+    "resolve the correct full name for the wrapped QueryBuilder call off the field" in {
       inside(cpg.method.nameExact("createQueryBuilder").call.name(".*createQueryBuilder").l) {
         case queryBuilderCall :: Nil =>
-          queryBuilderCall.methodFullName shouldBe "Doctrine\\ORM\\EntityManagerInterface->createQueryBuilder"
+          queryBuilderCall.methodFullName shouldBe "Doctrine\\ORM\\EntityManagerInterface.createQueryBuilder.<returnValue>"
         case xs => fail(s"Expected one call, instead got [$xs]")
       }
     }
@@ -536,7 +535,7 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture(withPostProcessing = t
     "resolve the correct full name for `leftJoin` based on the QueryBuilder return value" in {
       inside(cpg.call.nameExact("leftJoin").l) {
         case setParamCall :: Nil =>
-          setParamCall.methodFullName shouldBe "Doctrine\\ORM\\QueryBuilder->leftJoin"
+          setParamCall.methodFullName shouldBe "Doctrine\\ORM\\QueryBuilder.leftJoin"
         case xs => fail(s"Expected one call, instead got [$xs]")
       }
     }
@@ -544,7 +543,7 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture(withPostProcessing = t
     "resolve the correct full name for `setParameter` based on the QueryBuilder return value" in {
       inside(cpg.call.nameExact("setParameter").l) {
         case setParamCall :: Nil =>
-          setParamCall.methodFullName shouldBe "Doctrine\\ORM\\QueryBuilder->leftJoin->setParameter"
+          setParamCall.methodFullName shouldBe "Doctrine\\ORM\\QueryBuilder.leftJoin.setParameter"
         case xs => fail(s"Expected one call, instead got [$xs]")
       }
     }
@@ -636,20 +635,11 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture(withPostProcessing = t
       "User.php"
     )
 
-    "resolve the correct full name for `queryBuilder` from the return value a function using a chained call" in {
-      inside(cpg.method("findSomethingElse").ast.isIdentifier.nameExact("queryBuilder").take(1).l) {
-        case queryBuilder :: Nil =>
-          queryBuilder.typeFullName shouldBe "Doctrine\\ORM\\QueryBuilder"
-        case xs => fail(s"Expected one identifier, instead got [$xs]")
-      }
-    }
-
-    // TODO: Fix
-    "resolve the correct full name for `setParameter` in a long call chain based on the QueryBuilder return value" ignore {
+    "resolve the correct full name for `setParameter` in a long call chain based on the QueryBuilder return value" in {
       inside(cpg.method("findSomethingElse").call.nameExact("setParameter").l) {
         case setParamCall :: Nil =>
           setParamCall.methodFullName shouldBe
-            "Doctrine\\ORM\\QueryBuilder->leftJoin->leftJoin->leftJoin->andWhere->groupBy->having->orderBy->setParameter"
+            "Doctrine\\ORM\\QueryBuilder.leftJoin.leftJoin.leftJoin.andWhere.groupBy.having.orderBy.setParameter"
         case xs => fail(s"Expected one call, instead got [$xs]")
       }
     }

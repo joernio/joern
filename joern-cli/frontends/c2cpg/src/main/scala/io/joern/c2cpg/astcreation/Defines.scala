@@ -4,6 +4,7 @@ object Defines {
   val Any: String                            = io.joern.x2cpg.Defines.Any
   val UnresolvedNamespace: String            = io.joern.x2cpg.Defines.UnresolvedNamespace
   val Void: String                           = "void"
+  val This: String                           = "this"
   val Function: String                       = "std.function"
   val Array: String                          = "std.array"
   val Iterator: String                       = "std.iterator"
@@ -23,4 +24,6 @@ object Defines {
   val OperatorNew: String                    = "<operator>.new"
   val DuplicateSuffix                        = "<duplicate>"
   val ConstSuffix                            = "<const>"
+  val GlobalTag                              = "<global>"
+  val UnknownTag                             = "<unknown>"
 }

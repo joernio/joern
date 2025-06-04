@@ -1,5 +1,6 @@
 package io.joern.c2cpg.querying
 
+import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.semanticcpg.language.*
 
@@ -93,7 +94,7 @@ class LocalQueryTests extends C2CpgSuite {
         p.code shouldBe "struct node *p"
         nullLocal.name shouldBe "NULL"
         nullLocal.typeFullName shouldBe "ANY"
-        nullLocal.code shouldBe "NULL"
+        nullLocal.code shouldBe s"${Defines.UnknownTag} NULL"
       }
     }
 

@@ -324,7 +324,7 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |  get_foo<foo{123}>();
           |}
           |""".stripMargin)
-      cpg.typeDecl.nameExact("foo").size shouldBe 1
+      cpg.typeDecl.fullNameExact("foo").size shouldBe 1
       cpg.method.nameExact("get_foo").size shouldBe 1
       cpg.method.nameExact("main").ast.isCall.typeFullName.l shouldBe List("ANY", "foo")
       cpg.method.nameExact("main").ast.isCall.methodFullName.l shouldBe List(

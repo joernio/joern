@@ -99,7 +99,7 @@ class CallTests extends PhpCode2CpgFixture {
     "have the correct method node defined" in {
       inside(cpg.call.l) { case List(fooCall) =>
         fooCall.name shouldBe "foo"
-        fooCall.methodFullName shouldBe s"Foo${Domain.MetaTypeDeclExtension}::foo"
+        fooCall.methodFullName shouldBe s"Foo${Domain.MetaTypeDeclExtension}.foo"
         fooCall.receiver.isEmpty shouldBe true
         fooCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         fooCall.lineNumber shouldBe Some(2)
@@ -144,7 +144,7 @@ class CallTests extends PhpCode2CpgFixture {
     "resolve the correct method full name" in {
       val List(barCall) = cpg.call("bar").take(1).l
       barCall.name shouldBe "bar"
-      barCall.methodFullName shouldBe s"ClassA${Domain.MetaTypeDeclExtension}::bar"
+      barCall.methodFullName shouldBe s"ClassA${Domain.MetaTypeDeclExtension}.bar"
       barCall.receiver.isEmpty shouldBe true
       barCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       barCall.code shouldBe "self::bar($x)"
@@ -158,7 +158,7 @@ class CallTests extends PhpCode2CpgFixture {
 
     inside(cpg.call.nameExact("foo").l) { case List(fooCall) =>
       fooCall.name shouldBe "foo"
-      fooCall.methodFullName shouldBe """<unresolvedNamespace>\foo"""
+      fooCall.methodFullName shouldBe """<unresolvedNamespace>\$f.foo"""
       fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       fooCall.lineNumber shouldBe Some(2)
       fooCall.code shouldBe "$f->foo($x)"
@@ -181,16 +181,23 @@ class CallTests extends PhpCode2CpgFixture {
 
     inside(cpg.call.filter(_.name != Operators.fieldAccess).l) { case List(fooCall) =>
       fooCall.name shouldBe "$foo"
-      fooCall.methodFullName shouldBe """<unresolvedNamespace>\$foo"""
+      fooCall.methodFullName shouldBe """<unresolvedNamespace>\$$f.$foo"""
       fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       fooCall.lineNumber shouldBe Some(2)
       fooCall.code shouldBe "$$f->$foo($x)"
 
-      inside(fooCall.astChildren.l) { case (fBase: Identifier) :: (xArg: Identifier) :: Nil =>
-        fBase.name shouldBe "f"
-        fBase.code shouldBe "$$f"
-        fBase.lineNumber shouldBe Some(2)
-        fBase.argumentIndex shouldBe 0
+      inside(fooCall.argument.l) { case List(fRecv: Call, xArg: Identifier) =>
+        fRecv.name shouldBe Operators.fieldAccess
+        fRecv.code shouldBe "$$f->$foo"
+        fRecv.lineNumber shouldBe Some(2)
+
+        inside(fRecv.argument.l) { case List(fVar: Identifier, fooVar: FieldIdentifier) =>
+          fVar.name shouldBe "f"
+          fVar.code shouldBe "$$f"
+
+          fooVar.canonicalName shouldBe "foo"
+          fooVar.code shouldBe "$foo"
+        }
 
         xArg.name shouldBe "x"
         xArg.code shouldBe "$x"
@@ -207,6 +214,65 @@ class CallTests extends PhpCode2CpgFixture {
         |""".stripMargin)
     val call = cpg.call("test").head
     call.code shouldBe "test(...$args)"
+  }
+
+  "static call in a static function to a static function" in {
+    val cpg = code("""<?php
+        |class Foo {
+        |  static function foo() {
+        |    self::bar();
+        |
+        |    new class(10) {
+        |       function foz() {
+        |         self::boz();
+        |       }
+        |
+        |       static function boz() {}
+        |    }
+        |  }
+        |
+        |  private static function bar() {}
+        |}
+        |
+        |Foo::bar();
+        |""".stripMargin)
+
+    cpg.method.name("foo").call.name("bar").methodFullName.l shouldBe List("Foo<metaclass>.bar")
+    cpg.method.name("foz").call.name("boz").methodFullName.l shouldBe List(
+      "Foo<metaclass>.foo.anon-class-0<metaclass>.boz"
+    )
+  }
+
+  "static call in a dynamic function" in {
+    val cpg = code("""<?php
+         |class Foo {
+         |  function foo() {
+         |    self::bar();
+         |
+         |    new class(10) {
+         |       function foz() {
+         |         self::boz();
+         |       }
+         |
+         |       static function boz() {}
+         |    }
+         |  }
+         |
+         |  private static function bar() {}
+         |}
+         |""".stripMargin)
+    cpg.method.name("foz").call.name("boz").methodFullName.l shouldBe List("Foo.foo.anon-class-0<metaclass>.boz")
+  }
+
+  "a chained call from an external namespace should have normalized '.' method delimiters" in {
+    val cpg = code("""
+        |<?
+        |use Foo\Bar\Http;
+        |
+        |Http::retry(3)->timeout(10);
+        |""".stripMargin)
+
+    cpg.call("timeout").methodFullName.head shouldBe "Foo\\Bar\\Http<metaclass>.retry.timeout"
   }
 
   "chained calls should alias calls in receivers and bases" in {
@@ -235,4 +301,5 @@ class CallTests extends PhpCode2CpgFixture {
       fa.code shouldBe "$obj->foo()->bar"
     }
   }
+
 }

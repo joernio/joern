@@ -76,10 +76,10 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
   def getNewClassTmp: String = {
     stack.headOption match {
       case Some(node) =>
-        s"${this.surroundingScopeFullName.getOrElse("<global>")}@${node.scopeNode.getNextClassTmp}"
+        s"${this.surroundingScopeFullName.getOrElse("<global>")}.${node.scopeNode.getNextClassTmp}"
       case None =>
         logger.warn(s"Stack is empty - using global counter ")
-        s"${this.surroundingScopeFullName.getOrElse("<global>")}@${this.getNextClassTmp}"
+        s"${this.surroundingScopeFullName.getOrElse("<global>")}.${this.getNextClassTmp}"
     }
   }
 
@@ -103,6 +103,9 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
     anonymousMethods.clear()
     methods
   }
+
+  def isSurroundedByMetaclassTypeDecl: Boolean =
+    stack.map(_.scopeNode.node).collectFirst { case td: NewTypeDecl => td }.exists(_.name.endsWith("<metaclass>"))
 
   def getEnclosingNamespaceNames: List[String] =
     stack.map(_.scopeNode.node).collect { case ns: NewNamespaceBlock => ns.name }.reverse

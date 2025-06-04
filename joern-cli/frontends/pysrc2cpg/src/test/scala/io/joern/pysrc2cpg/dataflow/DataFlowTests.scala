@@ -11,7 +11,7 @@ import io.joern.dataflowengineoss.semanticsloader.{
   PassThroughMapping
 }
 import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Literal, Member, Method}
 import io.shiftleft.semanticcpg.language.*
 
@@ -422,8 +422,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |    y['B'] = x['A']
         |    sink(y)
         |""".stripMargin)
-
-    val sources = cpg.identifier("x").l
+    val sources = cpg.assignment.target.isIdentifier.nameExact("y").l
     val sinks   = cpg.call("sink").argument.l
     val flows   = sinks.reachableByFlows(sources)
     flows.size shouldBe 1
@@ -442,8 +441,8 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |       return sink(d)
         |""".stripMargin)
 
-    val sources = cpg.call("<operator>.indexAccess").argument.isIdentifier.l
-    val sinks   = cpg.call("sink").l
+    val sources = cpg.call(Operators.indexAccess).where(_.code(".*['(x|y|z)'].*")).l
+    val sinks   = cpg.call("sink").argument.l
     sinks.reachableByFlows(sources).size should not be 0
   }
 
@@ -1185,9 +1184,9 @@ class RegexDefinedFlowsDataFlowTests
         |print(Foo.func())
         |""".stripMargin)
     "be found" in {
-      val src = cpg.identifier("Foo").l
+      val src = cpg.call("func").receiver.l
       val snk = cpg.call("print").argument(1).l
-      snk.reachableByFlows(src).size shouldBe 3
+      snk.reachableByFlows(src).size shouldBe 1
     }
   }
   "Import statement with method ref sample four" in {

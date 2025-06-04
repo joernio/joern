@@ -226,6 +226,7 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
 
   private def withFieldAndIndexAccesses(nodes: List[CfgNode]): List[CfgNode] =
     nodes.flatMap {
+      case identifier: Identifier if identifier.isArgument.nonEmpty => identifier :: Nil
       case moduleVar: Identifier if moduleVar.isModuleVariable =>
         moduleVar :: moduleVariableToFirstUsagesAcrossProgram(moduleVar)
       case identifier: Identifier => identifier :: fieldAndIndexAccesses(identifier)

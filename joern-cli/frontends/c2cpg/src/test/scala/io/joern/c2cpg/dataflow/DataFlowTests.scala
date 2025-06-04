@@ -45,13 +45,13 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       implicit val callResolver: NoResolve.type = NoResolve
       val source                                = cpg.identifier
       val sink                                  = cpg.method.name("free").parameter.argument
-      sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.size shouldBe 6
+      sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.size shouldBe 5
     }
 
     "find flows to `free`" in {
       val source = cpg.identifier
       val sink   = cpg.call.name("free").argument(1)
-      sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.size shouldBe 6
+      sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.size shouldBe 5
     }
 
     "find flows from identifiers to return values of `flow`" in {
@@ -464,7 +464,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       val source = cpg.identifier
       val sink   = cpg.method.name("free").parameter.argument
       val flows  = sink.reachableByFlows(source).map(flowToResultPairs).l.distinct
-      flows.size shouldBe 6
+      flows.size shouldBe 5
     }
   }
 
@@ -1307,13 +1307,13 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       implicit val callResolver: NoResolve.type = NoResolve
       val source                                = cpg.identifier
       val sink                                  = cpg.method.name("free").parameter.argument
-      sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.toSet.size shouldBe 6
+      sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.toSet.size shouldBe 5
     }
 
     "find flows to `free`" in {
       val source = cpg.identifier
       val sink   = cpg.call.name("free").argument(1)
-      sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.toSet.size shouldBe 6
+      sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.toSet.size shouldBe 5
     }
 
     "find flows from identifiers to return values of `flow`" in {
@@ -1635,6 +1635,24 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         val sink   = cpg.call("sink").argument
         sink.reachableByFlows(source).size shouldBe 1
       }
+    }
+  }
+
+  "DataFlowTest71" should {
+    val cpg = code("""
+        |void abc() {
+        |  char *a;
+        |  fgets(a, 10, stdin);
+        |  a = "something";
+        |  a[5] = "\0";
+        |  system(a);
+        |}""".stripMargin)
+
+    "not find a flow from 'a' at 'fgets' to 'system'" in {
+      val src  = cpg.call("fgets").argument(1).l
+      val sink = cpg.call("system").argument(1).l
+      val flow = sink.reachableByFlows(src)
+      sink.reachableByFlows(src).size shouldBe 0
     }
   }
 
@@ -2171,4 +2189,35 @@ class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
       )
     }
   }
+
+  "DataFlowTest81" should {
+    val cpg = code("""int a = 1;
+        |int b = 2;
+        |int c = 3;
+        |
+        |void foo() {
+        |  bar(a, b, c);
+        |}
+        |""".stripMargin)
+
+    "not find a flow from top-level identifiers to call inside function" in {
+      val one   = cpg.literal.code("1").l
+      val two   = cpg.literal.code("2").l
+      val three = cpg.literal.code("3").l
+      one.size shouldBe 1
+      two.size shouldBe 1
+      three.size shouldBe 1
+
+      val sink = cpg.call("bar").argument.argumentIndexGte(1).l
+      sink.size shouldBe 3
+
+      def flows(source: Iterator[CfgNode]): Set[List[(String, Integer)]] =
+        sink.reachableByFlows(source).map(flowToResultPairs).toSet
+
+      flows(one) shouldBe Set(("a = 1", 1) :: ("bar(a, b, c)", 6) :: Nil)
+      flows(two) shouldBe Set(("b = 2", 2) :: ("bar(a, b, c)", 6) :: Nil)
+      flows(three) shouldBe Set(("c = 3", 3) :: ("bar(a, b, c)", 6) :: Nil)
+    }
+  }
+
 }

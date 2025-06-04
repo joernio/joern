@@ -56,9 +56,8 @@ class PhpDownloadDependenciesTest extends PhpCode2CpgFixture() {
       }
     }
 
-    // TODO: Fix
-    "download the AWS library and infer the full name of `S3Client` correctly" ignore {
-      cpg.call.nameExact("__construct").methodFullName.toSet shouldBe Set("Aws\\S3\\S3Client->__construct")
+    "download the AWS library and infer the full name of `S3Client` correctly" in {
+      cpg.call.nameExact("__construct").methodFullName.toSet shouldBe Set("Aws\\S3\\S3Client.__construct")
       cpg.identifier.nameExact("s3").typeFullName.toSet shouldBe Set("Aws\\S3\\S3Client")
     }
 

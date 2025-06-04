@@ -8,6 +8,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import org.slf4j.LoggerFactory
 
+import java.util.regex.Pattern
 import scala.jdk.CollectionConverters.*
 import scala.util.Try
 import scala.util.matching.Regex
@@ -37,9 +38,10 @@ object JavaSrc2Cpg {
   val language: String                  = Languages.JAVASRC
   val sourceFileExtensions: Set[String] = Set(".java")
 
-  val DefaultIgnoredFilesRegex: List[Regex] = List(".git", ".mvn", "test").flatMap { directory =>
-    List(s"(^|\\\\)$directory($$|\\\\)".r.unanchored, s"(^|/)$directory($$|/)".r.unanchored)
-  }
+  val DefaultIgnoredFilesRegex: List[Regex] =
+    List(".git", ".mvn", ".gradle", "test").map(Pattern.quote).flatMap { directory =>
+      List(s"(^|\\\\)$directory($$|\\\\)".r.unanchored, s"(^|/)$directory($$|/)".r.unanchored)
+    }
   val DefaultConfig: Config =
     Config().withDefaultIgnoredFilesRegex(DefaultIgnoredFilesRegex)
 

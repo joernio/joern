@@ -5,14 +5,9 @@ import io.joern.x2cpg.passes.frontend.MetaDataPass
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.*
-import org.eclipse.cdt.internal.core.dom.parser.c.CASTFunctionDeclarator
-import org.eclipse.cdt.internal.core.dom.parser.c.CVariable
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTIdExpression
+import org.eclipse.cdt.internal.core.dom.parser.c.{CASTFunctionDeclarator, CVariable}
+import org.eclipse.cdt.internal.core.dom.parser.cpp.*
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalBinding
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDeclarator
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDefinition
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPFunction
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPVariable
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import scala.annotation.tailrec
@@ -91,7 +86,7 @@ trait FullNameProvider { this: AstCreator =>
   import FullNameProvider.*
 
   protected def replaceQualifiedNameSeparator(name: String): String = {
-    if (name.isEmpty) return name
+    if (name.isEmpty || name == Defines.Any || name == Defines.Void) return name
     val normalizedName = StringUtils.normalizeSpace(name)
     normalizedName.replace(Defines.QualifiedNameSeparator, ".").stripPrefix(".")
   }
@@ -234,12 +229,17 @@ trait FullNameProvider { this: AstCreator =>
   }
 
   private def parameterListSignature(func: IASTNode): String = {
-    val variadic = if (isVariadic(func)) "..." else ""
-    val elements = parameters(func).map {
+    val parameter = parameters(func)
+    val elements = parameter.map {
       case p: IASTParameterDeclaration => typeForDeclSpecifier(p.getDeclSpecifier)
       case other                       => typeForDeclSpecifier(other)
     }
-    s"(${elements.mkString(",")}$variadic)"
+    val variadicString = if (isVariadic(func) || parameter.lastOption.exists(paramIsVariadic)) {
+      // See: https://en.cppreference.com/w/cpp/language/variadic_arguments
+      // `...` and `,...` are the same but `...` is deprecated since C++26 so we settle for the newer one
+      ",..."
+    } else { "" }
+    s"(${elements.mkString(",")}$variadicString)"
   }
 
   private def shortNameForIASTDeclarator(declarator: IASTDeclarator): String = {
@@ -296,6 +296,22 @@ trait FullNameProvider { this: AstCreator =>
     }
   }
 
+  protected def bindsToConstructor(funcDef: IASTFunctionDefinition): Boolean = {
+    safeGetBinding(funcDef.getDeclarator.getName) match {
+      case Some(_: ICPPConstructor) => true
+      case _                        => bindsToConstructor(funcDef.getDeclarator.getName)
+    }
+
+  }
+
+  protected def bindsToConstructor(name: IASTName): Boolean = {
+    val fullName_ = ASTStringUtil.getQualifiedName(name)
+    val name_     = ASTStringUtil.getSimpleName(name)
+    scope.computeScopePath.endsWith(s".$name_")
+    || (scope.computeScopePath.nonEmpty && scope.computeScopePath == name_)
+    || fullName_.startsWith(s"$name_::$name_")
+  }
+
   private def fullNameFromBinding(node: IASTNode): Option[String] = {
     node match {
       case id: CPPASTIdExpression =>
@@ -322,13 +338,24 @@ trait FullNameProvider { this: AstCreator =>
             val fn = if (function.isExternC) { tpe }
             else { s"${stripTemplateTags(fullNameNoSig)}.$tpe:${signature(returnType, declarator)}" }
             Option(fn)
+          case Some(constructor: ICPPConstructor) =>
+            val fullNameNoSig = replaceQualifiedNameSeparator(
+              replaceOperator(constructor.getQualifiedName.mkString("."))
+            )
+            val fn = if (constructor.isExternC) {
+              replaceOperator(constructor.getName)
+            } else {
+              val sig = signature(Defines.Void, declarator)
+              s"${stripTemplateTags(fullNameNoSig)}:$sig"
+            }
+            Option(fn)
           case Some(function: ICPPFunction) =>
             val fullNameNoSig = replaceQualifiedNameSeparator(replaceOperator(function.getQualifiedName.mkString(".")))
             val fn = if (function.isExternC) {
               replaceOperator(function.getName)
             } else {
               val returnTpe = declarator.getParent match {
-                case definition: ICPPASTFunctionDefinition if !isCppConstructor(definition) => returnType(definition)
+                case definition: ICPPASTFunctionDefinition if !bindsToConstructor(definition) => returnType(definition)
                 case _ => safeGetType(function.getType.getReturnType)
               }
               val sig = signature(cleanType(returnTpe), declarator)
@@ -340,12 +367,19 @@ trait FullNameProvider { this: AstCreator =>
             val fn = if (x.isExternC) { x.getName }
             else { s"${stripTemplateTags(fullNameNoSig)}:${cleanType(safeGetType(x.getType))}" }
             Option(fn)
+          case Some(_: IProblemBinding) if bindsToConstructor(declarator.getName) =>
+            val fullNameNoSig = replaceQualifiedNameSeparator(
+              replaceOperator(ASTStringUtil.getQualifiedName(declarator.getName))
+            )
+            val sig = signature(Defines.Void, declarator)
+            val fn  = s"${stripTemplateTags(fullNameNoSig)}:$sig"
+            Option(fn)
           case Some(_: IProblemBinding) =>
             val fullNameNoSig = replaceOperator(ASTStringUtil.getQualifiedName(declarator.getName))
             val fixedFullName = replaceQualifiedNameSeparator(fullNameNoSig)
             val returnTpe = declarator.getParent match {
-              case definition: ICPPASTFunctionDefinition if !isCppConstructor(definition) => returnType(definition)
-              case _                                                                      => returnType(declarator)
+              case definition: ICPPASTFunctionDefinition if !bindsToConstructor(definition) => returnType(definition)
+              case _                                                                        => returnType(declarator)
             }
             val signature_ = signature(returnTpe, declarator)
             if (fixedFullName.isEmpty) { Option(s"${X2CpgDefines.UnresolvedNamespace}:$signature_") }
@@ -360,6 +394,16 @@ trait FullNameProvider { this: AstCreator =>
         }
       case definition: ICPPASTFunctionDefinition =>
         Some(fullName(definition.getDeclarator))
+      case typeSpecifier: CPPASTNamedTypeSpecifier if typeSpecifier.isFriend =>
+        safeGetBinding(typeSpecifier.getName) match {
+          case Some(b: ICPPBinding) if b.getName.nonEmpty => Option(s"${scope.computeScopePath}.${b.getName}")
+          case _                                          => None
+        }
+      case typeSpecifier: IASTNamedTypeSpecifier =>
+        safeGetBinding(typeSpecifier.getName) match {
+          case Some(b: ICPPBinding) if b.getName.nonEmpty => Option(b.getQualifiedName.mkString("."))
+          case _                                          => None
+        }
       case namespace: ICPPASTNamespaceDefinition =>
         safeGetBinding(namespace.getName) match {
           case Some(b: ICPPBinding) if b.getName.nonEmpty => Option(b.getQualifiedName.mkString("."))
@@ -420,11 +464,6 @@ trait FullNameProvider { this: AstCreator =>
     s"${scope.computeScopePath}.$name"
   }
 
-  private def fullNameForIASTNamedTypeSpecifier(namedTypeSpecifier: IASTNamedTypeSpecifier): String = {
-    val name = shortName(namedTypeSpecifier)
-    s"${scope.computeScopePath}.$name"
-  }
-
   private def fullNameForIASTElaboratedTypeSpecifier(elaboratedTypeSpecifier: IASTElaboratedTypeSpecifier): String = {
     val name = shortName(elaboratedTypeSpecifier)
     s"${scope.computeScopePath}.$name"
@@ -436,6 +475,16 @@ trait FullNameProvider { this: AstCreator =>
 
   private def fullNameForIASTFunctionDefinition(functionDefinition: IASTFunctionDefinition): String = {
     Try(ASTStringUtil.getQualifiedName(functionDefinition.getDeclarator.getName)).getOrElse(nextClosureName())
+  }
+
+  private def fullNameForIASTNamedTypeSpecifier(typeSpecifier: IASTNamedTypeSpecifier): String = {
+    typeSpecifier match {
+      case typeSpecifier: CPPASTNamedTypeSpecifier if typeSpecifier.isFriend =>
+        s"${scope.computeScopePath}.${typeSpecifier.getName}"
+      case _ =>
+        Try(ASTStringUtil.getQualifiedName(typeSpecifier.getName)).getOrElse(shortName(typeSpecifier))
+    }
+
   }
 
 }

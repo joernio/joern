@@ -309,6 +309,7 @@ object X2Cpg {
           c
         }
         .text("a regex specifying files to exclude during CPG generation (paths relative to <input-dir> are matched)"),
+      opt[Unit]("no-default-exclude").action { (_, c) => c.withDefaultIgnoredFilesRegex(Nil) }.hidden(),
       opt[Unit]("enable-early-schema-checking")
         .action((_, c) => c.withSchemaValidation(ValidationMode.Enabled))
         .text("enables early schema validation during AST creation (disabled by default)"),

@@ -1,23 +1,10 @@
 package io.joern.c2cpg.passes
 
-import io.joern.c2cpg.astcreation.CGlobal
 import io.joern.c2cpg.Config
-import io.joern.x2cpg.Ast
-import io.joern.x2cpg.Defines
-import io.joern.x2cpg.ValidationMode
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethodReturn
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
-import io.shiftleft.codepropertygraph.generated.nodes.NewBinding
-import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.NodeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.Method
-import io.shiftleft.codepropertygraph.generated.nodes.NewModifier
-import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
+import io.joern.x2cpg.passes.frontend.MetaDataPass
+import io.joern.x2cpg.{Ast, Defines, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, EvaluationStrategies, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
@@ -67,6 +54,7 @@ class FunctionDeclNodePass(cpg: Cpg, methodDeclarations: Map[String, FunctionDec
   override def run(dstGraph: DiffGraphBuilder): Unit = {
     stubMethods(dstGraph)
     createMissingCppBindings(dstGraph)
+    createMissingCppMethodAstEdges(dstGraph)
   }
 
   private def nameAndSignature(method: Method): String = s".${method.name}:${method.signature}"
@@ -80,6 +68,19 @@ class FunctionDeclNodePass(cpg: Cpg, methodDeclarations: Map[String, FunctionDec
     !method.name.startsWith(io.joern.x2cpg.Defines.ClosurePrefix) &&
     method.signature.nonEmpty &&
     method.fullName.endsWith(nameAndSignature(method))
+  }
+
+  private def createMissingCppMethodAstEdges(dstGraph: DiffGraphBuilder): Unit = {
+    for {
+      method <- cpg.method.internal.not(_.astIn)
+      if method.filename.nonEmpty &&
+        method.filename != Method.PropertyDefaults.Filename &&
+        cpg.typeDecl.fullNameExact(method.astParentFullName).isEmpty
+    } {
+      val fileGlobalMethodName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(method.filename))
+      dstGraph.setNodeProperty(method, Method.PropertyNames.AstParentFullName, fileGlobalMethodName)
+      dstGraph.setNodeProperty(method, Method.PropertyNames.AstParentType, Method.Label)
+    }
   }
 
   private def createMissingCppBindings(dstGraph: DiffGraphBuilder): Unit = {

@@ -78,7 +78,7 @@ class ClosureTests extends PhpCode2CpgFixture {
         closureMethod
       }
 
-      val expectedName = s"foo.php:<global>-><lambda>0"
+      val expectedName = s"foo.php:<global>.<lambda>0"
       closureMethod.name shouldBe expectedName
       closureMethod.fullName shouldBe expectedName
       closureMethod.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
@@ -117,7 +117,7 @@ class ClosureTests extends PhpCode2CpgFixture {
 
     "have a correct MethodRef added to the AST where the closure is defined" in {
       inside(cpg.assignment.code(".*<lambda>.*").argument.l) { case List(_: Identifier, methodRef: MethodRef) =>
-        val expectedName = s"foo.php:<global>-><lambda>0"
+        val expectedName = s"foo.php:<global>.<lambda>0"
         methodRef.methodFullName shouldBe expectedName
         methodRef.code shouldBe expectedName
         methodRef.lineNumber shouldBe Some(3)
@@ -152,7 +152,7 @@ class ClosureTests extends PhpCode2CpgFixture {
         closureMethod
       }
 
-      val expectedName = "foo.php:<global>-><lambda>0"
+      val expectedName = "foo.php:<global>.<lambda>0"
       closureMethod.name shouldBe expectedName
       closureMethod.fullName shouldBe expectedName
       closureMethod.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
@@ -170,7 +170,7 @@ class ClosureTests extends PhpCode2CpgFixture {
 
     "have a correct MethodRef added to the AST where the closure is defined" in {
       inside(cpg.assignment.argument.l) { case List(_: Identifier, methodRef: MethodRef) =>
-        val expectedName = "foo.php:<global>-><lambda>0"
+        val expectedName = "foo.php:<global>.<lambda>0"
         methodRef.methodFullName shouldBe expectedName
         methodRef.code shouldBe expectedName
         methodRef.lineNumber shouldBe Some(2)
@@ -198,10 +198,10 @@ class ClosureTests extends PhpCode2CpgFixture {
      |""".stripMargin)
 
     inside(cpg.method.name(".*<lambda>.*").fullName.sorted.l) { case List(bar0, bar1, foo0, foo1) =>
-      bar0 shouldBe "Bar->bar-><lambda>2"
-      bar1 shouldBe "Bar->bar-><lambda>3"
-      foo0 shouldBe "foo-><lambda>0"
-      foo1 shouldBe "foo-><lambda>1"
+      bar0 shouldBe "Bar.bar.<lambda>2"
+      bar1 shouldBe "Bar.bar.<lambda>3"
+      foo0 shouldBe "foo.<lambda>0"
+      foo1 shouldBe "foo.<lambda>1"
     }
   }
 }
