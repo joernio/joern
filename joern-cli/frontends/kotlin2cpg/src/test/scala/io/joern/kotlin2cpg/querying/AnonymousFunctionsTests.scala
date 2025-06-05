@@ -1,5 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
+import io.joern.kotlin2cpg.Config
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes}
@@ -21,6 +22,7 @@ class AnonymousFunctionsTests extends KotlinCode2CpgFixture(withOssDataflow = fa
         |    return out
         |}
         |""".stripMargin)
+      .withConfig(Config().withDisableFileContent(false))
 
     "should contain a METHOD node for the anonymous fn with the correct props set" in {
       val List(m) = cpg.method.fullName(".*lambda.*0.*").l
@@ -44,6 +46,10 @@ class AnonymousFunctionsTests extends KotlinCode2CpgFixture(withOssDataflow = fa
       val List(p) = cpg.method.fullName(".*lambda.*").parameter.l
       p.code shouldBe "item"
       p.typeFullName shouldBe "int"
+    }
+
+    "should have the offset and offsetEnd fields set correctly for the lambda method" in {
+      cpg.method.fullName(".*lambda.*").sourceCode.l shouldBe List("fun(item: Int): Boolean { return item > 0 }")
     }
   }
 
@@ -56,6 +62,7 @@ class AnonymousFunctionsTests extends KotlinCode2CpgFixture(withOssDataflow = fa
         |    return out
         |}
         |""".stripMargin)
+      .withConfig(Config().withDisableFileContent(false))
 
     "should contain a METHOD node for the anonymous fn with the correct props set" in {
       val List(m) = cpg.method.fullName(".*lambda.*0.*").l
@@ -79,6 +86,10 @@ class AnonymousFunctionsTests extends KotlinCode2CpgFixture(withOssDataflow = fa
       val List(p) = cpg.method.fullName(".*lambda.*").parameter.l
       p.code shouldBe "item"
       p.typeFullName shouldBe "int"
+    }
+
+    "should have the offset and offsetEnd fields set correctly for the lambda method" in {
+      cpg.method.fullName(".*lambda.*").sourceCode.l shouldBe List("fun(item) = item > 0")
     }
   }
 }

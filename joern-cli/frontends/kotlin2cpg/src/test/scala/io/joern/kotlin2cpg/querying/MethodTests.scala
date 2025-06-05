@@ -1,5 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
+import io.joern.kotlin2cpg.Config
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Return}
 import io.shiftleft.semanticcpg.language.*
@@ -15,9 +16,22 @@ class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
        |  println("The double of 2 is: " + double(2))
        |}
        |""".stripMargin)
+      .withConfig(Config().withDisableFileContent(false))
 
     "should contain exactly three non-external methods" in {
       cpg.method.isExternal(false).size shouldBe 3
+    }
+
+    "should have the correct offsets set for the double method" in {
+      cpg.method.name("double").sourceCode.l shouldBe List("""fun double(x: Int): Int {
+          |  return x * 2
+          |}""".stripMargin)
+    }
+
+    "should have the correct offsets set for the main method" in {
+      cpg.method.name("main").sourceCode.l shouldBe List("""fun main(args : Array<String>) {
+          |  println("The double of 2 is: " + double(2))
+          |}""".stripMargin)
     }
 
     "should contain method nodes with the correct fields" in {
@@ -79,6 +93,7 @@ class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         |  }
         |}
         |""".stripMargin)
+      .withConfig(Config().withDisableFileContent(false))
 
     "should contain a METHOD node for `bar` with the props set" in {
       val List(m) = cpg.method.name("bar").l
@@ -93,6 +108,12 @@ class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       m.columnNumberEnd shouldBe Some(2)
       m.order shouldBe 1
       m.filename.endsWith(".kt") shouldBe true
+    }
+
+    "should have the correct offsets set for the bar method" in {
+      cpg.method.name("bar").sourceCode.l shouldBe List("""fun bar(x: Int): Int {
+          |    return x * 2
+          |  }""".stripMargin)
     }
 
     "should allow traversing to parameters" in {
@@ -126,11 +147,16 @@ class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         |class AClass(var x: String)
         |fun f1(p: String): AClass = AClass(p ?: "message")
         ||""".stripMargin)
+      .withConfig(Config().withDisableFileContent(false))
 
     "should contain a RETURN node as the child of the METHOD's BLOCK" in {
       val List(m)         = cpg.method.nameExact("f1").l
       val List(r: Return) = m.block.astChildren.l: @unchecked
       val List(_: Block)  = r.astChildren.l: @unchecked
+    }
+
+    "should have the correct offsets set for the f1 method" in {
+      cpg.method.name("f1").sourceCode.l shouldBe List("""fun f1(p: String): AClass = AClass(p ?: "message")""")
     }
   }
 
@@ -142,10 +168,27 @@ class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       |    println(one)
       |}
       |""".stripMargin)
+      .withConfig(Config().withDisableFileContent(false))
 
     "should contain a METHOD node with correct FULL_NAME set" in {
       val List(m) = cpg.method.nameExact("doSomething").l
       m.fullName shouldBe "mypkg.doSomething:void(mypkg.Base)"
+    }
+
+    "have the correct offsets set for the doSomething method" in {
+      cpg.method.name("doSomething").sourceCode.l shouldBe List("""fun <S:Base>doSomething(one: S) {
+          |    println(one)
+          |}""".stripMargin)
+    }
+
+    "have the correct offsets set for the <global> method" in {
+      cpg.method.nameExact("<global>").sourceCode.l shouldBe List("""
+          |package mypkg
+          |open class Base
+          |fun <S:Base>doSomething(one: S) {
+          |    println(one)
+          |}
+          |""".stripMargin)
     }
   }
 
@@ -172,6 +215,7 @@ class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         |    }
         |}
         |""".stripMargin)
+      .withConfig(Config().withDisableFileContent(false))
 
     "pass the lambda to a `sortedWith` call which is then under the method `sorted`" in {
       inside(cpg.methodRefWithName(".*<lambda>.*").inCall.l) {
@@ -180,6 +224,10 @@ class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
           sortedWith.method.name shouldBe "sorted"
         case xs => fail(s"Expected a single call with the method reference argument. Instead got [$xs]")
       }
+    }
+
+    "have the correct offsets set for the sorted method" in {
+      cpg.method.name("sorted").sourceCode.l
     }
   }
 

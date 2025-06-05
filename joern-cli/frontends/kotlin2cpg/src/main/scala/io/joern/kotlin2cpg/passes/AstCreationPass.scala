@@ -11,9 +11,13 @@ import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 
-class AstCreationPass(filesWithMeta: Iterable[KtFileWithMeta], bindingContext: BindingContext, cpg: Cpg)(implicit
-  withSchemaValidation: ValidationMode
-) extends ForkJoinParallelCpgPass[KtFileWithMeta](cpg) {
+class AstCreationPass(
+  filesWithMeta: Iterable[KtFileWithMeta],
+  bindingContext: BindingContext,
+  cpg: Cpg,
+  disableFileContent: Boolean
+)(implicit withSchemaValidation: ValidationMode)
+    extends ForkJoinParallelCpgPass[KtFileWithMeta](cpg) {
 
   private val logger         = LoggerFactory.getLogger(getClass)
   private val global: Global = new Global()
@@ -23,7 +27,7 @@ class AstCreationPass(filesWithMeta: Iterable[KtFileWithMeta], bindingContext: B
   override def generateParts(): Array[KtFileWithMeta] = filesWithMeta.toArray
 
   override def runOnPart(diffGraph: DiffGraphBuilder, fileWithMeta: KtFileWithMeta): Unit = {
-    diffGraph.absorb(new AstCreator(fileWithMeta, bindingContext, global).createAst())
+    diffGraph.absorb(new AstCreator(fileWithMeta, bindingContext, global, disableFileContent).createAst())
     logger.debug(s"AST created for file at `${fileWithMeta.f.getVirtualFilePath}`.")
   }
 

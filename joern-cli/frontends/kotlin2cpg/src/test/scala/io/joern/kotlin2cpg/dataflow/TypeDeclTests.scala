@@ -1,6 +1,7 @@
 package io.joern.kotlin2cpg.dataflow
 
 import io.joern.dataflowengineoss.language.toExtendedCfgNode
+import io.joern.kotlin2cpg.Config
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
@@ -18,6 +19,7 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
         |}
         |fun main() = f1("SOMETHING")
         |""".stripMargin)
+      .withConfig(Config().withDisableFileContent(false))
 
     "should find a flow through member assigned in ctor" in {
       val source = cpg.method.name("f1").parameter
@@ -38,6 +40,25 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
           )
         )
     }
+
+    "should have the correct offsets set for the ACLass type decl" in {
+      cpg.typeDecl.name("AClass").sourceCode.l shouldBe List("""class AClass(var x: String) {
+          |    fun printX() = println(this.x)
+          |}""".stripMargin)
+    }
+
+    "should have the correct offsets set for the <global> type decl" in {
+      cpg.typeDecl.nameExact("<global>").sourceCode.l shouldBe List("""
+          |class AClass(var x: String) {
+          |    fun printX() = println(this.x)
+          |}
+          |fun f1(p: String) {
+          |    val aClass = AClass(p)
+          |    aClass.printX()
+          |}
+          |fun main() = f1("SOMETHING")
+          |""".stripMargin)
+    }
   }
 
   "CPG for code with type alias of class definition with member defined inside ctor" should {
@@ -56,6 +77,7 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
       |}
       |fun main() = f1("SOMETHING"
       |""".stripMargin)
+      .withConfig(Config().withDisableFileContent(false))
 
     "should find a flow through member assigned in ctor" in {
       val source = cpg.method.name("f1").parameter
@@ -75,6 +97,34 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
             ("println(this.x)", Some(8))
           )
         )
+    }
+
+    "have the correct offsets set for the AClass typeDecl" in {
+      cpg.typeDecl.name("AClass").sourceCode.l shouldBe List("""class AClass {
+          |    var x: String
+          |    constructor(q: String) {
+          |        this.x = q
+          |    }
+          |    fun printX() = println(this.x)
+          |}""".stripMargin)
+    }
+
+    "have the correct offsets set for the <global> typeDecl" in {
+      cpg.typeDecl.nameExact("<global>").sourceCode.l shouldBe List("""
+          |typealias AnAlias = AClass
+          |class AClass {
+          |    var x: String
+          |    constructor(q: String) {
+          |        this.x = q
+          |    }
+          |    fun printX() = println(this.x)
+          |}
+          |fun f1(p: String) {
+          |    val aClass = AnAlias(p)
+          |    aClass.printX()
+          |}
+          |fun main() = f1("SOMETHING"
+          |""".stripMargin)
     }
   }
 

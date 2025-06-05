@@ -41,9 +41,13 @@ object AstCreator {
   case class ClosureBindingDef(node: NewClosureBinding, captureEdgeTo: NewMethodRef, refEdgeTo: NewNode)
 }
 
-class AstCreator(fileWithMeta: KtFileWithMeta, bindingContext: BindingContext, global: Global)(implicit
-  withSchemaValidation: ValidationMode
-) extends AstCreatorBase[PsiElement, AstCreator](fileWithMeta.filename)
+class AstCreator(
+  fileWithMeta: KtFileWithMeta,
+  bindingContext: BindingContext,
+  global: Global,
+  disableFileContent: Boolean
+)(implicit withSchemaValidation: ValidationMode)
+    extends AstCreatorBase[PsiElement, AstCreator](fileWithMeta.filename)
     with AstForDeclarationsCreator
     with AstForPrimitivesCreator
     with AstForFunctionsCreator
@@ -181,6 +185,17 @@ class AstCreator(fileWithMeta: KtFileWithMeta, bindingContext: BindingContext, g
       case elem => elem
     }
     column(lastElement)
+  }
+
+  override def offset(element: PsiElement): Option[(Int, Int)] = {
+    Option
+      .unless(disableFileContent) {
+        Option(element).map { someElement =>
+          val textRange = someElement.getTextRange
+          (textRange.getStartOffset, textRange.getEndOffset)
+        }
+      }
+      .flatten
   }
 
   protected def getName(node: NewImport): String = {
@@ -374,6 +389,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, bindingContext: BindingContext, g
 
     val declarationsAsts = ktFile.getDeclarations.asScala.flatMap(astsForDeclaration)
     val fileNode         = NewFile().name(fileWithMeta.relativizedPath)
+    if (!disableFileContent) {
+      fileNode.content(code(fileWithMeta.f))
+    }
     val lambdaTypeDecls =
       lambdaBindingInfoQueue.flatMap(_.edgeMeta.collect { case (node: NewTypeDecl, _, _) => Ast(node) })
     methodAstParentStack.pop()
