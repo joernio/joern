@@ -107,6 +107,9 @@ class ClosureTests extends PhpCode2CpgFixture {
     }
 
     "have a ref edge from the closure binding for a use to the captured node" in {
+      cpg.typeDecl.name("<global>").dotAst.l.foreach(println)
+
+      cpg.method.name("<global>").dotAst.l.foreach(println)
       inside(cpg.all.collectAll[ClosureBinding].filter(_.closureOriginalName.contains("use1")).l) {
         case List(closureBinding) =>
           val capturedNode = cpg.method.nameExact("<global>").local.name("use1").head

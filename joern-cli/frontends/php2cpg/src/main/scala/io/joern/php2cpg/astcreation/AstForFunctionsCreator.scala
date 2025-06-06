@@ -117,15 +117,22 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val method = methodNode(decl, methodName, methodCode, fullName, Some(signature), relativeFileName)
 
     scope.pushNewScope(method)
+    val methodBodyNode = blockNode(decl)
+    scope.pushNewScope(methodBodyNode)
 
     val returnType = decl.returnType.map(_.name).getOrElse(Defines.Any)
 
-    val methodBodyStmts = bodyPrefixAsts ++ decl.stmts.flatMap(astsForStmt)
+    val fieldInitAsts = scope.getFieldInits2.map { fieldInit =>
+      astForMemberAssignment(fieldInit.originNode, fieldInit.memberNode, fieldInit.value, isField = true)
+    }
+
+    val methodBodyStmts = bodyPrefixAsts ++ fieldInitAsts ++ decl.stmts.flatMap(astsForStmt)
     val methodReturn    = methodReturnNode(decl, returnType)
 
     val attributeAsts = decl.attributeGroups.flatMap(astForAttributeGroup)
-    val methodBody    = blockAst(blockNode(decl), methodBodyStmts)
+    val methodBody    = blockAst(methodBodyNode, methodBodyStmts)
 
+    scope.popScope()
     scope.popScope()
     methodAstWithAnnotations(method, parameters, methodBody, methodReturn, modifiers, attributeAsts)
   }
@@ -155,8 +162,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   protected def astForConstructor(constructorDecl: PhpMethodDecl): Ast = {
-    val fieldInits = scope.getFieldInits
-    astForMethodDecl(constructorDecl, fieldInits, isConstructor = true)
+    astForMethodDecl(constructorDecl, isConstructor = true)
   }
 
   protected def defaultConstructorAst(originNode: PhpNode): Ast = {
@@ -170,8 +176,16 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val thisParam = thisParamAstForMethod(originNode)
 
     val method = methodNode(originNode, ConstructorMethodName, fullName, fullName, Some(signature), relativeFileName)
+    scope.pushNewScope(method)
 
-    val methodBody = blockAst(blockNode(originNode), scope.getFieldInits)
+    val methodBodyBlock = blockNode(originNode)
+    scope.pushNewScope(methodBodyBlock)
+
+    val initAsts = scope.getFieldInits2.map { fieldInit =>
+      astForMemberAssignment(fieldInit.originNode, fieldInit.memberNode, fieldInit.value, isField = true)
+    }
+
+    val methodBody = blockAst(blockNode(originNode), initAsts)
 
     val methodReturn = methodReturnNode(originNode, Defines.Any)
 
@@ -211,17 +225,36 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   protected def astForStaticAndConstInits(node: PhpNode): Option[Ast] = {
-    scope.getConstAndStaticInits match {
+    scope.getConstAndStaticInits2 match {
       case Nil => None
 
       case inits =>
         val signature = s"${TypeConstants.Void}()"
         val fullName  = composeMethodFullName(Defines.StaticInitMethodName)
+
+        val methodNode = NewMethod()
+          .name(Defines.StaticInitMethodName)
+          .fullName(fullName)
+          .lineNumber(line(node))
+          .columnNumber(column(node))
+
+        scope.pushNewScope(methodNode)
+
+        val methodBlock = NewBlock()
+
+        scope.pushNewScope(methodBlock)
+
+        val assignmentAsts = inits.map { init =>
+          astForMemberAssignment(init.originNode, init.memberNode, init.value, isField = false)
+        }
+
+        val body = blockAst(methodBlock, assignmentAsts)
+
         val ast =
           staticInitMethodAst(
             node,
-            inits,
-            fullName,
+            methodNode,
+            body,
             Option(signature),
             TypeConstants.Void,
             fileName = Some(relativeFileName)
@@ -234,6 +267,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           method.offset(0)
           method.offsetEnd(content.length)
         }
+        scope.popScope()
+        scope.popScope()
         Option(ast)
     }
 

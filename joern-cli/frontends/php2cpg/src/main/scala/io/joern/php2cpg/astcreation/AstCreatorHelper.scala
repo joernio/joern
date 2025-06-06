@@ -3,10 +3,12 @@ package io.joern.php2cpg.astcreation
 import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
 import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*
+import io.joern.php2cpg.utils.PhpScopeElement
 import io.joern.x2cpg.Defines.UnresolvedNamespace
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewIdentifier, NewLiteral, NewNamespaceBlock}
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewIdentifier, NewLiteral, NewNamespaceBlock, NewNode}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import java.nio.charset.StandardCharsets
@@ -140,4 +142,18 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     }
   }
 
+  protected def handleVariableOccurrence(expr: PhpNode, name: String): NewNode = {
+    scope.lookupVariable(name) match {
+      case None =>
+        val local = localNode(expr, name, s"$$$name", Defines.Any)
+        scope.addToScope(name, local) match {
+          case PhpScopeElement(node: NewBlock) => diffGraph.addEdge(node, local, EdgeTypes.AST)
+          case _ =>
+            println("Not adding anything to block")
+          // do nothing
+        }
+        local
+      case Some(local) => local
+    }
+  }
 }

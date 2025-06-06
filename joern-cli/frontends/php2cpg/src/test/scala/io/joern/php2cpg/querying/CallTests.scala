@@ -248,4 +248,15 @@ class CallTests extends PhpCode2CpgFixture {
     cpg.call("timeout").methodFullName.head shouldBe "Foo\\Bar\\Http<metaclass>.retry.timeout"
   }
 
+  "assignment stuff" in {
+    val cpg = code("""<?php
+        |function foo($a) {
+        | $b = 13
+        | $c = $a + $b
+        |}
+        |""".stripMargin)
+
+    cpg.call.l
+  }
+
 }

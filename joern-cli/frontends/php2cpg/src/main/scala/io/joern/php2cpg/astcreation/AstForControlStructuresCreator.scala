@@ -164,6 +164,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
 
   protected def astForForeachStmt(stmt: PhpForeachStmt): Ast = {
     val iterIdentifier = getTmpIdentifier(stmt, maybeTypeFullName = None, prefix = "iter_")
+    val localN         = handleVariableOccurrence(stmt, iterIdentifier.name)
 
     // keep this just used to construct the `code` field
     val assignItemTargetAst = stmt.keyVar match {
@@ -174,7 +175,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     // Initializer asts
     // - Iterator assign
     val iterValue         = astForExpr(stmt.iterExpr)
-    val iteratorAssignAst = simpleAssignAst(stmt, Ast(iterIdentifier), iterValue)
+    val iteratorAssignAst = simpleAssignAst(stmt, Ast(iterIdentifier).withRefEdge(iterIdentifier, localN), iterValue)
 
     // - Assigned item assign
     val itemInitAst = getItemAssignAstForForeach(stmt, iterIdentifier.copy)
@@ -190,9 +191,10 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     val conditionAst = callAst(notIsNull, isNullAst :: Nil)
 
     // Update asts
-    val nextIterIdent = Ast(iterIdentifier.copy)
-    val nextSignature = "void()"
-    val nextCallCode  = s"${nextIterIdent.rootCodeOrEmpty}${InstanceMethodDelimiter}next()"
+    val nextIterIdentCopy = iterIdentifier.copy
+    val nextIterIdent     = Ast(nextIterIdentCopy).withRefEdge(nextIterIdentCopy, localN)
+    val nextSignature     = "void()"
+    val nextCallCode      = s"${nextIterIdent.rootCodeOrEmpty}${InstanceMethodDelimiter}next()"
     val nextCallNode = callNode(
       stmt,
       nextCallCode,
@@ -224,9 +226,13 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
   }
 
   private def getItemAssignAstForForeach(stmt: PhpForeachStmt, iteratorIdentifier: NewIdentifier): Ast = {
+    val block = blockNode(stmt)
+    scope.pushNewScope(block)
+
+    val localN = handleVariableOccurrence(stmt, iteratorIdentifier.name)
     // create assignment for value-part
     val valueAssign = {
-      val iteratorIdentifierAst = Ast(iteratorIdentifier)
+      val iteratorIdentifierAst = Ast(iteratorIdentifier).withRefEdge(iteratorIdentifier, localN)
       val currentCallSignature  = s"$UnresolvedSignature(0)"
       val currentCallCode       = s"${iteratorIdentifierAst.rootCodeOrEmpty}${InstanceMethodDelimiter}current()"
       // `current` function is used to get the current element of given array
@@ -254,9 +260,10 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
 
     // try to create assignment for key-part
     val keyAssignOption = stmt.keyVar.map(keyVar =>
-      val iteratorIdentifierAst = Ast(iteratorIdentifier.copy)
-      val keyCallSignature      = s"$UnresolvedSignature(0)"
-      val keyCallCode           = s"${iteratorIdentifierAst.rootCodeOrEmpty}${InstanceMethodDelimiter}key()"
+      val iteratorIdentifierCopyKey = iteratorIdentifier.copy
+      val iteratorIdentifierAst     = Ast(iteratorIdentifierCopyKey).withRefEdge(iteratorIdentifierCopyKey, localN)
+      val keyCallSignature          = s"$UnresolvedSignature(0)"
+      val keyCallCode               = s"${iteratorIdentifierAst.rootCodeOrEmpty}${InstanceMethodDelimiter}key()"
       // `key` function is used to get the key of the current element
       // see https://www.php.net/manual/en/function.key.php & https://www.php.net/manual/en/iterator.key.php
       val keyCallNode = callNode(
@@ -272,14 +279,18 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
       simpleAssignAst(stmt, astForExpr(keyVar), keyCallAst)
     )
 
-    keyAssignOption match {
-      case Some(keyAssign) =>
-        Ast(blockNode(stmt))
-          .withChild(keyAssign)
-          .withChild(valueAssign)
-      case None =>
-        valueAssign
-    }
+    scope.popScope()
+
+    Ast(block).withChildren(keyAssignOption.toList :+ valueAssign)
+
+//    keyAssignOption match {
+//      case Some(keyAssign) =>
+//        Ast(block)
+//          .withChild(keyAssign)
+//          .withChild(valueAssign)
+//      case None =>
+//        valueAssign
+//    }
   }
 
   protected def astForThrow(expr: PhpThrowExpr): Ast = {

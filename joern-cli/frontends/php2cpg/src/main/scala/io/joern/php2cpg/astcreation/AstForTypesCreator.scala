@@ -227,7 +227,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     // This needs to be carried over for enums
     val staticConsts = if (stmt.classLikeType == ClassLikeTypes.Enum) {
-      scope.getConstAndStaticInits
+      scope.getConstAndStaticInits2
     } else {
       List.empty
     }
@@ -237,7 +237,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val classTypeDeclAst = Ast(typeDecl).withChildren(modifiers).withChildren(bodyStmts).withChildren(annotationAsts)
 
     scope.pushNewScope(metaTypeDeclNode)
-    staticConsts.foreach(scope.addConstOrStaticInitToScope)
+    staticConsts.foreach(init => scope.addConstOrStaticInitToScope(init.originNode, init.memberNode, init.value))
     val metaTypeDeclAst = astForMetaTypeDecl(stmt, staticStmts, metaTypeDeclNode)
     scope.popScope()
     List(classTypeDeclAst, metaTypeDeclAst)
@@ -315,7 +315,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       val name      = constDecl.name.name
       val code      = s"const $name"
       val someValue = Option(constDecl.value)
-      astForConstOrStaticOrFieldValue(stmt, name, code, someValue, scope.addConstOrStaticInitToScope, isField = false)
+      astForConstOrStaticOrFieldValue(stmt, name, code, someValue, scope.addConstOrStaticInitToScope)
         .withChildren(modifierAsts)
     }
   }
@@ -326,7 +326,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val name = stmt.name.name
     val code = s"case $name"
 
-    astForConstOrStaticOrFieldValue(stmt, name, code, stmt.expr, scope.addConstOrStaticInitToScope, isField = false)
+    astForConstOrStaticOrFieldValue(stmt, name, code, stmt.expr, scope.addConstOrStaticInitToScope)
       .withChild(finalModifier)
   }
 
@@ -339,16 +339,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       val ast = if (modifiers.contains(ModifierTypes.STATIC)) {
         // A static member belongs to a class, not an instance
         val memberCode = s"static $$$name"
-        astForConstOrStaticOrFieldValue(
-          stmt,
-          name,
-          memberCode,
-          varDecl.defaultValue,
-          scope.addConstOrStaticInitToScope,
-          false
-        )
+        astForConstOrStaticOrFieldValue(stmt, name, memberCode, varDecl.defaultValue, scope.addConstOrStaticInitToScope)
       } else {
-        astForConstOrStaticOrFieldValue(stmt, name, s"$$$name", varDecl.defaultValue, scope.addFieldInitToScope, true)
+        astForConstOrStaticOrFieldValue(stmt, name, s"$$$name", varDecl.defaultValue, scope.addFieldInitToScope)
       }
 
       ast.withChildren(modifierAsts)
@@ -360,15 +353,13 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     name: String,
     code: String,
     value: Option[PhpExpr],
-    addToScope: Ast => Unit,
-    isField: Boolean
+    addToScope: (PhpNode, NewMember, PhpExpr) => Unit
   ): Ast = {
     val member = memberNode(originNode, name, code, Defines.Any)
 
     value match {
       case Some(v) =>
-        val assignAst = astForMemberAssignment(originNode, member, v, isField)
-        addToScope(assignAst)
+        addToScope(originNode, member, v)
       case None => // Nothing to do here
     }
 

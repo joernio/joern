@@ -1,6 +1,7 @@
 package io.joern.php2cpg.utils
 
 import io.joern.php2cpg.astcreation.AstCreator.NameConstants
+import io.joern.php2cpg.parser.Domain.{PhpExpr, PhpNode}
 import io.joern.php2cpg.passes.SymbolSummaryPass.*
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.{NamespaceLikeScope, ScopeElement, Scope as X2CpgScope}
@@ -10,17 +11,22 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
+sealed case class PhpInit(originNode: PhpNode, memberNode: NewMember, value: PhpExpr) {}
+
 class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextClosureName: () => String)
     extends X2CpgScope[String, NewNode, PhpScopeElement] {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  private var constAndStaticInits: List[mutable.ArrayBuffer[Ast]] = Nil
-  private var fieldInits: List[mutable.ArrayBuffer[Ast]]          = Nil
-  private val anonymousMethods                                    = mutable.ArrayBuffer[Ast]()
-  private var tmpVarCounter                                       = 0
-  private var tmpClassCounter                                     = 0
-  private var importedSymbols                                     = Map.empty[String, SymbolSummary]
+  private var constAndStaticInits: List[mutable.ArrayBuffer[Ast]]      = Nil
+  private var constAndStaticInits2: List[mutable.ArrayBuffer[PhpInit]] = Nil
+  private var fieldInits: List[mutable.ArrayBuffer[Ast]]               = Nil
+  private var fieldInits2: List[mutable.ArrayBuffer[PhpInit]]          = Nil
+  private val anonymousMethods                                         = mutable.ArrayBuffer[Ast]()
+  private var tmpVarCounter                                            = 0
+  private var tmpClassCounter                                          = 0
+  private var importedSymbols                                          = Map.empty[String, SymbolSummary]
+  private val localsToAdd                                              = mutable.ArrayBuffer[NewLocal]()
 
   def pushNewScope(scopeNode: NewNode): Unit = {
     scopeNode match {
@@ -33,7 +39,9 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
 
       case typeDecl: NewTypeDecl =>
         constAndStaticInits = mutable.ArrayBuffer[Ast]() :: constAndStaticInits
+        constAndStaticInits2 = mutable.ArrayBuffer[PhpInit]() :: constAndStaticInits2
         fieldInits = mutable.ArrayBuffer[Ast]() :: fieldInits
+        fieldInits2 = mutable.ArrayBuffer[PhpInit]() :: fieldInits2
         super.pushNewScope(PhpScopeElement(typeDecl))
 
       case namespace: NewNamespaceBlock =>
@@ -65,7 +73,9 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
       case Some(_: NewTypeDecl) =>
         // TODO This is unsafe to catch errors for now
         constAndStaticInits = constAndStaticInits.tail
+        constAndStaticInits2 = constAndStaticInits2.tail
         fieldInits = fieldInits.tail
+        fieldInits2 = fieldInits2.tail
 
       case _ => // Nothing to do here
     }
@@ -116,9 +126,19 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
   def getEnclosingTypeDeclTypeFullName: Option[String] =
     stack.map(_.scopeNode.node).collectFirst { case td: NewTypeDecl => td }.map(_.fullName)
 
+  def getConstAndStaticInits2: List[PhpInit] = {
+    getInits2(constAndStaticInits2)
+  }
+
+  def addConstOrStaticInitToScope(node: PhpNode, memberNode: NewMember, value: PhpExpr): Unit = {
+    val initNode = PhpInit(node, memberNode, value)
+    addInitToScope(initNode, constAndStaticInits2)
+  }
+
   def addConstOrStaticInitToScope(ast: Ast): Unit = {
     addInitToScope(ast, constAndStaticInits)
   }
+
   def getConstAndStaticInits: List[Ast] = {
     getInits(constAndStaticInits)
   }
@@ -127,8 +147,13 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
     addInitToScope(ast, fieldInits)
   }
 
-  def getFieldInits: List[Ast] = {
-    getInits(fieldInits)
+  def addFieldInitToScope(node: PhpNode, memberNode: NewMember, value: PhpExpr): Unit = {
+    val initNode = PhpInit(node, memberNode, value)
+    addInitToScope(initNode, fieldInits2)
+  }
+
+  def getFieldInits2: List[PhpInit] = {
+    getInits2(fieldInits2)
   }
 
   def getScopedClosureName: String = {
@@ -147,7 +172,19 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
     initList.head.addOne(ast)
   }
 
+  private def addInitToScope(init: PhpInit, initList: List[mutable.ArrayBuffer[PhpInit]]): Unit = {
+    initList.head.addOne(init)
+  }
+
   private def getInits(initList: List[mutable.ArrayBuffer[Ast]]): List[Ast] = {
+    // TODO This is unsafe to catch errors for now
+    val ret = initList.head.toList
+    // These ASTs should only be added once to avoid aliasing issues.
+    initList.head.clear()
+    ret
+  }
+
+  private def getInits2(initList: List[mutable.ArrayBuffer[PhpInit]]): List[PhpInit] = {
     // TODO This is unsafe to catch errors for now
     val ret = initList.head.toList
     // These ASTs should only be added once to avoid aliasing issues.

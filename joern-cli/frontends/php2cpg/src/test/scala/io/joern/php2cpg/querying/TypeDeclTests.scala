@@ -436,6 +436,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
     }
 
     "generate locals with correct types" in {
+      cpg.method.name("<global>").dotAst.l.foreach(println)
       inside(cpg.method.name("<global>").body.astChildren.isLocal.l) {
         case tmp0Local :: tmp1Local :: Nil =>
           tmp0Local.typeFullName shouldBe "Test0.php:<global>.anon-class-0"
