@@ -188,6 +188,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val methodBody = blockAst(blockNode(originNode), initAsts)
 
     val methodReturn = methodReturnNode(originNode, Defines.Any)
+    scope.popScope()
+    scope.popScope()
 
     methodAstWithAnnotations(method, thisParam :: Nil, methodBody, methodReturn, modifiers)
   }

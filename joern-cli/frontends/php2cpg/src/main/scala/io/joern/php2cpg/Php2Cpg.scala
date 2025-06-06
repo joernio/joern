@@ -72,7 +72,6 @@ class Php2Cpg extends X2CpgFrontend[Config] {
         new AstParentInfoPass(cpg).createAndApply()
         new AnyTypePass(cpg).createAndApply()
         TypeNodePass.withTypesFromCpg(cpg).createAndApply()
-        LocalCreationPass.allLocalCreationPasses(cpg).foreach(_.createAndApply())
         new ClosureRefPass(cpg).createAndApply()
       }
     } else {

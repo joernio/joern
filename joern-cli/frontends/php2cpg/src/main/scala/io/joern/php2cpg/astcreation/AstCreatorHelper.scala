@@ -1,6 +1,6 @@
 package io.joern.php2cpg.astcreation
 
-import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
+import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
 import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*
 import io.joern.php2cpg.utils.PhpScopeElement
@@ -8,7 +8,14 @@ import io.joern.x2cpg.Defines.UnresolvedNamespace
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewIdentifier, NewLiteral, NewNamespaceBlock, NewNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewBlock,
+  NewIdentifier,
+  NewLiteral,
+  NewMethod,
+  NewNamespaceBlock,
+  NewNode
+}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import java.nio.charset.StandardCharsets
@@ -145,11 +152,16 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
   protected def handleVariableOccurrence(expr: PhpNode, name: String): NewNode = {
     scope.lookupVariable(name) match {
       case None =>
-        val local = localNode(expr, name, s"$$$name", Defines.Any)
+        val localCode = if name == NameConstants.Self then NameConstants.Self else s"$$$name"
+        val local     = localNode(expr, name, localCode, Defines.Any)
         scope.addToScope(name, local) match {
           case PhpScopeElement(node: NewBlock) => diffGraph.addEdge(node, local, EdgeTypes.AST)
-          case _ =>
-            println("Not adding anything to block")
+          case PhpScopeElement(node) =>
+            node match {
+              case x: NewMethod => println(x.name); println(x.fullName)
+              case x            =>
+            }
+            println(s"Not adding anything, currently in ${node.getClass}")
           // do nothing
         }
         local

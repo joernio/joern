@@ -82,6 +82,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         |}
         |""".stripMargin)
 
+    cpg.method.name("foo").dotAst.l.foreach(println)
+
     inside(cpg.method.name("foo").body.astChildren.l) { case List(tmpLocal: Local, constructorBlock: Block) =>
       tmpLocal.name shouldBe "foo@tmp-0"
       tmpLocal.code shouldBe "$foo@tmp-0"

@@ -440,7 +440,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
       case _: PhpVariadicPlaceholder =>
         val identifier = identifierNode(arg, "...", "...", TypeConstants.VariadicPlaceholder)
-        Ast(identifier)
+        val local      = handleVariableOccurrence(arg, "...")
+        Ast(identifier).withRefEdge(identifier, local)
     }
   }
 
@@ -859,11 +860,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         (Option(ast), name)
     }
 
-    val block = blockNode(expr, "", Defines.Any)
-    scope.pushNewScope(block)
-
     val tmpIdentifier = getTmpIdentifier(expr, Option(className))
-//    val local = handleVariableOccurrence(expr, tmpIdentifier.name)
+    val local         = handleVariableOccurrence(expr, tmpIdentifier.name)
 
     // Alloc assign
     val allocCode       = s"$className.<alloc>()"
@@ -871,8 +869,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val allocAst        = callAst(allocNode, base = maybeNameAst)
     val allocAssignCode = s"${tmpIdentifier.code} = ${allocAst.rootCodeOrEmpty}"
     val allocAssignNode = operatorCallNode(expr, allocAssignCode, Operators.assignment, Option(className))
-//    val allocAssignAst  = callAst(allocAssignNode, Ast(tmpIdentifier).withRefEdge(tmpIdentifier, local) :: allocAst :: Nil)
-    val allocAssignAst = callAst(allocAssignNode, Ast(tmpIdentifier) :: allocAst :: Nil)
+    val allocAssignAst =
+      callAst(allocAssignNode, Ast(tmpIdentifier).withRefEdge(tmpIdentifier, local) :: allocAst :: Nil)
 
     // Init node
     val initArgs      = expr.args.map(astForCallArg)
@@ -888,16 +886,16 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       Some(initSignature),
       Some(Defines.Any)
     )
-    val tmpCopy = tmpIdentifier.copy
-//    val initReceiver = Ast(tmpCopy).withRefEdge(tmpCopy, local)
-    val initReceiver = Ast(tmpCopy)
+    val tmpCopy      = tmpIdentifier.copy
+    val initReceiver = Ast(tmpCopy).withRefEdge(tmpCopy, local)
     val initCallAst  = callAst(initCallNode, initArgs, base = Option(initReceiver))
 
     // Return identifier
-    val returnTmpCopy = tmpIdentifier.copy
-//    val returnIdentifierAst = Ast(returnTmpCopy).withRefEdge(returnTmpCopy, local)
-    val returnIdentifierAst = Ast(returnTmpCopy)
-    scope.popScope()
+    val returnTmpCopy       = tmpIdentifier.copy
+    val returnIdentifierAst = Ast(returnTmpCopy).withRefEdge(returnTmpCopy, local)
+
+    val block = blockNode(expr, "", Defines.Any)
+
     Ast(block)
       .withChild(allocAssignAst)
       .withChild(initCallAst)
