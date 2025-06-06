@@ -61,14 +61,14 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
           .orElse(getTypeDeclPrefix)
 
         val nameWithClass = List(className, Some(methodName)).flatten.mkString(MethodDelimiter)
-        prependNamespacePrefix(nameWithClass)
+        prependNamespacePrefix(nameWithClass, finalDelimiter = MethodDelimiter)
     }
   }
 
-  protected def prependNamespacePrefix(name: String): String = {
+  protected def prependNamespacePrefix(name: String, finalDelimiter: String = NamespaceDelimiter): String = {
     scope.getEnclosingNamespaceNames.filterNot(_ == NamespaceTraversal.globalNamespaceName) match {
       case Nil   => name
-      case names => names.appended(name).mkString(NamespaceDelimiter)
+      case names => s"${names.mkString(NamespaceDelimiter)}$finalDelimiter$name"
     }
   }
 

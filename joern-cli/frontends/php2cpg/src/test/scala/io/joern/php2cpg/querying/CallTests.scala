@@ -224,10 +224,27 @@ class CallTests extends PhpCode2CpgFixture {
         |Foo::bar();
         |""".stripMargin)
 
-    cpg.method.name("foo").call.name("bar").methodFullName.l shouldBe List("Foo<metaclass>.bar")
+    cpg.method.name("foo").call.name("bar").methodFullName.l shouldBe List(s"Foo${Domain.MetaTypeDeclExtension}.bar")
     cpg.method.name("foz").call.name("boz").methodFullName.l shouldBe List(
-      "Foo<metaclass>.foo.anon-class-0<metaclass>.boz"
+      s"Foo<metaclass>.foo.anon-class-0${Domain.MetaTypeDeclExtension}.boz"
     )
+  }
+
+  "a static call in a namespace should have a full name including the namespace path" in {
+    val cpg = code("""<?php
+        |
+        |namespace Foo\Bar {
+        |
+        | function baz() {}
+        |
+        | baz()
+        |
+        |}
+        |
+        |>
+        |""".stripMargin)
+
+    cpg.call.nameExact("baz").methodFullName.l shouldBe List(s"Foo.Bar.baz")
   }
 
   "static call in a dynamic function" in {
@@ -248,7 +265,9 @@ class CallTests extends PhpCode2CpgFixture {
          |  private static function bar() {}
          |}
          |""".stripMargin)
-    cpg.method.name("foz").call.name("boz").methodFullName.l shouldBe List("Foo.foo.anon-class-0<metaclass>.boz")
+    cpg.method.name("foz").call.name("boz").methodFullName.l shouldBe List(
+      s"Foo.foo.anon-class-0${Domain.MetaTypeDeclExtension}.boz"
+    )
   }
 
   "a chained call from an external namespace should have normalized '.' method delimiters" in {

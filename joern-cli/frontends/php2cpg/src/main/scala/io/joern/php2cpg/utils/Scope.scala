@@ -213,6 +213,21 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
       .foreach(hit => importedSymbols = importedSymbols + (name -> hit))
   }
 
+  /** Declares that the following function declaration has been defined and should now be considered in scope and
+    * resolvable by its name.
+    *
+    * @param name
+    *   the function name.
+    * @param fullName
+    *   the function full name.
+    */
+  def useFunctionDecl(name: String, fullName: String): Unit = {
+    summary
+      .get(fullName)
+      .flatMap(_.sorted.headOption)
+      .foreach(hit => importedSymbols = importedSymbols + (name -> hit))
+  }
+
   /** Attempts to resolve a simple symbol.
     *
     * Note: This will be extended to notify the caller if this identifier is instead a local variable.
