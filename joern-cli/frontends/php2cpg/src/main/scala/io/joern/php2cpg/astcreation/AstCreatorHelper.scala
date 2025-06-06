@@ -1,17 +1,16 @@
 package io.joern.php2cpg.astcreation
 
-import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants, operatorSymbols}
+import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
 import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*
+import io.joern.php2cpg.passes.SymbolSummaryPass.PhpFunction
 import io.joern.x2cpg.Defines.UnresolvedNamespace
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.{NewIdentifier, NewLiteral, NewLocal, NewNamespaceBlock}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewIdentifier, NewLiteral, NewNamespaceBlock}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import java.nio.charset.StandardCharsets
-import scala.io.Source
 
 trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -61,14 +60,14 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
           .orElse(getTypeDeclPrefix)
 
         val nameWithClass = List(className, Some(methodName)).flatten.mkString(MethodDelimiter)
-        prependNamespacePrefix(nameWithClass, finalDelimiter = MethodDelimiter)
+        prependNamespacePrefix(nameWithClass)
     }
   }
 
-  protected def prependNamespacePrefix(name: String, finalDelimiter: String = NamespaceDelimiter): String = {
+  protected def prependNamespacePrefix(name: String): String = {
     scope.getEnclosingNamespaceNames.filterNot(_ == NamespaceTraversal.globalNamespaceName) match {
       case Nil   => name
-      case names => s"${names.mkString(NamespaceDelimiter)}$finalDelimiter$name"
+      case names => names.appended(name).mkString(NamespaceDelimiter)
     }
   }
 
@@ -133,7 +132,8 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
   }
 
   protected def getMfn(call: PhpCallExpr, name: String): String = {
-    lazy val default = s"$UnresolvedNamespace$MethodDelimiter$name"
+    lazy val default               = s"$UnresolvedNamespace$MethodDelimiter$name"
+    lazy val maybeResolvedFunction = scope.resolveIdentifier(name).filter(_.isInstanceOf[PhpFunction])
     call.target match {
       case Some(nameExpr: PhpNameExpr) if call.isStatic =>
         // Static method call with a simple receiver
@@ -143,10 +143,12 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
       case Some(_) =>
         // As soon as we have a dynamic component to the call, we can't truly define a method full name
         default
+      // Function call resolved as either defined in current script or by import
+      case None if maybeResolvedFunction.isDefined      => maybeResolvedFunction.get.name
       case None if PhpBuiltins.FuncNames.contains(name) =>
         // No signature/namespace for MFN for builtin functions to ensure stable names as type info improves.
         name
-      // Function call
+      // Assume name-space local function call
       case None =>
         composeMethodFullName(name, call.isStatic)
     }

@@ -244,7 +244,7 @@ class CallTests extends PhpCode2CpgFixture {
         |>
         |""".stripMargin)
 
-    cpg.call.nameExact("baz").methodFullName.l shouldBe List(s"Foo.Bar.baz")
+    cpg.call.nameExact("baz").methodFullName.l shouldBe List(s"Foo\\Bar\\baz")
   }
 
   "static call in a dynamic function" in {
