@@ -56,11 +56,9 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
       case Some(importedMethod)                                         => importedMethod.name
       case None if methodName == NamespaceTraversal.globalNamespaceName => globalNamespace.fullName
       case None =>
-        val className = if (appendMetaTypeDeclExt) {
-          getTypeDeclPrefix.map(name => s"$name$MetaTypeDeclExtension")
-        } else {
-          getTypeDeclPrefix
-        }
+        val className = Option
+          .when(appendMetaTypeDeclExt)(getTypeDeclPrefix.map(name => s"$name$MetaTypeDeclExtension").orNull)
+          .orElse(getTypeDeclPrefix)
 
         val nameWithClass = List(className, Some(methodName)).flatten.mkString(MethodDelimiter)
         prependNamespacePrefix(nameWithClass)
@@ -152,17 +150,6 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
       case None =>
         composeMethodFullName(name, call.isStatic)
     }
-  }
-
-  private def composeStaticMethodFullName(call: PhpCallExpr, name: String): String = {
-
-    /** The code property may contain "?", "::", or "->", so this needs to be replaced before composing a full name.
-      */
-    val callPrefix = codeForStaticMethodCall(call, name)
-      .filterNot(c => c == '?' || c == ' ')
-      .replace(StaticMethodDelimiter, MethodDelimiter)
-      .replace(InstanceMethodDelimiter, MethodDelimiter)
-    s"$callPrefix$MethodDelimiter$name"
   }
 
   protected def isBuiltinFunc(name: String): Boolean = PhpBuiltins.FuncNames.contains(name)

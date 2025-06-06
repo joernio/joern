@@ -59,6 +59,18 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val name      = getCallName(call, nameAst)
     val arguments = call.args.map(astForCallArg)
 
+    /*
+     * A receiver only makes sense if one can track the receiver back to some sort of runtime type information. In the
+     * case of a normal top-level call like foo() that is not possible. There is no corresponding foo identifier which
+     * one could assign another function to. The only uncertainty in such a call is whether this is a foo in the global
+     * namespace or from the namespace surrounding the call-site. But this we cannot decide without knowing which php
+     * files are loaded. In terms of lambdas, they will be assigned to a variable which always begins with `$`.
+     *
+     * This is why we use pre-parse summary idea where we check which functions exist in which namespaces and make a
+     * lookup in it to figure out whether a foo call-site needs to have a global method full name or one from the
+     * current namespace. The `scope` object then delegates what has been defined or imported to determine calls in
+     * scope.
+     */
     call.target match {
       case Some(target: (PhpPropertyFetchExpr | PhpCallExpr)) => astForChainedCall(call, name, target)
       case None if scope.isTopLevel || isBuiltinFunc(name)    => astForStaticCall(call, name, arguments)
