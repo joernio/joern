@@ -1077,7 +1077,6 @@ class ControlStructureTests extends PhpCode2CpgFixture {
     val cpg = code("""<?php
         |foreach($GLOBALS as $x) {};
         |""".stripMargin)
-
     cpg.all.collectAll[Identifier].filter(node => Try(node.astParent).isFailure).toList shouldBe Nil
   }
 

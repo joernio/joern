@@ -7,12 +7,13 @@ import io.joern.php2cpg.utils.PhpScopeElement
 import io.joern.x2cpg.Defines.UnresolvedNamespace
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, ModifierTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewBlock,
   NewIdentifier,
   NewLiteral,
   NewMethod,
+  NewModifier,
   NewNamespaceBlock,
   NewNode
 }
@@ -156,16 +157,29 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
         val local     = localNode(expr, name, localCode, Defines.Any)
         scope.addToScope(name, local) match {
           case PhpScopeElement(node: NewBlock) => diffGraph.addEdge(node, local, EdgeTypes.AST)
-          case PhpScopeElement(node) =>
-            node match {
-              case x: NewMethod => println(x.name); println(x.fullName)
-              case x            =>
-            }
-            println(s"Not adding anything, currently in ${node.getClass}")
-          // do nothing
+          case PhpScopeElement(node)           => // do nothing
         }
         local
       case Some(local) => local
     }
+  }
+
+  protected def staticInitMethodAst(
+    node: PhpNode,
+    methodNode: NewMethod,
+    body: Ast,
+    signature: Option[String],
+    returnType: String,
+    fileName: Option[String]
+  ): Ast = {
+    if (signature.isDefined) {
+      methodNode.signature(signature.get)
+    }
+    if (fileName.isDefined) {
+      methodNode.filename(fileName.get)
+    }
+    val staticModifier = NewModifier().modifierType(ModifierTypes.STATIC)
+    val methodReturn   = methodReturnNode(node, returnType)
+    methodAst(methodNode, Nil, body, methodReturn, List(staticModifier))
   }
 }

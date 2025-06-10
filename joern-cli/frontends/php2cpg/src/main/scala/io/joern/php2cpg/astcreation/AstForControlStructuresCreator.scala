@@ -282,15 +282,6 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     scope.popScope()
 
     Ast(block).withChildren(keyAssignOption.toList :+ valueAssign)
-
-//    keyAssignOption match {
-//      case Some(keyAssign) =>
-//        Ast(block)
-//          .withChild(keyAssign)
-//          .withChild(valueAssign)
-//      case None =>
-//        valueAssign
-//    }
   }
 
   protected def astForThrow(expr: PhpThrowExpr): Ast = {

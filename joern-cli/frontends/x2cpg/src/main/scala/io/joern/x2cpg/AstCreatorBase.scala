@@ -102,25 +102,6 @@ abstract class AstCreatorBase[Node, NodeProcessor](filename: String)(implicit wi
 
   def staticInitMethodAst(
     node: Node,
-    methodNode: NewMethod,
-    body: Ast,
-    signature: Option[String],
-    returnType: String,
-    fileName: Option[String]
-  ): Ast = {
-    if (signature.isDefined) {
-      methodNode.signature(signature.get)
-    }
-    if (fileName.isDefined) {
-      methodNode.filename(fileName.get)
-    }
-    val staticModifier = NewModifier().modifierType(ModifierTypes.STATIC)
-    val methodReturn   = methodReturnNode(node, returnType)
-    methodAst(methodNode, Nil, body, methodReturn, List(staticModifier))
-  }
-
-  def staticInitMethodAst(
-    node: Node,
     initAsts: List[Ast],
     fullName: String,
     signature: Option[String],
