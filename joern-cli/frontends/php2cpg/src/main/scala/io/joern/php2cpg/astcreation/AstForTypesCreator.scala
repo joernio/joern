@@ -227,7 +227,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     // This needs to be carried over for enums
     val staticConsts = if (stmt.classLikeType == ClassLikeTypes.Enum) {
-      scope.getConstAndStaticInits2
+      scope.getConstAndStaticInits
     } else {
       List.empty
     }
