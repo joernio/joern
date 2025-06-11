@@ -150,14 +150,26 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     }
   }
 
-  protected def handleVariableOccurrence(expr: PhpNode, name: String): NewNode = {
+  protected def handleVariableOccurrence(
+    expr: PhpNode,
+    name: String,
+    code: Option[String] = None,
+    tfn: Option[String] = None,
+    modifiers: List[String] = List.empty
+  ): NewNode = {
     scope.lookupVariable(name) match {
       case None =>
         val localCode = if name == NameConstants.Self then NameConstants.Self else s"$$$name"
-        val local     = localNode(expr, name, localCode, Defines.Any)
+        val local     = localNode(expr, name, code.getOrElse(localCode), tfn.getOrElse(Defines.Any))
+
+        modifiers.foreach { modifier =>
+          val modNode = modifierNode(expr, modifier)
+          diffGraph.addEdge(local, modNode, EdgeTypes.AST)
+        }
+
         scope.addToScope(name, local) match {
           case PhpScopeElement(node: NewBlock) => diffGraph.addEdge(node, local, EdgeTypes.AST)
-          case PhpScopeElement(node)           => // do nothing
+          case _                               => // do nothing
         }
         local
       case Some(local) => local
