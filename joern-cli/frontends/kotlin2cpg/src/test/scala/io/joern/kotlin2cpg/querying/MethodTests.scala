@@ -6,6 +6,33 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Return}
 import io.shiftleft.semanticcpg.language.*
 
 class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
+  "CPG for code with UTF8 symbols" should {
+    val cpg = code("""
+        |fun double(x: Int): Int {
+        |  // ✅ This is a comment with UTF8.
+        |  return x * 2
+        |}
+        |
+        |fun main(args : Array<String>) {
+        |  println("The double of 2 is: " + double(2))
+        |}
+        |""".stripMargin)
+      .withConfig(Config().withDisableFileContent(false))
+
+    "should have the correct offsets set for the double method" in {
+      cpg.method.name("double").sourceCode.l shouldBe List("""fun double(x: Int): Int {
+          |  // ✅ This is a comment with UTF8.
+          |  return x * 2
+          |}""".stripMargin)
+    }
+
+    "should have the correct offsets set for the main method" in {
+      cpg.method.name("main").sourceCode.l shouldBe List("""fun main(args : Array<String>) {
+          |  println("The double of 2 is: " + double(2))
+          |}""".stripMargin)
+    }
+  }
+
   "CPG for code with simple method defined at package-level" should {
     val cpg = code("""
        |fun double(x: Int): Int {

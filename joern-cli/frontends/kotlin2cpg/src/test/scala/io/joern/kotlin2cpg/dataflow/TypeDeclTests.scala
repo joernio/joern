@@ -8,6 +8,41 @@ import io.shiftleft.semanticcpg.language.*
 class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
   implicit val resolver: ICallResolver = NoResolve
 
+  "CPG for code with class definition with UTF8 characters" should {
+    val cpg = code("""
+        |class AClass(var x: String) {
+        |    // ✅ This is a comment with UTF8.
+        |    fun printX() = println(this.x)
+        |}
+        |fun f1(p: String) {
+        |    val aClass = AClass(p)
+        |    aClass.printX()
+        |}
+        |fun main() = f1("SOMETHING")
+        |""".stripMargin)
+      .withConfig(Config().withDisableFileContent(false))
+
+    "should have the correct offsets set for the ACLass type decl" in {
+      cpg.typeDecl.name("AClass").sourceCode.l shouldBe List("""class AClass(var x: String) {
+          |    // ✅ This is a comment with UTF8.
+          |    fun printX() = println(this.x)
+          |}""".stripMargin)
+    }
+
+    "should have the correct offsets set for the <global> type decl" in {
+      cpg.typeDecl.nameExact("<global>").sourceCode.l shouldBe List("""
+          |class AClass(var x: String) {
+          |    // ✅ This is a comment with UTF8.
+          |    fun printX() = println(this.x)
+          |}
+          |fun f1(p: String) {
+          |    val aClass = AClass(p)
+          |    aClass.printX()
+          |}
+          |fun main() = f1("SOMETHING")
+          |""".stripMargin)
+    }
+  }
   "CPG for code with class definition with member defined inside ctor" should {
     val cpg = code("""
         |class AClass(var x: String) {
