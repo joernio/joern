@@ -36,16 +36,23 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     localsForUses.foreach { local =>
       val closureBindingId = s"$relativeFileName:$methodName:${local.name}"
       local.closureBindingId(closureBindingId)
-      scope.addToScope(local.name, local)
 
       val closureBindingNode = NewClosureBinding()
         .closureBindingId(closureBindingId)
         .closureOriginalName(local.name)
         .evaluationStrategy(EvaluationStrategies.BY_SHARING)
 
-      // The ref edge to the captured local is added in the ClosureRefPass
+      // Check if there is a local outside the closure for capturing
+      scope.lookupVariable(local.name) match {
+        case Some(refLocal) =>
+          diffGraph.addEdge(closureBindingNode, refLocal, EdgeTypes.REF)
+        case _ => // do nothing
+      }
+
+      scope.addToScope(local.name, local)
       diffGraph.addNode(closureBindingNode)
       diffGraph.addEdge(methodRef, closureBindingNode, EdgeTypes.CAPTURE)
+
     }
 
     // Create method for closure
@@ -70,6 +77,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case Nil    => ""
       case locals => s" use(${locals.map(_.code).mkString(", ")})"
     }
+
     methodAst.root.collect { case method: NewMethod => method }.foreach { methodNode =>
       methodNode.code(methodNode.code ++ usesCode)
     }

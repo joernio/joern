@@ -171,6 +171,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
           case PhpScopeElement(node: NewBlock) => diffGraph.addEdge(node, local, EdgeTypes.AST)
           case _                               => // do nothing
         }
+
         local
       case Some(local) => local
     }
