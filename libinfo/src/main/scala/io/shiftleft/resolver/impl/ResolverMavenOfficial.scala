@@ -16,7 +16,6 @@ import java.nio.file.Path
 import scala.jdk.CollectionConverters.*
 import javax.inject.Named
 import javax.inject.Singleton
-import org.codehaus.plexus.component.annotations.Component
 import org.eclipse.aether.RepositorySystemSession
 import org.eclipse.aether.artifact.Artifact
 import org.eclipse.aether.metadata.Metadata
@@ -46,7 +45,6 @@ object ResolverMavenOfficial {
   
   @Singleton
   @Named("MyRemoteRepoFilterSource")
-  @Component(role = classOf[MyRemoteRepoFilterSource], hint = "default")
   final class MyRemoteRepoFilterSource extends RemoteRepositoryFilterSource {
     override def getRemoteRepositoryFilter(session: RepositorySystemSession) = new MyRemoteRepoFilter
   }
