@@ -174,8 +174,9 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
 
     // Initializer asts
     // - Iterator assign
-    val iterValue         = astForExpr(stmt.iterExpr)
-    val iteratorAssignAst = simpleAssignAst(stmt, Ast(iterIdentifier).withRefEdge(iterIdentifier, localN), iterValue)
+    val iterValue          = astForExpr(stmt.iterExpr)
+    val iterAssignIdentAst = astForIdentifierWithLocalRef(iterIdentifier, localN)
+    val iteratorAssignAst  = simpleAssignAst(stmt, iterAssignIdentAst, iterValue)
 
     // - Assigned item assign
     val itemInitAst = getItemAssignAstForForeach(stmt, iterIdentifier.copy)
@@ -191,10 +192,9 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     val conditionAst = callAst(notIsNull, isNullAst :: Nil)
 
     // Update asts
-    val nextIterIdentCopy = iterIdentifier.copy
-    val nextIterIdent     = Ast(nextIterIdentCopy).withRefEdge(nextIterIdentCopy, localN)
-    val nextSignature     = "void()"
-    val nextCallCode      = s"${nextIterIdent.rootCodeOrEmpty}${InstanceMethodDelimiter}next()"
+    val nextIterIdent = astForIdentifierWithLocalRef(iterIdentifier.copy, localN)
+    val nextSignature = "void()"
+    val nextCallCode  = s"${nextIterIdent.rootCodeOrEmpty}${InstanceMethodDelimiter}next()"
     val nextCallNode = callNode(
       stmt,
       nextCallCode,
@@ -232,7 +232,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     val localN = handleVariableOccurrence(stmt, iteratorIdentifier.name)
     // create assignment for value-part
     val valueAssign = {
-      val iteratorIdentifierAst = Ast(iteratorIdentifier).withRefEdge(iteratorIdentifier, localN)
+      val iteratorIdentifierAst = astForIdentifierWithLocalRef(iteratorIdentifier, localN)
       val currentCallSignature  = s"$UnresolvedSignature(0)"
       val currentCallCode       = s"${iteratorIdentifierAst.rootCodeOrEmpty}${InstanceMethodDelimiter}current()"
       // `current` function is used to get the current element of given array
@@ -260,10 +260,9 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
 
     // try to create assignment for key-part
     val keyAssignOption = stmt.keyVar.map(keyVar =>
-      val iteratorIdentifierCopyKey = iteratorIdentifier.copy
-      val iteratorIdentifierAst     = Ast(iteratorIdentifierCopyKey).withRefEdge(iteratorIdentifierCopyKey, localN)
-      val keyCallSignature          = s"$UnresolvedSignature(0)"
-      val keyCallCode               = s"${iteratorIdentifierAst.rootCodeOrEmpty}${InstanceMethodDelimiter}key()"
+      val iteratorIdentifierAst = astForIdentifierWithLocalRef(iteratorIdentifier.copy, localN)
+      val keyCallSignature      = s"$UnresolvedSignature(0)"
+      val keyCallCode           = s"${iteratorIdentifierAst.rootCodeOrEmpty}${InstanceMethodDelimiter}key()"
       // `key` function is used to get the key of the current element
       // see https://www.php.net/manual/en/function.key.php & https://www.php.net/manual/en/iterator.key.php
       val keyCallNode = callNode(

@@ -226,7 +226,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       val fieldIdentifier = fieldIdentifierNode(originNode, memberNode.name, memberNode.name)
       val code = s"${NameConstants.Self}$StaticMethodDelimiter${memberNode.code.replaceAll("(static|case|const) ", "")}"
       val fieldAccessNode = operatorCallNode(originNode, code, Operators.fieldAccess, None)
-      val selfIdentAst    = Ast(selfIdentifier).withRefEdge(selfIdentifier, selfLocal)
+      val selfIdentAst    = astForIdentifierWithLocalRef(selfIdentifier, selfLocal)
       val callArgs        = List(selfIdentAst, Ast(fieldIdentifier))
       callAst(fieldAccessNode, callArgs)
     }
@@ -441,7 +441,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case _: PhpVariadicPlaceholder =>
         val identifier = identifierNode(arg, "...", "...", TypeConstants.VariadicPlaceholder)
         val local      = handleVariableOccurrence(arg, "...")
-        Ast(identifier).withRefEdge(identifier, local)
+        astForIdentifierWithLocalRef(identifier, local)
     }
   }
 
@@ -605,7 +605,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     def newTmpIdentifier: Ast = {
       val identifier = identifierNode(expr, tmpName, s"$$$tmpName", TypeConstants.Array)
-      Ast(identifier).withRefEdge(identifier, local)
+      astForIdentifierWithLocalRef(identifier, local)
     }
 
     val tmpIdentifierAssignNode = {
@@ -870,7 +870,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val allocAssignCode = s"${tmpIdentifier.code} = ${allocAst.rootCodeOrEmpty}"
     val allocAssignNode = operatorCallNode(expr, allocAssignCode, Operators.assignment, Option(className))
     val allocAssignAst =
-      callAst(allocAssignNode, Ast(tmpIdentifier).withRefEdge(tmpIdentifier, local) :: allocAst :: Nil)
+      callAst(allocAssignNode, astForIdentifierWithLocalRef(tmpIdentifier, local) :: allocAst :: Nil)
 
     // Init node
     val initArgs      = expr.args.map(astForCallArg)
@@ -886,13 +886,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       Some(initSignature),
       Some(Defines.Any)
     )
-    val tmpCopy      = tmpIdentifier.copy
-    val initReceiver = Ast(tmpCopy).withRefEdge(tmpCopy, local)
+    val initReceiver = astForIdentifierWithLocalRef(tmpIdentifier.copy, local)
     val initCallAst  = callAst(initCallNode, initArgs, base = Option(initReceiver))
 
     // Return identifier
-    val returnTmpCopy       = tmpIdentifier.copy
-    val returnIdentifierAst = Ast(returnTmpCopy).withRefEdge(returnTmpCopy, local)
+    val returnIdentifierAst = astForIdentifierWithLocalRef(tmpIdentifier.copy, local)
 
     val block = blockNode(expr, "", Defines.Any)
 

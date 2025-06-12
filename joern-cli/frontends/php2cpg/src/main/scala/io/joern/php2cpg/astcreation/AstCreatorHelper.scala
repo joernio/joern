@@ -12,6 +12,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewBlock,
   NewIdentifier,
   NewLiteral,
+  NewLocal,
   NewMethod,
   NewModifier,
   NewNamespaceBlock,
@@ -195,4 +196,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     val methodReturn   = methodReturnNode(node, returnType)
     methodAst(methodNode, Nil, body, methodReturn, List(staticModifier))
   }
+
+  protected def astForIdentifierWithLocalRef(ident: NewIdentifier, refLocal: NewNode): Ast =
+    Ast(ident).withRefEdge(ident, refLocal)
 }
