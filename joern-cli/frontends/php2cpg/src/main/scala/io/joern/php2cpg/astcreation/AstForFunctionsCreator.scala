@@ -42,7 +42,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         .closureOriginalName(local.name)
         .evaluationStrategy(EvaluationStrategies.BY_SHARING)
 
-      // Check if there is a local outside the closure for capturing
       scope.lookupVariable(local.name) match {
         case Some(refLocal) =>
           diffGraph.addEdge(closureBindingNode, refLocal, EdgeTypes.REF)
