@@ -1,5 +1,6 @@
 package io.joern.c2cpg.macros
 
+import io.joern.c2cpg.Config
 import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
@@ -21,7 +22,7 @@ class MacroHandlingTests extends C2CpgSuite {
        |  A_MACRO(*y, 2);
        |  return 10 * y;
        |}
-    """.stripMargin)
+    """.stripMargin).withConfig(Config().withDisableFileContent(false))
 
     "should correctly expand macro" in {
       val List(x) = cpg.method("foo").call.nameExact(Operators.assignment).l
@@ -53,10 +54,16 @@ class MacroHandlingTests extends C2CpgSuite {
 
     "should create a METHOD for the expanded macro" in {
       val List(m) = cpg.method.name("A_MACRO").l
-      m.fullName.endsWith("A_MACRO:2") shouldBe true
-      m.filename.endsWith(".c") shouldBe true
+      m.fullName shouldBe "Test0.c:A_MACRO:ANY(2)"
+      m.filename shouldBe "Test0.c"
+      m.code shouldBe "#define A_MACRO(x,c) (x = 10 + c)"
       m.lineNumber shouldBe Option(2)
       m.lineNumberEnd shouldBe Option(2)
+      m.columnNumber shouldBe Option(1)
+      m.columnNumberEnd shouldBe Option(33)
+      m.offset shouldBe Some(1)
+      m.offsetEnd shouldBe Some(34)
+      m.content shouldBe Some("#define A_MACRO(x,c) (x = 10 + c)")
       val List(param1, param2) = m.parameter.l.sortBy(_.order)
       param1.name shouldBe "p1"
       param2.name shouldBe "p2"
@@ -151,11 +158,12 @@ class MacroHandlingTests extends C2CpgSuite {
       val List(call1) = cpg.method("foo").call.nameExact("A_MACRO").l
       call1.code shouldBe "A_MACRO(dst, ptr, 1)"
       call1.name shouldBe "A_MACRO"
-      call1.methodFullName.endsWith("A_MACRO:3") shouldBe true
+      call1.methodFullName shouldBe "Test0.c:A_MACRO:ANY(3)"
       call1.lineNumber shouldBe Option(22)
       call1.columnNumber shouldBe Option(1)
       call1.typeFullName shouldBe "ANY"
       call1.dispatchType shouldBe DispatchTypes.INLINED
+      call1.code shouldBe "A_MACRO(dst, ptr, 1)"
 
       val List(arg1, arg2, arg3) = call1.argument.l.sortBy(_.order)
       arg1.code shouldBe "dst"
@@ -165,7 +173,7 @@ class MacroHandlingTests extends C2CpgSuite {
       val List(call2) = cpg.method("foo").call.nameExact("A_MACRO_2").l
       call2.code shouldBe "A_MACRO_2()"
       call2.name shouldBe "A_MACRO_2"
-      call2.methodFullName.endsWith("A_MACRO_2:0") shouldBe true
+      call2.methodFullName shouldBe "Test0.c:A_MACRO_2:ANY(0)"
       call2.lineNumber shouldBe Option(24)
       call2.columnNumber shouldBe Option(1)
       call2.typeFullName shouldBe "ANY"
@@ -355,6 +363,20 @@ class MacroHandlingTests extends C2CpgSuite {
           |}
           |""".stripMargin)
       cpg.local.nameExact("foo").size shouldBe 1
+    }
+  }
+
+  "MacroHandlingTests11" should {
+    "only have exactly one method stubbed" in {
+      val cpg = code("""
+          |#define FOO() (long)va_arg(ap, int)
+          |void func(void) {
+          |  int foo;
+          |  foo = FOO();
+          |  foo = FOO();
+          |}
+          |""".stripMargin)
+      cpg.method.nameExact("FOO").size shouldBe 1
     }
   }
 }
