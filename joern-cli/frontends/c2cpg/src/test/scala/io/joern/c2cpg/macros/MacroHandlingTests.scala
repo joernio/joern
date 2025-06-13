@@ -365,6 +365,20 @@ class MacroHandlingTests extends C2CpgSuite {
       cpg.local.nameExact("foo").size shouldBe 1
     }
   }
+
+  "MacroHandlingTests11" should {
+    "only have exactly one method stubbed" in {
+      val cpg = code("""
+          |#define FOO() (long)va_arg(ap, int)
+          |void func(void) {
+          |  int foo;
+          |  foo = FOO();
+          |  foo = FOO();
+          |}
+          |""".stripMargin)
+      cpg.method.nameExact("FOO").size shouldBe 1
+    }
+  }
 }
 
 class CfgMacroTests extends DataFlowCodeToCpgSuite {

@@ -1,8 +1,8 @@
 package io.joern.c2cpg.astcreation
 
+import io.joern.c2cpg.passes.FunctionDeclNodePass
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.passes.base.MethodStubCreator
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.eclipse.cdt.core.dom.ast.{
@@ -109,7 +109,7 @@ trait MacroHandler { this: AstCreator =>
 
     // we stub the corresponding method manually because we want different line/column information
     // (call information from the actual AST node but the method gets the IASTPreprocessorMacroDefinition information)
-    createMacroMethodStub(macroDefName, macroDefFullName, signature, fileName_, argAsts.size, macroDef)
+    createMacroMethodStub(macroDefName, macroDefFullName, signature, typeFullName, fileName_, argAsts.size, macroDef)
 
     callAst(callNode_, argAsts)
   }
@@ -118,6 +118,7 @@ trait MacroHandler { this: AstCreator =>
     name: String,
     fullName: String,
     signature: String,
+    typeFullName: String,
     fileName: String,
     parameterCount: Int,
     macroDef: IASTPreprocessorMacroDefinition
@@ -134,28 +135,40 @@ trait MacroHandler { this: AstCreator =>
     val columnNumber    = column(macroDef)
     val lineNumberEnd   = lineEnd(macroDef)
     val columnNumberEnd = columnEnd(macroDef)
-    val offsets         = offset(macroDef)
+    val offset_         = offset(macroDef)
 
-    val methodStub = MethodStubCreator.createMethodStub(
-      name,
-      fullName,
-      signature,
-      DispatchTypes.INLINED,
-      parameterCount,
-      dstGraph = diffGraph,
-      astParentType = astParentType,
-      astParentFullName = astParentFullName
-    )
-    methodStub
-      .lineNumber(lineNumber)
-      .lineNumberEnd(lineNumberEnd)
-      .columnNumber(columnNumber)
-      .columnNumberEnd(columnNumberEnd)
-      .code(code_)
-      .filename(fileName)
-    offsets.foreach { case (offset, offsetEnd) =>
-      methodStub.offset(offset).offsetEnd(offsetEnd)
+    val parameter = (1 to parameterCount).map { index =>
+      val nameAndCode = s"p$index"
+      new FunctionDeclNodePass.ParameterInfo(
+        name = nameAndCode,
+        code = nameAndCode,
+        index = index,
+        isVariadic = false,
+        evaluationStrategy = EvaluationStrategies.BY_VALUE,
+        lineNumber = lineNumber,
+        columnNumber = columnNumber,
+        typeFullName = registerType(Defines.Any)
+      )
     }
+
+    val methodInfo = FunctionDeclNodePass.MethodInfo(
+      name = name,
+      code = code_,
+      fileName = filename,
+      returnType = typeFullName,
+      astParentType = astParentType,
+      astParentFullName = astParentFullName,
+      lineNumber = lineNumber,
+      columnNumber = columnNumber,
+      lineNumberEnd = lineNumberEnd,
+      columnNumberEnd = columnNumberEnd,
+      signature = signature,
+      offset = offset_,
+      parameter = parameter,
+      modifier = Nil,
+      isExternal = true
+    )
+    registerMethodDeclaration(fullName, methodInfo)
   }
 
   private def argumentTrees(arguments: List[String], ast: Ast): List[Option[Ast]] = {
