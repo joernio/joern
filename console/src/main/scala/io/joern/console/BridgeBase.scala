@@ -1,14 +1,12 @@
 package io.joern.console
 
-import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.utils.FileUtil
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import org.apache.commons.text.StringEscapeUtils
 import replpp.scripting.ScriptRunner
 
 import java.nio.file.{Files, Path, Paths}
-import scala.collection.mutable
-import scala.jdk.CollectionConverters.*
 import scala.util.Try
 
 case class Config(
@@ -234,7 +232,7 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
 
   protected def buildRunBeforeCode(config: Config): Seq[String] = {
     val builder = Seq.newBuilder[String]
-    builder ++= runBeforeCode
+    builder ++= runBeforeCode.map(_.replace("\"", "\\\""))
     config.cpgToLoad.foreach { cpgFile =>
       val path = cpgFile.toString.replace("\\", "\\\\")
       builder += s"""importCpg("$path")"""
@@ -243,7 +241,7 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
       val path = name.replace("\\", "\\\\")
       builder += s"""openForInputPath("$path")""".stripMargin
     }
-    builder ++= config.runBefore
+    builder ++= config.runBefore.map(_.replace("\"", "\\\""))
     builder.result()
   }
 
