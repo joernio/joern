@@ -230,18 +230,26 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
   /** code that is executed on startup */
   protected def runBeforeCode: Seq[String]
 
+  private def escapeForWindows(s: String) = {
+    if (scala.util.Properties.isWin) {
+      s.replace("\\", "\\\\").replace("\"", "\\\"")
+    } else {
+      s
+    }
+  }
+
   protected def buildRunBeforeCode(config: Config): Seq[String] = {
     val builder = Seq.newBuilder[String]
-    builder ++= runBeforeCode.map(_.replace("\"", "\\\""))
+    builder ++= runBeforeCode.map(escapeForWindows)
     config.cpgToLoad.foreach { cpgFile =>
-      val path = cpgFile.toString.replace("\\", "\\\\")
+      val path = escapeForWindows(cpgFile.toString)
       builder += s"""importCpg("$path")"""
     }
     config.forInputPath.foreach { name =>
-      val path = name.replace("\\", "\\\\")
+      val path = escapeForWindows(name)
       builder += s"""openForInputPath("$path")""".stripMargin
     }
-    builder ++= config.runBefore.map(_.replace("\"", "\\\""))
+    builder ++= config.runBefore.map(escapeForWindows)
     builder.result()
   }
 
