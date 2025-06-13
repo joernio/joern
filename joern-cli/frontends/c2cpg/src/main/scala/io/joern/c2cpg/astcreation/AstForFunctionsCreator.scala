@@ -70,7 +70,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
           offset(funcDecl),
           parameter = parameterNodeInfos ++ variadicParams,
           modifier = modifierFor(funcDecl).map(_.modifierType),
-          false
+          isExternal = false
         )
         registerMethodDeclaration(fullName, methodInfo)
         Ast()
