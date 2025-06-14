@@ -30,7 +30,7 @@ jobs:
       - name: Upgrade all (internal) dependencies
         run: ./updateDependencies.sh --non-interactive
       - run: sbt clean test
-      - run: ./testDistro.sh
+      - run: python ./testDistro.py
       - run: |
           mkdir /tmp/foo
           echo "int foo(int a, int b, int c, int d, int e, int f) {}" > /tmp/foo/foo.c

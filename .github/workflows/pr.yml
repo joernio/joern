@@ -98,6 +98,27 @@ jobs:
       - run: echo "Previous step failed because certain coding quality expectations were violated. Please check the logs."
         if: ${{ failure() }}
 
+  test-distro:
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: sbt
+      - uses: sbt/setup-sbt@v1
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.sbt
+            ~/.coursier
+          key: ${{ runner.os }}-sbt-${{ hashfiles('**/build.sbt') }}
+      - run: python ./testDistro.py
+
   test-scripts:
     runs-on: ubuntu-latest
     steps:
@@ -117,7 +138,6 @@ jobs:
             ~/.sbt
             ~/.coursier
           key: ${{ runner.os }}-sbt-${{ hashfiles('**/build.sbt') }}
-      - run: ./testDistro.sh
       - run: |
           mkdir /tmp/foo
           echo "int foo(int a, int b, int c, int d, int e, int f) {}" > /tmp/foo/foo.c
