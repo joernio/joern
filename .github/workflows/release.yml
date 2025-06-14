@@ -36,8 +36,13 @@ jobs:
         run: rm -rf /home/runner/.cargo
         if: runner.os == 'Linux'
       - run: sbt scalafmtCheck test
-      - run: ./testDistro.sh
-      - run: |
+      - name: Test distribution
+        run: |
+          python -m pip install requests
+          sbt "-Dsbt.log.noformat=true clean joerncli/stage querydb/createDistribution"
+          python -u ./testDistro.py
+      - name: Test schema-extender
+        run: |
           cd joern-cli/target/universal/stage
           ./schema-extender/test.sh
           cd -

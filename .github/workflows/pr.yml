@@ -98,7 +98,38 @@ jobs:
       - run: echo "Previous step failed because certain coding quality expectations were violated. Please check the logs."
         if: ${{ failure() }}
 
-  test-scripts:
+  test-distro:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: sbt
+      - uses: sbt/setup-sbt@v1
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.sbt
+            ~/.coursier
+          key: ${{ runner.os }}-sbt-${{ hashfiles('**/build.sbt') }}
+      - name: Install php
+        if: matrix.os == 'macos-latest'
+        run: brew install php
+      - name: Test distribution
+        run: |
+          python -m pip install requests
+          sbt "-Dsbt.log.noformat=true clean joerncli/stage querydb/createDistribution"
+          python -u ./testDistro.py
+
+  test-schema-extender:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -117,21 +148,8 @@ jobs:
             ~/.sbt
             ~/.coursier
           key: ${{ runner.os }}-sbt-${{ hashfiles('**/build.sbt') }}
-      - run: ./testDistro.sh
-      - run: |
-          mkdir /tmp/foo
-          echo "int foo(int a, int b, int c, int d, int e, int f) {}" > /tmp/foo/foo.c
-          ./joern --src /tmp/foo --run scan
-          ./joern-scan /tmp/foo
-          ./joern-scan --dump
-      - name: Joern Slice Testing
+      - name: Test schema-extender
         run: |
-          mkdir /tmp/slice
-          ./joern-slice data-flow tests/code/javasrc/SliceTest.java -o /tmp/slice/dataflow-slice-javasrc.json
-          echo "checking that the script output contains the content we expect:"
-          ./joern --script "tests/test-dataflow-slice.sc" --param sliceFile=/tmp/slice/dataflow-slice-javasrc.json | grep 'List(boolean b, b, this, s, "MALICIOUS", s, new Foo("MALICIOUS"), s, s, "SAFE", s, b, this, this, b, s, System.out)'
-      - name: SARIF Export Testing
-        run: ./tests/finding-to-sarif-test.sh
-      - run: |
+          sbt joerncli/stage
           cd joern-cli/target/universal/stage
           ./schema-extender/test.sh
