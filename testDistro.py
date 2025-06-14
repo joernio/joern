@@ -4,6 +4,7 @@ import subprocess
 import sys
 import os
 import shutil
+import tempfile
 
 def abs_path(path):
     return os.path.abspath(os.path.realpath(path))
@@ -147,9 +148,8 @@ def querydb_test(script_abs_dir):
             encoding="utf-8"
         )
         query_names = proc.stdout
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError:
         print("Failed to list query names from joern-scan.")
-        print(e.stderr)
         sys.exit(1)
 
     sqli_count = sum(1 for line in query_names.splitlines() if "sql-injection" in line)
@@ -159,6 +159,141 @@ def querydb_test(script_abs_dir):
         sys.exit(1)
 
     print("querydb integration tested successfully.")
+
+def scan_test(script_abs_dir):
+    # Remove workspace directory if it exists
+    workspace_dir = os.path.join(script_abs_dir, "workspace")
+    if os.path.exists(workspace_dir):
+        try:
+            shutil.rmtree(workspace_dir)
+        except Exception as e:
+            print(f"Failed to remove workspace directory: {e}")
+            sys.exit(1)
+
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        foo_path = os.path.join(tmpdirname, "foo")
+        os.makedirs(foo_path, exist_ok=True)
+
+        with open(f"{foo_path}/foo.c", "w") as f:
+            f.write("int foo(int a, int b, int c, int d, int e, int f) {}")
+
+        try:
+            subprocess.run(["joern", "--src", foo_path, "--run", "scan"], check=True, shell=True)
+        except subprocess.CalledProcessError:
+            print("Failed to run scan")
+            sys.exit(1)
+        
+        try:
+            subprocess.run(["joern-scan", foo_path], check=True, shell=True)
+        except subprocess.CalledProcessError:
+            print("Failed to execute joern-scan")
+            sys.exit(1)
+
+        try:
+            subprocess.run(["joern-scan", "--dump"], check=True, shell=True)
+        except subprocess.CalledProcessError:
+            print("Failed to scan and dump from joern-scan")
+            sys.exit(1)
+
+def slice_test(script_abs_dir):
+    # Remove workspace directory if it exists
+    workspace_dir = os.path.join(script_abs_dir, "workspace")
+    if os.path.exists(workspace_dir):
+        try:
+            shutil.rmtree(workspace_dir)
+        except Exception as e:
+            print(f"Failed to remove workspace directory: {e}")
+            sys.exit(1)
+
+    slice_path = os.path.join(script_abs_dir, "workspace/slice")
+    os.makedirs(slice_path, exist_ok=True)
+
+    try:
+        subprocess.run([
+            "joern-slice", 
+            "data-flow", 
+            "./tests/code/javasrc/SliceTest.java", 
+            "-o", 
+            f"{slice_path}/dataflow-slice-javasrc.json"
+        ], check=True, shell=True)
+    except subprocess.CalledProcessError:
+        print("Failed to execute joern-slice")
+        sys.exit(1)
+
+    print("checking that the script output contains the content we expect:")
+
+    result = subprocess.run([
+        "joern", 
+        "--script", 
+        "tests/test-dataflow-slice.sc", 
+        "--param", 
+        f"\"sliceFile={slice_path}/dataflow-slice-javasrc.json\""
+    ], capture_output=True, text=True, shell=True)
+
+    # Search for the expected string in the output
+    expected_string = 'List(boolean b, b, this, s, "MALICIOUS", s, new Foo("MALICIOUS"), s, s, "SAFE", s, b, this, this, b, s, System.out)'
+    if expected_string in result.stdout:
+        print(expected_string)
+    else:
+        print(f"slice did not yield expected output. Got {result.stdout} instead")
+        sys.exit(1)
+
+def sarif_test(script_abs_dir):
+    # Remove workspace directory if it exists
+    workspace_dir = os.path.join(script_abs_dir, "workspace")
+    if os.path.exists(workspace_dir):
+        try:
+            shutil.rmtree(workspace_dir)
+        except Exception as e:
+            print(f"Failed to remove workspace directory: {e}")
+            sys.exit(1)
+
+    sarif_path = os.path.join(script_abs_dir, "workspace/sarif")
+    os.makedirs(sarif_path, exist_ok=True)
+
+    try:
+        subprocess.run(
+            ["joern-scan", os.path.join(script_abs_dir, "tests/code/sarif-test"), "--store"],
+            check=True, shell=True
+        )
+    except subprocess.CalledProcessError:
+        print("Failed to execute joern-scan")
+        sys.exit(1)
+
+    cpg_file = os.path.join(script_abs_dir, "workspace/sarif-test/cpg.bin")
+    out_file = f"{sarif_path}/test.sarif"
+
+    try:
+        subprocess.run(
+            [
+                "joern",
+                "--script", os.path.join(script_abs_dir, "tests/test-sarif.sc"),
+                "--param", f"\"cpgFile={cpg_file}\"",
+                "--param", f"\"outFile={out_file}\""
+            ],
+            check=True, shell=True
+        )
+    except subprocess.CalledProcessError:
+        print("Failed to execute joern sarif script")
+        sys.exit(1)
+
+    # Post SARIF file for validation
+    with open(out_file, "rb") as f:
+        files = {
+            "postedFiles": ("test.sarif", f, "application/octet-stream")
+        }
+        response = requests.post(
+            "https://sarifweb.azurewebsites.net/Validation/ValidateFiles",
+            files=files
+        )
+    response.raise_for_status()
+    result = response.json()
+    exit_code = int(result.get("exitCode", 1))
+
+    print(f"SARIF Validation Exit Code: {exit_code}")
+    if exit_code != 0:
+        print(f"resulting sarif file is invalid!")
+        sys.exit(1)
 
 def main():
     script_abs_path = abs_path(sys.argv[0])
@@ -170,6 +305,9 @@ def main():
     frontends_tests(script_abs_dir)
     scripts_test(script_abs_dir)
     querydb_test(script_abs_dir)
+    scan_test(script_abs_dir)
+    slice_test(script_abs_dir)
+    sarif_test(script_abs_dir)
 
     print("Success. Go analyse some code.")
 

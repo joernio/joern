@@ -119,7 +119,7 @@ jobs:
           key: ${{ runner.os }}-sbt-${{ hashfiles('**/build.sbt') }}
       - run: python ./testDistro.py
 
-  test-scripts:
+  test-schema-extender:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -139,19 +139,6 @@ jobs:
             ~/.coursier
           key: ${{ runner.os }}-sbt-${{ hashfiles('**/build.sbt') }}
       - run: |
-          mkdir /tmp/foo
-          echo "int foo(int a, int b, int c, int d, int e, int f) {}" > /tmp/foo/foo.c
-          ./joern --src /tmp/foo --run scan
-          ./joern-scan /tmp/foo
-          ./joern-scan --dump
-      - name: Joern Slice Testing
-        run: |
-          mkdir /tmp/slice
-          ./joern-slice data-flow tests/code/javasrc/SliceTest.java -o /tmp/slice/dataflow-slice-javasrc.json
-          echo "checking that the script output contains the content we expect:"
-          ./joern --script "tests/test-dataflow-slice.sc" --param sliceFile=/tmp/slice/dataflow-slice-javasrc.json | grep 'List(boolean b, b, this, s, "MALICIOUS", s, new Foo("MALICIOUS"), s, s, "SAFE", s, b, this, this, b, s, System.out)'
-      - name: SARIF Export Testing
-        run: ./tests/finding-to-sarif-test.sh
-      - run: |
+          sbt stage
           cd joern-cli/target/universal/stage
           ./schema-extender/test.sh
