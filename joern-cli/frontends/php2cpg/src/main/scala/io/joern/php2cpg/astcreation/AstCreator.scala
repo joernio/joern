@@ -234,8 +234,8 @@ class AstCreator(
           val code         = s"static $$$name"
           val typeFullName = maybeDefaultValueAst.flatMap(_.rootType).getOrElse(Defines.Any)
 
-          val local = localNode(stmt, name, code, typeFullName)
-          scope.addToScope(local.name, local)
+          val local =
+            handleVariableOccurrence(stmt, name, Option(code), Option(typeFullName), List(ModifierTypes.STATIC))
 
           val assignmentAst = maybeDefaultValueAst.map { defaultValue =>
             val variableNode = identifierNode(stmt, name, s"$$$name", typeFullName)
@@ -247,7 +247,7 @@ class AstCreator(
             callAst(assignNode, variableAst :: defaultValue :: Nil)
           }
 
-          Ast(local) :: assignmentAst.toList
+          assignmentAst.toList
 
         case other =>
           logger.warn(s"Unexpected static variable type $other in $relativeFileName")

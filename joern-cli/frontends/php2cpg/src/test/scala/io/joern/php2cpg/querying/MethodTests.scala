@@ -67,14 +67,16 @@ class MethodTests extends PhpCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    inside(cpg.method.name("foo").body.astChildren.l) { case List(xLocal: Local, xAssign: Call, yLocal: Local) =>
+    inside(cpg.method.name("foo").body.astChildren.l) { case List(xLocal: Local, yLocal: Local, xAssign: Call) =>
       xLocal.name shouldBe "x"
       xLocal.code shouldBe "static $x"
       xLocal.lineNumber shouldBe Some(3)
+      xLocal.modifier.modifierType.l shouldBe List(ModifierTypes.STATIC)
 
       yLocal.name shouldBe "y"
       yLocal.code shouldBe "static $y"
       yLocal.lineNumber shouldBe Some(3)
+      yLocal.modifier.modifierType.l shouldBe List(ModifierTypes.STATIC)
 
       xAssign.name shouldBe Operators.assignment
       xAssign.code shouldBe "static $x = 42"
@@ -221,5 +223,4 @@ class MethodTests extends PhpCode2CpgFixture {
       }
     }
   }
-
 }

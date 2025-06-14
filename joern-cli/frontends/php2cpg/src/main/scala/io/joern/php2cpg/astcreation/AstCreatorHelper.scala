@@ -1,12 +1,23 @@
 package io.joern.php2cpg.astcreation
 
-import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
+import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
 import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*
+import io.joern.php2cpg.utils.PhpScopeElement
 import io.joern.x2cpg.Defines.UnresolvedNamespace
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewIdentifier, NewLiteral, NewNamespaceBlock}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, ModifierTypes}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewBlock,
+  NewIdentifier,
+  NewLiteral,
+  NewLocal,
+  NewMethod,
+  NewModifier,
+  NewNamespaceBlock,
+  NewNode
+}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import java.nio.charset.StandardCharsets
@@ -140,4 +151,52 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     }
   }
 
+  protected def handleVariableOccurrence(
+    expr: PhpNode,
+    name: String,
+    code: Option[String] = None,
+    tfn: Option[String] = None,
+    modifiers: List[String] = List.empty
+  ): NewNode = {
+    scope.lookupVariable(name) match {
+      case None =>
+        val localCode = if name == NameConstants.Self then NameConstants.Self else s"$$$name"
+        val local     = localNode(expr, name, code.getOrElse(localCode), tfn.getOrElse(Defines.Any))
+
+        modifiers.foreach { modifier =>
+          val modNode = modifierNode(expr, modifier)
+          diffGraph.addEdge(local, modNode, EdgeTypes.AST)
+        }
+
+        scope.addToScope(name, local) match {
+          case PhpScopeElement(node: NewBlock) => diffGraph.addEdge(node, local, EdgeTypes.AST)
+          case _                               => // do nothing
+        }
+
+        local
+      case Some(local) => local
+    }
+  }
+
+  protected def staticInitMethodAst(
+    node: PhpNode,
+    methodNode: NewMethod,
+    body: Ast,
+    signature: Option[String],
+    returnType: String,
+    fileName: Option[String]
+  ): Ast = {
+    if (signature.isDefined) {
+      methodNode.signature(signature.get)
+    }
+    if (fileName.isDefined) {
+      methodNode.filename(fileName.get)
+    }
+    val staticModifier = NewModifier().modifierType(ModifierTypes.STATIC)
+    val methodReturn   = methodReturnNode(node, returnType)
+    methodAst(methodNode, Nil, body, methodReturn, List(staticModifier))
+  }
+
+  protected def astForIdentifierWithLocalRef(ident: NewIdentifier, refLocal: NewNode): Ast =
+    Ast(ident).withRefEdge(ident, refLocal)
 }
