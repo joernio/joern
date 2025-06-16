@@ -55,6 +55,10 @@ class AstCreator(
 
   private def globalMethodDeclStmt(file: PhpFile, bodyStmts: List[PhpStmt]): PhpMethodDecl = {
     val modifiersList = List(ModifierTypes.VIRTUAL, ModifierTypes.PUBLIC, ModifierTypes.STATIC, ModifierTypes.MODULE)
+    // lineNumber and lineNumberEnd must be set to some value to avoid back-end crashes, so default to 0 if
+    // the file is empty.
+    val lineNumber    = bodyStmts.headOption.flatMap(line).getOrElse(0)
+    val lineNumberEnd = bodyStmts.lastOption.flatMap(lineEnd).getOrElse(0)
     PhpMethodDecl(
       name = PhpNameExpr(NamespaceTraversal.globalNamespaceName, file.attributes),
       params = Nil,
@@ -64,7 +68,7 @@ class AstCreator(
       returnByRef = false,
       namespacedName = None,
       isClassMethod = false,
-      attributes = file.attributes,
+      attributes = file.attributes.copy(Option(lineNumber), Option(lineNumberEnd)),
       attributeGroups = Seq.empty[PhpAttributeGroup]
     )
   }
