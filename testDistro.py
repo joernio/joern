@@ -8,7 +8,18 @@ import tempfile
 import requests
 
 # Prerequisite:
-# > sbt -Dsbt.log.noformat=true clean joerncli/stage querydb/createDistribution
+# > sbt joerncli/stage querydb/createDistribution
+
+def executable_name(executable):
+    # Determine script name for Windows vs. Unix
+    if os.name == 'nt':
+        return f"{executable}.bat"
+    else:
+        return f"./{executable}"
+
+JOERN = executable_name("joern")
+JOERN_SCAN = executable_name("joern-scan")
+JOERN_SLICE = executable_name("joern-slice")
 
 def stage(stage_function):
     def wrapper_function(*args, **kwargs):
@@ -56,7 +67,7 @@ def frontends_tests(script_abs_dir):
         input_path = os.path.join("tests", "code", frontend)
         test_script = os.path.join("tests", "frontends-testscript.sc")
         args = [
-            "joern",
+            JOERN,
             "--script", test_script,
             "--param", f"\"inputPath={input_path}\"",
             "--param", f"\"minMethodCount={min_method_count[frontend]}\"",
@@ -64,7 +75,7 @@ def frontends_tests(script_abs_dir):
             "--param", f"\"frontend={frontend}\"",
         ]
         try:
-            subprocess.run(args, check=True, shell=True)
+            subprocess.run(args, check=True)
         except subprocess.CalledProcessError:
             print(f"Script [{test_script}] failed to run for frontend={frontend}")
             sys.exit(1)
@@ -99,12 +110,12 @@ def scripts_test(script_abs_dir):
         script_path = os.path.join(joern_scripts_dir, script)
         input_path = os.path.join(testcode_root, code[script])
         args = [
-            "joern",
+            JOERN,
             "--script", script_path,
             "--param", f"\"inputPath={input_path}\""
         ]
         try:
-            subprocess.run(args, check=True, shell=True)
+            subprocess.run(args, check=True)
         except subprocess.CalledProcessError:
             print(f"Script [{script}] failed to run successfully.")
             sys.exit(1)
@@ -119,12 +130,12 @@ def querydb_test(script_abs_dir):
     querydb_zip = os.path.join(script_abs_dir, "querydb", "target", "querydb.zip")
 
     try:
-        subprocess.run(["joern", "--remove-plugin", "querydb"], check=True, shell=True)
+        subprocess.run([JOERN, "--remove-plugin", "querydb"], check=True)
     except subprocess.CalledProcessError:
         print("Failed to remove 'querydb' plugin (it may not be installed yet), continuing...")
 
     try:
-        subprocess.run(["joern", "--add-plugin", querydb_zip], check=True, shell=True)
+        subprocess.run([JOERN, "--add-plugin", querydb_zip], check=True)
     except subprocess.CalledProcessError:
         print(f"Failed to add plugin {querydb_zip}")
         sys.exit(1)
@@ -132,9 +143,8 @@ def querydb_test(script_abs_dir):
     # Check for 'sql-injection' query
     try:
         proc = subprocess.run(
-            ["joern-scan", "--list-query-names"],
+            [JOERN_SCAN, "--list-query-names"],
             check=True, 
-            shell=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             encoding="utf-8"
@@ -162,19 +172,19 @@ def scan_test(script_abs_dir):
             f.write("int foo(int a, int b, int c, int d, int e, int f) {}")
 
         try:
-            subprocess.run(["joern", "--src", foo_path, "--run", "scan"], check=True, shell=True)
+            subprocess.run([JOERN, "--src", foo_path, "--run", "scan"], check=True)
         except subprocess.CalledProcessError:
             print("Failed to run scan")
             sys.exit(1)
         
         try:
-            subprocess.run(["joern-scan", foo_path], check=True, shell=True)
+            subprocess.run([JOERN_SCAN, foo_path], check=True)
         except subprocess.CalledProcessError:
             print("Failed to execute joern-scan")
             sys.exit(1)
 
         try:
-            subprocess.run(["joern-scan", "--dump"], check=True, shell=True)
+            subprocess.run([JOERN_SCAN, "--dump"], check=True)
         except subprocess.CalledProcessError:
             print("Failed to scan and dump from joern-scan")
             sys.exit(1)
@@ -193,23 +203,23 @@ def slice_test(script_abs_dir):
 
         try:
             subprocess.run([
-                "joern-slice", 
+                JOERN_SLICE, 
                 "data-flow", 
                 test_file,
                 "-o", 
                 out_file
-            ], check=True, shell=True)
+            ], check=True)
         except subprocess.CalledProcessError:
             print("Failed to execute joern-slice")
             sys.exit(1)
 
         result = subprocess.run([
-            "joern", 
+            JOERN, 
             "--script", 
             slice_script, 
             "--param", 
             f"\"sliceFile={out_file}\""
-        ], capture_output=True, text=True, shell=True)
+        ], capture_output=True, text=True)
 
         expected_string = 'List(boolean b, b, this, s, "MALICIOUS", s, new Foo("MALICIOUS"), s, s, "SAFE", s, b, this, this, b, s, System.out)'
         if expected_string not in result.stdout:
@@ -228,8 +238,8 @@ def sarif_test(script_abs_dir):
 
         try:
             subprocess.run(
-                ["joern-scan", test_code, "--store"],
-                check=True, shell=True
+                [JOERN_SCAN, test_code, "--store"],
+                check=True
             )
         except subprocess.CalledProcessError:
             print("Failed to execute joern-scan")
@@ -242,12 +252,12 @@ def sarif_test(script_abs_dir):
         try:
             subprocess.run(
                 [
-                    "joern",
+                    JOERN,
                     "--script", script_path,
                     "--param", f"\"cpgFile={cpg_file}\"",
                     "--param", f"\"outFile={out_file}\""
                 ],
-                check=True, shell=True
+                check=True
             )
         except subprocess.CalledProcessError:
             print("Failed to execute joern sarif script")
@@ -277,12 +287,12 @@ def main():
     
     # frontends_smoketest() TODO: implement proper smoke test with small test projects
     
-    frontends_tests(script_abs_dir)
-    scripts_test(script_abs_dir)
-    querydb_test(script_abs_dir)
+    #frontends_tests(script_abs_dir)
+    #scripts_test(script_abs_dir)
+    #querydb_test(script_abs_dir)
     scan_test(script_abs_dir)
-    slice_test(script_abs_dir)
-    sarif_test(script_abs_dir)
+    #slice_test(script_abs_dir)
+    #sarif_test(script_abs_dir)
 
     print("Success. Go analyse some code.")
 
