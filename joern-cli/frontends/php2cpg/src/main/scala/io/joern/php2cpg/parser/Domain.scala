@@ -84,18 +84,25 @@ object Domain {
   val ConstructorMethodName = "__construct"
   val MetaTypeDeclExtension = "<metaclass>"
 
-  final case class PhpAttributes(lineNumber: Option[Int], kind: Option[Int], startFilePos: Int, endFilePos: Int)
+  final case class PhpAttributes(
+    lineNumber: Option[Int],
+    lineEndNumber: Option[Int],
+    kind: Option[Int],
+    startFilePos: Int,
+    endFilePos: Int
+  )
   object PhpAttributes {
-    val Empty: PhpAttributes = PhpAttributes(None, None, -1, -1)
+    val Empty: PhpAttributes = PhpAttributes(None, None, None, -1, -1)
 
     def apply(json: Value): PhpAttributes = {
       Try(json("attributes")) match {
         case Success(Obj(attributes)) =>
           val startLine    = attributes.get("startLine").map(_.num.toInt)
+          val endLine      = attributes.get("endLine").map(_.num.toInt)
           val kind         = attributes.get("kind").map(_.num.toInt)
           val startFilePos = attributes.get("startFilePos").map(_.num.toInt).getOrElse(-1)
           val endFilePos   = attributes.get("endFilePos").map(_.num.toInt + 1).getOrElse(-1)
-          PhpAttributes(startLine, kind, startFilePos, endFilePos)
+          PhpAttributes(startLine, endLine, kind, startFilePos, endFilePos)
 
         case Success(Arr(_)) =>
           logger.debug(s"Found array attributes in $json")
@@ -140,6 +147,7 @@ object Domain {
   final case class PhpFile(children: List[PhpStmt]) extends PhpNode {
     override val attributes: PhpAttributes = PhpAttributes(
       children.headOption.flatMap(_.attributes.lineNumber),
+      children.lastOption.flatMap(_.attributes.lineEndNumber),
       None,
       children.headOption.map(_.attributes.startFilePos).getOrElse(0),
       children.lastOption.map(_.attributes.endFilePos).getOrElse(0)
