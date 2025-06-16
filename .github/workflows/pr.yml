@@ -39,7 +39,7 @@ jobs:
         run: rm -rf /home/runner/.cargo
         if: runner.os == 'Linux'
       - name: Run tests
-        run: sbt test
+        run: sbt clean test
 
   formatting:
     runs-on: ubuntu-latest
