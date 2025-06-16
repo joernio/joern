@@ -32,10 +32,6 @@ Specification: https://cpg.joern.io
 - JDK 21 (other versions _might_ work, but have not been properly tested)
 - _optional_: gcc and g++ (for auto-discovery of C/C++ system header files if included/used in your C/C++ code)
 
-## Development Requirements
-
-- mvn https://maven.apache.org/install.html
-
 ## Quick Installation
 
 ```
@@ -59,6 +55,23 @@ joern>
 If the installation script fails for any reason, try
 ```
 ./joern-install --interactive
+```
+
+## Development Requirements
+- [java](https://jdk.java.net/)
+- [sbt](https://www.scala-sbt.org)
+
+## Run unit and integration tests locally
+Unit tests:
+```bash
+sbt test
+```
+
+Integration tests:
+```bash
+sbt joerncli/stage querydb/createDistribution
+python -m pip install requests
+python -u ./testDistro.py
 ```
 
 ## Docker based execution
