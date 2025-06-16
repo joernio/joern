@@ -38,8 +38,15 @@ jobs:
       - name: Delete `.cargo` directory # to save disk space
         run: rm -rf /home/runner/.cargo
         if: runner.os == 'Linux'
-      - name: Compile and run tests
-        run: sbt clean test
+      - name: Build
+        run: sbt clean stage querydb/createDistribution
+      - name: Run tests
+        run: sbt test
+      - name: Test distribution
+        run: |
+          python -m pip install requests
+          python -u ./testDistro.py
+
   formatting:
     runs-on: ubuntu-latest
     steps:
@@ -79,31 +86,6 @@ jobs:
         run: sbt "scalafix RestrictedImports"
       - run: echo "Previous step failed because certain coding quality expectations were violated. Please check the logs."
         if: ${{ failure() }}
-
-  test-distro:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 21
-          cache: sbt
-      - uses: sbt/setup-sbt@v1
-      - name: Install php
-        if: matrix.os == 'macos-latest'
-        run: brew install php
-      - name: Test distribution
-        run: |
-          python -m pip install requests
-          sbt "-Dsbt.log.noformat=true clean joerncli/stage querydb/createDistribution"
-          python -u ./testDistro.py
 
   test-schema-extender:
     runs-on: ubuntu-latest
