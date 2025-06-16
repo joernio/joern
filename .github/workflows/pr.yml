@@ -17,6 +17,9 @@ jobs:
           java-version: 21
           cache: sbt
       - uses: sbt/setup-sbt@v1
+      - name: Install coreutils
+        if: matrix.os == 'macos-latest'
+        run: brew install coreutils
       - name: Install php
         if: matrix.os == 'macos-latest'
         run: brew install php
