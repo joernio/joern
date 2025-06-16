@@ -81,9 +81,12 @@ def frontends_tests(script_abs_dir):
             "--param", param_for_windows(f"frontend={frontend}")
         ]
         try:
-            subprocess.run(args, check=True)
+            print(f"Running script [{test_script}] for frontend={frontend}")
+            proc = subprocess.run(args, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         except subprocess.CalledProcessError:
             print(f"Script [{test_script}] failed to run for frontend={frontend}")
+            print(f"stdout was:\n{proc.stdout}")
+            print(f"stderr was:\n{proc.stderr}")
             sys.exit(1)
 
         print(f"Frontend [{frontend}] tested successfully")
@@ -121,10 +124,14 @@ def scripts_test(script_abs_dir):
             "--param", param_for_windows(f"inputPath={input_path}")
         ]
         try:
-            subprocess.run(args, check=True)
+            print(f"Running script [{script}]")
+            proc = subprocess.run(args, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         except subprocess.CalledProcessError:
             print(f"Script [{script}] failed to run successfully.")
+            print(f"stdout was:\n{proc.stdout}")
+            print(f"stderr was:\n{proc.stderr}")
             sys.exit(1)
+
         print(f"Script [{script}] passed...\n")
 
     print("All scripts tested successfully.")
@@ -136,18 +143,22 @@ def querydb_test(script_abs_dir):
     querydb_zip = os.path.join(script_abs_dir, "querydb", "target", "querydb.zip")
 
     try:
-        subprocess.run([JOERN, "--remove-plugin", "querydb"], check=True)
+        print("Running remove-plugin")
+        subprocess.run([JOERN, "--remove-plugin", "querydb"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except subprocess.CalledProcessError:
         print("Failed to remove 'querydb' plugin (it may not be installed yet), continuing...")
 
     try:
-        subprocess.run([JOERN, "--add-plugin", querydb_zip], check=True)
+        print("Running add-plugin")
+        proc = subprocess.run([JOERN, "--add-plugin", querydb_zip], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except subprocess.CalledProcessError:
         print(f"Failed to add plugin {querydb_zip}")
+        print(f"stdout was:\n{proc.stdout}")
+        print(f"stderr was:\n{proc.stderr}")
         sys.exit(1)
 
-    # Check for 'sql-injection' query
     try:
+        print("Listing querydb query names")
         proc = subprocess.run(
             [JOERN_SCAN, "--list-query-names"],
             check=True, 
@@ -164,6 +175,8 @@ def querydb_test(script_abs_dir):
 
     if sqli_count == 0:
         print("Error: query 'sql-injection' from querydb not found - something wrong with the querydb installation?")
+        print(f"stdout was:\n{proc.stdout}")
+        print(f"stderr was:\n{proc.stderr}")   
         sys.exit(1)
 
 @stage
@@ -178,21 +191,30 @@ def scan_test(script_abs_dir):
             f.write("int foo(int a, int b, int c, int d, int e, int f) {}")
 
         try:
-            subprocess.run([JOERN, "--src", foo_path, "--run", "scan"], check=True)
+            print(f"Running joern on {foo_path} with --run scan")
+            proc = subprocess.run([JOERN, "--src", foo_path, "--run", "scan"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         except subprocess.CalledProcessError:
             print("Failed to run scan")
+            print(f"stdout was:\n{proc.stdout}")
+            print(f"stderr was:\n{proc.stderr}")
             sys.exit(1)
         
         try:
-            subprocess.run([JOERN_SCAN, foo_path], check=True)
+            print(f"Running joern-scan on {foo_path}")
+            proc = subprocess.run([JOERN_SCAN, foo_path], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         except subprocess.CalledProcessError:
             print("Failed to execute joern-scan")
+            print(f"stdout was:\n{proc.stdout}")
+            print(f"stderr was:\n{proc.stderr}")            
             sys.exit(1)
 
         try:
-            subprocess.run([JOERN_SCAN, "--dump"], check=True)
+            print(f"Running joern-scan on {foo_path} with --dump")
+            subprocess.run([JOERN_SCAN, "--dump"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         except subprocess.CalledProcessError:
             print("Failed to scan and dump from joern-scan")
+            print(f"stdout was:\n{proc.stdout}")
+            print(f"stderr was:\n{proc.stderr}")    
             sys.exit(1)
 
 @stage
@@ -208,15 +230,18 @@ def slice_test(script_abs_dir):
         slice_script = os.path.join(script_abs_dir, "tests", "test-dataflow-slice.sc")
 
         try:
-            subprocess.run([
+            print(f"Running joern-slice on {slice_path}")
+            proc = subprocess.run([
                 JOERN_SLICE, 
                 "data-flow", 
                 test_file,
                 "-o", 
                 out_file
-            ], check=True)
+            ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         except subprocess.CalledProcessError:
             print("Failed to execute joern-slice")
+            print(f"stdout was:\n{proc.stdout}")
+            print(f"stderr was:\n{proc.stderr}")   
             sys.exit(1)
 
         result = subprocess.run([
@@ -243,12 +268,15 @@ def sarif_test(script_abs_dir):
         test_code = os.path.join(script_abs_dir, "tests", "code", "sarif-test")
 
         try:
-            subprocess.run(
+            print(f"Running joern-scan on {sarif_path} with --store")
+            proc = subprocess.run(
                 [JOERN_SCAN, test_code, "--store"],
-                check=True
+                check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
             )
         except subprocess.CalledProcessError:
             print("Failed to execute joern-scan")
+            print(f"stdout was:\n{proc.stdout}")
+            print(f"stderr was:\n{proc.stderr}")   
             sys.exit(1)
 
         cpg_file = os.path.join(script_abs_dir, "workspace", "sarif-test", "cpg.bin")
@@ -256,17 +284,20 @@ def sarif_test(script_abs_dir):
         script_path = os.path.join(script_abs_dir, "tests", "test-sarif.sc")
 
         try:
-            subprocess.run(
+            print(f"Running joern with script {script_path}")
+            proc = subprocess.run(
                 [
                     JOERN,
                     "--script", script_path,
                     "--param", param_for_windows(f"cpgFile={cpg_file}"),
                     "--param", param_for_windows(f"outFile={out_file}")
                 ],
-                check=True
+                check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
             )
         except subprocess.CalledProcessError:
             print("Failed to execute joern sarif script")
+            print(f"stdout was:\n{proc.stdout}")
+            print(f"stderr was:\n{proc.stderr}")   
             sys.exit(1)
 
         with open(out_file, "rb") as f:
