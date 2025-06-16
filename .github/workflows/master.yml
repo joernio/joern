@@ -35,7 +35,7 @@ jobs:
       - name: Test distribution
         run: |
           python -m pip install requests
-          sbt stage querydb/createDistribution
+          sbt joerncli/stage querydb/createDistribution
           python -u ./testDistro.py
       - name: Test schema-extender
         run: |

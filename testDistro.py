@@ -287,12 +287,12 @@ def main():
     
     # frontends_smoketest() TODO: implement proper smoke test with small test projects
     
-    #frontends_tests(script_abs_dir)
-    #scripts_test(script_abs_dir)
-    #querydb_test(script_abs_dir)
+    frontends_tests(script_abs_dir)
+    scripts_test(script_abs_dir)
+    querydb_test(script_abs_dir)
     scan_test(script_abs_dir)
-    #slice_test(script_abs_dir)
-    #sarif_test(script_abs_dir)
+    slice_test(script_abs_dir)
+    sarif_test(script_abs_dir)
 
     print("Success. Go analyse some code.")
 
