@@ -23,15 +23,14 @@ jobs:
       - uses: sbt/setup-sbt@v1
       - name: Upgrade all (internal) dependencies
         run: ./updateDependencies.sh --non-interactive
-      - name: Build
-        run: sbt clean stage querydb/createDistribution
-      - name: Run tests
-        run: sbt test
+      - run: sbt test
       - name: Test distribution
         run: |
           python -m pip install requests
+          sbt joerncli/stage querydb/createDistribution
           python -u ./testDistro.py
       - name: Test schema-extender
         run: |
+          sbt joerncli/stage
           cd joern-cli/target/universal/stage
           ./schema-extender/test.sh

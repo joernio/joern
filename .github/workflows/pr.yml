@@ -38,14 +38,13 @@ jobs:
       - name: Delete `.cargo` directory # to save disk space
         run: rm -rf /home/runner/.cargo
         if: runner.os == 'Linux'
-      - name: Build
-        run: sbt clean stage querydb/createDistribution
-      - name: Run tests
-        run: sbt test
       - name: Test distribution
         run: |
           python -m pip install requests
+          sbt joerncli/stage querydb/createDistribution
           python -u ./testDistro.py
+      - name: Run tests
+        run: sbt test
 
   formatting:
     runs-on: ubuntu-latest

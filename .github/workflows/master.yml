@@ -31,16 +31,15 @@ jobs:
       - name: Delete `.cargo` directory # to save disk space
         run: rm -rf /home/runner/.cargo
         if: runner.os == 'Linux'
-      - name: Build
-        run: sbt clean stage querydb/createDistribution
-      - name: Run tests
-        run: sbt scalafmtCheck test
+      - run: sbt scalafmtCheck test
       - name: Test distribution
         run: |
           python -m pip install requests
+          sbt joerncli/stage querydb/createDistribution
           python -u ./testDistro.py
       - name: Test schema-extender
         run: |
+          sbt joerncli/stage
           cd joern-cli/target/universal/stage
           ./schema-extender/test.sh
           cd -
