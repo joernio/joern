@@ -21,6 +21,12 @@ JOERN = executable_name("joern")
 JOERN_SCAN = executable_name("joern-scan")
 JOERN_SLICE = executable_name("joern-slice")
 
+def param_for_windows(param):
+    if os.name == 'nt':
+        return f"\"{param}\""
+    else:
+        return param
+
 def stage(stage_function):
     def wrapper_function(*args, **kwargs):
         print('### Executing stage', stage_function.__name__, "###")
@@ -69,10 +75,10 @@ def frontends_tests(script_abs_dir):
         args = [
             JOERN,
             "--script", test_script,
-            "--param", f"\"inputPath={input_path}\"",
-            "--param", f"\"minMethodCount={min_method_count[frontend]}\"",
-            "--param", f"\"expectedMethod={expected_method[frontend]}\"",
-            "--param", f"\"frontend={frontend}\"",
+            "--param", param_for_windows(f"inputPath={input_path}"),
+            "--param", param_for_windows(f"minMethodCount={min_method_count[frontend]}"),
+            "--param", param_for_windows(f"expectedMethod={expected_method[frontend]}"),
+            "--param", param_for_windows(f"frontend={frontend}")
         ]
         try:
             subprocess.run(args, check=True)
@@ -112,7 +118,7 @@ def scripts_test(script_abs_dir):
         args = [
             JOERN,
             "--script", script_path,
-            "--param", f"\"inputPath={input_path}\""
+            "--param", param_for_windows(f"inputPath={input_path}")
         ]
         try:
             subprocess.run(args, check=True)
@@ -218,7 +224,7 @@ def slice_test(script_abs_dir):
             "--script", 
             slice_script, 
             "--param", 
-            f"\"sliceFile={out_file}\""
+            param_for_windows(f"sliceFile={out_file}")
         ], capture_output=True, text=True)
 
         expected_string = 'List(boolean b, b, this, s, "MALICIOUS", s, new Foo("MALICIOUS"), s, s, "SAFE", s, b, this, this, b, s, System.out)'
@@ -254,8 +260,8 @@ def sarif_test(script_abs_dir):
                 [
                     JOERN,
                     "--script", script_path,
-                    "--param", f"\"cpgFile={cpg_file}\"",
-                    "--param", f"\"outFile={out_file}\""
+                    "--param", param_for_windows(f"cpgFile={cpg_file}"),
+                    "--param", param_for_windows(f"outFile={out_file}")
                 ],
                 check=True
             )
