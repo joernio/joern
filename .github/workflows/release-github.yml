@@ -31,7 +31,6 @@ jobs:
       - run: sbt stage createDistribution
       - name: Test schema-extender
         run: |
-          sbt joerncli/stage
           cd joern-cli/target/universal/stage
           ./schema-extender/test.sh
           cd -

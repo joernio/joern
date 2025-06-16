@@ -41,7 +41,7 @@ jobs:
       - name: Test distribution
         run: |
           python -m pip install requests
-          sbt joerncli/stage querydb/createDistribution
+          sbt stage querydb/createDistribution
           python -u ./testDistro.py
       - name: Run tests
         run: sbt test

@@ -8,7 +8,7 @@ import tempfile
 import requests
 
 # Prerequisite:
-# > sbt joerncli/stage querydb/createDistribution
+# > sbt stage querydb/createDistribution
 
 def executable_name(executable):
     # Determine script name for Windows vs. Unix
