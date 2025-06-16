@@ -22,6 +22,7 @@ JOERN_SCAN = executable_name("joern-scan")
 JOERN_SLICE = executable_name("joern-slice")
 
 def param_for_windows(param):
+    # --param arg for joern needs enclosing quotes for Windows
     if os.name == 'nt':
         return f"\"{param}\""
     else:
@@ -45,6 +46,23 @@ def remove_workspace(script_abs_dir):
         except Exception as e:
             print(f"Failed to remove workspace directory: {e}")
             sys.exit(1)
+
+@stage
+def frontends_smoketest(script_abs_dir):
+    remove_workspace(script_abs_dir)
+    test_script = os.path.join("tests", "frontends-smoketest.sc")
+    args = [
+        JOERN,
+        "--script", test_script
+    ]
+    try:
+        print(f"Running script [{test_script}]")
+        proc = subprocess.run(args, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except subprocess.CalledProcessError:
+        print(f"Script [{test_script}] failed to run successfully")
+        print(f"stdout was:\n{proc.stdout}")
+        print(f"stderr was:\n{proc.stderr}")
+        sys.exit(1)
 
 @stage
 def frontends_tests(script_abs_dir):
@@ -89,7 +107,7 @@ def frontends_tests(script_abs_dir):
             print(f"stderr was:\n{proc.stderr}")
             sys.exit(1)
 
-        print(f"Frontend [{frontend}] tested successfully")
+        print(f"Frontend [{frontend}] tested successfully.")
 
 @stage
 def scripts_test(script_abs_dir):
@@ -127,14 +145,14 @@ def scripts_test(script_abs_dir):
             print(f"Running script [{script}]")
             proc = subprocess.run(args, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         except subprocess.CalledProcessError:
-            print(f"Script [{script}] failed to run successfully.")
+            print(f"Script [{script}] failed to run successfully")
             print(f"stdout was:\n{proc.stdout}")
             print(f"stderr was:\n{proc.stderr}")
             sys.exit(1)
 
-        print(f"Script [{script}] passed...\n")
+        print(f"Script [{script}] passed")
 
-    print("All scripts tested successfully.")
+    print("All scripts tested successfully")
 
 @stage
 def querydb_test(script_abs_dir):
@@ -168,7 +186,7 @@ def querydb_test(script_abs_dir):
         )
         query_names = proc.stdout
     except subprocess.CalledProcessError:
-        print("Failed to list query names from joern-scan.")
+        print("Failed to list query names from joern-scan")
         sys.exit(1)
 
     sqli_count = sum(1 for line in query_names.splitlines() if "sql-injection" in line)
@@ -322,8 +340,7 @@ def main():
     script_abs_dir = os.path.dirname(script_abs_path)
     os.chdir(script_abs_dir)
     
-    # frontends_smoketest() TODO: implement proper smoke test with small test projects
-    
+    frontends_smoketest(script_abs_dir)
     frontends_tests(script_abs_dir)
     scripts_test(script_abs_dir)
     querydb_test(script_abs_dir)
