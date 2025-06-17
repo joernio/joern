@@ -71,9 +71,17 @@ class AstCreationPassTests extends AstC2CpgSuite {
         """
           |int foo(const char *a, ...){ return 0; }
           |int bar(const char *a...){ return 0; }
+          |
+          |void main() {
+          |  foo("a", "b", "c");
+          |}
           |""".stripMargin,
         "foo.cpp"
       )
+      val List(fooCall) = cpg.call.nameExact("foo").l
+      fooCall.methodFullName shouldBe "foo:int(char*,...)"
+      fooCall.signature shouldBe "int(char*,...)"
+
       val List(foo) = cpg.method("foo").l
       foo.fullName shouldBe "foo:int(char*,...)"
       foo.signature shouldBe "int(char*,...)"
