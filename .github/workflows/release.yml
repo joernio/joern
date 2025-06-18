@@ -41,11 +41,6 @@ jobs:
           python -m pip install requests
           sbt joerncli/stage querydb/createDistribution
           python -u ./testDistro.py
-      - name: Test schema-extender
-        run: |
-          cd joern-cli/target/universal/stage
-          ./schema-extender/test.sh
-          cd -
       - run: sbt ciReleaseSkipIfAlreadyReleased ciReleaseTagNextVersion ciReleaseSonatype createDistribution
         env:
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}

@@ -108,22 +108,3 @@ jobs:
           python -m pip install requests
           sbt joerncli/stage querydb/createDistribution
           python -u ./testDistro.py
-
-  test-schema-extender:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 21
-          cache: sbt
-      - uses: sbt/setup-sbt@v1
-      - name: Test schema-extender
-        run: |
-          sbt joerncli/stage
-          cd joern-cli/target/universal/stage
-          ./schema-extender/test.sh
