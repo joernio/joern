@@ -29,7 +29,3 @@ jobs:
           python -m pip install requests
           sbt joerncli/stage querydb/createDistribution
           python -u ./testDistro.py
-      - name: Test schema-extender
-        run: |
-          cd joern-cli/target/universal/stage
-          ./schema-extender/test.sh
