@@ -105,7 +105,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       // Static method call with a known class name
       case Some(nameExpr: PhpNameExpr) if call.isStatic =>
         if (nameExpr.name == NameConstants.Self)
-          composeMethodFullName(name, appendMetaTypeDeclExt = !scope.isSurroundedByMetaclassTypeDecl)
+          composeMethodFullNameForCall(name, appendMetaTypeDeclExt = !scope.isSurroundedByMetaclassTypeDecl)
         else s"${nameExpr.name}$MetaTypeDeclExtension$MethodDelimiter$name"
       case Some(_) =>
         val methodName = composeMethodName(call, targetAst, name)
@@ -115,7 +115,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         name
       // Function call
       case None =>
-        composeMethodFullName(name)
+        composeMethodFullNameForCall(name)
     }
 
     // Use method signature for methods that can be linked to avoid varargs issue.

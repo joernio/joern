@@ -1,12 +1,14 @@
 package io.joern.php2cpg.utils
 
+import flatgraph.DiffGraphBuilder
 import io.joern.php2cpg.astcreation.AstCreator.NameConstants
 import io.joern.php2cpg.parser.Domain.{PhpExpr, PhpNode}
 import io.joern.php2cpg.passes.SymbolSummaryPass.*
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.{NamespaceLikeScope, ScopeElement, Scope as X2CpgScope}
-import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
@@ -26,14 +28,14 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
   private var importedSymbols                                         = Map.empty[String, SymbolSummary]
   private val localsToAdd                                             = mutable.ArrayBuffer[NewLocal]()
 
-  def pushNewScope(scopeNode: NewNode): Unit = {
+  def pushNewScope(scopeNode: NewNode, maybeBlock: Option[NewBlock] = None): Unit = {
     scopeNode match {
       case block: NewBlock =>
         val scopeName = stack.headOption.map(_.scopeNode.getName)
         super.pushNewScope(PhpScopeElement(block, scopeName.getOrElse("")))
 
       case method: NewMethod =>
-        super.pushNewScope(PhpScopeElement(method))
+        super.pushNewScope(PhpScopeElement(method, maybeBlock))
 
       case typeDecl: NewTypeDecl =>
         constAndStaticInits = mutable.ArrayBuffer[PhpInit]() :: constAndStaticInits
@@ -100,6 +102,26 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
     super.addToScope(identifier, variable)
   }
 
+  def addVariableToMethodScope(
+    identifier: String,
+    variable: NewNode,
+    methodFullName: String
+  ): Option[PhpScopeElement] = {
+    stack.collectFirst { stackItem =>
+      stackItem.scopeNode match {
+        case _ @PhpScopeElement(method: NewMethod) if method.fullName == methodFullName =>
+          val addedVarStackItem = stackItem.addVariable(identifier, variable)
+
+          // Replace the stack item with a new one that holds the added variable
+          stack = stack.map {
+            case x if x.scopeNode == addedVarStackItem.scopeNode => addedVarStackItem
+            case x                                               => x
+          }
+          stackItem.scopeNode
+      }
+    }
+  }
+
   def addAnonymousMethod(methodAst: Ast): Unit = anonymousMethods.addOne(methodAst)
 
   def getAndClearAnonymousMethods: List[Ast] = {
@@ -119,6 +141,24 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
 
   def getEnclosingTypeDeclTypeFullName: Option[String] =
     stack.map(_.scopeNode.node).collectFirst { case td: NewTypeDecl => td }.map(_.fullName)
+
+  def getSurroundingFullName: String = {
+    stack
+      .map(_.scopeNode.node)
+      .collect {
+        case td: NewTypeDecl => td
+        case nm: NewMethod   => nm
+      }
+      .map {
+        case td: NewTypeDecl => td.name
+        case nm: NewMethod   => nm.name
+      }
+      .filterNot(_ == NamespaceTraversal.globalNamespaceName)
+      .mkString(".")
+  }
+
+  def getSurroundingMethods: List[PhpScopeElement] =
+    stack.map(_.scopeNode).collect { case nm if nm.node.isInstanceOf[NewMethod] => nm }.reverse
 
   def getConstAndStaticInits: List[PhpInit] = {
     getInits(constAndStaticInits)

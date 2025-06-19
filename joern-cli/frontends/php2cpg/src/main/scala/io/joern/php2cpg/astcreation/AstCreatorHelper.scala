@@ -64,6 +64,24 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     if (methodName == NamespaceTraversal.globalNamespaceName) {
       globalNamespace.fullName
     } else {
+      val name = scope.getSurroundingFullName
+      val className = if (appendMetaTypeDeclExt) {
+        Option.unless(name.isBlank)(s"$name$MetaTypeDeclExtension")
+      } else {
+        Option.unless(name.isBlank)(name)
+      }
+
+      val nameWithClass = List(className, Some(methodName)).flatten.mkString(MethodDelimiter)
+
+      prependNamespacePrefix(nameWithClass)
+    }
+  }
+
+  protected def composeMethodFullNameForCall(methodName: String, appendMetaTypeDeclExt: Boolean = false): String = {
+    if (methodName == NamespaceTraversal.globalNamespaceName) {
+      globalNamespace.fullName
+    } else {
+      val name = scope.getSurroundingFullName
       val className = if (appendMetaTypeDeclExt) {
         getTypeDeclPrefix.map(name => s"$name$MetaTypeDeclExtension")
       } else {
@@ -83,9 +101,12 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     }
   }
 
-  private def getTypeDeclPrefix: Option[String] = {
-    scope.getEnclosingTypeDeclTypeName
-      .filterNot(_ == NamespaceTraversal.globalNamespaceName)
+  private def getTypeDeclPrefix: Option[String] =
+    scope.getEnclosingTypeDeclTypeName.filterNot(_ == NamespaceTraversal.globalNamespaceName)
+
+  private def getSurroundingFullName: Option[String] = {
+    scope.surroundingScopeFullName
+      .filterNot(scopeName => scopeName.contains(NamespaceTraversal.globalNamespaceName))
   }
 
   protected def codeForMethodCall(call: PhpCallExpr, targetAst: Ast, name: String): String = {
@@ -169,8 +190,9 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
         }
 
         scope.addToScope(name, local) match {
-          case PhpScopeElement(node: NewBlock) => diffGraph.addEdge(node, local, EdgeTypes.AST)
-          case _                               => // do nothing
+          case PhpScopeElement(node: NewBlock)   => diffGraph.addEdge(node, local, EdgeTypes.AST)
+          case x @ PhpScopeElement(_: NewMethod) => x.maybeBlock.foreach(diffGraph.addEdge(_, local, EdgeTypes.AST))
+          case _                                 => // do nothing
         }
 
         local

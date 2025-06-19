@@ -124,8 +124,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val method         = methodNode(decl, methodName, methodCode, fullName, Some(signature), relativeFileName)
     val methodBodyNode = blockNode(decl)
     if (!isConstructor) {
-      scope.pushNewScope(method)
-      scope.pushNewScope(methodBodyNode)
+      scope.pushNewScope(method, Option(methodBodyNode))
     }
 
     val returnType = decl.returnType.map(_.name).getOrElse(Defines.Any)
@@ -141,7 +140,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val methodBody    = blockAst(methodBodyNode, methodBodyStmts)
 
     if (!isConstructor) {
-      scope.popScope()
       scope.popScope()
     }
     methodAstWithAnnotations(method, parameters, methodBody, methodReturn, modifiers, attributeAsts)
@@ -246,11 +244,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           .lineNumber(line(node))
           .columnNumber(column(node))
 
-        scope.pushNewScope(methodNode)
-
         val methodBlock = NewBlock()
 
-        scope.pushNewScope(methodBlock)
+        scope.pushNewScope(methodNode, Option(methodBlock))
 
         val assignmentAsts = inits.map { init =>
           astForMemberAssignment(init.originNode, init.memberNode, init.value, isField = false)
@@ -275,7 +271,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           method.offset(0)
           method.offsetEnd(content.length)
         }
-        scope.popScope()
         scope.popScope()
         Option(ast)
     }

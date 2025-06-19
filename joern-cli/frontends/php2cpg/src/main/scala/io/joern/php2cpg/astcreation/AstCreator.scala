@@ -3,7 +3,7 @@ package io.joern.php2cpg.astcreation
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
 import io.joern.php2cpg.parser.Domain.*
 import io.joern.php2cpg.passes.SymbolSummaryPass.SymbolSummary
-import io.joern.php2cpg.utils.Scope
+import io.joern.php2cpg.utils.{PhpScopeElement, Scope}
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, AstCreatorBase, Defines, ValidationMode}
@@ -122,7 +122,7 @@ class AstCreator(
       case _: NopStmt                      => Nil // TODO This'll need to be updated when comments are added.
       case haltStmt: PhpHaltCompilerStmt   => astForHaltCompilerStmt(haltStmt) :: Nil
       case unsetStmt: PhpUnsetStmt         => astForUnsetStmt(unsetStmt) :: Nil
-      case globalStmt: PhpGlobalStmt       => astForGlobalStmt(globalStmt) :: Nil
+      case globalStmt: PhpGlobalStmt       => astForGlobalStmt(globalStmt)
       case useStmt: PhpUseStmt             => astForUseStmt(useStmt) :: Nil
       case groupUseStmt: PhpGroupUseStmt   => astForGroupUseStmt(groupUseStmt) :: Nil
       case foreachStmt: PhpForeachStmt     => astForForeachStmt(foreachStmt) :: Nil
@@ -173,16 +173,59 @@ class AstCreator(
     callAst(callNode, args)
   }
 
-  private def astForGlobalStmt(stmt: PhpGlobalStmt): Ast = {
-    // This isn't an accurater representation of what `global` does, but with things like `global $$x` being possible,
-    // it's very difficult to figure out correct scopes for global variables.
+  private def astForGlobalStmt(stmt: PhpGlobalStmt): List[Ast] = {
+    val surroundingIter    = scope.getSurroundingMethods.drop(1).iterator // drop first to ignore global method
+    val surroundingMethods = scope.getSurroundingMethods.dropRight(1)     // drop last to ignore innermost method
 
-    val varsAsts = stmt.vars.map(astForExpr)
-    val code     = s"${PhpOperators.global} ${varsAsts.map(_.rootCodeOrEmpty).mkString(", ")}"
+    surroundingMethods.foreach { _ =>
+      val innerMethod = surroundingIter.next()
 
-    val globalCallNode = operatorCallNode(stmt, code, PhpOperators.global, Some(TypeConstants.Void))
+      innerMethod.node match {
+        case inner: NewMethod =>
+          val methodRef = methodRefNode(stmt, "", inner.fullName, Defines.Any)
 
-    callAst(globalCallNode, varsAsts)
+          stmt.vars.foreach {
+            case _ @PhpVariable(name: PhpNameExpr, _) =>
+              val closureBindingId = s"$relativeFileName:${inner.fullName}:${name.name}"
+              val closureLocal     = localNode(stmt, name.name, name.name, Defines.Any, Option(closureBindingId))
+
+              val closureBindingNode = NewClosureBinding()
+                .closureBindingId(closureBindingId)
+                .closureOriginalName(name.name)
+                .evaluationStrategy(EvaluationStrategies.BY_SHARING)
+
+              scope.lookupVariable(name.name) match {
+                case Some(refLocal) => diffGraph.addEdge(closureBindingNode, refLocal, EdgeTypes.REF)
+                case _              => // do nothing
+              }
+
+              scope.addVariableToMethodScope(closureLocal.name, closureLocal, inner.fullName) match {
+                case Some(node) =>
+                  node match {
+                    case newMethod @ PhpScopeElement(_: NewMethod) =>
+                      newMethod.maybeBlock.foreach(diffGraph.addEdge(_, closureLocal, EdgeTypes.AST))
+                    case _ =>
+                  }
+                case None =>
+                  scope.addToScope(closureLocal.name, closureLocal) match {
+                    case newMethod @ PhpScopeElement(_: NewMethod) =>
+                      newMethod.maybeBlock.foreach(diffGraph.addEdge(_, closureLocal, EdgeTypes.AST))
+                    case _ => // do nothing
+                  }
+              }
+
+              diffGraph.addNode(closureBindingNode)
+              diffGraph.addEdge(methodRef, closureBindingNode, EdgeTypes.CAPTURE)
+
+            case x =>
+              logger.warn(s"Unexpected variable type ${x.getClass} found")
+          }
+        case _ => // do nothing
+      }
+
+    }
+
+    stmt.vars.map(astForExpr)
   }
 
   private def astForUseStmt(stmt: PhpUseStmt): Ast = {
