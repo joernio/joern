@@ -166,7 +166,7 @@ class RunScriptTests extends AnyWordSpec with Matchers {
 }
 
 object RunScriptTests {
-  val projectRoot  = ProjectRoot.find.path.toAbsolutePath
+  val projectRoot  = ProjectRoot.find.toAbsolutePath
   val scriptsRoot  = projectRoot.resolve("scripts")
   val testCodeRoot = s"${projectRoot}/joern-cli/src/test/resources/testcode"
 
