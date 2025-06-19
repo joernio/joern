@@ -195,25 +195,10 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     }
   }
 
-  protected def staticInitMethodAst(
-    node: PhpNode,
-    methodNode: NewMethod,
-    body: Ast,
-    signature: Option[String],
-    returnType: String,
-    fileName: Option[String]
-  ): Ast = {
-    if (signature.isDefined) {
-      methodNode.signature(signature.get)
-    }
-    if (fileName.isDefined) {
-      methodNode.filename(fileName.get)
-    }
-
-    val staticMethodNode = methodNode.lineNumberEnd(lineEnd(node))
-    val staticModifier   = NewModifier().modifierType(ModifierTypes.STATIC)
-    val methodReturn     = methodReturnNode(node, returnType)
-    methodAst(staticMethodNode, Nil, body, methodReturn, List(staticModifier))
+  protected def staticInitMethodAst(node: PhpNode, methodNode: NewMethod, body: Ast, returnType: String): Ast = {
+    val staticModifier = NewModifier().modifierType(ModifierTypes.STATIC)
+    val methodReturn   = methodReturnNode(node, returnType)
+    methodAst(methodNode, Nil, body, methodReturn, List(staticModifier))
   }
 
   protected def astForIdentifierWithLocalRef(ident: NewIdentifier, refLocal: NewNode): Ast =

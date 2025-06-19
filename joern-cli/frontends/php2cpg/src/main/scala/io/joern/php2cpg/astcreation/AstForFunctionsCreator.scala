@@ -237,16 +237,17 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case inits =>
         val signature = s"${TypeConstants.Void}()"
         val fullName  = composeMethodFullName(Defines.StaticInitMethodName)
-
-        val methodNode = NewMethod()
-          .name(Defines.StaticInitMethodName)
-          .fullName(fullName)
-          .lineNumber(line(node))
-          .columnNumber(column(node))
+        val methodNode_ = methodNode(
+          node,
+          Defines.StaticInitMethodName,
+          fullName,
+          signature,
+          Option(relativeFileName).getOrElse(Method.PropertyDefaults.Filename)
+        )
 
         val methodBlock = NewBlock()
 
-        scope.pushNewScope(methodNode, Option(methodBlock))
+        scope.pushNewScope(methodNode_, Option(methodBlock))
 
         val assignmentAsts = inits.map { init =>
           astForMemberAssignment(init.originNode, init.memberNode, init.value, isField = false)
@@ -255,14 +256,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         val body = blockAst(methodBlock, assignmentAsts)
 
         val ast =
-          staticInitMethodAst(
-            node,
-            methodNode,
-            body,
-            Option(signature),
-            TypeConstants.Void,
-            fileName = Some(relativeFileName)
-          )
+          staticInitMethodAst(node, methodNode_, body, TypeConstants.Void)
 
         for {
           method  <- ast.root.collect { case method: NewMethod => method }

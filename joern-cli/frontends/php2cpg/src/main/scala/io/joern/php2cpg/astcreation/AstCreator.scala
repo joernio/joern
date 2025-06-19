@@ -183,10 +183,9 @@ class AstCreator(
 
     surroundingMethods.foreach { _ =>
       val innerMethod = surroundingIter.next()
-
       innerMethod.node match {
         case inner: NewMethod =>
-          val methodRef = methodRefNode(stmt, "", inner.fullName, Defines.Any)
+          val methodRef = methodRefNode(stmt, s"${inner.fullName}(...)", inner.fullName, Defines.Any)
 
           stmt.vars.foreach {
             case _ @PhpVariable(name: PhpNameExpr, _) =>
@@ -204,18 +203,9 @@ class AstCreator(
               }
 
               scope.addVariableToMethodScope(closureLocal.name, closureLocal, inner.fullName) match {
-                case Some(node) =>
-                  node match {
-                    case newMethod @ PhpScopeElement(_: NewMethod) =>
-                      newMethod.maybeBlock.foreach(diffGraph.addEdge(_, closureLocal, EdgeTypes.AST))
-                    case _ =>
-                  }
-                case None =>
-                  scope.addToScope(closureLocal.name, closureLocal) match {
-                    case newMethod @ PhpScopeElement(_: NewMethod) =>
-                      newMethod.maybeBlock.foreach(diffGraph.addEdge(_, closureLocal, EdgeTypes.AST))
-                    case _ => // do nothing
-                  }
+                case Some(node @ PhpScopeElement(_: NewMethod)) =>
+                  node.maybeBlock.foreach(diffGraph.addEdge(_, closureLocal, EdgeTypes.AST))
+                case _ => // do nothing
               }
 
               diffGraph.addNode(closureBindingNode)
