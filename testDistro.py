@@ -203,14 +203,6 @@ def slice_test(script_abs_dir):
         args = [JOERN_SLICE, "data-flow", test_file, "-o", out_file]
         run_externally(args, True, f"Running joern-slice on {slice_path}", "Failed to execute joern-slice")
 
-        result = subprocess.run([
-            JOERN, 
-            "--script", 
-            slice_script, 
-            "--param", 
-            param_for_windows(f"sliceFile={out_file}")
-        ], capture_output=True, text=True)
-
         args = [JOERN, "--script", slice_script, "--param", param_for_windows(f"sliceFile={out_file}")]
         proc = run_externally(args, True, f"Running joern with script {slice_script}", f"Failed to execute joern script {slice_script}")
 
