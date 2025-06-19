@@ -45,7 +45,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       scope.lookupVariable(local.name) match {
         case Some(refLocal) =>
           diffGraph.addEdge(closureBindingNode, refLocal, EdgeTypes.REF)
-        case _ => // do nothing
+        case _ =>
+          logger.warn(s"Unable to find local variable for closure ref: ${local.name}")
       }
 
       scope.addToScope(local.name, local)
@@ -123,9 +124,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val method         = methodNode(decl, methodName, methodCode, fullName, Some(signature), relativeFileName)
     val methodBodyNode = blockNode(decl)
-    if (!isConstructor) {
-      scope.pushNewScope(method, Option(methodBodyNode))
-    }
+    scope.pushNewScope(method, Option(methodBodyNode))
 
     val returnType = decl.returnType.map(_.name).getOrElse(Defines.Any)
 
@@ -139,9 +138,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val attributeAsts = decl.attributeGroups.flatMap(astForAttributeGroup)
     val methodBody    = blockAst(methodBodyNode, methodBodyStmts)
 
-    if (!isConstructor) {
-      scope.popScope()
-    }
+    scope.popScope()
     methodAstWithAnnotations(method, parameters, methodBody, methodReturn, modifiers, attributeAsts)
   }
 

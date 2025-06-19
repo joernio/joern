@@ -892,9 +892,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     // Return identifier
     val returnIdentifierAst = astForIdentifierWithLocalRef(tmpIdentifier.copy, local)
 
-    val block = blockNode(expr, "", Defines.Any)
-
-    Ast(block)
+    Ast(blockNode(expr, "", Defines.Any))
       .withChild(allocAssignAst)
       .withChild(initCallAst)
       .withChild(returnIdentifierAst)
