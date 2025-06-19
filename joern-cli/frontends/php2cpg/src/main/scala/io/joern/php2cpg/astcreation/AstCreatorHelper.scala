@@ -104,11 +104,6 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
   private def getTypeDeclPrefix: Option[String] =
     scope.getEnclosingTypeDeclTypeName.filterNot(_ == NamespaceTraversal.globalNamespaceName)
 
-  private def getSurroundingFullName: Option[String] = {
-    scope.surroundingScopeFullName
-      .filterNot(scopeName => scopeName.contains(NamespaceTraversal.globalNamespaceName))
-  }
-
   protected def codeForMethodCall(call: PhpCallExpr, targetAst: Ast, name: String): String = {
     val callOperator = if (call.isNullSafe) s"?$InstanceMethodDelimiter" else InstanceMethodDelimiter
     s"${targetAst.rootCodeOrEmpty}$callOperator$name"
@@ -214,9 +209,11 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     if (fileName.isDefined) {
       methodNode.filename(fileName.get)
     }
-    val staticModifier = NewModifier().modifierType(ModifierTypes.STATIC)
-    val methodReturn   = methodReturnNode(node, returnType)
-    methodAst(methodNode, Nil, body, methodReturn, List(staticModifier))
+
+    val staticMethodNode = methodNode.lineNumberEnd(lineEnd(node))
+    val staticModifier   = NewModifier().modifierType(ModifierTypes.STATIC)
+    val methodReturn     = methodReturnNode(node, returnType)
+    methodAst(staticMethodNode, Nil, body, methodReturn, List(staticModifier))
   }
 
   protected def astForIdentifierWithLocalRef(ident: NewIdentifier, refLocal: NewNode): Ast =
