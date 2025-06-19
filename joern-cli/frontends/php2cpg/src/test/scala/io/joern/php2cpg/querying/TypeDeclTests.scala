@@ -248,6 +248,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
           clinitMethod.signature shouldBe "void()"
           clinitMethod.filename shouldBe "foo.php"
           clinitMethod.file.name.l shouldBe List("foo.php")
+          clinitMethod.lineNumber shouldBe Some(2)
+          clinitMethod.lineNumberEnd shouldBe Some(5)
 
           inside(clinitMethod.body.astChildren.l) { case List(self: Local, aAssign: Call, bAssign: Call) =>
             aAssign.code shouldBe "self::A = \"A\""

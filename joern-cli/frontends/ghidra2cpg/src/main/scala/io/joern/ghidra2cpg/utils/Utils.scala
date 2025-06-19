@@ -66,6 +66,7 @@ object Utils {
   }
   def createMethodNode(decompiler: Decompiler, function: Function, fileName: String): NewMethod = {
     val code       = decompiler.toDecompiledFunction(function).map(_.getC).getOrElse("")
+    val signature  = decompiler.toDecompiledFunction(function).map(_.getSignature).getOrElse("")
     val isExternal = Option(function.getThunkedFunction(true)).map(_.isExternal).getOrElse(function.isExternal)
     val lineNumberEnd = Option(function.getReturn)
       .flatMap(x => Option(x.getMinAddress))
@@ -78,7 +79,7 @@ object Utils {
       .name(function.getName)
       .fullName(function.getName)
       .isExternal(isExternal)
-      .signature(function.getSignature(true).toString)
+      .signature(signature)
       .lineNumber(function.getEntryPoint.getOffsetAsBigInteger.intValue())
       .columnNumber(-1)
       .lineNumberEnd(lineNumberEnd)

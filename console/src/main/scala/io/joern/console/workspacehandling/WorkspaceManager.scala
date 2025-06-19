@@ -270,7 +270,18 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
       val cpgFile         = Paths.get(cpgFilename)
       val workingCopyPath = projectDir(name).resolve(Project.workCpgFileName)
       val workingCopyName = workingCopyPath.absolutePathAsString
-      FileUtil.copyFiles(cpgFile, workingCopyPath)
+
+      if (scala.util.Properties.isWin) {
+        // io.joern.console.workspacehandling.Project copies the CPG from 'cpg.bin.tmp' to 'cpg.bin'
+        // and on Windows the file handle may not be freed yet if openProject is called directly afterward.
+        // This happens e.g., during command combination like '> joern --src foo --run scan'.
+        // Files.copy throws an AccessDeniedException as the result.
+        // TODO: find a way to prevent this situation from the start
+        Try(FileUtil.copyFiles(cpgFile, workingCopyPath))
+      } else {
+        FileUtil.copyFiles(cpgFile, workingCopyPath)
+      }
+
       report(s"Loading base CPG from: $workingCopyName")
 
       val result = {

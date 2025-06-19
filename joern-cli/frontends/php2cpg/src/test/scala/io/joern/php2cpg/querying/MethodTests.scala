@@ -23,6 +23,7 @@ class MethodTests extends PhpCode2CpgFixture {
       fooMethod.fullName shouldBe "foo"
       fooMethod.signature shouldBe s"${Defines.UnresolvedSignature}(0)"
       fooMethod.lineNumber shouldBe Some(2)
+      fooMethod.lineNumberEnd shouldBe Some(2)
       fooMethod.code shouldBe "function foo()"
       fooMethod.astParentType shouldBe "METHOD"
       fooMethod.astParentFullName.endsWith("<global>") shouldBe true
@@ -41,6 +42,20 @@ class MethodTests extends PhpCode2CpgFixture {
         |  static $x, $y;
         |}
         |""".stripMargin)
+
+    "have the correct line numbers for the foo method" in {
+      inside(cpg.method("foo").l) { case List(fooMethod) =>
+        fooMethod.lineNumber shouldBe Some(2)
+        fooMethod.lineNumberEnd shouldBe Some(4)
+      }
+    }
+
+    "have the correct line numbers for the <global> method" in {
+      inside(cpg.method.nameExact("<global>").l) { case List(globalMethod) =>
+        globalMethod.lineNumber shouldBe Some(2)
+        globalMethod.lineNumberEnd shouldBe Some(4)
+      }
+    }
 
     "not leave orphan identifiers" in {
       cpg.identifier.filter(identifier => Try(identifier.astParent.isEmpty).getOrElse(true)).toList shouldBe Nil
@@ -158,6 +173,13 @@ class MethodTests extends PhpCode2CpgFixture {
     "set the content field correctly for the <global> method" in {
       inside(cpg.method.nameExact("<global>").l) { case List(globalMethod) =>
         globalMethod.sourceCode shouldBe sourceCode.stripPrefix("<?php").trim
+      }
+    }
+
+    "set line numbers correctly for the <global> method" in {
+      inside(cpg.method.nameExact("<global>").l) { case List(globalMethod) =>
+        globalMethod.lineNumber shouldBe Some(2)
+        globalMethod.lineNumberEnd shouldBe Some(5)
       }
     }
   }

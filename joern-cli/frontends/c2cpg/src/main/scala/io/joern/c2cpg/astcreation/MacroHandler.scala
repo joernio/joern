@@ -1,19 +1,16 @@
 package io.joern.c2cpg.astcreation
 
+import io.joern.c2cpg.passes.FunctionDeclNodePass
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.nodes.AstNodeNew
-import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
-import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
-import io.shiftleft.codepropertygraph.generated.nodes.NewCall
-import io.shiftleft.codepropertygraph.generated.nodes.NewFieldIdentifier
-import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
-import io.shiftleft.codepropertygraph.generated.nodes.NewNode
-import org.apache.commons.lang3.StringUtils
-import org.eclipse.cdt.core.dom.ast.IASTBinaryExpression
-import org.eclipse.cdt.core.dom.ast.IASTMacroExpansionLocation
-import org.eclipse.cdt.core.dom.ast.IASTNode
-import org.eclipse.cdt.core.dom.ast.IASTPreprocessorMacroDefinition
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
+import org.eclipse.cdt.core.dom.ast.{
+  IASTBinaryExpression,
+  IASTMacroExpansionLocation,
+  IASTNode,
+  IASTPreprocessorMacroDefinition
+}
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import scala.annotation.nowarn
@@ -99,23 +96,79 @@ trait MacroHandler { this: AstCreator =>
     macroDef: IASTPreprocessorMacroDefinition,
     arguments: List[String]
   ): Ast = {
-    val name    = ASTStringUtil.getSimpleName(macroDef.getName)
-    val code    = node.getRawSignature.stripSuffix(";")
-    val argAsts = argumentTrees(arguments, ast).map(_.getOrElse(Ast()))
+    val macroDefName     = shortName(macroDef)
+    val code             = node.getRawSignature.stripSuffix(";")
+    val typeFullName     = registerType(typeFor(node))
+    val argAsts          = argumentTrees(arguments, ast).map(_.getOrElse(Ast()))
+    val signature        = s"$typeFullName(${argAsts.size})"
+    val fileName_        = fileName(macroDef)
+    val macroDefFullName = s"$fileName_:$macroDefName:$signature"
 
-    val callName     = StringUtils.normalizeSpace(name)
-    val callFullName = StringUtils.normalizeSpace(fullName(macroDef, argAsts))
-    val typeFullName = registerType(typeFor(node))
-    val callNode =
-      NewCall()
-        .name(callName)
-        .dispatchType(DispatchTypes.INLINED)
-        .methodFullName(callFullName)
-        .code(code)
-        .typeFullName(typeFullName)
-        .lineNumber(line(node))
-        .columnNumber(column(node))
-    callAst(callNode, argAsts)
+    val callNode_ =
+      callNode(node, code, macroDefName, macroDefFullName, DispatchTypes.INLINED, Some(signature), Some(typeFullName))
+
+    // we stub the corresponding method manually because we want different line/column information
+    // (call information from the actual AST node but the method gets the IASTPreprocessorMacroDefinition information)
+    createMacroMethodStub(macroDefName, macroDefFullName, signature, typeFullName, fileName_, argAsts.size, macroDef)
+
+    callAst(callNode_, argAsts)
+  }
+
+  private def createMacroMethodStub(
+    name: String,
+    fullName: String,
+    signature: String,
+    typeFullName: String,
+    fileName: String,
+    parameterCount: Int,
+    macroDef: IASTPreprocessorMacroDefinition
+  ): Unit = {
+    val parentNode: NewTypeDecl = methodAstParentStack.collectFirst {
+      // just like actual macros we put the method stub for it top-level
+      case t: NewTypeDecl if t.name == NamespaceTraversal.globalNamespaceName => t
+    }.get
+    val astParentFullName = parentNode.fullName
+    val astParentType     = parentNode.label
+    val code_             = code(macroDef)
+
+    val lineNumber      = line(macroDef)
+    val columnNumber    = column(macroDef)
+    val lineNumberEnd   = lineEnd(macroDef)
+    val columnNumberEnd = columnEnd(macroDef)
+    val offset_         = offset(macroDef)
+
+    val parameter = (1 to parameterCount).map { index =>
+      val nameAndCode = s"p$index"
+      new FunctionDeclNodePass.ParameterInfo(
+        name = nameAndCode,
+        code = nameAndCode,
+        index = index,
+        isVariadic = false,
+        evaluationStrategy = EvaluationStrategies.BY_VALUE,
+        lineNumber = lineNumber,
+        columnNumber = columnNumber,
+        typeFullName = registerType(Defines.Any)
+      )
+    }
+
+    val methodInfo = FunctionDeclNodePass.MethodInfo(
+      name = name,
+      code = code_,
+      fileName = filename,
+      returnType = typeFullName,
+      astParentType = astParentType,
+      astParentFullName = astParentFullName,
+      lineNumber = lineNumber,
+      columnNumber = columnNumber,
+      lineNumberEnd = lineNumberEnd,
+      columnNumberEnd = columnNumberEnd,
+      signature = signature,
+      offset = offset_,
+      parameter = parameter,
+      modifier = Nil,
+      isExternal = true
+    )
+    registerMethodDeclaration(fullName, methodInfo)
   }
 
   private def argumentTrees(arguments: List[String], ast: Ast): List[Option[Ast]] = {
@@ -134,17 +187,6 @@ trait MacroHandler { this: AstCreator =>
         case x: ExpressionNew if !x.isInstanceOf[NewFieldIdentifier] && x.code == normalizedCode => x
       }
     }
-  }
-
-  /** Create a full name field that encodes line information that can be picked up by the MethodStubCreator in order to
-    * create a METHOD node with the correct location information.
-    */
-  private def fullName(macroDef: IASTPreprocessorMacroDefinition, argAsts: List[Ast]) = {
-    val name               = ASTStringUtil.getSimpleName(macroDef.getName)
-    val filename           = fileName(macroDef)
-    val lineNo: Integer    = line(macroDef).getOrElse(-1)
-    val lineNoEnd: Integer = lineEnd(macroDef).getOrElse(-1)
-    s"$filename:$lineNo:$lineNoEnd:$name:${argAsts.size}"
   }
 
   private def isExpandedFromMacro(node: IASTNode): Boolean = expandedFromMacro(node).nonEmpty

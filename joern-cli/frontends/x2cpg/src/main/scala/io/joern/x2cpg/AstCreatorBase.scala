@@ -108,22 +108,17 @@ abstract class AstCreatorBase[Node, NodeProcessor](filename: String)(implicit wi
     returnType: String,
     fileName: Option[String] = None
   ): Ast = {
-    // TODO Use methodNode builder method
-    val methodNode = NewMethod()
-      .name(Defines.StaticInitMethodName)
-      .fullName(fullName)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-    if (signature.isDefined) {
-      methodNode.signature(signature.get)
-    }
-    if (fileName.isDefined) {
-      methodNode.filename(fileName.get)
-    }
+    val methodNode_ = methodNode(
+      node,
+      Defines.StaticInitMethodName,
+      fullName,
+      signature.getOrElse(Method.PropertyDefaults.Signature),
+      fileName.getOrElse(Method.PropertyDefaults.Filename)
+    )
     val staticModifier = NewModifier().modifierType(ModifierTypes.STATIC)
     val body           = blockAst(NewBlock().typeFullName(Defines.Any), initAsts)
     val methodReturn   = methodReturnNode(node, returnType)
-    methodAst(methodNode, Nil, body, methodReturn, List(staticModifier))
+    methodAst(methodNode_, Nil, body, methodReturn, List(staticModifier))
   }
 
   /** For a given return node and arguments, create an AST that represents the return instruction. The main purpose of

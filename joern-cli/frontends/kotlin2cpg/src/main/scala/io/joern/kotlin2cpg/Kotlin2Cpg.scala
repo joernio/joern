@@ -235,7 +235,8 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
       new MetaDataPass(cpg, Languages.KOTLIN, config.inputPath).createAndApply()
 
       val bindingContext = createBindingContext(environment)
-      val astCreator     = new AstCreationPass(sourceFiles, bindingContext, cpg)(config.schemaValidation)
+      val astCreator =
+        new AstCreationPass(sourceFiles, bindingContext, cpg, config.disableFileContent)(config.schemaValidation)
       astCreator.createAndApply()
 
       Disposer.dispose(environment.getProjectEnvironment.getParentDisposable)

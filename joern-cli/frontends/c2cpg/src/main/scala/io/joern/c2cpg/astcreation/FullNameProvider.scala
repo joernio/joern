@@ -102,23 +102,24 @@ trait FullNameProvider { this: AstCreator =>
 
   protected def shortName(node: IASTNode): String = {
     val name = node match {
-      case n: IASTName                    => shortNameForIASTName(n)
-      case d: IASTDeclarator              => shortNameForIASTDeclarator(d)
-      case f: IASTFunctionDefinition      => shortNameForIASTFunctionDefinition(f)
-      case d: CPPASTIdExpression          => shortNameForCPPASTIdExpression(d)
-      case u: IASTUnaryExpression         => shortName(u.getOperand)
-      case c: IASTFunctionCallExpression  => shortName(c.getFunctionNameExpression)
-      case d: IASTIdExpression            => shortName(d.getName)
-      case a: ICPPASTNamespaceAlias       => shortName(a.getAlias)
-      case n: ICPPASTNamespaceDefinition  => shortName(n.getName)
-      case e: IASTEnumerationSpecifier    => shortName(e.getName)
-      case c: IASTCompositeTypeSpecifier  => shortName(c.getName)
-      case e: IASTElaboratedTypeSpecifier => shortName(e.getName)
-      case s: IASTNamedTypeSpecifier      => shortName(s.getName)
-      case l: IASTLabelStatement          => shortName(l.getName)
-      case s: IASTSimpleDeclSpecifier     => s.getRawSignature
-      case _: ICPPASTLambdaExpression     => nextClosureName()
-      case other                          => notHandledYet(other); nextClosureName()
+      case n: IASTName                        => shortNameForIASTName(n)
+      case d: IASTDeclarator                  => shortNameForIASTDeclarator(d)
+      case f: IASTFunctionDefinition          => shortNameForIASTFunctionDefinition(f)
+      case d: CPPASTIdExpression              => shortNameForCPPASTIdExpression(d)
+      case u: IASTUnaryExpression             => shortName(u.getOperand)
+      case c: IASTFunctionCallExpression      => shortName(c.getFunctionNameExpression)
+      case a: ICPPASTNamespaceAlias           => shortName(a.getAlias)
+      case d: IASTIdExpression                => shortName(d.getName)
+      case m: IASTPreprocessorMacroDefinition => shortName(m.getName)
+      case n: ICPPASTNamespaceDefinition      => shortName(n.getName)
+      case e: IASTEnumerationSpecifier        => shortName(e.getName)
+      case c: IASTCompositeTypeSpecifier      => shortName(c.getName)
+      case e: IASTElaboratedTypeSpecifier     => shortName(e.getName)
+      case s: IASTNamedTypeSpecifier          => shortName(s.getName)
+      case l: IASTLabelStatement              => shortName(l.getName)
+      case s: IASTSimpleDeclSpecifier         => s.getRawSignature
+      case _: ICPPASTLambdaExpression         => nextClosureName()
+      case other                              => notHandledYet(other); nextClosureName()
     }
     stripTemplateTags(replaceOperator(StringUtils.normalizeSpace(name)))
   }

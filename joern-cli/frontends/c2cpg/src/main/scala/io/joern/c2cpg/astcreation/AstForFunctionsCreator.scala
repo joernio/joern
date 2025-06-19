@@ -69,7 +69,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
           signature = signature,
           offset(funcDecl),
           parameter = parameterNodeInfos ++ variadicParams,
-          modifier = modifierFor(funcDecl).map(_.modifierType)
+          modifier = modifierFor(funcDecl).map(_.modifierType),
+          isExternal = false
         )
         registerMethodDeclaration(fullName, methodInfo)
         Ast()

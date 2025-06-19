@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.Constants
+import io.joern.kotlin2cpg.{Config, Constants}
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
@@ -20,7 +20,7 @@ import io.shiftleft.semanticcpg.language.*
 
 class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDefaultJars = true) {
   "CPG for code with a simple lambda which captures a method parameter" should {
-    val cpg = code("fun f1(p: String) { 1.let { println(p) } }")
+    val cpg = code("fun f1(p: String) { 1.let { println(p) } }").withConfig(Config().withDisableFileContent(false))
 
     "should contain a single METHOD_REF node with a single CAPTURE edge" in {
       cpg.methodRef.size shouldBe 1
@@ -46,6 +46,10 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.methodFullName shouldBe "kotlin.let:java.lang.Object(java.lang.Object,kotlin.jvm.functions.Function1)"
       c.signature shouldBe "java.lang.Object(java.lang.Object,kotlin.jvm.functions.Function1)"
+    }
+
+    "have the correct offsets set for the lambda method" in {
+      cpg.method.name(".*lambda.*").sourceCode.l shouldBe List("{ println(p) }")
     }
   }
 
@@ -110,6 +114,13 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
         |    return 1
         |}
         |""".stripMargin)
+      .withConfig(Config().withDisableFileContent(false))
+
+    "have the correct offsets set for the lambda method" in {
+      cpg.method.name(".*lambda.*").sourceCode.l shouldBe List("""{ arg ->
+          |        println(arg)
+          |    }""".stripMargin)
+    }
 
     "should contain a CALL node for `println`" in {
       val callsWithPrintln = cpg.call.code(".*println.*").code.toSet

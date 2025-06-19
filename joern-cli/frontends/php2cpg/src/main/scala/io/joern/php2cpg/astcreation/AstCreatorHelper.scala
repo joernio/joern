@@ -30,7 +30,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
 
   protected def column(phpNode: PhpNode): Option[Int] = None
 
-  protected def lineEnd(phpNode: PhpNode): Option[Int] = None
+  protected def lineEnd(phpNode: PhpNode): Option[Int] = phpNode.attributes.lineEndNumber
 
   protected def columnEnd(phpNode: PhpNode): Option[Int] = None
 
