@@ -17,11 +17,11 @@ import scala.util.Try
 
 class SwiftSrc2Cpg extends X2CpgFrontend[Config] {
 
-  private val report: Report = new Report()
-
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       FileUtil.usingTemporaryDirectory("swiftsrc2cpgOut") { tmpDir =>
+        val report: Report = new Report()
+
         val astGenResult = new AstGenRunner(config).execute(tmpDir)
         val hash         = HashUtil.sha256(astGenResult.parsedFiles.map(file => Paths.get(file)))
 

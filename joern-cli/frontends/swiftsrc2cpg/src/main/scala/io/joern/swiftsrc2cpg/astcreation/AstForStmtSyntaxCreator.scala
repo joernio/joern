@@ -1,6 +1,5 @@
 package io.joern.swiftsrc2cpg.astcreation
 
-import io.joern.swiftsrc2cpg.astcreation.AstCreatorHelper.OptionSafeAst
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
@@ -65,7 +64,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val catchNode = controlStructureNode(catchClause, ControlStructureTypes.CATCH, code(catchClause))
     val declAst   = astForNode(catchClause.catchItems)
     val bodyAst   = astForNode(catchClause.body)
-    setArgumentIndices(List(declAst, bodyAst))
+    setOrder(List(declAst, bodyAst))
     Ast(catchNode).withChild(declAst).withChild(bodyAst)
   }
 
@@ -230,7 +229,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val bodyAst = astForForStmtBody(node)
 
     val whileLoopBlockChildren = List(loopVariableAssignmentAst, bodyAst)
-    setArgumentIndices(whileLoopBlockChildren)
+    setOrder(whileLoopBlockChildren)
     val whileLoopBlockAst = blockAst(whileLoopBlockNode, whileLoopBlockChildren)
 
     scope.popScope()
@@ -242,7 +241,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val blockChildren =
       List(iteratorAssignmentAst, Ast(resultNode), Ast(loopVariableNode), whileLoopAst.withChild(whileLoopBlockAst))
-    setArgumentIndices(blockChildren)
+    setOrder(blockChildren)
     blockAst(blockNode_, blockChildren)
   }
 
@@ -359,7 +358,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val bodyAst = astForForStmtBody(node)
 
     val whileLoopBlockChildren = List(loopVariableAssignmentAst, bodyAst)
-    setArgumentIndices(whileLoopBlockChildren)
+    setOrder(whileLoopBlockChildren)
     val whileLoopBlockAst = blockAst(whileLoopBlockNode, whileLoopBlockChildren)
 
     scope.popScope()
@@ -370,7 +369,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     localAstParentStack.pop()
 
     val blockChildren = List(iteratorAssignmentAst, Ast(resultNode), whileLoopAst.withChild(whileLoopBlockAst))
-    setArgumentIndices(blockChildren)
+    setOrder(blockChildren)
     blockAst(blockNode_, blockChildren)
   }
 
@@ -502,7 +501,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val bodyAst = astForForStmtBody(node)
 
     val whileLoopBlockChildren = loopVariableAssignmentAsts :+ bodyAst
-    setArgumentIndices(whileLoopBlockChildren)
+    setOrder(whileLoopBlockChildren)
     val whileLoopBlockAst = blockAst(whileLoopBlockNode, whileLoopBlockChildren.toList)
 
     scope.popScope()
@@ -516,7 +515,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       List(iteratorAssignmentAst, Ast(resultNode)) ++ loopVariableNodes.map(Ast(_)) :+ whileLoopAst.withChild(
         whileLoopBlockAst
       )
-    setArgumentIndices(blockNodeChildren)
+    setOrder(blockNodeChildren)
     blockAst(blockNode_, blockNodeChildren)
   }
 
@@ -558,7 +557,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     localAstParentStack.pop()
 
     val labelAsts = List(Ast(labeledNode), bodyAst)
-    setArgumentIndices(labelAsts)
+    setOrder(labelAsts)
     blockAst(blockNode_, labelAsts)
   }
 
@@ -580,7 +579,11 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     node.expression match {
       case Some(value) =>
         val expr = astForNodeWithFunctionReference(value)
-        Ast(cpgReturn).withChild(expr).withArgEdge(cpgReturn, expr.root)
+        val ast  = Ast(cpgReturn).withChild(expr)
+        expr.root match {
+          case Some(value) => ast.withArgEdge(cpgReturn, value)
+          case None        => ast
+        }
       case None =>
         Ast(cpgReturn)
     }
@@ -613,7 +616,11 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForYieldStmtSyntax(node: YieldStmtSyntax): Ast = {
     val cpgReturn = returnNode(node, code(node))
     val expr      = astForNodeWithFunctionReference(node.yieldedExpressions)
-    Ast(cpgReturn).withChild(expr).withArgEdge(cpgReturn, expr.root)
+    val ast       = Ast(cpgReturn).withChild(expr)
+    expr.root match {
+      case Some(value) => ast.withArgEdge(cpgReturn, value)
+      case None        => ast
+    }
   }
 
   protected def astForStmtSyntax(stmtSyntax: StmtSyntax): Ast = stmtSyntax match {

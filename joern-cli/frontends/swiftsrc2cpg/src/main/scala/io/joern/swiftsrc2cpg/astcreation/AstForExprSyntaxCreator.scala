@@ -436,12 +436,13 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           case other => (List(astForNode(other)), List.empty)
         }
         val needsSyntheticBreak = !s.statements.children.lastOption.exists(_.item.isInstanceOf[FallThroughStmtSyntax])
+        val asts                = flowAst :+ astForNode(s.statements)
         val cAsts = if (needsSyntheticBreak) {
-          flowAst :+ astForNode(s.statements) :+ Ast(controlStructureNode(s, ControlStructureTypes.BREAK, "break"))
+          asts :+ Ast(controlStructureNode(s, ControlStructureTypes.BREAK, "break"))
         } else {
-          flowAst :+ astForNode(s.statements)
+          asts
         }
-        setArgumentIndices(cAsts)
+        setOrder(cAsts)
         (tAsts.toList, cAsts.toList)
       case i: IfConfigDeclSyntax =>
         (List.empty, List(astForIfConfigDeclSyntax(i)))
@@ -462,8 +463,8 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     scope.pushNewBlockScope(blockNode_)
     localAstParentStack.push(blockNode_)
 
-    val casesAsts = node.cases.children.flatMap(astsForSwitchCase)
-    setArgumentIndices(casesAsts.toList)
+    val casesAsts = node.cases.children.toList.flatMap(astsForSwitchCase)
+    setOrder(casesAsts)
 
     scope.popScope()
     localAstParentStack.pop()
@@ -471,7 +472,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     Ast(switchNode)
       .withChild(switchExpressionAst)
       .withConditionEdge(switchNode, switchExpressionAst.nodes.head)
-      .withChild(blockAst(blockNode_, casesAsts.toList))
+      .withChild(blockAst(blockNode_, casesAsts))
   }
 
   private def astForTernaryExprSyntax(node: TernaryExprSyntax): Ast = {
