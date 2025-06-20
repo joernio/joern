@@ -331,7 +331,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
           //  we want to clean this creation up.
           Option(tmpName)
         case None =>
-          val tmpName     = this.tmpGen.fresh
+//          val tmpName     = this.tmpGen.fresh
+          val tmpName     = scope.getNewVarTmp
           val tmpGenLocal = NewLocal().name(tmpName).code(tmpName).typeFullName(Defines.Any)
           scope.addToScope(tmpName, tmpGenLocal) match {
             case BlockScope(block) => diffGraph.addEdge(block, tmpGenLocal, EdgeTypes.AST)
@@ -424,7 +425,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val block = blockNode(node, node.text, Defines.Any)
     scope.pushNewScope(BlockScope(block))
 
-    val tmpName     = this.tmpGen.fresh
+//    val tmpName     = this.tmpGen.fresh
+    val tmpName     = scope.getNewVarTmp
     val tmpTypeHint = receiverTypeFullName.stripSuffix("<class>")
     val tmp         = SimpleIdentifier(None)(node.span.spanStart(tmpName))
     val tmpLocal    = NewLocal().name(tmpName).code(tmpName).dynamicTypeHintFullName(Seq(tmpTypeHint))
@@ -730,7 +732,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     if (node.elements.isEmpty) {
       arrayInitCall
     } else {
-      val tmp = this.tmpGen.fresh
+//      val tmp = this.tmpGen.fresh
+      val tmp = scope.getNewVarTmp
 
       def tmpRubyNode(tmpNode: Option[RubyExpression] = None) =
         SimpleIdentifier()(tmpNode.map(_.span).getOrElse(node.span).spanStart(tmp))
@@ -774,7 +777,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   protected def astForHashLiteral(node: HashLike): Ast = {
-    val tmp = this.tmpGen.fresh
+//    val tmp = this.tmpGen.fresh
+    val tmp = scope.getNewVarTmp
 
     def tmpAst(tmpNode: Option[RubyExpression] = None) = astForSimpleIdentifier(
       SimpleIdentifier()(tmpNode.map(_.span).getOrElse(node.span).spanStart(tmp))

@@ -20,6 +20,10 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     extends Scope[String, DeclarationNew, TypedScopeElement]
     with TypedScope[RubyMethod, RubyField, RubyType](summary) {
 
+  private var tmpVarCounter       = 0
+  private var tmpClassCounter     = 0
+  private var tmpProcParamCounter = 0
+
   private val builtinMethods = GlobalTypes.kernelFunctions
     .map(m => RubyMethod(m, List.empty, Defines.Any, Some(GlobalTypes.kernelPrefix)))
     .toList
@@ -188,6 +192,68 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
         case _ =>
           addRequireGem(path)
       }
+    }
+  }
+
+  private def getNextClassTmp: String = {
+    val anonClassName = s"<anon-class-$tmpClassCounter>"
+    tmpClassCounter = tmpClassCounter + 1
+
+    anonClassName
+  }
+
+  private def getNextVarTmp: String = {
+    val anonClassName = s"<tmp-$tmpVarCounter>"
+    tmpVarCounter = tmpVarCounter + 1
+
+    anonClassName
+  }
+
+  private def getNextProcParamTmp: String = {
+    val anonClassName = s"<proc-param-$tmpProcParamCounter>"
+    tmpProcParamCounter = tmpProcParamCounter + 1
+
+    anonClassName
+  }
+
+  def getNewClassTmp: String = {
+    val surroundingFullName = this.surroundingScopeFullName.getOrElse(RubyDefines.Main)
+
+    stack.headOption match {
+      case Some(_ @ScopeElement(scopeNode: NamespaceScope, _)) => s"$surroundingFullName.${scopeNode.getNextClassTmp}"
+      case Some(node: TypeLikeScope)                           => s"$surroundingFullName.${node.getNextClassTmp}"
+      case Some(node: MethodLikeScope)                         => s"$surroundingFullName.${node.getNextClassTmp}"
+      case Some(_ @ScopeElement(scopeNode: BlockScope, _))     => s"$surroundingFullName.${scopeNode.getNextClassTmp}"
+      case _ =>
+        s"${surroundingFullName}.${this.getNextClassTmp}"
+    }
+  }
+
+  def getNewVarTmp: String = {
+    val surroundingFullName = this.surroundingScopeFullName.getOrElse(RubyDefines.Main)
+
+    stack.headOption match {
+      case Some(_ @ScopeElement(scopeNode: NamespaceScope, _)) => s"${scopeNode.getNextVarTmp}"
+      case Some(node: TypeLikeScope)                           => s"${node.getNextVarTmp}"
+      case Some(node: MethodLikeScope)                         => s"${node.getNextVarTmp}"
+      case Some(_ @ScopeElement(scopeNode: BlockScope, _))     => s"${scopeNode.getNextVarTmp}"
+      case _ =>
+        s"${this.getNextVarTmp}"
+    }
+  }
+
+  def getNewProcParam: Either[String, String] = {
+    val surroundingFullName = this.surroundingScopeFullName.getOrElse(RubyDefines.Main)
+
+    stack.headOption match {
+      case Some(_ @ScopeElement(scopeNode: NamespaceScope, _)) =>
+        Left(s"$surroundingFullName.${scopeNode.getNextProcParamTmp}")
+      case Some(node: TypeLikeScope)   => Left(s"$surroundingFullName.${node.getNextProcParamTmp}")
+      case Some(node: MethodLikeScope) => Left(s"$surroundingFullName.${node.getNextProcParamTmp}")
+      case Some(_ @ScopeElement(scopeNode: BlockScope, _)) =>
+        Left(s"$surroundingFullName.${scopeNode.getNextProcParamTmp}")
+      case _ =>
+        Left(s"${surroundingFullName}.${this.getNextProcParamTmp}")
     }
   }
 

@@ -95,8 +95,12 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         val classFullName = typeDeclTemp.fullName
 
         (typeDeclTemp, classFullName, true)
-      case _ =>
-        val classFullName = computeFullName(className)
+      case node =>
+        val classFullName = node match {
+          case _: AnonymousTypeDeclaration =>
+            className // AnonTypeDecl's fullNames are already created via the scope object
+          case _ => computeFullName(className)
+        }
         val typeDeclTemp = typeDeclNode(
           node = node,
           name = className,

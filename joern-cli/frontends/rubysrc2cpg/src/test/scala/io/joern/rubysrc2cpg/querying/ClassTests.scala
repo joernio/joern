@@ -363,9 +363,9 @@ class ClassTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "generate a type decl with the associated members" in {
-      inside(cpg.typeDecl.nameExact("<anon-class-0>").l) {
+      inside(cpg.typeDecl.nameExact("Test0.rb:<main>.<anon-class-0>").l) {
         case anonClass :: Nil =>
-          anonClass.name shouldBe "<anon-class-0>"
+          anonClass.name shouldBe "Test0.rb:<main>.<anon-class-0>"
           anonClass.fullName shouldBe s"Test0.rb:$Main.<anon-class-0>"
           inside(anonClass.method.l) {
             case hello :: defaultConstructor :: Nil =>
@@ -384,10 +384,10 @@ class ClassTests extends RubyCode2CpgFixture {
       inside(cpg.method.isModule.assignment.l) {
         case aAssignment :: tmpAssign :: Nil =>
           aAssignment.target.code shouldBe "a"
-          aAssignment.source.code shouldBe "(<tmp-0> = Class.new <anon-class-0> (...)).new"
+          aAssignment.source.code shouldBe "(<tmp-0> = Class.new Test0.rb:<main>.<anon-class-0> (...)).new"
 
           tmpAssign.target.code shouldBe "<tmp-0>"
-          tmpAssign.source.code shouldBe "self.Class.new <anon-class-0> (...)"
+          tmpAssign.source.code shouldBe "self.Class.new Test0.rb:<main>.<anon-class-0> (...)"
         case xs => fail(s"Expected a single assignment, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
       }
     }
@@ -1287,8 +1287,8 @@ class ClassTests extends RubyCode2CpgFixture {
         lambdaReturn.code shouldBe "return nil"
 
         val List(lambdaTypeDecl, lambdaTypeDeclClass) = lambdaMethod.astChildren.isTypeDecl.l
-        lambdaTypeDecl.name shouldBe "<anon-class-0>"
-        lambdaTypeDeclClass.name shouldBe "<anon-class-0><class>"
+        lambdaTypeDecl.name shouldBe "Test0.rb:<main>.Taskbar.List.<body>.<lambda>0.<anon-class-0>"
+        lambdaTypeDeclClass.name shouldBe "Test0.rb:<main>.Taskbar.List.<body>.<lambda>0.<anon-class-0><class>"
 
       case xs => fail(s"expected 1 type, got ${xs.size}: [${xs.code.mkString(", ")}]")
     }
@@ -1333,5 +1333,55 @@ class ClassTests extends RubyCode2CpgFixture {
         }
       case xs =>
     }
+  }
+
+  "Anonymous class nested in class" should {
+    val cpg = code("""
+                     |a = Class.new do
+                     |  def hello
+                     |    puts "Hello world!"
+                     |  end
+                     |end
+                     |
+                     |class Foo
+                     |  c = Class.new do
+                     |    def hello
+                     |    end
+                     |  end
+                     |end
+                     |""".stripMargin)
+
+    "generate a type decl that does not clash" in {
+      inside(cpg.typeDecl.name(".*<anon-class-0>").l) {
+        case outerAnonClass :: nestedAnonClass :: Nil =>
+          outerAnonClass.name shouldBe s"Test0.rb:$Main.<anon-class-0>"
+          outerAnonClass.fullName shouldBe s"Test0.rb:$Main.<anon-class-0>"
+          inside(outerAnonClass.method.l) {
+            case hello :: defaultConstructor :: Nil =>
+              defaultConstructor.name shouldBe RubyDefines.Initialize
+              defaultConstructor.fullName shouldBe s"Test0.rb:$Main.<anon-class-0>.${RubyDefines.Initialize}"
+
+              hello.name shouldBe "hello"
+              hello.fullName shouldBe s"Test0.rb:$Main.<anon-class-0>.hello"
+            case xs => fail(s"Expected a single method, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
+          }
+
+          nestedAnonClass.name shouldBe s"Test0.rb:$Main.Foo.<body>.<anon-class-0>"
+          nestedAnonClass.fullName shouldBe s"Test0.rb:$Main.Foo.<body>.<anon-class-0>"
+
+          inside(nestedAnonClass.method.l) {
+            case hello :: defaultConstructor :: Nil =>
+              defaultConstructor.name shouldBe RubyDefines.Initialize
+              defaultConstructor.fullName shouldBe s"Test0.rb:$Main.Foo.<body>.<anon-class-0>.${RubyDefines.Initialize}"
+
+              hello.name shouldBe "hello"
+              hello.fullName shouldBe s"Test0.rb:$Main.Foo.<body>.<anon-class-0>.hello"
+            case xs => fail(s"Expected a single method, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
+          }
+
+        case xs => fail(s"Expected a single anonymous class, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
+      }
+    }
+
   }
 }

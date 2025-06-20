@@ -188,7 +188,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     */
   def lowerRegexMatch(target: RubyExpression, regex: RubyExpression, originSpan: TextSpan): RubyExpression = {
     // Create tmpName that takes the regex match result
-    val tmpName     = this.tmpGen.fresh
+//    val tmpName     = this.tmpGen.fresh
+    val tmpName     = scope.getNewVarTmp
     val tmpGenLocal = NewLocal().name(tmpName).code(tmpName).typeFullName(Defines.Any)
     scope.addToScope(tmpName, tmpGenLocal) match {
       case BlockScope(block) => diffGraph.addEdge(block, tmpGenLocal, EdgeTypes.AST)
