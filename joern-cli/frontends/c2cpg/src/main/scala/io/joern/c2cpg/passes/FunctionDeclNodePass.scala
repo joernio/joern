@@ -28,7 +28,8 @@ object FunctionDeclNodePass {
     signature: String,
     offset: Option[(Int, Int)],
     parameter: Seq[ParameterInfo],
-    modifier: Seq[String]
+    modifier: Seq[String],
+    isExternal: Boolean
   )
 
   final class ParameterInfo(
@@ -134,7 +135,7 @@ class FunctionDeclNodePass(cpg: Cpg, methodDeclarations: Map[String, FunctionDec
         .filename(methodNodeInfo.fileName)
         .astParentType(methodNodeInfo.astParentType)
         .astParentFullName(methodNodeInfo.astParentFullName)
-        .isExternal(false)
+        .isExternal(methodNodeInfo.isExternal)
         .lineNumber(methodNodeInfo.lineNumber)
         .columnNumber(methodNodeInfo.columnNumber)
         .lineNumberEnd(methodNodeInfo.lineNumberEnd)
@@ -210,7 +211,8 @@ class FunctionDeclNodePass(cpg: Cpg, methodDeclarations: Map[String, FunctionDec
         methodInfo.astParentFullName,
         methodInfo.lineNumber,
         methodInfo.columnNumber,
-        methodInfo.offset
+        methodInfo.offset,
+        methodInfo.isExternal
       )
       Ast.storeInDiffGraph(Ast(typeDecl), dstGraph)
       method.astParentFullName = typeDecl.fullName
@@ -229,13 +231,14 @@ class FunctionDeclNodePass(cpg: Cpg, methodDeclarations: Map[String, FunctionDec
     astParentFullName: String,
     line: Option[Int],
     column: Option[Int],
-    offset: Option[(Int, Int)]
+    offset: Option[(Int, Int)],
+    isExternal: Boolean
   ): NewTypeDecl = {
     val node_ = NewTypeDecl()
       .name(name)
       .fullName(fullName)
       .code(code)
-      .isExternal(false)
+      .isExternal(isExternal)
       .filename(filename)
       .astParentType(astParentType)
       .astParentFullName(astParentFullName)

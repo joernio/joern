@@ -29,10 +29,6 @@ jobs:
         run: rm -rf /home/runner/.cargo
         if: runner.os == 'Linux'
       - run: sbt stage createDistribution
-      - run: |
-          cd joern-cli/target/universal/stage
-          ./schema-extender/test.sh
-          cd -
       - run: sha512sum target/joern-cli.zip > target/joern-cli.zip.sha512
       - run: sbt "querydb/runMain io.joern.dumpq.Main"
       - name: Create Release

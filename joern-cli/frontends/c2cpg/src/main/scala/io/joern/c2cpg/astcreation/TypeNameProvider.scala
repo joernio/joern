@@ -129,7 +129,14 @@ trait TypeNameProvider { this: AstCreator =>
   protected def functionTypeToSignature(typ: IFunctionType): String = {
     val returnType     = cleanType(safeGetType(typ.getReturnType))
     val parameterTypes = typ.getParameterTypes.map(t => cleanType(safeGetType(t)))
-    StringUtils.normalizeSpace(s"$returnType(${parameterTypes.mkString(",")})")
+    val variadicString = if (typ.takesVarArgs()) {
+      // See: https://en.cppreference.com/w/cpp/language/variadic_arguments
+      // `...` and `,...` are the same but `...` is deprecated since C++26 so we settle for the newer one
+      ",..."
+    } else {
+      ""
+    }
+    StringUtils.normalizeSpace(s"$returnType(${parameterTypes.mkString(",")}$variadicString)")
   }
 
   protected def typeFullNameInfo(typeLike: TypeLike): TypeFullNameInfo = {
