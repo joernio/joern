@@ -367,9 +367,10 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   }
 
   protected def importNodes: Iterator[Import] = cu match {
-    case x: File   => x.method.flatMap(_._callViaContainsOut).referencedImports
-    case x: Method => x.file.method.flatMap(_._callViaContainsOut).referencedImports
-    case x         => x.ast.isCall.referencedImports
+    case x: File           => x.method.flatMap(_._callViaContainsOut).referencedImports
+    case x: Method         => x.file.method.flatMap(_._callViaContainsOut).referencedImports
+    case x: NamespaceBlock => x.file.namespaceBlock.ast.isImport
+    case x                 => x.ast.isCall.referencedImports
   }
 
   override def run(): Unit = {
@@ -398,7 +399,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Visits an import and stores references in the symbol table as both an identifier and call.
     */
   protected def visitImport(i: Import): Unit = for {
-    resolvedImport <- i.call.tag
+    resolvedImport <- (i.tag ++ i.call.tag)
     alias          <- i.importedAs
   } {
     EvaluatedImport.tagToEvaluatedImport(resolvedImport).foreach {
