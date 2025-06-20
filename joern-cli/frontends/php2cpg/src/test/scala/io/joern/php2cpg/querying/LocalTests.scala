@@ -31,9 +31,8 @@ class LocalTests extends PhpCode2CpgFixture {
           |}
           |""".stripMargin)
 
-      inside(cpg.method.name("foo").ast.isIdentifier.name("x").l) { case List(xIdent1, xIdent2) =>
-        xIdent1._localViaRefOut.map(_.name) should contain("x")
-        xIdent2._localViaRefOut.map(_.name) should contain("x")
+      inside(cpg.method.name("foo").ast.isIdentifier.name("x").l) { case List(xIdent) =>
+        xIdent._localViaRefOut.map(_.name) should contain("x")
       }
     }
 

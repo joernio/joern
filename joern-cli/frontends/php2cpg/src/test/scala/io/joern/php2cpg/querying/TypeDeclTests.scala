@@ -394,7 +394,6 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         |""".stripMargin)
 
     "parse methods in classes correctly" in {
-      cpg.method.name("<global>").dotAst.l.foreach(println)
       inside(cpg.typeDecl.name("Test0.php:<global>.anon-class-\\d+").l) {
         case anonClass0 :: anonClass1 :: Nil =>
           val List(memberX) = anonClass0.member.l
@@ -437,8 +436,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       }
     }
 
-    "generate locals with correct types" in {
-      inside(cpg.method.name("<global>").body.astChildren.isLocal.l) {
+    "generate identifiers with correct types" in {
+      inside(cpg.method.name("<global>").body.ast.isIdentifier.name(".*tmp.*").dedupBy(_.name).l) {
         case tmp0Local :: tmp1Local :: Nil =>
           tmp0Local.typeFullName shouldBe "Test0.php:<global>.anon-class-0"
           tmp0Local.name shouldBe "Test0.php:<global>@tmp-0"
@@ -526,7 +525,6 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    cpg.method.name("<global>").dotAst.l.foreach(println)
     inside(cpg.typeDecl.name("C.D.anon-class-\\d+").l) {
       case anonClass :: Nil =>
         anonClass.fullName shouldBe s"C.D.anon-class-0"
@@ -538,7 +536,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       case (localNode: Local) :: (bodyBlock: Block) :: Nil =>
         localNode.code shouldBe "$C.D@tmp-0"
         localNode.name shouldBe "C.D@tmp-0"
-        localNode.typeFullName shouldBe "C.D.anon-class-0"
+        localNode.refIn.cast[Identifier].head.typeFullName shouldBe "C.D.anon-class-0"
 
         inside(bodyBlock.astChildren.l) {
           case (assignmentCall: Call) :: (constructCall: Call) :: (tmpIdentifier: Identifier) :: Nil =>

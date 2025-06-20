@@ -3,7 +3,7 @@ package io.joern.php2cpg.astcreation
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants, operatorSymbols}
 import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*
-import io.joern.x2cpg.Defines.{UnresolvedNamespace, UnresolvedSignature}
+import io.joern.x2cpg.Defines.UnresolvedSignature
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -55,77 +55,96 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForCall(call: PhpCallExpr): Ast = {
+    val nameAst   = Option.unless(call.methodName.isInstanceOf[PhpNameExpr])(astForExpr(call.methodName))
+    val name      = getCallName(call, nameAst)
     val arguments = call.args.map(astForCallArg)
 
-    val targetAst = Option.unless(call.isStatic)(call.target.map(astForExpr)).flatten
-
-    val nameAst = Option.unless(call.methodName.isInstanceOf[PhpNameExpr])(astForExpr(call.methodName))
-    val name =
-      nameAst
-        .map(_.rootCodeOrEmpty)
-        .getOrElse(call.methodName match {
-          case nameExpr: PhpNameExpr => nameExpr.name
-          case other =>
-            logger.error(s"Found unexpected call target type: Crash for now to handle properly later: $other")
-            ???
-        })
-
-    val argsCode = arguments
-      .zip(call.args.collect { case x: PhpArg => x.unpack })
-      .map {
-        case (arg, true)  => s"...${arg.rootCodeOrEmpty}"
-        case (arg, false) => arg.rootCodeOrEmpty
-      }
-      .mkString(",")
-
-    val codePrefix =
-      if (!call.isStatic && targetAst.isDefined)
-        codeForMethodCall(call, targetAst.get, name)
-      else if (call.isStatic)
-        codeForStaticMethodCall(call, name)
-      else
-        name
-
-    val code = s"$codePrefix($argsCode)"
-
-    val dispatchType =
-      if (call.isStatic || call.target.isEmpty)
-        DispatchTypes.STATIC_DISPATCH
-      else
-        DispatchTypes.DYNAMIC_DISPATCH
-
-    val fullName = call.target match {
-      // Static method call with a known class name
-      case Some(nameExpr: PhpNameExpr) if call.isStatic =>
-        if (nameExpr.name == NameConstants.Self)
-          composeMethodFullName(name, appendMetaTypeDeclExt = !scope.isSurroundedByMetaclassTypeDecl)
-        else s"${nameExpr.name}$MetaTypeDeclExtension$MethodDelimiter$name"
-      case Some(_) =>
-        val methodName = composeMethodName(call, targetAst, name)
-        s"$UnresolvedNamespace\\$methodName"
-      case None if PhpBuiltins.FuncNames.contains(name) =>
-        // No signature/namespace for MFN for builtin functions to ensure stable names as type info improves.
-        name
-      // Function call
-      case None =>
-        composeMethodFullName(name)
+    /*
+     * A receiver only makes sense if one can track the receiver back to some sort of runtime type information. In the
+     * case of a normal top-level call like foo() that is not possible. There is no corresponding foo identifier which
+     * one could assign another function to. The only uncertainty in such a call is whether this is a foo in the global
+     * namespace or from the namespace surrounding the call-site. But this we cannot decide without knowing which php
+     * files are loaded. In terms of lambdas, they will be assigned to a variable which always begins with `$`.
+     *
+     * This is why we use pre-parse summary idea where we check which functions exist in which namespaces and make a
+     * lookup in it to figure out whether a foo call-site needs to have a global method full name or one from the
+     * current namespace. The `scope` object then delegates what has been defined or imported to determine calls in
+     * scope.
+     */
+    call.target match {
+      case Some(target: (PhpPropertyFetchExpr | PhpCallExpr)) => astForChainedCall(call, name, target)
+      case None if scope.isTopLevel || isBuiltinFunc(name)    => astForStaticCall(call, name, arguments)
+      case _ if call.isStatic                                 => astForStaticCall(call, name, arguments)
+      case maybeTarget                                        => astForDynamicCall(call, name, arguments, maybeTarget)
     }
+  }
+
+  private def astForDynamicCall(
+    call: PhpCallExpr,
+    name: String,
+    arguments: Seq[Ast],
+    maybeTarget: Option[PhpExpr]
+  ): Ast = {
+    val argsCode   = getArgsCode(call, arguments)
+    val targetAst  = maybeTarget.map(astForExpr)
+    val codePrefix = targetAst.map(codeForMethodCall(call, _, name)).getOrElse(name)
+    val code       = s"$codePrefix($argsCode)"
+
+    val dispatchType = DispatchTypes.DYNAMIC_DISPATCH
+
+    val fullName = getMfn(call, name)
 
     // Use method signature for methods that can be linked to avoid varargs issue.
     val signature = s"$UnresolvedSignature(${call.args.size})"
     val callRoot  = callNode(call, code, name, fullName, dispatchType, Some(signature), Some(Defines.Any))
 
-    val receiverAst = (targetAst, nameAst) match {
-      case (Some(target), Some(_)) =>
-        val fieldAccess     = operatorCallNode(call, codePrefix, Operators.fieldAccess, None)
-        val fieldIdentifier = Ast(fieldIdentifierNode(call, name.stripPrefix("$"), name))
-        Option(callAst(fieldAccess, target :: fieldIdentifier :: Nil))
-      case (Some(target), None) => Option(target)
-      case (None, Some(n))      => Option(n)
-      case (None, None)         => None
+    val receiverAst = targetAst match {
+      case None if !scope.isTopLevel =>
+        // if dynamic call is under some type decl, $this is the receiver
+        call.target.map(thisIdentifier).orElse(Option(thisIdentifier(call))).map(Ast(_))
+      case None =>
+        // if dynamic call is on "global" level, the variable itself is the receiver
+        Option(astForExpr(call.methodName))
+      case someTarget => someTarget
     }
 
-    callAst(callRoot, arguments, base = receiverAst)
+    callAst(callRoot, arguments, receiverAst)
+  }
+
+  private def astForStaticCall(call: PhpCallExpr, name: String, arguments: Seq[Ast]): Ast = {
+    val argsCode   = getArgsCode(call, arguments)
+    val codePrefix = codeForStaticMethodCall(call, name)
+    val code       = s"$codePrefix($argsCode)"
+
+    val dispatchType = DispatchTypes.STATIC_DISPATCH
+
+    val fullName = getMfn(call, name)
+
+    // Use method signature for methods that can be linked to avoid varargs issue.
+    val signature = s"$UnresolvedSignature(${call.args.size})"
+    val callRoot  = callNode(call, code, name, fullName, dispatchType, Some(signature), Some(Defines.Any))
+
+    callAst(callRoot, arguments)
+  }
+
+  private def astForChainedCall(call: PhpCallExpr, name: String, target: PhpPropertyFetchExpr | PhpCallExpr): Ast = {
+    val expr        = PhpPropertyFetchExpr(target, PhpNameExpr(name, call.attributes), false, false, call.attributes)
+    val receiverAst = astForPropertyFetchExpr(expr)
+    val targetAst   = astForExpr(target)
+
+    val codePrefix = codeForMethodCall(call, targetAst, name)
+
+    val argumentAsts = call.args.map(astForCallArg)
+    val argsCode     = getArgsCode(call, argumentAsts)
+
+    val code = s"$codePrefix($argsCode)"
+    val mfn  = getMfn(call, name)
+
+    val signature = s"$UnresolvedSignature(${call.args.size})"
+
+    val callN =
+      callNode(call, code, name, mfn, DispatchTypes.DYNAMIC_DISPATCH, Some(signature), Some(Defines.Any))
+    callAst(callN, argumentAsts, Option(receiverAst))
   }
 
   protected def simpleAssignAst(origin: PhpNode, target: Ast, source: Ast): Ast = {
@@ -856,6 +875,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val initSignature = s"$UnresolvedSignature(${initArgs.size})"
     val initFullName  = s"$className$MethodDelimiter$ConstructorMethodName"
     val initCode      = s"$initFullName(${initArgs.map(_.rootCodeOrEmpty).mkString(",")})"
+    val maybeTypeHint = scope.resolveIdentifier(className).map(_.name) // consider imported or defined types
     val initCallNode = callNode(
       expr,
       initCode,
@@ -863,7 +883,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       initFullName,
       DispatchTypes.DYNAMIC_DISPATCH,
       Some(initSignature),
-      Some(Defines.Any)
+      maybeTypeHint.orElse(Some(Defines.Any)) // TODO Review Note: Should the hint be under dynamicTypeHintFullName?
     )
     val initReceiver = Ast(tmpIdentifier.copy)
     val initCallAst  = callAst(initCallNode, initArgs, base = Option(initReceiver))

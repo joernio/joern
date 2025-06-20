@@ -13,7 +13,8 @@ package object php2cpg {
   ): List[CpgPassBase] = {
     List(
       new ComposerAutoloadPass(cpg),
-      new PhpTypeStubsParserPass(cpg, setKnownTypesConfig)
+      new PhpTypeStubsParserPass(cpg, setKnownTypesConfig),
+      new PhpImportResolverPass(cpg)
     ) ++ new PhpTypeRecoveryPassGenerator(cpg, typeRecoveryConfig).generate() :+ PhpTypeHintCallLinker(cpg)
   }
 }
