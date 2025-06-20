@@ -174,7 +174,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val (mAst, bAst) = if (methodBlockContent.isEmpty) {
       (methodStubAst(methodNode_, Seq.empty, methodReturnNode_, modifiers), Ast())
     } else {
-      setArgumentIndices(methodBlockContent)
+      setOrder(methodBlockContent)
       val bodyAst = blockAst(NewBlock(), methodBlockContent)
       (methodAstWithAnnotations(methodNode_, Seq.empty, bodyAst, methodReturnNode_, modifiers), bodyAst)
     }
@@ -287,12 +287,16 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         Option(createFakeConstructor(node, typeDeclNode, methodBlockContent = constructorContent))
     }
 
-  private def isClassMethodOrUninitializedMember(node: DeclSyntax): Boolean =
-    node.isInstanceOf[AccessorDeclSyntax] ||
-      node.isInstanceOf[InitializerDeclSyntax] ||
-      node.isInstanceOf[DeinitializerDeclSyntax] ||
-      node.isInstanceOf[FunctionDeclSyntax] ||
-      !isInitializedMember(node)
+  private def isClassMethodOrUninitializedMember(node: DeclSyntax): Boolean = {
+    node match {
+      case _: AccessorDeclSyntax                => true
+      case _: InitializerDeclSyntax             => true
+      case _: DeinitializerDeclSyntax           => true
+      case _: FunctionDeclSyntax                => true
+      case other if !isInitializedMember(other) => true
+      case _                                    => false
+    }
+  }
 
   private def astForDeclAttributes(node: TypeDeclLike | VariableDeclSyntax): Seq[Ast] = {
     node match {
@@ -431,7 +435,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case head :: Nil => head
       case _ =>
         val block = blockNode(node, code(node), Defines.Any)
-        setArgumentIndices(bindingAsts)
+        setOrder(bindingAsts)
         blockAst(block, bindingAsts.toList)
     }
   }
@@ -732,7 +736,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val methodReturnNode_ = methodReturnNode(node, returnType)
 
     val bodyAsts = methodBlockContent ++ bodyStmtAsts
-    setArgumentIndices(bodyAsts)
+    setOrder(bodyAsts)
     val blockAst_ = blockAst(block, bodyAsts)
     val astForMethod =
       methodAstWithAnnotations(
@@ -958,7 +962,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case head :: Nil => head
       case others =>
         val block = blockNode(node, code(node), Defines.Any)
-        setArgumentIndices(others)
+        setOrder(others)
         blockAst(block, others.toList)
     }
   }

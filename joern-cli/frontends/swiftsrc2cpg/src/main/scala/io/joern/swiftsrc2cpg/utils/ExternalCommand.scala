@@ -16,6 +16,15 @@ object ExternalCommand {
         // SwiftAstGen exits with exit code != 0 on Windows.
         // To catch with we specifically handle the empty stdErr here.
         Success(stdOut)
+      case ExternalCommandResult(_, stdOut, stdErr, _)
+          if stdErr.isEmpty && stdOut.isEmpty && scala.util.Properties.isWin =>
+        // SwiftAstGen exits with exit code != 0 on Windows
+        // and empty stdOut and stdErr if the Swift runtime is not installed at all
+        Failure(new RuntimeException("""
+            | Unable to execute SwiftAstGen!
+            | On Windows systems Swift needs to be installed.
+            | Please see: https://www.swift.org/install/windows/
+            |""".stripMargin))
       case ExternalCommandResult(_, stdOut, _, _) =>
         Failure(new RuntimeException(stdOut.mkString(System.lineSeparator())))
     }

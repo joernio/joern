@@ -10,20 +10,9 @@ import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.InitializerDeclSyntax
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.SwiftNode
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
-import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, NewNode}
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.PropertyNames
-
-object AstCreatorHelper {
-
-  implicit class OptionSafeAst(val ast: Ast) extends AnyVal {
-    def withArgEdge(src: NewNode, dst: Option[NewNode]): Ast = dst match {
-      case Some(value) => ast.withArgEdge(src, value)
-      case None        => ast
-    }
-  }
-
-}
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -39,6 +28,20 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     Ast(unknownNode(node, code(node)))
   }
 
+  protected def setOrder(asts: Seq[Ast]): Unit = {
+    var order = 1
+    asts.foreach { a =>
+      a.root match {
+        case Some(x: AstNodeNew) =>
+          x.order = order
+          order = order + 1
+        case None => // do nothing
+        case _ =>
+          order = order + 1
+      }
+    }
+  }
+
   protected def astsForBlockElements(elements: List[SwiftNode]): List[Ast] = {
     val (deferElements: List[SwiftNode], otherElements: List[SwiftNode]) = elements.partition(n =>
       n.isInstanceOf[CodeBlockItemSyntax] && n.asInstanceOf[CodeBlockItemSyntax].item.isInstanceOf[DeferStmtSyntax]
@@ -49,7 +52,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     )
     if (indexOfGuardStmt < 0) {
       val childrenAsts = otherElements.map(astForNode) ++ deferElementsAstsOrdered
-      setArgumentIndices(childrenAsts)
+      setOrder(childrenAsts)
       childrenAsts
     } else {
       val elementsBeforeGuard = otherElements.slice(0, indexOfGuardStmt)
@@ -68,7 +71,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
           blockElement
         case blockChildren =>
           val block = blockNode(elementsAfterGuard.head).order(2)
-          setArgumentIndices(blockChildren)
+          setOrder(blockChildren)
           blockAst(block, blockChildren)
       }
       val elseAst = astForNode(guardStmt.body)
@@ -76,7 +79,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
       val ifAst         = controlStructureAst(ifNode, Option(conditionAst), Seq(thenAst, elseAst))
       val resultingAsts = astsForBlockElements(elementsBeforeGuard) :+ ifAst
-      setArgumentIndices(resultingAsts)
+      setOrder(resultingAsts)
       resultingAsts
     }
   }

@@ -1,11 +1,9 @@
 package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
-import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.TypeSyntax
-import io.joern.x2cpg.Ast
-import io.joern.x2cpg.ValidationMode
-import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 
 import scala.annotation.unused
 

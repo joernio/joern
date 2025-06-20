@@ -20,7 +20,7 @@ class GuardTests extends AstSwiftSrc2CpgSuite {
         |""".stripMargin)
       val List(methodBlock) = cpg.method.nameExact("noConditionNoElse").block.l
       val List(guardIf)     = methodBlock.astChildren.isControlStructure.l
-      guardIf.argumentIndex shouldBe 1
+      guardIf.order shouldBe 1
       guardIf.code shouldBe "guard {} else {}"
       guardIf.controlStructureType shouldBe ControlStructureTypes.IF
       guardIf.condition.code.l shouldBe List("<lambda>0")
@@ -42,7 +42,7 @@ class GuardTests extends AstSwiftSrc2CpgSuite {
         |""".stripMargin)
       val List(whileBlock) = cpg.controlStructure.controlStructureType(ControlStructureTypes.WHILE).whenTrue.l
       val List(guardIf)    = whileBlock.astChildren.isControlStructure.l
-      guardIf.argumentIndex shouldBe 1
+      guardIf.order shouldBe 1
       guardIf.code should startWith("guard i % 2 == 0")
       guardIf.controlStructureType shouldBe ControlStructureTypes.IF
       guardIf.condition.code.l shouldBe List("i % 2 == 0")
@@ -63,10 +63,10 @@ class GuardTests extends AstSwiftSrc2CpgSuite {
         |""".stripMargin)
       val List(methodBlock) = cpg.method.nameExact("checkOddEven").block.l
       val List(call)        = methodBlock.astChildren.isCall.l
-      call.argumentIndex shouldBe 1
+      call.order shouldBe 1
       call.code shouldBe "var number = 24"
       val List(guardIf) = methodBlock.astChildren.isControlStructure.l
-      guardIf.argumentIndex shouldBe 2
+      guardIf.order shouldBe 2
       guardIf.code should startWith("guard number % 2 == 0")
       guardIf.controlStructureType shouldBe ControlStructureTypes.IF
       guardIf.condition.code.l shouldBe List("number % 2 == 0")
@@ -90,10 +90,10 @@ class GuardTests extends AstSwiftSrc2CpgSuite {
         |""".stripMargin)
       val List(methodBlock) = cpg.method.nameExact("checkJobEligibility").block.l
       val List(call)        = methodBlock.astChildren.isCall.l
-      call.argumentIndex shouldBe 1
+      call.order shouldBe 1
       call.code shouldBe "var age = 33"
       val List(guardIf) = methodBlock.astChildren.isControlStructure.l
-      guardIf.argumentIndex shouldBe 2
+      guardIf.order shouldBe 2
       guardIf.code should startWith("guard age >= 18, age <= 40")
       guardIf.controlStructureType shouldBe ControlStructureTypes.IF
       guardIf.condition.astChildren.code.l shouldBe List("age >= 18", "age <= 40")
@@ -118,10 +118,10 @@ class GuardTests extends AstSwiftSrc2CpgSuite {
       val List(methodBlock) = cpg.method.nameExact("checkAge").block.l
       methodBlock.local.name.l shouldBe List("myAge", "age", "this", "print")
       val List(call) = methodBlock.astChildren.isCall.l
-      call.argumentIndex shouldBe 1
+      call.order shouldBe 1
       call.code shouldBe "var age: Int? = 22"
       val List(guardIf) = methodBlock.astChildren.isControlStructure.l
-      guardIf.argumentIndex shouldBe 2
+      guardIf.order shouldBe 2
       guardIf.code should startWith("guard let myAge = age")
       guardIf.controlStructureType shouldBe ControlStructureTypes.IF
       guardIf.condition.code.l shouldBe List("let myAge = age")
@@ -151,12 +151,12 @@ class GuardTests extends AstSwiftSrc2CpgSuite {
         |""".stripMargin)
       val List(methodBlock)  = cpg.method.nameExact("multipleLinear").block.l
       val List(callA, callB) = methodBlock.astChildren.isCall.l
-      callA.argumentIndex shouldBe 1
+      callA.order shouldBe 1
       callA.code shouldBe "var a = true"
-      callB.argumentIndex shouldBe 2
+      callB.order shouldBe 2
       callB.code shouldBe "var b = true"
       val List(guardIfA) = methodBlock.astChildren.isControlStructure.l
-      guardIfA.argumentIndex shouldBe 3
+      guardIfA.order shouldBe 3
       guardIfA.code should startWith("guard a else")
       guardIfA.controlStructureType shouldBe ControlStructureTypes.IF
       guardIfA.condition.code.l shouldBe List("a")
@@ -189,12 +189,12 @@ class GuardTests extends AstSwiftSrc2CpgSuite {
         |""".stripMargin)
       val List(methodBlock)  = cpg.method.nameExact("multipleNested").block.l
       val List(callA, callB) = methodBlock.astChildren.isCall.l
-      callA.argumentIndex shouldBe 1
+      callA.order shouldBe 1
       callA.code shouldBe "var a = true"
-      callB.argumentIndex shouldBe 2
+      callB.order shouldBe 2
       callB.code shouldBe "var b = true"
       val List(guardIfA) = methodBlock.astChildren.isControlStructure.l
-      guardIfA.argumentIndex shouldBe 3
+      guardIfA.order shouldBe 3
       guardIfA.code should startWith("guard a else")
       guardIfA.controlStructureType shouldBe ControlStructureTypes.IF
       guardIfA.condition.code.l shouldBe List("a")
