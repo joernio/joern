@@ -6,7 +6,7 @@ import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.php2cpg.utils.*
 import io.shiftleft.semanticcpg.language.*
 
-class PhpDownloadDependenciesTest extends PhpCode2CpgFixture() {
+class PhpDownloadDependenciesTest extends PhpCode2CpgFixture(withPostProcessing = true) {
 
   "semantic versions from Packagist" should {
 
