@@ -2,7 +2,7 @@ package io.shiftleft.semanticcpg.language.nodemethods
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.codepropertygraph.generated.nodes.{Literal, NewLocation}
+import io.shiftleft.codepropertygraph.generated.nodes.Literal
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.nodemethods.LiteralMethods.{delimiters, logger}
@@ -11,7 +11,7 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.immutable.HashMap
 
-class LiteralMethods(val literal: Literal) extends AnyVal with NodeExtension with HasLocation {
+class LiteralMethods(val literal: Literal) extends AnyVal with NodeExtension {
   def strippedCode: String = {
     val language         = Cpg(literal.graph).metaData.language.head
     val stringDelimiters = delimiters(language)
@@ -26,11 +26,6 @@ class LiteralMethods(val literal: Literal) extends AnyVal with NodeExtension wit
       )
       .headOption
       .getOrElse(literal.code)
-  }
-
-  override def location: NewLocation = {
-    LocationCreator.defaultCreateLocation(literal)
-
   }
 }
 
