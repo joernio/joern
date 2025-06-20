@@ -1133,7 +1133,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         (initAsts, conditionAst, updateAsts, body)
     }
 
-    inside(initAsts.astChildren.l) { case List(iterInit: Call, valInit: Call) =>
+    inside(initAsts.astChildren.l) { case List(iterInit: Call, valInitBlock: Block) =>
       iterInit.name shouldBe Operators.assignment
       iterInit.code shouldBe "$foo@iter_tmp-0 = $arr"
       inside(iterInit.argument.l) { case List(iterTemp: Identifier, iterExpr: Identifier) =>
@@ -1146,6 +1146,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         iterExpr.argumentIndex shouldBe 2
       }
 
+      val List(valInit: Call) = valInitBlock.astChildren.l: @unchecked
       valInit.name shouldBe Operators.assignment
       valInit.code shouldBe "$val = $foo@iter_tmp-0->current()"
       inside(valInit.argument.l) { case List(valId: Identifier, currentCall: Call) =>
@@ -1170,7 +1171,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       isNullCall.code shouldBe "is_null($val)"
     }
 
-    inside(updateAsts.astChildren.l) { case List(nextCall: Call, valAssign: Call) =>
+    inside(updateAsts.astChildren.l) { case List(nextCall: Call, valAssignBlock: Block) =>
       nextCall.name shouldBe "next"
       nextCall.methodFullName shouldBe "Iterator.next"
       nextCall.code shouldBe "$foo@iter_tmp-0->next()"
@@ -1180,6 +1181,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         iterTmp.argumentIndex shouldBe 0
       }
 
+      val List(valAssign: Call) = valAssignBlock.astChildren.l: @unchecked
       valAssign.name shouldBe Operators.assignment
       valAssign.code shouldBe "$val = $foo@iter_tmp-0->current()"
     }
@@ -1213,7 +1215,8 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         (initAsts, updateAsts, body)
     }
 
-    inside(initAsts.astChildren.l) { case List(_: Call, valInit: Call) =>
+    inside(initAsts.astChildren.l) { case List(_: Call, valInitBlock: Block) =>
+      val List(valInit: Call) = valInitBlock.astChildren.l: @unchecked
       valInit.name shouldBe Operators.assignment
       valInit.code shouldBe "$val = &$foo@iter_tmp-0->current()"
       inside(valInit.argument.l) { case List(valId: Identifier, addressOfCall: Call) =>
@@ -1236,7 +1239,8 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       }
     }
 
-    inside(updateAsts.astChildren.l) { case List(_: Call, valAssign: Call) =>
+    inside(updateAsts.astChildren.l) { case List(_: Call, valAssignBlock: Block) =>
+      val List(valAssign: Call) = valAssignBlock.astChildren.l: @unchecked
       valAssign.name shouldBe Operators.assignment
       valAssign.code shouldBe "$val = &$foo@iter_tmp-0->current()"
     }

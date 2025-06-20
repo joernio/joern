@@ -36,16 +36,23 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     localsForUses.foreach { local =>
       val closureBindingId = s"$relativeFileName:$methodName:${local.name}"
       local.closureBindingId(closureBindingId)
-      scope.addToScope(local.name, local)
 
       val closureBindingNode = NewClosureBinding()
         .closureBindingId(closureBindingId)
         .closureOriginalName(local.name)
         .evaluationStrategy(EvaluationStrategies.BY_SHARING)
 
-      // The ref edge to the captured local is added in the ClosureRefPass
+      scope.lookupVariable(local.name) match {
+        case Some(refLocal) =>
+          diffGraph.addEdge(closureBindingNode, refLocal, EdgeTypes.REF)
+        case _ =>
+          logger.warn(s"Unable to find local variable for closure ref: ${local.name}")
+      }
+
+      scope.addToScope(local.name, local)
       diffGraph.addNode(closureBindingNode)
       diffGraph.addEdge(methodRef, closureBindingNode, EdgeTypes.CAPTURE)
+
     }
 
     // Create method for closure
@@ -70,6 +77,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case Nil    => ""
       case locals => s" use(${locals.map(_.code).mkString(", ")})"
     }
+
     methodAst.root.collect { case method: NewMethod => method }.foreach { methodNode =>
       methodNode.code(methodNode.code ++ usesCode)
     }
@@ -114,17 +122,21 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     }
     val methodCode = s"${modifierString}function $methodName(${parameters.map(_.rootCodeOrEmpty).mkString(",")})"
 
-    val method = methodNode(decl, methodName, methodCode, fullName, Some(signature), relativeFileName)
-
-    scope.pushNewScope(method)
+    val method         = methodNode(decl, methodName, methodCode, fullName, Some(signature), relativeFileName)
+    val methodBodyNode = blockNode(decl)
+    scope.pushNewScope(method, Option(methodBodyNode))
 
     val returnType = decl.returnType.map(_.name).getOrElse(Defines.Any)
 
-    val methodBodyStmts = bodyPrefixAsts ++ decl.stmts.flatMap(astsForStmt)
+    val fieldInitAsts = scope.getFieldInits.map { fieldInit =>
+      astForMemberAssignment(fieldInit.originNode, fieldInit.memberNode, fieldInit.value, isField = true)
+    }
+
+    val methodBodyStmts = bodyPrefixAsts ++ fieldInitAsts ++ decl.stmts.flatMap(astsForStmt)
     val methodReturn    = methodReturnNode(decl, returnType)
 
     val attributeAsts = decl.attributeGroups.flatMap(astForAttributeGroup)
-    val methodBody    = blockAst(blockNode(decl), methodBodyStmts)
+    val methodBody    = blockAst(methodBodyNode, methodBodyStmts)
 
     scope.popScope()
     methodAstWithAnnotations(method, parameters, methodBody, methodReturn, modifiers, attributeAsts)
@@ -155,8 +167,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   protected def astForConstructor(constructorDecl: PhpMethodDecl): Ast = {
-    val fieldInits = scope.getFieldInits
-    astForMethodDecl(constructorDecl, fieldInits, isConstructor = true)
+    astForMethodDecl(constructorDecl, isConstructor = true)
   }
 
   protected def defaultConstructorAst(originNode: PhpNode): Ast = {
@@ -171,7 +182,13 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val method = methodNode(originNode, ConstructorMethodName, fullName, fullName, Some(signature), relativeFileName)
 
-    val methodBody = blockAst(blockNode(originNode), scope.getFieldInits)
+    val methodBodyBlock = blockNode(originNode)
+
+    val initAsts = scope.getFieldInits.map { fieldInit =>
+      astForMemberAssignment(fieldInit.originNode, fieldInit.memberNode, fieldInit.value, isField = true)
+    }
+
+    val methodBody = blockAst(blockNode(originNode), initAsts)
 
     val methodReturn = methodReturnNode(originNode, Defines.Any)
 
@@ -217,15 +234,26 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case inits =>
         val signature = s"${TypeConstants.Void}()"
         val fullName  = composeMethodFullName(Defines.StaticInitMethodName)
+        val methodNode_ = methodNode(
+          node,
+          Defines.StaticInitMethodName,
+          fullName,
+          signature,
+          Option(relativeFileName).getOrElse(Method.PropertyDefaults.Filename)
+        )
+
+        val methodBlock = NewBlock()
+
+        scope.pushNewScope(methodNode_, Option(methodBlock))
+
+        val assignmentAsts = inits.map { init =>
+          astForMemberAssignment(init.originNode, init.memberNode, init.value, isField = false)
+        }
+
+        val body = blockAst(methodBlock, assignmentAsts)
+
         val ast =
-          staticInitMethodAst(
-            node,
-            inits,
-            fullName,
-            Option(signature),
-            TypeConstants.Void,
-            fileName = Some(relativeFileName)
-          )
+          staticInitMethodAst(node, methodNode_, body, TypeConstants.Void)
 
         for {
           method  <- ast.root.collect { case method: NewMethod => method }
@@ -234,6 +262,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           method.offset(0)
           method.offsetEnd(content.length)
         }
+        scope.popScope()
         Option(ast)
     }
 
