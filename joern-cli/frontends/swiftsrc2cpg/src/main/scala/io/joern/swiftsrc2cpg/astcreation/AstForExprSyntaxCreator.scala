@@ -442,7 +442,6 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         } else {
           asts
         }
-        setOrder(cAsts)
         (tAsts.toList, cAsts.toList)
       case i: IfConfigDeclSyntax =>
         (List.empty, List(astForIfConfigDeclSyntax(i)))
@@ -462,10 +461,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val blockNode_ = blockNode(node).order(2)
     scope.pushNewBlockScope(blockNode_)
     localAstParentStack.push(blockNode_)
-
     val casesAsts = node.cases.children.toList.flatMap(astsForSwitchCase)
-    setOrder(casesAsts)
-
     scope.popScope()
     localAstParentStack.pop()
 

@@ -28,20 +28,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     Ast(unknownNode(node, code(node)))
   }
 
-  protected def setOrder(asts: Seq[Ast]): Unit = {
-    var order = 1
-    asts.foreach { a =>
-      a.root match {
-        case Some(x: AstNodeNew) =>
-          x.order = order
-          order = order + 1
-        case None => // do nothing
-        case _ =>
-          order = order + 1
-      }
-    }
-  }
-
   protected def astsForBlockElements(elements: List[SwiftNode]): List[Ast] = {
     val (deferElements: List[SwiftNode], otherElements: List[SwiftNode]) = elements.partition(n =>
       n.isInstanceOf[CodeBlockItemSyntax] && n.asInstanceOf[CodeBlockItemSyntax].item.isInstanceOf[DeferStmtSyntax]
@@ -51,9 +37,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       n.isInstanceOf[CodeBlockItemSyntax] && n.asInstanceOf[CodeBlockItemSyntax].item.isInstanceOf[GuardStmtSyntax]
     )
     if (indexOfGuardStmt < 0) {
-      val childrenAsts = otherElements.map(astForNode) ++ deferElementsAstsOrdered
-      setOrder(childrenAsts)
-      childrenAsts
+      otherElements.map(astForNode) ++ deferElementsAstsOrdered
     } else {
       val elementsBeforeGuard = otherElements.slice(0, indexOfGuardStmt)
       val guardStmt =
@@ -71,16 +55,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
           blockElement
         case blockChildren =>
           val block = blockNode(elementsAfterGuard.head).order(2)
-          setOrder(blockChildren)
           blockAst(block, blockChildren)
       }
       val elseAst = astForNode(guardStmt.body)
       setOrderExplicitly(elseAst, 3)
 
-      val ifAst         = controlStructureAst(ifNode, Option(conditionAst), Seq(thenAst, elseAst))
-      val resultingAsts = astsForBlockElements(elementsBeforeGuard) :+ ifAst
-      setOrder(resultingAsts)
-      resultingAsts
+      val ifAst = controlStructureAst(ifNode, Option(conditionAst), Seq(thenAst, elseAst))
+      astsForBlockElements(elementsBeforeGuard) :+ ifAst
     }
   }
 

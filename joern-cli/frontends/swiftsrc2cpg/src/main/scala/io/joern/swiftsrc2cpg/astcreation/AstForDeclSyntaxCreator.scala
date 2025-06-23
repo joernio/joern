@@ -174,7 +174,6 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val (mAst, bAst) = if (methodBlockContent.isEmpty) {
       (methodStubAst(methodNode_, Seq.empty, methodReturnNode_, modifiers), Ast())
     } else {
-      setOrder(methodBlockContent)
       val bodyAst = blockAst(NewBlock(), methodBlockContent)
       (methodAstWithAnnotations(methodNode_, Seq.empty, bodyAst, methodReturnNode_, modifiers), bodyAst)
     }
@@ -435,7 +434,6 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case head :: Nil => head
       case _ =>
         val block = blockNode(node, code(node), Defines.Any)
-        setOrder(bindingAsts)
         blockAst(block, bindingAsts.toList)
     }
   }
@@ -735,9 +733,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val methodReturnNode_ = methodReturnNode(node, returnType)
 
-    val bodyAsts = methodBlockContent ++ bodyStmtAsts
-    setOrder(bodyAsts)
-    val blockAst_ = blockAst(block, bodyAsts)
+    val blockAst_ = blockAst(block, methodBlockContent ++ bodyStmtAsts)
     val astForMethod =
       methodAstWithAnnotations(
         methodNode_,
@@ -962,7 +958,6 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case head :: Nil => head
       case others =>
         val block = blockNode(node, code(node), Defines.Any)
-        setOrder(others)
         blockAst(block, others.toList)
     }
   }

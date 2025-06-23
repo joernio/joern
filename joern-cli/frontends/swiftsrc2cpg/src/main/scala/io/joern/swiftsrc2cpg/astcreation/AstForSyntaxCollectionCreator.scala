@@ -155,7 +155,6 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
     scope.pushNewBlockScope(blockNode_)
     localAstParentStack.push(blockNode_)
     val asts = node.children.toList.flatMap(astsForSwitchCase)
-    setOrder(asts)
     localAstParentStack.pop()
     scope.popScope()
     blockAst(blockNode_, asts)
