@@ -272,7 +272,7 @@ class CallTests extends PhpCode2CpgFixture {
 
   "a chained call from an external namespace should have normalized '.' method delimiters" in {
     val cpg = code("""
-        |<?
+        |<?php
         |use Foo\Bar\Http;
         |
         |Http::retry(3)->timeout(10);
@@ -306,6 +306,44 @@ class CallTests extends PhpCode2CpgFixture {
     inside(cpg.call("bar").astChildren.l) { case (fa: Call) :: Nil =>
       fa.name shouldBe Operators.fieldAccess
       fa.code shouldBe "$obj->foo()->bar"
+    }
+  }
+
+  "a call from a function from an external namespace should be static and have a fully qualified name" in {
+    val cpg = code("""
+        |<?php
+        |use function Foo\Bar\baz;
+        |
+        |baz();
+        |""".stripMargin)
+
+    val baz = cpg.call("baz").head
+    baz.name shouldBe "baz"
+    baz.methodFullName shouldBe "Foo\\Bar\\baz"
+    baz.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+  }
+
+  "calls from an external (lowercased) type" should {
+    val cpg = code("""
+        |<?php
+        |use Foo\Bar\baz;
+        |
+        |baz::test1();
+        |(new baz)->test2();
+        |""".stripMargin)
+
+    "be fully qualified in the case of static calls" in {
+      val test1 = cpg.call("test1").head
+      test1.name shouldBe "test1"
+      test1.methodFullName shouldBe "Foo\\Bar\\baz<metaclass>.test1"
+      test1.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    }
+
+    "be unknown in the case of dynamic calls" in {
+      val test2 = cpg.call("test2").head
+      test2.name shouldBe "test2"
+      test2.methodFullName shouldBe s"${Defines.UnresolvedNamespace}.test2"
+      test2.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
     }
   }
 

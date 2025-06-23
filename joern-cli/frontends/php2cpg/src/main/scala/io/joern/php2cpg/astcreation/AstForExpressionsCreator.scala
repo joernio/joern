@@ -66,6 +66,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
      * namespace or from the namespace surrounding the call-site. But this we cannot decide without knowing which php
      * files are loaded. In terms of lambdas, they will be assigned to a variable which always begins with `$`.
      *
+     * For built-in calls, we refer to the `builtin_functions.txt` list under `resources`, which is tied to the global
+     * namespace. If we import some symbol from a namespace, e.g., `A\B\foo`, is this a constant, field, or class? In
+     * certain cases, such as object instantiation, it will be clear. However, in the case of static member accesses,
+     * this is still ambiguous. If at any point a symbol's full name cannot be resolved, which is often in the case of
+     * chained calls of external API's the method full name is prefixed with <unresolvedNamespace>.
+     *
      * This is why we use pre-parse summary idea where we check which functions exist in which namespaces and make a
      * lookup in it to figure out whether a foo call-site needs to have a global method full name or one from the
      * current namespace. The `scope` object then delegates what has been defined or imported to determine calls in
@@ -118,7 +124,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val dispatchType = DispatchTypes.STATIC_DISPATCH
 
-    val fullName = getMfn(call, name)
+    // In some cases, the parser is able to obtain the fully qualified name from imports
+    val fullName = call.methodName match {
+      case name: PhpNameExpr if name.name.contains("\\") => name.name
+      case _                                             => getMfn(call, name)
+    }
 
     // Use method signature for methods that can be linked to avoid varargs issue.
     val signature = s"$UnresolvedSignature(${call.args.size})"

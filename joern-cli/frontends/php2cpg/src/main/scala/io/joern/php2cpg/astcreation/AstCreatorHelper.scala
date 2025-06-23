@@ -129,6 +129,8 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
           logger.error(s"Found unexpected call target type: Crash for now to handle properly later: $other")
           ???
       })
+      .split("\\\\") // call names may be fully qualified
+      .last
   }
 
   protected def getMfn(call: PhpCallExpr, name: String): String = {
