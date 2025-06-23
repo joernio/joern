@@ -220,20 +220,6 @@ trait AstCreatorHelper { this: AstCreator =>
     }
   }
 
-  protected def setOrder(asts: Seq[Ast]): Unit = {
-    var order = 1
-    asts.foreach { a =>
-      a.root match {
-        case Some(x: AstNodeNew) =>
-          x.order = order
-          order = order + 1
-        case None => // do nothing
-        case _ =>
-          order = order + 1
-      }
-    }
-  }
-
   private def genFileOffsetTable(): Array[Int] = {
     cdtAst.getRawSignature.toCharArray.zipWithIndex.collect { case ('\n', idx) => idx + 1 }
   }

@@ -25,7 +25,7 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
 
   private val global = new Global()
 
-  def typesSeen(): List[String] = global.usedTypes.keys().asScala.filterNot(_ == Defines.Any).toList
+  def typesSeen(): List[String] = global.usedTypes.keys().asScala.filterNot(Defines.SwiftTypes.contains).toList
 
   override def generateParts(): Array[String] = astGenRunnerResult.parsedFiles.toArray
 

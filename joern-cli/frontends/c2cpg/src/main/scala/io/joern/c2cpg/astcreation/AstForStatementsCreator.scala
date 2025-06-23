@@ -36,7 +36,6 @@ trait AstForStatementsCreator { this: AstCreator =>
       .typeFullName(registerType(Defines.Void))
     scope.pushNewBlockScope(node)
     val childAsts = blockStmt.getStatements.flatMap(astsForStatement).toList
-    setOrder(childAsts)
     scope.popScope()
     blockAst(node, childAsts)
   }
@@ -283,10 +282,9 @@ trait AstForStatementsCreator { this: AstCreator =>
       case other if other != null =>
         val bNode = blockNode(other)
         scope.pushNewBlockScope(bNode)
-        val a = astsForStatement(other)
-        setOrder(a)
+        val statementAsts = astsForStatement(other)
         scope.popScope()
-        blockAst(bNode, a.toList)
+        blockAst(bNode, statementAsts.toList)
       case _ => Ast()
     }
     val catchAsts = tryStmt.getCatchHandlers.toSeq.map(astForCatchHandler)
@@ -492,8 +490,7 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     val bodyAst                = nullSafeAst(forStmt.getBody)
     val whileLoopBlockChildren = loopVariableAssignmentAst +: bodyAst
-    setOrder(whileLoopBlockChildren)
-    val whileLoopBlockAst = blockAst(whileLoopBlockNode, whileLoopBlockChildren.toList)
+    val whileLoopBlockAst      = blockAst(whileLoopBlockNode, whileLoopBlockChildren.toList)
 
     // end while loop block:
     scope.popScope()
@@ -501,9 +498,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     // end surrounding block:
     scope.popScope()
 
-    val blockChildren =
-      List(iteratorAssignmentAst, Ast(loopVariableNode), whileLoopAst.withChild(whileLoopBlockAst))
-    setOrder(blockChildren)
+    val blockChildren = List(iteratorAssignmentAst, Ast(loopVariableNode), whileLoopAst.withChild(whileLoopBlockAst))
     blockAst(blockNode, blockChildren)
   }
 
@@ -531,10 +526,9 @@ trait AstForStatementsCreator { this: AstCreator =>
       case s: CPPASTIfStatement if s.getConditionExpression == null =>
         val exprBlock = blockNode(s.getConditionDeclaration)
         scope.pushNewBlockScope(exprBlock)
-        val a = astsForDeclaration(s.getConditionDeclaration)
-        setOrder(a)
+        val declAsts = astsForDeclaration(s.getConditionDeclaration)
         scope.popScope()
-        blockAst(exprBlock, a.toList)
+        blockAst(exprBlock, declAsts.toList)
     }
 
     val ifNode = controlStructureNode(ifStmt, ControlStructureTypes.IF, code(ifStmt))
@@ -544,10 +538,9 @@ trait AstForStatementsCreator { this: AstCreator =>
       case other if other != null =>
         val thenBlock = blockNode(other)
         scope.pushNewBlockScope(thenBlock)
-        val a = astsForStatement(other)
-        setOrder(a)
+        val statementAsts = astsForStatement(other)
         scope.popScope()
-        blockAst(thenBlock, a.toList)
+        blockAst(thenBlock, statementAsts.toList)
       case _ => Ast()
     }
 
@@ -560,10 +553,9 @@ trait AstForStatementsCreator { this: AstCreator =>
         val elseNode  = controlStructureNode(ifStmt.getElseClause, ControlStructureTypes.ELSE, "else")
         val elseBlock = blockNode(other)
         scope.pushNewBlockScope(elseBlock)
-        val a = astsForStatement(other)
-        setOrder(a)
+        val statementAsts = astsForStatement(other)
         scope.popScope()
-        Ast(elseNode).withChild(blockAst(elseBlock, a.toList))
+        Ast(elseNode).withChild(blockAst(elseBlock, statementAsts.toList))
       case _ => Ast()
     }
     initAsts :+ controlStructureAst(ifNode, Option(conditionAst), Seq(thenAst, elseAst))
