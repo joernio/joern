@@ -66,11 +66,12 @@ class LazyLocation(storedNode: StoredNode) extends LocationInfo with Product {
 
   def symbol: String = {
     storedNode match {
-      case _: Call | _: Literal | _: MethodRef =>
+      case _: Call | _: Literal | _: MethodRef | _: Block | _: JumpTarget | _: Member | _: TemplateDom =>
         storedNode.property(Properties.Code)
       case _: Identifier | _: Local | _: MethodParameterIn | _: MethodParameterOut | _: Method =>
         storedNode.property(Properties.Name)
       case _: MethodReturn => "$ret"
+      case cfgFile: ConfigFile => cfgFile.content
       case _               => defaultString
     }
   }
