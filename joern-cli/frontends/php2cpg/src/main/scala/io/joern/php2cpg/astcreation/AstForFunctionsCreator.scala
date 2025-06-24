@@ -40,6 +40,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
       val closureBindingNode = NewClosureBinding()
         .closureBindingId(closureBindingId)
+        // TODO: this needs a rewrite without using closureOriginalName
+        // see: ClosureRefPass that still relies on this property
+        .closureOriginalName(local.name)
         .evaluationStrategy(EvaluationStrategies.BY_SHARING)
 
       // The ref edge to the captured local is added in the ClosureRefPass
