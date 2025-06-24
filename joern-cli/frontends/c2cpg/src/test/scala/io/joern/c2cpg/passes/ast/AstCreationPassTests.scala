@@ -178,6 +178,27 @@ class AstCreationPassTests extends AstC2CpgSuite {
       }
     }
 
+    "be correct for pack expansion with template" in {
+      val cpg = code(
+        """
+          |template<typename... Args>
+          |void foo(char* a, Args... args) {}
+          |
+          |void main() {
+          |  foo("Hello", "World", "!");
+          |}
+          |""".stripMargin,
+        "test.cpp"
+      )
+      val List(fooMethod) = cpg.method.nameExact("foo").l
+      val List(fooCall)   = cpg.call.nameExact("foo").l
+
+      fooMethod.fullName shouldBe "foo:void(char*,Args)"
+      fooCall.methodFullName shouldBe "foo:void(char*,Args)"
+
+      fooMethod.fullName shouldBe fooCall.methodFullName
+    }
+
     "be correct for knr function declarations" in {
       val cpg = code("""
         |int handler(x, y)

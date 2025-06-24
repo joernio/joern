@@ -171,9 +171,15 @@ trait AstForExpressionsCreator { this: AstCreator =>
       case Some(functionType: ICPPFunctionType) =>
         functionNameExpr match {
           case idExpr: CPPASTIdExpression if safeGetBinding(idExpr).exists(_.isInstanceOf[ICPPFunction]) =>
-            val function  = idExpr.getName.getBinding.asInstanceOf[ICPPFunction]
-            val name      = idExpr.getName.getLastName.toString
-            val signature = if function.isExternC then "" else functionTypeToSignature(functionType)
+            val function = idExpr.getName.getBinding.asInstanceOf[ICPPFunction]
+            val name     = idExpr.getName.getLastName.toString
+            val signature = if (function.isExternC) { "" }
+            else {
+              function match {
+                case functionInstance: ICPPFunctionInstance => functionInstanceToSignature(functionInstance, functionType)
+                case _                                      => functionTypeToSignature(functionType)
+              }
+            }
             val fullName = if (function.isExternC) {
               StringUtils.normalizeSpace(name)
             } else {
