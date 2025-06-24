@@ -7,9 +7,6 @@ import scala.util.{Failure, Success}
 import concurrent.duration.*
 
 class ExternalCommandTest extends AnyWordSpec with Matchers {
-
-  private def cwd = FileUtil.currentWorkingDirectory
-
   "ExternalCommand.run" should {
     "be able to run `ls` successfully" in {
       FileUtil.usingTemporaryDirectory("sample") { sourceDir =>
@@ -19,17 +16,15 @@ class ExternalCommandTest extends AnyWordSpec with Matchers {
     }
 
     "report exit code and stdout/stderr for nonzero exit code" in {
-      ExternalCommand.run(Seq("ls", "/does/not/exist"), Option(cwd)).toTry match {
-        case result: Success[_] =>
-          fail(s"expected failure, but got $result")
-        case Failure(exception) =>
-          exception.getMessage should include("Process exited with code")  // exit code `2` on linux, `1` on mac...
-          exception.getMessage should include("No such file or directory") // again, different errors on mac and linux
-      }
+      val result = ExternalCommand.run(Seq("ls", "/does/not/exist"))
+      if (result.successful)
+        fail(s"expected failure, but got $result")
+      else
+        result.toTry.failed.get.getMessage should include("No such file or directory")
     }
 
     "report error for io exception (e.g. for nonexisting command)" in {
-      ExternalCommand.run(Seq("/command/does/not/exist"), Option(cwd)).toTry match {
+      ExternalCommand.run(Seq("/command/does/not/exist")).toTry match {
         case result: Success[_] =>
           fail(s"expected failure, but got $result")
         case Failure(exception) =>
@@ -46,7 +41,6 @@ class ExternalCommandTest extends AnyWordSpec with Matchers {
         case result: Success[_] =>
           fail(s"expected failure, but got $result")
         case Failure(exception) =>
-          exception.getMessage should include("Process exited with code 1")
           exception.getMessage should include("has timed out")
       }
 

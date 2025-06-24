@@ -11,6 +11,9 @@ case class ExternalCommandResult(
   additionalContext: Option[String]
 ) {
 
+  def successful: Boolean =
+    exitCode == 0
+
   /** Lines of standard output (if successful), or else a combination of stdout and stderr, plus some context.
     */
   def stdOutAndError: Seq[String] =
@@ -38,11 +41,7 @@ case class ExternalCommandResult(
     toTry.toOption
 
   def toTry: Try[Seq[String]] = {
-    exitCode match {
-      case 0 =>
-        Success(stdOut)
-      case nonZeroExitCode =>
-        Failure(new RuntimeException(stdErr.mkString("\n")))
-    }
+    if (successful) Success(stdOut)
+    else Failure(new RuntimeException(stdErr.mkString("\n")))
   }
 }
