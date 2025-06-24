@@ -119,10 +119,13 @@ trait TypeNameProvider { this: AstCreator =>
       case cppBasicType: ICPPBasicType if cppBasicType.isLong     => Defines.Long
       case cppBasicType: ICPPBasicType if cppBasicType.isLongLong => Defines.LongLong
       case cppBasicType: ICPPBasicType if cppBasicType.isShort    => Defines.Short
+      case templateType: ICPPTemplateTypeParameter                => templateType.getName
       case cppPackType: ICPPParameterPackType =>
         cppPackType.getType match {
-          case templateType: ICPPTemplateTypeParameter => templateType.getName
-          case other                                   => Try(ASTTypeUtil.getType(other)).getOrElse(Defines.Any)
+          case templateType: ICPPTemplateTypeParameter                 => templateType.getName
+          case refType: ICPPReferenceType if refType.isRValueReference => safeGetType(refType.getType) + "&&"
+          case refType: ICPPReferenceType                              => safeGetType(refType.getType)
+          case other => Try(ASTTypeUtil.getType(other)).getOrElse(Defines.Any)
         }
       case _ =>
         // In case of unresolved includes etc. this may fail throwing an unrecoverable exception
