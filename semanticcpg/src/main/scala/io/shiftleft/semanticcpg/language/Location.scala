@@ -37,7 +37,7 @@ type NewLocation = LocationInfo
 // and/or location information, to provide alternate or
 // extended implementations of LocationCreator.
 trait LocationCreator {
-  implicit def apply(node: StoredNode): LocationInfo
+  implicit def apply(node: StoredNode, filenameOverride: Option[String] = None): LocationInfo
 }
 
 object EmptyLocation extends LocationInfo {
@@ -54,14 +54,14 @@ object EmptyLocation extends LocationInfo {
 }
 
 object LazyLocation extends LocationCreator {
-  implicit def apply(node: StoredNode): LocationInfo = {
-    new LazyLocation(node)
+  implicit def apply(node: StoredNode, filenameOverride: Option[String] = None): LocationInfo = {
+    new LazyLocation(node, filenameOverride)
   }
 }
 
 implicit val locationCreator: LocationCreator = LazyLocation
 
-class LazyLocation(storedNode: StoredNode) extends LocationInfo with Product {
+class LazyLocation(storedNode: StoredNode, filenameOverride: Option[String]) extends LocationInfo with Product {
   def node: Option[AbstractNode] = Some(storedNode)
 
   def symbol: String = {
@@ -70,9 +70,9 @@ class LazyLocation(storedNode: StoredNode) extends LocationInfo with Product {
         storedNode.property(Properties.Code)
       case _: Identifier | _: Local | _: MethodParameterIn | _: MethodParameterOut | _: Method =>
         storedNode.property(Properties.Name)
-      case _: MethodReturn => "$ret"
+      case _: MethodReturn     => "$ret"
       case cfgFile: ConfigFile => cfgFile.content
-      case _               => defaultString
+      case _                   => defaultString
     }
   }
 
@@ -90,7 +90,7 @@ class LazyLocation(storedNode: StoredNode) extends LocationInfo with Product {
 
   def classShortName: String = typeOption.map(_.name).getOrElse(defaultString)
 
-  def filename: String = if (method.filename.isEmpty) "N/A" else method.filename
+  def filename: String = filenameOverride.getOrElse(if (method.filename.isEmpty) "N/A" else method.filename)
 
   final protected val defaultString = "<empty>";
 
