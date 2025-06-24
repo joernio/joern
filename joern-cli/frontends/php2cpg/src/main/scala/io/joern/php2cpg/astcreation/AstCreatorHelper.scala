@@ -1,8 +1,9 @@
 package io.joern.php2cpg.astcreation
 
-import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
+import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
 import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*
+import io.joern.php2cpg.passes.SymbolSummaryPass.PhpFunction
 import io.joern.x2cpg.Defines.UnresolvedNamespace
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
@@ -50,18 +51,16 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
   }
 
   protected def composeMethodFullName(methodName: String, appendMetaTypeDeclExt: Boolean = false): String = {
-    if (methodName == NamespaceTraversal.globalNamespaceName) {
-      globalNamespace.fullName
-    } else {
-      val className = if (appendMetaTypeDeclExt) {
-        getTypeDeclPrefix.map(name => s"$name$MetaTypeDeclExtension")
-      } else {
-        getTypeDeclPrefix
-      }
+    scope.resolveIdentifier(methodName) match {
+      case Some(importedMethod)                                         => importedMethod.name
+      case None if methodName == NamespaceTraversal.globalNamespaceName => globalNamespace.fullName
+      case None =>
+        val className = Option
+          .when(appendMetaTypeDeclExt)(getTypeDeclPrefix.map(name => s"$name$MetaTypeDeclExtension").orNull)
+          .orElse(getTypeDeclPrefix)
 
-      val nameWithClass = List(className, Some(methodName)).flatten.mkString(MethodDelimiter)
-
-      prependNamespacePrefix(nameWithClass)
+        val nameWithClass = List(className, Some(methodName)).flatten.mkString(MethodDelimiter)
+        prependNamespacePrefix(nameWithClass)
     }
   }
 
@@ -83,40 +82,11 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
   }
 
   protected def codeForStaticMethodCall(call: PhpCallExpr, name: String): String = {
-    val className =
-      call.target
-        .map(astForExpr)
-        .map(_.rootCode.getOrElse(UnresolvedNamespace))
-        .getOrElse(UnresolvedNamespace)
-    s"$className$StaticMethodDelimiter$name"
-  }
-
-  protected def composeMethodName(call: PhpCallExpr, targetAst: Option[Ast], name: String): String = {
-
-    /** The code property may contain "?", "::", or "->", so this needs to be replaced before composing a full name.
-      */
-    def normalizeMethodCode(code: String): String =
-      code
-        .filterNot(c => c == '?' || c == ' ')
-        .replace(StaticMethodDelimiter, MethodDelimiter)
-        .replace(InstanceMethodDelimiter, MethodDelimiter)
-
-    if (call.isStatic) {
-      val className =
-        call.target
-          .map(astForExpr)
-          .map(_.rootCode.map(normalizeMethodCode).getOrElse(UnresolvedNamespace))
-          .getOrElse(UnresolvedNamespace)
-      s"$className$MethodDelimiter$name"
-    } else if (targetAst.isDefined) {
-      val prefix = targetAst
-        .map(_.rootCodeOrEmpty)
-        .map(normalizeMethodCode)
-        .get
-      s"$prefix$MethodDelimiter$name"
-    } else {
-      name
-    }
+    call.target
+      .map(astForExpr)
+      .flatMap(_.rootCode)
+      .map(className => s"$className$StaticMethodDelimiter$name")
+      .getOrElse(name)
   }
 
   protected def dimensionFromSimpleScalar(scalar: PhpSimpleScalar, idxTracker: ArrayIndexTracker): PhpExpr = {
@@ -139,5 +109,53 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
         scalar
     }
   }
+
+  protected def getArgsCode(call: PhpCallExpr, arguments: Seq[Ast]): String = {
+    arguments
+      .zip(call.args.collect { case x: PhpArg => x.unpack })
+      .map {
+        case (arg, true)  => s"...${arg.rootCodeOrEmpty}"
+        case (arg, false) => arg.rootCodeOrEmpty
+      }
+      .mkString(",")
+  }
+
+  protected def getCallName(call: PhpCallExpr, nameAst: Option[Ast]): String = {
+    nameAst
+      .map(_.rootCodeOrEmpty)
+      .getOrElse(call.methodName match {
+        case nameExpr: PhpNameExpr => nameExpr.name
+        case other =>
+          logger.error(s"Found unexpected call target type: Crash for now to handle properly later: $other")
+          ???
+      })
+      .split("\\\\") // call names may be fully qualified
+      .last
+  }
+
+  protected def getMfn(call: PhpCallExpr, name: String): String = {
+    lazy val default               = s"$UnresolvedNamespace$MethodDelimiter$name"
+    lazy val maybeResolvedFunction = scope.resolveIdentifier(name).filter(_.isInstanceOf[PhpFunction])
+    call.target match {
+      case Some(nameExpr: PhpNameExpr) if call.isStatic =>
+        // Static method call with a simple receiver
+        if (nameExpr.name == NameConstants.Self)
+          composeMethodFullName(name, appendMetaTypeDeclExt = !scope.isSurroundedByMetaclassTypeDecl)
+        else s"${nameExpr.name}$MetaTypeDeclExtension$MethodDelimiter$name"
+      case Some(_) =>
+        // As soon as we have a dynamic component to the call, we can't truly define a method full name
+        default
+      // Function call resolved as either defined in current script or by import
+      case None if maybeResolvedFunction.isDefined      => maybeResolvedFunction.get.name
+      case None if PhpBuiltins.FuncNames.contains(name) =>
+        // No signature/namespace for MFN for builtin functions to ensure stable names as type info improves.
+        name
+      // Assume name-space local function call
+      case None =>
+        composeMethodFullName(name, call.isStatic)
+    }
+  }
+
+  protected def isBuiltinFunc(name: String): Boolean = PhpBuiltins.FuncNames.contains(name)
 
 }

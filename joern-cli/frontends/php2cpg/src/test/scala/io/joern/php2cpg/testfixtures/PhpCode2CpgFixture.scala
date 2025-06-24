@@ -35,7 +35,7 @@ class PhpTestCpg extends DefaultTestCpg with PhpFrontend with SemanticTestCpg {
 class PhpCode2CpgFixture(
   runOssDataflow: Boolean = false,
   semantics: Semantics = DefaultSemantics(),
-  withPostProcessing: Boolean = true
+  withPostProcessing: Boolean = false
 ) extends Code2CpgFixture(() =>
       new PhpTestCpg()
         .withOssDataflow(runOssDataflow)
