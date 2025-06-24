@@ -93,9 +93,8 @@ class ClosureTests extends PhpCode2CpgFixture {
         use1.name shouldBe "use1"
         use1.code shouldBe "$use1"
         use1.closureBindingId shouldBe Some(s"foo.php:$expectedName:use1")
-        inside(cpg.all.collectAll[ClosureBinding].filter(_.closureBindingId == use1.closureBindingId).l) {
-          case List(closureBinding) =>
-            closureBinding.closureOriginalName shouldBe Some("use1")
+        inside(cpg.closureBinding.filter(_.closureBindingId == use1.closureBindingId).l) { case List(closureBinding) =>
+          closureBinding._localViaRefOut shouldBe Some(use1)
         }
 
         use2.name shouldBe "use2"
@@ -107,10 +106,9 @@ class ClosureTests extends PhpCode2CpgFixture {
     }
 
     "have a ref edge from the closure binding for a use to the captured node" in {
-      inside(cpg.all.collectAll[ClosureBinding].filter(_.closureOriginalName.contains("use1")).l) {
-        case List(closureBinding) =>
-          val capturedNode = cpg.method.nameExact("<global>").local.name("use1").head
-          closureBinding.refOut.toList shouldBe List(capturedNode)
+      inside(cpg.closureBinding.l.filter(_._localViaRefOut.name.l == List("use1"))) { case List(closureBinding) =>
+        val capturedNode = cpg.method.nameExact("<global>").local.name("use1").head
+        closureBinding.refOut.toList shouldBe List(capturedNode)
       }
     }
 

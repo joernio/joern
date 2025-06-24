@@ -97,8 +97,8 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
     }
 
     "create closure bindings for captured identifiers" in {
-      cpg.all.collectAll[ClosureBinding].sortBy(_.closureOriginalName) match {
-        case Seq(fallbackClosureBinding) =>
+      cpg.all.collectAll[ClosureBinding].l match {
+        case List(fallbackClosureBinding) =>
           val fallbackLocal = cpg.method.name(".*lambda.*").local.name("fallback").head
           fallbackClosureBinding.closureBindingId shouldBe fallbackLocal.closureBindingId
 
@@ -445,9 +445,9 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
 
     "be captured precisely" in {
       cpg.all.collectAll[ClosureBinding].l match {
-        case myValue :: Nil =>
+        case List(myValue) =>
           myValue.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
-          myValue.closureOriginalName.head shouldBe "myValue"
+          myValue.closureBindingId shouldBe Some("Test0.cpp:<global>.Foo.foo.<lambda>0:string(string):myValue")
           myValue._localViaRefOut.get.name shouldBe "myValue"
           myValue._captureIn.collectFirst { case x: MethodRef =>
             x.methodFullName
@@ -478,9 +478,9 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
 
     "be captured precisely" in {
       cpg.all.collectAll[ClosureBinding].l match {
-        case myValue :: Nil =>
+        case List(myValue) =>
           myValue.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-          myValue.closureOriginalName.head shouldBe "myValue"
+          myValue.closureBindingId shouldBe Some("Test0.cpp:<global>.Foo.foo.<lambda>0:string(string):myValue")
           myValue._localViaRefOut.get.name shouldBe "myValue"
           myValue._captureIn.collectFirst { case x: MethodRef =>
             x.methodFullName

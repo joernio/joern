@@ -124,10 +124,8 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
     }
 
     "create closure bindings for captured identifiers" in {
-      cpg.all.collectAll[ClosureBinding].sortBy(_.closureOriginalName) match {
-        case Seq(fallbackClosureBinding) =>
-          fallbackClosureBinding.label shouldBe "CLOSURE_BINDING"
-
+      cpg.all.collectAll[ClosureBinding].l match {
+        case List(fallbackClosureBinding) =>
           val fallbackLocal = cpg.method.name(".*lambda.*").local.name("fallback").head
           fallbackClosureBinding.closureBindingId shouldBe fallbackLocal.closureBindingId
 
@@ -143,7 +141,6 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
               outMethod.methodFullName shouldBe "Foo.<lambda>0:java.lang.String(java.lang.String)"
             case result => fail(s"Expected single METHOD_REF but got $result")
           }
-
         case result => fail(s"Expected 2 closure bindings for captured variables but got $result")
       }
     }
@@ -706,7 +703,7 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
     "be captured precisely" in {
       cpg.all.collectAll[ClosureBinding].l match {
         case myValue :: Nil =>
-          myValue.closureOriginalName.head shouldBe "myValue"
+          myValue.closureBindingId shouldBe Some("Test0.java:<lambda>0:myValue")
           myValue._localViaRefOut.get.name shouldBe "myValue"
           myValue._captureIn.collectFirst { case x: MethodRef =>
             x.methodFullName
