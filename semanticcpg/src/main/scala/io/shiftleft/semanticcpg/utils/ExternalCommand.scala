@@ -19,8 +19,13 @@ object ExternalCommand {
   case class ExternalCommandResult(exitCode: Int, stdOut: Seq[String], stdErr: Seq[String], commandInfo: String) {
 
     /** convenience method: verify that the result is a success, throws an exception otherwise */
-    def verifySuccess(): Unit =
-      toTry.get
+    def verifySuccess(additionalContext: String = ""): Unit =
+      this.toTry match {
+        case Failure(exception) =>
+          if (additionalContext.length > 0) logger.error(additionalContext)
+          throw exception
+        case _ => ()
+      }
 
     /** Lines of standard output, if successful. */
     def successOption: Option[Seq[String]] = exitCode match {
