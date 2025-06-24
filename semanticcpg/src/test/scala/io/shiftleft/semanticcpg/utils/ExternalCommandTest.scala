@@ -2,22 +2,19 @@ package io.shiftleft.semanticcpg.utils
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
-
-import java.nio.file.Paths
 import scala.util.Properties.isWin
 import scala.util.{Failure, Success}
 import concurrent.duration.*
 
 class ExternalCommandTest extends AnyWordSpec with Matchers {
 
-  private def cwd = FileUtil.currentWorkingDirectory.toString
+  private def cwd = FileUtil.currentWorkingDirectory
 
   "ExternalCommand.run" should {
     "be able to run `ls` successfully" in {
       FileUtil.usingTemporaryDirectory("sample") { sourceDir =>
         val cmd = Seq("ls", sourceDir.toString)
-        ExternalCommand.run(cmd, Option(sourceDir.toString)).toTry should be a Symbol("success")
+        ExternalCommand.run(cmd, Option(sourceDir)).toTry should be a Symbol("success")
       }
     }
 
