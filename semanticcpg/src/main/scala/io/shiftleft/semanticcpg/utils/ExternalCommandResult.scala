@@ -40,6 +40,7 @@ case class ExternalCommandResult(
   def successOption: Option[Seq[String]] =
     toTry.toOption
 
+  /** Lines of stdout, if successful. Otherwise an exception with message=stderr. */
   def toTry: Try[Seq[String]] = {
     if (successful) Success(stdOut)
     else Failure(new RuntimeException(stdErr.mkString("\n")))
