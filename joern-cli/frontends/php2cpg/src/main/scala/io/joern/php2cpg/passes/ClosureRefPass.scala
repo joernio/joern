@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory
 class ClosureRefPass(cpg: Cpg) extends ForkJoinParallelCpgPass[ClosureBinding](cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  override def generateParts(): Array[ClosureBinding] = cpg.all.collectAll[ClosureBinding].toArray
+  override def generateParts(): Array[ClosureBinding] = cpg.closureBinding.toArray
 
   /** The AstCreator adds closureBindingIds and ClosureBindings for captured locals, but does not add the required REF
     * edges from the ClosureBinding to the captured node since the captured node may be a Local that is created by the

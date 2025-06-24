@@ -230,7 +230,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
     }
 
     "annotate the nodes via CAPTURE bindings" in {
-      cpg.all.collectAll[ClosureBinding].l match {
+      cpg.closureBinding.l match {
         case myValue :: Nil =>
           inside(myValue._localViaRefOut) {
             case Some(local) =>

@@ -23,7 +23,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
 
     "should contain a CLOSURE_BINDING node for the captured parameter with the correct props set" in {
-      val List(cb) = cpg.all.collectAll[ClosureBinding].l
+      val List(cb) = cpg.closureBinding.l
       cb.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       cb.closureBindingId should not be None
 
@@ -540,7 +540,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
 
     "should contain three CLOSURE_BINDING nodes" in {
-      cpg.all.collectAll[ClosureBinding].size shouldBe 3
+      cpg.closureBinding.size shouldBe 3
     }
   }
 

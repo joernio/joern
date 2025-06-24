@@ -97,7 +97,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
     }
 
     "create closure bindings for captured identifiers" in {
-      cpg.all.collectAll[ClosureBinding].l match {
+      cpg.closureBinding.l match {
         case List(fallbackClosureBinding) =>
           val fallbackLocal = cpg.method.name(".*lambda.*").local.name("fallback").head
           fallbackClosureBinding.closureBindingId shouldBe fallbackLocal.closureBindingId
@@ -165,7 +165,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
     "ref this correctly" in {
       val List(lambda) = cpg.method.name(".*lambda.*").l
       lambda.fullName shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:bool()"
-      cpg.all.collectAll[ClosureBinding].l match {
+      cpg.closureBinding.l match {
         case List(thisClosureBinding) =>
           val thisLocal = cpg.method.name(".*lambda.*").local.nameExact(Defines.This).head
           thisClosureBinding.closureBindingId shouldBe thisLocal.closureBindingId
@@ -198,7 +198,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
      |}""".stripMargin)
 
     "ref the shadowed variable correctly" in {
-      cpg.all.collectAll[ClosureBinding] shouldBe empty
+      cpg.closureBinding shouldBe empty
       val List(lambda) = cpg.method.name(".*lambda.*").l
       val List(xLocal) = lambda.block.local.nameExact("x").l
       xLocal.typeFullName shouldBe "float*"
@@ -221,7 +221,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
 
     "ref the shadowed variable correctly" in {
       val List(lambdaF, lambdaNested) = cpg.method.name(".*lambda.*").sortBy(_.lineNumber.get).l
-      cpg.all.collectAll[ClosureBinding].l match {
+      cpg.closureBinding.l match {
         case List(xClosureBinding) =>
           val List(xLocalCaptured) = lambdaF.block.local.nameExact("x").l
           xClosureBinding.closureBindingId shouldBe xLocalCaptured.closureBindingId
@@ -400,7 +400,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
     "ref this correctly" in {
       val List(lambda) = cpg.method.name(".*lambda.*").l
       lambda.fullName shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:bool()"
-      cpg.all.collectAll[ClosureBinding].l match {
+      cpg.closureBinding.l match {
         case List(thisClosureBinding) =>
           val thisLocal = cpg.method.name(".*lambda.*").local.nameExact(Defines.This).head
           thisClosureBinding.closureBindingId shouldBe thisLocal.closureBindingId
@@ -444,7 +444,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
         |""".stripMargin)
 
     "be captured precisely" in {
-      cpg.all.collectAll[ClosureBinding].l match {
+      cpg.closureBinding.l match {
         case List(myValue) =>
           myValue.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
           myValue.closureBindingId shouldBe Some("Test0.cpp:<global>.Foo.foo.<lambda>0:string(string):myValue")
@@ -477,7 +477,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
         |""".stripMargin)
 
     "be captured precisely" in {
-      cpg.all.collectAll[ClosureBinding].l match {
+      cpg.closureBinding.l match {
         case List(myValue) =>
           myValue.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
           myValue.closureBindingId shouldBe Some("Test0.cpp:<global>.Foo.foo.<lambda>0:string(string):myValue")
