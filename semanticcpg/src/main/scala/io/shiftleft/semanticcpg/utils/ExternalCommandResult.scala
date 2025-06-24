@@ -3,27 +3,26 @@ package io.shiftleft.semanticcpg.utils
 import scala.util.{Failure, Success, Try}
 import ExternalCommand.logger
 
-case class ExternalCommandResult(exitCode: Int, stdOut: Seq[String], stdErr: Seq[String], input: String, additionalContext: Option[String]) {
-  
-  /** Lines of standard output (if successful),
-    * or else a combination of stdout and stderr, plus some context. */
-  def getOutputText: String = {
-    exitCode match {
-      case 0 => stdOut.mkString("\n")
-      case nonZeroExitCode =>
-        val allOutput = stdOut ++ stdErr
-        s"""Process exited with code $nonZeroExitCode.
-           |${additionalContext.getOrElse("")}
-           |Input: $input
-           |Output:
-           |${allOutput.mkString("\n")}
-           |""".stripMargin
-    }
-  }
+case class ExternalCommandResult(
+  exitCode: Int,
+  stdOut: Seq[String],
+  stdErr: Seq[String],
+  input: String,
+  additionalContext: Option[String]
+) {
+
+  /** Lines of standard output (if successful), or else a combination of stdout and stderr, plus some context.
+    */
+  def stdOutAndError: Seq[String] =
+    stdOut ++ stdErr
 
   def logIfFailed(): this.type = {
     if (exitCode != 0) {
-      logger.error(getOutputText)
+      logger.error(s"""Process exited with code $exitCode.
+           |${additionalContext.getOrElse("")}
+           |Input: $input
+           |Output: $stdOutAndError
+           |""".stripMargin)
     }
     this
   }
@@ -35,13 +34,15 @@ case class ExternalCommandResult(exitCode: Int, stdOut: Seq[String], stdErr: Seq
   }
 
   /** Lines of standard output, if successful. */
-  def successOption: Option[String] =
+  def successOption: Option[Seq[String]] =
     toTry.toOption
 
-  def toTry: Try[String] = {
+  def toTry: Try[Seq[String]] = {
     exitCode match {
-      case 0 => Success(getOutputText)
-      case nonZeroExitCode => Failure(new RuntimeException(getOutputText))
+      case 0 =>
+        Success(stdOut)
+      case nonZeroExitCode =>
+        Failure(new RuntimeException(stdErr.mkString("\n")))
     }
   }
 }

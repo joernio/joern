@@ -3,7 +3,7 @@ package io.joern.php2cpg.parser
 import io.joern.php2cpg.Config
 import io.joern.php2cpg.parser.Domain.PhpFile
 import io.shiftleft.semanticcpg.utils.FileUtil.*
-import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
+import io.shiftleft.semanticcpg.utils.{ExternalCommand, ExternalCommandResult, FileUtil}
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{Files, Path, Paths}
@@ -37,9 +37,11 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
 
     val command = phpParseCommand(inputPaths)
 
-    val result = ExternalCommand.run(command, Some("."), mergeStdErrInStdOut = true)
-    result match {
-      case ExternalCommand.ExternalCommandResult(0, stdOut, _, _) =>
+    ExternalCommand
+      .run(command, mergeStdErrInStdOut = true)
+      .logIfFailed()
+      .successOption
+      .map { stdOut =>
         val asJson = linesToJsonValues(stdOut)
         val asPhpFile = asJson.map { case (filename, jsonObjectOption, infoLines) =>
           (filename, jsonToPhpFile(jsonObjectOption, filename), infoLines)
@@ -48,10 +50,8 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
           PhpParseResult(canonicalToInputPath.apply(filename), phpFileOption, infoLines)
         }
         withRemappedFileName
-      case ExternalCommand.ExternalCommandResult(exitCode, _, _, _) =>
-        logger.error(s"Failure running php-parser with ${command.mkString(" ")}, exit code $exitCode")
-        Nil
-    }
+      }
+      .getOrElse(Nil)
   }
 
   private def jsonToPhpFile(jsonObject: Option[ujson.Value], filename: String): Option[PhpFile] = {

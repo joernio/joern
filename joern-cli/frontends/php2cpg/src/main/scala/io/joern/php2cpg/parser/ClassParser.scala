@@ -32,7 +32,7 @@ class ClassParser(targetDir: Path) {
     Seq("php", classParserScript.toString, targetDir.toString)
 
   def parse(): Try[List[ClassParserClass]] = Try {
-    val inputDirectory = targetDir.getParent.absolutePathAsString
+    val inputDirectory = targetDir.getParent.toAbsolutePath
     ExternalCommand.run(phpClassParseCommand, Option(inputDirectory)).toTry.map(_.reverse) match {
       case Success(output) =>
         read[List[ClassParserClass]](output.mkString("\n"))

@@ -45,16 +45,15 @@ object DependencyResolver {
     projectDir: Path,
     configuration: String
   ): Option[collection.Seq[String]] = {
-    val lines = ExternalCommand.run(
-        command = Seq("gradle", "dependencies", "--configuration,", configuration), 
+    val lines = ExternalCommand
+      .run(
+        command = Seq("gradle", "dependencies", "--configuration,", configuration),
         workingDir = Option(projectDir),
         additionalContext = "trying to retrieve dependencies for Gradle project at path `$projectDir`"
       )
       .logIfFailed()
       .successOption
-      .getOrElse("")
-      .linesIterator
-      .toSeq
+      .getOrElse(Seq.empty)
 
     val coordinates = MavenCoordinates.fromGradleOutput(lines)
     logger.info("Got {} Maven coordinates", coordinates.size)

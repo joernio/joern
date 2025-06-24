@@ -21,8 +21,7 @@ class DownloadDependenciesPass(cpg: Cpg, parentGoMod: GoModHelper, goGlobal: GoG
     val processor       = new DependencyProcessorQueue()
     val processorThread = new Thread(processor)
     processorThread.start()
-    FileUtil.usingTemporaryDirectory("go-temp-download") { tmpDir =>
-      val projDir = tmpDir.toString
+    FileUtil.usingTemporaryDirectory("go-temp-download") { projDir =>
       parentGoMod
         .getModMetaData()
         .foreach(mod => {

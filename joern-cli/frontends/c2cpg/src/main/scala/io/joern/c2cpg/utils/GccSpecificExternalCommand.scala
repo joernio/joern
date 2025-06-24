@@ -19,7 +19,7 @@ object GccSpecificExternalCommand {
         // environment always returns Success(1) for whatever reason...
         Success(stdOut)
       case other =>
-        Failure(new RuntimeException(other.getOutputText))
+        Failure(new RuntimeException(other.stdOutAndError.mkString(System.lineSeparator())))
     }
   }
 

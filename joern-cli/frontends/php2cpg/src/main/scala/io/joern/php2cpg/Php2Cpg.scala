@@ -29,6 +29,9 @@ class Php2Cpg extends X2CpgFrontend[Config] {
         val verPattern: Regex = """\b\d+\.\d+\.\d+\b""".r
         val verStr            = verPattern.findFirstIn(version).getOrElse(version)
         VersionHelper.compare(verStr, "7.1.0") >= 0
+      case Success(output) =>
+        logger.error(s"Unable to determine PHP version string from '$output'")
+        false
       case Failure(exception) =>
         logger.error(s"Failed to run php --version: ${exception.getMessage}")
         false

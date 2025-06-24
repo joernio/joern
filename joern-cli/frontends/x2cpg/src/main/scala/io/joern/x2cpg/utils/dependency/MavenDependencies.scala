@@ -51,15 +51,15 @@ object MavenDependencies {
       .run(command = fetchCommandWithOpts, workingDir = Option(projectDir))
       .logIfFailed()
       .toTry match {
-      case Success(output) =>
-        if (output.contains("[INFO] Build failures were ignored.")) {
-          logErrors(output)
+      case Success(lines) =>
+        if (lines.contains("[INFO] Build failures were ignored.")) {
+          logErrors(lines.mkString(System.lineSeparator()))
         }
-        output.linesIterator
+        lines
       case Failure(exception) =>
         logErrors(exception.getMessage)
         // exception message is the program output - and we still want to look for potential partial results
-        exception.getMessage.linesIterator
+        exception.getMessage.linesIterator.toSeq
     }
 
     var classPathNext = false
@@ -68,9 +68,7 @@ object MavenDependencies {
       classPathNext = line.endsWith("Dependencies classpath:")
 
       if (isClassPathNow) line.split(':') else Array.empty[String]
-    }
-    .distinct
-    .toSeq
+    }.distinct
 
     logger.info("got {} Maven dependencies", deps.size)
     Some(deps)

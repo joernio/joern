@@ -3,9 +3,7 @@ package io.joern.swiftsrc2cpg.utils
 import io.shiftleft.semanticcpg.utils.ExternalCommandResult
 
 import java.nio.file.Paths
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 object ExternalCommand {
 
@@ -28,7 +26,8 @@ object ExternalCommand {
             | Please see: https://www.swift.org/install/windows/
             |""".stripMargin))
       case other =>
-        Failure(new RuntimeException(other.getOutputText))
+        Failure(new RuntimeException(other.stdOutAndError.mkString(System.lineSeparator())))
+
     }
   }
 

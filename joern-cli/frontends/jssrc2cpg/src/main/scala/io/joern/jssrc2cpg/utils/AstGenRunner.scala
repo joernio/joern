@@ -311,7 +311,7 @@ class AstGenRunner(config: Config) {
 
   }
 
-  private def processEjsFiles(in: Path, out: Path, ejsFiles: List[String]): Try[String] = {
+  private def processEjsFiles(in: Path, out: Path, ejsFiles: List[String]): Try[Seq[String]] = {
     val tmpJsFiles = ejsFiles.map { ejsFilePath =>
       val ejsFile             = Paths.get(ejsFilePath)
       val maybeTranspiledFile = Paths.get(s"${ejsFilePath.stripSuffix(".ejs")}.js")
@@ -369,7 +369,7 @@ class AstGenRunner(config: Config) {
     else Success(Seq.empty)
   }
 
-  private def vueFiles(in: Path, out: Path): Try[String] = {
+  private def vueFiles(in: Path, out: Path): Try[Seq[String]] = {
     val files = SourceFiles.determine(
       in.toString,
       Set(".vue"),
@@ -386,7 +386,7 @@ class AstGenRunner(config: Config) {
     }
   }
 
-  private def jsFiles(in: Path, out: Path): Try[String] = {
+  private def jsFiles(in: Path, out: Path): Try[Seq[String]] = {
     ExternalCommand
       .run((astGenCommand +: executableArgs) ++ Seq("-t", "ts", "-o", out.toString), workingDir = Option(in))
       .toTry

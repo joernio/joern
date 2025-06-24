@@ -44,8 +44,8 @@ object ExternalCommand {
     builder.redirectOutput(stdOutFile)
     stdErrFile.foreach(builder.redirectError)
 
-    val actualWorkingDir = workingDir.getOrElse(Paths.get(".").toAbsolutePath.toString)
-    val input = s"""cmd: `${cmd.mkString(" ")}`, workingDir: $actualWorkingDir, extraEnv: $extraEnv"""
+    val actualWorkingDir       = workingDir.getOrElse(Paths.get(".").toAbsolutePath.toString)
+    val input                  = s"""cmd: `${cmd.mkString(" ")}`, workingDir: $actualWorkingDir, extraEnv: $extraEnv"""
     val additionalContextMaybe = Option(additionalContext).filter(_.nonEmpty)
     try {
       logger.debug(s"executing command: $input")
