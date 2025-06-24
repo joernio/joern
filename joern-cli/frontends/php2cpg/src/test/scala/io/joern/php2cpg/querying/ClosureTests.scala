@@ -94,7 +94,7 @@ class ClosureTests extends PhpCode2CpgFixture {
         use1.code shouldBe "$use1"
         use1.closureBindingId shouldBe Some(s"foo.php:$expectedName:use1")
         inside(cpg.closureBinding.filter(_.closureBindingId == use1.closureBindingId).l) { case List(closureBinding) =>
-          closureBinding._localViaRefOut shouldBe Some(use1)
+          closureBinding._localViaRefOut.name.l shouldBe List("use1")
         }
 
         use2.name shouldBe "use2"
