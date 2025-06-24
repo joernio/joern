@@ -176,8 +176,9 @@ trait AstForExpressionsCreator { this: AstCreator =>
             val signature = if (function.isExternC) { "" }
             else {
               function match {
-                case functionInstance: ICPPFunctionInstance => functionInstanceToSignature(functionInstance, functionType)
-                case _                                      => functionTypeToSignature(functionType)
+                case functionInstance: ICPPFunctionInstance =>
+                  functionInstanceToSignature(functionInstance, functionType)
+                case _ => functionTypeToSignature(functionType)
               }
             }
             val fullName = if (function.isExternC) {
