@@ -61,8 +61,6 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     identifierNode(originNode, name, s"$$$name", typeFullName)
   }
 
-
-
   protected def composeMethodFullName(methodName: String, appendMetaTypeDeclExt: Boolean = false): String = {
     scope.resolveIdentifier(methodName) match {
       case Some(importedMethod)                                         => importedMethod.name
