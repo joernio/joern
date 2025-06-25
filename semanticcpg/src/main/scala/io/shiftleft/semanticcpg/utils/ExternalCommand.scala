@@ -24,7 +24,7 @@ object ExternalCommand {
     timeout: Duration = Duration.Inf,
     additionalContext: String = ""
   ): ExternalCommandResult = {
-    val cmd = createCommand(command, isShellCommand)
+    val cmd     = createCommand(command, isShellCommand)
     val builder = new ProcessBuilder().command(cmd.toArray*)
     builder.environment().putAll(extraEnv.asJava)
     builder.redirectErrorStream(mergeStdErrInStdOut)
