@@ -9,50 +9,20 @@ import java.util.concurrent.{TimeUnit, TimeoutException}
 import scala.concurrent.duration.Duration
 import scala.jdk.CollectionConverters.*
 import scala.language.implicitConversions
-import scala.util.{Failure, Success, Try}
 import scala.util.control.NonFatal
 import scala.util.Properties.isWin
 
 object ExternalCommand {
-  private val logger = LoggerFactory.getLogger(getClass)
-
-  case class ExternalCommandResult(exitCode: Int, stdOut: Seq[String], stdErr: Seq[String], commandInfo: String) {
-
-    /** convenience method: verify that the result is a success, throws an exception otherwise */
-    def verifySuccess(additionalContext: String = ""): Unit =
-      this.toTry match {
-        case Failure(exception) =>
-          if (additionalContext.length > 0) logger.error(additionalContext)
-          throw exception
-        case _ => ()
-      }
-
-    /** Lines of standard output, if successful. */
-    def successOption: Option[Seq[String]] = exitCode match {
-      case 0 => Some(stdOut)
-      case _ => None
-    }
-
-    def toTry: Try[Seq[String]] = exitCode match {
-      case 0 => Success(stdOut)
-      case nonZeroExitCode =>
-        val allOutput = stdOut ++ stdErr
-        val message = s"""Process exited with code $nonZeroExitCode. 
-                         |Input: $commandInfo
-                         |Output:
-                         |${allOutput.mkString(System.lineSeparator())}
-                         |""".stripMargin
-        Failure(new RuntimeException(message))
-    }
-  }
+  protected[utils] val logger = LoggerFactory.getLogger(getClass)
 
   def run(
     command: Seq[String],
-    workingDir: Option[String] = None,
+    workingDir: Option[Path] = None,
     mergeStdErrInStdOut: Boolean = false,
     extraEnv: Map[String, String] = Map.empty,
     isShellCommand: Boolean = false,
-    timeout: Duration = Duration.Inf
+    timeout: Duration = Duration.Inf,
+    additionalContext: String = ""
   ): ExternalCommandResult = {
     val cmd =
       if (isShellCommand) {
@@ -67,18 +37,18 @@ object ExternalCommand {
     val builder = new ProcessBuilder().command(cmd.toArray*)
     builder.environment().putAll(extraEnv.asJava)
     builder.redirectErrorStream(mergeStdErrInStdOut)
-    workingDir.map(new File(_)).foreach(builder.directory)
+    workingDir.foreach(dir => builder.directory(dir.toFile))
 
     val stdOutFile = File.createTempFile("x2cpg", "stdout")
     val stdErrFile = Option.when(!mergeStdErrInStdOut)(File.createTempFile("x2cpg", "stderr"))
     builder.redirectOutput(stdOutFile)
     stdErrFile.foreach(builder.redirectError)
 
-    val commandInfo = s"""cmd: `${cmd.mkString(" ")}`, workingDir: ${workingDir.getOrElse(
-        System.getProperty("user.dir")
-      )}, extraEnv: $extraEnv"""
+    val actualWorkingDir       = workingDir.getOrElse(Paths.get(".").toAbsolutePath.toString)
+    val input                  = s"""cmd: `${cmd.mkString(" ")}`, workingDir: $actualWorkingDir, extraEnv: $extraEnv"""
+    val additionalContextMaybe = Option(additionalContext).filter(_.nonEmpty)
     try {
-      logger.debug(s"executing command: $commandInfo")
+      logger.debug(s"executing command: $input")
       val process = builder.start()
       if (timeout.isFinite) {
         logger.debug(s"waiting until command completes (but max $timeout)")
@@ -89,20 +59,20 @@ object ExternalCommand {
           throw new TimeoutException(s"command '${command.mkString(" ")}' with timeout='$timeout' has timed out")
         }
       } else {
-        logger.debug("waiting (indefinitely) until command completes")
+        logger.debug("waiting until command completes (without a timeout)")
         process.waitFor()
       }
 
       logger.debug(s"command finished successfully")
       val stdOut = IOUtils.readLinesInFile(stdOutFile.toPath)
       val stdErr = stdErrFile.map(_.toPath).map(IOUtils.readLinesInFile).getOrElse(Seq.empty)
-      ExternalCommandResult(process.exitValue(), stdOut, stdErr, commandInfo)
+      ExternalCommandResult(process.exitValue(), stdOut, stdErr, input, additionalContextMaybe)
     } catch {
       case NonFatal(exception) =>
         val stdOut = IOUtils.readLinesInFile(stdOutFile.toPath)
         val stdErr = stdErrFile.map(f => IOUtils.readLinesInFile(f.toPath)).getOrElse(Seq.empty) :+ exception.getMessage
-        logger.debug(s"command did not finish successfully. Input was: $commandInfo")
-        ExternalCommandResult(1, stdOut, stdErr, commandInfo)
+        logger.debug(s"command did not finish successfully. Input was: $input")
+        ExternalCommandResult(1, stdOut, stdErr, input, additionalContextMaybe)
     } finally {
       stdOutFile.delete()
       stdErrFile.foreach(_.delete())
@@ -133,4 +103,5 @@ object ExternalCommand {
 
     fixedDir.resolve("bin/").toAbsolutePath
   }
+
 }

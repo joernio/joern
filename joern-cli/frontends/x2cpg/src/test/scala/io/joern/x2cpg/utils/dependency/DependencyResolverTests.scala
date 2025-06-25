@@ -33,7 +33,7 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
     // check that `mvn` is available - otherwise test will fail with only some logged warnings...
     withClue("`mvn` must be installed in order for this test to work...") {
       ExternalCommand
-        .run(Seq("mvn", "--version"), Some("."))
+        .run(Seq("mvn", "--version"))
         .successOption
         .exists(_.contains("Apache Maven")) shouldBe true
     }

@@ -1,7 +1,9 @@
 package io.joern.c2cpg.utils
 
 import io.shiftleft.semanticcpg.utils.ExternalCommand
-import io.shiftleft.semanticcpg.utils.ExternalCommand.ExternalCommandResult
+import io.shiftleft.semanticcpg.utils.ExternalCommandResult
+
+import java.nio.file.Paths
 import scala.util.{Failure, Success, Try}
 
 object GccSpecificExternalCommand {
@@ -9,15 +11,15 @@ object GccSpecificExternalCommand {
   private val IsWin = scala.util.Properties.isWin
 
   def run(command: Seq[String], cwd: String, extraEnv: Map[String, String] = Map.empty): Try[Seq[String]] = {
-    ExternalCommand.run(command, Option(cwd), mergeStdErrInStdOut = true, extraEnv) match {
-      case ExternalCommandResult(0, stdOut, _, _) =>
+    ExternalCommand.run(command, Option(Paths.get(cwd)), mergeStdErrInStdOut = true, extraEnv) match {
+      case ExternalCommandResult(0, stdOut, _, _, _) =>
         Success(stdOut)
-      case ExternalCommandResult(1, stdOut, _, _) if IsWin && IncludeAutoDiscovery.gccAvailable() =>
+      case ExternalCommandResult(1, stdOut, _, _, _) if IsWin && IncludeAutoDiscovery.gccAvailable() =>
         // the command to query the system header file locations within a Windows
         // environment always returns Success(1) for whatever reason...
         Success(stdOut)
-      case ExternalCommandResult(_, stdOut, _, _) =>
-        Failure(new RuntimeException(stdOut.mkString(System.lineSeparator())))
+      case other =>
+        Failure(new RuntimeException(other.stdOutAndError.mkString(System.lineSeparator())))
     }
   }
 

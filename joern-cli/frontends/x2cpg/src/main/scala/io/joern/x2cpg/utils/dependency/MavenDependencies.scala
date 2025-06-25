@@ -36,7 +36,6 @@ object MavenDependencies {
   }
 
   private def logErrors(output: String): Unit = {
-
     logger.warn(
       s"Retrieval of compile class path via maven return with error.\n" +
         "The compile class path may be missing or partial.\n" +
@@ -48,12 +47,14 @@ object MavenDependencies {
   }
 
   private[dependency] def get(projectDir: Path): Option[collection.Seq[String]] = {
-    val lines = ExternalCommand.run(fetchCommandWithOpts, Option(projectDir.toString)).toTry match {
+    val lines = ExternalCommand
+      .run(command = fetchCommandWithOpts, workingDir = Option(projectDir))
+      .logIfFailed()
+      .toTry match {
       case Success(lines) =>
         if (lines.contains("[INFO] Build failures were ignored.")) {
           logErrors(lines.mkString(System.lineSeparator()))
         }
-
         lines
       case Failure(exception) =>
         logErrors(exception.getMessage)
@@ -62,15 +63,12 @@ object MavenDependencies {
     }
 
     var classPathNext = false
-    val deps = lines
-      .flatMap { line =>
-        val isClassPathNow = classPathNext
-        classPathNext = line.endsWith("Dependencies classpath:")
+    val deps = lines.flatMap { line =>
+      val isClassPathNow = classPathNext
+      classPathNext = line.endsWith("Dependencies classpath:")
 
-        if (isClassPathNow) line.split(':') else Array.empty[String]
-      }
-      .distinct
-      .toList
+      if (isClassPathNow) line.split(':') else Array.empty[String]
+    }.distinct
 
     logger.info("got {} Maven dependencies", deps.size)
     Some(deps)
