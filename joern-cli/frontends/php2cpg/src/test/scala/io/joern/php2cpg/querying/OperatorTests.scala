@@ -680,21 +680,27 @@ class OperatorTests extends PhpCode2CpgFixture {
     }
   }
 
-  "global calls should handle simple and non-simple args" ignore {
+  // TODO: Add handling for non-simple args ($$ variables)
+  "global calls should handle simple args" in {
     val cpg = code("""<?php
-      |global $a, $$b;
+      |$a = "b"
+      |$$a = 10
+      |function foo() {
+      | global $a, $$a;
+      |}
       |""".stripMargin)
 
-    inside(cpg.call.l) { case List(globalCall) =>
-      globalCall.name shouldBe "global"
-      globalCall.methodFullName shouldBe "global"
-      globalCall.code shouldBe "global $a, $$b"
-      globalCall.lineNumber shouldBe Some(2)
+    inside(cpg.all.collectAll[ClosureBinding].l) {
+      case bindA :: Nil =>
+        bindA.closureBindingId shouldBe Some("Test0.php:foo:a")
+        bindA.closureOriginalName shouldBe Some("a")
+      case xs => fail(s"Expected one binding, got ${xs.closureBindingId.mkString(",")}")
+    }
 
-      inside(globalCall.argument.l) { case List(aArg: Identifier, bArg: Identifier) =>
-        aArg.name shouldBe "a"
-        bArg.name shouldBe "b"
-      }
+    inside(cpg.method.name("foo").local.l) {
+      case memA :: Nil =>
+        memA.name shouldBe "a"
+      case xs => fail(s"Expected one member, got ${xs.name.mkString(",")}")
     }
   }
 

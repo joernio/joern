@@ -185,38 +185,39 @@ class AstCreator(
       val innerMethod = surroundingIter.next()
       innerMethod.node match {
         case inner: NewMethod =>
-          val methodRef = methodRefNode(stmt, s"${inner.fullName}(...)", inner.fullName, Defines.Any)
+          scope.lookupMethodRef(inner.fullName) match {
+            case Some(methodRef) =>
+              stmt.vars.foreach {
+                case _ @PhpVariable(name: PhpNameExpr, _) =>
+                  val closureBindingId = s"$relativeFileName:${inner.fullName}:${name.name}"
+                  val closureLocal     = localNode(stmt, name.name, name.name, Defines.Any, Option(closureBindingId))
 
-          stmt.vars.foreach {
-            case _ @PhpVariable(name: PhpNameExpr, _) =>
-              val closureBindingId = s"$relativeFileName:${inner.fullName}:${name.name}"
-              val closureLocal     = localNode(stmt, name.name, name.name, Defines.Any, Option(closureBindingId))
+                  val closureBindingNode = NewClosureBinding()
+                    .closureBindingId(closureBindingId)
+                    .closureOriginalName(name.name)
+                    .evaluationStrategy(EvaluationStrategies.BY_SHARING)
 
-              val closureBindingNode = NewClosureBinding()
-                .closureBindingId(closureBindingId)
-                .closureOriginalName(name.name)
-                .evaluationStrategy(EvaluationStrategies.BY_SHARING)
+                  scope.lookupVariable(name.name) match {
+                    case Some(refLocal) => diffGraph.addEdge(closureBindingNode, refLocal, EdgeTypes.REF)
+                    case _              => // do nothing
+                  }
 
-              scope.lookupVariable(name.name) match {
-                case Some(refLocal) => diffGraph.addEdge(closureBindingNode, refLocal, EdgeTypes.REF)
-                case _              => // do nothing
+                  scope.addVariableToMethodScope(closureLocal.name, closureLocal, inner.fullName) match {
+                    case Some(node @ PhpScopeElement(_: NewMethod)) =>
+                      node.maybeBlock.foreach(diffGraph.addEdge(_, closureLocal, EdgeTypes.AST))
+                    case _ => // do nothing
+                  }
+
+                  diffGraph.addNode(closureBindingNode)
+                  diffGraph.addEdge(methodRef, closureBindingNode, EdgeTypes.CAPTURE)
+                case x =>
+                  logger.warn(s"Unexpected variable type ${x.getClass} found")
               }
-
-              scope.addVariableToMethodScope(closureLocal.name, closureLocal, inner.fullName) match {
-                case Some(node @ PhpScopeElement(_: NewMethod)) =>
-                  node.maybeBlock.foreach(diffGraph.addEdge(_, closureLocal, EdgeTypes.AST))
-                case _ => // do nothing
-              }
-
-              diffGraph.addNode(closureBindingNode)
-              diffGraph.addEdge(methodRef, closureBindingNode, EdgeTypes.CAPTURE)
-
-            case x =>
-              logger.warn(s"Unexpected variable type ${x.getClass} found")
+            case None =>
+              logger.warn(s"No methodRef found for capturing global variable in method ${inner.fullName}")
           }
         case _ => // do nothing
       }
-
     }
 
     stmt.vars.map(astForExpr)

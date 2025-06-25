@@ -92,7 +92,7 @@ class ClosureTests extends PhpCode2CpgFixture {
       inside(closureMethod.body.astChildren.l) { case List(use1: Local, use2: Local, echoCall: Call) =>
         use1.name shouldBe "use1"
         use1.code shouldBe "$use1"
-        use1.closureBindingId shouldBe Some(s"foo.php:$expectedName:use1")
+        use1.closureBindingId shouldBe Some(s"$expectedName:use1")
         inside(cpg.all.collectAll[ClosureBinding].filter(_.closureBindingId == use1.closureBindingId).l) {
           case List(closureBinding) =>
             closureBinding.closureOriginalName shouldBe Some("use1")
@@ -100,7 +100,7 @@ class ClosureTests extends PhpCode2CpgFixture {
 
         use2.name shouldBe "use2"
         use2.code shouldBe "&$use2"
-        use2.closureBindingId shouldBe Some(s"foo.php:$expectedName:use2")
+        use2.closureBindingId shouldBe Some(s"$expectedName:use2")
 
         echoCall.code shouldBe "sink($value,$use1)"
       }
@@ -225,6 +225,8 @@ class ClosureTests extends PhpCode2CpgFixture {
         |function foo() {
         |  function bar() {
         |    global $a;
+        |    global $c;
+        |    global $d;
         |    $a = 1;
         |    $b = $a;
         |  }
@@ -237,9 +239,10 @@ class ClosureTests extends PhpCode2CpgFixture {
     }
 
     "identifier association to local in bar" in {
+      cpg.method.name("<global>").dotAst.l.foreach(println)
       val localNode = cpg.method.name("bar").local.name("a").head
-      localNode.referencingIdentifiers.lineNumber(6).code.head shouldBe "$a"
-      localNode.referencingIdentifiers.lineNumber(7).code.head shouldBe "$a"
+      localNode.referencingIdentifiers.lineNumber(8).code.head shouldBe "$a"
+      localNode.referencingIdentifiers.lineNumber(9).code.head shouldBe "$a"
     }
 
     "method ref of closure binding of bar in foo" in {
@@ -267,6 +270,10 @@ class ClosureTests extends PhpCode2CpgFixture {
     "closure binding reference to global" in {
       val localNode = cpg.method.name("<global>").local.name("a").head
       localNode._closureBindingViaRefIn.next().closureBindingId shouldBe Some("Test0.php:foo:a")
+    }
+
+    "only two MethodRef nodes" in {
+      cpg.all.collectAll[MethodRef].map(_.methodFullName).l shouldBe List("foo", "foo.bar")
     }
   }
 }

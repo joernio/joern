@@ -8,6 +8,7 @@ import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes, PropertyNames}
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -34,7 +35,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     // Add closure bindings to diffgraph
     localsForUses.foreach { local =>
-      val closureBindingId = s"$relativeFileName:$methodName:${local.name}"
+      val closureBindingId = s"$methodName:${local.name}" // Filename already included in methodName
+
       local.closureBindingId(closureBindingId)
 
       val closureBindingNode = NewClosureBinding()
@@ -71,16 +73,14 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       closureExpr.attributes,
       List.empty[PhpAttributeGroup]
     )
-    val methodAst = astForMethodDecl(methodDecl, localsForUses.map(Ast(_)), Option(methodName))
 
     val usesCode = localsForUses match {
       case Nil    => ""
       case locals => s" use(${locals.map(_.code).mkString(", ")})"
     }
 
-    methodAst.root.collect { case method: NewMethod => method }.foreach { methodNode =>
-      methodNode.code(methodNode.code ++ usesCode)
-    }
+    val methodAst =
+      astForMethodDecl(methodDecl, localsForUses.map(Ast(_)), Option(methodName), usesCode = Option(usesCode))
 
     // Add method to scope to be attached to typeDecl later
     scope.addAnonymousMethod(methodAst)
@@ -92,7 +92,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     decl: PhpMethodDecl,
     bodyPrefixAsts: List[Ast] = Nil,
     fullNameOverride: Option[String] = None,
-    isConstructor: Boolean = false
+    isConstructor: Boolean = false,
+    usesCode: Option[String] = None
   ): Ast = {
     val isStatic = decl.modifiers.contains(ModifierTypes.STATIC)
     val thisParam = if (decl.isClassMethod && !isStatic) {
@@ -120,11 +121,20 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case Nil  => ""
       case mods => s"${mods.mkString(" ")} "
     }
-    val methodCode = s"${modifierString}function $methodName(${parameters.map(_.rootCodeOrEmpty).mkString(",")})"
+    val methodCode =
+      s"${modifierString}function $methodName(${parameters.map(_.rootCodeOrEmpty).mkString(",")})${usesCode.getOrElse("")}"
 
-    val method         = methodNode(decl, methodName, methodCode, fullName, Some(signature), relativeFileName)
+    val methodRef =
+      if methodName == NamespaceTraversal.globalNamespaceName || isConstructor then None
+      else Option(methodRefNode(decl, methodCode, fullName, Defines.Any))
+    val method = methodNode(decl, methodName, methodCode, fullName, Some(signature), relativeFileName)
+
+    scope.surroundingScopeFullName.map(method.astParentFullName(_))
+    scope.surroundingAstLabel.map(method.astParentType(_))
+
     val methodBodyNode = blockNode(decl)
-    scope.pushNewScope(method, Option(methodBodyNode))
+
+    scope.pushNewScope(method, Option(methodBodyNode), methodRef)
 
     val returnType = decl.returnType.map(_.name).getOrElse(Defines.Any)
 
@@ -139,7 +149,15 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val methodBody    = blockAst(methodBodyNode, methodBodyStmts)
 
     scope.popScope()
-    methodAstWithAnnotations(method, parameters, methodBody, methodReturn, modifiers, attributeAsts)
+    val methodAst = methodAstWithAnnotations(method, parameters, methodBody, methodReturn, modifiers, attributeAsts)
+
+    Ast.storeInDiffGraph(methodAst, diffGraph)
+    val methodRefAst = methodRef.map(Ast(_)).getOrElse(Ast())
+
+    scope.surroundingAstLabel match {
+      case Some(label) if label == "TYPE_DECL" => Ast()
+      case _                                   => methodRefAst
+    }
   }
 
   private def thisParamAstForMethod(originNode: PhpNode): Ast = {
@@ -180,19 +198,29 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val thisParam = thisParamAstForMethod(originNode)
 
-    val method = methodNode(originNode, ConstructorMethodName, fullName, fullName, Some(signature), relativeFileName)
-
-    val methodBodyBlock = blockNode(originNode)
-
     val initAsts = scope.getFieldInits.map { fieldInit =>
       astForMemberAssignment(fieldInit.originNode, fieldInit.memberNode, fieldInit.value, isField = true)
     }
 
-    val methodBody = blockAst(blockNode(originNode), initAsts)
+    val method = methodNode(originNode, ConstructorMethodName, fullName, fullName, Some(signature), relativeFileName)
+
+    val methodBodyBlock = blockNode(originNode)
+
+    scope.surroundingScopeFullName.map(method.astParentFullName(_))
+    scope.surroundingAstLabel.map(method.astParentType(_))
+
+    scope.pushNewScope(method, Option(methodBodyBlock))
+
+    val methodBody = blockAst(methodBodyBlock, initAsts)
 
     val methodReturn = methodReturnNode(originNode, Defines.Any)
 
-    methodAstWithAnnotations(method, thisParam :: Nil, methodBody, methodReturn, modifiers)
+    val methodAst = methodAstWithAnnotations(method, thisParam :: Nil, methodBody, methodReturn, modifiers)
+    Ast.storeInDiffGraph(methodAst, diffGraph)
+
+    scope.popScope()
+
+    Ast()
   }
 
   protected def astForAttributeGroup(attrGrp: PhpAttributeGroup): Seq[Ast] = {

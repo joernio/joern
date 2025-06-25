@@ -81,7 +81,6 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     if (methodName == NamespaceTraversal.globalNamespaceName) {
       globalNamespace.fullName
     } else {
-      val name = scope.getSurroundingFullName
       val className = if (appendMetaTypeDeclExt) {
         getTypeDeclPrefix.map(name => s"$name$MetaTypeDeclExtension")
       } else {
@@ -203,4 +202,24 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
 
   protected def astForIdentifierWithLocalRef(ident: NewIdentifier, refLocal: NewNode): Ast =
     Ast(ident).withRefEdge(ident, refLocal)
+
+  protected def createMethodRefsAst(stmt: PhpNode, stmts: List[PhpStmt]): List[Ast] = {
+    stmts
+      .collect {
+        case x: PhpMethodDecl if x.name.name != ConstructorMethodName => x
+      }
+      .map { methodDecl =>
+        val methodName = composeMethodFullName(methodDecl.name.name)
+        val methodRef  = methodRefNode(stmt, methodName, methodName, Defines.Any)
+        scope.addMethodRef(methodRef)
+        Ast(methodRef)
+      }
+  }
+
+  protected def createConstructorMethodRef(stmt: PhpNode, constructorName: String): Ast = {
+    val constructorMethodFullName = composeMethodFullName(constructorName)
+    val constructorMethodRef = methodRefNode(stmt, constructorMethodFullName, constructorMethodFullName, Defines.Any)
+    scope.addMethodRef(constructorMethodRef)
+    Ast(constructorMethodRef)
+  }
 }

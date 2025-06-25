@@ -26,15 +26,24 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
   private var tmpVarCounter                                           = 0
   private var tmpClassCounter                                         = 0
   private var importedSymbols                                         = Map.empty[String, SymbolSummary]
-  private val localsToAdd                                             = mutable.ArrayBuffer[NewLocal]()
+  private val methodRefs                                              = mutable.ArrayBuffer[NewMethodRef]()
 
-  def pushNewScope(scopeNode: NewNode, maybeBlock: Option[NewBlock] = None): Unit = {
+  def pushNewScope(
+    scopeNode: NewNode,
+    maybeBlock: Option[NewBlock] = None,
+    methodRef: Option[NewMethodRef] = None
+  ): Unit = {
     scopeNode match {
       case block: NewBlock =>
         val scopeName = stack.headOption.map(_.scopeNode.getName)
         super.pushNewScope(PhpScopeElement(block, scopeName.getOrElse("")))
 
       case method: NewMethod =>
+        methodRef match {
+          case Some(mr) => methodRefs.addOne(mr)
+          case _        =>
+        }
+
         super.pushNewScope(PhpScopeElement(method, maybeBlock))
 
       case typeDecl: NewTypeDecl =>
@@ -189,6 +198,8 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
     }
   }
 
+  def addMethodRef(methodRef: NewMethodRef): Unit = methodRefs.addOne(methodRef)
+
   private def addInitToScope(init: PhpInit, initList: List[mutable.ArrayBuffer[PhpInit]]): Unit = {
     initList.head.addOne(init)
   }
@@ -243,6 +254,10 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
     */
   def resolveIdentifier(symbol: String): Option[SymbolSummary] = {
     importedSymbols.get(symbol)
+  }
+
+  def lookupMethodRef(methodRefName: String): Option[NewMethodRef] = methodRefs.collectFirst {
+    case mr if mr.methodFullName == methodRefName => mr
   }
 
 }

@@ -1,7 +1,15 @@
 package io.joern.php2cpg.utils
 
 import io.joern.php2cpg.parser.Domain.MethodDelimiter
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  MethodRef,
+  NewBlock,
+  NewMethod,
+  NewMethodRef,
+  NewNamespaceBlock,
+  NewNode,
+  NewTypeDecl
+}
 
 class PhpScopeElement private (val node: NewNode, scopeName: String, val maybeBlock: Option[NewBlock] = None)(implicit
   nextClosureName: () => String
@@ -35,9 +43,7 @@ object PhpScopeElement {
     new PhpScopeElement(block, scopeName)
   }
 
-  def apply(method: NewMethod, block: Option[NewBlock] = None)(implicit
-    nextClosureName: () => String
-  ): PhpScopeElement = {
+  def apply(method: NewMethod, block: Option[NewBlock])(implicit nextClosureName: () => String): PhpScopeElement = {
     new PhpScopeElement(method, method.fullName, block)
   }
 
