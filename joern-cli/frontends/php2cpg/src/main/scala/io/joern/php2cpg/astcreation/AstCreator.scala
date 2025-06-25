@@ -252,11 +252,12 @@ class AstCreator(
       case PhpUseType.Constant => s"const "
       case _                   => ""
     }
-    val code = s"use $typeCode$originalName$aliasCode"
+    val code              = s"use $typeCode$originalName$aliasCode"
+    lazy val defaultAlias = originalName.split("\\\\").last
 
     val importNode = NewImport()
       .importedEntity(originalName)
-      .importedAs(stmt.alias.map(_.name))
+      .importedAs(stmt.alias.map(_.name).getOrElse(defaultAlias))
       .isExplicit(true)
       .code(code)
 

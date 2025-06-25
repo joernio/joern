@@ -135,6 +135,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val methodBodyNode = blockNode(decl)
 
     scope.pushNewScope(method, Option(methodBodyNode), methodRef)
+    scope.useFunctionDecl(methodName, fullName)
 
     val returnType = decl.returnType.map(_.name).getOrElse(Defines.Any)
 

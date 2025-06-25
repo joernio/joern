@@ -223,6 +223,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       inherits = inheritsFromMeta
     )
 
+    // Add this to scope for symbol resolution
+    scope.useTypeDecl(name.name, fullName)
+
     val createDefaultConstructor = stmt.hasConstructor
 
     scope.pushNewScope(typeDecl)

@@ -7,22 +7,22 @@ import org.json4s.{Formats, NoTypeHints}
 import org.json4s.native.Serialization
 
 import java.nio.file.{Files, Paths}
+import scala.util.Properties
 
 object Main {
 
-  def main(args: Array[String]) = {
+  def main(args: Array[String]): Unit = {
     dumpQueries()
   }
 
   def dumpQueries(): Unit = {
     implicit val engineContext: EngineContext = EngineContext(NoSemantics)
-    implicit val formats: AnyRef & Formats =
-      Serialization.formats(NoTypeHints)
-    val queryDb = new QueryDatabase(new JoernDefaultArgumentProvider(0))
-    // TODO allow specifying file from the outside and make this portable
-    val outFileName = "/tmp/querydb.json"
-    Files.writeString(Paths.get(outFileName), Serialization.write(queryDb.allQueries))
-    println(s"Queries written to: $outFileName")
+    implicit val formats: Formats             = Serialization.formats(NoTypeHints)
+    val queryDb                               = new QueryDatabase(new JoernDefaultArgumentProvider(0))
+    // TODO allow specifying file from the outside
+    val outFileName = Paths.get(Properties.tmpDir, "querydb.json")
+    Files.writeString(outFileName, Serialization.write(queryDb.allQueries))
+    println(s"Queries written to: ${outFileName.toAbsolutePath.toString}")
   }
 
   class JoernDefaultArgumentProvider(maxCallDepth: Int)(implicit context: EngineContext)

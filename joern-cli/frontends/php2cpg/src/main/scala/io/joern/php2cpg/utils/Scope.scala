@@ -3,6 +3,7 @@ package io.joern.php2cpg.utils
 import flatgraph.DiffGraphBuilder
 import io.joern.php2cpg.astcreation.AstCreator.NameConstants
 import io.joern.php2cpg.parser.Domain.{PhpExpr, PhpNode}
+import io.joern.php2cpg.parser.Domain.MetaTypeDeclExtension
 import io.joern.php2cpg.passes.SymbolSummaryPass.*
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.{NamespaceLikeScope, ScopeElement, Scope as X2CpgScope}
@@ -140,7 +141,13 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
   }
 
   def isSurroundedByMetaclassTypeDecl: Boolean =
-    stack.map(_.scopeNode.node).collectFirst { case td: NewTypeDecl => td }.exists(_.name.endsWith("<metaclass>"))
+    stack
+      .map(_.scopeNode.node)
+      .collectFirst { case td: NewTypeDecl => td }
+      .exists(_.name.endsWith(MetaTypeDeclExtension))
+
+  def isTopLevel: Boolean =
+    getEnclosingTypeDeclTypeName.forall(_ == NamespaceTraversal.globalNamespaceName)
 
   def getEnclosingNamespaceNames: List[String] =
     stack.map(_.scopeNode.node).collect { case ns: NewNamespaceBlock => ns.name }.reverse
@@ -246,6 +253,35 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
           }
       }
     }
+  }
+
+  /** Declares that the following type declaration has been defined and should now be considered in scope and resolvable
+    * by its name.
+    * @param name
+    *   the type decl name.
+    * @param fullName
+    *   the type decl full name.
+    */
+  def useTypeDecl(name: String, fullName: String): Unit = {
+    summary
+      .get(fullName)
+      .flatMap(_.sorted.headOption)
+      .foreach(hit => importedSymbols = importedSymbols + (name -> hit))
+  }
+
+  /** Declares that the following function declaration has been defined and should now be considered in scope and
+    * resolvable by its name.
+    *
+    * @param name
+    *   the function name.
+    * @param fullName
+    *   the function full name.
+    */
+  def useFunctionDecl(name: String, fullName: String): Unit = {
+    summary
+      .get(fullName)
+      .flatMap(_.sorted.headOption)
+      .foreach(hit => importedSymbols = importedSymbols + (name -> hit))
   }
 
   /** Attempts to resolve a simple symbol.

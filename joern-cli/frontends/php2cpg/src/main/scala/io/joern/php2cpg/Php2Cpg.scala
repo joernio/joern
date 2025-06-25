@@ -22,19 +22,18 @@ class Php2Cpg extends X2CpgFrontend[Config] {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   private def isPhpVersionSupported: Boolean = {
-    val result = ExternalCommand.run(Seq("php", "--version"), Some(".")).toTry
-    result match {
+    ExternalCommand.run(Seq("php", "--version")).logIfFailed().toTry match {
       case Success(s"PHP $version ($_" :: _) =>
         // PHP 7.1.0 and above is required by Composer, which is used by PHP Parser
         logger.info(s"Checking PHP installation: $version")
         val verPattern: Regex = """\b\d+\.\d+\.\d+\b""".r
         val verStr            = verPattern.findFirstIn(version).getOrElse(version)
         VersionHelper.compare(verStr, "7.1.0") >= 0
+      case Success(output) =>
+        logger.error(s"Unable to determine PHP version string from '$output'")
+        false
       case Failure(exception) =>
         logger.error(s"Failed to run php --version: ${exception.getMessage}")
-        false
-      case x =>
-        logger.error(s"Unable to determine PHP version string from '$x'")
         false
     }
   }

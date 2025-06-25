@@ -10,7 +10,7 @@ import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.Operators
 
-import scala.annotation.tailrec
+import scala.annotation.{tailrec, unused}
 
 trait AstForPatternSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
@@ -36,8 +36,9 @@ trait AstForPatternSyntaxCreator(implicit withSchemaValidation: ValidationMode) 
     callAst(callNode_, Seq(lhsAst))
   }
 
-  private def astForMissingPatternSyntax(node: MissingPatternSyntax): Ast = notHandledYet(node)
-  private def astForTuplePatternSyntax(node: TuplePatternSyntax): Ast     = notHandledYet(node)
+  private def astForMissingPatternSyntax(@unused node: MissingPatternSyntax): Ast = Ast()
+
+  private def astForTuplePatternSyntax(node: TuplePatternSyntax): Ast = notHandledYet(node)
 
   private def localForValueBindingPatternSyntax(
     node: ValueBindingPatternSyntax,

@@ -335,7 +335,6 @@ trait AstForTypesCreator { this: AstCreator =>
     scope.pushNewMethodScope(fullName, name, namespaceBlockNode_, None)
     scope.pushNewBlockScope(blockNode_)
     val childrenAsts = namespaceDefinition.getDeclarations.flatMap(astsForDeclaration).toIndexedSeq
-    setOrder(childrenAsts)
     methodAstParentStack.pop()
     scope.popScope()
     scope.popScope()
@@ -361,10 +360,9 @@ trait AstForTypesCreator { this: AstCreator =>
   private def astForStructuredBindingDeclaration(decl: ICPPASTStructuredBindingDeclaration): Ast = {
     val node = blockNode(decl)
     scope.pushNewBlockScope(node)
-    val childAsts = decl.getNames.toList.map(astForNode)
+    val childrenAsts = decl.getNames.toList.map(astForNode)
     scope.popScope()
-    setOrder(childAsts)
-    blockAst(node, childAsts)
+    blockAst(node, childrenAsts)
   }
 
   private def astsForLinkageSpecification(l: ICPPASTLinkageSpecification): Seq[Ast] = {

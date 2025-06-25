@@ -1,11 +1,10 @@
 package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
-import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.TypeSyntax
-import io.joern.x2cpg.Ast
-import io.joern.x2cpg.ValidationMode
-import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
+import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 
 import scala.annotation.unused
 
@@ -53,7 +52,7 @@ trait AstForTypeSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForIdentifierTypeSyntax(node: IdentifierTypeSyntax): Ast = {
     val nodeCode = code(node)
     registerType(nodeCode)
-    Ast(identifierNode(node, nodeCode, dynamicTypeHints = Seq(nodeCode)))
+    Ast(identifierNode(node, nodeCode, nodeCode, Defines.Any, Seq(nodeCode)))
   }
 
   private def astForImplicitlyUnwrappedOptionalTypeSyntax(node: ImplicitlyUnwrappedOptionalTypeSyntax): Ast = {

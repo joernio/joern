@@ -1,7 +1,5 @@
 package io.joern.php2cpg.astcreation
 
-import io.shiftleft.utils.IOUtils
-
 import scala.io.Source
 
 object PhpBuiltins {
