@@ -143,9 +143,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   private def astForChainedCall(call: PhpCallExpr, name: String, target: PhpPropertyFetchExpr | PhpCallExpr): Ast = {
     val expr        = PhpPropertyFetchExpr(target, PhpNameExpr(name, call.attributes), false, false, call.attributes)
     val receiverAst = astForPropertyFetchExpr(expr)
-    val targetAst   = astForExpr(target)
 
-    val codePrefix = codeForMethodCall(call, targetAst, name)
+    val codePrefix = codeForMethodCall(call, receiverAst, name)
 
     val argumentAsts = call.args.map(astForCallArg)
     val argsCode     = getArgsCode(call, argumentAsts)
