@@ -24,16 +24,7 @@ object ExternalCommand {
     timeout: Duration = Duration.Inf,
     additionalContext: String = ""
   ): ExternalCommandResult = {
-    val cmd =
-      if (isShellCommand) {
-        val invokeShell =
-          if (isWin) Seq("cmd.exe", "/C")
-          else Seq("sh", "-c")
-        invokeShell ++ command
-      } else {
-        command
-      }
-
+    val cmd = createCommand(command, isShellCommand)
     val builder = new ProcessBuilder().command(cmd.toArray*)
     builder.environment().putAll(extraEnv.asJava)
     builder.redirectErrorStream(mergeStdErrInStdOut)
@@ -47,26 +38,14 @@ object ExternalCommand {
     val actualWorkingDir       = workingDir.getOrElse(Paths.get(".").toAbsolutePath.toString)
     val input                  = s"""cmd: `${cmd.mkString(" ")}`, workingDir: $actualWorkingDir, extraEnv: $extraEnv"""
     val additionalContextMaybe = Option(additionalContext).filter(_.nonEmpty)
+
     try {
       logger.debug(s"executing command: $input")
-      val process = builder.start()
-      if (timeout.isFinite) {
-        logger.debug(s"waiting until command completes (but max $timeout)")
-        val finished = process.waitFor(timeout.toMillis, TimeUnit.MILLISECONDS)
-        if (!finished) {
-          logger.warn(s"timeout reached - will now kill the external command")
-          process.destroy()
-          throw new TimeoutException(s"command '${command.mkString(" ")}' with timeout='$timeout' has timed out")
-        }
-      } else {
-        logger.debug("waiting until command completes (without a timeout)")
-        process.waitFor()
-      }
-
-      logger.debug(s"command finished successfully")
+      val exitValue = execute(builder, timeout)
+      logger.debug(s"command finished")
       val stdOut = IOUtils.readLinesInFile(stdOutFile.toPath)
       val stdErr = stdErrFile.map(_.toPath).map(IOUtils.readLinesInFile).getOrElse(Seq.empty)
-      ExternalCommandResult(process.exitValue(), stdOut, stdErr, input, additionalContextMaybe)
+      ExternalCommandResult(exitValue, stdOut, stdErr, input, additionalContextMaybe)
     } catch {
       case NonFatal(exception) =>
         val stdOut = IOUtils.readLinesInFile(stdOutFile.toPath)
@@ -77,6 +56,36 @@ object ExternalCommand {
       stdOutFile.delete()
       stdErrFile.foreach(_.delete())
     }
+  }
+
+  private def createCommand(command: Seq[String], isShellCommand: Boolean) = {
+    if (isShellCommand) {
+      val invokeShell =
+        if (isWin) Seq("cmd.exe", "/C")
+        else Seq("sh", "-c")
+      invokeShell ++ command
+    } else {
+      command
+    }
+  }
+
+  /** @return the exit value of the process */
+  private def execute(processBuilder: ProcessBuilder, timeout: Duration): Int = {
+    val process = processBuilder.start()
+    if (timeout.isFinite) {
+      logger.debug(s"waiting until command completes (with timeout=$timeout)")
+      val finished = process.waitFor(timeout.toMillis, TimeUnit.MILLISECONDS)
+      if (!finished) {
+        logger.warn(s"timeout reached - will now kill the external command")
+        process.destroy()
+        val command = processBuilder.command().asScala.mkString(" ")
+        throw new TimeoutException(s"command '$command' has timed out after $timeout")
+      }
+    } else {
+      logger.debug("waiting until command completes (without a timeout)")
+      process.waitFor()
+    }
+    process.exitValue()
   }
 
   /** Finds the absolute path to the executable directory (e.g. `/path/to/javasrc2cpg/bin`). Based on the package path
