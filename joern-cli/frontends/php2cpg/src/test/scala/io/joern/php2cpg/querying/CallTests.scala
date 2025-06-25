@@ -305,7 +305,7 @@ class CallTests extends PhpCode2CpgFixture {
     bar.code shouldBe "$obj->foo()->bar()"
     inside(cpg.call("bar").astChildren.l) { case (fa: Call) :: Nil =>
       fa.name shouldBe Operators.fieldAccess
-      fa.code shouldBe "$obj->foo()->bar"
+      fa.code shouldBe "$obj->foo()"
     }
   }
 

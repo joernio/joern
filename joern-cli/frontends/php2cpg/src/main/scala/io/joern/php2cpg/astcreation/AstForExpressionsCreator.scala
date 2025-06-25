@@ -543,8 +543,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       else InstanceMethodDelimiter
 
     val targetAst       = astForExpr(expr.expr)
-    val targetCode      = targetAst.rootCodeOrEmpty
-    val code            = s"$targetCode$accessSymbol${fieldAst.rootCodeOrEmpty}"
+    val code            = targetAst.rootCodeOrEmpty
     val fieldAccessNode = operatorCallNode(expr, code, Operators.fieldAccess, None)
     callAst(fieldAccessNode, Seq(targetAst, fieldAst))
   }
