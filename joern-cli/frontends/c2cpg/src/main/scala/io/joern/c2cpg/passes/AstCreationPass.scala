@@ -108,6 +108,7 @@ class AstCreationPass(
           Try {
             val localDiff = new AstCreator(relPath, global, config, translationUnit, headerFileFinder).createAst()
             diffGraph.absorb(localDiff)
+            logger.debug(s"Generated a CPG for: '$relPath'")
           } match {
             case Failure(exception) =>
               logger.warn(s"Failed to generate a CPG for: '$relPath'", exception)
