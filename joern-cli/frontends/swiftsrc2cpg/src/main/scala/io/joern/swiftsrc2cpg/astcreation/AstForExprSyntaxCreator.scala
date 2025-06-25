@@ -500,7 +500,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForTypeExprSyntax(node: TypeExprSyntax): Ast = {
     val nodeCode = code(node)
     registerType(nodeCode)
-    Ast(identifierNode(node, nodeCode, dynamicTypeHints = Seq(nodeCode)))
+    Ast(identifierNode(node, nodeCode, nodeCode, Defines.Any, Seq(nodeCode)))
   }
 
   private def astForUnresolvedAsExprSyntax(node: UnresolvedAsExprSyntax): Ast           = notHandledYet(node)
