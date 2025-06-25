@@ -12,6 +12,8 @@ import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.Operators
 
+import scala.annotation.unused
+
 trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
@@ -185,7 +187,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val nextMemberNode = createFieldIdentifierNode("next", line(node), column(node))
 
     val nextReceiverNode =
-      createFieldAccessCallAst(nextBaseNode, nextMemberNode, line(node), column(node))
+      createFieldAccessCallAst(Ast(nextBaseNode), nextMemberNode, line(node), column(node))
 
     val thisNextNode = identifierNode(node, iteratorName)
 
@@ -194,11 +196,10 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val doneBaseArgs = List(Ast(lhsNode), rhsAst)
     val doneBaseAst  = callAst(doneBaseNode, doneBaseArgs)
-    Ast.storeInDiffGraph(doneBaseAst, diffGraph)
 
     val doneMemberNode = createFieldIdentifierNode("done", line(node), column(node))
 
-    val testNode = createFieldAccessCallAst(doneBaseNode, doneMemberNode, line(node), column(node))
+    val testNode = createFieldAccessCallAst(doneBaseAst, doneMemberNode, line(node), column(node))
 
     val testCallArgs = List(testNode)
     val testCallAst  = callAst(testCallNode, testCallArgs)
@@ -212,7 +213,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val memberNode = createFieldIdentifierNode("value", line(node), column(node))
 
-    val accessAst = createFieldAccessCallAst(baseNode, memberNode, line(node), column(node))
+    val accessAst = createFieldAccessCallAst(Ast(baseNode), memberNode, line(node), column(node))
 
     val loopVariableAssignmentNode =
       callNode(node, s"$loopVariableName = $resultName.value", Operators.assignment, DispatchTypes.STATIC_DISPATCH)
@@ -310,8 +311,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val nextMemberNode = createFieldIdentifierNode("next", line(node), column(node))
 
-    val nextReceiverNode =
-      createFieldAccessCallAst(nextBaseNode, nextMemberNode, line(node), column(node))
+    val nextReceiverNode = createFieldAccessCallAst(Ast(nextBaseNode), nextMemberNode, line(node), column(node))
 
     val thisNextNode = identifierNode(node, iteratorName)
 
@@ -324,8 +324,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val doneMemberNode = createFieldIdentifierNode("done", line(node), column(node))
 
-    val testNode =
-      createFieldAccessCallAst(doneBaseNode, doneMemberNode, line(node), column(node))
+    val testNode = createFieldAccessCallAst(Ast(doneBaseNode), doneMemberNode, line(node), column(node))
 
     val testCallArgs = List(testNode)
     val testCallAst  = callAst(testCallNode, testCallArgs)
@@ -339,7 +338,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val memberNode = createFieldIdentifierNode("value", line(node), column(node))
 
-    val accessAst = createFieldAccessCallAst(baseNode, memberNode, line(node), column(node))
+    val accessAst = createFieldAccessCallAst(Ast(baseNode), memberNode, line(node), column(node))
 
     val loopVariableAssignmentNode =
       callNode(node, s"${code(id.expression)} = $resultName.value", Operators.assignment, DispatchTypes.STATIC_DISPATCH)
@@ -445,8 +444,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val nextMemberNode = createFieldIdentifierNode("next", line(node), column(node))
 
-    val nextReceiverNode =
-      createFieldAccessCallAst(nextBaseNode, nextMemberNode, line(node), column(node))
+    val nextReceiverNode = createFieldAccessCallAst(Ast(nextBaseNode), nextMemberNode, line(node), column(node))
 
     val thisNextNode = identifierNode(node, iteratorName)
 
@@ -455,12 +453,10 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val doneBaseArgs = List(Ast(lhsNode), rhsAst)
     val doneBaseAst  = callAst(doneBaseNode, doneBaseArgs)
-    Ast.storeInDiffGraph(doneBaseAst, diffGraph)
 
     val doneMemberNode = createFieldIdentifierNode("done", line(node), column(node))
 
-    val testNode =
-      createFieldAccessCallAst(doneBaseNode, doneMemberNode, line(node), column(node))
+    val testNode = createFieldAccessCallAst(doneBaseAst, doneMemberNode, line(node), column(node))
 
     val testCallArgs = List(testNode)
     val testCallAst  = callAst(testCallNode, testCallArgs)
@@ -472,7 +468,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       val whileLoopVariableNode = identifierNode(node, loopVariableName)
       val baseNode              = identifierNode(node, resultName)
       val memberNode            = createFieldIdentifierNode("value", line(node), column(node))
-      val accessAst             = createFieldAccessCallAst(baseNode, memberNode, line(node), column(node))
+      val accessAst             = createFieldAccessCallAst(Ast(baseNode), memberNode, line(node), column(node))
       val index                 = idx + 1
       val variableMemberNode =
         createFieldIdentifierNode(s"_$index", line(node), column(node))
@@ -550,7 +546,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     blockAst(blockNode_, List(Ast(labeledNode), bodyAst))
   }
 
-  private def astForMissingStmtSyntax(node: MissingStmtSyntax): Ast = notHandledYet(node)
+  private def astForMissingStmtSyntax(@unused node: MissingStmtSyntax): Ast = Ast()
 
   private def astForRepeatStmtSyntax(node: RepeatStmtSyntax): Ast = {
     val code = this.code(node)
