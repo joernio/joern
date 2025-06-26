@@ -221,6 +221,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     scope.popScope()
 
+    // AST gets added via AST_PARENT_FULLNAME property
     Ast()
   }
 

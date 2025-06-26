@@ -187,8 +187,12 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
       }
   }
 
-  protected def createConstructorMethodRef(stmt: PhpNode, constructorName: String): Ast = {
-    val constructorMethodFullName = composeMethodFullName(constructorName)
+  protected def createConstructorMethodRef(
+    stmt: PhpNode,
+    constructorName: String,
+    fullNameOverride: Option[String] = None
+  ): Ast = {
+    val constructorMethodFullName = fullNameOverride.getOrElse(composeMethodFullName(constructorName))
     val constructorMethodRef = methodRefNode(stmt, constructorMethodFullName, constructorMethodFullName, Defines.Any)
     scope.addMethodRef(constructorMethodRef)
     Ast(constructorMethodRef)

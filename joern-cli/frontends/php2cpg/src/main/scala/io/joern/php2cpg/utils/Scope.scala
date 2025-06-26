@@ -161,11 +161,7 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
   def getSurroundingFullName: String = {
     stack
       .map(_.scopeNode.node)
-      .collect {
-        case td: NewTypeDecl => td
-        case nm: NewMethod   => nm
-      }
-      .map {
+      .collectFirst {
         case td: NewTypeDecl => td.name
         case nm: NewMethod   => nm.name
       }

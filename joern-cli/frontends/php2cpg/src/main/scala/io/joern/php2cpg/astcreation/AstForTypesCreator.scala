@@ -93,8 +93,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     scope.surroundingScopeFullName.foreach(typeDeclTemp.astParentFullName(_))
     scope.pushNewScope(typeDeclTemp)
 
-    val constructorRefAst = createConstructorMethodRef(stmt, ConstructorMethodName)
-    val methodRefAsts     = createMethodRefsAst(stmt, stmt.stmts)
+    val constructorRefAst =
+      createConstructorMethodRef(stmt, ConstructorMethodName, Option(s"${classFullName}.${ConstructorMethodName}"))
+    val methodRefAsts = createMethodRefsAst(stmt, stmt.stmts)
 
     val bodyStmts      = astsForClassLikeBody(stmt, dynamicStmts, stmt.hasConstructor)
     val modifiers      = stmt.modifiers.map(modifierNode(stmt, _)).map(Ast(_))
@@ -113,8 +114,12 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     }
 
     scope.pushNewScope(metaTypeDecl)
-    val staticConstructorRefAst = createConstructorMethodRef(stmt, Defines.StaticInitMethodName)
-    val metaTypeDeclAst         = astForMetaTypeDecl(stmt, staticStmts, metaTypeDecl)
+    val staticConstructorRefAst = createConstructorMethodRef(
+      stmt,
+      Defines.StaticInitMethodName,
+      Option(s"${classFullName}$MetaTypeDeclExtension.${Defines.StaticInitMethodName}")
+    )
+    val metaTypeDeclAst = astForMetaTypeDecl(stmt, staticStmts, metaTypeDecl)
     scope.popScope()
 
     if scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL) then {
@@ -165,7 +170,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     )
 
     val typeRefIdent = {
-      val thisIdent = NewIdentifier().name(NameConstants.This).code(s"$$$NameConstants.This").typeFullName(Defines.Any)
+      val thisIdent =
+        NewIdentifier().name(NameConstants.This).code(s"$$${NameConstants.This}").typeFullName(Defines.Any)
       val fi = NewFieldIdentifier()
         .code(typeDecl.name)
         .canonicalName(typeDecl.name)
