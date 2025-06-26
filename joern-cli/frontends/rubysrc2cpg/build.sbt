@@ -1,4 +1,5 @@
 import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.sbt.packager.Keys.stagingDirectory
 import java.net.URI
 
 name := "rubysrc2cpg"
