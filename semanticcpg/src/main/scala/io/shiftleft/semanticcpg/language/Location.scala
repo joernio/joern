@@ -104,7 +104,18 @@ class LazyLocation(storedNode: StoredNode, filenameOverride: Option[String]) ext
 
   private lazy val method: Method = storedNode match {
     case cfgNode: CfgNode => cfgNode.method
-    case local: Local     => local.method.head
+    case _ => findParentMethod(storedNode).getOrElse {
+      throw IllegalStateException(s"Node not contained in a method $storedNode")
+    }
+  }
+
+  @tailrec
+  private def findParentMethod(node: StoredNode): Option[Method] = {
+    node._containsIn.iterator.nextOption() match {
+      case Some(head: Method) => Option(head)
+      case Some(head) => findParentMethod(head)
+      case None => None
+    }
   }
 
   @tailrec
