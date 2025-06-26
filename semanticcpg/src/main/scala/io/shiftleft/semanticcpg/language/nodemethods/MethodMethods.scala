@@ -4,7 +4,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.*
 
-class MethodMethods(val method: Method) extends AnyVal with NodeExtension with HasLocation {
+class MethodMethods(val method: Method) extends AnyVal with NodeExtension {
 
   /** Traverse to annotations of method
     */
@@ -67,10 +67,6 @@ class MethodMethods(val method: Method) extends AnyVal with NodeExtension with H
   /** Traverse to method body (alias for `block`) */
   def body: Block =
     method.block
-
-  override def location: NewLocation = {
-    LocationCreator.defaultCreateLocation(method, method)
-  }
 
   def content: Option[String] = {
     for {
