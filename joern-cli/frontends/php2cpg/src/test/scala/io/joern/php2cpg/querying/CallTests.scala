@@ -304,8 +304,8 @@ class CallTests extends PhpCode2CpgFixture {
     val bar = cpg.call("bar").head
     bar.code shouldBe "$obj->foo()->bar()"
     inside(cpg.call("bar").astChildren.l) { case (fa: Call) :: Nil =>
-      fa.name shouldBe Operators.fieldAccess
-      fa.code shouldBe "$obj->foo()->bar"
+      fa.name shouldBe "foo"
+      fa.code shouldBe "$obj->foo()"
     }
   }
 
@@ -345,6 +345,27 @@ class CallTests extends PhpCode2CpgFixture {
       test2.methodFullName shouldBe s"${Defines.UnresolvedNamespace}.test2"
       test2.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
     }
+  }
+
+  "a chained call with a lambda argument should generate precisely one lambda reference" in {
+    val cpg = code("""
+        |<?php
+        |class Foo {
+        | public function bar() {
+        |        $batches = 0;
+        |        BatchBuilder::factory()
+        |            ->transferWith(function () {
+        |                $batches++;
+        |            })
+        |            ->build();
+        |   }
+        |}
+        |""".stripMargin)
+
+    cpg.expression.whereNot(_.astParent).size shouldBe 0
+    cpg.call.argument.isMethodRef.size shouldBe 1
+    val lambdaRef = cpg.call.argument.isMethodRef.head
+    lambdaRef.methodFullName shouldBe "Foo.bar.<lambda>0"
   }
 
 }
