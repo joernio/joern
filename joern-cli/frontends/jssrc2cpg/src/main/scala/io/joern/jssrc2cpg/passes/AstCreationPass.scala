@@ -41,7 +41,7 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
         case Success(fileContent) => fileContent.size
         case Failure(exception) =>
           logger.warn(s"Failed to read file: '$filePath'", exception)
-          0
+          -1
       }
       report.addReportInfo(fileName, fileLOC)
     }
@@ -59,10 +59,10 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
             diffGraph.absorb(localDiff)
           } match {
             case Failure(exception) =>
-              logger.warn(s"Failed to generate a CPG for: '${parseResult.fullPath}'", exception)
+              logger.warn(s"Failed to generate a CPG for: '${parseResult.filename}'", exception)
               (false, parseResult.filename)
             case Success(_) =>
-              logger.debug(s"Generated a CPG for: '${parseResult.fullPath}'")
+              logger.debug(s"Generated a CPG for: '${parseResult.filename}'")
               (true, parseResult.filename)
           }
         case Failure(exception) =>
