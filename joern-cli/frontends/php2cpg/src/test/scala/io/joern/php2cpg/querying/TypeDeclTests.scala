@@ -536,7 +536,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       case propertyAssignment :: Nil =>
         val List(_, rhs: Block) = propertyAssignment.argument.l: @unchecked
 
-        val List(constructRef: MethodRef, staticConstructRef: MethodRef, prefixAssign: Call, _, _, _) = rhs.astChildren.l: @unchecked
+        val List(constructRef: MethodRef, staticConstructRef: MethodRef, prefixAssign: Call, _, _, _) =
+          rhs.astChildren.l: @unchecked
         constructRef.methodFullName shouldBe "Foo.anon-class-0.__construct"
         staticConstructRef.methodFullName shouldBe "Foo.anon-class-0<metaclass>.<clinit>"
 
