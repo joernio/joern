@@ -25,9 +25,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     }
 
     stmt.name match {
-      case None => astForAnonymousClass(stmt, dynamicStmts, staticStmts)
+      case None => astForAnonymousClass(stmt, dynamicStmts, staticStmts) :: Nil
       case Some(name) if name.name.contains("anon-class") =>
-        astForAnonymousClass(stmt, dynamicStmts, staticStmts)
+        astForAnonymousClass(stmt, dynamicStmts, staticStmts) :: Nil
       case Some(name) => astForNamedClass(stmt, name, dynamicStmts, staticStmts)
     }
   }
@@ -55,7 +55,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     stmt: PhpClassLikeStmt,
     dynamicStmts: List[PhpStmt],
     staticStmts: List[PhpStmt]
-  ): List[Ast] = {
+  ): Ast = {
     val inheritsFrom = (stmt.extendsNames ++ stmt.implementedInterfaces).map(_.name)
     val inheritsFromMeta =
       (stmt.extendsNames ++ stmt.implementedInterfaces).map(name => s"${name.name}$MetaTypeDeclExtension")
@@ -93,10 +93,6 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     scope.surroundingScopeFullName.foreach(typeDeclTemp.astParentFullName(_))
     scope.pushNewScope(typeDeclTemp)
 
-    val constructorRefAst =
-      createConstructorMethodRef(stmt, ConstructorMethodName, Option(s"${classFullName}.${ConstructorMethodName}"))
-    val methodRefAsts = createMethodRefsAst(stmt, stmt.stmts)
-
     val bodyStmts      = astsForClassLikeBody(stmt, dynamicStmts, stmt.hasConstructor)
     val modifiers      = stmt.modifiers.map(modifierNode(stmt, _)).map(Ast(_))
     val annotationAsts = stmt.attributeGroups.flatMap(astForAttributeGroup)
@@ -114,11 +110,6 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     }
 
     scope.pushNewScope(metaTypeDecl)
-    val staticConstructorRefAst = createConstructorMethodRef(
-      stmt,
-      Defines.StaticInitMethodName,
-      Option(s"${classFullName}$MetaTypeDeclExtension.${Defines.StaticInitMethodName}")
-    )
     val metaTypeDeclAst = astForMetaTypeDecl(stmt, staticStmts, metaTypeDecl)
     scope.popScope()
 
@@ -156,8 +147,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     Ast.storeInDiffGraph(typeDeclAst, diffGraph)
     Ast.storeInDiffGraph(metaTypeDeclAst, diffGraph)
 
-    val allMethodRefAsts = List(constructorRefAst, staticConstructorRefAst) ++ methodRefAsts
-    allMethodRefAsts :+ prefixAst
+    prefixAst
   }
 
   private def createTypeRefPointer(typeDecl: NewTypeDecl): Ast = {

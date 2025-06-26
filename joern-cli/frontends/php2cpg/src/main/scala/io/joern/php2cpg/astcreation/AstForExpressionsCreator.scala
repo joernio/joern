@@ -767,7 +767,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         astForAnonymousClassInstantiation(expr, classLikeStmt)
 
       case classNameExpr: PhpExpr =>
-        Ast(blockNode(expr, "", Defines.Any)).withChildren(astForSimpleNewExpr(expr, classNameExpr))
+        astForSimpleNewExpr(expr, classNameExpr)
 
       case other =>
         throw new NotImplementedError(s"unexpected expression '$other' of type ${other.getClass}")
@@ -877,13 +877,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   private def astForAnonymousClassInstantiation(expr: PhpNewExpr, classLikeStmt: PhpClassLikeStmt): Ast = {
     val tmpClassNameExpr = PhpNameExpr(this.scope.getNewClassTmp, expr.attributes)
 
-    val classAsts = astForClassLikeStmt(classLikeStmt.copy(name = Some(tmpClassNameExpr)))
-    val newAsts   = astForSimpleNewExpr(expr, tmpClassNameExpr)
-
-    Ast(blockNode(expr, "", Defines.Any)).withChildren(classAsts).withChildren(newAsts)
+    astForClassLikeStmt(classLikeStmt.copy(name = Some(tmpClassNameExpr)))
+    astForSimpleNewExpr(expr, tmpClassNameExpr)
   }
 
-  private def astForSimpleNewExpr(expr: PhpNewExpr, classNameExpr: PhpExpr): List[Ast] = {
+  private def astForSimpleNewExpr(expr: PhpNewExpr, classNameExpr: PhpExpr): Ast = {
     val (maybeNameAst, className) = classNameExpr match {
       case nameExpr: PhpNameExpr =>
         (None, nameExpr.name)
@@ -927,8 +925,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     // Return identifier
     val returnIdentifierAst = astForIdentifierWithLocalRef(tmpIdentifier.copy, local)
-
-    List(allocAssignAst, initCallAst, returnIdentifierAst)
+    Ast(blockNode(expr, "", Defines.Any))
+      .withChild(allocAssignAst)
+      .withChild(initCallAst)
+      .withChild(returnIdentifierAst)
   }
 
 }
