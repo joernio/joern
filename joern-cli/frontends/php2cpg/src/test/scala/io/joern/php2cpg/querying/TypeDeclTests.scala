@@ -153,6 +153,9 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         fooMethod.signature shouldBe s"${Defines.UnresolvedSignature}(0)"
       }
     }
+
+    // Check that no methodRefs exist since there is no capturing
+    cpg.all.collectAll[MethodRef].l.size shouldBe 0
   }
 
   "interfaces should be able to extend multiple other interfaces" in {
@@ -188,6 +191,9 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         fooMethod.signature shouldBe s"${Defines.UnresolvedSignature}(0)"
       }
     }
+
+    // Check that no methodRefs exist since there is no capturing
+    cpg.all.collectAll[MethodRef].l.size shouldBe 0
   }
 
   "enums with cases without values should have the correct fields" in {
