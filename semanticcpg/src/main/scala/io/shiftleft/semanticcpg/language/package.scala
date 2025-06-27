@@ -252,6 +252,11 @@ package object language
     new ModifierAccessors[A](Iterator.single(a))
   implicit def iterOnceToModifierAccessorsTypeDecl[A <: TypeDecl](a: IterableOnce[A]): ModifierAccessors[A] =
     new ModifierAccessors[A](a.iterator)
+
+  implicit def singleToModifierAccessorLocal[A <: Local](a: A): ModifierAccessors[A] =
+    new ModifierAccessors[A](Iterator.single(a))
+  implicit def iterOnceToModifierAccessorsLocal[A <: Local](a: IterableOnce[A]): ModifierAccessors[A] =
+    new ModifierAccessors[A](a.iterator)
   // Modifier accessors ~
 
   implicit class NewNodeTypeDeco[NodeType <: NewNode](val node: NodeType) extends AnyVal {

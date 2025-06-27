@@ -3,11 +3,22 @@ package io.joern.php2cpg.astcreation
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
 import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*
+import io.joern.php2cpg.utils.PhpScopeElement
 import io.joern.php2cpg.passes.SymbolSummaryPass.PhpFunction
 import io.joern.x2cpg.Defines.UnresolvedNamespace
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewIdentifier, NewLiteral, NewNamespaceBlock}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, ModifierTypes}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewBlock,
+  NewIdentifier,
+  NewLiteral,
+  NewLocal,
+  NewMethod,
+  NewModifier,
+  NewNamespaceBlock,
+  NewNode
+}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import java.nio.charset.StandardCharsets
@@ -55,6 +66,24 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
       case Some(importedMethod)                                         => importedMethod.name
       case None if methodName == NamespaceTraversal.globalNamespaceName => globalNamespace.fullName
       case None =>
+        val name = scope.getSurroundingFullName
+        val className = if (appendMetaTypeDeclExt) {
+          Option.unless(name.isBlank)(s"$name$MetaTypeDeclExtension")
+        } else {
+          Option.unless(name.isBlank)(name)
+        }
+
+        val nameWithClass = List(className, Some(methodName)).flatten.mkString(MethodDelimiter)
+
+        prependNamespacePrefix(nameWithClass)
+    }
+  }
+
+  protected def composeMethodFullNameForCall(methodName: String, appendMetaTypeDeclExt: Boolean = false): String = {
+    scope.resolveIdentifier(methodName) match {
+      case Some(importedMethod)                                         => importedMethod.name
+      case None if methodName == NamespaceTraversal.globalNamespaceName => globalNamespace.fullName
+      case None =>
         val className = Option
           .when(appendMetaTypeDeclExt)(getTypeDeclPrefix.map(name => s"$name$MetaTypeDeclExtension").orNull)
           .orElse(getTypeDeclPrefix)
@@ -71,10 +100,8 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     }
   }
 
-  private def getTypeDeclPrefix: Option[String] = {
-    scope.getEnclosingTypeDeclTypeName
-      .filterNot(_ == NamespaceTraversal.globalNamespaceName)
-  }
+  private def getTypeDeclPrefix: Option[String] =
+    scope.getEnclosingTypeDeclTypeName.filterNot(_ == NamespaceTraversal.globalNamespaceName)
 
   protected def codeForMethodCall(call: PhpCallExpr, targetAst: Ast, name: String): String = {
     val callOperator = if (call.isNullSafe) s"?$InstanceMethodDelimiter" else InstanceMethodDelimiter
@@ -110,6 +137,67 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     }
   }
 
+  protected def handleVariableOccurrence(
+    expr: PhpNode,
+    name: String,
+    code: Option[String] = None,
+    tfn: Option[String] = None,
+    modifiers: List[String] = List.empty
+  ): NewNode = {
+    scope.lookupVariable(name) match {
+      case None =>
+        val localCode = if name == NameConstants.Self then NameConstants.Self else s"$$$name"
+        val local     = localNode(expr, name, code.getOrElse(localCode), tfn.getOrElse(Defines.Any))
+
+        modifiers.foreach { modifier =>
+          val modNode = modifierNode(expr, modifier)
+          diffGraph.addEdge(local, modNode, EdgeTypes.AST)
+        }
+
+        scope.addToScope(name, local) match {
+          case PhpScopeElement(node: NewBlock)   => diffGraph.addEdge(node, local, EdgeTypes.AST)
+          case x @ PhpScopeElement(_: NewMethod) => x.maybeBlock.foreach(diffGraph.addEdge(_, local, EdgeTypes.AST))
+          case _                                 => // do nothing
+        }
+
+        local
+      case Some(local) => local
+    }
+  }
+
+  protected def staticInitMethodAst(node: PhpNode, methodNode: NewMethod, body: Ast, returnType: String): Ast = {
+    val staticModifier = NewModifier().modifierType(ModifierTypes.STATIC)
+    val methodReturn   = methodReturnNode(node, returnType)
+    methodAst(methodNode, Nil, body, methodReturn, List(staticModifier))
+  }
+
+  protected def astForIdentifierWithLocalRef(ident: NewIdentifier, refLocal: NewNode): Ast =
+    Ast(ident).withRefEdge(ident, refLocal)
+
+  protected def createMethodRefsAst(stmt: PhpNode, stmts: List[PhpStmt]): Unit = {
+    stmts
+      .collect {
+        case x: PhpMethodDecl if x.name.name != ConstructorMethodName => x
+      }
+      .map { methodDecl =>
+        val methodName = composeMethodFullName(methodDecl.name.name)
+        val methodRef  = methodRefNode(stmt, methodName, methodName, Defines.Any)
+        scope.addMethodRef(methodRef)
+        Ast(methodRef)
+      }
+  }
+
+  protected def createConstructorMethodRef(
+    stmt: PhpNode,
+    constructorName: String,
+    fullNameOverride: Option[String] = None
+  ): Unit = {
+    val constructorMethodFullName = fullNameOverride.getOrElse(composeMethodFullName(constructorName))
+    val constructorMethodRef = methodRefNode(stmt, constructorMethodFullName, constructorMethodFullName, Defines.Any)
+    scope.addMethodRef(constructorMethodRef)
+    Ast(constructorMethodRef)
+  }
+
   protected def getArgsCode(call: PhpCallExpr, arguments: Seq[Ast]): String = {
     arguments
       .zip(call.args.collect { case x: PhpArg => x.unpack })
@@ -140,7 +228,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
       case Some(nameExpr: PhpNameExpr) if call.isStatic =>
         // Static method call with a simple receiver
         if (nameExpr.name == NameConstants.Self)
-          composeMethodFullName(name, appendMetaTypeDeclExt = !scope.isSurroundedByMetaclassTypeDecl)
+          composeMethodFullNameForCall(name, appendMetaTypeDeclExt = !scope.isSurroundedByMetaclassTypeDecl)
         else s"${nameExpr.name}$MetaTypeDeclExtension$MethodDelimiter$name"
       case Some(_) =>
         // As soon as we have a dynamic component to the call, we can't truly define a method full name
@@ -152,10 +240,9 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
         name
       // Assume name-space local function call
       case None =>
-        composeMethodFullName(name, call.isStatic)
+        composeMethodFullNameForCall(name, call.isStatic)
     }
   }
 
   protected def isBuiltinFunc(name: String): Boolean = PhpBuiltins.FuncNames.contains(name)
-
 }

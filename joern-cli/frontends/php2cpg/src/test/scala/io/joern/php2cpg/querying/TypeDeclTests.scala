@@ -153,6 +153,9 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         fooMethod.signature shouldBe s"${Defines.UnresolvedSignature}(0)"
       }
     }
+
+    // Check that no methodRefs exist since there is no capturing
+    cpg.all.collectAll[MethodRef].l.size shouldBe 0
   }
 
   "interfaces should be able to extend multiple other interfaces" in {
@@ -188,6 +191,9 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         fooMethod.signature shouldBe s"${Defines.UnresolvedSignature}(0)"
       }
     }
+
+    // Check that no methodRefs exist since there is no capturing
+    cpg.all.collectAll[MethodRef].l.size shouldBe 0
   }
 
   "enums with cases without values should have the correct fields" in {
@@ -485,7 +491,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
               allocSource.code shouldBe "Test0.php:<global>.anon-class-1.<alloc>()"
               allocSource.methodFullName shouldBe Operators.alloc
               allocTarget.typeFullName shouldBe "Test0.php:<global>.anon-class-1"
-            case xs => fail(s"Expected some things")
+            case xs => fail(s"Expected target and source")
           }
 
         case xs => fail(s"Expected one assignment, got ${xs.code.mkString("[", ",", "]")}")
@@ -524,7 +530,6 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         |  }
         |}
         |""".stripMargin)
-
     inside(cpg.typeDecl.name("C.D.anon-class-\\d+").l) {
       case anonClass :: Nil =>
         anonClass.fullName shouldBe s"C.D.anon-class-0"

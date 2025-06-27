@@ -3,11 +3,19 @@ package io.joern.php2cpg.astcreation
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants, operatorSymbols}
 import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*
+import io.joern.php2cpg.utils.PhpScopeElement
+import io.joern.x2cpg.Defines.{UnresolvedNamespace, UnresolvedSignature}
 import io.joern.x2cpg.Defines.UnresolvedSignature
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{
+  ControlStructureTypes,
+  DispatchTypes,
+  EdgeTypes,
+  Operators,
+  PropertyNames
+}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import scala.collection.mutable
@@ -224,11 +232,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         val typ  = scope.getEnclosingTypeDeclTypeName
         identifierNode(originNode, name, name, typ.getOrElse(Defines.Any), typ.toList)
       }
+
+      val selfLocal = handleVariableOccurrence(originNode, selfIdentifier.name)
+
       val fieldIdentifier = fieldIdentifierNode(originNode, memberNode.name, memberNode.name)
       val code = s"${NameConstants.Self}$StaticMethodDelimiter${memberNode.code.replaceAll("(static|case|const) ", "")}"
       val fieldAccessNode = operatorCallNode(originNode, code, Operators.fieldAccess, None)
-      callAst(fieldAccessNode, List(selfIdentifier, fieldIdentifier).map(Ast(_)))
+      val selfIdentAst    = astForIdentifierWithLocalRef(selfIdentifier, selfLocal)
+      val callArgs        = List(selfIdentAst, Ast(fieldIdentifier))
+      callAst(fieldAccessNode, callArgs)
     }
+
     val value = astForExpr(valueExpr)
 
     val assignmentCode = s"${targetAst.rootCodeOrEmpty} = ${value.rootCodeOrEmpty}"
@@ -438,7 +452,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
       case _: PhpVariadicPlaceholder =>
         val identifier = identifierNode(arg, "...", "...", TypeConstants.VariadicPlaceholder)
-        Ast(identifier)
+        val local      = handleVariableOccurrence(arg, "...")
+        astForIdentifierWithLocalRef(identifier, local)
     }
   }
 
@@ -460,9 +475,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   private def astForNameExpr(expr: PhpNameExpr): Ast = {
     val identifier = identifierNode(expr, expr.name, expr.name, Defines.Any)
 
-    val declaringNode = scope.lookupVariable(identifier.name)
+    val declaringNode = handleVariableOccurrence(expr, identifier.name)
 
-    Ast(identifier).withRefEdges(identifier, declaringNode.toList)
+    Ast(identifier).withRefEdges(identifier, List(declaringNode))
   }
 
   protected def stmtBodyBlockAst(stmt: PhpStmtWithBody): Ast = {
@@ -598,7 +613,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val tmpName = this.scope.getNewVarTmp()
 
-    def newTmpIdentifier: Ast = Ast(identifierNode(expr, tmpName, s"$$$tmpName", TypeConstants.Array))
+    val local = handleVariableOccurrence(expr, tmpName)
+
+    def newTmpIdentifier: Ast = {
+      val identifier = identifierNode(expr, tmpName, s"$$$tmpName", TypeConstants.Array)
+      astForIdentifierWithLocalRef(identifier, local)
+    }
 
     val tmpIdentifierAssignNode = {
       // use array() function to create an empty array. see https://www.php.net/manual/zh/function.array.php
@@ -853,6 +873,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
 
     val tmpIdentifier = getTmpIdentifier(expr, Option(className))
+    val local         = handleVariableOccurrence(expr, tmpIdentifier.name)
 
     // Alloc assign
     val allocCode       = s"$className.<alloc>()"
@@ -860,7 +881,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val allocAst        = callAst(allocNode, base = maybeNameAst)
     val allocAssignCode = s"${tmpIdentifier.code} = ${allocAst.rootCodeOrEmpty}"
     val allocAssignNode = operatorCallNode(expr, allocAssignCode, Operators.assignment, Option(className))
-    val allocAssignAst  = callAst(allocAssignNode, Ast(tmpIdentifier) :: allocAst :: Nil)
+    val allocAssignAst =
+      callAst(allocAssignNode, astForIdentifierWithLocalRef(tmpIdentifier, local) :: allocAst :: Nil)
 
     // Init node
     val initArgs      = expr.args.map(astForCallArg)
@@ -877,12 +899,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       Some(initSignature),
       maybeTypeHint.orElse(Some(Defines.Any)) // TODO Review Note: Should the hint be under dynamicTypeHintFullName?
     )
-    val initReceiver = Ast(tmpIdentifier.copy)
+    val initReceiver = astForIdentifierWithLocalRef(tmpIdentifier.copy, local)
     val initCallAst  = callAst(initCallNode, initArgs, base = Option(initReceiver))
 
     // Return identifier
-    val returnIdentifierAst = Ast(tmpIdentifier.copy)
-
+    val returnIdentifierAst = astForIdentifierWithLocalRef(tmpIdentifier.copy, local)
     Ast(blockNode(expr, "", Defines.Any))
       .withChild(allocAssignAst)
       .withChild(initCallAst)
