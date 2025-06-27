@@ -8,7 +8,7 @@ import io.joern.joerncli.JoernScan.getQueriesFromQueryDb
 import io.joern.joerncli.Scan.{allTag, defaultTag}
 import io.joern.joerncli.console.ReplBridge
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
+import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder, locationCreator}
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
 import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.utils.FileUtil.*
@@ -259,8 +259,6 @@ class ScanOptions(var maxCallDepth: Int, var names: Array[String], var tags: Arr
     extends LayerCreatorOptions {}
 
 class Scan(options: ScanOptions)(implicit engineContext: EngineContext) extends LayerCreator {
-  implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
-
   override val overlayName: String = Scan.overlayName
   override val description: String = Scan.description
 

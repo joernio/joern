@@ -517,7 +517,7 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture(withPostProcessing = t
     "resolve the correct full name for the wrapped QueryBuilder call off the field" in {
       inside(cpg.method.nameExact("createQueryBuilder").call.name(".*createQueryBuilder").l) {
         case queryBuilderCall :: Nil =>
-          queryBuilderCall.methodFullName shouldBe "Doctrine\\ORM\\EntityManagerInterface.createQueryBuilder"
+          queryBuilderCall.methodFullName shouldBe "Doctrine\\ORM\\EntityManagerInterface.createQueryBuilder.<returnValue>"
         case xs => fail(s"Expected one call, instead got [$xs]")
       }
     }

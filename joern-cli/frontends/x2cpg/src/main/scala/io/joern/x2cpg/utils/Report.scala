@@ -68,7 +68,7 @@ class Report {
       Seq(
         "Total",
         "",
-        s"${reports.map(_._2.loc).sum}",
+        s"${reports.filter(_._2.loc >= 0).map(_._2.loc).sum}",
         s"${reports.count(_._2.parsed)}/$numOfReports",
         s"${reports.count(_._2.cpgGen)}/$numOfReports",
         ""

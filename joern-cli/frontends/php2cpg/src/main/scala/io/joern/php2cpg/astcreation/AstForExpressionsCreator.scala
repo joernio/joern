@@ -89,10 +89,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
      * scope.
      */
     call.target match {
-      case Some(target: (PhpPropertyFetchExpr | PhpCallExpr)) => astForChainedCall(call, name, target)
-      case None if scope.isTopLevel || isBuiltinFunc(name)    => astForStaticCall(call, name, arguments)
-      case _ if call.isStatic                                 => astForStaticCall(call, name, arguments)
-      case maybeTarget                                        => astForDynamicCall(call, name, arguments, maybeTarget)
+      case None if scope.isTopLevel || isBuiltinFunc(name) => astForStaticCall(call, name, arguments)
+      case _ if call.isStatic                              => astForStaticCall(call, name, arguments)
+      case maybeTarget                                     => astForDynamicCall(call, name, arguments, maybeTarget)
     }
   }
 
@@ -146,26 +145,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val callRoot  = callNode(call, code, name, fullName, dispatchType, Some(signature), Some(Defines.Any))
 
     callAst(callRoot, arguments)
-  }
-
-  private def astForChainedCall(call: PhpCallExpr, name: String, target: PhpPropertyFetchExpr | PhpCallExpr): Ast = {
-    val expr        = PhpPropertyFetchExpr(target, PhpNameExpr(name, call.attributes), false, false, call.attributes)
-    val receiverAst = astForPropertyFetchExpr(expr)
-    val targetAst   = astForExpr(target)
-
-    val codePrefix = codeForMethodCall(call, targetAst, name)
-
-    val argumentAsts = call.args.map(astForCallArg)
-    val argsCode     = getArgsCode(call, argumentAsts)
-
-    val code = s"$codePrefix($argsCode)"
-    val mfn  = getMfn(call, name)
-
-    val signature = s"$UnresolvedSignature(${call.args.size})"
-
-    val callN =
-      callNode(call, code, name, mfn, DispatchTypes.DYNAMIC_DISPATCH, Some(signature), Some(Defines.Any))
-    callAst(callN, argumentAsts, Option(receiverAst))
   }
 
   protected def simpleAssignAst(origin: PhpNode, target: Ast, source: Ast): Ast = {

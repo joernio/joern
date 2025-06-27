@@ -1,5 +1,6 @@
 import versionsort.VersionHelper
 import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.sbt.packager.Keys.stagingDirectory
 
 import scala.sys.process.stringToProcess
 import scala.util.Try
