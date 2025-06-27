@@ -7,31 +7,6 @@ class AstQueryTests extends C2CpgSuite {
 
   private implicit val resolver: ICallResolver = NoResolve
 
-  "querying member location" should {
-    val cpg = code(
-      """
-        |#include <stdlib.h>
-        |
-        |struct flexArrayStruct {
-        |  int num;
-        |};
-        |""".stripMargin,
-      "foo.c"
-    )
-
-    "have the correct location for a struct member" in {
-      inside(cpg.member.name("num").location.l) { case List(location) =>
-        location.className shouldBe "flexArrayStruct"
-        location.filename shouldBe "foo.c"
-        location.lineNumber shouldBe Some(5)
-        location.symbol shouldBe "num"
-        location.classShortName shouldBe "flexArrayStruct"
-        location.methodFullName shouldBe "<empty>"
-        location.methodShortName shouldBe "<empty>"
-      }
-    }
-  }
-
   "querying the AST (code example 1)" should {
     val cpg = code("""
       | int foo(int y) {

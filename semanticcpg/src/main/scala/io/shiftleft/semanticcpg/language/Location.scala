@@ -92,7 +92,8 @@ class LazyLocation(storedNode: StoredNode) extends LocationInfo with Product {
 
   def filename: String = method match {
     case Some(method) if method.filename.nonEmpty => method.filename
-    case _                                        => typeOption.map(_.filename).getOrElse(defaultString)
+    case _ =>
+      typeOption.map(_.filename).filterNot(_ == defaultString).getOrElse("N/A")
   }
 
   final protected val defaultString = "<empty>";
@@ -112,7 +113,7 @@ class LazyLocation(storedNode: StoredNode) extends LocationInfo with Product {
 
   @tailrec
   private def findParentMethod(node: StoredNode): Option[Method] = {
-    node._containsIn.iterator.nextOption() match {
+    node._astIn.iterator.nextOption() match {
       case Some(head: Method) => Option(head)
       case Some(head)         => findParentMethod(head)
       case None               => None
