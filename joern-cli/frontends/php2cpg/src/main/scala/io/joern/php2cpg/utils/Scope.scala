@@ -28,6 +28,7 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
   private var tmpClassCounter                                         = 0
   private var importedSymbols                                         = Map.empty[String, SymbolSummary]
   private val methodRefs                                              = mutable.ArrayBuffer[NewMethodRef]()
+  private val methodRefsInAst                                         = mutable.HashSet[String]()
 
   def pushNewScope(
     scopeNode: NewNode,
@@ -111,6 +112,9 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
   override def addToScope(identifier: String, variable: NewNode): PhpScopeElement = {
     super.addToScope(identifier, variable)
   }
+
+  def addMethodRefName(methodRefName: String): Unit     = methodRefsInAst.addOne(methodRefName)
+  def containsMethodRef(methodRefName: String): Boolean = methodRefsInAst.contains(methodRefName)
 
   def addVariableToMethodScope(
     identifier: String,

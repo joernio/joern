@@ -174,7 +174,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
   protected def astForIdentifierWithLocalRef(ident: NewIdentifier, refLocal: NewNode): Ast =
     Ast(ident).withRefEdge(ident, refLocal)
 
-  protected def createMethodRefsAst(stmt: PhpNode, stmts: List[PhpStmt]): List[Ast] = {
+  protected def createMethodRefsAst(stmt: PhpNode, stmts: List[PhpStmt]): Unit = {
     stmts
       .collect {
         case x: PhpMethodDecl if x.name.name != ConstructorMethodName => x
@@ -191,7 +191,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     stmt: PhpNode,
     constructorName: String,
     fullNameOverride: Option[String] = None
-  ): Ast = {
+  ): Unit = {
     val constructorMethodFullName = fullNameOverride.getOrElse(composeMethodFullName(constructorName))
     val constructorMethodRef = methodRefNode(stmt, constructorMethodFullName, constructorMethodFullName, Defines.Any)
     scope.addMethodRef(constructorMethodRef)

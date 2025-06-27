@@ -153,15 +153,6 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         fooMethod.signature shouldBe s"${Defines.UnresolvedSignature}(0)"
       }
     }
-
-    inside(cpg.method.name("<global>").body.astChildren.isMethodRef.l) {
-      case constructMethodRef :: staticConstructMethodRef :: fooMethodRef :: Nil =>
-        constructMethodRef.methodFullName shouldBe "Foo.__construct"
-        staticConstructMethodRef.methodFullName shouldBe "Foo<metaclass>.<clinit>"
-        fooMethodRef.methodFullName shouldBe "Foo.foo"
-
-      case xs => fail(s"Expected 3 methodRefs, got ${xs.methodFullName.mkString("[", ",", "]")}")
-    }
   }
 
   "interfaces should be able to extend multiple other interfaces" in {
@@ -196,15 +187,6 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         fooMethod.fullName shouldBe s"Foo.foo"
         fooMethod.signature shouldBe s"${Defines.UnresolvedSignature}(0)"
       }
-    }
-
-    inside(cpg.method.name("<global>").body.astChildren.isMethodRef.l) {
-      case constructMethodRef :: staticConstructMethodRef :: fooMethodRef :: Nil =>
-        constructMethodRef.methodFullName shouldBe "Foo.__construct"
-        staticConstructMethodRef.methodFullName shouldBe "Foo<metaclass>.<clinit>"
-        fooMethodRef.methodFullName shouldBe "Foo.foo"
-
-      case xs => fail(s"Expected 3 methodRefs, got ${xs.methodFullName.mkString("[", ",", "]")}")
     }
   }
 

@@ -155,10 +155,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     Ast.storeInDiffGraph(methodAst, diffGraph)
     val methodRefAst = methodRef.map(Ast(_)).getOrElse(Ast())
 
-    scope.surroundingAstLabel match {
-      case Some(label) if label == "TYPE_DECL" => Ast()
-      case _                                   => methodRefAst
-    }
+    // method gets added via the AST_PARENT_FULLNAME property
+    Ast()
   }
 
   private def thisParamAstForMethod(originNode: PhpNode): Ast = {

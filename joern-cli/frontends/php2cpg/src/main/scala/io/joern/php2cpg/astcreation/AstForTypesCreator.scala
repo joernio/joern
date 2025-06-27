@@ -226,8 +226,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     scope.pushNewScope(typeDecl)
 
-    val constructorRefAst = createConstructorMethodRef(stmt, ConstructorMethodName)
-    val methodRefAsts     = createMethodRefsAst(stmt, stmt.stmts)
+    createConstructorMethodRef(stmt, ConstructorMethodName)
+    createMethodRefsAst(stmt, stmt.stmts)
 
     val bodyStmts      = astsForClassLikeBody(stmt, dynamicStmts, createDefaultConstructor)
     val modifiers      = stmt.modifiers.map(modifierNode(stmt, _)).map(Ast(_))
@@ -246,14 +246,12 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     scope.pushNewScope(metaTypeDeclNode)
 
-    val staticConstructorRefAst = createConstructorMethodRef(stmt, Defines.StaticInitMethodName)
+    createConstructorMethodRef(stmt, Defines.StaticInitMethodName)
     staticConsts.foreach(init => scope.addConstOrStaticInitToScope(init.originNode, init.memberNode, init.value))
     val metaTypeDeclAst = astForMetaTypeDecl(stmt, staticStmts, metaTypeDeclNode)
     scope.popScope()
 
-    val allMethodRefAsts = List(constructorRefAst, staticConstructorRefAst) ++ methodRefAsts
-
-    allMethodRefAsts :+ classTypeDeclAst :+ metaTypeDeclAst
+    List(classTypeDeclAst, metaTypeDeclAst)
   }
 
   private def astForMetaTypeDecl(

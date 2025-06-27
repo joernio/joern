@@ -181,12 +181,23 @@ class AstCreator(
     val surroundingIter    = scope.getSurroundingMethods.drop(1).iterator // drop first to ignore global method
     val surroundingMethods = scope.getSurroundingMethods.dropRight(1)     // drop last to ignore innermost method
 
-    surroundingMethods.foreach { _ =>
+    surroundingMethods.foreach { currentMethod =>
       val innerMethod = surroundingIter.next()
       innerMethod.node match {
         case inner: NewMethod =>
           scope.lookupMethodRef(inner.fullName) match {
             case Some(methodRef) =>
+              if (!scope.containsMethodRef(inner.fullName)) {
+                currentMethod.maybeBlock match {
+                  case Some(block) =>
+                    diffGraph.addNode(methodRef)
+                    diffGraph.addEdge(block, methodRef, EdgeTypes.AST)
+                  case None => // do nothing
+                }
+
+                scope.addMethodRefName(inner.fullName)
+              }
+
               stmt.vars.foreach {
                 case _ @PhpVariable(name: PhpNameExpr, _) =>
                   val closureBindingId = s"$relativeFileName:${inner.fullName}:${name.name}"
