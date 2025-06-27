@@ -37,7 +37,7 @@ type NewLocation = LocationInfo
 // and/or location information, to provide alternate or
 // extended implementations of LocationCreator.
 trait LocationCreator {
-  implicit def apply(node: StoredNode, filenameOverride: Option[String] = None): LocationInfo
+  implicit def apply(node: StoredNode): LocationInfo
 }
 
 object EmptyLocation extends LocationInfo {
@@ -54,14 +54,14 @@ object EmptyLocation extends LocationInfo {
 }
 
 object LazyLocation extends LocationCreator {
-  implicit def apply(node: StoredNode, filenameOverride: Option[String] = None): LocationInfo = {
-    new LazyLocation(node, filenameOverride)
+  implicit def apply(node: StoredNode): LocationInfo = {
+    new LazyLocation(node)
   }
 }
 
 implicit val locationCreator: LocationCreator = LazyLocation
 
-class LazyLocation(storedNode: StoredNode, filenameOverride: Option[String]) extends LocationInfo with Product {
+class LazyLocation(storedNode: StoredNode) extends LocationInfo with Product {
   def node: Option[AbstractNode] = Some(storedNode)
 
   def symbol: String = {
@@ -80,9 +80,9 @@ class LazyLocation(storedNode: StoredNode, filenameOverride: Option[String]) ext
 
   def lineNumber: Option[Int] = storedNode.propertyOption[Int](PropertyNames.LINE_NUMBER)
 
-  def methodFullName: String = method.fullName
+  def methodFullName: String = method.map(_.fullName).getOrElse(defaultString)
 
-  def methodShortName: String = method.name
+  def methodShortName: String = method.map(_.name).getOrElse(defaultString)
 
   def packageName: String = namespaceOption.getOrElse(defaultString)
 
@@ -90,11 +90,15 @@ class LazyLocation(storedNode: StoredNode, filenameOverride: Option[String]) ext
 
   def classShortName: String = typeOption.map(_.name).getOrElse(defaultString)
 
-  def filename: String = filenameOverride.getOrElse(if (method.filename.isEmpty) "N/A" else method.filename)
+  def filename: String = method match {
+    case Some(method) if method.filename.nonEmpty => method.filename
+    case _ =>
+      typeOption.map(_.filename).filterNot(_ == defaultString).getOrElse("N/A")
+  }
 
   final protected val defaultString = "<empty>";
 
-  private lazy val typeOption = findParentTypeDecl(method)
+  private lazy val typeOption: Option[TypeDecl] = findParentTypeDecl(storedNode)
 
   private lazy val namespaceOption = for {
     tpe            <- typeOption
@@ -102,9 +106,18 @@ class LazyLocation(storedNode: StoredNode, filenameOverride: Option[String]) ext
     namespace      <- namespaceBlock._namespaceViaRefOut.nextOption()
   } yield namespace.name
 
-  private lazy val method: Method = storedNode match {
-    case cfgNode: CfgNode => cfgNode.method
-    case local: Local     => local.method.head
+  private lazy val method: Option[Method] = storedNode match {
+    case cfgNode: CfgNode => Option(cfgNode.method)
+    case _                => findParentMethod(storedNode)
+  }
+
+  @tailrec
+  private def findParentMethod(node: StoredNode): Option[Method] = {
+    node._astIn.iterator.nextOption() match {
+      case Some(head: Method) => Option(head)
+      case Some(head)         => findParentMethod(head)
+      case None               => None
+    }
   }
 
   @tailrec
