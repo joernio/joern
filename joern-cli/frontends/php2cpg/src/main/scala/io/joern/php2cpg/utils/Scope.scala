@@ -1,39 +1,56 @@
 package io.joern.php2cpg.utils
 
+import flatgraph.DiffGraphBuilder
 import io.joern.php2cpg.astcreation.AstCreator.NameConstants
+import io.joern.php2cpg.parser.Domain.{PhpExpr, PhpNode}
+import io.joern.php2cpg.parser.Domain.MetaTypeDeclExtension
 import io.joern.php2cpg.passes.SymbolSummaryPass.*
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.{NamespaceLikeScope, ScopeElement, Scope as X2CpgScope}
-import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
+
+sealed case class PhpInit(originNode: PhpNode, memberNode: NewMember, value: PhpExpr) {}
 
 class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextClosureName: () => String)
     extends X2CpgScope[String, NewNode, PhpScopeElement] {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  private var constAndStaticInits: List[mutable.ArrayBuffer[Ast]] = Nil
-  private var fieldInits: List[mutable.ArrayBuffer[Ast]]          = Nil
-  private val anonymousMethods                                    = mutable.ArrayBuffer[Ast]()
-  private var tmpVarCounter                                       = 0
-  private var tmpClassCounter                                     = 0
-  private var importedSymbols                                     = Map.empty[String, SymbolSummary]
+  private var constAndStaticInits: List[mutable.ArrayBuffer[PhpInit]] = Nil
+  private var fieldInits: List[mutable.ArrayBuffer[PhpInit]]          = Nil
+  private val anonymousMethods                                        = mutable.ArrayBuffer[Ast]()
+  private var tmpVarCounter                                           = 0
+  private var tmpClassCounter                                         = 0
+  private var importedSymbols                                         = Map.empty[String, SymbolSummary]
+  private val methodRefs                                              = mutable.ArrayBuffer[NewMethodRef]()
+  private val methodRefsInAst                                         = mutable.HashSet[String]()
 
-  def pushNewScope(scopeNode: NewNode): Unit = {
+  def pushNewScope(
+    scopeNode: NewNode,
+    maybeBlock: Option[NewBlock] = None,
+    methodRef: Option[NewMethodRef] = None
+  ): Unit = {
     scopeNode match {
       case block: NewBlock =>
         val scopeName = stack.headOption.map(_.scopeNode.getName)
         super.pushNewScope(PhpScopeElement(block, scopeName.getOrElse("")))
 
       case method: NewMethod =>
-        super.pushNewScope(PhpScopeElement(method))
+        methodRef match {
+          case Some(mr) => methodRefs.addOne(mr)
+          case _        =>
+        }
+
+        super.pushNewScope(PhpScopeElement(method, maybeBlock))
 
       case typeDecl: NewTypeDecl =>
-        constAndStaticInits = mutable.ArrayBuffer[Ast]() :: constAndStaticInits
-        fieldInits = mutable.ArrayBuffer[Ast]() :: fieldInits
+        constAndStaticInits = mutable.ArrayBuffer[PhpInit]() :: constAndStaticInits
+        fieldInits = mutable.ArrayBuffer[PhpInit]() :: fieldInits
         super.pushNewScope(PhpScopeElement(typeDecl))
 
       case namespace: NewNamespaceBlock =>
@@ -96,6 +113,29 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
     super.addToScope(identifier, variable)
   }
 
+  def addMethodRefName(methodRefName: String): Unit     = methodRefsInAst.addOne(methodRefName)
+  def containsMethodRef(methodRefName: String): Boolean = methodRefsInAst.contains(methodRefName)
+
+  def addVariableToMethodScope(
+    identifier: String,
+    variable: NewNode,
+    methodFullName: String
+  ): Option[PhpScopeElement] = {
+    stack.collectFirst { stackItem =>
+      stackItem.scopeNode match {
+        case _ @PhpScopeElement(method: NewMethod) if method.fullName == methodFullName =>
+          val addedVarStackItem = stackItem.addVariable(identifier, variable)
+
+          // Replace the stack item with a new one that holds the added variable
+          stack = stack.map {
+            case x if x.scopeNode == addedVarStackItem.scopeNode => addedVarStackItem
+            case x                                               => x
+          }
+          stackItem.scopeNode
+      }
+    }
+  }
+
   def addAnonymousMethod(methodAst: Ast): Unit = anonymousMethods.addOne(methodAst)
 
   def getAndClearAnonymousMethods: List[Ast] = {
@@ -105,7 +145,13 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
   }
 
   def isSurroundedByMetaclassTypeDecl: Boolean =
-    stack.map(_.scopeNode.node).collectFirst { case td: NewTypeDecl => td }.exists(_.name.endsWith("<metaclass>"))
+    stack
+      .map(_.scopeNode.node)
+      .collectFirst { case td: NewTypeDecl => td }
+      .exists(_.name.endsWith(MetaTypeDeclExtension))
+
+  def isTopLevel: Boolean =
+    getEnclosingTypeDeclTypeName.forall(_ == NamespaceTraversal.globalNamespaceName)
 
   def getEnclosingNamespaceNames: List[String] =
     stack.map(_.scopeNode.node).collect { case ns: NewNamespaceBlock => ns.name }.reverse
@@ -116,18 +162,35 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
   def getEnclosingTypeDeclTypeFullName: Option[String] =
     stack.map(_.scopeNode.node).collectFirst { case td: NewTypeDecl => td }.map(_.fullName)
 
-  def addConstOrStaticInitToScope(ast: Ast): Unit = {
-    addInitToScope(ast, constAndStaticInits)
+  def getSurroundingFullName: String = {
+    stack
+      .map(_.scopeNode.node)
+      .collectFirst {
+        case td: NewTypeDecl => td.name
+        case nm: NewMethod   => nm.name
+      }
+      .filterNot(_ == NamespaceTraversal.globalNamespaceName)
+      .mkString(".")
   }
-  def getConstAndStaticInits: List[Ast] = {
+
+  def getSurroundingMethods: List[PhpScopeElement] =
+    stack.map(_.scopeNode).collect { case nm if nm.node.isInstanceOf[NewMethod] => nm }.reverse
+
+  def getConstAndStaticInits: List[PhpInit] = {
     getInits(constAndStaticInits)
   }
 
-  def addFieldInitToScope(ast: Ast): Unit = {
-    addInitToScope(ast, fieldInits)
+  def addConstOrStaticInitToScope(node: PhpNode, memberNode: NewMember, value: PhpExpr): Unit = {
+    val initNode = PhpInit(node, memberNode, value)
+    addInitToScope(initNode, constAndStaticInits)
   }
 
-  def getFieldInits: List[Ast] = {
+  def addFieldInitToScope(node: PhpNode, memberNode: NewMember, value: PhpExpr): Unit = {
+    val initNode = PhpInit(node, memberNode, value)
+    addInitToScope(initNode, fieldInits)
+  }
+
+  def getFieldInits: List[PhpInit] = {
     getInits(fieldInits)
   }
 
@@ -142,12 +205,13 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
     }
   }
 
-  private def addInitToScope(ast: Ast, initList: List[mutable.ArrayBuffer[Ast]]): Unit = {
-    // TODO This is unsafe to catch errors for now
-    initList.head.addOne(ast)
+  def addMethodRef(methodRef: NewMethodRef): Unit = methodRefs.addOne(methodRef)
+
+  private def addInitToScope(init: PhpInit, initList: List[mutable.ArrayBuffer[PhpInit]]): Unit = {
+    initList.head.addOne(init)
   }
 
-  private def getInits(initList: List[mutable.ArrayBuffer[Ast]]): List[Ast] = {
+  private def getInits(initList: List[mutable.ArrayBuffer[PhpInit]]): List[PhpInit] = {
     // TODO This is unsafe to catch errors for now
     val ret = initList.head.toList
     // These ASTs should only be added once to avoid aliasing issues.
@@ -191,12 +255,45 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
     }
   }
 
+  /** Declares that the following type declaration has been defined and should now be considered in scope and resolvable
+    * by its name.
+    * @param name
+    *   the type decl name.
+    * @param fullName
+    *   the type decl full name.
+    */
+  def useTypeDecl(name: String, fullName: String): Unit = {
+    summary
+      .get(fullName)
+      .flatMap(_.sorted.headOption)
+      .foreach(hit => importedSymbols = importedSymbols + (name -> hit))
+  }
+
+  /** Declares that the following function declaration has been defined and should now be considered in scope and
+    * resolvable by its name.
+    *
+    * @param name
+    *   the function name.
+    * @param fullName
+    *   the function full name.
+    */
+  def useFunctionDecl(name: String, fullName: String): Unit = {
+    summary
+      .get(fullName)
+      .flatMap(_.sorted.headOption)
+      .foreach(hit => importedSymbols = importedSymbols + (name -> hit))
+  }
+
   /** Attempts to resolve a simple symbol.
     *
     * Note: This will be extended to notify the caller if this identifier is instead a local variable.
     */
   def resolveIdentifier(symbol: String): Option[SymbolSummary] = {
     importedSymbols.get(symbol)
+  }
+
+  def lookupMethodRef(methodRefName: String): Option[NewMethodRef] = methodRefs.collectFirst {
+    case mr if mr.methodFullName == methodRefName => mr
   }
 
 }

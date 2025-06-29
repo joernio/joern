@@ -126,10 +126,10 @@ object AstGenRunner {
 
   private def hasCompatibleAstGenVersionAtPath(astGenVersion: String, path: Option[String]): Boolean = {
     val astGenCommand = path.getOrElse("astgen")
-    val localPath     = path.flatMap(Paths.get(_).parentOption.map(_.toString)).getOrElse(".")
+    val localPath     = path.flatMap(Paths.get(_).parentOption)
     val debugMsgPath  = path.getOrElse("PATH")
     ExternalCommand
-      .run(Seq(astGenCommand, "--version"), Option(localPath))
+      .run(Seq(astGenCommand, "--version"), localPath)
       .successOption
       .map(_.mkString.strip()) match {
       case Some(installedVersion)
@@ -335,7 +335,7 @@ class AstGenRunner(config: Config) {
     val result =
       ExternalCommand.run(
         (astGenCommand +: executableArgs) ++ Seq("-t", "ts", "-o", out.toString),
-        Option(out.toString)
+        workingDir = Option(out)
       )
 
     val jsons = SourceFiles.determine(out.toString, Set(".json"))
@@ -379,7 +379,7 @@ class AstGenRunner(config: Config) {
     )
     if (files.nonEmpty) {
       ExternalCommand
-        .run((astGenCommand +: executableArgs) ++ Seq("-t", "vue", "-o", out.toString), Option(in.toString))
+        .run((astGenCommand +: executableArgs) ++ Seq("-t", "vue", "-o", out.toString), workingDir = Option(in))
         .toTry
     } else {
       Success(Seq.empty)
@@ -388,7 +388,7 @@ class AstGenRunner(config: Config) {
 
   private def jsFiles(in: Path, out: Path): Try[Seq[String]] = {
     ExternalCommand
-      .run((astGenCommand +: executableArgs) ++ Seq("-t", "ts", "-o", out.toString), Option(in.toString))
+      .run((astGenCommand +: executableArgs) ++ Seq("-t", "ts", "-o", out.toString), workingDir = Option(in))
       .toTry
   }
 

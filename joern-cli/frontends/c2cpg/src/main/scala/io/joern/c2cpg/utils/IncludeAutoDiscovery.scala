@@ -70,7 +70,7 @@ object IncludeAutoDiscovery {
   }
 
   private def checkForGcc(): Boolean = {
-    ExternalCommand.run(GccVersionCommand, Some(".")).toTry match {
+    ExternalCommand.run(GccVersionCommand).toTry match {
       case Success(result) =>
         logger.debug(s"GCC is available: ${result.mkString(System.lineSeparator())}")
         true

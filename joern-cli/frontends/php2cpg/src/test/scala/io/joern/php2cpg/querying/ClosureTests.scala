@@ -2,7 +2,16 @@ package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, ClosureBinding, Identifier, Local, MethodRef, Return}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  Call,
+  ClosureBinding,
+  Identifier,
+  Local,
+  Method,
+  MethodRef,
+  NewMethod,
+  Return
+}
 import io.shiftleft.semanticcpg.language.*
 
 import scala.util.Try
@@ -92,23 +101,25 @@ class ClosureTests extends PhpCode2CpgFixture {
       inside(closureMethod.body.astChildren.l) { case List(use1: Local, use2: Local, echoCall: Call) =>
         use1.name shouldBe "use1"
         use1.code shouldBe "$use1"
-        use1.closureBindingId shouldBe Some(s"foo.php:$expectedName:use1")
-        inside(cpg.closureBinding.filter(_.closureBindingId == use1.closureBindingId).l) { case List(closureBinding) =>
-          closureBinding._localViaRefOut.name.l shouldBe List("use1")
+        use1.closureBindingId shouldBe Some(s"$expectedName:use1")
+        inside(cpg.all.collectAll[ClosureBinding].filter(_.closureBindingId == use1.closureBindingId).l) {
+          case List(closureBinding) =>
+            closureBinding.closureOriginalName shouldBe Some("use1")
         }
 
         use2.name shouldBe "use2"
         use2.code shouldBe "&$use2"
-        use2.closureBindingId shouldBe Some(s"foo.php:$expectedName:use2")
+        use2.closureBindingId shouldBe Some(s"$expectedName:use2")
 
         echoCall.code shouldBe "sink($value,$use1)"
       }
     }
 
     "have a ref edge from the closure binding for a use to the captured node" in {
-      inside(cpg.closureBinding.l.filter(_._localViaRefOut.name.l == List("use1"))) { case List(closureBinding) =>
-        val capturedNode = cpg.method.nameExact("<global>").local.name("use1").head
-        closureBinding.refOut.toList shouldBe List(capturedNode)
+      inside(cpg.all.collectAll[ClosureBinding].filter(_.closureOriginalName.contains("use1")).l) {
+        case List(closureBinding) =>
+          val capturedNode = cpg.method.nameExact("<global>").local.name("use1").head
+          closureBinding.refOut.toList shouldBe List(capturedNode)
       }
     }
 
@@ -199,6 +210,130 @@ class ClosureTests extends PhpCode2CpgFixture {
       bar1 shouldBe "Bar.bar.<lambda>3"
       foo0 shouldBe "foo.<lambda>0"
       foo1 shouldBe "foo.<lambda>1"
+    }
+  }
+
+  "simple global creates closure binding with correct ref edge" in {
+    val cpg = code("""<?php
+        |$a = 10
+        |function foo() {
+        |  global $a;
+        |}
+        |""".stripMargin)
+
+    inside(cpg.all.collectAll[ClosureBinding].filter(_.closureOriginalName.contains("a")).l) {
+      case List(closureBinding) =>
+        val capturedNode = cpg.method.nameExact("<global>").local.name("a").head
+        closureBinding.refOut.toList shouldBe List(capturedNode)
+    }
+  }
+
+  "global in nested functions" should {
+    val cpg = code("""<?php
+        |$a = 10;
+        |$c = 11;
+        |$e = 13;
+        |function foo() {
+        |  function bar() {
+        |    global $a;
+        |    global $c;
+        |    global $e;
+        |    $a = 1;
+        |    $b = $a;
+        |    $c = 1;
+        |    $d = $c;
+        |    $e = 1;
+        |    $f = $e;
+        |  }
+        |}
+        |""".stripMargin)
+
+    "local variable exists in bar" in {
+      val localNodeA = cpg.method.name("bar").local.name("a").head
+      localNodeA.closureBindingId shouldBe Some("Test0.php:foo.bar:a")
+
+      val localNodeC = cpg.method.name("bar").local.name("c").head
+      localNodeC.closureBindingId shouldBe Some("Test0.php:foo.bar:c")
+
+      val localNodeE = cpg.method.name("bar").local.name("e").head
+      localNodeE.closureBindingId shouldBe Some("Test0.php:foo.bar:e")
+    }
+
+    "identifier association to local in bar" in {
+      val localNodeA = cpg.method.name("bar").local.name("a").head
+      localNodeA.referencingIdentifiers.lineNumber(10).code.head shouldBe "$a"
+      localNodeA.referencingIdentifiers.lineNumber(11).code.head shouldBe "$a"
+
+      val localNodeC = cpg.method.name("bar").local.name("c").head
+      localNodeC.referencingIdentifiers.lineNumber(12).code.head shouldBe "$c"
+      localNodeC.referencingIdentifiers.lineNumber(13).code.head shouldBe "$c"
+
+      val localNodeE = cpg.method.name("bar").local.name("e").head
+      localNodeE.referencingIdentifiers.lineNumber(14).code.head shouldBe "$e"
+      localNodeE.referencingIdentifiers.lineNumber(15).code.head shouldBe "$e"
+    }
+
+    "method ref of closure binding of bar in foo" in {
+      val methodRefNode     = cpg.methodRefWithName("bar").head
+      val closureBindingIds = methodRefNode._closureBindingViaCaptureOut.l.map(_.closureBindingId)
+
+      closureBindingIds shouldBe List(
+        Some("Test0.php:foo.bar:a"),
+        Some("Test0.php:foo.bar:c"),
+        Some("Test0.php:foo.bar:e")
+      )
+    }
+
+    "local variable exists in foo" in {
+      val localNodeA = cpg.method.name("foo").local.name("a").head
+      localNodeA.closureBindingId shouldBe Some("Test0.php:foo:a")
+
+      val localNodeC = cpg.method.name("foo").local.name("c").head
+      localNodeC.closureBindingId shouldBe Some("Test0.php:foo:c")
+
+      val localNodeD = cpg.method.name("foo").local.name("e").head
+      localNodeD.closureBindingId shouldBe Some("Test0.php:foo:e")
+    }
+
+    "method reference closure binding of foo in global" in {
+      val methodRefNode     = cpg.methodRefWithName("foo").head
+      val closureBindingIds = methodRefNode._closureBindingViaCaptureOut.l.map(_.closureBindingId)
+
+      closureBindingIds shouldBe List(Some("Test0.php:foo:a"), Some("Test0.php:foo:c"), Some("Test0.php:foo:e"))
+    }
+
+    "global variable" in {
+      val localNode = cpg.method.name("<global>").local.name("a").head
+      localNode.closureBindingId shouldBe None
+
+      val localNodeC = cpg.method.name("<global>").local.name("c").head
+      localNodeC.closureBindingId shouldBe None
+
+      val localNodeE = cpg.method.name("<global>").local.name("e").head
+      localNodeE.closureBindingId shouldBe None
+    }
+
+    "closure binding reference to global" in {
+      val localNode = cpg.method.name("<global>").local.name("a").head
+      localNode._closureBindingViaRefIn.next().closureBindingId shouldBe Some("Test0.php:foo:a")
+
+      val localNodeC = cpg.method.name("<global>").local.name("c").head
+      localNodeC._closureBindingViaRefIn.next().closureBindingId shouldBe Some("Test0.php:foo:c")
+
+      val localNodeE = cpg.method.name("<global>").local.name("e").head
+      localNodeE._closureBindingViaRefIn.next().closureBindingId shouldBe Some("Test0.php:foo:e")
+    }
+
+    "should only have two methodRefs" in {
+      inside(cpg.all.collectAll[MethodRef].l) {
+        case fooMethodRef :: fooBarMethodRef :: Nil =>
+          fooMethodRef.methodFullName shouldBe "foo"
+          fooMethodRef.astParent.astParent.asInstanceOf[Method].fullName shouldBe "Test0.php:<global>"
+
+          fooBarMethodRef.methodFullName shouldBe "foo.bar"
+          fooBarMethodRef.astParent.astParent.asInstanceOf[Method].fullName shouldBe "foo"
+        case xs => fail(s"Expected two methodRefs, got ${xs.methodFullName.mkString("[", ",", "]")}")
+      }
     }
   }
 }

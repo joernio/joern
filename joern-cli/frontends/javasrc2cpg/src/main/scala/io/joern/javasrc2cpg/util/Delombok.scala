@@ -84,7 +84,8 @@ object Delombok {
 
     Try(childPath.createWithParentsIfNotExists(asDirectory = true)).flatMap { packageOutputDir =>
       ExternalCommand
-        .run(delombokToTempDirCommand(inputDir, packageOutputDir, analysisJavaHome), Some("."))
+        .run(delombokToTempDirCommand(inputDir, packageOutputDir, analysisJavaHome))
+        .logIfFailed()
         .toTry
         .map(_ => delombokTempDir.absolutePathAsString)
     }

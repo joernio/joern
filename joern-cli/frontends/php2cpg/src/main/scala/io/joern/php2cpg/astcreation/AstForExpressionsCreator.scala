@@ -3,11 +3,19 @@ package io.joern.php2cpg.astcreation
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants, operatorSymbols}
 import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*
+import io.joern.php2cpg.utils.PhpScopeElement
 import io.joern.x2cpg.Defines.{UnresolvedNamespace, UnresolvedSignature}
+import io.joern.x2cpg.Defines.UnresolvedSignature
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{
+  ControlStructureTypes,
+  DispatchTypes,
+  EdgeTypes,
+  Operators,
+  PropertyNames
+}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import scala.collection.mutable
@@ -55,77 +63,88 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForCall(call: PhpCallExpr): Ast = {
+    val nameAst   = Option.unless(call.methodName.isInstanceOf[PhpNameExpr])(astForExpr(call.methodName))
+    val name      = getCallName(call, nameAst)
     val arguments = call.args.map(astForCallArg)
 
-    val targetAst = Option.unless(call.isStatic)(call.target.map(astForExpr)).flatten
+    /*
+     * A receiver only makes sense if one can track the receiver back to some sort of runtime type information. In the
+     * case of a normal top-level call like foo() that is not possible. There is no corresponding foo identifier which
+     * one could assign another function to. In terms of lambdas, they will be assigned to a variable which always
+     * begins with `$`.
+     *
+     * The only uncertainty in such a call is whether this is a foo in the global namespace or from the namespace
+     * surrounding the call-site. But this we cannot decide without knowing which PHP files are loaded. For built-in
+     * calls, we refer to the `builtin_functions.txt` list under `resources`, which is tied to the global namespace,
+     * e.g., if `foo` is global, the full name will be `foo`.
+     *
+     * If we import some symbol from a namespace, e.g., `A\B\foo`, is this a constant, field, or class? PHP makes this
+     * clear with `use function x` or `use constant y`. However, in the case of `require` this is still ambiguous.
+     * If at any point a symbol's full name cannot be resolved, which is often in the case of chained calls of external
+     * API's or dynamic calls, the method full name is prefixed with <unresolvedNamespace>.
+     *
+     * This is why we use pre-parse summary idea where we check which functions exist in which namespaces and make a
+     * lookup in it to figure out whether a foo call-site needs to have an imported/external namespace or one from the
+     * current namespace. The `scope` object then delegates what has been defined or imported to determine calls in
+     * scope.
+     */
+    call.target match {
+      case None if scope.isTopLevel || isBuiltinFunc(name) => astForStaticCall(call, name, arguments)
+      case _ if call.isStatic                              => astForStaticCall(call, name, arguments)
+      case maybeTarget                                     => astForDynamicCall(call, name, arguments, maybeTarget)
+    }
+  }
 
-    val nameAst = Option.unless(call.methodName.isInstanceOf[PhpNameExpr])(astForExpr(call.methodName))
-    val name =
-      nameAst
-        .map(_.rootCodeOrEmpty)
-        .getOrElse(call.methodName match {
-          case nameExpr: PhpNameExpr => nameExpr.name
-          case other =>
-            logger.error(s"Found unexpected call target type: Crash for now to handle properly later: $other")
-            ???
-        })
+  private def astForDynamicCall(
+    call: PhpCallExpr,
+    name: String,
+    arguments: Seq[Ast],
+    maybeTarget: Option[PhpExpr]
+  ): Ast = {
+    val argsCode   = getArgsCode(call, arguments)
+    val targetAst  = maybeTarget.map(astForExpr)
+    val codePrefix = targetAst.map(codeForMethodCall(call, _, name)).getOrElse(name)
+    val code       = s"$codePrefix($argsCode)"
 
-    val argsCode = arguments
-      .zip(call.args.collect { case x: PhpArg => x.unpack })
-      .map {
-        case (arg, true)  => s"...${arg.rootCodeOrEmpty}"
-        case (arg, false) => arg.rootCodeOrEmpty
-      }
-      .mkString(",")
+    val dispatchType = DispatchTypes.DYNAMIC_DISPATCH
 
-    val codePrefix =
-      if (!call.isStatic && targetAst.isDefined)
-        codeForMethodCall(call, targetAst.get, name)
-      else if (call.isStatic)
-        codeForStaticMethodCall(call, name)
-      else
-        name
+    val fullName = getMfn(call, name)
 
-    val code = s"$codePrefix($argsCode)"
+    // Use method signature for methods that can be linked to avoid varargs issue.
+    val signature = s"$UnresolvedSignature(${call.args.size})"
+    val callRoot  = callNode(call, code, name, fullName, dispatchType, Some(signature), Some(Defines.Any))
 
-    val dispatchType =
-      if (call.isStatic || call.target.isEmpty)
-        DispatchTypes.STATIC_DISPATCH
-      else
-        DispatchTypes.DYNAMIC_DISPATCH
-
-    val fullName = call.target match {
-      // Static method call with a known class name
-      case Some(nameExpr: PhpNameExpr) if call.isStatic =>
-        if (nameExpr.name == NameConstants.Self)
-          composeMethodFullName(name, appendMetaTypeDeclExt = !scope.isSurroundedByMetaclassTypeDecl)
-        else s"${nameExpr.name}$MetaTypeDeclExtension$MethodDelimiter$name"
-      case Some(_) =>
-        val methodName = composeMethodName(call, targetAst, name)
-        s"$UnresolvedNamespace\\$methodName"
-      case None if PhpBuiltins.FuncNames.contains(name) =>
-        // No signature/namespace for MFN for builtin functions to ensure stable names as type info improves.
-        name
-      // Function call
+    val receiverAst = targetAst match {
+      case None if !scope.isTopLevel =>
+        // if dynamic call is under some type decl, $this is the receiver
+        call.target.map(thisIdentifier).orElse(Option(thisIdentifier(call))).map(Ast(_))
       case None =>
-        composeMethodFullName(name)
+        // if dynamic call is on "global" level, the variable itself is the receiver
+        Option(astForExpr(call.methodName))
+      case someTarget => someTarget
+    }
+
+    callAst(callRoot, arguments, receiverAst)
+  }
+
+  private def astForStaticCall(call: PhpCallExpr, name: String, arguments: Seq[Ast]): Ast = {
+    val argsCode   = getArgsCode(call, arguments)
+    val codePrefix = codeForStaticMethodCall(call, name)
+    val code       = s"$codePrefix($argsCode)"
+
+    val dispatchType = DispatchTypes.STATIC_DISPATCH
+
+    // In some cases, the parser is able to obtain the fully qualified name from imports
+    val fullName = call.methodName match {
+      case name: PhpNameExpr if name.name.contains("\\") => name.name
+      case _                                             => getMfn(call, name)
     }
 
     // Use method signature for methods that can be linked to avoid varargs issue.
     val signature = s"$UnresolvedSignature(${call.args.size})"
     val callRoot  = callNode(call, code, name, fullName, dispatchType, Some(signature), Some(Defines.Any))
 
-    val receiverAst = (targetAst, nameAst) match {
-      case (Some(target), Some(_)) =>
-        val fieldAccess     = operatorCallNode(call, codePrefix, Operators.fieldAccess, None)
-        val fieldIdentifier = Ast(fieldIdentifierNode(call, name.stripPrefix("$"), name))
-        Option(callAst(fieldAccess, target :: fieldIdentifier :: Nil))
-      case (Some(target), None) => Option(target)
-      case (None, Some(n))      => Option(n)
-      case (None, None)         => None
-    }
-
-    callAst(callRoot, arguments, base = receiverAst)
+    callAst(callRoot, arguments)
   }
 
   protected def simpleAssignAst(origin: PhpNode, target: Ast, source: Ast): Ast = {
@@ -213,11 +232,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         val typ  = scope.getEnclosingTypeDeclTypeName
         identifierNode(originNode, name, name, typ.getOrElse(Defines.Any), typ.toList)
       }
+
+      val selfLocal = handleVariableOccurrence(originNode, selfIdentifier.name)
+
       val fieldIdentifier = fieldIdentifierNode(originNode, memberNode.name, memberNode.name)
       val code = s"${NameConstants.Self}$StaticMethodDelimiter${memberNode.code.replaceAll("(static|case|const) ", "")}"
       val fieldAccessNode = operatorCallNode(originNode, code, Operators.fieldAccess, None)
-      callAst(fieldAccessNode, List(selfIdentifier, fieldIdentifier).map(Ast(_)))
+      val selfIdentAst    = astForIdentifierWithLocalRef(selfIdentifier, selfLocal)
+      val callArgs        = List(selfIdentAst, Ast(fieldIdentifier))
+      callAst(fieldAccessNode, callArgs)
     }
+
     val value = astForExpr(valueExpr)
 
     val assignmentCode = s"${targetAst.rootCodeOrEmpty} = ${value.rootCodeOrEmpty}"
@@ -427,7 +452,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
       case _: PhpVariadicPlaceholder =>
         val identifier = identifierNode(arg, "...", "...", TypeConstants.VariadicPlaceholder)
-        Ast(identifier)
+        val local      = handleVariableOccurrence(arg, "...")
+        astForIdentifierWithLocalRef(identifier, local)
     }
   }
 
@@ -449,9 +475,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   private def astForNameExpr(expr: PhpNameExpr): Ast = {
     val identifier = identifierNode(expr, expr.name, expr.name, Defines.Any)
 
-    val declaringNode = scope.lookupVariable(identifier.name)
+    val declaringNode = handleVariableOccurrence(expr, identifier.name)
 
-    Ast(identifier).withRefEdges(identifier, declaringNode.toList)
+    Ast(identifier).withRefEdges(identifier, List(declaringNode))
   }
 
   protected def stmtBodyBlockAst(stmt: PhpStmtWithBody): Ast = {
@@ -587,7 +613,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val tmpName = this.scope.getNewVarTmp()
 
-    def newTmpIdentifier: Ast = Ast(identifierNode(expr, tmpName, s"$$$tmpName", TypeConstants.Array))
+    val local = handleVariableOccurrence(expr, tmpName)
+
+    def newTmpIdentifier: Ast = {
+      val identifier = identifierNode(expr, tmpName, s"$$$tmpName", TypeConstants.Array)
+      astForIdentifierWithLocalRef(identifier, local)
+    }
 
     val tmpIdentifierAssignNode = {
       // use array() function to create an empty array. see https://www.php.net/manual/zh/function.array.php
@@ -842,6 +873,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
 
     val tmpIdentifier = getTmpIdentifier(expr, Option(className))
+    val local         = handleVariableOccurrence(expr, tmpIdentifier.name)
 
     // Alloc assign
     val allocCode       = s"$className.<alloc>()"
@@ -849,13 +881,15 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val allocAst        = callAst(allocNode, base = maybeNameAst)
     val allocAssignCode = s"${tmpIdentifier.code} = ${allocAst.rootCodeOrEmpty}"
     val allocAssignNode = operatorCallNode(expr, allocAssignCode, Operators.assignment, Option(className))
-    val allocAssignAst  = callAst(allocAssignNode, Ast(tmpIdentifier) :: allocAst :: Nil)
+    val allocAssignAst =
+      callAst(allocAssignNode, astForIdentifierWithLocalRef(tmpIdentifier, local) :: allocAst :: Nil)
 
     // Init node
     val initArgs      = expr.args.map(astForCallArg)
     val initSignature = s"$UnresolvedSignature(${initArgs.size})"
     val initFullName  = s"$className$MethodDelimiter$ConstructorMethodName"
     val initCode      = s"$initFullName(${initArgs.map(_.rootCodeOrEmpty).mkString(",")})"
+    val maybeTypeHint = scope.resolveIdentifier(className).map(_.name) // consider imported or defined types
     val initCallNode = callNode(
       expr,
       initCode,
@@ -863,14 +897,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       initFullName,
       DispatchTypes.DYNAMIC_DISPATCH,
       Some(initSignature),
-      Some(Defines.Any)
+      maybeTypeHint.orElse(Some(Defines.Any)) // TODO Review Note: Should the hint be under dynamicTypeHintFullName?
     )
-    val initReceiver = Ast(tmpIdentifier.copy)
+    val initReceiver = astForIdentifierWithLocalRef(tmpIdentifier.copy, local)
     val initCallAst  = callAst(initCallNode, initArgs, base = Option(initReceiver))
 
     // Return identifier
-    val returnIdentifierAst = Ast(tmpIdentifier.copy)
-
+    val returnIdentifierAst = astForIdentifierWithLocalRef(tmpIdentifier.copy, local)
     Ast(blockNode(expr, "", Defines.Any))
       .withChild(allocAssignAst)
       .withChild(initCallAst)

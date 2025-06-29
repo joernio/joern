@@ -40,6 +40,10 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
   override protected def prepopulateSymbolTableEntry(x: AstNode): Unit = x match {
     case x: Call =>
       x.methodFullName match {
+        case Operators.alloc =>
+          val allocRecv = x.code.takeWhile(_ != '.')
+          symbolTable.append(CallAlias(allocRecv), Set(x.typeFullName))
+          symbolTable.append(LocalVar(allocRecv), Set(x.typeFullName))
         case s"<operator>.$_" =>
         case _                => symbolTable.append(x, (x.methodFullName +: x.dynamicTypeHintFullName).toSet)
       }
@@ -75,7 +79,8 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
     unresolvedDynamicCalls.foreach(visitUnresolvedDynamicCall)
   }
   override protected def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
-    val constructorPaths = symbolTable.get(c).map(_.stripSuffix(s"${pathSep}<init>"))
+    val allocRecv        = c.code.takeWhile(_ != '.')
+    val constructorPaths = symbolTable.get(CallAlias(allocRecv))
     associateTypes(i, constructorPaths)
   }
 
@@ -84,11 +89,11 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
     if (symbolTable.contains(c)) {
       val callReturns = methodReturnValues(symbolTable.get(c).toSeq)
       associateTypes(i, callReturns)
-    } else if (c.argument.exists(_.argumentIndex == 0)) {
-      val callFullNames = (c.argument(0) match {
-        case i: Identifier if symbolTable.contains(LocalVar(i.name))  => symbolTable.get(LocalVar(i.name))
-        case i: Identifier if symbolTable.contains(CallAlias(i.name)) => symbolTable.get(CallAlias(i.name))
-        case _                                                        => Set.empty
+    } else if (c.receiver.nonEmpty) {
+      val callFullNames = (c.receiver.headOption match {
+        case Some(i: Identifier) if symbolTable.contains(LocalVar(i.name))  => symbolTable.get(LocalVar(i.name))
+        case Some(i: Identifier) if symbolTable.contains(CallAlias(i.name)) => symbolTable.get(CallAlias(i.name))
+        case _                                                              => Set.empty
       }).map(_.concat(s"$pathSep${c.name}")).toSeq
       val callReturns = methodReturnValues(callFullNames)
       associateTypes(i, callReturns)
@@ -116,6 +121,11 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
     )
     existingTypes.addAll(methodTypesTable.getOrElse(m, mutable.HashSet()))
 
+    def appendDummyReturn(name: String, xs: Set[String]) = xs.map {
+      case fn if fn.endsWith(XTypeRecovery.DummyReturnType) => fn
+      case t => Seq(t, name, XTypeRecovery.DummyReturnType).mkString(pathSep)
+    }
+
     def extractTypes(xs: List[CfgNode]): Set[String] = xs match {
       case ::(head: Literal, Nil) if head.typeFullName != "ANY" =>
         Set(head.typeFullName)
@@ -130,7 +140,9 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
           .filterNot { x => x == "ANY" || x == "this" }
           .toSet
         if (cpgTypes.nonEmpty) cpgTypes
-        else symbolTable.get(sym)
+        else if (symbolTable.get(sym).nonEmpty) symbolTable.get(sym)
+        else if (fieldAccess.argument(1).code == "$this") head.method.typeDecl.fullName.toSet
+        else Set.empty
       case (head: Call) :: _ if symbolTable.contains(head) =>
         val callPaths    = symbolTable.get(head)
         val returnValues = methodReturnValues(callPaths.toSeq)
@@ -139,14 +151,11 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
         else
           returnValues
       case (head: Call) :: _ if head.receiver.headOption.exists(symbolTable.contains) =>
-        symbolTable
-          .get(head.receiver.head)
-          .map(t => Seq(t, head.name, XTypeRecovery.DummyReturnType).mkString(pathSep))
+        appendDummyReturn(head.name, symbolTable.get(head.receiver.head))
       case ::(identifier: Identifier, Nil) if symbolTable.contains(identifier) =>
         symbolTable.get(identifier)
       case (head: Call) :: _ =>
-        val callees =
-          extractTypes(head.argument.l).map(t => Seq(t, head.name, XTypeRecovery.DummyReturnType).mkString(pathSep))
+        val callees = appendDummyReturn(head.name, extractTypes(head.argument.l))
         symbolTable.append(head, callees)
       case _ => Set.empty
     }
@@ -216,11 +225,14 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
     }
   }
 
-  override protected def getTypesFromCall(c: Call): Set[String] = c.name match {
-    case Operators.fieldAccess        => symbolTable.get(LocalVar(getFieldName(c.asInstanceOf[FieldAccess])))
-    case _ if symbolTable.contains(c) => symbolTable.get(c)
-    case Operators.indexAccess        => getIndexAccessTypes(c)
-    case n                            => methodReturnValues(Seq(c.methodFullName))
+  override protected def getTypesFromCall(c: Call): Set[String] = {
+    lazy val methodReturnVals = methodReturnValues(Seq(c.methodFullName))
+    c.name match {
+      case Operators.fieldAccess => symbolTable.get(LocalVar(getFieldName(c.asInstanceOf[FieldAccess])))
+      case Operators.indexAccess => getIndexAccessTypes(c)
+      case _ if symbolTable.contains(c) && methodReturnVals.isEmpty => symbolTable.get(c)
+      case _                                                        => methodReturnVals
+    }
   }
 
   override protected def indexAccessToCollectionVar(c: Call): Option[CollectionVar] = {
@@ -285,9 +297,10 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
       .toSet
     if (rs.isEmpty)
       /* Return dummy return type if not found */
-      fullNames
-        .flatMap(m => Set(m.concat(s"$pathSep${XTypeRecovery.DummyReturnType}")))
-        .toSet
+      fullNames.flatMap {
+        case m if m.endsWith(XTypeRecovery.DummyReturnType) => Set(m)
+        case m => Set(m.concat(s"$pathSep${XTypeRecovery.DummyReturnType}"))
+      }.toSet
     else rs
   }
 
@@ -317,10 +330,11 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
       }
     }
 
-    c.argumentOption(0).flatMap {
-      case rc: Call if rc.methodFullName.startsWith("<operator")                 => None // ignore operators
+    c.receiver.headOption.flatMap {
+      case rc: Call if rc.methodFullName.startsWith("<operator") =>
+        None // ignore operators
       case rc: Call if rc.methodFullName.startsWith(Defines.UnresolvedNamespace) =>
-        // Helps deal with with long call chains by attempting to perform an immediate resolve
+        // Helps deal with long call chains by attempting to perform an immediate resolve
         visitUnresolvedDynamicCall(rc).flatMap { rcFullName =>
           val newFullName = s"$rcFullName$pathSep${c.name}"
           setNodeFullName(c, newFullName)

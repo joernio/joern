@@ -244,7 +244,7 @@ class TestRunner:
                                    "--param", self.param_for_windows(f"sliceFile={out_file}")],
                                   f"Verify slice with {slice_script}")
             
-            expected_string = 'List(boolean b, b, this, s, "MALICIOUS", s, new Foo("MALICIOUS"), s, s, "SAFE", s, b, this, this, b, s, System.out)'
+            expected_string = 'List(this, boolean b, b, s, "MALICIOUS", s, new Foo("MALICIOUS"), s, s, "SAFE", s, b, this, this, b, s, System.out)'
             if expected_string not in proc.stdout:
                 raise RuntimeError(f"Slice output validation failed. Got: {proc.stdout}")
 

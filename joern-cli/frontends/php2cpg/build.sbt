@@ -1,4 +1,5 @@
 import better.files.File
+import com.typesafe.sbt.packager.Keys.stagingDirectory
 
 name := "php2cpg"
 

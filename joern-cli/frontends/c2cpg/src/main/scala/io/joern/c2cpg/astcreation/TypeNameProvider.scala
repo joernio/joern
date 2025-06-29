@@ -119,23 +119,51 @@ trait TypeNameProvider { this: AstCreator =>
       case cppBasicType: ICPPBasicType if cppBasicType.isLong     => Defines.Long
       case cppBasicType: ICPPBasicType if cppBasicType.isLongLong => Defines.LongLong
       case cppBasicType: ICPPBasicType if cppBasicType.isShort    => Defines.Short
-      case _                                                      =>
+      case templateType: ICPPTemplateTypeParameter                => templateType.getName
+      case cppPackType: ICPPParameterPackType =>
+        cppPackType.getType match {
+          case templateType: ICPPTemplateTypeParameter                 => templateType.getName
+          case refType: ICPPReferenceType if refType.isRValueReference => safeGetType(refType.getType) + "&&"
+          case refType: ICPPReferenceType                              => safeGetType(refType.getType)
+          case other => Try(ASTTypeUtil.getType(other)).getOrElse(Defines.Any)
+        }
+      case _ =>
         // In case of unresolved includes etc. this may fail throwing an unrecoverable exception
         Try(ASTTypeUtil.getType(tpe)).getOrElse(Defines.Any)
     }
     cleanType(tpeString)
   }
 
-  protected def functionTypeToSignature(typ: IFunctionType): String = {
-    val returnType     = cleanType(safeGetType(typ.getReturnType))
-    val parameterTypes = typ.getParameterTypes.map(t => cleanType(safeGetType(t)))
-    val variadicString = if (typ.takesVarArgs()) {
-      // See: https://en.cppreference.com/w/cpp/language/variadic_arguments
-      // `...` and `,...` are the same but `...` is deprecated since C++26 so we settle for the newer one
-      ",..."
-    } else {
-      ""
+  protected def variadicStringForFunction(
+    func: IFunctionType | IASTNode,
+    parameter: Seq[IASTNode] = Seq.empty
+  ): String = {
+    val takesVarArgs = func match {
+      case tpe: IFunctionType => tpe.takesVarArgs()
+      case func: IASTNode     => isVariadic(func) || parameter.lastOption.exists(paramIsVariadic)
     }
+    // See: https://en.cppreference.com/w/cpp/language/variadic_arguments
+    // `...` and `,...` are the same but `...` is deprecated since C++26 so we settle for the newer one
+    if (takesVarArgs) { ",..." }
+    else { "" }
+
+  }
+
+  protected def functionInstanceToSignature(function: ICPPFunctionInstance, tpe: IFunctionType): String = {
+    Try(function.getSpecializedBinding).toOption match {
+      case Some(binding: ICPPFunctionTemplate) =>
+        val returnType     = cleanType(safeGetType(tpe.getReturnType))
+        val parameterTypes = binding.getParameters.map(t => cleanType(safeGetType(t.getType)))
+        val variadicString = variadicStringForFunction(tpe)
+        StringUtils.normalizeSpace(s"$returnType(${parameterTypes.mkString(",")}$variadicString)")
+      case _ => functionTypeToSignature(tpe)
+    }
+  }
+
+  protected def functionTypeToSignature(tpe: IFunctionType): String = {
+    val returnType     = cleanType(safeGetType(tpe.getReturnType))
+    val parameterTypes = tpe.getParameterTypes.map(t => cleanType(safeGetType(t)))
+    val variadicString = variadicStringForFunction(tpe)
     StringUtils.normalizeSpace(s"$returnType(${parameterTypes.mkString(",")}$variadicString)")
   }
 

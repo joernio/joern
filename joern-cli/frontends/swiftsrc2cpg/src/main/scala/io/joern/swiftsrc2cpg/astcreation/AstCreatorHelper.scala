@@ -1,18 +1,8 @@
 package io.joern.swiftsrc2cpg.astcreation
 
-import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.AccessorDeclSyntax
-import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.CodeBlockItemSyntax
-import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.DeferStmtSyntax
-import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.DeinitializerDeclSyntax
-import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.FunctionDeclSyntax
-import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.GuardStmtSyntax
-import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.InitializerDeclSyntax
-import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.SwiftNode
-import io.joern.x2cpg.Ast
-import io.joern.x2cpg.ValidationMode
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, NewNode}
-import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
-import io.shiftleft.codepropertygraph.generated.PropertyNames
+import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
+import io.joern.x2cpg.{Ast, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, PropertyNames}
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 

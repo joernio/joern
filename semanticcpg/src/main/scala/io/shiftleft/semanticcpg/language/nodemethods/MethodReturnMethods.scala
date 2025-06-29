@@ -1,14 +1,10 @@
 package io.shiftleft.semanticcpg.language.nodemethods
 
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, MethodReturn, NewLocation, Type}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, MethodReturn, Type}
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.*
 
-class MethodReturnMethods(val node: MethodReturn) extends AnyVal with NodeExtension with HasLocation {
-  override def location: NewLocation = {
-    LocationCreator.defaultCreateLocation(node)
-  }
-
+class MethodReturnMethods(val node: MethodReturn) extends AnyVal with NodeExtension {
   def returnUser(implicit callResolver: ICallResolver): Iterator[Call] = {
     val method    = node._methodViaAstIn
     val callsites = callResolver.getMethodCallsites(method)

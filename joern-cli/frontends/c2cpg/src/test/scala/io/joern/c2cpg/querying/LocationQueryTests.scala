@@ -94,4 +94,29 @@ class LocationQueryTests extends C2CpgSuite {
     loc.nodeLabel shouldBe "LOCAL"
   }
 
+  "querying member location" should {
+    val cpg = code(
+      """
+        |#include <stdlib.h>
+        |
+        |struct flexArrayStruct {
+        |  int num;
+        |};
+        |""".stripMargin,
+      "foo.c"
+    )
+
+    "have the correct location for a struct member" in {
+      inside(cpg.member.name("num").location.l) { case List(location) =>
+        location.className shouldBe "flexArrayStruct"
+        location.filename shouldBe "foo.c"
+        location.lineNumber shouldBe Some(5)
+        location.symbol shouldBe "num"
+        location.classShortName shouldBe "flexArrayStruct"
+        location.methodFullName shouldBe "foo.c:<global>"
+        location.methodShortName shouldBe "<global>"
+      }
+    }
+  }
+
 }
