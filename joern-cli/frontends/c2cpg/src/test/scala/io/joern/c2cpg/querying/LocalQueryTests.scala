@@ -147,7 +147,7 @@ class LocalQueryTests extends C2CpgSuite {
       methodRef.parentExpression.l shouldBe cpg.namespaceBlock("Foo").astChildren.isBlock.l
       val List(binding) = x1.closureBinding.l
       binding.closureBindingId shouldBe Some("Test0.cpp:Foo.foo:void():x")
-      binding.closureOriginalName shouldBe Some("x")
+      binding._localViaRefOut.get.name shouldBe "x"
       binding._captureIn.l shouldBe List(methodRef)
       val List(id1) = x1.referencingIdentifiers.l
       id1.name shouldBe "x"

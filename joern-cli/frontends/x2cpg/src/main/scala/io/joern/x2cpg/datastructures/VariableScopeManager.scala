@@ -285,7 +285,7 @@ class VariableScopeManager {
                 val id = s"$prefix${methodScope.methodFullName}:${origin.variableName}"
                 capturedLocals.updateWith(id) {
                   case None =>
-                    val closureBinding = closureBindingNode(id, origin.variableName, origin.evaluationStrategy)
+                    val closureBinding = closureBindingNode(id, origin.evaluationStrategy)
                     methodScope.capturingRefNode.foreach(diffGraph.addEdge(_, closureBinding, EdgeTypes.CAPTURE))
                     nextReference = closureBinding
                     val localNode = createLocalForUnresolvedReference(diffGraph, methodScope.scopeNode, origin)

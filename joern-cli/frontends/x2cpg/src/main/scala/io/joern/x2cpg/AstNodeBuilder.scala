@@ -452,15 +452,8 @@ object AstNodeBuilder {
       .signature(signature)
   }
 
-  private[joern] def closureBindingNode(
-    closureBindingId: String,
-    originalName: String,
-    evaluationStrategy: String
-  ): NewClosureBinding = {
-    NewClosureBinding()
-      .closureBindingId(closureBindingId)
-      .closureOriginalName(originalName)
-      .evaluationStrategy(evaluationStrategy)
+  private[joern] def closureBindingNode(closureBindingId: String, evaluationStrategy: String): NewClosureBinding = {
+    NewClosureBinding().closureBindingId(closureBindingId).evaluationStrategy(evaluationStrategy)
   }
 
   private[joern] def dependencyNode(name: String, groupId: String, version: String): NewDependency = {

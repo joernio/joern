@@ -295,8 +295,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       .map { capturedNodeContext =>
         val uuidBytes        = stringForUUID(fn, capturedNodeContext.name, capturedNodeContext.typeFullName)
         val closureBindingId = nameUUIDFromBytes(uuidBytes.getBytes).toString
-        val closureBinding =
-          closureBindingNode(closureBindingId, capturedNodeContext.name, EvaluationStrategies.BY_REFERENCE)
+        val closureBinding   = closureBindingNode(closureBindingId, EvaluationStrategies.BY_REFERENCE)
         (closureBinding, capturedNodeContext)
       }
 
@@ -399,8 +398,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       .map { capturedNodeContext =>
         val uuidBytes        = stringForUUID(expr, capturedNodeContext.name, capturedNodeContext.typeFullName)
         val closureBindingId = nameUUIDFromBytes(uuidBytes.getBytes).toString
-        val closureBinding =
-          closureBindingNode(closureBindingId, capturedNodeContext.name, EvaluationStrategies.BY_REFERENCE)
+        val closureBinding   = closureBindingNode(closureBindingId, EvaluationStrategies.BY_REFERENCE)
         (closureBinding, capturedNodeContext)
       }
 

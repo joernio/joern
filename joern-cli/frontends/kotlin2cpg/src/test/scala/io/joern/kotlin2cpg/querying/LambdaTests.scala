@@ -1,21 +1,11 @@
 package io.joern.kotlin2cpg.querying
 
-import io.joern.kotlin2cpg.{Config, Constants}
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
+import io.joern.kotlin2cpg.{Config, Constants}
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
 import io.shiftleft.codepropertygraph.generated.edges.Capture
-import io.shiftleft.codepropertygraph.generated.nodes.Binding
-import io.shiftleft.codepropertygraph.generated.nodes.Block
-import io.shiftleft.codepropertygraph.generated.nodes.Call
-import io.shiftleft.codepropertygraph.generated.nodes.ClosureBinding
-import io.shiftleft.codepropertygraph.generated.nodes.Local
-import io.shiftleft.codepropertygraph.generated.nodes.MethodRef
-import io.shiftleft.codepropertygraph.generated.nodes.Return
-import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
 class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDefaultJars = true) {
@@ -33,12 +23,12 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
 
     "should contain a CLOSURE_BINDING node for the captured parameter with the correct props set" in {
-      val List(cb) = cpg.all.collectAll[ClosureBinding].l
-      cb.closureOriginalName shouldBe Some("p")
+      val List(cb) = cpg.closureBinding.l
       cb.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       cb.closureBindingId should not be None
 
       cb._refOut.size shouldBe 1
+      cb._methodParameterInViaRefOut.get.name shouldBe "p"
     }
 
     "should contain a CALL node for the `let` invocation" in {
@@ -76,8 +66,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
 
     "should contain a CLOSURE_BINDING node for captured `baz` with the correct props set" in {
-      val List(cb) = cpg.all.collectAll[ClosureBinding].filter(_.closureOriginalName.getOrElse("") == "baz").l
-      cb.closureOriginalName shouldBe Some("baz")
+      val List(cb) = cpg.closureBinding.filter(_._localViaRefOut.name.l == List("baz")).l
       cb.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       cb.closureBindingId should not be None
 
@@ -551,7 +540,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
 
     "should contain three CLOSURE_BINDING nodes" in {
-      cpg.all.collectAll[ClosureBinding].size shouldBe 3
+      cpg.closureBinding.size shouldBe 3
     }
   }
 
