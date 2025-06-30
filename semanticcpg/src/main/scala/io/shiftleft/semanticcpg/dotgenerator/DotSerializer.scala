@@ -13,7 +13,10 @@ import scala.language.postfixOps
 
 object DotSerializer {
 
-  private val CharLimit = 50
+  private val DefaultCharLimit: Int = 50
+  // maximum length of code fields in number of characters
+  private lazy val maxCharLimit: Int =
+    sys.env.get("JOERN_MAX_DOT_CODE_LENGTH").flatMap(_.toIntOption).getOrElse(DefaultCharLimit)
 
   case class Graph(
     vertices: List[StoredNode],
@@ -65,22 +68,22 @@ object DotSerializer {
     sb.append(s"""digraph "$name" {  \n""")
   }
 
-  private def limit(str: String): String = StringUtils.abbreviate(str, CharLimit)
+  private def limit(str: String): String = StringUtils.abbreviate(str, maxCharLimit)
 
   private def stringRepr(vertex: StoredNode): String = {
     val lineOpt = vertex.property(Properties.LineNumber).map(_.toString)
     val attrList = (vertex match {
       case call: Call                            => List(call.name, limit(call.code))
-      case ctrl: ControlStructure                => List(ctrl.label, ctrl.controlStructureType, ctrl.code)
+      case ctrl: ControlStructure                => List(ctrl.label, ctrl.controlStructureType, limit(ctrl.code))
       case expr: Expression                      => List(expr.label, limit(expr.code), limit(toCfgNode(expr).code))
       case method: Method                        => List(method.label, method.name)
       case ret: MethodReturn                     => List(ret.label, ret.typeFullName)
-      case param: MethodParameterIn              => List("PARAM", param.code)
-      case local: Local                          => List(local.label, s"${local.code}: ${local.typeFullName}")
+      case param: MethodParameterIn              => List("PARAM", limit(param.code))
+      case local: Local                          => List(local.label, s"${limit(local.code)}: ${local.typeFullName}")
       case target: JumpTarget                    => List(target.label, target.name)
       case modifier: Modifier                    => List(modifier.label, modifier.modifierType)
-      case annoAssign: AnnotationParameterAssign => List(annoAssign.label, annoAssign.code)
-      case annoParam: AnnotationParameter        => List(annoParam.label, annoParam.code)
+      case annoAssign: AnnotationParameterAssign => List(annoAssign.label, limit(annoAssign.code))
+      case annoParam: AnnotationParameter        => List(annoParam.label, limit(annoParam.code))
       case typ: Type                             => List(typ.label, typ.name)
       case typeDecl: TypeDecl                    => List(typeDecl.label, typeDecl.name)
       case member: Member                        => List(member.label, member.name)

@@ -18,7 +18,7 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
   private val MinCodeLength: Int        = 50
   private val DefaultMaxCodeLength: Int = 1000
   // maximum length of code fields in number of characters
-  private lazy val MaxCodeLength: Int =
+  private lazy val maxCodeLength: Int =
     sys.env.get("JOERN_MAX_CODE_LENGTH").flatMap(_.toIntOption).getOrElse(DefaultMaxCodeLength)
 
   private def setOffset[T <: AstNodeNew](node: Node, astNode: T): T = {
@@ -32,7 +32,7 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
   protected def code(node: Node): String
 
   protected def shortenCode(code: String): String =
-    StringUtils.abbreviate(code, math.max(MinCodeLength, MaxCodeLength))
+    StringUtils.abbreviate(code, math.max(MinCodeLength, maxCodeLength))
 
   protected def offset(node: Node): Option[(Int, Int)] = None
 
