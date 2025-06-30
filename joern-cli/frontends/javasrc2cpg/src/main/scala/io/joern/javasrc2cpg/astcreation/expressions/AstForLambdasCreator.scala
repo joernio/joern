@@ -274,7 +274,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
       .groupBy(_.name)
       .map { case (name, variables) =>
         val closureBindingId = s"$filename:$lambdaMethodName:$name"
-        val closureBinding   = closureBindingNode(closureBindingId, name, EvaluationStrategies.BY_SHARING)
+        val closureBinding   = closureBindingNode(closureBindingId, EvaluationStrategies.BY_SHARING)
 
         val scopeVariable = variables.head
         val capturedLocal = localNode(

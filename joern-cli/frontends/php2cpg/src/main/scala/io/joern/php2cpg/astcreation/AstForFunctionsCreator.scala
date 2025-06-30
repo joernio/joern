@@ -41,7 +41,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
       val closureBindingNode = NewClosureBinding()
         .closureBindingId(closureBindingId)
-        .closureOriginalName(local.name)
         .evaluationStrategy(EvaluationStrategies.BY_SHARING)
 
       scope.lookupVariable(local.name) match {

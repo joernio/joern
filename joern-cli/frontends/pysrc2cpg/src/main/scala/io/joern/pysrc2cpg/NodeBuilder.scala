@@ -130,7 +130,6 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
       .NewClosureBinding()
       .closureBindingId(Some(closureBindingId))
       .evaluationStrategy(EvaluationStrategies.BY_REFERENCE)
-      .closureOriginalName(None)
     addNodeToDiff(closureBindingNode)
   }
 

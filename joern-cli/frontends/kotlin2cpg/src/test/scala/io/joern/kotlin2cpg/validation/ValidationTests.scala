@@ -32,7 +32,7 @@ class ValidationTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
 
     "should contain CLOSURE_BINDING nodes for the lambdas" in {
-      cpg.all.collectAll[ClosureBinding].size should not be 0
+      cpg.closureBinding.size should not be 0
     }
   }
 
@@ -644,7 +644,7 @@ class ValidationTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         |""".stripMargin)
 
     "should not contain any LOCAL nodes with the CLOSURE_BINDING_ID prop set but without corresponding CLOSURE_BINDING node" in {
-      val allClosureBindingIds = cpg.all.collectAll[ClosureBinding].closureBindingId.l
+      val allClosureBindingIds = cpg.closureBinding.closureBindingId.l
       cpg.local
         .where(_.closureBindingId)
         .filterNot { l => allClosureBindingIds.contains(l.closureBindingId.get) }
@@ -672,7 +672,7 @@ class ValidationTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         |""".stripMargin)
 
     "should not contain any LOCAL nodes with the CLOSURE_BINDING_ID prop set but without corresponding CLOSURE_BINDING node" in {
-      val allClosureBindingIds = cpg.all.collectAll[ClosureBinding].closureBindingId.l
+      val allClosureBindingIds = cpg.closureBinding.closureBindingId.l
       cpg.local
         .where(_.closureBindingId)
         .filterNot { l => allClosureBindingIds.contains(l.closureBindingId.get) }
@@ -709,7 +709,7 @@ class ValidationTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         |""".stripMargin)
 
     "should not contain any LOCAL nodes with the CLOSURE_BINDING_ID prop set but without corresponding CLOSURE_BINDING node" in {
-      val allClosureBindingIds = cpg.all.collectAll[ClosureBinding].closureBindingId.l
+      val allClosureBindingIds = cpg.closureBinding.closureBindingId.l
       cpg.local
         .where(_.closureBindingId)
         .filterNot { l => allClosureBindingIds.contains(l.closureBindingId.get) }

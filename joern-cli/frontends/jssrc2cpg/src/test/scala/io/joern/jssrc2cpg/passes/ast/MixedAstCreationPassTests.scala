@@ -253,11 +253,9 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(fooLocalX)      = fooBlock.astChildren.isLocal.nameExact("x").l
       val List(barRef)         = fooBlock.astChildren.isCall.astChildren.isMethodRef.l
       val List(closureBinding) = barRef.captureOut.l
-      closureBinding.closureBindingId shouldBe Option("Test0.js::program:foo:bar:x")
-      closureBinding.closureOriginalName shouldBe Option("x")
-      closureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-
       closureBinding.refOut.head shouldBe fooLocalX
+      closureBinding.closureBindingId shouldBe Option("Test0.js::program:foo:bar:x")
+      closureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
 
       val List(barMethod)      = cpg.method.nameExact("bar").l
       val List(barMethodBlock) = barMethod.astChildren.isBlock.l
@@ -287,15 +285,13 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
 
       val List(closureBindForY, closureBindForX) = barRef.captureOut.cast[ClosureBinding].l
 
-      closureBindForX.closureOriginalName shouldBe Option("x")
+      closureBindForX.refOut.head shouldBe fooLocalX
       closureBindForX.closureBindingId shouldBe Option("Test0.js::program:foo:bar:x")
       closureBindForX.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      closureBindForX.refOut.head shouldBe fooLocalX
 
-      closureBindForY.closureOriginalName shouldBe Option("y")
+      closureBindForY.refOut.head shouldBe fooLocalY
       closureBindForY.closureBindingId shouldBe Option("Test0.js::program:foo:bar:y")
       closureBindForY.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      closureBindForY.refOut.head shouldBe fooLocalY
 
       val List(barMethod)                    = cpg.method.nameExact("bar").l
       val List(barMethodBlock)               = barMethod.astChildren.isBlock.l
@@ -333,9 +329,8 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
 
       val List(closureBindingXInFoo) = barRef.captureOut.l
       closureBindingXInFoo.closureBindingId shouldBe Option("Test0.js::program:foo:bar:x")
-      closureBindingXInFoo.closureOriginalName shouldBe Option("x")
-      closureBindingXInFoo.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       closureBindingXInFoo.refOut.head shouldBe fooLocalX
+      closureBindingXInFoo.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
 
       val List(barMethod)      = cpg.method.nameExact("bar").l
       val List(barMethodBlock) = barMethod.astChildren.isBlock.l
@@ -349,9 +344,8 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(bazRef)               = barMethodBlock.astChildren.isCall.astChildren.isMethodRef.l
       val List(closureBindingXInBar) = bazRef.captureOut.l
       closureBindingXInBar.closureBindingId shouldBe Option("Test0.js::program:foo:bar:baz:x")
-      closureBindingXInBar.closureOriginalName shouldBe Option("x")
-      closureBindingXInBar.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       closureBindingXInBar.refOut.head shouldBe barLocalX
+      closureBindingXInBar.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
 
       val List(bazMethod)      = cpg.method.nameExact("baz").l
       val List(bazMethodBlock) = bazMethod.astChildren.isBlock.l
@@ -384,9 +378,8 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(barRef)               = fooBlock.astChildren.isCall.astChildren.isMethodRef.l
       val List(closureBindingXInFoo) = barRef.captureOut.l
       closureBindingXInFoo.closureBindingId shouldBe Option("Test0.js::program:foo:bar:x")
-      closureBindingXInFoo.closureOriginalName shouldBe Option("x")
-      closureBindingXInFoo.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       closureBindingXInFoo.refOut.head shouldBe fooLocalX
+      closureBindingXInFoo.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
 
       val List(barMethod)      = cpg.method.nameExact("bar").l
       val List(barMethodBlock) = barMethod.astChildren.isBlock.l
@@ -401,9 +394,8 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(bazRef)               = barMethodInnerBlock.astChildren.isCall.astChildren.isMethodRef.l
       val List(closureBindingXInBar) = bazRef.captureOut.l
       closureBindingXInBar.closureBindingId shouldBe Option("Test0.js::program:foo:bar:baz:x")
-      closureBindingXInBar.closureOriginalName shouldBe Option("x")
-      closureBindingXInBar.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       closureBindingXInBar.refOut.head shouldBe barLocalX
+      closureBindingXInBar.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
 
       val List(bazMethod)      = cpg.method.nameExact("baz").l
       val List(bazMethodBlock) = bazMethod.astChildren.isBlock.l
@@ -433,9 +425,8 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(barRef)               = fooBlock.astChildren.isCall.astChildren.isMethodRef.l
       val List(closureBindingXInFoo) = barRef.captureOut.l
       closureBindingXInFoo.closureBindingId shouldBe Option("Test0.js::program:foo:bar:x")
-      closureBindingXInFoo.closureOriginalName shouldBe Option("x")
-      closureBindingXInFoo.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       closureBindingXInFoo.refOut.head shouldBe fooLocalX
+      closureBindingXInFoo.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
 
       val List(barMethod)      = cpg.method.nameExact("bar").l
       val List(barMethodBlock) = barMethod.astChildren.isBlock.l
@@ -446,9 +437,8 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(bazRef)               = barMethodBlock.astChildren.isCall.astChildren.isMethodRef.l
       val List(closureBindingXInBar) = bazRef.captureOut.l
       closureBindingXInBar.closureBindingId shouldBe Option("Test0.js::program:foo:bar:baz:x")
-      closureBindingXInBar.closureOriginalName shouldBe Option("x")
-      closureBindingXInBar.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       closureBindingXInBar.refOut.head shouldBe barLocalX
+      closureBindingXInBar.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
 
       val List(bazMethod)      = cpg.method.nameExact("baz").l
       val List(bazMethodBlock) = bazMethod.astChildren.isBlock.l
@@ -477,17 +467,15 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
 
       val List(closureBindingXAnon1) = anon1Ref.captureOut.l
       closureBindingXAnon1.closureBindingId shouldBe Option("Test0.js::program:foo:<lambda>0:x")
-      closureBindingXAnon1.closureOriginalName shouldBe Option("x")
-      closureBindingXAnon1.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       closureBindingXAnon1.refOut.head shouldBe fooLocalX
+      closureBindingXAnon1.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
 
       val List(anon2Ref) =
         fooBlock.astChildren.isCall.astChildren.isMethodRef.methodFullNameExact("Test0.js::program:foo:<lambda>1").l
       val List(closureBindingXAnon2) = anon2Ref.captureOut.l
       closureBindingXAnon2.closureBindingId shouldBe Option("Test0.js::program:foo:<lambda>1:x")
-      closureBindingXAnon2.closureOriginalName shouldBe Option("x")
-      closureBindingXAnon2.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       closureBindingXAnon2.refOut.head shouldBe fooLocalX
+      closureBindingXAnon2.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
     }
 
     "have correct closure bindings" in {
@@ -505,9 +493,8 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(barRef)         = fooBlock.astChildren.isCall.astChildren.isMethodRef.l
       val List(closureBinding) = barRef.captureOut.l
       closureBinding.closureBindingId shouldBe Option("Test0.js::program:foo:bar:x")
-      closureBinding.closureOriginalName shouldBe Option("x")
-      closureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       closureBinding.refOut.head shouldBe fooLocalX
+      closureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
 
       val List(barMethod)      = cpg.method.nameExact("bar").l
       val List(barMethodBlock) = barMethod.astChildren.isBlock.l
