@@ -282,7 +282,9 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
 
   private def astForMemberBlockItemSyntax(node: MemberBlockItemSyntax): Ast = notHandledYet(node)
   private def astForMemberBlockSyntax(node: MemberBlockSyntax): Ast         = notHandledYet(node)
-  private def astForMissingSyntax(node: MissingSyntax): Ast                 = notHandledYet(node)
+
+  private def astForMissingSyntax(@unused node: MissingSyntax): Ast = Ast()
+
   private def astForMultipleTrailingClosureElementSyntax(node: MultipleTrailingClosureElementSyntax): Ast =
     notHandledYet(node)
   private def astForObjCSelectorPieceSyntax(node: ObjCSelectorPieceSyntax): Ast = notHandledYet(node)

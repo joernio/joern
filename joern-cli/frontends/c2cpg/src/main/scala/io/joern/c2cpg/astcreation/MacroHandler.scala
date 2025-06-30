@@ -46,9 +46,7 @@ trait MacroHandler { this: AstCreator =>
         // to be connected via AST edges under a CALL. E.g., LOCALs but only if it is not already a BLOCK.
         val childAst = ast.root match {
           case Some(_: NewBlock) => ast
-          case _ =>
-            setOrder(List(ast))
-            blockAst(blockNode(node), List(ast))
+          case _                 => blockAst(blockNode(node), List(ast))
         }
         setArgumentIndices(List(childAst), callAst.argEdges.size + 1)
         callAst.withChild(childAst)

@@ -9,7 +9,7 @@ import scala.util.Try
 
 object SwiftJsonParser {
 
-  case class ParseResult(filename: String, fullPath: String, ast: SwiftNode, fileContent: String)
+  case class ParseResult(filename: String, fullPath: String, ast: SwiftNode, fileContent: String, loc: Int)
 
   def readFile(file: Path): Try[ParseResult] = Try {
     val jsonContent       = IOUtils.readEntireFile(file)
@@ -18,7 +18,8 @@ object SwiftJsonParser {
     val fullPath          = Paths.get(json("fullFilePath").str)
     val sourceFileContent = json("content").str
     val ast               = SwiftNodeSyntax.createSwiftNode(json)
-    ParseResult(filename, fullPath.toString, ast, sourceFileContent)
+    val loc               = json("loc").num.toInt
+    ParseResult(filename, fullPath.toString, ast, sourceFileContent, loc)
   }
 
 }

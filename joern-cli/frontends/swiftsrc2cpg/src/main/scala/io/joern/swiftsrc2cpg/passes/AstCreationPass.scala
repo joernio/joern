@@ -25,14 +25,19 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
 
   private val global = new Global()
 
-  def typesSeen(): List[String] = global.usedTypes.keys().asScala.filterNot(_ == Defines.Any).toList
+  def typesSeen(): List[String] = global.usedTypes.keys().asScala.filterNot(Defines.SwiftTypes.contains).toList
 
   override def generateParts(): Array[String] = astGenRunnerResult.parsedFiles.toArray
 
   override def finish(): Unit = {
     astGenRunnerResult.skippedFiles.foreach { skippedFile =>
       val filePath = Paths.get(skippedFile)
-      val fileLOC  = IOUtils.readLinesInFile(filePath).size
+      val fileLOC = Try(IOUtils.readLinesInFile(filePath)) match {
+        case Success(fileContent) => fileContent.size
+        case Failure(exception) =>
+          logger.warn(s"Failed to read file: '$filePath'", exception)
+          -1
+      }
       report.addReportInfo(skippedFile, fileLOC)
     }
   }
@@ -40,23 +45,22 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
   override def runOnPart(diffGraph: DiffGraphBuilder, input: String): Unit = {
     val ((gotCpg, filename), duration) = TimeUtils.time {
       SwiftJsonParser.readFile(Paths.get(input)) match {
-        case Failure(exception) =>
-          logger.warn(s"Failed to read '$input'", exception)
-          (false, input)
         case Success(parseResult) =>
-          val fileLOC = IOUtils.readLinesInFile(Paths.get(parseResult.fullPath)).size
-          report.addReportInfo(parseResult.filename, fileLOC, parsed = true)
+          report.addReportInfo(parseResult.filename, parseResult.loc, parsed = true)
           Try {
             val localDiff = new AstCreator(config, global, parseResult).createAst()
             diffGraph.absorb(localDiff)
           } match {
             case Failure(exception) =>
-              logger.warn(s"Failed to generate a CPG for: '${parseResult.fullPath}'", exception)
+              logger.warn(s"Failed to generate a CPG for: '${parseResult.filename}'", exception)
               (false, parseResult.filename)
             case Success(_) =>
-              logger.info(s"Generated a CPG for: '${parseResult.fullPath}'")
+              logger.debug(s"Generated a CPG for: '${parseResult.filename}'")
               (true, parseResult.filename)
           }
+        case Failure(exception) =>
+          logger.warn(s"Failed to read '$input'", exception)
+          (false, input)
       }
     }
     report.updateReport(filename, cpg = gotCpg, duration)

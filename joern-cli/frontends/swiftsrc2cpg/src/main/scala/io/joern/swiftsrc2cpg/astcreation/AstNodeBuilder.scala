@@ -80,29 +80,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
         val elemName = elements.headOption.fold(nameForJumpTarget(i.clauses.children.head))(nameForJumpTarget)
         (elemName, elemCode)
     }
-    NewJumpTarget()
-      .parserTypeName(switchCase.toString)
-      .name(switchName)
-      .code(switchCode)
-      .lineNumber(line(switchCase))
-      .columnNumber(column(switchCase))
-  }
-
-  protected def createIndexAccessCallAst(
-    baseNode: NewNode,
-    partNode: NewNode,
-    line: Option[Int],
-    column: Option[Int]
-  ): Ast = {
-    val callNode = createCallNode(
-      s"${codeOf(baseNode)}[${codeOf(partNode)}]",
-      Operators.indexAccess,
-      DispatchTypes.STATIC_DISPATCH,
-      line,
-      column
-    )
-    val arguments = List(Ast(baseNode), Ast(partNode))
-    callAst(callNode, arguments)
+    jumpTargetNode(switchCase, switchName, switchCode, Some(switchCase.toString))
   }
 
   protected def createIndexAccessCallAst(
@@ -120,23 +98,6 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
       column
     )
     val arguments = List(baseAst, partAst) ++ additionalArgsAst
-    callAst(callNode, arguments)
-  }
-
-  protected def createFieldAccessCallAst(
-    baseNode: NewNode,
-    partNode: NewNode,
-    line: Option[Int],
-    column: Option[Int]
-  ): Ast = {
-    val callNode = createCallNode(
-      s"${codeOf(baseNode)}.${codeOf(partNode)}",
-      Operators.fieldAccess,
-      DispatchTypes.STATIC_DISPATCH,
-      line,
-      column
-    )
-    val arguments = List(Ast(baseNode), Ast(partNode))
     callAst(callNode, arguments)
   }
 
@@ -198,18 +159,6 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
   }
 
   protected def createAssignmentCallAst(
-    destId: NewNode,
-    sourceId: NewNode,
-    code: String,
-    line: Option[Int],
-    column: Option[Int]
-  ): Ast = {
-    val callNode  = createCallNode(code, Operators.assignment, DispatchTypes.STATIC_DISPATCH, line, column)
-    val arguments = List(Ast(destId), Ast(sourceId))
-    callAst(callNode, arguments)
-  }
-
-  protected def createAssignmentCallAst(
     dest: Ast,
     source: Ast,
     code: String,
@@ -234,10 +183,6 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
       case _                        => None
     }
     identifierNode(node, name, name, Defines.Any, dynamicInstanceTypeOption.toList)
-  }
-
-  protected def identifierNode(node: SwiftNode, name: String, dynamicTypeHints: Seq[String]): NewIdentifier = {
-    identifierNode(node, name, name, Defines.Any, dynamicTypeHints)
   }
 
   def staticInitMethodAstAndBlock(

@@ -153,6 +153,9 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         fooMethod.signature shouldBe s"${Defines.UnresolvedSignature}(0)"
       }
     }
+
+    // Check that no methodRefs exist since there is no capturing
+    cpg.all.collectAll[MethodRef].l.size shouldBe 0
   }
 
   "interfaces should be able to extend multiple other interfaces" in {
@@ -188,6 +191,9 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         fooMethod.signature shouldBe s"${Defines.UnresolvedSignature}(0)"
       }
     }
+
+    // Check that no methodRefs exist since there is no capturing
+    cpg.all.collectAll[MethodRef].l.size shouldBe 0
   }
 
   "enums with cases without values should have the correct fields" in {
@@ -394,7 +400,6 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         |""".stripMargin)
 
     "parse methods in classes correctly" in {
-      cpg.method.name("<global>").dotAst.l.foreach(println)
       inside(cpg.typeDecl.name("Test0.php:<global>.anon-class-\\d+").l) {
         case anonClass0 :: anonClass1 :: Nil =>
           val List(memberX) = anonClass0.member.l
@@ -437,8 +442,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       }
     }
 
-    "generate locals with correct types" in {
-      inside(cpg.method.name("<global>").body.astChildren.isLocal.l) {
+    "generate identifiers with correct types" in {
+      inside(cpg.method.name("<global>").body.ast.isIdentifier.name(".*tmp.*").dedupBy(_.name).l) {
         case tmp0Local :: tmp1Local :: Nil =>
           tmp0Local.typeFullName shouldBe "Test0.php:<global>.anon-class-0"
           tmp0Local.name shouldBe "Test0.php:<global>@tmp-0"
@@ -486,7 +491,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
               allocSource.code shouldBe "Test0.php:<global>.anon-class-1.<alloc>()"
               allocSource.methodFullName shouldBe Operators.alloc
               allocTarget.typeFullName shouldBe "Test0.php:<global>.anon-class-1"
-            case xs => fail(s"Expected some things")
+            case xs => fail(s"Expected target and source")
           }
 
         case xs => fail(s"Expected one assignment, got ${xs.code.mkString("[", ",", "]")}")
@@ -525,8 +530,6 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         |  }
         |}
         |""".stripMargin)
-
-    cpg.method.name("<global>").dotAst.l.foreach(println)
     inside(cpg.typeDecl.name("C.D.anon-class-\\d+").l) {
       case anonClass :: Nil =>
         anonClass.fullName shouldBe s"C.D.anon-class-0"
@@ -538,7 +541,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       case (localNode: Local) :: (bodyBlock: Block) :: Nil =>
         localNode.code shouldBe "$C.D@tmp-0"
         localNode.name shouldBe "C.D@tmp-0"
-        localNode.typeFullName shouldBe "C.D.anon-class-0"
+        localNode.refIn.cast[Identifier].head.typeFullName shouldBe "C.D.anon-class-0"
 
         inside(bodyBlock.astChildren.l) {
           case (assignmentCall: Call) :: (constructCall: Call) :: (tmpIdentifier: Identifier) :: Nil =>

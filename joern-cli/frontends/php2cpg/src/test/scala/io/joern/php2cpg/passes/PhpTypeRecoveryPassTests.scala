@@ -4,7 +4,7 @@ import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.semanticcpg.language.*
 
-class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture() {
+class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture(withPostProcessing = true) {
 
   /* TODO: Future tests to specify correct type recovery behaviors:
    * - Method call inherited from a super class should be recovered

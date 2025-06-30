@@ -7,22 +7,23 @@ import io.joern.dataflowengineoss.semanticsloader.{NoSemantics, Semantics}
 import io.joern.joerncli.JoernScan.getQueriesFromQueryDb
 import io.joern.joerncli.Scan.{allTag, defaultTag}
 import io.joern.joerncli.console.ReplBridge
-import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
+import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder, locationCreator}
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
 import io.shiftleft.semanticcpg.utils.FileUtil
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import org.json4s.native.Serialization
 import org.json4s.{Formats, NoTypeHints}
+import scopt.OptionParser
 
-import java.io.FileNotFoundException
-import java.nio.file.{Files, NoSuchFileException, Path, Paths}
+import java.nio.file.{Files, Path, Paths}
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
+import scala.util.Properties
 
 object JoernScanConfig {
-  val defaultDbVersion: String    = "latest"
-  val defaultDumpQueryDestination = "/tmp/querydb.json"
+  val defaultDbVersion: String            = "latest"
+  val defaultDumpQueryDestination: String = Paths.get(Properties.tmpDir, "querydb.json").absolutePathAsString
 }
 
 case class JoernScanConfig(
@@ -44,16 +45,16 @@ case class JoernScanConfig(
 object JoernScan extends BridgeBase {
   override val applicationName = "joern"
 
-  val implementationVersion = getClass.getPackage.getImplementationVersion
+  val implementationVersion: String = getClass.getPackage.getImplementationVersion
 
-  def main(args: Array[String]) = {
+  def main(args: Array[String]): Unit = {
     val (scanArgs, frontendArgs) = CpgBasedTool.splitArgs(args)
     optionParser.parse(scanArgs, JoernScanConfig()).foreach { config =>
       run(config, frontendArgs)
     }
   }
 
-  val optionParser = new scopt.OptionParser[JoernScanConfig]("joern-scan") {
+  val optionParser: OptionParser[JoernScanConfig] = new scopt.OptionParser[JoernScanConfig]("joern-scan") {
     head(
       s"Creates a code property graph and scans it with queries from installed bundles.\nVersion: `$implementationVersion`"
     )
@@ -151,7 +152,6 @@ object JoernScan extends BridgeBase {
   }
 
   private def runScanPlugin(config: JoernScanConfig, frontendArgs: List[String]): Unit = {
-
     if (config.src == "") {
       println(optionParser.usage)
       return
@@ -241,9 +241,9 @@ object JoernScan extends BridgeBase {
     }
   }
 
-  override protected def runBeforeCode = ReplBridge.runBeforeCode
-  override protected def promptStr     = ReplBridge.promptStr
-  override protected def greeting      = ReplBridge.greeting
+  override protected def runBeforeCode: Seq[String] = ReplBridge.runBeforeCode
+  override protected def promptStr: String          = ReplBridge.promptStr
+  override protected def greeting: String           = ReplBridge.greeting
 }
 
 object Scan {
@@ -259,8 +259,6 @@ class ScanOptions(var maxCallDepth: Int, var names: Array[String], var tags: Arr
     extends LayerCreatorOptions {}
 
 class Scan(options: ScanOptions)(implicit engineContext: EngineContext) extends LayerCreator {
-  implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
-
   override val overlayName: String = Scan.overlayName
   override val description: String = Scan.description
 
