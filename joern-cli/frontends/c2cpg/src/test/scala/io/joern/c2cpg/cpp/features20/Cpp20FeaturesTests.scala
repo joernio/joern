@@ -4,11 +4,24 @@ import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.AstC2CpgSuite
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
+import io.shiftleft.codepropertygraph.generated.nodes.Unknown
 import io.shiftleft.semanticcpg.language.*
 
 class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt) {
 
   "C++20 feature support" should {
+
+    "generate an unknown node for unsupported co_await" in {
+      val cpg = code("""
+          |int main() {
+          |  co_await f();
+          |}
+          |""".stripMargin)
+      val List(unknown) = cpg.method.nameExact("main").block.astChildren.collectAll[Unknown].l
+      // Also the call to 'f' can't be parsed in this case. It ends up as a function declaration.
+      // There is no way to recover from that broken 'co_await' parsing at the moment
+      unknown.code shouldBe "co_await f()"
+    }
 
     "handle coroutines" in {
       val cpg = code("""

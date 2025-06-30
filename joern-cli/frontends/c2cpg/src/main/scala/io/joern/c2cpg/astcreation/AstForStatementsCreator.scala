@@ -16,9 +16,12 @@ import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.core.dom.ast.gnu.IGNUASTGotoStatement
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTIfStatement
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTIfStatement
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTNamespaceAlias
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTSimpleDeclaration
+import org.eclipse.cdt.internal.core.dom.parser.cpp.{
+  CPPASTDeclarationStatement,
+  CPPASTIfStatement,
+  CPPASTNamespaceAlias,
+  CPPASTSimpleDeclaration
+}
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import java.nio.file.Paths
@@ -41,6 +44,12 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   protected def astsForStatement(statement: IASTStatement): Seq[Ast] = {
+    // CDT does not support co_await yet. That leads to completely wrong parse trees that
+    // can't be recovered at all. Instead, we filter and warn here.
+    if (statement.getRawSignature.startsWith("co_await ")) {
+      return Seq(Ast(unknownNode(statement, statement.getRawSignature)))
+    }
+
     val r = statement match {
       case expr: IASTExpressionStatement          => Seq(astForExpression(expr.getExpression))
       case block: IASTCompoundStatement           => Seq(astForBlockStatement(block, blockNode(block)))
