@@ -15,7 +15,7 @@ object DotSerializer {
 
   private val DefaultCharLimit: Int = 50
   // maximum length of code fields in number of characters
-  private lazy val MaxCharLimit: Int =
+  private lazy val maxCharLimit: Int =
     sys.env.get("JOERN_MAX_DOT_CODE_LENGTH").flatMap(_.toIntOption).getOrElse(DefaultCharLimit)
 
   case class Graph(
@@ -68,7 +68,7 @@ object DotSerializer {
     sb.append(s"""digraph "$name" {  \n""")
   }
 
-  private def limit(str: String): String = StringUtils.abbreviate(str, MaxCharLimit)
+  private def limit(str: String): String = StringUtils.abbreviate(str, maxCharLimit)
 
   private def stringRepr(vertex: StoredNode): String = {
     val lineOpt = vertex.property(Properties.LineNumber).map(_.toString)
