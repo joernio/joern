@@ -20,7 +20,7 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       val List(unknown) = cpg.method.nameExact("main").block.astChildren.collectAll[Unknown].l
       // Also the call to 'f' can't be parsed in this case. It ends up as a function declaration.
       // There is no way to recover from that broken 'co_await' parsing at the moment
-      unknown.code shouldBe "co_await f()"
+      unknown.code shouldBe "co_await f();"
     }
 
     "handle coroutines" in {
