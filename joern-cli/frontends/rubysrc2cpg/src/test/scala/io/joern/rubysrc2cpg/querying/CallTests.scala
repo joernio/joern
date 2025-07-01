@@ -177,11 +177,11 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
     }
 
     "create an assignment from a temp variable to the alloc call" in {
-      inside(cpg.method.isModule.assignment.where(_.target.isIdentifier.name("<tmp-0>")).l) {
+      inside(cpg.method.isModule.assignment.where(_.target.isIdentifier.name("<tmp-1>")).l) {
         case assignment :: Nil =>
           inside(assignment.argument.l) {
             case (a: Identifier) :: (alloc: Call) :: Nil =>
-              a.name shouldBe "<tmp-0>"
+              a.name shouldBe "<tmp-1>"
 
               alloc.name shouldBe Operators.alloc
               alloc.methodFullName shouldBe Operators.alloc
@@ -198,7 +198,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
         case constructor :: Nil =>
           inside(constructor.argument.l) {
             case (a: Identifier) :: (one: Literal) :: (two: Literal) :: Nil =>
-              a.name shouldBe "<tmp-0>"
+              a.name shouldBe "<tmp-1>"
               a.typeFullName shouldBe s"Test0.rb:$Main.A"
               a.argumentIndex shouldBe 0
 
@@ -441,8 +441,8 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
 
             inside(arrayArg.astChildren.l) {
               case (_: Call) :: (elem1: Call) :: (elem2: Call) :: (_: Identifier) :: Nil =>
-                elem1.code shouldBe "<tmp-0>[0] = :b"
-                elem2.code shouldBe "<tmp-0>[1] = :c => 1"
+                elem1.code shouldBe "<tmp-1>[0] = :b"
+                elem2.code shouldBe "<tmp-1>[1] = :c => 1"
 
                 elem1.methodFullName shouldBe Operators.assignment
                 elem2.methodFullName shouldBe Operators.assignment

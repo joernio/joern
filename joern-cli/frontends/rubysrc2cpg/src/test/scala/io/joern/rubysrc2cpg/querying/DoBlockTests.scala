@@ -402,7 +402,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
                      |  end
                      |""".stripMargin)
 
-    inside(cpg.local.nameNot("<tmp-\\d>").l) {
+    inside(cpg.local.nameNot(".*<tmp-\\d>").l) {
       case jfsOutsideLocal :: schedules :: hashInsideLocal :: jfsCapturedLocal :: Nil =>
         jfsOutsideLocal.closureBindingId shouldBe None
         hashInsideLocal.closureBindingId shouldBe None

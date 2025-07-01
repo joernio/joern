@@ -219,42 +219,25 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
   def getNewClassTmp: String = {
     val surroundingFullName = this.surroundingScopeFullName.getOrElse(RubyDefines.Main)
 
-    stack.headOption match {
-      case Some(_ @ScopeElement(scopeNode: NamespaceScope, _)) => s"$surroundingFullName.${scopeNode.getNextClassTmp}"
-      case Some(node: TypeLikeScope)                           => s"$surroundingFullName.${node.getNextClassTmp}"
-      case Some(node: MethodLikeScope)                         => s"$surroundingFullName.${node.getNextClassTmp}"
-      case Some(_ @ScopeElement(scopeNode: BlockScope, _))     => s"$surroundingFullName.${scopeNode.getNextClassTmp}"
-      case _ =>
-        s"${surroundingFullName}.${this.getNextClassTmp}"
-    }
+    stack.collectFirst {
+      case ScopeElement(scopeNode: NamespaceScope, _) => s"$surroundingFullName.${scopeNode.getNextClassTmp}"
+      case ScopeElement(node: TypeLikeScope, _)                           => s"$surroundingFullName.${node.getNextClassTmp}"
+      case ScopeElement(node: MethodLikeScope, _)                         => s"$surroundingFullName.${node.getNextClassTmp}"
+    }.getOrElse(s"${surroundingFullName}.${this.getNextClassTmp}")
   }
 
   def getNewVarTmp: String = {
-    val surroundingFullName = this.surroundingScopeFullName.getOrElse(RubyDefines.Main)
-
-    stack.headOption match {
-      case Some(_ @ScopeElement(scopeNode: NamespaceScope, _)) => s"${scopeNode.getNextVarTmp}"
-      case Some(node: TypeLikeScope)                           => s"${node.getNextVarTmp}"
-      case Some(node: MethodLikeScope)                         => s"${node.getNextVarTmp}"
-      case Some(_ @ScopeElement(scopeNode: BlockScope, _))     => s"${scopeNode.getNextVarTmp}"
-      case _ =>
-        s"${this.getNextVarTmp}"
-    }
+    stack.collectFirst {
+      case ScopeElement(scopeNode: NamespaceScope, _) => s"${scopeNode.getNextVarTmp}"
+      case ScopeElement(node: TypeLikeScope, _)                           => s"${node.getNextVarTmp}"
+      case ScopeElement(node: MethodLikeScope, _) if !node.fullName.contains("<lambda>")                         => s"${node.getNextVarTmp}"
+    }.getOrElse(s"${this.getNextVarTmp}")
   }
 
   def getNewProcParam: Either[String, String] = {
-    val surroundingFullName = this.surroundingScopeFullName.getOrElse(RubyDefines.Main)
-
-    stack.headOption match {
-      case Some(_ @ScopeElement(scopeNode: NamespaceScope, _)) =>
-        Left(s"$surroundingFullName.${scopeNode.getNextProcParamTmp}")
-      case Some(node: TypeLikeScope)   => Left(s"$surroundingFullName.${node.getNextProcParamTmp}")
-      case Some(node: MethodLikeScope) => Left(s"$surroundingFullName.${node.getNextProcParamTmp}")
-      case Some(_ @ScopeElement(scopeNode: BlockScope, _)) =>
-        Left(s"$surroundingFullName.${scopeNode.getNextProcParamTmp}")
-      case _ =>
-        Left(s"${surroundingFullName}.${this.getNextProcParamTmp}")
-    }
+    stack.collectFirst {
+      case ScopeElement(node: MethodLikeScope, _) => Left(s"${node.getNextProcParamTmp}")
+    }.getOrElse(Left(s"${this.getNextProcParamTmp}"))
   }
 
   def addImportedFunctions(importName: String): Unit = {

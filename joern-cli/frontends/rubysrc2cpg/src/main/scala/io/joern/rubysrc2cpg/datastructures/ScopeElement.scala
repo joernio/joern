@@ -5,10 +5,8 @@ import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.datastructures.{NamespaceLikeScope, TypedScopeElement}
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 
-trait LambdaCreator {
-  private var tmpVarCounter       = 0
+sealed trait AnonymousClassNameCreator {
   private var tmpClassCounter     = 0
-  private var tmpProcParamCounter = 0
 
   def getNextClassTmp: String = {
     val anonClassName = s"<anon-class-$tmpClassCounter>"
@@ -16,6 +14,21 @@ trait LambdaCreator {
 
     anonClassName
   }
+}
+
+sealed trait ProcParamNameCreator {
+  private var tmpProcParamCounter = 0
+
+  def getNextProcParamTmp: String = {
+    val anonClassName = s"<proc-param-$tmpProcParamCounter>"
+    tmpProcParamCounter = tmpProcParamCounter + 1
+
+    anonClassName
+  }
+}
+
+sealed trait AnonymousVariableNameCreator {
+  private var tmpVarCounter       = 0
 
   def getNextVarTmp: String = {
     val anonClassName = s"<tmp-$tmpVarCounter>"
@@ -23,21 +36,13 @@ trait LambdaCreator {
 
     anonClassName
   }
-
-  def getNextProcParamTmp: String = {
-    val anonClassName = s"<proc-param-$tmpProcParamCounter>"
-    tmpProcParamCounter = tmpProcParamCounter + 1
-
-    anonClassName
-
-  }
 }
 
 /** The namespace.
   * @param fullName
   *   the namespace path.
   */
-case class NamespaceScope(fullName: String) extends NamespaceLikeScope with LambdaCreator
+case class NamespaceScope(fullName: String) extends NamespaceLikeScope with AnonymousClassNameCreator with AnonymousVariableNameCreator
 
 case class FieldDecl(
   name: String,
@@ -49,7 +54,7 @@ case class FieldDecl(
 
 /** A type-like scope with a full name.
   */
-trait TypeLikeScope extends TypedScopeElement with LambdaCreator {
+trait TypeLikeScope extends TypedScopeElement with AnonymousClassNameCreator with AnonymousVariableNameCreator {
 
   /** @return
     *   the full name of the type-like.
@@ -81,7 +86,7 @@ case class TypeScope(fullName: String, fields: List[FieldDecl]) extends TypeLike
 
 /** Represents scope objects that map to a method node.
   */
-trait MethodLikeScope extends TypedScopeElement with LambdaCreator {
+trait MethodLikeScope extends TypedScopeElement with AnonymousClassNameCreator with AnonymousVariableNameCreator with ProcParamNameCreator {
   def fullName: String
   def procParam: Either[String, String]
   def hasYield: Boolean
@@ -95,4 +100,4 @@ case class ConstructorScope(fullName: String, procParam: Either[String, String],
 
 /** Represents scope objects that map to a block node.
   */
-case class BlockScope(block: NewBlock) extends TypedScopeElement with LambdaCreator
+case class BlockScope(block: NewBlock) extends TypedScopeElement
