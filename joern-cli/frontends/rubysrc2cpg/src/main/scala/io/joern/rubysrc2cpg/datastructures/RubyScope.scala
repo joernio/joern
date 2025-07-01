@@ -219,25 +219,31 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
   def getNewClassTmp: String = {
     val surroundingFullName = this.surroundingScopeFullName.getOrElse(RubyDefines.Main)
 
-    stack.collectFirst {
-      case ScopeElement(scopeNode: NamespaceScope, _) => s"$surroundingFullName.${scopeNode.getNextClassTmp}"
-      case ScopeElement(node: TypeLikeScope, _)                           => s"$surroundingFullName.${node.getNextClassTmp}"
-      case ScopeElement(node: MethodLikeScope, _)                         => s"$surroundingFullName.${node.getNextClassTmp}"
-    }.getOrElse(s"${surroundingFullName}.${this.getNextClassTmp}")
+    stack
+      .collectFirst {
+        case ScopeElement(scopeNode: NamespaceScope, _) => s"$surroundingFullName.${scopeNode.getNextClassTmp}"
+        case ScopeElement(node: TypeLikeScope, _)       => s"$surroundingFullName.${node.getNextClassTmp}"
+        case ScopeElement(node: MethodLikeScope, _)     => s"$surroundingFullName.${node.getNextClassTmp}"
+      }
+      .getOrElse(s"${surroundingFullName}.${this.getNextClassTmp}")
   }
 
   def getNewVarTmp: String = {
-    stack.collectFirst {
-      case ScopeElement(scopeNode: NamespaceScope, _) => s"${scopeNode.getNextVarTmp}"
-      case ScopeElement(node: TypeLikeScope, _)                           => s"${node.getNextVarTmp}"
-      case ScopeElement(node: MethodLikeScope, _) if !node.fullName.contains("<lambda>")                         => s"${node.getNextVarTmp}"
-    }.getOrElse(s"${this.getNextVarTmp}")
+    stack
+      .collectFirst {
+        case ScopeElement(scopeNode: NamespaceScope, _) => s"${scopeNode.getNextVarTmp}"
+        case ScopeElement(node: TypeLikeScope, _)       => s"${node.getNextVarTmp}"
+        case ScopeElement(node: MethodLikeScope, _) if !node.fullName.contains("<lambda>") => s"${node.getNextVarTmp}"
+      }
+      .getOrElse(s"${this.getNextVarTmp}")
   }
 
   def getNewProcParam: Either[String, String] = {
-    stack.collectFirst {
-      case ScopeElement(node: MethodLikeScope, _) => Left(s"${node.getNextProcParamTmp}")
-    }.getOrElse(Left(s"${this.getNextProcParamTmp}"))
+    stack
+      .collectFirst { case ScopeElement(node: MethodLikeScope, _) =>
+        Left(s"${node.getNextProcParamTmp}")
+      }
+      .getOrElse(Left(s"${this.getNextProcParamTmp}"))
   }
 
   def addImportedFunctions(importName: String): Unit = {

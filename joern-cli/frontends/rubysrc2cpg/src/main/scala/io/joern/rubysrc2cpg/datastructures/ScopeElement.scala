@@ -6,7 +6,7 @@ import io.joern.x2cpg.datastructures.{NamespaceLikeScope, TypedScopeElement}
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 
 sealed trait AnonymousClassNameCreator {
-  private var tmpClassCounter     = 0
+  private var tmpClassCounter = 0
 
   def getNextClassTmp: String = {
     val anonClassName = s"<anon-class-$tmpClassCounter>"
@@ -28,7 +28,7 @@ sealed trait ProcParamNameCreator {
 }
 
 sealed trait AnonymousVariableNameCreator {
-  private var tmpVarCounter       = 0
+  private var tmpVarCounter = 0
 
   def getNextVarTmp: String = {
     val anonClassName = s"<tmp-$tmpVarCounter>"
@@ -42,7 +42,10 @@ sealed trait AnonymousVariableNameCreator {
   * @param fullName
   *   the namespace path.
   */
-case class NamespaceScope(fullName: String) extends NamespaceLikeScope with AnonymousClassNameCreator with AnonymousVariableNameCreator
+case class NamespaceScope(fullName: String)
+    extends NamespaceLikeScope
+    with AnonymousClassNameCreator
+    with AnonymousVariableNameCreator
 
 case class FieldDecl(
   name: String,
@@ -86,7 +89,11 @@ case class TypeScope(fullName: String, fields: List[FieldDecl]) extends TypeLike
 
 /** Represents scope objects that map to a method node.
   */
-trait MethodLikeScope extends TypedScopeElement with AnonymousClassNameCreator with AnonymousVariableNameCreator with ProcParamNameCreator {
+trait MethodLikeScope
+    extends TypedScopeElement
+    with AnonymousClassNameCreator
+    with AnonymousVariableNameCreator
+    with ProcParamNameCreator {
   def fullName: String
   def procParam: Either[String, String]
   def hasYield: Boolean

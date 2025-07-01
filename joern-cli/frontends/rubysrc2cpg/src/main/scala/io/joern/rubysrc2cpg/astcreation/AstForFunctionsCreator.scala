@@ -73,9 +73,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     )
 
     val isSurroundedByProgramScope = scope.isSurroundedByProgramScope
-//    if (isConstructor) scope.pushNewScope(ConstructorScope(fullName, this.procParamGen.fresh))
     if (isConstructor) scope.pushNewScope(ConstructorScope(fullName, scope.getNewProcParam))
-//    else scope.pushNewScope(MethodScope(fullName, this.procParamGen.fresh))
     else scope.pushNewScope(MethodScope(fullName, scope.getNewProcParam))
 
     val thisParameterNode = parameterInNode(
@@ -422,7 +420,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
             }
         }
 
-//        scope.pushNewScope(MethodScope(fullName, this.procParamGen.fresh))
         scope.pushNewScope(MethodScope(fullName, scope.getNewProcParam))
         val method = methodNode(
           node = node,
