@@ -368,4 +368,21 @@ class CallTests extends PhpCode2CpgFixture {
     lambdaRef.methodFullName shouldBe "Foo.bar.<lambda>0"
   }
 
+  "a call to a constructor should be static and have a correctly inferred method full name" in {
+    val cpg = code("""
+        |<?php
+        |use NNN\Foo;
+        |
+        |$foo = new NNN\Foo();
+        |""".stripMargin)
+
+    val construct = cpg.call.nameExact(Domain.ConstructorMethodName).head
+
+    construct.methodFullName shouldBe s"NNN\\Foo.${Domain.ConstructorMethodName}"
+    construct.code shouldBe s"new NNN\\Foo()"
+    construct.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    construct.typeFullName shouldBe Defines.Any
+    construct.dynamicTypeHintFullName shouldBe Seq.empty
+  }
+
 }

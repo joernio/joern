@@ -238,17 +238,29 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextC
     *   the import nodes generated from parsing PhpUseStmt and PhpGroupUseStmt nodes.
     */
   def useImport(imports: Seq[NewImport]): Unit = {
+
+    def determineUnresolvedImport(imporT: NewImport): Option[Seq[SymbolSummary]] = {
+      imporT.code match {
+        case s"use function $_" => imporT.importedEntity.map(x => PhpFunction(x) :: Nil)
+        case s"use const $_"    => None // TODO: We don't model constants yet
+        case s"use $_"          => imporT.importedEntity.map(x => PhpClass(x) :: Nil)
+        case _                  => None
+      }
+    }
+
     imports.foreach { imporT =>
       imporT.importedEntity.foreach { importName =>
         summary
           .get(importName)
+          .orElse(determineUnresolvedImport(imporT))
           .flatMap(_.sorted.headOption) // use ordering to set precedence
           .foreach { hit =>
             imporT.importedAs match {
-              case Some(alias) => importedSymbols = importedSymbols + (alias -> hit)
+              case Some(alias) =>
+                importedSymbols = importedSymbols + (alias -> hit)
               case None =>
                 val name = importName.split("\\\\").last
-                importedSymbols = importedSymbols + (name -> hit)
+                importedSymbols = importedSymbols + (name -> hit) + (importName -> hit) // both are valid aliases
             }
           }
       }
