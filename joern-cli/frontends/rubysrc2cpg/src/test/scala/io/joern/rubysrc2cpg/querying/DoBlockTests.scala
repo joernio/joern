@@ -230,21 +230,18 @@ class DoBlockTests extends RubyCode2CpgFixture {
     }
 
     "annotate the nodes via CAPTURE bindings" in {
-      cpg.all.collectAll[ClosureBinding].l match {
+      cpg.closureBinding.l match {
         case myValue :: Nil =>
-          myValue.closureOriginalName shouldBe Option("myValue")
           inside(myValue._localViaRefOut) {
             case Some(local) =>
               local.name shouldBe "myValue"
               local.method.fullName.headOption shouldBe Option(s"Test0.rb:$Main")
             case None => fail("Expected closure binding refer to the captured local")
           }
-
           inside(myValue._captureIn.l) {
             case (x: TypeRef) :: Nil => x.typeFullName shouldBe s"Test0.rb:$Main.<lambda>0&Proc"
             case xs                  => fail(s"Expected single method ref binding but got [${xs.mkString(",")}]")
           }
-
         case xs =>
           fail(s"Expected single closure binding but got [${xs.mkString(",")}]")
       }

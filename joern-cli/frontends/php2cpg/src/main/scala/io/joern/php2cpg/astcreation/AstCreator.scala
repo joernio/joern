@@ -205,7 +205,6 @@ class AstCreator(
 
                   val closureBindingNode = NewClosureBinding()
                     .closureBindingId(closureBindingId)
-                    .closureOriginalName(name.name)
                     .evaluationStrategy(EvaluationStrategies.BY_SHARING)
 
                   scope.lookupVariable(name.name) match {

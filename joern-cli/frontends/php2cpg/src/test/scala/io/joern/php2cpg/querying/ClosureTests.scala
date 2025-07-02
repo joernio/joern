@@ -2,16 +2,7 @@ package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  Call,
-  ClosureBinding,
-  Identifier,
-  Local,
-  Method,
-  MethodRef,
-  NewMethod,
-  Return
-}
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
 import scala.util.Try
@@ -103,8 +94,7 @@ class ClosureTests extends PhpCode2CpgFixture {
         use1.code shouldBe "$use1"
         use1.closureBindingId shouldBe Some(s"$expectedName:use1")
         inside(cpg.all.collectAll[ClosureBinding].filter(_.closureBindingId == use1.closureBindingId).l) {
-          case List(closureBinding) =>
-            closureBinding.closureOriginalName shouldBe Some("use1")
+          case List(closureBinding) => closureBinding._localViaRefOut.name.l shouldBe List("use1")
         }
 
         use2.name shouldBe "use2"
@@ -116,7 +106,7 @@ class ClosureTests extends PhpCode2CpgFixture {
     }
 
     "have a ref edge from the closure binding for a use to the captured node" in {
-      inside(cpg.all.collectAll[ClosureBinding].filter(_.closureOriginalName.contains("use1")).l) {
+      inside(cpg.all.collectAll[ClosureBinding].filter(_.closureBindingId.exists(_.endsWith("use1"))).l) {
         case List(closureBinding) =>
           val capturedNode = cpg.method.nameExact("<global>").local.name("use1").head
           closureBinding.refOut.toList shouldBe List(capturedNode)
@@ -221,7 +211,7 @@ class ClosureTests extends PhpCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    inside(cpg.all.collectAll[ClosureBinding].filter(_.closureOriginalName.contains("a")).l) {
+    inside(cpg.all.collectAll[ClosureBinding].filter(_.closureBindingId.exists(_.endsWith("a"))).l) {
       case List(closureBinding) =>
         val capturedNode = cpg.method.nameExact("<global>").local.name("a").head
         closureBinding.refOut.toList shouldBe List(capturedNode)

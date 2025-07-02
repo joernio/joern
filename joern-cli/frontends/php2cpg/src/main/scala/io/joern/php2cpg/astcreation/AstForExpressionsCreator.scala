@@ -888,14 +888,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val initArgs      = expr.args.map(astForCallArg)
     val initSignature = s"$UnresolvedSignature(${initArgs.size})"
     val initFullName  = s"$className$MethodDelimiter$ConstructorMethodName"
-    val initCode      = s"$initFullName(${initArgs.map(_.rootCodeOrEmpty).mkString(",")})"
+    val initCode      = s"new $className(${initArgs.map(_.rootCodeOrEmpty).mkString(",")})"
     val maybeTypeHint = scope.resolveIdentifier(className).map(_.name) // consider imported or defined types
     val initCallNode = callNode(
       expr,
       initCode,
       ConstructorMethodName,
       initFullName,
-      DispatchTypes.DYNAMIC_DISPATCH,
+      DispatchTypes.STATIC_DISPATCH,
       Some(initSignature),
       maybeTypeHint.orElse(Some(Defines.Any)) // TODO Review Note: Should the hint be under dynamicTypeHintFullName?
     )

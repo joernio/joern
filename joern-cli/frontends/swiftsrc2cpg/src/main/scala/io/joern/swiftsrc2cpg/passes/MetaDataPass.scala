@@ -6,7 +6,7 @@ import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import java.nio.file.Paths
-class SwiftMetaDataPass(cpg: Cpg, hash: String, inputPath: String) extends CpgPass(cpg) {
+class MetaDataPass(cpg: Cpg, hash: String, inputPath: String) extends CpgPass(cpg) {
 
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     val absolutePathToRoot = Paths.get(inputPath).absolutePathAsString

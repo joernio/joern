@@ -124,9 +124,8 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
       val List(barRef)         = fooBlock.astChildren.isCall.astChildren.isMethodRef.l
       val List(closureBinding) = barRef.captureOut.l
       closureBinding.closureBindingId shouldBe Option("Test0.swift:<global>:foo:bar:x")
-      closureBinding.closureOriginalName shouldBe Option("x")
-      closureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       closureBinding.refOut.head shouldBe fooLocalX
+      closureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
 
       val List(barMethod)      = cpg.method.nameExact("bar").l
       val List(barMethodBlock) = barMethod.astChildren.isBlock.l
