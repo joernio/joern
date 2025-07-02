@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory
 
 import scala.jdk.OptionConverters.RichOptional
 import io.joern.x2cpg.Defines.UnresolvedNamespace
-import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyNames
+import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 
 class TypeInferencePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Call](cpg) {

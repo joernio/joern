@@ -7,7 +7,7 @@ import io.joern.x2cpg.Defines.UnresolvedSignature
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes, PropertyDefaults, PropertyNames}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -266,7 +266,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           Defines.StaticInitMethodName,
           fullName,
           signature,
-          Option(relativeFileName).getOrElse(Method.PropertyDefaults.Filename)
+          Option(relativeFileName).getOrElse(PropertyDefaults.Filename)
         )
 
         val methodBlock = NewBlock()

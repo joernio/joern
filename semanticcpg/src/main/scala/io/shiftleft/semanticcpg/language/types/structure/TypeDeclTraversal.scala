@@ -1,5 +1,6 @@
 package io.shiftleft.semanticcpg.language.types.structure
 
+import io.shiftleft.codepropertygraph.generated.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -117,7 +118,7 @@ object TypeDeclTraversal {
   private def contentOnSingle(typeDecl: TypeDecl): Option[String] = {
     for {
       content <- typeDecl.file.content.headOption
-      if content != File.PropertyDefaults.Content
+      if content != PropertyDefaults.Content
       offset    <- typeDecl.offset
       offsetEnd <- typeDecl.offsetEnd
     } yield content.slice(offset, offsetEnd)

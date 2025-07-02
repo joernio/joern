@@ -3,7 +3,7 @@ package io.joern.c2cpg.passes
 import io.joern.c2cpg.Config
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, EvaluationStrategies, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, EvaluationStrategies, NodeTypes, PropertyDefaults, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
@@ -75,12 +75,12 @@ class FunctionDeclNodePass(cpg: Cpg, methodDeclarations: Map[String, FunctionDec
     for {
       method <- cpg.method.internal.not(_.astIn)
       if method.filename.nonEmpty &&
-        method.filename != Method.PropertyDefaults.Filename &&
+        method.filename != PropertyDefaults.Filename &&
         cpg.typeDecl.fullNameExact(method.astParentFullName).isEmpty
     } {
       val fileGlobalMethodName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(method.filename))
-      dstGraph.setNodeProperty(method, Method.PropertyNames.AstParentFullName, fileGlobalMethodName)
-      dstGraph.setNodeProperty(method, Method.PropertyNames.AstParentType, Method.Label)
+      dstGraph.setNodeProperty(method, PropertyNames.AstParentFullName, fileGlobalMethodName)
+      dstGraph.setNodeProperty(method, PropertyNames.AstParentType, Method.Label)
     }
   }
 
