@@ -14,7 +14,7 @@ class ParameterIndexCompatPass(cpg: Cpg) extends CpgPass(cpg) {
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     cpg.parameter.foreach { param =>
       if (param.index == PropertyDefaults.Index) {
-        diffGraph.setNodeProperty(param, PropertyNames.INDEX, param.order)
+        diffGraph.setNodeProperty(param, PropertyNames.Index, param.order)
       }
     }
   }

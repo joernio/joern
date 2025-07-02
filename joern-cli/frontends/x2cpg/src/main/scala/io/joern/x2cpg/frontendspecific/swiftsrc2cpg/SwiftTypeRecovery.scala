@@ -56,7 +56,7 @@ private class RecoverForSwiftFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder,
         else if (cpgTypeFullName.nonEmpty) symbolTable.put(x, cpgTypeFullName)
         else symbolTable.put(x, x.getKnownTypes)
       if (!resolvedTypeHints.contains(typeFullName) && resolvedTypeHints.sizeIs == 1)
-        builder.setNodeProperty(x, PropertyNames.TYPE_FULL_NAME, resolvedTypeHints.head)
+        builder.setNodeProperty(x, PropertyNames.TypeFullName, resolvedTypeHints.head)
     case x @ (_: Identifier | _: Local | _: MethodParameterIn) =>
       symbolTable.put(x, x.getKnownTypes)
     case call: Call => symbolTable.put(call, (call.methodFullName +: call.dynamicTypeHintFullName).toSet)
@@ -82,10 +82,10 @@ private class RecoverForSwiftFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder,
       p match {
         case _: MethodParameterIn => symbolTable.put(p, resolvedHints)
         case _: MethodReturn if resolvedHints.sizeIs == 1 =>
-          builder.setNodeProperty(p, PropertyNames.TYPE_FULL_NAME, resolvedHints.head)
+          builder.setNodeProperty(p, PropertyNames.TypeFullName, resolvedHints.head)
         case _: MethodReturn =>
-          builder.setNodeProperty(p, PropertyNames.TYPE_FULL_NAME, Defines.Any)
-          builder.setNodeProperty(p, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, resolvedHints)
+          builder.setNodeProperty(p, PropertyNames.TypeFullName, Defines.Any)
+          builder.setNodeProperty(p, PropertyNames.DynamicTypeHintFullName, resolvedHints)
         case _ =>
       }
     }

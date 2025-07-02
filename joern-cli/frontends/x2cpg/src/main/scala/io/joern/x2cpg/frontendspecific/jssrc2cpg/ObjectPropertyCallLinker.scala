@@ -36,7 +36,7 @@ class ObjectPropertyCallLinker(cpg: Cpg) extends CpgPass(cpg) {
           .filter { case (propertyAccess, _) => functionTarget.code.endsWith(propertyAccess) }
           .foreach { case (_, calls) =>
             calls.where(_.file.nameExact(functionTarget.file.name.toSeq*)).foreach { c =>
-              builder.setNodeProperty(c, PropertyNames.METHOD_FULL_NAME, calleeFn)
+              builder.setNodeProperty(c, PropertyNames.MethodFullName, calleeFn)
             }
           }
       }

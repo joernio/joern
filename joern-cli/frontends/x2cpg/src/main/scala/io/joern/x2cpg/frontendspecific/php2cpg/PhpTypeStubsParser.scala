@@ -70,6 +70,6 @@ class PhpTypeStubsParserPass(cpg: Cpg, config: XTypeStubsParserConfig = XTypeStu
     pTypesRawArr.map(paramTypeRaw => paramTypeRaw.split(",").map(_.strip).toSeq).toSeq
 
   protected def setTypes(builder: DiffGraphBuilder, n: StoredNode, types: Seq[String]): Unit =
-    if (types.size == 1) builder.setNodeProperty(n, PropertyNames.TYPE_FULL_NAME, types.head)
-    else builder.setNodeProperty(n, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types)
+    if (types.size == 1) builder.setNodeProperty(n, PropertyNames.TypeFullName, types.head)
+    else builder.setNodeProperty(n, PropertyNames.DynamicTypeHintFullName, types)
 }

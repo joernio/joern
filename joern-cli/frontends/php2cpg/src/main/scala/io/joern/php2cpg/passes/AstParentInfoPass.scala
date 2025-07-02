@@ -16,8 +16,8 @@ class AstParentInfoPass(cpg: Cpg) extends ForkJoinParallelCpgPass[AstNode](cpg) 
       val astParentType     = parentNode.label
       val astParentFullName = parentNode.property(Properties.FullName)
 
-      diffGraph.setNodeProperty(node, PropertyNames.AST_PARENT_TYPE, astParentType)
-      diffGraph.setNodeProperty(node, PropertyNames.AST_PARENT_FULL_NAME, astParentFullName)
+      diffGraph.setNodeProperty(node, PropertyNames.AstParentType, astParentType)
+      diffGraph.setNodeProperty(node, PropertyNames.AstParentFullName, astParentFullName)
     }
   }
 

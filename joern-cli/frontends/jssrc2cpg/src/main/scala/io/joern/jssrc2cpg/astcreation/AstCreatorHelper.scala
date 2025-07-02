@@ -83,7 +83,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     registerType(methodFullName)
 
     val astParentType     = parentNode.label
-    val astParentFullName = parentNode.properties(PropertyNames.FULL_NAME).toString
+    val astParentFullName = parentNode.properties(PropertyNames.FullName).toString
     val functionTypeDeclNode =
       typeDeclNode(
         node,

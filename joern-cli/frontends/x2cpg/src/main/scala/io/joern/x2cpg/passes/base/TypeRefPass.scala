@@ -21,7 +21,7 @@ class TypeRefPass(cpg: Cpg) extends ForkJoinParallelCpgPass[List[StoredNode]](cp
       dstNodeLabel = NodeTypes.TYPE_DECL,
       edgeType = EdgeTypes.REF,
       dstNodeMap = typeDeclFullNameToNode(cpg, _),
-      dstFullNameKey = PropertyNames.TYPE_DECL_FULL_NAME,
+      dstFullNameKey = PropertyNames.TypeDeclFullName,
       dstDefaultPropertyValue = Type.PropertyDefaults.TypeDeclFullName,
       dstGraph = builder,
       None

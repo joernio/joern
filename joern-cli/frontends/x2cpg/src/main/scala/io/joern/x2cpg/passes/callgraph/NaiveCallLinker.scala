@@ -22,7 +22,7 @@ class NaiveCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       dstGraph.addEdge(call, method, EdgeTypes.CALL)
       // If we can only find one name with the exact match then we can semi-confidently set it as the full name
       if (methods.sizeIs == 1)
-        dstGraph.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, method.fullName)
+        dstGraph.setNodeProperty(call, PropertyNames.MethodFullName, method.fullName)
     }
   }
 

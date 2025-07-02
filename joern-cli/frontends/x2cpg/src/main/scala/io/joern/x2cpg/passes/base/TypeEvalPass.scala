@@ -34,7 +34,7 @@ class TypeEvalPass(cpg: Cpg) extends ForkJoinParallelCpgPass[List[StoredNode]](c
       dstNodeLabel = NodeTypes.TYPE,
       edgeType = EdgeTypes.EVAL_TYPE,
       dstNodeMap = typeFullNameToNode(cpg, _),
-      dstFullNameKey = PropertyNames.TYPE_FULL_NAME,
+      dstFullNameKey = PropertyNames.TypeFullName,
       dstDefaultPropertyValue = Local.PropertyDefaults.TypeFullName,
       dstGraph = builder,
       None
