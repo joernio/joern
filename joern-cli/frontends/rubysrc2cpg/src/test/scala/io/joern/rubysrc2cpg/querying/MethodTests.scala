@@ -1165,4 +1165,31 @@ class MethodTests extends RubyCode2CpgFixture {
       case xs => fail(s"Expected one call, got ${xs.code.mkString(",")}")
     }
   }
+
+  "tmp-vars in different methods should have same names" in {
+    val cpg = code("""
+        |def a
+        | [1]
+        |end
+        |
+        |def b
+        | [2]
+        |end
+        |""".stripMargin)
+
+    inside(cpg.call.name(Operators.assignment).astChildren.isBlock.astChildren.isIdentifier.l) {
+      case aTmp :: bTmp :: Nil =>
+        aTmp.name shouldBe "<tmp-0>"
+        bTmp.name shouldBe "<tmp-0>"
+
+        // Shows above tmps have the same name, but come from different methods
+        val aMethod = aTmp.start.repeat(_.astParent)(_.until(_.isMethod)).head.asInstanceOf[Method]
+        val bMethod = bTmp.start.repeat(_.astParent)(_.until(_.isMethod)).head.asInstanceOf[Method]
+
+        aMethod.name shouldBe "a"
+        bMethod.name shouldBe "b"
+
+      case xs => fail(s"Expected two <tmp-0>, got ${xs.code.mkString("[", ",", "]")}")
+    }
+  }
 }

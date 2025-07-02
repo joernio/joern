@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.passes.Defines.Main
 import io.joern.rubysrc2cpg.passes.{Defines, GlobalTypes}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{File, Literal, NamespaceBlock}
+import io.shiftleft.codepropertygraph.generated.nodes.{File, Literal, NamespaceBlock, TypeRef}
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
 import io.shiftleft.semanticcpg.language.*
 
@@ -131,8 +131,9 @@ class ModuleTests extends RubyCode2CpgFixture {
 
     "Have the correct proc arg in call" in {
       inside(cpg.call.name("protected").argument.l) {
-        case _ :: proc :: Nil =>
-          proc.code shouldBe "<lambda>1&Proc"
+        case _ :: (proc: TypeRef) :: Nil =>
+          proc.typeFullName shouldBe "Test0.rb:<main>.QA.<body>.<lambda>0.<lambda>0&Proc"
+          proc.code shouldBe "<lambda>0&Proc"
         case xs => fail(s"Expected one call for protected, got [${xs.code.mkString(",")}]")
       }
     }
@@ -140,6 +141,8 @@ class ModuleTests extends RubyCode2CpgFixture {
     "Generate a lambda with true body" in {
       inside(cpg.method.isLambda.l) {
         case protectedLambda :: _ :: Nil =>
+          protectedLambda.name shouldBe "<lambda>0"
+          protectedLambda.fullName shouldBe "Test0.rb:<main>.QA.<body>.<lambda>0.<lambda>0"
           val List(lambdaReturn) = protectedLambda.body.astChildren.isReturn.l
           lambdaReturn.code shouldBe "true"
         case xs => fail(s"Expected two lambdas, got [${xs.code.mkString(",")}]")

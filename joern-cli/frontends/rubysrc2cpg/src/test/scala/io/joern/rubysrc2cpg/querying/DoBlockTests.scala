@@ -30,7 +30,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
             case foo :: closureMethod :: Nil =>
               foo.name shouldBe "foo"
 
-              closureMethod.name shouldBe "<lambda>0"
+              closureMethod.name shouldBe s"<lambda>0"
               closureMethod.fullName shouldBe s"Test0.rb:$Main.<lambda>0"
             case xs => fail(s"Expected a two method nodes, instead got [${xs.code.mkString(", ")}]")
           }
@@ -55,7 +55,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
 
     "create a method ref argument with populated type full name, which corresponds to the method type" in {
       val typeRefArg     = cpg.call("foo").argument(1).head.asInstanceOf[TypeRef]
-      val lambdaTypeDecl = cpg.typeDecl("<lambda>0").head
+      val lambdaTypeDecl = cpg.typeDecl(".*<lambda>0").head
       typeRefArg.typeFullName shouldBe s"${lambdaTypeDecl.fullName}&Proc"
     }
 

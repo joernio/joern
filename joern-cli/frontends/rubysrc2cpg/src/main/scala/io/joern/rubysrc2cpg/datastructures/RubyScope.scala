@@ -23,6 +23,7 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
   private var tmpVarCounter       = 0
   private var tmpClassCounter     = 0
   private var tmpProcParamCounter = 0
+  private var tmpClosureCounter   = 0
 
   private val builtinMethods = GlobalTypes.kernelFunctions
     .map(m => RubyMethod(m, List.empty, Defines.Any, Some(GlobalTypes.kernelPrefix)))
@@ -203,17 +204,24 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
   }
 
   private def getNextVarTmp: String = {
-    val anonClassName = s"<tmp-$tmpVarCounter>"
+    val tmpVarName = s"<tmp-$tmpVarCounter>"
     tmpVarCounter = tmpVarCounter + 1
 
-    anonClassName
+    tmpVarName
   }
 
   private def getNextProcParamTmp: String = {
-    val anonClassName = s"<proc-param-$tmpProcParamCounter>"
+    val procParamName = s"<proc-param-$tmpProcParamCounter>"
     tmpProcParamCounter = tmpProcParamCounter + 1
 
-    anonClassName
+    procParamName
+  }
+
+  private def getNextClosureName: String = {
+    val closureName = s"<lambda>$tmpClosureCounter"
+    tmpClosureCounter = tmpClosureCounter + 1
+
+    closureName
   }
 
   def getNewClassTmp: String = {
@@ -244,6 +252,16 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
         Left(s"${node.getNextProcParamTmp}")
       }
       .getOrElse(Left(s"${this.getNextProcParamTmp}"))
+  }
+
+  def getNewClosureName: String = {
+    stack
+      .collectFirst {
+        case ScopeElement(scopeNode: NamespaceScope, _) => s"${scopeNode.getNextClosureName}"
+        case ScopeElement(node: TypeLikeScope, _)       => s"${node.getNextClosureName}"
+        case ScopeElement(node: MethodLikeScope, _)     => s"${node.getNextClosureName}"
+      }
+      .getOrElse(s"${this.getNextClosureName}")
   }
 
   def addImportedFunctions(importName: String): Unit = {

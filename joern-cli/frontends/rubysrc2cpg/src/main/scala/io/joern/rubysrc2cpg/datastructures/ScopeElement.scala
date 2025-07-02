@@ -20,10 +20,10 @@ sealed trait ProcParamNameCreator {
   private var tmpProcParamCounter = 0
 
   def getNextProcParamTmp: String = {
-    val anonClassName = s"<proc-param-$tmpProcParamCounter>"
+    val procParamName = s"<proc-param-$tmpProcParamCounter>"
     tmpProcParamCounter = tmpProcParamCounter + 1
 
-    anonClassName
+    procParamName
   }
 }
 
@@ -31,10 +31,21 @@ sealed trait AnonymousVariableNameCreator {
   private var tmpVarCounter = 0
 
   def getNextVarTmp: String = {
-    val anonClassName = s"<tmp-$tmpVarCounter>"
+    val tmpVarName = s"<tmp-$tmpVarCounter>"
     tmpVarCounter = tmpVarCounter + 1
 
-    anonClassName
+    tmpVarName
+  }
+}
+
+sealed trait ClosureNameCreator {
+  private var tmpClosureCounter = 0
+
+  def getNextClosureName: String = {
+    val closureName = s"<lambda>$tmpClosureCounter"
+    tmpClosureCounter = tmpClosureCounter + 1
+
+    closureName
   }
 }
 
@@ -46,6 +57,7 @@ case class NamespaceScope(fullName: String)
     extends NamespaceLikeScope
     with AnonymousClassNameCreator
     with AnonymousVariableNameCreator
+    with ClosureNameCreator
 
 case class FieldDecl(
   name: String,
@@ -57,7 +69,11 @@ case class FieldDecl(
 
 /** A type-like scope with a full name.
   */
-trait TypeLikeScope extends TypedScopeElement with AnonymousClassNameCreator with AnonymousVariableNameCreator {
+trait TypeLikeScope
+    extends TypedScopeElement
+    with AnonymousClassNameCreator
+    with AnonymousVariableNameCreator
+    with ClosureNameCreator {
 
   /** @return
     *   the full name of the type-like.
@@ -93,7 +109,8 @@ trait MethodLikeScope
     extends TypedScopeElement
     with AnonymousClassNameCreator
     with AnonymousVariableNameCreator
-    with ProcParamNameCreator {
+    with ProcParamNameCreator
+    with ClosureNameCreator {
   def fullName: String
   def procParam: Either[String, String]
   def hasYield: Boolean
