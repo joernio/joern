@@ -1,7 +1,7 @@
 package io.joern.x2cpg.passes.base
 
 import io.joern.x2cpg.utils.LinkingUtil
-import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, NodeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, NodeTypes, PropertyDefaults, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.{Local, StoredNode}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.*
@@ -35,7 +35,7 @@ class TypeEvalPass(cpg: Cpg) extends ForkJoinParallelCpgPass[List[StoredNode]](c
       edgeType = EdgeTypes.EVAL_TYPE,
       dstNodeMap = typeFullNameToNode(cpg, _),
       dstFullNameKey = PropertyNames.TypeFullName,
-      dstDefaultPropertyValue = Local.PropertyDefaults.TypeFullName,
+      dstDefaultPropertyValue = PropertyDefaults.TypeFullName,
       dstGraph = builder,
       None
     )

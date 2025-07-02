@@ -3,14 +3,7 @@ package io.joern.x2cpg
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.utils.IntervalKeyPool
 import io.shiftleft.semanticcpg.utils.FileUtil.*
-import io.shiftleft.codepropertygraph.generated.{
-  ControlStructureTypes,
-  Cpg,
-  DiffGraphBuilder,
-  DispatchTypes,
-  ModifierTypes,
-  Operators
-}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Cpg, DiffGraphBuilder, DispatchTypes, ModifierTypes, Operators, PropertyDefaults}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
@@ -112,8 +105,8 @@ abstract class AstCreatorBase[Node, NodeProcessor](filename: String)(implicit wi
       node,
       Defines.StaticInitMethodName,
       fullName,
-      signature.getOrElse(Method.PropertyDefaults.Signature),
-      fileName.getOrElse(Method.PropertyDefaults.Filename)
+      signature.getOrElse(PropertyDefaults.Signature),
+      fileName.getOrElse(PropertyDefaults.Filename)
     )
     val staticModifier = NewModifier().modifierType(ModifierTypes.STATIC)
     val body           = blockAst(NewBlock().typeFullName(Defines.Any), initAsts)

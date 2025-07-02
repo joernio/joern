@@ -21,7 +21,7 @@ class MethodRefLinker(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
       edgeType = EdgeTypes.REF,
       dstNodeMap = methodFullNameToNode(cpg, _),
       dstFullNameKey = PropertyNames.MethodFullName,
-      dstDefaultPropertyValue = Method.PropertyDefaults.FullName,
+      dstDefaultPropertyValue = PropertyDefaults.FullName,
       dstGraph,
       None
     )

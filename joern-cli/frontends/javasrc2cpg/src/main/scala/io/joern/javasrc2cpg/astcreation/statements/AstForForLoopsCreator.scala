@@ -11,7 +11,7 @@ import io.joern.javasrc2cpg.util.NameConstants
 import io.joern.javasrc2cpg.util.Util.composeMethodFullName
 import io.joern.x2cpg.{Ast, Defines}
 import io.joern.x2cpg.utils.IntervalKeyPool
-import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
+import io.shiftleft.codepropertygraph.generated.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewBlock,
   NewControlStructure,
