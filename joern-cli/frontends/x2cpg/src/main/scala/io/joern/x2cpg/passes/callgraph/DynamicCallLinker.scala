@@ -206,7 +206,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   }
 
   private def nodesWithFullName(x: String): Iterator[StoredNode] =
-    cpg.graph.nodesWithProperty(PropertyNames.FULL_NAME, x).cast[StoredNode]
+    cpg.graph.nodesWithProperty(PropertyNames.FullName, x).cast[StoredNode]
 
   private def methodFullNameToNode(x: String): Option[Method] =
     nodesWithFullName(x).collectFirst { case x: Method => x }

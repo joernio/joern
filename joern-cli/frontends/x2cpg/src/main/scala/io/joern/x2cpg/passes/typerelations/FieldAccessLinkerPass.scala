@@ -28,7 +28,7 @@ class FieldAccessLinkerPass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
       edgeType = EdgeTypes.REF,
       dstNodeMap = typeDeclMemberToNode(cpg, _),
       getDstFullNames = (call: Call) => dstMemberFullNames(call),
-      dstFullNameKey = PropertyNames.NAME,
+      dstFullNameKey = PropertyNames.Name,
       dstGraph
     )
   }

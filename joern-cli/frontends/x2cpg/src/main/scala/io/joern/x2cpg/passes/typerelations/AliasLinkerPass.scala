@@ -20,7 +20,7 @@ class AliasLinkerPass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
       getDstFullNames = (srcNode: TypeDecl) => {
         srcNode.aliasTypeFullName
       },
-      dstFullNameKey = PropertyNames.ALIAS_TYPE_FULL_NAME,
+      dstFullNameKey = PropertyNames.AliasTypeFullName,
       dstGraph
     )
   }

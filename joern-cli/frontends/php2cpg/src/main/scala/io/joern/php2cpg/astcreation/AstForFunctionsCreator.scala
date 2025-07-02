@@ -21,7 +21,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         case PhpVariable(PhpNameExpr(name, _), _) =>
           val typeFullName = scope
             .lookupVariable(name)
-            .flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME).map(_.toString))
+            .flatMap(_.properties.get(PropertyNames.TypeFullName).map(_.toString))
             .getOrElse(Defines.Any)
           val byRefPrefix = if (closureUse.byRef) "&" else ""
 

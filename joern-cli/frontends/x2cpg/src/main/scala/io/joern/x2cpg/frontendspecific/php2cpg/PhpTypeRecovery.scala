@@ -196,7 +196,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
       }
     }
     methodTypesTable.update(m, saveTypes)
-    builder.setNodeProperty(ret.method.methodReturn, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, saveTypes)
+    builder.setNodeProperty(ret.method.methodReturn, PropertyNames.DynamicTypeHintFullName, saveTypes)
   }
 
   /* Necessary to change the filter regex from (this|self) to (\\$this|this), in order to account for $this PHP
@@ -312,13 +312,13 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
   private def visitUnresolvedDynamicCall(c: Call): Option[String] = {
 
     def setNodeFullName(tgt: CfgNode, newFullName: String): Option[String] = {
-      if (tgt.isCall) builder.setNodeProperty(tgt, PropertyNames.METHOD_FULL_NAME, newFullName)
+      if (tgt.isCall) builder.setNodeProperty(tgt, PropertyNames.MethodFullName, newFullName)
       builder.setNodeProperty(
         tgt,
-        PropertyNames.TYPE_FULL_NAME,
+        PropertyNames.TypeFullName,
         s"$newFullName$pathSep${XTypeRecovery.DummyReturnType}"
       )
-      builder.setNodeProperty(tgt, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty)
+      builder.setNodeProperty(tgt, PropertyNames.DynamicTypeHintFullName, Seq.empty)
       Option(newFullName)
     }
 
