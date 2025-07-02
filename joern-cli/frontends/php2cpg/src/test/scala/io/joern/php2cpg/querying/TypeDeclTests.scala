@@ -104,7 +104,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         initCall.name shouldBe "__construct"
         initCall.methodFullName shouldBe s"Foo.__construct"
         initCall.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
-        initCall.code shouldBe "Foo.__construct(42)"
+        initCall.code shouldBe "new Foo(42)"
         inside(initCall.argument.l) { case List(tmpIdentifier: Identifier, literal: Literal) =>
           tmpIdentifier.name shouldBe "foo@tmp-0"
           tmpIdentifier.code shouldBe "$foo@tmp-0"
@@ -456,12 +456,12 @@ class TypeDeclTests extends PhpCode2CpgFixture {
     "generate __construct calls" in {
       inside(cpg.call.name("__construct").l) {
         case constructAnonClass0 :: constructAnonClass1 :: Nil =>
-          constructAnonClass0.code shouldBe "Test0.php:<global>.anon-class-0.__construct(10)"
+          constructAnonClass0.code shouldBe "new Test0.php:<global>.anon-class-0(10)"
           val List(anonClass0Param1: Identifier, anonClass0Param2: Literal) = constructAnonClass0.argument.l: @unchecked
           anonClass0Param1.code shouldBe "$Test0.php:<global>@tmp-0"
           anonClass0Param2.code shouldBe "10"
 
-          constructAnonClass1.code shouldBe "Test0.php:<global>.anon-class-1.__construct(30)"
+          constructAnonClass1.code shouldBe "new Test0.php:<global>.anon-class-1(30)"
           val List(anonClass1Param1: Identifier, anonClass1Param2: Literal) = constructAnonClass1.argument.l: @unchecked
           anonClass1Param1.code shouldBe "$Test0.php:<global>@tmp-1"
           anonClass1Param2.code shouldBe "30"
