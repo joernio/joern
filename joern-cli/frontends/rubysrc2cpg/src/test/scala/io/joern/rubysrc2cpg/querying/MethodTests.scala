@@ -1166,30 +1166,43 @@ class MethodTests extends RubyCode2CpgFixture {
     }
   }
 
-  "tmp-vars in different methods should have same names" in {
+  "tmp-vars in different methods should both start from zero" in {
     val cpg = code("""
         |def a
         | [1]
+        | [2]
+        | [3]
         |end
         |
         |def b
         | [2]
+        | [3]
+        | [4]
+        | [5]
         |end
         |""".stripMargin)
 
     inside(cpg.call.name(Operators.assignment).astChildren.isBlock.astChildren.isIdentifier.l) {
-      case aTmp :: bTmp :: Nil =>
-        aTmp.name shouldBe "<tmp-0>"
-        bTmp.name shouldBe "<tmp-0>"
+      case aTmpOne :: aTmpTwo :: aTmpThree :: bTmpTwo :: bTmpThree :: bTmpFour :: bTmpFive :: Nil =>
+        // The even tmps are used for the assignment to Array.initialize, the odd tmps are used for the indexAssignemnts:
+        // <tmp-0> = Array.Initialize, <tmp-1>[0] = 1
+        aTmpOne.name shouldBe "<tmp-0>"
+        aTmpTwo.name shouldBe "<tmp-2>"
+        aTmpThree.name shouldBe "<tmp-4>"
+
+        bTmpTwo.name shouldBe "<tmp-0>"
+        bTmpThree.name shouldBe "<tmp-2>"
+        bTmpFour.name shouldBe "<tmp-4>"
+        bTmpFive.name shouldBe "<tmp-6>"
 
         // Shows above tmps have the same name, but come from different methods
-        val aMethod = aTmp.start.repeat(_.astParent)(_.until(_.isMethod)).head.asInstanceOf[Method]
-        val bMethod = bTmp.start.repeat(_.astParent)(_.until(_.isMethod)).head.asInstanceOf[Method]
+        val aMethod = aTmpOne.start.repeat(_.astParent)(_.until(_.isMethod)).head.asInstanceOf[Method]
+        val bMethod = bTmpTwo.start.repeat(_.astParent)(_.until(_.isMethod)).head.asInstanceOf[Method]
 
         aMethod.name shouldBe "a"
         bMethod.name shouldBe "b"
 
-      case xs => fail(s"Expected two <tmp-0>, got ${xs.code.mkString("[", ",", "]")}")
+      case xs => fail(s"Expected seven <tmp-#> vars, got ${xs.code.mkString("[", ",", "]")}")
     }
   }
 }

@@ -196,72 +196,36 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     }
   }
 
-  private def getNextClassTmp: String = {
-    val anonClassName = s"<anon-class-$tmpClassCounter>"
-    tmpClassCounter = tmpClassCounter + 1
-
-    anonClassName
-  }
-
-  private def getNextVarTmp: String = {
-    val tmpVarName = s"<tmp-$tmpVarCounter>"
-    tmpVarCounter = tmpVarCounter + 1
-
-    tmpVarName
-  }
-
-  private def getNextProcParamTmp: String = {
-    val procParamName = s"<proc-param-$tmpProcParamCounter>"
-    tmpProcParamCounter = tmpProcParamCounter + 1
-
-    procParamName
-  }
-
-  private def getNextClosureName: String = {
-    val closureName = s"<lambda>$tmpClosureCounter"
-    tmpClosureCounter = tmpClosureCounter + 1
-
-    closureName
-  }
-
   def getNewClassTmp: String = {
     val surroundingFullName = this.surroundingScopeFullName.getOrElse(RubyDefines.Main)
 
-    stack
-      .collectFirst {
-        case ScopeElement(scopeNode: NamespaceScope, _) => s"$surroundingFullName.${scopeNode.getNextClassTmp}"
-        case ScopeElement(node: TypeLikeScope, _)       => s"$surroundingFullName.${node.getNextClassTmp}"
-        case ScopeElement(node: MethodLikeScope, _)     => s"$surroundingFullName.${node.getNextClassTmp}"
-      }
-      .getOrElse(s"${surroundingFullName}.${this.getNextClassTmp}")
+    stack.collectFirst {
+      case ScopeElement(scopeNode: NamespaceScope, _) => s"$surroundingFullName.${scopeNode.getNextClassTmp}"
+      case ScopeElement(node: TypeLikeScope, _)       => s"$surroundingFullName.${node.getNextClassTmp}"
+      case ScopeElement(node: MethodLikeScope, _)     => s"$surroundingFullName.${node.getNextClassTmp}"
+    }.get
   }
 
   def getNewVarTmp: String = {
-    stack
-      .collectFirst {
-        case ScopeElement(scopeNode: NamespaceScope, _) => s"${scopeNode.getNextVarTmp}"
-        case ScopeElement(node: TypeLikeScope, _)       => s"${node.getNextVarTmp}"
-        case ScopeElement(node: MethodLikeScope, _) if !node.fullName.contains("<lambda>") => s"${node.getNextVarTmp}"
-      }
-      .getOrElse(s"${this.getNextVarTmp}")
+    stack.collectFirst {
+      case ScopeElement(scopeNode: NamespaceScope, _) => s"${scopeNode.getNextVarTmp}"
+      case ScopeElement(node: TypeLikeScope, _)       => s"${node.getNextVarTmp}"
+      case ScopeElement(node: MethodLikeScope, _) if !node.fullName.contains("<lambda>") => s"${node.getNextVarTmp}"
+    }.get
   }
 
   def getNewProcParam: Either[String, String] = {
-    stack
-      .collectFirst { case ScopeElement(node: MethodLikeScope, _) =>
-        Left(s"${node.getNextProcParamTmp}")
-      }
-      .getOrElse(Left(s"${this.getNextProcParamTmp}"))
+    stack.collectFirst { case ScopeElement(node: TypeLikeScope, _) =>
+      Left(s"${node.getNextProcParamTmp}")
+    }.get
   }
 
   def getNewClosureName: String = {
-    stack
-      .collectFirst {
-        case ScopeElement(scopeNode: NamespaceScope, _) => s"${scopeNode.getNextClosureName}"
-        case ScopeElement(node: TypeLikeScope, _)       => s"${node.getNextClosureName}"
-        case ScopeElement(node: MethodLikeScope, _)     => s"${node.getNextClosureName}"
-      }
-      .getOrElse(s"${this.getNextClosureName}")
+    stack.collectFirst {
+      case ScopeElement(scopeNode: NamespaceScope, _) => s"${scopeNode.getNextClosureName}"
+      case ScopeElement(node: TypeLikeScope, _)       => s"${node.getNextClosureName}"
+      case ScopeElement(node: MethodLikeScope, _)     => s"${node.getNextClosureName}"
+    }.get
   }
 
   def addImportedFunctions(importName: String): Unit = {

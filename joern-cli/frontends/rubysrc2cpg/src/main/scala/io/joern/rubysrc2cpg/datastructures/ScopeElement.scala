@@ -73,7 +73,8 @@ trait TypeLikeScope
     extends TypedScopeElement
     with AnonymousClassNameCreator
     with AnonymousVariableNameCreator
-    with ClosureNameCreator {
+    with ClosureNameCreator
+    with ProcParamNameCreator {
 
   /** @return
     *   the full name of the type-like.
@@ -109,7 +110,6 @@ trait MethodLikeScope
     extends TypedScopeElement
     with AnonymousClassNameCreator
     with AnonymousVariableNameCreator
-    with ProcParamNameCreator
     with ClosureNameCreator {
   def fullName: String
   def procParam: Either[String, String]

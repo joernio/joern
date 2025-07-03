@@ -77,7 +77,7 @@ class ClassTests extends RubyCode2CpgFixture {
     singletonC.member.nameExact("@a").isEmpty shouldBe true
 
     val List(aGetterMember) = classC.member.nameExact("a").l
-    aGetterMember.dynamicTypeHintFullName should contain("Test0.rb:<main>.C.a")
+    aGetterMember.dynamicTypeHintFullName should contain(s"Test0.rb:$Main.C.a")
   }
 
   "`attr_reader :'abc'` is represented by a `@abc` MEMBER node" in {
@@ -94,7 +94,7 @@ class ClassTests extends RubyCode2CpgFixture {
     abcMember.lineNumber shouldBe Some(3)
 
     val List(aMember) = classC.member.nameExact("abc").l
-    aMember.dynamicTypeHintFullName should contain("Test0.rb:<main>.C.abc")
+    aMember.dynamicTypeHintFullName should contain(s"Test0.rb:$Main.C.abc")
   }
 
   "`attr_reader :'abc' creates an `abc` METHOD node" in {
@@ -119,7 +119,7 @@ class ClassTests extends RubyCode2CpgFixture {
     abcFieldAccess.code shouldBe "self.@abc"
 
     val List(aMember) = classC.member.nameExact("abc").l
-    aMember.dynamicTypeHintFullName should contain("Test0.rb:<main>.C.abc")
+    aMember.dynamicTypeHintFullName should contain(s"Test0.rb:$Main.C.abc")
   }
 
   "`attr_reader :a, :b` is represented by `@a`, `@b` MEMBER nodes" in {
@@ -174,7 +174,7 @@ class ClassTests extends RubyCode2CpgFixture {
     lhs.code shouldBe "self.@a"
 
     val List(aMember) = classC.member.nameExact("a=").l
-    aMember.dynamicTypeHintFullName should contain("Test0.rb:<main>.C.a=")
+    aMember.dynamicTypeHintFullName should contain(s"Test0.rb:$Main.C.a=")
   }
 
   "`attr_accessor :a` is represented by a `@a` MEMBER node" in {
@@ -363,9 +363,9 @@ class ClassTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "generate a type decl with the associated members" in {
-      inside(cpg.typeDecl.nameExact("Test0.rb:<main>.<anon-class-0>").l) {
+      inside(cpg.typeDecl.nameExact(s"Test0.rb:$Main.<anon-class-0>").l) {
         case anonClass :: Nil =>
-          anonClass.name shouldBe "Test0.rb:<main>.<anon-class-0>"
+          anonClass.name shouldBe s"Test0.rb:$Main.<anon-class-0>"
           anonClass.fullName shouldBe s"Test0.rb:$Main.<anon-class-0>"
           inside(anonClass.method.l) {
             case hello :: defaultConstructor :: Nil =>
@@ -384,10 +384,10 @@ class ClassTests extends RubyCode2CpgFixture {
       inside(cpg.method.isModule.assignment.l) {
         case aAssignment :: tmpAssign :: Nil =>
           aAssignment.target.code shouldBe "a"
-          aAssignment.source.code shouldBe "(<tmp-0> = Class.new Test0.rb:<main>.<anon-class-0> (...)).new"
+          aAssignment.source.code shouldBe s"(<tmp-0> = Class.new Test0.rb:$Main.<anon-class-0> (...)).new"
 
           tmpAssign.target.code shouldBe "<tmp-0>"
-          tmpAssign.source.code shouldBe "self.Class.new Test0.rb:<main>.<anon-class-0> (...)"
+          tmpAssign.source.code shouldBe s"self.Class.new Test0.rb:$Main.<anon-class-0> (...)"
         case xs => fail(s"Expected a single assignment, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
       }
     }
@@ -980,17 +980,17 @@ class ClassTests extends RubyCode2CpgFixture {
     inside(cpg.namespaceBlock.fullNameExact("Api.V1").typeDecl.l) {
       case mobileNamespace :: mobileClassNamespace :: Nil =>
         mobileNamespace.name shouldBe "MobileController"
-        mobileNamespace.fullName shouldBe "Test0.rb:<main>.Api.V1.MobileController"
+        mobileNamespace.fullName shouldBe s"Test0.rb:$Main.Api.V1.MobileController"
 
         mobileClassNamespace.name shouldBe "MobileController<class>"
-        mobileClassNamespace.fullName shouldBe "Test0.rb:<main>.Api.V1.MobileController<class>"
+        mobileClassNamespace.fullName shouldBe s"Test0.rb:$Main.Api.V1.MobileController<class>"
       case xs => fail(s"Expected two namespace blocks, got ${xs.code.mkString(",")}")
     }
 
     inside(cpg.typeDecl.name("MobileController").l) {
       case mobileTypeDecl :: Nil =>
         mobileTypeDecl.name shouldBe "MobileController"
-        mobileTypeDecl.fullName shouldBe "Test0.rb:<main>.Api.V1.MobileController"
+        mobileTypeDecl.fullName shouldBe s"Test0.rb:$Main.Api.V1.MobileController"
         mobileTypeDecl.astParentFullName shouldBe "Api.V1"
         mobileTypeDecl.astParentType shouldBe NodeTypes.NAMESPACE_BLOCK
 
@@ -1019,7 +1019,7 @@ class ClassTests extends RubyCode2CpgFixture {
 
     inside(cpg.typeDecl.name("Baz").l) {
       case bazTypeDecl :: Nil =>
-        bazTypeDecl.fullName shouldBe "Test0.rb:<main>.Baz"
+        bazTypeDecl.fullName shouldBe s"Test0.rb:$Main.Baz"
       case xs => fail(s"Expected one type decl, got [${xs.code.mkString(",")}]")
     }
   }
@@ -1112,10 +1112,10 @@ class ClassTests extends RubyCode2CpgFixture {
       inside(cpg.typeDecl.name("Foo").astChildren.isMethod.name("bar=?").l) {
         case barGetter :: barSetter :: Nil =>
           barGetter.name shouldBe "bar"
-          barGetter.fullName shouldBe "Test0.rb:<main>.Foo.bar"
+          barGetter.fullName shouldBe s"Test0.rb:$Main.Foo.bar"
 
           barSetter.name shouldBe "bar="
-          barSetter.fullName shouldBe "Test0.rb:<main>.Foo.bar="
+          barSetter.fullName shouldBe s"Test0.rb:$Main.Foo.bar="
         case xs => fail(s"Expected two method calls for getter and setter, got [${xs.code.mkString(",")}]")
       }
     }
@@ -1153,13 +1153,13 @@ class ClassTests extends RubyCode2CpgFixture {
       inside(cpg.typeDecl.name("Foo").astChildren.isMethod.name("(bar=?|baz)").l) {
         case barGetter :: barSetter :: bazGetter :: Nil =>
           barGetter.name shouldBe "bar"
-          barGetter.fullName shouldBe "Test0.rb:<main>.Foo.bar"
+          barGetter.fullName shouldBe s"Test0.rb:$Main.Foo.bar"
 
           barSetter.name shouldBe "bar="
-          barSetter.fullName shouldBe "Test0.rb:<main>.Foo.bar="
+          barSetter.fullName shouldBe s"Test0.rb:$Main.Foo.bar="
 
           bazGetter.name shouldBe "baz"
-          bazGetter.fullName shouldBe "Test0.rb:<main>.Foo.baz"
+          bazGetter.fullName shouldBe s"Test0.rb:$Main.Foo.baz"
         case xs => fail(s"Expected three method defs for getter and setter, got [${xs.code.mkString(",")}]")
       }
     }
@@ -1287,8 +1287,8 @@ class ClassTests extends RubyCode2CpgFixture {
         lambdaReturn.code shouldBe "return nil"
 
         val List(lambdaTypeDecl, lambdaTypeDeclClass) = lambdaMethod.astChildren.isTypeDecl.l
-        lambdaTypeDecl.name shouldBe "Test0.rb:<main>.Taskbar.List.<body>.<lambda>0.<anon-class-0>"
-        lambdaTypeDeclClass.name shouldBe "Test0.rb:<main>.Taskbar.List.<body>.<lambda>0.<anon-class-0><class>"
+        lambdaTypeDecl.name shouldBe s"Test0.rb:$Main.Taskbar.List.<body>.<lambda>0.<anon-class-0>"
+        lambdaTypeDeclClass.name shouldBe s"Test0.rb:$Main.Taskbar.List.<body>.<lambda>0.<anon-class-0><class>"
 
       case xs => fail(s"expected 1 type, got ${xs.size}: [${xs.code.mkString(", ")}]")
     }
@@ -1382,6 +1382,45 @@ class ClassTests extends RubyCode2CpgFixture {
         case xs => fail(s"Expected a single anonymous class, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
       }
     }
+  }
 
+  "Anonymous classes in different contexts" should {
+    val cpg = code("""
+        |a = Class.new do
+        |end
+        |
+        |b = Class.new do
+        |end
+        |
+        |c = Class.new do
+        |end
+        |class Foo
+        |  d = Class.new do
+        |  end
+        |
+        |  e = Class.new do
+        |  end
+        |
+        |  def hello
+        |   f = Class.new do
+        |   end
+        |  end
+        |end
+        |""".stripMargin)
+
+    "generate type decls with independent incrementors" in {
+      inside(cpg.typeDecl.name(".*<anon-class-\\d>").l) {
+        case a :: b :: c :: d :: e :: f :: Nil =>
+          a.fullName shouldBe s"Test0.rb:$Main.<anon-class-0>"
+          b.fullName shouldBe s"Test0.rb:$Main.<anon-class-1>"
+          c.fullName shouldBe s"Test0.rb:$Main.<anon-class-2>"
+
+          d.fullName shouldBe s"Test0.rb:$Main.Foo.<body>.<anon-class-0>"
+          e.fullName shouldBe s"Test0.rb:$Main.Foo.<body>.<anon-class-1>"
+
+          f.fullName shouldBe s"Test0.rb:$Main.Foo.hello.<anon-class-0>"
+        case xs => fail(s"Expected 5 anonymous class decls, got ${xs.name.mkString("[", ",", "]")}")
+      }
+    }
   }
 }
