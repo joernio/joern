@@ -1,7 +1,7 @@
 package io.joern.c2cpg.passes
 
 import io.joern.c2cpg.astcreation.Defines
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.Binding
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.codepropertygraph.generated.nodes.Method
@@ -61,18 +61,18 @@ class FullNameUniquenessPass(cpg: Cpg) extends CpgPass(cpg) {
           val fullNameWithoutSignature = fullName.stripSuffix(s":$signature")
           s"$fullNameWithoutSignature$suffix:$signature"
         }
-        dstGraph.setNodeProperty(method, Method.PropertyNames.FullName, newFullName)
+        dstGraph.setNodeProperty(method, PropertyNames.FullName, newFullName)
         // fixup bindings
         bindingsAffected.filter(_.refOut.contains(method)).foreach { binding =>
-          dstGraph.setNodeProperty(binding, Binding.PropertyNames.Name, s"${binding.name}$suffix")
-          dstGraph.setNodeProperty(binding, Binding.PropertyNames.MethodFullName, newFullName)
+          dstGraph.setNodeProperty(binding, PropertyNames.Name, s"${binding.name}$suffix")
+          dstGraph.setNodeProperty(binding, PropertyNames.MethodFullName, newFullName)
         }
         // fixup calls to static methods in the same compilation unit via the naive namespace-by-filename approach
         if (method.isStatic.nonEmpty) {
           val callCandidates = callsAffected.filter(_.file.exists(_.name == method.filename))
           callCandidates.foreach { call =>
-            dstGraph.setNodeProperty(call, Call.PropertyNames.Name, s"${call.name}$suffix")
-            dstGraph.setNodeProperty(call, Call.PropertyNames.MethodFullName, newFullName)
+            dstGraph.setNodeProperty(call, PropertyNames.Name, s"${call.name}$suffix")
+            dstGraph.setNodeProperty(call, PropertyNames.MethodFullName, newFullName)
           }
         }
       }
@@ -107,7 +107,7 @@ class FullNameUniquenessPass(cpg: Cpg) extends CpgPass(cpg) {
   private def handleTypeDecls(dstGraph: DiffGraphBuilder): Unit = {
     handleDuplicateFullNames(
       cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName),
-      TypeDecl.PropertyNames.FullName,
+      PropertyNames.FullName,
       dstGraph
     )
   }
@@ -115,7 +115,7 @@ class FullNameUniquenessPass(cpg: Cpg) extends CpgPass(cpg) {
   private def handleNamespaceBlocks(dstGraph: DiffGraphBuilder): Unit = {
     handleDuplicateFullNames(
       cpg.namespaceBlock.nameNot(NamespaceTraversal.globalNamespaceName),
-      NamespaceBlock.PropertyNames.FullName,
+      PropertyNames.FullName,
       dstGraph
     )
   }

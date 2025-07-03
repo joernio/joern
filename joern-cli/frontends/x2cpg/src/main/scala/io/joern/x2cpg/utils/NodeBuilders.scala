@@ -1,6 +1,6 @@
 package io.joern.x2cpg.utils
 
-import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
+import io.shiftleft.codepropertygraph.generated.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewAnnotationLiteral,
   NewBinding,

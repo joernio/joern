@@ -25,7 +25,7 @@ class TypeHierarchyPass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
           Seq()
         }
       },
-      dstFullNameKey = PropertyNames.INHERITS_FROM_TYPE_FULL_NAME,
+      dstFullNameKey = PropertyNames.InheritsFromTypeFullName,
       dstGraph
     )
   }

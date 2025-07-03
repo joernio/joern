@@ -2,7 +2,7 @@ package io.joern.x2cpg.passes.base
 
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.PropertyNames
-import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn.PropertyDefaults
+import io.shiftleft.codepropertygraph.generated.PropertyDefaults
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
 
@@ -14,7 +14,7 @@ class ParameterIndexCompatPass(cpg: Cpg) extends CpgPass(cpg) {
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     cpg.parameter.foreach { param =>
       if (param.index == PropertyDefaults.Index) {
-        diffGraph.setNodeProperty(param, PropertyNames.INDEX, param.order)
+        diffGraph.setNodeProperty(param, PropertyNames.Index, param.order)
       }
     }
   }

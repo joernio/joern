@@ -4,7 +4,7 @@ import flatgraph.SchemaViolationException
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.nodes.AstNode.PropertyDefaults
+import io.shiftleft.codepropertygraph.generated.PropertyDefaults
 
 case class AstEdge(src: NewNode, dst: NewNode)
 

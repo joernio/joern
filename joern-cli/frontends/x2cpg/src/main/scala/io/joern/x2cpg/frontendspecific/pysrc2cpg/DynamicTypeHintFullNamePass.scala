@@ -89,11 +89,11 @@ class DynamicTypeHintFullNamePass(cpg: Cpg) extends ForkJoinParallelCpgPass[CfgN
     }
     cpg.typeDecl.fullName(s".*${Pattern.quote(pythonicTypeFullName)}").l match {
       case xs if xs.sizeIs == 1 =>
-        diffGraph.setNodeProperty(node, PropertyNames.TYPE_FULL_NAME, xs.fullName.head)
+        diffGraph.setNodeProperty(node, PropertyNames.TypeFullName, xs.fullName.head)
       case xs if xs.nonEmpty =>
-        diffGraph.setNodeProperty(node, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, xs.fullName.toSeq)
+        diffGraph.setNodeProperty(node, PropertyNames.DynamicTypeHintFullName, xs.fullName.toSeq)
       case _ =>
-        diffGraph.setNodeProperty(node, PropertyNames.TYPE_FULL_NAME, pythonicTypeFullName)
+        diffGraph.setNodeProperty(node, PropertyNames.TypeFullName, pythonicTypeFullName)
     }
   }
 }

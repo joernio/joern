@@ -185,7 +185,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
         val existingTypes = (identifierTypes ++ otherTypes).distinct
         val resolvedTypes = identifierTypes.map(LocalVar.apply).flatMap(symbolTable.get)
         if (existingTypes != resolvedTypes && resolvedTypes.nonEmpty) {
-          builder.setNodeProperty(t, PropertyNames.INHERITS_FROM_TYPE_FULL_NAME, resolvedTypes)
+          builder.setNodeProperty(t, PropertyNames.InheritsFromTypeFullName, resolvedTypes)
         }
       }
   }
@@ -199,7 +199,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
             val clsPath = classMethod.typeDecl.fullName.toSet
             symbolTable.put(LocalVar(cls.name), clsPath)
             if (cls.typeFullName == Defines.Any)
-              builder.setNodeProperty(cls, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, clsPath.toSeq)
+              builder.setNodeProperty(cls, PropertyNames.DynamicTypeHintFullName, clsPath.toSeq)
           }
     }
     super.prepopulateSymbolTable()

@@ -2,7 +2,7 @@ package io.joern.x2cpg.passes.base
 
 import io.joern.x2cpg.utils.LinkingUtil
 import io.shiftleft.codepropertygraph.generated.nodes.{File, NewFile, StoredNode}
-import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, NodeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, NodeTypes, PropertyDefaults, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
@@ -24,7 +24,7 @@ class FileCreationPass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
     }
 
     def createFileIfDoesNotExist(srcNode: StoredNode, destFullName: String): Unit = {
-      if (destFullName != File.PropertyDefaults.Name) {
+      if (destFullName != PropertyDefaults.Name) {
         val dstFullName = if (destFullName == "") { FileTraversal.UNKNOWN }
         else { destFullName }
         val newFile = newFileNameToNode.getOrElseUpdate(
@@ -48,8 +48,8 @@ class FileCreationPass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
       dstNodeMap = { x =>
         originalFileNameToNode.get(x)
       },
-      dstFullNameKey = PropertyNames.FILENAME,
-      dstDefaultPropertyValue = File.PropertyDefaults.Name,
+      dstFullNameKey = PropertyNames.Filename,
+      dstDefaultPropertyValue = PropertyDefaults.Name,
       dstGraph,
       Some(createFileIfDoesNotExist)
     )

@@ -11,11 +11,11 @@ object AstPropertiesUtil {
       ast.root.flatMap(_.properties.get(propertyName).map(_.toString))
     }
 
-    def rootType: Option[String] = rootProperty(PropertyNames.TYPE_FULL_NAME)
+    def rootType: Option[String] = rootProperty(PropertyNames.TypeFullName)
 
-    def rootCode: Option[String] = rootProperty(PropertyNames.CODE)
+    def rootCode: Option[String] = rootProperty(PropertyNames.Code)
 
-    def rootName: Option[String] = rootProperty(PropertyNames.NAME)
+    def rootName: Option[String] = rootProperty(PropertyNames.Name)
 
     def rootCodeOrEmpty: String = rootCode.getOrElse("")
 

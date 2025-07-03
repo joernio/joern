@@ -8,7 +8,7 @@ import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.joern.x2cpg.utils.IntervalKeyPool
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.File.PropertyDefaults
+import io.shiftleft.codepropertygraph.generated.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import ujson.Value
 
@@ -83,7 +83,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     registerType(methodFullName)
 
     val astParentType     = parentNode.label
-    val astParentFullName = parentNode.properties(PropertyNames.FULL_NAME).toString
+    val astParentFullName = parentNode.properties(PropertyNames.FullName).toString
     val functionTypeDeclNode =
       typeDeclNode(
         node,

@@ -55,14 +55,14 @@ class ComposerAutoloadPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg
 
   private def fullyQualifyCall(call: Call, builder: DiffGraphBuilder): Unit = {
     if (call.typeFullName != Defines.Any) {
-      typeMap.get(call.typeFullName).foreach(builder.setNodeProperty(call, PropertyNames.TYPE_FULL_NAME, _))
+      typeMap.get(call.typeFullName).foreach(builder.setNodeProperty(call, PropertyNames.TypeFullName, _))
     }
-    methodMap.get(call.methodFullName).foreach(builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, _))
+    methodMap.get(call.methodFullName).foreach(builder.setNodeProperty(call, PropertyNames.MethodFullName, _))
   }
 
   private def fullyQualifyIdentifier(identifier: Identifier, builder: DiffGraphBuilder): Unit = {
     if (identifier.typeFullName != Defines.Any) {
-      typeMap.get(identifier.typeFullName).foreach(builder.setNodeProperty(identifier, PropertyNames.TYPE_FULL_NAME, _))
+      typeMap.get(identifier.typeFullName).foreach(builder.setNodeProperty(identifier, PropertyNames.TypeFullName, _))
     }
   }
 
