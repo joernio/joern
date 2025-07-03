@@ -8,7 +8,7 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Opera
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.*
-import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTAliasDeclaration, CPPClosureType}
+import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTAliasDeclaration, CPPASTSimpleDeclaration, CPPClosureType}
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 trait AstForTypesCreator { this: AstCreator =>
@@ -252,6 +252,8 @@ trait AstForTypesCreator { this: AstCreator =>
   protected def astsForDeclaration(decl: IASTDeclaration): Seq[Ast] = {
     val declAsts = decl match {
       case sb: ICPPASTStructuredBindingDeclaration => Seq(astForStructuredBindingDeclaration(sb))
+      case declStmt: CPPASTSimpleDeclaration if isUnsupportedCoroutineKeyword(declStmt) =>
+        Seq(astForUnsupportedCoroutineNode(declStmt))
       case declaration: IASTSimpleDeclaration =>
         declaration.getDeclSpecifier match {
           case spec: IASTCompositeTypeSpecifier =>

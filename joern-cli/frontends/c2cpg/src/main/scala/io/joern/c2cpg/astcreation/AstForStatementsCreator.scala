@@ -3,25 +3,13 @@ package io.joern.c2cpg.astcreation
 import io.joern.c2cpg.parser.CdtParser
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.VariableScopeManager
-import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
-import io.shiftleft.codepropertygraph.generated.nodes.AstNodeNew
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
-import io.shiftleft.codepropertygraph.generated.nodes.NewCall
-import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
+import io.shiftleft.codepropertygraph.generated.*
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, NewBlock, NewCall, NewLocal}
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.core.dom.ast.gnu.IGNUASTGotoStatement
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTIfStatement
-import org.eclipse.cdt.internal.core.dom.parser.cpp.{
-  CPPASTDeclarationStatement,
-  CPPASTIfStatement,
-  CPPASTNamespaceAlias,
-  CPPASTSimpleDeclaration
-}
+import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTIfStatement, CPPASTNamespaceAlias, CPPASTSimpleDeclaration}
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import java.nio.file.Paths
@@ -43,11 +31,68 @@ trait AstForStatementsCreator { this: AstCreator =>
     blockAst(node, childAsts)
   }
 
+  /** Handles C++ coroutine keywords (co_await, co_yield, co_return) that are not directly supported by CDT.
+    *
+    * This function parses the code after stripping the coroutine keyword by wrapping it in a temporary function. It
+    * then creates appropriate AST nodes based on the type of coroutine keyword and adjusts line and column numbers to
+    * match the original node position.
+    *
+    * @param node
+    *   The AST node containing a coroutine-related statement or expression
+    * @return
+    *   An AST representation of the coroutine statement or expression
+    */
+  protected def astForUnsupportedCoroutineNode(node: IASTNode): Ast = {
+    val code         = node.getRawSignature
+    val strippedCode = code.replaceFirst("co_await ", "").replaceFirst("co_return ", "").replaceFirst("co_yield ", "")
+    val wrappedCode  = s"void wrapped() { $strippedCode }"
+
+    val childrenAsts = new CdtParser(config, headerFileFinder, None, global)
+      .parse(wrappedCode, Paths.get(node.getContainingFilename)) match {
+      case Some(translationUnit: IASTTranslationUnit) =>
+        translationUnit.getDeclarations.toSeq.collect { case wrapped: ICPPASTFunctionDefinition =>
+          wrapped.getBody.getChildren.toSeq.collect { case statement: IASTStatement =>
+            astsForStatement(statement)
+          }.flatten
+        }.flatten
+      case None => Seq.empty
+    }
+
+    val ast = code match {
+      case c if c.startsWith("co_return ") =>
+        val cpgReturn = returnNode(node, code)
+        Ast(cpgReturn).withChildren(childrenAsts)
+      case c if c.startsWith("co_await ") =>
+        val op        = "<operator>.await"
+        val dispatch  = DispatchTypes.STATIC_DISPATCH
+        val tpe       = Some(registerType(Defines.Any))
+        val callNode_ = callNode(node, code, op, op, dispatch, None, tpe)
+        callAst(callNode_, childrenAsts)
+      case c if c.startsWith("co_yield ") =>
+        val op        = "<operator>.yield"
+        val dispatch  = DispatchTypes.STATIC_DISPATCH
+        val tpe       = Some(registerType(Defines.Any))
+        val callNode_ = callNode(node, code, op, op, dispatch, None, tpe)
+        callAst(callNode_, childrenAsts)
+    }
+
+    // Restore the line/column numbers relative to the nodes position
+    val lineNumber   = line(node)
+    val columnNumber = column(node).map(_ + (code.length - strippedCode.length)) // account for keyword stripping
+    childrenAsts.flatMap(_.nodes).foreach {
+      case astNodeNew: AstNodeNew =>
+        astNodeNew.lineNumber = lineNumber
+        astNodeNew.columnNumber = columnNumber
+      case _ => // do nothing
+    }
+
+    ast
+  }
+
   protected def astsForStatement(statement: IASTStatement): Seq[Ast] = {
-    // CDT does not support co_await yet. That leads to completely wrong parse trees that
-    // can't be recovered at all. Instead, we filter and warn here.
-    if (statement.getRawSignature.startsWith("co_await ")) {
-      return Seq(Ast(unknownNode(statement, statement.getRawSignature)))
+    // CDT does not support co_await, co_yield, and co_return. That leads to completely wrong parse trees.
+    if (isUnsupportedCoroutineKeyword(statement)) {
+      return Seq(astForUnsupportedCoroutineNode(statement))
     }
 
     val r = statement match {
@@ -78,6 +123,11 @@ trait AstForStatementsCreator { this: AstCreator =>
 
   protected def hasValidArrayModifier(arrayDecl: IASTArrayDeclarator): Boolean = {
     arrayDecl.getArrayModifiers.nonEmpty && arrayDecl.getArrayModifiers.forall(_.getConstantExpression != null)
+  }
+
+  protected def isUnsupportedCoroutineKeyword(node: IASTNode): Boolean = {
+    val code = node.getRawSignature
+    code.startsWith("co_yield ") || code.startsWith("co_await ") || code.startsWith("co_return ")
   }
 
   private def astsForStructuredBindingDeclaration(
@@ -142,23 +192,6 @@ trait AstForStatementsCreator { this: AstCreator =>
     Seq(Ast(localTmpNode), assignmentCallAst) ++ accessAsts
   }
 
-  private def isCoroutineCall(decl: IASTDeclaration): Boolean = {
-    decl.getRawSignature.startsWith("co_yield ") || decl.getRawSignature.startsWith("co_await ")
-  }
-
-  /** CDT is unable to parse co_yield or co_await calls into actual AST elements. Hence, this hack to recover the
-    * structure from CPPASTSimpleDeclaration.
-    */
-  private def astForCoroutineCall(decl: CPPASTSimpleDeclaration): Ast = {
-    val op = decl.getRawSignature match {
-      case s if s.startsWith("co_yield ") => "<operator>.yield"
-      case _                              => "<operator>.await"
-    }
-    val node = callNode(decl, code(decl), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
-    val argAsts = decl.getDeclarators.zipWithIndex.map { case (d, i) => astForDeclarator(decl, d, i) }
-    callAst(node, argAsts.toSeq)
-  }
-
   private def astsForIASTSimpleDeclaration(simpleDecl: IASTSimpleDeclaration): Seq[Ast] = {
     val declAsts = simpleDecl.getDeclarators.zipWithIndex.map {
       case (d: IASTFunctionDeclarator, _) => astForFunctionDeclarator(d)
@@ -197,16 +230,17 @@ trait AstForStatementsCreator { this: AstCreator =>
 
   private def astsForDeclarationStatement(decl: IASTDeclarationStatement): Seq[Ast] =
     decl.getDeclaration match {
-      case struct: ICPPASTStructuredBindingDeclaration                    => astsForStructuredBindingDeclaration(struct)
-      case declStmt: CPPASTSimpleDeclaration if isCoroutineCall(declStmt) => Seq(astForCoroutineCall(declStmt))
-      case simpleDecl: IASTSimpleDeclaration                              => astsForIASTSimpleDeclaration(simpleDecl)
-      case s: ICPPASTStaticAssertDeclaration                              => Seq(astForStaticAssert(s))
-      case alias: ICPPASTAliasDeclaration                                 => Seq(astForAliasDeclaration(alias))
-      case func: IASTFunctionDefinition                                   => Seq(astForFunctionDefinition(func))
-      case alias: CPPASTNamespaceAlias                                    => Seq(astForNamespaceAlias(alias))
-      case asm: IASTASMDeclaration                                        => Seq(astForASMDeclaration(asm))
-      case _: ICPPASTUsingDeclaration | _: ICPPASTUsingDirective          => Seq.empty // handled by CDT itself
-      case declaration                                                    => astsForDeclaration(declaration)
+      case struct: ICPPASTStructuredBindingDeclaration => astsForStructuredBindingDeclaration(struct)
+      case declStmt: CPPASTSimpleDeclaration if isUnsupportedCoroutineKeyword(declStmt) =>
+        Seq(astForUnsupportedCoroutineNode(declStmt))
+      case simpleDecl: IASTSimpleDeclaration                     => astsForIASTSimpleDeclaration(simpleDecl)
+      case s: ICPPASTStaticAssertDeclaration                     => Seq(astForStaticAssert(s))
+      case alias: ICPPASTAliasDeclaration                        => Seq(astForAliasDeclaration(alias))
+      case func: IASTFunctionDefinition                          => Seq(astForFunctionDefinition(func))
+      case alias: CPPASTNamespaceAlias                           => Seq(astForNamespaceAlias(alias))
+      case asm: IASTASMDeclaration                               => Seq(astForASMDeclaration(asm))
+      case _: ICPPASTUsingDeclaration | _: ICPPASTUsingDirective => Seq.empty // handled by CDT itself
+      case declaration                                           => astsForDeclaration(declaration)
     }
 
   private def astForReturnStatement(ret: IASTReturnStatement): Ast = {
@@ -315,8 +349,10 @@ trait AstForStatementsCreator { this: AstCreator =>
     val asts = if (isFromMacroExpansion) {
       new CdtParser(config, headerFileFinder, None, global)
         .parse(statement.getRawSignature, Paths.get(statement.getContainingFilename)) match
-        case Some(node) => node.getDeclarations.toIndexedSeq.flatMap(astsForDeclaration)
-        case None       => Seq.empty
+        case Some(translationUnit: IASTTranslationUnit) =>
+          translationUnit.getDeclarations.toIndexedSeq.flatMap(astsForDeclaration)
+        case None =>
+          Seq.empty
     } else {
       Seq.empty
     }
