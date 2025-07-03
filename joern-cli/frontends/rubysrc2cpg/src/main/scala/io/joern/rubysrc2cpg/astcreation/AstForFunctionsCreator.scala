@@ -65,8 +65,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     )
 
     val isSurroundedByProgramScope = scope.isSurroundedByProgramScope
-    if (isConstructor) scope.pushNewScope(ConstructorScope(fullName, this.procParamGen.fresh))
-    else scope.pushNewScope(MethodScope(fullName, this.procParamGen.fresh))
+    if (isConstructor) scope.pushNewScope(ConstructorScope(fullName, scope.getNewProcParam))
+    else scope.pushNewScope(MethodScope(fullName, scope.getNewProcParam))
 
     val thisParameterNode = parameterInNode(
       node,
@@ -368,9 +368,15 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   protected def astForAnonymousTypeDeclaration(node: AnonymousTypeDeclaration): Ast = {
+    val updatedNode = node match {
+      case x: AnonymousClassDeclaration =>
+        x.copy(name = SimpleIdentifier(None)(x.span.spanStart(scope.getNewClassTmp)))(node.span)
+      case x: SingletonClassDeclaration =>
+        x.copy(name = SimpleIdentifier(None)(x.span.spanStart(scope.getNewClassTmp)))(node.span)
+    }
 
     // This will link the type decl to the surrounding context via base overlays
-    val Seq(typeRefAst) = astForClassDeclaration(node).take(1)
+    val Seq(typeRefAst) = astForClassDeclaration(updatedNode).take(1)
 
     typeRefAst.nodes
       .collectFirst { case typRef: NewTypeRef =>
@@ -405,7 +411,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
             }
         }
 
-        scope.pushNewScope(MethodScope(fullName, this.procParamGen.fresh))
+        scope.pushNewScope(MethodScope(fullName, scope.getNewProcParam))
         val method = methodNode(
           node = node,
           name = node.methodName,

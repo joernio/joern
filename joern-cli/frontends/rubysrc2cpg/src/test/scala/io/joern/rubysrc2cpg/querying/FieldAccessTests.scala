@@ -85,7 +85,6 @@ class FieldAccessTests extends RubyCode2CpgFixture {
         |f = Foo.new
         |f.func()           # self.f.func
         |""".stripMargin)
-
     "assign an alias for type declarations to the singleton" in {
       inside(cpg.method.isModule.assignment.where(_.source.isTypeRef).l) {
         case baz :: foo :: Nil =>
@@ -174,15 +173,15 @@ class FieldAccessTests extends RubyCode2CpgFixture {
       call.name shouldBe "func1"
 
       val base = call.argument(0).asInstanceOf[Identifier]
-      base.code shouldBe "<tmp-3>"
+      base.code shouldBe "<tmp-0>"
 
       val receiver = call.receiver.isCall.head
       receiver.name shouldBe Operators.fieldAccess
-      receiver.code shouldBe "(<tmp-3> = Baz).func1"
+      receiver.code shouldBe "(<tmp-0> = Baz).func1"
 
       val selfArg1 = receiver.argument(1).asInstanceOf[Call]
       selfArg1.name shouldBe Operators.assignment
-      selfArg1.code shouldBe "<tmp-3> = Baz"
+      selfArg1.code shouldBe "<tmp-0> = Baz"
 
       val selfArg2 = receiver.argument(2).asInstanceOf[FieldIdentifier]
       selfArg2.canonicalName shouldBe "func1"

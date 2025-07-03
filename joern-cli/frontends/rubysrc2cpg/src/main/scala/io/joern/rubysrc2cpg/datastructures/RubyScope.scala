@@ -20,6 +20,11 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     extends Scope[String, DeclarationNew, TypedScopeElement]
     with TypedScope[RubyMethod, RubyField, RubyType](summary) {
 
+  private var tmpVarCounter       = 0
+  private var tmpClassCounter     = 0
+  private var tmpProcParamCounter = 0
+  private var tmpClosureCounter   = 0
+
   private val builtinMethods = GlobalTypes.kernelFunctions
     .map(m => RubyMethod(m, List.empty, Defines.Any, Some(GlobalTypes.kernelPrefix)))
     .toList
@@ -189,6 +194,38 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
           addRequireGem(path)
       }
     }
+  }
+
+  def getNewClassTmp: String = {
+    val surroundingFullName = this.surroundingScopeFullName.getOrElse(RubyDefines.Main)
+
+    stack.collectFirst {
+      case ScopeElement(scopeNode: NamespaceScope, _) => s"$surroundingFullName.${scopeNode.getNextClassTmp}"
+      case ScopeElement(node: TypeLikeScope, _)       => s"$surroundingFullName.${node.getNextClassTmp}"
+      case ScopeElement(node: MethodLikeScope, _)     => s"$surroundingFullName.${node.getNextClassTmp}"
+    }.get
+  }
+
+  def getNewVarTmp: String = {
+    stack.collectFirst {
+      case ScopeElement(scopeNode: NamespaceScope, _) => s"${scopeNode.getNextVarTmp}"
+      case ScopeElement(node: TypeLikeScope, _)       => s"${node.getNextVarTmp}"
+      case ScopeElement(node: MethodLikeScope, _) if !node.fullName.contains("<lambda>") => s"${node.getNextVarTmp}"
+    }.get
+  }
+
+  def getNewProcParam: Either[String, String] = {
+    stack.collectFirst { case ScopeElement(node: TypeLikeScope, _) =>
+      Left(s"${node.getNextProcParamTmp}")
+    }.get
+  }
+
+  def getNewClosureName: String = {
+    stack.collectFirst {
+      case ScopeElement(scopeNode: NamespaceScope, _) => s"${scopeNode.getNextClosureName}"
+      case ScopeElement(node: TypeLikeScope, _)       => s"${node.getNextClosureName}"
+      case ScopeElement(node: MethodLikeScope, _)     => s"${node.getNextClosureName}"
+    }.get
   }
 
   def addImportedFunctions(importName: String): Unit = {
