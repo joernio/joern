@@ -199,6 +199,10 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   protected def astForNode(node: IASTNode): Ast = {
+    if (isUnsupportedCoroutineKeyword(node)) {
+      return astForUnsupportedCoroutineNode(node)
+    }
+
     node match {
       case expr: IASTExpression             => astForExpression(expr)
       case name: IASTName                   => astForIdentifier(name)
