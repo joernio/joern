@@ -15,7 +15,7 @@ import io.shiftleft.semanticcpg.language.*
 
 object EdgeValidator {
 
-  /** Determines whether the edge from `parentNode` to `childNode` is valid, according to the given semantics.
+  /** Determines whether the edge from `parentNode`to `childNode` is valid, according to the given semantics.
     */
   def isValidEdge(childNode: CfgNode, parentNode: CfgNode)(implicit semantics: Semantics): Boolean =
     (childNode, parentNode) match {

@@ -44,8 +44,8 @@ case class Cfg(
 
   import Cfg._
 
-  /** Create a new CFG in which `other` is appended to this CFG. All nodes of the fringe are connected to `other` 's
-    * entry node and the new fringe is `other` 's fringe. The diffgraphs, jumps, and labels are the sum of those present
+  /** Create a new CFG in which `other` is appended to this CFG. All nodes of the fringe are connected to `other`'s
+    * entry node and the new fringe is `other`'s fringe. The diffgraphs, jumps, and labels are the sum of those present
     * in `this` and `other`.
     */
   def ++(other: Cfg): Cfg = {

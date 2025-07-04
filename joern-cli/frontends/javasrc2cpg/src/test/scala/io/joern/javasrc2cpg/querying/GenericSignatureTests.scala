@@ -6,8 +6,10 @@ import io.shiftleft.semanticcpg.language.*
 /** ### Class type signatures
   *   - In most cases, only the simple name for the class will be used (so `LString;` will be used instead of
   *     `Ljava/lang/String`)
+  *
   *   - Where a qualified name is used in source, that name is used verbatim in the signature, for example
   *     `Ljava.util.List` (note the `.` were not substituted for `/`.
+  *
   *   - For local classes, the name of the class as it appears in the CPG is used in the signature for instances of that
   *     class (we don't follow the JVM naming scheme for these), for example
   *     `Ltestpackage.TestClass.testMethod.LocalClass;`
@@ -30,11 +32,15 @@ import io.shiftleft.semanticcpg.language.*
   * ### Unspecified types Where no type name is specified, the special `L__unspecified_type;` type is used in generic
   * signatures. This happens in a few places:
   *   - For lambda return types and lambda parameters which do not have explicit type annotations
+  *
   *   - For lambda type decls
+  *
   *   - For locals with a `var` type, for example `var x = 42`
+  *
   *   - For synthetic locals created for `foreach` loops, for example in `for (String item : items())`, we create a
   *     temporary `String[] $iterLocal0 = items()` local which will have an unspecified signature (`item` will still
   *     have the signature `LString;` as expected)
+  *
   *   - For synthetic locals created for the LHS of `instanceof` expressions with pattern matching, for example in
   *     `foo() instanceof String s`, we create an `Object o = foo()` local (since the type depends on the return type of
   *     `foo`).
