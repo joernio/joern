@@ -1218,8 +1218,8 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``PatternBindingSyntax``. ``PatternBindingSyntax/accessorBlock``
-    *   - ``SubscriptDeclSyntax``. ``SubscriptDeclSyntax/accessorBlock``
+    *   - ``PatternBindingSyntax``.``PatternBindingSyntax/accessorBlock``
+    *   - ``SubscriptDeclSyntax``.``SubscriptDeclSyntax/accessorBlock``
     */
   case class AccessorBlockSyntax(json: Value) extends Syntax with Braced {
     def leftBrace: SwiftToken =
@@ -1245,7 +1245,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AccessorBlockSyntax``. ``AccessorBlockSyntax/accessors``
+    *   - ``AccessorBlockSyntax``.``AccessorBlockSyntax/accessors``
     */
   case class AccessorDeclListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[AccessorDeclSyntax] =
@@ -1316,7 +1316,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AccessorDeclSyntax``. ``AccessorDeclSyntax/effectSpecifiers``
+    *   - ``AccessorDeclSyntax``.``AccessorDeclSyntax/effectSpecifiers``
     */
   case class AccessorEffectSpecifiersSyntax(json: Value) extends Syntax with EffectSpecifiers {
     def asyncSpecifier: Option[SwiftToken] = json("children").arr.toList
@@ -1342,7 +1342,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AccessorDeclSyntax``. ``AccessorDeclSyntax/parameters``
+    *   - ``AccessorDeclSyntax``.``AccessorDeclSyntax/parameters``
     */
   case class AccessorParametersSyntax(json: Value) extends Syntax with Parenthesized {
     def leftParen: SwiftToken =
@@ -1432,7 +1432,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``ArrayExprSyntax``. ``ArrayExprSyntax/elements``
+    *   - ``ArrayExprSyntax``.``ArrayExprSyntax/elements``
     */
   case class ArrayElementListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[ArrayElementSyntax] =
@@ -1709,33 +1709,33 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AccessorDeclSyntax``. ``AccessorDeclSyntax/attributes``
-    *   - ``ActorDeclSyntax``. ``ActorDeclSyntax/attributes``
-    *   - ``AssociatedTypeDeclSyntax``. ``AssociatedTypeDeclSyntax/attributes``
-    *   - ``AttributedTypeSyntax``. ``AttributedTypeSyntax/attributes``
-    *   - ``ClassDeclSyntax``. ``ClassDeclSyntax/attributes``
-    *   - ``ClosureParameterSyntax``. ``ClosureParameterSyntax/attributes``
-    *   - ``ClosureSignatureSyntax``. ``ClosureSignatureSyntax/attributes``
-    *   - ``DeinitializerDeclSyntax``. ``DeinitializerDeclSyntax/attributes``
-    *   - ``EditorPlaceholderDeclSyntax``. ``EditorPlaceholderDeclSyntax/attributes``
-    *   - ``EnumCaseDeclSyntax``. ``EnumCaseDeclSyntax/attributes``
-    *   - ``EnumDeclSyntax``. ``EnumDeclSyntax/attributes``
-    *   - ``ExtensionDeclSyntax``. ``ExtensionDeclSyntax/attributes``
-    *   - ``FunctionDeclSyntax``. ``FunctionDeclSyntax/attributes``
-    *   - ``FunctionParameterSyntax``. ``FunctionParameterSyntax/attributes``
-    *   - ``GenericParameterSyntax``. ``GenericParameterSyntax/attributes``
-    *   - ``IfConfigClauseSyntax``. ``IfConfigClauseSyntax/elements``
-    *   - ``ImportDeclSyntax``. ``ImportDeclSyntax/attributes``
-    *   - ``InitializerDeclSyntax``. ``InitializerDeclSyntax/attributes``
-    *   - ``MacroDeclSyntax``. ``MacroDeclSyntax/attributes``
-    *   - ``MacroExpansionDeclSyntax``. ``MacroExpansionDeclSyntax/attributes``
-    *   - ``MissingDeclSyntax``. ``MissingDeclSyntax/attributes``
-    *   - ``PrecedenceGroupDeclSyntax``. ``PrecedenceGroupDeclSyntax/attributes``
-    *   - ``ProtocolDeclSyntax``. ``ProtocolDeclSyntax/attributes``
-    *   - ``StructDeclSyntax``. ``StructDeclSyntax/attributes``
-    *   - ``SubscriptDeclSyntax``. ``SubscriptDeclSyntax/attributes``
-    *   - ``TypeAliasDeclSyntax``. ``TypeAliasDeclSyntax/attributes``
-    *   - ``VariableDeclSyntax``. ``VariableDeclSyntax/attributes``
+    *   - ``AccessorDeclSyntax``.``AccessorDeclSyntax/attributes``
+    *   - ``ActorDeclSyntax``.``ActorDeclSyntax/attributes``
+    *   - ``AssociatedTypeDeclSyntax``.``AssociatedTypeDeclSyntax/attributes``
+    *   - ``AttributedTypeSyntax``.``AttributedTypeSyntax/attributes``
+    *   - ``ClassDeclSyntax``.``ClassDeclSyntax/attributes``
+    *   - ``ClosureParameterSyntax``.``ClosureParameterSyntax/attributes``
+    *   - ``ClosureSignatureSyntax``.``ClosureSignatureSyntax/attributes``
+    *   - ``DeinitializerDeclSyntax``.``DeinitializerDeclSyntax/attributes``
+    *   - ``EditorPlaceholderDeclSyntax``.``EditorPlaceholderDeclSyntax/attributes``
+    *   - ``EnumCaseDeclSyntax``.``EnumCaseDeclSyntax/attributes``
+    *   - ``EnumDeclSyntax``.``EnumDeclSyntax/attributes``
+    *   - ``ExtensionDeclSyntax``.``ExtensionDeclSyntax/attributes``
+    *   - ``FunctionDeclSyntax``.``FunctionDeclSyntax/attributes``
+    *   - ``FunctionParameterSyntax``.``FunctionParameterSyntax/attributes``
+    *   - ``GenericParameterSyntax``.``GenericParameterSyntax/attributes``
+    *   - ``IfConfigClauseSyntax``.``IfConfigClauseSyntax/elements``
+    *   - ``ImportDeclSyntax``.``ImportDeclSyntax/attributes``
+    *   - ``InitializerDeclSyntax``.``InitializerDeclSyntax/attributes``
+    *   - ``MacroDeclSyntax``.``MacroDeclSyntax/attributes``
+    *   - ``MacroExpansionDeclSyntax``.``MacroExpansionDeclSyntax/attributes``
+    *   - ``MissingDeclSyntax``.``MissingDeclSyntax/attributes``
+    *   - ``PrecedenceGroupDeclSyntax``.``PrecedenceGroupDeclSyntax/attributes``
+    *   - ``ProtocolDeclSyntax``.``ProtocolDeclSyntax/attributes``
+    *   - ``StructDeclSyntax``.``StructDeclSyntax/attributes``
+    *   - ``SubscriptDeclSyntax``.``SubscriptDeclSyntax/attributes``
+    *   - ``TypeAliasDeclSyntax``.``TypeAliasDeclSyntax/attributes``
+    *   - ``VariableDeclSyntax``.``VariableDeclSyntax/attributes``
     */
   case class AttributeListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[AttributeSyntax | IfConfigDeclSyntax] =
@@ -1766,7 +1766,7 @@ object SwiftNodeSyntax {
     * ### Contained in
     *
     *   - ``AttributeListSyntax``
-    *   - ``SwitchCaseSyntax``. ``SwitchCaseSyntax/attribute``
+    *   - ``SwitchCaseSyntax``.``SwitchCaseSyntax/attribute``
     */
   case class AttributeSyntax(json: Value) extends Syntax {
     def atSign: SwiftToken =
@@ -1855,9 +1855,9 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AttributeSyntax``. ``AttributeSyntax/arguments``
-    *   - ``AvailabilityConditionSyntax``. ``AvailabilityConditionSyntax/availabilityArguments``
-    *   - ``SpecializeAvailabilityArgumentSyntax``. ``SpecializeAvailabilityArgumentSyntax/availabilityArguments``
+    *   - ``AttributeSyntax``.``AttributeSyntax/arguments``
+    *   - ``AvailabilityConditionSyntax``.``AvailabilityConditionSyntax/availabilityArguments``
+    *   - ``SpecializeAvailabilityArgumentSyntax``.``SpecializeAvailabilityArgumentSyntax/availabilityArguments``
     */
   case class AvailabilityArgumentListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[AvailabilityArgumentSyntax] =
@@ -1904,7 +1904,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``ConditionElementSyntax``. ``ConditionElementSyntax/condition``
+    *   - ``ConditionElementSyntax``.``ConditionElementSyntax/condition``
     */
   case class AvailabilityConditionSyntax(json: Value) extends Syntax {
     def availabilityKeyword: SwiftToken = json("children").arr.toList
@@ -1939,7 +1939,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AvailabilityArgumentSyntax``. ``AvailabilityArgumentSyntax/argument``
+    *   - ``AvailabilityArgumentSyntax``.``AvailabilityArgumentSyntax/argument``
     */
   case class AvailabilityLabeledArgumentSyntax(json: Value) extends Syntax {
     def label: SwiftToken =
@@ -1989,7 +1989,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AttributeSyntax``. ``AttributeSyntax/arguments``
+    *   - ``AttributeSyntax``.``AttributeSyntax/arguments``
     */
   case class BackDeployedAttributeArgumentsSyntax(json: Value) extends Syntax {
     def beforeLabel: SwiftToken = json("children").arr.toList
@@ -2135,7 +2135,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``CanImportExprSyntax``. ``CanImportExprSyntax/versionInfo``
+    *   - ``CanImportExprSyntax``.``CanImportExprSyntax/versionInfo``
     */
   case class CanImportVersionInfoSyntax(json: Value) extends ExprSyntax {
     def comma: SwiftToken =
@@ -2164,7 +2164,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``DoStmtSyntax``. ``DoStmtSyntax/catchClauses``
+    *   - ``DoStmtSyntax``.``DoStmtSyntax/catchClauses``
     */
   case class CatchClauseListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[CatchClauseSyntax] =
@@ -2212,7 +2212,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``CatchClauseSyntax``. ``CatchClauseSyntax/catchItems``
+    *   - ``CatchClauseSyntax``.``CatchClauseSyntax/catchItems``
     */
   case class CatchItemListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[CatchItemSyntax] =
@@ -2369,7 +2369,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``ClosureSignatureSyntax``. ``ClosureSignatureSyntax/capture``
+    *   - ``ClosureSignatureSyntax``.``ClosureSignatureSyntax/capture``
     */
   case class ClosureCaptureClauseSyntax(json: Value) extends Syntax {
     def leftSquare: SwiftToken =
@@ -2398,7 +2398,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``ClosureCaptureClauseSyntax``. ``ClosureCaptureClauseSyntax/items``
+    *   - ``ClosureCaptureClauseSyntax``.``ClosureCaptureClauseSyntax/items``
     */
   case class ClosureCaptureListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[ClosureCaptureSyntax] =
@@ -2418,7 +2418,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``ClosureCaptureSyntax``. ``ClosureCaptureSyntax/specifier``
+    *   - ``ClosureCaptureSyntax``.``ClosureCaptureSyntax/specifier``
     */
   case class ClosureCaptureSpecifierSyntax(json: Value) extends Syntax {
     def specifier: SwiftToken =
@@ -2488,11 +2488,11 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``FunctionCallExprSyntax``. ``FunctionCallExprSyntax/trailingClosure``
-    *   - ``MacroExpansionDeclSyntax``. ``MacroExpansionDeclSyntax/trailingClosure``
-    *   - ``MacroExpansionExprSyntax``. ``MacroExpansionExprSyntax/trailingClosure``
-    *   - ``MultipleTrailingClosureElementSyntax``. ``MultipleTrailingClosureElementSyntax/closure``
-    *   - ``SubscriptCallExprSyntax``. ``SubscriptCallExprSyntax/trailingClosure``
+    *   - ``FunctionCallExprSyntax``.``FunctionCallExprSyntax/trailingClosure``
+    *   - ``MacroExpansionDeclSyntax``.``MacroExpansionDeclSyntax/trailingClosure``
+    *   - ``MacroExpansionExprSyntax``.``MacroExpansionExprSyntax/trailingClosure``
+    *   - ``MultipleTrailingClosureElementSyntax``.``MultipleTrailingClosureElementSyntax/closure``
+    *   - ``SubscriptCallExprSyntax``.``SubscriptCallExprSyntax/trailingClosure``
     */
   case class ClosureExprSyntax(json: Value) extends ExprSyntax with Braced with WithStatements {
     def leftBrace: SwiftToken =
@@ -2525,7 +2525,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``ClosureSignatureSyntax``. ``ClosureSignatureSyntax/parameterClause``
+    *   - ``ClosureSignatureSyntax``.``ClosureSignatureSyntax/parameterClause``
     */
   case class ClosureParameterClauseSyntax(json: Value) extends Syntax with Parenthesized {
     def leftParen: SwiftToken =
@@ -2551,7 +2551,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``ClosureParameterClauseSyntax``. ``ClosureParameterClauseSyntax/parameters``
+    *   - ``ClosureParameterClauseSyntax``.``ClosureParameterClauseSyntax/parameters``
     */
   case class ClosureParameterListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[ClosureParameterSyntax] =
@@ -2634,7 +2634,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``ClosureSignatureSyntax``. ``ClosureSignatureSyntax/parameterClause``
+    *   - ``ClosureSignatureSyntax``.``ClosureSignatureSyntax/parameterClause``
     */
   case class ClosureShorthandParameterListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[ClosureShorthandParameterSyntax] =
@@ -2679,7 +2679,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``ClosureExprSyntax``. ``ClosureExprSyntax/signature``
+    *   - ``ClosureExprSyntax``.``ClosureExprSyntax/signature``
     */
   case class ClosureSignatureSyntax(json: Value) extends Syntax with WithAttributes {
     def attributes: AttributeListSyntax = json("children").arr.toList
@@ -2723,12 +2723,12 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AccessorBlockSyntax``. ``AccessorBlockSyntax/accessors``
-    *   - ``ClosureExprSyntax``. ``ClosureExprSyntax/statements``
-    *   - ``CodeBlockSyntax``. ``CodeBlockSyntax/statements``
-    *   - ``IfConfigClauseSyntax``. ``IfConfigClauseSyntax/elements``
-    *   - ``SourceFileSyntax``. ``SourceFileSyntax/statements``
-    *   - ``SwitchCaseSyntax``. ``SwitchCaseSyntax/statements``
+    *   - ``AccessorBlockSyntax``.``AccessorBlockSyntax/accessors``
+    *   - ``ClosureExprSyntax``.``ClosureExprSyntax/statements``
+    *   - ``CodeBlockSyntax``.``CodeBlockSyntax/statements``
+    *   - ``IfConfigClauseSyntax``.``IfConfigClauseSyntax/elements``
+    *   - ``SourceFileSyntax``.``SourceFileSyntax/statements``
+    *   - ``SwitchCaseSyntax``.``SwitchCaseSyntax/statements``
     */
   case class CodeBlockItemListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[CodeBlockItemSyntax] =
@@ -2773,19 +2773,19 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AccessorDeclSyntax``. ``AccessorDeclSyntax/body``
-    *   - ``CatchClauseSyntax``. ``CatchClauseSyntax/body``
-    *   - ``DeferStmtSyntax``. ``DeferStmtSyntax/body``
-    *   - ``DeinitializerDeclSyntax``. ``DeinitializerDeclSyntax/body``
-    *   - ``DoStmtSyntax``. ``DoStmtSyntax/body``
-    *   - ``ForStmtSyntax``. ``ForStmtSyntax/body``
-    *   - ``FunctionDeclSyntax``. ``FunctionDeclSyntax/body``
-    *   - ``GuardStmtSyntax``. ``GuardStmtSyntax/body``
-    *   - ``IfExprSyntax``. ``IfExprSyntax/body``
-    *   - ``IfExprSyntax``. ``IfExprSyntax/elseBody``
-    *   - ``InitializerDeclSyntax``. ``InitializerDeclSyntax/body``
-    *   - ``RepeatStmtSyntax``. ``RepeatStmtSyntax/body``
-    *   - ``WhileStmtSyntax``. ``WhileStmtSyntax/body``
+    *   - ``AccessorDeclSyntax``.``AccessorDeclSyntax/body``
+    *   - ``CatchClauseSyntax``.``CatchClauseSyntax/body``
+    *   - ``DeferStmtSyntax``.``DeferStmtSyntax/body``
+    *   - ``DeinitializerDeclSyntax``.``DeinitializerDeclSyntax/body``
+    *   - ``DoStmtSyntax``.``DoStmtSyntax/body``
+    *   - ``ForStmtSyntax``.``ForStmtSyntax/body``
+    *   - ``FunctionDeclSyntax``.``FunctionDeclSyntax/body``
+    *   - ``GuardStmtSyntax``.``GuardStmtSyntax/body``
+    *   - ``IfExprSyntax``.``IfExprSyntax/body``
+    *   - ``IfExprSyntax``.``IfExprSyntax/elseBody``
+    *   - ``InitializerDeclSyntax``.``InitializerDeclSyntax/body``
+    *   - ``RepeatStmtSyntax``.``RepeatStmtSyntax/body``
+    *   - ``WhileStmtSyntax``.``WhileStmtSyntax/body``
     */
   case class CodeBlockSyntax(json: Value) extends Syntax with Braced with WithStatements {
     def leftBrace: SwiftToken =
@@ -2811,7 +2811,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``CompositionTypeSyntax``. ``CompositionTypeSyntax/elements``
+    *   - ``CompositionTypeSyntax``.``CompositionTypeSyntax/elements``
     */
   case class CompositionTypeElementListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[CompositionTypeElementSyntax] =
@@ -2869,9 +2869,9 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``GuardStmtSyntax``. ``GuardStmtSyntax/conditions``
-    *   - ``IfExprSyntax``. ``IfExprSyntax/conditions``
-    *   - ``WhileStmtSyntax``. ``WhileStmtSyntax/conditions``
+    *   - ``GuardStmtSyntax``.``GuardStmtSyntax/conditions``
+    *   - ``IfExprSyntax``.``IfExprSyntax/conditions``
+    *   - ``WhileStmtSyntax``.``WhileStmtSyntax/conditions``
     */
   case class ConditionElementListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[ConditionElementSyntax] =
@@ -2920,7 +2920,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``GenericRequirementSyntax``. ``GenericRequirementSyntax/requirement``
+    *   - ``GenericRequirementSyntax``.``GenericRequirementSyntax/requirement``
     */
   case class ConformanceRequirementSyntax(json: Value) extends Syntax {
     def leftType: TypeSyntax =
@@ -2991,7 +2991,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AttributeSyntax``. ``AttributeSyntax/arguments``
+    *   - ``AttributeSyntax``.``AttributeSyntax/arguments``
     */
   case class ConventionAttributeArgumentsSyntax(json: Value) extends Syntax {
     def conventionLabel: SwiftToken = json("children").arr.toList
@@ -3029,7 +3029,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AttributeSyntax``. ``AttributeSyntax/arguments``
+    *   - ``AttributeSyntax``.``AttributeSyntax/arguments``
     */
   case class ConventionWitnessMethodAttributeArgumentsSyntax(json: Value) extends Syntax {
     def witnessMethodLabel: SwiftToken = json("children").arr.toList
@@ -3082,7 +3082,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``DeclModifierSyntax``. ``DeclModifierSyntax/detail``
+    *   - ``DeclModifierSyntax``.``DeclModifierSyntax/detail``
     */
   case class DeclModifierDetailSyntax(json: Value) extends Syntax with Parenthesized {
     def leftParen: SwiftToken =
@@ -3105,29 +3105,29 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``ActorDeclSyntax``. ``ActorDeclSyntax/modifiers``
-    *   - ``AssociatedTypeDeclSyntax``. ``AssociatedTypeDeclSyntax/modifiers``
-    *   - ``ClassDeclSyntax``. ``ClassDeclSyntax/modifiers``
-    *   - ``ClosureParameterSyntax``. ``ClosureParameterSyntax/modifiers``
-    *   - ``DeinitializerDeclSyntax``. ``DeinitializerDeclSyntax/modifiers``
-    *   - ``EditorPlaceholderDeclSyntax``. ``EditorPlaceholderDeclSyntax/modifiers``
-    *   - ``EnumCaseDeclSyntax``. ``EnumCaseDeclSyntax/modifiers``
-    *   - ``EnumCaseParameterSyntax``. ``EnumCaseParameterSyntax/modifiers``
-    *   - ``EnumDeclSyntax``. ``EnumDeclSyntax/modifiers``
-    *   - ``ExtensionDeclSyntax``. ``ExtensionDeclSyntax/modifiers``
-    *   - ``FunctionDeclSyntax``. ``FunctionDeclSyntax/modifiers``
-    *   - ``FunctionParameterSyntax``. ``FunctionParameterSyntax/modifiers``
-    *   - ``ImportDeclSyntax``. ``ImportDeclSyntax/modifiers``
-    *   - ``InitializerDeclSyntax``. ``InitializerDeclSyntax/modifiers``
-    *   - ``MacroDeclSyntax``. ``MacroDeclSyntax/modifiers``
-    *   - ``MacroExpansionDeclSyntax``. ``MacroExpansionDeclSyntax/modifiers``
-    *   - ``MissingDeclSyntax``. ``MissingDeclSyntax/modifiers``
-    *   - ``PrecedenceGroupDeclSyntax``. ``PrecedenceGroupDeclSyntax/modifiers``
-    *   - ``ProtocolDeclSyntax``. ``ProtocolDeclSyntax/modifiers``
-    *   - ``StructDeclSyntax``. ``StructDeclSyntax/modifiers``
-    *   - ``SubscriptDeclSyntax``. ``SubscriptDeclSyntax/modifiers``
-    *   - ``TypeAliasDeclSyntax``. ``TypeAliasDeclSyntax/modifiers``
-    *   - ``VariableDeclSyntax``. ``VariableDeclSyntax/modifiers``
+    *   - ``ActorDeclSyntax``.``ActorDeclSyntax/modifiers``
+    *   - ``AssociatedTypeDeclSyntax``.``AssociatedTypeDeclSyntax/modifiers``
+    *   - ``ClassDeclSyntax``.``ClassDeclSyntax/modifiers``
+    *   - ``ClosureParameterSyntax``.``ClosureParameterSyntax/modifiers``
+    *   - ``DeinitializerDeclSyntax``.``DeinitializerDeclSyntax/modifiers``
+    *   - ``EditorPlaceholderDeclSyntax``.``EditorPlaceholderDeclSyntax/modifiers``
+    *   - ``EnumCaseDeclSyntax``.``EnumCaseDeclSyntax/modifiers``
+    *   - ``EnumCaseParameterSyntax``.``EnumCaseParameterSyntax/modifiers``
+    *   - ``EnumDeclSyntax``.``EnumDeclSyntax/modifiers``
+    *   - ``ExtensionDeclSyntax``.``ExtensionDeclSyntax/modifiers``
+    *   - ``FunctionDeclSyntax``.``FunctionDeclSyntax/modifiers``
+    *   - ``FunctionParameterSyntax``.``FunctionParameterSyntax/modifiers``
+    *   - ``ImportDeclSyntax``.``ImportDeclSyntax/modifiers``
+    *   - ``InitializerDeclSyntax``.``InitializerDeclSyntax/modifiers``
+    *   - ``MacroDeclSyntax``.``MacroDeclSyntax/modifiers``
+    *   - ``MacroExpansionDeclSyntax``.``MacroExpansionDeclSyntax/modifiers``
+    *   - ``MissingDeclSyntax``.``MissingDeclSyntax/modifiers``
+    *   - ``PrecedenceGroupDeclSyntax``.``PrecedenceGroupDeclSyntax/modifiers``
+    *   - ``ProtocolDeclSyntax``.``ProtocolDeclSyntax/modifiers``
+    *   - ``StructDeclSyntax``.``StructDeclSyntax/modifiers``
+    *   - ``SubscriptDeclSyntax``.``SubscriptDeclSyntax/modifiers``
+    *   - ``TypeAliasDeclSyntax``.``TypeAliasDeclSyntax/modifiers``
+    *   - ``VariableDeclSyntax``.``VariableDeclSyntax/modifiers``
     */
   case class DeclModifierListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[DeclModifierSyntax] =
@@ -3149,7 +3149,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AccessorDeclSyntax``. ``AccessorDeclSyntax/modifier``
+    *   - ``AccessorDeclSyntax``.``AccessorDeclSyntax/modifier``
     *   - ``DeclModifierListSyntax``
     */
   case class DeclModifierSyntax(json: Value) extends Syntax {
@@ -3172,7 +3172,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``DeclNameArgumentsSyntax``. ``DeclNameArgumentsSyntax/arguments``
+    *   - ``DeclNameArgumentsSyntax``.``DeclNameArgumentsSyntax/arguments``
     */
   case class DeclNameArgumentListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[DeclNameArgumentSyntax] =
@@ -3212,7 +3212,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``DeclReferenceExprSyntax``. ``DeclReferenceExprSyntax/argumentNames``
+    *   - ``DeclReferenceExprSyntax``.``DeclReferenceExprSyntax/argumentNames``
     */
   case class DeclNameArgumentsSyntax(json: Value) extends Syntax with Parenthesized {
     def leftParen: SwiftToken =
@@ -3240,11 +3240,11 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``DynamicReplacementAttributeArgumentsSyntax``. ``DynamicReplacementAttributeArgumentsSyntax/declName``
-    *   - ``ImplementsAttributeArgumentsSyntax``. ``ImplementsAttributeArgumentsSyntax/declName``
-    *   - ``KeyPathPropertyComponentSyntax``. ``KeyPathPropertyComponentSyntax/declName``
-    *   - ``MemberAccessExprSyntax``. ``MemberAccessExprSyntax/declName``
-    *   - ``SpecializeTargetFunctionArgumentSyntax``. ``SpecializeTargetFunctionArgumentSyntax/declName``
+    *   - ``DynamicReplacementAttributeArgumentsSyntax``.``DynamicReplacementAttributeArgumentsSyntax/declName``
+    *   - ``ImplementsAttributeArgumentsSyntax``.``ImplementsAttributeArgumentsSyntax/declName``
+    *   - ``KeyPathPropertyComponentSyntax``.``KeyPathPropertyComponentSyntax/declName``
+    *   - ``MemberAccessExprSyntax``.``MemberAccessExprSyntax/declName``
+    *   - ``SpecializeTargetFunctionArgumentSyntax``.``SpecializeTargetFunctionArgumentSyntax/declName``
     */
   case class DeclReferenceExprSyntax(json: Value) extends ExprSyntax {
     def baseName: SwiftToken =
@@ -3343,7 +3343,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``DeinitializerDeclSyntax``. ``DeinitializerDeclSyntax/effectSpecifiers``
+    *   - ``DeinitializerDeclSyntax``.``DeinitializerDeclSyntax/effectSpecifiers``
     */
   case class DeinitializerEffectSpecifiersSyntax(json: Value) extends Syntax {
     def asyncSpecifier: Option[SwiftToken] = json("children").arr.toList
@@ -3369,7 +3369,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AttributeSyntax``. ``AttributeSyntax/arguments``
+    *   - ``AttributeSyntax``.``AttributeSyntax/arguments``
     */
   case class DerivativeAttributeArgumentsSyntax(json: Value) extends Syntax {
     def ofLabel: SwiftToken =
@@ -3411,7 +3411,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``OperatorPrecedenceAndTypesSyntax``. ``OperatorPrecedenceAndTypesSyntax/designatedTypes``
+    *   - ``OperatorPrecedenceAndTypesSyntax``.``OperatorPrecedenceAndTypesSyntax/designatedTypes``
     */
   case class DesignatedTypeListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[DesignatedTypeSyntax] =
@@ -3452,7 +3452,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``DictionaryExprSyntax``. ``DictionaryExprSyntax/content``
+    *   - ``DictionaryExprSyntax``.``DictionaryExprSyntax/content``
     */
   case class DictionaryElementListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[DictionaryElementSyntax] =
@@ -3563,7 +3563,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``DifferentiabilityArgumentsSyntax``. ``DifferentiabilityArgumentsSyntax/arguments``
+    *   - ``DifferentiabilityArgumentsSyntax``.``DifferentiabilityArgumentsSyntax/arguments``
     */
   case class DifferentiabilityArgumentListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[DifferentiabilityArgumentSyntax] =
@@ -3583,7 +3583,7 @@ object SwiftNodeSyntax {
     * ### Contained in
     *
     *   - ``DifferentiabilityArgumentListSyntax``
-    *   - ``DifferentiabilityWithRespectToArgumentSyntax``. ``DifferentiabilityWithRespectToArgumentSyntax/arguments``
+    *   - ``DifferentiabilityWithRespectToArgumentSyntax``.``DifferentiabilityWithRespectToArgumentSyntax/arguments``
     */
   case class DifferentiabilityArgumentSyntax(json: Value) extends Syntax with WithTrailingComma {
     def argument: SwiftToken =
@@ -3607,7 +3607,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``DifferentiabilityWithRespectToArgumentSyntax``. ``DifferentiabilityWithRespectToArgumentSyntax/arguments``
+    *   - ``DifferentiabilityWithRespectToArgumentSyntax``.``DifferentiabilityWithRespectToArgumentSyntax/arguments``
     */
   case class DifferentiabilityArgumentsSyntax(json: Value) extends Syntax {
     def leftParen: SwiftToken =
@@ -3635,8 +3635,8 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``DerivativeAttributeArgumentsSyntax``. ``DerivativeAttributeArgumentsSyntax/arguments``
-    *   - ``DifferentiableAttributeArgumentsSyntax``. ``DifferentiableAttributeArgumentsSyntax/arguments``
+    *   - ``DerivativeAttributeArgumentsSyntax``.``DerivativeAttributeArgumentsSyntax/arguments``
+    *   - ``DifferentiableAttributeArgumentsSyntax``.``DifferentiableAttributeArgumentsSyntax/arguments``
     */
   case class DifferentiabilityWithRespectToArgumentSyntax(json: Value) extends Syntax {
     def wrtLabel: SwiftToken =
@@ -3667,7 +3667,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AttributeSyntax``. ``AttributeSyntax/arguments``
+    *   - ``AttributeSyntax``.``AttributeSyntax/arguments``
     */
   case class DifferentiableAttributeArgumentsSyntax(json: Value) extends Syntax {
     def kindSpecifier: Option[SwiftToken] = json("children").arr.toList
@@ -3831,7 +3831,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AttributeSyntax``. ``AttributeSyntax/arguments``
+    *   - ``AttributeSyntax``.``AttributeSyntax/arguments``
     */
   case class DocumentationAttributeArgumentListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[DocumentationAttributeArgumentSyntax] =
@@ -3885,7 +3885,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AttributeSyntax``. ``AttributeSyntax/arguments``
+    *   - ``AttributeSyntax``.``AttributeSyntax/arguments``
     */
   case class DynamicReplacementAttributeArgumentsSyntax(json: Value) extends Syntax {
     def forLabel: SwiftToken =
@@ -3965,7 +3965,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AttributeSyntax``. ``AttributeSyntax/arguments``
+    *   - ``AttributeSyntax``.``AttributeSyntax/arguments``
     */
   case class EffectsAttributeArgumentListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[TokenSyntax] = json("children").arr.toList.map(createSwiftNode).map(_.asInstanceOf[TokenSyntax])
@@ -3973,7 +3973,7 @@ object SwiftNodeSyntax {
 
   /** ### Documentation
     *
-    * A `case` declaration of a Swift `enum`. It can have 1 or more `EnumCaseElement` s inside, each declaring a
+    * A `case` declaration of a Swift `enum`. It can have 1 or more `EnumCaseElement`s inside, each declaring a
     * different case of the enum.
     *
     * ### Children
@@ -4013,7 +4013,7 @@ object SwiftNodeSyntax {
 
   /** ### Documentation
     *
-    * A collection of 0 or more ``EnumCaseElementSyntax`` s.
+    * A collection of 0 or more ``EnumCaseElementSyntax``s.
     *
     * ### Children
     *
@@ -4021,7 +4021,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``EnumCaseDeclSyntax``. ``EnumCaseDeclSyntax/elements``
+    *   - ``EnumCaseDeclSyntax``.``EnumCaseDeclSyntax/elements``
     */
   case class EnumCaseElementListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[EnumCaseElementSyntax] =
@@ -4076,7 +4076,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``EnumCaseElementSyntax``. ``EnumCaseElementSyntax/parameterClause``
+    *   - ``EnumCaseElementSyntax``.``EnumCaseElementSyntax/parameterClause``
     */
   case class EnumCaseParameterClauseSyntax(json: Value) extends Syntax with Parenthesized {
     def leftParen: SwiftToken =
@@ -4102,7 +4102,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``EnumCaseParameterClauseSyntax``. ``EnumCaseParameterClauseSyntax/parameters``
+    *   - ``EnumCaseParameterClauseSyntax``.``EnumCaseParameterClauseSyntax/parameters``
     */
   case class EnumCaseParameterListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[EnumCaseParameterSyntax] =
@@ -4240,7 +4240,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AttributeSyntax``. ``AttributeSyntax/arguments``
+    *   - ``AttributeSyntax``.``AttributeSyntax/arguments``
     */
   case class ExposeAttributeArgumentsSyntax(json: Value) extends Syntax {
     def language: TokenSyntax =
@@ -4265,7 +4265,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``SequenceExprSyntax``. ``SequenceExprSyntax/elements``
+    *   - ``SequenceExprSyntax``.``SequenceExprSyntax/elements``
     */
   case class ExprListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[ExprSyntax] = json("children").arr.toList.map(createSwiftNode).map(_.asInstanceOf[ExprSyntax])
@@ -4653,7 +4653,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``FunctionSignatureSyntax``. ``FunctionSignatureSyntax/effectSpecifiers``
+    *   - ``FunctionSignatureSyntax``.``FunctionSignatureSyntax/effectSpecifiers``
     */
   case class FunctionEffectSpecifiersSyntax(json: Value) extends Syntax with EffectSpecifiers {
     def asyncSpecifier: Option[SwiftToken] = json("children").arr.toList
@@ -4679,8 +4679,8 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``FunctionSignatureSyntax``. ``FunctionSignatureSyntax/parameterClause``
-    *   - ``SubscriptDeclSyntax``. ``SubscriptDeclSyntax/parameterClause``
+    *   - ``FunctionSignatureSyntax``.``FunctionSignatureSyntax/parameterClause``
+    *   - ``SubscriptDeclSyntax``.``SubscriptDeclSyntax/parameterClause``
     */
   case class FunctionParameterClauseSyntax(json: Value) extends Syntax with Parenthesized {
     def leftParen: SwiftToken =
@@ -4706,7 +4706,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``FunctionParameterClauseSyntax``. ``FunctionParameterClauseSyntax/parameters``
+    *   - ``FunctionParameterClauseSyntax``.``FunctionParameterClauseSyntax/parameters``
     */
   case class FunctionParameterListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[FunctionParameterSyntax] =
@@ -4790,9 +4790,9 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``FunctionDeclSyntax``. ``FunctionDeclSyntax/signature``
-    *   - ``InitializerDeclSyntax``. ``InitializerDeclSyntax/signature``
-    *   - ``MacroDeclSyntax``. ``MacroDeclSyntax/signature``
+    *   - ``FunctionDeclSyntax``.``FunctionDeclSyntax/signature``
+    *   - ``InitializerDeclSyntax``.``InitializerDeclSyntax/signature``
+    *   - ``MacroDeclSyntax``.``MacroDeclSyntax/signature``
     */
   case class FunctionSignatureSyntax(json: Value) extends Syntax {
     def parameterClause: FunctionParameterClauseSyntax = json("children").arr.toList
@@ -4863,12 +4863,12 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``GenericSpecializationExprSyntax``. ``GenericSpecializationExprSyntax/genericArgumentClause``
-    *   - ``IdentifierTypeSyntax``. ``IdentifierTypeSyntax/genericArgumentClause``
-    *   - ``KeyPathPropertyComponentSyntax``. ``KeyPathPropertyComponentSyntax/genericArgumentClause``
-    *   - ``MacroExpansionDeclSyntax``. ``MacroExpansionDeclSyntax/genericArgumentClause``
-    *   - ``MacroExpansionExprSyntax``. ``MacroExpansionExprSyntax/genericArgumentClause``
-    *   - ``MemberTypeSyntax``. ``MemberTypeSyntax/genericArgumentClause``
+    *   - ``GenericSpecializationExprSyntax``.``GenericSpecializationExprSyntax/genericArgumentClause``
+    *   - ``IdentifierTypeSyntax``.``IdentifierTypeSyntax/genericArgumentClause``
+    *   - ``KeyPathPropertyComponentSyntax``.``KeyPathPropertyComponentSyntax/genericArgumentClause``
+    *   - ``MacroExpansionDeclSyntax``.``MacroExpansionDeclSyntax/genericArgumentClause``
+    *   - ``MacroExpansionExprSyntax``.``MacroExpansionExprSyntax/genericArgumentClause``
+    *   - ``MemberTypeSyntax``.``MemberTypeSyntax/genericArgumentClause``
     */
   case class GenericArgumentClauseSyntax(json: Value) extends Syntax {
     def leftAngle: SwiftToken =
@@ -4894,7 +4894,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``GenericArgumentClauseSyntax``. ``GenericArgumentClauseSyntax/arguments``
+    *   - ``GenericArgumentClauseSyntax``.``GenericArgumentClauseSyntax/arguments``
     */
   case class GenericArgumentListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[GenericArgumentSyntax] =
@@ -4937,16 +4937,16 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``ActorDeclSyntax``. ``ActorDeclSyntax/genericParameterClause``
-    *   - ``ClassDeclSyntax``. ``ClassDeclSyntax/genericParameterClause``
-    *   - ``EnumDeclSyntax``. ``EnumDeclSyntax/genericParameterClause``
-    *   - ``FunctionDeclSyntax``. ``FunctionDeclSyntax/genericParameterClause``
-    *   - ``InitializerDeclSyntax``. ``InitializerDeclSyntax/genericParameterClause``
-    *   - ``MacroDeclSyntax``. ``MacroDeclSyntax/genericParameterClause``
-    *   - ``NamedOpaqueReturnTypeSyntax``. ``NamedOpaqueReturnTypeSyntax/genericParameterClause``
-    *   - ``StructDeclSyntax``. ``StructDeclSyntax/genericParameterClause``
-    *   - ``SubscriptDeclSyntax``. ``SubscriptDeclSyntax/genericParameterClause``
-    *   - ``TypeAliasDeclSyntax``. ``TypeAliasDeclSyntax/genericParameterClause``
+    *   - ``ActorDeclSyntax``.``ActorDeclSyntax/genericParameterClause``
+    *   - ``ClassDeclSyntax``.``ClassDeclSyntax/genericParameterClause``
+    *   - ``EnumDeclSyntax``.``EnumDeclSyntax/genericParameterClause``
+    *   - ``FunctionDeclSyntax``.``FunctionDeclSyntax/genericParameterClause``
+    *   - ``InitializerDeclSyntax``.``InitializerDeclSyntax/genericParameterClause``
+    *   - ``MacroDeclSyntax``.``MacroDeclSyntax/genericParameterClause``
+    *   - ``NamedOpaqueReturnTypeSyntax``.``NamedOpaqueReturnTypeSyntax/genericParameterClause``
+    *   - ``StructDeclSyntax``.``StructDeclSyntax/genericParameterClause``
+    *   - ``SubscriptDeclSyntax``.``SubscriptDeclSyntax/genericParameterClause``
+    *   - ``TypeAliasDeclSyntax``.``TypeAliasDeclSyntax/genericParameterClause``
     */
   case class GenericParameterClauseSyntax(json: Value) extends Syntax {
     def leftAngle: SwiftToken =
@@ -4977,7 +4977,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``GenericParameterClauseSyntax``. ``GenericParameterClauseSyntax/parameters``
+    *   - ``GenericParameterClauseSyntax``.``GenericParameterClauseSyntax/parameters``
     */
   case class GenericParameterListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[GenericParameterSyntax] =
@@ -5040,7 +5040,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``GenericWhereClauseSyntax``. ``GenericWhereClauseSyntax/requirements``
+    *   - ``GenericWhereClauseSyntax``.``GenericWhereClauseSyntax/requirements``
     */
   case class GenericRequirementListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[GenericRequirementSyntax] =
@@ -5108,21 +5108,21 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``ActorDeclSyntax``. ``ActorDeclSyntax/genericWhereClause``
-    *   - ``AssociatedTypeDeclSyntax``. ``AssociatedTypeDeclSyntax/genericWhereClause``
-    *   - ``ClassDeclSyntax``. ``ClassDeclSyntax/genericWhereClause``
-    *   - ``DifferentiableAttributeArgumentsSyntax``. ``DifferentiableAttributeArgumentsSyntax/genericWhereClause``
-    *   - ``EnumDeclSyntax``. ``EnumDeclSyntax/genericWhereClause``
-    *   - ``ExtensionDeclSyntax``. ``ExtensionDeclSyntax/genericWhereClause``
-    *   - ``FunctionDeclSyntax``. ``FunctionDeclSyntax/genericWhereClause``
-    *   - ``GenericParameterClauseSyntax``. ``GenericParameterClauseSyntax/genericWhereClause``
-    *   - ``InitializerDeclSyntax``. ``InitializerDeclSyntax/genericWhereClause``
-    *   - ``MacroDeclSyntax``. ``MacroDeclSyntax/genericWhereClause``
-    *   - ``ProtocolDeclSyntax``. ``ProtocolDeclSyntax/genericWhereClause``
+    *   - ``ActorDeclSyntax``.``ActorDeclSyntax/genericWhereClause``
+    *   - ``AssociatedTypeDeclSyntax``.``AssociatedTypeDeclSyntax/genericWhereClause``
+    *   - ``ClassDeclSyntax``.``ClassDeclSyntax/genericWhereClause``
+    *   - ``DifferentiableAttributeArgumentsSyntax``.``DifferentiableAttributeArgumentsSyntax/genericWhereClause``
+    *   - ``EnumDeclSyntax``.``EnumDeclSyntax/genericWhereClause``
+    *   - ``ExtensionDeclSyntax``.``ExtensionDeclSyntax/genericWhereClause``
+    *   - ``FunctionDeclSyntax``.``FunctionDeclSyntax/genericWhereClause``
+    *   - ``GenericParameterClauseSyntax``.``GenericParameterClauseSyntax/genericWhereClause``
+    *   - ``InitializerDeclSyntax``.``InitializerDeclSyntax/genericWhereClause``
+    *   - ``MacroDeclSyntax``.``MacroDeclSyntax/genericWhereClause``
+    *   - ``ProtocolDeclSyntax``.``ProtocolDeclSyntax/genericWhereClause``
     *   - ``SpecializeAttributeArgumentListSyntax``
-    *   - ``StructDeclSyntax``. ``StructDeclSyntax/genericWhereClause``
-    *   - ``SubscriptDeclSyntax``. ``SubscriptDeclSyntax/genericWhereClause``
-    *   - ``TypeAliasDeclSyntax``. ``TypeAliasDeclSyntax/genericWhereClause``
+    *   - ``StructDeclSyntax``.``StructDeclSyntax/genericWhereClause``
+    *   - ``SubscriptDeclSyntax``.``SubscriptDeclSyntax/genericWhereClause``
+    *   - ``TypeAliasDeclSyntax``.``TypeAliasDeclSyntax/genericWhereClause``
     */
   case class GenericWhereClauseSyntax(json: Value) extends Syntax {
     def whereKeyword: SwiftToken = json("children").arr.toList
@@ -5228,7 +5228,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``IfConfigDeclSyntax``. ``IfConfigDeclSyntax/clauses``
+    *   - ``IfConfigDeclSyntax``.``IfConfigDeclSyntax/clauses``
     */
   case class IfConfigClauseListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[IfConfigClauseSyntax] =
@@ -5286,7 +5286,7 @@ object SwiftNodeSyntax {
     * ### Contained in
     *
     *   - ``AttributeListSyntax``
-    *   - ``PostfixIfConfigExprSyntax``. ``PostfixIfConfigExprSyntax/config``
+    *   - ``PostfixIfConfigExprSyntax``.``PostfixIfConfigExprSyntax/config``
     *   - ``SwitchCaseListSyntax``
     */
   case class IfConfigDeclSyntax(json: Value) extends DeclSyntax {
@@ -5314,7 +5314,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``IfExprSyntax``. ``IfExprSyntax/elseBody``
+    *   - ``IfExprSyntax``.``IfExprSyntax/elseBody``
     */
   case class IfExprSyntax(json: Value) extends ExprSyntax with WithCodeBlock {
     def ifKeyword: SwiftToken =
@@ -5352,7 +5352,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AttributeSyntax``. ``AttributeSyntax/arguments``
+    *   - ``AttributeSyntax``.``AttributeSyntax/arguments``
     */
   case class ImplementsAttributeArgumentsSyntax(json: Value) extends Syntax {
     def `type`: TypeSyntax =
@@ -5455,7 +5455,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``ImportDeclSyntax``. ``ImportDeclSyntax/path``
+    *   - ``ImportDeclSyntax``.``ImportDeclSyntax/path``
     */
   case class ImportPathComponentListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[ImportPathComponentSyntax] =
@@ -5548,13 +5548,13 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``ActorDeclSyntax``. ``ActorDeclSyntax/inheritanceClause``
-    *   - ``AssociatedTypeDeclSyntax``. ``AssociatedTypeDeclSyntax/inheritanceClause``
-    *   - ``ClassDeclSyntax``. ``ClassDeclSyntax/inheritanceClause``
-    *   - ``EnumDeclSyntax``. ``EnumDeclSyntax/inheritanceClause``
-    *   - ``ExtensionDeclSyntax``. ``ExtensionDeclSyntax/inheritanceClause``
-    *   - ``ProtocolDeclSyntax``. ``ProtocolDeclSyntax/inheritanceClause``
-    *   - ``StructDeclSyntax``. ``StructDeclSyntax/inheritanceClause``
+    *   - ``ActorDeclSyntax``.``ActorDeclSyntax/inheritanceClause``
+    *   - ``AssociatedTypeDeclSyntax``.``AssociatedTypeDeclSyntax/inheritanceClause``
+    *   - ``ClassDeclSyntax``.``ClassDeclSyntax/inheritanceClause``
+    *   - ``EnumDeclSyntax``.``EnumDeclSyntax/inheritanceClause``
+    *   - ``ExtensionDeclSyntax``.``ExtensionDeclSyntax/inheritanceClause``
+    *   - ``ProtocolDeclSyntax``.``ProtocolDeclSyntax/inheritanceClause``
+    *   - ``StructDeclSyntax``.``StructDeclSyntax/inheritanceClause``
     */
   case class InheritanceClauseSyntax(json: Value) extends Syntax {
     def colon: SwiftToken =
@@ -5577,7 +5577,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``InheritanceClauseSyntax``. ``InheritanceClauseSyntax/inheritedTypes``
+    *   - ``InheritanceClauseSyntax``.``InheritanceClauseSyntax/inheritedTypes``
     */
   case class InheritedTypeListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[InheritedTypeSyntax] =
@@ -5618,13 +5618,13 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``EnumCaseElementSyntax``. ``EnumCaseElementSyntax/rawValue``
-    *   - ``EnumCaseParameterSyntax``. ``EnumCaseParameterSyntax/defaultValue``
-    *   - ``FunctionParameterSyntax``. ``FunctionParameterSyntax/defaultValue``
-    *   - ``MacroDeclSyntax``. ``MacroDeclSyntax/definition``
-    *   - ``MatchingPatternConditionSyntax``. ``MatchingPatternConditionSyntax/initializer``
-    *   - ``OptionalBindingConditionSyntax``. ``OptionalBindingConditionSyntax/initializer``
-    *   - ``PatternBindingSyntax``. ``PatternBindingSyntax/initializer``
+    *   - ``EnumCaseElementSyntax``.``EnumCaseElementSyntax/rawValue``
+    *   - ``EnumCaseParameterSyntax``.``EnumCaseParameterSyntax/defaultValue``
+    *   - ``FunctionParameterSyntax``.``FunctionParameterSyntax/defaultValue``
+    *   - ``MacroDeclSyntax``.``MacroDeclSyntax/definition``
+    *   - ``MatchingPatternConditionSyntax``.``MatchingPatternConditionSyntax/initializer``
+    *   - ``OptionalBindingConditionSyntax``.``OptionalBindingConditionSyntax/initializer``
+    *   - ``PatternBindingSyntax``.``PatternBindingSyntax/initializer``
     */
   case class InitializerClauseSyntax(json: Value) extends Syntax {
     def equal: SwiftToken =
@@ -5787,7 +5787,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``KeyPathExprSyntax``. ``KeyPathExprSyntax/components``
+    *   - ``KeyPathExprSyntax``.``KeyPathExprSyntax/components``
     */
   case class KeyPathComponentListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[KeyPathComponentSyntax] =
@@ -5862,7 +5862,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``KeyPathComponentSyntax``. ``KeyPathComponentSyntax/component``
+    *   - ``KeyPathComponentSyntax``.``KeyPathComponentSyntax/component``
     */
   case class KeyPathOptionalComponentSyntax(json: Value) extends Syntax {
     def questionOrExclamationMark: SwiftToken = json("children").arr.toList
@@ -5883,7 +5883,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``KeyPathComponentSyntax``. ``KeyPathComponentSyntax/component``
+    *   - ``KeyPathComponentSyntax``.``KeyPathComponentSyntax/component``
     */
   case class KeyPathPropertyComponentSyntax(json: Value) extends Syntax {
     def declName: DeclReferenceExprSyntax = json("children").arr.toList
@@ -5910,7 +5910,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``KeyPathComponentSyntax``. ``KeyPathComponentSyntax/component``
+    *   - ``KeyPathComponentSyntax``.``KeyPathComponentSyntax/component``
     */
   case class KeyPathSubscriptComponentSyntax(json: Value) extends Syntax {
     def leftSquare: SwiftToken =
@@ -5939,14 +5939,14 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AttributeSyntax``. ``AttributeSyntax/arguments``
-    *   - ``ExpressionSegmentSyntax``. ``ExpressionSegmentSyntax/expressions``
-    *   - ``FunctionCallExprSyntax``. ``FunctionCallExprSyntax/arguments``
-    *   - ``KeyPathSubscriptComponentSyntax``. ``KeyPathSubscriptComponentSyntax/arguments``
-    *   - ``MacroExpansionDeclSyntax``. ``MacroExpansionDeclSyntax/arguments``
-    *   - ``MacroExpansionExprSyntax``. ``MacroExpansionExprSyntax/arguments``
-    *   - ``SubscriptCallExprSyntax``. ``SubscriptCallExprSyntax/arguments``
-    *   - ``TupleExprSyntax``. ``TupleExprSyntax/elements``
+    *   - ``AttributeSyntax``.``AttributeSyntax/arguments``
+    *   - ``ExpressionSegmentSyntax``.``ExpressionSegmentSyntax/expressions``
+    *   - ``FunctionCallExprSyntax``.``FunctionCallExprSyntax/arguments``
+    *   - ``KeyPathSubscriptComponentSyntax``.``KeyPathSubscriptComponentSyntax/arguments``
+    *   - ``MacroExpansionDeclSyntax``.``MacroExpansionDeclSyntax/arguments``
+    *   - ``MacroExpansionExprSyntax``.``MacroExpansionExprSyntax/arguments``
+    *   - ``SubscriptCallExprSyntax``.``SubscriptCallExprSyntax/arguments``
+    *   - ``TupleExprSyntax``.``TupleExprSyntax/elements``
     */
   case class LabeledExprListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[LabeledExprSyntax] =
@@ -6060,7 +6060,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``GenericRequirementSyntax``. ``GenericRequirementSyntax/requirement``
+    *   - ``GenericRequirementSyntax``.``GenericRequirementSyntax/requirement``
     */
   case class LayoutRequirementSyntax(json: Value) extends Syntax {
     def `type`: TypeSyntax =
@@ -6398,7 +6398,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``ConditionElementSyntax``. ``ConditionElementSyntax/condition``
+    *   - ``ConditionElementSyntax``.``ConditionElementSyntax/condition``
     */
   case class MatchingPatternConditionSyntax(json: Value) extends Syntax {
     def caseKeyword: SwiftToken = json("children").arr.toList
@@ -6458,8 +6458,8 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``IfConfigClauseSyntax``. ``IfConfigClauseSyntax/elements``
-    *   - ``MemberBlockSyntax``. ``MemberBlockSyntax/members``
+    *   - ``IfConfigClauseSyntax``.``IfConfigClauseSyntax/elements``
+    *   - ``MemberBlockSyntax``.``MemberBlockSyntax/members``
     */
   case class MemberBlockItemListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[MemberBlockItemSyntax] =
@@ -6501,12 +6501,12 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``ActorDeclSyntax``. ``ActorDeclSyntax/memberBlock``
-    *   - ``ClassDeclSyntax``. ``ClassDeclSyntax/memberBlock``
-    *   - ``EnumDeclSyntax``. ``EnumDeclSyntax/memberBlock``
-    *   - ``ExtensionDeclSyntax``. ``ExtensionDeclSyntax/memberBlock``
-    *   - ``ProtocolDeclSyntax``. ``ProtocolDeclSyntax/memberBlock``
-    *   - ``StructDeclSyntax``. ``StructDeclSyntax/memberBlock``
+    *   - ``ActorDeclSyntax``.``ActorDeclSyntax/memberBlock``
+    *   - ``ClassDeclSyntax``.``ClassDeclSyntax/memberBlock``
+    *   - ``EnumDeclSyntax``.``EnumDeclSyntax/memberBlock``
+    *   - ``ExtensionDeclSyntax``.``ExtensionDeclSyntax/memberBlock``
+    *   - ``ProtocolDeclSyntax``.``ProtocolDeclSyntax/memberBlock``
+    *   - ``StructDeclSyntax``.``StructDeclSyntax/memberBlock``
     */
   case class MemberBlockSyntax(json: Value) extends Syntax with Braced {
     def leftBrace: SwiftToken =
@@ -6709,10 +6709,10 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``FunctionCallExprSyntax``. ``FunctionCallExprSyntax/additionalTrailingClosures``
-    *   - ``MacroExpansionDeclSyntax``. ``MacroExpansionDeclSyntax/additionalTrailingClosures``
-    *   - ``MacroExpansionExprSyntax``. ``MacroExpansionExprSyntax/additionalTrailingClosures``
-    *   - ``SubscriptCallExprSyntax``. ``SubscriptCallExprSyntax/additionalTrailingClosures``
+    *   - ``FunctionCallExprSyntax``.``FunctionCallExprSyntax/additionalTrailingClosures``
+    *   - ``MacroExpansionDeclSyntax``.``MacroExpansionDeclSyntax/additionalTrailingClosures``
+    *   - ``MacroExpansionExprSyntax``.``MacroExpansionExprSyntax/additionalTrailingClosures``
+    *   - ``SubscriptCallExprSyntax``.``SubscriptCallExprSyntax/additionalTrailingClosures``
     */
   case class MultipleTrailingClosureElementListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[MultipleTrailingClosureElementSyntax] =
@@ -6794,7 +6794,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AttributeSyntax``. ``AttributeSyntax/arguments``
+    *   - ``AttributeSyntax``.``AttributeSyntax/arguments``
     */
   case class ObjCSelectorPieceListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[ObjCSelectorPieceSyntax] =
@@ -6835,7 +6835,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AttributeSyntax``. ``AttributeSyntax/arguments``
+    *   - ``AttributeSyntax``.``AttributeSyntax/arguments``
     */
   case class OpaqueReturnTypeOfAttributeArgumentsSyntax(json: Value) extends Syntax {
     def mangledName: StringLiteralExprSyntax = json("children").arr.toList
@@ -6899,7 +6899,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``OperatorDeclSyntax``. ``OperatorDeclSyntax/operatorPrecedenceAndTypes``
+    *   - ``OperatorDeclSyntax``.``OperatorDeclSyntax/operatorPrecedenceAndTypes``
     */
   case class OperatorPrecedenceAndTypesSyntax(json: Value) extends Syntax {
     def colon: SwiftToken =
@@ -6931,7 +6931,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``ConditionElementSyntax``. ``ConditionElementSyntax/condition``
+    *   - ``ConditionElementSyntax``.``ConditionElementSyntax/condition``
     */
   case class OptionalBindingConditionSyntax(json: Value) extends Syntax {
     def bindingSpecifier: SwiftToken = json("children").arr.toList
@@ -7015,7 +7015,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AttributeSyntax``. ``AttributeSyntax/arguments``
+    *   - ``AttributeSyntax``.``AttributeSyntax/arguments``
     */
   case class OriginallyDefinedInAttributeArgumentsSyntax(json: Value) extends Syntax {
     def moduleLabel: SwiftToken = json("children").arr.toList
@@ -7147,7 +7147,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``VariableDeclSyntax``. ``VariableDeclSyntax/bindings``
+    *   - ``VariableDeclSyntax``.``VariableDeclSyntax/bindings``
     */
   case class PatternBindingListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[PatternBindingSyntax] =
@@ -7220,8 +7220,8 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``BackDeployedAttributeArgumentsSyntax``. ``BackDeployedAttributeArgumentsSyntax/platforms``
-    *   - ``OriginallyDefinedInAttributeArgumentsSyntax``. ``OriginallyDefinedInAttributeArgumentsSyntax/platforms``
+    *   - ``BackDeployedAttributeArgumentsSyntax``.``BackDeployedAttributeArgumentsSyntax/platforms``
+    *   - ``OriginallyDefinedInAttributeArgumentsSyntax``.``OriginallyDefinedInAttributeArgumentsSyntax/platforms``
     */
   case class PlatformVersionItemListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[PlatformVersionItemSyntax] =
@@ -7266,8 +7266,8 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AvailabilityArgumentSyntax``. ``AvailabilityArgumentSyntax/argument``
-    *   - ``PlatformVersionItemSyntax``. ``PlatformVersionItemSyntax/platformVersion``
+    *   - ``AvailabilityArgumentSyntax``.``AvailabilityArgumentSyntax/argument``
+    *   - ``PlatformVersionItemSyntax``.``PlatformVersionItemSyntax/platformVersion``
     */
   case class PlatformVersionSyntax(json: Value) extends Syntax {
     def platform: SwiftToken =
@@ -7336,7 +7336,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``PoundSourceLocationSyntax``. ``PoundSourceLocationSyntax/arguments``
+    *   - ``PoundSourceLocationSyntax``.``PoundSourceLocationSyntax/arguments``
     */
   case class PoundSourceLocationArgumentsSyntax(json: Value) extends Syntax {
     def fileLabel: SwiftToken =
@@ -7464,7 +7464,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``PrecedenceGroupDeclSyntax``. ``PrecedenceGroupDeclSyntax/groupAttributes``
+    *   - ``PrecedenceGroupDeclSyntax``.``PrecedenceGroupDeclSyntax/groupAttributes``
     */
   case class PrecedenceGroupAttributeListSyntax(json: Value) extends SyntaxCollection {
     def children
@@ -7544,7 +7544,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``PrecedenceGroupRelationSyntax``. ``PrecedenceGroupRelationSyntax/precedenceGroups``
+    *   - ``PrecedenceGroupRelationSyntax``.``PrecedenceGroupRelationSyntax/precedenceGroups``
     */
   case class PrecedenceGroupNameListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[PrecedenceGroupNameSyntax] =
@@ -7646,7 +7646,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``ProtocolDeclSyntax``. ``ProtocolDeclSyntax/primaryAssociatedTypeClause``
+    *   - ``ProtocolDeclSyntax``.``ProtocolDeclSyntax/primaryAssociatedTypeClause``
     */
   case class PrimaryAssociatedTypeClauseSyntax(json: Value) extends Syntax {
     def leftAngle: SwiftToken =
@@ -7672,7 +7672,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``PrimaryAssociatedTypeClauseSyntax``. ``PrimaryAssociatedTypeClauseSyntax/primaryAssociatedTypes``
+    *   - ``PrimaryAssociatedTypeClauseSyntax``.``PrimaryAssociatedTypeClauseSyntax/primaryAssociatedTypes``
     */
   case class PrimaryAssociatedTypeListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[PrimaryAssociatedTypeSyntax] =
@@ -7861,10 +7861,10 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``ClosureSignatureSyntax``. ``ClosureSignatureSyntax/returnClause``
-    *   - ``FunctionSignatureSyntax``. ``FunctionSignatureSyntax/returnClause``
-    *   - ``FunctionTypeSyntax``. ``FunctionTypeSyntax/returnClause``
-    *   - ``SubscriptDeclSyntax``. ``SubscriptDeclSyntax/returnClause``
+    *   - ``ClosureSignatureSyntax``.``ClosureSignatureSyntax/returnClause``
+    *   - ``FunctionSignatureSyntax``.``FunctionSignatureSyntax/returnClause``
+    *   - ``FunctionTypeSyntax``.``FunctionTypeSyntax/returnClause``
+    *   - ``SubscriptDeclSyntax``.``SubscriptDeclSyntax/returnClause``
     */
   case class ReturnClauseSyntax(json: Value) extends Syntax {
     def arrow: SwiftToken =
@@ -7910,7 +7910,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``GenericRequirementSyntax``. ``GenericRequirementSyntax/requirement``
+    *   - ``GenericRequirementSyntax``.``GenericRequirementSyntax/requirement``
     */
   case class SameTypeRequirementSyntax(json: Value) extends Syntax {
     def leftType: TypeSyntax =
@@ -7959,8 +7959,8 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AvailabilityLabeledArgumentSyntax``. ``AvailabilityLabeledArgumentSyntax/value``
-    *   - ``PoundSourceLocationArgumentsSyntax``. ``PoundSourceLocationArgumentsSyntax/fileName``
+    *   - ``AvailabilityLabeledArgumentSyntax``.``AvailabilityLabeledArgumentSyntax/value``
+    *   - ``PoundSourceLocationArgumentsSyntax``.``PoundSourceLocationArgumentsSyntax/fileName``
     */
   case class SimpleStringLiteralExprSyntax(json: Value) extends ExprSyntax {
     def openingQuote: SwiftToken = json("children").arr.toList
@@ -7992,7 +7992,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``SimpleStringLiteralExprSyntax``. ``SimpleStringLiteralExprSyntax/segments``
+    *   - ``SimpleStringLiteralExprSyntax``.``SimpleStringLiteralExprSyntax/segments``
     */
   case class SimpleStringLiteralSegmentListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[StringSegmentSyntax] =
@@ -8079,7 +8079,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AttributeSyntax``. ``AttributeSyntax/arguments``
+    *   - ``AttributeSyntax``.``AttributeSyntax/arguments``
     */
   case class SpecializeAttributeArgumentListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[
@@ -8187,14 +8187,14 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AttributeSyntax``. ``AttributeSyntax/arguments``
-    *   - ``ConventionAttributeArgumentsSyntax``. ``ConventionAttributeArgumentsSyntax/cTypeString``
-    *   - ``DocumentationAttributeArgumentSyntax``. ``DocumentationAttributeArgumentSyntax/value``
-    *   - ``ExposeAttributeArgumentsSyntax``. ``ExposeAttributeArgumentsSyntax/cxxName``
-    *   - ``OpaqueReturnTypeOfAttributeArgumentsSyntax``. ``OpaqueReturnTypeOfAttributeArgumentsSyntax/mangledName``
-    *   - ``OriginallyDefinedInAttributeArgumentsSyntax``. ``OriginallyDefinedInAttributeArgumentsSyntax/moduleName``
-    *   - ``UnavailableFromAsyncAttributeArgumentsSyntax``. ``UnavailableFromAsyncAttributeArgumentsSyntax/message``
-    *   - ``UnderscorePrivateAttributeArgumentsSyntax``. ``UnderscorePrivateAttributeArgumentsSyntax/filename``
+    *   - ``AttributeSyntax``.``AttributeSyntax/arguments``
+    *   - ``ConventionAttributeArgumentsSyntax``.``ConventionAttributeArgumentsSyntax/cTypeString``
+    *   - ``DocumentationAttributeArgumentSyntax``.``DocumentationAttributeArgumentSyntax/value``
+    *   - ``ExposeAttributeArgumentsSyntax``.``ExposeAttributeArgumentsSyntax/cxxName``
+    *   - ``OpaqueReturnTypeOfAttributeArgumentsSyntax``.``OpaqueReturnTypeOfAttributeArgumentsSyntax/mangledName``
+    *   - ``OriginallyDefinedInAttributeArgumentsSyntax``.``OriginallyDefinedInAttributeArgumentsSyntax/moduleName``
+    *   - ``UnavailableFromAsyncAttributeArgumentsSyntax``.``UnavailableFromAsyncAttributeArgumentsSyntax/message``
+    *   - ``UnderscorePrivateAttributeArgumentsSyntax``.``UnderscorePrivateAttributeArgumentsSyntax/filename``
     */
   case class StringLiteralExprSyntax(json: Value) extends ExprSyntax {
     def openingPounds: Option[SwiftToken] = json("children").arr.toList
@@ -8236,7 +8236,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``StringLiteralExprSyntax``. ``StringLiteralExprSyntax/segments``
+    *   - ``StringLiteralExprSyntax``.``StringLiteralExprSyntax/segments``
     */
   case class StringLiteralSegmentListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[StringSegmentSyntax | ExpressionSegmentSyntax] = json("children").arr.toList
@@ -8551,7 +8551,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``SwitchCaseLabelSyntax``. ``SwitchCaseLabelSyntax/caseItems``
+    *   - ``SwitchCaseLabelSyntax``.``SwitchCaseLabelSyntax/caseItems``
     */
   case class SwitchCaseItemListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[SwitchCaseItemSyntax] =
@@ -8599,7 +8599,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``SwitchCaseSyntax``. ``SwitchCaseSyntax/label``
+    *   - ``SwitchCaseSyntax``.``SwitchCaseSyntax/label``
     */
   case class SwitchCaseLabelSyntax(json: Value) extends Syntax {
     def caseKeyword: SwiftToken = json("children").arr.toList
@@ -8628,8 +8628,8 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``IfConfigClauseSyntax``. ``IfConfigClauseSyntax/elements``
-    *   - ``SwitchExprSyntax``. ``SwitchExprSyntax/cases``
+    *   - ``IfConfigClauseSyntax``.``IfConfigClauseSyntax/elements``
+    *   - ``SwitchExprSyntax``.``SwitchExprSyntax/cases``
     */
   case class SwitchCaseListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[SwitchCaseSyntax | IfConfigDeclSyntax] =
@@ -8680,7 +8680,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``SwitchCaseSyntax``. ``SwitchCaseSyntax/label``
+    *   - ``SwitchCaseSyntax``.``SwitchCaseSyntax/label``
     */
   case class SwitchDefaultLabelSyntax(json: Value) extends Syntax {
     def defaultKeyword: SwiftToken = json("children").arr.toList
@@ -8853,10 +8853,10 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AccessorEffectSpecifiersSyntax``. ``AccessorEffectSpecifiersSyntax/throwsClause``
-    *   - ``DoStmtSyntax``. ``DoStmtSyntax/throwsClause``
-    *   - ``FunctionEffectSpecifiersSyntax``. ``FunctionEffectSpecifiersSyntax/throwsClause``
-    *   - ``TypeEffectSpecifiersSyntax``. ``TypeEffectSpecifiersSyntax/throwsClause``
+    *   - ``AccessorEffectSpecifiersSyntax``.``AccessorEffectSpecifiersSyntax/throwsClause``
+    *   - ``DoStmtSyntax``.``DoStmtSyntax/throwsClause``
+    *   - ``FunctionEffectSpecifiersSyntax``.``FunctionEffectSpecifiersSyntax/throwsClause``
+    *   - ``TypeEffectSpecifiersSyntax``.``TypeEffectSpecifiersSyntax/throwsClause``
     */
   case class ThrowsClauseSyntax(json: Value) extends Syntax {
     def throwsSpecifier: SwiftToken = json("children").arr.toList
@@ -8954,7 +8954,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``TuplePatternSyntax``. ``TuplePatternSyntax/elements``
+    *   - ``TuplePatternSyntax``.``TuplePatternSyntax/elements``
     */
   case class TuplePatternElementListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[TuplePatternElementSyntax] =
@@ -9036,8 +9036,8 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``FunctionTypeSyntax``. ``FunctionTypeSyntax/parameters``
-    *   - ``TupleTypeSyntax``. ``TupleTypeSyntax/elements``
+    *   - ``FunctionTypeSyntax``.``FunctionTypeSyntax/parameters``
+    *   - ``TupleTypeSyntax``.``TupleTypeSyntax/elements``
     */
   case class TupleTypeElementListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[TupleTypeElementSyntax] =
@@ -9190,10 +9190,10 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``ForStmtSyntax``. ``ForStmtSyntax/typeAnnotation``
-    *   - ``MatchingPatternConditionSyntax``. ``MatchingPatternConditionSyntax/typeAnnotation``
-    *   - ``OptionalBindingConditionSyntax``. ``OptionalBindingConditionSyntax/typeAnnotation``
-    *   - ``PatternBindingSyntax``. ``PatternBindingSyntax/typeAnnotation``
+    *   - ``ForStmtSyntax``.``ForStmtSyntax/typeAnnotation``
+    *   - ``MatchingPatternConditionSyntax``.``MatchingPatternConditionSyntax/typeAnnotation``
+    *   - ``OptionalBindingConditionSyntax``.``OptionalBindingConditionSyntax/typeAnnotation``
+    *   - ``PatternBindingSyntax``.``PatternBindingSyntax/typeAnnotation``
     */
   case class TypeAnnotationSyntax(json: Value) extends Syntax {
     def colon: SwiftToken =
@@ -9214,9 +9214,9 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``ArrowExprSyntax``. ``ArrowExprSyntax/effectSpecifiers``
-    *   - ``ClosureSignatureSyntax``. ``ClosureSignatureSyntax/effectSpecifiers``
-    *   - ``FunctionTypeSyntax``. ``FunctionTypeSyntax/effectSpecifiers``
+    *   - ``ArrowExprSyntax``.``ArrowExprSyntax/effectSpecifiers``
+    *   - ``ClosureSignatureSyntax``.``ClosureSignatureSyntax/effectSpecifiers``
+    *   - ``FunctionTypeSyntax``.``FunctionTypeSyntax/effectSpecifiers``
     */
   case class TypeEffectSpecifiersSyntax(json: Value) extends Syntax with EffectSpecifiers {
     def asyncSpecifier: Option[SwiftToken] = json("children").arr.toList
@@ -9256,8 +9256,8 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AssociatedTypeDeclSyntax``. ``AssociatedTypeDeclSyntax/initializer``
-    *   - ``TypeAliasDeclSyntax``. ``TypeAliasDeclSyntax/initializer``
+    *   - ``AssociatedTypeDeclSyntax``.``AssociatedTypeDeclSyntax/initializer``
+    *   - ``TypeAliasDeclSyntax``.``TypeAliasDeclSyntax/initializer``
     */
   case class TypeInitializerClauseSyntax(json: Value) extends Syntax {
     def equal: SwiftToken =
@@ -9277,7 +9277,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AttributedTypeSyntax``. ``AttributedTypeSyntax/specifiers``
+    *   - ``AttributedTypeSyntax``.``AttributedTypeSyntax/specifiers``
     */
   case class TypeSpecifierListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[SimpleTypeSpecifierSyntax | LifetimeTypeSpecifierSyntax] = json("children").arr.toList
@@ -9297,7 +9297,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AttributeSyntax``. ``AttributeSyntax/arguments``
+    *   - ``AttributeSyntax``.``AttributeSyntax/arguments``
     */
   case class UnavailableFromAsyncAttributeArgumentsSyntax(json: Value) extends Syntax {
     def messageLabel: SwiftToken = json("children").arr.toList
@@ -9328,7 +9328,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AttributeSyntax``. ``AttributeSyntax/arguments``
+    *   - ``AttributeSyntax``.``AttributeSyntax/arguments``
     */
   case class UnderscorePrivateAttributeArgumentsSyntax(json: Value) extends Syntax {
     def sourceFileLabel: SwiftToken = json("children").arr.toList
@@ -9512,7 +9512,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``VersionTupleSyntax``. ``VersionTupleSyntax/components``
+    *   - ``VersionTupleSyntax``.``VersionTupleSyntax/components``
     */
   case class VersionComponentListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[VersionComponentSyntax] =
@@ -9552,9 +9552,9 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``AvailabilityLabeledArgumentSyntax``. ``AvailabilityLabeledArgumentSyntax/value``
-    *   - ``CanImportVersionInfoSyntax``. ``CanImportVersionInfoSyntax/version``
-    *   - ``PlatformVersionSyntax``. ``PlatformVersionSyntax/version``
+    *   - ``AvailabilityLabeledArgumentSyntax``.``AvailabilityLabeledArgumentSyntax/value``
+    *   - ``CanImportVersionInfoSyntax``.``CanImportVersionInfoSyntax/version``
+    *   - ``PlatformVersionSyntax``.``PlatformVersionSyntax/version``
     */
   case class VersionTupleSyntax(json: Value) extends Syntax {
     def major: SwiftToken =
@@ -9578,9 +9578,9 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``CatchItemSyntax``. ``CatchItemSyntax/whereClause``
-    *   - ``ForStmtSyntax``. ``ForStmtSyntax/whereClause``
-    *   - ``SwitchCaseItemSyntax``. ``SwitchCaseItemSyntax/whereClause``
+    *   - ``CatchItemSyntax``.``CatchItemSyntax/whereClause``
+    *   - ``ForStmtSyntax``.``ForStmtSyntax/whereClause``
+    *   - ``SwitchCaseItemSyntax``.``SwitchCaseItemSyntax/whereClause``
     */
   case class WhereClauseSyntax(json: Value) extends Syntax {
     def whereKeyword: SwiftToken = json("children").arr.toList
@@ -9682,7 +9682,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``YieldedExpressionsClauseSyntax``. ``YieldedExpressionsClauseSyntax/elements``
+    *   - ``YieldedExpressionsClauseSyntax``.``YieldedExpressionsClauseSyntax/elements``
     */
   case class YieldedExpressionListSyntax(json: Value) extends SyntaxCollection {
     def children: Seq[YieldedExpressionSyntax] =
@@ -9722,7 +9722,7 @@ object SwiftNodeSyntax {
     *
     * ### Contained in
     *
-    *   - ``YieldStmtSyntax``. ``YieldStmtSyntax/yieldedExpressions``
+    *   - ``YieldStmtSyntax``.``YieldStmtSyntax/yieldedExpressions``
     */
   case class YieldedExpressionsClauseSyntax(json: Value) extends Syntax {
     def leftParen: SwiftToken =
