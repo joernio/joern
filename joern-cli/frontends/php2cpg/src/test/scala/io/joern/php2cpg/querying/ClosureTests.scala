@@ -136,10 +136,6 @@ class ClosureTests extends PhpCode2CpgFixture {
     "not leave orphan identifiers" in {
       cpg.identifier.filter(node => Try(node.astParent.toList).isFailure).toList shouldBe Nil
     }
-
-    "have a ref edge from the closure binding for the captured value" in {
-      cpg.method
-    }
   }
 
   "arrow functions should be represented as closures with return statements" should {
