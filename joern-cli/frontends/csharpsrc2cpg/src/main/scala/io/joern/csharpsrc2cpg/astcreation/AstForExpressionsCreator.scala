@@ -453,7 +453,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     _callAst
   }
 
-  /** Handles expressions like `foo.Bar()`. If `Bar` can't be found inside `foo` 's class, attempts to find a compatible
+  /** Handles expressions like `foo.Bar()`. If `Bar` can't be found inside `foo`'s class, attempts to find a compatible
     * extension method. If all fails, an AST is still produced.
     */
   private def astForMemberAccessInvocation(
@@ -771,7 +771,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     expression.copy(node = InvocationExpression, json = json)
   }
 
-  /** Traverses the "spine" of a chained `?.` /`.` expression. For instance, `x?.y.z?.w` becomes [x, y, z, w]. Notice
+  /** Traverses the "spine" of a chained `?.`/`.` expression. For instance, `x?.y.z?.w` becomes [x, y, z, w]. Notice
     * that, whereas `.` is left-associative, `?.` is right-associative.
     */
   private def traverseConditionalAccessSpine(expr: DotNetNodeInfo): Seq[DotNetNodeInfo] = {

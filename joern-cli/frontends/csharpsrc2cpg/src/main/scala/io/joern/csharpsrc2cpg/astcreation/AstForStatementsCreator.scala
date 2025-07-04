@@ -21,7 +21,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     * @param conditionAst
     *   the condition.
     * @param prependIfBody
-    *   statements to prepend to the `if` /`then` body.
+    *   statements to prepend to the `if`/`then` body.
     */
   final case class ConditionAstResult(conditionAst: Ast, prependIfBody: List[Ast])
 
