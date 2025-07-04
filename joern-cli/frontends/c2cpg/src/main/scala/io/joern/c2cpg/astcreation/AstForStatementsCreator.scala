@@ -31,66 +31,12 @@ trait AstForStatementsCreator { this: AstCreator =>
     blockAst(node, childAsts)
   }
 
-  /** Handles C++ coroutine keywords (co_await, co_yield, co_return) that are not directly supported by CDT.
-    *
-    * This function parses the code after stripping the coroutine keyword by wrapping it in a temporary function. It
-    * then creates appropriate AST nodes based on the type of coroutine keyword and adjusts line and column numbers to
-    * match the original node position.
-    *
-    * @param node
-    *   The AST node containing a coroutine-related statement or expression
-    * @return
-    *   An AST representation of the coroutine statement or expression
-    */
   protected def astForUnsupportedCoroutineNode(node: IASTNode): Ast = {
-    val code         = node.getRawSignature
-    val strippedCode = code.replaceFirst("co_await ", "").replaceFirst("co_return ", "").replaceFirst("co_yield ", "")
-    val wrappedCode  = s"void wrapped() { $strippedCode }"
-
-    val childrenAsts = new CdtParser(config, headerFileFinder, None, global)
-      .parse(wrappedCode, Paths.get(node.getContainingFilename)) match {
-      case Some(translationUnit: IASTTranslationUnit) =>
-        translationUnit.getDeclarations.toSeq.collect { case wrapped: ICPPASTFunctionDefinition =>
-          wrapped.getBody.getChildren.toSeq.collect { case statement: IASTStatement =>
-            astsForStatement(statement)
-          }.flatten
-        }.flatten
-      case None => Seq.empty
-    }
-
-    val ast = code match {
-      case c if c.startsWith("co_return ") =>
-        val cpgReturn = returnNode(node, code)
-        Ast(cpgReturn).withChildren(childrenAsts)
-      case c if c.startsWith("co_await ") =>
-        val op        = "<operator>.await"
-        val dispatch  = DispatchTypes.STATIC_DISPATCH
-        val tpe       = Some(registerType(Defines.Any))
-        val callNode_ = callNode(node, code, op, op, dispatch, None, tpe)
-        callAst(callNode_, childrenAsts)
-      case c if c.startsWith("co_yield ") =>
-        val op        = "<operator>.yield"
-        val dispatch  = DispatchTypes.STATIC_DISPATCH
-        val tpe       = Some(registerType(Defines.Any))
-        val callNode_ = callNode(node, code, op, op, dispatch, None, tpe)
-        callAst(callNode_, childrenAsts)
-    }
-
-    // Restore the line/column numbers relative to the nodes position
-    val lineNumber   = line(node)
-    val columnNumber = column(node).map(_ + (code.length - strippedCode.length)) // account for keyword stripping
-    childrenAsts.flatMap(_.nodes).foreach {
-      case astNodeNew: AstNodeNew =>
-        astNodeNew.lineNumber = lineNumber
-        astNodeNew.columnNumber = columnNumber
-      case _ => // do nothing
-    }
-
-    ast
+    // CDT does not support co_await, co_yield, and co_return. That leads to completely wrong parse trees.
+    Ast(unknownNode(node, code(node)))
   }
 
   protected def astsForStatement(statement: IASTStatement): Seq[Ast] = {
-    // CDT does not support co_await, co_yield, and co_return. That leads to completely wrong parse trees.
     if (isUnsupportedCoroutineKeyword(statement)) {
       return Seq(astForUnsupportedCoroutineNode(statement))
     }
@@ -125,9 +71,11 @@ trait AstForStatementsCreator { this: AstCreator =>
     arrayDecl.getArrayModifiers.nonEmpty && arrayDecl.getArrayModifiers.forall(_.getConstantExpression != null)
   }
 
+  private val UnsupportedCoroutineKeywords: List[String] = List("co_yield", "co_await", "co_return")
+
   protected def isUnsupportedCoroutineKeyword(node: IASTNode): Boolean = {
     val code = node.getRawSignature
-    code.startsWith("co_yield ") || code.startsWith("co_await ") || code.startsWith("co_return ")
+    UnsupportedCoroutineKeywords.exists(k => code.startsWith(s"$k ") || code == k)
   }
 
   private def astsForStructuredBindingDeclaration(

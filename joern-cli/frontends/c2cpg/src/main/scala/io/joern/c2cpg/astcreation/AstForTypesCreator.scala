@@ -250,6 +250,10 @@ trait AstForTypesCreator { this: AstCreator =>
   }
 
   protected def astsForDeclaration(decl: IASTDeclaration): Seq[Ast] = {
+    if (isUnsupportedCoroutineKeyword(decl)) {
+      return Seq(astForUnsupportedCoroutineNode(decl))
+    }
+
     val declAsts = decl match {
       case sb: ICPPASTStructuredBindingDeclaration => Seq(astForStructuredBindingDeclaration(sb))
       case declStmt: CPPASTSimpleDeclaration if isUnsupportedCoroutineKeyword(declStmt) =>

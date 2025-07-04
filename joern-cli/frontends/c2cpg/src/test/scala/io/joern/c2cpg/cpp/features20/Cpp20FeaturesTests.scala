@@ -4,6 +4,7 @@ import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.AstC2CpgSuite
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
+import io.shiftleft.codepropertygraph.generated.nodes.Unknown
 import io.shiftleft.semanticcpg.language.*
 
 class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt) {
@@ -17,22 +18,10 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |  co_return y();
           |}
           |""".stripMargin)
-      val List(coAwait) = cpg.method.nameExact("main").block.astChildren.isCall.l
-      coAwait.lineNumber shouldBe Some(3)
-      coAwait.columnNumber shouldBe Some(3)
-      coAwait.methodFullName shouldBe "<operator>.await"
-      val List(xCall) = coAwait.astChildren.isCall.l
-      xCall.name shouldBe "x"
-      xCall.lineNumber shouldBe Some(3)
-      xCall.columnNumber shouldBe Some(12)
-      val List(co_return) = cpg.method.nameExact("main").block.astChildren.isReturn.l
-      co_return.lineNumber shouldBe Some(4)
-      co_return.columnNumber shouldBe Some(3)
-      co_return.code shouldBe "co_return y();"
-      val List(yCall) = co_return.astChildren.isCall.l
-      yCall.name shouldBe "y"
-      yCall.lineNumber shouldBe Some(4)
-      yCall.columnNumber shouldBe Some(13)
+      cpg.method.nameExact("main").block.astChildren.collectAll[Unknown].code.l shouldBe List(
+        "co_await x();",
+        "co_return y();"
+      )
     }
 
     "handle coroutines" in {
@@ -51,32 +40,29 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |  }
           |}
           |""".stripMargin)
-      val List(coYield) = cpg.method
+      cpg.method
         .nameExact("range")
         .controlStructure
         .astChildren
         .isBlock
-        .astChildren
-        .isCall
-        .nameExact("<operator>.yield")
-        .l
-      coYield.argument.isIdentifier.nameExact("start").size shouldBe 1
+        .ast
+        .collectAll[Unknown]
+        .code
+        .l shouldBe List("co_yield start;")
 
       // `auto data = co_await s.async_read();` can not be parsed yet.
       // Hence, this co_await call is missing but the call `to async_read` is there.
       cpg.call.codeExact("s.async_read()").size shouldBe 1
 
-      // And we can still parse the next line with co_await async_write...
-      val List(coAwait) = cpg.method
+      cpg.method
         .nameExact("echo")
         .controlStructure
         .astChildren
         .isBlock
-        .astChildren
-        .isCall
-        .nameExact("<operator>.await")
-        .l
-      coAwait.argument.isCall.codeExact("async_write(s, data)").size shouldBe 1
+        .ast
+        .collectAll[Unknown]
+        .code
+        .l shouldBe List("co_await", "co_await async_write(s, data);")
     }
 
     "handle concepts" in {
