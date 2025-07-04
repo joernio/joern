@@ -120,14 +120,15 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
       val localCatchVariable = catchStmt.variable
         .collectFirst { case variable @ PhpVariable(name: PhpNameExpr, _) =>
           val local = localNode(variable, name.name, name.name, Defines.Any)
-          val phpScopeElement = scope.addToScope(name.name, local) match {
-            case _ @NamespaceScope(ns, _)       => ns
-            case _ @TypeScope(ts, _)            => ts
-            case _ @MethodScope(ms, _, _, _, _) => ms
-            case _ @BlockScope(bs, _)           => bs
+
+          val node = scope.addToScope(name.name, local) match {
+            case _ @NamespaceScope(namespaceNode, _)    => namespaceNode
+            case _ @TypeScope(typeDeclNode, _)          => typeDeclNode
+            case _ @MethodScope(methodNode, _, _, _, _) => methodNode
+            case _ @BlockScope(blockNode, _)            => blockNode
           }
 
-          diffGraph.addEdge(phpScopeElement, local, EdgeTypes.AST)
+          diffGraph.addEdge(node, local, EdgeTypes.AST)
           local.dynamicTypeHintFullName(catchStmt.types.map(_.name))
           Ast(local)
         }

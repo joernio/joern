@@ -16,12 +16,12 @@ package object pysrc2cpg {
       new PythonInheritanceNamePass(cpg)
     )
       ++ new PythonTypeRecoveryPassGenerator(cpg, typeRecoveryConfig).generate()
-      ++ List(
-        new PythonTypeHintCallLinker(cpg),
-        new NaiveCallLinker(cpg),
-        // Some of passes above create new methods, so, we
-        // need to run the ASTLinkerPass one more time
-        new AstLinkerPass(cpg)
-      )
+    ++ List (
+      new PythonTypeHintCallLinker(cpg),
+      new NaiveCallLinker(cpg),
+      // Some of passes above create new methods, so, we
+      // need to run the ASTLinkerPass one more time
+      new AstLinkerPass(cpg)
+    )
   }
 }

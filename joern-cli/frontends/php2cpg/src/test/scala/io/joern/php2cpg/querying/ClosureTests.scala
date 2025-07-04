@@ -135,10 +135,6 @@ class ClosureTests extends PhpCode2CpgFixture {
     "not leave orphan identifiers" in {
       cpg.identifier.filter(node => Try(node.astParent.toList).isFailure).toList shouldBe Nil
     }
-
-    "have a ref edge from the closure binding for the captured value" in {
-      cpg.method
-    }
   }
 
   "arrow functions should be represented as closures with return statements" should {
@@ -329,24 +325,5 @@ class ClosureTests extends PhpCode2CpgFixture {
         case xs => fail(s"Expected two methodRefs, got ${xs.methodFullName.mkString("[", ",", "]")}")
       }
     }
-  }
-
-  "arrow func" in {
-    val cpg = code("""<?php
-        |$a = 10;
-        |$b = fn($x) => $x + $a;
-        |""".stripMargin)
-    cpg.method
-  }
-
-  "anon func" in {
-    val cpg = code("""<?php
-        |$a = 10;
-        |$x = function() {
-        | return $a;
-        |}
-        |""".stripMargin)
-
-    cpg.method
   }
 }
