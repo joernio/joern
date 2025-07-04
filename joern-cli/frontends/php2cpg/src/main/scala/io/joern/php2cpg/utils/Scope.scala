@@ -15,14 +15,14 @@ import scala.collection.mutable
 
 sealed case class PhpInit(originNode: PhpNode, memberNode: NewMember, value: PhpExpr) {}
 
-class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)(implicit nextClosureName: () => String)
+class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn: () => String)
     extends X2CpgScope[String, NewNode, TypedScopeElement] {
   // This is a workaround for scalafmt. On 3.8.1 scalafmt fails with an error for the `given` line, but the later versions (3.8.4+)
   // are adding spaces in comments of random files which we don't want.
   private type ClosureCallBackSignature = () => String
 
   // allows the usage of `nextClosureName` in `trait ClosureNameCreator` in `utils/ScopeElement`
-  given closureName: ClosureCallBackSignature = nextClosureName
+  given closureName: ClosureCallBackSignature = closureNameFn
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
