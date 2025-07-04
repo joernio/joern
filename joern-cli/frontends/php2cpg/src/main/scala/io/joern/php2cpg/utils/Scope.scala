@@ -171,6 +171,9 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
       .collectFirst { case TypeScope(td, _) => td }
       .exists(_.name.endsWith(MetaTypeDeclExtension))
 
+  def isSurroundedByLambda: Boolean =
+    stack.map(_.scopeNode).collectFirst { case nm: MethodScope if nm.fullName.contains("<lambda>") => nm }.isDefined
+
   def isTopLevel: Boolean =
     getEnclosingTypeDeclTypeName.forall(_ == NamespaceTraversal.globalNamespaceName)
 

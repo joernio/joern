@@ -32,7 +32,7 @@ class CSharpScope(summary: CSharpProgramSummary)
   def getFieldsInScope: List[FieldDecl] =
     stack.collect { case ScopeElement(TypeScope(_, fields), _) => fields }.flatten
 
-  /** Works for `this`.field accesses or <currentType>.field accesses.
+  /** Works for `this`. field accesses or <currentType>.field accesses.
     */
   def findFieldInScope(fieldName: String): Option[FieldDecl] = {
     getFieldsInScope.find(_.name == fieldName)
