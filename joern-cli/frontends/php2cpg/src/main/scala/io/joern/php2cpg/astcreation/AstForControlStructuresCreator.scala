@@ -1,6 +1,6 @@
 package io.joern.php2cpg.astcreation
 
-import io.joern.php2cpg.utils.PhpScopeElement
+import io.joern.php2cpg.utils.{BlockScope, NamespaceScope, TypeScope, MethodScope}
 import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
 import io.joern.php2cpg.parser.Domain.*
 import io.joern.x2cpg.Defines.UnresolvedSignature
@@ -114,14 +114,20 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
   protected def astForTryStmt(stmt: PhpTryStmt): Ast = {
     val tryBody = stmtBodyBlockAst(stmt)
 
-    scope.pushNewScope(NewBlock())
+    scope.pushNewScope(BlockScope(NewBlock(), ""))
     val catches = stmt.catches.map { catchStmt =>
 
       val localCatchVariable = catchStmt.variable
         .collectFirst { case variable @ PhpVariable(name: PhpNameExpr, _) =>
-          val local           = localNode(variable, name.name, name.name, Defines.Any)
-          val phpScopeElement = scope.addToScope(name.name, local)
-          diffGraph.addEdge(phpScopeElement.node, local, EdgeTypes.AST)
+          val local = localNode(variable, name.name, name.name, Defines.Any)
+          val phpScopeElement = scope.addToScope(name.name, local) match {
+            case _ @NamespaceScope(ns, _)       => ns
+            case _ @TypeScope(ts, _)            => ts
+            case _ @MethodScope(ms, _, _, _, _) => ms
+            case _ @BlockScope(bs, _)           => bs
+          }
+
+          diffGraph.addEdge(phpScopeElement, local, EdgeTypes.AST)
           local.dynamicTypeHintFullName(catchStmt.types.map(_.name))
           Ast(local)
         }
@@ -227,7 +233,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
 
   private def getItemAssignAstForForeach(stmt: PhpForeachStmt, iteratorIdentifier: NewIdentifier): Ast = {
     val block = blockNode(stmt)
-    scope.pushNewScope(block)
+    scope.pushNewScope(BlockScope(block, ""))
 
     val localN = handleVariableOccurrence(stmt, iteratorIdentifier.name)
     // create assignment for value-part

@@ -148,8 +148,8 @@ case class AccessPath(elements: Elements, exclusions: Seq[Elements]) {
 
     /** We now try to greedily match more elements. We know that one of the two paths will only contain invertible
       * elements. The issue is the following: prefix <1> & x prefix <?> & With greedy matching, we end up with a diff:
-      * x. If we just did the invert-append algorithm, we would end up with a less precise diff: * <?> <1> & x == * <?>
-      * & x.
+      *   x. If we just did the invert-append algorithm, we would end up with a less precise diff: * <?> <1> & x == *
+      *      <?> & x.
       */
     val minlen = scala.math.min(elements.elements.length, other.elements.length)
     while (!done && idx < minlen) {

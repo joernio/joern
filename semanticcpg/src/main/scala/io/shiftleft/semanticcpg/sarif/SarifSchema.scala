@@ -414,7 +414,7 @@ object SarifSchema {
           ???
         },
         { case x: ReportingDescriptor =>
-          val elementMap = Map.newBuilder[String, Any]
+          val elementMap   = Map.newBuilder[String, Any]
           elementMap.addOne("id"   -> x.id)
           elementMap.addOne("name" -> x.name)
           x.shortDescription.foreach(x => elementMap.addOne("shortDescription" -> x))
@@ -430,7 +430,7 @@ object SarifSchema {
           ???
         },
         { case result: SarifSchema.Result =>
-          val elementMap = Map.newBuilder[String, Any]
+          val elementMap  = Map.newBuilder[String, Any]
           elementMap.addOne("ruleId"  -> result.ruleId)
           elementMap.addOne("message" -> result.message)
           elementMap.addOne("level"   -> result.level)

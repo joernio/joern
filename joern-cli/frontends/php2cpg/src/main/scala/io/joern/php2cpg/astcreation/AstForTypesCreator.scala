@@ -2,6 +2,7 @@ package io.joern.php2cpg.astcreation
 
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
 import io.joern.php2cpg.parser.Domain.*
+import io.joern.php2cpg.utils.TypeScope
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewCall,
@@ -41,7 +42,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val typeDecl = typeDeclNode(stmt, name.name, fullName, relativeFileName, code, inherits = inheritsFrom)
     val createDefaultConstructor = stmt.hasConstructor
 
-    scope.pushNewScope(typeDecl)
+    scope.pushNewScope(TypeScope(typeDecl, fullName))
     val bodyStmts      = astsForClassLikeBody(stmt, stmt.stmts, createDefaultConstructor)
     val clinitAst      = astForStaticAndConstInits(stmt).getOrElse(Ast())
     val modifiers      = stmt.modifiers.map(modifierNode(stmt, _)).map(Ast(_))
@@ -65,7 +66,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       case None       => this.scope.getNewClassTmp
     }
 
-    val classFullName = prependNamespacePrefix(className)
+    val classFullName             = prependNamespacePrefix(className)
+    val metaTypeDeclClassFullName = s"${classFullName}$MetaTypeDeclExtension"
 
     val code = codeForClassStmt(stmt, PhpNameExpr(className, stmt.attributes))
 
@@ -82,7 +84,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val metaTypeDecl = typeDeclNode(
       node = stmt,
       name = s"${className}$MetaTypeDeclExtension",
-      fullName = s"${classFullName}$MetaTypeDeclExtension",
+      fullName = metaTypeDeclClassFullName,
       filename = relativeFileName,
       code = code,
       inherits = inheritsFromMeta,
@@ -91,7 +93,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     scope.surroundingAstLabel.foreach(typeDeclTemp.astParentType(_))
     scope.surroundingScopeFullName.foreach(typeDeclTemp.astParentFullName(_))
-    scope.pushNewScope(typeDeclTemp)
+    scope.pushNewScope(TypeScope(typeDeclTemp, classFullName))
 
     val bodyStmts      = astsForClassLikeBody(stmt, dynamicStmts, stmt.hasConstructor)
     val modifiers      = stmt.modifiers.map(modifierNode(stmt, _)).map(Ast(_))
@@ -109,7 +111,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         )
     }
 
-    scope.pushNewScope(metaTypeDecl)
+    scope.pushNewScope(TypeScope(metaTypeDecl, metaTypeDeclClassFullName))
     val metaTypeDeclAst = astForMetaTypeDecl(stmt, staticStmts, metaTypeDecl)
     scope.popScope()
 
@@ -209,11 +211,13 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         prependNamespacePrefix(name.name)
       }
 
+    val metaTypeDeclFullName = s"$fullName$MetaTypeDeclExtension"
+
     val typeDecl = typeDeclNode(stmt, name.name, fullName, relativeFileName, code, inherits = inheritsFrom)
     val metaTypeDeclNode = typeDeclNode(
       stmt,
       s"${name.name}$MetaTypeDeclExtension",
-      s"${fullName}$MetaTypeDeclExtension",
+      metaTypeDeclFullName,
       relativeFileName,
       code,
       inherits = inheritsFromMeta
@@ -224,7 +228,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     val createDefaultConstructor = stmt.hasConstructor
 
-    scope.pushNewScope(typeDecl)
+    scope.pushNewScope(TypeScope(typeDecl, fullName))
 
     createConstructorMethodRef(stmt, ConstructorMethodName)
     createMethodRefsAst(stmt, stmt.stmts)
@@ -244,7 +248,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     val classTypeDeclAst = Ast(typeDecl).withChildren(modifiers).withChildren(bodyStmts).withChildren(annotationAsts)
 
-    scope.pushNewScope(metaTypeDeclNode)
+    scope.pushNewScope(TypeScope(metaTypeDeclNode, metaTypeDeclFullName))
 
     createConstructorMethodRef(stmt, Defines.StaticInitMethodName)
     staticConsts.foreach(init => scope.addConstOrStaticInitToScope(init.originNode, init.memberNode, init.value))

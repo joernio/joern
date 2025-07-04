@@ -115,9 +115,10 @@ trait AstGenRunnerBase(config: X2CpgConfig[?] & AstGenConfig[?]) {
     }
   }
 
-  protected def executableName(x86Suffix: String, armSuffix: String)(implicit
-    metaData: AstGenProgramMetaData
-  ): String = {
+  protected def executableName(
+    x86Suffix: String,
+    armSuffix: String
+  )(implicit metaData: AstGenProgramMetaData): String = {
     if (metaData.multiArchitectureBuilds) {
       s"${metaData.name}-$x86Suffix"
     } else {

@@ -3,7 +3,6 @@ package io.joern.php2cpg.astcreation
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants, operatorSymbols}
 import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*
-import io.joern.php2cpg.utils.PhpScopeElement
 import io.joern.x2cpg.Defines.{UnresolvedNamespace, UnresolvedSignature}
 import io.joern.x2cpg.Defines.UnresolvedSignature
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties

@@ -3,6 +3,7 @@ package io.joern.php2cpg.astcreation
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
 import io.joern.php2cpg.parser.Domain.*
 import io.joern.php2cpg.parser.Domain.PhpModifiers.containsAccessModifier
+import io.joern.php2cpg.utils.MethodScope
 import io.joern.x2cpg.Defines.UnresolvedSignature
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
@@ -53,7 +54,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       scope.addToScope(local.name, local)
       diffGraph.addNode(closureBindingNode)
       diffGraph.addEdge(methodRef, closureBindingNode, EdgeTypes.CAPTURE)
-
     }
 
     // Create method for closure
@@ -133,7 +133,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val methodBodyNode = blockNode(decl)
 
-    scope.pushNewScope(method, Option(methodBodyNode), methodRef)
+    scope.pushNewScope(MethodScope(method, methodBodyNode, method.fullName, methodRef))
     scope.useFunctionDecl(methodName, fullName)
 
     val returnType = decl.returnType.map(_.name).getOrElse(Defines.Any)
@@ -207,7 +207,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     scope.surroundingScopeFullName.map(method.astParentFullName(_))
     scope.surroundingAstLabel.map(method.astParentType(_))
 
-    scope.pushNewScope(method, Option(methodBodyBlock))
+    scope.pushNewScope(MethodScope(method, methodBodyBlock, method.fullName))
 
     val methodBody = blockAst(methodBodyBlock, initAsts)
 
@@ -271,7 +271,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
         val methodBlock = NewBlock()
 
-        scope.pushNewScope(methodNode_, Option(methodBlock))
+        scope.pushNewScope(MethodScope(methodNode_, methodBlock, fullName))
 
         val assignmentAsts = inits.map { init =>
           astForMemberAssignment(init.originNode, init.memberNode, init.value, isField = false)

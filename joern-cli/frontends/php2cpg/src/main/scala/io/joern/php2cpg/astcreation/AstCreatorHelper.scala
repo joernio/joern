@@ -3,7 +3,7 @@ package io.joern.php2cpg.astcreation
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
 import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*
-import io.joern.php2cpg.utils.PhpScopeElement
+import io.joern.php2cpg.utils.{BlockScope, MethodScope}
 import io.joern.php2cpg.passes.SymbolSummaryPass.PhpFunction
 import io.joern.x2cpg.Defines.UnresolvedNamespace
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
@@ -155,8 +155,8 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
         }
 
         scope.addToScope(name, local) match {
-          case PhpScopeElement(node: NewBlock)   => diffGraph.addEdge(node, local, EdgeTypes.AST)
-          case x @ PhpScopeElement(_: NewMethod) => x.maybeBlock.foreach(diffGraph.addEdge(_, local, EdgeTypes.AST))
+          case _ @BlockScope(block, _)           => diffGraph.addEdge(block, local, EdgeTypes.AST)
+          case _ @MethodScope(_, block, _, _, _) => diffGraph.addEdge(block, local, EdgeTypes.AST)
           case _                                 => // do nothing
         }
 
