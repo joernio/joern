@@ -130,7 +130,7 @@ jobs:
           python -m pip install wexpect
           python -c "
           import wexpect
-          child = wexpect.spawn('joern-cli/target/universal/stage/joern --nocolors')
+          child = wexpect.spawn('joern-cli/target/universal/stage/joern.bat --nocolors')
           child.expect('Version: ')
           child.expect('joern>')
           child.sendline('help')
