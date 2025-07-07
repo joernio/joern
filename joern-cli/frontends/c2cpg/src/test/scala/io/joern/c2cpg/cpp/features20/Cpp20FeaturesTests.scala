@@ -11,16 +11,17 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
 
   "C++20 feature support" should {
 
-    "generate an unknown node for unsupported co_await" in {
+    "recover from unsupported co_await and co_return" in {
       val cpg = code("""
           |int main() {
-          |  co_await f();
+          |  co_await x();
+          |  co_return y();
           |}
           |""".stripMargin)
-      val List(unknown) = cpg.method.nameExact("main").block.astChildren.collectAll[Unknown].l
-      // Also the call to 'f' can't be parsed in this case. It ends up as a function declaration.
-      // There is no way to recover from that broken 'co_await' parsing at the moment
-      unknown.code shouldBe "co_await f();"
+      cpg.method.nameExact("main").block.astChildren.collectAll[Unknown].code.l shouldBe List(
+        "co_await x();",
+        "co_return y();"
+      )
     }
 
     "handle coroutines" in {
@@ -44,24 +45,24 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
         .controlStructure
         .astChildren
         .isBlock
-        .astChildren
-        .isCall
-        .nameExact("<operator>.yield")
-        .size shouldBe 1
+        .ast
+        .collectAll[Unknown]
+        .code
+        .l shouldBe List("co_yield start;")
 
-      pendingUntilFixed {
-        // `auto data = co_await s.async_read();` can not be parsed yet.
-        // Hence, this co_await call is missing.
-        cpg.method
-          .nameExact("echo")
-          .controlStructure
-          .astChildren
-          .isBlock
-          .astChildren
-          .isCall
-          .nameExact("<operator>.await")
-          .size shouldBe 2
-      }
+      // `auto data = co_await s.async_read();` can not be parsed yet.
+      // Hence, this co_await call is missing but the call `to async_read` is there.
+      cpg.call.codeExact("s.async_read()").size shouldBe 1
+
+      cpg.method
+        .nameExact("echo")
+        .controlStructure
+        .astChildren
+        .isBlock
+        .ast
+        .collectAll[Unknown]
+        .code
+        .l shouldBe List("co_await", "co_await async_write(s, data);")
     }
 
     "handle concepts" in {
