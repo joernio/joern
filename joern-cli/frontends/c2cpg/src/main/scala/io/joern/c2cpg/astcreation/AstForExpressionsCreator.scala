@@ -82,6 +82,10 @@ trait AstForExpressionsCreator { this: AstCreator =>
   )
 
   protected def astForExpression(expression: IASTExpression): Ast = {
+    if (isUnsupportedCoroutineKeyword(expression)) {
+      return astForUnsupportedCoroutineNode(expression)
+    }
+
     val r = expression match {
       case lit: IASTLiteralExpression                                                => astForLiteral(lit)
       case un: IASTUnaryExpression if un.getOperator == IASTUnaryExpression.op_throw => astForThrowExpression(un)
