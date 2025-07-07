@@ -29,7 +29,7 @@ trait AstForPatternSyntaxCreator(implicit withSchemaValidation: ValidationMode) 
   private def astForIsTypePatternSyntax(node: IsTypePatternSyntax): Ast = {
     val op      = Operators.instanceOf
     val lhsNode = node.`type`
-    val typ     = code(lhsNode)
+    val typ     = cleanType(code(lhsNode))
     registerType(typ)
     val lhsAst    = Ast(literalNode(lhsNode, code(lhsNode), None).dynamicTypeHintFullName(Seq(typ)))
     val callNode_ = callNode(node, code(node), op, DispatchTypes.STATIC_DISPATCH).dynamicTypeHintFullName(Seq(typ))
@@ -60,7 +60,7 @@ trait AstForPatternSyntaxCreator(implicit withSchemaValidation: ValidationMode) 
     node.pattern match {
       case expr: ExpressionPatternSyntax if expr.expression.isInstanceOf[AsExprSyntax] =>
         val asExpr = expr.expression.asInstanceOf[AsExprSyntax]
-        localForValueBindingPatternSyntax(node, code(asExpr.expression), code(asExpr.`type`))
+        localForValueBindingPatternSyntax(node, code(asExpr.expression), cleanType(code(asExpr.`type`)))
       case expr: ExpressionPatternSyntax =>
         astForNode(expr)
       case ident: IdentifierPatternSyntax =>

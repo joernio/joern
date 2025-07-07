@@ -46,7 +46,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForAsExprSyntax(node: AsExprSyntax): Ast = {
     val op      = Operators.cast
     val lhsNode = node.`type`
-    val typ     = code(lhsNode)
+    val typ     = cleanType(code(lhsNode))
     registerType(typ)
     val lhsAst    = Ast(literalNode(lhsNode, code(lhsNode), None).dynamicTypeHintFullName(Seq(typ)))
     val rhsAst    = astForNodeWithFunctionReference(node.expression)

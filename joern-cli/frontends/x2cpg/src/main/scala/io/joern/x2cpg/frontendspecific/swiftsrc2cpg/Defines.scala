@@ -15,10 +15,12 @@ object Defines {
   val Float: String           = "Float"
   val Double: String          = "Double"
   val Bool: String            = "Bool"
+  val Function: String        = "Function"
+  val Array: String           = "Array"
   val Nil: String             = "Nil"
   val GlobalNamespace: String = NamespaceTraversal.globalNamespaceName
 
-  val SwiftTypes: List[String] = List(Any, Nil, Character, String, Int, Float, Double, Bool)
+  val SwiftTypes: List[String] = List(Any, Nil, Character, String, Int, Float, Double, Bool, Function, Array)
 
   val PostfixOperatorMap: Map[String, String] = Map(
     "++"  -> Operators.postIncrement,
