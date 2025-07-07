@@ -86,7 +86,7 @@ jobs:
     strategy:
       matrix:
         # os: [ubuntu-latest, windows-latest, macos-latest]
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -115,10 +115,14 @@ jobs:
           python -m pip install pexpect
           python -c "
           import pexpect
-          child = pexpect.spawn('joern')
+          child = pexpect.spawn('joern-cli/target/universal/stage/joern --nocolors')
+          child.expect('Version: ')
           child.expect('joern>')
+          child.sendline('val foo = 41')
+          child.sendline('val bar = foo + 1')
+          child.expect('val bar: Int = 42', timeout=5)
           child.sendline('help')
-          child.expect('Welcome to the interactive help system.')
+          child.expect('Welcome to the interactive help system.', timeout=5)
           child.sendline('exit')
-          child.expect(pexpect.EOF)
+          child.expect(pexpect.EOF, timeout=5)
           "
