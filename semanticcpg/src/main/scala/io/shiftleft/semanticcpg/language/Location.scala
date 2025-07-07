@@ -78,7 +78,7 @@ class LazyLocation(storedNode: StoredNode) extends LocationInfo with Product {
 
   def nodeLabel: String = storedNode.label
 
-  def lineNumber: Option[Int] = storedNode.propertyOption[Int](PropertyNames.LINE_NUMBER)
+  def lineNumber: Option[Int] = storedNode.propertyOption[Int](PropertyNames.LineNumber)
 
   def methodFullName: String = method.map(_.fullName).getOrElse(defaultString)
 
