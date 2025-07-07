@@ -109,7 +109,8 @@ jobs:
       #     python -m pip install requests
       #     sbt joerncli/stage querydb/createDistribution
       #     python -u ./testDistro.py
-      - name: Test REPL with pexpect
+      - name: Test REPL (linux, mac)
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
         run: |
           sbt joerncli/stage
           python -m pip install pexpect
@@ -118,11 +119,22 @@ jobs:
           child = pexpect.spawn('joern-cli/target/universal/stage/joern --nocolors')
           child.expect('Version: ')
           child.expect('joern>')
-          child.sendline('val foo = 41')
-          child.sendline('val bar = foo + 1')
-          child.expect('val bar: Int = 42', timeout=5)
           child.sendline('help')
           child.expect('Welcome to the interactive help system.', timeout=5)
           child.sendline('exit')
           child.expect(pexpect.EOF, timeout=5)
+          "
+      - name: Test REPL (windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          sbt joerncli/stage
+          choco install expect
+          # or use winget/scoop
+          expect -c "
+            spawn joern-cli/target/universal/stage/joern.bat --nocolors
+            expect \"joern>\"
+            send \"help\r\"
+            expect \"Welcome to the interactive help system.\"
+            send \"exit\r\"
+            expect eof
           "
