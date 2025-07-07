@@ -3,7 +3,14 @@ package io.joern.c2cpg.passes
 import io.joern.c2cpg.Config
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, EvaluationStrategies, NodeTypes, PropertyDefaults, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{
+  Cpg,
+  EdgeTypes,
+  EvaluationStrategies,
+  NodeTypes,
+  PropertyDefaults,
+  PropertyNames
+}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*

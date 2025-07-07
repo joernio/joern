@@ -7,7 +7,13 @@ import io.joern.x2cpg.Defines.UnresolvedSignature
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes, PropertyDefaults, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{
+  EdgeTypes,
+  EvaluationStrategies,
+  ModifierTypes,
+  PropertyDefaults,
+  PropertyNames
+}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>

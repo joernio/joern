@@ -1265,11 +1265,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   protected def storeCallTypeInfo(c: Call, types: Seq[String]): Unit =
     if (types.nonEmpty) {
-      builder.setNodeProperty(
-        c,
-        PropertyNames.DynamicTypeHintFullName,
-        (c.dynamicTypeHintFullName ++ types).distinct
-      )
+      builder.setNodeProperty(c, PropertyNames.DynamicTypeHintFullName, (c.dynamicTypeHintFullName ++ types).distinct)
     }
 
   /** Allows one to modify the types assigned to identifiers.

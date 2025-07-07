@@ -313,11 +313,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
 
     def setNodeFullName(tgt: CfgNode, newFullName: String): Option[String] = {
       if (tgt.isCall) builder.setNodeProperty(tgt, PropertyNames.MethodFullName, newFullName)
-      builder.setNodeProperty(
-        tgt,
-        PropertyNames.TypeFullName,
-        s"$newFullName$pathSep${XTypeRecovery.DummyReturnType}"
-      )
+      builder.setNodeProperty(tgt, PropertyNames.TypeFullName, s"$newFullName$pathSep${XTypeRecovery.DummyReturnType}")
       builder.setNodeProperty(tgt, PropertyNames.DynamicTypeHintFullName, Seq.empty)
       Option(newFullName)
     }

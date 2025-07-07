@@ -3,7 +3,15 @@ package io.joern.x2cpg
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.utils.IntervalKeyPool
 import io.shiftleft.semanticcpg.utils.FileUtil.*
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Cpg, DiffGraphBuilder, DispatchTypes, ModifierTypes, Operators, PropertyDefaults}
+import io.shiftleft.codepropertygraph.generated.{
+  ControlStructureTypes,
+  Cpg,
+  DiffGraphBuilder,
+  DispatchTypes,
+  ModifierTypes,
+  Operators,
+  PropertyDefaults
+}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
