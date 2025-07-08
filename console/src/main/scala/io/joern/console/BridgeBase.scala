@@ -240,7 +240,7 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
 
   protected def buildRunBeforeCode(config: Config): Seq[String] = {
     val builder = Seq.newBuilder[String]
-    builder ++= runBeforeCode.map(escapeForWindows)
+    builder ++= runBeforeCode // no need to escape for windows, these don't come from the user!
     config.cpgToLoad.foreach { cpgFile =>
       val path = escapeForWindows(cpgFile.toString)
       builder += s"""importCpg("$path")"""
