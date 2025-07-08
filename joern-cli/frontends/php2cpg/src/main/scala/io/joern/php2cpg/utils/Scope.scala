@@ -178,7 +178,7 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
     stack
       .map(_.scopeNode)
       .collectFirst {
-        case TypeScope(td, _)            => td.name
+        case TypeScope(td, _)               => td.name
         case MethodScope(nm, _, _, _, _, _) => nm.name
       }
       .filterNot(_ == NamespaceTraversal.globalNamespaceName)
