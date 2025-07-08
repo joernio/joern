@@ -122,10 +122,10 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
           val local = localNode(variable, name.name, name.name, Defines.Any)
 
           val node = scope.addToScope(name.name, local) match {
-            case _ @NamespaceScope(namespaceNode, _)    => namespaceNode
-            case _ @TypeScope(typeDeclNode, _)          => typeDeclNode
-            case _ @MethodScope(methodNode, _, _, _, _) => methodNode
-            case _ @BlockScope(blockNode, _)            => blockNode
+            case NamespaceScope(namespaceNode, _)    => namespaceNode
+            case TypeScope(typeDeclNode, _)          => typeDeclNode
+            case MethodScope(methodNode, _, _, _, _) => methodNode
+            case BlockScope(blockNode, _)            => blockNode
           }
 
           diffGraph.addEdge(node, local, EdgeTypes.AST)

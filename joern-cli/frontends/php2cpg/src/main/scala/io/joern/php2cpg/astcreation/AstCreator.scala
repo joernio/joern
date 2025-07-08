@@ -194,7 +194,7 @@ class AstCreator(
           }
 
           stmt.vars.foreach {
-            case _ @PhpVariable(name: PhpNameExpr, _) =>
+            case PhpVariable(name: PhpNameExpr, _) =>
               val closureBindingId = s"$relativeFileName:${innerMethodNode.fullName}:${name.name}"
               val closureLocal     = localNode(stmt, name.name, name.name, Defines.Any, Option(closureBindingId))
 

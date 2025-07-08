@@ -155,9 +155,9 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
         }
 
         scope.addToScope(name, local) match {
-          case _ @BlockScope(block, _)           => diffGraph.addEdge(block, local, EdgeTypes.AST)
-          case _ @MethodScope(_, block, _, _, _) => diffGraph.addEdge(block, local, EdgeTypes.AST)
-          case _                                 => // do nothing
+          case BlockScope(block, _)           => diffGraph.addEdge(block, local, EdgeTypes.AST)
+          case MethodScope(_, block, _, _, _) => diffGraph.addEdge(block, local, EdgeTypes.AST)
+          case _                              => // do nothing
         }
 
         local

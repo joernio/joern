@@ -39,7 +39,7 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
     val mappedNode = scopeNode match {
       case block: BlockScope =>
         val blockFullName = stack.headOption
-          .map { case _ @ScopeElement(node: NamedScope, _) => node.fullName }
+          .map { case ScopeElement(node: NamedScope, _) => node.fullName }
           .getOrElse("")
         BlockScope(block.block, blockFullName)
       case method: MethodScope =>
@@ -102,11 +102,11 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
 
   def getNewClassTmp: String = {
     stack.headOption match {
-      case Some(_ @ScopeElement(namespace: NamespaceScope, _)) =>
+      case Some(ScopeElement(namespace: NamespaceScope, _)) =>
         s"${this.surroundingScopeFullName.getOrElse("<global>")}.${namespace.getNextClassTmp}"
-      case Some(_ @ScopeElement(typeScope: TypeScope, _)) =>
+      case Some(ScopeElement(typeScope: TypeScope, _)) =>
         s"${this.surroundingScopeFullName.getOrElse("<global>")}.${typeScope.getNextClassTmp}"
-      case Some(_ @ScopeElement(methodScope: MethodScope, _)) =>
+      case Some(ScopeElement(methodScope: MethodScope, _)) =>
         s"${this.surroundingScopeFullName.getOrElse("<global>")}.${methodScope.getNextClassTmp}"
       case _ =>
         logger.warn(s"Stack is empty - using global counter ")
@@ -116,11 +116,11 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
 
   def getNewVarTmp(varPrefix: String = ""): String = {
     stack.headOption match {
-      case Some(_ @ScopeElement(namespace: NamespaceScope, _)) =>
+      case Some(ScopeElement(namespace: NamespaceScope, _)) =>
         s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${namespace.getNextVarTmp}"
-      case Some(_ @ScopeElement(typeScope: TypeScope, _)) =>
+      case Some(ScopeElement(typeScope: TypeScope, _)) =>
         s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${typeScope.getNextVarTmp}"
-      case Some(_ @ScopeElement(methodScope: MethodScope, _)) =>
+      case Some(ScopeElement(methodScope: MethodScope, _)) =>
         s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${methodScope.getNextVarTmp}"
       case _ =>
         s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${this.getNextVarTmp}"
@@ -156,7 +156,7 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
   def isSurroundedByMetaclassTypeDecl: Boolean =
     stack
       .map(_.scopeNode)
-      .collectFirst { case _ @TypeScope(td, _) => td }
+      .collectFirst { case TypeScope(td, _) => td }
       .exists(_.name.endsWith(MetaTypeDeclExtension))
 
   def isSurroundedByLambda: Boolean =
@@ -166,20 +166,20 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
     getEnclosingTypeDeclTypeName.forall(_ == NamespaceTraversal.globalNamespaceName)
 
   def getEnclosingNamespaceNames: List[String] =
-    stack.map(_.scopeNode).collect { case _ @NamespaceScope(ns, _) => ns.name }.reverse
+    stack.map(_.scopeNode).collect { case NamespaceScope(ns, _) => ns.name }.reverse
 
   def getEnclosingTypeDeclTypeName: Option[String] =
-    stack.map(_.scopeNode).collectFirst { case _ @TypeScope(td, _) => td }.map(_.name)
+    stack.map(_.scopeNode).collectFirst { case TypeScope(td, _) => td }.map(_.name)
 
   def getEnclosingTypeDeclTypeFullName: Option[String] =
-    stack.map(_.scopeNode).collectFirst { case _ @TypeScope(td, _) => td }.map(_.fullName)
+    stack.map(_.scopeNode).collectFirst { case TypeScope(td, _) => td }.map(_.fullName)
 
   def getSurroundingFullName: String = {
     stack
       .map(_.scopeNode)
       .collectFirst {
-        case _ @TypeScope(td, _)            => td.name
-        case _ @MethodScope(nm, _, _, _, _) => nm.name
+        case TypeScope(td, _)            => td.name
+        case MethodScope(nm, _, _, _, _) => nm.name
       }
       .filterNot(_ == NamespaceTraversal.globalNamespaceName)
       .mkString(".")
@@ -208,9 +208,9 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
 
   def getScopedClosureName: String = {
     stack.headOption match {
-      case Some(_ @ScopeElement(ns: NamespaceScope, _)) => ns.getClosureMethodName()
-      case Some(_ @ScopeElement(ts: TypeScope, _))      => ts.getClosureMethodName()
-      case Some(_ @ScopeElement(ms: MethodScope, _))    => ms.getClosureMethodName()
+      case Some(ScopeElement(ns: NamespaceScope, _)) => ns.getClosureMethodName()
+      case Some(ScopeElement(ts: TypeScope, _))      => ts.getClosureMethodName()
+      case Some(ScopeElement(ms: MethodScope, _))    => ms.getClosureMethodName()
       case _ =>
         logger.warn("BUG: Attempting to get scopedClosureName, but no scope has been push. Defaulting to unscoped")
         NameConstants.Closure
