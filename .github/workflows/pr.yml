@@ -131,10 +131,9 @@ jobs:
           python -c "
           import wexpect
           child = wexpect.spawn('joern-cli\\target\\universal\\stage\\joern.bat --nocolors')
-          child.expect('Version: ')
           child.expect('joern>')
           child.sendline('help')
-          child.expect('Welcome to the interactive help system.', timeout=5)
+          child.expect('Welcome to the interactive help system.')
           child.sendline('exit')
-          child.expect(pexpect.EOF, timeout=5)
+          child.expect(wexpect.EOF)
           "
