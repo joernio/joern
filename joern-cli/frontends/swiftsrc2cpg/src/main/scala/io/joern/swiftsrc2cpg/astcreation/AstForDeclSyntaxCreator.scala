@@ -7,7 +7,7 @@ import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.File.PropertyDefaults
+import io.shiftleft.codepropertygraph.generated.nodes.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.*
 
 import scala.annotation.unused

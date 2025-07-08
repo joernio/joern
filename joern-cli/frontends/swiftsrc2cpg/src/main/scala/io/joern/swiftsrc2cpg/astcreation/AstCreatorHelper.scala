@@ -59,7 +59,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def astParentInfo(): (String, String) = {
     val astParentType     = methodAstParentStack.head.label
-    val astParentFullName = methodAstParentStack.head.properties(PropertyNames.FULL_NAME).toString
+    val astParentFullName = methodAstParentStack.head.properties(PropertyNames.FullName).toString
     (astParentType, astParentFullName)
   }
 

@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.types.structure
 
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Expression, Literal, Method, NamespaceBlock, TypeDecl}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.testing.MockCpg
@@ -64,7 +64,7 @@ class MethodTests extends AnyWordSpec with Matchers {
           .withCustom { case (graph, cpg) =>
             val namespaceBlock = cpg.namespaceBlock("namespace").head
             val method         = cpg.method("foo").head
-            graph.setNodeProperty(method, Method.PropertyNames.AstParentType, NamespaceBlock.Label)
+            graph.setNodeProperty(method, PropertyNames.AstParentType, NamespaceBlock.Label)
             graph.addEdge(namespaceBlock, method, EdgeTypes.AST)
           }
           .cpg

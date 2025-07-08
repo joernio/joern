@@ -104,8 +104,8 @@ abstract class AstCreatorBase[Node, NodeProcessor](filename: String)(implicit wi
       node,
       Defines.StaticInitMethodName,
       fullName,
-      signature.getOrElse(Method.PropertyDefaults.Signature),
-      fileName.getOrElse(Method.PropertyDefaults.Filename)
+      signature.getOrElse(PropertyDefaults.Signature),
+      fileName.getOrElse(PropertyDefaults.Filename)
     )
     val staticModifier = NewModifier().modifierType(ModifierTypes.STATIC)
     val body           = blockAst(NewBlock().typeFullName(Defines.Any), initAsts)

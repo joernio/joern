@@ -116,7 +116,7 @@ private class RecoverForRubyFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, 
 
       builder.setNodeProperty(
         c,
-        PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
+        PropertyNames.DynamicTypeHintFullName,
         (c.dynamicTypeHintFullName ++ finalTypes).distinct
       )
     }

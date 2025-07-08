@@ -83,9 +83,9 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     method match {
       case m: Method if m.methodReturn.possibleTypes.headOption.exists(_ != "ANY") =>
         val typeFullName = m.methodReturn.possibleTypes.headOption.getOrElse(m.methodReturn.typeFullName)
-        builder.setNodeProperty(call, PropertyNames.TYPE_FULL_NAME, typeFullName)
+        builder.setNodeProperty(call, PropertyNames.TypeFullName, typeFullName)
       case m: Method =>
-        builder.setNodeProperty(call, PropertyNames.TYPE_FULL_NAME, m.methodReturn.typeFullName)
+        builder.setNodeProperty(call, PropertyNames.TypeFullName, m.methodReturn.typeFullName)
       case _ =>
     }
   }
@@ -93,10 +93,10 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   protected def setCallees(call: Call, methodNames: Seq[String], builder: DiffGraphBuilder): Unit = {
     val nonDummyTypes = methodNames.filterNot(isDummyType)
     if (methodNames.sizeIs == 1) {
-      builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNames.head)
+      builder.setNodeProperty(call, PropertyNames.MethodFullName, methodNames.head)
       builder.setNodeProperty(
         call,
-        PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
+        PropertyNames.DynamicTypeHintFullName,
         call.dynamicTypeHintFullName.diff(methodNames)
       )
     } else if (methodNames.sizeIs > 1 && methodNames != nonDummyTypes) {
