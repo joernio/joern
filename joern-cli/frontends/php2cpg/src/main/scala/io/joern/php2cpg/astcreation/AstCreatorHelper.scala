@@ -151,9 +151,9 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
         }
 
         scope.addToScope(name, local) match {
-          case BlockScope(block, _)           => diffGraph.addEdge(block, local, EdgeTypes.AST)
+          case BlockScope(block, _)              => diffGraph.addEdge(block, local, EdgeTypes.AST)
           case MethodScope(_, block, _, _, _, _) => diffGraph.addEdge(block, local, EdgeTypes.AST)
-          case _                              => // do nothing
+          case _                                 => // do nothing
         }
 
         local
@@ -199,9 +199,9 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     methodRef.foreach(diffGraph.addEdge(_, closureBindingNode, EdgeTypes.CAPTURE))
 
     scope.addToScope(newLocalNode.name, newLocalNode) match {
-      case _ @BlockScope(block, _)              => diffGraph.addEdge(block, newLocalNode, EdgeTypes.AST)
-      case _ @MethodScope(_, block, _, _, _, _) => diffGraph.addEdge(block, newLocalNode, EdgeTypes.AST)
-      case _                                    => // do nothing
+      case BlockScope(block, _)              => diffGraph.addEdge(block, newLocalNode, EdgeTypes.AST)
+      case MethodScope(_, block, _, _, _, _) => diffGraph.addEdge(block, newLocalNode, EdgeTypes.AST)
+      case _                                 => // do nothing
     }
   }
 
