@@ -822,7 +822,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case nameExpr: PhpNameExpr =>
         scope
           .lookupVariable(nameExpr.name)
-          .flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME).map(_.toString))
+          .flatMap(_.properties.get(PropertyNames.TypeFullName).map(_.toString))
           .getOrElse(nameExpr.name)
 
       case expr =>

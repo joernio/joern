@@ -1,10 +1,8 @@
 package io.joern.x2cpg
 
 import io.joern.x2cpg.AstNodeBuilder.methodReturnNodeWithExplicitPositionInfo
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, PropertyDefaults}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.nodes.Block.PropertyDefaults as BlockDefaults
 import org.apache.commons.lang3.StringUtils
 
 import scala.util.Try
@@ -261,7 +259,7 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
   }
 
   protected def blockNode(node: Node): NewBlock = {
-    blockNode(node, BlockDefaults.Code, Defines.Any)
+    blockNode(node, PropertyDefaults.Code, Defines.Any)
   }
 
   protected def blockNode(node: Node, code: String, typeFullName: String): NewBlock = {

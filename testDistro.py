@@ -323,7 +323,7 @@ class TestRunner:
         # Create and run test script
         test_script_content = (
             'assert(nodes.ExampleNode.Label == "EXAMPLE_NODE")\n'
-            'assert(nodes.ExampleNode.PropertyNames.ExampleProperty == "EXAMPLE_PROPERTY")'
+            'assert(PropertyNames.ExampleProperty == "EXAMPLE_PROPERTY")'
         )
         script_path.write_text(test_script_content)
         

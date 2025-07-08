@@ -2,7 +2,7 @@ package io.shiftleft.semanticcpg.language.nodemethods
 
 import io.shiftleft.Implicits.IterableOnceDeco
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.nodes.AstNode.PropertyDefaults
+import io.shiftleft.codepropertygraph.generated.PropertyDefaults
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.nodemethods.AstNodeMethods.lastExpressionInBlock
@@ -100,7 +100,7 @@ class AstNodeMethods(val node: AstNode) extends AnyVal with NodeExtension {
       offsetEnd   <- node.offsetEnd
       fileContent <- node.file.headOption.map(_.content)
     } yield fileContent.substring(offset, offsetEnd)
-    maybeSourceCode.getOrElse(AstNode.PropertyDefaults.Code)
+    maybeSourceCode.getOrElse(PropertyDefaults.Code)
   }
 
   def statement: AstNode =

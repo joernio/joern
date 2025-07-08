@@ -55,7 +55,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def getTypeFullNameFromAstNode(ast: Ast): String = {
     ast.root
-      .flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME))
+      .flatMap(_.properties.get(PropertyNames.TypeFullName))
       .map(_.toString)
       .getOrElse(Defines.Any)
   }

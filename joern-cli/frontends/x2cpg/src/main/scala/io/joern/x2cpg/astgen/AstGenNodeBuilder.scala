@@ -1,7 +1,7 @@
 package io.joern.x2cpg.astgen
 
 import io.joern.x2cpg.AstNodeBuilder
-import io.shiftleft.codepropertygraph.generated.nodes.AstNode.PropertyDefaults
+import io.shiftleft.codepropertygraph.generated.PropertyDefaults
 
 /** An extension of AstNodeBuilder that is able to provide useful defaults from the more specialized node type that
   * AstGen-based frontends use.

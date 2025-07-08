@@ -1,7 +1,7 @@
 package io.joern.swiftsrc2cpg.passes.inheritance
 
 import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
-import io.shiftleft.codepropertygraph.generated.nodes.File.PropertyDefaults
+import io.shiftleft.codepropertygraph.generated.PropertyDefaults
 import io.shiftleft.semanticcpg.language.*
 
 class ExtensionInheritancePassTests extends SwiftSrc2CpgSuite {

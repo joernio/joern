@@ -20,8 +20,7 @@ import io.joern.x2cpg.AstNodeBuilder.{bindingNode, closureBindingNode}
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.joern.x2cpg.{Ast, Defines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn.PropertyDefaults as ParameterDefaults
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes, PropertyDefaults}
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.*
@@ -119,7 +118,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
 
   private def lambdaMethodSignature(returnType: Option[String], parameters: Seq[Ast]): String = {
     val maybeParameterTypes = toOptionList(parameters.map(_.rootType))
-    val containsEmptyType   = maybeParameterTypes.exists(_.contains(ParameterDefaults.TypeFullName))
+    val containsEmptyType   = maybeParameterTypes.exists(_.contains(PropertyDefaults.TypeFullName))
 
     (returnType, maybeParameterTypes) match {
       case (Some(returnType), Some(parameterTypes)) if !containsEmptyType =>

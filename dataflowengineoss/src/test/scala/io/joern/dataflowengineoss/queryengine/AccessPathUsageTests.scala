@@ -30,7 +30,7 @@ class AccessPathUsageTests extends AnyWordSpec {
     val newCall          = NewCall().name(op)
     diffGraphBuilder.addNode(newCall)
     args.reverse.zipWithIndex.foreach { case (arg, idx) =>
-      diffGraphBuilder.setNodeProperty(arg, PropertyNames.ARGUMENT_INDEX, idx + 1)
+      diffGraphBuilder.setNodeProperty(arg, PropertyNames.ArgumentIndex, idx + 1)
       diffGraphBuilder.addEdge(newCall, arg, EdgeTypes.ARGUMENT)
     }
     diffGraphBuilder.apply(graph)
