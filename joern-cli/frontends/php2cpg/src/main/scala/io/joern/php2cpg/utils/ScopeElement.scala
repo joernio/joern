@@ -86,6 +86,7 @@ case class MethodScope(
   methodNode: NewMethod,
   bodyNode: NewBlock,
   fullName: String,
+  parameterNames: Seq[String] = Seq.empty,
   methodRefNode: Option[NewMethodRef] = None,
   isArrowFunc: Boolean = false
 ) extends MethodLikeScope
