@@ -76,8 +76,8 @@ class ConstClosurePass(cpg: Cpg) extends CpgPass(cpg) {
     name: String
   ): Unit = {
     val fullName = s"$enclosingMethod:$name"
-    diffGraph.setNodeProperty(methodRef, PropertyNames.METHOD_FULL_NAME, fullName)
-    diffGraph.setNodeProperty(method, PropertyNames.NAME, name)
-    diffGraph.setNodeProperty(method, PropertyNames.FULL_NAME, fullName)
+    diffGraph.setNodeProperty(methodRef, PropertyNames.MethodFullName, fullName)
+    diffGraph.setNodeProperty(method, PropertyNames.Name, name)
+    diffGraph.setNodeProperty(method, PropertyNames.FullName, fullName)
   }
 }

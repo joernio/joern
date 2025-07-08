@@ -1,7 +1,7 @@
 package io.joern.swiftsrc2cpg.passes.dependency
 
 import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
-import io.shiftleft.codepropertygraph.generated.nodes.File.PropertyDefaults
+import io.shiftleft.codepropertygraph.generated.PropertyDefaults
 import io.shiftleft.semanticcpg.language.*
 
 class DependenciesPassTests extends SwiftSrc2CpgSuite {

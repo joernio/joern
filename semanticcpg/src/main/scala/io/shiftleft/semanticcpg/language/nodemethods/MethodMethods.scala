@@ -1,5 +1,6 @@
 package io.shiftleft.semanticcpg.language.nodemethods
 
+import io.shiftleft.codepropertygraph.generated.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.*
@@ -71,7 +72,7 @@ class MethodMethods(val method: Method) extends AnyVal with NodeExtension {
   def content: Option[String] = {
     for {
       content <- method.file.content.headOption
-      if content != File.PropertyDefaults.Content
+      if content != PropertyDefaults.Content
       offset    <- method.offset
       offsetEnd <- method.offsetEnd
     } yield content.slice(offset, offsetEnd)
