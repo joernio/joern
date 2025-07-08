@@ -3,7 +3,7 @@ package io.joern.swiftsrc2cpg.astcreation
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, EvaluationStrategies, PropertyNames}
 import org.apache.commons.lang3.StringUtils
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -61,6 +61,18 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     val astParentType     = methodAstParentStack.head.label
     val astParentFullName = methodAstParentStack.head.properties(PropertyNames.FullName).toString
     (astParentType, astParentFullName)
+  }
+
+  protected def astForIdentifier(node: SwiftNode): Ast = {
+    val identifierName = code(node)
+    val variableOption = scope.lookupVariable(identifierName)
+    val tpe = variableOption match {
+      case Some((_, variableTypeName)) => variableTypeName
+      case _                           => Defines.Any
+    }
+    val identNode = identifierNode(node, identifierName).typeFullName(tpe)
+    scope.addVariableReference(identifierName, identNode, tpe, EvaluationStrategies.BY_REFERENCE)
+    Ast(identNode)
   }
 
   protected def cleanName(name: String): String = {

@@ -89,10 +89,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForDeclReferenceExprSyntax(node: DeclReferenceExprSyntax): Ast = {
-    val name      = code(node)
-    val identNode = identifierNode(node, name)
-    scope.addVariableReference(name, identNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
-    Ast(identNode)
+    astForIdentifier(node)
   }
 
   private def astForDictionaryExprSyntax(node: DictionaryExprSyntax): Ast = {

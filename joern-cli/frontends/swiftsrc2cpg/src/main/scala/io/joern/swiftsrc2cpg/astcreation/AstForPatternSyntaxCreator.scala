@@ -20,10 +20,7 @@ trait AstForPatternSyntaxCreator(implicit withSchemaValidation: ValidationMode) 
   }
 
   private def astForIdentifierPatternSyntax(node: IdentifierPatternSyntax): Ast = {
-    val name      = code(node.identifier)
-    val identNode = identifierNode(node, name)
-    scope.addVariableReference(name, identNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
-    Ast(identNode)
+    astForIdentifier(node)
   }
 
   private def astForIsTypePatternSyntax(node: IsTypePatternSyntax): Ast = {
