@@ -129,7 +129,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
           val node = scope.addToScope(name.name, local) match {
             case NamespaceScope(namespaceNode, _)    => namespaceNode
             case TypeScope(typeDeclNode, _)          => typeDeclNode
-            case MethodScope(methodNode, _, _, _, _) => methodNode
+            case MethodScope(methodNode, _, _, _, _, _) => methodNode
             case BlockScope(blockNode, _)            => blockNode
           }
 

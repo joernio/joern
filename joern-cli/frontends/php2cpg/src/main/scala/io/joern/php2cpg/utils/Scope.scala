@@ -171,8 +171,8 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
       .collectFirst { case TypeScope(td, _) => td }
       .exists(_.name.endsWith(MetaTypeDeclExtension))
 
-  def isSurroundedByLambda: Boolean =
-    stack.map(_.scopeNode).collectFirst { case nm: MethodScope if nm.fullName.contains("<lambda>") => nm }.isDefined
+  def isSurroundedByArrowClosure: Boolean =
+    stack.map(_.scopeNode).collectFirst { case nm: MethodScope if nm.isArrowFunc => nm }.isDefined
 
   def isTopLevel: Boolean =
     getEnclosingTypeDeclTypeName.forall(_ == NamespaceTraversal.globalNamespaceName)
@@ -208,8 +208,14 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
       .getOrElse(methodName)
   }
 
+  def getSurroundingArrowClosureMethodRef: Option[NewMethodRef] =
+    stack.map(_.scopeNode).collectFirst { case ms: MethodScope if ms.isArrowFunc => ms }.flatMap(_.methodRefNode)
+
   def getSurroundingMethods: List[MethodScope] =
     stack.map(_.scopeNode).collect { case nm: MethodScope => nm }.reverse
+
+  def surroundingMethodParams: List[String] =
+    stack.map(_.scopeNode).collectFirst { case ms: MethodScope => ms }.map(_.parameterNames.toList).get
 
   def getConstAndStaticInits: List[PhpInit] = {
     getInits(constAndStaticInits)

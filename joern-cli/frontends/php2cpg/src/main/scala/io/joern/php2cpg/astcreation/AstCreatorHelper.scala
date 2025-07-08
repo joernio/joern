@@ -8,13 +8,17 @@ import io.joern.php2cpg.passes.SymbolSummaryPass.PhpFunction
 import io.joern.x2cpg.Defines.UnresolvedNamespace
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, ModifierTypes}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{
+  MethodParameterIn,
   NewBlock,
+  NewClosureBinding,
   NewIdentifier,
   NewLiteral,
   NewLocal,
   NewMethod,
+  NewMethodParameterIn,
+  NewMethodRef,
   NewModifier,
   NewNamespaceBlock,
   NewNode
@@ -148,12 +152,56 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
 
         scope.addToScope(name, local) match {
           case BlockScope(block, _)           => diffGraph.addEdge(block, local, EdgeTypes.AST)
-          case MethodScope(_, block, _, _, _) => diffGraph.addEdge(block, local, EdgeTypes.AST)
+          case MethodScope(_, block, _, _, _, _) => diffGraph.addEdge(block, local, EdgeTypes.AST)
           case _                              => // do nothing
         }
 
         local
+      case Some(local: NewLocal) if scope.isSurroundedByArrowClosure && local.closureBindingId.isDefined => local
+      case Some(param: NewMethodParameterIn)
+          if scope.isSurroundedByArrowClosure && !scope.surroundingMethodParams.contains(param.name) =>
+        val methodName = scope.surroundingScopeFullName.get // should throw error if this does not exist
+        val methodRef  = scope.getSurroundingArrowClosureMethodRef
+
+        val closureBindingId = s"$methodName:$name"
+        val localNode_ =
+          localNode(expr, name, param.code, Defines.Any, closureBindingId = Option(closureBindingId))
+
+        createClosureBinding(methodRef, closureBindingId, param, localNode_)
+
+        localNode_
+      case Some(local: NewLocal) if scope.isSurroundedByArrowClosure =>
+        val methodName = scope.surroundingScopeFullName.get // should throw error if this does not exist
+        val methodRef  = scope.getSurroundingArrowClosureMethodRef
+
+        val closureBindingId = s"$methodName:$name"
+        val localNode_ =
+          localNode(expr, name, local.code, local.typeFullName, closureBindingId = Option(closureBindingId))
+
+        createClosureBinding(methodRef, closureBindingId, local, localNode_)
+
+        localNode_
       case Some(local) => local
+    }
+  }
+
+  private def createClosureBinding(
+    methodRef: Option[NewMethodRef],
+    closureBindingId: String,
+    existingNode: (NewLocal | NewMethodParameterIn),
+    newLocalNode: NewLocal
+  ): Unit = {
+    val closureBindingNode =
+      NewClosureBinding().closureBindingId(closureBindingId).evaluationStrategy(EvaluationStrategies.BY_SHARING)
+
+    diffGraph.addEdge(closureBindingNode, existingNode, EdgeTypes.REF)
+    diffGraph.addNode(closureBindingNode)
+    methodRef.foreach(diffGraph.addEdge(_, closureBindingNode, EdgeTypes.CAPTURE))
+
+    scope.addToScope(newLocalNode.name, newLocalNode) match {
+      case _ @BlockScope(block, _)              => diffGraph.addEdge(block, newLocalNode, EdgeTypes.AST)
+      case _ @MethodScope(_, block, _, _, _, _) => diffGraph.addEdge(block, newLocalNode, EdgeTypes.AST)
+      case _                                    => // do nothing
     }
   }
 

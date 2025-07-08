@@ -128,13 +128,63 @@ class ClosureTests extends PhpCode2CpgFixture {
     val cpg = code(
       """<?php
         |$captured = 5
-        |$x = fn ($value) => $value + $captured;
+        |$x = fn ($value) => $value + $captured + $captured + $captured;
         |""".stripMargin,
       fileName = "foo.php"
     )
 
     "not leave orphan identifiers" in {
       cpg.identifier.filter(node => Try(node.astParent.toList).isFailure).toList shouldBe Nil
+    }
+
+    "local variable $captured exists" in {
+      // Check that only one local for $captured exists in the lambda
+      val locals = cpg.method.name("foo.php:<global>.<lambda>0").local.l
+      locals.size shouldBe 1
+
+      val capturedLocal = locals.head
+      capturedLocal.closureBindingId shouldBe Some("foo.php:<global>.<lambda>0:captured")
+    }
+
+    "method ref of closure binding" in {
+      val methodRefNode     = cpg.methodRefWithName("foo.php:<global>.<lambda>0").head
+      val closureBindingIds = methodRefNode._closureBindingViaCaptureOut.l.map(_.closureBindingId)
+
+      closureBindingIds shouldBe List(Some("foo.php:<global>.<lambda>0:captured"))
+    }
+
+    "closure binding reference to global" in {
+      val localNode = cpg.method.name("<global>").local.name("captured").head
+      localNode._closureBindingViaRefIn.next().closureBindingId shouldBe Some("foo.php:<global>.<lambda>0:captured")
+    }
+  }
+
+  "arrow function with method parameter as capturesd variable" should {
+    val cpg = code("""<?php
+        |function foo($captured) {
+        |   $x = fn() => $captured + $captured + $captured;
+        |}
+        |""".stripMargin)
+
+    "local variable $captured exists" in {
+      // Check that only one local for $captured exists in the lambda
+      val locals = cpg.method.name("foo.<lambda>0").local.l
+      locals.size shouldBe 1
+
+      val capturedLocal = locals.head
+      capturedLocal.closureBindingId shouldBe Some("foo.<lambda>0:captured")
+    }
+
+    "method ref of closure binding" in {
+      val methodRefNode     = cpg.methodRefWithName("foo.<lambda>0").head
+      val closureBindingIds = methodRefNode._closureBindingViaCaptureOut.l.map(_.closureBindingId)
+
+      closureBindingIds shouldBe List(Some("foo.<lambda>0:captured"))
+    }
+
+    "closure binding reference to global" in {
+      val parameterNode = cpg.method.name("foo").parameter.name("captured").head
+      parameterNode._closureBindingViaRefIn.next().closureBindingId shouldBe Some("foo.<lambda>0:captured")
     }
   }
 
