@@ -6,10 +6,10 @@ import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{Files, Path, Paths}
-import java.util.concurrent.Executors
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
+import scala.collection.parallel.CollectionConverters.*
 
 object Delombok {
 
@@ -56,7 +56,6 @@ object Delombok {
     val command =
       Seq(
         javaPath,
-        "-Xmx1G",
         "-cp",
         classPathArg,
         "lombok.launch.Main",
@@ -104,27 +103,10 @@ object Delombok {
 
       case Success(tempDir) =>
         FileUtil.deleteOnExit(tempDir)
-
-        // Use a dedicated thread pool with exactly one thread per core to avoid
-        // ForkJoinPool compensation threads (which spawn additional workers).
-        val cores    = Runtime.getRuntime.availableProcessors()
-        val executor = Executors.newFixedThreadPool(cores)
-
-        try {
-          val packageRoots = PackageRootFinder.packageRootsFromFiles(inputPath, fileInfo)
-          val futures = packageRoots.map { relativeRoot =>
-            executor.submit(new Runnable {
-              override def run(): Unit =
-                delombokPackageRoot(inputPath, relativeRoot, tempDir, analysisJavaHome)
-            })
-          }
-
-          // Wait for all tasks to complete before continuing.
-          futures.foreach(_.get())
-        } finally {
-          executor.shutdown()
-        }
-
+        PackageRootFinder
+          .packageRootsFromFiles(inputPath, fileInfo)
+          .par
+          .foreach(delombokPackageRoot(inputPath, _, tempDir, analysisJavaHome))
         DelombokRunResult(tempDir, true)
     }
   }
