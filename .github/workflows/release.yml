@@ -38,7 +38,7 @@ jobs:
       - run: sbt scalafmtCheck test
       - name: Test distribution
         run: |
-          python -m pip install requests
+          python -m pip install requests pexpect
           sbt joerncli/stage querydb/createDistribution
           python -u ./testDistro.py
       - run: sbt ciReleaseSkipIfAlreadyReleased ciReleaseTagNextVersion ciReleaseSonatype createDistribution
