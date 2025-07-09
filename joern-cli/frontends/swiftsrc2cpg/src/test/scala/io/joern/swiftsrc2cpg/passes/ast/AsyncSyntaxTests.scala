@@ -33,18 +33,18 @@ class AsyncSyntaxTests extends AstSwiftSrc2CpgSuite {
       val List(f1, f2, f3) = cpg.typeDecl.where(_.aliasTypeFullName).l
       f1.name shouldBe "AsyncFunc1"
       f1.fullName shouldBe "Test0.swift:<global>:AsyncFunc1"
-      f1.aliasTypeFullName shouldBe Option("Test0.swift:<global>:<anon-class>0")
-      cpg.typeDecl.fullNameExact("Test0.swift:<global>:<anon-class>0").size shouldBe 1
+      f1.aliasTypeFullName shouldBe Option("Test0.swift:<global>:<type>0")
+      cpg.typeDecl.fullNameExact("Test0.swift:<global>:<type>0").size shouldBe 1
 
       f2.name shouldBe "AsyncFunc2"
       f2.fullName shouldBe "Test0.swift:<global>:AsyncFunc2"
-      f2.aliasTypeFullName shouldBe Option("Test0.swift:<global>:<anon-class>1")
-      cpg.typeDecl.fullNameExact("Test0.swift:<global>:<anon-class>1").size shouldBe 1
+      f2.aliasTypeFullName shouldBe Option("Test0.swift:<global>:<type>1")
+      cpg.typeDecl.fullNameExact("Test0.swift:<global>:<type>1").size shouldBe 1
 
       f3.name shouldBe "AsyncFunc3"
       f3.fullName shouldBe "Test0.swift:<global>:AsyncFunc3"
-      f3.aliasTypeFullName shouldBe Option("Test0.swift:<global>:<anon-class>2")
-      cpg.typeDecl.fullNameExact("Test0.swift:<global>:<anon-class>2").size shouldBe 1
+      f3.aliasTypeFullName shouldBe Option("Test0.swift:<global>:<type>2")
+      cpg.typeDecl.fullNameExact("Test0.swift:<global>:<type>2").size shouldBe 1
     }
 
     "testAsyncSyntax3" ignore {

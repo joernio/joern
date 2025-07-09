@@ -465,7 +465,7 @@ class DeclarationTests extends AstSwiftSrc2CpgSuite {
 
       val List(fooIdent) = assignment.astChildren.isIdentifier.l
       fooIdent.name shouldBe "foo"
-      fooIdent.typeFullName shouldBe "[Int]"
+      fooIdent.typeFullName shouldBe Defines.Array
     }
 
     "testSetDeclaration" in {
@@ -484,7 +484,7 @@ class DeclarationTests extends AstSwiftSrc2CpgSuite {
 
       val List(fooIdent) = assignment.astChildren.isIdentifier.l
       fooIdent.name shouldBe "foo"
-      fooIdent.typeFullName shouldBe "Set<Int>"
+      fooIdent.typeFullName shouldBe "Set"
     }
 
     "testDictionaryDeclaration" in {

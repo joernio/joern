@@ -98,7 +98,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
 
   private def astForClosureParameterSyntax(node: ClosureParameterSyntax): Ast = {
     val name = node.secondName.fold(code(node.firstName))(code)
-    val tpe  = node.`type`.fold(Defines.Any)(code)
+    val tpe  = node.`type`.fold(Defines.Any)(t => cleanType(code(t)))
     registerType(tpe)
     val parameterNode =
       parameterInNode(
@@ -307,7 +307,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   }
 
   private def astForOptionalBindingConditionSyntax(node: OptionalBindingConditionSyntax): Ast = {
-    val typeFullName = node.typeAnnotation.fold(Defines.Any)(t => code(t.`type`))
+    val typeFullName = node.typeAnnotation.fold(Defines.Any)(t => cleanType(code(t.`type`)))
 
     node.pattern match {
       case ident: IdentifierPatternSyntax =>
