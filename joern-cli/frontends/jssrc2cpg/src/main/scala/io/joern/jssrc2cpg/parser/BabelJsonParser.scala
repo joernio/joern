@@ -4,8 +4,7 @@ import io.joern.x2cpg.astgen.BaseParserResult
 import io.shiftleft.utils.IOUtils
 import ujson.Value.Value
 
-import java.nio.file.Path
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths}
 import scala.util.Try
 
 object BabelJsonParser {
@@ -15,17 +14,17 @@ object BabelJsonParser {
     fullPath: String,
     json: Value,
     fileContent: String,
-    typeMap: Map[Int, String],
+    typeMap: Map[String, String],
     fileLoc: Int
   ) extends BaseParserResult
 
-  private def loadTypeMap(file: Path): Try[Map[Int, String]] = Try {
+  private def loadTypeMap(file: Path): Try[Map[String, String]] = Try {
     val typeMapPathString = file.toString.replaceAll("\\.[^.]*$", "") + ".typemap"
     val typeMapPath       = Paths.get(typeMapPathString)
     if (typeMapPath.toFile.exists()) {
       val typeMapJsonContent = IOUtils.readEntireFile(typeMapPath)
       val typeMapJson        = ujson.read(typeMapJsonContent)
-      typeMapJson.obj.map { case (k, v) => k.toInt -> v.str }.toMap
+      typeMapJson.obj.map { case (k, v) => k -> v.str }.toMap
     } else {
       Map.empty
     }
@@ -36,7 +35,7 @@ object BabelJsonParser {
     ujson.read(jsonContent)
   }
 
-  private def generateParserResult(rootPath: Path, json: Value, typeMap: Map[Int, String]): Try[ParseResult] = Try {
+  private def generateParserResult(rootPath: Path, json: Value, typeMap: Map[String, String]): Try[ParseResult] = Try {
     val filename          = json("relativeName").str
     val fullPath          = Paths.get(rootPath.toString, filename)
     val sourceFileContent = IOUtils.readEntireFile(fullPath)
