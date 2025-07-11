@@ -65,7 +65,7 @@ class AstNodeMethods(val node: AstNode) extends AnyVal with NodeExtension {
   }
 
   def astParent: AstNode =
-    node._astIn.loneElement("astParent not found - this is a root node").asInstanceOf[AstNode]
+    node._astIn.loneElement("trying to resolve astParent - either this is a root node, or it has two parents (which is probably a malformed cpg)").asInstanceOf[AstNode]
 
   def astParentOption: Option[AstNode] =
     node._astIn.loneElementOption.asInstanceOf[Option[AstNode]]
