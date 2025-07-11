@@ -1,34 +1,27 @@
 package io.joern.kotlin2cpg.ast
 
-import io.joern.kotlin2cpg.Constants
-import io.joern.kotlin2cpg.KtFileWithMeta
+import io.joern.kotlin2cpg.{Constants, KtFileWithMeta}
 import io.joern.kotlin2cpg.datastructures.Scope
-import io.joern.kotlin2cpg.types.NameRenderer
-import io.joern.kotlin2cpg.types.TypeConstants
-import io.joern.kotlin2cpg.types.TypeInfoProvider
-import io.joern.x2cpg.Ast
-import io.joern.x2cpg.AstCreatorBase
-import io.joern.x2cpg.Defines
-import io.joern.x2cpg.ValidationMode
+import io.joern.kotlin2cpg.types.{NameRenderer, TypeConstants, TypeInfoProvider}
+import io.joern.x2cpg.{Ast, AstCreatorBase, Defines, ValidationMode}
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.IntervalKeyPool
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
-import org.jetbrains.kotlin.descriptors.DescriptorVisibility
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.lexer.KtToken
-import org.jetbrains.kotlin.lexer.KtTokens
+import org.jetbrains.kotlin.descriptors.{
+  DeclarationDescriptor,
+  DescriptorVisibilities,
+  DescriptorVisibility,
+  FunctionDescriptor
+}
+import org.jetbrains.kotlin.lexer.{KtToken, KtTokens}
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.BindingContext
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -54,8 +47,7 @@ class AstCreator(
     with AstForStatementsCreator
     with AstForExpressionsCreator {
 
-  import AstCreator.BindingInfo
-  import AstCreator.ClosureBindingDef
+  import AstCreator.{BindingInfo, ClosureBindingDef}
 
   protected val closureBindingDefQueue: mutable.ArrayBuffer[ClosureBindingDef] = mutable.ArrayBuffer.empty
   protected val bindingInfoQueue: mutable.ArrayBuffer[BindingInfo]             = mutable.ArrayBuffer.empty
@@ -396,7 +388,7 @@ class AstCreator(
       lambdaBindingInfoQueue.flatMap(_.edgeMeta.collect { case (node: NewTypeDecl, _, _) => Ast(node) })
     methodAstParentStack.pop()
 
-    val allDeclarationAsts = declarationsAsts ++ lambdaAstQueue ++ lambdaTypeDecls
+    val allDeclarationAsts = declarationsAsts ++ lambdaAstQueue ++ lambdaTypeDecls.distinct
     val fakeTypeDeclAst =
       Ast(fakeGlobalTypeDecl)
         .withChild(
