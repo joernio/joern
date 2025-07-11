@@ -150,6 +150,14 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     global.usedTypes.putIfAbsent(typeFullName, true)
   }
 
+  protected def stripQuotes(str: String): String = str
+    .stripPrefix("\"")
+    .stripSuffix("\"")
+    .stripPrefix("'")
+    .stripSuffix("'")
+    .stripPrefix("`")
+    .stripSuffix("`")
+
   protected def scopeLocalUniqueName(targetName: String): String = {
     val name = if (targetName.nonEmpty) { s"<$targetName>" }
     else { "<anonymous>" }

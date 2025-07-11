@@ -45,6 +45,7 @@ object Defines {
     ">"   -> Operators.greaterThan,
     "=="  -> Operators.equals,
     "%"   -> Operators.modulo,
+    "&"   -> Operators.addressOf,
     "..." -> "<operator>.splat"
   ).withDefault { key =>
     logger.info(s"Prefix operator '$key' not handled yet")
@@ -86,11 +87,11 @@ object Defines {
     "!="   -> Operators.notEquals,
     "==="  -> Operators.equals,
     "!=="  -> Operators.notEquals,
-    "&+"   -> Operators.plus,
-    "+"    -> Operators.plus,
+    "&+"   -> Operators.addition,
+    "+"    -> Operators.addition,
     "&+="  -> Operators.assignmentPlus,
-    "&-"   -> Operators.minus,
-    "-"    -> Operators.minus,
+    "&-"   -> Operators.subtraction,
+    "-"    -> Operators.subtraction,
     "&-="  -> Operators.assignmentMinus,
     "&/"   -> Operators.division,
     "/"    -> Operators.division,
