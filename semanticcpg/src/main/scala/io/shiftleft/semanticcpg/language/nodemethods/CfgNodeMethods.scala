@@ -119,10 +119,10 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
   }
 
   private def walkUpAst(node: CfgNode): Method =
-    node._astIn.loneElement.asInstanceOf[Method]
+    node.astParent.asInstanceOf[Method]
 
   private def walkUpContains(node: StoredNode): Method =
-    node._containsIn.loneElement match {
+    node._containsIn.loneElement("trying to walk `containsIn` edge") match {
       case method: Method => method
       case typeDecl: TypeDecl =>
         typeDecl.astParent match {

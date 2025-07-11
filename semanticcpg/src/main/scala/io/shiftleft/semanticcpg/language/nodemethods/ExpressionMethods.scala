@@ -21,8 +21,7 @@ class ExpressionMethods(val node: Expression) extends AnyVal with NodeExtension 
 
   @tailrec
   private final def _parentExpression(argument: AstNode): Option[Expression] = {
-    val parent = argument._astIn.loneElement
-    parent match {
+    argument.astParent match {
       case call: Call if MemberAccess.isGenericMemberAccessName(call.name) =>
         _parentExpression(call)
       case expression: Expression =>
