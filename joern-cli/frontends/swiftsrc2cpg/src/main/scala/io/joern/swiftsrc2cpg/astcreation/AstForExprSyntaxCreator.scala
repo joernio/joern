@@ -55,27 +55,17 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
           val propertiesAsts = slicedElements.map {
             case dictElement: DictionaryElementSyntax =>
-              val (lhsNode, rhsAst) = {
-                val key = dictElement.key
-                val fieldName = key match {
-                  case decl: (DeclReferenceExprSyntax | StringLiteralExprSyntax) =>
-                    stripQuotes(code(decl))
-                  case expr: ExprSyntax =>
-                    notHandledYet(dictElement)
-                    scopeLocalUniqueName("computed_object_property")
-                }
-                val keyNode = fieldIdentifierNode(key, fieldName, fieldName)
-                val ast     = astForNodeWithFunctionReference(dictElement.value)
-                (keyNode, ast)
-              }
-              val leftHandSideTmpNode = Ast(identifierNode(dictElement, tmpName))
-              val leftHandSideFieldAccessAst =
-                createFieldAccessCallAst(leftHandSideTmpNode, lhsNode, line(dictElement), column(dictElement))
+              val lhsAst = astForNodeWithFunctionReference(dictElement.key)
+              val rhsAst = astForNodeWithFunctionReference(dictElement.value)
+
+              val lhsTmpNode = Ast(identifierNode(dictElement, tmpName))
+              val lhsIndexAccessCallAst =
+                createIndexAccessCallAst(lhsTmpNode, lhsAst, line(dictElement), column(dictElement))
 
               createAssignmentCallAst(
-                leftHandSideFieldAccessAst,
+                lhsIndexAccessCallAst,
                 rhsAst,
-                s"$tmpName.${lhsNode.canonicalName} = ${codeOf(rhsAst.nodes.head)}",
+                s"${codeOf(lhsIndexAccessCallAst.nodes.head)} = ${codeOf(rhsAst.nodes.head)}",
                 line(dictElement),
                 column(dictElement)
               )

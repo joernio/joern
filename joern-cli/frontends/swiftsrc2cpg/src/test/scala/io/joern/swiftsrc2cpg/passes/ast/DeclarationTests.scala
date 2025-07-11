@@ -498,8 +498,8 @@ class DeclarationTests extends AstSwiftSrc2CpgSuite {
       localXViaRef shouldBe localX
 
       val List(block) = assignment.astChildren.isBlock.l
-      checkObjectInitialization(block, ("a", "1"))
-      checkObjectInitialization(block, ("b", "2"))
+      checkObjectInitialization(block, ("\"a\"", "1"))
+      checkObjectInitialization(block, ("\"b\"", "2"))
     }
 
     "testAddDictionaryElements" in {
@@ -508,7 +508,10 @@ class DeclarationTests extends AstSwiftSrc2CpgSuite {
         |elements["A"] = "3"
         |print(elements["A"])
         |""".stripMargin)
-      val List(elementsAccess1, elementsAccess2) = cpg.call(Operators.indexAccess).l
+      val List(tmpAccess1, tmpAccess2, elementsAccess1, elementsAccess2) = cpg.call(Operators.indexAccess).l
+      tmpAccess1.code shouldBe "<tmp>0[\"A\"]"
+      tmpAccess2.code shouldBe "<tmp>0[\"B\"]"
+
       elementsAccess1.code shouldBe "elements[\"A\"]"
       val List(arg11) = elementsAccess1.argument(1).start.isIdentifier.l
       arg11.name shouldBe "elements"
@@ -588,8 +591,8 @@ class DeclarationTests extends AstSwiftSrc2CpgSuite {
 
   }
 
-  private def checkObjectInitialization(node: Block, member: (String, String)): Unit = {
-    val (keyName, assignedValue) = member
+  private def checkObjectInitialization(node: Block, keyValuePair: (String, String)): Unit = {
+    val (key, value) = keyValuePair
 
     val List(localTmp) = node.astChildren.isLocal.nameExact("<tmp>0").l
     localTmp.order shouldBe 0
@@ -597,20 +600,22 @@ class DeclarationTests extends AstSwiftSrc2CpgSuite {
     val List(tmp) = node.astChildren.isIdentifier.nameExact("<tmp>0").l
     tmp.code shouldBe "<tmp>0"
 
-    val List(call) = node.astChildren.isCall.codeExact(s"<tmp>0.$keyName = $assignedValue").l
-    call.methodFullName shouldBe Operators.assignment
+    val List(assignmentCall) = node.astChildren.isCall.codeExact(s"<tmp>0[$key] = $value").l
+    assignmentCall.methodFullName shouldBe Operators.assignment
 
-    val List(tmpAccess) = call.argument(1).start.isCall.l
-    tmpAccess.code shouldBe s"<tmp>0.$keyName"
-    tmpAccess.methodFullName shouldBe Operators.fieldAccess
+    val List(tmpAccess) = assignmentCall.argument(1).start.isCall.l
+    tmpAccess.code shouldBe s"<tmp>0[$key]"
+    tmpAccess.methodFullName shouldBe Operators.indexAccess
     tmpAccess.argumentIndex shouldBe 1
-    val List(value) = call.argument(2).start.l
-    value.code shouldBe assignedValue
+    val valueNode = assignmentCall.argument(2)
+    valueNode.code shouldBe value
 
     val List(leftHandSideTmpId) = tmpAccess.astChildren.isIdentifier.nameExact("<tmp>0").l
+    leftHandSideTmpId.argumentIndex shouldBe 1
     leftHandSideTmpId.code shouldBe "<tmp>0"
 
-    val List(key) = tmpAccess.astChildren.isFieldIdentifier.l
-    key.canonicalName shouldBe keyName
+    val List(keyNode) = tmpAccess.astChildren.isLiteral.l
+    keyNode.argumentIndex shouldBe 2
+    keyNode.code shouldBe key
   }
 }

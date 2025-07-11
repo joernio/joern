@@ -170,7 +170,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     callAst(callNode, arguments)
   }
 
-  protected def typeHintForThisExpression(): Seq[String] = {
+  private def typeHintForThisExpression(): Seq[String] = {
     dynamicInstanceTypeStack.headOption match {
       case Some(tpe) => Seq(tpe)
       case None      => methodAstParentStack.collectFirst { case t: NewTypeDecl => t.fullName }.toSeq
