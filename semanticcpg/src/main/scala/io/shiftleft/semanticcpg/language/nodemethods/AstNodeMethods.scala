@@ -1,6 +1,5 @@
 package io.shiftleft.semanticcpg.language.nodemethods
 
-import io.shiftleft.Implicits.IterableOnceDeco
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.PropertyDefaults
 import io.shiftleft.semanticcpg.NodeExtension
@@ -66,7 +65,7 @@ class AstNodeMethods(val node: AstNode) extends AnyVal with NodeExtension {
   }
 
   def astParent: AstNode =
-    node._astIn.onlyChecked.asInstanceOf[AstNode]
+    node._astIn.loneElement.asInstanceOf[AstNode]
 
   /** Direct children of node in the AST. Siblings are ordered by their `order` fields
     */

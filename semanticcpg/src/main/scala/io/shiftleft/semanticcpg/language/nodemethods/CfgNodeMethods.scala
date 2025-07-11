@@ -1,6 +1,5 @@
 package io.shiftleft.semanticcpg.language.nodemethods
 
-import io.shiftleft.Implicits.IterableOnceDeco
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.*
@@ -120,10 +119,10 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
   }
 
   private def walkUpAst(node: CfgNode): Method =
-    node._astIn.onlyChecked.asInstanceOf[Method]
+    node._astIn.loneElement.asInstanceOf[Method]
 
   private def walkUpContains(node: StoredNode): Method =
-    node._containsIn.onlyChecked match {
+    node._containsIn.loneElement match {
       case method: Method => method
       case typeDecl: TypeDecl =>
         typeDecl.astParent match {

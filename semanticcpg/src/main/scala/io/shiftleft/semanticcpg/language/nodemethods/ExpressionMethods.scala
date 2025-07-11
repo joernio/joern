@@ -1,6 +1,5 @@
 package io.shiftleft.semanticcpg.language.nodemethods
 
-import io.shiftleft.Implicits.IterableOnceDeco
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.ICallResolver
@@ -22,7 +21,7 @@ class ExpressionMethods(val node: Expression) extends AnyVal with NodeExtension 
 
   @tailrec
   private final def _parentExpression(argument: AstNode): Option[Expression] = {
-    val parent = argument._astIn.onlyChecked
+    val parent = argument._astIn.loneElement
     parent match {
       case call: Call if MemberAccess.isGenericMemberAccessName(call.name) =>
         _parentExpression(call)
