@@ -85,7 +85,14 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     }
 
     val methodAst =
-      astForMethodDecl(methodDecl, localsForUses.map(Ast(_)), Option(methodName), usesCode = Option(usesCode))
+      astForMethodDecl(
+        methodDecl,
+        localsForUses.map(Ast(_)),
+        Option(methodName),
+        usesCode = Option(usesCode),
+        isArrowClosure = closureExpr.isArrowFunc,
+        closureMethodRef = Option(methodRef)
+      )
 
     // Add method to scope to be attached to typeDecl later
     scope.addAnonymousMethod(methodAst)
@@ -98,7 +105,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     bodyPrefixAsts: List[Ast] = Nil,
     fullNameOverride: Option[String] = None,
     isConstructor: Boolean = false,
-    usesCode: Option[String] = None
+    usesCode: Option[String] = None,
+    isArrowClosure: Boolean = false,
+    closureMethodRef: Option[NewMethodRef] = None
   ): Ast = {
     val isStatic = decl.modifiers.contains(ModifierTypes.STATIC)
     val thisParam = if (decl.isClassMethod && !isStatic) {
@@ -131,7 +140,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val methodRef =
       if methodName == NamespaceTraversal.globalNamespaceName || isConstructor then None
-      else Option(methodRefNode(decl, methodCode, fullName, Defines.Any))
+      else Option(closureMethodRef.getOrElse(methodRefNode(decl, methodCode, fullName, Defines.Any)))
     val method = methodNode(decl, methodName, methodCode, fullName, Some(signature), relativeFileName)
 
     scope.surroundingScopeFullName.map(method.astParentFullName(_))
@@ -139,7 +148,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val methodBodyNode = blockNode(decl)
 
-    scope.pushNewScope(MethodScope(method, methodBodyNode, method.fullName, methodRef))
+    scope.pushNewScope(
+      MethodScope(method, methodBodyNode, method.fullName, decl.params.map(_.name), methodRef, isArrowClosure)
+    )
     scope.useFunctionDecl(methodName, fullName)
 
     val returnType = decl.returnType.map(_.name).getOrElse(Defines.Any)
