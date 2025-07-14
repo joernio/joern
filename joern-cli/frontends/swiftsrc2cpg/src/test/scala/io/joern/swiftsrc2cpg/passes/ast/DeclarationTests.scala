@@ -488,18 +488,18 @@ class DeclarationTests extends AstSwiftSrc2CpgSuite {
     }
 
     "testDictionaryDeclaration" in {
-      val cpg               = code("var numbers = [1: \"One\", 2: \"Two\", 3: \"Three\"]")
-      val List(method)      = cpg.method.nameExact("<global>").l
-      val List(methodBlock) = method.astChildren.isBlock.l
+      val cpg               = code("let x = [\"a\": 1, \"b\": 2]")
+      val List(methodBlock) = cpg.method.nameExact("<global>").astChildren.isBlock.l
+      val List(localX)      = methodBlock.local.nameExact("x").l
+      val List(assignment)  = methodBlock.astChildren.isCall.l
+      val List(identifierX) = assignment.astChildren.isIdentifier.l
 
-      val List(assignment) = methodBlock.astChildren.isCall.l
-      assignment.name shouldBe Operators.assignment
+      val List(localXViaRef) = identifierX.refOut.l
+      localXViaRef shouldBe localX
 
-      val List(arrayCall) = assignment.astChildren.isCall.l
-      arrayCall.name shouldBe Operators.arrayInitializer
-      arrayCall.code shouldBe "[1: \"One\", 2: \"Two\", 3: \"Three\"]"
-      arrayCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      arrayCall.argument.isCall.code.l shouldBe List("1: \"One\",", "2: \"Two\",", "3: \"Three\"")
+      val List(block) = assignment.astChildren.isBlock.l
+      checkObjectInitialization(block, ("\"a\"", "1"))
+      checkObjectInitialization(block, ("\"b\"", "2"))
     }
 
     "testAddDictionaryElements" in {
@@ -508,7 +508,10 @@ class DeclarationTests extends AstSwiftSrc2CpgSuite {
         |elements["A"] = "3"
         |print(elements["A"])
         |""".stripMargin)
-      val List(elementsAccess1, elementsAccess2) = cpg.call(Operators.indexAccess).l
+      val List(tmpAccess1, tmpAccess2, elementsAccess1, elementsAccess2) = cpg.call(Operators.indexAccess).l
+      tmpAccess1.code shouldBe "<tmp>0[\"A\"]"
+      tmpAccess2.code shouldBe "<tmp>0[\"B\"]"
+
       elementsAccess1.code shouldBe "elements[\"A\"]"
       val List(arg11) = elementsAccess1.argument(1).start.isIdentifier.l
       arg11.name shouldBe "elements"
@@ -586,5 +589,33 @@ class DeclarationTests extends AstSwiftSrc2CpgSuite {
       ???
     }
 
+  }
+
+  private def checkObjectInitialization(node: Block, keyValuePair: (String, String)): Unit = {
+    val (key, value) = keyValuePair
+
+    val List(localTmp) = node.astChildren.isLocal.nameExact("<tmp>0").l
+    localTmp.order shouldBe 0
+
+    val List(tmp) = node.astChildren.isIdentifier.nameExact("<tmp>0").l
+    tmp.code shouldBe "<tmp>0"
+
+    val List(assignmentCall) = node.astChildren.isCall.codeExact(s"<tmp>0[$key] = $value").l
+    assignmentCall.methodFullName shouldBe Operators.assignment
+
+    val List(tmpAccess) = assignmentCall.argument(1).start.isCall.l
+    tmpAccess.code shouldBe s"<tmp>0[$key]"
+    tmpAccess.methodFullName shouldBe Operators.indexAccess
+    tmpAccess.argumentIndex shouldBe 1
+    val valueNode = assignmentCall.argument(2)
+    valueNode.code shouldBe value
+
+    val List(leftHandSideTmpId) = tmpAccess.astChildren.isIdentifier.nameExact("<tmp>0").l
+    leftHandSideTmpId.argumentIndex shouldBe 1
+    leftHandSideTmpId.code shouldBe "<tmp>0"
+
+    val List(keyNode) = tmpAccess.astChildren.isLiteral.l
+    keyNode.argumentIndex shouldBe 2
+    keyNode.code shouldBe key
   }
 }
