@@ -558,7 +558,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         s.modifiers.children.flatMap(c => astForNode(c).root.map(_.asInstanceOf[NewModifier]))
       case _: ClosureExprSyntax => Seq.empty
     }
-    val constructorModifier = if (node.isInstanceOf[InitializerDeclSyntax]) {
+    val constructorModifier = if (isConstructor(node)) {
       Seq(NewModifier().modifierType(ModifierTypes.CONSTRUCTOR))
     } else { Seq.empty }
     (constructorModifier ++ virtualModifier ++ modifiers).zipWithIndex.map { case (m, index) =>
@@ -624,7 +624,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     registerType(returnType)
     val methodFullNameAndSignature = s"$methodFullName:$signature"
 
-    val shouldCreateFunctionReference = typeRefIdStack.headOption.isEmpty
+    val shouldCreateFunctionReference = typeRefIdStack.headOption.isEmpty && !isConstructor(node)
     val methodRefNode_ = if (!shouldCreateFunctionReference) { None }
     else { Option(methodRefNode(node, methodName, methodFullNameAndSignature, methodFullNameAndSignature)) }
     val capturingRefNode = if (shouldCreateFunctionReference) { methodRefNode_ }
