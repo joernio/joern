@@ -62,12 +62,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       diffGraph.addEdge(typeDeclNode_, mod, EdgeTypes.AST)
     }
 
-    diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
-
     createDeclConstructor(node, typeDeclNode_, List.empty)
-
-    val typeRefNode_ = typeRefNode(node, code(node), typeFullName)
-    Ast(typeRefNode_)
+    Ast(typeDeclNode_)
   }
 
   private def isConstructor(node: SwiftNode): Boolean = node match {
@@ -339,13 +335,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       diffGraph.addEdge(typeDeclNode_, mod, EdgeTypes.AST)
     }
 
-    diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
-
-    val typeRefNode_ = typeRefNode(node, code(node), typeFullName)
-
     methodAstParentStack.push(typeDeclNode_)
     dynamicInstanceTypeStack.push(typeFullName)
-    typeRefIdStack.push(typeRefNode_)
     scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode_, None)
 
     val allClassMembers = declMembers(node, withConstructor = false).toList
@@ -368,7 +359,6 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     methodAstParentStack.pop()
     dynamicInstanceTypeStack.pop()
-    typeRefIdStack.pop()
     scope.popScope()
 
     if (staticMemberInitCalls.nonEmpty) {
@@ -383,7 +373,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       diffGraph.addEdge(typeDeclNode_, init.method, EdgeTypes.AST)
     }
 
-    Ast(typeRefNode_)
+    Ast(typeDeclNode_)
   }
 
   private def astForDeinitializerDeclSyntax(node: DeinitializerDeclSyntax): Ast = {
@@ -490,13 +480,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       diffGraph.addEdge(typeDeclNode_, mod, EdgeTypes.AST)
     }
 
-    diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
-
-    val typeRefNode_ = typeRefNode(node, code(node), typeFullName)
-
     methodAstParentStack.push(typeDeclNode_)
     dynamicInstanceTypeStack.push(typeFullName)
-    typeRefIdStack.push(typeRefNode_)
     scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode_, None)
 
     val allClassMembers = declMembers(node, withConstructor = false).toList
@@ -519,7 +504,6 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     methodAstParentStack.pop()
     dynamicInstanceTypeStack.pop()
-    typeRefIdStack.pop()
     scope.popScope()
 
     if (staticMemberInitCalls.nonEmpty) {
@@ -534,7 +518,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       diffGraph.addEdge(typeDeclNode_, init.method, EdgeTypes.AST)
     }
 
-    Ast(typeRefNode_)
+    Ast(typeDeclNode_)
   }
 
   private def modifiersForDecl(node: TypeDeclLike | EnumCaseDeclSyntax): Seq[NewModifier] = {
@@ -884,12 +868,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       diffGraph.addEdge(typeDeclNode_, mod, EdgeTypes.AST)
     }
 
-    diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
-
     createDeclConstructor(node, typeDeclNode_, List.empty)
-
-    val typeRefNode_ = typeRefNode(node, code(node), typeFullName)
-    Ast(typeRefNode_)
+    Ast(typeDeclNode_)
   }
 
   private def astForVariableDeclSyntax(node: VariableDeclSyntax): Ast = {
