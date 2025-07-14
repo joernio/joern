@@ -204,19 +204,20 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       (stmt.extendsNames ++ stmt.implementedInterfaces).map(name => s"${name.name}$MetaTypeDeclExtension")
     val code = codeForClassStmt(stmt, name)
 
-    val fullName =
+    val (dedupedName, fullName) =
       if (name.name == NamespaceTraversal.globalNamespaceName)
-        globalNamespace.fullName
+        (name.name, globalNamespace.fullName)
       else {
-        prependNamespacePrefix(name.name)
+        val dedupClassName = scope.getDeduplicatedClassName(name.name)
+        (dedupClassName, prependNamespacePrefix(dedupClassName))
       }
 
     val metaTypeDeclFullName = s"$fullName$MetaTypeDeclExtension"
 
-    val typeDecl = typeDeclNode(stmt, name.name, fullName, relativeFileName, code, inherits = inheritsFrom)
+    val typeDecl = typeDeclNode(stmt, dedupedName, fullName, relativeFileName, code, inherits = inheritsFrom)
     val metaTypeDeclNode = typeDeclNode(
       stmt,
-      s"${name.name}$MetaTypeDeclExtension",
+      s"$dedupedName$MetaTypeDeclExtension",
       metaTypeDeclFullName,
       relativeFileName,
       code,
@@ -224,14 +225,11 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     )
 
     // Add this to scope for symbol resolution
-    scope.useTypeDecl(name.name, fullName)
+    scope.useTypeDecl(dedupedName, fullName)
 
     val createDefaultConstructor = stmt.hasConstructor
 
     scope.pushNewScope(TypeScope(typeDecl, fullName))
-
-    createConstructorMethodRef(stmt, ConstructorMethodName)
-    createMethodRefsAst(stmt, stmt.stmts)
 
     val bodyStmts      = astsForClassLikeBody(stmt, dynamicStmts, createDefaultConstructor)
     val modifiers      = stmt.modifiers.map(modifierNode(stmt, _)).map(Ast(_))
@@ -250,7 +248,6 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     scope.pushNewScope(TypeScope(metaTypeDeclNode, metaTypeDeclFullName))
 
-    createConstructorMethodRef(stmt, Defines.StaticInitMethodName)
     staticConsts.foreach(init => scope.addConstOrStaticInitToScope(init.originNode, init.memberNode, init.value))
     val metaTypeDeclAst = astForMetaTypeDecl(stmt, staticStmts, metaTypeDeclNode)
     scope.popScope()

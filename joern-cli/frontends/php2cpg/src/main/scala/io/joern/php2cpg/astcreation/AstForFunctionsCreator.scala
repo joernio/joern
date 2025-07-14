@@ -107,7 +107,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       None
     }
 
-    val methodName = decl.name.name
+    val methodName = scope.getDeduplicatedMethodName(decl.name.name)
     val fullName   = fullNameOverride.getOrElse(composeMethodFullName(methodName))
 
     val signature = s"$UnresolvedSignature(${decl.params.size})"
@@ -130,8 +130,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       s"${modifierString}function $methodName(${parameters.map(_.rootCodeOrEmpty).mkString(",")})${usesCode.getOrElse("")}"
 
     val methodRef =
-      if methodName == NamespaceTraversal.globalNamespaceName || isConstructor then None
-      else Option(methodRefNode(decl, methodCode, fullName, Defines.Any))
+      if methodName == NamespaceTraversal.globalNamespaceName then None
+      else Option(methodRefNode(decl, s"$methodCode", fullName, Defines.Any))
     val method = methodNode(decl, methodName, methodCode, fullName, Some(signature), relativeFileName)
 
     scope.surroundingScopeFullName.map(method.astParentFullName(_))
@@ -206,14 +206,15 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       astForMemberAssignment(fieldInit.originNode, fieldInit.memberNode, fieldInit.value, isField = true)
     }
 
-    val method = methodNode(originNode, ConstructorMethodName, fullName, fullName, Some(signature), relativeFileName)
+    val method    = methodNode(originNode, ConstructorMethodName, fullName, fullName, Some(signature), relativeFileName)
+    val methodRef = methodRefNode(originNode, fullName, fullName, Defines.Any)
 
     val methodBodyBlock = blockNode(originNode)
 
     scope.surroundingScopeFullName.map(method.astParentFullName(_))
     scope.surroundingAstLabel.map(method.astParentType(_))
 
-    scope.pushNewScope(MethodScope(method, methodBodyBlock, method.fullName))
+    scope.pushNewScope(MethodScope(method, methodBodyBlock, method.fullName, Option(methodRef)))
 
     val methodBody = blockAst(methodBodyBlock, initAsts)
 
@@ -275,9 +276,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           Option(relativeFileName).getOrElse(PropertyDefaults.Filename)
         )
 
+        val methodRef = methodRefNode(node, fullName, fullName, Defines.Any)
+
         val methodBlock = NewBlock()
 
-        scope.pushNewScope(MethodScope(methodNode_, methodBlock, fullName))
+        scope.pushNewScope(MethodScope(methodNode_, methodBlock, fullName, Option(methodRef)))
 
         val assignmentAsts = inits.map { init =>
           astForMemberAssignment(init.originNode, init.memberNode, init.value, isField = false)

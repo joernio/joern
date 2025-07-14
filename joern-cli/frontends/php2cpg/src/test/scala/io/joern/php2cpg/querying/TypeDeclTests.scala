@@ -689,4 +689,48 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       }
     }
   }
+
+  "Duplicate class names" should {
+    val cpg = code("""<?php
+        |if (true) {
+        | class Foo {
+        |   function foo() {}
+        | }
+        |} else {
+        | class Foo {
+        |   function foo() {}
+        | }
+        |}
+        |""".stripMargin)
+
+    "contain deduplicated fullNames" in {
+      inside(cpg.typeDecl.fullName("Foo.*").l) {
+        case foo :: fooMetaClass :: fooDup :: fooMetaClassDup :: Nil =>
+          foo.name shouldBe "Foo"
+          foo.fullName shouldBe "Foo"
+
+          fooMetaClass.name shouldBe "Foo<metaclass>"
+          fooMetaClass.fullName shouldBe "Foo<metaclass>"
+
+          fooDup.name shouldBe "Foo<duplicate>0"
+          fooDup.fullName shouldBe "Foo<duplicate>0"
+
+          fooMetaClassDup.name shouldBe "Foo<duplicate>0<metaclass>"
+          fooMetaClassDup.fullName shouldBe "Foo<duplicate>0<metaclass>"
+        case xs => fail(s"Expected two typeDecls for Foo, got ${xs.name.mkString("[", ",", "]")}")
+      }
+    }
+
+    "contain methods with unqiue full names" in {
+      inside(cpg.method.name(".*foo.*").l) {
+        case foo :: fooDedup :: Nil =>
+          foo.name shouldBe "foo"
+          foo.fullName shouldBe "Foo.foo"
+
+          fooDedup.name shouldBe "foo"
+          fooDedup.fullName shouldBe "Foo<duplicate>0.foo"
+        case xs => fail(s"Expected two methods for foo, got ${xs.name.mkString("[", ",", "]")}")
+      }
+    }
+  }
 }
