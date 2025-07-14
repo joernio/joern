@@ -123,10 +123,14 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
 
 object CfgNodeMethods {
 
-  def walkUpAst(node: CfgNode): Method =
+  /** Attention: this only works for some special CfgNodes that are guaranteed to always
+    * be direct children of a method - that's why it's private! */
+  private def walkUpAst(node: CfgNode): Method =
     node.astParent.asInstanceOf[Method]
 
-  def walkUpContains(node: StoredNode): Method = {
+  /** Attention: this only works for some special CfgNodes that are guaranteed to always
+    * be direct children of a method - that's why it's private! */
+  private def walkUpContains(node: StoredNode): Method = {
     node._containsIn.loneElement("trying to walk `containsIn` edge") match {
       case method: Method => method
       case typeDecl: TypeDecl =>
