@@ -160,11 +160,11 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val functionTypeAndTypeDeclAst =
       createFunctionTypeAndTypeDeclAst(node, methodNode_, constructorName, methodFullName)
 
-    val (mAst, bAst) = if (methodBlockContent.isEmpty) {
-      (methodStubAst(methodNode_, Seq.empty, methodReturnNode_, modifiers), Ast())
+    val mAst = if (methodBlockContent.isEmpty) {
+      methodStubAst(methodNode_, Seq.empty, methodReturnNode_, modifiers)
     } else {
       val bodyAst = blockAst(NewBlock(), methodBlockContent)
-      (methodAstWithAnnotations(methodNode_, Seq.empty, bodyAst, methodReturnNode_, modifiers), bodyAst)
+      methodAstWithAnnotations(methodNode_, Seq.empty, bodyAst, methodReturnNode_, modifiers)
     }
 
     Ast.storeInDiffGraph(mAst, diffGraph)
@@ -209,7 +209,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val typeFullName = typeNameForDeclSyntax(node)
     node match {
       case d: FunctionDeclLike =>
-        astForFunctionLike(d).root.collect {
+        val ast = astForFunctionLike(d)
+        ast.root.collect {
           case function: NewMethod =>
             val memberNode_ = memberNode(d, function.name, code(d), typeFullName, Seq(function.fullName))
             diffGraph.addEdge(typeDeclNode, memberNode_, EdgeTypes.AST)
@@ -217,6 +218,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
             val memberNode_ = memberNode(d, methoRef.code, code(d), typeFullName, Seq(methoRef.methodFullName))
             diffGraph.addEdge(typeDeclNode, memberNode_, EdgeTypes.AST)
         }
+        Ast.storeInDiffGraph(ast, diffGraph)
+        ast.root.foreach(r => diffGraph.addEdge(typeDeclNode, r, EdgeTypes.AST))
         Ast()
       case ifConf: IfConfigDeclSyntax =>
         val declElements = declSyntaxFromIfConfigDeclSyntax(ifConf)
@@ -261,10 +264,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     findDeclConstructor(node) match {
       case Some(constructor: InitializerDeclSyntax) =>
         val ast = astForFunctionLike(constructor, methodBlockContent = constructorContent)
-        ast.root.foreach { node =>
-          Ast.storeInDiffGraph(ast, diffGraph)
-          diffGraph.addEdge(methodAstParentStack.head, node, EdgeTypes.AST)
-        }
+        Ast.storeInDiffGraph(ast, diffGraph)
+        ast.root.foreach(r => diffGraph.addEdge(typeDeclNode, r, EdgeTypes.AST))
       case _ if constructorBlock.root.isDefined =>
         constructorBlock.root.foreach { r =>
           constructorContent.foreach { c =>
@@ -335,8 +336,13 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       diffGraph.addEdge(typeDeclNode_, mod, EdgeTypes.AST)
     }
 
+    diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
+
+    val typeRefNode_ = typeRefNode(node, code(node), typeFullName)
+
     methodAstParentStack.push(typeDeclNode_)
     dynamicInstanceTypeStack.push(typeFullName)
+    typeRefIdStack.push(typeRefNode_)
     scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode_, None)
 
     val allClassMembers = declMembers(node, withConstructor = false).toList
@@ -359,6 +365,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     methodAstParentStack.pop()
     dynamicInstanceTypeStack.pop()
+    typeRefIdStack.pop()
     scope.popScope()
 
     if (staticMemberInitCalls.nonEmpty) {
@@ -373,7 +380,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       diffGraph.addEdge(typeDeclNode_, init.method, EdgeTypes.AST)
     }
 
-    Ast(typeDeclNode_)
+    Ast(typeRefNode_)
   }
 
   private def astForDeinitializerDeclSyntax(node: DeinitializerDeclSyntax): Ast = {
@@ -480,8 +487,13 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       diffGraph.addEdge(typeDeclNode_, mod, EdgeTypes.AST)
     }
 
+    diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
+
+    val typeRefNode_ = typeRefNode(node, code(node), typeFullName)
+
     methodAstParentStack.push(typeDeclNode_)
     dynamicInstanceTypeStack.push(typeFullName)
+    typeRefIdStack.push(typeRefNode_)
     scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode_, None)
 
     val allClassMembers = declMembers(node, withConstructor = false).toList
@@ -504,6 +516,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     methodAstParentStack.pop()
     dynamicInstanceTypeStack.pop()
+    typeRefIdStack.pop()
     scope.popScope()
 
     if (staticMemberInitCalls.nonEmpty) {
@@ -518,7 +531,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       diffGraph.addEdge(typeDeclNode_, init.method, EdgeTypes.AST)
     }
 
-    Ast(typeDeclNode_)
+    Ast(typeRefNode_)
   }
 
   private def modifiersForDecl(node: TypeDeclLike | EnumCaseDeclSyntax): Seq[NewModifier] = {
@@ -624,7 +637,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     registerType(returnType)
     val methodFullNameAndSignature = s"$methodFullName:$signature"
 
-    val shouldCreateFunctionReference = typeRefIdStack.headOption.isEmpty && !isConstructor(node)
+    val shouldCreateFunctionReference = typeRefIdStack.headOption.isEmpty
     val methodRefNode_ = if (!shouldCreateFunctionReference) { None }
     else { Option(methodRefNode(node, methodName, methodFullNameAndSignature, methodFullNameAndSignature)) }
     val capturingRefNode = if (shouldCreateFunctionReference) { methodRefNode_ }
@@ -719,7 +732,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         Ast(ref)
       case None =>
         val typeDeclAst = createFunctionTypeAndTypeDeclAst(node, methodNode_, methodName, methodFullNameAndSignature)
-        astForMethod.merge(typeDeclAst)
+        Ast.storeInDiffGraph(typeDeclAst, diffGraph)
+        astForMethod
     }
   }
 
