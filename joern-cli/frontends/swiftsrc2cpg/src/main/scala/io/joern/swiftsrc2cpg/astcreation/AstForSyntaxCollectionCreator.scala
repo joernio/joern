@@ -111,7 +111,9 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
     astForListSyntaxChildren(node, node.children)
   }
 
-  private def astForObjCSelectorPieceListSyntax(node: ObjCSelectorPieceListSyntax): Ast     = notHandledYet(node)
+  private def astForObjCSelectorPieceListSyntax(node: ObjCSelectorPieceListSyntax): Ast =
+    node.children.headOption.map(astForNode).getOrElse(Ast())
+
   private def astForPatternBindingListSyntax(node: PatternBindingListSyntax): Ast           = notHandledYet(node)
   private def astForPlatformVersionItemListSyntax(node: PlatformVersionItemListSyntax): Ast = notHandledYet(node)
   private def astForPrecedenceGroupAttributeListSyntax(node: PrecedenceGroupAttributeListSyntax): Ast = notHandledYet(

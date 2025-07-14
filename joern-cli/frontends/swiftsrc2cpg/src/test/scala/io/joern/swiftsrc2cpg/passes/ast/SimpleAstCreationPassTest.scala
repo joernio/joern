@@ -161,6 +161,28 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
       }
     }
 
+    "have correct structure for objc annotated class" in {
+      val cpg = code("""
+          |@objc(Foo)
+          |public class Foo {}
+          |""".stripMargin)
+      inside(cpg.typeDecl.nameExact("Foo").annotation.l) { case List(objc) =>
+        objc.code shouldBe "@objc(Foo)"
+        objc.name shouldBe "objc"
+        objc.fullName shouldBe "objc"
+        val List(paramAssignFoo) = objc.parameterAssign.l
+        paramAssignFoo.code shouldBe "Foo"
+        paramAssignFoo.order shouldBe 1
+        val List(paramFoo) = paramAssignFoo.parameter.l
+        paramFoo.code shouldBe "argument"
+        paramFoo.order shouldBe 1
+        val List(paramValueFoo) = paramAssignFoo.value.l
+        paramValueFoo.code shouldBe "Foo"
+        paramValueFoo.order shouldBe 2
+        paramValueFoo.argumentIndex shouldBe 2
+      }
+    }
+
     "have correct structure for named call arguments" in {
       val cpg = code("""
           |func logMessage(message: String, prefix: String, suffix: String) {
