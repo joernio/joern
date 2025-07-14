@@ -7,6 +7,7 @@ import io.shiftleft.semanticcpg.language.*
 import scala.jdk.CollectionConverters.*
 
 class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
+  import CfgNodeMethods.*
 
   /** Successors in the CFG
     */
@@ -118,10 +119,14 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
     node.lineNumber.map(_.toLong.toHexString)
   }
 
-  private def walkUpAst(node: CfgNode): Method =
+}
+
+object CfgNodeMethods {
+
+  def walkUpAst(node: CfgNode): Method =
     node.astParent.asInstanceOf[Method]
 
-  private def walkUpContains(node: StoredNode): Method =
+  def walkUpContains(node: StoredNode): Method = {
     node._containsIn.loneElement("trying to walk `containsIn` edge") match {
       case method: Method => method
       case typeDecl: TypeDecl =>
@@ -137,5 +142,6 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
             null
         }
     }
+  }
 
 }
