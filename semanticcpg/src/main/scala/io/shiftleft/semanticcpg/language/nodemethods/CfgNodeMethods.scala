@@ -7,6 +7,7 @@ import io.shiftleft.semanticcpg.language.*
 import scala.jdk.CollectionConverters.*
 
 class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
+  import CfgNodeMethods.*
 
   /** Successors in the CFG
     */
@@ -118,10 +119,20 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
     node.lineNumber.map(_.toLong.toHexString)
   }
 
+}
+
+object CfgNodeMethods {
+
+  /** Attention: this only works for some special CfgNodes that are guaranteed to always be direct children of a
+    * method... that's why it's private!
+    */
   private def walkUpAst(node: CfgNode): Method =
     node.astParent.asInstanceOf[Method]
 
-  private def walkUpContains(node: StoredNode): Method =
+  /** Attention: this only works for those `CfgNodes` that have `CONTAINS` edges (see `ContainsEdgePass`)... that's why
+    * it's private!
+    */
+  private def walkUpContains(node: StoredNode): Method = {
     node._containsIn.loneElement("trying to walk `containsIn` edge") match {
       case method: Method => method
       case typeDecl: TypeDecl =>
@@ -137,5 +148,6 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
             null
         }
     }
+  }
 
 }
