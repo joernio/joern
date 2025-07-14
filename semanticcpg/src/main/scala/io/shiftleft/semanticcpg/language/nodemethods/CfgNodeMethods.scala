@@ -129,7 +129,8 @@ object CfgNodeMethods {
   private def walkUpAst(node: CfgNode): Method =
     node.astParent.asInstanceOf[Method]
 
-  /** Attention: this only works for those `CfgNodes` that have `CONTAINS` edges (see `ContainsEdgePass`)... that's why it's private! 
+  /** Attention: this only works for those `CfgNodes` that have `CONTAINS` edges (see `ContainsEdgePass`)... that's why
+    * it's private!
     */
   private def walkUpContains(node: StoredNode): Method = {
     node._containsIn.loneElement("trying to walk `containsIn` edge") match {
