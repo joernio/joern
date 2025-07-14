@@ -33,6 +33,30 @@ class TypeDeclTests extends PhpCode2CpgFixture {
     }
   }
 
+  "anonymous class methods" should {
+    val cpg = code("""<?php
+                     |$x = new class {
+                     |  final public function foo(int $x): int {
+                     |    return 0;
+                     |  }
+                     |}
+                     |""".stripMargin).withConfig(Config().withDisableFileContent(false))
+
+    "have the correct bindings" in {
+      inside(cpg.typeDecl.name(".*anon-class-0$").bindsOut.sortBy(_.name).l) {
+        case List(constructBinding, fooBinding) =>
+          fooBinding.name shouldBe "foo"
+          fooBinding.methodFullName shouldBe "Test0.php:<global>.anon-class-0.foo"
+          fooBinding.signature shouldBe "<unresolvedSignature>(1)"
+
+          inside(fooBinding.refOut.l) { case List(fooMethod) =>
+            fooMethod.name shouldBe "foo"
+            fooMethod.fullName shouldBe "Test0.php:<global>.anon-class-0.foo"
+          }
+      }
+    }
+  }
+
   "class methods" should {
     val cpg = code("""<?php
         |class Foo {
@@ -41,6 +65,20 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         |  }
         |}
         |""".stripMargin).withConfig(Config().withDisableFileContent(false))
+
+    "have the correct bindings" in {
+      inside(cpg.typeDecl("Foo").bindsOut.sortBy(_.name).l) { case List(constructBinding, fooBinding) =>
+        fooBinding.name shouldBe "foo"
+        fooBinding.methodFullName shouldBe "Foo.foo"
+        fooBinding.signature shouldBe "<unresolvedSignature>(1)"
+
+        inside(fooBinding.refOut.l) { case List(fooMethod) =>
+          fooMethod.name shouldBe "foo"
+          fooMethod.fullName shouldBe "Foo.foo"
+        }
+      }
+    }
+
     "be created correctly" in {
       inside(cpg.method.name("foo").l) { case List(fooMethod) =>
         fooMethod.fullName shouldBe s"Foo.foo"

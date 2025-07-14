@@ -157,11 +157,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     scope.popScope()
     val methodAst = methodAstWithAnnotations(method, parameters, methodBody, methodReturn, modifiers, attributeAsts)
 
-    Ast.storeInDiffGraph(methodAst, diffGraph)
     val methodRefAst = methodRef.map(Ast(_)).getOrElse(Ast())
 
-    // method gets added via the AST_PARENT_FULLNAME property
-    Ast()
+    methodAst
   }
 
   private def thisParamAstForMethod(originNode: PhpNode): Ast = {
@@ -221,12 +219,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val methodReturn = methodReturnNode(originNode, Defines.Any)
 
     val methodAst = methodAstWithAnnotations(method, thisParam :: Nil, methodBody, methodReturn, modifiers)
-    Ast.storeInDiffGraph(methodAst, diffGraph)
 
     scope.popScope()
 
-    // AST gets added via AST_PARENT_FULLNAME property
-    Ast()
+    methodAst
   }
 
   protected def astForAttributeGroup(attrGrp: PhpAttributeGroup): Seq[Ast] = {

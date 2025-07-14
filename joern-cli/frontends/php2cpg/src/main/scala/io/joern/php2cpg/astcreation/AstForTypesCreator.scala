@@ -5,14 +5,16 @@ import io.joern.php2cpg.parser.Domain.*
 import io.joern.php2cpg.utils.TypeScope
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewBinding,
   NewCall,
   NewFieldIdentifier,
   NewIdentifier,
   NewMember,
+  NewMethod,
   NewTypeDecl,
   NewTypeRef
 }
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, NodeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes, NodeTypes, Operators}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -50,6 +52,14 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     scope.popScope()
 
     Ast(typeDecl).withChildren(modifiers).withChildren(bodyStmts :+ clinitAst).withChildren(annotationAsts)
+  }
+
+  private def addBindingsForTypeDecl(typeDecl: NewTypeDecl, bodyAsts: List[Ast]): Unit = {
+    bodyAsts.flatMap(_.root).collect { case method: NewMethod =>
+      val binding = NewBinding().name(method.name).methodFullName(method.fullName).signature(method.signature)
+      diffGraph.addEdge(typeDecl, binding, EdgeTypes.BINDS)
+      diffGraph.addEdge(binding, method, EdgeTypes.REF)
+    }
   }
 
   private def astForAnonymousClass(
@@ -139,6 +149,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       diffGraph.addNode(typeDeclMember)
       diffGraph.addNode(metaTypeDeclMember)
     }
+
+    addBindingsForTypeDecl(typeDeclTemp, bodyStmts)
 
     val prefixAst = createTypeRefPointer(typeDeclTemp)
     val typeDeclAst = Ast(typeDeclTemp)
@@ -245,6 +257,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     scope.popScope()
 
     val classTypeDeclAst = Ast(typeDecl).withChildren(modifiers).withChildren(bodyStmts).withChildren(annotationAsts)
+    addBindingsForTypeDecl(typeDecl, bodyStmts)
 
     scope.pushNewScope(TypeScope(metaTypeDeclNode, metaTypeDeclFullName))
 
