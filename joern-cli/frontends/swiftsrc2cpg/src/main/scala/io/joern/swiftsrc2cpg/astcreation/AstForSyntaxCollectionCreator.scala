@@ -15,7 +15,7 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
   protected def astForListSyntaxChildren(node: SwiftNode, children: Seq[SwiftNode]): Ast = {
     children.toList match {
       case Nil         => Ast()
-      case head :: Nil => astForNodeWithFunctionReference(head)
+      case head :: Nil => astForNode(head)
       case elements =>
         val blockNode_ = blockNode(node, PropertyDefaults.Code, Defines.Any)
         scope.pushNewBlockScope(blockNode_)
@@ -124,10 +124,10 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
 
   private def astForSimpleStringLiteralSegmentListSyntax(node: SimpleStringLiteralSegmentListSyntax): Ast = {
     node.children match {
-      case child :: Nil => astForNodeWithFunctionReference(child)
+      case child :: Nil => astForNode(child)
       case children =>
         val stringFormatCall = callNode(node, code(node), Operators.formatString, DispatchTypes.STATIC_DISPATCH)
-        val childrenAsts     = children.map(astForNodeWithFunctionReference)
+        val childrenAsts     = children.map(astForNode)
         setArgumentIndices(childrenAsts)
         callAst(stringFormatCall, childrenAsts)
     }
@@ -139,10 +139,10 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
 
   private def astForStringLiteralSegmentListSyntax(node: StringLiteralSegmentListSyntax): Ast = {
     node.children match {
-      case child :: Nil => astForNodeWithFunctionReference(child)
+      case child :: Nil => astForNode(child)
       case children =>
         val stringFormatCall = callNode(node, code(node), Operators.formatString, DispatchTypes.STATIC_DISPATCH)
-        val childrenAsts     = children.map(astForNodeWithFunctionReference)
+        val childrenAsts     = children.map(astForNode)
         setArgumentIndices(childrenAsts)
         callAst(stringFormatCall, childrenAsts)
     }

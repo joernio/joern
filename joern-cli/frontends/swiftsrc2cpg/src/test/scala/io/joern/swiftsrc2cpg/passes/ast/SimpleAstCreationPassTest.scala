@@ -121,7 +121,7 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
       val List(fooMethod)      = cpg.method.nameExact("foo").l
       val List(fooBlock)       = fooMethod.astChildren.isBlock.l
       val List(fooLocalX)      = fooBlock.astChildren.isLocal.nameExact("x").l
-      val List(barRef)         = fooBlock.astChildren.isCall.astChildren.isMethodRef.l
+      val List(barRef)         = fooBlock.astChildren.isMethodRef.l
       val List(closureBinding) = barRef.captureOut.l
       closureBinding.closureBindingId shouldBe Option("Test0.swift:<global>:foo:bar:x")
       closureBinding.refOut.head shouldBe fooLocalX

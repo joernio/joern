@@ -44,13 +44,13 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   }
 
   private def astForArrayElementSyntax(node: ArrayElementSyntax): Ast = {
-    astForNodeWithFunctionReference(node.expression)
+    astForNode(node.expression)
   }
 
   private def astForAttributeSyntax(node: AttributeSyntax): Ast = {
     val argumentAsts = node.arguments match {
       case Some(argument) =>
-        val argumentAst    = astForNodeWithFunctionReference(argument)
+        val argumentAst    = astForNode(argument)
         val parameter      = NewAnnotationParameter().code("argument")
         val assign         = NewAnnotationParameterAssign().code(code(argument))
         val assignChildren = List(Ast(parameter), argumentAst)
@@ -135,7 +135,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForClosureSignatureSyntax(node: ClosureSignatureSyntax): Ast = notHandledYet(node)
 
   private def astForCodeBlockItemSyntax(node: CodeBlockItemSyntax): Ast = {
-    astForNodeWithFunctionReferenceAndCall(node.item)
+    astForNode(node.item)
   }
   private def astForCodeBlockSyntax(node: CodeBlockSyntax): Ast = {
     astForNode(node.statements)
@@ -248,7 +248,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForInheritedTypeSyntax(node: InheritedTypeSyntax): Ast             = notHandledYet(node)
 
   private def astForInitializerClauseSyntax(node: InitializerClauseSyntax): Ast = {
-    astForNodeWithFunctionReference(node.value)
+    astForNode(node.value)
   }
 
   private def astForKeyPathComponentSyntax(node: KeyPathComponentSyntax): Ast                   = notHandledYet(node)
@@ -260,10 +260,10 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     node.label match {
       case Some(label) =>
         val name = code(label)
-        val ast  = astForNodeWithFunctionReference(node.expression)
+        val ast  = astForNode(node.expression)
         ast.root.collect { case i: ExpressionNew => i.argumentName(name) }
         ast
-      case None => astForNodeWithFunctionReference(node.expression)
+      case None => astForNode(node.expression)
     }
   }
 
@@ -357,7 +357,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
         val blockNode_ = blockNode(node, PropertyDefaults.Code, Defines.Any)
         scope.pushNewBlockScope(blockNode_)
         localAstParentStack.push(blockNode_)
-        val childrenAst = astForNodeWithFunctionReference(head)
+        val childrenAst = astForNode(head)
         localAstParentStack.pop()
         scope.popScope()
         blockAst(blockNode_, List(childrenAst))
@@ -398,7 +398,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForVersionTupleSyntax(node: VersionTupleSyntax): Ast         = notHandledYet(node)
 
   private def astForWhereClauseSyntax(node: WhereClauseSyntax): Ast = {
-    astForNodeWithFunctionReference(node.condition)
+    astForNode(node.condition)
   }
 
   private def astForYieldedExpressionSyntax(node: YieldedExpressionSyntax): Ast               = notHandledYet(node)
