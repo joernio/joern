@@ -712,10 +712,10 @@ class TypeDeclTests extends PhpCode2CpgFixture {
           fooMetaClass.name shouldBe "Foo<metaclass>"
           fooMetaClass.fullName shouldBe "Foo<metaclass>"
 
-          fooDup.name shouldBe "Foo<duplicate>0"
+          fooDup.name shouldBe "Foo"
           fooDup.fullName shouldBe "Foo<duplicate>0"
 
-          fooMetaClassDup.name shouldBe "Foo<duplicate>0<metaclass>"
+          fooMetaClassDup.name shouldBe "Foo<metaclass>"
           fooMetaClassDup.fullName shouldBe "Foo<duplicate>0<metaclass>"
         case xs => fail(s"Expected two typeDecls for Foo, got ${xs.name.mkString("[", ",", "]")}")
       }

@@ -209,7 +209,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         (name.name, globalNamespace.fullName)
       else {
         val dedupClassName = scope.getDeduplicatedClassName(name.name)
-        (dedupClassName, prependNamespacePrefix(dedupClassName))
+        (name.name, prependNamespacePrefix(dedupClassName))
       }
 
     val metaTypeDeclFullName = s"$fullName$MetaTypeDeclExtension"

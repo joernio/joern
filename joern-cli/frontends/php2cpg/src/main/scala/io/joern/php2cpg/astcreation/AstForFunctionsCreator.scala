@@ -107,7 +107,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       None
     }
 
-    val methodName = scope.getDeduplicatedMethodName(decl.name.name)
+    val methodName = decl.name.name
     val fullName   = fullNameOverride.getOrElse(composeMethodFullName(methodName))
 
     val signature = s"$UnresolvedSignature(${decl.params.size})"
@@ -235,7 +235,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
   private def astForAttribute(attribute: PhpAttribute): Ast = {
     val name     = attribute.name
-    val fullName = composeMethodFullName(name.name, true)
+    val fullName = composeMethodFullName(name.name)
     val _annotationNode =
       annotationNode(attribute, code = name.name, attribute.name.name, fullName)
     val argsAst = attribute.args.map(astForCallArg)

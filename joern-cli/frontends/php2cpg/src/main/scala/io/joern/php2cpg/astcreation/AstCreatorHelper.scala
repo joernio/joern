@@ -61,20 +61,13 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     identifierNode(originNode, name, s"$$$name", typeFullName)
   }
 
-  protected def composeMethodFullName(methodName: String, appendMetaTypeDeclExt: Boolean = false): String = {
+  protected def composeMethodFullName(methodName: String): String = {
     scope.resolveIdentifier(methodName) match {
       case Some(importedMethod)                                         => importedMethod.name
       case None if methodName == NamespaceTraversal.globalNamespaceName => globalNamespace.fullName
       case None =>
-        val name = scope.getSurroundingFullName
-        val className = if (appendMetaTypeDeclExt) {
-          Option.unless(name.isBlank)(s"$name$MetaTypeDeclExtension")
-        } else {
-          Option.unless(name.isBlank)(name)
-        }
-
-        val nameWithClass = List(className, Some(methodName)).flatten.mkString(MethodDelimiter)
-        prependNamespacePrefix(nameWithClass)
+        val nameWithClass = scope.createMethodNameWithSurroundingInformation(methodName)
+        scope.getDeduplicatedMethodName(nameWithClass)
     }
   }
 

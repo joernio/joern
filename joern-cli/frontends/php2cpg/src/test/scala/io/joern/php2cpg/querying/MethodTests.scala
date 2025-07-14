@@ -281,7 +281,7 @@ class MethodTests extends PhpCode2CpgFixture {
         foo.name shouldBe "foo"
         foo.fullName shouldBe "Foo.__construct.foo"
 
-        duplicateFoo.name shouldBe "foo<duplicate>0"
+        duplicateFoo.name shouldBe "foo"
         duplicateFoo.fullName shouldBe "Foo.__construct.foo<duplicate>0"
       case xs => fail(s"Expected two functions for `foo`, got ${xs.name.mkString("[", ",", "]")}")
     }
@@ -291,19 +291,19 @@ class MethodTests extends PhpCode2CpgFixture {
         barOne.name shouldBe "bar"
         barOne.fullName shouldBe "Foo.__construct.foo.bar"
 
-        barDedupOne.name shouldBe "bar<duplicate>0"
+        barDedupOne.name shouldBe "bar"
         barDedupOne.fullName shouldBe "Foo.__construct.foo.bar<duplicate>0"
 
-        barDedupTwoOne.name shouldBe "bar<duplicate>1"
+        barDedupTwoOne.name shouldBe "bar"
         barDedupTwoOne.fullName shouldBe "Foo.__construct.foo.bar<duplicate>1"
 
         barTwo.name shouldBe "bar"
         barTwo.fullName shouldBe "Foo.__construct.foo<duplicate>0.bar"
 
-        barDedupTwo.name shouldBe "bar<duplicate>0"
+        barDedupTwo.name shouldBe "bar"
         barDedupTwo.fullName shouldBe "Foo.__construct.foo<duplicate>0.bar<duplicate>0"
 
-        barDedupTwoTwo.name shouldBe "bar<duplicate>1"
+        barDedupTwoTwo.name shouldBe "bar"
         barDedupTwoTwo.fullName shouldBe "Foo.__construct.foo<duplicate>0.bar<duplicate>1"
       case xs => fail(s"Expected four `bar` functions, got ${xs.name.mkString("[", ",", "]")}")
     }
