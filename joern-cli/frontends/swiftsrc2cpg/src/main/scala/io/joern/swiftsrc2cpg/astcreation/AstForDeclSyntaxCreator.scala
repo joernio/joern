@@ -893,7 +893,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           Seq(scopeLocalUniqueName("wildcard"))
       }
 
-      names.flatMap { name =>
+      names.map { name =>
         val cleanedName  = cleanName(name)
         val typeFullName = cleanName(binding.typeAnnotation.fold(Defines.Any)(t => cleanType(code(t.`type`))))
         registerType(typeFullName)
@@ -901,9 +901,9 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         scope.addVariable(cleanedName, nLocalNode, typeFullName, scopeType)
         diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
 
-        val initAstMaybe = binding.initializer.map(astForNode)
-        if (initAstMaybe.isEmpty) {
-          Seq(Ast())
+        val initAsts = (binding.initializer.map(astForNode) ++ binding.accessorBlock.map(astForNode)).toSeq
+        if (initAsts.isEmpty) {
+          Ast()
         } else {
           val patternIdentifier = identifierNode(binding.pattern, cleanedName).typeFullName(typeFullName)
           scope.addVariableReference(cleanedName, patternIdentifier, typeFullName, EvaluationStrategies.BY_REFERENCE)
@@ -917,15 +917,23 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           val initCode          = binding.initializer.fold("")(i => s" ${code(i).strip()}")
           val accessorBlockCode = binding.accessorBlock.fold("")(a => s" ${code(a).strip()}")
           val typeCode          = binding.typeAnnotation.fold("")(t => code(t).strip())
+
+          val rhsAst = initAsts match {
+            case Nil         => Ast()
+            case head :: Nil => head
+            case others =>
+              val block = blockNode(node, code(node), Defines.Any)
+              blockAst(block, others.toList)
+          }
+
           val assignmentAst = createAssignmentCallAst(
             patternAst,
-            initAstMaybe.head,
+            rhsAst,
             s"$kind $cleanedName$typeCode$initCode$accessorBlockCode".strip(),
             line = line(binding),
             column = column(binding)
           )
-          val accessorBlockAst = binding.accessorBlock.map(astForNode).toSeq
-          Seq(assignmentAst) ++ accessorBlockAst
+          assignmentAst
         }
       }
     }
