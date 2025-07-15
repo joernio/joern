@@ -178,50 +178,14 @@ class AstCreator(
   }
 
   private def astForGlobalStmt(stmt: PhpGlobalStmt): List[Ast] = {
-    val surroundingIter    = scope.getSurroundingMethods.drop(1).iterator // drop first to ignore global method
-    val surroundingMethods = scope.getSurroundingMethods.dropRight(1)     // drop last to ignore innermost method
+    stmt.vars.foreach {
+      case PhpVariable(name: PhpNameExpr, _) =>
+        val surroundingIter    = scope.getSurroundingMethods.drop(1).iterator // drop first to ignore global method
+        val surroundingMethods = scope.getSurroundingMethods.dropRight(1)     // drop last to ignore innermost method
 
-    surroundingMethods.foreach { currentMethod =>
-      val innerMethodScope = surroundingIter.next()
-      val innerMethodNode  = innerMethodScope.methodNode
-      val innerMethodRef   = innerMethodScope.methodRefNode
-      innerMethodRef match {
-        case Some(methodRef) =>
-          scope.getMethodRef(innerMethodNode.fullName) match {
-            case None =>
-              diffGraph.addNode(methodRef)
-              diffGraph.addEdge(currentMethod.bodyNode, methodRef, EdgeTypes.AST)
-              scope.addMethodRef(innerMethodNode.fullName, methodRef)
-            case _ =>
-          }
-
-          stmt.vars.foreach {
-            case PhpVariable(name: PhpNameExpr, _) =>
-              val closureBindingId = s"$relativeFileName:${innerMethodNode.fullName}:${name.name}"
-              val closureLocal     = localNode(stmt, name.name, name.name, Defines.Any, Option(closureBindingId))
-
-              val closureBindingNode = createClosureBinding(closureBindingId)
-
-              scope.lookupVariable(name.name) match {
-                case Some(refLocal) =>
-                  val p = refLocal
-                  diffGraph.addEdge(closureBindingNode, refLocal, EdgeTypes.REF)
-                case _ => // do nothing
-              }
-
-              scope.addVariableToMethodScope(closureLocal.name, closureLocal, innerMethodNode.fullName) match {
-                case Some(ms) => diffGraph.addEdge(ms.bodyNode, closureLocal, EdgeTypes.AST)
-                case _        => // do nothing
-              }
-
-              diffGraph.addNode(closureBindingNode)
-              diffGraph.addEdge(methodRef, closureBindingNode, EdgeTypes.CAPTURE)
-            case x =>
-              logger.warn(s"Unexpected variable type ${x.getClass} found")
-          }
-        case None =>
-          logger.warn(s"No methodRef found for capturing global variable in method ${innerMethodNode.fullName}")
-      }
+        createClosureCaptureForNode(stmt, name.name, surroundingIter, surroundingMethods)
+      case x =>
+        logger.warn(s"Unexpected variable type ${x.getClass} found")
     }
 
     stmt.vars.map(astForExpr)

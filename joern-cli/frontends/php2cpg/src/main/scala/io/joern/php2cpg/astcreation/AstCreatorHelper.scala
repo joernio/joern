@@ -158,29 +158,28 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
         }
 
         local
-      case Some(local: NewLocal) if scope.isSurroundedByArrowClosure && local.closureBindingId.isDefined =>
-        val p = local
-        local
+      case Some(local: NewLocal)
+          if scope.isSurroundedByArrowClosure && local.closureBindingId.exists(_.contains("<lambda>")) =>
+        local // the contains check ensures that we can capture global variables into an arrow closure
       case Some(param: NewMethodParameterIn)
           if scope.isSurroundedByArrowClosure && !scope.surroundingMethodParams.contains(param.name) =>
-        createClosureBindingAndLocalNode(expr, name, param)
-      case Some(local: NewLocal) if scope.isSurroundedByArrowClosure =>
-        createClosureBindingAndLocalNode(expr, name, local)
+        createClosureBindingsForArrowClosure(expr, name)
+      case Some(_: NewLocal) if scope.isSurroundedByArrowClosure =>
+        createClosureBindingsForArrowClosure(expr, name)
       case Some(local) => local
     }
   }
 
-  private def createClosureBindingAndLocalNode(
+  def createClosureCaptureForNode(
     expr: PhpNode,
     name: String,
-    existingNode: (NewLocal | NewMethodParameterIn)
+    innerMethodsIterator: Iterator[MethodScope],
+    surroundingMethods: List[MethodScope]
   ): NewLocal = {
-    val surroundingIter    = scope.getSurroundingArrowClosures.drop(1).iterator // drop first to ignore global method
-    val surroundingMethods = scope.getSurroundingArrowClosures.dropRight(1)     // drop last to ignore innermost method
-    val localNodes         = mutable.ArrayBuffer[NewLocal]()
+    val localNodes = mutable.ArrayBuffer[NewLocal]()
 
     surroundingMethods.foreach { currentMethod =>
-      val innerMethodScope = surroundingIter.next()
+      val innerMethodScope = innerMethodsIterator.next()
       val innerMethodNode  = innerMethodScope.methodNode
       val innerMethodRef   = innerMethodScope.methodRefNode
       innerMethodRef match {
@@ -193,14 +192,18 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
             case _ =>
           }
 
-          val closureBindingId = s"$relativeFileName:${innerMethodNode.fullName}:${name}"
-          val closureLocal     = localNode(expr, name, name, Defines.Any, Option(closureBindingId))
+          val closureBindingId = if (innerMethodNode.fullName.contains(NamespaceTraversal.globalNamespaceName)) {
+            s"${innerMethodNode.fullName}:${name}"
+          } else {
+            s"$relativeFileName:${innerMethodNode.fullName}:${name}"
+          }
+
+          val closureLocal = localNode(expr, name, name, Defines.Any, Option(closureBindingId))
 
           val closureBindingNode = createClosureBinding(closureBindingId)
 
           scope.lookupVariable(name) match {
             case Some(refLocal) =>
-              val p = refLocal
               diffGraph.addEdge(closureBindingNode, refLocal, EdgeTypes.REF)
             case _ => // do nothing
           }
@@ -219,6 +222,12 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     }
 
     localNodes.reverse.head
+  }
+
+  private def createClosureBindingsForArrowClosure(expr: PhpNode, name: String): NewLocal = {
+    val surroundingIter    = scope.getSurroundingMethodsForArrowClosure.drop(1).iterator
+    val surroundingMethods = scope.getSurroundingMethodsForArrowClosure.dropRight(1)
+    createClosureCaptureForNode(expr, name, surroundingIter, surroundingMethods)
   }
 
   protected def createClosureBinding(closureBindingId: String): NewClosureBinding =
