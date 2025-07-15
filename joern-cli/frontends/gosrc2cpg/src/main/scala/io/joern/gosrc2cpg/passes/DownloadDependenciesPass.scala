@@ -80,7 +80,7 @@ class DownloadDependenciesPass(cpg: Cpg, parentGoMod: GoModHelper, goGlobal: GoG
           .withInputPath(dependencyLocation)
           .withIgnoredFilesRegex(config.ignoredFilesRegex.toString())
           .withIgnoredFiles(config.ignoredFiles.toList)
-        val astGenResult = new GoAstGenRunner( depConfig, dependency.getIncludePackagesList())
+        val astGenResult = new GoAstGenRunner(depConfig, dependency.getIncludePackagesList())
           .executeForGo(astLocation)
           .headOption
           .getOrElse(GoAstGenRunnerResult())
