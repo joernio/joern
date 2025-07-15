@@ -81,7 +81,7 @@ class ClosureTests extends PhpCode2CpgFixture {
       val expectedName = s"foo.php:<global>.<lambda>0"
       closureMethod.name shouldBe expectedName
       closureMethod.fullName shouldBe expectedName
-      closureMethod.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
+      closureMethod.signature shouldBe ""
       closureMethod.code shouldBe s"function $expectedName($$value) use($$use1, &$$use2)"
       closureMethod.parameter.size shouldBe 1
 
@@ -153,7 +153,7 @@ class ClosureTests extends PhpCode2CpgFixture {
       val expectedName = "foo.php:<global>.<lambda>0"
       closureMethod.name shouldBe expectedName
       closureMethod.fullName shouldBe expectedName
-      closureMethod.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
+      closureMethod.signature shouldBe ""
       closureMethod.code shouldBe s"function $expectedName($$value)"
       closureMethod.parameter.size shouldBe 1
 

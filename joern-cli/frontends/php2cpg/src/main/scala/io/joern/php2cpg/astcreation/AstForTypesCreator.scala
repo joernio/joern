@@ -14,7 +14,14 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewTypeDecl,
   NewTypeRef
 }
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes, NodeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{
+  DispatchTypes,
+  EdgeTypes,
+  ModifierTypes,
+  NodeTypes,
+  Operators,
+  PropertyDefaults
+}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -56,7 +63,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
   private def addBindingsForTypeDecl(typeDecl: NewTypeDecl, bodyAsts: List[Ast]): Unit = {
     bodyAsts.flatMap(_.root).collect { case method: NewMethod =>
-      val binding = NewBinding().name(method.name).methodFullName(method.fullName).signature(method.signature)
+      val binding = NewBinding().name(method.name).methodFullName(method.fullName)
       diffGraph.addEdge(typeDecl, binding, EdgeTypes.BINDS)
       diffGraph.addEdge(binding, method, EdgeTypes.REF)
     }
