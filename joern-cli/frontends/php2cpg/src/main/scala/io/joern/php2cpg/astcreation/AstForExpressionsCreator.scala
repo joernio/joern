@@ -7,12 +7,7 @@ import io.joern.php2cpg.utils.BlockScope
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{
-  ControlStructureTypes,
-  DispatchTypes,
-  Operators,
-  PropertyNames
-}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import scala.collection.mutable

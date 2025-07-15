@@ -742,8 +742,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         |""".stripMargin)
 
     "contain deduplicated fullNames" in {
-      inside(cpg.typeDecl.fullName("Foo.*").l) {
-        case foo :: fooMetaClass :: fooDup :: fooMetaClassDup :: Nil =>
+      inside(cpg.typeDecl.fullName("Foo.*").sortBy(_.fullName).l) {
+        case foo :: fooDup :: fooMetaClassDup :: fooMetaClass :: Nil =>
           foo.name shouldBe "Foo"
           foo.fullName shouldBe "Foo"
 

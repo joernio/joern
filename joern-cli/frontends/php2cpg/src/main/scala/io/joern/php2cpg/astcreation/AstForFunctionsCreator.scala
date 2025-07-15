@@ -199,7 +199,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       astForMemberAssignment(fieldInit.originNode, fieldInit.memberNode, fieldInit.value, isField = true)
     }
 
-    val method = methodNode(originNode, ConstructorMethodName, fullName, fullName, None, relativeFileName)
+    val method    = methodNode(originNode, ConstructorMethodName, fullName, fullName, None, relativeFileName)
     val methodRef = methodRefNode(originNode, fullName, fullName, Defines.Any)
 
     val methodBodyBlock = blockNode(originNode)
