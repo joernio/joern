@@ -200,12 +200,12 @@ class AstCreator(
               val closureBindingId = s"$relativeFileName:${innerMethodNode.fullName}:${name.name}"
               val closureLocal     = localNode(stmt, name.name, name.name, Defines.Any, Option(closureBindingId))
 
-              val closureBindingNode = NewClosureBinding()
-                .closureBindingId(closureBindingId)
-                .evaluationStrategy(EvaluationStrategies.BY_SHARING)
+              val closureBindingNode = createClosureBinding(closureBindingId)
 
               scope.lookupVariable(name.name) match {
-                case Some(refLocal) => diffGraph.addEdge(closureBindingNode, refLocal, EdgeTypes.REF)
+                case Some(refLocal) =>
+                  val p = refLocal
+                  diffGraph.addEdge(closureBindingNode, refLocal, EdgeTypes.REF)
                 case _              => // do nothing
               }
 

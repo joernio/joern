@@ -157,53 +157,55 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
         }
 
         local
-      case Some(local: NewLocal) if scope.isSurroundedByArrowClosure && local.closureBindingId.isDefined => local
+      case Some(local: NewLocal) if scope.isSurroundedByArrowClosure && local.closureBindingId.isDefined =>
+        val p = local
+        local
       case Some(param: NewMethodParameterIn)
           if scope.isSurroundedByArrowClosure && !scope.surroundingMethodParams.contains(param.name) =>
-        val methodName = scope.surroundingScopeFullName.get // should throw error if this does not exist
-        val methodRef  = scope.getSurroundingArrowClosureMethodRef
-
-        val closureBindingId = s"$methodName:$name"
-        val localNode_ =
-          localNode(expr, name, param.code, Defines.Any, closureBindingId = Option(closureBindingId))
-
-        createClosureBinding(methodRef, closureBindingId, param, localNode_)
-
-        localNode_
+        createClosureBindingAndLocalNode(expr, name, param)
       case Some(local: NewLocal) if scope.isSurroundedByArrowClosure =>
-        val methodName = scope.surroundingScopeFullName.get // should throw error if this does not exist
-        val methodRef  = scope.getSurroundingArrowClosureMethodRef
-
-        val closureBindingId = s"$methodName:$name"
-        val localNode_ =
-          localNode(expr, name, local.code, local.typeFullName, closureBindingId = Option(closureBindingId))
-
-        createClosureBinding(methodRef, closureBindingId, local, localNode_)
-
-        localNode_
+        createClosureBindingAndLocalNode(expr, name, local)
       case Some(local) => local
     }
   }
 
-  private def createClosureBinding(
-    methodRef: Option[NewMethodRef],
-    closureBindingId: String,
-    existingNode: (NewLocal | NewMethodParameterIn),
-    newLocalNode: NewLocal
-  ): Unit = {
-    val closureBindingNode =
-      NewClosureBinding().closureBindingId(closureBindingId).evaluationStrategy(EvaluationStrategies.BY_SHARING)
+  private def createClosureBindingAndLocalNode(
+    expr: PhpNode,
+    name: String,
+    existingNode: (NewLocal | NewMethodParameterIn)
+  ): NewLocal = {
+    val methodName = scope.surroundingScopeFullName.get // should throw error if this does not exist
+    val methodRef  = scope.getSurroundingArrowClosureMethodRef
 
-    diffGraph.addEdge(closureBindingNode, existingNode, EdgeTypes.REF)
-    diffGraph.addNode(closureBindingNode)
-    methodRef.foreach(diffGraph.addEdge(_, closureBindingNode, EdgeTypes.CAPTURE))
+    val closureBindingId = s"$methodName:$name"
 
-    scope.addToScope(newLocalNode.name, newLocalNode) match {
-      case BlockScope(block, _)              => diffGraph.addEdge(block, newLocalNode, EdgeTypes.AST)
-      case MethodScope(_, block, _, _, _, _) => diffGraph.addEdge(block, newLocalNode, EdgeTypes.AST)
-      case _                                 => // do nothing
+    val localTfn = existingNode match {
+      case x: NewLocal             => x.typeFullName
+      case _: NewMethodParameterIn => Defines.Any
     }
+
+    val localNode_ =
+      localNode(expr, name, existingNode.code, localTfn, closureBindingId = Option(closureBindingId))
+
+    val closureBindingNode = createClosureBinding(closureBindingId)
+
+    scope.addClosureBinding(closureBindingNode, localNode_)
+    scope.addToScope(localNode_.name, localNode_)
+
+//    diffGraph.addNode(closureBindingNode)
+//    methodRef.foreach(diffGraph.addEdge(_, closureBindingNode, EdgeTypes.CAPTURE))
+//
+//    scope.addToScope(localNode_.name, localNode_) match {
+//      case BlockScope(block, _)              => diffGraph.addEdge(block, localNode_, EdgeTypes.AST)
+//      case MethodScope(_, block, _, _, _, _) => diffGraph.addEdge(block, localNode_, EdgeTypes.AST)
+//      case _                                 => // do nothing
+//    }
+
+    localNode_
   }
+
+  protected def createClosureBinding(closureBindingId: String): NewClosureBinding =
+    NewClosureBinding().closureBindingId(closureBindingId).evaluationStrategy(EvaluationStrategies.BY_SHARING)
 
   protected def staticInitMethodAst(node: PhpNode, methodNode: NewMethod, body: Ast, returnType: String): Ast = {
     val staticModifier = NewModifier().modifierType(ModifierTypes.STATIC)

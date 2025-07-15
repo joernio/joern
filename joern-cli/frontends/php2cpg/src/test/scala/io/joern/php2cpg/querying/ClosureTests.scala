@@ -159,7 +159,7 @@ class ClosureTests extends PhpCode2CpgFixture {
     }
   }
 
-  "arrow function with method parameter as capturesd variable" should {
+  "arrow function with method parameter as captured variable" should {
     val cpg = code("""<?php
         |function foo($captured) {
         |   $x = fn() => $captured + $captured + $captured;
@@ -186,6 +186,83 @@ class ClosureTests extends PhpCode2CpgFixture {
       val parameterNode = cpg.method.name("foo").parameter.name("captured").head
       parameterNode._closureBindingViaRefIn.next().closureBindingId shouldBe Some("foo.<lambda>0:captured")
     }
+  }
+
+  "arrow function with multiple variables and parameters captured" should {
+    val cpg = code("""<?php
+        |function foo($capParamOne, $capParamTwo, $capParamThree) {
+        |  $capVarOne = 1;
+        |  $capVarTwo = 2;
+        |  $capVarThree = 3;
+        |
+        |  fn() => $capParamOne +$capParamTwo + $capVarOne + $capVarThree + $capParamTwo + $capParamThree + $capVarThree + $capVarTwo;
+        |}
+        |""".stripMargin)
+
+    "create one local variables for each captured variable" in {
+      val locals = cpg.method.name("foo.<lambda>0").local.l
+
+      val List(paramOne, paramTwo, varOne, varThree, paramThree, varTwo) = locals
+
+      paramOne.closureBindingId shouldBe Some("foo.<lambda>0:capParamOne")
+      paramTwo.closureBindingId shouldBe Some("foo.<lambda>0:capParamTwo")
+      paramThree.closureBindingId shouldBe Some("foo.<lambda>0:capParamThree")
+
+      varOne.closureBindingId shouldBe Some("foo.<lambda>0:capVarOne")
+      varTwo.closureBindingId shouldBe Some("foo.<lambda>0:capVarTwo")
+      varThree.closureBindingId shouldBe Some("foo.<lambda>0:capVarThree")
+    }
+
+    "method ref of closure binding" in {
+      val methodRefNode     = cpg.methodRefWithName("foo.<lambda>0").head
+      val closureBindingIds = methodRefNode._closureBindingViaCaptureOut.l.map(_.closureBindingId)
+
+      closureBindingIds shouldBe List(
+        Some("foo.<lambda>0:capParamOne"),
+        Some("foo.<lambda>0:capParamTwo"),
+        Some("foo.<lambda>0:capVarOne"),
+        Some("foo.<lambda>0:capVarThree"),
+        Some("foo.<lambda>0:capParamThree"),
+        Some("foo.<lambda>0:capVarTwo")
+      )
+    }
+
+    "closure binding reference to global" in {
+      val capParamOneNode = cpg.method.name("foo").parameter.name("capParamOne").head
+      capParamOneNode._closureBindingViaRefIn.next().closureBindingId shouldBe Some("foo.<lambda>0:capParamOne")
+
+      val capParamTwoNode = cpg.method.name("foo").parameter.name("capParamTwo").head
+      capParamTwoNode._closureBindingViaRefIn.next().closureBindingId shouldBe Some("foo.<lambda>0:capParamTwo")
+
+      val capParamThreeNode = cpg.method.name("foo").parameter.name("capParamThree").head
+      capParamThreeNode._closureBindingViaRefIn.next().closureBindingId shouldBe Some("foo.<lambda>0:capParamThree")
+
+      val capVarOneNode = cpg.method.name("foo").local.name("capVarOne").head
+      capVarOneNode._closureBindingViaRefIn.next().closureBindingId shouldBe Some("foo.<lambda>0:capVarOne")
+
+      val capVarTwoNode = cpg.method.name("foo").local.name("capVarTwo").head
+      capVarTwoNode._closureBindingViaRefIn.next().closureBindingId shouldBe Some("foo.<lambda>0:capVarTwo")
+
+      val capVarThreeNode = cpg.method.name("foo").local.name("capVarThree").head
+      capVarThreeNode._closureBindingViaRefIn.next().closureBindingId shouldBe Some("foo.<lambda>0:capVarThree")
+    }
+  }
+
+  "recursive arrow functions" should {
+    val cpg = code(
+      """<?php
+        |$a = 10;
+        |fn () => fn () => $a;
+        |""".stripMargin, "foo.php")
+
+    "create a local huh" in {
+      val locals = cpg.method.name("foo.php:<global>.<lambda>0.<lambda>1").local.l
+      println(locals.head.closureBindingId)
+
+      val locales = cpg.method.name("foo.php:<global>.<lambda>0").local.l
+      locales.foreach(x => println(x.closureBindingId))
+    }
+
   }
 
   "arrow functions should be represented as closures with return statements" should {

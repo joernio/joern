@@ -4,18 +4,12 @@ import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
 import io.joern.php2cpg.parser.Domain
 import io.joern.php2cpg.parser.Domain.*
 import io.joern.php2cpg.parser.Domain.PhpModifiers.containsAccessModifier
-import io.joern.php2cpg.utils.MethodScope
+import io.joern.php2cpg.utils.{BlockScope, MethodScope}
 import io.joern.x2cpg.Defines.UnresolvedSignature
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{
-  EdgeTypes,
-  EvaluationStrategies,
-  ModifierTypes,
-  PropertyDefaults,
-  PropertyNames
-}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes, PropertyDefaults, PropertyNames}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -48,9 +42,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
       local.closureBindingId(closureBindingId)
 
-      val closureBindingNode = NewClosureBinding()
-        .closureBindingId(closureBindingId)
-        .evaluationStrategy(EvaluationStrategies.BY_SHARING)
+      val closureBindingNode = createClosureBinding(closureBindingId)
 
       scope.lookupVariable(local.name) match {
         case Some(refLocal) =>
@@ -100,6 +92,16 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     // Add method to scope to be attached to typeDecl later
     scope.registerAstForInsertion(methodAst)
+
+    // When we only have one occurrence of the closure prefix in the method name, we know we are in the outermost
+    // closure expression if we are processing nested closure expressions
+
+
+//    if (Defines.ClosurePrefix.r.findAllIn(methodName).size == 1) {
+//
+//    } else {
+//
+//    }
 
     Ast(methodRef)
   }
@@ -168,6 +170,27 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val attributeAsts = decl.attributeGroups.flatMap(astForAttributeGroup)
     val methodBody    = blockAst(methodBodyNode, methodBodyStmts)
 
+    if (isArrowClosure) {
+      scope.getAndClearClosureBindings.foreach { (variableLocal, variableClosureBinding) =>
+        val closureBindingId = s"$methodName:${variableLocal.name}"
+        val closureBinding = createClosureBinding(closureBindingId)
+        val localNode_ = localNode(decl, variableLocal.name, variableLocal.name, variableLocal.typeFullName, Option(closureBindingId))
+
+        scope.addClosureBinding(closureBinding, localNode_)
+
+        diffGraph.addNode(closureBinding)
+        diffGraph.addEdge(variableClosureBinding, localNode_, EdgeTypes.REF)
+
+        scope.addToScope(localNode_.name, localNode_) match {
+          case BlockScope(block, _)              => diffGraph.addEdge(block, localNode_, EdgeTypes.AST)
+          case MethodScope(_, block, _, _, _, _) => diffGraph.addEdge(block, localNode_, EdgeTypes.AST)
+          case _                                 => // do nothing
+        }
+
+        diffGraph.addEdge(closureMethodRef.get, closureBinding, EdgeTypes.CAPTURE)
+      }
+    }
+    
     scope.popScope()
     val methodAst = methodAstWithAnnotations(method, parameters, methodBody, methodReturn, modifiers, attributeAsts)
 
