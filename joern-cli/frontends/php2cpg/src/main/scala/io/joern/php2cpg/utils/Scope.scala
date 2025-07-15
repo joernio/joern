@@ -32,8 +32,7 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
   private var tmpVarCounter                                           = 0
   private var tmpClassCounter                                         = 0
   private var importedSymbols                                         = Map.empty[String, SymbolSummary]
-  private val methodRefs                                              = mutable.ArrayBuffer[NewMethodRef]()
-  private val methodRefsInAst                                         = mutable.HashSet[String]()
+  private val methodRefsInAst                                         = mutable.HashMap[String, NewMethodRef]()
 
   override def pushNewScope(scopeNode: TypedScopeElement): Unit = {
     val mappedNode = scopeNode match {
@@ -43,11 +42,6 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
           .getOrElse("")
         BlockScope(block.block, blockFullName)
       case method: MethodScope =>
-        method.methodRefNode match {
-          case Some(methodRef) =>
-            methodRefs.addOne(methodRef)
-          case None => // do nothing
-        }
         method
       case typeDecl: TypeScope =>
         constAndStaticInits = mutable.ArrayBuffer[PhpInit]() :: constAndStaticInits
@@ -59,6 +53,24 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
 
     super.pushNewScope(mappedNode)
   }
+
+  def getDeduplicatedMethodName(methodName: String): String =
+    stack.headOption
+      .collectFirst {
+        case ScopeElement(node: TypeScope, _)      => node.getNextDeduplicateMethodName(methodName)
+        case ScopeElement(node: MethodScope, _)    => node.getNextDeduplicateMethodName(methodName)
+        case ScopeElement(node: NamespaceScope, _) => node.getNextDeduplicateMethodName(methodName)
+      }
+      .getOrElse(methodName)
+
+  def getDeduplicatedClassName(className: String): String =
+    stack.headOption
+      .collectFirst {
+        case ScopeElement(node: TypeScope, _)      => node.getNextDeduplicateClassName(className)
+        case ScopeElement(node: MethodScope, _)    => node.getNextDeduplicateClassName(className)
+        case ScopeElement(node: NamespaceScope, _) => node.getNextDeduplicateClassName(className)
+      }
+      .getOrElse(className)
 
   def surroundingAstLabel: Option[String] = stack.collectFirst {
     case ScopeElement(_: NamespaceLikeScope, _) => NodeTypes.NAMESPACE_BLOCK
@@ -127,8 +139,8 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
     }
   }
 
-  def addMethodRefName(methodRefName: String): Unit     = methodRefsInAst.addOne(methodRefName)
-  def containsMethodRef(methodRefName: String): Boolean = methodRefsInAst.contains(methodRefName)
+  def addMethodRef(methodRefName: String, methodRef: NewMethodRef): Unit = methodRefsInAst.put(methodRefName, methodRef)
+  def getMethodRef(methodRefName: String): Option[NewMethodRef]          = methodRefsInAst.get(methodRefName)
 
   def addVariableToMethodScope(identifier: String, variable: NewNode, methodFullName: String): Option[MethodScope] = {
     stack.collectFirst {
@@ -159,9 +171,6 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
       .collectFirst { case TypeScope(td, _) => td }
       .exists(_.name.endsWith(MetaTypeDeclExtension))
 
-  def isSurroundedByLambda: Boolean =
-    stack.map(_.scopeNode).collectFirst { case nm: MethodScope if nm.fullName.contains("<lambda>") => nm }.isDefined
-
   def isTopLevel: Boolean =
     getEnclosingTypeDeclTypeName.forall(_ == NamespaceTraversal.globalNamespaceName)
 
@@ -174,15 +183,23 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
   def getEnclosingTypeDeclTypeFullName: Option[String] =
     stack.map(_.scopeNode).collectFirst { case TypeScope(td, _) => td }.map(_.fullName)
 
-  def getSurroundingFullName: String = {
+  def createMethodNameWithSurroundingInformation(methodName: String): String = {
+    val namespaces =
+      getEnclosingNamespaceNames.filterNot(_ == NamespaceTraversal.globalNamespaceName).reverse.mkString("\\")
+
     stack
       .map(_.scopeNode)
       .collectFirst {
-        case TypeScope(td, _)            => td.name
-        case MethodScope(nm, _, _, _, _) => nm.name
+        case NamespaceScope(nm, _) if nm.name != NamespaceTraversal.globalNamespaceName => s"${nm.name}\\$methodName"
+        case TypeScope(td, _) if td.name != NamespaceTraversal.globalNamespaceName      => s"${td.fullName}.$methodName"
+        case MethodScope(nm, _, _, _, _) if nm.name != NamespaceTraversal.globalNamespaceName =>
+          if (namespaces.isEmpty) {
+            s"${nm.fullName}.$methodName"
+          } else {
+            s"$namespaces\\${nm.fullName}.$methodName"
+          }
       }
-      .filterNot(_ == NamespaceTraversal.globalNamespaceName)
-      .mkString(".")
+      .getOrElse(methodName)
   }
 
   def getSurroundingMethods: List[MethodScope] =
@@ -216,8 +233,6 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
         NameConstants.Closure
     }
   }
-
-  def addMethodRef(methodRef: NewMethodRef): Unit = methodRefs.addOne(methodRef)
 
   private def addInitToScope(init: PhpInit, initList: List[mutable.ArrayBuffer[PhpInit]]): Unit = {
     initList.head.addOne(init)
