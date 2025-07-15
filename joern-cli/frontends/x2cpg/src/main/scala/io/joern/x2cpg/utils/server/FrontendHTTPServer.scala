@@ -4,11 +4,13 @@ import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.X2CpgConfig
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.X2CpgMain
+import io.joern.x2cpg.utils.Environment
 import net.freeutils.httpserver.HTTPServer
 import net.freeutils.httpserver.HTTPServer.Context
 import org.slf4j.LoggerFactory
 
 import java.net.ServerSocket
+import java.nio.file.Paths
 import java.util.concurrent.{ExecutorService, Executors, Phaser, Semaphore, TimeUnit}
 import scala.annotation.tailrec
 import scala.concurrent.TimeoutException
@@ -179,4 +181,16 @@ trait FrontendHTTPServer { this: X2CpgMain =>
     }
   }
 
+  override def run(config: frontend.ConfigType): Unit = {
+    if (config.serverMode) {
+      startup()
+      config.serverTimeoutSeconds.foreach(serveUntilTimeout)
+    } else if (Environment.pathExists(config.inputPath)) {
+      val absPath = Paths.get(config.inputPath).toAbsolutePath.toString
+      frontend.run(config.withInputPath(absPath))
+    } else {
+      logger.warn(s"Given path '${config.inputPath}' does not exist, skipping")
+      System.exit(1)
+    }
+  }
 }

@@ -12,7 +12,7 @@ final case class Config(
   phpIni: Option[String] = None,
   phpParserBin: Option[String] = None,
   downloadDependencies: Boolean = false,
-  override val sharedConfig: X2CpgConfig.SharedConfig = X2CpgConfig.SharedConfig(),
+  override val sharedConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig(),
   override val sharedTypeRecoveryConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config(),
   override val typeStubsFilePath: Option[String] = None
 ) extends X2CpgConfig[Config]
@@ -20,7 +20,7 @@ final case class Config(
     with TypeStubsParserConfig
     with DependencyDownloadConfig {
 
-  override def withSharedConfig(newSharedConfig: X2CpgConfig.SharedConfig): Config =
+  override def withSharedConfig(newSharedConfig: X2CpgConfig.GenericConfig): Config =
     copy(sharedConfig = newSharedConfig)
 
   override def withSharedTypeRecoveryConfig(newSharedConfig: TypeRecoveryParserConfig.Config): Config =
@@ -65,10 +65,4 @@ object Frontend {
   }
 }
 
-object Main extends X2CpgMain(new Php2Cpg(): Php2Cpg, cmdLineParser) with FrontendHTTPServer {
-
-  def run(config: frontend.ConfigType): Unit = {
-    if (config.serverMode) { startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout) }
-    else { frontend.run(config) }
-  }
-}
+object Main extends X2CpgMain(new Php2Cpg(): Php2Cpg, cmdLineParser) with FrontendHTTPServer

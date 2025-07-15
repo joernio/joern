@@ -28,12 +28,12 @@ final case class Config(
   cacheJdkTypeSolver: Boolean = false,
   keepTypeArguments: Boolean = false,
   disableTypeFallback: Boolean = false,
-  override val sharedConfig: X2CpgConfig.SharedConfig = X2CpgConfig.SharedConfig(),
+  override val sharedConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig(),
   override val sharedTypeRecoveryConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config()
 ) extends X2CpgConfig[Config]
     with TypeRecoveryParserConfig {
 
-  override def withSharedConfig(newSharedConfig: X2CpgConfig.SharedConfig): Config =
+  override def withSharedConfig(newSharedConfig: X2CpgConfig.GenericConfig): Config =
     copy(sharedConfig = newSharedConfig)
 
   override def withSharedTypeRecoveryConfig(newSharedConfig: TypeRecoveryParserConfig.Config): Config =
@@ -169,15 +169,11 @@ object Main extends X2CpgMain(new JavaSrc2Cpg(), cmdLineParser) with FrontendHTT
     }
   }
 
-  def run(config: frontend.ConfigType): Unit = {
+  override def run(config: frontend.ConfigType): Unit = {
     config match {
-      case c if c.serverMode                 => startup(); c.serverTimeoutSeconds.foreach(serveUntilTimeout)
       case c: Config if c.showEnv            => JavaSrc2Cpg.showEnv()
       case c: Config if c.dumpJavaparserAsts => JavaParserAstPrinter.printJpAsts(c)
-      case _                                 => frontend.run(config)
+      case _                                 => super.run(config)
     }
   }
-
-  def getCmdLineParser = cmdLineParser
-
 }

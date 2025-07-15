@@ -39,13 +39,4 @@ private object Frontend {
   }
 }
 
-object NewMain extends X2CpgMain(new Py2CpgOnFileSystem(), cmdLineParser) with FrontendHTTPServer {
-
-  def run(config: frontend.ConfigType): Unit = {
-    if (config.serverMode) { startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout) }
-    else { frontend.run(config) }
-  }
-
-  def getCmdLineParser = cmdLineParser
-
-}
+object NewMain extends X2CpgMain(new Py2CpgOnFileSystem(), cmdLineParser) with FrontendHTTPServer

@@ -11,18 +11,18 @@ import scala.util.Try
 import scala.jdk.CollectionConverters.*
 
 case class Py2CpgOnFileSystemConfig(
-  venvDir: Option[Path] = None,
-  venvDirs: Seq[Path] = Nil,
-  ignoreVenvDir: Boolean = true,
-  ignorePaths: Seq[Path] = Nil,
-  ignoreDirNames: Seq[String] = Nil,
-  requirementsTxt: String = "requirements.txt",
-  override val sharedConfig: X2CpgConfig.SharedConfig = X2CpgConfig.SharedConfig(),
-  override val sharedTypeRecoveryConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config()
+                                     venvDir: Option[Path] = None,
+                                     venvDirs: Seq[Path] = Nil,
+                                     ignoreVenvDir: Boolean = true,
+                                     ignorePaths: Seq[Path] = Nil,
+                                     ignoreDirNames: Seq[String] = Nil,
+                                     requirementsTxt: String = "requirements.txt",
+                                     override val sharedConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig(),
+                                     override val sharedTypeRecoveryConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config()
 ) extends X2CpgConfig[Py2CpgOnFileSystemConfig]
     with TypeRecoveryParserConfig {
 
-  override def withSharedConfig(newSharedConfig: X2CpgConfig.SharedConfig): Py2CpgOnFileSystemConfig =
+  override def withSharedConfig(newSharedConfig: X2CpgConfig.GenericConfig): Py2CpgOnFileSystemConfig =
     copy(sharedConfig = newSharedConfig)
 
   override def withSharedTypeRecoveryConfig(

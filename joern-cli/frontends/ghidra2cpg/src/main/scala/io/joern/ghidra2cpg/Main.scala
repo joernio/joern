@@ -1,14 +1,14 @@
 package io.joern.ghidra2cpg
 
 import io.joern.ghidra2cpg.Frontend.*
-import io.joern.x2cpg.X2CpgConfig.SharedConfig
+import io.joern.x2cpg.X2CpgConfig.GenericConfig
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import scopt.OParser
 
 /** Command line configuration parameters
   */
-final case class Config(override val sharedConfig: SharedConfig = SharedConfig()) extends X2CpgConfig[Config] {
-  override def withSharedConfig(newSharedConfig: SharedConfig): Config = copy(sharedConfig = newSharedConfig)
+final case class Config(override val sharedConfig: GenericConfig = GenericConfig()) extends X2CpgConfig[Config] {
+  override def withSharedConfig(newSharedConfig: GenericConfig): Config = copy(sharedConfig = newSharedConfig)
 }
 
 private object Frontend {

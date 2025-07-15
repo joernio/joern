@@ -10,9 +10,9 @@ import java.nio.file.Paths
 final case class Config(
   fetchDependencies: Boolean = false,
   includeIndirectDependencies: Boolean = false,
-  override val sharedConfig: X2CpgConfig.SharedConfig = X2CpgConfig.SharedConfig()
+  override val sharedConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig()
 ) extends X2CpgConfig[Config] {
-  override def withSharedConfig(newSharedConfig: X2CpgConfig.SharedConfig): Config =
+  override def withSharedConfig(newSharedConfig: X2CpgConfig.GenericConfig): Config =
     copy(sharedConfig = newSharedConfig)
 
   def withFetchDependencies(value: Boolean): Config = {
@@ -41,13 +41,4 @@ object Frontend {
 
 }
 
-object Main extends X2CpgMain(new GoSrc2Cpg(), cmdLineParser.asInstanceOf) with FrontendHTTPServer {
-
-  def run(config: frontend.ConfigType): Unit = {
-    if (config.serverMode) { startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout) }
-    else {
-      val absPath = Paths.get(config.inputPath).toAbsolutePath.toString
-      frontend.run(config.withInputPath(absPath))
-    }
-  }
-}
+object Main extends X2CpgMain(new GoSrc2Cpg(), cmdLineParser.asInstanceOf) with FrontendHTTPServer

@@ -18,7 +18,7 @@ object X2CpgConfig {
   def defaultInputPath: String  = ""
   def defaultOutputPath: String = "cpg.bin"
 
-  final case class SharedConfig(
+  final case class GenericConfig(
     inputPath: String = X2CpgConfig.defaultInputPath,
     outputPath: String = X2CpgConfig.defaultOutputPath,
     serverMode: Boolean = false,
@@ -35,7 +35,7 @@ object X2CpgConfig {
 trait X2CpgConfig[T <: X2CpgConfig[?]] {
   final type OwnType = T
 
-  protected def sharedConfig: X2CpgConfig.SharedConfig
+  protected def sharedConfig: X2CpgConfig.GenericConfig
   final def inputPath: String                    = sharedConfig.inputPath
   final def outputPath: String                   = sharedConfig.outputPath
   final def serverMode: Boolean                  = sharedConfig.serverMode
@@ -46,7 +46,7 @@ trait X2CpgConfig[T <: X2CpgConfig[?]] {
   final def schemaValidation: ValidationMode     = sharedConfig.schemaValidation
   final def disableFileContent: Boolean          = sharedConfig.disableFileContent
 
-  protected def withSharedConfig(newSharedConfig: X2CpgConfig.SharedConfig): OwnType
+  protected def withSharedConfig(newSharedConfig: X2CpgConfig.GenericConfig): OwnType
 
   def withInputPath(inputPath: String): OwnType = {
     withSharedConfig(sharedConfig.copy(inputPath = Paths.get(inputPath).toAbsolutePath.normalize().toString))

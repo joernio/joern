@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg
 
 import io.joern.rubysrc2cpg.Frontend.*
-import io.joern.x2cpg.X2CpgConfig.SharedConfig
+import io.joern.x2cpg.X2CpgConfig.GenericConfig
 import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery, XTypeRecoveryConfig}
 import io.joern.x2cpg.typestub.TypeStubConfig
 import io.joern.x2cpg.utils.server.FrontendHTTPServer
@@ -13,7 +13,7 @@ import java.nio.file.Paths
 final case class Config(
   downloadDependencies: Boolean = false,
   useTypeStubs: Boolean = true,
-  override val sharedConfig: SharedConfig = SharedConfig(defaultIgnoredFilesRegex =
+  override val sharedConfig: GenericConfig = GenericConfig(defaultIgnoredFilesRegex =
     List("spec", "tests?", "vendor", "db(\\\\|/)([\\w_]*)migrate([_\\w]*)").flatMap { directory =>
       List(s"(^|\\\\)$directory($$|\\\\)".r.unanchored, s"(^|/)$directory($$|/)".r.unanchored)
     }
@@ -24,7 +24,7 @@ final case class Config(
     with TypeRecoveryParserConfig
     with TypeStubConfig {
 
-  override def withSharedConfig(newSharedConfig: X2CpgConfig.SharedConfig): Config =
+  override def withSharedConfig(newSharedConfig: X2CpgConfig.GenericConfig): Config =
     copy(sharedConfig = newSharedConfig)
 
   override def withSharedTypeRecoveryConfig(newSharedConfig: TypeRecoveryParserConfig.Config): Config =
@@ -58,10 +58,4 @@ private object Frontend {
   }
 }
 
-object Main extends X2CpgMain(new RubySrc2Cpg(), cmdLineParser) with FrontendHTTPServer {
-
-  def run(config: frontend.ConfigType): Unit = {
-    if (config.serverMode) { startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout) }
-    else { frontend.run(config) }
-  }
-}
+object Main extends X2CpgMain(new RubySrc2Cpg(), cmdLineParser) with FrontendHTTPServer

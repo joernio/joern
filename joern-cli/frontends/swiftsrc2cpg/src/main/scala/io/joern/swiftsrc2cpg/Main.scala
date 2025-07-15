@@ -13,12 +13,12 @@ import java.nio.file.Paths
 
 final case class Config(
   defines: Set[String] = Set.empty,
-  override val sharedConfig: X2CpgConfig.SharedConfig = X2CpgConfig.SharedConfig(),
+  override val sharedConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig(),
   override val sharedTypeRecoveryConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config()
 ) extends X2CpgConfig[Config]
     with TypeRecoveryParserConfig {
 
-  override def withSharedConfig(newSharedConfig: X2CpgConfig.SharedConfig): Config =
+  override def withSharedConfig(newSharedConfig: X2CpgConfig.GenericConfig): Config =
     copy(sharedConfig = newSharedConfig)
 
   override def withSharedTypeRecoveryConfig(newSharedConfig: TypeRecoveryParserConfig.Config): Config =
@@ -47,18 +47,4 @@ object Frontend {
 
 }
 
-object Main extends X2CpgMain(new SwiftSrc2Cpg(), cmdLineParser) with FrontendHTTPServer {
-
-  def run(config: frontend.ConfigType): Unit = {
-    if (config.serverMode) { startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout) }
-    else {
-      val absPath = Paths.get(config.inputPath).toAbsolutePath.toString
-      if (Environment.pathExists(absPath)) {
-        frontend.run(config.withInputPath(absPath))
-      } else {
-        System.exit(1)
-      }
-    }
-  }
-
-}
+object Main extends X2CpgMain(new SwiftSrc2Cpg(), cmdLineParser) with FrontendHTTPServer
