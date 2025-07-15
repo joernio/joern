@@ -4,18 +4,10 @@ import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants, op
 import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*
 import io.joern.php2cpg.utils.BlockScope
-import io.joern.x2cpg.Defines.{UnresolvedNamespace, UnresolvedSignature}
-import io.joern.x2cpg.Defines.UnresolvedSignature
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{
-  ControlStructureTypes,
-  DispatchTypes,
-  EdgeTypes,
-  Operators,
-  PropertyNames
-}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import scala.collection.mutable
@@ -110,9 +102,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val fullName = getMfn(call, name)
 
-    // Use method signature for methods that can be linked to avoid varargs issue.
-    val signature = s"$UnresolvedSignature(${call.args.size})"
-    val callRoot  = callNode(call, code, name, fullName, dispatchType, Some(signature), Some(Defines.Any))
+    val callRoot = callNode(call, code, name, fullName, dispatchType, None, Some(Defines.Any))
 
     val receiverAst = targetAst match {
       case None if !scope.isTopLevel =>
@@ -140,9 +130,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case _                                             => getMfn(call, name)
     }
 
-    // Use method signature for methods that can be linked to avoid varargs issue.
-    val signature = s"$UnresolvedSignature(${call.args.size})"
-    val callRoot  = callNode(call, code, name, fullName, dispatchType, Some(signature), Some(Defines.Any))
+    val callRoot = callNode(call, code, name, fullName, dispatchType, None, Some(Defines.Any))
 
     callAst(callRoot, arguments)
   }
@@ -886,7 +874,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     // Init node
     val initArgs      = expr.args.map(astForCallArg)
-    val initSignature = s"$UnresolvedSignature(${initArgs.size})"
     val initFullName  = s"$className$MethodDelimiter$ConstructorMethodName"
     val initCode      = s"new $className(${initArgs.map(_.rootCodeOrEmpty).mkString(",")})"
     val maybeTypeHint = scope.resolveIdentifier(className).map(_.name) // consider imported or defined types
@@ -896,7 +883,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       ConstructorMethodName,
       initFullName,
       DispatchTypes.STATIC_DISPATCH,
-      Some(initSignature),
+      None,
       maybeTypeHint.orElse(Some(Defines.Any)) // TODO Review Note: Should the hint be under dynamicTypeHintFullName?
     )
     val initReceiver = astForIdentifierWithLocalRef(tmpIdentifier.copy, local)
