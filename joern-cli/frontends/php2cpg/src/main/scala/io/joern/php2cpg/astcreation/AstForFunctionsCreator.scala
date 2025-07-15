@@ -99,15 +99,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     // Add method to scope to be attached to typeDecl later
     scope.registerAstForInsertion(methodAst)
 
-    // When we only have one occurrence of the closure prefix in the method name, we know we are in the outermost
-    // closure expression if we are processing nested closure expressions
-
-//    if (Defines.ClosurePrefix.r.findAllIn(methodName).size == 1) {
-//
-//    } else {
-//
-//    }
-
     Ast(methodRef)
   }
 

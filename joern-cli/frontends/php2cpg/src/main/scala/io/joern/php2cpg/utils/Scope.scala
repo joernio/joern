@@ -223,6 +223,24 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
   def getSurroundingMethods: List[MethodScope] =
     stack.map(_.scopeNode).collect { case nm: MethodScope => nm }.reverse
 
+  def getSurroundingMethodsForArrowClosure: List[MethodScope] = {
+    val methods = mutable.ArrayBuffer[MethodScope]()
+    stack
+      .collect { case scopeEl @ ScopeElement(_: MethodScope, _) =>
+        scopeEl
+      }
+      .takeWhile {
+        case ScopeElement(ms: MethodScope, _) if ms.isArrowFunc =>
+          methods.addOne(ms)
+          true
+        case ScopeElement(ms: MethodScope, _) =>
+          methods.addOne(ms)
+          false
+      }
+
+    methods.toList.reverse
+  }
+
   def getSurroundingArrowClosures: List[MethodScope] =
     stack.map(_.scopeNode).collect { case nm: MethodScope if nm.isArrowFunc => nm }.reverse
 
