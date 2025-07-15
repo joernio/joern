@@ -1,13 +1,12 @@
 package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
-import io.joern.x2cpg.AstNodeBuilder.{bindingNode, dependencyNode}
-import io.joern.x2cpg.{Ast, ValidationMode}
+import io.joern.x2cpg.AstNodeBuilder.dependencyNode
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
-import io.shiftleft.codepropertygraph.generated.PropertyDefaults
+import io.joern.x2cpg.{Ast, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 
 import scala.annotation.unused
@@ -22,7 +21,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     DeinitializerDeclSyntax | ClosureExprSyntax | SubscriptDeclSyntax
 
   private def astForAccessorDeclSyntax(node: AccessorDeclSyntax): Ast = {
-    astForNodeWithFunctionReference(node)
+    astForNode(node)
   }
 
   private def astForActorDeclSyntax(node: ActorDeclSyntax): Ast = {
@@ -62,12 +61,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       diffGraph.addEdge(typeDeclNode_, mod, EdgeTypes.AST)
     }
 
-    diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
-
     createDeclConstructor(node, typeDeclNode_, List.empty)
-
-    val typeRefNode_ = typeRefNode(node, code(node), typeFullName)
-    Ast(typeRefNode_)
+    Ast(typeDeclNode_)
   }
 
   private def isConstructor(node: SwiftNode): Boolean = node match {
@@ -151,7 +146,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     node: TypeDeclLike,
     typeDeclNode: NewTypeDecl,
     methodBlockContent: List[Ast] = List.empty
-  ): AstAndMethod = {
+  ): Unit = {
     val constructorName = io.joern.x2cpg.Defines.ConstructorMethodName
     val methodFullName  = s"${typeDeclNode.fullName}:$constructorName"
     val methodNode_ = methodNode(node, constructorName, constructorName, methodFullName, None, parserResult.filename)
@@ -165,18 +160,16 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val functionTypeAndTypeDeclAst =
       createFunctionTypeAndTypeDeclAst(node, methodNode_, constructorName, methodFullName)
 
-    val (mAst, bAst) = if (methodBlockContent.isEmpty) {
-      (methodStubAst(methodNode_, Seq.empty, methodReturnNode_, modifiers), Ast())
+    val mAst = if (methodBlockContent.isEmpty) {
+      methodStubAst(methodNode_, Seq.empty, methodReturnNode_, modifiers)
     } else {
       val bodyAst = blockAst(NewBlock(), methodBlockContent)
-      (methodAstWithAnnotations(methodNode_, Seq.empty, bodyAst, methodReturnNode_, modifiers), bodyAst)
+      methodAstWithAnnotations(methodNode_, Seq.empty, bodyAst, methodReturnNode_, modifiers)
     }
 
     Ast.storeInDiffGraph(mAst, diffGraph)
     Ast.storeInDiffGraph(functionTypeAndTypeDeclAst, diffGraph)
-    diffGraph.addEdge(methodAstParentStack.head, methodNode_, EdgeTypes.AST)
-
-    AstAndMethod(Ast(), methodNode_, bAst)
+    diffGraph.addEdge(typeDeclNode, methodNode_, EdgeTypes.AST)
   }
 
   private def declSyntaxFromIfConfigClauseSyntax(node: IfConfigClauseSyntax): Seq[DeclSyntax] = {
@@ -216,12 +209,17 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val typeFullName = typeNameForDeclSyntax(node)
     node match {
       case d: FunctionDeclLike =>
-        val function = astForFunctionLike(d).method
-        val binding  = bindingNode("", "", "")
-        diffGraph.addEdge(typeDeclNode, binding, EdgeTypes.BINDS)
-        diffGraph.addEdge(binding, function, EdgeTypes.REF)
-        val memberNode_ = memberNode(d, function.name, code(d), typeFullName, Seq(function.fullName))
-        diffGraph.addEdge(typeDeclNode, memberNode_, EdgeTypes.AST)
+        val ast = astForFunctionLike(d)
+        ast.root.collect {
+          case function: NewMethod =>
+            val memberNode_ = memberNode(d, function.name, code(d), typeFullName, Seq(function.fullName))
+            diffGraph.addEdge(typeDeclNode, memberNode_, EdgeTypes.AST)
+          case methoRef: NewMethodRef =>
+            val memberNode_ = memberNode(d, methoRef.code, code(d), typeFullName, Seq(methoRef.methodFullName))
+            diffGraph.addEdge(typeDeclNode, memberNode_, EdgeTypes.AST)
+        }
+        Ast.storeInDiffGraph(ast, diffGraph)
+        ast.root.foreach(r => diffGraph.addEdge(typeDeclNode, r, EdgeTypes.AST))
         Ast()
       case ifConf: IfConfigDeclSyntax =>
         val declElements = declSyntaxFromIfConfigDeclSyntax(ifConf)
@@ -262,12 +260,12 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     typeDeclNode: NewTypeDecl,
     constructorContent: List[Ast],
     constructorBlock: Ast = Ast()
-  ): Option[AstAndMethod] =
+  ): Unit =
     findDeclConstructor(node) match {
       case Some(constructor: InitializerDeclSyntax) =>
-        val result = astForFunctionLike(constructor, methodBlockContent = constructorContent)
-        diffGraph.addEdge(result.method, NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), EdgeTypes.AST)
-        Option(result)
+        val ast = astForFunctionLike(constructor, methodBlockContent = constructorContent)
+        Ast.storeInDiffGraph(ast, diffGraph)
+        ast.root.foreach(r => diffGraph.addEdge(typeDeclNode, r, EdgeTypes.AST))
       case _ if constructorBlock.root.isDefined =>
         constructorBlock.root.foreach { r =>
           constructorContent.foreach { c =>
@@ -275,9 +273,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
             c.root.foreach(diffGraph.addEdge(r, _, EdgeTypes.AST))
           }
         }
-        None
       case _ =>
-        Option(createFakeConstructor(node, typeDeclNode, methodBlockContent = constructorContent))
+        createFakeConstructor(node, typeDeclNode, methodBlockContent = constructorContent)
     }
 
   private def isClassMethodOrUninitializedMember(node: DeclSyntax): Boolean = {
@@ -387,7 +384,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForDeinitializerDeclSyntax(node: DeinitializerDeclSyntax): Ast = {
-    astForNodeWithFunctionReference(node)
+    astForNode(node)
   }
 
   private def astForEditorPlaceholderDeclSyntax(node: EditorPlaceholderDeclSyntax): Ast = {
@@ -561,7 +558,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def modifiersForFunctionLike(node: FunctionDeclLike): Seq[NewModifier] = {
-    val virtualModifier = NewModifier().modifierType(ModifierTypes.VIRTUAL)
+    val virtualModifier = Seq(NewModifier().modifierType(ModifierTypes.VIRTUAL))
     val modifiers = node match {
       case f: FunctionDeclSyntax =>
         f.modifiers.children.flatMap(c => astForNode(c).root.map(_.asInstanceOf[NewModifier]))
@@ -574,7 +571,10 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         s.modifiers.children.flatMap(c => astForNode(c).root.map(_.asInstanceOf[NewModifier]))
       case _: ClosureExprSyntax => Seq.empty
     }
-    (virtualModifier +: modifiers).zipWithIndex.map { case (m, index) =>
+    val constructorModifier = if (isConstructor(node)) {
+      Seq(NewModifier().modifierType(ModifierTypes.CONSTRUCTOR))
+    } else { Seq.empty }
+    (constructorModifier ++ virtualModifier ++ modifiers).zipWithIndex.map { case (m, index) =>
       m.order(index)
     }
   }
@@ -594,12 +594,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  protected def astForFunctionLike(
-    node: FunctionDeclLike,
-    shouldCreateFunctionReference: Boolean = false,
-    shouldCreateAssignmentCall: Boolean = false,
-    methodBlockContent: List[Ast] = List.empty
-  ): AstAndMethod = {
+  protected def astForFunctionLike(node: FunctionDeclLike, methodBlockContent: List[Ast] = List.empty): Ast = {
     // TODO: handle genericParameterClause
     // TODO: handle genericWhereClause
 
@@ -641,29 +636,12 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     }
     registerType(returnType)
     val methodFullNameAndSignature = s"$methodFullName:$signature"
+
+    val shouldCreateFunctionReference = typeRefIdStack.headOption.isEmpty
     val methodRefNode_ = if (!shouldCreateFunctionReference) { None }
     else { Option(methodRefNode(node, methodName, methodFullNameAndSignature, methodFullNameAndSignature)) }
-
-    val callAst = if (shouldCreateAssignmentCall && shouldCreateFunctionReference) {
-      val idNode  = identifierNode(node, methodName)
-      val idLocal = localNode(node, methodName, methodName, methodFullNameAndSignature).order(0)
-      diffGraph.addEdge(localAstParentStack.head, idLocal, EdgeTypes.AST)
-      scope.addVariable(methodName, idLocal, Defines.Any, VariableScopeManager.ScopeType.BlockScope)
-      scope.addVariableReference(methodName, idNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
-      val assignmentCode = s"func $methodName = ${code(node)}"
-      val assignment =
-        createAssignmentCallAst(Ast(idNode), Ast(methodRefNode_.get), assignmentCode, line(node), column(node))
-      assignment
-    } else {
-      Ast()
-    }
-
-    val capturingRefNode =
-      if (shouldCreateFunctionReference) {
-        methodRefNode_
-      } else {
-        typeRefIdStack.headOption
-      }
+    val capturingRefNode = if (shouldCreateFunctionReference) { methodRefNode_ }
+    else { typeRefIdStack.headOption }
 
     val codeString  = code(node)
     val methodNode_ = methodNode(node, methodName, codeString, methodFullNameAndSignature, Option(signature), filename)
@@ -705,16 +683,13 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val bodyStmtAsts = body match {
       case Some(bodyNode: AccessorDeclListSyntax) =>
-        bodyNode.children.toList match {
-          case Nil      => List.empty[Ast]
-          case children => children.map(astForNodeWithFunctionReferenceAndCall)
-        }
+        bodyNode.children.toList.map(astForNode)
       case Some(bodyNode: CodeBlockSyntax) =>
         bodyNode.statements.children.toList match {
           case Nil => List.empty[Ast]
           case head :: Nil if head.item.isInstanceOf[ClosureExprSyntax] =>
             val retCode = code(head)
-            List(returnAst(returnNode(head, retCode), List(astForNodeWithFunctionReference(head.item))))
+            List(returnAst(returnNode(head, retCode), List(astForNode(head.item))))
           case children =>
             astsForBlockElements(children)
         }
@@ -723,7 +698,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           case Nil => List.empty[Ast]
           case head :: Nil if !head.item.isInstanceOf[ReturnStmtSyntax] =>
             val retCode = code(head)
-            List(returnAst(returnNode(head, retCode), List(astForNodeWithFunctionReference(head.item))))
+            List(returnAst(returnNode(head, retCode), List(astForNode(head.item))))
           case children =>
             astsForBlockElements(children)
         }
@@ -748,19 +723,22 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     localAstParentStack.pop()
     methodAstParentStack.pop()
 
-    val typeDeclAst = createFunctionTypeAndTypeDeclAst(node, methodNode_, methodName, methodFullNameAndSignature)
-    Ast.storeInDiffGraph(astForMethod, diffGraph)
-    Ast.storeInDiffGraph(typeDeclAst, diffGraph)
-    diffGraph.addEdge(methodAstParentStack.head, methodNode_, EdgeTypes.AST)
-
     methodRefNode_ match {
-      case Some(ref) if callAst.nodes.isEmpty => AstAndMethod(Ast(ref), methodNode_, blockAst_)
-      case _                                  => AstAndMethod(callAst, methodNode_, blockAst_)
+      case Some(ref) =>
+        val typeDeclAst = createFunctionTypeAndTypeDeclAst(node, methodNode_, methodName, methodFullNameAndSignature)
+        Ast.storeInDiffGraph(astForMethod, diffGraph)
+        Ast.storeInDiffGraph(typeDeclAst, diffGraph)
+        diffGraph.addEdge(methodAstParentStack.head, methodNode_, EdgeTypes.AST)
+        Ast(ref)
+      case None =>
+        val typeDeclAst = createFunctionTypeAndTypeDeclAst(node, methodNode_, methodName, methodFullNameAndSignature)
+        Ast.storeInDiffGraph(typeDeclAst, diffGraph)
+        astForMethod
     }
   }
 
   private def astForFunctionDeclSyntax(node: FunctionDeclSyntax): Ast = {
-    astForFunctionLike(node).ast
+    astForFunctionLike(node)
   }
 
   protected def ifConfigDeclConditionIsSatisfied(node: IfConfigClauseSyntax): Boolean = {
@@ -813,7 +791,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForInitializerDeclSyntax(node: InitializerDeclSyntax): Ast = {
-    astForNodeWithFunctionReference(node)
+    astForNode(node)
   }
 
   private def astForMacroDeclSyntax(node: MacroDeclSyntax): Ast = notHandledYet(node)
@@ -821,7 +799,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForMacroExpansionDeclSyntax(node: MacroExpansionDeclSyntax): Ast = {
     val name = code(node.macroName)
     val argAsts = astForNode(node.arguments) +:
-      node.trailingClosure.toList.map(astForNodeWithFunctionReference) :+
+      node.trailingClosure.toList.map(astForNode) :+
       astForNode(node.additionalTrailingClosures)
     val callNode =
       NewCall()
@@ -884,12 +862,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       diffGraph.addEdge(typeDeclNode_, mod, EdgeTypes.AST)
     }
 
-    diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
-
     createDeclConstructor(node, typeDeclNode_, List.empty)
-
-    val typeRefNode_ = typeRefNode(node, code(node), typeFullName)
-    Ast(typeRefNode_)
+    Ast(typeDeclNode_)
   }
 
   private def astForVariableDeclSyntax(node: VariableDeclSyntax): Ast = {
@@ -899,7 +873,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val scopeType = if (kind == "let") { VariableScopeManager.ScopeType.BlockScope }
     else { VariableScopeManager.ScopeType.MethodScope }
 
-    val bindingAsts = node.bindings.children.map { binding =>
+    val bindingAsts = node.bindings.children.flatMap { binding =>
       val names = binding.pattern match {
         case expr: ExpressionPatternSyntax =>
           notHandledYet(expr)
@@ -927,7 +901,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         scope.addVariable(cleanedName, nLocalNode, typeFullName, scopeType)
         diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
 
-        val initAsts = binding.initializer.map(astForNode) ++ binding.accessorBlock.map(astForNode)
+        val initAsts = (binding.initializer.map(astForNode) ++ binding.accessorBlock.map(astForNode)).toSeq
         if (initAsts.isEmpty) {
           Ast()
         } else {
@@ -943,18 +917,28 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           val initCode          = binding.initializer.fold("")(i => s" ${code(i).strip()}")
           val accessorBlockCode = binding.accessorBlock.fold("")(a => s" ${code(a).strip()}")
           val typeCode          = binding.typeAnnotation.fold("")(t => code(t).strip())
-          createAssignmentCallAst(
+
+          val rhsAst = initAsts match {
+            case Nil         => Ast()
+            case head :: Nil => head
+            case others =>
+              val block = blockNode(node, code(node), Defines.Any)
+              blockAst(block, others.toList)
+          }
+
+          val assignmentAst = createAssignmentCallAst(
             patternAst,
-            initAsts.head,
+            rhsAst,
             s"$kind $cleanedName$typeCode$initCode$accessorBlockCode".strip(),
             line = line(binding),
             column = column(binding)
           )
+          assignmentAst
         }
       }
     }
 
-    bindingAsts.flatten match {
+    bindingAsts match {
       case Nil         => Ast()
       case head :: Nil => head
       case others =>

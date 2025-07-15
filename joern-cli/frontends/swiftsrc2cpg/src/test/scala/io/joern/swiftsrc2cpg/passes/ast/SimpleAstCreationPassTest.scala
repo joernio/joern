@@ -121,7 +121,7 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
       val List(fooMethod)      = cpg.method.nameExact("foo").l
       val List(fooBlock)       = fooMethod.astChildren.isBlock.l
       val List(fooLocalX)      = fooBlock.astChildren.isLocal.nameExact("x").l
-      val List(barRef)         = fooBlock.astChildren.isCall.astChildren.isMethodRef.l
+      val List(barRef)         = fooBlock.astChildren.isMethodRef.l
       val List(closureBinding) = barRef.captureOut.l
       closureBinding.closureBindingId shouldBe Option("Test0.swift:<global>:foo:bar:x")
       closureBinding.refOut.head shouldBe fooLocalX
@@ -158,6 +158,28 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
         paramValueFoo.order shouldBe 2
         paramValueFoo.argumentIndex shouldBe 2
         paramValueFoo.argumentName shouldBe Some("x")
+      }
+    }
+
+    "have correct structure for objc annotated class" in {
+      val cpg = code("""
+          |@objc(Foo)
+          |public class Foo {}
+          |""".stripMargin)
+      inside(cpg.typeDecl.nameExact("Foo").annotation.l) { case List(objc) =>
+        objc.code shouldBe "@objc(Foo)"
+        objc.name shouldBe "objc"
+        objc.fullName shouldBe "objc"
+        val List(paramAssignFoo) = objc.parameterAssign.l
+        paramAssignFoo.code shouldBe "Foo"
+        paramAssignFoo.order shouldBe 1
+        val List(paramFoo) = paramAssignFoo.parameter.l
+        paramFoo.code shouldBe "argument"
+        paramFoo.order shouldBe 1
+        val List(paramValueFoo) = paramAssignFoo.value.l
+        paramValueFoo.code shouldBe "Foo"
+        paramValueFoo.order shouldBe 2
+        paramValueFoo.argumentIndex shouldBe 2
       }
     }
 

@@ -91,8 +91,9 @@ class AsyncTests extends AstSwiftSrc2CpgSuite {
       |struct MyFuture {
       |  func await() -> Int { 0 }
       |}""".stripMargin)
-      val List(struct) = cpg.typeDecl.nameExact("MyFuture").l
-      val List(await)  = struct.boundMethod.l
+      val List(struct)      = cpg.typeDecl.nameExact("MyFuture").l
+      val List(init, await) = struct.boundMethod.l
+      init.fullName shouldBe "Test0.swift:<global>:MyFuture:<init>"
       await.name shouldBe "await"
       await.fullName shouldBe "Test0.swift:<global>:MyFuture:await:Int()"
       await.methodReturn.typeFullName shouldBe "Int"

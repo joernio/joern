@@ -6,9 +6,7 @@ import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes, Operators}
 
 trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -248,6 +246,12 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
       )
     Ast.storeInDiffGraph(Ast(functionTypeDeclNode), diffGraph)
 
+    val parentTypeDeclNode = methodAstParentStack.find(_.isInstanceOf[NewTypeDecl])
+    parentTypeDeclNode.foreach { typeDeclNode =>
+      val typeDeclFunctionBinding = NewBinding().name("").signature("")
+      diffGraph.addEdge(typeDeclNode, typeDeclFunctionBinding, EdgeTypes.BINDS)
+      diffGraph.addEdge(typeDeclFunctionBinding, methodNode, EdgeTypes.REF)
+    }
     val bindingNode = NewBinding().name("").signature("")
     Ast(functionTypeDeclNode).withBindsEdge(functionTypeDeclNode, bindingNode).withRefEdge(bindingNode, methodNode)
   }
