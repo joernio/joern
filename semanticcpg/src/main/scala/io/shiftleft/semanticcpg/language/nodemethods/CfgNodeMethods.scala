@@ -1,6 +1,5 @@
 package io.shiftleft.semanticcpg.language.nodemethods
 
-import io.shiftleft.Implicits.IterableOnceDeco
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.*
@@ -8,6 +7,7 @@ import io.shiftleft.semanticcpg.language.*
 import scala.jdk.CollectionConverters.*
 
 class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
+  import CfgNodeMethods.*
 
   /** Successors in the CFG
     */
@@ -119,11 +119,21 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
     node.lineNumber.map(_.toLong.toHexString)
   }
 
-  private def walkUpAst(node: CfgNode): Method =
-    node._astIn.onlyChecked.asInstanceOf[Method]
+}
 
-  private def walkUpContains(node: StoredNode): Method =
-    node._containsIn.onlyChecked match {
+object CfgNodeMethods {
+
+  /** Attention: this only works for some special CfgNodes that are guaranteed to always be direct children of a
+    * method... that's why it's private!
+    */
+  private def walkUpAst(node: CfgNode): Method =
+    node.astParent.asInstanceOf[Method]
+
+  /** Attention: this only works for those `CfgNodes` that have `CONTAINS` edges (see `ContainsEdgePass`)... that's why
+    * it's private!
+    */
+  private def walkUpContains(node: StoredNode): Method = {
+    node._containsIn.loneElement("trying to walk `containsIn` edge") match {
       case method: Method => method
       case typeDecl: TypeDecl =>
         typeDecl.astParent match {
@@ -138,5 +148,6 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
             null
         }
     }
+  }
 
 }

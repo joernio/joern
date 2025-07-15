@@ -34,14 +34,7 @@ class RunScriptTests extends AnyWordSpec with Matchers {
     "execute a simple script" in new Fixture {
       def test(scriptFile: Path, outputFile: Path) = {
         val escScriptPath = outputFile.toString.replace("\\", "\\\\")
-        Files.writeString(
-          scriptFile,
-          s"""
-        |val fw = new java.io.FileWriter("$escScriptPath", true)
-        |fw.write("michael was here")
-        |fw.close()
-        """.stripMargin
-        )
+        Files.writeString(scriptFile, s""""michael was here" #> "$escScriptPath"""".stripMargin)
 
         ReplBridge.main(Array("--script", scriptFile.toString))
 
@@ -57,9 +50,7 @@ class RunScriptTests extends AnyWordSpec with Matchers {
           scriptFile,
           s"""
           |@main def foo(outFile: String, magicNumber: Int) = {
-          |  val fw = new java.io.FileWriter(outFile, true)
-          |  fw.write(magicNumber.toString)
-          |  fw.close() 
+          |  magicNumber #> outFile
           |}
           """.stripMargin
         )
@@ -88,14 +79,10 @@ class RunScriptTests extends AnyWordSpec with Matchers {
           scriptFile,
           s"""
           |@main def foo() = {
-          |  val fw = new java.io.FileWriter("$escScriptPath", true)
-          |  fw.write("foo was called")
-          |  fw.close() 
+          |  "foo was called" #> "$escScriptPath"
           |}
           |@main def bar() = {
-          |  val fw = new java.io.FileWriter("$escScriptPath", true)
-          |  fw.write("bar was called")
-          |  fw.close() 
+          |  "bar was called" #> "$escScriptPath"
           |}
           """.stripMargin
         )
@@ -116,9 +103,7 @@ class RunScriptTests extends AnyWordSpec with Matchers {
           scriptFile,
           s"""
           |//> using file $additionalImportFile
-          |val fw = new java.io.FileWriter("$escScriptPath", true)
-          |fw.write(sayHello("michael")) //function defined in additionalImportFile
-          |fw.close() 
+          |sayHello("michael") #> "$escScriptPath"
           """.stripMargin
         )
 
@@ -137,9 +122,7 @@ class RunScriptTests extends AnyWordSpec with Matchers {
         Files.writeString(
           scriptFile,
           s"""
-          |val fw = new java.io.FileWriter("$escScriptPath", true)
-          |fw.write(sayHello("michael")) //function defined in additionalImportFile
-          |fw.close() 
+          |sayHello("michael") #> "$escScriptPath"
           """.stripMargin
         )
 

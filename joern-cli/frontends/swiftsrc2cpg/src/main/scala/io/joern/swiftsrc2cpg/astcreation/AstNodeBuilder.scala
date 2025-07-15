@@ -150,12 +150,12 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
       .columnNumber(column)
   }
 
-  protected def literalNode(node: SwiftNode, code: String, dynamicTypeOption: Option[String]): NewLiteral = {
-    val typeFullName = dynamicTypeOption match {
+  protected def literalNode(node: SwiftNode, code: String, possibleTypes: Option[String]): NewLiteral = {
+    val typeFullName = possibleTypes match {
       case Some(value) if Defines.SwiftTypes.contains(value) => value
       case _                                                 => Defines.Any
     }
-    literalNode(node, code, typeFullName, dynamicTypeOption.toList)
+    literalNode(node, code, typeFullName).possibleTypes(possibleTypes.toList)
   }
 
   protected def createAssignmentCallAst(
@@ -170,7 +170,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     callAst(callNode, arguments)
   }
 
-  protected def typeHintForThisExpression(): Seq[String] = {
+  private def typeHintForThisExpression(): Seq[String] = {
     dynamicInstanceTypeStack.headOption match {
       case Some(tpe) => Seq(tpe)
       case None      => methodAstParentStack.collectFirst { case t: NewTypeDecl => t.fullName }.toSeq
@@ -178,11 +178,11 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
   }
 
   protected def identifierNode(node: SwiftNode, name: String): NewIdentifier = {
-    val dynamicInstanceTypeOption = name match {
-      case "this" | "self" | "Self" => typeHintForThisExpression().headOption
-      case _                        => None
+    val tpe = name match {
+      case "this" | "self" | "Self" => typeHintForThisExpression().headOption.getOrElse(Defines.Any)
+      case _                        => Defines.Any
     }
-    identifierNode(node, name, name, Defines.Any, dynamicInstanceTypeOption.toList)
+    identifierNode(node, name, name, tpe)
   }
 
   def staticInitMethodAstAndBlock(

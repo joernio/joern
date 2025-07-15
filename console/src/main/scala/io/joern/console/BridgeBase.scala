@@ -230,26 +230,26 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
   /** code that is executed on startup */
   protected def runBeforeCode: Seq[String]
 
-  private def escapeForWindows(s: String) = {
-    if (scala.util.Properties.isWin) {
+  private def escapeForWindows(s: String, isInteractive: Boolean) = {
+    if (!isInteractive && scala.util.Properties.isWin) {
       s.replace("\\", "\\\\").replace("\"", "\\\"")
     } else {
       s
     }
   }
 
-  protected def buildRunBeforeCode(config: Config): Seq[String] = {
+  protected def buildRunBeforeCode(config: Config, isInteractive: Boolean = false): Seq[String] = {
     val builder = Seq.newBuilder[String]
-    builder ++= runBeforeCode.map(escapeForWindows)
+    builder ++= runBeforeCode.map(code => escapeForWindows(code, isInteractive))
     config.cpgToLoad.foreach { cpgFile =>
-      val path = escapeForWindows(cpgFile.toString)
+      val path = escapeForWindows(cpgFile.toString, isInteractive)
       builder += s"""importCpg("$path")"""
     }
     config.forInputPath.foreach { name =>
-      val path = escapeForWindows(name)
+      val path = escapeForWindows(name, isInteractive)
       builder += s"""openForInputPath("$path")""".stripMargin
     }
-    builder ++= config.runBefore.map(escapeForWindows)
+    builder ++= config.runBefore.map(code => escapeForWindows(code, isInteractive))
     builder.result()
   }
 
@@ -268,7 +268,7 @@ trait InteractiveShell { this: BridgeBase =>
     replpp.InteractiveShell.run(
       replpp.Config(
         predefFiles = config.predefFiles,
-        runBefore = buildRunBeforeCode(config),
+        runBefore = buildRunBeforeCode(config, true),
         runAfter = buildRunAfterCode(config),
         nocolors = config.nocolors,
         verbose = config.verbose,

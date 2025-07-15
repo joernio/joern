@@ -12,6 +12,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewTypeDecl
 }
 
+import scala.collection.mutable
+
 sealed trait AnonymousClassNameCreator {
   private var tmpClassCounter = 0
 
@@ -41,6 +43,36 @@ sealed trait ClosureNameCreator {
   }
 }
 
+sealed trait DeDuplicateNameCreator {
+  private val duplicateMethodMap     = mutable.HashMap[String, Int]()
+  private val duplicateClassNamesMap = mutable.HashMap[String, Int]()
+
+  def getNextDeduplicateClassName(className: String): String = {
+    if (duplicateClassNamesMap.contains(className)) {
+      val nextCounter = duplicateClassNamesMap(className)
+      duplicateClassNamesMap.update(className, nextCounter + 1)
+
+      s"$className<duplicate>$nextCounter"
+    } else {
+      duplicateClassNamesMap.put(className, 0)
+      className
+    }
+  }
+
+  def getNextDeduplicateMethodName(methodName: String): String = {
+    if (duplicateMethodMap.contains(methodName)) {
+      val nextCounter    = duplicateMethodMap(methodName)
+      val updatedCounter = nextCounter + 1
+      duplicateMethodMap.update(methodName, updatedCounter)
+
+      s"$methodName<duplicate>$nextCounter"
+    } else {
+      duplicateMethodMap.put(methodName, 0)
+      methodName
+    }
+  }
+}
+
 trait NamedScope extends TypedScopeElement {
 
   /** @return
@@ -58,6 +90,7 @@ case class NamespaceScope(namespaceBlock: NewNamespaceBlock, fullName: String)
     with AnonymousClassNameCreator
     with AnonymousVariableNameCreator
     with ClosureNameCreator
+    with DeDuplicateNameCreator
 
 /** A type-like scope with a full name.
   */
@@ -66,6 +99,7 @@ trait TypeLikeScope
     with AnonymousClassNameCreator
     with AnonymousVariableNameCreator
     with ClosureNameCreator
+    with DeDuplicateNameCreator
 
 /** A class or interface.
   *
@@ -81,6 +115,7 @@ trait MethodLikeScope
     with AnonymousClassNameCreator
     with AnonymousVariableNameCreator
     with ClosureNameCreator
+    with DeDuplicateNameCreator
 
 case class MethodScope(
   methodNode: NewMethod,

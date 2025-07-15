@@ -945,7 +945,7 @@ class SimpleAstCreationPassTests extends AstJsSrc2CpgSuite {
       args.name shouldBe "args"
       args.code shouldBe "...args"
       args.isVariadic shouldBe true
-      args.typeFullName shouldBe Defines.Any
+      args.typeFullName shouldBe Defines.Array
     }
 
     "have correct structure for decl assignment" in {

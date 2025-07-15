@@ -2,18 +2,14 @@ package io.joern.jssrc2cpg.astcreation
 
 import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
-import io.joern.x2cpg.Ast
-import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.joern.x2cpg.utils.IntervalKeyPool
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyDefaults, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.PropertyDefaults
-import io.shiftleft.codepropertygraph.generated.PropertyNames
 import ujson.Value
 
-import scala.collection.SortedMap
-import scala.collection.mutable
+import scala.collection.{SortedMap, mutable}
 import scala.util.Try
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -35,6 +31,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def line(node: Value): Option[Int] = start(node).map(getLineOfSource)
 
   protected def start(node: Value): Option[Int] = Try(node("start").num.toInt).toOption
+
+  protected def range(node: Value): Option[String] = {
+    for {
+      nodeStart <- start(node)
+      nodeEnd   <- end(node)
+    } yield s"$nodeStart:$nodeEnd"
+  }
 
   // Returns the line number for a given position in the source.
   private def getLineOfSource(position: Int): Int = {
@@ -138,8 +141,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def safeObj(node: Value, key: String): Option[upickle.core.LinkedHashMap[String, Value]] =
     Try(node(key).obj).toOption.filter(_.nonEmpty)
-
-  protected def pos(node: Value): Option[Int] = Try(node("start").num.toInt).toOption
 
   protected def positionLookupTables(source: String): (SortedMap[Int, Int], SortedMap[Int, Int]) = {
     val positionToLineNumber, positionToFirstPositionInLine = mutable.TreeMap.empty[Int, Int]

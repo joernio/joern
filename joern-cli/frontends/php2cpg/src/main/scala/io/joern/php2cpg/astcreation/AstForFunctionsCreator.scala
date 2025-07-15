@@ -139,8 +139,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       s"${modifierString}function $methodName(${parameters.map(_.rootCodeOrEmpty).mkString(",")})${usesCode.getOrElse("")}"
 
     val methodRef =
-      if methodName == NamespaceTraversal.globalNamespaceName || isConstructor then None
-      else Option(closureMethodRef.getOrElse(methodRefNode(decl, methodCode, fullName, Defines.Any)))
+      if methodName == NamespaceTraversal.globalNamespaceName then None
+      else Option(methodRefNode(decl, s"$methodCode", fullName, Defines.Any))
     val method = methodNode(decl, methodName, methodCode, fullName, Some(signature), relativeFileName)
 
     scope.surroundingScopeFullName.map(method.astParentFullName(_))
@@ -217,14 +217,15 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       astForMemberAssignment(fieldInit.originNode, fieldInit.memberNode, fieldInit.value, isField = true)
     }
 
-    val method = methodNode(originNode, ConstructorMethodName, fullName, fullName, Some(signature), relativeFileName)
+    val method    = methodNode(originNode, ConstructorMethodName, fullName, fullName, Some(signature), relativeFileName)
+    val methodRef = methodRefNode(originNode, fullName, fullName, Defines.Any)
 
     val methodBodyBlock = blockNode(originNode)
 
     scope.surroundingScopeFullName.map(method.astParentFullName(_))
     scope.surroundingAstLabel.map(method.astParentType(_))
 
-    scope.pushNewScope(MethodScope(method, methodBodyBlock, method.fullName))
+    scope.pushNewScope(MethodScope(method, methodBodyBlock, method.fullName, methodRefNode = Option(methodRef)))
 
     val methodBody = blockAst(methodBodyBlock, initAsts)
 
@@ -245,7 +246,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
   private def astForAttribute(attribute: PhpAttribute): Ast = {
     val name     = attribute.name
-    val fullName = composeMethodFullName(name.name, true)
+    val fullName = composeMethodFullName(name.name)
     val _annotationNode =
       annotationNode(attribute, code = name.name, attribute.name.name, fullName)
     val argsAst = attribute.args.map(astForCallArg)
@@ -286,9 +287,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           Option(relativeFileName).getOrElse(PropertyDefaults.Filename)
         )
 
+        val methodRef = methodRefNode(node, fullName, fullName, Defines.Any)
+
         val methodBlock = NewBlock()
 
-        scope.pushNewScope(MethodScope(methodNode_, methodBlock, fullName))
+        scope.pushNewScope(MethodScope(methodNode_, methodBlock, fullName, methodRefNode = Option(methodRef)))
 
         val assignmentAsts = inits.map { init =>
           astForMemberAssignment(init.originNode, init.memberNode, init.value, isField = false)

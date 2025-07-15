@@ -27,8 +27,7 @@ trait AstForSwiftTokenCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astForIdentifierToken(node: identifier): Ast = {
-    val name = code(node)
-    Ast(identifierNode(node, name, name, Defines.Any))
+    astForIdentifier(node)
   }
 
   private def astForInfixQuestionMarkToken(@unused node: infixQuestionMark): Ast = Ast()

@@ -32,7 +32,7 @@ trait AstForTemplateDomCreator(implicit withSchemaValidation: ValidationMode) { 
     // Hence, we strip it away with astgen and restore it here.
     // parserResult.fileContent contains the unmodified Vue.js source code for the current file.
     // We look at the previous character there and re-add the colon if needed.
-    val colon = pos(jsxAttr.json)
+    val colon = start(jsxAttr.json)
       .collect {
         case position if position > 0 && parserResult.fileContent.substring(position - 1, position) == ":" => ":"
       }

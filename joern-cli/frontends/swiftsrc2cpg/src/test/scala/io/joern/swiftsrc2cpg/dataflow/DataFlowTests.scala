@@ -1,11 +1,9 @@
 package io.joern.swiftsrc2cpg.dataflow
 
 import io.joern.dataflowengineoss.language.*
-import io.joern.dataflowengineoss.queryengine.EngineConfig
-import io.joern.dataflowengineoss.queryengine.EngineContext
+import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.swiftsrc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.codepropertygraph.generated.nodes.Literal
 import io.shiftleft.semanticcpg.language.*
 

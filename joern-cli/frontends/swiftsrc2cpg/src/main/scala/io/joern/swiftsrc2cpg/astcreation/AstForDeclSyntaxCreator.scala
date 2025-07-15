@@ -1,23 +1,14 @@
 package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
-import io.joern.x2cpg.Ast
 import io.joern.x2cpg.AstNodeBuilder.{bindingNode, dependencyNode}
-import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.nodes.NewModifier
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
-import io.shiftleft.codepropertygraph.generated.nodes.NewCall
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
-import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
 import io.shiftleft.codepropertygraph.generated.PropertyDefaults
-import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
+import io.shiftleft.codepropertygraph.generated.nodes.*
 
 import scala.annotation.unused
 
@@ -47,7 +38,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val name                               = typeNameForDeclSyntax(node)
     val (astParentType, astParentFullName) = astParentInfo()
-    val (typeName, typeFullName)           = calcTypeNameAndFullName(name)
+    val (typeName, typeFullName)           = calcNameAndFullName(name)
     registerType(typeFullName)
 
     val typeDeclNode_ = typeDeclNode(
@@ -109,21 +100,24 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     case _                     => false
   }
 
-  private def typeNameForDeclSyntax(node: DeclSyntax): String = node match {
-    case d: ActorDeclSyntax          => code(d.name)
-    case d: AssociatedTypeDeclSyntax => code(d.name)
-    case d: ClassDeclSyntax          => code(d.name)
-    case d: EnumDeclSyntax           => code(d.name)
-    case d: ExtensionDeclSyntax      => s"${code(d.extendedType)}<extension>"
-    case d: FunctionDeclSyntax       => d.signature.returnClause.fold(Defines.Any)(c => code(c.`type`))
-    case d: InitializerDeclSyntax    => d.signature.returnClause.fold(Defines.Any)(c => code(c.`type`))
-    case d: MacroDeclSyntax          => d.signature.returnClause.fold(Defines.Any)(c => code(c.`type`))
-    case d: MacroExpansionDeclSyntax => code(d.macroName)
-    case d: ProtocolDeclSyntax       => code(d.name)
-    case d: StructDeclSyntax         => code(d.name)
-    case d: SubscriptDeclSyntax      => code(d.returnClause.`type`)
-    case d: TypeAliasDeclSyntax      => code(d.name)
-    case _                           => Defines.Any
+  private def typeNameForDeclSyntax(node: DeclSyntax): String = {
+    val name = node match {
+      case d: ActorDeclSyntax          => code(d.name)
+      case d: AssociatedTypeDeclSyntax => code(d.name)
+      case d: ClassDeclSyntax          => code(d.name)
+      case d: EnumDeclSyntax           => code(d.name)
+      case d: ExtensionDeclSyntax      => s"${code(d.extendedType)}<extension>"
+      case d: FunctionDeclSyntax       => d.signature.returnClause.fold(Defines.Any)(c => code(c.`type`))
+      case d: InitializerDeclSyntax    => d.signature.returnClause.fold(Defines.Any)(c => code(c.`type`))
+      case d: MacroDeclSyntax          => d.signature.returnClause.fold(Defines.Any)(c => code(c.`type`))
+      case d: MacroExpansionDeclSyntax => code(d.macroName)
+      case d: ProtocolDeclSyntax       => code(d.name)
+      case d: StructDeclSyntax         => code(d.name)
+      case d: SubscriptDeclSyntax      => code(d.returnClause.`type`)
+      case d: TypeAliasDeclSyntax      => code(d.name)
+      case _                           => Defines.Any
+    }
+    cleanType(name)
   }
 
   private def isStaticMember(node: DeclSyntax): Boolean = node match {
@@ -320,7 +314,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val inherits   = inheritsFrom(node)
 
     val name                     = typeNameForDeclSyntax(node)
-    val (typeName, typeFullName) = calcTypeNameAndFullName(name)
+    val (typeName, typeFullName) = calcNameAndFullName(name)
     registerType(typeFullName)
 
     val (astParentType, astParentFullName) = astParentInfo()
@@ -454,7 +448,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case _: TypeAliasDeclSyntax      => None
     }
     val inherits = clause match {
-      case Some(value) => value.inheritedTypes.children.map(c => code(c.`type`)).distinct.sorted
+      case Some(value) => value.inheritedTypes.children.map(c => cleanType(code(c.`type`))).distinct.sorted
       case None        => Seq.empty
     }
     inherits.foreach(registerType)
@@ -471,7 +465,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val name = typeNameForDeclSyntax(node)
 
-    val (typeName, typeFullName) = calcTypeNameAndFullName(name)
+    val (typeName, typeFullName) = calcNameAndFullName(name)
     registerType(typeFullName)
 
     val (astParentType, astParentFullName) = astParentInfo()
@@ -592,9 +586,9 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   ): String = {
     node match {
       case f: FunctionParameterClauseSyntax =>
-        f.parameters.children.map(c => code(c.`type`)).mkString("(", ",", ")")
+        f.parameters.children.map(c => cleanType(code(c.`type`))).mkString("(", ",", ")")
       case c: ClosureParameterClauseSyntax =>
-        c.parameters.children.map(c => c.`type`.fold(Defines.Any)(code)).mkString("(", ",", ")")
+        c.parameters.children.map(c => c.`type`.fold(Defines.Any)(t => cleanType(code(t)))).mkString("(", ",", ")")
       case c: ClosureShorthandParameterListSyntax =>
         c.children.map(_ => Defines.Any).mkString("(", ",", ")")
     }
@@ -621,11 +615,12 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     }
 
     val modifiers                    = modifiersForFunctionLike(node)
-    val (methodName, methodFullName) = calcMethodNameAndFullName(node)
+    val name                         = calcMethodName(node)
+    val (methodName, methodFullName) = calcNameAndFullName(name)
     val filename                     = parserResult.filename
     val (signature, returnType) = node match {
       case f: FunctionDeclSyntax =>
-        val returnType = f.signature.returnClause.fold(Defines.Any)(c => code(c.`type`))
+        val returnType = f.signature.returnClause.fold(Defines.Any)(c => cleanType(code(c.`type`)))
         (s"$returnType${paramSignature(f.signature.parameterClause)}", returnType)
       case a: AccessorDeclSyntax =>
         val returnType = Defines.Any
@@ -637,10 +632,10 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         val returnType = Defines.Any
         (s"$returnType()", returnType)
       case s: SubscriptDeclSyntax =>
-        val returnType = code(s.returnClause.`type`)
+        val returnType = cleanType(code(s.returnClause.`type`))
         (s"$returnType${paramSignature(s.parameterClause)}", returnType)
       case c: ClosureExprSyntax =>
-        val returnType      = c.signature.flatMap(_.returnClause).fold(Defines.Any)(r => code(r.`type`))
+        val returnType      = c.signature.flatMap(_.returnClause).fold(Defines.Any)(r => cleanType(code(r.`type`)))
         val paramClauseCode = c.signature.flatMap(_.parameterClause).fold("()")(paramSignature)
         (s"$returnType$paramClauseCode", returnType)
     }
@@ -864,7 +859,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val aliasName  = handleTypeAliasInitializer(node.initializer.value)
 
     val name                     = typeNameForDeclSyntax(node)
-    val (typeName, typeFullName) = calcTypeNameAndFullName(name)
+    val (typeName, typeFullName) = calcNameAndFullName(name)
     registerType(typeFullName)
 
     val (astParentType, astParentFullName) = astParentInfo()
@@ -925,18 +920,19 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       }
 
       names.map { name =>
-        val typeFullName = binding.typeAnnotation.fold(Defines.Any)(t => code(t.`type`))
+        val cleanedName  = cleanName(name)
+        val typeFullName = cleanName(binding.typeAnnotation.fold(Defines.Any)(t => cleanType(code(t.`type`))))
         registerType(typeFullName)
-        val nLocalNode = localNode(binding, name, name, typeFullName).order(0)
-        scope.addVariable(name, nLocalNode, typeFullName, scopeType)
+        val nLocalNode = localNode(binding, cleanedName, cleanedName, typeFullName).order(0)
+        scope.addVariable(cleanedName, nLocalNode, typeFullName, scopeType)
         diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
 
         val initAsts = binding.initializer.map(astForNode) ++ binding.accessorBlock.map(astForNode)
         if (initAsts.isEmpty) {
           Ast()
         } else {
-          val patternIdentifier = identifierNode(binding.pattern, name).typeFullName(typeFullName)
-          scope.addVariableReference(name, patternIdentifier, typeFullName, EvaluationStrategies.BY_REFERENCE)
+          val patternIdentifier = identifierNode(binding.pattern, cleanedName).typeFullName(typeFullName)
+          scope.addVariableReference(cleanedName, patternIdentifier, typeFullName, EvaluationStrategies.BY_REFERENCE)
           val patternAst = Ast(patternIdentifier)
           modifiers.foreach { mod =>
             diffGraph.addEdge(patternIdentifier, mod, EdgeTypes.AST)
@@ -950,7 +946,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           createAssignmentCallAst(
             patternAst,
             initAsts.head,
-            s"$kind $name$typeCode$initCode$accessorBlockCode".strip(),
+            s"$kind $cleanedName$typeCode$initCode$accessorBlockCode".strip(),
             line = line(binding),
             column = column(binding)
           )

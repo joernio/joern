@@ -166,6 +166,8 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       td.code shouldBe "LAMBDA_TYPE_DECL"
       td.inheritsFromTypeFullName shouldBe Seq("kotlin.Function1")
       Option(td.astParent).isDefined shouldBe true
+      val astParent = td._astIn.l
+      astParent.size shouldBe 1
 
       val List(bm) = cpg.typeDecl.fullName(".*lambda.*").boundMethod.dedup.l
       bm.fullName shouldBe s"mypkg.foo.${Defines.ClosurePrefix}0:void(java.lang.String)"

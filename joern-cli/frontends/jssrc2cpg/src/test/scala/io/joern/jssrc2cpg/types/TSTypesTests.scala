@@ -42,7 +42,7 @@ class TSTypesTests extends AstJsSrc2CpgSuite {
     args.name shouldBe "args"
     args.code shouldBe "...args"
     args.isVariadic shouldBe true
-    args.typeFullName shouldBe Defines.Any
+    args.typeFullName shouldBe Defines.Array
   }
 
   "have return types for arrow functions" in {

@@ -25,6 +25,42 @@ class ExpressionTests extends AstSwiftSrc2CpgSuite {
       }
     }
 
+    "testBinaryPlus" in {
+      val cpg = code("let a = b + c")
+      inside(cpg.call.nameExact(Operators.addition).l) { case List(call: Call) =>
+        call.code shouldBe "b + c"
+        inside(call.argument.l) { case List(b: Identifier, c: Identifier) =>
+          b.name shouldBe "b"
+          c.name shouldBe "c"
+        }
+      }
+    }
+
+    "testBinarySubstraction" in {
+      val cpg = code("let a = b - c")
+      inside(cpg.call.nameExact(Operators.subtraction).l) { case List(call: Call) =>
+        call.code shouldBe "b - c"
+        inside(call.argument.l) { case List(b: Identifier, c: Identifier) =>
+          b.name shouldBe "b"
+          c.name shouldBe "c"
+        }
+      }
+    }
+
+    "testAddressOf" in {
+      val cpg = code("let d = Data(a: &b + offset, count: &c - offset)")
+      inside(cpg.call.nameExact(Operators.addressOf).l) { case List(bCall: Call, cCall: Call) =>
+        bCall.code shouldBe "&b"
+        cCall.code shouldBe "&c"
+        inside(bCall.argument.l) { case List(b: Identifier) =>
+          b.name shouldBe "b"
+        }
+        inside(cCall.argument.l) { case List(c: Identifier) =>
+          c.name shouldBe "c"
+        }
+      }
+    }
+
     "testSequence1" in {
       val cpg = code("a ? b : c ? d : e")
       inside(cpg.method.name("<global>").ast.isCall.l) { case List(call: Call, nestedCall: Call) =>

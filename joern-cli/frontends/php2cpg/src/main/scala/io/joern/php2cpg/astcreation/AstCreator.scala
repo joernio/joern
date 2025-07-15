@@ -187,10 +187,12 @@ class AstCreator(
       val innerMethodRef   = innerMethodScope.methodRefNode
       innerMethodRef match {
         case Some(methodRef) =>
-          if (!scope.containsMethodRef(innerMethodNode.fullName)) {
-            diffGraph.addNode(methodRef)
-            diffGraph.addEdge(currentMethod.bodyNode, methodRef, EdgeTypes.AST)
-            scope.addMethodRefName(innerMethodNode.fullName)
+          scope.getMethodRef(innerMethodNode.fullName) match {
+            case None =>
+              diffGraph.addNode(methodRef)
+              diffGraph.addEdge(currentMethod.bodyNode, methodRef, EdgeTypes.AST)
+              scope.addMethodRef(innerMethodNode.fullName, methodRef)
+            case _ =>
           }
 
           stmt.vars.foreach {

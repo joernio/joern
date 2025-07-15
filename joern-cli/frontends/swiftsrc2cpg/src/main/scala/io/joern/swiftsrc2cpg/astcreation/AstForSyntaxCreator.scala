@@ -98,7 +98,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
 
   private def astForClosureParameterSyntax(node: ClosureParameterSyntax): Ast = {
     val name = node.secondName.fold(code(node.firstName))(code)
-    val tpe  = node.`type`.fold(Defines.Any)(code)
+    val tpe  = node.`type`.fold(Defines.Any)(t => cleanType(code(t)))
     registerType(tpe)
     val parameterNode =
       parameterInNode(
@@ -133,12 +133,14 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   }
 
   private def astForClosureSignatureSyntax(node: ClosureSignatureSyntax): Ast = notHandledYet(node)
+
   private def astForCodeBlockItemSyntax(node: CodeBlockItemSyntax): Ast = {
     astForNodeWithFunctionReferenceAndCall(node.item)
   }
   private def astForCodeBlockSyntax(node: CodeBlockSyntax): Ast = {
     astForNode(node.statements)
   }
+
   private def astForCompositionTypeElementSyntax(node: CompositionTypeElementSyntax): Ast = notHandledYet(node)
 
   private def astForConditionElementSyntax(node: ConditionElementSyntax): Ast = {
@@ -178,12 +180,8 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
 
   private def astForDesignatedTypeSyntax(node: DesignatedTypeSyntax): Ast = notHandledYet(node)
 
-  private def astForDictionaryElementSyntax(node: DictionaryElementSyntax): Ast = {
-    // TODO: check if handling Labels like that fits the Swift semantics:
-    val dstAst = astForNode(node.key)
-    val srcAst = astForNodeWithFunctionReference(node.value)
-    createAssignmentCallAst(dstAst, srcAst, code(node), line(node), column(node))
-  }
+  private def astForDictionaryElementSyntax(node: DictionaryElementSyntax): Ast =
+    Ast() // we handle dictionary elements in astForDictionaryExprSyntax
 
   private def astForDifferentiabilityArgumentSyntax(node: DifferentiabilityArgumentSyntax): Ast   = notHandledYet(node)
   private def astForDifferentiabilityArgumentsSyntax(node: DifferentiabilityArgumentsSyntax): Ast = notHandledYet(node)
@@ -307,7 +305,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   }
 
   private def astForOptionalBindingConditionSyntax(node: OptionalBindingConditionSyntax): Ast = {
-    val typeFullName = node.typeAnnotation.fold(Defines.Any)(t => code(t.`type`))
+    val typeFullName = node.typeAnnotation.fold(Defines.Any)(t => cleanType(code(t.`type`)))
 
     node.pattern match {
       case ident: IdentifierPatternSyntax =>
