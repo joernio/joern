@@ -253,7 +253,9 @@ class ClosureTests extends PhpCode2CpgFixture {
       """<?php
         |$a = 10;
         |fn () => fn () => $a;
-        |""".stripMargin, "foo.php")
+        |""".stripMargin,
+      "foo.php"
+    )
 
     "create a local huh" in {
       val locals = cpg.method.name("foo.php:<global>.<lambda>0.<lambda>1").local.l

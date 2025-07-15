@@ -143,7 +143,8 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
   def addMethodRef(methodRefName: String, methodRef: NewMethodRef): Unit = methodRefsInAst.put(methodRefName, methodRef)
   def getMethodRef(methodRefName: String): Option[NewMethodRef]          = methodRefsInAst.get(methodRefName)
 
-  def addClosureBinding(closureBinding: NewClosureBinding, localNode: NewLocal): Unit = capturedVariableClosureBindings.addOne((localNode, closureBinding))
+  def addClosureBinding(closureBinding: NewClosureBinding, localNode: NewLocal): Unit =
+    capturedVariableClosureBindings.addOne((localNode, closureBinding))
   def getAndClearClosureBindings: List[(NewLocal, NewClosureBinding)] = {
     val capturedClosureBindings = capturedVariableClosureBindings.toList
     capturedVariableClosureBindings.clear()
@@ -221,6 +222,9 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
 
   def getSurroundingMethods: List[MethodScope] =
     stack.map(_.scopeNode).collect { case nm: MethodScope => nm }.reverse
+
+  def getSurroundingArrowClosures: List[MethodScope] =
+    stack.map(_.scopeNode).collect { case nm: MethodScope if nm.isArrowFunc => nm }.reverse
 
   def surroundingMethodParams: List[String] =
     stack.map(_.scopeNode).collectFirst { case ms: MethodScope => ms }.map(_.parameterNames.toList).get

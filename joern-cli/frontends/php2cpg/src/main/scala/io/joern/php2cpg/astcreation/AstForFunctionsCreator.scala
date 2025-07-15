@@ -9,7 +9,13 @@ import io.joern.x2cpg.Defines.UnresolvedSignature
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes, PropertyDefaults, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{
+  EdgeTypes,
+  EvaluationStrategies,
+  ModifierTypes,
+  PropertyDefaults,
+  PropertyNames
+}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -96,7 +102,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     // When we only have one occurrence of the closure prefix in the method name, we know we are in the outermost
     // closure expression if we are processing nested closure expressions
 
-
 //    if (Defines.ClosurePrefix.r.findAllIn(methodName).size == 1) {
 //
 //    } else {
@@ -173,8 +178,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     if (isArrowClosure) {
       scope.getAndClearClosureBindings.foreach { (variableLocal, variableClosureBinding) =>
         val closureBindingId = s"$methodName:${variableLocal.name}"
-        val closureBinding = createClosureBinding(closureBindingId)
-        val localNode_ = localNode(decl, variableLocal.name, variableLocal.name, variableLocal.typeFullName, Option(closureBindingId))
+        val closureBinding   = createClosureBinding(closureBindingId)
+        val localNode_ =
+          localNode(decl, variableLocal.name, variableLocal.name, variableLocal.typeFullName, Option(closureBindingId))
 
         scope.addClosureBinding(closureBinding, localNode_)
 
@@ -190,7 +196,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         diffGraph.addEdge(closureMethodRef.get, closureBinding, EdgeTypes.CAPTURE)
       }
     }
-    
+
     scope.popScope()
     val methodAst = methodAstWithAnnotations(method, parameters, methodBody, methodReturn, modifiers, attributeAsts)
 
