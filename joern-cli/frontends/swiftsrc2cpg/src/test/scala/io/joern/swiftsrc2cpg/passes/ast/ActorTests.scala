@@ -16,7 +16,7 @@ class ActorTests extends AstSwiftSrc2CpgSuite {
       val List(myActor1) = cpg.typeDecl.nameExact("MyActor1").l
       myActor1.fullName shouldBe "Test0.swift:<global>:MyActor1"
       myActor1.member shouldBe empty
-      myActor1.boundMethod shouldBe empty
+      myActor1.boundMethod.fullName.l shouldBe List("Test0.swift:<global>:MyActor1:<init>")
     }
 
     "testActor2" in {
@@ -31,7 +31,8 @@ class ActorTests extends AstSwiftSrc2CpgSuite {
       val List(constructor) = myActor2.method.isConstructor.l
       constructor.name shouldBe "init"
       constructor.fullName shouldBe "Test0.swift:<global>:MyActor2:init:Test0.swift:<global>:MyActor2()"
-      val List(hello) = myActor2.boundMethod.l
+      val List(init, hello) = myActor2.boundMethod.l
+      init shouldBe constructor
       hello.name shouldBe "hello"
       hello.fullName shouldBe "Test0.swift:<global>:MyActor2:hello:ANY()"
     }

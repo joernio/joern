@@ -70,7 +70,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForExpressionStmtSyntax(node: ExpressionStmtSyntax): Ast = {
-    astForNodeWithFunctionReference(node.expression)
+    astForNode(node.expression)
   }
 
   private def astForFallThroughStmtSyntax(node: FallThroughStmtSyntax): Ast = {
@@ -104,7 +104,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForForStmtSyntaxWithWildcard(node: ForStmtSyntax): Ast = {
-    val initAsts = Seq(astForNodeWithFunctionReference(node.sequence))
+    val initAsts = Seq(astForNode(node.sequence))
     val bodyAst  = astForForStmtBody(node)
     val forNode  = controlStructureNode(node, ControlStructureTypes.FOR, code(node))
     forAst(forNode, Nil, initAsts, Nil, Nil, bodyAst)
@@ -139,7 +139,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       // TODO: add operator to schema
       callNode(node, s"<operator>.iterator($collectionName)", "<operator>.iterator", DispatchTypes.STATIC_DISPATCH)
 
-    val objectKeysCallArgs = List(astForNodeWithFunctionReference(collection))
+    val objectKeysCallArgs = List(astForNode(collection))
     val objectKeysCallAst  = callAst(iteratorCall, objectKeysCallArgs)
 
     val iteratorAssignmentNode =
@@ -272,7 +272,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       // TODO: add operator to schema
       callNode(node, s"<operator>.iterator($collectionName)", "<operator>.iterator", DispatchTypes.STATIC_DISPATCH)
 
-    val objectKeysCallArgs = List(astForNodeWithFunctionReference(collection))
+    val objectKeysCallArgs = List(astForNode(collection))
     val objectKeysCallAst  = callAst(iteratorCall, objectKeysCallArgs)
 
     val iteratorAssignmentNode =
@@ -395,7 +395,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val iteratorCall =
       callNode(node, s"<operator>.iterator($collectionName)", "<operator>.iterator", DispatchTypes.STATIC_DISPATCH)
 
-    val objectKeysCallArgs = List(astForNodeWithFunctionReference(collection))
+    val objectKeysCallArgs = List(astForNode(collection))
     val objectKeysCallAst  = callAst(iteratorCall, objectKeysCallArgs)
 
     val iteratorAssignmentNode =
@@ -540,7 +540,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val blockNode_  = blockNode(node)
     scope.pushNewBlockScope(blockNode_)
     localAstParentStack.push(blockNode_)
-    val bodyAst = astForNodeWithFunctionReference(node.statement)
+    val bodyAst = astForNode(node.statement)
     scope.popScope()
     localAstParentStack.pop()
     blockAst(blockNode_, List(Ast(labeledNode), bodyAst))
@@ -552,7 +552,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val code = this.code(node)
     // In Swift, a repeat-while loop is semantically the same as a C do-while loop
     val doNode       = controlStructureNode(node, ControlStructureTypes.DO, code)
-    val conditionAst = astForNodeWithFunctionReference(node.condition)
+    val conditionAst = astForNode(node.condition)
     val bodyAst      = astForNode(node.body)
     setOrderExplicitly(conditionAst, 1)
     setOrderExplicitly(bodyAst, 2)
@@ -563,7 +563,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val cpgReturn = returnNode(node, code(node))
     node.expression match {
       case Some(value) =>
-        val expr = astForNodeWithFunctionReference(value)
+        val expr = astForNode(value)
         val ast  = Ast(cpgReturn).withChild(expr)
         expr.root match {
           case Some(value) => ast.withArgEdge(cpgReturn, value)
@@ -579,13 +579,13 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForThrowStmtSyntax(node: ThrowStmtSyntax): Ast = {
     val op        = "<operator>.throw"
     val callNode_ = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH)
-    val exprAst   = astForNodeWithFunctionReference(node.expression)
+    val exprAst   = astForNode(node.expression)
     callAst(callNode_, List(exprAst))
   }
 
   private def astForWhileStmtSyntax(node: WhileStmtSyntax): Ast = {
     val code         = this.code(node)
-    val conditionAst = astForNodeWithFunctionReference(node.conditions)
+    val conditionAst = astForNode(node.conditions)
     val bodyAst      = astForNode(node.body)
     setOrderExplicitly(conditionAst, 1)
     setOrderExplicitly(bodyAst, 2)
@@ -600,7 +600,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def astForYieldStmtSyntax(node: YieldStmtSyntax): Ast = {
     val cpgReturn = returnNode(node, code(node))
-    val expr      = astForNodeWithFunctionReference(node.yieldedExpressions)
+    val expr      = astForNode(node.yieldedExpressions)
     val ast       = Ast(cpgReturn).withChild(expr)
     expr.root match {
       case Some(value) => ast.withArgEdge(cpgReturn, value)

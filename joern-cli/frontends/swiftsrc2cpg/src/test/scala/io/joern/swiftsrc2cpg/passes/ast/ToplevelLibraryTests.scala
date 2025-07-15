@@ -32,7 +32,7 @@ class ToplevelLibraryTests extends AstSwiftSrc2CpgSuite {
       |{ }
       |({ 5 }())
       |""".stripMargin)
-      cpg.call.code.sorted.l shouldBe List("func <lambda>0 = { }", "let x = 42", "x + x", "x + x", "{ 5 }()")
+      cpg.call.code.sorted.l shouldBe List("let x = 42", "x + x", "x + x", "{ 5 }()")
       cpg.method.fullName.sorted.l shouldBe List(
         "<operator>.addition",
         "<operator>.assignment",
