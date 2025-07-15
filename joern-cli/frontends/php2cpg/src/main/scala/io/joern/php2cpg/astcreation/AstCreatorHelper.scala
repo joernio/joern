@@ -25,6 +25,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 }
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
+import scala.collection.mutable
 import java.nio.charset.StandardCharsets
 
 trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -174,34 +175,50 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     name: String,
     existingNode: (NewLocal | NewMethodParameterIn)
   ): NewLocal = {
-    val methodName = scope.surroundingScopeFullName.get // should throw error if this does not exist
-    val methodRef  = scope.getSurroundingArrowClosureMethodRef
+    val surroundingIter    = scope.getSurroundingArrowClosures.drop(1).iterator // drop first to ignore global method
+    val surroundingMethods = scope.getSurroundingArrowClosures.dropRight(1)     // drop last to ignore innermost method
+    val localNodes         = mutable.ArrayBuffer[NewLocal]()
 
-    val closureBindingId = s"$methodName:$name"
+    surroundingMethods.foreach { currentMethod =>
+      val innerMethodScope = surroundingIter.next()
+      val innerMethodNode  = innerMethodScope.methodNode
+      val innerMethodRef   = innerMethodScope.methodRefNode
+      innerMethodRef match {
+        case Some(methodRef) =>
+          scope.getMethodRef(innerMethodNode.fullName) match {
+            case None =>
+              diffGraph.addNode(methodRef)
+              diffGraph.addEdge(currentMethod.bodyNode, methodRef, EdgeTypes.AST)
+              scope.addMethodRef(innerMethodNode.fullName, methodRef)
+            case _ =>
+          }
 
-    val localTfn = existingNode match {
-      case x: NewLocal             => x.typeFullName
-      case _: NewMethodParameterIn => Defines.Any
+          val closureBindingId = s"$relativeFileName:${innerMethodNode.fullName}:${name}"
+          val closureLocal     = localNode(expr, name, name, Defines.Any, Option(closureBindingId))
+
+          val closureBindingNode = createClosureBinding(closureBindingId)
+
+          scope.lookupVariable(name) match {
+            case Some(refLocal) =>
+              val p = refLocal
+              diffGraph.addEdge(closureBindingNode, refLocal, EdgeTypes.REF)
+            case _ => // do nothing
+          }
+
+          scope.addVariableToMethodScope(closureLocal.name, closureLocal, innerMethodNode.fullName) match {
+            case Some(ms) => diffGraph.addEdge(ms.bodyNode, closureLocal, EdgeTypes.AST)
+            case _        => // do nothing
+          }
+
+          diffGraph.addNode(closureBindingNode)
+          diffGraph.addEdge(methodRef, closureBindingNode, EdgeTypes.CAPTURE)
+          localNodes.addOne(closureLocal)
+        case None =>
+          logger.warn(s"No methodRef found for capturing global variable in method ${innerMethodNode.fullName}")
+      }
     }
 
-    val localNode_ =
-      localNode(expr, name, existingNode.code, localTfn, closureBindingId = Option(closureBindingId))
-
-    val closureBindingNode = createClosureBinding(closureBindingId)
-
-    scope.addClosureBinding(closureBindingNode, localNode_)
-    scope.addToScope(localNode_.name, localNode_)
-
-//    diffGraph.addNode(closureBindingNode)
-//    methodRef.foreach(diffGraph.addEdge(_, closureBindingNode, EdgeTypes.CAPTURE))
-//
-//    scope.addToScope(localNode_.name, localNode_) match {
-//      case BlockScope(block, _)              => diffGraph.addEdge(block, localNode_, EdgeTypes.AST)
-//      case MethodScope(_, block, _, _, _, _) => diffGraph.addEdge(block, localNode_, EdgeTypes.AST)
-//      case _                                 => // do nothing
-//    }
-
-    localNode_
+    localNodes.reverse.head
   }
 
   protected def createClosureBinding(closureBindingId: String): NewClosureBinding =

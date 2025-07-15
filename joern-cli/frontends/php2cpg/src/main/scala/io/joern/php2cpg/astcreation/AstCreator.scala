@@ -206,7 +206,7 @@ class AstCreator(
                 case Some(refLocal) =>
                   val p = refLocal
                   diffGraph.addEdge(closureBindingNode, refLocal, EdgeTypes.REF)
-                case _              => // do nothing
+                case _ => // do nothing
               }
 
               scope.addVariableToMethodScope(closureLocal.name, closureLocal, innerMethodNode.fullName) match {
