@@ -171,21 +171,21 @@ abstract class XTypeRecoveryPassGenerator[CompilationUnitType <: AstNode](
 }
 
 object TypeRecoveryParserConfig {
-  case class Config(disableDummyTypes: Boolean = false, typePropagationIterations: Int = 2)
+  final case class Config(disableDummyTypes: Boolean = false, typePropagationIterations: Int = 2)
 }
 trait TypeRecoveryParserConfig { this: X2CpgConfig[?] =>
 
-  protected def sharedTypeRecoveryConfig: TypeRecoveryParserConfig.Config
-  final def disableDummyTypes: Boolean     = sharedTypeRecoveryConfig.disableDummyTypes
-  final def typePropagationIterations: Int = sharedTypeRecoveryConfig.typePropagationIterations
+  protected def typeRecoveryParserConfig: TypeRecoveryParserConfig.Config
+  final def disableDummyTypes: Boolean     = typeRecoveryParserConfig.disableDummyTypes
+  final def typePropagationIterations: Int = typeRecoveryParserConfig.typePropagationIterations
 
-  protected def withSharedTypeRecoveryConfig(newSharedConfig: frontend.TypeRecoveryParserConfig.Config): OwnType
-  def withDisableDummyTypes(value: Boolean): OwnType = {
-    withSharedTypeRecoveryConfig(sharedTypeRecoveryConfig.copy(disableDummyTypes = value))
+  protected def withTypeRecoveryParserConfig(value: frontend.TypeRecoveryParserConfig.Config): OwnType
+  final def withDisableDummyTypes(value: Boolean): OwnType = {
+    withTypeRecoveryParserConfig(typeRecoveryParserConfig.copy(disableDummyTypes = value))
   }
 
-  def withTypePropagationIterations(value: Int): OwnType = {
-    withSharedTypeRecoveryConfig(sharedTypeRecoveryConfig.copy(typePropagationIterations = value))
+  final def withTypePropagationIterations(value: Int): OwnType = {
+    withTypeRecoveryParserConfig(typeRecoveryParserConfig.copy(typePropagationIterations = value))
   }
 
 }

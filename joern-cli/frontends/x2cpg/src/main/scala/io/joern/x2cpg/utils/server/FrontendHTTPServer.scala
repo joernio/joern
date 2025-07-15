@@ -8,6 +8,7 @@ import io.joern.x2cpg.utils.Environment
 import net.freeutils.httpserver.HTTPServer
 import net.freeutils.httpserver.HTTPServer.Context
 import org.slf4j.LoggerFactory
+import scopt.OParser
 
 import java.net.ServerSocket
 import java.nio.file.Paths
@@ -33,6 +34,7 @@ object FrontendHTTPServer {
   /** Default ExecutorService used by `FrontendHTTPServer`. */
   def defaultExecutor(): ExecutorService = cachedThreadPoolExecutor()
 
+  private val logger = LoggerFactory.getLogger(classOf[FrontendHTTPServer])
 }
 
 /** A trait representing a frontend HTTP server for handling operations any subclass of `X2CpgMain` may offer via its
@@ -40,32 +42,31 @@ object FrontendHTTPServer {
   * related to `X2CpgMain`. It includes handling request execution either in a single-threaded or multi-threaded manner,
   * depending on the executor configuration.
   *
-  * @tparam T
-  *   The type parameter representing the X2Cpg configuration.
-  * @tparam X
-  *   The type parameter representing the X2Cpg frontend.
+  * @param executor
+  *   ExecutorService used to execute HTTP requests.
+  * @param handleRequest
+  *   function handling the reequest
   */
-trait FrontendHTTPServer { this: X2CpgMain =>
+class FrontendHTTPServer(executor: ExecutorService, handleRequest: Array[String] => Unit) {
+  import FrontendHTTPServer.*
 
-  /** Logger instance for logging server-related information. */
-  private val logger = LoggerFactory.getLogger(this.getClass)
-
-  /** Optionally holds the underlying HTTP server instance. */
-  private var underlyingServer: Option[HTTPServer] = None
-
-  /** ExecutorService used to execute HTTP requests.
-    *
-    * This can be overridden to switch between single-threaded and multi-threaded execution. By default, it uses the
+  /** This can be overridden to switch between single-threaded and multi-threaded execution. By default, it uses the
     * cached thread pool executor from `FrontendHTTPServer`.
     */
-  protected val executor: ExecutorService = FrontendHTTPServer.defaultExecutor()
+
+  private object server extends HTTPServer(0 /* port 0 means the OS chooses a random open port for us */ ) {
+    def chosenPort: Int = serv.getLocalPort
+
+    server.getVirtualHost(null).addContexts(frontendHTTPHandler)
+    setExecutor(FrontendHTTPServer.this.executor)
+  }
 
   /** Handler for HTTP requests, providing functionality to handle specific routes.
     *
     * @param server
     *   The underlying HTTP server instance.
     */
-  protected class FrontendHTTPHandler(val server: HTTPServer) {
+  private object frontendHTTPHandler {
 
     /** Handles POST requests to the "/run" endpoint.
       *
@@ -103,10 +104,7 @@ trait FrontendHTTPServer { this: X2CpgMain =>
         }.flatten
         logger.debug("Got POST with arguments: " + arguments.mkString(" "))
 
-        val config = X2Cpg
-          .parseCommandLine(arguments.toArray, cmdLineParser, frontend.defaultConfig)
-          .getOrElse(frontend.defaultConfig)
-        Try(frontend.run(config)) match {
+        Try(handleRequest(arguments.toArray)) match {
           case Failure(exception) =>
             resp.send(400, exception.getMessage)
           case Success(_) =>
@@ -130,67 +128,37 @@ trait FrontendHTTPServer { this: X2CpgMain =>
     * indicating that the server has been stopped. If the server is not running, this method does nothing.
     */
   def stop(): Unit = {
-    try {
-      underlyingServer.foreach { server =>
-        executor.shutdown()
-        server.stop()
-        logger.debug("Server stopped.")
-      }
-      underlyingServer = None
-    } finally {
-      frontend.close()
+    if (isRunning) {
+      executor.shutdown()
+      server.stop()
+      isRunning = false;
+      logger.debug("Server stopped.")
     }
   }
 
   private var runningRequests = 0
   private var lastRequest     = System.nanoTime()
+  private var isRunning       = false
 
-  /** Starts the HTTP server.
-    *
-    * This method initializes the `underlyingServer`, sets the executor, and adds the appropriate contexts using the
-    * `FrontendHTTPHandler`. It then starts the server and prints the server's port to stdout. Additionally, a shutdown
-    * hook is added to ensure that the server is properly stopped when the application is terminated.
-    *
-    * @return
-    *   The port this server is bound to which is chosen randomly
+  /** Starts the server and returns the server's randomly chosen port
     */
   def startup(): Int = {
-    object server extends HTTPServer(0 /* port 0 means the OS chooses a random open port for us */ ) {
-      def chosenPort: Int = serv.getLocalPort
-    }
-    val host = server.getVirtualHost(null)
-    host.addContexts(new FrontendHTTPHandler(server))
-    server.setExecutor(executor)
+    require(!isRunning)
     server.start()
-    underlyingServer = Some(server)
 
-    println(s"FrontendHTTPServer started on port ${server.chosenPort}")
     server.chosenPort
   }
 
   /** Stops the server, once it hasn't served any new requests for longer than timeout seconds
     */
-  def serveUntilTimeout(timeoutSeconds: Long): Unit = {
+  def stopServerAfterTimeout(timeoutSeconds: Long): Unit = {
     synchronized {
-      while (underlyingServer.isDefined) {
+      while (isRunning) {
         wait(TimeUnit.SECONDS.toMillis(timeoutSeconds))
         if (runningRequests == 0 && System.nanoTime() > lastRequest + TimeUnit.SECONDS.toNanos(timeoutSeconds)) {
           stop()
         }
       }
-    }
-  }
-
-  override def run(config: frontend.ConfigType): Unit = {
-    if (config.serverMode) {
-      startup()
-      config.serverTimeoutSeconds.foreach(serveUntilTimeout)
-    } else if (Environment.pathExists(config.inputPath)) {
-      val absPath = Paths.get(config.inputPath).toAbsolutePath.toString
-      frontend.run(config.withInputPath(absPath))
-    } else {
-      logger.warn(s"Given path '${config.inputPath}' does not exist, skipping")
-      System.exit(1)
     }
   }
 }

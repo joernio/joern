@@ -11,23 +11,22 @@ import scala.util.Try
 import scala.jdk.CollectionConverters.*
 
 case class Py2CpgOnFileSystemConfig(
-                                     venvDir: Option[Path] = None,
-                                     venvDirs: Seq[Path] = Nil,
-                                     ignoreVenvDir: Boolean = true,
-                                     ignorePaths: Seq[Path] = Nil,
-                                     ignoreDirNames: Seq[String] = Nil,
-                                     requirementsTxt: String = "requirements.txt",
-                                     override val sharedConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig(),
-                                     override val sharedTypeRecoveryConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config()
+  venvDir: Option[Path] = None,
+  venvDirs: Seq[Path] = Nil,
+  ignoreVenvDir: Boolean = true,
+  ignorePaths: Seq[Path] = Nil,
+  ignoreDirNames: Seq[String] = Nil,
+  requirementsTxt: String = "requirements.txt",
+  override val genericConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig(),
+  override val typeRecoveryParserConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config()
 ) extends X2CpgConfig[Py2CpgOnFileSystemConfig]
     with TypeRecoveryParserConfig {
 
-  override def withSharedConfig(newSharedConfig: X2CpgConfig.GenericConfig): Py2CpgOnFileSystemConfig =
-    copy(sharedConfig = newSharedConfig)
+  override def withGenericConfig(value: X2CpgConfig.GenericConfig): Py2CpgOnFileSystemConfig =
+    copy(genericConfig = value)
 
-  override def withSharedTypeRecoveryConfig(
-    newSharedConfig: TypeRecoveryParserConfig.Config
-  ): Py2CpgOnFileSystemConfig = copy(sharedTypeRecoveryConfig = newSharedConfig)
+  override def withTypeRecoveryParserConfig(value: TypeRecoveryParserConfig.Config): Py2CpgOnFileSystemConfig =
+    copy(typeRecoveryParserConfig = value)
 
   def withVenvDir(venvDir: Path): Py2CpgOnFileSystemConfig = {
     copy(venvDir = Option(venvDir))

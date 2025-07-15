@@ -11,19 +11,19 @@ import scopt.OParser
 import java.nio.file.Paths
 
 final case class Config(
-                         downloadDependencies: Boolean = false,
-                         useBuiltinSummaries: Boolean = true,
-                         externalSummaryPaths: Set[String] = Set.empty,
-                         override val sharedConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig(),
-                         override val sharedTypeRecoveryConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config()
+  downloadDependencies: Boolean = false,
+  useBuiltinSummaries: Boolean = true,
+  externalSummaryPaths: Set[String] = Set.empty,
+  override val genericConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig(),
+  override val typeRecoveryParserConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config()
 ) extends X2CpgConfig[Config]
     with DependencyDownloadConfig
     with TypeRecoveryParserConfig {
-  override def withSharedConfig(newSharedConfig: X2CpgConfig.GenericConfig): Config =
-    copy(sharedConfig = newSharedConfig)
+  override def withGenericConfig(value: X2CpgConfig.GenericConfig): Config =
+    copy(genericConfig = value)
 
-  override def withSharedTypeRecoveryConfig(newSharedConfig: TypeRecoveryParserConfig.Config): Config =
-    copy(sharedTypeRecoveryConfig = newSharedConfig)
+  override def withTypeRecoveryParserConfig(value: TypeRecoveryParserConfig.Config): Config =
+    copy(typeRecoveryParserConfig = value)
 
   override def withDownloadDependencies(value: Boolean): Config = {
     copy(downloadDependencies = value)
@@ -60,8 +60,4 @@ object Frontend {
 
 }
 
-object Main extends X2CpgMain(new CSharpSrc2Cpg(), cmdLineParser) with FrontendHTTPServer {
-
-  private val logger = LoggerFactory.getLogger(getClass)
-
-}
+object Main extends X2CpgMain(new CSharpSrc2Cpg(), cmdLineParser)

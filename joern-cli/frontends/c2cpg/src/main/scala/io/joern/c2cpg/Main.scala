@@ -18,11 +18,10 @@ final case class Config(
   skipFunctionBodies: Boolean = false,
   withPreprocessedFiles: Boolean = false,
   compilationDatabaseFilename: Option[String] = None,
-  override val sharedConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig()
+  override val genericConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig()
 ) extends X2CpgConfig[Config] {
 
-  override def withSharedConfig(newSharedConfig: X2CpgConfig.GenericConfig): Config =
-    copy(sharedConfig = newSharedConfig)
+  override def withGenericConfig(value: X2CpgConfig.GenericConfig): Config = copy(genericConfig = value)
 
   def withIncludePaths(includePaths: Set[String]): Config = {
     this.copy(includePaths = includePaths)
@@ -121,7 +120,7 @@ private object Frontend {
 
 }
 
-object Main extends X2CpgMain(new C2Cpg(), cmdLineParser) with FrontendHTTPServer {
+object Main extends X2CpgMain(new C2Cpg(), cmdLineParser) {
 
   override def run(config: frontend.ConfigType): Unit = {
     config match {

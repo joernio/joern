@@ -13,16 +13,15 @@ import java.nio.file.Paths
 
 final case class Config(
   defines: Set[String] = Set.empty,
-  override val sharedConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig(),
-  override val sharedTypeRecoveryConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config()
+  override val genericConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig(),
+  override val typeRecoveryParserConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config()
 ) extends X2CpgConfig[Config]
     with TypeRecoveryParserConfig {
 
-  override def withSharedConfig(newSharedConfig: X2CpgConfig.GenericConfig): Config =
-    copy(sharedConfig = newSharedConfig)
+  override def withGenericConfig(value: X2CpgConfig.GenericConfig): Config = copy(genericConfig = value)
 
-  override def withSharedTypeRecoveryConfig(newSharedConfig: TypeRecoveryParserConfig.Config): Config =
-    copy(sharedTypeRecoveryConfig = newSharedConfig)
+  override def withTypeRecoveryParserConfig(value: TypeRecoveryParserConfig.Config): Config =
+    copy(typeRecoveryParserConfig = value)
 
   def withDefines(defines: Set[String]): Config = {
     this.copy(defines = defines)
@@ -47,4 +46,4 @@ object Frontend {
 
 }
 
-object Main extends X2CpgMain(new SwiftSrc2Cpg(), cmdLineParser) with FrontendHTTPServer
+object Main extends X2CpgMain(new SwiftSrc2Cpg(), cmdLineParser)

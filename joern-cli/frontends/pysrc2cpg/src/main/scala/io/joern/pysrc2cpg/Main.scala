@@ -39,4 +39,4 @@ private object Frontend {
   }
 }
 
-object NewMain extends X2CpgMain(new Py2CpgOnFileSystem(), cmdLineParser) with FrontendHTTPServer
+object NewMain extends X2CpgMain(new Py2CpgOnFileSystem(), cmdLineParser)

@@ -13,22 +13,21 @@ import java.nio.file.Paths
 final case class Config(
   downloadDependencies: Boolean = false,
   useTypeStubs: Boolean = true,
-  override val sharedConfig: GenericConfig = GenericConfig(defaultIgnoredFilesRegex =
+  override val genericConfig: GenericConfig = GenericConfig(defaultIgnoredFilesRegex =
     List("spec", "tests?", "vendor", "db(\\\\|/)([\\w_]*)migrate([_\\w]*)").flatMap { directory =>
       List(s"(^|\\\\)$directory($$|\\\\)".r.unanchored, s"(^|/)$directory($$|/)".r.unanchored)
     }
   ),
-  override val sharedTypeRecoveryConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config()
+  override val typeRecoveryParserConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config()
 ) extends X2CpgConfig[Config]
     with DependencyDownloadConfig
     with TypeRecoveryParserConfig
     with TypeStubConfig {
 
-  override def withSharedConfig(newSharedConfig: X2CpgConfig.GenericConfig): Config =
-    copy(sharedConfig = newSharedConfig)
+  override def withGenericConfig(value: X2CpgConfig.GenericConfig): Config = copy(genericConfig = value)
 
-  override def withSharedTypeRecoveryConfig(newSharedConfig: TypeRecoveryParserConfig.Config): Config =
-    copy(sharedTypeRecoveryConfig = newSharedConfig)
+  override def withTypeRecoveryParserConfig(value: TypeRecoveryParserConfig.Config): Config =
+    copy(typeRecoveryParserConfig = value)
 
   override def withDownloadDependencies(value: Boolean): Config = {
     copy(downloadDependencies = value)
@@ -58,4 +57,4 @@ private object Frontend {
   }
 }
 
-object Main extends X2CpgMain(new RubySrc2Cpg(), cmdLineParser) with FrontendHTTPServer
+object Main extends X2CpgMain(new RubySrc2Cpg(), cmdLineParser)

@@ -12,19 +12,19 @@ final case class Config(
   phpIni: Option[String] = None,
   phpParserBin: Option[String] = None,
   downloadDependencies: Boolean = false,
-  override val sharedConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig(),
-  override val sharedTypeRecoveryConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config(),
+  override val genericConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig(),
+  override val typeRecoveryParserConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config(),
   override val typeStubsFilePath: Option[String] = None
 ) extends X2CpgConfig[Config]
     with TypeRecoveryParserConfig
     with TypeStubsParserConfig
     with DependencyDownloadConfig {
 
-  override def withSharedConfig(newSharedConfig: X2CpgConfig.GenericConfig): Config =
-    copy(sharedConfig = newSharedConfig)
+  override def withGenericConfig(value: X2CpgConfig.GenericConfig): Config =
+    copy(genericConfig = value)
 
-  override def withSharedTypeRecoveryConfig(newSharedConfig: TypeRecoveryParserConfig.Config): Config =
-    copy(sharedTypeRecoveryConfig = newSharedConfig)
+  override def withTypeRecoveryParserConfig(value: TypeRecoveryParserConfig.Config): Config =
+    copy(typeRecoveryParserConfig = value)
 
   def withPhpIni(phpIni: String): Config = {
     copy(phpIni = Some(phpIni))
@@ -65,4 +65,4 @@ object Frontend {
   }
 }
 
-object Main extends X2CpgMain(new Php2Cpg(): Php2Cpg, cmdLineParser) with FrontendHTTPServer
+object Main extends X2CpgMain(new Php2Cpg(): Php2Cpg, cmdLineParser)

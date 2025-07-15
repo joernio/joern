@@ -17,12 +17,12 @@ final case class Config(
   generateNodesForDependencies: Boolean = false,
   downloadDependencies: Boolean = false,
   keepTypeArguments: Boolean = false,
-  override val sharedConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig()
+  override val genericConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig()
 ) extends X2CpgConfig[Config]
     with DependencyDownloadConfig {
 
-  override def withSharedConfig(newSharedConfig: X2CpgConfig.GenericConfig): Config =
-    copy(sharedConfig = newSharedConfig)
+  override def withGenericConfig(value: X2CpgConfig.GenericConfig): Config =
+    copy(genericConfig = value)
 
   def withClasspath(classpath: Set[String]): Config = {
     this.copy(classpath = classpath)
@@ -101,4 +101,4 @@ private object Frontend {
   }
 }
 
-object Main extends X2CpgMain(new Kotlin2Cpg(), cmdLineParser.asInstanceOf) with FrontendHTTPServer
+object Main extends X2CpgMain(new Kotlin2Cpg(), cmdLineParser.asInstanceOf)

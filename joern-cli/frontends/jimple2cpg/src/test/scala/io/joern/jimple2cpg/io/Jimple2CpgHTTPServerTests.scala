@@ -39,13 +39,11 @@ class Jimple2CpgHTTPServerTests extends JimpleCode2CpgFixture with BeforeAndAfte
   }
 
   override def beforeAll(): Unit = {
-    // Start server
-    port = io.joern.jimple2cpg.Main.startup()
+    port = io.joern.jimple2cpg.Main.server.startup()
   }
 
   override def afterAll(): Unit = {
-    // Stop server
-    io.joern.jimple2cpg.Main.stop()
+    io.joern.jimple2cpg.Main.server.stop()
   }
 
   "Using jimple2cpg in server mode" should {

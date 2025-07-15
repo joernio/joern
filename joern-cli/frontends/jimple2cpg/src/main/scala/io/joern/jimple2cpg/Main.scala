@@ -1,7 +1,7 @@
 package io.joern.jimple2cpg
 
 import io.joern.jimple2cpg.Frontend.*
-import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
+import io.joern.x2cpg.{SingleThreadedFrontend, X2CpgConfig, X2CpgMain}
 import io.joern.x2cpg.utils.server.FrontendHTTPServer
 import scopt.OParser
 
@@ -16,10 +16,9 @@ final case class Config(
   fullResolver: Boolean = false,
   recurse: Boolean = false,
   depth: Int = 1,
-  override val sharedConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig()
+  override val genericConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig()
 ) extends X2CpgConfig[Config] {
-  override def withSharedConfig(newSharedConfig: X2CpgConfig.GenericConfig): Config =
-    copy(sharedConfig = newSharedConfig)
+  override def withGenericConfig(value: X2CpgConfig.GenericConfig): Config = copy(genericConfig = value)
 
   def withAndroid(android: String): Config = {
     copy(android = Some(android))
@@ -81,7 +80,4 @@ private object Frontend {
 
 /** Entry point for command line CPG creator
   */
-object Main extends X2CpgMain(new Jimple2Cpg(), cmdLineParser) with FrontendHTTPServer {
-
-  override protected val executor: ExecutorService = FrontendHTTPServer.singleThreadExecutor()
-}
+object Main extends X2CpgMain(new Jimple2Cpg(), cmdLineParser) with SingleThreadedFrontend
