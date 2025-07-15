@@ -13,6 +13,8 @@ import io.shiftleft.semanticcpg.utils.FileUtil
 import java.nio.file.Paths
 
 trait AstJsSrc2CpgFrontend extends LanguageFrontend {
+  override type ConfigType = Config
+  
   def execute(sourceCodePath: java.io.File): Cpg = {
     val cpgOutFile = FileUtil.newTemporaryFile(suffix = "cpg.bin")
     FileUtil.deleteOnExit(cpgOutFile)

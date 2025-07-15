@@ -7,7 +7,7 @@ import java.net.URL
 
 /** Extends the config to download type stubs to help resolve type full names.
   */
-trait TypeStubConfig[R <: X2CpgConfig[R]] { this: R =>
+trait TypeStubConfig { this: X2CpgConfig[?] =>
 
   /** Whether to use type stubs to help resolve type information or not. Using type stubs may increase memory
     * consumption.
@@ -16,7 +16,7 @@ trait TypeStubConfig[R <: X2CpgConfig[R]] { this: R =>
 
   /** The entrypoint to load the type stubs into the config.
     */
-  def withTypeStubs(value: Boolean): R
+  def withTypeStubs(value: Boolean): OwnType
 
   /** Creates a meta-data class of information about the type stub management.
     */
@@ -35,7 +35,7 @@ case class TypeStubMetaData(useTypeStubs: Boolean, packagePath: URL)
 
 object TypeStubConfig {
 
-  def parserOptions[R <: X2CpgConfig[R] & TypeStubConfig[R]]: OParser[?, R] = {
+  def parserOptions[R <: X2CpgConfig[R] & TypeStubConfig]: OParser[?, R] = {
     val builder = OParser.builder[R]
     import builder.*
     OParser.sequence(

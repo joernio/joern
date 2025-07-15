@@ -11,22 +11,35 @@ import scopt.OParser
 final case class Config(
   phpIni: Option[String] = None,
   phpParserBin: Option[String] = None,
-  downloadDependencies: Boolean = false
+  downloadDependencies: Boolean = false,
+  override val sharedConfig: X2CpgConfig.SharedConfig = X2CpgConfig.SharedConfig(),
+  override val sharedTypeRecoveryConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config(),
+  override val typeStubsFilePath: Option[String] = None
 ) extends X2CpgConfig[Config]
-    with TypeRecoveryParserConfig[Config]
-    with TypeStubsParserConfig[Config]
-    with DependencyDownloadConfig[Config] {
+    with TypeRecoveryParserConfig
+    with TypeStubsParserConfig
+    with DependencyDownloadConfig {
+
+  override def withSharedConfig(newSharedConfig: X2CpgConfig.SharedConfig): Config =
+    copy(sharedConfig = newSharedConfig)
+
+  override def withSharedTypeRecoveryConfig(newSharedConfig: TypeRecoveryParserConfig.Config): Config =
+    copy(sharedTypeRecoveryConfig = newSharedConfig)
 
   def withPhpIni(phpIni: String): Config = {
-    copy(phpIni = Some(phpIni)).withInheritedFields(this)
+    copy(phpIni = Some(phpIni))
   }
 
   def withPhpParserBin(phpParserBin: String): Config = {
-    copy(phpParserBin = Some(phpParserBin)).withInheritedFields(this)
+    copy(phpParserBin = Some(phpParserBin))
   }
 
   override def withDownloadDependencies(downloadDependencies: Boolean): Config = {
-    copy(downloadDependencies = downloadDependencies).withInheritedFields(this)
+    copy(downloadDependencies = downloadDependencies)
+  }
+
+  protected override def internalWithTypeStubsFilePath(typeStubsFilePath: String): Config = {
+    copy(typeStubsFilePath = Some(typeStubsFilePath))
   }
 }
 
@@ -52,12 +65,10 @@ object Frontend {
   }
 }
 
-object Main extends X2CpgMain(cmdLineParser, new Php2Cpg()) with FrontendHTTPServer[Config, Php2Cpg] {
+object Main extends X2CpgMain(new Php2Cpg(): Php2Cpg, cmdLineParser) with FrontendHTTPServer {
 
-  override protected def newDefaultConfig(): Config = Config()
-
-  def run(config: Config, php2Cpg: Php2Cpg): Unit = {
+  def run(config: frontend.ConfigType): Unit = {
     if (config.serverMode) { startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout) }
-    else { php2Cpg.run(config) }
+    else { frontend.run(config) }
   }
 }

@@ -15,6 +15,7 @@ import io.shiftleft.semanticcpg.language.*
 import java.io.File
 
 trait JavaSrcFrontend extends LanguageFrontend {
+  override type ConfigType = Config
   override val fileSuffix: String = ".java"
 
   override def execute(sourceCodeFile: File): Cpg = {
@@ -22,7 +23,7 @@ trait JavaSrcFrontend extends LanguageFrontend {
       .map(_.asInstanceOf[Config])
       .getOrElse(JavaSrc2Cpg.DefaultConfig.withDelombokMode("no-delombok"))
       .withCacheJdkTypeSolver(true)
-    new JavaSrc2Cpg().createCpg(sourceCodeFile.getAbsolutePath)(config).get
+    new JavaSrc2Cpg().createCpg(config.withInputPath(sourceCodeFile.getAbsolutePath)).get
   }
 }
 

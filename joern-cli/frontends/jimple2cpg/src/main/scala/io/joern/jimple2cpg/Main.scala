@@ -15,25 +15,29 @@ final case class Config(
   dynamicPkgs: Seq[String] = Seq.empty,
   fullResolver: Boolean = false,
   recurse: Boolean = false,
-  depth: Int = 1
+  depth: Int = 1,
+  override val sharedConfig: X2CpgConfig.SharedConfig = X2CpgConfig.SharedConfig()
 ) extends X2CpgConfig[Config] {
+  override def withSharedConfig(newSharedConfig: X2CpgConfig.SharedConfig): Config =
+    copy(sharedConfig = newSharedConfig)
+
   def withAndroid(android: String): Config = {
-    copy(android = Some(android)).withInheritedFields(this)
+    copy(android = Some(android))
   }
   def withDynamicDirs(value: Seq[String]): Config = {
-    copy(dynamicDirs = value).withInheritedFields(this)
+    copy(dynamicDirs = value)
   }
   def withDynamicPkgs(value: Seq[String]): Config = {
-    copy(dynamicPkgs = value).withInheritedFields(this)
+    copy(dynamicPkgs = value)
   }
   def withFullResolver(value: Boolean): Config = {
-    copy(fullResolver = value).withInheritedFields(this)
+    copy(fullResolver = value)
   }
   def withRecurse(value: Boolean): Config = {
-    copy(recurse = value).withInheritedFields(this)
+    copy(recurse = value)
   }
   def withDepth(value: Int): Config = {
-    copy(depth = value).withInheritedFields(this)
+    copy(depth = value)
   }
 }
 
@@ -77,14 +81,12 @@ private object Frontend {
 
 /** Entry point for command line CPG creator
   */
-object Main extends X2CpgMain(cmdLineParser, new Jimple2Cpg()) with FrontendHTTPServer[Config, Jimple2Cpg] {
-
-  override protected def newDefaultConfig(): Config = Config()
+object Main extends X2CpgMain(new Jimple2Cpg(), cmdLineParser) with FrontendHTTPServer {
 
   override protected val executor: ExecutorService = FrontendHTTPServer.singleThreadExecutor()
 
-  def run(config: Config, jimple2Cpg: Jimple2Cpg): Unit = {
+  def run(config: frontend.ConfigType): Unit = {
     if (config.serverMode) { startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout) }
-    else { jimple2Cpg.run(config) }
+    else { frontend.run(config) }
   }
 }

@@ -1,32 +1,30 @@
 package io.joern.gosrc2cpg
 
 import io.joern.gosrc2cpg.Frontend.*
-import io.joern.x2cpg.astgen.AstGenConfig
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import io.joern.x2cpg.utils.server.FrontendHTTPServer
 import scopt.OParser
 
 import java.nio.file.Paths
 
-final case class Config(fetchDependencies: Boolean = false, includeIndirectDependencies: Boolean = false)
-    extends X2CpgConfig[Config]
-    with AstGenConfig[Config] {
-
-  override val astGenProgramName: String  = "goastgen"
-  override val astGenConfigPrefix: String = "gosrc2cpg"
+final case class Config(
+  fetchDependencies: Boolean = false,
+  includeIndirectDependencies: Boolean = false,
+  override val sharedConfig: X2CpgConfig.SharedConfig = X2CpgConfig.SharedConfig()
+) extends X2CpgConfig[Config] {
+  override def withSharedConfig(newSharedConfig: X2CpgConfig.SharedConfig): Config =
+    copy(sharedConfig = newSharedConfig)
 
   def withFetchDependencies(value: Boolean): Config = {
-    copy(fetchDependencies = value).withInheritedFields(this)
+    copy(fetchDependencies = value)
   }
 
   def withIncludeIndirectDependencies(value: Boolean): Config = {
-    copy(includeIndirectDependencies = value).withInheritedFields(this)
+    copy(includeIndirectDependencies = value)
   }
 }
 
 object Frontend {
-  implicit val defaultConfig: Config = Config()
-
   val cmdLineParser: OParser[Unit, Config] = {
     val builder = OParser.builder[Config]
     import builder._
@@ -43,15 +41,13 @@ object Frontend {
 
 }
 
-object Main extends X2CpgMain(cmdLineParser, new GoSrc2Cpg()) with FrontendHTTPServer[Config, GoSrc2Cpg] {
+object Main extends X2CpgMain(new GoSrc2Cpg(), cmdLineParser.asInstanceOf) with FrontendHTTPServer {
 
-  override protected def newDefaultConfig(): Config = Config()
-
-  def run(config: Config, gosrc2cpg: GoSrc2Cpg): Unit = {
+  def run(config: frontend.ConfigType): Unit = {
     if (config.serverMode) { startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout) }
     else {
       val absPath = Paths.get(config.inputPath).toAbsolutePath.toString
-      gosrc2cpg.run(config.withInputPath(absPath))
+      frontend.run(config.withInputPath(absPath))
     }
   }
 }

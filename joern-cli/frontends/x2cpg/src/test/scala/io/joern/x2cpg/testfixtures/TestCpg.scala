@@ -24,7 +24,7 @@ abstract class TestCpg extends Cpg(Cpg.empty.graph) with LanguageFrontend with T
     super.moreCode(code, fileName)
   }
 
-  def withConfig(config: X2CpgConfig[?]): this.type = {
+  def withConfig(config: ConfigType): this.type = {
     setConfig(config)
     this
   }

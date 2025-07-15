@@ -13,8 +13,11 @@ import scala.jdk.CollectionConverters.*
 import scala.util.Try
 import scala.util.matching.Regex
 
-class JavaSrc2Cpg extends X2CpgFrontend[Config] {
+class JavaSrc2Cpg extends X2CpgFrontend {
   import JavaSrc2Cpg._
+
+  override type ConfigType = Config
+  override val defaultConfig = Config()
 
   override def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>

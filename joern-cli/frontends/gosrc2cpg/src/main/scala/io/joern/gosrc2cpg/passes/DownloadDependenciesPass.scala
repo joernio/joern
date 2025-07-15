@@ -4,8 +4,8 @@ import io.joern.gosrc2cpg.Config
 import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.model.{GoModDependency, GoModHelper}
 import io.joern.gosrc2cpg.parser.GoAstJsonParser
-import io.joern.gosrc2cpg.utils.AstGenRunner
-import io.joern.gosrc2cpg.utils.AstGenRunner.{GoAstGenRunnerResult, getClass}
+import io.joern.gosrc2cpg.utils.GoAstGenRunner
+import io.joern.gosrc2cpg.utils.GoAstGenRunner.{GoAstGenRunnerResult, getClass}
 import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.slf4j.LoggerFactory
@@ -80,7 +80,7 @@ class DownloadDependenciesPass(cpg: Cpg, parentGoMod: GoModHelper, goGlobal: GoG
           .withInputPath(dependencyLocation)
           .withIgnoredFilesRegex(config.ignoredFilesRegex.toString())
           .withIgnoredFiles(config.ignoredFiles.toList)
-        val astGenResult = new AstGenRunner(depConfig, dependency.getIncludePackagesList())
+        val astGenResult = new GoAstGenRunner( depConfig, dependency.getIncludePackagesList())
           .executeForGo(astLocation)
           .headOption
           .getOrElse(GoAstGenRunnerResult())

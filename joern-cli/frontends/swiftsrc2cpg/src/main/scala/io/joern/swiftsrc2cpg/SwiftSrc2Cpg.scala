@@ -15,7 +15,9 @@ import io.shiftleft.semanticcpg.utils.FileUtil
 import java.nio.file.Paths
 import scala.util.Try
 
-class SwiftSrc2Cpg extends X2CpgFrontend[Config] {
+class SwiftSrc2Cpg extends X2CpgFrontend {
+  override type ConfigType = Config
+  override val defaultConfig = Config()
 
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
@@ -42,7 +44,7 @@ class SwiftSrc2Cpg extends X2CpgFrontend[Config] {
   }
 
   // This method is intended for internal use only and may be removed at any time.
-  def createCpgWithAllOverlays(config: Config): Try[Cpg] = {
+  def createCpgWithAllOverlays(config: ConfigType): Try[Cpg] = {
     val maybeCpg = createCpgWithOverlays(config)
     maybeCpg.map { cpg =>
       new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))

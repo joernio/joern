@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg
 
 import io.joern.rubysrc2cpg.Frontend.*
-import io.joern.x2cpg.astgen.AstGenConfig
+import io.joern.x2cpg.X2CpgConfig.SharedConfig
 import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery, XTypeRecoveryConfig}
 import io.joern.x2cpg.typestub.TypeStubConfig
 import io.joern.x2cpg.utils.server.FrontendHTTPServer
@@ -10,28 +10,32 @@ import scopt.OParser
 
 import java.nio.file.Paths
 
-final case class Config(downloadDependencies: Boolean = false, useTypeStubs: Boolean = true)
-    extends X2CpgConfig[Config]
-    with DependencyDownloadConfig[Config]
-    with TypeRecoveryParserConfig[Config]
-    with TypeStubConfig[Config]
-    with AstGenConfig[Config] {
-
-  override val astGenProgramName: String        = "ruby_ast_gen"
-  override val astGenConfigPrefix: String       = "rubysrc2cpg"
-  override val multiArchitectureBuilds: Boolean = true
-
-  this.defaultIgnoredFilesRegex = List("spec", "tests?", "vendor", "db(\\\\|/)([\\w_]*)migrate([_\\w]*)").flatMap {
-    directory =>
+final case class Config(
+  downloadDependencies: Boolean = false,
+  useTypeStubs: Boolean = true,
+  override val sharedConfig: SharedConfig = SharedConfig(defaultIgnoredFilesRegex =
+    List("spec", "tests?", "vendor", "db(\\\\|/)([\\w_]*)migrate([_\\w]*)").flatMap { directory =>
       List(s"(^|\\\\)$directory($$|\\\\)".r.unanchored, s"(^|/)$directory($$|/)".r.unanchored)
-  }
+    }
+  ),
+  override val sharedTypeRecoveryConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config()
+) extends X2CpgConfig[Config]
+    with DependencyDownloadConfig
+    with TypeRecoveryParserConfig
+    with TypeStubConfig {
+
+  override def withSharedConfig(newSharedConfig: X2CpgConfig.SharedConfig): Config =
+    copy(sharedConfig = newSharedConfig)
+
+  override def withSharedTypeRecoveryConfig(newSharedConfig: TypeRecoveryParserConfig.Config): Config =
+    copy(sharedTypeRecoveryConfig = newSharedConfig)
 
   override def withDownloadDependencies(value: Boolean): Config = {
-    copy(downloadDependencies = value).withInheritedFields(this)
+    copy(downloadDependencies = value)
   }
 
   override def withTypeStubs(value: Boolean): Config = {
-    copy(useTypeStubs = value).withInheritedFields(this)
+    copy(useTypeStubs = value)
   }
 }
 
@@ -54,12 +58,10 @@ private object Frontend {
   }
 }
 
-object Main extends X2CpgMain(cmdLineParser, new RubySrc2Cpg()) with FrontendHTTPServer[Config, RubySrc2Cpg] {
+object Main extends X2CpgMain(new RubySrc2Cpg(), cmdLineParser) with FrontendHTTPServer {
 
-  override protected def newDefaultConfig(): Config = Config()
-
-  def run(config: Config, rubySrc2Cpg: RubySrc2Cpg): Unit = {
+  def run(config: frontend.ConfigType): Unit = {
     if (config.serverMode) { startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout) }
-    else { rubySrc2Cpg.run(config) }
+    else { frontend.run(config) }
   }
 }

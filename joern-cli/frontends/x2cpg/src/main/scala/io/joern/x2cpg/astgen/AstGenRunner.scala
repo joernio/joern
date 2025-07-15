@@ -1,6 +1,7 @@
 package io.joern.x2cpg.astgen
 
 import com.typesafe.config.ConfigFactory
+import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, logger}
 import io.joern.x2cpg.utils.Environment.ArchitectureType.ArchitectureType
 import io.joern.x2cpg.utils.Environment.OperatingSystemType.OperatingSystemType
 import io.joern.x2cpg.utils.Environment
@@ -15,7 +16,7 @@ import scala.util.{Failure, Success, Try}
 
 object AstGenRunner {
 
-  private val logger = LoggerFactory.getLogger(getClass)
+  private val logger = LoggerFactory.getLogger(classOf[AstGenRunner])
 
   trait AstGenRunnerResult {
     def parsedFiles: List[String]
@@ -36,44 +37,20 @@ object AstGenRunner {
     *   the prefix of the executable's respective configuration path.
     * @param multiArchitectureBuilds
     *   whether there is a binary for specific architectures or not.
-    * @param packagePath
-    *   the code path for the frontend.
+    *
+    * This class must be abstract, because it determines the path of the ast gen binary from the class path location of
+    * its derived class.
     */
-  case class AstGenProgramMetaData(
-    name: String,
-    configPrefix: String,
-    multiArchitectureBuilds: Boolean,
-    packagePath: URL
-  )
-
-  def executableDir(implicit metaData: AstGenProgramMetaData): String =
-    ExternalCommand
-      .executableDir(Paths.get(metaData.packagePath.toURI))
-      .resolve("astgen")
-      .toString
-
-  def hasCompatibleAstGenVersion(compatibleVersion: String)(implicit metaData: AstGenProgramMetaData): Boolean = {
-    ExternalCommand.run(Seq(metaData.name, "-version")).successOption.map(_.mkString.strip()) match {
-      case Some(installedVersion)
-          if installedVersion != "unknown" &&
-            Try(VersionHelper.compare(installedVersion, compatibleVersion)).toOption.getOrElse(-1) >= 0 =>
-        logger.debug(s"Using local ${metaData.name} v$installedVersion from systems PATH")
-        true
-      case Some(installedVersion) =>
-        logger.debug(
-          s"Found local ${metaData.name} v$installedVersion in systems PATH but ${metaData.name} requires at least v$compatibleVersion"
-        )
-        false
-      case _ =>
-        false
-    }
+  abstract class AstGenProgramMetaData(
+    val name: String,
+    val configPrefix: String,
+    val multiArchitectureBuilds: Boolean = false
+  ) {
+    val packagePath: URL = getClass.getProtectionDomain.getCodeSource.getLocation
   }
-
 }
 
-trait AstGenRunnerBase(config: X2CpgConfig[?] & AstGenConfig[?]) {
-
-  private val logger = LoggerFactory.getLogger(getClass)
+abstract class AstGenRunner(metaData: AstGenProgramMetaData, config: X2CpgConfig[?]) {
 
   import io.joern.x2cpg.astgen.AstGenRunner.*
 
@@ -100,7 +77,7 @@ trait AstGenRunnerBase(config: X2CpgConfig[?] & AstGenConfig[?]) {
     * operating systems, and two architectures. Some binaries are multiplatform, in which case the suffix for x86 is
     * used for both architectures.
     */
-  protected def executableName(implicit metaData: AstGenProgramMetaData): String = {
+  protected def executableName: String = {
     if (!SupportedBinaries.contains(Environment.operatingSystem -> Environment.architecture)) {
       throw new UnsupportedOperationException(s"No compatible binary of ${metaData.name} for your operating system!")
     } else {
@@ -115,9 +92,7 @@ trait AstGenRunnerBase(config: X2CpgConfig[?] & AstGenConfig[?]) {
     }
   }
 
-  protected def executableName(x86Suffix: String, armSuffix: String)(implicit
-    metaData: AstGenProgramMetaData
-  ): String = {
+  protected def executableName(x86Suffix: String, armSuffix: String): String = {
     if (metaData.multiArchitectureBuilds) {
       s"${metaData.name}-$x86Suffix"
     } else {
@@ -153,11 +128,9 @@ trait AstGenRunnerBase(config: X2CpgConfig[?] & AstGenConfig[?]) {
 
   protected def skippedFiles(in: Path, astGenOut: List[String]): List[String]
 
-  protected def runAstGenNative(in: String, out: Path, exclude: String, include: String)(implicit
-    metaData: AstGenProgramMetaData
-  ): Try[Seq[String]]
+  protected def runAstGenNative(in: String, out: Path, exclude: String, include: String): Try[Seq[String]]
 
-  protected def astGenCommand(implicit metaData: AstGenProgramMetaData): String = {
+  protected def astGenCommand: String = {
     val conf          = ConfigFactory.load
     val astGenVersion = conf.getString(s"${metaData.configPrefix}.${metaData.name}_version")
     if (hasCompatibleAstGenVersion(astGenVersion)) {
@@ -168,8 +141,7 @@ trait AstGenRunnerBase(config: X2CpgConfig[?] & AstGenConfig[?]) {
   }
 
   def execute(out: Path): AstGenRunnerResult = {
-    implicit val metaData: AstGenProgramMetaData = config.astGenMetaData
-    val in                                       = Paths.get(config.inputPath)
+    val in = Paths.get(config.inputPath)
     logger.info(s"Running ${metaData.name} on '${config.inputPath}'")
     runAstGenNative(config.inputPath, out, config.ignoredFilesRegex.toString(), "") match {
       case Success(result) =>
@@ -187,4 +159,28 @@ trait AstGenRunnerBase(config: X2CpgConfig[?] & AstGenConfig[?]) {
         DefaultAstGenRunnerResult()
     }
   }
+
+  def executableDir: String =
+    ExternalCommand
+      .executableDir(Paths.get(metaData.packagePath.toURI))
+      .resolve("astgen")
+      .toString
+
+  def hasCompatibleAstGenVersion(compatibleVersion: String): Boolean = {
+    ExternalCommand.run(Seq(metaData.name, "-version")).successOption.map(_.mkString.strip()) match {
+      case Some(installedVersion)
+          if installedVersion != "unknown" &&
+            Try(VersionHelper.compare(installedVersion, compatibleVersion)).toOption.getOrElse(-1) >= 0 =>
+        logger.debug(s"Using local ${metaData.name} v$installedVersion from systems PATH")
+        true
+      case Some(installedVersion) =>
+        logger.debug(
+          s"Found local ${metaData.name} v$installedVersion in systems PATH but ${metaData.name} requires at least v$compatibleVersion"
+        )
+        false
+      case _ =>
+        false
+    }
+  }
+
 }

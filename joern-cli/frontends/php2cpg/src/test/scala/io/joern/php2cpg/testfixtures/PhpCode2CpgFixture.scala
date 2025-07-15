@@ -12,11 +12,13 @@ import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 import java.io.File
 
 trait PhpFrontend extends LanguageFrontend {
+  override type ConfigType = Config
+
   override val fileSuffix: String = ".php"
 
   override def execute(sourceCodeFile: File): Cpg = {
-    implicit val defaultConfig: Config = getConfig().map(_.asInstanceOf[Config]).getOrElse(Config())
-    new Php2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get
+    val defaultConfig: Config = getConfig().getOrElse(Config())
+    new Php2Cpg().createCpg(defaultConfig.withInputPath(sourceCodeFile.getAbsolutePath)).get
   }
 }
 

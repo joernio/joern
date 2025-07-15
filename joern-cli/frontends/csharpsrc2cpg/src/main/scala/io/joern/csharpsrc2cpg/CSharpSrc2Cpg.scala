@@ -31,9 +31,11 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success, Try}
 
-class CSharpSrc2Cpg extends X2CpgFrontend[Config] {
+class CSharpSrc2Cpg extends X2CpgFrontend {
+  override type ConfigType = Config
+  override val defaultConfig: Config = Config()
 
-  private val logger         = LoggerFactory.getLogger(getClass)
+  private val logger         = LoggerFactory.getLogger(classOf[CSharpSrc2Cpg])
   private val report: Report = new Report()
 
   override def createCpg(config: Config): Try[Cpg] = {

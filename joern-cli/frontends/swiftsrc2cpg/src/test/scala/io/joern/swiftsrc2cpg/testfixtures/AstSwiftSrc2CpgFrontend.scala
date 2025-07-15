@@ -13,6 +13,8 @@ import io.shiftleft.semanticcpg.utils.FileUtil
 import java.nio.file.Paths
 
 trait AstSwiftSrc2CpgFrontend extends LanguageFrontend {
+  override type ConfigType = Config
+
   def execute(sourceCodePath: java.io.File): Cpg = {
     val cpgOutFile = FileUtil.newTemporaryFile(suffix = "cpg.bin")
     FileUtil.deleteOnExit(cpgOutFile)
@@ -21,6 +23,7 @@ trait AstSwiftSrc2CpgFrontend extends LanguageFrontend {
     var config = Config()
       .withInputPath(pathAsString)
       .withOutputPath(pathAsString)
+      .asInstanceOf[Config]
     val definedConfig = getConfig().collect { case c: Config => config.withDefines(c.defines) }
     if (definedConfig.isDefined) {
       config = definedConfig.get

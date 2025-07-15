@@ -10,19 +10,18 @@ import java.nio.file.Paths
   */
 case class XTypeStubsParserConfig(typeStubsFilePath: Option[String] = None)
 
-trait TypeStubsParserConfig[R <: X2CpgConfig[R]] { this: R =>
+trait TypeStubsParserConfig { this: X2CpgConfig[?] =>
 
-  var typeStubsFilePath: Option[String] = None
-
-  def withTypeStubsFilePath(typeStubsFilePath: String): R = {
-    this.typeStubsFilePath = Some(Paths.get(typeStubsFilePath).toAbsolutePath.normalize().toString)
-    this.asInstanceOf[R]
+  def typeStubsFilePath: Option[String]
+  final def withTypeStubsFilePath(typeStubsFilePath: String): OwnType = {
+    internalWithTypeStubsFilePath(Paths.get(typeStubsFilePath).toAbsolutePath.normalize().toString)
   }
+  protected def internalWithTypeStubsFilePath(typeStubsFilePath: String): OwnType
 }
 
 object XTypeStubsParser {
 
-  def parserOptions[R <: X2CpgConfig[R] & TypeStubsParserConfig[R]]: OParser[?, R] = {
+  def parserOptions[R <: X2CpgConfig[R] & TypeStubsParserConfig]: OParser[?, R] = {
     _parserOptions[R](configureTypeStubsFilePath = (path, c) => c.withTypeStubsFilePath(path))
   }
 

@@ -17,46 +17,51 @@ final case class Config(
   includePathsAutoDiscovery: Boolean = false,
   skipFunctionBodies: Boolean = false,
   withPreprocessedFiles: Boolean = false,
-  compilationDatabaseFilename: Option[String] = None
+  compilationDatabaseFilename: Option[String] = None,
+  override val sharedConfig: X2CpgConfig.SharedConfig = X2CpgConfig.SharedConfig()
 ) extends X2CpgConfig[Config] {
+
+  override def withSharedConfig(newSharedConfig: X2CpgConfig.SharedConfig): Config =
+    copy(sharedConfig = newSharedConfig)
+
   def withIncludePaths(includePaths: Set[String]): Config = {
-    this.copy(includePaths = includePaths).withInheritedFields(this)
+    this.copy(includePaths = includePaths)
   }
 
   def withDefines(defines: Set[String]): Config = {
-    this.copy(defines = defines).withInheritedFields(this)
+    this.copy(defines = defines)
   }
 
   def withIncludeComments(value: Boolean): Config = {
-    this.copy(includeComments = value).withInheritedFields(this)
+    this.copy(includeComments = value)
   }
 
   def withLogProblems(value: Boolean): Config = {
-    this.copy(logProblems = value).withInheritedFields(this)
+    this.copy(logProblems = value)
   }
 
   def withLogPreprocessor(value: Boolean): Config = {
-    this.copy(logPreprocessor = value).withInheritedFields(this)
+    this.copy(logPreprocessor = value)
   }
 
   def withPrintIfDefsOnly(value: Boolean): Config = {
-    this.copy(printIfDefsOnly = value).withInheritedFields(this)
+    this.copy(printIfDefsOnly = value)
   }
 
   def withIncludePathsAutoDiscovery(value: Boolean): Config = {
-    this.copy(includePathsAutoDiscovery = value).withInheritedFields(this)
+    this.copy(includePathsAutoDiscovery = value)
   }
 
   def withSkipFunctionBodies(value: Boolean): Config = {
-    this.copy(skipFunctionBodies = value).withInheritedFields(this)
+    this.copy(skipFunctionBodies = value)
   }
 
   def withPreprocessedFiles(value: Boolean): Config = {
-    this.copy(withPreprocessedFiles = value).withInheritedFields(this)
+    this.copy(withPreprocessedFiles = value)
   }
 
   def withCompilationDatabase(value: String): Config = {
-    this.copy(compilationDatabaseFilename = Option(value)).withInheritedFields(this)
+    this.copy(compilationDatabaseFilename = Option(value))
   }
 }
 
@@ -116,16 +121,14 @@ private object Frontend {
 
 }
 
-object Main extends X2CpgMain(cmdLineParser, new C2Cpg()) with FrontendHTTPServer[Config, C2Cpg] {
+object Main extends X2CpgMain(new C2Cpg(): C2Cpg, cmdLineParser) with FrontendHTTPServer {
 
-  override def run(config: Config, c2cpg: C2Cpg): Unit = {
+  override def run(config: frontend.ConfigType): Unit = {
     config match {
-      case c if c.serverMode      => startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout)
-      case c if c.printIfDefsOnly => c2cpg.printIfDefsOnly(config)
-      case _                      => c2cpg.run(config)
+      case c if c.serverMode              => startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout)
+      case c: Config if c.printIfDefsOnly => frontend.asInstanceOf[C2Cpg].printIfDefsOnly(c)
+      case _                              => frontend.run(config)
     }
   }
-
-  override protected def newDefaultConfig(): Config = Config()
 
 }

@@ -1,12 +1,15 @@
 package io.joern.ghidra2cpg
 
 import io.joern.ghidra2cpg.Frontend.*
+import io.joern.x2cpg.X2CpgConfig.SharedConfig
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import scopt.OParser
 
 /** Command line configuration parameters
   */
-final case class Config() extends X2CpgConfig[Config]
+final case class Config(override val sharedConfig: SharedConfig = SharedConfig()) extends X2CpgConfig[Config] {
+  override def withSharedConfig(newSharedConfig: SharedConfig): Config = copy(sharedConfig = newSharedConfig)
+}
 
 private object Frontend {
 
@@ -19,8 +22,8 @@ private object Frontend {
   }
 }
 
-object Main extends X2CpgMain(cmdLineParser, new Ghidra2Cpg()) {
-  def run(config: Config, ghidra2Cpg: Ghidra2Cpg): Unit = {
-    ghidra2Cpg.run(config)
+object Main extends X2CpgMain(new Ghidra2Cpg(), cmdLineParser.asInstanceOf) {
+  def run(config: frontend.ConfigType): Unit = {
+    frontend.run(config)
   }
 }

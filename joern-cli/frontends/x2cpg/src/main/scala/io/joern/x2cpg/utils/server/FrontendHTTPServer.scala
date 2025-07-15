@@ -43,23 +43,13 @@ object FrontendHTTPServer {
   * @tparam X
   *   The type parameter representing the X2Cpg frontend.
   */
-trait FrontendHTTPServer[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]] { this: X2CpgMain[T, X] =>
+trait FrontendHTTPServer { this: X2CpgMain =>
 
   /** Logger instance for logging server-related information. */
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   /** Optionally holds the underlying HTTP server instance. */
   private var underlyingServer: Option[HTTPServer] = None
-
-  /** Creates a new default configuration for the inheriting `X2CpgFrontend`.
-    *
-    * This method should be overridden by implementations to provide the default configuration object needed for the
-    * `X2CpgFrontend` operation.
-    *
-    * @return
-    *   A new instance of the configuration `T`.
-    */
-  protected def newDefaultConfig(): T
 
   /** ExecutorService used to execute HTTP requests.
     *
@@ -112,8 +102,8 @@ trait FrontendHTTPServer[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]] { this: X2C
         logger.debug("Got POST with arguments: " + arguments.mkString(" "))
 
         val config = X2Cpg
-          .parseCommandLine(arguments.toArray, cmdLineParser, newDefaultConfig())
-          .getOrElse(newDefaultConfig())
+          .parseCommandLine(arguments.toArray, cmdLineParser, frontend.defaultConfig)
+          .getOrElse(frontend.defaultConfig)
         Try(frontend.run(config)) match {
           case Failure(exception) =>
             resp.send(400, exception.getMessage)

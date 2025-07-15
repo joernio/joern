@@ -35,14 +35,15 @@ class ConfigTests extends AnyWordSpec with Matchers with Inside {
       s.takeRight(n)
     }
 
-    inside(X2Cpg.parseCommandLine(args, parser, Py2CpgOnFileSystemConfig())) { case Some(config) =>
-      config.inputPath.endsWith("INPUT") shouldBe true
-      config.outputPath shouldBe "OUTPUT"
-      config.ignoredFiles.map(getSuffix(_, 13)).toSet shouldBe Set("1EXCLUDE_FILE", "2EXCLUDE_FILE")
-      config.ignoredFilesRegex.toString shouldBe "EXCLUDE_REGEX"
-      config.venvDir.exists(_.endsWith("VENV_DIR")) shouldBe true
-      config.ignoreVenvDir shouldBe false
-      config.disableDummyTypes shouldBe true
+    inside(X2Cpg.parseCommandLine(args, parser, NewMain.frontend.defaultConfig)) {
+      case Some(config: Py2CpgOnFileSystemConfig) =>
+        config.inputPath.endsWith("INPUT") shouldBe true
+        config.outputPath shouldBe "OUTPUT"
+        config.ignoredFiles.map(getSuffix(_, 13)).toSet shouldBe Set("1EXCLUDE_FILE", "2EXCLUDE_FILE")
+        config.ignoredFilesRegex.toString shouldBe "EXCLUDE_REGEX"
+        config.venvDir.exists(_.endsWith("VENV_DIR")) shouldBe true
+        config.ignoreVenvDir shouldBe false
+        config.disableDummyTypes shouldBe true
     }
   }
 }

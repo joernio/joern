@@ -16,36 +16,49 @@ case class Py2CpgOnFileSystemConfig(
   ignoreVenvDir: Boolean = true,
   ignorePaths: Seq[Path] = Nil,
   ignoreDirNames: Seq[String] = Nil,
-  requirementsTxt: String = "requirements.txt"
+  requirementsTxt: String = "requirements.txt",
+  override val sharedConfig: X2CpgConfig.SharedConfig = X2CpgConfig.SharedConfig(),
+  override val sharedTypeRecoveryConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config()
 ) extends X2CpgConfig[Py2CpgOnFileSystemConfig]
-    with TypeRecoveryParserConfig[Py2CpgOnFileSystemConfig] {
+    with TypeRecoveryParserConfig {
+
+  override def withSharedConfig(newSharedConfig: X2CpgConfig.SharedConfig): Py2CpgOnFileSystemConfig =
+    copy(sharedConfig = newSharedConfig)
+
+  override def withSharedTypeRecoveryConfig(
+    newSharedConfig: TypeRecoveryParserConfig.Config
+  ): Py2CpgOnFileSystemConfig = copy(sharedTypeRecoveryConfig = newSharedConfig)
+
   def withVenvDir(venvDir: Path): Py2CpgOnFileSystemConfig = {
-    copy(venvDir = Option(venvDir)).withInheritedFields(this)
+    copy(venvDir = Option(venvDir))
   }
 
   def withVenvDirs(venvDirs: Seq[Path]): Py2CpgOnFileSystemConfig = {
-    copy(venvDirs = venvDirs).withInheritedFields(this)
+    copy(venvDirs = venvDirs)
   }
 
   def withIgnoreVenvDir(value: Boolean): Py2CpgOnFileSystemConfig = {
-    copy(ignoreVenvDir = value).withInheritedFields(this)
+    copy(ignoreVenvDir = value)
   }
 
   def withIgnorePaths(value: Seq[Path]): Py2CpgOnFileSystemConfig = {
-    copy(ignorePaths = value).withInheritedFields(this)
+    copy(ignorePaths = value)
   }
 
   def withIgnoreDirNames(value: Seq[String]): Py2CpgOnFileSystemConfig = {
-    copy(ignoreDirNames = value).withInheritedFields(this)
+    copy(ignoreDirNames = value)
   }
 
   def withRequirementsTxt(text: String): Py2CpgOnFileSystemConfig = {
-    copy(requirementsTxt = text).withInheritedFields(this)
+    copy(requirementsTxt = text)
   }
 }
 
-class Py2CpgOnFileSystem extends X2CpgFrontend[Py2CpgOnFileSystemConfig] {
-  private val logger = LoggerFactory.getLogger(getClass)
+class Py2CpgOnFileSystem extends X2CpgFrontend {
+  override type ConfigType = Py2CpgOnFileSystemConfig
+  override val defaultConfig: Py2CpgOnFileSystemConfig = Py2CpgOnFileSystemConfig()
+
+  private val logger = LoggerFactory.getLogger(classOf[Py2CpgOnFileSystem])
 
   /** Entry point for files system based cpg generation from python code.
     * @param config
