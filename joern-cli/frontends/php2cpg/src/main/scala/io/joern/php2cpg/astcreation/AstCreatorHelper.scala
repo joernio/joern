@@ -175,9 +175,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     name: String,
     innerMethodsIterator: Iterator[MethodScope],
     surroundingMethods: List[MethodScope]
-  ): NewLocal = {
-    val localNodes = mutable.ArrayBuffer[NewLocal]()
-
+  ): Unit = {
     surroundingMethods.foreach { currentMethod =>
       val innerMethodScope = innerMethodsIterator.next()
       val innerMethodNode  = innerMethodScope.methodNode
@@ -215,19 +213,18 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
 
           diffGraph.addNode(closureBindingNode)
           diffGraph.addEdge(methodRef, closureBindingNode, EdgeTypes.CAPTURE)
-          localNodes.addOne(closureLocal)
         case None =>
           logger.warn(s"No methodRef found for capturing global variable in method ${innerMethodNode.fullName}")
       }
     }
-
-    localNodes.reverse.head
   }
 
-  private def createClosureBindingsForArrowClosure(expr: PhpNode, name: String): NewLocal = {
+  private def createClosureBindingsForArrowClosure(expr: PhpNode, name: String): NewNode = {
     val surroundingIter    = scope.getSurroundingMethodsForArrowClosure.drop(1).iterator
     val surroundingMethods = scope.getSurroundingMethodsForArrowClosure.dropRight(1)
+    val localNodes         = mutable.ArrayBuffer[NewLocal]()
     createClosureCaptureForNode(expr, name, surroundingIter, surroundingMethods)
+    scope.lookupVariable(name).get
   }
 
   protected def createClosureBinding(closureBindingId: String): NewClosureBinding =
