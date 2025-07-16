@@ -16,7 +16,9 @@ class ActorTests extends AstSwiftSrc2CpgSuite {
       val List(myActor1) = cpg.typeDecl.nameExact("MyActor1").l
       myActor1.fullName shouldBe "Test0.swift:<global>.MyActor1"
       myActor1.member shouldBe empty
-      myActor1.boundMethod.fullName.l shouldBe List("Test0.swift:<global>.MyActor1.<init>")
+      myActor1.boundMethod.fullName.l shouldBe List(
+        "Test0.swift:<global>.MyActor1.<init>:Test0.swift:<global>.MyActor1()"
+      )
     }
 
     "testActor2" in {

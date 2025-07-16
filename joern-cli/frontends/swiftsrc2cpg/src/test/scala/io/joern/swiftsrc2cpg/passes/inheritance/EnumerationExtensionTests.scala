@@ -76,7 +76,7 @@ class EnumerationExtensionTests extends SwiftSrc2CpgSuite {
     typeDeclB.inheritsFromTypeFullName.l shouldBe empty
     typeDeclB.modifier.modifierType.l shouldBe List(ModifierTypes.PRIVATE)
     val List(bConstructor) = typeDeclB.method.isConstructor.l
-    bConstructor.fullName shouldBe s"Test0.swift:<global>.B.${io.joern.x2cpg.Defines.ConstructorMethodName}"
+    bConstructor.fullName shouldBe s"Test0.swift:<global>.B.${io.joern.x2cpg.Defines.ConstructorMethodName}:Test0.swift:<global>.B()"
     bConstructor.block.astChildren.code.l shouldBe List("var b = 0.0")
 
     val List(typeDeclFoo) = cpg.typeDecl.nameExact("Foo").l
@@ -122,7 +122,7 @@ class EnumerationExtensionTests extends SwiftSrc2CpgSuite {
     typeDeclFooExtension.modifier.modifierType.l shouldBe List(ModifierTypes.PRIVATE)
 
     val List(fooExtensionConstructor) = typeDeclFooExtension.method.isConstructor.l
-    fooExtensionConstructor.fullName shouldBe s"Test0.swift:<global>.Foo<extension>.${io.joern.x2cpg.Defines.ConstructorMethodName}"
+    fooExtensionConstructor.fullName shouldBe s"Test0.swift:<global>.Foo<extension>.${io.joern.x2cpg.Defines.ConstructorMethodName}:Test0.swift:<global>.Foo<extension>()"
     fooExtensionConstructor.block.astChildren.assignment.code.l.sorted shouldBe List("var h = 0.0")
 
     val List(fooExtensionStaticInit) =
