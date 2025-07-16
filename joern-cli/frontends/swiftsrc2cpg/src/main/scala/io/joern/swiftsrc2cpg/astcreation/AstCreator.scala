@@ -3,25 +3,14 @@ package io.joern.swiftsrc2cpg.astcreation
 import io.joern.swiftsrc2cpg.Config
 import io.joern.swiftsrc2cpg.parser.SwiftJsonParser.ParseResult
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
-import io.joern.x2cpg.Ast
-import io.joern.x2cpg.AstCreatorBase
-import io.joern.x2cpg.ValidationMode
-import io.joern.x2cpg.datastructures.Global
+import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.datastructures.VariableScopeManager
+import io.joern.x2cpg.datastructures.{Global, VariableScopeManager}
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.NodeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
-import io.shiftleft.codepropertygraph.generated.nodes.NewFile
-import io.shiftleft.codepropertygraph.generated.nodes.NewNode
-import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
-import io.shiftleft.codepropertygraph.generated.nodes.NewTypeRef
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.shiftleft.codepropertygraph.generated.PropertyDefaults
-import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, ModifierTypes, NodeTypes, PropertyDefaults}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewFile, NewNode, NewTypeDecl}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
 
@@ -44,7 +33,6 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
   protected val scope = new VariableScopeManager()
 
   protected val methodAstParentStack     = new Stack[NewNode]()
-  protected val typeRefIdStack           = new Stack[NewTypeRef]
   protected val dynamicInstanceTypeStack = new Stack[String]
   protected val localAstParentStack      = new Stack[NewBlock]()
   protected val scopeLocalUniqueNames    = mutable.HashMap.empty[String, Int]

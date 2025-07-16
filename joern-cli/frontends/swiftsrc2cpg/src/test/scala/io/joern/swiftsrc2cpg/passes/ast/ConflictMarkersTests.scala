@@ -24,9 +24,9 @@ class ConflictMarkersTests extends AstSwiftSrc2CpgSuite {
         |func <<<<<<< (x : String, y : String) {}
         |""".stripMargin)
       val List(f1, f2) = cpg.method.nameExact("<<<<<<<").l
-      f1.fullName shouldBe "Test0.swift:<global>:<<<<<<<:ANY(String)"
+      f1.fullName shouldBe "Test0.swift:<global>.<<<<<<<:ANY(String)"
       f1.signature shouldBe "ANY(String)"
-      f2.fullName shouldBe "Test0.swift:<global>:<<<<<<<:ANY(String,String)"
+      f2.fullName shouldBe "Test0.swift:<global>.<<<<<<<:ANY(String,String)"
       f2.signature shouldBe "ANY(String,String)"
       val List(x1) = f1.parameter.l
       x1.name shouldBe "x"
@@ -44,9 +44,9 @@ class ConflictMarkersTests extends AstSwiftSrc2CpgSuite {
         |func >>>>>>> (x : String, y : String) {}
         |""".stripMargin)
       val List(f1, f2) = cpg.method.nameExact(">>>>>>>").l
-      f1.fullName shouldBe "Test0.swift:<global>:>>>>>>>:ANY(String)"
+      f1.fullName shouldBe "Test0.swift:<global>.>>>>>>>:ANY(String)"
       f1.signature shouldBe "ANY(String)"
-      f2.fullName shouldBe "Test0.swift:<global>:>>>>>>>:ANY(String,String)"
+      f2.fullName shouldBe "Test0.swift:<global>.>>>>>>>:ANY(String,String)"
       f2.signature shouldBe "ANY(String,String)"
       val List(x1) = f1.parameter.l
       x1.name shouldBe "x"

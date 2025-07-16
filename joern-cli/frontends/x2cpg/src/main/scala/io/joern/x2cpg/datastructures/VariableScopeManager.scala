@@ -1,15 +1,8 @@
 package io.joern.x2cpg.datastructures
 
-import io.joern.x2cpg.AstNodeBuilder.closureBindingNode
-import io.joern.x2cpg.AstNodeBuilder.localNodeWithExplicitPositionInfo
-import io.shiftleft.codepropertygraph.generated.nodes.NewNode
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
-import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
-import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
-import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
-import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
-import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.joern.x2cpg.AstNodeBuilder.{closureBindingNode, localNodeWithExplicitPositionInfo}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, EdgeTypes, EvaluationStrategies}
 
 import scala.collection.mutable
 
@@ -138,6 +131,15 @@ class VariableScopeManager {
     */
   def computeScopePath: String = {
     getAllEnclosingMethodScopeElements(stack).reverse.map(_.methodName).mkString(":")
+  }
+
+  /** Checks if the current scope is within a proper method scope, excluding type declarations.
+    *
+    * @return
+    *   True if the current scope is within a method scope that is not a type declaration, false otherwise.
+    */
+  def isInMethodScope: Boolean = {
+    getEnclosingMethodScopeElement(stack).exists(!_.scopeNode.isInstanceOf[NewTypeDecl])
   }
 
   /** Looks up a variable by its identifier in the current scope stack.

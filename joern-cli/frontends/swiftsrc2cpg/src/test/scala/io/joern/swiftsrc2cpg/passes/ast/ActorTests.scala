@@ -14,9 +14,9 @@ class ActorTests extends AstSwiftSrc2CpgSuite {
     "testActor1" in {
       val cpg            = code("actor MyActor1 {}")
       val List(myActor1) = cpg.typeDecl.nameExact("MyActor1").l
-      myActor1.fullName shouldBe "Test0.swift:<global>:MyActor1"
+      myActor1.fullName shouldBe "Test0.swift:<global>.MyActor1"
       myActor1.member shouldBe empty
-      myActor1.boundMethod.fullName.l shouldBe List("Test0.swift:<global>:MyActor1:<init>")
+      myActor1.boundMethod.fullName.l shouldBe List("Test0.swift:<global>.MyActor1.<init>")
     }
 
     "testActor2" in {
@@ -26,15 +26,15 @@ class ActorTests extends AstSwiftSrc2CpgSuite {
         |  func hello() {}
         |}""".stripMargin)
       val List(myActor2) = cpg.typeDecl.nameExact("MyActor2").l
-      myActor2.fullName shouldBe "Test0.swift:<global>:MyActor2"
+      myActor2.fullName shouldBe "Test0.swift:<global>.MyActor2"
       myActor2.member.name.l shouldBe List("hello")
       val List(constructor) = myActor2.method.isConstructor.l
       constructor.name shouldBe "init"
-      constructor.fullName shouldBe "Test0.swift:<global>:MyActor2:init:Test0.swift:<global>:MyActor2()"
+      constructor.fullName shouldBe "Test0.swift:<global>.MyActor2.init:Test0.swift:<global>.MyActor2()"
       val List(init, hello) = myActor2.boundMethod.l
       init shouldBe constructor
       hello.name shouldBe "hello"
-      hello.fullName shouldBe "Test0.swift:<global>:MyActor2:hello:ANY()"
+      hello.fullName shouldBe "Test0.swift:<global>.MyActor2.hello:ANY()"
     }
   }
 

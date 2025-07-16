@@ -160,7 +160,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   protected def calcNameAndFullName(name: String): (String, String) = {
-    val fullNamePrefix = s"${parserResult.filename}:${scope.computeScopePath}:"
+    val fullNamePrefix = s"${parserResult.filename}:${scope.computeScopePath.replaceAll(":", ".")}."
     val fullName       = s"$fullNamePrefix$name"
     (name, fullName)
   }
