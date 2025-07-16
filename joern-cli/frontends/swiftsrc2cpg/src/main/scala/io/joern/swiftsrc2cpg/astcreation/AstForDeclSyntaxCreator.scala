@@ -336,8 +336,14 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       diffGraph.addEdge(typeDeclNode_, mod, EdgeTypes.AST)
     }
 
+    val typeRefNode_ = typeRefNode(node, code(node), typeFullName)
+    methodAstParentStack.find(_.isInstanceOf[NewBlock]).foreach { node =>
+      diffGraph.addEdge(methodAstParentStack.head, typeRefNode_, EdgeTypes.AST)
+    }
+
     methodAstParentStack.push(typeDeclNode_)
     dynamicInstanceTypeStack.push(typeFullName)
+    typeRefIdStack.push(typeRefNode_)
     scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode_, None)
 
     val allClassMembers = declMembers(node, withConstructor = false).toList
@@ -360,6 +366,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     methodAstParentStack.pop()
     dynamicInstanceTypeStack.pop()
+    typeRefIdStack.pop()
     scope.popScope()
 
     if (staticMemberInitCalls.nonEmpty) {
@@ -481,10 +488,14 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       diffGraph.addEdge(typeDeclNode_, mod, EdgeTypes.AST)
     }
 
-    diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
+    val typeRefNode_ = typeRefNode(node, code(node), typeFullName)
+    methodAstParentStack.find(_.isInstanceOf[NewBlock]).foreach { node =>
+      diffGraph.addEdge(methodAstParentStack.head, typeRefNode_, EdgeTypes.AST)
+    }
 
     methodAstParentStack.push(typeDeclNode_)
     dynamicInstanceTypeStack.push(typeFullName)
+    typeRefIdStack.push(typeRefNode_)
     scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode_, None)
 
     val allClassMembers = declMembers(node, withConstructor = false).toList
@@ -507,6 +518,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     methodAstParentStack.pop()
     dynamicInstanceTypeStack.pop()
+    typeRefIdStack.pop()
     scope.popScope()
 
     if (staticMemberInitCalls.nonEmpty) {
@@ -631,15 +643,17 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     registerType(returnType)
     val methodFullNameAndSignature = s"$methodFullName:$signature"
 
-    val shouldCreateFunctionReference = scope.isInMethodScope || isTrailingClosure
+    val shouldCreateFunctionReference = typeRefIdStack.nonEmpty || isTrailingClosure
     val methodRefNode_ = if (!shouldCreateFunctionReference) { None }
     else { Option(methodRefNode(node, methodName, methodFullNameAndSignature, methodFullNameAndSignature)) }
+    val capturingRefNode = if (shouldCreateFunctionReference) { methodRefNode_ }
+    else { typeRefIdStack.headOption }
 
     val codeString  = code(node)
     val methodNode_ = methodNode(node, methodName, codeString, methodFullNameAndSignature, Option(signature), filename)
     val block       = blockNode(node, PropertyDefaults.Code, Defines.Any)
     methodAstParentStack.push(methodNode_)
-    scope.pushNewMethodScope(methodFullName, methodName, block, methodRefNode_)
+    scope.pushNewMethodScope(methodFullName, methodName, block, capturingRefNode)
     localAstParentStack.push(block)
 
     val parameterAsts = node match {
@@ -896,8 +910,10 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val codeString  = code(node)
     val methodNode_ = methodNode(node, methodName, codeString, methodFullNameAndSignature, Option(signature), filename)
     val block       = blockNode(node, PropertyDefaults.Code, Defines.Any)
+
+    val capturingRefNode = Option.when(typeRefIdStack.nonEmpty)(typeRefIdStack.head)
     methodAstParentStack.push(methodNode_)
-    scope.pushNewMethodScope(methodFullName, methodName, block, None)
+    scope.pushNewMethodScope(methodFullName, methodName, block, capturingRefNode)
     localAstParentStack.push(block)
 
     val parameterAsts = if (parameters.isEmpty && accessorName == "set") {

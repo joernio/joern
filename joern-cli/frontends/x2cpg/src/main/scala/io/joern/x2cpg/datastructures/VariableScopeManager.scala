@@ -133,15 +133,6 @@ class VariableScopeManager {
     getAllEnclosingMethodScopeElements(stack).reverse.map(_.methodName).mkString(":")
   }
 
-  /** Checks if the current scope is within a proper method scope, excluding type declarations.
-    *
-    * @return
-    *   True if the current scope is within a method scope that is not a type declaration, false otherwise.
-    */
-  def isInMethodScope: Boolean = {
-    getEnclosingMethodScopeElement(stack).exists(!_.scopeNode.isInstanceOf[NewTypeDecl])
-  }
-
   /** Looks up a variable by its identifier in the current scope stack.
     *
     * @param identifier

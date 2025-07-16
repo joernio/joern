@@ -8,7 +8,7 @@ import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.datastructures.{Global, VariableScopeManager}
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, ModifierTypes, NodeTypes, PropertyDefaults}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewFile, NewNode, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewFile, NewNode, NewTypeDecl, NewTypeRef}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -33,6 +33,7 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
   protected val scope = new VariableScopeManager()
 
   protected val methodAstParentStack     = new Stack[NewNode]()
+  protected val typeRefIdStack           = new Stack[NewTypeRef]
   protected val dynamicInstanceTypeStack = new Stack[String]
   protected val localAstParentStack      = new Stack[NewBlock]()
   protected val scopeLocalUniqueNames    = mutable.HashMap.empty[String, Int]
