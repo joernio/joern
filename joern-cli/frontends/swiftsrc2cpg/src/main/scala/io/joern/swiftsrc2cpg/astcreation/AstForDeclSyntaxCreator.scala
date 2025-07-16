@@ -157,9 +157,6 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     methodAstParentStack.pop()
 
-    val functionTypeAndTypeDeclAst =
-      createFunctionTypeAndTypeDeclAst(node, methodNode_, constructorName, methodFullName)
-
     val mAst = if (methodBlockContent.isEmpty) {
       methodStubAst(methodNode_, Seq.empty, methodReturnNode_, modifiers)
     } else {
@@ -167,8 +164,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       methodAstWithAnnotations(methodNode_, Seq.empty, bodyAst, methodReturnNode_, modifiers)
     }
 
-    Ast.storeInDiffGraph(mAst, diffGraph)
-    Ast.storeInDiffGraph(functionTypeAndTypeDeclAst, diffGraph)
+    val typeDeclAst = createFunctionTypeAndTypeDecl(methodNode_)
+    Ast.storeInDiffGraph(mAst.merge(typeDeclAst), diffGraph)
     diffGraph.addEdge(typeDeclNode, methodNode_, EdgeTypes.AST)
   }
 
@@ -643,11 +640,10 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     registerType(returnType)
     val methodFullNameAndSignature = s"$methodFullName:$signature"
 
-    val shouldCreateFunctionReference = typeRefIdStack.nonEmpty || isTrailingClosure
+    val shouldCreateFunctionReference = typeRefIdStack.isEmpty || isTrailingClosure
     val methodRefNode_ = if (!shouldCreateFunctionReference) { None }
     else { Option(methodRefNode(node, methodName, methodFullNameAndSignature, methodFullNameAndSignature)) }
-    val capturingRefNode = if (shouldCreateFunctionReference) { methodRefNode_ }
-    else { typeRefIdStack.headOption }
+    val capturingRefNode = methodRefNode_.orElse(typeRefIdStack.headOption)
 
     val codeString  = code(node)
     val methodNode_ = methodNode(node, methodName, codeString, methodFullNameAndSignature, Option(signature), filename)
@@ -731,15 +727,13 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     methodRefNode_ match {
       case Some(ref) =>
-        val typeDeclAst = createFunctionTypeAndTypeDeclAst(node, methodNode_, methodName, methodFullNameAndSignature)
+        createFunctionTypeAndTypeDecl(node, methodNode_)
         Ast.storeInDiffGraph(astForMethod, diffGraph)
-        Ast.storeInDiffGraph(typeDeclAst, diffGraph)
         diffGraph.addEdge(methodAstParentStack.head, methodNode_, EdgeTypes.AST)
         Ast(ref)
       case None =>
-        val typeDeclAst = createFunctionTypeAndTypeDeclAst(node, methodNode_, methodName, methodFullNameAndSignature)
-        Ast.storeInDiffGraph(typeDeclAst, diffGraph)
-        astForMethod
+        val typeDeclAst = createFunctionTypeAndTypeDecl(methodNode_)
+        astForMethod.merge(typeDeclAst)
     }
   }
 
@@ -911,7 +905,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val methodNode_ = methodNode(node, methodName, codeString, methodFullNameAndSignature, Option(signature), filename)
     val block       = blockNode(node, PropertyDefaults.Code, Defines.Any)
 
-    val capturingRefNode = Option.when(typeRefIdStack.nonEmpty)(typeRefIdStack.head)
+    val capturingRefNode = typeRefIdStack.headOption
     methodAstParentStack.push(methodNode_)
     scope.pushNewMethodScope(methodFullName, methodName, block, capturingRefNode)
     localAstParentStack.push(block)
@@ -984,9 +978,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     localAstParentStack.pop()
     methodAstParentStack.pop()
 
-    val typeDeclAst = createFunctionTypeAndTypeDeclAst(node, methodNode_, methodName, methodFullNameAndSignature)
-    Ast.storeInDiffGraph(typeDeclAst, diffGraph)
-    Ast.storeInDiffGraph(astForMethod, diffGraph)
+    val typeDeclAst = createFunctionTypeAndTypeDecl(methodNode_)
+    Ast.storeInDiffGraph(astForMethod.merge(typeDeclAst), diffGraph)
     diffGraph.addEdge(methodAstParentStack.head, methodNode_, EdgeTypes.AST)
   }
 

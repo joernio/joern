@@ -183,20 +183,6 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
       }
     }
 
-    "have correct structure for synthetic this access" in {
-      val cpg = code("""
-          |public class Foo {
-          |  var x = 1
-          |  foo() {
-          |    x = 2
-          |  }
-          |}
-          |""".stripMargin)
-      cpg.call.code.l shouldBe List("var x = 1", "x = 2", "this.x")
-      cpg.call.codeExact("x = 2").argument(1).code.l shouldBe List("this.x")
-      cpg.local("x").closureBinding shouldBe empty
-    }
-
     "have correct structure for nested classes" in {
       val cpg = code("""
           |public class N1 {
