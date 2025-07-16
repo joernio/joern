@@ -35,7 +35,6 @@ class SwiftSrc2Cpg extends X2CpgFrontend[Config] {
         new MetaDataPass(cpg, hash, config.inputPath).createAndApply()
         new ConfigFileCreationPass(cpg).createAndApply()
         new DependenciesPass(cpg).createAndApply()
-        new ImportsPass(cpg).createAndApply()
 
         report.print()
       }

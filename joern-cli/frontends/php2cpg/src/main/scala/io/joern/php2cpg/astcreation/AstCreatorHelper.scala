@@ -3,7 +3,7 @@ package io.joern.php2cpg.astcreation
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
 import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*
-import io.joern.php2cpg.utils.PhpScopeElement
+import io.joern.php2cpg.utils.{BlockScope, MethodScope}
 import io.joern.php2cpg.passes.SymbolSummaryPass.PhpFunction
 import io.joern.x2cpg.Defines.UnresolvedNamespace
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
@@ -61,21 +61,13 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     identifierNode(originNode, name, s"$$$name", typeFullName)
   }
 
-  protected def composeMethodFullName(methodName: String, appendMetaTypeDeclExt: Boolean = false): String = {
+  protected def composeMethodFullName(methodName: String): String = {
     scope.resolveIdentifier(methodName) match {
       case Some(importedMethod)                                         => importedMethod.name
       case None if methodName == NamespaceTraversal.globalNamespaceName => globalNamespace.fullName
       case None =>
-        val name = scope.getSurroundingFullName
-        val className = if (appendMetaTypeDeclExt) {
-          Option.unless(name.isBlank)(s"$name$MetaTypeDeclExtension")
-        } else {
-          Option.unless(name.isBlank)(name)
-        }
-
-        val nameWithClass = List(className, Some(methodName)).flatten.mkString(MethodDelimiter)
-
-        prependNamespacePrefix(nameWithClass)
+        val nameWithClass = scope.createMethodNameWithSurroundingInformation(methodName)
+        scope.getDeduplicatedMethodName(nameWithClass)
     }
   }
 
@@ -155,9 +147,9 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
         }
 
         scope.addToScope(name, local) match {
-          case PhpScopeElement(node: NewBlock)   => diffGraph.addEdge(node, local, EdgeTypes.AST)
-          case x @ PhpScopeElement(_: NewMethod) => x.maybeBlock.foreach(diffGraph.addEdge(_, local, EdgeTypes.AST))
-          case _                                 => // do nothing
+          case BlockScope(block, _)           => diffGraph.addEdge(block, local, EdgeTypes.AST)
+          case MethodScope(_, block, _, _, _) => diffGraph.addEdge(block, local, EdgeTypes.AST)
+          case _                              => // do nothing
         }
 
         local
@@ -173,30 +165,6 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
 
   protected def astForIdentifierWithLocalRef(ident: NewIdentifier, refLocal: NewNode): Ast =
     Ast(ident).withRefEdge(ident, refLocal)
-
-  protected def createMethodRefsAst(stmt: PhpNode, stmts: List[PhpStmt]): Unit = {
-    stmts
-      .collect {
-        case x: PhpMethodDecl if x.name.name != ConstructorMethodName => x
-      }
-      .map { methodDecl =>
-        val methodName = composeMethodFullName(methodDecl.name.name)
-        val methodRef  = methodRefNode(stmt, methodName, methodName, Defines.Any)
-        scope.addMethodRef(methodRef)
-        Ast(methodRef)
-      }
-  }
-
-  protected def createConstructorMethodRef(
-    stmt: PhpNode,
-    constructorName: String,
-    fullNameOverride: Option[String] = None
-  ): Unit = {
-    val constructorMethodFullName = fullNameOverride.getOrElse(composeMethodFullName(constructorName))
-    val constructorMethodRef = methodRefNode(stmt, constructorMethodFullName, constructorMethodFullName, Defines.Any)
-    scope.addMethodRef(constructorMethodRef)
-    Ast(constructorMethodRef)
-  }
 
   protected def getArgsCode(call: PhpCallExpr, arguments: Seq[Ast]): String = {
     arguments

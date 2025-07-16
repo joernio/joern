@@ -81,7 +81,7 @@ class ClosureTests extends PhpCode2CpgFixture {
       val expectedName = s"foo.php:<global>.<lambda>0"
       closureMethod.name shouldBe expectedName
       closureMethod.fullName shouldBe expectedName
-      closureMethod.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
+      closureMethod.signature shouldBe ""
       closureMethod.code shouldBe s"function $expectedName($$value) use($$use1, &$$use2)"
       closureMethod.parameter.size shouldBe 1
 
@@ -153,7 +153,7 @@ class ClosureTests extends PhpCode2CpgFixture {
       val expectedName = "foo.php:<global>.<lambda>0"
       closureMethod.name shouldBe expectedName
       closureMethod.fullName shouldBe expectedName
-      closureMethod.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
+      closureMethod.signature shouldBe ""
       closureMethod.code shouldBe s"function $expectedName($$value)"
       closureMethod.parameter.size shouldBe 1
 
@@ -323,6 +323,126 @@ class ClosureTests extends PhpCode2CpgFixture {
           fooBarMethodRef.methodFullName shouldBe "foo.bar"
           fooBarMethodRef.astParent.astParent.asInstanceOf[Method].fullName shouldBe "foo"
         case xs => fail(s"Expected two methodRefs, got ${xs.methodFullName.mkString("[", ",", "]")}")
+      }
+    }
+  }
+
+  "Global variable in method constructor" should {
+    val cpg = code("""<?php
+        |$a = 10;
+        |class Foo {
+        |  function __construct() {
+        |     global $a;
+        |  }
+        |}
+        |""".stripMargin)
+
+    "local variable exists in construct" in {
+      val localNodeA = cpg.method.name("__construct").local.name("a").head
+      localNodeA.closureBindingId shouldBe Some("Test0.php:Foo.__construct:a")
+    }
+
+    "method ref of closure binding of construct" in {
+      val methodRefNode     = cpg.methodRefWithName("__construct").head
+      val closureBindingIds = methodRefNode._closureBindingViaCaptureOut.l.map(_.closureBindingId)
+
+      closureBindingIds shouldBe List(Some("Test0.php:Foo.__construct:a"))
+    }
+
+    "global variable" in {
+      val localNode = cpg.method.name("<global>").local.name("a").head
+      localNode.closureBindingId shouldBe None
+    }
+
+    "closure binding reference to global" in {
+      val localNode = cpg.method.name("<global>").local.name("a").head
+      localNode._closureBindingViaRefIn.next().closureBindingId shouldBe Some("Test0.php:Foo.__construct:a")
+    }
+
+    "have a methodRef for construct" in {
+      inside(cpg.all.collectAll[MethodRef].l) {
+        case constructorRef :: Nil =>
+          constructorRef.methodFullName shouldBe "Foo.__construct"
+          constructorRef.astParent.astParent.asInstanceOf[Method].fullName shouldBe "Test0.php:<global>"
+        case xs => fail(s"Expected one methodRef for constructor, got ${xs.methodFullName.mkString("[", ",", "]")}")
+      }
+    }
+  }
+
+  "conditional method definitions with global statements" should {
+    val cpg = code("""<?php
+                     |$a = 10;
+                     |$b = 20;
+                     |if (true) {
+                     |  function foo() {
+                     |    global $a;
+                     |    global $b;
+                     |  }
+                     |} else {
+                     |  function foo() {
+                     |    global $a;
+                     |    global $b;
+                     |  }
+                     |}
+                     |""".stripMargin)
+
+    "have no orphaned methodRef nodes" in {
+      cpg.methodRefWithName("foo.*").filter(node => Try(node.astParent.toList).isFailure).toList shouldBe Nil
+    }
+
+    "local variable exists in foo" in {
+      val localNodeA = cpg.method.fullName("foo").local.name("a").head
+      localNodeA.closureBindingId shouldBe Some("Test0.php:foo:a")
+
+      val localNodeB = cpg.method.fullName("foo").local.name("b").head
+      localNodeB.closureBindingId shouldBe Some("Test0.php:foo:b")
+
+      val localNodeADup = cpg.method.fullName("foo<duplicate>0").local.name("a").head
+      localNodeADup.closureBindingId shouldBe Some("Test0.php:foo<duplicate>0:a")
+
+      val localNodeBDup = cpg.method.fullName("foo<duplicate>0").local.name("b").head
+      localNodeBDup.closureBindingId shouldBe Some("Test0.php:foo<duplicate>0:b")
+    }
+
+    "method ref of closure binding of construct" in {
+      val methodRefNode     = cpg.methodRef.methodFullName("foo").head
+      val closureBindingIds = methodRefNode._closureBindingViaCaptureOut.l.map(_.closureBindingId)
+
+      val methodRefNodeDup     = cpg.methodRef.methodFullName("foo<duplicate>0").head
+      val closureBindingIdsDup = methodRefNodeDup._closureBindingViaCaptureOut.l.map(_.closureBindingId)
+
+      closureBindingIds shouldBe List(Some("Test0.php:foo:a"), Some("Test0.php:foo:b"))
+
+      closureBindingIdsDup shouldBe List(Some("Test0.php:foo<duplicate>0:a"), Some("Test0.php:foo<duplicate>0:b"))
+    }
+
+    "global variable" in {
+      val localNode  = cpg.method.name("<global>").local.name("a").head
+      val localNodeB = cpg.method.name("<global>").local.name("b").head
+      localNode.closureBindingId shouldBe None
+      localNodeB.closureBindingId shouldBe None
+    }
+
+    "closure binding reference to global" in {
+      val localNode  = cpg.method.name("<global>").local.name("a").head
+      val localNodeB = cpg.method.name("<global>").local.name("b").head
+
+      localNode._closureBindingViaRefIn.map(_.closureBindingId).l shouldBe List(
+        Some("Test0.php:foo:a"),
+        Some("Test0.php:foo<duplicate>0:a")
+      )
+      localNodeB._closureBindingViaRefIn.map(_.closureBindingId).l shouldBe List(
+        Some("Test0.php:foo:b"),
+        Some("Test0.php:foo<duplicate>0:b")
+      )
+    }
+
+    "create two method refs" in {
+      inside(cpg.methodRefWithName("foo.*").l) {
+        case methodRef :: duplicateMethodRef :: Nil =>
+          methodRef.methodFullName shouldBe "foo"
+          duplicateMethodRef.methodFullName shouldBe "foo<duplicate>0"
+        case xs => fail(s"Expected two method refs, got ${xs.methodFullName.mkString("[", ",", "]")}")
       }
     }
   }

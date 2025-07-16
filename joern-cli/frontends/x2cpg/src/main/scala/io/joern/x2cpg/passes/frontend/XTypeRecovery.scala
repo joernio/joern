@@ -992,7 +992,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     }
     val returnTypes = extractTypes(ret.argumentOut.l)
     existingTypes.addAll(returnTypes)
-    builder.setNodeProperty(ret.method.methodReturn, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, existingTypes)
+    builder.setNodeProperty(ret.method.methodReturn, PropertyNames.DynamicTypeHintFullName, existingTypes)
   }
 
   /** Using an entry from the symbol table, will queue the CPG modification to persist the recovered type information.
@@ -1265,11 +1265,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   protected def storeCallTypeInfo(c: Call, types: Seq[String]): Unit =
     if (types.nonEmpty) {
-      builder.setNodeProperty(
-        c,
-        PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
-        (c.dynamicTypeHintFullName ++ types).distinct
-      )
+      builder.setNodeProperty(c, PropertyNames.DynamicTypeHintFullName, (c.dynamicTypeHintFullName ++ types).distinct)
     }
 
   /** Allows one to modify the types assigned to identifiers.
@@ -1286,15 +1282,15 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         .matches(XTypeRecovery.unknownTypePattern.pattern.pattern())
 
     if (types.toSet != n.getKnownTypes || (hasUnknownType && types.nonEmpty)) {
-      setTypes(n, (n.propertyOption(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME).getOrElse(Seq.empty) ++ types).distinct)
+      setTypes(n, (n.propertyOption(PropertyNames.DynamicTypeHintFullName).getOrElse(Seq.empty) ++ types).distinct)
     }
 
   /** If there is only 1 type hint then this is set to the `typeFullName` property and `dynamicTypeHintFullName` is
     * cleared. If not then `dynamicTypeHintFullName` is set to the types.
     */
   protected def setTypes(n: StoredNode, types: Seq[String]): Unit =
-    if (types.sizeIs == 1) builder.setNodeProperty(n, PropertyNames.TYPE_FULL_NAME, types.head)
-    else builder.setNodeProperty(n, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types)
+    if (types.sizeIs == 1) builder.setNodeProperty(n, PropertyNames.TypeFullName, types.head)
+    else builder.setNodeProperty(n, PropertyNames.DynamicTypeHintFullName, types)
 
   /** Allows one to modify the types assigned to locals.
     */

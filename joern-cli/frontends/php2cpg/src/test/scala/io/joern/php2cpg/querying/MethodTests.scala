@@ -4,7 +4,7 @@ import io.joern.php2cpg.Config
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, Local}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, ClosureBinding, Identifier, Literal, Local, MethodRef}
 import io.shiftleft.semanticcpg.language.*
 
 import scala.util.Try
@@ -21,7 +21,7 @@ class MethodTests extends PhpCode2CpgFixture {
 
     inside(cpg.method.name("foo").l) { case List(fooMethod) =>
       fooMethod.fullName shouldBe "foo"
-      fooMethod.signature shouldBe s"${Defines.UnresolvedSignature}(0)"
+      fooMethod.signature shouldBe ""
       fooMethod.lineNumber shouldBe Some(2)
       fooMethod.lineNumberEnd shouldBe Some(2)
       fooMethod.code shouldBe "function foo()"
@@ -243,6 +243,69 @@ class MethodTests extends PhpCode2CpgFixture {
         constructor.filename shouldBe "foo.php"
         constructor.file.name.l shouldBe List("foo.php")
       }
+    }
+  }
+
+  "duplicate function definitions" in {
+    val cpg = code("""<?php
+        |function baz() {}
+        |class Foo {
+        |   function __construct() {
+        |     if (true) {
+        |       function foo() {
+        |         if (true) {
+        |           function bar() {}
+        |         } else if (false) {
+        |           function bar() {}
+        |         } else {
+        |           function bar() {}
+        |         }
+        |       }
+        |     } else {
+        |       function foo() {
+        |         if (true) {
+        |           function bar() {}
+        |         } else if (false) {
+        |           function bar() {}
+        |         } else {
+        |           function bar() {}
+        |         }
+        |       }
+        |     }
+        |   }
+        |}
+        |""".stripMargin)
+
+    inside(cpg.method.name("foo.*").l) {
+      case foo :: duplicateFoo :: Nil =>
+        foo.name shouldBe "foo"
+        foo.fullName shouldBe "Foo.__construct.foo"
+
+        duplicateFoo.name shouldBe "foo"
+        duplicateFoo.fullName shouldBe "Foo.__construct.foo<duplicate>0"
+      case xs => fail(s"Expected two functions for `foo`, got ${xs.name.mkString("[", ",", "]")}")
+    }
+
+    inside(cpg.method.name("bar.*").l) {
+      case barOne :: barDedupOne :: barDedupTwoOne :: barTwo :: barDedupTwo :: barDedupTwoTwo :: Nil =>
+        barOne.name shouldBe "bar"
+        barOne.fullName shouldBe "Foo.__construct.foo.bar"
+
+        barDedupOne.name shouldBe "bar"
+        barDedupOne.fullName shouldBe "Foo.__construct.foo.bar<duplicate>0"
+
+        barDedupTwoOne.name shouldBe "bar"
+        barDedupTwoOne.fullName shouldBe "Foo.__construct.foo.bar<duplicate>1"
+
+        barTwo.name shouldBe "bar"
+        barTwo.fullName shouldBe "Foo.__construct.foo<duplicate>0.bar"
+
+        barDedupTwo.name shouldBe "bar"
+        barDedupTwo.fullName shouldBe "Foo.__construct.foo<duplicate>0.bar<duplicate>0"
+
+        barDedupTwoTwo.name shouldBe "bar"
+        barDedupTwoTwo.fullName shouldBe "Foo.__construct.foo<duplicate>0.bar<duplicate>1"
+      case xs => fail(s"Expected four `bar` functions, got ${xs.name.mkString("[", ",", "]")}")
     }
   }
 }

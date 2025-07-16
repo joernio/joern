@@ -70,7 +70,7 @@ sbt test
 Integration tests:
 ```bash
 sbt joerncli/stage querydb/createDistribution
-python -m pip install requests
+python -m pip install requests pexpect # wexpect on Windows
 python -u ./testDistro.py
 ```
 

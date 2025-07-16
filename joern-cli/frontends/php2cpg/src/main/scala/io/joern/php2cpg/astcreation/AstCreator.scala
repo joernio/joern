@@ -3,7 +3,7 @@ package io.joern.php2cpg.astcreation
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
 import io.joern.php2cpg.parser.Domain.*
 import io.joern.php2cpg.passes.SymbolSummaryPass.SymbolSummary
-import io.joern.php2cpg.utils.{PhpScopeElement, Scope}
+import io.joern.php2cpg.utils.{NamespaceScope, Scope}
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, AstCreatorBase, Defines, ValidationMode}
@@ -31,7 +31,7 @@ class AstCreator(
     with AstForTypesCreator {
 
   protected val logger: Logger = LoggerFactory.getLogger(AstCreator.getClass)
-  protected val scope          = new Scope(summary)(() => nextClosureName())
+  protected val scope          = new Scope(summary, () => nextClosureName())
   protected var fileContent    = Option.empty[String]
 
   override def createAst(): DiffGraphBuilder = {
@@ -77,7 +77,7 @@ class AstCreator(
     val fileNode = NewFile().name(relativeFileName)
     fileContent.foreach(fileNode.content(_))
 
-    scope.pushNewScope(globalNamespace)
+    scope.pushNewScope(NamespaceScope(globalNamespace, globalNamespace.fullName))
 
     val (globalDeclStmts, globalMethodStmts) =
       file.children.flatMap(flattenGlobalNamespaceStmt).partition(_.isInstanceOf[PhpConstStmt])
@@ -154,7 +154,7 @@ class AstCreator(
       .name(name)
       .fullName(fullName)
 
-    scope.pushNewScope(namespaceBlock)
+    scope.pushNewScope(NamespaceScope(namespaceBlock, namespaceBlock.fullName))
     val bodyStmts = astsForClassLikeBody(stmt, stmt.stmts, createDefaultConstructor = false)
     scope.popScope()
 
@@ -182,51 +182,45 @@ class AstCreator(
     val surroundingMethods = scope.getSurroundingMethods.dropRight(1)     // drop last to ignore innermost method
 
     surroundingMethods.foreach { currentMethod =>
-      val innerMethod = surroundingIter.next()
-      innerMethod.node match {
-        case inner: NewMethod =>
-          scope.lookupMethodRef(inner.fullName) match {
-            case Some(methodRef) =>
-              if (!scope.containsMethodRef(inner.fullName)) {
-                currentMethod.maybeBlock match {
-                  case Some(block) =>
-                    diffGraph.addNode(methodRef)
-                    diffGraph.addEdge(block, methodRef, EdgeTypes.AST)
-                  case None => // do nothing
-                }
-
-                scope.addMethodRefName(inner.fullName)
-              }
-
-              stmt.vars.foreach {
-                case _ @PhpVariable(name: PhpNameExpr, _) =>
-                  val closureBindingId = s"$relativeFileName:${inner.fullName}:${name.name}"
-                  val closureLocal     = localNode(stmt, name.name, name.name, Defines.Any, Option(closureBindingId))
-
-                  val closureBindingNode = NewClosureBinding()
-                    .closureBindingId(closureBindingId)
-                    .evaluationStrategy(EvaluationStrategies.BY_SHARING)
-
-                  scope.lookupVariable(name.name) match {
-                    case Some(refLocal) => diffGraph.addEdge(closureBindingNode, refLocal, EdgeTypes.REF)
-                    case _              => // do nothing
-                  }
-
-                  scope.addVariableToMethodScope(closureLocal.name, closureLocal, inner.fullName) match {
-                    case Some(node @ PhpScopeElement(_: NewMethod)) =>
-                      node.maybeBlock.foreach(diffGraph.addEdge(_, closureLocal, EdgeTypes.AST))
-                    case _ => // do nothing
-                  }
-
-                  diffGraph.addNode(closureBindingNode)
-                  diffGraph.addEdge(methodRef, closureBindingNode, EdgeTypes.CAPTURE)
-                case x =>
-                  logger.warn(s"Unexpected variable type ${x.getClass} found")
-              }
+      val innerMethodScope = surroundingIter.next()
+      val innerMethodNode  = innerMethodScope.methodNode
+      val innerMethodRef   = innerMethodScope.methodRefNode
+      innerMethodRef match {
+        case Some(methodRef) =>
+          scope.getMethodRef(innerMethodNode.fullName) match {
             case None =>
-              logger.warn(s"No methodRef found for capturing global variable in method ${inner.fullName}")
+              diffGraph.addNode(methodRef)
+              diffGraph.addEdge(currentMethod.bodyNode, methodRef, EdgeTypes.AST)
+              scope.addMethodRef(innerMethodNode.fullName, methodRef)
+            case _ =>
           }
-        case _ => // do nothing
+
+          stmt.vars.foreach {
+            case PhpVariable(name: PhpNameExpr, _) =>
+              val closureBindingId = s"$relativeFileName:${innerMethodNode.fullName}:${name.name}"
+              val closureLocal     = localNode(stmt, name.name, name.name, Defines.Any, Option(closureBindingId))
+
+              val closureBindingNode = NewClosureBinding()
+                .closureBindingId(closureBindingId)
+                .evaluationStrategy(EvaluationStrategies.BY_SHARING)
+
+              scope.lookupVariable(name.name) match {
+                case Some(refLocal) => diffGraph.addEdge(closureBindingNode, refLocal, EdgeTypes.REF)
+                case _              => // do nothing
+              }
+
+              scope.addVariableToMethodScope(closureLocal.name, closureLocal, innerMethodNode.fullName) match {
+                case Some(ms) => diffGraph.addEdge(ms.bodyNode, closureLocal, EdgeTypes.AST)
+                case _        => // do nothing
+              }
+
+              diffGraph.addNode(closureBindingNode)
+              diffGraph.addEdge(methodRef, closureBindingNode, EdgeTypes.CAPTURE)
+            case x =>
+              logger.warn(s"Unexpected variable type ${x.getClass} found")
+          }
+        case None =>
+          logger.warn(s"No methodRef found for capturing global variable in method ${innerMethodNode.fullName}")
       }
     }
 

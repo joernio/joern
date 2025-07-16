@@ -16,7 +16,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
-import io.shiftleft.codepropertygraph.generated.nodes.File.PropertyDefaults
+import io.shiftleft.codepropertygraph.generated.PropertyDefaults
 
 import scala.annotation.unused
 
@@ -44,13 +44,13 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   }
 
   private def astForArrayElementSyntax(node: ArrayElementSyntax): Ast = {
-    astForNodeWithFunctionReference(node.expression)
+    astForNode(node.expression)
   }
 
   private def astForAttributeSyntax(node: AttributeSyntax): Ast = {
     val argumentAsts = node.arguments match {
       case Some(argument) =>
-        val argumentAst    = astForNodeWithFunctionReference(argument)
+        val argumentAst    = astForNode(argument)
         val parameter      = NewAnnotationParameter().code("argument")
         val assign         = NewAnnotationParameterAssign().code(code(argument))
         val assignChildren = List(Ast(parameter), argumentAst)
@@ -98,7 +98,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
 
   private def astForClosureParameterSyntax(node: ClosureParameterSyntax): Ast = {
     val name = node.secondName.fold(code(node.firstName))(code)
-    val tpe  = node.`type`.fold(Defines.Any)(code)
+    val tpe  = node.`type`.fold(Defines.Any)(t => cleanType(code(t)))
     registerType(tpe)
     val parameterNode =
       parameterInNode(
@@ -133,12 +133,14 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   }
 
   private def astForClosureSignatureSyntax(node: ClosureSignatureSyntax): Ast = notHandledYet(node)
+
   private def astForCodeBlockItemSyntax(node: CodeBlockItemSyntax): Ast = {
-    astForNodeWithFunctionReferenceAndCall(node.item)
+    astForNode(node.item)
   }
   private def astForCodeBlockSyntax(node: CodeBlockSyntax): Ast = {
     astForNode(node.statements)
   }
+
   private def astForCompositionTypeElementSyntax(node: CompositionTypeElementSyntax): Ast = notHandledYet(node)
 
   private def astForConditionElementSyntax(node: ConditionElementSyntax): Ast = {
@@ -178,12 +180,8 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
 
   private def astForDesignatedTypeSyntax(node: DesignatedTypeSyntax): Ast = notHandledYet(node)
 
-  private def astForDictionaryElementSyntax(node: DictionaryElementSyntax): Ast = {
-    // TODO: check if handling Labels like that fits the Swift semantics:
-    val dstAst = astForNode(node.key)
-    val srcAst = astForNodeWithFunctionReference(node.value)
-    createAssignmentCallAst(dstAst, srcAst, code(node), line(node), column(node))
-  }
+  private def astForDictionaryElementSyntax(node: DictionaryElementSyntax): Ast =
+    Ast() // we handle dictionary elements in astForDictionaryExprSyntax
 
   private def astForDifferentiabilityArgumentSyntax(node: DifferentiabilityArgumentSyntax): Ast   = notHandledYet(node)
   private def astForDifferentiabilityArgumentsSyntax(node: DifferentiabilityArgumentsSyntax): Ast = notHandledYet(node)
@@ -250,7 +248,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForInheritedTypeSyntax(node: InheritedTypeSyntax): Ast             = notHandledYet(node)
 
   private def astForInitializerClauseSyntax(node: InitializerClauseSyntax): Ast = {
-    astForNodeWithFunctionReference(node.value)
+    astForNode(node.value)
   }
 
   private def astForKeyPathComponentSyntax(node: KeyPathComponentSyntax): Ast                   = notHandledYet(node)
@@ -262,10 +260,10 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     node.label match {
       case Some(label) =>
         val name = code(label)
-        val ast  = astForNodeWithFunctionReference(node.expression)
+        val ast  = astForNode(node.expression)
         ast.root.collect { case i: ExpressionNew => i.argumentName(name) }
         ast
-      case None => astForNodeWithFunctionReference(node.expression)
+      case None => astForNode(node.expression)
     }
   }
 
@@ -287,7 +285,10 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
 
   private def astForMultipleTrailingClosureElementSyntax(node: MultipleTrailingClosureElementSyntax): Ast =
     notHandledYet(node)
-  private def astForObjCSelectorPieceSyntax(node: ObjCSelectorPieceSyntax): Ast = notHandledYet(node)
+
+  private def astForObjCSelectorPieceSyntax(node: ObjCSelectorPieceSyntax): Ast =
+    Ast(literalNode(node, code(node), Option(Defines.String)))
+
   private def astForOpaqueReturnTypeOfAttributeArgumentsSyntax(node: OpaqueReturnTypeOfAttributeArgumentsSyntax): Ast =
     notHandledYet(node)
   private def astForOperatorPrecedenceAndTypesSyntax(node: OperatorPrecedenceAndTypesSyntax): Ast = notHandledYet(node)
@@ -307,7 +308,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   }
 
   private def astForOptionalBindingConditionSyntax(node: OptionalBindingConditionSyntax): Ast = {
-    val typeFullName = node.typeAnnotation.fold(Defines.Any)(t => code(t.`type`))
+    val typeFullName = node.typeAnnotation.fold(Defines.Any)(t => cleanType(code(t.`type`)))
 
     node.pattern match {
       case ident: IdentifierPatternSyntax =>
@@ -356,7 +357,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
         val blockNode_ = blockNode(node, PropertyDefaults.Code, Defines.Any)
         scope.pushNewBlockScope(blockNode_)
         localAstParentStack.push(blockNode_)
-        val childrenAst = astForNodeWithFunctionReference(head)
+        val childrenAst = astForNode(head)
         localAstParentStack.pop()
         scope.popScope()
         blockAst(blockNode_, List(childrenAst))
@@ -397,7 +398,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForVersionTupleSyntax(node: VersionTupleSyntax): Ast         = notHandledYet(node)
 
   private def astForWhereClauseSyntax(node: WhereClauseSyntax): Ast = {
-    astForNodeWithFunctionReference(node.condition)
+    astForNode(node.condition)
   }
 
   private def astForYieldedExpressionSyntax(node: YieldedExpressionSyntax): Ast               = notHandledYet(node)

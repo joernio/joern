@@ -11,6 +11,7 @@ import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.Properties
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -44,8 +45,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     filename: String
   ): Ast = {
     val astParentType     = parentNode.label
-    val astParentName     = parentNode.properties(TypeDecl.Properties.Name.name).toString
-    val astParentFullName = parentNode.properties(TypeDecl.Properties.FullName.name).toString
+    val astParentName     = parentNode.properties(Properties.Name.name).toString
+    val astParentFullName = parentNode.properties(Properties.FullName.name).toString
     val functionTypeDeclNode =
       typeDeclNode(
         node,

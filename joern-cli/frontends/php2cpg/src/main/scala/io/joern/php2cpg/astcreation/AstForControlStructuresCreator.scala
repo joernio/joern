@@ -1,13 +1,18 @@
 package io.joern.php2cpg.astcreation
 
-import io.joern.php2cpg.utils.PhpScopeElement
+import io.joern.php2cpg.utils.{BlockScope, MethodScope, NamespaceScope, TypeScope}
 import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
 import io.joern.php2cpg.parser.Domain.*
-import io.joern.x2cpg.Defines.UnresolvedSignature
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{
+  ControlStructureTypes,
+  DispatchTypes,
+  EdgeTypes,
+  Operators,
+  PropertyDefaults
+}
 import io.shiftleft.proto.cpg.Cpg.CpgStruct.Edge.EdgeType
 
 trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -114,14 +119,21 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
   protected def astForTryStmt(stmt: PhpTryStmt): Ast = {
     val tryBody = stmtBodyBlockAst(stmt)
 
-    scope.pushNewScope(NewBlock())
+    scope.pushNewScope(BlockScope(NewBlock(), ""))
     val catches = stmt.catches.map { catchStmt =>
 
       val localCatchVariable = catchStmt.variable
         .collectFirst { case variable @ PhpVariable(name: PhpNameExpr, _) =>
-          val local           = localNode(variable, name.name, name.name, Defines.Any)
-          val phpScopeElement = scope.addToScope(name.name, local)
-          diffGraph.addEdge(phpScopeElement.node, local, EdgeTypes.AST)
+          val local = localNode(variable, name.name, name.name, Defines.Any)
+
+          val node = scope.addToScope(name.name, local) match {
+            case NamespaceScope(namespaceNode, _)    => namespaceNode
+            case TypeScope(typeDeclNode, _)          => typeDeclNode
+            case MethodScope(methodNode, _, _, _, _) => methodNode
+            case BlockScope(blockNode, _)            => blockNode
+          }
+
+          diffGraph.addEdge(node, local, EdgeTypes.AST)
           local.dynamicTypeHintFullName(catchStmt.types.map(_.name))
           Ast(local)
         }
@@ -193,17 +205,9 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
 
     // Update asts
     val nextIterIdent = astForIdentifierWithLocalRef(iterIdentifier.copy, localN)
-    val nextSignature = "void()"
     val nextCallCode  = s"${nextIterIdent.rootCodeOrEmpty}${InstanceMethodDelimiter}next()"
-    val nextCallNode = callNode(
-      stmt,
-      nextCallCode,
-      "next",
-      "Iterator.next",
-      DispatchTypes.DYNAMIC_DISPATCH,
-      Some(nextSignature),
-      Some(Defines.Any)
-    )
+    val nextCallNode =
+      callNode(stmt, nextCallCode, "next", "Iterator.next", DispatchTypes.DYNAMIC_DISPATCH, None, Some(Defines.Any))
     val nextCallAst = callAst(nextCallNode, base = Option(nextIterIdent))
     val itemUpdateAst = itemInitAst.root match {
       case Some(initRoot: AstNodeNew) => itemInitAst.subTreeCopy(initRoot)
@@ -227,13 +231,12 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
 
   private def getItemAssignAstForForeach(stmt: PhpForeachStmt, iteratorIdentifier: NewIdentifier): Ast = {
     val block = blockNode(stmt)
-    scope.pushNewScope(block)
+    scope.pushNewScope(BlockScope(block, ""))
 
     val localN = handleVariableOccurrence(stmt, iteratorIdentifier.name)
     // create assignment for value-part
     val valueAssign = {
       val iteratorIdentifierAst = astForIdentifierWithLocalRef(iteratorIdentifier, localN)
-      val currentCallSignature  = s"$UnresolvedSignature(0)"
       val currentCallCode       = s"${iteratorIdentifierAst.rootCodeOrEmpty}${InstanceMethodDelimiter}current()"
       // `current` function is used to get the current element of given array
       // see https://www.php.net/manual/en/function.current.php & https://www.php.net/manual/en/iterator.current.php
@@ -243,7 +246,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
         "current",
         "Iterator.current",
         DispatchTypes.DYNAMIC_DISPATCH,
-        Some(currentCallSignature),
+        None,
         Some(Defines.Any)
       )
       val currentCallAst = callAst(currentCallNode, base = Option(iteratorIdentifierAst))
@@ -261,19 +264,11 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     // try to create assignment for key-part
     val keyAssignOption = stmt.keyVar.map(keyVar =>
       val iteratorIdentifierAst = astForIdentifierWithLocalRef(iteratorIdentifier.copy, localN)
-      val keyCallSignature      = s"$UnresolvedSignature(0)"
       val keyCallCode           = s"${iteratorIdentifierAst.rootCodeOrEmpty}${InstanceMethodDelimiter}key()"
       // `key` function is used to get the key of the current element
       // see https://www.php.net/manual/en/function.key.php & https://www.php.net/manual/en/iterator.key.php
-      val keyCallNode = callNode(
-        stmt,
-        keyCallCode,
-        "key",
-        "Iterator.key",
-        DispatchTypes.DYNAMIC_DISPATCH,
-        Some(keyCallSignature),
-        Some(Defines.Any)
-      )
+      val keyCallNode =
+        callNode(stmt, keyCallCode, "key", "Iterator.key", DispatchTypes.DYNAMIC_DISPATCH, None, Some(Defines.Any))
       val keyCallAst = callAst(keyCallNode, base = Option(iteratorIdentifierAst))
       simpleAssignAst(stmt, astForExpr(keyVar), keyCallAst)
     )

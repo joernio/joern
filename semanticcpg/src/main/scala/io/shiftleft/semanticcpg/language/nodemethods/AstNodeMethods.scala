@@ -1,8 +1,7 @@
 package io.shiftleft.semanticcpg.language.nodemethods
 
-import io.shiftleft.Implicits.IterableOnceDeco
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.nodes.AstNode.PropertyDefaults
+import io.shiftleft.codepropertygraph.generated.PropertyDefaults
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.nodemethods.AstNodeMethods.lastExpressionInBlock
@@ -66,7 +65,14 @@ class AstNodeMethods(val node: AstNode) extends AnyVal with NodeExtension {
   }
 
   def astParent: AstNode =
-    node._astIn.onlyChecked.asInstanceOf[AstNode]
+    node._astIn
+      .loneElement(
+        "trying to resolve astParent - either this is a root node, or it has two parents (which is probably a malformed cpg)"
+      )
+      .asInstanceOf[AstNode]
+
+  def astParentOption: Option[AstNode] =
+    node._astIn.loneElementOption.asInstanceOf[Option[AstNode]]
 
   /** Direct children of node in the AST. Siblings are ordered by their `order` fields
     */
@@ -99,8 +105,9 @@ class AstNodeMethods(val node: AstNode) extends AnyVal with NodeExtension {
       offset      <- node.offset
       offsetEnd   <- node.offsetEnd
       fileContent <- node.file.headOption.map(_.content)
+      if fileContent != PropertyDefaults.Content
     } yield fileContent.substring(offset, offsetEnd)
-    maybeSourceCode.getOrElse(AstNode.PropertyDefaults.Code)
+    maybeSourceCode.getOrElse(node.code)
   }
 
   def statement: AstNode =

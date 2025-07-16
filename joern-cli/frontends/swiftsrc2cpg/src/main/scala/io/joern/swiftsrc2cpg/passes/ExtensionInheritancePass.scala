@@ -21,7 +21,7 @@ class ExtensionInheritancePass(cpg: Cpg) extends ForkJoinParallelCpgPass[TypeDec
     fromExtensions: Iterator[TypeDecl]
   ): Unit = {
     val fullNames = (part.inheritsFromTypeFullName ++ fromExtensions.map(_.fullName)).toSet.toSeq
-    builder.setNodeProperty(part, PropertyNames.INHERITS_FROM_TYPE_FULL_NAME, fullNames)
+    builder.setNodeProperty(part, PropertyNames.InheritsFromTypeFullName, fullNames)
     cpg.typ.fullNameExact(fullNames*).foreach(tgt => builder.addEdge(part, tgt, EdgeTypes.INHERITS_FROM))
   }
 

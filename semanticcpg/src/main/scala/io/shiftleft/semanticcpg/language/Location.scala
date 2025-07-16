@@ -2,6 +2,7 @@ package io.shiftleft.semanticcpg.language
 
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Properties, PropertyNames}
+import io.shiftleft.semanticcpg.language.nodemethods.AstNodeMethods
 import io.shiftleft.semanticcpg.language.*
 
 import scala.annotation.tailrec
@@ -66,11 +67,10 @@ class LazyLocation(storedNode: StoredNode) extends LocationInfo with Product {
 
   def symbol: String = {
     storedNode match {
-      case _: Call | _: Literal | _: MethodRef | _: Block | _: JumpTarget | _: Member | _: TemplateDom =>
-        storedNode.property(Properties.Code)
       case _: Identifier | _: Local | _: MethodParameterIn | _: MethodParameterOut | _: Method =>
         storedNode.property(Properties.Name)
       case _: MethodReturn     => "$ret"
+      case astNode: AstNode    => AstNodeMethods(astNode).sourceCode
       case cfgFile: ConfigFile => cfgFile.content
       case _                   => defaultString
     }
@@ -78,7 +78,7 @@ class LazyLocation(storedNode: StoredNode) extends LocationInfo with Product {
 
   def nodeLabel: String = storedNode.label
 
-  def lineNumber: Option[Int] = storedNode.propertyOption[Int](PropertyNames.LINE_NUMBER)
+  def lineNumber: Option[Int] = storedNode.propertyOption[Int](PropertyNames.LineNumber)
 
   def methodFullName: String = method.map(_.fullName).getOrElse(defaultString)
 
@@ -146,7 +146,7 @@ class LazyLocation(storedNode: StoredNode) extends LocationInfo with Product {
 
   override def canEqual(that: Any): Boolean = that != null && that.isInstanceOf[LazyLocation]
 
-  override def productArity: Int = productElements.size
+  override def productArity: Int = productElements.length
 
   override def productElementName(n: Int): String = {
     productElements(n)._1

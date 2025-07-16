@@ -323,18 +323,47 @@ class TestRunner:
         # Create and run test script
         test_script_content = (
             'assert(nodes.ExampleNode.Label == "EXAMPLE_NODE")\n'
-            'assert(nodes.ExampleNode.PropertyNames.ExampleProperty == "EXAMPLE_PROPERTY")'
+            'assert(PropertyNames.ExampleProperty == "EXAMPLE_PROPERTY")'
         )
         script_path.write_text(test_script_content)
         
         self.run_command([self.joern_exe, "--script", str(script_path)],
                         f"Run Joern with schema extender test script {script_path}", cwd=stage_dir)
 
+    def _joerncli_windows_test(self):
+        """Joern CLI Windows test"""
+        import wexpect
+        child = wexpect.spawn(f"{self.joern_exe} --nocolors")
+        child.expect("joern>")
+        child.sendline("help")
+        child.expect("Welcome to the interactive help system.")
+        child.sendline("exit")
+        child.expect(wexpect.EOF)
+
+    def _joerncli_unix_test(self):
+        """Joern CLI Linux and MacOS test"""
+        import pexpect
+        child = pexpect.spawn(f"{self.joern_exe} --nocolors")
+        child.expect("joern>")
+        child.sendline("help")
+        child.expect("Welcome to the interactive help system.", timeout=10)
+        child.sendline("exit")
+        child.expect(pexpect.EOF, timeout=10)
+
+    @stage
+    def joerncli_test(self):
+        """Test Joern CLI startup"""
+        if os.name == 'nt':
+            self._joerncli_windows_test()
+        else:
+            self._joerncli_unix_test()
+
     def run_all_tests(self):
         """Run all test stages"""
         test_stages = [
+            self.joerncli_test,
             self.frontends_smoketest,
-            self.frontends_tests, 
+            self.frontends_tests,
             self.scripts_test,
             self.querydb_test,
             self.scan_test,

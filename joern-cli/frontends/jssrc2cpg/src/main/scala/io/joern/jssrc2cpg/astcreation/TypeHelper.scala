@@ -45,11 +45,12 @@ trait TypeHelper { this: AstCreator =>
     case NullLiteralTypeAnnotation    => code(flowType.json)
     case StringLiteralTypeAnnotation  => code(flowType.json)
     case GenericTypeAnnotation =>
-      val idCode = code(flowType.json("id"))
-      if (isNumberType(idCode)) Defines.Number
-      else if (isStringType(idCode)) Defines.String
-      else idCode
-    case ThisTypeAnnotation     => typeHintForThisExpression(Option(flowType)).headOption.getOrElse(Defines.Any);
+      code(flowType.json("id")) match {
+        case tpe if isNumberType(tpe) => Defines.Number
+        case tpe if isStringType(tpe) => Defines.String
+        case tpe                      => tpe
+      }
+    case ThisTypeAnnotation     => typeHintForThisExpression(Option(flowType)).headOption.getOrElse(Defines.Any)
     case NullableTypeAnnotation => typeForTypeAnnotation(createBabelNodeInfo(flowType.json(TypeAnnotationKey)))
     case _                      => Defines.Any
   }
@@ -68,10 +69,11 @@ trait TypeHelper { this: AstCreator =>
     case TSNeverKeyword     => Defines.Never
     case TSIntrinsicKeyword => code(tsType.json)
     case TSTypeReference =>
-      val refCode = code(tsType.json)
-      if (isNumberType(refCode)) Defines.Number
-      else if (isStringType(refCode)) Defines.String
-      else refCode
+      code(tsType.json) match {
+        case tpe if isNumberType(tpe) => Defines.Number
+        case tpe if isStringType(tpe) => Defines.String
+        case tpe                      => tpe
+      }
     case TSArrayType         => Defines.Array
     case TSThisType          => typeHintForThisExpression(Option(tsType)).headOption.getOrElse(Defines.Any)
     case TSOptionalType      => typeForTypeAnnotation(createBabelNodeInfo(tsType.json(TypeAnnotationKey)))
@@ -88,19 +90,17 @@ trait TypeHelper { this: AstCreator =>
     case _                => Defines.Any
   }
 
-  private def isStringType(tpe: String): Boolean =
-    tpe.isEmpty || tpe == "string" || tpe.startsWith("\"") && tpe.endsWith("\"")
+  private def isStringType(tpe: String): Boolean = tpe == "string"
 
-  private def isNumberType(tpe: String): Boolean =
-    tpe == "number" || tpe == "int" || tpe.toDoubleOption.isDefined
+  private def isNumberType(tpe: String): Boolean = tpe == "number" || tpe == "int" || tpe.toDoubleOption.isDefined
 
   private def typeFromTypeMap(node: BabelNodeInfo): String =
-    pos(node.json).flatMap(parserResult.typeMap.get) match {
+    range(node.json).flatMap(parserResult.typeMap.get) match {
+      case Some(value) if value == "any"                         => Defines.Any
+      case Some(value) if value == "boolean"                     => Defines.Boolean
+      case Some(value) if value == "null"                        => Defines.Null
       case Some(value) if isStringType(value)                    => Defines.String
       case Some(value) if isNumberType(value)                    => Defines.Number
-      case Some(value) if value == "null"                        => Defines.Null
-      case Some(value) if value == "boolean"                     => Defines.Boolean
-      case Some(value) if value == "any"                         => Defines.Any
       case Some(value) if ImportMatcher.matcher(value).matches() => importToModule(value)
       case Some(value)                                           => value
       case None                                                  => Defines.Any

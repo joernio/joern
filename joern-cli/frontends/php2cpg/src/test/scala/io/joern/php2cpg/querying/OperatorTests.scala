@@ -710,7 +710,7 @@ class OperatorTests extends PhpCode2CpgFixture {
       absCall.name shouldBe "abs"
       absCall.methodFullName shouldBe "abs"
       absCall.code shouldBe "abs($a)"
-      absCall.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
+      absCall.signature shouldBe ""
     }
   }
 

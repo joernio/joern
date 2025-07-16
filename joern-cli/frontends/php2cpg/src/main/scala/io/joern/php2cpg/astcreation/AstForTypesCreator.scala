@@ -2,16 +2,26 @@ package io.joern.php2cpg.astcreation
 
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
 import io.joern.php2cpg.parser.Domain.*
+import io.joern.php2cpg.utils.TypeScope
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewBinding,
   NewCall,
   NewFieldIdentifier,
   NewIdentifier,
   NewMember,
+  NewMethod,
   NewTypeDecl,
   NewTypeRef
 }
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, NodeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{
+  DispatchTypes,
+  EdgeTypes,
+  ModifierTypes,
+  NodeTypes,
+  Operators,
+  PropertyDefaults
+}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -41,7 +51,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val typeDecl = typeDeclNode(stmt, name.name, fullName, relativeFileName, code, inherits = inheritsFrom)
     val createDefaultConstructor = stmt.hasConstructor
 
-    scope.pushNewScope(typeDecl)
+    scope.pushNewScope(TypeScope(typeDecl, fullName))
     val bodyStmts      = astsForClassLikeBody(stmt, stmt.stmts, createDefaultConstructor)
     val clinitAst      = astForStaticAndConstInits(stmt).getOrElse(Ast())
     val modifiers      = stmt.modifiers.map(modifierNode(stmt, _)).map(Ast(_))
@@ -49,6 +59,14 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     scope.popScope()
 
     Ast(typeDecl).withChildren(modifiers).withChildren(bodyStmts :+ clinitAst).withChildren(annotationAsts)
+  }
+
+  private def addBindingsForTypeDecl(typeDecl: NewTypeDecl, bodyAsts: List[Ast]): Unit = {
+    bodyAsts.flatMap(_.root).collect { case method: NewMethod =>
+      val binding = NewBinding().name(method.name).methodFullName(method.fullName)
+      diffGraph.addEdge(typeDecl, binding, EdgeTypes.BINDS)
+      diffGraph.addEdge(binding, method, EdgeTypes.REF)
+    }
   }
 
   private def astForAnonymousClass(
@@ -65,7 +83,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       case None       => this.scope.getNewClassTmp
     }
 
-    val classFullName = prependNamespacePrefix(className)
+    val classFullName             = prependNamespacePrefix(className)
+    val metaTypeDeclClassFullName = s"${classFullName}$MetaTypeDeclExtension"
 
     val code = codeForClassStmt(stmt, PhpNameExpr(className, stmt.attributes))
 
@@ -82,7 +101,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val metaTypeDecl = typeDeclNode(
       node = stmt,
       name = s"${className}$MetaTypeDeclExtension",
-      fullName = s"${classFullName}$MetaTypeDeclExtension",
+      fullName = metaTypeDeclClassFullName,
       filename = relativeFileName,
       code = code,
       inherits = inheritsFromMeta,
@@ -91,7 +110,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     scope.surroundingAstLabel.foreach(typeDeclTemp.astParentType(_))
     scope.surroundingScopeFullName.foreach(typeDeclTemp.astParentFullName(_))
-    scope.pushNewScope(typeDeclTemp)
+    scope.pushNewScope(TypeScope(typeDeclTemp, classFullName))
 
     val bodyStmts      = astsForClassLikeBody(stmt, dynamicStmts, stmt.hasConstructor)
     val modifiers      = stmt.modifiers.map(modifierNode(stmt, _)).map(Ast(_))
@@ -109,7 +128,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         )
     }
 
-    scope.pushNewScope(metaTypeDecl)
+    scope.pushNewScope(TypeScope(metaTypeDecl, metaTypeDeclClassFullName))
     val metaTypeDeclAst = astForMetaTypeDecl(stmt, staticStmts, metaTypeDecl)
     scope.popScope()
 
@@ -137,6 +156,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       diffGraph.addNode(typeDeclMember)
       diffGraph.addNode(metaTypeDeclMember)
     }
+
+    addBindingsForTypeDecl(typeDeclTemp, bodyStmts)
 
     val prefixAst = createTypeRefPointer(typeDeclTemp)
     val typeDeclAst = Ast(typeDeclTemp)
@@ -202,32 +223,32 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       (stmt.extendsNames ++ stmt.implementedInterfaces).map(name => s"${name.name}$MetaTypeDeclExtension")
     val code = codeForClassStmt(stmt, name)
 
-    val fullName =
+    val (dedupedName, fullName) =
       if (name.name == NamespaceTraversal.globalNamespaceName)
-        globalNamespace.fullName
+        (name.name, globalNamespace.fullName)
       else {
-        prependNamespacePrefix(name.name)
+        val dedupClassName = scope.getDeduplicatedClassName(name.name)
+        (name.name, prependNamespacePrefix(dedupClassName))
       }
 
-    val typeDecl = typeDeclNode(stmt, name.name, fullName, relativeFileName, code, inherits = inheritsFrom)
+    val metaTypeDeclFullName = s"$fullName$MetaTypeDeclExtension"
+
+    val typeDecl = typeDeclNode(stmt, dedupedName, fullName, relativeFileName, code, inherits = inheritsFrom)
     val metaTypeDeclNode = typeDeclNode(
       stmt,
-      s"${name.name}$MetaTypeDeclExtension",
-      s"${fullName}$MetaTypeDeclExtension",
+      s"$dedupedName$MetaTypeDeclExtension",
+      metaTypeDeclFullName,
       relativeFileName,
       code,
       inherits = inheritsFromMeta
     )
 
     // Add this to scope for symbol resolution
-    scope.useTypeDecl(name.name, fullName)
+    scope.useTypeDecl(dedupedName, fullName)
 
     val createDefaultConstructor = stmt.hasConstructor
 
-    scope.pushNewScope(typeDecl)
-
-    createConstructorMethodRef(stmt, ConstructorMethodName)
-    createMethodRefsAst(stmt, stmt.stmts)
+    scope.pushNewScope(TypeScope(typeDecl, fullName))
 
     val bodyStmts      = astsForClassLikeBody(stmt, dynamicStmts, createDefaultConstructor)
     val modifiers      = stmt.modifiers.map(modifierNode(stmt, _)).map(Ast(_))
@@ -243,10 +264,10 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     scope.popScope()
 
     val classTypeDeclAst = Ast(typeDecl).withChildren(modifiers).withChildren(bodyStmts).withChildren(annotationAsts)
+    addBindingsForTypeDecl(typeDecl, bodyStmts)
 
-    scope.pushNewScope(metaTypeDeclNode)
+    scope.pushNewScope(TypeScope(metaTypeDeclNode, metaTypeDeclFullName))
 
-    createConstructorMethodRef(stmt, Defines.StaticInitMethodName)
     staticConsts.foreach(init => scope.addConstOrStaticInitToScope(init.originNode, init.memberNode, init.value))
     val metaTypeDeclAst = astForMetaTypeDecl(stmt, staticStmts, metaTypeDeclNode)
     scope.popScope()
