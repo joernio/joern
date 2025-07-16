@@ -90,11 +90,12 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
     "have corresponding type decl with correct bindings for function" in {
       val cpg            = code("func method() {}")
       val List(typeDecl) = cpg.typeDecl.nameExact("method").l
-      typeDecl.fullName should endWith(".swift:<global>.method:ANY()")
+      typeDecl.fullName shouldBe "Test0.swift:<global>.method:ANY()"
 
       val List(binding) = typeDecl.bindsOut.l
-      binding.name shouldBe ""
-      binding.signature shouldBe ""
+      binding.name shouldBe "method"
+      binding.methodFullName shouldBe "Test0.swift:<global>.method:ANY()"
+      binding.signature shouldBe "ANY()"
 
       val List(boundMethod) = binding.refOut.l
       boundMethod shouldBe cpg.method.nameExact("method").head
