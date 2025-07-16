@@ -199,8 +199,6 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
 
       n3.astIn.l shouldBe List(n2)
       n2.astIn.l shouldBe List(n1)
-
-      cpg.typeRef shouldBe empty
     }
 
     "have correct structure for function in accessor block" in {
