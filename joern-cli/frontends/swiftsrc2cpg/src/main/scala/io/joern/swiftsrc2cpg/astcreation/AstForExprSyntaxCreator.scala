@@ -192,9 +192,8 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     callName: String
   ): Ast = {
 
-    val trailingClosureAsts = callExpr.trailingClosure.toList.map(astForTrailingClosure)
-    val additionalTrailingClosuresAsts =
-      callExpr.additionalTrailingClosures.children.map(c => astForTrailingClosure(c.closure))
+    val trailingClosureAsts            = callExpr.trailingClosure.toList.map(astForNode)
+    val additionalTrailingClosuresAsts = callExpr.additionalTrailingClosures.children.map(c => astForNode(c.closure))
 
     val args = callExpr.arguments.children.map(astForNode) ++ trailingClosureAsts ++ additionalTrailingClosuresAsts
 
@@ -314,9 +313,8 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForMacroExpansionExprSyntax(node: MacroExpansionExprSyntax): Ast = {
     val name = code(node.macroName)
 
-    val trailingClosureAsts = node.trailingClosure.toList.map(astForTrailingClosure)
-    val additionalTrailingClosuresAsts =
-      node.additionalTrailingClosures.children.map(c => astForTrailingClosure(c.closure))
+    val trailingClosureAsts            = node.trailingClosure.toList.map(astForNode)
+    val additionalTrailingClosuresAsts = node.additionalTrailingClosures.children.map(c => astForNode(c.closure))
 
     val argAsts = astForNode(node.arguments) +: (trailingClosureAsts ++ additionalTrailingClosuresAsts)
     val callNode =
@@ -455,9 +453,8 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val baseAst   = astForNode(node.calledExpression)
     val memberAst = astForNode(node.arguments)
 
-    val trailingClosureAsts = node.trailingClosure.toList.map(astForTrailingClosure)
-    val additionalTrailingClosuresAsts =
-      node.additionalTrailingClosures.children.map(c => astForTrailingClosure(c.closure))
+    val trailingClosureAsts            = node.trailingClosure.toList.map(astForNode)
+    val additionalTrailingClosuresAsts = node.additionalTrailingClosures.children.map(c => astForNode(c.closure))
 
     val additionalArgsAsts = trailingClosureAsts ++ additionalTrailingClosuresAsts
     createIndexAccessCallAst(baseAst, memberAst, line(node), column(node), additionalArgsAsts)

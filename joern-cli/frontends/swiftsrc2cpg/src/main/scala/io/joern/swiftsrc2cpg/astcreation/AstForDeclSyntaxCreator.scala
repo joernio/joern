@@ -595,11 +595,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  protected def astForFunctionLike(
-    node: FunctionDeclLike,
-    isTrailingClosure: Boolean = false,
-    methodBlockContent: List[Ast] = List.empty
-  ): Ast = {
+  protected def astForFunctionLike(node: FunctionDeclLike, methodBlockContent: List[Ast] = List.empty): Ast = {
     // TODO: handle genericParameterClause
     // TODO: handle genericWhereClause
 
@@ -642,7 +638,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     registerType(returnType)
     val methodFullNameAndSignature = s"$methodFullName:$signature"
 
-    val shouldCreateFunctionReference = typeRefIdStack.isEmpty || isTrailingClosure
+    val shouldCreateFunctionReference = typeRefIdStack.isEmpty || node.isInstanceOf[ClosureExprSyntax]
     val methodRefNode_ = if (!shouldCreateFunctionReference) { None }
     else { Option(methodRefNode(node, methodName, methodFullNameAndSignature, methodFullNameAndSignature)) }
     val capturingRefNode = methodRefNode_.orElse(typeRefIdStack.headOption)
@@ -801,9 +797,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForMacroExpansionDeclSyntax(node: MacroExpansionDeclSyntax): Ast = {
     val name = code(node.macroName)
 
-    val trailingClosureAsts = node.trailingClosure.toList.map(astForTrailingClosure)
-    val additionalTrailingClosuresAsts =
-      node.additionalTrailingClosures.children.map(c => astForTrailingClosure(c.closure))
+    val trailingClosureAsts            = node.trailingClosure.toList.map(astForNode)
+    val additionalTrailingClosuresAsts = node.additionalTrailingClosures.children.map(c => astForNode(c.closure))
 
     val argAsts = astForNode(node.arguments) +: (trailingClosureAsts ++ additionalTrailingClosuresAsts)
     val callNode =
@@ -869,10 +864,6 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     createDeclConstructor(node, typeDeclNode_, List.empty)
     Ast(typeDeclNode_)
-  }
-
-  protected def astForTrailingClosure(node: ClosureExprSyntax): Ast = {
-    astForFunctionLike(node, isTrailingClosure = true)
   }
 
   private def astForAccessor(node: AccessorDeclSyntax, variableName: String, tpe: String): Unit = {
