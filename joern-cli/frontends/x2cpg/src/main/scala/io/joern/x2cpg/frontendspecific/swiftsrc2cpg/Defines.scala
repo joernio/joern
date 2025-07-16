@@ -19,6 +19,7 @@ object Defines {
   val Array: String           = "Array"
   val Nil: String             = "Nil"
   val GlobalNamespace: String = NamespaceTraversal.globalNamespaceName
+  val DuplicateSuffix: String = "<duplicate>"
 
   val SwiftTypes: List[String] = List(Any, Nil, Character, String, Int, Float, Double, Bool, Function, Array)
 

@@ -171,6 +171,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case a: AccessorDeclSyntax      => code(a.accessorSpecifier)
       case d: DeinitializerDeclSyntax => code(d.deinitKeyword)
       case i: InitializerDeclSyntax   => code(i.initKeyword)
+      case s: SubscriptDeclSyntax     => code(s.subscriptKeyword)
       case _                          => nextClosureName()
     }
     cleanName(name)
