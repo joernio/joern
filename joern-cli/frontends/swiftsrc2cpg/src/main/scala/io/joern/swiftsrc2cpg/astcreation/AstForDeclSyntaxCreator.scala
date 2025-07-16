@@ -819,7 +819,9 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def astForPrecedenceGroupDeclSyntax(@unused node: PrecedenceGroupDeclSyntax): Ast = Ast()
 
-  private def astForSubscriptDeclSyntax(node: SubscriptDeclSyntax): Ast = notHandledYet(node)
+  private def astForSubscriptDeclSyntax(node: SubscriptDeclSyntax): Ast = {
+    astForFunctionLike(node)
+  }
 
   protected def handleTypeAliasInitializer(node: TypeSyntax): String = {
     astForTypeSyntax(node).root match
