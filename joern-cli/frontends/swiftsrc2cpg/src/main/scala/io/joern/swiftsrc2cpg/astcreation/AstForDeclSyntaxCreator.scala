@@ -336,7 +336,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     }
 
     val typeRefNode_ = typeRefNode(node, code(node), typeFullName)
-    methodAstParentStack.find(_.isInstanceOf[NewBlock]).foreach { node =>
+    methodAstParentStack.find(_.isInstanceOf[NewMethod]).foreach { node =>
       diffGraph.addEdge(methodAstParentStack.head, typeRefNode_, EdgeTypes.AST)
     }
 
@@ -488,7 +488,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     }
 
     val typeRefNode_ = typeRefNode(node, code(node), typeFullName)
-    methodAstParentStack.find(_.isInstanceOf[NewBlock]).foreach { node =>
+    methodAstParentStack.find(_.isInstanceOf[NewMethod]).foreach { node =>
       diffGraph.addEdge(methodAstParentStack.head, typeRefNode_, EdgeTypes.AST)
     }
 
