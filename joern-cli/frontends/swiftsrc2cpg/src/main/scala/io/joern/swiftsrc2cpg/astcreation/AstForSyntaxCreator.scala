@@ -97,8 +97,9 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForClosureParameterClauseSyntax(node: ClosureParameterClauseSyntax): Ast   = notHandledYet(node)
 
   private def astForClosureParameterSyntax(node: ClosureParameterSyntax): Ast = {
-    val name = node.secondName.fold(code(node.firstName))(code)
-    val tpe  = node.`type`.fold(Defines.Any)(t => cleanType(code(t)))
+    val name       = node.secondName.fold(code(node.firstName))(code)
+    val tpe        = node.`type`.fold(Defines.Any)(t => cleanType(code(t)))
+    val isVariadic = node.ellipsis.isDefined
     registerType(tpe)
     val parameterNode =
       parameterInNode(
@@ -106,7 +107,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
         name,
         code(node).stripSuffix(","),
         node.json("index").num.toInt + 1,
-        false,
+        isVariadic,
         EvaluationStrategies.BY_VALUE,
         Option(tpe)
       )
@@ -212,17 +213,17 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForFunctionParameterSyntax(node: FunctionParameterSyntax): Ast = {
     // TODO: handle attributes
     // TODO: handle modifiers
-    // TODO: handle ellipsis
     // TODO: handle defaultValue
-    val name = node.secondName.fold(code(node.firstName))(code)
-    val tpe  = handleTypeAliasInitializer(node.`type`)
+    val name       = node.secondName.fold(code(node.firstName))(code)
+    val tpe        = handleTypeAliasInitializer(node.`type`)
+    val isVariadic = node.ellipsis.isDefined
     val parameterNode =
       parameterInNode(
         node,
         name,
         code(node).stripSuffix(","),
         node.json("index").num.toInt + 1,
-        false,
+        isVariadic,
         EvaluationStrategies.BY_VALUE,
         Option(tpe)
       )

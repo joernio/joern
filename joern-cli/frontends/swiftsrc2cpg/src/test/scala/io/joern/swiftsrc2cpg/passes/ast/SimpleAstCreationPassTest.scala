@@ -237,6 +237,20 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
       didSet.fullName shouldBe "Test0.swift:<global>.Foo.didSet_bar:ANY()"
     }
 
+    "have correct structure for function with variadic parameter" in {
+      val cpg = code("""
+          |func foo(a: String, b: String...) -> {}
+          |""".stripMargin)
+      val List(foo) = cpg.method.nameExact("foo").l
+      foo.isVariadic shouldBe true
+      val List(a, b) = foo.parameter.l
+      a.name shouldBe "a"
+      a.typeFullName shouldBe "String"
+      b.name shouldBe "b"
+      b.typeFullName shouldBe "String"
+      b.isVariadic shouldBe true
+    }
+
     "have correct structure for named call arguments" in {
       val cpg = code("""
           |func logMessage(message: String, prefix: String, suffix: String) {

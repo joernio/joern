@@ -582,16 +582,32 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
   case class AstAndMethod(ast: Ast, method: NewMethod, methodBlock: Ast)
 
+  private def paramTypeString(node: FunctionParameterSyntax | ClosureParameterSyntax): String = {
+    node match {
+      case f: FunctionParameterSyntax =>
+        val tpe   = cleanType(code(f.`type`))
+        val label = code(f.firstName)
+        s"$label:$tpe"
+      case c: ClosureParameterSyntax =>
+        val tpe   = c.`type`.fold(Defines.Any)(t => cleanType(code(t)))
+        val label = code(c.firstName)
+        s"$label:$tpe"
+    }
+  }
+
   private def paramSignature(
-    node: FunctionParameterClauseSyntax | ClosureShorthandParameterListSyntax | ClosureParameterClauseSyntax
+    node: FunctionParameterClauseSyntax | ClosureShorthandParameterListSyntax | ClosureParameterClauseSyntax |
+      AccessorParametersSyntax
   ): String = {
     node match {
       case f: FunctionParameterClauseSyntax =>
-        f.parameters.children.map(c => cleanType(code(c.`type`))).mkString("(", ",", ")")
+        f.parameters.children.map(paramTypeString).mkString("(", ",", ")")
       case c: ClosureParameterClauseSyntax =>
-        c.parameters.children.map(c => c.`type`.fold(Defines.Any)(t => cleanType(code(t)))).mkString("(", ",", ")")
+        c.parameters.children.map(paramTypeString).mkString("(", ",", ")")
       case c: ClosureShorthandParameterListSyntax =>
         c.children.map(_ => Defines.Any).mkString("(", ",", ")")
+      case a: AccessorParametersSyntax =>
+        s"(${Defines.Any})"
     }
   }
 
@@ -620,7 +636,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         (s"$returnType${paramSignature(f.signature.parameterClause)}", returnType)
       case a: AccessorDeclSyntax =>
         val returnType = Defines.Any
-        (s"$returnType${a.parameters.fold("()")(code)}", returnType)
+        (s"$returnType${a.parameters.fold("()")(paramSignature)}", returnType)
       case i: InitializerDeclSyntax =>
         val (_, returnType) = astParentInfo()
         (s"$returnType${paramSignature(i.signature.parameterClause)}", returnType)
@@ -889,9 +905,9 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case "set" | "didSet" | "willSet" => Defines.Any
     }
     val signature = if (accessorName == "set") {
-      s"$returnType${node.parameters.fold(s"($tpe)")(code)}"
+      s"$returnType($tpe)"
     } else {
-      s"$returnType${node.parameters.fold(s"()")(code)}"
+      s"$returnType()"
     }
     registerType(returnType)
 
