@@ -26,6 +26,8 @@ class ErbTests extends RubyCode2CpgFixture {
     "Condition for IF should be `equals`" in {
       inside(cpg.controlStructure.isIf.condition.l) {
         case (condition: Call) :: Nil =>
+          condition.lineNumber shouldBe None
+          condition.columnNumber shouldBe None
           condition.methodFullName shouldBe Operators.equals
         case xs => fail(s"Expected one condition for if, got ${xs.code.mkString("[", ",", "]")}")
       }
@@ -34,7 +36,9 @@ class ErbTests extends RubyCode2CpgFixture {
     "True branch contains appends" in {
       inside(cpg.controlStructure.isIf.whenTrue.astChildren.isCall.l) {
         case appendCallOne :: appendCallTwo :: Nil =>
-          println(appendCallOne.code)
+          appendCallOne.lineNumber shouldBe None
+          appendCallTwo.lineNumber shouldBe None
+
           appendCallOne.code shouldBe
             """(<tmp-4> = self.joern__buffer) << "redis:\nhost:"""".stripMargin
 
@@ -216,6 +220,7 @@ class ErbTests extends RubyCode2CpgFixture {
     "Contains call to main function" in {
       inside(cpg.call.name("form_with").l) {
         case formCall :: Nil =>
+          formCall.lineNumber shouldBe None
           formCall.code shouldBe "form_with(url: some_url)"
         case xs => fail(s"Expected one call to `form_with`, got ${xs.code.mkString("[", ",", "]")}")
       }
