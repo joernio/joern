@@ -8,6 +8,7 @@ object GlobalBuiltins {
     "print",      // Prints values to standard output
     "debugPrint", // Prints debug description of values
     "dump",       // Dumps detailed object structure information
+    "readLine", // Returns a string read from standard input through the end of the current line or until EOF is reached
 
     // Type Conversion Functions
     "String",     // Converts a value to a string
@@ -18,6 +19,12 @@ object GlobalBuiltins {
     "Array",      // Creates an array from a sequence
     "Dictionary", // Creates a dictionary from a sequence of key-value pairs
     "Set",        // Creates a set from a sequence
+
+    // Types and type casting
+    "type",           // Returns the dynamic type of a value
+    "numericCast",    // Returns the given integer as the equivalent value in a different integer type
+    "unsafeDowncast", // Returns the given instance cast unconditionally to the specified type
+    "unsafeBitCast",  // Returns the bits of the given instance, interpreted as having the specified type
 
     // Collection Functions
     "min",        // Returns the minimum element in a sequence
@@ -46,18 +53,20 @@ object GlobalBuiltins {
     "ceil",  // Returns the smallest integer not less than the given number
 
     // Memory Management Functions
+    "extendLifetime",           // Extends the lifetime of the given instance
+    "withExtendedLifetime",     // Extends the lifetime of an object during the execution of a closure
+    "withoutActuallyEscaping",  // Temporarily treats a non-escaping closure as an escaping one
     "withUnsafePointer",        // Invokes a closure with a pointer to a value
     "withUnsafeMutablePointer", // Invokes a closure with a mutable pointer to a value
     "withUnsafeBytes",          // Invokes a closure with the bytes of a value
     "withUnsafeMutableBytes",   // Invokes a closure with mutable bytes of a value
-    "autoreleasepool",          // Creates an autorelease pool and executes the given closure within it
+    "withUnsafeTemporaryAllocation", // Provides scoped access to a buffer pointer to memory of the specified type and with the specified capacity
+    "autoreleasepool", // Creates an autorelease pool and executes the given closure within it
 
     // Runtime Functions
-    "type",                   // Returns the dynamic type of a value
     "MemoryLayout.size",      // Returns the size in bytes of the given value's type
     "MemoryLayout.stride",    // Returns the stride in bytes of the given value's type
     "MemoryLayout.alignment", // Returns the alignment in bytes of the given value's type
-    "unsafeBitCast",          // Reinterprets the bits of a value of one type as another type
 
     // Error Handling Functions
     "assert",              // Checks a condition and stops execution if it's false (in debug builds)
@@ -66,9 +75,25 @@ object GlobalBuiltins {
     "preconditionFailure", // Indicates that a precondition has failed (in all builds)
     "fatalError",          // Unconditionally prints a message and stops execution
 
+    // Concurrrency
+    "withTaskGroup",                   // Starts a new scope that can contain a dynamic number of child tasks
+    "withThrowingTaskGroup",           // Starts a new scope that can contain a dynamic number of throwing child tasks
+    "withDiscardingTaskGroup",         // Starts a new scope that can contain a dynamic number of child tasks
+    "withThrowingDiscardingTaskGroup", // Starts a new scope that can contain a dynamic number of child tasks
+    "withCheckedContinuation",         // Invokes the passed in closure with a checked continuation for the current task
+    "withCheckedThrowingContinuation", // Invokes the passed in closure with a checked continuation for the current task
+    "withUnsafeContinuation",          // Invokes the passed in closure with a unsafe continuation for the current task
+    "withUnsafeThrowingContinuation",  // Invokes the passed in closure with a unsafe continuation for the current task
+    "extractIsolation", // Returns a reference to the actor to which the function is isolated, or nil if it is nonisolated
+    "withTaskExecutorPreference", // Configure the current task hierarchy’s task executor preference to the passed TaskExecutor, and execute the passed in closure by immediately hopping to that executor
+
+    // C Interoperability
+    "withVaList", // Invokes the given closure with a C va_list argument derived from the given array of arguments
+    "getVaList", // Returns a CVaListPointer that is backed by autoreleased storage, built from the given array of arguments
+
     // Miscellaneous Functions
-    "swap",                // Exchanges the values of two variables
-    "withExtendedLifetime" // Extends the lifetime of an object during the execution of a closure
+    "swap",    // Exchanges the values of two variables
+    "exchange" // Replaces the value of a mutable value with the supplied new value, returning the original.
   )
 
 }
