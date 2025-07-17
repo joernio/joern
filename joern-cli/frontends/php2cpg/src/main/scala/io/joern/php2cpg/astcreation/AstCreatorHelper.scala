@@ -8,19 +8,24 @@ import io.joern.php2cpg.passes.SymbolSummaryPass.PhpFunction
 import io.joern.x2cpg.Defines.UnresolvedNamespace
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, ModifierTypes}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{
+  MethodParameterIn,
   NewBlock,
+  NewClosureBinding,
   NewIdentifier,
   NewLiteral,
   NewLocal,
   NewMethod,
+  NewMethodParameterIn,
+  NewMethodRef,
   NewModifier,
   NewNamespaceBlock,
   NewNode
 }
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
+import scala.collection.mutable
 import java.nio.charset.StandardCharsets
 
 trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -147,15 +152,83 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
         }
 
         scope.addToScope(name, local) match {
-          case BlockScope(block, _)           => diffGraph.addEdge(block, local, EdgeTypes.AST)
-          case MethodScope(_, block, _, _, _) => diffGraph.addEdge(block, local, EdgeTypes.AST)
-          case _                              => // do nothing
+          case BlockScope(block, _)              => diffGraph.addEdge(block, local, EdgeTypes.AST)
+          case MethodScope(_, block, _, _, _, _) => diffGraph.addEdge(block, local, EdgeTypes.AST)
+          case _                                 => // do nothing
         }
 
         local
+      case Some(local: NewLocal)
+          if scope.isSurroundedByArrowClosure && local.closureBindingId.exists(_.contains("<lambda>")) =>
+        local // the contains check ensures that we can capture global variables into an arrow closure
+      case Some(param: NewMethodParameterIn)
+          if scope.isSurroundedByArrowClosure && !scope.surroundingMethodParams.contains(param.name) =>
+        createClosureBindingsForArrowClosure(expr, name)
+      case Some(_: NewLocal) if scope.isSurroundedByArrowClosure =>
+        createClosureBindingsForArrowClosure(expr, name)
       case Some(local) => local
     }
   }
+
+  def createClosureCaptureForNode(
+    expr: PhpNode,
+    name: String,
+    innerMethodsIterator: Iterator[MethodScope],
+    surroundingMethods: List[MethodScope]
+  ): Unit = {
+    surroundingMethods.foreach { currentMethod =>
+      val innerMethodScope = innerMethodsIterator.next()
+      val innerMethodNode  = innerMethodScope.methodNode
+      val innerMethodRef   = innerMethodScope.methodRefNode
+      innerMethodRef match {
+        case Some(methodRef) =>
+          scope.getMethodRef(innerMethodNode.fullName) match {
+            case None =>
+              diffGraph.addNode(methodRef)
+              diffGraph.addEdge(currentMethod.bodyNode, methodRef, EdgeTypes.AST)
+              scope.addMethodRef(innerMethodNode.fullName, methodRef)
+            case _ =>
+          }
+
+          val closureBindingId = if (innerMethodNode.fullName.contains(NamespaceTraversal.globalNamespaceName)) {
+            s"${innerMethodNode.fullName}:${name}"
+          } else {
+            s"$relativeFileName:${innerMethodNode.fullName}:${name}"
+          }
+
+          val closureLocal = localNode(expr, name, name, Defines.Any, Option(closureBindingId))
+
+          val closureBindingNode = createClosureBinding(closureBindingId)
+
+          scope.lookupVariable(name) match {
+            case Some(refLocal) =>
+              diffGraph.addEdge(closureBindingNode, refLocal, EdgeTypes.REF)
+            case _ => // do nothing
+          }
+
+          scope.addVariableToMethodScope(closureLocal.name, closureLocal, innerMethodNode.fullName) match {
+            case Some(ms) => diffGraph.addEdge(ms.bodyNode, closureLocal, EdgeTypes.AST)
+            case _        => // do nothing
+          }
+
+          diffGraph.addNode(closureBindingNode)
+          diffGraph.addEdge(methodRef, closureBindingNode, EdgeTypes.CAPTURE)
+        case None =>
+          logger.warn(s"No methodRef found for capturing global variable in method ${innerMethodNode.fullName}")
+      }
+    }
+  }
+
+  private def createClosureBindingsForArrowClosure(expr: PhpNode, name: String): NewNode = {
+    val surroundingIter    = scope.getSurroundingMethodsForArrowClosure.drop(1).iterator
+    val surroundingMethods = scope.getSurroundingMethodsForArrowClosure.dropRight(1)
+    val localNodes         = mutable.ArrayBuffer[NewLocal]()
+    createClosureCaptureForNode(expr, name, surroundingIter, surroundingMethods)
+    scope.lookupVariable(name).get
+  }
+
+  protected def createClosureBinding(closureBindingId: String): NewClosureBinding =
+    NewClosureBinding().closureBindingId(closureBindingId).evaluationStrategy(EvaluationStrategies.BY_SHARING)
 
   protected def staticInitMethodAst(node: PhpNode, methodNode: NewMethod, body: Ast, returnType: String): Ast = {
     val staticModifier = NewModifier().modifierType(ModifierTypes.STATIC)
