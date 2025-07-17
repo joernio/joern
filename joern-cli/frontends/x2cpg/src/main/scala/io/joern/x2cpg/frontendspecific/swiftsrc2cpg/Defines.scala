@@ -17,11 +17,13 @@ object Defines {
   val Bool: String            = "Bool"
   val Function: String        = "Function"
   val Array: String           = "Array"
+  val Dictionary: String      = "Dictionary"
   val Nil: String             = "Nil"
   val GlobalNamespace: String = NamespaceTraversal.globalNamespaceName
   val DuplicateSuffix: String = "<duplicate>"
 
-  val SwiftTypes: List[String] = List(Any, Nil, Character, String, Int, Float, Double, Bool, Function, Array)
+  val SwiftTypes: List[String] =
+    List(Any, Nil, Character, String, Int, Float, Double, Bool, Function, Array, Dictionary)
 
   val PostfixOperatorMap: Map[String, String] = Map(
     "++"  -> Operators.postIncrement,

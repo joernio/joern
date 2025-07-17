@@ -95,7 +95,7 @@ class ProtocolExtensionTests extends SwiftSrc2CpgSuite {
     typeDeclFoo.modifier.modifierType.l shouldBe List(ModifierTypes.PRIVATE)
 
     val List(fooConstructor) = typeDeclFoo.method.isConstructor.l
-    fooConstructor.fullName shouldBe "Test0.swift:<global>.Foo.init:Test0.swift:<global>.Foo(String,Int)"
+    fooConstructor.fullName shouldBe "Test0.swift:<global>.Foo.init:Test0.swift:<global>.Foo(paramA:String,paramB:Int)"
     fooConstructor.block.astChildren.assignment.code.l.sorted shouldBe List(
       "var a = A()",
       "var b = false",
