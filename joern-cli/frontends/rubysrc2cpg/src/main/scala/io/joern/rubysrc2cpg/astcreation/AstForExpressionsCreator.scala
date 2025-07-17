@@ -193,7 +193,20 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   protected def astForMemberCall(node: RubyCallWithBase, isStatic: Boolean = false): Ast = {
 
     def createMemberCall(n: RubyCallWithBase): Ast = {
-      val receiverAst = astForFieldAccess(MemberAccess(n.target, ".", n.methodName)(n.span), stripLeadingAt = true)
+      val isErbCall = n.target.span.text == "self.joern__buffer" && n.methodName == "<<"
+
+      val (nodeOp, hasStringArguments, receiverAst) = if (isErbCall) {
+        val hasStringArgs = n.arguments.exists {
+          case StaticLiteral(typeFullName) if typeFullName == Defines.String => true
+          case _                                                             => false
+        }
+        val ast = astForFieldAccess(MemberAccess(n.target, " ", n.methodName)(n.span), stripLeadingAt = true)
+        (" ", hasStringArgs, ast)
+      } else {
+        val ast = astForFieldAccess(MemberAccess(n.target, ".", n.methodName)(n.span), stripLeadingAt = true)
+        (n.op, false, ast)
+      }
+
       val (baseAst, baseCode) = astForMemberAccessTarget(n.target)
       val builtinType = n.target match {
         case MemberAccess(_: SelfIdentifier, _, memberName) if isBundledClass(memberName) =>
@@ -219,8 +232,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       val callCode = if (baseCode.contains("<tmp-")) {
         val rhsCode =
           if (n.methodName == "new") n.methodName
+          else if (isErbCall && hasStringArguments)
+            s"${n.methodName} \"${n.arguments.map(code(_).replaceAll("\n", "\\\\n")).mkString(", ")}\""
+          else if (isErbCall) s"${n.methodName} ${n.arguments.map(code(_).replaceAll("\n", "\\\\n")).mkString(", ")}"
           else s"${n.methodName}(${n.arguments.map(code).mkString(", ")})"
-        s"$baseCode${n.op}$rhsCode"
+        s"$baseCode${nodeOp}$rhsCode"
       } else {
         code(n)
       }
