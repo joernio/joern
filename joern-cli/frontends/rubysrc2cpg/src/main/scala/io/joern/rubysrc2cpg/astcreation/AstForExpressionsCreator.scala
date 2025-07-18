@@ -6,6 +6,7 @@ import io.joern.rubysrc2cpg.parser.RubyJsonHelpers
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.GlobalTypes
 import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, prefixAsKernelDefined}
+import io.joern.x2cpg.frontendspecific.rubysrc2cpg.Constants
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{
@@ -42,6 +43,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     case node: TypeIdentifier                   => astForTypeIdentifier(node)
     case node: RubyIdentifier                   => astForSimpleIdentifier(node)
     case node: SimpleCall                       => astForSimpleCall(node)
+    case node: ErbTemplateCall                  => astForErbTemplateCall(node)
     case node: RequireCall                      => astForRequireCall(node)
     case node: IncludeCall                      => astForIncludeCall(node)
     case node: RaiseCall                        => astForRaiseCall(node)
@@ -191,7 +193,20 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   protected def astForMemberCall(node: RubyCallWithBase, isStatic: Boolean = false): Ast = {
 
     def createMemberCall(n: RubyCallWithBase): Ast = {
-      val receiverAst = astForFieldAccess(MemberAccess(n.target, ".", n.methodName)(n.span), stripLeadingAt = true)
+      val isErbCall = n.target.span.text == "self.joern__buffer" && n.methodName == "<<"
+
+      val (nodeOp, hasStringArguments, receiverAst) = if (isErbCall) {
+        val hasStringArgs = n.arguments.exists {
+          case StaticLiteral(typeFullName) if typeFullName == Defines.String => true
+          case _                                                             => false
+        }
+        val ast = astForFieldAccess(MemberAccess(n.target, " ", n.methodName)(n.span), stripLeadingAt = true)
+        (" ", hasStringArgs, ast)
+      } else {
+        val ast = astForFieldAccess(MemberAccess(n.target, ".", n.methodName)(n.span), stripLeadingAt = true)
+        (n.op, false, ast)
+      }
+
       val (baseAst, baseCode) = astForMemberAccessTarget(n.target)
       val builtinType = n.target match {
         case MemberAccess(_: SelfIdentifier, _, memberName) if isBundledClass(memberName) =>
@@ -217,8 +232,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       val callCode = if (baseCode.contains("<tmp-")) {
         val rhsCode =
           if (n.methodName == "new") n.methodName
+          else if (isErbCall && hasStringArguments)
+            s"${n.methodName} \"${n.arguments.map(code(_).replaceAll("\n", "\\\\n")).mkString(", ")}\""
+          else if (isErbCall) s"${n.methodName} ${n.arguments.map(code(_).replaceAll("\n", "\\\\n")).mkString(", ")}"
           else s"${n.methodName}(${n.arguments.map(code).mkString(", ")})"
-        s"$baseCode${n.op}$rhsCode"
+        s"$baseCode${nodeOp}$rhsCode"
       } else {
         code(n)
       }
@@ -662,6 +680,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         astForUnknown(targetNode)
   }
 
+  protected def astForErbTemplateCall(node: ErbTemplateCall): Ast = {
+    val argAsts = node.arguments.map(astForExpression)
+    val opName  = ErbTemplateCallNames(node.target.text)
+    val opNode  = callNode(node, node.span.text, opName, opName, DispatchTypes.STATIC_DISPATCH)
+    callAst(opNode, argAsts)
+  }
+
   protected def astForRequireCall(node: RequireCall): Ast = {
     val pathOpt = node.argument match {
       case arg: StaticLiteral if arg.isString => Option(arg.innerText)
@@ -970,7 +995,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForMethodCallWithoutBlock(node: SimpleCall, methodIdentifier: SimpleIdentifier): Ast = {
-    val methodName         = methodIdentifier.text
+    val methodName =
+      if (isErbCall(methodIdentifier.text)) ErbTemplateCallNames(methodIdentifier.text) else methodIdentifier.text
     lazy val defaultResult = Defines.Any -> XDefines.DynamicCallUnknownFullName
 
     val (receiverType, methodFullNameHint) =
@@ -1087,4 +1113,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   private def getUnaryOperatorName(op: String): Option[String] = UnaryOperatorNames.get(op)
 
   private def getAssignmentOperatorName(op: String): Option[String] = AssignmentOperatorNames.get(op)
+
+  private def isLineFeed(text: String): Boolean = text == "\n" || text == "\r" || text == "\r\n"
 }
