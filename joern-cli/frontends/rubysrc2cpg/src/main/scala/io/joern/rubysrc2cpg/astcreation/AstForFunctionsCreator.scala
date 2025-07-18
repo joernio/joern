@@ -68,22 +68,26 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     if (isConstructor) scope.pushNewScope(ConstructorScope(fullName, scope.getNewProcParam))
     else scope.pushNewScope(MethodScope(fullName, scope.getNewProcParam))
 
-    val thisParameterNode = parameterInNode(
-      node,
-      name = Defines.Self,
-      code = Defines.Self,
-      index = 0,
-      isVariadic = false,
-      typeFullName = Option(scope.surroundingTypeFullName.getOrElse(Defines.Any)),
-      evaluationStrategy = EvaluationStrategies.BY_SHARING
-    )
-    val thisParameterAst = Ast(thisParameterNode)
-    scope.addToScope(Defines.Self, thisParameterNode)
-    val parameterAsts = thisParameterAst :: astForParameters(node.parameters)
+    val parameterAsts =
+      if (isClosure) {
+        astForParameters(node.parameters)
+      } else {
+        val thisParameterNode = parameterInNode(
+          node,
+          name = Defines.Self,
+          code = Defines.Self,
+          index = 0,
+          isVariadic = false,
+          typeFullName = Option(scope.surroundingTypeFullName.getOrElse(Defines.Any)),
+          evaluationStrategy = EvaluationStrategies.BY_SHARING
+        )
+
+        val thisParameterAst = Ast(thisParameterNode)
+        scope.addToScope(Defines.Self, thisParameterNode)
+        thisParameterAst :: astForParameters(node.parameters)
+      }
 
     val optionalStatementList = statementListForOptionalParams(node.parameters)
-
-    val methodReturn = methodReturnNode(node, Defines.Any)
 
     val refs = {
       val typeRef =
@@ -91,6 +95,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         else typeRefNode(node, methodName, fullName)
       List(typeRef, methodRefNode(node, methodName, fullName, fullName)).map(Ast.apply)
     }
+
+    val methodReturn = methodReturnNode(node, Defines.Any)
 
     // Consider which variables are captured from the outer scope
     val stmtBlockAst = if (isClosure || isSingletonObjectMethod) {
@@ -208,7 +214,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   private def transformAsClosureBody(originNode: RubyExpression, refs: List[Ast], baseStmtBlockAst: Ast) = {
     // Determine which locals are captured
     val capturedLocalNodes = baseStmtBlockAst.nodes
-      .collect { case x: NewIdentifier if x.name != Defines.Self => x } // Self identifiers are handled separately
+      .collect { case x: NewIdentifier => x } // Self identifiers are handled separately
       .distinctBy(_.name)
       .map(i => scope.lookupVariableInOuterScope(i.name))
       .filter(_.nonEmpty)

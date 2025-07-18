@@ -243,7 +243,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
             case xs                  => fail(s"Expected single method ref binding but got [${xs.mkString(",")}]")
           }
         case xs =>
-          fail(s"Expected single closure binding but got [${xs.mkString(",")}]")
+          fail(s"Expected single closure binding but got [${xs.closureBindingId.mkString(",")}]")
       }
     }
 
@@ -338,7 +338,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
       inside(cpg.method.isLambda.headOption) {
         case Some(lambda) =>
           lambda.code shouldBe "->(y) { y }"
-          lambda.parameter.name.l shouldBe List("self", "y")
+          lambda.parameter.name.l shouldBe List("y")
         case xs => fail(s"Expected a lambda method")
       }
     }
@@ -364,7 +364,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
       inside(cpg.method.isLambda.headOption) {
         case Some(lambda) =>
           lambda.code shouldBe "lambda { |y| y }"
-          lambda.parameter.name.l shouldBe List("self", "y")
+          lambda.parameter.name.l shouldBe List("y")
         case xs => fail(s"Expected a lambda method")
       }
     }
@@ -424,7 +424,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
 
     "Generate correct parameters" in {
       inside(cpg.method.isLambda.parameter.l) {
-        case _ :: aParam :: tmp0Param :: dParam :: eParam :: tmp1Param :: hParam :: iParam :: Nil =>
+        case aParam :: tmp0Param :: dParam :: eParam :: tmp1Param :: hParam :: iParam :: Nil =>
           aParam.name shouldBe "a"
           aParam.code shouldBe "a"
 
@@ -451,12 +451,15 @@ class DoBlockTests extends RubyCode2CpgFixture {
 
     "Generate required locals" in {
       inside(cpg.method.isLambda.body.local.l) {
-        case bLocal :: cLocal :: fLocal :: gSplatLocal :: Nil =>
+        case bLocal :: cLocal :: fLocal :: gSplatLocal :: selfLocal :: Nil =>
           bLocal.code shouldBe "b"
           cLocal.code shouldBe "c"
 
           fLocal.code shouldBe "f"
           gSplatLocal.code shouldBe "g"
+
+          selfLocal.code shouldBe "self"
+          selfLocal.closureBindingId shouldBe Some("Test0.rb:<global>.self")
         case xs => fail(s"Expected 4 locals, got [${xs.name.mkString(", ")}]")
       }
     }

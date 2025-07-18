@@ -211,7 +211,7 @@ class ErbTests extends RubyCode2CpgFixture {
     val cpg = code(
       """
         |<%= form_with url: some_url do |form| %>
-        | <%= form.text_field :name %>
+        |  <%= form.text_field :name %>
         |<% end %>
         |""".stripMargin,
       "index.html.erb"
@@ -235,7 +235,7 @@ class ErbTests extends RubyCode2CpgFixture {
 
       inside(cpg.method.isLambda.l) {
         case lambdaMethod :: Nil =>
-          val List(_, lambdaParamForm) = lambdaMethod.parameter.l
+          val List(lambdaParamForm) = lambdaMethod.parameter.l
           lambdaParamForm.code shouldBe "form"
 
           inside(lambdaMethod.body.astChildren.l) {
@@ -333,7 +333,7 @@ class ErbTests extends RubyCode2CpgFixture {
     )
     inside(cpg.method.isLambda.l) {
       case eachLambda :: Nil =>
-        val List(_, varParam) = eachLambda.parameter.l
+        val List(varParam) = eachLambda.parameter.l
         varParam.code shouldBe "var"
 
         inside(eachLambda.methodReturn.toReturn.l) {
@@ -352,6 +352,45 @@ class ErbTests extends RubyCode2CpgFixture {
           case xs => fail(s"Expected one return, got ${xs.code.mkString("[", ",", "]")}")
         }
       case xs => fail(s"Expected one lambda, got ${xs.code.mkString("[", ",", "]")}")
+    }
+  }
+
+  "ERB with self in lambda" in {
+    val cpg = code(
+      """
+        |<% cache "user-profile-sidebar-stats-#{@user.id}-#{@user.last_article_at&.rfc3339}-#{@user.last_comment_at&.rfc3339}-#{@user.following_tags_count}-#{@user.last_followed_at&.rfc3339}-#{@user.articles.published.from_subforem.size}", expires_in: 10.days do %>
+        |    <div class="crayons-card crayons-card--secondary p-4">
+        |      <div class="flex items-center mb-4">
+        |        <%= crayons_icon_tag(:post, class: "mr-3 color-base-50", title: t("views.users.side.post.icon")) %>
+        |        <%= t "views.users.side.post.text", count: @user.articles.published.from_subforem.size %>
+        |      </div>
+        |      <div class="flex items-center mb-4">
+        |        <%= crayons_icon_tag(:comment, class: "mr-3 color-base-50", title: t("views.users.side.comment.icon")) %>
+        |        <%= t "views.users.side.comment.text", count: @user.comments.where(deleted: false).size %>
+        |      </div>
+        |      <div class="flex items-center">
+        |        <%= crayons_icon_tag(:tag, class: "mr-3 color-base-50", title: t("views.users.side.tag.icon")) %>
+        |        <%= t("views.users.side.tag.text", count: @user.decorate.cached_followed_tags.size) %>
+        |      </div>
+        |    </div>
+        |  <% end %>
+        |""".stripMargin,
+      "index.html.erb"
+    )
+
+    inside(cpg.method.name("<main>").parameter.name("self").l) {
+      case selfMain :: Nil =>
+        selfMain._closureBindingViaRefIn.map(_.closureBindingId).toList shouldBe List(
+          Some("index.html.erb:<global>.self")
+        )
+        selfMain.closureBindingId shouldBe None
+      case xs => fail(s"Expected one local in global, got ${xs.name.mkString("[", ",", "]")}")
+    }
+
+    inside(cpg.method.isLambda.local.name("self").l) {
+      case selfLocal :: Nil =>
+        selfLocal.closureBindingId shouldBe Some("index.html.erb:<global>.self")
+      case xs => fail(s"Expected one self local, got ${xs.name.mkString("[", ",", "]")}")
     }
   }
 }
