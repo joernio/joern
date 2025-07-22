@@ -517,7 +517,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val fieldAst = fieldName match {
       case None =>
-        logger.debug(s"Unable to determine field identifier node from ${fieldNode.getClass} (parent node $expr)")
         astForExpr(fieldNode)
       case Some(name) => Ast(fieldIdentifierNode(expr, name.stripPrefix("$"), name))
     }
