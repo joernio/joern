@@ -9,13 +9,17 @@ import io.joern.x2cpg.utils.Environment
 import io.joern.x2cpg.utils.server.FrontendHTTPServer
 import scopt.OParser
 
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths}
 
-final case class Config(defines: Set[String] = Set.empty)
+final case class Config(defines: Set[String] = Set.empty, xcodeOutputPath: Option[Path] = None)
     extends X2CpgConfig[Config]
     with TypeRecoveryParserConfig[Config] {
   def withDefines(defines: Set[String]): Config = {
     this.copy(defines = defines).withInheritedFields(this)
+  }
+
+  def withXcodeOutput(xcodeOutputPath: Path): Config = {
+    this.copy(xcodeOutputPath = Option(xcodeOutputPath)).withInheritedFields(this)
   }
 }
 
@@ -31,7 +35,18 @@ object Frontend {
       opt[String]("define")
         .unbounded()
         .text("define a name")
-        .action((d, c) => c.withDefines(c.defines + d))
+        .action((d, c) => c.withDefines(c.defines + d)),
+      opt[Path]("xcode-output")
+        .text("the path to the Xcode compiler debug output")
+        .validate { path =>
+          val file = path.toRealPath().toFile
+          if (!file.isFile || !file.canRead) {
+            failure(s"The Xcode compiler output file can not be read: '${file.toString}'")
+          } else {
+            success
+          }
+        }
+        .action((path, c) => c.withXcodeOutput(path))
     )
   }
 
