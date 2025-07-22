@@ -524,7 +524,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val operatorName = fieldName match {
       case Some(_) => Operators.fieldAccess
-      case None => Operators.indexAccess
+      case None    => Operators.indexAccess
     }
 
     val accessSymbol =
@@ -532,9 +532,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       else if (expr.isNullsafe) s"?$InstanceMethodDelimiter"
       else InstanceMethodDelimiter
 
-    val targetAst       = astForExpr(expr.expr)
-    val targetCode      = targetAst.rootCodeOrEmpty
-    val code            = s"$targetCode$accessSymbol${fieldAst.rootCodeOrEmpty}"
+    val targetAst  = astForExpr(expr.expr)
+    val targetCode = targetAst.rootCodeOrEmpty
+    val fieldAstCode = fieldName match {
+      case Some(_) => fieldAst.rootCodeOrEmpty
+      case None    => s"{${fieldAst.rootCodeOrEmpty}}"
+    }
+    val code            = s"$targetCode$accessSymbol$fieldAstCode"
     val fieldAccessNode = operatorCallNode(expr, code, operatorName, None)
     callAst(fieldAccessNode, Seq(targetAst, fieldAst))
   }
