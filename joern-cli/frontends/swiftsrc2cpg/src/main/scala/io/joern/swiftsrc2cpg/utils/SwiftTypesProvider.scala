@@ -2,7 +2,7 @@ package io.joern.swiftsrc2cpg.utils
 
 import com.google.gson.JsonObject
 import io.joern.swiftsrc2cpg.Config
-import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{SwiftDeclModifier, SwiftDemangleCommand, SwiftSymbolsMapping}
+import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{SwiftDeclModifier, SwiftDemangleCommand}
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.shiftleft.utils.IOUtils
@@ -255,58 +255,47 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
   }
 
   private def calculateFullname(mangledName: String, node: JsonObject): Option[String] = {
-    val fullName = SwiftSymbolsMapping.get(mangledName).orElse {
-      node.get("_kind").getAsString match {
-        case "accessor_decl" =>
-          val demangledName = demangle(mangledName)
-          val finalName = demangledName.map { name =>
-            val parent       = name.substring(0, name.indexOf(".("))
-            val accessorName = name.substring(parent.length + 2, name.indexOf(" in "))
-            val tpe          = name.substring(name.indexOf(".getter : ") + 10, name.length)
-            s"$parent.$accessorName.getter:$tpe()"
+    val fullName = node.get("_kind").getAsString match {
+      case "accessor_decl" =>
+        val demangledName = demangle(mangledName)
+        val finalName = demangledName.map { name =>
+          val parent       = name.substring(0, name.indexOf(".("))
+          val accessorName = name.substring(parent.length + 2, name.indexOf(" in "))
+          val tpe          = name.substring(name.indexOf(".getter : ") + 10, name.length)
+          s"$parent.$accessorName.getter:$tpe()"
+        }
+        finalName
+      case "var_decl" =>
+        val demangledName = demangle(mangledName)
+        val finalName = demangledName.map { name =>
+          name.substring(name.lastIndexOf(") : ") + 4, name.length)
+        }
+        finalName
+      case "constructor_decl" | "func_decl" =>
+        val demangledName = demangle(mangledName)
+        val finalName = demangledName.map { name =>
+          val parent = name.substring(0, name.indexOf("("))
+          val params = name.substring(name.indexOf("(") + 1, name.indexOf(") -> ")).replace(" ", "")
+          val tpe = name.substring(name.indexOf(") -> ") + 5, name.length) match {
+            case "()"  => Defines.Void
+            case other => other
           }
-          finalName
-        case "var_decl" =>
-          val demangledName = demangle(mangledName)
-          val finalName = demangledName.map { name =>
-            name.substring(name.lastIndexOf(") : ") + 4, name.length)
-          }
-          finalName
-        case "constructor_decl" =>
-          val demangledName = demangle(mangledName)
-          val finalName = demangledName.map { name =>
-            val parent = name.substring(0, name.indexOf("("))
-            val params = name.substring(name.indexOf("(") + 1, name.indexOf(") -> ")).replace(" ", "")
-            val tpe    = name.substring(name.indexOf(") -> ") + 5, name.length)
-            s"$parent:$tpe($params)"
-          }
-          finalName
-        case "func_decl" =>
-          val demangledName = demangle(mangledName)
-          val finalName = demangledName.map { name =>
-            val parent = name.substring(0, name.indexOf("("))
-            val params = name.substring(name.indexOf("(") + 1, name.indexOf(") -> ")).replace(" ", "")
-            val tpe = name.substring(name.indexOf(") -> ") + 5, name.length) match {
-              case "()"  => Defines.Void
-              case other => other
-            }
-            s"$parent:$tpe($params)"
-          }
-          finalName
-        case "destructor_decl" =>
-          val demangledName = demangle(mangledName)
-          val finalName = demangledName.map { name =>
-            s"$name:${Defines.Void}()"
-          }
-          finalName
-        case "class_decl"     => demangle(mangledName)
-        case "struct_decl"    => demangle(mangledName)
-        case "extension_decl" => demangle(mangledName) // TODO: might need special handling
-        case other            =>
-          // TODO: write remaining special handling
-          val demangledName = demangle(mangledName)
-          demangledName
-      }
+          s"$parent:$tpe($params)"
+        }
+        finalName
+      case "destructor_decl" =>
+        val demangledName = demangle(mangledName)
+        val finalName = demangledName.map { name =>
+          s"$name:${Defines.Void}()"
+        }
+        finalName
+      case "class_decl"     => demangle(mangledName)
+      case "struct_decl"    => demangle(mangledName)
+      case "extension_decl" => demangle(mangledName) // TODO: might need special handling
+      case other            =>
+        // TODO: write remaining special handling
+        val demangledName = demangle(mangledName)
+        demangledName
     }
     fullName.map(removeModifier)
   }
