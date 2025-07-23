@@ -22,7 +22,6 @@ object Defines {
   val GlobalNamespace: String = NamespaceTraversal.globalNamespaceName
   val DuplicateSuffix: String = "<duplicate>"
   val Void: String            = "Void"
-  val Unknown                 = "<unknown>"
 
   val SwiftTypes: List[String] =
     List(Any, Nil, Character, String, Int, Float, Double, Bool, Function, Array, Dictionary, Void)

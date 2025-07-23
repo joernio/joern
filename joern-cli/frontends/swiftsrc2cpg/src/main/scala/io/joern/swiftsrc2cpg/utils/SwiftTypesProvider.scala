@@ -304,8 +304,9 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
     Using(new StringReader(jsonString)) { reader =>
       GsonUtils.collectJsonNodesWithProperty(reader, "usr").foreach { jsonObject =>
         val mangledName = jsonObject.get("usr").getAsString
-        result(mangledName) =
-          calculateFullname(mangledName.replaceFirst(":", ""), jsonObject).getOrElse(Defines.Unknown)
+        calculateFullname(mangledName.replaceFirst(":", ""), jsonObject).foreach { fullName =>
+          result(mangledName) = fullName
+        }
       }
     }
   }
