@@ -265,6 +265,21 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
           swiftHelloWorldCommand should contain("-dump-ast")
           swiftHelloWorldCommand should contain("-dump-ast-format")
           swiftHelloWorldCommand should contain("json")
+
+          provider.retrieveDeclFullnameMapping() shouldBe Map(
+            "s:18SwiftHelloWorldLib0bC0CACycfc" -> "SwiftHelloWorldLib.HelloWorld.init:SwiftHelloWorldLib.HelloWorld()",
+            "s:18SwiftHelloWorldLib0bC0C6suffix33_C6D5E4A96804CD03B7512662F178D1D8LLSSvg" -> "SwiftHelloWorldLib.HelloWorld.suffix.getter:Swift.String()",
+            "s:18SwiftHelloWorldLib0bC0C8greeting33_C6D5E4A96804CD03B7512662F178D1D8LLSSvp" -> "Swift.String",
+            "s:18SwiftHelloWorldLib0bC0C6suffix33_C6D5E4A96804CD03B7512662F178D1D8LLSSvp"   -> "Swift.String",
+            "s:15SwiftHelloWorld4MainVACycfc"    -> "SwiftHelloWorld.Main.init:SwiftHelloWorld.Main()",
+            "s:15SwiftHelloWorld4MainV4mainyyFZ" -> "SwiftHelloWorld.Main.main:Void()",
+            "s:15SwiftHelloWorld4MainV"          -> "SwiftHelloWorld.Main",
+            "s:18SwiftHelloWorldLib0bC0C"        -> "SwiftHelloWorldLib.HelloWorld",
+            "s:18SwiftHelloWorldLib0bC0Cfd"      -> "SwiftHelloWorldLib.HelloWorld.deinit:Void()",
+            "s:18SwiftHelloWorldLib0bC0C8greeting33_C6D5E4A96804CD03B7512662F178D1D8LLSSvg" -> "SwiftHelloWorldLib.HelloWorld.greeting.getter:Swift.String()",
+            "s:15SwiftHelloWorld4MainV5$mainyyFZ" -> "SwiftHelloWorld.Main.$main:Void()",
+            "s:18SwiftHelloWorldLib0bC0C5greet4fromySS_tF" -> "SwiftHelloWorldLib.HelloWorld.greet:Void(from:Swift.String)"
+          )
         case None => fail("Can't build the SwiftTypesProvider")
       }
     }
