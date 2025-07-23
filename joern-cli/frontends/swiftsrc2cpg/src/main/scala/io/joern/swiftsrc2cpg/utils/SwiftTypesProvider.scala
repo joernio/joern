@@ -2,6 +2,8 @@ package io.joern.swiftsrc2cpg.utils
 
 import com.google.gson.JsonObject
 import io.joern.swiftsrc2cpg.Config
+import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{SwiftDeclModifier, SwiftDemangleCommand, SwiftSymbolsMapping}
+import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
@@ -18,11 +20,127 @@ object SwiftTypesProvider {
 
   private val MinimumSwiftVersion = "6.1" // This brings in the -dump-ast-format json option
 
-  private val SwiftVersionCommand  = Seq("swift", "--version")
-  private val SwiftcVersionCommand = Seq("swiftc", "--version")
-  private val SwiftVersionCommands = Seq(SwiftVersionCommand, SwiftcVersionCommand)
-  private val SwiftBuildCommand    = Seq("swift", "build", "--verbose")
-  private val SwiftcDumpOptions    = Seq("-dump-ast", "-dump-ast-format", "json")
+  private val SwiftVersionCommand         = Seq("swift", "--version")
+  private val SwiftcVersionCommand        = Seq("swiftc", "--version")
+  private val SwiftVersionCommands        = Seq(SwiftVersionCommand, SwiftcVersionCommand)
+  private val SwiftDemangleVersionCommand = Seq("swift-demangle", "--version")
+  private val SwiftDemangleCommand        = Seq("swift-demangle", "--compact", "--no-sugar")
+  private val SwiftBuildCommand           = Seq("swift", "build", "--verbose")
+  private val SwiftcDumpOptions           = Seq("-dump-ast", "-dump-ast-format", "json")
+
+  /** @see
+    *   https://swiftinit.org/help/what-are-mangled-names
+    */
+  private val SwiftSymbolsMapping = Map(
+    "Sa"  -> "Array",
+    "SB"  -> "BinaryFloatingPoint",
+    "Sb"  -> "Bool",
+    "SD"  -> "Dictionary",
+    "Sd"  -> "Float64",
+    "SE"  -> "Encodable",
+    "Se"  -> "Decodable",
+    "SF"  -> "FloatingPoint",
+    "Sf"  -> "Float32",
+    "SG"  -> "RandomNumberGenerator",
+    "SH"  -> "Hashable",
+    "Sh"  -> "Set",
+    "SI"  -> "DefaultIndices",
+    "Si"  -> "Int",
+    "SJ"  -> "Character",
+    "Sj"  -> "Numeric",
+    "SK"  -> "BidirectionalCollection",
+    "Sk"  -> "RandomAccessCollection",
+    "SL"  -> "Comparable",
+    "Sl"  -> "Collection",
+    "SM"  -> "MutableCollection",
+    "Sm"  -> "RangeReplaceableCollection",
+    "SN"  -> "ClosedRange",
+    "Sn"  -> "Range",
+    "SO"  -> "ObjectIdentifier",
+    "SP"  -> "UnsafePointer",
+    "Sp"  -> "UnsafeMutablePointer",
+    "SQ"  -> "Equatable",
+    "Sq"  -> "Optional",
+    "SR"  -> "UnsafeBufferPointer",
+    "Sr"  -> "UnsafeMutableBufferPointer",
+    "SS"  -> "String",
+    "Ss"  -> "Substring",
+    "ST"  -> "Sequence",
+    "St"  -> "IteratorProtocol",
+    "SU"  -> "UnsignedInteger",
+    "Su"  -> "UInt",
+    "SV"  -> "UnsafeRawPointer",
+    "Sv"  -> "UnsafeMutableRawPointer",
+    "SW"  -> "UnsafeRawBufferPointer",
+    "Sw"  -> "UnsafeMutableRawBufferPointer",
+    "SX"  -> "RangeExpression",
+    "Sx"  -> "Strideable",
+    "SY"  -> "RawRepresentable",
+    "Sy"  -> "StringProtocol",
+    "SZ"  -> "SignedInteger",
+    "Sz"  -> "BinaryInteger",
+    "ScA" -> "Actor",
+    "ScC" -> "CheckedContinuation",
+    "Scc" -> "UnsafeContinuation",
+    "ScE" -> "CancellationError",
+    "Sce" -> "UnownedSerialExecutor",
+    "ScF" -> "Executor",
+    "Scf" -> "SerialExecutor",
+    "ScG" -> "TaskGroup",
+    "Scg" -> "ThrowingTaskGroup",
+    "ScI" -> "AsyncIteratorProtocol",
+    "Sci" -> "AsyncSequence",
+    "ScJ" -> "UnownedJob",
+    "ScM" -> "MainActor",
+    "ScP" -> "TaskPriority",
+    "ScS" -> "AsyncStream",
+    "Scs" -> "AsyncThrowingStream",
+    "ScT" -> "Task",
+    "Sct" -> "UnsafeCurrentTask"
+  )
+
+  /** @see
+    *   [[io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.DeclModifierSyntax]]
+    */
+  private val SwiftDeclModifier = Set(
+    "__consuming",
+    "__setter_access",
+    "_const",
+    "_local",
+    "actor",
+    "async",
+    "borrowing",
+    "class",
+    "consuming",
+    "convenience",
+    "distributed",
+    "dynamic",
+    "fileprivate",
+    "final",
+    "indirect",
+    "infix",
+    "internal",
+    "isolated",
+    "lazy",
+    "mutating",
+    "nonisolated",
+    "nonmutating",
+    "open",
+    "optional",
+    "override",
+    "package",
+    "postfix",
+    "prefix",
+    "private",
+    "public",
+    "reasync",
+    "_resultDependsOnSelf",
+    "required",
+    "static",
+    "transferring",
+    "unowned",
+    "weak"
+  )
 
   /** The regular expression pattern `(?<!\\\\)` is used to split a string of spaces, but only if the space is not
     * preceded by a backslash.
@@ -52,7 +170,7 @@ object SwiftTypesProvider {
     } else {
       SwiftVersionCommands
     }
-    commands.forall { command =>
+    val hasSwift = commands.forall { command =>
       ExternalCommand.run(command, mergeStdErrInStdOut = true).successOption match {
         case Some(outLines) =>
           val swiftVersion = outLines.find(_.startsWith("Swift version ")).map { str =>
@@ -68,6 +186,8 @@ object SwiftTypesProvider {
           false
       }
     }
+    val hasSwiftDemangle = ExternalCommand.run(SwiftDemangleVersionCommand, mergeStdErrInStdOut = true).successful
+    hasSwift && hasSwiftDemangle
   }
 
   private def build(config: Config): Option[SwiftTypesProvider] = {
@@ -119,9 +239,86 @@ object SwiftTypesProvider {
 
 case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[String]]) {
 
-  private def calculateFullname(node: JsonObject): String = {
-    // TODO: do the actual calculation
-    "fullname"
+  private def demangle(mangledName: String): Option[String] = {
+    ExternalCommand
+      .run(SwiftDemangleCommand :+ mangledName, mergeStdErrInStdOut = true)
+      .successOption
+      .map(outLines => outLines.mkString.trim)
+  }
+
+  private def removeModifier(fullName: String): String = {
+    SwiftDeclModifier.foldLeft(fullName) { (cur, repl) =>
+      if (cur.startsWith(s"$repl ") || cur.contains(s" $repl ")) {
+        cur.replace(s" $repl ", " ").stripPrefix(s"$repl ")
+      } else cur
+    }
+  }
+
+  private def calculateFullname(mangledName: String, node: JsonObject): Option[String] = {
+    val fullName = SwiftSymbolsMapping.get(mangledName).orElse {
+      node.get("_kind").getAsString match {
+        case "accessor_decl" =>
+          val demangledName = demangle(mangledName)
+          val finalName = demangledName.map { name =>
+            val parent       = name.substring(0, name.indexOf(".("))
+            val accessorName = name.substring(parent.length + 2, name.indexOf(" in "))
+            val tpe          = name.substring(name.indexOf(".getter : ") + 10, name.length)
+            s"$parent.$accessorName.getter:$tpe()"
+          }
+          finalName
+        case "var_decl" =>
+          val demangledName = demangle(mangledName)
+          val finalName = demangledName.map { name =>
+            name.substring(name.lastIndexOf(") : ") + 4, name.length)
+          }
+          finalName
+        case "constructor_decl" =>
+          val demangledName = demangle(mangledName)
+          val finalName = demangledName.map { name =>
+            val parent = name.substring(0, name.indexOf("("))
+            val params = name.substring(name.indexOf("(") + 1, name.indexOf(") -> ")).replace(" ", "")
+            val tpe    = name.substring(name.indexOf(") -> ") + 5, name.length)
+            s"$parent:$tpe($params)"
+          }
+          finalName
+        case "func_decl" =>
+          val demangledName = demangle(mangledName)
+          val finalName = demangledName.map { name =>
+            val parent = name.substring(0, name.indexOf("("))
+            val params = name.substring(name.indexOf("(") + 1, name.indexOf(") -> ")).replace(" ", "")
+            val tpe = name.substring(name.indexOf(") -> ") + 5, name.length) match {
+              case "()"  => Defines.Void
+              case other => other
+            }
+            s"$parent:$tpe($params)"
+          }
+          finalName
+        case "destructor_decl" =>
+          val demangledName = demangle(mangledName)
+          val finalName = demangledName.map { name =>
+            s"$name:${Defines.Void}()"
+          }
+          finalName
+        case "class_decl"     => demangle(mangledName)
+        case "struct_decl"    => demangle(mangledName)
+        case "extension_decl" => demangle(mangledName) // TODO: might need special handling
+        case other            =>
+          // TODO: write remaining special handling
+          val demangledName = demangle(mangledName)
+          demangledName
+      }
+    }
+    fullName.map(removeModifier)
+  }
+
+  def mappingFromJsonString(jsonString: String, result: mutable.HashMap[String, String]): Unit = {
+    Using(new StringReader(jsonString)) { reader =>
+      GsonUtils.collectJsonNodesWithProperty(reader, "usr").foreach { jsonObject =>
+        val mangledName = jsonObject.get("usr").getAsString
+        result(mangledName) =
+          calculateFullname(mangledName.replaceFirst(":", ""), jsonObject).getOrElse(Defines.Unknown)
+      }
+    }
   }
 
   def retrieveDeclFullnameMapping(): Map[String, String] = {
@@ -132,11 +329,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
         .successOption
         .foreach { outlines =>
           val jsonString = outlines.mkString
-          Using(new StringReader(jsonString)) { reader =>
-            GsonUtils.collectJsonNodesWithProperty(reader, "usr").foreach { jsonObject =>
-              mapping(jsonObject.get("usr").getAsString) = calculateFullname(jsonObject)
-            }
-          }
+          mappingFromJsonString(jsonString, mapping)
         }
     }
     mapping.toMap

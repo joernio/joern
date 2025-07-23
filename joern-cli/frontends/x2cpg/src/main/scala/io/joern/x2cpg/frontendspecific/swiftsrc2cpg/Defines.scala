@@ -21,9 +21,11 @@ object Defines {
   val Nil: String             = "Nil"
   val GlobalNamespace: String = NamespaceTraversal.globalNamespaceName
   val DuplicateSuffix: String = "<duplicate>"
+  val Void: String            = "Void"
+  val Unknown                 = "<unknown>"
 
   val SwiftTypes: List[String] =
-    List(Any, Nil, Character, String, Int, Float, Double, Bool, Function, Array, Dictionary)
+    List(Any, Nil, Character, String, Int, Float, Double, Bool, Function, Array, Dictionary, Void)
 
   val PostfixOperatorMap: Map[String, String] = Map(
     "++"  -> Operators.postIncrement,
