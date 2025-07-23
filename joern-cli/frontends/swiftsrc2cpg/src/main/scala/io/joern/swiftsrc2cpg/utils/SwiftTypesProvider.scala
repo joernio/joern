@@ -1,13 +1,16 @@
 package io.joern.swiftsrc2cpg.utils
 
+import com.google.gson.JsonObject
 import io.joern.swiftsrc2cpg.Config
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 import versionsort.VersionHelper
 
+import java.io.StringReader
 import java.nio.file.Paths
-import scala.util.Try
+import scala.collection.mutable
+import scala.util.{Try, Using}
 
 object SwiftTypesProvider {
 
@@ -110,8 +113,33 @@ object SwiftTypesProvider {
   def build(config: Config, compilerOutput: Seq[String]): SwiftTypesProvider = {
     val swiftcInvocations       = compilerOutput.filter(isSwiftcInvocation)
     val parsedSwiftcInvocations = swiftcInvocations.map(l => parseSwiftcArgs(argsFromLine(l)) ++ SwiftcDumpOptions)
-    new SwiftTypesProvider(parsedSwiftcInvocations)
+    new SwiftTypesProvider(config, parsedSwiftcInvocations)
   }
 }
 
-case class SwiftTypesProvider(parsedSwiftcInvocations: Seq[Seq[String]]) {}
+case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[String]]) {
+
+  private def calculateFullname(node: JsonObject): String = {
+    // TODO: do the actual calculation
+    "fullname"
+  }
+
+  def retrieveDeclFullnameMapping(): Map[String, String] = {
+    val mapping = mutable.HashMap.empty[String, String]
+    parsedSwiftcInvocations.foreach { invocationCommand =>
+      ExternalCommand
+        .run(invocationCommand, mergeStdErrInStdOut = true, workingDir = Some(Paths.get(config.inputPath)))
+        .successOption
+        .foreach { outlines =>
+          val jsonString = outlines.mkString
+          Using(new StringReader(jsonString)) { reader =>
+            GsonUtils.collectJsonNodesWithProperty(reader, "usr").foreach { jsonObject =>
+              mapping(jsonObject.get("usr").getAsString) = calculateFullname(jsonObject)
+            }
+          }
+        }
+    }
+    mapping.toMap
+  }
+
+}

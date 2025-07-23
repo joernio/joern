@@ -235,6 +235,21 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
           swiftHelloWorldCommand should contain("-dump-ast")
           swiftHelloWorldCommand should contain("-dump-ast-format")
           swiftHelloWorldCommand should contain("json")
+
+          provider.retrieveDeclFullnameMapping() shouldBe Map(
+            "s:15SwiftHelloWorld4MainV4mainyyFZ"                                            -> "fullname",
+            "s:18SwiftHelloWorldLib0bC0CACycfc"                                             -> "fullname",
+            "s:18SwiftHelloWorldLib0bC0C8greeting33_C6D5E4A96804CD03B7512662F178D1D8LLSSvg" -> "fullname",
+            "s:15SwiftHelloWorld4MainVACycfc"                                               -> "fullname",
+            "s:18SwiftHelloWorldLib0bC0C"                                                   -> "fullname",
+            "s:18SwiftHelloWorldLib0bC0Cfd"                                                 -> "fullname",
+            "s:15SwiftHelloWorld4MainV"                                                     -> "fullname",
+            "s:18SwiftHelloWorldLib0bC0C8greeting33_C6D5E4A96804CD03B7512662F178D1D8LLSSvp" -> "fullname",
+            "s:15SwiftHelloWorld4MainV5$mainyyFZ"                                           -> "fullname",
+            "s:18SwiftHelloWorldLib0bC0C5greet4fromySS_tF"                                  -> "fullname",
+            "s:18SwiftHelloWorldLib0bC0C6suffix33_C6D5E4A96804CD03B7512662F178D1D8LLSSvp"   -> "fullname",
+            "s:18SwiftHelloWorldLib0bC0C6suffix33_C6D5E4A96804CD03B7512662F178D1D8LLSSvg"   -> "fullname"
+          )
         case None => fail("Can't build the SwiftTypesProvider")
       }
     }
