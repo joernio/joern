@@ -2,7 +2,12 @@ package io.joern.swiftsrc2cpg.utils
 
 import com.google.gson.JsonObject
 import io.joern.swiftsrc2cpg.Config
-import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{SwiftDeclModifier, SwiftDemangleCommand}
+import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{
+  SwiftDeclModifier,
+  SwiftDemangleCommand,
+  SwiftTypeMapping,
+  TypeInfo
+}
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.shiftleft.utils.IOUtils
@@ -12,7 +17,7 @@ import versionsort.VersionHelper
 import java.io.StringReader
 import java.nio.file.Paths
 import scala.collection.mutable
-import scala.util.{Try, Using}
+import scala.util.{Failure, Try, Using}
 
 object SwiftTypesProvider {
 
@@ -27,6 +32,10 @@ object SwiftTypesProvider {
   private val SwiftDemangleCommand        = Seq("swift-demangle", "--compact", "--no-sugar")
   private val SwiftBuildCommand           = Seq("swift", "build", "--verbose")
   private val SwiftcDumpOptions           = Seq("-dump-ast", "-dump-ast-format", "json")
+
+  case class TypeInfo(pos: (Int, Int), tpe: Option[String], fullName: Option[String], node: JsonObject)
+
+  type SwiftTypeMapping = Map[String, Set[TypeInfo]]
 
   /** @see
     *   [[io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.DeclModifierSyntax]]
@@ -123,7 +132,6 @@ object SwiftTypesProvider {
     if (isValidEnvironment(config)) {
       ExternalCommand
         .run(SwiftBuildCommand, mergeStdErrInStdOut = true, workingDir = Some(Paths.get(config.inputPath)))
-        .logIfFailed()
         .successOption
         .map(outLines => build(config, outLines))
     } else None
@@ -170,7 +178,8 @@ object SwiftTypesProvider {
 case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[String]]) {
 
   private def demangle(mangledName: String): Option[String] = {
-    val strippedMangledName = mangledName.replaceFirst(":", "")
+    if (mangledName.isEmpty) return None
+    val strippedMangledName = mangledName.stripPrefix("$").replaceFirst(":", "")
     ExternalCommand
       .run(SwiftDemangleCommand :+ strippedMangledName, mergeStdErrInStdOut = true)
       .successOption
@@ -185,7 +194,15 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
     }
   }
 
+  private def calculateTypename(mangledName: String): Option[String] = {
+    demangle(mangledName) match {
+      case Some("()") => Some(Defines.Void)
+      case other      => other
+    }
+  }
+
   private def calculateFullname(mangledName: String, node: JsonObject): Option[String] = {
+    return demangle(mangledName)
     val fullName = node.get("_kind").getAsString match {
       case "accessor_decl" if node.has("_modify") && node.get("_modify").getAsBoolean =>
         return None
@@ -250,7 +267,16 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
       case "var_decl" =>
         val demangledName = demangle(mangledName)
         val finalName = demangledName.map { name =>
-          name.substring(name.lastIndexOf(" : ") + 3, name.length)
+          if (name.contains(" in ")) {
+            val parent  = name.substring(0, name.indexOf(".("))
+            val varName = name.substring(parent.length + 2, name.indexOf(" in "))
+            val tpe     = name.substring(name.indexOf(") : ") + 4, name.length)
+            s"$parent.$varName:$tpe"
+          } else {
+            val varName = name.substring(0, name.indexOf(" : "))
+            val tpe     = name.substring(name.indexOf(" : ") + 3, name.length)
+            s"$varName:$tpe"
+          }
         }
         finalName
       case "constructor_decl" | "func_decl" =>
@@ -282,30 +308,33 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
     fullName.map(removeModifier)
   }
 
-  def mappingFromJsonString(jsonString: String, result: mutable.HashMap[String, String]): Unit = {
+  def mappingFromJson(jsonString: String, result: mutable.HashMap[String, mutable.HashSet[TypeInfo]]): Unit = {
     Using(new StringReader(jsonString)) { reader =>
-      GsonUtils.collectJsonNodesWithProperty(reader, "usr").foreach { jsonObject =>
-        val mangledName = jsonObject.get("usr").getAsString
-        calculateFullname(mangledName, jsonObject).foreach { fullName =>
-          result(mangledName) = fullName
-        }
+      GsonUtils.collectJsonNodes(reader, Set("usr", "type", "result", "decl_usr")).foreach {
+        case (filename, typeInfo) =>
+          val resolvedTypeInfo = typeInfo.copy(
+            tpe = typeInfo.tpe.flatMap(t => calculateTypename(t)),
+            fullName = typeInfo.fullName.flatMap(t => calculateFullname(t, typeInfo.node))
+          )
+          result
+            .getOrElseUpdate(filename, mutable.HashSet(resolvedTypeInfo))
+            .addOne(resolvedTypeInfo)
       }
     }
   }
 
-  def retrieveDeclFullnameMapping(): Map[String, String] = {
-    val mapping = mutable.HashMap.empty[String, String]
+  def retrieveMappings(): SwiftTypeMapping = {
+    val mapping = mutable.HashMap.empty[String, mutable.HashSet[TypeInfo]]
     parsedSwiftcInvocations.foreach { invocationCommand =>
       ExternalCommand
         .run(invocationCommand, mergeStdErrInStdOut = true, workingDir = Some(Paths.get(config.inputPath)))
-        .logIfFailed()
         .successOption
         .foreach { outlines =>
           val jsonString = outlines.mkString
-          mappingFromJsonString(jsonString, mapping)
+          mappingFromJson(jsonString, mapping)
         }
     }
-    mapping.toMap
+    mapping.map { case (filename, set) => filename -> set.toSet }.toMap
   }
 
 }

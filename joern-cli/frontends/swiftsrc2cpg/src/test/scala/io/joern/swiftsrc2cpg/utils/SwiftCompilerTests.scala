@@ -1,7 +1,7 @@
-package io.joern.swiftsrc2cpg.io
+package io.joern.swiftsrc2cpg.utils
 
 import io.joern.swiftsrc2cpg.Config
-import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider
+import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.TypeInfo
 import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import org.scalatest.matchers.should.Matchers
@@ -227,23 +227,162 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
         """
           |{"_kind":"source_file","filename":"Main.swift","compiler_version":{"_kind":"compiler_version","major":"6","minor":"1","full":"Swift version 6.1.2 (swift-6.1.2-RELEASE)"},"items":[{"_kind":"import_decl","range":{"start":1,"end":8},"module_path":["Foundation"]},{"_kind":"import_decl","range":{"start":19,"end":26},"module_path":["SwiftHelloWorldLib"]},{"_kind":"struct_decl","usr":"s:15SwiftHelloWorld4MainV","range":{"start":52,"end":157},"name":{"_kind":"decl_name","base_name":{"_kind":"base_name","name":"Main"}},"interface_type":"$s15SwiftHelloWorld4MainVmD","access":"internal","non_resilient":true,"attrs":[{"_kind":"main_type_attr","range":{"start":46,"end":47}}],"members":[{"_kind":"func_decl","usr":"s:15SwiftHelloWorld4MainV4mainyyFZ","range":{"start":67,"end":154},"name":{"_kind":"decl_name","base_name":{"_kind":"base_name","name":"main"}},"interface_type":"$syyyc15SwiftHelloWorld4MainVmcD","access":"internal","static":true,"implicit_self_decl":{"_kind":"parameter","name":{"_kind":"decl_name","base_name":{"_kind":"base_name","name":"self"}}},"result":"$ss4VoidaD","thrown_type":"","params":{"_kind":"parameter_list","range":{"start":83,"end":84}},"body":{"_kind":"brace_stmt","range":{"start":94,"end":154},"elements":[{"_kind":"pattern_binding_decl","range":{"start":98,"end":123},"pattern_entries":[{"_kind":"pattern_entry","pattern":{"_kind":"pattern_named","type":"$s18SwiftHelloWorldLib0bC0CD","name":{"_kind":"decl_name","base_name":{"_kind":"base_name","name":"greeter"}}},"original_init":{"_kind":"call_expr","type":"$s18SwiftHelloWorldLib0bC0CD","range":{"start":112,"end":123},"nothrow":true,"isolation_crossing":"none","fn":{"_kind":"constructor_ref_call_expr","type":"$s18SwiftHelloWorldLib0bC0CycD","range":{"start":112,"end":112},"nothrow":true,"isolation_crossing":"none","fn":{"_kind":"declref_expr","implicit":true,"type":"$sy18SwiftHelloWorldLib0bC0CycACmcD","range":{"start":112,"end":112},"decl":{"_kind":"decl_ref","base_name":"init","decl_usr":"s:18SwiftHelloWorldLib0bC0CACycfc","type_usr":"$s18SwiftHelloWorldLib0bC0CycD"},"function_ref":"single_apply"},"args":{"_kind":"argument_list","implicit":true,"args":[{"_kind":"argument","expr":{"_kind":"type_expr","type":"$s18SwiftHelloWorldLib0bC0CmD","range":{"start":112,"end":112}}}]}},"args":{"_kind":"argument_list"}},"processed_init":{"_kind":"call_expr","type":"$s18SwiftHelloWorldLib0bC0CD","range":{"start":112,"end":123},"nothrow":true,"isolation_crossing":"none","fn":{"_kind":"constructor_ref_call_expr","type":"$s18SwiftHelloWorldLib0bC0CycD","range":{"start":112,"end":112},"nothrow":true,"isolation_crossing":"none","fn":{"_kind":"declref_expr","implicit":true,"type":"$sy18SwiftHelloWorldLib0bC0CycACmcD","range":{"start":112,"end":112},"decl":{"_kind":"decl_ref","base_name":"init","decl_usr":"s:18SwiftHelloWorldLib0bC0CACycfc","type_usr":"$s18SwiftHelloWorldLib0bC0CycD"},"function_ref":"single_apply"},"args":{"_kind":"argument_list","implicit":true,"args":[{"_kind":"argument","expr":{"_kind":"type_expr","type":"$s18SwiftHelloWorldLib0bC0CmD","range":{"start":112,"end":112}}}]}},"args":{"_kind":"argument_list"}}}]},{"_kind":"var_decl","range":{"start":102,"end":102},"name":{"_kind":"decl_name","base_name":{"_kind":"base_name","name":"greeter"}},"interface_type":"$s18SwiftHelloWorldLib0bC0CD","access":"private","let":true,"readImpl":"stored","immutable":true},{"_kind":"call_expr","type":"$sytD","range":{"start":127,"end":151},"nothrow":true,"isolation_crossing":"none","fn":{"_kind":"dot_syntax_call_expr","type":"$s4fromySS_tcD","range":{"start":127,"end":135},"nothrow":true,"isolation_crossing":"none","fn":{"_kind":"declref_expr","type":"$syySS_tc18SwiftHelloWorldLib0bC0CcD","range":{"start":135,"end":135},"decl":{"_kind":"decl_ref","base_name":"greet","decl_usr":"s:18SwiftHelloWorldLib0bC0C5greet4fromySS_tF","type_usr":"$s4fromySS_tcD"},"function_ref":"single_apply"},"args":{"_kind":"argument_list","implicit":true,"args":[{"_kind":"argument","expr":{"_kind":"declref_expr","type":"$s18SwiftHelloWorldLib0bC0CD","range":{"start":127,"end":127},"decl":{"_kind":"decl_ref","base_name":"greeter","decl_usr":"","type_usr":"$s18SwiftHelloWorldLib0bC0CD"},"function_ref":"unapplied"}}]}},"args":{"_kind":"argument_list","labels":"from:","args":[{"_kind":"argument","label":"from","expr":{"_kind":"string_literal_expr","type":"$sSSD","range":{"start":147,"end":147},"encoding":"utf8","value":"me","builtin_initializer":{"_kind":"decl_ref","base_name":"init","decl_usr":"s:SS21_builtinStringLiteral17utf8CodeUnitCount7isASCIISSBp_BwBi1_tcfc","type_usr":"$s21_builtinStringLiteral17utf8CodeUnitCount7isASCIISSBp_BwBi1_tcD"}}}]}}]}},{"_kind":"func_decl","usr":"s:15SwiftHelloWorld4MainV5$mainyyFZ","implicit":true,"name":{"_kind":"decl_name","base_name":{"_kind":"base_name","name":"$main"}},"interface_type":"$syyyc15SwiftHelloWorld4MainVmcD","access":"internal","static":true,"implicit_self_decl":{"_kind":"parameter","name":{"_kind":"decl_name","base_name":{"_kind":"base_name","name":"self"}}},"result":"$sytD","thrown_type":"","params":{"_kind":"parameter_list"},"body":{"_kind":"brace_stmt","implicit":true,"range":{"start":46,"end":46},"elements":[{"_kind":"return_stmt","implicit":true,"range":{"start":46,"end":46},"result":{"_kind":"call_expr","implicit":true,"type":"$ss4VoidaD","range":{"start":46,"end":46},"nothrow":true,"isolation_crossing":"none","fn":{"_kind":"dot_syntax_call_expr","implicit":true,"type":"$syyScMYccD","range":{"start":46,"end":46},"nothrow":true,"isolation_crossing":"none","fn":{"_kind":"function_conversion_expr","implicit":true,"type":"$syyyScMYcc15SwiftHelloWorld4MainVmcD","range":{"start":46,"end":46},"sub_expr":{"_kind":"declref_expr","implicit":true,"type":"$syyyc15SwiftHelloWorld4MainVmcD","range":{"start":46,"end":46},"decl":{"_kind":"decl_ref","base_name":"main","decl_usr":"s:15SwiftHelloWorld4MainV4mainyyFZ","type_usr":"$syycD"},"function_ref":"double_apply"}},"args":{"_kind":"argument_list","implicit":true,"args":[{"_kind":"argument","expr":{"_kind":"type_expr","implicit":true,"type":"$s15SwiftHelloWorld4MainVmD"}}]}},"args":{"_kind":"argument_list","implicit":true}}}]}},{"_kind":"constructor_decl","usr":"s:15SwiftHelloWorld4MainVACycfc","implicit":true,"range":{"start":59,"end":59},"name":{"_kind":"decl_name","base_name":{"_kind":"base_name","special":"init"}},"interface_type":"$sy15SwiftHelloWorld4MainVycACmcD","access":"internal","designated":true,"implicit_self_decl":{"_kind":"parameter","name":{"_kind":"decl_name","base_name":{"_kind":"base_name","name":"self"}}},"thrown_type":"","params":{"_kind":"parameter_list"},"body":{"_kind":"brace_stmt","implicit":true,"range":{"start":59,"end":59},"elements":[{"_kind":"return_stmt","implicit":true,"range":{"start":59,"end":59}}]}}]}]}
           |""".stripMargin
-      val mapping  = mutable.HashMap.empty[String, String]
+      val mapping  = mutable.HashMap.empty[String, mutable.HashSet[TypeInfo]]
       val provider = new SwiftTypesProvider(Config(), Nil)
-      provider.mappingFromJsonString(jsonStringHelloWorldSwift, mapping)
-      provider.mappingFromJsonString(jsonStringMain, mapping)
-      mapping shouldBe Map(
-        "s:18SwiftHelloWorldLib0bC0CACycfc" -> "SwiftHelloWorldLib.HelloWorld.init:SwiftHelloWorldLib.HelloWorld()",
-        "s:18SwiftHelloWorldLib0bC0C6suffix33_C6D5E4A96804CD03B7512662F178D1D8LLSSvg" -> "SwiftHelloWorldLib.HelloWorld.suffix:Swift.String()",
-        "s:18SwiftHelloWorldLib0bC0C8greeting33_C6D5E4A96804CD03B7512662F178D1D8LLSSvp" -> "Swift.String",
-        "s:18SwiftHelloWorldLib0bC0C6suffix33_C6D5E4A96804CD03B7512662F178D1D8LLSSvp"   -> "Swift.String",
-        "s:15SwiftHelloWorld4MainVACycfc"    -> "SwiftHelloWorld.Main.init:SwiftHelloWorld.Main()",
-        "s:15SwiftHelloWorld4MainV4mainyyFZ" -> "SwiftHelloWorld.Main.main:Void()",
-        "s:15SwiftHelloWorld4MainV"          -> "SwiftHelloWorld.Main",
-        "s:18SwiftHelloWorldLib0bC0C"        -> "SwiftHelloWorldLib.HelloWorld",
-        "s:18SwiftHelloWorldLib0bC0Cfd"      -> "SwiftHelloWorldLib.HelloWorld.deinit:Void()",
-        "s:18SwiftHelloWorldLib0bC0C8greeting33_C6D5E4A96804CD03B7512662F178D1D8LLSSvg" -> "SwiftHelloWorldLib.HelloWorld.greeting:Swift.String()",
-        "s:15SwiftHelloWorld4MainV5$mainyyFZ"          -> "SwiftHelloWorld.Main.$main:Void()",
-        "s:18SwiftHelloWorldLib0bC0C5greet4fromySS_tF" -> "SwiftHelloWorldLib.HelloWorld.greet:Void(from:Swift.String)"
+      provider.mappingFromJson(jsonStringHelloWorldSwift, mapping)
+      provider.mappingFromJson(jsonStringMain, mapping)
+      val result = mapping.flatMap { case (filename, typeInfoList) =>
+        typeInfoList.map { typeInfo =>
+          (filename, typeInfo.node.get("_kind").getAsString, typeInfo.pos, typeInfo.tpe, typeInfo.fullName)
+        }
+      }
+      result.toList shouldBe List(
+        ("HelloWorldSwift.swift", "array_expr", (195, 224), Some("[Any]"), None),
+        ("HelloWorldSwift.swift", "destructor_decl", (33, 33), None, Some("SwiftHelloWorldLib.HelloWorld.deinit")),
+        (
+          "HelloWorldSwift.swift",
+          "func_decl",
+          (155, 233),
+          Some("Void"),
+          Some("SwiftHelloWorldLib.HelloWorld.greet(from: Swift.String) -> ()")
+        ),
+        ("HelloWorldSwift.swift", "string_literal_expr", (123, 123), Some("Swift.String"), None),
+        (
+          "HelloWorldSwift.swift",
+          "dot_syntax_call_expr",
+          (215, 215),
+          Some("(Swift.String, Swift.String) -> Swift.String"),
+          None
+        ),
+        ("HelloWorldSwift.swift", "binary_expr", (195, 206), Some("Swift.String"), None),
+        (
+          "HelloWorldSwift.swift",
+          "dot_syntax_call_expr",
+          (222, 222),
+          Some("(Swift.String, Swift.String) -> Swift.String"),
+          None
+        ),
+        (
+          "HelloWorldSwift.swift",
+          "var_decl",
+          (60, 60),
+          None,
+          Some("SwiftHelloWorldLib.HelloWorld.(greeting in _C6D5E4A96804CD03B7512662F178D1D8) : Swift.String")
+        ),
+        (
+          "HelloWorldSwift.swift",
+          "dot_syntax_call_expr",
+          (204, 204),
+          Some("(Swift.String, Swift.String) -> Swift.String"),
+          None
+        ),
+        ("HelloWorldSwift.swift", "string_literal_expr", (79, 79), Some("Swift.String"), None),
+        ("HelloWorldSwift.swift", "erasure_expr", (195, 224), Some("Any"), None),
+        ("HelloWorldSwift.swift", "string_literal_expr", (206, 206), Some("Swift.String"), None),
+        ("HelloWorldSwift.swift", "binary_expr", (195, 217), Some("Swift.String"), None),
+        ("HelloWorldSwift.swift", "declref_expr", (224, 224), Some("SwiftHelloWorldLib.HelloWorld"), None),
+        (
+          "HelloWorldSwift.swift",
+          "var_decl",
+          (106, 106),
+          None,
+          Some("SwiftHelloWorldLib.HelloWorld.(suffix in _C6D5E4A96804CD03B7512662F178D1D8) : Swift.String")
+        ),
+        ("HelloWorldSwift.swift", "vararg_expansion_expr", (195, 224), Some("[Any]"), None),
+        ("HelloWorldSwift.swift", "class_decl", (27, 236), None, Some("SwiftHelloWorldLib.HelloWorld")),
+        ("HelloWorldSwift.swift", "declref_expr", (217, 217), Some("Swift.String"), None),
+        (
+          "HelloWorldSwift.swift",
+          "declref_expr",
+          (204, 204),
+          Some("(Swift.String.Type) -> (Swift.String, Swift.String) -> Swift.String"),
+          None
+        ),
+        (
+          "HelloWorldSwift.swift",
+          "accessor_decl",
+          (106, 106),
+          Some("Swift.String"),
+          Some("SwiftHelloWorldLib.HelloWorld.(suffix in _C6D5E4A96804CD03B7512662F178D1D8).getter : Swift.String")
+        ),
+        (
+          "HelloWorldSwift.swift",
+          "constructor_decl",
+          (136, 144),
+          None,
+          Some("SwiftHelloWorldLib.HelloWorld.init() -> SwiftHelloWorldLib.HelloWorld")
+        ),
+        ("HelloWorldSwift.swift", "type_expr", (204, 204), Some("Swift.String.Type"), None),
+        ("HelloWorldSwift.swift", "member_ref_expr", (195, 195), Some("Swift.String"), None),
+        (
+          "HelloWorldSwift.swift",
+          "declref_expr",
+          (222, 222),
+          Some("(Swift.String.Type) -> (Swift.String, Swift.String) -> Swift.String"),
+          None
+        ),
+        (
+          "HelloWorldSwift.swift",
+          "declref_expr",
+          (215, 215),
+          Some("(Swift.String.Type) -> (Swift.String, Swift.String) -> Swift.String"),
+          None
+        ),
+        ("HelloWorldSwift.swift", "member_ref_expr", (224, 224), Some("Swift.String"), None),
+        (
+          "HelloWorldSwift.swift",
+          "declref_expr",
+          (189, 189),
+          Some("(_: Any..., separator: Swift.String, terminator: Swift.String) -> ()"),
+          None
+        ),
+        ("HelloWorldSwift.swift", "binary_expr", (195, 224), Some("Swift.String"), None),
+        ("HelloWorldSwift.swift", "type_expr", (215, 215), Some("Swift.String.Type"), None),
+        ("HelloWorldSwift.swift", "type_expr", (222, 222), Some("Swift.String.Type"), None),
+        ("HelloWorldSwift.swift", "call_expr", (189, 230), Some("Void"), None),
+        (
+          "HelloWorldSwift.swift",
+          "accessor_decl",
+          (60, 60),
+          Some("Swift.String"),
+          Some("SwiftHelloWorldLib.HelloWorld.(greeting in _C6D5E4A96804CD03B7512662F178D1D8).getter : Swift.String")
+        ),
+        ("HelloWorldSwift.swift", "declref_expr", (195, 195), Some("SwiftHelloWorldLib.HelloWorld"), None),
+        ("HelloWorldSwift.swift", "default_argument_expr", (194, 194), Some("Swift.String"), None),
+        (
+          "Main.swift",
+          "function_conversion_expr",
+          (46, 46),
+          Some("(SwiftHelloWorld.Main.Type) -> @Swift.MainActor () -> ()"),
+          None
+        ),
+        ("Main.swift", "struct_decl", (52, 157), None, Some("SwiftHelloWorld.Main")),
+        ("Main.swift", "declref_expr", (46, 46), Some("(SwiftHelloWorld.Main.Type) -> () -> ()"), None),
+        ("Main.swift", "call_expr", (127, 151), Some("Void"), None),
+        ("Main.swift", "call_expr", (112, 123), Some("SwiftHelloWorldLib.HelloWorld"), None),
+        ("Main.swift", "declref_expr", (127, 127), Some("SwiftHelloWorldLib.HelloWorld"), None),
+        ("Main.swift", "constructor_decl", (59, 59), None, Some("SwiftHelloWorld.Main.init() -> SwiftHelloWorld.Main")),
+        ("Main.swift", "constructor_ref_call_expr", (112, 112), Some("() -> SwiftHelloWorldLib.HelloWorld"), None),
+        ("Main.swift", "string_literal_expr", (147, 147), Some("Swift.String"), None),
+        ("Main.swift", "type_expr", (112, 112), Some("SwiftHelloWorldLib.HelloWorld.Type"), None),
+        ("Main.swift", "func_decl", (67, 154), Some("Swift.Void"), Some("static SwiftHelloWorld.Main.main() -> ()")),
+        ("Main.swift", "dot_syntax_call_expr", (127, 135), Some("(from: Swift.String) -> ()"), None),
+        ("Main.swift", "call_expr", (46, 46), Some("Swift.Void"), None),
+        ("Main.swift", "dot_syntax_call_expr", (46, 46), Some("@Swift.MainActor () -> ()"), None),
+        (
+          "Main.swift",
+          "declref_expr",
+          (112, 112),
+          Some("(SwiftHelloWorldLib.HelloWorld.Type) -> () -> SwiftHelloWorldLib.HelloWorld"),
+          None
+        ),
+        (
+          "Main.swift",
+          "declref_expr",
+          (135, 135),
+          Some("(SwiftHelloWorldLib.HelloWorld) -> (Swift.String) -> ()"),
+          None
+        )
       )
     }
 
@@ -282,32 +421,6 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
           swiftHelloWorldCommand should contain("-dump-ast")
           swiftHelloWorldCommand should contain("-dump-ast-format")
           swiftHelloWorldCommand should contain("json")
-
-          provider.retrieveDeclFullnameMapping() shouldBe Map(
-            "s:18SwiftHelloWorldLib0bC0C4bar2SivW"    -> "SwiftHelloWorldLib.HelloWorld.didSet_bar2:Void()",
-            "s:18SwiftHelloWorldLib0bC0C4bar2Sivp"    -> "Swift.Int",
-            "s:18SwiftHelloWorldLib0bC0C7membersSivs" -> "SwiftHelloWorldLib.HelloWorld.members:Void(Swift.Int)",
-            "s:18SwiftHelloWorldLib0bC0CACycfc" -> "SwiftHelloWorldLib.HelloWorld.init:SwiftHelloWorldLib.HelloWorld()",
-            "s:15SwiftHelloWorld4MainVACycfc"   -> "SwiftHelloWorld.Main.init:SwiftHelloWorld.Main()",
-            "s:18SwiftHelloWorldLib0bC0C8_membersSivp" -> "Swift.Int",
-            "s:18SwiftHelloWorldLib0bC0C"              -> "SwiftHelloWorldLib.HelloWorld",
-            "s:18SwiftHelloWorldLib0bC0C8_membersSivg" -> "SwiftHelloWorldLib.HelloWorld._members:Swift.Int()",
-            "s:18SwiftHelloWorldLib0bC0Cfd"            -> "SwiftHelloWorldLib.HelloWorld.deinit:Void()",
-            "s:18SwiftHelloWorldLib0bC0C7membersSivp"  -> "Swift.Int",
-            "s:18SwiftHelloWorldLib0bC0C8greeting33_C6D5E4A96804CD03B7512662F178D1D8LLSSvp" -> "Swift.String",
-            "s:15SwiftHelloWorld4MainV4mainyyFZ"   -> "SwiftHelloWorld.Main.main:Void()",
-            "s:18SwiftHelloWorldLib0bC0C4bar2Sivw" -> "SwiftHelloWorldLib.HelloWorld.willSet_bar2:Void()",
-            "s:15SwiftHelloWorld4MainV5$mainyyFZ"  -> "SwiftHelloWorld.Main.$main:Void()",
-            "s:18SwiftHelloWorldLib0bC0C5greet4fromySS_tF" -> "SwiftHelloWorldLib.HelloWorld.greet:Void(from:Swift.String)",
-            "s:18SwiftHelloWorldLib0bC0C8_membersSivs" -> "SwiftHelloWorldLib.HelloWorld._members:Void(Swift.Int)",
-            "s:18SwiftHelloWorldLib0bC0C8greeting33_C6D5E4A96804CD03B7512662F178D1D8LLSSvg" -> "SwiftHelloWorldLib.HelloWorld.greeting:Swift.String()",
-            "s:18SwiftHelloWorldLib0bC0C4bar2Sivs" -> "SwiftHelloWorldLib.HelloWorld.bar2:Void(Swift.Int)",
-            "s:18SwiftHelloWorldLib0bC0C4bar2Sivg" -> "SwiftHelloWorldLib.HelloWorld.bar2:Swift.Int()",
-            "s:18SwiftHelloWorldLib0bC0C6suffix33_C6D5E4A96804CD03B7512662F178D1D8LLSSvp" -> "Swift.String",
-            "s:18SwiftHelloWorldLib0bC0C6suffix33_C6D5E4A96804CD03B7512662F178D1D8LLSSvg" -> "SwiftHelloWorldLib.HelloWorld.suffix:Swift.String()",
-            "s:18SwiftHelloWorldLib0bC0C7membersSivg" -> "SwiftHelloWorldLib.HelloWorld.members:Swift.Int()",
-            "s:15SwiftHelloWorld4MainV"               -> "SwiftHelloWorld.Main"
-          )
         case None => fail("Can't build the SwiftTypesProvider")
       }
     }
