@@ -37,9 +37,10 @@ object GsonUtils {
       while (jsonReader.hasNext) {
         val name = jsonReader.nextName()
         jsonReader.peek() match {
-          case com.google.gson.stream.JsonToken.BEGIN_OBJECT =>
+          case com.google.gson.stream.JsonToken.BEGIN_OBJECT if obj.has("_kind") =>
             val value = parseObject()
             obj.add(name, value)
+          case com.google.gson.stream.JsonToken.BEGIN_OBJECT => // don't descend
           case com.google.gson.stream.JsonToken.BEGIN_ARRAY =>
             val value = parseArray()
             obj.add(name, value)
