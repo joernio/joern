@@ -147,7 +147,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         // Rewrite `$xs[] = <value_expr>` as `array_push($xs, <value_expr>)` to simplify finding dataflows.
         astForEmptyArrayDimAssign(assignment, arrayDimFetch)
       case arrayExpr: (PhpArrayExpr | PhpListExpr) =>
-        astForArrayUnpack(assignment, arrayExpr)
+        astForArrayUnpack(assignment, arrayExpr, astForExpr(assignment.source))
       case _ =>
         val operatorName = assignment.assignOp
 
@@ -241,7 +241,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   /** Lower the array/list unpack. For example `[$a, $b] = $arr;` will be lowered to `$a = $arr[0]; $b = $arr[1];`
     */
-  private def astForArrayUnpack(assignment: PhpAssignment, target: PhpArrayExpr | PhpListExpr): Ast = {
+  protected def astForArrayUnpack(assignment: PhpNode, target: PhpArrayExpr | PhpListExpr, sourceAst: Ast): Ast = {
     val loweredAssignNodes = mutable.ListBuffer.empty[Ast]
 
     // create a Identifier ast for given name
@@ -316,7 +316,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       }
     }
 
-    val sourceAst = astForExpr(assignment.source)
     val itemsOf = (exp: PhpArrayExpr | PhpListExpr) =>
       exp match {
         case x: PhpArrayExpr => x.items
