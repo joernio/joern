@@ -194,6 +194,7 @@ object SwiftTypesProvider {
     if (isValidEnvironment(config)) {
       ExternalCommand
         .run(SwiftBuildCommand, mergeStdErrInStdOut = true, workingDir = Some(Paths.get(config.inputPath)))
+        .logIfFailed()
         .successOption
         .map(outLines => build(config, outLines))
     } else None
@@ -240,8 +241,9 @@ object SwiftTypesProvider {
 case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[String]]) {
 
   private def demangle(mangledName: String): Option[String] = {
+    val strippedMangledName = mangledName.replaceFirst(":", "")
     ExternalCommand
-      .run(SwiftDemangleCommand :+ mangledName, mergeStdErrInStdOut = true)
+      .run(SwiftDemangleCommand :+ strippedMangledName, mergeStdErrInStdOut = true)
       .successOption
       .map(outLines => outLines.mkString.trim)
   }
@@ -256,19 +258,70 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
 
   private def calculateFullname(mangledName: String, node: JsonObject): Option[String] = {
     val fullName = node.get("_kind").getAsString match {
-      case "accessor_decl" =>
+      case "accessor_decl" if node.has("_modify") && node.get("_modify").getAsBoolean =>
+        return None
+      case "accessor_decl" if node.has("get") && node.get("get").getAsBoolean =>
         val demangledName = demangle(mangledName)
         val finalName = demangledName.map { name =>
-          val parent       = name.substring(0, name.indexOf(".("))
-          val accessorName = name.substring(parent.length + 2, name.indexOf(" in "))
-          val tpe          = name.substring(name.indexOf(".getter : ") + 10, name.length)
-          s"$parent.$accessorName.getter:$tpe()"
+          if (name.contains(" in ")) {
+            val parent       = name.substring(0, name.indexOf(".("))
+            val accessorName = name.substring(parent.length + 2, name.indexOf(" in "))
+            val tpe          = name.substring(name.indexOf(".getter : ") + 10, name.length)
+            s"$parent.$accessorName:$tpe()"
+          } else {
+            val accessorName = name.substring(0, name.indexOf(".getter : "))
+            val tpe          = name.substring(name.indexOf(".getter : ") + 10, name.length)
+            s"$accessorName:$tpe()"
+          }
+        }
+        finalName
+      case "accessor_decl" if node.has("set") && node.get("set").getAsBoolean =>
+        val demangledName = demangle(mangledName)
+        val finalName = demangledName.map { name =>
+          if (name.contains(" in ")) {
+            val parent       = name.substring(0, name.indexOf(".("))
+            val accessorName = name.substring(parent.length + 2, name.indexOf(" in "))
+            val tpe          = name.substring(name.indexOf(".setter : ") + 10, name.length)
+            s"$parent.$accessorName:${Defines.Void}($tpe)"
+          } else {
+            val accessorName = name.substring(0, name.indexOf(".setter : "))
+            val tpe          = name.substring(name.indexOf(".setter : ") + 10, name.length)
+            s"$accessorName:${Defines.Void}($tpe)"
+          }
+        }
+        finalName
+      case "accessor_decl" if node.has("willSet") && node.get("willSet").getAsBoolean =>
+        val demangledName = demangle(mangledName)
+        val finalName = demangledName.map { name =>
+          if (name.contains(" in ")) {
+            val parent       = name.substring(0, name.indexOf(".("))
+            val accessorName = name.substring(parent.length + 2, name.indexOf(" in "))
+            s"$parent.willSet_$accessorName:${Defines.Void}()"
+          } else {
+            val parent       = name.substring(0, name.substring(0, name.indexOf(".willset")).lastIndexOf("."))
+            val accessorName = name.substring(parent.length + 1, name.indexOf(".willset"))
+            s"$parent.willSet_$accessorName:${Defines.Void}()"
+          }
+        }
+        finalName
+      case "accessor_decl" if node.has("didSet") && node.get("didSet").getAsBoolean =>
+        val demangledName = demangle(mangledName)
+        val finalName = demangledName.map { name =>
+          if (name.contains(" in ")) {
+            val parent       = name.substring(0, name.indexOf(".("))
+            val accessorName = name.substring(parent.length + 2, name.indexOf(" in "))
+            s"$parent.didSet_$accessorName:${Defines.Void}()"
+          } else {
+            val parent       = name.substring(0, name.substring(0, name.indexOf(".didset")).lastIndexOf("."))
+            val accessorName = name.substring(parent.length + 1, name.indexOf(".didset"))
+            s"$parent.didSet_$accessorName:${Defines.Void}()"
+          }
         }
         finalName
       case "var_decl" =>
         val demangledName = demangle(mangledName)
         val finalName = demangledName.map { name =>
-          name.substring(name.lastIndexOf(") : ") + 4, name.length)
+          name.substring(name.lastIndexOf(" : ") + 3, name.length)
         }
         finalName
       case "constructor_decl" | "func_decl" =>
@@ -304,7 +357,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
     Using(new StringReader(jsonString)) { reader =>
       GsonUtils.collectJsonNodesWithProperty(reader, "usr").foreach { jsonObject =>
         val mangledName = jsonObject.get("usr").getAsString
-        calculateFullname(mangledName.replaceFirst(":", ""), jsonObject).foreach { fullName =>
+        calculateFullname(mangledName, jsonObject).foreach { fullName =>
           result(mangledName) = fullName
         }
       }
@@ -316,6 +369,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
     parsedSwiftcInvocations.foreach { invocationCommand =>
       ExternalCommand
         .run(invocationCommand, mergeStdErrInStdOut = true, workingDir = Some(Paths.get(config.inputPath)))
+        .logIfFailed()
         .successOption
         .foreach { outlines =>
           val jsonString = outlines.mkString

@@ -54,7 +54,24 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
         |	private let greeting: String = "Hello World"
         |	private let suffix: String = "!"
         |
-        |	public init() {}
+        |   var _members: Int = 2
+        |   var members: Int {
+        |      get {
+        |        return _members
+        |      }
+        |      set (newVal) {
+        |        if newVal >= 2 {
+        |          _members = newVal
+        |        }
+        |      }
+        |   }
+        |
+        |   var bar2: Int {
+        |     willSet {}
+        |     didSet {}
+        |   }
+        |
+        |	public init() { self.bar2 = 1 }
         |
         |	public func greet(from name: String) {
         |		print(greeting + " from " + name + suffix)
@@ -267,18 +284,29 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
           swiftHelloWorldCommand should contain("json")
 
           provider.retrieveDeclFullnameMapping() shouldBe Map(
+            "s:18SwiftHelloWorldLib0bC0C4bar2SivW"    -> "SwiftHelloWorldLib.HelloWorld.didSet_bar2:Void()",
+            "s:18SwiftHelloWorldLib0bC0C4bar2Sivp"    -> "Swift.Int",
+            "s:18SwiftHelloWorldLib0bC0C7membersSivs" -> "SwiftHelloWorldLib.HelloWorld.members:Void(Swift.Int)",
             "s:18SwiftHelloWorldLib0bC0CACycfc" -> "SwiftHelloWorldLib.HelloWorld.init:SwiftHelloWorldLib.HelloWorld()",
-            "s:18SwiftHelloWorldLib0bC0C6suffix33_C6D5E4A96804CD03B7512662F178D1D8LLSSvg" -> "SwiftHelloWorldLib.HelloWorld.suffix.getter:Swift.String()",
+            "s:15SwiftHelloWorld4MainVACycfc"   -> "SwiftHelloWorld.Main.init:SwiftHelloWorld.Main()",
+            "s:18SwiftHelloWorldLib0bC0C8_membersSivp" -> "Swift.Int",
+            "s:18SwiftHelloWorldLib0bC0C"              -> "SwiftHelloWorldLib.HelloWorld",
+            "s:18SwiftHelloWorldLib0bC0C8_membersSivg" -> "SwiftHelloWorldLib.HelloWorld._members:Swift.Int()",
+            "s:18SwiftHelloWorldLib0bC0Cfd"            -> "SwiftHelloWorldLib.HelloWorld.deinit:Void()",
+            "s:18SwiftHelloWorldLib0bC0C7membersSivp"  -> "Swift.Int",
             "s:18SwiftHelloWorldLib0bC0C8greeting33_C6D5E4A96804CD03B7512662F178D1D8LLSSvp" -> "Swift.String",
-            "s:18SwiftHelloWorldLib0bC0C6suffix33_C6D5E4A96804CD03B7512662F178D1D8LLSSvp"   -> "Swift.String",
-            "s:15SwiftHelloWorld4MainVACycfc"    -> "SwiftHelloWorld.Main.init:SwiftHelloWorld.Main()",
-            "s:15SwiftHelloWorld4MainV4mainyyFZ" -> "SwiftHelloWorld.Main.main:Void()",
-            "s:15SwiftHelloWorld4MainV"          -> "SwiftHelloWorld.Main",
-            "s:18SwiftHelloWorldLib0bC0C"        -> "SwiftHelloWorldLib.HelloWorld",
-            "s:18SwiftHelloWorldLib0bC0Cfd"      -> "SwiftHelloWorldLib.HelloWorld.deinit:Void()",
-            "s:18SwiftHelloWorldLib0bC0C8greeting33_C6D5E4A96804CD03B7512662F178D1D8LLSSvg" -> "SwiftHelloWorldLib.HelloWorld.greeting.getter:Swift.String()",
-            "s:15SwiftHelloWorld4MainV5$mainyyFZ" -> "SwiftHelloWorld.Main.$main:Void()",
-            "s:18SwiftHelloWorldLib0bC0C5greet4fromySS_tF" -> "SwiftHelloWorldLib.HelloWorld.greet:Void(from:Swift.String)"
+            "s:15SwiftHelloWorld4MainV4mainyyFZ"   -> "SwiftHelloWorld.Main.main:Void()",
+            "s:18SwiftHelloWorldLib0bC0C4bar2Sivw" -> "SwiftHelloWorldLib.HelloWorld.willSet_bar2:Void()",
+            "s:15SwiftHelloWorld4MainV5$mainyyFZ"  -> "SwiftHelloWorld.Main.$main:Void()",
+            "s:18SwiftHelloWorldLib0bC0C5greet4fromySS_tF" -> "SwiftHelloWorldLib.HelloWorld.greet:Void(from:Swift.String)",
+            "s:18SwiftHelloWorldLib0bC0C8_membersSivs" -> "SwiftHelloWorldLib.HelloWorld._members:Void(Swift.Int)",
+            "s:18SwiftHelloWorldLib0bC0C8greeting33_C6D5E4A96804CD03B7512662F178D1D8LLSSvg" -> "SwiftHelloWorldLib.HelloWorld.greeting:Swift.String()",
+            "s:18SwiftHelloWorldLib0bC0C4bar2Sivs" -> "SwiftHelloWorldLib.HelloWorld.bar2:Void(Swift.Int)",
+            "s:18SwiftHelloWorldLib0bC0C4bar2Sivg" -> "SwiftHelloWorldLib.HelloWorld.bar2:Swift.Int()",
+            "s:18SwiftHelloWorldLib0bC0C6suffix33_C6D5E4A96804CD03B7512662F178D1D8LLSSvp" -> "Swift.String",
+            "s:18SwiftHelloWorldLib0bC0C6suffix33_C6D5E4A96804CD03B7512662F178D1D8LLSSvg" -> "SwiftHelloWorldLib.HelloWorld.suffix:Swift.String()",
+            "s:18SwiftHelloWorldLib0bC0C7membersSivg" -> "SwiftHelloWorldLib.HelloWorld.members:Swift.Int()",
+            "s:15SwiftHelloWorld4MainV"               -> "SwiftHelloWorld.Main"
           )
         case None => fail("Can't build the SwiftTypesProvider")
       }
