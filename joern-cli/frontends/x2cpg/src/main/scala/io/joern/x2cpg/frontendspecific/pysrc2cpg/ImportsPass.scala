@@ -36,7 +36,7 @@ class ImportsPass(cpg: Cpg) extends XImportsPass(cpg) {
             }
           }
           .getOrElse("")
-      case x => x
+      case x => x + s".$what"
     }
   }
 
