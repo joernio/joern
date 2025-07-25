@@ -25,7 +25,13 @@ object SwiftTypesProvider {
   private val SwiftBuildCommand    = Seq("swift", "build", "--verbose")
   private val SwiftcDumpOptions    = Seq("-dump-ast", "-dump-ast-format", "json")
 
-  case class TypeInfo(range: (Int, Int), tpe: Option[String], fullName: Option[String], nodeKind: String)
+  case class TypeInfo(
+    filename: String,
+    range: (Int, Int),
+    tpe: Option[String],
+    fullName: Option[String],
+    nodeKind: String
+  )
 
   type SwiftTypeMapping = Map[String, Set[TypeInfo]]
 
@@ -224,12 +230,11 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
 
   def mappingFromJson(jsonString: String, result: mutable.HashMap[String, mutable.HashSet[TypeInfo]]): Unit = {
     Using(new StringReader(jsonString)) { reader =>
-      GsonTypeInfoReader.collectTypeInfo(reader).foreach { case (filename, typeInfo) =>
-        val resolvedTypeInfo = typeInfo
-          .copy(tpe = typeInfo.tpe.flatMap(calculateTypename), fullName = typeInfo.fullName.flatMap(calculateFullname))
-        result
-          .getOrElseUpdate(filename, mutable.HashSet(resolvedTypeInfo))
-          .addOne(resolvedTypeInfo)
+      GsonTypeInfoReader.collectTypeInfo(reader).foreach { typeInfo =>
+        val demangledTpe      = typeInfo.tpe.flatMap(calculateTypename)
+        val demangledFullName = typeInfo.fullName.flatMap(calculateFullname)
+        val resolvedTypeInfo  = typeInfo.copy(tpe = demangledTpe, fullName = demangledFullName)
+        result.getOrElseUpdate(typeInfo.filename, mutable.HashSet.empty).addOne(resolvedTypeInfo)
       }
     }
   }
