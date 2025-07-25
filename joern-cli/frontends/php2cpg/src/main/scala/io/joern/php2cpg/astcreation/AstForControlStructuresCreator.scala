@@ -207,8 +207,11 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
                 .filter(_.isDefined)
                 .foldLeft(headItem)((previousVar, currentVar) => {
                   currentVar.get match {
-                    case PhpArrayItem(_, value: PhpVariable, _, _, _) =>
-                      val notCall = createNotNullCall(value)
+                    case PhpArrayItem(_, value: (PhpVariable | PhpListExpr), _, _, _) =>
+                      val notCall = value match {
+                        case _: PhpVariable => createNotNullCall(value)
+                        case _: PhpListExpr => createNotNullChecks(value)
+                      }
                       val callNode = operatorCallNode(
                         currentVar.get,
                         s"${previousVar.rootCodeOrEmpty} || ${notCall.rootCodeOrEmpty}",
@@ -216,8 +219,6 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
                         None
                       )
                       callAst(callNode, List(previousVar, notCall))
-                    case PhpArrayItem(_, value: PhpListExpr, _, _, _) =>
-                      createNotNullChecks(value)
                     case x =>
                       logger.warn(s"Invalid PhpArrayItem.Value: ${x.value.getClass}")
                       Ast()
