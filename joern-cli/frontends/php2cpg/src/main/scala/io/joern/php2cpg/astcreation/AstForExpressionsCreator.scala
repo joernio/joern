@@ -130,7 +130,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case _                                             => getMfn(call, name)
     }
 
-    val callRoot = callNode(call, code, name, fullName, dispatchType, None, Some(Defines.Any))
+    val staticReceiver = call.target.collect {
+      case nameExpr: PhpNameExpr if nameExpr.name == NameConstants.Self =>
+        getTypeDeclPrefix.map(name => s"$name$MetaTypeDeclExtension")
+      case nameExpr: PhpNameExpr =>
+        Option(s"${nameExpr.name}$MetaTypeDeclExtension")
+    }.flatten
+
+    val callRoot = callNode(call, code, name, fullName, dispatchType, None, Some(Defines.Any), staticReceiver)
 
     callAst(callRoot, arguments)
   }
