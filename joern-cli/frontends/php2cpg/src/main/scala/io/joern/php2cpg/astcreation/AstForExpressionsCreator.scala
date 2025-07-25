@@ -705,29 +705,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForListExpr(expr: PhpListExpr): Ast = {
-    /* TODO: Handling list in a way that will actually work with dataflow tracking is somewhat more complicated than
-     *  this and will likely need a fairly ugly lowering.
-     *
-     * In short, the case:
-     *   list($a, $b) = $arr;
-     * can be lowered to:
-     *   $a = $arr[0];
-     *   $b = $arr[1];
-     *
-     * the case:
-     *   list("id" => $a, "name" => $b) = $arr;
-     * can be lowered to:
-     *   $a = $arr["id"];
-     *   $b = $arr["name"];
-     *
-     * and the case:
-     *   foreach ($arr as list($a, $b)) { ... }
-     * can be lowered as above for each $arr[i];
-     *
-     * The below is just a placeholder to prevent crashes while figuring out the cleanest way to
-     * implement the above lowering or to think of a better way to do it.
-     */
-
+    // This is only used in `AstForControlStructureesCreator::astForForeachStatement:assignItemTargetAst` so that the
+    // code field can be populated.
     val name     = PhpOperators.listFunc
     val args     = expr.items.flatten.map { item => astForExpr(item.value) }
     val listCode = s"$name(${args.map(_.rootCodeOrEmpty).mkString(",")})"
