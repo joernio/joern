@@ -1,12 +1,8 @@
 package io.joern.swiftsrc2cpg.utils
 
 import io.joern.swiftsrc2cpg.Config
-import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{
-  SwiftDeclModifier,
-  SwiftDemangleCommand,
-  SwiftTypeMapping,
-  TypeInfo
-}
+import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{SwiftDeclModifier, SwiftTypeMapping, TypeInfo}
+import io.joern.x2cpg.utils.Environment
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
@@ -23,13 +19,11 @@ object SwiftTypesProvider {
 
   private val MinimumSwiftVersion = "6.1" // This brings in the -dump-ast-format json option
 
-  private val SwiftVersionCommand         = Seq("swift", "--version")
-  private val SwiftcVersionCommand        = Seq("swiftc", "--version")
-  private val SwiftVersionCommands        = Seq(SwiftVersionCommand, SwiftcVersionCommand)
-  private val SwiftDemangleVersionCommand = Seq("swift-demangle", "--version")
-  private val SwiftDemangleCommand        = Seq("swift-demangle", "--compact", "--no-sugar")
-  private val SwiftBuildCommand           = Seq("swift", "build", "--verbose")
-  private val SwiftcDumpOptions           = Seq("-dump-ast", "-dump-ast-format", "json")
+  private val SwiftVersionCommand  = Seq("swift", "--version")
+  private val SwiftcVersionCommand = Seq("swiftc", "--version")
+  private val SwiftVersionCommands = Seq(SwiftVersionCommand, SwiftcVersionCommand)
+  private val SwiftBuildCommand    = Seq("swift", "build", "--verbose")
+  private val SwiftcDumpOptions    = Seq("-dump-ast", "-dump-ast-format", "json")
 
   case class TypeInfo(range: (Int, Int), tpe: Option[String], fullName: Option[String], nodeKind: String)
 
@@ -99,6 +93,32 @@ object SwiftTypesProvider {
     config.xcodeOutputPath.map(outputPath => build(config, IOUtils.readLinesInFile(outputPath))).orElse(build(config))
   }
 
+  private def resolveSwiftDemangleCommand(config: Config, args: Seq[String]): Seq[String] = {
+    val defaultCommand = "swift-demangle" +: args
+    if (Environment.operatingSystem == Environment.OperatingSystemType.Windows) {
+      // Windows installation of swift puts swift-demangle into the PATH automatically
+      defaultCommand
+    } else {
+      // Installer for Linux and macOS do not
+      ExternalCommand
+        .run(Seq("which", "swiftc"))
+        .successOption
+        .map { outLines =>
+          val resolvedPath = Paths.get(outLines.mkString).toRealPath().resolveSibling("swift-demangle").toString
+          resolvedPath +: args
+        }
+        .getOrElse(defaultCommand)
+    }
+  }
+
+  private def swiftDemangleVersionCommand(config: Config): Seq[String] = {
+    resolveSwiftDemangleCommand(config, Seq("--version"))
+  }
+
+  private def swiftDemangleCommand(config: Config): Seq[String] = {
+    resolveSwiftDemangleCommand(config, Seq("--compact", "--no-sugar"))
+  }
+
   private def isValidEnvironment(config: Config): Boolean = {
     val commands = if (config.xcodeOutputPath.isDefined) {
       // we do not need 'swift' on the system if the commands are taken from Xcode
@@ -107,7 +127,7 @@ object SwiftTypesProvider {
       SwiftVersionCommands
     }
     val hasSwift = commands.forall { command =>
-      ExternalCommand.run(command, mergeStdErrInStdOut = true).successOption match {
+      ExternalCommand.run(command).successOption match {
         case Some(outLines) =>
           val swiftVersion = outLines.find(_.startsWith("Swift version ")).map { str =>
             str.substring("Swift version ".length, str.indexOf(" ("))
@@ -122,7 +142,7 @@ object SwiftTypesProvider {
           false
       }
     }
-    val hasSwiftDemangle = ExternalCommand.run(SwiftDemangleVersionCommand, mergeStdErrInStdOut = true).successful
+    val hasSwiftDemangle = ExternalCommand.run(swiftDemangleVersionCommand(config)).successful
     hasSwift && hasSwiftDemangle
   }
 
@@ -175,11 +195,13 @@ object SwiftTypesProvider {
 
 case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[String]]) {
 
+  private lazy val swiftDemangleCommand = SwiftTypesProvider.swiftDemangleCommand(config)
+
   private def demangle(mangledName: String): Option[String] = {
     if (mangledName.isEmpty) return None
     val strippedMangledName = mangledName.stripPrefix("$").replaceFirst(":", "")
     ExternalCommand
-      .run(SwiftDemangleCommand :+ strippedMangledName, mergeStdErrInStdOut = true)
+      .run(swiftDemangleCommand :+ strippedMangledName)
       .successOption
       .map(outLines => outLines.mkString.trim)
   }
