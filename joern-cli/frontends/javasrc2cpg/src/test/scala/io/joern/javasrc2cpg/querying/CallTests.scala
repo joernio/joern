@@ -62,7 +62,10 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
                        |
                        |""".stripMargin)
 
-      cpg.call.name("valueOf").methodFullName.l shouldBe List("java.lang.String.valueOf:java.lang.String(boolean)")
+      inside(cpg.call.name("valueOf").l) { case List(valueOfCall) =>
+        valueOfCall.methodFullName shouldBe "java.lang.String.valueOf:java.lang.String(boolean)"
+        valueOfCall.staticReceiver shouldBe Some("java.lang.String")
+      }
     }
 
     "they are instance methods imported from java.lang.* should be resolved" in {
@@ -131,7 +134,51 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    cpg.call.name("foo").methodFullName.l shouldBe List("foo.Foo.foo:java.lang.String()")
+    inside(cpg.call.name("foo").l) { case List(fooCall) =>
+      fooCall.methodFullName shouldBe "foo.Foo.foo:java.lang.String()"
+      fooCall.staticReceiver shouldBe Some("foo.Foo")
+    }
+  }
+
+  "calls to inherited static methods" should {
+      val cpg = code(
+        """
+          |package foo;
+          |
+          |class Foo {
+          |  public static String foo() {
+          |    return "FOO";
+          |  }
+          |}
+          |""".stripMargin)
+        .moreCode(
+          """
+            |package bar;
+            |
+            |import foo.Foo;
+            |
+            |class Bar extends Foo { }
+            |""".stripMargin)
+        .moreCode(
+          """
+            |package baz;
+            |
+            |import bar.Bar;
+            |
+            |class Baz {
+            |  void test() {
+            |    Bar.foo();
+            |  }
+            |}
+            |""".stripMargin
+        )
+
+    "have the correct staticReceiver set" in {
+      inside(cpg.call.name("foo").l) { case List(fooCall) =>
+        fooCall.methodFullName shouldBe "bar.Bar.foo:java.lang.String()"
+        fooCall.staticReceiver shouldBe Some("bar.Bar")
+      }
+    }
   }
 
   "calls with unresolved receivers should have the correct fullnames" in {
