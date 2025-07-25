@@ -147,7 +147,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         // Rewrite `$xs[] = <value_expr>` as `array_push($xs, <value_expr>)` to simplify finding dataflows.
         astForEmptyArrayDimAssign(assignment, arrayDimFetch)
       case arrayExpr: (PhpArrayExpr | PhpListExpr) =>
-        astForArrayUnpack(assignment, arrayExpr)
+        astForArrayUnpack(assignment, arrayExpr, astForExpr(assignment.source))
       case _ =>
         val operatorName = assignment.assignOp
 
@@ -241,7 +241,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   /** Lower the array/list unpack. For example `[$a, $b] = $arr;` will be lowered to `$a = $arr[0]; $b = $arr[1];`
     */
-  private def astForArrayUnpack(assignment: PhpAssignment, target: PhpArrayExpr | PhpListExpr): Ast = {
+  protected def astForArrayUnpack(assignment: PhpNode, target: PhpArrayExpr | PhpListExpr, sourceAst: Ast): Ast = {
     val loweredAssignNodes = mutable.ListBuffer.empty[Ast]
 
     // create a Identifier ast for given name
@@ -316,7 +316,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       }
     }
 
-    val sourceAst = astForExpr(assignment.source)
     val itemsOf = (exp: PhpArrayExpr | PhpListExpr) =>
       exp match {
         case x: PhpArrayExpr => x.items
@@ -706,29 +705,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForListExpr(expr: PhpListExpr): Ast = {
-    /* TODO: Handling list in a way that will actually work with dataflow tracking is somewhat more complicated than
-     *  this and will likely need a fairly ugly lowering.
-     *
-     * In short, the case:
-     *   list($a, $b) = $arr;
-     * can be lowered to:
-     *   $a = $arr[0];
-     *   $b = $arr[1];
-     *
-     * the case:
-     *   list("id" => $a, "name" => $b) = $arr;
-     * can be lowered to:
-     *   $a = $arr["id"];
-     *   $b = $arr["name"];
-     *
-     * and the case:
-     *   foreach ($arr as list($a, $b)) { ... }
-     * can be lowered as above for each $arr[i];
-     *
-     * The below is just a placeholder to prevent crashes while figuring out the cleanest way to
-     * implement the above lowering or to think of a better way to do it.
-     */
-
+    // This is only used in `AstForControlStructureesCreator::astForForeachStatement:assignItemTargetAst` so that the
+    // code field can be populated.
     val name     = PhpOperators.listFunc
     val args     = expr.items.flatten.map { item => astForExpr(item.value) }
     val listCode = s"$name(${args.map(_.rootCodeOrEmpty).mkString(",")})"
