@@ -33,7 +33,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case evalExpr: PhpEvalExpr                       => astForEval(evalExpr)
       case exitExpr: PhpExitExpr                       => astForExit(exitExpr)
       case arrayExpr: PhpArrayExpr                     => astForArrayExpr(arrayExpr)
-      case listExpr: PhpListExpr                       => astForListExpr(listExpr)
       case newExpr: PhpNewExpr                         => astForNewExpr(newExpr)
       case matchExpr: PhpMatchExpr                     => astForMatchExpr(matchExpr)
       case yieldExpr: PhpYieldExpr                     => astForYieldExpr(yieldExpr)
@@ -702,39 +701,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         logger.error(s"ArrayDimFetchExpr without dimensions should be handled in assignment: $errorPosition")
         Ast()
     }
-  }
-
-  private def astForListExpr(expr: PhpListExpr): Ast = {
-    /* TODO: Handling list in a way that will actually work with dataflow tracking is somewhat more complicated than
-     *  this and will likely need a fairly ugly lowering.
-     *
-     * In short, the case:
-     *   list($a, $b) = $arr;
-     * can be lowered to:
-     *   $a = $arr[0];
-     *   $b = $arr[1];
-     *
-     * the case:
-     *   list("id" => $a, "name" => $b) = $arr;
-     * can be lowered to:
-     *   $a = $arr["id"];
-     *   $b = $arr["name"];
-     *
-     * and the case:
-     *   foreach ($arr as list($a, $b)) { ... }
-     * can be lowered as above for each $arr[i];
-     *
-     * The below is just a placeholder to prevent crashes while figuring out the cleanest way to
-     * implement the above lowering or to think of a better way to do it.
-     */
-
-    val name     = PhpOperators.listFunc
-    val args     = expr.items.flatten.map { item => astForExpr(item.value) }
-    val listCode = s"$name(${args.map(_.rootCodeOrEmpty).mkString(",")})"
-    val listNode = operatorCallNode(expr, listCode, name, None)
-      .methodFullName(PhpOperators.listFunc)
-
-    callAst(listNode, args)
   }
 
   private def astForNewExpr(expr: PhpNewExpr): Ast = {
