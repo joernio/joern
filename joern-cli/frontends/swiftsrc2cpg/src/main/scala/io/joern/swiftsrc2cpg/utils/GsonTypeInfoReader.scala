@@ -7,19 +7,24 @@ import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.TypeInfo
 import java.io.Reader
 import scala.collection.mutable.ListBuffer
 
-object GsonUtils {
+object GsonTypeInfoReader {
 
-  /** Collects all JsonObjects containing the type and fullName specific properties from a very large JSON file using a
-    * JsonReader.
-    *
-    * @param reader
-    *   A java.io.Reader for the JSON input.
-    * @param properties
-    *   The properties as Set of String to look for.
-    * @return
-    *   A sequence of [[TypeInfo]] with their filename.
-    */
-  def collectJsonNodes(reader: Reader, properties: Set[String]): Seq[(String, TypeInfo)] = {
+  private val FullnameFieldNames = Set("usr", "type", "result", "decl_usr")
+
+  private def safePropertyValue(obj: JsonObject, propertyName: String): Option[String] = {
+    Option.when(obj.has(propertyName) && obj.get(propertyName).isJsonPrimitive)(obj.get(propertyName).getAsString)
+  }
+
+  private def range(obj: JsonObject): (Int, Int) = {
+    val rangeObj = obj.get("range").getAsJsonObject
+    (rangeObj.get("start").getAsInt, rangeObj.get("end").getAsInt)
+  }
+
+  private def qualifies(obj: JsonObject): Boolean = {
+    FullnameFieldNames.exists(n => safePropertyValue(obj, n).isDefined) && obj.has("range")
+  }
+
+  def collectTypeInfo(reader: Reader): Seq[(String, TypeInfo)] = {
     val found      = ListBuffer.empty[(String, TypeInfo)]
     val jsonReader = new JsonReader(reader)
     var filename   = ""
@@ -51,30 +56,20 @@ object GsonUtils {
             val value = JsonParser.parseReader(jsonReader)
             obj.add(name, value)
         }
-        if (properties.exists(p => obj.has(p) && obj.get(p).isJsonPrimitive) && obj.has("range")) hasProperty = true
+        if (qualifies(obj)) hasProperty = true
         if (name == "filename") filename = obj.get("filename").getAsString
       }
       jsonReader.endObject()
 
       if (hasProperty) {
-        val rangeObj        = obj.get("range").getAsJsonObject
-        val pos             = (rangeObj.get("start").getAsInt, rangeObj.get("end").getAsInt)
-        val mangledTypeName = Option.when(obj.has("type")) { obj.get("type").getAsString }
-        val mangledResultTypeName = Option.when(obj.has("result") && obj.get("result").isJsonPrimitive) {
-          obj.get("result").getAsString
-        }
-        val mangledDeclFullName = Option.when(obj.has("usr")) { obj.get("usr").getAsString }
-        val mangledFullName     = Option.when(obj.has("decl_usr")) { obj.get("decl_usr").getAsString }
+        val nodeKind       = obj.get("_kind").getAsString
+        val range_         = range(obj)
+        val typeName       = safePropertyValue(obj, "type")
+        val resultTypeName = safePropertyValue(obj, "result")
+        val usrFullName    = safePropertyValue(obj, "usr")
+        val declFullName   = safePropertyValue(obj, "decl_usr")
         found.addOne(
-          (
-            filename,
-            TypeInfo(
-              pos,
-              mangledTypeName.orElse(mangledResultTypeName),
-              mangledDeclFullName.orElse(mangledFullName),
-              obj
-            )
-          )
+          (filename, TypeInfo(range_, typeName.orElse(resultTypeName), usrFullName.orElse(declFullName), nodeKind))
         )
       }
       obj

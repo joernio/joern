@@ -233,19 +233,12 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
       provider.mappingFromJson(jsonStringMain, mapping)
       val result = mapping.flatMap { case (filename, typeInfoList) =>
         typeInfoList.map { typeInfo =>
-          (filename, typeInfo.node.get("_kind").getAsString, typeInfo.pos, typeInfo.tpe, typeInfo.fullName)
+          (filename, typeInfo.nodeKind, typeInfo.range, typeInfo.tpe, typeInfo.fullName)
         }
       }
       result.toList shouldBe List(
         ("HelloWorldSwift.swift", "array_expr", (195, 224), Some("[Any]"), None),
         ("HelloWorldSwift.swift", "destructor_decl", (33, 33), None, Some("SwiftHelloWorldLib.HelloWorld.deinit")),
-        (
-          "HelloWorldSwift.swift",
-          "func_decl",
-          (155, 233),
-          Some("Void"),
-          Some("SwiftHelloWorldLib.HelloWorld.greet(from: Swift.String) -> ()")
-        ),
         ("HelloWorldSwift.swift", "string_literal_expr", (123, 123), Some("Swift.String"), None),
         (
           "HelloWorldSwift.swift",
@@ -276,6 +269,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
           Some("(Swift.String, Swift.String) -> Swift.String"),
           None
         ),
+        ("HelloWorldSwift.swift", "call_expr", (189, 230), Some("()"), None),
         ("HelloWorldSwift.swift", "string_literal_expr", (79, 79), Some("Swift.String"), None),
         ("HelloWorldSwift.swift", "erasure_expr", (195, 224), Some("Any"), None),
         ("HelloWorldSwift.swift", "string_literal_expr", (206, 206), Some("Swift.String"), None),
@@ -338,8 +332,14 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
         ),
         ("HelloWorldSwift.swift", "binary_expr", (195, 224), Some("Swift.String"), None),
         ("HelloWorldSwift.swift", "type_expr", (215, 215), Some("Swift.String.Type"), None),
+        (
+          "HelloWorldSwift.swift",
+          "func_decl",
+          (155, 233),
+          Some("()"),
+          Some("SwiftHelloWorldLib.HelloWorld.greet(from: Swift.String) -> ()")
+        ),
         ("HelloWorldSwift.swift", "type_expr", (222, 222), Some("Swift.String.Type"), None),
-        ("HelloWorldSwift.swift", "call_expr", (189, 230), Some("Void"), None),
         (
           "HelloWorldSwift.swift",
           "accessor_decl",
@@ -358,14 +358,14 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
         ),
         ("Main.swift", "struct_decl", (52, 157), None, Some("SwiftHelloWorld.Main")),
         ("Main.swift", "declref_expr", (46, 46), Some("(SwiftHelloWorld.Main.Type) -> () -> ()"), None),
-        ("Main.swift", "call_expr", (127, 151), Some("Void"), None),
         ("Main.swift", "call_expr", (112, 123), Some("SwiftHelloWorldLib.HelloWorld"), None),
         ("Main.swift", "declref_expr", (127, 127), Some("SwiftHelloWorldLib.HelloWorld"), None),
         ("Main.swift", "constructor_decl", (59, 59), None, Some("SwiftHelloWorld.Main.init() -> SwiftHelloWorld.Main")),
         ("Main.swift", "constructor_ref_call_expr", (112, 112), Some("() -> SwiftHelloWorldLib.HelloWorld"), None),
         ("Main.swift", "string_literal_expr", (147, 147), Some("Swift.String"), None),
+        ("Main.swift", "call_expr", (127, 151), Some("()"), None),
         ("Main.swift", "type_expr", (112, 112), Some("SwiftHelloWorldLib.HelloWorld.Type"), None),
-        ("Main.swift", "func_decl", (67, 154), Some("Swift.Void"), Some("static SwiftHelloWorld.Main.main() -> ()")),
+        ("Main.swift", "func_decl", (67, 154), Some("Swift.Void"), Some("SwiftHelloWorld.Main.main() -> ()")),
         ("Main.swift", "dot_syntax_call_expr", (127, 135), Some("(from: Swift.String) -> ()"), None),
         ("Main.swift", "call_expr", (46, 46), Some("Swift.Void"), None),
         ("Main.swift", "dot_syntax_call_expr", (46, 46), Some("@Swift.MainActor () -> ()"), None),
