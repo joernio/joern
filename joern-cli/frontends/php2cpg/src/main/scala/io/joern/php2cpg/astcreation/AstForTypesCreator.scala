@@ -62,11 +62,15 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   }
 
   private def addBindingsForTypeDecl(typeDecl: NewTypeDecl, bodyAsts: List[Ast]): Unit = {
-    bodyAsts.flatMap(_.root).collect { case method: NewMethod =>
-      val binding = NewBinding().name(method.name).methodFullName(method.fullName)
-      diffGraph.addEdge(typeDecl, binding, EdgeTypes.BINDS)
-      diffGraph.addEdge(binding, method, EdgeTypes.REF)
-    }
+    // TODO Adding bindings to the CPG fixes dataflow tracking in the backend, but this has a huge performance impact,
+    //  so is disabled for now. This should be re-enabled once the issue in the backend has been resolved, or if it
+    //  turns out the impact was just caused by the relevant projects being huge.
+    //
+    // bodyAsts.flatMap(_.root).collect { case method: NewMethod =>
+    //   val binding = NewBinding().name(method.name).methodFullName(method.fullName)
+    //   diffGraph.addEdge(typeDecl, binding, EdgeTypes.BINDS)
+    //   diffGraph.addEdge(binding, method, EdgeTypes.REF)
+    // }
   }
 
   private def astForAnonymousClass(

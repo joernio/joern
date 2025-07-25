@@ -42,7 +42,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
                      |}
                      |""".stripMargin).withConfig(Config().withDisableFileContent(false))
 
-    "have the correct bindings" in {
+    // TODO Re-enable along with bindings
+    "have the correct bindings" ignore {
       inside(cpg.typeDecl.name(".*anon-class-0$").bindsOut.sortBy(_.name).l) {
         case List(constructBinding, fooBinding) =>
           fooBinding.name shouldBe "foo"
@@ -66,7 +67,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         |}
         |""".stripMargin).withConfig(Config().withDisableFileContent(false))
 
-    "have the correct bindings" in {
+    // TODO Re-enable along with bindings
+    "have the correct bindings" ignore {
       inside(cpg.typeDecl("Foo").bindsOut.sortBy(_.name).l) { case List(constructBinding, fooBinding) =>
         fooBinding.name shouldBe "foo"
         fooBinding.methodFullName shouldBe "Foo.foo"
