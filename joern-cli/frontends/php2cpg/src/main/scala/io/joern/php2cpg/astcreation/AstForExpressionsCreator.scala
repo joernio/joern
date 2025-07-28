@@ -33,7 +33,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case evalExpr: PhpEvalExpr                       => astForEval(evalExpr)
       case exitExpr: PhpExitExpr                       => astForExit(exitExpr)
       case arrayExpr: PhpArrayExpr                     => astForArrayExpr(arrayExpr)
-      case listExpr: PhpListExpr                       => astForListExpr(listExpr)
       case newExpr: PhpNewExpr                         => astForNewExpr(newExpr)
       case matchExpr: PhpMatchExpr                     => astForMatchExpr(matchExpr)
       case yieldExpr: PhpYieldExpr                     => astForYieldExpr(yieldExpr)
@@ -702,18 +701,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         logger.error(s"ArrayDimFetchExpr without dimensions should be handled in assignment: $errorPosition")
         Ast()
     }
-  }
-
-  private def astForListExpr(expr: PhpListExpr): Ast = {
-    // This is only used in `AstForControlStructureesCreator::astForForeachStatement:assignItemTargetAst` so that the
-    // code field can be populated.
-    val name     = PhpOperators.listFunc
-    val args     = expr.items.flatten.map { item => astForExpr(item.value) }
-    val listCode = s"$name(${args.map(_.rootCodeOrEmpty).mkString(",")})"
-    val listNode = operatorCallNode(expr, listCode, name, None)
-      .methodFullName(PhpOperators.listFunc)
-
-    callAst(listNode, args)
   }
 
   private def astForNewExpr(expr: PhpNewExpr): Ast = {

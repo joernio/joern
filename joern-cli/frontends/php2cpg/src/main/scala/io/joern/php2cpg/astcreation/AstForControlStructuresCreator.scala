@@ -179,9 +179,13 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     val localN         = handleVariableOccurrence(stmt, iterIdentifier.name)
 
     // keep this just used to construct the `code` field
-    val assignItemTargetAst = stmt.keyVar match {
-      case Some(key) => astForKeyValPair(stmt, key, stmt.valueVar)
-      case None      => astForExpr(stmt.valueVar)
+    val assignItemTargetString = stmt.keyVar match {
+      case Some(key) => astForKeyValPair(stmt, key, stmt.valueVar).rootCodeOrEmpty
+      case None =>
+        stmt.valueVar match {
+          case x: PhpListExpr => createListExprCodeField(x)
+          case x              => astForExpr(x).rootCodeOrEmpty
+        }
     }
 
     // Initializer asts
@@ -261,7 +265,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     val bodyAst = stmtBodyBlockAst(stmt)
 
     val ampPrefix   = if (stmt.assignByRef) "&" else ""
-    val foreachCode = s"foreach (${iterValue.rootCodeOrEmpty} as $ampPrefix${assignItemTargetAst.rootCodeOrEmpty})"
+    val foreachCode = s"foreach (${iterValue.rootCodeOrEmpty} as $ampPrefix${assignItemTargetString})"
     val foreachNode = controlStructureNode(stmt, ControlStructureTypes.FOR, foreachCode)
     Ast(foreachNode)
       .withChild(wrapMultipleInBlock(iteratorAssignAst :: itemInitAst :: Nil, line(stmt)))
