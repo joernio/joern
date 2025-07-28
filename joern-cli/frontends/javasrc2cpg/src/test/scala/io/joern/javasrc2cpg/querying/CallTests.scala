@@ -141,8 +141,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
   }
 
   "calls to inherited static methods" should {
-      val cpg = code(
-        """
+    val cpg = code("""
           |package foo;
           |
           |class Foo {
@@ -151,16 +150,14 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
           |  }
           |}
           |""".stripMargin)
-        .moreCode(
-          """
+      .moreCode("""
             |package bar;
             |
             |import foo.Foo;
             |
             |class Bar extends Foo { }
             |""".stripMargin)
-        .moreCode(
-          """
+      .moreCode("""
             |package baz;
             |
             |import bar.Bar;
@@ -170,8 +167,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
             |    Bar.foo();
             |  }
             |}
-            |""".stripMargin
-        )
+            |""".stripMargin)
 
     "have the correct staticReceiver set" in {
       inside(cpg.call.name("foo").l) { case List(fooCall) =>

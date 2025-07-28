@@ -81,7 +81,7 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
           .toList
     }
 
-    val receiverType = scopeAsts.rootType.filter(_ != TypeConstants.Any).orElse(receiverTypeOption)
+    val receiverType   = scopeAsts.rootType.filter(_ != TypeConstants.Any).orElse(receiverTypeOption)
     val staticReceiver = Option.when(dispatchType == DispatchTypes.STATIC_DISPATCH)(receiverType).flatten
 
     val argumentsCode = getArgumentCodeString(call.getArguments)
