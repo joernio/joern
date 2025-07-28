@@ -13,6 +13,10 @@ import scala.collection.mutable
 import scala.util.matching.Regex
 import scala.util.{Try, Using}
 
+/** Provides Swift type information by extracting type data from Swift compiler output. This provider uses the Swift
+  * compiler's AST dump functionality to collect type information which is then used for populating the CPG with
+  * accurate type references.
+  */
 object SwiftTypesProvider {
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -25,6 +29,19 @@ object SwiftTypesProvider {
   private val SwiftBuildCommand    = Seq("swift", "build", "--verbose")
   private val SwiftcDumpOptions    = Seq("-dump-ast", "-dump-ast-format", "json")
 
+  /** Information about a Swift type found in the source code
+    *
+    * @param filename
+    *   The source file where the type was found
+    * @param range
+    *   The position range in the source file
+    * @param tpe
+    *   The fully qualified type name (if any; demangled)
+    * @param fullName
+    *   The fully qualified name (if any; demangled)
+    * @param nodeKind
+    *   The AST node kind
+    */
   case class TypeInfo(
     filename: String,
     range: (Int, Int),
@@ -96,6 +113,13 @@ object SwiftTypesProvider {
   private val SwiftcIgnoredArgs =
     Seq("-v", "-incremental", "-whole-module-optimization", "-parseable-output", "-serialize-diagnostics")
 
+  /** Attempts to create a SwiftTypesProvider using the given configuration.
+    *
+    * @param config
+    *   The Swift CPG generation configuration
+    * @return
+    *   Some(SwiftTypesProvider) if Swift environment is valid, None otherwise
+    */
   def apply(config: Config): Option[SwiftTypesProvider] = {
     config.xcodeOutputPath.map(outputPath => build(config, IOUtils.readLinesInFile(outputPath))).orElse(build(config))
   }
@@ -200,6 +224,13 @@ object SwiftTypesProvider {
   }
 }
 
+/** Creates and retrieves type mappings from Swift source code.
+  *
+  * @param config
+  *   The configuration for the Swift CPG generation
+  * @param parsedSwiftcInvocations
+  *   The parsed Swift compiler invocations to extract type information
+  */
 case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[String]]) {
 
   import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.*
