@@ -220,8 +220,8 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
       .map {
         case PhpArrayItem(_, _ @PhpVariable(name: PhpNameExpr, _), _, _, _) => s"$$${name.name}"
         case PhpArrayItem(_, value: PhpListExpr, _, _, _)                   => createListExprCodeField(value)
-        case _ =>
-          logger.warn("Invalid arg type for code field")
+        case x =>
+          logger.warn(s"Invalid arg type for code field: ${x.getClass}")
           ""
       }
       .mkString(",")
