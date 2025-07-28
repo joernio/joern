@@ -5,7 +5,15 @@ import io.joern.x2cpg.Defines
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg.Constants
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, FieldIdentifier, Identifier, Literal, TypeRef}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  Block,
+  Call,
+  FieldIdentifier,
+  Identifier,
+  Literal,
+  Return,
+  TypeRef
+}
 import io.shiftleft.semanticcpg.language.*
 
 class ErbTests extends RubyCode2CpgFixture {
@@ -331,6 +339,7 @@ class ErbTests extends RubyCode2CpgFixture {
         |""".stripMargin,
       "index.html.erb"
     )
+
     inside(cpg.method.isLambda.l) {
       case eachLambda :: Nil =>
         val List(varParam) = eachLambda.parameter.l
@@ -392,5 +401,35 @@ class ErbTests extends RubyCode2CpgFixture {
         selfLocal.closureBindingId shouldBe Some("index.html.erb:<global>.self")
       case xs => fail(s"Expected one self local, got ${xs.name.mkString("[", ",", "]")}")
     }
+  }
+
+  "ERB file with empty body in if" in {
+    val cpg = code(
+      """
+        |<% if article_count == 0 %>
+        |<% elsif article_count == 1 %>
+        |  <%= article_count %> <%= I18n.t('public_portal.common.article') %>
+        |<% else %>
+        |  <%= article_count %> <%= I18n.t('public_portal.common.articles') %>
+        |<% end %>
+        |""".stripMargin,
+      "test.html.erb"
+    )
+    // Should be no RETURN expressions in ERB files
+    cpg.all.collectAll[Return].isEmpty shouldBe true
+  }
+
+  "ERB file with empty bodies in all branches of if statement" in {
+    val cpg = code(
+      """
+        |<% if article_count == 0 %>
+        |<% elsif article_count == 1 %>
+        |<% else %>
+        |<% end %>
+        |""".stripMargin,
+      "test.html.erb"
+    )
+    // Should be no RETURN expressions in ERB files
+    cpg.all.collectAll[Return].isEmpty shouldBe true
   }
 }

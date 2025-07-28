@@ -689,4 +689,5 @@ object RubyIntermediateAst {
       extends RubyExpression(span)
       with AllowedTypeDeclarationChild
 
+  final case class EmptyExpression()(span: TextSpan) extends RubyExpression(span)
 }

@@ -66,6 +66,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     case node: ArrayPattern                     => astForArrayPattern(node)
     case node: DummyNode                        => Ast(node.node)
     case node: DummyAst                         => node.ast
+    case node: EmptyExpression                  => Ast()
     case node: Unknown                          => astForUnknown(node)
     case x =>
       logger.warn(s"Unhandled expression of type ${x.getClass.getSimpleName}")
