@@ -33,7 +33,7 @@ object GsonTypeInfoReader {
   private def declFromCallExpr(obj: JsonObject): JsonObject = {
     safePropertyObject(obj, "fn") match {
       case Some(fn) =>
-        fn.get("_kind").getAsString match {
+        astNodeKind(fn) match {
           // TODO: there are maybe more AST node kinds that need special handling
           case "declref_expr"                   => fn.getAsJsonObject("decl")
           case "function_conversion_expr"       => fn.getAsJsonObject("sub_expr").getAsJsonObject("decl")
@@ -47,13 +47,21 @@ object GsonTypeInfoReader {
   private def declFromMemberRefExpr(obj: JsonObject): JsonObject = {
     safePropertyObject(obj, "decl") match {
       case Some(decl) =>
-        decl.get("_kind").getAsString match {
+        astNodeKind(decl) match {
           // TODO: there are maybe more AST node kinds that need special handling
           case "decl_ref" => decl
           case _          => obj
         }
       case None => obj
     }
+  }
+
+  private def astNodeKind(obj: JsonObject): String = {
+    obj.get("_kind").getAsString
+  }
+
+  private def isAstNode(obj: JsonObject): Boolean = {
+    obj.has("_kind")
   }
 
   def collectTypeInfo(reader: Reader): Set[TypeInfo] = {
@@ -69,7 +77,7 @@ object GsonTypeInfoReader {
       while (jsonReader.hasNext) {
         val name = jsonReader.nextName()
         jsonReader.peek() match {
-          case com.google.gson.stream.JsonToken.BEGIN_OBJECT if obj.has("_kind") =>
+          case com.google.gson.stream.JsonToken.BEGIN_OBJECT if isAstNode(obj) =>
             val value = parseObject()
             obj.add(name, value)
           case com.google.gson.stream.JsonToken.BEGIN_OBJECT => // don't descend
@@ -86,7 +94,7 @@ object GsonTypeInfoReader {
       jsonReader.endObject()
 
       if (hasProperty) {
-        val nodeKind = obj.get("_kind").getAsString
+        val nodeKind = astNodeKind(obj)
         val range_   = range(obj)
 
         lazy val declFullName = nodeKind match {

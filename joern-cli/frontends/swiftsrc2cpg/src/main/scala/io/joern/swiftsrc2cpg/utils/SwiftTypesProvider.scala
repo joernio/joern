@@ -1,7 +1,6 @@
 package io.joern.swiftsrc2cpg.utils
 
 import io.joern.swiftsrc2cpg.Config
-import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{SwiftDeclModifier, SwiftTypeMapping, TypeInfo}
 import io.joern.x2cpg.utils.Environment
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.shiftleft.utils.IOUtils
@@ -34,7 +33,8 @@ object SwiftTypesProvider {
     nodeKind: String
   )
 
-  type SwiftTypeMapping = Map[String, Set[TypeInfo]]
+  type SwiftTypeMapping        = Map[String, Set[TypeInfo]]
+  type MutableSwiftTypeMapping = mutable.HashMap[String, mutable.HashSet[TypeInfo]]
 
   /** @see
     *   [[io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.DeclModifierSyntax]]
@@ -202,6 +202,8 @@ object SwiftTypesProvider {
 
 case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[String]]) {
 
+  import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.*
+
   private lazy val swiftDemangleCommand = SwiftTypesProvider.swiftDemangleCommand(config)
 
   private def demangle(mangledName: String): Option[String] = {
@@ -228,14 +230,14 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
   /** This regex is designed to clean up Swift demangled type names by extracting meaningful parts and removing internal
     * representation details. It has three capture groups:
     *
-    *   1. {{{([^(]+)}}} - Captures everything before the first opening parenthesis, Example:
+    *   1. `([^(]+)` - Captures everything before the first opening parenthesis, Example:
     *      `SwiftHelloWorldLib.HelloWorld.`
     *
-    *   1. {{{\((.+)\sin\s_[^)]+\)}}} - Matches a pattern with internal identifier details:
-    *      - {{{\(}}} - Literal opening parenthesis
-    *      - {{{(.+)}}} - Captures the name inside parentheses (before "in _...")
-    *      - {{{\sin\s_[^)]+\)}}} - Matches " in _" followed by an identifier and closing parenthesis
-    *   1. {{{(.*)}}} - Captures everything after the closing parenthesis. Example: `.getter : Swift.String`
+    *   1. `\((.+)\sin\s_[^)]+\)` - Matches a pattern with internal identifier details:
+    *      - `\(` - Literal opening parenthesis
+    *      - `(.+)` - Captures the name inside parentheses (before "in _...")
+    *      - `\sin\s_[^)]+\)` - Matches " in _" followed by an identifier and closing parenthesis
+    *   1. `(.*)` - Captures everything after the closing parenthesis. Example: `.getter : Swift.String`
     *
     * Full example: `SwiftHelloWorldLib.HelloWorld.(suffix in _C6D5E4A96804CD03B7512662F178D1D8).getter : Swift.String`
     * becomes: `SwiftHelloWorldLib.HelloWorld.suffix.getter : Swift.String`
@@ -249,7 +251,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
     }
   }
 
-  def mappingFromJson(jsonString: String, result: mutable.HashMap[String, mutable.HashSet[TypeInfo]]): Unit = {
+  def mappingFromJson(jsonString: String, result: MutableSwiftTypeMapping): Unit = {
     Using(new StringReader(jsonString)) { reader =>
       GsonTypeInfoReader.collectTypeInfo(reader).foreach { typeInfo =>
         val demangledTpe      = typeInfo.tpe.flatMap(calculateTypename)
@@ -261,7 +263,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
   }
 
   def retrieveMappings(): SwiftTypeMapping = {
-    val mapping = mutable.HashMap.empty[String, mutable.HashSet[TypeInfo]]
+    val mapping = new MutableSwiftTypeMapping
     parsedSwiftcInvocations.foreach { invocationCommand =>
       ExternalCommand
         .run(invocationCommand, mergeStdErrInStdOut = true, workingDir = Some(Paths.get(config.inputPath)))
