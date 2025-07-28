@@ -16,6 +16,10 @@ object GsonTypeInfoReader {
     Option.when(obj.has(propertyName) && obj.get(propertyName).isJsonPrimitive)(obj.get(propertyName).getAsString)
   }
 
+  private def safePropertyObject(obj: JsonObject, propertyName: String): Option[JsonObject] = {
+    Option.when(obj.has(propertyName) && obj.get(propertyName).isJsonObject)(obj.get(propertyName).getAsJsonObject)
+  }
+
   private def range(obj: JsonObject): (Int, Int) = {
     val rangeObj = obj.get("range").getAsJsonObject
     (rangeObj.get("start").getAsInt, rangeObj.get("end").getAsInt)
@@ -27,17 +31,28 @@ object GsonTypeInfoReader {
 
   @tailrec
   private def declFromCallExpr(obj: JsonObject): JsonObject = {
-    if (obj.has("fn") && obj.get("fn").isJsonObject) {
-      val fn = obj.getAsJsonObject("fn")
-      fn.get("_kind").getAsString match {
-        // TODO: there are maybe more AST node kinds that need special handling
-        case "declref_expr"                   => fn.getAsJsonObject("decl")
-        case "function_conversion_expr"       => fn.getAsJsonObject("sub_expr").getAsJsonObject("decl")
-        case other if other.endsWith("_expr") => declFromCallExpr(fn)
-        case _                                => obj
-      }
-    } else {
-      obj
+    safePropertyObject(obj, "fn") match {
+      case Some(fn) =>
+        fn.get("_kind").getAsString match {
+          // TODO: there are maybe more AST node kinds that need special handling
+          case "declref_expr"                   => fn.getAsJsonObject("decl")
+          case "function_conversion_expr"       => fn.getAsJsonObject("sub_expr").getAsJsonObject("decl")
+          case other if other.endsWith("_expr") => declFromCallExpr(fn)
+          case _                                => obj
+        }
+      case None => obj
+    }
+  }
+
+  private def declFromMemberRefExpr(obj: JsonObject): JsonObject = {
+    safePropertyObject(obj, "decl") match {
+      case Some(decl) =>
+        decl.get("_kind").getAsString match {
+          // TODO: there are maybe more AST node kinds that need special handling
+          case "decl_ref" => decl
+          case _          => obj
+        }
+      case None => obj
     }
   }
 
@@ -45,14 +60,6 @@ object GsonTypeInfoReader {
     val found      = mutable.HashSet.empty[TypeInfo]
     val jsonReader = new JsonReader(reader)
     var filename   = ""
-
-    def parseElement(): Unit = {
-      jsonReader.peek() match {
-        case com.google.gson.stream.JsonToken.BEGIN_OBJECT => parseObject()
-        case com.google.gson.stream.JsonToken.BEGIN_ARRAY  => parseArray()
-        case _                                             => jsonReader.skipValue()
-      }
-    }
 
     def parseObject(): JsonObject = {
       val obj         = new JsonObject
@@ -83,12 +90,11 @@ object GsonTypeInfoReader {
         val range_   = range(obj)
 
         lazy val declFullName = nodeKind match {
-          case kind if kind.endsWith("call_expr") =>
-            val fn = declFromCallExpr(obj)
-            safePropertyValue(fn, "decl_usr")
-          case _ =>
-            safePropertyValue(obj, "decl_usr")
+          case kind if kind.endsWith("call_expr") => safePropertyValue(declFromCallExpr(obj), "decl_usr")
+          case kind if kind == "member_ref_expr"  => safePropertyValue(declFromMemberRefExpr(obj), "decl_usr")
+          case _                                  => safePropertyValue(obj, "decl_usr")
         }
+
         val typeName    = safePropertyValue(obj, "type").orElse(safePropertyValue(obj, "result"))
         val usrFullName = safePropertyValue(obj, "usr").orElse(declFullName)
         found.addOne(TypeInfo(filename, range_, typeName, usrFullName, nodeKind))
@@ -101,19 +107,21 @@ object GsonTypeInfoReader {
       jsonReader.beginArray()
       while (jsonReader.hasNext) {
         jsonReader.peek() match {
-          case com.google.gson.stream.JsonToken.BEGIN_OBJECT =>
-            arr.add(parseObject())
-          case com.google.gson.stream.JsonToken.BEGIN_ARRAY =>
-            arr.add(parseArray())
-          case _ =>
-            arr.add(JsonParser.parseReader(jsonReader))
+          case com.google.gson.stream.JsonToken.BEGIN_OBJECT => arr.add(parseObject())
+          case com.google.gson.stream.JsonToken.BEGIN_ARRAY  => arr.add(parseArray())
+          case _                                             => arr.add(JsonParser.parseReader(jsonReader))
         }
       }
       jsonReader.endArray()
       arr
     }
 
-    parseElement()
+    jsonReader.peek() match {
+      case com.google.gson.stream.JsonToken.BEGIN_OBJECT => parseObject()
+      case com.google.gson.stream.JsonToken.BEGIN_ARRAY  => parseArray()
+      case _                                             => jsonReader.skipValue()
+    }
+
     found.toSet
   }
 }

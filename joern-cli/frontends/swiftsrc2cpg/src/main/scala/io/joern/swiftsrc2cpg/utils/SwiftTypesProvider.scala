@@ -11,6 +11,7 @@ import versionsort.VersionHelper
 import java.io.StringReader
 import java.nio.file.Paths
 import scala.collection.mutable
+import scala.util.matching.Regex
 import scala.util.{Try, Using}
 
 object SwiftTypesProvider {
@@ -224,8 +225,28 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
     demangle(mangledName).map(removeModifier)
   }
 
+  /** This regex is designed to clean up Swift demangled type names by extracting meaningful parts and removing internal
+    * representation details. It has three capture groups:
+    *
+    *   1. {{{([^(]+)}}} - Captures everything before the first opening parenthesis, Example:
+    *      `SwiftHelloWorldLib.HelloWorld.`
+    *
+    *   1. {{{\((.+)\sin\s_[^)]+\)}}} - Matches a pattern with internal identifier details:
+    *      - {{{\(}}} - Literal opening parenthesis
+    *      - {{{(.+)}}} - Captures the name inside parentheses (before "in _...")
+    *      - {{{\sin\s_[^)]+\)}}} - Matches " in _" followed by an identifier and closing parenthesis
+    *   1. {{{(.*)}}} - Captures everything after the closing parenthesis. Example: `.getter : Swift.String`
+    *
+    * Full example: `SwiftHelloWorldLib.HelloWorld.(suffix in _C6D5E4A96804CD03B7512662F178D1D8).getter : Swift.String`
+    * becomes: `SwiftHelloWorldLib.HelloWorld.suffix.getter : Swift.String`
+    */
+  private val MemberNameRegex: Regex = """([^(]+)\((.+)\sin\s_[^)]+\)(.*)""".r
+
   private def calculateFullname(mangledName: String): Option[String] = {
-    demangle(mangledName).map(removeModifier)
+    demangle(mangledName).map {
+      case MemberNameRegex(parent, name, rest) => removeModifier(s"$parent$name$rest")
+      case other                               => removeModifier(other)
+    }
   }
 
   def mappingFromJson(jsonString: String, result: mutable.HashMap[String, mutable.HashSet[TypeInfo]]): Unit = {

@@ -211,6 +211,16 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
     }
   }
 
+  private def toResultList(
+    mapping: mutable.HashMap[String, mutable.HashSet[TypeInfo]]
+  ): List[(String, String, (Int, Int), Option[String], Option[String])] = {
+    mapping.flatMap { case (filename, typeInfoList) =>
+      typeInfoList.map { typeInfo =>
+        (filename, typeInfo.nodeKind, typeInfo.range, typeInfo.tpe, typeInfo.fullName)
+      }
+    }.toList
+  }
+
   "Processing the compile output" should {
 
     "parsing the swiftc arguments correctly" in {
@@ -231,12 +241,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
       val provider = new SwiftTypesProvider(Config(), Nil)
       provider.mappingFromJson(jsonStringHelloWorldSwift, mapping)
       provider.mappingFromJson(jsonStringMain, mapping)
-      val result = mapping.flatMap { case (filename, typeInfoList) =>
-        typeInfoList.map { typeInfo =>
-          (filename, typeInfo.nodeKind, typeInfo.range, typeInfo.tpe, typeInfo.fullName)
-        }
-      }
-      result.toList shouldBe List(
+      toResultList(mapping) shouldBe List(
         ("HelloWorldSwift.swift", "array_expr", (195, 224), Some("[Any]"), None),
         ("HelloWorldSwift.swift", "destructor_decl", (33, 33), None, Some("SwiftHelloWorldLib.HelloWorld.deinit")),
         ("HelloWorldSwift.swift", "string_literal_expr", (123, 123), Some("Swift.String"), None),
@@ -248,26 +253,33 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
           Some("Swift.String.+ infix(Swift.String, Swift.String) -> Swift.String")
         ),
         ("HelloWorldSwift.swift", "binary_expr", (195, 206), Some("Swift.String"), None),
-        (
-          "HelloWorldSwift.swift",
-          "var_decl",
-          (60, 60),
-          None,
-          Some("SwiftHelloWorldLib.HelloWorld.(greeting in _C6D5E4A96804CD03B7512662F178D1D8) : Swift.String")
-        ),
         ("HelloWorldSwift.swift", "string_literal_expr", (79, 79), Some("Swift.String"), None),
         ("HelloWorldSwift.swift", "erasure_expr", (195, 224), Some("Any"), None),
         ("HelloWorldSwift.swift", "string_literal_expr", (206, 206), Some("Swift.String"), None),
         ("HelloWorldSwift.swift", "binary_expr", (195, 217), Some("Swift.String"), None),
         ("HelloWorldSwift.swift", "declref_expr", (224, 224), Some("SwiftHelloWorldLib.HelloWorld"), None),
+        ("HelloWorldSwift.swift", "vararg_expansion_expr", (195, 224), Some("[Any]"), None),
         (
           "HelloWorldSwift.swift",
-          "var_decl",
+          "accessor_decl",
           (106, 106),
-          None,
-          Some("SwiftHelloWorldLib.HelloWorld.(suffix in _C6D5E4A96804CD03B7512662F178D1D8) : Swift.String")
+          Some("Swift.String"),
+          Some("SwiftHelloWorldLib.HelloWorld.suffix.getter : Swift.String")
         ),
-        ("HelloWorldSwift.swift", "vararg_expansion_expr", (195, 224), Some("[Any]"), None),
+        (
+          "HelloWorldSwift.swift",
+          "accessor_decl",
+          (60, 60),
+          Some("Swift.String"),
+          Some("SwiftHelloWorldLib.HelloWorld.greeting.getter : Swift.String")
+        ),
+        (
+          "HelloWorldSwift.swift",
+          "member_ref_expr",
+          (195, 195),
+          Some("Swift.String"),
+          Some("SwiftHelloWorldLib.HelloWorld.greeting : Swift.String")
+        ),
         (
           "HelloWorldSwift.swift",
           "call_expr",
@@ -276,6 +288,13 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
           Some("Swift.print(_: Any..., separator: Swift.String, terminator: Swift.String) -> ()")
         ),
         ("HelloWorldSwift.swift", "class_decl", (27, 236), None, Some("SwiftHelloWorldLib.HelloWorld")),
+        (
+          "HelloWorldSwift.swift",
+          "var_decl",
+          (106, 106),
+          None,
+          Some("SwiftHelloWorldLib.HelloWorld.suffix : Swift.String")
+        ),
         ("HelloWorldSwift.swift", "declref_expr", (217, 217), Some("Swift.String"), None),
         (
           "HelloWorldSwift.swift",
@@ -293,20 +312,12 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
         ),
         (
           "HelloWorldSwift.swift",
-          "accessor_decl",
-          (106, 106),
-          Some("Swift.String"),
-          Some("SwiftHelloWorldLib.HelloWorld.(suffix in _C6D5E4A96804CD03B7512662F178D1D8).getter : Swift.String")
-        ),
-        (
-          "HelloWorldSwift.swift",
           "constructor_decl",
           (136, 144),
           None,
           Some("SwiftHelloWorldLib.HelloWorld.init() -> SwiftHelloWorldLib.HelloWorld")
         ),
         ("HelloWorldSwift.swift", "type_expr", (204, 204), Some("Swift.String.Type"), None),
-        ("HelloWorldSwift.swift", "member_ref_expr", (195, 195), Some("Swift.String"), None),
         (
           "HelloWorldSwift.swift",
           "declref_expr",
@@ -321,7 +332,6 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
           Some("(Swift.String.Type) -> (Swift.String, Swift.String) -> Swift.String"),
           None
         ),
-        ("HelloWorldSwift.swift", "member_ref_expr", (224, 224), Some("Swift.String"), None),
         (
           "HelloWorldSwift.swift",
           "declref_expr",
@@ -346,15 +356,22 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
           Some("SwiftHelloWorldLib.HelloWorld.greet(from: Swift.String) -> ()")
         ),
         ("HelloWorldSwift.swift", "type_expr", (222, 222), Some("Swift.String.Type"), None),
-        (
-          "HelloWorldSwift.swift",
-          "accessor_decl",
-          (60, 60),
-          Some("Swift.String"),
-          Some("SwiftHelloWorldLib.HelloWorld.(greeting in _C6D5E4A96804CD03B7512662F178D1D8).getter : Swift.String")
-        ),
         ("HelloWorldSwift.swift", "declref_expr", (195, 195), Some("SwiftHelloWorldLib.HelloWorld"), None),
         ("HelloWorldSwift.swift", "default_argument_expr", (194, 194), Some("Swift.String"), None),
+        (
+          "HelloWorldSwift.swift",
+          "member_ref_expr",
+          (224, 224),
+          Some("Swift.String"),
+          Some("SwiftHelloWorldLib.HelloWorld.suffix : Swift.String")
+        ),
+        (
+          "HelloWorldSwift.swift",
+          "var_decl",
+          (60, 60),
+          None,
+          Some("SwiftHelloWorldLib.HelloWorld.greeting : Swift.String")
+        ),
         (
           "Main.swift",
           "function_conversion_expr",
@@ -453,7 +470,8 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
           swiftHelloWorldCommand should contain("-dump-ast")
           swiftHelloWorldCommand should contain("-dump-ast-format")
           swiftHelloWorldCommand should contain("json")
-        case None => fail("Can't build the SwiftTypesProvider")
+        case None =>
+          fail("Can't build the SwiftTypesProvider")
       }
     }
 
@@ -463,7 +481,8 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
       swiftTypesProvider match {
         case Some(provider) =>
           provider.parsedSwiftcInvocations shouldBe SwiftCompilerTestsFixture.ExpectedSwiftcInvocations
-        case None => fail("Can't build the SwiftTypesProvider")
+        case None =>
+          fail("Can't build the SwiftTypesProvider")
       }
     }
 
