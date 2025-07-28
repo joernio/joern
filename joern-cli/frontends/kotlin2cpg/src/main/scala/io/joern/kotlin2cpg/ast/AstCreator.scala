@@ -382,7 +382,7 @@ class AstCreator(
     val declarationsAsts = ktFile.getDeclarations.asScala.flatMap(astsForDeclaration)
     val fileNode         = NewFile().name(fileWithMeta.relativizedPath)
     if (!disableFileContent) {
-      fileNode.content(code(fileWithMeta.f))
+      fileNode.content(fileWithMeta.f.getText)
     }
     val lambdaTypeDecls =
       lambdaBindingInfoQueue.flatMap(_.edgeMeta.collect { case (node: NewTypeDecl, _, _) => Ast(node) })

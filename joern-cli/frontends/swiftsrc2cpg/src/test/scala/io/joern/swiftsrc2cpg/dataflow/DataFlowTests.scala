@@ -132,7 +132,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       |}
       |
       |func main() {
-      |  var k: Int = source(2)
+      |  var k: Int = source()
       |  var point: Point
       |  point.x = k
       |  point.y = 2
@@ -149,8 +149,8 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
           Set(
             List(
               ("RET", 7),
-              ("source(2)", 16),
-              ("var k: Int = source(2)", 16),
+              ("source()", 16),
+              ("var k: Int = source()", 16),
               ("point.x = k", 18),
               ("sink(point.x)", 20),
               ("sink(x: Int)", 11)
