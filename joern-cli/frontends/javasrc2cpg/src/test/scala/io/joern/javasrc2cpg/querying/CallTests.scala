@@ -177,6 +177,91 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
     }
   }
 
+  "calls to inherited static methods via an instance" should {
+    val cpg = code("""
+                     |package foo;
+                     |
+                     |class Foo {
+                     |  public static String foo() {
+                     |    return "FOO";
+                     |  }
+                     |}
+                     |""".stripMargin)
+      .moreCode("""
+                  |package bar;
+                  |
+                  |import foo.Foo;
+                  |
+                  |class Bar extends Foo {
+                  |  public static String foo() {
+                  |    return "BAR";
+                  |  }
+                  |}
+                  |""".stripMargin)
+      .moreCode("""
+                  |package baz;
+                  |
+                  |import bar.Bar;
+                  |
+                  |class Baz {
+                  |  void test(Bar b) {
+                  |    b.foo();
+                  |  }
+                  |}
+                  |""".stripMargin)
+
+    "have the correct staticReceiver set" in {
+      inside(cpg.call.name("foo").l) { case List(fooCall) =>
+        fooCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        fooCall.methodFullName shouldBe "bar.Bar.foo:java.lang.String()"
+        fooCall.staticReceiver shouldBe Some("bar.Bar")
+      }
+    }
+  }
+
+  "calls to overridden static methods via an instance" should {
+    val cpg = code("""
+                     |package foo;
+                     |
+                     |class Foo {
+                     |  public static String foo() {
+                     |    return "FOO";
+                     |  }
+                     |}
+                     |""".stripMargin)
+      .moreCode("""
+                  |package bar;
+                  |
+                  |import foo.Foo;
+                  |
+                  |class Bar extends Foo {
+                  |  public static String foo() {
+                  |    return "BAR";
+                  |  }
+                  |}
+                  |""".stripMargin)
+      .moreCode("""
+                  |package baz;
+                  |
+                  |import bar.Bar;
+                  |import foo.Foo;
+                  |
+                  |class Baz {
+                  |  void test(Foo f) {
+                  |    f.foo();
+                  |  }
+                  |}
+                  |""".stripMargin)
+
+    "have the correct staticReceiver set" in {
+      inside(cpg.call.name("foo").l) { case List(fooCall) =>
+        fooCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        fooCall.methodFullName shouldBe "foo.Foo.foo:java.lang.String()"
+        fooCall.staticReceiver shouldBe Some("foo.Foo")
+      }
+    }
+  }
+
   "calls with unresolved receivers should have the correct fullnames" in {
     val cpg = code("""
         |import a.*;
