@@ -14,7 +14,7 @@ import scala.collection.mutable
 object GsonTypeInfoReader {
 
   /** Field names that can contain type and decl fullnames in the Swift AST */
-  private val FullnameFieldNames = Set("usr", "type", "result", "decl_usr")
+  private val FullnameFieldNames = Set("usr", "type", "result", "decl_usr", "interface_type")
 
   /** AST node kinds that require special handling.
     *
@@ -129,12 +129,8 @@ object GsonTypeInfoReader {
     */
   private def declFromMemberRefExpr(obj: JsonObject): JsonObject = {
     safePropertyObject(obj, "decl") match {
-      case Some(decl) =>
-        astNodeKind(decl) match {
-          case NodeKinds.DeclRef => decl
-          case _                 => obj
-        }
-      case None => obj
+      case Some(decl) if astNodeKind(decl) == NodeKinds.DeclRef => decl
+      case _                                                    => obj
     }
   }
 
@@ -161,7 +157,8 @@ object GsonTypeInfoReader {
           case JsonToken.BEGIN_OBJECT if isAstNode(obj) =>
             val value = parseObject()
             obj.add(name, value)
-          case JsonToken.BEGIN_OBJECT => // don't descend
+          case JsonToken.BEGIN_OBJECT =>
+            // don't descend
             jsonReader.skipValue()
           case JsonToken.BEGIN_ARRAY =>
             val value = parseArray()
@@ -198,7 +195,9 @@ object GsonTypeInfoReader {
         case _                                         => safePropertyValue(obj, "decl_usr")
       }
 
-      val typeName    = safePropertyValue(obj, "type").orElse(safePropertyValue(obj, "result"))
+      val typeName = safePropertyValue(obj, "type")
+        .orElse(safePropertyValue(obj, "result"))
+        .orElse(safePropertyValue(obj, "interface_type"))
       val usrFullName = safePropertyValue(obj, "usr").orElse(declFullName)
 
       found.addOne(TypeInfo(filename, range_, typeName, usrFullName, nodeKind))
@@ -216,7 +215,7 @@ object GsonTypeInfoReader {
         jsonReader.peek() match {
           case JsonToken.BEGIN_OBJECT => arr.add(parseObject())
           case JsonToken.BEGIN_ARRAY  => arr.add(parseArray())
-          case _                      => arr.add(JsonParser.parseReader(jsonReader))
+          case _                      => jsonReader.skipValue()
         }
       }
       jsonReader.endArray()
