@@ -49,7 +49,23 @@ object SwiftTypesProvider {
     tpe: Option[String],
     fullName: Option[String],
     nodeKind: String
-  )
+  ) {
+    override def equals(obj: Any): Boolean = obj match {
+      case that: TypeInfo =>
+        this.filename == that.filename &&
+        this.range == that.range &&
+        this.nodeKind == that.nodeKind
+      case _ => false
+    }
+
+    override def hashCode(): Int = {
+      val prime  = 31
+      var result = 1
+      result = prime * result + filename.hashCode
+      result = prime * result + range.hashCode
+      prime * result + nodeKind.hashCode
+    }
+  }
 
   type SwiftTypeMapping        = Map[String, Set[TypeInfo]]
   type MutableSwiftTypeMapping = mutable.HashMap[String, mutable.HashSet[TypeInfo]]
