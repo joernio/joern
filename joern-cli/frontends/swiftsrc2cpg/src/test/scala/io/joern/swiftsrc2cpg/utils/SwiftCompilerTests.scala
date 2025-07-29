@@ -458,7 +458,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
     }
 
     "handle a SwiftPM project correctly" in SwiftCompilerTestsFixture { dir =>
-      val config             = Config().withInputPath(dir.toString).withOutputPath(dir.toString)
+      val config             = Config().withInputPath(dir.toString).withOutputPath(dir.toString).withSwiftBuild(true)
       val swiftTypesProvider = SwiftTypesProvider.apply(config)
       swiftTypesProvider match {
         case Some(provider) =>
@@ -494,7 +494,11 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
     }
 
     "handle a Xcode project correctly with a given compiler log file" in SwiftCompilerTestsFixture { dir =>
-      val config = Config().withInputPath(dir.toString).withOutputPath(dir.toString).withXcodeOutput(dir / "out.log")
+      val config = Config()
+        .withInputPath(dir.toString)
+        .withOutputPath(dir.toString)
+        .withXcodeOutput(dir / "out.log")
+        .withSwiftBuild(true)
       val swiftTypesProvider = SwiftTypesProvider.apply(config)
       swiftTypesProvider match {
         case Some(provider) =>

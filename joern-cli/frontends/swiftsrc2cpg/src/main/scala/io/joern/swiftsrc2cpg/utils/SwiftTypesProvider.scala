@@ -138,6 +138,19 @@ object SwiftTypesProvider {
     *   Some(SwiftTypesProvider) if Swift environment is valid, None otherwise
     */
   def apply(config: Config): Option[SwiftTypesProvider] = {
+    if (!config.swiftBuild) {
+      logger.warn(
+        "Swift build disabled (--swift-build was not provided). CPG will not contain any type information from the Swift compiler."
+      )
+      return None
+    }
+    if (!isValidEnvironment(config)) {
+      logger.warn(
+        "No valid Swift environment found (swift and swiftc executables). CPG will not contain any type information from the Swift compiler."
+      )
+      return None
+    }
+
     config.xcodeOutputPath.map(outputPath => build(config, IOUtils.readLinesInFile(outputPath))).orElse(build(config))
   }
 
@@ -190,7 +203,7 @@ object SwiftTypesProvider {
             isCompatible
           }
         case _ =>
-          logger.debug(s"No Swift version on this system found!")
+          logger.debug("No Swift version on this system found!")
           false
       }
     }
@@ -199,12 +212,10 @@ object SwiftTypesProvider {
   }
 
   private def build(config: Config): Option[SwiftTypesProvider] = {
-    if (isValidEnvironment(config)) {
-      ExternalCommand
-        .run(SwiftBuildCommand, mergeStdErrInStdOut = true, workingDir = Some(Paths.get(config.inputPath)))
-        .successOption
-        .map(outLines => build(config, outLines))
-    } else None
+    ExternalCommand
+      .run(SwiftBuildCommand, mergeStdErrInStdOut = true, workingDir = Some(Paths.get(config.inputPath)))
+      .successOption
+      .map(outLines => build(config, outLines))
   }
 
   private def argShouldBeFiltered(arg: String): Boolean = {

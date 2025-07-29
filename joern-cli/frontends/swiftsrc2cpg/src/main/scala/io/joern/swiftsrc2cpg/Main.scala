@@ -11,11 +11,18 @@ import scopt.OParser
 
 import java.nio.file.{Path, Paths}
 
-final case class Config(defines: Set[String] = Set.empty, xcodeOutputPath: Option[Path] = None)
-    extends X2CpgConfig[Config]
+final case class Config(
+  defines: Set[String] = Set.empty,
+  swiftBuild: Boolean = false,
+  xcodeOutputPath: Option[Path] = None
+) extends X2CpgConfig[Config]
     with TypeRecoveryParserConfig[Config] {
   def withDefines(defines: Set[String]): Config = {
     this.copy(defines = defines).withInheritedFields(this)
+  }
+
+  def withSwiftBuild(swiftBuild: Boolean): Config = {
+    this.copy(swiftBuild = swiftBuild).withInheritedFields(this)
   }
 
   def withXcodeOutput(xcodeOutputPath: Path): Config = {
@@ -36,17 +43,23 @@ object Frontend {
         .unbounded()
         .text("define a name")
         .action((d, c) => c.withDefines(c.defines + d)),
-      opt[Path]("xcode-output")
-        .text("the path to the Xcode compiler debug output")
-        .validate { path =>
-          val file = path.toRealPath().toFile
-          if (!file.isFile || !file.canRead) {
-            failure(s"The Xcode compiler output file can not be read: '${file.toString}'")
-          } else {
-            success
-          }
-        }
-        .action((path, c) => c.withXcodeOutput(path))
+      cmd("swift-build")
+        .hidden() // TODO: remove once fully usable
+        .action((_, c) => c.copy(swiftBuild = true))
+        .text("build the project to retrieve full Swift compiler type information")
+        .children(
+          opt[Path]("xcode-output")
+            .text("the path to the Xcode compiler debug output")
+            .validate { path =>
+              val file = path.toRealPath().toFile
+              if (!file.isFile || !file.canRead) {
+                failure(s"The Xcode compiler output file can not be read: '${file.toString}'")
+              } else {
+                success
+              }
+            }
+            .action((path, c) => c.withXcodeOutput(path))
+        )
     )
   }
 
