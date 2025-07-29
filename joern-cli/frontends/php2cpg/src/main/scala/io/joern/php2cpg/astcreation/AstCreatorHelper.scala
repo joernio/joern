@@ -213,4 +213,19 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
   }
 
   protected def isBuiltinFunc(name: String): Boolean = PhpBuiltins.FuncNames.contains(name)
+
+  protected def createListExprCodeField(listExpr: PhpListExpr): String = {
+    val name = PhpOperators.listFunc
+    val args = listExpr.items.flatten
+      .map {
+        case PhpArrayItem(_, _ @PhpVariable(name: PhpNameExpr, _), _, _, _) => s"$$${name.name}"
+        case PhpArrayItem(_, value: PhpListExpr, _, _, _)                   => createListExprCodeField(value)
+        case x =>
+          logger.warn(s"Invalid arg type for code field: ${x.getClass}")
+          ""
+      }
+      .mkString(",")
+
+    s"$name($args)"
+  }
 }
