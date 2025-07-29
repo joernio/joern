@@ -1,6 +1,7 @@
 package io.joern.swiftsrc2cpg.utils
 
 import io.joern.swiftsrc2cpg.Config
+import io.joern.swiftsrc2cpg.astcreation.AstCreatorHelper
 import io.joern.x2cpg.utils.Environment
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.shiftleft.utils.IOUtils
@@ -151,6 +152,10 @@ object SwiftTypesProvider {
   }
 
   private def isValidEnvironment(config: Config): Boolean = {
+    if (config.xcodeOutputPath.isEmpty && !Paths.get(config.inputPath, "Package.swift").toFile.canRead) {
+      return false
+    }
+
     val commands = if (config.xcodeOutputPath.isDefined) {
       // we do not need 'swift' on the system if the commands are taken from Xcode
       Seq(SwiftcVersionCommand)
@@ -255,7 +260,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
   }
 
   private def calculateTypename(mangledName: String): Option[String] = {
-    demangle(mangledName).map(removeModifier)
+    demangle(mangledName).map(removeModifier).map(AstCreatorHelper.stripTemplateTags).map(_.replace(" ", ""))
   }
 
   /** This regex is designed to clean up Swift demangled type names by extracting meaningful parts and removing internal
@@ -276,10 +281,13 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
   private val MemberNameRegex: Regex = """([^(]+)\((.+)\sin\s_[^)]+\)(.*)""".r
 
   private def calculateFullname(mangledName: String): Option[String] = {
-    demangle(mangledName).map {
-      case MemberNameRegex(parent, name, rest) => removeModifier(s"$parent$name$rest")
-      case other                               => removeModifier(other)
-    }
+    demangle(mangledName)
+      .map {
+        case MemberNameRegex(parent, name, rest) => removeModifier(s"$parent$name$rest")
+        case other                               => removeModifier(other)
+      }
+      .map(AstCreatorHelper.stripTemplateTags)
+      .map(_.replace(" ", ""))
   }
 
   def mappingFromJson(jsonString: String, result: MutableSwiftTypeMapping): Unit = {

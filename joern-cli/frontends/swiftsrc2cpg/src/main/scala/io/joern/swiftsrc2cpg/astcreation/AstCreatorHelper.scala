@@ -6,7 +6,61 @@ import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, EvaluationStrategies, PropertyNames}
 import org.apache.commons.lang3.StringUtils
 
+object AstCreatorHelper {
+
+  private val TagsToKeepInFullName = List("<anonymous>", "<lambda>", "<global>", "<type>", "<extension>", "<wildcard>")
+
+  /** Removes template type parameters from qualified names while preserving special tags.
+    *
+    * This method strips the angle brackets and their contents from type names, which is useful for simplifying complex
+    * templated type names. It preserves certain special tags that are enclosed in angle brackets (like &lt;lambda&gt;,
+    * &lt;const&gt;, etc.) to maintain semantic meaning.
+    *
+    * Examples:
+    * {{{
+    *  stripTemplateTags("ns.Foo<int>") == "ns.Foo"
+    *  stripTemplateTags("Foo.Bar<T>.<lambda>1") == "Foo.Bar.<lambda>1" // preserves the special <lambda> tag
+    *  stripTemplateTags("ns.map<ns.foo, ns.bar<int>>") == "ns.map" // removes nested template parameters
+    * }}}
+    *
+    * @param input
+    *   The input string that may contain template tags
+    * @return
+    *   The string with template tags removed but special tags preserved
+    */
+  def stripTemplateTags(input: String): String = {
+    if (input.isEmpty || !input.contains("<") || !input.contains(">")) {
+      return input
+    }
+
+    val firstOpenIndex = input.indexOf("<")
+    // Find matching closing bracket, accounting for nesting
+    var nesting    = 1
+    var closeIndex = firstOpenIndex + 1
+    while (closeIndex < input.length && nesting > 0) {
+      if (input(closeIndex) == '<') nesting += 1
+      else if (input(closeIndex) == '>') nesting -= 1
+      closeIndex += 1
+    }
+    closeIndex -= 1 // Adjust to point at the closing bracket
+
+    val prefix = input.substring(0, firstOpenIndex)
+    val tag    = input.substring(firstOpenIndex, closeIndex + 1)
+    val suffix = input.substring(closeIndex + 1)
+
+    // Keep special tags, remove others
+    if (TagsToKeepInFullName.contains(tag)) {
+      s"$prefix$tag${stripTemplateTags(suffix)}"
+    } else {
+      s"$prefix${stripTemplateTags(suffix)}"
+    }
+  }
+
+}
+
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+
+  import AstCreatorHelper.*
 
   protected def notHandledYet(node: SwiftNode): Ast = {
     val text =
@@ -79,55 +133,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     if (name == Defines.Any) return name
     val normalizedName = StringUtils.normalizeSpace(name)
     stripTemplateTags(normalizedName)
-  }
-
-  private val TagsToKeepInFullName =
-    List("<anonymous>", "<lambda>", "<global>", "<type>", "<extension>", "<wildcard>")
-
-  /** Removes template type parameters from qualified names while preserving special tags.
-    *
-    * This method strips the angle brackets and their contents from type names, which is useful for simplifying complex
-    * templated type names. It preserves certain special tags that are enclosed in angle brackets (like &lt;lambda&gt;,
-    * &lt;const&gt;, etc.) to maintain semantic meaning.
-    *
-    * Examples:
-    * {{{
-    *  stripTemplateTags("ns.Foo<int>") == "ns.Foo"
-    *  stripTemplateTags("Foo.Bar<T>.<lambda>1") == "Foo.Bar.<lambda>1" // preserves the special <lambda> tag
-    *  stripTemplateTags("ns.map<ns.foo, ns.bar<int>>") == "ns.map" // removes nested template parameters
-    * }}}
-    *
-    * @param input
-    *   The input string that may contain template tags
-    * @return
-    *   The string with template tags removed but special tags preserved
-    */
-  private def stripTemplateTags(input: String): String = {
-    if (input.isEmpty || !input.contains("<") || !input.contains(">")) {
-      return input
-    }
-
-    val firstOpenIndex = input.indexOf("<")
-    // Find matching closing bracket, accounting for nesting
-    var nesting    = 1
-    var closeIndex = firstOpenIndex + 1
-    while (closeIndex < input.length && nesting > 0) {
-      if (input(closeIndex) == '<') nesting += 1
-      else if (input(closeIndex) == '>') nesting -= 1
-      closeIndex += 1
-    }
-    closeIndex -= 1 // Adjust to point at the closing bracket
-
-    val prefix = input.substring(0, firstOpenIndex)
-    val tag    = input.substring(firstOpenIndex, closeIndex + 1)
-    val suffix = input.substring(closeIndex + 1)
-
-    // Keep special tags, remove others
-    if (TagsToKeepInFullName.contains(tag)) {
-      s"$prefix$tag${stripTemplateTags(suffix)}"
-    } else {
-      s"$prefix${stripTemplateTags(suffix)}"
-    }
   }
 
   protected def cleanType(rawType: String): String = {
