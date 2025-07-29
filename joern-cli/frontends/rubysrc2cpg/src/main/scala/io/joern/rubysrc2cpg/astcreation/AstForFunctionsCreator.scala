@@ -214,10 +214,13 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   private def transformAsClosureBody(originNode: RubyExpression, refs: List[Ast], baseStmtBlockAst: Ast) = {
     // Determine which locals are captured
     val capturedLocalNodes = baseStmtBlockAst.nodes
-      .collect { case x: NewIdentifier => x } // Self identifiers are handled separately
+      .collect { case x: NewIdentifier => x }
       .distinctBy(_.name)
-      .map(i => scope.lookupVariableInOuterScope(i.name))
-      .filter(_.nonEmpty)
+      .map {
+        case i if i.name == "self" => scope.lookupSelfInOuterScope // we only need to bind to the closest self in scope
+        case i                     => scope.lookupVariableInOuterScope(i.name)
+      }
+      .filter(_.iterator.nonEmpty)
       .flatten
       .toSet
 

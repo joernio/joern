@@ -432,4 +432,28 @@ class ErbTests extends RubyCode2CpgFixture {
     // Should be no RETURN expressions in ERB files
     cpg.all.collectAll[Return].isEmpty shouldBe true
   }
+
+  "Self in inner lambda" in {
+    val cpg = code("""module Admin
+                     |  class UsersController < ActionController::Base
+                     |    layout "admin"
+                     |
+                     |    def show
+                     |      render "hello"
+                     |      respond_to do |format|
+                     |        format.json { render partial: "foo" }
+                     |      end
+                     |    end
+                     |  end
+                     |end
+                     |""".stripMargin)
+
+    inside(
+      cpg.method.fullNameExact("Test0.rb:<main>.Admin.UsersController.show.<lambda>0.<lambda>0").local.name("self").l
+    ) {
+      case selfLocal :: Nil =>
+        selfLocal.closureBindingId shouldBe Some("Test0.rb:<main>.Admin.UsersController.show.self")
+      case xs => fail(s"Expected one local for self, got ${xs.name.mkString("[", ",", "]")}")
+    }
+  }
 }
