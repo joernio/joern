@@ -68,7 +68,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
 
     "have the return node under the closure (returning the literal)" in {
       inside(cpg.method("<lambda>0").block.astChildren.l) {
-        case ret :: Nil =>
+        case ret :: _ :: Nil =>
           ret.code shouldBe "\"world!\""
         case xs => fail(s"Expected the closure to have a single call, instead got [${xs.code.mkString(", ")}]")
       }
@@ -229,9 +229,9 @@ class DoBlockTests extends RubyCode2CpgFixture {
       }
     }
 
-    "annotate the nodes via CAPTURE bindings" in {
+    "nnotate the nodes via CAPTURE bindings" in {
       cpg.closureBinding.l match {
-        case myValue :: Nil =>
+        case myValue :: _ :: Nil =>
           inside(myValue._localViaRefOut) {
             case Some(local) =>
               local.name shouldBe "myValue"
@@ -400,17 +400,19 @@ class DoBlockTests extends RubyCode2CpgFixture {
                      |""".stripMargin)
 
     inside(cpg.local.nameNot(".*<tmp-\\d>").l) {
-      case jfsOutsideLocal :: schedules :: hashInsideLocal :: jfsCapturedLocal :: Nil =>
+      case jfsOutsideLocal :: _ :: hashInsideLocal :: jfsCapturedLocal :: selfCapturedLocal :: Nil =>
         jfsOutsideLocal.closureBindingId shouldBe None
         hashInsideLocal.closureBindingId shouldBe None
         jfsCapturedLocal.closureBindingId shouldBe Some("Test0.rb:<main>.get_pto_schedule.jfs")
+        selfCapturedLocal.closureBindingId shouldBe Some("Test0.rb:<main>.get_pto_schedule.<lambda>0.self")
       case xs => fail(s"Expected 6 locals, got ${xs.code.mkString(",")}")
     }
 
     inside(cpg.method.isLambda.local.l) {
-      case hashLocal :: _ :: jfsLocal :: Nil =>
+      case hashLocal :: _ :: jfsLocal :: selfLocal :: Nil =>
         hashLocal.closureBindingId shouldBe None
         jfsLocal.closureBindingId shouldBe Some("Test0.rb:<main>.get_pto_schedule.jfs")
+        selfLocal.closureBindingId shouldBe Some("Test0.rb:<main>.get_pto_schedule.<lambda>0.self")
       case xs => fail(s"Expected 3 locals in lambda, got ${xs.code.mkString(",")}")
     }
   }
@@ -459,7 +461,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
           gSplatLocal.code shouldBe "g"
 
           selfLocal.code shouldBe "self"
-          selfLocal.closureBindingId shouldBe Some("Test0.rb:<global>.self")
+          selfLocal.closureBindingId shouldBe Some("Test0.rb:<main>.<lambda>0.self")
         case xs => fail(s"Expected 4 locals, got [${xs.name.mkString(", ")}]")
       }
     }
