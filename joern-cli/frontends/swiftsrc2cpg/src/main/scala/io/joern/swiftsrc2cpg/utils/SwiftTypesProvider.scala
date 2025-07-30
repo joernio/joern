@@ -10,7 +10,7 @@ import versionsort.VersionHelper
 
 import java.io.StringReader
 import java.nio.file.Paths
-import scala.collection.mutable
+import scala.collection.{immutable, mutable}
 import scala.util.matching.Regex
 import scala.util.{Try, Using}
 
@@ -30,16 +30,16 @@ object SwiftTypesProvider {
   private val SwiftBuildCommand    = Seq("swift", "build", "--verbose")
   private val SwiftcDumpOptions    = Seq("-dump-ast", "-dump-ast-format", "json")
 
-  /** Information about a Swift type found in the source code
+  /** Information about a Swift type found in the source code. fullName and tpe are not demangled yet.
     *
     * @param filename
     *   The source file where the type was found
     * @param range
     *   The position range in the source file
     * @param tpe
-    *   The fully qualified type name (if any; demangled)
+    *   The fully qualified type name (if any; not demangled)
     * @param fullName
-    *   The fully qualified name (if any; demangled)
+    *   The fully qualified name (if any; not demangled)
     * @param nodeKind
     *   The AST node kind
     */
@@ -67,8 +67,27 @@ object SwiftTypesProvider {
     }
   }
 
-  type SwiftTypeMapping        = Map[String, Set[TypeInfo]]
-  type MutableSwiftTypeMapping = mutable.HashMap[String, mutable.HashSet[TypeInfo]]
+  /** Information about a Swift type found in the source code. fullName and tpe are demangled.
+    *
+    * @param range
+    *   The position range in the source file
+    * @param tpe
+    *   The fully qualified type name (if any; demangled)
+    * @param fullName
+    *   The fully qualified name (if any; demangled)
+    * @param nodeKind
+    *   The AST node kind
+    */
+  case class ResolvedTypeInfo(range: (Int, Int), tpe: Option[String], fullName: Option[String], nodeKind: String)
+
+  type SwiftTypeMapping        = immutable.HashMap[String, immutable.List[ResolvedTypeInfo]]
+  type MutableSwiftTypeMapping = mutable.HashMap[String, mutable.ListBuffer[ResolvedTypeInfo]]
+
+  object TypeMappingConversion:
+    given toImmutable: Conversion[MutableSwiftTypeMapping, SwiftTypeMapping] = mutableSwiftTypeMapping =>
+      immutable.HashMap.from(mutableSwiftTypeMapping.map { case (filename, list) =>
+        filename -> immutable.List.from(list)
+      })
 
   /** @see
     *   [[io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.DeclModifierSyntax]]
@@ -267,6 +286,9 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
 
   import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.*
 
+  import scala.language.implicitConversions
+  import TypeMappingConversion.toImmutable
+
   private lazy val swiftDemangleCommand = SwiftTypesProvider.swiftDemangleCommand(config)
 
   private val mangledNameCache = mutable.HashMap.empty[String, Option[String]]
@@ -325,13 +347,16 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
     )
   }
 
+  private def resolve(typeInfo: TypeInfo): ResolvedTypeInfo = {
+    val demangledTpe      = typeInfo.tpe.flatMap(calculateTypename)
+    val demangledFullName = typeInfo.fullName.flatMap(calculateFullname)
+    ResolvedTypeInfo(typeInfo.range, demangledTpe, demangledFullName, typeInfo.nodeKind)
+  }
+
   def mappingFromJson(jsonString: String, result: MutableSwiftTypeMapping): Unit = {
     Using(new StringReader(jsonString)) { reader =>
       GsonTypeInfoReader.collectTypeInfo(reader).foreach { typeInfo =>
-        val demangledTpe      = typeInfo.tpe.flatMap(calculateTypename)
-        val demangledFullName = typeInfo.fullName.flatMap(calculateFullname)
-        val resolvedTypeInfo  = typeInfo.copy(tpe = demangledTpe, fullName = demangledFullName)
-        result.getOrElseUpdate(typeInfo.filename, mutable.HashSet.empty).addOne(resolvedTypeInfo)
+        result.getOrElseUpdate(typeInfo.filename, mutable.ListBuffer.empty).addOne(resolve(typeInfo))
       }
     }
   }
@@ -347,7 +372,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
           mappingFromJson(jsonString, mapping)
         }
     }
-    mapping.map { case (filename, set) => filename -> set.toSet }.toMap
+    mapping
   }
 
 }

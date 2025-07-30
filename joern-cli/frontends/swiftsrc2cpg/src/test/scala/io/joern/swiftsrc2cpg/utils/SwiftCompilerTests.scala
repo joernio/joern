@@ -1,7 +1,7 @@
 package io.joern.swiftsrc2cpg.utils
 
 import io.joern.swiftsrc2cpg.Config
-import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{MutableSwiftTypeMapping, TypeInfo}
+import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.MutableSwiftTypeMapping
 import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import org.scalatest.matchers.should.Matchers
@@ -11,6 +11,9 @@ import java.nio.file.{Files, Path}
 import scala.collection.mutable
 
 class SwiftCompilerTests extends AnyWordSpec with Matchers {
+
+  import scala.language.implicitConversions
+  import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.TypeMappingConversion.toImmutable
 
   private object SwiftCompilerTestsFixture {
     private val PackageSwiftContent: String =
@@ -453,8 +456,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
       val provider = new SwiftTypesProvider(Config(), Nil)
       provider.mappingFromJson(SwiftCompilerTestsFixture.JsonStringHelloWorldSwift, mapping)
       provider.mappingFromJson(SwiftCompilerTestsFixture.JsonStringMain, mapping)
-      val resultMapping = mapping.map { case (filename, set) => filename -> set.toSet }.toMap
-      toResultList(resultMapping) shouldBe SwiftCompilerTestsFixture.ExpectedMapping
+      toResultList(mapping) shouldBe SwiftCompilerTestsFixture.ExpectedMapping
     }
 
     "handle a SwiftPM project correctly" in SwiftCompilerTestsFixture { dir =>
