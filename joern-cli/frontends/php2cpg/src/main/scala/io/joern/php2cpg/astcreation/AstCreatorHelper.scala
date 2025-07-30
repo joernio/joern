@@ -92,7 +92,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     }
   }
 
-  private def getTypeDeclPrefix: Option[String] =
+  protected def getTypeDeclPrefix: Option[String] =
     scope.getEnclosingTypeDeclTypeName.filterNot(_ == NamespaceTraversal.globalNamespaceName)
 
   protected def codeForMethodCall(call: PhpCallExpr, targetAst: Ast, name: String): String = {
