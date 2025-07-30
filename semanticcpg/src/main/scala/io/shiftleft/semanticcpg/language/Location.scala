@@ -4,6 +4,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Properties, PropertyNames}
 import io.shiftleft.semanticcpg.language.nodemethods.AstNodeMethods
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.Steps.JsonSerializeAsProduct
 
 import scala.annotation.tailrec
 
@@ -62,8 +63,8 @@ object LazyLocation extends LocationCreator {
 
 implicit val locationCreator: LocationCreator = LazyLocation
 
-class LazyLocation(storedNode: StoredNode) extends LocationInfo with Product {
-  def node: Option[AbstractNode] = Some(storedNode)
+class LazyLocation(storedNode: StoredNode) extends LocationInfo with JsonSerializeAsProduct {
+  def node: Option[AbstractNode] = Option(storedNode)
 
   def symbol: String = {
     storedNode match {
