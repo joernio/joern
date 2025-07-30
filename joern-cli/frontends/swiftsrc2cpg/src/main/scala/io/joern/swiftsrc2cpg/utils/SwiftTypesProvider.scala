@@ -269,6 +269,8 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
 
   private lazy val swiftDemangleCommand = SwiftTypesProvider.swiftDemangleCommand(config)
 
+  private val mangledNameCache = mutable.HashMap.empty[String, Option[String]]
+
   private def demangle(mangledName: String): Option[String] = {
     if (mangledName.isEmpty) return None
     val strippedMangledName = mangledName.stripPrefix("$").replaceFirst(":", "")
@@ -287,7 +289,10 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
   }
 
   private def calculateTypename(mangledName: String): Option[String] = {
-    demangle(mangledName).map(removeModifier).map(AstCreatorHelper.stripTemplateTags).map(_.replace(" ", ""))
+    mangledNameCache.getOrElseUpdate(
+      mangledName,
+      demangle(mangledName).map(removeModifier).map(AstCreatorHelper.stripTemplateTags).map(_.replace(" ", ""))
+    )
   }
 
   /** This regex is designed to clean up Swift demangled type names by extracting meaningful parts and removing internal
@@ -308,13 +313,16 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
   private val MemberNameRegex: Regex = """([^(]+)\((.+)\sin\s_[^)]+\)(.*)""".r
 
   private def calculateFullname(mangledName: String): Option[String] = {
-    demangle(mangledName)
-      .map {
-        case MemberNameRegex(parent, name, rest) => removeModifier(s"$parent$name$rest")
-        case other                               => removeModifier(other)
-      }
-      .map(AstCreatorHelper.stripTemplateTags)
-      .map(_.replace(" ", ""))
+    mangledNameCache.getOrElseUpdate(
+      mangledName,
+      demangle(mangledName)
+        .map {
+          case MemberNameRegex(parent, name, rest) => removeModifier(s"$parent$name$rest")
+          case other                               => removeModifier(other)
+        }
+        .map(AstCreatorHelper.stripTemplateTags)
+        .map(_.replace(" ", ""))
+    )
   }
 
   def mappingFromJson(jsonString: String, result: MutableSwiftTypeMapping): Unit = {
