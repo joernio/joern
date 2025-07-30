@@ -141,6 +141,10 @@ class StepsTest extends AnyWordSpec with Matchers {
       val parsed = parse(json).children.head // exactly one result for the above query
       parsed shouldBe JString("asignature")
     }
+
+    "operating on regular stdlib classes" in {
+      List(1, 2, 3).toJson shouldBe "[1,2,3]"
+    }
   }
 
   ".p for pretty printing" should {

@@ -83,16 +83,14 @@ object Steps {
   private lazy val nodeSerializer = new CustomSerializer[AbstractNode](implicit format =>
     (
       { case _ => ??? }, // deserializer not required for now
-      { case node: Product =>
+      { case node: AbstractNode =>
         val elementMap = Map.newBuilder[String, Any]
         (0 until node.productArity).foreach { i =>
           val label   = node.productElementName(i)
           val element = node.productElement(i)
           elementMap.addOne(label -> element)
         }
-        if (node.isInstanceOf[AbstractNode]) {
-          elementMap.addOne("_label" -> node.asInstanceOf[AbstractNode].label)
-        }
+        elementMap.addOne("_label" -> node.label)
         if (node.isInstanceOf[StoredNode]) {
           elementMap.addOne("_id" -> node.asInstanceOf[StoredNode].id())
         }
