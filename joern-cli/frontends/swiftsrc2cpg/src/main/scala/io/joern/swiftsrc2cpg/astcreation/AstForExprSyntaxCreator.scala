@@ -191,7 +191,11 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     baseNode: NewNode,
     callName: String
   ): Ast = {
-    val args = callExpr.arguments.children.map(astForNode) ++ callExpr.trailingClosure.toList.map(astForNode)
+
+    val trailingClosureAsts            = callExpr.trailingClosure.toList.map(astForNode)
+    val additionalTrailingClosuresAsts = callExpr.additionalTrailingClosures.children.map(c => astForNode(c.closure))
+
+    val args = callExpr.arguments.children.map(astForNode) ++ trailingClosureAsts ++ additionalTrailingClosuresAsts
 
     val callExprCode = code(callExpr)
     val callCode = callExprCode match {
@@ -308,9 +312,11 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def astForMacroExpansionExprSyntax(node: MacroExpansionExprSyntax): Ast = {
     val name = code(node.macroName)
-    val argAsts = astForNode(node.arguments) +:
-      node.trailingClosure.toList.map(astForNode) :+
-      astForNode(node.additionalTrailingClosures)
+
+    val trailingClosureAsts            = node.trailingClosure.toList.map(astForNode)
+    val additionalTrailingClosuresAsts = node.additionalTrailingClosures.children.map(c => astForNode(c.closure))
+
+    val argAsts = astForNode(node.arguments) +: (trailingClosureAsts ++ additionalTrailingClosuresAsts)
     val callNode =
       NewCall()
         .name(name)
@@ -446,8 +452,11 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForSubscriptCallExprSyntax(node: SubscriptCallExprSyntax): Ast = {
     val baseAst   = astForNode(node.calledExpression)
     val memberAst = astForNode(node.arguments)
-    val additionalArgsAsts = node.trailingClosure.toList.map(astForNode) ++
-      node.additionalTrailingClosures.children.map(c => astForNode(c.closure))
+
+    val trailingClosureAsts            = node.trailingClosure.toList.map(astForNode)
+    val additionalTrailingClosuresAsts = node.additionalTrailingClosures.children.map(c => astForNode(c.closure))
+
+    val additionalArgsAsts = trailingClosureAsts ++ additionalTrailingClosuresAsts
     createIndexAccessCallAst(baseAst, memberAst, line(node), column(node), additionalArgsAsts)
   }
 

@@ -17,7 +17,7 @@ class BuiltinTypesPass(cpg: Cpg) extends CpgPass(cpg) {
 
     diffGraph.addNode(namespaceBlock)
 
-    Defines.SwiftTypes.zipWithIndex.map { case (typeName: String, index) =>
+    Defines.SwiftTypes.diff(Seq(Defines.Any)).zipWithIndex.map { case (typeName: String, index) =>
       val tpe = NewType()
         .name(typeName)
         .fullName(typeName)

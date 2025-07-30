@@ -37,8 +37,8 @@ class ToplevelLibraryTests extends AstSwiftSrc2CpgSuite {
         "<operator>.addition",
         "<operator>.assignment",
         "Test0.swift:<global>",
-        "Test0.swift:<global>:<lambda>0:ANY()",
-        "Test0.swift:<global>:<lambda>1:ANY()"
+        "Test0.swift:<global>.<lambda>0:ANY()",
+        "Test0.swift:<global>.<lambda>1:ANY()"
       )
     }
 

@@ -28,7 +28,7 @@ class ExtensionInheritancePass(cpg: Cpg) extends ForkJoinParallelCpgPass[TypeDec
   override def runOnPart(builder: DiffGraphBuilder, part: TypeDecl): Unit = {
     val folderOption = Option(new File(part.filename).getParent)
     if (folderOption.isEmpty) {
-      val extensions = cpg.typeDecl.filter(_.fullName.endsWith(s":${part.name}<extension>"))
+      val extensions = cpg.typeDecl.filter(_.fullName.endsWith(s".${part.name}<extension>"))
       setInheritsFromFullNames(builder, part, extensions)
     } else {
       val folder = s"${folderOption.get}/".replaceAll("\\\\", "/")
@@ -38,7 +38,7 @@ class ExtensionInheritancePass(cpg: Cpg) extends ForkJoinParallelCpgPass[TypeDec
         ""
       }
       val extensions = cpg.typeDecl.filter(t =>
-        t.fullName.startsWith(folderPrefix) && t.fullName.endsWith(s":${part.name}<extension>")
+        t.fullName.startsWith(folderPrefix) && t.fullName.endsWith(s".${part.name}<extension>")
       )
       setInheritsFromFullNames(builder, part, extensions)
     }

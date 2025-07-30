@@ -14,11 +14,29 @@ class ImportsPass(cpg: Cpg) extends XImportsPass(cpg) {
 
   override def importedEntityFromCall(call: Call): String = {
     call.argument.code.l match {
-      case List("", what)       => what.split('.')(0)
-      case List(where, what)    => s"$where.$what"
+      case List("", what)    => what.split('.')(0)
+      case List(where, what) => s"${resolve(where, what, call)}"
+
       case List("", what, _)    => what
-      case List(where, what, _) => s"$where.$what"
+      case List(where, what, _) => s"${resolve(where, what, call)}"
       case _                    => ""
+    }
+  }
+
+  private def resolve(where: String, what: String, call: Call): String = {
+    where match {
+      case "." =>
+        call.file.name.headOption
+          .map { path =>
+            path.split(".").dropRight(1) match {
+              case Array() =>
+                what
+              case packagePathElems =>
+                packagePathElems.mkString(".") + s".$what"
+            }
+          }
+          .getOrElse("")
+      case x => x + s".$what"
     }
   }
 

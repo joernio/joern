@@ -116,7 +116,7 @@ class GuardTests extends AstSwiftSrc2CpgSuite {
         |}
         |""".stripMargin)
       val List(methodBlock) = cpg.method.nameExact("checkAge").block.l
-      methodBlock.local.name.l shouldBe List("myAge", "age", "this", "print")
+      methodBlock.local.name.l shouldBe List("myAge", "age")
       val List(call) = methodBlock.astChildren.isCall.l
       call.order shouldBe 1
       call.code shouldBe "var age: Int? = 22"

@@ -1,22 +1,12 @@
 package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
-import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
-import io.shiftleft.codepropertygraph.generated.nodes.NewModifier
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.shiftleft.codepropertygraph.generated.nodes.NewAnnotationParameter
-import io.shiftleft.codepropertygraph.generated.nodes.NewAnnotationParameterAssign
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
-import io.shiftleft.codepropertygraph.generated.PropertyDefaults
+import io.joern.x2cpg.{Ast, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.*
+import io.shiftleft.codepropertygraph.generated.nodes.*
 
 import scala.annotation.unused
 
@@ -97,8 +87,9 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForClosureParameterClauseSyntax(node: ClosureParameterClauseSyntax): Ast   = notHandledYet(node)
 
   private def astForClosureParameterSyntax(node: ClosureParameterSyntax): Ast = {
-    val name = node.secondName.fold(code(node.firstName))(code)
-    val tpe  = node.`type`.fold(Defines.Any)(t => cleanType(code(t)))
+    val name       = node.secondName.fold(code(node.firstName))(code)
+    val tpe        = node.`type`.fold(Defines.Any)(t => cleanType(code(t)))
+    val isVariadic = node.ellipsis.isDefined
     registerType(tpe)
     val parameterNode =
       parameterInNode(
@@ -106,7 +97,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
         name,
         code(node).stripSuffix(","),
         node.json("index").num.toInt + 1,
-        false,
+        isVariadic,
         EvaluationStrategies.BY_VALUE,
         Option(tpe)
       )
@@ -212,20 +203,27 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForFunctionParameterSyntax(node: FunctionParameterSyntax): Ast = {
     // TODO: handle attributes
     // TODO: handle modifiers
-    // TODO: handle ellipsis
     // TODO: handle defaultValue
-    val name = node.secondName.fold(code(node.firstName))(code)
-    val tpe  = handleTypeAliasInitializer(node.`type`)
+    val label      = code(node.firstName)
+    val name       = node.secondName.fold(label)(code)
+    val tpe        = handleTypeAliasInitializer(node.`type`)
+    val isVariadic = node.ellipsis.isDefined
+
+    val parameterName = node.firstName match {
+      case _: wildcard => name
+      case _           => label
+    }
     val parameterNode =
       parameterInNode(
         node,
-        name,
+        parameterName,
         code(node).stripSuffix(","),
         node.json("index").num.toInt + 1,
-        false,
+        isVariadic,
         EvaluationStrategies.BY_VALUE,
         Option(tpe)
       )
+
     scope.addVariable(name, parameterNode, tpe, VariableScopeManager.ScopeType.MethodScope)
     Ast(parameterNode)
   }

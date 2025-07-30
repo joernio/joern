@@ -90,11 +90,12 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
     "have corresponding type decl with correct bindings for function" in {
       val cpg            = code("func method() {}")
       val List(typeDecl) = cpg.typeDecl.nameExact("method").l
-      typeDecl.fullName should endWith(".swift:<global>:method:ANY()")
+      typeDecl.fullName shouldBe "Test0.swift:<global>.method:ANY()"
 
       val List(binding) = typeDecl.bindsOut.l
-      binding.name shouldBe ""
-      binding.signature shouldBe ""
+      binding.name shouldBe "method"
+      binding.methodFullName shouldBe "Test0.swift:<global>.method:ANY()"
+      binding.signature shouldBe "ANY()"
 
       val List(boundMethod) = binding.refOut.l
       boundMethod shouldBe cpg.method.nameExact("method").head
@@ -123,14 +124,14 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
       val List(fooLocalX)      = fooBlock.astChildren.isLocal.nameExact("x").l
       val List(barRef)         = fooBlock.astChildren.isMethodRef.l
       val List(closureBinding) = barRef.captureOut.l
-      closureBinding.closureBindingId shouldBe Option("Test0.swift:<global>:foo:bar:x")
+      closureBinding.closureBindingId shouldBe Option("Test0.swift:<global>.foo.bar:x")
       closureBinding.refOut.head shouldBe fooLocalX
       closureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
 
       val List(barMethod)      = cpg.method.nameExact("bar").l
       val List(barMethodBlock) = barMethod.astChildren.isBlock.l
       val List(barLocals)      = barMethodBlock.astChildren.isLocal.l
-      barLocals.closureBindingId shouldBe Option("Test0.swift:<global>:foo:bar:x")
+      barLocals.closureBindingId shouldBe Option("Test0.swift:<global>.foo.bar:x")
 
       val List(identifierX) = barMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
       identifierX.refOut.head shouldBe barLocals
@@ -181,6 +182,73 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
         paramValueFoo.order shouldBe 2
         paramValueFoo.argumentIndex shouldBe 2
       }
+    }
+
+    "have correct structure for nested classes" in {
+      val cpg = code("""
+          |public class N1 {
+          |  pubic class N2 {
+          |    public class N3 {}
+          |  }
+          |}
+          |""".stripMargin)
+      val List(n1, n2, n3) = cpg.typeDecl.name("N1", "N2", "N3").l
+      n1.fullName shouldBe "Test0.swift:<global>.N1"
+      n2.fullName shouldBe "Test0.swift:<global>.N1.N2"
+      n3.fullName shouldBe "Test0.swift:<global>.N1.N2.N3"
+
+      n3.astIn.l shouldBe List(n2)
+      n2.astIn.l shouldBe List(n1)
+    }
+
+    "have correct structure for function in accessor block" in {
+      val cpg = code("""
+          |public protocol Foo {
+          |  var bar: Int {
+          |    get {}
+          |    set {}
+          |    willSet {} // runs before bar is set
+          |    didSet {} // runs after bar is set
+          |  }
+          |}
+          |""".stripMargin)
+      cpg.method.where(_._argumentIn) shouldBe empty
+
+      val List(get, set, willSet, didSet) = cpg.typeDecl.nameExact("Foo").boundMethod.nameNot("<init>").l
+      get.fullName shouldBe "Test0.swift:<global>.Foo.bar:Int()"
+      val List(getReturn) = get.body.astChildren.isReturn.l
+      getReturn.code shouldBe "bar"
+      val List(thisBar) = getReturn.astChildren.isCall.l
+      thisBar.name shouldBe Operators.fieldAccess
+      thisBar.typeFullName shouldBe "Int"
+      inside(thisBar.argument.l) { case List(base: Identifier, field: FieldIdentifier) =>
+        base.name shouldBe "this"
+        base.typeFullName shouldBe "Test0.swift:<global>.Foo"
+        field.canonicalName shouldBe "bar"
+      }
+
+      set.fullName shouldBe "Test0.swift:<global>.Foo.bar:ANY(Int)"
+      val List(setParam) = set.parameter.l
+      setParam.name shouldBe "newValue"
+      setParam.typeFullName shouldBe "Int"
+      set.body.astChildren.isCall.code.l shouldBe List("this.bar = newValue")
+
+      willSet.fullName shouldBe "Test0.swift:<global>.Foo.willSet_bar:ANY()"
+      didSet.fullName shouldBe "Test0.swift:<global>.Foo.didSet_bar:ANY()"
+    }
+
+    "have correct structure for function with variadic parameter" in {
+      val cpg = code("""
+          |func foo(a: String, b: String...) -> {}
+          |""".stripMargin)
+      val List(foo) = cpg.method.nameExact("foo").l
+      foo.isVariadic shouldBe true
+      val List(a, b) = foo.parameter.l
+      a.name shouldBe "a"
+      a.typeFullName shouldBe "String"
+      b.name shouldBe "b"
+      b.typeFullName shouldBe "String"
+      b.isVariadic shouldBe true
     }
 
     "have correct structure for named call arguments" in {

@@ -7,6 +7,6 @@ import java.nio.file.Path
 
 class ConfigFileCreationPass(cpg: Cpg) extends XConfigFileCreationPass(cpg) {
 
-  override val configFileFilters: List[Path => Boolean] = List(extensionFilter(".plist"))
+  override val configFileFilters: List[Path => Boolean] = List(extensionFilter(".plist"), extensionFilter(".xib"))
 
 }

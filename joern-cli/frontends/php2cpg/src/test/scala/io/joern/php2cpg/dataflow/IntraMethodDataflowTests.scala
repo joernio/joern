@@ -75,4 +75,32 @@ class IntraMethodDataflowTests extends PhpCode2CpgFixture(runOssDataflow = true)
     val flows  = sink.reachableByFlows(source)
     flows.size shouldBe 2
   }
+
+  "flow from list unpacking in foreach loop" in {
+    val cpg = code("""<?php
+        |foreach($arr as list($a, $b)) {
+        | echo $a;
+        | echo $b;
+        |}
+        |""".stripMargin)
+    val source = cpg.identifier("arr")
+    val sink   = cpg.call("echo").argument(1)
+    val flows  = sink.reachableByFlows(source)
+    flows.size shouldBe 2
+  }
+
+  "flow from nested list unpacking in foreach loop" in {
+    val cpg = code("""<?php
+        |foreach($arr as list($a, list($b, $c))) {
+        |   echo $a;
+        |   echo $b;
+        |   echo $c;
+        | }
+        |""".stripMargin)
+
+    val source = cpg.identifier("arr")
+    val sink   = cpg.call("echo").argument(1)
+    val flows  = sink.reachableByFlows(source)
+    flows.size shouldBe 3
+  }
 }

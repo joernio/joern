@@ -153,6 +153,7 @@ object JoernExport {
               windowsFilenameDeduplicationHelper
             )
             val outFileName = outDir.resolve(relativeFilename)
+            Files.createDirectories(outFileName)
             exporter.runExport(cpg.graph.schema, nodes, subGraph.edges, outFileName)
           }
           .reduce(plus)

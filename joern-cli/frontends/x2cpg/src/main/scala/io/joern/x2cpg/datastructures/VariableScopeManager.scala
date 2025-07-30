@@ -1,15 +1,8 @@
 package io.joern.x2cpg.datastructures
 
-import io.joern.x2cpg.AstNodeBuilder.closureBindingNode
-import io.joern.x2cpg.AstNodeBuilder.localNodeWithExplicitPositionInfo
-import io.shiftleft.codepropertygraph.generated.nodes.NewNode
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
-import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
-import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
-import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
-import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
-import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.joern.x2cpg.AstNodeBuilder.{closureBindingNode, localNodeWithExplicitPositionInfo}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, EdgeTypes, EvaluationStrategies}
 
 import scala.collection.mutable
 

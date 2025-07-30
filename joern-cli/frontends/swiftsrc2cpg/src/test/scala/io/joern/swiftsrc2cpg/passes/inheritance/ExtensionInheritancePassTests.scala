@@ -53,25 +53,25 @@ class ExtensionInheritancePassTests extends SwiftSrc2CpgSuite {
           .moreCode(extension1FooCode, "projectB/Source/Foo+Ext1.swift")
           .moreCode(extensionStringCode, "String+Ext.swift")
 
-      val List(fooTypeDeclInProjectA) = cpg.typeDecl.fullNameExact("projectA/Source/Foo.swift:<global>:Foo").l
+      val List(fooTypeDeclInProjectA) = cpg.typeDecl.fullNameExact("projectA/Source/Foo.swift:<global>.Foo").l
       fooTypeDeclInProjectA.inheritsFromTypeFullName.sorted.l shouldBe List(
         "Bar",
-        "projectA/Source/Foo+Ext1.swift:<global>:Foo<extension>",
-        "projectA/Source/Foo+Ext2.swift:<global>:Foo<extension>"
+        "projectA/Source/Foo+Ext1.swift:<global>.Foo<extension>",
+        "projectA/Source/Foo+Ext2.swift:<global>.Foo<extension>"
       )
 
-      val List(fooTypeDeclInProjectB) = cpg.typeDecl.fullNameExact("projectB/Source/Foo.swift:<global>:Foo").l
+      val List(fooTypeDeclInProjectB) = cpg.typeDecl.fullNameExact("projectB/Source/Foo.swift:<global>.Foo").l
       fooTypeDeclInProjectB.inheritsFromTypeFullName.sorted.l shouldBe List(
         "Bar",
-        "projectB/Source/Foo+Ext1.swift:<global>:Foo<extension>"
+        "projectB/Source/Foo+Ext1.swift:<global>.Foo<extension>"
       )
 
       val List(stringTypeDecl) = cpg.typeDecl("String").l
-      stringTypeDecl.inheritsFromTypeFullName.l shouldBe List("String+Ext.swift:<global>:String<extension>")
+      stringTypeDecl.inheritsFromTypeFullName.l shouldBe List("String+Ext.swift:<global>.String<extension>")
 
-      val List(barTypeDeclInMain) = cpg.typeDecl.fullNameExact("main/Bar.swift:<global>:Bar").l
+      val List(barTypeDeclInMain) = cpg.typeDecl.fullNameExact("main/Bar.swift:<global>.Bar").l
       barTypeDeclInMain.inheritsFromTypeFullName.sorted.l shouldBe List(
-        "extensions/Bar+Ext.swift:<global>:Bar<extension>"
+        "extensions/Bar+Ext.swift:<global>.Bar<extension>"
       )
     }
 
