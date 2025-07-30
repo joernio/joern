@@ -247,7 +247,7 @@ class ErbTests extends RubyCode2CpgFixture {
           lambdaParamForm.code shouldBe "form"
 
           inside(lambdaMethod.body.astChildren.l) {
-            case _ :: _ :: (appendCallTemplate: Call) :: _ :: Nil =>
+            case _ :: _ :: (appendCallTemplate: Call) :: _ :: _ :: Nil =>
               appendCallTemplate.code shouldBe "joern__inner_buffer << <%= form.text_field :name %>"
               val List(appendCallArgOne, appendCallArgTwo: Call) = appendCallTemplate.argument.l: @unchecked
 
@@ -390,7 +390,7 @@ class ErbTests extends RubyCode2CpgFixture {
     inside(cpg.method.name("<main>").parameter.name("self").l) {
       case selfMain :: Nil =>
         selfMain._closureBindingViaRefIn.map(_.closureBindingId).toList shouldBe List(
-          Some("index.html.erb:<global>.self")
+          Some("index.html.erb:<main>.<lambda>0.self")
         )
         selfMain.closureBindingId shouldBe None
       case xs => fail(s"Expected one local in global, got ${xs.name.mkString("[", ",", "]")}")
@@ -398,7 +398,7 @@ class ErbTests extends RubyCode2CpgFixture {
 
     inside(cpg.method.isLambda.local.name("self").l) {
       case selfLocal :: Nil =>
-        selfLocal.closureBindingId shouldBe Some("index.html.erb:<global>.self")
+        selfLocal.closureBindingId shouldBe Some("index.html.erb:<main>.<lambda>0.self")
       case xs => fail(s"Expected one self local, got ${xs.name.mkString("[", ",", "]")}")
     }
   }
@@ -452,7 +452,14 @@ class ErbTests extends RubyCode2CpgFixture {
       cpg.method.fullNameExact("Test0.rb:<main>.Admin.UsersController.show.<lambda>0.<lambda>0").local.name("self").l
     ) {
       case selfLocal :: Nil =>
-        selfLocal.closureBindingId shouldBe Some("Test0.rb:<main>.Admin.UsersController.show.self")
+        selfLocal.closureBindingId shouldBe Some("Test0.rb:<main>.Admin.UsersController.show.<lambda>0.<lambda>0.self")
+      case xs => fail(s"Expected one local for self, got ${xs.name.mkString("[", ",", "]")}")
+    }
+
+    inside(
+      cpg.method.fullNameExact("Test0.rb:<main>.Admin.UsersController.show.<lambda>0").local.name("self").l) {
+      case selfLocal :: Nil =>
+        selfLocal.closureBindingId shouldBe Some("Test0.rb:<main>.Admin.UsersController.show.<lambda>0.self")
       case xs => fail(s"Expected one local for self, got ${xs.name.mkString("[", ",", "]")}")
     }
   }
