@@ -102,4 +102,13 @@ class ImportsPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
   }
 
+  "For an import from '.', it" should {
+    lazy val cpg = code("from . import Bar")
+    "create an IMPORT node" in {
+      val List(importNode) = cpg.imports.l
+      importNode.importedEntity shouldBe Some("Bar")
+      importNode.importedAs shouldBe Some("Bar")
+    }
+  }
+
 }
