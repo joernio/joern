@@ -57,10 +57,14 @@ class TypeNodeTests extends PhpCode2CpgFixture {
     "have baseTypeDecl steps for meta TYPE_DECL (<metaclass>)" in {
       cpg.typeDecl.name(s"Baz${Domain.MetaTypeDeclExtension}").baseTypeDecl.l.map(_.name) shouldBe List(
         s"Bar${Domain.MetaTypeDeclExtension}",
+        s"TraitA${Domain.MetaTypeDeclExtension}",
+        s"TraitB${Domain.MetaTypeDeclExtension}",
         s"Foo${Domain.MetaTypeDeclExtension}"
       )
       cpg.typeDecl.name(s"Baz${Domain.MetaTypeDeclExtension}").baseTypeDeclTransitive.l.map(_.name) shouldBe List(
         s"Bar${Domain.MetaTypeDeclExtension}",
+        s"TraitA${Domain.MetaTypeDeclExtension}",
+        s"TraitB${Domain.MetaTypeDeclExtension}",
         s"Foo${Domain.MetaTypeDeclExtension}"
       )
     }
