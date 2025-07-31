@@ -313,7 +313,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
   private def calculateTypename(mangledName: String): Option[String] = {
     mangledNameCache.getOrElseUpdate(
       mangledName,
-      demangle(mangledName).map(removeModifier).map(AstCreatorHelper.stripTemplateTags).map(_.replace(" ", ""))
+      demangle(mangledName).map(removeModifier).map(AstCreatorHelper.stripGenerics).map(_.replace(" ", ""))
     )
   }
 
@@ -342,7 +342,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
           case MemberNameRegex(parent, name, rest) => removeModifier(s"$parent$name$rest")
           case other                               => removeModifier(other)
         }
-        .map(AstCreatorHelper.stripTemplateTags)
+        .map(AstCreatorHelper.stripGenerics)
         .map(_.replace(" ", ""))
     )
   }

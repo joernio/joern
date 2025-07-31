@@ -10,25 +10,25 @@ object AstCreatorHelper {
 
   private val TagsToKeepInFullName = List("<anonymous>", "<lambda>", "<global>", "<type>", "<extension>", "<wildcard>")
 
-  /** Removes template type parameters from qualified names while preserving special tags.
+  /** Removes generic type parameters from qualified names while preserving special tags.
     *
     * This method strips the angle brackets and their contents from type names, which is useful for simplifying complex
-    * templated type names. It preserves certain special tags that are enclosed in angle brackets (like &lt;lambda&gt;,
-    * &lt;const&gt;, etc.) to maintain semantic meaning.
+    * generic type and declaration full names. It preserves certain special tags that are enclosed in angle brackets
+    * (like &lt;lambda&gt;, &lt;const&gt;, etc.) to maintain semantic meaning.
     *
     * Examples:
     * {{{
-    *  stripTemplateTags("ns.Foo<int>") == "ns.Foo"
-    *  stripTemplateTags("Foo.Bar<T>.<lambda>1") == "Foo.Bar.<lambda>1" // preserves the special <lambda> tag
-    *  stripTemplateTags("ns.map<ns.foo, ns.bar<int>>") == "ns.map" // removes nested template parameters
+    *  stripGenerics("ns.Foo<int>") == "ns.Foo"
+    *  stripGenerics("Foo.Bar<T>.<lambda>1") == "Foo.Bar.<lambda>1" // preserves the special <lambda> tag
+    *  stripGenerics("ns.map<ns.foo, ns.bar<int>>") == "ns.map" // removes nested generic parameters
     * }}}
     *
     * @param input
-    *   The input string that may contain template tags
+    *   The input string that may contain generic types
     * @return
-    *   The string with template tags removed but special tags preserved
+    *   The string with generic types removed but special tags preserved
     */
-  def stripTemplateTags(input: String): String = {
+  def stripGenerics(input: String): String = {
     if (input.isEmpty || !input.contains("<") || !input.contains(">")) {
       return input
     }
@@ -39,7 +39,7 @@ object AstCreatorHelper {
     var closeIndex = firstOpenIndex + 1
     while (closeIndex < input.length && nesting > 0) {
       if (input(closeIndex) == '<') nesting += 1
-      else if (input(closeIndex) == '>') nesting -= 1
+      else if (input(closeIndex) == '>' && closeIndex > 0 && input(closeIndex - 1) != '-') nesting -= 1
       closeIndex += 1
     }
     closeIndex -= 1 // Adjust to point at the closing bracket
@@ -49,11 +49,15 @@ object AstCreatorHelper {
     val suffix = input.substring(closeIndex + 1)
 
     // Keep special tags, remove others
-    if (TagsToKeepInFullName.contains(tag)) {
-      s"$prefix$tag${stripTemplateTags(suffix)}"
+    if (isSpecialTag(tag, suffix)) {
+      s"$prefix$tag${stripGenerics(suffix)}"
     } else {
-      s"$prefix${stripTemplateTags(suffix)}"
+      s"$prefix${stripGenerics(suffix)}"
     }
+  }
+
+  private def isSpecialTag(tag: String, suffix: String): Boolean = {
+    TagsToKeepInFullName.contains(tag) || suffix.startsWith(" infix") || suffix.startsWith(" prefix")
   }
 
 }
@@ -132,13 +136,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def cleanName(name: String): String = {
     if (name == Defines.Any) return name
     val normalizedName = StringUtils.normalizeSpace(name)
-    stripTemplateTags(normalizedName)
+    stripGenerics(normalizedName)
   }
 
   protected def cleanType(rawType: String): String = {
     if (rawType == Defines.Any) return rawType
     val normalizedTpe = StringUtils.normalizeSpace(rawType.stripSuffix(" ()"))
-    stripTemplateTags(normalizedTpe) match {
+    stripGenerics(normalizedTpe) match {
       // Empty or problematic types
       case ""                   => Defines.Any
       case t if t.contains("?") => Defines.Any
