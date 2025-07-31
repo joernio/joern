@@ -452,7 +452,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
 
     "generate mapping from Json correctly" in {
       val mapping  = new MutableSwiftTypeMapping
-      val provider = new SwiftTypesProvider(Config(), Nil)
+      val provider = new SwiftTypesProvider(Config().withInputPath("."), Nil)
       provider.mappingFromJson(SwiftCompilerTestsFixture.JsonStringHelloWorldSwift, mapping)
       provider.mappingFromJson(SwiftCompilerTestsFixture.JsonStringMain, mapping)
       toResultList(mapping) shouldBe SwiftCompilerTestsFixture.ExpectedMapping

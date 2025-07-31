@@ -6,6 +6,7 @@ import io.joern.x2cpg.utils.Environment
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
+import org.slf4j.event.Level
 import versionsort.VersionHelper
 
 import java.io.StringReader
@@ -183,7 +184,8 @@ object SwiftTypesProvider {
     } else {
       // Installer for Linux and macOS do not
       ExternalCommand
-        .run(Seq("which", "swiftc"))
+        .run(Seq("which", "swiftc"), workingDir = Some(Paths.get(config.inputPath)))
+        .logIfFailed(Level.WARN)
         .successOption
         .map { outLines =>
           val resolvedPath = Paths.get(outLines.mkString).toRealPath().resolveSibling("swift-demangle").toString
@@ -213,7 +215,10 @@ object SwiftTypesProvider {
       SwiftVersionCommands
     }
     val hasSwift = commands.forall { command =>
-      ExternalCommand.run(command).successOption match {
+      ExternalCommand
+        .run(command, workingDir = Some(Paths.get(config.inputPath)))
+        .logIfFailed(Level.WARN)
+        .successOption match {
         case Some(outLines) =>
           val swiftVersion = outLines.find(_.startsWith("Swift version ")).map { str =>
             str.substring("Swift version ".length, str.indexOf(" ("))
@@ -228,13 +233,16 @@ object SwiftTypesProvider {
           false
       }
     }
-    val hasSwiftDemangle = ExternalCommand.run(swiftDemangleVersionCommand(config)).successful
+    val hasSwiftDemangle = ExternalCommand
+      .run(swiftDemangleVersionCommand(config), workingDir = Some(Paths.get(config.inputPath)))
+      .successful
     hasSwift && hasSwiftDemangle
   }
 
   private def build(config: Config): Option[SwiftTypesProvider] = {
     ExternalCommand
       .run(SwiftBuildCommand, mergeStdErrInStdOut = true, workingDir = Some(Paths.get(config.inputPath)))
+      .logIfFailed(Level.WARN)
       .successOption
       .map(outLines => build(config, outLines))
   }
@@ -299,7 +307,8 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
     if (mangledName.isEmpty) return None
     val strippedMangledName = mangledName.stripPrefix("$").replaceFirst(":", "")
     ExternalCommand
-      .run(swiftDemangleCommand :+ strippedMangledName)
+      .run(swiftDemangleCommand :+ strippedMangledName, workingDir = Some(Paths.get(config.inputPath)))
+      .logIfFailed(Level.WARN)
       .successOption
       .map(outLines => outLines.mkString.trim)
   }
@@ -370,6 +379,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
     parsedSwiftcInvocations.foreach { invocationCommand =>
       ExternalCommand
         .run(invocationCommand, mergeStdErrInStdOut = true, workingDir = Some(Paths.get(config.inputPath)))
+        .logIfFailed(Level.WARN)
         .successOption
         .foreach { outlines =>
           val jsonString = outlines.mkString

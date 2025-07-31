@@ -2,6 +2,7 @@ package io.shiftleft.semanticcpg.utils
 
 import scala.util.{Failure, Success, Try}
 import ExternalCommand.logger
+import org.slf4j.event.Level
 
 case class ExternalCommandResult(
   exitCode: Int,
@@ -19,9 +20,11 @@ case class ExternalCommandResult(
   def stdOutAndError: Seq[String] =
     stdOut ++ stdErr
 
-  def logIfFailed(): this.type = {
+  def logIfFailed(level: Level = Level.ERROR): this.type = {
     if (exitCode != 0) {
-      logger.error(s"""Process exited with code $exitCode.
+      val logFunction = if (level == Level.ERROR) { (msg: String) => logger.error(msg) }
+      else { (msg: String) => logger.warn(msg) }
+      logFunction(s"""Process exited with code $exitCode.
            |${additionalContext.getOrElse("")}
            |Input: $input
            |Output: $stdOutAndError
