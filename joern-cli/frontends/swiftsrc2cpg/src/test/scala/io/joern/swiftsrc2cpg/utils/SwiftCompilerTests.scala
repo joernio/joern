@@ -434,11 +434,10 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
     mapping: SwiftTypesProvider.SwiftTypeMapping
   ): List[(String, String, (Int, Int), Option[String], Option[String])] = {
     mapping
-      .flatMap { case (filename, typeInfoList) =>
-        typeInfoList
-          .map { typeInfo =>
-            (filename, typeInfo.nodeKind, typeInfo.range, typeInfo.tpe, typeInfo.fullName)
-          }
+      .flatMap { case (filename, posToResolvedTypeInfo) =>
+        posToResolvedTypeInfo.flatMap { case (range, typeInfos) =>
+          typeInfos.map(typeInfo => (filename, typeInfo.nodeKind, range, typeInfo.tpe, typeInfo.fullName))
+        }
       }
       .toList
       .sortBy(t => s"${t._1}:${t._2}:${t._3._1}:${t._3._2}")

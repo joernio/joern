@@ -69,8 +69,6 @@ object SwiftTypesProvider {
 
   /** Information about a Swift type found in the source code. fullName and tpe are demangled.
     *
-    * @param range
-    *   The position range in the source file
     * @param tpe
     *   The fully qualified type name (if any; demangled)
     * @param fullName
@@ -78,15 +76,19 @@ object SwiftTypesProvider {
     * @param nodeKind
     *   The AST node kind
     */
-  case class ResolvedTypeInfo(range: (Int, Int), tpe: Option[String], fullName: Option[String], nodeKind: String)
+  case class ResolvedTypeInfo(tpe: Option[String], fullName: Option[String], nodeKind: String)
 
-  type SwiftTypeMapping        = immutable.HashMap[String, immutable.List[ResolvedTypeInfo]]
-  type MutableSwiftTypeMapping = mutable.HashMap[String, mutable.ListBuffer[ResolvedTypeInfo]]
+  type SwiftTypeMapping =
+    immutable.HashMap[String, immutable.HashMap[(Int, Int), immutable.List[ResolvedTypeInfo]]]
+  type MutableSwiftTypeMapping =
+    mutable.HashMap[String, mutable.HashMap[(Int, Int), mutable.ListBuffer[ResolvedTypeInfo]]]
 
   object TypeMappingConversion:
     given toImmutable: Conversion[MutableSwiftTypeMapping, SwiftTypeMapping] = mutableSwiftTypeMapping =>
-      immutable.HashMap.from(mutableSwiftTypeMapping.map { case (filename, list) =>
-        filename -> immutable.List.from(list)
+      immutable.HashMap.from(mutableSwiftTypeMapping.map { case (filename, posToResolvedTypeInfo) =>
+        filename -> immutable.HashMap.from(posToResolvedTypeInfo.map { case (range, resolvedTypeInfo) =>
+          range -> immutable.List.from(resolvedTypeInfo)
+        })
       })
 
   /** @see
@@ -350,13 +352,15 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
   private def resolve(typeInfo: TypeInfo): ResolvedTypeInfo = {
     val demangledTpe      = typeInfo.tpe.flatMap(calculateTypename)
     val demangledFullName = typeInfo.fullName.flatMap(calculateFullname)
-    ResolvedTypeInfo(typeInfo.range, demangledTpe, demangledFullName, typeInfo.nodeKind)
+    ResolvedTypeInfo(demangledTpe, demangledFullName, typeInfo.nodeKind)
   }
 
   def mappingFromJson(jsonString: String, result: MutableSwiftTypeMapping): Unit = {
     Using(new StringReader(jsonString)) { reader =>
       GsonTypeInfoReader.collectTypeInfo(reader).foreach { typeInfo =>
-        result.getOrElseUpdate(typeInfo.filename, mutable.ListBuffer.empty).addOne(resolve(typeInfo))
+        val range     = typeInfo.range
+        val typeInfos = result.getOrElseUpdate(typeInfo.filename, mutable.HashMap.empty)
+        typeInfos.getOrElseUpdate(typeInfo.range, mutable.ListBuffer.empty).addOne(resolve(typeInfo))
       }
     }
   }
