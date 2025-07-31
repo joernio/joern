@@ -6,14 +6,14 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class StripGenericsTests extends AnyWordSpec with Matchers {
 
-  "stripTemplateTags" should {
-    "return input unchanged if it doesn't contain angle brackets" in {
+  "AstCreatorHelper.stripGenerics" should {
+    "return input unchanged if it doesn't contain generics" in {
       AstCreatorHelper.stripGenerics("") shouldBe ""
       AstCreatorHelper.stripGenerics("SimpleType") shouldBe "SimpleType"
       AstCreatorHelper.stripGenerics("Swift.String") shouldBe "Swift.String"
     }
 
-    "remove simple template parameters" in {
+    "remove simple generic parameters" in {
       AstCreatorHelper.stripGenerics("Array<String>") shouldBe "Array"
       AstCreatorHelper.stripGenerics("Swift.Dictionary<String, Int>") shouldBe "Swift.Dictionary"
       AstCreatorHelper.stripGenerics("Optional<Int>") shouldBe "Optional"
@@ -28,7 +28,7 @@ class StripGenericsTests extends AnyWordSpec with Matchers {
       AstCreatorHelper.stripGenerics("<wildcard>") shouldBe "<wildcard>"
     }
 
-    "handle nested template parameters" in {
+    "handle nested generic parameters" in {
       AstCreatorHelper.stripGenerics("Result<Success<T>, Error<E>>") shouldBe "Result"
       AstCreatorHelper.stripGenerics("Dictionary<String, Array<Int>>") shouldBe "Dictionary"
       AstCreatorHelper.stripGenerics("Promise<Result<Data, Error>>") shouldBe "Promise"
@@ -48,7 +48,7 @@ class StripGenericsTests extends AnyWordSpec with Matchers {
       AstCreatorHelper.stripGenerics("Callback<(Result<User, Error>) -> Void>") shouldBe "Callback"
     }
 
-    "handle complex cases with mixed special tags and templates" in {
+    "handle complex cases with mixed special tags and generics" in {
       AstCreatorHelper.stripGenerics("Module.Class<T>.<lambda>") shouldBe "Module.Class.<lambda>"
       AstCreatorHelper.stripGenerics("Outer<T>.Inner<U>.<extension>") shouldBe "Outer.Inner.<extension>"
       AstCreatorHelper.stripGenerics("Generic<T>.Protocol<Element>.<type>") shouldBe "Generic.Protocol.<type>"
