@@ -123,7 +123,7 @@ class FullNameUniquenessPassTests extends C2CpgSuite {
       )
       cpg.call
         .map(c =>
-          s"${c.name} in ${c.file.map(_.name).head} -> CALL -> ${c.methodFullName} in ${c.callOut.filename.head}"
+          s"${c.name} in ${c.file.map(_.name).head} -> CALL -> ${c.methodFullName} in ${c.staticCallOut.filename.head}"
         )
         .sorted
         .l shouldBe List(
