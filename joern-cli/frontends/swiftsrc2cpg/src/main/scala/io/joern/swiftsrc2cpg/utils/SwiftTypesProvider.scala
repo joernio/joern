@@ -6,7 +6,6 @@ import io.joern.x2cpg.utils.Environment
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
-import org.slf4j.event.Level
 import versionsort.VersionHelper
 
 import java.io.StringReader
@@ -185,7 +184,7 @@ object SwiftTypesProvider {
       // Installer for Linux and macOS do not
       ExternalCommand
         .run(Seq("which", "swiftc"), workingDir = Some(Paths.get(config.inputPath)))
-        .logIfFailed(Level.WARN)
+        .logIfFailed(false)
         .successOption
         .map { outLines =>
           val resolvedPath = Paths.get(outLines.mkString).toRealPath().resolveSibling("swift-demangle").toString
@@ -217,7 +216,7 @@ object SwiftTypesProvider {
     val hasSwift = commands.forall { command =>
       ExternalCommand
         .run(command, workingDir = Some(Paths.get(config.inputPath)))
-        .logIfFailed(Level.WARN)
+        .logIfFailed(false)
         .successOption match {
         case Some(outLines) =>
           val swiftVersion = outLines.find(_.startsWith("Swift version ")).map { str =>
@@ -242,7 +241,7 @@ object SwiftTypesProvider {
   private def build(config: Config): Option[SwiftTypesProvider] = {
     ExternalCommand
       .run(SwiftBuildCommand, mergeStdErrInStdOut = true, workingDir = Some(Paths.get(config.inputPath)))
-      .logIfFailed(Level.WARN)
+      .logIfFailed(false)
       .successOption
       .map(outLines => build(config, outLines))
   }
@@ -308,7 +307,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
     val strippedMangledName = mangledName.stripPrefix("$").replaceFirst(":", "")
     ExternalCommand
       .run(swiftDemangleCommand :+ strippedMangledName, workingDir = Some(Paths.get(config.inputPath)))
-      .logIfFailed(Level.WARN)
+      .logIfFailed(false)
       .successOption
       .map(outLines => outLines.mkString.trim)
   }
@@ -379,7 +378,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
     parsedSwiftcInvocations.foreach { invocationCommand =>
       ExternalCommand
         .run(invocationCommand, mergeStdErrInStdOut = true, workingDir = Some(Paths.get(config.inputPath)))
-        .logIfFailed(Level.WARN)
+        .logIfFailed(false)
         .successOption
         .foreach { outlines =>
           val jsonString = outlines.mkString

@@ -1,8 +1,8 @@
 package io.shiftleft.semanticcpg.utils
 
+import io.shiftleft.semanticcpg.utils.ExternalCommand.logger
+
 import scala.util.{Failure, Success, Try}
-import ExternalCommand.logger
-import org.slf4j.event.Level
 
 case class ExternalCommandResult(
   exitCode: Int,
@@ -15,35 +15,49 @@ case class ExternalCommandResult(
   def successful: Boolean =
     exitCode == 0
 
-  /** Lines of standard output (if successful), or else a combination of stdout and stderr, plus some context.
+  /** @return
+    *   Lines of standard output (if successful), or else a combination of stdout and stderr.
     */
   def stdOutAndError: Seq[String] =
     stdOut ++ stdErr
 
-  def logIfFailed(level: Level = Level.ERROR): this.type = {
+  /** Logs details about the command execution if it failed (non-zero exit code).
+    *
+    * @param asError
+    *   If true, logs as error level; otherwise logs as warning level
+    * @return
+    *   This instance (for method chaining)
+    */
+  def logIfFailed(asError: Boolean = true): this.type = {
     if (exitCode != 0) {
-      val logFunction = if (level == Level.ERROR) { (msg: String) => logger.error(msg) }
-      else { (msg: String) => logger.warn(msg) }
-      logFunction(s"""Process exited with code $exitCode.
-           |${additionalContext.getOrElse("")}
-           |Input: $input
-           |Output: $stdOutAndError
-           |""".stripMargin)
+      val msg = s"""Process exited with code $exitCode.
+       |Context: ${additionalContext.getOrElse("None provided.")}
+       |Input: $input
+       |Output: ${stdOutAndError.mkString("\n")}
+       |""".stripMargin
+      if (asError) logger.error(msg) else logger.warn(msg)
     }
     this
   }
 
-  /** convenience method: verify that the result is a success, throws an exception otherwise */
+  /** Convenience method: verify that the result is a success, throws an exception otherwise
+    * @return
+    *   This instance (for method chaining)
+    */
   def verifySuccess(): this.type = {
     toTry.get
     this
   }
 
-  /** Lines of standard output, if successful. */
+  /** @return
+    *   Lines of standard output, if successful.
+    */
   def successOption: Option[Seq[String]] =
     toTry.toOption
 
-  /** Lines of stdout, if successful. Otherwise an exception with message=stderr. */
+  /** @return
+    *   Lines of stdout, if successful. Otherwise, an exception with message=stderr.
+    */
   def toTry: Try[Seq[String]] = {
     if (successful) Success(stdOut)
     else Failure(new RuntimeException(stdErr.mkString("\n")))
