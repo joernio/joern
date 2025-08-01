@@ -4,12 +4,13 @@ import io.joern.swiftsrc2cpg.Config
 import io.joern.swiftsrc2cpg.astcreation.AstCreatorHelper
 import io.joern.x2cpg.utils.Environment
 import io.shiftleft.semanticcpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.FileUtil.PathExt
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 import versionsort.VersionHelper
 
 import java.io.StringReader
-import java.nio.file.Paths
+import java.nio.file.{Files, Path, Paths}
 import scala.collection.{immutable, mutable}
 import scala.util.matching.Regex
 import scala.util.{Try, Using}
@@ -277,9 +278,39 @@ object SwiftTypesProvider {
     line.replace("\\ -", " -").replace("/ -", " -").split(SwiftcArgSplit).toList
   }
 
+  /** Lists all readable directories under the given path.
+    *
+    * @param path
+    *   The starting directory path to search from
+    * @return
+    *   A set of names of the readable directories found under path
+    */
+  private def listReadableDirectories(path: Path): Set[String] = {
+    if (!Files.isDirectory(path) || !Files.isReadable(path)) {
+      return Set.empty
+    }
+    try {
+      path
+        .listFiles()
+        .filter(p => Files.isDirectory(p) && Files.isReadable(p))
+        .flatMap(_.nameOption)
+        .toSet
+    } catch {
+      case e: Exception =>
+        logger.warn(s"Error listing module directories under ${path.toFile.toString}: ${e.getMessage}")
+        Set.empty
+    }
+  }
+
   def build(config: Config, compilerOutput: Seq[String]): SwiftTypesProvider = {
-    val swiftcInvocations       = compilerOutput.filter(isSwiftcInvocation)
-    val parsedSwiftcInvocations = swiftcInvocations.map(l => parseSwiftcArgs(argsFromLine(l)) ++ SwiftcDumpOptions)
+    val sourceModules     = listReadableDirectories(Paths.get(config.inputPath, "Sources"))
+    val swiftcInvocations = compilerOutput.filter(isSwiftcInvocation)
+    val parsedSwiftcInvocations =
+      swiftcInvocations.map(l => parseSwiftcArgs(argsFromLine(l)) ++ SwiftcDumpOptions).filter { args =>
+        val moduleNameIndex = args.indexOf("-module-name")
+        val moduleName      = args(moduleNameIndex + 1)
+        sourceModules.isEmpty || sourceModules.contains(moduleName)
+      }
     new SwiftTypesProvider(config, parsedSwiftcInvocations)
   }
 }

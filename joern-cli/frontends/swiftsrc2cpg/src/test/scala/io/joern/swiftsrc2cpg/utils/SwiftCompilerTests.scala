@@ -107,12 +107,46 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
     val SwiftcInvocation: String =
       """
         |/usr/bin/swiftc
-        | -module-name CodeGeneration
+        | -module-name SwiftHelloWorld
         | -emit-dependencies
         | -emit-module
-        | -emit-module-path /tmp/project/.build/debug/Modules/CodeGeneration.swiftmodule
-        | -output-file-map /tmp/project/.build/debug/CodeGeneration.build/output-file-map.json
-        | -parse-as-library -incremental -c @/tmp/project/.build/debug/CodeGeneration.build/sources
+        | -emit-module-path /tmp/project/.build/debug/Modules/SwiftHelloWorld.swiftmodule
+        | -output-file-map /tmp/project/.build/debug/SwiftHelloWorld.build/output-file-map.json
+        | -parse-as-library -incremental -c @/tmp/project/.build/debug/SwiftHelloWorld.build/sources
+        | -I /tmp/project/.build/debug/Modules
+        | -target x86_64-unknown-windows-msvc
+        | -v
+        | -enable-batch-mode
+        | -index-store-path /tmp/project/.build/debug/index/store
+        | -Onone
+        | -enable-testing
+        | -j16
+        | -DSWIFT_PACKAGE
+        | -DDEBUG
+        | -module-cache-path /tmp/project/.build/debug/ModuleCache
+        | -parseable-output
+        | -parse-as-library
+        | -static
+        | -swift-version 5
+        | -sdk /some/SDK/
+        | -libc MD
+        | -I /path/to/XCTest/usr/lib/swift/windows
+        | -I /path/to/XCTest/usr/lib/swift/windows/x86_64
+        | -L /path/to/XCTest/usr/lib/swift/windows/x86_64
+        | -I /path/to/Testing/usr/lib/swift/windows
+        | -L /path/to/Testing/usr/lib/swift/windows/x86_64
+        | -use-ld=lld -g -use-ld=lld -Xcc -D_MT -Xcc -D_DLL -Xcc -Xclang -Xcc --dependent-lib=msvcrt -Xcc -gdwarf -package-name swiftastgen""".stripMargin
+        .replace("\n", "")
+
+    val SwiftcInvocationDependency: String =
+      """
+        |/usr/bin/swiftc
+        | -module-name Foundation
+        | -emit-dependencies
+        | -emit-module
+        | -emit-module-path /tmp/project/.build/debug/Modules/SwiftHelloWorld.swiftmodule
+        | -output-file-map /tmp/project/.build/debug/SwiftHelloWorld.build/output-file-map.json
+        | -parse-as-library -incremental -c @/tmp/project/.build/debug/SwiftHelloWorld.build/sources
         | -I /tmp/project/.build/debug/Modules
         | -target x86_64-unknown-windows-msvc
         | -v
@@ -142,10 +176,10 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
       Seq(
         "/usr/bin/swiftc",
         "-module-name",
-        "CodeGeneration",
+        "SwiftHelloWorld",
         "-parse-as-library",
         "-c",
-        "@/tmp/project/.build/debug/CodeGeneration.build/sources",
+        "@/tmp/project/.build/debug/SwiftHelloWorld.build/sources",
         "-I",
         "/tmp/project/.build/debug/Modules",
         "-target",
@@ -447,6 +481,14 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
 
     "parsing the swiftc arguments correctly" in {
       val provider = SwiftTypesProvider.build(Config(), Seq(SwiftCompilerTestsFixture.SwiftcInvocation))
+      provider.parsedSwiftcInvocations shouldBe SwiftCompilerTestsFixture.ExpectedSwiftcInvocations
+    }
+
+    "filter external dependencies correctly" in SwiftCompilerTestsFixture { dir =>
+      val provider = SwiftTypesProvider.build(
+        Config().withInputPath(dir.toString).withOutputPath(dir.toString),
+        Seq(SwiftCompilerTestsFixture.SwiftcInvocation, SwiftCompilerTestsFixture.SwiftcInvocationDependency)
+      )
       provider.parsedSwiftcInvocations shouldBe SwiftCompilerTestsFixture.ExpectedSwiftcInvocations
     }
 
