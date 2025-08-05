@@ -112,7 +112,7 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
 
         init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         init.methodFullName shouldBe "Bar.<init>:void(int,int)"
-        init.callOut.head.fullName shouldBe "Bar.<init>:void(int,int)"
+        init.staticCallOut.head.fullName shouldBe "Bar.<init>:void(int,int)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
         init.typeFullName shouldBe "void"
         init.signature shouldBe "void(int,int)"
@@ -149,7 +149,7 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
 
         init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         init.methodFullName shouldBe "Bar.<init>:void(int,int)"
-        init.callOut.head.fullName shouldBe "Bar.<init>:void(int,int)"
+        init.staticCallOut.head.fullName shouldBe "Bar.<init>:void(int,int)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
         init.typeFullName shouldBe "void"
         init.signature shouldBe "void(int,int)"
@@ -190,7 +190,7 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
 
         init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         init.methodFullName shouldBe "Bar.<init>:void(int)"
-        init.callOut.head.fullName shouldBe "Bar.<init>:void(int)"
+        init.staticCallOut.head.fullName shouldBe "Bar.<init>:void(int)"
         init.signature shouldBe "void(int)"
         init.code shouldBe "$stack1.Bar(42)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString

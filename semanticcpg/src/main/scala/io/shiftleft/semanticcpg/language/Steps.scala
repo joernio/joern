@@ -16,6 +16,7 @@ import scala.jdk.CollectionConverters.*
   */
 @Traversal(elementType = classOf[AnyRef])
 class Steps[A](val traversal: Iterator[A]) extends AnyVal {
+  import Steps.*
 
   /** Execute the traversal and convert it to a mutable buffer
     */
@@ -70,7 +71,7 @@ class Steps[A](val traversal: Iterator[A]) extends AnyVal {
   def toJsonPretty: String = toJson(pretty = true)
 
   protected def toJson(pretty: Boolean): String = {
-    implicit val formats: Formats = org.json4s.DefaultFormats + Steps.nodeSerializer
+    implicit val formats: Formats = org.json4s.DefaultFormats + nodeSerializer + productSerializer
 
     val results = traversal.toList
     if (pretty) writePretty(results)
@@ -80,19 +81,20 @@ class Steps[A](val traversal: Iterator[A]) extends AnyVal {
 }
 
 object Steps {
-  private lazy val nodeSerializer = new CustomSerializer[AbstractNode](implicit format =>
+
+  /** Marker trait that allows us to selectively serialize types using the accessors from Product: productElement,
+    * productElementName etc. We do not want to define a serializer format for _all_ Products, because that would
+    * include many stdlib classes like List, for which have better suited formats exist already. See StepsTest.scala for
+    * more details and examples.
+    */
+  trait JsonSerializeAsProduct extends Product
+
+  private lazy val nodeSerializer = new CustomSerializer(implicit format =>
     (
       { case _ => ??? }, // deserializer not required for now
-      { case node: Product =>
-        val elementMap = Map.newBuilder[String, Any]
-        (0 until node.productArity).foreach { i =>
-          val label   = node.productElementName(i)
-          val element = node.productElement(i)
-          elementMap.addOne(label -> element)
-        }
-        if (node.isInstanceOf[AbstractNode]) {
-          elementMap.addOne("_label" -> node.asInstanceOf[AbstractNode].label)
-        }
+      { case node: AbstractNode =>
+        val elementMap = productElements(node)
+        elementMap.addOne("_label" -> node.label)
         if (node.isInstanceOf[StoredNode]) {
           elementMap.addOne("_id" -> node.asInstanceOf[StoredNode].id())
         }
@@ -100,4 +102,21 @@ object Steps {
       }
     )
   )
+
+  private lazy val productSerializer = new CustomSerializer(implicit format =>
+    (
+      { case _ => ??? }, // deserializer not required for now
+      { case node: JsonSerializeAsProduct => Extraction.decompose(productElements(node).result()) }
+    )
+  )
+
+  private def productElements(product: Product) = {
+    val elementMap = Map.newBuilder[String, Any]
+    (0 until product.productArity).foreach { i =>
+      val label = product.productElementName(i)
+      val value = product.productElement(i)
+      elementMap.addOne(label -> value)
+    }
+    elementMap
+  }
 }

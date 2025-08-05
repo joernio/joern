@@ -698,7 +698,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
       case None =>
         val errorPosition = s"$variableCode:${line(expr).getOrElse("")}:$relativeFileName"
-        logger.error(s"ArrayDimFetchExpr without dimensions should be handled in assignment: $errorPosition")
+        logger.warn(s"ArrayDimFetchExpr without dimensions should be handled in assignment: $errorPosition")
         Ast()
     }
   }

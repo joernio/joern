@@ -16,7 +16,7 @@ class CallGraphGenerator {
       srcMethod <- vertices
       _ = storeInSubgraph(srcMethod, subgraph)
       child <- srcMethod.call
-      tgt   <- child.callOut
+      tgt   <- child.staticCallOut
     } yield {
       storeInSubgraph(tgt, subgraph)
       Edge(srcMethod, tgt, label = child.dispatchType.stripSuffix("_DISPATCH"))
