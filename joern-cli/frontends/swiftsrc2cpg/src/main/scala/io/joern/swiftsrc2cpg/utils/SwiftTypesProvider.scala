@@ -29,7 +29,7 @@ object SwiftTypesProvider {
   private val SwiftcVersionCommand = Seq("swiftc", "--version")
   private val SwiftVersionCommands = Seq(SwiftVersionCommand, SwiftcVersionCommand)
   private val SwiftBuildCommand    = Seq("swift", "build", "--verbose")
-  private val SwiftcDumpOptions    = Seq("-dump-ast", "-dump-ast-format", "json")
+  private val SwiftcDumpOptions    = Seq("-dump-ast", "-dump-ast-format", "json", "-suppress-warnings")
 
   /** Information about a Swift type found in the source code. fullName and tpe are not demangled yet.
     *
@@ -88,7 +88,7 @@ object SwiftTypesProvider {
     given toImmutable: Conversion[MutableSwiftTypeMapping, SwiftTypeMapping] = mutableSwiftTypeMapping =>
       immutable.HashMap.from(mutableSwiftTypeMapping.map { case (filename, posToResolvedTypeInfo) =>
         filename -> immutable.HashMap.from(posToResolvedTypeInfo.map { case (range, resolvedTypeInfo) =>
-          range -> immutable.List.from(resolvedTypeInfo)
+          range -> immutable.List.from(resolvedTypeInfo).distinct
         })
       })
 
@@ -150,7 +150,16 @@ object SwiftTypesProvider {
   private val SwiftcArgSplit = "(?<!\\\\) "
 
   private val SwiftcIgnoredArgs =
-    Seq("-v", "-incremental", "-whole-module-optimization", "-parseable-output", "-serialize-diagnostics")
+    Seq(
+      "-v",
+      "-output-file-map",
+      "-incremental",
+      "-whole-module-optimization",
+      "-parseable-output",
+      "-serialize-diagnostics",
+      "-Wwarning",
+      "-warnings-as-errors"
+    )
 
   /** Attempts to create a SwiftTypesProvider using the given configuration.
     *
@@ -185,7 +194,6 @@ object SwiftTypesProvider {
       // Installer for Linux and macOS do not
       ExternalCommand
         .run(Seq("which", "swiftc"), workingDir = Some(Paths.get(config.inputPath)))
-        .logIfFailed(false)
         .successOption
         .map { outLines =>
           val resolvedPath = Paths.get(outLines.mkString).toRealPath().resolveSibling("swift-demangle").toString
@@ -217,7 +225,6 @@ object SwiftTypesProvider {
     val hasSwift = commands.forall { command =>
       ExternalCommand
         .run(command, workingDir = Some(Paths.get(config.inputPath)))
-        .logIfFailed(false)
         .successOption match {
         case Some(outLines) =>
           val swiftVersion = outLines.find(_.startsWith("Swift version ")).map { str =>
@@ -240,15 +247,16 @@ object SwiftTypesProvider {
   }
 
   private def build(config: Config): Option[SwiftTypesProvider] = {
+    logger.info("Building Swift type map from SwiftPM project configuration")
     ExternalCommand
       .run(SwiftBuildCommand, mergeStdErrInStdOut = true, workingDir = Some(Paths.get(config.inputPath)))
-      .logIfFailed(false)
+      .logIfFailed()
       .successOption
       .map(outLines => build(config, outLines))
   }
 
   private def argShouldBeFiltered(arg: String): Boolean = {
-    SwiftcIgnoredArgs.contains(arg) || arg.startsWith("-emit") || arg == "-output-file-map"
+    SwiftcIgnoredArgs.contains(arg) || arg.startsWith("-emit")
   }
 
   private def parseSwiftcArgs(args: List[String]): List[String] = {
@@ -303,6 +311,10 @@ object SwiftTypesProvider {
   }
 
   def build(config: Config, compilerOutput: Seq[String]): SwiftTypesProvider = {
+    config.xcodeOutputPath.foreach(path =>
+      logger.info(s"Building Swift type map from compiler log at ${path.toFile.toString}")
+    )
+
     val sourceModules     = listReadableDirectories(Paths.get(config.inputPath, "Sources"))
     val swiftcInvocations = compilerOutput.filter(isSwiftcInvocation)
     val parsedSwiftcInvocations =
@@ -325,9 +337,9 @@ object SwiftTypesProvider {
 case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[String]]) {
 
   import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.*
+  import TypeMappingConversion.toImmutable
 
   import scala.language.implicitConversions
-  import TypeMappingConversion.toImmutable
 
   private lazy val swiftDemangleCommand = SwiftTypesProvider.swiftDemangleCommand(config)
 
@@ -335,10 +347,9 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
 
   private def demangle(mangledName: String): Option[String] = {
     if (mangledName.isEmpty) return None
-    val strippedMangledName = mangledName.stripPrefix("$").replaceFirst(":", "")
+    val strippedMangledName = mangledName.stripPrefix("$").replaceFirst("s:e:s:", "s:").replace(":", "")
     ExternalCommand
       .run(swiftDemangleCommand :+ strippedMangledName, workingDir = Some(Paths.get(config.inputPath)))
-      .logIfFailed(false)
       .successOption
       .map(outLines => outLines.mkString.trim)
   }
@@ -375,12 +386,19 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
     */
   private val MemberNameRegex: Regex = """([^(]+)\((.+)\sin\s_[^)]+\)(.*)""".r
 
+  /** Basically the same as with MemberNameRegex. But here for extension function fullnames.
+    *
+    * E.g., `(extension in FooExt)Foo.bar() -> Swift.String` becomes `FooExt.Foo.bar() -> Swift.String`.
+    */
+  private val ExtensionNameRegex: Regex = """\(extension\sin\s([^)]+)\):(.*)""".r
+
   private def calculateFullname(mangledName: String): Option[String] = {
     mangledNameCache.getOrElseUpdate(
       mangledName,
       demangle(mangledName)
         .map {
           case MemberNameRegex(parent, name, rest) => removeModifier(s"$parent$name$rest")
+          case ExtensionNameRegex(name, rest)      => removeModifier(s"$name$rest")
           case other                               => removeModifier(other)
         }
         .map(AstCreatorHelper.stripGenerics)
@@ -397,11 +415,32 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
   def mappingFromJson(jsonString: String, result: MutableSwiftTypeMapping): Unit = {
     Using(new StringReader(jsonString)) { reader =>
       GsonTypeInfoReader.collectTypeInfo(reader).foreach { typeInfo =>
-        val range     = typeInfo.range
-        val typeInfos = result.getOrElseUpdate(typeInfo.filename, mutable.HashMap.empty)
+        val range = typeInfo.range
+        val typeInfos = result.getOrElseUpdate(
+          typeInfo.filename, {
+            logger.info(s"Generating type map for: ${typeInfo.filename}")
+            mutable.HashMap.empty
+          }
+        )
         typeInfos.getOrElseUpdate(typeInfo.range, mutable.ListBuffer.empty).addOne(resolve(typeInfo))
       }
     }
+  }
+
+  private val JsonTypeResulDelimiter = """(?=\{"_kind":"source_file","filename":)"""
+
+  private def prepareJsonString(jsonString: String): String = {
+    val lastClosingBracketIndex = jsonString.lastIndexOf("}")
+    // If there is anything behind the last closing bracket we need to substring here.
+    // Sadly, swiftc puts all compilation warnings/errors directly behind the json string without a newline.
+    val substring = if (lastClosingBracketIndex > 0 && lastClosingBracketIndex < jsonString.length - 1) {
+      jsonString.substring(0, jsonString.lastIndexOf("}") + 1)
+    } else {
+      jsonString
+    }
+    // If multiple json objects result from a single swiftc invocation they are put
+    // directly behind each other without a newline.
+    substring.split(JsonTypeResulDelimiter).mkString("[", ",", "]")
   }
 
   def retrieveMappings(): SwiftTypeMapping = {
@@ -409,10 +448,10 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
     parsedSwiftcInvocations.foreach { invocationCommand =>
       ExternalCommand
         .run(invocationCommand, mergeStdErrInStdOut = true, workingDir = Some(Paths.get(config.inputPath)))
-        .logIfFailed(false)
-        .successOption
-        .foreach { outlines =>
-          val jsonString = outlines.mkString
+        .stdOutAndError
+        .filter(_.startsWith("{"))
+        .foreach { outLine =>
+          val jsonString = prepareJsonString(outLine)
           mappingFromJson(jsonString, mapping)
         }
     }

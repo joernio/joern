@@ -229,7 +229,8 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
         "swiftastgen",
         "-dump-ast",
         "-dump-ast-format",
-        "json"
+        "json",
+        "-suppress-warnings"
       )
     )
 

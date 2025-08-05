@@ -50,6 +50,8 @@ object Defines {
     "=="  -> Operators.equals,
     "%"   -> Operators.modulo,
     "&"   -> Operators.addressOf,
+    "&+"  -> Operators.plus,
+    "&-"  -> Operators.minus,
     "..." -> "<operator>.splat"
   ).withDefault { key =>
     logger.info(s"Prefix operator '$key' not handled yet")

@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.utils
 
 import io.shiftleft.utils.IOUtils
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.LoggerFactory
 
 import java.io.File
 import java.nio.file.{Path, Paths}
@@ -13,7 +13,7 @@ import scala.util.control.NonFatal
 import scala.util.Properties.isWin
 
 object ExternalCommand {
-  protected[utils] val logger: Logger = LoggerFactory.getLogger(getClass)
+  protected[utils] val logger = LoggerFactory.getLogger(getClass)
 
   def run(
     command: Seq[String],

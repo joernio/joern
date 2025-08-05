@@ -4,6 +4,7 @@ import io.joern.swiftsrc2cpg.Config
 import io.joern.swiftsrc2cpg.astcreation.AstCreator
 import io.joern.swiftsrc2cpg.parser.SwiftJsonParser
 import io.joern.swiftsrc2cpg.utils.AstGenRunner.AstGenRunnerResult
+import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
@@ -23,7 +24,8 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
-  private val global = new Global()
+  private val global  = new Global()
+  private val typeMap = SwiftTypesProvider(config).map(_.retrieveMappings())
 
   def typesSeen(): List[String] = global.usedTypes.keys().asScala.filterNot(Defines.SwiftTypes.contains).toList
 
@@ -48,7 +50,8 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
         case Success(parseResult) =>
           report.addReportInfo(parseResult.filename, parseResult.loc, parsed = true)
           Try {
-            val localDiff = new AstCreator(config, global, parseResult).createAst()
+            val fileLocalTypesMap = typeMap.flatMap(map => map.get(parseResult.fullPath)).getOrElse(Map.empty)
+            val localDiff         = new AstCreator(config, global, parseResult).createAst()
             diffGraph.absorb(localDiff)
           } match {
             case Failure(exception) =>

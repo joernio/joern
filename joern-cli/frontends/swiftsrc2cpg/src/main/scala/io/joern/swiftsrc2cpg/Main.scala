@@ -44,7 +44,6 @@ object Frontend {
         .text("define a name")
         .action((d, c) => c.withDefines(c.defines + d)),
       cmd("swift-build")
-        .hidden() // TODO: remove once fully usable
         .action((_, c) => c.copy(swiftBuild = true))
         .text("build the project to retrieve full Swift compiler type information")
         .children(

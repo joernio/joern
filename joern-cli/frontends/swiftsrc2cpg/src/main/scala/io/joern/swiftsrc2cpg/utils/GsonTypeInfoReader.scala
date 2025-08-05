@@ -172,7 +172,7 @@ object GsonTypeInfoReader {
       }
       jsonReader.endObject()
 
-      if (hasTypeInfo) {
+      if (hasTypeInfo && !filename.contains(".build")) {
         extractTypeInfo(obj, filename)
       }
       obj
