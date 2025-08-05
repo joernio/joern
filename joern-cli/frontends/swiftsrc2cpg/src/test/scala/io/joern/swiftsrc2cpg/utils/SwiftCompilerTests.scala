@@ -1,7 +1,7 @@
 package io.joern.swiftsrc2cpg.utils
 
 import io.joern.swiftsrc2cpg.Config
-import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.MutableSwiftTypeMapping
+import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{MutableSwiftTypeMapping, ResolvedTypeInfo}
 import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import org.scalatest.matchers.should.Matchers
@@ -477,6 +477,13 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
       .sortBy(t => s"${t._1}:${t._2}:${t._3._1}:${t._3._2}")
   }
 
+  private def toResultList(
+    mapping: SwiftTypesProvider.SwiftTypeMapping,
+    fileName: String
+  ): List[(String, (Int, Int), Option[String], Option[String])] = {
+    toResultList(mapping).filter(_._1.endsWith(fileName)).map(e => (e._2, e._3, e._4, e._5))
+  }
+
   "Processing the compile output" should {
 
     "parsing the swiftc arguments correctly" in {
@@ -531,6 +538,71 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
           swiftHelloWorldCommand should contain("-dump-ast")
           swiftHelloWorldCommand should contain("-dump-ast-format")
           swiftHelloWorldCommand should contain("json")
+
+          val allMappings        = provider.retrieveMappings()
+          val helloWorldMappings = toResultList(allMappings, "HelloWorldSwift.swift")
+          val mainMappings       = toResultList(allMappings, "Main.swift")
+
+          mainMappings should contain(
+            (
+              "call_expr",
+              (112, 123),
+              Some("SwiftHelloWorldLib.HelloWorld"),
+              Some("SwiftHelloWorldLib.HelloWorld.init()->SwiftHelloWorldLib.HelloWorld")
+            )
+          )
+          mainMappings should contain(
+            ("call_expr", (127, 151), Some("()"), Some("SwiftHelloWorldLib.HelloWorld.greet(from:Swift.String)->()"))
+          )
+          mainMappings should contain(
+            (
+              "constructor_ref_call_expr",
+              (112, 112),
+              Some("()->SwiftHelloWorldLib.HelloWorld"),
+              Some("SwiftHelloWorldLib.HelloWorld.init()->SwiftHelloWorldLib.HelloWorld")
+            )
+          )
+          mainMappings should contain(
+            ("func_decl", (67, 154), Some("Swift.Void"), Some("SwiftHelloWorld.Main.main()->()"))
+          )
+          mainMappings should contain(("var_decl", (102, 102), Some("SwiftHelloWorldLib.HelloWorld"), None))
+
+          helloWorldMappings should contain(
+            ("class_decl", (27, 496), Some("SwiftHelloWorldLib.HelloWorld.Type"), Some("SwiftHelloWorldLib.HelloWorld"))
+          )
+          helloWorldMappings should contain(
+            (
+              "constructor_decl",
+              (381, 404),
+              Some("(SwiftHelloWorldLib.HelloWorld.Type)->()->SwiftHelloWorldLib.HelloWorld"),
+              Some("SwiftHelloWorldLib.HelloWorld.init()->SwiftHelloWorldLib.HelloWorld")
+            )
+          )
+          helloWorldMappings should contain(
+            ("func_decl", (415, 493), Some("()"), Some("SwiftHelloWorldLib.HelloWorld.greet(from:Swift.String)->()"))
+          )
+          helloWorldMappings should contain(
+            (
+              "member_ref_expr",
+              (455, 455),
+              Some("Swift.String"),
+              Some("SwiftHelloWorldLib.HelloWorld.greeting:Swift.String")
+            )
+          )
+          helloWorldMappings should contain(
+            (
+              "member_ref_expr",
+              (484, 484),
+              Some("Swift.String"),
+              Some("SwiftHelloWorldLib.HelloWorld.suffix:Swift.String")
+            )
+          )
+          helloWorldMappings should contain(
+            ("var_decl", (60, 60), Some("Swift.String"), Some("SwiftHelloWorldLib.HelloWorld.greeting:Swift.String"))
+          )
+          helloWorldMappings should contain(
+            ("var_decl", (106, 106), Some("Swift.String"), Some("SwiftHelloWorldLib.HelloWorld.suffix:Swift.String"))
+          )
         case None =>
           fail("Can't build the SwiftTypesProvider")
       }
