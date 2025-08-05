@@ -154,15 +154,18 @@ object GsonTypeInfoReader {
       while (jsonReader.hasNext) {
         val name = jsonReader.nextName()
         jsonReader.peek() match {
-          case JsonToken.BEGIN_OBJECT if isAstNode(obj) =>
+          case JsonToken.BEGIN_OBJECT if isAstNode(obj) && !filename.contains(".build") =>
             val value = parseObject()
             obj.add(name, value)
           case JsonToken.BEGIN_OBJECT =>
             // don't descend
             jsonReader.skipValue()
-          case JsonToken.BEGIN_ARRAY =>
+          case JsonToken.BEGIN_ARRAY if !filename.contains(".build") =>
             val value = parseArray()
             obj.add(name, value)
+          case JsonToken.BEGIN_ARRAY =>
+            // don't descend
+            jsonReader.skipValue()
           case _ =>
             val value = JsonParser.parseReader(jsonReader)
             obj.add(name, value)
