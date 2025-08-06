@@ -400,7 +400,6 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
 
   def mappingFromJson(jsonString: String, result: SwiftTypeMapping): Unit = {
     Using(new StringReader(jsonString)) { reader =>
-      logger.info("Handling json")
       val (_, duration) = TimeUtils.time {
         GsonTypeInfoReader.collectTypeInfo(reader).foreach { typeInfo =>
           val range = typeInfo.range
@@ -419,7 +418,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
 
   private val JsonTypeResulDelimiter = """(?=\{"_kind":"source_file","filename":)"""
 
-  private def prepareJsonString(jsonString: String): Array[String] = {
+  private def prepareJsonString(jsonString: String): Iterator[String] = {
     val lastClosingBracketIndex = jsonString.lastIndexOf("}")
     // If there is anything behind the last closing bracket we need to substring here.
     // Sadly, swiftc puts all compilation warnings/errors directly behind the json string without a newline.
@@ -430,24 +429,20 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
     }
     // If multiple json objects result from a single swiftc invocation they are put
     // directly behind each other without a newline.
-    substring.split(JsonTypeResulDelimiter)
+    substring.split(JsonTypeResulDelimiter).iterator
   }
 
   def retrieveMappings(): SwiftTypeMapping = {
     val mapping = new SwiftTypeMapping
     parsedSwiftcInvocations.foreach { invocationCommand =>
-      logger.info(s"Running command: ${invocationCommand.mkString(" ")}")
-      val (stdOutAndError, duration) = TimeUtils.time {
-        ExternalCommand
-          .run(invocationCommand, mergeStdErrInStdOut = true, workingDir = Some(Paths.get(config.inputPath)))
-          .stdOutAndError
-          .filter(_.startsWith("{"))
-      }
-      logger.info(s"Command time: ${TimeUtils.pretty(duration)}")
-      stdOutAndError.foreach { outLine =>
-        val jsonStrings = prepareJsonString(outLine)
-        jsonStrings.foreach(jsonString => mappingFromJson(jsonString, mapping))
-      }
+      ExternalCommand
+        .run(invocationCommand, mergeStdErrInStdOut = true, workingDir = Some(Paths.get(config.inputPath)))
+        .stdOutAndError
+        .filter(_.startsWith("{"))
+        .foreach { outLine =>
+          val jsonStrings = prepareJsonString(outLine)
+          jsonStrings.foreach(jsonString => mappingFromJson(jsonString, mapping))
+        }
     }
     mapping
   }

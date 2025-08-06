@@ -138,7 +138,7 @@ object GsonTypeInfoReader {
     * @return
     *   A set of TypeInfo objects extracted from the JSON
     */
-  def collectTypeInfo(reader: Reader): Set[TypeInfo] = {
+  def collectTypeInfo(reader: Reader): Iterator[TypeInfo] = {
     val found      = mutable.HashSet.empty[TypeInfo]
     val jsonReader = new JsonReader(reader)
     var filename   = ""
@@ -247,6 +247,6 @@ object GsonTypeInfoReader {
     }
 
     jsonReader.close()
-    found.toSet
+    found.iterator
   }
 }
