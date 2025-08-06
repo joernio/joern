@@ -1,7 +1,7 @@
 package io.joern.swiftsrc2cpg.utils
 
 import com.google.gson.stream.{JsonReader, JsonToken}
-import com.google.gson.{JsonArray, JsonObject, JsonParser}
+import com.google.gson.{JsonArray, JsonObject, JsonParser, Strictness}
 import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.TypeInfo
 
 import java.io.Reader
@@ -26,6 +26,7 @@ object GsonTypeInfoReader {
     val MemberRefExpr          = "member_ref_expr"
     val DeclRef                = "decl_ref"
     val CallExpr               = "call_expr"
+    val ReturnStmt             = "return_stmt"
   }
 
   /** Safely retrieves a string property from a JsonObject.
@@ -74,7 +75,7 @@ object GsonTypeInfoReader {
     *   true if the object contains type information, false otherwise
     */
   private def qualifies(obj: JsonObject): Boolean = {
-    FullnameFieldNames.exists(n => safePropertyValue(obj, n).isDefined) && obj.has("range")
+    FullnameFieldNames.exists(obj.has) && obj.has("range")
   }
 
   /** Gets the AST node kind from a JSON object.
@@ -86,17 +87,6 @@ object GsonTypeInfoReader {
     */
   private def astNodeKind(obj: JsonObject): String = {
     obj.get("_kind").getAsString
-  }
-
-  /** Determines if a JSON object represents an AST node.
-    *
-    * @param obj
-    *   The JSON object to check
-    * @return
-    *   true if the object is an AST node, false otherwise
-    */
-  private def isAstNode(obj: JsonObject): Boolean = {
-    obj.has("_kind")
   }
 
   /** Recursively traverses a call expression to find its declaration.
@@ -117,6 +107,13 @@ object GsonTypeInfoReader {
           case _                                => obj
         }
       case None => obj
+    }
+  }
+
+  private def resultFromReturnStmt(obj: JsonObject): JsonObject = {
+    safePropertyObject(obj, "result") match {
+      case Some(resultObj) => resultObj
+      case None            => obj
     }
   }
 
@@ -146,32 +143,43 @@ object GsonTypeInfoReader {
     val jsonReader = new JsonReader(reader)
     var filename   = ""
 
+    // Configure reader for better performance
+    jsonReader.setStrictness(Strictness.LENIENT)
+
     def parseObject(): JsonObject = {
       val obj         = new JsonObject
       var hasTypeInfo = false
+      var hasKind     = false
 
       jsonReader.beginObject()
       while (jsonReader.hasNext) {
         val name = jsonReader.nextName()
-        jsonReader.peek() match {
-          case JsonToken.BEGIN_OBJECT if isAstNode(obj) && !filename.contains(".build") =>
-            val value = parseObject()
-            obj.add(name, value)
-          case JsonToken.BEGIN_OBJECT =>
-            // don't descend
-            jsonReader.skipValue()
-          case JsonToken.BEGIN_ARRAY if !filename.contains(".build") =>
-            val value = parseArray()
-            obj.add(name, value)
-          case JsonToken.BEGIN_ARRAY =>
-            // don't descend
-            jsonReader.skipValue()
-          case _ =>
-            val value = JsonParser.parseReader(jsonReader)
-            obj.add(name, value)
+
+        // Check for _kind attribute
+        if (name == "_kind") {
+          hasKind = true
+          val value = JsonParser.parseReader(jsonReader)
+          obj.add(name, value)
+        } else {
+          jsonReader.peek() match {
+            case JsonToken.BEGIN_OBJECT if hasKind =>
+              obj.add(name, parseObject())
+            case JsonToken.BEGIN_OBJECT =>
+              // don't descend
+              jsonReader.skipValue()
+            case JsonToken.BEGIN_ARRAY if hasKind =>
+              obj.add(name, parseArray())
+            case JsonToken.BEGIN_ARRAY =>
+              // don't descend
+              jsonReader.skipValue()
+            case _ =>
+              // Always parse primitive values
+              val value = JsonParser.parseReader(jsonReader)
+              obj.add(name, value)
+          }
+          if (qualifies(obj)) hasTypeInfo = true
+          if (name == "filename") filename = obj.get("filename").getAsString
         }
-        if (qualifies(obj)) hasTypeInfo = true
-        if (name == "filename") filename = obj.get("filename").getAsString
       }
       jsonReader.endObject()
 
@@ -198,12 +206,18 @@ object GsonTypeInfoReader {
         case _                                         => safePropertyValue(obj, "decl_usr")
       }
 
-      val typeName = safePropertyValue(obj, "type")
-        .orElse(safePropertyValue(obj, "result"))
-        .orElse(safePropertyValue(obj, "interface_type"))
+      val typeObj = nodeKind match {
+        case NodeKinds.ReturnStmt => resultFromReturnStmt(obj)
+        case _                    => obj
+      }
+
+      val typeFullName = safePropertyValue(typeObj, "type")
+        .orElse(safePropertyValue(typeObj, "result"))
+        .orElse(safePropertyValue(typeObj, "interface_type"))
+
       val usrFullName = safePropertyValue(obj, "usr").orElse(declFullName)
 
-      found.addOne(TypeInfo(filename, range_, typeName, usrFullName, nodeKind))
+      found.addOne(TypeInfo(filename, range_, typeFullName, usrFullName, nodeKind))
     }
 
     /** Parses a JSON array.
@@ -229,9 +243,10 @@ object GsonTypeInfoReader {
     jsonReader.peek() match {
       case JsonToken.BEGIN_OBJECT => parseObject()
       case JsonToken.BEGIN_ARRAY  => parseArray()
-      case _                      => jsonReader.skipValue()
+      case _                      => // Do nothing
     }
 
+    jsonReader.close()
     found.toSet
   }
 }

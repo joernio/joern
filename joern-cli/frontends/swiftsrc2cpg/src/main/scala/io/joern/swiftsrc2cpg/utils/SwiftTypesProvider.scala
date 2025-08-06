@@ -2,7 +2,7 @@ package io.joern.swiftsrc2cpg.utils
 
 import io.joern.swiftsrc2cpg.Config
 import io.joern.swiftsrc2cpg.astcreation.AstCreatorHelper
-import io.joern.x2cpg.utils.Environment
+import io.joern.x2cpg.utils.{Environment, TimeUtils}
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.shiftleft.semanticcpg.utils.FileUtil.PathExt
 import io.shiftleft.utils.IOUtils
@@ -400,22 +400,26 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
 
   def mappingFromJson(jsonString: String, result: SwiftTypeMapping): Unit = {
     Using(new StringReader(jsonString)) { reader =>
-      GsonTypeInfoReader.collectTypeInfo(reader).foreach { typeInfo =>
-        val range = typeInfo.range
-        val typeInfos = result.getOrElseUpdate(
-          typeInfo.filename, {
-            logger.info(s"Generating type map for: ${typeInfo.filename}")
-            mutable.HashMap.empty
-          }
-        )
-        typeInfos.getOrElseUpdate(typeInfo.range, mutable.HashSet.empty).addOne(resolve(typeInfo))
+      logger.info("Handling json")
+      val (_, duration) = TimeUtils.time {
+        GsonTypeInfoReader.collectTypeInfo(reader).foreach { typeInfo =>
+          val range = typeInfo.range
+          val typeInfos = result.getOrElseUpdate(
+            typeInfo.filename, {
+              logger.info(s"Generating type map for: ${typeInfo.filename}")
+              mutable.HashMap.empty
+            }
+          )
+          typeInfos.getOrElseUpdate(typeInfo.range, mutable.HashSet.empty).addOne(resolve(typeInfo))
+        }
       }
+      logger.info(s"Handling json time: ${TimeUtils.pretty(duration)}")
     }
   }
 
   private val JsonTypeResulDelimiter = """(?=\{"_kind":"source_file","filename":)"""
 
-  private def prepareJsonString(jsonString: String): String = {
+  private def prepareJsonString(jsonString: String): Array[String] = {
     val lastClosingBracketIndex = jsonString.lastIndexOf("}")
     // If there is anything behind the last closing bracket we need to substring here.
     // Sadly, swiftc puts all compilation warnings/errors directly behind the json string without a newline.
@@ -426,20 +430,24 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
     }
     // If multiple json objects result from a single swiftc invocation they are put
     // directly behind each other without a newline.
-    substring.split(JsonTypeResulDelimiter).mkString("[", ",", "]")
+    substring.split(JsonTypeResulDelimiter)
   }
 
   def retrieveMappings(): SwiftTypeMapping = {
     val mapping = new SwiftTypeMapping
     parsedSwiftcInvocations.foreach { invocationCommand =>
-      ExternalCommand
-        .run(invocationCommand, mergeStdErrInStdOut = true, workingDir = Some(Paths.get(config.inputPath)))
-        .stdOutAndError
-        .filter(_.startsWith("{"))
-        .foreach { outLine =>
-          val jsonString = prepareJsonString(outLine)
-          mappingFromJson(jsonString, mapping)
-        }
+      logger.info(s"Running command: ${invocationCommand.mkString(" ")}")
+      val (stdOutAndError, duration) = TimeUtils.time {
+        ExternalCommand
+          .run(invocationCommand, mergeStdErrInStdOut = true, workingDir = Some(Paths.get(config.inputPath)))
+          .stdOutAndError
+          .filter(_.startsWith("{"))
+      }
+      logger.info(s"Command time: ${TimeUtils.pretty(duration)}")
+      stdOutAndError.foreach { outLine =>
+        val jsonStrings = prepareJsonString(outLine)
+        jsonStrings.foreach(jsonString => mappingFromJson(jsonString, mapping))
+      }
     }
     mapping
   }

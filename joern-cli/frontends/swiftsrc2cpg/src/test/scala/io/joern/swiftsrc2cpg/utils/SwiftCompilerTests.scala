@@ -435,6 +435,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
         Some("(SwiftHelloWorld.Main.Type)->@Swift.MainActor()->()"),
         None
       ),
+      ("Main.swift", "return_stmt", (46, 46), Some("Swift.Void"), None),
       ("Main.swift", "string_literal_expr", (147, 147), Some("Swift.String"), None),
       ("Main.swift", "struct_decl", (52, 157), Some("SwiftHelloWorld.Main.Type"), Some("SwiftHelloWorld.Main")),
       ("Main.swift", "type_expr", (112, 112), Some("SwiftHelloWorldLib.HelloWorld.Type"), None),
