@@ -79,18 +79,7 @@ object SwiftTypesProvider {
     */
   case class ResolvedTypeInfo(tpe: Option[String], fullName: Option[String], nodeKind: String)
 
-  type SwiftTypeMapping =
-    immutable.HashMap[String, immutable.HashMap[(Int, Int), immutable.List[ResolvedTypeInfo]]]
-  type MutableSwiftTypeMapping =
-    mutable.HashMap[String, mutable.HashMap[(Int, Int), mutable.ListBuffer[ResolvedTypeInfo]]]
-
-  object TypeMappingConversion:
-    given toImmutable: Conversion[MutableSwiftTypeMapping, SwiftTypeMapping] = mutableSwiftTypeMapping =>
-      immutable.HashMap.from(mutableSwiftTypeMapping.map { case (filename, posToResolvedTypeInfo) =>
-        filename -> immutable.HashMap.from(posToResolvedTypeInfo.map { case (range, resolvedTypeInfo) =>
-          range -> immutable.List.from(resolvedTypeInfo).distinct
-        })
-      })
+  type SwiftTypeMapping = mutable.HashMap[String, mutable.HashMap[(Int, Int), mutable.HashSet[ResolvedTypeInfo]]]
 
   /** @see
     *   [[io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.DeclModifierSyntax]]
@@ -337,9 +326,6 @@ object SwiftTypesProvider {
 case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[String]]) {
 
   import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.*
-  import TypeMappingConversion.toImmutable
-
-  import scala.language.implicitConversions
 
   private lazy val swiftDemangleCommand = SwiftTypesProvider.swiftDemangleCommand(config)
 
@@ -412,7 +398,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
     ResolvedTypeInfo(demangledTpe, demangledFullName, typeInfo.nodeKind)
   }
 
-  def mappingFromJson(jsonString: String, result: MutableSwiftTypeMapping): Unit = {
+  def mappingFromJson(jsonString: String, result: SwiftTypeMapping): Unit = {
     Using(new StringReader(jsonString)) { reader =>
       GsonTypeInfoReader.collectTypeInfo(reader).foreach { typeInfo =>
         val range = typeInfo.range
@@ -422,7 +408,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
             mutable.HashMap.empty
           }
         )
-        typeInfos.getOrElseUpdate(typeInfo.range, mutable.ListBuffer.empty).addOne(resolve(typeInfo))
+        typeInfos.getOrElseUpdate(typeInfo.range, mutable.HashSet.empty).addOne(resolve(typeInfo))
       }
     }
   }
@@ -444,7 +430,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
   }
 
   def retrieveMappings(): SwiftTypeMapping = {
-    val mapping = new MutableSwiftTypeMapping
+    val mapping = new SwiftTypeMapping
     parsedSwiftcInvocations.foreach { invocationCommand =>
       ExternalCommand
         .run(invocationCommand, mergeStdErrInStdOut = true, workingDir = Some(Paths.get(config.inputPath)))

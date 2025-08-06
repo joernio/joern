@@ -1,7 +1,7 @@
 package io.joern.swiftsrc2cpg.utils
 
 import io.joern.swiftsrc2cpg.Config
-import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{MutableSwiftTypeMapping, ResolvedTypeInfo}
+import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{SwiftTypeMapping, ResolvedTypeInfo}
 import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import org.scalatest.matchers.should.Matchers
@@ -11,9 +11,6 @@ import java.nio.file.{Files, Path}
 import scala.collection.mutable
 
 class SwiftCompilerTests extends AnyWordSpec with Matchers {
-
-  import scala.language.implicitConversions
-  import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.TypeMappingConversion.toImmutable
 
   private object SwiftCompilerTestsFixture {
     private val PackageSwiftContent: String =
@@ -501,7 +498,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
     }
 
     "generate mapping from Json correctly" in {
-      val mapping  = new MutableSwiftTypeMapping
+      val mapping  = new SwiftTypeMapping
       val provider = new SwiftTypesProvider(Config().withInputPath("."), Nil)
       provider.mappingFromJson(SwiftCompilerTestsFixture.JsonStringHelloWorldSwift, mapping)
       provider.mappingFromJson(SwiftCompilerTestsFixture.JsonStringMain, mapping)
