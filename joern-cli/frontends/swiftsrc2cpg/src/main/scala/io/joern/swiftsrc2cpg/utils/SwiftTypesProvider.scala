@@ -25,11 +25,11 @@ object SwiftTypesProvider {
 
   private val MinimumSwiftVersion = "6.1" // This brings in the -dump-ast-format json option
 
-  private val SwiftVersionCommand  = Seq("swift", "--version")
-  private val SwiftcVersionCommand = Seq("swiftc", "--version")
-  private val SwiftVersionCommands = Seq(SwiftVersionCommand, SwiftcVersionCommand)
-  private val SwiftBuildCommand    = Seq("swift", "build", "--verbose")
-  private val SwiftcDumpOptions    = Seq("-dump-ast", "-dump-ast-format", "json", "-suppress-warnings")
+  private val SwiftVersionCommand         = Seq("swift", "--version")
+  private val SwiftCompilerVersionCommand = Seq("swiftc", "--version")
+  private val SwiftVersionCommands        = Seq(SwiftVersionCommand, SwiftCompilerVersionCommand)
+  private val SwiftBuildCommand           = Seq("swift", "build", "--verbose")
+  private val SwiftCompilerDumpOptions    = Seq("-dump-ast", "-dump-ast-format", "json", "-suppress-warnings")
 
   /** Information about a Swift type found in the source code. fullName and tpe are not demangled yet.
     *
@@ -136,9 +136,9 @@ object SwiftTypesProvider {
     * Example: The string {{{file1.swift file\ with\ spaces.swift -o output}}} would be split into
     * {{{["file1.swift", "file\ with\ spaces.swift", "-o", "output"]}}}.
     */
-  private val SwiftcArgSplit = "(?<!\\\\) "
+  private val SwiftCompilerArgSplit = "(?<!\\\\) "
 
-  private val SwiftcIgnoredArgs =
+  private val SwiftCompilerIgnoredArgs =
     Seq(
       "-v",
       "-output-file-map",
@@ -174,7 +174,7 @@ object SwiftTypesProvider {
     config.xcodeOutputPath.map(outputPath => build(config, IOUtils.readLinesInFile(outputPath))).orElse(build(config))
   }
 
-  private def resolveSwiftDemangleCommand(config: Config, args: Seq[String]): Seq[String] = {
+  private def resolveSwiftDemangleCommand(args: Seq[String]): Seq[String] = {
     val defaultCommand = "swift-demangle" +: args
     if (Environment.operatingSystem == Environment.OperatingSystemType.Windows) {
       // Windows installation of swift puts swift-demangle into the PATH automatically
@@ -182,7 +182,7 @@ object SwiftTypesProvider {
     } else {
       // Installer for Linux and macOS do not
       ExternalCommand
-        .run(Seq("which", "swiftc"), workingDir = Some(Paths.get(config.inputPath)))
+        .run(Seq("which", "swiftc"))
         .successOption
         .map { outLines =>
           val resolvedPath = Paths.get(outLines.mkString).toRealPath().resolveSibling("swift-demangle").toString
@@ -192,12 +192,12 @@ object SwiftTypesProvider {
     }
   }
 
-  private def swiftDemangleVersionCommand(config: Config): Seq[String] = {
-    resolveSwiftDemangleCommand(config, Seq("--version"))
+  private def swiftDemangleVersionCommand(): Seq[String] = {
+    resolveSwiftDemangleCommand(Seq("--version"))
   }
 
-  private def swiftDemangleCommand(config: Config): Seq[String] = {
-    resolveSwiftDemangleCommand(config, Seq("--compact", "--no-sugar"))
+  private def swiftDemangleCommand(): Seq[String] = {
+    resolveSwiftDemangleCommand(Seq("--compact", "--no-sugar"))
   }
 
   private def isValidEnvironment(config: Config): Boolean = {
@@ -207,14 +207,12 @@ object SwiftTypesProvider {
 
     val commands = if (config.xcodeOutputPath.isDefined) {
       // we do not need 'swift' on the system if the commands are taken from Xcode
-      Seq(SwiftcVersionCommand)
+      Seq(SwiftCompilerVersionCommand)
     } else {
       SwiftVersionCommands
     }
     val hasSwift = commands.forall { command =>
-      ExternalCommand
-        .run(command, workingDir = Some(Paths.get(config.inputPath)))
-        .successOption match {
+      ExternalCommand.run(command).successOption match {
         case Some(outLines) =>
           val swiftVersion = outLines.find(_.startsWith("Swift version ")).map { str =>
             str.substring("Swift version ".length, str.indexOf(" ("))
@@ -229,9 +227,7 @@ object SwiftTypesProvider {
           false
       }
     }
-    val hasSwiftDemangle = ExternalCommand
-      .run(swiftDemangleVersionCommand(config), workingDir = Some(Paths.get(config.inputPath)))
-      .successful
+    val hasSwiftDemangle = ExternalCommand.run(swiftDemangleVersionCommand()).successful
     hasSwift && hasSwiftDemangle
   }
 
@@ -245,10 +241,10 @@ object SwiftTypesProvider {
   }
 
   private def argShouldBeFiltered(arg: String): Boolean = {
-    SwiftcIgnoredArgs.contains(arg) || arg.startsWith("-emit")
+    SwiftCompilerIgnoredArgs.contains(arg) || arg.startsWith("-emit")
   }
 
-  private def parseSwiftcArgs(args: List[String]): List[String] = {
+  private def parseSwiftCompilerArgs(args: List[String]): List[String] = {
     @scala.annotation.tailrec
     def loop(remaining: List[String], result: List[String]): List[String] = {
       remaining match {
@@ -265,14 +261,14 @@ object SwiftTypesProvider {
     loop(args, Nil)
   }
 
-  private def isSwiftcInvocation(line: String): Boolean = {
+  private def isSwiftInvocation(line: String): Boolean = {
     (line.contains("\\swiftc.exe ") || line.contains("/swiftc "))
     && line.contains(" -module-name ")
     && !line.contains(" -emit-executable ")
   }
 
   private def argsFromLine(line: String): List[String] = {
-    line.replace("\\ -", " -").replace("/ -", " -").split(SwiftcArgSplit).toList
+    line.replace("\\ -", " -").replace("/ -", " -").split(SwiftCompilerArgSplit).toList
   }
 
   /** Lists all readable directories under the given path.
@@ -304,15 +300,15 @@ object SwiftTypesProvider {
       logger.info(s"Building Swift type map from compiler log at ${path.toFile.toString}")
     )
 
-    val sourceModules     = listReadableDirectories(Paths.get(config.inputPath, "Sources"))
-    val swiftcInvocations = compilerOutput.filter(isSwiftcInvocation)
-    val parsedSwiftcInvocations =
-      swiftcInvocations.map(l => parseSwiftcArgs(argsFromLine(l)) ++ SwiftcDumpOptions).filter { args =>
+    val sourceModules    = listReadableDirectories(Paths.get(config.inputPath, "Sources"))
+    val swiftInvocations = compilerOutput.filter(isSwiftInvocation)
+    val parsedSwiftInvocations =
+      swiftInvocations.map(l => parseSwiftCompilerArgs(argsFromLine(l)) ++ SwiftCompilerDumpOptions).filter { args =>
         val moduleNameIndex = args.indexOf("-module-name")
         val moduleName      = args(moduleNameIndex + 1)
         sourceModules.isEmpty || sourceModules.contains(moduleName)
       }
-    new SwiftTypesProvider(config, parsedSwiftcInvocations)
+    new SwiftTypesProvider(config, parsedSwiftInvocations)
   }
 }
 
@@ -320,14 +316,14 @@ object SwiftTypesProvider {
   *
   * @param config
   *   The configuration for the Swift CPG generation
-  * @param parsedSwiftcInvocations
+  * @param parsedSwiftInvocations
   *   The parsed Swift compiler invocations to extract type information
   */
-case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[String]]) {
+case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[String]]) {
 
   import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.*
 
-  private lazy val swiftDemangleCommand = SwiftTypesProvider.swiftDemangleCommand(config)
+  private lazy val swiftDemangleCommand = SwiftTypesProvider.swiftDemangleCommand()
 
   private val mangledNameCache = mutable.HashMap.empty[String, Option[String]]
 
@@ -335,7 +331,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
     if (mangledName.isEmpty) return None
     val strippedMangledName = mangledName.stripPrefix("$").replaceFirst("s:e:s:", "s:").replace(":", "")
     ExternalCommand
-      .run(swiftDemangleCommand :+ strippedMangledName, workingDir = Some(Paths.get(config.inputPath)))
+      .run(swiftDemangleCommand :+ strippedMangledName)
       .successOption
       .map(outLines => outLines.mkString.trim)
   }
@@ -421,20 +417,20 @@ case class SwiftTypesProvider(config: Config, parsedSwiftcInvocations: Seq[Seq[S
   private def prepareJsonString(jsonString: String): Iterator[String] = {
     val lastClosingBracketIndex = jsonString.lastIndexOf("}")
     // If there is anything behind the last closing bracket we need to substring here.
-    // Sadly, swiftc puts all compilation warnings/errors directly behind the json string without a newline.
+    // Sadly, the swift compiler puts all compilation warnings/errors directly behind the json string without a newline.
     val substring = if (lastClosingBracketIndex > 0 && lastClosingBracketIndex < jsonString.length - 1) {
       jsonString.substring(0, jsonString.lastIndexOf("}") + 1)
     } else {
       jsonString
     }
-    // If multiple json objects result from a single swiftc invocation they are put
+    // If multiple json objects result from a single swift compiler invocation they are put
     // directly behind each other without a newline.
     substring.split(JsonTypeResulDelimiter).iterator
   }
 
   def retrieveMappings(): SwiftTypeMapping = {
     val mapping = new SwiftTypeMapping
-    parsedSwiftcInvocations.foreach { invocationCommand =>
+    parsedSwiftInvocations.foreach { invocationCommand =>
       ExternalCommand
         .run(invocationCommand, mergeStdErrInStdOut = true, workingDir = Some(Paths.get(config.inputPath)))
         .stdOutAndError

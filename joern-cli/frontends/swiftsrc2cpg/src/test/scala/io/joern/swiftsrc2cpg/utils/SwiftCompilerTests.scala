@@ -101,7 +101,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
         |}
         |""".stripMargin
 
-    val SwiftcInvocation: String =
+    val SwiftInvocation: String =
       """
         |/usr/bin/swiftc
         | -module-name SwiftHelloWorld
@@ -135,7 +135,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
         | -use-ld=lld -g -use-ld=lld -Xcc -D_MT -Xcc -D_DLL -Xcc -Xclang -Xcc --dependent-lib=msvcrt -Xcc -gdwarf -package-name swiftastgen""".stripMargin
         .replace("\n", "")
 
-    val SwiftcInvocationDependency: String =
+    val SwiftInvocationDependency: String =
       """
         |/usr/bin/swiftc
         | -module-name Foundation
@@ -169,7 +169,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
         | -use-ld=lld -g -use-ld=lld -Xcc -D_MT -Xcc -D_DLL -Xcc -Xclang -Xcc --dependent-lib=msvcrt -Xcc -gdwarf -package-name swiftastgen""".stripMargin
         .replace("\n", "")
 
-    val ExpectedSwiftcInvocations: Seq[Seq[String]] = Seq(
+    val ExpectedSwiftInvocations: Seq[Seq[String]] = Seq(
       Seq(
         "/usr/bin/swiftc",
         "-module-name",
@@ -456,7 +456,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
         Files.writeString(mainSwift, MainSwiftContent)
 
         val xCodeOut = tmpDir / "out.log"
-        Files.writeString(xCodeOut, SwiftcInvocation)
+        Files.writeString(xCodeOut, SwiftInvocation)
 
         f(tmpDir)
       }
@@ -486,16 +486,16 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
   "Processing the compile output" should {
 
     "parsing the swiftc arguments correctly" in {
-      val provider = SwiftTypesProvider.build(Config(), Seq(SwiftCompilerTestsFixture.SwiftcInvocation))
-      provider.parsedSwiftcInvocations shouldBe SwiftCompilerTestsFixture.ExpectedSwiftcInvocations
+      val provider = SwiftTypesProvider.build(Config(), Seq(SwiftCompilerTestsFixture.SwiftInvocation))
+      provider.parsedSwiftInvocations shouldBe SwiftCompilerTestsFixture.ExpectedSwiftInvocations
     }
 
     "filter external dependencies correctly" in SwiftCompilerTestsFixture { dir =>
       val provider = SwiftTypesProvider.build(
         Config().withInputPath(dir.toString).withOutputPath(dir.toString),
-        Seq(SwiftCompilerTestsFixture.SwiftcInvocation, SwiftCompilerTestsFixture.SwiftcInvocationDependency)
+        Seq(SwiftCompilerTestsFixture.SwiftInvocation, SwiftCompilerTestsFixture.SwiftInvocationDependency)
       )
-      provider.parsedSwiftcInvocations shouldBe SwiftCompilerTestsFixture.ExpectedSwiftcInvocations
+      provider.parsedSwiftInvocations shouldBe SwiftCompilerTestsFixture.ExpectedSwiftInvocations
     }
 
     "generate mapping from Json correctly" in {
@@ -511,7 +511,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
       val swiftTypesProvider = SwiftTypesProvider.apply(config)
       swiftTypesProvider match {
         case Some(provider) =>
-          val Seq(swiftHelloWorldLibCommand, swiftHelloWorldCommand) = provider.parsedSwiftcInvocations
+          val Seq(swiftHelloWorldLibCommand, swiftHelloWorldCommand) = provider.parsedSwiftInvocations
           swiftHelloWorldLibCommand.exists(c => c.endsWith("/swiftc") || c.endsWith("\\swiftc.exe")) shouldBe true
           swiftHelloWorldLibCommand should contain("-module-name")
           swiftHelloWorldLibCommand should contain("SwiftHelloWorldLib")
@@ -616,7 +616,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
       val swiftTypesProvider = SwiftTypesProvider.apply(config)
       swiftTypesProvider match {
         case Some(provider) =>
-          provider.parsedSwiftcInvocations shouldBe SwiftCompilerTestsFixture.ExpectedSwiftcInvocations
+          provider.parsedSwiftInvocations shouldBe SwiftCompilerTestsFixture.ExpectedSwiftInvocations
         case None =>
           fail("Can't build the SwiftTypesProvider")
       }
