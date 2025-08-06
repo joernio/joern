@@ -160,6 +160,8 @@ object GsonTypeInfoReader {
           hasKind = true
           val value = JsonParser.parseReader(jsonReader)
           obj.add(name, value)
+        } else if (name == "filename") {
+          filename = JsonParser.parseReader(jsonReader).getAsString
         } else {
           jsonReader.peek() match {
             case JsonToken.BEGIN_OBJECT if hasKind =>
@@ -178,7 +180,6 @@ object GsonTypeInfoReader {
               obj.add(name, value)
           }
           if (qualifies(obj)) hasTypeInfo = true
-          if (name == "filename") filename = obj.get("filename").getAsString
         }
       }
       jsonReader.endObject()
@@ -200,10 +201,10 @@ object GsonTypeInfoReader {
       val nodeKind = astNodeKind(obj)
       val range_   = range(obj)
 
-      lazy val declFullName = nodeKind match {
-        case kind if kind.endsWith(NodeKinds.CallExpr) => safePropertyValue(declFromCallExpr(obj), "decl_usr")
-        case NodeKinds.MemberRefExpr                   => safePropertyValue(declFromMemberRefExpr(obj), "decl_usr")
-        case _                                         => safePropertyValue(obj, "decl_usr")
+      lazy val declObj = nodeKind match {
+        case kind if kind.endsWith(NodeKinds.CallExpr) => declFromCallExpr(obj)
+        case NodeKinds.MemberRefExpr                   => declFromMemberRefExpr(obj)
+        case _                                         => obj
       }
 
       val typeObj = nodeKind match {
@@ -215,9 +216,9 @@ object GsonTypeInfoReader {
         .orElse(safePropertyValue(typeObj, "result"))
         .orElse(safePropertyValue(typeObj, "interface_type"))
 
-      val usrFullName = safePropertyValue(obj, "usr").orElse(declFullName)
+      val declFullName = safePropertyValue(obj, "usr").orElse(safePropertyValue(declObj, "decl_usr"))
 
-      found.addOne(TypeInfo(filename, range_, typeFullName, usrFullName, nodeKind))
+      found.addOne(TypeInfo(filename, range_, typeFullName, declFullName, nodeKind))
     }
 
     /** Parses a JSON array.
