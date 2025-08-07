@@ -9,11 +9,11 @@ import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 import versionsort.VersionHelper
 
-import java.io.StringReader
+import java.io.{BufferedReader, InputStreamReader, StringReader}
 import java.nio.file.{Files, Path, Paths}
 import scala.collection.{immutable, mutable}
 import scala.util.matching.Regex
-import scala.util.{Try, Using}
+import scala.util.{Failure, Try, Using}
 
 /** Provides Swift type information by extracting type data from Swift compiler output. This provider uses the Swift
   * compiler's AST dump functionality to collect type information which is then used for populating the CPG with
@@ -417,7 +417,6 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
   private def prepareJsonString(jsonString: String): Iterator[String] = {
     val lastClosingBracketIndex = jsonString.lastIndexOf("}")
     // If there is anything behind the last closing bracket we need to substring here.
-    // Sadly, the swift compiler puts all compilation warnings/errors directly behind the json string without a newline.
     val substring = if (lastClosingBracketIndex > 0 && lastClosingBracketIndex < jsonString.length - 1) {
       jsonString.substring(0, jsonString.lastIndexOf("}") + 1)
     } else {
@@ -431,15 +430,25 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
   def retrieveMappings(): SwiftTypeMapping = {
     val mapping = new SwiftTypeMapping
     parsedSwiftInvocations.foreach { invocationCommand =>
-      ExternalCommand
-        .run(invocationCommand, mergeStdErrInStdOut = true, workingDir = Some(Paths.get(config.inputPath)))
-        .stdOutAndError
-        .filter(_.startsWith("{"))
-        .foreach { outLine =>
-          val jsonStrings = prepareJsonString(outLine)
-          jsonStrings.foreach(jsonString => mappingFromJson(jsonString, mapping))
+      val builder = new ProcessBuilder().command(invocationCommand.toArray*)
+      builder.directory(Paths.get(config.inputPath).toFile)
+      builder.redirectErrorStream(true)
+      Using.Manager { use =>
+        val process = builder.start()
+        val reader  = use(new InputStreamReader(process.getInputStream))
+        val stdOut  = use(new BufferedReader(reader))
+        Iterator.continually(stdOut.readLine()).takeWhile(_ != null).foreach { outLine =>
+          if (outLine.startsWith("{")) {
+            val jsonStrings = prepareJsonString(outLine)
+            jsonStrings.foreach(jsonString => mappingFromJson(jsonString, mapping))
+          }
         }
+      } match {
+        case Failure(exception) => throw exception
+        case _                  => // do nothing
+      }
     }
+    logger.info(s"Got ${mapping.size} type map entries.")
     mapping
   }
 
