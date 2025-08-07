@@ -395,7 +395,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
   }
 
   def mappingFromJson(jsonString: String, result: SwiftTypeMapping): Unit = {
-    Using(new StringReader(jsonString)) { reader =>
+    Using.resource(new StringReader(jsonString)) { reader =>
       val (_, duration) = TimeUtils.time {
         GsonTypeInfoReader.collectTypeInfo(reader).foreach { typeInfo =>
           val range = typeInfo.range

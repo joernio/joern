@@ -138,7 +138,7 @@ object GsonTypeInfoReader {
     * @return
     *   A set of TypeInfo objects extracted from the JSON
     */
-  def collectTypeInfo(reader: Reader): Iterator[TypeInfo] = {
+  def collectTypeInfo(reader: Reader): Set[TypeInfo] = {
     val found      = mutable.HashSet.empty[TypeInfo]
     val jsonReader = new JsonReader(reader)
     var filename   = ""
@@ -148,43 +148,43 @@ object GsonTypeInfoReader {
 
     def parseObject(): JsonObject = {
       val obj         = new JsonObject
-      var hasTypeInfo = false
       var hasKind     = false
+      var isFromBuild = false
 
       jsonReader.beginObject()
       while (jsonReader.hasNext) {
         val name = jsonReader.nextName()
 
-        // Check for _kind attribute
         if (name == "_kind") {
           hasKind = true
           val value = JsonParser.parseReader(jsonReader)
           obj.add(name, value)
         } else if (name == "filename") {
           filename = JsonParser.parseReader(jsonReader).getAsString
+          isFromBuild = filename.contains("/.build/") || filename.contains("\\.build\\")
         } else {
           jsonReader.peek() match {
-            case JsonToken.BEGIN_OBJECT if hasKind =>
+            case JsonToken.BEGIN_OBJECT if hasKind && !isFromBuild =>
               obj.add(name, parseObject())
             case JsonToken.BEGIN_OBJECT =>
               // don't descend
               jsonReader.skipValue()
-            case JsonToken.BEGIN_ARRAY if hasKind =>
+            case JsonToken.BEGIN_ARRAY if hasKind && !isFromBuild =>
               obj.add(name, parseArray())
             case JsonToken.BEGIN_ARRAY =>
               // don't descend
               jsonReader.skipValue()
             case _ =>
-              // Always parse primitive values
-              val value = JsonParser.parseReader(jsonReader)
-              obj.add(name, value)
+              if (name == "start" || name == "end" || FullnameFieldNames.contains(name)) {
+                val value = JsonParser.parseReader(jsonReader)
+                obj.add(name, value)
+              } else jsonReader.skipValue()
           }
-          if (qualifies(obj)) hasTypeInfo = true
         }
       }
       jsonReader.endObject()
 
-      if (hasTypeInfo && !filename.contains(".build")) {
+      if (qualifies(obj)) {
         extractTypeInfo(obj, filename)
       }
       obj
@@ -248,6 +248,6 @@ object GsonTypeInfoReader {
     }
 
     jsonReader.close()
-    found.iterator
+    found.toSet
   }
 }
