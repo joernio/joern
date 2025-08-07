@@ -47,8 +47,9 @@ object MavenDependencies {
   }
 
   private[dependency] def get(projectDir: Path): Option[collection.Seq[String]] = {
+    val isWindows = System.getProperty("os.name").toLowerCase.startsWith("windows")
     val lines = ExternalCommand
-      .run(command = fetchCommandWithOpts, workingDir = Option(projectDir))
+      .run(command = fetchCommandWithOpts, workingDir = Option(projectDir), isShellCommand = isWindows)
       .logIfFailed()
       .toTry match {
       case Success(lines) =>
