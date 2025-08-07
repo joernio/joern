@@ -15,6 +15,7 @@ import io.shiftleft.utils.IOUtils
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.nio.file.Paths
+import java.util.concurrent.ConcurrentHashMap
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
 
@@ -50,8 +51,9 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
         case Success(parseResult) =>
           report.addReportInfo(parseResult.filename, parseResult.loc, parsed = true)
           Try {
-            val fileLocalTypesMap = typeMap.flatMap(map => map.get(parseResult.fullPath)).getOrElse(Map.empty)
-            val localDiff         = new AstCreator(config, global, parseResult).createAst()
+            val fileLocalTypesMap =
+              typeMap.flatMap(map => Option(map.get(parseResult.fullPath))).getOrElse(new ConcurrentHashMap())
+            val localDiff = new AstCreator(config, global, parseResult).createAst()
             diffGraph.absorb(localDiff)
           } match {
             case Failure(exception) =>

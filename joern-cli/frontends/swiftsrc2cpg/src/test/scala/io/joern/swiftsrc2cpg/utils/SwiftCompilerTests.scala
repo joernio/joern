@@ -1,14 +1,14 @@
 package io.joern.swiftsrc2cpg.utils
 
 import io.joern.swiftsrc2cpg.Config
-import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{SwiftTypeMapping, ResolvedTypeInfo}
+import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{ResolvedTypeInfo, SwiftTypeMapping}
 import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 import java.nio.file.{Files, Path}
-import scala.collection.mutable
+import scala.jdk.CollectionConverters.*
 
 class SwiftCompilerTests extends AnyWordSpec with Matchers {
 
@@ -466,9 +466,9 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
   private def toResultList(
     mapping: SwiftTypesProvider.SwiftTypeMapping
   ): List[(String, String, (Int, Int), Option[String], Option[String])] = {
-    mapping
+    mapping.asScala
       .flatMap { case (filename, posToResolvedTypeInfo) =>
-        posToResolvedTypeInfo.flatMap { case (range, typeInfos) =>
+        posToResolvedTypeInfo.asScala.flatMap { case (range, typeInfos) =>
           typeInfos.map(typeInfo => (filename, typeInfo.nodeKind, range, typeInfo.tpe, typeInfo.fullName))
         }
       }

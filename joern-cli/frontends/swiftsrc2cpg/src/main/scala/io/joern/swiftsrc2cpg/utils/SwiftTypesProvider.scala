@@ -2,7 +2,7 @@ package io.joern.swiftsrc2cpg.utils
 
 import io.joern.swiftsrc2cpg.Config
 import io.joern.swiftsrc2cpg.astcreation.AstCreatorHelper
-import io.joern.x2cpg.utils.{Environment, TimeUtils}
+import io.joern.x2cpg.utils.Environment
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.shiftleft.semanticcpg.utils.FileUtil.PathExt
 import io.shiftleft.utils.IOUtils
@@ -11,7 +11,11 @@ import versionsort.VersionHelper
 
 import java.io.{BufferedReader, InputStreamReader, StringReader}
 import java.nio.file.{Files, Path, Paths}
+import java.util.Collections
+import java.util.concurrent.{Callable, ConcurrentHashMap, ExecutorService, Executors}
+import scala.collection.parallel.CollectionConverters.*
 import scala.collection.{immutable, mutable}
+import scala.jdk.CollectionConverters.*
 import scala.util.matching.Regex
 import scala.util.{Failure, Try, Using}
 
@@ -79,7 +83,7 @@ object SwiftTypesProvider {
     */
   case class ResolvedTypeInfo(tpe: Option[String], fullName: Option[String], nodeKind: String)
 
-  type SwiftTypeMapping = mutable.HashMap[String, mutable.HashMap[(Int, Int), mutable.HashSet[ResolvedTypeInfo]]]
+  type SwiftTypeMapping = ConcurrentHashMap[String, ConcurrentHashMap[(Int, Int), mutable.HashSet[ResolvedTypeInfo]]]
 
   /** @see
     *   [[io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.DeclModifierSyntax]]
@@ -396,19 +400,29 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
 
   def mappingFromJson(jsonString: String, result: SwiftTypeMapping): Unit = {
     Using.resource(new StringReader(jsonString)) { reader =>
-      val (_, duration) = TimeUtils.time {
-        GsonTypeInfoReader.collectTypeInfo(reader).foreach { typeInfo =>
-          val range = typeInfo.range
-          val typeInfos = result.getOrElseUpdate(
-            typeInfo.filename, {
-              logger.info(s"Generating type map for: ${typeInfo.filename}")
-              mutable.HashMap.empty
-            }
-          )
-          typeInfos.getOrElseUpdate(typeInfo.range, mutable.HashSet.empty).addOne(resolve(typeInfo))
-        }
+      GsonTypeInfoReader.collectTypeInfo(reader).foreach { typeInfo =>
+        val range    = typeInfo.range
+        val filename = typeInfo.filename
+        result.compute(
+          filename,
+          (_, typeInfos) => {
+            val newTypeInfos = if (typeInfos == null) {
+              logger.info(s"Generating type map for: $filename")
+              new ConcurrentHashMap()
+            } else { typeInfos }
+            newTypeInfos.compute(
+              range,
+              (_, set) => {
+                val newSet = if (set == null) { mutable.HashSet.empty }
+                else { set }
+                newSet.addOne(resolve(typeInfo))
+                newSet
+              }
+            )
+            newTypeInfos
+          }
+        )
       }
-      logger.info(s"Handling json time: ${TimeUtils.pretty(duration)}")
     }
   }
 
@@ -427,27 +441,44 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     substring.split(JsonTypeResulDelimiter).iterator
   }
 
-  def retrieveMappings(): SwiftTypeMapping = {
-    val mapping = new SwiftTypeMapping
-    parsedSwiftInvocations.foreach { invocationCommand =>
-      val builder = new ProcessBuilder().command(invocationCommand.toArray*)
-      builder.directory(Paths.get(config.inputPath).toFile)
-      builder.redirectErrorStream(true)
-      Using.Manager { use =>
-        val process = builder.start()
-        val reader  = use(new InputStreamReader(process.getInputStream))
-        val stdOut  = use(new BufferedReader(reader))
-        Iterator.continually(stdOut.readLine()).takeWhile(_ != null).foreach { outLine =>
-          if (outLine.startsWith("{")) {
-            val jsonStrings = prepareJsonString(outLine)
-            jsonStrings.foreach(jsonString => mappingFromJson(jsonString, mapping))
-          }
-        }
-      } match {
-        case Failure(exception) => throw exception
-        case _                  => // do nothing
+  private def runInParallel(tasks: Iterator[() => Unit], executor: ExecutorService): Unit = {
+    val callables = Collections.list(tasks.map { x =>
+      new Callable[Unit] {
+        override def call(): Unit = x.apply()
       }
-    }
+    }.asJavaEnumeration)
+    executor.invokeAll(callables)
+  }
+
+  def retrieveMappings(): SwiftTypeMapping = {
+    val mapping  = new SwiftTypeMapping
+    val executor = Executors.newWorkStealingPool()
+    try {
+      runInParallel(
+        parsedSwiftInvocations.iterator.map { invocationCommand => () =>
+          {
+            val builder = new ProcessBuilder().command(invocationCommand.toArray*)
+            builder.directory(Paths.get(config.inputPath).toFile)
+            builder.redirectErrorStream(true)
+            val process = builder.start()
+            Using.Manager { use =>
+              val reader = use(new InputStreamReader(process.getInputStream))
+              val stdOut = use(new BufferedReader(reader))
+              val jsonStringsIterator = Iterator
+                .continually(stdOut.readLine())
+                .takeWhile(_ != null)
+                .filter(_.startsWith("{"))
+                .flatMap(prepareJsonString)
+              runInParallel(jsonStringsIterator.map(jsonString => () => mappingFromJson(jsonString, mapping)), executor)
+            } match {
+              case Failure(exception) => throw exception
+              case _                  => // this is fine
+            }
+          }
+        },
+        executor
+      )
+    } finally executor.shutdown()
     logger.info(s"Got ${mapping.size} type map entries.")
     mapping
   }
