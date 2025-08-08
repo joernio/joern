@@ -505,6 +505,15 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
       toResultList(mapping) shouldBe SwiftCompilerTestsFixture.ExpectedMapping
     }
 
+    "generate mapping from Json with split correctly" in {
+      val mapping  = new SwiftTypeMapping
+      val provider = new SwiftTypesProvider(Config().withInputPath("."), Nil)
+      val input =
+        s"${SwiftCompilerTestsFixture.JsonStringHelloWorldSwift}${SwiftCompilerTestsFixture.JsonStringMain}Error: some error foo"
+      provider.mappingFromJson(input, mapping)
+      toResultList(mapping) shouldBe SwiftCompilerTestsFixture.ExpectedMapping
+    }
+
     "handle a SwiftPM project correctly" in SwiftCompilerTestsFixture { dir =>
       val config             = Config().withInputPath(dir.toString).withOutputPath(dir.toString).withSwiftBuild(true)
       val swiftTypesProvider = SwiftTypesProvider.apply(config)

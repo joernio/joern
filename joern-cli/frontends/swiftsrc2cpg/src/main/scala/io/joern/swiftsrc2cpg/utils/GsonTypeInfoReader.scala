@@ -240,11 +240,14 @@ object GsonTypeInfoReader {
       arr
     }
 
-    // Start parsing based on the root element type
-    jsonReader.peek() match {
-      case JsonToken.BEGIN_OBJECT => parseObject()
-      case JsonToken.BEGIN_ARRAY  => parseArray()
-      case _                      => // Do nothing
+    var shouldTerminate = false
+    while (!shouldTerminate && jsonReader.hasNext) {
+      // Start parsing based on the root element type
+      jsonReader.peek() match {
+        case JsonToken.BEGIN_OBJECT => parseObject()
+        case JsonToken.BEGIN_ARRAY  => parseArray()
+        case _                      => shouldTerminate = true
+      }
     }
 
     jsonReader.close()

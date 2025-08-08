@@ -9,7 +9,7 @@ import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 import versionsort.VersionHelper
 
-import java.io.{BufferedReader, InputStreamReader, StringReader}
+import java.io.{BufferedReader, InputStream, InputStreamReader, StringReader}
 import java.nio.file.{Files, Path, Paths}
 import java.util.Collections
 import java.util.concurrent.{Callable, ExecutorService, Executors}
@@ -416,21 +416,6 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     }
   }
 
-  private val JsonTypeResulDelimiter = """(?=\{"_kind":"source_file","filename":)"""
-
-  private def prepareJsonString(jsonString: String): Iterator[String] = {
-    val lastClosingBracketIndex = jsonString.lastIndexOf("}")
-    // If there is anything behind the last closing bracket we need to substring here.
-    val substring = if (lastClosingBracketIndex > 0 && lastClosingBracketIndex < jsonString.length - 1) {
-      jsonString.substring(0, jsonString.lastIndexOf("}") + 1)
-    } else {
-      jsonString
-    }
-    // If multiple json objects result from a single swift compiler invocation they are put
-    // directly behind each other without a newline.
-    substring.split(JsonTypeResulDelimiter).iterator
-  }
-
   private def runInParallel(tasks: Iterator[() => Unit], executor: ExecutorService): Unit = {
     val callables = Collections.list(tasks.map { x =>
       new Callable[Unit] {
@@ -440,30 +425,31 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     executor.invokeAll(callables)
   }
 
+  private def stdOutFromSwiftCompiler(invocationCommand: Seq[String]): InputStream = {
+    val builder = new ProcessBuilder().command(invocationCommand.toArray*)
+    builder.directory(Paths.get(config.inputPath).toFile)
+    builder.redirectErrorStream(true)
+    builder.start().getInputStream
+  }
+
   def retrieveMappings(): SwiftTypeMapping = {
     val mapping  = new SwiftTypeMapping
     val executor = Executors.newWorkStealingPool()
     try {
       runInParallel(
         parsedSwiftInvocations.iterator.map { invocationCommand => () =>
-          {
-            val builder = new ProcessBuilder().command(invocationCommand.toArray*)
-            builder.directory(Paths.get(config.inputPath).toFile)
-            builder.redirectErrorStream(true)
-            val process = builder.start()
-            Using.Manager { use =>
-              val reader = use(new InputStreamReader(process.getInputStream))
-              val stdOut = use(new BufferedReader(reader))
-              val jsonStringsIterator = Iterator
-                .continually(stdOut.readLine())
-                .takeWhile(_ != null)
-                .filter(_.startsWith("{"))
-                .flatMap(prepareJsonString)
-              runInParallel(jsonStringsIterator.map(jsonString => () => mappingFromJson(jsonString, mapping)), executor)
-            } match {
-              case Failure(exception) => throw exception
-              case _                  => // this is fine
-            }
+          Using.Manager { use =>
+            val reader = use(new InputStreamReader(stdOutFromSwiftCompiler(invocationCommand)))
+            val stdOut = use(new BufferedReader(reader))
+            val jsonStringsIterator = Iterator
+              .continually(stdOut.readLine())
+              .takeWhile(_ != null)
+              .filter(_.startsWith("{"))
+              .map(jsonString => () => mappingFromJson(jsonString, mapping))
+            runInParallel(jsonStringsIterator, executor)
+          } match {
+            case Failure(exception) => throw exception // Using.Manager swallows exceptions otherwise
+            case _                  =>                 // this is fine
           }
         },
         executor
