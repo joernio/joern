@@ -43,8 +43,7 @@ abstract class CpgGenerator() {
            |""".stripMargin
       )
 
-      val exitValue = ExternalCommand.run(cmd).exitCode
-      assert(exitValue == 0, s"Error running shell command: exitValue=$exitValue; $cmd")
+      ExternalCommand.run(cmd).logIfFailed().verifySuccess()
     }
 
   protected lazy val maxMemoryParameter = {
