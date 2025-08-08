@@ -43,7 +43,7 @@ abstract class CpgGenerator() {
            |""".stripMargin
       )
 
-      ExternalCommand.run(cmd, additionalContext = cmd.toString.logIfFailed().verifySuccess()
+      ExternalCommand.run(cmd, additionalContext = cmd.toString).logIfFailed().verifySuccess()
     }
 
   protected lazy val maxMemoryParameter = {
