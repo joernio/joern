@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory
 
 import java.nio.file.Path
 import scala.util.{Failure, Success}
+import scala.util.Properties.isWin
 
 object MavenDependencies {
   private val logger = LoggerFactory.getLogger(getClass)
@@ -48,7 +49,7 @@ object MavenDependencies {
 
   private[dependency] def get(projectDir: Path): Option[collection.Seq[String]] = {
     val lines = ExternalCommand
-      .run(command = fetchCommandWithOpts, workingDir = Option(projectDir))
+      .run(command = fetchCommandWithOpts, workingDir = Option(projectDir), isShellCommand = isWin)
       .logIfFailed()
       .toTry match {
       case Success(lines) =>
