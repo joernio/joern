@@ -12,10 +12,10 @@ import versionsort.VersionHelper
 import java.io.{BufferedReader, InputStreamReader, StringReader}
 import java.nio.file.{Files, Path, Paths}
 import java.util.Collections
-import java.util.concurrent.{Callable, ConcurrentHashMap, ExecutorService, Executors}
-import scala.collection.parallel.CollectionConverters.*
+import java.util.concurrent.{Callable, ExecutorService, Executors}
+import scala.jdk.CollectionConverters.IteratorHasAsJava
+import scala.collection.concurrent.TrieMap
 import scala.collection.{immutable, mutable}
-import scala.jdk.CollectionConverters.*
 import scala.util.matching.Regex
 import scala.util.{Failure, Try, Using}
 
@@ -83,7 +83,7 @@ object SwiftTypesProvider {
     */
   case class ResolvedTypeInfo(tpe: Option[String], fullName: Option[String], nodeKind: String)
 
-  type SwiftTypeMapping = ConcurrentHashMap[String, ConcurrentHashMap[(Int, Int), mutable.HashSet[ResolvedTypeInfo]]]
+  type SwiftTypeMapping = TrieMap[String, TrieMap[(Int, Int), mutable.HashSet[ResolvedTypeInfo]]]
 
   /** @see
     *   [[io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.DeclModifierSyntax]]
@@ -403,25 +403,15 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
       GsonTypeInfoReader.collectTypeInfo(reader).foreach { typeInfo =>
         val range    = typeInfo.range
         val filename = typeInfo.filename
-        result.compute(
-          filename,
-          (_, typeInfos) => {
-            val newTypeInfos = if (typeInfos == null) {
+        result
+          .getOrElseUpdate(
+            filename, {
               logger.info(s"Generating type map for: $filename")
-              new ConcurrentHashMap()
-            } else { typeInfos }
-            newTypeInfos.compute(
-              range,
-              (_, set) => {
-                val newSet = if (set == null) { mutable.HashSet.empty }
-                else { set }
-                newSet.addOne(resolve(typeInfo))
-                newSet
-              }
-            )
-            newTypeInfos
-          }
-        )
+              TrieMap.empty
+            }
+          )
+          .getOrElseUpdate(range, mutable.HashSet.empty)
+          .addOne(resolve(typeInfo))
       }
     }
   }

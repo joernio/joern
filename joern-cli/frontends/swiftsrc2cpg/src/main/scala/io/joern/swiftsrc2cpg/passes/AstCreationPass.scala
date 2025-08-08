@@ -5,6 +5,7 @@ import io.joern.swiftsrc2cpg.astcreation.AstCreator
 import io.joern.swiftsrc2cpg.parser.SwiftJsonParser
 import io.joern.swiftsrc2cpg.utils.AstGenRunner.AstGenRunnerResult
 import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider
+import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.SwiftTypeMapping
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
@@ -15,7 +16,7 @@ import io.shiftleft.utils.IOUtils
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.nio.file.Paths
-import java.util.concurrent.ConcurrentHashMap
+import scala.collection.concurrent.TrieMap
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
 
@@ -25,8 +26,9 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
-  private val global  = new Global()
-  private val typeMap = SwiftTypesProvider(config).map(_.retrieveMappings())
+  private val global             = new Global()
+  private val swiftTypesProvider = SwiftTypesProvider(config)
+  private val typeMap            = swiftTypesProvider.map(_.retrieveMappings()).getOrElse(new SwiftTypeMapping)
 
   def typesSeen(): List[String] = global.usedTypes.keys().asScala.filterNot(Defines.SwiftTypes.contains).toList
 
@@ -51,9 +53,8 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
         case Success(parseResult) =>
           report.addReportInfo(parseResult.filename, parseResult.loc, parsed = true)
           Try {
-            val fileLocalTypesMap =
-              typeMap.flatMap(map => Option(map.get(parseResult.fullPath))).getOrElse(new ConcurrentHashMap())
-            val localDiff = new AstCreator(config, global, parseResult).createAst()
+            val fileLocalTypesMap = typeMap.getOrElse(parseResult.fullPath, TrieMap.empty)
+            val localDiff         = new AstCreator(config, global, parseResult).createAst()
             diffGraph.absorb(localDiff)
           } match {
             case Failure(exception) =>
