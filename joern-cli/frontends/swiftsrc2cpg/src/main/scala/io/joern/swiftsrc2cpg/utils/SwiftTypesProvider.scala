@@ -206,6 +206,7 @@ object SwiftTypesProvider {
 
   private def isValidEnvironment(config: Config): Boolean = {
     if (config.xcodeOutputPath.isEmpty && !Paths.get(config.inputPath, "Package.swift").toFile.canRead) {
+      logger.debug("Package.swift not found or can not be read. This does not look like a valid SwiftPM project.")
       return false
     }
 
@@ -312,7 +313,7 @@ object SwiftTypesProvider {
         val moduleName      = args(moduleNameIndex + 1)
         sourceModules.isEmpty || sourceModules.contains(moduleName)
       }
-    new SwiftTypesProvider(config, parsedSwiftInvocations)
+    new SwiftTypesProvider(config, parsedSwiftInvocations.distinct)
   }
 }
 
