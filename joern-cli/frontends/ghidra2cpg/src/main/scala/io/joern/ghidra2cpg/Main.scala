@@ -25,4 +25,4 @@ private object Frontend {
   }
 }
 
-object Main extends X2CpgMain(new Ghidra2Cpg(), cmdLineParser.asInstanceOf) with SingleThreadedFrontend
+object Main extends X2CpgMain(new Ghidra2Cpg(), cmdLineParser) with SingleThreadedFrontend

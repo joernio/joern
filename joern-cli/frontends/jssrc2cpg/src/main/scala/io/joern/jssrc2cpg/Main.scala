@@ -44,4 +44,4 @@ object Frontend {
 
 }
 
-object Main extends X2CpgMain(new JsSrc2Cpg(), cmdLineParser.asInstanceOf)
+object Main extends X2CpgMain(new JsSrc2Cpg(), cmdLineParser)

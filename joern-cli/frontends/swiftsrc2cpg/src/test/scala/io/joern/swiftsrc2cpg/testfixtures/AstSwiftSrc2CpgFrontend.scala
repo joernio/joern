@@ -13,7 +13,7 @@ import io.shiftleft.semanticcpg.utils.FileUtil
 import java.nio.file.Paths
 
 trait AstSwiftSrc2CpgFrontend extends LanguageFrontend {
-  override type ConfigType = Config
+  final override type ConfigType = Config
 
   def execute(sourceCodePath: java.io.File): Cpg = {
     val cpgOutFile = FileUtil.newTemporaryFile(suffix = "cpg.bin")
@@ -23,11 +23,7 @@ trait AstSwiftSrc2CpgFrontend extends LanguageFrontend {
     var config = Config()
       .withInputPath(pathAsString)
       .withOutputPath(pathAsString)
-      .asInstanceOf[Config]
-    val definedConfig = getConfig().collect { case c: Config => config.withDefines(c.defines) }
-    if (definedConfig.isDefined) {
-      config = definedConfig.get
-    }
+    getConfig().foreach(c => config = config.withDefines(c.defines))
     val astGenResult    = new AstGenRunner(config).execute(Paths.get(pathAsString))
     val astCreationPass = new AstCreationPass(cpg, astGenResult, config)(ValidationMode.Enabled)
     astCreationPass.createAndApply()

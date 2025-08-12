@@ -101,4 +101,4 @@ private object Frontend {
   }
 }
 
-object Main extends X2CpgMain(new Kotlin2Cpg(), cmdLineParser.asInstanceOf)
+object Main extends X2CpgMain(new Kotlin2Cpg(), cmdLineParser)
