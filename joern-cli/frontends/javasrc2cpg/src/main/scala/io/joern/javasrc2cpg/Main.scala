@@ -28,7 +28,7 @@ final case class Config(
   cacheJdkTypeSolver: Boolean = false,
   keepTypeArguments: Boolean = false,
   disableTypeFallback: Boolean = false,
-  override val genericConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig(),
+  override val genericConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig(defaultIgnoredFilesRegex = JavaSrc2Cpg.DefaultIgnoredFilesRegex),
   override val typeRecoveryParserConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config()
 ) extends X2CpgConfig[Config]
     with TypeRecoveryParserConfig {
