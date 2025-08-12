@@ -82,7 +82,7 @@ class CompilerAPITests extends AnyFreeSpec with Matchers {
         else Seq("./gradlew", "gatherDependencies")
       ExternalCommand.run(command, Option(Paths.get(projectDirPath))).toTry shouldBe Symbol("success")
       val config = Config(classpath = Set(projectDependenciesPath.toString))
-      val cpg = new Kotlin2Cpg().createCpg(projectDirPath)(config).getOrElse {
+      val cpg = new Kotlin2Cpg().createCpg(config.withInputPath(projectDirPath)).getOrElse {
         fail("Could not create a CPG!")
       }
       cpg.method.fullName(s".*${Defines.UnresolvedNamespace}.*") shouldBe empty

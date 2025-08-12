@@ -38,13 +38,11 @@ class C2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndAfter
   }
 
   override def beforeAll(): Unit = {
-    // Start server
-    port = io.joern.c2cpg.Main.startup()
+    port = io.joern.c2cpg.Main.server.startup()
   }
 
   override def afterAll(): Unit = {
-    // Stop server
-    io.joern.c2cpg.Main.stop()
+    io.joern.c2cpg.Main.server.stop()
   }
 
   "Using c2cpg in server mode" should {

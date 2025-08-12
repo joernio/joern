@@ -19,7 +19,9 @@ import scala.util.control.NonFatal
 import scala.util.Try
 import scala.util.matching.Regex
 
-class C2Cpg extends X2CpgFrontend[Config] {
+class C2Cpg extends X2CpgFrontend {
+  final override type ConfigType = Config
+  override val defaultConfig = Config()
 
   private val logger = LoggerFactory.getLogger(classOf[C2Cpg])
 

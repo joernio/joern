@@ -1,9 +1,10 @@
 package io.joern.gosrc2cpg.utils
 
-import io.joern.gosrc2cpg.Config
+import io.joern.gosrc2cpg.{Config, GoSrc2Cpg}
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, AstGenRunnerResult}
-import io.joern.x2cpg.astgen.AstGenRunnerBase
+import io.joern.x2cpg.astgen
+import io.joern.x2cpg.astgen.AstGenRunner
 import io.joern.x2cpg.utils.Environment.ArchitectureType.ArchitectureType
 import io.joern.x2cpg.utils.Environment.OperatingSystemType.OperatingSystemType
 import io.joern.x2cpg.utils.Environment
@@ -13,11 +14,10 @@ import org.slf4j.LoggerFactory
 
 import java.nio.file.{Path, Paths}
 import scala.collection.mutable.ListBuffer
-import scala.jdk.CollectionConverters.*
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
-object AstGenRunner {
+object GoAstGenRunner {
   private val logger = LoggerFactory.getLogger(getClass)
   case class GoAstGenRunnerResult(
     modulePath: String = "",
@@ -25,10 +25,13 @@ object AstGenRunner {
     parsedFiles: List[String] = List.empty,
     skippedFiles: List[String] = List.empty
   ) extends AstGenRunnerResult
+
+  private object astGenMetaData extends AstGenProgramMetaData(name = "goastgen", configPrefix = "gosrc2cpg")
 }
 
-class AstGenRunner(config: Config, includeFileRegex: String = "") extends AstGenRunnerBase(config) {
-  import io.joern.gosrc2cpg.utils.AstGenRunner.*
+class GoAstGenRunner(config: Config, includeFileRegex: String = "")
+    extends AstGenRunner(GoAstGenRunner.astGenMetaData, config) {
+  import io.joern.gosrc2cpg.utils.GoAstGenRunner.*
 
   override val WinX86   = "windows.exe"
   override val LinuxArm = "linux-arm64"
@@ -73,9 +76,7 @@ class AstGenRunner(config: Config, includeFileRegex: String = "") extends AstGen
     }
   }
 
-  override def runAstGenNative(in: String, out: Path, exclude: String, include: String)(implicit
-    metaData: AstGenProgramMetaData
-  ): Try[Seq[String]] = {
+  override def runAstGenNative(in: String, out: Path, exclude: String, include: String): Try[Seq[String]] = {
     val excludeCommand = if (exclude.isEmpty) Seq.empty else Seq("-exclude", exclude)
     val includeCommand = if (include.isEmpty) Seq.empty else Seq("-include-packages", include)
     ExternalCommand
@@ -84,8 +85,7 @@ class AstGenRunner(config: Config, includeFileRegex: String = "") extends AstGen
   }
 
   def executeForGo(out: Path): List[GoAstGenRunnerResult] = {
-    implicit val metaData: AstGenProgramMetaData = config.astGenMetaData
-    val in                                       = Paths.get(config.inputPath)
+    val in = Paths.get(config.inputPath)
     logger.info(s"Running goastgen in '$config.inputPath' ...")
     runAstGenNative(config.inputPath, out, config.ignoredFilesRegex.toString(), includeFileRegex) match {
       case Success(result) =>

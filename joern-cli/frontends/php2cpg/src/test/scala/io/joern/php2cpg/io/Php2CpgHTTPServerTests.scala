@@ -35,12 +35,12 @@ class Php2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndAft
 
   override def beforeAll(): Unit = {
     // Start server
-    port = io.joern.php2cpg.Main.startup()
+    port = io.joern.php2cpg.Main.server.startup()
   }
 
   override def afterAll(): Unit = {
     // Stop server
-    io.joern.php2cpg.Main.stop()
+    io.joern.php2cpg.Main.server.stop()
   }
 
   "Using php2cpg in server mode" should {

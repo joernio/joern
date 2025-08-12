@@ -25,7 +25,9 @@ object Jimple2Cpg {
   def apply(): Jimple2Cpg = new Jimple2Cpg()
 }
 
-class Jimple2Cpg extends X2CpgFrontend[Config] {
+class Jimple2Cpg extends X2CpgFrontend {
+  override type ConfigType = Config
+  override val defaultConfig = Config()
 
   import Jimple2Cpg.*
 

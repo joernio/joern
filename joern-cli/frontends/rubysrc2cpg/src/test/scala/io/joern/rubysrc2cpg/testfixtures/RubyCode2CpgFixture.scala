@@ -15,17 +15,18 @@ import java.io.File
 import scala.util.Using
 
 trait RubyFrontend(withDownloadDependencies: Boolean, disableFileContent: Boolean) extends LanguageFrontend {
+  override type ConfigType = Config
+
   override val fileSuffix: String = ".rb"
 
   implicit val config: Config =
     getConfig()
-      .map(_.asInstanceOf[Config])
       .getOrElse(Config().withSchemaValidation(ValidationMode.Enabled))
       .withDownloadDependencies(withDownloadDependencies)
       .withDisableFileContent(disableFileContent)
 
   override def execute(sourceCodeFile: File): Cpg = {
-    Using.resource(new RubySrc2Cpg())(_.createCpg(sourceCodeFile.getAbsolutePath).get)
+    Using.resource(new RubySrc2Cpg())(_.createCpg(config.withInputPath(sourceCodeFile.getAbsolutePath)).get)
   }
 
 }

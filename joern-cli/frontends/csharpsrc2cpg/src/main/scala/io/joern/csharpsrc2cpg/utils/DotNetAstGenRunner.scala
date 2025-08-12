@@ -3,7 +3,7 @@ package io.joern.csharpsrc2cpg.utils
 import io.joern.csharpsrc2cpg.Config
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, getClass}
-import io.joern.x2cpg.astgen.AstGenRunnerBase
+import io.joern.x2cpg.astgen.AstGenRunner
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
@@ -11,7 +11,10 @@ import java.nio.file.Path
 import scala.collection.mutable
 import scala.util.Try
 
-class DotNetAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
+object DotNetAstGenRunner {
+  private object astGenMetaData extends AstGenProgramMetaData(name = "dotnetastgen", configPrefix = "csharpsrc2cpg")
+}
+class DotNetAstGenRunner(config: Config) extends AstGenRunner(DotNetAstGenRunner.astGenMetaData, config) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -64,9 +67,7 @@ class DotNetAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
     }.toList
   }
 
-  override def runAstGenNative(in: String, out: Path, exclude: String, include: String)(implicit
-    metaData: AstGenProgramMetaData
-  ): Try[Seq[String]] = {
+  override def runAstGenNative(in: String, out: Path, exclude: String, include: String): Try[Seq[String]] = {
     val excludeCommand = if (exclude.isEmpty) Seq.empty else Seq("-e", exclude)
     ExternalCommand.run(Seq(astGenCommand, "-o", out.toString(), "-i", in) ++ excludeCommand).toTry
   }

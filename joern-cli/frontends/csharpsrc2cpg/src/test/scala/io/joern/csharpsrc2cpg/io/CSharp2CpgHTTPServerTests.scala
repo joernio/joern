@@ -31,13 +31,11 @@ class CSharp2CpgHTTPServerTests extends CSharpCode2CpgFixture with BeforeAndAfte
   }
 
   override def beforeAll(): Unit = {
-    // Start server
-    port = io.joern.csharpsrc2cpg.Main.startup()
+    port = io.joern.csharpsrc2cpg.Main.server.startup()
   }
 
   override def afterAll(): Unit = {
-    // Stop server
-    io.joern.csharpsrc2cpg.Main.stop()
+    io.joern.csharpsrc2cpg.Main.server.stop()
   }
 
   "Using csharp2cpg in server mode" should {

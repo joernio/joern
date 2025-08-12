@@ -13,8 +13,11 @@ import scala.jdk.CollectionConverters.*
 import scala.util.Try
 import scala.util.matching.Regex
 
-class JavaSrc2Cpg extends X2CpgFrontend[Config] {
+class JavaSrc2Cpg extends X2CpgFrontend {
   import JavaSrc2Cpg._
+
+  override type ConfigType = Config
+  override val defaultConfig = DefaultConfig
 
   override def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
@@ -42,10 +45,7 @@ object JavaSrc2Cpg {
     List(".git", ".mvn", ".gradle", "test").map(Pattern.quote).flatMap { directory =>
       List(s"(^|\\\\)$directory($$|\\\\)".r.unanchored, s"(^|/)$directory($$|/)".r.unanchored)
     }
-  val DefaultConfig: Config =
-    Config().withDefaultIgnoredFilesRegex(DefaultIgnoredFilesRegex)
-
-  def apply(): JavaSrc2Cpg = new JavaSrc2Cpg()
+  val DefaultConfig: Config = Config()
 
   def showEnv(): Unit = {
     JavaSrcEnvVar.values.foreach { envVar =>

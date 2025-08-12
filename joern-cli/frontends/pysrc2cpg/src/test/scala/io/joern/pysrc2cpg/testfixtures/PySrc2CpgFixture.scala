@@ -23,11 +23,13 @@ import io.shiftleft.semanticcpg.language.ICallResolver
 import io.shiftleft.semanticcpg.language.NoResolve
 
 trait PythonFrontend extends LanguageFrontend {
+  override type ConfigType = Py2CpgOnFileSystemConfig
+
   override val fileSuffix: String = ".py"
 
   override def execute(sourceCodePath: java.io.File): Cpg = {
     new Py2CpgOnFileSystem()
-      .createCpg(sourceCodePath.getAbsolutePath)(Py2CpgOnFileSystemConfig().withDisableFileContent(false))
+      .createCpg(Py2CpgOnFileSystemConfig().withDisableFileContent(false).withInputPath(sourceCodePath.getAbsolutePath))
       .get
   }
 }

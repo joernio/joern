@@ -12,6 +12,7 @@ import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 import io.shiftleft.semanticcpg.utils.FileUtil
 import org.scalatest.Inside
 class DefaultTestCpgWithGo(val fileSuffix: String) extends DefaultTestCpg with SemanticTestCpg {
+  override type ConfigType = Config
 
   private var goGlobal: Option[GoGlobal]   = None
   private var goSrc2Cpg: Option[GoSrc2Cpg] = None

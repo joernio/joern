@@ -39,7 +39,7 @@ class ConfigTests extends AnyWordSpec with Matchers with Inside {
       s.takeRight(n)
     }
 
-    inside(X2Cpg.parseCommandLine(args, parser, Config())) { case Some(config) =>
+    inside(X2Cpg.parseCommandLine(args, parser, Main.frontend.defaultConfig)) { case Some(config: Config) =>
       config.inputPath.endsWith("INPUT") shouldBe true
       config.outputPath shouldBe "OUTPUT"
       config.ignoredFiles.map(getSuffix(_, 13)).toSet shouldBe Set("1EXCLUDE_FILE", "2EXCLUDE_FILE")

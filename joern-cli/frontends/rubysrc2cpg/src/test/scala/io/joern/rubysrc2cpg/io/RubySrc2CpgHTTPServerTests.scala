@@ -36,13 +36,11 @@ class RubySrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAn
   }
 
   override def beforeAll(): Unit = {
-    // Start server
-    port = io.joern.rubysrc2cpg.Main.startup()
+    port = io.joern.rubysrc2cpg.Main.server.startup()
   }
 
   override def afterAll(): Unit = {
-    // Stop server
-    io.joern.rubysrc2cpg.Main.stop()
+    io.joern.rubysrc2cpg.Main.server.stop()
   }
 
   "Using rubysrc2cpg in server mode" should {

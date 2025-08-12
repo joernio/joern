@@ -38,13 +38,11 @@ class JavaSrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAn
   }
 
   override def beforeAll(): Unit = {
-    // Start server
-    port = io.joern.javasrc2cpg.Main.startup()
+    port = io.joern.javasrc2cpg.Main.server.startup()
   }
 
   override def afterAll(): Unit = {
-    // Stop server
-    io.joern.javasrc2cpg.Main.stop()
+    io.joern.javasrc2cpg.Main.server.stop()
   }
 
   "Using javasrc2cpg in server mode" should {

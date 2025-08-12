@@ -6,6 +6,8 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.utils.FileUtil
 
 trait SwiftSrc2CpgFrontend extends LanguageFrontend {
+  override type ConfigType = Config
+
   def execute(sourceCodePath: java.io.File): Cpg = {
     val cpgOutFile = FileUtil.newTemporaryFile(suffix = "cpg.bin")
     FileUtil.deleteOnExit(cpgOutFile)

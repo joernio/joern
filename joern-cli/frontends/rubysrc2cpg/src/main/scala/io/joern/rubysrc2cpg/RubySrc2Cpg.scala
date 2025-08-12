@@ -30,7 +30,9 @@ import java.nio.file.{Files, Paths}
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try, Using}
 
-class RubySrc2Cpg extends X2CpgFrontend[Config] {
+class RubySrc2Cpg extends X2CpgFrontend {
+  override type ConfigType = Config
+  override val defaultConfig: Config = Config()
 
   private val logger                                     = LoggerFactory.getLogger(this.getClass)
   private var rubyAstGenRunner: Option[RubyAstGenRunner] = None

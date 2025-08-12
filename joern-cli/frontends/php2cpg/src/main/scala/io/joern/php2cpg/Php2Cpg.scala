@@ -17,7 +17,9 @@ import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 import scala.jdk.CollectionConverters.*
 
-class Php2Cpg extends X2CpgFrontend[Config] {
+class Php2Cpg extends X2CpgFrontend {
+  final override type ConfigType = Config
+  override val defaultConfig = Config()
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 

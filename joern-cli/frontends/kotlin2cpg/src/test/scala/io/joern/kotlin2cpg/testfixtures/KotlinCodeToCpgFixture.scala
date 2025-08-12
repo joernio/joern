@@ -18,6 +18,8 @@ import java.io.File
 import java.nio.file.Paths
 
 trait KotlinFrontend extends LanguageFrontend {
+  override type ConfigType = Config
+
   protected val withTestResourcePaths: Boolean
 
   override val fileSuffix: String = ".kt"
@@ -30,14 +32,14 @@ trait KotlinFrontend extends LanguageFrontend {
     )
 
   override def execute(sourceCodeFile: File): Cpg = {
-    implicit val config: Config = getConfig() match {
+    val config = getConfig() match {
       case Some(config: Config) => config
       case _ =>
         setConfig(defaultConfig)
         defaultConfig
     }
 
-    new Kotlin2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get
+    new Kotlin2Cpg().createCpg(config.withInputPath(sourceCodeFile.getAbsolutePath)).get
   }
 }
 

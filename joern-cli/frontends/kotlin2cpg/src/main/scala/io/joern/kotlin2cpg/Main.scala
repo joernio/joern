@@ -16,44 +16,48 @@ final case class Config(
   includeJavaSourceFiles: Boolean = false,
   generateNodesForDependencies: Boolean = false,
   downloadDependencies: Boolean = false,
-  keepTypeArguments: Boolean = false
+  keepTypeArguments: Boolean = false,
+  override val genericConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig()
 ) extends X2CpgConfig[Config]
-    with DependencyDownloadConfig[Config] {
+    with DependencyDownloadConfig {
+
+  override def withGenericConfig(value: X2CpgConfig.GenericConfig): Config =
+    copy(genericConfig = value)
 
   def withClasspath(classpath: Set[String]): Config = {
-    this.copy(classpath = classpath).withInheritedFields(this)
+    this.copy(classpath = classpath)
   }
 
   def withStdLibJars(value: Boolean): Config = {
-    this.copy(withStdlibJarsInClassPath = value).withInheritedFields(this)
+    this.copy(withStdlibJarsInClassPath = value)
   }
 
   def withGradleProjectName(name: String): Config = {
-    this.copy(gradleProjectName = Some(name)).withInheritedFields(this)
+    this.copy(gradleProjectName = Some(name))
   }
 
   def withGradleConfigurationName(name: String): Config = {
-    this.copy(gradleConfigurationName = Some(name)).withInheritedFields(this)
+    this.copy(gradleConfigurationName = Some(name))
   }
 
   def withJar4ImportServiceUrl(url: String): Config = {
-    this.copy(jar4importServiceUrl = Some(url)).withInheritedFields(this)
+    this.copy(jar4importServiceUrl = Some(url))
   }
 
   def withIncludeJavaSourceFiles(value: Boolean): Config = {
-    this.copy(includeJavaSourceFiles = value).withInheritedFields(this)
+    this.copy(includeJavaSourceFiles = value)
   }
 
   def withGenerateNodesForDependencies(value: Boolean): Config = {
-    this.copy(generateNodesForDependencies = value).withInheritedFields(this)
+    this.copy(generateNodesForDependencies = value)
   }
 
   override def withDownloadDependencies(value: Boolean): Config = {
-    this.copy(downloadDependencies = value).withInheritedFields(this)
+    this.copy(downloadDependencies = value)
   }
 
   def withKeepTypeArguments(value: Boolean): Config = {
-    copy(keepTypeArguments = value).withInheritedFields(this)
+    copy(keepTypeArguments = value)
   }
 }
 
@@ -97,13 +101,4 @@ private object Frontend {
   }
 }
 
-object Main extends X2CpgMain(cmdLineParser, new Kotlin2Cpg()) with FrontendHTTPServer[Config, Kotlin2Cpg] {
-
-  override protected def newDefaultConfig(): Config =
-    Frontend.defaultConfig.copy()
-
-  def run(config: Config, kotlin2cpg: Kotlin2Cpg): Unit = {
-    if (config.serverMode) { startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout) }
-    else { kotlin2cpg.run(config) }
-  }
-}
+object Main extends X2CpgMain(new Kotlin2Cpg(), cmdLineParser)

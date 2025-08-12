@@ -163,7 +163,7 @@ object SwiftTypesProvider {
     */
   def apply(config: Config): Option[SwiftTypesProvider] = {
     if (!config.swiftBuild) {
-      logger.warn(
+      logger.debug(
         "Swift build disabled (--swift-build was not provided). CPG will not contain any type information from the Swift compiler."
       )
       return None

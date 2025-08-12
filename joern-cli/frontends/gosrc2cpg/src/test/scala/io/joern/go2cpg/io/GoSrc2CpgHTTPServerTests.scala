@@ -37,13 +37,11 @@ class GoSrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndA
   }
 
   override def beforeAll(): Unit = {
-    // Start server
-    port = io.joern.gosrc2cpg.Main.startup()
+    port = io.joern.gosrc2cpg.Main.server.startup()
   }
 
   override def afterAll(): Unit = {
-    // Stop server
-    io.joern.gosrc2cpg.Main.stop()
+    io.joern.gosrc2cpg.Main.server.stop()
   }
 
   "Using gosrc2cpg in server mode" should {

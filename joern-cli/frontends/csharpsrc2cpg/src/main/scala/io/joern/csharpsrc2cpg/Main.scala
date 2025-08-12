@@ -1,7 +1,6 @@
 package io.joern.csharpsrc2cpg
 
 import io.joern.csharpsrc2cpg.Frontend.{cmdLineParser, defaultConfig}
-import io.joern.x2cpg.astgen.AstGenConfig
 import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery, XTypeRecoveryConfig}
 import io.joern.x2cpg.utils.Environment
 import io.joern.x2cpg.{DependencyDownloadConfig, X2CpgConfig, X2CpgMain}
@@ -14,25 +13,28 @@ import java.nio.file.Paths
 final case class Config(
   downloadDependencies: Boolean = false,
   useBuiltinSummaries: Boolean = true,
-  externalSummaryPaths: Set[String] = Set.empty
+  externalSummaryPaths: Set[String] = Set.empty,
+  override val genericConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig(),
+  override val typeRecoveryParserConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config()
 ) extends X2CpgConfig[Config]
-    with DependencyDownloadConfig[Config]
-    with TypeRecoveryParserConfig[Config]
-    with AstGenConfig[Config] {
+    with DependencyDownloadConfig
+    with TypeRecoveryParserConfig {
+  override def withGenericConfig(value: X2CpgConfig.GenericConfig): Config =
+    copy(genericConfig = value)
 
-  override val astGenProgramName: String  = "dotnetastgen"
-  override val astGenConfigPrefix: String = "csharpsrc2cpg"
+  override def withTypeRecoveryParserConfig(value: TypeRecoveryParserConfig.Config): Config =
+    copy(typeRecoveryParserConfig = value)
 
   override def withDownloadDependencies(value: Boolean): Config = {
-    copy(downloadDependencies = value).withInheritedFields(this)
+    copy(downloadDependencies = value)
   }
 
   def withUseBuiltinSummaries(value: Boolean): Config = {
-    copy(useBuiltinSummaries = value).withInheritedFields(this)
+    copy(useBuiltinSummaries = value)
   }
 
   def withExternalSummaryPaths(paths: Set[String]): Config = {
-    copy(externalSummaryPaths = paths).withInheritedFields(this)
+    copy(externalSummaryPaths = paths)
   }
 
 }
@@ -58,22 +60,4 @@ object Frontend {
 
 }
 
-object Main extends X2CpgMain(cmdLineParser, new CSharpSrc2Cpg()) with FrontendHTTPServer[Config, CSharpSrc2Cpg] {
-
-  private val logger = LoggerFactory.getLogger(getClass)
-
-  override protected def newDefaultConfig(): Config = Config()
-
-  def run(config: Config, csharpsrc2cpg: CSharpSrc2Cpg): Unit = {
-    if (config.serverMode) { startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout) }
-    else {
-      val absPath = Paths.get(config.inputPath).toAbsolutePath.toString
-      if (Environment.pathExists(absPath)) {
-        csharpsrc2cpg.run(config.withInputPath(absPath))
-      } else {
-        logger.warn(s"Given path '$absPath' does not exist, skipping")
-      }
-    }
-  }
-
-}
+object Main extends X2CpgMain(new CSharpSrc2Cpg(), cmdLineParser)

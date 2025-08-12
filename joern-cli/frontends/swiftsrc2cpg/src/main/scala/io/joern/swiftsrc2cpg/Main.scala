@@ -14,19 +14,27 @@ import java.nio.file.{Path, Paths}
 final case class Config(
   defines: Set[String] = Set.empty,
   swiftBuild: Boolean = false,
-  xcodeOutputPath: Option[Path] = None
+  xcodeOutputPath: Option[Path] = None,
+  override val genericConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig(),
+  override val typeRecoveryParserConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config()
 ) extends X2CpgConfig[Config]
-    with TypeRecoveryParserConfig[Config] {
+    with TypeRecoveryParserConfig {
+
+  override def withGenericConfig(value: X2CpgConfig.GenericConfig): Config = copy(genericConfig = value)
+
+  override def withTypeRecoveryParserConfig(value: TypeRecoveryParserConfig.Config): Config =
+    copy(typeRecoveryParserConfig = value)
+
   def withDefines(defines: Set[String]): Config = {
-    this.copy(defines = defines).withInheritedFields(this)
+    copy(defines = defines)
   }
 
   def withSwiftBuild(swiftBuild: Boolean): Config = {
-    this.copy(swiftBuild = swiftBuild).withInheritedFields(this)
+    copy(swiftBuild = swiftBuild)
   }
 
   def withXcodeOutput(xcodeOutputPath: Path): Config = {
-    this.copy(xcodeOutputPath = Option(xcodeOutputPath)).withInheritedFields(this)
+    copy(xcodeOutputPath = Option(xcodeOutputPath))
   }
 }
 
@@ -43,41 +51,23 @@ object Frontend {
         .unbounded()
         .text("define a name")
         .action((d, c) => c.withDefines(c.defines + d)),
-      cmd("swift-build")
-        .action((_, c) => c.copy(swiftBuild = true))
+      opt[Unit]("swift-build")
         .text("build the project to retrieve full Swift compiler type information")
-        .children(
-          opt[Path]("xcode-output")
-            .text("the path to the Xcode compiler debug output")
-            .validate { path =>
-              val file = path.toRealPath().toFile
-              if (!file.isFile || !file.canRead) {
-                failure(s"The Xcode compiler output file can not be read: '${file.toString}'")
-              } else {
-                success
-              }
-            }
-            .action((path, c) => c.withXcodeOutput(path))
-        )
+        .action((path, c) => c.withSwiftBuild(true)),
+      opt[Path]("xcode-output")
+        .text("the path to the Xcode compiler debug output")
+        .validate { path =>
+          val file = path.toRealPath().toFile
+          if (!file.isFile || !file.canRead) {
+            failure(s"The Xcode compiler output file can not be read: '${file.toString}'")
+          } else {
+            success
+          }
+        }
+        .action((path, c) => c.withSwiftBuild(true).withXcodeOutput(path))
     )
   }
 
 }
 
-object Main extends X2CpgMain(cmdLineParser, new SwiftSrc2Cpg()) with FrontendHTTPServer[Config, SwiftSrc2Cpg] {
-
-  override protected def newDefaultConfig(): Config = Config()
-
-  def run(config: Config, swiftsrc2cpg: SwiftSrc2Cpg): Unit = {
-    if (config.serverMode) { startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout) }
-    else {
-      val absPath = Paths.get(config.inputPath).toAbsolutePath.toString
-      if (Environment.pathExists(absPath)) {
-        swiftsrc2cpg.run(config.withInputPath(absPath))
-      } else {
-        System.exit(1)
-      }
-    }
-  }
-
-}
+object Main extends X2CpgMain(new SwiftSrc2Cpg(), cmdLineParser)

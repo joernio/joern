@@ -16,12 +16,13 @@ import javax.tools.{JavaCompiler, JavaFileObject, StandardLocation, ToolProvider
 import scala.jdk.CollectionConverters.IterableHasAsJava
 
 trait Jimple2CpgFrontend extends LanguageFrontend {
+  override type ConfigType = Config
 
   override val fileSuffix: String = ".java"
 
   override def execute(sourceCodeFile: File): Cpg = {
-    val config = getConfig().map(_.asInstanceOf[Config]).getOrElse(Config())
-    new Jimple2Cpg().createCpg(sourceCodeFile.getAbsolutePath)(config).get
+    val config = getConfig().getOrElse(Config())
+    new Jimple2Cpg().createCpg(config.withInputPath(sourceCodeFile.getAbsolutePath)).get
   }
 }
 

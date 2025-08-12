@@ -1,7 +1,7 @@
 package io.joern.gosrc2cpg.parser
 
 import io.joern.gosrc2cpg.astcreation.AstCreator
-import io.joern.gosrc2cpg.utils.AstGenRunner.getClass
+import io.joern.gosrc2cpg.utils.GoAstGenRunner.getClass
 import org.slf4j.{Logger, LoggerFactory}
 
 object ParserAst {

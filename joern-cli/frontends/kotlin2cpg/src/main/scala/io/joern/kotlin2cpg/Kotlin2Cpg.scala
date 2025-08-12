@@ -60,7 +60,9 @@ object Kotlin2Cpg {
 case class KtFileWithMeta(f: KtFile, relativizedPath: String, filename: String)
 case class FileContentAtPath(content: String, relativizedPath: String, filename: String)
 
-class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
+class Kotlin2Cpg extends X2CpgFrontend with UsesService {
+  override type ConfigType = Config
+  override val defaultConfig: Config = Frontend.defaultConfig.copy()
 
   import Kotlin2Cpg.*
 

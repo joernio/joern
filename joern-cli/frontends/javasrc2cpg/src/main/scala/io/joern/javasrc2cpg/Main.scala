@@ -27,59 +27,69 @@ final case class Config(
   dumpJavaparserAsts: Boolean = false,
   cacheJdkTypeSolver: Boolean = false,
   keepTypeArguments: Boolean = false,
-  disableTypeFallback: Boolean = false
+  disableTypeFallback: Boolean = false,
+  override val genericConfig: X2CpgConfig.GenericConfig =
+    X2CpgConfig.GenericConfig(defaultIgnoredFilesRegex = JavaSrc2Cpg.DefaultIgnoredFilesRegex),
+  override val typeRecoveryParserConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config()
 ) extends X2CpgConfig[Config]
-    with TypeRecoveryParserConfig[Config] {
+    with TypeRecoveryParserConfig {
+
+  override def withGenericConfig(value: X2CpgConfig.GenericConfig): Config =
+    copy(genericConfig = value)
+
+  override def withTypeRecoveryParserConfig(value: TypeRecoveryParserConfig.Config): Config =
+    copy(typeRecoveryParserConfig = value)
+
   def withInferenceJarPaths(paths: Set[String]): Config = {
-    copy(inferenceJarPaths = paths).withInheritedFields(this)
+    copy(inferenceJarPaths = paths)
   }
 
   def withFetchDependencies(value: Boolean): Config = {
-    copy(fetchDependencies = value).withInheritedFields(this)
+    copy(fetchDependencies = value)
   }
 
   def withJavaFeatureSetVersion(version: String): Config = {
-    copy(javaFeatureSetVersion = Some(version)).withInheritedFields(this)
+    copy(javaFeatureSetVersion = Some(version))
   }
 
   def withDelombokJavaHome(path: String): Config = {
-    copy(delombokJavaHome = Some(path)).withInheritedFields(this)
+    copy(delombokJavaHome = Some(path))
   }
 
   def withDelombokMode(mode: String): Config = {
-    copy(delombokMode = Some(mode)).withInheritedFields(this)
+    copy(delombokMode = Some(mode))
   }
 
   def withEnableTypeRecovery(value: Boolean): Config = {
-    copy(enableTypeRecovery = value).withInheritedFields(this)
+    copy(enableTypeRecovery = value)
   }
 
   def withJdkPath(path: String): Config = {
-    copy(jdkPath = Some(path)).withInheritedFields(this)
+    copy(jdkPath = Some(path))
   }
 
   def withShowEnv(value: Boolean): Config = {
-    copy(showEnv = value).withInheritedFields(this)
+    copy(showEnv = value)
   }
 
   def withSkipTypeInfPass(value: Boolean): Config = {
-    copy(skipTypeInfPass = value).withInheritedFields(this)
+    copy(skipTypeInfPass = value)
   }
 
   def withDumpJavaparserAsts(value: Boolean): Config = {
-    copy(dumpJavaparserAsts = value).withInheritedFields(this)
+    copy(dumpJavaparserAsts = value)
   }
 
   def withCacheJdkTypeSolver(value: Boolean): Config = {
-    copy(cacheJdkTypeSolver = value).withInheritedFields(this)
+    copy(cacheJdkTypeSolver = value)
   }
 
   def withKeepTypeArguments(value: Boolean): Config = {
-    copy(keepTypeArguments = value).withInheritedFields(this)
+    copy(keepTypeArguments = value)
   }
 
   def withDisableTypeFallback(value: Boolean): Config = {
-    copy(disableTypeFallback = value).withInheritedFields(this)
+    copy(disableTypeFallback = value)
   }
 }
 
@@ -148,9 +158,7 @@ private object Frontend {
   }
 }
 
-object Main extends X2CpgMain(cmdLineParser, new JavaSrc2Cpg()) with FrontendHTTPServer[Config, JavaSrc2Cpg] {
-
-  override protected def newDefaultConfig(): Config = Config()
+object Main extends X2CpgMain(new JavaSrc2Cpg(), cmdLineParser) {
 
   override def main(args: Array[String]): Unit = {
     // TODO: This is a hack to allow users to use the "--show-env" option without having
@@ -162,15 +170,11 @@ object Main extends X2CpgMain(cmdLineParser, new JavaSrc2Cpg()) with FrontendHTT
     }
   }
 
-  def run(config: Config, javasrc2Cpg: JavaSrc2Cpg): Unit = {
+  override def run(config: frontend.ConfigType): Unit = {
     config match {
-      case c if c.serverMode         => startup(); c.serverTimeoutSeconds.foreach(serveUntilTimeout)
-      case c if c.showEnv            => JavaSrc2Cpg.showEnv()
-      case c if c.dumpJavaparserAsts => JavaParserAstPrinter.printJpAsts(c)
-      case _                         => javasrc2Cpg.run(config)
+      case c: Config if c.showEnv            => JavaSrc2Cpg.showEnv()
+      case c: Config if c.dumpJavaparserAsts => JavaParserAstPrinter.printJpAsts(c)
+      case _                                 => super.run(config)
     }
   }
-
-  def getCmdLineParser = cmdLineParser
-
 }

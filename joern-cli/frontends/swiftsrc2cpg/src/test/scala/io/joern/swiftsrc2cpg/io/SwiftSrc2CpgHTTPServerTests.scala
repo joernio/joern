@@ -35,13 +35,11 @@ class SwiftSrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeA
   }
 
   override def beforeAll(): Unit = {
-    // Start server
-    port = io.joern.swiftsrc2cpg.Main.startup()
+    port = io.joern.swiftsrc2cpg.Main.server.startup()
   }
 
   override def afterAll(): Unit = {
-    // Stop server
-    io.joern.swiftsrc2cpg.Main.stop()
+    io.joern.swiftsrc2cpg.Main.server.stop()
   }
 
   "Using swiftsrc2cpg in server mode" should {

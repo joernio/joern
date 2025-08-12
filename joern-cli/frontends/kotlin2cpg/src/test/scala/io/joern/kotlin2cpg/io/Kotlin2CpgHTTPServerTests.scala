@@ -37,13 +37,11 @@ class Kotlin2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAnd
   }
 
   override def beforeAll(): Unit = {
-    // Start server
-    port = io.joern.kotlin2cpg.Main.startup()
+    port = io.joern.kotlin2cpg.Main.server.startup()
   }
 
   override def afterAll(): Unit = {
-    // Stop server
-    io.joern.kotlin2cpg.Main.stop()
+    io.joern.kotlin2cpg.Main.server.stop()
   }
 
   "Using kotlin2cpg in server mode" should {
