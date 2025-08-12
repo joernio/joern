@@ -73,6 +73,7 @@ class DefaultTestCpgWithCSharp extends DefaultTestCpg with CSharpFrontend with S
 }
 
 trait CSharpFrontend extends LanguageFrontend {
+  override type ConfigType = Config
 
   override val fileSuffix: String = ".cs"
 
@@ -82,7 +83,7 @@ trait CSharpFrontend extends LanguageFrontend {
       .getOrElse(Config().withSchemaValidation(ValidationMode.Enabled))
 
   override def execute(sourceCodeFile: File): Cpg = {
-    new CSharpSrc2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get
+    new CSharpSrc2Cpg().createCpg(defaultConfig.withInputPath(sourceCodeFile.getAbsolutePath)).get
   }
 
 }

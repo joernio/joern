@@ -9,10 +9,19 @@ import scopt.OParser
 
 import java.nio.file.Paths
 
-final case class Config(tsTypes: Boolean = true) extends X2CpgConfig[Config] with TypeRecoveryParserConfig[Config] {
+final case class Config(
+  tsTypes: Boolean = true,
+  override val genericConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig(),
+  override val typeRecoveryParserConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config()
+) extends X2CpgConfig[Config]
+    with TypeRecoveryParserConfig {
+  override def withGenericConfig(value: X2CpgConfig.GenericConfig): Config = copy(genericConfig = value)
+
+  override def withTypeRecoveryParserConfig(value: TypeRecoveryParserConfig.Config): Config =
+    copy(typeRecoveryParserConfig = value)
 
   def withTsTypes(value: Boolean): Config = {
-    copy(tsTypes = value).withInheritedFields(this)
+    copy(tsTypes = value)
   }
 
 }
@@ -35,20 +44,4 @@ object Frontend {
 
 }
 
-object Main extends X2CpgMain(cmdLineParser, new JsSrc2Cpg()) with FrontendHTTPServer[Config, JsSrc2Cpg] {
-
-  override protected def newDefaultConfig(): Config = Config()
-
-  def run(config: Config, jssrc2cpg: JsSrc2Cpg): Unit = {
-    if (config.serverMode) { startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout) }
-    else {
-      val absPath = Paths.get(config.inputPath).toAbsolutePath.toString
-      if (Environment.pathExists(absPath)) {
-        jssrc2cpg.run(config.withInputPath(absPath))
-      } else {
-        System.exit(1)
-      }
-    }
-  }
-
-}
+object Main extends X2CpgMain(new JsSrc2Cpg(), cmdLineParser)

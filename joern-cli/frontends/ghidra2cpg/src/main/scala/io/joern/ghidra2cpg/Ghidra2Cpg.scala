@@ -25,7 +25,9 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.util.Try
 
-class Ghidra2Cpg extends X2CpgFrontend[Config] {
+class Ghidra2Cpg extends X2CpgFrontend {
+  override type ConfigType = Config
+  override val defaultConfig: Config = Config()
 
   /** Create a CPG representing the given input file. The CPG is stored at the given output file. The caller must close
     * the CPG.

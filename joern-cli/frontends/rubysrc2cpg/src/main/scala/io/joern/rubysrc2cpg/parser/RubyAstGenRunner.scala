@@ -1,10 +1,10 @@
 package io.joern.rubysrc2cpg.parser
 
 import io.joern.rubysrc2cpg.Config
-import io.joern.rubysrc2cpg.parser.RubyAstGenRunner.ExecutionEnvironment
+import io.joern.rubysrc2cpg.parser.RubyAstGenRunner.{ExecutionEnvironment, astGenMetaData}
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, AstGenRunnerResult, DefaultAstGenRunnerResult}
-import io.joern.x2cpg.astgen.AstGenRunnerBase
+import io.joern.x2cpg.astgen.AstGenRunner
 import org.jruby.RubyInstanceConfig
 import org.jruby.embed.{LocalContextScope, LocalVariableBehavior, PathType, ScriptingContainer}
 import org.slf4j.LoggerFactory
@@ -21,7 +21,9 @@ import scala.util.{Failure, Success, Try, Using}
 /** Creates a JRuby scripting environment using `ruby_ast_gen` within a temporary directory allowing for re-usable
   * execution.
   */
-class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with AutoCloseable {
+class RubyAstGenRunner(config: Config)
+    extends AstGenRunner(RubyAstGenRunner.astGenMetaData, config)
+    with AutoCloseable {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -106,9 +108,7 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
     }.toList
   }
 
-  override def runAstGenNative(in: String, out: Path, exclude: String, include: String)(implicit
-    metaData: AstGenProgramMetaData
-  ): Try[Seq[String]] = {
+  override def runAstGenNative(in: String, out: Path, exclude: String, include: String): Try[Seq[String]] = {
     val scriptTarget = Files.createTempFile("ruby_driver", ".rb")
     try {
       // We use the URI format as this is the best in terms of language agnostic importing
@@ -152,9 +152,8 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
     * for multiple executions.
     */
   def execute(out: Path, specifiedConfig: Config): AstGenRunnerResult = {
-    implicit val metaData: AstGenProgramMetaData = specifiedConfig.astGenMetaData
-    val in                                       = Paths.get(config.inputPath)
-    logger.info(s"Running ${metaData.name} on '${specifiedConfig.inputPath}'")
+    val in = Paths.get(config.inputPath)
+    logger.info(s"Running ${astGenMetaData.name} on '${specifiedConfig.inputPath}'")
 
     val combineIgnoreRegex =
       if (
@@ -190,7 +189,7 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
         val skipped = skippedFiles(in, result.toList)
         DefaultAstGenRunnerResult(parsed, skipped)
       case Failure(f) =>
-        logger.error(s"\t- running ${metaData.name} failed!", f)
+        logger.error(s"\t- running ${astGenMetaData.name} failed!", f)
         DefaultAstGenRunnerResult()
     }
   }
@@ -209,6 +208,9 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
 }
 
 object RubyAstGenRunner {
+
+  private object astGenMetaData
+      extends AstGenProgramMetaData(name = "ruby_ast_gen", configPrefix = "rubysrc2cpg", multiArchitectureBuilds = true)
 
   sealed trait ExecutionEnvironment extends AutoCloseable {
     def path: Path

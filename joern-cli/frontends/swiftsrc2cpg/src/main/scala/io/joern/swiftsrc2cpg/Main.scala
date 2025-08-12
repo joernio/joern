@@ -11,11 +11,20 @@ import scopt.OParser
 
 import java.nio.file.Paths
 
-final case class Config(defines: Set[String] = Set.empty)
-    extends X2CpgConfig[Config]
-    with TypeRecoveryParserConfig[Config] {
+final case class Config(
+  defines: Set[String] = Set.empty,
+  override val genericConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig(),
+  override val typeRecoveryParserConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config()
+) extends X2CpgConfig[Config]
+    with TypeRecoveryParserConfig {
+
+  override def withGenericConfig(value: X2CpgConfig.GenericConfig): Config = copy(genericConfig = value)
+
+  override def withTypeRecoveryParserConfig(value: TypeRecoveryParserConfig.Config): Config =
+    copy(typeRecoveryParserConfig = value)
+
   def withDefines(defines: Set[String]): Config = {
-    this.copy(defines = defines).withInheritedFields(this)
+    this.copy(defines = defines)
   }
 }
 
@@ -37,20 +46,4 @@ object Frontend {
 
 }
 
-object Main extends X2CpgMain(cmdLineParser, new SwiftSrc2Cpg()) with FrontendHTTPServer[Config, SwiftSrc2Cpg] {
-
-  override protected def newDefaultConfig(): Config = Config()
-
-  def run(config: Config, swiftsrc2cpg: SwiftSrc2Cpg): Unit = {
-    if (config.serverMode) { startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout) }
-    else {
-      val absPath = Paths.get(config.inputPath).toAbsolutePath.toString
-      if (Environment.pathExists(absPath)) {
-        swiftsrc2cpg.run(config.withInputPath(absPath))
-      } else {
-        System.exit(1)
-      }
-    }
-  }
-
-}
+object Main extends X2CpgMain(new SwiftSrc2Cpg(), cmdLineParser)

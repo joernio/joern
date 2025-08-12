@@ -17,7 +17,9 @@ import io.shiftleft.semanticcpg.utils.FileUtil
 import java.nio.file.Paths
 import scala.util.Try
 
-class JsSrc2Cpg extends X2CpgFrontend[Config] {
+class JsSrc2Cpg extends X2CpgFrontend {
+  override type ConfigType = Config
+  override val defaultConfig: Config = Config()
 
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>

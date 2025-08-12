@@ -39,17 +39,4 @@ private object Frontend {
   }
 }
 
-object NewMain
-    extends X2CpgMain(cmdLineParser, new Py2CpgOnFileSystem())(Py2CpgOnFileSystemConfig())
-    with FrontendHTTPServer[Py2CpgOnFileSystemConfig, Py2CpgOnFileSystem] {
-
-  override protected def newDefaultConfig(): Py2CpgOnFileSystemConfig = Py2CpgOnFileSystemConfig()
-
-  def run(config: Py2CpgOnFileSystemConfig, frontend: Py2CpgOnFileSystem): Unit = {
-    if (config.serverMode) { startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout) }
-    else { frontend.run(config) }
-  }
-
-  def getCmdLineParser = cmdLineParser
-
-}
+object NewMain extends X2CpgMain(new Py2CpgOnFileSystem(), cmdLineParser)
