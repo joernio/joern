@@ -179,9 +179,13 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     val localN         = handleVariableOccurrence(stmt, iterIdentifier.name)
 
     // keep this just used to construct the `code` field
-    val assignItemTargetAst = stmt.keyVar match {
-      case Some(key) => astForKeyValPair(stmt, key, stmt.valueVar)
-      case None      => astForExpr(stmt.valueVar)
+    val assignItemTargetString = stmt.keyVar match {
+      case Some(key) => astForKeyValPair(stmt, key, stmt.valueVar).rootCodeOrEmpty
+      case None =>
+        stmt.valueVar match {
+          case x: PhpListExpr => createListExprCodeField(x)
+          case x              => astForExpr(x).rootCodeOrEmpty
+        }
     }
 
     // Initializer asts
@@ -193,15 +197,57 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     // - Assigned item assign
     val itemInitAst = getItemAssignAstForForeach(stmt, iterIdentifier.copy)
 
-    // Condition ast
     val isNullName = PhpOperators.isNull
-    val valueAst   = astForExpr(stmt.valueVar)
-    val isNullCode = s"$isNullName(${valueAst.rootCodeOrEmpty})"
-    val isNullCall = operatorCallNode(stmt, isNullCode, isNullName, Some(TypeConstants.Bool))
-      .methodFullName(PhpOperators.isNull)
-    val notIsNull    = operatorCallNode(stmt, s"!$isNullCode", Operators.logicalNot, None)
-    val isNullAst    = callAst(isNullCall, valueAst :: Nil)
-    val conditionAst = callAst(notIsNull, isNullAst :: Nil)
+
+    def createNotNullChecks(valueVar: PhpExpr): Ast = {
+      valueVar match {
+        case x: PhpListExpr =>
+          x.items match {
+            case List(None, _*)    => Ast()
+            case Some(head) :: Nil => createNotNullChecks(head) // only one item in the listExpr
+            case Some(head) :: tail =>
+              val headItem = createNotNullChecks(head)
+              tail
+                .filter(_.isDefined)
+                .foldLeft(headItem)((previousVar, currentVar) => {
+                  currentVar.get match {
+                    case PhpArrayItem(_, value: (PhpVariable | PhpListExpr), _, _, _) =>
+                      val notCall = value match {
+                        case _: PhpVariable => createNotNullCall(value)
+                        case _: PhpListExpr => createNotNullChecks(value)
+                      }
+                      val callNode = operatorCallNode(
+                        currentVar.get,
+                        s"${previousVar.rootCodeOrEmpty} || ${notCall.rootCodeOrEmpty}",
+                        Operators.or,
+                        None
+                      )
+                      callAst(callNode, List(previousVar, notCall))
+                    case x =>
+                      logger.warn(s"Invalid PhpArrayItem.Value: ${x.value.getClass}")
+                      Ast()
+                  }
+                })
+            case Nil => Ast()
+          }
+        case PhpArrayItem(_, value: PhpVariable, _, _, _) => createNotNullCall(value)
+        case PhpArrayItem(_, value: PhpListExpr, _, _, _) => createNotNullChecks(value)
+        case x =>
+          createNotNullCall(x)
+      }
+    }
+
+    def createNotNullCall(valueVar: PhpExpr): Ast = {
+      val valueAst   = astForExpr(valueVar)
+      val isNullCode = s"$isNullName(${valueAst.rootCodeOrEmpty})"
+      val isNullCall = operatorCallNode(stmt, isNullCode, isNullName, Some(TypeConstants.Bool))
+        .methodFullName(PhpOperators.isNull)
+      val notIsNull = operatorCallNode(stmt, s"!$isNullCode", Operators.logicalNot, None)
+      val isNullAst = callAst(isNullCall, valueAst :: Nil)
+      callAst(notIsNull, isNullAst :: Nil)
+    }
+
+    val conditionAst = createNotNullChecks(stmt.valueVar)
 
     // Update asts
     val nextIterIdent = astForIdentifierWithLocalRef(iterIdentifier.copy, localN)
@@ -219,7 +265,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     val bodyAst = stmtBodyBlockAst(stmt)
 
     val ampPrefix   = if (stmt.assignByRef) "&" else ""
-    val foreachCode = s"foreach (${iterValue.rootCodeOrEmpty} as $ampPrefix${assignItemTargetAst.rootCodeOrEmpty})"
+    val foreachCode = s"foreach (${iterValue.rootCodeOrEmpty} as $ampPrefix${assignItemTargetString})"
     val foreachNode = controlStructureNode(stmt, ControlStructureTypes.FOR, foreachCode)
     Ast(foreachNode)
       .withChild(wrapMultipleInBlock(iteratorAssignAst :: itemInitAst :: Nil, line(stmt)))
@@ -258,7 +304,13 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
       } else {
         currentCallAst
       }
-      simpleAssignAst(stmt, astForExpr(stmt.valueVar), valueAst)
+
+      stmt.valueVar match {
+        case target: PhpListExpr =>
+          astForArrayUnpack(stmt, target, valueAst)
+        case target =>
+          simpleAssignAst(stmt, astForExpr(target), valueAst)
+      }
     }
 
     // try to create assignment for key-part

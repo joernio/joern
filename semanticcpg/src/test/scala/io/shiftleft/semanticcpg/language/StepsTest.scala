@@ -126,8 +126,17 @@ class StepsTest extends AnyWordSpec with Matchers {
     }
 
     "operating on NewNode" in {
-      def location = cpg.method.name("foo").location
+      val newNode = NewMethod().signature("def methodName: Int").columnNumber(50)
+      val json    = Seq(newNode).toJson
 
+      val parsedChildren = parse(json).children
+      val parsed         = parsedChildren.head // exactly one result for the above query
+      (parsed \ "signature") shouldBe JString("def methodName: Int")
+      (parsed \ "columnNumber") shouldBe JInt(50)
+    }
+
+    "operating on Location" in {
+      def location = cpg.method.name("foo").location
       location.size shouldBe 1
       val parsedChildren = parse(location.toJson).children
       val parsed         = parsedChildren.head // exactly one result for the above query
@@ -140,6 +149,10 @@ class StepsTest extends AnyWordSpec with Matchers {
       val json   = cpg.method.name("foo").signature.toJson
       val parsed = parse(json).children.head // exactly one result for the above query
       parsed shouldBe JString("asignature")
+    }
+
+    "operating on regular stdlib classes" in {
+      List(1, 2, 3).toJson shouldBe "[1,2,3]"
     }
   }
 

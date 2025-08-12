@@ -224,36 +224,41 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     .columnNumber(column)
     .typeFullName(Defines.Any)
 
-  protected def createFunctionTypeAndTypeDeclAst(
-    node: SwiftNode,
-    methodNode: NewMethod,
-    methodName: String,
-    methodFullName: String
-  ): Ast = {
-    registerType(methodFullName)
+  protected def createFunctionTypeAndTypeDecl(method: NewMethod): Ast = {
+    val parentNode: NewTypeDecl = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.get
+    method.astParentFullName = parentNode.fullName
+    method.astParentType = parentNode.label
+    val functionBinding = NewBinding().name(method.name).methodFullName(method.fullName).signature(method.signature)
+    Ast(functionBinding).withBindsEdge(parentNode, functionBinding).withRefEdge(functionBinding, method)
+  }
 
+  protected def createFunctionTypeAndTypeDecl(node: SwiftNode, methodNode: NewMethod): Unit = {
+    registerType(methodNode.fullName)
     val (astParentType, astParentFullName) = astParentInfo()
-    val functionTypeDeclNode =
-      typeDeclNode(
-        node,
-        methodName,
-        methodFullName,
-        parserResult.filename,
-        methodName,
-        astParentType = astParentType,
-        astParentFullName = astParentFullName,
-        List(Defines.Any)
-      )
-    Ast.storeInDiffGraph(Ast(functionTypeDeclNode), diffGraph)
+    val methodTypeDeclNode = typeDeclNode(
+      node,
+      methodNode.name,
+      methodNode.fullName,
+      methodNode.filename,
+      methodNode.fullName,
+      astParentType,
+      astParentFullName
+    )
 
-    val parentTypeDeclNode = methodAstParentStack.find(_.isInstanceOf[NewTypeDecl])
-    parentTypeDeclNode.foreach { typeDeclNode =>
-      val typeDeclFunctionBinding = NewBinding().name("").signature("")
-      diffGraph.addEdge(typeDeclNode, typeDeclFunctionBinding, EdgeTypes.BINDS)
-      diffGraph.addEdge(typeDeclFunctionBinding, methodNode, EdgeTypes.REF)
-    }
-    val bindingNode = NewBinding().name("").signature("")
-    Ast(functionTypeDeclNode).withBindsEdge(functionTypeDeclNode, bindingNode).withRefEdge(bindingNode, methodNode)
+    methodNode.astParentFullName = astParentFullName
+    methodNode.astParentType = astParentType
+
+    val functionBinding = NewBinding()
+      .name(methodNode.name)
+      .methodFullName(methodNode.fullName)
+      .signature(methodNode.signature)
+
+    val functionBindAst = Ast(functionBinding)
+      .withBindsEdge(methodTypeDeclNode, functionBinding)
+      .withRefEdge(functionBinding, methodNode)
+
+    Ast.storeInDiffGraph(Ast(methodTypeDeclNode), diffGraph)
+    Ast.storeInDiffGraph(functionBindAst, diffGraph)
   }
 
 }

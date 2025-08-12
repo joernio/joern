@@ -1,7 +1,6 @@
 package io.joern.x2cpg
 
 import io.joern.x2cpg.X2Cpg.{applyDefaultOverlays, withErrorsToConsole}
-import io.joern.x2cpg.frontendspecific.FrontendArgsDelimitor
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.joern.x2cpg.utils.Environment
 import io.joern.x2cpg.utils.server.FrontendHTTPServer
@@ -9,7 +8,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import io.shiftleft.semanticcpg.utils.FileUtil
 import org.slf4j.LoggerFactory
-import scopt.OParser
+import scopt.{DefaultOParserSetup, OParser, OParserSetup}
 
 import java.io.PrintWriter
 import java.nio.file.{Files, Paths}
@@ -271,6 +270,10 @@ object X2Cpg {
 
   private val logger = LoggerFactory.getLogger(X2Cpg.getClass)
 
+  private val oParserSetup: OParserSetup = new DefaultOParserSetup {
+    override def showUsageOnError: Option[Boolean] = Some(true)
+  }
+
   /** Parse commands line arguments in `args` using an X2Cpg command line parser, extended with the frontend specific
     * options in `frontendSpecific` with the initial configuration set to `initialConf`. On success, the configuration
     * is returned wrapped into an Option. On failure, error messages are printed and, `None` is returned.
@@ -281,7 +284,7 @@ object X2Cpg {
     initialConf: R
   ): Option[R] = {
     val parser = commandLineParser(frontendSpecific)
-    OParser.parse(parser, args, initialConf)
+    OParser.parse(parser, args, initialConf, oParserSetup)
   }
 
   /** Create a command line parser that can be extended to add options specific for the frontend.
