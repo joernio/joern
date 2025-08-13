@@ -11,10 +11,9 @@ import versionsort.VersionHelper
 
 import java.io.{BufferedReader, InputStream, InputStreamReader, StringReader}
 import java.nio.file.{Files, Path, Paths}
-import java.util.Collections
-import java.util.concurrent.{Callable, ExecutorService, Executors}
-import scala.jdk.CollectionConverters.IteratorHasAsJava
 import scala.collection.concurrent.TrieMap
+import scala.collection.parallel.CollectionConverters.ImmutableSeqIsParallelizable
+import scala.collection.parallel.ParSeq
 import scala.collection.{immutable, mutable}
 import scala.util.matching.Regex
 import scala.util.{Failure, Try, Using}
@@ -417,15 +416,6 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     }
   }
 
-  private def runInParallel(tasks: Iterator[() => Unit], executor: ExecutorService): Unit = {
-    val callables = Collections.list(tasks.map { x =>
-      new Callable[Unit] {
-        override def call(): Unit = x.apply()
-      }
-    }.asJavaEnumeration)
-    executor.invokeAll(callables)
-  }
-
   private def stdOutFromSwiftCompiler(invocationCommand: Seq[String]): InputStream = {
     val builder = new ProcessBuilder().command(invocationCommand.toArray*)
     builder.directory(Paths.get(config.inputPath).toFile)
@@ -433,29 +423,27 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     builder.start().getInputStream
   }
 
+  private def parSeqFrom(reader: BufferedReader): ParSeq[String] = {
+    Iterator
+      .continually(reader.readLine())
+      .takeWhile(_ != null)
+      .filter(_.startsWith("{"))
+      .toSeq
+      .par
+  }
+
   def retrieveMappings(): SwiftTypeMapping = {
-    val mapping  = new SwiftTypeMapping
-    val executor = Executors.newWorkStealingPool()
-    try {
-      runInParallel(
-        parsedSwiftInvocations.iterator.map { invocationCommand => () =>
-          Using.Manager { use =>
-            val reader = use(new InputStreamReader(stdOutFromSwiftCompiler(invocationCommand)))
-            val stdOut = use(new BufferedReader(reader))
-            val jsonStringsIterator = Iterator
-              .continually(stdOut.readLine())
-              .takeWhile(_ != null)
-              .filter(_.startsWith("{"))
-              .map(jsonString => () => mappingFromJson(jsonString, mapping))
-            runInParallel(jsonStringsIterator, executor)
-          } match {
-            case Failure(exception) => throw exception // Using.Manager swallows exceptions otherwise
-            case _                  =>                 // this is fine
-          }
-        },
-        executor
-      )
-    } finally executor.shutdown()
+    val mapping = new SwiftTypeMapping
+    parsedSwiftInvocations.par.foreach { invocationCommand =>
+      Using.Manager { use =>
+        val reader = use(new InputStreamReader(stdOutFromSwiftCompiler(invocationCommand)))
+        val stdOut = use(new BufferedReader(reader))
+        parSeqFrom(stdOut).foreach(jsonString => mappingFromJson(jsonString, mapping))
+      } match {
+        case Failure(exception) => throw exception // Using.Manager swallows exceptions otherwise
+        case _                  =>                 // this is fine
+      }
+    }
     logger.info(s"Got ${mapping.size} type map entries.")
     mapping
   }
