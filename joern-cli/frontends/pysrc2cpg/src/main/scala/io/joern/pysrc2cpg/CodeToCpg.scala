@@ -18,12 +18,12 @@ class CodeToCpg(
   override def generateParts(): Array[InputProvider] = inputProvider.toArray
 
   override def runOnPart(diffGraph: DiffGraphBuilder, inputProvider: InputProvider): Unit = {
-    val inputPair = inputProvider()
+    val inputPair              = inputProvider()
+    val parser                 = new PyParser()
+    val lineBreakCorrectedCode = inputPair.content.replace("\r\n", "\n").replace("\r", "\n")
     try {
-      val parser                 = new PyParser()
-      val lineBreakCorrectedCode = inputPair.content.replace("\r\n", "\n").replace("\r", "\n")
-      val astRoot                = parser.parse(lineBreakCorrectedCode)
-      val nodeToCode             = new NodeToCode(lineBreakCorrectedCode)
+      val astRoot    = parser.parse(lineBreakCorrectedCode)
+      val nodeToCode = new NodeToCode(lineBreakCorrectedCode)
       val astVisitor = new PythonAstVisitor(inputPair.relFileName, nodeToCode, PythonV2AndV3, enableFileContent)(
         schemaValidationMode
       )
@@ -32,11 +32,33 @@ class CodeToCpg(
       diffGraph.absorb(astVisitor.createAst())
     } catch {
       case exception: Throwable =>
-        logger.warn(s"Failed to convert file ${inputPair.relFileName}", exception)
-        Iterator.empty
+        val lineBreakWasCorrected = lineBreakCorrectedCode != inputPair.content
+        handleParsingError(inputPair.relFileName, lineBreakCorrectedCode, lineBreakWasCorrected, exception, diffGraph)
     }
   }
 
+  def handleParsingError(
+    relFileName: String,
+    code: String,
+    lineBreakWasCorrected: Boolean,
+    exception: Throwable,
+    diffGraph: DiffGraphBuilder
+  ): Unit = {
+    val contentOption = if (enableFileContent) {
+      Some(code)
+    } else {
+      None
+    }
+
+    // We add the file content maily for debugging purposes.
+    val nodeBuilder = new NodeBuilder(diffGraph)
+    nodeBuilder.fileNode(relFileName, contentOption)
+
+    logger.warn(
+      s"Failed to convert${if (lineBreakWasCorrected) " line break corrected " else " "}file ${relFileName}",
+      exception
+    )
+  }
 }
 
 object CodeToCpg {
