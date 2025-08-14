@@ -440,8 +440,10 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
         val stdOut = use(new BufferedReader(reader))
         parSeqFrom(stdOut).foreach(jsonString => mappingFromJson(jsonString, mapping))
       } match {
-        case Failure(exception) => throw exception // Using.Manager swallows exceptions otherwise
-        case _                  =>                 // this is fine
+        case Failure(exception) =>
+          // Using.Manager swallows exceptions otherwise
+          logger.warn("Error during Swift type map creation", exception)
+        case _ => // this is fine
       }
     }
     logger.info(s"Got ${mapping.size} type map entries.")
