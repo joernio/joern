@@ -619,7 +619,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
       val config = Config()
         .withInputPath(dir.toString)
         .withOutputPath(dir.toString)
-        .withXcodeOutput(dir / "out.log")
+        .withBuildLogPath(dir / "out.log")
         .withSwiftBuild(true)
       val swiftTypesProvider = SwiftTypesProvider.apply(config)
       swiftTypesProvider match {

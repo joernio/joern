@@ -82,7 +82,8 @@ object SwiftTypesProvider {
     */
   case class ResolvedTypeInfo(tpe: Option[String], fullName: Option[String], nodeKind: String)
 
-  type SwiftTypeMapping = TrieMap[String, TrieMap[(Int, Int), mutable.HashSet[ResolvedTypeInfo]]]
+  type SwiftFileLocalTypeMapping = mutable.HashMap[(Int, Int), mutable.HashSet[ResolvedTypeInfo]]
+  type SwiftTypeMapping          = TrieMap[String, SwiftFileLocalTypeMapping]
 
   /** @see
     *   [[io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.DeclModifierSyntax]]
@@ -174,7 +175,7 @@ object SwiftTypesProvider {
       return None
     }
 
-    config.xcodeOutputPath.map(outputPath => build(config, IOUtils.readLinesInFile(outputPath))).orElse(build(config))
+    config.buildLogPath.map(outputPath => build(config, IOUtils.readLinesInFile(outputPath))).orElse(build(config))
   }
 
   private def resolveSwiftDemangleCommand(args: Seq[String]): Seq[String] = {
@@ -204,12 +205,12 @@ object SwiftTypesProvider {
   }
 
   private def isValidEnvironment(config: Config): Boolean = {
-    if (config.xcodeOutputPath.isEmpty && !Paths.get(config.inputPath, "Package.swift").toFile.canRead) {
+    if (config.buildLogPath.isEmpty && !Paths.get(config.inputPath, "Package.swift").toFile.canRead) {
       logger.debug("Package.swift not found or can not be read. This does not look like a valid SwiftPM project.")
       return false
     }
 
-    val commands = if (config.xcodeOutputPath.isDefined) {
+    val commands = if (config.buildLogPath.isDefined) {
       // we do not need 'swift' on the system if the commands are taken from Xcode
       Seq(SwiftCompilerVersionCommand)
     } else {
@@ -300,7 +301,7 @@ object SwiftTypesProvider {
   }
 
   def build(config: Config, compilerOutput: Seq[String]): SwiftTypesProvider = {
-    config.xcodeOutputPath.foreach(path =>
+    config.buildLogPath.foreach(path =>
       logger.info(s"Building Swift type map from compiler log at ${path.toFile.toString}")
     )
 
@@ -407,7 +408,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
           .getOrElseUpdate(
             filename, {
               logger.info(s"Generating type map for: $filename")
-              TrieMap.empty
+              mutable.HashMap.empty
             }
           )
           .getOrElseUpdate(range, mutable.HashSet.empty)

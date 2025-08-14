@@ -14,7 +14,7 @@ import java.nio.file.{Path, Paths}
 final case class Config(
   defines: Set[String] = Set.empty,
   swiftBuild: Boolean = false,
-  xcodeOutputPath: Option[Path] = None,
+  buildLogPath: Option[Path] = None,
   override val genericConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig(),
   override val typeRecoveryParserConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config()
 ) extends X2CpgConfig[Config]
@@ -33,8 +33,8 @@ final case class Config(
     copy(swiftBuild = swiftBuild)
   }
 
-  def withXcodeOutput(xcodeOutputPath: Path): Config = {
-    copy(xcodeOutputPath = Option(xcodeOutputPath))
+  def withBuildLogPath(buildLogPath: Path): Config = {
+    copy(buildLogPath = Option(buildLogPath))
   }
 }
 
@@ -54,17 +54,17 @@ object Frontend {
       opt[Unit]("swift-build")
         .text("build the project to retrieve full Swift compiler type information")
         .action((path, c) => c.withSwiftBuild(true)),
-      opt[Path]("xcode-output")
-        .text("the path to the Xcode compiler debug output")
+      opt[Path]("build-log-path")
+        .text("the path to the compiler debug output log file")
         .validate { path =>
           val file = path.toRealPath().toFile
           if (!file.isFile || !file.canRead) {
-            failure(s"The Xcode compiler output file can not be read: '${file.toString}'")
+            failure(s"Unable to read compiler debug output log file: '${file.toString}'")
           } else {
             success
           }
         }
-        .action((path, c) => c.withSwiftBuild(true).withXcodeOutput(path))
+        .action((path, c) => c.withSwiftBuild(true).withBuildLogPath(path))
     )
   }
 

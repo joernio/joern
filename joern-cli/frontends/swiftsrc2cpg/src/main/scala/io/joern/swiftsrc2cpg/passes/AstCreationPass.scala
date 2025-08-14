@@ -5,7 +5,7 @@ import io.joern.swiftsrc2cpg.astcreation.AstCreator
 import io.joern.swiftsrc2cpg.parser.SwiftJsonParser
 import io.joern.swiftsrc2cpg.utils.AstGenRunner.AstGenRunnerResult
 import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider
-import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.SwiftTypeMapping
+import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{SwiftFileLocalTypeMapping, SwiftTypeMapping}
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
@@ -53,8 +53,9 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
         case Success(parseResult) =>
           report.addReportInfo(parseResult.filename, parseResult.loc, parsed = true)
           Try {
-            val fileLocalTypesMap = typeMap.getOrElse(parseResult.fullPath, TrieMap.empty)
-            val localDiff         = new AstCreator(config, global, parseResult).createAst()
+            val fileLocalTypesMap = typeMap.getOrElse(parseResult.fullPath, new SwiftFileLocalTypeMapping)
+            val localDiff         = new AstCreator(config, global, parseResult, fileLocalTypesMap).createAst()
+            typeMap.remove(parseResult.fullPath)
             diffGraph.absorb(localDiff)
           } match {
             case Failure(exception) =>
