@@ -13,8 +13,11 @@ import scala.collection.mutable
   */
 object GsonTypeInfoReader {
 
-  /** Field names that can contain type and decl fullnames in the Swift AST */
-  private val FullnameFieldNames = Set("usr", "type", "result", "decl_usr", "interface_type")
+  /** Field names that can contain decl fullnames in the Swift AST */
+  private val DeclFullnameFieldNames = Set("usr", "decl_usr")
+
+  /** Field names that can contain type fullnames in the Swift AST */
+  private val TypeFullnameFieldNames = Set("type", "type_usr", "result", "interface_type")
 
   /** AST node kinds that require special handling.
     *
@@ -67,15 +70,15 @@ object GsonTypeInfoReader {
     (rangeObj.get("start").getAsInt, rangeObj.get("end").getAsInt)
   }
 
-  /** Determines if a JSON object contains useful type information.
+  /** Determines if a JSON object contains useful type or decl fullname information.
     *
     * @param obj
     *   The JSON object to check
     * @return
-    *   true if the object contains type information, false otherwise
+    *   true if the object contains type or decl fullname information, false otherwise
     */
   private def qualifies(obj: JsonObject): Boolean = {
-    FullnameFieldNames.exists(obj.has) && obj.has("range")
+    obj.has("range") && (TypeFullnameFieldNames.exists(obj.has) || DeclFullnameFieldNames.exists(obj.has))
   }
 
   /** Gets the AST node kind from a JSON object.
@@ -175,7 +178,11 @@ object GsonTypeInfoReader {
               // don't descend
               jsonReader.skipValue()
             case _ =>
-              if (name == "start" || name == "end" || FullnameFieldNames.contains(name)) {
+              if (
+                name == "start" || name == "end" ||
+                TypeFullnameFieldNames.contains(name) ||
+                DeclFullnameFieldNames.contains(name)
+              ) {
                 val value = JsonParser.parseReader(jsonReader)
                 obj.add(name, value)
               } else jsonReader.skipValue()
@@ -213,6 +220,7 @@ object GsonTypeInfoReader {
       }
 
       val typeFullName = safePropertyValue(typeObj, "type")
+        .orElse(safePropertyValue(typeObj, "type_usr"))
         .orElse(safePropertyValue(typeObj, "result"))
         .orElse(safePropertyValue(typeObj, "interface_type"))
 
