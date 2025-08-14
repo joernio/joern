@@ -329,7 +329,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
 
   private lazy val swiftDemangleCommand = SwiftTypesProvider.swiftDemangleCommand()
 
-  private val mangledNameCache = mutable.HashMap.empty[String, Option[String]]
+  private val mangledNameCache = TrieMap.empty[String, Option[String]]
 
   private def demangle(mangledName: String): Option[String] = {
     if (mangledName.isEmpty) return None
