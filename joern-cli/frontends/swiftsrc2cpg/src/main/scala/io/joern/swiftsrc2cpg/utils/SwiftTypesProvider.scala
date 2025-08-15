@@ -240,10 +240,10 @@ object SwiftTypesProvider {
   private def build(config: Config): Option[SwiftTypesProvider] = {
     logger.info("Building Swift type map from SwiftPM project configuration")
 
-    logger.debug("Cleaning the project first ...")
+    logger.info("Cleaning the project first ...")
     ExternalCommand.run(SwiftCleanCommand, workingDir = Some(Paths.get(config.inputPath))).logIfFailed()
 
-    logger.debug("Building the project ...")
+    logger.info("Building the project ...")
     ExternalCommand
       .run(SwiftBuildCommand, mergeStdErrInStdOut = true, workingDir = Some(Paths.get(config.inputPath)))
       .logIfFailed()
