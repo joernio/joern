@@ -32,6 +32,7 @@ object SwiftTypesProvider {
   private val SwiftCompilerVersionCommand = Seq("swiftc", "--version")
   private val SwiftVersionCommands        = Seq(SwiftVersionCommand, SwiftCompilerVersionCommand)
   private val SwiftBuildCommand           = Seq("swift", "build", "--verbose")
+  private val SwiftCleanCommand           = Seq("swift", "package", "clean")
   private val SwiftCompilerDumpOptions    = Seq("-dump-ast", "-dump-ast-format", "json", "-suppress-warnings")
 
   /** Information about a Swift type found in the source code. fullName and tpe are not demangled yet.
@@ -238,6 +239,11 @@ object SwiftTypesProvider {
 
   private def build(config: Config): Option[SwiftTypesProvider] = {
     logger.info("Building Swift type map from SwiftPM project configuration")
+
+    logger.debug("Cleaning the project first ...")
+    ExternalCommand.run(SwiftCleanCommand, workingDir = Some(Paths.get(config.inputPath))).logIfFailed()
+
+    logger.debug("Building the project ...")
     ExternalCommand
       .run(SwiftBuildCommand, mergeStdErrInStdOut = true, workingDir = Some(Paths.get(config.inputPath)))
       .logIfFailed()
