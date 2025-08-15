@@ -468,7 +468,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
     mapping
       .flatMap { case (filename, posToResolvedTypeInfo) =>
         posToResolvedTypeInfo.flatMap { case (range, typeInfos) =>
-          typeInfos.map(typeInfo => (filename, typeInfo.nodeKind, range, typeInfo.tpe, typeInfo.fullName))
+          typeInfos.map(typeInfo => (filename, typeInfo.nodeKind, range, typeInfo.typeFullname, typeInfo.declFullname))
         }
       }
       .toList

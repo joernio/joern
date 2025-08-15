@@ -113,6 +113,13 @@ object GsonTypeInfoReader {
     }
   }
 
+  /** Extracts result object from a return statement.
+    *
+    * @param obj
+    *   The JSON object representing a return statement
+    * @return
+    *   The JSON object representing the result or the original object if result not found
+    */
   private def resultFromReturnStmt(obj: JsonObject): JsonObject = {
     safePropertyObject(obj, "result") match {
       case Some(resultObj) => resultObj
@@ -125,7 +132,7 @@ object GsonTypeInfoReader {
     * @param obj
     *   The JSON object representing a member reference expression
     * @return
-    *   The JSON object representing the declaration
+    *   The JSON object representing the declaration or the original object if result not found
     */
   private def declFromMemberRefExpr(obj: JsonObject): JsonObject = {
     safePropertyObject(obj, "decl") match {
@@ -219,14 +226,14 @@ object GsonTypeInfoReader {
         case _                    => obj
       }
 
-      val typeFullName = safePropertyValue(typeObj, "type")
+      val typeFullname = safePropertyValue(typeObj, "type")
         .orElse(safePropertyValue(typeObj, "type_usr"))
         .orElse(safePropertyValue(typeObj, "result"))
         .orElse(safePropertyValue(typeObj, "interface_type"))
 
-      val declFullName = safePropertyValue(obj, "usr").orElse(safePropertyValue(declObj, "decl_usr"))
+      val declFullname = safePropertyValue(obj, "usr").orElse(safePropertyValue(declObj, "decl_usr"))
 
-      found.addOne(TypeInfo(filename, range_, typeFullName, declFullName, nodeKind))
+      found.addOne(TypeInfo(filename, range_, typeFullname, declFullname, nodeKind))
     }
 
     /** Parses a JSON array.
