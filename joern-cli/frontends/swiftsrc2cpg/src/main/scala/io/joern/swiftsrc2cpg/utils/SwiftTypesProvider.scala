@@ -340,7 +340,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
 
   private def demangle(mangledName: String): Option[String] = {
     if (mangledName.isEmpty) return None
-    val strippedMangledName = mangledName.stripPrefix("$").replaceFirst("s:e:s:", "s:").replace(":", "")
+    val strippedMangledName = mangledName.stripPrefix("$").replace("s:e:s:", "s:").replace(":", "")
     ExternalCommand
       .run(swiftDemangleCommand :+ strippedMangledName)
       .successOption

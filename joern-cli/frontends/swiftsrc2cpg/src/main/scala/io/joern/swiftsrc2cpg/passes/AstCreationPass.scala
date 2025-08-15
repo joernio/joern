@@ -26,9 +26,8 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
-  private val global             = new Global()
-  private val swiftTypesProvider = SwiftTypesProvider(config)
-  private val typeMap            = swiftTypesProvider.map(_.retrieveMappings()).getOrElse(new SwiftTypeMapping)
+  private val global  = new Global()
+  private val typeMap = SwiftTypesProvider(config).map(_.retrieveMappings()).getOrElse(new SwiftTypeMapping)
 
   def typesSeen(): List[String] = global.usedTypes.keys().asScala.filterNot(Defines.SwiftTypes.contains).toList
 
@@ -54,9 +53,12 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
           report.addReportInfo(parseResult.filename, parseResult.loc, parsed = true)
           Try {
             val fileLocalTypesMap = typeMap.getOrElse(parseResult.fullPath, new SwiftFileLocalTypeMapping)
-            val localDiff         = new AstCreator(config, global, parseResult, fileLocalTypesMap).createAst()
-            typeMap.remove(parseResult.fullPath)
+            var astCreator        = new AstCreator(config, global, parseResult, fileLocalTypesMap)
+            var localDiff         = astCreator.createAst()
             diffGraph.absorb(localDiff)
+            astCreator = null
+            localDiff = null
+            typeMap.remove(parseResult.fullPath)
           } match {
             case Failure(exception) =>
               logger.warn(s"Failed to generate a CPG for: '${parseResult.filename}'", exception)
