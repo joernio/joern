@@ -5,7 +5,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-2019, macos-latest]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,7 +26,7 @@ jobs:
           cache: false
           go-version: 1.18
       - name: Set up Swift
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2019'
         uses: SwiftyLab/setup-swift@latest
         with:
           check-latest: true
