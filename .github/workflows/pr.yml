@@ -45,7 +45,7 @@ jobs:
         run: sbt clean test
       - name: Run tests
         if: matrix.os == 'windows-latest'
-        run: sbt clean 'set joerncli / swiftsrc2cpg / Test / skip := true' test
+        run: sbt clean 'set Projects.swiftsrc2cpg / Test / skip := true' test
 
   formatting:
     runs-on: ubuntu-latest
