@@ -141,7 +141,8 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       }
     }
 
-    "allow importing code from file with Swift frontend via apply" in ConsoleFixture() { (console, _) =>
+    // TODO: re-enable once https://github.com/actions/runner-images/issues/12764 is fixed
+    "allow importing code from file with Swift frontend via apply" taggedAs NotInWindowsRunners in ConsoleFixture() { (console, _) =>
       val code = "func foo() {};"
       FileUtil.usingTemporaryFile("consoleTests", ".swift") { tmpFile =>
         Files.writeString(tmpFile, code)
