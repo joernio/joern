@@ -142,13 +142,14 @@ class ConsoleTests extends AnyWordSpec with Matchers {
     }
 
     // TODO: re-enable once https://github.com/actions/runner-images/issues/12764 is fixed
-    "allow importing code from file with Swift frontend via apply" taggedAs NotInWindowsRunners in ConsoleFixture() { (console, _) =>
-      val code = "func foo() {};"
-      FileUtil.usingTemporaryFile("consoleTests", ".swift") { tmpFile =>
-        Files.writeString(tmpFile, code)
-        console.importCode(tmpFile.toString)
-        Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe true
-      }
+    "allow importing code from file with Swift frontend via apply" taggedAs NotInWindowsRunners in ConsoleFixture() {
+      (console, _) =>
+        val code = "func foo() {};"
+        FileUtil.usingTemporaryFile("consoleTests", ".swift") { tmpFile =>
+          Files.writeString(tmpFile, code)
+          console.importCode(tmpFile.toString)
+          Set("foo").subsetOf(console.cpg.method.name.toSet) shouldBe true
+        }
     }
 
     "allow importing code from file with Swift frontend" taggedAs NotInWindowsRunners in ConsoleFixture() {
