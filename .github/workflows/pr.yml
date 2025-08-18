@@ -25,21 +25,27 @@ jobs:
         with:
           cache: false
           go-version: 1.18
-      - name: Set up Swift
-        if: matrix.os == 'windows-latest'
-        uses: SwiftyLab/setup-swift@latest
-        with:
-          check-latest: true
-          development: true
-          swift-version: "6.1"
+      # TODO: re-enable once https://github.com/actions/runner-images/issues/12764 is fixed
+      #- name: Set up Swift
+      #  if: matrix.os == 'windows-latest'
+      #  uses: SwiftyLab/setup-swift@latest
+      #  with:
+      #    check-latest: true
+      #    development: true
+      #    swift-version: "6.1"
       - name: Delete `.rustup` directory
         run: rm -rf /home/runner/.rustup # to save disk space
         if: runner.os == 'Linux'
       - name: Delete `.cargo` directory # to save disk space
         run: rm -rf /home/runner/.cargo
         if: runner.os == 'Linux'
+      # TODO: re-enable once https://github.com/actions/runner-images/issues/12764 is fixed
       - name: Run tests
+        if: matrix.os != 'windows-latest'
         run: sbt clean test
+      - name: Run tests
+        if: matrix.os == 'windows-latest'
+        run: sbt clean 'set joerncli / swiftsrc2cpg / Test / skip := true' test
 
   formatting:
     runs-on: ubuntu-latest
