@@ -1,6 +1,7 @@
 package io.joern.swiftsrc2cpg.utils
 
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.SwiftNode
+import io.joern.swiftsrc2cpg.utils.FullnameProvider.NodeKindMapping
 import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{ResolvedTypeInfo, SwiftFileLocalTypeMapping}
 
 import scala.annotation.tailrec
@@ -17,6 +18,9 @@ private object FullnameProvider {
   private enum Kind {
     case Type, Decl
   }
+
+  // TODO: provide the actual mapping from SwiftNode.toString (nodeKind) to ResolvedTypeInfo.nodeKind
+  private val NodeKindMapping = Map.empty[String, String]
 }
 
 /** Provides functionality to resolve and retrieve fullnames for Swift types and declarations. Uses a type mapping to
@@ -37,8 +41,9 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
     *   An optional resolved type information that matches the node kind
     */
   private def filterForNodeKind(in: mutable.HashSet[ResolvedTypeInfo], nodeKind: String): Option[ResolvedTypeInfo] = {
-    // TODO: provide the actual mapping from SwiftNode.toString (nodeKind) to ResolvedTypeInfo.nodeKind
-    in.headOption
+    if (in.isEmpty) return None
+    if (in.size == 1) return in.headOption
+    NodeKindMapping.get(nodeKind).flatMap(mappedNodeKind => in.find(_.nodeKind == mappedNodeKind)).orElse(in.headOption)
   }
 
   /** Recursively attempts to find the fullname for a given source range and kind. If the exact range is not found, it
@@ -60,7 +65,12 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
         filterForNodeKind(typeInfo.filter(_.typeFullname.nonEmpty), nodeKind).flatMap(_.typeFullname)
       case Some(typeInfo) if kind == FullnameProvider.Kind.Decl =>
         filterForNodeKind(typeInfo.filter(_.declFullname.nonEmpty), nodeKind).flatMap(_.declFullname)
-      case _ => fullName((range._1, range._1), kind, nodeKind)
+      case _ if range._1 != range._2 =>
+        // Only recurse if we haven't already reduced to a point (for synthetic AST elements)
+        fullName((range._1, range._1), kind, nodeKind)
+      case _ =>
+        // We've already tried with a point and still found nothing
+        None
     }
   }
 

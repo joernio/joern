@@ -9,10 +9,10 @@ import scala.collection.mutable
 class FullnameProviderTest extends AnyFlatSpec with Matchers {
 
   // Test data
-  val typeInfo1          = ResolvedTypeInfo(Some("type.fullname.A"), Some("decl.fullname.A"), "nodeKind")
-  val typeInfo2          = ResolvedTypeInfo(Some("type.fullname.B"), Some("decl.fullname.B"), "nodeKind")
-  val typeInfoNoType     = ResolvedTypeInfo(None, Some("decl.fullname.C"), "nodeKind")
-  val typeInfoNoFullName = ResolvedTypeInfo(Some("type.fullname.D"), None, "nodeKind")
+  val typeInfo1          = ResolvedTypeInfo(Some("type.fullname.A"), Some("decl.fullname.A"), "AKind")
+  val typeInfo2          = ResolvedTypeInfo(Some("type.fullname.B"), Some("decl.fullname.B"), "BKind")
+  val typeInfoNoType     = ResolvedTypeInfo(None, Some("decl.fullname.C"), "CKind")
+  val typeInfoNoFullName = ResolvedTypeInfo(Some("type.fullname.D"), None, "DKind")
 
   "typeFullname" should "return the type when available in the map" in {
     val mockTypeMap = new SwiftFileLocalTypeMapping()
@@ -69,6 +69,7 @@ class FullnameProviderTest extends AnyFlatSpec with Matchers {
 
     val provider = new FullnameProvider(mockTypeMap)
     provider.declFullname((30, 40), "nodeKind") shouldBe Some("decl.fullname.B")
+    provider.typeFullname((30, 40), "nodeKind") shouldBe Some("type.fullname.B")
   }
 
   it should "handle multiple type infos for the same range" in {
@@ -78,6 +79,15 @@ class FullnameProviderTest extends AnyFlatSpec with Matchers {
 
     val provider = new FullnameProvider(mockTypeMap)
     // Since filterForNodeKind just returns headOption at the moment, this would pick the first one
-    provider.declFullname((50, 60), "nodeKind") shouldBe Some("decl.fullname.A")
+    provider.declFullname((50, 60), "nodeKind") shouldBe defined
+    provider.typeFullname((50, 60), "nodeKind") shouldBe defined
+  }
+
+  it should "return None when range is not available at all" in {
+    val mockTypeMap = new SwiftFileLocalTypeMapping()
+
+    val provider = new FullnameProvider(mockTypeMap)
+    provider.declFullname((30, 40), "nodeKind") shouldBe None
+    provider.typeFullname((30, 40), "nodeKind") shouldBe None
   }
 }
