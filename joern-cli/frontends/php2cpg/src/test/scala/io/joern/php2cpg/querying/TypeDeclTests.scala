@@ -41,10 +41,10 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       |}""".stripMargin).withConfig(Config().withDisableFileContent(false))
 
     "have the correct bindings" in {
-      inside(cpg.typeDecl.name(".*anon-class-0$").bindsOut.sortBy(_.name).l) {
-        case List(constructBinding, fooBinding) =>
-          fooBinding.name shouldBe "foo"
-          fooBinding.methodFullName shouldBe "Test0.php:<global>.anon-class-0.foo"
+      inside(cpg.typeDecl.name(".*anon-class-0$").bindsOut.sortBy(_.refOut.head.name).l) {
+        case List(fooBinding, constructorBinding) =>
+          fooBinding.name shouldBe ""
+          fooBinding.methodFullName shouldBe "<empty>"
           fooBinding.signature shouldBe ""
 
           inside(fooBinding.refOut.l) { case List(fooMethod) =>
@@ -65,8 +65,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
     "have the correct bindings" in {
       inside(cpg.typeDecl("Foo").bindsOut.sortBy(_.name).l) { case List(constructBinding, fooBinding) =>
-        fooBinding.name shouldBe "foo"
-        fooBinding.methodFullName shouldBe "Foo.foo"
+        fooBinding.name shouldBe ""
+        fooBinding.methodFullName shouldBe ""
         fooBinding.signature shouldBe ""
 
         inside(fooBinding.refOut.l) { case List(fooMethod) =>

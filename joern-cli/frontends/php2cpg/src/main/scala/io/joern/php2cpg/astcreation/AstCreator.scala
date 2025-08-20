@@ -324,6 +324,7 @@ object AstCreator {
     val True: String         = "true"
     val False: String        = "false"
     val NullName: String     = "null"
+    val Invoke: String       = "__invoke"
 
     def isBoolean(name: String): Boolean = {
       List(True, False).contains(name)

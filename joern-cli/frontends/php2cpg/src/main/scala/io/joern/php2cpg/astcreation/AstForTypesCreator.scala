@@ -61,14 +61,6 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     Ast(typeDecl).withChildren(modifiers).withChildren(bodyStmts :+ clinitAst).withChildren(annotationAsts)
   }
 
-  private def addBindingsForTypeDecl(typeDecl: NewTypeDecl, bodyAsts: List[Ast]): Unit = {
-    bodyAsts.flatMap(_.root).collect { case method: NewMethod =>
-      val binding = NewBinding().name(method.name).methodFullName(method.fullName)
-      diffGraph.addEdge(typeDecl, binding, EdgeTypes.BINDS)
-      diffGraph.addEdge(binding, method, EdgeTypes.REF)
-    }
-  }
-
   private def astForAnonymousClass(
     stmt: PhpClassLikeStmt,
     dynamicStmts: List[PhpStmt],
@@ -156,8 +148,6 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       diffGraph.addNode(typeDeclMember)
       diffGraph.addNode(metaTypeDeclMember)
     }
-
-    addBindingsForTypeDecl(typeDeclTemp, bodyStmts)
 
     val prefixAst = createTypeRefPointer(typeDeclTemp)
     val typeDeclAst = Ast(typeDeclTemp)
@@ -264,7 +254,6 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     scope.popScope()
 
     val classTypeDeclAst = Ast(typeDecl).withChildren(modifiers).withChildren(bodyStmts).withChildren(annotationAsts)
-    addBindingsForTypeDecl(typeDecl, bodyStmts)
 
     scope.pushNewScope(TypeScope(metaTypeDeclNode, metaTypeDeclFullName))
 
