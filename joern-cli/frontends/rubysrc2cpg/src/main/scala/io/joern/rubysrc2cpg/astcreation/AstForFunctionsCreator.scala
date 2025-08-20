@@ -217,7 +217,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     methodAst
   }
 
-  private def transformAsClosureBody(originNode: RubyExpression, refs: List[Ast], baseStmtBlockAst: Ast) = {
+  private def transformAsClosureBody(originNode: RubyExpression, refs: List[Ast], baseStmtBlockAst: Ast): Ast = {
     // Determine which locals are captured
     val capturedLocalNodes = baseStmtBlockAst.nodes
       .collect { case x: NewIdentifier if x.name != Defines.Self => x }
