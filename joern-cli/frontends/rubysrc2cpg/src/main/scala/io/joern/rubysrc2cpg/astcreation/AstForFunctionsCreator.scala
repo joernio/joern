@@ -103,7 +103,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       // create closure local used for capturing
       createClosureBindingInformation(scope.lookupSelfInOuterScope.toSet)
         .collect { case (_, name, _, Some(closureBindingId)) =>
-          val capturingLocal = localNode(node.body, name, name, Defines.Any, closureBindingId = Option(closureBindingId))
+          val capturingLocal =
+            localNode(node.body, name, name, Defines.Any, closureBindingId = Option(closureBindingId))
           scope.addToScope(capturingLocal.name, capturingLocal)
         }
       val baseStmtBlockAst = astForMethodBody(node.body, optionalStatementList)
@@ -224,13 +225,13 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       .distinctBy(_.name)
       .map {
         case i if i.name == Defines.Self => scope.lookupSelfInOuterScope
-        case i => scope.lookupVariableInOuterScope(i.name)
+        case i                           => scope.lookupVariableInOuterScope(i.name)
       }
       .filter(_.iterator.nonEmpty)
       .flatten
       .toSet
 
-    val selfLocal = scope.lookupSelfInOuterScope.toSet
+    val selfLocal     = scope.lookupSelfInOuterScope.toSet
     val capturedNodes = capturedLocalNodes ++ selfLocal
 
     val capturedIdentifiers = baseStmtBlockAst.nodes.collect {
@@ -627,7 +628,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     }
   }
 
-  private def createClosureBindingInformation(capturedNodes: Set[DeclarationNew]): Set[(DeclarationNew, String, String, Option[String])] = {
+  private def createClosureBindingInformation(
+    capturedNodes: Set[DeclarationNew]
+  ): Set[(DeclarationNew, String, String, Option[String])] = {
     capturedNodes
       .collect {
         case local: NewLocal =>

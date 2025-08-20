@@ -546,8 +546,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
   }
 
   "A `self` reference in a lambda" should {
-    val cpg = code(
-      """
+    val cpg = code("""
         |foo("something") { |x| send x }
         |""".stripMargin)
 
