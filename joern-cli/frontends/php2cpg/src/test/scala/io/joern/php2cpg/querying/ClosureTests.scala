@@ -2,6 +2,7 @@ package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.x2cpg.Defines
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -83,9 +84,10 @@ class ClosureTests extends PhpCode2CpgFixture {
       closureMethod.fullName shouldBe expectedName
       closureMethod.signature shouldBe ""
       closureMethod.code shouldBe s"function $expectedName($$value) use($$use1, &$$use2)"
-      closureMethod.parameter.size shouldBe 1
+      closureMethod.parameter.size shouldBe 2
 
-      inside(closureMethod.parameter.l) { case List(valueParam) =>
+      inside(closureMethod.parameter.l) { case List(thisParam, valueParam) =>
+        thisParam.name shouldBe "this"
         valueParam.name shouldBe "value"
       }
 
@@ -155,9 +157,10 @@ class ClosureTests extends PhpCode2CpgFixture {
       closureMethod.fullName shouldBe expectedName
       closureMethod.signature shouldBe ""
       closureMethod.code shouldBe s"function $expectedName($$value)"
-      closureMethod.parameter.size shouldBe 1
+      closureMethod.parameter.size shouldBe 2
 
-      inside(closureMethod.parameter.l) { case List(valueParam) =>
+      inside(closureMethod.parameter.l) { case List(thisParam, valueParam) =>
+        thisParam.name shouldBe "this"
         valueParam.name shouldBe "value"
       }
 
@@ -443,6 +446,73 @@ class ClosureTests extends PhpCode2CpgFixture {
           methodRef.methodFullName shouldBe "foo"
           duplicateMethodRef.methodFullName shouldBe "foo<duplicate>0"
         case xs => fail(s"Expected two method refs, got ${xs.methodFullName.mkString("[", ",", "]")}")
+      }
+    }
+  }
+
+  "a simple lambda definition and call" should {
+    val cpg = code("""<?php
+                               |function foo($aaa) {
+                               |  $b_lambda = fn($x) => $x;
+                               |  return $b_lambda($aaa);
+                               |}
+                               |""".stripMargin)
+
+    "have a member for the lambda function" in {
+      inside(cpg.typeDecl.name(".*global.*").member.sortBy(_.name).l) { case List(fooMember, lambdaMember) =>
+        lambdaMember.name shouldBe "foo.<lambda>0"
+        lambdaMember.typeFullName shouldBe "foo.<lambda>0"
+        lambdaMember.dynamicTypeHintFullName.toList shouldBe List("foo.<lambda>0")
+      }
+    }
+
+    "represent the lambda assignment correctly" in {
+      inside(cpg.method.name("foo").body.astChildren.l) { case List(_: Local, lambdaAssign: Call, _: Return) =>
+        lambdaAssign.name shouldBe Operators.assignment
+        lambdaAssign.code shouldBe "$b_lambda = foo.<lambda>0"
+
+        inside(lambdaAssign.argument.l) { case List(bLambdaIdentifier: Identifier, lambdaMethodRef: MethodRef) =>
+          bLambdaIdentifier.name shouldBe "b_lambda"
+
+          lambdaMethodRef.methodFullName shouldBe "foo.<lambda>0"
+        }
+      }
+    }
+
+    "have the method declaration corresponding to the lambda created correctly" in {
+      inside(cpg.method.name(".*lambda.*").l) { case List(lambdaMethod) =>
+        lambdaMethod.name shouldBe "foo.<lambda>0"
+        lambdaMethod.fullName shouldBe "foo.<lambda>0"
+        lambdaMethod.astParentType shouldBe "TYPE_DECL"
+        lambdaMethod.astParentFullName shouldBe "Test0.php:<global>"
+      }
+    }
+
+    "have the type declaration corresponding to the lambda created correctly" in {
+      inside(cpg.typeDecl.name(".*lambda.*").l) { case List(lambdaDecl) =>
+        lambdaDecl.name shouldBe "foo.<lambda>0"
+        lambdaDecl.fullName shouldBe "foo.<lambda>0"
+
+        inside(lambdaDecl.bindsOut.l) { case List(binding) =>
+          binding.name shouldBe "__invoke"
+          binding.signature shouldBe ""
+          binding.methodFullName shouldBe "<empty>"
+
+          inside(binding.refOut.l) { case List(method) =>
+            method.fullName shouldBe "foo.<lambda>0"
+          }
+        }
+
+        inside(lambdaDecl.method.sortBy(_.name).l) { case List(constructMethod, invokeMethod) =>
+          invokeMethod.name shouldBe "__invoke"
+          invokeMethod.fullName shouldBe "foo.<lambda>0.__invoke"
+
+          inside(invokeMethod.parameter.l) { case List(thisParameter, xParameter) =>
+            thisParameter.name shouldBe "this"
+
+            xParameter.name shouldBe "x"
+          }
+        }
       }
     }
   }

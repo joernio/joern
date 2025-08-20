@@ -31,9 +31,7 @@ class LocalTests extends PhpCode2CpgFixture {
           |}
           |""".stripMargin)
 
-      inside(cpg.method.name("foo").ast.isIdentifier.name("x").l) { case List(xIdent) =>
-        xIdent._localViaRefOut.map(_.name) should contain("x")
-      }
+      cpg.method.name("foo").ast.isIdentifier.name("x")._localViaRefOut.map(_.name).l shouldBe List("x", "x")
     }
 
     "not be created if the variable matches a parameter type" in {
