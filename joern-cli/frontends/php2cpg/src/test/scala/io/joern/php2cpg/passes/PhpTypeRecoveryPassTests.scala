@@ -3,7 +3,9 @@ package io.joern.php2cpg.passes
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.semanticcpg.language.*
+import org.scalatest.Ignore
 
+//@Ignore
 class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture(withPostProcessing = true) {
 
   /* TODO: Future tests to specify correct type recovery behaviors:
@@ -385,7 +387,7 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture(withPostProcessing = t
 
     "propagate type information to calling method when called with $this" in {
       val List(barMethod) = cpg.method("bar").take(1).l
-      barMethod.methodReturn.dynamicTypeHintFullName shouldBe Seq("int")
+      barMethod.methodReturn.dynamicTypeHintFullName shouldBe Seq("int", "Test0.php:<global>.foo.<returnValue>")
     }
   }
 

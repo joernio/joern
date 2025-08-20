@@ -155,7 +155,7 @@ class AstCreator(
       .fullName(fullName)
 
     scope.pushNewScope(NamespaceScope(namespaceBlock, namespaceBlock.fullName))
-    val bodyStmts = astsForClassLikeBody(stmt, stmt.stmts, createDefaultConstructor = false)
+    val bodyStmts = astsForClassLikeBody(stmt, stmt.stmts, createDefaultConstructor = false, None)
     scope.popScope()
 
     Ast(namespaceBlock).withChildren(bodyStmts)
@@ -324,6 +324,7 @@ object AstCreator {
     val True: String         = "true"
     val False: String        = "false"
     val NullName: String     = "null"
+    val Invoke: String       = "__invoke"
 
     def isBoolean(name: String): Boolean = {
       List(True, False).contains(name)
