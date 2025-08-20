@@ -544,4 +544,26 @@ class DoBlockTests extends RubyCode2CpgFixture {
     backRefCall.lineNumber shouldBe Option(3)
     backRefCall.columnNumber shouldBe Option(29)
   }
+
+  "A `self` reference in a lambda" should {
+    val cpg = code(
+      """
+        |foo("something") { |x| send x }
+        |""".stripMargin)
+
+    "not result in `self` identifiers with multiple refOut edges" in {
+      inside(cpg.method.isLambda.ast.fieldAccess.argument.isIdentifier.distinct.nameExact(RubyDefines.Self).l) {
+        case (identifier: Identifier) :: Nil =>
+          inside(identifier.refOut.l) {
+            case (local: Local) :: Nil =>
+              local.name shouldBe "self"
+              local.closureBindingId shouldBe Some("Test0.rb:<main>.<lambda>0.self")
+            case xs =>
+              fail(s"Expected a single local, got [${xs.code.mkString(",")}]")
+          }
+        case Nil =>
+          fail(s"Expected `self` identifiers, got none")
+      }
+    }
+  }
 }
