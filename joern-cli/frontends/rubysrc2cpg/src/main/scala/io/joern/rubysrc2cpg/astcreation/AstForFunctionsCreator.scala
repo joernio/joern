@@ -237,7 +237,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case i: NewIdentifier if capturedNodes.map(_.name).contains(i.name) => i
     }
     // Copy AST block detaching the REF nodes between parent locals/params and identifiers, with the closures' one
-    val capturedBlockAst = baseStmtBlockAst.copy(refEdges = baseStmtBlockAst.refEdges.filterNot {
+    val capturedBlockAst = baseStmtBlockAst.copy(refEdges = baseStmtBlockAst.refEdges.filter {
       case AstEdge(_: NewIdentifier, dst: DeclarationNew) => capturedNodes.contains(dst)
       case _                                              => false
     })
