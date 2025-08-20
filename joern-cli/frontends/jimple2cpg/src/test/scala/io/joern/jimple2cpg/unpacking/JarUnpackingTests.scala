@@ -38,8 +38,8 @@ class JarUnpackingTests extends AnyWordSpec with Matchers with BeforeAndAfterAll
   private def getUnpackingCpg(path: String, recurse: Boolean = true, depths: Int = 1): Cpg =
     Try(getClass.getResource(s"/unpacking/${path}").toURI) match {
       case Success(x) =>
-        implicit val config: Config = Config().withRecurse(recurse)
-        new Jimple2Cpg().createCpg(Paths.get(x).toString).get
+        val config = Config().withRecurse(recurse)
+        new Jimple2Cpg().createCpg(config.withInputPath(Paths.get(x).toString)).get
       case Failure(x: Throwable) =>
         fail("Unable to obtain test resources.", x)
     }

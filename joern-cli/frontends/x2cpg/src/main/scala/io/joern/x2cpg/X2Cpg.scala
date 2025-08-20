@@ -1,112 +1,110 @@
 package io.joern.x2cpg
 
 import io.joern.x2cpg.X2Cpg.{applyDefaultOverlays, withErrorsToConsole}
-import io.joern.x2cpg.frontendspecific.FrontendArgsDelimitor
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
+import io.joern.x2cpg.utils.Environment
+import io.joern.x2cpg.utils.server.FrontendHTTPServer
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import io.shiftleft.semanticcpg.utils.FileUtil
 import org.slf4j.LoggerFactory
-import scopt.OParser
+import scopt.{DefaultOParserSetup, OParser, OParserSetup}
 
 import java.io.PrintWriter
 import java.nio.file.{Files, Paths}
+import java.util.concurrent.ExecutorService
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
 object X2CpgConfig {
-  def defaultInputPath: String  = ""
   def defaultOutputPath: String = "cpg.bin"
+
+  final case class GenericConfig(
+    inputPath: String = "",
+    outputPath: String = X2CpgConfig.defaultOutputPath,
+    serverMode: Boolean = false,
+    serverTimeoutSeconds: Option[Long] = None,
+    defaultIgnoredFilesRegex: Seq[Regex] = Seq.empty,
+    ignoredFilesRegex: Regex = "".r,
+    ignoredFiles: Seq[String] = Seq.empty,
+    schemaValidation: ValidationMode = ValidationMode.Disabled,
+    disableFileContent: Boolean = true
+  ) {}
+
 }
 
-trait X2CpgConfig[R <: X2CpgConfig[R]] {
-  var inputPath: String                  = X2CpgConfig.defaultInputPath
-  var outputPath: String                 = X2CpgConfig.defaultOutputPath
-  var serverMode: Boolean                = false
-  var serverTimeoutSeconds: Option[Long] = None
+trait X2CpgConfig[T <: X2CpgConfig[?]] {
+  final type OwnType = T
 
-  def withInputPath(inputPath: String): R = {
-    this.inputPath = Paths.get(inputPath).toAbsolutePath.normalize().toString
-    this.asInstanceOf[R]
+  protected def genericConfig: X2CpgConfig.GenericConfig
+  final def inputPath: String                    = genericConfig.inputPath
+  final def outputPath: String                   = genericConfig.outputPath
+  final def serverMode: Boolean                  = genericConfig.serverMode
+  final def serverTimeoutSeconds: Option[Long]   = genericConfig.serverTimeoutSeconds
+  final def defaultIgnoredFilesRegex: Seq[Regex] = genericConfig.defaultIgnoredFilesRegex
+  final def ignoredFilesRegex: Regex             = genericConfig.ignoredFilesRegex
+  final def ignoredFiles: Seq[String]            = genericConfig.ignoredFiles
+  final def schemaValidation: ValidationMode     = genericConfig.schemaValidation
+  final def disableFileContent: Boolean          = genericConfig.disableFileContent
+
+  protected def withGenericConfig(value: X2CpgConfig.GenericConfig): OwnType
+
+  final def withInputPath(inputPath: String): OwnType = {
+    withGenericConfig(genericConfig.copy(inputPath = Paths.get(inputPath).toAbsolutePath.normalize().toString))
   }
 
-  def withOutputPath(x: String): R = {
-    this.outputPath = x
-    this.asInstanceOf[R]
+  final def withOutputPath(x: String): OwnType = {
+    withGenericConfig(genericConfig.copy(outputPath = x))
   }
 
-  def withServerMode(x: Boolean): R = {
-    this.serverMode = x
-    this.asInstanceOf[R]
+  final def withServerMode(x: Boolean): OwnType = {
+    withGenericConfig(genericConfig.copy(serverMode = x))
   }
 
-  def withServerTimeoutSeconds(x: Long): this.type = {
-    this.serverTimeoutSeconds = Some(x)
-    this
+  final def withServerTimeoutSeconds(x: Long): OwnType = {
+    withGenericConfig(genericConfig.copy(serverTimeoutSeconds = Some(x)))
   }
 
-  var defaultIgnoredFilesRegex: Seq[Regex] = Seq.empty
-  var ignoredFilesRegex: Regex             = "".r
-  var ignoredFiles: Seq[String]            = Seq.empty
-
-  def withDefaultIgnoredFilesRegex(x: Seq[Regex]): R = {
-    this.defaultIgnoredFilesRegex = x
-    this.asInstanceOf[R]
+  final def withDefaultIgnoredFilesRegex(x: Seq[Regex]): OwnType = {
+    withGenericConfig(genericConfig.copy(defaultIgnoredFilesRegex = x))
   }
 
-  def withIgnoredFilesRegex(x: String): R = {
-    this.ignoredFilesRegex = x.r
-    this.asInstanceOf[R]
+  final def withIgnoredFilesRegex(x: String): OwnType = {
+    withGenericConfig(genericConfig.copy(ignoredFilesRegex = x.r))
   }
 
-  def withIgnoredFiles(x: Seq[String]): R = {
-    this.ignoredFiles = x.map(createPathForIgnore)
-    this.asInstanceOf[R]
+  final def withIgnoredFiles(x: Seq[String]): OwnType = {
+    def createPathForIgnore(ignore: String): String = {
+      val path = Paths.get(ignore)
+      if (path.isAbsolute) {
+        path.toString
+      } else {
+        Paths.get(inputPath, ignore).toAbsolutePath.normalize().toString
+      }
+    }
+
+    withGenericConfig(genericConfig.copy(ignoredFiles = x.map(createPathForIgnore)))
   }
 
-  def createPathForIgnore(ignore: String): String = {
-    val path = Paths.get(ignore)
-    if (path.isAbsolute) { path.toString }
-    else { Paths.get(inputPath, ignore).toAbsolutePath.normalize().toString }
+  final def withSchemaValidation(value: ValidationMode): OwnType = {
+    withGenericConfig(genericConfig.copy(schemaValidation = value))
   }
 
-  var schemaValidation: ValidationMode = ValidationMode.Disabled
-
-  def withSchemaValidation(value: ValidationMode): R = {
-    this.schemaValidation = value
-    this.asInstanceOf[R]
-  }
-
-  var disableFileContent: Boolean = true
-
-  def withDisableFileContent(value: Boolean): R = {
-    this.disableFileContent = value
-    this.asInstanceOf[R]
-  }
-
-  def withInheritedFields(config: R): R = {
-    this.inputPath = config.inputPath
-    this.outputPath = config.outputPath
-    this.serverMode = config.serverMode
-    this.serverTimeoutSeconds = config.serverTimeoutSeconds
-    this.defaultIgnoredFilesRegex = config.defaultIgnoredFilesRegex
-    this.ignoredFilesRegex = config.ignoredFilesRegex
-    this.ignoredFiles = config.ignoredFiles
-    this.disableFileContent = config.disableFileContent
-    this.asInstanceOf[R]
+  final def withDisableFileContent(value: Boolean): OwnType = {
+    withGenericConfig(genericConfig.copy(disableFileContent = value))
   }
 }
 
 /** Enables the configuration to specify if dependencies should be downloaded for additional symbol information.
   */
-trait DependencyDownloadConfig[R <: X2CpgConfig[R]] { this: R =>
+trait DependencyDownloadConfig { this: X2CpgConfig[?] =>
 
-  def withDownloadDependencies(value: Boolean): R
+  def withDownloadDependencies(value: Boolean): OwnType
 
 }
 
 object DependencyDownloadConfig {
-  def parserOptions[R <: X2CpgConfig[R] & DependencyDownloadConfig[R]]: OParser[?, R] = {
+  def parserOptions[R <: X2CpgConfig[R] & DependencyDownloadConfig]: OParser[?, R] = {
     val builder = OParser.builder[R]
     import builder.*
     OParser.sequence(
@@ -115,6 +113,14 @@ object DependencyDownloadConfig {
         .action((_, c) => c.withDownloadDependencies(true))
     )
   }
+}
+
+object X2CpgMain {
+  private val logger = LoggerFactory.getLogger(classOf[X2CpgMain.type])
+}
+
+trait SingleThreadedFrontend { this: X2CpgMain =>
+  override protected def executor: ExecutorService = FrontendHTTPServer.singleThreadExecutor()
 }
 
 /** Base class for `Main` classes of CPG frontends.
@@ -128,12 +134,8 @@ object DependencyDownloadConfig {
   * @param frontend
   *   the frontend to use for CPG creation
   */
-abstract class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]](
-  val cmdLineParser: OParser[Unit, T],
-  val frontend: X
-)(implicit defaultConfig: T) {
-
-  private val logger = LoggerFactory.getLogger(classOf[X2CpgMain[T, X]])
+abstract class X2CpgMain(val frontend: X2CpgFrontend, val cmdLineParser: OParser[Unit, frontend.ConfigType]) {
+  import X2CpgMain.*
 
   private def logVersionAndArgs(args: Array[String]): Unit = {
     val frontendName = frontend.getClass.getSimpleName.stripSuffix("$")
@@ -152,17 +154,53 @@ abstract class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]](
     }
   }
 
+  /** ExecutorService used to execute HTTP requests.
+    *
+    * This can be overridden to switch between single-threaded and multi-threaded execution. By default, it uses the
+    * cached thread pool executor from `FrontendHTTPServer`.
+    */
+  protected def executor: ExecutorService = FrontendHTTPServer.defaultExecutor()
+
+  val server: FrontendHTTPServer = new FrontendHTTPServer(
+    executor,
+    arguments => {
+      val config = X2Cpg
+        .parseCommandLine(arguments, cmdLineParser, frontend.defaultConfig)
+        .getOrElse(frontend.defaultConfig)
+      frontend.run(config)
+    }
+  )
+
   /** method that evaluates frontend with configuration
     */
-  def run(config: T, frontend: X): Unit
+  def run(config: frontend.ConfigType): Unit = {
+    if (config.serverMode) {
+      try {
+        val port = server.startup()
+        println(s"FrontendHTTPServer started on port $port")
+
+        config.serverTimeoutSeconds match {
+          case Some(timeout) => server.stopServerAfterTimeout(timeout)
+          case None          => Thread.sleep(Long.MaxValue)
+        }
+      } finally {
+        frontend.close()
+      }
+    } else {
+      frontend.run(config)
+    }
+  }
 
   def main(args: Array[String]): Unit = {
     logVersionAndArgs(args)
-    X2Cpg.parseCommandLine(args, cmdLineParser, defaultConfig) match {
+    X2Cpg.parseCommandLine(args, cmdLineParser, frontend.defaultConfig) match {
+      case Some(config) if !Environment.pathExists(config.inputPath) =>
+        logger.warn(s"Given path '${config.inputPath}' does not exist")
+        System.exit(1)
       case Some(config) =>
         try {
           logOutputPath(config.outputPath)
-          run(config, frontend)
+          run(config)
         } catch {
           case ex: Throwable =>
             ex.printStackTrace()
@@ -180,18 +218,20 @@ abstract class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]](
 
 /** Trait that represents a CPG generator, where T is the frontend configuration class.
   */
-trait X2CpgFrontend[T <: X2CpgConfig[T]] extends AutoCloseable {
+trait X2CpgFrontend extends AutoCloseable {
+  type ConfigType <: X2CpgConfig[ConfigType]
+  val defaultConfig: ConfigType
 
   /** Create a CPG according to given configuration. Returns CPG wrapped in a `Try`, making it possible to detect and
     * inspect exceptions in CPG generation. To be provided by the frontend.
     */
-  def createCpg(config: T): Try[Cpg]
+  def createCpg(config: ConfigType): Try[Cpg]
 
   /** Create CPG according to given configuration, printing errors to the console if they occur. The CPG is closed and
     * not returned.
     */
   @throws[Throwable]("if createCpg throws any Throwable")
-  def run(config: T): Unit = {
+  def run(config: ConfigType): Unit = {
     withErrorsToConsole(config) { _ =>
       createCpg(config) match {
         case Success(cpg) =>
@@ -213,7 +253,7 @@ trait X2CpgFrontend[T <: X2CpgConfig[T]] extends AutoCloseable {
 
   /** Create a CPG with default overlays according to given configuration
     */
-  def createCpgWithOverlays(config: T): Try[Cpg] = {
+  def createCpgWithOverlays(config: ConfigType): Try[Cpg] = {
     val maybeCpg = createCpg(config)
     maybeCpg.map { cpg =>
       applyDefaultOverlays(cpg)
@@ -221,46 +261,18 @@ trait X2CpgFrontend[T <: X2CpgConfig[T]] extends AutoCloseable {
     }
   }
 
-  /** Create a CPG for code at `inputPath` and apply default overlays.
-    */
-  def createCpgWithOverlays(inputName: String)(implicit defaultConfig: T): Try[Cpg] = {
-    val maybeCpg = createCpg(inputName)
-    maybeCpg.map { cpg =>
-      applyDefaultOverlays(cpg)
-      cpg
-    }
-  }
-
-  /** Create a CPG for code at `inputName` (a single location) with default frontend configuration. If `outputName`
-    * exists, it is the file name of the resulting CPG. Otherwise, the CPG is held in memory.
-    */
-  def createCpg(inputName: String, outputName: Option[String])(implicit defaultConfig: T): Try[Cpg] = {
-    val defaultWithInputPath = defaultConfig.withInputPath(inputName)
-    val config = if (!outputName.contains(X2CpgConfig.defaultOutputPath)) {
-      if (outputName.isEmpty) {
-        defaultWithInputPath.withOutputPath("")
-      } else {
-        defaultWithInputPath.withOutputPath(outputName.get)
-      }
-    } else {
-      defaultWithInputPath
-    }
-    createCpg(config)
-  }
-
-  /** Create a CPG in memory for file at `inputName` with default configuration.
-    */
-  def createCpg(inputName: String)(implicit defaultConfig: T): Try[Cpg] = createCpg(inputName, None)(defaultConfig)
-
   /** For frontends that create and manage resources during AST generation, they can clean up these resources here.
     */
   override def close(): Unit = {}
-
 }
 
 object X2Cpg {
 
   private val logger = LoggerFactory.getLogger(X2Cpg.getClass)
+
+  private val oParserSetup: OParserSetup = new DefaultOParserSetup {
+    override def showUsageOnError: Option[Boolean] = Some(true)
+  }
 
   /** Parse commands line arguments in `args` using an X2Cpg command line parser, extended with the frontend specific
     * options in `frontendSpecific` with the initial configuration set to `initialConf`. On success, the configuration
@@ -272,7 +284,7 @@ object X2Cpg {
     initialConf: R
   ): Option[R] = {
     val parser = commandLineParser(frontendSpecific)
-    OParser.parse(parser, args, initialConf)
+    OParser.parse(parser, args, initialConf, oParserSetup)
   }
 
   /** Create a command line parser that can be extended to add options specific for the frontend.
@@ -298,16 +310,10 @@ object X2Cpg {
       opt[Seq[String]]("exclude")
         .valueName("<file1>")
         .unbounded()
-        .action { (x, c) =>
-          c.ignoredFiles = c.ignoredFiles ++ x.map(c.createPathForIgnore)
-          c
-        }
+        .action { (x, c) => c.withIgnoredFiles(c.ignoredFiles ++ x) }
         .text("files or folders to exclude during CPG generation (paths relative to <input-dir> or absolute paths)"),
       opt[String]("exclude-regex")
-        .action { (x, c) =>
-          c.ignoredFilesRegex = x.r
-          c
-        }
+        .action { (x, c) => c.withIgnoredFilesRegex(x) }
         .text("a regex specifying files to exclude during CPG generation (paths relative to <input-dir> are matched)"),
       opt[Unit]("no-default-exclude").action { (_, c) => c.withDefaultIgnoredFilesRegex(Nil) }.hidden(),
       opt[Unit]("enable-early-schema-checking")
@@ -353,7 +359,7 @@ object X2Cpg {
   /** Apply function `applyPasses` to a newly created CPG. The CPG is wrapped in a `Try` and returned. On failure, the
     * CPG is ensured to be closed.
     */
-  def withNewEmptyCpg[T <: X2CpgConfig[?]](outPath: String, config: T)(applyPasses: (Cpg, T) => Unit): Try[Cpg] = {
+  def withNewEmptyCpg[T <: X2CpgConfig[T]](outPath: String, config: T)(applyPasses: (Cpg, T) => Unit): Try[Cpg] = {
     val outputPath = if (outPath != "") Some(outPath) else None
     Try {
       val cpg = newEmptyCpg(outputPath)

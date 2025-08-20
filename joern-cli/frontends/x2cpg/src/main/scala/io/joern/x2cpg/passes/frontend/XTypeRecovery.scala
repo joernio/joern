@@ -1,6 +1,7 @@
 package io.joern.x2cpg.passes.frontend
 
-import io.joern.x2cpg.{Defines, X2CpgConfig}
+import io.joern.x2cpg.passes.frontend
+import io.joern.x2cpg.{Defines, ValidationMode, X2CpgConfig}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.passes.{CpgPass, CpgPassBase, ForkJoinParallelCpgPass}
@@ -52,7 +53,7 @@ object XTypeRecoveryConfig {
   }
 
   /** Parser options for languages implementing this pass. */
-  def parserOptionsForParserConfig[R <: X2CpgConfig[R] & TypeRecoveryParserConfig[R]]: OParser[?, R] = {
+  def parserOptionsForParserConfig[R <: X2CpgConfig[R] & TypeRecoveryParserConfig]: OParser[?, R] = {
     _parserOptions[R](
       configureNoDummyTypes = _.withDisableDummyTypes(true),
       configureIterations = (iterations, config) => config.withTypePropagationIterations(iterations)
@@ -169,19 +170,22 @@ abstract class XTypeRecoveryPassGenerator[CompilationUnitType <: AstNode](
 
 }
 
-trait TypeRecoveryParserConfig[R <: X2CpgConfig[R]] { this: R =>
+object TypeRecoveryParserConfig {
+  final case class Config(disableDummyTypes: Boolean = false, typePropagationIterations: Int = 2)
+}
+trait TypeRecoveryParserConfig { this: X2CpgConfig[?] =>
 
-  var disableDummyTypes: Boolean     = false
-  var typePropagationIterations: Int = 2
+  protected def typeRecoveryParserConfig: TypeRecoveryParserConfig.Config
+  final def disableDummyTypes: Boolean     = typeRecoveryParserConfig.disableDummyTypes
+  final def typePropagationIterations: Int = typeRecoveryParserConfig.typePropagationIterations
 
-  def withDisableDummyTypes(value: Boolean): R = {
-    this.disableDummyTypes = value
-    this
+  protected def withTypeRecoveryParserConfig(value: frontend.TypeRecoveryParserConfig.Config): OwnType
+  final def withDisableDummyTypes(value: Boolean): OwnType = {
+    withTypeRecoveryParserConfig(typeRecoveryParserConfig.copy(disableDummyTypes = value))
   }
 
-  def withTypePropagationIterations(value: Int): R = {
-    typePropagationIterations = value
-    this
+  final def withTypePropagationIterations(value: Int): OwnType = {
+    withTypeRecoveryParserConfig(typeRecoveryParserConfig.copy(typePropagationIterations = value))
   }
 
 }

@@ -1,7 +1,7 @@
 package io.joern.jimple2cpg
 
 import io.joern.jimple2cpg.Frontend.*
-import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
+import io.joern.x2cpg.{SingleThreadedFrontend, X2CpgConfig, X2CpgMain}
 import io.joern.x2cpg.utils.server.FrontendHTTPServer
 import scopt.OParser
 
@@ -15,25 +15,28 @@ final case class Config(
   dynamicPkgs: Seq[String] = Seq.empty,
   fullResolver: Boolean = false,
   recurse: Boolean = false,
-  depth: Int = 1
+  depth: Int = 1,
+  override val genericConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig()
 ) extends X2CpgConfig[Config] {
+  override def withGenericConfig(value: X2CpgConfig.GenericConfig): Config = copy(genericConfig = value)
+
   def withAndroid(android: String): Config = {
-    copy(android = Some(android)).withInheritedFields(this)
+    copy(android = Some(android))
   }
   def withDynamicDirs(value: Seq[String]): Config = {
-    copy(dynamicDirs = value).withInheritedFields(this)
+    copy(dynamicDirs = value)
   }
   def withDynamicPkgs(value: Seq[String]): Config = {
-    copy(dynamicPkgs = value).withInheritedFields(this)
+    copy(dynamicPkgs = value)
   }
   def withFullResolver(value: Boolean): Config = {
-    copy(fullResolver = value).withInheritedFields(this)
+    copy(fullResolver = value)
   }
   def withRecurse(value: Boolean): Config = {
-    copy(recurse = value).withInheritedFields(this)
+    copy(recurse = value)
   }
   def withDepth(value: Int): Config = {
-    copy(depth = value).withInheritedFields(this)
+    copy(depth = value)
   }
 }
 
@@ -77,14 +80,4 @@ private object Frontend {
 
 /** Entry point for command line CPG creator
   */
-object Main extends X2CpgMain(cmdLineParser, new Jimple2Cpg()) with FrontendHTTPServer[Config, Jimple2Cpg] {
-
-  override protected def newDefaultConfig(): Config = Config()
-
-  override protected val executor: ExecutorService = FrontendHTTPServer.singleThreadExecutor()
-
-  def run(config: Config, jimple2Cpg: Jimple2Cpg): Unit = {
-    if (config.serverMode) { startup(); config.serverTimeoutSeconds.foreach(serveUntilTimeout) }
-    else { jimple2Cpg.run(config) }
-  }
-}
+object Main extends X2CpgMain(new Jimple2Cpg(), cmdLineParser) with SingleThreadedFrontend

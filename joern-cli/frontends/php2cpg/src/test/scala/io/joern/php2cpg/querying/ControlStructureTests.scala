@@ -1315,4 +1315,357 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       echoCall.code shouldBe "echo $val"
     }
   }
+
+  "foreach loop with listExpr" should {
+    val cpg = code("""<?php
+        |function foo($data) {
+        | foreach($data as list($a, $b, $c)) {
+        |   echo $a;
+        |   echo $b;
+        | }
+        |}
+        |""".stripMargin)
+
+    def assignmentTests(assignmentCall: Call, variableName: String, arrayIndex: Int): Unit = {
+      assignmentCall.methodFullName shouldBe Operators.assignment
+
+      inside(assignmentCall.argument.l) { case List(lhsIdent: Identifier, rhsIdxAccess: Call) =>
+        lhsIdent.name shouldBe variableName
+        lhsIdent.code shouldBe s"$$${variableName}"
+
+        rhsIdxAccess.methodFullName shouldBe Operators.indexAccess
+        rhsIdxAccess.code shouldBe s"$$foo@tmp-0[${arrayIndex}]" // $foo@tmp-0 is the name of the variable holding the current value
+        val List(idxLhs: Identifier, idxRhs: Literal) = rhsIdxAccess.argument.l: @unchecked
+        idxLhs.name shouldBe "foo@tmp-0"
+        idxLhs.code shouldBe "$foo@tmp-0"
+      }
+    }
+
+    "foreach structure" in {
+      inside(cpg.method.name("foo").body.astChildren.l) {
+        case (iterLocal: Local) :: (aLocal: Local) :: (bLocal: Local) :: (cLocal: Local) :: (foreachStruct: ControlStructure) :: Nil =>
+          iterLocal.name shouldBe "foo@iter_tmp-0"
+          aLocal.name shouldBe "a"
+          bLocal.name shouldBe "b"
+          cLocal.name shouldBe "c"
+          foreachStruct.code shouldBe "foreach ($data as list($a,$b,$c))"
+        case xs => fail(s"Expected five astChildren, got ${xs.code.mkString("[", ",", "]")}")
+      }
+    }
+
+    "Init AST structures" in {
+      inside(cpg.method.name("foo").body.astChildren.isControlStructure.astChildren.l) {
+        case (initAsts: Block) :: _ :: _ :: _ =>
+          inside(initAsts.astChildren.l) { case List(iterInit: Call, valInitBlock: Block) =>
+            iterInit.name shouldBe Operators.assignment
+            iterInit.code shouldBe "$foo@iter_tmp-0 = $data"
+            inside(iterInit.argument.l) { case List(iterTemp: Identifier, iterExpr: Identifier) =>
+              iterTemp.name shouldBe "foo@iter_tmp-0"
+              iterTemp.code shouldBe "$foo@iter_tmp-0"
+              iterTemp.argumentIndex shouldBe 1
+
+              iterExpr.name shouldBe "data"
+              iterExpr.code shouldBe "$data"
+              iterExpr.argumentIndex shouldBe 2
+            }
+
+            val List(valInit: Call, aInit: Call, bInit: Call, cInit: Call) =
+              valInitBlock.astChildren.isBlock.astChildren.l: @unchecked
+            valInit.name shouldBe Operators.assignment
+            valInit.code shouldBe "$foo@tmp-0 = $foo@iter_tmp-0->current()"
+            inside(valInit.argument.l) { case List(valId: Identifier, currentCall: Call) =>
+              valId.name shouldBe "foo@tmp-0"
+              valId.code shouldBe "$foo@tmp-0"
+              valId.argumentIndex shouldBe 1
+
+              currentCall.name shouldBe "current"
+              currentCall.methodFullName shouldBe s"Iterator.current"
+              currentCall.code shouldBe "$foo@iter_tmp-0->current()"
+              inside(currentCall.argument(0).start.l) { case List(iterRecv: Identifier) =>
+                iterRecv.name shouldBe "foo@iter_tmp-0"
+                iterRecv.argumentIndex shouldBe 0
+              }
+            }
+
+            assignmentTests(aInit, variableName = "a", arrayIndex = 0)
+            assignmentTests(bInit, variableName = "b", arrayIndex = 1)
+            assignmentTests(cInit, variableName = "c", arrayIndex = 2)
+          }
+        case xs => fail(s"Expected four children for control structure, got ${xs.code.mkString("[", ",", "]")}")
+      }
+    }
+
+    "Update AST structures" in {
+      inside(cpg.method.name("foo").body.astChildren.isControlStructure.astChildren.l) {
+        case _ :: _ :: (updateAsts: Block) :: (body: Block) :: Nil =>
+          inside(updateAsts.astChildren.l) { case List(nextCall: Call, valAssignBlock: Block) =>
+            nextCall.name shouldBe "next"
+            nextCall.methodFullName shouldBe "Iterator.next"
+            nextCall.code shouldBe "$foo@iter_tmp-0->next()"
+            inside(nextCall.argument(0).start.l) { case List(iterTmp: Identifier) =>
+              iterTmp.name shouldBe "foo@iter_tmp-0"
+              iterTmp.code shouldBe "$foo@iter_tmp-0"
+              iterTmp.argumentIndex shouldBe 0
+            }
+
+            val List(valInit: Call, aInit: Call, bInit: Call, cInit: Call) =
+              valAssignBlock.astChildren.isBlock.astChildren.l: @unchecked
+            valInit.name shouldBe Operators.assignment
+            valInit.code shouldBe "$foo@tmp-0 = $foo@iter_tmp-0->current()"
+            inside(valInit.argument.l) { case List(valId: Identifier, currentCall: Call) =>
+              valId.name shouldBe "foo@tmp-0"
+              valId.code shouldBe "$foo@tmp-0"
+              valId.argumentIndex shouldBe 1
+
+              currentCall.name shouldBe "current"
+              currentCall.methodFullName shouldBe s"Iterator.current"
+              currentCall.code shouldBe "$foo@iter_tmp-0->current()"
+              inside(currentCall.argument(0).start.l) { case List(iterRecv: Identifier) =>
+                iterRecv.name shouldBe "foo@iter_tmp-0"
+                iterRecv.argumentIndex shouldBe 0
+              }
+            }
+
+            assignmentTests(aInit, variableName = "a", arrayIndex = 0)
+            assignmentTests(bInit, variableName = "b", arrayIndex = 1)
+            assignmentTests(cInit, variableName = "c", arrayIndex = 2)
+          }
+
+          inside(body.astChildren.l) { case List(echoCallA: Call, echoCallB: Call) =>
+            echoCallA.code shouldBe "echo $a"
+            echoCallB.code shouldBe "echo $b"
+          }
+        case xs => fail(s"Expected four children for control structure, got ${xs.code.mkString("[", ",", "]")}")
+      }
+    }
+
+    "create OR `!isNull` checks" in {
+      /*
+      ```php
+      $data = [[1, 2]]
+      foreach($data as list($a, $b, $c)
+      ```
+      The above sample is still valid Php code and runs as long as we don't use the $c variable in the loop (only a warning is emitted when running the code). This means
+      that the `!isNull` condition should be an OR since the loop still executes above, even though $c is a null-value
+       */
+      inside(cpg.controlStructure.isFor.condition.l) {
+        case parentOr :: Nil =>
+          inside(parentOr.astChildren.l) {
+            case (nestedOr: Call) :: (logicalNot: Call) :: Nil =>
+              nestedOr.methodFullName shouldBe Operators.or
+              val List(orLeftArg: Call, orRightArg: Call) = nestedOr.argument.l: @unchecked
+              orLeftArg.methodFullName shouldBe Operators.logicalNot
+              orRightArg.methodFullName shouldBe Operators.logicalNot
+
+              val List(orLeftArgNullCall: Call) = orLeftArg.argument.l: @unchecked
+              orLeftArgNullCall.methodFullName shouldBe PhpOperators.isNull
+
+              val List(aVar) = orLeftArgNullCall.argument.l: @unchecked
+              aVar.code shouldBe "$a"
+
+              val List(orRightArgNullCall: Call) = orRightArg.argument.l: @unchecked
+              orRightArgNullCall.methodFullName shouldBe PhpOperators.isNull
+
+              val List(bVar) = orRightArgNullCall.argument.l: @unchecked
+              bVar.code shouldBe "$b"
+
+              logicalNot.methodFullName shouldBe Operators.logicalNot
+              val List(notArg: Call) = logicalNot.argument.l: @unchecked
+              notArg.methodFullName shouldBe PhpOperators.isNull
+
+              val List(cVar: Identifier) = notArg.argument.l: @unchecked
+              cVar.code shouldBe "$c"
+
+            case xs => fail(s"Expected two children calls for condition, got, ${xs.code.mkString("[", ",", "]")}")
+          }
+        case xs => fail(s"Expected one condition for FOR construct, got ${xs.code.mkString("[", ",", "]")}")
+      }
+    }
+  }
+
+  "foreach loop with nested list construct" should {
+    val cpg = code("""<?php
+                     |function foo($data) {
+                     | foreach($data as list($a, list($b, $c))) {
+                     |   echo $a;
+                     |   echo $b;
+                     | }
+                     |}
+                     |""".stripMargin)
+    def assignmentTests(assignmentCall: Call, variableName: String, tmpIndex: Int, arrayIndex: Int): Unit = {
+      assignmentCall.methodFullName shouldBe Operators.assignment
+
+      inside(assignmentCall.argument.l) { case List(lhsIdent: Identifier, rhsIdxAccess: Call) =>
+        lhsIdent.name shouldBe variableName
+        lhsIdent.code shouldBe s"$$${variableName}"
+
+        rhsIdxAccess.methodFullName shouldBe Operators.indexAccess
+        rhsIdxAccess.code shouldBe s"$$foo@tmp-${tmpIndex}[${arrayIndex}]" // $foo@tmp-0 is the name of the variable holding the current value
+        val List(idxLhs: Identifier, idxRhs: Literal) = rhsIdxAccess.argument.l: @unchecked
+        idxLhs.name shouldBe s"foo@tmp-${tmpIndex}"
+        idxLhs.code shouldBe s"$$foo@tmp-${tmpIndex}"
+      }
+    }
+
+    "foreach structure" in {
+      inside(cpg.method.name("foo").body.astChildren.l) {
+        case (iterLocal: Local) :: (aLocal: Local) :: (bLocal: Local) :: (cLocal: Local) :: (foreachStruct: ControlStructure) :: Nil =>
+          iterLocal.name shouldBe "foo@iter_tmp-0"
+          aLocal.name shouldBe "a"
+          bLocal.name shouldBe "b"
+          cLocal.name shouldBe "c"
+          foreachStruct.code shouldBe "foreach ($data as list($a,list($b,$c)))"
+        case xs => fail(s"Expected five astChildren, got ${xs.code.mkString("[", ",", "]")}")
+      }
+    }
+
+    "Init AST structures" in {
+      inside(cpg.method.name("foo").body.astChildren.isControlStructure.astChildren.l) {
+        case (initAsts: Block) :: _ :: _ :: _ =>
+          inside(initAsts.astChildren.l) { case List(iterInit: Call, valInitBlock: Block) =>
+            iterInit.name shouldBe Operators.assignment
+            iterInit.code shouldBe "$foo@iter_tmp-0 = $data"
+            inside(iterInit.argument.l) { case List(iterTemp: Identifier, iterExpr: Identifier) =>
+              iterTemp.name shouldBe "foo@iter_tmp-0"
+              iterTemp.code shouldBe "$foo@iter_tmp-0"
+              iterTemp.argumentIndex shouldBe 1
+
+              iterExpr.name shouldBe "data"
+              iterExpr.code shouldBe "$data"
+              iterExpr.argumentIndex shouldBe 2
+            }
+
+            val List(valInit: Call, aInit: Call, tmp1Init: Call, tmp2Init: Call, bInit: Call, cInit: Call) =
+              valInitBlock.astChildren.isBlock.astChildren.l: @unchecked
+            valInit.name shouldBe Operators.assignment
+            valInit.code shouldBe "$foo@tmp-0 = $foo@iter_tmp-0->current()"
+            inside(valInit.argument.l) { case List(valId: Identifier, currentCall: Call) =>
+              valId.name shouldBe "foo@tmp-0"
+              valId.code shouldBe "$foo@tmp-0"
+              valId.argumentIndex shouldBe 1
+
+              currentCall.name shouldBe "current"
+              currentCall.methodFullName shouldBe s"Iterator.current"
+              currentCall.code shouldBe "$foo@iter_tmp-0->current()"
+              inside(currentCall.argument(0).start.l) { case List(iterRecv: Identifier) =>
+                iterRecv.name shouldBe "foo@iter_tmp-0"
+                iterRecv.argumentIndex shouldBe 0
+              }
+            }
+
+            tmp2Init.methodFullName shouldBe Operators.assignment
+            tmp2Init.code shouldBe "$foo@tmp-2 = $foo@tmp-1"
+            inside(tmp2Init.argument.l) { case List(lhsIdent: Identifier, rhsIdent: Identifier) =>
+              lhsIdent.name shouldBe "foo@tmp-2"
+              lhsIdent.code shouldBe "$foo@tmp-2"
+
+              rhsIdent.name shouldBe "foo@tmp-1"
+              rhsIdent.code shouldBe "$foo@tmp-1"
+            }
+
+            assignmentTests(aInit, variableName = "a", tmpIndex = 0, arrayIndex = 0)
+            assignmentTests(bInit, variableName = "b", tmpIndex = 2, arrayIndex = 0)
+            assignmentTests(cInit, variableName = "c", tmpIndex = 2, arrayIndex = 1)
+
+            assignmentTests(tmp1Init, variableName = "foo@tmp-1", tmpIndex = 0, arrayIndex = 1)
+          }
+        case xs => fail(s"Expected four children for control structure, got ${xs.code.mkString("[", ",", "]")}")
+      }
+    }
+
+    "Update AST structures" in {
+      inside(cpg.method.name("foo").body.astChildren.isControlStructure.astChildren.l) {
+        case _ :: _ :: (updateAsts: Block) :: (body: Block) :: Nil =>
+          inside(updateAsts.astChildren.l) { case List(nextCall: Call, valAssignBlock: Block) =>
+            nextCall.name shouldBe "next"
+            nextCall.methodFullName shouldBe "Iterator.next"
+            nextCall.code shouldBe "$foo@iter_tmp-0->next()"
+            inside(nextCall.argument(0).start.l) { case List(iterTmp: Identifier) =>
+              iterTmp.name shouldBe "foo@iter_tmp-0"
+              iterTmp.code shouldBe "$foo@iter_tmp-0"
+              iterTmp.argumentIndex shouldBe 0
+            }
+
+            val List(valInit: Call, aInit: Call, tmp1Init: Call, tmp2Init: Call, bInit: Call, cInit: Call) =
+              valAssignBlock.astChildren.isBlock.astChildren.l: @unchecked
+            valInit.name shouldBe Operators.assignment
+            valInit.code shouldBe "$foo@tmp-0 = $foo@iter_tmp-0->current()"
+            inside(valInit.argument.l) { case List(valId: Identifier, currentCall: Call) =>
+              valId.name shouldBe "foo@tmp-0"
+              valId.code shouldBe "$foo@tmp-0"
+              valId.argumentIndex shouldBe 1
+
+              currentCall.name shouldBe "current"
+              currentCall.methodFullName shouldBe s"Iterator.current"
+              currentCall.code shouldBe "$foo@iter_tmp-0->current()"
+              inside(currentCall.argument(0).start.l) { case List(iterRecv: Identifier) =>
+                iterRecv.name shouldBe "foo@iter_tmp-0"
+                iterRecv.argumentIndex shouldBe 0
+              }
+            }
+
+            tmp2Init.methodFullName shouldBe Operators.assignment
+            tmp2Init.code shouldBe "$foo@tmp-2 = $foo@tmp-1"
+            inside(tmp2Init.argument.l) { case List(lhsIdent: Identifier, rhsIdent: Identifier) =>
+              lhsIdent.name shouldBe "foo@tmp-2"
+              lhsIdent.code shouldBe "$foo@tmp-2"
+
+              rhsIdent.name shouldBe "foo@tmp-1"
+              rhsIdent.code shouldBe "$foo@tmp-1"
+            }
+
+            assignmentTests(aInit, variableName = "a", tmpIndex = 0, arrayIndex = 0)
+            assignmentTests(bInit, variableName = "b", tmpIndex = 2, arrayIndex = 0)
+            assignmentTests(cInit, variableName = "c", tmpIndex = 2, arrayIndex = 1)
+
+            assignmentTests(tmp1Init, variableName = "foo@tmp-1", tmpIndex = 0, arrayIndex = 1)
+          }
+
+          inside(body.astChildren.l) { case List(echoCallA: Call, echoCallB: Call) =>
+            echoCallA.code shouldBe "echo $a"
+            echoCallB.code shouldBe "echo $b"
+          }
+        case xs => fail(s"Expected four children for control structure, got ${xs.code.mkString("[", ",", "]")}")
+      }
+    }
+
+    "create OR `!isNull` checks" in {
+      /*
+      For nested list deconstruction, we have !a || (!b || !c) instead of (!a || !b) || !c because we process
+      the nested list first, which gives the (!b || !c), and then we use that result to create the !a || (!b || !c)
+       */
+      inside(cpg.controlStructure.isFor.condition.l) {
+        case parentOr :: Nil =>
+          inside(parentOr.astChildren.l) {
+            case (logicalNot: Call) :: (nestedOr: Call) :: Nil =>
+              nestedOr.methodFullName shouldBe Operators.or
+              val List(orLeftArg: Call, orRightArg: Call) = nestedOr.argument.l: @unchecked
+              orLeftArg.methodFullName shouldBe Operators.logicalNot
+              orRightArg.methodFullName shouldBe Operators.logicalNot
+
+              val List(orLeftArgNullCall: Call) = orLeftArg.argument.l: @unchecked
+              orLeftArgNullCall.methodFullName shouldBe PhpOperators.isNull
+
+              val List(bVar) = orLeftArgNullCall.argument.l: @unchecked
+              bVar.code shouldBe "$b"
+
+              val List(orRightArgNullCall: Call) = orRightArg.argument.l: @unchecked
+              orRightArgNullCall.methodFullName shouldBe PhpOperators.isNull
+
+              val List(cVar) = orRightArgNullCall.argument.l: @unchecked
+              cVar.code shouldBe "$c"
+
+              logicalNot.methodFullName shouldBe Operators.logicalNot
+              val List(notArg: Call) = logicalNot.argument.l: @unchecked
+              notArg.methodFullName shouldBe PhpOperators.isNull
+
+              val List(aVar: Identifier) = notArg.argument.l: @unchecked
+              aVar.code shouldBe "$a"
+
+            case xs => fail(s"Expected two children calls for condition, got, ${xs.code.mkString("[", ",", "]")}")
+          }
+        case xs => fail(s"Expected one condition for FOR construct, got ${xs.code.mkString("[", ",", "]")}")
+      }
+    }
+  }
 }

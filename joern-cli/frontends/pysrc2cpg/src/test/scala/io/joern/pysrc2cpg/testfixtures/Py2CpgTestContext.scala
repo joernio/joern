@@ -14,13 +14,24 @@ object Py2CpgTestContext {
     context.addSource(code, file)
     context.buildCpg
   }
+
+  def addSource(code: String, file: String = "test.py"): Py2CpgTestContext = {
+    val context = new Py2CpgTestContext()
+    context.addSource(code, file)
+  }
 }
 
 class Py2CpgTestContext {
 
-  private val codeAndFile     = mutable.ArrayBuffer.empty[Py2Cpg.InputPair]
-  private var buildResult     = Option.empty[Cpg]
-  private val absTestFilePath = "<absoluteTestPath>/"
+  private val codeAndFile       = mutable.ArrayBuffer.empty[Py2Cpg.InputPair]
+  private var buildResult       = Option.empty[Cpg]
+  private val absTestFilePath   = "<absoluteTestPath>/"
+  private var enableFileContent = true
+
+  def withEnabledFileContent(value: Boolean): Py2CpgTestContext = {
+    enableFileContent = value
+    this
+  }
 
   def addSource(code: String, file: String = "test.py"): Py2CpgTestContext = {
     if (buildResult.nonEmpty) {
@@ -42,7 +53,7 @@ class Py2CpgTestContext {
           cpg,
           absTestFilePath,
           schemaValidationMode = ValidationMode.Enabled,
-          enableFileContent = true
+          enableFileContent = enableFileContent
         )
       py2Cpg.buildCpg()
 
