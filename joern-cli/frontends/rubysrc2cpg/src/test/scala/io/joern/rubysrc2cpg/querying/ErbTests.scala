@@ -456,8 +456,7 @@ class ErbTests extends RubyCode2CpgFixture {
       case xs => fail(s"Expected one local for self, got ${xs.name.mkString("[", ",", "]")}")
     }
 
-    inside(
-      cpg.method.fullNameExact("Test0.rb:<main>.Admin.UsersController.show.<lambda>0").local.name("self").l) {
+    inside(cpg.method.fullNameExact("Test0.rb:<main>.Admin.UsersController.show.<lambda>0").local.name("self").l) {
       case selfLocal :: Nil =>
         selfLocal.closureBindingId shouldBe Some("Test0.rb:<main>.Admin.UsersController.show.<lambda>0.self")
       case xs => fail(s"Expected one local for self, got ${xs.name.mkString("[", ",", "]")}")
