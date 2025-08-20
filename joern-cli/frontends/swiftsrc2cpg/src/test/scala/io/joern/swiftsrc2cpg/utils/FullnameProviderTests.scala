@@ -6,9 +6,16 @@ import org.scalatest.matchers.should.Matchers
 
 import scala.collection.mutable
 
-class FullnameProviderTest extends AnyFlatSpec with Matchers {
+class FullnameProviderTests extends AnyFlatSpec with Matchers {
 
-  // Test data
+  private class MockFullNameProvider(typeMap: SwiftFileLocalTypeMapping) extends FullnameProvider(typeMap) {
+    override def typeFullname(range: (Int, Int), nodeKind: String): Option[String] =
+      super.typeFullname(range, nodeKind)
+
+    override def declFullname(range: (Int, Int), nodeKind: String): Option[String] =
+      super.declFullname(range, nodeKind)
+  }
+
   val typeInfo1          = ResolvedTypeInfo(Some("type.fullname.A"), Some("decl.fullname.A"), "AKind")
   val typeInfo2          = ResolvedTypeInfo(Some("type.fullname.B"), Some("decl.fullname.B"), "BKind")
   val typeInfoNoType     = ResolvedTypeInfo(None, Some("decl.fullname.C"), "CKind")
@@ -18,7 +25,7 @@ class FullnameProviderTest extends AnyFlatSpec with Matchers {
     val mockTypeMap = new SwiftFileLocalTypeMapping()
     mockTypeMap.put((10, 20), mutable.HashSet(typeInfo1))
 
-    val provider = new FullnameProvider(mockTypeMap)
+    val provider = new MockFullNameProvider(mockTypeMap)
     provider.typeFullname((10, 20), "nodeKind") shouldBe Some("type.fullname.A")
   }
 
@@ -26,7 +33,7 @@ class FullnameProviderTest extends AnyFlatSpec with Matchers {
     val mockTypeMap = new SwiftFileLocalTypeMapping()
     mockTypeMap.put((10, 20), mutable.HashSet(typeInfoNoType))
 
-    val provider = new FullnameProvider(mockTypeMap)
+    val provider = new MockFullNameProvider(mockTypeMap)
     provider.typeFullname((10, 20), "nodeKind") shouldBe None
   }
 
@@ -34,7 +41,7 @@ class FullnameProviderTest extends AnyFlatSpec with Matchers {
     val mockTypeMap = new SwiftFileLocalTypeMapping()
     mockTypeMap.put((10, 10), mutable.HashSet(typeInfo2))
 
-    val provider = new FullnameProvider(mockTypeMap)
+    val provider = new MockFullNameProvider(mockTypeMap)
     provider.typeFullname((10, 20), "nodeKind") shouldBe Some("type.fullname.B")
   }
 
@@ -43,7 +50,7 @@ class FullnameProviderTest extends AnyFlatSpec with Matchers {
     mockTypeMap.put((10, 20), mutable.HashSet())
     mockTypeMap.put((10, 10), mutable.HashSet())
 
-    val provider = new FullnameProvider(mockTypeMap)
+    val provider = new MockFullNameProvider(mockTypeMap)
     provider.typeFullname((10, 20), "nodeKind") shouldBe None
   }
 
@@ -51,7 +58,7 @@ class FullnameProviderTest extends AnyFlatSpec with Matchers {
     val mockTypeMap = new SwiftFileLocalTypeMapping()
     mockTypeMap.put((30, 40), mutable.HashSet(typeInfo1))
 
-    val provider = new FullnameProvider(mockTypeMap)
+    val provider = new MockFullNameProvider(mockTypeMap)
     provider.declFullname((30, 40), "nodeKind") shouldBe Some("decl.fullname.A")
   }
 
@@ -59,7 +66,7 @@ class FullnameProviderTest extends AnyFlatSpec with Matchers {
     val mockTypeMap = new SwiftFileLocalTypeMapping()
     mockTypeMap.put((30, 40), mutable.HashSet(typeInfoNoFullName))
 
-    val provider = new FullnameProvider(mockTypeMap)
+    val provider = new MockFullNameProvider(mockTypeMap)
     provider.declFullname((30, 40), "nodeKind") shouldBe None
   }
 
@@ -67,7 +74,7 @@ class FullnameProviderTest extends AnyFlatSpec with Matchers {
     val mockTypeMap = new SwiftFileLocalTypeMapping()
     mockTypeMap.put((30, 30), mutable.HashSet(typeInfo2))
 
-    val provider = new FullnameProvider(mockTypeMap)
+    val provider = new MockFullNameProvider(mockTypeMap)
     provider.declFullname((30, 40), "nodeKind") shouldBe Some("decl.fullname.B")
     provider.typeFullname((30, 40), "nodeKind") shouldBe Some("type.fullname.B")
   }
@@ -77,7 +84,7 @@ class FullnameProviderTest extends AnyFlatSpec with Matchers {
     val multiSet    = mutable.HashSet(typeInfo1, typeInfo2)
     mockTypeMap.put((50, 60), multiSet)
 
-    val provider = new FullnameProvider(mockTypeMap)
+    val provider = new MockFullNameProvider(mockTypeMap)
     // Since filterForNodeKind just returns headOption at the moment, this would pick the first one
     provider.declFullname((50, 60), "nodeKind") shouldBe defined
     provider.typeFullname((50, 60), "nodeKind") shouldBe defined
@@ -86,7 +93,7 @@ class FullnameProviderTest extends AnyFlatSpec with Matchers {
   it should "return None when range is not available at all" in {
     val mockTypeMap = new SwiftFileLocalTypeMapping()
 
-    val provider = new FullnameProvider(mockTypeMap)
+    val provider = new MockFullNameProvider(mockTypeMap)
     provider.declFullname((30, 40), "nodeKind") shouldBe None
     provider.typeFullname((30, 40), "nodeKind") shouldBe None
   }

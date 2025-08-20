@@ -83,7 +83,7 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
     * @return
     *   An optional String containing the type fullname if found
     */
-  def typeFullname(range: (Int, Int), nodeKind: String): Option[String] = {
+  protected def typeFullname(range: (Int, Int), nodeKind: String): Option[String] = {
     fullName(range, FullnameProvider.Kind.Type, nodeKind)
   }
 
@@ -96,11 +96,12 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
     * @return
     *   An optional String containing the declaration fullname if found
     */
-  def declFullname(range: (Int, Int), nodeKind: String): Option[String] = {
+  protected def declFullname(range: (Int, Int), nodeKind: String): Option[String] = {
     fullName(range, FullnameProvider.Kind.Decl, nodeKind)
   }
 
   /** Retrieves the type fullname for a given Swift node. Extracts the start and end offsets from the node if available.
+    * Returns None if typeMap is empty.
     *
     * @param node
     *   The Swift node to get the type fullname for
@@ -108,6 +109,7 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
     *   An optional String containing the type fullname if found
     */
   def typeFullname(node: SwiftNode): Option[String] = {
+    if (typeMap.isEmpty) return None
     (node.startOffset, node.endOffset) match {
       case (Some(start), Some(end)) => typeFullname((start, end), node.toString)
       case _                        => None
@@ -115,7 +117,7 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
   }
 
   /** Retrieves the declaration fullname for a given Swift node. Extracts the start and end offsets from the node if
-    * available.
+    * available. Returns None if typeMap is empty.
     *
     * @param node
     *   The Swift node to get the declaration fullname for
@@ -123,6 +125,7 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
     *   An optional String containing the declaration fullname if found
     */
   def declFullname(node: SwiftNode): Option[String] = {
+    if (typeMap.isEmpty) return None
     (node.startOffset, node.endOffset) match {
       case (Some(start), Some(end)) => declFullname((start, end), node.toString)
       case _                        => None
