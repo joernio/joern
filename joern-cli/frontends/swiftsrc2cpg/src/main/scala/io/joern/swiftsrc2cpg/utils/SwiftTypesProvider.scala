@@ -494,7 +494,10 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
   private def calculateTypeFullname(mangledName: String): Option[String] = {
     mangledNameCache.getOrElseUpdate(
       mangledName,
-      demangle(mangledName).map(removeModifier).map(AstCreatorHelper.stripGenerics).map(_.replace(" ", ""))
+      demangle(mangledName)
+        .map(removeModifier)
+        .map(AstCreatorHelper.stripGenerics)
+        .map(_.replace(" ", "").stripSuffix(".Type"))
     )
   }
 

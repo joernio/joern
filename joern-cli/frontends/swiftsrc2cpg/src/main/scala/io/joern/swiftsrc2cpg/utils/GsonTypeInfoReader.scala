@@ -70,6 +70,19 @@ object GsonTypeInfoReader {
     (rangeObj.get("start").getAsInt, rangeObj.get("end").getAsInt)
   }
 
+  /** Safely extracts the source range from a JSON object.
+    *
+    * @param obj
+    *   The JSON object to extract range information from
+    * @return
+    *   Some((start, end)) if the range property exists, None otherwise
+    */
+  private def safeRange(obj: JsonObject): Option[(Int, Int)] = {
+    if (!obj.has("range")) return None
+    val rangeObj = obj.get("range").getAsJsonObject
+    Some((rangeObj.get("start").getAsInt, rangeObj.get("end").getAsInt))
+  }
+
   /** Determines if a JSON object contains useful type or decl fullname information.
     *
     * @param obj
@@ -79,6 +92,18 @@ object GsonTypeInfoReader {
     */
   private def qualifies(obj: JsonObject): Boolean = {
     obj.has("range") && (TypeFullnameFieldNames.exists(obj.has) || DeclFullnameFieldNames.exists(obj.has))
+  }
+
+  /** Determines if a JSON object represents a parameter in the Swift AST.
+    *
+    * @param obj
+    *   The JSON object to check
+    * @return
+    *   true if the object is a parameter with type or declaration information, false otherwise
+    */
+  private def isParameter(obj: JsonObject): Boolean = {
+    safePropertyValue(obj, "_kind").contains("parameter") &&
+    (TypeFullnameFieldNames.exists(obj.has) || DeclFullnameFieldNames.exists(obj.has))
   }
 
   /** Gets the AST node kind from a JSON object.
@@ -149,9 +174,10 @@ object GsonTypeInfoReader {
     *   A set of TypeInfo objects extracted from the JSON
     */
   def collectTypeInfo(reader: Reader): Set[TypeInfo] = {
-    val found      = mutable.HashSet.empty[TypeInfo]
-    val jsonReader = new JsonReader(reader)
-    var filename   = ""
+    val found        = mutable.HashSet.empty[TypeInfo]
+    val jsonReader   = new JsonReader(reader)
+    var filename     = ""
+    var currentRange = Option.empty[(Int, Int)]
 
     // Configure reader for better performance
     jsonReader.setStrictness(Strictness.LENIENT)
@@ -194,12 +220,15 @@ object GsonTypeInfoReader {
                 obj.add(name, value)
               } else jsonReader.skipValue()
           }
+          currentRange = safeRange(obj).orElse(currentRange)
         }
       }
       jsonReader.endObject()
 
       if (qualifies(obj)) {
-        extractTypeInfo(obj, filename)
+        extractTypeInfo(obj, filename, None)
+      } else if (isParameter(obj)) {
+        extractTypeInfo(obj, filename, currentRange)
       }
       obj
     }
@@ -211,9 +240,9 @@ object GsonTypeInfoReader {
       * @param filename
       *   The source file name
       */
-    def extractTypeInfo(obj: JsonObject, filename: String): Unit = {
+    def extractTypeInfo(obj: JsonObject, filename: String, rangeOpt: Option[(Int, Int)]): Unit = {
       val nodeKind = astNodeKind(obj)
-      val range_   = range(obj)
+      val range_   = rangeOpt.getOrElse(range(obj))
 
       lazy val declObj = nodeKind match {
         case kind if kind.endsWith(NodeKinds.CallExpr) => declFromCallExpr(obj)

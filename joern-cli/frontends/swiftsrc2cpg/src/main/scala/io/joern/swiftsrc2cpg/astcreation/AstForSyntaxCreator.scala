@@ -206,7 +206,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     // TODO: handle defaultValue
     val label      = code(node.firstName)
     val name       = node.secondName.fold(label)(code)
-    val tpe        = handleTypeAliasInitializer(node.`type`)
+    val tpe        = fullnameProvider.typeFullname(node).getOrElse(handleTypeAliasInitializer(node.`type`))
     val isVariadic = node.ellipsis.isDefined
 
     val parameterName = node.firstName match {

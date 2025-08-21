@@ -12,9 +12,7 @@ trait AstForTypeSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
   private def typeDeclForTypeSyntax(node: TypeSyntax): NewTypeDecl = {
-    val name                     = scopeLocalUniqueName("type")
-    val (typeName, typeFullName) = calcNameAndFullName(name)
-    registerType(typeFullName)
+    val (typeName, typeFullName) = typeNameInfoForTypeSyntax(node)
 
     val (astParentType, astParentFullName) = astParentInfo()
     val typeDeclNode_ =

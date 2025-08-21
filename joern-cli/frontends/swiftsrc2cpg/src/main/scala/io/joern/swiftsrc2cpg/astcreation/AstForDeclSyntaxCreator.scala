@@ -35,10 +35,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val modifiers  = modifiersForDecl(node)
     val aliasName  = node.initializer.map(i => handleTypeAliasInitializer(i.value))
 
-    val name                               = typeNameForDeclSyntax(node)
     val (astParentType, astParentFullName) = astParentInfo()
-    val (typeName, typeFullName)           = calcNameAndFullName(name)
-    registerType(typeFullName)
+    val (typeName, typeFullName)           = typeNameInfoForDeclSyntax(node)
 
     val typeDeclNode_ = typeDeclNode(
       node,
@@ -95,7 +93,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     case _                     => false
   }
 
-  private def typeNameForDeclSyntax(node: DeclSyntax): String = {
+  protected def typeNameForDeclSyntax(node: DeclSyntax): String = {
     val name = node match {
       case d: ActorDeclSyntax          => code(d.name)
       case d: AssociatedTypeDeclSyntax => code(d.name)
@@ -309,11 +307,9 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val modifiers  = modifiersForDecl(node)
     val inherits   = inheritsFrom(node)
 
-    val name                     = typeNameForDeclSyntax(node)
-    val (typeName, typeFullName) = calcNameAndFullName(name)
-    registerType(typeFullName)
-
+    val (typeName, typeFullName)           = typeNameInfoForDeclSyntax(node)
     val (astParentType, astParentFullName) = astParentInfo()
+
     val typeDeclNode_ = typeDeclNode(
       node,
       typeName,
@@ -460,12 +456,9 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val modifiers  = modifiersForDecl(node)
     val inherits   = inheritsFrom(node)
 
-    val name = typeNameForDeclSyntax(node)
-
-    val (typeName, typeFullName) = calcNameAndFullName(name)
-    registerType(typeFullName)
-
+    val (typeName, typeFullName)           = typeNameInfoForDeclSyntax(node)
     val (astParentType, astParentFullName) = astParentInfo()
+
     val typeDeclNode_ = typeDeclNode(
       node,
       typeName,
@@ -595,7 +588,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  private def paramSignature(
+  protected def paramSignature(
     node: FunctionParameterClauseSyntax | ClosureShorthandParameterListSyntax | ClosureParameterClauseSyntax |
       AccessorParametersSyntax
   ): String = {
@@ -626,33 +619,10 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         x.getOrElse(Seq.empty)
     }
 
-    val modifiers                    = modifiersForFunctionLike(node)
-    val name                         = calcMethodName(node)
-    val (methodName, methodFullName) = calcNameAndFullName(name)
-    val filename                     = parserResult.filename
-    val (signature, returnType) = node match {
-      case f: FunctionDeclSyntax =>
-        val returnType = f.signature.returnClause.fold(Defines.Any)(c => cleanType(code(c.`type`)))
-        (s"$returnType${paramSignature(f.signature.parameterClause)}", returnType)
-      case a: AccessorDeclSyntax =>
-        val returnType = Defines.Any
-        (s"$returnType${a.parameters.fold("()")(paramSignature)}", returnType)
-      case i: InitializerDeclSyntax =>
-        val (_, returnType) = astParentInfo()
-        (s"$returnType${paramSignature(i.signature.parameterClause)}", returnType)
-      case _: DeinitializerDeclSyntax =>
-        val returnType = Defines.Any
-        (s"$returnType()", returnType)
-      case s: SubscriptDeclSyntax =>
-        val returnType = cleanType(code(s.returnClause.`type`))
-        (s"$returnType${paramSignature(s.parameterClause)}", returnType)
-      case c: ClosureExprSyntax =>
-        val returnType      = c.signature.flatMap(_.returnClause).fold(Defines.Any)(r => cleanType(code(r.`type`)))
-        val paramClauseCode = c.signature.flatMap(_.parameterClause).fold("()")(paramSignature)
-        (s"$returnType$paramClauseCode", returnType)
-    }
-    registerType(returnType)
-    val methodFullNameAndSignature = s"$methodFullName:$signature"
+    val modifiers                                           = modifiersForFunctionLike(node)
+    val filename                                            = parserResult.filename
+    val (methodName, methodFullName, signature, returnType) = methodInfoForFunctionDeclLike(node)
+    val methodFullNameAndSignature                          = s"$methodFullName:$signature"
 
     val shouldCreateFunctionReference =
       typeRefIdStack.isEmpty || node.isInstanceOf[ClosureExprSyntax] || node.isInstanceOf[AccessorDeclSyntax]
@@ -855,11 +825,9 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val modifiers  = modifiersForDecl(node)
     val aliasName  = handleTypeAliasInitializer(node.initializer.value)
 
-    val name                     = typeNameForDeclSyntax(node)
-    val (typeName, typeFullName) = calcNameAndFullName(name)
-    registerType(typeFullName)
-
+    val (typeName, typeFullName)           = typeNameInfoForDeclSyntax(node)
     val (astParentType, astParentFullName) = astParentInfo()
+
     val typeDeclNode_ = typeDeclNode(
       node,
       typeName,
@@ -889,40 +857,22 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val attributes = node.attributes.children.map(astForNode)
     val modifiers  = modifiersForFunctionLike(node)
 
-    val accessorName = calcMethodName(node)
-    val name = accessorName match {
-      case "set" | "get" => variableName
-      case "didSet"      => s"didSet_$variableName"
-      case "willSet"     => s"willSet_$variableName"
-    }
-    val (methodName, methodFullName) = calcNameAndFullName(name)
-    val parameters                   = node.parameters.toSeq
-
-    val filename = parserResult.filename
-
-    val returnType = accessorName match {
-      case "get"                        => tpe
-      case "set" | "didSet" | "willSet" => Defines.Any
-    }
-    val signature = if (accessorName == "set") {
-      s"$returnType($tpe)"
-    } else {
-      s"$returnType()"
-    }
-    registerType(returnType)
-
-    val methodFullNameAndSignature = s"$methodFullName:$signature"
+    val filename                                = parserResult.filename
+    val parameters                              = node.parameters.toSeq
+    val accessorSpecifier                       = code(node.accessorSpecifier)
+    val (name, fullName, signature, returnType) = methodInfoForAccessorDecl(node, variableName, tpe)
+    val methodFullNameAndSignature              = s"$fullName:$signature"
 
     val codeString  = code(node)
-    val methodNode_ = methodNode(node, methodName, codeString, methodFullNameAndSignature, Option(signature), filename)
+    val methodNode_ = methodNode(node, name, codeString, methodFullNameAndSignature, Option(signature), filename)
     val block       = blockNode(node, PropertyDefaults.Code, Defines.Any)
 
     val capturingRefNode = typeRefIdStack.headOption
     methodAstParentStack.push(methodNode_)
-    scope.pushNewMethodScope(methodFullName, methodName, block, capturingRefNode)
+    scope.pushNewMethodScope(fullName, name, block, capturingRefNode)
     localAstParentStack.push(block)
 
-    val parameterAsts = if (parameters.isEmpty && accessorName == "set") {
+    val parameterAsts = if (parameters.isEmpty && accessorSpecifier == "set") {
       val name          = "newValue" // Swift default parameter name for set accessors
       val parameterNode = parameterInNode(node, name, name, 1, false, EvaluationStrategies.BY_VALUE, Some(tpe))
       scope.addVariable(name, parameterNode, Defines.Any, VariableScopeManager.ScopeType.MethodScope)
@@ -945,7 +895,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       .getOrElse(List.empty[Ast])
 
     val syntheticBodyStmtAst = if (bodyStmtAsts.isEmpty) {
-      accessorName match {
+      accessorSpecifier match {
         case "set" =>
           val thisNode    = identifierNode(node, "this")
           val fieldAccess = fieldAccessAst(node, node, Ast(thisNode), s"this.$variableName", variableName, tpe)
