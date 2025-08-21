@@ -44,6 +44,17 @@ class SwiftCompilerFullnameTests extends AstSwiftCompilerSrc2CpgSuite {
       helloMethod.fullName shouldBe "SwiftTest.Main.hello:()->()"
       val List(helloCall) = cpg.call.nameExact("hello").l
       helloCall.methodFullName shouldBe "SwiftTest.Main.hello:()->()"
+
+      helloMethod.fullName shouldBe helloCall.methodFullName
+
+      val List(mainTypeDecl) = cpg.typeDecl.nameExact("Main").l
+      mainTypeDecl.fullName shouldBe "SwiftTest.Main"
+      val List(mainConstructor) = mainTypeDecl.ast.isMethod.isConstructor.l
+      mainConstructor.fullName shouldBe "SwiftTest.Main.init:()->SwiftTest.Main"
+      val List(mainConstructorCall) = cpg.call.nameExact("Main").l
+      mainConstructorCall.methodFullName shouldBe "SwiftTest.Main.init:()->SwiftTest.Main"
+
+      mainConstructor.fullName shouldBe mainConstructorCall.methodFullName
     }
 
   }

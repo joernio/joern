@@ -145,9 +145,10 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     typeDeclNode: NewTypeDecl,
     methodBlockContent: List[Ast] = List.empty
   ): Unit = {
-    val constructorName = io.joern.x2cpg.Defines.ConstructorMethodName
-    val signature       = s"${typeDeclNode.fullName}()"
+    val constructorName = Defines.ConstructorMethodName
+    val signature       = s"()->${typeDeclNode.fullName}"
     val methodFullName  = s"${typeDeclNode.fullName}.$constructorName:$signature"
+
     val methodNode_ =
       methodNode(node, constructorName, constructorName, methodFullName, Some(signature), parserResult.filename)
     val modifiers = Seq(NewModifier().modifierType(ModifierTypes.CONSTRUCTOR))
