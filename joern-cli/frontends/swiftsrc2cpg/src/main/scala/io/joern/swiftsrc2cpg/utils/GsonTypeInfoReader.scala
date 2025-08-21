@@ -67,7 +67,9 @@ object GsonTypeInfoReader {
     */
   private def range(obj: JsonObject): (Int, Int) = {
     val rangeObj = obj.get("range").getAsJsonObject
-    (rangeObj.get("start").getAsInt, rangeObj.get("end").getAsInt)
+    val start    = rangeObj.get("start").getAsInt
+    val end      = rangeObj.get("end").getAsInt
+    if (start == end) (start, end) else (start, end + 1)
   }
 
   /** Safely extracts the source range from a JSON object.
@@ -78,9 +80,7 @@ object GsonTypeInfoReader {
     *   Some((start, end)) if the range property exists, None otherwise
     */
   private def safeRange(obj: JsonObject): Option[(Int, Int)] = {
-    if (!obj.has("range")) return None
-    val rangeObj = obj.get("range").getAsJsonObject
-    Some((rangeObj.get("start").getAsInt, rangeObj.get("end").getAsInt))
+    Option.when(obj.has("range"))(range(obj))
   }
 
   /** Determines if a JSON object contains useful type or decl fullname information.

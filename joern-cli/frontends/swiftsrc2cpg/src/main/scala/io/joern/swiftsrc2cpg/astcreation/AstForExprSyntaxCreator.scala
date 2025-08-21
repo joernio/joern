@@ -210,6 +210,25 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case _ => callExprCode
     }
     val callNode_ = callNode(callExpr, callCode, callName, DispatchTypes.DYNAMIC_DISPATCH)
+
+    fullnameProvider.declFullname(callExpr) match {
+      case Some(fullNameWithSignature) =>
+        val (fullName, signature) = if (fullNameWithSignature.contains("(")) {
+          (
+            fullNameWithSignature.substring(0, fullNameWithSignature.indexOf("(")),
+            fullNameWithSignature.substring(fullNameWithSignature.indexOf("("))
+          )
+        } else {
+          (fullNameWithSignature, "()")
+        }
+        val typeFullName = fullnameProvider.typeFullname(callExpr).getOrElse(Defines.Any)
+        registerType(typeFullName)
+        callNode_.methodFullName(s"$fullName:$signature")
+        callNode_.signature(signature)
+        callNode_.typeFullName(typeFullName)
+      case None =>
+    }
+
     callAst(callNode_, args, receiver = Option(receiverAst), base = Option(Ast(baseNode)))
   }
 

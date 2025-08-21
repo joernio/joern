@@ -223,10 +223,10 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
         "-gdwarf",
         "-package-name",
         "swiftastgen",
+        "-suppress-warnings",
         "-dump-ast",
         "-dump-ast-format",
-        "json",
-        "-suppress-warnings"
+        "json"
       )
     )
 
@@ -245,28 +245,28 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
         Some("Swift.String"),
         Some("SwiftHelloWorldLib.HelloWorld.greeting.getter:Swift.String")
       ),
-      ("HelloWorldSwift.swift", "array_expr", (195, 224), Some("[Any]"), None),
-      ("HelloWorldSwift.swift", "binary_expr", (195, 206), Some("Swift.String"), None),
-      ("HelloWorldSwift.swift", "binary_expr", (195, 217), Some("Swift.String"), None),
-      ("HelloWorldSwift.swift", "binary_expr", (195, 224), Some("Swift.String"), None),
+      ("HelloWorldSwift.swift", "array_expr", (195, 225), Some("[Any]"), None),
+      ("HelloWorldSwift.swift", "binary_expr", (195, 207), Some("Swift.String"), None),
+      ("HelloWorldSwift.swift", "binary_expr", (195, 218), Some("Swift.String"), None),
+      ("HelloWorldSwift.swift", "binary_expr", (195, 225), Some("Swift.String"), None),
       (
         "HelloWorldSwift.swift",
         "call_expr",
-        (189, 230),
+        (189, 231),
         Some("()"),
         Some("Swift.print(_:Any...,separator:Swift.String,terminator:Swift.String)->()")
       ),
       (
         "HelloWorldSwift.swift",
         "class_decl",
-        (27, 236),
+        (27, 237),
         Some("SwiftHelloWorldLib.HelloWorld"),
         Some("SwiftHelloWorldLib.HelloWorld")
       ),
       (
         "HelloWorldSwift.swift",
         "constructor_decl",
-        (136, 144),
+        (136, 145),
         Some("(SwiftHelloWorldLib.HelloWorld.Type)->()->SwiftHelloWorldLib.HelloWorld"),
         Some("SwiftHelloWorldLib.HelloWorld.init()->SwiftHelloWorldLib.HelloWorld")
       ),
@@ -330,11 +330,11 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
         Some("(Swift.String,Swift.String)->Swift.String"),
         Some("Swift.String.+infix(Swift.String,Swift.String)->Swift.String")
       ),
-      ("HelloWorldSwift.swift", "erasure_expr", (195, 224), Some("Any"), None),
+      ("HelloWorldSwift.swift", "erasure_expr", (195, 225), Some("Any"), None),
       (
         "HelloWorldSwift.swift",
         "func_decl",
-        (155, 233),
+        (155, 234),
         Some("()"),
         Some("SwiftHelloWorldLib.HelloWorld.greet(from:Swift.String)->()")
       ),
@@ -353,8 +353,8 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
         Some("SwiftHelloWorldLib.HelloWorld.suffix:Swift.String")
       ),
       ("HelloWorldSwift.swift", "parameter", (106, 106), Some("SwiftHelloWorldLib.HelloWorld"), None),
-      ("HelloWorldSwift.swift", "parameter", (155, 233), Some("SwiftHelloWorldLib.HelloWorld"), None),
-      ("HelloWorldSwift.swift", "parameter", (165, 183), Some("Swift.String"), None),
+      ("HelloWorldSwift.swift", "parameter", (155, 234), Some("SwiftHelloWorldLib.HelloWorld"), None),
+      ("HelloWorldSwift.swift", "parameter", (165, 184), Some("Swift.String"), None),
       ("HelloWorldSwift.swift", "parameter", (60, 60), Some("SwiftHelloWorldLib.HelloWorld"), None),
       ("HelloWorldSwift.swift", "string_literal_expr", (123, 123), Some("Swift.String"), None),
       ("HelloWorldSwift.swift", "string_literal_expr", (206, 206), Some("Swift.String"), None),
@@ -376,18 +376,18 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
         Some("Swift.String"),
         Some("SwiftHelloWorldLib.HelloWorld.greeting:Swift.String")
       ),
-      ("HelloWorldSwift.swift", "vararg_expansion_expr", (195, 224), Some("[Any]"), None),
+      ("HelloWorldSwift.swift", "vararg_expansion_expr", (195, 225), Some("[Any]"), None),
       (
         "Main.swift",
         "call_expr",
-        (112, 123),
+        (112, 124),
         Some("SwiftHelloWorldLib.HelloWorld"),
         Some("SwiftHelloWorldLib.HelloWorld.init()->SwiftHelloWorldLib.HelloWorld")
       ),
       (
         "Main.swift",
         "call_expr",
-        (127, 151),
+        (127, 152),
         Some("()"),
         Some("SwiftHelloWorldLib.HelloWorld.greet(from:Swift.String)->()")
       ),
@@ -419,7 +419,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
       (
         "Main.swift",
         "dot_syntax_call_expr",
-        (127, 135),
+        (127, 136),
         Some("(from:Swift.String)->()"),
         Some("SwiftHelloWorldLib.HelloWorld.greet(from:Swift.String)->()")
       ),
@@ -430,7 +430,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
         Some("@Swift.MainActor()->()"),
         Some("SwiftHelloWorld.Main.main()->()")
       ),
-      ("Main.swift", "func_decl", (67, 154), Some("Swift.Void"), Some("SwiftHelloWorld.Main.main()->()")),
+      ("Main.swift", "func_decl", (67, 155), Some("Swift.Void"), Some("SwiftHelloWorld.Main.main()->()")),
       (
         "Main.swift",
         "function_conversion_expr",
@@ -440,7 +440,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
       ),
       ("Main.swift", "return_stmt", (46, 46), Some("Swift.Void"), None),
       ("Main.swift", "string_literal_expr", (147, 147), Some("Swift.String"), None),
-      ("Main.swift", "struct_decl", (52, 157), Some("SwiftHelloWorld.Main"), Some("SwiftHelloWorld.Main")),
+      ("Main.swift", "struct_decl", (52, 158), Some("SwiftHelloWorld.Main"), Some("SwiftHelloWorld.Main")),
       ("Main.swift", "type_expr", (112, 112), Some("SwiftHelloWorldLib.HelloWorld"), None),
       ("Main.swift", "var_decl", (102, 102), Some("SwiftHelloWorldLib.HelloWorld"), None)
     )
@@ -557,13 +557,13 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
           mainMappings should contain(
             (
               "call_expr",
-              (112, 123),
+              (112, 124),
               Some("SwiftHelloWorldLib.HelloWorld"),
               Some("SwiftHelloWorldLib.HelloWorld.init()->SwiftHelloWorldLib.HelloWorld")
             )
           )
           mainMappings should contain(
-            ("call_expr", (127, 151), Some("()"), Some("SwiftHelloWorldLib.HelloWorld.greet(from:Swift.String)->()"))
+            ("call_expr", (127, 152), Some("()"), Some("SwiftHelloWorldLib.HelloWorld.greet(from:Swift.String)->()"))
           )
           mainMappings should contain(
             (
@@ -574,23 +574,23 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
             )
           )
           mainMappings should contain(
-            ("func_decl", (67, 154), Some("Swift.Void"), Some("SwiftHelloWorld.Main.main()->()"))
+            ("func_decl", (67, 155), Some("Swift.Void"), Some("SwiftHelloWorld.Main.main()->()"))
           )
           mainMappings should contain(("var_decl", (102, 102), Some("SwiftHelloWorldLib.HelloWorld"), None))
 
           helloWorldMappings should contain(
-            ("class_decl", (27, 496), Some("SwiftHelloWorldLib.HelloWorld"), Some("SwiftHelloWorldLib.HelloWorld"))
+            ("class_decl", (27, 497), Some("SwiftHelloWorldLib.HelloWorld"), Some("SwiftHelloWorldLib.HelloWorld"))
           )
           helloWorldMappings should contain(
             (
               "constructor_decl",
-              (381, 404),
+              (381, 405),
               Some("(SwiftHelloWorldLib.HelloWorld.Type)->()->SwiftHelloWorldLib.HelloWorld"),
               Some("SwiftHelloWorldLib.HelloWorld.init()->SwiftHelloWorldLib.HelloWorld")
             )
           )
           helloWorldMappings should contain(
-            ("func_decl", (415, 493), Some("()"), Some("SwiftHelloWorldLib.HelloWorld.greet(from:Swift.String)->()"))
+            ("func_decl", (415, 494), Some("()"), Some("SwiftHelloWorldLib.HelloWorld.greet(from:Swift.String)->()"))
           )
           helloWorldMappings should contain(
             (

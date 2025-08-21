@@ -396,7 +396,6 @@ object SwiftTypesProvider {
         3,
         new SimpleFileVisitor[Path] {
           override def preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult = {
-            if (dir == path) return FileVisitResult.CONTINUE
             if (dir.getFileName.toString.startsWith(".")) { return FileVisitResult.SKIP_SUBTREE }
             if (Files.isReadable(dir)) { dir.nameOption.foreach(resultSet.add) }
             FileVisitResult.CONTINUE
