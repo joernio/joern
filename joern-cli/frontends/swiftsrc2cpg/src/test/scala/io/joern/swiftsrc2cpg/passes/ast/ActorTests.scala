@@ -17,7 +17,7 @@ class ActorTests extends AstSwiftSrc2CpgSuite {
       myActor1.fullName shouldBe "Test0.swift:<global>.MyActor1"
       myActor1.member shouldBe empty
       myActor1.boundMethod.fullName.l shouldBe List(
-        "Test0.swift:<global>.MyActor1.<init>:Test0.swift:<global>.MyActor1()"
+        "Test0.swift:<global>.MyActor1.init:()->Test0.swift:<global>.MyActor1"
       )
     }
 

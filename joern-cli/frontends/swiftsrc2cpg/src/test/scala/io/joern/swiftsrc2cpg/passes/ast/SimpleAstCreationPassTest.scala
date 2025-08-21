@@ -214,7 +214,7 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
           |""".stripMargin)
       cpg.method.where(_._argumentIn) shouldBe empty
 
-      val List(get, set, willSet, didSet) = cpg.typeDecl.nameExact("Foo").boundMethod.nameNot("<init>").l
+      val List(get, set, willSet, didSet) = cpg.typeDecl.nameExact("Foo").boundMethod.nameNot("init").l
       get.fullName shouldBe "Test0.swift:<global>.Foo.bar:Int()"
       val List(getReturn) = get.body.astChildren.isReturn.l
       getReturn.code shouldBe "bar"
