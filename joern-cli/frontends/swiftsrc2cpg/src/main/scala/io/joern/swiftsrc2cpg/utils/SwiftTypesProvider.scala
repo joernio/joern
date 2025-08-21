@@ -10,7 +10,8 @@ import org.slf4j.LoggerFactory
 import versionsort.VersionHelper
 
 import java.io.{BufferedReader, InputStream, InputStreamReader, StringReader}
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.*
 import scala.collection.concurrent.TrieMap
 import scala.collection.parallel.CollectionConverters.ImmutableSeqIsParallelizable
 import scala.collection.parallel.ParSeq
@@ -33,7 +34,7 @@ object SwiftTypesProvider {
   private val SwiftVersionCommands        = Seq(SwiftVersionCommand, SwiftCompilerVersionCommand)
   private val SwiftBuildCommand           = Seq("swift", "build", "--verbose")
   private val SwiftCleanCommand           = Seq("swift", "package", "clean")
-  private val SwiftCompilerDumpOptions    = Seq("-dump-ast", "-dump-ast-format", "json", "-suppress-warnings")
+  private val SwiftCompilerDumpOptions    = Seq("-suppress-warnings", "-dump-ast", "-dump-ast-format", "json")
 
   /** Information about a Swift type found in the source code. fullName and tpe are not demangled yet.
     *
@@ -381,15 +382,28 @@ object SwiftTypesProvider {
     *   A set of names of the readable directories found under path
     */
   private def listReadableDirectories(path: Path): Set[String] = {
-    if (!Files.isDirectory(path) || !Files.isReadable(path)) {
+    if (path.toString.isEmpty || !Files.isDirectory(path) || !Files.isReadable(path)) {
       return Set.empty
     }
     try {
-      path
-        .listFiles()
-        .filter(p => Files.isDirectory(p) && Files.isReadable(p))
-        .flatMap(_.nameOption)
-        .toSet
+      val resultSet = mutable.Set.empty[String]
+      Files.walkFileTree(
+        path,
+        java.util.EnumSet.of(FileVisitOption.FOLLOW_LINKS),
+        // 3 = The directory itself + all directories top-level + all directories under them (as these indicate modules).
+        // We could use the Package.swift module description but that is only available in SwiftPM projects, and
+        // we want to support as many project types as possible.
+        3,
+        new SimpleFileVisitor[Path] {
+          override def preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult = {
+            if (dir == path) return FileVisitResult.CONTINUE
+            if (dir.getFileName.toString.startsWith(".")) { return FileVisitResult.SKIP_SUBTREE }
+            if (Files.isReadable(dir)) { dir.nameOption.foreach(resultSet.add) }
+            FileVisitResult.CONTINUE
+          }
+        }
+      )
+      resultSet.toSet
     } catch {
       case e: Exception =>
         logger.warn(s"Error listing module directories under ${path.toFile.toString}: ${e.getMessage}")
@@ -417,7 +431,7 @@ object SwiftTypesProvider {
       logger.info(s"Building Swift type map from compiler log at ${path.toFile.toString}")
     )
 
-    val sourceModules    = listReadableDirectories(Paths.get(config.inputPath, "Sources"))
+    val sourceModules    = listReadableDirectories(Paths.get(config.inputPath))
     val swiftInvocations = compilerOutput.filter(isSwiftInvocation)
     val parsedSwiftInvocations =
       swiftInvocations.map(l => parseSwiftCompilerArgs(argsFromLine(l)) ++ SwiftCompilerDumpOptions).filter { args =>
