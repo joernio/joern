@@ -174,30 +174,24 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     astForNode(node.expression)
   }
 
+  private def setFullNameInfoForCall(callExpr: FunctionCallExprSyntax, callNode: NewCall): Unit = {
+    fullnameProvider.declFullname(callExpr).foreach { fullNameWithSignature =>
+      val (fullName, signature) = methodInfoFromFullNameWithSignature(fullNameWithSignature)
+      val typeFullName          = fullnameProvider.typeFullname(callExpr).getOrElse(Defines.Any)
+      registerType(typeFullName)
+      callNode.methodFullName(s"$fullName:$signature")
+      callNode.signature(signature)
+      callNode.typeFullName(typeFullName)
+    }
+  }
+
   private def createBuiltinStaticCall(callExpr: FunctionCallExprSyntax, callee: ExprSyntax, fullName: String): Ast = {
     val callName = callee match {
       case m: MemberAccessExprSyntax => code(m.declName)
       case _                         => code(callee)
     }
     val callNode = createStaticCallNode(code(callExpr), callName, fullName, line(callee), column(callee))
-
-    fullnameProvider.declFullname(callExpr) match {
-      case Some(fullNameWithSignature) =>
-        val (fullName, signature) = if (fullNameWithSignature.contains("(")) {
-          (
-            fullNameWithSignature.substring(0, fullNameWithSignature.indexOf("(")),
-            fullNameWithSignature.substring(fullNameWithSignature.indexOf("("))
-          )
-        } else {
-          (fullNameWithSignature, "()")
-        }
-        val typeFullName = fullnameProvider.typeFullname(callExpr).getOrElse(Defines.Any)
-        registerType(typeFullName)
-        callNode.methodFullName(s"$fullName:$signature")
-        callNode.signature(signature)
-        callNode.typeFullName(typeFullName)
-      case None =>
-    }
+    setFullNameInfoForCall(callExpr, callNode)
 
     val argAsts = callExpr.arguments.children.map(astForNode)
     callAst(callNode, argAsts)
@@ -228,24 +222,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case _ => callExprCode
     }
     val callNode_ = callNode(callExpr, callCode, callName, DispatchTypes.DYNAMIC_DISPATCH)
-
-    fullnameProvider.declFullname(callExpr) match {
-      case Some(fullNameWithSignature) =>
-        val (fullName, signature) = if (fullNameWithSignature.contains("(")) {
-          (
-            fullNameWithSignature.substring(0, fullNameWithSignature.indexOf("(")),
-            fullNameWithSignature.substring(fullNameWithSignature.indexOf("("))
-          )
-        } else {
-          (fullNameWithSignature, "()")
-        }
-        val typeFullName = fullnameProvider.typeFullname(callExpr).getOrElse(Defines.Any)
-        registerType(typeFullName)
-        callNode_.methodFullName(s"$fullName:$signature")
-        callNode_.signature(signature)
-        callNode_.typeFullName(typeFullName)
-      case None =>
-    }
+    setFullNameInfoForCall(callExpr, callNode_)
 
     callAst(callNode_, args, receiver = Option(receiverAst), base = Option(Ast(baseNode)))
   }

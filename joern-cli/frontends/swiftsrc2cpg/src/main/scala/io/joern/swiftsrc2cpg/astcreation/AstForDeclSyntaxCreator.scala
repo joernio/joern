@@ -36,7 +36,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val aliasName  = node.initializer.map(i => nameFromTypeSyntax(i.value))
 
     val (astParentType, astParentFullName) = astParentInfo()
-    val (typeName, typeFullName)           = typeNameInfoForDeclSyntax(node)
+    val TypeInfo(typeName, typeFullName)   = typeNameInfoForDeclSyntax(node)
 
     val typeDeclNode_ = typeDeclNode(
       node,
@@ -308,7 +308,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val modifiers  = modifiersForDecl(node)
     val inherits   = inheritsFrom(node)
 
-    val (typeName, typeFullName)           = typeNameInfoForDeclSyntax(node)
+    val TypeInfo(typeName, typeFullName)   = typeNameInfoForDeclSyntax(node)
     val (astParentType, astParentFullName) = astParentInfo()
 
     val typeDeclNode_ = typeDeclNode(
@@ -457,7 +457,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val modifiers  = modifiersForDecl(node)
     val inherits   = inheritsFrom(node)
 
-    val (typeName, typeFullName)           = typeNameInfoForDeclSyntax(node)
+    val TypeInfo(typeName, typeFullName)   = typeNameInfoForDeclSyntax(node)
     val (astParentType, astParentFullName) = astParentInfo()
 
     val typeDeclNode_ = typeDeclNode(
@@ -620,10 +620,12 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         x.getOrElse(Seq.empty)
     }
 
-    val modifiers                                           = modifiersForFunctionLike(node)
-    val filename                                            = parserResult.filename
-    val (methodName, methodFullName, signature, returnType) = methodInfoForFunctionDeclLike(node)
-    val methodFullNameAndSignature                          = s"$methodFullName:$signature"
+    val modifiers = modifiersForFunctionLike(node)
+    val filename  = parserResult.filename
+
+    val methodInfo                                                    = methodInfoForFunctionDeclLike(node)
+    val MethodInfo(methodName, methodFullName, signature, returnType) = methodInfo
+    val methodFullNameAndSignature                                    = methodInfo.fullNameAndSignature
 
     val shouldCreateFunctionReference =
       typeRefIdStack.isEmpty || node.isInstanceOf[ClosureExprSyntax] || node.isInstanceOf[AccessorDeclSyntax]
@@ -828,7 +830,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val modifiers  = modifiersForDecl(node)
     val aliasName  = nameFromTypeSyntax(node.initializer.value)
 
-    val (typeName, typeFullName)           = typeNameInfoForDeclSyntax(node)
+    val TypeInfo(typeName, typeFullName)   = typeNameInfoForDeclSyntax(node)
     val (astParentType, astParentFullName) = astParentInfo()
 
     val typeDeclNode_ = typeDeclNode(
@@ -860,19 +862,21 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val attributes = node.attributes.children.map(astForNode)
     val modifiers  = modifiersForFunctionLike(node)
 
-    val filename                                = parserResult.filename
-    val parameters                              = node.parameters.toSeq
-    val accessorSpecifier                       = code(node.accessorSpecifier)
-    val (name, fullName, signature, returnType) = methodInfoForAccessorDecl(node, variableName, tpe)
-    val methodFullNameAndSignature              = s"$fullName:$signature"
+    val filename          = parserResult.filename
+    val parameters        = node.parameters.toSeq
+    val accessorSpecifier = code(node.accessorSpecifier)
+
+    val methodInfo                                                    = methodInfoForFunctionDeclLike(node)
+    val MethodInfo(methodName, methodFullName, signature, returnType) = methodInfo
+    val methodFullNameAndSignature                                    = methodInfo.fullNameAndSignature
 
     val codeString  = code(node)
-    val methodNode_ = methodNode(node, name, codeString, methodFullNameAndSignature, Option(signature), filename)
+    val methodNode_ = methodNode(node, methodName, codeString, methodFullNameAndSignature, Option(signature), filename)
     val block       = blockNode(node, PropertyDefaults.Code, Defines.Any)
 
     val capturingRefNode = typeRefIdStack.headOption
     methodAstParentStack.push(methodNode_)
-    scope.pushNewMethodScope(fullName, name, block, capturingRefNode)
+    scope.pushNewMethodScope(methodFullName, methodName, block, capturingRefNode)
     localAstParentStack.push(block)
 
     val parameterAsts = if (parameters.isEmpty && accessorSpecifier == "set") {

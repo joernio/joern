@@ -6,8 +6,6 @@ import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, EvaluationStrategies, PropertyNames}
 import org.apache.commons.lang3.StringUtils
 
-import scala.annotation.tailrec
-
 object AstCreatorHelper {
 
   private val TagsToKeepInFullName = List("<anonymous>", "<lambda>", "<global>", "<type>", "<extension>", "<wildcard>")
@@ -181,24 +179,25 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     s"$name$idx"
   }
 
-  /** @return
-    *   A tuple with (name, fullname, signature, returnType)
-    */
-  protected def methodInfoForFunctionDeclLike(node: FunctionDeclLike): (String, String, String, String) = {
+  protected def methodInfoFromFullNameWithSignature(fullNameWithSignature: String): (String, String) = {
+    if (fullNameWithSignature.contains("(")) {
+      (
+        fullNameWithSignature.substring(0, fullNameWithSignature.indexOf("(")),
+        fullNameWithSignature.substring(fullNameWithSignature.indexOf("("))
+      )
+    } else {
+      (fullNameWithSignature, "()")
+    }
+  }
+
+  protected def methodInfoForFunctionDeclLike(node: FunctionDeclLike): MethodInfo = {
     val name = calcMethodName(node)
     fullnameProvider.declFullname(node) match {
       case Some(fullNameWithSignature) =>
-        val (fullName, signature) = if (fullNameWithSignature.contains("(")) {
-          (
-            fullNameWithSignature.substring(0, fullNameWithSignature.indexOf("(")),
-            fullNameWithSignature.substring(fullNameWithSignature.indexOf("("))
-          )
-        } else {
-          (fullNameWithSignature, "()")
-        }
-        val returnType = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
+        val (fullName, signature) = methodInfoFromFullNameWithSignature(fullNameWithSignature)
+        val returnType            = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
         registerType(returnType)
-        (name, fullName, signature, returnType)
+        MethodInfo(name, fullName, signature, returnType)
       case None =>
         val (methodName, methodFullName) = calcNameAndFullName(name)
         val (signature, returnType) = node match {
@@ -223,33 +222,33 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
             (s"$paramClauseCode->$returnType", returnType)
         }
         registerType(returnType)
-        (methodName, methodFullName, signature, returnType)
+        MethodInfo(methodName, methodFullName, signature, returnType)
     }
   }
 
-  /** @return
-    *   A tuple with (name, fullname, signature, returnType)
-    */
-  protected def methodInfoForAccessorDecl(
-    node: AccessorDeclSyntax,
-    variableName: String,
-    tpe: String
-  ): (String, String, String, String) = {
-    val accessorName = calcMethodName(node)
+  case class MethodInfo(name: String, fullName: String, signature: String, returnType: String) {
+    val fullNameAndSignature: String = s"$fullName:$signature"
+  }
+
+  case class TypeInfo(name: String, fullName: String)
+
+  protected def methodInfoForAccessorDecl(node: AccessorDeclSyntax, variableName: String, tpe: String): MethodInfo = {
+    val accessorName = code(node.accessorSpecifier)
     val name = accessorName match {
-      case "set" | "get" => variableName
-      case "didSet"      => s"didSet_$variableName"
-      case "willSet"     => s"willSet_$variableName"
+      case "set"     => s"$variableName.setter"
+      case "get"     => s"$variableName.getter"
+      case "didSet"  => s"$variableName.didSet"
+      case "willSet" => s"$variableName.willSet"
     }
 
     var returnType = accessorName match {
       case "get"                        => tpe
-      case "set" | "didSet" | "willSet" => Defines.Any
+      case "set" | "didSet" | "willSet" => Defines.Void
     }
-    var signature = if (accessorName == "set") {
-      s"($tpe)->$returnType"
-    } else {
-      s"()->$returnType"
+
+    var signature = accessorName match {
+      case "get"                        => returnType
+      case "set" | "didSet" | "willSet" => s"($tpe)->$returnType"
     }
 
     fullnameProvider.declFullname(node) match {
@@ -261,33 +260,21 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         }
         returnType = fullnameProvider.typeFullname(node).getOrElse(returnType)
         registerType(returnType)
-        (name, fullName, signature, returnType)
+        MethodInfo(name, fullName, signature, returnType)
       case None =>
         val (methodName, methodFullName) = calcNameAndFullName(name)
         registerType(returnType)
-        (methodName, methodFullName, signature, returnType)
+        MethodInfo(methodName, methodFullName, signature, returnType)
     }
   }
 
-  /** @return
-    *   A tuple with (name, fullname)
-    */
-  protected def typeNameInfoForDeclSyntax(node: DeclSyntax): (String, String) = {
+  protected def typeNameInfoForDeclSyntax(node: DeclSyntax): TypeInfo = {
     val name = typeNameForDeclSyntax(node)
-    fullnameProvider.declFullname(node) match {
-      case Some(declFullname) =>
-        registerType(declFullname)
-        (name, declFullname)
-      case None =>
-        val (_, declFullname) = calcNameAndFullName(name)
-        registerType(declFullname)
-        (name, declFullname)
-    }
+    typeNameInfoForNode(node, name)
   }
 
-  @tailrec
   private def nameForTypeSyntax(node: TypeSyntax): String = {
-    node match {
+    val name = node match {
       case id: IdentifierTypeSyntax                 => code(id.name)
       case m: MemberTypeSyntax                      => code(m)
       case m: MetatypeTypeSyntax                    => code(m)
@@ -297,21 +284,23 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case s: SuppressedTypeSyntax                  => nameForTypeSyntax(s.`type`)
       case _                                        => scopeLocalUniqueName("type")
     }
+    cleanType(name)
   }
 
-  /** @return
-    *   A tuple with (name, fullname)
-    */
-  protected def typeNameInfoForTypeSyntax(node: TypeSyntax): (String, String) = {
+  protected def typeNameInfoForTypeSyntax(node: TypeSyntax): TypeInfo = {
     val name = nameForTypeSyntax(node)
+    typeNameInfoForNode(node, name)
+  }
+
+  private def typeNameInfoForNode(node: SwiftNode, name: String): TypeInfo = {
     fullnameProvider.declFullname(node) match {
       case Some(declFullname) =>
         registerType(declFullname)
-        (name, declFullname)
+        TypeInfo(name, declFullname)
       case None =>
         val (_, declFullname) = calcNameAndFullName(name)
         registerType(declFullname)
-        (name, declFullname)
+        TypeInfo(name, declFullname)
     }
   }
 

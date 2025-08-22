@@ -215,7 +215,7 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
       cpg.method.where(_._argumentIn) shouldBe empty
 
       val List(get, set, willSet, didSet) = cpg.typeDecl.nameExact("Foo").boundMethod.nameNot("init").l
-      get.fullName shouldBe "Test0.swift:<global>.Foo.bar:()->Swift.Int"
+      get.fullName shouldBe "Test0.swift:<global>.Foo.bar.getter:Swift.Int"
       val List(getReturn) = get.body.astChildren.isReturn.l
       getReturn.code shouldBe "bar"
       val List(thisBar) = getReturn.astChildren.isCall.l
@@ -227,14 +227,14 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
         field.canonicalName shouldBe "bar"
       }
 
-      set.fullName shouldBe "Test0.swift:<global>.Foo.bar:(Swift.Int)->ANY"
+      set.fullName shouldBe "Test0.swift:<global>.Foo.bar.setter:(Swift.Int)->()"
       val List(setParam) = set.parameter.l
       setParam.name shouldBe "newValue"
       setParam.typeFullName shouldBe "Swift.Int"
       set.body.astChildren.isCall.code.l shouldBe List("this.bar = newValue")
 
-      willSet.fullName shouldBe "Test0.swift:<global>.Foo.willSet_bar:()->ANY"
-      didSet.fullName shouldBe "Test0.swift:<global>.Foo.didSet_bar:()->ANY"
+      willSet.fullName shouldBe "Test0.swift:<global>.Foo.bar.willSet:(Swift.Int)->()"
+      didSet.fullName shouldBe "Test0.swift:<global>.Foo.bar.didSet:(Swift.Int)->()"
     }
 
     "have correct structure for function with variadic parameter" in {

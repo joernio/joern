@@ -19,7 +19,7 @@ object Defines {
   val Array: String                 = "Swift.Array"
   val Dictionary: String            = "Swift.Dictionary"
   val Nil: String                   = "Swift.Nil"
-  val Void: String                  = "Swift.Void"
+  val Void: String                  = "()"
   val ConstructorMethodName: String = "init"
   val DuplicateSuffix: String       = "<duplicate>"
   val GlobalNamespace: String       = NamespaceTraversal.globalNamespaceName
