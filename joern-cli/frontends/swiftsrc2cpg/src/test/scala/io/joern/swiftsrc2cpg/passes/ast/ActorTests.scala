@@ -32,11 +32,11 @@ class ActorTests extends AstSwiftSrc2CpgSuite {
       myActor2.member.name.l shouldBe List("hello")
       val List(constructor) = myActor2.method.isConstructor.l
       constructor.name shouldBe "init"
-      constructor.fullName shouldBe "Test0.swift:<global>.MyActor2.init:Test0.swift:<global>.MyActor2()"
+      constructor.fullName shouldBe "Test0.swift:<global>.MyActor2.init:()->Test0.swift:<global>.MyActor2"
       val List(init, hello) = myActor2.boundMethod.l
       init shouldBe constructor
       hello.name shouldBe "hello"
-      hello.fullName shouldBe "Test0.swift:<global>.MyActor2.hello:ANY()"
+      hello.fullName shouldBe "Test0.swift:<global>.MyActor2.hello:()->ANY"
     }
   }
 

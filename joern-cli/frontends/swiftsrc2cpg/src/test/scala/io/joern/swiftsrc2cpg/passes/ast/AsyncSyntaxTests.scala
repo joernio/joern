@@ -19,9 +19,9 @@ class AsyncSyntaxTests extends AstSwiftSrc2CpgSuite {
         |""".stripMargin)
       val List(asyncGlobal1, asyncGlobal2) = cpg.method.internal.nameNot(NamespaceTraversal.globalNamespaceName).l
       asyncGlobal1.name shouldBe "asyncGlobal1"
-      asyncGlobal1.fullName shouldBe "Test0.swift:<global>.asyncGlobal1:ANY()"
+      asyncGlobal1.fullName shouldBe "Test0.swift:<global>.asyncGlobal1:()->ANY"
       asyncGlobal2.name shouldBe "asyncGlobal2"
-      asyncGlobal2.fullName shouldBe "Test0.swift:<global>.asyncGlobal2:ANY()"
+      asyncGlobal2.fullName shouldBe "Test0.swift:<global>.asyncGlobal2:()->ANY"
     }
 
     "testAsyncSyntax2" in {
@@ -68,11 +68,11 @@ class AsyncSyntaxTests extends AstSwiftSrc2CpgSuite {
         |let _ = { () async throws in 5 }""".stripMargin)
       val List(f1, f2, f3) = cpg.method.internal.nameNot(NamespaceTraversal.globalNamespaceName).l
       f1.name shouldBe "<lambda>0"
-      f1.fullName shouldBe "Test0.swift:<global>.<lambda>0:ANY()"
+      f1.fullName shouldBe "Test0.swift:<global>.<lambda>0:()->ANY"
       f2.name shouldBe "<lambda>1"
-      f2.fullName shouldBe "Test0.swift:<global>.<lambda>1:ANY()"
+      f2.fullName shouldBe "Test0.swift:<global>.<lambda>1:()->ANY"
       f3.name shouldBe "<lambda>2"
-      f3.fullName shouldBe "Test0.swift:<global>.<lambda>2:ANY()"
+      f3.fullName shouldBe "Test0.swift:<global>.<lambda>2:()->ANY"
     }
 
     "testAsyncSyntax6" ignore {

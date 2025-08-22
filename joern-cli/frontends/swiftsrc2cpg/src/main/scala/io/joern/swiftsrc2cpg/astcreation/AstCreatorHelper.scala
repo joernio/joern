@@ -148,6 +148,17 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       // Empty or problematic types
       case ""                   => Defines.Any
       case t if t.contains("?") => Defines.Any
+      // Map builtin types
+      case "String"     => Defines.String
+      case "Character"  => Defines.Character
+      case "Int"        => Defines.Int
+      case "Float"      => Defines.Float
+      case "Double"     => Defines.Double
+      case "Bool"       => Defines.Bool
+      case "Array"      => Defines.Array
+      case "Dictionary" => Defines.Dictionary
+      case "Nil"        => Defines.Nil
+      case "()"         => Defines.Void
       // Special patterns with specific handling
       case t if t.startsWith("[") && t.endsWith("]") => Defines.Array
       case t if t.contains("=>") || t.contains("->") => Defines.Function
@@ -193,23 +204,23 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         val (signature, returnType) = node match {
           case f: FunctionDeclSyntax =>
             val returnType = f.signature.returnClause.fold(Defines.Any)(c => cleanType(code(c.`type`)))
-            (s"$returnType${paramSignature(f.signature.parameterClause)}", returnType)
+            (s"${paramSignature(f.signature.parameterClause)}->$returnType", returnType)
           case a: AccessorDeclSyntax =>
             val returnType = Defines.Any
-            (s"$returnType${a.parameters.fold("()")(paramSignature)}", returnType)
+            (s"${a.parameters.fold("()")(paramSignature)}->$returnType", returnType)
           case i: InitializerDeclSyntax =>
             val (_, returnType) = astParentInfo()
-            (s"$returnType${paramSignature(i.signature.parameterClause)}", returnType)
+            (s"${paramSignature(i.signature.parameterClause)}->$returnType", returnType)
           case _: DeinitializerDeclSyntax =>
             val returnType = Defines.Any
-            (s"$returnType()", returnType)
+            (s"()->$returnType", returnType)
           case s: SubscriptDeclSyntax =>
             val returnType = cleanType(code(s.returnClause.`type`))
-            (s"$returnType${paramSignature(s.parameterClause)}", returnType)
+            (s"${paramSignature(s.parameterClause)}->$returnType", returnType)
           case c: ClosureExprSyntax =>
             val returnType      = c.signature.flatMap(_.returnClause).fold(Defines.Any)(r => cleanType(code(r.`type`)))
             val paramClauseCode = c.signature.flatMap(_.parameterClause).fold("()")(paramSignature)
-            (s"$returnType$paramClauseCode", returnType)
+            (s"$paramClauseCode->$returnType", returnType)
         }
         registerType(returnType)
         (methodName, methodFullName, signature, returnType)
@@ -236,9 +247,9 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case "set" | "didSet" | "willSet" => Defines.Any
     }
     var signature = if (accessorName == "set") {
-      s"$returnType($tpe)"
+      s"($tpe)->$returnType"
     } else {
-      s"$returnType()"
+      s"()->$returnType"
     }
 
     fullnameProvider.declFullname(node) match {

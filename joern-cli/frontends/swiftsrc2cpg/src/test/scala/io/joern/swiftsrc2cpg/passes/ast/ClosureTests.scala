@@ -15,18 +15,18 @@ class ClosureTests extends AstSwiftSrc2CpgSuite {
         |reversedNames = names.sorted(by: { (s1: String, s2: String) -> Bool in return s1 > s2 } )
         |""".stripMargin)
       val List(closureRef) = cpg.call("sorted").argument.isMethodRef.l
-      closureRef.methodFullName shouldBe "Test0.swift:<global>.<lambda>0:Bool(s1:String,s2:String)"
+      closureRef.methodFullName shouldBe "Test0.swift:<global>.<lambda>0:(s1:Swift.String,s2:Swift.String)->Swift.Bool"
       val List(closureMethod) = cpg.method.nameExact("<lambda>0").l
-      closureMethod.fullName shouldBe "Test0.swift:<global>.<lambda>0:Bool(s1:String,s2:String)"
+      closureMethod.fullName shouldBe "Test0.swift:<global>.<lambda>0:(s1:Swift.String,s2:Swift.String)->Swift.Bool"
       closureMethod.code shouldBe "{ (s1: String, s2: String) -> Bool in return s1 > s2 }"
-      closureMethod.signature shouldBe "Bool(s1:String,s2:String)"
+      closureMethod.signature shouldBe "(s1:Swift.String,s2:Swift.String)->Swift.Bool"
       val List(p1, p2) = closureMethod.parameter.l
       p1.code shouldBe "s1: String"
       p1.name shouldBe "s1"
-      p1.typeFullName shouldBe "String"
+      p1.typeFullName shouldBe "Swift.String"
       p2.code shouldBe "s2: String"
       p2.name shouldBe "s2"
-      p2.typeFullName shouldBe "String"
+      p2.typeFullName shouldBe "Swift.String"
       closureMethod.block.astChildren.isReturn.code.l shouldBe List("return s1 > s2")
     }
 
@@ -36,11 +36,11 @@ class ClosureTests extends AstSwiftSrc2CpgSuite {
         |reversedNames = names.sorted(by: { s1, s2 in s1 > s2 } )
         |""".stripMargin)
       val List(closureRef) = cpg.call("sorted").argument.isMethodRef.l
-      closureRef.methodFullName shouldBe "Test0.swift:<global>.<lambda>0:ANY(ANY,ANY)"
+      closureRef.methodFullName shouldBe "Test0.swift:<global>.<lambda>0:(ANY,ANY)->ANY"
       val List(closureMethod) = cpg.method.nameExact("<lambda>0").l
-      closureMethod.fullName shouldBe "Test0.swift:<global>.<lambda>0:ANY(ANY,ANY)"
+      closureMethod.fullName shouldBe "Test0.swift:<global>.<lambda>0:(ANY,ANY)->ANY"
       closureMethod.code shouldBe "{ s1, s2 in s1 > s2 }"
-      closureMethod.signature shouldBe "ANY(ANY,ANY)"
+      closureMethod.signature shouldBe "(ANY,ANY)->ANY"
       val List(p1, p2) = closureMethod.parameter.l
       p1.code shouldBe "s1"
       p1.name shouldBe "s1"
@@ -57,11 +57,11 @@ class ClosureTests extends AstSwiftSrc2CpgSuite {
         |""".stripMargin)
       val List(call)       = cpg.call.nameExact("someFunctionThatTakesAClosure").l
       val List(closureRef) = call.argument.isMethodRef.l
-      closureRef.methodFullName shouldBe "Test0.swift:<global>.<lambda>0:ANY()"
+      closureRef.methodFullName shouldBe "Test0.swift:<global>.<lambda>0:()->ANY"
       val List(closureMethod) = cpg.method.nameExact("<lambda>0").l
-      closureMethod.fullName shouldBe "Test0.swift:<global>.<lambda>0:ANY()"
+      closureMethod.fullName shouldBe "Test0.swift:<global>.<lambda>0:()->ANY"
       closureMethod.code shouldBe "{ foo() }"
-      closureMethod.signature shouldBe "ANY()"
+      closureMethod.signature shouldBe "()->ANY"
       closureMethod.parameter.size shouldBe 0
       closureMethod.block.astChildren.isReturn.code.l shouldBe List("foo()")
     }
@@ -72,11 +72,11 @@ class ClosureTests extends AstSwiftSrc2CpgSuite {
         |""".stripMargin)
       val List(call)       = cpg.call.nameExact("someFunctionThatTakesAClosure").l
       val List(closureRef) = call.argument.isMethodRef.l
-      closureRef.methodFullName shouldBe "Test0.swift:<global>.<lambda>0:ANY()"
+      closureRef.methodFullName shouldBe "Test0.swift:<global>.<lambda>0:()->ANY"
       val List(closureMethod) = cpg.method.nameExact("<lambda>0").l
-      closureMethod.fullName shouldBe "Test0.swift:<global>.<lambda>0:ANY()"
+      closureMethod.fullName shouldBe "Test0.swift:<global>.<lambda>0:()->ANY"
       closureMethod.code shouldBe "{ foo() }"
-      closureMethod.signature shouldBe "ANY()"
+      closureMethod.signature shouldBe "()->ANY"
       closureMethod.parameter.size shouldBe 0
       closureMethod.block.astChildren.isReturn.code.l shouldBe List("foo()")
     }
@@ -88,21 +88,21 @@ class ClosureTests extends AstSwiftSrc2CpgSuite {
         |""".stripMargin)
       val List(fooAssignment, barAssignment) = cpg.call.l
       val closure1Ref                        = fooAssignment.argument(2).asInstanceOf[MethodRef]
-      closure1Ref.methodFullName shouldBe "Test0.swift:<global>.<lambda>0:ANY(_:MyType)"
+      closure1Ref.methodFullName shouldBe "Test0.swift:<global>.<lambda>0:(_:MyType)->ANY"
       val closure2Ref = barAssignment.argument(2).asInstanceOf[MethodRef]
-      closure2Ref.methodFullName shouldBe "Test0.swift:<global>.<lambda>1:ANY(x:MyType)"
+      closure2Ref.methodFullName shouldBe "Test0.swift:<global>.<lambda>1:(x:MyType)->ANY"
       val List(closureMethod1) = cpg.method.nameExact("<lambda>0").l
-      closureMethod1.fullName shouldBe "Test0.swift:<global>.<lambda>0:ANY(_:MyType)"
+      closureMethod1.fullName shouldBe "Test0.swift:<global>.<lambda>0:(_:MyType)->ANY"
       closureMethod1.code shouldBe "{ (_ x: MyType) in }"
-      closureMethod1.signature shouldBe "ANY(_:MyType)"
+      closureMethod1.signature shouldBe "(_:MyType)->ANY"
       val List(p1) = closureMethod1.parameter.l
       p1.code shouldBe "_ x: MyType"
       p1.name shouldBe "x"
       p1.typeFullName shouldBe "MyType"
       val List(closureMethod2) = cpg.method.nameExact("<lambda>1").l
-      closureMethod2.fullName shouldBe "Test0.swift:<global>.<lambda>1:ANY(x:MyType)"
+      closureMethod2.fullName shouldBe "Test0.swift:<global>.<lambda>1:(x:MyType)->ANY"
       closureMethod2.code shouldBe "{ (x y: MyType) in }"
-      closureMethod2.signature shouldBe "ANY(x:MyType)"
+      closureMethod2.signature shouldBe "(x:MyType)->ANY"
       val List(p2) = closureMethod2.parameter.l
       p2.code shouldBe "x y: MyType"
       p2.name shouldBe "y"

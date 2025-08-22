@@ -33,7 +33,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     // - handle genericWhereClause
     val attributes = astForDeclAttributes(node)
     val modifiers  = modifiersForDecl(node)
-    val aliasName  = node.initializer.map(i => handleTypeAliasInitializer(i.value))
+    val aliasName  = node.initializer.map(i => nameFromTypeSyntax(i.value))
 
     val (astParentType, astParentFullName) = astParentInfo()
     val (typeName, typeFullName)           = typeNameInfoForDeclSyntax(node)
@@ -811,11 +811,13 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     astForFunctionLike(node)
   }
 
-  protected def handleTypeAliasInitializer(node: TypeSyntax): String = {
-    astForTypeSyntax(node).root match
+  protected def nameFromTypeSyntax(node: TypeSyntax): String = {
+    val tpe = astForTypeSyntax(node).root match {
       case Some(id: NewIdentifier)     => id.name
       case Some(typeDecl: NewTypeDecl) => typeDecl.fullName
       case _                           => code(node)
+    }
+    cleanType(tpe)
   }
 
   private def astForTypeAliasDeclSyntax(node: TypeAliasDeclSyntax): Ast = {
@@ -824,7 +826,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     // - handle genericWhereClause
     val attributes = astForDeclAttributes(node)
     val modifiers  = modifiersForDecl(node)
-    val aliasName  = handleTypeAliasInitializer(node.initializer.value)
+    val aliasName  = nameFromTypeSyntax(node.initializer.value)
 
     val (typeName, typeFullName)           = typeNameInfoForDeclSyntax(node)
     val (astParentType, astParentFullName) = astParentInfo()

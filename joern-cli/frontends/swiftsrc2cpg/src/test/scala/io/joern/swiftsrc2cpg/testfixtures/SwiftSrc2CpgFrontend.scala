@@ -13,7 +13,7 @@ trait SwiftSrc2CpgFrontend extends LanguageFrontend {
     FileUtil.deleteOnExit(cpgOutFile)
     val swiftsrc2cpg = new SwiftSrc2Cpg()
     val config = getConfig()
-      .fold(Config())(_.asInstanceOf[Config])
+      .fold(Config())(identity)
       .withInputPath(sourceCodePath.getAbsolutePath)
       .withOutputPath(cpgOutFile.toString)
     swiftsrc2cpg.createCpg(config).get
