@@ -55,6 +55,12 @@ class SwiftCompilerFullnameTests extends AstSwiftCompilerSrc2CpgSuite {
       mainConstructorCall.methodFullName shouldBe "SwiftTest.Main.init:()->SwiftTest.Main"
 
       mainConstructor.fullName shouldBe mainConstructorCall.methodFullName
+
+      val List(printCall) = cpg.call.nameExact("print").l
+      printCall.methodFullName shouldBe "Swift.print:(_:Any...,separator:Swift.String,terminator:Swift.String)->()"
+      printCall.signature shouldBe "(_:Any...,separator:Swift.String,terminator:Swift.String)->()"
+      printCall.typeFullName shouldBe "()"
+      printCall.isStatic shouldBe true
     }
 
   }
