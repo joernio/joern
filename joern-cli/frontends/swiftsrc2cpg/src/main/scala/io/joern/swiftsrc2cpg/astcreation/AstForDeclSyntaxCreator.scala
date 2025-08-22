@@ -633,8 +633,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     else { Option(methodRefNode(node, methodName, methodFullNameAndSignature, methodFullNameAndSignature)) }
     val capturingRefNode = methodRefNode_.orElse(typeRefIdStack.headOption)
 
-    val codeString  = code(node)
-    val methodNode_ = methodNode(node, methodName, codeString, methodFullNameAndSignature, Option(signature), filename)
+    val methodNode_ = methodNode(node, methodName, code(node), methodFullNameAndSignature, Option(signature), filename)
     val block       = blockNode(node, PropertyDefaults.Code, Defines.Any)
     methodAstParentStack.push(methodNode_)
     scope.pushNewMethodScope(methodFullName, methodName, block, capturingRefNode)
@@ -866,12 +865,11 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val parameters        = node.parameters.toSeq
     val accessorSpecifier = code(node.accessorSpecifier)
 
-    val methodInfo                                                    = methodInfoForFunctionDeclLike(node)
+    val methodInfo = methodInfoForAccessorDecl(node, variableName, tpe)
     val MethodInfo(methodName, methodFullName, signature, returnType) = methodInfo
     val methodFullNameAndSignature                                    = methodInfo.fullNameAndSignature
 
-    val codeString  = code(node)
-    val methodNode_ = methodNode(node, methodName, codeString, methodFullNameAndSignature, Option(signature), filename)
+    val methodNode_ = methodNode(node, methodName, code(node), methodFullNameAndSignature, Option(signature), filename)
     val block       = blockNode(node, PropertyDefaults.Code, Defines.Any)
 
     val capturingRefNode = typeRefIdStack.headOption
