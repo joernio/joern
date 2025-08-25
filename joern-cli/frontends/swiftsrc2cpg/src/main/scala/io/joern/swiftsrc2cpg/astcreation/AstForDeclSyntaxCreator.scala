@@ -204,18 +204,19 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForDeclMember(node: DeclSyntax, typeDeclNode: NewTypeDecl): Ast = {
-    val tpeFromTypeMap = fullnameProvider.typeFullname(node)
-    val typeFullName   = tpeFromTypeMap.getOrElse(typeNameForDeclSyntax(node))
-    registerType(typeFullName)
     node match {
       case d: FunctionDeclLike =>
         val ast = astForFunctionLike(d)
         ast.root.collect {
           case function: NewMethod =>
-            val memberNode_ = memberNode(d, function.name, code(d), typeFullName, Seq(function.fullName))
+            val tpeFromTypeMap = fullnameProvider.typeFullname(d)
+            val typeFullName   = tpeFromTypeMap.getOrElse(typeNameForDeclSyntax(d))
+            val memberNode_    = memberNode(d, function.name, code(d), typeFullName, Seq(function.fullName))
             diffGraph.addEdge(typeDeclNode, memberNode_, EdgeTypes.AST)
-          case methoRef: NewMethodRef =>
-            val memberNode_ = memberNode(d, methoRef.code, code(d), typeFullName, Seq(methoRef.methodFullName))
+          case methodRef: NewMethodRef =>
+            val tpeFromTypeMap = fullnameProvider.typeFullname(d)
+            val typeFullName   = tpeFromTypeMap.getOrElse(typeNameForDeclSyntax(d))
+            val memberNode_    = memberNode(d, methodRef.code, code(d), typeFullName, Seq(methodRef.methodFullName))
             diffGraph.addEdge(typeDeclNode, memberNode_, EdgeTypes.AST)
         }
         Ast.storeInDiffGraph(ast, diffGraph)
@@ -235,16 +236,20 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case d: EnumCaseDeclSyntax =>
         val ast = astForNode(d)
         d.elements.children.foreach { c =>
-          val cCode       = code(c.name)
-          val memberNode_ = memberNode(c, cCode, cCode, typeFullName)
+          val cCode          = code(c.name)
+          val tpeFromTypeMap = fullnameProvider.typeFullname(c)
+          val typeFullName   = tpeFromTypeMap.getOrElse(typeNameForDeclSyntax(d))
+          val memberNode_    = memberNode(c, cCode, cCode, typeFullName)
           diffGraph.addEdge(typeDeclNode, memberNode_, EdgeTypes.AST)
         }
         ast
       case d: VariableDeclSyntax =>
         val ast = astForNode(d)
         d.bindings.children.foreach { c =>
-          val cCode       = code(c.pattern)
-          val memberNode_ = memberNode(c, cCode, cCode, typeFullName)
+          val cCode          = code(c.pattern)
+          val tpeFromTypeMap = fullnameProvider.typeFullname(c)
+          val typeFullName   = tpeFromTypeMap.getOrElse(typeNameForDeclSyntax(d))
+          val memberNode_    = memberNode(c, cCode, cCode, typeFullName)
           diffGraph.addEdge(typeDeclNode, memberNode_, EdgeTypes.AST)
         }
         ast
