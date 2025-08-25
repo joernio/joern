@@ -85,7 +85,7 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
     *   An optional String containing the type fullname if found
     */
   protected def typeFullname(range: (Int, Int), nodeKind: String): Option[String] = {
-    fullName(range, FullnameProvider.Kind.Type, nodeKind).map(AstCreatorHelper.cleanType)
+    fullName(range, FullnameProvider.Kind.Type, nodeKind).map(AstCreatorHelper.cleanName)
   }
 
   /** Retrieves the declaration fullname for a given source range and node kind.
@@ -98,7 +98,7 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
     *   An optional String containing the declaration fullname if found
     */
   protected def declFullname(range: (Int, Int), nodeKind: String): Option[String] = {
-    fullName(range, FullnameProvider.Kind.Decl, nodeKind).map(AstCreatorHelper.cleanType)
+    fullName(range, FullnameProvider.Kind.Decl, nodeKind).map(AstCreatorHelper.cleanName)
   }
 
   /** Retrieves the type fullname for a given Swift node. Extracts the start and end offsets from the node if available.
