@@ -110,7 +110,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case d: TypeAliasDeclSyntax      => code(d.name)
       case _                           => Defines.Any
     }
-    cleanType(name)
+    AstCreatorHelper.cleanType(name)
   }
 
   private def isStaticMember(node: DeclSyntax): Boolean = node match {
@@ -204,7 +204,9 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForDeclMember(node: DeclSyntax, typeDeclNode: NewTypeDecl): Ast = {
-    val typeFullName = typeNameForDeclSyntax(node)
+    val tpeFromTypeMap = fullnameProvider.typeFullname(node)
+    val typeFullName   = tpeFromTypeMap.getOrElse(typeNameForDeclSyntax(node))
+    registerType(typeFullName)
     node match {
       case d: FunctionDeclLike =>
         val ast = astForFunctionLike(d)
@@ -442,8 +444,9 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case _: TypeAliasDeclSyntax      => None
     }
     val inherits = clause match {
-      case Some(value) => value.inheritedTypes.children.map(c => cleanType(code(c.`type`))).distinct.sorted
-      case None        => Seq.empty
+      case Some(value) =>
+        value.inheritedTypes.children.map(c => AstCreatorHelper.cleanType(code(c.`type`))).distinct.sorted
+      case None => Seq.empty
     }
     inherits.foreach(registerType)
     inherits
@@ -579,11 +582,11 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def paramTypeString(node: FunctionParameterSyntax | ClosureParameterSyntax): String = {
     node match {
       case f: FunctionParameterSyntax =>
-        val tpe   = cleanType(code(f.`type`))
+        val tpe   = AstCreatorHelper.cleanType(code(f.`type`))
         val label = code(f.firstName)
         s"$label:$tpe"
       case c: ClosureParameterSyntax =>
-        val tpe   = c.`type`.fold(Defines.Any)(t => cleanType(code(t)))
+        val tpe   = c.`type`.fold(Defines.Any)(t => AstCreatorHelper.cleanType(code(t)))
         val label = code(c.firstName)
         s"$label:$tpe"
     }
@@ -818,7 +821,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case Some(typeDecl: NewTypeDecl) => typeDecl.fullName
       case _                           => code(node)
     }
-    cleanType(tpe)
+    AstCreatorHelper.cleanType(tpe)
   }
 
   private def astForTypeAliasDeclSyntax(node: TypeAliasDeclSyntax): Ast = {
@@ -958,28 +961,30 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     else { VariableScopeManager.ScopeType.MethodScope }
 
     val bindingAsts = node.bindings.children.flatMap { binding =>
-      val names = binding.pattern match {
+      val namesWithNode = binding.pattern match {
         case expr: ExpressionPatternSyntax =>
           notHandledYet(expr)
-          Seq(code(expr))
+          Seq((code(expr), expr))
         case ident: IdentifierPatternSyntax =>
-          Seq(code(ident.identifier))
+          Seq((code(ident.identifier), ident))
         case isType: IsTypePatternSyntax =>
           notHandledYet(isType)
-          Seq(code(isType))
+          Seq((code(isType), isType))
         case missing: MissingPatternSyntax =>
-          Seq(code(missing.placeholder))
+          Seq((code(missing.placeholder), missing))
         case tuple: TuplePatternSyntax =>
-          tuple.elements.children.map(c => code(c.pattern))
+          tuple.elements.children.map(c => (code(c.pattern), c))
         case valueBinding: ValueBindingPatternSyntax =>
-          Seq(code(valueBinding.pattern))
-        case _: WildcardPatternSyntax =>
-          Seq(scopeLocalUniqueName("wildcard"))
+          Seq((code(valueBinding.pattern), valueBinding))
+        case w: WildcardPatternSyntax =>
+          Seq((scopeLocalUniqueName("wildcard"), w))
       }
 
-      names.map { name =>
-        val cleanedName  = cleanName(name)
-        val typeFullName = cleanName(binding.typeAnnotation.fold(Defines.Any)(t => cleanType(code(t.`type`))))
+      namesWithNode.map { case (name, node) =>
+        val cleanedName    = AstCreatorHelper.cleanName(name)
+        val tpeFromTypeMap = fullnameProvider.typeFullname(node)
+        val tpeFromAst     = binding.typeAnnotation.map(t => AstCreatorHelper.cleanType(code(t.`type`)))
+        val typeFullName   = tpeFromTypeMap.orElse(tpeFromAst).getOrElse(Defines.Any)
         registerType(typeFullName)
         val nLocalNode = localNode(binding, cleanedName, cleanedName, typeFullName).order(0)
         scope.addVariable(cleanedName, nLocalNode, typeFullName, scopeType)

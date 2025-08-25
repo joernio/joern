@@ -97,10 +97,11 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForArrowExprSyntax(node: ArrowExprSyntax): Ast = notHandledYet(node)
 
   private def astForAsExprSyntax(node: AsExprSyntax): Ast = {
-    val op      = Operators.cast
-    val tpeNode = node.`type`
-    val tpeCode = code(tpeNode)
-    val tpe     = cleanType(tpeCode)
+    val op             = Operators.cast
+    val tpeNode        = node.`type`
+    val tpeCode        = code(tpeNode)
+    val tpeFromTypeMap = fullnameProvider.typeFullname(node)
+    val tpe            = tpeFromTypeMap.getOrElse(AstCreatorHelper.cleanType(tpeCode))
     registerType(tpe)
     val cpgCastExpression = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
     val expr              = astForNode(node.expression)

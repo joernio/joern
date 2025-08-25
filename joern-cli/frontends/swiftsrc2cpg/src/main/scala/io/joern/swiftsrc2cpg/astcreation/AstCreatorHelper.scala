@@ -60,6 +60,39 @@ object AstCreatorHelper {
     TagsToKeepInFullName.contains(tag) || suffix.startsWith(" infix") || suffix.startsWith(" prefix")
   }
 
+  def cleanName(name: String): String = {
+    if (name == Defines.Any) return name
+    val normalizedName = StringUtils.normalizeSpace(name)
+    stripGenerics(normalizedName)
+  }
+
+  def cleanType(rawType: String): String = {
+    if (rawType == Defines.Any) return rawType
+    val normalizedTpe = StringUtils.normalizeSpace(rawType.stripSuffix(" ()"))
+    stripGenerics(normalizedTpe) match {
+      // Empty or problematic types
+      case ""                   => Defines.Any
+      case t if t.contains("?") => Defines.Any
+      // Map builtin types
+      case "String"     => Defines.String
+      case "Character"  => Defines.Character
+      case "Int"        => Defines.Int
+      case "Float"      => Defines.Float
+      case "Double"     => Defines.Double
+      case "Bool"       => Defines.Bool
+      case "Array"      => Defines.Array
+      case "Dictionary" => Defines.Dictionary
+      case "Nil"        => Defines.Nil
+      case "()"         => Defines.Void
+      // Special patterns with specific handling
+      case t if t.startsWith("[") && t.endsWith("]") => Defines.Array
+      case t if t.contains("=>") || t.contains("->") => Defines.Function
+      case t if t.contains("( ")                     => t.substring(0, t.indexOf("( "))
+      // Default case
+      case typeStr => typeStr
+    }
+  }
+
 }
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -131,39 +164,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     val identNode = identifierNode(node, identifierName).typeFullName(tpe)
     scope.addVariableReference(identifierName, identNode, tpe, EvaluationStrategies.BY_REFERENCE)
     Ast(identNode)
-  }
-
-  protected def cleanName(name: String): String = {
-    if (name == Defines.Any) return name
-    val normalizedName = StringUtils.normalizeSpace(name)
-    stripGenerics(normalizedName)
-  }
-
-  protected def cleanType(rawType: String): String = {
-    if (rawType == Defines.Any) return rawType
-    val normalizedTpe = StringUtils.normalizeSpace(rawType.stripSuffix(" ()"))
-    stripGenerics(normalizedTpe) match {
-      // Empty or problematic types
-      case ""                   => Defines.Any
-      case t if t.contains("?") => Defines.Any
-      // Map builtin types
-      case "String"     => Defines.String
-      case "Character"  => Defines.Character
-      case "Int"        => Defines.Int
-      case "Float"      => Defines.Float
-      case "Double"     => Defines.Double
-      case "Bool"       => Defines.Bool
-      case "Array"      => Defines.Array
-      case "Dictionary" => Defines.Dictionary
-      case "Nil"        => Defines.Nil
-      case "()"         => Defines.Void
-      // Special patterns with specific handling
-      case t if t.startsWith("[") && t.endsWith("]") => Defines.Array
-      case t if t.contains("=>") || t.contains("->") => Defines.Function
-      case t if t.contains("( ")                     => t.substring(0, t.indexOf("( "))
-      // Default case
-      case typeStr => typeStr
-    }
   }
 
   protected def registerType(typeFullName: String): Unit = {

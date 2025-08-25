@@ -23,7 +23,7 @@ trait AstForPatternSyntaxCreator(implicit withSchemaValidation: ValidationMode) 
     val op      = Operators.instanceOf
     val tpeNode = node.`type`
     val tpeCode = code(tpeNode)
-    val tpe     = cleanType(tpeCode)
+    val tpe     = AstCreatorHelper.cleanType(tpeCode)
     registerType(tpe)
     val callNode_    = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
     val typeRefNode_ = typeRefNode(tpeNode, tpeCode, tpe)
@@ -54,12 +54,18 @@ trait AstForPatternSyntaxCreator(implicit withSchemaValidation: ValidationMode) 
   private def astForValueBindingPatternSyntax(node: ValueBindingPatternSyntax): Ast = {
     node.pattern match {
       case expr: ExpressionPatternSyntax if expr.expression.isInstanceOf[AsExprSyntax] =>
-        val asExpr = expr.expression.asInstanceOf[AsExprSyntax]
-        localForValueBindingPatternSyntax(node, code(asExpr.expression), cleanType(code(asExpr.`type`)))
+        val asExpr         = expr.expression.asInstanceOf[AsExprSyntax]
+        val tpeFromTypeMap = fullnameProvider.typeFullname(expr.expression)
+        localForValueBindingPatternSyntax(
+          node,
+          code(asExpr.expression),
+          tpeFromTypeMap.getOrElse(AstCreatorHelper.cleanType(code(asExpr.`type`)))
+        )
       case expr: ExpressionPatternSyntax =>
         astForNode(expr)
       case ident: IdentifierPatternSyntax =>
-        localForValueBindingPatternSyntax(node, code(ident.identifier), Defines.Any)
+        val tpeFromTypeMap = fullnameProvider.typeFullname(ident.identifier)
+        localForValueBindingPatternSyntax(node, code(ident.identifier), tpeFromTypeMap.getOrElse(Defines.Any))
       case isType: IsTypePatternSyntax =>
         astForNode(isType)
       case _: MissingPatternSyntax => Ast()

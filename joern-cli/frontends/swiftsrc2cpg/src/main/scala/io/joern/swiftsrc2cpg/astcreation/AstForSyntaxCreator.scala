@@ -87,9 +87,10 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForClosureParameterClauseSyntax(node: ClosureParameterClauseSyntax): Ast   = notHandledYet(node)
 
   private def astForClosureParameterSyntax(node: ClosureParameterSyntax): Ast = {
-    val name       = node.secondName.fold(code(node.firstName))(code)
-    val tpe        = node.`type`.fold(Defines.Any)(t => cleanType(code(t)))
-    val isVariadic = node.ellipsis.isDefined
+    val name           = node.secondName.fold(code(node.firstName))(code)
+    val tpeFromTypeMap = fullnameProvider.typeFullname(node)
+    val tpe            = node.`type`.fold(Defines.Any)(t => AstCreatorHelper.cleanType(code(t)))
+    val isVariadic     = node.ellipsis.isDefined
     registerType(tpe)
     val parameterNode =
       parameterInNode(
@@ -306,11 +307,12 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   }
 
   private def astForOptionalBindingConditionSyntax(node: OptionalBindingConditionSyntax): Ast = {
-    val typeFullName = node.typeAnnotation.fold(Defines.Any)(t => cleanType(code(t.`type`)))
+    val typeFullName = node.typeAnnotation.fold(Defines.Any)(t => AstCreatorHelper.cleanType(code(t.`type`)))
 
     node.pattern match {
       case ident: IdentifierPatternSyntax =>
-        localForOptionalBindingConditionSyntax(node, code(ident.identifier), typeFullName)
+        val tpeFromTypeMap = fullnameProvider.typeFullname(ident)
+        localForOptionalBindingConditionSyntax(node, code(ident.identifier), tpeFromTypeMap.getOrElse(typeFullName))
       case _ => // do nothing
     }
 
@@ -318,8 +320,11 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     if (initAst.isEmpty) {
       Ast()
     } else {
-      val patternAst = astForNode(node.pattern)
-      patternAst.root.collect { case i: NewIdentifier => i }.foreach(_.typeFullName(typeFullName))
+      val patternAst     = astForNode(node.pattern)
+      val tpeFromTypeMap = fullnameProvider.typeFullname(node.pattern)
+      patternAst.root
+        .collect { case i: NewIdentifier => i }
+        .foreach(_.typeFullName(tpeFromTypeMap.getOrElse(typeFullName)))
       createAssignmentCallAst(patternAst, initAst.head, code(node), line = line(node), column = column(node))
     }
   }
