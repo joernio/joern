@@ -326,7 +326,8 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForKeyPathExprSyntax(node: KeyPathExprSyntax): Ast = notHandledYet(node)
 
   private def astForMacroExpansionExprSyntax(node: MacroExpansionExprSyntax): Ast = {
-    val name = code(node.macroName)
+    val fullName = fullnameProvider.declFullname(node).getOrElse(code(node.macroName))
+    val tpe      = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
 
     val trailingClosureAsts            = node.trailingClosure.toList.map(astForNode)
     val additionalTrailingClosuresAsts = node.additionalTrailingClosures.children.map(c => astForNode(c.closure))
@@ -334,11 +335,11 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val argAsts = astForNode(node.arguments) +: (trailingClosureAsts ++ additionalTrailingClosuresAsts)
     val callNode =
       NewCall()
-        .name(name)
+        .name(code(node.macroName))
         .dispatchType(DispatchTypes.INLINED)
-        .methodFullName(name)
+        .methodFullName(fullName)
         .code(code(node))
-        .typeFullName(Defines.Any)
+        .typeFullName(tpe)
         .lineNumber(line(node))
         .columnNumber(column(node))
     callAst(callNode, argAsts)

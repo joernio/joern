@@ -33,7 +33,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     // - handle genericWhereClause
     val attributes = astForDeclAttributes(node)
     val modifiers  = modifiersForDecl(node)
-    val aliasName  = node.initializer.map(i => nameFromTypeSyntax(i.value))
+    val aliasName  = node.initializer.map(i => nameFromTypeSyntaxAst(i.value))
 
     val (astParentType, astParentFullName) = astParentInfo()
     val TypeInfo(typeName, typeFullName)   = typeNameInfoForDeclSyntax(node)
@@ -804,7 +804,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         .dispatchType(DispatchTypes.INLINED)
         .methodFullName(name)
         .code(code(node))
-        .typeFullName(Defines.Any)
+        .typeFullName(fullnameProvider.typeFullname(node).getOrElse(Defines.Any))
         .lineNumber(line(node))
         .columnNumber(column(node))
     callAst(callNode, argAsts)
@@ -820,7 +820,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     astForFunctionLike(node)
   }
 
-  protected def nameFromTypeSyntax(node: TypeSyntax): String = {
+  protected def nameFromTypeSyntaxAst(node: TypeSyntax): String = {
     val tpe = astForTypeSyntax(node).root match {
       case Some(id: NewIdentifier)     => id.name
       case Some(typeDecl: NewTypeDecl) => typeDecl.fullName
@@ -835,7 +835,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     // - handle genericWhereClause
     val attributes = astForDeclAttributes(node)
     val modifiers  = modifiersForDecl(node)
-    val aliasName  = nameFromTypeSyntax(node.initializer.value)
+    val aliasName  = nameFromTypeSyntaxAst(node.initializer.value)
 
     val TypeInfo(typeName, typeFullName)   = typeNameInfoForDeclSyntax(node)
     val (astParentType, astParentFullName) = astParentInfo()

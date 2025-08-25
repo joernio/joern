@@ -83,7 +83,6 @@ object AstCreatorHelper {
       case "Array"      => Defines.Array
       case "Dictionary" => Defines.Dictionary
       case "Nil"        => Defines.Nil
-      case "()"         => Defines.Void
       // Special patterns with specific handling
       case t if t.startsWith("[") && t.endsWith("]") => Defines.Array
       case t if t.contains("=>") || t.contains("->") => Defines.Function
@@ -273,7 +272,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     typeNameInfoForNode(node, name)
   }
 
-  private def nameForTypeSyntax(node: TypeSyntax): String = {
+  protected def nameForTypeSyntax(node: TypeSyntax): String = {
     val name = node match {
       case id: IdentifierTypeSyntax                 => code(id.name)
       case m: MemberTypeSyntax                      => code(m)

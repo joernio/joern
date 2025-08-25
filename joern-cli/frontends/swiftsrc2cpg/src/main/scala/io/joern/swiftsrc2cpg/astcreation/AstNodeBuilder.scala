@@ -2,11 +2,10 @@ package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.x2cpg
-import io.joern.x2cpg.Ast
-import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, Operators}
 
 trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 

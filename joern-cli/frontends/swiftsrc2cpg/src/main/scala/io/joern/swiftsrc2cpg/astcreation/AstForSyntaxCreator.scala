@@ -89,8 +89,8 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForClosureParameterSyntax(node: ClosureParameterSyntax): Ast = {
     val name           = node.secondName.fold(code(node.firstName))(code)
     val tpeFromTypeMap = fullnameProvider.typeFullname(node)
-    val tpe            = node.`type`.fold(Defines.Any)(t => AstCreatorHelper.cleanType(code(t)))
-    val isVariadic     = node.ellipsis.isDefined
+    val tpe        = tpeFromTypeMap.getOrElse(node.`type`.fold(Defines.Any)(t => AstCreatorHelper.cleanType(code(t))))
+    val isVariadic = node.ellipsis.isDefined
     registerType(tpe)
     val parameterNode =
       parameterInNode(
@@ -108,7 +108,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
 
   private def astForClosureShorthandParameterSyntax(node: ClosureShorthandParameterSyntax): Ast = {
     val name = code(node.name)
-    val tpe  = Defines.Any
+    val tpe  = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
     registerType(tpe)
     val parameterNode =
       parameterInNode(
@@ -207,7 +207,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     // TODO: handle defaultValue
     val label      = code(node.firstName)
     val name       = node.secondName.fold(label)(code)
-    val tpe        = fullnameProvider.typeFullname(node).getOrElse(nameFromTypeSyntax(node.`type`))
+    val tpe        = fullnameProvider.typeFullname(node).getOrElse(nameFromTypeSyntaxAst(node.`type`))
     val isVariadic = node.ellipsis.isDefined
 
     val parameterName = node.firstName match {

@@ -23,10 +23,10 @@ trait AstForPatternSyntaxCreator(implicit withSchemaValidation: ValidationMode) 
     val op      = Operators.instanceOf
     val tpeNode = node.`type`
     val tpeCode = code(tpeNode)
-    val tpe     = AstCreatorHelper.cleanType(tpeCode)
+    val tpe     = nameForTypeSyntax(tpeNode)
     registerType(tpe)
     val callNode_    = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
-    val typeRefNode_ = typeRefNode(tpeNode, tpeCode, tpe)
+    val typeRefNode_ = typeRefNode(node, tpeCode, tpe)
     val arg          = Ast(typeRefNode_)
     callAst(callNode_, List(arg))
   }
