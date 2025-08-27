@@ -412,7 +412,7 @@ class MethodReturnTests extends RubyCode2CpgFixture {
 
     "have the return node under the closure (returning the literal)" in {
       inside(cpg.method("<lambda>0").block.astChildren.l) {
-        case ret :: Nil =>
+        case ret :: _ :: Nil =>
           ret.code shouldBe "\"hello\""
         case xs => fail(s"Expected the closure to have a single call, instead got [${xs.code.mkString(", ")}]")
       }
