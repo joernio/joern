@@ -2,11 +2,10 @@ package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.x2cpg
-import io.joern.x2cpg.Ast
-import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, Operators}
 
 trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -82,70 +81,36 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
   }
 
   protected def createIndexAccessCallAst(
+    node: SwiftNode,
     baseAst: Ast,
     partAst: Ast,
-    line: Option[Int],
-    column: Option[Int],
     additionalArgsAst: Seq[Ast] = Seq.empty
   ): Ast = {
-    val callNode = createCallNode(
+    val callNode_ = callNode(
+      node,
       s"${codeOf(baseAst.nodes.head)}[${codeOf(partAst.nodes.head)}]",
       Operators.indexAccess,
+      Operators.indexAccess,
       DispatchTypes.STATIC_DISPATCH,
-      line,
-      column
+      None,
+      Some(Defines.Any)
     )
     val arguments = List(baseAst, partAst) ++ additionalArgsAst
-    callAst(callNode, arguments)
+    callAst(callNode_, arguments)
   }
 
-  protected def createFieldAccessCallAst(
-    baseAst: Ast,
-    partNode: NewNode,
-    line: Option[Int],
-    column: Option[Int]
-  ): Ast = {
-    val callNode = createCallNode(
+  protected def createFieldAccessCallAst(node: SwiftNode, baseAst: Ast, partNode: NewNode): Ast = {
+    val callNode_ = callNode(
+      node,
       s"${codeOf(baseAst.nodes.head)}.${codeOf(partNode)}",
       Operators.fieldAccess,
+      Operators.fieldAccess,
       DispatchTypes.STATIC_DISPATCH,
-      line,
-      column
+      None,
+      Some(Defines.Any)
     )
     val arguments = List(baseAst, Ast(partNode))
-    callAst(callNode, arguments)
-  }
-
-  def callNode(node: SwiftNode, code: String, name: String, dispatchType: String): NewCall = {
-    val fullName =
-      if (dispatchType == DispatchTypes.STATIC_DISPATCH) name
-      else x2cpg.Defines.DynamicCallUnknownFullName
-    callNode(node, code, name, fullName, dispatchType, None, Option(Defines.Any))
-  }
-
-  private def createCallNode(
-    code: String,
-    callName: String,
-    dispatchType: String,
-    line: Option[Int],
-    column: Option[Int]
-  ): NewCall = NewCall()
-    .code(code)
-    .name(callName)
-    .methodFullName(
-      if (dispatchType == DispatchTypes.STATIC_DISPATCH) callName else x2cpg.Defines.DynamicCallUnknownFullName
-    )
-    .dispatchType(dispatchType)
-    .lineNumber(line)
-    .columnNumber(column)
-    .typeFullName(Defines.Any)
-
-  protected def createFieldIdentifierNode(name: String, line: Option[Int], column: Option[Int]): NewFieldIdentifier = {
-    NewFieldIdentifier()
-      .code(name)
-      .canonicalName(name)
-      .lineNumber(line)
-      .columnNumber(column)
+    callAst(callNode_, arguments)
   }
 
   protected def literalNode(node: SwiftNode, code: String, possibleTypes: Option[String]): NewLiteral = {
@@ -156,16 +121,18 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     literalNode(node, code, typeFullName).possibleTypes(possibleTypes.toList)
   }
 
-  protected def createAssignmentCallAst(
-    dest: Ast,
-    source: Ast,
-    code: String,
-    line: Option[Int],
-    column: Option[Int]
-  ): Ast = {
-    val callNode  = createCallNode(code, Operators.assignment, DispatchTypes.STATIC_DISPATCH, line, column)
+  protected def createAssignmentCallAst(node: SwiftNode, dest: Ast, source: Ast, code: String): Ast = {
+    val callNode_ = callNode(
+      node,
+      code,
+      Operators.assignment,
+      Operators.assignment,
+      DispatchTypes.STATIC_DISPATCH,
+      None,
+      Some(Defines.Void)
+    )
     val arguments = List(dest, source)
-    callAst(callNode, arguments)
+    callAst(callNode_, arguments)
   }
 
   private def typeHintForThisExpression(): Seq[String] = {
@@ -209,20 +176,20 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
   }
 
   protected def createStaticCallNode(
+    node: SwiftNode,
     code: String,
     callName: String,
     fullName: String,
-    line: Option[Int],
-    column: Option[Int]
-  ): NewCall = NewCall()
-    .code(code)
-    .name(callName)
-    .methodFullName(fullName)
-    .dispatchType(DispatchTypes.STATIC_DISPATCH)
-    .signature("")
-    .lineNumber(line)
-    .columnNumber(column)
-    .typeFullName(Defines.Any)
+    typeFullName: String
+  ): NewCall = callNode(node, code, callName, fullName, DispatchTypes.STATIC_DISPATCH, Some(""), Some(typeFullName))
+
+  protected def createStaticCallForOperatorAst(node: SwiftNode, op: String, argument: SwiftNode): Ast = {
+    val tpe = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
+    registerType(tpe)
+    val callNode_ = createStaticCallNode(node, code(node), op, op, tpe)
+    val argAst    = astForNode(argument)
+    callAst(callNode_, List(argAst))
+  }
 
   protected def createFunctionTypeAndTypeDecl(method: NewMethod): Ast = {
     val parentNode: NewTypeDecl = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.get

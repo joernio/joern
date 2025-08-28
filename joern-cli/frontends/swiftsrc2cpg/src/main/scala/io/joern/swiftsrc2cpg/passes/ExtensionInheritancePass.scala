@@ -11,7 +11,7 @@ import java.io.File
 
 class ExtensionInheritancePass(cpg: Cpg) extends ForkJoinParallelCpgPass[TypeDecl](cpg) {
 
-  private val SourceFolder: String = "/Source/"
+  private val SourceFolder: String = "/Sources/"
 
   override def generateParts(): Array[TypeDecl] = cpg.typeDecl.filterNot(_.fullName.endsWith("<extension>")).toArray
 
@@ -28,7 +28,8 @@ class ExtensionInheritancePass(cpg: Cpg) extends ForkJoinParallelCpgPass[TypeDec
   override def runOnPart(builder: DiffGraphBuilder, part: TypeDecl): Unit = {
     val folderOption = Option(new File(part.filename).getParent)
     if (folderOption.isEmpty) {
-      val extensions = cpg.typeDecl.filter(_.fullName.endsWith(s".${part.name}<extension>"))
+      val name       = part.name.stripPrefix("Swift.")
+      val extensions = cpg.typeDecl.filter(_.fullName.endsWith(s".$name<extension>"))
       setInheritsFromFullNames(builder, part, extensions)
     } else {
       val folder = s"${folderOption.get}/".replaceAll("\\\\", "/")
@@ -37,9 +38,9 @@ class ExtensionInheritancePass(cpg: Cpg) extends ForkJoinParallelCpgPass[TypeDec
       } else {
         ""
       }
-      val extensions = cpg.typeDecl.filter(t =>
-        t.fullName.startsWith(folderPrefix) && t.fullName.endsWith(s".${part.name}<extension>")
-      )
+      val name = part.name.stripPrefix("Swift.")
+      val extensions =
+        cpg.typeDecl.filter(t => t.fullName.startsWith(folderPrefix) && t.fullName.endsWith(s".$name<extension>"))
       setInheritsFromFullNames(builder, part, extensions)
     }
   }

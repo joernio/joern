@@ -9,10 +9,12 @@ import io.joern.x2cpg.utils.Environment
 import io.joern.x2cpg.utils.server.FrontendHTTPServer
 import scopt.OParser
 
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths}
 
 final case class Config(
   defines: Set[String] = Set.empty,
+  swiftBuild: Boolean = false,
+  buildLogPath: Option[Path] = None,
   override val genericConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig(),
   override val typeRecoveryParserConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config()
 ) extends X2CpgConfig[Config]
@@ -24,7 +26,15 @@ final case class Config(
     copy(typeRecoveryParserConfig = value)
 
   def withDefines(defines: Set[String]): Config = {
-    this.copy(defines = defines)
+    copy(defines = defines)
+  }
+
+  def withSwiftBuild(swiftBuild: Boolean): Config = {
+    copy(swiftBuild = swiftBuild)
+  }
+
+  def withBuildLogPath(buildLogPath: Path): Config = {
+    copy(buildLogPath = Option(buildLogPath))
   }
 }
 
@@ -40,7 +50,21 @@ object Frontend {
       opt[String]("define")
         .unbounded()
         .text("define a name")
-        .action((d, c) => c.withDefines(c.defines + d))
+        .action((d, c) => c.withDefines(c.defines + d)),
+      opt[Unit]("swift-build")
+        .text("build the project to retrieve full Swift compiler type information")
+        .action((path, c) => c.withSwiftBuild(true)),
+      opt[Path]("build-log-path")
+        .text("the path to the compiler debug output log file")
+        .validate { path =>
+          val file = path.toRealPath().toFile
+          if (!file.isFile || !file.canRead) {
+            failure(s"Unable to read compiler debug output log file: '${file.toString}'")
+          } else {
+            success
+          }
+        }
+        .action((path, c) => c.withSwiftBuild(true).withBuildLogPath(path))
     )
   }
 
