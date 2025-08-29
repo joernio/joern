@@ -8,6 +8,7 @@ import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, Semantic
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg, LanguageFrontend}
 import io.joern.x2cpg.{ValidationMode, X2Cpg}
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.scalatest.Inside
@@ -83,7 +84,10 @@ trait CSharpFrontend extends LanguageFrontend {
       .getOrElse(Config().withSchemaValidation(ValidationMode.Enabled))
 
   override def execute(sourceCodeFile: File): Cpg = {
-    new CSharpSrc2Cpg().createCpg(defaultConfig.withInputPath(sourceCodeFile.getAbsolutePath)).get
+    val cpgOutFile = FileUtil.newTemporaryFile(suffix = "cpg.bin")
+    FileUtil.deleteOnExit(cpgOutFile)
+    val config = defaultConfig.withInputPath(sourceCodeFile.getAbsolutePath).withOutputPath(cpgOutFile.toString)
+    new CSharpSrc2Cpg().createCpg(config).get
   }
 
 }
