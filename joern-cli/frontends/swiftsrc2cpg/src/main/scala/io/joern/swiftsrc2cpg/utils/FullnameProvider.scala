@@ -60,17 +60,28 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
     *   An optional String containing the fullname if found
     */
   @tailrec
-  private def fullName(range: (Int, Int), kind: FullnameProvider.Kind, nodeKind: String): Option[String] = {
+  private def fullName(
+    range: (Int, Int),
+    kind: FullnameProvider.Kind,
+    nodeKind: String,
+    iter: Int = 1
+  ): Option[String] = {
     typeMap.get(range) match {
       case Some(typeInfo) if kind == FullnameProvider.Kind.Type =>
         filterForNodeKind(typeInfo.filter(_.typeFullname.nonEmpty), nodeKind).flatMap(_.typeFullname)
       case Some(typeInfo) if kind == FullnameProvider.Kind.Decl =>
         filterForNodeKind(typeInfo.filter(_.declFullname.nonEmpty), nodeKind).flatMap(_.declFullname)
-      case _ if range._1 != range._2 =>
+      case None if range._1 != range._2 && iter > 0 =>
+        println(s"Found nothing at $range for $nodeKind")
+        // Only recurse if we haven't already considered offsets (for synthetic AST elements with +-1 offsets)
+        fullName((range._1 - 1, range._2 + 1), kind, nodeKind, 0)
+      case None if range._1 != range._2 =>
+        println(s"Found nothing at $range for $nodeKind")
         // Only recurse if we haven't already reduced to a point (for synthetic AST elements)
         fullName((range._1, range._1), kind, nodeKind)
       case _ =>
         // We've already tried with a point and still found nothing
+        println(s"Found nothing at $range for $nodeKind. Giving up.")
         None
     }
   }
