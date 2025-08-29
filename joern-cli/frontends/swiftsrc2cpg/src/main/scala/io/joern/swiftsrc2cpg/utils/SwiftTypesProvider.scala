@@ -264,7 +264,7 @@ object SwiftTypesProvider {
       ExternalCommand.run(command).successOption match {
         case Some(outLines) =>
           val swiftVersion = outLines.find(_.contains("Swift version ")).map { str =>
-            str.substring("Swift version ".length, str.indexOf(" ("))
+            str.substring(str.indexOf("Swift version ") + 14, str.indexOf(" ("))
           }
           if (swiftVersion.isEmpty) {
             logger.warn("Unable to determine a Swift version on this system!")
