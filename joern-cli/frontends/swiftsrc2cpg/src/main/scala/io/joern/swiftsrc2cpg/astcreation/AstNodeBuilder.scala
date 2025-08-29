@@ -138,7 +138,10 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
   private def typeHintForThisExpression(): Seq[String] = {
     dynamicInstanceTypeStack.headOption match {
       case Some(tpe) => Seq(tpe)
-      case None      => methodAstParentStack.collectFirst { case t: NewTypeDecl => t.fullName }.toSeq
+      case None =>
+        methodAstParentStack.collectFirst {
+          case t: NewTypeDecl if !t.fullName.endsWith("<global>") => t.fullName
+        }.toSeq
     }
   }
 
