@@ -54,8 +54,8 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
           Try {
             val fileLocalTypesMap = typeMap.getOrElse(parseResult.fullPath, new SwiftFileLocalTypeMapping)
             logger.debug(s"fileLocalTypesMap for '${parseResult.fullPath}' has size: ${fileLocalTypesMap.size}")
-            var astCreator        = new AstCreator(config, global, parseResult, fileLocalTypesMap)
-            var localDiff         = astCreator.createAst()
+            var astCreator = new AstCreator(config, global, parseResult, fileLocalTypesMap)
+            var localDiff  = astCreator.createAst()
             diffGraph.absorb(localDiff)
             astCreator = null
             localDiff = null
