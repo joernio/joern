@@ -40,7 +40,6 @@ jobs:
           check-latest: true
           development: true
           swift-version: "6.1"
-          visual-studio-components: Microsoft.VisualStudio.Component.Windows11SDK.22621
       - name: Delete `.rustup` directory
         run: rm -rf /home/runner/.rustup # to save disk space
         if: runner.os == 'Linux'
