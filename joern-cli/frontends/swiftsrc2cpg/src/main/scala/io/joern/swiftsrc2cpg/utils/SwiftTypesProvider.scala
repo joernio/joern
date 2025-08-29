@@ -255,7 +255,7 @@ object SwiftTypesProvider {
     }
 
     val commands = if (config.buildLogPath.isDefined) {
-      // we do not need 'swift' on the system if the commands are taken from Xcode
+      // we do not need 'swift' on the system if the commands are taken from a build log file
       Seq(SwiftCompilerVersionCommand)
     } else {
       SwiftVersionCommands
