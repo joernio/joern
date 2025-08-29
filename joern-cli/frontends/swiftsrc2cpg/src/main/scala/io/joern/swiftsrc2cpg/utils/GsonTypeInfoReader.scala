@@ -196,7 +196,7 @@ object GsonTypeInfoReader {
           val value = JsonParser.parseReader(jsonReader)
           obj.add(name, value)
         } else if (name == "filename") {
-          filename = JsonParser.parseReader(jsonReader).getAsString
+          filename = JsonParser.parseReader(jsonReader).getAsString.stripPrefix("/private")
           isFromBuild = filename.contains("/.build/") || filename.contains("\\.build\\")
         } else {
           jsonReader.peek() match {

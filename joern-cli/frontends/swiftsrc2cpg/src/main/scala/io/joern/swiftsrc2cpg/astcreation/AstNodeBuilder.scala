@@ -143,10 +143,13 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
   }
 
   protected def identifierNode(node: SwiftNode, name: String): NewIdentifier = {
-    val tpe = name match {
-      case "this" | "self" | "Self" => typeHintForThisExpression().headOption.getOrElse(Defines.Any)
-      case _                        => Defines.Any
-    }
+    val tpe = fullnameProvider
+      .typeFullname(node)
+      .getOrElse(name match {
+        case "this" | "self" | "Self" => typeHintForThisExpression().headOption.getOrElse(Defines.Any)
+        case _                        => Defines.Any
+      })
+    registerType(tpe)
     identifierNode(node, name, name, tpe)
   }
 

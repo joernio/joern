@@ -23,7 +23,7 @@ private object FullnameProvider {
   }
 
   // TODO: provide the actual mapping from SwiftNode.toString (nodeKind) to ResolvedTypeInfo.nodeKind
-  private val NodeKindMapping = Map.empty[String, String]
+  private val NodeKindMapping = Map("DeclReferenceExprSyntax" -> "type_expr")
 }
 
 /** Provides functionality to resolve and retrieve fullnames for Swift types and declarations. Uses a type mapping to
@@ -82,7 +82,7 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
       case None if range._1 != range._2 =>
         logger.debug(s"Found nothing at $range for $nodeKind")
         // Only recurse if we haven't already reduced to a point (for synthetic AST elements)
-        fullName((range._1, range._1), kind, nodeKind)
+        fullName((range._1 + 1, range._1 + 1), kind, nodeKind)
       case _ =>
         // We've already tried with a point and still found nothing
         logger.debug(s"Found nothing at $range for $nodeKind. Giving up.")
