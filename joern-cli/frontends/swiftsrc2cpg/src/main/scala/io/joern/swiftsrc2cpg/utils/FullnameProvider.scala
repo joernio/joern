@@ -8,6 +8,8 @@ import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{ResolvedTypeInfo, SwiftFi
 import scala.annotation.tailrec
 import scala.collection.mutable
 
+import org.slf4j.{Logger, LoggerFactory}
+
 /** Companion object for the FullnameProvider class. Contains helper types and constants used by the FullnameProvider.
   */
 private object FullnameProvider {
@@ -31,6 +33,8 @@ private object FullnameProvider {
   *   A mapping from source position ranges to resolved type information
   */
 class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
+
+  private val logger: Logger = LoggerFactory.getLogger(classOf[FullnameProvider])
 
   /** Filters a set of resolved type information based on the given node kind.
     *
@@ -72,16 +76,16 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
       case Some(typeInfo) if kind == FullnameProvider.Kind.Decl =>
         filterForNodeKind(typeInfo.filter(_.declFullname.nonEmpty), nodeKind).flatMap(_.declFullname)
       case None if range._1 != range._2 && iter > 0 =>
-        println(s"Found nothing at $range for $nodeKind")
+        logger.debug(s"Found nothing at $range for $nodeKind")
         // Only recurse if we haven't already considered offsets (for synthetic AST elements with +-1 offsets)
         fullName((range._1 - 1, range._2 + 1), kind, nodeKind, 0)
       case None if range._1 != range._2 =>
-        println(s"Found nothing at $range for $nodeKind")
+        logger.debug(s"Found nothing at $range for $nodeKind")
         // Only recurse if we haven't already reduced to a point (for synthetic AST elements)
         fullName((range._1, range._1), kind, nodeKind)
       case _ =>
         // We've already tried with a point and still found nothing
-        println(s"Found nothing at $range for $nodeKind. Giving up.")
+        logger.debug(s"Found nothing at $range for $nodeKind. Giving up.")
         None
     }
   }
