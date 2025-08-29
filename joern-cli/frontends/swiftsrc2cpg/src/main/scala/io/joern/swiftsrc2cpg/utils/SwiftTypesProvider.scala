@@ -250,7 +250,7 @@ object SwiftTypesProvider {
     */
   private def isValidEnvironment(config: Config): Boolean = {
     if (config.buildLogPath.isEmpty && !Paths.get(config.inputPath, "Package.swift").toFile.canRead) {
-      logger.debug("Package.swift not found or can not be read. This does not look like a valid SwiftPM project.")
+      logger.warn("Package.swift not found or can not be read. This does not look like a valid SwiftPM project.")
       return false
     }
 

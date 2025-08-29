@@ -36,5 +36,13 @@ jobs:
         run: |
           swift --version
           swiftc --version
+      - name: Print Swiftc location
+        if: matrix.os == "macos-latest"
+        run: |
+          which swiftc
+      - name: Print Swift demangle version
+        if: matrix.os != "ubuntu-latest"
+        run: |
+          swift-demangle --version
       - name: Run tests
         run: sbt "swiftsrc2cpg/testOnly *ActorTests"
