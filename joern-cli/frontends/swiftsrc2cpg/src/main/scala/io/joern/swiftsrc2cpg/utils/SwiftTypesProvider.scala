@@ -657,6 +657,18 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
         }
       }
       logger.info(s"Got ${mapping.size} type map entries.")
+      val mapString = mapping
+        .flatMap { case (filename, posToResolvedTypeInfo) =>
+          posToResolvedTypeInfo.flatMap { case (range, typeInfos) =>
+            typeInfos.map(typeInfo =>
+              (filename, typeInfo.nodeKind, range, typeInfo.typeFullname, typeInfo.declFullname)
+            )
+          }
+        }
+        .toList
+        .sortBy(t => s"${t._1}:${t._2}:${t._3._1}:${t._3._2}")
+        .mkString("\n")
+      logger.info(s"Type map is:\n$mapString")
       mapping
     } finally {
       pool.shutdown()
