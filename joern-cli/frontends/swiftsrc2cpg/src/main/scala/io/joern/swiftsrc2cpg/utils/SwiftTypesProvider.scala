@@ -184,8 +184,8 @@ object SwiftTypesProvider {
   /** Resolves the path to the swift-demangle command and combines it with the provided arguments.
     *
     * This method determines the appropriate command to use for swift-demangle based on the operating system:
-    *   - On Windows, it assumes swift-demangle is already in PATH
-    *   - On Linux and macOS, it attempts to find the correct path by resolving from swiftc's location
+    *   - On Windows and MacOS, it assumes swift-demangle is already in PATH
+    *   - On Linux, it attempts to find the correct path by resolving from swiftc's location
     *
     * @param args
     *   Arguments to pass to the swift-demangle command
@@ -194,11 +194,11 @@ object SwiftTypesProvider {
     */
   private def resolveSwiftDemangleCommand(args: Seq[String]): Seq[String] = {
     val defaultCommand = "swift-demangle" +: args
-    if (Environment.operatingSystem == Environment.OperatingSystemType.Windows) {
-      // Windows installation of swift puts swift-demangle into the PATH automatically
+    if (Environment.operatingSystem != Environment.OperatingSystemType.Linux) {
+      // Windows and MacOS installations of Swift puts swift-demangle into the PATH automatically
       defaultCommand
     } else {
-      // Installer for Linux and macOS do not
+      // but not on Linux
       ExternalCommand
         .run(Seq("which", "swiftc"))
         .successOption
@@ -277,6 +277,9 @@ object SwiftTypesProvider {
       }
     }
     val hasSwiftDemangle = ExternalCommand.run(swiftDemangleVersionCommand()).successful
+    if (!hasSwiftDemangle) {
+      logger.warn("Unable to find swift-demangle on this system!")
+    }
     hasSwift && hasSwiftDemangle
   }
 
