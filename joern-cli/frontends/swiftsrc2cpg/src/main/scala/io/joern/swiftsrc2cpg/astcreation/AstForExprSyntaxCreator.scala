@@ -2,6 +2,7 @@ package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.swiftsrc2cpg.passes.GlobalBuiltins
+import io.joern.x2cpg
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
@@ -16,8 +17,10 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private val MaxInitializers = 1000
 
   private def astForEmptyListLikeExpr(node: SwiftNode): Ast = {
-    val op           = Operators.arrayInitializer
-    val initCallNode = callNode(node, code(node), op, DispatchTypes.STATIC_DISPATCH)
+    val op  = Operators.arrayInitializer
+    val tpe = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
+    registerType(tpe)
+    val initCallNode = createStaticCallNode(node, code(node), op, op, tpe)
     callAst(initCallNode, List.empty)
   }
 
@@ -26,8 +29,10 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     else {
       node match {
         case _: (ArrayExprSyntax | TupleExprSyntax) =>
-          val op           = Operators.arrayInitializer
-          val initCallNode = callNode(node, code(node), op, DispatchTypes.STATIC_DISPATCH)
+          val op  = Operators.arrayInitializer
+          val tpe = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
+          registerType(tpe)
+          val initCallNode = createStaticCallNode(node, code(node), op, op, tpe)
 
           val clauses = elements.slice(0, MaxInitializers)
 
@@ -58,16 +63,14 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
               val lhsAst = astForNode(dictElement.key)
               val rhsAst = astForNode(dictElement.value)
 
-              val lhsTmpNode = Ast(identifierNode(dictElement, tmpName))
-              val lhsIndexAccessCallAst =
-                createIndexAccessCallAst(lhsTmpNode, lhsAst, line(dictElement), column(dictElement))
+              val lhsTmpNode            = Ast(identifierNode(dictElement, tmpName))
+              val lhsIndexAccessCallAst = createIndexAccessCallAst(dictElement, lhsTmpNode, lhsAst)
 
               createAssignmentCallAst(
+                dictElement,
                 lhsIndexAccessCallAst,
                 rhsAst,
-                s"${codeOf(lhsIndexAccessCallAst.nodes.head)} = ${codeOf(rhsAst.nodes.head)}",
-                line(dictElement),
-                column(dictElement)
+                s"${codeOf(lhsIndexAccessCallAst.nodes.head)} = ${codeOf(rhsAst.nodes.head)}"
               )
             case other => astForNode(other)
           }
@@ -97,12 +100,13 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForArrowExprSyntax(node: ArrowExprSyntax): Ast = notHandledYet(node)
 
   private def astForAsExprSyntax(node: AsExprSyntax): Ast = {
-    val op      = Operators.cast
-    val tpeNode = node.`type`
-    val tpeCode = code(tpeNode)
-    val tpe     = cleanType(tpeCode)
+    val op             = Operators.cast
+    val tpeNode        = node.`type`
+    val tpeCode        = code(tpeNode)
+    val tpeFromTypeMap = fullnameProvider.typeFullname(node)
+    val tpe            = tpeFromTypeMap.getOrElse(AstCreatorHelper.cleanType(tpeCode))
     registerType(tpe)
-    val cpgCastExpression = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
+    val cpgCastExpression = createStaticCallNode(node, code(node), op, op, tpe)
     val expr              = astForNode(node.expression)
     val typeRefNode_      = typeRefNode(tpeNode, tpeCode, tpe)
     val arg               = Ast(typeRefNode_)
@@ -112,7 +116,10 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForAssignmentExprSyntax(node: AssignmentExprSyntax): Ast = notHandledYet(node)
 
   private def astForAwaitExprSyntax(node: AwaitExprSyntax): Ast = {
-    val callNode_ = callNode(node, code(node), "<operator>.await", DispatchTypes.STATIC_DISPATCH)
+    val op  = "<operator>.await"
+    val tpe = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
+    registerType(tpe)
+    val callNode_ = createStaticCallNode(node, code(node), op, op, tpe)
     val argAsts   = List(astForNode(node.expression))
     callAst(callNode_, argAsts)
   }
@@ -174,13 +181,25 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     astForNode(node.expression)
   }
 
+  private def setFullNameInfoForCall(callExpr: FunctionCallExprSyntax, callNode: NewCall): Unit = {
+    fullnameProvider.declFullname(callExpr).foreach { fullNameWithSignature =>
+      val (fullName, signature) = methodInfoFromFullNameWithSignature(fullNameWithSignature)
+      val typeFullName          = fullnameProvider.typeFullname(callExpr).getOrElse(Defines.Any)
+      registerType(typeFullName)
+      callNode.methodFullName(s"$fullName:$signature")
+      callNode.signature(signature)
+      callNode.typeFullName(typeFullName)
+    }
+  }
+
   private def createBuiltinStaticCall(callExpr: FunctionCallExprSyntax, callee: ExprSyntax, fullName: String): Ast = {
     val callName = callee match {
       case m: MemberAccessExprSyntax => code(m.declName)
       case _                         => code(callee)
     }
-    val callNode =
-      createStaticCallNode(code(callExpr), callName, fullName, line(callee), column(callee))
+    val callNode = createStaticCallNode(callee, code(callExpr), callName, fullName, Defines.Any)
+    setFullNameInfoForCall(callExpr, callNode)
+
     val argAsts = callExpr.arguments.children.map(astForNode)
     callAst(callNode, argAsts)
   }
@@ -209,7 +228,18 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         }
       case _ => callExprCode
     }
-    val callNode_ = callNode(callExpr, callCode, callName, DispatchTypes.DYNAMIC_DISPATCH)
+
+    val callNode_ = callNode(
+      callExpr,
+      callCode,
+      callName,
+      x2cpg.Defines.DynamicCallUnknownFullName,
+      DispatchTypes.DYNAMIC_DISPATCH,
+      None,
+      Option(Defines.Any)
+    )
+    setFullNameInfoForCall(callExpr, callNode_)
+
     callAst(callNode_, args, receiver = Option(receiverAst), base = Option(Ast(baseNode)))
   }
 
@@ -221,43 +251,48 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     } else {
       val (receiverAst, baseNode, callName) = callee match {
         case m: MemberAccessExprSyntax =>
-          val base   = m.base
-          val member = m.declName
+          val base       = m.base
+          val member     = m.declName
+          val memberCode = code(member)
           base match {
             case None =>
               // referencing implicit this
               val receiverAst = astForNode(callee)
-              val baseNode    = identifierNode(m, "this")
-              scope.addVariableReference("this", baseNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
-              (receiverAst, baseNode, code(member))
-            case Some(d: DeclReferenceExprSyntax) if code(d) == "this" || code(d) == "self" =>
-              val receiverAst = astForNode(callee)
-              val baseNode    = identifierNode(d, code(d))
-              scope.addVariableReference(code(d), baseNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
-              (receiverAst, baseNode, code(member))
+              val baseNodeId  = identifierNode(m, "this")
+              scope.addVariableReference("this", baseNodeId, baseNodeId.typeFullName, EvaluationStrategies.BY_REFERENCE)
+              (receiverAst, baseNodeId, memberCode)
             case Some(d: DeclReferenceExprSyntax) =>
               val receiverAst = astForNode(callee)
-              val baseNode    = identifierNode(d, code(d))
-              scope.addVariableReference(code(d), baseNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
-              (receiverAst, baseNode, code(member))
+              val baseNodeId  = identifierNode(d, code(d))
+              scope.addVariableReference(
+                code(d),
+                baseNodeId,
+                baseNodeId.typeFullName,
+                EvaluationStrategies.BY_REFERENCE
+              )
+              (receiverAst, baseNodeId, memberCode)
             case Some(otherBase) =>
               val tmpVarName  = scopeLocalUniqueName("tmp")
               val baseTmpNode = identifierNode(otherBase, tmpVarName)
-              scope.addVariableReference(tmpVarName, baseTmpNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+              scope.addVariableReference(
+                tmpVarName,
+                baseTmpNode,
+                baseTmpNode.typeFullName,
+                EvaluationStrategies.BY_REFERENCE
+              )
               val baseAst   = astForNode(otherBase)
               val codeField = s"(${codeOf(baseTmpNode)} = ${codeOf(baseAst.nodes.head)})"
               val tmpAssignmentAst =
-                createAssignmentCallAst(Ast(baseTmpNode), baseAst, codeField, line(otherBase), column(otherBase))
-              val memberNode = createFieldIdentifierNode(code(member), line(member), column(member))
-              val fieldAccessAst =
-                createFieldAccessCallAst(tmpAssignmentAst, memberNode, line(callee), column(callee))
-              val thisTmpNode = identifierNode(callee, tmpVarName)
-              (fieldAccessAst, thisTmpNode, code(member))
+                createAssignmentCallAst(otherBase, Ast(baseTmpNode), baseAst, codeField)
+              val memberNode     = fieldIdentifierNode(member, memberCode, memberCode)
+              val fieldAccessAst = createFieldAccessCallAst(callee, tmpAssignmentAst, memberNode)
+              val thisTmpNode    = identifierNode(callee, tmpVarName)
+              (fieldAccessAst, thisTmpNode, memberCode)
           }
         case _ =>
           val receiverAst = astForNode(callee)
           val thisNode    = identifierNode(callee, "this")
-          scope.addVariableReference(thisNode.name, thisNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+          scope.addVariableReference(thisNode.name, thisNode, thisNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
           (receiverAst, thisNode, calleeCode)
       }
       handleCallNodeArgs(node, receiverAst, baseNode, callName)
@@ -281,17 +316,18 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForInOutExprSyntax(node: InOutExprSyntax): Ast = {
-    val op        = Defines.PrefixOperatorMap(code(node.ampersand))
-    val argAst    = astForNode(node.expression)
-    val callNode_ = callNode(node, code(node), op, DispatchTypes.STATIC_DISPATCH)
-    callAst(callNode_, List(argAst))
+    val op = Defines.PrefixOperatorMap(code(node.ampersand))
+    createStaticCallForOperatorAst(node, op, node.expression)
   }
 
   private def astForInfixOperatorExprSyntax(node: InfixOperatorExprSyntax): Ast = {
-    val op        = Defines.InfixOperatorMap(code(node.operator))
+    val op  = Defines.InfixOperatorMap(code(node.operator))
+    val tpe = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
+    registerType(tpe)
+
     val lhsAst    = astForNode(node.leftOperand)
     val rhsAst    = astForNode(node.rightOperand)
-    val callNode_ = callNode(node, code(node), op, DispatchTypes.STATIC_DISPATCH)
+    val callNode_ = createStaticCallNode(node, code(node), op, op, tpe)
     val argAsts   = List(lhsAst, rhsAst)
     callAst(callNode_, argAsts)
   }
@@ -301,17 +337,24 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForIsExprSyntax(node: IsExprSyntax): Ast = {
-    val lhsAst    = astForNode(node.expression)
-    val rhsAst    = astForNode(node.`type`)
-    val callNode_ = callNode(node, code(node), Operators.instanceOf, DispatchTypes.STATIC_DISPATCH)
-    val argAsts   = List(lhsAst, rhsAst)
+    val lhsAst = astForNode(node.expression)
+    val rhsAst = astForNode(node.`type`)
+
+    val op  = Operators.instanceOf
+    val tpe = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
+    registerType(tpe)
+    val callNode_ = createStaticCallNode(node, code(node), op, op, tpe)
+
+    val argAsts = List(lhsAst, rhsAst)
     callAst(callNode_, argAsts)
   }
 
   private def astForKeyPathExprSyntax(node: KeyPathExprSyntax): Ast = notHandledYet(node)
 
   private def astForMacroExpansionExprSyntax(node: MacroExpansionExprSyntax): Ast = {
-    val name = code(node.macroName)
+    val nodeCode = code(node.macroName)
+    val fullName = fullnameProvider.declFullname(node).getOrElse(nodeCode)
+    val tpe      = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
 
     val trailingClosureAsts            = node.trailingClosure.toList.map(astForNode)
     val additionalTrailingClosuresAsts = node.additionalTrailingClosures.children.map(c => astForNode(c.closure))
@@ -319,11 +362,11 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val argAsts = astForNode(node.arguments) +: (trailingClosureAsts ++ additionalTrailingClosuresAsts)
     val callNode =
       NewCall()
-        .name(name)
+        .name(nodeCode)
         .dispatchType(DispatchTypes.INLINED)
-        .methodFullName(name)
+        .methodFullName(fullName)
         .code(code(node))
-        .typeFullName(Defines.Any)
+        .typeFullName(tpe)
         .lineNumber(line(node))
         .columnNumber(column(node))
     callAst(callNode, argAsts)
@@ -349,10 +392,10 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     member.baseName match {
       case l @ integerLiteral(_) =>
         val memberNode = astForIntegerLiteralToken(l)
-        createIndexAccessCallAst(baseAst, memberNode, line(node), column(node))
+        createIndexAccessCallAst(node, baseAst, memberNode)
       case other =>
-        val memberNode = createFieldIdentifierNode(code(other), line(other), column(other))
-        createFieldAccessCallAst(baseAst, memberNode, line(node), column(node))
+        val memberNode = fieldIdentifierNode(other, code(other), code(other))
+        createFieldAccessCallAst(node, baseAst, memberNode)
     }
 
   }
@@ -422,17 +465,13 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForPostfixOperatorExprSyntax(node: PostfixOperatorExprSyntax): Ast = {
-    val operatorMethod = Defines.PostfixOperatorMap(code(node.operator))
-    val unaryCall      = callNode(node, code(node), operatorMethod, operatorMethod, DispatchTypes.STATIC_DISPATCH)
-    val expressionAst  = astForNode(node.expression)
-    callAst(unaryCall, List(expressionAst))
+    val op = Defines.PostfixOperatorMap(code(node.operator))
+    createStaticCallForOperatorAst(node, op, node.expression)
   }
 
   private def astForPrefixOperatorExprSyntax(node: PrefixOperatorExprSyntax): Ast = {
-    val operatorMethod = Defines.PrefixOperatorMap(code(node.operator))
-    val unaryCall      = callNode(node, code(node), operatorMethod, operatorMethod, DispatchTypes.STATIC_DISPATCH)
-    val expressionAst  = astForNode(node.expression)
-    callAst(unaryCall, List(expressionAst))
+    val op = Defines.PrefixOperatorMap(code(node.operator))
+    createStaticCallForOperatorAst(node, op, node.expression)
   }
 
   private def astForRegexLiteralExprSyntax(node: RegexLiteralExprSyntax): Ast = notHandledYet(node)
@@ -457,7 +496,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val additionalTrailingClosuresAsts = node.additionalTrailingClosures.children.map(c => astForNode(c.closure))
 
     val additionalArgsAsts = trailingClosureAsts ++ additionalTrailingClosuresAsts
-    createIndexAccessCallAst(baseAst, memberAst, line(node), column(node), additionalArgsAsts)
+    createIndexAccessCallAst(node, baseAst, memberAst, additionalArgsAsts)
   }
 
   private def astForSuperExprSyntax(node: SuperExprSyntax): Ast = {
@@ -478,12 +517,17 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
                 val ifNode =
                   controlStructureNode(whereClause.condition, ControlStructureTypes.IF, code(whereClause.condition))
                 val whereAst = astForNode(whereClause)
-                val whereClauseCallNode = callNode(
-                  whereClause.condition,
-                  s"!(${code(whereClause.condition)})",
-                  Operators.logicalNot,
-                  DispatchTypes.STATIC_DISPATCH
-                )
+
+                val op = Operators.logicalNot
+                val whereClauseCallNode =
+                  createStaticCallNode(
+                    whereClause.condition,
+                    s"!(${code(whereClause.condition)})",
+                    op,
+                    op,
+                    Defines.Bool
+                  )
+
                 val argAsts = List(whereAst)
                 val testAst = callAst(whereClauseCallNode, argAsts)
                 val consequentAst =
@@ -535,8 +579,10 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForTernaryExprSyntax(node: TernaryExprSyntax): Ast = {
-    val name = Operators.conditional
-    val call = callNode(node, code(node), name, DispatchTypes.STATIC_DISPATCH)
+    val op  = Operators.conditional
+    val tpe = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
+    registerType(tpe)
+    val call = createStaticCallNode(node, code(node), op, op, tpe)
 
     val condAst = astForNode(node.condition)
     val posAst  = astForNode(node.thenExpression)

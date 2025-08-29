@@ -1,10 +1,11 @@
 package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
+import io.joern.x2cpg
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.Defines
+import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewJumpLabel
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
@@ -135,20 +136,17 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     diffGraph.addEdge(localAstParentStack.head, iteratorLocalNode, EdgeTypes.AST)
     scope.addVariableReference(iteratorName, iteratorNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
+    // TODO: add operator to schema
+    var op = "<operator>.iterator"
     val iteratorCall =
-      // TODO: add operator to schema
-      callNode(node, s"<operator>.iterator($collectionName)", "<operator>.iterator", DispatchTypes.STATIC_DISPATCH)
+      createStaticCallNode(node, s"<operator>.iterator($collectionName)", op, op, Defines.Iterator)
 
     val objectKeysCallArgs = List(astForNode(collection))
     val objectKeysCallAst  = callAst(iteratorCall, objectKeysCallArgs)
 
+    op = Operators.assignment
     val iteratorAssignmentNode =
-      callNode(
-        node,
-        s"$iteratorName = <operator>.iterator($collectionName)",
-        Operators.assignment,
-        DispatchTypes.STATIC_DISPATCH
-      )
+      createStaticCallNode(node, s"$iteratorName = <operator>.iterator($collectionName)", op, op, Defines.Void)
 
     val iteratorAssignmentArgs = List(Ast(iteratorNode), objectKeysCallAst)
     val iteratorAssignmentAst  = callAst(iteratorAssignmentNode, iteratorAssignmentArgs)
@@ -172,22 +170,30 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val whileLoopNode = controlStructureNode(node, ControlStructureTypes.WHILE, code(node))
 
     // while loop test:
-    val testCallNode =
-      callNode(node, s"!($resultName = $iteratorName.next()).done", Operators.not, DispatchTypes.STATIC_DISPATCH)
+    op = Operators.logicalNot
+    val testCallNode = createStaticCallNode(node, s"!($resultName = $iteratorName.next()).done", op, op, Defines.Bool)
 
+    op = Operators.assignment
     val doneBaseNode =
-      callNode(node, s"($resultName = $iteratorName.next())", Operators.assignment, DispatchTypes.STATIC_DISPATCH)
+      createStaticCallNode(node, s"($resultName = $iteratorName.next())", op, op, Defines.Void)
 
     val lhsNode = identifierNode(node, resultName)
 
-    val rhsNode = callNode(node, s"$iteratorName.next()", "next", DispatchTypes.DYNAMIC_DISPATCH)
+    val rhsNode = callNode(
+      node,
+      s"$iteratorName.next()",
+      "next",
+      x2cpg.Defines.DynamicCallUnknownFullName,
+      DispatchTypes.DYNAMIC_DISPATCH,
+      None,
+      Option(Defines.Any)
+    )
 
     val nextBaseNode = identifierNode(node, iteratorName)
 
-    val nextMemberNode = createFieldIdentifierNode("next", line(node), column(node))
+    val nextMemberNode = fieldIdentifierNode(node, "next", "next")
 
-    val nextReceiverNode =
-      createFieldAccessCallAst(Ast(nextBaseNode), nextMemberNode, line(node), column(node))
+    val nextReceiverNode = createFieldAccessCallAst(node, Ast(nextBaseNode), nextMemberNode)
 
     val thisNextNode = identifierNode(node, iteratorName)
 
@@ -197,9 +203,9 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val doneBaseArgs = List(Ast(lhsNode), rhsAst)
     val doneBaseAst  = callAst(doneBaseNode, doneBaseArgs)
 
-    val doneMemberNode = createFieldIdentifierNode("done", line(node), column(node))
+    val doneMemberNode = fieldIdentifierNode(node, "done", "done")
 
-    val testNode = createFieldAccessCallAst(doneBaseAst, doneMemberNode, line(node), column(node))
+    val testNode = createFieldAccessCallAst(node, doneBaseAst, doneMemberNode)
 
     val testCallArgs = List(testNode)
     val testCallAst  = callAst(testCallNode, testCallArgs)
@@ -211,12 +217,13 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val baseNode = identifierNode(node, resultName)
 
-    val memberNode = createFieldIdentifierNode("value", line(node), column(node))
+    val memberNode = fieldIdentifierNode(node, "value", "value")
 
-    val accessAst = createFieldAccessCallAst(Ast(baseNode), memberNode, line(node), column(node))
+    val accessAst = createFieldAccessCallAst(node, Ast(baseNode), memberNode)
 
+    op = Operators.assignment
     val loopVariableAssignmentNode =
-      callNode(node, s"$loopVariableName = $resultName.value", Operators.assignment, DispatchTypes.STATIC_DISPATCH)
+      createStaticCallNode(node, s"$loopVariableName = $resultName.value", op, op, Defines.Void)
 
     val loopVariableAssignmentArgs = List(Ast(whileLoopVariableNode), accessAst)
     val loopVariableAssignmentAst  = callAst(loopVariableAssignmentNode, loopVariableAssignmentArgs)
@@ -268,20 +275,17 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     diffGraph.addEdge(localAstParentStack.head, iteratorLocalNode, EdgeTypes.AST)
     scope.addVariableReference(iteratorName, iteratorNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
+    // TODO: add operator to schema
+    var op = "<operator>.iterator"
     val iteratorCall =
-      // TODO: add operator to schema
-      callNode(node, s"<operator>.iterator($collectionName)", "<operator>.iterator", DispatchTypes.STATIC_DISPATCH)
+      createStaticCallNode(node, s"<operator>.iterator($collectionName)", op, op, Defines.Iterator)
 
     val objectKeysCallArgs = List(astForNode(collection))
     val objectKeysCallAst  = callAst(iteratorCall, objectKeysCallArgs)
 
+    op = Operators.assignment
     val iteratorAssignmentNode =
-      callNode(
-        node,
-        s"$iteratorName = <operator>.iterator($collectionName)",
-        Operators.assignment,
-        DispatchTypes.STATIC_DISPATCH
-      )
+      createStaticCallNode(node, s"$iteratorName = <operator>.iterator($collectionName)", op, op, Defines.Void)
 
     val iteratorAssignmentArgs = List(Ast(iteratorNode), objectKeysCallAst)
     val iteratorAssignmentAst  = callAst(iteratorAssignmentNode, iteratorAssignmentArgs)
@@ -297,21 +301,30 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val whileLoopNode = controlStructureNode(node, ControlStructureTypes.WHILE, code(node))
 
     // while loop test:
-    val testCallNode =
-      callNode(node, s"!($resultName = $iteratorName.next()).done", Operators.not, DispatchTypes.STATIC_DISPATCH)
+    op = Operators.logicalNot
+    val testCallNode = createStaticCallNode(node, s"!($resultName = $iteratorName.next()).done", op, op, Defines.Bool)
 
+    op = Operators.assignment
     val doneBaseNode =
-      callNode(node, s"($resultName = $iteratorName.next())", Operators.assignment, DispatchTypes.STATIC_DISPATCH)
+      createStaticCallNode(node, s"($resultName = $iteratorName.next())", op, op, Defines.Void)
 
     val lhsNode = identifierNode(node, resultName)
 
-    val rhsNode = callNode(node, s"$iteratorName.next()", "next", DispatchTypes.DYNAMIC_DISPATCH)
+    val rhsNode = callNode(
+      node,
+      s"$iteratorName.next()",
+      "next",
+      x2cpg.Defines.DynamicCallUnknownFullName,
+      DispatchTypes.DYNAMIC_DISPATCH,
+      None,
+      Option(Defines.Any)
+    )
 
     val nextBaseNode = identifierNode(node, iteratorName)
 
-    val nextMemberNode = createFieldIdentifierNode("next", line(node), column(node))
+    val nextMemberNode = fieldIdentifierNode(node, "next", "next")
 
-    val nextReceiverNode = createFieldAccessCallAst(Ast(nextBaseNode), nextMemberNode, line(node), column(node))
+    val nextReceiverNode = createFieldAccessCallAst(node, Ast(nextBaseNode), nextMemberNode)
 
     val thisNextNode = identifierNode(node, iteratorName)
 
@@ -322,9 +335,9 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val doneBaseAst  = callAst(doneBaseNode, doneBaseArgs)
     Ast.storeInDiffGraph(doneBaseAst, diffGraph)
 
-    val doneMemberNode = createFieldIdentifierNode("done", line(node), column(node))
+    val doneMemberNode = fieldIdentifierNode(node, "done", "done")
 
-    val testNode = createFieldAccessCallAst(Ast(doneBaseNode), doneMemberNode, line(node), column(node))
+    val testNode = createFieldAccessCallAst(node, Ast(doneBaseNode), doneMemberNode)
 
     val testCallArgs = List(testNode)
     val testCallAst  = callAst(testCallNode, testCallArgs)
@@ -336,12 +349,13 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val baseNode = identifierNode(node, resultName)
 
-    val memberNode = createFieldIdentifierNode("value", line(node), column(node))
+    val memberNode = fieldIdentifierNode(node, "value", "value")
 
-    val accessAst = createFieldAccessCallAst(Ast(baseNode), memberNode, line(node), column(node))
+    val accessAst = createFieldAccessCallAst(node, Ast(baseNode), memberNode)
 
+    op = Operators.assignment
     val loopVariableAssignmentNode =
-      callNode(node, s"${code(id.expression)} = $resultName.value", Operators.assignment, DispatchTypes.STATIC_DISPATCH)
+      createStaticCallNode(node, s"${code(id.expression)} = $resultName.value", op, op, Defines.Void)
 
     val loopVariableAssignmentArgs = List(whileLoopVariableNode, accessAst)
     val loopVariableAssignmentAst  = callAst(loopVariableAssignmentNode, loopVariableAssignmentArgs)
@@ -391,20 +405,18 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val iteratorNode      = identifierNode(node, iteratorName)
     diffGraph.addEdge(localAstParentStack.head, iteratorLocalNode, EdgeTypes.AST)
     scope.addVariableReference(iteratorName, iteratorNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+
     // TODO: add operator to schema
+    var op = "<operator>.iterator"
     val iteratorCall =
-      callNode(node, s"<operator>.iterator($collectionName)", "<operator>.iterator", DispatchTypes.STATIC_DISPATCH)
+      createStaticCallNode(node, s"<operator>.iterator($collectionName)", op, op, Defines.Iterator)
 
     val objectKeysCallArgs = List(astForNode(collection))
     val objectKeysCallAst  = callAst(iteratorCall, objectKeysCallArgs)
 
+    op = Operators.assignment
     val iteratorAssignmentNode =
-      callNode(
-        node,
-        s"$iteratorName = <operator>.iterator($collectionName)",
-        Operators.assignment,
-        DispatchTypes.STATIC_DISPATCH
-      )
+      createStaticCallNode(node, s"$iteratorName = <operator>.iterator($collectionName)", op, op, Defines.Void)
 
     val iteratorAssignmentArgs = List(Ast(iteratorNode), objectKeysCallAst)
     val iteratorAssignmentAst  = callAst(iteratorAssignmentNode, iteratorAssignmentArgs)
@@ -430,21 +442,31 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val whileLoopNode = controlStructureNode(node, ControlStructureTypes.WHILE, code(node))
 
     // while loop test:
+    op = Operators.logicalNot
     val testCallNode =
-      callNode(node, s"!($resultName = $iteratorName.next()).done", Operators.not, DispatchTypes.STATIC_DISPATCH)
+      createStaticCallNode(node, s"!($resultName = $iteratorName.next()).done", op, op, Defines.Bool)
 
+    op = Operators.assignment
     val doneBaseNode =
-      callNode(node, s"($resultName = $iteratorName.next())", Operators.assignment, DispatchTypes.STATIC_DISPATCH)
+      createStaticCallNode(node, s"($resultName = $iteratorName.next())", op, op, Defines.Void)
 
     val lhsNode = identifierNode(node, resultName)
 
-    val rhsNode = callNode(node, s"$iteratorName.next()", "next", DispatchTypes.DYNAMIC_DISPATCH)
+    val rhsNode = callNode(
+      node,
+      s"$iteratorName.next()",
+      "next",
+      x2cpg.Defines.DynamicCallUnknownFullName,
+      DispatchTypes.DYNAMIC_DISPATCH,
+      None,
+      Option(Defines.Any)
+    )
 
     val nextBaseNode = identifierNode(node, iteratorName)
 
-    val nextMemberNode = createFieldIdentifierNode("next", line(node), column(node))
+    val nextMemberNode = fieldIdentifierNode(node, "next", "next")
 
-    val nextReceiverNode = createFieldAccessCallAst(Ast(nextBaseNode), nextMemberNode, line(node), column(node))
+    val nextReceiverNode = createFieldAccessCallAst(node, Ast(nextBaseNode), nextMemberNode)
 
     val thisNextNode = identifierNode(node, iteratorName)
 
@@ -454,9 +476,9 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val doneBaseArgs = List(Ast(lhsNode), rhsAst)
     val doneBaseAst  = callAst(doneBaseNode, doneBaseArgs)
 
-    val doneMemberNode = createFieldIdentifierNode("done", line(node), column(node))
+    val doneMemberNode = fieldIdentifierNode(node, "done", "done")
 
-    val testNode = createFieldAccessCallAst(doneBaseAst, doneMemberNode, line(node), column(node))
+    val testNode = createFieldAccessCallAst(node, doneBaseAst, doneMemberNode)
 
     val testCallArgs = List(testNode)
     val testCallAst  = callAst(testCallNode, testCallArgs)
@@ -467,19 +489,16 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val loopVariableAssignmentAsts = loopVariableNames.zipWithIndex.map { case (loopVariableName, idx) =>
       val whileLoopVariableNode = identifierNode(node, loopVariableName)
       val baseNode              = identifierNode(node, resultName)
-      val memberNode            = createFieldIdentifierNode("value", line(node), column(node))
-      val accessAst             = createFieldAccessCallAst(Ast(baseNode), memberNode, line(node), column(node))
+      val memberNode            = fieldIdentifierNode(node, "value", "value")
+      val accessAst             = createFieldAccessCallAst(node, Ast(baseNode), memberNode)
       val index                 = idx + 1
-      val variableMemberNode =
-        createFieldIdentifierNode(s"_$index", line(node), column(node))
-      val variableAccessAst =
-        createFieldAccessCallAst(accessAst, variableMemberNode, line(node), column(node))
-      val loopVariableAssignmentNode = callNode(
-        node,
-        s"$loopVariableName = $resultName.value._$index",
-        Operators.assignment,
-        DispatchTypes.STATIC_DISPATCH
-      )
+      val variableMemberNode    = fieldIdentifierNode(node, s"_$index", s"_$index")
+      val variableAccessAst     = createFieldAccessCallAst(node, accessAst, variableMemberNode)
+
+      val op = Operators.assignment
+      val loopVariableAssignmentNode =
+        createStaticCallNode(node, s"$loopVariableName = $resultName.value._$index", op, op, Defines.Void)
+
       val loopVariableAssignmentArgs = List(Ast(whileLoopVariableNode), variableAccessAst)
       callAst(loopVariableAssignmentNode, loopVariableAssignmentArgs)
     }
@@ -577,8 +596,10 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForThenStmtSyntax(node: ThenStmtSyntax): Ast = notHandledYet(node)
 
   private def astForThrowStmtSyntax(node: ThrowStmtSyntax): Ast = {
-    val op        = "<operator>.throw"
-    val callNode_ = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH)
+    val op  = "<operator>.throw"
+    val tpe = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
+    registerType(tpe)
+    val callNode_ = createStaticCallNode(node, code(node), op, op, tpe)
     val exprAst   = astForNode(node.expression)
     callAst(callNode_, List(exprAst))
   }

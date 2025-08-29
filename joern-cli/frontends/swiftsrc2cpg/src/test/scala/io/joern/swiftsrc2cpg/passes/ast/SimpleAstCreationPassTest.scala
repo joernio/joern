@@ -82,20 +82,20 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
       assignB.code shouldBe "var b: Int = foo()"
       val List(localA, localB) = method.block.local.l
       localA.name shouldBe "a"
-      localA.typeFullName shouldBe "Int"
+      localA.typeFullName shouldBe "Swift.Int"
       localB.name shouldBe "b"
-      localB.typeFullName shouldBe "Int"
+      localB.typeFullName shouldBe "Swift.Int"
     }
 
     "have corresponding type decl with correct bindings for function" in {
       val cpg            = code("func method() {}")
       val List(typeDecl) = cpg.typeDecl.nameExact("method").l
-      typeDecl.fullName shouldBe "Test0.swift:<global>.method:ANY()"
+      typeDecl.fullName shouldBe "Test0.swift:<global>.method:()->ANY"
 
       val List(binding) = typeDecl.bindsOut.l
       binding.name shouldBe "method"
-      binding.methodFullName shouldBe "Test0.swift:<global>.method:ANY()"
-      binding.signature shouldBe "ANY()"
+      binding.methodFullName shouldBe "Test0.swift:<global>.method:()->ANY"
+      binding.signature shouldBe "()->ANY"
 
       val List(boundMethod) = binding.refOut.l
       boundMethod shouldBe cpg.method.nameExact("method").head
@@ -214,27 +214,27 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
           |""".stripMargin)
       cpg.method.where(_._argumentIn) shouldBe empty
 
-      val List(get, set, willSet, didSet) = cpg.typeDecl.nameExact("Foo").boundMethod.nameNot("<init>").l
-      get.fullName shouldBe "Test0.swift:<global>.Foo.bar:Int()"
+      val List(get, set, willSet, didSet) = cpg.typeDecl.nameExact("Foo").boundMethod.nameNot("init").l
+      get.fullName shouldBe "Test0.swift:<global>.Foo.bar.getter:Swift.Int"
       val List(getReturn) = get.body.astChildren.isReturn.l
       getReturn.code shouldBe "bar"
       val List(thisBar) = getReturn.astChildren.isCall.l
       thisBar.name shouldBe Operators.fieldAccess
-      thisBar.typeFullName shouldBe "Int"
+      thisBar.typeFullName shouldBe "Swift.Int"
       inside(thisBar.argument.l) { case List(base: Identifier, field: FieldIdentifier) =>
         base.name shouldBe "this"
         base.typeFullName shouldBe "Test0.swift:<global>.Foo"
         field.canonicalName shouldBe "bar"
       }
 
-      set.fullName shouldBe "Test0.swift:<global>.Foo.bar:ANY(Int)"
+      set.fullName shouldBe "Test0.swift:<global>.Foo.bar.setter:Swift.Int"
       val List(setParam) = set.parameter.l
       setParam.name shouldBe "newValue"
-      setParam.typeFullName shouldBe "Int"
+      setParam.typeFullName shouldBe "Swift.Int"
       set.body.astChildren.isCall.code.l shouldBe List("this.bar = newValue")
 
-      willSet.fullName shouldBe "Test0.swift:<global>.Foo.willSet_bar:ANY()"
-      didSet.fullName shouldBe "Test0.swift:<global>.Foo.didSet_bar:ANY()"
+      willSet.fullName shouldBe "Test0.swift:<global>.Foo.bar.willSet:Swift.Int"
+      didSet.fullName shouldBe "Test0.swift:<global>.Foo.bar.didSet:Swift.Int"
     }
 
     "have correct structure for function with variadic parameter" in {
@@ -245,9 +245,9 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
       foo.isVariadic shouldBe true
       val List(a, b) = foo.parameter.l
       a.name shouldBe "a"
-      a.typeFullName shouldBe "String"
+      a.typeFullName shouldBe "Swift.String"
       b.name shouldBe "b"
-      b.typeFullName shouldBe "String"
+      b.typeFullName shouldBe "Swift.String"
       b.isVariadic shouldBe true
     }
 

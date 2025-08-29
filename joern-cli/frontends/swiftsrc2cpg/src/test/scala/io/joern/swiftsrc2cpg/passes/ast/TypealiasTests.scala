@@ -19,9 +19,9 @@ class TypealiasTests extends AstSwiftSrc2CpgSuite {
         |  var foo: String
         |}
         |""".stripMargin)
-      val expectedTypeAliasFullName = "Test0.swift:<global>.<type>0"
+      val expectedTypeAliasFullName = "Test0.swift:<global>.<tuple-type>0"
       val List(tupleTypeDecl)       = cpg.typeDecl.fullNameExact(expectedTypeAliasFullName).l
-      tupleTypeDecl.name shouldBe "<type>0"
+      tupleTypeDecl.name shouldBe "<tuple-type>0"
       tupleTypeDecl.code shouldBe "(Int, Int)"
 
       val List(intPair) = cpg.typeDecl.nameExact("IntPair").l
@@ -38,9 +38,9 @@ class TypealiasTests extends AstSwiftSrc2CpgSuite {
         |}
         |typealias IntPair = (Int, Int)
         |""".stripMargin)
-      val expectedTypeAliasFullName = "Test0.swift:<global>.<type>0"
+      val expectedTypeAliasFullName = "Test0.swift:<global>.<tuple-type>0"
       val List(tupleTypeDecl)       = cpg.typeDecl.fullNameExact(expectedTypeAliasFullName).l
-      tupleTypeDecl.name shouldBe "<type>0"
+      tupleTypeDecl.name shouldBe "<tuple-type>0"
       tupleTypeDecl.code shouldBe "(Int, Int)"
 
       val List(intPair) = cpg.typeDecl.nameExact("IntPair").l
@@ -52,9 +52,9 @@ class TypealiasTests extends AstSwiftSrc2CpgSuite {
 
     "testTypealias2b" in {
       val cpg                       = code("typealias IntTriple = (Int, Int, Int)")
-      val expectedTypeAliasFullName = "Test0.swift:<global>.<type>0"
+      val expectedTypeAliasFullName = "Test0.swift:<global>.<tuple-type>0"
       val List(tupleTypeDecl)       = cpg.typeDecl.fullNameExact(expectedTypeAliasFullName).l
-      tupleTypeDecl.name shouldBe "<type>0"
+      tupleTypeDecl.name shouldBe "<tuple-type>0"
       tupleTypeDecl.code shouldBe "(Int, Int, Int)"
 
       val List(intTriple) = cpg.typeDecl.nameExact("IntTriple").l
@@ -64,19 +64,19 @@ class TypealiasTests extends AstSwiftSrc2CpgSuite {
     "testTypealias3a" in {
       val cpg        = code("typealias Foo1 = Int")
       val List(foo1) = cpg.typeDecl.nameExact("Foo1").l
-      foo1.aliasTypeFullName shouldBe Option("Int")
+      foo1.aliasTypeFullName shouldBe Option("Swift.Int")
     }
 
     "testTypealias9" in {
       val cpg             = code("typealias Recovery5 = Int, Float")
       val List(recovery5) = cpg.typeDecl.nameExact("Recovery5").l
-      recovery5.aliasTypeFullName shouldBe Option("Int")
+      recovery5.aliasTypeFullName shouldBe Option("Swift.Int")
     }
 
     "testTypealias11" in {
       val cpg      = code("typealias `switch` = Int")
       val List(sw) = cpg.typeDecl.nameExact("`switch`").l
-      sw.aliasTypeFullName shouldBe Option("Int")
+      sw.aliasTypeFullName shouldBe Option("Swift.Int")
     }
   }
 

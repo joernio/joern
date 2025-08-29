@@ -20,37 +20,35 @@ class AsyncTests extends AstSwiftSrc2CpgSuite {
        |""".stripMargin)
       val List(asyncGlobal1, asyncGlobal2) = cpg.method.internal.nameNot(NamespaceTraversal.globalNamespaceName).l
       asyncGlobal1.name shouldBe "asyncGlobal1"
-      asyncGlobal1.fullName shouldBe "Test0.swift:<global>.asyncGlobal1:ANY()"
+      asyncGlobal1.fullName shouldBe "Test0.swift:<global>.asyncGlobal1:()->ANY"
       asyncGlobal2.name shouldBe "asyncGlobal2"
-      asyncGlobal2.fullName shouldBe "Test0.swift:<global>.asyncGlobal2:ANY()"
+      asyncGlobal2.fullName shouldBe "Test0.swift:<global>.asyncGlobal2:()->ANY"
     }
 
     "testAsync3" in {
       val cpg                = code("func asyncGlobal3(fn: () throws -> Int) async rethrows { }")
       val List(asyncGlobal3) = cpg.method.internal.nameNot(NamespaceTraversal.globalNamespaceName).l
       asyncGlobal3.name shouldBe "asyncGlobal3"
-      asyncGlobal3.fullName shouldBe s"Test0.swift:<global>.asyncGlobal3:ANY(fn:${Defines.Function})"
+      asyncGlobal3.fullName shouldBe s"Test0.swift:<global>.asyncGlobal3:(fn:${Defines.Function})->ANY"
       val List(fn) = asyncGlobal3.parameter.l
       fn.name shouldBe "fn"
-      fn.typeFullName shouldBe "Test0.swift:<global>.asyncGlobal3.<type>0"
-      val List(t) = cpg.typeDecl.fullNameExact("Test0.swift:<global>.asyncGlobal3.<type>0").l
-      t.code shouldBe "() throws -> Int"
+      fn.typeFullName shouldBe Defines.Function
     }
 
     "testAsync4" in {
       val cpg                = code("func asyncGlobal4() async -> Int { }")
       val List(asyncGlobal4) = cpg.method.internal.nameNot(NamespaceTraversal.globalNamespaceName).l
       asyncGlobal4.name shouldBe "asyncGlobal4"
-      asyncGlobal4.fullName shouldBe "Test0.swift:<global>.asyncGlobal4:Int()"
-      asyncGlobal4.methodReturn.typeFullName shouldBe "Int"
+      asyncGlobal4.fullName shouldBe "Test0.swift:<global>.asyncGlobal4:()->Swift.Int"
+      asyncGlobal4.methodReturn.typeFullName shouldBe "Swift.Int"
     }
 
     "testAsync6" in {
       val cpg                = code("func asyncGlobal6() async throws -> Int { }")
       val List(asyncGlobal6) = cpg.method.internal.nameNot(NamespaceTraversal.globalNamespaceName).l
       asyncGlobal6.name shouldBe "asyncGlobal6"
-      asyncGlobal6.fullName shouldBe "Test0.swift:<global>.asyncGlobal6:Int()"
-      asyncGlobal6.methodReturn.typeFullName shouldBe "Int"
+      asyncGlobal6.fullName shouldBe "Test0.swift:<global>.asyncGlobal6:()->Swift.Int"
+      asyncGlobal6.methodReturn.typeFullName shouldBe "Swift.Int"
     }
 
     "testAsync10a" in {
@@ -58,8 +56,8 @@ class AsyncTests extends AstSwiftSrc2CpgSuite {
       val List(f1) = cpg.typeDecl.where(_.aliasTypeFullName).l
       f1.name shouldBe "AsyncFunc1"
       f1.fullName shouldBe "Test0.swift:<global>.AsyncFunc1"
-      f1.aliasTypeFullName shouldBe Option("Test0.swift:<global>.<type>0")
-      cpg.typeDecl.fullNameExact("Test0.swift:<global>.<type>0").size shouldBe 1
+      f1.aliasTypeFullName shouldBe Option("Test0.swift:<global>.<Swift.Function>0")
+      cpg.typeDecl.fullNameExact("Test0.swift:<global>.<Swift.Function>0").size shouldBe 1
     }
 
     "testAsync10b" in {
@@ -67,8 +65,8 @@ class AsyncTests extends AstSwiftSrc2CpgSuite {
       val List(f2) = cpg.typeDecl.where(_.aliasTypeFullName).l
       f2.name shouldBe "AsyncFunc2"
       f2.fullName shouldBe "Test0.swift:<global>.AsyncFunc2"
-      f2.aliasTypeFullName shouldBe Option("Test0.swift:<global>.<type>0")
-      cpg.typeDecl.fullNameExact("Test0.swift:<global>.<type>0").size shouldBe 1
+      f2.aliasTypeFullName shouldBe Option("Test0.swift:<global>.<Swift.Function>0")
+      cpg.typeDecl.fullNameExact("Test0.swift:<global>.<Swift.Function>0").size shouldBe 1
     }
 
     "testAsync11a" ignore {
@@ -93,11 +91,11 @@ class AsyncTests extends AstSwiftSrc2CpgSuite {
       |}""".stripMargin)
       val List(struct)      = cpg.typeDecl.nameExact("MyFuture").l
       val List(init, await) = struct.boundMethod.l
-      init.signature shouldBe "Test0.swift:<global>.MyFuture()"
-      init.fullName shouldBe "Test0.swift:<global>.MyFuture.<init>:Test0.swift:<global>.MyFuture()"
+      init.signature shouldBe "()->Test0.swift:<global>.MyFuture"
+      init.fullName shouldBe "Test0.swift:<global>.MyFuture.init:()->Test0.swift:<global>.MyFuture"
       await.name shouldBe "await"
-      await.fullName shouldBe "Test0.swift:<global>.MyFuture.await:Int()"
-      await.methodReturn.typeFullName shouldBe "Int"
+      await.fullName shouldBe "Test0.swift:<global>.MyFuture.await:()->Swift.Int"
+      await.methodReturn.typeFullName shouldBe "Swift.Int"
     }
 
     "testAsync13" in {
@@ -123,8 +121,8 @@ class AsyncTests extends AstSwiftSrc2CpgSuite {
       val cpg                 = code("func getIntSomeday() async -> Int { 5 }")
       val List(getIntSomeday) = cpg.method.internal.nameNot(NamespaceTraversal.globalNamespaceName).l
       getIntSomeday.name shouldBe "getIntSomeday"
-      getIntSomeday.fullName shouldBe "Test0.swift:<global>.getIntSomeday:Int()"
-      getIntSomeday.methodReturn.typeFullName shouldBe "Int"
+      getIntSomeday.fullName shouldBe "Test0.swift:<global>.getIntSomeday:()->Swift.Int"
+      getIntSomeday.methodReturn.typeFullName shouldBe "Swift.Int"
     }
 
     "testAsync15" in {
@@ -146,7 +144,7 @@ class AsyncTests extends AstSwiftSrc2CpgSuite {
       val cpg                    = code("async func asyncIncorrectly() { }")
       val List(asyncIncorrectly) = cpg.method.internal.nameNot(NamespaceTraversal.globalNamespaceName).l
       asyncIncorrectly.name shouldBe "asyncIncorrectly"
-      asyncIncorrectly.fullName shouldBe "Test0.swift:<global>.asyncIncorrectly:ANY()"
+      asyncIncorrectly.fullName shouldBe "Test0.swift:<global>.asyncIncorrectly:()->ANY"
     }
 
   }

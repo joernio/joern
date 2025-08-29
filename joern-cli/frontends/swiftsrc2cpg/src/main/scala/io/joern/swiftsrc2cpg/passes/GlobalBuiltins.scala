@@ -82,8 +82,8 @@ object GlobalBuiltins {
     "withThrowingDiscardingTaskGroup", // Starts a new scope that can contain a dynamic number of child tasks
     "withCheckedContinuation",         // Invokes the passed in closure with a checked continuation for the current task
     "withCheckedThrowingContinuation", // Invokes the passed in closure with a checked continuation for the current task
-    "withUnsafeContinuation",          // Invokes the passed in closure with a unsafe continuation for the current task
-    "withUnsafeThrowingContinuation",  // Invokes the passed in closure with a unsafe continuation for the current task
+    "withUnsafeContinuation",          // Invokes the passed in closure with an unsafe continuation for the current task
+    "withUnsafeThrowingContinuation",  // Invokes the passed in closure with an unsafe continuation for the current task
     "extractIsolation", // Returns a reference to the actor to which the function is isolated, or nil if it is nonisolated
     "withTaskExecutorPreference", // Configure the current task hierarchy’s task executor preference to the passed TaskExecutor, and execute the passed in closure by immediately hopping to that executor
 

@@ -3,20 +3,26 @@ package io.joern.swiftsrc2cpg.astcreation
 import io.joern.swiftsrc2cpg.Config
 import io.joern.swiftsrc2cpg.parser.SwiftJsonParser.ParseResult
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
-import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
+import io.joern.swiftsrc2cpg.utils.FullnameProvider
+import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.SwiftFileLocalTypeMapping
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.datastructures.{Global, VariableScopeManager}
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
+import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, ModifierTypes, NodeTypes, PropertyDefaults}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewFile, NewNode, NewTypeDecl, NewTypeRef}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
 
-class AstCreator(val config: Config, val global: Global, val parserResult: ParseResult)(implicit
-  withSchemaValidation: ValidationMode
-) extends AstCreatorBase[SwiftNode, AstCreator](parserResult.filename)
+class AstCreator(
+  val config: Config,
+  val global: Global,
+  val parserResult: ParseResult,
+  val typeMap: SwiftFileLocalTypeMapping
+)(implicit withSchemaValidation: ValidationMode)
+    extends AstCreatorBase[SwiftNode, AstCreator](parserResult.filename)
     with AstForSwiftTokenCreator
     with AstForSyntaxCreator
     with AstForExprSyntaxCreator
@@ -30,7 +36,8 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
 
-  protected val scope = new VariableScopeManager()
+  protected val scope            = new VariableScopeManager()
+  protected val fullnameProvider = new FullnameProvider(typeMap)
 
   protected val methodAstParentStack     = new Stack[NewNode]()
   protected val typeRefIdStack           = new Stack[NewTypeRef]

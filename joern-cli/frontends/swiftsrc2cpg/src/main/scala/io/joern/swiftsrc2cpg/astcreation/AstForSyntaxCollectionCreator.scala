@@ -1,13 +1,10 @@
 package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
-import io.joern.x2cpg.Ast
-import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.PropertyDefaults
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.{Operators, PropertyDefaults}
 
 trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
@@ -123,29 +120,27 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
   private def astForPrimaryAssociatedTypeListSyntax(node: PrimaryAssociatedTypeListSyntax): Ast = notHandledYet(node)
 
   private def astForSimpleStringLiteralSegmentListSyntax(node: SimpleStringLiteralSegmentListSyntax): Ast = {
-    node.children match {
-      case child :: Nil => astForNode(child)
-      case children =>
-        val stringFormatCall = callNode(node, code(node), Operators.formatString, DispatchTypes.STATIC_DISPATCH)
-        val childrenAsts     = children.map(astForNode)
-        setArgumentIndices(childrenAsts)
-        callAst(stringFormatCall, childrenAsts)
-    }
+    createAstForStringLiteralSegmentListSyntax(node, node.children)
   }
 
   private def astForSpecializeAttributeArgumentListSyntax(node: SpecializeAttributeArgumentListSyntax): Ast = {
     Ast(literalNode(node, code(node), Option(Defines.String)))
   }
 
-  private def astForStringLiteralSegmentListSyntax(node: StringLiteralSegmentListSyntax): Ast = {
-    node.children match {
+  private def createAstForStringLiteralSegmentListSyntax(node: SwiftNode, children: Seq[SwiftNode]): Ast = {
+    children match {
       case child :: Nil => astForNode(child)
       case children =>
-        val stringFormatCall = callNode(node, code(node), Operators.formatString, DispatchTypes.STATIC_DISPATCH)
+        val tpe              = Defines.String
+        val op               = Operators.formatString
+        val stringFormatCall = createStaticCallNode(node, code(node), op, op, tpe)
         val childrenAsts     = children.map(astForNode)
-        setArgumentIndices(childrenAsts)
         callAst(stringFormatCall, childrenAsts)
     }
+  }
+
+  private def astForStringLiteralSegmentListSyntax(node: StringLiteralSegmentListSyntax): Ast = {
+    createAstForStringLiteralSegmentListSyntax(node, node.children)
   }
 
   private def astForSwitchCaseItemListSyntax(node: SwitchCaseItemListSyntax): Ast = {

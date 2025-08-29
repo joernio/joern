@@ -26,19 +26,19 @@ class LabeledParamSignatureTests extends Code2CpgFixture(() => new SwiftAstTestC
       val List(f1, f2, f3, f4, f5, f6) = cpg.method.nameExact("someFunction").l
       val List(c1, c2, c3)             = cpg.call.nameExact("someFunction").l
 
-      f1.fullName shouldBe "Test0.swift:<global>.someFunction:ANY(argumentLabel:Int)"
-      f2.fullName shouldBe "Test0.swift:<global>.someFunction:ANY(argumentLabel:String)"
-      f3.fullName shouldBe "Test0.swift:<global>.someFunction:String(otherLabel:Int)"
-      f4.fullName shouldBe "Test0.swift:<global>.someFunction:Int(otherLabel:Int)"
-      f5.fullName shouldBe "Test0.swift:<global>.someFunction:Int(_:Int)"
-      f6.fullName shouldBe "Test0.swift:<global>.someFunction:Int(parameterLabel:Int)"
+      f1.fullName shouldBe "Test0.swift:<global>.someFunction:(argumentLabel:Swift.Int)->ANY"
+      f2.fullName shouldBe "Test0.swift:<global>.someFunction:(argumentLabel:Swift.String)->ANY"
+      f3.fullName shouldBe "Test0.swift:<global>.someFunction:(otherLabel:Swift.Int)->Swift.String"
+      f4.fullName shouldBe "Test0.swift:<global>.someFunction:(otherLabel:Swift.Int)->Swift.Int"
+      f5.fullName shouldBe "Test0.swift:<global>.someFunction:(_:Swift.Int)->Swift.Int"
+      f6.fullName shouldBe "Test0.swift:<global>.someFunction:(parameterLabel:Swift.Int)->Swift.Int"
 
-      f1.signature shouldBe "ANY(argumentLabel:Int)"
-      f2.signature shouldBe "ANY(argumentLabel:String)"
-      f3.signature shouldBe "String(otherLabel:Int)"
-      f4.signature shouldBe "Int(otherLabel:Int)"
-      f5.signature shouldBe "Int(_:Int)"
-      f6.signature shouldBe "Int(parameterLabel:Int)"
+      f1.signature shouldBe "(argumentLabel:Swift.Int)->ANY"
+      f2.signature shouldBe "(argumentLabel:Swift.String)->ANY"
+      f3.signature shouldBe "(otherLabel:Swift.Int)->Swift.String"
+      f4.signature shouldBe "(otherLabel:Swift.Int)->Swift.Int"
+      f5.signature shouldBe "(_:Swift.Int)->Swift.Int"
+      f6.signature shouldBe "(parameterLabel:Swift.Int)->Swift.Int"
 
       c1.methodFullName shouldBe Defines.DynamicCallUnknownFullName
       c2.methodFullName shouldBe Defines.DynamicCallUnknownFullName

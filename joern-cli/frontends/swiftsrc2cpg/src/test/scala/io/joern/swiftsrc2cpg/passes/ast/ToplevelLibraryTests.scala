@@ -37,8 +37,8 @@ class ToplevelLibraryTests extends AstSwiftSrc2CpgSuite {
         "<operator>.addition",
         "<operator>.assignment",
         "Test0.swift:<global>",
-        "Test0.swift:<global>.<lambda>0:ANY()",
-        "Test0.swift:<global>.<lambda>1:ANY()"
+        "Test0.swift:<global>.<lambda>0:()->ANY",
+        "Test0.swift:<global>.<lambda>1:()->ANY"
       )
     }
 
@@ -89,7 +89,7 @@ class ToplevelLibraryTests extends AstSwiftSrc2CpgSuite {
       loop.controlStructureType shouldBe ControlStructureTypes.WHILE
 
       val List(loopTestCall) = loop.astChildren.isCall.codeExact("!(<result>0 = <iterator>0.next()).done").l
-      loopTestCall.name shouldBe Operators.not
+      loopTestCall.name shouldBe Operators.logicalNot
       loopTestCall.order shouldBe 1
 
       val List(doneMaCall) = loopTestCall.astChildren.isCall.codeExact("(<result>0 = <iterator>0.next()).done").l
