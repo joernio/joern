@@ -268,11 +268,11 @@ object SwiftTypesProvider {
           }
           swiftVersion.exists { v =>
             val isCompatible = Try(VersionHelper.compare(v, MinimumSwiftVersion)).toOption.getOrElse(-1) >= 0
-            if (!isCompatible) { logger.debug(s"Found Swift version '$v' but '$MinimumSwiftVersion' is required!") }
+            if (!isCompatible) { logger.warn(s"Found Swift version '$v' but '$MinimumSwiftVersion' is required!") }
             isCompatible
           }
         case _ =>
-          logger.debug("No Swift version on this system found!")
+          logger.warn("Unable to determine a Swift version on this system!")
           false
       }
     }
