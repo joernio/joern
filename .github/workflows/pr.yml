@@ -25,7 +25,15 @@ jobs:
         with:
           cache: false
           go-version: 1.18
-      - name: Set up Swift
+      - name: Set up Swift (MacOS)
+        # The macos-latest runner image only comes with Swift 5.10 at the moment
+        if: matrix.os == 'macos-latest'
+        uses: SwiftyLab/setup-swift@latest
+        with:
+          check-latest: true
+          development: true
+          swift-version: "6.1"
+      - name: Set up Swift (Windows)
         if: matrix.os == 'windows-latest'
         uses: SwiftyLab/setup-swift@latest
         with:

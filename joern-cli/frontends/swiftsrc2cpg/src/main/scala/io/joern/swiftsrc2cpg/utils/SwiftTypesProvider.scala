@@ -184,8 +184,8 @@ object SwiftTypesProvider {
   /** Resolves the path to the swift-demangle command and combines it with the provided arguments.
     *
     * This method determines the appropriate command to use for swift-demangle based on the operating system:
-    *   - On Windows, it assumes swift-demangle is already in PATH
-    *   - On Linux and macOS, it attempts to find the correct path by resolving from swiftc's location
+    *   - On Windows and macOS, it assumes swift-demangle is already in PATH
+    *   - On Linux, it attempts to find the correct path by resolving from swiftc's location
     *
     * @param args
     *   Arguments to pass to the swift-demangle command
@@ -194,11 +194,11 @@ object SwiftTypesProvider {
     */
   private def resolveSwiftDemangleCommand(args: Seq[String]): Seq[String] = {
     val defaultCommand = "swift-demangle" +: args
-    if (Environment.operatingSystem == Environment.OperatingSystemType.Windows) {
-      // Windows installation of swift puts swift-demangle into the PATH automatically
+    if (Environment.operatingSystem != Environment.OperatingSystemType.Linux) {
+      // Windows and macOS installations of Swift puts swift-demangle into the PATH automatically
       defaultCommand
     } else {
-      // Installer for Linux and macOS do not
+      // but not on Linux
       ExternalCommand
         .run(Seq("which", "swiftc"))
         .successOption
@@ -250,12 +250,12 @@ object SwiftTypesProvider {
     */
   private def isValidEnvironment(config: Config): Boolean = {
     if (config.buildLogPath.isEmpty && !Paths.get(config.inputPath, "Package.swift").toFile.canRead) {
-      logger.debug("Package.swift not found or can not be read. This does not look like a valid SwiftPM project.")
+      logger.warn("Package.swift not found or can not be read. This does not look like a valid SwiftPM project.")
       return false
     }
 
     val commands = if (config.buildLogPath.isDefined) {
-      // we do not need 'swift' on the system if the commands are taken from Xcode
+      // we do not need 'swift' on the system if the commands are taken from a build log file
       Seq(SwiftCompilerVersionCommand)
     } else {
       SwiftVersionCommands
@@ -263,20 +263,26 @@ object SwiftTypesProvider {
     val hasSwift = commands.forall { command =>
       ExternalCommand.run(command).successOption match {
         case Some(outLines) =>
-          val swiftVersion = outLines.find(_.startsWith("Swift version ")).map { str =>
-            str.substring("Swift version ".length, str.indexOf(" ("))
+          val swiftVersion = outLines.find(_.contains("Swift version ")).map { str =>
+            str.substring(str.indexOf("Swift version ") + 14, str.indexOf(" ("))
+          }
+          if (swiftVersion.isEmpty) {
+            logger.warn("Unable to determine a Swift version on this system!")
           }
           swiftVersion.exists { v =>
             val isCompatible = Try(VersionHelper.compare(v, MinimumSwiftVersion)).toOption.getOrElse(-1) >= 0
-            if (!isCompatible) { logger.debug(s"Found Swift version '$v' but '$MinimumSwiftVersion' is required!") }
+            if (!isCompatible) { logger.warn(s"Found Swift version '$v' but '$MinimumSwiftVersion' is required!") }
             isCompatible
           }
         case _ =>
-          logger.debug("No Swift version on this system found!")
+          logger.warn("Unable to determine a Swift version on this system!")
           false
       }
     }
     val hasSwiftDemangle = ExternalCommand.run(swiftDemangleVersionCommand()).successful
+    if (!hasSwiftDemangle) {
+      logger.warn("Unable to find swift-demangle on this system!")
+    }
     hasSwift && hasSwiftDemangle
   }
 

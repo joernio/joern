@@ -155,12 +155,14 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def astForIdentifier(node: SwiftNode): Ast = {
     val identifierName = code(node)
+    val identNode      = identifierNode(node, identifierName)
     val variableOption = scope.lookupVariable(identifierName)
     val tpe = variableOption match {
-      case Some((_, variableTypeName)) => variableTypeName
-      case _                           => Defines.Any
+      case Some((_, variableTypeName)) if variableTypeName != Defines.Any => variableTypeName
+      case None if identNode.typeFullName != Defines.Any                  => identNode.typeFullName
+      case _                                                              => Defines.Any
     }
-    val identNode = identifierNode(node, identifierName).typeFullName(tpe)
+    val typedIdentNode = identNode.typeFullName(tpe)
     scope.addVariableReference(identifierName, identNode, tpe, EvaluationStrategies.BY_REFERENCE)
     Ast(identNode)
   }
@@ -248,7 +250,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         var signature = tpe
         if (fullNameWithSignature.contains(":")) {
           fullName = fullNameWithSignature.substring(0, fullNameWithSignature.lastIndexOf(":"))
-          signature = fullNameWithSignature.substring(fullNameWithSignature.lastIndexOf("("))
+          signature = fullNameWithSignature.substring(fullNameWithSignature.lastIndexOf(":"))
         }
         MethodInfo(name, fullName, signature, tpe)
       case None =>

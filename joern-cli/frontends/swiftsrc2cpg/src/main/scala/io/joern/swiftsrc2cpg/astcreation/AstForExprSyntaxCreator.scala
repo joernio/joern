@@ -258,18 +258,28 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
             case None =>
               // referencing implicit this
               val receiverAst = astForNode(callee)
-              val baseNode    = identifierNode(m, "this")
-              scope.addVariableReference("this", baseNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
-              (receiverAst, baseNode, memberCode)
+              val baseNodeId  = identifierNode(m, "this")
+              scope.addVariableReference("this", baseNodeId, baseNodeId.typeFullName, EvaluationStrategies.BY_REFERENCE)
+              (receiverAst, baseNodeId, memberCode)
             case Some(d: DeclReferenceExprSyntax) =>
               val receiverAst = astForNode(callee)
-              val baseNode    = identifierNode(d, code(d))
-              scope.addVariableReference(code(d), baseNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
-              (receiverAst, baseNode, memberCode)
+              val baseNodeId  = identifierNode(d, code(d))
+              scope.addVariableReference(
+                code(d),
+                baseNodeId,
+                baseNodeId.typeFullName,
+                EvaluationStrategies.BY_REFERENCE
+              )
+              (receiverAst, baseNodeId, memberCode)
             case Some(otherBase) =>
               val tmpVarName  = scopeLocalUniqueName("tmp")
               val baseTmpNode = identifierNode(otherBase, tmpVarName)
-              scope.addVariableReference(tmpVarName, baseTmpNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+              scope.addVariableReference(
+                tmpVarName,
+                baseTmpNode,
+                baseTmpNode.typeFullName,
+                EvaluationStrategies.BY_REFERENCE
+              )
               val baseAst   = astForNode(otherBase)
               val codeField = s"(${codeOf(baseTmpNode)} = ${codeOf(baseAst.nodes.head)})"
               val tmpAssignmentAst =
@@ -282,7 +292,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         case _ =>
           val receiverAst = astForNode(callee)
           val thisNode    = identifierNode(callee, "this")
-          scope.addVariableReference(thisNode.name, thisNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+          scope.addVariableReference(thisNode.name, thisNode, thisNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
           (receiverAst, thisNode, calleeCode)
       }
       handleCallNodeArgs(node, receiverAst, baseNode, callName)
