@@ -52,14 +52,22 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
         case Success(parseResult) =>
           report.addReportInfo(parseResult.filename, parseResult.loc, parsed = true)
           Try {
-            val fileLocalTypesMap = typeMap.getOrElse(parseResult.fullPath, new SwiftFileLocalTypeMapping)
+            val (fullFilename, fileLocalTypesMap) = typeMap
+              .collectFirst {
+                // special handling for Github Windows and MacOS runner
+                // Windows: C:\Users\RUNNER~1\AppData\Local\Temp\hash\Input\file.swift vs. C:\Users\runneradmin\AppData\Local\Temp\hash\Input\file.swift
+                // MacOS: /private/var/folders/y6/hash/T/Input/file.swift vs. /var/folders/y6/hash/T/Input/file.swift
+                case (filename, map) if filename.replace("\\", "/").endsWith(parseResult.filename) =>
+                  (Some(filename.replace("\\", "/")), map)
+              }
+              .getOrElse(None, new SwiftFileLocalTypeMapping)
             logger.debug(s"fileLocalTypesMap for '${parseResult.fullPath}' has size: ${fileLocalTypesMap.size}")
             var astCreator = new AstCreator(config, global, parseResult, fileLocalTypesMap)
             var localDiff  = astCreator.createAst()
             diffGraph.absorb(localDiff)
             astCreator = null
             localDiff = null
-            typeMap.remove(parseResult.fullPath)
+            fullFilename.foreach(typeMap.remove)
           } match {
             case Failure(exception) =>
               logger.warn(s"Failed to generate a CPG for: '${parseResult.filename}'", exception)
