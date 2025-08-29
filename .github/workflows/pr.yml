@@ -16,6 +16,7 @@ jobs:
           distribution: temurin
           java-version: 21
           cache: sbt
+      - uses: sbt/setup-sbt@v1
       - name: Set up Swift
         if: matrix.os == 'windows-latest'
         uses: SwiftyLab/setup-swift@latest
