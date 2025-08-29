@@ -263,8 +263,11 @@ object SwiftTypesProvider {
     val hasSwift = commands.forall { command =>
       ExternalCommand.run(command).successOption match {
         case Some(outLines) =>
-          val swiftVersion = outLines.find(_.startsWith("Swift version ")).map { str =>
+          val swiftVersion = outLines.find(_.contains("Swift version ")).map { str =>
             str.substring("Swift version ".length, str.indexOf(" ("))
+          }
+          if (swiftVersion.isEmpty) {
+            logger.warn("Unable to determine a Swift version on this system!")
           }
           swiftVersion.exists { v =>
             val isCompatible = Try(VersionHelper.compare(v, MinimumSwiftVersion)).toOption.getOrElse(-1) >= 0
