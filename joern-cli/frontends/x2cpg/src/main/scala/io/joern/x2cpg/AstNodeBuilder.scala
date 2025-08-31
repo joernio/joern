@@ -15,6 +15,7 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
 
   private val MinCodeLength: Int        = 50
   private val DefaultMaxCodeLength: Int = 1000
+
   // maximum length of code fields in number of characters
   private lazy val maxCodeLength: Int =
     sys.env.get("JOERN_MAX_CODE_LENGTH").flatMap(_.toIntOption).getOrElse(DefaultMaxCodeLength)
@@ -29,8 +30,30 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
 
   protected def code(node: Node): String
 
-  protected def shortenCode(code: String): String =
-    StringUtils.abbreviate(code, math.max(MinCodeLength, maxCodeLength))
+  /** Abbreviates a code snippet to a bounded length suitable for CPG node `code` fields.
+    *
+    * The default maximum is derived from the `JOERN_MAX_CODE_LENGTH` environment variable (falls back to 1000). The
+    * width passed to `StringUtils.abbreviate` is clamped to a minimum of 50 characters to avoid over‑aggressive
+    * truncation.
+    *
+    * If either the requested maximum or the input length is smaller than 4, the original string is returned unchanged
+    * to prevent `IllegalArgumentException` from `StringUtils.abbreviate`.
+    *
+    * @param code
+    *   the original code snippet
+    * @param maxCodeLength
+    *   desired maximum length; defaults to `maxCodeLength`
+    * @return
+    *   the possibly abbreviated code string
+    */
+  protected def shortenCode(code: String, maxCodeLength: Int = maxCodeLength): String = {
+    // check this; otherwise, StringUtils.abbreviate throws an IllegalArgumentException
+    if (maxCodeLength < 4 || code.length < 4) {
+      code
+    } else {
+      StringUtils.abbreviate(code, math.max(MinCodeLength, maxCodeLength))
+    }
+  }
 
   protected def offset(node: Node): Option[(Int, Int)] = None
 
