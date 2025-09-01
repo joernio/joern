@@ -3,15 +3,15 @@ package io.joern.swiftsrc2cpg.utils
 import io.joern.swiftsrc2cpg.Config
 import io.joern.swiftsrc2cpg.astcreation.AstCreatorHelper
 import io.joern.x2cpg.utils.Environment
-import io.shiftleft.semanticcpg.utils.ExternalCommand
+import ExternalCommand.*
 import io.shiftleft.semanticcpg.utils.FileUtil.PathExt
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 import versionsort.VersionHelper
 
-import java.io.{BufferedReader, InputStream, InputStreamReader, StringReader}
-import java.nio.file.attribute.BasicFileAttributes
+import java.io.{BufferedReader, InputStreamReader, StringReader}
 import java.nio.file.*
+import java.nio.file.attribute.BasicFileAttributes
 import scala.collection.concurrent.TrieMap
 import scala.collection.parallel.CollectionConverters.ImmutableSeqIsParallelizable
 import scala.collection.parallel.ExecutionContextTaskSupport
@@ -35,6 +35,7 @@ object SwiftTypesProvider {
   private val SwiftVersionCommands        = Seq(SwiftVersionCommand, SwiftCompilerVersionCommand)
   private val SwiftBuildCommand           = Seq("swift", "build", "--verbose")
   private val SwiftCleanCommand           = Seq("swift", "package", "clean")
+  private val WhichSwiftCompilerCommand   = Seq("which", "swiftc")
   private val SwiftCompilerDumpOptions    = Seq("-suppress-warnings", "-dump-ast", "-dump-ast-format", "json")
 
   /** Information about a Swift type found in the source code. fullName and tpe are not demangled yet.
@@ -199,11 +200,9 @@ object SwiftTypesProvider {
       defaultCommand
     } else {
       // but not on Linux
-      ExternalCommand
-        .run(Seq("which", "swiftc"))
-        .successOption
-        .map { outLines =>
-          val resolvedPath = Paths.get(outLines.mkString).toRealPath().resolveSibling("swift-demangle").toString
+      findInStdOut(WhichSwiftCompilerCommand)
+        .map { outLine =>
+          val resolvedPath = Paths.get(outLine).toRealPath().resolveSibling("swift-demangle").toString
           resolvedPath +: args
         }
         .getOrElse(defaultCommand)
@@ -261,25 +260,20 @@ object SwiftTypesProvider {
       SwiftVersionCommands
     }
     val hasSwift = commands.forall { command =>
-      ExternalCommand.run(command).successOption match {
-        case Some(outLines) =>
-          val swiftVersion = outLines.find(_.contains("Swift version ")).map { str =>
-            str.substring(str.indexOf("Swift version ") + 14, str.indexOf(" ("))
+      findInStdOut(command, _.contains("Swift version ")) match {
+        case Some(outLine) =>
+          val swiftVersion = outLine.substring(outLine.indexOf("Swift version ") + 14, outLine.indexOf(" ("))
+          val isCompatible = Try(VersionHelper.compare(swiftVersion, MinimumSwiftVersion)).toOption.getOrElse(-1) >= 0
+          if (!isCompatible) {
+            logger.warn(s"Found Swift version '$swiftVersion' but '$MinimumSwiftVersion' is required!")
           }
-          if (swiftVersion.isEmpty) {
-            logger.warn("Unable to determine a Swift version on this system!")
-          }
-          swiftVersion.exists { v =>
-            val isCompatible = Try(VersionHelper.compare(v, MinimumSwiftVersion)).toOption.getOrElse(-1) >= 0
-            if (!isCompatible) { logger.warn(s"Found Swift version '$v' but '$MinimumSwiftVersion' is required!") }
-            isCompatible
-          }
-        case _ =>
+          isCompatible
+        case None =>
           logger.warn("Unable to determine a Swift version on this system!")
           false
       }
     }
-    val hasSwiftDemangle = ExternalCommand.run(swiftDemangleVersionCommand()).successful
+    val hasSwiftDemangle = findInStdOut(swiftDemangleVersionCommand()).isDefined
     if (!hasSwiftDemangle) {
       logger.warn("Unable to find swift-demangle on this system!")
     }
@@ -302,10 +296,12 @@ object SwiftTypesProvider {
     logger.info("Building Swift type map from SwiftPM project configuration")
 
     logger.info("Cleaning the project first ...")
-    ExternalCommand.run(SwiftCleanCommand, workingDir = Some(Paths.get(config.inputPath))).logIfFailed()
+    io.shiftleft.semanticcpg.utils.ExternalCommand
+      .run(SwiftCleanCommand, workingDir = Some(Paths.get(config.inputPath)))
+      .logIfFailed()
 
     logger.info("Building the project ...")
-    ExternalCommand
+    io.shiftleft.semanticcpg.utils.ExternalCommand
       .run(SwiftBuildCommand, mergeStdErrInStdOut = true, workingDir = Some(Paths.get(config.inputPath)))
       .logIfFailed()
       .successOption
@@ -403,8 +399,12 @@ object SwiftTypesProvider {
         3,
         new SimpleFileVisitor[Path] {
           override def preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult = {
-            if (dir.getFileName.toString.startsWith(".")) { return FileVisitResult.SKIP_SUBTREE }
-            if (Files.isReadable(dir)) { dir.nameOption.foreach(resultSet.add) }
+            if (dir.getFileName.toString.startsWith(".")) {
+              return FileVisitResult.SKIP_SUBTREE
+            }
+            if (Files.isReadable(dir)) {
+              dir.nameOption.foreach(resultSet.add)
+            }
             FileVisitResult.CONTINUE
           }
         }
@@ -477,10 +477,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
   private def demangle(mangledName: String): Option[String] = {
     if (mangledName.isEmpty) return None
     val strippedMangledName = mangledName.stripPrefix("$").replace("s:e:s:", "s:").replace(":", "")
-    ExternalCommand
-      .run(swiftDemangleCommand :+ strippedMangledName)
-      .successOption
-      .map(outLines => outLines.mkString.trim)
+    findInStdOut(swiftDemangleCommand :+ strippedMangledName).map(_.trim)
   }
 
   /** Removes Swift modifiers from a fullname.
@@ -609,23 +606,6 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     }
   }
 
-  /** Executes a Swift compiler command and returns its output as an InputStream.
-    *
-    * This method builds and starts a process with the given Swift compiler command, configuring it to merge stderr into
-    * stdout and setting the working directory.
-    *
-    * @param invocationCommand
-    *   The Swift compiler command to execute
-    * @return
-    *   An InputStream containing the output of the Swift compiler process
-    */
-  private def stdOutFromSwiftCompiler(invocationCommand: Seq[String]): InputStream = {
-    val builder = new ProcessBuilder().command(invocationCommand.toArray*)
-    builder.directory(Paths.get(config.inputPath).toFile)
-    builder.redirectErrorStream(true)
-    builder.start().getInputStream
-  }
-
   /** Retrieves Swift type mappings by executing Swift compiler commands and processing output.
     *
     * This method executes all parsed Swift compiler invocations in parallel, processes the JSON output to extract type
@@ -644,7 +624,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
       parInvocations.tasksupport = new ExecutionContextTaskSupport(ec)
       parInvocations.foreach { invocationCommand =>
         Using.Manager { use =>
-          val reader = use(new InputStreamReader(stdOutFromSwiftCompiler(invocationCommand)))
+          val reader = use(new InputStreamReader(inputStreamFromCommand(invocationCommand, config.inputPath)))
           val stdOut = use(new BufferedReader(reader))
           ParallelLineProcessor.processLinesParallel(stdOut, pool, _.startsWith("{"))(jsonString =>
             mappingFromJson(jsonString, mapping)
