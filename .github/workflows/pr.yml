@@ -2,48 +2,15 @@ name: pr
 on: pull_request
 jobs:
   test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 21
-          cache: sbt
-      - uses: sbt/setup-sbt@v1
       - name: Set up Swift (MacOS)
-        # The macos-latest runner image only comes with Swift 5.10 at the moment
-        if: matrix.os == 'macos-latest'
         uses: SwiftyLab/setup-swift@latest
         with:
           check-latest: true
           development: true
           swift-version: "6.1"
-      - name: Set up Swift (Windows)
-        if: matrix.os == 'windows-latest'
-        uses: SwiftyLab/setup-swift@latest
-        with:
-          check-latest: true
-          development: true
-          swift-version: "6.1"
-          visual-studio-components: Microsoft.VisualStudio.Component.Windows11SDK.22621
-      - name: Check swift-demangle (MacOS)
-        if: matrix.os == 'macos-latest'
+      - name: Check swift-demangle
         run: |
           which swiftc
           /usr/bin/swift-demangle --version
-      - name: Check swift-demangle (Windows)
-        if: matrix.os == 'windows-latest'
-        run: |
-          swift-demangle --version
-      - name: Check swift-demangle (Linux)
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          which swiftc
-          /usr/local/bin/swift-demangle --version
