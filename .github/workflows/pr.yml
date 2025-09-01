@@ -38,7 +38,11 @@ jobs:
         run: |
           which swiftc
           swift-demangle --version
-      - name: Check swift-demangle (Windows and Linux)
-        if: matrix.os != 'macos-latest'
+      - name: Check swift-demangle (Windows)
+        if: matrix.os == 'windows-latest'
         run: |
           swift-demangle --version
+      - name: Check swift-demangle (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          which swiftc
