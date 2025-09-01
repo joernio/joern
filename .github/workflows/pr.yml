@@ -12,5 +12,4 @@ jobs:
           swift-version: "6.1"
       - name: Check swift-demangle
         run: |
-          which swiftc
-          /usr/bin/swift-demangle --version
+          xcrun --find swift-demangle
