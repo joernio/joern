@@ -36,6 +36,7 @@ object SwiftTypesProvider {
   private val SwiftBuildCommand           = Seq("swift", "build", "--verbose")
   private val SwiftCleanCommand           = Seq("swift", "package", "clean")
   private val WhichSwiftCompilerCommand   = Seq("which", "swiftc")
+  private val XcrunFindDemangleCommand    = Seq("xcrun", "--find", "swift-demangle")
   private val SwiftCompilerDumpOptions    = Seq("-suppress-warnings", "-dump-ast", "-dump-ast-format", "json")
 
   /** Information about a Swift type found in the source code. fullName and tpe are not demangled yet.
@@ -182,11 +183,8 @@ object SwiftTypesProvider {
     config.buildLogPath.map(outputPath => build(config, IOUtils.readLinesInFile(outputPath))).orElse(build(config))
   }
 
-  /** Resolves the path to the swift-demangle command and combines it with the provided arguments.
-    *
-    * This method determines the appropriate command to use for swift-demangle based on the operating system:
-    *   - On Windows and macOS, it assumes swift-demangle is already in PATH
-    *   - On Linux, it attempts to find the correct path by resolving from swiftc's location
+  /** Resolves the path to the swift-demangle command and combines it with the provided arguments. This method
+    * determines the appropriate command to use for swift-demangle based on the operating system.
     *
     * @param args
     *   Arguments to pass to the swift-demangle command
@@ -195,18 +193,24 @@ object SwiftTypesProvider {
     */
   private def resolveSwiftDemangleCommand(args: Seq[String]): Seq[String] = {
     val defaultCommand = "swift-demangle" +: args
-    if (Environment.operatingSystem != Environment.OperatingSystemType.Linux) {
-      // Windows and macOS installations of Swift puts swift-demangle into the PATH automatically
-      defaultCommand
-    } else {
-      // but not on Linux
-      findInStdOut(WhichSwiftCompilerCommand)
-        .map { outLine =>
-          val resolvedPath = Paths.get(outLine).toRealPath().resolveSibling("swift-demangle").toString
-          resolvedPath +: args
-        }
-        .getOrElse(defaultCommand)
+    val osSpecificCommand = Environment.operatingSystem match {
+      case io.joern.x2cpg.utils.Environment.OperatingSystemType.Windows =>
+        // The Windows installation of Swift puts swift-demangle into the PATH automatically
+        Some(defaultCommand)
+      case io.joern.x2cpg.utils.Environment.OperatingSystemType.Linux =>
+        // The Linux installation of Swift puts swift-demangle next to swiftc but not into the PATH automatically
+        findInStdOut(WhichSwiftCompilerCommand)
+          .map { outLine =>
+            val resolvedPath = Paths.get(outLine).toRealPath().resolveSibling("swift-demangle").toString
+            resolvedPath +: args
+          }
+      case io.joern.x2cpg.utils.Environment.OperatingSystemType.Mac =>
+        // On macOS, we have to ask xcrun --find swift-demangle
+        findInStdOut(XcrunFindDemangleCommand).map { outLine => outLine +: args }
+      case io.joern.x2cpg.utils.Environment.OperatingSystemType.Unknown =>
+        Some(defaultCommand)
     }
+    osSpecificCommand.getOrElse(defaultCommand)
   }
 
   /** Returns the command to get the version of swift-demangle.
@@ -273,7 +277,7 @@ object SwiftTypesProvider {
           false
       }
     }
-    val hasSwiftDemangle = io.shiftleft.semanticcpg.utils.ExternalCommand.run(swiftDemangleVersionCommand()).successful
+    val hasSwiftDemangle = findInStdOut(swiftDemangleVersionCommand()).isDefined
     if (!hasSwiftDemangle) {
       logger.warn("Unable to find swift-demangle on this system!")
     }
