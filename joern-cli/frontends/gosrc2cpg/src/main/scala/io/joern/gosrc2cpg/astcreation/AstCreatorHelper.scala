@@ -107,7 +107,7 @@ trait AstCreatorHelper { this: AstCreator =>
   private def nodeType(node: Value): ParserNode = fromString(node(ParserKeys.NodeType).str, relPathFileName)
 
   protected def code(node: Value): String = {
-    codeForValue(node).toOption.fold("")(shortenCode)
+    codeForValue(node).toOption.fold("")(c => shortenCode(c))
   }
 
   private def codeForValue(node: Value): Try[String] = Try {
