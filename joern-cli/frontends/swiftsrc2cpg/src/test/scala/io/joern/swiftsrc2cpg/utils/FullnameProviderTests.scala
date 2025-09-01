@@ -5,7 +5,6 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import scala.collection.mutable
-import scala.jdk.CollectionConverters.*
 
 class FullnameProviderTests extends AnyFlatSpec with Matchers {
 
@@ -69,6 +68,15 @@ class FullnameProviderTests extends AnyFlatSpec with Matchers {
 
     val provider = new MockFullNameProvider(mockTypeMap)
     provider.declFullname((30, 40), "nodeKind") shouldBe None
+  }
+
+  it should "try with a +-1 range when original range is not found" in {
+    val mockTypeMap = new SwiftFileLocalTypeMapping()
+    mockTypeMap.put((30, 30), mutable.HashSet(typeInfo2))
+
+    val provider = new MockFullNameProvider(mockTypeMap)
+    provider.declFullname((31, 29), "nodeKind") shouldBe Some("decl.fullname.B")
+    provider.typeFullname((31, 29), "nodeKind") shouldBe Some("type.fullname.B")
   }
 
   it should "try with a single-point range when original range is not found" in {
