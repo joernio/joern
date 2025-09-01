@@ -273,7 +273,7 @@ object SwiftTypesProvider {
           false
       }
     }
-    val hasSwiftDemangle = findInStdOut(swiftDemangleVersionCommand()).isDefined
+    val hasSwiftDemangle = io.shiftleft.semanticcpg.utils.ExternalCommand.run(swiftDemangleVersionCommand()).successful
     if (!hasSwiftDemangle) {
       logger.warn("Unable to find swift-demangle on this system!")
     }
