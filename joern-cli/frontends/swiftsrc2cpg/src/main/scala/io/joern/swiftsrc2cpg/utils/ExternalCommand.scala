@@ -1,12 +1,15 @@
 package io.joern.swiftsrc2cpg.utils
 
 import io.shiftleft.semanticcpg.utils.ExternalCommandResult
+import org.slf4j.LoggerFactory
 
 import java.io.{BufferedReader, InputStream, InputStreamReader}
 import java.nio.file.Paths
 import scala.util.{Failure, Success, Try, Using}
 
 object ExternalCommand {
+
+  private val logger = LoggerFactory.getLogger(getClass)
 
   def run(command: Seq[String], cwd: String, extraEnv: Map[String, String] = Map.empty): Try[Seq[String]] = {
     io.shiftleft.semanticcpg.utils.ExternalCommand
@@ -45,7 +48,7 @@ object ExternalCommand {
     *
     * Note:
     *   - A result is returned only if the process exits successfully \(`exit code == 0`\). If the process fails, `None`
-    *     is returned even if a matching line was observed.
+    *     is returned even if a matching line was observed. If an exception occurred it is logged as WARN.
     *   - Stderr is ignored \(`Redirect.DISCARD`\).
     *
     * @param command
@@ -59,19 +62,24 @@ object ExternalCommand {
   def findInStdOut(command: Seq[String], find: String => Boolean = _ => true): Option[String] = {
     val pb = new ProcessBuilder(command*)
     pb.redirectError(ProcessBuilder.Redirect.DISCARD)
-    val process = pb.start()
-
-    var result = Option.empty[String]
     Using.Manager { use =>
-      val input  = use(new InputStreamReader(process.getInputStream))
-      val reader = use(new BufferedReader(input))
-      result = Iterator
+      val process = pb.start()
+      val input   = use(new InputStreamReader(process.getInputStream))
+      val reader  = use(new BufferedReader(input))
+      val result = Iterator
         .continually(reader.readLine())
         .takeWhile(_ != null)
         .find(find)
+      if (process.waitFor() == 0) { result }
+      else None
+    } match {
+      case Failure(exception) =>
+        // Using.Manager swallows exceptions otherwise
+        logger.warn(s"Unable to execute command '${command.mkString(" ")}'", exception)
+        None
+      case Success(value) =>
+        value
     }
-
-    if (process.waitFor() == 0) result else Option.empty
   }
 
   /** Executes a command and returns its output as an InputStream.
@@ -79,7 +87,7 @@ object ExternalCommand {
     * This method builds and starts a process with the given command, configuring it to merge stderr into stdout and
     * setting the working directory.
     *
-    * @param invocationCommand
+    * @param command
     *   The command to execute
     * @param workingDir
     *   The directory to execute the command in

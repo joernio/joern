@@ -35,8 +35,9 @@ object SwiftTypesProvider {
   private val SwiftVersionCommands        = Seq(SwiftVersionCommand, SwiftCompilerVersionCommand)
   private val SwiftBuildCommand           = Seq("swift", "build", "--verbose")
   private val SwiftCleanCommand           = Seq("swift", "package", "clean")
+  private val SwiftDemangleCommand        = Seq("swift-demangle")
   private val WhichSwiftCompilerCommand   = Seq("which", "swiftc")
-  private val XcrunFindDemangleCommand    = Seq("xcrun", "--find", "swift-demangle")
+  private val XcrunFindDemangleCommand    = Seq("xcrun", "--find") ++ SwiftDemangleCommand
   private val SwiftCompilerDumpOptions    = Seq("-suppress-warnings", "-dump-ast", "-dump-ast-format", "json")
 
   /** Information about a Swift type found in the source code. fullName and tpe are not demangled yet.
@@ -192,7 +193,7 @@ object SwiftTypesProvider {
     *   A sequence containing the resolved swift-demangle command path followed by the provided arguments
     */
   private def resolveSwiftDemangleCommand(args: Seq[String]): Seq[String] = {
-    val defaultCommand = "swift-demangle" +: args
+    val defaultCommand = SwiftDemangleCommand ++ args
     val osSpecificCommand = Environment.operatingSystem match {
       case io.joern.x2cpg.utils.Environment.OperatingSystemType.Windows =>
         // The Windows installation of Swift puts swift-demangle into the PATH automatically
