@@ -3440,7 +3440,6 @@ class PatternExprTests extends JavaSrcCode2CpgFixture {
                        |  }
                        |}
                        |""".stripMargin)
-
       "not have the local name mangled" in {
         inside(cpg.call.name("sink").l) { case List(firstSink, secondSink, thirdSink) =>
           inside(firstSink.argument.argumentIndex(1).isIdentifier.l) { case List(firstValue) =>
@@ -3483,6 +3482,10 @@ class PatternExprTests extends JavaSrcCode2CpgFixture {
             ifStmt.controlStructureType shouldBe ControlStructureTypes.IF
         }
       }
+      "have no AST node which appears in multiple locations in the AST" in {
+        cpg.astNode.filter(_._astIn.toList.size > 1).size shouldBe 0
+      }
+
     }
 
     "a variable on the rhs of a binary expression should not have a mangled name" should {
