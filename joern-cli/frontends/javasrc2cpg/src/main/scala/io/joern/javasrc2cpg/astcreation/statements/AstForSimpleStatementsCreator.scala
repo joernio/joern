@@ -20,8 +20,9 @@ import com.github.javaparser.ast.stmt.{
   TryStmt,
   WhileStmt
 }
-import com.github.javaparser.symbolsolver.javaparsermodel.contexts.{SwitchEntryContext}
+import com.github.javaparser.symbolsolver.javaparsermodel.contexts.SwitchEntryContext
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver
+import io.joern.javasrc2cpg.astcreation.expressions.PatternInitAndRefAsts
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.util.NameConstants
 import io.joern.x2cpg.Ast
@@ -271,7 +272,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
 
     val (initializerAst, referenceAst) = if (selectorMustBeIdentifierOrFieldAccess) {
       val initAndRefAsts = initAndRefAstsForPatternInitializer(stmt.getSelector, selectorAst)
-      (initAndRefAsts.get, Option(initAndRefAsts.get))
+      (initAndRefAsts.get, Option(initAndRefAsts))
     } else {
       (selectorAst, None)
     }
@@ -327,7 +328,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
     (defaultAst ++ explicitLabelAsts).toList
   }
 
-  private def astForSwitchEntry(entry: SwitchEntry, selectorReferenceAst: Option[Ast]): Seq[Ast] = {
+  private def astForSwitchEntry(entry: SwitchEntry, selectorReferenceAst: Option[PatternInitAndRefAsts]): Seq[Ast] = {
     // Fallthrough to/from a pattern is a compile error, so an entry can only have a pattern label if that is
     // the only label
     val labels    = entry.getLabels.asScala.toList
@@ -342,7 +343,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
 
       val instanceOfAst = labels.lastOption.collect { case patternExpr: PatternExpr =>
         selectorReferenceAst.map { selectorAst =>
-          instanceOfAstForPattern(patternExpr, selectorAst)
+          instanceOfAstForPattern(patternExpr, selectorAst.get)
         }
       }.flatten
 
