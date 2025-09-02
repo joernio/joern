@@ -11,17 +11,16 @@ object ExternalCommand {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  def run(command: Seq[String], cwd: String, extraEnv: Map[String, String] = Map.empty): Try[Seq[String]] = {
+  def run(command: Seq[String], workingDir: String): Try[Seq[String]] = {
     io.shiftleft.semanticcpg.utils.ExternalCommand
-      .run(command, Option(Paths.get(cwd)), mergeStdErrInStdOut = true, extraEnv) match {
+      .run(command, Option(Paths.get(workingDir)), mergeStdErrInStdOut = true) match {
       case ExternalCommandResult(0, stdOut, _, _, _) =>
         Success(stdOut)
-      case ExternalCommandResult(_, stdOut, stdErr, _, _) if stdErr.isEmpty && stdOut.nonEmpty =>
+      case ExternalCommandResult(_, stdOut, Nil, _, _) if stdOut.nonEmpty =>
         // SwiftAstGen exits with exit code != 0 on Windows.
         // To catch with we specifically handle the empty stdErr here.
         Success(stdOut)
-      case ExternalCommandResult(_, stdOut, stdErr, _, _)
-          if stdErr.isEmpty && stdOut.isEmpty && scala.util.Properties.isWin =>
+      case ExternalCommandResult(_, Nil, Nil, _, _) if scala.util.Properties.isWin =>
         // SwiftAstGen exits with exit code != 0 on Windows
         // and empty stdOut and stdErr if the Swift runtime is not installed at all
         Failure(new RuntimeException("""
@@ -30,7 +29,7 @@ object ExternalCommand {
             | Please see: https://www.swift.org/install/windows/
             |""".stripMargin))
       case other =>
-        Failure(new RuntimeException(other.stdOutAndError.mkString(System.lineSeparator())))
+        Failure(new RuntimeException(other.stdOutAndError.mkString("\n")))
 
     }
   }
