@@ -232,14 +232,8 @@ trait X2CpgFrontend extends AutoCloseable {
     */
   @throws[Throwable]("if createCpg throws any Throwable")
   def run(config: ConfigType): Unit = {
-    withErrorsToConsole(config) { _ =>
-      createCpg(config) match {
-        case Success(cpg) =>
-          cpg.close() // persists to disk
-          Success(cpg)
-        case Failure(exception) =>
-          Failure(exception)
-      }
+    createCpg(config).map { cpg =>
+      cpg.close() // persists to disk
     } match {
       case Failure(exception) =>
         // We explicitly rethrow the exception so that every frontend will
