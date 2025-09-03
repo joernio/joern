@@ -10,9 +10,7 @@ import org.slf4j.LoggerFactory
 import java.io.ByteArrayOutputStream
 import java.io.File as JFile
 import java.nio.charset.Charset
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.Paths
+import java.nio.file.{FileAlreadyExistsException, Files, Path, Paths}
 import java.util.stream.Collectors
 import scala.collection.mutable
 import scala.io.Source
@@ -25,7 +23,7 @@ import scala.util.Using
 
 case class GradleVersion(major: Int, minor: Int)
 
-case class GradleDepsInitScript(contents: String, taskName: String, destinationDir: Path)
+case class GradleDepsInitScript(contents: String, taskName: String)
 
 object GradleDependencies {
   private val aarFileExtension     = "aar"
@@ -96,14 +94,14 @@ object GradleDependencies {
       projectNameOverride,
       configurationNameOverride
     )
-    GradleDepsInitScript(content, taskName, destinationDir)
+    GradleDepsInitScript(content, taskName)
   }
 
   private[dependency] def makeConnection(projectDir: JFile): ProjectConnection = {
     GradleConnector.newConnector().forProjectDirectory(projectDir).connect()
   }
 
-  private def dependencyMapFromOutputDir(outputDir: Path): Map[String, List[String]] = {
+  private def dependencyMapFromOutputDir(outputDir: Path): List[(String, List[String])] = {
     val dependencyMap = mutable.Map.empty[String, List[String]]
 
     Try(Files.walk(outputDir)) match {
@@ -114,12 +112,10 @@ object GradleDependencies {
             .asScala
             .groupBy(path => path.getParent.toString)
             .foreach { case (parentStr, paths) =>
-              paths.collect {
+              paths.foreach {
                 case path if !Files.isDirectory(path) =>
-                  dependencyMap.put(
-                    parentStr,
-                    path.toAbsolutePath.toString :: dependencyMap.getOrElseUpdate(parentStr, Nil)
-                  )
+                  dependencyMap.put(parentStr, path.toAbsolutePath.toString :: dependencyMap.getOrElse(parentStr, Nil))
+                case _ =>
               }
             }
         }
@@ -127,7 +123,7 @@ object GradleDependencies {
         logger.warn(s"Encountered exception while walking dependency fetcher output: ${e.getMessage}")
     }
 
-    dependencyMap.toMap
+    dependencyMap.toList.sortBy(_._1)
   }
 
   private def runGradleTask(
@@ -135,7 +131,7 @@ object GradleDependencies {
     taskName: String,
     destinationDir: Path,
     initScriptPath: String
-  ): Map[String, List[String]] = {
+  ): List[(String, List[String])] = {
     Using.resources(new ByteArrayOutputStream, new ByteArrayOutputStream) { case (stdoutStream, stderrStream) =>
       Option(System.getenv("ANDROID_HOME")) match {
         case Some(androidHome) => logger.debug(s"Found ANDROID_HOME set to $androidHome")
@@ -158,7 +154,7 @@ object GradleDependencies {
       ) match {
         case Success(_) =>
           val result          = dependencyMapFromOutputDir(destinationDir)
-          val dependencyCount = result.values.flatten.size
+          val dependencyCount = result.flatMap(_._2).size
           logger.info(s"Task $taskName resolved `$dependencyCount` dependency files.")
           result
         case Failure(ex) =>
@@ -177,7 +173,7 @@ object GradleDependencies {
           }
           logger.debug(s"Gradle task execution stdout: \n$stdoutStream")
           logger.debug(s"Gradle task execution stderr: \n$stderrStream")
-          Map.empty
+          List.empty
       }
     }
   }
@@ -203,7 +199,13 @@ object GradleDependencies {
     } else {
       val classesJar = classesJarEntries.head
       logger.trace(s"Copying `classes.jar` for aar at `${aar.toString}` into `$newPath`")
-      classesJar.copyTo(outFile)
+      try {
+        classesJar.copyTo(outFile)
+      } catch {
+        case exception: FileAlreadyExistsException =>
+        // Files can already exist due to a copy instruction in the gradle init script.
+        // So this is a fine and valid case in which we do not need to log.
+      }
       FileUtil.delete(outDir)
       FileUtil.delete(aar)
       Some(outFile)
@@ -216,7 +218,7 @@ object GradleDependencies {
     projectDir: Path,
     projectNameOverride: Option[String],
     configurationNameOverride: Option[String]
-  ): Map[String, collection.Seq[String]] = {
+  ): List[(String, collection.Seq[String])] = {
     logger.info(s"Fetching Gradle project information at path `$projectDir`.")
     Try(Files.createTempDirectory(tempDirPrefix)) match {
       case Success(destinationDir) =>
@@ -231,7 +233,7 @@ object GradleDependencies {
                   val initScript =
                     makeInitScript(destinationDir, gradleVersion, projectNameOverride, configurationNameOverride)
                   Files.writeString(initScriptFile, initScript.contents)
-                  runGradleTask(c, initScript.taskName, initScript.destinationDir, initScriptFile.toString).map {
+                  runGradleTask(c, initScript.taskName, destinationDir, initScriptFile.toString).map {
                     case (projectName, dependencies) =>
                       projectName -> dependencies.map { dependency =>
                         if (!dependency.endsWith(aarFileExtension))
@@ -247,17 +249,17 @@ object GradleDependencies {
               case Failure(ex) =>
                 logger.warn(s"Caught exception while trying to establish a Gradle connection: ${ex.getMessage}")
                 logger.debug(s"Full exception: ", ex)
-                Map.empty
+                List.empty
             }
           case Failure(ex) =>
             logger.warn(s"Could not create temporary file for Gradle init script: ${ex.getMessage}")
             logger.debug(s"Full exception: ", ex)
-            Map.empty
+            List.empty
         }
       case Failure(ex) =>
         logger.warn(s"Could not create temporary directory for saving dependency files: ${ex.getMessage}")
         logger.debug("Full exception: ", ex)
-        Map.empty
+        List.empty
     }
   }
 }
