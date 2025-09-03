@@ -88,7 +88,7 @@ object DependencyResolver {
     GradleDependencies.get(projectDir, maybeProjectNameOverride, maybeConfigurationOverride) match {
       case dependencies if dependencies.exists(_._2.nonEmpty) =>
         val allDependencies = dependencies.flatMap(_._2)
-        Option(allDependencies.distinctBy(path => path.split(java.io.File.separatorChar).last))
+        Option(allDependencies.distinctBy(path => new java.io.File(path).getName))
       case _ =>
         logger.warn(s"Could not download Gradle dependencies for project at path `$projectDir`")
         None
