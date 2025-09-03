@@ -2,205 +2,230 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
+import io.joern.swiftsrc2cpg.testfixtures.SwiftCompilerSrc2CpgSuite
+import io.shiftleft.codepropertygraph.generated.*
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.*
 
-class InitDeinitTests extends AstSwiftSrc2CpgSuite {
+class InitDeinitTests extends SwiftCompilerSrc2CpgSuite {
 
   "InitDeinitTests" should {
 
-    "testInitDeinit1" ignore {
-      val cpg = code("""
-        |struct FooStructConstructorA {
-        |  init()
-        |}
-        |""".stripMargin)
-      ???
-    }
-
-    "testInitDeinit2" ignore {
-      val cpg = code("""
+    "testInitDeinit2" in {
+      val testCode = """
         |struct FooStructConstructorA {
         |  init() {}
         |}
-        |""".stripMargin)
-      ???
+        |""".stripMargin
+      val cpg                = code(testCode)
+      val compilerCpg        = codeWithSwiftSetup(testCode)
+      val List(constructorA) = cpg.method.isConstructor.l
+      val List(constructorB) = compilerCpg.method.isConstructor.l
+
+      constructorA.fullName shouldBe "Sources/main.swift:<global>.FooStructConstructorA.init:()->Sources/main.swift:<global>.FooStructConstructorA"
+      constructorB.fullName shouldBe "SwiftTest.FooStructConstructorA.init:()->SwiftTest.FooStructConstructorA"
+
+      val List(paramA) = constructorA.parameter.l
+      val List(paramB) = constructorB.parameter.l
+
+      paramA.index shouldBe 0
+      paramA.order shouldBe 0
+      paramA.name shouldBe "self"
+      paramA.typeFullName shouldBe "Sources/main.swift:<global>.FooStructConstructorA"
+
+      paramB.index shouldBe 0
+      paramB.order shouldBe 0
+      paramB.name shouldBe "self"
+      paramB.typeFullName shouldBe "SwiftTest.FooStructConstructorA"
     }
 
-    "testInitDeinit3" ignore {
-      val cpg = code("""
-        |struct FooStructConstructorA {
-        |  init<T>() {}
-        |}
-        |""".stripMargin)
-      ???
-    }
-
-    "testInitDeinit4" ignore {
-      val cpg = code("""
+    "testInitDeinit4" in {
+      val testCode = """
         |struct FooStructConstructorA {
         |  init?() { self.init() }
         |}
-        |""".stripMargin)
-      ???
+        |""".stripMargin
+      val cpg                = code(testCode)
+      val compilerCpg        = codeWithSwiftSetup(testCode)
+      val List(constructorA) = cpg.method.isConstructor.l
+      val List(constructorB) = compilerCpg.method.isConstructor.l
+
+      constructorA.fullName shouldBe "Sources/main.swift:<global>.FooStructConstructorA.init:()->Sources/main.swift:<global>.FooStructConstructorA"
+      constructorB.fullName shouldBe "SwiftTest.FooStructConstructorA.init:()->Swift.Optional"
+
+      val List(paramA) = constructorA.parameter.l
+      val List(paramB) = constructorB.parameter.l
+
+      paramA.index shouldBe 0
+      paramA.order shouldBe 0
+      paramA.name shouldBe "self"
+      paramA.typeFullName shouldBe "Sources/main.swift:<global>.FooStructConstructorA"
+
+      paramB.index shouldBe 0
+      paramB.order shouldBe 0
+      paramB.name shouldBe "self"
+      paramB.typeFullName shouldBe "SwiftTest.FooStructConstructorA"
     }
 
-    "testInitDeinit5" ignore {
-      val cpg = code("""
-        |struct FooStructDeinitializerA {
-        |  deinit
-        |}
-        |""".stripMargin)
-      ???
-    }
-
-    "testInitDeinit6" ignore {
-      val cpg = code("""
-        |struct FooStructDeinitializerA {
-        |  deinit {}
-        |}
-        |""".stripMargin)
-      ???
-    }
-
-    "testInitDeinit7" ignore {
-      val cpg = code("""
+    "testInitDeinit7" in {
+      val testCode = """
         |class FooStructDeinitializerA {
         |  deinit {}
         |}
-        |""".stripMargin)
-      ???
+        |""".stripMargin
+      val cpg           = code(testCode)
+      val compilerCpg   = codeWithSwiftSetup(testCode)
+      val List(deinitA) = cpg.method.nameExact("deinit").l
+      val List(deinitB) = compilerCpg.method.nameExact("deinit").l
+
+      deinitA.fullName shouldBe "Sources/main.swift:<global>.FooStructDeinitializerA.deinit:()->ANY"
+      deinitB.fullName shouldBe "SwiftTest.FooStructDeinitializerA.deinit:()"
+
+      deinitA.parameter shouldBe empty
+      deinitB.parameter shouldBe empty
     }
 
-    "testInitDeinit12" ignore {
-      val cpg = code("""
-        |deinit {}
-        |deinit
-        |deinit {}
-        |""".stripMargin)
-      ???
-    }
-
-    "testInitDeinit13" ignore {
-      val cpg = code("""
-        |struct BarStruct {
-        |  init() {}
-        |  deinit {}
-        |}
-        |""".stripMargin)
-      ???
-    }
-
-    "testInitDeinit14" ignore {
-      val cpg = code("""
-        |extension BarStruct {
-        |  init(x : Int) {}
-        |  deinit {}
-        |}
-        |""".stripMargin)
-      ???
-    }
-
-    "testInitDeinit15" ignore {
-      val cpg = code("""
+    "testInitDeinit15" in {
+      val testCode = """
         |enum BarUnion {
-        |  init() {}
-        |  deinit {}
+        |  init() { self.init() }
         |}
-        |""".stripMargin)
-      ???
+        |""".stripMargin
+      val cpg                = code(testCode)
+      val compilerCpg        = codeWithSwiftSetup(testCode)
+      val List(constructorA) = cpg.method.isConstructor.l
+      val List(constructorB) = compilerCpg.method.isConstructor.l
+
+      constructorA.fullName shouldBe "Sources/main.swift:<global>.BarUnion.init:()->Sources/main.swift:<global>.BarUnion"
+      constructorB.fullName shouldBe "SwiftTest.BarUnion.init:()->SwiftTest.BarUnion"
+
+      val List(paramA) = constructorA.parameter.l
+      val List(paramB) = constructorB.parameter.l
+
+      paramA.index shouldBe 0
+      paramA.order shouldBe 0
+      paramA.name shouldBe "self"
+      paramA.typeFullName shouldBe "Sources/main.swift:<global>.BarUnion"
+
+      paramB.index shouldBe 0
+      paramB.order shouldBe 0
+      paramB.name shouldBe "self"
+      paramB.typeFullName shouldBe "SwiftTest.BarUnion"
     }
 
-    "testInitDeinit16" ignore {
-      val cpg = code("""
-        |extension BarUnion {
-        |  init(x : Int) {}
-        |  deinit {}
-        |}
-        |""".stripMargin)
-      ???
-    }
-
-    "testInitDeinit17" ignore {
-      val cpg = code("""
+    "testInitDeinit17" in {
+      val testCode = """
         |class BarClass {
         |  init() {}
         |  deinit {}
         |}
-        |""".stripMargin)
-      ???
+        |""".stripMargin
+      val cpg                = code(testCode)
+      val compilerCpg        = codeWithSwiftSetup(testCode)
+      val List(constructorA) = cpg.method.isConstructor.l
+      val List(constructorB) = compilerCpg.method.isConstructor.l
+
+      constructorA.fullName shouldBe "Sources/main.swift:<global>.BarClass.init:()->Sources/main.swift:<global>.BarClass"
+      constructorB.fullName shouldBe "SwiftTest.BarClass.init:()->SwiftTest.BarClass"
+
+      val List(paramA) = constructorA.parameter.l
+      val List(paramB) = constructorB.parameter.l
+
+      paramA.index shouldBe 0
+      paramA.order shouldBe 0
+      paramA.name shouldBe "self"
+      paramA.typeFullName shouldBe "Sources/main.swift:<global>.BarClass"
+
+      paramB.index shouldBe 0
+      paramB.order shouldBe 0
+      paramB.name shouldBe "self"
+      paramB.typeFullName shouldBe "SwiftTest.BarClass"
+
+      val List(deinitA) = cpg.method.nameExact("deinit").l
+      val List(deinitB) = compilerCpg.method.nameExact("deinit").l
+
+      deinitA.fullName shouldBe "Sources/main.swift:<global>.BarClass.deinit:()->ANY"
+      deinitB.fullName shouldBe "SwiftTest.BarClass.deinit:()"
+
+      deinitA.parameter shouldBe empty
+      deinitB.parameter shouldBe empty
     }
 
-    "testInitDeinit19" ignore {
-      val cpg = code("""
-        |protocol BarProtocol {
-        |  init() {}
-        |  deinit {}
-        |}
-        |""".stripMargin)
-      ???
-    }
-
-    "testInitDeinit20" ignore {
-      val cpg = code("""
-        |extension BarProtocol {
-        |  init(x : Int) {}
-        |  deinit {}
-        |}
-        |""".stripMargin)
-      ???
-    }
-
-    "testInitDeinit21" ignore {
-      val cpg = code("""
-        |func fooFunc() {
-        |  init() {}
-        |  deinit {}
-        |}
-        |""".stripMargin)
-      ???
-    }
-
-    "testInitDeinit24" ignore {
-      val cpg = code("""
-        |class Aaron {
-        |  convenience init() { init(x: 1) }
-        |}
-        |""".stripMargin)
-      ???
-    }
-
-    "testDeinitInSwiftinterfaceIsFollowedByFinalFunc" ignore {
-      val cpg = code("""
-        |class Foo {
-        |  deinit
-        |  final func foo()
-        |}
-        |""".stripMargin)
-      ???
-    }
-
-    "testDeinitAsync" ignore {
-      val cpg = code("""
-        |class FooClassDeinitializerA {
-        |  deinit async {}
-        |}
-        |""".stripMargin)
-      ???
-    }
-
-    "testAsyncDeinit" ignore {
-      val cpg = code(
-        // This is expected for now.
-        // `async` is parsed as a modifier like `public` because you can have an `async var x: Int`.
+    "testInitDeinit18" in {
+      val testCode =
         """
-        |class FooClassDeinitializerA {
-        |  async deinit {}
+          |class BarClass {
+          |  init(a: Int) {}
+          |}
+          |""".stripMargin
+      val cpg                = code(testCode)
+      val compilerCpg        = codeWithSwiftSetup(testCode)
+      val List(constructorA) = cpg.method.isConstructor.l
+      val List(constructorB) = compilerCpg.method.isConstructor.l
+
+      constructorA.fullName shouldBe "Sources/main.swift:<global>.BarClass.init:(a:Swift.Int)->Sources/main.swift:<global>.BarClass"
+      constructorB.fullName shouldBe "SwiftTest.BarClass.init:(a:Swift.Int)->SwiftTest.BarClass"
+
+      val List(paramA, xA) = constructorA.parameter.l
+      val List(paramB, xB) = constructorB.parameter.l
+
+      paramA.index shouldBe 0
+      paramA.order shouldBe 0
+      paramA.name shouldBe "self"
+      paramA.typeFullName shouldBe "Sources/main.swift:<global>.BarClass"
+
+      paramB.index shouldBe 0
+      paramB.order shouldBe 0
+      paramB.name shouldBe "self"
+      paramB.typeFullName shouldBe "SwiftTest.BarClass"
+
+      xA.index shouldBe 1
+      xA.order shouldBe 1
+      xA.name shouldBe "a"
+      xA.typeFullName shouldBe "Swift.Int"
+
+      xB.index shouldBe 1
+      xB.order shouldBe 1
+      xB.name shouldBe "a"
+      xB.typeFullName shouldBe "Swift.Int"
+    }
+
+    "testInitDeinit19" in {
+      val testCode = """
+        |protocol BarProtocol {
+        |  init()
         |}
         |""".stripMargin
-      )
-      ???
-    }
+      val cpg                = code(testCode)
+      val compilerCpg        = codeWithSwiftSetup(testCode)
+      val List(constructorA) = cpg.method.isConstructor.l
+      val List(constructorB) = compilerCpg.method.isConstructor.l
 
+      constructorA.fullName shouldBe "Sources/main.swift:<global>.BarProtocol.init:()->Sources/main.swift:<global>.BarProtocol"
+
+      // Swift initializers conceptually return `Self`. For a protocol requirement, `Self` is not a concrete type;
+      // it is an abstract, generic type parameter constrained to the protocol.
+      // In the compiler’s canonical form (and thus in your CPG), that abstract `Self` is represented as the first
+      // generic parameter `A` (think: `<A where A: SwiftTest.BarProtocol>`).
+      //
+      // Returning `SwiftTest.BarProtocol` would imply an existential (boxed) value,
+      // but a protocol initializer constructs the concrete conforming type, not the existential.
+      // Hence, the signature is `()->A`, matching Swift’s `init` => `Self`.
+      constructorB.fullName shouldBe "SwiftTest.BarProtocol.init:()->A"
+
+      val List(paramA) = constructorA.parameter.l
+      val List(paramB) = constructorB.parameter.l
+
+      paramA.index shouldBe 0
+      paramA.order shouldBe 0
+      paramA.name shouldBe "self"
+      paramA.typeFullName shouldBe "Sources/main.swift:<global>.BarProtocol"
+
+      paramB.index shouldBe 0
+      paramB.order shouldBe 0
+      paramB.name shouldBe "self"
+      paramB.typeFullName shouldBe "SwiftTest.BarProtocol"
+    }
   }
 
 }
