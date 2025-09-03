@@ -103,7 +103,7 @@ object GradleDependencies {
     GradleConnector.newConnector().forProjectDirectory(projectDir).connect()
   }
 
-  private def dependencyMapFromOutputDir(outputDir: Path): Map[String, List[String]] = {
+  private def dependencyMapFromOutputDir(outputDir: Path): List[(String, List[String])] = {
     val dependencyMap = mutable.Map.empty[String, List[String]]
 
     Try(Files.walk(outputDir)) match {
@@ -114,12 +114,10 @@ object GradleDependencies {
             .asScala
             .groupBy(path => path.getParent.toString)
             .foreach { case (parentStr, paths) =>
-              paths.collect {
+              paths.foreach {
                 case path if !Files.isDirectory(path) =>
-                  dependencyMap.put(
-                    parentStr,
-                    path.toAbsolutePath.toString :: dependencyMap.getOrElseUpdate(parentStr, Nil)
-                  )
+                  dependencyMap.put(parentStr, path.toAbsolutePath.toString :: dependencyMap.getOrElse(parentStr, Nil))
+                case _ =>
               }
             }
         }
@@ -127,7 +125,7 @@ object GradleDependencies {
         logger.warn(s"Encountered exception while walking dependency fetcher output: ${e.getMessage}")
     }
 
-    dependencyMap.toMap
+    dependencyMap.toList.sortBy(_._1)
   }
 
   private def runGradleTask(
@@ -135,7 +133,7 @@ object GradleDependencies {
     taskName: String,
     destinationDir: Path,
     initScriptPath: String
-  ): Map[String, List[String]] = {
+  ): List[(String, List[String])] = {
     Using.resources(new ByteArrayOutputStream, new ByteArrayOutputStream) { case (stdoutStream, stderrStream) =>
       Option(System.getenv("ANDROID_HOME")) match {
         case Some(androidHome) => logger.debug(s"Found ANDROID_HOME set to $androidHome")
@@ -158,7 +156,7 @@ object GradleDependencies {
       ) match {
         case Success(_) =>
           val result          = dependencyMapFromOutputDir(destinationDir)
-          val dependencyCount = result.values.flatten.size
+          val dependencyCount = result.flatMap(_._2).size
           logger.info(s"Task $taskName resolved `$dependencyCount` dependency files.")
           result
         case Failure(ex) =>
@@ -177,7 +175,7 @@ object GradleDependencies {
           }
           logger.debug(s"Gradle task execution stdout: \n$stdoutStream")
           logger.debug(s"Gradle task execution stderr: \n$stderrStream")
-          Map.empty
+          List.empty
       }
     }
   }
@@ -216,7 +214,7 @@ object GradleDependencies {
     projectDir: Path,
     projectNameOverride: Option[String],
     configurationNameOverride: Option[String]
-  ): Map[String, collection.Seq[String]] = {
+  ): List[(String, collection.Seq[String])] = {
     logger.info(s"Fetching Gradle project information at path `$projectDir`.")
     Try(Files.createTempDirectory(tempDirPrefix)) match {
       case Success(destinationDir) =>
@@ -247,17 +245,17 @@ object GradleDependencies {
               case Failure(ex) =>
                 logger.warn(s"Caught exception while trying to establish a Gradle connection: ${ex.getMessage}")
                 logger.debug(s"Full exception: ", ex)
-                Map.empty
+                List.empty
             }
           case Failure(ex) =>
             logger.warn(s"Could not create temporary file for Gradle init script: ${ex.getMessage}")
             logger.debug(s"Full exception: ", ex)
-            Map.empty
+            List.empty
         }
       case Failure(ex) =>
         logger.warn(s"Could not create temporary directory for saving dependency files: ${ex.getMessage}")
         logger.debug("Full exception: ", ex)
-        Map.empty
+        List.empty
     }
   }
 }
