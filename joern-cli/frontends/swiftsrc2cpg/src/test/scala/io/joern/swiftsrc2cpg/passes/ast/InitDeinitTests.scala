@@ -81,8 +81,18 @@ class InitDeinitTests extends SwiftCompilerSrc2CpgSuite {
       deinitA.fullName shouldBe "Sources/main.swift:<global>.FooStructDeinitializerA.deinit:()->ANY"
       deinitB.fullName shouldBe "SwiftTest.FooStructDeinitializerA.deinit:()"
 
-      deinitA.parameter shouldBe empty
-      deinitB.parameter shouldBe empty
+      val List(paramA) = deinitA.parameter.l
+      val List(paramB) = deinitB.parameter.l
+
+      paramA.index shouldBe 0
+      paramA.order shouldBe 0
+      paramA.name shouldBe "self"
+      paramA.typeFullName shouldBe "Sources/main.swift:<global>.FooStructDeinitializerA"
+
+      paramB.index shouldBe 0
+      paramB.order shouldBe 0
+      paramB.name shouldBe "self"
+      paramB.typeFullName shouldBe "SwiftTest.FooStructDeinitializerA"
     }
 
     "testInitDeinit15" in {
@@ -147,8 +157,18 @@ class InitDeinitTests extends SwiftCompilerSrc2CpgSuite {
       deinitA.fullName shouldBe "Sources/main.swift:<global>.BarClass.deinit:()->ANY"
       deinitB.fullName shouldBe "SwiftTest.BarClass.deinit:()"
 
-      deinitA.parameter shouldBe empty
-      deinitB.parameter shouldBe empty
+      val List(deinitParamA) = deinitA.parameter.l
+      val List(deinitParamB) = deinitB.parameter.l
+
+      deinitParamA.index shouldBe 0
+      deinitParamA.order shouldBe 0
+      deinitParamA.name shouldBe "self"
+      deinitParamA.typeFullName shouldBe "Sources/main.swift:<global>.BarClass"
+
+      deinitParamB.index shouldBe 0
+      deinitParamB.order shouldBe 0
+      deinitParamB.name shouldBe "self"
+      deinitParamB.typeFullName shouldBe "SwiftTest.BarClass"
     }
 
     "testInitDeinit18" in {

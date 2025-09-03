@@ -654,7 +654,10 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         scope.addVariable("self", parameterNode, parentFullName, VariableScopeManager.ScopeType.MethodScope)
         Ast(parameterNode) +: i.signature.parameterClause.parameters.children.map(astForNode)
       case _: DeinitializerDeclSyntax =>
-        Seq.empty
+        val parameterNode =
+          parameterInNode(node, "self", "self", 0, false, EvaluationStrategies.BY_SHARING, parentFullName)
+        scope.addVariable("self", parameterNode, parentFullName, VariableScopeManager.ScopeType.MethodScope)
+        Seq(Ast(parameterNode))
       case s: SubscriptDeclSyntax =>
         s.parameterClause.parameters.children.map(astForNode)
       case c: ClosureExprSyntax =>
