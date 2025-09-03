@@ -25,7 +25,7 @@ import scala.util.Using
 
 case class GradleVersion(major: Int, minor: Int)
 
-case class GradleDepsInitScript(contents: String, taskName: String, destinationDir: Path)
+case class GradleDepsInitScript(contents: String, taskName: String)
 
 object GradleDependencies {
   private val aarFileExtension     = "aar"
@@ -96,7 +96,7 @@ object GradleDependencies {
       projectNameOverride,
       configurationNameOverride
     )
-    GradleDepsInitScript(content, taskName, destinationDir)
+    GradleDepsInitScript(content, taskName)
   }
 
   private[dependency] def makeConnection(projectDir: JFile): ProjectConnection = {
@@ -229,7 +229,7 @@ object GradleDependencies {
                   val initScript =
                     makeInitScript(destinationDir, gradleVersion, projectNameOverride, configurationNameOverride)
                   Files.writeString(initScriptFile, initScript.contents)
-                  runGradleTask(c, initScript.taskName, initScript.destinationDir, initScriptFile.toString).map {
+                  runGradleTask(c, initScript.taskName, destinationDir, initScriptFile.toString).map {
                     case (projectName, dependencies) =>
                       projectName -> dependencies.map { dependency =>
                         if (!dependency.endsWith(aarFileExtension))
