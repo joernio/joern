@@ -285,6 +285,20 @@ object SwiftTypesProvider {
     hasSwift && hasSwiftDemangle
   }
 
+  /** Checks whether the given path points to a readable directory.
+    *
+    * This safely wraps the filesystem checks in `scala.util.Try` and returns `false` if an exception occurs (e.g.,
+    * permission errors, broken symlinks).
+    *
+    * @param path
+    *   The filesystem path to check.
+    * @return
+    *   `true` if `path` exists, is a directory, and is readable; `false` otherwise.
+    */
+  private def folderExistsAndReadable(path: Path): Boolean = {
+    Try(Files.isDirectory(path) && Files.isReadable(path)).getOrElse(false)
+  }
+
   /** Attempts to build a SwiftTypesProvider by running Swift build commands on the project.
     *
     * This method performs the following steps:
@@ -300,14 +314,18 @@ object SwiftTypesProvider {
   private def build(config: Config): Option[SwiftTypesProvider] = {
     logger.info("Building Swift type map from SwiftPM project configuration")
 
+    val projectPath = Paths.get(config.inputPath)
     logger.info("Cleaning the project first ...")
-    io.shiftleft.semanticcpg.utils.ExternalCommand
-      .run(SwiftCleanCommand, workingDir = Some(Paths.get(config.inputPath)))
-      .logIfFailed()
+
+    if (folderExistsAndReadable(projectPath.resolve(".build/"))) {
+      io.shiftleft.semanticcpg.utils.ExternalCommand
+        .run(SwiftCleanCommand, workingDir = Some(projectPath))
+        .logIfFailed()
+    }
 
     logger.info("Building the project ...")
     io.shiftleft.semanticcpg.utils.ExternalCommand
-      .run(SwiftBuildCommand, mergeStdErrInStdOut = true, workingDir = Some(Paths.get(config.inputPath)))
+      .run(SwiftBuildCommand, mergeStdErrInStdOut = true, workingDir = Some(projectPath))
       .logIfFailed()
       .successOption
       .map(outLines => build(config, outLines))
@@ -390,7 +408,7 @@ object SwiftTypesProvider {
     *   A set of names of the readable directories found under path
     */
   private def listReadableDirectories(path: Path): Set[String] = {
-    if (path.toString.isEmpty || !Files.isDirectory(path) || !Files.isReadable(path)) {
+    if (path.toString.isEmpty || !folderExistsAndReadable(path)) {
       return Set.empty
     }
     try {
@@ -601,7 +619,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
         result
           .getOrElseUpdate(
             filename, {
-              logger.info(s"Generating type map for: $filename")
+              logger.debug(s"Generating type map for: $filename")
               mutable.HashMap.empty
             }
           )
