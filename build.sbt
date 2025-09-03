@@ -112,3 +112,6 @@ ThisBuild / developers := List(
 publish / skip := true // don't publish the root project
 
 ThisBuild / Test / packageBin / publishArtifact := true
+
+// trigger an sbt reload when any `application.conf` file changes
+Global / checkBuildSources / fileInputs += (baseDirectory.value.toGlob / ** / "resources" / "application.conf")

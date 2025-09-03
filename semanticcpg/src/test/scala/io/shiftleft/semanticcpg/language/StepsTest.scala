@@ -142,7 +142,7 @@ class StepsTest extends AnyWordSpec with Matchers {
       val parsed         = parsedChildren.head // exactly one result for the above query
       (parsed \ "symbol") shouldBe JString("foo")
       (parsed \ "className") shouldBe JString("AClass")
-      (parsed \ "filename") shouldBe JString("N/A")
+      (parsed \ "filename") shouldBe JString("afile.c")
     }
 
     "operating on primitive" in {
