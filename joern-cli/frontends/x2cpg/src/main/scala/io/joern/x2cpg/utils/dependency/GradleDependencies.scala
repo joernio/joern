@@ -10,9 +10,7 @@ import org.slf4j.LoggerFactory
 import java.io.ByteArrayOutputStream
 import java.io.File as JFile
 import java.nio.charset.Charset
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.Paths
+import java.nio.file.{FileAlreadyExistsException, Files, Path, Paths}
 import java.util.stream.Collectors
 import scala.collection.mutable
 import scala.io.Source
@@ -201,7 +199,13 @@ object GradleDependencies {
     } else {
       val classesJar = classesJarEntries.head
       logger.trace(s"Copying `classes.jar` for aar at `${aar.toString}` into `$newPath`")
-      classesJar.copyTo(outFile)
+      try {
+        classesJar.copyTo(outFile)
+      } catch {
+        case exception: FileAlreadyExistsException =>
+        // Files can already exist due to a copy instruction in the gradle init script.
+        // So this is a fine and valid case in which we do not need to log.
+      }
       FileUtil.delete(outDir)
       FileUtil.delete(aar)
       Some(outFile)
