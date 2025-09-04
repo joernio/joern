@@ -157,7 +157,7 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
     }
   }
 
-  def addAnonymousMethod(methodAst: Ast): Unit = anonymousMethods.addOne(methodAst)
+  def registerAstForInsertion(methodAst: Ast): Unit = anonymousMethods.addOne(methodAst)
 
   def getAndClearAnonymousMethods: List[Ast] = {
     val methods = anonymousMethods.toList
@@ -182,6 +182,9 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
 
   def getEnclosingTypeDeclTypeFullName: Option[String] =
     stack.map(_.scopeNode).collectFirst { case TypeScope(td, _) => td }.map(_.fullName)
+
+  def getEnclosingTypeDecl: Option[NewTypeDecl] =
+    stack.map(_.scopeNode).collectFirst { case TypeScope(td, _) => td }
 
   def createMethodNameWithSurroundingInformation(methodName: String): String = {
     val namespaces =

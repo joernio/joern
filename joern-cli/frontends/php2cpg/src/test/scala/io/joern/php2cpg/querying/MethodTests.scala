@@ -116,7 +116,7 @@ class MethodTests extends PhpCode2CpgFixture {
       fileName = "test.php"
     )
 
-    cpg.file.method.name.toSet shouldBe Set("<global>", "foo")
+    cpg.file.method.name.toSet shouldBe Set("<global>", "foo", "__construct", "__invoke")
     cpg.method.name("foo").filename.l shouldBe List("test.php")
   }
 
@@ -133,7 +133,7 @@ class MethodTests extends PhpCode2CpgFixture {
         |""".stripMargin).withConfig(Config().withDisableFileContent(false))
 
     "be created with escaped char codes" in {
-      cpg.file.method.name.toSet shouldBe Set("<global>", "foo")
+      cpg.file.method.name.toSet shouldBe Set("<global>", "foo", "__construct", "__invoke")
       cpg.assignment.code.l shouldBe List("$x = \"\\\\xFF\"")
     }
 
@@ -230,8 +230,7 @@ class MethodTests extends PhpCode2CpgFixture {
       inside(cpg.method.nameExact("__construct").l) { case List(constructor) =>
         constructor.modifier.modifierType.toSet shouldBe Set(
           ModifierTypes.CONSTRUCTOR,
-          ModifierTypes.PUBLIC,
-          ModifierTypes.VIRTUAL
+          ModifierTypes.PUBLIC
         )
       }
 
