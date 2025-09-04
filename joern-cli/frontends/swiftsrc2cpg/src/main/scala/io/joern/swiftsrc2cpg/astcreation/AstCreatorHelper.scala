@@ -191,15 +191,20 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }
   }
 
+  private val ReturnTypeMatcher = """\(.*\)->(.+)""".r
+
   protected def methodInfoForFunctionDeclLike(node: FunctionDeclLike): MethodInfo = {
     val name = calcMethodName(node)
     fullnameProvider.declFullname(node) match {
       case Some(fullNameWithSignature) =>
         val (fullName, signature) = methodInfoFromFullNameWithSignature(fullNameWithSignature)
         val returnType = node match {
-          case init: InitializerDeclSyntax     => astParentInfo()._2
-          case deinit: DeinitializerDeclSyntax => Defines.Void
-          case _                               => fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
+          case init: InitializerDeclSyntax =>
+            ReturnTypeMatcher.findFirstMatchIn(signature).map(_.group(1)).getOrElse(astParentInfo()._2)
+          case deinit: DeinitializerDeclSyntax =>
+            Defines.Void
+          case _ =>
+            fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
         }
         registerType(returnType)
         MethodInfo(name, fullName, signature, returnType)

@@ -22,7 +22,14 @@ class InitDeinitTests extends SwiftCompilerSrc2CpgSuite {
       val List(constructorA) = cpg.method.isConstructor.l
       val List(constructorB) = compilerCpg.method.isConstructor.l
 
+      constructorA.methodReturn.typeFullName shouldBe "Sources/main.swift:<global>.FooStructConstructorA"
+      constructorA.methodReturn.dynamicTypeHintFullName shouldBe Seq(
+        "Sources/main.swift:<global>.FooStructConstructorA"
+      )
       constructorA.fullName shouldBe "Sources/main.swift:<global>.FooStructConstructorA.init:()->Sources/main.swift:<global>.FooStructConstructorA"
+
+      constructorB.methodReturn.typeFullName shouldBe "SwiftTest.FooStructConstructorA"
+      constructorB.methodReturn.dynamicTypeHintFullName shouldBe Seq("SwiftTest.FooStructConstructorA")
       constructorB.fullName shouldBe "SwiftTest.FooStructConstructorA.init:()->SwiftTest.FooStructConstructorA"
 
       val List(paramA) = constructorA.parameter.l
@@ -50,7 +57,14 @@ class InitDeinitTests extends SwiftCompilerSrc2CpgSuite {
       val List(constructorA) = cpg.method.isConstructor.l
       val List(constructorB) = compilerCpg.method.isConstructor.l
 
+      constructorA.methodReturn.typeFullName shouldBe "Sources/main.swift:<global>.FooStructConstructorA"
+      constructorA.methodReturn.dynamicTypeHintFullName shouldBe Seq(
+        "Sources/main.swift:<global>.FooStructConstructorA"
+      )
       constructorA.fullName shouldBe "Sources/main.swift:<global>.FooStructConstructorA.init:()->Sources/main.swift:<global>.FooStructConstructorA"
+
+      constructorB.methodReturn.typeFullName shouldBe "Swift.Optional"
+      constructorB.methodReturn.dynamicTypeHintFullName shouldBe Seq("Swift.Optional")
       constructorB.fullName shouldBe "SwiftTest.FooStructConstructorA.init:()->Swift.Optional"
 
       val List(paramA) = constructorA.parameter.l
@@ -106,7 +120,12 @@ class InitDeinitTests extends SwiftCompilerSrc2CpgSuite {
       val List(constructorA) = cpg.method.isConstructor.l
       val List(constructorB) = compilerCpg.method.isConstructor.l
 
+      constructorA.methodReturn.typeFullName shouldBe "Sources/main.swift:<global>.BarUnion"
+      constructorA.methodReturn.dynamicTypeHintFullName shouldBe Seq("Sources/main.swift:<global>.BarUnion")
       constructorA.fullName shouldBe "Sources/main.swift:<global>.BarUnion.init:()->Sources/main.swift:<global>.BarUnion"
+
+      constructorB.methodReturn.typeFullName shouldBe "SwiftTest.BarUnion"
+      constructorB.methodReturn.dynamicTypeHintFullName shouldBe Seq("SwiftTest.BarUnion")
       constructorB.fullName shouldBe "SwiftTest.BarUnion.init:()->SwiftTest.BarUnion"
 
       val List(paramA) = constructorA.parameter.l
@@ -135,7 +154,12 @@ class InitDeinitTests extends SwiftCompilerSrc2CpgSuite {
       val List(constructorA) = cpg.method.isConstructor.l
       val List(constructorB) = compilerCpg.method.isConstructor.l
 
+      constructorA.methodReturn.typeFullName shouldBe "Sources/main.swift:<global>.BarClass"
+      constructorA.methodReturn.dynamicTypeHintFullName shouldBe Seq("Sources/main.swift:<global>.BarClass")
       constructorA.fullName shouldBe "Sources/main.swift:<global>.BarClass.init:()->Sources/main.swift:<global>.BarClass"
+
+      constructorB.methodReturn.typeFullName shouldBe "SwiftTest.BarClass"
+      constructorB.methodReturn.dynamicTypeHintFullName shouldBe Seq("SwiftTest.BarClass")
       constructorB.fullName shouldBe "SwiftTest.BarClass.init:()->SwiftTest.BarClass"
 
       val List(paramA) = constructorA.parameter.l
@@ -183,7 +207,12 @@ class InitDeinitTests extends SwiftCompilerSrc2CpgSuite {
       val List(constructorA) = cpg.method.isConstructor.l
       val List(constructorB) = compilerCpg.method.isConstructor.l
 
+      constructorA.methodReturn.typeFullName shouldBe "Sources/main.swift:<global>.BarClass"
+      constructorA.methodReturn.dynamicTypeHintFullName shouldBe Seq("Sources/main.swift:<global>.BarClass")
       constructorA.fullName shouldBe "Sources/main.swift:<global>.BarClass.init:(a:Swift.Int)->Sources/main.swift:<global>.BarClass"
+
+      constructorB.methodReturn.typeFullName shouldBe "SwiftTest.BarClass"
+      constructorB.methodReturn.dynamicTypeHintFullName shouldBe Seq("SwiftTest.BarClass")
       constructorB.fullName shouldBe "SwiftTest.BarClass.init:(a:Swift.Int)->SwiftTest.BarClass"
 
       val List(paramA, xA) = constructorA.parameter.l
@@ -221,6 +250,8 @@ class InitDeinitTests extends SwiftCompilerSrc2CpgSuite {
       val List(constructorA) = cpg.method.isConstructor.l
       val List(constructorB) = compilerCpg.method.isConstructor.l
 
+      constructorA.methodReturn.typeFullName shouldBe "Sources/main.swift:<global>.BarProtocol"
+      constructorA.methodReturn.dynamicTypeHintFullName shouldBe Seq("Sources/main.swift:<global>.BarProtocol")
       constructorA.fullName shouldBe "Sources/main.swift:<global>.BarProtocol.init:()->Sources/main.swift:<global>.BarProtocol"
 
       // Swift initializers conceptually return `Self`. For a protocol requirement, `Self` is not a concrete type;
@@ -231,6 +262,8 @@ class InitDeinitTests extends SwiftCompilerSrc2CpgSuite {
       // Returning `SwiftTest.BarProtocol` would imply an existential (boxed) value,
       // but a protocol initializer constructs the concrete conforming type, not the existential.
       // Hence, the signature is `()->A`, matching Swift’s `init` => `Self`.
+      constructorB.methodReturn.typeFullName shouldBe "A"
+      constructorB.methodReturn.dynamicTypeHintFullName shouldBe Seq("A")
       constructorB.fullName shouldBe "SwiftTest.BarProtocol.init:()->A"
 
       val List(paramA) = constructorA.parameter.l

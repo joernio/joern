@@ -705,7 +705,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         List.empty[Ast]
     }
 
-    val methodReturnNode_ = methodReturnNode(node, returnType)
+    val methodReturnNode_ = methodReturnNode(node, returnType, Some(returnType))
 
     val blockAst_ = blockAst(block, methodBlockContent ++ bodyStmtAsts)
     val astForMethod =
