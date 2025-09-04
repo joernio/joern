@@ -106,6 +106,7 @@ class FrontendHTTPServer(executor: ExecutorService, handleRequest: Array[String]
 
         Try(handleRequest(arguments.toArray)) match {
           case Failure(exception) =>
+            exception.printStackTrace()
             resp.send(400, exception.getMessage)
           case Success(_) =>
             resp.send(200, outputDir)
