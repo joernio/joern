@@ -106,7 +106,7 @@ class ForeachTests extends AstSwiftSrc2CpgSuite {
     loop.controlStructureType shouldBe ControlStructureTypes.WHILE
 
     val List(loopTestCall) = loop.astChildren.isCall.codeExact("!(<result>0 = <iterator>0.next()).done").l
-    loopTestCall.name shouldBe Operators.not
+    loopTestCall.name shouldBe Operators.logicalNot
     loopTestCall.order shouldBe 1
 
     val List(doneMaCall) = loopTestCall.astChildren.isCall.codeExact("(<result>0 = <iterator>0.next()).done").l
@@ -198,7 +198,7 @@ class ForeachTests extends AstSwiftSrc2CpgSuite {
     loop.controlStructureType shouldBe ControlStructureTypes.WHILE
 
     val List(loopTestCall) = loop.astChildren.isCall.codeExact("!(<result>0 = <iterator>0.next()).done").l
-    loopTestCall.name shouldBe Operators.not
+    loopTestCall.name shouldBe Operators.logicalNot
     loopTestCall.order shouldBe 1
 
     val List(doneMaCall) = loopTestCall.astChildren.isCall.codeExact("(<result>0 = <iterator>0.next()).done").l

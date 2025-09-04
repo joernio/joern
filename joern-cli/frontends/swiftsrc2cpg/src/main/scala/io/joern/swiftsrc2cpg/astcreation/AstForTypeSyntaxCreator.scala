@@ -12,11 +12,9 @@ trait AstForTypeSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
   private def typeDeclForTypeSyntax(node: TypeSyntax): NewTypeDecl = {
-    val name                     = scopeLocalUniqueName("type")
-    val (typeName, typeFullName) = calcNameAndFullName(name)
-    registerType(typeFullName)
-
+    val TypeInfo(typeName, typeFullName)   = typeNameInfoForTypeSyntax(node)
     val (astParentType, astParentFullName) = astParentInfo()
+
     val typeDeclNode_ =
       typeDeclNode(node, typeName, typeFullName, parserResult.filename, code(node), astParentType, astParentFullName)
 
@@ -51,8 +49,17 @@ trait AstForTypeSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def astForIdentifierTypeSyntax(node: IdentifierTypeSyntax): Ast = {
     val nodeCode = code(node)
-    registerType(nodeCode)
-    Ast(identifierNode(node, nodeCode, nodeCode, Defines.Any, Seq(nodeCode)))
+    val (typeFullName, possibleTypes) = fullnameProvider.typeFullname(node) match {
+      case Some(tpe) => (tpe, Seq.empty)
+      case None =>
+        val tpe = AstCreatorHelper.cleanType(nodeCode) match {
+          case value if Defines.SwiftTypes.contains(value) => value
+          case _                                           => Defines.Any
+        }
+        (tpe, Seq(nodeCode))
+    }
+    registerType(typeFullName)
+    Ast(identifierNode(node, nodeCode, nodeCode, typeFullName, possibleTypes))
   }
 
   private def astForImplicitlyUnwrappedOptionalTypeSyntax(node: ImplicitlyUnwrappedOptionalTypeSyntax): Ast = {

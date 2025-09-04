@@ -23,9 +23,11 @@ lazy val astGenVersion = settingKey[String]("astgen version")
 astGenVersion := appProperties.value.getString("swiftsrc2cpg.astgen_version")
 
 libraryDependencies ++= Seq(
-  "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
-  "com.lihaoyi"   %% "upickle"           % Versions.upickle,
-  "org.scalatest" %% "scalatest"         % Versions.scalatest % Test
+  "io.shiftleft" %% "codepropertygraph" % Versions.cpg,
+  "com.lihaoyi"  %% "upickle"           % Versions.upickle,
+  // we want to use also Google Gson for its streaming abilities for very large Json files:
+  "com.google.code.gson" % "gson"      % Versions.gson,
+  "org.scalatest"       %% "scalatest" % Versions.scalatest % Test
 )
 
 Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc-version", version.value)
