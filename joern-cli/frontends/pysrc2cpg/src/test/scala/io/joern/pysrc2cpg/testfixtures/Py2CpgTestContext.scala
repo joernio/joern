@@ -1,6 +1,6 @@
 package io.joern.pysrc2cpg.testfixtures
 
-import io.joern.pysrc2cpg.Py2Cpg
+import io.joern.pysrc2cpg.{Py2Cpg, Py2CpgOnFileSystemConfig}
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.defaultOverlayCreators
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -45,16 +45,14 @@ class Py2CpgTestContext {
   }
 
   def buildCpg: Cpg = {
+    val config = Py2CpgOnFileSystemConfig()
+      .withInputPath(absTestFilePath)
+      .withSchemaValidation(ValidationMode.Enabled)
+      .withDisableFileContent(!enableFileContent)
     if (buildResult.isEmpty) {
       val cpg = new Cpg()
       val py2Cpg =
-        new Py2Cpg(
-          codeAndFile.map(inputPair => () => inputPair),
-          cpg,
-          absTestFilePath,
-          schemaValidationMode = ValidationMode.Enabled,
-          enableFileContent = enableFileContent
-        )
+        new Py2Cpg(codeAndFile.map(inputPair => () => inputPair), cpg, config)
       py2Cpg.buildCpg()
 
       val context = new LayerCreatorContext(cpg)

@@ -35,7 +35,7 @@ class SwiftSrc2Cpg extends X2CpgFrontend {
 
         new ExtensionInheritancePass(cpg).createAndApply()
         new MetaDataPass(cpg, hash, config.inputPath).createAndApply()
-        new ConfigFileCreationPass(cpg).createAndApply()
+        new ConfigFileCreationPass(cpg, config).createAndApply()
         new DependenciesPass(cpg).createAndApply()
         new FullNameUniquenessPass(cpg).createAndApply()
 

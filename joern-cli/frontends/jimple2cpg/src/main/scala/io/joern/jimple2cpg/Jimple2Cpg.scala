@@ -129,7 +129,7 @@ class Jimple2Cpg extends X2CpgFrontend {
       .withRegisteredTypes(global.usedTypes.keys().asScala.toList, cpg)
       .createAndApply()
     DeclarationRefPass(cpg).createAndApply()
-    JavaConfigFileCreationPass(cpg, Option(tmpDir.toString)).createAndApply()
+    JavaConfigFileCreationPass(cpg, Option(tmpDir.toString), config).createAndApply()
   }
 
   private def decompileClassFiles(classFiles: List[ClassFile], decompileJava: Boolean): Unit = {

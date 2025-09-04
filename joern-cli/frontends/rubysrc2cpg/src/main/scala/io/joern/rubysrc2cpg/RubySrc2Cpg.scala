@@ -40,7 +40,7 @@ class RubySrc2Cpg extends X2CpgFrontend {
   override def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
       new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
-      new ConfigFileCreationPass(cpg).createAndApply()
+      new ConfigFileCreationPass(cpg, config).createAndApply()
       new DependencyPass(cpg).createAndApply()
       createCpgAction(cpg, config)
     }

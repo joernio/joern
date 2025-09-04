@@ -5,8 +5,8 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 
 import java.nio.file.Path
 
-class ConfigFileCreationPass(cpg: Cpg, requirementsTxt: String = "requirement.txt")
-    extends XConfigFileCreationPass(cpg) {
+class ConfigFileCreationPass(cpg: Cpg, requirementsTxt: String = "requirement.txt", config: Py2CpgOnFileSystemConfig)
+    extends XConfigFileCreationPass(cpg, config = config) {
 
   override val configFileFilters: List[Path => Boolean] = List(
     // TOML files
