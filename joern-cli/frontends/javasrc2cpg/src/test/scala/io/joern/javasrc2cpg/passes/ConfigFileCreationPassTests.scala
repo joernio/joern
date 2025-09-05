@@ -19,7 +19,7 @@ class ConfigFileCreationPassTests extends JavaSrcCode2CpgFixture {
 
   "it should find the correct config files" in {
     val cpg    = Cpg.from(_.addNode(NewMetaData().root(testConfigDir)))
-    val config = Config().withIgnoredFilesRegex(".*/excluded/.*").withDefaultIgnoredFilesRegex(Nil)
+    val config = Config().withIgnoredFilesRegex(".*excluded.*").withDefaultIgnoredFilesRegex(Nil)
 
     val foundFiles = new JavaConfigFileCreationPass(cpg, config = config).generateParts().map(_.absolutePathAsString)
     val absoluteConfigDir = Paths.get(testConfigDir).absolutePathAsString

@@ -33,7 +33,7 @@ abstract class XConfigFileCreationPass(cpg: Cpg, private val rootDir: Option[Str
               .walk()
               .filterNot(_ == file)
               .filter(isConfigFile)
-              .filterNot(isExcludedFile(root, _))
+              .filter(isAccepted(root, _))
               .toArray
 
           case Success(file) if isConfigFile(file) => Array(file)
@@ -73,16 +73,14 @@ abstract class XConfigFileCreationPass(cpg: Cpg, private val rootDir: Option[Str
     file.absolutePathAsString.endsWith(pathEnd)
   }
 
-  protected def isExcludedFile(rootPath: String, filePath: Path): Boolean = {
-    val isAcceptedFile = SourceFiles.filterFile(
+  protected def isAccepted(rootPath: String, filePath: Path): Boolean = {
+    SourceFiles.filterFile(
       filePath.toAbsolutePath.toString,
       rootPath,
       Option(config.defaultIgnoredFilesRegex),
       Option(config.ignoredFilesRegex),
       Option(config.ignoredFiles)
     )
-
-    !isAcceptedFile
   }
 
   private def isConfigFile(file: Path): Boolean = {
