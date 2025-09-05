@@ -1,10 +1,11 @@
 package io.joern.pysrc2cpg.testfixtures
 
-import io.joern.pysrc2cpg.Py2Cpg
+import io.joern.pysrc2cpg.{Py2Cpg, Py2CpgOnFileSystemConfig}
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.defaultOverlayCreators
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 import scala.collection.mutable
 
@@ -25,7 +26,7 @@ class Py2CpgTestContext {
 
   private val codeAndFile       = mutable.ArrayBuffer.empty[Py2Cpg.InputPair]
   private var buildResult       = Option.empty[Cpg]
-  private val absTestFilePath   = "<absoluteTestPath>/"
+  private val absTestFilePath   = "absoluteTestPath/"
   private var enableFileContent = true
 
   def withEnabledFileContent(value: Boolean): Py2CpgTestContext = {
@@ -45,16 +46,17 @@ class Py2CpgTestContext {
   }
 
   def buildCpg: Cpg = {
+    val cpgOutFile = FileUtil.newTemporaryFile(suffix = "cpg.bin")
+    FileUtil.deleteOnExit(cpgOutFile)
+    val config = Py2CpgOnFileSystemConfig()
+      .withInputPath(absTestFilePath)
+      .withOutputPath(cpgOutFile.toString)
+      .withSchemaValidation(ValidationMode.Enabled)
+      .withDisableFileContent(!enableFileContent)
     if (buildResult.isEmpty) {
       val cpg = new Cpg()
       val py2Cpg =
-        new Py2Cpg(
-          codeAndFile.map(inputPair => () => inputPair),
-          cpg,
-          absTestFilePath,
-          schemaValidationMode = ValidationMode.Enabled,
-          enableFileContent = enableFileContent
-        )
+        new Py2Cpg(codeAndFile.map(inputPair => () => inputPair), cpg, config)
       py2Cpg.buildCpg()
 
       val context = new LayerCreatorContext(cpg)

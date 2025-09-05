@@ -1,5 +1,6 @@
 package io.joern.rubysrc2cpg.passes
 
+import io.joern.rubysrc2cpg.Config
 import io.joern.x2cpg.passes.frontend.XConfigFileCreationPass
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -7,12 +8,11 @@ import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.utils.FileUtil
 
 import java.nio.file.{Path, Paths}
-
 import scala.util.Try
 
 /** Creates the CONFIGURATION layer from any existing `Gemfile` or `Gemfile.lock` files found at root level.
   */
-class ConfigFileCreationPass(cpg: Cpg) extends XConfigFileCreationPass(cpg) {
+class ConfigFileCreationPass(cpg: Cpg, config: Config) extends XConfigFileCreationPass(cpg, config = config) {
 
   private val validGemfilePaths = Try(Paths.get(cpg.metaData.root.headOption.getOrElse(""))).toOption match {
     case Some(rootPath) => Seq("Gemfile", "Gemfile.lock").map(rootPath / _)

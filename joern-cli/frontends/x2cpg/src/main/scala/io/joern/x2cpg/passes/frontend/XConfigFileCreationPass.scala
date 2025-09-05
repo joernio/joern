@@ -1,5 +1,6 @@
 package io.joern.x2cpg.passes.frontend
 
+import io.joern.x2cpg.{SourceFiles, X2CpgConfig}
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewConfigFile
@@ -15,7 +16,7 @@ import scala.util.{Failure, Success, Try}
 /** Scans for and inserts configuration files into the CPG. Relies on the MetaData's `ROOT` property to provide the path
   * to scan, but alternatively one can specify a directory on the `rootDir` parameter.
   */
-abstract class XConfigFileCreationPass(cpg: Cpg, private val rootDir: Option[String] = None)
+abstract class XConfigFileCreationPass(cpg: Cpg, private val rootDir: Option[String] = None, config: X2CpgConfig[_])
     extends ForkJoinParallelCpgPass[Path](cpg) {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -32,6 +33,7 @@ abstract class XConfigFileCreationPass(cpg: Cpg, private val rootDir: Option[Str
               .walk()
               .filterNot(_ == file)
               .filter(isConfigFile)
+              .filter(isAccepted(root, _))
               .toArray
 
           case Success(file) if isConfigFile(file) => Array(file)
@@ -71,6 +73,16 @@ abstract class XConfigFileCreationPass(cpg: Cpg, private val rootDir: Option[Str
     file.absolutePathAsString.endsWith(pathEnd)
   }
 
+  protected def isAccepted(rootPath: String, filePath: Path): Boolean = {
+    SourceFiles.filterFile(
+      filePath.toAbsolutePath.toString,
+      rootPath,
+      Option(config.defaultIgnoredFilesRegex),
+      Option(config.ignoredFilesRegex),
+      Option(config.ignoredFiles)
+    )
+  }
+
   private def isConfigFile(file: Path): Boolean = {
     configFileFilters.exists(predicate => predicate(file))
   }
@@ -79,8 +91,8 @@ abstract class XConfigFileCreationPass(cpg: Cpg, private val rootDir: Option[Str
 /** Parses common Java related configuration files. Multiple frontends cover JVM languages so this is in a single shared
   * spot.
   */
-class JavaConfigFileCreationPass(cpg: Cpg, rootDir: Option[String] = None)
-    extends XConfigFileCreationPass(cpg, rootDir) {
+class JavaConfigFileCreationPass(cpg: Cpg, rootDir: Option[String] = None, config: X2CpgConfig[_])
+    extends XConfigFileCreationPass(cpg, rootDir, config) {
 
   override val configFileFilters: List[Path => Boolean] = List(
     // JAVA_INTERNAL
