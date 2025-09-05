@@ -104,7 +104,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       createClosureBindingInformation(scope.lookupSelfInOuterScope.toSet)
         .collect { case (_, name, _, Some(closureBindingId)) =>
           val capturingLocal =
-            localNode(node.body, name, name, Defines.Any, closureBindingId = Option(closureBindingId))
+            localNode(node.body, name, name, Defines.Any, closureBindingId = Option(s"$fullName.$name"))
           scope.addToScope(capturingLocal.name, capturingLocal)
         }
       val baseStmtBlockAst = astForMethodBody(node.body, optionalStatementList)
