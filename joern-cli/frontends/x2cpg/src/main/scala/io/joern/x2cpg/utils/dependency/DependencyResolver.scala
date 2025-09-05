@@ -86,8 +86,9 @@ object DependencyResolver {
     val maybeProjectNameOverride   = params.forGradle.get(GradleConfigKeys.ProjectName)
     val maybeConfigurationOverride = params.forGradle.get(GradleConfigKeys.ConfigurationName)
     GradleDependencies.get(projectDir, maybeProjectNameOverride, maybeConfigurationOverride) match {
-      case dependenciesMap if dependenciesMap.values.exists(_.nonEmpty) =>
-        Option(dependenciesMap.values.flatten.toList.distinctBy(path => path.split(java.io.File.separatorChar).last))
+      case dependencies if dependencies.exists(_._2.nonEmpty) =>
+        val allDependencies = dependencies.flatMap(_._2)
+        Option(allDependencies.distinctBy(path => new java.io.File(path).getName))
       case _ =>
         logger.warn(s"Could not download Gradle dependencies for project at path `$projectDir`")
         None

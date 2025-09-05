@@ -59,7 +59,8 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
 
   private def astForAvailabilityConditionSyntax(node: AvailabilityConditionSyntax): Ast = {
     val callName = code(node.availabilityKeyword)
-    val callNode = createStaticCallNode(code(node), callName, callName, line(node), column(node))
+
+    val callNode = createStaticCallNode(node, code(node), callName, callName, Defines.Bool)
     val argAsts = node.availabilityArguments.children.map { c =>
       Ast(literalNode(c, code(c).stripSuffix(","), Option(Defines.String)))
     }
@@ -87,8 +88,9 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForClosureParameterClauseSyntax(node: ClosureParameterClauseSyntax): Ast   = notHandledYet(node)
 
   private def astForClosureParameterSyntax(node: ClosureParameterSyntax): Ast = {
-    val name       = node.secondName.fold(code(node.firstName))(code)
-    val tpe        = node.`type`.fold(Defines.Any)(t => cleanType(code(t)))
+    val name           = node.secondName.fold(code(node.firstName))(code)
+    val tpeFromTypeMap = fullnameProvider.typeFullname(node)
+    val tpe        = tpeFromTypeMap.getOrElse(node.`type`.fold(Defines.Any)(t => AstCreatorHelper.cleanType(code(t))))
     val isVariadic = node.ellipsis.isDefined
     registerType(tpe)
     val parameterNode =
@@ -107,7 +109,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
 
   private def astForClosureShorthandParameterSyntax(node: ClosureShorthandParameterSyntax): Ast = {
     val name = code(node.name)
-    val tpe  = Defines.Any
+    val tpe  = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
     registerType(tpe)
     val parameterNode =
       parameterInNode(
@@ -206,7 +208,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     // TODO: handle defaultValue
     val label      = code(node.firstName)
     val name       = node.secondName.fold(label)(code)
-    val tpe        = handleTypeAliasInitializer(node.`type`)
+    val tpe        = fullnameProvider.typeFullname(node).getOrElse(AstCreatorHelper.cleanType(code(node.`type`)))
     val isVariadic = node.ellipsis.isDefined
 
     val parameterName = node.firstName match {
@@ -269,9 +271,12 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForLayoutRequirementSyntax(node: LayoutRequirementSyntax): Ast                 = notHandledYet(node)
 
   private def astForMatchingPatternConditionSyntax(node: MatchingPatternConditionSyntax): Ast = {
-    val lhsAst    = astForNode(node.pattern)
-    val rhsAst    = astForNode(node.initializer.value)
-    val callNode_ = callNode(node, code(node), Operators.equals, DispatchTypes.STATIC_DISPATCH)
+    val lhsAst = astForNode(node.pattern)
+    val rhsAst = astForNode(node.initializer.value)
+
+    val tpe       = Defines.Bool
+    val op        = Operators.equals
+    val callNode_ = createStaticCallNode(node, code(node), op, op, tpe)
     val argAsts   = List(lhsAst, rhsAst)
     callAst(callNode_, argAsts)
   }
@@ -306,11 +311,12 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   }
 
   private def astForOptionalBindingConditionSyntax(node: OptionalBindingConditionSyntax): Ast = {
-    val typeFullName = node.typeAnnotation.fold(Defines.Any)(t => cleanType(code(t.`type`)))
+    val typeFullName = node.typeAnnotation.fold(Defines.Any)(t => AstCreatorHelper.cleanType(code(t.`type`)))
 
     node.pattern match {
       case ident: IdentifierPatternSyntax =>
-        localForOptionalBindingConditionSyntax(node, code(ident.identifier), typeFullName)
+        val tpeFromTypeMap = fullnameProvider.typeFullname(ident)
+        localForOptionalBindingConditionSyntax(node, code(ident.identifier), tpeFromTypeMap.getOrElse(typeFullName))
       case _ => // do nothing
     }
 
@@ -318,9 +324,12 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     if (initAst.isEmpty) {
       Ast()
     } else {
-      val patternAst = astForNode(node.pattern)
-      patternAst.root.collect { case i: NewIdentifier => i }.foreach(_.typeFullName(typeFullName))
-      createAssignmentCallAst(patternAst, initAst.head, code(node), line = line(node), column = column(node))
+      val patternAst     = astForNode(node.pattern)
+      val tpeFromTypeMap = fullnameProvider.typeFullname(node.pattern)
+      patternAst.root
+        .collect { case i: NewIdentifier => i }
+        .foreach(_.typeFullName(tpeFromTypeMap.getOrElse(typeFullName)))
+      createAssignmentCallAst(node, patternAst, initAst.head, code(node))
     }
   }
 
@@ -378,11 +387,14 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
 
   private def astForSwitchDefaultLabelSyntax(@unused node: SwitchDefaultLabelSyntax): Ast = Ast()
 
-  private def astForTuplePatternElementSyntax(node: TuplePatternElementSyntax): Ast     = notHandledYet(node)
-  private def astForTupleTypeElementSyntax(node: TupleTypeElementSyntax): Ast           = notHandledYet(node)
-  private def astForTypeAnnotationSyntax(node: TypeAnnotationSyntax): Ast               = notHandledYet(node)
-  private def astForTypeEffectSpecifiersSyntax(node: TypeEffectSpecifiersSyntax): Ast   = notHandledYet(node)
-  private def astForTypeInitializerClauseSyntax(node: TypeInitializerClauseSyntax): Ast = notHandledYet(node)
+  private def astForTuplePatternElementSyntax(node: TuplePatternElementSyntax): Ast   = notHandledYet(node)
+  private def astForTupleTypeElementSyntax(node: TupleTypeElementSyntax): Ast         = notHandledYet(node)
+  private def astForTypeAnnotationSyntax(node: TypeAnnotationSyntax): Ast             = notHandledYet(node)
+  private def astForTypeEffectSpecifiersSyntax(node: TypeEffectSpecifiersSyntax): Ast = notHandledYet(node)
+
+  private def astForTypeInitializerClauseSyntax(node: TypeInitializerClauseSyntax): Ast = {
+    astForTypeSyntax(node.value)
+  }
 
   private def astForUnavailableFromAsyncAttributeArgumentsSyntax(
     node: UnavailableFromAsyncAttributeArgumentsSyntax

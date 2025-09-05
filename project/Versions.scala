@@ -3,11 +3,11 @@ object Versions {
   val cpg = parseVersion("cpgVersion")
   // Dont upgrade antlr to 4.10 or above since those versions require java 11 or higher which
   // causes problems upstreams.
-  val antlr                  = "4.7.2"
-  val cask                   = "0.9.5" // 0.9.5 is actually the latest release, not 0.10.2 ¯\_(ツ)_/¯ - check the cask git commits...
-  val catsCore               = "2.12.0"
-  val catsEffect             = "3.5.4"
-  val cfr                    = "0.152"
+  val antlr      = "4.7.2"
+  val cask       = "0.9.5" // 0.9.5 is actually the latest release, not 0.10.2 ¯\_(ツ)_/¯ - check the cask git commits...
+  val catsCore   = "2.12.0"
+  val catsEffect = "3.5.4"
+  val cfr        = "0.152"
   val commonsCompress        = "1.26.2"
   val commonsExec            = "1.4.0"
   val commonsIo              = "2.16.0"
@@ -39,6 +39,7 @@ object Versions {
   val slf4j                  = "2.0.7"
   val log4j                  = "2.20.0"
   val upickle                = "4.0.2"
+  val gson                   = "2.13.1"
   val zeroTurnaround         = "1.17"
 
   // Shared with `projects/meta-build.sbt`, which needs to be updated there directly

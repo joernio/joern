@@ -1,4 +1,4 @@
-package io.joern.swiftsrc2cpg
+package io.joern.swiftsrc2cpg.passes
 
 import io.joern.x2cpg.passes.frontend.XConfigFileCreationPass
 import io.shiftleft.codepropertygraph.generated.Cpg

@@ -22,7 +22,7 @@ trait AstSwiftSrc2CpgFrontend extends LanguageFrontend {
     val pathAsString = sourceCodePath.getAbsolutePath
     var config = Config()
       .withInputPath(pathAsString)
-      .withOutputPath(pathAsString)
+      .withOutputPath(cpgOutFile.toString)
     getConfig().foreach(c => config = config.withDefines(c.defines))
     val astGenResult    = new AstGenRunner(config).execute(Paths.get(pathAsString))
     val astCreationPass = new AstCreationPass(cpg, astGenResult, config)(ValidationMode.Enabled)
