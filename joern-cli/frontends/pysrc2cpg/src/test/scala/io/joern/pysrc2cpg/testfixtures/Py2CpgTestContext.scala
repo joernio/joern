@@ -5,6 +5,7 @@ import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.defaultOverlayCreators
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
+import io.shiftleft.semanticcpg.utils.FileUtil
 
 import scala.collection.mutable
 
@@ -45,8 +46,11 @@ class Py2CpgTestContext {
   }
 
   def buildCpg: Cpg = {
+    val cpgOutFile = FileUtil.newTemporaryFile(suffix = "cpg.bin")
+    FileUtil.deleteOnExit(cpgOutFile)
     val config = Py2CpgOnFileSystemConfig()
       .withInputPath(absTestFilePath)
+      .withOutputPath(cpgOutFile.toString)
       .withSchemaValidation(ValidationMode.Enabled)
       .withDisableFileContent(!enableFileContent)
     if (buildResult.isEmpty) {
