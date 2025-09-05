@@ -18,7 +18,7 @@ of the build process. To build jssrc2cpg issue the command `sbt stage`.
 
 ## JS/TS AST Generation
 
-jssrc2cpg uses [@joern/astgen](https://github.com/joernio/astgen) under the hood.
+jssrc2cpg uses [joernio/astgen](https://github.com/joernio/astgen) under the hood.
 Native binaries for Linux, macOS, and Windows are generated as described [here](https://github.com/joernio/astgen#building).
 To build your own native binaries run the following commands:
 
@@ -40,10 +40,32 @@ To produce a code property graph  issue the command:
 
 Run the following to see a complete list of available options:
 ```shell script
-./jssrc2cpg.sh --help
+> ./jssrc2cpg.sh --help
+
+Usage: jssrc2cpg [options] input-dir
+
+  input-dir                source directory
+  -o, --output <value>     output filename
+  --exclude <file1>        files or folders to exclude during CPG generation (paths relative to <input-dir> or absolute paths)
+  --exclude-regex <value>  a regex specifying files to exclude during CPG generation (paths relative to <input-dir> are matched)
+  --enable-early-schema-checking
+                           enables early schema validation during AST creation (disabled by default)
+  --enable-file-content    add the raw source code to the content field of FILE nodes to allow for method source retrieval via offset fields (disabled by default)
+  --help                   display this help message
 ```
 
-## Warning
+## Alternative with Transpiling
 
-This is work in progress. Use https://github.com/ShiftLeftSecurity/js2cpg as a mature alternative.
+You may want to use https://github.com/ShiftLeftSecurity/js2cpg powered by the [GraalJS parser](https://github.com/oracle/graaljs/tree/master/graal-js/src/com.oracle.js.parser) which is part of the [GraalVM JS project](https://www.graalvm.org/latest/reference-manual/js/).
 
+js2cpg attempts to run several transpilers / preprocessors if the input project contains at least one element of the targeted language extension or template language (e.g., at least one Typescript file).
+
+This includes:
+  - Babel
+  - EJS
+  - Nuxt.js
+  - PUG templates
+  - Vue.js templates
+  - Typescript
+
+Transpiling ensures we have ES6 compliant JS code before we continue with the actual parsing and CPG-generation.

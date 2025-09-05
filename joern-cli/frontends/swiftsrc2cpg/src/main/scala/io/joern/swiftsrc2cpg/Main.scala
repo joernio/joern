@@ -52,10 +52,10 @@ object Frontend {
         .text("define a name")
         .action((d, c) => c.withDefines(c.defines + d)),
       opt[Unit]("swift-build")
-        .text("build the project to retrieve full Swift compiler type information")
+        .text("build the project to retrieve full Swift compiler type information (requires Swift > 6.1)")
         .action((path, c) => c.withSwiftBuild(true)),
       opt[Path]("build-log-path")
-        .text("the path to the compiler debug output log file")
+        .text("the path to the compiler debug output log file (this enables --swift-build; requires Swift > 6.1)")
         .validate { path =>
           val file = path.toRealPath().toFile
           if (!file.isFile || !file.canRead) {
