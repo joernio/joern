@@ -25,7 +25,7 @@ class Py2CpgTestContext {
 
   private val codeAndFile       = mutable.ArrayBuffer.empty[Py2Cpg.InputPair]
   private var buildResult       = Option.empty[Cpg]
-  private val absTestFilePath   = "<absoluteTestPath>/"
+  private val absTestFilePath   = "absoluteTestPath/"
   private var enableFileContent = true
 
   def withEnabledFileContent(value: Boolean): Py2CpgTestContext = {
