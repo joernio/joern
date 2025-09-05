@@ -465,7 +465,7 @@ class ClosureTests extends PhpCode2CpgFixture {
     }
 
     "represent the lambda assignment correctly" in {
-      inside(cpg.method.name("foo").body.astChildren.headOption) { case Some(lambdaAssign: Call) =>
+      inside(cpg.method.name("foo").body.astChildren.l) { case List(_: Local, _: Local, lambdaAssign: Call, _: Return) =>
         lambdaAssign.name shouldBe Operators.assignment
         lambdaAssign.code shouldBe "$b_lambda = fn($x) => $x"
 
@@ -501,7 +501,7 @@ class ClosureTests extends PhpCode2CpgFixture {
           }
         }
 
-        inside(lambdaDecl.method.l) { case List(invokeMethod) =>
+        inside(lambdaDecl.method.sortBy(_.name).l) { case List(constructMethod, invokeMethod) =>
           invokeMethod.name shouldBe "__invoke"
           invokeMethod.fullName shouldBe "foo.<lambda>0.__invoke"
 

@@ -41,8 +41,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       |}""".stripMargin).withConfig(Config().withDisableFileContent(false))
 
     "have the correct bindings" in {
-      inside(cpg.typeDecl.name(".*anon-class-0$").bindsOut.sortBy(_.refOut.head.name).l) {
-        case List(fooBinding, constructorBinding) =>
+      inside(cpg.typeDecl.name("foo").bindsOut.sortBy(_.refOut.head.name).l) {
+        case List(fooBinding) =>
           fooBinding.name shouldBe ""
           fooBinding.methodFullName shouldBe "<empty>"
           fooBinding.signature shouldBe ""
@@ -64,9 +64,9 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       |}""".stripMargin).withConfig(Config().withDisableFileContent(false))
 
     "have the correct bindings" in {
-      inside(cpg.typeDecl("Foo").bindsOut.sortBy(_.name).l) { case List(constructBinding, fooBinding) =>
+      inside(cpg.typeDecl("foo").bindsOut.sortBy(_.name).l) { case List(fooBinding) =>
         fooBinding.name shouldBe ""
-        fooBinding.methodFullName shouldBe ""
+        fooBinding.methodFullName shouldBe "<empty>"
         fooBinding.signature shouldBe ""
 
         inside(fooBinding.refOut.l) { case List(fooMethod) =>
@@ -80,7 +80,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       inside(cpg.method.name("foo").l) { case List(fooMethod) =>
         fooMethod.fullName shouldBe s"Foo.foo"
         fooMethod.signature shouldBe ""
-        fooMethod.modifier.map(_.modifierType).toSet shouldBe Set(ModifierTypes.FINAL, ModifierTypes.PUBLIC)
+        fooMethod.modifier.map(_.modifierType).toSet shouldBe Set(ModifierTypes.FINAL, ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL)
         fooMethod.methodReturn.typeFullName shouldBe "int"
         inside(fooMethod.parameter.l) { case List(thisParam, xParam) =>
           thisParam.name shouldBe "this"
@@ -179,7 +179,13 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       fooDecl.code shouldBe "interface Foo"
       fooDecl.inheritsFromTypeFullName.isEmpty shouldBe true
 
-      inside(fooDecl.astChildren.l) { case List(fooMethod: Method) =>
+      inside(fooDecl.astChildren.l) { case List(fooMethodMember: Member, fooMethodDecl: TypeDecl, fooMethod: Method) =>
+        fooMethodMember.name shouldBe "foo"
+        fooMethodMember.typeFullName shouldBe "Foo.foo"
+        fooMethodMember.dynamicTypeHintFullName.l shouldBe List("Foo.foo")
+
+        fooMethodDecl.fullName shouldBe "Foo.foo"
+
         fooMethod.name shouldBe "foo"
         fooMethod.fullName shouldBe s"Foo.foo"
         fooMethod.signature shouldBe ""
@@ -215,7 +221,13 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       fooDecl.code shouldBe "trait Foo"
       fooDecl.inheritsFromTypeFullName.isEmpty shouldBe true
 
-      inside(fooDecl.astChildren.l) { case List(fooMethod: Method) =>
+      inside(fooDecl.astChildren.l) { case List(fooMethodMember: Member, fooMethodDecl: TypeDecl, fooMethod: Method) =>
+        fooMethodMember.name shouldBe "foo"
+        fooMethodMember.typeFullName shouldBe "Foo.foo"
+        fooMethodMember.dynamicTypeHintFullName.l shouldBe List("Foo.foo")
+
+        fooMethodDecl.fullName shouldBe "Foo.foo"
+
         fooMethod.name shouldBe "foo"
         fooMethod.fullName shouldBe s"Foo.foo"
         fooMethod.signature shouldBe ""
@@ -727,7 +739,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
     "contain deduplicated fullNames" in {
       inside(cpg.typeDecl.fullName("Foo.*").sortBy(_.fullName).l) {
-        case foo :: fooDup :: fooMetaClassDup :: fooMetaClass :: Nil =>
+        case foo :: fooMethod :: fooDup :: fooDupMethod :: fooMetaClassDup :: fooMetaClass :: Nil =>
           foo.name shouldBe "Foo"
           foo.fullName shouldBe "Foo"
 
