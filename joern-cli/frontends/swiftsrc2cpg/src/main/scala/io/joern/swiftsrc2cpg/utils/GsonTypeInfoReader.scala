@@ -262,7 +262,7 @@ object GsonTypeInfoReader {
 
       val declFullname = safePropertyValue(obj, "usr").orElse(safePropertyValue(declObj, "decl_usr"))
 
-      found.addOne(TypeInfo(filename, range_, typeFullname, declFullname, nodeKind))
+      found.add(TypeInfo(filename, range_, typeFullname, declFullname, nodeKind))
     }
 
     /** Parses a JSON array.

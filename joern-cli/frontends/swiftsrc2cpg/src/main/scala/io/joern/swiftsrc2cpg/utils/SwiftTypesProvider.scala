@@ -2,8 +2,8 @@ package io.joern.swiftsrc2cpg.utils
 
 import io.joern.swiftsrc2cpg.Config
 import io.joern.swiftsrc2cpg.astcreation.AstCreatorHelper
+import io.joern.swiftsrc2cpg.utils.ExternalCommand.*
 import io.joern.x2cpg.utils.Environment
-import ExternalCommand.*
 import io.shiftleft.semanticcpg.utils.FileUtil.PathExt
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
@@ -12,11 +12,11 @@ import versionsort.VersionHelper
 import java.io.{BufferedReader, InputStreamReader, StringReader}
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
-import scala.jdk.CollectionConverters.*
 import scala.collection.parallel.CollectionConverters.ImmutableSeqIsParallelizable
 import scala.collection.parallel.ExecutionContextTaskSupport
 import scala.collection.{immutable, mutable}
 import scala.concurrent.ExecutionContext
+import scala.jdk.CollectionConverters.*
 import scala.util.matching.Regex
 import scala.util.{Failure, Try, Using}
 
@@ -88,6 +88,16 @@ object SwiftTypesProvider {
     */
   case class ResolvedTypeInfo(typeFullname: Option[String], declFullname: Option[String], nodeKind: String)
 
+  /**   - [[java.util.concurrent.ConcurrentHashMap]] provides atomic compute and computeIfAbsent operations used here to
+    *     create-or-update entries and mutate the inner HashSet safely per key, without extra locks or retry loops.
+    *   - TrieMap lacks equivalent APIs with the same per-key atomicity semantics; achieving the same would require
+    *     CAS/retries or external synchronization, hurting clarity and throughput.
+    *   - ConcurrentHashMap is highly optimized and scales better under contention; in practice it outperforms
+    *     [[scala.collection.concurrent.TrieMap]] for hot, fine-grained updates like we do in
+    *     [[SwiftTypesProvider.mappingFromJson]].
+    *   - Keeps interop consistent with the rest of the JDK concurrency used here (executors, I/O), and plays well with
+    *     `.asScala` when materializing immutable views.
+    */
   type MutableSwiftFileLocalTypeMapping =
     java.util.concurrent.ConcurrentHashMap[(Int, Int), mutable.HashSet[ResolvedTypeInfo]]
   type MutableSwiftTypeMapping =
@@ -628,25 +638,18 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
           {
             case (_, null) =>
               logger.debug(s"Generating type map for: $filename")
-              val set = new mutable.HashSet[ResolvedTypeInfo]()
-              set.addOne(resolve(typeInfo))
-              val map      = new MutableSwiftFileLocalTypeMapping()
-              val rangeMap = new java.util.concurrent.ConcurrentHashMap[(Int, Int), mutable.HashSet[ResolvedTypeInfo]]()
-              map.put(range, set)
-              map
-            case (_, map) =>
-              map.compute(
+              val rangeMapping = new MutableSwiftFileLocalTypeMapping()
+              rangeMapping.put(range, new mutable.HashSet[ResolvedTypeInfo]().addOne(resolve(typeInfo)))
+              rangeMapping
+            case (_, rangeMapping) =>
+              rangeMapping.compute(
                 range,
                 {
-                  case (_, null) =>
-                    val set = new mutable.HashSet[ResolvedTypeInfo]()
-                    set.addOne(resolve(typeInfo))
-                    set
-                  case (_, set) =>
-                    set.addOne(resolve(typeInfo))
+                  case (_, null) => new mutable.HashSet[ResolvedTypeInfo]().addOne(resolve(typeInfo))
+                  case (_, set)  => set.addOne(resolve(typeInfo))
                 }
               )
-              map
+              rangeMapping
           }
         )
       }
