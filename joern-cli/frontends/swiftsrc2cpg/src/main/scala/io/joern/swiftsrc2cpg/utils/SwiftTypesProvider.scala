@@ -2,8 +2,8 @@ package io.joern.swiftsrc2cpg.utils
 
 import io.joern.swiftsrc2cpg.Config
 import io.joern.swiftsrc2cpg.astcreation.AstCreatorHelper
+import io.joern.swiftsrc2cpg.utils.ExternalCommand.*
 import io.joern.x2cpg.utils.Environment
-import ExternalCommand.*
 import io.shiftleft.semanticcpg.utils.FileUtil.PathExt
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
@@ -12,11 +12,11 @@ import versionsort.VersionHelper
 import java.io.{BufferedReader, InputStreamReader, StringReader}
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
-import scala.collection.concurrent.TrieMap
 import scala.collection.parallel.CollectionConverters.ImmutableSeqIsParallelizable
 import scala.collection.parallel.ExecutionContextTaskSupport
 import scala.collection.{immutable, mutable}
 import scala.concurrent.ExecutionContext
+import scala.jdk.CollectionConverters.*
 import scala.util.matching.Regex
 import scala.util.{Failure, Try, Using}
 
@@ -88,8 +88,23 @@ object SwiftTypesProvider {
     */
   case class ResolvedTypeInfo(typeFullname: Option[String], declFullname: Option[String], nodeKind: String)
 
-  type SwiftFileLocalTypeMapping = mutable.HashMap[(Int, Int), mutable.HashSet[ResolvedTypeInfo]]
-  type SwiftTypeMapping          = TrieMap[String, SwiftFileLocalTypeMapping]
+  /**   - [[java.util.concurrent.ConcurrentHashMap]] provides atomic compute and computeIfAbsent operations used here to
+    *     create-or-update entries and mutate the inner HashSet safely per key, without extra locks or retry loops.
+    *   - TrieMap lacks equivalent APIs with the same per-key atomicity semantics; achieving the same would require
+    *     CAS/retries or external synchronization, hurting clarity and throughput.
+    *   - ConcurrentHashMap is highly optimized and scales better under contention; in practice it outperforms
+    *     [[scala.collection.concurrent.TrieMap]] for hot, fine-grained updates like we do in
+    *     [[SwiftTypesProvider.mappingFromJson]].
+    *   - Keeps interop consistent with the rest of the JDK concurrency used here (executors, I/O), and plays well with
+    *     `.asScala` when materializing immutable views.
+    */
+  type MutableSwiftFileLocalTypeMapping =
+    java.util.concurrent.ConcurrentHashMap[(Int, Int), mutable.HashSet[ResolvedTypeInfo]]
+  type MutableSwiftTypeMapping =
+    java.util.concurrent.ConcurrentHashMap[String, MutableSwiftFileLocalTypeMapping]
+
+  type SwiftFileLocalTypeMapping = Map[(Int, Int), Set[ResolvedTypeInfo]]
+  type SwiftTypeMapping          = Map[String, SwiftFileLocalTypeMapping]
 
   /** @see
     *   [[io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.DeclModifierSyntax]]
@@ -485,7 +500,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
 
   private lazy val swiftDemangleCommand = SwiftTypesProvider.swiftDemangleCommand()
 
-  private val mangledNameCache = TrieMap.empty[String, Option[String]]
+  private val mangledNameCache = java.util.concurrent.ConcurrentHashMap[String, Option[String]]()
 
   /** Demangles a Swift symbol name to a human-readable form.
     *
@@ -532,12 +547,13 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     *   Some(demangled type fullname) if successful, None otherwise
     */
   private def calculateTypeFullname(mangledName: String): Option[String] = {
-    mangledNameCache.getOrElseUpdate(
+    mangledNameCache.computeIfAbsent(
       mangledName,
-      demangle(mangledName)
-        .map(removeModifier)
-        .map(AstCreatorHelper.stripGenerics)
-        .map(_.replace(" ", "").stripSuffix(".Type"))
+      _ =>
+        demangle(mangledName)
+          .map(removeModifier)
+          .map(AstCreatorHelper.stripGenerics)
+          .map(_.replace(" ", "").stripSuffix(".Type"))
     )
   }
 
@@ -575,16 +591,17 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     *   Some(demangled declaration fullname) if successful, None otherwise
     */
   private def calculateDeclFullname(mangledName: String): Option[String] = {
-    mangledNameCache.getOrElseUpdate(
+    mangledNameCache.computeIfAbsent(
       mangledName,
-      demangle(mangledName)
-        .map {
-          case MemberNameRegex(parent, name, rest) => removeModifier(s"$parent$name$rest")
-          case ExtensionNameRegex(name, rest)      => removeModifier(s"$name$rest")
-          case other                               => removeModifier(other)
-        }
-        .map(AstCreatorHelper.stripGenerics)
-        .map(_.replace(" ", ""))
+      _ =>
+        demangle(mangledName)
+          .map {
+            case MemberNameRegex(parent, name, rest) => removeModifier(s"$parent$name$rest")
+            case ExtensionNameRegex(name, rest)      => removeModifier(s"$name$rest")
+            case other                               => removeModifier(other)
+          }
+          .map(AstCreatorHelper.stripGenerics)
+          .map(_.replace(" ", ""))
     )
   }
 
@@ -611,20 +628,30 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     * @param result
     *   The type mapping to update with extracted information
     */
-  def mappingFromJson(jsonString: String, result: SwiftTypeMapping): Unit = {
+  def mappingFromJson(jsonString: String, result: MutableSwiftTypeMapping): Unit = {
     Using.resource(new StringReader(jsonString)) { reader =>
       GsonTypeInfoReader.collectTypeInfo(reader).foreach { typeInfo =>
         val range    = typeInfo.range
         val filename = typeInfo.filename
-        result
-          .getOrElseUpdate(
-            filename, {
+        result.compute(
+          filename,
+          {
+            case (_, null) =>
               logger.debug(s"Generating type map for: $filename")
-              mutable.HashMap.empty
-            }
-          )
-          .getOrElseUpdate(range, mutable.HashSet.empty)
-          .addOne(resolve(typeInfo))
+              val rangeMapping = new MutableSwiftFileLocalTypeMapping()
+              rangeMapping.put(range, new mutable.HashSet[ResolvedTypeInfo]().addOne(resolve(typeInfo)))
+              rangeMapping
+            case (_, rangeMapping) =>
+              rangeMapping.compute(
+                range,
+                {
+                  case (_, null) => new mutable.HashSet[ResolvedTypeInfo]().addOne(resolve(typeInfo))
+                  case (_, set)  => set.addOne(resolve(typeInfo))
+                }
+              )
+              rangeMapping
+          }
+        )
       }
     }
   }
@@ -635,10 +662,10 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     * information, and builds a comprehensive type mapping. Progress and errors are logged appropriately.
     *
     * @return
-    *   A TrieMap containing filename-to-type mappings for Swift source files
+    *   A Map containing filename-to-type mappings for Swift source files
     */
   def retrieveMappings(): SwiftTypeMapping = {
-    val mapping = new SwiftTypeMapping
+    val mapping = new MutableSwiftTypeMapping
     // We want to use the same pool for parallel Swift compiler invocations and their type mapping work
     val pool = java.util.concurrent.Executors.newCachedThreadPool()
     try {
@@ -660,7 +687,11 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
         }
       }
       logger.info(s"Got ${mapping.size} type map entries.")
-      mapping
+      mapping.asScala.toMap.map { case (filename, mapping) =>
+        filename -> mapping.asScala.toMap.map { case (range, set) =>
+          range -> set.toSet
+        }
+      }
     } finally {
       pool.shutdown()
     }

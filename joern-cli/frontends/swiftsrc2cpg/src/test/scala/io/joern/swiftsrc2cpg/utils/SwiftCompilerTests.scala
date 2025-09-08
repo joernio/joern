@@ -1,12 +1,13 @@
 package io.joern.swiftsrc2cpg.utils
 
 import io.joern.swiftsrc2cpg.Config
-import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.SwiftTypeMapping
+import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.*
 import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import scala.jdk.CollectionConverters.*
 import java.nio.file.{Files, Path}
 
 class SwiftCompilerTests extends AnyWordSpec with Matchers {
@@ -467,7 +468,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
   }
 
   private def toResultList(
-    mapping: SwiftTypesProvider.SwiftTypeMapping
+    mapping: SwiftTypeMapping
   ): List[(String, String, (Int, Int), Option[String], Option[String])] = {
     mapping
       .flatMap { case (filename, posToResolvedTypeInfo) =>
@@ -480,7 +481,30 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
   }
 
   private def toResultList(
-    mapping: SwiftTypesProvider.SwiftTypeMapping,
+    mapping: MutableSwiftTypeMapping
+  ): List[(String, String, (Int, Int), Option[String], Option[String])] = {
+    val map = mapping.asScala.toMap.map { case (filename, mapping) =>
+      filename -> mapping.asScala.toMap.map { case (range, set) =>
+        range -> set.toSet
+      }
+    }
+    toResultList(map)
+  }
+
+  private def toResultList(
+    mapping: MutableSwiftTypeMapping,
+    fileName: String
+  ): List[(String, (Int, Int), Option[String], Option[String])] = {
+    val map = mapping.asScala.toMap.map { case (filename, mapping) =>
+      filename -> mapping.asScala.toMap.map { case (range, set) =>
+        range -> set.toSet
+      }
+    }
+    toResultList(map, fileName)
+  }
+
+  private def toResultList(
+    mapping: SwiftTypeMapping,
     fileName: String
   ): List[(String, (Int, Int), Option[String], Option[String])] = {
     toResultList(mapping).filter(_._1.endsWith(fileName)).map(e => (e._2, e._3, e._4, e._5))
@@ -502,7 +526,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
     }
 
     "generate mapping from Json correctly" in {
-      val mapping  = new SwiftTypeMapping
+      val mapping  = new MutableSwiftTypeMapping
       val provider = new SwiftTypesProvider(Config().withInputPath("."), Nil)
       provider.mappingFromJson(SwiftCompilerTestsFixture.JsonStringHelloWorldSwift, mapping)
       provider.mappingFromJson(SwiftCompilerTestsFixture.JsonStringMain, mapping)
@@ -510,7 +534,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
     }
 
     "generate mapping from Json with split correctly" in {
-      val mapping  = new SwiftTypeMapping
+      val mapping  = new MutableSwiftTypeMapping
       val provider = new SwiftTypesProvider(Config().withInputPath("."), Nil)
       val input =
         s"${SwiftCompilerTestsFixture.JsonStringHelloWorldSwift}${SwiftCompilerTestsFixture.JsonStringMain}Error: some error foo"

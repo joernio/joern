@@ -6,7 +6,6 @@ import io.joern.swiftsrc2cpg.utils.FullnameProvider.NodeKindMapping
 import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{ResolvedTypeInfo, SwiftFileLocalTypeMapping}
 
 import scala.annotation.tailrec
-import scala.collection.mutable
 
 /** Companion object for the FullnameProvider class. Contains helper types and constants used by the FullnameProvider.
   */
@@ -41,7 +40,7 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
     * @return
     *   An optional resolved type information that matches the node kind
     */
-  private def filterForNodeKind(in: mutable.HashSet[ResolvedTypeInfo], nodeKind: String): Option[ResolvedTypeInfo] = {
+  private def filterForNodeKind(in: Set[ResolvedTypeInfo], nodeKind: String): Option[ResolvedTypeInfo] = {
     if (in.isEmpty) return None
     if (in.size == 1) return in.headOption
     NodeKindMapping.get(nodeKind).flatMap(mappedNodeKind => in.find(_.nodeKind == mappedNodeKind)).orElse(in.headOption)
