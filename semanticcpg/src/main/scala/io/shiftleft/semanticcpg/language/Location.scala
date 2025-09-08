@@ -92,10 +92,15 @@ class LazyLocation(storedNode: StoredNode) extends LocationInfo with JsonSeriali
   def classShortName: String = typeOption.map(_.name).getOrElse(defaultString)
 
   def filename: String = {
-    method
-      .flatMap(_.file.name.headOption)
-      .orElse(typeOption.flatMap(_.file.name.headOption))
-      .getOrElse("N/A")
+    storedNode match {
+      case configFile: ConfigFile =>
+        if (configFile.name == Properties.Name.default) "N/A" else configFile.name
+      case _ =>
+        method
+          .flatMap(_.file.name.headOption)
+          .orElse(typeOption.flatMap(_.file.name.headOption))
+          .getOrElse("N/A")
+    }
   }
 
   final protected val defaultString = "<empty>";
