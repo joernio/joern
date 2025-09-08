@@ -22,57 +22,49 @@ class FullnameProviderTests extends AnyFlatSpec with Matchers {
   val typeInfoNoFullName = ResolvedTypeInfo(Some("type.fullname.D"), None, "DKind")
 
   "typeFullname" should "return the type when available in the map" in {
-    val mockTypeMap = new SwiftFileLocalTypeMapping()
-    mockTypeMap.put((10, 20), mutable.HashSet(typeInfo1))
+    val mockTypeMap = Map((10, 20) -> Set(typeInfo1))
 
     val provider = new MockFullNameProvider(mockTypeMap)
     provider.typeFullname((10, 20), "nodeKind") shouldBe Some("type.fullname.A")
   }
 
   it should "return None when type is not available" in {
-    val mockTypeMap = new SwiftFileLocalTypeMapping()
-    mockTypeMap.put((10, 20), mutable.HashSet(typeInfoNoType))
+    val mockTypeMap = Map((10, 20) -> Set(typeInfoNoType))
 
     val provider = new MockFullNameProvider(mockTypeMap)
     provider.typeFullname((10, 20), "nodeKind") shouldBe None
   }
 
   it should "try with a single-point range when original range is not found" in {
-    val mockTypeMap = new SwiftFileLocalTypeMapping()
-    mockTypeMap.put((10, 10), mutable.HashSet(typeInfo2))
+    val mockTypeMap = Map((10, 10) -> Set(typeInfo2))
 
     val provider = new MockFullNameProvider(mockTypeMap)
     provider.typeFullname((10, 20), "nodeKind") shouldBe Some("type.fullname.B")
   }
 
   it should "handle empty sets in the type map" in {
-    val mockTypeMap = new SwiftFileLocalTypeMapping()
-    mockTypeMap.put((10, 20), mutable.HashSet())
-    mockTypeMap.put((10, 10), mutable.HashSet())
+    val mockTypeMap = Map((10, 20) -> Set.empty[ResolvedTypeInfo], (10, 10) -> Set.empty[ResolvedTypeInfo])
 
     val provider = new MockFullNameProvider(mockTypeMap)
     provider.typeFullname((10, 20), "nodeKind") shouldBe None
   }
 
   "declFullname" should "return the fullName when available in the map" in {
-    val mockTypeMap = new SwiftFileLocalTypeMapping()
-    mockTypeMap.put((30, 40), mutable.HashSet(typeInfo1))
+    val mockTypeMap = Map((30, 40) -> Set(typeInfo1))
 
     val provider = new MockFullNameProvider(mockTypeMap)
     provider.declFullname((30, 40), "nodeKind") shouldBe Some("decl.fullname.A")
   }
 
   it should "return None when fullName is not available" in {
-    val mockTypeMap = new SwiftFileLocalTypeMapping()
-    mockTypeMap.put((30, 40), mutable.HashSet(typeInfoNoFullName))
+    val mockTypeMap = Map((30, 40) -> Set(typeInfoNoFullName))
 
     val provider = new MockFullNameProvider(mockTypeMap)
     provider.declFullname((30, 40), "nodeKind") shouldBe None
   }
 
   it should "try with a +-1 range when original range is not found" in {
-    val mockTypeMap = new SwiftFileLocalTypeMapping()
-    mockTypeMap.put((30, 30), mutable.HashSet(typeInfo2))
+    val mockTypeMap = Map((30, 30) -> Set(typeInfo2))
 
     val provider = new MockFullNameProvider(mockTypeMap)
     provider.declFullname((31, 29), "nodeKind") shouldBe Some("decl.fullname.B")
@@ -80,8 +72,7 @@ class FullnameProviderTests extends AnyFlatSpec with Matchers {
   }
 
   it should "try with a single-point range when original range is not found" in {
-    val mockTypeMap = new SwiftFileLocalTypeMapping()
-    mockTypeMap.put((30, 30), mutable.HashSet(typeInfo2))
+    val mockTypeMap = Map((30, 30) -> Set(typeInfo2))
 
     val provider = new MockFullNameProvider(mockTypeMap)
     provider.declFullname((30, 40), "nodeKind") shouldBe Some("decl.fullname.B")
@@ -89,9 +80,7 @@ class FullnameProviderTests extends AnyFlatSpec with Matchers {
   }
 
   it should "handle multiple type infos for the same range" in {
-    val mockTypeMap = new SwiftFileLocalTypeMapping()
-    val multiSet    = mutable.HashSet(typeInfo1, typeInfo2)
-    mockTypeMap.put((50, 60), multiSet)
+    val mockTypeMap = Map((50, 60) -> Set(typeInfo1, typeInfo2))
 
     val provider = new MockFullNameProvider(mockTypeMap)
     // Since filterForNodeKind just returns headOption at the moment, this would pick the first one
@@ -100,7 +89,7 @@ class FullnameProviderTests extends AnyFlatSpec with Matchers {
   }
 
   it should "return None when range is not available at all" in {
-    val mockTypeMap = new SwiftFileLocalTypeMapping()
+    val mockTypeMap = Map.empty[(Int, Int), Set[ResolvedTypeInfo]]
 
     val provider = new MockFullNameProvider(mockTypeMap)
     provider.declFullname((30, 40), "nodeKind") shouldBe None
