@@ -18,7 +18,7 @@ object AstGenRunner {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  private val AstGenDefaultIgnoreRegex: Seq[Regex] =
+  val AstGenDefaultIgnoreRegex: Seq[Regex] =
     List(
       s"\\..*${Pattern.quote(java.io.File.separator)}.*".r,
       s"__.*${Pattern.quote(java.io.File.separator)}.*".r,
