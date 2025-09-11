@@ -100,11 +100,15 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     // Consider which variables are captured from the outer scope
     val stmtBlockAst = if (isClosure || isSingletonObjectMethod) {
-      // create closure local used for capturing
-      createClosureBindingInformation(scope.lookupSelfInOuterScope.toSet)
-        .collect { case (_, name, _, Some(closureBindingId)) =>
+      // create closure `self` local used for capturing
+      scope.lookupSelfInOuterScope
+        .collect {
+          case local: NewLocal             => local.name
+          case param: NewMethodParameterIn => param.name
+        }
+        .foreach { name =>
           val capturingLocal =
-            localNode(node.body, name, name, Defines.Any, closureBindingId = Option(closureBindingId))
+            localNode(node.body, name, name, Defines.Any, closureBindingId = Option(s"$fullName.$name"))
           scope.addToScope(capturingLocal.name, capturingLocal)
         }
       val baseStmtBlockAst = astForMethodBody(node.body, optionalStatementList)
@@ -238,7 +242,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case i: NewIdentifier if capturedNodes.map(_.name).contains(i.name) => i
     }
     // Copy AST block detaching the REF nodes between parent locals/params and identifiers, with the closures' one
-    val capturedBlockAst = baseStmtBlockAst.copy(refEdges = baseStmtBlockAst.refEdges.filter {
+    val capturedBlockAst = baseStmtBlockAst.copy(refEdges = baseStmtBlockAst.refEdges.filterNot {
+      case AstEdge(_: NewIdentifier, dst: NewLocal) if dst.name == Defines.Self =>
+        capturedNodes.map(_.name).contains(dst.name)
       case AstEdge(_: NewIdentifier, dst: DeclarationNew) => capturedNodes.contains(dst)
       case _                                              => false
     })
@@ -251,8 +257,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     createClosureBindingInformation(capturedNodes)
       .collect { case (capturedLocal, name, code, Some(closureBindingId)) =>
-        val capturingLocal =
+        val selfCapturingLocal = if name == Defines.Self then scope.lookupSelfInCurrentScope else None
+        val capturingLocal = selfCapturingLocal.getOrElse(
           localNode(originNode, name, name, Defines.Any, closureBindingId = Option(closureBindingId))
+        )
 
         val closureBinding = closureBindingNode(
           closureBindingId = closureBindingId,
