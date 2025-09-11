@@ -159,6 +159,13 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     }
   }
 
+  def lookupSelfInCurrentScope: Option[DeclarationNew] = {
+    stack.headOption.collectFirst {
+      case scopeElement if scopeElement.variables.contains(RubyDefines.Self) =>
+        scopeElement.variables(RubyDefines.Self)
+    }
+  }
+
   def addRequire(
     projectRoot: String,
     currentFilePath: String,
