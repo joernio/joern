@@ -565,4 +565,52 @@ class DoBlockTests extends RubyCode2CpgFixture {
       }
     }
   }
+
+  "A `self` reference in a nested lambda" should {
+    val cpg = code("""
+        |class UsersController < ActionController::Base
+        |  def show
+        |    respond_to do |format|
+        |      format.json { render partial: "foo" }
+        |    end
+        |  end
+        |end
+        |""".stripMargin)
+
+    "be correctly referenced by the closure binding" in {
+      inside(
+        cpg.method
+          .fullNameExact("Test0.rb:<main>.UsersController.show.<lambda>0.<lambda>0")
+          .local
+          .nameExact(RubyDefines.Self)
+          .l
+      ) {
+        case (local: Local) :: Nil =>
+          local.closureBindingId shouldBe Some("Test0.rb:<main>.UsersController.show.<lambda>0.<lambda>0.self")
+
+          inside(cpg.closureBinding.closureBindingIdExact(local.closureBindingId.get).l) {
+            case (closureBinding: ClosureBinding) :: Nil =>
+              closureBinding.closureBindingId shouldBe Some(
+                "Test0.rb:<main>.UsersController.show.<lambda>0.<lambda>0.self"
+              )
+
+              inside(closureBinding.refOut.isLocal.l) {
+                case (outerLocal: Local) :: Nil =>
+                  outerLocal.name shouldBe RubyDefines.Self
+                  outerLocal.closureBindingId shouldBe Some("Test0.rb:<main>.UsersController.show.<lambda>0.self")
+                case xs =>
+                  fail(s"Expected a single local referenced by the closure binding, got [${xs.code.mkString(",")}]")
+              }
+            case xs =>
+              fail(s"Expected a single closureBinding, got ${xs.size}")
+          }
+        case xs =>
+          fail(s"Expected a single local, got [${xs.code.mkString(",")}]")
+      }
+    }
+
+    "result in the correct number of LOCAL `self` nodes" in {
+      cpg.local.nameExact("self").size shouldBe 2
+    }
+  }
 }
