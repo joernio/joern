@@ -52,7 +52,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val createDefaultConstructor = stmt.hasConstructor
 
     scope.pushNewScope(TypeScope(typeDecl, fullName))
-    val bodyStmts      = astsForClassLikeBody(stmt, stmt.stmts, createDefaultConstructor)
+    val bodyStmts      = astsForClassLikeBody(stmt, stmt.stmts, createDefaultConstructor, Option(typeDecl))
     val clinitAst      = astForStaticAndConstInits(stmt).getOrElse(Ast())
     val modifiers      = stmt.modifiers.map(modifierNode(stmt, _)).map(Ast(_))
     val annotationAsts = stmt.attributeGroups.flatMap(astForAttributeGroup)
@@ -104,7 +104,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     scope.surroundingScopeFullName.foreach(typeDeclTemp.astParentFullName(_))
     scope.pushNewScope(TypeScope(typeDeclTemp, classFullName))
 
-    val bodyStmts      = astsForClassLikeBody(stmt, dynamicStmts, stmt.hasConstructor)
+    val bodyStmts      = astsForClassLikeBody(stmt, dynamicStmts, stmt.hasConstructor, Option(typeDeclTemp))
     val modifiers      = stmt.modifiers.map(modifierNode(stmt, _)).map(Ast(_))
     val annotationAsts = stmt.attributeGroups.flatMap(astForAttributeGroup)
 
@@ -240,7 +240,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     scope.pushNewScope(TypeScope(typeDecl, fullName))
 
-    val bodyStmts      = astsForClassLikeBody(stmt, dynamicStmts, createDefaultConstructor)
+    val bodyStmts      = astsForClassLikeBody(stmt, dynamicStmts, createDefaultConstructor, Option(typeDecl))
     val modifiers      = stmt.modifiers.map(modifierNode(stmt, _)).map(Ast(_))
     val annotationAsts = stmt.attributeGroups.flatMap(astForAttributeGroup)
 
@@ -283,7 +283,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   protected def astsForClassLikeBody(
     classLike: PhpStmt,
     bodyStmts: List[PhpStmt],
-    createDefaultConstructor: Boolean
+    createDefaultConstructor: Boolean,
+    typeDecl: Option[NewTypeDecl],
   ): List[Ast] = {
 
     val classConsts = bodyStmts.collect { case cs: PhpConstStmt => cs }.flatMap(astsForConstStmt)
@@ -309,6 +310,18 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     }
 
     val anonymousMethodAsts = scope.getAndClearAnonymousMethods
+
+    val bindings = typeDecl match {
+      case Some(typeDecl) =>
+        (anonymousMethodAsts ++ otherBodyStmts).flatMap(_.root).collect { case method: NewMethod =>
+          val bindingNode = NewBinding().name(method.name).signature("")
+          diffGraph.addNode(bindingNode)
+          diffGraph.addEdge(typeDecl, bindingNode, EdgeTypes.BINDS)
+          diffGraph.addEdge(bindingNode, method, EdgeTypes.REF)
+        }
+        
+      case None => Nil
+    }
 
     List(classConsts, properties, constructorAst, anonymousMethodAsts, otherBodyStmts).flatten
   }

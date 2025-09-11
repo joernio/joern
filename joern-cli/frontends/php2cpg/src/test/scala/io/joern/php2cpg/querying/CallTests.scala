@@ -25,20 +25,13 @@ class CallTests extends PhpCode2CpgFixture {
       arg.argumentIndex shouldBe 1
     }
 
-    val contentsCall = cpg.call.methodFullName(".*contents.*").head
+    val contentsCall = cpg.call.nameExact("contents").head
     contentsCall.code shouldBe "$a->contents()"
     contentsCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-    inside(contentsCall.astChildren.l) { case (receiverFieldAccess: Call) :: Nil =>
-      receiverFieldAccess.name shouldBe Operators.fieldAccess
-      receiverFieldAccess.argumentIndex shouldBe 0
-
-      inside(receiverFieldAccess.argument.l) { case List(receiver: Identifier, fieldIdentifier: FieldIdentifier) =>
-        receiver.name shouldBe "a"
-        receiver.code shouldBe "$a"
-        receiver.argumentIndex shouldBe 1
-
-        fieldIdentifier.canonicalName shouldBe "contents"
-      }
+    inside(contentsCall.astChildren.l) { case (receiver: Identifier) :: Nil =>
+      receiver.name shouldBe "a"
+      receiver.code shouldBe "$a"
+      receiver.argumentIndex shouldBe 0
     }
 
     val fooCall = cpg.call.name("foo").head
@@ -158,21 +151,17 @@ class CallTests extends PhpCode2CpgFixture {
         |$f->foo($x);
         |""".stripMargin)
 
-    inside(cpg.call.methodFullName(".*foo.__invoke").l) { case List(fooInvokeCall) =>
-      fooInvokeCall.name shouldBe "__invoke"
-      fooInvokeCall.methodFullName shouldBe """<unresolvedNamespace>.foo.__invoke"""
-      fooInvokeCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-      fooInvokeCall.lineNumber shouldBe Some(2)
-      fooInvokeCall.code shouldBe "$f->foo($x)"
+    inside(cpg.call.nameExact("foo").l) { case List(fooCall) =>
+      fooCall.name shouldBe "foo"
+      fooCall.methodFullName shouldBe """<unresolvedNamespace>.foo"""
+      fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      fooCall.lineNumber shouldBe Some(2)
+      fooCall.code shouldBe "$f->foo($x)"
 
-      inside(fooInvokeCall.argument.l) { case List(fRecvFieldAccess: Call, xArg: Identifier) =>
-        inside(fRecvFieldAccess.argument.l) { case List(fRecv: Identifier, fooFieldIdentifier: FieldIdentifier) =>
-          fRecv.name shouldBe "f"
-          fRecv.code shouldBe "$f"
-          fRecv.lineNumber shouldBe Some(2)
-
-          fooFieldIdentifier.canonicalName shouldBe "foo"
-        }
+      inside(fooCall.argument.l) { case List(fRecv: Identifier, xArg: Identifier) =>
+        fRecv.name shouldBe "f"
+        fRecv.code shouldBe "$f"
+        fRecv.lineNumber shouldBe Some(2)
 
         xArg.name shouldBe "x"
         xArg.code shouldBe "$x"
@@ -185,23 +174,17 @@ class CallTests extends PhpCode2CpgFixture {
         |$$f->{$foo}($x);
         |""".stripMargin)
 
-    inside(cpg.call.filter(_.name != Operators.fieldAccess).l) { case List(fooInvokeCall) =>
-      fooInvokeCall.name shouldBe "__invoke"
-      fooInvokeCall.methodFullName shouldBe """<unresolvedNamespace>.$foo.__invoke"""
-      fooInvokeCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-      fooInvokeCall.lineNumber shouldBe Some(2)
-      fooInvokeCall.code shouldBe "$$f->$foo($x)"
+    inside(cpg.call.filter(_.name != Operators.fieldAccess).l) { case List(fooCall) =>
+      fooCall.name shouldBe "$foo"
+      fooCall.methodFullName shouldBe """<unresolvedNamespace>.$foo"""
+      fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      fooCall.lineNumber shouldBe Some(2)
+      fooCall.code shouldBe "$$f->$foo($x)"
 
-      inside(fooInvokeCall.argument.l) { case List(fRecvFieldAccess: Call, xArg: Identifier) =>
-        fRecvFieldAccess.name shouldBe Operators.fieldAccess
-
-        inside(fRecvFieldAccess.argument.l) { case List(fRecv: Identifier, fooFieldIdentifier: FieldIdentifier) =>
-          fRecv.name shouldBe "f"
-          fRecv.code shouldBe "$$f"
-          fRecv.lineNumber shouldBe Some(2)
-
-          fooFieldIdentifier.canonicalName shouldBe "foo"
-        }
+      inside(fooCall.argument.l) { case List(fRecv: Identifier, xArg: Identifier) =>
+        fRecv.name shouldBe "f"
+        fRecv.code shouldBe "$$f"
+        fRecv.lineNumber shouldBe Some(2)
 
         xArg.name shouldBe "x"
         xArg.code shouldBe "$x"
@@ -296,10 +279,7 @@ class CallTests extends PhpCode2CpgFixture {
         |""".stripMargin)
 
     cpg.call("retry").methodFullName.head shouldBe "Foo\\Bar\\Http<metaclass>.retry"
-    cpg.call
-      .methodFullName(".*timeout.__invoke")
-      .methodFullName
-      .head shouldBe s"${Defines.UnresolvedNamespace}.timeout.__invoke"
+    cpg.call("timeout").methodFullName.head shouldBe s"${Defines.UnresolvedNamespace}.timeout"
   }
 
   "chained calls should alias calls in receivers and bases" in {
@@ -311,29 +291,21 @@ class CallTests extends PhpCode2CpgFixture {
         |""".stripMargin)
 
     // These calls should only happen once, as per the code
-    cpg.call.methodFullName(".*foo.__invoke").size shouldBe 1
-    cpg.call.methodFullName(".*bar.__invoke").size shouldBe 1
+    cpg.call("foo").size shouldBe 1
+    cpg.call("bar").size shouldBe 1
 
-    val foo = cpg.call.methodFullName(".*foo.__invoke").head
+    val foo = cpg.call("foo").head
     foo.code shouldBe "$obj->foo()"
-    inside(foo.astChildren.l) { case (faFieldAccess: Call) :: Nil =>
-      inside(faFieldAccess.argument.l) { case List(fa: Identifier, fooFieldIdentifier: FieldIdentifier) =>
-        fa.name shouldBe "obj"
-        fa.code shouldBe "$obj"
-      }
+    inside(cpg.call("foo").astChildren.l) { case (fa: Identifier) :: Nil =>
+      fa.name shouldBe "obj"
+      fa.code shouldBe "$obj"
     }
 
-    val bar = cpg.call.methodFullName(".*bar.__invoke").head
+    val bar = cpg.call("bar").head
     bar.code shouldBe "$obj->foo()->bar()"
-    inside(bar.astChildren.l) { case (faFieldAccess: Call) :: Nil =>
-      faFieldAccess.name shouldBe Operators.fieldAccess
-
-      inside(faFieldAccess.argument.l) { case List(fa: Call, barFieldIdentifier: FieldIdentifier) =>
-        fa.name shouldBe "__invoke"
-        fa.code shouldBe "$obj->foo()"
-
-        barFieldIdentifier.canonicalName shouldBe "bar"
-      }
+    inside(cpg.call("bar").astChildren.l) { case (fa: Call) :: Nil =>
+      fa.name shouldBe "foo"
+      fa.code shouldBe "$obj->foo()"
     }
   }
 
@@ -368,9 +340,9 @@ class CallTests extends PhpCode2CpgFixture {
     }
 
     "be unknown in the case of dynamic calls" in {
-      val test2 = cpg.call.methodFullName(".*test2.__invoke").head
-      test2.name shouldBe "__invoke"
-      test2.methodFullName shouldBe s"${Defines.UnresolvedNamespace}.test2.__invoke"
+      val test2 = cpg.call("test2").head
+      test2.name shouldBe "test2"
+      test2.methodFullName shouldBe s"${Defines.UnresolvedNamespace}.test2"
       test2.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
     }
   }

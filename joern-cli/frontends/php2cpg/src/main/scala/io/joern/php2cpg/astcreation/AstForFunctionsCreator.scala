@@ -201,7 +201,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val defaultConstructor = defaultConstructorAst(decl, Some(s"${method.fullName}.$ConstructorMethodName"))
 
-    val binding = NewBinding().name("").signature("")
+    val binding = NewBinding().name(NameConstants.Invoke).signature("")
     val methodTypeDeclAst = Ast(methodTypeDecl)
       .withChild(invokeMethodAst)
       .withChild(defaultConstructor)

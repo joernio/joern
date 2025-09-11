@@ -155,7 +155,7 @@ class AstCreator(
       .fullName(fullName)
 
     scope.pushNewScope(NamespaceScope(namespaceBlock, namespaceBlock.fullName))
-    val bodyStmts = astsForClassLikeBody(stmt, stmt.stmts, createDefaultConstructor = false)
+    val bodyStmts = astsForClassLikeBody(stmt, stmt.stmts, createDefaultConstructor = false, None)
     scope.popScope()
 
     Ast(namespaceBlock).withChildren(bodyStmts)

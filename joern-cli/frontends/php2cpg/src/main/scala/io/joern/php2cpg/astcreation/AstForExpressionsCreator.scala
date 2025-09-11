@@ -83,7 +83,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
      */
     call.target match {
       case None if isCallOnVariable(call) => astForDynamicCall(call, name, arguments, None)
-      case None if scope.isTopLevel || inStaticScope || isBuiltinFunc(name) => astForStaticCall(call, name, arguments)
+      case None => astForStaticCall(call, name, arguments)
       case _ if call.isStatic                                               => astForStaticCall(call, name, arguments)
       case maybeTarget => astForDynamicCall(call, name, arguments, maybeTarget)
     }
@@ -102,20 +102,21 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val dispatchType = DispatchTypes.DYNAMIC_DISPATCH
 
-    val fullName = s"${getMfn(call, name)}.${NameConstants.Invoke}"
+    val (receiverAst, callRoot) = targetAst match {
+      case None =>
+        val receiverAst = astForExpr(call.methodName)
 
-    val callRoot = callNode(call, code, NameConstants.Invoke, fullName, dispatchType, None, Some(Defines.Any))
+        val fullName = s"${getMfn(call, name)}.${NameConstants.Invoke}"
+        val callRoot = callNode(call, code, NameConstants.Invoke, fullName, dispatchType, None, Some(Defines.Any))
 
-    val receiverAst = targetAst match {
-      case None if isCallOnVariable(call) =>
-        astForExpr(call.methodName)
-      case None if !scope.isTopLevel =>
-        // if dynamic call is under some type decl, $this is the receiver
-        val receiverAst = Ast(call.target.map(thisIdentifier).getOrElse(thisIdentifier(call)))
-        fieldAccessAst(call, call, receiverAst, receiverAst.rootCodeOrEmpty, name.stripPrefix("$"), Defines.Any)
+        (receiverAst, callRoot)
       case Some(target) =>
         val receiverAst = target
-        fieldAccessAst(call, call, receiverAst, receiverAst.rootCodeOrEmpty, name.stripPrefix("$"), Defines.Any)
+        val nameAst = astForExpr(call.methodName)
+        val fullName = getMfn(call, name)
+        val callRoot = callNode(call, code, name, fullName, dispatchType, None, Some(Defines.Any))
+
+        (receiverAst, callRoot)
     }
 
     callAst(callRoot, arguments, Option(receiverAst))
