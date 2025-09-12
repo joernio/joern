@@ -7,14 +7,13 @@ import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 
 class TypeDeclTests extends PhpCode2CpgFixture {
 
   "typedecl nodes for empty classes" should {
     val cpg = code("""<?php
-        |class A extends B implements C, D {}
-        |""".stripMargin).withConfig(Config().withDisableFileContent(false))
+      |class A extends B implements C, D {}
+      |""".stripMargin).withConfig(Config().withDisableFileContent(false))
 
     "have the correct basic properties set" in {
       inside(cpg.typeDecl.nameExact("A").l) { case List(typeDecl) =>
@@ -35,12 +34,11 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
   "anonymous class methods" should {
     val cpg = code("""<?php
-                     |$x = new class {
-                     |  final public function foo(int $x): int {
-                     |    return 0;
-                     |  }
-                     |}
-                     |""".stripMargin).withConfig(Config().withDisableFileContent(false))
+      |$x = new class {
+      |  final public function foo(int $x): int {
+      |    return 0;
+      |  }
+      |}""".stripMargin).withConfig(Config().withDisableFileContent(false))
 
     "have the correct bindings" in {
       inside(cpg.typeDecl.name(".*anon-class-0$").bindsOut.sortBy(_.name).l) {
@@ -59,12 +57,11 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
   "class methods" should {
     val cpg = code("""<?php
-        |class Foo {
-        |  final public function foo(int $x): int {
-        |    return 0;
-        |  }
-        |}
-        |""".stripMargin).withConfig(Config().withDisableFileContent(false))
+      |class Foo {
+      |  final public function foo(int $x): int {
+      |    return 0;
+      |  }
+      |}""".stripMargin).withConfig(Config().withDisableFileContent(false))
 
     "have the correct bindings" in {
       inside(cpg.typeDecl("Foo").bindsOut.sortBy(_.name).l) { case List(constructBinding, fooBinding) =>
@@ -115,10 +112,9 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
   "constructors using the class name should be represented with the correct init method" in {
     val cpg = code("""<?php
-        |function foo() {
-        |  new Foo(42);
-        |}
-        |""".stripMargin)
+      |function foo() {
+      |  new Foo(42);
+      |}""".stripMargin)
 
     inside(cpg.method.name("foo").body.astChildren.l) { case List(tmpLocal: Local, constructorBlock: Block) =>
       tmpLocal.name shouldBe "foo@tmp-0"
@@ -157,10 +153,9 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
   "constructors using expressions for the class name should have the correct alloc receiver" in {
     val cpg = code("""<?php
-        |function foo() {
-        |  new $x();
-        |}
-        |""".stripMargin)
+      |function foo() {
+      |  new $x();
+      |}""".stripMargin)
 
     inside(cpg.call.nameExact(Operators.alloc).l) { case List(alloc: Call) =>
       alloc.name shouldBe Operators.alloc
@@ -175,10 +170,9 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
   "interfaces not extending other interfaces should be created correctly" in {
     val cpg = code("""<?php
-        |interface Foo {
-        |  public function foo();
-        |}
-        |""".stripMargin)
+      |interface Foo {
+      |  public function foo();
+      |}""".stripMargin)
 
     inside(cpg.typeDecl.name("Foo").l) { case List(fooDecl) =>
       fooDecl.fullName shouldBe "Foo"
@@ -198,9 +192,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
   "interfaces should be able to extend multiple other interfaces" in {
     val cpg = code("""<?php
-        |interface Foo extends Bar, Baz {
-        |}
-        |""".stripMargin)
+      |interface Foo extends Bar, Baz {
+      |}""".stripMargin)
 
     inside(cpg.typeDecl.name("Foo").l) { case List(fooDecl) =>
       fooDecl.fullName shouldBe "Foo"
@@ -211,12 +204,11 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
   "traits should have the correct code fields" in {
     val cpg = code("""<?php
-        |trait Foo {
-        |  public function foo() {
-        |    echo "foo";
-        |  }
-        |}
-        |""".stripMargin)
+      |trait Foo {
+      |  public function foo() {
+      |    echo "foo";
+      |  }
+      |}""".stripMargin)
 
     inside(cpg.typeDecl.name("Foo").l) { case List(fooDecl) =>
       fooDecl.fullName shouldBe "Foo"
@@ -236,11 +228,10 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
   "enums with cases without values should have the correct fields" in {
     val cpg = code("""<?php
-        |enum Foo {
-        |  case A;
-        |  case B;
-        |}
-        |""".stripMargin)
+      |enum Foo {
+      |  case A;
+      |  case B;
+      |}""".stripMargin)
 
     inside(cpg.typeDecl.name("Foo").l) { case List(fooDecl) =>
       fooDecl.fullName shouldBe "Foo"
@@ -264,8 +255,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         |enum Foo {
         |  case A = "A";
         |  case B = "B";
-        |}
-        |""".stripMargin,
+        |}""".stripMargin,
       fileName = "foo.php"
     )
 
@@ -327,13 +317,12 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
   "Enums with static methods" in {
     val cpg = code("""<?php
-        |enum Foo {
-        |  case A;
-        |  case B;
-        |
-        |  public static function foo() {}
-        |}
-        |""".stripMargin)
+      |enum Foo {
+      |  case A;
+      |  case B;
+      |
+      |  public static function foo() {}
+      |}""".stripMargin)
 
     inside(cpg.typeDecl.name(s"Foo${Domain.MetaTypeDeclExtension}").method.name("foo").l) {
       case fooMethod :: Nil =>
@@ -357,8 +346,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         |
         |function test() {
         |  Foo::class;
-        |}
-        |""")
+        |}""")
 
       inside(cpg.method.name("test").body.astChildren.l) { case List(fooRef: TypeRef) =>
         fooRef.typeFullName shouldBe "foo\\Foo"
@@ -373,8 +361,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         |
         |function test(Foo $f) {
         |  $f::class;
-        |}
-        |""")
+        |}""")
 
       inside(cpg.method.name("test").body.astChildren.l) { case List(fooRef: TypeRef) =>
         // TODO The typeFullName here is missing, even though we should get it. Fix with types in general.
@@ -386,11 +373,10 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
   "static/const member of class should be put in <clinit> method" in {
     val cpg = code("""<?php
-        |class Foo {
-        |  static $A = "A";
-        |  const B = "B";
-        |}
-        |""")
+      |class Foo {
+      |  static $A = "A";
+      |  const B = "B";
+      |}""")
 
     inside(cpg.method.nameExact(Defines.StaticInitMethodName).l) { case List(clinitMethod) =>
       inside(clinitMethod.body.astChildren.l) { case List(self: Local, bAssign: Call, aAssign: Call) =>
@@ -422,20 +408,19 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
   "anonymous classes" should {
     val cpg = code("""<?php
-        |new class(10) {
-        |  private int $x;
-        |  function __construct($x) {
-        |    $this->x = $x;
-        |  }
-        |}
-        |
-        |new class(30) {
-        |          private int $y;
-        |          function __construct($y) {
-        |            $this->y = $y;
-        |          }
-        |        }
-        |""".stripMargin)
+      |new class(10) {
+      |  private int $x;
+      |  function __construct($x) {
+      |    $this->x = $x;
+      |  }
+      |}
+      |
+      |new class(30) {
+      |  private int $y;
+      |  function __construct($y) {
+      |    $this->y = $y;
+      |  }
+      |}""".stripMargin)
 
     "parse methods in classes correctly" in {
       inside(cpg.typeDecl.name("Test0.php:<global>.anon-class-\\d+").l) {
@@ -539,12 +524,11 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
   "Members for anonymous class directly under class created" in {
     val cpg = code("""<?php
-        |class Foo {
-        |  public $foo = new class(10) {
-        |   private int $x;
-        |  };
-        |}
-        |""".stripMargin)
+      |class Foo {
+      |  public $foo = new class(10) {
+      |   private int $x;
+      |  };
+      |}""".stripMargin)
     inside(cpg.typeDecl.name("Foo").member.l) {
       case _ :: fooAnonMem :: Nil =>
         fooAnonMem.name shouldBe "Foo.anon-class-0"
@@ -560,14 +544,13 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
   "Anonymous class nested in class" in {
     val cpg = code("""<?php
-        |class C {
-        |  function D() {
-        |     new class("foo") {
-        |       private int $x;
-        |     }
-        |  }
-        |}
-        |""".stripMargin)
+      |class C {
+      |  function D() {
+      |     new class("foo") {
+      |       private int $x;
+      |     }
+      |  }
+      |}""".stripMargin)
     inside(cpg.typeDecl.name("C.D.anon-class-\\d+").l) {
       case anonClass :: Nil =>
         anonClass.fullName shouldBe s"C.D.anon-class-0"
@@ -599,13 +582,12 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
   "Singleton type decl for a normal class" should {
     val cpg = code("""<?php
-        |class Foo {
-        |  public static $foo = 'foo';
-        |  public $baz = 'baz';
-        |  const BAZZ = 'bazz';
-        |  public static function bar() {}
-        |}
-        |""".stripMargin)
+      |class Foo {
+      |  public static $foo = 'foo';
+      |  public $baz = 'baz';
+      |  const BAZZ = 'bazz';
+      |  public static function bar() {}
+      |}""".stripMargin)
 
     "create a singleton type decl" in {
       inside(cpg.typeDecl.name(s"Foo${Domain.MetaTypeDeclExtension}").l) {
@@ -640,11 +622,13 @@ class TypeDeclTests extends PhpCode2CpgFixture {
               // TODO: Self in <clinit> is existing behavior
               self.code shouldBe "self"
 
-              val List(bazzLhs: FieldAccess, bazzRhs: Literal) = assignmentBazz.argument.l: @unchecked
+              val List(bazzLhs) = assignmentBazz.argument.fieldAccess.l
+              val List(bazzRhs) = assignmentBazz.argument.isLiteral.l
               bazzLhs.code shouldBe "self::BAZZ"
               bazzRhs.code shouldBe "\"bazz\""
+              assignmentBazz.argument.l shouldBe List(bazzLhs, bazzRhs)
 
-              val List(fooLhs, fooRhs) = assignmentFoo.argument.l: @unchecked
+              val List(fooLhs, fooRhs) = assignmentFoo.argument.l
               fooLhs.code shouldBe "self::$foo"
               fooRhs.code shouldBe "\"foo\""
 
@@ -658,13 +642,12 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
   "Singleton type decl for an anonymous class" should {
     val cpg = code("""<?php
-        |new class(10) {
-        |  public static $foo = 'foo';
-        |  public $baz = 'baz';
-        |  const BAZZ = 'bazz';
-        |  public static function bar() {}
-        |};
-        |""".stripMargin)
+      |new class(10) {
+      |  public static $foo = 'foo';
+      |  public $baz = 'baz';
+      |  const BAZZ = 'bazz';
+      |  public static function bar() {}
+      |};""".stripMargin)
 
     "Create <metaclass> type decl" in {
       inside(cpg.typeDecl.name(s"Test0.php:<global>.anon-class-0${Domain.MetaTypeDeclExtension}").l) {
@@ -714,11 +697,13 @@ class TypeDeclTests extends PhpCode2CpgFixture {
             case (self: Local) :: (bazzAssignment: Call) :: (fooAssignment: Call) :: Nil =>
               self.code shouldBe "self"
 
-              val List(bazzLhs: FieldAccess, bazzRhs: Literal) = bazzAssignment.argument.l: @unchecked
+              val List(bazzLhs) = bazzAssignment.argument.fieldAccess.l
+              val List(bazzRhs) = bazzAssignment.argument.isLiteral.l
               bazzLhs.code shouldBe "self::BAZZ"
               bazzRhs.code shouldBe "\"bazz\""
+              bazzAssignment.argument.l shouldBe List(bazzLhs, bazzRhs)
 
-              val List(fooLhs, fooRhs) = fooAssignment.argument.l: @unchecked
+              val List(fooLhs, fooRhs) = fooAssignment.argument.l
               fooLhs.code shouldBe "self::$foo"
               fooRhs.code shouldBe "\"foo\""
             case xs => fail(s"Expected three astChildren, got ${xs.code.mkString("[", ",", "]")}")
@@ -730,16 +715,15 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
   "Duplicate class names" should {
     val cpg = code("""<?php
-        |if (true) {
-        | class Foo {
-        |   function foo() {}
-        | }
-        |} else {
-        | class Foo {
-        |   function foo() {}
-        | }
-        |}
-        |""".stripMargin)
+      |if (true) {
+      | class Foo {
+      |   function foo() {}
+      | }
+      |} else {
+      | class Foo {
+      |   function foo() {}
+      | }
+      |}""".stripMargin)
 
     "contain deduplicated fullNames" in {
       inside(cpg.typeDecl.fullName("Foo.*").sortBy(_.fullName).l) {

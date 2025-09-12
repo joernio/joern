@@ -1,13 +1,12 @@
 package io.joern.javasrc2cpg.passes
 
-import flatgraph.misc.TestUtils.*
 import io.joern.javasrc2cpg.Config
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.joern.x2cpg.passes.frontend.JavaConfigFileCreationPass
-import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewMetaData
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.utils.ProjectRoot
 
 import java.nio.file.Paths

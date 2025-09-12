@@ -16,7 +16,7 @@ import scala.util.{Failure, Success, Try}
 /** Scans for and inserts configuration files into the CPG. Relies on the MetaData's `ROOT` property to provide the path
   * to scan, but alternatively one can specify a directory on the `rootDir` parameter.
   */
-abstract class XConfigFileCreationPass(cpg: Cpg, private val rootDir: Option[String] = None, config: X2CpgConfig[_])
+abstract class XConfigFileCreationPass(cpg: Cpg, private val rootDir: Option[String] = None, config: X2CpgConfig[?])
     extends ForkJoinParallelCpgPass[Path](cpg) {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -29,16 +29,11 @@ abstract class XConfigFileCreationPass(cpg: Cpg, private val rootDir: Option[Str
       case Some(root) =>
         Try(Paths.get(root)) match {
           case Success(file) if Files.isDirectory(file) =>
-            file
-              .walk()
-              .filterNot(_ == file)
-              .filter(isConfigFile)
-              .filter(isAccepted(root, _))
-              .toArray
-
-          case Success(file) if isConfigFile(file) => Array(file)
-
-          case _ => Array.empty
+            file.walk().filter(f => f != file && isConfigFile(f) && isAccepted(root, f)).toArray
+          case Success(file) if isConfigFile(file) =>
+            Array(file)
+          case _ =>
+            Array.empty
         }
       case None =>
         logger.warn("Unable to recover project directory for configuration file pass.")
@@ -91,7 +86,7 @@ abstract class XConfigFileCreationPass(cpg: Cpg, private val rootDir: Option[Str
 /** Parses common Java related configuration files. Multiple frontends cover JVM languages so this is in a single shared
   * spot.
   */
-class JavaConfigFileCreationPass(cpg: Cpg, rootDir: Option[String] = None, config: X2CpgConfig[_])
+class JavaConfigFileCreationPass(cpg: Cpg, rootDir: Option[String] = None, config: X2CpgConfig[?])
     extends XConfigFileCreationPass(cpg, rootDir, config) {
 
   override val configFileFilters: List[Path => Boolean] = List(
