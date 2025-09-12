@@ -12,7 +12,7 @@ class MetaDataTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "should contain exactly one META_DATA node with all mandatory fields set" in {
     val List(md) = cpg.metaData.l
     md.language shouldBe "KOTLIN"
-    md.version shouldBe "0.1"
+    md.version should not be "0.1"
     md.overlays shouldBe List("base", "controlflow", "typerel", "callgraph")
   }
 

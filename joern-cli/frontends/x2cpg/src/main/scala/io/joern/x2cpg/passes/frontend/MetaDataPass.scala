@@ -1,5 +1,6 @@
 package io.joern.x2cpg.passes.frontend
 
+import io.joern.x2cpg.passes.frontend
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{NewMetaData, NewNamespaceBlock}
 import io.shiftleft.passes.CpgPass
@@ -15,7 +16,11 @@ class MetaDataPass(cpg: Cpg, language: String, root: String, hash: Option[String
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     def addMetaDataNode(diffGraph: DiffGraphBuilder): Unit = {
       val absolutePathToRoot = Paths.get(root).absolutePathAsString
-      val metaNode           = NewMetaData().language(language).root(absolutePathToRoot).version("0.1").hash(hash)
+      val metaNode = NewMetaData()
+        .language(language)
+        .root(absolutePathToRoot)
+        .version(classOf[MetaDataPass].getPackage.getImplementationVersion)
+        .hash(hash)
       diffGraph.addNode(metaNode)
     }
 

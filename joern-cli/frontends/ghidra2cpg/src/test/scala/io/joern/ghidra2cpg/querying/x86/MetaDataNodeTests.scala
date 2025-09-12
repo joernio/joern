@@ -15,7 +15,7 @@ class MetaDataNodeTests extends GhidraBinToCpgSuite {
     cpg.metaData.l match {
       case List(x) =>
         x.language shouldBe Languages.GHIDRA
-        x.version shouldBe "0.1"
+        x.version should not equal "0.1"
         x.overlays shouldBe List("base", "controlflow", "typerel", "callgraph")
       case _ => fail()
     }

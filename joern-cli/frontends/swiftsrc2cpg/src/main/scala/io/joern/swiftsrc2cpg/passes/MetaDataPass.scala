@@ -10,7 +10,11 @@ class MetaDataPass(cpg: Cpg, hash: String, inputPath: String) extends CpgPass(cp
 
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     val absolutePathToRoot = Paths.get(inputPath).absolutePathAsString
-    val metaNode = NewMetaData().language(Languages.SWIFTSRC).root(absolutePathToRoot).hash(hash).version("0.1")
+    val metaNode = NewMetaData()
+      .language(Languages.SWIFTSRC)
+      .root(absolutePathToRoot)
+      .hash(hash)
+      .version(classOf[MetaDataPass].getPackage.getImplementationVersion)
     diffGraph.addNode(metaNode)
   }
 
