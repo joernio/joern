@@ -41,16 +41,15 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       |}""".stripMargin).withConfig(Config().withDisableFileContent(false))
 
     "have the correct bindings" in {
-      inside(cpg.typeDecl.name("foo").bindsOut.sortBy(_.refOut.head.name).l) {
-        case List(fooBinding) =>
-          fooBinding.name shouldBe ""
-          fooBinding.methodFullName shouldBe "<empty>"
-          fooBinding.signature shouldBe ""
+      inside(cpg.typeDecl.name("foo").bindsOut.sortBy(_.refOut.head.name).l) { case List(invokeBinding) =>
+        invokeBinding.name shouldBe "__invoke"
+        invokeBinding.methodFullName shouldBe "<empty>"
+        invokeBinding.signature shouldBe ""
 
-          inside(fooBinding.refOut.l) { case List(fooMethod) =>
-            fooMethod.name shouldBe "foo"
-            fooMethod.fullName shouldBe "Test0.php:<global>.anon-class-0.foo"
-          }
+        inside(invokeBinding.refOut.l) { case List(fooMethod) =>
+          fooMethod.name shouldBe "foo"
+          fooMethod.fullName shouldBe "Test0.php:<global>.anon-class-0.foo"
+        }
       }
     }
   }
@@ -63,9 +62,9 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       |  }
       |}""".stripMargin).withConfig(Config().withDisableFileContent(false))
 
-    "have the correct bindings" in {
-      inside(cpg.typeDecl("foo").bindsOut.sortBy(_.name).l) { case List(fooBinding) =>
-        fooBinding.name shouldBe ""
+    "have the correct bindings for the explicit Foo class" in {
+      inside(cpg.typeDecl("Foo").bindsOut.sortBy(_.name).l) { case List(fooBinding) =>
+        fooBinding.name shouldBe "foo"
         fooBinding.methodFullName shouldBe "<empty>"
         fooBinding.signature shouldBe ""
 
@@ -76,11 +75,28 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       }
     }
 
+    "have the correct bindings for the synthetic foo method class" in {
+      inside(cpg.typeDecl("foo").bindsOut.sortBy(_.name).l) { case List(invokeBinding) =>
+        invokeBinding.name shouldBe "__invoke"
+        invokeBinding.methodFullName shouldBe "<empty>"
+        invokeBinding.signature shouldBe ""
+
+        inside(invokeBinding.refOut.l) { case List(fooMethod) =>
+          fooMethod.name shouldBe "foo"
+          fooMethod.fullName shouldBe "Foo.foo"
+        }
+      }
+    }
+
     "be created correctly" in {
       inside(cpg.method.name("foo").l) { case List(fooMethod) =>
         fooMethod.fullName shouldBe s"Foo.foo"
         fooMethod.signature shouldBe ""
-        fooMethod.modifier.map(_.modifierType).toSet shouldBe Set(ModifierTypes.FINAL, ModifierTypes.PUBLIC, ModifierTypes.VIRTUAL)
+        fooMethod.modifier.map(_.modifierType).toSet shouldBe Set(
+          ModifierTypes.FINAL,
+          ModifierTypes.PUBLIC,
+          ModifierTypes.VIRTUAL
+        )
         fooMethod.methodReturn.typeFullName shouldBe "int"
         inside(fooMethod.parameter.l) { case List(thisParam, xParam) =>
           thisParam.name shouldBe "this"

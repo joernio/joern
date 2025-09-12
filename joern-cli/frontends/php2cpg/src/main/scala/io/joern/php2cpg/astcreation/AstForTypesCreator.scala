@@ -284,7 +284,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     classLike: PhpStmt,
     bodyStmts: List[PhpStmt],
     createDefaultConstructor: Boolean,
-    typeDecl: Option[NewTypeDecl],
+    typeDecl: Option[NewTypeDecl]
   ): List[Ast] = {
 
     val classConsts = bodyStmts.collect { case cs: PhpConstStmt => cs }.flatMap(astsForConstStmt)
@@ -319,7 +319,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
           diffGraph.addEdge(typeDecl, bindingNode, EdgeTypes.BINDS)
           diffGraph.addEdge(bindingNode, method, EdgeTypes.REF)
         }
-        
+
       case None => Nil
     }
 

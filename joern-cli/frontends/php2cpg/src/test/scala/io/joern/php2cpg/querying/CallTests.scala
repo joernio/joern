@@ -363,12 +363,9 @@ class CallTests extends PhpCode2CpgFixture {
         |""".stripMargin)
 
     cpg.expression.whereNot(_.astParent).size shouldBe 0
-    cpg.call.argument.isBlock.size shouldBe 1
-    val lambdaInitBlock = cpg.call.argument.isBlock.head
-    inside(lambdaInitBlock.astChildren.l) {
-      case List(allocAssign: Call, constructCall: Call, tmpIdentifier: Identifier) =>
-        constructCall.methodFullName shouldBe "Foo.bar.<lambda>0.__construct"
-    }
+    cpg.call.argument.isMethodRef.size shouldBe 1
+    val lambdaRef = cpg.call.argument.isMethodRef.head
+    lambdaRef.methodFullName shouldBe "Foo.bar.<lambda>0"
   }
 
   "a call to a constructor should be static and have a correctly inferred method full name" in {

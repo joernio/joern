@@ -84,9 +84,10 @@ class ClosureTests extends PhpCode2CpgFixture {
       closureMethod.fullName shouldBe expectedName
       closureMethod.signature shouldBe ""
       closureMethod.code shouldBe s"function $expectedName($$value) use($$use1, &$$use2)"
-      closureMethod.parameter.size shouldBe 1
+      closureMethod.parameter.size shouldBe 2
 
-      inside(closureMethod.parameter.l) { case List(valueParam) =>
+      inside(closureMethod.parameter.l) { case List(thisParam, valueParam) =>
+        thisParam.name shouldBe "this"
         valueParam.name shouldBe "value"
       }
 
@@ -156,9 +157,10 @@ class ClosureTests extends PhpCode2CpgFixture {
       closureMethod.fullName shouldBe expectedName
       closureMethod.signature shouldBe ""
       closureMethod.code shouldBe s"function $expectedName($$value)"
-      closureMethod.parameter.size shouldBe 1
+      closureMethod.parameter.size shouldBe 2
 
-      inside(closureMethod.parameter.l) { case List(valueParam) =>
+      inside(closureMethod.parameter.l) { case List(thisParam, valueParam) =>
+        thisParam.name shouldBe "this"
         valueParam.name shouldBe "value"
       }
 
@@ -465,14 +467,14 @@ class ClosureTests extends PhpCode2CpgFixture {
     }
 
     "represent the lambda assignment correctly" in {
-      inside(cpg.method.name("foo").body.astChildren.l) { case List(_: Local, _: Local, lambdaAssign: Call, _: Return) =>
+      inside(cpg.method.name("foo").body.astChildren.l) { case List(_: Local, lambdaAssign: Call, _: Return) =>
         lambdaAssign.name shouldBe Operators.assignment
-        lambdaAssign.code shouldBe "$b_lambda = fn($x) => $x"
+        lambdaAssign.code shouldBe "$b_lambda = foo.<lambda>0"
 
-        inside(lambdaAssign.argument.l) { case List(bLambdaIdentifier: Identifier, allocBlock: Block) =>
+        inside(lambdaAssign.argument.l) { case List(bLambdaIdentifier: Identifier, lambdaMethodRef: MethodRef) =>
           bLambdaIdentifier.name shouldBe "b_lambda"
 
-          inside(allocBlock.astChildren.l) { case List() => }
+          lambdaMethodRef.methodFullName shouldBe "foo.<lambda>0"
         }
       }
     }
@@ -492,7 +494,7 @@ class ClosureTests extends PhpCode2CpgFixture {
         lambdaDecl.fullName shouldBe "foo.<lambda>0"
 
         inside(lambdaDecl.bindsOut.l) { case List(binding) =>
-          binding.name shouldBe ""
+          binding.name shouldBe "__invoke"
           binding.signature shouldBe ""
           binding.methodFullName shouldBe "<empty>"
 

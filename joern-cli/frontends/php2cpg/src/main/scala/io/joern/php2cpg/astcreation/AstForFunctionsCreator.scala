@@ -100,10 +100,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     // Add method to scope to be attached to typeDecl later
     scope.registerAstForInsertion(methodAst)
 
-    val classNameExpr = PhpNameExpr(methodName, methodDecl.attributes)
-    val newExpr       = PhpNewExpr(className = classNameExpr, Nil, methodDecl.attributes)
-
-    astForExpr(newExpr)
+    Ast(methodRef)
   }
 
   protected def astForMethodDecl(
@@ -140,7 +137,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case mods => s"${mods.mkString(" ")} "
     }
     val methodCode =
-      s"${modifierString}function $methodName(${parameters.map(_.rootCodeOrEmpty).mkString(",")})${usesCode.getOrElse("")}"
+      s"${modifierString}function $methodName(${parameters.filterNot(_.rootName.contains(NameConstants.This)).map(_.rootCodeOrEmpty).mkString(",")})${usesCode
+          .getOrElse("")}"
 
     val methodRef =
       if methodName == NamespaceTraversal.globalNamespaceName then None

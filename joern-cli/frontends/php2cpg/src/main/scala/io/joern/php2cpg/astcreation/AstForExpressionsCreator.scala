@@ -83,9 +83,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
      */
     call.target match {
       case None if isCallOnVariable(call) => astForDynamicCall(call, name, arguments, None)
-      case None => astForStaticCall(call, name, arguments)
-      case _ if call.isStatic                                               => astForStaticCall(call, name, arguments)
-      case maybeTarget => astForDynamicCall(call, name, arguments, maybeTarget)
+      case None                           => astForStaticCall(call, name, arguments)
+      case _ if call.isStatic             => astForStaticCall(call, name, arguments)
+      case maybeTarget                    => astForDynamicCall(call, name, arguments, maybeTarget)
     }
   }
 
@@ -112,9 +112,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         (receiverAst, callRoot)
       case Some(target) =>
         val receiverAst = target
-        val nameAst = astForExpr(call.methodName)
-        val fullName = getMfn(call, name)
-        val callRoot = callNode(call, code, name, fullName, dispatchType, None, Some(Defines.Any))
+        val nameAst     = astForExpr(call.methodName)
+        val fullName    = getMfn(call, name)
+        val callRoot    = callNode(call, code, name, fullName, dispatchType, None, Some(Defines.Any))
 
         (receiverAst, callRoot)
     }
