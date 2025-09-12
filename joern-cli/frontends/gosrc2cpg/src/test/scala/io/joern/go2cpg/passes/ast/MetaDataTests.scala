@@ -15,7 +15,7 @@ class MetaDataTests extends GoCodeToCpgSuite {
   "should contain exactly one node with all mandatory fields set" in {
     val List(x) = cpg.metaData.l
     x.language shouldBe Languages.GOLANG
-    x.version shouldBe "0.1"
+    x.version should not be "0.1"
     x.overlays shouldBe List(
       Base.overlayName,
       ControlFlow.overlayName,

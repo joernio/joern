@@ -31,7 +31,9 @@ class Py2Cpg(inputProviders: Iterable[Py2Cpg.InputProvider], outputCpg: Cpg, con
   private val edgeBuilder = new EdgeBuilder(diffGraph)
 
   def buildCpg(): Unit = {
-    nodeBuilder.metaNode(Languages.PYTHONSRC, version = "").root(config.inputPath + java.io.File.separator)
+    nodeBuilder
+      .metaNode(Languages.PYTHONSRC, version = classOf[Py2Cpg].getPackage.getImplementationVersion)
+      .root(config.inputPath + java.io.File.separator)
     val globalNamespaceBlock =
       nodeBuilder.namespaceBlockNode(Constants.GLOBAL_NAMESPACE, Constants.GLOBAL_NAMESPACE, "N/A")
     nodeBuilder.typeNode(Constants.ANY, Constants.ANY)

@@ -19,7 +19,7 @@ class MetaDataPass(filename: String, cpg: Cpg) extends CpgPass(cpg) {
       nodes
         .NewMetaData()
         .language(Languages.GHIDRA)
-        .version("0.1")
+        .version(classOf[MetaDataPass].getPackage.getImplementationVersion)
     )
   }
 
