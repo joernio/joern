@@ -168,7 +168,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     scope.popScope()
     val methodAst = methodAstWithAnnotations(method, parameters, methodBody, methodReturn, modifiers, attributeAsts)
 
-    if (!isStatic && !isConstructor) {
+    if (decl.isClassMethod && !isStatic && !isConstructor) {
       val paramCopies = parameters.map(paramAst => (paramAst, paramAst.root)).collect {
         case (paramAst, Some(root: AstNodeNew)) => paramAst.subTreeCopy(root)
       }
