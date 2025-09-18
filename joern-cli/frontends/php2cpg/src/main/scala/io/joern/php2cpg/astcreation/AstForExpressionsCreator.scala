@@ -2,6 +2,7 @@ package io.joern.php2cpg.astcreation
 
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants, operatorSymbols}
 import io.joern.php2cpg.datastructures.ArrayIndexTracker
+import io.joern.php2cpg.parser.Domain
 import io.joern.php2cpg.parser.Domain.*
 import io.joern.php2cpg.utils.BlockScope
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
@@ -58,6 +59,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val name      = getCallName(call, nameAst)
     val arguments = call.args.map(astForCallArg)
 
+    val inStaticScope = scope.getEnclosingTypeDeclTypeFullName.exists(_.endsWith(Domain.MetaTypeDeclExtension))
     /*
      * A receiver only makes sense if one can track the receiver back to some sort of runtime type information. In the
      * case of a normal top-level call like foo() that is not possible. There is no corresponding foo identifier which
@@ -80,9 +82,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
      * scope.
      */
     call.target match {
-      case None if scope.isTopLevel || isBuiltinFunc(name) => astForStaticCall(call, name, arguments)
-      case _ if call.isStatic                              => astForStaticCall(call, name, arguments)
-      case maybeTarget                                     => astForDynamicCall(call, name, arguments, maybeTarget)
+      case None if isCallOnVariable(call) => astForDynamicCall(call, name, arguments, None)
+      case None                           => astForStaticCall(call, name, arguments)
+      case _ if call.isStatic             => astForStaticCall(call, name, arguments)
+      case maybeTarget                    => astForDynamicCall(call, name, arguments, maybeTarget)
     }
   }
 
@@ -99,21 +102,24 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val dispatchType = DispatchTypes.DYNAMIC_DISPATCH
 
-    val fullName = getMfn(call, name)
-
-    val callRoot = callNode(call, code, name, fullName, dispatchType, None, Some(Defines.Any))
-
-    val receiverAst = targetAst match {
-      case None if !scope.isTopLevel =>
-        // if dynamic call is under some type decl, $this is the receiver
-        call.target.map(thisIdentifier).orElse(Option(thisIdentifier(call))).map(Ast(_))
+    val (receiverAst, callRoot) = targetAst match {
       case None =>
-        // if dynamic call is on "global" level, the variable itself is the receiver
-        Option(astForExpr(call.methodName))
-      case someTarget => someTarget
+        val receiverAst = astForExpr(call.methodName)
+
+        val fullName = s"${getMfn(call, name)}.${NameConstants.Invoke}"
+        val callRoot = callNode(call, code, NameConstants.Invoke, fullName, dispatchType, None, Some(Defines.Any))
+
+        (receiverAst, callRoot)
+      case Some(target) =>
+        val receiverAst = target
+        val nameAst     = astForExpr(call.methodName)
+        val fullName    = getMfn(call, name)
+        val callRoot    = callNode(call, code, name, fullName, dispatchType, None, Some(Defines.Any))
+
+        (receiverAst, callRoot)
     }
 
-    callAst(callRoot, arguments, receiverAst)
+    callAst(callRoot, arguments, Option(receiverAst))
   }
 
   private def astForStaticCall(call: PhpCallExpr, name: String, arguments: Seq[Ast]): Ast = {
