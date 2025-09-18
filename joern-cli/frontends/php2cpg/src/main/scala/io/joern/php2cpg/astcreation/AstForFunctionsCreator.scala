@@ -186,8 +186,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   ): Unit = {
     val methodTypeDecl = typeDeclNode(decl, method.name, method.fullName, method.filename, code = method.name)
     scope.getEnclosingTypeDeclTypeFullName.foreach(tfn => methodTypeDecl.inheritsFromTypeFullName(tfn :: Nil))
-    val methodMember =
-      memberNode(decl, method.name, method.name, method.fullName, dynamicTypeHints = method.fullName :: Nil)
 
     val invokeMethodNode =
       methodNode(decl, NameConstants.Invoke, s"${method.fullName}.${NameConstants.Invoke}", "", method.filename)
@@ -206,7 +204,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       .withBindsEdge(methodTypeDecl, binding)
       .withRefEdge(binding, method)
 
-    scope.registerAstForInsertion(Ast(methodMember).withChild(Ast(modifierNode(decl, ModifierTypes.PUBLIC))))
     scope.registerAstForInsertion(methodTypeDeclAst)
   }
 
