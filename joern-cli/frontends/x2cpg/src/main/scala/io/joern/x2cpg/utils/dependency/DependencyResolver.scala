@@ -75,7 +75,10 @@ object DependencyResolver {
       }
     }.flatten
 
-    Option.when(dependencies.nonEmpty)(dependencies)
+    Option.when(dependencies.nonEmpty) {
+      logger.debug(("Dependency jars fetched:" :: dependencies).mkString(s"${System.lineSeparator()} - "))
+      dependencies
+    }
   }
 
   private def getDepsForGradleProject(

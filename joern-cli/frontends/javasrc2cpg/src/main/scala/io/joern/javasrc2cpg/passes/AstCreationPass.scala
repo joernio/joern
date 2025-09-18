@@ -36,7 +36,7 @@ import scala.collection.parallel.CollectionConverters.*
 import scala.collection.concurrent
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
 
 class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[String]] = None)
     extends ForkJoinParallelCpgPass[String](cpg) {
@@ -119,7 +119,14 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     dependencies: List[String],
     sourceParser: SourceParser
   ): JavaSymbolSolver = {
-    val combinedTypeSolver = new SimpleCombinedTypeSolver()
+    val verboseDebugLoggingEnvVarValue = Option(System.getenv(JavaSrcEnvVar.EnableVerboseTypeLogging.name))
+    val enableVerboseTypeLogging       = verboseDebugLoggingEnvVarValue.isDefined || config.enableVerboseTypeLogging
+    if (enableVerboseTypeLogging) {
+      logger.warn(
+        "Verbose type logging is enabled. This will impact performance and log size and should only be enabled for debugging specific issues!"
+      )
+    }
+    val combinedTypeSolver = new SimpleCombinedTypeSolver(enableVerboseTypeLogging)
     val symbolSolver       = new JavaSymbolSolver(combinedTypeSolver)
 
     val jdkPathFromEnvVar = Option(System.getenv(JavaSrcEnvVar.JdkPath.name))
@@ -141,11 +148,11 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     }
 
     combinedTypeSolver.addNonCachingTypeSolver(
-      JdkJarTypeSolver.fromJdkPath(jdkPath, useCache = config.cacheJdkTypeSolver)
+      JdkJarTypeSolver.fromJdkPath(jdkPath, config.cacheJdkTypeSolver, enableVerboseTypeLogging)
     )
 
     val sourceTypeSolver =
-      EagerSourceTypeSolver(sourceParser, combinedTypeSolver, symbolSolver)
+      EagerSourceTypeSolver(sourceParser, combinedTypeSolver, symbolSolver, enableVerboseTypeLogging)
 
     combinedTypeSolver.addCachingTypeSolver(sourceTypeSolver)
 
@@ -159,10 +166,21 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
       logger.debug(s"Using inference jars: ${jarsList.mkString(":")}")
     }
     (jarsList ++ dependencies)
-      .flatMap { path =>
-        Try(new JarTypeSolver(path)).toOption
+      .foreach { path =>
+        Try(new JarTypeSolver(path)) match {
+          case Success(jarTypeSolver) =>
+            combinedTypeSolver.addNonCachingTypeSolver(jarTypeSolver)
+            if (enableVerboseTypeLogging) {
+              logger.debug(s"Added JarTypeSolver for jar at $path")
+              logger.debug(
+                (s"Known classes:" :: jarTypeSolver.getKnownClasses.asScala.toList.sorted)
+                  .mkString(s"${System.lineSeparator()} - ")
+              )
+            }
+          case Failure(exception) =>
+            logger.warn(s"Could not create JarTypeSolver for jar at $path")
+        }
       }
-      .foreach { combinedTypeSolver.addNonCachingTypeSolver(_) }
 
     symbolSolver
   }

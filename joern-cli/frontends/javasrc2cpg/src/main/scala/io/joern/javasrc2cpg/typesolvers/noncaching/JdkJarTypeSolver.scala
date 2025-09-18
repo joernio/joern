@@ -70,7 +70,7 @@ class JdkJarTypeSolver(classPool: NonCachingClassPool, knownPackagePrefixes: Set
   }
 }
 
-class JdkJarTypeSolverBuilder {
+class JdkJarTypeSolverBuilder(enableVerboseTypeLogging: Boolean) {
 
   private val logger                                    = LoggerFactory.getLogger(this.getClass)
   private val classPool                                 = new NonCachingClassPool()
@@ -111,17 +111,27 @@ class JdkJarTypeSolverBuilder {
     val entryNameConverter = if (archivePath.isJarPath) packagePrefixForJarEntry else packagePrefixForJmodEntry
     try {
       Using(new JarFile(archivePath)) { jarFile =>
-        knownPackagePrefixes ++=
-          jarFile
-            .entries()
-            .asIterator()
-            .asScala
-            .filter(entry => !entry.isDirectory() && entry.getName().endsWith(ClassExtension))
-            .map(entry => entryNameConverter(entry.getName()))
+        if (enableVerboseTypeLogging) {
+          logger.debug(s"Adding jar to JdkJarTypeSolver: $archivePath")
+        }
+        val newPrefixes = jarFile
+          .entries()
+          .asIterator()
+          .asScala
+          .filter(entry => !entry.isDirectory() && entry.getName().endsWith(ClassExtension))
+          .map { entry =>
+            if (enableVerboseTypeLogging) {
+              logger.debug(s" - ${entry.getName}")
+            }
+            entryNameConverter(entry.getName())
+          }
+          .toList
+
+        knownPackagePrefixes ++= newPrefixes
       }
     } catch {
       case ioException: IOException =>
-        logger.warn(s"Could register classes for archive at $archivePath", ioException.getMessage())
+        logger.warn(s"Could not register classes for archive at $archivePath", ioException.getMessage())
     }
   }
 }
@@ -148,8 +158,12 @@ object JdkJarTypeSolver {
     jarPaths
   }
 
-  def fromJdkPath(jdkPath: String, useCache: Boolean = false): JdkJarTypeSolver = {
-    def createBuilder = new JdkJarTypeSolverBuilder().withJars(determineJarPaths(jdkPath))
+  def fromJdkPath(
+    jdkPath: String,
+    useCache: Boolean = false,
+    enableVerboseTypeLogging: Boolean = false
+  ): JdkJarTypeSolver = {
+    def createBuilder = new JdkJarTypeSolverBuilder(enableVerboseTypeLogging).withJars(determineJarPaths(jdkPath))
     if (useCache) {
       cache.getOrElseUpdate(jdkPath, createBuilder).build
     } else {

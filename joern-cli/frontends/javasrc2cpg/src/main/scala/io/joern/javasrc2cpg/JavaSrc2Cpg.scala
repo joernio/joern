@@ -67,5 +67,10 @@ object JavaSrc2Cpg {
           "JAVASRC_FETCH_DEPENDENCIES",
           "If set, javasrc2cpg will fetch dependencies regardless of the --fetch-dependencies flag."
         )
+    case EnableVerboseTypeLogging
+        extends JavaSrcEnvVar(
+          "JAVASRC_ENABLE_VERBOSE_TYPE_LOGGING",
+          "If set, javasrc2cpg will log all types found across JarTypeSolvers. THIS WILL IMPACT PERFORMANCE AND LOG SIZE AND SHOULD ONLY BE USED FOR DEBUGGING SPECIFIC ISSUES!"
+        )
   }
 }
