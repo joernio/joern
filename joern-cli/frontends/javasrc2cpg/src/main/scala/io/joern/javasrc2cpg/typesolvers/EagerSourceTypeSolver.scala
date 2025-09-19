@@ -16,14 +16,15 @@ import scala.util.Try
 class EagerSourceTypeSolver(
   sourceParser: SourceParser,
   combinedTypeSolver: SimpleCombinedTypeSolver,
-  symbolSolver: JavaSymbolSolver
+  symbolSolver: JavaSymbolSolver,
+  enableVerboseTypeLogging: Boolean
 ) extends TypeSolver {
 
   private val logger             = LoggerFactory.getLogger(this.getClass)
   private var parent: TypeSolver = scala.compiletime.uninitialized
 
   private val foundTypes: Map[String, SymbolReference[ResolvedReferenceTypeDeclaration]] = {
-    sourceParser.relativeFilenames
+    val result = sourceParser.relativeFilenames
       .flatMap(sourceParser.parseTypesFile)
       .flatMap { cu =>
         symbolSolver.inject(cu)
@@ -51,6 +52,15 @@ class EagerSourceTypeSolver(
           .toList
       }
       .toMap
+
+    if (enableVerboseTypeLogging) {
+      logger.debug(("EagerSourceTypeSolver found following types:" :: result.toList.sortBy(_._1).map {
+        case (name, resolveResult) =>
+          s"$name isSolved=${resolveResult.isSolved}"
+      }).mkString(s"${System.lineSeparator()} - "))
+    }
+
+    result
   }
 
   override def getParent: TypeSolver = parent
@@ -76,8 +86,9 @@ object EagerSourceTypeSolver {
   def apply(
     sourceParser: SourceParser,
     combinedTypeSolver: SimpleCombinedTypeSolver,
-    symbolSolver: JavaSymbolSolver
+    symbolSolver: JavaSymbolSolver,
+    enableVerboseTypeLogging: Boolean
   ): EagerSourceTypeSolver = {
-    new EagerSourceTypeSolver(sourceParser, combinedTypeSolver, symbolSolver)
+    new EagerSourceTypeSolver(sourceParser, combinedTypeSolver, symbolSolver, enableVerboseTypeLogging)
   }
 }
