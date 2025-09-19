@@ -21,8 +21,10 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
 }
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, FieldDecl}
 import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.rubysrc2cpg.passes.GlobalTypes
 import io.joern.rubysrc2cpg.passes.GlobalTypes.{kernelFunctions, kernelPrefix}
+import io.joern.x2cpg.frontendspecific.rubysrc2cpg.Constants
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
@@ -251,6 +253,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
     StatementList(tmpAssignment :: ifStmt :: Nil)(originSpan)
   }
+
+  protected def isErbCall(callName: String): Boolean = ErbTemplateCallNames.contains(callName)
+
+  protected val ErbTemplateCallNames: Map[String, String] = Map(
+    Constants.joernErbTemplateOutRawName    -> RubyOperators.templateOutRaw,
+    Constants.joernErbTemplateOutEscapeName -> RubyOperators.templateOutEscape
+  )
 
   protected val UnaryOperatorNames: Map[String, String] = Map(
     "!"   -> Operators.logicalNot,
