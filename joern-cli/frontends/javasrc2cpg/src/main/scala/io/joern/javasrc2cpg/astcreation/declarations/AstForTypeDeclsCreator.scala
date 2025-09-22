@@ -705,7 +705,8 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
   private def modifiersForFieldDeclaration(decl: FieldDeclaration): Seq[Ast] = {
     val staticModifier =
       Option.when(decl.isStatic)(modifierNode(decl, ModifierTypes.STATIC))
-
+    val finalModifier =
+      Option.when(decl.isFinal)(modifierNode(decl, ModifierTypes.FINAL))
     val accessModifierType =
       if (decl.isPublic)
         Some(ModifierTypes.PUBLIC)
@@ -718,7 +719,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
 
     val accessModifier = accessModifierType.map(modifierNode(decl, _))
 
-    List(staticModifier, accessModifier).flatten.map(Ast(_))
+    List(staticModifier, finalModifier, accessModifier).flatten.map(Ast(_))
   }
 
   private def createTypeDeclNode(
