@@ -5,7 +5,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.Ignore
 
-//@Ignore
 class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture(withPostProcessing = true) {
 
   /* TODO: Future tests to specify correct type recovery behaviors:
@@ -387,7 +386,7 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture(withPostProcessing = t
 
     "propagate type information to calling method when called with $this" in {
       val List(barMethod) = cpg.method("bar").take(1).l
-      barMethod.methodReturn.dynamicTypeHintFullName shouldBe Seq("int", "Test0.php:<global>.foo.<returnValue>")
+      barMethod.methodReturn.dynamicTypeHintFullName shouldBe Seq("int")
     }
   }
 

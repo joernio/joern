@@ -195,11 +195,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       fooDecl.code shouldBe "interface Foo"
       fooDecl.inheritsFromTypeFullName.isEmpty shouldBe true
 
-      inside(fooDecl.astChildren.l) { case List(fooMethodMember: Member, fooMethodDecl: TypeDecl, fooMethod: Method) =>
-        fooMethodMember.name shouldBe "foo"
-        fooMethodMember.typeFullName shouldBe "Foo.foo"
-        fooMethodMember.dynamicTypeHintFullName.l shouldBe List("Foo.foo")
-
+      inside(fooDecl.astChildren.l) { case List(fooMethodDecl: TypeDecl, fooMethod: Method) =>
         fooMethodDecl.fullName shouldBe "Foo.foo"
 
         fooMethod.name shouldBe "foo"
@@ -237,11 +233,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       fooDecl.code shouldBe "trait Foo"
       fooDecl.inheritsFromTypeFullName.isEmpty shouldBe true
 
-      inside(fooDecl.astChildren.l) { case List(fooMethodMember: Member, fooMethodDecl: TypeDecl, fooMethod: Method) =>
-        fooMethodMember.name shouldBe "foo"
-        fooMethodMember.typeFullName shouldBe "Foo.foo"
-        fooMethodMember.dynamicTypeHintFullName.l shouldBe List("Foo.foo")
-
+      inside(fooDecl.astChildren.l) { case List(fooMethodDecl: TypeDecl, fooMethod: Method) =>
         fooMethodDecl.fullName shouldBe "Foo.foo"
 
         fooMethod.name shouldBe "foo"

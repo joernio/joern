@@ -458,14 +458,6 @@ class ClosureTests extends PhpCode2CpgFixture {
                                |}
                                |""".stripMargin)
 
-    "have a member for the lambda function" in {
-      inside(cpg.typeDecl.name(".*global.*").member.sortBy(_.name).l) { case List(fooMember, lambdaMember) =>
-        lambdaMember.name shouldBe "foo.<lambda>0"
-        lambdaMember.typeFullName shouldBe "foo.<lambda>0"
-        lambdaMember.dynamicTypeHintFullName.toList shouldBe List("foo.<lambda>0")
-      }
-    }
-
     "represent the lambda assignment correctly" in {
       inside(cpg.method.name("foo").body.astChildren.l) { case List(_: Local, lambdaAssign: Call, _: Return) =>
         lambdaAssign.name shouldBe Operators.assignment
