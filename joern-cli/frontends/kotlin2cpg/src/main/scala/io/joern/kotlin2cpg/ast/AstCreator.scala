@@ -240,9 +240,14 @@ class AstCreator(
     }
   }
 
-  private def logDebugWithTestAndStackTrace(message: String): Unit = {
+  protected def logDebugWithTestAndStackTrace(message: String): Unit = {
     val declString = debugScope.headOption.map(_.getText).getOrElse("Declaration scope empty")
     logger.debug(message + "\nIn declaration:\n" + declString + "\nStack trace to declaration:" + getStackTrace)
+  }
+
+  protected def logWarnWithTestAndStackTrace(message: String): Unit = {
+    val declString = debugScope.headOption.map(_.getText).getOrElse("Declaration scope empty")
+    logger.warn(message + "\nIn declaration:\n" + declString + "\nStack trace to declaration:" + getStackTrace)
   }
 
   private def getStackTrace: String = {
