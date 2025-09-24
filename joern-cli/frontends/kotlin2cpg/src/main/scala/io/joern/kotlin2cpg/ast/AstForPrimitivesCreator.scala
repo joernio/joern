@@ -125,7 +125,22 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     registerType(typeFullName)
 
     val baseTypeFullName = declDesc
-      .flatMap(desc => nameRenderer.typeFullName(desc.getDispatchReceiverParameter.getType))
+      .flatMap { desc =>
+        val dispatchReceiver = desc.getDispatchReceiverParameter
+        if (dispatchReceiver != null) {
+          nameRenderer.typeFullName(dispatchReceiver.getType)
+        } else {
+          val descClassName = desc.getClass.getName
+          val contextReceiverTypeFullNames =
+            desc.getContextReceiverParameters.asScala.map(_.getType).map(nameRenderer.typeFullName)
+          val dispatchReceiverFullName =
+            Option(desc.getDispatchReceiverParameter).map(_.getType).map(nameRenderer.typeFullName)
+          logWarnWithTestAndStackTrace(
+            s"Dispatch receiver is null for expression ${expr.getText} in line ${line(expr)} of file $relativizedPath\nDescClassName $descClassName\nContextReceiverFullNames: $contextReceiverTypeFullNames\nDispatchReceiverFullName: $dispatchReceiverFullName"
+          )
+          None
+        }
+      }
       .getOrElse(TypeConstants.Any)
     registerType(baseTypeFullName)
 
