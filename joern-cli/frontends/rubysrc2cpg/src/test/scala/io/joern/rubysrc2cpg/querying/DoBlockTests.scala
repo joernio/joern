@@ -68,7 +68,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
 
     "have the return node under the closure (returning the literal)" in {
       inside(cpg.method("<lambda>0").block.astChildren.l) {
-        case ret :: Nil =>
+        case ret :: _ :: Nil =>
           ret.code shouldBe "\"world!\""
         case xs => fail(s"Expected the closure to have a single call, instead got [${xs.code.mkString(", ")}]")
       }
@@ -229,9 +229,9 @@ class DoBlockTests extends RubyCode2CpgFixture {
       }
     }
 
-    "annotate the nodes via CAPTURE bindings" in {
+    "nnotate the nodes via CAPTURE bindings" in {
       cpg.closureBinding.l match {
-        case myValue :: Nil =>
+        case myValue :: _ :: Nil =>
           inside(myValue._localViaRefOut) {
             case Some(local) =>
               local.name shouldBe "myValue"
@@ -243,7 +243,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
             case xs                  => fail(s"Expected single method ref binding but got [${xs.mkString(",")}]")
           }
         case xs =>
-          fail(s"Expected single closure binding but got [${xs.mkString(",")}]")
+          fail(s"Expected single closure binding but got [${xs.closureBindingId.mkString(",")}]")
       }
     }
 
@@ -338,7 +338,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
       inside(cpg.method.isLambda.headOption) {
         case Some(lambda) =>
           lambda.code shouldBe "->(y) { y }"
-          lambda.parameter.name.l shouldBe List("self", "y")
+          lambda.parameter.name.l shouldBe List("y")
         case xs => fail(s"Expected a lambda method")
       }
     }
@@ -364,7 +364,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
       inside(cpg.method.isLambda.headOption) {
         case Some(lambda) =>
           lambda.code shouldBe "lambda { |y| y }"
-          lambda.parameter.name.l shouldBe List("self", "y")
+          lambda.parameter.name.l shouldBe List("y")
         case xs => fail(s"Expected a lambda method")
       }
     }
@@ -400,17 +400,19 @@ class DoBlockTests extends RubyCode2CpgFixture {
                      |""".stripMargin)
 
     inside(cpg.local.nameNot(".*<tmp-\\d>").l) {
-      case jfsOutsideLocal :: schedules :: hashInsideLocal :: jfsCapturedLocal :: Nil =>
+      case jfsOutsideLocal :: _ :: hashInsideLocal :: jfsCapturedLocal :: selfCapturedLocal :: Nil =>
         jfsOutsideLocal.closureBindingId shouldBe None
         hashInsideLocal.closureBindingId shouldBe None
         jfsCapturedLocal.closureBindingId shouldBe Some("Test0.rb:<main>.get_pto_schedule.jfs")
+        selfCapturedLocal.closureBindingId shouldBe Some("Test0.rb:<main>.get_pto_schedule.<lambda>0.self")
       case xs => fail(s"Expected 6 locals, got ${xs.code.mkString(",")}")
     }
 
     inside(cpg.method.isLambda.local.l) {
-      case hashLocal :: _ :: jfsLocal :: Nil =>
+      case hashLocal :: _ :: jfsLocal :: selfLocal :: Nil =>
         hashLocal.closureBindingId shouldBe None
         jfsLocal.closureBindingId shouldBe Some("Test0.rb:<main>.get_pto_schedule.jfs")
+        selfLocal.closureBindingId shouldBe Some("Test0.rb:<main>.get_pto_schedule.<lambda>0.self")
       case xs => fail(s"Expected 3 locals in lambda, got ${xs.code.mkString(",")}")
     }
   }
@@ -424,7 +426,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
 
     "Generate correct parameters" in {
       inside(cpg.method.isLambda.parameter.l) {
-        case _ :: aParam :: tmp0Param :: dParam :: eParam :: tmp1Param :: hParam :: iParam :: Nil =>
+        case aParam :: tmp0Param :: dParam :: eParam :: tmp1Param :: hParam :: iParam :: Nil =>
           aParam.name shouldBe "a"
           aParam.code shouldBe "a"
 
@@ -451,12 +453,15 @@ class DoBlockTests extends RubyCode2CpgFixture {
 
     "Generate required locals" in {
       inside(cpg.method.isLambda.body.local.l) {
-        case bLocal :: cLocal :: fLocal :: gSplatLocal :: Nil =>
+        case bLocal :: cLocal :: fLocal :: gSplatLocal :: selfLocal :: Nil =>
           bLocal.code shouldBe "b"
           cLocal.code shouldBe "c"
 
           fLocal.code shouldBe "f"
           gSplatLocal.code shouldBe "g"
+
+          selfLocal.code shouldBe "self"
+          selfLocal.closureBindingId shouldBe Some("Test0.rb:<main>.<lambda>0.self")
         case xs => fail(s"Expected 4 locals, got [${xs.name.mkString(", ")}]")
       }
     }
@@ -538,5 +543,74 @@ class DoBlockTests extends RubyCode2CpgFixture {
     backRefCall.code shouldBe "self.$&"
     backRefCall.lineNumber shouldBe Option(3)
     backRefCall.columnNumber shouldBe Option(29)
+  }
+
+  "A `self` reference in a lambda" should {
+    val cpg = code("""
+        |foo("something") { |x| send x }
+        |""".stripMargin)
+
+    "not result in `self` identifiers with multiple refOut edges" in {
+      inside(cpg.method.isLambda.ast.fieldAccess.argument.isIdentifier.distinct.nameExact(RubyDefines.Self).l) {
+        case (identifier: Identifier) :: Nil =>
+          inside(identifier.refOut.l) {
+            case (local: Local) :: Nil =>
+              local.name shouldBe "self"
+              local.closureBindingId shouldBe Some("Test0.rb:<main>.<lambda>0.self")
+            case xs =>
+              fail(s"Expected a single local, got [${xs.code.mkString(",")}]")
+          }
+        case Nil =>
+          fail(s"Expected `self` identifiers, got none")
+      }
+    }
+  }
+
+  "A `self` reference in a nested lambda" should {
+    val cpg = code("""
+        |class UsersController < ActionController::Base
+        |  def show
+        |    respond_to do |format|
+        |      format.json { render partial: "foo" }
+        |    end
+        |  end
+        |end
+        |""".stripMargin)
+
+    "be correctly referenced by the closure binding" in {
+      inside(
+        cpg.method
+          .fullNameExact("Test0.rb:<main>.UsersController.show.<lambda>0.<lambda>0")
+          .local
+          .nameExact(RubyDefines.Self)
+          .l
+      ) {
+        case (local: Local) :: Nil =>
+          local.closureBindingId shouldBe Some("Test0.rb:<main>.UsersController.show.<lambda>0.<lambda>0.self")
+
+          inside(cpg.closureBinding.closureBindingIdExact(local.closureBindingId.get).l) {
+            case (closureBinding: ClosureBinding) :: Nil =>
+              closureBinding.closureBindingId shouldBe Some(
+                "Test0.rb:<main>.UsersController.show.<lambda>0.<lambda>0.self"
+              )
+
+              inside(closureBinding.refOut.isLocal.l) {
+                case (outerLocal: Local) :: Nil =>
+                  outerLocal.name shouldBe RubyDefines.Self
+                  outerLocal.closureBindingId shouldBe Some("Test0.rb:<main>.UsersController.show.<lambda>0.self")
+                case xs =>
+                  fail(s"Expected a single local referenced by the closure binding, got [${xs.code.mkString(",")}]")
+              }
+            case xs =>
+              fail(s"Expected a single closureBinding, got ${xs.size}")
+          }
+        case xs =>
+          fail(s"Expected a single local, got [${xs.code.mkString(",")}]")
+      }
+    }
+
+    "result in the correct number of LOCAL `self` nodes" in {
+      cpg.local.nameExact("self").size shouldBe 2
+    }
   }
 }
