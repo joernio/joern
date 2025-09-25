@@ -3,6 +3,7 @@ package io.joern.php2cpg.passes
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.semanticcpg.language.*
+import org.scalatest.Ignore
 
 class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture(withPostProcessing = true) {
 
