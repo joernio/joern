@@ -7,9 +7,8 @@ import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewImport}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewImport, NewMethod, NewNode}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.Operators
 import ujson.Value
@@ -454,6 +453,9 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       .lineNumber(call.flatMap(_.lineNumber))
       .columnNumber(call.flatMap(_.lineNumber))
     call.foreach { c => diffGraph.addEdge(c, impNode, EdgeTypes.IS_CALL_FOR_IMPORT) }
+    methodAstParentStack
+      .collectFirst { case m: NewMethod if m.name == Defines.Program => m }
+      .foreach(diffGraph.addEdge(_, impNode, EdgeTypes.AST))
     impNode
   }
 
