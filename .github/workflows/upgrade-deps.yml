@@ -20,6 +20,10 @@ jobs:
           distribution: temurin
           java-version: 21
           cache: sbt
+      - name: Set up Swift
+        uses: SwiftyLab/setup-swift@latest
+        with:
+          swift-version: "6.1"
       - uses: sbt/setup-sbt@v1
       - name: Upgrade all (internal) dependencies
         run: ./updateDependencies.sh --non-interactive
