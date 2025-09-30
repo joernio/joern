@@ -4,7 +4,7 @@ dependsOn(
   Projects.semanticcpg,
   Projects.dataflowengineoss % "compile->compile;test->test",
   Projects.x2cpg             % "compile->compile;test->test",
-  Projects.linterRules % ScalafixConfig
+  Projects.linterRules       % ScalafixConfig
 )
 
 libraryDependencies ++= Seq(
