@@ -10,6 +10,7 @@ object Constants {
   val joernErbTemplatePrefix        = "joern__"
   val joernErbTemplateOutRawName    = s"${joernErbTemplatePrefix}template_out_raw"
   val joernErbTemplateOutEscapeName = s"${joernErbTemplatePrefix}template_out_escape"
+  val joernErbBufferAppend          = s"${joernErbTemplatePrefix}buffer_append"
 
   /* Source: https://ruby-doc.org/3.2.2/Kernel.html
    *

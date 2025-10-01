@@ -48,13 +48,16 @@ class ErbTests extends RubyCode2CpgFixture {
           appendCallTwo.lineNumber shouldBe None
 
           appendCallOne.code shouldBe
-            """(<tmp-4> = self.joern__buffer) << "redis:\nhost:"""".stripMargin
+            """self.joern__buffer_append(self.joern__buffer, "redis:\nhost:...""".stripMargin
 
-          appendCallTwo.code shouldBe "(<tmp-5> = self.joern__buffer) << <%= ENV['REDIS_HOST'] %>"
+          appendCallTwo.code shouldBe "self.joern__buffer_append(self.joern__buffer, <%= ENV['REDIS_HOST'] %>)"
 
           inside(appendCallTwo.argument.l) {
-            case base :: (argTwo: Call) :: Nil =>
-              base.code shouldBe "<tmp-5>"
+            case base :: (argOne: Call) :: (argTwo: Call) :: Nil =>
+              base.code shouldBe "self"
+
+              argOne.code shouldBe "self.joern__buffer"
+              argOne.methodFullName shouldBe "<operator>.fieldAccess"
 
               argTwo.code shouldBe "<%= ENV['REDIS_HOST'] %>"
               argTwo.methodFullName shouldBe RubyOperators.templateOutEscape
@@ -63,7 +66,7 @@ class ErbTests extends RubyCode2CpgFixture {
 
           inside(appendCallTwo.receiver.l) {
             case recv :: Nil =>
-              recv.code shouldBe "(<tmp-5> = self.joern__buffer) <<"
+              recv.code shouldBe "self.joern__buffer_append"
             case xs => fail(s"Expected one receiver, got ${xs.code.mkString("[", ",", "]")}")
           }
         case xs => fail(s"Expected one true branch, got ${xs.code.mkString("[", ",", "]")}")
@@ -111,19 +114,21 @@ class ErbTests extends RubyCode2CpgFixture {
           inside(ifStruct.whenTrue.isBlock.astChildren.isCall.l) {
             case appendCallStatic :: appendCallTemplate :: Nil =>
               val List(appendCallStaticRecv) = appendCallStatic.receiver.l: @unchecked
-              appendCallStaticRecv.code shouldBe "(<tmp-2> = self.joern__buffer) <<"
+              appendCallStaticRecv.code shouldBe "self.joern__buffer_append"
 
-              val List(callArgStaticOne, callArgStaticTwo) = appendCallStatic.argument.l: @unchecked
-              callArgStaticOne.code shouldBe "<tmp-2>"
+              val List(selfIdentifier, callArgStaticOne, callArgStaticTwo) = appendCallStatic.argument.l: @unchecked
+              selfIdentifier.code shouldBe "self"
+              callArgStaticOne.code shouldBe "self.joern__buffer"
               callArgStaticTwo.code shouldBe
                 """redis:
                   |host:""".stripMargin
 
               val List(appendCallTemplateRecv) = appendCallTemplate.receiver.l: @unchecked
-              appendCallTemplateRecv.code shouldBe "(<tmp-3> = self.joern__buffer) <<"
+              appendCallTemplateRecv.code shouldBe "self.joern__buffer_append"
 
-              val List(callArgOne, callArgTwo: Call) = appendCallTemplate.argument.l: @unchecked
-              callArgOne.code shouldBe "<tmp-3>"
+              val List(selfId, callArgOne, callArgTwo: Call) = appendCallTemplate.argument.l: @unchecked
+              selfId.code shouldBe "self"
+              callArgOne.code shouldBe "self.joern__buffer"
               callArgTwo.methodFullName shouldBe RubyOperators.templateOutEscape
               callArgTwo.code shouldBe "<%= ENV['REDIS_HOST'] %>"
 
@@ -155,16 +160,19 @@ class ErbTests extends RubyCode2CpgFixture {
 
           inside(elsifStruct.whenTrue.isBlock.astChildren.isCall.l) {
             case appendCallStatic :: appendCallTemplate :: Nil =>
-              appendCallStatic.argument.l.size shouldBe 2
-              val List(callArgStaticOne, callArgStaticTwo) = appendCallStatic.argument.l: @unchecked
-              callArgStaticOne.code shouldBe "<tmp-4>"
+              appendCallStatic.argument.l.size shouldBe 3
+              val List(selfIdentifier, callArgStaticOne, callArgStaticTwo) = appendCallStatic.argument.l: @unchecked
+              selfIdentifier.code shouldBe "self"
+              callArgStaticOne.code shouldBe "self.joern__buffer"
               callArgStaticTwo.code shouldBe
                 """rabbitmq:
                   |port:""".stripMargin
 
-              appendCallTemplate.argument.l.size shouldBe 2
-              val List(callArgOne, callArgTwo: Call) = appendCallTemplate.argument.l: @unchecked
-              callArgOne.code shouldBe "<tmp-5>"
+              appendCallTemplate.argument.l.size shouldBe 3
+              val List(selfId: Identifier, callArgOne: Call, callArgTwo: Call) =
+                appendCallTemplate.argument.l: @unchecked
+              selfId.code shouldBe "self"
+              callArgOne.code shouldBe "self.joern__buffer"
               callArgTwo.methodFullName shouldBe RubyOperators.templateOutRaw
               callArgTwo.code shouldBe "<%== ENV['RABBITMQ_PORT'] %>"
 
@@ -215,6 +223,15 @@ class ErbTests extends RubyCode2CpgFixture {
      *   joern__buffer
      * ```
      *
+     * self.joern__buffer = ""
+     * self.joern__buffer_append(self.joern__buffer, form_with(url: some_url)
+     * rails_lambda_0 = lambda do |form|
+     *    joern__inner_buffer = ""
+     *    self.joern__buffer_append(joern__inner_buffer, joern__template_out_escape( form.text_field :name ))
+     *    joern__inner_buffer
+     * end
+     * self.joern__buffer_append(self.joern__buffer, rails_lambda_0.call(form))
+     *
      */
     val cpg = code(
       """
@@ -248,8 +265,9 @@ class ErbTests extends RubyCode2CpgFixture {
 
           inside(lambdaMethod.body.astChildren.l) {
             case _ :: _ :: (appendCallTemplate: Call) :: _ :: _ :: Nil =>
-              appendCallTemplate.code shouldBe "joern__inner_buffer << <%= form.text_field :name %>"
-              val List(appendCallArgOne, appendCallArgTwo: Call) = appendCallTemplate.argument.l: @unchecked
+              appendCallTemplate.code shouldBe "self.joern__buffer_append(joern__inner_buffer, <%= form.text_field :name %>)"
+              val List(selfId, appendCallArgOne, appendCallArgTwo: Call) = appendCallTemplate.argument.l: @unchecked
+              selfId.code shouldBe "self"
 
               appendCallArgOne.code shouldBe "joern__inner_buffer"
               appendCallArgTwo.code shouldBe "<%= form.text_field :name %>"
@@ -272,7 +290,7 @@ class ErbTests extends RubyCode2CpgFixture {
 
     "Assign the lambda to a variable" in {
       inside(cpg.call.name(Operators.assignment).l) {
-        case _ :: _ :: _ :: lambdaAssign :: _ :: Nil =>
+        case _ :: _ :: lambdaAssign :: Nil =>
           val List(lhs, rhs: TypeRef) = lambdaAssign.argument.l: @unchecked
           lhs.code shouldBe "rails_lambda_0"
           rhs.code shouldBe "<lambda>0&Proc"
@@ -320,8 +338,10 @@ class ErbTests extends RubyCode2CpgFixture {
         inside(ifStruct.whenTrue.l) {
           case trueBranch :: Nil =>
             val List(appendCall: Call) = trueBranch.astChildren.isCall.l
-            appendCall.code shouldBe "(<tmp-0> = self.joern__buffer) << <%= link_to(url: some_url) %>"
-            val List(appendArgOne, appendArgTwo: Call) = appendCall.argument.l: @unchecked
+            appendCall.code shouldBe "self.joern__buffer_append(self.joern__buffer, <%= link_to(url: some_url) %>)"
+            val List(selfId, appendArgOne, appendArgTwo: Call) = appendCall.argument.l: @unchecked
+            selfId.code shouldBe "self"
+            appendArgOne.code shouldBe "self.joern__buffer"
             appendArgTwo.methodFullName shouldBe RubyOperators.templateOutEscape
             appendArgTwo.code shouldBe "<%= link_to(url: some_url) %>"
           case xs => fail(s"Expected one true branch, got ${xs.code.mkString("[", ",", "]")}")
@@ -347,15 +367,17 @@ class ErbTests extends RubyCode2CpgFixture {
 
         inside(eachLambda.methodReturn.toReturn.l) {
           case ret :: Nil =>
-            ret.code shouldBe "self.joern__buffer << <%= var.out %>"
+            ret.code shouldBe "self.joern__buffer_append(self.joern__buffer, <%= var.out %>)"
             inside(ret.astChildren.l) {
               case (appendCall: Call) :: Nil =>
                 val List(appendCallRecv) = appendCall.receiver.l: @unchecked
-                appendCallRecv.code shouldBe "(<tmp-0> = self.joern__buffer) <<"
+                appendCallRecv.code shouldBe "self.joern__buffer_append"
 
-                val List(callArgOne, callArgTwo: Call) = appendCall.argument.l: @unchecked
-                callArgOne.code shouldBe "<tmp-0>"
+                val List(selfId, callArgOne, callArgTwo: Call) = appendCall.argument.l: @unchecked
+                selfId.code shouldBe "self"
+                callArgOne.code shouldBe "self.joern__buffer"
                 callArgTwo.methodFullName shouldBe RubyOperators.templateOutEscape
+                callArgTwo.code shouldBe "<%= var.out %>"
               case xs => fail(s"Expected one call in the return, got ${xs.code.mkString("[", ",", "]")}")
             }
           case xs => fail(s"Expected one return, got ${xs.code.mkString("[", ",", "]")}")

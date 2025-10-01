@@ -1,14 +1,12 @@
 package io.joern.rubysrc2cpg.parser
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
-import io.joern.rubysrc2cpg.parser.AstType.Send
 import io.joern.rubysrc2cpg.parser.RubyJsonHelpers.*
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.rubysrc2cpg.passes.Defines.{NilClass, RubyOperators}
-import io.joern.rubysrc2cpg.passes.GlobalTypes.corePrefix
+import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
-import io.joern.x2cpg.frontendspecific.rubysrc2cpg.{Constants, ImportsPass}
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg.ImportsPass.ImportCallNames
+import io.joern.x2cpg.frontendspecific.rubysrc2cpg.{Constants, ImportsPass}
 import org.slf4j.LoggerFactory
 import ujson.*
 
@@ -1019,7 +1017,7 @@ class RubyJsonToNodeCreator(
       }
 
       // This is specifically for ERB lowering, where we append some ERBTemplateCall to a buffer
-      if (callName == "<<" && arguments.exists(_.isInstanceOf[ErbTemplateCall])) {
+      if (callName == "joern__buffer_append" && arguments.exists(_.isInstanceOf[ErbTemplateCall])) {
         val argumentText = arguments
           .map {
             case x: ErbTemplateCall =>
@@ -1030,10 +1028,10 @@ class RubyJsonToNodeCreator(
               }
             case x => x.span.text
           }
-          .mkString(",")
+          .mkString(", ")
 
         MemberCall(base, op, callName, arguments)(
-          obj.toTextSpan.spanStart(s"${base.span.text} ${callName} ${argumentText}")
+          obj.toTextSpan.spanStart(s"${base.span.text}.${callName}(${argumentText})")
         )
       } else if (isMemberCall) {
         MemberCall(base, op, callName, arguments)(obj.toTextSpan)
