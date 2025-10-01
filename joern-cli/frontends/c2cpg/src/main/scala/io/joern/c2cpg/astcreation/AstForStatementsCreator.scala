@@ -294,9 +294,10 @@ trait AstForStatementsCreator { this: AstCreator =>
     val columnNumber = column(statement)
     // We only handle un-parsable macros here for now
     val isFromMacroExpansion = statement.getProblem.getNodeLocations.exists(_.isInstanceOf[IASTMacroExpansionLocation])
+    val code                 = statement.getRawSignature
+    val file                 = Paths.get(statement.getContainingFilename)
     val asts = if (isFromMacroExpansion) {
-      new CdtParser(config, headerFileFinder, None, global)
-        .parse(statement.getRawSignature, Paths.get(statement.getContainingFilename)) match
+      new CdtParser(config, headerFileFinder, None, global).parse(code, file) match
         case Some(translationUnit: IASTTranslationUnit) =>
           translationUnit.getDeclarations.toIndexedSeq.flatMap(astsForDeclaration)
         case None =>
