@@ -228,11 +228,7 @@ class MethodTests extends PhpCode2CpgFixture {
 
     "have the constructor modifier set" in {
       inside(cpg.method.nameExact("__construct").l) { case List(constructor) =>
-        constructor.modifier.modifierType.toSet shouldBe Set(
-          ModifierTypes.CONSTRUCTOR,
-          ModifierTypes.PUBLIC,
-          ModifierTypes.VIRTUAL
-        )
+        constructor.modifier.modifierType.toSet shouldBe Set(ModifierTypes.CONSTRUCTOR, ModifierTypes.PUBLIC)
       }
 
       cpg.method.name("__construct").size shouldBe cpg.method.isConstructor.size
