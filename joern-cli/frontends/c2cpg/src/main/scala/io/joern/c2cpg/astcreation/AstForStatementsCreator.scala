@@ -297,11 +297,12 @@ trait AstForStatementsCreator { this: AstCreator =>
     val code                 = statement.getRawSignature
     val file                 = Paths.get(statement.getContainingFilename)
     val asts = if (isFromMacroExpansion) {
-      new CdtParser(config, headerFileFinder, None, global).parse(code, file) match
+      new CdtParser(config, headerFileFinder, None, global).parse(code, file) match {
         case Some(translationUnit: IASTTranslationUnit) =>
           translationUnit.getDeclarations.toIndexedSeq.flatMap(astsForDeclaration)
         case None =>
           Seq.empty
+      }
     } else {
       Seq.empty
     }
