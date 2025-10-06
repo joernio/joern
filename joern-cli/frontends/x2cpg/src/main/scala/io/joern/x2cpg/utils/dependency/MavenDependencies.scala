@@ -3,6 +3,7 @@ package io.joern.x2cpg.utils.dependency
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
+import java.io.File
 import java.nio.file.Path
 import scala.util.{Failure, Success}
 import scala.util.Properties.isWin
@@ -68,7 +69,7 @@ object MavenDependencies {
       val isClassPathNow = classPathNext
       classPathNext = line.endsWith("Dependencies classpath:")
 
-      if (isClassPathNow) line.split(':') else Array.empty[String]
+      if (isClassPathNow) line.split(File.pathSeparatorChar) else Array.empty[String]
     }.distinct
 
     logger.info("got {} Maven dependencies", deps.size)
