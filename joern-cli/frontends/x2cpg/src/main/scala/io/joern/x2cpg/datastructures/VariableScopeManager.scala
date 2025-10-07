@@ -124,13 +124,15 @@ class VariableScopeManager {
   /** The current scope stack, represented as an optional `ScopeElement`. */
   protected var stack: Option[ScopeElement] = Option.empty
 
+  protected val ScopePathSeparator: String = ":"
+
   /** Computes the scope path by concatenating the names of all enclosing method scopes.
     *
     * @return
     *   A string representing the scope path.
     */
   def computeScopePath: String = {
-    getAllEnclosingMethodScopeElements(stack).reverse.map(_.methodName).mkString(":")
+    getAllEnclosingMethodScopeElements(stack).reverse.map(_.methodName).mkString(ScopePathSeparator)
   }
 
   /** Looks up a variable by its identifier in the current scope stack.
