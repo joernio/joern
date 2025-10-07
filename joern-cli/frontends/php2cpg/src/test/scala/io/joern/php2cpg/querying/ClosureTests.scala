@@ -84,10 +84,9 @@ class ClosureTests extends PhpCode2CpgFixture {
       closureMethod.fullName shouldBe expectedName
       closureMethod.signature shouldBe ""
       closureMethod.code shouldBe s"function $expectedName($$value) use($$use1, &$$use2)"
-      closureMethod.parameter.size shouldBe 2
+      closureMethod.parameter.size shouldBe 1
 
-      inside(closureMethod.parameter.l) { case List(thisParam, valueParam) =>
-        thisParam.name shouldBe "this"
+      inside(closureMethod.parameter.l) { case List(valueParam) =>
         valueParam.name shouldBe "value"
       }
 
@@ -157,10 +156,9 @@ class ClosureTests extends PhpCode2CpgFixture {
       closureMethod.fullName shouldBe expectedName
       closureMethod.signature shouldBe ""
       closureMethod.code shouldBe s"function $expectedName($$value)"
-      closureMethod.parameter.size shouldBe 2
+      closureMethod.parameter.size shouldBe 1
 
-      inside(closureMethod.parameter.l) { case List(thisParam, valueParam) =>
-        thisParam.name shouldBe "this"
+      inside(closureMethod.parameter.l) { case List(valueParam) =>
         valueParam.name shouldBe "value"
       }
 
@@ -471,6 +469,22 @@ class ClosureTests extends PhpCode2CpgFixture {
       }
     }
 
+    "represent the variable invocation correctly" in {
+      inside(cpg.call("__invoke").l) { case List(invokeCall) =>
+        invokeCall.methodFullName shouldBe "$b_lambda.__invoke"
+
+        inside(invokeCall.receiver.l) { case List(bLambda: Identifier) =>
+          bLambda.name shouldBe "b_lambda"
+          bLambda.argumentIndex shouldBe -1
+        }
+
+        inside(invokeCall.argument.l) { case List(aaaArg: Identifier) =>
+          aaaArg.name shouldBe "aaa"
+          aaaArg.argumentIndex shouldBe 1
+        }
+      }
+    }
+
     "have the method declaration corresponding to the lambda created correctly" in {
       inside(cpg.method.name(".*lambda.*").l) { case List(lambdaMethod) =>
         lambdaMethod.name shouldBe "foo.<lambda>0"
@@ -495,16 +509,7 @@ class ClosureTests extends PhpCode2CpgFixture {
           }
         }
 
-        inside(lambdaDecl.method.sortBy(_.name).l) { case List(constructMethod, invokeMethod) =>
-          invokeMethod.name shouldBe "__invoke"
-          invokeMethod.fullName shouldBe "foo.<lambda>0.__invoke"
-
-          inside(invokeMethod.parameter.l) { case List(thisParameter, xParameter) =>
-            thisParameter.name shouldBe "this"
-
-            xParameter.name shouldBe "x"
-          }
-        }
+        lambdaDecl.method.isEmpty shouldBe true
       }
     }
   }

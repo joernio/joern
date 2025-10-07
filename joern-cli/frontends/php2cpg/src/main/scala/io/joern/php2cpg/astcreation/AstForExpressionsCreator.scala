@@ -119,7 +119,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         (receiverAst, callRoot)
     }
 
-    callAst(callRoot, arguments, Option(receiverAst))
+    if (isCallOnVariable(call))
+      callAst(callRoot, arguments, receiver = Option(receiverAst))
+    else
+      callAst(callRoot, arguments, base = Option(receiverAst))
+
   }
 
   private def astForStaticCall(call: PhpCallExpr, name: String, arguments: Seq[Ast]): Ast = {

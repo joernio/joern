@@ -94,7 +94,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         localsForUses.map(Ast(_)),
         Option(methodName),
         usesCode = Option(usesCode),
-        isAnonymousDecl = true
+        isAnonymousMethod = true
       )
 
     // Add method to scope to be attached to typeDecl later
@@ -109,10 +109,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     fullNameOverride: Option[String] = None,
     isConstructor: Boolean = false,
     usesCode: Option[String] = None,
-    isAnonymousDecl: Boolean = false
+    isAnonymousMethod: Boolean = false
   ): Ast = {
     val isStatic = decl.modifiers.contains(ModifierTypes.STATIC)
-    val thisParam = if (decl.isClassMethod && !isStatic) {
+    val thisParam = if (!isAnonymousMethod && decl.isClassMethod && !isStatic) {
       Option(thisParamAstForMethod(decl))
     } else {
       None
@@ -172,12 +172,19 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       val paramCopies = parameters.map(paramAst => (paramAst, paramAst.root)).collect {
         case (paramAst, Some(root: AstNodeNew)) => paramAst.subTreeCopy(root)
       }
-      createAndPushTypeDeclForMethod(decl, method, isAnonymousDecl, paramCopies)
+      createAndPushTypeDeclForMethod(decl, method, isAnonymousMethod, paramCopies)
     }
 
     methodAst
   }
 
+  /** Following PHP convention, callable object invocations are lowered to an explicit `__invoke` call in the CPG, e.g.
+    * `$x(...)` is lowered to `$x.__invoke(...)`. To facilitate dataflow tracking through these methods (which could
+    * either be lambda/anonymous functions, or regular functions assigned to objects via the first-class function
+    * syntax), a type decl corresponding to the originally called method is created. A binding from the `__invoke`
+    * method on this synthetic type to the originally called method is added to link to the correct method which should
+    * actually be called.
+    */
   private def createAndPushTypeDeclForMethod(
     decl: PhpMethodDecl,
     method: NewMethod,
@@ -187,20 +194,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val methodTypeDecl = typeDeclNode(decl, method.name, method.fullName, method.filename, code = method.name)
     scope.getEnclosingTypeDeclTypeFullName.foreach(tfn => methodTypeDecl.inheritsFromTypeFullName(tfn :: Nil))
 
-    val invokeMethodNode =
-      methodNode(decl, NameConstants.Invoke, s"${method.fullName}.${NameConstants.Invoke}", "", method.filename)
-    val invokeMethodAst = Ast(invokeMethodNode)
-      .withChildren(parameters)
-      .withChild(blockAst(blockNode(decl)))
-      .withChild(Ast(methodReturnNode(decl, Defines.Any)))
-      .withChild(Ast(modifierNode(decl, ModifierTypes.VIRTUAL)))
-
-    val defaultConstructor = defaultConstructorAst(decl, Some(s"${method.fullName}.$ConstructorMethodName"))
-
     val binding = NewBinding().name(NameConstants.Invoke).signature("")
     val methodTypeDeclAst = Ast(methodTypeDecl)
-      .withChild(invokeMethodAst)
-      .withChild(defaultConstructor)
       .withBindsEdge(methodTypeDecl, binding)
       .withRefEdge(binding, method)
 
