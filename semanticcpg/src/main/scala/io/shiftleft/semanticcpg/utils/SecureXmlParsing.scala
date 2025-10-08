@@ -2,6 +2,7 @@ package io.shiftleft.semanticcpg.utils
 
 import org.slf4j.{Logger, LoggerFactory}
 
+import javax.xml.XMLConstants
 import javax.xml.parsers.SAXParserFactory
 import scala.util.{Failure, Success, Try}
 import scala.xml.{Elem, XML}
@@ -20,6 +21,7 @@ object SecureXmlParsing {
       spf.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
       spf.setFeature("http://xml.org/sax/features/external-parameter-entities", false)
       spf.setFeature("http://xml.org/sax/features/external-general-entities", false)
+      spf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true)
 
       XML.withSAXParser(spf.newSAXParser()).loadString(content)
     } match {
