@@ -1,7 +1,9 @@
-package io.joern.semanticcpg.utils
+package io.shiftleft.semanticcpg.utils
+
+import org.slf4j.{Logger, LoggerFactory}
 
 import javax.xml.parsers.SAXParserFactory
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 import scala.xml.{Elem, XML}
 
 object SecureXmlParsing {
@@ -20,6 +22,13 @@ object SecureXmlParsing {
       spf.setFeature("http://xml.org/sax/features/external-general-entities", false)
 
       XML.withSAXParser(spf.newSAXParser()).loadString(content)
-    }.toOption
+    } match {
+      case Success(elem) => Some(elem)
+      case Failure(exception) =>
+        logger.warn(s"Error creating XML secure parser: ${exception.getMessage}")
+        None
+    }
   }
+
+  private val logger: Logger = LoggerFactory.getLogger(classOf[SecureXmlParsing.type])
 }

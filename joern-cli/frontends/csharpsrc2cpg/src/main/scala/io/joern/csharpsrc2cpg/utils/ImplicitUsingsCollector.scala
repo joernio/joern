@@ -1,7 +1,6 @@
 package io.joern.csharpsrc2cpg.utils
 
-import io.joern.semanticcpg.utils.SecureXmlParsing
-
+import io.shiftleft.semanticcpg.utils.SecureXmlParsing
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 
 import java.nio.file.Paths

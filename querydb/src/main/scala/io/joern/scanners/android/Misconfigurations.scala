@@ -20,7 +20,7 @@ object Misconfigurations extends QueryBundle {
           |""".stripMargin,
       score = 3,
       withStrRep({ cpg =>
-        import io.joern.semanticcpg.utils.SecureXmlParsing
+        import io.shiftleft.semanticcpg.utils.SecureXmlParsing
 
         val androidUri = "http://schemas.android.com/apk/res/android"
         cpg.configFile
