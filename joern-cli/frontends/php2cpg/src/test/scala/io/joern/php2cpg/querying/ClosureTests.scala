@@ -491,6 +491,12 @@ class ClosureTests extends PhpCode2CpgFixture {
         lambdaMethod.fullName shouldBe "foo.<lambda>0"
         lambdaMethod.astParentType shouldBe "TYPE_DECL"
         lambdaMethod.astParentFullName shouldBe "Test0.php:<global>"
+
+        inside(lambdaMethod.parameter.l) { case List(xParam) =>
+          xParam.name shouldBe "x"
+          xParam.code shouldBe "$x"
+          xParam.lineNumber shouldBe Some(3)
+        }
       }
     }
 
