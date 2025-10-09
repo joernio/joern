@@ -2,10 +2,8 @@ package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{Unknown, Block as RubyBlock, *}
 import io.joern.rubysrc2cpg.datastructures.BlockScope
-import io.joern.rubysrc2cpg.parser.RubyJsonHelpers
-import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.rubysrc2cpg.passes.GlobalTypes
-import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, prefixAsKernelDefined}
+import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
+import io.joern.rubysrc2cpg.passes.{Defines, GlobalTypes}
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg.Constants
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -14,8 +12,7 @@ import io.shiftleft.codepropertygraph.generated.{
   DispatchTypes,
   EdgeTypes,
   NodeTypes,
-  Operators,
-  PropertyNames
+  Operators
 }
 
 import scala.collection.mutable
@@ -194,15 +191,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   protected def astForMemberCall(node: RubyCallWithBase, isStatic: Boolean = false): Ast = {
 
     def createMemberCall(n: RubyCallWithBase): Ast = {
-      val isErbCall = n.target.span.text == "self.joern__buffer" && n.methodName == "<<"
+      val isErbCall = n.methodName == Constants.joernErbBufferAppend && n.arguments.headOption.exists(
+        _.span.text == "self.joern__buffer"
+      )
 
       val (nodeOp, hasStringArguments, receiverAst) = if (isErbCall) {
-        val hasStringArgs = n.arguments.exists {
+        val hasStringArgs = n.arguments.tail.exists {
           case StaticLiteral(typeFullName) if typeFullName == Defines.String => true
           case _                                                             => false
         }
-        val ast = astForFieldAccess(MemberAccess(n.target, " ", n.methodName)(n.span), stripLeadingAt = true)
-        (" ", hasStringArgs, ast)
+        val ast = astForFieldAccess(MemberAccess(n.target, ".", n.methodName)(n.span), stripLeadingAt = true)
+        (n.op, hasStringArgs, ast)
       } else {
         val ast = astForFieldAccess(MemberAccess(n.target, ".", n.methodName)(n.span), stripLeadingAt = true)
         (n.op, false, ast)
@@ -215,18 +214,22 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         case x: TypeIdentifier if x.isBuiltin => Option(x.typeFullName)
         case _                                => None
       }
-      val methodFullName = receiverAst.nodes
-        .collectFirst {
-          case _ if builtinType.isDefined => s"${builtinType.get}.${n.methodName}"
-          case x: NewMethodRef            => x.methodFullName
-          case _ =>
-            (n.target match {
-              case ma: MemberAccess => scope.tryResolveTypeReference(ma.memberName).map(_.name)
-              case _                => typeFromCallTarget(n.target)
-            }).map(x => s"$x.${n.methodName}")
-              .getOrElse(XDefines.DynamicCallUnknownFullName)
-        }
-        .getOrElse(XDefines.DynamicCallUnknownFullName)
+      val methodFullName = if (isErbCall) {
+        RubyOperators.bufferAppend
+      } else {
+        receiverAst.nodes
+          .collectFirst {
+            case _ if builtinType.isDefined => s"${builtinType.get}.${n.methodName}"
+            case x: NewMethodRef            => x.methodFullName
+            case _ =>
+              (n.target match {
+                case ma: MemberAccess => scope.tryResolveTypeReference(ma.memberName).map(_.name)
+                case _                => typeFromCallTarget(n.target)
+              }).map(x => s"$x.${n.methodName}")
+                .getOrElse(XDefines.DynamicCallUnknownFullName)
+          }
+          .getOrElse(XDefines.DynamicCallUnknownFullName)
+      }
       val argumentAsts = n.arguments.map(astForMethodCallArgument)
       val dispatchType = if (isStatic) DispatchTypes.STATIC_DISPATCH else DispatchTypes.DYNAMIC_DISPATCH
 
@@ -242,12 +245,21 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         code(n)
       }
 
-      val call = callNode(n, callCode, n.methodName, XDefines.DynamicCallUnknownFullName, dispatchType)
-      if methodFullName != XDefines.DynamicCallUnknownFullName then call.possibleTypes(Seq(methodFullName))
-      if (isStatic) {
-        callAst(call, argumentAsts, base = Option(baseAst)).copy(receiverEdges = Nil)
+      val call = if (isErbCall) {
+        operatorCallNode(n, callCode, methodFullName, Some(Constants.stringPrefix))
       } else {
-        callAst(call, argumentAsts, base = Option(baseAst), receiver = Option(receiverAst))
+        val call = callNode(n, callCode, n.methodName, XDefines.DynamicCallUnknownFullName, dispatchType)
+        if methodFullName != XDefines.DynamicCallUnknownFullName then call.possibleTypes(Seq(methodFullName))
+        call
+      }
+      if (isErbCall) {
+        callAst(call, argumentAsts).copy(receiverEdges = Nil)
+      } else {
+        if (isStatic) {
+          callAst(call, argumentAsts, base = Option(baseAst)).copy(receiverEdges = Nil)
+        } else {
+          callAst(call, argumentAsts, base = Option(baseAst), receiver = Option(receiverAst))
+        }
       }
     }
 
@@ -319,6 +331,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
           scope.tryResolveTypeReference(x.typeName).map(_.name).getOrElse(Defines.Any)
       }
       .orElse(Option(Defines.Any))
+    val typeFullName = if node.memberName == "joern__buffer" then Constants.stringPrefix else Defines.Any
     val fieldAccess = callNode(
       node,
       code,
@@ -326,7 +339,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       Operators.fieldAccess,
       DispatchTypes.STATIC_DISPATCH,
       signature = None,
-      typeFullName = Option(Defines.Any)
+      typeFullName = Option(typeFullName)
     ).possibleTypes(IndexedSeq(memberType.get))
     callAst(fieldAccess, Seq(targetAst, fieldIdentifierAst))
   }

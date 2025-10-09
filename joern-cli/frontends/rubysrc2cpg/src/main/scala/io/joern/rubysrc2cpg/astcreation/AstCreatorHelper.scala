@@ -258,7 +258,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected val ErbTemplateCallNames: Map[String, String] = Map(
     Constants.joernErbTemplateOutRawName    -> RubyOperators.templateOutRaw,
-    Constants.joernErbTemplateOutEscapeName -> RubyOperators.templateOutEscape
+    Constants.joernErbTemplateOutEscapeName -> RubyOperators.templateOutEscape,
+    Constants.joernErbBufferAppend          -> RubyOperators.bufferAppend
   )
 
   protected val UnaryOperatorNames: Map[String, String] = Map(

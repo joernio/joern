@@ -4,12 +4,14 @@ object Constants {
 
   val builtinPrefix = "__core"
   val kernelPrefix  = s"$builtinPrefix.Kernel"
+  val stringPrefix  = s"$builtinPrefix.String"
   val Initialize    = "initialize"
   val Main          = "<main>"
 
   val joernErbTemplatePrefix        = "joern__"
   val joernErbTemplateOutRawName    = s"${joernErbTemplatePrefix}template_out_raw"
   val joernErbTemplateOutEscapeName = s"${joernErbTemplatePrefix}template_out_escape"
+  val joernErbBufferAppend          = s"${joernErbTemplatePrefix}buffer_append"
 
   /* Source: https://ruby-doc.org/3.2.2/Kernel.html
    *
