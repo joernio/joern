@@ -185,9 +185,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   protected def astForMemberCall(node: RubyCallWithBase, isStatic: Boolean = false): Ast = {
 
     def createMemberCall(n: RubyCallWithBase): Ast = {
-      val isErbCall = n.methodName == Constants.joernErbBufferAppend && n.arguments.headOption.exists(
-        _.span.text == "self.joern__buffer"
-      )
+      val isErbCall = n.methodName == Constants.joernErbBufferAppend
 
       val (nodeOp, hasStringArguments, receiverAst) = if (isErbCall) {
         val hasStringArgs = n.arguments.tail.exists {
@@ -325,7 +323,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
           scope.tryResolveTypeReference(x.typeName).map(_.name).getOrElse(Defines.Any)
       }
       .orElse(Option(Defines.Any))
-    val typeFullName = if node.memberName == "joern__buffer" then Constants.stringPrefix else Defines.Any
+    val typeFullName = if (node.memberName == "joern__buffer" || node.memberName == "joern__inner_buffer") {
+      Constants.stringPrefix
+    } else {
+      Defines.Any
+    }
     val fieldAccess = callNode(
       node,
       code,

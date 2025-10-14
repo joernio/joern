@@ -261,9 +261,8 @@ class ErbTests extends RubyCode2CpgFixture {
           inside(lambdaMethod.body.astChildren.l) {
             case _ :: _ :: (appendCallTemplate: Call) :: _ :: _ :: Nil =>
               appendCallTemplate.code shouldBe "self.joern__buffer_append(joern__inner_buffer, <%= form.text_field :name %>)"
-              val List(selfId, appendCallArgOne, appendCallArgTwo: Call) = appendCallTemplate.argument.l: @unchecked
-              selfId.code shouldBe "self"
-
+              appendCallTemplate.methodFullName shouldBe "<operator>.joernBufferAppend"
+              val List(appendCallArgOne, appendCallArgTwo: Call) = appendCallTemplate.argument.l: @unchecked
               appendCallArgOne.code shouldBe "joern__inner_buffer"
               appendCallArgTwo.code shouldBe "<%= form.text_field :name %>"
               appendCallArgTwo.methodFullName shouldBe RubyOperators.templateOutEscape
