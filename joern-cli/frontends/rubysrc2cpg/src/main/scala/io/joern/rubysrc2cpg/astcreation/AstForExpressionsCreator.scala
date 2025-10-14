@@ -245,7 +245,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         call
       }
       if (isErbCall) {
-        callAst(call, argumentAsts).copy(receiverEdges = Nil)
+        callAst(call, argumentAsts)
       } else {
         if (isStatic) {
           callAst(call, argumentAsts, base = Option(baseAst)).copy(receiverEdges = Nil)
