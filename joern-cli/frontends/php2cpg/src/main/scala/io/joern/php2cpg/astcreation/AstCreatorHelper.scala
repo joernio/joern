@@ -214,6 +214,9 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
 
   protected def isBuiltinFunc(name: String): Boolean = PhpBuiltins.FuncNames.contains(name)
 
+  protected def isCallOnVariable(call: PhpCallExpr): Boolean =
+    call.target.isEmpty && call.methodName.isInstanceOf[PhpVariable]
+
   protected def createListExprCodeField(listExpr: PhpListExpr): String = {
     val name = PhpOperators.listFunc
     val args = listExpr.items.flatten

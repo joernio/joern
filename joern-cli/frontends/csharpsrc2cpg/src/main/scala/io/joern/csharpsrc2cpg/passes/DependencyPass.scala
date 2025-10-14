@@ -1,6 +1,6 @@
 package io.joern.csharpsrc2cpg.passes
 
-import io.joern.semanticcpg.utils.SecureXmlParsing
+import io.shiftleft.semanticcpg.utils.SecureXmlParsing
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewDependency

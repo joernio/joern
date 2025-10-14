@@ -528,11 +528,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
             call.getResolvedCallAtom
           }
 
-        resolvedCallAtom.map { callAtom =>
+        resolvedCallAtom.flatMap { callAtom =>
           callAtom.getCandidateDescriptor match {
             case samConstructorDesc: SamConstructorDescriptor =>
               // Lambda is wrapped e.g. `SomeInterface { obj -> obj }`
-              samConstructorDesc.getBaseDescriptorForSynthetic
+              Some(samConstructorDesc.getBaseDescriptorForSynthetic)
             case _ =>
               // Lambda/anon function is directly used as call argument e.g. `someCall(obj -> obj)`
               val samInterfaceViaConversion = callAtom.getArgumentsWithConversion.asScala.collectFirst {
@@ -541,9 +541,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
                     .asInstanceOf[ClassDescriptor]
               }
 
-              val samInterface = samInterfaceViaConversion.getOrElse {
-                val expectedExprType = bindingUtils.getExpectedExprType(expr).get
-                expectedExprType.getConstructor.getDeclarationDescriptor.asInstanceOf[ClassDescriptor]
+              val samInterface = samInterfaceViaConversion.orElse {
+                bindingUtils.getExpectedExprType(expr).map { expectedExprType =>
+                  expectedExprType.getConstructor.getDeclarationDescriptor.asInstanceOf[ClassDescriptor]
+                }
               }
 
               samInterface

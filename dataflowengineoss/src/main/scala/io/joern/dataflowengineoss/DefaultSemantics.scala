@@ -109,7 +109,7 @@ object DefaultSemantics {
     F("strcmp", List((1, 1), (1, -1), (2, 2), (2, -1))),
     F("strlen", List((1, 1), (1, -1))),
     F("strncpy", List((1, 1), (2, 2), (3, 3), (1, -1), (2, -1))),
-    F("strncat", List((1, 1), (1, -1), (2, 2), (2, -1)))
+    F("strncat", List((1, 1), (2, 2), (3, 3), (1, -1), (2, -1)))
   )
 
   /** Semantic summaries for common external Java calls.

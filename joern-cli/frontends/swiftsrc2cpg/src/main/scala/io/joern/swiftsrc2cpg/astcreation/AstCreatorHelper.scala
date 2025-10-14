@@ -174,7 +174,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def scopeLocalUniqueName(targetName: String): String = {
     val name = if (targetName.nonEmpty) { s"<$targetName>" }
     else { "<anonymous>" }
-    val key = s"${scope.computeScopePath}:$name"
+    val key = s"${scope.computeScopePath}.$name"
     val idx = scopeLocalUniqueNames.getOrElseUpdate(key, 0)
     scopeLocalUniqueNames.update(key, idx + 1)
     s"$name$idx"
@@ -312,8 +312,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   private def calcNameAndFullName(name: String): (String, String) = {
-    val fullNamePrefix = s"${parserResult.filename}:${scope.computeScopePath.replace(":", ".")}."
-    val fullName       = s"$fullNamePrefix$name"
+    val fullNamePrefix = s"${parserResult.filename}:${scope.computeScopePath}"
+    val fullName       = s"$fullNamePrefix.$name"
     (name, fullName)
   }
 

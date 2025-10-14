@@ -5,8 +5,8 @@ import io.joern.swiftsrc2cpg.parser.SwiftJsonParser.ParseResult
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.swiftsrc2cpg.utils.FullnameProvider
 import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.SwiftFileLocalTypeMapping
+import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.datastructures.{Global, VariableScopeManager}
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -36,7 +36,7 @@ class AstCreator(
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
 
-  protected val scope            = new VariableScopeManager()
+  protected val scope            = new SwiftVariableScopeManager()
   protected val fullnameProvider = new FullnameProvider(typeMap)
 
   protected val methodAstParentStack     = new Stack[NewNode]()

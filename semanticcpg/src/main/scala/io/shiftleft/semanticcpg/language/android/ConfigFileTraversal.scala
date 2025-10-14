@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.android
 
-import io.joern.semanticcpg.utils.SecureXmlParsing
+import io.shiftleft.semanticcpg.utils.SecureXmlParsing
 import io.shiftleft.codepropertygraph.generated.nodes.ConfigFile
 import io.shiftleft.semanticcpg.language.*
 

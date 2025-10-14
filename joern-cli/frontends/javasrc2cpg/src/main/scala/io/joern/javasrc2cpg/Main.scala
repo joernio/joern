@@ -28,6 +28,7 @@ final case class Config(
   cacheJdkTypeSolver: Boolean = false,
   keepTypeArguments: Boolean = false,
   disableTypeFallback: Boolean = false,
+  enableVerboseTypeLogging: Boolean = false,
   override val genericConfig: X2CpgConfig.GenericConfig =
     X2CpgConfig.GenericConfig(defaultIgnoredFilesRegex = JavaSrc2Cpg.DefaultIgnoredFilesRegex),
   override val typeRecoveryParserConfig: TypeRecoveryParserConfig.Config = TypeRecoveryParserConfig.Config()
@@ -91,6 +92,10 @@ final case class Config(
   def withDisableTypeFallback(value: Boolean): Config = {
     copy(disableTypeFallback = value)
   }
+
+  def withEnableVerboseTypeLogging(value: Boolean): Config = {
+    copy(enableVerboseTypeLogging = value)
+  }
 }
 
 private object Frontend {
@@ -153,6 +158,11 @@ private object Frontend {
         .action((_, c) => c.withDisableTypeFallback(true))
         .text(
           "Disables fallback to wildcard imports, unsound type inferences and the Any type (except where no better information is available)."
+        ),
+      opt[Unit]("enable-verbose-type-logging")
+        .action((_, c) => c.withEnableVerboseTypeLogging(true))
+        .text(
+          "Enable extra verbose type logging. THIS WILL IMPACT PERFORMANCE AND LOG SIZE AND SHOULD ONLY BE USED FOR DEBUGGING SPECIFIC ISSUES!"
         )
     )
   }

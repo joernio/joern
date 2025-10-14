@@ -8,10 +8,11 @@ import com.github.javaparser.resolution.model.SymbolReference
 import com.google.common.cache.CacheBuilder
 import org.slf4j.LoggerFactory
 
+import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
 import scala.jdk.OptionConverters.RichOptional
 
-class SimpleCombinedTypeSolver extends TypeSolver {
+class SimpleCombinedTypeSolver(enableVerboseTypeLogging: Boolean) extends TypeSolver {
 
   private val logger             = LoggerFactory.getLogger(this.getClass)
   private var parent: TypeSolver = scala.compiletime.uninitialized
@@ -20,6 +21,8 @@ class SimpleCombinedTypeSolver extends TypeSolver {
   // non-caching solvers avoids caching types twice.
   private val cachingTypeSolvers: mutable.ArrayBuffer[TypeSolver]    = mutable.ArrayBuffer()
   private val nonCachingTypeSolvers: mutable.ArrayBuffer[TypeSolver] = mutable.ArrayBuffer()
+
+  private val loggedTypes = new ConcurrentHashMap[String, Boolean]()
 
   private val typeCache = new GuavaCache(
     CacheBuilder.newBuilder().build[String, SymbolReference[ResolvedReferenceTypeDeclaration]]()
@@ -40,12 +43,19 @@ class SimpleCombinedTypeSolver extends TypeSolver {
       case Some(result) => result
 
       case None =>
-        findSolvedTypeWithSolvers(cachingTypeSolvers, name)
+        val result = findSolvedTypeWithSolvers(cachingTypeSolvers, name)
           .getOrElse {
             val result = findSolvedTypeWithSolvers(nonCachingTypeSolvers, name).getOrElse(SymbolReference.unsolved())
             typeCache.put(name, result)
             result
           }
+
+        if (enableVerboseTypeLogging && !loggedTypes.containsKey(name)) {
+          loggedTypes.put(name, true)
+          logger.debug(s"Type resolution result: $name - isSolved=${result.isSolved}")
+        }
+
+        result
     }
   }
 
