@@ -44,6 +44,41 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
       )
     }
 
+    "a call with an unresolved argument with a null type" when {
+      "there is only one matching method should be resolved" in {
+        val cpg = code(
+          """
+            |package foo;
+            |
+            |import a.b.Bar;
+            |
+            |public class Foo {
+            |  public static Bar test(String s) {
+            |    return new Bar(s);
+            |  }
+            |
+            |  public void sink(Bar b) {}
+            |}
+            |""".stripMargin,
+          fileName = "Foo.java"
+        ).moreCode("""
+            |import foo.Foo;
+            |
+            |import baz.Baz;
+            |
+            |class Test {
+            |  public static Bar stringCall() {
+            |    sink(Foo.test(null));
+            |  }
+            |}
+            |""".stripMargin)
+
+        cpg.method.name("stringCall").call.name("test").methodFullName.l shouldBe List(
+          "foo.Foo.test:a.b.Bar(java.lang.String)"
+        )
+      }
+    }
+
     "there are multiple matching methods should not be resolved" in {
       val cpg = code(
         """
