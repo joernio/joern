@@ -264,6 +264,7 @@ object TypeInfoCalculator {
     val Record: String   = "java.lang.Record"
     val Void: String     = "void"
     val Any: String      = "ANY"
+    val NULL: String     = "null"
   }
 
   object TypeNameConstants {
