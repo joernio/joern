@@ -3,7 +3,7 @@ package io.joern.pysrc2cpg
 import io.joern.pysrc2cpg.memop.Load
 import io.joern.pysrc2cpg.memop.MemoryOperation
 import io.joern.pysrc2cpg.memop.Store
-import io.joern.pythonparser.ast
+import io.joern.pythonparser.{AstPrinter, ast}
 import io.joern.x2cpg.ValidationMode
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
@@ -119,7 +119,7 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
         })
 
         val importCallNode =
-          createCall(createIdentifierNode("import", Load, lineAndCol), "import", lineAndCol, arguments, Nil)
+          createCall(createIdentifierNode("import", Load, lineAndCol), "import", lineAndCol, arguments, Nil, None)
 
         val assignNode = createAssignment(importAssignLhsIdentifierNode, importCallNode, lineAndCol)
         assignNode
@@ -282,21 +282,35 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
     blockNode
   }
 
+  private def codeForCallNode(
+    receiverNode: NewNode,
+    argumentNodes: Iterable[NewNode],
+    keywordArguments: Iterable[(String, NewNode)],
+    callAstNode: Option[ast.iast]
+  ): String = {
+    callAstNode
+      .map(new AstPrinter("").print)
+      .getOrElse(
+        codeOf(receiverNode) +
+          "(" +
+          argumentNodes.map(codeOf).mkString(", ") +
+          (if (argumentNodes.nonEmpty && keywordArguments.nonEmpty) ", " else "") +
+          keywordArguments
+            .map { case (keyword: String, argNode) => keyword + " = " + codeOf(argNode) }
+            .mkString(", ") +
+          ")"
+      )
+  }
+
   protected def createCall(
     receiverNode: NewNode,
     name: String,
     lineAndColumn: LineAndColumn,
     argumentNodes: Iterable[NewNode],
-    keywordArguments: Iterable[(String, NewNode)]
+    keywordArguments: Iterable[(String, NewNode)],
+    callAstNode: Option[ast.iast]
   ): NewCall = {
-    val code = codeOf(receiverNode) +
-      "(" +
-      argumentNodes.map(codeOf).mkString(", ") +
-      (if (argumentNodes.nonEmpty && keywordArguments.nonEmpty) ", " else "") +
-      keywordArguments
-        .map { case (keyword: String, argNode) => keyword + " = " + codeOf(argNode) }
-        .mkString(", ") +
-      ")"
+    val code     = codeForCallNode(receiverNode, argumentNodes, keywordArguments, callAstNode)
     val callNode = nodeBuilder.callNode(code, name, DispatchTypes.DYNAMIC_DISPATCH, lineAndColumn)
 
     edgeBuilder.astEdge(receiverNode, callNode, 0)
@@ -324,16 +338,10 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
     name: String,
     lineAndColumn: LineAndColumn,
     argumentNodes: Iterable[NewNode],
-    keywordArguments: Iterable[(String, NewNode)]
+    keywordArguments: Iterable[(String, NewNode)],
+    callAstNode: Option[ast.iast]
   ): NewCall = {
-    val code = codeOf(receiverNode) +
-      "(" +
-      argumentNodes.map(codeOf).mkString(", ") +
-      (if (argumentNodes.nonEmpty && keywordArguments.nonEmpty) ", " else "") +
-      keywordArguments
-        .map { case (keyword: String, argNode) => keyword + " = " + codeOf(argNode) }
-        .mkString(", ") +
-      ")"
+    val code     = codeForCallNode(receiverNode, argumentNodes, keywordArguments, callAstNode)
     val callNode = nodeBuilder.callNode(code, name, DispatchTypes.DYNAMIC_DISPATCH, lineAndColumn)
 
     edgeBuilder.astEdge(receiverNode, callNode, 0)
@@ -374,7 +382,8 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
     xMayHaveSideEffects: Boolean,
     lineAndColumn: LineAndColumn,
     argumentNodes: Iterable[NewNode],
-    keywordArguments: Iterable[(String, NewNode)]
+    keywordArguments: Iterable[(String, NewNode)],
+    callAstNode: Option[ast.iast]
   ): NewNode = {
     if (xMayHaveSideEffects) {
       val tmpVarName    = getUnusedName()
@@ -383,11 +392,11 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
         createFieldAccess(createIdentifierNode(tmpVarName, Load, lineAndColumn), y, lineAndColumn)
       val instanceNode = createIdentifierNode(tmpVarName, Load, lineAndColumn)
       val instanceCallNode =
-        createInstanceCall(receiverNode, instanceNode, y, lineAndColumn, argumentNodes, keywordArguments)
+        createInstanceCall(receiverNode, instanceNode, y, lineAndColumn, argumentNodes, keywordArguments, callAstNode)
       createBlock(tmpAssignCall :: instanceCallNode :: Nil, lineAndColumn)
     } else {
       val receiverNode = createFieldAccess(x(), y, lineAndColumn)
-      createInstanceCall(receiverNode, x(), y, lineAndColumn, argumentNodes, keywordArguments)
+      createInstanceCall(receiverNode, x(), y, lineAndColumn, argumentNodes, keywordArguments, callAstNode)
     }
   }
 
