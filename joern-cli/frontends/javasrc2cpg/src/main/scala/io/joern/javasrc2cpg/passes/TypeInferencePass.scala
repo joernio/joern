@@ -68,7 +68,7 @@ class TypeInferencePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Call](cpg) {
 //    }
     val hasDifferingArg = method.parameter.zip(callArgs).zipWithIndex.exists { case ((parameter, argument), idx) =>
       val maybeArgumentType = argument.propertyOption(Properties.TypeFullName).getOrElse(TypeConstants.Any)
-      val argMatches        = maybeArgumentType == TypeConstants.Any || maybeArgumentType == parameter.typeFullName || (maybeArgumentType == TypeConstants.NULL && !isPrimitiveType(parameter.typeFullName))
+      val argMatches        = maybeArgumentType == TypeConstants.Any || maybeArgumentType == parameter.typeFullName || (maybeArgumentType == TypeConstants.NULL && !isPrimitiveType(parameter.typeFullName)) || isSubtypeOf(maybeArgumentType, parameter.typeFullName)
 //      if (call.name == "createScript") {
 //        println(s"    [$idx] Param: ${parameter.name} (${parameter.typeFullName}) vs Arg: ${argument.code} (${maybeArgumentType})")
 //        println(s"        Match: $argMatches")
@@ -84,6 +84,20 @@ class TypeInferencePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Call](cpg) {
   private def isPrimitiveType(typeName: String): Boolean = {
     Set("byte", "short", "int", "long", "float", "double", "boolean", "char").contains(typeName)
   }
+
+  private def isSubtypeOf(argumentType: String, parameterType: String): Boolean = {
+    if (argumentType == parameterType) {
+      return true
+    }
+
+    cpg.typeDecl.fullNameExact(argumentType).headOption match {
+      case Some(typeDecl) =>
+        typeDecl.inheritsFromTypeFullName.contains(parameterType)
+      case None =>
+        false
+    }
+  }
+
   private def getNameParts(name: String, fullName: String): NameParts = {
     val Array(qualifiedName, signature) = fullName.split(":", 2)
 
