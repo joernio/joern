@@ -75,24 +75,52 @@ class TypeInferencePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Call](cpg) {
 //      }
       !argMatches
     }
-//    if (call.name == "createScript") {
-//      println(s"    hasDifferingArg: $hasDifferingArg")
-//      println(s"    === End doArgumentTypesMatch ===\n")
-//    }
+    if (call.name == "createScript") {
+      println(s"    hasDifferingArg: $hasDifferingArg")
+      println(s"    === End doArgumentTypesMatch ===\n")
+    }
     !hasDifferingArg
   }
   private def isPrimitiveType(typeName: String): Boolean = {
     Set("byte", "short", "int", "long", "float", "double", "boolean", "char").contains(typeName)
   }
 
-  private def isSubtypeOf(argumentType: String, parameterType: String): Boolean = {
+//  private def isSubtypeOf(argumentType: String, parameterType: String): Boolean = {
+//    if (argumentType == parameterType) {
+//      return true
+//    }
+//
+//    cpg.typeDecl.fullNameExact(argumentType).headOption match {
+//      case Some(typeDecl) =>
+//        typeDecl.inheritsFromTypeFullName.contains(parameterType)
+//      case None =>
+//        false
+//    }
+//  }
+  private def isSubtypeOf(
+                         argumentType: String,
+                         parameterType: String,
+                         visited: Set[String] = Set.empty
+                       ): Boolean = {
     if (argumentType == parameterType) {
       return true
     }
 
+    if (visited.contains(argumentType)) {
+      return false
+    }
+
     cpg.typeDecl.fullNameExact(argumentType).headOption match {
       case Some(typeDecl) =>
-        typeDecl.inheritsFromTypeFullName.contains(parameterType)
+        val parents = typeDecl.inheritsFromTypeFullName.l
+
+        if (parents.contains(parameterType)) {
+          return true
+        }
+
+        val newVisited = visited + argumentType
+        parents.exists(parent => isSubtypeOf(parent, parameterType, newVisited))
+
       case None =>
         false
     }
