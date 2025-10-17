@@ -12,6 +12,9 @@ object Constants {
   val joernErbTemplateOutRawName    = s"${joernErbTemplatePrefix}template_out_raw"
   val joernErbTemplateOutEscapeName = s"${joernErbTemplatePrefix}template_out_escape"
   val joernErbBufferAppend          = s"${joernErbTemplatePrefix}buffer_append"
+  val joernErbBuffer                = s"${joernErbTemplatePrefix}buffer"
+  val joernErbInnerBuffer           = s"${joernErbTemplatePrefix}inner_buffer"
+  val joernErbBuffers               = Set(joernErbBuffer, joernErbInnerBuffer)
 
   /* Source: https://ruby-doc.org/3.2.2/Kernel.html
    *
