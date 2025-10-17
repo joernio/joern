@@ -233,9 +233,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       val callCode = if (baseCode.contains("<tmp-")) {
         val rhsCode =
           if (n.methodName == "new") n.methodName
-          else if (isErbCall && hasStringArguments)
-            s"${n.methodName} \"${n.arguments.map(code(_).replaceAll("\n", "\\\\n")).mkString(", ")}\""
-          else if (isErbCall) s"${n.methodName} ${n.arguments.map(code(_).replaceAll("\n", "\\\\n")).mkString(", ")}"
           else s"${n.methodName}(${n.arguments.map(code).mkString(", ")})"
         s"$baseCode${nodeOp}$rhsCode"
       } else {
