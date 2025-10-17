@@ -572,7 +572,7 @@ class RubyJsonToNodeCreator(
         IfExpression(condition, thenBranch, elsifClauses = List.empty, elseClause)(obj.toTextSpan)
       case None =>
         val nilBlock = if (fileName.endsWith("erb.json")) {
-          EmptyExpression()(
+          EmptyExpression(
             obj.toTextSpan.spanStart("<empty>")
           ) // specifically used for ERB files so that we don't have a `return nil` in empty if statements
         } else {
