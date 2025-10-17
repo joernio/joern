@@ -192,16 +192,16 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     def createMemberCall(n: RubyCallWithBase): Ast = {
       val isErbCall = n.methodName == Constants.joernErbBufferAppend
 
-      val (nodeOp, hasStringArguments, receiverAst) = if (isErbCall) {
+      val (nodeOp, receiverAst) = if (isErbCall) {
         val hasStringArgs = n.arguments.tail.exists {
           case StaticLiteral(typeFullName) if typeFullName == Defines.String => true
           case _                                                             => false
         }
         val ast = astForFieldAccess(MemberAccess(n.target, ".", n.methodName)(n.span), stripLeadingAt = true)
-        (n.op, hasStringArgs, ast)
+        (n.op, ast)
       } else {
         val ast = astForFieldAccess(MemberAccess(n.target, ".", n.methodName)(n.span), stripLeadingAt = true)
-        (n.op, false, ast)
+        (n.op, ast)
       }
 
       val (baseAst, baseCode) = astForMemberAccessTarget(n.target)
