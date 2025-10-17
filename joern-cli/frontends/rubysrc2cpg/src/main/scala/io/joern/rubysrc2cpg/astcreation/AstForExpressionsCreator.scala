@@ -156,7 +156,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
           case None => x
         }
         astForFieldAccess(node.copy(target = newTarget)(node.span))
-      case _ => astForFieldAccess(node)
+      case _ =>
+        if (Constants.joernErbBuffers.contains(node.memberName)) {
+          astForFieldAccess(node, typeFullName = Constants.stringPrefix)
+        } else {
+          astForFieldAccess(node)
+        }
     }
   }
 
@@ -301,7 +306,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  protected def astForFieldAccess(node: MemberAccess, stripLeadingAt: Boolean = false): Ast = {
+  protected def astForFieldAccess(node: MemberAccess, stripLeadingAt: Boolean = false, typeFullName: String = Defines.Any): Ast = {
     val (memberName, memberCode) = node.target match {
       case _ if node.memberName == Defines.Initialize => Defines.Initialize -> Defines.Initialize
       case _ if stripLeadingAt                        => node.memberName    -> node.memberName.stripPrefix("@")
@@ -323,11 +328,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
           scope.tryResolveTypeReference(x.typeName).map(_.name).getOrElse(Defines.Any)
       }
       .orElse(Option(Defines.Any))
-    val typeFullName = if (node.memberName == "joern__buffer" || node.memberName == "joern__inner_buffer") {
-      Constants.stringPrefix
-    } else {
-      Defines.Any
-    }
     val fieldAccess = callNode(
       node,
       code,
