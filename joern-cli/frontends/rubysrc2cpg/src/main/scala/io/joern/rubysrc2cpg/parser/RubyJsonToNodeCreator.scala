@@ -1017,7 +1017,7 @@ class RubyJsonToNodeCreator(
       }
 
       // This is specifically for ERB lowering, where we append some ERBTemplateCall to a buffer
-      if (callName == "joern__buffer_append" && arguments.exists(_.isInstanceOf[ErbTemplateCall])) {
+      if (callName == Constants.joernErbBufferAppend && arguments.exists(_.isInstanceOf[ErbTemplateCall])) {
         val argumentText = arguments
           .map {
             case x: ErbTemplateCall =>
