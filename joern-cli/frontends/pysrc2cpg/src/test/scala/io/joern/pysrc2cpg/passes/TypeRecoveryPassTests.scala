@@ -2,8 +2,7 @@ package io.joern.pysrc2cpg.passes
 
 import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 import io.joern.x2cpg.passes.frontend.XTypeHintCallLinker
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Member}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.importresolver.*
 
@@ -350,7 +349,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         .where(_.parentBlock.ast.isIdentifier.typeFullName("flask_sqlalchemy.py:<module>.SQLAlchemy"))
         .where(_.parentBlock.ast.isFieldIdentifier.canonicalName("session"))
         .headOption
-        .map(_.code) shouldBe Some("tmp0.add(user)")
+        .map(_.code) shouldBe Some("db.session.add(user)")
     }
 
     "provide a dummy type to a member if the member type is not known" in {

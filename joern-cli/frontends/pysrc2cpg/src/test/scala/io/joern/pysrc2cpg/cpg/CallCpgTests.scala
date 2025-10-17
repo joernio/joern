@@ -47,6 +47,30 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
   }
 
+  "call on member call-chain" should {
+    lazy val cpg = code("""x.y.func(a, b, **args)""".stripMargin, "test.py")
+
+    "test call node properties" in {
+      val callNode = cpg.call.codeExact("x.y.func(a, b, **args)").head
+      callNode.name shouldBe "func"
+      callNode.signature shouldBe ""
+      callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      callNode.lineNumber shouldBe Some(1)
+    }
+  }
+
+  "call on complex call-chain" should {
+    lazy val cpg = code("""x.foo(1, 2).y.func(a, b, **args)""".stripMargin, "test.py")
+
+    "test call node properties" in {
+      val callNode = cpg.call.codeExact("x.foo(1, 2).y.func(a, b, **args)").head
+      callNode.name shouldBe "func"
+      callNode.signature shouldBe ""
+      callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      callNode.lineNumber shouldBe Some(1)
+    }
+  }
+
   "call on identifier with named argument" should {
     lazy val cpg = code("""func(a, b, namedPar = c)""".stripMargin, "test.py")
 
