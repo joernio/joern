@@ -257,7 +257,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     createClosureBindingInformation(capturedNodes)
       .collect { case (capturedLocal, name, code, Some(closureBindingId)) =>
-        val selfCapturingLocal = if name == Defines.Self then scope.lookupSelfInCurrentScope else None
+        val selfCapturingLocal = Option.when(name == Defines.Self)(scope.lookupSelfInCurrentScope).flatten
         val capturingLocal = selfCapturingLocal.getOrElse(
           localNode(originNode, name, name, Defines.Any, closureBindingId = Option(closureBindingId))
         )
