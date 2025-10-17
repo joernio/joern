@@ -210,7 +210,6 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     baseNode: NewNode,
     callName: String
   ): Ast = {
-
     val trailingClosureAsts            = callExpr.trailingClosure.toList.map(astForNode)
     val additionalTrailingClosuresAsts = callExpr.additionalTrailingClosures.children.map(c => astForNode(c.closure))
 
@@ -289,6 +288,8 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
               val thisTmpNode    = identifierNode(callee, tmpVarName)
               (fieldAccessAst, thisTmpNode, memberCode)
           }
+        case other if isRefToClosure(node, other) =>
+          return astForClosureCall(node)
         case _ =>
           val receiverAst = astForNode(callee)
           val thisNode    = identifierNode(callee, "this")
@@ -296,6 +297,43 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           (receiverAst, thisNode, calleeCode)
       }
       handleCallNodeArgs(node, receiverAst, baseNode, callName)
+    }
+  }
+
+  private def astForClosureCall(expr: FunctionCallExprSyntax): Ast = {
+    val tpe = fullnameProvider.typeFullname(expr).getOrElse(Defines.Any)
+    registerType(tpe)
+    val signature = fullnameProvider.typeFullnameRaw(expr.calledExpression).getOrElse(x2cpg.Defines.UnresolvedSignature)
+    val callName  = Defines.ClosureApplyMethodName
+    val callMethodFullname = s"${Defines.Function}.$callName:$signature"
+    val baseAst            = astForNode(expr.calledExpression)
+
+    val trailingClosureAsts            = expr.trailingClosure.toList.map(astForNode)
+    val additionalTrailingClosuresAsts = expr.additionalTrailingClosures.children.map(c => astForNode(c.closure))
+
+    val args = expr.arguments.children.map(astForNode) ++ trailingClosureAsts ++ additionalTrailingClosuresAsts
+
+    val callExprCode = code(expr)
+    val callNode_ = callNode(
+      expr,
+      callExprCode,
+      callName,
+      callMethodFullname,
+      DispatchTypes.DYNAMIC_DISPATCH,
+      Option(signature),
+      Option(tpe)
+    )
+    callAst(callNode_, args, Option(baseAst))
+  }
+
+  private def isRefToClosure(func: FunctionCallExprSyntax, node: ExprSyntax): Boolean = {
+    node match {
+      case refExpr: DeclReferenceExprSyntax
+          if refExpr.baseName.isInstanceOf[identifier] && refExpr.argumentNames.isEmpty &&
+            fullnameProvider.declFullname(func).isEmpty &&
+            fullnameProvider.typeFullname(refExpr).contains(Defines.Function) =>
+        true
+      case _ => false
     }
   }
 
