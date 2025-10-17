@@ -48,15 +48,15 @@ class ErbTests extends RubyCode2CpgFixture {
           appendCallTwo.lineNumber shouldBe None
 
           appendCallOne.code shouldBe
-            """self.joern__buffer_append(self.joern__buffer, "redis:\nhost:...""".stripMargin
+            """self.joernBufferAppend(self.joernBuffer, "redis:\nhost:")""".stripMargin
           appendCallOne.typeFullName shouldBe Constants.stringPrefix
 
-          appendCallTwo.code shouldBe "self.joern__buffer_append(self.joern__buffer, <%= ENV['REDIS_HOST'] %>)"
+          appendCallTwo.code shouldBe "self.joernBufferAppend(self.joernBuffer, <%= ENV['REDIS_HOST'] %>)"
           appendCallTwo.typeFullName shouldBe Constants.stringPrefix
 
           inside(appendCallTwo.argument.l) {
             case (argOne: Call) :: (argTwo: Call) :: Nil =>
-              argOne.code shouldBe "self.joern__buffer"
+              argOne.code shouldBe "self.joernBuffer"
               argOne.methodFullName shouldBe "<operator>.fieldAccess"
               argOne.typeFullName shouldBe Constants.stringPrefix
 
@@ -114,7 +114,7 @@ class ErbTests extends RubyCode2CpgFixture {
               appendCallStatic.typeFullName shouldBe Constants.stringPrefix
 
               val List(callArgStaticOne: Call, callArgStaticTwo) = appendCallStatic.argument.l: @unchecked
-              callArgStaticOne.code shouldBe "self.joern__buffer"
+              callArgStaticOne.code shouldBe "self.joernBuffer"
               callArgStaticOne.typeFullName shouldBe Constants.stringPrefix
               callArgStaticTwo.code shouldBe
                 """redis:
@@ -123,7 +123,7 @@ class ErbTests extends RubyCode2CpgFixture {
               appendCallTemplate.receiver shouldBe empty
 
               val List(callArgOne: Call, callArgTwo: Call) = appendCallTemplate.argument.l: @unchecked
-              callArgOne.code shouldBe "self.joern__buffer"
+              callArgOne.code shouldBe "self.joernBuffer"
               callArgOne.typeFullName shouldBe Constants.stringPrefix
 
               callArgTwo.methodFullName shouldBe RubyOperators.templateOutEscape
@@ -159,7 +159,7 @@ class ErbTests extends RubyCode2CpgFixture {
             case appendCallStatic :: appendCallTemplate :: Nil =>
               appendCallStatic.argument.l.size shouldBe 2
               val List(callArgStaticOne, callArgStaticTwo) = appendCallStatic.argument.l: @unchecked
-              callArgStaticOne.code shouldBe "self.joern__buffer"
+              callArgStaticOne.code shouldBe "self.joernBuffer"
               callArgStaticTwo.code shouldBe
                 """rabbitmq:
                   |port:""".stripMargin
@@ -167,7 +167,7 @@ class ErbTests extends RubyCode2CpgFixture {
               appendCallTemplate.argument.l.size shouldBe 2
               val List(callArgOne: Call, callArgTwo: Call) =
                 appendCallTemplate.argument.l: @unchecked
-              callArgOne.code shouldBe "self.joern__buffer"
+              callArgOne.code shouldBe "self.joernBuffer"
               callArgTwo.methodFullName shouldBe RubyOperators.templateOutRaw
               callArgTwo.code shouldBe "<%== ENV['RABBITMQ_PORT'] %>"
 
@@ -208,24 +208,24 @@ class ErbTests extends RubyCode2CpgFixture {
   "Do-block in <%= %> tags" should {
     /* The code gets lowered to:
      * ```
-     *   joern__buffer = ""
-     *   joern__buffer << form_with(url: some_url)
+     *   joernBuffer = ""
+     *   joernBuffer << form_with(url: some_url)
      *   rails_lambda_0 = lambda do |form|
-     *     joern__inner_buffer << <%= form.text_field :name %>
-           joern__inner_buffer
+     *     joernInnerBuffer << <%= form.text_field :name %>
+           joernInnerBuffer
      *   end
-     *   joern__buffer << rails_lambda_0.call(form)
-     *   joern__buffer
+     *   joernBuffer << rails_lambda_0.call(form)
+     *   joernBuffer
      * ```
      *
-     * self.joern__buffer = ""
-     * self.joern__buffer_append(self.joern__buffer, form_with(url: some_url)
+     * self.joernBuffer = ""
+     * self.joernBufferAppend(self.joernBuffer, form_with(url: some_url)
      * rails_lambda_0 = lambda do |form|
-     *    joern__inner_buffer = ""
-     *    self.joern__buffer_append(joern__inner_buffer, joern__template_out_escape( form.text_field :name ))
-     *    joern__inner_buffer
+     *    joernInnerBuffer = ""
+     *    self.joernBufferAppend(joernInnerBuffer, joernTemplateOutEscape( form.text_field :name ))
+     *    joernInnerBuffer
      * end
-     * self.joern__buffer_append(self.joern__buffer, rails_lambda_0.call(form))
+     * self.joernBufferAppend(self.joernBuffer, rails_lambda_0.call(form))
      *
      */
     val cpg = code(
@@ -268,10 +268,10 @@ class ErbTests extends RubyCode2CpgFixture {
 
           inside(lambdaMethod.body.astChildren.l) {
             case _ :: _ :: (appendCallTemplate: Call) :: _ :: _ :: Nil =>
-              appendCallTemplate.code shouldBe "self.joern__buffer_append(joern__inner_buffer, <%= form.text_field :name %>)"
+              appendCallTemplate.code shouldBe "self.joernBufferAppend(joernInnerBuffer, <%= form.text_field :name %>)"
               appendCallTemplate.methodFullName shouldBe "<operator>.joernBufferAppend"
               val List(appendCallArgOne, appendCallArgTwo: Call) = appendCallTemplate.argument.l: @unchecked
-              appendCallArgOne.code shouldBe "joern__inner_buffer"
+              appendCallArgOne.code shouldBe "joernInnerBuffer"
               appendCallArgTwo.code shouldBe "<%= form.text_field :name %>"
               appendCallArgTwo.methodFullName shouldBe RubyOperators.templateOutEscape
 
@@ -283,7 +283,7 @@ class ErbTests extends RubyCode2CpgFixture {
           inside(lambdaMethod.methodReturn.toReturn.l) {
             case lambdaRet :: Nil =>
               val List(innerBuff) = lambdaRet.astChildren.l
-              innerBuff.code shouldBe "joern__inner_buffer"
+              innerBuff.code shouldBe "joernInnerBuffer"
             case xs => fail(s"Expected one RETURN, got ${xs.code.mkString("[", ",", "]")}")
           }
         case xs => fail(s"Expected one lambda method, got ${xs.code.mkString("[", ",", "]")}")
@@ -314,7 +314,7 @@ class ErbTests extends RubyCode2CpgFixture {
     /* ERB gets lowered to:
      * ```
      *  if a == "a"
-     *   joern__buffer << <%= link_to(url: some_url) %>
+     *   joernBuffer << <%= link_to(url: some_url) %>
      *  end
      * ```
      */
@@ -340,9 +340,9 @@ class ErbTests extends RubyCode2CpgFixture {
         inside(ifStruct.whenTrue.l) {
           case trueBranch :: Nil =>
             val List(appendCall: Call) = trueBranch.astChildren.isCall.l
-            appendCall.code shouldBe "self.joern__buffer_append(self.joern__buffer, <%= link_to(url: some_url) %>)"
+            appendCall.code shouldBe "self.joernBufferAppend(self.joernBuffer, <%= link_to(url: some_url) %>)"
             val List(appendArgOne, appendArgTwo: Call) = appendCall.argument.l: @unchecked
-            appendArgOne.code shouldBe "self.joern__buffer"
+            appendArgOne.code shouldBe "self.joernBuffer"
             appendArgTwo.methodFullName shouldBe RubyOperators.templateOutEscape
             appendArgTwo.code shouldBe "<%= link_to(url: some_url) %>"
           case xs => fail(s"Expected one true branch, got ${xs.code.mkString("[", ",", "]")}")
@@ -368,14 +368,14 @@ class ErbTests extends RubyCode2CpgFixture {
 
         inside(eachLambda.methodReturn.toReturn.l) {
           case ret :: Nil =>
-            ret.code shouldBe "self.joern__buffer_append(self.joern__buffer, <%= var.out %>)"
+            ret.code shouldBe "self.joernBufferAppend(self.joernBuffer, <%= var.out %>)"
             inside(ret.astChildren.l) {
               case (appendCall: Call) :: Nil =>
                 appendCall.receiver shouldBe empty
                 appendCall.typeFullName shouldBe Constants.stringPrefix
 
                 val List(callArgOne: Call, callArgTwo: Call) = appendCall.argument.l: @unchecked
-                callArgOne.code shouldBe "self.joern__buffer"
+                callArgOne.code shouldBe "self.joernBuffer"
                 callArgOne.typeFullName shouldBe Constants.stringPrefix
                 callArgTwo.methodFullName shouldBe RubyOperators.templateOutEscape
                 callArgTwo.code shouldBe "<%= var.out %>"
