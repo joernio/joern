@@ -227,10 +227,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val capturedLocalNodes = baseStmtBlockAst.nodes
       .collect { case x: NewIdentifier if x.name != Defines.Self => x }
       .distinctBy(_.name)
-      .map {
-        case i if i.name == Defines.Self => scope.lookupSelfInOuterScope
-        case i                           => scope.lookupVariableInOuterScope(i.name)
-      }
+      .map(i => scope.lookupVariableInOuterScope(i.name))
       .filter(_.iterator.nonEmpty)
       .flatten
       .toSet
