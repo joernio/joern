@@ -303,7 +303,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  protected def astForFieldAccess(node: MemberAccess, stripLeadingAt: Boolean = false, typeFullName: String = Defines.Any): Ast = {
+  protected def astForFieldAccess(
+    node: MemberAccess,
+    stripLeadingAt: Boolean = false,
+    typeFullName: String = Defines.Any
+  ): Ast = {
     val (memberName, memberCode) = node.target match {
       case _ if node.memberName == Defines.Initialize => Defines.Initialize -> Defines.Initialize
       case _ if stripLeadingAt                        => node.memberName    -> node.memberName.stripPrefix("@")
