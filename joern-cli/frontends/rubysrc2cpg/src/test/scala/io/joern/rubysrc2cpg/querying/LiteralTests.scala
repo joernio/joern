@@ -261,7 +261,6 @@ class LiteralTests extends RubyCode2CpgFixture {
         |-> (a, *b, &c) {}
         |""".stripMargin)
 
-    cpg.method.name(Constants.Main).dotAst.l.foreach(println)
     inside(cpg.method.isLambda.l) {
       case lambdaLiteral :: Nil =>
         inside(lambdaLiteral.parameter.l) {
