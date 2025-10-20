@@ -25,7 +25,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     "should contain a CLOSURE_BINDING node for the captured parameter with the correct props set" in {
       val List(cb) = cpg.closureBinding.l
       cb.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      cb.closureBindingId shouldBe Some("f1.<lambda>0")
+      cb.closureBindingId shouldBe Some("f1.<lambda>0.p")
 
       cb._refOut.size shouldBe 1
       cb._methodParameterInViaRefOut.get.name shouldBe "p"
