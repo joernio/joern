@@ -190,9 +190,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   protected def astForMemberCall(node: RubyCallWithBase, isStatic: Boolean = false): Ast = {
 
     def createMemberCall(n: RubyCallWithBase): Ast = {
-      val isErbCall = n.methodName == Constants.joernErbBufferAppend
+      val isErbBufferAppendCall = n.methodName == Constants.joernErbBufferAppend
 
-      val (nodeOp, receiverAst) = if (isErbCall) {
+      val (nodeOp, receiverAst) = if (isErbBufferAppendCall) {
         val hasStringArgs = n.arguments.tail.exists {
           case StaticLiteral(typeFullName) if typeFullName == Defines.String => true
           case _                                                             => false
@@ -211,7 +211,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         case x: TypeIdentifier if x.isBuiltin => Option(x.typeFullName)
         case _                                => None
       }
-      val methodFullName = if (isErbCall) {
+      val methodFullName = if (isErbBufferAppendCall) {
         RubyOperators.bufferAppend
       } else {
         receiverAst.nodes
@@ -239,14 +239,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         code(n)
       }
 
-      val call = if (isErbCall) {
+      val call = if (isErbBufferAppendCall) {
         operatorCallNode(n, callCode, methodFullName, Some(Constants.stringPrefix))
       } else {
         val call = callNode(n, callCode, n.methodName, XDefines.DynamicCallUnknownFullName, dispatchType)
         if methodFullName != XDefines.DynamicCallUnknownFullName then call.possibleTypes(Seq(methodFullName))
         call
       }
-      if (isErbCall) {
+      if (isErbBufferAppendCall) {
         callAst(call, argumentAsts)
       } else {
         if (isStatic) {
