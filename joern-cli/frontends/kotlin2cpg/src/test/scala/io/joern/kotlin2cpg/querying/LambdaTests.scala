@@ -79,7 +79,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     "should contain a CLOSURE_BINDING node for captured `baz` with the correct props set" in {
       val List(cb) = cpg.closureBinding.filter(_._localViaRefOut.name.l == List("baz")).l
       cb.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      cb.closureBindingId shouldBe Some("simple.pkg.Bar.foo.<lambda>0")
+      cb.closureBindingId shouldBe Some("simple.pkg.Bar.foo.<lambda>0.baz")
 
       cb._refOut.size shouldBe 1
     }
@@ -87,7 +87,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     "should contain a CLOSURE_BINDING node for captured `x` with the correct props set" in {
       val List(cb) = cpg.closureBinding.filter(_._methodParameterInViaRefOut.name.l == List("x")).l
       cb.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      cb.closureBindingId shouldBe Some("simple.pkg.Bar.foo.<lambda>0")
+      cb.closureBindingId shouldBe Some("simple.pkg.Bar.foo.<lambda>0.x")
 
       cb._refOut.size shouldBe 1
     }
@@ -95,7 +95,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     "should contain a CLOSURE_BINDING node for captured `this` with the correct props set" in {
       val List(cb) = cpg.closureBinding.filter(_._methodParameterInViaRefOut.name.l == List("this")).l
       cb.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      cb.closureBindingId shouldBe Some("simple.pkg.Bar.foo.<lambda>0")
+      cb.closureBindingId shouldBe Some("simple.pkg.Bar.foo.<lambda>0.this")
 
       cb._refOut.size shouldBe 1
     }

@@ -293,7 +293,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
         case node: NewLocal             => NodeContext(node, node.name, node.typeFullName)
       }
       .map { capturedNodeContext =>
-        val closureBinding = closureBindingNode(descFullName, EvaluationStrategies.BY_REFERENCE)
+        val closureBindingId = s"$descFullName.${capturedNodeContext.name}"
+        val closureBinding   = closureBindingNode(closureBindingId, EvaluationStrategies.BY_REFERENCE)
         (closureBinding, capturedNodeContext)
       }
 
@@ -394,7 +395,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
         case node: NewLocal             => NodeContext(node, node.name, node.typeFullName)
       }
       .map { capturedNodeContext =>
-        val closureBinding = closureBindingNode(descFullName, EvaluationStrategies.BY_REFERENCE)
+        val closureBindingId = s"$descFullName.${capturedNodeContext.name}"
+        val closureBinding   = closureBindingNode(closureBindingId, EvaluationStrategies.BY_REFERENCE)
         (closureBinding, capturedNodeContext)
       }
 
