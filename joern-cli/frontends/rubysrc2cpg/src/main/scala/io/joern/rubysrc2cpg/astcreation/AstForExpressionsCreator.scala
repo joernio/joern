@@ -207,15 +207,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         RubyOperators.bufferAppend
       } else {
         val fullNameOpt = receiverAstOpt.flatMap { ast =>
-          ast.nodes.collectFirst {
-            case _ if builtinType.isDefined => s"${builtinType.get}.${n.methodName}"
-            case x: NewMethodRef            => x.methodFullName
+          ast.nodes.headOption.flatMap {
+            case _ if builtinType.isDefined => builtinType.map(t => s"$t.${n.methodName}")
+            case x: NewMethodRef            => Some(x.methodFullName)
             case _ =>
               (n.target match {
                 case ma: MemberAccess => scope.tryResolveTypeReference(ma.memberName).map(_.name)
                 case _                => typeFromCallTarget(n.target)
               }).map(x => s"$x.${n.methodName}")
-                .getOrElse(XDefines.DynamicCallUnknownFullName)
           }
         }
         fullNameOpt.getOrElse(XDefines.DynamicCallUnknownFullName)
