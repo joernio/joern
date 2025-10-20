@@ -192,17 +192,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     def createMemberCall(n: RubyCallWithBase): Ast = {
       val isErbBufferAppendCall = n.methodName == Constants.joernErbBufferAppend
 
-      val (nodeOp, receiverAst) = if (isErbBufferAppendCall) {
-        val hasStringArgs = n.arguments.tail.exists {
-          case StaticLiteral(typeFullName) if typeFullName == Defines.String => true
-          case _                                                             => false
-        }
-        val ast = astForFieldAccess(MemberAccess(n.target, ".", n.methodName)(n.span), stripLeadingAt = true)
-        (n.op, ast)
-      } else {
-        val ast = astForFieldAccess(MemberAccess(n.target, ".", n.methodName)(n.span), stripLeadingAt = true)
-        (n.op, ast)
-      }
+      val receiverAstOpt = Option.when(!isErbBufferAppendCall)(
+        astForFieldAccess(MemberAccess(n.target, ".", n.methodName)(n.span), stripLeadingAt = true)
+      )
 
       val (baseAst, baseCode) = astForMemberAccessTarget(n.target)
       val builtinType = n.target match {
@@ -214,8 +206,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       val methodFullName = if (isErbBufferAppendCall) {
         RubyOperators.bufferAppend
       } else {
-        receiverAst.nodes
-          .collectFirst {
+        val fullNameOpt = receiverAstOpt.flatMap { ast =>
+          ast.nodes.collectFirst {
             case _ if builtinType.isDefined => s"${builtinType.get}.${n.methodName}"
             case x: NewMethodRef            => x.methodFullName
             case _ =>
@@ -225,7 +217,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
               }).map(x => s"$x.${n.methodName}")
                 .getOrElse(XDefines.DynamicCallUnknownFullName)
           }
-          .getOrElse(XDefines.DynamicCallUnknownFullName)
+        }
+        fullNameOpt.getOrElse(XDefines.DynamicCallUnknownFullName)
       }
       val argumentAsts = n.arguments.map(astForMethodCallArgument)
       val dispatchType = if (isStatic) DispatchTypes.STATIC_DISPATCH else DispatchTypes.DYNAMIC_DISPATCH
@@ -234,7 +227,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         val rhsCode =
           if (n.methodName == "new") n.methodName
           else s"${n.methodName}(${n.arguments.map(code).mkString(", ")})"
-        s"$baseCode${nodeOp}$rhsCode"
+        s"$baseCode${n.op}$rhsCode"
       } else {
         code(n)
       }
@@ -252,7 +245,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         if (isStatic) {
           callAst(call, argumentAsts, base = Option(baseAst)).copy(receiverEdges = Nil)
         } else {
-          callAst(call, argumentAsts, base = Option(baseAst), receiver = Option(receiverAst))
+          callAst(call, argumentAsts, base = Option(baseAst), receiver = receiverAstOpt)
         }
       }
     }
