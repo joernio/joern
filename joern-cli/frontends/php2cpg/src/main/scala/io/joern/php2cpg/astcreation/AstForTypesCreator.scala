@@ -66,9 +66,12 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     dynamicStmts: List[PhpStmt],
     staticStmts: List[PhpStmt]
   ): Ast = {
-    val inheritsFrom = (stmt.extendsNames ++ stmt.implementedInterfaces).map(_.name)
+    val useTraitNames = dynamicStmts.collect { case x: PhpTraitUseStmt => x }.flatMap(_.traits)
+    val inheritsFrom  = (stmt.extendsNames ++ useTraitNames ++ stmt.implementedInterfaces).map(_.name)
     val inheritsFromMeta =
-      (stmt.extendsNames ++ stmt.implementedInterfaces).map(name => s"${name.name}$MetaTypeDeclExtension")
+      (stmt.extendsNames ++ useTraitNames ++ stmt.implementedInterfaces).map(name =>
+        s"${name.name}$MetaTypeDeclExtension"
+      )
 
     val className = stmt.name match {
       case Some(name) => name.name
@@ -208,9 +211,27 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     dynamicStmts: List[PhpStmt],
     staticStmts: List[PhpStmt]
   ): List[Ast] = {
-    val inheritsFrom = (stmt.extendsNames ++ stmt.implementedInterfaces).map(_.name)
+    /*
+     the `use <trait>` can be used anywhere in a class definition, but the method is available to be called in any function in the class so we find all the traits before processing the rest of the class.
+     In the below sample, if we execute `(Foo.new())->foo()` it executes the `traitFunc` even though the `use <trait>` is after the `foo` method
+     ```php
+     trait TraitA {
+      function traitFunc() {}
+     }
+     class Foo {
+      function foo() {
+        $this->traitFunc();
+      }
+      use TraitA;
+     }
+     ```
+     */
+    val useTraitNames = dynamicStmts.collect { case x: PhpTraitUseStmt => x }.flatMap(_.traits)
+    val inheritsFrom  = (stmt.extendsNames ++ useTraitNames ++ stmt.implementedInterfaces).map(_.name)
     val inheritsFromMeta =
-      (stmt.extendsNames ++ stmt.implementedInterfaces).map(name => s"${name.name}$MetaTypeDeclExtension")
+      (stmt.extendsNames ++ useTraitNames ++ stmt.implementedInterfaces).map(name =>
+        s"${name.name}$MetaTypeDeclExtension"
+      )
     val code = codeForClassStmt(stmt, name)
 
     val (dedupedName, fullName) =
