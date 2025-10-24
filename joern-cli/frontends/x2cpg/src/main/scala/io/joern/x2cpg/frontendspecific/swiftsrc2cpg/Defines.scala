@@ -8,25 +8,44 @@ object Defines {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
-  val Any: String                   = "ANY"
-  val Character: String             = "Swift.Character"
-  val String: String                = "Swift.String"
-  val Int: String                   = "Swift.Int"
-  val Float: String                 = "Swift.Float"
-  val Double: String                = "Swift.Double"
-  val Bool: String                  = "Swift.Bool"
-  val Function: String              = "Swift.Function"
-  val Array: String                 = "Swift.Array"
-  val Dictionary: String            = "Swift.Dictionary"
-  val Nil: String                   = "Swift.Nil"
-  val Iterator: String              = "Swift.Iterator"
-  val Void: String                  = "()"
-  val ConstructorMethodName: String = "init"
-  val DuplicateSuffix: String       = "<duplicate>"
-  val GlobalNamespace: String       = NamespaceTraversal.globalNamespaceName
+  val Any: String                    = "ANY"
+  val Character: String              = "Swift.Character"
+  val String: String                 = "Swift.String"
+  val Int: String                    = "Swift.Int"
+  val Float: String                  = "Swift.Float"
+  val Double: String                 = "Swift.Double"
+  val Bool: String                   = "Swift.Bool"
+  val Function: String               = "Swift.Function"
+  val Tuple: String                  = "Swift.Tuple"
+  val Array: String                  = "Swift.Array"
+  val Class: String                  = "Swift.Class"
+  val Dictionary: String             = "Swift.Dictionary"
+  val Nil: String                    = "Swift.Nil"
+  val Iterator: String               = "Swift.Iterator"
+  val Void: String                   = "()"
+  val ConstructorMethodName: String  = "init"
+  val ClosureApplyMethodName: String = "single_apply"
+  val DuplicateSuffix: String        = "<duplicate>"
+  val GlobalNamespace: String        = NamespaceTraversal.globalNamespaceName
 
   val SwiftTypes: List[String] =
-    List(Any, Nil, Character, String, Int, Float, Double, Bool, Function, Array, Dictionary, Iterator, Void)
+    List(
+      Any,
+      Nil,
+      Character,
+      String,
+      Int,
+      Float,
+      Double,
+      Bool,
+      Tuple,
+      Function,
+      Class,
+      Array,
+      Dictionary,
+      Iterator,
+      Void
+    )
 
   val PostfixOperatorMap: Map[String, String] = Map(
     "++"  -> Operators.postIncrement,

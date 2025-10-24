@@ -18,7 +18,6 @@ trait AstForTypeSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val typeDeclNode_ =
       typeDeclNode(node, typeName, typeFullName, parserResult.filename, code(node), astParentType, astParentFullName)
 
-    seenAliasTypes.add(typeDeclNode_)
     diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
     typeDeclNode_
   }
