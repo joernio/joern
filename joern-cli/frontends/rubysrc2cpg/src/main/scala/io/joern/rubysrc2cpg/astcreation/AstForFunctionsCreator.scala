@@ -269,7 +269,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     diffGraph.addEdge(binding, method, EdgeTypes.REF)
   }
 
-  // TODO: remaining cases
   protected def astForParameter(node: RubyExpression, index: Int): Ast = {
     node match {
       case node: (MandatoryParameter | OptionalParameter) =>
