@@ -86,7 +86,7 @@ object AstCreatorHelper {
       case "Dictionary" => Defines.Dictionary
       case "Nil"        => Defines.Nil
       // Special patterns with specific handling
-      case t if t.startsWith("[") && t.endsWith("]") => Defines.Array
+      case t if t.startsWith("[") && t.endsWith("]")         => Defines.Array
       case ClosureSignatureMatcher(params, mods, returnType) =>
         // "throws" is the only modifier that swiftc keeps
         // so we have to restore it here to keep signatures
