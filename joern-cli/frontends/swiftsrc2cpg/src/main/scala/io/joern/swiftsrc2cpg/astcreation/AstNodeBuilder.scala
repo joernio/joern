@@ -207,6 +207,13 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
 
   protected def createFunctionTypeAndTypeDecl(node: SwiftNode, methodNode: NewMethod): Unit = {
     registerType(methodNode.fullName)
+
+    val (inherits, bindingName) = if (node.isInstanceOf[ClosureExprSyntax]) {
+      val inheritsFunctionFullName = s"${Defines.Function}<${methodNode.signature}>"
+      registerType(inheritsFunctionFullName)
+      (Seq(inheritsFunctionFullName), Defines.ClosureApplyMethodName)
+    } else (Seq.empty, methodNode.name)
+
     val (astParentType, astParentFullName) = astParentInfo()
     val methodTypeDeclNode = typeDeclNode(
       node,
@@ -214,15 +221,16 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
       methodNode.fullName,
       methodNode.filename,
       methodNode.fullName,
-      astParentType,
-      astParentFullName
+      astParentType = astParentType,
+      astParentFullName = astParentFullName,
+      inherits = inherits
     )
 
     methodNode.astParentFullName = astParentFullName
     methodNode.astParentType = astParentType
 
     val functionBinding = NewBinding()
-      .name(methodNode.name)
+      .name(bindingName)
       .methodFullName(methodNode.fullName)
       .signature(methodNode.signature)
 

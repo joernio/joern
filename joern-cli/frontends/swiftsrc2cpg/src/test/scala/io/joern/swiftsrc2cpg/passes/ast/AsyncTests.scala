@@ -29,10 +29,10 @@ class AsyncTests extends AstSwiftSrc2CpgSuite {
       val cpg                = code("func asyncGlobal3(fn: () throws -> Int) async rethrows { }")
       val List(asyncGlobal3) = cpg.method.internal.nameNot(NamespaceTraversal.globalNamespaceName).l
       asyncGlobal3.name shouldBe "asyncGlobal3"
-      asyncGlobal3.fullName shouldBe s"Test0.swift:<global>.asyncGlobal3:(fn:${Defines.Function})->ANY"
+      asyncGlobal3.fullName shouldBe s"Test0.swift:<global>.asyncGlobal3:(fn:Swift.Function<()throws->Int>)->ANY"
       val List(fn) = asyncGlobal3.parameter.l
       fn.name shouldBe "fn"
-      fn.typeFullName shouldBe Defines.Function
+      fn.typeFullName shouldBe "Swift.Function<()throws->Int>"
     }
 
     "testAsync4" in {
