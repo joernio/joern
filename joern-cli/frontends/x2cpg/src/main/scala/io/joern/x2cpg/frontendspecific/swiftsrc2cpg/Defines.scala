@@ -42,8 +42,8 @@ object Defines {
   }
 
   val PrefixOperatorMap: Map[String, String] = Map(
-    "-"   -> Operators.preDecrement,
-    "+"   -> Operators.preIncrement,
+    "-"   -> Operators.minus,
+    "+"   -> Operators.plus,
     "~"   -> Operators.not,
     "!"   -> Operators.logicalNot,
     "..<" -> Operators.lessThan,

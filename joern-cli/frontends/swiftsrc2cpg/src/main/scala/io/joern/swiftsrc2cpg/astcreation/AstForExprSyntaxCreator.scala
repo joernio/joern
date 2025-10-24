@@ -305,7 +305,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     registerType(tpe)
     val signature = fullnameProvider.typeFullnameRaw(expr.calledExpression).getOrElse(x2cpg.Defines.UnresolvedSignature)
     val callName  = Defines.ClosureApplyMethodName
-    val callMethodFullname = s"${Defines.Function}.$callName:$signature"
+    val callMethodFullname = s"${Defines.Function}<$signature>.$callName:$signature"
     val baseAst            = astForNode(expr.calledExpression)
 
     val trailingClosureAsts            = expr.trailingClosure.toList.map(astForNode)
@@ -331,7 +331,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case refExpr: DeclReferenceExprSyntax
           if refExpr.baseName.isInstanceOf[identifier] && refExpr.argumentNames.isEmpty &&
             fullnameProvider.declFullname(func).isEmpty &&
-            fullnameProvider.typeFullname(refExpr).contains(Defines.Function) =>
+            fullnameProvider.typeFullname(refExpr).exists(_.startsWith(s"${Defines.Function}<")) =>
         true
       case _ => false
     }

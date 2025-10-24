@@ -9,6 +9,8 @@ import org.apache.commons.lang3.StringUtils
 object AstCreatorHelper {
 
   private val TagsToKeepInFullName = List("<anonymous>", "<lambda>", "<global>", "<type>", "<extension>", "<wildcard>")
+  private val ReturnTypeMatcher    = """^\(.*\)(->|:)(.+)$""".r
+  private val ClosureSignatureMatcher = """^(\(.*\))\s*(.*)\s*->(.+)$""".r
 
   /** Removes generic type parameters from qualified names while preserving special tags.
     *
@@ -84,9 +86,15 @@ object AstCreatorHelper {
       case "Dictionary" => Defines.Dictionary
       case "Nil"        => Defines.Nil
       // Special patterns with specific handling
-      case t if t.startsWith("[") && t.endsWith("]")  => Defines.Array
-      case t if t.startsWith("(") && t.contains("->") => Defines.Function
-      case t if t.contains("( ")                      => t.substring(0, t.indexOf("( "))
+      case t if t.startsWith("[") && t.endsWith("]") => Defines.Array
+      case ClosureSignatureMatcher(params, mods, returnType) =>
+        // "throws" is the only modifier that swiftc keeps
+        // so we have to restore it here to keep signatures
+        // consistent between runs with compiler support and without.
+        val m = if (mods.contains("throws")) { "throws" }
+        else ""
+        s"${Defines.Function}<$params$m->$returnType>".replace(" ", "")
+      case t if t.contains("( ") => t.substring(0, t.indexOf("( "))
       // Default case
       case typeStr => typeStr
     }
@@ -190,8 +198,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       (fullNameWithSignature, "()")
     }
   }
-
-  private val ReturnTypeMatcher = """\(.*\)(->|:)(.+)""".r
 
   protected def methodInfoForFunctionDeclLike(node: FunctionDeclLike): MethodInfo = {
     val name = calcMethodName(node)
