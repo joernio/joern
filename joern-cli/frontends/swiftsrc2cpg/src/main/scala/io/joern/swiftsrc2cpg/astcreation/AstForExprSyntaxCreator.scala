@@ -337,15 +337,17 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForIsExprSyntax(node: IsExprSyntax): Ast = {
+    val op     = Operators.instanceOf
     val lhsAst = astForNode(node.expression)
-    val rhsAst = astForNode(node.`type`)
 
-    val op  = Operators.instanceOf
-    val tpe = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
+    val tpeNode = node.`type`
+    val tpe     = simpleTypeNameForTypeSyntax(tpeNode)
     registerType(tpe)
-    val callNode_ = createStaticCallNode(node, code(node), op, op, tpe)
 
-    val argAsts = List(lhsAst, rhsAst)
+    val callNode_    = createStaticCallNode(node, code(node), op, op, Defines.Bool)
+    val typeRefNode_ = typeRefNode(node, code(tpeNode), tpe)
+
+    val argAsts = List(lhsAst, Ast(typeRefNode_))
     callAst(callNode_, argAsts)
   }
 

@@ -48,7 +48,6 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       astParentFullName,
       alias = aliasName
     )
-    seenAliasTypes.add(typeDeclNode_)
 
     attributes.foreach { ast =>
       Ast.storeInDiffGraph(ast, diffGraph)
@@ -328,7 +327,6 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       astParentFullName,
       inherits = inherits
     )
-    seenAliasTypes.add(typeDeclNode_)
 
     attributes.foreach { ast =>
       Ast.storeInDiffGraph(ast, diffGraph)
@@ -472,7 +470,6 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       astParentFullName,
       inherits = inherits
     )
-    seenAliasTypes.add(typeDeclNode_)
 
     attributes.foreach { ast =>
       Ast.storeInDiffGraph(ast, diffGraph)
@@ -856,7 +853,6 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       astParentFullName,
       alias = Option(aliasName)
     )
-    seenAliasTypes.add(typeDeclNode_)
 
     attributes.foreach { ast =>
       Ast.storeInDiffGraph(ast, diffGraph)

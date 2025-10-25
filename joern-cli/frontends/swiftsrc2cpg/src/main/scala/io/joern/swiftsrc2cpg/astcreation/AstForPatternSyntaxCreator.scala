@@ -1,10 +1,10 @@
 package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
-import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
+import io.joern.x2cpg.{Ast, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 
 import scala.annotation.{tailrec, unused}
 
@@ -20,16 +20,17 @@ trait AstForPatternSyntaxCreator(implicit withSchemaValidation: ValidationMode) 
   }
 
   private def astForIsTypePatternSyntax(node: IsTypePatternSyntax): Ast = {
-    val op      = Operators.instanceOf
+    val op = Operators.instanceOf
+
     val tpeNode = node.`type`
-    val tpeCode = code(tpeNode)
-    val tpe     = nameForTypeSyntax(tpeNode)
+    val tpe     = simpleTypeNameForTypeSyntax(tpeNode)
     registerType(tpe)
 
-    val callNode_    = createStaticCallNode(node, code(node), op, op, tpe)
-    val typeRefNode_ = typeRefNode(node, tpeCode, tpe)
-    val arg          = Ast(typeRefNode_)
-    callAst(callNode_, List(arg))
+    val callNode_    = createStaticCallNode(node, code(node), op, op, Defines.Bool)
+    val typeRefNode_ = typeRefNode(node, code(tpeNode), tpe)
+
+    val argAsts = List(Ast(typeRefNode_))
+    callAst(callNode_, argAsts)
   }
 
   private def astForMissingPatternSyntax(@unused node: MissingPatternSyntax): Ast = Ast()

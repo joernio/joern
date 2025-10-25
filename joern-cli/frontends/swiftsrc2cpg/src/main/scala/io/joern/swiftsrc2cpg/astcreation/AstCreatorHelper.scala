@@ -74,6 +74,7 @@ object AstCreatorHelper {
       case ""                   => Defines.Any
       case t if t.contains("?") => Defines.Any
       // Map builtin types
+      case "Any"        => Defines.Any
       case "String"     => Defines.String
       case "Character"  => Defines.Character
       case "Int"        => Defines.Int
@@ -270,7 +271,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     typeNameInfoForNode(node, name)
   }
 
-  protected def nameForTypeSyntax(node: TypeSyntax): String = {
+  private def nameForTypeSyntax(node: TypeSyntax): String = {
     val name = node match {
       case _: ArrayTypeSyntax                       => "array-type"
       case a: AttributedTypeSyntax                  => nameForTypeSyntax(a.baseType)
@@ -292,6 +293,29 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case _: TupleTypeSyntax                       => "tuple-type"
     }
     scopeLocalUniqueName(cleanType(name))
+  }
+
+  protected def simpleTypeNameForTypeSyntax(node: TypeSyntax): String = {
+    node match {
+      case _: ArrayTypeSyntax                       => Defines.Array
+      case a: AttributedTypeSyntax                  => simpleTypeNameForTypeSyntax(a.baseType)
+      case _: ClassRestrictionTypeSyntax            => Defines.Class
+      case _: CompositionTypeSyntax                 => scopeLocalUniqueName("composition-type")
+      case _: DictionaryTypeSyntax                  => Defines.Dictionary
+      case _: FunctionTypeSyntax                    => Defines.Function
+      case id: IdentifierTypeSyntax                 => scopeLocalUniqueName(cleanType(code(id.name)))
+      case w: ImplicitlyUnwrappedOptionalTypeSyntax => simpleTypeNameForTypeSyntax(w.wrappedType)
+      case m: MemberTypeSyntax                      => scopeLocalUniqueName(cleanType(code(m)))
+      case m: MetatypeTypeSyntax                    => simpleTypeNameForTypeSyntax(m.baseType)
+      case _: MissingTypeSyntax                     => scopeLocalUniqueName("missing-type")
+      case n: NamedOpaqueReturnTypeSyntax           => simpleTypeNameForTypeSyntax(n.`type`)
+      case o: OptionalTypeSyntax                    => simpleTypeNameForTypeSyntax(o.wrappedType)
+      case p: PackElementTypeSyntax                 => simpleTypeNameForTypeSyntax(p.pack)
+      case p: PackExpansionTypeSyntax               => simpleTypeNameForTypeSyntax(p.repetitionPattern)
+      case s: SomeOrAnyTypeSyntax                   => simpleTypeNameForTypeSyntax(s.constraint)
+      case s: SuppressedTypeSyntax                  => simpleTypeNameForTypeSyntax(s.`type`)
+      case _: TupleTypeSyntax                       => Defines.Tuple
+    }
   }
 
   protected def typeNameInfoForTypeSyntax(node: TypeSyntax): TypeInfo = {
