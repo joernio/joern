@@ -413,7 +413,7 @@ class ClassTests extends RubyCode2CpgFixture {
 
     "Create assignments to method refs for methods on singleton object" in {
       inside(cpg.method.isModule.block.assignment.l) {
-        case _ :: _ :: _ :: barkAssignment :: legsAssignment :: Nil =>
+        case _ :: _ :: _ :: _ :: barkAssignment :: legsAssignment :: Nil =>
           inside(barkAssignment.argument.l) {
             case (lhs: Call) :: (rhs: TypeRef) :: Nil =>
               val List(identifier, fieldIdentifier) = lhs.argument.l: @unchecked
@@ -639,7 +639,7 @@ class ClassTests extends RubyCode2CpgFixture {
           bodyCall.methodFullName shouldBe s"Test0.rb:$Main.Foo.${RubyDefines.TypeDeclBody}"
           bodyCall.code shouldBe "(<tmp-0> = self::Foo)::<body>()"
           bodyCall.receiver.isEmpty shouldBe true
-          bodyCall.argument(0).code shouldBe "<tmp-0>"
+          bodyCall.argument(0).code shouldBe "<tmp-0> = self::Foo"
         case None => fail("Expected <body> call")
       }
     }

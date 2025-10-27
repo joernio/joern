@@ -192,7 +192,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     def createMemberCall(n: RubyCallWithBase): Ast = {
       val isErbBufferAppendCall = n.methodName == Constants.joernErbBufferAppend
 
-      val receiverAstOpt = Option.when(!isErbBufferAppendCall)(
+      val receiverAstOpt = Option.unless(isStatic || isErbBufferAppendCall)(
         astForFieldAccess(MemberAccess(n.target, ".", n.methodName)(n.span), stripLeadingAt = true)
       )
 
