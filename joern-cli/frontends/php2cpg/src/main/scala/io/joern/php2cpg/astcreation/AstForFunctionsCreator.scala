@@ -93,7 +93,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         localsForUses.map(Ast(_)),
         Option(methodName),
         usesCode = Option(usesCode),
-        isAnonymousMethod = true
+        isArrowClosure = closureExpr.isArrowFunc,
+        isAnonymousMethod = true,
+        closureMethodRef = Option(methodRef)
       )
 
     // Add method to scope to be attached to typeDecl later
@@ -108,7 +110,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     fullNameOverride: Option[String] = None,
     isConstructor: Boolean = false,
     usesCode: Option[String] = None,
-    isAnonymousMethod: Boolean = false
+    isArrowClosure: Boolean = false,
+    isAnonymousMethod: Boolean = false,
+    closureMethodRef: Option[NewMethodRef] = None
   ): Ast = {
     val isStatic = decl.modifiers.contains(ModifierTypes.STATIC)
     val thisParam = if (!isAnonymousMethod && decl.isClassMethod && !isStatic) {
@@ -325,7 +329,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
         val methodBlock = NewBlock()
 
-        scope.pushNewScope(MethodScope(methodNode_, methodBlock, fullName, Option(methodRef)))
+        scope.pushNewScope(MethodScope(methodNode_, methodBlock, fullName, methodRefNode = Option(methodRef)))
 
         val assignmentAsts = inits.map { init =>
           astForMemberAssignment(init.originNode, init.memberNode, init.value, isField = false)

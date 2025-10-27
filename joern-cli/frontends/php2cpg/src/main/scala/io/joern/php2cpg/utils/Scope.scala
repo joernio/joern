@@ -207,7 +207,7 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
       .collectFirst {
         case NamespaceScope(nm, _) if nm.name != NamespaceTraversal.globalNamespaceName => s"${nm.name}\\$methodName"
         case TypeScope(td, _) if td.name != NamespaceTraversal.globalNamespaceName      => s"${td.fullName}.$methodName"
-        case MethodScope(nm, _, _, _, _) if nm.name != NamespaceTraversal.globalNamespaceName =>
+        case MethodScope(nm, _, _, _, _, _) if nm.name != NamespaceTraversal.globalNamespaceName =>
           if (namespaces.isEmpty) {
             s"${nm.fullName}.$methodName"
           } else {
