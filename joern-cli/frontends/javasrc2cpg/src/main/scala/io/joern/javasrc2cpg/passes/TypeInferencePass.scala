@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory
 import scala.jdk.OptionConverters.RichOptional
 import io.joern.x2cpg.Defines.UnresolvedNamespace
 import io.shiftleft.codepropertygraph.generated.PropertyNames
-import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
+import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.{PrimitiveTypes, TypeConstants}
 
 class TypeInferencePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Call](cpg) {
 
@@ -73,6 +73,10 @@ class TypeInferencePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Call](cpg) {
 //        println(s"    [$idx] Param: ${parameter.name} (${parameter.typeFullName}) vs Arg: ${argument.code} (${maybeArgumentType})")
 //        println(s"        Match: $argMatches")
 //      }
+      val argMatches =
+        maybeArgumentType == TypeConstants.Any || maybeArgumentType == parameter.typeFullName || (maybeArgumentType == TypeConstants.Null && !PrimitiveTypes
+          .contains(parameter.typeFullName))
+
       !argMatches
     }
     if (call.name == "createScript") {

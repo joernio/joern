@@ -264,7 +264,7 @@ object TypeInfoCalculator {
     val Record: String   = "java.lang.Record"
     val Void: String     = "void"
     val Any: String      = "ANY"
-    val NULL: String     = "null"
+    val Null: String     = "null"
   }
 
   object TypeNameConstants {
@@ -289,15 +289,9 @@ object TypeInfoCalculator {
     "registerNatives()"
   )
 
-  val NumericTypes: Set[String] = Set(
-    "byte",
-    "short",
-    "int",
-    "long",
-    "float",
-    "double",
-    "char",
-    "boolean",
+  val PrimitiveTypes: Set[String] = Set("byte", "short", "int", "long", "float", "double", "char", "boolean")
+
+  val NumericTypes: Set[String] = PrimitiveTypes ++ Set(
     "java.lang.Byte",
     "java.lang.Short",
     "java.lang.Integer",

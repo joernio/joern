@@ -26,7 +26,6 @@ import org.jetbrains.kotlin.resolve.sam.SamConstructorDescriptor
 import org.jetbrains.kotlin.resolve.sam.SamConversionResolverImplKt
 import org.jetbrains.kotlin.resolve.source.KotlinSourceElement
 
-import java.util.UUID.nameUUIDFromBytes
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
@@ -294,8 +293,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
         case node: NewLocal             => NodeContext(node, node.name, node.typeFullName)
       }
       .map { capturedNodeContext =>
-        val uuidBytes        = stringForUUID(fn, capturedNodeContext.name, capturedNodeContext.typeFullName)
-        val closureBindingId = nameUUIDFromBytes(uuidBytes.getBytes).toString
+        val closureBindingId = s"$descFullName.${capturedNodeContext.name}"
         val closureBinding   = closureBindingNode(closureBindingId, EvaluationStrategies.BY_REFERENCE)
         (closureBinding, capturedNodeContext)
       }
@@ -397,8 +395,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
         case node: NewLocal             => NodeContext(node, node.name, node.typeFullName)
       }
       .map { capturedNodeContext =>
-        val uuidBytes        = stringForUUID(expr, capturedNodeContext.name, capturedNodeContext.typeFullName)
-        val closureBindingId = nameUUIDFromBytes(uuidBytes.getBytes).toString
+        val closureBindingId = s"$descFullName.${capturedNodeContext.name}"
         val closureBinding   = closureBindingNode(closureBindingId, EvaluationStrategies.BY_REFERENCE)
         (closureBinding, capturedNodeContext)
       }
