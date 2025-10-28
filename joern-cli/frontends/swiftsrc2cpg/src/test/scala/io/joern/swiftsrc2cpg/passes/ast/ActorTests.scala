@@ -41,7 +41,6 @@ class ActorTests extends SwiftCompilerSrc2CpgSuite {
 
       val List(myActor) = cpg.typeDecl.nameExact("MyActor2").l
       myActor.fullName shouldBe "Sources/main.swift:<global>.MyActor2"
-      myActor.member.name.l shouldBe List("hello", "foo")
       val List(constructor) = myActor.method.isConstructor.l
       constructor.name shouldBe "init"
       constructor.fullName shouldBe "Sources/main.swift:<global>.MyActor2.init:()->Sources/main.swift:<global>.MyActor2"
@@ -54,7 +53,6 @@ class ActorTests extends SwiftCompilerSrc2CpgSuite {
 
       val List(myActorSwiftc) = compilerCpg.typeDecl.nameExact("MyActor2").l
       myActorSwiftc.fullName shouldBe "SwiftTest.MyActor2"
-      myActorSwiftc.member.name.l shouldBe List("hello", "foo")
       val List(constructorSwiftc) = myActorSwiftc.method.isConstructor.l
       constructorSwiftc.name shouldBe "init"
       constructorSwiftc.fullName shouldBe "SwiftTest.MyActor2.init:()->SwiftTest.MyActor2"

@@ -201,6 +201,41 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
       n2.astIn.l shouldBe List(n1)
     }
 
+    "have correct structure for implicit self access" in {
+      // Swift does not allow to access any member / function of the outer class instance.
+      // Something like `Foo.self.f` in Foo.Bar.bar is not possible.
+      // Hence, we do not need to implement or test this here.
+      val cpg = code("""
+          |class Foo {
+          |  let f: String = "f"
+          |  class Bar {
+          |    let b = "b"
+          |    func bar() {
+          |      let f: Int = 1
+          |      handleB(b)
+          |      handleF(f)
+          |    }
+          |  }
+          |}
+          |""".stripMargin)
+      cpg.typeDecl.nameExact("Foo").member.name.l shouldBe List("f")
+      cpg.typeDecl.nameExact("Bar").member.name.l shouldBe List("b")
+      val List(bAccess) = cpg.call.nameExact("handleB").argument.fieldAccess.l
+      bAccess.code shouldBe "self.b"
+      inside(bAccess.argument.l) { case List(id: Identifier, fieldName: FieldIdentifier) =>
+        id.name shouldBe "self"
+        id.typeFullName shouldBe "Test0.swift:<global>.Foo.Bar"
+        fieldName.canonicalName shouldBe "b"
+      }
+      inside(cpg.call.nameExact("handleF").argument(1).l) { case List(id: Identifier) =>
+        id.name shouldBe "f"
+        id.typeFullName shouldBe Defines.Int
+        val fLocal = id._localViaRefOut.get
+        fLocal.name shouldBe "f"
+        fLocal.typeFullName shouldBe Defines.Int
+      }
+    }
+
     "have correct structure for function in accessor block" in {
       val cpg = code("""
           |public protocol Foo {
@@ -222,7 +257,7 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
       thisBar.name shouldBe Operators.fieldAccess
       thisBar.typeFullName shouldBe "Swift.Int"
       inside(thisBar.argument.l) { case List(base: Identifier, field: FieldIdentifier) =>
-        base.name shouldBe "this"
+        base.name shouldBe "self"
         base.typeFullName shouldBe "Test0.swift:<global>.Foo"
         field.canonicalName shouldBe "bar"
       }
@@ -231,7 +266,7 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
       val List(setParam) = set.parameter.l
       setParam.name shouldBe "newValue"
       setParam.typeFullName shouldBe "Swift.Int"
-      set.body.astChildren.isCall.code.l shouldBe List("this.bar = newValue")
+      set.body.astChildren.isCall.code.l shouldBe List("self.bar = newValue")
 
       willSet.fullName shouldBe "Test0.swift:<global>.Foo.bar.willSet:Swift.Int"
       didSet.fullName shouldBe "Test0.swift:<global>.Foo.bar.didSet:Swift.Int"

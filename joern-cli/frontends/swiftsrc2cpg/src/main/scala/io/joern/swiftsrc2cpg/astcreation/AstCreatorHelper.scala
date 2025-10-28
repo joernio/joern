@@ -164,16 +164,23 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def astForIdentifier(node: SwiftNode): Ast = {
     val identifierName = code(node)
-    val identNode      = identifierNode(node, identifierName)
-    val variableOption = scope.lookupVariable(identifierName)
-    val tpe = variableOption match {
-      case Some((_, variableTypeName)) if variableTypeName != Defines.Any => variableTypeName
-      case None if identNode.typeFullName != Defines.Any                  => identNode.typeFullName
-      case _                                                              => Defines.Any
+    dynamicInstanceTypeStack.headOption match {
+      case Some(InstanceTypeStackElement(tpe, members)) if members.contains(identifierName) =>
+        val selfNode = identifierNode(node, "self", "self", tpe)
+        scope.addVariableReference("self", selfNode, selfNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
+        fieldAccessAst(node, node, Ast(selfNode), s"self.$identifierName", identifierName, tpe)
+      case _ =>
+        val identNode      = identifierNode(node, identifierName)
+        val variableOption = scope.lookupVariable(identifierName)
+        val tpe = variableOption match {
+          case Some((_, variableTypeName)) if variableTypeName != Defines.Any => variableTypeName
+          case None if identNode.typeFullName != Defines.Any                  => identNode.typeFullName
+          case _                                                              => Defines.Any
+        }
+        identNode.typeFullName = tpe
+        scope.addVariableReference(identifierName, identNode, tpe, EvaluationStrategies.BY_REFERENCE)
+        Ast(identNode)
     }
-    identNode.typeFullName = tpe
-    scope.addVariableReference(identifierName, identNode, tpe, EvaluationStrategies.BY_REFERENCE)
-    Ast(identNode)
   }
 
   protected def registerType(typeFullName: String): Unit = {

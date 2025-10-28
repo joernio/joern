@@ -30,6 +30,7 @@ object GsonTypeInfoReader {
     val DeclRef                = "decl_ref"
     val CallExpr               = "call_expr"
     val ReturnStmt             = "return_stmt"
+    val DotCallExpr            = "dot_syntax_call_expr"
   }
 
   /** Safely retrieves a string property from a JsonObject.
@@ -69,7 +70,11 @@ object GsonTypeInfoReader {
     val rangeObj = obj.get("range").getAsJsonObject
     val start    = rangeObj.get("start").getAsInt
     val end      = rangeObj.get("end").getAsInt
-    if (start == end) (start, end) else (start, end + 1)
+    val offset = astNodeKind(obj) match {
+      case NodeKinds.DotCallExpr => 3 // offsets are off by 2 from SwiftParser for simple dot calls
+      case _                     => 1
+    }
+    if (start == end) (start, end) else (start, end + offset)
   }
 
   /** Safely extracts the source range from a JSON object.
