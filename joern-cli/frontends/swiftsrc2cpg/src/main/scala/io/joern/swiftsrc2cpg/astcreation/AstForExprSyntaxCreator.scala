@@ -327,6 +327,11 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def isRefToClosure(func: FunctionCallExprSyntax, node: ExprSyntax): Boolean = {
+    if (!config.swiftBuild) {
+      // Early exit; without types from the compiler we will be unable to identify closure calls anyway.
+      // This saves us the typeFullname lookup below.
+      return false
+    }
     node match {
       case refExpr: DeclReferenceExprSyntax
           if refExpr.baseName.isInstanceOf[identifier] && refExpr.argumentNames.isEmpty &&
