@@ -420,7 +420,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
       (
         "Main.swift",
         "dot_syntax_call_expr",
-        (127, 136),
+        (127, 138),
         Some("(from:Swift.String)->()"),
         Some("SwiftHelloWorldLib.HelloWorld.greet(from:Swift.String)->()")
       ),

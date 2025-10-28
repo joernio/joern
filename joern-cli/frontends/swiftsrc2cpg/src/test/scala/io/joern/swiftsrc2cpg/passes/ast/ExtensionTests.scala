@@ -38,7 +38,7 @@ class ExtensionTests extends AstSwiftSrc2CpgSuite {
     "create stable ASTs from multiple files" in {
       val List(fooTypeDecl) = cpg.typeDecl.fullNameExact("Foo.swift:<global>.Foo").l
       fooTypeDecl.name shouldBe "Foo"
-      fooTypeDecl.member.name.l.sorted shouldBe List("a", "b", "c", "someFunc")
+      fooTypeDecl.member.name.l.sorted shouldBe List("a", "b", "c")
       val List(fooConstructor) = fooTypeDecl.method.isConstructor.l
       fooConstructor.fullName shouldBe s"Foo.swift:<global>.Foo.init:()->Foo.swift:<global>.Foo"
       fooConstructor.block.astChildren.assignment.code.l.sorted shouldBe List("var a = 1")
@@ -48,7 +48,7 @@ class ExtensionTests extends AstSwiftSrc2CpgSuite {
 
       val List(fooExt1TypeDecl) = cpg.typeDecl.fullNameExact("Ext1.swift:<global>.Foo<extension>").l
       fooExt1TypeDecl.name shouldBe "Foo<extension>"
-      fooExt1TypeDecl.member.name.l.sorted shouldBe List("d", "e", "f", "someOtherFunc")
+      fooExt1TypeDecl.member.name.l.sorted shouldBe List("d", "e", "f")
       val List(fooExt1TypeDeclConstructor) = fooExt1TypeDecl.method.isConstructor.l
       fooExt1TypeDeclConstructor.fullName shouldBe s"Ext1.swift:<global>.Foo<extension>.init:()->Ext1.swift:<global>.Foo<extension>"
       fooExt1TypeDeclConstructor.block.astChildren.assignment.code.l.sorted shouldBe List("var d = 0.0")

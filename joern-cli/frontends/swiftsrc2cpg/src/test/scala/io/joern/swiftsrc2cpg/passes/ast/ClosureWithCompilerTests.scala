@@ -183,17 +183,28 @@ class ClosureWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
           |  }
           |}""".stripMargin
 
-      val cpg = codeWithSwiftSetup(testCode)
+      val cpg                    = codeWithSwiftSetup(testCode)
+      val compareClosureFullName = "Sources/main.swift:<global>.Foo.<lambda>0:(Swift.String,Swift.String)->Swift.Bool"
 
-      val List(compareClassLocal, compareFunctionLocal) = cpg.local.nameExact("compare").l
-      compareClassLocal.typeFullName shouldBe "Swift.Function<(Swift.String,Swift.String)->Swift.Bool>"
-      compareFunctionLocal.typeFullName shouldBe "Swift.Function<(Swift.String,Swift.String)->Swift.Bool>"
+      cpg.local.nameExact("compare") shouldBe empty
+
+      val List(fooConstructor)    = cpg.method.isConstructor.fullNameExact("SwiftTest.Foo.init:()->SwiftTest.Foo").l
+      val List(compareAssignment) = fooConstructor.ast.isCall.isAssignment.l
+      val List(compareTarget)     = compareAssignment.target.fieldAccess.l
+      compareTarget.code shouldBe "self.compare"
+      compareTarget.typeFullName shouldBe "Swift.Function<(Swift.String,Swift.String)->Swift.Bool>"
+      inside(compareTarget.argument.l) { case List(selfId: Identifier, fieldId: FieldIdentifier) =>
+        selfId.typeFullName shouldBe "SwiftTest.Foo"
+        fieldId.code shouldBe "compare"
+      }
+
+      val compareSource = compareAssignment.source.asInstanceOf[MethodRef]
+      compareSource.methodFullName shouldBe compareClosureFullName
 
       val List(compareResultLocal) = cpg.local.nameExact("compareResult").l
       compareResultLocal.typeFullName shouldBe "Swift.Bool"
 
-      val compareClosureFullName = "Sources/main.swift:<global>.Foo.<lambda>0:(Swift.String,Swift.String)->Swift.Bool"
-      val List(compareClosure)   = cpg.method.fullNameExact(compareClosureFullName).l
+      val List(compareClosure)         = cpg.method.fullNameExact(compareClosureFullName).l
       val List(compareClosureTypeDecl) = cpg.typeDecl.fullNameExact(compareClosureFullName).l
       compareClosureTypeDecl.inheritsFromTypeFullName.l shouldBe List(
         "Swift.Function<(Swift.String,Swift.String)->Swift.Bool>"

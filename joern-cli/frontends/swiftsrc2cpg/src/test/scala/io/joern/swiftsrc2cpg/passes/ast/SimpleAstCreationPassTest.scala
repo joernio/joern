@@ -222,7 +222,7 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
       thisBar.name shouldBe Operators.fieldAccess
       thisBar.typeFullName shouldBe "Swift.Int"
       inside(thisBar.argument.l) { case List(base: Identifier, field: FieldIdentifier) =>
-        base.name shouldBe "this"
+        base.name shouldBe "self"
         base.typeFullName shouldBe "Test0.swift:<global>.Foo"
         field.canonicalName shouldBe "bar"
       }
@@ -231,7 +231,7 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
       val List(setParam) = set.parameter.l
       setParam.name shouldBe "newValue"
       setParam.typeFullName shouldBe "Swift.Int"
-      set.body.astChildren.isCall.code.l shouldBe List("this.bar = newValue")
+      set.body.astChildren.isCall.code.l shouldBe List("self.bar = newValue")
 
       willSet.fullName shouldBe "Test0.swift:<global>.Foo.bar.willSet:Swift.Int"
       didSet.fullName shouldBe "Test0.swift:<global>.Foo.bar.didSet:Swift.Int"

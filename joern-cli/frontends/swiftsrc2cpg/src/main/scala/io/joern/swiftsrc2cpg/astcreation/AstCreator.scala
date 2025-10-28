@@ -86,7 +86,7 @@ class AstCreator(
   }
 
   protected def astForNode(node: SwiftNode): Ast = node match {
-    case func: FunctionDeclLike             => astForFunctionLike(func)
+    case func: FunctionDeclLike             => astForFunctionLike(func, List.empty, None)
     case swiftToken: SwiftToken             => astForSwiftToken(swiftToken)
     case syntax: Syntax                     => astForSyntax(syntax)
     case exprSyntax: ExprSyntax             => astForExprSyntax(exprSyntax)
