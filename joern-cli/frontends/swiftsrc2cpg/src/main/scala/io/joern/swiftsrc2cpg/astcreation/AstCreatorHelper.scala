@@ -9,6 +9,8 @@ import org.apache.commons.lang3.StringUtils
 object AstCreatorHelper {
 
   private val TagsToKeepInFullName = List("<anonymous>", "<lambda>", "<global>", "<type>", "<extension>", "<wildcard>")
+  private val ReturnTypeMatcher    = """^\(.*\)(->|:)(.+)$""".r
+  private val ClosureSignatureMatcher = """^(\(.*\))\s*(.*)\s*->(.+)$""".r
 
   /** Removes generic type parameters from qualified names while preserving special tags.
     *
@@ -85,9 +87,15 @@ object AstCreatorHelper {
       case "Dictionary" => Defines.Dictionary
       case "Nil"        => Defines.Nil
       // Special patterns with specific handling
-      case t if t.startsWith("[") && t.endsWith("]") => Defines.Array
-      case t if t.contains("=>") || t.contains("->") => Defines.Function
-      case t if t.contains("( ")                     => t.substring(0, t.indexOf("( "))
+      case t if t.startsWith("[") && t.endsWith("]")         => Defines.Array
+      case ClosureSignatureMatcher(params, mods, returnType) =>
+        // "throws" is the only modifier that swiftc keeps
+        // so we have to restore it here to keep signatures
+        // consistent between runs with compiler support and without.
+        val m = if (mods.contains("throws")) { "throws" }
+        else ""
+        s"${Defines.Function}<$params$m->$returnType>".replace(" ", "")
+      case t if t.contains("( ") => t.substring(0, t.indexOf("( "))
       // Default case
       case typeStr => typeStr
     }
@@ -163,7 +171,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case None if identNode.typeFullName != Defines.Any                  => identNode.typeFullName
       case _                                                              => Defines.Any
     }
-    val typedIdentNode = identNode.typeFullName(tpe)
+    identNode.typeFullName = tpe
     scope.addVariableReference(identifierName, identNode, tpe, EvaluationStrategies.BY_REFERENCE)
     Ast(identNode)
   }
@@ -191,8 +199,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       (fullNameWithSignature, "()")
     }
   }
-
-  private val ReturnTypeMatcher = """\(.*\)(->|:)(.+)""".r
 
   protected def methodInfoForFunctionDeclLike(node: FunctionDeclLike): MethodInfo = {
     val name = calcMethodName(node)
@@ -227,9 +233,16 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
             val returnType = cleanType(code(s.returnClause.`type`))
             (s"${paramSignature(s.parameterClause)}->$returnType", returnType)
           case c: ClosureExprSyntax =>
-            val returnType      = c.signature.flatMap(_.returnClause).fold(Defines.Any)(r => cleanType(code(r.`type`)))
-            val paramClauseCode = c.signature.flatMap(_.parameterClause).fold("()")(paramSignature)
-            (s"$paramClauseCode->$returnType", returnType)
+            fullnameProvider.typeFullnameRaw(node) match {
+              case Some(tpe) =>
+                val signature  = tpe
+                val returnType = ReturnTypeMatcher.findFirstMatchIn(signature).map(_.group(2)).getOrElse(Defines.Any)
+                (signature, returnType)
+              case _ =>
+                val returnType = c.signature.flatMap(_.returnClause).fold(Defines.Any)(r => cleanType(code(r.`type`)))
+                val paramClauseCode = c.signature.flatMap(_.parameterClause).fold("()")(paramSignature)
+                (s"$paramClauseCode->$returnType", returnType)
+            }
         }
         registerType(returnType)
         MethodInfo(methodName, methodFullName, signature, returnType)

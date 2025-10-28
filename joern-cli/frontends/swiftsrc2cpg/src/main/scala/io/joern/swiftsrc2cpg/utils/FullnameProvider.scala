@@ -20,7 +20,12 @@ private object FullnameProvider {
   }
 
   // TODO: provide the actual mapping from SwiftNode.toString (nodeKind) to ResolvedTypeInfo.nodeKind
-  private val NodeKindMapping = Map("DeclReferenceExprSyntax" -> "type_expr")
+  private val NodeKindMapping = Map(
+    "DeclReferenceExprSyntax" -> "type_expr",
+    "VariableDeclSyntax"      -> "var_decl",
+    "PatternBindingSyntax"    -> "var_decl",
+    "IdentifierPatternSyntax" -> "var_decl"
+  )
 }
 
 /** Provides functionality to resolve and retrieve fullnames for Swift types and declarations. Uses a type mapping to
@@ -92,6 +97,12 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
     *   An optional String containing the type fullname if found
     */
   protected def typeFullname(range: (Int, Int), nodeKind: String): Option[String] = {
+    fullName(range, FullnameProvider.Kind.Type, nodeKind).map(AstCreatorHelper.cleanType)
+  }
+
+  /** Same as FullnameProvider.typeFullname but does no type name sanitation.
+    */
+  protected def typeFullnameRaw(range: (Int, Int), nodeKind: String): Option[String] = {
     fullName(range, FullnameProvider.Kind.Type, nodeKind).map(AstCreatorHelper.cleanName)
   }
 
@@ -120,6 +131,16 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
     if (typeMap.isEmpty) return None
     (node.startOffset, node.endOffset) match {
       case (Some(start), Some(end)) => typeFullname((start, end), node.toString)
+      case _                        => None
+    }
+  }
+
+  /** Same as FullnameProvider.typeFullname but does no type name sanitation.
+    */
+  def typeFullnameRaw(node: SwiftNode): Option[String] = {
+    if (typeMap.isEmpty) return None
+    (node.startOffset, node.endOffset) match {
+      case (Some(start), Some(end)) => typeFullnameRaw((start, end), node.toString)
       case _                        => None
     }
   }
