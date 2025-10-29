@@ -688,11 +688,9 @@ class MethodTests extends RubyCode2CpgFixture {
 
     "be directly under :program" in {
       inside(cpg.method.name(RDefines.Main).filename("t1.rb").assignment.l) {
-        case moduleAssignment :: moduleTmpAssignment :: classAssignment :: classTmpAssignment :: methodAssignment :: Nil =>
+        case moduleAssignment :: classAssignment :: methodAssignment :: Nil =>
           moduleAssignment.code shouldBe "self.A = module A (...)"
-          moduleTmpAssignment.code shouldBe "<tmp-0> = self::A"
           classAssignment.code shouldBe "self.B = class B (...)"
-          classTmpAssignment.code shouldBe "<tmp-1> = self::B"
           methodAssignment.code shouldBe "self.c = def c (...)"
 
           inside(moduleAssignment.argument.l) {
@@ -703,27 +701,11 @@ class MethodTests extends RubyCode2CpgFixture {
             case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
           }
 
-          inside(moduleTmpAssignment.argument.l) {
-            case (lhs: Identifier) :: (rhs: Call) :: Nil =>
-              lhs.name shouldBe "<tmp-0>"
-              rhs.code shouldBe "self::A"
-              rhs.name shouldBe Operators.fieldAccess
-            case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
-          }
-
           inside(classAssignment.argument.l) {
             case (lhs: Call) :: (rhs: TypeRef) :: Nil =>
               lhs.code shouldBe "self.B"
               lhs.name shouldBe Operators.fieldAccess
               rhs.typeFullName shouldBe s"t1.rb:$Main.B<class>"
-            case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
-          }
-
-          inside(classTmpAssignment.argument.l) {
-            case (lhs: Identifier) :: (rhs: Call) :: Nil =>
-              lhs.name shouldBe "<tmp-1>"
-              rhs.code shouldBe "self::B"
-              rhs.name shouldBe Operators.fieldAccess
             case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
           }
 
@@ -736,15 +718,14 @@ class MethodTests extends RubyCode2CpgFixture {
             case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
           }
 
-        case xs => fail(s"Expected five assignments, got [${xs.code.mkString(",")}]")
+        case xs => fail(s"Expected three assignments, got [${xs.code.mkString(",")}]")
       }
     }
 
     "not be present in other files" in {
       inside(cpg.method.name(RDefines.Main).filename("t2.rb").assignment.l) {
-        case classAssignment :: classTmpAssignment :: methodAssignment :: Nil =>
+        case classAssignment :: methodAssignment :: Nil =>
           classAssignment.code shouldBe "self.D = class D (...)"
-          classTmpAssignment.code shouldBe "<tmp-0> = self::D"
           methodAssignment.code shouldBe "self.e = def e (...)"
 
           inside(classAssignment.argument.l) {
@@ -752,14 +733,6 @@ class MethodTests extends RubyCode2CpgFixture {
               lhs.code shouldBe "self.D"
               lhs.name shouldBe Operators.fieldAccess
               rhs.typeFullName shouldBe s"t2.rb:$Main.D<class>"
-            case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
-          }
-
-          inside(classTmpAssignment.argument.l) {
-            case (lhs: Identifier) :: (rhs: Call) :: Nil =>
-              lhs.name shouldBe "<tmp-0>"
-              rhs.code shouldBe "self::D"
-              rhs.name shouldBe Operators.fieldAccess
             case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
           }
 
