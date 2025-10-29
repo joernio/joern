@@ -31,7 +31,7 @@ class AstCreator(
     with AstForTypesCreator {
 
   protected val logger: Logger = LoggerFactory.getLogger(AstCreator.getClass)
-  protected val scope          = new Scope(summary, () => nextClosureName())
+  protected val scope          = new Scope(summary)
   protected var fileContent    = Option.empty[String]
 
   override def createAst(): DiffGraphBuilder = {

@@ -1,16 +1,10 @@
 package io.joern.php2cpg.utils
 
 import io.joern.php2cpg.parser.Domain.MethodDelimiter
-import io.joern.x2cpg.datastructures.{NamespaceLikeScope, TypedScopeElement}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  MethodRef,
-  NewBlock,
-  NewMethod,
-  NewMethodRef,
-  NewNamespaceBlock,
-  NewNode,
-  NewTypeDecl
-}
+import io.joern.x2cpg.Defines
+import io.joern.x2cpg.datastructures.TypedScopeElement
+import io.joern.x2cpg.utils.IntervalKeyPool
+import io.shiftleft.codepropertygraph.generated.nodes.*
 
 import scala.collection.mutable
 
@@ -38,8 +32,10 @@ sealed trait AnonymousVariableNameCreator {
 
 sealed trait ClosureNameCreator {
   def fullName: String
-  def getClosureMethodName()(using nextClosureName: () => String): String = {
-    s"$fullName$MethodDelimiter${nextClosureName()}"
+  private val closureKeyPool = new IntervalKeyPool(first = 0, last = Long.MaxValue)
+
+  def getClosureMethodName: String = {
+    s"$fullName$MethodDelimiter${Defines.ClosurePrefix}${closureKeyPool.next}"
   }
 }
 

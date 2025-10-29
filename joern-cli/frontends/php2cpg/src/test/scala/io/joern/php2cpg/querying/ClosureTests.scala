@@ -256,6 +256,28 @@ class ClosureTests extends PhpCode2CpgFixture {
     }
   }
 
+  "multiple recursive arrow functions" should {
+    val cpg = code(
+      """<?php
+        |$a = 5
+        |fn () => fn () => $a;
+        |fn () => fn () => $a;
+        |""".stripMargin,
+      "foo.php"
+    )
+
+    "correctly number lambdas" in {
+      inside(cpg.method.isLambda.l) {
+        case firstOuterInnerLambda :: firstOuterLambda :: secondOuterInnerLambda :: secondOuterLambda :: Nil =>
+          firstOuterInnerLambda.name shouldBe "foo.php:<global>.<lambda>0.<lambda>0"
+          firstOuterLambda.name shouldBe "foo.php:<global>.<lambda>0"
+          secondOuterInnerLambda.name shouldBe "foo.php:<global>.<lambda>1.<lambda>0"
+          secondOuterLambda.name shouldBe "foo.php:<global>.<lambda>1"
+        case xs => fail(s"Expected four lambdas, instead got ${xs.name.mkString(", ")}")
+      }
+    }
+  }
+
   "recursive arrow functions with captured variables" should {
     val cpg = code(
       """<?php
@@ -268,23 +290,23 @@ class ClosureTests extends PhpCode2CpgFixture {
 
     "create a local variable in innermost lambda" in {
       // Confirming only 1 local is created for each captured variable
-      cpg.method.name("foo.php:<global>.<lambda>0.<lambda>1").local.name("a").size shouldBe 1
-      cpg.method.name("foo.php:<global>.<lambda>0.<lambda>1").local.name("b").size shouldBe 1
+      cpg.method.name("foo.php:<global>.<lambda>0.<lambda>0").local.name("a").size shouldBe 1
+      cpg.method.name("foo.php:<global>.<lambda>0.<lambda>0").local.name("b").size shouldBe 1
 
-      val localNode = cpg.method.name("foo.php:<global>.<lambda>0.<lambda>1").local.name("a").head
-      localNode.closureBindingId shouldBe Some("foo.php:<global>.<lambda>0.<lambda>1:a")
+      val localNode = cpg.method.name("foo.php:<global>.<lambda>0.<lambda>0").local.name("a").head
+      localNode.closureBindingId shouldBe Some("foo.php:<global>.<lambda>0.<lambda>0:a")
 
-      val localNodeB = cpg.method.name("foo.php:<global>.<lambda>0.<lambda>1").local.name("b").head
-      localNodeB.closureBindingId shouldBe Some("foo.php:<global>.<lambda>0.<lambda>1:b")
+      val localNodeB = cpg.method.name("foo.php:<global>.<lambda>0.<lambda>0").local.name("b").head
+      localNodeB.closureBindingId shouldBe Some("foo.php:<global>.<lambda>0.<lambda>0:b")
     }
 
     "methodRef of inner closure binding" in {
-      val methodRefNode     = cpg.methodRefWithName("foo.php:<global>.<lambda>0.<lambda>1").head
+      val methodRefNode     = cpg.methodRefWithName("foo.php:<global>.<lambda>0.<lambda>0").head
       val closureBindingIds = methodRefNode._closureBindingViaCaptureOut.l.map(_.closureBindingId)
 
       closureBindingIds shouldBe List(
-        Some("foo.php:<global>.<lambda>0.<lambda>1:a"),
-        Some("foo.php:<global>.<lambda>0.<lambda>1:b")
+        Some("foo.php:<global>.<lambda>0.<lambda>0:a"),
+        Some("foo.php:<global>.<lambda>0.<lambda>0:b")
       )
     }
 
@@ -335,17 +357,17 @@ class ClosureTests extends PhpCode2CpgFixture {
 
     "create a local variable in innermost lambda" in {
       // Confirming only 1 local is created for each captured variable
-      cpg.method.name("foo.<lambda>0.<lambda>1").local.name("a").size shouldBe 1
+      cpg.method.name("foo.<lambda>0.<lambda>0").local.name("a").size shouldBe 1
 
-      val localNode = cpg.method.name("foo.<lambda>0.<lambda>1").local.name("a").head
-      localNode.closureBindingId shouldBe Some("Test0.php:foo.<lambda>0.<lambda>1:a")
+      val localNode = cpg.method.name("foo.<lambda>0.<lambda>0").local.name("a").head
+      localNode.closureBindingId shouldBe Some("Test0.php:foo.<lambda>0.<lambda>0:a")
     }
 
     "methodRef of inner closure binding" in {
-      val methodRefNode     = cpg.methodRefWithName("foo.<lambda>0.<lambda>1").head
+      val methodRefNode     = cpg.methodRefWithName("foo.<lambda>0.<lambda>0").head
       val closureBindingIds = methodRefNode._closureBindingViaCaptureOut.l.map(_.closureBindingId)
 
-      closureBindingIds shouldBe List(Some("Test0.php:foo.<lambda>0.<lambda>1:a"))
+      closureBindingIds shouldBe List(Some("Test0.php:foo.<lambda>0.<lambda>0:a"))
     }
 
     "local variable in outer lambda" in {
@@ -445,8 +467,8 @@ class ClosureTests extends PhpCode2CpgFixture {
      |""".stripMargin)
 
     inside(cpg.method.name(".*<lambda>.*").fullName.sorted.l) { case List(bar0, bar1, foo0, foo1) =>
-      bar0 shouldBe "Bar.bar.<lambda>2"
-      bar1 shouldBe "Bar.bar.<lambda>3"
+      bar0 shouldBe "Bar.bar.<lambda>0"
+      bar1 shouldBe "Bar.bar.<lambda>1"
       foo0 shouldBe "foo.<lambda>0"
       foo1 shouldBe "foo.<lambda>1"
     }

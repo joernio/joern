@@ -1,12 +1,11 @@
 package io.joern.php2cpg.utils
 
 import io.joern.php2cpg.astcreation.AstCreator.NameConstants
-import io.joern.php2cpg.parser.Domain.{PhpExpr, PhpNode}
-import io.joern.php2cpg.parser.Domain.MetaTypeDeclExtension
+import io.joern.php2cpg.parser.Domain.{MetaTypeDeclExtension, PhpExpr, PhpNode}
 import io.joern.php2cpg.passes.SymbolSummaryPass.*
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.{NamespaceLikeScope, ScopeElement, TypedScopeElement, Scope as X2CpgScope}
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
@@ -15,14 +14,8 @@ import scala.collection.mutable
 
 sealed case class PhpInit(originNode: PhpNode, memberNode: NewMember, value: PhpExpr) {}
 
-class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn: () => String)
+class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)
     extends X2CpgScope[String, NewNode, TypedScopeElement] {
-  // This is a workaround for scalafmt. On 3.8.1 scalafmt fails with an error for the `given` line, but the later versions (3.8.4+)
-  // are adding spaces in comments of random files which we don't want.
-  private type ClosureCallBackSignature = () => String
-
-  // allows the usage of `nextClosureName` in `trait ClosureNameCreator` in `utils/ScopeElement`
-  given closureName: ClosureCallBackSignature = closureNameFn
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -267,9 +260,9 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
 
   def getScopedClosureName: String = {
     stack.headOption match {
-      case Some(ScopeElement(ns: NamespaceScope, _)) => ns.getClosureMethodName()
-      case Some(ScopeElement(ts: TypeScope, _))      => ts.getClosureMethodName()
-      case Some(ScopeElement(ms: MethodScope, _))    => ms.getClosureMethodName()
+      case Some(ScopeElement(ns: NamespaceScope, _)) => ns.getClosureMethodName
+      case Some(ScopeElement(ts: TypeScope, _))      => ts.getClosureMethodName
+      case Some(ScopeElement(ms: MethodScope, _))    => ms.getClosureMethodName
       case _ =>
         logger.warn("BUG: Attempting to get scopedClosureName, but no scope has been push. Defaulting to unscoped")
         NameConstants.Closure
