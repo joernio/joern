@@ -162,6 +162,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     (astParentType, astParentFullName)
   }
 
+  // TODO: create a self access if this identifier references some type decl member
   protected def astForIdentifier(node: SwiftNode): Ast = {
     val identifierName = code(node)
     val identNode      = identifierNode(node, identifierName)

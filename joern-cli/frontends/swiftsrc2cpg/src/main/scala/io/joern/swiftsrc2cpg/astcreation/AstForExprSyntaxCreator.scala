@@ -8,7 +8,6 @@ import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
-import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import scala.annotation.unused
 
@@ -240,7 +239,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       callee match {
         case m: MemberAccessExprSyntax =>
           val memberCode = code(m.declName)
-          handleCallNodeArgs(node, astForNode(m), memberCode)
+          handleCallNodeArgs(node, astForMemberAccessExprSyntax(m), memberCode)
         case other if isRefToClosure(node, other) =>
           astForClosureCall(node)
         case declReferenceExprSyntax: DeclReferenceExprSyntax if code(declReferenceExprSyntax) != "self" =>

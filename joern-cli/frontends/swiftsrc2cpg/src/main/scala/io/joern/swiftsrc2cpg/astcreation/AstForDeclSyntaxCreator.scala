@@ -20,10 +20,6 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   protected type FunctionDeclLike = FunctionDeclSyntax | AccessorDeclSyntax | InitializerDeclSyntax |
     DeinitializerDeclSyntax | ClosureExprSyntax | SubscriptDeclSyntax
 
-  private def astForAccessorDeclSyntax(node: AccessorDeclSyntax): Ast = {
-    astForNode(node)
-  }
-
   private def astForActorDeclSyntax(node: ActorDeclSyntax): Ast = {
     astForTypeDeclSyntax(node)
   }
@@ -630,9 +626,18 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val parameterAsts = node match {
       case f: FunctionDeclSyntax =>
-        f.signature.parameterClause.parameters.children.map(astForNode)
+        val selfAst = if (isStaticMember(f)) {
+          val parameterNode =
+            parameterInNode(node, "self", "self", 0, false, EvaluationStrategies.BY_SHARING, parentFullName)
+          scope.addVariable("self", parameterNode, parentFullName, VariableScopeManager.ScopeType.MethodScope)
+          Seq(Ast(parameterNode))
+        } else Seq.empty
+        selfAst ++ f.signature.parameterClause.parameters.children.map(astForNode)
       case a: AccessorDeclSyntax =>
-        a.parameters.toSeq.map(astForNode)
+        val parameterNode =
+          parameterInNode(node, "self", "self", 0, false, EvaluationStrategies.BY_SHARING, parentFullName)
+        scope.addVariable("self", parameterNode, parentFullName, VariableScopeManager.ScopeType.MethodScope)
+        Ast(parameterNode) +: a.parameters.toSeq.map(astForNode)
       case i: InitializerDeclSyntax =>
         val parameterNode =
           parameterInNode(node, "self", "self", 0, false, EvaluationStrategies.BY_SHARING, parentFullName)
@@ -644,7 +649,10 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         scope.addVariable("self", parameterNode, parentFullName, VariableScopeManager.ScopeType.MethodScope)
         Seq(Ast(parameterNode))
       case s: SubscriptDeclSyntax =>
-        s.parameterClause.parameters.children.map(astForNode)
+        val parameterNode =
+          parameterInNode(node, "self", "self", 0, false, EvaluationStrategies.BY_SHARING, parentFullName)
+        scope.addVariable("self", parameterNode, parentFullName, VariableScopeManager.ScopeType.MethodScope)
+        Ast(parameterNode) +: s.parameterClause.parameters.children.map(astForNode)
       case c: ClosureExprSyntax =>
         c.signature.flatMap(_.parameterClause) match
           case Some(p: ClosureShorthandParameterListSyntax) => p.children.map(astForNode)
@@ -879,7 +887,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val parameterAsts = if (parameters.isEmpty && accessorSpecifier == "set") {
       val name          = "newValue" // Swift default parameter name for set accessors
       val parameterNode = parameterInNode(node, name, name, 1, false, EvaluationStrategies.BY_VALUE, Some(tpe))
-      scope.addVariable(name, parameterNode, Defines.Any, VariableScopeManager.ScopeType.MethodScope)
+      scope.addVariable(name, parameterNode, parameterNode.typeFullName, VariableScopeManager.ScopeType.MethodScope)
       Seq(Ast(parameterNode))
     } else {
       parameters.map(astForNode)
@@ -1046,7 +1054,6 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForMissingDeclSyntax(@unused node: MissingDeclSyntax): Ast = Ast()
 
   protected def astForDeclSyntax(declSyntax: DeclSyntax): Ast = declSyntax match {
-    case node: AccessorDeclSyntax          => astForAccessorDeclSyntax(node)
     case node: ActorDeclSyntax             => astForActorDeclSyntax(node)
     case node: AssociatedTypeDeclSyntax    => astForAssociatedTypeDeclSyntax(node)
     case node: ClassDeclSyntax             => astForTypeDeclSyntax(node)
@@ -1070,6 +1077,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     case node: SubscriptDeclSyntax         => astForSubscriptDeclSyntax(node)
     case node: TypeAliasDeclSyntax         => astForTypeAliasDeclSyntax(node)
     case node: VariableDeclSyntax          => astForVariableDeclSyntax(node)
+    case other                             => notHandledYet(other)
   }
 
 }
