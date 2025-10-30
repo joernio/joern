@@ -39,8 +39,10 @@ class AstCreator(
   protected val scope            = new SwiftVariableScopeManager()
   protected val fullnameProvider = new FullnameProvider(typeMap)
 
-  protected val methodAstParentStack     = new Stack[NewNode]()
-  protected val typeRefIdStack           = new Stack[NewTypeRef]
+  protected val methodAstParentStack = new Stack[NewNode]()
+  protected val typeRefIdStack       = new Stack[NewTypeRef]
+
+  // TODO: expand this datastructure to also store its type decl members
   protected val dynamicInstanceTypeStack = new Stack[String]
   protected val localAstParentStack      = new Stack[NewBlock]()
   protected val scopeLocalUniqueNames    = mutable.HashMap.empty[String, Int]
