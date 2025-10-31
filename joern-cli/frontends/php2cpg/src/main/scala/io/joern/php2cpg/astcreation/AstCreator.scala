@@ -209,6 +209,7 @@ class AstCreator(
     logger.debug(
       s"Trait use statement encountered. This is not yet supported. Location: $relativeFileName:${line(stmt)}"
     )
+
     Ast(unknownNode(stmt, code(stmt)))
   }
 
