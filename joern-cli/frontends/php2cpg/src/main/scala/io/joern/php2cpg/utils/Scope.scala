@@ -1,12 +1,11 @@
 package io.joern.php2cpg.utils
 
 import io.joern.php2cpg.astcreation.AstCreator.NameConstants
-import io.joern.php2cpg.parser.Domain.{PhpExpr, PhpNode}
-import io.joern.php2cpg.parser.Domain.MetaTypeDeclExtension
+import io.joern.php2cpg.parser.Domain.{MetaTypeDeclExtension, PhpExpr, PhpNode}
 import io.joern.php2cpg.passes.SymbolSummaryPass.*
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.{NamespaceLikeScope, ScopeElement, TypedScopeElement, Scope as X2CpgScope}
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
@@ -15,14 +14,8 @@ import scala.collection.mutable
 
 sealed case class PhpInit(originNode: PhpNode, memberNode: NewMember, value: PhpExpr) {}
 
-class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn: () => String)
+class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)
     extends X2CpgScope[String, NewNode, TypedScopeElement] {
-  // This is a workaround for scalafmt. On 3.8.1 scalafmt fails with an error for the `given` line, but the later versions (3.8.4+)
-  // are adding spaces in comments of random files which we don't want.
-  private type ClosureCallBackSignature = () => String
-
-  // allows the usage of `nextClosureName` in `trait ClosureNameCreator` in `utils/ScopeElement`
-  given closureName: ClosureCallBackSignature = closureNameFn
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -33,6 +26,7 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
   private var tmpClassCounter                                         = 0
   private var importedSymbols                                         = Map.empty[String, SymbolSummary]
   private val methodRefsInAst                                         = mutable.HashMap[String, NewMethodRef]()
+  private val capturedVariableClosureBindings = mutable.ArrayBuffer[(NewLocal, NewClosureBinding)]()
 
   override def pushNewScope(scopeNode: TypedScopeElement): Unit = {
     val mappedNode = scopeNode match {
@@ -142,6 +136,14 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
   def addMethodRef(methodRefName: String, methodRef: NewMethodRef): Unit = methodRefsInAst.put(methodRefName, methodRef)
   def getMethodRef(methodRefName: String): Option[NewMethodRef]          = methodRefsInAst.get(methodRefName)
 
+  def addClosureBinding(closureBinding: NewClosureBinding, localNode: NewLocal): Unit =
+    capturedVariableClosureBindings.addOne((localNode, closureBinding))
+  def getAndClearClosureBindings: List[(NewLocal, NewClosureBinding)] = {
+    val capturedClosureBindings = capturedVariableClosureBindings.toList
+    capturedVariableClosureBindings.clear()
+    capturedClosureBindings
+  }
+
   def addVariableToMethodScope(identifier: String, variable: NewNode, methodFullName: String): Option[MethodScope] = {
     stack.collectFirst {
       case el @ ScopeElement(methodScope: MethodScope, _) if methodScope.fullName == methodFullName =>
@@ -171,6 +173,9 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
       .collectFirst { case TypeScope(td, _) => td }
       .exists(_.name.endsWith(MetaTypeDeclExtension))
 
+  def isSurroundedByArrowClosure: Boolean =
+    stack.map(_.scopeNode).collectFirst { case nm: MethodScope if nm.isArrowFunc => nm }.isDefined
+
   def isTopLevel: Boolean =
     getEnclosingTypeDeclTypeName.forall(_ == NamespaceTraversal.globalNamespaceName)
 
@@ -195,7 +200,7 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
       .collectFirst {
         case NamespaceScope(nm, _) if nm.name != NamespaceTraversal.globalNamespaceName => s"${nm.name}\\$methodName"
         case TypeScope(td, _) if td.name != NamespaceTraversal.globalNamespaceName      => s"${td.fullName}.$methodName"
-        case MethodScope(nm, _, _, _, _) if nm.name != NamespaceTraversal.globalNamespaceName =>
+        case MethodScope(nm, _, _, _, _, _) if nm.name != NamespaceTraversal.globalNamespaceName =>
           if (namespaces.isEmpty) {
             s"${nm.fullName}.$methodName"
           } else {
@@ -205,8 +210,35 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
       .getOrElse(methodName)
   }
 
+  def getSurroundingArrowClosureMethodRef: Option[NewMethodRef] =
+    stack.map(_.scopeNode).collectFirst { case ms: MethodScope if ms.isArrowFunc => ms }.flatMap(_.methodRefNode)
+
   def getSurroundingMethods: List[MethodScope] =
     stack.map(_.scopeNode).collect { case nm: MethodScope => nm }.reverse
+
+  def getSurroundingMethodsForArrowClosure: List[MethodScope] = {
+    val methods = mutable.ArrayBuffer[MethodScope]()
+    stack
+      .collect { case scopeEl @ ScopeElement(_: MethodScope, _) =>
+        scopeEl
+      }
+      .takeWhile {
+        case ScopeElement(ms: MethodScope, _) if ms.isArrowFunc =>
+          methods.addOne(ms)
+          true
+        case ScopeElement(ms: MethodScope, _) =>
+          methods.addOne(ms)
+          false
+      }
+
+    methods.toList.reverse
+  }
+
+  def getSurroundingArrowClosures: List[MethodScope] =
+    stack.map(_.scopeNode).collect { case nm: MethodScope if nm.isArrowFunc => nm }.reverse
+
+  def surroundingMethodParams: List[String] =
+    stack.map(_.scopeNode).collectFirst { case ms: MethodScope => ms }.map(_.parameterNames.toList).get
 
   def getConstAndStaticInits: List[PhpInit] = {
     getInits(constAndStaticInits)
@@ -228,9 +260,9 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty, closureNameFn:
 
   def getScopedClosureName: String = {
     stack.headOption match {
-      case Some(ScopeElement(ns: NamespaceScope, _)) => ns.getClosureMethodName()
-      case Some(ScopeElement(ts: TypeScope, _))      => ts.getClosureMethodName()
-      case Some(ScopeElement(ms: MethodScope, _))    => ms.getClosureMethodName()
+      case Some(ScopeElement(ns: NamespaceScope, _)) => ns.getClosureMethodName
+      case Some(ScopeElement(ts: TypeScope, _))      => ts.getClosureMethodName
+      case Some(ScopeElement(ms: MethodScope, _))    => ms.getClosureMethodName
       case _ =>
         logger.warn("BUG: Attempting to get scopedClosureName, but no scope has been push. Defaulting to unscoped")
         NameConstants.Closure
