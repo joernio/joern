@@ -66,13 +66,13 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       scope.pushNewScope(NamespaceScope(namespaceBlockFullName))
 
       val namespaceBlock =
-        NewNamespaceBlock().name(astParentFullName).fullName(astParentFullName).filename(relativeFileName)
+        NewNamespaceBlock().name(astParentFullName).fullName(namespaceBlockFullName).filename(relativeFileName)
 
       diffGraph.addNode(namespaceBlock)
 
       fileNode.foreach(diffGraph.addEdge(_, namespaceBlock, EdgeTypes.AST))
 
-      typeDecl.astParentFullName(astParentFullName)
+      typeDecl.astParentFullName(namespaceBlockFullName)
       typeDecl.astParentType(NodeTypes.NAMESPACE_BLOCK)
 
       typeDecl.fullName(computeFullName(className))

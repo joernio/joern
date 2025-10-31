@@ -977,7 +977,7 @@ class ClassTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    inside(cpg.namespaceBlock.fullNameExact("Api.V1").typeDecl.l) {
+    inside(cpg.namespaceBlock.fullNameExact("Test0.rb:<main>.Api.V1").typeDecl.l) {
       case mobileNamespace :: mobileClassNamespace :: Nil =>
         mobileNamespace.name shouldBe "MobileController"
         mobileNamespace.fullName shouldBe s"Test0.rb:$Main.Api.V1.MobileController"
@@ -991,7 +991,7 @@ class ClassTests extends RubyCode2CpgFixture {
       case mobileTypeDecl :: Nil =>
         mobileTypeDecl.name shouldBe "MobileController"
         mobileTypeDecl.fullName shouldBe s"Test0.rb:$Main.Api.V1.MobileController"
-        mobileTypeDecl.astParentFullName shouldBe "Api.V1"
+        mobileTypeDecl.astParentFullName shouldBe "Test0.rb:<main>.Api.V1"
         mobileTypeDecl.astParentType shouldBe NodeTypes.NAMESPACE_BLOCK
 
         mobileTypeDecl.astParent.isNamespaceBlock shouldBe true
