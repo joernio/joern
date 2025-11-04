@@ -67,7 +67,9 @@ class ConfigFileCreationPassTests extends AnyFunSpec with Matchers {
           val node = diff.nodes.collectFirst { case n: NewConfigFile => n }.get
           node.name should (startWith("testbin") and endWith(".plist"))
           // binary should have been converted to XML content:
-          node.content should (startWith("<!--This has been generated from") and endWith(Xml))
+          node.content should startWith(Xml)
+          // and the content should have a comment referencing the original file at the very end
+          node.content.linesIterator.toList.last should startWith("<!--This file was generated from")
         }
       }
     }

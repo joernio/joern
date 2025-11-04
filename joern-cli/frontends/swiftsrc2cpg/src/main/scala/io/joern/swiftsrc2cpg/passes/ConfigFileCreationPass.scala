@@ -35,14 +35,14 @@ class ConfigFileCreationPass(cpg: Cpg, config: Config)
 
   override def runOnPart(diffGraph: DiffGraphBuilder, file: Path): Unit = {
     val parseResult = if (isBinaryPlist(file)) {
-      val header = s"<!--This has been generated from ${file.toAbsolutePath}-->\n"
-      Try((PropertyListParser.parse(file.toFile).toXMLPropertyList, header))
+      val sourceComment = s"\n<!--This file was generated from ${file.toAbsolutePath}-->"
+      Try((PropertyListParser.parse(file.toFile).toXMLPropertyList, sourceComment))
     } else {
       Try((IOUtils.readEntireFile(file), ""))
     }
     parseResult match {
-      case Success((content, header)) =>
-        val configFileContent = s"$header$content"
+      case Success((content, sourceComment)) =>
+        val configFileContent = s"$content$sourceComment"
         val name              = configFileName(file)
         val configNode        = NewConfigFile().name(name).content(configFileContent)
         logger.debug(s"Adding config file $name")
