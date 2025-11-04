@@ -25,19 +25,26 @@ class ConfigFileCreationPass(cpg: Cpg, config: Config)
 
   override val configFileFilters: List[Path => Boolean] = List(extensionFilter(PlistExt), extensionFilter(".xib"))
 
-  override def runOnPart(diffGraph: DiffGraphBuilder, file: Path): Unit = {
-    val contentMaybe = if (file.extension().contains(PlistExt)) {
-      Try(PropertyListParser.parse(file.toFile).toXMLPropertyList)
-    } else {
-      Try(IOUtils.readEntireFile(file))
+  private def isBinaryPlist(file: Path): Boolean = {
+    if (!file.extension().contains(PlistExt)) return false
+    Try(IOUtils.readLinesInFile(file)) match {
+      case Success(dataBeginning :: _) => dataBeginning.trim.startsWith("bplist")
+      case _                           => false
     }
-    contentMaybe match {
-      case Success(content) =>
-        val configFileContent =
-          s"""<!--This has been generated from ${file.toAbsolutePath}-->
-             |$content""".stripMargin
-        val name       = configFileName(file)
-        val configNode = NewConfigFile().name(name).content(configFileContent)
+  }
+
+  override def runOnPart(diffGraph: DiffGraphBuilder, file: Path): Unit = {
+    val parseResult = if (isBinaryPlist(file)) {
+      val header = s"<!--This has been generated from ${file.toAbsolutePath}-->\n"
+      Try((PropertyListParser.parse(file.toFile).toXMLPropertyList, header))
+    } else {
+      Try((IOUtils.readEntireFile(file), ""))
+    }
+    parseResult match {
+      case Success((content, header)) =>
+        val configFileContent = s"$header$content"
+        val name              = configFileName(file)
+        val configNode        = NewConfigFile().name(name).content(configFileContent)
         logger.debug(s"Adding config file $name")
         diffGraph.addNode(configNode)
       case Failure(error) =>
