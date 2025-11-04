@@ -26,7 +26,9 @@ libraryDependencies ++= Seq(
   "io.shiftleft" %% "codepropertygraph" % Versions.cpg,
   "com.lihaoyi"  %% "upickle"           % Versions.upickle,
   // we want to use also Google Gson for its streaming abilities for very large Json files:
-  "com.google.code.gson" % "gson"      % Versions.gson,
+  "com.google.code.gson" % "gson" % Versions.gson,
+  // to handle property list files of various formats (i.e., binary and plain XML)
+  "com.googlecode.plist" % "dd-plist"  % "1.28",
   "org.scalatest"       %% "scalatest" % Versions.scalatest % Test
 )
 
