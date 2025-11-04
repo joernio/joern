@@ -236,6 +236,108 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
       }
     }
 
+    "have correct structure for implicit self access except for variable in closure" in {
+      val cpg = code("""
+          |class Foo {
+          |  let f: String = "f"
+          |  class Bar {
+          |    let b = "b"
+          |    func bar() {
+          |      let compare = { (s1: String, s2: String) -> Bool in
+          |        let f: Int = 1
+          |        handleB(b)
+          |        handleF(f)
+          |        return s1 > s2
+          |	     }
+          |    }
+          |  }
+          |}
+          |""".stripMargin)
+      cpg.typeDecl.nameExact("Foo").member.name.l shouldBe List("f")
+      cpg.typeDecl.nameExact("Bar").member.name.l shouldBe List("b")
+      val List(bAccess) = cpg.call.nameExact("handleB").argument.fieldAccess.l
+      bAccess.code shouldBe "self.b"
+      inside(bAccess.argument.l) { case List(id: Identifier, fieldName: FieldIdentifier) =>
+        id.name shouldBe "self"
+        id.typeFullName shouldBe "Test0.swift:<global>.Foo.Bar"
+        fieldName.canonicalName shouldBe "b"
+      }
+      inside(cpg.call.nameExact("handleF").argument(1).l) { case List(id: Identifier) =>
+        id.name shouldBe "f"
+        id.typeFullName shouldBe Defines.Int
+        val fLocal = id._localViaRefOut.get
+        fLocal.name shouldBe "f"
+        fLocal.typeFullName shouldBe Defines.Int
+      }
+    }
+
+    "have correct structure for implicit self access except for parameters" in {
+      val cpg = code("""
+          |class Foo {
+          |  let f: String = "f"
+          |  class Bar {
+          |    let b = "b"
+          |    func bar(f: Int) {
+          |      handleB(b)
+          |      handleF(f)
+          |    }
+          |  }
+          |}
+          |""".stripMargin)
+      cpg.typeDecl.nameExact("Foo").member.name.l shouldBe List("f")
+      cpg.typeDecl.nameExact("Bar").member.name.l shouldBe List("b")
+      val List(bAccess) = cpg.call.nameExact("handleB").argument.fieldAccess.l
+      bAccess.code shouldBe "self.b"
+      inside(bAccess.argument.l) { case List(id: Identifier, fieldName: FieldIdentifier) =>
+        id.name shouldBe "self"
+        id.typeFullName shouldBe "Test0.swift:<global>.Foo.Bar"
+        fieldName.canonicalName shouldBe "b"
+      }
+      inside(cpg.call.nameExact("handleF").argument(1).l) { case List(id: Identifier) =>
+        id.name shouldBe "f"
+        id.typeFullName shouldBe Defines.Int
+        inside(id.refsTo.l) { case List(p: MethodParameterIn) =>
+          p.name shouldBe "f"
+          p.typeFullName shouldBe Defines.Int
+        }
+      }
+    }
+
+    "have correct structure for implicit self access except for parameters in closure" in {
+      val cpg = code("""
+          |class Foo {
+          |  let f: String = "f"
+          |  class Bar {
+          |    let b = "b"
+          |    func bar() {
+          |      let compare = { (f: String, g: String) -> Bool in
+          |        handleB(b)
+          |        handleF(f)
+          |        return f > g
+          |	     }
+          |    }
+          |  }
+          |}
+          |""".stripMargin)
+      cpg.typeDecl.nameExact("Foo").member.name.l shouldBe List("f")
+      cpg.typeDecl.nameExact("Bar").member.name.l shouldBe List("b")
+      val List(bAccess) = cpg.call.nameExact("handleB").argument.fieldAccess.l
+      bAccess.code shouldBe "self.b"
+      inside(bAccess.argument.l) { case List(id: Identifier, fieldName: FieldIdentifier) =>
+        id.name shouldBe "self"
+        id.typeFullName shouldBe "Test0.swift:<global>.Foo.Bar"
+        fieldName.canonicalName shouldBe "b"
+      }
+      inside(cpg.call.nameExact("handleF").argument(1).l) { case List(id: Identifier) =>
+        id.name shouldBe "f"
+        id.typeFullName shouldBe Defines.String
+        inside(id.refsTo.l) { case List(p: MethodParameterIn) =>
+          p.name shouldBe "f"
+          p.typeFullName shouldBe Defines.String
+        }
+      }
+    }
+
     "have correct structure for function in accessor block" in {
       val cpg = code("""
           |public protocol Foo {
