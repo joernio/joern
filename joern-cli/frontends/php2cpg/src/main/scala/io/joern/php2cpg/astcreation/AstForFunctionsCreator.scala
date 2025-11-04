@@ -4,7 +4,8 @@ import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
 import io.joern.php2cpg.parser.Domain
 import io.joern.php2cpg.parser.Domain.*
 import io.joern.php2cpg.parser.Domain.PhpModifiers.containsAccessModifier
-import io.joern.php2cpg.utils.MethodScope
+import io.joern.php2cpg.utils.{BlockScope, MethodScope}
+import io.joern.x2cpg.Defines.UnresolvedSignature
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -47,9 +48,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
       local.closureBindingId(closureBindingId)
 
-      val closureBindingNode = NewClosureBinding()
-        .closureBindingId(closureBindingId)
-        .evaluationStrategy(EvaluationStrategies.BY_SHARING)
+      val closureBindingNode = createClosureBinding(closureBindingId)
 
       scope.lookupVariable(local.name) match {
         case Some(refLocal) =>
@@ -94,7 +93,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         localsForUses.map(Ast(_)),
         Option(methodName),
         usesCode = Option(usesCode),
-        isAnonymousMethod = true
+        isArrowClosure = closureExpr.isArrowFunc,
+        isAnonymousMethod = true,
+        closureMethodRef = Option(methodRef)
       )
 
     // Add method to scope to be attached to typeDecl later
@@ -109,7 +110,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     fullNameOverride: Option[String] = None,
     isConstructor: Boolean = false,
     usesCode: Option[String] = None,
-    isAnonymousMethod: Boolean = false
+    isArrowClosure: Boolean = false,
+    isAnonymousMethod: Boolean = false,
+    closureMethodRef: Option[NewMethodRef] = None
   ): Ast = {
     val isStatic = decl.modifiers.contains(ModifierTypes.STATIC)
     val thisParam = if (!isAnonymousMethod && decl.isClassMethod && !isStatic) {
@@ -150,7 +153,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val methodBodyNode = blockNode(decl)
 
-    scope.pushNewScope(MethodScope(method, methodBodyNode, method.fullName, methodRef))
+    scope.pushNewScope(
+      MethodScope(method, methodBodyNode, method.fullName, decl.params.map(_.name), methodRef, isArrowClosure)
+    )
     scope.useFunctionDecl(methodName, fullName)
 
     val returnType = decl.returnType.map(_.name).getOrElse(Defines.Any)
@@ -164,6 +169,28 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val attributeAsts = decl.attributeGroups.flatMap(astForAttributeGroup)
     val methodBody    = blockAst(methodBodyNode, methodBodyStmts)
+
+    if (isArrowClosure) {
+      scope.getAndClearClosureBindings.foreach { (variableLocal, variableClosureBinding) =>
+        val closureBindingId = s"$methodName:${variableLocal.name}"
+        val closureBinding   = createClosureBinding(closureBindingId)
+        val localNode_ =
+          localNode(decl, variableLocal.name, variableLocal.name, variableLocal.typeFullName, Option(closureBindingId))
+
+        scope.addClosureBinding(closureBinding, localNode_)
+
+        diffGraph.addNode(closureBinding)
+        diffGraph.addEdge(variableClosureBinding, localNode_, EdgeTypes.REF)
+
+        scope.addToScope(localNode_.name, localNode_) match {
+          case BlockScope(block, _)              => diffGraph.addEdge(block, localNode_, EdgeTypes.AST)
+          case MethodScope(_, block, _, _, _, _) => diffGraph.addEdge(block, localNode_, EdgeTypes.AST)
+          case _                                 => // do nothing
+        }
+
+        diffGraph.addEdge(closureMethodRef.get, closureBinding, EdgeTypes.CAPTURE)
+      }
+    }
 
     scope.popScope()
     val methodAst = methodAstWithAnnotations(method, parameters, methodBody, methodReturn, modifiers, attributeAsts)
@@ -302,7 +329,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
         val methodBlock = NewBlock()
 
-        scope.pushNewScope(MethodScope(methodNode_, methodBlock, fullName, Option(methodRef)))
+        scope.pushNewScope(MethodScope(methodNode_, methodBlock, fullName, methodRefNode = Option(methodRef)))
 
         val assignmentAsts = inits.map { init =>
           astForMemberAssignment(init.originNode, init.memberNode, init.value, isField = false)

@@ -54,7 +54,7 @@ abstract class XConfigFileCreationPass(cpg: Cpg, private val rootDir: Option[Str
     }
   }
 
-  private def configFileName(configFile: Path): String = {
+  protected def configFileName(configFile: Path): String = {
     Try(Paths.get(rootDir.getOrElse(cpg.metaData.root.head)).toAbsolutePath)
       .map(_.relativize(configFile.toAbsolutePath).toString)
       .getOrElse(configFile.fileName)
