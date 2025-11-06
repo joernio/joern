@@ -153,8 +153,8 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
         t
       }
       .getOrElse(name match {
-        case "this" | "self" | "Self" => typeHintForSelfExpression().headOption.getOrElse(Defines.Any)
-        case _                        => Defines.Any
+        case "self" | "Self" => typeHintForSelfExpression().headOption.getOrElse(Defines.Any)
+        case _               => Defines.Any
       })
     identifierNode(node, name, name, tpe)
   }

@@ -18,6 +18,7 @@ class CallTests extends SwiftCompilerSrc2CpgSuite {
           |  func main() {
           |    foo()
           |    self.bar()
+          |    other.method()
           |  }
           |}
           |""".stripMargin
@@ -33,10 +34,16 @@ class CallTests extends SwiftCompilerSrc2CpgSuite {
       val List(barCall) = cpg.call.nameExact("bar").l
       barCall.methodFullName shouldBe x2cpg.Defines.DynamicCallUnknownFullName
       barCall.signature shouldBe ""
-      val List(barCallReceiverCall) = barCall.receiver.fieldAccess.l
-      barCallReceiverCall.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe "bar"
-      barCallReceiverCall.argument(1).asInstanceOf[Identifier].name shouldBe "self"
-      barCallReceiverCall.argument(1).asInstanceOf[Identifier].typeFullName shouldBe "Sources/main.swift:<global>.Foo"
+      val List(barCallReceiverCall) = barCall.receiver.isIdentifier.l
+      barCallReceiverCall.name shouldBe "self"
+      barCallReceiverCall.typeFullName shouldBe "Sources/main.swift:<global>.Foo"
+
+      val List(methodCall) = cpg.call.nameExact("method").l
+      methodCall.methodFullName shouldBe x2cpg.Defines.DynamicCallUnknownFullName
+      methodCall.signature shouldBe ""
+      val List(methodCallReceiverCall) = methodCall.receiver.isIdentifier.l
+      methodCallReceiverCall.name shouldBe "other"
+      methodCallReceiverCall.typeFullName shouldBe "ANY"
     }
 
     "be correct for simple calls with compiler support" in {
@@ -63,11 +70,9 @@ class CallTests extends SwiftCompilerSrc2CpgSuite {
       val List(barCall) = cpg.call.nameExact("bar").l
       barCall.methodFullName shouldBe "SwiftTest.Foo.bar:()->Swift.String"
       barCall.signature shouldBe "()->Swift.String"
-      val List(barCallReceiverCall) = barCall.receiver.fieldAccess.l
-      barCallReceiverCall.typeFullName shouldBe "Swift.Function<()->Swift.String>"
-      barCallReceiverCall.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe "bar"
-      barCallReceiverCall.argument(1).asInstanceOf[Identifier].name shouldBe "self"
-      barCallReceiverCall.argument(1).asInstanceOf[Identifier].typeFullName shouldBe "SwiftTest.Foo"
+      val List(barCallReceiverCall) = barCall.receiver.isIdentifier.l
+      barCallReceiverCall.name shouldBe "self"
+      barCallReceiverCall.typeFullName shouldBe "SwiftTest.Foo"
     }
 
   }

@@ -236,6 +236,46 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
       }
     }
 
+    "have correct structure for implicit self access with shadowing a member in class" in {
+      val cpg = code("""
+          |class Foo {
+          |  let f: String = "f"
+          |  func bar() {
+          |    let f: Int = 1
+          |    handleF(f)
+          |  }
+          |}
+          |""".stripMargin)
+      cpg.typeDecl.nameExact("Foo").member.name.l shouldBe List("f")
+      inside(cpg.call.nameExact("handleF").argument(1).l) { case List(id: Identifier) =>
+        id.name shouldBe "f"
+        id.typeFullName shouldBe Defines.Int
+        val fLocal = id._localViaRefOut.get
+        fLocal.name shouldBe "f"
+        fLocal.typeFullName shouldBe Defines.Int
+      }
+    }
+
+    "have correct structure for implicit self access with shadowing a variable from outer scope" in {
+      val cpg = code("""
+          |let f: String = "f"
+          |class Foo {
+          |  let f: String = "f"
+          |  func bar() {
+          |    handleF(f)
+          |  }
+          |}
+          |""".stripMargin)
+      cpg.typeDecl.nameExact("Foo").member.name.l shouldBe List("f")
+      val List(bAccess) = cpg.call.nameExact("handleF").argument.fieldAccess.l
+      bAccess.code shouldBe "self.f"
+      inside(bAccess.argument.l) { case List(id: Identifier, fieldName: FieldIdentifier) =>
+        id.name shouldBe "self"
+        id.typeFullName shouldBe "Test0.swift:<global>.Foo"
+        fieldName.canonicalName shouldBe "f"
+      }
+    }
+
     "have correct structure for implicit self access except for variable in closure" in {
       val cpg = code("""
           |class Foo {

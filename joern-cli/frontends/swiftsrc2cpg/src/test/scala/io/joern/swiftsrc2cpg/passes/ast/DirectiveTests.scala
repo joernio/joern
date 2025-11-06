@@ -61,7 +61,7 @@ class DirectiveTests extends AstSwiftSrc2CpgSuite {
         |.baz()
         |#endif
         |""".stripMargin).withConfig(Config(Set("CONFIG1")))
-      cpg.call.code.l shouldBe List("foo.bar()", "foo.bar")
+      cpg.call.code.l shouldBe List("foo.bar()")
     }
 
     "testConfigExpression7 (call behind define with trailing call)" in {
@@ -74,7 +74,7 @@ class DirectiveTests extends AstSwiftSrc2CpgSuite {
         |#endif
         |.oneMore(x: 1)
         |""".stripMargin).withConfig(Config(Set("CONFIG1")))
-      cpg.call.code.l shouldBe List("foo.bar().oneMore(x: 1)", "foo.bar().oneMore", "foo.bar()", "foo.bar")
+      cpg.call.code.l shouldBe List("foo.bar().oneMore(x: 1)", "foo.bar().oneMore", "foo.bar()")
     }
 
     "testSourceLocation1" ignore {

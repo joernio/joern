@@ -211,7 +211,9 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val args = callExpr.arguments.children.map(astForNode) ++ trailingClosureAsts ++ additionalTrailingClosuresAsts
 
     val callExprCode = code(callExpr)
-    val callCode = if (callExprCode.startsWith(".") || callExprCode.contains("#if ")) {
+    val callCode = if (callExprCode.startsWith(".")) {
+      s"${codeOf(baseAst.root.get)}$callExprCode"
+    } else if (callExprCode.contains("#if ")) {
       s"${codeOf(baseAst.root.get)}(${code(callExpr.arguments)})"
     } else callExprCode
     val callNode_ = callNode(
@@ -237,7 +239,18 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       // TODO: extend the GsonTypeInfoReader to query for information whether
       //  the call is a call to a static function and generate a proper static call here
       callee match {
+        case m: MemberAccessExprSyntax if m.base.isEmpty || code(m.base.get) == "self" =>
+          // referencing implicit self
+          val selfTpe  = typeHintForSelfExpression().headOption.getOrElse(Defines.Any)
+          val selfNode = identifierNode(node, "self", "self", selfTpe)
+          scope.addVariableReference("self", selfNode, selfTpe, EvaluationStrategies.BY_REFERENCE)
+          handleCallNodeArgs(node, Ast(selfNode), code(m.declName.baseName))
+        case m: MemberAccessExprSyntax if m.base.exists(_.isInstanceOf[DeclReferenceExprSyntax]) =>
+          // simple base
+          val memberCode = code(m.declName)
+          handleCallNodeArgs(node, astForNode(m.base.get), memberCode)
         case m: MemberAccessExprSyntax =>
+          // call-chain / complex base
           val memberCode = code(m.declName)
           handleCallNodeArgs(node, astForMemberAccessExprSyntax(m), memberCode)
         case other if isRefToClosure(node, other) =>
