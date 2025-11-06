@@ -138,11 +138,8 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     callAst(callNode_, arguments)
   }
 
-  protected def typeHintForSelfExpression(): Seq[String] = {
-    dynamicInstanceTypeStack.headOption match {
-      case Some(InstanceTypeStackElement(tpe, _)) => Seq(tpe)
-      case None => methodAstParentStack.collectFirst { case t: NewTypeDecl => t.fullName }.toSeq
-    }
+  protected def typeForSelfExpression(): String = {
+    scope.getEnclosingTypeDeclFullName.getOrElse(Defines.Any)
   }
 
   protected def identifierNode(node: SwiftNode, name: String): NewIdentifier = {
@@ -153,7 +150,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
         t
       }
       .getOrElse(name match {
-        case "self" | "Self" => typeHintForSelfExpression().headOption.getOrElse(Defines.Any)
+        case "self" | "Self" => typeForSelfExpression()
         case _               => Defines.Any
       })
     identifierNode(node, name, name, tpe)

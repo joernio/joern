@@ -233,7 +233,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           val tpeFromTypeMap = fullnameProvider.typeFullname(c)
           val typeFullName   = tpeFromTypeMap.getOrElse(typeNameForDeclSyntax(d))
           val memberNode_    = memberNode(c, cCode, cCode, typeFullName)
-          addMemberToDynamicInstanceTypeStack(typeDeclNode.fullName, cCode)
+          scope.addVariable(cCode, memberNode_, typeFullName, VariableScopeManager.ScopeType.TypeDeclScope)
           diffGraph.addEdge(typeDeclNode, memberNode_, EdgeTypes.AST)
         }
         ast
@@ -244,7 +244,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           val tpeFromTypeMap = fullnameProvider.typeFullname(c)
           val typeFullName   = tpeFromTypeMap.getOrElse(typeNameForDeclSyntax(d))
           val memberNode_    = memberNode(c, cCode, cCode, typeFullName)
-          addMemberToDynamicInstanceTypeStack(typeDeclNode.fullName, cCode)
+          scope.addVariable(cCode, memberNode_, typeFullName, VariableScopeManager.ScopeType.TypeDeclScope)
           diffGraph.addEdge(typeDeclNode, memberNode_, EdgeTypes.AST)
         }
         ast
@@ -331,8 +331,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     }
 
     methodAstParentStack.push(typeDeclNode_)
-    dynamicInstanceTypeStack.push(InstanceTypeStackElement(typeFullName, mutable.HashSet.empty))
     typeRefIdStack.push(typeRefNode_)
+    scope.pushNewTypeDeclScope(typeFullName)
     scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode_, None)
 
     val allClassMembers = declMembers(node, withConstructor = false).toList
@@ -350,8 +350,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val staticMemberInits = allClassMembers.filter(isStaticMember)
 
     methodAstParentStack.pop()
-    dynamicInstanceTypeStack.pop()
     typeRefIdStack.pop()
+    scope.popScope()
     scope.popScope()
 
     if (staticMemberInits.nonEmpty) {
@@ -471,8 +471,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     }
 
     methodAstParentStack.push(typeDeclNode_)
-    dynamicInstanceTypeStack.push(InstanceTypeStackElement(typeFullName, mutable.HashSet.empty))
     typeRefIdStack.push(typeRefNode_)
+    scope.pushNewTypeDeclScope(typeFullName)
     scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode_, None)
 
     val allClassMembers = declMembers(node, withConstructor = false).toList
@@ -491,8 +491,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val staticMemberInits = allClassMembers.filter(isStaticMember)
 
     methodAstParentStack.pop()
-    dynamicInstanceTypeStack.pop()
     typeRefIdStack.pop()
+    scope.popScope()
     scope.popScope()
 
     if (staticMemberInits.nonEmpty) {
@@ -1016,7 +1016,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
             Ast(patternIdentifier)
           } else {
             // TODO: handle static members
-            val selfTpe  = typeHintForSelfExpression().headOption.getOrElse(Defines.Any)
+            val selfTpe  = typeForSelfExpression()
             val baseNode = identifierNode(node, "self", "self", selfTpe)
             scope.addVariableReference("self", baseNode, selfTpe, EvaluationStrategies.BY_REFERENCE)
             fieldAccessAst(node, node, Ast(baseNode), s"self.$name", name, typeFullName)

@@ -36,21 +36,11 @@ class AstCreator(
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
 
-  protected val scope                = new SwiftVariableScopeManager()
-  protected val fullnameProvider     = new FullnameProvider(typeMap)
-  protected val methodAstParentStack = new Stack[NewNode]()
-  protected val typeRefIdStack       = new Stack[NewTypeRef]
-  protected val localAstParentStack  = new Stack[NewBlock]()
-
-  case class InstanceTypeStackElement(name: String, members: mutable.HashSet[String])
-  protected val dynamicInstanceTypeStack = new Stack[InstanceTypeStackElement]
-
-  protected def addMemberToDynamicInstanceTypeStack(typeDeclFullName: String, memberName: String): Unit = {
-    dynamicInstanceTypeStack.find(_.name == typeDeclFullName).foreach { elem =>
-      elem.members.addOne(memberName)
-    }
-  }
-
+  protected val scope                 = new SwiftVariableScopeManager()
+  protected val fullnameProvider      = new FullnameProvider(typeMap)
+  protected val methodAstParentStack  = new Stack[NewNode]()
+  protected val typeRefIdStack        = new Stack[NewTypeRef]
+  protected val localAstParentStack   = new Stack[NewBlock]()
   protected val scopeLocalUniqueNames = mutable.HashMap.empty[String, Int]
 
   protected lazy val definedSymbols: Map[String, String] = {
@@ -83,6 +73,7 @@ class AstCreator(
     val fakeGlobalMethod =
       methodNode(ast, name, name, fullName, None, path, Option(NodeTypes.TYPE_DECL), Option(fullName))
     methodAstParentStack.push(fakeGlobalMethod)
+    scope.pushNewTypeDeclScope(fullName)
     scope.pushNewMethodScope(fullName, name, fakeGlobalMethod, None)
     val sourceFileAst = astForNode(ast)
     val methodReturn  = methodReturnNode(ast, Defines.Any)

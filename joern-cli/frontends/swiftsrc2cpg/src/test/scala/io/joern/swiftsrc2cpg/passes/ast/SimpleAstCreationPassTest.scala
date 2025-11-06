@@ -258,9 +258,9 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
 
     "have correct structure for implicit self access with shadowing a variable from outer scope" in {
       val cpg = code("""
-          |let f: String = "f"
+          |let f: String = "a"
           |class Foo {
-          |  let f: String = "f"
+          |  let f: String = "b"
           |  func bar() {
           |    handleF(f)
           |  }
@@ -273,6 +273,53 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
         id.name shouldBe "self"
         id.typeFullName shouldBe "Test0.swift:<global>.Foo"
         fieldName.canonicalName shouldBe "f"
+      }
+    }
+
+    "have correct structure for implicit self access from within nested functions" in {
+      val cpg = code("""
+          |let f: String = "a"
+          |class Foo {
+          |  let f: String = "b"
+          |  func foo() -> String {
+          |    func closure() -> String {
+          |      return handleF(f)
+          |    }
+          |    return closure()
+          |  }
+          |}
+          |""".stripMargin)
+      cpg.typeDecl.nameExact("Foo").member.name.l shouldBe List("f")
+      val List(bAccess) = cpg.call.nameExact("handleF").argument.fieldAccess.l
+      bAccess.code shouldBe "self.f"
+      inside(bAccess.argument.l) { case List(id: Identifier, fieldName: FieldIdentifier) =>
+        id.name shouldBe "self"
+        id.typeFullName shouldBe "Test0.swift:<global>.Foo"
+        fieldName.canonicalName shouldBe "f"
+      }
+    }
+
+    "have correct structure for implicit self access from within nested functions with shadowing" in {
+      val cpg = code("""
+          |let f: String = "a"
+          |class Foo {
+          |  let f: String = "b"
+          |  func foo() -> String {
+          |    let f: String = "c"
+          |    func closure() -> String {
+          |      return handleF(f)
+          |    }
+          |    return closure()
+          |  }
+          |}
+          |""".stripMargin)
+      cpg.typeDecl.nameExact("Foo").member.name.l shouldBe List("f")
+      inside(cpg.call.nameExact("handleF").argument(1).l) { case List(id: Identifier) =>
+        id.name shouldBe "f"
+        id.typeFullName shouldBe Defines.String
+        val fLocal = id._localViaRefOut.get
+        fLocal.name shouldBe "f"
+        fLocal.typeFullName shouldBe Defines.String
       }
     }
 

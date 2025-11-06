@@ -177,14 +177,10 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       identNode.typeFullName = tpe
       scope.addVariableReference(identifierName, identNode, tpe, EvaluationStrategies.BY_REFERENCE)
       Ast(identNode)
-    } else if (
-      dynamicInstanceTypeStack.headOption.exists { case InstanceTypeStackElement(tpe, members) =>
-        members.contains(identifierName)
-      }
-    ) {
+    } else if (scope.variableIsInTypeDeclScope(identifierName)) {
       // 2) we found it as member of the surrounding type decl:
       // (Swift does not allow to access any member / function of the outer class instance)
-      val tpe      = dynamicInstanceTypeStack.head.name
+      val tpe      = typeForSelfExpression()
       val selfNode = identifierNode(node, "self", "self", tpe)
       scope.addVariableReference("self", selfNode, selfNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
       fieldAccessAst(node, node, Ast(selfNode), s"self.$identifierName", identifierName, tpe)
