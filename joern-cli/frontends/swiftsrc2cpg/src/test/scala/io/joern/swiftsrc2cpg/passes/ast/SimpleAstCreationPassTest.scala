@@ -282,10 +282,10 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
           |class Foo {
           |  let f: String = "b"
           |  func foo() -> String {
-          |    func closure() -> String {
+          |    func bar() -> String {
           |      return handleF(f)
           |    }
-          |    return closure()
+          |    return bar()
           |  }
           |}
           |""".stripMargin)
@@ -297,6 +297,15 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
         id.typeFullName shouldBe "Test0.swift:<global>.Foo"
         fieldName.canonicalName shouldBe "f"
       }
+
+      val List(fooMethod) = cpg.method.nameExact("foo").l
+      val List(fooBlock)  = fooMethod.astChildren.isBlock.l
+      val List(barRef)    = fooBlock.astChildren.isMethodRef.l
+      barRef.captureOut shouldBe empty
+
+      val List(barMethod)      = cpg.method.nameExact("bar").l
+      val List(barMethodBlock) = barMethod.astChildren.isBlock.l
+      barMethodBlock.astChildren.isLocal.name("f") shouldBe empty
     }
 
     "have correct structure for implicit self access from within nested functions with shadowing" in {
@@ -306,10 +315,10 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
           |  let f: String = "b"
           |  func foo() -> String {
           |    let f: String = "c"
-          |    func closure() -> String {
+          |    func bar() -> String {
           |      return handleF(f)
           |    }
-          |    return closure()
+          |    return bar()
           |  }
           |}
           |""".stripMargin)
@@ -321,6 +330,22 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
         fLocal.name shouldBe "f"
         fLocal.typeFullName shouldBe Defines.String
       }
+      val List(fooMethod)       = cpg.method.nameExact("foo").l
+      val List(fooBlock)        = fooMethod.astChildren.isBlock.l
+      val List(fooLocalF)       = fooBlock.astChildren.isLocal.nameExact("f").l
+      val List(barRef)          = fooBlock.astChildren.isMethodRef.l
+      val List(closureBindingF) = barRef.captureOut.l
+      closureBindingF.closureBindingId shouldBe Option("Test0.swift:<global>.Foo.foo.bar:f")
+      closureBindingF.refOut.head shouldBe fooLocalF
+      closureBindingF.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+
+      val List(barMethod)      = cpg.method.nameExact("bar").l
+      val List(barMethodBlock) = barMethod.astChildren.isBlock.l
+      val List(barLocal)       = barMethodBlock.astChildren.isLocal.name("f").l
+      barLocal.closureBindingId shouldBe Option("Test0.swift:<global>.Foo.foo.bar:f")
+
+      val List(identifierF) = barMethodBlock.ast.isIdentifier.nameExact("f").l
+      identifierF.refOut.head shouldBe barLocal
     }
 
     "have correct structure for implicit self access except for variable in closure" in {
@@ -329,7 +354,7 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
           |  let f: String = "f"
           |  class Bar {
           |    let b = "b"
-          |    func bar() {
+          |    func foo() {
           |      let compare = { (s1: String, s2: String) -> Bool in
           |        let f: Int = 1
           |        handleB(b)
@@ -356,6 +381,20 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
         fLocal.name shouldBe "f"
         fLocal.typeFullName shouldBe Defines.Int
       }
+
+      val List(fooMethod)  = cpg.method.nameExact("foo").l
+      val List(fooBlock)   = fooMethod.astChildren.isBlock.l
+      val List(compareRef) = fooBlock.ast.isMethodRef.l
+      compareRef.captureOut shouldBe empty
+
+      val List(compareClosure)                              = cpg.method.nameExact("<lambda>0").l
+      val List(compareClosureBlock)                         = compareClosure.astChildren.isBlock.l
+      val List(compareClosureLocal)                         = compareClosureBlock.astChildren.isLocal.name("f").l
+      val List(identifierFFromLocalDecl, identifierFInCall) = compareClosureBlock.ast.isIdentifier.nameExact("f").l
+      identifierFFromLocalDecl.refOut.head shouldBe compareClosureLocal
+      identifierFFromLocalDecl.lineNumber shouldBe Some(8)
+      identifierFInCall.refOut.head shouldBe compareClosureLocal
+      identifierFInCall.lineNumber shouldBe Some(10)
     }
 
     "have correct structure for implicit self access except for parameters" in {

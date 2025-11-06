@@ -8,8 +8,8 @@ import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
-import scala.collection.mutable
 import scala.annotation.unused
 
 trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
@@ -612,8 +612,10 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val MethodInfo(methodName, methodFullName, signature, returnType) = methodInfo
     val methodFullNameAndSignature                                    = methodInfo.fullNameAndSignature
 
-    val shouldCreateFunctionReference =
-      typeRefIdStack.isEmpty || node.isInstanceOf[ClosureExprSyntax] || node.isInstanceOf[AccessorDeclSyntax]
+    val shouldCreateFunctionReference = typeRefIdStack.isEmpty ||
+      methodAstParentStack.headOption.exists(_.isInstanceOf[NewMethod]) ||
+      node.isInstanceOf[ClosureExprSyntax] ||
+      node.isInstanceOf[AccessorDeclSyntax]
     val methodRefNode_ = if (!shouldCreateFunctionReference) { None }
     else { Option(methodRefNode(node, methodName, methodFullNameAndSignature, methodFullNameAndSignature)) }
     val capturingRefNode = methodRefNode_.orElse(typeRefIdStack.headOption)
@@ -629,12 +631,13 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val parameterAsts = node match {
       case f: FunctionDeclSyntax =>
-        val selfAst = if (isStaticMember(f)) {
-          val parameterNode =
-            parameterInNode(node, "self", "self", 0, false, EvaluationStrategies.BY_SHARING, parentFullName)
-          scope.addVariable("self", parameterNode, parentFullName, VariableScopeManager.ScopeType.MethodScope)
-          Seq(Ast(parameterNode))
-        } else Seq.empty
+        val selfAst =
+          if (!isStaticMember(f) && !typeForSelfExpression().endsWith(NamespaceTraversal.globalNamespaceName)) {
+            val parameterNode =
+              parameterInNode(node, "self", "self", 0, false, EvaluationStrategies.BY_SHARING, parentFullName)
+            scope.addVariable("self", parameterNode, parentFullName, VariableScopeManager.ScopeType.MethodScope)
+            Seq(Ast(parameterNode))
+          } else Seq.empty
         selfAst ++ f.signature.parameterClause.parameters.children.map(astForNode)
       case a: AccessorDeclSyntax =>
         val parameterNode =
@@ -657,10 +660,17 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         scope.addVariable("self", parameterNode, parentFullName, VariableScopeManager.ScopeType.MethodScope)
         Ast(parameterNode) +: s.parameterClause.parameters.children.map(astForNode)
       case c: ClosureExprSyntax =>
-        c.signature.flatMap(_.parameterClause) match
+        val selfAst = if (!typeForSelfExpression().endsWith(NamespaceTraversal.globalNamespaceName)) {
+          val parameterNode =
+            parameterInNode(node, "self", "self", 0, false, EvaluationStrategies.BY_SHARING, parentFullName)
+          scope.addVariable("self", parameterNode, parentFullName, VariableScopeManager.ScopeType.MethodScope)
+          Seq(Ast(parameterNode))
+        } else Seq.empty
+        selfAst ++ (c.signature.flatMap(_.parameterClause) match {
           case Some(p: ClosureShorthandParameterListSyntax) => p.children.map(astForNode)
           case Some(p: ClosureParameterClauseSyntax)        => p.parameters.children.map(astForNode)
           case None                                         => Seq.empty
+        })
     }
 
     val body: Option[CodeBlockSyntax | AccessorDeclListSyntax | CodeBlockItemListSyntax] = node match {

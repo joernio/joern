@@ -164,28 +164,15 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def astForIdentifier(node: SwiftNode): Ast = {
     val identifierName = code(node)
-    // scoping rules for self access:
-    // 1) if identifier is in local method scope it shadows everything else:
-    if (scope.variableIsInMethodScope(identifierName)) {
-      val identNode      = identifierNode(node, identifierName)
-      val variableOption = scope.lookupVariable(identifierName)
-      val tpe = variableOption match {
-        case Some((_, variableTypeName)) if variableTypeName != Defines.Any => variableTypeName
-        case None if identNode.typeFullName != Defines.Any                  => identNode.typeFullName
-        case _                                                              => Defines.Any
-      }
-      identNode.typeFullName = tpe
-      scope.addVariableReference(identifierName, identNode, tpe, EvaluationStrategies.BY_REFERENCE)
-      Ast(identNode)
-    } else if (scope.variableIsInTypeDeclScope(identifierName)) {
-      // 2) we found it as member of the surrounding type decl:
+    if (scope.variableIsInTypeDeclScope(identifierName)) {
+      // we found it as member of the surrounding type decl
       // (Swift does not allow to access any member / function of the outer class instance)
       val tpe      = typeForSelfExpression()
       val selfNode = identifierNode(node, "self", "self", tpe)
       scope.addVariableReference("self", selfNode, selfNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
       fieldAccessAst(node, node, Ast(selfNode), s"self.$identifierName", identifierName, tpe)
     } else {
-      // 3) default handling, it must come from the outer scope somewhere
+      // otherwise it must come from the outer scope somewhere
       val identNode      = identifierNode(node, identifierName)
       val variableOption = scope.lookupVariable(identifierName)
       val tpe = variableOption match {

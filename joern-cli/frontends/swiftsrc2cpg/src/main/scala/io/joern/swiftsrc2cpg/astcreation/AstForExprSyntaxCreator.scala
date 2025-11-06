@@ -8,6 +8,7 @@ import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import scala.annotation.unused
 
