@@ -8,7 +8,6 @@ import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
-import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import scala.annotation.unused
 
@@ -273,7 +272,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val signature = fullnameProvider.typeFullnameRaw(expr.calledExpression).getOrElse(x2cpg.Defines.UnresolvedSignature)
     val callName  = Defines.ClosureApplyMethodName
     val callMethodFullname = s"${Defines.Function}<$signature>.$callName:$signature"
-    val baseAst            = Ast(identifierNode(expr.calledExpression, code(expr.calledExpression)))
+    val baseAst            = astForIdentifier(expr.calledExpression)
 
     val trailingClosureAsts            = expr.trailingClosure.toList.map(astForNode)
     val additionalTrailingClosuresAsts = expr.additionalTrailingClosures.children.map(c => astForNode(c.closure))

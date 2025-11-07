@@ -218,10 +218,14 @@ class ClosureWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
       compareClosureCall.name shouldBe "single_apply"
       compareClosure.signature shouldBe "(Swift.String,Swift.String)->Swift.Bool"
       compareClosureCall.methodFullName shouldBe "Swift.Function<(Swift.String,Swift.String)->Swift.Bool>.single_apply:(Swift.String,Swift.String)->Swift.Bool"
-      compareClosureCall.receiver.isIdentifier.name.l shouldBe List("compare")
-      compareClosureCall.receiver.isIdentifier.typeFullName.l shouldBe List(
-        "Swift.Function<(Swift.String,Swift.String)->Swift.Bool>"
-      )
+
+      val List(compareClosureCallReceiver) = compareClosureCall.receiver.fieldAccess.l
+      compareClosureCallReceiver.code shouldBe "self.compare"
+      compareClosureCallReceiver.typeFullName shouldBe "Swift.Function<(Swift.String,Swift.String)->Swift.Bool>"
+      inside(compareClosureCallReceiver.argument.l) { case List(selfId: Identifier, fieldId: FieldIdentifier) =>
+        selfId.typeFullName shouldBe "SwiftTest.Foo"
+        fieldId.code shouldBe "compare"
+      }
       compareClosureCall.argument(1).code shouldBe """"1""""
       compareClosureCall.argument(2).code shouldBe """"2""""
     }
