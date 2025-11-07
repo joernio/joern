@@ -172,7 +172,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       scope.addVariableReference("self", selfNode, selfNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
       fieldAccessAst(node, node, Ast(selfNode), s"self.$identifierName", identifierName, tpe)
     } else {
-      // otherwise it must come from the outer scope somewhere
+      // otherwise it must come from a variable (potentially captured from an outer scope)
       val identNode      = identifierNode(node, identifierName)
       val variableOption = scope.lookupVariable(identifierName)
       val tpe = variableOption match {
