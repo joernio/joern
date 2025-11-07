@@ -214,7 +214,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val callCode = if (callExprCode.startsWith(".")) {
       s"${codeOf(baseAst.root.get)}$callExprCode"
     } else if (callExprCode.contains("#if ")) {
-      s"${codeOf(baseAst.root.get)}(${code(callExpr.arguments)})"
+      s"${codeOf(baseAst.root.get)}.$callName(${code(callExpr.arguments)})"
     } else callExprCode
     val callNode_ = callNode(
       callExpr,
@@ -245,14 +245,9 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           val selfNode = identifierNode(node, "self", "self", selfTpe)
           scope.addVariableReference("self", selfNode, selfTpe, EvaluationStrategies.BY_REFERENCE)
           handleCallNodeArgs(node, Ast(selfNode), code(m.declName.baseName))
-        case m: MemberAccessExprSyntax if m.base.exists(_.isInstanceOf[DeclReferenceExprSyntax]) =>
-          // simple base
+        case m: MemberAccessExprSyntax =>
           val memberCode = code(m.declName)
           handleCallNodeArgs(node, astForNode(m.base.get), memberCode)
-        case m: MemberAccessExprSyntax =>
-          // call-chain / complex base
-          val memberCode = code(m.declName)
-          handleCallNodeArgs(node, astForMemberAccessExprSyntax(m), memberCode)
         case other if isRefToClosure(node, other) =>
           astForClosureCall(node)
         case declReferenceExprSyntax: DeclReferenceExprSyntax if code(declReferenceExprSyntax) != "self" =>

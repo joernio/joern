@@ -181,7 +181,9 @@ class ClosureWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
           |  func main() {
           |	   let compareResult = compare("1", "2")
           |  }
-          |}""".stripMargin
+          |}
+          |Foo().main()
+          |""".stripMargin
 
       val cpg                    = codeWithSwiftSetup(testCode)
       val compareClosureFullName = "Sources/main.swift:<global>.Foo.<lambda>0:(Swift.String,Swift.String)->Swift.Bool"
@@ -228,6 +230,17 @@ class ClosureWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
       }
       compareClosureCall.argument(1).code shouldBe """"1""""
       compareClosureCall.argument(2).code shouldBe """"2""""
+
+      val List(mainCall) = cpg.call.nameExact("main").l
+      mainCall.methodFullName shouldBe "SwiftTest.Foo.main:()->()"
+      mainCall.signature shouldBe "()->()"
+      mainCall.typeFullName shouldBe "()"
+      val List(mainCallReceiver) = mainCall.receiver.isCall.l
+      mainCallReceiver.name shouldBe "Foo"
+      mainCallReceiver.methodFullName shouldBe "SwiftTest.Foo.init:()->SwiftTest.Foo"
+      mainCallReceiver.signature shouldBe "()->SwiftTest.Foo"
+      mainCallReceiver.typeFullName shouldBe "SwiftTest.Foo"
+      mainCallReceiver._methodViaCallOut.l shouldBe List(fooConstructor)
     }
 
     "create type decls and bindings correctly (closure as function parameter)" in {
