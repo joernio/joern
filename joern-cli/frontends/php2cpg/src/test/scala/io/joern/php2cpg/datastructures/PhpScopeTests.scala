@@ -67,7 +67,7 @@ object PhpScopeTests {
 
   def scopeFrom(symbols: SymbolSummary*): Scope = {
     val summary = symbols.groupBy(_.name)
-    Scope(summary, () => "nan")
+    Scope(summary)
   }
 
   extension (path: String) {
