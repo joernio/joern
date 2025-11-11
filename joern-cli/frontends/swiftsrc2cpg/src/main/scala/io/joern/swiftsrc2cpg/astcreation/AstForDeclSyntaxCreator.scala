@@ -349,11 +349,6 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     // adding all static members and retrieving their initialization calls
     val staticMemberInits = allClassMembers.filter(isStaticMember)
 
-    methodAstParentStack.pop()
-    typeRefIdStack.pop()
-    scope.popScope()
-    scope.popScope()
-
     if (staticMemberInits.nonEmpty) {
       val init = staticInitMethodAstAndBlock(
         node,
@@ -366,6 +361,11 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       Ast.storeInDiffGraph(init.ast, diffGraph)
       diffGraph.addEdge(typeDeclNode_, init.method, EdgeTypes.AST)
     }
+
+    methodAstParentStack.pop()
+    typeRefIdStack.pop()
+    scope.popScope()
+    scope.popScope()
 
     Ast(typeDeclNode_)
   }
@@ -490,11 +490,6 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     // adding all static members and retrieving their initialization calls
     val staticMemberInits = allClassMembers.filter(isStaticMember)
 
-    methodAstParentStack.pop()
-    typeRefIdStack.pop()
-    scope.popScope()
-    scope.popScope()
-
     if (staticMemberInits.nonEmpty) {
       val init = staticInitMethodAstAndBlock(
         node,
@@ -507,6 +502,11 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       Ast.storeInDiffGraph(init.ast, diffGraph)
       diffGraph.addEdge(typeDeclNode_, init.method, EdgeTypes.AST)
     }
+
+    methodAstParentStack.pop()
+    typeRefIdStack.pop()
+    scope.popScope()
+    scope.popScope()
 
     Ast(typeDeclNode_)
   }
