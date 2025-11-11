@@ -381,9 +381,6 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForEnumCaseDeclSyntax(node: EnumCaseDeclSyntax): Ast = {
-    val attributeAsts = node.attributes.children.map(astForNode)
-    val modifiers     = modifiersForDecl(node)
-
     val bindingAsts = node.elements.children.map { binding =>
       val name       = code(binding.name)
       val nLocalNode = localNode(binding, name, name, Defines.Any).order(0)
@@ -394,11 +391,15 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       if (initAsts.isEmpty) {
         Ast()
       } else {
+        val attributeAsts = node.attributes.children.map(astForNode)
+        val modifiers     = modifiersForDecl(node)
+
         val patternAst = astForNode(binding.name)
         modifiers.foreach { mod =>
           patternAst.root.foreach { r => diffGraph.addEdge(r, mod, EdgeTypes.AST) }
         }
         attributeAsts.foreach { attrAst =>
+          Ast.storeInDiffGraph(attrAst, diffGraph)
           patternAst.root.foreach { r => attrAst.root.foreach { attr => diffGraph.addEdge(r, attr, EdgeTypes.AST) } }
         }
         createAssignmentCallAst(binding, patternAst, initAsts.head, code(binding).stripSuffix(","))
@@ -962,14 +963,12 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     diffGraph.addEdge(methodAstParentStack.head, methodNode_, EdgeTypes.AST)
   }
 
-  private def astForVariableDeclSyntax(node: VariableDeclSyntax, isTypeDeclMember: Boolean = false): Ast = {
-    val attributeAsts = node.attributes.children.map(astForNode)
-    val modifiers     = node.modifiers.children.flatMap(c => astForNode(c).root.map(_.asInstanceOf[NewModifier]))
-    val kind          = code(node.bindingSpecifier)
+  private def astForVariableDeclSyntax(variableDecl: VariableDeclSyntax, isTypeDeclMember: Boolean = false): Ast = {
+    val kind = code(variableDecl.bindingSpecifier)
     val scopeType = if (kind == "let") { VariableScopeManager.ScopeType.BlockScope }
     else { VariableScopeManager.ScopeType.MethodScope }
 
-    val bindingAsts = node.bindings.children.flatMap { binding =>
+    val bindingAsts = variableDecl.bindings.children.flatMap { binding =>
       val namesWithNode = binding.pattern match {
         case expr: ExpressionPatternSyntax =>
           notHandledYet(expr)
@@ -1015,12 +1014,17 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           Ast()
         } else {
           val patternAst = if (!isTypeDeclMember) {
+            val attributeAsts = variableDecl.attributes.children.map(astForNode)
+            val modifiers =
+              variableDecl.modifiers.children.flatMap(c => astForNode(c).root.map(_.asInstanceOf[NewModifier]))
+
             val patternIdentifier = identifierNode(binding.pattern, cleanedName).typeFullName(typeFullName)
             scope.addVariableReference(cleanedName, patternIdentifier, typeFullName, EvaluationStrategies.BY_REFERENCE)
             modifiers.foreach { mod =>
               diffGraph.addEdge(patternIdentifier, mod, EdgeTypes.AST)
             }
             attributeAsts.foreach { attrAst =>
+              Ast.storeInDiffGraph(attrAst, diffGraph)
               attrAst.root.foreach { attr => diffGraph.addEdge(patternIdentifier, attr, EdgeTypes.AST) }
             }
             Ast(patternIdentifier)
@@ -1059,7 +1063,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case Nil         => Ast()
       case head :: Nil => head
       case others =>
-        val block = blockNode(node, code(node), Defines.Any)
+        val block = blockNode(variableDecl, code(variableDecl), Defines.Any)
         blockAst(block, others.toList)
     }
   }

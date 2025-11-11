@@ -45,7 +45,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
         val assign         = NewAnnotationParameterAssign().code(code(argument))
         val assignChildren = List(Ast(parameter), argumentAst)
         setArgumentIndices(assignChildren)
-        List(Ast(assign).withChild(Ast(parameter)).withChild(argumentAst))
+        List(Ast(assign).withChildren(assignChildren))
       case None => Nil
     }
     val attributeCode = code(node)
