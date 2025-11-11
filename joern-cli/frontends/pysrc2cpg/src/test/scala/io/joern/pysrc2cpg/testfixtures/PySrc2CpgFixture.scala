@@ -21,6 +21,7 @@ import io.joern.x2cpg.testfixtures.LanguageFrontend
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.ICallResolver
 import io.shiftleft.semanticcpg.language.NoResolve
+import io.shiftleft.semanticcpg.validation.PostFrontendValidator
 
 trait PythonFrontend extends LanguageFrontend {
   override type ConfigType = Py2CpgOnFileSystemConfig
@@ -28,9 +29,11 @@ trait PythonFrontend extends LanguageFrontend {
   override val fileSuffix: String = ".py"
 
   override def execute(sourceCodePath: java.io.File): Cpg = {
-    new Py2CpgOnFileSystem()
+    val tmp = new Py2CpgOnFileSystem()
       .createCpg(Py2CpgOnFileSystemConfig().withDisableFileContent(false).withInputPath(sourceCodePath.getAbsolutePath))
       .get
+    new PostFrontendValidator(tmp, true).run()
+    tmp
   }
 }
 

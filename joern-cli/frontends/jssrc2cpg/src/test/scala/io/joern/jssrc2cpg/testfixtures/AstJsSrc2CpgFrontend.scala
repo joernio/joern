@@ -9,6 +9,7 @@ import io.joern.x2cpg.X2Cpg.newEmptyCpg
 import io.joern.x2cpg.utils.HashUtil
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.utils.FileUtil
+import io.shiftleft.semanticcpg.validation.PostFrontendValidator
 
 import java.nio.file.Paths
 
@@ -32,6 +33,7 @@ trait AstJsSrc2CpgFrontend extends LanguageFrontend {
     val astCreationPass = new AstCreationPass(cpg, astGenResult, config)(ValidationMode.Enabled)
     astCreationPass.createAndApply()
     JavaScriptTypeNodePass.withRegisteredTypes(astCreationPass.typesSeen(), cpg).createAndApply()
+    new PostFrontendValidator(cpg, false).run()
     cpg
   }
 }

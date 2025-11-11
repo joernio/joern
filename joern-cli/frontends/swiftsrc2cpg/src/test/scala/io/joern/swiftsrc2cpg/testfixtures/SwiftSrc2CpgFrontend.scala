@@ -4,6 +4,7 @@ import io.joern.swiftsrc2cpg.{Config, SwiftSrc2Cpg}
 import io.joern.x2cpg.testfixtures.LanguageFrontend
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.utils.FileUtil
+import io.shiftleft.semanticcpg.validation.PostFrontendValidator
 
 trait SwiftSrc2CpgFrontend extends LanguageFrontend {
   override type ConfigType = Config
@@ -17,6 +18,8 @@ trait SwiftSrc2CpgFrontend extends LanguageFrontend {
       .withInputPath(sourceCodePath.getAbsolutePath)
       .withOutputPath(cpgOutFile.toString)
 
-    new SwiftSrc2Cpg().createCpg(config).get
+    val tmp = new SwiftSrc2Cpg().createCpg(config).get
+    new PostFrontendValidator(tmp, true).run()
+    tmp
   }
 }
