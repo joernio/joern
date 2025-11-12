@@ -68,22 +68,26 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     if (isConstructor) scope.pushNewScope(ConstructorScope(fullName, scope.getNewProcParam))
     else scope.pushNewScope(MethodScope(fullName, scope.getNewProcParam))
 
-    val thisParameterNode = parameterInNode(
-      node,
-      name = Defines.Self,
-      code = Defines.Self,
-      index = 0,
-      isVariadic = false,
-      typeFullName = Option(scope.surroundingTypeFullName.getOrElse(Defines.Any)),
-      evaluationStrategy = EvaluationStrategies.BY_SHARING
-    )
-    val thisParameterAst = Ast(thisParameterNode)
-    scope.addToScope(Defines.Self, thisParameterNode)
-    val parameterAsts = thisParameterAst :: astForParameters(node.parameters)
+    val parameterAsts =
+      if (isClosure) {
+        astForParameters(node.parameters)
+      } else {
+        val thisParameterNode = parameterInNode(
+          node,
+          name = Defines.Self,
+          code = Defines.Self,
+          index = 0,
+          isVariadic = false,
+          typeFullName = Option(scope.surroundingTypeFullName.getOrElse(Defines.Any)),
+          evaluationStrategy = EvaluationStrategies.BY_SHARING
+        )
+
+        val thisParameterAst = Ast(thisParameterNode)
+        scope.addToScope(Defines.Self, thisParameterNode)
+        thisParameterAst :: astForParameters(node.parameters)
+      }
 
     val optionalStatementList = statementListForOptionalParams(node.parameters)
-
-    val methodReturn = methodReturnNode(node, Defines.Any)
 
     val refs = {
       val typeRef =
@@ -92,8 +96,21 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       List(typeRef, methodRefNode(node, methodName, fullName, fullName)).map(Ast.apply)
     }
 
+    val methodReturn = methodReturnNode(node, Defines.Any)
+
     // Consider which variables are captured from the outer scope
     val stmtBlockAst = if (isClosure || isSingletonObjectMethod) {
+      // create closure `self` local used for capturing
+      scope.lookupSelfInOuterScope
+        .collect {
+          case local: NewLocal             => local.name
+          case param: NewMethodParameterIn => param.name
+        }
+        .foreach { name =>
+          val capturingLocal =
+            localNode(node.body, name, name, Defines.Any, closureBindingId = Option(s"$fullName.$name"))
+          scope.addToScope(capturingLocal.name, capturingLocal)
+        }
       val baseStmtBlockAst = astForMethodBody(node.body, optionalStatementList)
       transformAsClosureBody(node.body, refs, baseStmtBlockAst)
     } else {
@@ -205,22 +222,27 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     methodAst
   }
 
-  private def transformAsClosureBody(originNode: RubyExpression, refs: List[Ast], baseStmtBlockAst: Ast) = {
+  private def transformAsClosureBody(originNode: RubyExpression, refs: List[Ast], baseStmtBlockAst: Ast): Ast = {
     // Determine which locals are captured
     val capturedLocalNodes = baseStmtBlockAst.nodes
-      .collect { case x: NewIdentifier if x.name != Defines.Self => x } // Self identifiers are handled separately
+      .collect { case x: NewIdentifier if x.name != Defines.Self => x }
       .distinctBy(_.name)
       .map(i => scope.lookupVariableInOuterScope(i.name))
-      .filter(_.nonEmpty)
+      .filter(_.iterator.nonEmpty)
       .flatten
       .toSet
 
+    val selfLocal     = scope.lookupSelfInOuterScope.toSet
+    val capturedNodes = capturedLocalNodes ++ selfLocal
+
     val capturedIdentifiers = baseStmtBlockAst.nodes.collect {
-      case i: NewIdentifier if capturedLocalNodes.map(_.name).contains(i.name) => i
+      case i: NewIdentifier if capturedNodes.map(_.name).contains(i.name) => i
     }
     // Copy AST block detaching the REF nodes between parent locals/params and identifiers, with the closures' one
     val capturedBlockAst = baseStmtBlockAst.copy(refEdges = baseStmtBlockAst.refEdges.filterNot {
-      case AstEdge(_: NewIdentifier, dst: DeclarationNew) => capturedLocalNodes.contains(dst)
+      case AstEdge(_: NewIdentifier, dst: NewLocal) if dst.name == Defines.Self =>
+        capturedNodes.map(_.name).contains(dst.name)
+      case AstEdge(_: NewIdentifier, dst: DeclarationNew) => capturedNodes.contains(dst)
       case _                                              => false
     })
 
@@ -229,18 +251,13 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val astChildren  = mutable.Buffer.empty[NewNode]
     val refEdges     = mutable.Buffer.empty[(NewNode, NewNode)]
     val captureEdges = mutable.Buffer.empty[(NewNode, NewNode)]
-    capturedLocalNodes
-      .collect {
-        case local: NewLocal =>
-          val closureBindingId = scope.variableScopeFullName(local.name).map(x => s"$x.${local.name}")
-          (local, local.name, local.code, closureBindingId)
-        case param: NewMethodParameterIn =>
-          val closureBindingId = scope.variableScopeFullName(param.name).map(x => s"$x.${param.name}")
-          (param, param.name, param.code, closureBindingId)
-      }
+
+    createClosureBindingInformation(capturedNodes)
       .collect { case (capturedLocal, name, code, Some(closureBindingId)) =>
-        val capturingLocal =
+        val selfCapturingLocal = Option.when(name == Defines.Self)(scope.lookupSelfInCurrentScope).flatten
+        val capturingLocal = selfCapturingLocal.getOrElse(
           localNode(originNode, name, name, Defines.Any, closureBindingId = Option(closureBindingId))
+        )
 
         val closureBinding = closureBindingNode(
           closureBindingId = closureBindingId,
@@ -613,5 +630,19 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case Some(NodeTypes.METHOD) => inBodyMethodScope
       case _                      => false
     }
+  }
+
+  private def createClosureBindingInformation(
+    capturedNodes: Set[DeclarationNew]
+  ): Set[(DeclarationNew, String, String, Option[String])] = {
+    capturedNodes
+      .collect {
+        case local: NewLocal =>
+          val closureBindingId = scope.variableScopeFullName(local.name).map(x => s"$x.${local.name}")
+          (local, local.name, local.code, closureBindingId)
+        case param: NewMethodParameterIn =>
+          val closureBindingId = scope.variableScopeFullName(param.name).map(x => s"$x.${param.name}")
+          (param, param.name, param.code, closureBindingId)
+      }
   }
 }

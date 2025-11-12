@@ -67,7 +67,7 @@ class RubySrc2Cpg extends X2CpgFrontend {
         }
         .filter { x =>
           if x.fileContent.isBlank then logger.info(s"File content empty, skipping - ${x.fileName}")
-          !x.fileContent.isBlank
+          !x.fileContent.isBlank || x.fileName.endsWith(".html.erb")
         }
 
       val internalProgramSummary = ConcurrentTaskUtil
@@ -122,7 +122,7 @@ object RubySrc2Cpg {
   ): Iterator[() => AstCreator] = {
     astFiles.map { fileName => () =>
       val parserResult   = RubyJsonParser.readFile(Paths.get(fileName))
-      val rubyProgram    = new RubyJsonToNodeCreator().visitProgram(parserResult.json)
+      val rubyProgram    = new RubyJsonToNodeCreator(fileName = fileName).visitProgram(parserResult.json)
       val sourceFileName = parserResult.fullPath
       val fileContent    = new String(Files.readAllBytes(Paths.get(sourceFileName)), Charset.defaultCharset())
       new AstCreator(
