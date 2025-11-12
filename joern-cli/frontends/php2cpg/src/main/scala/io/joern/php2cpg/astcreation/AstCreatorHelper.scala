@@ -3,30 +3,16 @@ package io.joern.php2cpg.astcreation
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
 import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*
-import io.joern.php2cpg.utils.{BlockScope, MethodScope}
 import io.joern.php2cpg.passes.SymbolSummaryPass.PhpFunction
+import io.joern.php2cpg.utils.{BlockScope, MethodScope}
 import io.joern.x2cpg.Defines.UnresolvedNamespace
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  MethodParameterIn,
-  NewBlock,
-  NewClosureBinding,
-  NewIdentifier,
-  NewLiteral,
-  NewLocal,
-  NewMethod,
-  NewMethodParameterIn,
-  NewMethodRef,
-  NewModifier,
-  NewNamespaceBlock,
-  NewNode
-}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import scala.collection.mutable
-import java.nio.charset.StandardCharsets
 
 trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -45,9 +31,9 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
   override protected def offset(phpNode: PhpNode): Option[(Int, Int)] = {
     Option.when(!disableFileContent) {
       val startPos =
-        new String(fileContent.get.getBytes.slice(0, phpNode.attributes.startFilePos), StandardCharsets.UTF_8).length
+        new String(fileContentBytes.slice(0, phpNode.attributes.startFilePos), fileCharset).length
       val endPos =
-        new String(fileContent.get.getBytes.slice(0, phpNode.attributes.endFilePos), StandardCharsets.UTF_8).length
+        new String(fileContentBytes.slice(0, phpNode.attributes.endFilePos), fileCharset).length
       (startPos, endPos)
     }
   }

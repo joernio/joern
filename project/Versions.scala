@@ -41,6 +41,7 @@ object Versions {
   val upickle                = "4.0.2"
   val gson                   = "2.13.1"
   val zeroTurnaround         = "1.17"
+  val juniversalchardet      = "2.5.0"
 
   // Shared with `projects/meta-build.sbt`, which needs to be updated there directly
   val betterFiles    = "3.9.2"
