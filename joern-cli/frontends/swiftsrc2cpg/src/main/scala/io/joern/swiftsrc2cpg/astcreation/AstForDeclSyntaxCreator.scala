@@ -84,7 +84,10 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def isInitializedMember(node: DeclSyntax): Boolean = node match {
-    case v: VariableDeclSyntax => v.bindings.children.exists(c => c.initializer.isDefined || c.accessorBlock.isDefined)
+    case v: VariableDeclSyntax =>
+      v.bindings.children.exists(c =>
+        c.initializer.isDefined || c.accessorBlock.exists(_.accessors.isInstanceOf[CodeBlockItemListSyntax])
+      )
     case e: EnumCaseDeclSyntax => e.elements.children.exists(c => c.rawValue.isDefined)
     case _                     => false
   }
@@ -149,26 +152,26 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       methodNode(node, constructorName, constructorName, methodFullName, Some(signature), parserResult.filename)
     val modifiers = Seq(NewModifier().modifierType(ModifierTypes.CONSTRUCTOR))
 
-    methodAstParentStack.push(methodNode_)
     val methodReturnNode_ = methodReturnNode(node, typeDeclNode.fullName)
 
+    val blockNode = NewBlock()
+    methodAstParentStack.push(methodNode_)
+    scope.pushNewMethodScope(methodFullName, constructorName, blockNode, typeRefIdStack.headOption)
+    localAstParentStack.push(blockNode)
+    val methodBlockContentAsts = methodBlockContent.map(m => astForDeclMember(m, typeDeclNode))
+    val parameterNode =
+      parameterInNode(node, "self", "self", 0, false, EvaluationStrategies.BY_SHARING, typeDeclNode.fullName)
+    scope.addVariable("self", parameterNode, typeDeclNode.fullName, VariableScopeManager.ScopeType.MethodScope)
+    localAstParentStack.pop()
     methodAstParentStack.pop()
-
-    val mAst = if (methodBlockContent.isEmpty) {
-      methodStubAst(methodNode_, Seq.empty, methodReturnNode_, modifiers)
-    } else {
-      val blockNode = NewBlock()
-      localAstParentStack.push(blockNode)
-      val methodBlockContentAsts = methodBlockContent.map(m => astForDeclMember(m, typeDeclNode))
-      localAstParentStack.pop()
-      methodAstWithAnnotations(
-        methodNode_,
-        Seq.empty,
-        blockAst(blockNode, methodBlockContentAsts),
-        methodReturnNode_,
-        modifiers
-      )
-    }
+    scope.popScope()
+    val mAst = methodAstWithAnnotations(
+      methodNode_,
+      Seq(Ast(parameterNode)),
+      blockAst(blockNode, methodBlockContentAsts),
+      methodReturnNode_,
+      modifiers
+    )
 
     val typeDeclAst = createFunctionTypeAndTypeDecl(methodNode_)
     Ast.storeInDiffGraph(mAst.merge(typeDeclAst), diffGraph)

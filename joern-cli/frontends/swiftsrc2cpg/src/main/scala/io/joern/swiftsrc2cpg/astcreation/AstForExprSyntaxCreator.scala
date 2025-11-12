@@ -4,6 +4,7 @@ import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.swiftsrc2cpg.passes.GlobalBuiltins
 import io.joern.x2cpg
 import io.joern.x2cpg.datastructures.Stack.*
+import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
@@ -230,14 +231,61 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     callAst(callNode_, args, Option(baseAst))
   }
 
+  private def constructorInvocationBlockAst(expr: FunctionCallExprSyntax): Ast = {
+    // get call is safe as this function is guarded by isRefToConstructor
+    val tpe = fullnameProvider.typeFullname(expr).get
+    registerType(tpe)
+
+    val callExprCode = code(expr)
+    val blockNode_   = blockNode(expr, callExprCode, tpe)
+    scope.pushNewBlockScope(blockNode_)
+
+    val tmpNodeName  = scopeLocalUniqueName("tmp")
+    val tmpNode      = identifierNode(expr, tmpNodeName, tmpNodeName, tpe)
+    val localTmpNode = localNode(expr, tmpNodeName, tmpNodeName, tpe)
+    scope.addVariable(tmpNodeName, localTmpNode, tpe, VariableScopeManager.ScopeType.BlockScope)
+
+    val allocOp          = Operators.alloc
+    val allocCallNode    = callNode(expr, allocOp, allocOp, allocOp, DispatchTypes.STATIC_DISPATCH)
+    val assignmentCallOp = Operators.assignment
+    val assignmentCallNode =
+      callNode(expr, s"$tmpNodeName = $allocOp", assignmentCallOp, assignmentCallOp, DispatchTypes.STATIC_DISPATCH)
+    val assignmentAst = callAst(assignmentCallNode, List(Ast(tmpNode), Ast(allocCallNode)))
+
+    val baseNode = identifierNode(expr, tmpNodeName, tmpNodeName, tpe)
+    scope.addVariableReference(tmpNodeName, baseNode, tpe, EvaluationStrategies.BY_SHARING)
+
+    val constructorCallNode = callNode(
+      expr,
+      callExprCode,
+      "init",
+      x2cpg.Defines.UnresolvedNamespace,
+      DispatchTypes.STATIC_DISPATCH,
+      Some(x2cpg.Defines.UnresolvedSignature),
+      Some(Defines.Void)
+    )
+    setFullNameInfoForCall(expr, constructorCallNode)
+
+    val trailingClosureAsts            = expr.trailingClosure.toList.map(astForNode)
+    val additionalTrailingClosuresAsts = expr.additionalTrailingClosures.children.map(c => astForNode(c.closure))
+    val args = expr.arguments.children.map(astForNode) ++ trailingClosureAsts ++ additionalTrailingClosuresAsts
+
+    val constructorCallAst = callAst(constructorCallNode, args, base = Some(Ast(baseNode)))
+
+    val retNode = identifierNode(expr, tmpNodeName, tmpNodeName, tpe)
+    scope.addVariableReference(tmpNodeName, retNode, tpe, EvaluationStrategies.BY_SHARING)
+    val retAst = Ast(retNode)
+
+    scope.popScope()
+    Ast(blockNode_).withChildren(Seq(assignmentAst, constructorCallAst, retAst))
+  }
+
   private def astForFunctionCallExprSyntax(node: FunctionCallExprSyntax): Ast = {
     val callee     = node.calledExpression
     val calleeCode = code(callee)
     if (GlobalBuiltins.builtins.contains(calleeCode)) {
       createBuiltinStaticCall(node, callee, calleeCode)
     } else {
-      // TODO: extend the GsonTypeInfoReader to query for information whether
-      //  the call is a call to a static function and generate a proper static call here
       callee match {
         case m: MemberAccessExprSyntax if m.base.isEmpty || code(m.base.get) == "self" =>
           // referencing implicit self
@@ -245,9 +293,13 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           val selfNode = identifierNode(node, "self", "self", selfTpe)
           scope.addVariableReference("self", selfNode, selfTpe, EvaluationStrategies.BY_REFERENCE)
           handleCallNodeArgs(node, Ast(selfNode), code(m.declName.baseName))
+        case m: MemberAccessExprSyntax if isRefToStaticFunction(calleeCode) =>
+          createBuiltinStaticCall(node, callee, calleeCode)
         case m: MemberAccessExprSyntax =>
           val memberCode = code(m.declName)
           handleCallNodeArgs(node, astForNode(m.base.get), memberCode)
+        case other if isRefToConstructor(node, other) =>
+          constructorInvocationBlockAst(node)
         case other if isRefToClosure(node, other) =>
           astForClosureCall(node)
         case declReferenceExprSyntax: DeclReferenceExprSyntax if code(declReferenceExprSyntax) != "self" =>
@@ -271,7 +323,6 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val trailingClosureAsts            = expr.trailingClosure.toList.map(astForNode)
     val additionalTrailingClosuresAsts = expr.additionalTrailingClosures.children.map(c => astForNode(c.closure))
-
     val args = expr.arguments.children.map(astForNode) ++ trailingClosureAsts ++ additionalTrailingClosuresAsts
 
     val callExprCode = code(expr)
@@ -290,14 +341,37 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def isRefToClosure(func: FunctionCallExprSyntax, node: ExprSyntax): Boolean = {
     if (!config.swiftBuild) {
       // Early exit; without types from the compiler we will be unable to identify closure calls anyway.
-      // This saves us the typeFullname lookup below.
+      // This saves us the fullnameProvider lookups below.
       return false
     }
     node match {
       case refExpr: DeclReferenceExprSyntax
-          if refExpr.baseName.isInstanceOf[identifier] && refExpr.argumentNames.isEmpty &&
+          if refExpr.baseName.isInstanceOf[identifier] &&
             fullnameProvider.declFullname(func).isEmpty &&
             fullnameProvider.typeFullname(refExpr).exists(_.startsWith(s"${Defines.Function}<")) =>
+        true
+      case _ => false
+    }
+  }
+
+  private def isRefToStaticFunction(calleeCode: String): Boolean = {
+    // TODO: extend the GsonTypeInfoReader to query for information whether the call is a call to a static function
+    calleeCode.headOption.exists(_.isUpper) && !calleeCode.contains("(") && !calleeCode.contains(")")
+  }
+
+  private def isRefToConstructor(func: FunctionCallExprSyntax, node: ExprSyntax): Boolean = {
+    if (!config.swiftBuild) {
+      // Early exit; without types from the compiler we will be unable to identify constructor calls anyway.
+      // This saves us the fullnameProvider lookups below.
+      return false
+    }
+    node match {
+      case refExpr: DeclReferenceExprSyntax
+          if refExpr.baseName.isInstanceOf[identifier] &&
+            fullnameProvider.typeFullname(func).nonEmpty &&
+            fullnameProvider.declFullname(func).exists { fullName =>
+              fullName.contains(".init(") && fullName.contains(")->")
+            } =>
         true
       case _ => false
     }

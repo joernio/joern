@@ -21,7 +21,7 @@ object GlobalBuiltins {
     "Set",        // Creates a set from a sequence
 
     // Types and type casting
-    "type",           // Returns the dynamic type of a value
+    "type",           // Returns the dynamic type of some value
     "numericCast",    // Returns the given integer as the equivalent value in a different integer type
     "unsafeDowncast", // Returns the given instance cast unconditionally to the specified type
     "unsafeBitCast",  // Returns the bits of the given instance, interpreted as having the specified type
@@ -89,7 +89,7 @@ object GlobalBuiltins {
 
     // C Interoperability
     "withVaList", // Invokes the given closure with a C va_list argument derived from the given array of arguments
-    "getVaList", // Returns a CVaListPointer that is backed by autoreleased storage, built from the given array of arguments
+    "getVaList", // Returns a CVaListPointer that is backed by auto-released storage, built from the given array of arguments
 
     // Miscellaneous Functions
     "swap",    // Exchanges the values of two variables

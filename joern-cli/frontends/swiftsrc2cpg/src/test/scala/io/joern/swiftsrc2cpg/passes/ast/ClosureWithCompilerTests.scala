@@ -185,8 +185,9 @@ class ClosureWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
           |Foo().main()
           |""".stripMargin
 
-      val cpg                    = codeWithSwiftSetup(testCode)
-      val compareClosureFullName = "Sources/main.swift:<global>.Foo.<lambda>0:(Swift.String,Swift.String)->Swift.Bool"
+      val cpg = codeWithSwiftSetup(testCode)
+      val compareClosureFullName =
+        "Sources/main.swift:<global>.Foo.init.<lambda>0:(Swift.String,Swift.String)->Swift.Bool"
 
       cpg.local.nameExact("compare") shouldBe empty
 
@@ -235,12 +236,11 @@ class ClosureWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
       mainCall.methodFullName shouldBe "SwiftTest.Foo.main:()->()"
       mainCall.signature shouldBe "()->()"
       mainCall.typeFullName shouldBe "()"
-      val List(mainCallReceiver) = mainCall.receiver.isCall.l
-      mainCallReceiver.name shouldBe "Foo"
-      mainCallReceiver.methodFullName shouldBe "SwiftTest.Foo.init:()->SwiftTest.Foo"
-      mainCallReceiver.signature shouldBe "()->SwiftTest.Foo"
-      mainCallReceiver.typeFullName shouldBe "SwiftTest.Foo"
-      mainCallReceiver._methodViaCallOut.l shouldBe List(fooConstructor)
+      val List(fooConstructorCall) = mainCall.receiver.isBlock.astChildren.isCall.nameExact("init").l
+      fooConstructorCall.methodFullName shouldBe "SwiftTest.Foo.init:()->SwiftTest.Foo"
+      fooConstructorCall.signature shouldBe "()->SwiftTest.Foo"
+      fooConstructorCall.typeFullName shouldBe "SwiftTest.Foo"
+      fooConstructorCall._methodViaCallOut.l shouldBe List(fooConstructor)
     }
 
     "create type decls and bindings correctly (closure as function parameter)" in {

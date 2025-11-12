@@ -22,11 +22,17 @@ class ActorTests extends SwiftCompilerSrc2CpgSuite {
       myActor.boundMethod.fullName.l shouldBe List(
         "Sources/main.swift:<global>.MyActor1.init:()->Sources/main.swift:<global>.MyActor1"
       )
+      val List(constructorParam) = myActor.boundMethod.parameter.l
+      constructorParam.name shouldBe "self"
+      constructorParam.typeFullName shouldBe "Sources/main.swift:<global>.MyActor1"
 
       val List(myActorSwiftc) = compilerCpg.typeDecl.nameExact("MyActor1").l
       myActorSwiftc.fullName shouldBe "SwiftTest.MyActor1"
       myActorSwiftc.member shouldBe empty
       myActorSwiftc.boundMethod.fullName.l shouldBe List("SwiftTest.MyActor1.init:()->SwiftTest.MyActor1")
+      val List(constructorParamSwiftc) = myActorSwiftc.boundMethod.parameter.l
+      constructorParamSwiftc.name shouldBe "self"
+      constructorParamSwiftc.typeFullName shouldBe "SwiftTest.MyActor1"
     }
 
     "testActor2" in {

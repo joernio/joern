@@ -2,6 +2,7 @@ package io.joern.swiftsrc2cpg.passes.ast
 
 import io.joern.swiftsrc2cpg.testfixtures.SwiftCompilerSrc2CpgSuite
 import io.joern.x2cpg
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -73,6 +74,49 @@ class CallTests extends SwiftCompilerSrc2CpgSuite {
       val List(barCallReceiverCall) = barCall.receiver.isIdentifier.l
       barCallReceiverCall.name shouldBe "self"
       barCallReceiverCall.typeFullName shouldBe "SwiftTest.Foo"
+    }
+
+    "be correct for simple call to constructor with compiler support" in {
+      val testCode =
+        """
+          |class Foo {}
+          |
+          |func main() {
+          |  Foo()
+          |}
+          |""".stripMargin
+      val cpg = codeWithSwiftSetup(testCode)
+
+      val List(constructorCallBlock) = cpg.block.codeExact("Foo()").l
+      val List(tmpAssignment)        = constructorCallBlock.astChildren.isCall.isAssignment.l
+      tmpAssignment.code shouldBe s"<tmp>0 = ${Operators.alloc}"
+      tmpAssignment.argument.isIdentifier.typeFullName.l shouldBe List("SwiftTest.Foo")
+      tmpAssignment.argument.isCall.name.l shouldBe List(Operators.alloc)
+      val List(constructorCall) = constructorCallBlock.astChildren.isCall.nameExact("init").l
+      constructorCall.methodFullName shouldBe "SwiftTest.Foo.init:()->SwiftTest.Foo"
+      constructorCall.typeFullName shouldBe "SwiftTest.Foo"
+      constructorCall.signature shouldBe "()->SwiftTest.Foo"
+      constructorCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      constructorCall.argument.isIdentifier.name.l shouldBe List("<tmp>0")
+      constructorCall.argument.isIdentifier.typeFullName.l shouldBe List("SwiftTest.Foo")
+      val List(returnId) = constructorCallBlock.astChildren.isIdentifier.nameExact("<tmp>0").l
+      returnId.typeFullName shouldBe "SwiftTest.Foo"
+    }
+
+    "be correct for simple call to static function" in {
+      // TODO: extend the GsonTypeInfoReader to query for information whether the call is a call to a static function
+      val testCode =
+        """
+          |func main() {
+          |  Foo.staticFunc()
+          |}
+          |""".stripMargin
+      val cpg = code(testCode)
+
+      val List(staticFuncCall) = cpg.call.nameExact("staticFunc").l
+      staticFuncCall.methodFullName shouldBe "Foo.staticFunc"
+      staticFuncCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      staticFuncCall.argument shouldBe empty
     }
 
   }
