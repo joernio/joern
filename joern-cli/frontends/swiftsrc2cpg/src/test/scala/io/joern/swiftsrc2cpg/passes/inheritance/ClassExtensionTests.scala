@@ -166,6 +166,38 @@ class ClassExtensionTests extends SwiftSrc2CpgSuite {
       )
     }
 
+    "resolve self correctly (extension first)" in {
+      val cpg = code(s"""
+           |extension Foo {
+           |  var c: String
+           |
+           |  func foo() {
+           |    print(a)
+           |    var b: String = "b"
+           |    print(b)
+           |    print(c)
+           |  }
+           |}
+           |class Foo {
+           |  var a: String
+           |  var b: Int = 1
+           |}
+           |""".stripMargin)
+      cpg.call.codeExact("print(a)").argument.isCall.code.l shouldBe List("self.a")
+      cpg.call.codeExact("print(a)").argument.isCall.typeFullName.l shouldBe List("Swift.String")
+      cpg.call.codeExact("print(a)").argument.isCall.argument.isIdentifier.typeFullName.l shouldBe List(
+        "Test0.swift:<global>.Foo"
+      )
+
+      cpg.call.codeExact("print(b)").argument.isIdentifier.typeFullName.l shouldBe List("Swift.String")
+
+      cpg.call.codeExact("print(c)").argument.isCall.code.l shouldBe List("self.c")
+      cpg.call.codeExact("print(c)").argument.isCall.typeFullName.l shouldBe List("Swift.String")
+      cpg.call.codeExact("print(c)").argument.isCall.argument.isIdentifier.typeFullName.l shouldBe List(
+        "Test0.swift:<global>.Foo<extension>"
+      )
+    }
+
   }
 
 }

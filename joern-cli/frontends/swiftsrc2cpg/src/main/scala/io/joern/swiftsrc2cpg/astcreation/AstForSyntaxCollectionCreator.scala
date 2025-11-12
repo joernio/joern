@@ -50,7 +50,13 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
   )
 
   private def astForCodeBlockItemListSyntax(node: CodeBlockItemListSyntax): Ast = {
-    astForListSyntaxChildren(node, node.children)
+    astForListSyntaxChildren(
+      node,
+      node.children.sortBy {
+        case item if item.item.isInstanceOf[ExtensionDeclSyntax] => 2
+        case _                                                   => 1
+      }
+    )
   }
 
   private def astForCompositionTypeElementListSyntax(node: CompositionTypeElementListSyntax): Ast = notHandledYet(node)
