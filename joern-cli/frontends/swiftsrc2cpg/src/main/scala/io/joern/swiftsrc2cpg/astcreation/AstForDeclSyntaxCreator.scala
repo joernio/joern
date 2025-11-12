@@ -245,8 +245,10 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         d.bindings.children.foreach { c =>
           val cCode          = code(c.pattern)
           val tpeFromTypeMap = fullnameProvider.typeFullname(c)
-          val typeFullName   = tpeFromTypeMap.getOrElse(typeNameForDeclSyntax(d))
-          val memberNode_    = memberNode(c, cCode, cCode, typeFullName)
+          val typeFullName = tpeFromTypeMap.getOrElse(
+            c.typeAnnotation.map(t => AstCreatorHelper.cleanType(code(t.`type`))).getOrElse(Defines.Any)
+          )
+          val memberNode_ = memberNode(c, cCode, cCode, typeFullName)
           scope.addVariable(cCode, memberNode_, typeFullName, VariableScopeManager.ScopeType.TypeDeclScope)
           diffGraph.addEdge(typeDeclNode, memberNode_, EdgeTypes.AST)
         }

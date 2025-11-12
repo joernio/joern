@@ -174,6 +174,18 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       val variableOption = scope.lookupVariable(identifierName)
       val callTpe        = variableOption.map(_._2).getOrElse(Defines.Any)
       fieldAccessAst(node, node, Ast(selfNode), s"self.$identifierName", identifierName, callTpe)
+    } else if (
+      typeForSelfExpression().endsWith("<extension>")
+      && scope.lookupVariable(identifierName).isEmpty
+      && scope.typeDeclHasMember(typeForSelfExpression(), identifierName)
+    ) {
+      // we found it as member of the extension type decl
+      val tpe      = typeForSelfExpression().stripSuffix("<extension>")
+      val selfNode = identifierNode(node, "self", "self", tpe)
+      scope.addVariableReference("self", selfNode, selfNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
+
+      val callTpe = scope.memberTypeFromTypeDeclExtension(typeForSelfExpression(), identifierName).get
+      fieldAccessAst(node, node, Ast(selfNode), s"self.$identifierName", identifierName, callTpe)
     } else {
       // otherwise it must come from a variable (potentially captured from an outer scope)
       val identNode      = identifierNode(node, identifierName)
