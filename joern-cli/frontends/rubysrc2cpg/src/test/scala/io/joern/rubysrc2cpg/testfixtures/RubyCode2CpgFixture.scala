@@ -9,6 +9,7 @@ import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.testfixtures.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
+import io.shiftleft.semanticcpg.validation.PostFrontendValidator
 import org.scalatest.Inside
 
 import java.io.File
@@ -26,7 +27,9 @@ trait RubyFrontend(withDownloadDependencies: Boolean, disableFileContent: Boolea
       .withDisableFileContent(disableFileContent)
 
   override def execute(sourceCodeFile: File): Cpg = {
-    Using.resource(new RubySrc2Cpg())(_.createCpg(config.withInputPath(sourceCodeFile.getAbsolutePath)).get)
+    val tmp = Using.resource(new RubySrc2Cpg())(_.createCpg(config.withInputPath(sourceCodeFile.getAbsolutePath)).get)
+    new PostFrontendValidator(tmp, false).run()
+    tmp
   }
 
 }

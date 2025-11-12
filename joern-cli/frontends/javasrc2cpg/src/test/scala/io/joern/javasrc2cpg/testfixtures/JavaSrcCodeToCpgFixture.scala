@@ -11,6 +11,7 @@ import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg, LanguageFro
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Expression, Literal}
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.validation.PostFrontendValidator
 
 import java.io.File
 
@@ -22,7 +23,9 @@ trait JavaSrcFrontend extends LanguageFrontend {
     val config = getConfig()
       .getOrElse(JavaSrc2Cpg.DefaultConfig.withDelombokMode("no-delombok"))
       .withCacheJdkTypeSolver(true)
-    new JavaSrc2Cpg().createCpg(config.withInputPath(sourceCodeFile.getAbsolutePath)).get
+    val res = new JavaSrc2Cpg().createCpg(config.withInputPath(sourceCodeFile.getAbsolutePath)).get
+    new PostFrontendValidator(res, true).run()
+    res
   }
 }
 
