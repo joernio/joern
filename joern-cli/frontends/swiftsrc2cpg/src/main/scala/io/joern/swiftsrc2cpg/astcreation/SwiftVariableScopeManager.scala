@@ -10,17 +10,29 @@ class SwiftVariableScopeManager extends VariableScopeManager {
 
   override val ScopePathSeparator: String = "."
 
-  // to access members from extensions
-  private val typeDeclToMemberMap = mutable.HashMap.empty[String, mutable.HashMap[String, String]]
+  private case class MemberElement(variableName: String, variableNode: NewNode, tpe: String)
 
-  def typeDeclHasMember(typeDeclFullName: String, memberName: String): Boolean = {
-    typeDeclToMemberMap.get(typeDeclFullName.stripSuffix("<extension>")).exists(_.contains(memberName))
+  // mapping from TypDecl fullname to members to access members from extensions
+  private val typeDeclToMemberMap = mutable.HashMap.empty[String, mutable.ArrayBuffer[MemberElement]]
+
+  def typeDeclFullNameForMember(variableName: String): Option[String] = {
+    typeDeclToMemberMap.collectFirst {
+      case (typeDeclFullName, members) if members.exists(_.variableName == variableName) => typeDeclFullName
+    }
   }
 
-  def memberTypeFromTypeDeclExtension(typeDeclFullName: String, memberName: String): Option[String] = {
-    typeDeclToMemberMap
-      .get(typeDeclFullName.stripSuffix("<extension>"))
-      .collect { case memberMap if memberMap.contains(memberName) => memberMap(memberName) }
+  def restoreMembersForExtension(typeDeclFullName: String): Unit = {
+    val members = typeDeclToMemberMap.get(typeDeclFullName.stripSuffix("<extension>"))
+    members.foreach(memberList =>
+      memberList.foreach(memberElement =>
+        super.addVariable(
+          memberElement.variableName,
+          memberElement.variableNode,
+          memberElement.tpe,
+          ScopeType.TypeDeclScope
+        )
+      )
+    )
   }
 
   override def addVariable(variableName: String, variableNode: NewNode, tpe: String, scopeType: ScopeType): Unit = {
@@ -28,9 +40,9 @@ class SwiftVariableScopeManager extends VariableScopeManager {
     if (scopeType == ScopeType.TypeDeclScope) {
       val typeDeclFullName = this.getEnclosingTypeDeclFullName
       if (typeDeclFullName.isDefined) {
-        val memberMap = typeDeclToMemberMap.getOrElse(typeDeclFullName.get, mutable.HashMap.empty)
-        memberMap(variableName) = tpe
-        typeDeclToMemberMap(typeDeclFullName.get) = memberMap
+        val members = typeDeclToMemberMap.getOrElse(typeDeclFullName.get, mutable.ArrayBuffer.empty)
+        members.addOne(MemberElement(variableName, variableNode, tpe))
+        typeDeclToMemberMap(typeDeclFullName.get) = members
       }
     }
   }

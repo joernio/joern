@@ -481,6 +481,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     scope.pushNewTypeDeclScope(typeFullName)
     scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode_, None)
 
+    scope.restoreMembersForExtension(typeFullName)
+
     val allClassMembers = declMembers(node, withConstructor = false).toList
 
     // adding all other members and retrieving their initialization calls
