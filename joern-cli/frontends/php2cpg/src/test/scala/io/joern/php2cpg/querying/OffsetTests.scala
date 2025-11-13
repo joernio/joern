@@ -17,7 +17,9 @@ class OffsetTests extends PhpCode2CpgFixture {
         |// ääú
         |
         |print("hello");
-        |""".stripMargin, "test.php", StandardCharsets.ISO_8859_1
+        |""".stripMargin,
+      "test.php",
+      StandardCharsets.ISO_8859_1
     ).withConfig(contentEnabled)
 
     "have correct offsets" in {
@@ -47,7 +49,9 @@ class OffsetTests extends PhpCode2CpgFixture {
         |// ääú
         |
         |print("hello");
-        |""".stripMargin, "test.php", StandardCharsets.UTF_8
+        |""".stripMargin,
+      "test.php",
+      StandardCharsets.UTF_8
     ).withConfig(contentEnabled)
 
     "have correct offsets" in {

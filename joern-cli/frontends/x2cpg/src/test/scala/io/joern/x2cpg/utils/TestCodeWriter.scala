@@ -29,7 +29,7 @@ trait TestCodeWriter {
     codeFileNamePairs.append(Code(code, Option(fileName), None))
     this
   }
-  
+
   def moreCode(code: String, fileName: String, charset: Charset): this.type = {
     codeFileNamePairs.append(Code(code, Option(fileName), Option(charset)))
     this
