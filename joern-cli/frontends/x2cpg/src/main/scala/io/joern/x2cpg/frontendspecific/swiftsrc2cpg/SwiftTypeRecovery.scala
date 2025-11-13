@@ -35,12 +35,10 @@ private class RecoverForSwiftFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder,
 
   import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
 
-  override protected val pathSep = ":"
-
   /** A heuristic method to determine if a call is a constructor or not.
     */
   override protected def isConstructor(c: Call): Boolean = {
-    c.name.endsWith("factory") && c.inCall.astParent.headOption.exists(_.isInstanceOf[Block])
+    isConstructor(c.name) && c.inCall.astParent.headOption.exists(_.isInstanceOf[Block])
   }
 
   override protected def isConstructor(name: String): Boolean = name == "init"
@@ -77,7 +75,7 @@ private class RecoverForSwiftFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder,
         }
         .flatMap {
           case (t, ts) if Set(t) == ts => Set(t)
-          case (_, ts)                 => ts.map(_.replaceAll("\\.(?!swift:<global>)", pathSep.toString))
+          case (_, ts)                 => ts.map(_.replaceAll("\\.(?!swift:<global>)", pathSep))
         }
       p match {
         case _: MethodParameterIn => symbolTable.put(p, resolvedHints)

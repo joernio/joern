@@ -9,7 +9,6 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
   */
 class SwiftInheritanceNamePass(cpg: Cpg) extends XInheritanceFullNamePass(cpg) {
 
-  override val pathSep: Char      = ':'
   override val moduleName: String = NamespaceTraversal.globalNamespaceName
   override val fileExt: String    = ".swift"
 
