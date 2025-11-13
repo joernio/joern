@@ -175,17 +175,26 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       val callTpe        = variableOption.map(_._2).getOrElse(Defines.Any)
       fieldAccessAst(node, node, Ast(selfNode), s"self.$identifierName", identifierName, callTpe)
     } else {
-      // otherwise it must come from a variable (potentially captured from an outer scope)
-      val identNode      = identifierNode(node, identifierName)
-      val variableOption = scope.lookupVariable(identifierName)
-      val tpe = variableOption match {
-        case Some((_, variableTypeName)) if variableTypeName != Defines.Any => variableTypeName
-        case None if identNode.typeFullName != Defines.Any                  => identNode.typeFullName
-        case _                                                              => Defines.Any
+      if (config.swiftBuild && scope.lookupVariable(identifierName).isEmpty) {
+        val tpe      = typeForSelfExpression()
+        val selfNode = identifierNode(node, "self", "self", tpe)
+        scope.addVariableReference("self", selfNode, selfNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
+
+        val callTpe = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
+        fieldAccessAst(node, node, Ast(selfNode), s"self.$identifierName", identifierName, callTpe)
+      } else {
+        // otherwise it must come from a variable (potentially captured from an outer scope)
+        val identNode      = identifierNode(node, identifierName)
+        val variableOption = scope.lookupVariable(identifierName)
+        val tpe = variableOption match {
+          case Some((_, variableTypeName)) if variableTypeName != Defines.Any => variableTypeName
+          case None if identNode.typeFullName != Defines.Any                  => identNode.typeFullName
+          case _                                                              => Defines.Any
+        }
+        identNode.typeFullName = tpe
+        scope.addVariableReference(identifierName, identNode, tpe, EvaluationStrategies.BY_REFERENCE)
+        Ast(identNode)
       }
-      identNode.typeFullName = tpe
-      scope.addVariableReference(identifierName, identNode, tpe, EvaluationStrategies.BY_REFERENCE)
-      Ast(identNode)
     }
   }
 
@@ -352,8 +361,12 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   private def typeNameInfoForNode(node: SwiftNode, name: String): TypeInfo = {
     fullnameProvider.declFullname(node) match {
       case Some(declFullname) =>
-        registerType(declFullname)
-        TypeInfo(name, declFullname)
+        val cleanedFullName = if (declFullname.contains("(")) {
+          val fullName = declFullname.substring(0, declFullname.indexOf("("))
+          fullName.substring(0, fullName.lastIndexOf("."))
+        } else declFullname
+        registerType(cleanedFullName)
+        TypeInfo(name, cleanedFullName)
       case None =>
         val (_, declFullname) = calcNameAndFullName(name)
         registerType(declFullname)
