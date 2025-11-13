@@ -4,6 +4,7 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Inside}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import java.nio.charset.Charset
 import scala.collection.mutable
 
 // Fixture class from which all tests which require a code to CPG translation step
@@ -29,6 +30,12 @@ class Code2CpgFixture[T <: TestCpg](testCpgFactory: () => T)
 
   def code(code: String, fileName: String): T = {
     val newCpg = testCpgFactory().moreCode(code, fileName)
+    cpgs.append(newCpg)
+    newCpg
+  }
+
+  def code(code: String, fileName: String, charset: Charset): T = {
+    val newCpg = testCpgFactory().moreCode(code, fileName, charset)
     cpgs.append(newCpg)
     newCpg
   }

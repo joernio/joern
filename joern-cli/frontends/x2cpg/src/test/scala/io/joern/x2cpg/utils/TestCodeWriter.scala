@@ -3,14 +3,15 @@ package io.joern.x2cpg.utils
 import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 
-import java.nio.charset.StandardCharsets
+import java.nio.charset.{Charset, StandardCharsets}
 import java.nio.file.{Files, Path}
 import scala.annotation.nowarn
 import scala.collection.mutable
 
 trait TestCodeWriter {
 
-  private val codeFileNamePairs             = mutable.ArrayBuffer.empty[(String, Option[String])]
+  private case class Code(code: String, fileName: Option[String], charset: Option[Charset])
+  private val codeFileNamePairs             = mutable.ArrayBuffer.empty[Code]
   private var fileNameCounter               = 0
   private var outputDirectory: Option[Path] = None
   @nowarn
@@ -20,12 +21,17 @@ trait TestCodeWriter {
   protected def codeDirPreProcessing(rootFile: Path, codeFiles: List[Path]): Unit = {}
 
   def moreCode(code: String): this.type = {
-    codeFileNamePairs.append((code, None))
+    codeFileNamePairs.append(Code(code, None, None))
     this
   }
 
   def moreCode(code: String, fileName: String): this.type = {
-    codeFileNamePairs.append((code, Option(fileName)))
+    codeFileNamePairs.append(Code(code, Option(fileName), None))
+    this
+  }
+
+  def moreCode(code: String, fileName: String, charset: Charset): this.type = {
+    codeFileNamePairs.append(Code(code, Option(fileName), Option(charset)))
     this
   }
 
@@ -37,7 +43,7 @@ trait TestCodeWriter {
     FileUtil.deleteOnExit(tmpDir)
     outputDirectory = Some(tmpDir)
 
-    val codeFiles = codeFileNamePairs.map { case (code, explicitFileName) =>
+    val codeFiles = codeFileNamePairs.map { case Code(code, explicitFileName, explicitCharset) =>
       val fileName = explicitFileName.getOrElse {
         val filename = s"Test$fileNameCounter$extension"
         fileNameCounter += 1
@@ -47,7 +53,7 @@ trait TestCodeWriter {
       if (filePath.getParent != null) {
         Files.createDirectories(tmpDir.resolve(filePath.getParent))
       }
-      val codeAsBytes = code.getBytes(StandardCharsets.UTF_8)
+      val codeAsBytes = code.getBytes(explicitCharset.getOrElse(StandardCharsets.UTF_8))
       val codeFile    = tmpDir.resolve(filePath)
       Files.write(codeFile, codeAsBytes)
       codeFilePreProcessing(codeFile)
