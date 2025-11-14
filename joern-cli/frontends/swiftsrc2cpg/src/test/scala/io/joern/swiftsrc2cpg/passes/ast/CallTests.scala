@@ -28,6 +28,8 @@ class CallTests extends SwiftCompilerSrc2CpgSuite {
       val List(fooCall) = cpg.call.nameExact("foo").l
       fooCall.methodFullName shouldBe x2cpg.Defines.DynamicCallUnknownFullName
       fooCall.signature shouldBe ""
+      fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+
       val List(fooCallReceiver) = fooCall.receiver.isIdentifier.l
       fooCallReceiver.name shouldBe "self"
       fooCallReceiver.typeFullName shouldBe "Sources/main.swift:<global>.Foo"
@@ -109,6 +111,148 @@ class CallTests extends SwiftCompilerSrc2CpgSuite {
       constructorCall.argument.isIdentifier.typeFullName.l shouldBe List("SwiftTest.Foo")
       val List(returnId) = constructorCallBlock.astChildren.isIdentifier.nameExact("<tmp>0").l
       returnId.typeFullName shouldBe "SwiftTest.Foo"
+    }
+
+    "be correct for simple calls to functions from extensions" in {
+      val testCode =
+        """
+          |extension Foo {
+          |  func foo() {}
+          |  func bar() {}
+          |}
+          |class Foo {
+          |  func main() {
+          |    foo()
+          |    self.bar()
+          |  }
+          |}
+          |""".stripMargin
+      val cpg = code(testCode)
+
+      val List(fooCall) = cpg.call.nameExact("foo").l
+      fooCall.methodFullName shouldBe x2cpg.Defines.DynamicCallUnknownFullName
+      fooCall.signature shouldBe ""
+      fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+
+      val List(fooCallReceiver) = fooCall.receiver.isIdentifier.l
+      fooCallReceiver.name shouldBe "self"
+      fooCallReceiver.typeFullName shouldBe "Sources/main.swift:<global>.Foo"
+
+      val List(barCall) = cpg.call.nameExact("bar").l
+      barCall.methodFullName shouldBe x2cpg.Defines.DynamicCallUnknownFullName
+      barCall.signature shouldBe ""
+      barCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+
+      val List(barCallReceiverCall) = barCall.receiver.isIdentifier.l
+      barCallReceiverCall.name shouldBe "self"
+      barCallReceiverCall.typeFullName shouldBe "Sources/main.swift:<global>.Foo"
+    }
+
+    "be correct for simple calls to functions from extensions with compiler support" in {
+      val testCode =
+        """
+          |extension Foo {
+          |  func foo() {}
+          |  func bar() {}
+          |}
+          |class Foo {
+          |  func main() {
+          |    foo()
+          |    self.bar()
+          |  }
+          |}
+          |""".stripMargin
+      val cpg = codeWithSwiftSetup(testCode)
+
+      val List(fooCall) = cpg.call.nameExact("foo").l
+      fooCall.methodFullName shouldBe "SwiftTest.Foo.foo:()->()"
+      fooCall.signature shouldBe "()->()"
+      fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      val List(fooCallReceiver) = fooCall.receiver.isIdentifier.l
+      fooCallReceiver.name shouldBe "self"
+      fooCallReceiver.typeFullName shouldBe "SwiftTest.Foo"
+
+      val List(barCall) = cpg.call.nameExact("bar").l
+      barCall.methodFullName shouldBe "SwiftTest.Foo.bar:()->()"
+      barCall.signature shouldBe "()->()"
+      barCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+
+      val List(barCallReceiverCall) = barCall.receiver.isIdentifier.l
+      barCallReceiverCall.name shouldBe "self"
+      barCallReceiverCall.typeFullName shouldBe "SwiftTest.Foo"
+    }
+
+    "be correct for simple calls to functions from protocols" in {
+      val testCode =
+        """
+          |protocol FooProtocol {
+          |  func foo()
+          |  func bar()
+          |}
+          |class Foo: FooProtocol {
+          |  func foo() {}
+          |  func bar() {}
+          |  func main() {
+          |    foo()
+          |    self.bar()
+          |  }
+          |}
+          |""".stripMargin
+      val cpg = code(testCode)
+
+      val List(fooCall) = cpg.call.nameExact("foo").l
+      fooCall.methodFullName shouldBe x2cpg.Defines.DynamicCallUnknownFullName
+      fooCall.signature shouldBe ""
+      fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+
+      val List(fooCallReceiver) = fooCall.receiver.isIdentifier.l
+      fooCallReceiver.name shouldBe "self"
+      fooCallReceiver.typeFullName shouldBe "Sources/main.swift:<global>.Foo"
+
+      val List(barCall) = cpg.call.nameExact("bar").l
+      barCall.methodFullName shouldBe x2cpg.Defines.DynamicCallUnknownFullName
+      barCall.signature shouldBe ""
+      barCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+
+      val List(barCallReceiverCall) = barCall.receiver.isIdentifier.l
+      barCallReceiverCall.name shouldBe "self"
+      barCallReceiverCall.typeFullName shouldBe "Sources/main.swift:<global>.Foo"
+    }
+
+    "be correct for simple calls to functions from protocols with compiler support" in {
+      val testCode =
+        """
+          |protocol FooProtocol {
+          |  func foo()
+          |  func bar()
+          |}
+          |class Foo: FooProtocol {
+          |  func foo() {}
+          |  func bar() {}
+          |  func main() {
+          |    foo()
+          |    self.bar()
+          |  }
+          |}
+          |""".stripMargin
+      val cpg = codeWithSwiftSetup(testCode)
+
+      val List(fooCall) = cpg.call.nameExact("foo").l
+      fooCall.methodFullName shouldBe "SwiftTest.Foo.foo:()->()"
+      fooCall.signature shouldBe "()->()"
+      fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      val List(fooCallReceiver) = fooCall.receiver.isIdentifier.l
+      fooCallReceiver.name shouldBe "self"
+      fooCallReceiver.typeFullName shouldBe "SwiftTest.Foo"
+
+      val List(barCall) = cpg.call.nameExact("bar").l
+      barCall.methodFullName shouldBe "SwiftTest.Foo.bar:()->()"
+      barCall.signature shouldBe "()->()"
+      barCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+
+      val List(barCallReceiverCall) = barCall.receiver.isIdentifier.l
+      barCallReceiverCall.name shouldBe "self"
+      barCallReceiverCall.typeFullName shouldBe "SwiftTest.Foo"
     }
 
     "be correct for simple call to static function" in {
