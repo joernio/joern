@@ -22,8 +22,17 @@ class SwiftCompilerSrc2CpgSuite(fileSuffix: String = ".swift")
 
   override def code(code: String): SwiftCompilerTestCpg = super.code(code, TestFilename)
 
+  override def code(code: String, fileName: String): SwiftCompilerTestCpg =
+    super.code(code, s"SwiftTest/Sources/$fileName")
+
   protected def codeWithSwiftSetup(codeString: String): SwiftCompilerTestCpg = {
     code(codeString)
+      .moreCode(PackageSwiftContent, PackageSwiftFilename)
+      .withConfig(Config(swiftBuild = true))
+  }
+
+  protected def codeWithSwiftSetup(codeString: String, fileName: String): SwiftCompilerTestCpg = {
+    code(codeString, fileName)
       .moreCode(PackageSwiftContent, PackageSwiftFilename)
       .withConfig(Config(swiftBuild = true))
   }

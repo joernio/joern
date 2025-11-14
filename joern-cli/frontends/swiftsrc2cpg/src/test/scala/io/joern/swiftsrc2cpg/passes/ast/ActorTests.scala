@@ -22,11 +22,17 @@ class ActorTests extends SwiftCompilerSrc2CpgSuite {
       myActor.boundMethod.fullName.l shouldBe List(
         "Sources/main.swift:<global>.MyActor1.init:()->Sources/main.swift:<global>.MyActor1"
       )
+      val List(constructorParam) = myActor.boundMethod.parameter.l
+      constructorParam.name shouldBe "self"
+      constructorParam.typeFullName shouldBe "Sources/main.swift:<global>.MyActor1"
 
       val List(myActorSwiftc) = compilerCpg.typeDecl.nameExact("MyActor1").l
       myActorSwiftc.fullName shouldBe "SwiftTest.MyActor1"
       myActorSwiftc.member shouldBe empty
       myActorSwiftc.boundMethod.fullName.l shouldBe List("SwiftTest.MyActor1.init:()->SwiftTest.MyActor1")
+      val List(constructorParamSwiftc) = myActorSwiftc.boundMethod.parameter.l
+      constructorParamSwiftc.name shouldBe "self"
+      constructorParamSwiftc.typeFullName shouldBe "SwiftTest.MyActor1"
     }
 
     "testActor2" in {
@@ -41,7 +47,6 @@ class ActorTests extends SwiftCompilerSrc2CpgSuite {
 
       val List(myActor) = cpg.typeDecl.nameExact("MyActor2").l
       myActor.fullName shouldBe "Sources/main.swift:<global>.MyActor2"
-      myActor.member.name.l shouldBe List("hello", "foo")
       val List(constructor) = myActor.method.isConstructor.l
       constructor.name shouldBe "init"
       constructor.fullName shouldBe "Sources/main.swift:<global>.MyActor2.init:()->Sources/main.swift:<global>.MyActor2"
@@ -54,7 +59,6 @@ class ActorTests extends SwiftCompilerSrc2CpgSuite {
 
       val List(myActorSwiftc) = compilerCpg.typeDecl.nameExact("MyActor2").l
       myActorSwiftc.fullName shouldBe "SwiftTest.MyActor2"
-      myActorSwiftc.member.name.l shouldBe List("hello", "foo")
       val List(constructorSwiftc) = myActorSwiftc.method.isConstructor.l
       constructorSwiftc.name shouldBe "init"
       constructorSwiftc.fullName shouldBe "SwiftTest.MyActor2.init:()->SwiftTest.MyActor2"

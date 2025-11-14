@@ -35,12 +35,10 @@ private class RecoverForSwiftFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder,
 
   import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
 
-  override protected val pathSep = ":"
-
   /** A heuristic method to determine if a call is a constructor or not.
     */
   override protected def isConstructor(c: Call): Boolean = {
-    c.name.endsWith("factory") && c.inCall.astParent.headOption.exists(_.isInstanceOf[Block])
+    isConstructor(c.name) && c.inCall.astParent.headOption.exists(_.isInstanceOf[Block])
   }
 
   override protected def isConstructor(name: String): Boolean = name == "init"
@@ -65,8 +63,8 @@ private class RecoverForSwiftFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder,
 
   override protected def prepopulateSymbolTable(): Unit = {
     super.prepopulateSymbolTable()
-    cu.ast.isMethod.foreach(f => symbolTable.put(CallAlias(f.name, Option("this")), Set(f.fullName)))
-    (cu.ast.isParameter.whereNot(_.nameExact("this")) ++ cu.ast.isMethod.methodReturn).filter(hasTypes).foreach { p =>
+    cu.ast.isMethod.foreach(f => symbolTable.put(CallAlias(f.name, Option("self")), Set(f.fullName)))
+    (cu.ast.isParameter.whereNot(_.nameExact("self")) ++ cu.ast.isMethod.methodReturn).filter(hasTypes).foreach { p =>
       val resolvedHints = p.getKnownTypes
         .map { t =>
           t.split("\\.").headOption match {
@@ -77,7 +75,7 @@ private class RecoverForSwiftFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder,
         }
         .flatMap {
           case (t, ts) if Set(t) == ts => Set(t)
-          case (_, ts)                 => ts.map(_.replaceAll("\\.(?!swift:<global>)", pathSep.toString))
+          case (_, ts)                 => ts.map(_.replaceAll("\\.(?!swift:<global>)", pathSep))
         }
       p match {
         case _: MethodParameterIn => symbolTable.put(p, resolvedHints)
@@ -113,7 +111,7 @@ private class RecoverForSwiftFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder,
       }
       lazy val possibleConstructorPointer =
         newChildren.astChildren.isFieldIdentifier
-          .map(f => CallAlias(f.canonicalName, Option("this")))
+          .map(f => CallAlias(f.canonicalName, Option("self")))
           .headOption match {
           case Some(fi) => symbolTable.get(fi)
           case None     => Set.empty[String]
@@ -153,8 +151,8 @@ private class RecoverForSwiftFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder,
     if (symbolTable.contains(LocalVar(fieldName))) {
       val fieldTypes = symbolTable.get(LocalVar(fieldName))
       symbolTable.append(i, fieldTypes)
-    } else if (symbolTable.contains(CallAlias(fieldName, Option("this")))) {
-      symbolTable.get(CallAlias(fieldName, Option("this")))
+    } else if (symbolTable.contains(CallAlias(fieldName, Option("self")))) {
+      symbolTable.get(CallAlias(fieldName, Option("self")))
     } else {
       super.associateInterproceduralTypes(
         i: Identifier,
@@ -171,20 +169,20 @@ private class RecoverForSwiftFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder,
     m: MethodRef,
     rec: Option[String] = None
   ): Set[String] =
-    super.visitIdentifierAssignedToMethodRef(i, m, Option("this"))
+    super.visitIdentifierAssignedToMethodRef(i, m, Option("self"))
 
   override protected def visitIdentifierAssignedToTypeRef(
     i: Identifier,
     t: TypeRef,
     rec: Option[String] = None
   ): Set[String] =
-    super.visitIdentifierAssignedToTypeRef(i, t, Option("this"))
+    super.visitIdentifierAssignedToTypeRef(i, t, Option("self"))
 
   override protected def postSetTypeInformation(): Unit = {
-    // often there are "this" identifiers with type hints but this can be set to a type hint if they meet the criteria
+    // often there are "self" identifiers with type hints but this can be set to a type hint if they meet the criteria
     cu.method
       .flatMap(_._identifierViaContainsOut)
-      .nameExact("this")
+      .nameExact("self")
       .where(_.typeFullNameExact(Defines.Any))
       .filterNot(_.dynamicTypeHintFullName.isEmpty)
       .foreach(setTypeFromTypeHints)

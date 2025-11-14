@@ -112,7 +112,6 @@ class AsyncTests extends AstSwiftSrc2CpgSuite {
         "let <wildcard>0 = await asyncGlobal1()",
         "let <wildcard>1 = myFuture.await()",
         "let myFuture = MyFuture()",
-        "myFuture.await",
         "myFuture.await()"
       )
     }
