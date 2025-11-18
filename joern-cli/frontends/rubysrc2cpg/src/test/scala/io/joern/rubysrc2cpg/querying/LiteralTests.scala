@@ -2,6 +2,7 @@ package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.joern.x2cpg.frontendspecific.rubysrc2cpg.Constants
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.Literal
 import io.shiftleft.semanticcpg.language.*
@@ -189,9 +190,7 @@ class LiteralTests extends RubyCode2CpgFixture {
         |>
         |""".stripMargin)
 
-    val List(firstLine, xyz, one23) = cpg.literal.l
-    firstLine.code.trim shouldBe ""
-    firstLine.lineNumber shouldBe Some(2)
+    val List(_, xyz, one23) = cpg.literal.l
     xyz.code.trim shouldBe "xyz"
     xyz.lineNumber shouldBe Some(3)
     xyz.typeFullName shouldBe RubyDefines.prefixAsCoreType("String")
@@ -265,7 +264,7 @@ class LiteralTests extends RubyCode2CpgFixture {
     inside(cpg.method.isLambda.l) {
       case lambdaLiteral :: Nil =>
         inside(lambdaLiteral.parameter.l) {
-          case _ :: aParam :: bParam :: cParam :: Nil =>
+          case aParam :: bParam :: cParam :: Nil =>
             aParam.code shouldBe "a"
             bParam.code shouldBe "*b"
             cParam.code shouldBe "&c"

@@ -4,8 +4,16 @@ object Constants {
 
   val builtinPrefix = "__core"
   val kernelPrefix  = s"$builtinPrefix.Kernel"
+  val stringPrefix  = s"$builtinPrefix.String"
   val Initialize    = "initialize"
   val Main          = "<main>"
+
+  val joernErbTemplateOutRawName    = s"joernTemplateOutRaw"
+  val joernErbTemplateOutEscapeName = s"joernTemplateOutEscape"
+  val joernErbBufferAppend          = s"joernBufferAppend"
+  val joernErbBuffer                = s"joernBuffer"
+  val joernErbInnerBuffer           = s"joernInnerBuffer"
+  val joernErbBuffers               = Set(joernErbBuffer, joernErbInnerBuffer)
 
   /* Source: https://ruby-doc.org/3.2.2/Kernel.html
    *

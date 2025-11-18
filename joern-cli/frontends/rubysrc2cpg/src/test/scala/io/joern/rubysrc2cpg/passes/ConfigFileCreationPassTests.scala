@@ -45,16 +45,18 @@ class ConfigFileCreationPassTests extends RubyCode2CpgFixture {
     config.content should include("<p>bar<p>")
   }
 
-  "erb files should be included" in {
+  "html erb files should be included" in {
     val cpg = code(
       """
-        |<%= 1 + 2 %>
+        |<foo>
+        | <p><%= ENV['SOME_VAR'] %></p>
+        |</foo>
         |""".stripMargin,
-      "foo.erb"
+      "config.html.erb"
     )
 
-    val config = cpg.configFile.name("foo.erb").head
-    config.content should include("1 + 2")
+    val config = cpg.configFile.name("config.html.erb").head
+    config.content should include("<p><%= ENV['SOME_VAR'] %></p>")
   }
 
 }
