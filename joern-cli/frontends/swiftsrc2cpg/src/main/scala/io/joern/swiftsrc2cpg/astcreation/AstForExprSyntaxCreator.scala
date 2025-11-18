@@ -64,8 +64,10 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
               val lhsAst = astForNode(dictElement.key)
               val rhsAst = astForNode(dictElement.value)
 
-              val lhsTmpNode            = Ast(identifierNode(dictElement, tmpName))
-              val lhsIndexAccessCallAst = createIndexAccessCallAst(dictElement, lhsTmpNode, lhsAst)
+              val lhsTmpNode = identifierNode(dictElement, tmpName)
+              scope.addVariableReference(tmpName, lhsTmpNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+
+              val lhsIndexAccessCallAst = createIndexAccessCallAst(dictElement, Ast(lhsTmpNode), lhsAst)
 
               createAssignmentCallAst(
                 dictElement,
@@ -77,6 +79,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           }
 
           val tmpNode = identifierNode(node, tmpName)
+          scope.addVariableReference(tmpName, tmpNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
           scope.popScope()
           localAstParentStack.pop()
@@ -231,7 +234,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     callAst(callNode_, args, Option(baseAst))
   }
 
-  private def constructorInvocationBlockAst(expr: FunctionCallExprSyntax): Ast = {
+  private def astForConstructorInvocation(expr: FunctionCallExprSyntax): Ast = {
     // get call is safe as this function is guarded by isRefToConstructor
     val tpe = fullnameProvider.typeFullname(expr).get
     registerType(tpe)
@@ -241,9 +244,12 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     scope.pushNewBlockScope(blockNode_)
 
     val tmpNodeName  = scopeLocalUniqueName("tmp")
-    val tmpNode      = identifierNode(expr, tmpNodeName, tmpNodeName, tpe)
-    val localTmpNode = localNode(expr, tmpNodeName, tmpNodeName, tpe)
+    val localTmpNode = localNode(expr, tmpNodeName, tmpNodeName, tpe).order(0)
+    diffGraph.addEdge(blockNode_, localTmpNode, EdgeTypes.AST)
     scope.addVariable(tmpNodeName, localTmpNode, tpe, VariableScopeManager.ScopeType.BlockScope)
+
+    val tmpNode = identifierNode(expr, tmpNodeName, tmpNodeName, tpe)
+    scope.addVariableReference(tmpNodeName, tmpNode, tpe, EvaluationStrategies.BY_SHARING)
 
     val allocOp          = Operators.alloc
     val allocCallNode    = callNode(expr, allocOp, allocOp, allocOp, DispatchTypes.STATIC_DISPATCH)
@@ -274,10 +280,9 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val retNode = identifierNode(expr, tmpNodeName, tmpNodeName, tpe)
     scope.addVariableReference(tmpNodeName, retNode, tpe, EvaluationStrategies.BY_SHARING)
-    val retAst = Ast(retNode)
 
     scope.popScope()
-    Ast(blockNode_).withChildren(Seq(assignmentAst, constructorCallAst, retAst))
+    Ast(blockNode_).withChildren(Seq(assignmentAst, constructorCallAst, Ast(retNode)))
   }
 
   private def astForFunctionCallExprSyntax(node: FunctionCallExprSyntax): Ast = {
@@ -299,7 +304,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           val memberCode = code(m.declName)
           handleCallNodeArgs(node, astForNode(m.base.get), memberCode)
         case other if isRefToConstructor(node, other) =>
-          constructorInvocationBlockAst(node)
+          astForConstructorInvocation(node)
         case other if isRefToClosure(node, other) =>
           astForClosureCall(node)
         case declReferenceExprSyntax: DeclReferenceExprSyntax if code(declReferenceExprSyntax) != "self" =>
