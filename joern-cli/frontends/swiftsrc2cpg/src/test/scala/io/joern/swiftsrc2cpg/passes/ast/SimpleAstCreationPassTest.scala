@@ -201,6 +201,269 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
       n2.astIn.l shouldBe List(n1)
     }
 
+    "have correct structure for implicit self access" in {
+      // Swift does not allow to access any member / function of the outer class instance.
+      // Something like `Foo.self.f` in Foo.Bar.bar is not possible.
+      // Hence, we do not need to implement or test this here.
+      val cpg = code("""
+          |class Foo {
+          |  let f: String = "f"
+          |  class Bar {
+          |    let b = "b"
+          |    func bar() {
+          |      let f: Int = 1
+          |      handleB(b)
+          |      handleF(f)
+          |    }
+          |  }
+          |}
+          |""".stripMargin)
+      cpg.typeDecl.nameExact("Foo").member.name.l shouldBe List("f")
+      cpg.typeDecl.nameExact("Bar").member.name.l shouldBe List("b")
+      val List(bAccess) = cpg.call.nameExact("handleB").argument.fieldAccess.l
+      bAccess.code shouldBe "self.b"
+      inside(bAccess.argument.l) { case List(id: Identifier, fieldName: FieldIdentifier) =>
+        id.name shouldBe "self"
+        id.typeFullName shouldBe "Test0.swift:<global>.Foo.Bar"
+        fieldName.canonicalName shouldBe "b"
+      }
+      inside(cpg.call.nameExact("handleF").argument(1).l) { case List(id: Identifier) =>
+        id.name shouldBe "f"
+        id.typeFullName shouldBe Defines.Int
+        val fLocal = id._localViaRefOut.get
+        fLocal.name shouldBe "f"
+        fLocal.typeFullName shouldBe Defines.Int
+      }
+    }
+
+    "have correct structure for implicit self access with shadowing a member in class" in {
+      val cpg = code("""
+          |class Foo {
+          |  let f: String = "f"
+          |  func bar() {
+          |    let f: Int = 1
+          |    handleF(f)
+          |  }
+          |}
+          |""".stripMargin)
+      cpg.typeDecl.nameExact("Foo").member.name.l shouldBe List("f")
+      inside(cpg.call.nameExact("handleF").argument(1).l) { case List(id: Identifier) =>
+        id.name shouldBe "f"
+        id.typeFullName shouldBe Defines.Int
+        val fLocal = id._localViaRefOut.get
+        fLocal.name shouldBe "f"
+        fLocal.typeFullName shouldBe Defines.Int
+      }
+    }
+
+    "have correct structure for implicit self access with shadowing a variable from outer scope" in {
+      val cpg = code("""
+          |let f: String = "a"
+          |class Foo {
+          |  let f: String = "b"
+          |  func bar() {
+          |    handleF(f)
+          |  }
+          |}
+          |""".stripMargin)
+      cpg.typeDecl.nameExact("Foo").member.name.l shouldBe List("f")
+      val List(bAccess) = cpg.call.nameExact("handleF").argument.fieldAccess.l
+      bAccess.code shouldBe "self.f"
+      inside(bAccess.argument.l) { case List(id: Identifier, fieldName: FieldIdentifier) =>
+        id.name shouldBe "self"
+        id.typeFullName shouldBe "Test0.swift:<global>.Foo"
+        fieldName.canonicalName shouldBe "f"
+      }
+    }
+
+    "have correct structure for implicit self access from within nested functions" in {
+      val cpg = code("""
+          |let f: String = "a"
+          |class Foo {
+          |  let f: String = "b"
+          |  func foo() -> String {
+          |    func bar() -> String {
+          |      return handleF(f)
+          |    }
+          |    return bar()
+          |  }
+          |}
+          |""".stripMargin)
+      cpg.typeDecl.nameExact("Foo").member.name.l shouldBe List("f")
+      val List(bAccess) = cpg.call.nameExact("handleF").argument.fieldAccess.l
+      bAccess.code shouldBe "self.f"
+      inside(bAccess.argument.l) { case List(id: Identifier, fieldName: FieldIdentifier) =>
+        id.name shouldBe "self"
+        id.typeFullName shouldBe "Test0.swift:<global>.Foo"
+        fieldName.canonicalName shouldBe "f"
+      }
+
+      val List(fooMethod) = cpg.method.nameExact("foo").l
+      val List(fooBlock)  = fooMethod.astChildren.isBlock.l
+      val List(barRef)    = fooBlock.astChildren.isMethodRef.l
+      barRef.captureOut shouldBe empty
+
+      val List(barMethod)      = cpg.method.nameExact("bar").l
+      val List(barMethodBlock) = barMethod.astChildren.isBlock.l
+      barMethodBlock.astChildren.isLocal.name("f") shouldBe empty
+    }
+
+    "have correct structure for implicit self access from within nested functions with shadowing" in {
+      val cpg = code("""
+          |let f: String = "a"
+          |class Foo {
+          |  let f: String = "b"
+          |  func foo() -> String {
+          |    let f: String = "c"
+          |    func bar() -> String {
+          |      return handleF(f)
+          |    }
+          |    return bar()
+          |  }
+          |}
+          |""".stripMargin)
+      cpg.typeDecl.nameExact("Foo").member.name.l shouldBe List("f")
+      inside(cpg.call.nameExact("handleF").argument(1).l) { case List(id: Identifier) =>
+        id.name shouldBe "f"
+        id.typeFullName shouldBe Defines.String
+        val fLocal = id._localViaRefOut.get
+        fLocal.name shouldBe "f"
+        fLocal.typeFullName shouldBe Defines.String
+      }
+      val List(fooMethod)       = cpg.method.nameExact("foo").l
+      val List(fooBlock)        = fooMethod.astChildren.isBlock.l
+      val List(fooLocalF)       = fooBlock.astChildren.isLocal.nameExact("f").l
+      val List(barRef)          = fooBlock.astChildren.isMethodRef.l
+      val List(closureBindingF) = barRef.captureOut.l
+      closureBindingF.closureBindingId shouldBe Option("Test0.swift:<global>.Foo.foo.bar:f")
+      closureBindingF.refOut.head shouldBe fooLocalF
+      closureBindingF.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+
+      val List(barMethod)      = cpg.method.nameExact("bar").l
+      val List(barMethodBlock) = barMethod.astChildren.isBlock.l
+      val List(barLocal)       = barMethodBlock.astChildren.isLocal.name("f").l
+      barLocal.closureBindingId shouldBe Option("Test0.swift:<global>.Foo.foo.bar:f")
+
+      val List(identifierF) = barMethodBlock.ast.isIdentifier.nameExact("f").l
+      identifierF.refOut.head shouldBe barLocal
+    }
+
+    "have correct structure for implicit self access except for variable in closure" in {
+      val cpg = code("""
+          |class Foo {
+          |  let f: String = "f"
+          |  class Bar {
+          |    let b = "b"
+          |    func foo() {
+          |      let compare = { (s1: String, s2: String) -> Bool in
+          |        let f: Int = 1
+          |        handleB(b)
+          |        handleF(f)
+          |        return s1 > s2
+          |	     }
+          |    }
+          |  }
+          |}
+          |""".stripMargin)
+      cpg.typeDecl.nameExact("Foo").member.name.l shouldBe List("f")
+      cpg.typeDecl.nameExact("Bar").member.name.l shouldBe List("b")
+      val List(bAccess) = cpg.call.nameExact("handleB").argument.fieldAccess.l
+      bAccess.code shouldBe "self.b"
+      inside(bAccess.argument.l) { case List(id: Identifier, fieldName: FieldIdentifier) =>
+        id.name shouldBe "self"
+        id.typeFullName shouldBe "Test0.swift:<global>.Foo.Bar"
+        fieldName.canonicalName shouldBe "b"
+      }
+      inside(cpg.call.nameExact("handleF").argument(1).l) { case List(id: Identifier) =>
+        id.name shouldBe "f"
+        id.typeFullName shouldBe Defines.Int
+        val fLocal = id._localViaRefOut.get
+        fLocal.name shouldBe "f"
+        fLocal.typeFullName shouldBe Defines.Int
+      }
+
+      val List(fooMethod)  = cpg.method.nameExact("foo").l
+      val List(fooBlock)   = fooMethod.astChildren.isBlock.l
+      val List(compareRef) = fooBlock.ast.isMethodRef.l
+      compareRef.captureOut shouldBe empty
+
+      val List(compareClosure)                              = cpg.method.nameExact("<lambda>0").l
+      val List(compareClosureBlock)                         = compareClosure.astChildren.isBlock.l
+      val List(compareClosureLocal)                         = compareClosureBlock.astChildren.isLocal.name("f").l
+      val List(identifierFFromLocalDecl, identifierFInCall) = compareClosureBlock.ast.isIdentifier.nameExact("f").l
+      identifierFFromLocalDecl.refOut.head shouldBe compareClosureLocal
+      identifierFFromLocalDecl.lineNumber shouldBe Some(8)
+      identifierFInCall.refOut.head shouldBe compareClosureLocal
+      identifierFInCall.lineNumber shouldBe Some(10)
+    }
+
+    "have correct structure for implicit self access except for parameters" in {
+      val cpg = code("""
+          |class Foo {
+          |  let f: String = "f"
+          |  class Bar {
+          |    let b = "b"
+          |    func bar(f: Int) {
+          |      handleB(b)
+          |      handleF(f)
+          |    }
+          |  }
+          |}
+          |""".stripMargin)
+      cpg.typeDecl.nameExact("Foo").member.name.l shouldBe List("f")
+      cpg.typeDecl.nameExact("Bar").member.name.l shouldBe List("b")
+      val List(bAccess) = cpg.call.nameExact("handleB").argument.fieldAccess.l
+      bAccess.code shouldBe "self.b"
+      inside(bAccess.argument.l) { case List(id: Identifier, fieldName: FieldIdentifier) =>
+        id.name shouldBe "self"
+        id.typeFullName shouldBe "Test0.swift:<global>.Foo.Bar"
+        fieldName.canonicalName shouldBe "b"
+      }
+      inside(cpg.call.nameExact("handleF").argument(1).l) { case List(id: Identifier) =>
+        id.name shouldBe "f"
+        id.typeFullName shouldBe Defines.Int
+        inside(id.refsTo.l) { case List(p: MethodParameterIn) =>
+          p.name shouldBe "f"
+          p.typeFullName shouldBe Defines.Int
+        }
+      }
+    }
+
+    "have correct structure for implicit self access except for parameters in closure" in {
+      val cpg = code("""
+          |class Foo {
+          |  let f: String = "f"
+          |  class Bar {
+          |    let b = "b"
+          |    func bar() {
+          |      let compare = { (f: String, g: String) -> Bool in
+          |        handleB(b)
+          |        handleF(f)
+          |        return f > g
+          |	     }
+          |    }
+          |  }
+          |}
+          |""".stripMargin)
+      cpg.typeDecl.nameExact("Foo").member.name.l shouldBe List("f")
+      cpg.typeDecl.nameExact("Bar").member.name.l shouldBe List("b")
+      val List(bAccess) = cpg.call.nameExact("handleB").argument.fieldAccess.l
+      bAccess.code shouldBe "self.b"
+      inside(bAccess.argument.l) { case List(id: Identifier, fieldName: FieldIdentifier) =>
+        id.name shouldBe "self"
+        id.typeFullName shouldBe "Test0.swift:<global>.Foo.Bar"
+        fieldName.canonicalName shouldBe "b"
+      }
+      inside(cpg.call.nameExact("handleF").argument(1).l) { case List(id: Identifier) =>
+        id.name shouldBe "f"
+        id.typeFullName shouldBe Defines.String
+        inside(id.refsTo.l) { case List(p: MethodParameterIn) =>
+          p.name shouldBe "f"
+          p.typeFullName shouldBe Defines.String
+        }
+      }
+    }
+
     "have correct structure for function in accessor block" in {
       val cpg = code("""
           |public protocol Foo {
@@ -222,7 +485,7 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
       thisBar.name shouldBe Operators.fieldAccess
       thisBar.typeFullName shouldBe "Swift.Int"
       inside(thisBar.argument.l) { case List(base: Identifier, field: FieldIdentifier) =>
-        base.name shouldBe "this"
+        base.name shouldBe "self"
         base.typeFullName shouldBe "Test0.swift:<global>.Foo"
         field.canonicalName shouldBe "bar"
       }
@@ -231,7 +494,7 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
       val List(setParam) = set.parameter.l
       setParam.name shouldBe "newValue"
       setParam.typeFullName shouldBe "Swift.Int"
-      set.body.astChildren.isCall.code.l shouldBe List("this.bar = newValue")
+      set.body.astChildren.isCall.code.l shouldBe List("self.bar = newValue")
 
       willSet.fullName shouldBe "Test0.swift:<global>.Foo.bar.willSet:Swift.Int"
       didSet.fullName shouldBe "Test0.swift:<global>.Foo.bar.didSet:Swift.Int"

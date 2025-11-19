@@ -264,7 +264,7 @@ class ExpressionTests extends AstSwiftSrc2CpgSuite {
           controlStruct.code should startWith("if .random() {")
           controlStruct.controlStructureType shouldBe ControlStructureTypes.IF
           inside(controlStruct.condition.l) { case List(cndNode) =>
-            cndNode.code shouldBe ".random()"
+            cndNode.code shouldBe "self.random()"
           }
           controlStruct.whenTrue.code.l shouldBe List("0")
           controlStruct.whenFalse.code.l shouldBe List("1")

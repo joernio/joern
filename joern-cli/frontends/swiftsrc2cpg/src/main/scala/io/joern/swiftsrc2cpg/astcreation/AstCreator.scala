@@ -36,14 +36,12 @@ class AstCreator(
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
 
-  protected val scope            = new SwiftVariableScopeManager()
-  protected val fullnameProvider = new FullnameProvider(typeMap)
-
-  protected val methodAstParentStack     = new Stack[NewNode]()
-  protected val typeRefIdStack           = new Stack[NewTypeRef]
-  protected val dynamicInstanceTypeStack = new Stack[String]
-  protected val localAstParentStack      = new Stack[NewBlock]()
-  protected val scopeLocalUniqueNames    = mutable.HashMap.empty[String, Int]
+  protected val scope                 = new SwiftVariableScopeManager()
+  protected val fullnameProvider      = new FullnameProvider(typeMap)
+  protected val methodAstParentStack  = new Stack[NewNode]()
+  protected val typeRefIdStack        = new Stack[NewTypeRef]
+  protected val localAstParentStack   = new Stack[NewBlock]()
+  protected val scopeLocalUniqueNames = mutable.HashMap.empty[String, Int]
 
   protected lazy val definedSymbols: Map[String, String] = {
     config.defines.map {
@@ -75,6 +73,7 @@ class AstCreator(
     val fakeGlobalMethod =
       methodNode(ast, name, name, fullName, None, path, Option(NodeTypes.TYPE_DECL), Option(fullName))
     methodAstParentStack.push(fakeGlobalMethod)
+    scope.pushNewTypeDeclScope(fullName)
     scope.pushNewMethodScope(fullName, name, fakeGlobalMethod, None)
     val sourceFileAst = astForNode(ast)
     val methodReturn  = methodReturnNode(ast, Defines.Any)
@@ -86,7 +85,7 @@ class AstCreator(
   }
 
   protected def astForNode(node: SwiftNode): Ast = node match {
-    case func: FunctionDeclLike             => astForFunctionLike(func)
+    case func: FunctionDeclLike             => astForFunctionLike(func, List.empty, None)
     case swiftToken: SwiftToken             => astForSwiftToken(swiftToken)
     case syntax: Syntax                     => astForSyntax(syntax)
     case exprSyntax: ExprSyntax             => astForExprSyntax(exprSyntax)

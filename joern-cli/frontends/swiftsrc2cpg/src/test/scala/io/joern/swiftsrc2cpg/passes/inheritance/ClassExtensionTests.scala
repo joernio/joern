@@ -79,18 +79,7 @@ class ClassExtensionTests extends SwiftSrc2CpgSuite {
 
     val List(typeDeclFoo) = cpg.typeDecl.nameExact("Foo").l
     typeDeclFoo.fullName shouldBe "Test0.swift:<global>.Foo"
-    typeDeclFoo.member.name.l.sorted shouldBe List(
-      "a",
-      "b",
-      "c",
-      "d",
-      "e",
-      "f",
-      "g",
-      "someFunc",
-      "someMethod",
-      "square"
-    )
+    typeDeclFoo.member.name.l.sorted shouldBe List("a", "b", "c", "d", "e", "f", "g")
     typeDeclFoo.inheritsFromTypeFullName.sorted.l shouldBe List("Bar", "Test0.swift:<global>.Foo<extension>")
     typeDeclFoo.modifier.modifierType.l shouldBe List(ModifierTypes.PRIVATE)
 
@@ -109,7 +98,7 @@ class ClassExtensionTests extends SwiftSrc2CpgSuite {
 
     val List(typeDeclFooExtension) = cpg.typeDecl.nameExact("Foo<extension>").l
     typeDeclFooExtension.fullName shouldBe "Test0.swift:<global>.Foo<extension>"
-    typeDeclFooExtension.member.name.l.sorted shouldBe List("h", "i", "j", "someOtherFunc")
+    typeDeclFooExtension.member.name.l.sorted shouldBe List("h", "i", "j")
     typeDeclFooExtension.inheritsFromTypeFullName.l shouldBe List("AnotherProtocol", "SomeProtocol")
     typeDeclFooExtension.modifier.modifierType.l shouldBe List(ModifierTypes.PRIVATE)
 
@@ -143,6 +132,70 @@ class ClassExtensionTests extends SwiftSrc2CpgSuite {
         |$classFooCode
         |""".stripMargin)
       testClassExtension(cpg)
+    }
+
+    "resolve self correctly" in {
+      val cpg = code(s"""
+           |class Foo {
+           |  var a: String
+           |  var b: Int = 1
+           |}
+           |extension Foo {
+           |  var c: String
+           |
+           |  func foo() {
+           |    print(a)
+           |    var b: String = "b"
+           |    print(b)
+           |    print(c)
+           |  }
+           |}
+           |""".stripMargin)
+      cpg.call.codeExact("print(a)").argument.isCall.code.l shouldBe List("self.a")
+      cpg.call.codeExact("print(a)").argument.isCall.typeFullName.l shouldBe List("Swift.String")
+      cpg.call.codeExact("print(a)").argument.isCall.argument.isIdentifier.typeFullName.l shouldBe List(
+        "Test0.swift:<global>.Foo"
+      )
+
+      cpg.call.codeExact("print(b)").argument.isIdentifier.typeFullName.l shouldBe List("Swift.String")
+
+      cpg.call.codeExact("print(c)").argument.isCall.code.l shouldBe List("self.c")
+      cpg.call.codeExact("print(c)").argument.isCall.typeFullName.l shouldBe List("Swift.String")
+      cpg.call.codeExact("print(c)").argument.isCall.argument.isIdentifier.typeFullName.l shouldBe List(
+        "Test0.swift:<global>.Foo<extension>"
+      )
+    }
+
+    "resolve self correctly (extension first)" in {
+      val cpg = code(s"""
+           |extension Foo {
+           |  var c: String
+           |
+           |  func foo() {
+           |    print(a)
+           |    var b: String = "b"
+           |    print(b)
+           |    print(c)
+           |  }
+           |}
+           |class Foo {
+           |  var a: String
+           |  var b: Int = 1
+           |}
+           |""".stripMargin)
+      cpg.call.codeExact("print(a)").argument.isCall.code.l shouldBe List("self.a")
+      cpg.call.codeExact("print(a)").argument.isCall.typeFullName.l shouldBe List("Swift.String")
+      cpg.call.codeExact("print(a)").argument.isCall.argument.isIdentifier.typeFullName.l shouldBe List(
+        "Test0.swift:<global>.Foo"
+      )
+
+      cpg.call.codeExact("print(b)").argument.isIdentifier.typeFullName.l shouldBe List("Swift.String")
+
+      cpg.call.codeExact("print(c)").argument.isCall.code.l shouldBe List("self.c")
+      cpg.call.codeExact("print(c)").argument.isCall.typeFullName.l shouldBe List("Swift.String")
+      cpg.call.codeExact("print(c)").argument.isCall.argument.isIdentifier.typeFullName.l shouldBe List(
+        "Test0.swift:<global>.Foo<extension>"
+      )
     }
 
   }
