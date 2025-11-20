@@ -79,7 +79,7 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
         .valueName("'import Int.MaxValue'")
         .unbounded()
         .optional()
-        .action((x, c) => c.copy(runBefore = c.runBefore :+ x))
+        .action((x, c) => c.copy(runBefore = c.runBefore ++ x.linesIterator.toIndexedSeq))
         .text("given code will be executed on startup - this may be passed multiple times")
 
       opt[String]("runAfter")
