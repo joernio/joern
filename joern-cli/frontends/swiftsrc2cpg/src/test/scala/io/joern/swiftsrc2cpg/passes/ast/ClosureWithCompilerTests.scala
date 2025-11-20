@@ -181,19 +181,33 @@ class ClosureWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
           |  func main() {
           |	   let compareResult = compare("1", "2")
           |  }
-          |}""".stripMargin
+          |}
+          |Foo().main()
+          |""".stripMargin
 
       val cpg = codeWithSwiftSetup(testCode)
+      val compareClosureFullName =
+        "Sources/main.swift:<global>.Foo.init.<lambda>0:(Swift.String,Swift.String)->Swift.Bool"
 
-      val List(compareClassLocal, compareFunctionLocal) = cpg.local.nameExact("compare").l
-      compareClassLocal.typeFullName shouldBe "Swift.Function<(Swift.String,Swift.String)->Swift.Bool>"
-      compareFunctionLocal.typeFullName shouldBe "Swift.Function<(Swift.String,Swift.String)->Swift.Bool>"
+      cpg.local.nameExact("compare") shouldBe empty
+
+      val List(fooConstructor)    = cpg.method.isConstructor.fullNameExact("SwiftTest.Foo.init:()->SwiftTest.Foo").l
+      val List(compareAssignment) = fooConstructor.ast.isCall.isAssignment.l
+      val List(compareTarget)     = compareAssignment.target.fieldAccess.l
+      compareTarget.code shouldBe "self.compare"
+      compareTarget.typeFullName shouldBe "Swift.Function<(Swift.String,Swift.String)->Swift.Bool>"
+      inside(compareTarget.argument.l) { case List(selfId: Identifier, fieldId: FieldIdentifier) =>
+        selfId.typeFullName shouldBe "SwiftTest.Foo"
+        fieldId.code shouldBe "compare"
+      }
+
+      val compareSource = compareAssignment.source.asInstanceOf[MethodRef]
+      compareSource.methodFullName shouldBe compareClosureFullName
 
       val List(compareResultLocal) = cpg.local.nameExact("compareResult").l
       compareResultLocal.typeFullName shouldBe "Swift.Bool"
 
-      val compareClosureFullName = "Sources/main.swift:<global>.Foo.<lambda>0:(Swift.String,Swift.String)->Swift.Bool"
-      val List(compareClosure)   = cpg.method.fullNameExact(compareClosureFullName).l
+      val List(compareClosure)         = cpg.method.fullNameExact(compareClosureFullName).l
       val List(compareClosureTypeDecl) = cpg.typeDecl.fullNameExact(compareClosureFullName).l
       compareClosureTypeDecl.inheritsFromTypeFullName.l shouldBe List(
         "Swift.Function<(Swift.String,Swift.String)->Swift.Bool>"
@@ -207,12 +221,26 @@ class ClosureWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
       compareClosureCall.name shouldBe "single_apply"
       compareClosure.signature shouldBe "(Swift.String,Swift.String)->Swift.Bool"
       compareClosureCall.methodFullName shouldBe "Swift.Function<(Swift.String,Swift.String)->Swift.Bool>.single_apply:(Swift.String,Swift.String)->Swift.Bool"
-      compareClosureCall.receiver.isIdentifier.name.l shouldBe List("compare")
-      compareClosureCall.receiver.isIdentifier.typeFullName.l shouldBe List(
-        "Swift.Function<(Swift.String,Swift.String)->Swift.Bool>"
-      )
+
+      val List(compareClosureCallReceiver) = compareClosureCall.receiver.fieldAccess.l
+      compareClosureCallReceiver.code shouldBe "self.compare"
+      compareClosureCallReceiver.typeFullName shouldBe "Swift.Function<(Swift.String,Swift.String)->Swift.Bool>"
+      inside(compareClosureCallReceiver.argument.l) { case List(selfId: Identifier, fieldId: FieldIdentifier) =>
+        selfId.typeFullName shouldBe "SwiftTest.Foo"
+        fieldId.code shouldBe "compare"
+      }
       compareClosureCall.argument(1).code shouldBe """"1""""
       compareClosureCall.argument(2).code shouldBe """"2""""
+
+      val List(mainCall) = cpg.call.nameExact("main").l
+      mainCall.methodFullName shouldBe "SwiftTest.Foo.main:()->()"
+      mainCall.signature shouldBe "()->()"
+      mainCall.typeFullName shouldBe "()"
+      val List(fooConstructorCall) = mainCall.receiver.isBlock.astChildren.isCall.nameExact("init").l
+      fooConstructorCall.methodFullName shouldBe "SwiftTest.Foo.init:()->SwiftTest.Foo"
+      fooConstructorCall.signature shouldBe "()->SwiftTest.Foo"
+      fooConstructorCall.typeFullName shouldBe "SwiftTest.Foo"
+      fooConstructorCall._methodViaCallOut.l shouldBe List(fooConstructor)
     }
 
     "create type decls and bindings correctly (closure as function parameter)" in {

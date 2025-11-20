@@ -328,7 +328,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       .possibleTypes(possibleTypes)
     diffGraph.addEdge(getParentTypeDecl, memberNode_, EdgeTypes.AST)
     addModifier(functionNode, func.json)
-    Ast(functionNode)
+    Ast()
   }
 
   protected def createMethodDefinitionNode(

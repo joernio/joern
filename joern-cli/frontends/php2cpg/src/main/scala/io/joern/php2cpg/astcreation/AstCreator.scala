@@ -10,10 +10,12 @@ import io.joern.x2cpg.{Ast, AstCreatorBase, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import io.shiftleft.utils.IOUtils
+import org.mozilla.universalchardet.UniversalDetector
 import org.slf4j.{Logger, LoggerFactory}
 
-import java.nio.file.Path
+import java.nio.charset.{Charset, StandardCharsets}
+import java.nio.file.{Files, Path}
+import scala.util.Try
 
 class AstCreator(
   protected val relativeFileName: String,
@@ -30,13 +32,18 @@ class AstCreator(
     with AstForFunctionsCreator
     with AstForTypesCreator {
 
-  protected val logger: Logger = LoggerFactory.getLogger(AstCreator.getClass)
-  protected val scope          = new Scope(summary)
-  protected var fileContent    = Option.empty[String]
+  protected val logger: Logger       = LoggerFactory.getLogger(AstCreator.getClass)
+  protected val scope                = new Scope(summary)
+  protected var fileContentBytes     = Array.empty[Byte]
+  protected var fileContent          = Option.empty[String]
+  protected var fileCharset: Charset = StandardCharsets.UTF_8
 
   override def createAst(): DiffGraphBuilder = {
     if (!disableFileContent) {
-      fileContent = Option(IOUtils.readEntireFile(Path.of(fileName)))
+      val filePath = Path.of(fileName)
+      fileContentBytes = Files.readAllBytes(filePath)
+      fileCharset = Try(Charset.forName(UniversalDetector.detectCharset(filePath))).getOrElse(StandardCharsets.UTF_8)
+      fileContent = Some(new String(fileContentBytes, fileCharset))
     }
 
     val ast = astForPhpFile(phpAst)

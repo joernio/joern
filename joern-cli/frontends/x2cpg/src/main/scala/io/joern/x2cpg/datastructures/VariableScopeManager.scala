@@ -36,7 +36,7 @@ object VariableScopeManager {
   /** Enumeration representing the types of scopes.
     */
   enum ScopeType {
-    case MethodScope, BlockScope
+    case MethodScope, BlockScope, TypeDeclScope
   }
 
   /** Case class representing a method scope element.
@@ -109,6 +109,15 @@ object VariableScopeManager {
     */
   private case class BlockScopeElement(scopeNode: NewNode, surroundingScope: Option[ScopeElement]) extends ScopeElement
 
+  /** Case class representing a type declaration scope element.
+    *
+    * @param fullname
+    *   The full name (qualified name) of the type declaration this scope represents.
+    * @param surroundingScope
+    *   The surrounding scope, if any.
+    */
+  private case class TypeDeclScopeElement(fullname: String, surroundingScope: Option[ScopeElement]) extends ScopeElement
+
 }
 
 /** Class for managing variable scopes during CPG conversion. Provides methods for managing scope stacks, adding
@@ -146,6 +155,17 @@ class VariableScopeManager {
     variableFromStack(stack, identifier).map { case (variableNodeId, tpe, _) => (variableNodeId, tpe) }
   }
 
+  /** Looks up a variable by its identifier in the current type decl scope stack.
+    *
+    * @param identifier
+    *   The name of the variable.
+    * @return
+    *   An optional String representing the type decl fullname
+    */
+  private def lookupVariableInSurroundingTypeDel(identifier: String): Option[String] = {
+    variableFromTypeDeclStack(stack, identifier)
+  }
+
   /** Checks if a variable is in the current method scope.
     *
     * @param identifier
@@ -155,6 +175,27 @@ class VariableScopeManager {
     */
   def variableIsInMethodScope(identifier: String): Boolean = {
     getEnclosingMethodScopeElement(stack).exists(_.nameToVariableNode.contains(identifier))
+  }
+
+  /** Checks whether a variable with the given identifier is declared in the type decl scope.
+    *
+    * This method inspects the current scope stack:
+    *   - If the top-most scope is a `TypeDeclScopeElement` that contains `identifier`, returns `true`.
+    *   - If a nearer (non-type) scope contains the identifier, returns `false` (the variable is shadowed by that
+    *     scope).
+    *   - Otherwise, searches surrounding type-declaration scopes to determine presence.
+    *
+    * @param identifier
+    *   the variable name to check
+    * @return
+    *   `true` if the variable is declared in a type-declaration scope reachable from the current stack
+    */
+  def variableIsInTypeDeclScope(identifier: String): Boolean = {
+    stack.exists {
+      case typeDeclScope: TypeDeclScopeElement if typeDeclScope.nameToVariableNode.contains(identifier) => true
+      case other if other.nameToVariableNode.contains(identifier)                                       => false
+      case other => lookupVariableInSurroundingTypeDel(identifier).isDefined
+    }
   }
 
   /** Pushes a new method scope onto the scope stack.
@@ -184,6 +225,15 @@ class VariableScopeManager {
     */
   def pushNewBlockScope(scopeNode: NewNode): Unit = {
     stack = Option(BlockScopeElement(scopeNode, stack))
+  }
+
+  /** Pushes a new type decl scope onto the scope stack.
+    *
+    * @param fullName
+    *   The full name (fully qualified name) of the type decl
+    */
+  def pushNewTypeDeclScope(fullName: String): Unit = {
+    stack = Option(TypeDeclScopeElement(fullName, stack))
   }
 
   /** Pops the current scope from the scope stack. */
@@ -313,7 +363,36 @@ class VariableScopeManager {
   protected def getEnclosingMethodScopeElement(scopeHead: Option[ScopeElement]): Option[MethodScopeElement] = {
     scopeHead.flatMap {
       case methodScope: MethodScopeElement => Some(methodScope)
-      case blockScope: BlockScopeElement   => getEnclosingMethodScopeElement(blockScope.surroundingScope)
+      case other                           => getEnclosingMethodScopeElement(other.surroundingScope)
+    }
+  }
+
+  /** Retrieves the enclosing type decl scope element from the given scope head.
+    *
+    * @param scopeHead
+    *   The starting scope element.
+    * @return
+    *   The enclosing type decl scope element, if any.
+    */
+  private def getEnclosingTypeDeclScopeElement(scopeHead: Option[ScopeElement]): Option[TypeDeclScopeElement] = {
+    scopeHead.flatMap {
+      case typeDeclScope: TypeDeclScopeElement => Some(typeDeclScope)
+      case other                               => getEnclosingTypeDeclScopeElement(other.surroundingScope)
+    }
+  }
+
+  /** Returns the full name of the enclosing type declaration, if any.
+    *
+    * Searches the current `stack` for a `TypeDeclScopeElement`. If the top of the stack is a `TypeDeclScopeElement`,
+    * its `fullname` is returned. Otherwise, the surrounding scopes are searched recursively.
+    *
+    * @return
+    *   `Some(fullname)` of the enclosing type declaration, or `None` if none found.
+    */
+  def getEnclosingTypeDeclFullName: Option[String] = {
+    stack.flatMap {
+      case typeDeclScope: TypeDeclScopeElement => Some(typeDeclScope.fullname)
+      case other => getEnclosingTypeDeclScopeElement(other.surroundingScope).map(_.fullname)
     }
   }
 
@@ -360,8 +439,8 @@ class VariableScopeManager {
       .collect {
         case methodScope: MethodScopeElement =>
           methodScope +: getAllEnclosingMethodScopeElements(methodScope.surroundingScope)
-        case blockScope: BlockScopeElement =>
-          getAllEnclosingMethodScopeElements(blockScope.surroundingScope)
+        case other =>
+          getAllEnclosingMethodScopeElements(other.surroundingScope)
       }
       .getOrElse(Seq.empty)
   }
@@ -438,6 +517,32 @@ class VariableScopeManager {
     }
   }
 
+  /** Search the given scope `stack` for a surrounding type decl scope that declares `variableName`.
+    *
+    * Traversal rules:
+    *   - If a nearer (non-type) scope (block or method) contains `variableName`, the search stops and `None` is
+    *     returned because the name is shadowed by that nearer scope.
+    *   - Otherwise the surrounding scopes are searched until a `TypeDeclScopeElement` that contains the name is found.
+    *
+    * @param stack
+    *   The starting scope head to search (can be `None`).
+    * @param variableName
+    *   The variable name to look up.
+    * @return
+    *   `Some(fullname)` of the declaring type decl scope if found, otherwise `None`.
+    */
+  private def variableFromTypeDeclStack(stack: Option[ScopeElement], variableName: String): Option[String] = {
+    stack.flatMap {
+      case blockScope: BlockScopeElement if blockScope.nameToVariableNode.contains(variableName) => None
+      case blockScope: BlockScopeElement => variableFromTypeDeclStack(blockScope.surroundingScope, variableName)
+      case methodScope: MethodScopeElement if methodScope.nameToVariableNode.contains(variableName) => None
+      case methodScope: MethodScopeElement => variableFromTypeDeclStack(methodScope.surroundingScope, variableName)
+      case typeDeclScope: TypeDeclScopeElement if typeDeclScope.nameToVariableNode.contains(variableName) =>
+        Some(typeDeclScope.fullname)
+      case _ => None
+    }
+  }
+
   /** Adds a variable to the appropriate scope in the stack.
     *
     * @param stack
@@ -462,8 +567,9 @@ class VariableScopeManager {
     scopeType: ScopeType
   ): Unit = {
     val scopeToAddTo = scopeType match {
-      case ScopeType.MethodScope => getEnclosingMethodScopeElement(stack)
-      case _                     => stack
+      case ScopeType.MethodScope   => getEnclosingMethodScopeElement(stack)
+      case ScopeType.TypeDeclScope => getEnclosingTypeDeclScopeElement(stack)
+      case _                       => stack
     }
     scopeToAddTo.foreach(_.addVariable(variableName, variableNode, tpe, evaluationStrategy))
   }

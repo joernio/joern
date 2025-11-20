@@ -4,10 +4,11 @@ import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.swiftsrc2cpg.passes.GlobalBuiltins
 import io.joern.x2cpg
 import io.joern.x2cpg.datastructures.Stack.*
+import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewNode}
+import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 
 import scala.annotation.unused
 
@@ -63,8 +64,10 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
               val lhsAst = astForNode(dictElement.key)
               val rhsAst = astForNode(dictElement.value)
 
-              val lhsTmpNode            = Ast(identifierNode(dictElement, tmpName))
-              val lhsIndexAccessCallAst = createIndexAccessCallAst(dictElement, lhsTmpNode, lhsAst)
+              val lhsTmpNode = identifierNode(dictElement, tmpName)
+              scope.addVariableReference(tmpName, lhsTmpNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+
+              val lhsIndexAccessCallAst = createIndexAccessCallAst(dictElement, Ast(lhsTmpNode), lhsAst)
 
               createAssignmentCallAst(
                 dictElement,
@@ -76,6 +79,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           }
 
           val tmpNode = identifierNode(node, tmpName)
+          scope.addVariableReference(tmpName, tmpNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
           scope.popScope()
           localAstParentStack.pop()
@@ -204,30 +208,18 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     callAst(callNode, argAsts)
   }
 
-  private def handleCallNodeArgs(
-    callExpr: FunctionCallExprSyntax,
-    receiverAst: Ast,
-    baseNode: NewNode,
-    callName: String
-  ): Ast = {
+  private def handleCallNodeArgs(callExpr: FunctionCallExprSyntax, baseAst: Ast, callName: String): Ast = {
     val trailingClosureAsts            = callExpr.trailingClosure.toList.map(astForNode)
     val additionalTrailingClosuresAsts = callExpr.additionalTrailingClosures.children.map(c => astForNode(c.closure))
 
     val args = callExpr.arguments.children.map(astForNode) ++ trailingClosureAsts ++ additionalTrailingClosuresAsts
 
     val callExprCode = code(callExpr)
-    val callCode = callExprCode match {
-      case c if c.startsWith(".") && codeOf(baseNode) != "this" => s"${codeOf(baseNode)}$callExprCode"
-      case c if c.contains("#if ") =>
-        val recCode = codeOf(receiverAst.nodes.head)
-        if (recCode.endsWith(callName)) {
-          s"${codeOf(receiverAst.nodes.head)}(${code(callExpr.arguments)})"
-        } else {
-          s"${codeOf(receiverAst.nodes.head)}$callName(${code(callExpr.arguments)})"
-        }
-      case _ => callExprCode
-    }
-
+    val callCode = if (callExprCode.startsWith(".")) {
+      s"${codeOf(baseAst.root.get)}$callExprCode"
+    } else if (callExprCode.contains("#if ")) {
+      s"${codeOf(baseAst.root.get)}.$callName(${code(callExpr.arguments)})"
+    } else callExprCode
     val callNode_ = callNode(
       callExpr,
       callCode,
@@ -239,7 +231,58 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     )
     setFullNameInfoForCall(callExpr, callNode_)
 
-    callAst(callNode_, args, receiver = Option(receiverAst), base = Option(Ast(baseNode)))
+    callAst(callNode_, args, Option(baseAst))
+  }
+
+  private def astForConstructorInvocation(expr: FunctionCallExprSyntax): Ast = {
+    // get call is safe as this function is guarded by isRefToConstructor
+    val tpe = fullnameProvider.typeFullname(expr).get
+    registerType(tpe)
+
+    val callExprCode = code(expr)
+    val blockNode_   = blockNode(expr, callExprCode, tpe)
+    scope.pushNewBlockScope(blockNode_)
+
+    val tmpNodeName  = scopeLocalUniqueName("tmp")
+    val localTmpNode = localNode(expr, tmpNodeName, tmpNodeName, tpe).order(0)
+    diffGraph.addEdge(blockNode_, localTmpNode, EdgeTypes.AST)
+    scope.addVariable(tmpNodeName, localTmpNode, tpe, VariableScopeManager.ScopeType.BlockScope)
+
+    val tmpNode = identifierNode(expr, tmpNodeName, tmpNodeName, tpe)
+    scope.addVariableReference(tmpNodeName, tmpNode, tpe, EvaluationStrategies.BY_SHARING)
+
+    val allocOp          = Operators.alloc
+    val allocCallNode    = callNode(expr, allocOp, allocOp, allocOp, DispatchTypes.STATIC_DISPATCH)
+    val assignmentCallOp = Operators.assignment
+    val assignmentCallNode =
+      callNode(expr, s"$tmpNodeName = $allocOp", assignmentCallOp, assignmentCallOp, DispatchTypes.STATIC_DISPATCH)
+    val assignmentAst = callAst(assignmentCallNode, List(Ast(tmpNode), Ast(allocCallNode)))
+
+    val baseNode = identifierNode(expr, tmpNodeName, tmpNodeName, tpe)
+    scope.addVariableReference(tmpNodeName, baseNode, tpe, EvaluationStrategies.BY_SHARING)
+
+    val constructorCallNode = callNode(
+      expr,
+      callExprCode,
+      "init",
+      x2cpg.Defines.UnresolvedNamespace,
+      DispatchTypes.STATIC_DISPATCH,
+      Some(x2cpg.Defines.UnresolvedSignature),
+      Some(Defines.Void)
+    )
+    setFullNameInfoForCall(expr, constructorCallNode)
+
+    val trailingClosureAsts            = expr.trailingClosure.toList.map(astForNode)
+    val additionalTrailingClosuresAsts = expr.additionalTrailingClosures.children.map(c => astForNode(c.closure))
+    val args = expr.arguments.children.map(astForNode) ++ trailingClosureAsts ++ additionalTrailingClosuresAsts
+
+    val constructorCallAst = callAst(constructorCallNode, args, base = Some(Ast(baseNode)))
+
+    val retNode = identifierNode(expr, tmpNodeName, tmpNodeName, tpe)
+    scope.addVariableReference(tmpNodeName, retNode, tpe, EvaluationStrategies.BY_SHARING)
+
+    scope.popScope()
+    Ast(blockNode_).withChildren(Seq(assignmentAst, constructorCallAst, Ast(retNode)))
   }
 
   private def astForFunctionCallExprSyntax(node: FunctionCallExprSyntax): Ast = {
@@ -248,55 +291,30 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     if (GlobalBuiltins.builtins.contains(calleeCode)) {
       createBuiltinStaticCall(node, callee, calleeCode)
     } else {
-      val (receiverAst, baseNode, callName) = callee match {
+      callee match {
+        case m: MemberAccessExprSyntax if m.base.isEmpty || code(m.base.get) == "self" =>
+          // referencing implicit self
+          val selfTpe  = typeForSelfExpression()
+          val selfNode = identifierNode(node, "self", "self", selfTpe)
+          scope.addVariableReference("self", selfNode, selfTpe, EvaluationStrategies.BY_REFERENCE)
+          handleCallNodeArgs(node, Ast(selfNode), code(m.declName.baseName))
+        case m: MemberAccessExprSyntax if isRefToStaticFunction(calleeCode) =>
+          createBuiltinStaticCall(node, callee, calleeCode)
         case m: MemberAccessExprSyntax =>
-          val base       = m.base
-          val member     = m.declName
-          val memberCode = code(member)
-          base match {
-            case None =>
-              // referencing implicit this
-              val receiverAst = astForNode(callee)
-              val baseNodeId  = identifierNode(m, "this")
-              scope.addVariableReference("this", baseNodeId, baseNodeId.typeFullName, EvaluationStrategies.BY_REFERENCE)
-              (receiverAst, baseNodeId, memberCode)
-            case Some(d: DeclReferenceExprSyntax) =>
-              val receiverAst = astForNode(callee)
-              val baseNodeId  = identifierNode(d, code(d))
-              scope.addVariableReference(
-                code(d),
-                baseNodeId,
-                baseNodeId.typeFullName,
-                EvaluationStrategies.BY_REFERENCE
-              )
-              (receiverAst, baseNodeId, memberCode)
-            case Some(otherBase) =>
-              val tmpVarName  = scopeLocalUniqueName("tmp")
-              val baseTmpNode = identifierNode(otherBase, tmpVarName)
-              scope.addVariableReference(
-                tmpVarName,
-                baseTmpNode,
-                baseTmpNode.typeFullName,
-                EvaluationStrategies.BY_REFERENCE
-              )
-              val baseAst   = astForNode(otherBase)
-              val codeField = s"(${codeOf(baseTmpNode)} = ${codeOf(baseAst.nodes.head)})"
-              val tmpAssignmentAst =
-                createAssignmentCallAst(otherBase, Ast(baseTmpNode), baseAst, codeField)
-              val memberNode     = fieldIdentifierNode(member, memberCode, memberCode)
-              val fieldAccessAst = createFieldAccessCallAst(callee, tmpAssignmentAst, memberNode)
-              val thisTmpNode    = identifierNode(callee, tmpVarName)
-              (fieldAccessAst, thisTmpNode, memberCode)
-          }
+          val memberCode = code(m.declName)
+          handleCallNodeArgs(node, astForNode(m.base.get), memberCode)
+        case other if isRefToConstructor(node, other) =>
+          astForConstructorInvocation(node)
         case other if isRefToClosure(node, other) =>
-          return astForClosureCall(node)
-        case _ =>
-          val receiverAst = astForNode(callee)
-          val thisNode    = identifierNode(callee, "this")
-          scope.addVariableReference(thisNode.name, thisNode, thisNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
-          (receiverAst, thisNode, calleeCode)
+          astForClosureCall(node)
+        case declReferenceExprSyntax: DeclReferenceExprSyntax if code(declReferenceExprSyntax) != "self" =>
+          val selfTpe  = typeForSelfExpression()
+          val selfNode = identifierNode(declReferenceExprSyntax, "self", "self", selfTpe)
+          scope.addVariableReference(selfNode.name, selfNode, selfTpe, EvaluationStrategies.BY_REFERENCE)
+          handleCallNodeArgs(node, Ast(selfNode), calleeCode)
+        case other =>
+          handleCallNodeArgs(node, astForNode(other), calleeCode)
       }
-      handleCallNodeArgs(node, receiverAst, baseNode, callName)
     }
   }
 
@@ -306,11 +324,10 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val signature = fullnameProvider.typeFullnameRaw(expr.calledExpression).getOrElse(x2cpg.Defines.UnresolvedSignature)
     val callName  = Defines.ClosureApplyMethodName
     val callMethodFullname = s"${Defines.Function}<$signature>.$callName:$signature"
-    val baseAst            = astForNode(expr.calledExpression)
+    val baseAst            = astForIdentifier(expr.calledExpression)
 
     val trailingClosureAsts            = expr.trailingClosure.toList.map(astForNode)
     val additionalTrailingClosuresAsts = expr.additionalTrailingClosures.children.map(c => astForNode(c.closure))
-
     val args = expr.arguments.children.map(astForNode) ++ trailingClosureAsts ++ additionalTrailingClosuresAsts
 
     val callExprCode = code(expr)
@@ -329,14 +346,37 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def isRefToClosure(func: FunctionCallExprSyntax, node: ExprSyntax): Boolean = {
     if (!config.swiftBuild) {
       // Early exit; without types from the compiler we will be unable to identify closure calls anyway.
-      // This saves us the typeFullname lookup below.
+      // This saves us the fullnameProvider lookups below.
       return false
     }
     node match {
       case refExpr: DeclReferenceExprSyntax
-          if refExpr.baseName.isInstanceOf[identifier] && refExpr.argumentNames.isEmpty &&
+          if refExpr.baseName.isInstanceOf[identifier] &&
             fullnameProvider.declFullname(func).isEmpty &&
             fullnameProvider.typeFullname(refExpr).exists(_.startsWith(s"${Defines.Function}<")) =>
+        true
+      case _ => false
+    }
+  }
+
+  private def isRefToStaticFunction(calleeCode: String): Boolean = {
+    // TODO: extend the GsonTypeInfoReader to query for information whether the call is a call to a static function
+    calleeCode.headOption.exists(_.isUpper) && !calleeCode.contains("(") && !calleeCode.contains(")")
+  }
+
+  private def isRefToConstructor(func: FunctionCallExprSyntax, node: ExprSyntax): Boolean = {
+    if (!config.swiftBuild) {
+      // Early exit; without types from the compiler we will be unable to identify constructor calls anyway.
+      // This saves us the fullnameProvider lookups below.
+      return false
+    }
+    node match {
+      case refExpr: DeclReferenceExprSyntax
+          if refExpr.baseName.isInstanceOf[identifier] &&
+            fullnameProvider.typeFullname(func).nonEmpty &&
+            fullnameProvider.declFullname(func).exists { fullName =>
+              fullName.contains(".init(") && fullName.contains(")->")
+            } =>
         true
       case _ => false
     }
@@ -422,13 +462,10 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val member = node.declName
     val baseAst = base match {
       case None =>
-        // referencing implicit this
-        val baseNode = identifierNode(node, "this")
-        scope.addVariableReference("this", baseNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
-        Ast(baseNode)
-      case Some(d: DeclReferenceExprSyntax) if code(d) == "this" || code(d) == "self" =>
-        val baseNode = identifierNode(d, code(d))
-        scope.addVariableReference(code(d), baseNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+        // referencing implicit self
+        val selfTpe  = typeForSelfExpression()
+        val baseNode = identifierNode(node, "self", "self", selfTpe)
+        scope.addVariableReference("self", baseNode, selfTpe, EvaluationStrategies.BY_REFERENCE)
         Ast(baseNode)
       case Some(otherBase) =>
         astForNode(otherBase)
@@ -442,7 +479,6 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         val memberNode = fieldIdentifierNode(other, code(other), code(other))
         createFieldAccessCallAst(node, baseAst, memberNode)
     }
-
   }
 
   private def astForMissingExprSyntax(@unused node: MissingExprSyntax): Ast = Ast()

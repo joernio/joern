@@ -1,14 +1,12 @@
 package io.joern.rubysrc2cpg.parser
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
-import io.joern.rubysrc2cpg.parser.AstType.Send
 import io.joern.rubysrc2cpg.parser.RubyJsonHelpers.*
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.rubysrc2cpg.passes.Defines.{NilClass, RubyOperators}
-import io.joern.rubysrc2cpg.passes.GlobalTypes.corePrefix
+import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
-import io.joern.x2cpg.frontendspecific.rubysrc2cpg.ImportsPass
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg.ImportsPass.ImportCallNames
+import io.joern.x2cpg.frontendspecific.rubysrc2cpg.{Constants, ImportsPass}
 import org.slf4j.LoggerFactory
 import ujson.*
 
@@ -573,9 +571,16 @@ class RubyJsonToNodeCreator(
       case Some(thenBranch) =>
         IfExpression(condition, thenBranch, elsifClauses = List.empty, elseClause)(obj.toTextSpan)
       case None =>
-        val nilBlock = ReturnExpression(
-          List(StaticLiteral(Defines.prefixAsCoreType(Defines.NilClass))(obj.toTextSpan.spanStart("nil")))
-        )(obj.toTextSpan.spanStart("return nil"))
+        val nilBlock = if (fileName.endsWith("erb.json")) {
+          EmptyExpression(
+            obj.toTextSpan.spanStart("<empty>")
+          ) // specifically used for ERB files so that we don't have a `return nil` in empty if statements
+        } else {
+          ReturnExpression(
+            List(StaticLiteral(Defines.prefixAsCoreType(Defines.NilClass))(obj.toTextSpan.spanStart("nil")))
+          )(obj.toTextSpan.spanStart("return nil"))
+        }
+
         IfExpression(condition, nilBlock, elsifClauses = List.empty, elseClause)(obj.toTextSpan)
     }
   }
@@ -1010,10 +1015,40 @@ class RubyJsonToNodeCreator(
         val dot = if objSpan.text.stripPrefix(base.text).startsWith("::") then "::" else "."
         if isConditional then s"&$dot" else dot
       }
-      if isMemberCall then MemberCall(base, op, callName, arguments)(obj.toTextSpan)
-      else MemberAccess(base, op, callName)(obj.toTextSpan)
+
+      // This is specifically for ERB lowering, where we append some ERBTemplateCall to a buffer
+      if (callName == Constants.joernErbBufferAppend && arguments.exists(_.isInstanceOf[ErbTemplateCall])) {
+        val argumentText = arguments
+          .map {
+            case x: ErbTemplateCall =>
+              if (x.target.text == Constants.joernErbTemplateOutEscapeName) {
+                s"<%= ${x.arguments.map(_.span.text).mkString(",")} %>"
+              } else {
+                s"<%== ${x.arguments.map(_.span.text).mkString(",")} %>"
+              }
+            case x => x.span.text
+          }
+          .mkString(", ")
+
+        MemberCall(base, op, callName, arguments)(
+          obj.toTextSpan.spanStart(s"${base.span.text}.${callName}(${argumentText})")
+        )
+      } else if (isMemberCall) {
+        MemberCall(base, op, callName, arguments)(obj.toTextSpan)
+      } else {
+        MemberAccess(base, op, callName)(obj.toTextSpan)
+      }
     } else if (hasArguments || usesParenthesis) {
-      SimpleCall(target, arguments)(obj.toTextSpan)
+      // This handles ONLY the ErbTemplateCall from the ERB lowering
+      callName match {
+        case Constants.joernErbTemplateOutRawName =>
+          val code = s"<%== ${arguments.map(_.span.text).mkString(",")} %>"
+          ErbTemplateCall(target, arguments)(obj.toTextSpan.spanStart(code))
+        case Constants.joernErbTemplateOutEscapeName =>
+          val code = s"<%= ${arguments.map(_.span.text).mkString(",")} %>"
+          ErbTemplateCall(target, arguments)(obj.toTextSpan.spanStart(code))
+        case _ => SimpleCall(target, arguments)(obj.toTextSpan)
+      }
     } else {
       // The following allows the AstCreator to approximate when an identifier could be a call or not - puts less
       //  strain on data-flow tracking for externally inherited accessor calls such as `params` in RubyOnRails

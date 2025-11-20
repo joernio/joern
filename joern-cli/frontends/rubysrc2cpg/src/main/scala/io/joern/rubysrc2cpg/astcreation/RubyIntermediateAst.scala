@@ -508,6 +508,10 @@ object RubyIntermediateAst {
       extends RubyExpression(span)
       with RubyCall
 
+  final case class ErbTemplateCall(target: RubyExpression, arguments: List[RubyExpression])(span: TextSpan)
+      extends RubyExpression(span)
+      with RubyCall
+
   sealed trait AccessModifier extends AllowedTypeDeclarationChild {
     def toSimpleIdentifier: SimpleIdentifier
   }
@@ -685,4 +689,5 @@ object RubyIntermediateAst {
       extends RubyExpression(span)
       with AllowedTypeDeclarationChild
 
+  final case class EmptyExpression(override val span: TextSpan) extends RubyExpression(span)
 }

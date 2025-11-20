@@ -109,6 +109,7 @@ class TsAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
       arg.code shouldBe "arg: string"
       arg.index shouldBe 1
       cpg.method("foo").bindingTypeDecl.fullName.l shouldBe List("Test0.ts::program:foo")
+      func.astIn.size shouldBe 1
     }
 
     "have correct structure for type assertion" in {

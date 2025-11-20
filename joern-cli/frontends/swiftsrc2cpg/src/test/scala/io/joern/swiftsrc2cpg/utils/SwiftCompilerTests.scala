@@ -420,7 +420,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
       (
         "Main.swift",
         "dot_syntax_call_expr",
-        (127, 136),
+        (127, 138),
         Some("(from:Swift.String)->()"),
         Some("SwiftHelloWorldLib.HelloWorld.greet(from:Swift.String)->()")
       ),
@@ -597,8 +597,10 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
               Some("SwiftHelloWorldLib.HelloWorld.init()->SwiftHelloWorldLib.HelloWorld")
             )
           )
-          mainMappings should contain(
-            ("func_decl", (67, 155), Some("Swift.Void"), Some("SwiftHelloWorld.Main.main()->()"))
+          mainMappings should contain oneElementOf List(
+            ("func_decl", (67, 155), Some("Swift.Void"), Some("SwiftHelloWorld.Main.main()->()")),
+            // TODO: in preparation for Swift 6.2.x migration, Void changed to () just like in the function signature
+            ("func_decl", (67, 155), Some("()"), Some("SwiftHelloWorld.Main.main()->()"))
           )
           mainMappings should contain(("var_decl", (102, 102), Some("SwiftHelloWorldLib.HelloWorld"), None))
 

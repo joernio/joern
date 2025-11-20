@@ -79,18 +79,7 @@ class ProtocolExtensionTests extends SwiftSrc2CpgSuite {
 
     val List(typeDeclFoo) = cpg.typeDecl.nameExact("Foo").l
     typeDeclFoo.fullName shouldBe "Test0.swift:<global>.Foo"
-    typeDeclFoo.member.name.l.sorted shouldBe List(
-      "a",
-      "b",
-      "c",
-      "d",
-      "e",
-      "f",
-      "g",
-      "someFunc",
-      "someMethod",
-      "square"
-    )
+    typeDeclFoo.member.name.l.sorted shouldBe List("a", "b", "c", "d", "e", "f", "g")
     typeDeclFoo.inheritsFromTypeFullName.l shouldBe List("Bar", "Test0.swift:<global>.Foo<extension>")
     typeDeclFoo.modifier.modifierType.l shouldBe List(ModifierTypes.PRIVATE)
 
@@ -109,7 +98,7 @@ class ProtocolExtensionTests extends SwiftSrc2CpgSuite {
 
     val List(typeDeclFooExtension) = cpg.typeDecl.nameExact("Foo<extension>").l
     typeDeclFooExtension.fullName shouldBe "Test0.swift:<global>.Foo<extension>"
-    typeDeclFooExtension.member.name.l.sorted shouldBe List("h", "i", "j", "someOtherFunc")
+    typeDeclFooExtension.member.name.l.sorted shouldBe List("h", "i", "j")
     typeDeclFooExtension.inheritsFromTypeFullName.l shouldBe List("AnotherProtocol", "SomeProtocol")
     typeDeclFooExtension.modifier.modifierType.l shouldBe List(ModifierTypes.PRIVATE)
 
