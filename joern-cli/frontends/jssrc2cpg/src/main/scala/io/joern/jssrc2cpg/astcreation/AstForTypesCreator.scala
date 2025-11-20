@@ -90,7 +90,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   private def createFakeConstructor(
     code: String,
     forElem: BabelNodeInfo,
-    methodBlockContent: List[Ast] = List.empty
+    methodBlockContent: ConstructorContent
   ): MethodAst = {
     val fakeStartEnd =
       s"""
@@ -114,10 +114,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       |   "body": []
       | }
       |}""".stripMargin
-    val result = createMethodAstAndNode(
-      createBabelNodeInfo(ujson.read(fakeConstructorCode)),
-      methodBlockContent = methodBlockContent
-    )
+    val result =
+      createMethodAstAndNode(createBabelNodeInfo(ujson.read(fakeConstructorCode)), false, false, methodBlockContent)
     result.methodNode.code(code)
     result
   }
@@ -125,28 +123,38 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   private def findClassConstructor(clazz: BabelNodeInfo): Option[Value] =
     classMembers(clazz).find(isConstructor)
 
-  private def createClassConstructor(classExpr: BabelNodeInfo, constructorContent: List[Ast]): MethodAst =
+  protected case class ConstructorContent(
+    clazz: Option[BabelNodeInfo],
+    constructorContent: List[Value],
+    typeDecl: Option[NewTypeDecl]
+  )
+  protected object ConstructorContent {
+    def empty: ConstructorContent = ConstructorContent(None, List.empty, None)
+  }
+
+  private def createClassConstructor(classExpr: BabelNodeInfo, constructorContent: ConstructorContent): MethodAst =
     findClassConstructor(classExpr) match {
       case Some(classConstructor) if hasKey(classConstructor, "body") =>
         val result =
-          createMethodAstAndNode(createBabelNodeInfo(classConstructor), methodBlockContent = constructorContent)
+          createMethodAstAndNode(createBabelNodeInfo(classConstructor), false, false, constructorContent)
         diffGraph.addEdge(result.methodNode, NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), EdgeTypes.AST)
         result
       case Some(classConstructor) =>
         val methodNode =
-          createMethodDefinitionNode(createBabelNodeInfo(classConstructor), methodBlockContent = constructorContent)
+          createMethodDefinitionNode(createBabelNodeInfo(classConstructor), constructorContent)
         diffGraph.addEdge(methodNode, NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), EdgeTypes.AST)
         MethodAst(Ast(methodNode), methodNode, Ast(methodNode))
       case _ =>
-        val result = createFakeConstructor("constructor() {}", classExpr, methodBlockContent = constructorContent)
+        val result = createFakeConstructor("constructor() {}", classExpr, constructorContent)
         diffGraph.addEdge(result.methodNode, NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), EdgeTypes.AST)
         result
     }
 
   private def interfaceConstructor(typeName: String, tsInterface: BabelNodeInfo): NewMethod =
     findClassConstructor(tsInterface) match {
-      case Some(interfaceConstructor) => createMethodDefinitionNode(createBabelNodeInfo(interfaceConstructor))
-      case _                          => createFakeConstructor(s"new: $typeName", tsInterface).methodNode
+      case Some(interfaceConstructor) =>
+        createMethodDefinitionNode(createBabelNodeInfo(interfaceConstructor), ConstructorContent.empty)
+      case _ => createFakeConstructor(s"new: $typeName", tsInterface, ConstructorContent.empty).methodNode
     }
 
   private def astsForEnumMember(tsEnumMember: BabelNodeInfo): Seq[Ast] = {
@@ -169,7 +177,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     }
   }
 
-  private def astForClassMember(
+  protected def astForClassMember(
     classElement: Value,
     typeDeclNode: NewTypeDecl,
     ignoreInitCalls: Boolean = false
@@ -180,12 +188,12 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val typeFullName  = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
     val memberNode_ = nodeInfo.node match {
       case TSDeclareMethod | TSDeclareFunction =>
-        val function = createMethodDefinitionNode(nodeInfo)
+        val function = createMethodDefinitionNode(nodeInfo, ConstructorContent.empty)
         addModifier(function, nodeInfo.json)
         memberNode(nodeInfo, function.name, nodeInfo.code, typeFullName, Seq(function.fullName))
           .possibleTypes(possibleTypes)
       case ClassMethod | ClassPrivateMethod =>
-        val function = createMethodAstAndNode(nodeInfo).methodNode
+        val function = createMethodAstAndNode(nodeInfo, false, false, ConstructorContent.empty).methodNode
         addModifier(function, nodeInfo.json)
         memberNode(nodeInfo, function.name, nodeInfo.code, typeFullName, Seq(function.fullName))
           .possibleTypes(possibleTypes)
@@ -196,7 +204,12 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       case TSPropertySignature | ObjectProperty if hasKey(nodeInfo.json("key"), "name") =>
         val memberNodeInfo = createBabelNodeInfo(nodeInfo.json("key"))
         val name           = memberNodeInfo.json("name").str
-        memberNode(nodeInfo, name, nodeInfo.code, typeFullName).possibleTypes(possibleTypes)
+        val memberNode_    = memberNode(nodeInfo, name, nodeInfo.code, typeFullName).possibleTypes(possibleTypes)
+        astsForDecorators(nodeInfo).foreach { decoratorAst =>
+          Ast.storeInDiffGraph(decoratorAst, diffGraph)
+          decoratorAst.root.foreach(diffGraph.addEdge(memberNode_, _, EdgeTypes.AST))
+        }
+        memberNode_
       case _ =>
         val name = nodeInfo.node match {
           case ClassProperty        => code(nodeInfo.json("key"))
@@ -210,15 +223,16 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
           // TODO: name field most likely needs adjustment for other Babel AST types
           case _ => nodeInfo.code
         }
-        memberNode(nodeInfo, name, nodeInfo.code, typeFullName).possibleTypes(possibleTypes)
+        val memberNode_ = memberNode(nodeInfo, name, nodeInfo.code, typeFullName).possibleTypes(possibleTypes)
+        astsForDecorators(nodeInfo).foreach { decoratorAst =>
+          Ast.storeInDiffGraph(decoratorAst, diffGraph)
+          decoratorAst.root.foreach(diffGraph.addEdge(memberNode_, _, EdgeTypes.AST))
+        }
+        memberNode_
     }
 
     addModifier(memberNode_, classElement)
     diffGraph.addEdge(typeDeclNode, memberNode_, EdgeTypes.AST)
-    astsForDecorators(nodeInfo).foreach { decoratorAst =>
-      Ast.storeInDiffGraph(decoratorAst, diffGraph)
-      decoratorAst.root.foreach(diffGraph.addEdge(memberNode_, _, EdgeTypes.AST))
-    }
 
     if (!ignoreInitCalls && hasKey(nodeInfo.json, "value") && !nodeInfo.json("value").isNull) {
       val lhsAst = astForNode(nodeInfo.json("key"))
@@ -378,11 +392,11 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val allClassMembers = classMembers(clazz, withConstructor = false).toList
 
     // adding all other members and retrieving their initialization calls
-    val memberInitCalls = allClassMembers
-      .filter(m => !isStaticMember(m) && (isInitializedMember(m) || isParameterProperty(m)))
-      .map(m => astForClassMember(m, typeDeclNode_))
+    val memberInitCalls =
+      allClassMembers.filter(m => !isStaticMember(m) && (isInitializedMember(m) || isParameterProperty(m)))
 
-    val constructor     = createClassConstructor(clazz, memberInitCalls)
+    val constructor =
+      createClassConstructor(clazz, ConstructorContent(Some(clazz), memberInitCalls, Some(typeDeclNode_)))
     val constructorNode = constructor.methodNode
 
     // adding all class methods / functions and uninitialized, non-static members
@@ -538,7 +552,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       val typeFullName  = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
       val memberNodes = nodeInfo.node match {
         case TSCallSignatureDeclaration | TSMethodSignature =>
-          val functionNode = createMethodDefinitionNode(nodeInfo)
+          val functionNode = createMethodDefinitionNode(nodeInfo, ConstructorContent.empty)
           addModifier(functionNode, nodeInfo.json)
           Seq(
             memberNode(nodeInfo, functionNode.name, nodeInfo.code, typeFullName, Seq(functionNode.fullName))
