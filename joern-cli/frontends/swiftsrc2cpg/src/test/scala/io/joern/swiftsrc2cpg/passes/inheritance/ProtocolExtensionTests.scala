@@ -54,9 +54,6 @@ class ProtocolExtensionTests extends SwiftSrc2CpgSuite {
   private val protocolFooExtensionCode =
     """
       |extension Foo: SomeProtocol, AnotherProtocol {
-      |  var h = 0.0
-      |  var i: String
-      |  static var j = 2
       |  func someOtherFunc() {}
       |}
       |""".stripMargin
@@ -80,7 +77,7 @@ class ProtocolExtensionTests extends SwiftSrc2CpgSuite {
     val List(typeDeclFoo) = cpg.typeDecl.nameExact("Foo").l
     typeDeclFoo.fullName shouldBe "Test0.swift:<global>.Foo"
     typeDeclFoo.member.name.l.sorted shouldBe List("a", "b", "c", "d", "e", "f", "g")
-    typeDeclFoo.inheritsFromTypeFullName.l shouldBe List("Bar", "Test0.swift:<global>.Foo<extension>")
+    typeDeclFoo.inheritsFromTypeFullName.l shouldBe List("Bar")
     typeDeclFoo.modifier.modifierType.l shouldBe List(ModifierTypes.PRIVATE)
 
     val List(fooConstructor) = typeDeclFoo.method.isConstructor.l
@@ -96,20 +93,8 @@ class ProtocolExtensionTests extends SwiftSrc2CpgSuite {
     fooStaticInit.fullName shouldBe s"Test0.swift:<global>.Foo.${io.joern.x2cpg.Defines.StaticInitMethodName}"
     fooStaticInit.block.astChildren.assignment.code.l.sorted shouldBe List("var e = 1", "var f = true")
 
-    val List(typeDeclFooExtension) = cpg.typeDecl.nameExact("Foo<extension>").l
-    typeDeclFooExtension.fullName shouldBe "Test0.swift:<global>.Foo<extension>"
-    typeDeclFooExtension.member.name.l.sorted shouldBe List("h", "i", "j")
-    typeDeclFooExtension.inheritsFromTypeFullName.l shouldBe List("AnotherProtocol", "SomeProtocol")
-    typeDeclFooExtension.modifier.modifierType.l shouldBe List(ModifierTypes.PRIVATE)
-
-    val List(fooExtensionConstructor) = typeDeclFooExtension.method.isConstructor.l
-    fooExtensionConstructor.fullName shouldBe s"Test0.swift:<global>.Foo<extension>.init:()->Test0.swift:<global>.Foo<extension>"
-    fooExtensionConstructor.block.astChildren.assignment.code.l.sorted shouldBe List("var h = 0.0")
-
-    val List(fooExtensionStaticInit) =
-      typeDeclFooExtension.method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).l
-    fooExtensionStaticInit.fullName shouldBe s"Test0.swift:<global>.Foo<extension>.${io.joern.x2cpg.Defines.StaticInitMethodName}"
-    fooExtensionStaticInit.block.astChildren.assignment.code.l.sorted shouldBe List("var j = 2")
+    val List(someOtherFunc) = cpg.method.nameExact("someOtherFunc").l
+    someOtherFunc.fullName shouldBe "Test0.swift:<global>.Foo<extension>.someOtherFunc:()->ANY"
   }
 
   "ProtocolExtensionTests" should {

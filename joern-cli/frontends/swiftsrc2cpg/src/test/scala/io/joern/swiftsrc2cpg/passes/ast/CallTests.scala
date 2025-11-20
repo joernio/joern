@@ -131,10 +131,7 @@ class CallTests extends SwiftCompilerSrc2CpgSuite {
         val cpg = code(testCode)
 
         // These extension calls should be static calls.
-        // Currently, there is no way to detect this as the swift-parser AST does not carry this information.
-        // Hence, they are treated as dynamic calls like regular method calls.
-        // We will leave this test in to document to current state and to remind us to fix this in the future.
-        // TODO: Fix this once we can detect extension method calls properly. (see similar test with compiler support below)
+        // Currently, there is no way to detect this as we have no correct method fullnames at calls without compiler support at all.
         val List(fooCall) = cpg.call.nameExact("foo").l
         fooCall.methodFullName shouldBe x2cpg.Defines.DynamicCallUnknownFullName
         fooCall.signature shouldBe ""
@@ -170,32 +167,29 @@ class CallTests extends SwiftCompilerSrc2CpgSuite {
           |}
           |""".stripMargin
 
-      pendingUntilFixed {
-        // These extension calls should be static calls.
-        // Currently, there is no way to detect this as the swift-parser AST does not carry this information.
-        // Hence, they are treated as dynamic calls like regular method calls.
-        // We will leave this test in to document to current state and to remind us to fix this in the future.
-        // TODO: Fix this once we can detect extension method calls properly.
-        // TODO: Extend the compiler info queries to be able to detect static calls reliably.
-        val cpg = codeWithSwiftSetup(testCode)
+      val cpg = codeWithSwiftSetup(testCode)
 
-        val List(fooCall) = cpg.call.nameExact("foo").l
-        fooCall.methodFullName shouldBe "SwiftTest.Foo.foo:()->()"
-        fooCall.signature shouldBe "()->()"
-        fooCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH // Should be STATIC_DISPATCH for extension methods, but it is not
-        val List(fooCallReceiver) = fooCall.receiver.isIdentifier.l
-        fooCallReceiver.name shouldBe "self"
-        fooCallReceiver.typeFullName shouldBe "SwiftTest.Foo"
+      val List(fooMethod) = cpg.method.nameExact("foo").l
+      fooMethod.fullName shouldBe "SwiftTest.Foo<extension>.foo:()->()"
+      val List(barMethod) = cpg.method.nameExact("bar").l
+      barMethod.fullName shouldBe "SwiftTest.Foo<extension>.bar:()->()"
 
-        val List(barCall) = cpg.call.nameExact("bar").l
-        barCall.methodFullName shouldBe "SwiftTest.Foo.bar:()->()"
-        barCall.signature shouldBe "()->()"
-        barCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH // Should be STATIC_DISPATCH for extension methods, but it is not
+      val List(fooCall) = cpg.call.nameExact("foo").l
+      fooCall.methodFullName shouldBe fooMethod.fullName
+      fooCall.signature shouldBe "()->()"
+      fooCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      val List(fooCallReceiver) = fooCall.receiver.isIdentifier.l
+      fooCallReceiver.name shouldBe "self"
+      fooCallReceiver.typeFullName shouldBe "SwiftTest.Foo"
 
-        val List(barCallReceiverCall) = barCall.receiver.isIdentifier.l
-        barCallReceiverCall.name shouldBe "self"
-        barCallReceiverCall.typeFullName shouldBe "SwiftTest.Foo"
-      }
+      val List(barCall) = cpg.call.nameExact("bar").l
+      barCall.methodFullName shouldBe barMethod.fullName
+      barCall.signature shouldBe "()->()"
+      barCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+      val List(barCallReceiverCall) = barCall.receiver.isIdentifier.l
+      barCallReceiverCall.name shouldBe "self"
+      barCallReceiverCall.typeFullName shouldBe "SwiftTest.Foo"
     }
 
     "be correct for simple calls to functions from protocols" in {

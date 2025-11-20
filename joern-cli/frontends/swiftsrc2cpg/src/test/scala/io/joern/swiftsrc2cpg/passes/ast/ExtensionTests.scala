@@ -17,17 +17,14 @@ class ExtensionTests extends AstSwiftSrc2CpgSuite {
   private val ext1Code =
     """
       |extension Foo {
-      |  var d = 0.0
-      |  var e: String
-      |  static var f = 3
-      |  func someOtherFunc() {}
+      |  func someFooFunc() {}
       |}
       |""".stripMargin
 
   private val ext2Code =
     """
       |extension Foo : Bar {
-      |  var g: String = ""
+      |  func someOtherFooFunc() {}
       |}
       |""".stripMargin
 
@@ -46,24 +43,11 @@ class ExtensionTests extends AstSwiftSrc2CpgSuite {
       fooStaticInit.fullName shouldBe s"Foo.swift:<global>.Foo.${io.joern.x2cpg.Defines.StaticInitMethodName}"
       fooStaticInit.block.astChildren.assignment.code.l.sorted shouldBe List("var c = 2")
 
-      val List(fooExt1TypeDecl) = cpg.typeDecl.fullNameExact("Ext1.swift:<global>.Foo<extension>").l
-      fooExt1TypeDecl.name shouldBe "Foo<extension>"
-      fooExt1TypeDecl.member.name.l.sorted shouldBe List("d", "e", "f")
-      val List(fooExt1TypeDeclConstructor) = fooExt1TypeDecl.method.isConstructor.l
-      fooExt1TypeDeclConstructor.fullName shouldBe s"Ext1.swift:<global>.Foo<extension>.init:()->Ext1.swift:<global>.Foo<extension>"
-      fooExt1TypeDeclConstructor.block.astChildren.assignment.code.l.sorted shouldBe List("var d = 0.0")
-      val List(fooExt1TypeDeclStaticInit) =
-        fooExt1TypeDecl.method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).l
-      fooExt1TypeDeclStaticInit.fullName shouldBe s"Ext1.swift:<global>.Foo<extension>.${io.joern.x2cpg.Defines.StaticInitMethodName}"
-      fooExt1TypeDeclStaticInit.block.astChildren.assignment.code.l.sorted shouldBe List("var f = 3")
+      val List(someFooFunc) = cpg.method.nameExact("someFooFunc").l
+      someFooFunc.fullName shouldBe "Ext1.swift:<global>.Foo<extension>.someFooFunc:()->ANY"
 
-      val List(fooExt2TypeDecl) = cpg.typeDecl.fullNameExact("Ext2.swift:<global>.Foo<extension>").l
-      fooExt2TypeDecl.name shouldBe "Foo<extension>"
-      fooExt2TypeDecl.member.name.l.sorted shouldBe List("g")
-      val List(fooExt2TypeDeclConstructor) = fooExt2TypeDecl.method.isConstructor.l
-      fooExt2TypeDeclConstructor.fullName shouldBe s"Ext2.swift:<global>.Foo<extension>.init:()->Ext2.swift:<global>.Foo<extension>"
-      fooExt2TypeDeclConstructor.block.astChildren.assignment.code.l.sorted shouldBe List("var g: String = \"\"")
-      fooExt2TypeDecl.method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName) shouldBe empty
+      val List(someOtherFooFunc) = cpg.method.nameExact("someOtherFooFunc").l
+      someOtherFooFunc.fullName shouldBe "Ext2.swift:<global>.Foo<extension>.someOtherFooFunc:()->ANY"
     }
 
   }

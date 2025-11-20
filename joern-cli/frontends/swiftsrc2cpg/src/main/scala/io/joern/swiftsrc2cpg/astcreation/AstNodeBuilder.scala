@@ -6,7 +6,7 @@ import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes, Operators}
 
 trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -138,7 +138,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     callAst(callNode_, arguments)
   }
 
-  protected def typeForSelfExpression(): String = {
+  protected def fullNameOfEnclosingTypeDecl(): String = {
     scope.getEnclosingTypeDeclFullName.getOrElse(Defines.Any)
   }
 
@@ -150,7 +150,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
         t
       }
       .getOrElse(name match {
-        case "self" | "Self" => typeForSelfExpression()
+        case "self" | "Self" => fullNameOfEnclosingTypeDecl()
         case _               => Defines.Any
       })
     identifierNode(node, name, name, tpe)
@@ -221,20 +221,16 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
       (Seq(inheritsFunctionFullName), Defines.ClosureApplyMethodName)
     } else (Seq.empty, methodNode.name)
 
-    val (astParentType, astParentFullName) = astParentInfo()
     val methodTypeDeclNode = typeDeclNode(
       node,
       methodNode.name,
       methodNode.fullName,
       methodNode.filename,
       methodNode.fullName,
-      astParentType = astParentType,
-      astParentFullName = astParentFullName,
       inherits = inherits
     )
-
-    methodNode.astParentFullName = astParentFullName
-    methodNode.astParentType = astParentType
+    Ast.storeInDiffGraph(Ast(methodTypeDeclNode), diffGraph)
+    diffGraph.addEdge(methodAstParentStack.head, methodTypeDeclNode, EdgeTypes.AST)
 
     val functionBinding = NewBinding()
       .name(bindingName)
@@ -245,7 +241,6 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
       .withBindsEdge(methodTypeDeclNode, functionBinding)
       .withRefEdge(functionBinding, methodNode)
 
-    Ast.storeInDiffGraph(Ast(methodTypeDeclNode), diffGraph)
     Ast.storeInDiffGraph(functionBindAst, diffGraph)
   }
 

@@ -73,7 +73,7 @@ class AstCreator(
     val fakeGlobalMethod =
       methodNode(ast, name, name, fullName, None, path, Option(NodeTypes.TYPE_DECL), Option(fullName))
     methodAstParentStack.push(fakeGlobalMethod)
-    scope.pushNewTypeDeclScope(fullName)
+    scope.pushNewTypeDeclScope(name, fullName)
     scope.pushNewMethodScope(fullName, name, fakeGlobalMethod, None)
     val sourceFileAst = astForNode(ast)
     val methodReturn  = methodReturnNode(ast, Defines.Any)
