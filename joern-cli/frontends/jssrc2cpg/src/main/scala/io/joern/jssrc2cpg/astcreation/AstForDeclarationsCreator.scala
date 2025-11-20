@@ -75,10 +75,12 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         val node             = annotationNode(decorator, decorator.code, name, fullName)
         val assignmentAsts = exprNode.json("arguments").arr.toList.map { arg =>
           createBabelNodeInfo(arg).node match {
-            case AssignmentExpression =>
-              annotationAssignmentAst(code(arg("left")), code(arg), astForNodeWithFunctionReference(arg("right")))
+            case AssignmentExpression if !createBabelNodeInfo(arg("right")).node.isInstanceOf[FunctionLike] =>
+              annotationAssignmentAst(code(arg("left")), code(arg), astForNode(arg("right")))
+            case n if n.isInstanceOf[FunctionLike] =>
+              Ast()
             case _ =>
-              annotationAssignmentAst("value", code(arg), astForNodeWithFunctionReference(arg))
+              annotationAssignmentAst("value", code(arg), astForNode(arg))
           }
         }
         annotationAst(node, assignmentAsts)
