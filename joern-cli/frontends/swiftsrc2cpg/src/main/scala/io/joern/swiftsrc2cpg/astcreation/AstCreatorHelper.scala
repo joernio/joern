@@ -272,7 +272,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   case class MethodInfo(name: String, fullName: String, signature: String, returnType: String) {
-    val fullNameAndSignature: String = s"$fullName:$signature"
+    val fullNameAndSignature: String    = s"$fullName:$signature"
+    val fullNameAndSignatureExt: String = fullNameAndSignature.replace(s".$name:", s"<extension>.$name:")
   }
 
   case class TypeInfo(name: String, fullName: String)
