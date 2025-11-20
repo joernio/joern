@@ -8,6 +8,7 @@ import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg, LanguageFrontend, TestCpg}
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.semanticcpg.validation.PostFrontendValidator
 
 import java.io.File
 import java.nio.file.Path
@@ -22,7 +23,9 @@ trait Jimple2CpgFrontend extends LanguageFrontend {
 
   override def execute(sourceCodeFile: File): Cpg = {
     val config = getConfig().getOrElse(Config())
-    new Jimple2Cpg().createCpg(config.withInputPath(sourceCodeFile.getAbsolutePath)).get
+    val cpg    = new Jimple2Cpg().createCpg(config.withInputPath(sourceCodeFile.getAbsolutePath)).get
+    new PostFrontendValidator(cpg, false).run()
+    cpg
   }
 }
 
