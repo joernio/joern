@@ -12,6 +12,7 @@ import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.utils.FileUtil
+import io.shiftleft.semanticcpg.validation.PostFrontendValidator
 
 trait AstC2CpgFrontend extends LanguageFrontend {
   override type ConfigType = Config
@@ -44,6 +45,7 @@ trait AstC2CpgFrontend extends LanguageFrontend {
     new AstCreationPass(cpg, preprocessedFiles, sourceFileExtensions, config, global).createAndApply()
     new AstCreationPass(cpg, preprocessedFiles, FileDefaults.HeaderFileExtensions, config, global).createAndApply()
     new FunctionDeclNodePass(cpg, global.unhandledMethodDeclarations(), config).createAndApply()
+    new PostFrontendValidator(cpg, false).run()
     cpg
   }
 }

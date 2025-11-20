@@ -19,7 +19,7 @@ trait SwiftSrc2CpgFrontend extends LanguageFrontend {
       .withOutputPath(cpgOutFile.toString)
 
     val tmp = new SwiftSrc2Cpg().createCpg(config).get
-    new PostFrontendValidator(tmp, true).run()
+    new PostFrontendValidator(tmp, false).run()
     tmp
   }
 }

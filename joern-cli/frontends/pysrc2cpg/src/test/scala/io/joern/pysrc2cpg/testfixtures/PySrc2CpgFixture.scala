@@ -32,7 +32,7 @@ trait PythonFrontend extends LanguageFrontend {
     val tmp = new Py2CpgOnFileSystem()
       .createCpg(Py2CpgOnFileSystemConfig().withDisableFileContent(false).withInputPath(sourceCodePath.getAbsolutePath))
       .get
-    new PostFrontendValidator(tmp, true).run()
+    new PostFrontendValidator(tmp, false).run()
     tmp
   }
 }
