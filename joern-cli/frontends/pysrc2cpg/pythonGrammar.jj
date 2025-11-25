@@ -822,7 +822,13 @@ SPECIAL_TOKEN: {
 
 <INDENT_CHECK> SKIP: {
   <INDENT_CHECK_SPACE: " "> { currentIndent += 1; }
-| <INDENT_CHECK_TAB: "\t">  { currentIndent = currentIndent / 8 + 8; }
+| <INDENT_CHECK_TAB: "\t">  {
+  // The "/ 8 * 8" rounds down to the closest multiple of 8.
+  // This is needed to handle python 2 mixed space and tab use cases
+  // where tab is not strictly counted as 8 spaces but rather adds the
+  // amount of spaces to get to the next multiple of 8.
+  currentIndent = currentIndent / 8 * 8 + 8;
+}
 | <INDENT_CHECK_NEWLINE: "\n" | "\r"> { currentIndent = 0; }
 | <INDENT_CHECK_END_OF_MEDIUM: "\u0019">
 | <INDENT_CHECK_END: ~[]> {
