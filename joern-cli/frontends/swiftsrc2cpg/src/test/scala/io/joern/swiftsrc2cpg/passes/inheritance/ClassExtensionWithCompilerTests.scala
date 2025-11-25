@@ -18,7 +18,7 @@ class ClassExtensionWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
         "main.swift"
       ).moreCode(
         s"""
-          |extension Foo {
+          |extension Foo : SomeProtocol, AnotherProtocol {
           |  // var c = "c" --> compiler says: extensions must not contain stored properties
           |
           |  func foo() {
@@ -29,6 +29,16 @@ class ClassExtensionWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
           |  }
           |}""".stripMargin,
         "SwiftTest/Sources/FooExt.swift"
+      ).moreCode(
+        """
+          |protocol SomeProtocol {}
+          |""".stripMargin,
+        "SwiftTest/Sources/SomeProtocol.swift"
+      ).moreCode(
+        """
+          |protocol AnotherProtocol {}
+          |""".stripMargin,
+        "SwiftTest/Sources/AnotherProtocol.swift"
       )
       cpg.call.codeExact("print(a)").argument.isCall.code.l shouldBe List("self.a")
       cpg.call.codeExact("print(a)").argument.isCall.typeFullName.l shouldBe List("Swift.String")
@@ -39,6 +49,14 @@ class ClassExtensionWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
       cpg.call.codeExact("print(c)").argument.isCall.code.l shouldBe List("self.c")
       cpg.call.codeExact("print(c)").argument.isCall.typeFullName.l shouldBe List("Swift.String")
       cpg.call.codeExact("print(c)").argument.isCall.argument.isIdentifier.typeFullName.l shouldBe List("SwiftTest.Foo")
+
+      cpg.typeDecl.nameExact("Foo").inheritsFromTypeFullName.sorted.l shouldBe List(
+        "SwiftTest.AnotherProtocol",
+        "SwiftTest.SomeProtocol"
+      )
+
+      cpg.typ.nameExact("AnotherProtocol")._typeDeclViaInheritsFromIn.fullName.l shouldBe List("SwiftTest.Foo")
+      cpg.typ.nameExact("SomeProtocol")._typeDeclViaInheritsFromIn.fullName.l shouldBe List("SwiftTest.Foo")
     }
 
   }

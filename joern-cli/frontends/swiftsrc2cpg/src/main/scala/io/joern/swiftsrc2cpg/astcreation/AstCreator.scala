@@ -5,7 +5,6 @@ import io.joern.swiftsrc2cpg.parser.SwiftJsonParser.ParseResult
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.swiftsrc2cpg.utils.FullnameProvider
 import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.SwiftFileLocalTypeMapping
-import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
@@ -18,7 +17,7 @@ import scala.collection.mutable
 
 class AstCreator(
   val config: Config,
-  val global: Global,
+  val global: SwiftSrcGlobal,
   val parserResult: ParseResult,
   val typeMap: SwiftFileLocalTypeMapping
 )(implicit withSchemaValidation: ValidationMode)

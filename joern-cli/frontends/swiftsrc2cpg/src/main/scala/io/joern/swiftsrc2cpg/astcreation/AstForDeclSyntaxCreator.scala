@@ -395,7 +395,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  private def inheritsFrom(node: TypeDeclLike): Seq[String] = {
+  private def inheritsFrom(node: TypeDeclLike | ExtensionDeclSyntax): Seq[String] = {
     val clause = node match {
       case c: ClassDeclSyntax          => c.inheritanceClause
       case p: ProtocolDeclSyntax       => p.inheritanceClause
@@ -403,6 +403,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case e: EnumDeclSyntax           => e.inheritanceClause
       case a: ActorDeclSyntax          => a.inheritanceClause
       case a: AssociatedTypeDeclSyntax => a.inheritanceClause
+      case e: ExtensionDeclSyntax      => e.inheritanceClause
       case _: TypeAliasDeclSyntax      => None
     }
     val inherits = clause match {
@@ -417,6 +418,9 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForExtensionDeclSyntax(node: ExtensionDeclSyntax): Ast = {
     val TypeInfo(typeName, typeFullName) = typeNameInfoForDeclSyntax(node)
     val typeRefNode_                     = typeRefNode(node, code(node), typeFullName)
+
+    val inherits = inheritsFrom(node)
+    global.addExtensionInherits(typeFullName, inherits)
 
     typeRefIdStack.push(typeRefNode_)
     scope.pushNewTypeDeclScope(typeName, typeFullName)
