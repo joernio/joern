@@ -55,6 +55,7 @@ class ClassExtensionWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
         "SwiftTest.SomeProtocol"
       )
 
+      cpg.typ.name.l.distinct shouldBe cpg.typ.name.l
       cpg.typ.nameExact("AnotherProtocol")._typeDeclViaInheritsFromIn.fullName.l shouldBe List("SwiftTest.Foo")
       cpg.typ.nameExact("SomeProtocol")._typeDeclViaInheritsFromIn.fullName.l shouldBe List("SwiftTest.Foo")
     }

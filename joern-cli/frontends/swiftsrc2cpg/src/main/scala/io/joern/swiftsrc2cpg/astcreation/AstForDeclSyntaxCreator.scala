@@ -406,13 +406,11 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case e: ExtensionDeclSyntax      => e.inheritanceClause
       case _: TypeAliasDeclSyntax      => None
     }
-    val inherits = clause match {
+    clause match {
       case Some(value) =>
         value.inheritedTypes.children.map(c => AstCreatorHelper.cleanType(code(c.`type`))).distinct.sorted
       case None => Seq.empty
     }
-    inherits.foreach(registerType)
-    inherits
   }
 
   private def astForExtensionDeclSyntax(node: ExtensionDeclSyntax): Ast = {

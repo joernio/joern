@@ -12,8 +12,10 @@ object SwiftTypeNodePass {
 
       override def fullToShortName(typeName: String): String = {
         typeName match {
-          case name if name.endsWith(NamespaceTraversal.globalNamespaceName) => NamespaceTraversal.globalNamespaceName
-          case _ => typeName.takeWhile(_ != '<').split('.').lastOption.getOrElse(typeName)
+          case name if name.endsWith(NamespaceTraversal.globalNamespaceName) =>
+            NamespaceTraversal.globalNamespaceName
+          case _ =>
+            typeName.split('.').lastOption.map(_.takeWhile(_ != ':')).getOrElse(typeName)
         }
       }
 

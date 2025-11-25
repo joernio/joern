@@ -75,6 +75,7 @@ class StructureExtensionTests extends SwiftSrc2CpgSuite {
     val List(typeDeclFoo) = cpg.typeDecl.nameExact("Foo").l
     typeDeclFoo.fullName shouldBe "Test0.swift:<global>.Foo"
     typeDeclFoo.member.name.l.sorted shouldBe List("a", "b", "c", "d", "e", "f", "g")
+    cpg.typ.name.l.distinct shouldBe cpg.typ.name.l
     typeDeclFoo.inheritsFromTypeFullName.sorted.l shouldBe List("AnotherProtocol", "Bar", "SomeProtocol")
     typeDeclFoo.modifier.modifierType.l shouldBe List(ModifierTypes.PRIVATE)
 
