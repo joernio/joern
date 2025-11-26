@@ -8,6 +8,7 @@ import org.apache.commons.io.FileUtils
 import io.shiftleft.codepropertygraph.generated.nodes
 import io.joern.dataflowengineoss.language.*
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.validation.PostFrontendValidator
 
 import java.nio.file.Files
 
@@ -28,7 +29,9 @@ class GhidraFrontend extends LanguageFrontend {
 
     val cpgBin = dir.getAbsolutePath
     val config = Config().withInputPath(inputFile.getAbsolutePath).withOutputPath(cpgBin)
-    new Ghidra2Cpg().createCpg(config).get
+    val cpg    = new Ghidra2Cpg().createCpg(config).get
+    new PostFrontendValidator(cpg, false).run()
+    cpg
   }
 
 }

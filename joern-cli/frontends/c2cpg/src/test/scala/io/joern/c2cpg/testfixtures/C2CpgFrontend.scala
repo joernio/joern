@@ -5,6 +5,7 @@ import io.joern.c2cpg.Config
 import io.joern.x2cpg.testfixtures.LanguageFrontend
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.utils.FileUtil
+import io.shiftleft.semanticcpg.validation.PostFrontendValidator
 
 trait C2CpgFrontend extends LanguageFrontend {
   override type ConfigType = Config
@@ -17,6 +18,8 @@ trait C2CpgFrontend extends LanguageFrontend {
       .fold(Config())(_.asInstanceOf[Config])
       .withInputPath(sourceCodePath.getAbsolutePath)
       .withOutputPath(cpgOutFile.toString)
-    c2cpg.createCpg(config).get
+    val res = c2cpg.createCpg(config).get
+    new PostFrontendValidator(res, false).run()
+    res
   }
 }
