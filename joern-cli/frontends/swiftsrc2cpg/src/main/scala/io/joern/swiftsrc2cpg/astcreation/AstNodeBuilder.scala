@@ -204,7 +204,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     callAst(callNode_, List(argAst))
   }
 
-  protected def createFunctionTypeAndTypeDecl(method: NewMethod): Ast = {
+  protected def createFunctionBinding(method: NewMethod): Ast = {
     val parentNode: NewTypeDecl = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.get
     method.astParentFullName = parentNode.fullName
     method.astParentType = parentNode.label

@@ -50,9 +50,12 @@ class ClassExtensionWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
       cpg.call.codeExact("print(c)").argument.isCall.typeFullName.l shouldBe List("Swift.String")
       cpg.call.codeExact("print(c)").argument.isCall.argument.isIdentifier.typeFullName.l shouldBe List("SwiftTest.Foo")
 
-      cpg.typeDecl.nameExact("Foo").inheritsFromTypeFullName.sorted.l shouldBe List(
-        "SwiftTest.AnotherProtocol",
-        "SwiftTest.SomeProtocol"
+      val List(foo) = cpg.typeDecl.nameExact("Foo").l
+      foo.inheritsFromTypeFullName.sorted.l shouldBe List("SwiftTest.AnotherProtocol", "SwiftTest.SomeProtocol")
+
+      foo.boundMethod.fullName.l shouldBe List(
+        "SwiftTest.Foo.init:()->SwiftTest.Foo",
+        "SwiftTest.Foo<extension>.foo:()->()"
       )
 
       cpg.typ.name.l.distinct shouldBe cpg.typ.name.l

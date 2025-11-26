@@ -169,6 +169,13 @@ class CallTests extends SwiftCompilerSrc2CpgSuite {
 
       val cpg = codeWithSwiftSetup(testCode)
 
+      cpg.typeDecl.nameExact("Foo").boundMethod.fullName.l shouldBe List(
+        "SwiftTest.Foo.init:()->SwiftTest.Foo",
+        "SwiftTest.Foo.main:()->()",
+        "SwiftTest.Foo<extension>.foo:()->()",
+        "SwiftTest.Foo<extension>.bar:()->()"
+      )
+
       val List(fooMethod) = cpg.method.nameExact("foo").l
       fooMethod.fullName shouldBe "SwiftTest.Foo<extension>.foo:()->()"
       val List(barMethod) = cpg.method.nameExact("bar").l
