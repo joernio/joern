@@ -158,8 +158,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       modifiers
     )
 
-    val typeDeclAst = createFunctionBinding(methodNode_)
-    Ast.storeInDiffGraph(mAst.merge(typeDeclAst), diffGraph)
+    val functionBindingAst = createFunctionBinding(methodNode_)
+    Ast.storeInDiffGraph(mAst.merge(functionBindingAst), diffGraph)
     diffGraph.addEdge(typeDeclNode, methodNode_, EdgeTypes.AST)
   }
 
@@ -283,6 +283,36 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
+  private def createStaticConstructor(node: SwiftNode, inits: List[DeclSyntax], typeDeclNode: NewTypeDecl): Unit = {
+    val constructorName = io.joern.x2cpg.Defines.StaticInitMethodName
+    val signature       = s"()->${typeDeclNode.fullName}"
+    val methodFullName  = s"${typeDeclNode.fullName}.$constructorName:$signature"
+
+    val methodNode_ =
+      methodNode(node, constructorName, constructorName, methodFullName, Some(signature), parserResult.filename)
+    val modifiers =
+      Seq(NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), NewModifier().modifierType(ModifierTypes.STATIC))
+
+    val blockNode = NewBlock()
+    methodAstParentStack.push(methodNode_)
+    scope.pushNewMethodScope(methodFullName, constructorName, blockNode, typeRefIdStack.headOption)
+    localAstParentStack.push(blockNode)
+
+    val initAsts = inits.map(m => astForDeclMember(m, typeDeclNode))
+
+    scope.popScope()
+    methodAstParentStack.pop()
+    localAstParentStack.pop()
+
+    val bodyAst           = blockAst(blockNode, initAsts)
+    val methodReturnNode_ = methodReturnNode(node, typeDeclNode.fullName)
+    val mAst              = methodAst(methodNode_, Nil, bodyAst, methodReturnNode_, modifiers)
+
+    val functionBindingAst = createFunctionBinding(methodNode_)
+    Ast.storeInDiffGraph(mAst.merge(functionBindingAst), diffGraph)
+    diffGraph.addEdge(typeDeclNode, methodNode_, EdgeTypes.AST)
+  }
+
   private def astForTypeDeclSyntax(node: TypeDeclLike): Ast = {
     // TODO:
     // - handle genericParameterClause
@@ -330,16 +360,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val staticMemberInits = allClassMembers.filter(isStaticMember)
 
     if (staticMemberInits.nonEmpty) {
-      val init = staticInitMethodAstAndBlock(
-        node,
-        staticMemberInits,
-        s"$typeFullName.${io.joern.x2cpg.Defines.StaticInitMethodName}",
-        None,
-        Defines.Any,
-        typeDeclNode_
-      )
-      Ast.storeInDiffGraph(init.ast, diffGraph)
-      diffGraph.addEdge(typeDeclNode_, init.method, EdgeTypes.AST)
+      createStaticConstructor(node, staticMemberInits, typeDeclNode_)
     }
 
     methodAstParentStack.pop()
@@ -666,8 +687,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         diffGraph.addEdge(methodAstParentStack.head, methodNode_, EdgeTypes.AST)
         Ast(ref)
       case None =>
-        val typeDeclAst = createFunctionBinding(methodNode_)
-        astForMethod.merge(typeDeclAst)
+        val functionBindingAst = createFunctionBinding(methodNode_)
+        astForMethod.merge(functionBindingAst)
     }
   }
 
@@ -1003,8 +1024,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     localAstParentStack.pop()
     methodAstParentStack.pop()
 
-    val typeDeclAst = createFunctionBinding(methodNode_)
-    Ast.storeInDiffGraph(astForMethod.merge(typeDeclAst), diffGraph)
+    val functionBindingAst = createFunctionBinding(methodNode_)
+    Ast.storeInDiffGraph(astForMethod.merge(functionBindingAst), diffGraph)
     diffGraph.addEdge(methodAstParentStack.head, methodNode_, EdgeTypes.AST)
   }
 

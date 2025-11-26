@@ -36,11 +36,12 @@ class ExtensionTests extends AstSwiftSrc2CpgSuite {
       val List(fooTypeDecl) = cpg.typeDecl.fullNameExact("Foo.swift:<global>.Foo").l
       fooTypeDecl.name shouldBe "Foo"
       fooTypeDecl.member.name.l.sorted shouldBe List("a", "b", "c")
-      val List(fooConstructor) = fooTypeDecl.method.isConstructor.l
+      val List(fooConstructor) = fooTypeDecl.method.nameExact("init").isConstructor.l
       fooConstructor.fullName shouldBe s"Foo.swift:<global>.Foo.init:()->Foo.swift:<global>.Foo"
       fooConstructor.block.astChildren.assignment.code.l.sorted shouldBe List("var a = 1")
-      val List(fooStaticInit) = fooTypeDecl.method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).l
-      fooStaticInit.fullName shouldBe s"Foo.swift:<global>.Foo.${io.joern.x2cpg.Defines.StaticInitMethodName}"
+      val List(fooStaticInit) =
+        fooTypeDecl.method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).isConstructor.l
+      fooStaticInit.fullName shouldBe s"Foo.swift:<global>.Foo.${io.joern.x2cpg.Defines.StaticInitMethodName}:()->Foo.swift:<global>.Foo"
       fooStaticInit.block.astChildren.assignment.code.l.sorted shouldBe List("var c = 2")
 
       val List(someFooFunc) = cpg.method.nameExact("someFooFunc").l
