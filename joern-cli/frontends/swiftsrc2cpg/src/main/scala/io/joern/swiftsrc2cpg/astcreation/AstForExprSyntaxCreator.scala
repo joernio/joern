@@ -440,6 +440,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val nodeCode = code(node.macroName)
     val fullName = fullnameProvider.declFullname(node).getOrElse(nodeCode)
     val tpe      = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
+    registerType(tpe)
 
     val trailingClosureAsts            = node.trailingClosure.toList.map(astForNode)
     val additionalTrailingClosuresAsts = node.additionalTrailingClosures.children.map(c => astForNode(c.closure))

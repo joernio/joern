@@ -181,6 +181,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         scope.addVariableReference("self", selfNode, selfNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
 
         val callTpe = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
+        registerType(callTpe)
         fieldAccessAst(node, node, Ast(selfNode), s"self.$identifierName", identifierName, callTpe)
       } else {
         // otherwise it must come from a variable (potentially captured from an outer scope)

@@ -86,7 +86,8 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     partAst: Ast,
     additionalArgsAst: Seq[Ast] = Seq.empty
   ): Ast = {
-    val tpe = fullnameProvider.typeFullname(node).orElse(Some(Defines.Any))
+    val tpe = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
+    registerType(tpe)
     val callNode_ = callNode(
       node,
       s"${codeOf(baseAst.nodes.head)}[${codeOf(partAst.nodes.head)}]",
@@ -94,14 +95,15 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
       Operators.indexAccess,
       DispatchTypes.STATIC_DISPATCH,
       None,
-      tpe
+      Some(tpe)
     )
     val arguments = List(baseAst, partAst) ++ additionalArgsAst
     callAst(callNode_, arguments)
   }
 
   protected def createFieldAccessCallAst(node: SwiftNode, baseAst: Ast, partNode: NewNode): Ast = {
-    val tpe = fullnameProvider.typeFullname(node).orElse(Some(Defines.Any))
+    val tpe = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
+    registerType(tpe)
     val callNode_ = callNode(
       node,
       s"${codeOf(baseAst.nodes.head)}.${codeOf(partNode)}",
@@ -109,7 +111,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
       Operators.fieldAccess,
       DispatchTypes.STATIC_DISPATCH,
       None,
-      tpe
+      Some(tpe)
     )
     val arguments = List(baseAst, Ast(partNode))
     callAst(callNode_, arguments)

@@ -221,6 +221,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           val tpeFromTypeMap = fullnameProvider.typeFullname(c)
           val typeFullName   = tpeFromTypeMap.getOrElse(typeNameForDeclSyntax(d))
           val memberNode_    = memberNode(c, cCode, cCode, typeFullName)
+          registerType(typeFullName)
           scope.addVariable(cCode, memberNode_, typeFullName, VariableScopeManager.ScopeType.TypeDeclScope)
           diffGraph.addEdge(typeDeclNode, memberNode_, EdgeTypes.AST)
         }
@@ -233,6 +234,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           val typeFullName = tpeFromTypeMap.getOrElse(
             c.typeAnnotation.map(t => AstCreatorHelper.cleanType(code(t.`type`))).getOrElse(Defines.Any)
           )
+          registerType(typeFullName)
           val memberNode_ = memberNode(c, cCode, cCode, typeFullName)
           scope.addVariable(cCode, memberNode_, typeFullName, VariableScopeManager.ScopeType.TypeDeclScope)
           diffGraph.addEdge(typeDeclNode, memberNode_, EdgeTypes.AST)
@@ -882,6 +884,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val nodeCode = code(node.macroName)
     val fullName = fullnameProvider.declFullname(node).getOrElse(nodeCode)
     val tpe      = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
+    registerType(tpe)
 
     val trailingClosureAsts            = node.trailingClosure.toList.map(astForNode)
     val additionalTrailingClosuresAsts = node.additionalTrailingClosures.children.map(c => astForNode(c.closure))

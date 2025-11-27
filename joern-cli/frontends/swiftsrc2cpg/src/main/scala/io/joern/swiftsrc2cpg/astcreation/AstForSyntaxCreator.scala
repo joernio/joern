@@ -206,9 +206,10 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     // TODO: handle attributes
     // TODO: handle modifiers
     // TODO: handle defaultValue
-    val label      = code(node.firstName)
-    val name       = node.secondName.fold(label)(code)
-    val tpe        = fullnameProvider.typeFullname(node).getOrElse(AstCreatorHelper.cleanType(code(node.`type`)))
+    val label = code(node.firstName)
+    val name  = node.secondName.fold(label)(code)
+    val tpe   = fullnameProvider.typeFullname(node).getOrElse(AstCreatorHelper.cleanType(code(node.`type`)))
+    registerType(tpe)
     val isVariadic = node.ellipsis.isDefined
 
     val parameterName = node.firstName match {
@@ -324,11 +325,12 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     if (initAst.isEmpty) {
       Ast()
     } else {
-      val patternAst     = astForNode(node.pattern)
-      val tpeFromTypeMap = fullnameProvider.typeFullname(node.pattern)
+      val patternAst = astForNode(node.pattern)
+      val tpe        = fullnameProvider.typeFullname(node.pattern).getOrElse(typeFullName)
+      registerType(tpe)
       patternAst.root
         .collect { case i: NewIdentifier => i }
-        .foreach(_.typeFullName(tpeFromTypeMap.getOrElse(typeFullName)))
+        .foreach(_.typeFullName(tpe))
       createAssignmentCallAst(node, patternAst, initAst.head, code(node))
     }
   }
