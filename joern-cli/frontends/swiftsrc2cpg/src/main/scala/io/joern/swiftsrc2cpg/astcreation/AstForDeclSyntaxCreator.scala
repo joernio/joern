@@ -439,7 +439,9 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val typeRefNode_                     = typeRefNode(node, code(node), typeFullName)
 
     val inherits = inheritsFrom(node)
-    global.addExtensionInherits(typeFullName, inherits)
+    if (inherits.nonEmpty) {
+      global.addExtensionInherits(typeFullName, inherits)
+    }
 
     typeRefIdStack.push(typeRefNode_)
     scope.pushNewTypeDeclScope(typeName, typeFullName)

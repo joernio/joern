@@ -1,9 +1,7 @@
 package io.joern.swiftsrc2cpg.passes
 
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.*
 
