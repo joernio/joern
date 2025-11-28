@@ -71,7 +71,7 @@ object AstCreatorHelper {
   def cleanType(rawType: String): String = {
     if (rawType == Defines.Any) return rawType
     val normalizedTpe = StringUtils.normalizeSpace(rawType.stripSuffix(" ()"))
-    stripGenerics(normalizedTpe) match {
+    val tpe = stripGenerics(normalizedTpe) match {
       // Empty or problematic types
       case ""                   => Defines.Any
       case t if t.contains("?") => Defines.Any
@@ -98,6 +98,11 @@ object AstCreatorHelper {
       case t if t.contains("( ") => t.substring(0, t.indexOf("( "))
       // Default case
       case typeStr => typeStr
+    }
+    if (tpe.startsWith("@")) {
+      tpe.substring(tpe.indexOf(" ") + 1)
+    } else {
+      tpe
     }
   }
 
