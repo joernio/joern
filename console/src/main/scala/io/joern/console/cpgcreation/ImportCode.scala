@@ -232,7 +232,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
         report("""|Code successfully imported. You can now query it using `cpg`.
           |For an overview of all imported code, type `workspace`.""".stripMargin)
         console.applyDefaultOverlays(cpg)
-        generator.applyPostProcessingPasses(cpg)
+        console.applyPostProcessingPasses(cpg)
       }
       .getOrElse(throw new ConsoleException(s"Error creating project for input path: `$inputPath`"))
   }
