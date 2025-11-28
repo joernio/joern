@@ -620,14 +620,23 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
           helloWorldMappings should contain(
             ("class_decl", (20, 497), Some("SwiftHelloWorldLib.HelloWorld"), Some("SwiftHelloWorldLib.HelloWorld"))
           )
-          helloWorldMappings should contain(
+
+          helloWorldMappings should contain oneElementOf List(
+            // TODO: in preparation for Swift 6.2.x migration, modifiers are actually honored in constructor decl positions
             (
               "constructor_decl",
               (374, 405),
               Some("(SwiftHelloWorldLib.HelloWorld.Type)->()->SwiftHelloWorldLib.HelloWorld"),
               Some("SwiftHelloWorldLib.HelloWorld.init()->SwiftHelloWorldLib.HelloWorld")
+            ),
+            (
+              "constructor_decl",
+              (381, 405),
+              Some("(SwiftHelloWorldLib.HelloWorld.Type)->()->SwiftHelloWorldLib.HelloWorld"),
+              Some("SwiftHelloWorldLib.HelloWorld.init()->SwiftHelloWorldLib.HelloWorld")
             )
           )
+
           helloWorldMappings should contain(
             ("func_decl", (408, 494), Some("()"), Some("SwiftHelloWorldLib.HelloWorld.greet(from:Swift.String)->()"))
           )
