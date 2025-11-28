@@ -1,7 +1,7 @@
 package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.x2cpg.datastructures.VariableScopeManager
-import io.joern.x2cpg.datastructures.VariableScopeManager.ScopeType
+import io.joern.x2cpg.datastructures.VariableScopeManager.*
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 
 import scala.collection.mutable
@@ -22,7 +22,7 @@ class SwiftVariableScopeManager extends VariableScopeManager {
   }
 
   def restoreMembersForExtension(typeDeclFullName: String): Unit = {
-    val members = typeDeclToMemberMap.get(typeDeclFullName.stripSuffix("<extension>"))
+    val members = typeDeclToMemberMap.get(typeDeclFullName)
     members.foreach(memberList =>
       memberList.foreach(memberElement =>
         super.addVariable(
@@ -45,6 +45,40 @@ class SwiftVariableScopeManager extends VariableScopeManager {
         typeDeclToMemberMap(typeDeclFullName.get) = members
       }
     }
+  }
+
+  private def getAllEnclosingFullNames(scopeHead: Option[ScopeElement]): Seq[String] = {
+    scopeHead
+      .collect {
+        case methodScope: MethodScopeElement =>
+          methodScope.methodName +: getAllEnclosingFullNames(methodScope.surroundingScope)
+        case typeDeclScope: TypeDeclScopeElement =>
+          typeDeclScope.name +: getAllEnclosingFullNames(typeDeclScope.surroundingScope)
+        case other =>
+          getAllEnclosingFullNames(other.surroundingScope)
+      }
+      .getOrElse(Seq.empty)
+  }
+
+  /** Compute the scope path for the current stack.
+    *
+    * We override the base implementation to provide Swift-specific behavior: We need to ensure the produced scope path
+    * is stable for Swift constructs (including extensions) and does not contain redundant repeated segments.
+    *
+    * What `collapsed` does:
+    *   - `getAllEnclosingFullNames(stack)` yields names from the innermost scope to the outermost.
+    *   - We `reverse` that sequence so we iterate from outermost to innermost.
+    *   - The `foldLeft` builds a sequence while skipping a name if it is the same as the last appended one. This
+    *     removes adjacent duplicates (caused by extensions with the same name) while preserving the overall ordering.
+    *
+    * The final path is the collapsed segments joined by `ScopePathSeparator`.
+    */
+  override def computeScopePath: String = {
+    val collapsed = getAllEnclosingFullNames(stack).reverse.foldLeft(Seq.empty[String]) {
+      case (acc, name) if acc.lastOption.contains(name) => acc
+      case (acc, name)                                  => acc :+ name
+    }
+    collapsed.mkString(ScopePathSeparator)
   }
 
 }

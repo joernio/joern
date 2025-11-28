@@ -13,7 +13,7 @@ object VariableScopeManager {
   /** Trait representing a generic scope element. Each scope element can have a surrounding scope and a map of variable
     * names to their nodes.
     */
-  protected sealed trait ScopeElement {
+  sealed trait ScopeElement {
     val surroundingScope: Option[ScopeElement]
     val nameToVariableNode: mutable.Map[String, (NewNode, String, String)] = mutable.HashMap.empty
 
@@ -52,7 +52,7 @@ object VariableScopeManager {
     * @param surroundingScope
     *   The surrounding scope, if any.
     */
-  protected case class MethodScopeElement(
+  case class MethodScopeElement(
     methodFullName: String,
     methodName: String,
     capturingRefNode: Option[NewNode],
@@ -107,16 +107,19 @@ object VariableScopeManager {
     * @param surroundingScope
     *   The surrounding scope, if any.
     */
-  private case class BlockScopeElement(scopeNode: NewNode, surroundingScope: Option[ScopeElement]) extends ScopeElement
+  case class BlockScopeElement(scopeNode: NewNode, surroundingScope: Option[ScopeElement]) extends ScopeElement
 
   /** Case class representing a type declaration scope element.
     *
+    * @param name
+    *   The name of the type declaration.
     * @param fullname
     *   The full name (qualified name) of the type declaration this scope represents.
     * @param surroundingScope
     *   The surrounding scope, if any.
     */
-  private case class TypeDeclScopeElement(fullname: String, surroundingScope: Option[ScopeElement]) extends ScopeElement
+  case class TypeDeclScopeElement(name: String, fullname: String, surroundingScope: Option[ScopeElement])
+      extends ScopeElement
 
 }
 
@@ -229,11 +232,13 @@ class VariableScopeManager {
 
   /** Pushes a new type decl scope onto the scope stack.
     *
+    * @param name
+    *   The name of the type decl
     * @param fullName
     *   The full name (fully qualified name) of the type decl
     */
-  def pushNewTypeDeclScope(fullName: String): Unit = {
-    stack = Option(TypeDeclScopeElement(fullName, stack))
+  def pushNewTypeDeclScope(name: String, fullName: String): Unit = {
+    stack = Option(TypeDeclScopeElement(name, fullName, stack))
   }
 
   /** Pops the current scope from the scope stack. */

@@ -547,14 +547,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     *   Some(demangled type fullname) if successful, None otherwise
     */
   private def calculateTypeFullname(mangledName: String): Option[String] = {
-    mangledNameCache.computeIfAbsent(
-      mangledName,
-      _ =>
-        demangle(mangledName)
-          .map(removeModifier)
-          .map(AstCreatorHelper.stripGenerics)
-          .map(_.replace(" ", "").stripSuffix(".Type"))
-    )
+    calculateDeclFullname(mangledName).map(_.stripSuffix(".Type"))
   }
 
   /** This regex is designed to clean up Swift demangled type names by extracting meaningful parts and removing internal
@@ -578,7 +571,8 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     *
     * E.g., `(extension in FooExt)Foo.bar() -> Swift.String` becomes `FooExt.Foo.bar() -> Swift.String`.
     */
-  private val ExtensionNameRegex: Regex = """\(extension\sin\s([^)]+)\):(.*)""".r
+  private val ExtensionNameRegex: Regex      = """^(.*)\(extension\sin\s([^)]+)\):(.*)""".r
+  private val ExtensionNameStartRegex: Regex = """^\(extension\sin\s([^)]+)\):(.*)""".r
 
   /** Calculates a demangled declaration fullname from a mangled Swift declaration name.
     *
@@ -595,12 +589,13 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
       mangledName,
       _ =>
         demangle(mangledName)
+          .map(n => AstCreatorHelper.stripGenerics(removeModifier(n)))
           .map {
-            case MemberNameRegex(parent, name, rest) => removeModifier(s"$parent$name$rest")
-            case ExtensionNameRegex(name, rest)      => removeModifier(s"$name$rest")
-            case other                               => removeModifier(other)
+            case ExtensionNameStartRegex(name, rest)  => s"$name.$rest"
+            case ExtensionNameRegex(head, name, rest) => s"$head$name.$rest"
+            case MemberNameRegex(parent, name, rest)  => s"$parent$name$rest"
+            case other                                => other
           }
-          .map(AstCreatorHelper.stripGenerics)
           .map(_.replace(" ", ""))
     )
   }

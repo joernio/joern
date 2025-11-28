@@ -71,7 +71,7 @@ object AstCreatorHelper {
   def cleanType(rawType: String): String = {
     if (rawType == Defines.Any) return rawType
     val normalizedTpe = StringUtils.normalizeSpace(rawType.stripSuffix(" ()"))
-    stripGenerics(normalizedTpe) match {
+    val tpe = stripGenerics(normalizedTpe) match {
       // Empty or problematic types
       case ""                   => Defines.Any
       case t if t.contains("?") => Defines.Any
@@ -98,6 +98,11 @@ object AstCreatorHelper {
       case t if t.contains("( ") => t.substring(0, t.indexOf("( "))
       // Default case
       case typeStr => typeStr
+    }
+    if (tpe.startsWith("@")) {
+      tpe.substring(tpe.indexOf(" ") + 1)
+    } else {
+      tpe
     }
   }
 
@@ -167,7 +172,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     if (scope.variableIsInTypeDeclScope(identifierName)) {
       // we found it as member of the surrounding type decl
       // (Swift does not allow to access any member / function of the outer class instance)
-      val tpe      = scope.typeDeclFullNameForMember(identifierName).getOrElse(typeForSelfExpression())
+      val tpe      = scope.typeDeclFullNameForMember(identifierName).getOrElse(fullNameOfEnclosingTypeDecl())
       val selfNode = identifierNode(node, "self", "self", tpe)
       scope.addVariableReference("self", selfNode, selfNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
 
@@ -176,11 +181,12 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       fieldAccessAst(node, node, Ast(selfNode), s"self.$identifierName", identifierName, callTpe)
     } else {
       if (config.swiftBuild && scope.lookupVariable(identifierName).isEmpty) {
-        val tpe      = typeForSelfExpression()
+        val tpe      = fullNameOfEnclosingTypeDecl()
         val selfNode = identifierNode(node, "self", "self", tpe)
         scope.addVariableReference("self", selfNode, selfNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
 
         val callTpe = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
+        registerType(callTpe)
         fieldAccessAst(node, node, Ast(selfNode), s"self.$identifierName", identifierName, callTpe)
       } else {
         // otherwise it must come from a variable (potentially captured from an outer scope)
@@ -231,7 +237,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
           case _: DeinitializerDeclSyntax =>
             Defines.Void
           case _: InitializerDeclSyntax =>
-            ReturnTypeMatcher.findFirstMatchIn(signature).map(_.group(2)).getOrElse(astParentInfo()._2)
+            ReturnTypeMatcher.findFirstMatchIn(signature).map(_.group(2)).getOrElse(fullNameOfEnclosingTypeDecl())
           case _ =>
             ReturnTypeMatcher.findFirstMatchIn(signature).map(_.group(2)).getOrElse(Defines.Any)
         }
@@ -246,7 +252,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
           case a: AccessorDeclSyntax =>
             (Defines.Any, Defines.Any)
           case i: InitializerDeclSyntax =>
-            val (_, returnType) = astParentInfo()
+            val returnType = fullNameOfEnclosingTypeDecl()
             (s"${paramSignature(i.signature.parameterClause)}->$returnType", returnType)
           case _: DeinitializerDeclSyntax =>
             val returnType = Defines.Any
@@ -272,7 +278,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   case class MethodInfo(name: String, fullName: String, signature: String, returnType: String) {
-    val fullNameAndSignature: String = s"$fullName:$signature"
+    val fullNameAndSignature: String    = s"$fullName:$signature"
+    val fullNameAndSignatureExt: String = fullNameAndSignature.replaceFirst(s"\\.$name:", s"<extension>.$name:")
   }
 
   case class TypeInfo(name: String, fullName: String)

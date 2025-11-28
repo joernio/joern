@@ -2,11 +2,10 @@ package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.x2cpg
-import io.joern.x2cpg.{Ast, ValidationMode}
-import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
 
 trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -87,7 +86,8 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     partAst: Ast,
     additionalArgsAst: Seq[Ast] = Seq.empty
   ): Ast = {
-    val tpe = fullnameProvider.typeFullname(node).orElse(Some(Defines.Any))
+    val tpe = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
+    registerType(tpe)
     val callNode_ = callNode(
       node,
       s"${codeOf(baseAst.nodes.head)}[${codeOf(partAst.nodes.head)}]",
@@ -95,14 +95,15 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
       Operators.indexAccess,
       DispatchTypes.STATIC_DISPATCH,
       None,
-      tpe
+      Some(tpe)
     )
     val arguments = List(baseAst, partAst) ++ additionalArgsAst
     callAst(callNode_, arguments)
   }
 
   protected def createFieldAccessCallAst(node: SwiftNode, baseAst: Ast, partNode: NewNode): Ast = {
-    val tpe = fullnameProvider.typeFullname(node).orElse(Some(Defines.Any))
+    val tpe = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
+    registerType(tpe)
     val callNode_ = callNode(
       node,
       s"${codeOf(baseAst.nodes.head)}.${codeOf(partNode)}",
@@ -110,7 +111,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
       Operators.fieldAccess,
       DispatchTypes.STATIC_DISPATCH,
       None,
-      tpe
+      Some(tpe)
     )
     val arguments = List(baseAst, Ast(partNode))
     callAst(callNode_, arguments)
@@ -138,7 +139,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     callAst(callNode_, arguments)
   }
 
-  protected def typeForSelfExpression(): String = {
+  protected def fullNameOfEnclosingTypeDecl(): String = {
     scope.getEnclosingTypeDeclFullName.getOrElse(Defines.Any)
   }
 
@@ -150,42 +151,10 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
         t
       }
       .getOrElse(name match {
-        case "self" | "Self" => typeForSelfExpression()
+        case "self" | "Self" => fullNameOfEnclosingTypeDecl()
         case _               => Defines.Any
       })
     identifierNode(node, name, name, tpe)
-  }
-
-  def staticInitMethodAstAndBlock(
-    node: SwiftNode,
-    inits: List[DeclSyntax],
-    fullName: String,
-    signature: Option[String],
-    returnType: String,
-    typeDecl: NewTypeDecl,
-    fileName: Option[String] = None
-  ): AstAndMethod = {
-    val methodNode = NewMethod()
-      .name(io.joern.x2cpg.Defines.StaticInitMethodName)
-      .fullName(fullName)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-    if (signature.isDefined) {
-      methodNode.signature(signature.get)
-    }
-    if (fileName.isDefined) {
-      methodNode.filename(fileName.get)
-    }
-
-    val blockNode = NewBlock()
-    localAstParentStack.push(blockNode)
-    val initAsts = inits.map(m => astForDeclMember(m, typeDecl))
-    localAstParentStack.pop()
-
-    val staticModifier = NewModifier().modifierType(ModifierTypes.STATIC)
-    val body           = blockAst(blockNode, initAsts)
-    val methodReturn   = methodReturnNode(node, returnType)
-    AstAndMethod(methodAst(methodNode, Nil, body, methodReturn, List(staticModifier)), methodNode, body)
   }
 
   protected def createStaticCallNode(
@@ -204,7 +173,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     callAst(callNode_, List(argAst))
   }
 
-  protected def createFunctionTypeAndTypeDecl(method: NewMethod): Ast = {
+  protected def createFunctionBinding(method: NewMethod): Ast = {
     val parentNode: NewTypeDecl = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.get
     method.astParentFullName = parentNode.fullName
     method.astParentType = parentNode.label
@@ -221,20 +190,16 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
       (Seq(inheritsFunctionFullName), Defines.ClosureApplyMethodName)
     } else (Seq.empty, methodNode.name)
 
-    val (astParentType, astParentFullName) = astParentInfo()
     val methodTypeDeclNode = typeDeclNode(
       node,
       methodNode.name,
       methodNode.fullName,
       methodNode.filename,
       methodNode.fullName,
-      astParentType = astParentType,
-      astParentFullName = astParentFullName,
       inherits = inherits
     )
-
-    methodNode.astParentFullName = astParentFullName
-    methodNode.astParentType = astParentType
+    Ast.storeInDiffGraph(Ast(methodTypeDeclNode), diffGraph)
+    diffGraph.addEdge(methodAstParentStack.head, methodTypeDeclNode, EdgeTypes.AST)
 
     val functionBinding = NewBinding()
       .name(bindingName)
@@ -245,7 +210,6 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
       .withBindsEdge(methodTypeDeclNode, functionBinding)
       .withRefEdge(functionBinding, methodNode)
 
-    Ast.storeInDiffGraph(Ast(methodTypeDeclNode), diffGraph)
     Ast.storeInDiffGraph(functionBindAst, diffGraph)
   }
 

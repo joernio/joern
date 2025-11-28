@@ -70,11 +70,28 @@ object GsonTypeInfoReader {
     val rangeObj = obj.get("range").getAsJsonObject
     val start    = rangeObj.get("start").getAsInt
     val end      = rangeObj.get("end").getAsInt
-    val offset = astNodeKind(obj) match {
+
+    // no adjustment needed for zero-length ranges, e.g., for member accesses:
+    if (start == end) return (start, end)
+
+    val endOffset = astNodeKind(obj) match {
       case NodeKinds.DotCallExpr => 3 // offsets are off by 2 from SwiftParser for simple dot calls
       case _                     => 1
     }
-    if (start == end) (start, end) else (start, end + offset)
+    val startWithModifiers = obj match {
+      case _ if obj.has("attrs") =>
+        /** Handles cases where attributes modify the start position of the range. For example, in the presence of
+          * attributes like `@escaping` or for access modifiers like `static` the start position may need to be adjusted
+          * to account for the attribute's position because swift-parser does include attributes in the range of the
+          * associated declaration while swiftc does not.
+          */
+        safeRange(obj.getAsJsonArray("attrs").get(0).getAsJsonObject) match {
+          case Some((s, e)) if s < start => s
+          case _                         => start
+        }
+      case _ => start
+    }
+    (startWithModifiers, end + endOffset)
   }
 
   /** Safely extracts the source range from a JSON object.

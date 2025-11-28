@@ -294,7 +294,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       callee match {
         case m: MemberAccessExprSyntax if m.base.isEmpty || code(m.base.get) == "self" =>
           // referencing implicit self
-          val selfTpe  = typeForSelfExpression()
+          val selfTpe  = fullNameOfEnclosingTypeDecl()
           val selfNode = identifierNode(node, "self", "self", selfTpe)
           scope.addVariableReference("self", selfNode, selfTpe, EvaluationStrategies.BY_REFERENCE)
           handleCallNodeArgs(node, Ast(selfNode), code(m.declName.baseName))
@@ -308,7 +308,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         case other if isRefToClosure(node, other) =>
           astForClosureCall(node)
         case declReferenceExprSyntax: DeclReferenceExprSyntax if code(declReferenceExprSyntax) != "self" =>
-          val selfTpe  = typeForSelfExpression()
+          val selfTpe  = fullNameOfEnclosingTypeDecl()
           val selfNode = identifierNode(declReferenceExprSyntax, "self", "self", selfTpe)
           scope.addVariableReference(selfNode.name, selfNode, selfTpe, EvaluationStrategies.BY_REFERENCE)
           handleCallNodeArgs(node, Ast(selfNode), calleeCode)
@@ -440,6 +440,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val nodeCode = code(node.macroName)
     val fullName = fullnameProvider.declFullname(node).getOrElse(nodeCode)
     val tpe      = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
+    registerType(tpe)
 
     val trailingClosureAsts            = node.trailingClosure.toList.map(astForNode)
     val additionalTrailingClosuresAsts = node.additionalTrailingClosures.children.map(c => astForNode(c.closure))
@@ -463,7 +464,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val baseAst = base match {
       case None =>
         // referencing implicit self
-        val selfTpe  = typeForSelfExpression()
+        val selfTpe  = fullNameOfEnclosingTypeDecl()
         val baseNode = identifierNode(node, "self", "self", selfTpe)
         scope.addVariableReference("self", baseNode, selfTpe, EvaluationStrategies.BY_REFERENCE)
         Ast(baseNode)
