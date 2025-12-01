@@ -6,7 +6,14 @@ import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
 
 class SwiftSrcGlobal extends Global {
+
+  /** Mapping from extension fullName to the set of names it inherits from. */
   val extensionInherits: ConcurrentHashMap[String, mutable.HashSet[String]] = new ConcurrentHashMap()
+
+  /** Mapping from extension method fullName (provided by the compiler) to the fullName the frontend generates for
+    * fullName uniqueness.
+    */
+  val extensionMethodFullNameMapping: ConcurrentHashMap[String, String] = new ConcurrentHashMap()
 
   def addExtensionInherits(extensionFullName: String, inheritNames: Seq[String]): Unit = {
     extensionInherits.compute(
@@ -19,6 +26,10 @@ class SwiftSrcGlobal extends Global {
         }
       }
     )
+  }
+
+  def addExtensionMethodFullName(extensionMethodFullName: String, fullName: String): Unit = {
+    extensionMethodFullNameMapping.putIfAbsent(extensionMethodFullName, fullName)
   }
 
 }

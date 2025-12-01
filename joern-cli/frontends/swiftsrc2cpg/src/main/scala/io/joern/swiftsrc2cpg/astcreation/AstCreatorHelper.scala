@@ -180,7 +180,11 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       val callTpe        = variableOption.map(_._2).getOrElse(Defines.Any)
       fieldAccessAst(node, node, Ast(selfNode), s"self.$identifierName", identifierName, callTpe)
     } else {
-      if (config.swiftBuild && scope.lookupVariable(identifierName).isEmpty) {
+      if (
+        config.swiftBuild &&
+        scope.lookupVariable(identifierName).isEmpty &&
+        fullnameProvider.declFullname(node).nonEmpty
+      ) {
         val tpe      = fullNameOfEnclosingTypeDecl()
         val selfNode = identifierNode(node, "self", "self", tpe)
         scope.addVariableReference("self", selfNode, selfNode.typeFullName, EvaluationStrategies.BY_REFERENCE)

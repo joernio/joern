@@ -28,9 +28,14 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
   private val global  = new SwiftSrcGlobal()
   private var typeMap = SwiftTypesProvider(config).map(_.retrieveMappings()).getOrElse(Map.empty)
 
-  def typesSeen(): List[String] = global.usedTypes.keys().asScala.filterNot(Defines.SwiftTypes.contains).toList
+  def typesSeen(): List[String] =
+    global.usedTypes.keys().asScala.filterNot(Defines.SwiftTypes.contains).toList
 
-  def extensionInherits(): Map[String, Set[String]] = global.extensionInherits.asScala.view.mapValues(_.toSet).toMap
+  def extensionInherits(): Map[String, Set[String]] =
+    global.extensionInherits.asScala.view.mapValues(_.toSet).toMap
+
+  def extensionMethodFullNameMapping(): Map[String, String] =
+    global.extensionMethodFullNameMapping.asScala.toMap
 
   override def generateParts(): Array[String] = astGenRunnerResult.parsedFiles.toArray
 
