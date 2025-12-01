@@ -196,6 +196,39 @@ class CallTests extends SwiftCompilerSrc2CpgSuite {
       barCallReceiverCall.typeFullName shouldBe "SwiftTest.Foo"
     }
 
+    "be correct for calls to generic functions from extensions with compiler support" in {
+      val testCode =
+        """
+          |class Foo<T> {}
+          |
+          |extension Foo<Int> {
+          |  func bar() {}
+          |}
+          |
+          |extension Foo<Double> {
+          |  func bar() {}
+          |}
+          |
+          |func main() {
+          |  Foo<Int>().bar()
+          |  Foo<Double>().bar()
+          |}
+          |""".stripMargin
+
+      val cpg = codeWithSwiftSetup(testCode)
+
+      val List(barMethodInt, barMethodDouble) = cpg.method.nameExact("bar").l
+      barMethodInt.fullName shouldBe "SwiftTest.Foo<AwhereA==Swift.Int><extension>.bar:()->()"
+      barMethodDouble.fullName shouldBe "SwiftTest.Foo<AwhereA==Swift.Double><extension>.bar:()->()"
+
+      val List(intBarCall, doubleBarCall) = cpg.call.nameExact("bar").l
+      intBarCall.methodFullName shouldBe barMethodInt.fullName
+      intBarCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+      doubleBarCall.methodFullName shouldBe barMethodDouble.fullName
+      doubleBarCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    }
+
     "be correct for simple calls to functions from protocols" in {
       val testCode =
         """
