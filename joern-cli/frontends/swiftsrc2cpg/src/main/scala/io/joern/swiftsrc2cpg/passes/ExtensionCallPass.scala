@@ -6,40 +6,43 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.*
 
-import scala.collection.immutable.HashSet
-
-/** A pass that detects calls which should dispatch to Swift extension methods.
+/** Pass that resolves extension-method-style calls and rewrites them to use static dispatch to the corresponding
+  * extension method fullName.
   *
-  * Extension methods are represented in the CPG with a `<extension>` marker in their fullName. This pass scans calls
-  * that are currently non-static and whose `methodFullName` is known at call-site but not present among declared
-  * methods. If inserting `<extension>` before the method name yields a known method full name, the call's dispatch type
-  * is changed to `STATIC_DISPATCH` and the call's `methodFullName` is updated accordingly.
+  * The pass scans call nodes in the provided CPG and for each call methodFullName present in `extensionFullNameMapping`
+  * it:
+  *   - updates the call's dispatch type to STATIC_DISPATCH
+  *   - replaces the call's methodFullName with the mapped extension method full name
   *
   * @param cpg
-  *   the code property graph being transformed
+  *   the code property graph to operate on
+  * @param extensionFullNameMapping
+  *   mapping from compiler generated methodFullName -> CPG extension methodFullName (for uniqueness)
   */
-class ExtensionCallPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Call](cpg) {
+class ExtensionCallPass(cpg: Cpg, extensionFullNameMapping: Map[String, String])
+    extends ForkJoinParallelCpgPass[Call](cpg) {
 
-  /** Cache of existing method full names in the CPG. */
-  private lazy val methodFullNames = HashSet.from(cpg.method.fullName)
-
+  /** Selects calls that are not already static dispatch and the methodFullName is not unknown. These are candidates for
+    * being rewritten to extension calls.
+    */
   override def generateParts(): Array[Call] =
     cpg.call
       .methodFullNameNot(x2cpg.Defines.DynamicCallUnknownFullName)
       .dispatchTypeNot(DispatchTypes.STATIC_DISPATCH)
       .toArray
 
-  /** For each call, if the original `methodFullName` is not present among defined methods but the transformed name with
-    * `<extension>` inserted is present, update the call to use static dispatch and the extension method fullName.
+  /** For a given call (part), if a mapping exists for its methodFullName, set the call to static dispatch and update
+    * the methodFullName to the extension's fullName.
+    *
+    * @param builder
+    *   DiffGraphBuilder used to apply modifications to the graph
+    * @param part
+    *   the call node being processed
     */
   override def runOnPart(builder: DiffGraphBuilder, part: Call): Unit = {
-    if (!methodFullNames.contains(part.methodFullName)) {
-      val methodFullNameWithExtension =
-        part.methodFullName.replaceFirst(s"\\.${part.name}:", s"<extension>.${part.name}:")
-      if (methodFullNames.contains(methodFullNameWithExtension)) {
-        builder.setNodeProperty(part, PropertyNames.DispatchType, DispatchTypes.STATIC_DISPATCH)
-        builder.setNodeProperty(part, PropertyNames.MethodFullName, methodFullNameWithExtension)
-      }
+    extensionFullNameMapping.get(part.methodFullName).foreach { methodFullNameExt =>
+      builder.setNodeProperty(part, PropertyNames.DispatchType, DispatchTypes.STATIC_DISPATCH)
+      builder.setNodeProperty(part, PropertyNames.MethodFullName, methodFullNameExt)
     }
   }
 

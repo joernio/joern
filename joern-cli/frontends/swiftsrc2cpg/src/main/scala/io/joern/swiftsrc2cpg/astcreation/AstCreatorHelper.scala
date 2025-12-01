@@ -376,7 +376,9 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
           val fullName = declFullname.substring(0, declFullname.indexOf("("))
           fullName.substring(0, fullName.lastIndexOf("."))
         } else declFullname
-        registerType(cleanedFullName)
+        if (!node.isInstanceOf[ExtensionDeclSyntax]) {
+          registerType(cleanedFullName)
+        }
         TypeInfo(name, cleanedFullName)
       case None =>
         val (_, declFullname) = calcNameAndFullName(name)

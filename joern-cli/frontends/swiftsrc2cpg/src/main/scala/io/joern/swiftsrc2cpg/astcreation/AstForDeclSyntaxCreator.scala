@@ -713,11 +713,14 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val methodInfo                                                    = methodInfoForFunctionDeclLike(node)
     val MethodInfo(methodName, methodFullName, signature, returnType) = methodInfo
-    val methodFullNameAndSignature                                    = methodInfo.fullNameAndSignatureExt
+    val methodFullNameAndSignature                                    = methodInfo.fullNameAndSignature
+    val methodFullNameAndSignatureExt                                 = methodInfo.fullNameAndSignatureExt
+    global.addExtensionMethodFullName(methodFullNameAndSignature, methodFullNameAndSignatureExt)
 
     val capturingRefNode = typeRefIdStack.headOption
-    val methodNode_ = methodNode(node, methodName, code(node), methodFullNameAndSignature, Option(signature), filename)
-    val block       = blockNode(node, PropertyDefaults.Code, Defines.Any)
+    val methodNode_ =
+      methodNode(node, methodName, code(node), methodFullNameAndSignatureExt, Option(signature), filename)
+    val block = blockNode(node, PropertyDefaults.Code, Defines.Any)
 
     methodAstParentStack.push(methodNode_)
     scope.pushNewMethodScope(methodFullName, methodName, block, capturingRefNode)
