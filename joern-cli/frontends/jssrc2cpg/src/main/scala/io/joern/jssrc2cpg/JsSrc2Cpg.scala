@@ -6,7 +6,7 @@ import io.joern.jssrc2cpg.utils.AstGenRunner
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.postProcessingPasses
-import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
+import io.joern.x2cpg.passes.callgraph.{MethodRefLinker, NaiveCallLinker}
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
 import io.joern.x2cpg.utils.{HashUtil, Report}
 import io.shiftleft.codepropertygraph.generated.Cpg

@@ -11,8 +11,7 @@ import io.joern.x2cpg.frontendspecific.jssrc2cpg.GlobalBuiltins
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
-import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+import io.shiftleft.codepropertygraph.generated.nodes.{NewIdentifier, NewMethodRef, NewNode}
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 
 import scala.util.Try
@@ -458,11 +457,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         case _ =>
           val (lhsNode, rhsAst) = nodeInfo.node match {
             case ObjectMethod =>
+              val objectMethodAst = astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true)
               val keyName = if (hasKey(nodeInfo.json("key"), "name")) { nodeInfo.json("key")("name").str }
               else { code(nodeInfo.json("key")) }
               val fieldName = stripQuotes(keyName)
-              val keyNode   = fieldIdentifierNode(nodeInfo, fieldName, fieldName)
-              (keyNode, astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true))
+              val name      = objectMethodAst.root.collect { case r: NewMethodRef => r.code }.getOrElse(fieldName)
+              val keyNode   = fieldIdentifierNode(nodeInfo, name, name)
+              (keyNode, objectMethodAst)
             case ObjectProperty =>
               val key = createBabelNodeInfo(nodeInfo.json("key"))
               val keyName = key.node match {
