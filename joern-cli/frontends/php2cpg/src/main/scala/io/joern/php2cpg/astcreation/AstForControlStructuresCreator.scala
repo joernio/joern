@@ -346,9 +346,9 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
 
     val code = s"yield from ${exprAst.rootCodeOrEmpty}"
 
-    val yieldNode = controlStructureNode(expr, ControlStructureTypes.YIELD, code)
+    val node = returnNode(expr, code)
 
-    Ast(yieldNode)
+    Ast(node)
       .withChild(exprAst)
   }
 

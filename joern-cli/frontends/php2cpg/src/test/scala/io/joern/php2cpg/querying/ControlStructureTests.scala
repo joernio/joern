@@ -1000,12 +1000,11 @@ class ControlStructureTests extends PhpCode2CpgFixture {
      |}
      |""".stripMargin)
 
-    inside(cpg.controlStructure.l) { case List(yieldStructure) =>
-      yieldStructure.controlStructureType shouldBe ControlStructureTypes.YIELD
-      yieldStructure.code shouldBe "yield from $xs"
-      yieldStructure.lineNumber shouldBe Some(3)
+    inside(cpg.ret.l) { case List(returnNode) =>
+      returnNode.code shouldBe "yield from $xs"
+      returnNode.lineNumber shouldBe Some(3)
 
-      inside(yieldStructure.astChildren.l) { case List(xs: Identifier) =>
+      inside(returnNode.astChildren.l) { case List(xs: Identifier) =>
         xs.name shouldBe "xs"
         xs.code shouldBe "$xs"
         xs.lineNumber shouldBe Some(3)
@@ -1021,12 +1020,11 @@ class ControlStructureTests extends PhpCode2CpgFixture {
        |}
        |""".stripMargin)
 
-      inside(cpg.controlStructure.l) { case List(yieldStructure) =>
-        yieldStructure.controlStructureType shouldBe ControlStructureTypes.YIELD
-        yieldStructure.code shouldBe "yield"
-        yieldStructure.lineNumber shouldBe Some(3)
+      inside(cpg.ret.l) { case List(returnNode) =>
+        returnNode.code shouldBe "yield"
+        returnNode.lineNumber shouldBe Some(3)
 
-        yieldStructure.astChildren.size shouldBe 0
+        returnNode.astChildren.size shouldBe 0
       }
     }
 
@@ -1037,12 +1035,11 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         |}
         |""".stripMargin)
 
-      inside(cpg.controlStructure.l) { case List(yieldStructure) =>
-        yieldStructure.controlStructureType shouldBe ControlStructureTypes.YIELD
-        yieldStructure.code shouldBe "yield 1"
-        yieldStructure.lineNumber shouldBe Some(3)
+      inside(cpg.ret.l) { case List(returnNode) =>
+        returnNode.code shouldBe "yield 1"
+        returnNode.lineNumber shouldBe Some(3)
 
-        inside(yieldStructure.astChildren.l) { case List(value: Literal) =>
+        inside(returnNode.astChildren.l) { case List(value: Literal) =>
           value.code shouldBe "1"
           value.lineNumber shouldBe Some(3)
         }
@@ -1056,12 +1053,11 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         |}
         |""".stripMargin)
 
-      inside(cpg.controlStructure.l) { case List(yieldStructure) =>
-        yieldStructure.controlStructureType shouldBe ControlStructureTypes.YIELD
-        yieldStructure.code shouldBe "yield 1 => $x"
-        yieldStructure.lineNumber shouldBe Some(3)
+      inside(cpg.ret.l) { case List(returnNode) =>
+        returnNode.code shouldBe "yield 1 => $x"
+        returnNode.lineNumber shouldBe Some(3)
 
-        inside(yieldStructure.astChildren.l) { case List(key: Literal, value: Identifier) =>
+        inside(returnNode.astChildren.l) { case List(key: Literal, value: Identifier) =>
           key.code shouldBe "1"
           key.lineNumber shouldBe Some(3)
 

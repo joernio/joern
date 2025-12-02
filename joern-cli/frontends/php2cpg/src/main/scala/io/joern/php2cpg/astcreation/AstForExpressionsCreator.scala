@@ -770,9 +770,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         s"yield ${maybeKey.map(_.rootCodeOrEmpty).getOrElse("")}${maybeVal.map(_.rootCodeOrEmpty).getOrElse("")}".trim
     }
 
-    val yieldNode = controlStructureNode(expr, ControlStructureTypes.YIELD, code)
+    val node = returnNode(expr, code)
 
-    Ast(yieldNode)
+    Ast(node)
       .withChildren(maybeKey.toList)
       .withChildren(maybeVal.toList)
   }
