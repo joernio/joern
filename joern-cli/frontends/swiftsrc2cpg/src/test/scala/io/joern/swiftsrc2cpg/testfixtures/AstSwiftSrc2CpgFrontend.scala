@@ -9,6 +9,7 @@ import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.utils.FileUtil
+import io.shiftleft.semanticcpg.validation.PostFrontendValidator
 
 import java.nio.file.Paths
 
@@ -28,6 +29,7 @@ trait AstSwiftSrc2CpgFrontend extends LanguageFrontend {
     val astCreationPass = new AstCreationPass(cpg, astGenResult, config)(ValidationMode.Enabled)
     astCreationPass.createAndApply()
     SwiftTypeNodePass.withRegisteredTypes(astCreationPass.typesSeen(), cpg).createAndApply()
+    new PostFrontendValidator(cpg, false).run()
     cpg
   }
 }

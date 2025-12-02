@@ -350,6 +350,7 @@ class ParserTests extends AnyFreeSpec with Matchers {
         |  z = (x,y)
         |a""".stripMargin
     )
+    testT("def init():\n\tmatch x:\n\t\tcase 'C':\n\t\t\tz = 1")
   }
 
   "explicit line joining tests" in {

@@ -8,6 +8,7 @@ import io.joern.x2cpg.frontendspecific.php2cpg
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg, LanguageFrontend}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
+import io.shiftleft.semanticcpg.validation.PostFrontendValidator
 
 import java.io.File
 
@@ -18,7 +19,9 @@ trait PhpFrontend extends LanguageFrontend {
 
   override def execute(sourceCodeFile: File): Cpg = {
     val defaultConfig: Config = getConfig().getOrElse(Config())
-    new Php2Cpg().createCpg(defaultConfig.withInputPath(sourceCodeFile.getAbsolutePath)).get
+    val cpg                   = new Php2Cpg().createCpg(defaultConfig.withInputPath(sourceCodeFile.getAbsolutePath)).get
+    new PostFrontendValidator(cpg, false).run()
+    cpg
   }
 }
 
