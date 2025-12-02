@@ -155,6 +155,12 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
     *   An optional String containing the declaration fullName if found
     */
   def declFullname(node: SwiftNode): Option[String] = {
+    declFullnameRaw(node).map(_.replace("<extension>", ""))
+  }
+
+  /** Same as FullnameProvider.declFullname but does not strip the `<extension>` tag.
+    */
+  def declFullnameRaw(node: SwiftNode): Option[String] = {
     if (typeMap.isEmpty) return None
     (node.startOffset, node.endOffset) match {
       case (Some(start), Some(end)) => declFullname((start, end), node.toString)

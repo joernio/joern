@@ -589,8 +589,8 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
       _ =>
         demangle(mangledName)
           .map {
-            case ExtensionNameRegex(name, rest) if rest.startsWith(name) => removeModifier(rest)
-            case ExtensionNameRegex(name, rest)                          => removeModifier(s"$name.$rest")
+            case ExtensionNameRegex(name, rest) =>
+              removeModifier(s"$name<extension>.$rest")
             case MemberNameRegex(parent, name, rest) =>
               AstCreatorHelper.stripGenerics(removeModifier(s"$parent$name$rest"))
             case other =>

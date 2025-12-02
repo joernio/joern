@@ -283,7 +283,12 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   case class MethodInfo(name: String, fullName: String, signature: String, returnType: String) {
     val fullNameAndSignature: String    = s"$fullName:$signature"
-    val fullNameAndSignatureExt: String = fullNameAndSignature.replaceFirst(s"\\.$name:", s"<extension>.$name:")
+    val fullNameAndSignatureExt: String = MethodInfo.fullNameToExtensionFullName(fullNameAndSignature, name)
+  }
+  object MethodInfo {
+    def fullNameToExtensionFullName(fullName: String, name: String): String = {
+      fullName.replaceFirst(s"\\.$name:", s"<extension>.$name:")
+    }
   }
 
   case class TypeInfo(name: String, fullName: String)

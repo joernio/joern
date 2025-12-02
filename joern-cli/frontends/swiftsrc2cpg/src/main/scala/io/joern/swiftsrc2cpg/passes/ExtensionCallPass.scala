@@ -1,7 +1,8 @@
 package io.joern.swiftsrc2cpg.passes
 
+import flatgraph.Edge
 import io.joern.x2cpg
-import io.shiftleft.codepropertygraph.generated.{Cpg, DispatchTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{Cpg, DispatchTypes, EdgeTypes, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.*
@@ -13,6 +14,7 @@ import io.shiftleft.semanticcpg.language.*
   * it:
   *   - updates the call's dispatch type to STATIC_DISPATCH
   *   - replaces the call's methodFullName with the mapped extension method full name
+  *   - removes the receiver edge from the call node
   *
   * @param cpg
   *   the code property graph to operate on
@@ -28,11 +30,11 @@ class ExtensionCallPass(cpg: Cpg, extensionFullNameMapping: Map[String, String])
   override def generateParts(): Array[Call] =
     cpg.call
       .methodFullNameNot(x2cpg.Defines.DynamicCallUnknownFullName)
-      .dispatchTypeNot(DispatchTypes.STATIC_DISPATCH)
+      .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
       .toArray
 
-  /** For a given call (part), if a mapping exists for its methodFullName, set the call to static dispatch and update
-    * the methodFullName to the extension's fullName.
+  /** For a given call (part), if a mapping exists for its methodFullName, set the call to static dispatch, update the
+    * methodFullName to the extension's fullName, and remove the receiver edge.
     *
     * @param builder
     *   DiffGraphBuilder used to apply modifications to the graph
@@ -43,6 +45,7 @@ class ExtensionCallPass(cpg: Cpg, extensionFullNameMapping: Map[String, String])
     extensionFullNameMapping.get(part.methodFullName).foreach { methodFullNameExt =>
       builder.setNodeProperty(part, PropertyNames.DispatchType, DispatchTypes.STATIC_DISPATCH)
       builder.setNodeProperty(part, PropertyNames.MethodFullName, methodFullNameExt)
+      part.outE(EdgeTypes.RECEIVER).foreach(builder.removeEdge)
     }
   }
 

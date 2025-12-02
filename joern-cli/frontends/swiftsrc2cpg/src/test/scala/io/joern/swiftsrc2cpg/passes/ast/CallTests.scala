@@ -182,18 +182,33 @@ class CallTests extends SwiftCompilerSrc2CpgSuite {
       fooCall.methodFullName shouldBe fooMethod.fullName
       fooCall.signature shouldBe "()->()"
       fooCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      val List(fooCallReceiver) = fooCall.receiver.isIdentifier.l
-      fooCallReceiver.name shouldBe "self"
-      fooCallReceiver.typeFullName shouldBe "SwiftTest.Foo"
+
+      fooCall.receiver shouldBe empty
+      val List(fooCallBase) = fooCall.arguments(0).isIdentifier.l
+      fooCallBase.name shouldBe "self"
+      fooCallBase.typeFullName shouldBe "SwiftTest.Foo"
 
       val List(barCall) = cpg.call.nameExact("bar").l
       barCall.methodFullName shouldBe barMethod.fullName
       barCall.signature shouldBe "()->()"
       barCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-      val List(barCallReceiverCall) = barCall.receiver.isIdentifier.l
-      barCallReceiverCall.name shouldBe "self"
-      barCallReceiverCall.typeFullName shouldBe "SwiftTest.Foo"
+      barCall.receiver shouldBe empty
+      val List(barCallBase) = barCall.arguments(0).isIdentifier.l
+      barCallBase.name shouldBe "self"
+      barCallBase.typeFullName shouldBe "SwiftTest.Foo"
+    }
+
+    "be correct for simple calls to extension from library" in {
+      val testCode =
+        """
+          |var x = 1
+          |x.negate()
+          |""".stripMargin
+      val cpg = codeWithSwiftSetup(testCode)
+
+      val List(negateCall) = cpg.call.nameExact("negate").l
+      negateCall.methodFullName shouldBe "Swift.Swift.SignedNumeric<extension>.negate:()->()"
     }
 
     "be correct for calls to generic functions from extensions with compiler support" in {
@@ -218,12 +233,16 @@ class CallTests extends SwiftCompilerSrc2CpgSuite {
       val cpg = codeWithSwiftSetup(testCode)
 
       val List(barMethodInt, barMethodDouble) = cpg.method.nameExact("bar").l
-      barMethodInt.fullName shouldBe "SwiftTest.Foo<AwhereA==Swift.Int><extension>.bar:()->()"
-      barMethodDouble.fullName shouldBe "SwiftTest.Foo<AwhereA==Swift.Double><extension>.bar:()->()"
+      barMethodInt.fullName shouldBe "SwiftTest.SwiftTest.Foo<AwhereA==Swift.Int><extension>.bar:()->()"
+      barMethodDouble.fullName shouldBe "SwiftTest.SwiftTest.Foo<AwhereA==Swift.Double><extension>.bar:()->()"
 
       val List(intBarCall, doubleBarCall) = cpg.call.nameExact("bar").l
       intBarCall.methodFullName shouldBe barMethodInt.fullName
       intBarCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+      intBarCall.receiver shouldBe empty
+      val List(base) = intBarCall.arguments(0).l
+      base.code shouldBe "Foo<Int>()"
 
       doubleBarCall.methodFullName shouldBe barMethodDouble.fullName
       doubleBarCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
