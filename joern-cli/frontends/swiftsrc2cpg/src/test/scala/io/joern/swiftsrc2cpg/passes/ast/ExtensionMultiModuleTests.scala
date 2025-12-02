@@ -47,9 +47,13 @@ class ExtensionMultiModuleTests extends SwiftCompilerMultiModuleSrc2CpgSuite {
       fooTypeDecl.fullName shouldBe "ModuleA.Foo"
 
       val List(foo) = cpg.method.nameExact("foo").l
+      // The extension method foo for class Foo is defined in the same module as Foo itself.
+      // Hence, the compiler does not prefix the fullName with ModuleA.
       foo.fullName shouldBe "ModuleA.Foo<extension>.foo:()->()"
 
       val List(bar) = cpg.method.nameExact("bar").l
+      // The extension method bar for class Foo is defined in a different module than Foo itself.
+      // Hence, the compiler does prefix the fullName with ModuleB (where the extension is defined).
       bar.fullName shouldBe "ModuleB.ModuleA.Foo<extension>.bar:()->()"
 
       val List(fooCall) = cpg.call.nameExact("foo").l
