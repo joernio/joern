@@ -2,6 +2,14 @@
 NON_INTERACTIVE_OPTION=$1
 DEPENDENCY=$2
 
+# Check if Bash version is 4 or higher
+if (( BASH_VERSINFO[0] < 4 )); then
+  echo "Error: Bash version 4 or higher is required." >&2
+  echo "If you are on a mac, you can switch to a modern bash e.g. with 'brew install bash' and ensure it's in your PATH." >&2
+  # n.b. if it's not in your PATH, you can do so e.g. by defining "export PATH="/opt/homebrew/bin:$PATH" in your ~/.zshrc
+  exit 1
+fi
+
 check_installed() {
   if ! type "$1" > /dev/null; then
     echo "Please ensure you have $1 installed."
