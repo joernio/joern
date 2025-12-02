@@ -21,7 +21,7 @@ jobs:
         if: matrix.os == 'macos-latest'
         run: brew install php
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           cache: false
           go-version: 1.25
