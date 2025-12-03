@@ -409,7 +409,7 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: Path = FileUtil
   }
 
   def applyPostProcessingPasses(cpg: Cpg): Cpg = {
-    new io.joern.console.cpgcreation.CpgGeneratorFactory(_config).forLanguage(cpg.metaData.language.l.head) match {
+    new io.joern.console.cpgcreation.CpgGeneratorFactory(_config).forLanguage(cpg.metaData.language.head) match {
       case Some(frontend) => frontend.applyPostProcessingPasses(cpg)
       case None           => cpg
     }
