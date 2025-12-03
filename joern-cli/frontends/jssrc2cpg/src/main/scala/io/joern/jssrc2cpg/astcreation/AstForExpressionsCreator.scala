@@ -3,16 +3,11 @@ package io.joern.jssrc2cpg.astcreation
 import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.EcmaBuiltins
-import io.joern.x2cpg.Ast
-import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
-import io.joern.x2cpg.frontendspecific.jssrc2cpg.GlobalBuiltins
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.{NewIdentifier, NewMethodRef, NewNode}
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
+import io.joern.x2cpg.frontendspecific.jssrc2cpg.{Defines, GlobalBuiltins}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewIdentifier, NewMethodRef, NewNode}
 
 import scala.util.Try
 
@@ -455,28 +450,30 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           val arg1Ast = Ast(identifierNode(nodeInfo, tmpName))
           astForSpreadOrRestElement(nodeInfo, Option(arg1Ast))
         case _ =>
-          val (lhsNode, rhsAst) = nodeInfo.node match {
+          val (lhsAst, rhsAst) = nodeInfo.node match {
             case ObjectMethod =>
               val objectMethodAst = astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true)
               val keyName = if (hasKey(nodeInfo.json("key"), "name")) { nodeInfo.json("key")("name").str }
               else { code(nodeInfo.json("key")) }
-              val fieldName = stripQuotes(keyName)
-              val name      = objectMethodAst.root.collect { case r: NewMethodRef => r.code }.getOrElse(fieldName)
-              val keyNode   = fieldIdentifierNode(nodeInfo, name, name)
-              (keyNode, objectMethodAst)
+              val keyAst = objectMethodAst.root match {
+                case Some(r: NewMethodRef) if !hasKey(nodeInfo.json("key"), "name") =>
+                  Ast(literalNode(nodeInfo, keyName, keyName))
+                case _ =>
+                  val fieldName = stripQuotes(keyName)
+                  Ast(fieldIdentifierNode(nodeInfo, fieldName, fieldName))
+              }
+              (keyAst, objectMethodAst)
             case ObjectProperty =>
               val key = createBabelNodeInfo(nodeInfo.json("key"))
-              val keyName = key.node match {
-                case Identifier if nodeInfo.json("computed").bool =>
-                  key.code
+              val keyAst = key.node match {
                 case _ if nodeInfo.json("computed").bool =>
-                  generateUnusedVariableName(usedVariableNames, "_computed_object_property")
-                case _ => key.code
+                  astForNode(key.json)
+                case _ =>
+                  val fieldName = stripQuotes(key.code)
+                  Ast(fieldIdentifierNode(nodeInfo, fieldName, fieldName))
               }
-              val fieldName = stripQuotes(keyName)
-              val keyNode   = fieldIdentifierNode(nodeInfo, fieldName, fieldName)
-              val ast       = astForNodeWithFunctionReference(nodeInfo.json("value"))
-              (keyNode, ast)
+              val ast = astForNodeWithFunctionReference(nodeInfo.json("value"))
+              (keyAst, ast)
             case _ =>
               // can't happen as per https://github.com/babel/babel/blob/main/packages/babel-types/src/ast-types/generated/index.ts#L573
               // just to make the compiler happy here.
@@ -484,13 +481,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           }
 
           val leftHandSideTmpNode = identifierNode(nodeInfo, tmpName)
-          val leftHandSideFieldAccessAst =
-            createFieldAccessCallAst(leftHandSideTmpNode, lhsNode, nodeInfo.lineNumber, nodeInfo.columnNumber)
+          val leftHandSideAccessAst = lhsAst.root match {
+            case Some(f: NewFieldIdentifier) =>
+              createFieldAccessCallAst(leftHandSideTmpNode, f, nodeInfo.lineNumber, nodeInfo.columnNumber)
+            case _ =>
+              createIndexAccessCallAst(Ast(leftHandSideTmpNode), lhsAst, nodeInfo.lineNumber, nodeInfo.columnNumber)
+          }
 
           createAssignmentCallAst(
-            leftHandSideFieldAccessAst,
+            leftHandSideAccessAst,
             rhsAst,
-            s"$tmpName.${lhsNode.canonicalName} = ${codeOf(rhsAst.nodes.head)}",
+            s"${codeOf(leftHandSideAccessAst.nodes.head)} = ${codeOf(rhsAst.nodes.head)}",
             nodeInfo.lineNumber,
             nodeInfo.columnNumber
           )

@@ -449,8 +449,8 @@ class SimpleAstCreationPassTests extends AstJsSrc2CpgSuite {
       localXViaRef shouldBe localX
 
       val List(block) = assignment.astChildren.isBlock.l
-      checkObjectInitialization(block, ("key1", "\"value\""))
-      checkObjectInitialization(block, ("key2", "2"))
+      checkObjectInitializationMember(block, ("key1", "\"value\""))
+      checkObjectInitializationMember(block, ("key2", "2"))
 
       val List(spreadObjectCall) = block.astChildren.isCall.nameExact("<operator>.spread").l
       spreadObjectCall.code shouldBe "...rest"
@@ -480,8 +480,8 @@ class SimpleAstCreationPassTests extends AstJsSrc2CpgSuite {
       localXViaRef shouldBe localX
 
       val List(block) = assignment.astChildren.isBlock.l
-      checkObjectInitialization(block, ("key1", "\"value\""))
-      checkObjectInitialization(block, ("key2", "2"))
+      checkObjectInitializationMember(block, ("key1", "\"value\""))
+      checkObjectInitializationMember(block, ("key2", "2"))
 
       val List(spreadObjectCall) = block.astChildren.isCall.nameExact("<operator>.spread").l
       spreadObjectCall.code shouldBe "...x.foo()"
@@ -510,16 +510,16 @@ class SimpleAstCreationPassTests extends AstJsSrc2CpgSuite {
       localXViaRef shouldBe localX
 
       val List(block) = assignment.astChildren.isBlock.l
-      checkObjectInitialization(block, ("key1", "value()"))
-      checkObjectInitialization(block, ("key2", "foo.compute()"))
+      checkObjectInitializationMember(block, ("key1", "value()"))
+      checkObjectInitializationMember(block, ("key2", "foo.compute()"))
     }
 
     "have correct structure for 1 object with object function" in {
       val cpg = code("""
        |var x = {
        | key1: value(),
-       | foo() {},
-       | 'bladad'() {}
+       | ["foo()"]: 1,
+       | foo() {}
        |}
        |""".stripMargin)
       val List(methodBlock) = cpg.method.nameExact(":program").astChildren.isBlock.l
@@ -531,8 +531,9 @@ class SimpleAstCreationPassTests extends AstJsSrc2CpgSuite {
       localXViaRef shouldBe localX
 
       val List(block) = assignment.astChildren.isBlock.l
-      checkObjectInitialization(block, ("key1", "value()"))
-      checkObjectInitialization(block, ("foo", "foo")) // ref to foo
+      checkObjectInitializationMember(block, ("key1", "value()"))
+      checkObjectInitializationIndex(block, ("\"foo()\"", "1"))
+      checkObjectInitializationMember(block, ("foo", "foo")) // ref to foo
     }
 
     "have correct structure for object with computed property name" in {
@@ -549,7 +550,7 @@ class SimpleAstCreationPassTests extends AstJsSrc2CpgSuite {
       localXViaRef shouldBe localX
 
       val List(block) = assignment.astChildren.isBlock.l
-      checkObjectInitialization(block, ("_computed_object_property_0", "value()"))
+      checkObjectInitializationIndex(block, ("1 + 1", "value()"))
     }
 
     "have correct structure for objects with computed object method names" in {
@@ -577,8 +578,8 @@ class SimpleAstCreationPassTests extends AstJsSrc2CpgSuite {
       cpg.methodRefWithName("_computed_object_method_1").referencedMethod.fullName.l shouldBe List(
         "obj.ts::program:_computed_object_method_1"
       )
-      checkObjectInitialization(block, ("_computed_object_method_0", "_computed_object_method_0")) // ref to method
-      checkObjectInitialization(block, ("_computed_object_method_1", "_computed_object_method_1"))
+      checkObjectInitializationIndex(block, ("\"someNameComputation()\"", "_computed_object_method_0")) // ref to method
+      checkObjectInitializationIndex(block, ("\"someOtherNameComputation()\"", "_computed_object_method_1"))
     }
 
     "have correct structure for object with property names with quotes" in {
@@ -595,8 +596,8 @@ class SimpleAstCreationPassTests extends AstJsSrc2CpgSuite {
       localXViaRef shouldBe localX
 
       val List(block) = assignment.astChildren.isBlock.l
-      checkObjectInitialization(block, ("a", "1"))
-      checkObjectInitialization(block, ("b", "2"))
+      checkObjectInitializationMember(block, ("a", "1"))
+      checkObjectInitializationMember(block, ("b", "2"))
     }
 
     "have correct structure for conditional expression" in {
@@ -1768,7 +1769,7 @@ class SimpleAstCreationPassTests extends AstJsSrc2CpgSuite {
 
   }
 
-  private def checkObjectInitialization(node: Block, member: (String, String)): Unit = {
+  private def checkObjectInitializationMember(node: Block, member: (String, String)): Unit = {
     val (keyName, assignedValue) = member
 
     val List(localTmp) = node.astChildren.isLocal.nameExact("_tmp_0").l
@@ -1792,6 +1793,32 @@ class SimpleAstCreationPassTests extends AstJsSrc2CpgSuite {
 
     val List(key) = tmpAccess.astChildren.isFieldIdentifier.l
     key.canonicalName shouldBe keyName
+  }
+
+  private def checkObjectInitializationIndex(node: Block, index: (String, String)): Unit = {
+    val (keyName, assignedValue) = index
+
+    val List(localTmp) = node.astChildren.isLocal.nameExact("_tmp_0").l
+    localTmp.order shouldBe 0
+
+    val List(tmp) = node.astChildren.isIdentifier.nameExact("_tmp_0").l
+    tmp.code shouldBe "_tmp_0"
+
+    val List(call) = node.astChildren.isCall.codeExact(s"_tmp_0[$keyName] = $assignedValue").l
+    call.methodFullName shouldBe Operators.assignment
+
+    val List(tmpAccess) = call.argument(1).start.isCall.l
+    tmpAccess.code shouldBe s"_tmp_0[$keyName]"
+    tmpAccess.methodFullName shouldBe Operators.indexAccess
+    tmpAccess.argumentIndex shouldBe 1
+    val List(value) = call.argument(2).start.l
+    value.code shouldBe assignedValue
+
+    val List(leftHandSideTmpId) = tmpAccess.arguments(1).isIdentifier.nameExact("_tmp_0").l
+    leftHandSideTmpId.code shouldBe "_tmp_0"
+
+    val List(key) = tmpAccess.arguments(2).l
+    key.code shouldBe keyName
   }
 
   private def checkForInOrOfObject(node: Block): Unit = {
