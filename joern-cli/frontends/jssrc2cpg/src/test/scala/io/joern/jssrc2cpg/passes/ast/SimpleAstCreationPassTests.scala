@@ -3,6 +3,7 @@ package io.joern.jssrc2cpg.passes.ast
 import io.joern.jssrc2cpg.passes.EcmaBuiltins
 import io.joern.jssrc2cpg.testfixtures.AstJsSrc2CpgSuite
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
+import io.joern.x2cpg.passes.callgraph.MethodRefLinker
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
@@ -549,6 +550,35 @@ class SimpleAstCreationPassTests extends AstJsSrc2CpgSuite {
 
       val List(block) = assignment.astChildren.isBlock.l
       checkObjectInitialization(block, ("_computed_object_property_0", "value()"))
+    }
+
+    "have correct structure for objects with computed object method names" in {
+      val cpg = code(
+        """
+        |const obj = {
+        |  ["someNameComputation()"](node: Node) {
+        |    foo(node);
+        |  },
+        |  ["someOtherNameComputation()"](node: Node) {
+        |    bar(node);
+        |  }
+        |};""".stripMargin,
+        fileName = "obj.ts"
+      )
+      new MethodRefLinker(cpg).createAndApply()
+
+      val List(methodBlock) = cpg.method.nameExact(":program").astChildren.isBlock.l
+      val List(assignment)  = methodBlock.astChildren.isCall.l
+      val List(block)       = assignment.astChildren.isBlock.l
+
+      cpg.methodRefWithName("_computed_object_method_0").referencedMethod.fullName.l shouldBe List(
+        "obj.ts::program:_computed_object_method_0"
+      )
+      cpg.methodRefWithName("_computed_object_method_1").referencedMethod.fullName.l shouldBe List(
+        "obj.ts::program:_computed_object_method_1"
+      )
+      checkObjectInitialization(block, ("_computed_object_method_0", "_computed_object_method_0")) // ref to method
+      checkObjectInitialization(block, ("_computed_object_method_1", "_computed_object_method_1"))
     }
 
     "have correct structure for object with property names with quotes" in {
