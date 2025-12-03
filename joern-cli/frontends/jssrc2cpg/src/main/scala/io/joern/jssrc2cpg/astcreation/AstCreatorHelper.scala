@@ -1,7 +1,7 @@
 package io.joern.jssrc2cpg.astcreation
 
 import io.joern.jssrc2cpg.parser.BabelAst.*
-import io.joern.jssrc2cpg.parser.BabelNodeInfo
+import io.joern.jssrc2cpg.parser.{BabelAst, BabelNodeInfo}
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.joern.x2cpg.utils.IntervalKeyPool
@@ -196,15 +196,23 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   private def calcMethodName(func: BabelNodeInfo): String = func.node match {
-    case ObjectMethod if isMethodOrGetSet(func) && code(func.json("key")).startsWith("'") => nextClosureName()
-    case TSCallSignatureDeclaration                                                       => nextClosureName()
-    case TSConstructSignatureDeclaration => io.joern.x2cpg.Defines.ConstructorMethodName
+    case ObjectMethod if hasKey(func.json, "computed") && func.json("computed").bool =>
+      generateUnusedVariableName(usedVariableNames, "_computed_object_method")
+    case ObjectMethod if isMethodOrGetSet(func) && code(func.json("key")).startsWith("'") =>
+      nextClosureName()
+    case TSCallSignatureDeclaration =>
+      nextClosureName()
+    case TSConstructSignatureDeclaration =>
+      io.joern.x2cpg.Defines.ConstructorMethodName
     case _ if isMethodOrGetSet(func) =>
       if (hasKey(func.json("key"), "name")) func.json("key")("name").str
       else code(func.json("key"))
-    case _ if safeStr(func.json, "kind").contains("constructor") => io.joern.x2cpg.Defines.ConstructorMethodName
-    case _ if func.json("id").isNull                             => nextClosureName()
-    case _                                                       => func.json("id")("name").str
+    case _ if safeStr(func.json, "kind").contains("constructor") =>
+      io.joern.x2cpg.Defines.ConstructorMethodName
+    case _ if func.json("id").isNull =>
+      nextClosureName()
+    case _ =>
+      func.json("id")("name").str
   }
 
   protected def safeStr(node: Value, key: String): Option[String] =
