@@ -1,48 +1,57 @@
 package io.joern.swiftsrc2cpg.passes
 
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.*
 
-import java.io.File
+/** Pass that applies inheritance relationships discovered from Swift extensions to type declarations in the CPG.
+  *
+  * @param cpg
+  *   the code property graph to update
+  * @param inheritsMapping
+  *   mapping from TypeDecl fullNames to sets of extension target type fullNames to be added as inherits-from
+  */
+class ExtensionInheritancePass(cpg: Cpg, inheritsMapping: Map[String, Set[String]])
+    extends ForkJoinParallelCpgPass[(String, Set[String])](cpg) {
 
-class ExtensionInheritancePass(cpg: Cpg) extends ForkJoinParallelCpgPass[TypeDecl](cpg) {
+  override def generateParts(): Array[(String, Set[String])] = inheritsMapping.traversal.toArray
 
-  private val SourceFolder: String = "/Sources/"
-
-  override def generateParts(): Array[TypeDecl] = cpg.typeDecl.filterNot(_.fullName.endsWith("<extension>")).toArray
-
-  private def setInheritsFromFullNames(
-    builder: DiffGraphBuilder,
-    part: TypeDecl,
-    fromExtensions: Iterator[TypeDecl]
-  ): Unit = {
-    val fullNames = (part.inheritsFromTypeFullName ++ fromExtensions.map(_.fullName)).toSet.toSeq
-    builder.setNodeProperty(part, PropertyNames.InheritsFromTypeFullName, fullNames)
-    cpg.typ.fullNameExact(fullNames*).foreach(tgt => builder.addEdge(part, tgt, EdgeTypes.INHERITS_FROM))
+  private def setInherits(builder: DiffGraphBuilder, typeDecl: TypeDecl, inheritFullNames: Set[String]): Unit = {
+    val existingInherits = typeDecl.inheritsFromTypeFullName
+    val allInherits      = existingInherits ++ inheritFullNames
+    builder.setNodeProperty(typeDecl, PropertyNames.InheritsFromTypeFullName, allInherits)
   }
 
-  override def runOnPart(builder: DiffGraphBuilder, part: TypeDecl): Unit = {
-    val folderOption = Option(new File(part.filename).getParent)
-    if (folderOption.isEmpty) {
-      val name       = part.name.stripPrefix("Swift.")
-      val extensions = cpg.typeDecl.filter(_.fullName.endsWith(s".$name<extension>"))
-      setInheritsFromFullNames(builder, part, extensions)
-    } else {
-      val folder = s"${folderOption.get}/".replaceAll("\\\\", "/")
-      val folderPrefix = if (folder.contains(SourceFolder)) {
-        folder.substring(0, folder.indexOf(SourceFolder))
-      } else {
-        ""
+  /** Process a single part of the work (a mapping entry) and update the diff graph with inheritance information
+    * discovered from extensions.
+    *
+    * @param builder
+    *   the diff graph builder used to record node property changes and edges
+    * @param part
+    *   a tuple where the first element is the fullName of the `TypeDecl` to update and the second element is the set of
+    *   extension target type names to be added as inherits-from entries
+    */
+  override def runOnPart(builder: DiffGraphBuilder, part: (String, Set[String])): Unit = {
+
+    /** Resolve extension target names to TypeDecl fullNames if a matching `TypeDecl` exists.
+      *
+      * For each name in the set of extension target type names we look up a matching `TypeDecl` using `nameExact`. If
+      * found, use its `fullName`; otherwise keep the original name. This ensures we add consistent fullNames to the
+      * `inheritsFrom` property and create `INHERITS_FROM` edges to the correct `typ` nodes.
+      *
+      * The value is `lazy` to avoid performing lookups when the outer `for` does not find a `TypeDecl` for `part._1`.
+      */
+    lazy val inheritsFullNames = part._2.map { name =>
+      cpg.typeDecl.nameExact(name).headOption match {
+        case Some(td) => td.fullName
+        case None     => name
       }
-      val name = part.name.stripPrefix("Swift.")
-      val extensions =
-        cpg.typeDecl.filter(t => t.fullName.startsWith(folderPrefix) && t.fullName.endsWith(s".$name<extension>"))
-      setInheritsFromFullNames(builder, part, extensions)
     }
+
+    for {
+      typeDecl <- cpg.typeDecl.fullNameExact(part._1)
+    } setInherits(builder, typeDecl, inheritsFullNames)
   }
 
 }

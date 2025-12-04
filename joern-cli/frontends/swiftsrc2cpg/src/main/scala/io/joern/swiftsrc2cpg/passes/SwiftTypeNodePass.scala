@@ -5,8 +5,6 @@ import io.joern.x2cpg.passes.frontend.TypeNodePass
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
-import scala.collection.mutable
-
 object SwiftTypeNodePass {
 
   def withRegisteredTypes(registeredTypes: List[String], cpg: Cpg): TypeNodePass = {
@@ -14,15 +12,11 @@ object SwiftTypeNodePass {
 
       override def fullToShortName(typeName: String): String = {
         typeName match {
-          case name if name.endsWith(NamespaceTraversal.globalNamespaceName) => NamespaceTraversal.globalNamespaceName
-          case _ => typeName.takeWhile(_ != '<').split('.').lastOption.getOrElse(typeName)
+          case name if name.endsWith(NamespaceTraversal.globalNamespaceName) =>
+            NamespaceTraversal.globalNamespaceName
+          case _ =>
+            typeName.split('.').lastOption.map(_.takeWhile(_ != ':')).getOrElse(typeName)
         }
-      }
-
-      override protected def typeDeclTypes: mutable.Set[String] = {
-        // The only difference to the default implementation in TypeNodePass.typeDeclTypes is the following:
-        // We do not want to add types for types being inherited as this is already handled by the SwiftInheritanceNamePass.
-        cpg.typeDecl.fullName.toSetMutable
       }
 
     }

@@ -260,7 +260,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
       (
         "HelloWorldSwift.swift",
         "class_decl",
-        (27, 237),
+        (20, 237),
         Some("SwiftHelloWorldLib.HelloWorld"),
         Some("SwiftHelloWorldLib.HelloWorld")
       ),
@@ -441,7 +441,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
       ),
       ("Main.swift", "return_stmt", (46, 46), Some("Swift.Void"), None),
       ("Main.swift", "string_literal_expr", (147, 147), Some("Swift.String"), None),
-      ("Main.swift", "struct_decl", (52, 158), Some("SwiftHelloWorld.Main"), Some("SwiftHelloWorld.Main")),
+      ("Main.swift", "struct_decl", (46, 158), Some("SwiftHelloWorld.Main"), Some("SwiftHelloWorld.Main")),
       ("Main.swift", "type_expr", (112, 112), Some("SwiftHelloWorldLib.HelloWorld"), None),
       ("Main.swift", "var_decl", (102, 102), Some("SwiftHelloWorldLib.HelloWorld"), None)
     )
@@ -618,9 +618,17 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
           )
 
           helloWorldMappings should contain(
-            ("class_decl", (27, 497), Some("SwiftHelloWorldLib.HelloWorld"), Some("SwiftHelloWorldLib.HelloWorld"))
+            ("class_decl", (20, 497), Some("SwiftHelloWorldLib.HelloWorld"), Some("SwiftHelloWorldLib.HelloWorld"))
           )
-          helloWorldMappings should contain(
+
+          helloWorldMappings should contain oneElementOf List(
+            // TODO: in preparation for Swift 6.2.x migration, modifiers are actually honored in constructor decl positions
+            (
+              "constructor_decl",
+              (374, 405),
+              Some("(SwiftHelloWorldLib.HelloWorld.Type)->()->SwiftHelloWorldLib.HelloWorld"),
+              Some("SwiftHelloWorldLib.HelloWorld.init()->SwiftHelloWorldLib.HelloWorld")
+            ),
             (
               "constructor_decl",
               (381, 405),
@@ -628,7 +636,10 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
               Some("SwiftHelloWorldLib.HelloWorld.init()->SwiftHelloWorldLib.HelloWorld")
             )
           )
-          helloWorldMappings should contain(
+
+          helloWorldMappings should contain oneElementOf List(
+            // TODO: in preparation for Swift 6.2.x migration, modifiers are actually honored in func decl positions
+            ("func_decl", (408, 494), Some("()"), Some("SwiftHelloWorldLib.HelloWorld.greet(from:Swift.String)->()")),
             ("func_decl", (415, 494), Some("()"), Some("SwiftHelloWorldLib.HelloWorld.greet(from:Swift.String)->()"))
           )
           helloWorldMappings should contain(
