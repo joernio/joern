@@ -573,6 +573,8 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     */
   private val ExtensionNameRegex: Regex = """^\(extension\sin\s([^)]+)\):(.*)""".r
 
+  private val ExtensionInSignatureRegex: Regex = """\(extension in ([^)]+)\):""".r
+
   /** Calculates a demangled declaration fullName from a mangled Swift declaration name.
     *
     * This method demangles the Swift declaration name, applies special transformations for member names and extensions,
@@ -590,17 +592,30 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
         demangle(mangledName)
           .map {
             case ExtensionNameRegex(name, rest) =>
-              removeModifier(s"$name<extension>.$rest")
+              removeModifier(s"$name<extension>.${rest.stripPrefix(s"$name.")}")
             case MemberNameRegex(parent, name, rest) =>
               AstCreatorHelper.stripGenerics(removeModifier(s"$parent$name$rest"))
             case other =>
               AstCreatorHelper.stripGenerics(removeModifier(other))
           }
-          .map { s =>
-            // Replace any remaining occurrence of `(extension in Foo):` with `Foo.` and then remove spaces
-            val withExtensionsFixed = s.replaceAll("""\(extension in ([^)]+)\):""", "$1.")
+          .map { fullName =>
+            val withExtensionsFixed = replaceExtensionInSignature(fullName)
             withExtensionsFixed.replace(" ", "")
           }
+    )
+  }
+
+  private def replaceExtensionInSignature(fullName: String): String = {
+    ExtensionInSignatureRegex.replaceAllIn(
+      fullName,
+      m => {
+        val head = m.before
+        val name = m.group(1)
+        val rest = m.after.toString.stripPrefix(s"$name.")
+        // Only extension methods are tagged with <extension> in their fullName.
+        // The signature only contains the module and type fullNames.
+        s"$head$name.$rest"
+      }
     )
   }
 

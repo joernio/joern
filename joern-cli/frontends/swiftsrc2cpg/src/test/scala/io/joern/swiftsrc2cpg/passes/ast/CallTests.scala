@@ -208,7 +208,7 @@ class CallTests extends SwiftCompilerSrc2CpgSuite {
       val cpg = codeWithSwiftSetup(testCode)
 
       val List(negateCall) = cpg.call.nameExact("negate").l
-      negateCall.methodFullName shouldBe "Swift.Swift.SignedNumeric<extension>.negate:()->()"
+      negateCall.methodFullName shouldBe "Swift.SignedNumeric<extension>.negate:()->()"
     }
 
     "be correct for calls to generic functions from extensions with compiler support" in {
@@ -233,8 +233,8 @@ class CallTests extends SwiftCompilerSrc2CpgSuite {
       val cpg = codeWithSwiftSetup(testCode)
 
       val List(barMethodInt, barMethodDouble) = cpg.method.nameExact("bar").l
-      barMethodInt.fullName shouldBe "SwiftTest.SwiftTest.Foo<AwhereA==Swift.Int><extension>.bar:()->()"
-      barMethodDouble.fullName shouldBe "SwiftTest.SwiftTest.Foo<AwhereA==Swift.Double><extension>.bar:()->()"
+      barMethodInt.fullName shouldBe "SwiftTest.Foo<AwhereA==Swift.Int><extension>.bar:()->()"
+      barMethodDouble.fullName shouldBe "SwiftTest.Foo<AwhereA==Swift.Double><extension>.bar:()->()"
 
       val List(intBarCall, doubleBarCall) = cpg.call.nameExact("bar").l
       intBarCall.methodFullName shouldBe barMethodInt.fullName
