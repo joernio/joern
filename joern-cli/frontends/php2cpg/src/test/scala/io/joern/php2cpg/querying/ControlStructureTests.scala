@@ -15,7 +15,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   Local
 }
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 
 import scala.util.Try
 
@@ -1057,13 +1056,10 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         returnNode.code shouldBe "yield 1 => $x"
         returnNode.lineNumber shouldBe Some(3)
 
-        inside(returnNode.astChildren.l) { case List(key: Literal, value: Identifier) =>
-          key.code shouldBe "1"
-          key.lineNumber shouldBe Some(3)
-
-          value.name shouldBe "x"
-          value.code shouldBe "$x"
-          value.lineNumber shouldBe Some(3)
+        inside(returnNode.astChildren.l) { case List(kv: Call) =>
+          kv.code shouldBe "1 => $x"
+          kv.lineNumber shouldBe Some(3)
+          kv.methodFullName shouldBe "<operator>.doubleArrow"
         }
       }
     }
