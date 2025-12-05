@@ -160,7 +160,8 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     expr: PhpNode,
     name: String,
     innerMethodsIterator: Iterator[MethodScope],
-    surroundingMethods: List[MethodScope]
+    surroundingMethods: List[MethodScope],
+    isInClosure: Boolean = false
   ): Unit = {
     surroundingMethods.foreach { currentMethod =>
       val innerMethodScope = innerMethodsIterator.next()
@@ -168,12 +169,14 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
       val innerMethodRef   = innerMethodScope.methodRefNode
       innerMethodRef match {
         case Some(methodRef) =>
-          scope.getMethodRef(innerMethodNode.fullName) match {
-            case None =>
-              diffGraph.addNode(methodRef)
-              diffGraph.addEdge(currentMethod.bodyNode, methodRef, EdgeTypes.AST)
-              scope.addMethodRef(innerMethodNode.fullName, methodRef)
-            case _ =>
+          if (!isInClosure) {
+            scope.getMethodRef(innerMethodNode.fullName) match {
+              case None =>
+                diffGraph.addNode(methodRef)
+                diffGraph.addEdge(currentMethod.bodyNode, methodRef, EdgeTypes.AST)
+                scope.addMethodRef(innerMethodNode.fullName, methodRef)
+              case _ =>
+            }
           }
 
           val closureBindingId = if (innerMethodNode.fullName.contains(NamespaceTraversal.globalNamespaceName)) {
@@ -208,8 +211,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
   private def createClosureBindingsForArrowClosure(expr: PhpNode, name: String): NewNode = {
     val surroundingIter    = scope.getSurroundingMethodsForArrowClosure.drop(1).iterator
     val surroundingMethods = scope.getSurroundingMethodsForArrowClosure.dropRight(1)
-    val localNodes         = mutable.ArrayBuffer[NewLocal]()
-    createClosureCaptureForNode(expr, name, surroundingIter, surroundingMethods)
+    createClosureCaptureForNode(expr, name, surroundingIter, surroundingMethods, isInClosure = true)
     scope.lookupVariable(name).get
   }
 

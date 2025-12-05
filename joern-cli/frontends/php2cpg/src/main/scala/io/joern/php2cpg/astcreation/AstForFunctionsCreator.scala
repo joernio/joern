@@ -145,6 +145,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val methodRef =
       if methodName == NamespaceTraversal.globalNamespaceName then None
+      else if isAnonymousMethod then closureMethodRef
       else Option(methodRefNode(decl, s"$methodCode", fullName, Defines.Any))
     val method = methodNode(decl, methodName, methodCode, fullName, None, relativeFileName)
 
@@ -169,28 +170,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val attributeAsts = decl.attributeGroups.flatMap(astForAttributeGroup)
     val methodBody    = blockAst(methodBodyNode, methodBodyStmts)
-
-    if (isArrowClosure) {
-      scope.getAndClearClosureBindings.foreach { (variableLocal, variableClosureBinding) =>
-        val closureBindingId = s"$methodName:${variableLocal.name}"
-        val closureBinding   = createClosureBinding(closureBindingId)
-        val localNode_ =
-          localNode(decl, variableLocal.name, variableLocal.name, variableLocal.typeFullName, Option(closureBindingId))
-
-        scope.addClosureBinding(closureBinding, localNode_)
-
-        diffGraph.addNode(closureBinding)
-        diffGraph.addEdge(variableClosureBinding, localNode_, EdgeTypes.REF)
-
-        scope.addToScope(localNode_.name, localNode_) match {
-          case BlockScope(block, _)              => diffGraph.addEdge(block, localNode_, EdgeTypes.AST)
-          case MethodScope(_, block, _, _, _, _) => diffGraph.addEdge(block, localNode_, EdgeTypes.AST)
-          case _                                 => // do nothing
-        }
-
-        diffGraph.addEdge(closureMethodRef.get, closureBinding, EdgeTypes.CAPTURE)
-      }
-    }
 
     scope.popScope()
     val methodAst = methodAstWithAnnotations(method, parameters, methodBody, methodReturn, modifiers, attributeAsts)
