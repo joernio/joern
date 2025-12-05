@@ -759,22 +759,24 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForYieldExpr(expr: PhpYieldExpr): Ast = {
-    val maybeKey = expr.key.map(astForExpr)
-    val maybeVal = expr.value.map(astForExpr)
-
-    val code = (maybeKey, maybeVal) match {
+    val exprAst = (expr.key, expr.value) match {
       case (Some(key), Some(value)) =>
-        s"yield ${key.rootCodeOrEmpty} => ${value.rootCodeOrEmpty}"
-
+        Some(astForKeyValPair(expr, key, value))
+      case (_, Some(value)) =>
+        Some(astForExpr(value))
       case _ =>
-        s"yield ${maybeKey.map(_.rootCodeOrEmpty).getOrElse("")}${maybeVal.map(_.rootCodeOrEmpty).getOrElse("")}".trim
+        None
     }
 
-    val yieldNode = controlStructureNode(expr, ControlStructureTypes.YIELD, code)
+    val code = exprAst match {
+      case Some(ast) => s"yield ${ast.rootCodeOrEmpty}"
+      case _         => s"yield"
+    }
 
-    Ast(yieldNode)
-      .withChildren(maybeKey.toList)
-      .withChildren(maybeVal.toList)
+    val node = returnNode(expr, code)
+
+    Ast(node)
+      .withChildren(exprAst.toList)
   }
 
   private def astForClassConstFetchExpr(expr: PhpClassConstFetchExpr): Ast = {
