@@ -800,17 +800,14 @@ class ClosureTests extends PhpCode2CpgFixture {
     )
 
     "contain two methodRef nodes with single parents" in {
-      inside(cpg.methodRef.l) {
-        case (firstRef: MethodRef) :: (secondRef: MethodRef) :: Nil =>
-          firstRef.methodFullName shouldBe "foo.php:<global>.<lambda>1"
-          val firstParent = cpg.call.codeExact("$outer = foo.php:<global>.<lambda>1").headOption
-          Iterator(firstRef).astParent.l shouldBe firstParent.toList
+      inside(cpg.methodRef.l) { case (firstRef: MethodRef) :: (secondRef: MethodRef) :: Nil =>
+        firstRef.methodFullName shouldBe "foo.php:<global>.<lambda>1"
+        val firstParent = cpg.call.codeExact("$outer = foo.php:<global>.<lambda>1").headOption
+        Iterator(firstRef).astParent.l shouldBe firstParent.toList
 
-          secondRef.methodFullName shouldBe "foo.php:<global>.<lambda>0"
-          val secondParent = cpg.call.codeExact("$func = foo.php:<global>.<lambda>0").headOption
-          Iterator(secondRef).astParent.l shouldBe secondParent.toList
-        case xs =>
-          fail(s"Expected two method refs, got ${xs.methodFullName.mkString("[", ",", "]")}")
+        secondRef.methodFullName shouldBe "foo.php:<global>.<lambda>0"
+        val secondParent = cpg.call.codeExact("$func = foo.php:<global>.<lambda>0").headOption
+        Iterator(secondRef).astParent.l shouldBe secondParent.toList
       }
     }
   }
