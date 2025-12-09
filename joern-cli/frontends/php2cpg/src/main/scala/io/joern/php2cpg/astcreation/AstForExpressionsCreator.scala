@@ -61,7 +61,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val name      = getCallName(call, nameAst)
     val arguments = call.args.map(astForCallArg)
 
-    val inStaticScope = scope.getEnclosingTypeDeclTypeFullName.exists(_.endsWith(Domain.MetaTypeDeclExtension))
     /*
      * A receiver only makes sense if one can track the receiver back to some sort of runtime type information. In the
      * case of a normal top-level call like foo() that is not possible. There is no corresponding foo identifier which
