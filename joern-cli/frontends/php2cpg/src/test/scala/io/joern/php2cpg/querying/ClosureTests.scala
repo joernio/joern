@@ -789,4 +789,26 @@ class ClosureTests extends PhpCode2CpgFixture {
       }
     }
   }
+
+  "a captured lambda" should {
+    val cpg = code(
+      """<?php
+        |$func = fn($xxx) => $xxx;
+        |$outer = fn($p1) => $func($p1);
+        |""".stripMargin,
+      fileName = "foo.php"
+    )
+
+    "contain two methodRef nodes with single parents" in {
+      inside(cpg.methodRef.l) { case (firstRef: MethodRef) :: (secondRef: MethodRef) :: Nil =>
+        firstRef.methodFullName shouldBe "foo.php:<global>.<lambda>1"
+        val firstParent = cpg.call.codeExact("$outer = foo.php:<global>.<lambda>1").headOption
+        Iterator(firstRef).astParent.l shouldBe firstParent.toList
+
+        secondRef.methodFullName shouldBe "foo.php:<global>.<lambda>0"
+        val secondParent = cpg.call.codeExact("$func = foo.php:<global>.<lambda>0").headOption
+        Iterator(secondRef).astParent.l shouldBe secondParent.toList
+      }
+    }
+  }
 }
