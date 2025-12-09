@@ -334,11 +334,12 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     val bindings = typeDecl match {
       case Some(typeDecl) =>
-        (anonymousMethodAsts ++ otherBodyStmts).flatMap(_.root).collect { case method: NewMethod =>
-          val bindingNode = NewBinding().name(method.name).signature("")
-          diffGraph.addNode(bindingNode)
-          diffGraph.addEdge(typeDecl, bindingNode, EdgeTypes.BINDS)
-          diffGraph.addEdge(bindingNode, method, EdgeTypes.REF)
+        otherBodyStmts.flatMap(_.root).collect {
+          case method: NewMethod if method.name != "<global>" =>
+            val bindingNode = NewBinding().name(method.name).signature("")
+            diffGraph.addNode(bindingNode)
+            diffGraph.addEdge(typeDecl, bindingNode, EdgeTypes.BINDS)
+            diffGraph.addEdge(bindingNode, method, EdgeTypes.REF)
         }
 
       case None => Nil
