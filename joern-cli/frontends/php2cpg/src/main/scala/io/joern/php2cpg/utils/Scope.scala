@@ -26,7 +26,6 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)
   private var tmpClassCounter                                         = 0
   private var importedSymbols                                         = Map.empty[String, SymbolSummary]
   private val methodRefsInAst                                         = mutable.HashMap[String, NewMethodRef]()
-  private val capturedVariableClosureBindings = mutable.ArrayBuffer[(NewLocal, NewClosureBinding)]()
 
   override def pushNewScope(scopeNode: TypedScopeElement): Unit = {
     val mappedNode = scopeNode match {
@@ -135,14 +134,6 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)
 
   def addMethodRef(methodRefName: String, methodRef: NewMethodRef): Unit = methodRefsInAst.put(methodRefName, methodRef)
   def getMethodRef(methodRefName: String): Option[NewMethodRef]          = methodRefsInAst.get(methodRefName)
-
-  def addClosureBinding(closureBinding: NewClosureBinding, localNode: NewLocal): Unit =
-    capturedVariableClosureBindings.addOne((localNode, closureBinding))
-  def getAndClearClosureBindings: List[(NewLocal, NewClosureBinding)] = {
-    val capturedClosureBindings = capturedVariableClosureBindings.toList
-    capturedVariableClosureBindings.clear()
-    capturedClosureBindings
-  }
 
   def addVariableToMethodScope(identifier: String, variable: NewNode, methodFullName: String): Option[MethodScope] = {
     stack.collectFirst {
