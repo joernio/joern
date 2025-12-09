@@ -17,11 +17,7 @@ class TypeNodeTests extends PhpCode2CpgFixture {
         "foo\\A",
         "foo\\B",
         "foo\\C",
-        s"foo\\B${Domain.MetaTypeDeclExtension}",
-        s"foo\\D${Domain.MetaTypeDeclExtension}",
-        "foo\\D",
-        s"foo\\A${Domain.MetaTypeDeclExtension}",
-        s"foo\\C${Domain.MetaTypeDeclExtension}"
+        "foo\\D"
       )
     }
 
@@ -29,11 +25,8 @@ class TypeNodeTests extends PhpCode2CpgFixture {
       cpg.typeDecl.external.fullName.toSet shouldEqual Set(
         "ANY",
         "foo\\B",
-        s"foo\\B${Domain.MetaTypeDeclExtension}",
         "foo\\C",
-        s"foo\\C${Domain.MetaTypeDeclExtension}",
         "foo\\D",
-        s"foo\\D${Domain.MetaTypeDeclExtension}"
       )
     }
   }
@@ -55,17 +48,17 @@ class TypeNodeTests extends PhpCode2CpgFixture {
     }
 
     "have baseTypeDecl steps for meta TYPE_DECL (<metaclass>)" in {
-      cpg.typeDecl.name(s"Baz${Domain.MetaTypeDeclExtension}").baseTypeDecl.l.map(_.name) shouldBe List(
-        s"Bar${Domain.MetaTypeDeclExtension}",
-        s"TraitA${Domain.MetaTypeDeclExtension}",
-        s"TraitB${Domain.MetaTypeDeclExtension}",
-        s"Foo${Domain.MetaTypeDeclExtension}"
+      cpg.typeDecl.name(s"Baz").baseTypeDecl.l.map(_.name) shouldBe List(
+        s"Bar",
+        s"TraitA",
+        s"TraitB",
+        s"Foo"
       )
-      cpg.typeDecl.name(s"Baz${Domain.MetaTypeDeclExtension}").baseTypeDeclTransitive.l.map(_.name) shouldBe List(
-        s"Bar${Domain.MetaTypeDeclExtension}",
-        s"TraitA${Domain.MetaTypeDeclExtension}",
-        s"TraitB${Domain.MetaTypeDeclExtension}",
-        s"Foo${Domain.MetaTypeDeclExtension}"
+      cpg.typeDecl.name(s"Baz").baseTypeDeclTransitive.l.map(_.name) shouldBe List(
+        s"Bar",
+        s"TraitA",
+        s"TraitB",
+        s"Foo"
       )
     }
   }

@@ -62,14 +62,12 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     }
   }
 
-  protected def composeMethodFullNameForCall(methodName: String, appendMetaTypeDeclExt: Boolean = false): String = {
+  protected def composeMethodFullNameForCall(methodName: String): String = {
     scope.resolveIdentifier(methodName) match {
       case Some(importedMethod)                                         => importedMethod.name
       case None if methodName == NamespaceTraversal.globalNamespaceName => globalNamespace.fullName
       case None =>
-        val className = Option
-          .when(appendMetaTypeDeclExt)(getTypeDeclPrefix.map(name => s"$name$MetaTypeDeclExtension").orNull)
-          .orElse(getTypeDeclPrefix)
+        val className = getTypeDeclPrefix
 
         val nameWithClass = List(className, Some(methodName)).flatten.mkString(MethodDelimiter)
         prependNamespacePrefix(nameWithClass)
@@ -257,8 +255,8 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
       case Some(nameExpr: PhpNameExpr) if call.isStatic =>
         // Static method call with a simple receiver
         if (nameExpr.name == NameConstants.Self)
-          composeMethodFullNameForCall(name, appendMetaTypeDeclExt = !scope.isSurroundedByMetaclassTypeDecl)
-        else s"${nameExpr.name}$MetaTypeDeclExtension$MethodDelimiter$name"
+          composeMethodFullNameForCall(name)
+        else s"${nameExpr.name}$MethodDelimiter$name"
       case Some(_) =>
         // As soon as we have a dynamic component to the call, we can't truly define a method full name
         default
@@ -269,7 +267,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
         name
       // Assume name-space local function call
       case None =>
-        composeMethodFullNameForCall(name, call.isStatic)
+        composeMethodFullNameForCall(name)
     }
   }
 
