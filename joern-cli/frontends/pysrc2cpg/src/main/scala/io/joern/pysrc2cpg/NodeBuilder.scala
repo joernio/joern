@@ -322,6 +322,15 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
     addNodeToDiff(metaNode)
   }
 
+  def jumpNode(code: String): nodes.NewJumpTarget = {
+    val jumpNode = nodes
+      .NewJumpTarget()
+      .code(code)
+      .name(code)
+
+    addNodeToDiff(jumpNode)
+  }
+
   def unknownNode(code: String, parserTypeName: String, lineAndColumn: LineAndColumn): nodes.NewUnknown = {
     val unknownNode = nodes
       .NewUnknown()
