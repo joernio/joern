@@ -1064,7 +1064,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
           inside(kv.astChildren.l) { case (literal: Literal) :: (identifier: Identifier) :: Nil =>
             literal.code shouldBe "1"
             literal.typeFullName shouldBe "int"
-            
+
             identifier.name shouldBe "x"
           }
         }
