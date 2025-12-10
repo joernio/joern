@@ -225,9 +225,7 @@ class CallTests extends PhpCode2CpgFixture {
         |""".stripMargin)
 
     cpg.method.name("foo").call.name("bar").methodFullName.l shouldBe List(s"Foo.bar")
-    cpg.method.name("foz").call.name("boz").methodFullName.l shouldBe List(
-      s"Foo.foo.anon-class-0.boz"
-    )
+    cpg.method.name("foz").call.name("boz").methodFullName.l shouldBe List(s"Foo.foo.anon-class-0.boz")
   }
 
   "a static call in a namespace should have a full name including the namespace path" in {
@@ -265,9 +263,7 @@ class CallTests extends PhpCode2CpgFixture {
          |  private static function bar() {}
          |}
          |""".stripMargin)
-    cpg.method.name("foz").call.name("boz").methodFullName.l shouldBe List(
-      s"Foo.foo.anon-class-0.boz"
-    )
+    cpg.method.name("foz").call.name("boz").methodFullName.l shouldBe List(s"Foo.foo.anon-class-0.boz")
   }
 
   "a chained call from an external namespace should have normalized '.' method delimiters" in {

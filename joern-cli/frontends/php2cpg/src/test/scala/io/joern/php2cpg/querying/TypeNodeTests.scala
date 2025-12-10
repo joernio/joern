@@ -12,22 +12,11 @@ class TypeNodeTests extends PhpCode2CpgFixture {
      |""".stripMargin)
 
     "have type nodes created for the TypeDecl and inherited types" in {
-      cpg.typ.fullName.toSet shouldEqual Set(
-        "ANY",
-        "foo\\A",
-        "foo\\B",
-        "foo\\C",
-        "foo\\D"
-      )
+      cpg.typ.fullName.toSet shouldEqual Set("ANY", "foo\\A", "foo\\B", "foo\\C", "foo\\D")
     }
 
     "have TypeDecl stubs created for inherited types" in {
-      cpg.typeDecl.external.fullName.toSet shouldEqual Set(
-        "ANY",
-        "foo\\B",
-        "foo\\C",
-        "foo\\D",
-      )
+      cpg.typeDecl.external.fullName.toSet shouldEqual Set("ANY", "foo\\B", "foo\\C", "foo\\D")
     }
   }
 
@@ -48,18 +37,8 @@ class TypeNodeTests extends PhpCode2CpgFixture {
     }
 
     "have baseTypeDecl steps for meta TYPE_DECL (<metaclass>)" in {
-      cpg.typeDecl.name(s"Baz").baseTypeDecl.l.map(_.name) shouldBe List(
-        s"Bar",
-        s"TraitA",
-        s"TraitB",
-        s"Foo"
-      )
-      cpg.typeDecl.name(s"Baz").baseTypeDeclTransitive.l.map(_.name) shouldBe List(
-        s"Bar",
-        s"TraitA",
-        s"TraitB",
-        s"Foo"
-      )
+      cpg.typeDecl.name(s"Baz").baseTypeDecl.l.map(_.name) shouldBe List(s"Bar", s"TraitA", s"TraitB", s"Foo")
+      cpg.typeDecl.name(s"Baz").baseTypeDeclTransitive.l.map(_.name) shouldBe List(s"Bar", s"TraitA", s"TraitB", s"Foo")
     }
   }
 
