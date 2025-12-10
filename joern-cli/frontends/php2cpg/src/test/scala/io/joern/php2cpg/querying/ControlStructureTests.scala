@@ -1060,6 +1060,13 @@ class ControlStructureTests extends PhpCode2CpgFixture {
           kv.code shouldBe "1 => $x"
           kv.lineNumber shouldBe Some(3)
           kv.methodFullName shouldBe "<operator>.doubleArrow"
+
+          inside(kv.astChildren.l) { case (literal: Literal) :: (identifier: Identifier) :: Nil =>
+            literal.code shouldBe "1"
+            literal.typeFullName shouldBe "int"
+            
+            identifier.name shouldBe "x"
+          }
         }
       }
     }
