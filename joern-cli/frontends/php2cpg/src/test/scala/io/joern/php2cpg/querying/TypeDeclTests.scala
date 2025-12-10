@@ -547,9 +547,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       |   private int $x;
       |  };
       |}""".stripMargin)
-    inside(cpg.typeDecl.name("Foo").member.l) {
-      case _ :: fooAnonMem :: Nil =>
-        fooAnonMem.name shouldBe "Foo.anon-class-0"
+    inside(cpg.typeDecl.name("Foo").member.l) { case _ :: fooAnonMem :: Nil =>
+      fooAnonMem.name shouldBe "Foo.anon-class-0"
     }
   }
 
@@ -676,9 +675,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
     }
 
     "Contains the required static method" in {
-      inside(
-        cpg.typeDecl.name(s"Test0.php:<global>.anon-class-0").method.name("bar").l
-      ) {
+      inside(cpg.typeDecl.name(s"Test0.php:<global>.anon-class-0").method.name("bar").l) {
         case barMethod :: Nil =>
           barMethod.name shouldBe "bar"
           barMethod.modifier.modifierType.l.contains(ModifierTypes.STATIC) shouldBe true
