@@ -35,7 +35,7 @@ class CallLinkerPassTests extends DataFlowCodeToCpgSuite {
 
       inside(cpg.method("c").callIn(NoResolve).l) { case List(call) =>
         call.code shouldBe "new this.bar().c()"
-        call.methodFullName should endWith(".js::program:Foo:Bar:c")
+        call.methodFullName should endWith(".js::program:Foo:<init>:Bar:c")
       }
     }
 

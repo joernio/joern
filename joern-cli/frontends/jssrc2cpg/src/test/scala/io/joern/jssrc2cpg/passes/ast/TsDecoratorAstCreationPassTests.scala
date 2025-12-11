@@ -1,6 +1,8 @@
 package io.joern.jssrc2cpg.passes.ast
 
 import io.joern.jssrc2cpg.testfixtures.AstJsSrc2CpgSuite
+import io.joern.x2cpg.passes.base.ContainsEdgePass
+import io.shiftleft.codepropertygraph.generated.nodes.{Method, TypeDecl, _containsIn}
 import io.shiftleft.semanticcpg.language.*
 
 class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
@@ -18,54 +20,30 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
         |    return "Hello";
         |  }
         |}""".stripMargin)
+      cpg.method.nameExact("greet").ast.isCall.code.l shouldBe List(
+        "a(false)",
+        "b(foo)",
+        "c(foo=false)",
+        "foo=false",
+        "d()"
+      )
       inside(cpg.typeDecl.name("Greeter").method.name("greet").annotation.l) {
         case List(annotationA, annotationB, annotationC, annotationD) =>
           annotationA.code shouldBe "@a(false)"
           annotationA.name shouldBe "a"
           annotationA.fullName shouldBe "a"
-          val List(paramAssignA) = annotationA.parameterAssign.l
-          paramAssignA.code shouldBe "false"
-          paramAssignA.order shouldBe 1
-          val List(paramA) = paramAssignA.parameter.l
-          paramA.code shouldBe "value"
-          paramA.order shouldBe 1
-          val List(paramValueA) = paramAssignA.value.l
-          paramValueA.code shouldBe "false"
-          paramValueA.order shouldBe 2
-          paramValueA.argumentIndex shouldBe 2
 
           annotationB.code shouldBe "@b(foo)"
           annotationB.name shouldBe "b"
           annotationB.fullName shouldBe "b"
-          val List(paramAssignB) = annotationB.parameterAssign.l
-          paramAssignB.code shouldBe "foo"
-          paramAssignB.order shouldBe 1
-          val List(paramB) = paramAssignB.parameter.l
-          paramB.code shouldBe "value"
-          paramB.order shouldBe 1
-          val List(paramValueB) = paramAssignB.value.l
-          paramValueB.code shouldBe "foo"
-          paramValueB.order shouldBe 2
-          paramValueB.argumentIndex shouldBe 2
 
           annotationC.code shouldBe "@c(foo=false)"
           annotationC.name shouldBe "c"
           annotationC.fullName shouldBe "c"
-          val List(paramAssignC) = annotationC.parameterAssign.l
-          paramAssignC.code shouldBe "foo=false"
-          paramAssignC.order shouldBe 1
-          val List(paramC) = paramAssignC.parameter.l
-          paramC.code shouldBe "foo"
-          paramC.order shouldBe 1
-          val List(paramValueC) = paramAssignC.value.l
-          paramValueC.code shouldBe "false"
-          paramValueC.order shouldBe 2
-          paramValueC.argumentIndex shouldBe 2
 
           annotationD.code shouldBe "@d()"
           annotationD.name shouldBe "d"
           annotationD.fullName shouldBe "d"
-          annotationD.parameterAssign.l shouldBe empty
       }
     }
 
@@ -80,16 +58,6 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
         c.code shouldBe "@c(foo=false)"
         c.name shouldBe "c"
         c.fullName shouldBe "c"
-        val List(paramAssignC) = c.parameterAssign.l
-        paramAssignC.code shouldBe "foo=false"
-        paramAssignC.order shouldBe 1
-        val List(paramC) = paramAssignC.parameter.l
-        paramC.code shouldBe "foo"
-        paramC.order shouldBe 1
-        val List(paramValueC) = paramAssignC.value.l
-        paramValueC.code shouldBe "false"
-        paramValueC.order shouldBe 2
-        paramValueC.argumentIndex shouldBe 2
       }
     }
 
@@ -123,54 +91,30 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
         |@d()
         |class Greeter {}
         |""".stripMargin)
+      cpg.method.nameExact("<init>").ast.isCall.code.l shouldBe List(
+        "a(false)",
+        "b(foo)",
+        "c(foo=false)",
+        "foo=false",
+        "d()"
+      )
       inside(cpg.typeDecl.name("Greeter").annotation.l) {
         case List(annotationA, annotationB, annotationC, annotationD) =>
           annotationA.code shouldBe "@a(false)"
           annotationA.name shouldBe "a"
           annotationA.fullName shouldBe "a"
-          val List(paramAssignA) = annotationA.parameterAssign.l
-          paramAssignA.code shouldBe "false"
-          paramAssignA.order shouldBe 1
-          val List(paramA) = paramAssignA.parameter.l
-          paramA.code shouldBe "value"
-          paramA.order shouldBe 1
-          val List(paramValueA) = paramAssignA.value.l
-          paramValueA.code shouldBe "false"
-          paramValueA.order shouldBe 2
-          paramValueA.argumentIndex shouldBe 2
 
           annotationB.code shouldBe "@b(foo)"
           annotationB.name shouldBe "b"
           annotationB.fullName shouldBe "b"
-          val List(paramAssignB) = annotationB.parameterAssign.l
-          paramAssignB.code shouldBe "foo"
-          paramAssignB.order shouldBe 1
-          val List(paramB) = paramAssignB.parameter.l
-          paramB.code shouldBe "value"
-          paramB.order shouldBe 1
-          val List(paramValueB) = paramAssignB.value.l
-          paramValueB.code shouldBe "foo"
-          paramValueB.order shouldBe 2
-          paramValueB.argumentIndex shouldBe 2
 
           annotationC.code shouldBe "@c(foo=false)"
           annotationC.name shouldBe "c"
           annotationC.fullName shouldBe "c"
-          val List(paramAssignC) = annotationC.parameterAssign.l
-          paramAssignC.code shouldBe "foo=false"
-          paramAssignC.order shouldBe 1
-          val List(paramC) = paramAssignC.parameter.l
-          paramC.code shouldBe "foo"
-          paramC.order shouldBe 1
-          val List(paramValueC) = paramAssignC.value.l
-          paramValueC.code shouldBe "false"
-          paramValueC.order shouldBe 2
-          paramValueC.argumentIndex shouldBe 2
 
           annotationD.code shouldBe "@d()"
           annotationD.name shouldBe "d"
           annotationD.fullName shouldBe "d"
-          annotationD.parameterAssign.l shouldBe empty
       }
     }
 
@@ -189,44 +133,14 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
           annotationA.code shouldBe "@a(false)"
           annotationA.name shouldBe "a"
           annotationA.fullName shouldBe "a"
-          val List(paramAssignA) = annotationA.parameterAssign.l
-          paramAssignA.code shouldBe "false"
-          paramAssignA.order shouldBe 1
-          val List(paramA) = paramAssignA.parameter.l
-          paramA.code shouldBe "value"
-          paramA.order shouldBe 1
-          val List(paramValueA) = paramAssignA.value.l
-          paramValueA.code shouldBe "false"
-          paramValueA.order shouldBe 2
-          paramValueA.argumentIndex shouldBe 2
 
           annotationB.code shouldBe "@b(foo)"
           annotationB.name shouldBe "b"
           annotationB.fullName shouldBe "b"
-          val List(paramAssignB) = annotationB.parameterAssign.l
-          paramAssignB.code shouldBe "foo"
-          paramAssignB.order shouldBe 1
-          val List(paramB) = paramAssignB.parameter.l
-          paramB.code shouldBe "value"
-          paramB.order shouldBe 1
-          val List(paramValueB) = paramAssignB.value.l
-          paramValueB.code shouldBe "foo"
-          paramValueB.order shouldBe 2
-          paramValueB.argumentIndex shouldBe 2
 
           annotationC.code shouldBe "@c(foo=false)"
           annotationC.name shouldBe "c"
           annotationC.fullName shouldBe "c"
-          val List(paramAssignC) = annotationC.parameterAssign.l
-          paramAssignC.code shouldBe "foo=false"
-          paramAssignC.order shouldBe 1
-          val List(paramC) = paramAssignC.parameter.l
-          paramC.code shouldBe "foo"
-          paramC.order shouldBe 1
-          val List(paramValueC) = paramAssignC.value.l
-          paramValueC.code shouldBe "false"
-          paramValueC.order shouldBe 2
-          paramValueC.argumentIndex shouldBe 2
 
           annotationD.code shouldBe "@d()"
           annotationD.name shouldBe "d"
@@ -246,17 +160,6 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
         annotationA.code shouldBe "@a('lit')"
         annotationA.name shouldBe "a"
         annotationA.fullName shouldBe "a"
-        val List(assign) = annotationA.parameterAssign.l
-        assign.code shouldBe "'lit'"
-        assign.order shouldBe 1
-        val List(paramA) = assign.parameter.l
-        paramA.code shouldBe "value"
-        paramA.order shouldBe 1
-        val List(lit) = assign.value.isLiteral.l
-        lit.code shouldBe "\"lit\""
-        lit.order shouldBe 2
-        lit.argumentIndex shouldBe 2
-        lit.parentExpression.code.head shouldBe "@a('lit')"
       }
     }
 
@@ -273,55 +176,49 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
         |    return this._x;
         |  }
         |}""".stripMargin)
+      cpg.method.nameExact("x").ast.isCall.code.l shouldBe List(
+        "a(false)",
+        "b(foo)",
+        "c(foo=false)",
+        "foo=false",
+        "d()",
+        "this._x"
+      )
       inside(cpg.typeDecl.name("Foo").method.name("x").annotation.l) {
         case List(annotationA, annotationB, annotationC, annotationD) =>
           annotationA.code shouldBe "@a(false)"
           annotationA.name shouldBe "a"
           annotationA.fullName shouldBe "a"
-          val List(paramAssignA) = annotationA.parameterAssign.l
-          paramAssignA.code shouldBe "false"
-          paramAssignA.order shouldBe 1
-          val List(paramA) = paramAssignA.parameter.l
-          paramA.code shouldBe "value"
-          paramA.order shouldBe 1
-          val List(paramValueA) = paramAssignA.value.l
-          paramValueA.code shouldBe "false"
-          paramValueA.order shouldBe 2
-          paramValueA.argumentIndex shouldBe 2
 
           annotationB.code shouldBe "@b(foo)"
           annotationB.name shouldBe "b"
           annotationB.fullName shouldBe "b"
-          val List(paramAssignB) = annotationB.parameterAssign.l
-          paramAssignB.code shouldBe "foo"
-          paramAssignB.order shouldBe 1
-          val List(paramB) = paramAssignB.parameter.l
-          paramB.code shouldBe "value"
-          paramB.order shouldBe 1
-          val List(paramValueB) = paramAssignB.value.l
-          paramValueB.code shouldBe "foo"
-          paramValueB.order shouldBe 2
-          paramValueB.argumentIndex shouldBe 2
 
           annotationC.code shouldBe "@c(foo=false)"
           annotationC.name shouldBe "c"
           annotationC.fullName shouldBe "c"
-          val List(paramAssignC) = annotationC.parameterAssign.l
-          paramAssignC.code shouldBe "foo=false"
-          paramAssignC.order shouldBe 1
-          val List(paramC) = paramAssignC.parameter.l
-          paramC.code shouldBe "foo"
-          paramC.order shouldBe 1
-          val List(paramValueC) = paramAssignC.value.l
-          paramValueC.code shouldBe "false"
-          paramValueC.order shouldBe 2
-          paramValueC.argumentIndex shouldBe 2
 
           annotationD.code shouldBe "@d()"
           annotationD.name shouldBe "d"
           annotationD.fullName shouldBe "d"
           annotationD.parameterAssign.l shouldBe empty
       }
+    }
+
+    "create annotations correctly with lambda function as annotation argument" in {
+      val cpg = code("""
+          |import { NgModule } from '@angular/core';
+          |
+          |@NgModule(() => { })
+          |export class MyClass { }
+          |""".stripMargin)
+      ContainsEdgePass(cpg).createAndApply()
+      cpg.methodRef.where(_._containsIn.collectAll[TypeDecl]) shouldBe empty
+      cpg.methodRef._containsIn.collectAll[Method].fullName.l shouldBe List(
+        "Test0.ts::program:MyClass:<init>",
+        "Test0.ts::program"
+      )
+      cpg.method.nameExact("<init>").ast.isCall.code.l shouldBe List("NgModule(() => { })")
     }
   }
 
