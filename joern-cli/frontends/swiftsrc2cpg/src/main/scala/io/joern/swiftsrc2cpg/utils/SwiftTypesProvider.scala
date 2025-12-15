@@ -58,6 +58,7 @@ object SwiftTypesProvider {
     range: (Int, Int),
     typeFullname: Option[String],
     declFullname: Option[String],
+    inherits: Seq[String],
     nodeKind: String
   ) {
     override def equals(obj: Any): Boolean = obj match {
@@ -77,16 +78,23 @@ object SwiftTypesProvider {
     }
   }
 
-  /** Information about a Swift type found in the source code. fullName and tpe are demangled.
+  /** Information about a Swift type found in the source code. The provided fullNames are demangled.
     *
     * @param typeFullname
     *   The fully qualified type name (if any; demangled)
     * @param declFullname
-    *   The fully qualified decl name (if any; demangled)
+    *   The fully qualified declaration name (if any; demangled)
+    * @param inherits
+    *   A sequence of fully qualified inherited type names (if any; demangled)
     * @param nodeKind
-    *   The AST node kind
+    *   The AST node kind where this information was observed
     */
-  case class ResolvedTypeInfo(typeFullname: Option[String], declFullname: Option[String], nodeKind: String)
+  case class ResolvedTypeInfo(
+    typeFullname: Option[String],
+    declFullname: Option[String],
+    inherits: Seq[String],
+    nodeKind: String
+  )
 
   /**   - [[java.util.concurrent.ConcurrentHashMap]] provides atomic compute and computeIfAbsent operations used here to
     *     create-or-update entries and mutate the inner HashSet safely per key, without extra locks or retry loops.
@@ -629,7 +637,8 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
   private def resolve(typeInfo: TypeInfo): ResolvedTypeInfo = {
     val demangledTypeFullname = typeInfo.typeFullname.flatMap(calculateTypeFullname)
     val demangledDeclFullname = typeInfo.declFullname.flatMap(calculateDeclFullname)
-    ResolvedTypeInfo(demangledTypeFullname, demangledDeclFullname, typeInfo.nodeKind)
+    val demangledInherits     = typeInfo.inherits.flatMap(calculateTypeFullname)
+    ResolvedTypeInfo(demangledTypeFullname, demangledDeclFullname, demangledInherits, typeInfo.nodeKind)
   }
 
   /** Parses Swift compiler JSON output and adds type information to the provided type mapping.

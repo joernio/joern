@@ -6,6 +6,7 @@ import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.TypeInfo
 
 import java.io.Reader
 import scala.annotation.tailrec
+import scala.jdk.CollectionConverters.*
 import scala.collection.mutable
 
 /** Utility for reading and extracting type information from Swift AST in JSON format. Parses Swift's JSON
@@ -14,7 +15,7 @@ import scala.collection.mutable
 object GsonTypeInfoReader {
 
   /** Field names that can contain decl fullnames in the Swift AST */
-  private val DeclFullnameFieldNames = Set("usr", "decl_usr")
+  private val DeclFullnameFieldNames = Set("usr", "decl_usr", "protocol", "superclass_type")
 
   /** Field names that can contain type fullnames in the Swift AST */
   private val TypeFullnameFieldNames = Set("type", "type_usr", "result", "interface_type")
@@ -284,7 +285,19 @@ object GsonTypeInfoReader {
 
       val declFullname = safePropertyValue(obj, "usr").orElse(safePropertyValue(declObj, "decl_usr"))
 
-      found.add(TypeInfo(filename, range_, typeFullname, declFullname, nodeKind))
+      val conformances = safePropertyObject(obj, "inherits")
+        .map(_.getAsJsonArray("conformances"))
+        .collect {
+          case v if v != null =>
+            v.asList()
+              .asScala
+              .toSeq
+              .flatMap(r => safePropertyValue(r.getAsJsonObject, "protocol"))
+        }
+        .getOrElse(Seq.empty)
+      val superClassTypes = safePropertyObject(obj, "inherits").flatMap(safePropertyValue(_, "superclass_type")).toSeq
+
+      found.add(TypeInfo(filename, range_, typeFullname, declFullname, superClassTypes ++ conformances, nodeKind))
     }
 
     /** Parses a JSON array.

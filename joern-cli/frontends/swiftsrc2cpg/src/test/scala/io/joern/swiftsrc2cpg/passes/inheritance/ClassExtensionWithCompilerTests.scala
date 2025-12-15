@@ -51,7 +51,12 @@ class ClassExtensionWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
       cpg.call.codeExact("print(c)").argument.isCall.argument.isIdentifier.typeFullName.l shouldBe List("SwiftTest.Foo")
 
       val List(foo) = cpg.typeDecl.nameExact("Foo").l
-      foo.inheritsFromTypeFullName.sorted.l shouldBe List("SwiftTest.AnotherProtocol", "SwiftTest.SomeProtocol")
+      foo.inheritsFromTypeFullName.sorted.l shouldBe List(
+        "Swift.Copyable",
+        "Swift.Escapable",
+        "SwiftTest.AnotherProtocol",
+        "SwiftTest.SomeProtocol"
+      )
 
       /** TODO: Re-enable once extension methods are properly accessible via EXTENSION_BLOCK foo.boundMethod.fullName.l
         * shouldBe List( "SwiftTest.Foo.init:()->SwiftTest.Foo", "SwiftTest.Foo<extension>.foo:()->()" )

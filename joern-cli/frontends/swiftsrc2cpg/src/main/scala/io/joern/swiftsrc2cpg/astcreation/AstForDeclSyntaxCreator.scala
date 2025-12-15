@@ -321,7 +321,12 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     // - handle genericWhereClause
     val attributes = astForDeclAttributes(node)
     val modifiers  = modifiersForDecl(node)
-    val inherits   = inheritsFrom(node)
+
+    val inherits = fullnameProvider.inheritsFor(node) match {
+      case set if set.nonEmpty => set
+      case _                   => inheritsFrom(node)
+    }
+    inherits.foreach(registerType)
 
     val TypeInfo(typeName, typeFullName) = typeNameInfoForDeclSyntax(node)
 
@@ -440,7 +445,12 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val TypeInfo(typeName, typeFullName) = typeNameInfoForDeclSyntax(node)
     val typeRefNode_                     = typeRefNode(node, code(node), typeFullName)
 
-    val inherits = inheritsFrom(node)
+    val inherits = fullnameProvider.inheritsFor(node) match {
+      case set if set.nonEmpty => set
+      case _                   => inheritsFrom(node)
+    }
+    inherits.foreach(registerType)
+
     if (inherits.nonEmpty) {
       global.addExtensionInherits(typeFullName, inherits)
     }
