@@ -174,10 +174,13 @@ object SwiftTypesProvider {
   private val SwiftCompilerIgnoredArgs =
     Seq(
       "-v",
+      "-experimental-emit-module-separately",
+      "-explicit-module-build",
       "-output-file-map",
       "-incremental",
       "-whole-module-optimization",
       "-parseable-output",
+      "-use-frontend-parseable-output",
       "-serialize-diagnostics",
       "-Wwarning",
       "-warnings-as-errors"
@@ -380,7 +383,12 @@ object SwiftTypesProvider {
     @scala.annotation.tailrec
     def loop(remaining: List[String], result: List[String]): List[String] = {
       remaining match {
-        case Nil => result.reverse
+        case Nil                                              => result.reverse
+        case "--" :: tail                                     => loop(tail, result)
+        case "" :: tail                                       => loop(tail, result)
+        case "builtin-Swift-Compilation" :: tail              => loop(tail, result)
+        case "builtin-SwiftDriver" :: tail                    => loop(tail, result)
+        case "builtin-Swift-Compilation-Requirements" :: tail => loop(tail, result)
         case head :: tail if argShouldBeFiltered(head) =>
           val remainingArgs = if (tail.headOption.exists(!_.startsWith("-"))) {
             val nextFlagIdx = tail.indexWhere(_.startsWith("-"))
@@ -420,7 +428,7 @@ object SwiftTypesProvider {
     *   A list of individual arguments
     */
   private def argsFromLine(line: String): List[String] = {
-    line.replace("\\ -", " -").replace("/ -", " -").split(SwiftCompilerArgSplit).toList
+    line.replace("\\ -", " -").replace("/ -", " -").replace("\\=", "=").split(SwiftCompilerArgSplit).toList
   }
 
   /** Lists all readable directories under the given path.

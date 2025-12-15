@@ -379,7 +379,11 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case Some(declFullname) =>
         val cleanedFullName = if (declFullname.contains("(")) {
           val fullName = declFullname.substring(0, declFullname.indexOf("("))
-          fullName.substring(0, fullName.lastIndexOf("."))
+          if (fullName.contains(".")) {
+            fullName.substring(0, fullName.lastIndexOf("."))
+          } else {
+            fullName
+          }
         } else declFullname
         if (!node.isInstanceOf[ExtensionDeclSyntax]) {
           registerType(cleanedFullName)
