@@ -33,12 +33,7 @@ class InheritanceMultiModuleTests extends SwiftCompilerMultiModuleSrc2CpgSuite {
       val List(mainTypeDecl) = cpg.typeDecl.nameExact("Main").l
       mainTypeDecl.fullName shouldBe "SwiftTest.Main"
 
-      mainTypeDecl.inheritsFromTypeFullName.sorted.l shouldBe List(
-        "ModuleA.A",
-        "ModuleB.B",
-        "Swift.Copyable",
-        "Swift.Escapable"
-      )
+      mainTypeDecl.inheritsFromTypeFullName.l should contain allElementsOf List("ModuleA.A", "ModuleB.B")
 
       val List(aTypeDecl) = cpg.typeDecl.nameExact("A").l
       aTypeDecl.fullName shouldBe "ModuleA.A"

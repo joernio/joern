@@ -15,8 +15,6 @@ class ClosureWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
       // just results on awfully long test-code-test-repeat cycles.
       val testCode =
         """
-          |import Foundation
-          |
           |func main() {
           |  // closure call is allways "function_ref": "single_apply"
           |
@@ -171,8 +169,6 @@ class ClosureWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
     "create type decls and bindings correctly (class variable closure declaration)" in {
       val testCode =
         """
-          |import Foundation
-          |
           |class Foo {
           |  var compare = { (s1: String, s2: String) -> Bool in
           |    return s1 > s2
@@ -246,8 +242,6 @@ class ClosureWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
     "create type decls and bindings correctly (closure as function parameter)" in {
       val testCode =
         """
-          |import Foundation
-          |
           |func runCompare(compare:(String, String) -> Bool) {
           |	 let compareResult = compare("1", "2")
           |}
