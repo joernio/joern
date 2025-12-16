@@ -580,7 +580,6 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     *
     *   1. `([^(]+)` - Captures everything before the first opening parenthesis, Example:
     *      `SwiftHelloWorldLib.HelloWorld.`
-    *
     *   1. `\((.+)\sin\s_[^)]+\)` - Matches a pattern with internal identifier details:
     *      - `\(` - Literal opening parenthesis
     *      - `(.+)` - Captures the name inside parentheses (before "in _...")
@@ -598,8 +597,8 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     * Example match (abstracted): `... ) -> Module.Type(in _ID...).memberRest`
     *
     * Capture groups:
-    *   1. `(.+)` — the module/type name before the `\(in` clause (e.g. `Module.Type`) 2. `(.+)` — the member or
-    *      remainder after the final dot (e.g. `memberRest`)
+    *   1. `(.+)` — the module/type name before the `\(in` clause (e.g. `Module.Type`)
+    *   1. `(.+)` — the member or remainder after the final dot (e.g. `memberRest`)
     *
     * Structure breakdown:
     *   - `.+\)` : any characters ending with a closing parenthesis (end of parameter list)
