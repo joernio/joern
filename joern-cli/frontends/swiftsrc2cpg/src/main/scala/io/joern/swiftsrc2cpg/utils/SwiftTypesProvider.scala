@@ -530,6 +530,15 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     */
   private def demangle(mangledName: String): Option[String] = {
     if (mangledName.isEmpty) return None
+
+    // special handling for objc symbols
+    if (mangledName.contains("@objc")) {
+      // `c:@(C)M@` is used as module prefix for objc symbols
+      // `@objc(cs)` indicates that a type follows that is an objc class
+      // `(im)` indicates that an instance method follows
+      return Some(mangledName.stripPrefix("c:@M@").stripPrefix("c:@CM@").replace("@objc(cs)", ".").replace("(im)", "."))
+    }
+
     val strippedMangledName = mangledName.stripPrefix("$").replace("s:e:s:", "s:").replace(":", "")
     findInStdOut(swiftDemangleCommand :+ strippedMangledName).map(_.trim)
   }
@@ -583,6 +592,23 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     */
   private val MemberNameRegex: Regex = """([^(]+)\((.+)\sin\s_[^)]+\)(.*)""".r
 
+  /** Regex to match demangled initializer-like signatures that contain a `->` return type followed by an `(in ...)`
+    * clause and a member after a dot.
+    *
+    * Example match (abstracted): `... ) -> Module.Type(in _ID...).memberRest`
+    *
+    * Capture groups:
+    *   1. `(.+)` — the module/type name before the `\(in` clause (e.g. `Module.Type`) 2. `(.+)` — the member or
+    *      remainder after the final dot (e.g. `memberRest`)
+    *
+    * Structure breakdown:
+    *   - `.+\)` : any characters ending with a closing parenthesis (end of parameter list)
+    *   - `\s->\s` : literal arrow with surrounding spaces
+    *   - `(.+)\(in.+\)` : capture the module/type name that precedes the `(in ...)` clause
+    *   - `\.(.+)` : a dot followed by the captured member/signature tail
+    */
+  private val InitNameRegex: Regex = """.+\)\s->\s(.+)\(in.+\)\.(.+)""".r
+
   /** Basically the same as with MemberNameRegex. But here for extension function fullNames.
     *
     * E.g., `(extension in FooExt):Foo.bar() -> Swift.String` becomes `FooExt.Foo.bar() -> Swift.String`.
@@ -611,6 +637,8 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
               removeModifier(s"$name<extension>.${rest.stripPrefix(s"$name.")}")
             case MemberNameRegex(parent, name, rest) =>
               AstCreatorHelper.stripGenerics(removeModifier(s"$parent$name$rest"))
+            case InitNameRegex(name, rest) =>
+              AstCreatorHelper.stripGenerics(removeModifier(s"$name.$rest"))
             case other =>
               AstCreatorHelper.stripGenerics(removeModifier(other))
           }

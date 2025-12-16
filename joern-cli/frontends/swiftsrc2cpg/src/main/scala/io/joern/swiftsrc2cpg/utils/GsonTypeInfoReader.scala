@@ -99,7 +99,12 @@ object GsonTypeInfoReader {
           * to account for the attribute's position because swift-parser does include attributes in the range of the
           * associated declaration while swiftc does not.
           */
-        safeRange(obj.getAsJsonArray("attrs").get(0).getAsJsonObject) match {
+        val elemWithRange = safePropertyArray(obj, "attrs").flatMap { arr =>
+          arr.asList().asScala.collectFirst {
+            case attrObj if safeRange(attrObj.getAsJsonObject).isDefined => attrObj.getAsJsonObject
+          }
+        }
+        elemWithRange.map(range) match {
           case Some((s, e)) if s < start => s
           case _                         => start
         }
