@@ -235,6 +235,10 @@ object GsonTypeInfoReader {
       .orElse(safePropertyValue(obj, "interface_type"))
   }
 
+  private def isInBuildFolder(filename: String): Boolean = {
+    filename.contains("/.build/") || filename.contains("\\.build\\") || filename.contains("/Build/")
+  }
+
   /** Collects type information from Swift AST JSON.
     *
     * @param reader
@@ -266,7 +270,7 @@ object GsonTypeInfoReader {
           obj.add(name, value)
         } else if (name == "filename") {
           filename = JsonParser.parseReader(jsonReader).getAsString
-          isFromBuild = filename.contains("/.build/") || filename.contains("\\.build\\")
+          isFromBuild = isInBuildFolder(filename)
         } else {
           jsonReader.peek() match {
             case JsonToken.BEGIN_OBJECT if hasKind && !isFromBuild =>
