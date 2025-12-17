@@ -98,7 +98,7 @@ object SwiftTypesProvider {
     *   - Keeps interop consistent with the rest of the JDK concurrency used here (executors, I/O), and plays well with
     *     `.asScala` when materializing immutable views.
     */
-  type MutableSwiftFileLocalTypeMapping =
+  private type MutableSwiftFileLocalTypeMapping =
     java.util.concurrent.ConcurrentHashMap[(Int, Int), mutable.HashSet[ResolvedTypeInfo]]
   type MutableSwiftTypeMapping =
     java.util.concurrent.ConcurrentHashMap[String, MutableSwiftFileLocalTypeMapping]
@@ -518,15 +518,15 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     findInStdOut(swiftDemangleCommand :+ strippedMangledName).map(_.trim)
   }
 
-  /** Removes Swift modifiers from a fullname.
+  /** Removes Swift modifiers from a fullName.
     *
-    * This method removes any Swift declaration modifiers (like public, private, static) from the given fullname,
+    * This method removes any Swift declaration modifiers (like public, private, static) from the given fullName,
     * cleaning it up for display and analysis.
     *
     * @param fullName
-    *   The fullname potentially containing Swift modifiers
+    *   The fullName potentially containing Swift modifiers
     * @return
-    *   The cleaned fullname with modifiers removed
+    *   The cleaned fullName with modifiers removed
     */
   private def removeModifier(fullName: String): String = {
     SwiftDeclModifier.foldLeft(fullName) { (cur, repl) =>
@@ -536,7 +536,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     }
   }
 
-  /** Calculates a demangled type fullname from a mangled Swift type name.
+  /** Calculates a demangled type fullName from a mangled Swift type name.
     *
     * This method demangles the Swift type name, removes modifiers, strips generics, and removes spaces to create a
     * clean, fully qualified type name. Results are cached.
@@ -544,17 +544,10 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     * @param mangledName
     *   The mangled Swift type name
     * @return
-    *   Some(demangled type fullname) if successful, None otherwise
+    *   Some(demangled type fullName) if successful, None otherwise
     */
   private def calculateTypeFullname(mangledName: String): Option[String] = {
-    mangledNameCache.computeIfAbsent(
-      mangledName,
-      _ =>
-        demangle(mangledName)
-          .map(removeModifier)
-          .map(AstCreatorHelper.stripGenerics)
-          .map(_.replace(" ", "").stripSuffix(".Type"))
-    )
+    calculateDeclFullname(mangledName).map(_.stripSuffix(".Type"))
   }
 
   /** This regex is designed to clean up Swift demangled type names by extracting meaningful parts and removing internal
@@ -574,13 +567,15 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     */
   private val MemberNameRegex: Regex = """([^(]+)\((.+)\sin\s_[^)]+\)(.*)""".r
 
-  /** Basically the same as with MemberNameRegex. But here for extension function fullnames.
+  /** Basically the same as with MemberNameRegex. But here for extension function fullNames.
     *
-    * E.g., `(extension in FooExt)Foo.bar() -> Swift.String` becomes `FooExt.Foo.bar() -> Swift.String`.
+    * E.g., `(extension in FooExt):Foo.bar() -> Swift.String` becomes `FooExt.Foo.bar() -> Swift.String`.
     */
-  private val ExtensionNameRegex: Regex = """\(extension\sin\s([^)]+)\):(.*)""".r
+  private val ExtensionNameRegex: Regex = """^\(extension\sin\s([^)]+)\):(.*)""".r
 
-  /** Calculates a demangled declaration fullname from a mangled Swift declaration name.
+  private val ExtensionInSignatureRegex: Regex = """\(extension in ([^)]+)\):""".r
+
+  /** Calculates a demangled declaration fullName from a mangled Swift declaration name.
     *
     * This method demangles the Swift declaration name, applies special transformations for member names and extensions,
     * and cleans up the result by removing modifiers and spaces. Results are cached.
@@ -588,7 +583,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     * @param mangledName
     *   The mangled Swift declaration name
     * @return
-    *   Some(demangled declaration fullname) if successful, None otherwise
+    *   Some(demangled declaration fullName) if successful, None otherwise
     */
   private def calculateDeclFullname(mangledName: String): Option[String] = {
     mangledNameCache.computeIfAbsent(
@@ -596,21 +591,40 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
       _ =>
         demangle(mangledName)
           .map {
-            case MemberNameRegex(parent, name, rest) => removeModifier(s"$parent$name$rest")
-            case ExtensionNameRegex(name, rest)      => removeModifier(s"$name$rest")
-            case other                               => removeModifier(other)
+            case ExtensionNameRegex(name, rest) =>
+              removeModifier(s"$name<extension>.${rest.stripPrefix(s"$name.")}")
+            case MemberNameRegex(parent, name, rest) =>
+              AstCreatorHelper.stripGenerics(removeModifier(s"$parent$name$rest"))
+            case other =>
+              AstCreatorHelper.stripGenerics(removeModifier(other))
           }
-          .map(AstCreatorHelper.stripGenerics)
-          .map(_.replace(" ", ""))
+          .map { fullName =>
+            val withExtensionsFixed = replaceExtensionInSignature(fullName)
+            withExtensionsFixed.replace(" ", "")
+          }
     )
   }
 
-  /** Resolves a TypeInfo object to a ResolvedTypeInfo by demangling type and declaration fullnames.
+  private def replaceExtensionInSignature(fullName: String): String = {
+    ExtensionInSignatureRegex.replaceAllIn(
+      fullName,
+      m => {
+        val head = m.before
+        val name = m.group(1)
+        val rest = m.after.toString.stripPrefix(s"$name.")
+        // Only extension methods are tagged with <extension> in their fullName.
+        // The signature only contains the module and type fullNames.
+        s"$head$name.$rest"
+      }
+    )
+  }
+
+  /** Resolves a TypeInfo object to a ResolvedTypeInfo by demangling type and declaration fullNames.
     *
     * @param typeInfo
     *   The TypeInfo object to resolve
     * @return
-    *   A ResolvedTypeInfo object containing demangled fullnames
+    *   A ResolvedTypeInfo object containing demangled fullNames
     */
   private def resolve(typeInfo: TypeInfo): ResolvedTypeInfo = {
     val demangledTypeFullname = typeInfo.typeFullname.flatMap(calculateTypeFullname)

@@ -3,8 +3,8 @@ package io.joern.pysrc2cpg
 import PythonAstVisitor.{logger, metaClassSuffix, noLineAndColumn}
 import io.joern.pysrc2cpg.memop.*
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants.builtinPrefix
-import io.joern.pythonparser.ast
-import io.joern.pythonparser.ast.{Arguments, iast, iexpr, istmt}
+import io.joern.pythonparser.{AstPrinter, ast}
+import io.joern.pythonparser.ast.{Arguments, MatchAs, iast, iexpr, istmt}
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants
 import io.joern.x2cpg.{AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
@@ -1248,21 +1248,35 @@ class PythonAstVisitor(
     createBlock(blockStmts, lineAndCol)
   }
 
-  // TODO add case pattern and guard statements to cpg
+  // TODO add case pattern and guard statements to not just as string in the JUMP_TARGET to the CPG
+  // but rather as proper AST constructs.
   def convert(matchStmt: ast.Match): NewNode = {
     val controlStructureNode =
-      nodeBuilder.controlStructureNode("match ... : ...", ControlStructureTypes.SWITCH, lineAndColOf(matchStmt))
+      nodeBuilder.controlStructureNode("match ... : ...", ControlStructureTypes.MATCH, lineAndColOf(matchStmt))
 
     val matchSubject = convert(matchStmt.subject)
 
-    val caseBlocks = matchStmt.cases.map { caseStmt =>
-      val bodyNodes = caseStmt.body.map(convert)
-      createBlock(bodyNodes, lineAndColOf(caseStmt.pattern))
+    val caseBlocks = matchStmt.cases.flatMap { caseStmt =>
+      val jumpTargetCode =
+        caseStmt.pattern match {
+          case MatchAs(None, _, _) if caseStmt.guard.isEmpty =>
+            // TODO For the moment we have to use "default" because otherwise the CfgCreator does not detect
+            // the jump target as the default case.
+            "default"
+          case pattern =>
+            val printer = new AstPrinter("")
+            "case " + printer.print(pattern) + caseStmt.guard.map(g => " if " + printer.print(g)).getOrElse("")
+        }
+      val jumpTarget = nodeBuilder.jumpNode(jumpTargetCode)
+      val bodyNodes  = caseStmt.body.map(convert)
+      jumpTarget :: createBlock(bodyNodes, lineAndColOf(caseStmt.pattern)) :: Nil
     }
+
+    val switchBodyBlock = createBlock(caseBlocks, lineAndColOf(matchStmt))
 
     edgeBuilder.conditionEdge(matchSubject, controlStructureNode)
     addAstChildNodes(controlStructureNode, 1, matchSubject)
-    addAstChildNodes(controlStructureNode, 2, caseBlocks)
+    addAstChildNodes(controlStructureNode, 2, switchBodyBlock)
 
     controlStructureNode
   }

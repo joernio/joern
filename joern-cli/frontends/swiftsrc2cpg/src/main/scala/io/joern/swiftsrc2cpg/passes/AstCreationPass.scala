@@ -1,14 +1,13 @@
 package io.joern.swiftsrc2cpg.passes
 
 import io.joern.swiftsrc2cpg.Config
-import io.joern.swiftsrc2cpg.astcreation.AstCreator
+import io.joern.swiftsrc2cpg.astcreation.{AstCreator, SwiftSrcGlobal}
 import io.joern.swiftsrc2cpg.parser.SwiftJsonParser
 import io.joern.swiftsrc2cpg.parser.SwiftJsonParser.ParseResult
 import io.joern.swiftsrc2cpg.utils.AstGenRunner.AstGenRunnerResult
 import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider
 import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.SwiftFileLocalTypeMapping
 import io.joern.x2cpg.ValidationMode
-import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -26,10 +25,17 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
-  private val global  = new Global()
+  private val global  = new SwiftSrcGlobal()
   private var typeMap = SwiftTypesProvider(config).map(_.retrieveMappings()).getOrElse(Map.empty)
 
-  def typesSeen(): List[String] = global.usedTypes.keys().asScala.filterNot(Defines.SwiftTypes.contains).toList
+  def typesSeen(): List[String] =
+    global.usedTypes.keys().asScala.filterNot(Defines.SwiftTypes.contains).toList
+
+  def extensionInherits(): Map[String, Set[String]] =
+    global.extensionInherits.asScala.view.mapValues(_.toSet).toMap
+
+  def extensionMethodFullNameMapping(): Map[String, String] =
+    global.extensionMethodFullNameMapping.asScala.toMap
 
   override def generateParts(): Array[String] = astGenRunnerResult.parsedFiles.toArray
 

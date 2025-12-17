@@ -12,12 +12,8 @@ trait AstForTypeSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
   private def typeDeclForTypeSyntax(node: TypeSyntax): NewTypeDecl = {
-    val TypeInfo(typeName, typeFullName)   = typeNameInfoForTypeSyntax(node)
-    val (astParentType, astParentFullName) = astParentInfo()
-
-    val typeDeclNode_ =
-      typeDeclNode(node, typeName, typeFullName, parserResult.filename, code(node), astParentType, astParentFullName)
-
+    val TypeInfo(typeName, typeFullName) = typeNameInfoForTypeSyntax(node)
+    val typeDeclNode_                    = typeDeclNode(node, typeName, typeFullName, parserResult.filename, code(node))
     diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
     typeDeclNode_
   }
