@@ -2,9 +2,8 @@ package io.joern.jssrc2cpg.passes
 
 import io.joern.jssrc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.semanticcpg.language.importresolver.*
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.importresolver.*
 
 class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
@@ -430,7 +429,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     )
 
     "have their calls from a field access structure successfully recovered" in {
-      cpg.identifier("_tmp_2").typeFullName.headOption shouldBe Option("@angular/common/http:HttpClient")
+      cpg.identifier("_tmp_0").typeFullName.headOption shouldBe Option("@angular/common/http:HttpClient")
       cpg.call("post").methodFullName.headOption shouldBe Option("@angular/common/http:HttpClient:post")
     }
 

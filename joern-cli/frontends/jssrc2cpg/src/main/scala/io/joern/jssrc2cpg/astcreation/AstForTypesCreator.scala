@@ -2,13 +2,21 @@ package io.joern.jssrc2cpg.astcreation
 
 import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
+import io.joern.jssrc2cpg.passes.EcmaBuiltins
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes, Operators, PropertyNames}
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
+import io.shiftleft.codepropertygraph.generated.{
+  DispatchTypes,
+  EdgeTypes,
+  EvaluationStrategies,
+  ModifierTypes,
+  Operators,
+  PropertyDefaults,
+  PropertyNames
+}
 import ujson.Value
 
 import scala.util.Try
@@ -350,6 +358,39 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     ))
   }
 
+  private def staticInitMethodAst(
+    node: BabelNodeInfo,
+    typeDeclNode: NewTypeDecl,
+    staticMemberInits: List[Value],
+    staticMemberBlocks: List[Value],
+    fullName: String,
+    returnType: String
+  ): Ast = {
+    val staticModifier = NewModifier().modifierType(ModifierTypes.STATIC)
+    val blockNode      = NewBlock().typeFullName(Defines.Any)
+    val methodNode_ = methodNode(node, io.joern.x2cpg.Defines.StaticInitMethodName, fullName, "", parserResult.filename)
+
+    methodAstParentStack.push(methodNode_)
+    scope.pushNewMethodScope(
+      fullName,
+      io.joern.x2cpg.Defines.StaticInitMethodName,
+      blockNode,
+      typeRefIdStack.headOption
+    )
+    localAstParentStack.push(blockNode)
+
+    val initAsts = staticMemberInits.map(astForClassMember(_, typeDeclNode))
+      ++ staticMemberBlocks.map(astForNodeWithFunctionReference)
+    val body = blockAst(NewBlock().typeFullName(Defines.Any), initAsts)
+
+    methodAstParentStack.pop()
+    localAstParentStack.pop()
+    scope.popScope()
+
+    val methodReturn = methodReturnNode(node, returnType)
+    methodAst(methodNode_, Nil, body, methodReturn, List(staticModifier))
+  }
+
   protected def astForClass(clazz: BabelNodeInfo, shouldCreateAssignmentCall: Boolean = false): Ast = {
     val (typeName, typeFullName) = calcTypeNameAndFullName(clazz)
     registerType(typeFullName)
@@ -405,30 +446,29 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       .map(m => astForClassMember(m, typeDeclNode_))
 
     // adding all static members and retrieving their initialization calls
-    val staticMemberInitCalls =
-      allClassMembers.filter(isStaticMember).map(m => astForClassMember(m, typeDeclNode_))
+    val staticMemberInits = allClassMembers.filter(isStaticMember)
 
     // retrieving initialization calls from the static initialization block if any
-    val staticInitBlock = allClassMembers.find(isStaticInitBlock)
-    val staticInitBlockAsts =
-      staticInitBlock.map(block => block("body").arr.toList.map(astForNodeWithFunctionReference)).getOrElse(List.empty)
+    val staticInitBlock  = allClassMembers.find(isStaticInitBlock)
+    val staticInitBlocks = staticInitBlock.map(block => block("body").arr.toList).getOrElse(List.empty)
 
-    methodAstParentStack.pop()
-    dynamicInstanceTypeStack.pop()
-    typeRefIdStack.pop()
-    scope.popScope()
-
-    if (staticMemberInitCalls.nonEmpty || staticInitBlockAsts.nonEmpty) {
+    if (staticMemberInits.nonEmpty || staticInitBlocks.nonEmpty) {
       val init = staticInitMethodAst(
         clazz,
-        staticMemberInitCalls ++ staticInitBlockAsts,
+        typeDeclNode_,
+        staticMemberInits,
+        staticInitBlocks,
         s"$typeFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}",
-        None,
         Defines.Any
       )
       Ast.storeInDiffGraph(init, diffGraph)
       diffGraph.addEdge(typeDeclNode_, init.nodes.head, EdgeTypes.AST)
     }
+
+    methodAstParentStack.pop()
+    dynamicInstanceTypeStack.pop()
+    typeRefIdStack.pop()
+    scope.popScope()
 
     if (shouldCreateAssignmentCall) {
       diffGraph.addEdge(localAstParentStack.head, typeRefNode_, EdgeTypes.AST)
@@ -444,16 +484,121 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       scope.addVariable(typeName, idLocal, Defines.Any, VariableScopeManager.ScopeType.BlockScope)
       scope.addVariableReference(typeName, classIdNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
-      createAssignmentCallAst(
+      val assignmentAst = createAssignmentCallAst(
         classIdNode,
         constructorRefNode,
         s"$typeName = ${constructorNode.fullName}",
         clazz.lineNumber,
         clazz.columnNumber
       )
+
+      val annotationAst = createClassAnnotationAst(clazz, classIdNode)
+      if (annotationAst.root.isDefined) {
+        val blockNode_   = blockNode(clazz)
+        val childrenAsts = List(assignmentAst, annotationAst)
+        setArgumentIndices(childrenAsts)
+        Ast(blockNode_).withChildren(childrenAsts)
+      } else assignmentAst
     } else {
       Ast(typeRefNode_)
     }
+  }
+
+  private def createClassAnnotationAst(classNodeInfo: BabelNodeInfo, classIdNode: NewIdentifier): Ast = {
+    val decoratorAsts = decoratorExpressionElements(classNodeInfo).map(e => astForNodeWithFunctionReference(e.json))
+    if (decoratorAsts.nonEmpty) {
+      val lhsAst = Ast(
+        identifierNode(
+          classNodeInfo,
+          classIdNode.name,
+          classIdNode.code,
+          Defines.Any,
+          classIdNode.dynamicTypeHintFullName
+        )
+      )
+
+      val receiverNode = identifierNode(classNodeInfo, "__decorate")
+      scope.addVariableReference(receiverNode.name, receiverNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+      val thisNode = identifierNode(classNodeInfo, "this").dynamicTypeHintFullName(typeHintForThisExpression())
+      scope.addVariableReference(thisNode.name, thisNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+
+      val decorateCallNode =
+        callNode(
+          classNodeInfo,
+          s"__decorate([${decoratorAsts.flatMap(_.root.map(codeOf)).mkString(",")}], ${classIdNode.name})",
+          "__decorate",
+          DispatchTypes.DYNAMIC_DISPATCH
+        )
+
+      val classRefNode = Ast(
+        identifierNode(
+          classNodeInfo,
+          classIdNode.name,
+          classIdNode.code,
+          Defines.Any,
+          classIdNode.dynamicTypeHintFullName
+        )
+      )
+      val annotationExprAst = astForDecorateArray(classNodeInfo, decoratorAsts)
+      val args              = Seq(annotationExprAst, classRefNode)
+      val decorateCallAst =
+        callAst(decorateCallNode, args, receiver = Option(Ast(receiverNode)), base = Option(Ast(thisNode)))
+
+      createAssignmentCallAst(
+        lhsAst,
+        decorateCallAst,
+        s"${classIdNode.name} = ${codeOf(decorateCallAst.nodes.head)}",
+        classNodeInfo.lineNumber,
+        classNodeInfo.columnNumber
+      )
+    } else Ast()
+  }
+
+  private def astForDecorateArray(classNodeInfo: BabelNodeInfo, decoratorAsts: List[Ast]): Ast = {
+    val blockNode_ = blockNode(classNodeInfo)
+    scope.pushNewBlockScope(blockNode_)
+    localAstParentStack.push(blockNode_)
+
+    val tmpName      = generateUnusedVariableName(usedVariableNames, "_tmp")
+    val localTmpNode = localNode(classNodeInfo, tmpName, tmpName, Defines.Any).order(0)
+    val tmpArrayNode = identifierNode(classNodeInfo, tmpName)
+    diffGraph.addEdge(localAstParentStack.head, localTmpNode, EdgeTypes.AST)
+    scope.addVariableReference(tmpName, tmpArrayNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+
+    val arrayCallNode =
+      callNode(
+        classNodeInfo,
+        s"${EcmaBuiltins.arrayFactory}()",
+        EcmaBuiltins.arrayFactory,
+        DispatchTypes.STATIC_DISPATCH
+      )
+
+    val lineNumber     = classNodeInfo.lineNumber
+    val columnNumber   = classNodeInfo.columnNumber
+    val assignmentCode = s"${localTmpNode.code} = ${arrayCallNode.code}"
+    val assignmentTmpArrayCallNode =
+      createAssignmentCallAst(tmpArrayNode, arrayCallNode, assignmentCode, lineNumber, columnNumber)
+
+    val elementAsts = decoratorAsts.map { ast =>
+      val elementCode  = ast.root.map(codeOf).getOrElse(PropertyDefaults.Code)
+      val pushCallNode = callNode(classNodeInfo, s"$tmpName.push($elementCode)", "", DispatchTypes.DYNAMIC_DISPATCH)
+
+      val baseNode   = identifierNode(classNodeInfo, tmpName)
+      val memberNode = fieldIdentifierNode(classNodeInfo, "push", "push")
+      val receiverNode =
+        createFieldAccessCallAst(baseNode, memberNode, classNodeInfo.lineNumber, classNodeInfo.columnNumber)
+      val thisPushNode = identifierNode(classNodeInfo, tmpName)
+      callAst(pushCallNode, List(ast), receiver = Option(receiverNode), base = Option(Ast(thisPushNode)))
+    }
+
+    val tmpArrayReturnNode = identifierNode(classNodeInfo, tmpName)
+
+    scope.popScope()
+    localAstParentStack.pop()
+
+    val blockChildrenAsts = assignmentTmpArrayCallNode +: elementAsts :+ Ast(tmpArrayReturnNode)
+    setArgumentIndices(blockChildrenAsts)
+    blockAst(blockNode_, blockChildrenAsts)
   }
 
   protected def addModifier(node: NewNode, json: Value): Unit = createBabelNodeInfo(json).node match {

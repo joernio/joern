@@ -91,11 +91,22 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
         |@d()
         |class Greeter {}
         |""".stripMargin)
-      cpg.method.nameExact("<init>").ast.isCall.code.l shouldBe List(
+      cpg.call.nameExact("__decorate").ast.isCall.code.l shouldBe List(
+        "__decorate([a(false),b(foo),c(foo=false),d()], Greeter)",
+        "_tmp_0 = __ecma.Array.factory()",
+        "__ecma.Array.factory()",
+        "_tmp_0.push(a(false))",
+        "_tmp_0.push",
         "a(false)",
+        "_tmp_0.push(b(foo))",
+        "_tmp_0.push",
         "b(foo)",
+        "_tmp_0.push(c(foo=false))",
+        "_tmp_0.push",
         "c(foo=false)",
         "foo=false",
+        "_tmp_0.push(d())",
+        "_tmp_0.push",
         "d()"
       )
       inside(cpg.typeDecl.name("Greeter").annotation.l) {
@@ -214,11 +225,36 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
           |""".stripMargin)
       ContainsEdgePass(cpg).createAndApply()
       cpg.methodRef.where(_._containsIn.collectAll[TypeDecl]) shouldBe empty
-      cpg.methodRef._containsIn.collectAll[Method].fullName.l shouldBe List(
-        "Test0.ts::program:MyClass:<init>",
-        "Test0.ts::program"
+
+      val List(constructorRef, annotationLambdaRef) = cpg.methodRef.l
+      constructorRef.methodFullName shouldBe "Test0.ts::program:MyClass:<init>"
+      constructorRef._containsIn.collectAll[Method].fullName.l shouldBe List("Test0.ts::program")
+      annotationLambdaRef.methodFullName shouldBe "Test0.ts::program:<lambda>0"
+      annotationLambdaRef._containsIn.collectAll[Method].fullName.l shouldBe List("Test0.ts::program")
+
+      val List(decoratorAssignment) = cpg.call.codeExact("MyClass = __decorate([NgModule(() => { })], MyClass)").l
+      val List(myClassRef)          = decoratorAssignment.arguments(1).isIdentifier.l
+      myClassRef.name shouldBe "MyClass"
+      myClassRef.dynamicTypeHintFullName.l shouldBe List("Test0.ts::program:MyClass:<init>")
+      val List(decoratorCall) = decoratorAssignment.arguments(2).isCall.l
+      val List(rec)           = decoratorCall.receiver.isIdentifier.l
+      rec.name shouldBe "__decorate"
+      rec.code shouldBe "__decorate"
+
+      val List(myClassRef2) = decoratorCall.arguments(2).isIdentifier.l
+      myClassRef2.name shouldBe "MyClass"
+      myClassRef2.dynamicTypeHintFullName.l shouldBe List("Test0.ts::program:MyClass:<init>")
+
+      val List(decoratorExpr) = decoratorCall.arguments(1).ast.isCall.code("NgModule.*").l
+      decoratorExpr.code shouldBe "NgModule(() => { })"
+
+      decoratorCall.arguments(1).ast.isCall.code.l shouldBe List(
+        "_tmp_0 = __ecma.Array.factory()",
+        "__ecma.Array.factory()",
+        "_tmp_0.push(NgModule(() => { }))",
+        "_tmp_0.push",
+        "NgModule(() => { })"
       )
-      cpg.method.nameExact("<init>").ast.isCall.code.l shouldBe List("NgModule(() => { })")
     }
   }
 

@@ -353,10 +353,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       handleParameters(func.json("params").arr.toSeq, mutable.ArrayBuffer.empty[Ast], createLocals = false)
     }
 
-    val annotationExpressionAsts = methodBlockContent.clazz
-      .map(c => decoratorExpressionElements(c).map(e => astForNodeWithFunctionReference(e.json)))
-      .getOrElse(List.empty)
-      ++ decoratorExpressionElements(func).map(e => astForNodeWithFunctionReference(e.json))
+    val annotationExpressionAsts = decoratorExpressionElements(func).map(e => astForNodeWithFunctionReference(e.json))
 
     val blockAsts = annotationExpressionAsts ++ methodBlockContent.constructorContent.flatMap(m =>
       methodBlockContent.typeDecl.map(astForClassMember(m, _))
@@ -462,10 +459,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         }
       case _ => createBlockStatementAsts(bodyJson("body"))
     }
-    val annotationExpressionAsts = methodBlockContent.clazz
-      .map(c => decoratorExpressionElements(c).map(e => astForNodeWithFunctionReference(e.json)))
-      .getOrElse(List.empty)
-      ++ decoratorExpressionElements(func).map(e => astForNodeWithFunctionReference(e.json))
+    val annotationExpressionAsts = decoratorExpressionElements(func).map(e => astForNodeWithFunctionReference(e.json))
 
     val methodBlockChildren = annotationExpressionAsts ++ methodBlockContent.constructorContent.flatMap(m =>
       methodBlockContent.typeDecl.map(astForClassMember(m, _))
