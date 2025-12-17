@@ -293,27 +293,29 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     typeRefIdStack.push(typeRefNode_)
     scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode_, None)
 
-    val memberAsts = tsEnum.json("members").arr.toList.flatMap(m => astsForEnumMember(createBabelNodeInfo(m)))
+    val enumMembers                = tsEnum.json("members").arr.toList
+    val enumMembersPlain           = enumMembers.filter(m => !hasKey(m, "initializer"))
+    val enumMembersWithInitializer = enumMembers.filter(m => hasKey(m, "initializer") && !m("initializer").isNull)
+
+    val memberAsts = enumMembersPlain.flatMap(m => astsForEnumMember(createBabelNodeInfo(m)))
+
+    if (enumMembersWithInitializer.isEmpty) {
+      Ast.storeInDiffGraph(Ast(typeDeclNode_).withChildren(memberAsts), diffGraph)
+    } else {
+      val init = staticEnumInitMethodAst(
+        tsEnum,
+        typeDeclNode_,
+        enumMembersWithInitializer,
+        s"$typeFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}",
+        Defines.Any
+      )
+      Ast.storeInDiffGraph(Ast(typeDeclNode_).withChildren(memberAsts).withChild(init), diffGraph)
+    }
 
     methodAstParentStack.pop()
     dynamicInstanceTypeStack.pop()
     typeRefIdStack.pop()
     scope.popScope()
-
-    val (calls, member) = memberAsts.partition(_.nodes.headOption.exists(_.isInstanceOf[NewCall]))
-    if (calls.isEmpty) {
-      Ast.storeInDiffGraph(Ast(typeDeclNode_).withChildren(member), diffGraph)
-    } else {
-      val init =
-        staticInitMethodAst(
-          tsEnum,
-          calls,
-          s"$typeFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}",
-          None,
-          Defines.Any
-        )
-      Ast.storeInDiffGraph(Ast(typeDeclNode_).withChildren(member).withChild(init), diffGraph)
-    }
 
     diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
     Ast(typeRefNode_)
@@ -358,7 +360,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     ))
   }
 
-  private def staticInitMethodAst(
+  private def staticClassInitMethodAst(
     node: BabelNodeInfo,
     typeDeclNode: NewTypeDecl,
     staticMemberInits: List[Value],
@@ -382,6 +384,40 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val initAsts = staticMemberInits.map(astForClassMember(_, typeDeclNode))
       ++ staticMemberBlocks.map(astForNodeWithFunctionReference)
     val body = blockAst(NewBlock().typeFullName(Defines.Any), initAsts)
+
+    methodAstParentStack.pop()
+    localAstParentStack.pop()
+    scope.popScope()
+
+    val methodReturn = methodReturnNode(node, returnType)
+    methodAst(methodNode_, Nil, body, methodReturn, List(staticModifier))
+  }
+
+  private def staticEnumInitMethodAst(
+    node: BabelNodeInfo,
+    typeDeclNode: NewTypeDecl,
+    enumMembersWithInitializer: List[Value],
+    fullName: String,
+    returnType: String
+  ): Ast = {
+    val staticModifier = NewModifier().modifierType(ModifierTypes.STATIC)
+    val blockNode      = NewBlock().typeFullName(Defines.Any)
+    val methodNode_ = methodNode(node, io.joern.x2cpg.Defines.StaticInitMethodName, fullName, "", parserResult.filename)
+
+    methodAstParentStack.push(methodNode_)
+    scope.pushNewMethodScope(
+      fullName,
+      io.joern.x2cpg.Defines.StaticInitMethodName,
+      blockNode,
+      typeRefIdStack.headOption
+    )
+    localAstParentStack.push(blockNode)
+
+    val initAsts         = enumMembersWithInitializer.flatMap(m => astsForEnumMember(createBabelNodeInfo(m)))
+    val (calls, members) = initAsts.partition(_.nodes.headOption.exists(_.isInstanceOf[NewCall]))
+
+    members.foreach(m => diffGraph.addEdge(typeDeclNode, m.root.get, EdgeTypes.AST))
+    val body = blockAst(NewBlock().typeFullName(Defines.Any), calls)
 
     methodAstParentStack.pop()
     localAstParentStack.pop()
@@ -453,7 +489,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val staticInitBlocks = staticInitBlock.map(block => block("body").arr.toList).getOrElse(List.empty)
 
     if (staticMemberInits.nonEmpty || staticInitBlocks.nonEmpty) {
-      val init = staticInitMethodAst(
+      val init = staticClassInitMethodAst(
         clazz,
         typeDeclNode_,
         staticMemberInits,
