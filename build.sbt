@@ -59,18 +59,18 @@ ThisBuild / libraryDependencies ++= Seq(
 ThisBuild / compile / javacOptions ++= Seq(
   "-g", // debug symbols
   "-Xlint",
-  "--release=11"
+  "--release=13"
 ) ++ {
-  // fail early if users with JDK8 try to run this
+  // Require Java 13+ due to FileSystems.newFileSystem(Path) API used in project/FileUtils.scala
   val javaVersion = sys.props("java.specification.version").toFloat
-  assert(javaVersion.toInt >= 11, s"this build requires JDK11+ - you're using $javaVersion")
+  assert(javaVersion.toInt >= 13, s"this build requires JDK13+ - you're using $javaVersion")
   Nil
 }
 
 ThisBuild / scalacOptions ++= Seq(
   "-deprecation", // Emit warning and location for usages of deprecated APIs.
   "--release",
-  "11",
+  "13",
   "-Wshadow:type-parameter-shadow"
 )
 
