@@ -196,7 +196,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  protected def astForDeclMember(node: DeclSyntax, typeDeclNode: NewTypeDecl): Ast = {
+  private def astForDeclMember(node: DeclSyntax, typeDeclNode: NewTypeDecl): Ast = {
     node match {
       case d: FunctionDeclLike =>
         val ast = astForFunctionLike(d, List.empty, None)
@@ -321,12 +321,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     // - handle genericWhereClause
     val attributes = astForDeclAttributes(node)
     val modifiers  = modifiersForDecl(node)
-
-    val inherits = fullnameProvider.inheritsFor(node) match {
-      case set if set.nonEmpty => set
-      case _                   => inheritsFrom(node)
-    }
-    inherits.foreach(registerType)
+    val inherits   = inheritsFrom(node)
 
     val TypeInfo(typeName, typeFullName) = typeNameInfoForDeclSyntax(node)
 
@@ -424,45 +419,57 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def inheritsFrom(node: TypeDeclLike | ExtensionDeclSyntax): Seq[String] = {
-    val clause = node match {
-      case c: ClassDeclSyntax          => c.inheritanceClause
-      case p: ProtocolDeclSyntax       => p.inheritanceClause
-      case s: StructDeclSyntax         => s.inheritanceClause
-      case e: EnumDeclSyntax           => e.inheritanceClause
-      case a: ActorDeclSyntax          => a.inheritanceClause
-      case a: AssociatedTypeDeclSyntax => a.inheritanceClause
-      case e: ExtensionDeclSyntax      => e.inheritanceClause
-      case _: TypeAliasDeclSyntax      => None
+    val inheritFullNames = fullnameProvider.inheritsFor(node) match {
+      case fullNames if fullNames.nonEmpty => fullNames
+      case _ =>
+        val clause = node match {
+          case c: ClassDeclSyntax          => c.inheritanceClause
+          case p: ProtocolDeclSyntax       => p.inheritanceClause
+          case s: StructDeclSyntax         => s.inheritanceClause
+          case e: EnumDeclSyntax           => e.inheritanceClause
+          case a: ActorDeclSyntax          => a.inheritanceClause
+          case a: AssociatedTypeDeclSyntax => a.inheritanceClause
+          case e: ExtensionDeclSyntax      => e.inheritanceClause
+          case _: TypeAliasDeclSyntax      => None
+        }
+        clause match {
+          case Some(value) =>
+            value.inheritedTypes.children.map(c => AstCreatorHelper.cleanType(code(c.`type`))).distinct.sorted
+          case None => Seq.empty
+        }
     }
-    clause match {
-      case Some(value) =>
-        value.inheritedTypes.children.map(c => AstCreatorHelper.cleanType(code(c.`type`))).distinct.sorted
-      case None => Seq.empty
-    }
+    inheritFullNames.foreach(registerType)
+    inheritFullNames
   }
 
   private def astForExtensionDeclSyntax(node: ExtensionDeclSyntax): Ast = {
     val TypeInfo(typeName, typeFullName) = typeNameInfoForDeclSyntax(node)
-    val typeRefNode_                     = typeRefNode(node, code(node), typeFullName)
-
-    val inherits = fullnameProvider.inheritsFor(node) match {
-      case set if set.nonEmpty => set
-      case _                   => inheritsFrom(node)
+    val (extendedTypeName, extendedTypeFullName) = fullnameProvider.typeFullname(node) match {
+      case Some(tpe) =>
+        if (tpe.contains('.')) {
+          val parts = tpe.split('.')
+          (parts.last, tpe)
+        } else {
+          (typeName, tpe)
+        }
+      case None => (typeName, typeFullName)
     }
-    inherits.foreach(registerType)
 
+    val typeRefNode_ = typeRefNode(node, code(node), extendedTypeFullName)
+
+    val inherits = inheritsFrom(node)
     if (inherits.nonEmpty) {
-      global.addExtensionInherits(typeFullName, inherits)
+      global.addExtensionInherits(extendedTypeFullName, inherits)
     }
 
     typeRefIdStack.push(typeRefNode_)
-    scope.pushNewTypeDeclScope(typeName, typeFullName)
+    scope.pushNewTypeDeclScope(extendedTypeName, extendedTypeFullName)
 
-    scope.restoreMembersForExtension(typeFullName)
+    scope.restoreMembersForExtension(extendedTypeFullName)
 
     val memberBlock = node.memberBlock
 
-    // TODO: also handle computed properties here
+    // TODO: also handle member and computed properties (if any) here
     val functionDeclLikes = memberBlock.members.children.map(_.decl).collect { case f: FunctionDeclLike => f }.toList
     val functionDeclLikesAsts = functionDeclLikes.map(astForFunctionInExtension)
 

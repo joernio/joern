@@ -18,7 +18,9 @@ class ExtensionMultiModuleTests extends SwiftCompilerMultiModuleSrc2CpgSuite {
   private val moduleACode =
     """
       |public class Foo {
-      |    public init() {}
+      |  public var x: Int = 0
+      |
+      |  public init() {}
       |}
       |
       |public extension Foo {
@@ -31,7 +33,9 @@ class ExtensionMultiModuleTests extends SwiftCompilerMultiModuleSrc2CpgSuite {
       |import ModuleA
       |
       |public extension Foo {
-      |  func bar() {}
+      |  func bar() {
+      |    print(x)
+      |  }
       |}
       |""".stripMargin
 
@@ -61,6 +65,17 @@ class ExtensionMultiModuleTests extends SwiftCompilerMultiModuleSrc2CpgSuite {
 
       val List(barCall) = cpg.call.nameExact("bar").l
       barCall.methodFullName shouldBe "ModuleB.ModuleA.Foo<extension>.bar:()->()"
+
+      val List(selfParamInBar) = cpg.method.nameExact("bar").parameter.nameExact("self").l
+      selfParamInBar.typeFullName shouldBe "ModuleA.Foo"
+
+      val List(printCall)  = cpg.call.nameExact("print").l
+      val List(selfAccess) = printCall.argument.isCall.l
+      selfAccess.code shouldBe "self.x"
+      selfAccess.typeFullName shouldBe "Swift.Int"
+      val List(selfIdentifier) = selfAccess.argument.isIdentifier.l
+      selfIdentifier.name shouldBe "self"
+      selfIdentifier.typeFullName shouldBe "ModuleA.Foo"
     }
 
   }
