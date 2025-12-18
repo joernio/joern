@@ -293,9 +293,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     typeRefIdStack.push(typeRefNode_)
     scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode_, None)
 
-    val enumMembers                = tsEnum.json("members").arr.toList
-    val enumMembersPlain           = enumMembers.filter(m => !hasKey(m, "initializer"))
-    val enumMembersWithInitializer = enumMembers.filter(m => hasKey(m, "initializer") && !m("initializer").isNull)
+    val enumMembers = tsEnum.json("members").arr.toList
+    val (enumMembersWithInitializer, enumMembersPlain) =
+      enumMembers.partition(m => hasKey(m, "initializer") && !m("initializer").isNull)
 
     val memberAsts = enumMembersPlain.flatMap(m => astsForEnumMember(createBabelNodeInfo(m)))
 
