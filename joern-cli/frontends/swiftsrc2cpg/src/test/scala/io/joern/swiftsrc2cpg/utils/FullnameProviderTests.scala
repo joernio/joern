@@ -4,8 +4,6 @@ import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{ResolvedTypeInfo, SwiftFi
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-import scala.collection.mutable
-
 class FullnameProviderTests extends AnyFlatSpec with Matchers {
 
   private class MockFullNameProvider(typeMap: SwiftFileLocalTypeMapping) extends FullnameProvider(typeMap) {
@@ -16,10 +14,10 @@ class FullnameProviderTests extends AnyFlatSpec with Matchers {
       super.declFullname(range, nodeKind)
   }
 
-  val typeInfo1          = ResolvedTypeInfo(Some("type.fullname.A"), Some("decl.fullname.A"), "AKind")
-  val typeInfo2          = ResolvedTypeInfo(Some("type.fullname.B"), Some("decl.fullname.B"), "BKind")
-  val typeInfoNoType     = ResolvedTypeInfo(None, Some("decl.fullname.C"), "CKind")
-  val typeInfoNoFullName = ResolvedTypeInfo(Some("type.fullname.D"), None, "DKind")
+  val typeInfo1          = ResolvedTypeInfo(Some("type.fullname.A"), Some("decl.fullname.A"), Seq.empty, "AKind")
+  val typeInfo2          = ResolvedTypeInfo(Some("type.fullname.B"), Some("decl.fullname.B"), Seq.empty, "BKind")
+  val typeInfoNoType     = ResolvedTypeInfo(None, Some("decl.fullname.C"), Seq.empty, "CKind")
+  val typeInfoNoFullName = ResolvedTypeInfo(Some("type.fullname.D"), None, Seq.empty, "DKind")
 
   "typeFullname" should "return the type when available in the map" in {
     val mockTypeMap = Map((10, 20) -> Set(typeInfo1))

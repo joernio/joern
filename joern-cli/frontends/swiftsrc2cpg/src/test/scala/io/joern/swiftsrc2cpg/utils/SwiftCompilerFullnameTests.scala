@@ -11,8 +11,6 @@ class SwiftCompilerFullnameTests extends SwiftCompilerSrc2CpgSuite {
 
     "be correct in a simple Hello World example" in {
       val cpg = codeWithSwiftSetup("""
-          |import Foundation
-          |
           |class Main {
           |  func hello() {
           |    print("Hello World!")
@@ -47,8 +45,6 @@ class SwiftCompilerFullnameTests extends SwiftCompilerSrc2CpgSuite {
 
     "be correct for variable declarations" in {
       val cpg = codeWithSwiftSetup("""
-          |import Foundation
-          |
           |let a = 1
           |let b = "b"
           |var c = 0.1

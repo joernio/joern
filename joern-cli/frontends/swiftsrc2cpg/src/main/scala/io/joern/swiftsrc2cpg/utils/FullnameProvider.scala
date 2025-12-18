@@ -4,7 +4,6 @@ import io.joern.swiftsrc2cpg.astcreation.AstCreatorHelper
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.SwiftNode
 import io.joern.swiftsrc2cpg.utils.FullnameProvider.NodeKindMapping
 import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{ResolvedTypeInfo, SwiftFileLocalTypeMapping}
-import org.apache.commons.lang3.StringUtils
 
 import scala.annotation.tailrec
 
@@ -20,12 +19,12 @@ private object FullnameProvider {
     case Type, Decl
   }
 
-  // TODO: provide the actual mapping from SwiftNode.toString (nodeKind) to ResolvedTypeInfo.nodeKind
+  // TODO: provide the actual mapping from SwiftNode.toString (nodeKind) to ResolvedTypeInfo.nodeKind priority list
   private val NodeKindMapping = Map(
-    "DeclReferenceExprSyntax" -> "type_expr",
-    "VariableDeclSyntax"      -> "var_decl",
-    "PatternBindingSyntax"    -> "var_decl",
-    "IdentifierPatternSyntax" -> "var_decl"
+    "DeclReferenceExprSyntax" -> List("type_expr", "member_ref_expr"),
+    "VariableDeclSyntax"      -> List("var_decl"),
+    "PatternBindingSyntax"    -> List("var_decl"),
+    "IdentifierPatternSyntax" -> List("var_decl")
   )
 }
 
@@ -49,7 +48,10 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
   private def filterForNodeKind(in: Set[ResolvedTypeInfo], nodeKind: String): Option[ResolvedTypeInfo] = {
     if (in.isEmpty) return None
     if (in.size == 1) return in.headOption
-    NodeKindMapping.get(nodeKind).flatMap(mappedNodeKind => in.find(_.nodeKind == mappedNodeKind)).orElse(in.headOption)
+    NodeKindMapping
+      .get(nodeKind)
+      .flatMap(mappedNodeKinds => mappedNodeKinds.flatMap(kind => in.find(_.nodeKind == kind)).headOption)
+      .orElse(in.headOption)
   }
 
   /** Recursively attempts to find the fullName for a given source range and kind. If the exact range is not found, it
@@ -165,6 +167,29 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
     (node.startOffset, node.endOffset) match {
       case (Some(start), Some(end)) => declFullname((start, end), node.toString)
       case _                        => None
+    }
+  }
+
+  /** Returns inheritance fullNames for the given Swift node.
+    *
+    * Looks up resolved type information in the `typeMap` using the node's start and end offsets. If no mapping is
+    * present or the node does not have offsets, an empty sequence is returned.
+    *
+    * @param node
+    *   the Swift AST node to query
+    * @return
+    *   a sequence of inheritance fullNames, or an empty sequence if none are found
+    */
+  def inheritsFor(node: SwiftNode): Seq[String] = {
+    if (typeMap.isEmpty) return Seq.empty
+    (node.startOffset, node.endOffset) match {
+      case (Some(start), Some(end)) =>
+        typeMap.get((start, end)) match {
+          case Some(typeInfos) =>
+            typeInfos.flatMap(_.inherits).toSeq
+          case None => Seq.empty
+        }
+      case _ => Seq.empty
     }
   }
 

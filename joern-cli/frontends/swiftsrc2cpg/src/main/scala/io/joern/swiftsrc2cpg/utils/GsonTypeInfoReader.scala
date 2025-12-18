@@ -6,6 +6,7 @@ import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.TypeInfo
 
 import java.io.Reader
 import scala.annotation.tailrec
+import scala.jdk.CollectionConverters.*
 import scala.collection.mutable
 
 /** Utility for reading and extracting type information from Swift AST in JSON format. Parses Swift's JSON
@@ -13,11 +14,11 @@ import scala.collection.mutable
   */
 object GsonTypeInfoReader {
 
-  /** Field names that can contain decl fullnames in the Swift AST */
-  private val DeclFullnameFieldNames = Set("usr", "decl_usr")
+  /** Field names that can contain decl fullNames in the Swift AST */
+  private val DeclFullNameFieldNames = Set("usr", "decl_usr", "protocol", "superclass_type")
 
-  /** Field names that can contain type fullnames in the Swift AST */
-  private val TypeFullnameFieldNames = Set("type", "type_usr", "result", "interface_type")
+  /** Field names that can contain type fullNames in the Swift AST */
+  private val TypeFullNameFieldNames = Set("type", "type_usr", "result", "interface_type")
 
   /** AST node kinds that require special handling.
     *
@@ -59,6 +60,19 @@ object GsonTypeInfoReader {
     Option.when(obj.has(propertyName) && obj.get(propertyName).isJsonObject)(obj.get(propertyName).getAsJsonObject)
   }
 
+  /** Safely retrieves a JsonArray property.
+    *
+    * @param obj
+    *   The JSON object to extract from
+    * @param propertyName
+    *   The name of the property to extract
+    * @return
+    *   Some(jsonArray) if property exists and is an array, None otherwise
+    */
+  private def safePropertyArray(obj: JsonObject, propertyName: String): Option[JsonArray] = {
+    Option.when(obj.has(propertyName) && obj.get(propertyName).isJsonArray)(obj.get(propertyName).getAsJsonArray)
+  }
+
   /** Extracts the source range from a JSON object.
     *
     * @param obj
@@ -85,7 +99,12 @@ object GsonTypeInfoReader {
           * to account for the attribute's position because swift-parser does include attributes in the range of the
           * associated declaration while swiftc does not.
           */
-        safeRange(obj.getAsJsonArray("attrs").get(0).getAsJsonObject) match {
+        val elemWithRange = safePropertyArray(obj, "attrs").flatMap { arr =>
+          arr.asList().asScala.collectFirst {
+            case attrObj if safeRange(attrObj.getAsJsonObject).isDefined => attrObj.getAsJsonObject
+          }
+        }
+        elemWithRange.map(range) match {
           case Some((s, e)) if s < start => s
           case _                         => start
         }
@@ -105,15 +124,15 @@ object GsonTypeInfoReader {
     Option.when(obj.has("range"))(range(obj))
   }
 
-  /** Determines if a JSON object contains useful type or decl fullname information.
+  /** Determines if a JSON object contains useful type or decl fullName information.
     *
     * @param obj
     *   The JSON object to check
     * @return
-    *   true if the object contains type or decl fullname information, false otherwise
+    *   true if the object contains type or decl fullName information, false otherwise
     */
   private def qualifies(obj: JsonObject): Boolean = {
-    obj.has("range") && (TypeFullnameFieldNames.exists(obj.has) || DeclFullnameFieldNames.exists(obj.has))
+    obj.has("range") && (TypeFullNameFieldNames.exists(obj.has) || DeclFullNameFieldNames.exists(obj.has))
   }
 
   /** Determines if a JSON object represents a parameter in the Swift AST.
@@ -125,7 +144,7 @@ object GsonTypeInfoReader {
     */
   private def isParameter(obj: JsonObject): Boolean = {
     safePropertyValue(obj, "_kind").contains("parameter") &&
-    (TypeFullnameFieldNames.exists(obj.has) || DeclFullnameFieldNames.exists(obj.has))
+    (TypeFullNameFieldNames.exists(obj.has) || DeclFullNameFieldNames.exists(obj.has))
   }
 
   /** Gets the AST node kind from a JSON object.
@@ -188,6 +207,43 @@ object GsonTypeInfoReader {
     }
   }
 
+  /** Until swiftc 6.1.x `inherits` is a plain JSON array storing the mangled fullNames directly */
+  private def superClassesFromNodeLegacy(obj: JsonObject): Seq[String] = {
+    safePropertyArray(obj, "inherits")
+      .filter(_ != null)
+      .map(_.asList().asScala.toSeq.map(_.getAsString))
+      .getOrElse(Seq.empty)
+  }
+
+  /** Starting with swiftc 6.2.x `inherits` is an actual JSON object */
+  private def superClassesFromNode(obj: JsonObject): Seq[String] = {
+    safePropertyObject(obj, "inherits").flatMap(safePropertyValue(_, "superclass_type")).toSeq
+  }
+
+  /** Starting with swiftc 6.2.x `inherits` is an actual JSON object */
+  private def conformancesFromNode(obj: JsonObject): Seq[String] = {
+    safePropertyObject(obj, "inherits")
+      .flatMap(safePropertyArray(_, "conformances"))
+      .filter(_ != null)
+      .map(_.asList().asScala.toSeq.flatMap(r => safePropertyValue(r.getAsJsonObject, "protocol")))
+      .getOrElse(Seq.empty)
+  }
+
+  private def declFullNameFromNode(obj: JsonObject, declObj: JsonObject): Option[String] = {
+    safePropertyValue(obj, "usr").orElse(safePropertyValue(declObj, "decl_usr"))
+  }
+
+  private def typeFullNameFromNode(obj: JsonObject): Option[String] = {
+    safePropertyValue(obj, "type")
+      .orElse(safePropertyValue(obj, "type_usr"))
+      .orElse(safePropertyValue(obj, "result"))
+      .orElse(safePropertyValue(obj, "interface_type"))
+  }
+
+  private def isInBuildFolder(filename: String): Boolean = {
+    filename.contains("/.build/") || filename.contains("\\.build\\") || filename.contains("/Build/")
+  }
+
   /** Collects type information from Swift AST JSON.
     *
     * @param reader
@@ -219,7 +275,7 @@ object GsonTypeInfoReader {
           obj.add(name, value)
         } else if (name == "filename") {
           filename = JsonParser.parseReader(jsonReader).getAsString
-          isFromBuild = filename.contains("/.build/") || filename.contains("\\.build\\")
+          isFromBuild = isInBuildFolder(filename)
         } else {
           jsonReader.peek() match {
             case JsonToken.BEGIN_OBJECT if hasKind && !isFromBuild =>
@@ -235,8 +291,8 @@ object GsonTypeInfoReader {
             case _ =>
               if (
                 name == "start" || name == "end" ||
-                TypeFullnameFieldNames.contains(name) ||
-                DeclFullnameFieldNames.contains(name)
+                TypeFullNameFieldNames.contains(name) ||
+                DeclFullNameFieldNames.contains(name)
               ) {
                 val value = JsonParser.parseReader(jsonReader)
                 obj.add(name, value)
@@ -277,14 +333,12 @@ object GsonTypeInfoReader {
         case _                    => obj
       }
 
-      val typeFullname = safePropertyValue(typeObj, "type")
-        .orElse(safePropertyValue(typeObj, "type_usr"))
-        .orElse(safePropertyValue(typeObj, "result"))
-        .orElse(safePropertyValue(typeObj, "interface_type"))
+      val typeFullName    = typeFullNameFromNode(typeObj)
+      val declFullName    = declFullNameFromNode(obj, declObj)
+      val conformances    = conformancesFromNode(obj)
+      val superClassTypes = superClassesFromNode(obj) ++ superClassesFromNodeLegacy(obj)
 
-      val declFullname = safePropertyValue(obj, "usr").orElse(safePropertyValue(declObj, "decl_usr"))
-
-      found.add(TypeInfo(filename, range_, typeFullname, declFullname, nodeKind))
+      found.add(TypeInfo(filename, range_, typeFullName, declFullName, superClassTypes ++ conformances, nodeKind))
     }
 
     /** Parses a JSON array.
@@ -299,6 +353,7 @@ object GsonTypeInfoReader {
         jsonReader.peek() match {
           case JsonToken.BEGIN_OBJECT => arr.add(parseObject())
           case JsonToken.BEGIN_ARRAY  => arr.add(parseArray())
+          case JsonToken.STRING       => arr.add(jsonReader.nextString())
           case _                      => jsonReader.skipValue()
         }
       }
