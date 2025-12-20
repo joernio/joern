@@ -391,7 +391,9 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         TypeInfo(name, cleanedFullName)
       case None =>
         val (_, declFullname) = calcNameAndFullName(name)
-        registerType(declFullname)
+        if (!node.isInstanceOf[ExtensionDeclSyntax]) {
+          registerType(declFullname)
+        }
         TypeInfo(name, declFullname)
     }
   }

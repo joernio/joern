@@ -18,7 +18,7 @@ object GsonTypeInfoReader {
   private val DeclFullNameFieldNames = Set("usr", "decl_usr", "protocol", "superclass_type")
 
   /** Field names that can contain type fullNames in the Swift AST */
-  private val TypeFullNameFieldNames = Set("type", "type_usr", "result", "interface_type")
+  private val TypeFullNameFieldNames = Set("type", "type_usr", "result", "interface_type", "extended_type")
 
   /** AST node kinds that require special handling.
     *
@@ -238,6 +238,7 @@ object GsonTypeInfoReader {
       .orElse(safePropertyValue(obj, "type_usr"))
       .orElse(safePropertyValue(obj, "result"))
       .orElse(safePropertyValue(obj, "interface_type"))
+      .orElse(safePropertyValue(obj, "extended_type"))
   }
 
   private def isInBuildFolder(filename: String): Boolean = {
