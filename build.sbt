@@ -70,7 +70,7 @@ ThisBuild / compile / javacOptions ++= Seq(
 ThisBuild / scalacOptions ++= Seq(
   "-deprecation", // Emit warning and location for usages of deprecated APIs.
   "--release",
-  "13",
+  "11",
   "-Wshadow:type-parameter-shadow"
 )
 
