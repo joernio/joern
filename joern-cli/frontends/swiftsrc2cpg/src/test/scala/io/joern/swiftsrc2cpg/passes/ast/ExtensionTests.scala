@@ -17,6 +17,8 @@ class ExtensionTests extends AstSwiftSrc2CpgSuite {
   private val ext1Code =
     """
       |extension Foo {
+      |  var d: Int { return 1 }
+      |
       |  func someFooFunc() {}
       |}
       |""".stripMargin
@@ -24,6 +26,8 @@ class ExtensionTests extends AstSwiftSrc2CpgSuite {
   private val ext2Code =
     """
       |extension Foo : Bar {
+      |  var e: String { return "hello" }
+      |
       |  func someOtherFooFunc() {}
       |}
       |""".stripMargin
@@ -35,7 +39,7 @@ class ExtensionTests extends AstSwiftSrc2CpgSuite {
     "create stable ASTs from multiple files" in {
       val List(fooTypeDecl) = cpg.typeDecl.fullNameExact("Foo.swift:<global>.Foo").l
       fooTypeDecl.name shouldBe "Foo"
-      fooTypeDecl.member.name.l.sorted shouldBe List("a", "b", "c")
+      fooTypeDecl.member.name.l.sorted shouldBe List("a", "b", "c", "d", "e")
       val List(fooConstructor) = fooTypeDecl.method.nameExact("init").isConstructor.l
       fooConstructor.fullName shouldBe s"Foo.swift:<global>.Foo.init:()->Foo.swift:<global>.Foo"
       fooConstructor.block.astChildren.assignment.code.l.sorted shouldBe List("var a = 1")
@@ -49,6 +53,18 @@ class ExtensionTests extends AstSwiftSrc2CpgSuite {
 
       val List(someOtherFooFunc) = cpg.method.nameExact("someOtherFooFunc").l
       someOtherFooFunc.fullName shouldBe "Ext2.swift:<global>.Foo<extension>.someOtherFooFunc:()->ANY"
+
+      val List(a, b, c, d, e) = fooTypeDecl.member.sortBy(_.name).l
+      a.name shouldBe "a"
+      b.name shouldBe "b"
+      c.name shouldBe "c"
+      d.name shouldBe "d"
+      e.name shouldBe "e"
+      a.typeFullName shouldBe "ANY" // we don't have type inference without compiler support
+      b.typeFullName shouldBe "Swift.String"
+      c.typeFullName shouldBe "ANY" // we don't have type inference without compiler support
+      d.typeFullName shouldBe "Swift.Int"
+      e.typeFullName shouldBe "Swift.String"
     }
 
   }

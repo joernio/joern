@@ -33,6 +33,8 @@ class ExtensionInheritancePass(cpg: Cpg, inheritsMapping: Map[String, Set[String
     *   extension target type names to be added as inherits-from entries
     */
   override def runOnPart(builder: DiffGraphBuilder, part: (String, Set[String])): Unit = {
+    val (typeDeclFullName, inheritsFullNames) = part
+    if (inheritsFullNames.isEmpty) return
 
     /** Resolve extension target names to TypeDecl fullNames if a matching `TypeDecl` exists.
       *
@@ -40,9 +42,10 @@ class ExtensionInheritancePass(cpg: Cpg, inheritsMapping: Map[String, Set[String
       * found, use its `fullName`; otherwise keep the original name. This ensures we add consistent fullNames to the
       * `inheritsFrom` property and create `INHERITS_FROM` edges to the correct `typ` nodes.
       *
-      * The value is `lazy` to avoid performing lookups when the outer `for` does not find a `TypeDecl` for `part._1`.
+      * The value is `lazy` to avoid performing lookups when the outer `for` does not find a `TypeDecl` for
+      * `typeDeclFullName`.
       */
-    lazy val inheritsFullNames = part._2.map { name =>
+    lazy val inheritsFullNamesResolved = inheritsFullNames.map { name =>
       cpg.typeDecl.nameExact(name).headOption match {
         case Some(td) => td.fullName
         case None     => name
@@ -50,8 +53,8 @@ class ExtensionInheritancePass(cpg: Cpg, inheritsMapping: Map[String, Set[String
     }
 
     for {
-      typeDecl <- cpg.typeDecl.fullNameExact(part._1)
-    } setInherits(builder, typeDecl, inheritsFullNames)
+      typeDecl <- cpg.typeDecl.fullNameExact(typeDeclFullName)
+    } setInherits(builder, typeDecl, inheritsFullNamesResolved)
   }
 
 }
