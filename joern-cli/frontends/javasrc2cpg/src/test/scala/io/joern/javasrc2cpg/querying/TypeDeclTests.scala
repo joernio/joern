@@ -106,7 +106,127 @@ class NewTypeDeclTests extends JavaSrcCode2CpgFixture {
     }
   }
 
+  "a package-private class" should {
+    val cpg = code("class Foo {}")
+
+    "have no modifier" in {
+      cpg.typeDecl.name("Foo").modifier.modifierType.toSet shouldBe Set()
+    }
+
+    "have the correct code field" in {
+      cpg.typeDecl.name("Foo").code.l shouldBe List("class Foo")
+    }
+  }
+
+  "a public class" should {
+    val cpg = code("public class Foo {}")
+
+    "have the correct modifier" in {
+      cpg.typeDecl.name("Foo").modifier.modifierType.toSet shouldBe Set("PUBLIC")
+    }
+
+    "have the correct code field" in {
+      cpg.typeDecl.name("Foo").code.l shouldBe List("public class Foo")
+    }
+  }
+
+  "a protected class" should {
+    val cpg = code("class Outer { protected class Foo {} }")
+
+    "have the correct modifier" in {
+      cpg.typeDecl.name(".*Foo").modifier.modifierType.toSet shouldBe Set("PROTECTED")
+    }
+
+    "have the correct code field" in {
+      cpg.typeDecl.name(".*Foo").code.l shouldBe List("protected class Foo")
+    }
+  }
+
+  "a private class" should {
+    val cpg = code("class Outer { private class Foo {} }")
+
+    "have the correct modifier" in {
+      cpg.typeDecl.name(".*Foo").modifier.modifierType.toSet shouldBe Set("PRIVATE")
+    }
+
+    "have the correct code field" in {
+      cpg.typeDecl.name(".*Foo").code.l shouldBe List("private class Foo")
+    }
+  }
+
+  "an abstract class" should {
+    val cpg = code("abstract class Foo {}")
+
+    "have the correct modifier" in {
+      cpg.typeDecl.name("Foo").modifier.modifierType.toSet shouldBe Set("ABSTRACT")
+    }
+
+    "have the correct code field" in {
+      cpg.typeDecl.name("Foo").code.l shouldBe List("abstract class Foo")
+    }
+  }
+
+  "a static class" should {
+    val cpg = code("class Outer { static class Foo {} }")
+
+    "have the correct modifier" in {
+      cpg.typeDecl.name(".*Foo").modifier.modifierType.toSet shouldBe Set("STATIC")
+    }
+
+    "have the correct code field" in {
+      cpg.typeDecl.name(".*Foo").code.l shouldBe List("static class Foo")
+    }
+  }
+
+  "a final class" should {
+    val cpg = code("final class Foo {}")
+
+    "have the correct modifier" in {
+      cpg.typeDecl.name("Foo").modifier.modifierType.toSet shouldBe Set("FINAL")
+    }
+
+    "have the correct code field" in {
+      cpg.typeDecl.name("Foo").code.l shouldBe List("final class Foo")
+    }
+  }
+
+  "a sealed class" should {
+    val cpg = code("sealed class Foo {}")
+
+    "have the correct modifier" in {
+      cpg.typeDecl.name("Foo").modifier.modifierType.toSet shouldBe Set("SEALED")
+    }
+
+    "have the correct code field" in {
+      cpg.typeDecl.name("Foo").code.l shouldBe List("sealed class Foo")
+    }
+  }
+
+  "a non-sealed class" should {
+    val cpg = code("non-sealed class Foo {}")
+
+    "have the correct modifier" in {
+      cpg.typeDecl.name("Foo").modifier.modifierType.toSet shouldBe Set("NON_SEALED")
+    }
+
+    "have the correct code field" in {
+      cpg.typeDecl.name("Foo").code.l shouldBe List("non-sealed class Foo")
+    }
+  }
+
+  "a strictfp class" should {
+    val cpg = code("strictfp class Foo {}")
+
+    "have the correct modifier" in {
+      cpg.typeDecl.name("Foo").modifier.modifierType.toSet shouldBe Set("STRICTFP")
+    }
+
+    "have the correct code field" in {
+      cpg.typeDecl.name("Foo").code.l shouldBe List("strictfp class Foo")
+    }
+  }
 }
+
 class TypeDeclTests extends JavaSrcCode2CpgFixture {
 
   val cpg = code(
