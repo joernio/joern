@@ -1,5 +1,6 @@
 package io.joern.javasrc2cpg.astcreation.declarations
 
+import com.github.javaparser.ast.Modifier
 import com.github.javaparser.ast.body.{
   AnnotationDeclaration,
   AnnotationMemberDeclaration,
@@ -783,6 +784,12 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     if (typ.isStatic) {
       codeBuilder.append("static ")
     }
+    if (hasModifier(typ, Modifier.Keyword.ABSTRACT)) {
+      codeBuilder.append("abstract ")
+    }
+    if (hasModifier(typ, Modifier.Keyword.FINAL)) {
+      codeBuilder.append("final ")
+    }
 
     val classPrefix =
       if (isInterface)
@@ -794,8 +801,20 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     codeBuilder.append(classPrefix)
     codeBuilder.append(typ.getNameAsString)
 
+    val typeParameters = typ match {
+      case classOrInterface: ClassOrInterfaceDeclaration => classOrInterface.getTypeParameters.asScala
+      case recordDeclaration: RecordDeclaration          => recordDeclaration.getTypeParameters.asScala
+      case _                                             => Nil
+    }
+    if (typeParameters.nonEmpty) {
+      codeBuilder.append(typeParameters.mkString("<", ", ", ">"))
+    }
+
     codeBuilder.toString()
   }
+
+  private def hasModifier(typ: TypeDeclaration[?], keyword: Modifier.Keyword): Boolean =
+    typ.getModifiers.asScala.exists(_.getKeyword == keyword)
 
   private def addTypeDeclTypeParamsToScope(typ: TypeDeclaration[?]): Unit = {
     val typeParameters = typ match {
