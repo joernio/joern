@@ -1,6 +1,7 @@
 package io.joern.php2cpg.astcreation
 
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants}
+import io.joern.php2cpg.parser.Domain
 import io.joern.php2cpg.parser.Domain.*
 import io.joern.php2cpg.utils.TypeScope
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
@@ -332,16 +333,16 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     val anonymousMethodAsts = scope.getAndClearAnonymousMethods
 
-    val bindings = typeDecl match {
-      case Some(typeDecl) =>
-        (anonymousMethodAsts ++ otherBodyStmts).flatMap(_.root).collect { case method: NewMethod =>
+    // Add method bindings
+    typeDecl match {
+      case Some(td) if td.name != Domain.GlobalName =>
+        otherBodyStmts.flatMap(_.root).collect { case method: NewMethod =>
           val bindingNode = NewBinding().name(method.name).signature("")
           diffGraph.addNode(bindingNode)
-          diffGraph.addEdge(typeDecl, bindingNode, EdgeTypes.BINDS)
+          diffGraph.addEdge(td, bindingNode, EdgeTypes.BINDS)
           diffGraph.addEdge(bindingNode, method, EdgeTypes.REF)
         }
-
-      case None => Nil
+      case _ => // do nothing
     }
 
     List(classConsts, properties, constructorAst, anonymousMethodAsts, otherBodyStmts).flatten
