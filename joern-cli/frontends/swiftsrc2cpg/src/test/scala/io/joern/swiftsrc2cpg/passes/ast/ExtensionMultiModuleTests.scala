@@ -81,7 +81,7 @@ class ExtensionMultiModuleTests extends SwiftCompilerMultiModuleSrc2CpgSuite {
       selfIdentifier.name shouldBe "self"
       selfIdentifier.typeFullName shouldBe "ModuleA.Foo"
 
-      val List(a, b, x) = fooTypeDecl.member.sortBy(_.name).l
+      val Seq(a, b, x) = fooTypeDecl.member.sortBy(_.name)
       a.name shouldBe "a"
       b.name shouldBe "b"
       x.name shouldBe "x"

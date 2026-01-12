@@ -43,14 +43,12 @@ class ExtensionMemberPass(cpg: Cpg, extensionMembers: Map[String, List[SwiftSrcG
     val (fullName, members) = part
     if (members.isEmpty) return
 
-    def findTypeDecl(name: String): Option[TypeDecl] = {
+    def findTypeDecl(fullName: String): Option[TypeDecl] = {
       // If we cannot find the typeDecl by fullName, try looking it up by name (last part of fullName).
       // This is a fallback / the best effort approach for cases where the fullName is not accurate due to missing compiler support.
-      cpg.typeDecl.fullNameExact(name).headOption.orElse {
-        if (name.contains('.')) {
-          val simpleName = name.split('.').last
-          cpg.typeDecl.nameExact(simpleName).headOption
-        } else None
+      cpg.typeDecl.fullNameExact(fullName).headOption.orElse {
+        val simpleName = fullName.split('.').last
+        cpg.typeDecl.nameExact(simpleName).headOption
       }
     }
 
