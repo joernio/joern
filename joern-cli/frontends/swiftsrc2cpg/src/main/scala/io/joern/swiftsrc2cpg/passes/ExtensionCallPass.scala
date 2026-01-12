@@ -30,7 +30,7 @@ class ExtensionCallPass(cpg: Cpg, extensionFullNameMapping: Map[String, String])
   override def generateParts(): Array[Call] =
     cpg.call
       .methodFullNameNot(x2cpg.Defines.DynamicCallUnknownFullName)
-      .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
+      .filterNot(_.methodFullName.startsWith("<operator>"))
       .toArray
 
   /** For a given call (part), if a mapping exists for its methodFullName, set the call to static dispatch, update the
