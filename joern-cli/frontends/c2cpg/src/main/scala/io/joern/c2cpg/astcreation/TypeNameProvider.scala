@@ -428,7 +428,7 @@ trait TypeNameProvider { this: AstCreator =>
         evalBinding.getBinding match {
           case m: CPPMethod   => safeGetNodeType(m.getPrimaryDeclaration)
           case f: CPPFunction => safeGetNodeType(f.getDefinition)
-          case v: CPPVariable => v.getType.toString
+          case v: CPPVariable => safeGetNodeType(v.getDefinition)
           case _              => safeGetNodeType(s)
         }
       case _ => safeGetNodeType(s)
