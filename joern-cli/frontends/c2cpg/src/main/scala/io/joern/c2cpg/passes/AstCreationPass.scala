@@ -1,29 +1,18 @@
 package io.joern.c2cpg.passes
 
-import io.joern.c2cpg.Config
-import io.joern.c2cpg.astcreation.AstCreator
-import io.joern.c2cpg.astcreation.CGlobal
-import io.joern.c2cpg.parser.CdtParser
-import io.joern.c2cpg.parser.FileDefaults
-import io.joern.c2cpg.parser.HeaderFileFinder
-import io.joern.c2cpg.parser.JSONCompilationDatabaseParser
+import io.joern.c2cpg.{C2Cpg, Config}
+import io.joern.c2cpg.astcreation.{AstCreator, CGlobal}
+import io.joern.c2cpg.parser.{CdtParser, FileDefaults, HeaderFileFinder, JSONCompilationDatabaseParser}
 import io.joern.c2cpg.parser.JSONCompilationDatabaseParser.CompilationDatabase
-import io.joern.c2cpg.C2Cpg
 import io.joern.x2cpg.SourceFiles
-import io.joern.x2cpg.utils.Report
-import io.joern.x2cpg.utils.TimeUtils
+import io.joern.x2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.model.ILanguage
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 
-import java.nio.file.Path
-import java.nio.file.Paths
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
+import java.nio.file.{Path, Paths}
 
 class AstCreationPass(
   cpg: Cpg,
@@ -105,15 +94,23 @@ class AstCreationPass(
         case Some(translationUnit) =>
           val fileLOC = translationUnit.getRawSignature.linesIterator.size
           report.addReportInfo(relPath, fileLOC, parsed = true)
-          Try {
+          try {
             val localDiff = new AstCreator(relPath, global, config, translationUnit, headerFileFinder).createAst()
             diffGraph.absorb(localDiff)
             logger.debug(s"Generated a CPG for: '$relPath'")
-          } match {
-            case Failure(exception) =>
-              logger.warn(s"Failed to generate a CPG for: '$relPath'", exception)
+            true
+          } catch {
+            case s: StackOverflowError =>
+              /**   - Eclipse CDT’s C/C++ type inference/analysis is heavily recursive. For certain real-world inputs
+                *     this can create extremely deep call stacks and trigger a JVM `StackOverflowError`.
+                *   - `StackOverflowError` is a `VirtualMachineError`. Without an explicit catch, failing type analysis
+                *     in a single problematic file would crash the whole process.
+                */
+              logger.warn(s"Failed to generate a CPG for: '$relPath' (error during type analysis)", s)
               false
-            case Success(_) => true
+            case other: Throwable =>
+              logger.warn(s"Failed to generate a CPG for: '$relPath'", other)
+              false
           }
         case None =>
           report.addReportInfo(relPath, -1)
