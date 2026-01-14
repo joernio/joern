@@ -2,14 +2,8 @@ package io.joern.dataflowengineoss.passes.reachingdef
 
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.Engine.{isOutputArgOfInternalMethod, semanticsForCall}
-import io.joern.dataflowengineoss.semanticsloader.{
-  FlowMapping,
-  FlowPath,
-  FlowSemantic,
-  ParameterNode,
-  PassThroughMapping,
-  Semantics
-}
+import io.joern.dataflowengineoss.semanticsloader.{FlowPath, FlowSemantic, ParameterNode, Semantics}
+import io.joern.dataflowengineoss.semanticsloader.FlowPath.{FlowMapping, PassThroughMapping}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, Expression, StoredNode}
 import io.shiftleft.semanticcpg.language.*
 
