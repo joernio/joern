@@ -330,7 +330,6 @@ case class EngineConfig(
 enum QueryEngineStatistic:
   case PATH_CACHE_HITS, PATH_CACHE_MISSES
 
-
 object QueryEngineStatistics {
 
   private val statistics = new ConcurrentHashMap[QueryEngineStatistic, Long]()
