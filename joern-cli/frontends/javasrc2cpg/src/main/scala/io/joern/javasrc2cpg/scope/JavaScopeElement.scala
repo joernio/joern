@@ -99,10 +99,11 @@ case class PatternVariableInfo(
 )
 
 object JavaScopeElement {
-  enum WildcardImports:
+  enum WildcardImports {
     case NoWildcard
     case SingleWildcard(prefix: String)
     case MultipleWildcards
+  }
 
   trait AnonymousClassCounter {
     private val anonymousClassKeyPool = IntervalKeyPool(0, Long.MaxValue)
