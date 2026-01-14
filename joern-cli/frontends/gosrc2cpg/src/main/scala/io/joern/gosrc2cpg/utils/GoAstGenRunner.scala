@@ -5,8 +5,8 @@ import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, AstGenRunnerResult}
 import io.joern.x2cpg.astgen
 import io.joern.x2cpg.astgen.AstGenRunner
-import io.joern.x2cpg.utils.Environment.ArchitectureType.ArchitectureType
-import io.joern.x2cpg.utils.Environment.OperatingSystemType.OperatingSystemType
+import io.joern.x2cpg.utils.Environment.ArchitectureType
+import io.joern.x2cpg.utils.Environment.OperatingSystemType
 import io.joern.x2cpg.utils.Environment
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
