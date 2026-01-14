@@ -23,8 +23,9 @@ object MethodParameters {
 }
 case class MethodParameters(posStartIndex: Int, positionalParams: Iterable[nodes.NewMethodParameterIn])
 
-enum PythonVersion:
+enum PythonVersion {
   case PythonV2, PythonV3, PythonV2AndV3
+}
 
 class PythonAstVisitor(
   relFileName: String,
