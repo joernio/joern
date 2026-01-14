@@ -6,11 +6,13 @@ import java.nio.file.Paths
 
 object Environment {
 
-  enum OperatingSystemType:
+  enum OperatingSystemType {
     case Windows, Linux, Mac, Unknown
+  }
 
-  enum ArchitectureType:
+  enum ArchitectureType {
     case X86, ARMv8
+  }
 
   lazy val operatingSystem: OperatingSystemType =
     if (scala.util.Properties.isMac) OperatingSystemType.Mac
