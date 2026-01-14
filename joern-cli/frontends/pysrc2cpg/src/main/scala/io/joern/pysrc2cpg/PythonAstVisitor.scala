@@ -2,6 +2,7 @@ package io.joern.pysrc2cpg
 
 import PythonAstVisitor.{logger, metaClassSuffix, noLineAndColumn}
 import io.joern.pysrc2cpg.memop.*
+import io.joern.pysrc2cpg.memop.MemoryOperation.{Del, Load, Store}
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants.builtinPrefix
 import io.joern.pythonparser.{AstPrinter, ast}
 import io.joern.pythonparser.ast.{Arguments, MatchAs, iast, iexpr, istmt}
@@ -11,6 +12,7 @@ import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewIdentifier, NewNode, NewTypeDecl}
 import org.slf4j.LoggerFactory
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
+import PythonVersion.*
 
 import scala.collection.mutable
 
@@ -21,10 +23,8 @@ object MethodParameters {
 }
 case class MethodParameters(posStartIndex: Int, positionalParams: Iterable[nodes.NewMethodParameterIn])
 
-sealed trait PythonVersion
-object PythonV2      extends PythonVersion
-object PythonV3      extends PythonVersion
-object PythonV2AndV3 extends PythonVersion
+enum PythonVersion:
+  case PythonV2, PythonV3, PythonV2AndV3
 
 class PythonAstVisitor(
   relFileName: String,
