@@ -221,9 +221,10 @@ case class AccessPath(elements: Elements, exclusions: Seq[Elements]) {
 
 }
 
-enum MatchResult:
+enum MatchResult {
   case NO_MATCH, EXACT_MATCH, VARIABLE_EXACT_MATCH, PREFIX_MATCH, VARIABLE_PREFIX_MATCH, EXTENDED_MATCH,
     VARIABLE_EXTENDED_MATCH
+}
 
 /** Result of `matchFull` comparison
   *
