@@ -326,10 +326,11 @@ object Domain {
     attributes: PhpAttributes
   ) extends PhpStmt
 
-  enum PhpUseType:
+  enum PhpUseType {
     case Unknown, Normal, Function, Constant
+  }
 
-  object PhpUseType:
+  object PhpUseType {
     def getUseType(typeNum: Int): PhpUseType =
       typeNum match {
         case 1 => Normal
@@ -337,6 +338,7 @@ object Domain {
         case 3 => Constant
         case _ => Unknown
       }
+  }
 
   final case class PhpForeachStmt(
     iterExpr: PhpExpr,
