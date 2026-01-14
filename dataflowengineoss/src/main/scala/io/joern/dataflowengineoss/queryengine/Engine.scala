@@ -327,8 +327,9 @@ case class EngineConfig(
 
 /** Tracks various performance characteristics of the query engine.
   */
-enum QueryEngineStatistic:
+enum QueryEngineStatistic {
   case PATH_CACHE_HITS, PATH_CACHE_MISSES
+}
 
 object QueryEngineStatistics {
 
