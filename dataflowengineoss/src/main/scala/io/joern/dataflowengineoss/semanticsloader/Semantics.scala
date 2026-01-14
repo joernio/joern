@@ -139,7 +139,7 @@ object ParameterNode {
 
 /** Represents explicit mappings or special cases as a Scala 3 enum.
   */
-enum FlowPath:
+enum FlowPath {
   /** Maps flow between arguments based on how they interact as parameters at the callee.
     *
     * @param src
@@ -155,8 +155,9 @@ enum FlowPath:
     * The main benefit is that this works for unbounded parameters e.g. VARARGS. Note this does not taint 0 -> 0.
     */
   case PassThroughMapping
+}
 
-object FlowPath:
+object FlowPath {
 
   def FlowMapping(from: Int, to: Int): FlowPath = FlowMapping(ParameterNode(from), ParameterNode(to))
 
@@ -168,3 +169,4 @@ object FlowPath:
 
   def FlowMapping(from: Int, toIdx: Int, to: String): FlowPath =
     FlowMapping(ParameterNode(from), ParameterNode(toIdx, to))
+}
