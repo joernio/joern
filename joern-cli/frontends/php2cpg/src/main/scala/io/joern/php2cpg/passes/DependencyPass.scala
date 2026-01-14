@@ -47,11 +47,12 @@ class DependencyPass(cpg: Cpg, composerPaths: List[String]) extends ForkJoinPara
 
 }
 
-enum PsrStringOrArray:
+enum PsrStringOrArray {
   case PsrString(obj: String)
   case PsrArray(obj: Array[String])
+}
 
-object PsrStringOrArray:
+object PsrStringOrArray {
   given ReadWriter[PsrStringOrArray] = {
     val logger = LoggerFactory.getLogger(getClass)
 
@@ -71,6 +72,7 @@ object PsrStringOrArray:
         }
       )
   }
+}
 
 case class Autoload(
   @targetName("psr0") `psr-0`: Map[String, PsrStringOrArray] = Map.empty,
