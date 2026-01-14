@@ -318,16 +318,19 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       case Some(bodyBlockExpression) =>
         astForLambdaBlock(bodyBlockExpression, None, None, localsForCaptures = localsForCaptured)
       case None =>
-        (Option(fn.getBodyExpression)
-          .map { expr =>
-            val bodyBlock  = blockNode(expr, expr.getText, TypeConstants.Any)
-            val returnAst_ = returnAst(returnNode(expr, Constants.RetCode), astsForExpression(expr, Some(1)))
-            blockAst(bodyBlock, localsForCaptured.map(Ast(_)) ++ List(returnAst_))
-          }
-          .getOrElse {
-            val bodyBlock = blockNode(fn, "<empty>", TypeConstants.Any)
-            blockAst(bodyBlock, List[Ast]())
-          }, List())
+        (
+          Option(fn.getBodyExpression)
+            .map { expr =>
+              val bodyBlock  = blockNode(expr, expr.getText, TypeConstants.Any)
+              val returnAst_ = returnAst(returnNode(expr, Constants.RetCode), astsForExpression(expr, Some(1)))
+              blockAst(bodyBlock, localsForCaptured.map(Ast(_)) ++ List(returnAst_))
+            }
+            .getOrElse {
+              val bodyBlock = blockNode(fn, "<empty>", TypeConstants.Any)
+              blockAst(bodyBlock, List[Ast]())
+            },
+          List()
+        )
     }
 
     val returnTypeFullName     = TypeConstants.JavaLangObject
@@ -361,8 +364,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     createLambdaBindings(lambdaMethodNode, lambdaTypeDecl, samInterface)
 
     scope.popScope()
-    val closureBindingDefs = closureBindingEntriesForCaptured.collect { case (closureBinding, node)
-      if usedLocalCaptures.exists(node.name == _.name) => ClosureBindingDef(closureBinding, _methodRefNode, node.node)
+    val closureBindingDefs = closureBindingEntriesForCaptured.collect {
+      case (closureBinding, node) if usedLocalCaptures.exists(node.name == _.name) =>
+        ClosureBindingDef(closureBinding, _methodRefNode, node.node)
     }
     closureBindingDefs.foreach(closureBindingDefQueue.prepend)
     lambdaAstQueue.prepend(lambdaMethodAst)
@@ -488,8 +492,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     createLambdaBindings(lambdaMethodNode, lambdaTypeDecl, samInterface)
 
     scope.popScope()
-    val closureBindingDefs = closureBindingEntriesForCaptured.collect { case (closureBinding, node)
-      if usedLocalCaptures.exists(node.name == _.name) => ClosureBindingDef(closureBinding, _methodRefNode, node.node)
+    val closureBindingDefs = closureBindingEntriesForCaptured.collect {
+      case (closureBinding, node) if usedLocalCaptures.exists(node.name == _.name) =>
+        ClosureBindingDef(closureBinding, _methodRefNode, node.node)
     }
     closureBindingDefs.foreach(closureBindingDefQueue.prepend)
     lambdaAstQueue.prepend(lambdaMethodAst)
@@ -497,14 +502,14 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForLambdaBlock(
-     expr: KtBlockExpression,
-     argIdxMaybe: Option[Int],
-     argNameMaybe: Option[String],
-     pushToScope: Boolean = true,
-     localsForCaptures: List[NewLocal] = List(),
-     implicitReturnAroundLastStatement: Boolean = false,
-     preStatements: Option[Seq[Ast]] = None
-   ): (Ast, List[NewLocal]) = {
+    expr: KtBlockExpression,
+    argIdxMaybe: Option[Int],
+    argNameMaybe: Option[String],
+    pushToScope: Boolean = true,
+    localsForCaptures: List[NewLocal] = List(),
+    implicitReturnAroundLastStatement: Boolean = false,
+    preStatements: Option[Seq[Ast]] = None
+  ): (Ast, List[NewLocal]) = {
     val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
     val node =
       withArgumentIndex(
