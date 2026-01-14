@@ -25,35 +25,35 @@ object JoernExport {
   case class Config(
     cpgFileName: String = "cpg.bin",
     outDir: String = "out",
-    repr: Representation.Value = Representation.Cpg14,
-    format: Format.Value = Format.Dot
+    repr: Representation = Representation.Cpg14,
+    format: Format = Format.Dot
   )
 
   /** Choose from either a subset of the graph, or the entire graph (all).
     */
-  object Representation extends Enumeration {
-    val Ast, Cfg, Ddg, Cdg, Pdg, Cpg14, Cpg, All = Value
+  enum Representation:
+    case Ast, Cfg, Ddg, Cdg, Pdg, Cpg14, Cpg, All
 
-    lazy val byNameLowercase: Map[String, Value] =
+  object Representation:
+    lazy val byNameLowercase: Map[String, Representation] =
       values.map { value =>
         value.toString.toLowerCase -> value
       }.toMap
 
-    def withNameIgnoreCase(s: String): Value =
+    def withNameIgnoreCase(s: String): Representation =
       byNameLowercase.getOrElse(s, throw new NoSuchElementException(s"No value found for '$s'"))
 
-  }
-  object Format extends Enumeration {
-    val Dot, Neo4jCsv, Graphml, Graphson = Value
+  enum Format:
+    case Dot, Neo4jCsv, Graphml, Graphson
 
-    lazy val byNameLowercase: Map[String, Value] =
+  object Format:
+    lazy val byNameLowercase: Map[String, Format] =
       values.map { value =>
         value.toString.toLowerCase -> value
       }.toMap
 
-    def withNameIgnoreCase(s: String): Value =
+    def withNameIgnoreCase(s: String): Format =
       byNameLowercase.getOrElse(s, throw new NoSuchElementException(s"No value found for '$s'"))
-  }
 
   def main(args: Array[String]): Unit = {
     parseConfig(args).foreach { config =>
@@ -92,7 +92,7 @@ object JoernExport {
     }.parse(args, Config())
   }
 
-  def exportCpg(cpg: Cpg, representation: Representation.Value, format: Format.Value, outDir: Path): Unit = {
+  def exportCpg(cpg: Cpg, representation: Representation, format: Format, outDir: Path): Unit = {
     implicit val semantics: Semantics = DefaultSemantics()
     if (semantics == NoSemantics) {
       System.err.println("Warning: semantics are empty.")
@@ -117,7 +117,7 @@ object JoernExport {
     }
   }
 
-  private def exportDot(repr: Representation.Value, outDir: Path, context: LayerCreatorContext): Unit = {
+  private def exportDot(repr: Representation, outDir: Path, context: LayerCreatorContext): Unit = {
     val outDirStr = outDir.toString
     import Representation._
     repr match {
@@ -133,7 +133,7 @@ object JoernExport {
 
   private def exportWithFlatgraphFormat(
     cpg: Cpg,
-    repr: Representation.Value,
+    repr: Representation,
     outDir: Path,
     exporter: flatgraph.formats.Exporter
   ): Unit = {
