@@ -1,16 +1,7 @@
 package io.joern.javasrc2cpg.jartypereader
 
-import io.joern.javasrc2cpg.jartypereader.model.{
-  BoundWildcard,
-  ClassSignature,
-  ClassTypeSignature,
-  NameWithTypeArgs,
-  ResolvedTypeDecl,
-  SimpleTypeArgument,
-  TypeParameter,
-  TypeVariableSignature,
-  UnboundWildcard
-}
+import io.joern.javasrc2cpg.jartypereader.model.*
+import io.joern.javasrc2cpg.jartypereader.model.TypeArgument.{BoundWildcard, SimpleTypeArgument, UnboundWildcard}
 import io.joern.javasrc2cpg.jartypereader.JarTypeReader.ObjectTypeSignature
 import io.joern.javasrc2cpg.jartypereader.model.Bound.{BoundAbove, BoundBelow}
 import io.shiftleft.utils.ProjectRoot
