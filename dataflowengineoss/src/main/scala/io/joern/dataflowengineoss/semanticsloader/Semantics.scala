@@ -140,6 +140,7 @@ object ParameterNode {
 /** Represents explicit mappings or special cases as a Scala 3 enum.
   */
 enum FlowPath {
+
   /** Maps flow between arguments based on how they interact as parameters at the callee.
     *
     * @param src
