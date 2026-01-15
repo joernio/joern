@@ -218,16 +218,17 @@ object PhpParser {
     }
   }
 
-  def withParser[T](config: Config)(f: PhpParser => T): Option[T] = {
-    config.phpIni match {
+  def withParser[T](config: Config)(f: Option[PhpParser] => T): T = {
+    val parserOption = config.phpIni match {
       case Some(userProvidedIni) if userProvidedIni.nonEmpty =>
-        validateIniPath(userProvidedIni).flatMap(validatedPath => getParser(config, validatedPath).map(f))
+        validateIniPath(userProvidedIni).flatMap(validatedPath => getParser(config, validatedPath))
       case _ =>
         Try(FileUtil.usingTemporaryFile(suffix = "-php.ini") { tmpIni =>
           val iniContents = Source.fromResource("php.ini").getLines().mkString(System.lineSeparator())
           Files.writeString(tmpIni, iniContents)
-          getParser(config, tmpIni.absolutePathAsString).map(f)
+          getParser(config, tmpIni.absolutePathAsString)
         }).toOption.flatten
     }
+    f(parserOption)
   }
 }

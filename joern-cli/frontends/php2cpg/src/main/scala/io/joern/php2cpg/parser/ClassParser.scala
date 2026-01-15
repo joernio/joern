@@ -33,7 +33,7 @@ class ClassParser(targetDir: Path) {
         case Success(output) =>
           Try(read[List[ClassParserClass]](output.mkString("\n")))
         case Failure(exception) =>
-          logger.error(s"Failure running `ClassParser.php` with ${scriptFile.toString}", exception.getMessage)
+          logger.error(s"Failure running `ClassParser.php`", exception.getMessage)
           Failure(exception)
       }
     }
