@@ -39,7 +39,8 @@ import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
 import scala.util.{Success, Try}
 import javassist.compiler.ast.CallExpr
-import io.joern.javasrc2cpg.scope.Scope.{NewVariableNode, ScopeInnerType, ScopeParameter, SimpleVariable}
+import io.joern.javasrc2cpg.scope.Scope.{NewVariableNode, ScopeInnerType, SimpleVariable}
+import io.joern.javasrc2cpg.scope.Scope.ScopeVariable.*
 import io.joern.javasrc2cpg.scope.JavaScopeElement.PartialInit
 import org.slf4j.LoggerFactory
 

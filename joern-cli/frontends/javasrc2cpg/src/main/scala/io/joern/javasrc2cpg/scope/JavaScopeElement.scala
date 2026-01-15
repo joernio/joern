@@ -9,6 +9,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{NewImport, NewMethod, New
 import scala.collection.mutable
 import io.joern.javasrc2cpg.astcreation.ExpectedType
 import io.joern.javasrc2cpg.scope.TypeType.{ReferenceTypeType, TypeVariableType}
+import io.joern.javasrc2cpg.scope.Scope.ScopeVariable.*
 import io.joern.javasrc2cpg.util.MultiBindingTableAdapterForJavaparser.JavaparserBindingDeclType
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
 import io.shiftleft.codepropertygraph.generated.nodes.NewLocal

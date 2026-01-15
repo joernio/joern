@@ -4,6 +4,7 @@ import com.github.javaparser.ast.body.Parameter
 import com.github.javaparser.ast.expr.TypePatternExpr
 import io.joern.javasrc2cpg.astcreation.ExpectedType
 import io.joern.javasrc2cpg.scope.Scope.*
+import io.joern.javasrc2cpg.scope.Scope.ScopeVariable.*
 import io.joern.javasrc2cpg.scope.JavaScopeElement.*
 import io.joern.javasrc2cpg.util.MultiBindingTableAdapterForJavaparser.JavaparserBindingDeclType
 import io.joern.javasrc2cpg.util.NameConstants
@@ -384,29 +385,34 @@ object Scope {
 
   final case class ScopeTypeParam(override val typeFullName: String, override val name: String) extends ScopeType
 
-  sealed trait ScopeVariable {
-    def node: NewVariableNode
-    def typeFullName: String
-    def name: String
-    def genericSignature: String
-    def mangledName: String = name
-  }
-  final case class ScopeLocal(override val node: NewLocal, originalName: String) extends ScopeVariable {
-    val typeFullName: String         = node.typeFullName
-    val name: String                 = originalName
-    val genericSignature: String     = node.genericSignature
-    override val mangledName: String = node.name
-  }
-  final case class ScopeParameter(override val node: NewMethodParameterIn, override val genericSignature: String)
-      extends ScopeVariable {
-    val typeFullName: String = node.typeFullName
-    val name: String         = node.name
-  }
-  final case class ScopeMember(override val node: NewMember, isStatic: Boolean) extends ScopeVariable {
-    val typeFullName: String     = node.typeFullName
-    val name: String             = node.name
-    val genericSignature: String = node.genericSignature
-  }
+  enum ScopeVariable:
+    case ScopeLocal(override val node: NewLocal, originalName: String)
+    case ScopeParameter(override val node: NewMethodParameterIn, override val genericSignature: String)
+    case ScopeMember(override val node: NewMember, isStatic: Boolean)
+
+    def node: NewVariableNode = this match
+      case ScopeLocal(n, _)     => n
+      case ScopeParameter(n, _) => n
+      case ScopeMember(n, _)    => n
+
+    def typeFullName: String = this match
+      case ScopeLocal(node, _)     => node.typeFullName
+      case ScopeParameter(node, _) => node.typeFullName
+      case ScopeMember(node, _)    => node.typeFullName
+
+    def name: String = this match
+      case ScopeLocal(_, originalName) => originalName
+      case ScopeParameter(node, _)     => node.name
+      case ScopeMember(node, _)        => node.name
+
+    def genericSignature: String = this match
+      case ScopeLocal(node, _)    => node.genericSignature
+      case ScopeParameter(_, sig) => sig
+      case ScopeMember(node, _)   => node.genericSignature
+
+    def mangledName: String = this match
+      case ScopeLocal(node, _) => node.name
+      case _                   => name
 
   sealed trait VariableLookupResult {
     def typeFullName: Option[String]          = None

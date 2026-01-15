@@ -9,7 +9,8 @@ import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes.{NewLocal, NewMethodParameterIn, NewTypeRef}
 
 import scala.util.Success
-import io.joern.javasrc2cpg.scope.Scope.{CapturedVariable, NotInScope, ScopeMember, SimpleVariable}
+import io.joern.javasrc2cpg.scope.Scope.{CapturedVariable, NotInScope, SimpleVariable}
+import io.joern.javasrc2cpg.scope.Scope.ScopeVariable.*
 import org.slf4j.LoggerFactory
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.shiftleft.codepropertygraph.generated.Operators

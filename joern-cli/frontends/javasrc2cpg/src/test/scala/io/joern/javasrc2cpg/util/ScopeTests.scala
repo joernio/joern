@@ -9,10 +9,9 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewMember
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
 import io.joern.javasrc2cpg.astcreation.ExpectedType
 import io.joern.javasrc2cpg.scope.Scope.SimpleVariable
-import io.joern.javasrc2cpg.scope.Scope.ScopeMember
+import io.joern.javasrc2cpg.scope.Scope.ScopeVariable.*
 import io.joern.javasrc2cpg.scope.Scope.CapturedVariable
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
-import io.joern.javasrc2cpg.scope.Scope.ScopeParameter
 import io.joern.javasrc2cpg.scope.Scope.NotInScope
 import io.joern.x2cpg.ValidationMode
 
