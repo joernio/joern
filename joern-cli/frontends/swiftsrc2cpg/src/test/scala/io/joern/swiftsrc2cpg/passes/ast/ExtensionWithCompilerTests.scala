@@ -115,10 +115,9 @@ class ExtensionWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
       aGetter.receiver.code.loneElement shouldBe "foo"
 
       val List(bGetter) = cpg.call.nameExact("b.getter").codeExact("foo.b").l
-      bGetter.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      bGetter.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       bGetter.methodFullName shouldBe "SwiftTest.Foo<extension>.b.getter:Swift.Int"
-      bGetter.receiver.argumentIndex.loneElement shouldBe 0
-      bGetter.receiver.code.loneElement shouldBe "foo"
+      bGetter.receiver shouldBe empty
 
       val List(xGetter) = cpg.call.nameExact("x").l
       xGetter.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
@@ -128,11 +127,10 @@ class ExtensionWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
       xGetter.receiver.code.loneElement shouldBe "foo"
 
       val List(yGetter) = cpg.call.nameExact("y").l
-      yGetter.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      yGetter.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       yGetter.code shouldBe "foo.y"
       yGetter.methodFullName shouldBe "SwiftTest.Foo<extension>.y:Swift.Int"
-      yGetter.receiver.argumentIndex.loneElement shouldBe 0
-      yGetter.receiver.code.loneElement shouldBe "foo"
+      yGetter.receiver shouldBe empty
 
       cpg.typeDecl.nameExact("Foo").member.name.sorted shouldBe Seq("a", "b", "x", "y")
     }

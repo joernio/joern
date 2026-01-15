@@ -103,7 +103,9 @@ class ExtensionsPass(
     }
   }
 
-  /** Extract an expression's `TYPE_FULL_NAME` property, handling both boxed and unboxed property encodings. */
+  /** Extract an expression's `TYPE_FULL_NAME` property, handling both boxed and unboxed property encodings. We cannot
+    * use `.evalType` as the `TypeEvalPass` did not run yet.
+    */
   private def typeFullNameOf(node: Expression): Option[String] = {
     node.properties.get(PropertyNames.TypeFullName) match {
       case Some(Some(tpe: String)) => Some(tpe)
@@ -120,26 +122,32 @@ class ExtensionsPass(
     *   - if a match exists in `memberPropertyMapping`, updates the access to reference the getter by setting:
     *     - `NAME` and `METHOD_FULL_NAME` to the resolved getter
     *     - `DISPATCH_TYPE` to `DYNAMIC_DISPATCH`
-    *     - ensures a `RECEIVER` edge from the access to the base expression and fixes argument indices/orders
+    *     - ensures a `RECEIVER` edge from the access to the base expression and fixes argument indices/orders if its
+    *       not from an extension
     */
   private def handleMemberPropertyCalls(diffGraph: DiffGraphBuilder): Unit = {
-    val fieldAccesses = cpg.fieldAccess
-    fieldAccesses.foreach { fieldAccess =>
-      for {
-        base         <- fieldAccess.arguments(1).headOption
-        baseFullName <- base.flatMap(typeFullNameOf)
-        memberName   <- fieldAccess.arguments(2).headOption.map(_.code)
-      } {
-        Seq(s"$memberName.getter", memberName).foreach { memberName =>
-          val memberFullName = s"$baseFullName.$memberName"
-          memberPropertyMapping.get(memberFullName).foreach { propertyFullName =>
-            diffGraph.setNodeProperty(fieldAccess, PropertyNames.Name, memberName)
-            diffGraph.setNodeProperty(fieldAccess, PropertyNames.MethodFullName, propertyFullName)
+    for {
+      fieldAccess         <- cpg.fieldAccess
+      baseNode            <- fieldAccess.arguments(1).headOption
+      fieldIdentifierNode <- fieldAccess.arguments(2).headOption
+      baseFullName        <- typeFullNameOf(baseNode)
+    } {
+      val memberName = fieldIdentifierNode.code
+      Seq(s"$memberName.getter", memberName).foreach { memberName =>
+        val memberFullName = s"$baseFullName.$memberName"
+        memberPropertyMapping.get(memberFullName).foreach { propertyFullName =>
+          diffGraph.setNodeProperty(fieldAccess, PropertyNames.Name, memberName)
+          diffGraph.setNodeProperty(fieldAccess, PropertyNames.MethodFullName, propertyFullName)
+          diffGraph.setNodeProperty(baseNode, PropertyNames.ArgumentIndex, 0)
+          diffGraph.setNodeProperty(baseNode, PropertyNames.Order, 1)
+
+          if (!propertyFullName.contains("<extension>")) {
+            // Ensure receiver edge from fieldAccess to baseNode only if the access is not from an extension.
             diffGraph.setNodeProperty(fieldAccess, PropertyNames.DispatchType, DispatchTypes.DYNAMIC_DISPATCH)
-            diffGraph.addEdge(fieldAccess, base, EdgeTypes.RECEIVER)
-            diffGraph.setNodeProperty(base, PropertyNames.ArgumentIndex, 0)
-            diffGraph.setNodeProperty(base, PropertyNames.Order, 1)
+            diffGraph.addEdge(fieldAccess, baseNode, EdgeTypes.RECEIVER)
           }
+
+          diffGraph.removeNode(fieldIdentifierNode)
         }
       }
     }
@@ -160,7 +168,7 @@ class ExtensionsPass(
           * `typeDeclFullName`.
           */
         lazy val inheritsFullNamesResolved = inheritsFullNames.map { name =>
-          cpg.typeDecl.nameExact(name).headOption match {
+          cpg.typeDecl.nameExact(name).loneElementOption match {
             case Some(td) => td.fullName
             case None     => name
           }
@@ -176,7 +184,7 @@ class ExtensionsPass(
   /** Merge the provided inherited type fullNames with existing ones and set them on the type declaration. */
   private def setInherits(diffGraph: DiffGraphBuilder, typeDecl: TypeDecl, inheritFullNames: Set[String]): Unit = {
     val existingInherits = typeDecl.inheritsFromTypeFullName
-    val allInherits      = (existingInherits ++ inheritFullNames).sorted
+    val allInherits      = (existingInherits ++ inheritFullNames).distinct.sorted
     diffGraph.setNodeProperty(typeDecl, PropertyNames.InheritsFromTypeFullName, allInherits)
   }
 
