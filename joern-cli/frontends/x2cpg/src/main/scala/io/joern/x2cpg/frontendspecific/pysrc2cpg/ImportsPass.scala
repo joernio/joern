@@ -40,14 +40,4 @@ class ImportsPass(cpg: Cpg) extends XImportsPass(cpg) {
     }
   }
 
-  override protected def importCode(call: Call): String = {
-    call.argument.code.l match {
-      case List("", what)          => s"import $what"
-      case List("", what, as)      => s"import $what as $as"
-      case List(where, what)       => s"from $where import $what"
-      case List(where, what, as)   => s"from $where import $what as $as"
-      case _                       => call.code
-    }
-  }
-
 }

@@ -1334,7 +1334,7 @@ class PythonAstVisitor(
   //     y = import("", "y")
   //   }
   def convert(importStmt: ast.Import): NewNode = {
-    createTransformedImport("", importStmt.names, lineAndColOf(importStmt))
+    createTransformedImport("", importStmt.names, lineAndColOf(importStmt), importStmt)
   }
 
   // Lowering of from x import y:
@@ -1354,7 +1354,7 @@ class PythonAstVisitor(
     }
     moduleName += importFrom.module.getOrElse("")
 
-    createTransformedImport(moduleName, importFrom.names, lineAndColOf(importFrom))
+    createTransformedImport(moduleName, importFrom.names, lineAndColOf(importFrom), importFrom)
   }
 
   def convert(global: ast.Global): NewNode = {

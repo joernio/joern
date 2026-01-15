@@ -9,7 +9,7 @@ class ImportsPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     lazy val cpg = code("import foo", "app.py")
     "be a create a call to `import`" in {
       val List(callToImport) = cpg.call("import").l
-      callToImport.code shouldBe "import(, foo)"
+      callToImport.code shouldBe "import foo"
       val List(where, what) = callToImport.argument.l
       where.code shouldBe ""
       what.code shouldBe "foo"
@@ -17,7 +17,7 @@ class ImportsPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     "create an assignment with the import on the right-hand-side" in {
       val List(assignment) = cpg.call("import").inAssignment.l
       assignment.target.code shouldBe "foo"
-      assignment.source.code shouldBe "import(, foo)"
+      assignment.source.code shouldBe "import foo"
     }
 
     "create an IMPORT node" in {
@@ -61,7 +61,7 @@ class ImportsPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     lazy val cpg = code("from foo import Bar")
     "create a call to `import`" in {
       val List(callToImport) = cpg.call("import").l
-      callToImport.code shouldBe "import(foo, Bar)"
+      callToImport.code shouldBe "from foo import Bar"
       val List(where, what) = callToImport.argument.l
       where.code shouldBe "foo"
       what.code shouldBe "Bar"
@@ -70,7 +70,7 @@ class ImportsPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     "create an assignment with the import on the right-hand-side" in {
       val List(assignment) = cpg.call("import").inAssignment.l
       assignment.target.code shouldBe "Bar"
-      assignment.source.code shouldBe "import(foo, Bar)"
+      assignment.source.code shouldBe "from foo import Bar"
     }
 
     "create an IMPORT node" in {
@@ -85,7 +85,7 @@ class ImportsPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     lazy val cpg = code("import foo as bar")
     "create a call to `import`" in {
       val List(callToImport) = cpg.call("import").l
-      callToImport.code shouldBe "import(, foo, bar)"
+      callToImport.code shouldBe "import foo as bar"
       val List(where, what, as) = callToImport.argument.l
       where.code shouldBe ""
       what.code shouldBe "foo"
@@ -95,7 +95,7 @@ class ImportsPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     "create an assignment with the import on the right-hand-side" in {
       val List(assignment) = cpg.call("import").inAssignment.l
       assignment.target.code shouldBe "bar"
-      assignment.source.code shouldBe "import(, foo, bar)"
+      assignment.source.code shouldBe "import foo as bar"
     }
 
     "create an IMPORT node" in {
@@ -110,7 +110,7 @@ class ImportsPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     lazy val cpg = code("from foo import Bar as Woo")
     "create a call to `import`" in {
       val List(callToImport) = cpg.call("import").l
-      callToImport.code shouldBe "import(foo, Bar, Woo)"
+      callToImport.code shouldBe "from foo import Bar as Woo"
       val List(where, what, as) = callToImport.argument.l
       where.code shouldBe "foo"
       what.code shouldBe "Bar"
@@ -120,7 +120,7 @@ class ImportsPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     "create an assignment with the import on the right-hand-side" in {
       val List(assignment) = cpg.call("import").inAssignment.l
       assignment.target.code shouldBe "Woo"
-      assignment.source.code shouldBe "import(foo, Bar, Woo)"
+      assignment.source.code shouldBe "from foo import Bar as Woo"
     }
 
     "create an IMPORT node" in {

@@ -99,7 +99,8 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
   protected def createTransformedImport(
     from: String,
     names: Iterable[ast.Alias],
-    lineAndCol: LineAndColumn
+    lineAndCol: LineAndColumn,
+    importAstNode: ast.iast
   ): NewNode = {
     val importAssignNodes =
       names.map { alias =>
@@ -119,7 +120,14 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
         })
 
         val importCallNode =
-          createCall(createIdentifierNode("import", Load, lineAndCol), "import", lineAndCol, arguments, Nil, None)
+          createCall(
+            createIdentifierNode("import", Load, lineAndCol),
+            "import",
+            lineAndCol,
+            arguments,
+            Nil,
+            Some(importAstNode)
+          )
 
         val assignNode = createAssignment(importAssignLhsIdentifierNode, importCallNode, lineAndCol)
         assignNode
