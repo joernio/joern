@@ -8,6 +8,7 @@ import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
+import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import org.slf4j.LoggerFactory
 import versionsort.VersionHelper
@@ -43,37 +44,46 @@ class Php2Cpg extends X2CpgFrontend {
   override def createCpg(config: Config): Try[Cpg] = {
     val errorMessages = mutable.ListBuffer[String]()
 
-    val parser = PhpParser.getParser(config)
-
-    if (parser.isEmpty) {
-      errorMessages.append("Could not initialize PhpParser")
-    }
     if (!isPhpVersionSupported) {
       errorMessages.append("PHP version not supported. Is PHP 7.1.0 or above installed and available on your path?")
     }
 
     if (errorMessages.isEmpty) {
-      withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
-        new MetaDataPass(cpg, Languages.PHP, config.inputPath).createAndApply()
-        new DependencyPass(cpg, buildFiles(config)).createAndApply()
-        if (config.downloadDependencies) {
-          val dependencyDir = DependencyDownloader(cpg, config).download()
-          // Parse dependencies and add high-level nodes to the CPG
-          new DependencySymbolsPass(cpg, dependencyDir).createAndApply()
+      PhpParser
+        .withParser(config) { parser =>
+          withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
+            new MetaDataPass(cpg, Languages.PHP, config.inputPath).createAndApply()
+            new DependencyPass(cpg, buildFiles(config)).createAndApply()
+            if (config.downloadDependencies) {
+              FileUtil.usingTemporaryDirectory("joern-php2cpg-deps") { dependencyDir =>
+                DependencyDownloader(cpg, config).download(dependencyDir)
+                // Parse dependencies and add high-level nodes to the CPG
+                new DependencySymbolsPass(cpg, dependencyDir).createAndApply()
+              }
+            }
+            // The following block parses the code twice, once to summarize all symbols across various namespaces, and
+            // twice to build the AST. This helps resolve symbols during the latter parse. Compared to parsing once, and
+            // holding the AST in-memory, it was decided that parsing did not incur a significant speed impact, and lower
+            // memory was prioritized.
+            var buffer = Option.empty[Map[String, Seq[SymbolSummary]]]
+            new SymbolSummaryPass(config, cpg, parser, summary => buffer = Option(summary)).createAndApply()
+            new AstCreationPass(config, cpg, parser, buffer.getOrElse(Map.empty)).createAndApply()
+            new AstParentInfoPass(cpg).createAndApply()
+            new AnyTypePass(cpg).createAndApply()
+            TypeNodePass.withTypesFromCpg(cpg).createAndApply()
+          }
         }
-        parser.foreach { parser =>
-          // The following block parses the code twice, once to summarize all symbols across various namespaces, and
-          // twice to build the AST. This helps resolve symbols during the latter parse. Compared to parsing once, and
-          // holding the AST in-memory, it was decided that parsing did not incur a significant speed impact, and lower
-          // memory was prioritized.
-          var buffer = Option.empty[Map[String, Seq[SymbolSummary]]]
-          new SymbolSummaryPass(config, cpg, parser, summary => buffer = Option(summary)).createAndApply()
-          new AstCreationPass(config, cpg, parser, buffer.getOrElse(Map.empty)).createAndApply()
+        .getOrElse {
+          errorMessages.append("Could not initialize PhpParser")
+          val errorOutput = (
+            "Skipping AST creation as php/php-parser could not be executed." ::
+              errorMessages.toList
+          ).mkString("\n- ")
+
+          logger.error(errorOutput)
+
+          Failure(new RuntimeException("php not found or version not supported"))
         }
-        new AstParentInfoPass(cpg).createAndApply()
-        new AnyTypePass(cpg).createAndApply()
-        TypeNodePass.withTypesFromCpg(cpg).createAndApply()
-      }
     } else {
       val errorOutput = (
         "Skipping AST creation as php/php-parser could not be executed." ::

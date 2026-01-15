@@ -29,15 +29,14 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
   private val PACKAGIST_API = "repo.packagist.org/p2"
 
   /** Downloads dependencies and places them in a temporary directory.
+    * @param outputDir
+    *   the directory where downloaded dependencies should be placed. Must exist.
     * @return
-    *   the path to the directory of downloaded dependencies. This directory is deleted on exit.
+    *   the path to the output directory containing downloaded dependencies.
     */
-  def download(): Path = {
-    val dir = Files.createTempDirectory("joern-php2cpg")
-    FileUtil.deleteOnExit(dir, swallowIOExceptions = true)
-    cpg.dependency.filterNot(isAutoloadedDependency).foreach(downloadDependency(dir, _))
-
-    dir
+  def download(outputDir: Path): Path = {
+    cpg.dependency.filterNot(isAutoloadedDependency).foreach(downloadDependency(outputDir, _))
+    outputDir
   }
 
   private def isAutoloadedDependency(dependency: Dependency): Boolean = {
