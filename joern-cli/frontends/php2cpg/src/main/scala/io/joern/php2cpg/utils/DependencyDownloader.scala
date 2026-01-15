@@ -3,7 +3,8 @@ package io.joern.php2cpg.utils
 import com.github.sh4869.semver_parser.{Range, SemVer}
 import io.joern.php2cpg.Config
 import io.joern.php2cpg.parser.Domain.PhpOperators
-import io.joern.php2cpg.passes.{Composer, PsrArray, PsrString}
+import io.joern.php2cpg.passes.Composer
+import io.joern.php2cpg.passes.PsrStringOrArray.{PsrArray, PsrString}
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Dependency
