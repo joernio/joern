@@ -68,11 +68,8 @@ import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParame
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.joern.javasrc2cpg.scope.JavaScopeElement.PartialInit
-import io.joern.javasrc2cpg.util.MultiBindingTableAdapterForJavaparser.{
-  InnerClassDeclaration,
-  JavaparserBindingDeclType,
-  RegularClassDeclaration
-}
+import io.joern.javasrc2cpg.util.MultiBindingTableAdapterForJavaparser.JavaparserBindingDeclType
+import io.joern.javasrc2cpg.util.MultiBindingTableAdapterForJavaparser.JavaparserBindingDeclType.*
 import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
 
 import scala.jdk.OptionConverters.RichOptional
