@@ -26,7 +26,7 @@ abstract class XImportsPass(cpg: Cpg) extends ForkJoinParallelCpgPass[(Call, Ass
     val importNode         = createImportNodeAndLink(importedEntity, importedAs, Some(call), diffGraph)
 
     importNode
-      .code(importCode(call))
+      .code(call.code)
       .order(call.order)
       .lineNumber(call.lineNumber)
       .columnNumber(call.columnNumber)
@@ -35,9 +35,6 @@ abstract class XImportsPass(cpg: Cpg) extends ForkJoinParallelCpgPass[(Call, Ass
       diffGraph.addEdge(m, importNode, EdgeTypes.AST)
     }
   }
-
-  /** Hook for frontends to customize how the import code string is rendered (defaults to lowering in call.code). */
-  protected def importCode(call: Call): String = call.code
 
   protected def importedEntityFromCall(call: Call): String
 

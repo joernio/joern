@@ -760,7 +760,11 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     def sink       = cpg.call("doThing").argument.argumentIndex(1)
     def source     = cpg.literal("\"XYZ\"")
     val List(flow) = sink.reachableByFlows(source).map(flowToResultPairs).l
-    flow shouldBe List(("FOOBAR = \"XYZ\"", 2), ("FOOBAR = from models import FOOBAR", 3), ("service.doThing(FOOBAR)", 5))
+    flow shouldBe List(
+      ("FOOBAR = \"XYZ\"", 2),
+      ("FOOBAR = from models import FOOBAR", 3),
+      ("service.doThing(FOOBAR)", 5)
+    )
   }
 
   "flow from global variable defined in imported file and used as field access to `print`" in {
