@@ -510,60 +510,24 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     implicitReturnAroundLastStatement: Boolean = false,
     preStatements: Option[Seq[Ast]] = None
   ): (Ast, List[NewLocal]) = {
-    val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
-    val node =
-      withArgumentIndex(
-        blockNode(expr, expr.getStatements.asScala.map(_.getText).mkString("\n"), typeFullName),
-        argIdxMaybe
-      )
-        .argumentName(argNameMaybe)
-    if (pushToScope) scope.pushNewScope(node)
-    val statements = expr.getStatements.asScala.toSeq.filter { stmt =>
-      !stmt.isInstanceOf[KtNamedFunction] && !stmt.isInstanceOf[KtClassOrObject]
-    }
-    val declarations = expr.getStatements.asScala.toSeq.collect {
-      case fn: KtNamedFunction         => fn
-      case classOrObj: KtClassOrObject => classOrObj
-    }
-    val declarationAsts          = declarations.flatMap(astsForDeclaration)
-    val allStatementsButLast     = statements.dropRight(1)
-    val allStatementsButLastAsts = allStatementsButLast.flatMap(astsForExpression(_, None))
-
-    val lastStatementAstWithTail =
-      if (implicitReturnAroundLastStatement && statements.nonEmpty) {
-        val _returnNode          = returnNode(statements.last, Constants.RetCode)
-        val astsForLastStatement = astsForExpression(statements.last, Some(1))
-        if (astsForLastStatement.isEmpty)
-          (Seq(), None)
-        else
-          (
-            astsForLastStatement.dropRight(1),
-            Some(returnAst(_returnNode, Seq(astsForLastStatement.lastOption.getOrElse(Ast()))))
-          )
-      } else if (statements.nonEmpty) {
-        val astsForLastStatement = astsForExpression(statements.last, None)
-        if (astsForLastStatement.isEmpty)
-          (Seq(), None)
-        else
-          (astsForLastStatement.dropRight(1), Some(astsForLastStatement.lastOption.getOrElse(Ast())))
-      } else (Seq(), None)
-
-    if (pushToScope) scope.popScope()
-    val tempChildrenAsts =
-      preStatements.getOrElse(Seq()) ++
-        declarationAsts ++
-        allStatementsButLastAsts ++
-        lastStatementAstWithTail._1 ++
-        lastStatementAstWithTail._2.map(Seq(_)).getOrElse(Seq())
+    val (node, childrenAsts) = buildBlockAst(
+      expr,
+      argIdxMaybe,
+      argNameMaybe,
+      pushToScope,
+      localsForCaptures,
+      implicitReturnAroundLastStatement,
+      preStatements
+    )
 
     val localCapturesNames = localsForCaptures.map(x => x.name -> x).toMap
 
-    val usedLocalCaptures = tempChildrenAsts.flatMap(_.nodes).collect {
+    val usedLocalCaptures = childrenAsts.flatMap(_.nodes).collect {
       case i: NewIdentifier if localCapturesNames.contains(i.name) => localCapturesNames(i.name)
     }
-    val childrenAsts = usedLocalCaptures.map(Ast(_)).toList ++ tempChildrenAsts
+    val allChildrenAsts = usedLocalCaptures.map(Ast(_)).toList ++ childrenAsts
 
-    (blockAst(node, childrenAsts), usedLocalCaptures.toList)
+    (blockAst(node, allChildrenAsts), usedLocalCaptures.toList)
   }
 
   private def createImplicitParamNode(
