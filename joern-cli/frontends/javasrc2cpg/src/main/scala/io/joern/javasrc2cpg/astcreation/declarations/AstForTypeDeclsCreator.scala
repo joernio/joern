@@ -1,5 +1,6 @@
 package io.joern.javasrc2cpg.astcreation.declarations
 
+import com.github.javaparser.ast.Modifier.Keyword
 import com.github.javaparser.ast.body.{
   AnnotationDeclaration,
   AnnotationMemberDeclaration,
@@ -43,7 +44,7 @@ import com.github.javaparser.resolution.declarations.{
 }
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
-import io.joern.javasrc2cpg.util.{BindingTable, BindingTableEntry, NameConstants, Util}
+import io.joern.javasrc2cpg.util.{BindingTable, BindingTableEntry, JavaModifierTypes, NameConstants, Util}
 import io.joern.x2cpg.{Ast, Defines}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewArrayInitializer,
@@ -61,7 +62,7 @@ import scala.util.{Success, Try}
 import com.github.javaparser.ast.expr.ObjectCreationExpr
 import com.github.javaparser.ast.stmt.LocalClassDeclarationStmt
 import io.joern.javasrc2cpg.scope.Scope.ScopeVariable
-import com.github.javaparser.ast.Node
+import com.github.javaparser.ast.{Modifier, Node}
 import com.github.javaparser.resolution.types.ResolvedReferenceType
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
@@ -654,21 +655,38 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
   }
 
   private def modifiersForTypeDecl(typ: TypeDeclaration[?], isInterface: Boolean): List[NewModifier] = {
-    val accessModifierType = if (typ.isPublic) {
-      Some(ModifierTypes.PUBLIC)
-    } else if (typ.isPrivate) {
-      Some(ModifierTypes.PRIVATE)
-    } else if (typ.isProtected) {
-      Some(ModifierTypes.PROTECTED)
-    } else {
-      None
+    val modifiers = typ.getModifiers.asScala.toList
+    // Interfaces are implicitly abstract, so add the abstract modifier if it hasn't been explicitly added
+    val implicitInterfaceAbstractModifier = Option.when(
+      isInterface && !modifiers.exists(_.getKeyword == Keyword.ABSTRACT)
+    )(modifierNode(typ, ModifierTypes.ABSTRACT))
+
+    val explicitModifiers = typ.getModifiers.asScala
+      .collect {
+        case modifier if modifier.getKeyword == Keyword.PUBLIC     => (modifier, ModifierTypes.PUBLIC)
+        case modifier if modifier.getKeyword == Keyword.PROTECTED  => (modifier, ModifierTypes.PROTECTED)
+        case modifier if modifier.getKeyword == Keyword.PRIVATE    => (modifier, ModifierTypes.PRIVATE)
+        case modifier if modifier.getKeyword == Keyword.ABSTRACT   => (modifier, ModifierTypes.ABSTRACT)
+        case modifier if modifier.getKeyword == Keyword.STATIC     => (modifier, ModifierTypes.STATIC)
+        case modifier if modifier.getKeyword == Keyword.FINAL      => (modifier, ModifierTypes.FINAL)
+        case modifier if modifier.getKeyword == Keyword.SEALED     => (modifier, JavaModifierTypes.Sealed)
+        case modifier if modifier.getKeyword == Keyword.NON_SEALED => (modifier, JavaModifierTypes.NonSealed)
+        case modifier if modifier.getKeyword == Keyword.STRICTFP   => (modifier, JavaModifierTypes.Strictfp)
+        // This should never be reached since the above list was taken directly from the Java Language Specification
+        case unhandled => logger.warn(s"BUG! Encountered unhandled class modifier $unhandled")
+      }
+      .map { case (node, modifierType) => modifierNode(node, modifierType) }
+      .toList
+
+    // This isn't technically necessary, but ensures that the implicit abstract modifier for interfaces is inserted
+    // in the standard order, provided the explicit modifiers follow this order.
+    val accessModifiers = Set(ModifierTypes.PUBLIC, ModifierTypes.PRIVATE, ModifierTypes.PROTECTED)
+    explicitModifiers match {
+      case Nil => implicitInterfaceAbstractModifier.toList
+      case maybeAccess :: rest if accessModifiers.contains(maybeAccess.modifierType) =>
+        maybeAccess :: implicitInterfaceAbstractModifier.toList ++ rest
+      case _ => implicitInterfaceAbstractModifier.toList ++ explicitModifiers
     }
-    val accessModifier = accessModifierType.map(modifierNode(typ, _))
-
-    val abstractModifier =
-      Option.when(isInterface || typ.getMethods.asScala.exists(_.isAbstract))(modifierNode(typ, ModifierTypes.ABSTRACT))
-
-    List(accessModifier, abstractModifier).flatten
   }
 
   private def astForFieldVariable(v: VariableDeclarator, fieldDeclaration: FieldDeclaration): Ast = {
@@ -772,10 +790,11 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
 
   private def codeForTypeDecl(typ: TypeDeclaration[?], isInterface: Boolean): String = {
     val codeBuilder = new mutable.StringBuilder()
-    val modifiers = typ.getModifiers.asScala.map(_.getKeyword.asString).mkString(" ")
-    if (modifiers.nonEmpty) {
-      codeBuilder.append(modifiers).append(" ")
-    }
+    typ.getModifiers.asScala
+      .foreach { modifier =>
+        codeBuilder.append(modifier.getKeyword.asString())
+        codeBuilder.append(" ")
+      }
 
     val classPrefix =
       if (isInterface)

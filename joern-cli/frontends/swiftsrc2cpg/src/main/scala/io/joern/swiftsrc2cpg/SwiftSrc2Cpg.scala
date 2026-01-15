@@ -31,6 +31,7 @@ class SwiftSrc2Cpg extends X2CpgFrontend {
         astCreationPass.createAndApply()
 
         new BuiltinTypesPass(cpg).createAndApply()
+        new ExtensionMemberPass(cpg, astCreationPass.extensionMembers()).createAndApply()
         new ExtensionCallPass(cpg, astCreationPass.extensionMethodFullNameMapping()).createAndApply()
         new ExtensionInheritancePass(cpg, astCreationPass.extensionInherits()).createAndApply()
 

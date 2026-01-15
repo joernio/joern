@@ -10,7 +10,7 @@ import io.joern.php2cpg.parser.Domain.PhpCast.CastTypeMap
 import io.joern.php2cpg.parser.Domain.PhpCast.isCastType
 import io.joern.php2cpg.parser.Domain.PhpUnaryOp.UnaryOpTypeMap
 import io.joern.php2cpg.parser.Domain.PhpUnaryOp.isUnaryOpType
-import io.joern.php2cpg.parser.Domain.PhpUseType.PhpUseType
+import io.joern.php2cpg.parser.Domain.PhpUseType
 import io.joern.php2cpg.parser.Domain.PhpUseType.getUseType
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.Operators
@@ -83,6 +83,7 @@ object Domain {
   // Used for creating the default constructor.
   val ConstructorMethodName = "__construct"
   val MetaTypeDeclExtension = "<metaclass>"
+  val GlobalName            = "<global>"
 
   final case class PhpAttributes(
     lineNumber: Option[Int],
@@ -325,21 +326,18 @@ object Domain {
     attributes: PhpAttributes
   ) extends PhpStmt
 
-  case object PhpUseType {
-    sealed trait PhpUseType
-    case object Unknown  extends PhpUseType
-    case object Normal   extends PhpUseType
-    case object Function extends PhpUseType
-    case object Constant extends PhpUseType
+  enum PhpUseType {
+    case Unknown, Normal, Function, Constant
+  }
 
-    def getUseType(typeNum: Int): PhpUseType = {
+  object PhpUseType {
+    def getUseType(typeNum: Int): PhpUseType =
       typeNum match {
         case 1 => Normal
         case 2 => Function
         case 3 => Constant
         case _ => Unknown
       }
-    }
   }
 
   final case class PhpForeachStmt(

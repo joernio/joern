@@ -1,8 +1,5 @@
 package io.joern.pysrc2cpg.memop
 
-sealed trait MemoryOperation {
-  override def toString: String = getClass.getSimpleName
+enum MemoryOperation {
+  case Store, Load, Del
 }
-object Store extends MemoryOperation
-object Load  extends MemoryOperation
-object Del   extends MemoryOperation
