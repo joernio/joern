@@ -1,6 +1,5 @@
 package io.joern.javasrc2cpg.astcreation.declarations
 
-import com.github.javaparser.ast.Modifier
 import com.github.javaparser.ast.body.{
   AnnotationDeclaration,
   AnnotationMemberDeclaration,
@@ -773,22 +772,9 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
 
   private def codeForTypeDecl(typ: TypeDeclaration[?], isInterface: Boolean): String = {
     val codeBuilder = new mutable.StringBuilder()
-    if (typ.isPublic) {
-      codeBuilder.append("public ")
-    } else if (typ.isPrivate) {
-      codeBuilder.append("private ")
-    } else if (typ.isProtected) {
-      codeBuilder.append("protected ")
-    }
-
-    if (typ.isStatic) {
-      codeBuilder.append("static ")
-    }
-    if (hasModifier(typ, Modifier.Keyword.ABSTRACT)) {
-      codeBuilder.append("abstract ")
-    }
-    if (hasModifier(typ, Modifier.Keyword.FINAL)) {
-      codeBuilder.append("final ")
+    val modifiers = typ.getModifiers.asScala.map(_.getKeyword.asString).mkString(" ")
+    if (modifiers.nonEmpty) {
+      codeBuilder.append(modifiers).append(" ")
     }
 
     val classPrefix =
@@ -812,9 +798,6 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
 
     codeBuilder.toString()
   }
-
-  private def hasModifier(typ: TypeDeclaration[?], keyword: Modifier.Keyword): Boolean =
-    typ.getModifiers.asScala.exists(_.getKeyword == keyword)
 
   private def addTypeDeclTypeParamsToScope(typ: TypeDeclaration[?]): Unit = {
     val typeParameters = typ match {
