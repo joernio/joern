@@ -18,34 +18,34 @@ trait AstC2CpgFrontend extends LanguageFrontend {
   override type ConfigType = Config
 
   def execute(sourceCodePath: java.io.File): Cpg = {
-    val cpgOutFile = FileUtil.newTemporaryFile(suffix = "cpg.bin")
-    FileUtil.deleteOnExit(cpgOutFile)
-    val cpg          = newEmptyCpg(Option(cpgOutFile.toString))
-    val pathAsString = sourceCodePath.getAbsolutePath
-    val config = getConfig()
-      .fold(Config())(_.asInstanceOf[Config])
-      .withInputPath(pathAsString)
-      .withOutputPath(pathAsString)
-      .withSchemaValidation(ValidationMode.Enabled)
-    val global = new CGlobal()
+    FileUtil.usingTemporaryFile(suffix = "cpg.bin") { tmpCpg =>
+      val cpg          = newEmptyCpg(Option(tmpCpg.toString))
+      val pathAsString = sourceCodePath.getAbsolutePath
+      val config = getConfig()
+        .fold(Config())(_.asInstanceOf[Config])
+        .withInputPath(pathAsString)
+        .withOutputPath(pathAsString)
+        .withSchemaValidation(ValidationMode.Enabled)
+      val global = new CGlobal()
 
-    val preprocessedFiles = if (config.withPreprocessedFiles) {
-      SourceFiles
-        .determine(
-          config.inputPath,
-          Set(FileDefaults.PreprocessedExt),
-          ignoredDefaultRegex = Option(DefaultIgnoredFolders),
-          ignoredFilesRegex = Option(config.ignoredFilesRegex),
-          ignoredFilesPath = Option(config.ignoredFiles)
-        )
-    } else List.empty
+      val preprocessedFiles = if (config.withPreprocessedFiles) {
+        SourceFiles
+          .determine(
+            config.inputPath,
+            Set(FileDefaults.PreprocessedExt),
+            ignoredDefaultRegex = Option(DefaultIgnoredFolders),
+            ignoredFilesRegex = Option(config.ignoredFilesRegex),
+            ignoredFilesPath = Option(config.ignoredFiles)
+          )
+      } else List.empty
 
-    val sourceFileExtensions = FileDefaults.SourceFileExtensions ++
-      Option.when(config.withPreprocessedFiles)(FileDefaults.PreprocessedExt).toList
-    new AstCreationPass(cpg, preprocessedFiles, sourceFileExtensions, config, global).createAndApply()
-    new AstCreationPass(cpg, preprocessedFiles, FileDefaults.HeaderFileExtensions, config, global).createAndApply()
-    new FunctionDeclNodePass(cpg, global.unhandledMethodDeclarations(), config).createAndApply()
-    new PostFrontendValidator(cpg, false).run()
-    cpg
+      val sourceFileExtensions = FileDefaults.SourceFileExtensions ++
+        Option.when(config.withPreprocessedFiles)(FileDefaults.PreprocessedExt).toList
+      new AstCreationPass(cpg, preprocessedFiles, sourceFileExtensions, config, global).createAndApply()
+      new AstCreationPass(cpg, preprocessedFiles, FileDefaults.HeaderFileExtensions, config, global).createAndApply()
+      new FunctionDeclNodePass(cpg, global.unhandledMethodDeclarations(), config).createAndApply()
+      new PostFrontendValidator(cpg, false).run()
+      cpg
+    }
   }
 }
