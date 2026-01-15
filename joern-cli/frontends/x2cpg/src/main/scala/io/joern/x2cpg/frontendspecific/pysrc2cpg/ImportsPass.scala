@@ -1,8 +1,6 @@
 package io.joern.x2cpg.frontendspecific.pysrc2cpg
 
-import io.joern.x2cpg.Imports.createImportNodeAndLink
 import io.joern.x2cpg.passes.frontend.XImportsPass
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
@@ -25,25 +23,6 @@ class ImportsPass(cpg: Cpg) extends XImportsPass(cpg) {
     }
   }
 
-  override def runOnPart(diffGraph: DiffGraphBuilder, part: (Call, Assignment)): Unit = {
-    val (call, assignment) = part
-    val importedEntity     = importedEntityFromCall(call)
-    val importedAs         = assignment.target.code
-    val importCode         = importCodeFromCall(call)
-    val importNode         = createImportNodeAndLink(importedEntity, importedAs, Some(call), diffGraph)
-
-    // Enrich import node with data from the import call
-    importNode
-      .code(importCode)
-      .order(call.order)
-      .lineNumber(call.lineNumber)
-      .columnNumber(call.columnNumber)
-
-    Option(call.method).foreach { m =>
-      diffGraph.addEdge(m, importNode, EdgeTypes.AST)
-    }
-  }
-
   private def resolve(where: String, what: String, call: Call): String = {
     where match {
       case "." =>
@@ -61,7 +40,7 @@ class ImportsPass(cpg: Cpg) extends XImportsPass(cpg) {
     }
   }
 
-  private def importCodeFromCall(call: Call): String = {
+  override protected def importCode(call: Call): String = {
     call.argument.code.l match {
       case List("", what)          => s"import $what"
       case List("", what, as)      => s"import $what as $as"
