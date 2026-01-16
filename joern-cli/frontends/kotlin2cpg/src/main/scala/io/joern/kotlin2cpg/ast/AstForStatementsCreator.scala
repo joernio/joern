@@ -7,7 +7,7 @@ import io.joern.x2cpg.ValidationMode
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewLocal}
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtBreakExpression
@@ -522,15 +522,15 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     Ast(node)
   }
 
-  def astForBlock(
+  def buildBlockAst(
     expr: KtBlockExpression,
     argIdxMaybe: Option[Int],
     argNameMaybe: Option[String],
-    pushToScope: Boolean = true,
-    localsForCaptures: List[NewLocal] = List(),
-    implicitReturnAroundLastStatement: Boolean = false,
-    preStatements: Option[Seq[Ast]] = None
-  ): Ast = {
+    pushToScope: Boolean,
+    localsForCaptures: List[NewLocal],
+    implicitReturnAroundLastStatement: Boolean,
+    preStatements: Option[Seq[Ast]]
+  ): (NewBlock, Seq[Ast]) = {
     val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
     val node =
       withArgumentIndex(
@@ -570,12 +570,35 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
       } else (Seq(), None)
 
     if (pushToScope) scope.popScope()
-    val childrenAsts = localsForCaptures.map(Ast(_)) ++
+    val childrenAsts =
       preStatements.getOrElse(Seq()) ++
-      declarationAsts ++
-      allStatementsButLastAsts ++
-      lastStatementAstWithTail._1 ++
-      lastStatementAstWithTail._2.map(Seq(_)).getOrElse(Seq())
-    blockAst(node, childrenAsts)
+        declarationAsts ++
+        allStatementsButLastAsts ++
+        lastStatementAstWithTail._1 ++
+        lastStatementAstWithTail._2.map(Seq(_)).getOrElse(Seq())
+
+    (node, childrenAsts)
+  }
+
+  def astForBlock(
+    expr: KtBlockExpression,
+    argIdxMaybe: Option[Int],
+    argNameMaybe: Option[String],
+    pushToScope: Boolean = true,
+    localsForCaptures: List[NewLocal] = List(),
+    implicitReturnAroundLastStatement: Boolean = false,
+    preStatements: Option[Seq[Ast]] = None
+  ): Ast = {
+    val (node, childrenAsts) = buildBlockAst(
+      expr,
+      argIdxMaybe,
+      argNameMaybe,
+      pushToScope,
+      localsForCaptures,
+      implicitReturnAroundLastStatement,
+      preStatements
+    )
+    val allChildrenAsts = localsForCaptures.map(Ast(_)) ++ childrenAsts
+    blockAst(node, allChildrenAsts)
   }
 }

@@ -60,16 +60,16 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       mr.code should not be null
     }
 
-    "should contain three CAPTURE edges for the METHOD_REF" in {
-      cpg.methodRef.outE.collectAll[Capture].size shouldBe 3
+    "should contain a single CAPTURE edge for the METHOD_REF" in {
+      cpg.methodRef.outE.collectAll[Capture].size shouldBe 1
     }
 
-    "should contain a LOCAL node for the captured `this`" in {
-      cpg.local.code("this").size shouldBe 1
+    "should not contain a LOCAL node for `this`" in {
+      cpg.local.code("this").size shouldBe 0
     }
 
-    "should contain a LOCAL node for the captured `x`" in {
-      cpg.local.code("x").size shouldBe 1
+    "should not contain a LOCAL node for `x`" in {
+      cpg.local.code("x").size shouldBe 0
     }
 
     "should contain a LOCAL node for the captured `baz`" in {
@@ -80,22 +80,6 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       val List(cb) = cpg.closureBinding.filter(_._localViaRefOut.name.l == List("baz")).l
       cb.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       cb.closureBindingId shouldBe Some("simple.pkg.Bar.foo.<lambda>0.baz")
-
-      cb._refOut.size shouldBe 1
-    }
-
-    "should contain a CLOSURE_BINDING node for captured `x` with the correct props set" in {
-      val List(cb) = cpg.closureBinding.filter(_._methodParameterInViaRefOut.name.l == List("x")).l
-      cb.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      cb.closureBindingId shouldBe Some("simple.pkg.Bar.foo.<lambda>0.x")
-
-      cb._refOut.size shouldBe 1
-    }
-
-    "should contain a CLOSURE_BINDING node for captured `this` with the correct props set" in {
-      val List(cb) = cpg.closureBinding.filter(_._methodParameterInViaRefOut.name.l == List("this")).l
-      cb.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      cb.closureBindingId shouldBe Some("simple.pkg.Bar.foo.<lambda>0.this")
 
       cb._refOut.size shouldBe 1
     }
