@@ -123,40 +123,32 @@ class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
 
   "Using a simple compile_commands.json" should {
     "respect the files listed" in {
-      FileUtil.usingTemporaryFile(suffix = "-c2cpg.bin") { tmpCpg =>
-        newProjectUnderTest() { projectUnderTest =>
-          val input  = projectUnderTest.toAbsolutePath.toString
-          val output = tmpCpg.toString
-          val config = Config()
-            .withInputPath(input)
-            .withOutputPath(output)
-            .withCompilationDatabase((Paths.get(input) / "compile_commands.json").toString)
-          val c2cpg = new C2Cpg()
-          val cpg   = c2cpg.createCpg(config).get
-          cpg.file.nameNot(FileTraversal.UNKNOWN, "<includes>").name.sorted.l should contain theSameElementsAs List(
-            "fileA.c",
-            "fileB.c"
-            // fileC.c is ignored because it is not listed in the compile_commands.json
-          )
-          cpg.method.nameNot("<global>").name.sorted.l shouldBe List("foo", "main", "main")
-        }
+      newProjectUnderTest() { projectUnderTest =>
+        val input = projectUnderTest.toAbsolutePath.toString
+        val config = Config()
+          .withInputPath(input)
+          .withCompilationDatabase((Paths.get(input) / "compile_commands.json").toString)
+        val c2cpg = new C2Cpg()
+        val cpg   = c2cpg.createCpg(config).get
+        cpg.file.nameNot(FileTraversal.UNKNOWN, "<includes>").name.sorted.l should contain theSameElementsAs List(
+          "fileA.c",
+          "fileB.c"
+          // fileC.c is ignored because it is not listed in the compile_commands.json
+        )
+        cpg.method.nameNot("<global>").name.sorted.l shouldBe List("foo", "main", "main")
       }
     }
 
     "handle broken file paths" in {
-      FileUtil.usingTemporaryFile(suffix = "-c2cpg.bin") { tmpCpg =>
-        newBrokenProjectUnderTest() { projectUnderTest =>
-          val input  = projectUnderTest.toAbsolutePath.toString
-          val output = tmpCpg.toString
-          val config = Config()
-            .withInputPath(input)
-            .withOutputPath(output)
-            .withCompilationDatabase((Paths.get(input) / "compile_commands.json").toString)
-          val c2cpg = new C2Cpg()
-          val cpg   = c2cpg.createCpg(config).get
-          cpg.file.nameNot(FileTraversal.UNKNOWN, "<includes>").name.l shouldBe List("fileA.c")
-          cpg.method.nameNot("<global>").name.l shouldBe List("main")
-        }
+      newBrokenProjectUnderTest() { projectUnderTest =>
+        val input = projectUnderTest.toAbsolutePath.toString
+        val config = Config()
+          .withInputPath(input)
+          .withCompilationDatabase((Paths.get(input) / "compile_commands.json").toString)
+        val c2cpg = new C2Cpg()
+        val cpg   = c2cpg.createCpg(config).get
+        cpg.file.nameNot(FileTraversal.UNKNOWN, "<includes>").name.l shouldBe List("fileA.c")
+        cpg.method.nameNot("<global>").name.l shouldBe List("main")
       }
     }
   }
