@@ -11,15 +11,12 @@ trait C2CpgFrontend extends LanguageFrontend {
   override type ConfigType = Config
 
   def execute(sourceCodePath: java.io.File): Cpg = {
-    FileUtil.usingTemporaryFile(suffix = "cpg.bin") { tmpCpg =>
-      val c2cpg = new C2Cpg()
-      val config = getConfig()
-        .fold(Config())(_.asInstanceOf[Config])
-        .withInputPath(sourceCodePath.getAbsolutePath)
-        .withOutputPath(tmpCpg.toString)
-      val res = c2cpg.createCpg(config).get
-      new PostFrontendValidator(res, false).run()
-      res
-    }
+    val c2cpg = new C2Cpg()
+    val config = getConfig()
+      .fold(Config())(_.asInstanceOf[Config])
+      .withInputPath(sourceCodePath.getAbsolutePath)
+    val res = c2cpg.createCpg(config).get
+    new PostFrontendValidator(res, false).run()
+    res
   }
 }

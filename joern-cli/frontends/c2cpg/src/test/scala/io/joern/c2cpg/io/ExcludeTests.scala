@@ -48,20 +48,17 @@ class ExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChe
   override def afterAll(): Unit = FileUtil.delete(projectUnderTest, swallowIoExceptions = true)
 
   private def testWithArguments(exclude: Seq[String], excludeRegex: String, expectedFiles: Set[String]): Unit = {
-    FileUtil.usingTemporaryFile(suffix = "-c2cpg.bin") { tmpCpg =>
-      val config = Config()
-        .withInputPath(projectUnderTest.toString)
-        .withOutputPath(tmpCpg.toString)
-        .withIgnoredFiles(exclude)
-        .withIgnoredFilesRegex(excludeRegex)
-      val c2cpg = new C2Cpg()
-      val cpg   = c2cpg.createCpg(config).get
+    val config = Config()
+      .withInputPath(projectUnderTest.toString)
+      .withIgnoredFiles(exclude)
+      .withIgnoredFilesRegex(excludeRegex)
+    val c2cpg = new C2Cpg()
+    val cpg   = c2cpg.createCpg(config).get
 
-      X2Cpg.applyDefaultOverlays(cpg)
-      cpg.file.nameNot(FileTraversal.UNKNOWN, "<includes>").name.l should contain theSameElementsAs expectedFiles.map(
-        _.replace("/", java.io.File.separator)
-      )
-    }
+    X2Cpg.applyDefaultOverlays(cpg)
+    cpg.file.nameNot(FileTraversal.UNKNOWN, "<includes>").name.l should contain theSameElementsAs expectedFiles.map(
+      _.replace("/", java.io.File.separator)
+    )
   }
 
   "Using case sensitive excludes" should {
