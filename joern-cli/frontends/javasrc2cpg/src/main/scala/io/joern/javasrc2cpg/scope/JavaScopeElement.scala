@@ -16,6 +16,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewMember
 import io.joern.javasrc2cpg.util.{BindingTable, BindingTableEntry, NameConstants}
 import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.{Ast, ValidationMode}
+import io.joern.javasrc2cpg.scope.JavaScopeElement.WildcardImports.{MultipleWildcards, NoWildcard, SingleWildcard}
 
 import java.util
 import scala.jdk.CollectionConverters.*
@@ -98,10 +99,11 @@ case class PatternVariableInfo(
 )
 
 object JavaScopeElement {
-  sealed trait WildcardImports
-  case object NoWildcard                    extends WildcardImports
-  case class SingleWildcard(prefix: String) extends WildcardImports
-  case object MultipleWildcards             extends WildcardImports
+  enum WildcardImports {
+    case NoWildcard
+    case SingleWildcard(prefix: String)
+    case MultipleWildcards
+  }
 
   trait AnonymousClassCounter {
     private val anonymousClassKeyPool = IntervalKeyPool(0, Long.MaxValue)

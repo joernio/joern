@@ -1,20 +1,18 @@
 package io.joern.x2cpg.utils.dependency
 
 import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
-import io.joern.x2cpg.utils.dependency.GradleConfigKeys.GradleConfigKey
 import FileUtil.*
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{Files, Path}
 import scala.util.{Failure, Success}
 
-object GradleConfigKeys extends Enumeration {
-  type GradleConfigKey = Value
-  val ProjectName, ConfigurationName = Value
-}
+enum GradleConfigKeys:
+  case ProjectName, ConfigurationName
+
 case class DependencyResolverParams(
   forMaven: Map[String, String] = Map(),
-  forGradle: Map[GradleConfigKey, String] = Map()
+  forGradle: Map[GradleConfigKeys, String] = Map()
 )
 
 object DependencyResolver {

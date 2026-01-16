@@ -1,8 +1,7 @@
 package io.joern.pysrc2cpg
 
-import io.joern.pysrc2cpg.memop.Load
 import io.joern.pysrc2cpg.memop.MemoryOperation
-import io.joern.pysrc2cpg.memop.Store
+import io.joern.pysrc2cpg.memop.MemoryOperation.{Del, Load, Store}
 import io.joern.pythonparser.{AstPrinter, ast}
 import io.joern.x2cpg.ValidationMode
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes

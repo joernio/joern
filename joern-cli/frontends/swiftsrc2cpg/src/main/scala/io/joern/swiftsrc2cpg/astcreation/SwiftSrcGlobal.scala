@@ -5,7 +5,15 @@ import io.joern.x2cpg.datastructures.Global
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
 
+object SwiftSrcGlobal {
+
+  case class MemberInfo(name: String, code: String, typeFullName: String)
+
+}
+
 class SwiftSrcGlobal extends Global {
+
+  import SwiftSrcGlobal.MemberInfo
 
   /** Mapping from extension fullName to the set of names it inherits from. */
   val extensionInherits: ConcurrentHashMap[String, mutable.HashSet[String]] = new ConcurrentHashMap()
@@ -14,6 +22,28 @@ class SwiftSrcGlobal extends Global {
     * fullName uniqueness.
     */
   val extensionMethodFullNameMapping: ConcurrentHashMap[String, String] = new ConcurrentHashMap()
+
+  /** Mapping from extension fullName to the members it defines as computed properties. */
+  val extensionMembers: ConcurrentHashMap[String, mutable.ArrayBuffer[MemberInfo]] = new ConcurrentHashMap()
+
+  def addExtensionMember(
+    extensionFullName: String,
+    memberName: String,
+    memberCode: String,
+    memberTypeFullName: String
+  ): Unit = {
+    extensionMembers.compute(
+      extensionFullName,
+      (_, previousList) => {
+        val memberInfo = MemberInfo(memberName, memberCode, memberTypeFullName)
+        if (previousList == null) {
+          mutable.ArrayBuffer(memberInfo)
+        } else {
+          previousList.append(memberInfo)
+        }
+      }
+    )
+  }
 
   def addExtensionInherits(extensionFullName: String, inheritNames: Seq[String]): Unit = {
     extensionInherits.compute(
