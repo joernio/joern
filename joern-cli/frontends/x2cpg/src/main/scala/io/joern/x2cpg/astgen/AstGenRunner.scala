@@ -2,8 +2,8 @@ package io.joern.x2cpg.astgen
 
 import com.typesafe.config.ConfigFactory
 import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, logger}
-import io.joern.x2cpg.utils.Environment.ArchitectureType.ArchitectureType
-import io.joern.x2cpg.utils.Environment.OperatingSystemType.OperatingSystemType
+import io.joern.x2cpg.utils.Environment.ArchitectureType
+import io.joern.x2cpg.utils.Environment.OperatingSystemType
 import io.joern.x2cpg.utils.Environment
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import io.joern.x2cpg.{SourceFiles, X2CpgConfig}

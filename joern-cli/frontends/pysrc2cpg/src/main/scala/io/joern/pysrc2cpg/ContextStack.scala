@@ -1,7 +1,8 @@
 package io.joern.pysrc2cpg
 
 import io.joern.pysrc2cpg.ContextStack.transferLineColInfo
-import io.joern.pysrc2cpg.memop.*
+import io.joern.pysrc2cpg.memop.MemoryOperation
+import io.joern.pysrc2cpg.memop.MemoryOperation.{Del, Load, Store}
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants
 import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.codepropertygraph.generated.nodes.*

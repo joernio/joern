@@ -1,7 +1,5 @@
 package io.joern.javasrc2cpg.jartypereader.model
 
-import Bound.Bound
-
 sealed trait Named {
   def name: String
   def qualifiedName: String
@@ -21,16 +19,16 @@ sealed trait Named {
 
 case class NameWithTypeArgs(name: String, typeArguments: List[TypeArgument])
 
-object Bound {
-  sealed trait Bound
-  case object BoundAbove extends Bound
-  case object BoundBelow extends Bound
+enum Bound {
+  case BoundAbove
+  case BoundBelow
 }
 
-sealed trait TypeArgument
-case class SimpleTypeArgument(typeSignature: ReferenceTypeSignature)          extends TypeArgument
-case class BoundWildcard(bound: Bound, typeSignature: ReferenceTypeSignature) extends TypeArgument
-case object UnboundWildcard                                                   extends TypeArgument
+enum TypeArgument {
+  case SimpleTypeArgument(typeSignature: ReferenceTypeSignature)
+  case BoundWildcard(bound: Bound, typeSignature: ReferenceTypeSignature)
+  case UnboundWildcard
+}
 
 sealed trait JavaTypeSignature extends Named
 case class PrimitiveType(fullName: String) extends JavaTypeSignature {
