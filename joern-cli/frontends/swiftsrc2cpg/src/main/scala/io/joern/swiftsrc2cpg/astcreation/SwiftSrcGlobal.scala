@@ -16,7 +16,7 @@ class SwiftSrcGlobal extends Global {
   import SwiftSrcGlobal.MemberInfo
 
   /** Mapping from extension fullName to the set of names it inherits from. */
-  val extensionInherits: ConcurrentHashMap[String, mutable.HashSet[String]] = new ConcurrentHashMap()
+  val extensionInheritMapping: ConcurrentHashMap[String, mutable.HashSet[String]] = new ConcurrentHashMap()
 
   /** Mapping from extension method fullName (provided by the compiler) to the fullName the frontend generates for
     * fullName uniqueness.
@@ -24,7 +24,10 @@ class SwiftSrcGlobal extends Global {
   val extensionMethodFullNameMapping: ConcurrentHashMap[String, String] = new ConcurrentHashMap()
 
   /** Mapping from extension fullName to the members it defines as computed properties. */
-  val extensionMembers: ConcurrentHashMap[String, mutable.ArrayBuffer[MemberInfo]] = new ConcurrentHashMap()
+  val extensionMemberMapping: ConcurrentHashMap[String, mutable.ArrayBuffer[MemberInfo]] = new ConcurrentHashMap()
+
+  /** Mapping from member fullName to method fullName from its computed property. */
+  val memberPropertyMapping: ConcurrentHashMap[String, String] = new ConcurrentHashMap()
 
   def addExtensionMember(
     extensionFullName: String,
@@ -32,7 +35,7 @@ class SwiftSrcGlobal extends Global {
     memberCode: String,
     memberTypeFullName: String
   ): Unit = {
-    extensionMembers.compute(
+    extensionMemberMapping.compute(
       extensionFullName,
       (_, previousList) => {
         val memberInfo = MemberInfo(memberName, memberCode, memberTypeFullName)
@@ -46,7 +49,7 @@ class SwiftSrcGlobal extends Global {
   }
 
   def addExtensionInherits(extensionFullName: String, inheritNames: Seq[String]): Unit = {
-    extensionInherits.compute(
+    extensionInheritMapping.compute(
       extensionFullName,
       (_, previousSet) => {
         if (previousSet == null) {
@@ -60,6 +63,10 @@ class SwiftSrcGlobal extends Global {
 
   def addExtensionMethodFullName(extensionMethodFullName: String, fullName: String): Unit = {
     extensionMethodFullNameMapping.putIfAbsent(extensionMethodFullName, fullName)
+  }
+
+  def addMemberPropertyFullName(memberFullName: String, propertyFullName: String): Unit = {
+    memberPropertyMapping.putIfAbsent(memberFullName, propertyFullName)
   }
 
 }
