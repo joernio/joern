@@ -4,8 +4,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.*
 
-import scala.jdk.CollectionConverters.*
-
 class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
   import CfgNodeMethods.*
 
@@ -138,10 +136,10 @@ object CfgNodeMethods {
       case typeDecl: TypeDecl =>
         typeDecl.astParent match {
           case namespaceBlock: NamespaceBlock =>
-            // For Typescript, types may be declared in namespaces which we represent as NamespaceBlocks
-            namespaceBlock.inAst.collectAll[Method].headOption.orNull
+            // For TypeScript, types may be declared in namespaces which we represent as NamespaceBlocks
+            namespaceBlock.inAst.collectAll[Method].loneElement
           case method: Method =>
-            // For a language such as Javascript, types may be dynamically declared under procedures
+            // For a language such as JavaScript, types may be dynamically declared under procedures
             method
           case _ =>
             // there are csharp CPGs that have typedecls here, which is invalid.
