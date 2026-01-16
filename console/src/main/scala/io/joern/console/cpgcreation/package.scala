@@ -114,11 +114,10 @@ package object cpgcreation {
   }
 
   def withFileInTmpFile(inputPath: String)(f: Path => Try[String]): Try[String] = {
-    val dir = Files.createTempDirectory("cpgcreation")
-    Paths.get(inputPath).copyToDirectory(dir)
-    val result = f(dir)
-    FileUtil.deleteOnExit(dir, swallowIOExceptions = true)
-    result
+    FileUtil.usingTemporaryDirectory("cpgcreation") { dir =>
+      Paths.get(inputPath).copyToDirectory(dir)
+      f(dir)
+    }
   }
 
 }
