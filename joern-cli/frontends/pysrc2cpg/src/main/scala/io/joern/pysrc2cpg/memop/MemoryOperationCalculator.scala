@@ -19,6 +19,7 @@ import io.joern.pythonparser.ast.{
   TypeVarTuple
 }
 import io.joern.pythonparser.{AstVisitor, ast}
+import MemoryOperation.{Del, Load, Store}
 
 import scala.collection.mutable
 

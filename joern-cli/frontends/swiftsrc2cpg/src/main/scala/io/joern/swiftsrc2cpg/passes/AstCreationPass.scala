@@ -34,6 +34,9 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
   def extensionInherits(): Map[String, Set[String]] =
     global.extensionInherits.asScala.view.mapValues(_.toSet).toMap
 
+  def extensionMembers(): Map[String, List[SwiftSrcGlobal.MemberInfo]] =
+    global.extensionMembers.asScala.view.mapValues(_.toList).toMap
+
   def extensionMethodFullNameMapping(): Map[String, String] =
     global.extensionMethodFullNameMapping.asScala.toMap
 

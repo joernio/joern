@@ -327,11 +327,11 @@ case class EngineConfig(
 
 /** Tracks various performance characteristics of the query engine.
   */
-object QueryEngineStatistics extends Enumeration {
+enum QueryEngineStatistic {
+  case PATH_CACHE_HITS, PATH_CACHE_MISSES
+}
 
-  type QueryEngineStatistic = Value
-
-  val PATH_CACHE_HITS, PATH_CACHE_MISSES = Value
+object QueryEngineStatistics {
 
   private val statistics = new ConcurrentHashMap[QueryEngineStatistic, Long]()
 
@@ -355,6 +355,6 @@ object QueryEngineStatistics extends Enumeration {
   /** Sets all the tracked values back to 0.
     */
   def reset(): Unit =
-    QueryEngineStatistics.values.map((_, 0L)).foreach { case (v, t) => statistics.put(v, t) }
+    QueryEngineStatistic.values.map((_, 0L)).foreach { case (v, t) => statistics.put(v, t) }
 
 }

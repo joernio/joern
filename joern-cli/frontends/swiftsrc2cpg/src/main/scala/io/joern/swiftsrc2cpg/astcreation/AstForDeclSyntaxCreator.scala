@@ -469,7 +469,20 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val memberBlock = node.memberBlock
 
-    // TODO: also handle member and computed properties (if any) here
+    val members = memberBlock.members.children.map(_.decl).collect { case v: VariableDeclSyntax => v }.toList
+    members.foreach { decl =>
+      decl.bindings.children.foreach { c =>
+        val name           = code(c.pattern)
+        val cCode          = code(c)
+        val tpeFromTypeMap = fullnameProvider.typeFullname(c)
+        val typeFullName = tpeFromTypeMap.getOrElse(
+          c.typeAnnotation.map(t => AstCreatorHelper.cleanType(code(t.`type`))).getOrElse(Defines.Any)
+        )
+        registerType(typeFullName)
+        global.addExtensionMember(extendedTypeFullName, name, cCode, typeFullName)
+      }
+    }
+
     val functionDeclLikes = memberBlock.members.children.map(_.decl).collect { case f: FunctionDeclLike => f }.toList
     val functionDeclLikesAsts = functionDeclLikes.map(astForFunctionInExtension)
 
