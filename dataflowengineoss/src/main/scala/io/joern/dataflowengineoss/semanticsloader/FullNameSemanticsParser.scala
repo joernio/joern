@@ -2,6 +2,7 @@ package io.joern.dataflowengineoss.semanticsloader
 
 import io.joern.dataflowengineoss.SemanticsParser.MappingContext
 import io.joern.dataflowengineoss.{SemanticsBaseListener, SemanticsLexer, SemanticsParser}
+import io.joern.dataflowengineoss.semanticsloader.FlowPath.{FlowMapping, PassThroughMapping}
 import org.antlr.v4.runtime.tree.ParseTreeWalker
 import org.antlr.v4.runtime.{CharStream, CharStreams, CommonTokenStream}
 
