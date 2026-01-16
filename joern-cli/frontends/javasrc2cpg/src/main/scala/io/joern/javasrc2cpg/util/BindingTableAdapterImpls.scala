@@ -6,16 +6,14 @@ import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParame
 import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserAnnotationDeclaration
 import com.github.javaparser.symbolsolver.javassistmodel.JavassistAnnotationDeclaration
 import com.github.javaparser.symbolsolver.reflectionmodel.ReflectionAnnotationDeclaration
-import io.joern.javasrc2cpg.util.MultiBindingTableAdapterForJavaparser.{
-  InnerClassDeclaration,
-  JavaparserBindingDeclType,
-  RegularClassDeclaration
-}
+import io.joern.javasrc2cpg.util.MultiBindingTableAdapterForJavaparser.{JavaparserBindingDeclType}
 import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, getAllParents, safeGetAncestors}
 import io.shiftleft.codepropertygraph.generated.nodes.NewBinding
 
 import scala.jdk.OptionConverters.RichOptional
 import scala.jdk.CollectionConverters.*
+
+import JavaparserBindingDeclType.*
 
 object Shared {
   def getDeclaredMethods(typeDecl: ResolvedReferenceTypeDeclaration): Iterable[ResolvedMethodDeclaration] = {
@@ -140,20 +138,18 @@ class MultiBindingTableAdapterForJavaparser(
 }
 
 object MultiBindingTableAdapterForJavaparser {
-  sealed trait JavaparserBindingDeclType
-
-  case class InnerClassDeclaration(
-    fullName: String,
-    directParents: List[JavaparserBindingDeclType],
-    methodDeclarations: List[ResolvedMethodDeclaration],
-    typeParametersMap: ResolvedTypeParametersMap
-  ) extends JavaparserBindingDeclType
-
-  case class RegularClassDeclaration(
-    resolvedDeclaration: ResolvedReferenceTypeDeclaration,
-    typeParametersMap: ResolvedTypeParametersMap
-  ) extends JavaparserBindingDeclType
-
+  enum JavaparserBindingDeclType {
+    case InnerClassDeclaration(
+      fullName: String,
+      directParents: List[JavaparserBindingDeclType],
+      methodDeclarations: List[ResolvedMethodDeclaration],
+      typeParametersMap: ResolvedTypeParametersMap
+    )
+    case RegularClassDeclaration(
+      resolvedDeclaration: ResolvedReferenceTypeDeclaration,
+      typeParametersMap: ResolvedTypeParametersMap
+    )
+  }
 }
 
 class BindingTableAdapterForJavaparser(

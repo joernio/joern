@@ -35,11 +35,8 @@ import io.joern.javasrc2cpg.scope.Scope.*
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
-import io.joern.javasrc2cpg.util.MultiBindingTableAdapterForJavaparser.{
-  InnerClassDeclaration,
-  JavaparserBindingDeclType,
-  RegularClassDeclaration
-}
+import io.joern.javasrc2cpg.util.MultiBindingTableAdapterForJavaparser.JavaparserBindingDeclType
+import io.joern.javasrc2cpg.util.MultiBindingTableAdapterForJavaparser.JavaparserBindingDeclType.*
 import io.joern.javasrc2cpg.util.{
   BindingTable,
   BindingTableAdapterForJavaparser,
