@@ -39,27 +39,25 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: Path = FileUtil
   implicit object ConsoleImageViewer extends ImageViewer {
     def view(imagePathStr: String): Try[String] = {
       // We need to copy the file as the original one is only temporary
-      // and gets removed immediately after running this viewer instance synchronously via .run().
-      FileUtil.usingTemporaryFile(suffix = ".svg") { tmpFile =>
-        Paths.get(imagePathStr).copyTo(tmpFile, copyOption = StandardCopyOption.REPLACE_EXISTING)
+      // and gets removed immediately after running this viewer instance asynchronously via .run().
+      val tmpFile = FileUtil.newTemporaryFile(suffix = ".svg")
+      Paths.get(imagePathStr).copyTo(tmpFile, copyOption = StandardCopyOption.REPLACE_EXISTING)
 
-        val result = Try {
-          val command = if (scala.util.Properties.isWin) { Seq("cmd.exe", "/C", config.tools.imageViewer) }
-          else { Seq(config.tools.imageViewer) }
-          ExternalCommand
-            .run(command :+ tmpFile.absolutePathAsString)
-        } match {
-          case Success(_) =>
-            // We never handle the actual result anywhere.
-            // Hence, we just pass a success message.
-            Success(s"Running viewer for '$tmpFile' finished.")
-          case Failure(exc) =>
-            System.err.println("Executing image viewer failed. Is it installed? ")
-            System.err.println(exc)
-            Failure(exc)
-        }
-
-        result
+      FileUtil.deleteOnExit(tmpFile, swallowIOExceptions = true)
+      Try {
+        val command = if (scala.util.Properties.isWin) { Seq("cmd.exe", "/C", config.tools.imageViewer) }
+        else { Seq(config.tools.imageViewer) }
+        ExternalCommand
+          .run(command :+ tmpFile.absolutePathAsString)
+      } match {
+        case Success(_) =>
+          // We never handle the actual result anywhere.
+          // Hence, we just pass a success message.
+          Success(s"Running viewer for '$tmpFile' finished.")
+        case Failure(exc) =>
+          System.err.println("Executing image viewer failed. Is it installed? ")
+          System.err.println(exc)
+          Failure(exc)
       }
     }
   }
