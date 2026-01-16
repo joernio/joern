@@ -107,6 +107,7 @@ jobs:
       - name: Install Python dependencies for distribution test (Windows)
         if: matrix.os == 'windows-latest'
         run: |
+          python -m pip install setuptools<81
           python -m pip install requests wexpect
       - name: Test distribution
         run: |
