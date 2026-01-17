@@ -206,6 +206,17 @@ class VarDeclTests extends JavaSrcCode2CpgFixture {
         .head shouldBe "org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer.<init>:<unresolvedSignature>(3)"
     }
 
+    "parse enums correctly" in {
+      val cpg = code("""
+          |public enum Color {
+          |  RED,
+          |  GREEN,
+          |  BLUE
+          |}
+          |""".stripMargin).withConfig(Config().withKeepTypeArguments(true))
+
+      cpg.typeDecl("Color").code.head shouldBe "public enum Color"
+    }
   }
 
 }
