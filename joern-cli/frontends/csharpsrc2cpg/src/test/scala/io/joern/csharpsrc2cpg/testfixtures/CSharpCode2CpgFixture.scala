@@ -86,9 +86,8 @@ trait CSharpFrontend extends LanguageFrontend {
 
   override def execute(sourceCodeFile: File): Cpg = {
     val cpgOutFile = FileUtil.newTemporaryFile(suffix = "cpg.bin")
-    FileUtil.deleteOnExit(cpgOutFile)
-    val config = defaultConfig.withInputPath(sourceCodeFile.getAbsolutePath).withOutputPath(cpgOutFile.toString)
-    val tmp    = new CSharpSrc2Cpg().createCpg(config).get
+    val config     = defaultConfig.withInputPath(sourceCodeFile.getAbsolutePath)
+    val tmp        = new CSharpSrc2Cpg().createCpg(config).get
     new PostFrontendValidator(tmp, false).createAndApply()
     tmp
 
