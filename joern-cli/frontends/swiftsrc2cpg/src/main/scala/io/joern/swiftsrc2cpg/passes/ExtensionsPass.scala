@@ -128,7 +128,8 @@ class ExtensionsPass(
     */
   private def handleMemberPropertyGetterCalls(diffGraph: DiffGraphBuilder): Unit = {
     for {
-      fieldAccess         <- cpg.fieldAccess
+      fieldAccess <- cpg.fieldAccess
+      if !fieldAccess.astIn.isCall.isAssignment.target.contains(fieldAccess)
       baseNode            <- fieldAccess.arguments(1).headOption
       fieldIdentifierNode <- fieldAccess.arguments(2).headOption
       baseFullName        <- typeFullNameOf(baseNode)
@@ -137,21 +138,18 @@ class ExtensionsPass(
       Seq(s"$memberName.getter", memberName).foreach { memberName =>
         val memberFullName = s"$baseFullName.$memberName"
         memberPropertyMapping.get(memberFullName).foreach { propertyFullName =>
-          val parentAssignmentCallMaybe = fieldAccess.astIn.isCall.isAssignment.headOption
-          if (!parentAssignmentCallMaybe.exists(_.target == fieldAccess)) {
-            diffGraph.setNodeProperty(fieldAccess, PropertyNames.Name, memberName)
-            diffGraph.setNodeProperty(fieldAccess, PropertyNames.MethodFullName, propertyFullName)
-            diffGraph.setNodeProperty(baseNode, PropertyNames.ArgumentIndex, 0)
-            diffGraph.setNodeProperty(baseNode, PropertyNames.Order, 1)
+          diffGraph.setNodeProperty(fieldAccess, PropertyNames.Name, memberName)
+          diffGraph.setNodeProperty(fieldAccess, PropertyNames.MethodFullName, propertyFullName)
+          diffGraph.setNodeProperty(baseNode, PropertyNames.ArgumentIndex, 0)
+          diffGraph.setNodeProperty(baseNode, PropertyNames.Order, 1)
 
-            if (!propertyFullName.contains("<extension>")) {
-              // Ensure receiver edge from fieldAccess to baseNode only if the access is not from an extension.
-              diffGraph.setNodeProperty(fieldAccess, PropertyNames.DispatchType, DispatchTypes.DYNAMIC_DISPATCH)
-              diffGraph.addEdge(fieldAccess, baseNode, EdgeTypes.RECEIVER)
-            }
-
-            diffGraph.removeNode(fieldIdentifierNode)
+          if (!propertyFullName.contains("<extension>")) {
+            // Ensure receiver edge from fieldAccess to baseNode only if the access is not from an extension.
+            diffGraph.setNodeProperty(fieldAccess, PropertyNames.DispatchType, DispatchTypes.DYNAMIC_DISPATCH)
+            diffGraph.addEdge(fieldAccess, baseNode, EdgeTypes.RECEIVER)
           }
+
+          diffGraph.removeNode(fieldIdentifierNode)
         }
       }
     }
