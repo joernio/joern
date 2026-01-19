@@ -34,7 +34,8 @@ class ExtensionsPass(
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     handleExtensionMembers(diffGraph)
     handleExtensionCalls(diffGraph)
-    handleMemberPropertyCalls(diffGraph)
+    handleMemberPropertyGetterCalls(diffGraph)
+    handleMemberPropertySetterCalls(diffGraph)
     handleInherits(diffGraph)
   }
 
@@ -125,7 +126,7 @@ class ExtensionsPass(
     *     - ensures a `RECEIVER` edge from the access to the base expression and fixes argument indices/orders if its
     *       not from an extension
     */
-  private def handleMemberPropertyCalls(diffGraph: DiffGraphBuilder): Unit = {
+  private def handleMemberPropertyGetterCalls(diffGraph: DiffGraphBuilder): Unit = {
     for {
       fieldAccess         <- cpg.fieldAccess
       baseNode            <- fieldAccess.arguments(1).headOption
@@ -136,19 +137,69 @@ class ExtensionsPass(
       Seq(s"$memberName.getter", memberName).foreach { memberName =>
         val memberFullName = s"$baseFullName.$memberName"
         memberPropertyMapping.get(memberFullName).foreach { propertyFullName =>
-          diffGraph.setNodeProperty(fieldAccess, PropertyNames.Name, memberName)
-          diffGraph.setNodeProperty(fieldAccess, PropertyNames.MethodFullName, propertyFullName)
-          diffGraph.setNodeProperty(baseNode, PropertyNames.ArgumentIndex, 0)
-          diffGraph.setNodeProperty(baseNode, PropertyNames.Order, 1)
+          if (fieldAccess.astIn.isCall.isAssignment.isEmpty) {
+            diffGraph.setNodeProperty(fieldAccess, PropertyNames.Name, memberName)
+            diffGraph.setNodeProperty(fieldAccess, PropertyNames.MethodFullName, propertyFullName)
+            diffGraph.setNodeProperty(baseNode, PropertyNames.ArgumentIndex, 0)
+            diffGraph.setNodeProperty(baseNode, PropertyNames.Order, 1)
 
-          if (!propertyFullName.contains("<extension>")) {
-            // Ensure receiver edge from fieldAccess to baseNode only if the access is not from an extension.
-            diffGraph.setNodeProperty(fieldAccess, PropertyNames.DispatchType, DispatchTypes.DYNAMIC_DISPATCH)
-            diffGraph.addEdge(fieldAccess, baseNode, EdgeTypes.RECEIVER)
+            if (!propertyFullName.contains("<extension>")) {
+              // Ensure receiver edge from fieldAccess to baseNode only if the access is not from an extension.
+              diffGraph.setNodeProperty(fieldAccess, PropertyNames.DispatchType, DispatchTypes.DYNAMIC_DISPATCH)
+              diffGraph.addEdge(fieldAccess, baseNode, EdgeTypes.RECEIVER)
+            }
+
+            diffGraph.removeNode(fieldIdentifierNode)
           }
-
-          diffGraph.removeNode(fieldIdentifierNode)
         }
+      }
+    }
+  }
+
+  /** Rewrites computed-property setter accesses (assignments to a property) to the corresponding setter call if
+    * resolvable.
+    *
+    * For each assignment call node:
+    *   - identifies the `fieldAccess` on the assignment target and extracts the base expression and member identifier
+    *   - derives the setter member fullName candidate as `T.m.setter`
+    *   - if a match exists in `memberPropertyMapping`, updates the assignment call to reference the setter by setting:
+    *     - `NAME` and `METHOD_FULL_NAME` to the resolved setter
+    *     - `DISPATCH_TYPE` to `DYNAMIC_DISPATCH` (only when not an extension)
+    *     - fixes argument indices/orders and ensures `RECEIVER`, `AST`, and `ARGUMENT` edges are consistent
+    *     - removes intermediate `fieldAccess` and member identifier nodes/edges that are no longer needed
+    */
+  private def handleMemberPropertySetterCalls(diffGraph: DiffGraphBuilder): Unit = {
+    for {
+      assignmentCall      <- cpg.assignment
+      sourceNode          <- assignmentCall.source
+      fieldAccess         <- assignmentCall.target.fieldAccess
+      baseNode            <- fieldAccess.arguments(1).headOption
+      fieldIdentifierNode <- fieldAccess.arguments(2).headOption
+      baseFullName        <- typeFullNameOf(baseNode)
+    } {
+      val memberName     = s"${fieldIdentifierNode.code}.setter"
+      val memberFullName = s"$baseFullName.$memberName"
+      memberPropertyMapping.get(memberFullName).foreach { propertyFullName =>
+        diffGraph.setNodeProperty(assignmentCall, PropertyNames.Name, memberName)
+        diffGraph.setNodeProperty(assignmentCall, PropertyNames.MethodFullName, propertyFullName)
+        diffGraph.setNodeProperty(baseNode, PropertyNames.ArgumentIndex, 0)
+        diffGraph.setNodeProperty(baseNode, PropertyNames.Order, 1)
+
+        if (!propertyFullName.contains("<extension>")) {
+          // Ensure receiver edge from fieldAccess to baseNode only if the access is not from an extension.
+          diffGraph.setNodeProperty(assignmentCall, PropertyNames.DispatchType, DispatchTypes.DYNAMIC_DISPATCH)
+          diffGraph.addEdge(assignmentCall, baseNode, EdgeTypes.RECEIVER)
+        }
+
+        diffGraph.addEdge(assignmentCall, baseNode, EdgeTypes.AST)
+        diffGraph.addEdge(assignmentCall, baseNode, EdgeTypes.ARGUMENT)
+        diffGraph.setNodeProperty(sourceNode, PropertyNames.ArgumentIndex, 1)
+        diffGraph.setNodeProperty(sourceNode, PropertyNames.Order, 2)
+
+        fieldAccess.outE(EdgeTypes.AST).foreach(diffGraph.removeEdge)
+        fieldAccess.outE(EdgeTypes.ARGUMENT).foreach(diffGraph.removeEdge)
+        diffGraph.removeNode(fieldAccess)
+        diffGraph.removeNode(fieldIdentifierNode)
       }
     }
   }

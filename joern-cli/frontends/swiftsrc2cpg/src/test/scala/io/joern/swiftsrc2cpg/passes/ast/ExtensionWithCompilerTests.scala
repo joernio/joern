@@ -82,6 +82,9 @@ class ExtensionWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
           |  print(foo.b)
           |  print(foo.x)
           |  print(foo.y)
+          |
+          |  foo.a = 10
+          |  foo.b = 20
           |}
           |""".stripMargin)
       cpg.method.fullName.sorted shouldBe Seq(
@@ -101,11 +104,14 @@ class ExtensionWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
         "SwiftTest.main:()->()"
       )
 
+      cpg.call.isAssignment.code.l should not contain allElementsOf(List("foo.a = 10", "foo.b = 20"))
       cpg.call.methodFullName.sorted should contain allElementsOf Seq(
         "SwiftTest.Foo.a.getter:Swift.Int",
         "SwiftTest.Foo<extension>.b.getter:Swift.Int",
         "SwiftTest.Foo.x:Swift.Int",
-        "SwiftTest.Foo<extension>.y:Swift.Int"
+        "SwiftTest.Foo<extension>.y:Swift.Int",
+        "SwiftTest.Foo.a.setter:Swift.Int",
+        "SwiftTest.Foo<extension>.b.setter:Swift.Int"
       )
 
       val List(aGetter) = cpg.call.nameExact("a.getter").codeExact("foo.a").l
@@ -133,6 +139,19 @@ class ExtensionWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
       yGetter.receiver shouldBe empty
 
       cpg.typeDecl.nameExact("Foo").member.name.sorted shouldBe Seq("a", "b", "x", "y")
+
+      val List(setACall) = cpg.call.nameExact("a.setter").codeExact("foo.a = 10").l
+      setACall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      setACall.methodFullName shouldBe "SwiftTest.Foo.a.setter:Swift.Int"
+      setACall.receiver.argumentIndex.loneElement shouldBe 0
+      setACall.receiver.code.loneElement shouldBe "foo"
+      setACall.argument(1).code shouldBe "10"
+
+      val List(setBCall) = cpg.call.nameExact("b.setter").codeExact("foo.b = 20").l
+      setBCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      setBCall.methodFullName shouldBe "SwiftTest.Foo<extension>.b.setter:Swift.Int"
+      setBCall.receiver shouldBe empty
+      setBCall.argument(1).code shouldBe "20"
     }
 
   }
