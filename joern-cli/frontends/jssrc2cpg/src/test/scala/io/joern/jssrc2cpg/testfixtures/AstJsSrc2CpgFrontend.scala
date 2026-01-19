@@ -17,14 +17,11 @@ trait AstJsSrc2CpgFrontend extends LanguageFrontend {
   override type ConfigType = Config
 
   def execute(sourceCodePath: java.io.File): Cpg = {
-    val cpgOutFile = FileUtil.newTemporaryFile(suffix = "cpg.bin")
-    FileUtil.deleteOnExit(cpgOutFile)
-    val cpg          = newEmptyCpg(Option(cpgOutFile.toString))
+    val cpg          = newEmptyCpg()
     val pathAsString = sourceCodePath.getAbsolutePath
     val config = getConfig()
       .fold(Config())(_.asInstanceOf[Config])
       .withInputPath(pathAsString)
-      .withOutputPath(pathAsString)
     val hash = HashUtil.sha256(pathAsString)
 
     new JavaScriptMetaDataPass(cpg, hash, pathAsString).createAndApply()
