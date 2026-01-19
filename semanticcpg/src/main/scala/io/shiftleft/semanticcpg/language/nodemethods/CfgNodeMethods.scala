@@ -112,10 +112,11 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
           method
         case _ =>
           throw new RuntimeException(s"""|This method cannot be used on ANNOTATION or ANNOTATION_LITERAL nodes as they
-                                         |do not necessarily belong to a METHOD. This is a problem is caused by annotations
+                                         |do not necessarily belong to a METHOD. This problem is caused by annotations
                                          |invalidly implementing the CFG trait which we sadly cannot easily fix.
-                                         |As workaround you have to manually walk the AST or test a CONTAINS edge expansion
-                                         |to check if an annotation is part of a method or not.
+                                         |As workaround you can use the `methodOption` extension on the annotation
+                                         |nodes, manually walk the AST or test a CONTAINS edge expansion to check if 
+                                         |an annotation is part of a method or not.
                                          |""".stripMargin)
       }
     case _: Expression | _: JumpTarget => walkUpContains(node)
