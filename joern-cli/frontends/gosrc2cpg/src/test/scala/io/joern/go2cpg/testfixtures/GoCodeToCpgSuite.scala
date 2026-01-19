@@ -35,14 +35,11 @@ class DefaultTestCpgWithGo(val fileSuffix: String) extends DefaultTestCpg with S
   }
 
   def execute(sourceCodePath: java.io.File): Cpg = {
-    val cpgOutFile = FileUtil.newTemporaryFile("go2cpg.bin")
-    FileUtil.deleteOnExit(cpgOutFile)
     goSrc2Cpg = Some(new GoSrc2Cpg(this.goGlobal))
     val config = getConfig()
       .collectFirst { case x: Config => x }
       .getOrElse(Config())
       .withInputPath(sourceCodePath.getAbsolutePath)
-      .withOutputPath(cpgOutFile.toString)
     val res = goSrc2Cpg.get.createCpg(config).get
     new PostFrontendValidator(res, false).run()
     res

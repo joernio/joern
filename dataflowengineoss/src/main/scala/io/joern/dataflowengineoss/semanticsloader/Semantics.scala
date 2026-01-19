@@ -1,5 +1,6 @@
 package io.joern.dataflowengineoss.semanticsloader
 
+import io.joern.dataflowengineoss.semanticsloader.FlowPath.{FlowMapping, PassThroughMapping}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.semanticcpg.language.*
@@ -135,33 +136,38 @@ object ParameterNode {
 
 /** Represents explicit mappings or special cases.
   */
-sealed trait FlowPath
 
-/** Maps flow between arguments based on how they interact as parameters at the callee.
-  *
-  * @param src
-  *   source of the flow.
-  * @param dst
-  *   destination of the flow.
+/** Represents explicit mappings or special cases as a Scala 3 enum.
   */
-case class FlowMapping(src: FlowNode, dst: FlowNode) extends FlowPath
+enum FlowPath {
 
-object FlowMapping {
-  def apply(from: Int, to: Int): FlowMapping = FlowMapping(ParameterNode(from), ParameterNode(to))
+  /** Maps flow between arguments based on how they interact as parameters at the callee.
+    *
+    * @param src
+    *   source of the flow.
+    * @param dst
+    *   destination of the flow.
+    */
+  case FlowMapping(src: FlowNode, dst: FlowNode)
 
-  def apply(fromIdx: Int, from: String, toIdx: Int, to: String): FlowMapping =
-    FlowMapping(ParameterNode(fromIdx, from), ParameterNode(toIdx, to))
-
-  def apply(fromIdx: Int, from: String, toIdx: Int): FlowMapping =
-    FlowMapping(ParameterNode(fromIdx, from), ParameterNode(toIdx))
-
-  def apply(from: Int, toIdx: Int, to: String): FlowMapping = FlowMapping(ParameterNode(from), ParameterNode(toIdx, to))
-
+  /** Represents an instance where parameters are not sanitized, may affect the return value, and do not cross-taint.
+    * e.g. foo(1, 2) = 1 -> 1, 2 -> 2, 1 -> -1, 2 -> -1
+    *
+    * The main benefit is that this works for unbounded parameters e.g. VARARGS. Note this does not taint 0 -> 0.
+    */
+  case PassThroughMapping
 }
 
-/** Represents an instance where parameters are not sanitized, may affect the return value, and do not cross-taint. e.g.
-  * foo(1, 2) = 1 -> 1, 2 -> 2, 1 -> -1, 2 -> -1
-  *
-  * The main benefit is that this works for unbounded parameters e.g. VARARGS. Note this does not taint 0 -> 0.
-  */
-object PassThroughMapping extends FlowPath
+object FlowPath {
+
+  def FlowMapping(from: Int, to: Int): FlowPath = FlowMapping(ParameterNode(from), ParameterNode(to))
+
+  def FlowMapping(fromIdx: Int, from: String, toIdx: Int, to: String): FlowPath =
+    FlowMapping(ParameterNode(fromIdx, from), ParameterNode(toIdx, to))
+
+  def FlowMapping(fromIdx: Int, from: String, toIdx: Int): FlowPath =
+    FlowMapping(ParameterNode(fromIdx, from), ParameterNode(toIdx))
+
+  def FlowMapping(from: Int, toIdx: Int, to: String): FlowPath =
+    FlowMapping(ParameterNode(from), ParameterNode(toIdx, to))
+}

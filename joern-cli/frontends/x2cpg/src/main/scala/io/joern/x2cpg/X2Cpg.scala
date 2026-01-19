@@ -17,7 +17,7 @@ import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
 object X2CpgConfig {
-  def defaultOutputPath: String = "cpg.bin"
+  def defaultOutputPath: String = ""
 
   final case class GenericConfig(
     inputPath: String = "",

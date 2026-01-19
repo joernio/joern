@@ -790,7 +790,6 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
 
   private def codeForTypeDecl(typ: TypeDeclaration[?], isInterface: Boolean): String = {
     val codeBuilder = new mutable.StringBuilder()
-
     typ.getModifiers.asScala
       .foreach { modifier =>
         codeBuilder.append(modifier.getKeyword.asString())
@@ -806,6 +805,15 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
         "class "
     codeBuilder.append(classPrefix)
     codeBuilder.append(typ.getNameAsString)
+
+    val typeParameters = typ match {
+      case classOrInterface: ClassOrInterfaceDeclaration => classOrInterface.getTypeParameters.asScala
+      case recordDeclaration: RecordDeclaration          => recordDeclaration.getTypeParameters.asScala
+      case _                                             => Nil
+    }
+    if (typeParameters.nonEmpty) {
+      codeBuilder.append(typeParameters.mkString("<", ", ", ">"))
+    }
 
     codeBuilder.toString()
   }
