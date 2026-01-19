@@ -35,11 +35,6 @@ class TypeNodeTests extends PhpCode2CpgFixture {
       cpg.typeDecl.name("Baz").baseTypeDecl.l.map(_.name) shouldBe List("Bar", "TraitA", "TraitB", "Foo")
       cpg.typeDecl.name("Baz").baseTypeDeclTransitive.l.map(_.name) shouldBe List("Bar", "TraitA", "TraitB", "Foo")
     }
-
-    "have baseTypeDecl steps for meta TYPE_DECL (<metaclass>)" in {
-      cpg.typeDecl.name(s"Baz").baseTypeDecl.l.map(_.name) shouldBe List(s"Bar", s"TraitA", s"TraitB", s"Foo")
-      cpg.typeDecl.name(s"Baz").baseTypeDeclTransitive.l.map(_.name) shouldBe List(s"Bar", s"TraitA", s"TraitB", s"Foo")
-    }
   }
 
   "known types without explicit typeDecls" should {

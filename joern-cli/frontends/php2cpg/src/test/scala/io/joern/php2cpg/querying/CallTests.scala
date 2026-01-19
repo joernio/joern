@@ -143,7 +143,7 @@ class CallTests extends PhpCode2CpgFixture {
       barCall.receiver.isEmpty shouldBe true
       barCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       barCall.code shouldBe "self::bar($x)"
-      barCall.staticReceiver shouldBe Some("ClassA<metaclass>")
+      barCall.staticReceiver shouldBe Some("ClassA")
     }
   }
 
@@ -334,7 +334,7 @@ class CallTests extends PhpCode2CpgFixture {
       test1.name shouldBe "test1"
       test1.methodFullName shouldBe "Foo\\Bar\\baz.test1"
       test1.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      test1.staticReceiver shouldBe Some("Foo\\Bar\\baz<metaclass>")
+      test1.staticReceiver shouldBe Some("Foo\\Bar\\baz")
     }
 
     "be unknown in the case of dynamic calls" in {
