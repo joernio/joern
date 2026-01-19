@@ -137,7 +137,8 @@ class ExtensionsPass(
       Seq(s"$memberName.getter", memberName).foreach { memberName =>
         val memberFullName = s"$baseFullName.$memberName"
         memberPropertyMapping.get(memberFullName).foreach { propertyFullName =>
-          if (fieldAccess.astIn.isCall.isAssignment.isEmpty) {
+          val parentAssignmentCallMaybe = fieldAccess.astIn.isCall.isAssignment.headOption
+          if (!parentAssignmentCallMaybe.exists(_.target == fieldAccess)) {
             diffGraph.setNodeProperty(fieldAccess, PropertyNames.Name, memberName)
             diffGraph.setNodeProperty(fieldAccess, PropertyNames.MethodFullName, propertyFullName)
             diffGraph.setNodeProperty(baseNode, PropertyNames.ArgumentIndex, 0)
