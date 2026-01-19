@@ -367,6 +367,8 @@ class TsClassesAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
       val List(credentialsParam) = cpg.parameter.nameExact("credentials").l
       credentialsParam.typeFullName shouldBe "Test0.ts::program:Test:run:<anon-class>0"
       // should not produce dangling nodes that are meant to be inside procedures
+
+      val x = cpg.all.collectAll[CfgNode].whereNot(_.astParent).l
       cpg.all.collectAll[CfgNode].whereNot(_.astParent).size shouldBe 0
       cpg.identifier.count(_.refsTo.size > 1) shouldBe 0
       cpg.identifier.whereNot(_.refsTo).size shouldBe 0

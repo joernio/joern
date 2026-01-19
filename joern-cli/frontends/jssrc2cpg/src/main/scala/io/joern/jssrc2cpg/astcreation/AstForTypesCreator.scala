@@ -528,10 +528,12 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         clazz.columnNumber
       )
 
-      val annotationAst = createClassAnnotationAst(clazz, classIdNode)
-      if (annotationAst.root.isDefined) {
+      val classAnnotationAst     = createClassAnnotationAst(clazz, classIdNode)
+      val propertyAnnotationAsts = createPropertyAnnotationAsts(clazz, classIdNode)
+      val methodAnnotationAsts   = createMethodAnnotationAsts(clazz, classIdNode)
+      if (classAnnotationAst.root.isDefined || propertyAnnotationAsts.nonEmpty || methodAnnotationAsts.nonEmpty) {
         val blockNode_   = blockNode(clazz)
-        val childrenAsts = List(assignmentAst, annotationAst)
+        val childrenAsts = List(assignmentAst, classAnnotationAst) ++ propertyAnnotationAsts ++ methodAnnotationAsts
         setArgumentIndices(childrenAsts)
         Ast(blockNode_).withChildren(childrenAsts)
       } else assignmentAst
@@ -555,7 +557,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
       val receiverNode = identifierNode(classNodeInfo, "__decorate")
       scope.addVariableReference(receiverNode.name, receiverNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
-      val thisNode = identifierNode(classNodeInfo, "this").dynamicTypeHintFullName(typeHintForThisExpression())
+      val thisNode = identifierNode(classNodeInfo, "this").dynamicTypeHintFullName(rootTypeDecl.map(_.fullName).toSeq)
       scope.addVariableReference(thisNode.name, thisNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
 
       val decorateCallNode =
@@ -588,6 +590,311 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         classNodeInfo.columnNumber
       )
     } else Ast()
+  }
+
+  private def createMetadataCallTypeAst(tsMethodNodeInfo: BabelNodeInfo): Ast = {
+    val metadataCallRecNode = identifierNode(tsMethodNodeInfo, "__metadata")
+    scope.addVariableReference(
+      metadataCallRecNode.name,
+      metadataCallRecNode,
+      Defines.Any,
+      EvaluationStrategies.BY_REFERENCE
+    )
+    val metadataCallRecThisNode =
+      identifierNode(tsMethodNodeInfo, "this").dynamicTypeHintFullName(rootTypeDecl.map(_.fullName).toSeq)
+    scope.addVariableReference(
+      metadataCallRecThisNode.name,
+      metadataCallRecThisNode,
+      Defines.Any,
+      EvaluationStrategies.BY_REFERENCE
+    )
+
+    val designTypeLiteralNode = literalNode(tsMethodNodeInfo, "'design:type'", Defines.String)
+    val functionLiteralNode   = literalNode(tsMethodNodeInfo, "Function", Defines.Any)
+    val metadataCallType =
+      callNode(
+        tsMethodNodeInfo,
+        s"""__metadata("design:type", Function)""",
+        "__metadata",
+        DispatchTypes.DYNAMIC_DISPATCH
+      )
+    val metadataTypeArgAsts = Seq(Ast(designTypeLiteralNode), Ast(functionLiteralNode))
+    callAst(
+      metadataCallType,
+      metadataTypeArgAsts,
+      receiver = Option(Ast(metadataCallRecNode)),
+      base = Option(Ast(metadataCallRecThisNode))
+    )
+  }
+
+  private def createMetadataCallParamTypesAst(tsMethodNodeInfo: BabelNodeInfo, numParams: Int): Ast = {
+    val metadataCallRecNode = identifierNode(tsMethodNodeInfo, "__metadata")
+    scope.addVariableReference(
+      metadataCallRecNode.name,
+      metadataCallRecNode,
+      Defines.Any,
+      EvaluationStrategies.BY_REFERENCE
+    )
+    val metadataCallThisNode =
+      identifierNode(tsMethodNodeInfo, "this").dynamicTypeHintFullName(rootTypeDecl.map(_.fullName).toSeq)
+    scope.addVariableReference(
+      metadataCallThisNode.name,
+      metadataCallThisNode,
+      Defines.Any,
+      EvaluationStrategies.BY_REFERENCE
+    )
+
+    val designParamTypeLiteralNode = literalNode(tsMethodNodeInfo, "'design:paramtypes'", Defines.String)
+
+    val objectLiteralNode = literalNode(tsMethodNodeInfo, "Object", Defines.Object)
+
+    val blockNode_ = blockNode(tsMethodNodeInfo)
+    scope.pushNewBlockScope(blockNode_)
+    localAstParentStack.push(blockNode_)
+
+    val tmpName      = generateUnusedVariableName(usedVariableNames, "_tmp")
+    val localTmpNode = localNode(tsMethodNodeInfo, tmpName, tmpName, Defines.Any).order(0)
+    val tmpArrayNode = identifierNode(tsMethodNodeInfo, tmpName)
+    diffGraph.addEdge(localAstParentStack.head, localTmpNode, EdgeTypes.AST)
+    scope.addVariableReference(tmpName, tmpArrayNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+
+    val arrayCallNode =
+      callNode(
+        tsMethodNodeInfo,
+        s"${EcmaBuiltins.arrayFactory}()",
+        EcmaBuiltins.arrayFactory,
+        DispatchTypes.STATIC_DISPATCH
+      )
+
+    val lineNumber     = tsMethodNodeInfo.lineNumber
+    val columnNumber   = tsMethodNodeInfo.columnNumber
+    val assignmentCode = s"${localTmpNode.code} = ${arrayCallNode.code}"
+    val assignmentTmpArrayCallNode =
+      createAssignmentCallAst(tmpArrayNode, arrayCallNode, assignmentCode, lineNumber, columnNumber)
+
+    val elementAsts = (0 until numParams).toList.map { _ =>
+      val objectLiteralNode = literalNode(tsMethodNodeInfo, "Object", Defines.Object)
+      val pushCallNode      = callNode(tsMethodNodeInfo, s"$tmpName.push(Object)", "", DispatchTypes.DYNAMIC_DISPATCH)
+
+      val baseNode   = identifierNode(tsMethodNodeInfo, tmpName)
+      val memberNode = fieldIdentifierNode(tsMethodNodeInfo, "push", "push")
+      val receiverNode =
+        createFieldAccessCallAst(baseNode, memberNode, tsMethodNodeInfo.lineNumber, tsMethodNodeInfo.columnNumber)
+      val thisPushNode = identifierNode(tsMethodNodeInfo, tmpName)
+      callAst(
+        pushCallNode,
+        List(Ast(objectLiteralNode)),
+        receiver = Option(receiverNode),
+        base = Option(Ast(thisPushNode))
+      )
+    }
+
+    val tmpArrayReturnNode = identifierNode(tsMethodNodeInfo, tmpName)
+
+    scope.popScope()
+    localAstParentStack.pop()
+
+    val blockChildrenAsts = assignmentTmpArrayCallNode +: elementAsts :+ Ast(tmpArrayReturnNode)
+    setArgumentIndices(blockChildrenAsts)
+    val blockAst_ = blockAst(blockNode_, blockChildrenAsts)
+
+    val metadataParamTypeCall =
+      callNode(
+        tsMethodNodeInfo,
+        s"""__metadata("design:paramtypes", [${List.fill(numParams)("Object").mkString(",")}])""",
+        "__metadata",
+        DispatchTypes.DYNAMIC_DISPATCH
+      )
+    val metadataTypeArgAsts = Seq(Ast(designParamTypeLiteralNode), blockAst_)
+    callAst(
+      metadataParamTypeCall,
+      metadataTypeArgAsts,
+      receiver = Option(Ast(metadataCallRecNode)),
+      base = Option(Ast(metadataCallThisNode))
+    )
+  }
+
+  private def createMetadataCallReturnTypeAst(tsMethodNodeInfo: BabelNodeInfo, tpe: String): Ast = {
+    val metadataCallRecNode = identifierNode(tsMethodNodeInfo, "__metadata")
+    scope.addVariableReference(
+      metadataCallRecNode.name,
+      metadataCallRecNode,
+      Defines.Any,
+      EvaluationStrategies.BY_REFERENCE
+    )
+    val metadataCallTypeRecThisNode =
+      identifierNode(tsMethodNodeInfo, "this").dynamicTypeHintFullName(rootTypeDecl.map(_.fullName).toSeq)
+    scope.addVariableReference(
+      metadataCallTypeRecThisNode.name,
+      metadataCallTypeRecThisNode,
+      Defines.Any,
+      EvaluationStrategies.BY_REFERENCE
+    )
+
+    val designTypeLiteralNode = literalNode(tsMethodNodeInfo, "'design:returntype'", Defines.String)
+    val tpeLiteralNode        = literalNode(tsMethodNodeInfo, tpe, Defines.Any)
+    val metadataCallType =
+      callNode(tsMethodNodeInfo, s"""__metadata("design:type", $tpe)""", "__metadata", DispatchTypes.DYNAMIC_DISPATCH)
+    val metadataTypeArgAsts = Seq(Ast(designTypeLiteralNode), Ast(tpeLiteralNode))
+    callAst(
+      metadataCallType,
+      metadataTypeArgAsts,
+      receiver = Option(Ast(metadataCallRecNode)),
+      base = Option(Ast(metadataCallTypeRecThisNode))
+    )
+  }
+
+  private def createPropertyAnnotationAsts(classNodeInfo: BabelNodeInfo, classIdNode: NewIdentifier): Seq[Ast] = {
+    val tsProperties = classMembers(classNodeInfo).flatMap { member =>
+      val memberNodeInfo = createBabelNodeInfo(member)
+      if (
+        memberNodeInfo.node == ClassProperty ||
+        memberNodeInfo.node == ClassPrivateProperty
+      ) {
+        Some(memberNodeInfo)
+      } else {
+        None
+      }
+    }
+
+    tsProperties.map { tsPropertyNodeInfo =>
+      val decoratorAsts =
+        decoratorExpressionElements(tsPropertyNodeInfo).map(e => astForNodeWithFunctionReference(e.json))
+      if (decoratorAsts.nonEmpty) {
+        val name = tsPropertyNodeInfo.node match {
+          case ClassProperty        => code(tsPropertyNodeInfo.json("key"))
+          case ClassPrivateProperty => code(tsPropertyNodeInfo.json("key")("id"))
+          case _                    => tsPropertyNodeInfo.code
+        }
+        val propertyTpe = typeFor(tsPropertyNodeInfo)
+
+        val receiverNode = identifierNode(classNodeInfo, "__decorate")
+        scope.addVariableReference(receiverNode.name, receiverNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+        val thisNode = identifierNode(classNodeInfo, "this").dynamicTypeHintFullName(rootTypeDecl.map(_.fullName).toSeq)
+        scope.addVariableReference(thisNode.name, thisNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+
+        val classPrototypeAccessAst = createFieldAccessCallAst(
+          identifierNode(classNodeInfo, classIdNode.name),
+          fieldIdentifierNode(classNodeInfo, "prototype", "prototype"),
+          classNodeInfo.lineNumber,
+          classNodeInfo.columnNumber
+        )
+        val propertyNameNode = literalNode(tsPropertyNodeInfo, s"'$name'", Defines.String)
+        val voidCallNode_    = voidCallNode(line(tsPropertyNodeInfo), column(tsPropertyNodeInfo))
+
+        val arg1Code = decoratorAsts.flatMap(_.root.map(codeOf)).mkString(",")
+        val decorateCallCode =
+          s"__decorate([$arg1Code], ${codeOf(classPrototypeAccessAst.nodes.head)}, ${propertyNameNode.code}, ${voidCallNode_.code})"
+
+        val decorateCallNode = callNode(classNodeInfo, decorateCallCode, "__decorate", DispatchTypes.DYNAMIC_DISPATCH)
+        val subAst           = astForDecorateArray(classNodeInfo, decoratorAsts)
+        callAst(
+          decorateCallNode,
+          subAst +: Seq(classPrototypeAccessAst, Ast(propertyNameNode), Ast(voidCallNode_)),
+          receiver = Option(Ast(receiverNode)),
+          base = Option(Ast(thisNode))
+        )
+      } else {
+        Ast()
+      }
+    }
+  }
+
+  private def createMethodAnnotationAsts(classNodeInfo: BabelNodeInfo, classIdNode: NewIdentifier): Seq[Ast] = {
+    val tsMethods = classMembers(classNodeInfo).flatMap { member =>
+      val memberNodeInfo = createBabelNodeInfo(member)
+      if (memberNodeInfo.node == ClassMethod) {
+        Some(memberNodeInfo)
+      } else {
+        None
+      }
+    }
+
+    tsMethods.map { tsMethodNodeInfo =>
+      val decoratorAsts =
+        decoratorExpressionElements(tsMethodNodeInfo).map(e => astForNodeWithFunctionReference(e.json))
+      val (name, fullName) = calcMethodNameAndFullName(tsMethodNodeInfo)
+      val methodTpe        = typeFor(tsMethodNodeInfo)
+      val paramNodeInfos = if (hasKey(tsMethodNodeInfo.json, "parameters")) {
+        tsMethodNodeInfo.json("parameters").arr.toSeq
+      } else {
+        tsMethodNodeInfo.json("params").arr.toSeq
+      }
+      val paramDecoratorAsts = paramNodeInfos.zipWithIndex.flatMap { case (value, idx) =>
+        val paramAsts =
+          decoratorExpressionElements(createBabelNodeInfo(value)).map(e => astForNodeWithFunctionReference(e.json))
+
+        if (paramAsts.isEmpty) {
+          Seq.empty
+        } else {
+          val paramNodeInfo = createBabelNodeInfo(value)
+          val receiverNode  = identifierNode(paramNodeInfo, "__param")
+          scope.addVariableReference(receiverNode.name, receiverNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+          val thisNode =
+            identifierNode(paramNodeInfo, "this").dynamicTypeHintFullName(rootTypeDecl.map(_.fullName).toSeq)
+          scope.addVariableReference(thisNode.name, thisNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+
+          paramAsts.map { p =>
+            val callNode_ = callNode(
+              paramNodeInfo,
+              s"__param($idx, ${codeOf(p.nodes.head)})",
+              "__param",
+              DispatchTypes.DYNAMIC_DISPATCH
+            )
+            val idxNode = literalNode(paramNodeInfo, s"$idx", Defines.Number)
+            val argAsts = Seq(Ast(idxNode), p)
+            val paramDecorateCallAst =
+              callAst(callNode_, argAsts, receiver = Option(Ast(receiverNode)), base = Option(Ast(thisNode)))
+            paramDecorateCallAst
+          }
+        }
+      }
+
+      if (decoratorAsts.nonEmpty || paramDecoratorAsts.nonEmpty) {
+        val receiverNode = identifierNode(classNodeInfo, "__decorate")
+        scope.addVariableReference(receiverNode.name, receiverNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+        val thisNode = identifierNode(classNodeInfo, "this").dynamicTypeHintFullName(rootTypeDecl.map(_.fullName).toSeq)
+        scope.addVariableReference(thisNode.name, thisNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+
+        val classPrototypeAccessAst = createFieldAccessCallAst(
+          identifierNode(classNodeInfo, classIdNode.name),
+          fieldIdentifierNode(classNodeInfo, "prototype", "prototype"),
+          classNodeInfo.lineNumber,
+          classNodeInfo.columnNumber
+        )
+        val functionNameNode          = literalNode(tsMethodNodeInfo, s"'$name'", Defines.String)
+        val nullNode                  = literalNode(tsMethodNodeInfo, "null", Defines.Null)
+        val metadataCallTypeAst       = createMetadataCallTypeAst(tsMethodNodeInfo)
+        val metadataCallParamTypesAst = createMetadataCallParamTypesAst(tsMethodNodeInfo, paramNodeInfos.size)
+        val metadataCallReturnTypeAst = createMetadataCallReturnTypeAst(tsMethodNodeInfo, methodTpe)
+
+        val arg1Code = decoratorAsts.flatMap(_.root.map(codeOf)).mkString(",")
+        val arg2Code = paramDecoratorAsts.flatMap(_.root.map(codeOf)).mkString(",")
+        val arg3Code = codeOf(metadataCallTypeAst.root.get)
+        val arg4Code = codeOf(metadataCallParamTypesAst.root.get)
+        val arg5Code = codeOf(metadataCallReturnTypeAst.root.get)
+        val decorateCallCode =
+          s"__decorate([$arg1Code, $arg2Code, $arg3Code, $arg4Code, $arg5Code], ${codeOf(classPrototypeAccessAst.nodes.head)}, ${functionNameNode.code}, null)"
+
+        val decorateCallNode = callNode(classNodeInfo, decorateCallCode, "__decorate", DispatchTypes.DYNAMIC_DISPATCH)
+        val subAst = astForDecorateArray(
+          classNodeInfo,
+          decoratorAsts ++ paramDecoratorAsts ++ Seq(
+            metadataCallTypeAst,
+            metadataCallParamTypesAst,
+            metadataCallReturnTypeAst
+          )
+        )
+        callAst(
+          decorateCallNode,
+          subAst +: Seq(classPrototypeAccessAst, Ast(functionNameNode), Ast(nullNode)),
+          receiver = Option(Ast(receiverNode)),
+          base = Option(Ast(thisNode))
+        )
+      } else {
+        Ast()
+      }
+    }
   }
 
   private def astForDecorateArray(classNodeInfo: BabelNodeInfo, decoratorAsts: List[Ast]): Ast = {

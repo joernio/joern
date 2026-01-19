@@ -20,13 +20,7 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
         |    return "Hello";
         |  }
         |}""".stripMargin)
-      cpg.method.nameExact("greet").ast.isCall.code.l shouldBe List(
-        "a(false)",
-        "b(foo)",
-        "c(foo=false)",
-        "foo=false",
-        "d()"
-      )
+      cpg.method.nameExact("greet").ast.isCall shouldBe empty
       inside(cpg.typeDecl.name("Greeter").method.name("greet").annotation.l) {
         case List(annotationA, annotationB, annotationC, annotationD) =>
           annotationA.code shouldBe "@a(false)"
@@ -187,14 +181,7 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
         |    return this._x;
         |  }
         |}""".stripMargin)
-      cpg.method.nameExact("x").ast.isCall.code.l shouldBe List(
-        "a(false)",
-        "b(foo)",
-        "c(foo=false)",
-        "foo=false",
-        "d()",
-        "this._x"
-      )
+      cpg.method.nameExact("x").ast.isCall.code.l shouldBe List("this._x")
       inside(cpg.typeDecl.name("Foo").method.name("x").annotation.l) {
         case List(annotationA, annotationB, annotationC, annotationD) =>
           annotationA.code shouldBe "@a(false)"
@@ -255,6 +242,59 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
         "_tmp_0.push",
         "NgModule(() => { })"
       )
+    }
+
+    "create annotations correctly for class properties" in {
+      val cpg = code("""
+          |class Foo {
+          |  @format("a, %s")
+          |  a: string;
+          |
+          |  @format("b, %s")
+          |  @validate("isString")
+          |  b: string;
+          |}
+          |""".stripMargin)
+      val List(reqAAnnotation) = cpg.member.nameExact("a").annotation.l
+      reqAAnnotation.code shouldBe "@format(\"a, %s\")"
+      reqAAnnotation.name shouldBe "format"
+      val List(bFormatAnnotation, bValidateAnnotation) = cpg.member.nameExact("b").annotation.l
+      bFormatAnnotation.code shouldBe "@format(\"b, %s\")"
+      bFormatAnnotation.name shouldBe "format"
+      bValidateAnnotation.code shouldBe "@validate(\"isString\")"
+      bValidateAnnotation.name shouldBe "validate"
+
+      val List(decorateACall, decorateBCall) = cpg.call.name("__decorate").l
+      decorateACall.code shouldBe """__decorate([format("a, %s")], Foo.prototype, 'a', void 0)"""
+      decorateBCall.code shouldBe """__decorate([format("b, %s"),validate("isString")], Foo.prototype, 'b', void 0)"""
+    }
+
+    "create annotations correctly for class methods" in {
+      val cpg = code("""
+          |class Foo {
+          |  @Get("argA")
+          |  reqA(@Req("reqAParam") request: Request): string {
+          |    return foo();
+          |  }
+          |  @Get("argB")
+          |  @Put("argC")
+          |  reqB(@Req("reqBParam1") request1: Request, @Req("reqBParam2") request2: Request): number {
+          |    return bar();
+          |  }
+          |}
+          |""".stripMargin)
+      val List(reqAAnnotation) = cpg.method.nameExact("reqA").annotation.l
+      reqAAnnotation.code shouldBe "@Get(\"argA\")"
+      reqAAnnotation.name shouldBe "Get"
+      val List(reqBAnnotationGet, reqBAnnotationPut) = cpg.method.nameExact("reqB").annotation.l
+      reqBAnnotationGet.code shouldBe "@Get(\"argB\")"
+      reqBAnnotationGet.name shouldBe "Get"
+      reqBAnnotationPut.code shouldBe "@Put(\"argC\")"
+      reqBAnnotationPut.name shouldBe "Put"
+
+      val List(decorateReqACall, decorateReqBCall) = cpg.call.name("__decorate").l
+      decorateReqACall.code shouldBe """__decorate([Get("argA"), __param(0, Req("reqAParam")), __metadata("design:type", Function), __metadata("design:paramtypes", [Object]), __metadata("design:type", __ecma.String)], Foo.prototype, 'reqA', null)"""
+      decorateReqBCall.code shouldBe """__decorate([Get("argB"),Put("argC"), __param(0, Req("reqBParam1")),__param(1, Req("reqBParam2")), __metadata("design:type", Function), __metadata("design:paramtypes", [Object,Object]), __metadata("design:type", __ecma.Number)], Foo.prototype, 'reqB', null)"""
     }
   }
 

@@ -353,11 +353,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       handleParameters(func.json("params").arr.toSeq, mutable.ArrayBuffer.empty[Ast], createLocals = false)
     }
 
-    val annotationExpressionAsts = decoratorExpressionElements(func).map(e => astForNodeWithFunctionReference(e.json))
-
-    val blockAsts = annotationExpressionAsts ++ methodBlockContent.constructorContent.flatMap(m =>
-      methodBlockContent.typeDecl.map(astForClassMember(m, _))
-    )
+    val blockAsts =
+      methodBlockContent.constructorContent.flatMap(m => methodBlockContent.typeDecl.map(astForClassMember(m, _)))
     setArgumentIndices(blockAsts)
 
     val methodReturnNode_ = methodReturnNode(func)
@@ -459,9 +456,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         }
       case _ => createBlockStatementAsts(bodyJson("body"))
     }
-    val annotationExpressionAsts = decoratorExpressionElements(func).map(e => astForNodeWithFunctionReference(e.json))
 
-    val methodBlockChildren = annotationExpressionAsts ++ methodBlockContent.constructorContent.flatMap(m =>
+    val methodBlockChildren = methodBlockContent.constructorContent.flatMap(m =>
       methodBlockContent.typeDecl.map(astForClassMember(m, _))
     ) ++ additionalBlockStatements.toList ++ bodyStmtAsts
     setArgumentIndices(methodBlockChildren)
