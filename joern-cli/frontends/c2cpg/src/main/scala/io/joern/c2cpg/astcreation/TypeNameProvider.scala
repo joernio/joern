@@ -179,11 +179,12 @@ trait TypeNameProvider { this: AstCreator =>
         val (uniqueName, uniqueNameFullName) = scopeLocalUniqueName(name_, fullName_, "enum")
         TypeFullNameInfo(uniqueName, uniqueNameFullName)
       case n: ICPPASTNamespaceDefinition =>
-        val name_     = shortName(n)
+        val name = shortName(n) match {
+          case ""    => "<namespace>"
+          case other => other
+        }
         val fullName_ = fullName(n)
-        val (uniqueName, uniqueNameFullName) =
-          scopeLocalUniqueName(name_, fullName_, "namespace")
-        TypeFullNameInfo(uniqueName, scopeLocalUniqueNamespaceFullName(uniqueNameFullName))
+        TypeFullNameInfo(name, scopeLocalUniqueNamespaceFullName(fullName_))
       case s: IASTCompositeTypeSpecifier =>
         val fullName_ = registerType(cleanType(fullName(s)))
         val name_ = shortName(s) match {

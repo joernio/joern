@@ -320,6 +320,26 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       )
     }
 
+    "handle namespaces and classes with the same name" in {
+      val cpg = code("""
+          |namespace A {
+          |  class A {}
+          |}
+          |
+          |namespace A {
+          |  class B {}
+          |}
+          |""".stripMargin)
+      cpg.namespaceBlock.nameNot("<global>").name.sorted shouldBe Seq("A", "A")
+      cpg.namespaceBlock.nameNot("<global>").fullName.sorted shouldBe Seq("Test0.cpp:A", "Test0.cpp:A<extension>0")
+
+      cpg.typeDecl.nameNot("<global>").name.sorted shouldBe Seq("A", "B")
+
+      // We get these fullNames directly from CDT, so they do not include the filename prefix.
+      // Classes in anonymous namespaces have no fullName prefix at all according to the CDT fullName resolution.
+      cpg.typeDecl.nameNot("<global>").fullName.sorted shouldBe Seq("A.A", "A.B")
+    }
+
     "handle the same namespace appearing multiple times in the same file" in {
       val cpg = code("""
           |namespace A { // old
@@ -351,8 +371,10 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |}
           |""".stripMargin)
       cpg.namespaceBlock.nameNot("<global>").name.sorted shouldBe Seq(
-        "<namespace>0",
-        "<namespace>1",
+        // Within a translation unit each unnamed namespace definition maps to the same unique name:
+        // multiple unnamed namespace definitions in the same scope denote the same unnamed namespace
+        "<namespace>",
+        "<namespace>",
         "A",
         "A",
         "B",
@@ -363,16 +385,16 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
         "X"
       )
       cpg.namespaceBlock.nameNot("<global>").fullName.sorted shouldBe Seq(
-        "Test0.cpp:<namespace>0",
-        "Test0.cpp:<namespace>1",
+        "Test0.cpp:<namespace>",
+        "Test0.cpp:<namespace><extension>0",
         "Test0.cpp:A",
         "Test0.cpp:A.B",
         "Test0.cpp:A.B.C",
-        "Test0.cpp:A.B.C<duplicate>0",
-        "Test0.cpp:A.B<duplicate>0",
-        "Test0.cpp:A<duplicate>0",
+        "Test0.cpp:A.B.C<extension>0",
+        "Test0.cpp:A.B<extension>0",
+        "Test0.cpp:A<extension>0",
         "Test0.cpp:X",
-        "Test0.cpp:X<duplicate>0"
+        "Test0.cpp:X<extension>0"
       )
       cpg.typeDecl.nameNot("<global>").name.sorted shouldBe Seq(
         "Bar",

@@ -119,9 +119,9 @@ class NamespaceTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
         |  j++;    // ok, increments ::A::(unique)::j
         |}""".stripMargin)
       inside(cpg.namespaceBlock.nameNot("<global>").sortBy(_.fullName).l) { case List(unnamed1, namespaceA, unnamed2) =>
-        unnamed1.fullName shouldBe "Test0.cpp:<namespace>0"
+        unnamed1.fullName shouldBe "Test0.cpp:<namespace>"
         namespaceA.fullName shouldBe "Test0.cpp:A"
-        unnamed2.fullName shouldBe "Test0.cpp:A.<namespace>0"
+        unnamed2.fullName shouldBe "Test0.cpp:A.<namespace>"
       }
 
       inside(cpg.method.internal.nameNot("<global>").fullName.l) { case List(f, g, h) =>
@@ -195,7 +195,7 @@ class NamespaceTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
         |}""".stripMargin)
       inside(cpg.namespaceBlock.nameNot("<global>").l) { case List(a1, a2) =>
         a1.fullName shouldBe "Test0.cpp:A"
-        a2.fullName shouldBe "Test0.cpp:A<duplicate>0"
+        a2.fullName shouldBe "Test0.cpp:A<extension>0"
       }
 
       inside(cpg.method.internal.nameNot("<global>").l) { case List(foo, bar, f1, f2) =>

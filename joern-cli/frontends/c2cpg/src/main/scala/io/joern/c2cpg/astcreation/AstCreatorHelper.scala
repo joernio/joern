@@ -67,13 +67,18 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   protected def scopeLocalUniqueNamespaceFullName(fullName: String): String = {
-    scopeLocalUniqueNames.get(fullName) match {
+    val newFullName = fullName match {
+      case ""     => "<namespace>"
+      case s"$p." => s"$p.<namespace>"
+      case other  => other
+    }
+    scopeLocalUniqueNames.get(newFullName) match {
       case None =>
-        scopeLocalUniqueNames.update(fullName, 0)
-        fullName
+        scopeLocalUniqueNames.update(newFullName, 0)
+        newFullName
       case Some(index) =>
-        val suffix = s"${Defines.DuplicateSuffix}$index"
-        s"$fullName$suffix"
+        val suffix = s"${Defines.NamespaceExtension}$index"
+        s"$newFullName$suffix"
     }
   }
 

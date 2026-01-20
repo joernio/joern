@@ -22,6 +22,7 @@ object FullNameProvider {
     "<const>",
     "<duplicate>",
     "<enum>",
+    "<extension>",
     "<global>",
     "<iterator>",
     "<lambda>",
