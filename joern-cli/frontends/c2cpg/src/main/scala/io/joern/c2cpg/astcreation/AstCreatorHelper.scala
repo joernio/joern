@@ -1,24 +1,18 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.c2cpg.passes.FunctionDeclNodePass
-import io.joern.x2cpg.Ast
-import io.joern.x2cpg.AstNodeBuilder
 import io.joern.x2cpg.AstNodeBuilder.dependencyNode
-import io.joern.x2cpg.SourceFiles
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, ExpressionNew, NewCall, NewNode}
+import io.joern.x2cpg.{Ast, AstNodeBuilder, SourceFiles}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall, NewNode}
 import org.eclipse.cdt.core.dom.ast.*
-import org.eclipse.cdt.core.dom.ast.c.ICASTArrayDesignator
-import org.eclipse.cdt.core.dom.ast.c.ICASTDesignatedInitializer
-import org.eclipse.cdt.core.dom.ast.c.ICASTFieldDesignator
+import org.eclipse.cdt.core.dom.ast.c.{ICASTArrayDesignator, ICASTDesignatedInitializer, ICASTFieldDesignator}
 import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTArrayRangeDesignator
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTArrayRangeDesignator
-import org.eclipse.cdt.internal.core.dom.parser.cpp.ICPPEvaluation
+import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTArrayRangeDesignator, ICPPEvaluation}
 
 import scala.collection.mutable
-import scala.util.Success
-import scala.util.Try
+import scala.util.{Success, Try}
 
 trait AstCreatorHelper { this: AstCreator =>
 
@@ -70,6 +64,17 @@ trait AstCreatorHelper { this: AstCreator =>
     val idx = scopeLocalUniqueNames.getOrElseUpdate(key, 0)
     scopeLocalUniqueNames.update(key, idx + 1)
     s"$name$idx"
+  }
+
+  protected def scopeLocalUniqueNamespaceFullName(fullName: String): String = {
+    scopeLocalUniqueNames.get(fullName) match {
+      case None =>
+        scopeLocalUniqueNames.update(fullName, 0)
+        fullName
+      case Some(index) =>
+        val suffix = s"${Defines.DuplicateSuffix}$index"
+        s"$fullName$suffix"
+    }
   }
 
   protected def scopeLocalUniqueName(name: String, fullName: String, targetName: String): (String, String) = {
