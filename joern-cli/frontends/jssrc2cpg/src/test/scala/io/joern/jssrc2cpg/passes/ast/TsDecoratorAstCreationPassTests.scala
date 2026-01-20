@@ -1,7 +1,9 @@
 package io.joern.jssrc2cpg.passes.ast
 
 import io.joern.jssrc2cpg.testfixtures.AstJsSrc2CpgSuite
+import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.joern.x2cpg.passes.base.ContainsEdgePass
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Method, TypeDecl, _containsIn}
 import io.shiftleft.semanticcpg.language.*
 
@@ -267,6 +269,59 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
       val List(decorateACall, decorateBCall) = cpg.call.name("__decorate").l
       decorateACall.code shouldBe """__decorate([format("a, %s")], Foo.prototype, 'a', void 0)"""
       decorateBCall.code shouldBe """__decorate([format("b, %s"),validate("isString")], Foo.prototype, 'b', void 0)"""
+
+      val List(recA) = decorateACall.receiver.isIdentifier.l
+      recA.name shouldBe "__decorate"
+      recA.code shouldBe "__decorate"
+
+      val List(recB) = decorateBCall.receiver.isIdentifier.l
+      recB.name shouldBe "__decorate"
+      recB.code shouldBe "__decorate"
+
+      // arg2: Foo.prototype
+      val List(aPrototypeExpr) = decorateACall.arguments(2).isCall.l
+      aPrototypeExpr.code shouldBe "Foo.prototype"
+      aPrototypeExpr.name shouldBe Operators.fieldAccess
+      val List(aPrototypeBase) = aPrototypeExpr.arguments(1).isIdentifier.l
+      aPrototypeBase.name shouldBe "Foo"
+      val List(aPrototypeMember) = aPrototypeExpr.arguments(2).isFieldIdentifier.l
+      aPrototypeMember.code.shouldBe("prototype")
+
+      val List(bPrototypeExpr) = decorateBCall.arguments(2).isCall.l
+      bPrototypeExpr.code shouldBe "Foo.prototype"
+      bPrototypeExpr.name shouldBe Operators.fieldAccess
+      val List(bPrototypeBase) = bPrototypeExpr.arguments(1).isIdentifier.l
+      bPrototypeBase.name shouldBe "Foo"
+      val List(bPrototypeMember) = bPrototypeExpr.arguments(2).isFieldIdentifier.l
+      bPrototypeMember.code.shouldBe("prototype")
+
+      // arg3: property name
+      decorateACall.arguments(3).isLiteral.code.loneElement shouldBe "'a'"
+      decorateBCall.arguments(3).isLiteral.code.loneElement shouldBe "'b'"
+
+      // arg4: decorator return/descriptor placeholder
+      decorateACall.arguments(4).isCall.name.loneElement shouldBe "<operator>.void"
+      decorateBCall.arguments(4).isCall.name.loneElement shouldBe "<operator>.void"
+
+      // decorator-array lowering under arg1
+      decorateACall.arguments(1).ast.isCall.code.l shouldBe List(
+        "_tmp_0 = __ecma.Array.factory()",
+        "__ecma.Array.factory()",
+        """_tmp_0.push(format("a, %s"))""",
+        "_tmp_0.push",
+        """format("a, %s")"""
+      )
+
+      decorateBCall.arguments(1).ast.isCall.code.l shouldBe List(
+        "_tmp_1 = __ecma.Array.factory()",
+        "__ecma.Array.factory()",
+        """_tmp_1.push(format("b, %s"))""",
+        "_tmp_1.push",
+        """format("b, %s")""",
+        """_tmp_1.push(validate("isString"))""",
+        "_tmp_1.push",
+        """validate("isString")"""
+      )
     }
 
     "create annotations correctly for class methods" in {
@@ -295,6 +350,103 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
       val List(decorateReqACall, decorateReqBCall) = cpg.call.name("__decorate").l
       decorateReqACall.code shouldBe """__decorate([Get("argA"), __param(0, Req("reqAParam")), __metadata("design:type", Function), __metadata("design:paramtypes", [Object]), __metadata("design:type", __ecma.String)], Foo.prototype, 'reqA', null)"""
       decorateReqBCall.code shouldBe """__decorate([Get("argB"),Put("argC"), __param(0, Req("reqBParam1")),__param(1, Req("reqBParam2")), __metadata("design:type", Function), __metadata("design:paramtypes", [Object,Object]), __metadata("design:type", __ecma.Number)], Foo.prototype, 'reqB', null)"""
+
+      val List(recReqA) = decorateReqACall.receiver.isIdentifier.l
+      recReqA.name shouldBe "__decorate"
+      recReqA.code shouldBe "__decorate"
+
+      val List(recReqB) = decorateReqBCall.receiver.isIdentifier.l
+      recReqB.name shouldBe "__decorate"
+      recReqB.code shouldBe "__decorate"
+
+      // arg2: Foo.prototype
+      val List(reqAPrototypeExpr) = decorateReqACall.arguments(2).isCall.l
+      reqAPrototypeExpr.code shouldBe "Foo.prototype"
+      reqAPrototypeExpr.name shouldBe Operators.fieldAccess
+      val List(reqAPrototypeBase) = reqAPrototypeExpr.arguments(1).isIdentifier.l
+      reqAPrototypeBase.name shouldBe "Foo"
+      val List(reqAPrototypeMember) = reqAPrototypeExpr.arguments(2).isFieldIdentifier.l
+      reqAPrototypeMember.code.shouldBe("prototype")
+
+      val List(reqBPrototypeExpr) = decorateReqBCall.arguments(2).isCall.l
+      reqBPrototypeExpr.code shouldBe "Foo.prototype"
+      reqBPrototypeExpr.name shouldBe Operators.fieldAccess
+      val List(reqBPrototypeBase) = reqBPrototypeExpr.arguments(1).isIdentifier.l
+      reqBPrototypeBase.name shouldBe "Foo"
+      val List(reqBPrototypeMember) = reqBPrototypeExpr.arguments(2).isFieldIdentifier.l
+      reqBPrototypeMember.code.shouldBe("prototype")
+
+      // arg3: method name
+      decorateReqACall.arguments(3).isLiteral.code.loneElement shouldBe "'reqA'"
+      decorateReqACall.arguments(3).isLiteral.typeFullName.loneElement shouldBe Defines.String
+      decorateReqBCall.arguments(3).isLiteral.code.loneElement shouldBe "'reqB'"
+      decorateReqBCall.arguments(3).isLiteral.typeFullName.loneElement shouldBe Defines.String
+
+      // arg4: null descriptor
+      decorateReqACall.arguments(4).isLiteral.code.loneElement shouldBe "null"
+      decorateReqACall.arguments(4).isLiteral.typeFullName.loneElement shouldBe Defines.Null
+      decorateReqBCall.arguments(4).isLiteral.code.loneElement shouldBe "null"
+      decorateReqBCall.arguments(4).isLiteral.typeFullName.loneElement shouldBe Defines.Null
+
+      // decorator-array lowering under arg1
+      decorateReqACall.arguments(1).ast.isCall.code.l shouldBe List(
+        "_tmp_1 = __ecma.Array.factory()",
+        "__ecma.Array.factory()",
+        """_tmp_1.push(Get("argA"))""",
+        "_tmp_1.push",
+        """Get("argA")""",
+        """_tmp_1.push(__param(0, Req("reqAParam")))""",
+        "_tmp_1.push",
+        """__param(0, Req("reqAParam"))""",
+        """Req("reqAParam")""",
+        """_tmp_1.push(__metadata("design:type", Function))""",
+        "_tmp_1.push",
+        """__metadata("design:type", Function)""",
+        """_tmp_1.push(__metadata("design:paramtypes", [Object]))""",
+        "_tmp_1.push",
+        """__metadata("design:paramtypes", [Object])""",
+        "_tmp_0 = __ecma.Array.factory()",
+        "__ecma.Array.factory()",
+        "_tmp_0.push(Object)",
+        "_tmp_0.push",
+        """_tmp_1.push(__metadata("design:type", __ecma.String))""",
+        "_tmp_1.push",
+        """__metadata("design:type", __ecma.String)"""
+      )
+
+      decorateReqBCall.arguments(1).ast.isCall.code.l shouldBe List(
+        "_tmp_3 = __ecma.Array.factory()",
+        "__ecma.Array.factory()",
+        """_tmp_3.push(Get("argB"))""",
+        "_tmp_3.push",
+        """Get("argB")""",
+        """_tmp_3.push(Put("argC"))""",
+        "_tmp_3.push",
+        """Put("argC")""",
+        """_tmp_3.push(__param(0, Req("reqBParam1")))""",
+        "_tmp_3.push",
+        """__param(0, Req("reqBParam1"))""",
+        """Req("reqBParam1")""",
+        """_tmp_3.push(__param(1, Req("reqBParam2")))""",
+        "_tmp_3.push",
+        """__param(1, Req("reqBParam2"))""",
+        """Req("reqBParam2")""",
+        """_tmp_3.push(__metadata("design:type", Function))""",
+        "_tmp_3.push",
+        """__metadata("design:type", Function)""",
+        """_tmp_3.push(__metadata("design:paramtypes", [Object,Object]))""",
+        "_tmp_3.push",
+        """__metadata("design:paramtypes", [Object,Object])""",
+        "_tmp_2 = __ecma.Array.factory()",
+        "__ecma.Array.factory()",
+        "_tmp_2.push(Object)",
+        "_tmp_2.push",
+        "_tmp_2.push(Object)",
+        "_tmp_2.push",
+        """_tmp_3.push(__metadata("design:type", __ecma.Number))""",
+        "_tmp_3.push",
+        """__metadata("design:type", __ecma.Number)"""
+      )
     }
   }
 
