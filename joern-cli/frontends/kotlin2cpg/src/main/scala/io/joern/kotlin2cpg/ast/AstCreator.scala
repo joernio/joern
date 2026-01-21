@@ -300,8 +300,9 @@ class AstCreator(
       case typedExpr: KtLambdaExpression => Seq(astForLambda(typedExpr, argIdxMaybe, argNameMaybe, annotations))
       case typedExpr: KtNameReferenceExpression if typedExpr.getReferencedNameElementType == KtTokens.IDENTIFIER =>
         Seq(astForNameReference(typedExpr, argIdxMaybe, argNameMaybe, annotations))
-      // TODO: callable reference
       case _: KtNameReferenceExpression => Seq()
+      case typedExpr: KtCallableReferenceExpression =>
+        Seq(astForCallableReferenceExpression(typedExpr, argIdxMaybe, argNameMaybe, annotations))
       case typedExpr: KtObjectLiteralExpression =>
         Seq(astForObjectLiteralExpr(typedExpr, argIdxMaybe, argNameMaybe, annotations))
       case typedExpr: KtParenthesizedExpression =>
@@ -331,7 +332,6 @@ class AstCreator(
       case null =>
         logDebugWithTestAndStackTrace("Received null expression! Skipping...")
         Seq()
-      // TODO: handle `KtCallableReferenceExpression` like `this::baseTerrain`
       case unknownExpr =>
         logger.debug(
           s"Creating empty AST node for unknown expression `${unknownExpr.getClass}` with text `${unknownExpr.getText}`."
