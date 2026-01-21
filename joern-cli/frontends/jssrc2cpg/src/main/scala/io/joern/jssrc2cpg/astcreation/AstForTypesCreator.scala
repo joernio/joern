@@ -368,8 +368,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     fullName: String,
     returnType: String
   ): Ast = {
-    val staticModifier = NewModifier().modifierType(ModifierTypes.STATIC)
-    val blockNode      = NewBlock().typeFullName(Defines.Any)
+    val modifiers =
+      List(NewModifier().modifierType(ModifierTypes.STATIC), NewModifier().modifierType(ModifierTypes.CONSTRUCTOR))
+    val blockNode   = NewBlock().typeFullName(Defines.Any)
     val methodNode_ = methodNode(node, io.joern.x2cpg.Defines.StaticInitMethodName, fullName, "", parserResult.filename)
 
     methodAstParentStack.push(methodNode_)
@@ -390,7 +391,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     scope.popScope()
 
     val methodReturn = methodReturnNode(node, returnType)
-    methodAst(methodNode_, Nil, body, methodReturn, List(staticModifier))
+    methodAst(methodNode_, Nil, body, methodReturn, modifiers)
   }
 
   private def staticEnumInitMethodAst(
@@ -400,8 +401,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     fullName: String,
     returnType: String
   ): Ast = {
-    val staticModifier = NewModifier().modifierType(ModifierTypes.STATIC)
-    val blockNode      = NewBlock().typeFullName(Defines.Any)
+    val modifiers =
+      List(NewModifier().modifierType(ModifierTypes.STATIC), NewModifier().modifierType(ModifierTypes.CONSTRUCTOR))
+    val blockNode   = NewBlock().typeFullName(Defines.Any)
     val methodNode_ = methodNode(node, io.joern.x2cpg.Defines.StaticInitMethodName, fullName, "", parserResult.filename)
 
     methodAstParentStack.push(methodNode_)
@@ -424,7 +426,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     scope.popScope()
 
     val methodReturn = methodReturnNode(node, returnType)
-    methodAst(methodNode_, Nil, body, methodReturn, List(staticModifier))
+    methodAst(methodNode_, Nil, body, methodReturn, modifiers)
   }
 
   protected def astForClass(clazz: BabelNodeInfo, shouldCreateAssignmentCall: Boolean = false): Ast = {
@@ -528,12 +530,12 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         clazz.columnNumber
       )
 
-      val classAnnotationAst     = createClassAnnotationAst(clazz, classIdNode)
-      val propertyAnnotationAsts = createPropertyAnnotationAsts(clazz, classIdNode)
-      val methodAnnotationAsts   = createMethodAnnotationAsts(clazz, classIdNode)
-      if (classAnnotationAst.root.isDefined || propertyAnnotationAsts.nonEmpty || methodAnnotationAsts.nonEmpty) {
+      val classDecorationAst     = createClassDecorationAst(clazz, classIdNode)
+      val propertyDecorationAsts = createPropertyDecorationAsts(clazz, classIdNode)
+      val methodDecorationAsts   = createMethodDecorationAsts(clazz, classIdNode)
+      if (classDecorationAst.root.isDefined || propertyDecorationAsts.nonEmpty || methodDecorationAsts.nonEmpty) {
         val blockNode_   = blockNode(clazz)
-        val childrenAsts = List(assignmentAst, classAnnotationAst) ++ propertyAnnotationAsts ++ methodAnnotationAsts
+        val childrenAsts = List(assignmentAst, classDecorationAst) ++ propertyDecorationAsts ++ methodDecorationAsts
         setArgumentIndices(childrenAsts)
         Ast(blockNode_).withChildren(childrenAsts)
       } else assignmentAst
@@ -542,7 +544,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     }
   }
 
-  private def createClassAnnotationAst(classNodeInfo: BabelNodeInfo, classIdNode: NewIdentifier): Ast = {
+  private def createClassDecorationAst(classNodeInfo: BabelNodeInfo, classIdNode: NewIdentifier): Ast = {
     val decoratorAsts = decoratorExpressionElements(classNodeInfo).map(e => astForNodeWithFunctionReference(e.json))
     if (decoratorAsts.nonEmpty) {
       val lhsAst = Ast(
@@ -744,7 +746,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     )
   }
 
-  private def createPropertyAnnotationAsts(classNodeInfo: BabelNodeInfo, classIdNode: NewIdentifier): Seq[Ast] = {
+  private def createPropertyDecorationAsts(classNodeInfo: BabelNodeInfo, classIdNode: NewIdentifier): Seq[Ast] = {
     val tsProperties = classMembers(classNodeInfo).flatMap { member =>
       val memberNodeInfo = createBabelNodeInfo(member)
       if (
@@ -800,7 +802,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     }
   }
 
-  private def createMethodAnnotationAsts(classNodeInfo: BabelNodeInfo, classIdNode: NewIdentifier): Seq[Ast] = {
+  private def createMethodDecorationAsts(classNodeInfo: BabelNodeInfo, classIdNode: NewIdentifier): Seq[Ast] = {
     val tsMethods = classMembers(classNodeInfo).flatMap { member =>
       val memberNodeInfo = createBabelNodeInfo(member)
       if (memberNodeInfo.node == ClassMethod) {
@@ -814,7 +816,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       val decoratorAsts =
         decoratorExpressionElements(tsMethodNodeInfo).map(e => astForNodeWithFunctionReference(e.json))
       val (name, fullName) = calcMethodNameAndFullName(tsMethodNodeInfo)
-      val methodTpe        = typeFor(tsMethodNodeInfo)
+      val methodTpe        = typeFor(tsMethodNodeInfo).stripPrefix("__ecma.")
       val paramNodeInfos = if (hasKey(tsMethodNodeInfo.json, "parameters")) {
         tsMethodNodeInfo.json("parameters").arr.toSeq
       } else {

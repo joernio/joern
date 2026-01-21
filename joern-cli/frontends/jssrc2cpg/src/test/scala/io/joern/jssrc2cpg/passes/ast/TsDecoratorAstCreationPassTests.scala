@@ -348,8 +348,8 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
       reqBAnnotationPut.name shouldBe "Put"
 
       val List(decorateReqACall, decorateReqBCall) = cpg.call.name("__decorate").l
-      decorateReqACall.code shouldBe """__decorate([Get("argA"), __param(0, Req("reqAParam")), __metadata("design:type", Function), __metadata("design:paramtypes", [Object]), __metadata("design:type", __ecma.String)], Foo.prototype, 'reqA', null)"""
-      decorateReqBCall.code shouldBe """__decorate([Get("argB"),Put("argC"), __param(0, Req("reqBParam1")),__param(1, Req("reqBParam2")), __metadata("design:type", Function), __metadata("design:paramtypes", [Object,Object]), __metadata("design:type", __ecma.Number)], Foo.prototype, 'reqB', null)"""
+      decorateReqACall.code shouldBe """__decorate([Get("argA"), __param(0, Req("reqAParam")), __metadata("design:type", Function), __metadata("design:paramtypes", [Object]), __metadata("design:type", String)], Foo.prototype, 'reqA', null)"""
+      decorateReqBCall.code shouldBe """__decorate([Get("argB"),Put("argC"), __param(0, Req("reqBParam1")),__param(1, Req("reqBParam2")), __metadata("design:type", Function), __metadata("design:paramtypes", [Object,Object]), __metadata("design:type", Number)], Foo.prototype, 'reqB', null)"""
 
       val List(recReqA) = decorateReqACall.receiver.isIdentifier.l
       recReqA.name shouldBe "__decorate"
@@ -409,9 +409,9 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
         "__ecma.Array.factory()",
         "_tmp_0.push(Object)",
         "_tmp_0.push",
-        """_tmp_1.push(__metadata("design:type", __ecma.String))""",
+        """_tmp_1.push(__metadata("design:type", String))""",
         "_tmp_1.push",
-        """__metadata("design:type", __ecma.String)"""
+        """__metadata("design:type", String)"""
       )
 
       decorateReqBCall.arguments(1).ast.isCall.code.l shouldBe List(
@@ -443,9 +443,9 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
         "_tmp_2.push",
         "_tmp_2.push(Object)",
         "_tmp_2.push",
-        """_tmp_3.push(__metadata("design:type", __ecma.Number))""",
+        """_tmp_3.push(__metadata("design:type", Number))""",
         "_tmp_3.push",
-        """__metadata("design:type", __ecma.Number)"""
+        """__metadata("design:type", Number)"""
       )
     }
   }
