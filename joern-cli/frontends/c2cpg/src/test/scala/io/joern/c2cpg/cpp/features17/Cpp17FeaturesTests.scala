@@ -295,6 +295,19 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       cpg.typeDecl.member.nameExact("count").typeFullName.l shouldBe List("int")
     }
 
+    "handle namespace alias" in {
+      val cpg = code("""
+          |namespace A {
+          |  class Foo {};
+          |}
+          |
+          |namespace B = A;
+          |auto f = B::Foo();
+          |""".stripMargin)
+      cpg.typeDecl.nameExact("Foo").fullName.loneElement shouldBe "A.Foo"
+      cpg.identifier.nameExact("f").typeFullName.loneElement shouldBe "A.Foo"
+    }
+
     "handle nested namespaces" in {
       val cpg = code("""
           |namespace A1 { // old
