@@ -180,7 +180,7 @@ trait TypeNameProvider { this: AstCreator =>
         TypeFullNameInfo(uniqueName, uniqueNameFullName)
       case n: ICPPASTNamespaceDefinition =>
         val name = shortName(n) match {
-          case ""    => "<namespace>"
+          case ""    => "<anonymous>"
           case other => other
         }
         val fullName_ = fullName(n)

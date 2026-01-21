@@ -386,8 +386,8 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       cpg.namespaceBlock.nameNot("<global>").name.sorted shouldBe Seq(
         // Within a translation unit each unnamed namespace definition maps to the same unique name:
         // multiple unnamed namespace definitions in the same scope denote the same unnamed namespace
-        "<namespace>",
-        "<namespace>",
+        "<anonymous>",
+        "<anonymous>",
         "A",
         "A",
         "B",
@@ -398,8 +398,8 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
         "X"
       )
       cpg.namespaceBlock.nameNot("<global>").fullName.sorted shouldBe Seq(
-        "Test0.cpp:<namespace>",
-        "Test0.cpp:<namespace><extension>0",
+        "Test0.cpp:<anonymous>",
+        "Test0.cpp:<anonymous><extension>0",
         "Test0.cpp:A",
         "Test0.cpp:A.B",
         "Test0.cpp:A.B.C",

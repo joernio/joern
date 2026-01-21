@@ -68,8 +68,8 @@ trait AstCreatorHelper { this: AstCreator =>
 
   protected def scopeLocalUniqueNamespaceFullName(fullName: String): String = {
     val newFullName = fullName match {
-      case ""     => "<namespace>"
-      case s"$p." => s"$p.<namespace>"
+      case ""     => "<anonymous>"
+      case s"$p." => s"$p.<anonymous>"
       case other  => other
     }
     scopeLocalUniqueNames.get(newFullName) match {

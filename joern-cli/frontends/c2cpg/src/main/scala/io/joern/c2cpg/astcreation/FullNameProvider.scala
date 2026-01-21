@@ -26,7 +26,6 @@ object FullNameProvider {
     "<global>",
     "<iterator>",
     "<lambda>",
-    "<namespace>",
     "<param>",
     "<tmp>",
     "<type>"
