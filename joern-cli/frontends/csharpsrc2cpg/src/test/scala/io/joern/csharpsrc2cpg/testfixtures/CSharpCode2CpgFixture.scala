@@ -89,7 +89,6 @@ trait CSharpFrontend extends LanguageFrontend {
     val tmp    = new CSharpSrc2Cpg().createCpg(config).get
     new PostFrontendValidator(tmp, false).createAndApply()
     tmp
-
   }
 
 }
