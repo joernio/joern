@@ -871,7 +871,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val initArgs      = expr.args.map(astForCallArg)
     val initFullName  = s"$className$MethodDelimiter$ConstructorMethodName"
     val initCode      = s"new $className(${initArgs.map(_.rootCodeOrEmpty).mkString(",")})"
-    val maybeTypeHint = scope.resolveIdentifier(className).map(_.name) // consider imported or defined types
+    val maybeTypeHint = scope.resolveClassIdentifier(className).map(_.name) // consider imported or defined types
     val initCallNode = callNode(
       expr,
       initCode,

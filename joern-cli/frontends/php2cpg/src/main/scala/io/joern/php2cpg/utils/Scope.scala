@@ -336,4 +336,16 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)
   def resolveIdentifier(symbol: String): Option[SymbolSummary] = {
     importedSymbols.get(symbol)
   }
+
+  def resolveClassIdentifier(symbol: String): Option[SymbolSummary] = {
+    resolveIdentifier(symbol).collect { case sym: PhpClass =>
+      sym
+    }
+  }
+
+  def resolveFunctionIdentifier(symbol: String): Option[SymbolSummary] = {
+    resolveIdentifier(symbol).collect { case sym: PhpFunction =>
+      sym
+    }
+  }
 }

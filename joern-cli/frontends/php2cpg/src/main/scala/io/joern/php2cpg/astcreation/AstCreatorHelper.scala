@@ -53,7 +53,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
   }
 
   protected def composeMethodFullName(methodName: String): String = {
-    scope.resolveIdentifier(methodName) match {
+    scope.resolveFunctionIdentifier(methodName) match {
       case Some(importedMethod)                                         => importedMethod.name
       case None if methodName == NamespaceTraversal.globalNamespaceName => globalNamespace.fullName
       case None =>
@@ -63,7 +63,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
   }
 
   protected def composeMethodFullNameForCall(methodName: String): String = {
-    scope.resolveIdentifier(methodName) match {
+    scope.resolveFunctionIdentifier(methodName) match {
       case Some(importedMethod)                                         => importedMethod.name
       case None if methodName == NamespaceTraversal.globalNamespaceName => globalNamespace.fullName
       case None =>
@@ -250,7 +250,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
 
   protected def getMfn(call: PhpCallExpr, name: String): String = {
     lazy val default               = s"$UnresolvedNamespace$MethodDelimiter$name"
-    lazy val maybeResolvedFunction = scope.resolveIdentifier(name).filter(_.isInstanceOf[PhpFunction])
+    lazy val maybeResolvedFunction = scope.resolveFunctionIdentifier(name)
     call.target match {
       case Some(nameExpr: PhpNameExpr) if call.isStatic =>
         // Static method call with a simple receiver

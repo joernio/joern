@@ -752,4 +752,21 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       }
     }
   }
+
+  "Same class and function name" should {
+    val cpg = code("""<?php
+        |class Foo {
+        |  function Foo() {}
+        |}""".stripMargin)
+
+    "contain deduplicated fullNames" in {
+      inside(cpg.typeDecl.fullName("Foo.*").sortBy(_.fullName).l) { case classTypeDecl :: funcTypeDecl :: Nil =>
+        classTypeDecl.name shouldBe "Foo"
+        classTypeDecl.fullName shouldBe "Foo"
+
+        funcTypeDecl.name shouldBe "Foo"
+        funcTypeDecl.fullName shouldBe "Foo.Foo"
+      }
+    }
+  }
 }
