@@ -70,4 +70,24 @@ class ArrayAccessExprsTests extends KotlinCode2CpgFixture(withOssDataflow = true
       firstArg.refsTo.size shouldBe 1
     }
   }
+
+  "CPG for code with simple array construction and access in one line" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |fun main(args: Array<String>) {
+        |    val foo = listOf(1, 2, 3)[0]
+        |    println(foo)
+        |}
+        |""".stripMargin)
+
+    "should contain a listOf Call with the correct arguments" in {
+      cpg.call.name("listOf").length shouldBe 1
+      val List(call) = cpg.call.name("listOf").l
+      call.argument.length shouldBe 3
+      call.argument(1).code shouldBe "1"
+      call.argument(2).code shouldBe "2"
+      call.argument(3).code shouldBe "3"
+    }
+  }
 }
