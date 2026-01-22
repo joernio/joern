@@ -19,15 +19,16 @@ object FullNameProvider {
 
   private val TagsToKeepInFullName = List(
     "<anonymous>",
+    "<const>",
+    "<duplicate>",
+    "<enum>",
+    "<extension>",
+    "<global>",
     "<iterator>",
     "<lambda>",
-    "<global>",
     "<param>",
-    "<const>",
-    "<alias>",
-    "<type>",
-    "<enum>",
-    "<tmp>"
+    "<tmp>",
+    "<type>"
   )
 
   /** Removes template type parameters from qualified names while preserving special tags.
@@ -108,7 +109,6 @@ trait FullNameProvider { this: AstCreator =>
       case d: CPPASTIdExpression              => shortNameForCPPASTIdExpression(d)
       case u: IASTUnaryExpression             => shortName(u.getOperand)
       case c: IASTFunctionCallExpression      => shortName(c.getFunctionNameExpression)
-      case a: ICPPASTNamespaceAlias           => shortName(a.getAlias)
       case d: IASTIdExpression                => shortName(d.getName)
       case m: IASTPreprocessorMacroDefinition => shortName(m.getName)
       case n: ICPPASTNamespaceDefinition      => shortName(n.getName)
@@ -131,7 +131,6 @@ trait FullNameProvider { this: AstCreator =>
       case None =>
         val qualifiedName = node match {
           case _: IASTTranslationUnit                            => ""
-          case alias: ICPPASTNamespaceAlias                      => fullNameForICPPASTNamespaceAlias(alias)
           case aliasDecl: ICPPASTAliasDeclaration                => fullNameForICPPASTAliasDeclaration(aliasDecl)
           case namespace: ICPPASTNamespaceDefinition             => fullNameForICPPASTNamespaceDefinition(namespace)
           case compType: IASTCompositeTypeSpecifier              => fullNameForIASTCompositeTypeSpecifier(compType)
@@ -182,10 +181,6 @@ trait FullNameProvider { this: AstCreator =>
 
   private def fullNameForICPPASTQualifiedName(qfn: ICPPASTQualifiedName): String = {
     Try(ASTStringUtil.getQualifiedName(qfn)).getOrElse(nextClosureName())
-  }
-
-  private def fullNameForICPPASTNamespaceAlias(alias: ICPPASTNamespaceAlias): String = {
-    ASTStringUtil.getQualifiedName(alias.getMappingName)
   }
 
   private def fullNameForICPPASTAliasDeclaration(alias: ICPPASTAliasDeclaration): String = {

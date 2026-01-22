@@ -23,6 +23,7 @@ object Defines {
   val OperatorCall: String                   = "<operator>()"
   val OperatorNew: String                    = "<operator>.new"
   val DuplicateSuffix                        = "<duplicate>"
+  val NamespaceExtension                     = "<extension>"
   val ConstSuffix                            = "<const>"
   val GlobalTag                              = "<global>"
   val UnknownTag                             = "<unknown>"
