@@ -654,16 +654,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     argName: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   ): Ast = {
-    val arrayExpr     = expression.getArrayExpression
-    val typeFullName  = registerType(exprTypeFullName(expression).getOrElse(TypeConstants.Any))
-    val identifier    = identifierNode(arrayExpr, arrayExpr.getText, arrayExpr.getText, typeFullName)
-    val identifierAst = astWithRefEdgeMaybe(arrayExpr.getText, identifier)
+    val typeFullName      = registerType(exprTypeFullName(expression).getOrElse(TypeConstants.Any))
+    val baseExpressionAst = astsForExpression(expression.getArrayExpression, None)
     val astsForIndexExpr = expression.getIndexExpressions.asScala.zipWithIndex.flatMap { case (expr, idx) =>
       astsForExpression(expr, Option(idx + 1))
     }
     val callNode =
       operatorCallNode(expression, expression.getText, Operators.indexAccess, Option(typeFullName))
-    callAst(withArgumentName(withArgumentIndex(callNode, argIdx), argName), List(identifierAst) ++ astsForIndexExpr)
+    callAst(withArgumentName(withArgumentIndex(callNode, argIdx), argName), baseExpressionAst ++ astsForIndexExpr)
       .withChildren(annotations.map(astForAnnotationEntry))
   }
 
