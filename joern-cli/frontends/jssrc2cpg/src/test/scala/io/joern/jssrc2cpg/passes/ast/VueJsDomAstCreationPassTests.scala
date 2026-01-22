@@ -177,12 +177,23 @@ class VueJsDomAstCreationPassTests extends AstJsSrc2CpgSuite with DomPassTestsHe
         "var Prop = require(\"vue-property-decorator\").Prop",
         "var Vue = require(\"vue-property-decorator\").Vue",
         "HelloWorld = test.vue::program:HelloWorld:<init>",
+        "_tmp_0 = __ecma.Array.factory()",
         "exports[\"default\"] = HelloWorld"
       )
-      cpg.local.code.l shouldBe List("Component", "Prop", "Vue", "HelloWorld", "msg")
+      cpg.local.code.l shouldBe List(
+        "Component",
+        "Prop",
+        "Vue",
+        "HelloWorld",
+        "_tmp_0", // from the lowering of the decorators to their __decorate calls
+        "_tmp_0", // from the lowering of the decorators to their __decorate calls
+        "__decorate",
+        "msg"
+      )
 
-      inside(cpg.identifier.nameNot("this", "require").l) {
-        case List(comp, prop, vue, msg, helloWorld1, exports, helloWorld2) =>
+      val x = cpg.identifier.nameNot("this", "require", "__decorate", "_tmp_0", "this").code.l
+      inside(cpg.identifier.nameNot("this", "require", "__decorate", "_tmp_0", "this").l) {
+        case List(comp, prop, vue, msg, helloWorld1, _, _, exports, helloWorld2) =>
           comp.name shouldBe "Component"
           comp.code shouldBe "Component"
           prop.name shouldBe "Prop"
