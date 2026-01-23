@@ -480,7 +480,7 @@ class ExpressionTests extends AstSwiftSrc2CpgSuite {
         "abc",
         "\\\"abc",
         "abc\\\"",
-        s"abc${System.lineSeparator()}", // Multiline strings are split into single strings in Swift
+        "abc", // Multiline strings are split into single strings in Swift
         "def"
       )
     }
