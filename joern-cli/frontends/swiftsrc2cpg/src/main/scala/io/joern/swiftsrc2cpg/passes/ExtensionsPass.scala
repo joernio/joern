@@ -40,7 +40,7 @@ class ExtensionsPass(
 
   /** Creates a pass that rewrites computed-property member accesses to use the corresponding setter calls. We need to
     * separate this from the main pass as setter handling needs to happen after getter handling. (For the case where a
-    * setter is called on the result of a getter.)
+    * setter is called on the result of a getter, i.e. `foo.bar.baz = ...`.)
     *
     * @return
     *   A pass that rewrites computed-property member accesses to use the corresponding setter calls.
