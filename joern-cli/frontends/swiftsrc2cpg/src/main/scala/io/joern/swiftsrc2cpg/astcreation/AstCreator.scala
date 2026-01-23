@@ -119,7 +119,7 @@ class AstCreator(
       case (Some((startOffset, endOffset)), _: identifier) =>
         parserResult.fileContent.substring(startOffset, endOffset).trim.stripSuffix("()")
       case (Some((startOffset, endOffset)), _) =>
-        shortenCode(parserResult.fileContent.substring(startOffset, endOffset).trim)
+        shortenCode(parserResult.fileContent.substring(startOffset, endOffset)).stripLineEnd
       case _ =>
         PropertyDefaults.Code
     }

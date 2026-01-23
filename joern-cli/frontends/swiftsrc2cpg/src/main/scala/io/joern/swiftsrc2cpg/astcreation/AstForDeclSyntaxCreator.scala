@@ -353,13 +353,15 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val memberInits = allClassMembers.filter(m => !isStaticMember(m) && isInitializedMember(m))
     createDeclConstructor(node, typeDeclNode_, memberInits)
 
-    // adding all class methods / functions and uninitialized, non-static members
+    // adding all class methods / functions and uninitialized members
     allClassMembers
-      .filter(member => isClassMethodOrUninitializedMember(member) && !isStaticMember(member))
+      .filter(member => isClassMethodOrUninitializedMember(member))
       .foreach(m => astForDeclMember(m, typeDeclNode_))
 
     // adding all static members and retrieving their initialization calls
-    val staticMemberInits = allClassMembers.filter(isStaticMember)
+    val staticMemberInits = allClassMembers.filter { member =>
+      isStaticMember(member) && !isClassMethodOrUninitializedMember(member)
+    }
 
     if (staticMemberInits.nonEmpty) {
       createStaticConstructor(node, staticMemberInits, typeDeclNode_)
