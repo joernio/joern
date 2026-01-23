@@ -387,6 +387,79 @@ class CallTests extends SwiftCompilerSrc2CpgSuite {
       staticFuncCall.argument shouldBe empty
     }
 
+    "be correct for simple call with one trailing closure in static function" in {
+      val testCode =
+        """
+          |struct Controller {
+          |  static func boot(routes: Builder) {
+          |    routes.get("find") { req async throws -> User in
+          |      return User()
+          |    }
+          |  }
+          |}
+          |""".stripMargin
+      val cpg = code(testCode)
+
+      val List(getCall)       = cpg.call.nameExact("get").l
+      val List(_, arg1, arg2) = getCall.argument.l
+      arg1.code shouldBe "\"find\""
+      arg2.code shouldBe "<lambda>0"
+      arg2.isMethodRef shouldBe true
+      arg2.ast.isMethodRef.referencedMethod.fullName.loneElement shouldBe "Sources/main.swift:<global>.Controller.boot.<lambda>0:(ANY)->User"
+    }
+
+    "be correct for simple call with two trailing closures where the last one is named" in {
+      val testCode =
+        """
+          |struct Controller {
+          |  func boot(routes: Builder) {
+          |    routes.get("find") { req async throws -> User in
+          |      return User()
+          |    } onFailure: { req async throws -> Error in
+          |      return Abort(.internalServerError)
+          |    }
+          |  }
+          |}
+          |""".stripMargin
+      val cpg = code(testCode)
+
+      val List(getCall)             = cpg.call.nameExact("get").l
+      val List(_, arg1, arg2, arg3) = getCall.argument.l
+      arg1.code shouldBe "\"find\""
+      arg2.code shouldBe "<lambda>0"
+      arg2.isMethodRef shouldBe true
+      arg2.ast.isMethodRef.referencedMethod.fullName.loneElement shouldBe "Sources/main.swift:<global>.Controller.boot.<lambda>0:(ANY)->User"
+      arg3.code shouldBe "<lambda>1"
+      arg3.isMethodRef shouldBe true
+      arg3.ast.isMethodRef.referencedMethod.fullName.loneElement shouldBe "Sources/main.swift:<global>.Controller.boot.<lambda>1:(ANY)->Error"
+    }
+
+    "be correct for simple call with two trailing closures where the last one is named in static function" in {
+      val testCode =
+        """
+          |struct Controller {
+          |  static func boot(routes: Builder) {
+          |    routes.get("find") { req async throws -> User in
+          |      return User()
+          |    } onFailure: { req async throws -> Error in
+          |      return Abort(.internalServerError)
+          |    }
+          |  }
+          |}
+          |""".stripMargin
+      val cpg = code(testCode)
+
+      val List(getCall)             = cpg.call.nameExact("get").l
+      val List(_, arg1, arg2, arg3) = getCall.argument.l
+      arg1.code shouldBe "\"find\""
+      arg2.code shouldBe "<lambda>0"
+      arg2.isMethodRef shouldBe true
+      arg2.ast.isMethodRef.referencedMethod.fullName.loneElement shouldBe "Sources/main.swift:<global>.Controller.boot.<lambda>0:(ANY)->User"
+      arg3.code shouldBe "<lambda>1"
+      arg3.isMethodRef shouldBe true
+      arg3.ast.isMethodRef.referencedMethod.fullName.loneElement shouldBe "Sources/main.swift:<global>.Controller.boot.<lambda>1:(ANY)->Error"
+    }
+
   }
 
 }
