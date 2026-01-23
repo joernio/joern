@@ -721,9 +721,10 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForTryExprSyntax(node: TryExprSyntax): Ast = {
-    val tryNode = controlStructureNode(node, ControlStructureTypes.TRY, code(node))
-    val bodyAst = astForNode(node.expression)
-    tryCatchAst(tryNode, bodyAst, Seq.empty, None)
+    // Try expression does not change the value of the expression.
+    // We do not model the try semantics, so we just return the expression AST.
+    // That way the data-flow is preserved.
+    astForNode(node.expression)
   }
 
   private def astForTupleExprSyntax(node: TupleExprSyntax): Ast = {

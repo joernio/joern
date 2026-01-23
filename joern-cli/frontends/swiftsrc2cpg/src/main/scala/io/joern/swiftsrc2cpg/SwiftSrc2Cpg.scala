@@ -37,13 +37,15 @@ class SwiftSrc2Cpg extends X2CpgFrontend {
         new ConfigFileCreationPass(cpg, config).createAndApply()
         new DependenciesPass(cpg).createAndApply()
 
-        new ExtensionsPass(
+        val extensionsPass = new ExtensionsPass(
           cpg,
           astCreationPass.extensionMembers(),
           astCreationPass.extensionMethodFullNameMapping(),
           astCreationPass.memberPropertyMapping(),
           astCreationPass.extensionInherits()
-        ).createAndApply()
+        )
+        extensionsPass.createAndApply()
+        extensionsPass.setters.createAndApply()
 
         new FullNameUniquenessPass(cpg).createAndApply()
 
