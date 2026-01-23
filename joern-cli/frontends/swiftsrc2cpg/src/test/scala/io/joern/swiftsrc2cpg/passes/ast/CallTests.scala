@@ -460,6 +460,36 @@ class CallTests extends SwiftCompilerSrc2CpgSuite {
       arg3.referencedMethod.fullName shouldBe "Sources/main.swift:<global>.Controller.boot.<lambda>1:(ANY)->Error"
     }
 
+    "be correct for simple call with a trailing closure to an extension method" in {
+      val testCode =
+        """
+          |extension String {
+          |  func withPrefix(_ prefix: String, transform: (String) -> String) -> String {
+          |    return transform(prefix + self)
+          |  }
+          |}
+          |
+          |func main() {
+          |  let name = "Boimler"
+          |  let result = name.withPrefix("Hi ") { value in
+          |    value.uppercased()
+          |  }
+          |  print(result)
+          |}
+          |""".stripMargin
+      val cpg = codeWithSwiftSetup(testCode)
+
+      val List(withPrefixCall) = cpg.call.nameExact("withPrefix").l
+      withPrefixCall.methodFullName shouldBe "SwiftTest.Swift.String<extension>.withPrefix:(_:Swift.String,transform:(Swift.String)->Swift.String)->Swift.String"
+      withPrefixCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      withPrefixCall._methodViaCallOut.fullName.loneElement shouldBe withPrefixCall.methodFullName
+      val List(arg1) = withPrefixCall.arguments(1).isLiteral.l
+      arg1.code shouldBe "\"Hi \""
+      val List(arg2) = withPrefixCall.arguments(2).isMethodRef.l
+      arg2.code shouldBe "<lambda>0"
+      arg2.referencedMethod.fullName shouldBe "Sources/main.swift:<global>.main.<lambda>0:(Swift.String)->Swift.String"
+    }
+
   }
 
 }

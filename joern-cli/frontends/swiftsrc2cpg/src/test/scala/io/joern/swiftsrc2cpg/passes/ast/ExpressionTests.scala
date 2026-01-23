@@ -469,10 +469,10 @@ class ExpressionTests extends AstSwiftSrc2CpgSuite {
            | var a = "abc";
            | var b = "\\\"abc";
            | var c = "abc\\\"";
-           | var d = ${tripQuote}
+           | var d = $tripQuote
            |abc
            |def
-           |${tripQuote};
+           |$tripQuote;
            |}
            |""".stripMargin)
 
@@ -480,7 +480,7 @@ class ExpressionTests extends AstSwiftSrc2CpgSuite {
         "abc",
         "\\\"abc",
         "abc\\\"",
-        "abc", // Multiline strings are split into single strings in Swift
+        s"abc${System.lineSeparator()}", // Multiline strings are split into single strings in Swift
         "def"
       )
     }
