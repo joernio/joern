@@ -400,12 +400,12 @@ class CallTests extends SwiftCompilerSrc2CpgSuite {
           |""".stripMargin
       val cpg = code(testCode)
 
-      val List(getCall)       = cpg.call.nameExact("get").l
-      val List(_, arg1, arg2) = getCall.argument.l
+      val List(getCall) = cpg.call.nameExact("get").l
+      val List(arg1)    = getCall.arguments(1).isLiteral.l
       arg1.code shouldBe "\"find\""
+      val List(arg2) = getCall.arguments(2).isMethodRef.l
       arg2.code shouldBe "<lambda>0"
-      arg2.isMethodRef shouldBe true
-      arg2.ast.isMethodRef.referencedMethod.fullName.loneElement shouldBe "Sources/main.swift:<global>.Controller.boot.<lambda>0:(ANY)->User"
+      arg2.referencedMethod.fullName shouldBe "Sources/main.swift:<global>.Controller.boot.<lambda>0:(ANY)->User"
     }
 
     "be correct for simple call with two trailing closures where the last one is named" in {
@@ -423,15 +423,15 @@ class CallTests extends SwiftCompilerSrc2CpgSuite {
           |""".stripMargin
       val cpg = code(testCode)
 
-      val List(getCall)             = cpg.call.nameExact("get").l
-      val List(_, arg1, arg2, arg3) = getCall.argument.l
+      val List(getCall) = cpg.call.nameExact("get").l
+      val List(arg1)    = getCall.arguments(1).isLiteral.l
       arg1.code shouldBe "\"find\""
+      val List(arg2) = getCall.arguments(2).isMethodRef.l
       arg2.code shouldBe "<lambda>0"
-      arg2.isMethodRef shouldBe true
-      arg2.ast.isMethodRef.referencedMethod.fullName.loneElement shouldBe "Sources/main.swift:<global>.Controller.boot.<lambda>0:(ANY)->User"
+      arg2.referencedMethod.fullName shouldBe "Sources/main.swift:<global>.Controller.boot.<lambda>0:(ANY)->User"
+      val List(arg3) = getCall.arguments(3).isMethodRef.l
       arg3.code shouldBe "<lambda>1"
-      arg3.isMethodRef shouldBe true
-      arg3.ast.isMethodRef.referencedMethod.fullName.loneElement shouldBe "Sources/main.swift:<global>.Controller.boot.<lambda>1:(ANY)->Error"
+      arg3.referencedMethod.fullName shouldBe "Sources/main.swift:<global>.Controller.boot.<lambda>1:(ANY)->Error"
     }
 
     "be correct for simple call with two trailing closures where the last one is named in static function" in {
@@ -449,15 +449,15 @@ class CallTests extends SwiftCompilerSrc2CpgSuite {
           |""".stripMargin
       val cpg = code(testCode)
 
-      val List(getCall)             = cpg.call.nameExact("get").l
-      val List(_, arg1, arg2, arg3) = getCall.argument.l
+      val List(getCall) = cpg.call.nameExact("get").l
+      val List(arg1)    = getCall.arguments(1).isLiteral.l
       arg1.code shouldBe "\"find\""
+      val List(arg2) = getCall.arguments(2).isMethodRef.l
       arg2.code shouldBe "<lambda>0"
-      arg2.isMethodRef shouldBe true
-      arg2.ast.isMethodRef.referencedMethod.fullName.loneElement shouldBe "Sources/main.swift:<global>.Controller.boot.<lambda>0:(ANY)->User"
+      arg2.referencedMethod.fullName shouldBe "Sources/main.swift:<global>.Controller.boot.<lambda>0:(ANY)->User"
+      val List(arg3) = getCall.arguments(3).isMethodRef.l
       arg3.code shouldBe "<lambda>1"
-      arg3.isMethodRef shouldBe true
-      arg3.ast.isMethodRef.referencedMethod.fullName.loneElement shouldBe "Sources/main.swift:<global>.Controller.boot.<lambda>1:(ANY)->Error"
+      arg3.referencedMethod.fullName shouldBe "Sources/main.swift:<global>.Controller.boot.<lambda>1:(ANY)->Error"
     }
 
   }
