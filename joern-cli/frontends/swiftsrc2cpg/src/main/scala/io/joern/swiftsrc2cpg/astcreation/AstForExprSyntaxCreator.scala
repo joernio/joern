@@ -302,8 +302,9 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       callNode.typeFullName(typeFullName)
     }
 
-    val argAsts = node.arguments.children.map(astForNode)
-
+    val trailingClosureAsts            = node.trailingClosure.toList.map(astForNode)
+    val additionalTrailingClosuresAsts = node.additionalTrailingClosures.children.map(c => astForNode(c.closure))
+    val argAsts = node.arguments.children.map(astForNode) ++ trailingClosureAsts ++ additionalTrailingClosuresAsts
     setArgumentIndices(argAsts)
 
     val baseRoot = baseAst.root.toList

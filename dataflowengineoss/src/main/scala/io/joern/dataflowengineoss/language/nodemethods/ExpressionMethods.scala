@@ -1,6 +1,7 @@
 package io.joern.dataflowengineoss.language.nodemethods
 
 import io.joern.dataflowengineoss.semanticsloader.*
+import io.joern.dataflowengineoss.semanticsloader.FlowPath.{FlowMapping, PassThroughMapping}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Expression, Method}
 import io.shiftleft.semanticcpg.language.*
 

@@ -140,6 +140,7 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
       case ClassExpression           => astForClass(nodeInfo)
       case TSInterfaceDeclaration    => astForInterface(nodeInfo)
       case TSModuleDeclaration       => astForModule(nodeInfo)
+      case Decorator                 => astForDecorator(nodeInfo)
       case TSExportAssignment        => astForExportAssignment(nodeInfo)
       case ExportNamedDeclaration    => astForExportNamedDeclaration(nodeInfo)
       case ExportDefaultDeclaration  => astForExportDefaultDeclaration(nodeInfo)

@@ -239,7 +239,8 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     methodFullName: String,
     dispatchType: String,
     signature: Option[String],
-    typeFullName: Option[String]
+    typeFullName: Option[String],
+    staticReceiver: Option[String] = None
   ): NewCall = {
     val node_ =
       NewCall()
@@ -247,6 +248,7 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
         .name(name)
         .methodFullName(methodFullName)
         .dispatchType(dispatchType)
+        .staticReceiver(staticReceiver)
         .lineNumber(line(node))
         .columnNumber(column(node))
     signature.foreach { s => node_.signature(s) }

@@ -469,10 +469,10 @@ class ExpressionTests extends AstSwiftSrc2CpgSuite {
            | var a = "abc";
            | var b = "\\\"abc";
            | var c = "abc\\\"";
-           | var d = ${tripQuote}
+           | var d = $tripQuote
            |abc
            |def
-           |${tripQuote};
+           |$tripQuote;
            |}
            |""".stripMargin)
 

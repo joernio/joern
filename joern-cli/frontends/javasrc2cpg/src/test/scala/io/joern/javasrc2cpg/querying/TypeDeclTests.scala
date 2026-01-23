@@ -59,6 +59,18 @@ class NewTypeDeclTests extends JavaSrcCode2CpgFixture {
     }
   }
 
+  "type decl code" should {
+    "include abstract modifier and type parameters" in {
+      val cpg = code("""
+          |class BaseReq {}
+          |public abstract class GenericService<T extends BaseReq, R> {}
+          |""".stripMargin)
+
+      cpg.typeDecl.nameExact("GenericService").code.l shouldBe
+        List("public abstract class GenericService<T extends BaseReq, R>")
+    }
+  }
+
   "typedecls extending unresolved types available in imports should have inheritsFrom set" in {
     val cpg = code("""package io.vrooom.vulnerableapp;
         |

@@ -58,31 +58,32 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     codes.map(_.replace("...", ""))
   }
 
-  protected def astsForDecorators(elem: BabelNodeInfo): Seq[Ast] = {
+  private def decoratorElements(elem: BabelNodeInfo): List[BabelNodeInfo] = {
     if (hasKey(elem.json, "decorators") && !elem.json("decorators").isNull) {
-      elem.json("decorators").arr.toList.map(d => astForDecorator(createBabelNodeInfo(d)))
-    } else Seq.empty
+      elem.json("decorators").arr.toList.map(createBabelNodeInfo)
+    } else List.empty
   }
 
-  private def astForDecorator(decorator: BabelNodeInfo): Ast = {
+  protected def decoratorExpressionElements(elem: BabelNodeInfo): List[BabelNodeInfo] = {
+    val exprs = decoratorElements(elem).map(e => createBabelNodeInfo(e.json("expression")))
+    exprs.collect {
+      case d if d.node != Identifier && d.node != MemberExpression => d
+    }
+  }
+
+  protected def astsForDecorators(elem: BabelNodeInfo): List[Ast] = {
+    decoratorElements(elem).map(d => astForDecorator(d))
+  }
+
+  protected def astForDecorator(decorator: BabelNodeInfo): Ast = {
     val exprNode = createBabelNodeInfo(decorator.json("expression"))
     exprNode.node match {
       case Identifier | MemberExpression =>
-        val (name, fullName) = namesForDecoratorExpression(code(exprNode.json))
+        val (name, fullName) = namesForDecoratorExpression(exprNode.code)
         annotationAst(annotationNode(decorator, decorator.code, name, fullName), List.empty)
-      case CallExpression =>
-        val (name, fullName) = namesForDecoratorExpression(code(exprNode.json("callee")))
-        val node             = annotationNode(decorator, decorator.code, name, fullName)
-        val assignmentAsts = exprNode.json("arguments").arr.toList.map { arg =>
-          createBabelNodeInfo(arg).node match {
-            case AssignmentExpression =>
-              annotationAssignmentAst(code(arg("left")), code(arg), astForNodeWithFunctionReference(arg("right")))
-            case _ =>
-              annotationAssignmentAst("value", code(arg), astForNodeWithFunctionReference(arg))
-          }
-        }
-        annotationAst(node, assignmentAsts)
-      case _ => Ast()
+      case _ =>
+        val (name, fullName) = namesForDecoratorExpression(exprNode.code.takeWhile(_ != '('))
+        annotationAst(annotationNode(decorator, decorator.code, name, fullName), List.empty)
     }
   }
 
