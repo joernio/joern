@@ -35,9 +35,22 @@ class ExtensionsPass(
     handleExtensionMembers(diffGraph)
     handleExtensionCalls(diffGraph)
     handleMemberPropertyGetterCalls(diffGraph)
-    handleMemberPropertySetterCalls(diffGraph)
     handleInherits(diffGraph)
   }
+
+  /** Creates a pass that rewrites computed-property member accesses to use the corresponding setter calls. We need to
+    * separate this from the main pass as setter handling needs to happen after getter handling. (For the case where a
+    * setter is called on the result of a getter.)
+    *
+    * @return
+    *   A pass that rewrites computed-property member accesses to use the corresponding setter calls.
+    */
+  def setters: ExtensionsPass =
+    new ExtensionsPass(cpg, extensionMembers, extensionFullNameMapping, memberPropertyMapping, inheritsMapping) {
+      override def run(diffGraph: DiffGraphBuilder): Unit = {
+        handleMemberPropertySetterCalls(diffGraph)
+      }
+    }
 
   /** Lookup a `TypeDecl` by its expected `fullName`, falling back to a best-effort simple-name lookup.
     *
