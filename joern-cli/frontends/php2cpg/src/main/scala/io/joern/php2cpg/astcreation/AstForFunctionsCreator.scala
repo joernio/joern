@@ -173,6 +173,19 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     }
     scope.useFunctionDecl(methodName, fullName)
 
+    val thisParam = if (!isAnonymousMethod && decl.isClassMethod && !isStatic) {
+      Option(thisParamAstForMethod(decl))
+    } else {
+      None
+    }
+    val staticReceiver = Option.when(decl.isClassMethod && isStatic) {
+      staticReceiverAstForMethod(decl)
+    }
+
+    val parameters = thisParam.toList ++ staticReceiver.toList ++ decl.params.zipWithIndex.map { case (param, idx) =>
+      astForParam(param, idx + 1)
+    }
+
     val returnType = decl.returnType.map(_.name).getOrElse(Defines.Any)
 
     val fieldInitAsts = scope.getFieldInits.map { fieldInit =>
@@ -260,6 +273,25 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     Ast(thisNode)
   }
 
+  private def staticReceiverAstForMethod(originNode: PhpNode): Ast = {
+    val typeFullName = scope.getEnclosingTypeDeclTypeFullName.getOrElse(Defines.Any)
+
+    val node = parameterInNode(
+      originNode,
+      name = NameConstants.StaticReceiver,
+      code = NameConstants.StaticReceiver,
+      index = 0,
+      isVariadic = false,
+      evaluationStrategy = EvaluationStrategies.BY_SHARING,
+      typeFullName = typeFullName
+    ).dynamicTypeHintFullName(typeFullName :: Nil)
+    // TODO Add dynamicTypeHintFullName to parameterInNode param list
+
+    scope.addToScope(NameConstants.StaticReceiver, node)
+
+    Ast(node)
+  }
+
   protected def thisIdentifier(originNode: PhpNode): NewIdentifier = {
     val typ = scope.getEnclosingTypeDeclTypeName
     identifierNode(originNode, NameConstants.This, s"$$${NameConstants.This}", typ.getOrElse(Defines.Any), typ.toList)
@@ -309,12 +341,16 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val typeFullName = param.paramType.map(_.name).getOrElse(Defines.Any)
 
-    val byRefCodePrefix = if (param.byRef) "&" else ""
-    val code            = s"$byRefCodePrefix$$${param.name}"
+    val code      = getParamCode(param)
     val paramNode = parameterInNode(param, param.name, code, index, param.isVariadic, evaluationStrategy, typeFullName)
     val attributeAsts = param.attributeGroups.flatMap(astForAttributeGroup)
 
     Ast(paramNode).withChildren(attributeAsts)
+  }
+
+  private def getParamCode(param: PhpParam): String = {
+    val byRefCodePrefix = if (param.byRef) "&" else ""
+    s"$byRefCodePrefix$$${param.name}"
   }
 
   protected def astForStaticAndConstInits(node: PhpNode): Option[Ast] = {
