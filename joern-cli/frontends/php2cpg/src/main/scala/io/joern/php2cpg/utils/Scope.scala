@@ -225,6 +225,12 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)
   def surroundingMethodParams: List[String] =
     stack.map(_.scopeNode).collectFirst { case ms: MethodScope => ms }.map(_.parameterNames.toList).get
 
+  def surroundingMethodReceiver: Option[String] =
+    stack
+      .collectFirst { case scopeEl @ ScopeElement(_: MethodScope, vars) => vars.headOption.map(_.head) }
+      .flatten
+      .filter(v => Set(NameConstants.StaticReceiver, NameConstants.This).contains(v))
+
   def getConstAndStaticInits: List[PhpInit] = {
     getInits(constAndStaticInits)
   }

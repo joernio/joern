@@ -84,6 +84,9 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
   protected def getTypeDeclPrefix: Option[String] =
     scope.getEnclosingTypeDeclTypeName.filterNot(_ == NamespaceTraversal.globalNamespaceName)
 
+  protected def getInheritedTypeFullName: Option[String] =
+    scope.getEnclosingTypeDecl.flatMap(_.inheritsFromTypeFullName.headOption)
+
   protected def codeForMethodCall(call: PhpCallExpr, targetAst: Ast, name: String): String = {
     val callOperator = if (call.isNullSafe) s"?$InstanceMethodDelimiter" else InstanceMethodDelimiter
     s"${targetAst.rootCodeOrEmpty}$callOperator$name"
@@ -249,9 +252,17 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
   }
 
   protected def getMfn(call: PhpCallExpr, name: String): String = {
-    lazy val default               = s"$UnresolvedNamespace$MethodDelimiter$name"
-    lazy val maybeResolvedFunction = scope.resolveFunctionIdentifier(name)
+    lazy val default                    = s"$UnresolvedNamespace$MethodDelimiter$name"
+    lazy val maybeResolvedFunction      = scope.resolveFunctionIdentifier(name)
+    lazy val maybeInheritedTypeFullName = getInheritedTypeFullName
     call.target match {
+      case Some(nameExpr: PhpNameExpr) if call.isStatic && nameExpr.name == NameConstants.Static =>
+        // static:: late static binding call handled separately as we consider it a dynamic call
+        composeMethodFullNameForCall(name)
+      case Some(nameExpr: PhpNameExpr)
+          if call.isStatic && nameExpr.name == NameConstants.Parent && maybeInheritedTypeFullName.isDefined =>
+        // Static parent:: method call
+        s"${maybeInheritedTypeFullName.get}$MethodDelimiter$name"
       case Some(nameExpr: PhpNameExpr) if call.isStatic =>
         // Static method call with a simple receiver
         if (nameExpr.name == NameConstants.Self)
