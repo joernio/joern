@@ -500,8 +500,13 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
 
     addAstChildrenAsArguments(callNode, 1, lhsNode, rhsNode)
     // Do not include imports or function pointers
-    if (!codeOf(rhsNode).startsWith("import(") && codeOf(rhsNode) != s"def ${codeOf(lhsNode)}(...)")
+    val isImportCall = rhsNode match {
+      case c: NewCall => c.name == "import"
+      case _          => false
+    }
+    if (!isImportCall && codeOf(rhsNode) != s"def ${codeOf(lhsNode)}(...)") {
       contextStack.considerAsGlobalVariable(lhsNode)
+    }
 
     callNode
   }
