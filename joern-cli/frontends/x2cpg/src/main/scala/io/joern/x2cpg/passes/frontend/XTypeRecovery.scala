@@ -418,6 +418,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           .nameExact(memberName)
           .getKnownTypes
         symbolTable.append(LocalVar(alias), memberTypes)
+        // Allow direct calls of imported members to resolve to base module path.
+        symbolTable.append(CallAlias(alias), basePath)
       case UnknownMethod(fullName, alias, receiver, _) =>
         symbolTable.append(CallAlias(alias, receiver), fullName)
       case UnknownTypeDecl(fullName, _) =>
@@ -1022,6 +1024,15 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
             if (state.enableDummyTypesForThisIteration) symbolTable.get(x).toSeq
             else symbolTable.get(x).filterNot(XTypeRecovery.isDummyType).toSeq
           storeCallTypeInfo(x, typs)
+        case x: Call if symbolTable.contains(CallAlias(x.name)) && !x.name.startsWith("<operator>") =>
+          val typs = symbolTable
+            .get(CallAlias(x.name))
+            .map { t =>
+              if (t.endsWith(s"$pathSep${x.name}")) t
+              else createCallFromIdentifierTypeFullName(t, x.name)
+            }
+            .filterNot(XTypeRecovery.isDummyType)
+          storeCallTypeInfo(x, typs.toSeq)
         case x: Identifier if symbolTable.contains(CallAlias(x.name)) && x.inCall.nonEmpty =>
           setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.l)
         case x: Call if x.argument.headOption.exists(symbolTable.contains) =>
@@ -1080,7 +1091,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   }
 
   protected def setTypeForDynamicDispatchCall(call: Call, i: Identifier): Unit = {
-    val idHints   = symbolTable.get(i)
+    val idHints   = if (symbolTable.contains(i)) symbolTable.get(i) else symbolTable.get(CallAlias(i.name))
     val callTypes = symbolTable.get(call)
     persistType(i, idHints)
     if (callTypes.isEmpty && !call.name.startsWith("<operator>"))
