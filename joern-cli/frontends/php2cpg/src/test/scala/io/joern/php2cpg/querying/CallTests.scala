@@ -1,11 +1,11 @@
 package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.astcreation.AstCreator.NameConstants
-import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.php2cpg.parser.Domain
+import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.x2cpg.Defines
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, Method}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, Literal}
 import io.shiftleft.semanticcpg.language.*
 
 class CallTests extends PhpCode2CpgFixture {
@@ -382,5 +382,256 @@ class CallTests extends PhpCode2CpgFixture {
     construct.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     construct.typeFullName shouldBe Defines.Any
     construct.dynamicTypeHintFullName shouldBe Seq.empty
+  }
+
+  "late static binding call in static method" should {
+    val cpg = code("""<?php
+        |class Foo {
+        |  public static function foo($test) {
+        |    static::bar();
+        |  }
+        |
+        |  private static function bar() {}
+        |}
+        |""".stripMargin)
+
+    "contain a dynamically dispatched call" in {
+      inside(cpg.call("bar").l) { case (call: Call) :: Nil =>
+        call.methodFullName shouldBe "Foo.bar"
+        call.code shouldBe "static::bar()"
+        call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+
+        inside(call.receiver.isIdentifier.l) { case (identifier: Identifier) :: Nil =>
+          identifier.name shouldBe NameConstants.StaticReceiver
+          identifier.code shouldBe NameConstants.Static
+        }
+      }
+    }
+
+    "contain <staticReceiver> as argument 0 of static functions" in {
+      inside(cpg.method.isStatic.l) { case (fooMethod: Method) :: (barMethod: Method) :: _ :: Nil =>
+        fooMethod.name shouldBe "foo"
+        fooMethod.parameter.headOption.map(_.name) shouldBe Some(NameConstants.StaticReceiver)
+
+        barMethod.name shouldBe "bar"
+        barMethod.parameter.headOption.map(_.name) shouldBe Some(NameConstants.StaticReceiver)
+      }
+    }
+  }
+
+  "late static binding call in a non-static method" should {
+    val cpg = code("""<?php
+        |class Foo {
+        |  public function foo($test) {
+        |    static::bar();
+        |  }
+        |
+        |  private static function bar() {}
+        |}
+        |""".stripMargin)
+
+    "contain a dynamically dispatched call" in {
+      inside(cpg.call("bar").l) { case (call: Call) :: Nil =>
+        call.methodFullName shouldBe "Foo.bar"
+        call.code shouldBe "static::bar()"
+        call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      }
+    }
+
+    "have 'this' as the call receiver" in {
+      inside(cpg.call("bar").receiver.isIdentifier.l) { case (identifier: Identifier) :: Nil =>
+        identifier.name shouldBe "this"
+      }
+    }
+  }
+
+  "self call to a static function within a static function" should {
+    val cpg = code("""<?php
+        |class Foo {
+        |  static function foo() {
+        |    self::bar();
+        |  }
+        |
+        |  static function bar() {}
+        |}
+        |""".stripMargin)
+
+    "be a statically dispatched call" in {
+      inside(cpg.call("bar").l) { case (call: Call) :: Nil =>
+        call.methodFullName shouldBe "Foo.bar"
+        call.code shouldBe "self::bar()"
+        call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      }
+    }
+
+    "have the correct receivers" in {
+      inside(cpg.call("bar").l) { case (call: Call) :: Nil =>
+        call.staticReceiver shouldBe Some("Foo")
+      }
+    }
+  }
+
+  "self call to a static function within a non-static function" should {
+    val cpg = code("""<?php
+        |class Foo {
+        |  function foo() {
+        |    self::bar();
+        |  }
+        |
+        |  static function bar() {}
+        |}
+        |""".stripMargin)
+
+    "be a statically dispatched call" in {
+      inside(cpg.call("bar").l) { case (call: Call) :: Nil =>
+        call.methodFullName shouldBe "Foo.bar"
+        call.code shouldBe "self::bar()"
+        call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      }
+    }
+
+    "have the correct receivers" in {
+      inside(cpg.call("bar").l) { case (call: Call) :: Nil =>
+        call.staticReceiver shouldBe Some("Foo")
+      }
+    }
+  }
+
+  "self call to a non-static function within a non-static function" should {
+    val cpg = code("""<?php
+        |class Foo {
+        |  function foo() {
+        |    self::bar();
+        |  }
+        |
+        |  function bar() {}
+        |}
+        |""".stripMargin)
+
+    "be a statically dispatched call" in {
+      inside(cpg.call("bar").l) { case (call: Call) :: Nil =>
+        call.methodFullName shouldBe "Foo.bar"
+        call.code shouldBe "self::bar()"
+        call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      }
+    }
+
+    "have the correct receivers" in {
+      inside(cpg.call("bar").l) { case (call: Call) :: Nil =>
+        call.staticReceiver shouldBe Some("Foo")
+      }
+    }
+  }
+
+  "parent call to a static function from a static function" should {
+    val cpg = code("""<?php
+        |class Base {
+        |  static function bar() {}
+        |}
+        |
+        |class Foo extends Base {
+        |  static function foo() {
+        |    parent::bar();
+        |  }
+        |}
+        |""".stripMargin)
+
+    "be a statically dispatched call to the base class" in {
+      inside(cpg.call("bar").l) { case (call: Call) :: Nil =>
+        call.methodFullName shouldBe "Base.bar"
+        call.code shouldBe "parent::bar()"
+        call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      }
+    }
+
+    "have the correct receivers" in {
+      inside(cpg.call("bar").l) { case (call: Call) :: Nil =>
+        call.staticReceiver shouldBe Some("Base")
+      }
+    }
+  }
+
+  "parent call to a static function from a non-static function" should {
+    val cpg = code("""<?php
+        |class Base {
+        |  static function bar() {}
+        |}
+        |
+        |class Foo extends Base {
+        |  function foo() {
+        |    parent::bar();
+        |  }
+        |}
+        |""".stripMargin)
+
+    "be a statically dispatched call to the base class" in {
+      inside(cpg.call("bar").l) { case (call: Call) :: Nil =>
+        call.methodFullName shouldBe "Base.bar"
+        call.code shouldBe "parent::bar()"
+        call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      }
+    }
+
+    "have the correct receivers" in {
+      inside(cpg.call("bar").l) { case (call: Call) :: Nil =>
+        call.staticReceiver shouldBe Some("Base")
+      }
+    }
+  }
+
+  "parent call to a non-static function from a non-static function" should {
+    val cpg = code("""<?php
+        |class Base {
+        |  function bar() {}
+        |}
+        |
+        |class Foo extends Base {
+        |  function foo() {
+        |    parent::bar();
+        |  }
+        |}
+        |""".stripMargin)
+
+    "be a statically dispatched call to the base class" in {
+      inside(cpg.call("bar").l) { case (call: Call) :: Nil =>
+        call.methodFullName shouldBe "Base.bar"
+        call.code shouldBe "parent::bar()"
+        call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      }
+    }
+
+    "have the correct receivers" in {
+      inside(cpg.call("bar").l) { case (call: Call) :: Nil =>
+        call.staticReceiver shouldBe Some("Base")
+      }
+    }
+  }
+
+  "parent call to a non-static function from a static function" should {
+    val cpg = code("""<?php
+        |class Base {
+        |  function bar() {}
+        |}
+        |
+        |class Foo extends Base {
+        |  static function foo() {
+        |    parent::bar();
+        |  }
+        |}
+        |""".stripMargin)
+
+    "be a statically dispatched call to the base class" in {
+      inside(cpg.call("bar").l) { case (call: Call) :: Nil =>
+        call.methodFullName shouldBe "Base.bar"
+        call.code shouldBe "parent::bar()"
+        call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      }
+    }
+
+    "have the correct receivers" in {
+      inside(cpg.call("bar").l) { case (call: Call) :: Nil =>
+        call.staticReceiver shouldBe Some("Base")
+      }
+    }
   }
 }
