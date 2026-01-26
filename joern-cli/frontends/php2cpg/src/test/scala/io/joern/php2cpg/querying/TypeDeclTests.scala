@@ -279,26 +279,24 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       fileName = "foo.php"
     )
 
-    inside(cpg.typeDecl.name("Foo").l) { case List(fooDecl) =>
-      fooDecl.fullName shouldBe "Foo"
-      fooDecl.code shouldBe "enum Foo"
-
-      inside(fooDecl.member.l) { case List(aMember: Member, bMember: Member) =>
-        aMember.name shouldBe "A"
-        aMember.code shouldBe "case A"
-        aMember.lineNumber shouldBe Some(3)
-
-        bMember.name shouldBe "B"
-        bMember.code shouldBe "case B"
-        bMember.lineNumber shouldBe Some(4)
-      }
-    }
-
-    inside(cpg.typeDecl.name(s"Foo${Domain.MetaTypeDeclExtension}").l) {
+    inside(cpg.typeDecl.name(s"Foo").l) {
       case fooTypeDecl :: Nil =>
+        fooTypeDecl.fullName shouldBe "Foo"
+        fooTypeDecl.code shouldBe "enum Foo"
+
+        inside(fooTypeDecl.member.l) { case List(aMember: Member, bMember: Member) =>
+          aMember.name shouldBe "A"
+          aMember.code shouldBe "case A"
+          aMember.lineNumber shouldBe Some(3)
+
+          bMember.name shouldBe "B"
+          bMember.code shouldBe "case B"
+          bMember.lineNumber shouldBe Some(4)
+        }
+
         inside(fooTypeDecl.method.l) { case List(clinitMethod: Method) =>
           clinitMethod.name shouldBe Defines.StaticInitMethodName
-          clinitMethod.fullName shouldBe s"Foo${Domain.MetaTypeDeclExtension}.${Defines.StaticInitMethodName}"
+          clinitMethod.fullName shouldBe s"Foo.${Defines.StaticInitMethodName}"
           clinitMethod.signature shouldBe ""
           clinitMethod.filename shouldBe "foo.php"
           clinitMethod.file.name.l shouldBe List("foo.php")
@@ -344,10 +342,10 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       |  public static function foo() {}
       |}""".stripMargin)
 
-    inside(cpg.typeDecl.name(s"Foo${Domain.MetaTypeDeclExtension}").method.name("foo").l) {
+    inside(cpg.typeDecl.name(s"Foo").method.name("foo").l) {
       case fooMethod :: Nil =>
         fooMethod.name shouldBe "foo"
-        fooMethod.fullName shouldBe s"Foo${Domain.MetaTypeDeclExtension}.foo"
+        fooMethod.fullName shouldBe s"Foo.foo"
       case xs => fail(s"Expected one typeDecl, got ${xs.name.mkString("[", ",", "]")}")
     }
   }
@@ -549,16 +547,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       |   private int $x;
       |  };
       |}""".stripMargin)
-    inside(cpg.typeDecl.name("Foo").member.l) {
-      case _ :: fooAnonMem :: Nil =>
-        fooAnonMem.name shouldBe "Foo.anon-class-0"
-      case xs => fail(s"Expected two members, got ${xs.code.mkString("[", ",", "]")}")
-    }
-
-    inside(cpg.typeDecl.name(s"Foo${Domain.MetaTypeDeclExtension}").member.l) {
-      case anonTypeDeclMem :: Nil =>
-        anonTypeDeclMem.name shouldBe s"Foo.anon-class-0${Domain.MetaTypeDeclExtension}"
-      case xs => fail(s"Expected one member for metaclass type decl, got ${xs.name.mkString("[", ",", "]")}")
+    inside(cpg.typeDecl.name("Foo").member.l) { case _ :: fooAnonMem :: Nil =>
+      fooAnonMem.name shouldBe "Foo.anon-class-0"
     }
   }
 
@@ -610,15 +600,15 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       |}""".stripMargin)
 
     "create a singleton type decl" in {
-      inside(cpg.typeDecl.name(s"Foo${Domain.MetaTypeDeclExtension}").l) {
+      inside(cpg.typeDecl.name(s"Foo").l) {
         case fooTypeDecl :: Nil =>
-          fooTypeDecl.fullName shouldBe s"Foo${Domain.MetaTypeDeclExtension}"
+          fooTypeDecl.fullName shouldBe s"Foo"
         case xs => fail(s"Expected one singleton type decl, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
     "contain static methods" in {
-      inside(cpg.typeDecl.name(s"Foo${Domain.MetaTypeDeclExtension}").method.name("bar").l) {
+      inside(cpg.typeDecl.name(s"Foo").method.name("bar").l) {
         case barMethod :: Nil =>
           barMethod.modifier.modifierType.sorted.l shouldBe List(ModifierTypes.PUBLIC, ModifierTypes.STATIC)
         case xs => fail(s"Expected one method, got ${xs.code.mkString("[", ",", "]")}")
@@ -626,16 +616,17 @@ class TypeDeclTests extends PhpCode2CpgFixture {
     }
 
     "contain members for static variables and consts" in {
-      inside(cpg.typeDecl.name(s"Foo${Domain.MetaTypeDeclExtension}").member.l) {
-        case bazzMember :: fooMember :: Nil =>
+      inside(cpg.typeDecl.name(s"Foo").member.l) {
+        case bazzMember :: fooMember :: bazMember :: Nil =>
           bazzMember.name shouldBe "BAZZ"
           fooMember.name shouldBe "foo"
+          bazMember.name shouldBe "baz"
         case xs => fail(s"Expected two members, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
     "contain the <clinit> static constructor" in {
-      inside(cpg.typeDecl.name(s"Foo${Domain.MetaTypeDeclExtension}").method.name(Defines.StaticInitMethodName).l) {
+      inside(cpg.typeDecl.name(s"Foo").method.name(Defines.StaticInitMethodName).l) {
         case staticConstructor :: Nil =>
           inside(staticConstructor.body.astChildren.l) {
             case (self: Local) :: (assignmentBazz: Call) :: (assignmentFoo: Call) :: Nil =>
@@ -669,30 +660,22 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       |  public static function bar() {}
       |};""".stripMargin)
 
-    "Create <metaclass> type decl" in {
-      inside(cpg.typeDecl.name(s"Test0.php:<global>.anon-class-0${Domain.MetaTypeDeclExtension}").l) {
-        case anonTypeDecl :: Nil =>
-          anonTypeDecl.fullName shouldBe s"Test0.php:<global>.anon-class-0${Domain.MetaTypeDeclExtension}"
-        case xs => fail(s"Expected one anon type-decl, got ${xs.code.mkString("[", ",", "]")}")
-      }
-    }
-
     "Contains required consts and static vars" in {
-      inside(cpg.typeDecl.name(s"Test0.php:<global>.anon-class-0${Domain.MetaTypeDeclExtension}").member.l) {
-        case bazzMember :: fooMember :: Nil =>
+      inside(cpg.typeDecl.name(s"Test0.php:<global>.anon-class-0").member.l) {
+        case bazMember :: bazzMember :: fooMember :: Nil =>
           bazzMember.code shouldBe "const BAZZ"
           bazzMember.modifier.modifierType.l.contains(ModifierTypes.FINAL) shouldBe true
 
+          bazMember.code shouldBe "$baz"
+          bazzMember.modifier.modifierType.l shouldBe List(ModifierTypes.FINAL)
+
           fooMember.code shouldBe "static $foo"
           fooMember.modifier.modifierType.l.contains(ModifierTypes.STATIC) shouldBe true
-        case xs => fail(s"Expected one anon type-decl, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
     "Contains the required static method" in {
-      inside(
-        cpg.typeDecl.name(s"Test0.php:<global>.anon-class-0${Domain.MetaTypeDeclExtension}").method.name("bar").l
-      ) {
+      inside(cpg.typeDecl.name(s"Test0.php:<global>.anon-class-0").method.name("bar").l) {
         case barMethod :: Nil =>
           barMethod.name shouldBe "bar"
           barMethod.modifier.modifierType.l.contains(ModifierTypes.STATIC) shouldBe true
@@ -704,14 +687,14 @@ class TypeDeclTests extends PhpCode2CpgFixture {
     "Contains static constructor" in {
       inside(
         cpg.typeDecl
-          .name(s"Test0.php:<global>.anon-class-0${Domain.MetaTypeDeclExtension}")
+          .name(s"Test0.php:<global>.anon-class-0")
           .method
           .name(Defines.StaticInitMethodName)
           .l
       ) {
         case staticConstructor :: Nil =>
           staticConstructor.name shouldBe Defines.StaticInitMethodName
-          staticConstructor.fullName shouldBe s"Test0.php:<global>.anon-class-0${Domain.MetaTypeDeclExtension}.<clinit>"
+          staticConstructor.fullName shouldBe s"Test0.php:<global>.anon-class-0.<clinit>"
 
           inside(staticConstructor.body.astChildren.l) {
             case (self: Local) :: (bazzAssignment: Call) :: (fooAssignment: Call) :: Nil =>
@@ -747,18 +730,12 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
     "contain deduplicated fullNames" in {
       inside(cpg.typeDecl.fullName("Foo.*").sortBy(_.fullName).l) {
-        case foo :: fooMethod :: fooDup :: fooDupMethod :: fooMetaClassDup :: fooMetaClass :: Nil =>
+        case foo :: fooMethod :: fooDup :: fooDupMethod :: Nil =>
           foo.name shouldBe "Foo"
           foo.fullName shouldBe "Foo"
 
-          fooMetaClass.name shouldBe "Foo<metaclass>"
-          fooMetaClass.fullName shouldBe "Foo<metaclass>"
-
           fooDup.name shouldBe "Foo"
           fooDup.fullName shouldBe "Foo<duplicate>0"
-
-          fooMetaClassDup.name shouldBe "Foo<metaclass>"
-          fooMetaClassDup.fullName shouldBe "Foo<duplicate>0<metaclass>"
         case xs => fail(s"Expected two typeDecls for Foo, got ${xs.name.mkString("[", ",", "]")}")
       }
     }
@@ -772,6 +749,23 @@ class TypeDeclTests extends PhpCode2CpgFixture {
           fooDedup.name shouldBe "foo"
           fooDedup.fullName shouldBe "Foo<duplicate>0.foo"
         case xs => fail(s"Expected two methods for foo, got ${xs.name.mkString("[", ",", "]")}")
+      }
+    }
+  }
+
+  "Same class and function name" should {
+    val cpg = code("""<?php
+        |class Foo {
+        |  function Foo() {}
+        |}""".stripMargin)
+
+    "contain deduplicated fullNames" in {
+      inside(cpg.typeDecl.fullName("Foo.*").sortBy(_.fullName).l) { case classTypeDecl :: funcTypeDecl :: Nil =>
+        classTypeDecl.name shouldBe "Foo"
+        classTypeDecl.fullName shouldBe "Foo"
+
+        funcTypeDecl.name shouldBe "Foo"
+        funcTypeDecl.fullName shouldBe "Foo.Foo"
       }
     }
   }
