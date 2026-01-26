@@ -86,6 +86,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case None if isCallOnVariable(call) => astForDynamicCall(call, name, arguments, None)
       case None                           => astForStaticCall(call, name, arguments)
       case maybeTarget @ Some(expr: PhpNameExpr) if call.isStatic && expr.name == NameConstants.Static =>
+        // Late static binding calls (static::foo()) are dynamic calls resolved at runtime.
         astForDynamicCall(call, name, arguments, maybeTarget, isLateStaticBindingCall = true)
       case _ if call.isStatic => astForStaticCall(call, name, arguments)
       case maybeTarget        => astForDynamicCall(call, name, arguments, maybeTarget)
@@ -103,16 +104,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val targetAst = if (isLateStaticBindingCall) {
       maybeTarget match {
         case Some(t: PhpNameExpr) =>
-          scope.surroundingMethodReceiver match {
-            case Some(recv) =>
-              val target = t.copy(name = recv)
-              Some(astForNameExpr(target, Some(NameConstants.Static)))
-            case _ =>
-              logger.warn(s"Expected method surround call $call to have parameter 0 as `static` or `<staticReceiver>")
-              None
+          scope.surroundingMethodReceiver.map { recv =>
+            val target = t.copy(name = recv)
+            astForNameExpr(target, Some(NameConstants.Static))
           }
         case t =>
-          logger.warn(s"Expected a PhpNameExpr target for call on static receiver but got $t.")
+          logger.warn(s"Expected a PhpNameExpr target but got $t.")
           None
       }
     } else {
