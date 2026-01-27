@@ -521,11 +521,10 @@ trait AstForStatementsCreator { this: AstCreator =>
   private def wrapInNullComparison(node: IASTNode, conditionAst: Ast): Ast = {
     def isWrapCandidate(ast: Ast): Boolean = {
       ast.root match {
-        case Some(r: NewCall)                                       => false
-        case Some(r: NewBlock)                                      => false
-        case Some(r: NewLiteral)                                    => false
-        case Some(r: NewIdentifier) if r.typeFullName.endsWith("*") => false
-        case _                                                      => true
+        case Some(r: NewCall)    => false
+        case Some(r: NewBlock)   => false
+        case Some(r: NewLiteral) => false
+        case _                   => true
       }
     }
 
@@ -535,17 +534,20 @@ trait AstForStatementsCreator { this: AstCreator =>
     conditionAst match {
       case ast if !isWrapCandidate(ast) => ast
       case ast =>
+        val nullNode = conditionAst.root match {
+          case Some(id: NewIdentifier) if id.typeFullName.endsWith("*") => literalNode(node, "NULL", Defines.Any)
+          case _                                                        => literalNode(node, "0", "int")
+        }
         val notEqualsCallNode = callNode(
           node,
-          s"${code(node)} != 0",
+          s"${code(node)} != ${nullNode.code}",
           Operators.notEquals,
           Operators.notEquals,
           DispatchTypes.STATIC_DISPATCH,
           None,
           Some(registerType("int"))
         )
-        val zeroLiteralNode = literalNode(node, "0", "int")
-        createCallAst(notEqualsCallNode, Seq(ast, Ast(zeroLiteralNode)))
+        createCallAst(notEqualsCallNode, Seq(ast, Ast(nullNode)))
     }
   }
 

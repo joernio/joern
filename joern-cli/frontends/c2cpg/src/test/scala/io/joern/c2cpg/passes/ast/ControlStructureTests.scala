@@ -220,11 +220,9 @@ class ControlStructureTests extends C2CpgSuite(FileDefaults.CppExt) {
         fileName = "foo.c"
       )
       inside(cpg.method.nameExact("foo").controlStructure.l) { case List(whileLoop) =>
-        whileLoop.condition.isCall shouldBe empty
-        inside(whileLoop.condition.isIdentifier.l) { case List(x) =>
+        inside(whileLoop.condition.isCall.l) { case List(x) =>
           x.order shouldBe 2
-          x.name shouldBe "x"
-          x.code shouldBe "x"
+          x.code shouldBe "x != NULL"
         }
       }
       inside(cpg.method.nameExact("bar").controlStructure.l) { case List(whileLoop) =>
