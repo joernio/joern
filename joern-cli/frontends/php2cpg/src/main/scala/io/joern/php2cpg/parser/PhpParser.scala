@@ -163,14 +163,6 @@ object PhpParser {
   private val logger             = LoggerFactory.getLogger(this.getClass)
   private val PhpParserBinEnvVar = "PHP_PARSER_BIN"
 
-  private def defaultPhpIni: String = {
-    val iniContents = Source.fromResource("php.ini").getLines().mkString(System.lineSeparator())
-    val tmpIni      = FileUtil.newTemporaryFile(suffix = "-php.ini")
-    FileUtil.deleteOnExit(tmpIni)
-    Files.writeString(tmpIni, iniContents)
-    tmpIni.absolutePathAsString
-  }
-
   private def defaultPhpParserBin: String = {
     val packagePath = Paths.get(this.getClass.getProtectionDomain.getCodeSource.getLocation.toURI)
     ExternalCommand
@@ -206,14 +198,30 @@ object PhpParser {
     configOverrideOrDefaultPath("PhpParserBin", phpParserPathOverride, defaultPhpParserBin)
   }
 
-  private def maybePhpIniPath(config: Config): Option[String] = {
-    configOverrideOrDefaultPath("PhpIni", config.phpIni, defaultPhpIni)
+  private def getParser(config: Config, phpIniPath: String): Option[PhpParser] = {
+    maybePhpParserPath(config).map(phpParserPath => new PhpParser(phpParserPath, phpIniPath, config.disableFileContent))
   }
 
-  def getParser(config: Config): Option[PhpParser] = {
-    for (
-      phpParserPath <- maybePhpParserPath(config);
-      phpIniPath    <- maybePhpIniPath(config)
-    ) yield new PhpParser(phpParserPath, phpIniPath, config.disableFileContent)
+  private def validateIniPath(userProvidedIni: String): Option[String] = {
+    Paths.get(userProvidedIni) match {
+      case file if Files.exists(file) && Files.isRegularFile(file) => Some(file.absolutePathAsString)
+      case _ =>
+        logger.error(s"Invalid path for PhpIni: $userProvidedIni")
+        None
+    }
+  }
+
+  def withParser[T](config: Config)(f: Option[PhpParser] => T): T = {
+    val parserOption = config.phpIni match {
+      case Some(userProvidedIni) if userProvidedIni.nonEmpty =>
+        validateIniPath(userProvidedIni).flatMap(validatedPath => getParser(config, validatedPath))
+      case _ =>
+        Try(FileUtil.usingTemporaryFile(suffix = "-php.ini") { tmpIni =>
+          val iniContents = Source.fromResource("php.ini").getLines().mkString(System.lineSeparator())
+          Files.writeString(tmpIni, iniContents)
+          getParser(config, tmpIni.absolutePathAsString)
+        }).toOption.flatten
+    }
+    f(parserOption)
   }
 }
