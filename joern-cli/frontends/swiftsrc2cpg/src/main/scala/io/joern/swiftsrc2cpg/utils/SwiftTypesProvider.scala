@@ -660,22 +660,19 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     * @return
     *   The normalized fullName with extension qualifiers rewritten.
     */
-  private def replaceExtensionInSignature(fullName: String): String = {
-    @scala.annotation.tailrec
-    def loop(cur: String): String = {
-      ExtensionInSignatureRegex.findFirstMatchIn(cur) match {
-        case Some(m) =>
-          val head     = m.before
-          val name     = m.group(1)
-          val tail     = m.after.toString
-          val rest     = tail.stripPrefix(s"$name.")
-          val replaced = s"$head$name.$rest"
-          loop(replaced)
-        case None =>
-          cur
-      }
+  @scala.annotation.tailrec
+  private[utils] final def replaceExtensionInSignature(fullName: String): String = {
+    ExtensionInSignatureRegex.findFirstMatchIn(fullName) match {
+      case Some(m) =>
+        val head     = m.before
+        val name     = m.group(1)
+        val tail     = m.after.toString
+        val rest     = tail.stripPrefix(s"$name.")
+        val replaced = s"$head$name.$rest"
+        replaceExtensionInSignature(replaced)
+      case None =>
+        fullName
     }
-    loop(fullName)
   }
 
   /** Resolves a TypeInfo object to a ResolvedTypeInfo by demangling type and declaration fullNames.
