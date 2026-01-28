@@ -8,7 +8,7 @@ import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
-import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall, NewMethodParameterIn}
+import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall}
 
 import scala.annotation.unused
 
@@ -356,17 +356,10 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         case other if isRefToClosure(node, other) =>
           astForClosureCall(node)
         case declReferenceExprSyntax: DeclReferenceExprSyntax if code(declReferenceExprSyntax) != "self" =>
-          if (
-            !scope.lookupVariable(calleeCode).exists(_._1.isInstanceOf[NewMethodParameterIn]) &&
-            !calleeCode.startsWith(".")
-          ) {
-            val selfTpe  = fullNameOfEnclosingTypeDecl()
-            val selfNode = identifierNode(declReferenceExprSyntax, "self", "self", selfTpe)
-            scope.addVariableReference(selfNode.name, selfNode, selfTpe, EvaluationStrategies.BY_REFERENCE)
-            handleCallNodeArgs(node, Ast(selfNode), calleeCode)
-          } else {
-            handleCallNodeArgs(node, astForIdentifier(declReferenceExprSyntax), calleeCode)
-          }
+          val selfTpe  = fullNameOfEnclosingTypeDecl()
+          val selfNode = identifierNode(declReferenceExprSyntax, "self", "self", selfTpe)
+          scope.addVariableReference(selfNode.name, selfNode, selfTpe, EvaluationStrategies.BY_REFERENCE)
+          handleCallNodeArgs(node, Ast(selfNode), calleeCode)
         case other =>
           handleCallNodeArgs(node, astForNode(other), calleeCode)
       }
