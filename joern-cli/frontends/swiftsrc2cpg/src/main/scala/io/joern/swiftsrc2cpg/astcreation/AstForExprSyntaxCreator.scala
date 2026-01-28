@@ -204,7 +204,9 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val callNode = createStaticCallNode(callee, code(callExpr), callName, fullName, Defines.Any)
     setFullNameInfoForCall(callExpr, callNode)
 
-    val argAsts = callExpr.arguments.children.map(astForNode)
+    val trailingClosureAsts            = callExpr.trailingClosure.toList.map(astForNode)
+    val additionalTrailingClosuresAsts = callExpr.additionalTrailingClosures.children.map(c => astForNode(c.closure))
+    val argAsts = callExpr.arguments.children.map(astForNode) ++ trailingClosureAsts ++ additionalTrailingClosuresAsts
     callAst(callNode, argAsts)
   }
 
