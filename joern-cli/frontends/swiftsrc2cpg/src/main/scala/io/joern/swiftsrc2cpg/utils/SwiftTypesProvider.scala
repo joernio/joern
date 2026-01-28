@@ -648,18 +648,31 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     )
   }
 
-  private def replaceExtensionInSignature(fullName: String): String = {
-    ExtensionInSignatureRegex.replaceAllIn(
-      fullName,
-      m => {
-        val head = m.before
-        val name = m.group(1)
-        val rest = m.after.toString.stripPrefix(s"$name.")
-        // Only extension methods are tagged with <extension> in their fullName.
-        // The signature only contains the module and type fullNames.
-        s"$head$name.$rest"
-      }
-    )
+  /** Rewrites `(extension in X):` fragments that can appear inside demangled Swift signatures. Swift demangling may
+    * embed extension context qualifiers like: `(...(extension in FooExt):Foo.bar...)` This method normalizes those
+    * occurrences by replacing: `(extension in FooExt):Foo.` with `FooExt.Foo.`
+    *
+    * It repeatedly applies the rewrite until no such fragment remains, ensuring nested or multiple occurrences are
+    * handled.
+    *
+    * @param fullName
+    *   The demangled fullName that may contain extension qualifiers.
+    * @return
+    *   The normalized fullName with extension qualifiers rewritten.
+    */
+  @scala.annotation.tailrec
+  private[utils] final def replaceExtensionInSignature(fullName: String): String = {
+    ExtensionInSignatureRegex.findFirstMatchIn(fullName) match {
+      case Some(m) =>
+        val head     = m.before
+        val name     = m.group(1)
+        val tail     = m.after.toString
+        val rest     = tail.stripPrefix(s"$name.")
+        val replaced = s"$head$name.$rest"
+        replaceExtensionInSignature(replaced)
+      case None =>
+        fullName
+    }
   }
 
   /** Resolves a TypeInfo object to a ResolvedTypeInfo by demangling type and declaration fullNames.
