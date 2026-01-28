@@ -137,7 +137,6 @@ class AstCreator(
       case useStmt: PhpUseStmt             => astForUseStmt(useStmt) :: Nil
       case groupUseStmt: PhpGroupUseStmt   => astForGroupUseStmt(groupUseStmt) :: Nil
       case foreachStmt: PhpForeachStmt     => astForForeachStmt(foreachStmt) :: Nil
-      case traitUseStmt: PhpTraitUseStmt   => astforTraitUseStmt(traitUseStmt) :: Nil
       case enumCase: PhpEnumCaseStmt       => astForEnumCase(enumCase) :: Nil
       case staticStmt: PhpStaticStmt       => astsForStaticStmt(staticStmt)
       case unhandled =>
@@ -209,15 +208,6 @@ class AstCreator(
     val imports     = stmt.uses.map(astForUseUse(_, groupPrefix))
     scope.useImport(imports.flatMap(_.nodes).collect { case x: NewImport => x })
     wrapMultipleInBlock(imports, line(stmt))
-  }
-
-  private def astforTraitUseStmt(stmt: PhpTraitUseStmt): Ast = {
-    // TODO Actually implement this
-    logger.debug(
-      s"Trait use statement encountered. This is not yet supported. Location: $relativeFileName:${line(stmt)}"
-    )
-
-    Ast(unknownNode(stmt, code(stmt)))
   }
 
   private def astForUseUse(stmt: PhpUseUse, namePrefix: String = ""): Ast = {
