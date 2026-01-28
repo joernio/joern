@@ -387,6 +387,49 @@ class CallTests extends SwiftCompilerSrc2CpgSuite {
       staticFuncCall.argument shouldBe empty
     }
 
+    "be correct for implicit member expressions in call arguments" in {
+      val testCode =
+        """
+          |enum Color {
+          |  case red
+          |  case blue
+          |}
+          |
+          |func takesColor(_ c: Color) {}
+          |
+          |func main() {
+          |  takesColor(.red)
+          |}
+          |""".stripMargin
+      val cpg = code(testCode)
+
+      val List(takesColorCall) = cpg.call.nameExact("takesColor").l
+      val implicitMemberArg    = takesColorCall.arguments(1).loneElement.asInstanceOf[Unknown]
+      implicitMemberArg.code shouldBe "red"
+
+      cpg.fieldAccess.l shouldBe empty
+    }
+
+    "be correct for implicit member expressions in assignments" in {
+      val testCode =
+        """
+          |enum Color {
+          |  case red
+          |}
+          |
+          |func main() {
+          |  let c: Color = .red
+          |}
+          |""".stripMargin
+      val cpg = code(testCode)
+
+      val List(assignCall) = cpg.call.nameExact(Operators.assignment).l
+      val rhs              = assignCall.arguments(2).loneElement.asInstanceOf[Unknown]
+      rhs.code shouldBe "red"
+
+      cpg.fieldAccess.l shouldBe empty
+    }
+
   }
 
 }

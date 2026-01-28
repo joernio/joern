@@ -8,7 +8,7 @@ import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
-import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall}
+import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall, NewMethodParameterIn}
 
 import scala.annotation.unused
 
@@ -356,10 +356,17 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         case other if isRefToClosure(node, other) =>
           astForClosureCall(node)
         case declReferenceExprSyntax: DeclReferenceExprSyntax if code(declReferenceExprSyntax) != "self" =>
-          val selfTpe  = fullNameOfEnclosingTypeDecl()
-          val selfNode = identifierNode(declReferenceExprSyntax, "self", "self", selfTpe)
-          scope.addVariableReference(selfNode.name, selfNode, selfTpe, EvaluationStrategies.BY_REFERENCE)
-          handleCallNodeArgs(node, Ast(selfNode), calleeCode)
+          if (
+            !scope.lookupVariable(calleeCode).exists(_._1.isInstanceOf[NewMethodParameterIn]) &&
+            !calleeCode.startsWith(".")
+          ) {
+            val selfTpe  = fullNameOfEnclosingTypeDecl()
+            val selfNode = identifierNode(declReferenceExprSyntax, "self", "self", selfTpe)
+            scope.addVariableReference(selfNode.name, selfNode, selfTpe, EvaluationStrategies.BY_REFERENCE)
+            handleCallNodeArgs(node, Ast(selfNode), calleeCode)
+          } else {
+            handleCallNodeArgs(node, astForIdentifier(declReferenceExprSyntax), calleeCode)
+          }
         case other =>
           handleCallNodeArgs(node, astForNode(other), calleeCode)
       }
@@ -511,11 +518,14 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val member = node.declName
     val baseAst = base match {
       case None =>
-        // referencing implicit self
-        val selfTpe  = fullNameOfEnclosingTypeDecl()
-        val baseNode = identifierNode(node, "self", "self", selfTpe)
-        scope.addVariableReference("self", baseNode, selfTpe, EvaluationStrategies.BY_REFERENCE)
-        Ast(baseNode)
+        // Swift's documentation refers to this as "implicit member expression" or "shorthand syntax for enumeration cases".
+        // This syntax is not limited to enums. It works with several Swift types where the compiler can infer the type from context
+        // to access static members. This is a commonly used pattern.
+        // For enums only we could emit a Literal AST node representing the enum member. But as it works for other types as well,
+        // we emit an unknown node here to avoid making potentially wrong assumptions.
+        val code_        = code(member.baseName)
+        val unknownNode_ = unknownNode(node, code_)
+        return Ast(unknownNode_)
       case Some(otherBase) =>
         astForNode(otherBase)
     }
