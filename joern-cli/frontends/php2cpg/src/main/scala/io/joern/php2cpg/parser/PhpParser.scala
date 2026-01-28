@@ -163,13 +163,6 @@ object PhpParser {
   private val logger             = LoggerFactory.getLogger(this.getClass)
   private val PhpParserBinEnvVar = "PHP_PARSER_BIN"
 
-  private def createDefaultPhpIni(): Path = {
-    val iniContents = Source.fromResource("php.ini").getLines().mkString(System.lineSeparator())
-    val tmpIni      = FileUtil.newTemporaryFile(suffix = "-php.ini")
-    Files.writeString(tmpIni, iniContents)
-    tmpIni
-  }
-
   private def defaultPhpParserBin: String = {
     val packagePath = Paths.get(this.getClass.getProtectionDomain.getCodeSource.getLocation.toURI)
     ExternalCommand

@@ -82,7 +82,7 @@ class Php2Cpg extends X2CpgFrontend {
 
             logger.error(errorOutput)
 
-            Failure(new RuntimeException("php not found or version not supported"))
+            Failure(new RuntimeException("PhpParser could not be initialised"))
         }
       }
     } else {
