@@ -11,16 +11,12 @@ trait JsSrc2CpgFrontend extends LanguageFrontend {
   override type ConfigType = Config
 
   def execute(sourceCodePath: java.io.File): Cpg = {
-    val cpgOutFile = FileUtil.newTemporaryFile(suffix = "cpg.bin")
-    FileUtil.deleteOnExit(cpgOutFile)
     val jssrc2cpg = new JsSrc2Cpg()
     val config = getConfig()
       .fold(Config(tsTypes = false))(_.asInstanceOf[Config])
       .withInputPath(sourceCodePath.getAbsolutePath)
-      .withOutputPath(cpgOutFile.toString)
     val res = jssrc2cpg.createCpg(config).get
     new PostFrontendValidator(res, false).run()
     res
-
   }
 }
