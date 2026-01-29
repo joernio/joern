@@ -20,7 +20,8 @@ import com.github.javaparser.ast.stmt.{
   SynchronizedStmt,
   ThrowStmt,
   TryStmt,
-  WhileStmt
+  WhileStmt,
+  YieldStmt
 }
 import com.github.javaparser.symbolsolver.javaparsermodel.contexts.SwitchEntryContext
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver
@@ -132,6 +133,12 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
       .columnNumber(column(stmt))
       .code(code(stmt))
     Ast(node)
+  }
+
+  private[statements] def astForYieldStatement(stmt: YieldStmt): Ast = {
+    val node    = controlStructureNode(stmt, ControlStructureTypes.YIELD, code(stmt))
+    val exprAst = astsForExpression(stmt.getExpression, ExpectedType.empty)
+    Ast(node).withChildren(exprAst)
   }
 
   private[statements] def astsForDo(stmt: DoStmt): Seq[Ast] = {
@@ -258,13 +265,23 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
     entries: NodeList[SwitchEntry],
     controlStructureType: String
   ): Ast = {
-    val switchNode =
-      NewControlStructure()
-        .controlStructureType(controlStructureType)
-        .code(s"switch(${selector.toString})")
-        .lineNumber(line(node))
-        .columnNumber(column(node))
+    val switchNode = controlStructureNode(node, controlStructureType, s"switch(${code(selector)})")
 
+    val (selectorAst, selectorReferenceAst) = astForSwitchSelector(selector, entries)
+    val selectorNode                        = selectorAst.root.get
+
+    val switchBodyAst = astForSwitchBody(node, entries, selectorReferenceAst)
+
+    Ast(switchNode)
+      .withChild(selectorAst)
+      .withChild(switchBodyAst)
+      .withConditionEdge(switchNode, selectorNode)
+  }
+
+  private def astForSwitchSelector(
+    selector: Expression,
+    entries: NodeList[SwitchEntry]
+  ): (Ast, Option[PatternInitAndRefAsts]) = {
     val selectorAst = astsForExpression(selector, ExpectedType.empty) match {
       case Seq() =>
         throw new IllegalArgumentException(s"Got an empty ast list for expression ${code(selector)}")
@@ -276,26 +293,24 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
         asts.head
     }
 
-    val selectorNode = selectorAst.root.get
-
     val selectorMustBeIdentifierOrFieldAccess =
       entries.asScala.flatMap(_.getLabels.asScala).exists(_.isPatternExpr)
 
-    val (initializerAst, referenceAst) = if (selectorMustBeIdentifierOrFieldAccess) {
+    if (selectorMustBeIdentifierOrFieldAccess) {
       val initAndRefAsts = initAndRefAstsForPatternInitializer(selector, selectorAst)
       (initAndRefAsts.get, Option(initAndRefAsts))
     } else {
       (selectorAst, None)
     }
+  }
 
-    val entryAsts = entries.asScala.flatMap(astForSwitchEntry(_, referenceAst))
-
-    val switchBodyAst = Ast(NewBlock()).withChildren(entryAsts)
-
-    Ast(switchNode)
-      .withChild(initializerAst)
-      .withChild(switchBodyAst)
-      .withConditionEdge(switchNode, selectorNode)
+  private def astForSwitchBody(
+    node: Node,
+    entries: NodeList[SwitchEntry],
+    selectorReferenceAst: Option[PatternInitAndRefAsts]
+  ): Ast = {
+    val entryAsts = entries.asScala.flatMap(astForSwitchEntry(_, selectorReferenceAst))
+    blockAst(blockNode(node), entryAsts.toList)
   }
 
   private[statements] def astForSynchronizedStatement(stmt: SynchronizedStmt): Ast = {
@@ -348,11 +363,10 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
     val labels    = entry.getLabels.asScala.toList
     val labelAsts = astsForSwitchLabels(labels, entry.isDefault)
 
-    val entryContext = new SwitchEntryContext(entry, new CombinedTypeSolver())
-
     if (entry.getStatements.isEmpty) {
       labelAsts
     } else {
+      val entryContext = new SwitchEntryContext(entry, new CombinedTypeSolver())
       scope.pushBlockScope()
 
       val instanceOfAst = labels.lastOption.collect { case patternExpr: PatternExpr =>
@@ -376,7 +390,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
           val ifNode = controlStructureNode(
             entry.getGuard.get(),
             ControlStructureTypes.IF,
-            s"if (${guard.headOption.flatMap(_.rootCode)})"
+            s"if (${guard.headOption.flatMap(_.rootCode).getOrElse("")})"
           )
 
           controlStructureAst(ifNode, guard.headOption, bodyAst :: Nil)

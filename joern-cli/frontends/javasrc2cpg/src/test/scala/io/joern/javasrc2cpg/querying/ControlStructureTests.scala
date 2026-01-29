@@ -13,7 +13,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   Literal,
   Local,
   Return,
-  TypeRef
+  TypeRef,
+  Unknown
 }
 import io.shiftleft.semanticcpg.language.*
 
@@ -997,21 +998,57 @@ class ControlStructureTests extends JavaSrcCode2CpgFixture {
 
           body.order shouldBe 2
 
-          // Should have jump targets for each case
-          val jumpTargets = body.astChildren.collect { case jt: JumpTarget => jt }.l
-          jumpTargets.map(_.name) should contain.allOf("case", "default")
+          // Pattern matching cases have: JumpTarget, Block (with Local and IF), repeated for each case
+          // Default case has: JumpTarget, Literal
+          inside(body.astChildren.l) {
+            case List(
+                  case1Target: JumpTarget,
+                  case1Block: Block,
+                  case2Target: JumpTarget,
+                  case2Block: Block,
+                  defaultTarget: JumpTarget,
+                  defaultResult: Literal
+                ) =>
+              // First case: pattern with guard
+              case1Target.name shouldBe "case"
+              case1Target.code shouldBe "String s"
+              case1Target.order shouldBe 1
 
-          // The guarded case should have an IF control structure
-          val ifNodes =
-            matchNode.ast.collectAll[ControlStructure].filter(_.controlStructureType == ControlStructureTypes.IF).l
-          ifNodes.size should be >= 1
+              case1Block.order shouldBe 2
+              inside(case1Block.astChildren.l) { case List(patternLocal: Local, ifNode: ControlStructure) =>
+                patternLocal.name shouldBe "s"
+                patternLocal.typeFullName shouldBe "java.lang.String"
 
-          // The guard condition (s.length() > 5) should be present
-          val guardConditions = ifNodes.flatMap(_.condition.collectAll[Call].l)
-          guardConditions.exists(_.name == Operators.greaterThan) shouldBe true
+                ifNode.controlStructureType shouldBe ControlStructureTypes.IF
 
-          // The pattern variable 's' should have a local
-          matchNode.ast.collectAll[Local].name("s").size should be >= 1
+                // The IF condition includes the instanceof check and the guard (s.length() > 5)
+                // The guard should be present in the AST
+                val allCalls = ifNode.ast.collectAll[Call].l
+                allCalls.exists(_.name == Operators.greaterThan) shouldBe true
+                allCalls.exists(_.name == "length") shouldBe true
+              }
+
+              // Second case: pattern without guard
+              case2Target.name shouldBe "case"
+              case2Target.code shouldBe "String s"
+              case2Target.order shouldBe 3
+
+              case2Block.order shouldBe 4
+              inside(case2Block.astChildren.l) { case List(patternLocal: Local, ifNode: ControlStructure) =>
+                patternLocal.name shouldBe "s"
+                patternLocal.typeFullName shouldBe "java.lang.String"
+
+                ifNode.controlStructureType shouldBe ControlStructureTypes.IF
+              }
+
+              // Default case
+              defaultTarget.name shouldBe "default"
+              defaultTarget.code shouldBe "default"
+              defaultTarget.order shouldBe 5
+
+              defaultResult.code shouldBe "\"not a string\""
+              defaultResult.order shouldBe 6
+          }
         }
       }
     }
@@ -1136,6 +1173,81 @@ class ControlStructureTests extends JavaSrcCode2CpgFixture {
                 defaultResult.typeFullName shouldBe "java.lang.String"
                 defaultResult.order shouldBe 5
             }
+          }
+        }
+      }
+    }
+  }
+
+  "a switch expression with yield statements" should {
+    val cpg = code("""
+        |public class Foo {
+        |  public String test(int x) {
+        |    return switch (x) {
+        |      case 1 -> {
+        |        String s = "computed";
+        |        yield s;
+        |      }
+        |      default -> "other";
+        |    };
+        |  }
+        |}
+        |""".stripMargin)
+
+    "create a MATCH control structure with block case containing yield" in {
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.MATCH).l) { case List(matchNode) =>
+        matchNode.code shouldBe "switch(x)"
+        matchNode.lineNumber shouldBe Some(4)
+
+        inside(matchNode.astChildren.l) { case List(selector: Identifier, body: Block) =>
+          selector.name shouldBe "x"
+          selector.typeFullName shouldBe "int"
+          selector.order shouldBe 1
+
+          body.order shouldBe 2
+
+          inside(body.astChildren.l) {
+            case List(
+                  case1Target: JumpTarget,
+                  case1Label: Literal,
+                  case1Block: Block,
+                  defaultTarget: JumpTarget,
+                  defaultResult: Literal
+                ) =>
+              case1Target.name shouldBe "case"
+              case1Target.code shouldBe "1"
+              case1Target.order shouldBe 1
+
+              case1Label.code shouldBe "1"
+              case1Label.order shouldBe 2
+
+              case1Block.order shouldBe 3
+              inside(case1Block.astChildren.l) { case List(sLocal: Local, sAssign: Call, yieldNode: ControlStructure) =>
+                sLocal.name shouldBe "s"
+                sLocal.typeFullName shouldBe "java.lang.String"
+                sLocal.order shouldBe 1
+
+                sAssign.name shouldBe Operators.assignment
+                sAssign.order shouldBe 2
+                inside(sAssign.argument.l) { case List(target: Identifier, value: Literal) =>
+                  target.name shouldBe "s"
+                  value.code shouldBe "\"computed\""
+                }
+
+                yieldNode.controlStructureType shouldBe ControlStructureTypes.YIELD
+                yieldNode.code shouldBe "yield s;"
+                yieldNode.order shouldBe 3
+                inside(yieldNode.astChildren.l) { case List(sIdentifier: Identifier) =>
+                  sIdentifier.name shouldBe "s"
+                  sIdentifier.typeFullName shouldBe "java.lang.String"
+                }
+              }
+
+              defaultTarget.name shouldBe "default"
+              defaultTarget.order shouldBe 4
+
+              defaultResult.code shouldBe "\"other\""
+              defaultResult.order shouldBe 5
           }
         }
       }

@@ -20,7 +20,8 @@ import com.github.javaparser.ast.stmt.{
   SynchronizedStmt,
   ThrowStmt,
   TryStmt,
-  WhileStmt
+  WhileStmt,
+  YieldStmt
 }
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.x2cpg.Ast
@@ -51,7 +52,6 @@ trait AstForStatementsCreator extends AstForSimpleStatementsCreator with AstForF
     // TODO: Implement missing handlers
     // case _: LocalClassDeclarationStmt  => Seq()
     // case _: LocalRecordDeclarationStmt => Seq()
-    // case _: YieldStmt                  => Seq()
     val statementAsts = statement match {
       case x: ExplicitConstructorInvocationStmt =>
         Seq(astForExplicitConstructorInvocation(x))
@@ -72,6 +72,7 @@ trait AstForStatementsCreator extends AstForSimpleStatementsCreator with AstForF
       case x: ThrowStmt                 => Seq(astForThrow(x))
       case x: TryStmt                   => astsForTry(x)
       case x: WhileStmt                 => astsForWhile(x)
+      case x: YieldStmt                 => Seq(astForYieldStatement(x))
       case x: LocalClassDeclarationStmt => Seq(astForLocalClassDeclaration(x))
       case x =>
         logger.warn(s"Attempting to generate AST for unknown statement of type ${x.getClass}")
