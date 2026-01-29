@@ -11,6 +11,7 @@ import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodRef
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.lexer.KtToken
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
@@ -665,4 +666,57 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       .withChildren(annotations.map(astForAnnotationEntry))
   }
 
+  def astForCallableReferenceExpression(
+    expr: KtCallableReferenceExpression,
+    argIdx: Option[Int],
+    argNameMaybe: Option[String],
+    annotations: Seq[KtAnnotationEntry] = Seq()
+  ): Ast = {
+    // These represent constructs like:
+    // - ::func (unbound reference)
+    // - obj/this::func (bound reference with receiver)
+    // - Type::func (static reference)
+
+    val callableNameExpr = expr.getCallableReference
+    val methodName       = callableNameExpr.getText
+
+    val receiverTypeFullName = Option(expr.getReceiverExpression) match {
+      case Some(receiver: KtNameReferenceExpression) if typeInfoProvider.isReferenceToClass(receiver) =>
+        val typeName = receiver.getText
+        val nameToClass = expr.getContainingKtFile.getDeclarations.asScala.collect { case c: KtClass =>
+          c.getName -> c
+        }.toMap
+
+        if (nameToClass.contains(typeName)) {
+          val klass       = nameToClass(typeName)
+          val packageName = klass.getContainingKtFile.getPackageFqName.toString
+          if (packageName.isEmpty) Some(typeName) else Some(s"$packageName.$typeName")
+        } else {
+          exprTypeFullName(receiver)
+        }
+      case Some(receiver) =>
+        exprTypeFullName(receiver)
+      case None =>
+        None
+    }
+
+    val namespacePrefix = receiverTypeFullName.getOrElse(Defines.UnresolvedNamespace)
+
+    val funcDesc = bindingUtils.getCalledFunctionDesc(callableNameExpr)
+
+    val signature = funcDesc
+      .orElse(getAmbiguousFuncDescIfSignaturesEqual(callableNameExpr))
+      .flatMap(nameRenderer.funcDescSignature)
+      .getOrElse(Defines.UnresolvedSignature)
+
+    val methodFullName = nameRenderer.combineFunctionFullName(s"$namespacePrefix.$methodName", signature)
+
+    val methodRefTypeFullName = receiverTypeFullName.map(registerType).getOrElse(TypeConstants.Any)
+
+    val methodRefNode_ = methodRefNode(expr, expr.getText, methodFullName, methodRefTypeFullName)
+
+    val node = withArgumentIndex(methodRefNode_, argIdx).argumentName(argNameMaybe)
+
+    Ast(node).withChildren(annotations.map(astForAnnotationEntry))
+  }
 }
