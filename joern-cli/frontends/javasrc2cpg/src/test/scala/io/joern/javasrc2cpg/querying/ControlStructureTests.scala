@@ -9,6 +9,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   ControlStructure,
   FieldIdentifier,
   Identifier,
+  JumpTarget,
   Literal,
   Local,
   Return,
@@ -897,5 +898,247 @@ class ControlStructureTests extends JavaSrcCode2CpgFixture {
 
     // The visible statements/labels + jump targets
     body.astChildren.size shouldBe 7
+  }
+
+  "a switch expression with arrow syntax" should {
+    val cpg = code("""
+        |public class Foo {
+        |  public String test(int x) {
+        |    return switch (x) {
+        |      case 1 -> "one";
+        |      case 2 -> "two";
+        |      default -> "other";
+        |    };
+        |  }
+        |}
+        |""".stripMargin)
+
+    "create a MATCH control structure with the correct full AST structure" in {
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.MATCH).l) { case List(matchNode) =>
+        matchNode.code shouldBe "switch(x)"
+        matchNode.lineNumber shouldBe Some(4)
+
+        inside(matchNode.astChildren.l) { case List(selector: Identifier, body: Block) =>
+          selector.name shouldBe "x"
+          selector.typeFullName shouldBe "int"
+          selector.order shouldBe 1
+
+          body.order shouldBe 2
+
+          inside(body.astChildren.l) {
+            case List(
+                  case1Target: JumpTarget,
+                  case1Label: Literal,
+                  case1Result: Literal,
+                  case2Target: JumpTarget,
+                  case2Label: Literal,
+                  case2Result: Literal,
+                  defaultTarget: JumpTarget,
+                  defaultResult: Literal
+                ) =>
+              case1Target.name shouldBe "case"
+              case1Target.code shouldBe "1"
+              case1Target.order shouldBe 1
+
+              case1Label.code shouldBe "1"
+              case1Label.order shouldBe 2
+
+              case1Result.code shouldBe "\"one\""
+              case1Result.typeFullName shouldBe "java.lang.String"
+              case1Result.order shouldBe 3
+
+              case2Target.name shouldBe "case"
+              case2Target.code shouldBe "2"
+              case2Target.order shouldBe 4
+
+              case2Label.code shouldBe "2"
+              case2Label.order shouldBe 5
+
+              case2Result.code shouldBe "\"two\""
+              case2Result.typeFullName shouldBe "java.lang.String"
+              case2Result.order shouldBe 6
+
+              defaultTarget.name shouldBe "default"
+              defaultTarget.code shouldBe "default"
+              defaultTarget.order shouldBe 7
+
+              defaultResult.code shouldBe "\"other\""
+              defaultResult.typeFullName shouldBe "java.lang.String"
+              defaultResult.order shouldBe 8
+          }
+        }
+
+        matchNode.condition.l shouldBe List(matchNode.astChildren.head)
+      }
+    }
+  }
+
+  "a switch expression with a pattern and guard" should {
+    val cpg = code("""
+        |public class Foo {
+        |  public String test(Object obj) {
+        |    return switch (obj) {
+        |      case String s when s.length() > 5 -> "long string";
+        |      case String s -> "short string";
+        |      default -> "not a string";
+        |    };
+        |  }
+        |}
+        |""".stripMargin)
+
+    "create a MATCH control structure with pattern matching and guards" in {
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.MATCH).l) { case List(matchNode) =>
+        matchNode.code shouldBe "switch(obj)"
+        matchNode.lineNumber shouldBe Some(4)
+
+        inside(matchNode.astChildren.l) { case List(selector: Identifier, body: Block) =>
+          selector.name shouldBe "obj"
+          selector.order shouldBe 1
+
+          body.order shouldBe 2
+
+          // Should have jump targets for each case
+          val jumpTargets = body.astChildren.collect { case jt: JumpTarget => jt }.l
+          jumpTargets.map(_.name) should contain.allOf("case", "default")
+
+          // The guarded case should have an IF control structure
+          val ifNodes =
+            matchNode.ast.collectAll[ControlStructure].filter(_.controlStructureType == ControlStructureTypes.IF).l
+          ifNodes.size should be >= 1
+
+          // The guard condition (s.length() > 5) should be present
+          val guardConditions = ifNodes.flatMap(_.condition.collectAll[Call].l)
+          guardConditions.exists(_.name == Operators.greaterThan) shouldBe true
+
+          // The pattern variable 's' should have a local
+          matchNode.ast.collectAll[Local].name("s").size should be >= 1
+        }
+      }
+    }
+  }
+
+  "a switch expression assigned to a variable" should {
+    val cpg = code("""
+        |public class Foo {
+        |  public void test(int x) {
+        |    String result = switch (x) {
+        |      case 1 -> "one";
+        |      default -> "other";
+        |    };
+        |  }
+        |}
+        |""".stripMargin)
+
+    "create a MATCH control structure as part of an assignment with correct full AST" in {
+      inside(cpg.method.name("test").body.astChildren.l) { case List(resultLocal: Local, assignment: Call) =>
+        resultLocal.name shouldBe "result"
+        resultLocal.typeFullName shouldBe "java.lang.String"
+        resultLocal.order shouldBe 1
+
+        assignment.name shouldBe Operators.assignment
+        assignment.order shouldBe 2
+
+        inside(assignment.argument.l) { case List(target: Identifier, matchNode: ControlStructure) =>
+          target.name shouldBe "result"
+          target.typeFullName shouldBe "java.lang.String"
+          target.argumentIndex shouldBe 1
+
+          matchNode.controlStructureType shouldBe ControlStructureTypes.MATCH
+          matchNode.code shouldBe "switch(x)"
+          matchNode.argumentIndex shouldBe 2
+
+          inside(matchNode.astChildren.l) { case List(selector: Identifier, body: Block) =>
+            selector.name shouldBe "x"
+            selector.typeFullName shouldBe "int"
+
+            inside(body.astChildren.l) {
+              case List(
+                    case1Target: JumpTarget,
+                    case1Label: Literal,
+                    case1Result: Literal,
+                    defaultTarget: JumpTarget,
+                    defaultResult: Literal
+                  ) =>
+                case1Target.name shouldBe "case"
+                case1Target.code shouldBe "1"
+
+                case1Label.code shouldBe "1"
+                case1Result.code shouldBe "\"one\""
+
+                defaultTarget.name shouldBe "default"
+                defaultResult.code shouldBe "\"other\""
+            }
+          }
+        }
+      }
+    }
+  }
+
+  "a switch expression used as a method argument" should {
+    val cpg = code("""
+        |public class Foo {
+        |  public void sink(String s) {}
+        |
+        |  public void test(int x) {
+        |    sink(switch (x) {
+        |      case 1 -> "one";
+        |      default -> "other";
+        |    });
+        |  }
+        |}
+        |""".stripMargin)
+
+    "create a MATCH control structure as argument to the call with correct full AST" in {
+      inside(cpg.call.name("sink").l) { case List(sinkCall) =>
+        sinkCall.name shouldBe "sink"
+        sinkCall.methodFullName shouldBe "Foo.sink:void(java.lang.String)"
+
+        // argument(0) is the receiver (this), argument(1) is the switch expression
+        inside(sinkCall.argument.l) { case List(receiver: Identifier, matchNode: ControlStructure) =>
+          receiver.name shouldBe "this"
+          receiver.argumentIndex shouldBe 0
+
+          matchNode.controlStructureType shouldBe ControlStructureTypes.MATCH
+          matchNode.code shouldBe "switch(x)"
+          matchNode.argumentIndex shouldBe 1
+
+          inside(matchNode.astChildren.l) { case List(selector: Identifier, body: Block) =>
+            selector.name shouldBe "x"
+            selector.typeFullName shouldBe "int"
+            selector.order shouldBe 1
+
+            body.order shouldBe 2
+
+            inside(body.astChildren.l) {
+              case List(
+                    case1Target: JumpTarget,
+                    case1Label: Literal,
+                    case1Result: Literal,
+                    defaultTarget: JumpTarget,
+                    defaultResult: Literal
+                  ) =>
+                case1Target.name shouldBe "case"
+                case1Target.code shouldBe "1"
+                case1Target.order shouldBe 1
+
+                case1Label.code shouldBe "1"
+                case1Label.order shouldBe 2
+
+                case1Result.code shouldBe "\"one\""
+                case1Result.typeFullName shouldBe "java.lang.String"
+                case1Result.order shouldBe 3
+
+                defaultTarget.name shouldBe "default"
+                defaultTarget.code shouldBe "default"
+                defaultTarget.order shouldBe 4
+
+                defaultResult.code shouldBe "\"other\""
+                defaultResult.typeFullName shouldBe "java.lang.String"
+                defaultResult.order shouldBe 5
+            }
+          }
+        }
+      }
+    }
   }
 }

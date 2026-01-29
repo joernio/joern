@@ -1,5 +1,7 @@
 package io.joern.javasrc2cpg.astcreation.statements
 
+import com.github.javaparser.ast.Node
+import com.github.javaparser.ast.NodeList
 import com.github.javaparser.ast.expr.{Expression, PatternExpr, TypePatternExpr}
 import com.github.javaparser.ast.stmt.{
   AssertStmt,
@@ -247,37 +249,46 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
   }
 
   private[statements] def astForSwitchStatement(stmt: SwitchStmt): Ast = {
-    // TODO: Add support for switch expressions
-    // TODO: Switch expressions should either be represented with MATCH or we should add a break.
+    astForSwitch(stmt, stmt.getSelector, stmt.getEntries, ControlStructureTypes.SWITCH)
+  }
+
+  private[astcreation] def astForSwitch(
+    node: Node,
+    selector: Expression,
+    entries: NodeList[SwitchEntry],
+    controlStructureType: String
+  ): Ast = {
     val switchNode =
       NewControlStructure()
-        .controlStructureType(ControlStructureTypes.SWITCH)
-        .code(s"switch(${stmt.getSelector.toString})")
+        .controlStructureType(controlStructureType)
+        .code(s"switch(${selector.toString})")
+        .lineNumber(line(node))
+        .columnNumber(column(node))
 
-    val selectorAst = astsForExpression(stmt.getSelector, ExpectedType.empty) match {
+    val selectorAst = astsForExpression(selector, ExpectedType.empty) match {
       case Seq() =>
-        throw new IllegalArgumentException(s"Got an empty ast list for expression ${code(stmt.getSelector)}")
+        throw new IllegalArgumentException(s"Got an empty ast list for expression ${code(selector)}")
 
       case Seq(ast) => ast
 
       case asts =>
-        logger.warn(s"Found multiple asts for selector expression ${code(stmt.getSelector)}")
+        logger.warn(s"Found multiple asts for selector expression ${code(selector)}")
         asts.head
     }
 
     val selectorNode = selectorAst.root.get
 
     val selectorMustBeIdentifierOrFieldAccess =
-      stmt.getEntries.asScala.flatMap(_.getLabels.asScala).exists(_.isPatternExpr)
+      entries.asScala.flatMap(_.getLabels.asScala).exists(_.isPatternExpr)
 
     val (initializerAst, referenceAst) = if (selectorMustBeIdentifierOrFieldAccess) {
-      val initAndRefAsts = initAndRefAstsForPatternInitializer(stmt.getSelector, selectorAst)
+      val initAndRefAsts = initAndRefAstsForPatternInitializer(selector, selectorAst)
       (initAndRefAsts.get, Option(initAndRefAsts))
     } else {
       (selectorAst, None)
     }
 
-    val entryAsts = stmt.getEntries.asScala.flatMap(astForSwitchEntry(_, referenceAst))
+    val entryAsts = entries.asScala.flatMap(astForSwitchEntry(_, referenceAst))
 
     val switchBodyAst = Ast(NewBlock()).withChildren(entryAsts)
 
@@ -304,7 +315,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
       .withChild(bodyAst)
   }
 
-  private def astsForSwitchLabels(labels: List[Expression], isDefault: Boolean): Seq[Ast] = {
+  private[astcreation] def astsForSwitchLabels(labels: List[Expression], isDefault: Boolean): Seq[Ast] = {
     val defaultAst = Option.when(labels.isEmpty || isDefault) {
       val target = NewJumpTarget()
         .name("default")
@@ -328,7 +339,10 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
     (defaultAst ++ explicitLabelAsts).toList
   }
 
-  private def astForSwitchEntry(entry: SwitchEntry, selectorReferenceAst: Option[PatternInitAndRefAsts]): Seq[Ast] = {
+  private[astcreation] def astForSwitchEntry(
+    entry: SwitchEntry,
+    selectorReferenceAst: Option[PatternInitAndRefAsts]
+  ): Seq[Ast] = {
     // Fallthrough to/from a pattern is a compile error, so an entry can only have a pattern label if that is
     // the only label
     val labels    = entry.getLabels.asScala.toList
