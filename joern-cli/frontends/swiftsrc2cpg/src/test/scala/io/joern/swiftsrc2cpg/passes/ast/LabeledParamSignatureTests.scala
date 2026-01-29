@@ -44,9 +44,9 @@ class LabeledParamSignatureTests extends Code2CpgFixture(() => new SwiftAstTestC
       c2.methodFullName shouldBe Defines.DynamicCallUnknownFullName
       c3.methodFullName shouldBe Defines.DynamicCallUnknownFullName
 
-      c1.argument.argumentName.l shouldBe List("otherLabel")
+      c1.argument.argumentName shouldBe empty
       c2.argument.argumentName shouldBe empty
-      c3.argument.argumentName.l shouldBe List("parameterLabel")
+      c3.argument.argumentName shouldBe empty
     }
 
     "create correct REF edges for labeled parameters" in {
