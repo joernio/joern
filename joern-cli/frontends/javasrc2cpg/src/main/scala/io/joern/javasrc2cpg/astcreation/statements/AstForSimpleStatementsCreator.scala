@@ -20,8 +20,7 @@ import com.github.javaparser.ast.stmt.{
   SynchronizedStmt,
   ThrowStmt,
   TryStmt,
-  WhileStmt,
-  YieldStmt
+  WhileStmt
 }
 import com.github.javaparser.symbolsolver.javaparsermodel.contexts.SwitchEntryContext
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver
@@ -133,12 +132,6 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
       .columnNumber(column(stmt))
       .code(code(stmt))
     Ast(node)
-  }
-
-  private[statements] def astForYieldStatement(stmt: YieldStmt): Ast = {
-    val node    = controlStructureNode(stmt, ControlStructureTypes.YIELD, code(stmt))
-    val exprAst = astsForExpression(stmt.getExpression, ExpectedType.empty)
-    Ast(node).withChildren(exprAst)
   }
 
   private[statements] def astsForDo(stmt: DoStmt): Seq[Ast] = {
