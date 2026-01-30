@@ -206,16 +206,15 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     // TODO: handle attributes
     // TODO: handle modifiers
     // TODO: handle defaultValue
-    val label = code(node.firstName)
-    val name  = node.secondName.fold(label)(code)
-    val tpe   = fullnameProvider.typeFullname(node).getOrElse(AstCreatorHelper.cleanType(code(node.`type`)))
-    registerType(tpe)
-    val isVariadic = node.ellipsis.isDefined
 
-    val parameterName = node.firstName match {
-      case _: wildcard => name
-      case _           => label
+    val parameterName = node.secondName match {
+      case Some(name) => code(name)
+      case None       => code(node.firstName)
     }
+    val tpe = fullnameProvider.typeFullname(node).getOrElse(AstCreatorHelper.cleanType(code(node.`type`)))
+    registerType(tpe)
+
+    val isVariadic = node.ellipsis.isDefined
     val parameterNode =
       parameterInNode(
         node,
@@ -227,7 +226,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
         Option(tpe)
       )
 
-    scope.addVariable(name, parameterNode, tpe, VariableScopeManager.ScopeType.MethodScope)
+    scope.addVariable(parameterName, parameterNode, tpe, VariableScopeManager.ScopeType.MethodScope)
     Ast(parameterNode)
   }
 

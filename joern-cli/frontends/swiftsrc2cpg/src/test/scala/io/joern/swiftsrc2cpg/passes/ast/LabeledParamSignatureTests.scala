@@ -61,10 +61,10 @@ class LabeledParamSignatureTests extends Code2CpgFixture(() => new SwiftAstTestC
           |""".stripMargin)
       val List(f1, f2, f3, f4, f5, f6) = cpg.method.nameExact("someFunction").l
 
-      f1.body.ast.isIdentifier.nameExact("parameterName").refsTo.l shouldBe f1.parameter.nameExact("argumentLabel").l
-      f2.body.ast.isIdentifier.nameExact("parameterName").refsTo.l shouldBe f2.parameter.nameExact("argumentLabel").l
-      f3.body.ast.isIdentifier.nameExact("parameterName").refsTo.l shouldBe f3.parameter.nameExact("otherLabel").l
-      f4.body.ast.isIdentifier.nameExact("parameterName").refsTo.l shouldBe f4.parameter.nameExact("otherLabel").l
+      f1.body.ast.isIdentifier.nameExact("parameterName").refsTo.l shouldBe f1.parameter.nameExact("parameterName").l
+      f2.body.ast.isIdentifier.nameExact("parameterName").refsTo.l shouldBe f2.parameter.nameExact("parameterName").l
+      f3.body.ast.isIdentifier.nameExact("parameterName").refsTo.l shouldBe f3.parameter.nameExact("parameterName").l
+      f4.body.ast.isIdentifier.nameExact("parameterName").refsTo.l shouldBe f4.parameter.nameExact("parameterName").l
       f5.body.ast.isIdentifier.nameExact("parameterName").refsTo.l shouldBe f5.parameter.nameExact("parameterName").l
       f6.body.ast.isIdentifier.nameExact("parameterLabel").refsTo.l shouldBe f6.parameter.nameExact("parameterLabel").l
     }
