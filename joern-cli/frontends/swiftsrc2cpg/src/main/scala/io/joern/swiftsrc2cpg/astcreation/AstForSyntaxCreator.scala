@@ -8,6 +8,7 @@ import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 
+import java.nio.file.Paths
 import scala.annotation.unused
 
 trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -267,7 +268,8 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
       * We don't have types/fullNames nor do we do anything dataflow-related there anyway, so it's safe to just add the
       * argument names.
       */
-    if (parserResult.filename == "Package.swift") {
+    val fileName = Paths.get(parserResult.filename).getFileName.toString
+    if (fileName.equalsIgnoreCase("Package.swift")) {
       node.label.foreach { label =>
         val name = code(label)
         ast.root.collect { case i: ExpressionNew => i.argumentName(name) }
