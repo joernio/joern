@@ -1,4 +1,4 @@
-package io.joern.javasrc2cpg.util
+package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
@@ -20,7 +20,7 @@ import org.scalatest.Inside
   *   - Fields of local classes not leaked
   *   - Instance initializers scoping
   */
-class CaptureUseFinderTests extends JavaSrcCode2CpgFixture with Inside {
+class CapturingTests extends JavaSrcCode2CpgFixture with Inside {
 
   // ============================================================================
   // Review 1: Core Issues

@@ -328,7 +328,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
 
     val capturedVariableUses = captureUseFinder.getCaptureUses(lambdaExpr)
     var thisCaptureHandled   = false
-    val closureBindingsAndLocalsForCaptures = capturedVariableUses.toList.flatMap { name =>
+    val closureBindingsAndLocalsForCaptures = capturedVariableUses.toList.sorted.flatMap { name =>
       val capturedResult = scope.lookupVariable(name)
 
       capturedResult match {
