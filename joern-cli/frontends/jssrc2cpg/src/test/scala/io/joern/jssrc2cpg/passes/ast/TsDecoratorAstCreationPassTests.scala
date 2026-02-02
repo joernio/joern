@@ -448,6 +448,18 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
         """__metadata("design:type", Number)"""
       )
     }
+
+    "not have identifier used multiple times on class method parameters with multiple decorators" in {
+      val cpg = code("""
+          |export class Component {
+          |  constructor(
+          |    @Optional() @Inject(FOO) data: Data
+          |  ) {}
+          |}
+          |
+          |""".stripMargin)
+      cpg.identifier.filter(_._astIn.size != 1) shouldBe empty
+    }
   }
 
 }
