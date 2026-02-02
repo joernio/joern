@@ -11,12 +11,11 @@ trait SwiftCompilerSrc2CpgFrontend extends LanguageFrontend {
 
   def execute(sourceCodePath: java.io.File): Cpg = {
     val pathAsString = sourceCodePath.toPath.resolve("SwiftTest").toAbsolutePath.toString
-    var config = Config()
-      .withInputPath(pathAsString)
+    var config       = Config().withInputPath(pathAsString)
     getConfig().foreach(c => config = config.withDefines(c.defines).withSwiftBuild(c.swiftBuild))
 
     val cpg = new SwiftSrc2Cpg().createCpg(config).get
-    new PostFrontendValidator(cpg, false).run()
+    new PostFrontendValidator(cpg, true).run()
     cpg
   }
 
