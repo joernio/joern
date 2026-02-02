@@ -29,49 +29,63 @@ import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.*
 import scala.util.Try
 
+/** The CaptureUseFinder does a conceptually bottom-up (practically top-down post-order reverse) traversal of the given
+  * AST and adds all variable names not defined within that AST (i.e. captured from scope surrounding this subtree).
+  * This effectively means traversing the source code in reverse starting at the end of the given structure. When it
+  * encounters an identifier, that identifier is added to the undeclaredVariables set since a corresponding declaration
+  * could not have been seen yet. Then, when a declaration is seen, the matching name is removed from undeclared
+  * variables since the corresponding NameExpr is no longer capturing anything from the already processed scope.
+  *
+  * The actual implementation is a bit muddier due to the use of mutable sets to avoid the performance cost of
+  * constantly creating and merging new sets. This means that at some pre-order points, new sets for undeclared
+  * variables need to be created to handle nodes that create new scope (blocks, methods, etc.). Once these subtrees have
+  * been fully processed, these temporary sets are merged into the main set keeping track of undeclared variables.
+  *
+  * Once a node declaring a new type has been processed, the results are cached, so a given file should only be
+  * traversed once
+  */
 class CaptureUseFinder {
 
   private val cache: mutable.Map[Node, Set[String]] = mutable.Map()
   // Not actually used, but is needed as an argument to the context constructors
   private val typeSolver = new CombinedTypeSolver()
 
-  def getCaptureUses(node: Node): Set[String] = {
+  def getUndeclaredVariables(node: Node): Set[String] = {
     cache.get(node) match {
-      case Some(captureUses) => captureUses
+      case Some(undeclaredVariables) => undeclaredVariables
 
       case None =>
-        val captureUses = mutable.Set[String]()
-        storeCaptureUses(node, captureUses)
-        captureUses.toSet
+        val undeclaredVariables = mutable.Set[String]()
+        findUndeclaredVariablesInSubtree(node, undeclaredVariables)
+        undeclaredVariables.toSet
     }
   }
 
-  // This method does a bottom-up traversal of the given AST and adds all variable names not defined within that AST
-  // (i.e. captured from scope surrounding this subtree). When it encounters an identifier, that identifier
-  // is added to the captureUses set
-  private def storeCaptureUses(node: Node, captureUses: mutable.Set[String]): Unit = {
+  private def findUndeclaredVariablesInSubtree(node: Node, undeclaredVariables: mutable.Set[String]): Unit = {
     cache.get(node) match {
-      case Some(cachedCaptureUses) => captureUses.addAll(cachedCaptureUses)
+      case Some(cachedUndeclaredVariables) => undeclaredVariables.addAll(cachedUndeclaredVariables)
 
       case None =>
         node match {
           case nameExpr: NameExpr =>
-            captureUses.add(nameExpr.getNameAsString)
+            undeclaredVariables.add(nameExpr.getNameAsString)
 
           case _: ThisExpr =>
-            captureUses.add(NameConstants.This)
+            undeclaredVariables.add(NameConstants.This)
 
           case _: SuperExpr =>
-            captureUses.add(NameConstants.This)
+            undeclaredVariables.add(NameConstants.This)
 
           case variableDeclarationExpr: VariableDeclarationExpr =>
             variableDeclarationExpr.getVariables.asScala.reverseIterator.foreach { variableDeclarator =>
-              variableDeclarator.getInitializer.toScala.foreach(storeCaptureUses(_, captureUses))
-              captureUses.remove(variableDeclarator.getNameAsString)
+              variableDeclarator.getInitializer.toScala.foreach(
+                findUndeclaredVariablesInSubtree(_, undeclaredVariables)
+              )
+              undeclaredVariables.remove(variableDeclarator.getNameAsString)
             }
 
           case parameter: Parameter =>
-            captureUses.remove(parameter.getNameAsString)
+            undeclaredVariables.remove(parameter.getNameAsString)
 
           case ifStmt: IfStmt =>
             val context = IfStatementContext(ifStmt, typeSolver)
@@ -79,49 +93,50 @@ class CaptureUseFinder {
             val maybeElse             = ifStmt.getElseStmt.toScala
             val patternsExposedToElse = maybeElse.map(context.typePatternExprsExposedToChild(_).asScala).getOrElse(Nil)
 
-            storeCaptureUsesForIfTypeNode(
+            storeUndeclaredVariablesForIfTypeNode(
               ifStmt.getThenStmt,
               maybeElse,
               ifStmt.getCondition,
               context.typePatternExprsExposedToChild(ifStmt.getThenStmt).asScala,
               patternsExposedToElse,
-              captureUses
+              undeclaredVariables
             )
 
-            context.getIntroducedTypePatterns.forEach(tpe => captureUses.remove(tpe.getNameAsString))
+            context.getIntroducedTypePatterns.forEach(tpe => undeclaredVariables.remove(tpe.getNameAsString))
 
           case conditionalExpr: ConditionalExpr =>
             val context = ConditionalExprContext(conditionalExpr, typeSolver)
 
-            storeCaptureUsesForIfTypeNode(
+            storeUndeclaredVariablesForIfTypeNode(
               conditionalExpr.getThenExpr,
               Option(conditionalExpr.getElseExpr),
               conditionalExpr.getCondition,
               context.typePatternExprsExposedToChild(conditionalExpr.getThenExpr).asScala,
               context.typePatternExprsExposedToChild(conditionalExpr.getElseExpr).asScala,
-              captureUses
+              undeclaredVariables
             )
 
           case switchNode: (SwitchStmt | SwitchExpr) =>
-            storeCaptureUses(switchNode.getSelector, captureUses)
+            findUndeclaredVariablesInSubtree(switchNode.getSelector, undeclaredVariables)
 
             switchNode.getEntries.forEach { switchEntry =>
               val context = SwitchEntryContext(switchEntry, typeSolver)
 
-              val entryCaptureUses = mutable.Set[String]()
+              val entryUndeclaredVariables = mutable.Set[String]()
 
-              switchEntry.getStatements.asScala.reverseIterator.foreach(storeCaptureUses(_, entryCaptureUses))
-              switchEntry.getGuard.toScala.foreach(storeCaptureUses(_, entryCaptureUses))
+              switchEntry.getStatements.asScala.reverseIterator
+                .foreach(findUndeclaredVariablesInSubtree(_, entryUndeclaredVariables))
+              switchEntry.getGuard.toScala.foreach(findUndeclaredVariablesInSubtree(_, entryUndeclaredVariables))
 
               switchEntry.getStatements.getFirst.toScala.foreach { firstStatement =>
                 context
                   .typePatternExprsExposedToChild(firstStatement)
-                  .forEach(tpe => entryCaptureUses.remove(tpe.getNameAsString))
+                  .forEach(tpe => entryUndeclaredVariables.remove(tpe.getNameAsString))
               }
 
-              switchEntry.getLabels.forEach(storeCaptureUses(_, entryCaptureUses))
+              switchEntry.getLabels.forEach(findUndeclaredVariablesInSubtree(_, entryUndeclaredVariables))
 
-              captureUses.addAll(entryCaptureUses)
+              undeclaredVariables.addAll(entryUndeclaredVariables)
             }
 
           case methodCall: MethodCallExpr =>
@@ -130,96 +145,101 @@ class CaptureUseFinder {
             // TODO it's a call to a statically imported method which must be handled properly. For now an extra `this`
             //  local may be created
             if (!isStatic && methodCall.getScope.isEmpty) {
-              captureUses.add(NameConstants.This)
+              undeclaredVariables.add(NameConstants.This)
             }
 
-            methodCall.getChildNodes.asScala.reverseIterator.foreach(storeCaptureUses(_, captureUses))
+            methodCall.getChildNodes.asScala.reverseIterator
+              .foreach(findUndeclaredVariablesInSubtree(_, undeclaredVariables))
 
           case objectCreationExpr: ObjectCreationExpr =>
             objectCreationExpr.getAnonymousClassBody.toScala.match {
               case Some(bodyElements) =>
-                val anonymousClassCaptureUses = mutable.Set[String]()
-                bodyElements.asScala.reverseIterator.foreach(storeCaptureUses(_, anonymousClassCaptureUses))
+                val anonymousClassUndeclaredVariables = mutable.Set[String]()
+                bodyElements.asScala.reverseIterator.foreach(
+                  findUndeclaredVariablesInSubtree(_, anonymousClassUndeclaredVariables)
+                )
                 // unhandled (up to this point) `this` references in the body refer to the anonymous class instance
-                anonymousClassCaptureUses.remove(NameConstants.This)
-                captureUses.addAll(anonymousClassCaptureUses)
+                anonymousClassUndeclaredVariables.remove(NameConstants.This)
+                undeclaredVariables.addAll(anonymousClassUndeclaredVariables)
+                cache.put(objectCreationExpr, undeclaredVariables.toSet)
 
               case None => // Nothing to do here
             }
 
-            objectCreationExpr.getArguments.forEach(storeCaptureUses(_, captureUses))
-            objectCreationExpr.getScope.toScala.foreach(storeCaptureUses(_, captureUses))
+            objectCreationExpr.getArguments.forEach(findUndeclaredVariablesInSubtree(_, undeclaredVariables))
+            objectCreationExpr.getScope.toScala.foreach(findUndeclaredVariablesInSubtree(_, undeclaredVariables))
 
           case tryStmt: TryStmt =>
-            val tryCaptureUses = mutable.Set[String]()
-            tryStmt.getFinallyBlock.toScala.foreach(storeCaptureUses(_, tryCaptureUses))
+            val tryUndeclaredVariables = mutable.Set[String]()
+            tryStmt.getFinallyBlock.toScala.foreach(findUndeclaredVariablesInSubtree(_, tryUndeclaredVariables))
 
             tryStmt.getCatchClauses.asScala.reverseIterator.foreach { catchClause =>
-              val catchClauseCaptureUses = mutable.Set[String]()
-              catchClause.getChildNodes.forEach(storeCaptureUses(_, catchClauseCaptureUses))
-              captureUses.addAll(catchClauseCaptureUses)
+              val catchClauseUndeclaredVariables = mutable.Set[String]()
+              catchClause.getChildNodes.forEach(findUndeclaredVariablesInSubtree(_, catchClauseUndeclaredVariables))
+              undeclaredVariables.addAll(catchClauseUndeclaredVariables)
             }
 
-            storeCaptureUses(tryStmt.getTryBlock, tryCaptureUses)
+            findUndeclaredVariablesInSubtree(tryStmt.getTryBlock, tryUndeclaredVariables)
 
-            tryStmt.getResources.asScala.reverseIterator.foreach(storeCaptureUses(_, tryCaptureUses))
+            tryStmt.getResources.asScala.reverseIterator
+              .foreach(findUndeclaredVariablesInSubtree(_, tryUndeclaredVariables))
 
-            captureUses.addAll(tryCaptureUses)
+            undeclaredVariables.addAll(tryUndeclaredVariables)
 
           case nodeIntroducingNewScope: (BlockStmt | MethodDeclaration | TypeDeclaration[?] | LambdaExpr) =>
-            val newScopeCaptureUses = mutable.Set[String]()
+            val newScopeUndeclaredVariables = mutable.Set[String]()
             nodeIntroducingNewScope.getChildNodes.asScala.reverseIterator
-              .foreach(storeCaptureUses(_, newScopeCaptureUses))
+              .foreach(findUndeclaredVariablesInSubtree(_, newScopeUndeclaredVariables))
 
             nodeIntroducingNewScope match {
               case _: BlockStmt =>
               // Don't cache blocks since they will usually be the top level in a method/type/lambda body
 
               case _ =>
-                cache.put(nodeIntroducingNewScope, newScopeCaptureUses.toSet)
+                cache.put(nodeIntroducingNewScope, newScopeUndeclaredVariables.toSet)
             }
 
-            captureUses.addAll(newScopeCaptureUses)
+            undeclaredVariables.addAll(newScopeUndeclaredVariables)
 
             nodeIntroducingNewScope match {
               case methodDeclaration: MethodDeclaration if !methodDeclaration.isStatic =>
-                captureUses.remove(NameConstants.This)
+                undeclaredVariables.remove(NameConstants.This)
 
               case _: TypeDeclaration[?] =>
                 // Type declarations (classes, anonymous classes, local classes) provide their own `this`
-                captureUses.remove(NameConstants.This)
+                undeclaredVariables.remove(NameConstants.This)
 
               case _ => // Nothing to do here
             }
 
           case _ =>
-            node.getChildNodes.asScala.reverseIterator.foreach(storeCaptureUses(_, captureUses))
+            node.getChildNodes.asScala.reverseIterator.foreach(findUndeclaredVariablesInSubtree(_, undeclaredVariables))
         }
     }
   }
 
-  private def storeCaptureUsesForIfTypeNode(
+  private def storeUndeclaredVariablesForIfTypeNode(
     thenNode: Node,
     maybeElseNode: Option[Node],
     conditionNode: Node,
     patternsIntroducedToThen: Iterable[TypePatternExpr],
     patternsIntroducedToElse: Iterable[TypePatternExpr],
-    captureUses: mutable.Set[String]
+    undeclaredVariables: mutable.Set[String]
   ): Unit = {
 
-    val thenCaptureUses = mutable.Set[String]()
-    storeCaptureUses(thenNode, thenCaptureUses)
-    patternsIntroducedToThen.foreach(tpe => thenCaptureUses.remove(tpe.getNameAsString))
+    val thenUndeclaredVariables = mutable.Set[String]()
+    findUndeclaredVariablesInSubtree(thenNode, thenUndeclaredVariables)
+    patternsIntroducedToThen.foreach(tpe => thenUndeclaredVariables.remove(tpe.getNameAsString))
 
-    val elseCaptureUses = mutable.Set[String]()
+    val elseUndeclaredVariables = mutable.Set[String]()
     maybeElseNode.foreach { elseNode =>
-      storeCaptureUses(elseNode, elseCaptureUses)
-      patternsIntroducedToElse.foreach(tpe => elseCaptureUses.remove(tpe.getNameAsString))
+      findUndeclaredVariablesInSubtree(elseNode, elseUndeclaredVariables)
+      patternsIntroducedToElse.foreach(tpe => elseUndeclaredVariables.remove(tpe.getNameAsString))
     }
 
-    storeCaptureUses(conditionNode, captureUses)
+    findUndeclaredVariablesInSubtree(conditionNode, undeclaredVariables)
 
-    captureUses.addAll(thenCaptureUses)
-    captureUses.addAll(elseCaptureUses)
+    undeclaredVariables.addAll(thenUndeclaredVariables)
+    undeclaredVariables.addAll(elseUndeclaredVariables)
   }
 }

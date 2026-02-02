@@ -326,7 +326,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
     scope.pushBlockScope()
     val outerScopeVariableNames = variablesInScope.map(x => x.name -> x).toMap
 
-    val capturedVariableUses = captureUseFinder.getCaptureUses(lambdaExpr)
+    val capturedVariableUses = captureUseFinder.getUndeclaredVariables(lambdaExpr)
     var thisCaptureHandled   = false
     val closureBindingsAndLocalsForCaptures = capturedVariableUses.toList.sorted.flatMap { name =>
       val capturedResult = scope.lookupVariable(name)
