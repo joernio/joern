@@ -645,10 +645,24 @@ class AstCreator(
           Operators.fieldAccess,
           DispatchTypes.STATIC_DISPATCH,
           None,
-          Some(registerType(receiverType))
+          Some(TypeConstants.JavaLangObject)
         )
-        val receiverAst = callAst(receiverFieldAccess, Seq(Ast(thisIdent), Ast(fieldIdent)))
-        (DispatchTypes.DYNAMIC_DISPATCH, Some(receiverAst))
+        val fieldAccessAst = callAst(receiverFieldAccess, Seq(Ast(thisIdent), Ast(fieldIdent)), None)
+
+        // Wrap the field access in a cast operation
+        val typeRefNode_ = typeRefNode(samInfo.expr, receiverType.split('.').last, registerType(receiverType))
+        val castCallNode = callNode(
+          samInfo.expr,
+          s"receiver as ${receiverType.split('.').last}",
+          Operators.cast,
+          Operators.cast,
+          DispatchTypes.STATIC_DISPATCH,
+          None,
+          Some(TypeConstants.Any)
+        )
+        val castAst = callAst(castCallNode, Seq(fieldAccessAst, Ast(typeRefNode_)), None)
+
+        (DispatchTypes.DYNAMIC_DISPATCH, Some(castAst))
       case _ =>
         (DispatchTypes.STATIC_DISPATCH, None)
     }
@@ -680,14 +694,6 @@ class AstCreator(
       BindingInfo(
         samBinding,
         Seq((samTypeDecl, samBinding, EdgeTypes.BINDS), (samBinding, samMethodNode, EdgeTypes.REF))
-      )
-    )
-
-    val methodRefBinding = bindingNode(samInfo.samMethodName, samInfo.signature, samInfo.methodRefName)
-    bindingInfoQueue.prepend(
-      BindingInfo(
-        methodRefBinding,
-        Seq((samTypeDecl, methodRefBinding, EdgeTypes.BINDS), (methodRefBinding, samMethodNode, EdgeTypes.REF))
       )
     )
 
