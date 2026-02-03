@@ -1,7 +1,7 @@
 package io.joern.jssrc2cpg.testfixtures
 
 import io.joern.dataflowengineoss.DefaultSemantics
-import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
+import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.x2cpg.testfixtures.Code2CpgFixture
 
 class JsSrc2CpgSuite(

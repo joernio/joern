@@ -10,10 +10,8 @@ trait JsSrc2CpgFrontend extends LanguageFrontend {
 
   def execute(sourceCodePath: java.io.File): Cpg = {
     val jssrc2cpg = new JsSrc2Cpg()
-    val config = getConfig()
-      .getOrElse(Config(tsTypes = false))
-      .withInputPath(sourceCodePath.getAbsolutePath)
-    val res = jssrc2cpg.createCpg(config).get
+    val config    = getConfig().getOrElse(Config(tsTypes = false)).withInputPath(sourceCodePath.getAbsolutePath)
+    val res       = jssrc2cpg.createCpg(config).get
     new PostFrontendValidator(res, true).run()
     res
   }

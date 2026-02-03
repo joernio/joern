@@ -1,13 +1,13 @@
 package io.joern.jssrc2cpg.passes.ast
 
-import io.joern.jssrc2cpg.testfixtures.AstJsSrc2CpgSuite
+import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgSuite
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.joern.x2cpg.passes.base.ContainsEdgePass
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Method, TypeDecl, _containsIn}
 import io.shiftleft.semanticcpg.language.*
 
-class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
+class TsDecoratorAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
 
   "AST generation for TS decorator" should {
 
@@ -212,7 +212,6 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
           |@NgModule(() => { })
           |export class MyClass { }
           |""".stripMargin)
-      ContainsEdgePass(cpg).createAndApply()
       cpg.methodRef.where(_._containsIn.collectAll[TypeDecl]) shouldBe empty
 
       val List(constructorRef, annotationLambdaRef) = cpg.methodRef.l
