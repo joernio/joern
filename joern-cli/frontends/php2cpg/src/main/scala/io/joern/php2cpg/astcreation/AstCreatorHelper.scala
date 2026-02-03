@@ -251,6 +251,8 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
       .last
   }
 
+  protected def getSimpleName(fullName: String): String = fullName.split("\\\\").last
+
   protected def getMfn(call: PhpCallExpr, name: String): String = {
     lazy val default                    = s"$UnresolvedNamespace$MethodDelimiter$name"
     lazy val maybeResolvedFunction      = scope.resolveFunctionIdentifier(name)
