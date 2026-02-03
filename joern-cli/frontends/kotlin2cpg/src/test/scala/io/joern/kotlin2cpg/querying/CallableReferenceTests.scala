@@ -52,17 +52,28 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       forwardedArgs.map(_.typeFullName).toSet shouldBe Set("int", "java.lang.String")
     }
 
-    "use DYNAMIC_DISPATCH with field access to receiver" in {
+    "use DYNAMIC_DISPATCH with cast and field access to receiver" in {
       val processCall = invokeMethod.ast.isCall.name("process").head
       processCall.dispatchType shouldBe "DYNAMIC_DISPATCH"
 
-      val receiverAccess = processCall.receiver.isCall.name(Operators.fieldAccess).head
-      receiverAccess.typeFullName shouldBe "com.test.Handler"
+      // The receiver should be a cast operation
+      val castCall = processCall.receiver.isCall.name(Operators.cast).head
+      castCall.methodFullName shouldBe Operators.cast
+      castCall.typeFullName shouldBe "ANY"
+      castCall.dispatchType shouldBe "STATIC_DISPATCH"
+
+      // Cast should have field access as first argument
+      val receiverAccess = castCall.argument.argumentIndex(1).isCall.name(Operators.fieldAccess).head
+      receiverAccess.typeFullName shouldBe "java.lang.Object"
       receiverAccess.ast.isFieldIdentifier.canonicalName.head shouldBe "receiver"
       receiverAccess.ast.isIdentifier
         .name("this")
         .head
         .typeFullName shouldBe "com.test.Handler.process$kotlin.jvm.functions.Function2Impl"
+
+      // Cast should have TypeRef as second argument
+      val typeRef = castCall.argument.argumentIndex(2).isTypeRef.head
+      typeRef.typeFullName shouldBe "com.test.Handler"
     }
 
     "create a constructor call for the synthetic type with receiver as parameter" in {
@@ -315,7 +326,8 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       val methodCall = invokeMethod.ast.isCall.name("method").head
       methodCall.dispatchType shouldBe "DYNAMIC_DISPATCH"
 
-      val receiverAccess = methodCall.receiver.isCall.name(Operators.fieldAccess).head
+      val castCall       = methodCall.receiver.isCall.name(Operators.cast).head
+      val receiverAccess = castCall.argument.argumentIndex(1).isCall.name(Operators.fieldAccess).head
       receiverAccess.ast.isFieldIdentifier.canonicalName.head shouldBe "receiver"
     }
 
