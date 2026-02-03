@@ -9,8 +9,9 @@ trait SwiftSrc2CpgFrontend extends LanguageFrontend {
   override type ConfigType = Config
 
   def execute(sourceCodePath: java.io.File): Cpg = {
-    val config = getConfig().getOrElse(Config()).withInputPath(sourceCodePath.getAbsolutePath)
-    val tmp    = new SwiftSrc2Cpg().createCpg(config).get
+    val pathAsString = sourceCodePath.getAbsolutePath
+    val config       = getConfig().getOrElse(Config()).withInputPath(pathAsString)
+    val tmp          = new SwiftSrc2Cpg().createCpg(config).get
     new PostFrontendValidator(tmp, true).run()
     tmp
   }
