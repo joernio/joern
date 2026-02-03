@@ -102,16 +102,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   ): Ast = {
     val argsCode = getArgsCode(call, arguments)
     val targetAst = if (isLateStaticBindingCall) {
-      maybeTarget match {
-        case Some(t: PhpNameExpr) =>
-          scope.surroundingMethodReceiver.map { recv =>
-            val target = t.copy(name = recv)
-            astForNameExpr(target, Some(NameConstants.Static))
-          }
-        case t =>
-          logger.warn(s"Expected a PhpNameExpr target but got $t.")
-          None
-      }
+      maybeTarget.flatMap(astForClassScopeResolutionTarget)
     } else {
       maybeTarget.map(astForExpr)
     }
@@ -149,6 +140,19 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   }
 
+  private def astForClassScopeResolutionTarget(expr: PhpExpr): Option[Ast] = {
+    expr match {
+      case t: PhpNameExpr =>
+        scope.surroundingMethodReceiver.map { recv =>
+          val target = t.copy(name = recv)
+          astForNameExpr(target, code = Some(recv))
+        }
+      case t =>
+        logger.warn(s"Expected a PhpNameExpr target but got $t.")
+        None
+    }
+  }
+
   private def astForStaticCall(call: PhpCallExpr, name: String, arguments: Seq[Ast]): Ast = {
     val isParentCall = call.target match {
       case Some(expr: PhpNameExpr) => expr.name == NameConstants.Parent
@@ -166,6 +170,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case _                                             => getMfn(call, name)
     }
 
+    val targetArgument = call.target.collect {
+      case nameExpr: PhpNameExpr if nameExpr.name == NameConstants.Parent || nameExpr.name == NameConstants.Self =>
+        astForClassScopeResolutionTarget(nameExpr)
+      case nameExpr: PhpNameExpr =>
+        val typ = typeRefNode(nameExpr, getSimpleName(nameExpr.name), nameExpr.name)
+        Some(Ast(typ))
+    }.flatten
+
     val staticReceiver = call.target.collect {
       case nameExpr: PhpNameExpr if isParentCall =>
         getInheritedTypeFullName
@@ -177,7 +189,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val callRoot = callNode(call, code, name, fullName, dispatchType, None, Some(Defines.Any), staticReceiver)
 
-    callAst(callRoot, arguments)
+    val allArgs            = List(targetArgument, arguments).flatten
+    val startArgumentIndex = Option.when(targetArgument.isDefined)(0)
+    staticCallAst(callRoot, List(targetArgument, arguments).flatten, startArgumentIndex = startArgumentIndex)
   }
 
   protected def simpleAssignAst(origin: PhpNode, target: Ast, source: Ast): Ast = {
