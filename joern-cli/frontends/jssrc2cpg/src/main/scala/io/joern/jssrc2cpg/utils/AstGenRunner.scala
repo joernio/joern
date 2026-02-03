@@ -277,6 +277,21 @@ class AstGenRunner(config: Config) {
 
   }
 
+  private def hasEjsSourceFile(filePath: String): Boolean = {
+    val file = Paths.get(filePath)
+    if (file.extension().contains(".js")) {
+      val vueFilePath = file.getParent
+        .listFiles()
+        .find { siblingFile =>
+          siblingFile.nameWithoutExtension(includeAll = false) == file.nameWithoutExtension() &&
+          siblingFile.extension().contains(".ejs")
+        }
+      vueFilePath.isDefined
+    } else {
+      false
+    }
+  }
+
   private def filterFiles(files: List[String], out: Path): List[String] = {
     files.filter { file =>
       Try {
@@ -284,11 +299,11 @@ class AstGenRunner(config: Config) {
           // We are not interested in JS / TS type definition files at this stage.
           // TODO: maybe we can enable that later on and use the type definitions there
           //  for enhancing the CPG with additional type information for functions
-          case filePath if TypeDefinitionFileExtensions.exists(filePath.endsWith) => false
-          case filePath if isIgnoredByUserConfig(filePath)                        => false
-          case filePath if isIgnoredByDefault(filePath)                           => false
-          case filePath if isTranspiledFile(filePath)                             => false
-          case _                                                                  => true
+          case filePath if TypeDefinitionFileExtensions.exists(filePath.endsWith)    => false
+          case filePath if isIgnoredByUserConfig(filePath)                           => false
+          case filePath if isIgnoredByDefault(filePath)                              => false
+          case filePath if isTranspiledFile(filePath) && !hasEjsSourceFile(filePath) => false
+          case _                                                                     => true
         }
       } match {
         case Success(result)    => result
@@ -312,12 +327,10 @@ class AstGenRunner(config: Config) {
   }
 
   private def processEjsFiles(in: Path, out: Path, ejsFiles: List[String]): Try[Seq[String]] = {
-    val tmpJsFiles = ejsFiles.map { ejsFilePath =>
+    val tmpJsFiles = ejsFiles.flatMap { ejsFilePath =>
       val ejsFile             = Paths.get(ejsFilePath)
       val maybeTranspiledFile = Paths.get(s"${ejsFilePath.stripSuffix(".ejs")}.js")
-      if (isTranspiledFile(maybeTranspiledFile.toString)) {
-        maybeTranspiledFile
-      } else {
+      if (!isTranspiledFile(maybeTranspiledFile.toString)) {
         val sourceFileContent = IOUtils.readEntireFile(ejsFile)
         val preprocessContent = new EjsPreprocessor().preprocess(sourceFileContent)
         (out / in.relativize(ejsFile).toString).getParent
@@ -328,8 +341,8 @@ class AstGenRunner(config: Config) {
         val jsFile  = Files.writeString(changeExtensionTo(newEjsFile, ".js"), preprocessContent)
         val newFile = Files.createFile(newEjsFile)
         Files.writeString(newFile, sourceFileContent)
-        jsFile
-      }
+        Some(jsFile)
+      } else None
     }
 
     val result =

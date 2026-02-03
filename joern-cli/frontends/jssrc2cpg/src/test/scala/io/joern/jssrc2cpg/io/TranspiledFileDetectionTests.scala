@@ -1,9 +1,9 @@
 package io.joern.jssrc2cpg.io
 
-import io.joern.jssrc2cpg.testfixtures.AstJsSrc2CpgSuite
+import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgSuite
 import io.shiftleft.semanticcpg.language.*
 
-class TranspiledFileDetectionTests extends AstJsSrc2CpgSuite {
+class TranspiledFileDetectionTests extends JsSrc2CpgSuite {
 
   "Detecting transpiled files" should {
     "skip transpiled files correctly (with source map comment)" in {
@@ -25,11 +25,17 @@ class TranspiledFileDetectionTests extends AstJsSrc2CpgSuite {
       cpg.file.name.l shouldBe List("index.ts")
     }
 
-    "skip transpiled files correctly (with other file types)" in {
+    "skip ejs transpilation if there is a transpiled file" in {
       val cpg = code("console.log('Hello World!');", "index.vue")
         .moreCode("console.log('Hello World!');", "index.ejs")
         .moreCode("console.log('Hello World!');", "index.js")
         .moreCode("", "index.js.map")
+      cpg.file.name.l shouldBe List("index.js", "index.vue")
+    }
+
+    "not skip ejs transpilation if there is no transpiled file" in {
+      val cpg = code("console.log('Hello World!');", "index.vue")
+        .moreCode("console.log('Hello World!');", "index.ejs")
       cpg.file.name.l shouldBe List("index.ejs", "index.vue")
     }
 

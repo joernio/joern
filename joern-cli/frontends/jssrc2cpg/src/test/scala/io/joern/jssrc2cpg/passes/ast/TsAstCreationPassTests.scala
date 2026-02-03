@@ -1,12 +1,12 @@
 package io.joern.jssrc2cpg.passes.ast
 
-import io.joern.jssrc2cpg.testfixtures.AstJsSrc2CpgSuite
+import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgSuite
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier}
 import io.shiftleft.semanticcpg.language.*
 
-class TsAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
+class TsAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
 
   "AST generation for simple TS constructs" should {
 
@@ -55,7 +55,7 @@ class TsAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
         |const a = (): string | undefined => undefined;
         |(({ [a() ?? "d"]: c = "" }) => {})();
         |""".stripMargin)
-      cpg.method.name.sorted.l shouldBe List(":program", "<lambda>0", "<lambda>1")
+      cpg.method.internal.name.sorted.l shouldBe List(":program", "<lambda>0", "<lambda>1")
       val params = cpg.method.nameExact("<lambda>1").parameter.l
       params.code.l shouldBe List("this", """{ [a() ?? "d"]: c = "" }""")
       params.name.l shouldBe List("this", "param1_0")
@@ -63,7 +63,7 @@ class TsAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
 
     "create methods for const exports" in {
       val cpg = code("export const getApiA = (req: Request) => { const user = req.user as UserDocument; }")
-      cpg.method.name.sorted.l shouldBe List(":program", "<lambda>0")
+      cpg.method.internal.name.sorted.l shouldBe List(":program", "<lambda>0")
       cpg.assignment.code.l shouldBe List(
         "const user = req.user as UserDocument",
         "const getApiA = (req: Request) => { const user = req.user as UserDocument; }",

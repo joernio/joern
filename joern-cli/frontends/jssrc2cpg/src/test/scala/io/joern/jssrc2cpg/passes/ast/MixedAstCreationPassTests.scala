@@ -1,13 +1,13 @@
 package io.joern.jssrc2cpg.passes.ast
 
-import io.joern.jssrc2cpg.testfixtures.AstJsSrc2CpgSuite
+import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgSuite
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{ClosureBinding, MethodParameterIn}
 import io.shiftleft.semanticcpg.language.*
 
-class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
+class MixedAstCreationPassTests extends JsSrc2CpgSuite {
 
   "AST method full names" should {
     "anonymous arrow function full name 1" in {
@@ -1376,15 +1376,14 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
 
     "make available `require` statements via cpg.imports" in {
       val cpg       = code("const x = require(\"foo\");")
-      val List(imp) = cpg.imports.l
-      imp.code shouldBe "x = require(\"foo\")"
+      val List(imp) = cpg.imports.codeExact("x = require(\"foo\")").l
       imp.importedEntity shouldBe Option("foo")
       imp.importedAs shouldBe Option("x")
     }
 
     "allow traversing from dependency to import for `require` statements" in {
       val cpg        = code("const x = require(\"foo\");")
-      val List(imp)  = cpg.imports.l
+      val List(imp)  = cpg.imports.codeExact("x = require(\"foo\")").l
       val List(dep)  = cpg.dependency.l
       val List(imp2) = dep.imports.l
       imp shouldBe imp2
