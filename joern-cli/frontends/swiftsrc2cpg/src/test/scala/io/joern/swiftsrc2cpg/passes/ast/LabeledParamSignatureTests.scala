@@ -1,12 +1,10 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
+import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
 import io.joern.x2cpg.Defines
-
-import io.joern.swiftsrc2cpg.testfixtures.SwiftAstTestCpg
-import io.joern.x2cpg.testfixtures.Code2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
-class LabeledParamSignatureTests extends Code2CpgFixture(() => new SwiftAstTestCpg(".swift")) {
+class LabeledParamSignatureTests extends SwiftSrc2CpgSuite {
 
   "LabeledParamSignatureTests" should {
 
