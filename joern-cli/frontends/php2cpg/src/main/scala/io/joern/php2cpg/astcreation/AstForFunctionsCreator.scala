@@ -122,7 +122,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val parameterCode = decl.params.map(getParamCode)
 
     val constructorModifier   = Option.when(isConstructor)(ModifierTypes.CONSTRUCTOR)
-    val virtualModifier       = Option.unless(isStatic || isConstructor)(ModifierTypes.VIRTUAL)
+    val virtualModifier       = Option.unless(isConstructor)(ModifierTypes.VIRTUAL)
     val defaultAccessModifier = Option.unless(containsAccessModifier(decl.modifiers))(ModifierTypes.PUBLIC)
 
     val allModifiers      = virtualModifier ++: constructorModifier ++: defaultAccessModifier ++: decl.modifiers
@@ -225,7 +225,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       isVariadic = false,
       evaluationStrategy = EvaluationStrategies.BY_SHARING,
       typeFullName = typeFullName
-    ).dynamicTypeHintFullName(typeFullName :: Nil)
+    )
     // TODO Add dynamicTypeHintFullName to parameterInNode param list
 
     scope.addToScope(NameConstants.This, thisNode)
@@ -244,7 +244,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       isVariadic = false,
       evaluationStrategy = EvaluationStrategies.BY_SHARING,
       typeFullName = typeFullName
-    ).dynamicTypeHintFullName(typeFullName :: Nil)
+    )
     // TODO Add dynamicTypeHintFullName to parameterInNode param list
 
     scope.addToScope(NameConstants.StaticReceiver, node)
