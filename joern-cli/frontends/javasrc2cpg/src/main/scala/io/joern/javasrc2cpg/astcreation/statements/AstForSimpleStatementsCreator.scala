@@ -425,6 +425,8 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
   }
 
   private[statements] def astsForTry(stmt: TryStmt): Seq[Ast] = {
+    // Need to wrap the try in a block scope to ensure correct resources handling
+    scope.pushBlockScope()
     val tryNode   = controlStructureNode(stmt, ControlStructureTypes.TRY, "try")
     val resources = stmt.getResources.asScala.flatMap(astsForExpression(_, expectedType = ExpectedType.empty)).toList
 
@@ -438,6 +440,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
       Ast(finallyNode).withChild(astForBlockStatement(finallyBlock, "finally"))
     }
     val controlStructureAst = tryCatchAst(tryNode, tryAst, catchAsts, finallyAst)
+    scope.popBlockScope()
     resources.appended(controlStructureAst)
   }
 }
