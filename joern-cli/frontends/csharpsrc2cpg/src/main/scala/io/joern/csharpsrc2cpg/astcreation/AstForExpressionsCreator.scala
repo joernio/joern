@@ -113,8 +113,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
                 logger.warn(s"Unrecognized assignment in ${code(expr)}")
                 originalRhs
               case Some(opName) =>
-                val getterInvocation =
-                  createInvocationAst(expr, getterMethod.name, Nil, receiver, Some(getterMethod), Some(setterBaseType))
+                val getterInvocation = {
+                  // TODO passing the receiver in at this point leads to an invalid AST with 2 AST parents
+                  // for the receiver. We are therefore not passing it in, knowing that it is already part
+                  // of the AST in some sense.
+                  // createInvocationAst(expr, getterMethod.name, Nil, receiver, Some(getterMethod), Some(setterBaseType))
+                  createInvocationAst(expr, getterMethod.name, Nil, None, Some(getterMethod), Some(setterBaseType))
+                }
                 val operatorCall =
                   operatorCallNode(expr, code(expr), opName, Some(setterMethod.returnType))
                 callAst(operatorCall, getterInvocation +: originalRhs, None, None) :: Nil
