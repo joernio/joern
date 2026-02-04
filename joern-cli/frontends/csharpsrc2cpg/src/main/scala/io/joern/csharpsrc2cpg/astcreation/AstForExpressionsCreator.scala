@@ -877,7 +877,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           .typeFullName(nodeTypeFullName(typeInfo))
 
         val conditionAst      = callAst(instanceOfCallNode, expression :+ Ast(typeNode))
-        val assignmentCallAst = callAst(assignmentAst, designationAst +: expression)
+        val expressionClone   = astForExpression(expressionNode)
+        val assignmentCallAst = callAst(assignmentAst, designationAst +: expressionClone)
 
         List(conditionAst, assignmentCallAst)
       case ConstantPattern =>
