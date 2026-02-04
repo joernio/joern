@@ -114,11 +114,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
                 originalRhs
               case Some(opName) =>
                 val getterInvocation = {
-                  // TODO passing the receiver in at this point leads to an invalid AST with 2 AST parents
-                  // for the receiver. We are therefore not passing it in, knowing that it is already part
-                  // of the AST in some sense.
-                  // createInvocationAst(expr, getterMethod.name, Nil, receiver, Some(getterMethod), Some(setterBaseType))
-                  createInvocationAst(expr, getterMethod.name, Nil, None, Some(getterMethod), Some(setterBaseType))
+                  createInvocationAst(expr, getterMethod.name, Nil, receiver, Some(getterMethod), Some(setterBaseType))
                 }
                 val operatorCall =
                   operatorCallNode(expr, code(expr), opName, Some(setterMethod.returnType))
@@ -144,20 +140,27 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     rhs: DotNetNodeInfo,
     setterInfo: (CSharpMethod, String)
   ): Seq[Ast] = {
+
     val (setterMethod, setterBaseType) = setterInfo
-    val receiver = if (setterMethod.isStatic) {
-      None
-    } else {
-      val baseNode = createDotNetNodeInfo(lhs.json(ParserKeys.Expression))
-      astForNode(baseNode).headOption
+
+    def createReceiver(): Option[Ast] = {
+      if (setterMethod.isStatic) {
+        None
+      } else {
+        val baseNode = createDotNetNodeInfo(lhs.json(ParserKeys.Expression))
+        astForNode(baseNode).headOption
+      }
     }
-    val rhsAst = lowerSetterAssignmentRhs(assignExpr, assignOp, setterInfo, receiver, rhs)
+
+    val receiver      = createReceiver()
+    val rhsAst        = lowerSetterAssignmentRhs(assignExpr, assignOp, setterInfo, receiver, rhs)
+    val receiverClone = createReceiver()
 
     createInvocationAst(
       assignExpr,
       setterMethod.name,
       rhsAst,
-      receiver,
+      receiverClone,
       Some(setterMethod),
       Some(setterBaseType)
     ) :: Nil
@@ -180,14 +183,15 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     setterInfo: (CSharpMethod, String)
   ): Seq[Ast] = {
     val (setterMethod, setterBaseType) = setterInfo
-    val receiver = Option.when(!setterMethod.isStatic)(astForThisReceiver(lhs, scope.surroundingTypeDeclFullName))
-    val rhsAst   = lowerSetterAssignmentRhs(assignExpr, assignOp, setterInfo, receiver, rhs)
+    val receiver      = Option.when(!setterMethod.isStatic)(astForThisReceiver(lhs, scope.surroundingTypeDeclFullName))
+    val receiverClone = Option.when(!setterMethod.isStatic)(astForThisReceiver(lhs, scope.surroundingTypeDeclFullName))
+    val rhsAst        = lowerSetterAssignmentRhs(assignExpr, assignOp, setterInfo, receiver, rhs)
 
     createInvocationAst(
       assignExpr,
       setterMethod.name,
       rhsAst,
-      receiver,
+      receiverClone,
       Some(setterMethod),
       Some(setterBaseType)
     ) :: Nil
