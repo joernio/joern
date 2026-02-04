@@ -602,14 +602,13 @@ class AstCreator(
       samInfo.samMethodName,
       samMethodFullName,
       Some(samInfo.samMethodSig),
-      relativizedPath,
-      Some(NodeTypes.TYPE_DECL),
-      Some(samInfo.samImplClass)
+      relativizedPath
     )
 
     val thisParamAst = {
       val paramNode =
         parameterInNode(samInfo.expr, "this", "this", 0, false, EvaluationStrategies.BY_SHARING, samInfo.samImplClass)
+          .dynamicTypeHintFullName(IndexedSeq(samInfo.samImplClass))
       Ast(paramNode)
     }
 
@@ -628,16 +627,26 @@ class AstCreator(
 
     val allParameterAsts = thisParamAst +: valueParameterAsts
 
+    val paramString = samInfo.samMethodParams.map(_._1).mkString(", ")
+
     val returnType   = extractReturnTypeFromSignature(samInfo.samMethodSig)
     val methodReturn = methodReturnNode(samInfo.expr, registerType(returnType))
 
-    val blockNode_ = blockNode(samInfo.expr, "<body>", registerType(returnType))
+    val receiverType     = samInfo.receiverTypeFullName.getOrElse(TypeConstants.Any)
+    val receiverTypeName = receiverType.split('.').last
+    val calledMethodName = samInfo.methodRefName.split('.').last
+
+    val callCode = samInfo.receiverParam match {
+      case Some((_, receiverText)) if !samInfo.isStaticReference =>
+        s"(receiver as ${receiverTypeName}).${calledMethodName}(${paramString})"
+      case _ => samInfo.methodRefName
+    }
+    val blockNode_ = blockNode(samInfo.expr, s"return $callCode", TypeConstants.JavaLangVoid)
 
     val (dispatchType, receiverAstOpt) = (samInfo.receiverParam, samInfo.isStaticReference) match {
       case (Some((_, receiverText)), false) =>
-        val receiverType = samInfo.receiverTypeFullName.getOrElse(TypeConstants.Any)
-        val thisIdent    = identifierNode(samInfo.expr, "this", "this", registerType(samInfo.samImplClass))
-        val fieldIdent   = fieldIdentifierNode(samInfo.expr, "receiver", "receiver")
+        val thisIdent  = identifierNode(samInfo.expr, "this", "this", registerType(samInfo.samImplClass))
+        val fieldIdent = fieldIdentifierNode(samInfo.expr, "receiver", "receiver")
         val receiverFieldAccess = callNode(
           samInfo.expr,
           "this.receiver",
@@ -650,10 +659,10 @@ class AstCreator(
         val fieldAccessAst = callAst(receiverFieldAccess, Seq(Ast(thisIdent), Ast(fieldIdent)), None)
 
         // Wrap the field access in a cast operation
-        val typeRefNode_ = typeRefNode(samInfo.expr, receiverType.split('.').last, registerType(receiverType))
+        val typeRefNode_ = typeRefNode(samInfo.expr, receiverTypeName, registerType(receiverType))
         val castCallNode = callNode(
           samInfo.expr,
-          s"receiver as ${receiverType.split('.').last}",
+          s"receiver as ${receiverTypeName}",
           Operators.cast,
           Operators.cast,
           DispatchTypes.STATIC_DISPATCH,
@@ -669,9 +678,9 @@ class AstCreator(
 
     val callNode_ = callNode(
       samInfo.expr,
-      samInfo.methodRefName,
+      callCode,
       samInfo.methodRefName.split("\\.").lastOption.getOrElse(samInfo.methodRefName),
-      samInfo.methodRefName,
+      s"${samInfo.methodRefName}:${samInfo.signature}",
       dispatchType,
       Some(samInfo.signature),
       Some(registerType(returnType))
@@ -684,10 +693,13 @@ class AstCreator(
 
     val callAst_ = callAst(callNode_, callArgumentAsts.toList, receiverAstOpt)
 
-    val returnNode_ = returnNode(samInfo.expr, s"return ${samInfo.methodRefName}")
+    val returnNode_ = returnNode(samInfo.expr, s"return ${callCode}")
     val returnAst_  = returnAst(returnNode_, List(callAst_))
 
-    val methodAst_ = methodAst(samMethodNode, allParameterAsts, blockAst(blockNode_, List(returnAst_)), methodReturn)
+    val modifiers =
+      Seq(modifierNode(samInfo.expr, ModifierTypes.PUBLIC), modifierNode(samInfo.expr, ModifierTypes.VIRTUAL))
+    val methodAst_ =
+      methodAst(samMethodNode, allParameterAsts, blockAst(blockNode_, List(returnAst_)), methodReturn, modifiers)
 
     val samBinding = bindingNode(samInfo.samMethodName, samInfo.samMethodSig, samMethodFullName)
     bindingInfoQueue.prepend(
@@ -697,7 +709,53 @@ class AstCreator(
       )
     )
 
-    Ast(samTypeDecl).withChild(methodAst_)
+    // Create nested TypeDecl for the invoke method (represents the function type)
+    val methodTypeDecl = typeDeclNode(
+      samInfo.expr,
+      samInfo.samMethodName,
+      samMethodFullName,
+      relativizedPath,
+      samInfo.samMethodName,
+      NodeTypes.TYPE_DECL,
+      samInfo.samImplClass,
+      Seq(registerType("kotlin.Function"))
+    )
+
+    // Create constructor for bound references
+    val constructorAsts = if (samInfo.receiverParam.isDefined && !samInfo.isStaticReference) {
+      val receiverType = samInfo.receiverTypeFullName.getOrElse(TypeConstants.Any)
+      val ctorFullName = s"${samInfo.samImplClass}.<init>:void(${receiverType})"
+      val ctorNode =
+        methodNode(samInfo.expr, "<init>", "<init>", ctorFullName, Some(s"void(${receiverType})"), relativizedPath)
+
+      val ctorThisParam =
+        parameterInNode(samInfo.expr, "this", "this", 0, false, EvaluationStrategies.BY_SHARING, samInfo.samImplClass)
+          .dynamicTypeHintFullName(IndexedSeq(samInfo.samImplClass))
+
+      val receiverParamName = samInfo.receiverParam
+        .flatMap(_._1.root.collect { case expr: ExpressionNew => expr.code })
+        .getOrElse("receiver")
+
+      val ctorReceiverParam = parameterInNode(
+        samInfo.expr,
+        receiverParamName,
+        receiverParamName,
+        1,
+        false,
+        EvaluationStrategies.BY_VALUE,
+        registerType(receiverType)
+      )
+
+      val ctorBlock     = blockNode(samInfo.expr, "", registerType(TypeConstants.Void))
+      val ctorReturn    = methodReturnNode(samInfo.expr, registerType(TypeConstants.Void))
+      val ctorModifiers = Seq(modifierNode(samInfo.expr, ModifierTypes.CONSTRUCTOR))
+
+      Seq(
+        methodAst(ctorNode, Seq(Ast(ctorThisParam), Ast(ctorReceiverParam)), Ast(ctorBlock), ctorReturn, ctorModifiers)
+      )
+    } else Seq.empty
+
+    Ast(samTypeDecl).withChild(methodAst_).withChildren(constructorAsts).withChild(Ast(methodTypeDecl))
   }
 
   private def extractReturnTypeFromSignature(signature: String): String = {

@@ -890,7 +890,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         else "void()"
       val ctorCallNode = callNode(
         expr,
-        s"new $samImplClass($receiverArgument)",
+        s"$samImplClass($receiverArgument)",
         Defines.ConstructorMethodName,
         s"$samImplClass.${Defines.ConstructorMethodName}:$ctorSignature",
         DispatchTypes.STATIC_DISPATCH,

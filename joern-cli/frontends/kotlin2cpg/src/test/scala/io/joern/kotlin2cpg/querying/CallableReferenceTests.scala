@@ -90,6 +90,55 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       receiverArg.name shouldBe "handler"
       receiverArg.typeFullName shouldBe "com.test.Handler"
     }
+
+    "have PUBLIC and VIRTUAL modifiers on invoke method" in {
+      val modifiers = invokeMethod.modifier.l
+      modifiers.size shouldBe 2
+      modifiers.map(_.modifierType).toSet shouldBe Set("PUBLIC", "VIRTUAL")
+    }
+
+    "have a constructor method with CONSTRUCTOR modifier" in {
+      val constructors = syntheticTypeDecl.method.name("<init>").l
+      constructors.size shouldBe 1
+
+      val constructor = constructors.head
+      constructor.fullName shouldBe "com.test.Handler.process$kotlin.jvm.functions.Function2Impl.<init>:void(com.test.Handler)"
+      constructor.signature shouldBe "void(com.test.Handler)"
+
+      val ctorParams = constructor.parameter.l.sortBy(_.index)
+      ctorParams.size shouldBe 2
+      ctorParams.head.name shouldBe "this"
+      ctorParams.head.typeFullName shouldBe "com.test.Handler.process$kotlin.jvm.functions.Function2Impl"
+      ctorParams(1).name shouldBe "handler"
+      ctorParams(1).typeFullName shouldBe "com.test.Handler"
+
+      val ctorModifiers = constructor.modifier.l
+      ctorModifiers.size shouldBe 1
+      ctorModifiers.head.modifierType shouldBe "CONSTRUCTOR"
+    }
+
+    "have dynamic type hints on this parameter" in {
+      val thisParam = invokeMethod.parameter.index(0).head
+      thisParam.dynamicTypeHintFullName shouldBe Seq("com.test.Handler.process$kotlin.jvm.functions.Function2Impl")
+    }
+
+    "have block code containing the actual method call" in {
+      val block = invokeMethod.ast.isBlock.head
+      block.code should include("process")
+      block.code should include("receiver as Handler")
+    }
+
+    "have a nested TypeDecl representing the function type" in {
+      val nestedTypeDecls = cpg.typeDecl.fullName(".*Function2Impl.*invoke.*").l
+      nestedTypeDecls.size shouldBe 1
+
+      val nestedTypeDecl = nestedTypeDecls.head
+      nestedTypeDecl.name shouldBe "invoke"
+      nestedTypeDecl.fullName shouldBe "com.test.Handler.process$kotlin.jvm.functions.Function2Impl.invoke:boolean(int,java.lang.String)"
+      nestedTypeDecl.astParentType shouldBe "TYPE_DECL"
+      nestedTypeDecl.astParentFullName shouldBe "com.test.Handler.process$kotlin.jvm.functions.Function2Impl"
+      nestedTypeDecl.inheritsFromTypeFullName should contain("kotlin.Function")
+    }
   }
 
   "SAM implementation for static companion method reference" should {
@@ -140,6 +189,12 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       receiverBase.name shouldBe "Utils"
       receiverBase.typeFullName shouldBe "com.test.Utils$Companion"
       receiverField.canonicalName shouldBe Constants.CompanionObjectMemberName
+    }
+
+    "have PUBLIC and VIRTUAL modifiers on invoke method" in {
+      val modifiers = invokeMethod.modifier.l
+      modifiers.size shouldBe 2
+      modifiers.map(_.modifierType).toSet shouldBe Set("PUBLIC", "VIRTUAL")
     }
   }
 
@@ -193,6 +248,13 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       // The invoke method should not be created in this case
       invokeMethods.isEmpty shouldBe true
     }
+
+    "not create a constructor for unbound references" in {
+      val syntheticTypes = cpg.typeDecl.fullName(".*globalFunction.*Function2.*").l
+      val syntheticType  = syntheticTypes.head
+      val constructors   = syntheticType.method.name("<init>").l
+      constructors.isEmpty shouldBe true
+    }
   }
 
   "SAM implementation with custom interfaces" should {
@@ -234,6 +296,22 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       val actionImpl    = cpg.typeDecl.fullName(".*SimpleActionImpl.*").head
       val executeMethod = actionImpl.method.name("execute").head
       executeMethod.signature shouldBe "void(int)"
+    }
+
+    "have modifiers on methods implementing custom interfaces" in {
+      val transformerImpl = cpg.typeDecl.fullName(".*TransformerImpl.*").head
+      val transformMethod = transformerImpl.method.name("transform").head
+      val modifiers       = transformMethod.modifier.l
+      modifiers.map(_.modifierType).toSet shouldBe Set("PUBLIC", "VIRTUAL")
+    }
+
+    "have constructors for custom interface implementations" in {
+      val transformerImpl = cpg.typeDecl.fullName(".*TransformerImpl.*").head
+      val constructors    = transformerImpl.method.name("<init>").l
+      constructors.size shouldBe 1
+
+      val constructor = constructors.head
+      constructor.modifier.map(_.modifierType).head shouldBe "CONSTRUCTOR"
     }
   }
 
@@ -378,7 +456,49 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
 
       invokeMethod.signature shouldBe "boolean(int)"
       val checkCall = invokeMethod.ast.isCall.name("check").head
-      checkCall.methodFullName shouldBe "Validator.check"
+      checkCall.methodFullName shouldBe "Validator.check:boolean(int)"
+    }
+
+    "have dynamic type hints on this parameter in all cases" in {
+      val cpg = code("""
+          |class Handler {
+          |    fun process(value: String?): Boolean {
+          |        return value != null
+          |    }
+          |}
+          |
+          |fun test() {
+          |   val handler = Handler()
+          |   val ref: (String?) -> Boolean = handler::process
+          |}
+          |""".stripMargin)
+
+      val syntheticTypeDecl = cpg.typeDecl.fullName(".*Function1Impl.*").head
+      val invokeMethod      = syntheticTypeDecl.method.name("invoke").head
+      val thisParam         = invokeMethod.parameter.index(0).head
+
+      thisParam.dynamicTypeHintFullName should not be empty
+      thisParam.dynamicTypeHintFullName.head should include("Function1Impl")
+    }
+
+    "have constructor with dynamic type hints on this parameter" in {
+      val cpg = code("""
+          |class Counter {
+          |    fun increment(): Int = 1
+          |}
+          |
+          |fun test() {
+          |   val counter = Counter()
+          |   val ref: () -> Int = counter::increment
+          |}
+          |""".stripMargin)
+
+      val syntheticTypeDecl = cpg.typeDecl.fullName(".*Function0Impl.*").head
+      val constructor       = syntheticTypeDecl.method.name("<init>").head
+      val thisParam         = constructor.parameter.index(0).head
+
+      thisParam.dynamicTypeHintFullName should not be empty
+      thisParam.dynamicTypeHintFullName.head should include("Function0Impl")
     }
   }
 
@@ -399,7 +519,7 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
           |}
           |""".stripMargin)
 
-    val syntheticTypeDecls = cpg.typeDecl.fullName(".*Calculator.*Function2Impl.*").l
+    val syntheticTypeDecls = cpg.typeDecl.fullName(".*Calculator.*Function2Impl.*").filter(_.astParentType == "").l
 
     "only have ONE synthetic type declaration for Calculator::add with Function2<Int, Int, Int>" in {
       syntheticTypeDecls.size shouldBe 1
