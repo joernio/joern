@@ -154,10 +154,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForStaticCall(call: PhpCallExpr, name: String, arguments: Seq[Ast]): Ast = {
-    val isParentCall = call.target match {
-      case Some(expr: PhpNameExpr) => expr.name == NameConstants.Parent
-      case _                       => false
-    }
     val argsCode   = getArgsCode(call, arguments)
     val codePrefix = codeForStaticMethodCall(call, name)
     val code       = s"$codePrefix($argsCode)"
@@ -171,7 +167,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
 
     val targetArgument = call.target.collect {
-      case nameExpr: PhpNameExpr if nameExpr.name == NameConstants.Parent || nameExpr.name == NameConstants.Self =>
+      case nameExpr: PhpNameExpr if Set(NameConstants.Parent, NameConstants.Self).contains(nameExpr.name) =>
         astForClassScopeResolutionTarget(nameExpr)
       case nameExpr: PhpNameExpr =>
         val typ = typeRefNode(nameExpr, getSimpleName(nameExpr.name), nameExpr.name)
@@ -179,7 +175,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }.flatten
 
     val staticReceiver = call.target.collect {
-      case nameExpr: PhpNameExpr if isParentCall =>
+      case nameExpr: PhpNameExpr if nameExpr.name == NameConstants.Parent =>
         getInheritedTypeFullName
       case nameExpr: PhpNameExpr if nameExpr.name == NameConstants.Self =>
         getTypeDeclPrefix
@@ -191,7 +187,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val allArgs            = List(targetArgument, arguments).flatten
     val startArgumentIndex = Option.when(targetArgument.isDefined)(0)
-    staticCallAst(callRoot, List(targetArgument, arguments).flatten, startArgumentIndex = startArgumentIndex)
+    staticCallAst(callRoot, allArgs, startArgumentIndex = startArgumentIndex)
   }
 
   protected def simpleAssignAst(origin: PhpNode, target: Ast, source: Ast): Ast = {
