@@ -765,9 +765,20 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
         "this.outerClass = outerClass",
         "this.outerParam = outerParam"
       )
-      val lastBody = constructors.last.body.astChildren.l
-      inside(constructors.last.body.astChildren.l) { case List(thisCall: Call, sinkCall: Call) =>
-        thisCall.argument.code.l shouldBe List("this", "outerClass", "outerParam")
+      val lastCtx  = constructors.last
+      val lastBody = lastCtx.body.astChildren.l
+      inside(lastBody) { case List(thisCall: Call, sinkCall: Call) =>
+        inside(thisCall.argument.l) {
+          case List(thisArg: Identifier, outerClassArg: Identifier, outerParamArg: Identifier) =>
+            thisArg.name shouldBe "this"
+            thisArg.refsTo.l shouldBe lastCtx.parameter.name("this").l
+
+            outerClassArg.name shouldBe "outerClass"
+            outerClassArg.refsTo.l shouldBe lastCtx.parameter.name("outerClass").l
+
+            outerParamArg.name shouldBe "outerParam"
+            outerParamArg.refsTo.l shouldBe lastCtx.parameter.name("outerParam").l
+        }
         sinkCall.code shouldBe "sink(ctxParam)"
       }
     }

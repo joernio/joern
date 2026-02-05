@@ -624,9 +624,17 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
 
     val thisNode = partialConstructor.thisNode
     val assignmentsForCaptures =
-      if (partialConstructor.startsWithThisCall)
+      if (partialConstructor.startsWithThisCall) {
+        // Register the synthetic capture parameters for this constructor's this() call
+        // so that REF edges can be created correctly in addArgsToPartialInits
+        partialConstructor.bodyStatementAsts.headOption
+          .flatMap(_.root)
+          .collect { case initCall: NewCall => initCall }
+          .foreach { initCall =>
+            scope.enclosingTypeDecl.foreach(_.registerThisCallCaptureParams(initCall, paramsForCaptures))
+          }
         Nil
-      else
+      } else
         paramsForCaptures.map(assignmentForCapture(partialConstructor.originNode, _, partialConstructor.thisNode))
 
     val bodyAst =
