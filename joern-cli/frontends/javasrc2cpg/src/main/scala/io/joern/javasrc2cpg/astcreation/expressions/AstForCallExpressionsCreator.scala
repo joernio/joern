@@ -178,7 +178,7 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
     val returnedIdentifierAst = Ast(returnedIdentifier).withRefEdge(returnedIdentifier, tmpLocal)
 
     Ast(blockNode(expr).typeFullName(returnedIdentifier.typeFullName))
-      .withChild(Ast(tmpLocal).withRefEdge(assignTarget, tmpLocal))
+      .withChild(Ast(tmpLocal))
       .withChild(allocAssignAst)
       .withChild(allocAndInitAst.initAst)
       .withChild(returnedIdentifierAst)
