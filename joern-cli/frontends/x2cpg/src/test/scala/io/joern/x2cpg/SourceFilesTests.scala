@@ -105,33 +105,13 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
 
   "filterFile" should {
 
-    "accept a file whose size is lower than maxFileSize" in {
-      FileUtil.usingTemporaryDirectory() { tmpDir =>
-        val file  = tmpDir / "a.c"
-        val bytes = Array.fill[Byte](1023)(0)
-        Files.write(file, bytes)
-
-        SourceFiles.filterFile(file = file.toString, inputPath = tmpDir.toString, maxFileSize = 1024L) shouldBe true
-      }
-    }
-
-    "accept a file whose size equals maxFileSize" in {
+    "accept a file whose size is lower than DefaultMaxFileSizeBytes" in {
       FileUtil.usingTemporaryDirectory() { tmpDir =>
         val file  = tmpDir / "a.c"
         val bytes = Array.fill[Byte](1024)(0)
         Files.write(file, bytes)
 
-        SourceFiles.filterFile(file = file.toString, inputPath = tmpDir.toString, maxFileSize = 1024L) shouldBe true
-      }
-    }
-
-    "reject a file whose size exceeds maxFileSize" in {
-      FileUtil.usingTemporaryDirectory() { tmpDir =>
-        val file  = tmpDir / "a.c"
-        val bytes = Array.fill[Byte](1025)(0)
-        Files.write(file, bytes)
-
-        SourceFiles.filterFile(file = file.toString, inputPath = tmpDir.toString, maxFileSize = 1024L) shouldBe false
+        SourceFiles.filterFile(file = file.toString, inputPath = tmpDir.toString) shouldBe true
       }
     }
 
@@ -158,86 +138,6 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
       }
     }
 
-    "reject a file whose size is larger than JVM String max. size even when filtered with a larger value" in {
-      FileUtil.usingTemporaryDirectory() { tmpDir =>
-        val file           = tmpDir / "a.c"
-        val bytes          = Array.fill[Byte](Integer.MAX_VALUE - 2)(0)
-        val additionalByte = Array.fill[Byte](1)(0)
-        Files.write(file, bytes)
-        Files.write(file, additionalByte, java.nio.file.StandardOpenOption.APPEND)
-
-        SourceFiles.filterFile(
-          file = file.toString,
-          inputPath = tmpDir.toString,
-          maxFileSize = SourceFiles.DefaultMaxFileSizeBytes + 1
-        ) shouldBe false
-      }
-    }
-
-    "allow a file when filtered with a value below min. size" in {
-      FileUtil.usingTemporaryDirectory() { tmpDir =>
-        val file  = tmpDir / "a.c"
-        val bytes = Array.fill[Byte](SourceFiles.DefaultMinFileSizeBytes.toInt + 1)(0)
-        Files.write(file, bytes)
-
-        SourceFiles.filterFile(
-          file = file.toString,
-          inputPath = tmpDir.toString,
-          maxFileSize = SourceFiles.DefaultMinFileSizeBytes - 1
-        ) shouldBe false
-      }
-    }
-
-  }
-
-  "parseMaxFileSize" should {
-
-    "parse plain bytes" in {
-      SourceFiles.parseMaxFileSize("123") shouldBe Some(SourceFiles.DefaultMinFileSizeBytes)
-    }
-
-    "parse MB/GB suffixes case-insensitively (and tolerate whitespace)" in {
-      SourceFiles.parseMaxFileSize("1MB") shouldBe Some(1024L * 1024L)
-      SourceFiles.parseMaxFileSize("2gb") shouldBe Some(SourceFiles.DefaultMaxFileSizeBytes)
-      SourceFiles.parseMaxFileSize("  3  MB ") shouldBe Some(3L * 1024L * 1024L)
-    }
-
-    "return None for invalid values" in {
-      SourceFiles.parseMaxFileSize("") shouldBe None
-      SourceFiles.parseMaxFileSize(" ") shouldBe None
-      SourceFiles.parseMaxFileSize("-1GB") shouldBe None
-      SourceFiles.parseMaxFileSize("1TB") shouldBe None
-      SourceFiles.parseMaxFileSize("GB") shouldBe None
-
-      SourceFiles.parseMaxFileSize("2048.1mb") shouldBe Some(SourceFiles.DefaultMaxFileSizeBytes)
-      SourceFiles.parseMaxFileSize("2.01GB") shouldBe Some(SourceFiles.DefaultMaxFileSizeBytes)
-      SourceFiles.parseMaxFileSize("3GB") shouldBe Some(SourceFiles.DefaultMaxFileSizeBytes)
-    }
-
-    "parse decimal MB/GB values" in {
-      SourceFiles.parseMaxFileSize("1.5GB") shouldBe Some((1.5 * 1024 * 1024 * 1024).round)
-      SourceFiles.parseMaxFileSize("0.25MB") shouldBe Some((0.25 * 1024 * 1024).round)
-      SourceFiles.parseMaxFileSize(" 0.5 gb ") shouldBe Some((0.5 * 1024 * 1024 * 1024).round)
-    }
-  }
-
-  "formatMaxFileSize" should {
-
-    "format GiB and MiB nicely" in {
-      SourceFiles.formatMaxFileSize(2L * 1024L * 1024L * 1024L) shouldBe "2GB"
-      SourceFiles.formatMaxFileSize(512L * 1024L * 1024L) shouldBe "512MB"
-    }
-
-    "support rounded decimals" in {
-      // 1.5 GiB
-      SourceFiles.formatMaxFileSize((1.5 * 1024 * 1024 * 1024).toLong) shouldBe "1.5GB"
-      // 1.2 MiB (rounded to 1 decimal)
-      SourceFiles.formatMaxFileSize((1.24 * 1024 * 1024).toLong) shouldBe "1.2MB"
-    }
-
-    "fall back to bytes if below 1MiB" in {
-      SourceFiles.formatMaxFileSize(12345L) shouldBe "12345B"
-    }
   }
 
 }
