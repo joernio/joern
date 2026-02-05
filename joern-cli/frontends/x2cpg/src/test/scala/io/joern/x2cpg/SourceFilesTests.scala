@@ -119,6 +119,10 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
       }
     }
 
+    // This test causes OutOfMemoryError on MacOS, see: https://github.com/actions/runner-images/issues/11899
+    // The test is still relevant to ensure that we do not attempt to process files larger than JVM String max. size,
+    // but we need to find a way to run it without causing OOM on MacOS CI runners.
+    // TODO: enable, once the issue with OOM on MacOS CI runners is resolved
     "allow a file whose size is exactly JVM String max. size" taggedAs NotInMacOS in {
       FileUtil.usingTemporaryDirectory() { tmpDir =>
         val file = tmpDir / "a.c"
@@ -130,6 +134,10 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
       }
     }
 
+    // This test causes OutOfMemoryError on MacOS, see: https://github.com/actions/runner-images/issues/11899
+    // The test is still relevant to ensure that we do not attempt to process files larger than JVM String max. size,
+    // but we need to find a way to run it without causing OOM on MacOS CI runners.
+    // TODO: enable, once the issue with OOM on MacOS CI runners is resolved
     "reject a file whose size is larger than JVM String max. size" taggedAs NotInMacOS in {
       FileUtil.usingTemporaryDirectory() { tmpDir =>
         val file           = tmpDir / "a.c"

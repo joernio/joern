@@ -15,10 +15,14 @@ object SourceFiles {
   private val logger = LoggerFactory.getLogger(getClass)
 
   // Max. size for Array[Byte] in JVM is Integer.MAX_VALUE, but String can hold at most Integer.MAX_VALUE - 2 bytes
-  private[x2cpg] val DefaultMaxFileSizeBytes = Integer.MAX_VALUE - 2L
+  private[x2cpg] val DefaultMaxFileSizeBytes: Long = Integer.MAX_VALUE - 2L
 
-  // it actually is Integer.MAX_VALUE - 2 bytes, just for readability in log messages
-  private val DefaultMaxFileSizeString = "2GB"
+  // Human-readable representation for log messages; derived from DefaultMaxFileSizeBytes.
+  private def DefaultMaxFileSizeString: String = {
+    val gib = 1024L * 1024L * 1024L
+    if (DefaultMaxFileSizeBytes % gib == 0) s"${DefaultMaxFileSizeBytes / gib}GiB"
+    else "2GB"
+  }
 
   /** A failsafe implementation of a [[FileVisitor]] that continues iterating through files even if an [[IOException]]
     * occurs during traversal.
