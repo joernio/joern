@@ -27,6 +27,7 @@ object SourceFiles {
 
   // Max. size for Array[Byte] in JVM is Integer.MAX_VALUE, but String can hold at most Integer.MAX_VALUE - 2 bytes
   private[x2cpg] val DefaultMaxFileSizeBytes = Integer.MAX_VALUE - 2L
+  private[x2cpg] val DefaultMinFileSizeBytes = 1024L
 
   private[x2cpg] def parseMaxFileSize(value: String): Option[Long] = {
     val trimmed = Option(value).map(_.trim).getOrElse("")
@@ -49,7 +50,7 @@ object SourceFiles {
             // Round to nearest byte. Also guards against negative/zero
             // but never more than DefaultMaxFileSizeBytes because that's the maximum we can put into a String anyway.
             val bytes = Math.min(Math.round(bytesDouble), DefaultMaxFileSizeBytes)
-            if (bytes <= 0L) None else Some(bytes)
+            if (bytes < DefaultMinFileSizeBytes) Some(DefaultMinFileSizeBytes) else Some(bytes)
           }
         }.toOption.flatten
       case _ => None
@@ -62,7 +63,7 @@ object SourceFiles {
       case Some(raw) =>
         parseMaxFileSize(raw).getOrElse {
           logger.info(
-            s"Invalid MAX_FILE_SIZE='$raw'. Expected e.g., '512MB' or '1.5GB' (max. 2GB). Falling back to $DefaultMaxFileSizeBytes bytes."
+            s"Invalid MAX_FILE_SIZE='$raw'. Expected e.g., '512MB' or '1.5GB' (min. 1024B, max. 2GB). Falling back to $DefaultMaxFileSizeBytes bytes."
           )
           DefaultMaxFileSizeBytes
         }
@@ -198,13 +199,14 @@ object SourceFiles {
     *   Maximum allowed size in bytes.
     */
   private def isTooLarge(file: String, maxFileSize: Long): Boolean = {
-    val path = Paths.get(file)
+    val path             = Paths.get(file)
+    val maxFileSizeBytes = Math.max(DefaultMinFileSizeBytes, Math.min(maxFileSize, DefaultMaxFileSizeBytes))
     if (Files.isDirectory(path) || !Files.isRegularFile(path)) return false
     Try {
       val size     = Files.size(path)
-      val tooLarge = size > maxFileSize
+      val tooLarge = size > maxFileSizeBytes
       if (tooLarge) {
-        logger.warn(s"'$file' ignored (too large: ${size}B > ${formatMaxFileSize(maxFileSize)})")
+        logger.warn(s"'$file' ignored (too large: ${size}B > ${formatMaxFileSize(maxFileSizeBytes)})")
       }
       tooLarge
     }.getOrElse(false)

@@ -158,12 +158,42 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
       }
     }
 
+    "reject a file whose size is larger than JVM String max. size even when filtered with a larger value" in {
+      FileUtil.usingTemporaryDirectory() { tmpDir =>
+        val file           = tmpDir / "a.c"
+        val bytes          = Array.fill[Byte](Integer.MAX_VALUE - 2)(0)
+        val additionalByte = Array.fill[Byte](1)(0)
+        Files.write(file, bytes)
+        Files.write(file, additionalByte, java.nio.file.StandardOpenOption.APPEND)
+
+        SourceFiles.filterFile(
+          file = file.toString,
+          inputPath = tmpDir.toString,
+          maxFileSize = SourceFiles.DefaultMaxFileSizeBytes + 1
+        ) shouldBe false
+      }
+    }
+
+    "allow a file when filtered with a value below min. size" in {
+      FileUtil.usingTemporaryDirectory() { tmpDir =>
+        val file  = tmpDir / "a.c"
+        val bytes = Array.fill[Byte](SourceFiles.DefaultMinFileSizeBytes.toInt + 1)(0)
+        Files.write(file, bytes)
+
+        SourceFiles.filterFile(
+          file = file.toString,
+          inputPath = tmpDir.toString,
+          maxFileSize = SourceFiles.DefaultMinFileSizeBytes - 1
+        ) shouldBe false
+      }
+    }
+
   }
 
   "parseMaxFileSize" should {
 
     "parse plain bytes" in {
-      SourceFiles.parseMaxFileSize("123") shouldBe Some(123L)
+      SourceFiles.parseMaxFileSize("123") shouldBe Some(SourceFiles.DefaultMinFileSizeBytes)
     }
 
     "parse MB/GB suffixes case-insensitively (and tolerate whitespace)" in {
