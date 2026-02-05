@@ -17,6 +17,9 @@ object SourceFiles {
   // Max. size for Array[Byte] in JVM is Integer.MAX_VALUE, but String can hold at most Integer.MAX_VALUE - 2 bytes
   private[x2cpg] val DefaultMaxFileSizeBytes = Integer.MAX_VALUE - 2L
 
+  // it actually is Integer.MAX_VALUE - 2 bytes, just for readability in log messages
+  private val DefaultMaxFileSizeString = "2GB"
+
   /** A failsafe implementation of a [[FileVisitor]] that continues iterating through files even if an [[IOException]]
     * occurs during traversal.
     *
@@ -132,7 +135,7 @@ object SourceFiles {
       val size     = Files.size(path)
       val tooLarge = size > DefaultMaxFileSizeBytes
       if (tooLarge) {
-        logger.warn(s"'$file' ignored (too large: ${size}B > 2GB)")
+        logger.warn(s"'$file' ignored (too large: ${size}B > $DefaultMaxFileSizeString)")
       }
       tooLarge
     }.getOrElse(false)

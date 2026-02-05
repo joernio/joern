@@ -3,19 +3,23 @@ package io.joern.x2cpg
 import io.joern.x2cpg.utils.IgnoreInWindows
 import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.utils.FileUtil.*
-
 import io.shiftleft.utils.ProjectRoot
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.Inside
+import org.scalatest.{Ignore, Inside, Tag}
 
 import java.nio.file.attribute.PosixFilePermissions
 import scala.util.Try
 import java.io.FileNotFoundException
-
 import java.nio.file.{Files, Paths}
 
 class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
+
+  private object NotInMacOS
+      extends Tag(
+        if (!scala.util.Properties.isMac) ""
+        else classOf[Ignore].getName
+      )
 
   private val cSourceFileExtensions: Set[String] = Set(".c", ".h")
   private val resourcesRoot: String = ProjectRoot.relativise("joern-cli/frontends/x2cpg/src/main/resources")
@@ -115,7 +119,7 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
       }
     }
 
-    "allow a file whose size is exactly JVM String max. size" in {
+    "allow a file whose size is exactly JVM String max. size" taggedAs NotInMacOS in {
       FileUtil.usingTemporaryDirectory() { tmpDir =>
         val file = tmpDir / "a.c"
         // max size for Array[Byte] in JVM is Integer.MAX_VALUE, but String can hold at most Integer.MAX_VALUE - 2 bytes
@@ -126,7 +130,7 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
       }
     }
 
-    "reject a file whose size is larger than JVM String max. size" in {
+    "reject a file whose size is larger than JVM String max. size" taggedAs NotInMacOS {
       FileUtil.usingTemporaryDirectory() { tmpDir =>
         val file           = tmpDir / "a.c"
         val bytes          = Array.fill[Byte](Integer.MAX_VALUE - 2)(0)
