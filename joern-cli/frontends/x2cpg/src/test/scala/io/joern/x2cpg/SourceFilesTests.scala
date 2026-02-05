@@ -130,7 +130,7 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
       }
     }
 
-    "reject a file whose size is larger than JVM String max. size" taggedAs NotInMacOS {
+    "reject a file whose size is larger than JVM String max. size" taggedAs NotInMacOS in {
       FileUtil.usingTemporaryDirectory() { tmpDir =>
         val file           = tmpDir / "a.c"
         val bytes          = Array.fill[Byte](Integer.MAX_VALUE - 2)(0)
