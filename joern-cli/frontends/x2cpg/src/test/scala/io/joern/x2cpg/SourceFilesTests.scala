@@ -135,6 +135,29 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
       }
     }
 
+    "allow a file whose size is exactly JVM String max. size" in {
+      FileUtil.usingTemporaryDirectory() { tmpDir =>
+        val file = tmpDir / "a.c"
+        // max size for Array[Byte] in JVM is Integer.MAX_VALUE, but String can hold at most Integer.MAX_VALUE - 2 bytes
+        val bytes = Array.fill[Byte](Integer.MAX_VALUE - 2)(0)
+        Files.write(file, bytes)
+
+        SourceFiles.filterFile(file = file.toString, inputPath = tmpDir.toString) shouldBe true
+      }
+    }
+
+    "reject a file whose size is larger than JVM String max. size" in {
+      FileUtil.usingTemporaryDirectory() { tmpDir =>
+        val file           = tmpDir / "a.c"
+        val bytes          = Array.fill[Byte](Integer.MAX_VALUE - 2)(0)
+        val additionalByte = Array.fill[Byte](1)(0)
+        Files.write(file, bytes)
+        Files.write(file, additionalByte, java.nio.file.StandardOpenOption.APPEND)
+
+        SourceFiles.filterFile(file = file.toString, inputPath = tmpDir.toString) shouldBe false
+      }
+    }
+
   }
 
   "parseMaxFileSize" should {
@@ -145,7 +168,7 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
 
     "parse MB/GB suffixes case-insensitively (and tolerate whitespace)" in {
       SourceFiles.parseMaxFileSize("1MB") shouldBe Some(1024L * 1024L)
-      SourceFiles.parseMaxFileSize("2gb") shouldBe Some(2L * 1024L * 1024L * 1024L)
+      SourceFiles.parseMaxFileSize("2gb") shouldBe Some(SourceFiles.DefaultMaxFileSizeBytes)
       SourceFiles.parseMaxFileSize("  3  MB ") shouldBe Some(3L * 1024L * 1024L)
     }
 
@@ -155,6 +178,10 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
       SourceFiles.parseMaxFileSize("-1GB") shouldBe None
       SourceFiles.parseMaxFileSize("1TB") shouldBe None
       SourceFiles.parseMaxFileSize("GB") shouldBe None
+
+      SourceFiles.parseMaxFileSize("2048.1mb") shouldBe Some(SourceFiles.DefaultMaxFileSizeBytes)
+      SourceFiles.parseMaxFileSize("2.01GB") shouldBe Some(SourceFiles.DefaultMaxFileSizeBytes)
+      SourceFiles.parseMaxFileSize("3GB") shouldBe Some(SourceFiles.DefaultMaxFileSizeBytes)
     }
 
     "parse decimal MB/GB values" in {
