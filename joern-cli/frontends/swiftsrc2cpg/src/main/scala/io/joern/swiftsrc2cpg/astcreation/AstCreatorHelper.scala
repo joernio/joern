@@ -232,24 +232,28 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }
   }
 
-  private def transferEndOffsetToStartOffset(src: SwiftNode, dst: SwiftNode): SwiftNode = {
-    dst.json("range")("startOffset") = src.json("range")("endOffset").num + 1
+  private def transferOffsets(src: SwiftNode, dst: SwiftNode): SwiftNode = {
+    val srcStartOffset = src.json("range")("startOffset").num
+    val srcEndOffset   = src.json("range")("endOffset").num
+    dst.json("range")("startOffset") = srcEndOffset - 1
+    val srcLength = srcEndOffset - srcStartOffset - 1
+    dst.json("range")("endOffset") = dst.json("range")("endOffset").num + srcLength
     dst
   }
 
   protected def methodInfoForFunctionDeclLike(node: FunctionDeclLike): MethodInfo = {
     val name = calcMethodName(node)
 
-    val nodeRange = node.json("range")
+    val nodeRange = node.asInstanceOf[SwiftNode].json("range").obj.copy()
     // Try to get legacy node startOffset from modifiers since in older versions of swiftc (<6.2) it is not stored in the JSON object.
-    lazy val legacyNode: Option[SwiftNode] = (node match {
+    def legacyNode: Option[SwiftNode] = (node match {
       case f: FunctionDeclSyntax      => f.modifiers.children.lastOption
       case a: AccessorDeclSyntax      => a.modifier
       case d: DeinitializerDeclSyntax => d.modifiers.children.lastOption
       case i: InitializerDeclSyntax   => i.modifiers.children.lastOption
       case s: SubscriptDeclSyntax     => s.modifiers.children.lastOption
       case c: ClosureExprSyntax       => None
-    }).map(l => transferEndOffsetToStartOffset(l, node))
+    }).map(l => transferOffsets(l, node))
 
     val methodInfo =
       fullnameProvider.declFullname(node).orElse(legacyNode.flatMap(fullnameProvider.declFullname)) match {

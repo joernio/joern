@@ -86,6 +86,20 @@ class FullnameProviderTests extends AnyFlatSpec with Matchers {
     provider.typeFullname((50, 60), "nodeKind") shouldBe defined
   }
 
+  it should "search for the closest match by widening the range" in {
+    val mockTypeMap = Map((6, 6) -> Set(typeInfo2))
+
+    val provider = new MockFullNameProvider(mockTypeMap)
+    provider.declFullname((10, 10), "nodeKind") shouldBe Some("decl.fullname.B")
+    provider.typeFullname((10, 10), "nodeKind") shouldBe Some("type.fullname.B")
+
+    val mockTypeMap2 = Map((15, 15) -> Set(typeInfo2))
+
+    val provider2 = new MockFullNameProvider(mockTypeMap2)
+    provider2.declFullname((10, 10), "nodeKind") shouldBe Some("decl.fullname.B")
+    provider2.typeFullname((10, 10), "nodeKind") shouldBe Some("type.fullname.B")
+  }
+
   it should "return None when range is not available at all" in {
     val mockTypeMap = Map.empty[(Int, Int), Set[ResolvedTypeInfo]]
 

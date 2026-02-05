@@ -5,8 +5,6 @@ import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.SwiftNode
 import io.joern.swiftsrc2cpg.utils.FullnameProvider.NodeKindMapping
 import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{ResolvedTypeInfo, SwiftFileLocalTypeMapping}
 
-import scala.annotation.tailrec
-
 /** Companion object for the FullnameProvider class. Contains helper types and constants used by the FullnameProvider.
   */
 private object FullnameProvider {
@@ -54,38 +52,48 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
       .orElse(in.headOption)
   }
 
-  /** Recursively attempts to find the fullName for a given source range and kind. If the exact range is not found, it
-    * narrows the range down to a single point (the Swift compiler may generate synthetic node for them).
+  /** Recursively attempts to find the fullName for a given source range and kind.
     *
-    * @param range
-    *   The source position range (start offset, end offset)
-    * @param kind
-    *   The kind of fullName to retrieve (Type or Decl)
-    * @param nodeKind
-    *   The kind of Swift node
-    * @return
-    *   An optional String containing the fullName if found
+    * Lookup strategy:
+    *   - Try the exact (start,end) range.
+    *     - If not found and the range is not a point, try a synthetic "widened" range (start-1,end+1).
+    *     - If still not found, try collapsing the range to a point at start+1.
+    *     - As a final fallback, search for the closest match by iteratively widening the range (start-+d,end-+d) for d
+    *       \= 1 ... maxDistance.
+    * This is bounded to avoid excessive work and to guarantee termination.
     */
-  @tailrec
   private def fullName(
     range: (Int, Int),
     kind: FullnameProvider.Kind,
     nodeKind: String,
-    iter: Int = 1
+    iter: Int = 1,
+    closestDistance: Int = 0,
+    maxClosestDistance: Int = 5
   ): Option[String] = {
-    typeMap.get(range) match {
-      case Some(typeInfo) if kind == FullnameProvider.Kind.Type =>
+
+    def pickFrom(typeInfo: Set[ResolvedTypeInfo]): Option[String] = kind match {
+      case FullnameProvider.Kind.Type =>
         filterForNodeKind(typeInfo.filter(_.typeFullname.nonEmpty), nodeKind).flatMap(_.typeFullname)
-      case Some(typeInfo) if kind == FullnameProvider.Kind.Decl =>
+      case FullnameProvider.Kind.Decl =>
         filterForNodeKind(typeInfo.filter(_.declFullname.nonEmpty), nodeKind).flatMap(_.declFullname)
-      case None if range._1 != range._2 && iter > 0 =>
-        // Only recurse if we haven't already considered offsets (for synthetic AST elements with +-1 offsets)
-        fullName((range._1 - 1, range._2 + 1), kind, nodeKind, 0)
-      case None if range._1 != range._2 =>
-        // Only recurse if we haven't already reduced to a point (for synthetic AST elements)
-        fullName((range._1 + 1, range._1 + 1), kind, nodeKind)
+    }
+
+    typeMap.get(range) match {
+      case Some(typeInfo) =>
+        pickFrom(typeInfo)
+      case None if range._1 != range._2 && iter > 0 && nodeKind != "FunctionDeclSyntax" =>
+        // First, consider synthetic AST elements with +-1 offsets.
+        fullName((range._1 - 1, range._2 + 1), kind, nodeKind, 0, closestDistance)
+      case None if range._1 != range._2 && nodeKind != "FunctionDeclSyntax" =>
+        // Then, reduce to a point (Swift compiler may produce synthetic nodes).
+        fullName((range._1 + 1, range._1 + 1), kind, nodeKind, iter, closestDistance)
+      case None if closestDistance < maxClosestDistance =>
+        // Final fallback: look for the closest match by widening around the point.
+        val start = range._1
+        val end   = range._2
+        fullName((start - 1, end - 1), kind, nodeKind, iter, closestDistance + 1, maxClosestDistance)
+          .orElse(fullName((start + 1, end + 1), kind, nodeKind, iter, closestDistance + 1, maxClosestDistance))
       case _ =>
-        // We've already tried with a point and still found nothing
         None
     }
   }
