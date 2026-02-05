@@ -11,11 +11,14 @@ class UnicodeWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
       val cpg = codeWithSwiftSetup("""
          |struct Factory {
          |  var unicode: String = "✓ Hello, World! ✓"
+         |  var emoticon: String = "😊"
+         |  var combined: String = "✓😊 Hello, World! 😊✓"
+         |  var party: String = "🥳🎉"
          |}
          |
          |extension Factory {
          |  static func id(x: Int) -> Int {
-         |    print("Hello, World!")
+         |    print("😊Hello, World! 😊")
          |    return x
          |  }
          |}

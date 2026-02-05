@@ -3,7 +3,6 @@ package io.joern.swiftsrc2cpg.utils
 import io.joern.swiftsrc2cpg.Config
 import io.joern.swiftsrc2cpg.passes.AstCreationPass
 import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
-import io.joern.swiftsrc2cpg.utils.AstGenRunner
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
@@ -61,12 +60,12 @@ class ProjectParseTests extends SwiftSrc2CpgSuite with BeforeAndAfterAll {
 
     "handle utf8 correctly" in ProjectParseTestsFixture(projectWithUtf8) { cpg =>
       val List(op) = cpg.call.nameExact(Operators.elvis).l
-      op.offset shouldBe Some(99)
-      op.offsetEnd shouldBe Some(112)
+      op.offset shouldBe Some(115)
+      op.offsetEnd shouldBe Some(128)
       cpg.method.nameExact("main").content.head.linesIterator.map(_.trim).toSeq shouldBe Seq(
         "func main() {",
-        "print(\"6?? Something: \\(foo?.bar ?? 0)\")  // ? May crash",
-        "print(\"? Done!\")",
+        "print(\"6?????? Something: \\(foo?.bar ?? 0)\")  // ???? May crash",
+        "print(\"??? Done!\")",
         "}"
       )
     }
