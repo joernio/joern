@@ -232,12 +232,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }
   }
 
-  private def transferOffsets(src: SwiftNode, dst: SwiftNode): SwiftNode = {
-    val srcStartOffset = src.json("range")("startOffset").num
-    val srcEndOffset   = src.json("range")("endOffset").num
-    dst.json("range")("startOffset") = srcEndOffset - 1
-    val srcLength = srcEndOffset - srcStartOffset - 1
-    dst.json("range")("endOffset") = dst.json("range")("endOffset").num + srcLength
+  private def transferEndOffsetToStartOffset(src: SwiftNode, dst: SwiftNode): SwiftNode = {
+    dst.json("range")("startOffset") = src.json("range")("endOffset").num + 1
     dst
   }
 
@@ -253,7 +249,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case i: InitializerDeclSyntax   => i.modifiers.children.lastOption
       case s: SubscriptDeclSyntax     => s.modifiers.children.lastOption
       case c: ClosureExprSyntax       => None
-    }).map(l => transferOffsets(l, node))
+    }).map(l => transferEndOffsetToStartOffset(l, node))
 
     val methodInfo =
       fullnameProvider.declFullname(node).orElse(legacyNode.flatMap(fullnameProvider.declFullname)) match {

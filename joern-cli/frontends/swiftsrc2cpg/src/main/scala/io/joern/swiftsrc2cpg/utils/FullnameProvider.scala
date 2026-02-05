@@ -5,6 +5,8 @@ import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.SwiftNode
 import io.joern.swiftsrc2cpg.utils.FullnameProvider.NodeKindMapping
 import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{ResolvedTypeInfo, SwiftFileLocalTypeMapping}
 
+import scala.annotation.tailrec
+
 /** Companion object for the FullnameProvider class. Contains helper types and constants used by the FullnameProvider.
   */
 private object FullnameProvider {
@@ -58,17 +60,15 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
     *   - Try the exact (start,end) range.
     *     - If not found and the range is not a point, try a synthetic "widened" range (start-1,end+1).
     *     - If still not found, try collapsing the range to a point at start+1.
-    *     - As a final fallback, search for the closest match by iteratively widening the range (start-+d,end-+d) for d
-    *       \= 1 ... maxDistance.
+    *
     * This is bounded to avoid excessive work and to guarantee termination.
     */
+  @tailrec
   private def fullName(
     range: (Int, Int),
     kind: FullnameProvider.Kind,
     nodeKind: String,
-    iter: Int = 1,
-    closestDistance: Int = 0,
-    maxClosestDistance: Int = 5
+    iter: Int = 1
   ): Option[String] = {
 
     def pickFrom(typeInfo: Set[ResolvedTypeInfo]): Option[String] = kind match {
@@ -81,19 +81,14 @@ class FullnameProvider(typeMap: SwiftFileLocalTypeMapping) {
     typeMap.get(range) match {
       case Some(typeInfo) =>
         pickFrom(typeInfo)
-      case None if range._1 != range._2 && iter > 0 && nodeKind != "FunctionDeclSyntax" =>
+      case None if range._1 != range._2 && iter > 0 =>
         // First, consider synthetic AST elements with +-1 offsets.
-        fullName((range._1 - 1, range._2 + 1), kind, nodeKind, 0, closestDistance)
-      case None if range._1 != range._2 && nodeKind != "FunctionDeclSyntax" =>
+        fullName((range._1 - 1, range._2 + 1), kind, nodeKind, 0)
+      case None if range._1 != range._2 =>
         // Then, reduce to a point (Swift compiler may produce synthetic nodes).
-        fullName((range._1 + 1, range._1 + 1), kind, nodeKind, iter, closestDistance)
-      case None if closestDistance < maxClosestDistance =>
-        // Final fallback: look for the closest match by widening around the point.
-        val start = range._1
-        val end   = range._2
-        fullName((start - 1, end - 1), kind, nodeKind, iter, closestDistance + 1, maxClosestDistance)
-          .orElse(fullName((start + 1, end + 1), kind, nodeKind, iter, closestDistance + 1, maxClosestDistance))
+        fullName((range._1 + 1, range._1 + 1), kind, nodeKind)
       case _ =>
+        // We still found nothing
         None
     }
   }
