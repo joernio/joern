@@ -8,10 +8,65 @@ import java.nio.file.{FileVisitOption, FileVisitResult, FileVisitor, Files, Path
 import java.nio.file.attribute.BasicFileAttributes
 import scala.jdk.CollectionConverters.SetHasAsJava
 import scala.util.matching.Regex
+import scala.util.Try
 
 object SourceFiles {
 
   private val logger = LoggerFactory.getLogger(getClass)
+
+  // Supported formats (case-insensitive):
+  //   - "123"
+  //   - "123MB"
+  //   - "2GB"
+  //   - "1.5GB"
+  //   - "0.25MB"
+  private val FileSizePattern = "(?i)^([0-9]+(?:\\.[0-9]+)?)\\s*(MB|GB)?$".r
+
+  private val MiB                     = 1024L * 1024L
+  private val GiB                     = 1024L * 1024L * 1024L
+  private val DefaultMaxFileSizeBytes = 2L * GiB
+
+  private[x2cpg] def parseMaxFileSize(value: String): Option[Long] = {
+    val trimmed = Option(value).map(_.trim).getOrElse("")
+    if (trimmed.isEmpty) return None
+    trimmed match {
+      case FileSizePattern(numberRaw, unitRaw) =>
+        val factor = Option(unitRaw).map(_.toUpperCase) match {
+          case Some("MB") => MiB.toDouble
+          case Some("GB") => GiB.toDouble
+          case None       => 1.0
+          case _          => return None
+        }
+
+        Try {
+          val num = numberRaw.toDouble
+          if (num.isNaN || num.isInfinity) {
+            None
+          } else {
+            val bytesDouble = num * factor
+            // Round to nearest byte. Also guards against negative/zero.
+            val bytes = Math.round(bytesDouble)
+            if (bytes <= 0L) None else Some(bytes)
+          }
+        }.toOption.flatten
+      case _ => None
+    }
+  }
+
+  private def maxFileSizeFromEnv(): Long = {
+    sys.env.get("MAX_FILE_SIZE") match {
+      case None => DefaultMaxFileSizeBytes
+      case Some(raw) =>
+        parseMaxFileSize(raw).getOrElse {
+          logger.warn(
+            s"Invalid MAX_FILE_SIZE='$raw'. Expected e.g., '512MB' or '2GB'. Falling back to $DefaultMaxFileSizeBytes bytes."
+          )
+          DefaultMaxFileSizeBytes
+        }
+    }
+  }
+
+  private val MaxFileSize: Long = maxFileSizeFromEnv()
 
   /** A failsafe implementation of a [[FileVisitor]] that continues iterating through files even if an [[IOException]]
     * occurs during traversal.
@@ -113,6 +168,45 @@ object SourceFiles {
     }
   }
 
+  private[x2cpg] def formatMaxFileSize(bytes: Long): String = {
+    def formatRounded(value: Double, unit: String): String = {
+      // Round to 1 decimal, but avoid trailing .0
+      val rounded = Math.round(value * 10.0) / 10.0
+      if (rounded.isWhole) s"${rounded.toLong}$unit" else s"$rounded$unit"
+    }
+
+    if (bytes >= GiB) {
+      formatRounded(bytes.toDouble / GiB.toDouble, "GB")
+    } else if (bytes >= MiB) {
+      formatRounded(bytes.toDouble / MiB.toDouble, "MB")
+    } else {
+      s"${bytes}B"
+    }
+  }
+
+  /** Returns true if `file` is a regular file whose size exceeds `maxFileSize`.
+    *
+    * Directories and non-regular files (e.g., devices, sockets) are treated as not too large. If the size cannot be
+    * determined (e.g., due to an `IOException`), this function returns `false`.
+    *
+    * @param file
+    *   Path to the file to check.
+    * @param maxFileSize
+    *   Maximum allowed size in bytes.
+    */
+  private def isTooLarge(file: String, maxFileSize: Long): Boolean = {
+    val path = Paths.get(file)
+    if (Files.isDirectory(path) || !Files.isRegularFile(path)) return false
+    Try {
+      val size     = Files.size(path)
+      val tooLarge = size > maxFileSize
+      if (tooLarge) {
+        logger.debug(s"'$file' ignored (too large: ${formatMaxFileSize(size)} > ${formatMaxFileSize(maxFileSize)})")
+      }
+      tooLarge
+    }.getOrElse(false)
+  }
+
   /** Filters a file based on the provided ignore rules.
     *
     * This method determines whether a given file should be excluded from processing based on several criteria, such as
@@ -128,6 +222,8 @@ object SourceFiles {
     *   Optional regular expression defining specific file name patterns to ignore.
     * @param ignoredFilesPath
     *   Optional sequence of file paths to explicitly exclude.
+    * @param maxFileSize
+    *   * Optional maximum accepted size in bytes. Defaults to [[SourceFiles.MaxFileSize]].
     * @return
     *   `true` if the file is accepted, i.e., does not match any of the ignore criteria, `false` otherwise.
     */
@@ -136,10 +232,13 @@ object SourceFiles {
     inputPath: String,
     ignoredDefaultRegex: Option[Seq[Regex]] = None,
     ignoredFilesRegex: Option[Regex] = None,
-    ignoredFilesPath: Option[Seq[String]] = None
-  ): Boolean = !ignoredDefaultRegex.exists(isIgnoredByDefaultRegex(file, inputPath, _))
-    && !ignoredFilesRegex.exists(isIgnoredByRegex(file, inputPath, _))
-    && !ignoredFilesPath.exists(isIgnoredByFileList(file, _))
+    ignoredFilesPath: Option[Seq[String]] = None,
+    maxFileSize: Long = MaxFileSize
+  ): Boolean =
+    !isTooLarge(file, maxFileSize)
+      && !ignoredDefaultRegex.exists(isIgnoredByDefaultRegex(file, inputPath, _))
+      && !ignoredFilesRegex.exists(isIgnoredByRegex(file, inputPath, _))
+      && !ignoredFilesPath.exists(isIgnoredByFileList(file, _))
 
   /** Filters a list of files based on the provided ignore rules.
     *

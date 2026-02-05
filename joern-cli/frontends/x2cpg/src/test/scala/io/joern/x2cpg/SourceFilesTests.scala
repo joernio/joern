@@ -13,12 +13,12 @@ import java.nio.file.attribute.PosixFilePermissions
 import scala.util.Try
 import java.io.FileNotFoundException
 
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Files, Paths}
 
 class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
 
-  val cSourceFileExtensions = Set(".c", ".h")
-  val resourcesRoot         = ProjectRoot.relativise("joern-cli/frontends/x2cpg/src/main/resources")
+  private val cSourceFileExtensions: Set[String] = Set(".c", ".h")
+  private val resourcesRoot: String = ProjectRoot.relativise("joern-cli/frontends/x2cpg/src/main/resources")
 
   "determine source files" when {
 
@@ -57,10 +57,11 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
   }
 
   "do not throw an exception" when {
+
     "one of the input files is a broken symlink" in {
       FileUtil.usingTemporaryDirectory() { tmpDir =>
         (tmpDir / "a.c").createWithParentsIfNotExists()
-        val symlink = Files.createSymbolicLink((tmpDir / "broken.c"), Paths.get("does/not/exist.c"))
+        val symlink = Files.createSymbolicLink(tmpDir / "broken.c", Paths.get("does/not/exist.c"))
         Files.exists(symlink) shouldBe false
         Files.isReadable(symlink) shouldBe false
 
@@ -77,6 +78,7 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
         result.getOrElse(List.empty).size shouldBe 1
       }
     }
+
   }
 
   "throw an exception" when {
@@ -98,5 +100,87 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
         result.failed.get shouldBe a[FileNotFoundException]
       }
     }
+
   }
+
+  "filterFile" should {
+
+    "accept a file whose size is lower than maxFileSize" in {
+      FileUtil.usingTemporaryDirectory() { tmpDir =>
+        val file  = tmpDir / "a.c"
+        val bytes = Array.fill[Byte](1023)(0)
+        Files.write(file, bytes)
+
+        SourceFiles.filterFile(file = file.toString, inputPath = tmpDir.toString, maxFileSize = 1024L) shouldBe true
+      }
+    }
+
+    "accept a file whose size equals maxFileSize" in {
+      FileUtil.usingTemporaryDirectory() { tmpDir =>
+        val file  = tmpDir / "a.c"
+        val bytes = Array.fill[Byte](1024)(0)
+        Files.write(file, bytes)
+
+        SourceFiles.filterFile(file = file.toString, inputPath = tmpDir.toString, maxFileSize = 1024L) shouldBe true
+      }
+    }
+
+    "reject a file whose size exceeds maxFileSize" in {
+      FileUtil.usingTemporaryDirectory() { tmpDir =>
+        val file  = tmpDir / "a.c"
+        val bytes = Array.fill[Byte](1025)(0)
+        Files.write(file, bytes)
+
+        SourceFiles.filterFile(file = file.toString, inputPath = tmpDir.toString, maxFileSize = 1024L) shouldBe false
+      }
+    }
+
+  }
+
+  "parseMaxFileSize" should {
+
+    "parse plain bytes" in {
+      SourceFiles.parseMaxFileSize("123") shouldBe Some(123L)
+    }
+
+    "parse MB/GB suffixes case-insensitively (and tolerate whitespace)" in {
+      SourceFiles.parseMaxFileSize("1MB") shouldBe Some(1024L * 1024L)
+      SourceFiles.parseMaxFileSize("2gb") shouldBe Some(2L * 1024L * 1024L * 1024L)
+      SourceFiles.parseMaxFileSize("  3  MB ") shouldBe Some(3L * 1024L * 1024L)
+    }
+
+    "return None for invalid values" in {
+      SourceFiles.parseMaxFileSize("") shouldBe None
+      SourceFiles.parseMaxFileSize(" ") shouldBe None
+      SourceFiles.parseMaxFileSize("-1GB") shouldBe None
+      SourceFiles.parseMaxFileSize("1TB") shouldBe None
+      SourceFiles.parseMaxFileSize("GB") shouldBe None
+    }
+
+    "parse decimal MB/GB values" in {
+      SourceFiles.parseMaxFileSize("1.5GB") shouldBe Some((1.5 * 1024 * 1024 * 1024).round)
+      SourceFiles.parseMaxFileSize("0.25MB") shouldBe Some((0.25 * 1024 * 1024).round)
+      SourceFiles.parseMaxFileSize(" 0.5 gb ") shouldBe Some((0.5 * 1024 * 1024 * 1024).round)
+    }
+  }
+
+  "formatMaxFileSize" should {
+
+    "format GiB and MiB nicely" in {
+      SourceFiles.formatMaxFileSize(2L * 1024L * 1024L * 1024L) shouldBe "2GB"
+      SourceFiles.formatMaxFileSize(512L * 1024L * 1024L) shouldBe "512MB"
+    }
+
+    "support rounded decimals" in {
+      // 1.5 GiB
+      SourceFiles.formatMaxFileSize((1.5 * 1024 * 1024 * 1024).toLong) shouldBe "1.5GB"
+      // 1.2 MiB (rounded to 1 decimal)
+      SourceFiles.formatMaxFileSize((1.24 * 1024 * 1024).toLong) shouldBe "1.2MB"
+    }
+
+    "fall back to bytes if below 1MiB" in {
+      SourceFiles.formatMaxFileSize(12345L) shouldBe "12345B"
+    }
+  }
+
 }
