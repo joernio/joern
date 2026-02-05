@@ -291,27 +291,23 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           idx.argumentIndex shouldBe 1
           idx.refOut.toSet should contain(idxLocal)
 
-          arraySize.name shouldBe Operators.fieldAccess
+          arraySize.name shouldBe Operators.sizeOf
           arraySize.typeFullName shouldBe "int"
           arraySize.order shouldBe 2
           arraySize.argumentIndex shouldBe 2
 
           arraySize.argument.l match {
-            case List(items: Identifier, length: FieldIdentifier) =>
+            case List(items: Identifier) =>
               items.name shouldBe "$iterLocal0"
               items.typeFullName shouldBe "java.lang.String[]"
               items.order shouldBe 1
               items.argumentIndex shouldBe 1
               items.refOut.toSet should contain(cpg.method.name("foo").local.nameExact("$iterLocal0").head)
 
-              length.code shouldBe "length"
-              length.order shouldBe 2
-              length.argumentIndex shouldBe 2
-
-            case result => fail(s"Expected array.length field access but got $result")
+            case result => fail(s"Expected sizeOf(array) but got $result")
           }
 
-        case result => fail(s"Expected idx < array.length args but got $result")
+        case result => fail(s"Expected idx < sizeOf(array) args but got $result")
       }
     }
 
@@ -471,27 +467,23 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           idx.argumentIndex shouldBe 1
           idx.refOut.toSet should contain(idxLocal)
 
-          arraySize.name shouldBe Operators.fieldAccess
+          arraySize.name shouldBe Operators.sizeOf
           arraySize.typeFullName shouldBe "int"
           arraySize.order shouldBe 2
           arraySize.argumentIndex shouldBe 2
 
           arraySize.argument.l match {
-            case List(items: Identifier, length: FieldIdentifier) =>
+            case List(items: Identifier) =>
               items.name shouldBe "items"
               items.typeFullName shouldBe "java.lang.String[]"
               items.order shouldBe 1
               items.argumentIndex shouldBe 1
               items.refOut.toSet should contain(cpg.parameter.name("items").head)
 
-              length.code shouldBe "length"
-              length.order shouldBe 2
-              length.argumentIndex shouldBe 2
-
-            case result => fail(s"Expected array.length field access but got $result")
+            case result => fail(s"Expected sizeOf(array) but got $result")
           }
 
-        case result => fail(s"Expected idx < array.length args but got $result")
+        case result => fail(s"Expected idx < sizeOf(array) args but got $result")
       }
     }
 
