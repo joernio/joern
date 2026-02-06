@@ -1,12 +1,12 @@
 package io.joern.jssrc2cpg.passes.ast
 
-import io.joern.jssrc2cpg.testfixtures.AstJsSrc2CpgSuite
+import io.joern.jssrc2cpg.Config
+import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgSuite
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import io.shiftleft.semanticcpg.language.*
 
-class TsClassesAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
+class TsClassesAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
 
   "AST generation for TS classes" should {
 
@@ -19,7 +19,7 @@ class TsClassesAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
           |    private z: number
           |  ) {}
           |}
-          |""".stripMargin)
+          |""".stripMargin).withConfig(Config().withTsTypes(true))
       val List(x, y, z) = cpg.typeDecl.nameExact("Params").member.l
       x.name shouldBe "x"
       x.typeFullName shouldBe Defines.Number
@@ -256,10 +256,9 @@ class TsClassesAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
        |  new (param: string) : Greeter
        |}
        |""".stripMargin)
-      inside(cpg.typeDecl("Greeter").l) { case List(greeter) =>
+      inside(cpg.typeDecl.fullNameExact("Test0.ts::program:Greeter").l) { case List(greeter) =>
         greeter.name shouldBe "Greeter"
         greeter.code shouldBe "interface Greeter"
-        greeter.fullName shouldBe "Test0.ts::program:Greeter"
         greeter.filename shouldBe "Test0.ts"
         greeter.file.name.head shouldBe "Test0.ts"
         inside(cpg.typeDecl("Greeter").method.l) { case List(constructor) =>
@@ -367,7 +366,7 @@ class TsClassesAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
       val List(credentialsParam) = cpg.parameter.nameExact("credentials").l
       credentialsParam.typeFullName shouldBe "Test0.ts::program:Test:run:<anon-class>0"
       // should not produce dangling nodes that are meant to be inside procedures
-      cpg.all.collectAll[CfgNode].whereNot(_.astParent).size shouldBe 0
+      cpg.file("Test0.ts").ast.isCfgNode.whereNot(_.astParent) shouldBe empty
       cpg.identifier.count(_.refsTo.size > 1) shouldBe 0
       cpg.identifier.whereNot(_.refsTo).size shouldBe 0
       // should not produce assignment calls directly under typedecls
@@ -387,7 +386,7 @@ class TsClassesAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
       val List(credentialsParam) = cpg.parameter.nameExact("param1_0").l
       credentialsParam.typeFullName shouldBe "Test0.ts::program:apiCall:<anon-class>0"
       // should not produce dangling nodes that are meant to be inside procedures
-      cpg.all.collectAll[CfgNode].whereNot(_.astParent).size shouldBe 0
+      cpg.file("Test0.ts").ast.isCfgNode.whereNot(_.astParent) shouldBe empty
       cpg.identifier.count(_.refsTo.size > 1) shouldBe 0
       cpg.identifier.whereNot(_.refsTo).size shouldBe 0
       // should not produce assignment calls directly under typedecls

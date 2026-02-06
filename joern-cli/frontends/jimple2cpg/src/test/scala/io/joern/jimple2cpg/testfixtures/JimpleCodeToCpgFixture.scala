@@ -65,10 +65,6 @@ object JimpleCodeToCpgFixture {
           fileManager.getJavaFileObjectsFromFiles(sourceCodeFiles.asJava)
         )
         .call()
-
-      fileManager
-        .list(StandardLocation.CLASS_OUTPUT, "", Collections.singleton(JavaFileObject.Kind.CLASS), true)
-        .forEach(x => new File(x.toUri).deleteOnExit())
     } finally {
       fileManager.close()
     }

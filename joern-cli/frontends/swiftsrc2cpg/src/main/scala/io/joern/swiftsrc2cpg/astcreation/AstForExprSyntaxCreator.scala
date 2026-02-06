@@ -511,11 +511,14 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val member = node.declName
     val baseAst = base match {
       case None =>
-        // referencing implicit self
-        val selfTpe  = fullNameOfEnclosingTypeDecl()
-        val baseNode = identifierNode(node, "self", "self", selfTpe)
-        scope.addVariableReference("self", baseNode, selfTpe, EvaluationStrategies.BY_REFERENCE)
-        Ast(baseNode)
+        // Swift's documentation refers to this as "implicit member expression" or "shorthand syntax for enumeration cases".
+        // This syntax is not limited to enums. It works with several Swift types where the compiler can infer the type from context
+        // to access static members. This is a commonly used pattern.
+        // For enums only we could emit a Literal AST node representing the enum member. But as it works for other types as well,
+        // we emit an unknown node here to avoid making potentially wrong assumptions.
+        val code_        = code(member.baseName)
+        val unknownNode_ = unknownNode(node, code_)
+        return Ast(unknownNode_)
       case Some(otherBase) =>
         astForNode(otherBase)
     }
