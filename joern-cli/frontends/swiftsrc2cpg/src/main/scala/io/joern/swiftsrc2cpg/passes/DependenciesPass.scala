@@ -22,23 +22,23 @@ class DependenciesPass(cpg: Cpg) extends CpgPass(cpg) {
     cpg.file("Package.swift").ast.isCall.nameExact("package").foreach { call =>
       call.argument.argumentIndexGt(0).l match
         case Nil => // Do nothing
-        case (lit: Literal) :: Nil if lit.argumentName.contains("path") =>
+        case (lit: Literal) :: Nil if lit.argumentLabel.contains("path") =>
           val name = X2Cpg.stripQuotes(lit.code)
           val dep  = NewDependency().name(name)
           diffGraph.addNode(dep)
         case (lit1: Literal) :: (lit2: Literal) :: Nil
-            if lit1.argumentName.contains("name") && lit2.argumentName.contains("path") =>
+            if lit1.argumentLabel.contains("name") && lit2.argumentLabel.contains("path") =>
           val name = X2Cpg.stripQuotes(lit1.code)
           val path = X2Cpg.stripQuotes(lit2.code)
           val dep  = NewDependency().name(name).dependencyGroupId(path)
           diffGraph.addNode(dep)
         case (lit1: Literal) :: (lit2: Literal) :: Nil
-            if lit1.argumentName.contains("url") && lit2.argumentName.exists(VersionIdSpecifier.contains) =>
+            if lit1.argumentLabel.contains("url") && lit2.argumentLabel.exists(VersionIdSpecifier.contains) =>
           val name    = X2Cpg.stripQuotes(lit1.code)
           val version = X2Cpg.stripQuotes(lit2.code)
           val dep     = NewDependency().name(name).version(version)
           diffGraph.addNode(dep)
-        case (lit1: Literal) :: (versionRange: Call) :: Nil if lit1.argumentName.contains("url") =>
+        case (lit1: Literal) :: (versionRange: Call) :: Nil if lit1.argumentLabel.contains("url") =>
           val name    = X2Cpg.stripQuotes(lit1.code)
           val version = versionRange.code.replaceAll("[\"']", "")
           val dep     = NewDependency().name(name).version(version)
