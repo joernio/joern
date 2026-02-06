@@ -27,6 +27,14 @@ import org.jetbrains.kotlin.psi.*
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.util.Random
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.{CallableMemberDescriptor, SimpleFunctionDescriptor}
+import org.jetbrains.kotlin.types.SimpleType
+import scala.jdk.CollectionConverters.*
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
+import scala.jdk.CollectionConverters.*
+import org.jetbrains.kotlin.types.KotlinType
 
 trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
@@ -238,6 +246,9 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
     (List(ctorBindingInfo) ++ bindingsInfo ++ componentNBindingsInfo).foreach(bindingInfoQueue.prepend)
 
+    val genericBindingsInfo = createGenericMethodBindings(classDesc, classFunctions.toSeq, methodAsts, typeDecl)
+    genericBindingsInfo.foreach(bindingInfoQueue.prepend)
+
     val finalAst = if (classDesc.isCompanionObject) {
       val companionMemberTypeFullName = ktClass.getParent.getParent match {
         case c: KtClassOrObject =>
@@ -260,6 +271,85 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     scope.popScope()
 
     finalAst.withChildren(annotations.map(astForAnnotationEntry))
+  }
+
+  /** Creates additional method bindings for erased generic signatures. When a class implements a generic interface or
+    * extends a generic class, we need to create bindings for both the concrete signature and the erased signature
+    */
+  private def createGenericMethodBindings(
+    classDesc: ClassDescriptor,
+    classFunctions: Seq[KtNamedFunction],
+    methodAsts: Seq[Ast],
+    typeDecl: NewTypeDecl
+  ): Seq[BindingInfo] = {
+
+    val genericSuperTypes = classDesc.getTypeConstructor.getSupertypes.asScala.collect {
+      case simpleType: SimpleType if simpleType.getArguments.size() > 0 => simpleType
+    }
+
+    if (genericSuperTypes.isEmpty) {
+      return Seq.empty
+    }
+
+    classFunctions.zip(methodAsts).flatMap { case (ktFunction, methodAst) =>
+      methodAst.root.collectAll[NewMethod].flatMap { methodNode =>
+        Option(bindingUtils.getFunctionDesc(ktFunction)).toSeq
+          .flatMap(_.getOverriddenDescriptors.asScala)
+          .flatMap { overriddenDesc =>
+            createErasedSignature(overriddenDesc.getOriginal)
+              .filter(_ != methodNode.signature)
+              .map { signature =>
+                val bindingNode_ = bindingNode(methodNode.name, signature, methodNode.fullName)
+                BindingInfo(
+                  bindingNode_,
+                  List((typeDecl, bindingNode_, EdgeTypes.BINDS), (bindingNode_, methodNode, EdgeTypes.REF))
+                )
+              }
+          }
+      }
+    }
+  }
+
+  /** Erases a Kotlin type by replacing type parameters with their upper bounds.
+    */
+  private def eraseType(kotlinType: KotlinType): Option[String] = {
+    kotlinType.getConstructor.getDeclarationDescriptor match {
+      case typeParam: TypeParameterDescriptor =>
+        val upperBounds = typeParam.getUpperBounds.asScala
+        if (upperBounds.isEmpty) {
+          Some(TypeConstants.JavaLangObject)
+        } else {
+          nameRenderer.typeFullName(upperBounds.head)
+        }
+      case _ =>
+        nameRenderer.typeFullName(kotlinType)
+    }
+  }
+
+  /** Creates an erased signature for a function descriptor, replacing type parameters with their upper bounds.
+    */
+  private def createErasedSignature(functionDesc: FunctionDescriptor): Option[String] = {
+    val extRecvType = Option(functionDesc.getExtensionReceiverParameter) match {
+      case None        => Some(None)
+      case Some(param) => eraseType(param.getType).map(Some(_))
+    }
+
+    val paramTypes = functionDesc.getValueParameters.asScala
+      .map(param => eraseType(param.getType))
+      .toSeq
+
+    val returnType = Option(functionDesc.getReturnType)
+      .map(eraseType)
+      .getOrElse(Some("void"))
+
+    for {
+      extTypeOpt     <- extRecvType
+      returnTypeName <- returnType
+      if paramTypes.forall(_.isDefined)
+    } yield {
+      val allParamTypes = (extTypeOpt.toSeq ++ paramTypes.flatten).mkString(",")
+      s"$returnTypeName($allParamTypes)"
+    }
   }
 
   private def memberSetCallAst(param: KtParameter, classFullName: String): Ast = {
