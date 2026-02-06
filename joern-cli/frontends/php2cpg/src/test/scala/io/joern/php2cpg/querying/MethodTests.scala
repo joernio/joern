@@ -1,10 +1,19 @@
 package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.Config
+import io.joern.php2cpg.astcreation.AstCreator.NameConstants
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, ClosureBinding, Identifier, Literal, Local, MethodRef}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  Call,
+  ClosureBinding,
+  Identifier,
+  Literal,
+  Local,
+  Method,
+  MethodRef
+}
 import io.shiftleft.semanticcpg.language.*
 
 import scala.util.Try
@@ -302,6 +311,38 @@ class MethodTests extends PhpCode2CpgFixture {
         barDedupTwoTwo.name shouldBe "bar"
         barDedupTwoTwo.fullName shouldBe "Foo.__construct.foo<duplicate>0.bar<duplicate>1"
       case xs => fail(s"Expected four `bar` functions, got ${xs.name.mkString("[", ",", "]")}")
+    }
+  }
+
+  "static class functions" should {
+    val cpg = code("""<?php
+        |class Foo {
+        |  static function foo() {}
+        |}
+        |""".stripMargin)
+
+    "have parameter 0 as <staticReceiver>" in {
+      inside(cpg.method.name("foo").l) { case (fooMethod: Method) :: Nil =>
+        val List(fooParam) = fooMethod.parameter.order(0).l
+        fooParam.name shouldBe NameConstants.StaticReceiver
+        fooParam.code shouldBe NameConstants.StaticReceiver
+      }
+    }
+  }
+
+  "non-static class functions" should {
+    val cpg = code("""<?php
+        |class Foo {
+        |  function foo() {}
+        |}
+        |""".stripMargin)
+
+    "have parameter 0 as <staticReceiver>" in {
+      inside(cpg.method.name("foo").l) { case (fooMethod: Method) :: Nil =>
+        val List(fooParam) = fooMethod.parameter.order(0).l
+        fooParam.name shouldBe NameConstants.This
+        fooParam.code shouldBe NameConstants.This
+      }
     }
   }
 }
