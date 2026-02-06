@@ -16,6 +16,7 @@ import com.github.javaparser.ast.expr.{
   MethodReferenceExpr,
   NameExpr,
   SuperExpr,
+  SwitchExpr,
   ThisExpr,
   TypeExpr,
   UnaryExpr
@@ -32,7 +33,7 @@ import io.joern.javasrc2cpg.util.{NameConstants, Util}
 import io.joern.x2cpg.{Ast, Defines}
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, NewCall, NewFieldIdentifier, NewLiteral, NewTypeRef}
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, EdgeTypes, Operators}
 
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
@@ -411,5 +412,9 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
     val methodFullName = Util.composeMethodFullName(namespacePrefix, methodName, signature)
 
     Ast(methodRefNode(expr, expr.toString, methodFullName, typeFullName.getOrElse(defaultTypeFallback())))
+  }
+
+  private[expressions] def astForSwitchExpr(expr: SwitchExpr, expectedType: ExpectedType): Ast = {
+    astForSwitch(expr, expr.getSelector, expr.getEntries, ControlStructureTypes.MATCH)
   }
 }
