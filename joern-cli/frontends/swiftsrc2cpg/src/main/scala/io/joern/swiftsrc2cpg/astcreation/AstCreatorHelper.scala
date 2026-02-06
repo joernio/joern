@@ -240,7 +240,11 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def methodInfoForFunctionDeclLike(node: FunctionDeclLike): MethodInfo = {
     val name = calcMethodName(node)
 
+    // We need to copy the node range here because we might modify it when trying to get the legacy node for older swiftc versions.
+    // (see: transferEndOffsetToStartOffset)
+    // We want to keep the original range intact for the actual node.
     val nodeRange = node.asInstanceOf[SwiftNode].json("range").obj.copy()
+
     // Try to get legacy node startOffset from modifiers since in older versions of swiftc (<6.2) it is not stored in the JSON object.
     def legacyNode: Option[SwiftNode] = (node match {
       case f: FunctionDeclSyntax      => f.modifiers.children.lastOption

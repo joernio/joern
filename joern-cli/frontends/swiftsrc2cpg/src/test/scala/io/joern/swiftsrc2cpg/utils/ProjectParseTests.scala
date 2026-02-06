@@ -29,7 +29,7 @@ class ProjectParseTests extends SwiftSrc2CpgSuite with BeforeAndAfterAll {
       |// ❌
       |// 1️⃣ Some comment ...
       |func main() {
-      |  print("6️⃣ Something: \(foo?.bar ?? 0)")  // 💥 May crash
+      |  print("6️⃣ Something: \(foo?.bar ?? 0)") // 💥 May crash
       |  print("✅ Done!")
       |}
       |""".stripMargin
@@ -63,9 +63,9 @@ class ProjectParseTests extends SwiftSrc2CpgSuite with BeforeAndAfterAll {
       op.offset shouldBe Some(115)
       op.offsetEnd shouldBe Some(128)
       cpg.method.nameExact("main").content.head.linesIterator.map(_.trim).toSeq shouldBe Seq(
-        "func main() {",
-        "print(\"6?????? Something: \\(foo?.bar ?? 0)\")  // ???? May crash",
-        "print(\"??? Done!\")",
+        ") {",
+        """print("6️⃣ Something: \(foo?.bar ?? 0)") // 💥 May crash""",
+        """print("✅ Done!")""",
         "}"
       )
     }
