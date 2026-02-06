@@ -634,8 +634,9 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
             scope.enclosingTypeDecl.foreach(_.registerThisCallCaptureParams(initCall, paramsForCaptures))
           }
         Nil
-      } else
-        paramsForCaptures.map(assignmentForCapture(partialConstructor.originNode, _, partialConstructor.thisNode))
+      } else {
+paramsForCaptures.map(assignmentForCapture(partialConstructor.originNode, _, partialConstructor.thisNode))
+      }
 
     val bodyAst =
       astForConstructorBody(partialConstructor.originNode, partialConstructor.bodyStatementAsts, assignmentsForCaptures)
