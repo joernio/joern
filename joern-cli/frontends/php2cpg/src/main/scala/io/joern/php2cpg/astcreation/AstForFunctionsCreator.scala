@@ -226,7 +226,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       evaluationStrategy = EvaluationStrategies.BY_SHARING,
       typeFullName = typeFullName
     )
-    // TODO Add dynamicTypeHintFullName to parameterInNode param list
 
     scope.addToScope(NameConstants.This, thisNode)
 
@@ -245,7 +244,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       evaluationStrategy = EvaluationStrategies.BY_SHARING,
       typeFullName = typeFullName
     )
-    // TODO Add dynamicTypeHintFullName to parameterInNode param list
 
     scope.addToScope(NameConstants.StaticReceiver, node)
 
