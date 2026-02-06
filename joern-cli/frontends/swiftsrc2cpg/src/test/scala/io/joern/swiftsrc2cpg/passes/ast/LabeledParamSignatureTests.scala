@@ -43,8 +43,11 @@ class LabeledParamSignatureTests extends SwiftSrc2CpgSuite {
       c3.methodFullName shouldBe Defines.DynamicCallUnknownFullName
 
       c1.argument.argumentName shouldBe empty
+      c1.argument.argumentLabel.loneElement shouldBe "otherLabel"
       c2.argument.argumentName shouldBe empty
+      c2.argument.argumentLabel shouldBe empty
       c3.argument.argumentName shouldBe empty
+      c3.argument.argumentLabel.loneElement shouldBe "parameterLabel"
     }
 
     "create correct REF edges for labeled parameters" in {

@@ -159,6 +159,7 @@ class SimpleAstCreationPassTest extends SwiftSrc2CpgSuite {
         paramValueFoo.order shouldBe 2
         paramValueFoo.argumentIndex shouldBe 2
         paramValueFoo.argumentName shouldBe empty
+        paramValueFoo.argumentLabel.loneElement shouldBe "x"
       }
     }
 
@@ -516,12 +517,15 @@ class SimpleAstCreationPassTest extends SwiftSrc2CpgSuite {
       inside(cpg.call.nameExact("logMessage").argument.l) { case List(_, message, prefix, suffix) =>
         message.code shouldBe "\"error message\""
         message.argumentName shouldBe empty
+        message.argumentLabel shouldBe empty
         message.argumentIndex shouldBe 1
         prefix.code shouldBe "\">>>\""
         prefix.argumentName shouldBe empty
+        prefix.argumentLabel.loneElement shouldBe "prefix"
         prefix.argumentIndex shouldBe 2
         suffix.code shouldBe "\"<<<\""
         suffix.argumentName shouldBe empty
+        suffix.argumentLabel.loneElement shouldBe "suffix"
         suffix.argumentIndex shouldBe 3
       }
     }

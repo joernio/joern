@@ -258,25 +258,14 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForKeyPathSubscriptComponentSyntax(node: KeyPathSubscriptComponentSyntax): Ast = notHandledYet(node)
 
   private def astForLabeledExprSyntax(node: LabeledExprSyntax): Ast = {
-    val ast = astForNode(node.expression)
-
-    /** In general, labeled expressions are just syntactic sugar and can be ignored when creating the AST. However, in
-      * `Package.swift` files, they are used to name the arguments for package dependencies. Hence, we handle labeled
-      * expressions in Package.swift files differently to capture the argument names for package dependencies. See:
-      * [[io.joern.swiftsrc2cpg.passes.DependenciesPass]] and its test `DependenciesPassTest` for more details.
-      *
-      * We don't have types/fullNames nor do we do anything dataflow-related there anyway, so it's safe to just add the
-      * argument names.
-      */
-    val fileName = Paths.get(parserResult.filename).getFileName.toString
-    if (fileName.equalsIgnoreCase("Package.swift")) {
-      node.label.foreach { label =>
-        val name = code(label)
-        ast.root.collect { case i: ExpressionNew => i.argumentName(name) }
-      }
+    node.label match {
+      case Some(label) =>
+        val labelName = code(label)
+        val ast       = astForNode(node.expression)
+        ast.root.collect { case i: ExpressionNew => i.argumentLabel(labelName) }
+        ast
+      case None => astForNode(node.expression)
     }
-
-    ast
   }
 
   private def astForLabeledSpecializeArgumentSyntax(node: LabeledSpecializeArgumentSyntax): Ast = notHandledYet(node)
