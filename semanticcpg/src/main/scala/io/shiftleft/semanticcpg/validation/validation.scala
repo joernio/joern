@@ -29,7 +29,7 @@ object PostFrontendValidator {
 
   enum ErrorType:
     case FULLNAME_UNIQUE_METHOD, FULLNAME_UNIQUE_TYPE, FULLNAME_UNIQUE_TYPEDECL, MULTI_REF, BAD_REF_TYPE, NONLOCAL_REF,
-      MULTI_AST_IN, MULTI_ARG_IN
+      MULTI_AST_IN, MULTI_ARG_IN, DUPLICATE_ORDER
 }
 /*This derives from CpgPass in order to get the good logging (e.g. timing, etc).
  * The pass is initially very bare-bones and under-complicated.
@@ -107,6 +107,18 @@ class PostFrontendValidator(cpg: Cpg, throwOnError: Boolean) extends AbstractVal
     case _ =>
   }
 
+  def checkDuplicateOrder(node: nodes.StoredNode): Unit = {
+    node match {
+      case block: nodes.Block =>
+        block.astChildren.groupBy(_.order).foreach { case (order, nodes) =>
+          if (nodes.size > 1) {
+            registerViolation(DUPLICATE_ORDER, s"Nodes $nodes have same order $order inside block $block")
+          }
+        }
+      case _ => // Do nothing: other nodes worth checking?
+    }
+  }
+
   override def run(builder: DiffGraphBuilder): Unit = {
     for (node <- cpg.all) {
 
@@ -121,6 +133,8 @@ class PostFrontendValidator(cpg: Cpg, throwOnError: Boolean) extends AbstractVal
       if (node._argumentIn.size > 1) {
         registerViolation(MULTI_ARG_IN, s"Node ${node} should have at most one incoming ARGUMENT edge")
       }
+
+      checkDuplicateOrder(node)
 
     }
     val violations = getViolationsCompressed()
