@@ -2,6 +2,7 @@ package io.shiftleft.semanticcpg.validation
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes
+import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import io.shiftleft.passes.CpgPass
 
 import scala.collection.mutable
@@ -110,9 +111,12 @@ class PostFrontendValidator(cpg: Cpg, throwOnError: Boolean) extends AbstractVal
   def checkDuplicateOrder(node: nodes.StoredNode): Unit = {
     node match {
       case block: nodes.Block =>
-        block.astChildren.groupBy(_.order).foreach { case (order, nodes) =>
-          if (nodes.size > 1) {
-            registerViolation(DUPLICATE_ORDER, s"Nodes $nodes have same order $order inside block $block")
+        // CFG nodes must have different orders. But when CFG and non-CFG nodes collide, that's usually fine, e.g.
+        // CALL and LOCAL: LOCAL yields an empty CFG, so no harm in combining it with CALL under the Cfg.(++) operation.
+        block.astChildren.groupBy(_.order).filter(_._2.size > 1).foreach { case (order, nodes) =>
+          val cfgNodes = nodes.filter(_.isInstanceOf[CfgNode])
+          if (cfgNodes.size > 1) {
+            registerViolation(DUPLICATE_ORDER, s"Nodes $cfgNodes have same order $order inside block $block")
           }
         }
       case _ => // Do nothing: other nodes worth checking?
