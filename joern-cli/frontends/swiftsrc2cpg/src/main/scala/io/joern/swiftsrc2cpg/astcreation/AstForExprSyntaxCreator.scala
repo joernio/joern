@@ -250,11 +250,33 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     setFullNameInfoForCall(expr, constructorCallNode)
   }
 
+  private def parseObjcInitDeclFullname(fullNameFromCompiler: String): (String, String) = {
+    def splitAt(marker: String, add: Int): Option[(String, String)] = {
+      val idx = fullNameFromCompiler.indexOf(marker)
+      if (idx >= 0) {
+        val fn   = fullNameFromCompiler.substring(0, idx + add)
+        val rest = fullNameFromCompiler.substring(idx + marker.length)
+        Some((fn, rest))
+      } else None
+    }
+
+    splitAt(".init", 0)
+      .orElse(splitAt(")init", 1))
+      .getOrElse(methodInfoFromFullNameWithSignature(fullNameFromCompiler))
+  }
+
   private def finalizeObjcInitCall(expr: FunctionCallExprSyntax, constructorCallNode: NewCall, tpe: String): Unit = {
     // For ObjC constructors: derive signature and return type from constructed type.
-    val (fullName, signature) = methodInfoFromFullNameWithSignature(fullnameProvider.declFullname(expr).get)
-    constructorCallNode.methodFullName(s"$fullName:$signature->$tpe")
-    constructorCallNode.signature(s"$signature->$tpe")
+    val (fullName, argumentsString) = fullnameProvider
+      .declFullname(expr)
+      .map(parseObjcInitDeclFullname)
+      .getOrElse((tpe, "()"))
+
+    val arguments = Option(argumentsString).map(_.trim).filter(_.nonEmpty).getOrElse("()")
+    val signature = s"$arguments->$tpe"
+
+    constructorCallNode.methodFullName(s"$fullName.init:$signature")
+    constructorCallNode.signature(signature)
     constructorCallNode.typeFullName(tpe)
   }
 
