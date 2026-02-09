@@ -237,7 +237,31 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForConstructorInvocation(expr: FunctionCallExprSyntax): Ast = {
-    // get call is safe as this function is guarded by isRefToConstructor
+    astForConstructorInvocationCommon(expr)(finalizeSwiftInitCall)
+  }
+
+  private def astForObjcConstructorInvocation(expr: FunctionCallExprSyntax): Ast = {
+    astForConstructorInvocationCommon(expr)(finalizeObjcInitCall)
+  }
+
+  private def finalizeSwiftInitCall(expr: FunctionCallExprSyntax, constructorCallNode: NewCall, tpe: String): Unit = {
+    // Use decl/type info as provided by the fullnameProvider
+    // (methodFullName: "<fullName>:<signature>", signature: "<signature>", typeFullName: call's type).
+    setFullNameInfoForCall(expr, constructorCallNode)
+  }
+
+  private def finalizeObjcInitCall(expr: FunctionCallExprSyntax, constructorCallNode: NewCall, tpe: String): Unit = {
+    // For ObjC constructors: derive signature and return type from constructed type.
+    val (fullName, signature) = methodInfoFromFullNameWithSignature(fullnameProvider.declFullname(expr).get)
+    constructorCallNode.methodFullName(s"$fullName:$signature->$tpe")
+    constructorCallNode.signature(s"$signature->$tpe")
+    constructorCallNode.typeFullName(tpe)
+  }
+
+  private def astForConstructorInvocationCommon(
+    expr: FunctionCallExprSyntax
+  )(finalizeInitCall: (FunctionCallExprSyntax, NewCall, String) => Unit): Ast = {
+    // get call is safe as this function is guarded by isRefToConstructor/isRefToObjcConstructor
     val tpe = fullnameProvider.typeFullname(expr).get
     registerType(tpe)
 
@@ -272,7 +296,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       Some(x2cpg.Defines.UnresolvedSignature),
       Some(Defines.Void)
     )
-    setFullNameInfoForCall(expr, constructorCallNode)
+    finalizeInitCall(expr, constructorCallNode, tpe)
 
     val trailingClosureAsts            = expr.trailingClosure.toList.map(astForNode)
     val additionalTrailingClosuresAsts = expr.additionalTrailingClosures.children.map(c => astForNode(c.closure))
@@ -353,6 +377,8 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           handleCallNodeArgs(node, astForNode(m.base.get), memberCode)
         case other if isRefToConstructor(node, other) =>
           astForConstructorInvocation(node)
+        case other if isRefToObjcConstructor(node, other) =>
+          astForObjcConstructorInvocation(node)
         case other if isRefToClosure(node, other) =>
           astForClosureCall(node)
         case declReferenceExprSyntax: DeclReferenceExprSyntax if code(declReferenceExprSyntax) != "self" =>
@@ -412,21 +438,35 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     calleeCode.headOption.exists(_.isUpper) && !calleeCode.contains("(") && !calleeCode.contains(")")
   }
 
-  private def isRefToConstructor(func: FunctionCallExprSyntax, node: ExprSyntax): Boolean = {
+  private def isRefToConstructorCommon(func: FunctionCallExprSyntax, node: ExprSyntax)(
+    matchesFullName: String => Boolean
+  ): Boolean = {
     if (!config.swiftBuild) {
       // Early exit; without types from the compiler we will be unable to identify constructor calls anyway.
       // This saves us the fullnameProvider lookups below.
       return false
     }
+
     node match {
       case refExpr: DeclReferenceExprSyntax
           if refExpr.baseName.isInstanceOf[identifier] &&
             fullnameProvider.typeFullname(func).nonEmpty &&
-            fullnameProvider.declFullname(func).exists { fullName =>
-              fullName.contains(".init(") && fullName.contains(")->")
-            } =>
+            fullnameProvider.declFullname(func).exists(matchesFullName) =>
         true
       case _ => false
+    }
+  }
+
+  private def isRefToConstructor(func: FunctionCallExprSyntax, node: ExprSyntax): Boolean = {
+    isRefToConstructorCommon(func, node) { fullName =>
+      fullName.contains(".init(") && fullName.contains(")->")
+    }
+  }
+
+  private def isRefToObjcConstructor(func: FunctionCallExprSyntax, node: ExprSyntax): Boolean = {
+    isRefToConstructorCommon(func, node) { fullName =>
+      val typeFullName = fullnameProvider.typeFullname(func).get
+      fullName == s"$typeFullName.init" || (fullName.contains("cobjc(") && fullName.contains(")init"))
     }
   }
 
