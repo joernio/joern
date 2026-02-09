@@ -488,7 +488,8 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def isRefToObjcConstructor(func: FunctionCallExprSyntax, node: ExprSyntax): Boolean = {
     isRefToConstructorCommon(func, node) { fullName =>
       val typeFullName = fullnameProvider.typeFullname(func).get
-      fullName == s"$typeFullName.init" || (fullName.contains("cobjc(") && fullName.contains(")init"))
+      fullName == s"$typeFullName.init" ||
+      (AstCreatorHelper.isObjcCall(fullName) && (fullName.contains(")init") || fullName.contains(".init")))
     }
   }
 

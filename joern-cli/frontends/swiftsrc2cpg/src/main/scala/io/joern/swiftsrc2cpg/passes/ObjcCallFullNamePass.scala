@@ -1,5 +1,6 @@
 package io.joern.swiftsrc2cpg.passes
 
+import io.joern.swiftsrc2cpg.astcreation.AstCreatorHelper
 import io.shiftleft.codepropertygraph.generated.{Cpg, PropertyDefaults, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
@@ -15,17 +16,10 @@ import io.shiftleft.semanticcpg.language.*
   */
 class ObjcCallFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
 
-  private def isObjcCall(callMethodFullName: String): Boolean = {
-    // TODO: there might be more prefixes to consider here, but these are the ones we have seen so far in our test codebases
-    callMethodFullName.startsWith("cobjc") ||
-    callMethodFullName.startsWith("(cs)") ||
-    callMethodFullName.startsWith("(cswift)")
-  }
-
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     for {
       call <- cpg.call.isStatic.nameExact("init").methodFullName(".+\\.init:\\(.*\\)->.+")
-      if call.typeFullName != PropertyDefaults.TypeFullName && isObjcCall(call.methodFullName)
+      if call.typeFullName != PropertyDefaults.TypeFullName && AstCreatorHelper.isObjcCall(call.methodFullName)
       constructorMethod <- cpg.typeDecl
         .fullNameExact(call.typeFullName)
         .method
