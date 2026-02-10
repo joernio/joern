@@ -1,15 +1,15 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.joern.pysrc2cpg.testfixtures.Py2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 
-class ImportCpgTests extends AnyFreeSpec with Matchers {
+class ImportCpgTests extends PySrc2CpgFixture with Matchers {
 
   "test plain import statement" in {
-    lazy val cpg   = Py2CpgTestContext.buildCpg("""import a""".stripMargin)
+    val cpg        = code("""import a""".stripMargin)
     val assignment = cpg.call.code(".*=.*import.*").l
 
     val lhsIdentifier = assignment.argument(1).isIdentifier.head
@@ -23,7 +23,7 @@ class ImportCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "test plain import statement with hierarchical name" in {
-    lazy val cpg   = Py2CpgTestContext.buildCpg("""import a.b""".stripMargin)
+    val cpg        = code("""import a.b""".stripMargin)
     val assignment = cpg.call.code(".*=.*import.*").l
 
     val lhsIdentifier = assignment.argument(1).isIdentifier.head
@@ -37,7 +37,7 @@ class ImportCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "test 'from ... import' statement with hierarchical name" in {
-    lazy val cpg   = Py2CpgTestContext.buildCpg("""from a.b import c""".stripMargin)
+    val cpg        = code("""from a.b import c""".stripMargin)
     val assignment = cpg.call.code(".*=.*import.*").l
 
     val lhsIdentifier = assignment.argument(1).isIdentifier.head

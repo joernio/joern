@@ -1,18 +1,21 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.joern.pysrc2cpg.testfixtures.Py2CpgTestContext
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 
-class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
-  "normal argument function" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""def func(a, b):
+class FunctionDefCpgTests extends PySrc2CpgFixture with Matchers {
+  "normal argument function" should {
+    val cpg = code(
+      """def func(a, b):
         |  pass
-        |""".stripMargin)
+        |""".stripMargin,
+      "test.py"
+    )
 
     "test method node properties" in {
       val methodNode = cpg.method.fullName("test.py:<module>.func").head
@@ -83,10 +86,13 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "positional argument function" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""def func(a, b, /):
+  "positional argument function" should {
+    val cpg = code(
+      """def func(a, b, /):
         |  pass
-        |""".stripMargin)
+        |""".stripMargin,
+      "test.py"
+    )
 
     "test method parameter nodes" in {
       val parameter1 = cpg.method.fullName("test.py:<module>.func").parameter.order(1).head
@@ -101,10 +107,13 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "mixed argument function" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""def func(a, b, /, c):
+  "mixed argument function" should {
+    val cpg = code(
+      """def func(a, b, /, c):
         |  pass
-        |""".stripMargin)
+        |""".stripMargin,
+      "test.py"
+    )
 
     "test method parameter nodes" in {
       val parameter1 = cpg.method.fullName("test.py:<module>.func").parameter.order(1).head
@@ -124,8 +133,8 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "decorated function" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""@abc(arg)
+  "decorated function" should {
+    val cpg = code("""@abc(arg)
         |@staticmethod
         |def func():
         |  pass
@@ -144,8 +153,8 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
 
   }
 
-  "type hinted function" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""
+  "type hinted function" should {
+    val cpg = code("""
         |from typing import List, Optional
         |
         |def func1(a: int, b: int) -> float:
@@ -205,8 +214,8 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "module function" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""
+  "module function" should {
+    val cpg = code("""
         |""".stripMargin)
     "test existence of MODULE modifier on module method node" in {
       cpg.method

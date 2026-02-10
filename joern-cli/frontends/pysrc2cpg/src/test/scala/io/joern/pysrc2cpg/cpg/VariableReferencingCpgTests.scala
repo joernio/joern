@@ -1,14 +1,14 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.joern.pysrc2cpg.testfixtures.Py2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 
-class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
-  "local variable reference" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""def f():
+class VariableReferencingCpgTests extends PySrc2CpgFixture with Matchers {
+  "local variable reference" should {
+    val cpg = code("""def f():
         |  x = 1
         |  y = x""".stripMargin)
 
@@ -37,8 +37,8 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
 
   }
 
-  "parameter variable reference" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""def f(x):
+  "parameter variable reference" should {
+    val cpg = code("""def f(x):
         |  x = 1
         |  y = x""".stripMargin)
 
@@ -67,8 +67,8 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
 
   }
 
-  "comprehension variable reference" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""x = 1
+  "comprehension variable reference" should {
+    val cpg = code("""x = 1
         |[x for x in y]
         |f(x)""".stripMargin)
 
@@ -105,8 +105,8 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "comprehension tuple variable reference" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""x = 1
+  "comprehension tuple variable reference" should {
+    val cpg = code("""x = 1
         |[x for (x,) in y]
         |f(x)""".stripMargin)
 
@@ -130,12 +130,15 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "global variable reference" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""x = 0
+  "global variable reference" should {
+    val cpg = code(
+      """x = 0
         |def f():
         |  global x
         |  x = 1
-        |  y = x""".stripMargin)
+        |  y = x""".stripMargin,
+      "test.py"
+    )
 
     "test local variable exists" in {
       val localNode = cpg.method.name("f").local.name("x").head
@@ -166,11 +169,14 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "global variable (implicitly created) reference " - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""def f():
+  "global variable (implicitly created) reference " should {
+    val cpg = code(
+      """def f():
         |  global x
         |  x = 1
-        |  y = x""".stripMargin)
+        |  y = x""".stripMargin,
+      "test.py"
+    )
 
     "test local variable exists" in {
       val localNode = cpg.method.name("f").local.name("x").head
@@ -201,13 +207,16 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "nested global variable reference" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""x = 0
+  "nested global variable reference" should {
+    val cpg = code(
+      """x = 0
         |def g():
         |  def f():
         |    global x
         |    x = 1
-        |    y = x""".stripMargin)
+        |    y = x""".stripMargin,
+      "test.py"
+    )
 
     "test local variable exists in f" in {
       val localNode = cpg.method.name("f").local.name("x").head
@@ -254,14 +263,17 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "reference from class method" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""
+  "reference from class method" should {
+    val cpg = code(
+      """
         |x = 0
         |class MyClass():
         |  x = 1
         |  def f(self):
         |    someFunc(x)
-        |""".stripMargin)
+        |""".stripMargin,
+      "test.py"
+    )
 
     "test capturing to global x exists" in {
       val moduleXLocal   = cpg.method.name("<module>").local.name("x").head
@@ -281,8 +293,8 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "reference from class body method" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""x = 0
+  "reference from class body method" should {
+    val cpg = code("""x = 0
         |class MyClass():
         |  x = 1
         |  someFunc(x)
@@ -297,8 +309,8 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "delete wildcard imported variable" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""from foo import *
+  "delete wildcard imported variable" should {
+    val cpg = code("""from foo import *
         |del someImportedVariable
         |""".stripMargin)
 

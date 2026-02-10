@@ -7,6 +7,7 @@ import io.joern.dataflowengineoss.testfixtures.SemanticCpgTestFixture
 import io.joern.dataflowengineoss.testfixtures.SemanticTestCpg
 import io.joern.pysrc2cpg.Py2CpgOnFileSystem
 import io.joern.pysrc2cpg.Py2CpgOnFileSystemConfig
+import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.DynamicTypeHintFullNamePass
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.ImportsPass
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.PythonImportResolverPass
@@ -28,16 +29,30 @@ trait PythonFrontend extends LanguageFrontend {
 
   override val fileSuffix: String = ".py"
 
+  def schemaValidation: ValidationMode = ValidationMode.Enabled
+  def withFileContent: Boolean         = true
+
   override def execute(sourceCodePath: java.io.File): Cpg = {
     val tmp = new Py2CpgOnFileSystem()
-      .createCpg(Py2CpgOnFileSystemConfig().withDisableFileContent(false).withInputPath(sourceCodePath.getAbsolutePath))
+      .createCpg(
+        Py2CpgOnFileSystemConfig()
+          .withSchemaValidation(schemaValidation)
+          .withDisableFileContent(!withFileContent)
+          .withInputPath(sourceCodePath.getAbsolutePath)
+      )
       .get
     new PostFrontendValidator(tmp, false).run()
     tmp
   }
 }
 
-class PySrcTestCpg extends DefaultTestCpg with PythonFrontend with SemanticTestCpg {
+class PySrcTestCpg(schemaValidationMode: ValidationMode, fileContentEnabled: Boolean)
+    extends DefaultTestCpg
+    with PythonFrontend
+    with SemanticTestCpg {
+
+  override def schemaValidation: ValidationMode = schemaValidationMode
+  override def withFileContent: Boolean         = fileContentEnabled
 
   override protected def applyPasses(): Unit = {
     super.applyPasses()
@@ -64,9 +79,11 @@ class PySrcTestCpg extends DefaultTestCpg with PythonFrontend with SemanticTestC
 class PySrc2CpgFixture(
   withOssDataflow: Boolean = false,
   semantics: Semantics = DefaultSemantics(),
-  withPostProcessing: Boolean = true
+  withPostProcessing: Boolean = true,
+  withSchemaValidation: ValidationMode = ValidationMode.Enabled,
+  withFileContent: Boolean = true
 ) extends Code2CpgFixture(() =>
-      new PySrcTestCpg()
+      new PySrcTestCpg(withSchemaValidation, withFileContent)
         .withOssDataflow(withOssDataflow)
         .withSemantics(semantics)
         .withPostProcessingPasses(withPostProcessing)

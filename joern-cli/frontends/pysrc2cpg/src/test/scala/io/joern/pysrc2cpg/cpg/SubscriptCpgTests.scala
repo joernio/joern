@@ -1,13 +1,13 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.joern.pysrc2cpg.testfixtures.Py2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 
-class SubscriptCpgTests extends AnyFreeSpec with Matchers {
-  lazy val cpg = Py2CpgTestContext.buildCpg("""x[1]""".stripMargin)
+class SubscriptCpgTests extends PySrc2CpgFixture with Matchers {
+  val cpg = code("""x[1]""".stripMargin)
 
   "test index access node properties" in {
     val assignCall = cpg.call.methodFullName(Operators.indexAccess).head
