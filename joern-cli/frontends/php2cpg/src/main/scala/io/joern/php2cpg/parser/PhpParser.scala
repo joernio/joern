@@ -218,20 +218,13 @@ object PhpParser {
 
         f(parserOption)
       case _ =>
-        Try {
-          FileUtil.usingTemporaryFile(suffix = "-php.ini") { tmpIni =>
-            val iniContents = Using(Source.fromResource("php.ini"))(_.getLines().mkString(System.lineSeparator()))
-              .getOrElse("")
-            Files.writeString(tmpIni, iniContents)
-            val parserOption = getParser(config, tmpIni.absolutePathAsString)
+        FileUtil.usingTemporaryFile(suffix = "-php.ini") { tmpIni =>
+          val iniContents = Using(Source.fromResource("php.ini"))(_.getLines().mkString(System.lineSeparator()))
+            .getOrElse("")
+          Files.writeString(tmpIni, iniContents)
+          val parserOption = getParser(config, tmpIni.absolutePathAsString)
 
-            f(parserOption)
-          }
-        } match {
-          case Success(result) => result
-          case Failure(exception) =>
-            logger.error(s"Failed to set up temporary php.ini: ${exception.getMessage}")
-            f(None)
+          f(parserOption)
         }
     }
   }
