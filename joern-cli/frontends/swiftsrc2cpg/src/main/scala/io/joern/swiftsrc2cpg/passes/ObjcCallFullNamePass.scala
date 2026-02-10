@@ -18,16 +18,19 @@ class ObjcCallFullNamePass(cpg: Cpg) extends CpgPass(cpg) {
 
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     for {
-      call <- cpg.call.isStatic.nameExact("init").methodFullName(".+\\.init:\\(.*\\)->.+")
-      if call.typeFullName != PropertyDefaults.TypeFullName && AstCreatorHelper.isObjcCall(call.methodFullName)
+      call <- cpg.call.isStatic
+        .typeFullNameNot(PropertyDefaults.TypeFullName)
+        .signatureNot(PropertyDefaults.Signature)
+        .nameExact("init")
+        .methodFullName(".+\\.init:\\(.*\\)->.+")
+      if AstCreatorHelper.isObjcCall(call.methodFullName)
       constructorMethod <- cpg.typeDecl
         .fullNameExact(call.typeFullName)
         .method
         .isConstructor
-        .filter(m =>
-          m.fullName.startsWith(s"${call.typeFullName}.init:") && m.fullName.endsWith(s")->${call.typeFullName}")
-        )
-      if call.methodFullName != constructorMethod.fullName
+        .fullNameNot(call.methodFullName)
+        .filter(_.fullName.startsWith(s"${call.typeFullName}.init:"))
+        .signatureExact(call.signature)
     } {
       diffGraph.setNodeProperty(call, PropertyNames.MethodFullName, constructorMethod.fullName)
       diffGraph.setNodeProperty(call, PropertyNames.Signature, constructorMethod.signature)
