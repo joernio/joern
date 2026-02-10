@@ -69,7 +69,7 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       receiverAccess.ast.isIdentifier
         .name("this")
         .head
-        .typeFullName shouldBe "com.test.Handler.process$kotlin.jvm.functions.Function2Impl"
+        .typeFullName shouldBe "kotlin.jvm.internal.CallableReference"
 
       // Cast should have TypeRef as second argument
       val typeRef = castCall.argument.argumentIndex(2).isTypeRef.head
@@ -81,8 +81,9 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       ctorCalls.size shouldBe 1
 
       val ctorCall = ctorCalls.head
-      ctorCall.methodFullName shouldBe "com.test.Handler.process$kotlin.jvm.functions.Function2Impl.<init>:void(kotlin.jvm.functions.Function2)"
-      ctorCall.typeFullName shouldBe "com.test.Handler.process$kotlin.jvm.functions.Function2Impl"
+      ctorCall.methodFullName shouldBe "com.test.Handler.process$kotlin.jvm.functions.Function2Impl.<init>:void(com.test.Handler)"
+      ctorCall.typeFullName shouldBe "void"
+      ctorCall.signature shouldBe "void(com.test.Handler)"
 
       val args = ctorCall.argument.l
 
@@ -175,8 +176,8 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       ctorCalls.size shouldBe 1
 
       val ctorCall = ctorCalls.head
-      ctorCall.methodFullName should include("Function1Impl")
-      ctorCall.typeFullName should include("Function1Impl")
+      ctorCall.methodFullName shouldBe "com.test.Utils$Companion.validate$kotlin.jvm.functions.Function1Impl.<init>:void(com.test.Utils$Companion)"
+      ctorCall.typeFullName shouldBe "void"
 
       val args = ctorCall.argument.l
       args.size shouldBe 2
@@ -187,7 +188,7 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
 
       val List(receiverBase: Identifier, receiverField: FieldIdentifier) = receiverArg.argument.l: @unchecked
       receiverBase.name shouldBe "Utils"
-      receiverBase.typeFullName shouldBe "com.test.Utils$Companion"
+      receiverBase.typeFullName shouldBe "com.test.Utils"
       receiverField.canonicalName shouldBe Constants.CompanionObjectMemberName
     }
 
@@ -217,6 +218,7 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
 
       val methodRef = methodRefs.head
       methodRef.methodFullName shouldBe "com.test.globalFunction:java.lang.String(int,int)"
+      methodRef.typeFullName shouldBe ("com.test.globalFunction$kotlin.jvm.functions.Function2Impl")
     }
 
     "create a synthetic type that does NOT inherit from CallableReference" in {
@@ -234,11 +236,15 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
         .nameExact("invoke")
         .l
         .filter(_.bindingTypeDecl.fullName.contains("globalFunction"))
-      bindings.size shouldBe 1
+        .sortBy(_.methodFullName)
+      bindings.size shouldBe 2
 
-      val binding = bindings.head
-      binding.methodFullName shouldBe "com.test.globalFunction:java.lang.String(int,int)"
-      binding.signature shouldBe "java.lang.String(int,int)"
+      val List(erasedBinding, initialBinding) = bindings
+      initialBinding.methodFullName shouldBe "com.test.globalFunction:java.lang.String(int,int)"
+      initialBinding.signature shouldBe "java.lang.String(int,int)"
+
+      erasedBinding.methodFullName shouldBe "com.test.globalFunction:java.lang.String(int,int)"
+      erasedBinding.signature shouldBe "java.lang.Object(java.lang.Object,java.lang.Object)"
     }
 
     "not create an invoke method that calls the function, only the binding" in {
@@ -537,7 +543,7 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       val ctorCalls = cpg.call
         .nameExact("<init>")
         .methodFullNameExact(
-          "com.test.Calculator.add$kotlin.jvm.functions.Function2Impl.<init>:void(kotlin.jvm.functions.Function2)"
+          "com.test.Calculator.add$kotlin.jvm.functions.Function2Impl.<init>:void(com.test.Calculator)"
         )
         .l
       ctorCalls.size shouldBe 3
