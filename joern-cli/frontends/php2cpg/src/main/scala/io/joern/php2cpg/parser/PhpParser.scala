@@ -3,14 +3,14 @@ package io.joern.php2cpg.parser
 import io.joern.php2cpg.Config
 import io.joern.php2cpg.parser.Domain.PhpFile
 import io.shiftleft.semanticcpg.utils.FileUtil.*
-import io.shiftleft.semanticcpg.utils.{ExternalCommand, ExternalCommandResult, FileUtil}
+import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{Files, Path, Paths}
 import java.util.regex.Pattern
 import scala.collection.mutable
 import scala.io.Source
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success, Try, Using}
 
 private[php2cpg] case class PhpParseResult(fileName: String, parseResult: Option[PhpFile], infoLines: String)
 
@@ -212,16 +212,20 @@ object PhpParser {
   }
 
   def withParser[T](config: Config)(f: Option[PhpParser] => T): T = {
-    val parserOption = config.phpIni match {
+    config.phpIni match {
       case Some(userProvidedIni) if userProvidedIni.nonEmpty =>
-        validateIniPath(userProvidedIni).flatMap(validatedPath => getParser(config, validatedPath))
+        val parserOption = validateIniPath(userProvidedIni).flatMap(validatedPath => getParser(config, validatedPath))
+
+        f(parserOption)
       case _ =>
-        Try(FileUtil.usingTemporaryFile(suffix = "-php.ini") { tmpIni =>
-          val iniContents = Source.fromResource("php.ini").getLines().mkString(System.lineSeparator())
+        FileUtil.usingTemporaryFile(suffix = "-php.ini") { tmpIni =>
+          val iniContents = Using(Source.fromResource("php.ini"))(_.getLines().mkString(System.lineSeparator()))
+            .getOrElse("")
           Files.writeString(tmpIni, iniContents)
-          getParser(config, tmpIni.absolutePathAsString)
-        }).toOption.flatten
+          val parserOption = getParser(config, tmpIni.absolutePathAsString)
+
+          f(parserOption)
+        }
     }
-    f(parserOption)
   }
 }
