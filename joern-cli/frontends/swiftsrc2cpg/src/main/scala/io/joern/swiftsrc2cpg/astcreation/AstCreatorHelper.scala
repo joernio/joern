@@ -106,6 +106,13 @@ object AstCreatorHelper {
     }
   }
 
+  def isObjcCall(callMethodFullName: String): Boolean = {
+    // TODO: there might be more prefixes to consider here, but these are the ones we have seen so far in our test codebases
+    callMethodFullName.startsWith("cobjc") ||
+    callMethodFullName.startsWith("(cs)") ||
+    callMethodFullName.startsWith("(cswift)")
+  }
+
 }
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>

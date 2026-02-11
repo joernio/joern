@@ -113,6 +113,86 @@ class CallTests extends SwiftCompilerSrc2CpgSuite {
       returnId.typeFullName shouldBe "SwiftTest.Foo"
     }
 
+    "be correct for call to objc constructor with compiler support" in {
+      val testCode =
+        """
+          |import Foundation
+          |
+          |class Foo : NSObject {}
+          |
+          |func main() {
+          |  var x = Foo()
+          |}
+          |""".stripMargin
+      val cpg = codeWithSwiftSetup(testCode)
+
+      val List(constructorCallBlock) = cpg.block.codeExact("Foo()").l
+      val List(tmpAssignment)        = constructorCallBlock.astChildren.isCall.isAssignment.l
+      tmpAssignment.code shouldBe s"<tmp>0 = ${Operators.alloc}"
+      tmpAssignment.argument.isIdentifier.typeFullName.l shouldBe List("SwiftTest.Foo")
+      tmpAssignment.argument.isCall.name.l shouldBe List(Operators.alloc)
+      val List(constructorCall) = constructorCallBlock.astChildren.isCall.nameExact("init").l
+      constructorCall.methodFullName shouldBe "SwiftTest.Foo.init:()->SwiftTest.Foo"
+      constructorCall.typeFullName shouldBe "SwiftTest.Foo"
+      constructorCall.signature shouldBe "()->SwiftTest.Foo"
+      constructorCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      constructorCall.argument.isIdentifier.name.l shouldBe List("<tmp>0")
+      constructorCall.argument.isIdentifier.typeFullName.l shouldBe List("SwiftTest.Foo")
+      val List(returnId) = constructorCallBlock.astChildren.isIdentifier.nameExact("<tmp>0").l
+      returnId.typeFullName shouldBe "SwiftTest.Foo"
+
+      cpg.identifier.nameExact("x").typeFullName.loneElement shouldBe "SwiftTest.Foo"
+    }
+
+    "be correct for call to obj constructor with parameters with compiler support" in {
+      val testCode =
+        """
+          |import Foundation
+          |
+          |class Foo : NSObject {
+          |  init(x: Int, y: String) {}
+          |}
+          |
+          |func main() {
+          |  var x = Foo(x: 1, y: "a")
+          |}
+          |""".stripMargin
+
+      val cpg = codeWithSwiftSetup(testCode)
+
+      val List(constructorCallBlock) = cpg.block.codeExact("Foo(x: 1, y: \"a\")").l
+      val List(tmpAssignment)        = constructorCallBlock.astChildren.isCall.isAssignment.l
+      tmpAssignment.code shouldBe s"<tmp>0 = ${Operators.alloc}"
+      tmpAssignment.argument.isIdentifier.typeFullName.l shouldBe List("SwiftTest.Foo")
+      tmpAssignment.argument.isCall.name.l shouldBe List(Operators.alloc)
+
+      val List(constructorCall) = constructorCallBlock.astChildren.isCall.nameExact("init").l
+      constructorCall.typeFullName shouldBe "SwiftTest.Foo"
+      constructorCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+      constructorCall.methodFullName shouldBe "SwiftTest.Foo.init:(x:Swift.Int,y:Swift.String)->SwiftTest.Foo"
+      constructorCall.typeFullName shouldBe "SwiftTest.Foo"
+      constructorCall.signature shouldBe "(x:Swift.Int,y:Swift.String)->SwiftTest.Foo"
+      constructorCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+      constructorCall.argument.size shouldBe 3
+      constructorCall.arguments(0).isIdentifier.name.loneElement shouldBe "<tmp>0"
+      constructorCall.arguments(0).isIdentifier.typeFullName.loneElement shouldBe "SwiftTest.Foo"
+      constructorCall.arguments(1).isLiteral.code.loneElement shouldBe "1"
+      constructorCall.arguments(2).isLiteral.code.loneElement shouldBe "\"a\""
+
+      val List(returnId) = constructorCallBlock.astChildren.isIdentifier.nameExact("<tmp>0").l
+      returnId.typeFullName shouldBe "SwiftTest.Foo"
+
+      cpg.typeDecl
+        .fullNameExact("SwiftTest.Foo")
+        .method
+        .isConstructor
+        .fullName
+        .loneElement shouldBe constructorCall.methodFullName
+      cpg.identifier.nameExact("x").typeFullName.loneElement shouldBe "SwiftTest.Foo"
+    }
+
     "be correct for simple calls to functions from extensions" in {
       val testCode =
         """
