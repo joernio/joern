@@ -338,9 +338,6 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     }
 
     val typeRefNode_ = typeRefNode(node, code(node), typeFullName)
-    methodAstParentStack.find(_.isInstanceOf[NewMethod]).foreach { node =>
-      diffGraph.addEdge(node, typeRefNode_, EdgeTypes.AST)
-    }
 
     methodAstParentStack.push(typeDeclNode_)
     typeRefIdStack.push(typeRefNode_)
@@ -372,7 +369,10 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     scope.popScope()
     scope.popScope()
 
-    Ast(typeDeclNode_)
+    Ast.storeInDiffGraph(Ast(typeDeclNode_), diffGraph)
+    diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
+
+    Ast(typeRefNode_)
   }
 
   private def astForDeinitializerDeclSyntax(node: DeinitializerDeclSyntax): Ast = {

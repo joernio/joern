@@ -257,6 +257,21 @@ class SimpleAstCreationPassTest extends SwiftSrc2CpgSuite {
       }
     }
 
+    "have correct order for global variables and classes" in {
+      val cpg = code("""
+          |let a: String = "a"
+          |let b: String = "a"
+          |class Foo {}
+          |""".stripMargin)
+      cpg.method.nameExact("<global>").block.astChildren.sortBy(_.order).label.toSeq shouldBe Seq(
+        NodeTypes.LOCAL,
+        NodeTypes.LOCAL,
+        NodeTypes.CALL,
+        NodeTypes.CALL,
+        NodeTypes.TYPE_REF
+      )
+    }
+
     "have correct structure for implicit self access with shadowing a variable from outer scope" in {
       val cpg = code("""
           |let f: String = "a"
