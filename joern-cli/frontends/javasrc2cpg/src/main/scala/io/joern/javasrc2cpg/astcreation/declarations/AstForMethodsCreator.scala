@@ -635,7 +635,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
           }
         Nil
       } else {
-paramsForCaptures.map(assignmentForCapture(partialConstructor.originNode, _, partialConstructor.thisNode))
+        paramsForCaptures.map(assignmentForCapture(partialConstructor.originNode, _, partialConstructor.thisNode))
       }
 
     val bodyAst =
