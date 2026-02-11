@@ -109,14 +109,18 @@ class PostFrontendValidator(cpg: Cpg, throwOnError: Boolean) extends AbstractVal
 
   def checkDuplicateOrder(node: nodes.StoredNode): Unit = {
     node match {
-      case block: nodes.Block =>
-        // CFG nodes must have different orders. But when CFG and non-CFG nodes collide, that's usually fine, e.g.
-        // CALL and LOCAL: LOCAL yields an empty CFG, so no harm in combining it with CALL under the Cfg.(++) operation.
-        block.astChildren.collectAll[nodes.CfgNode].groupBy(_.order).foreach { case (order, nodes) =>
-          if (nodes.size > 1) {
-            registerViolation(DUPLICATE_ORDER, s"Nodes $nodes have same order $order inside block $block")
+      // CFG nodes must have different orders. But when CFG and non-CFG nodes collide, that's usually fine, e.g.
+      // CALL and LOCAL: LOCAL yields an empty CFG, so no harm in combining it with CALL under the Cfg.(++) operation.
+      case astNode: nodes.AstNode =>
+        astNode.astChildren
+          .collectAll[nodes.CfgNode]
+          .filterNot(_.isInstanceOf[nodes.Declaration])
+          .groupBy(_.order)
+          .foreach { case (order, nodes) =>
+            if (nodes.size > 1) {
+              registerViolation(DUPLICATE_ORDER, s"Nodes $nodes have same order $order inside node $astNode")
+            }
           }
-        }
       case _ => // Do nothing: other nodes worth checking?
     }
   }
