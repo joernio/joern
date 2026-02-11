@@ -114,7 +114,7 @@ class ClosureTests extends SwiftSrc2CpgSuite {
           |class A {
           |  var x = 1
           |  func foo(_ a: ANY, _ b: ANY, _ c: ANY, _ d: ANY, _ x: ANY) {}
-          |  func method() {
+          |  func method(_ a: ANY, _ b: ANY, _ c: ANY, _ d: ANY) {
           |    let result = a.closureA { paramA in
           |      b.closureB { paramB in
           |        c.closureC { paramC in
