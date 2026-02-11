@@ -540,7 +540,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         d.modifiers.children.flatMap(c => astForNode(c).root.map(_.asInstanceOf[NewModifier]))
       case s: SubscriptDeclSyntax =>
         s.modifiers.children.flatMap(c => astForNode(c).root.map(_.asInstanceOf[NewModifier]))
-      case _: ClosureExprSyntax => Seq.empty
+      case _: ClosureExprSyntax =>
+        Seq(NewModifier().modifierType(ModifierTypes.LAMBDA))
     }
     val constructorModifier = if (isConstructor(node)) {
       Seq(NewModifier().modifierType(ModifierTypes.CONSTRUCTOR))

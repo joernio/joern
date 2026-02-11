@@ -130,15 +130,19 @@ class ClosureTests extends SwiftSrc2CpgSuite {
       val List(closureMethod1) = cpg.method.nameExact("<lambda>0").l
       closureMethod1.fullName shouldBe "Test0.swift:<global>.A.method.<lambda>0:(ANY)->ANY"
       closureMethod1.parameter.code.l shouldBe List("paramA")
+      closureMethod1.modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL, ModifierTypes.LAMBDA)
       val List(closureMethod2) = cpg.method.nameExact("<lambda>1").l
       closureMethod2.fullName shouldBe "Test0.swift:<global>.A.method.<lambda>0.<lambda>1:(ANY)->ANY"
       closureMethod2.parameter.code.l shouldBe List("paramB")
+      closureMethod2.modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL, ModifierTypes.LAMBDA)
       val List(closureMethod3) = cpg.method.nameExact("<lambda>2").l
       closureMethod3.fullName shouldBe "Test0.swift:<global>.A.method.<lambda>0.<lambda>1.<lambda>2:(ANY)->ANY"
       closureMethod3.parameter.code.l shouldBe List("paramC")
+      closureMethod3.modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL, ModifierTypes.LAMBDA)
       val List(closureMethod4) = cpg.method.nameExact("<lambda>3").l
       closureMethod4.fullName shouldBe "Test0.swift:<global>.A.method.<lambda>0.<lambda>1.<lambda>2.<lambda>3:(ANY)->ANY"
       closureMethod4.parameter.code.l shouldBe List("paramD")
+      closureMethod4.modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL, ModifierTypes.LAMBDA)
       cpg.call.nameExact("foo").argument.code.l shouldBe List("self", "paramA", "paramB", "paramC", "paramD", "self.x")
     }
   }
