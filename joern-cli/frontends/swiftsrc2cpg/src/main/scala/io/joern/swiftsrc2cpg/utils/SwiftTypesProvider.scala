@@ -576,22 +576,6 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     calculateDeclFullname(mangledName).map(_.stripSuffix(".Type"))
   }
 
-  /** This regex is designed to clean up Swift demangled type names by extracting meaningful parts and removing internal
-    * representation details. It has three capture groups:
-    *
-    *   1. `([^(]+)` - Captures everything before the first opening parenthesis, Example:
-    *      `SwiftHelloWorldLib.HelloWorld.`
-    *   1. `\((.+)\sin\s_[^)]+\)` - Matches a pattern with internal identifier details:
-    *      - `\(` - Literal opening parenthesis
-    *      - `(.+)` - Captures the name inside parentheses (before "in _...")
-    *      - `\sin\s_[^)]+\)` - Matches " in _" followed by an identifier and closing parenthesis
-    *   1. `(.*)` - Captures everything after the closing parenthesis. Example: `.getter : Swift.String`
-    *
-    * Full example: `SwiftHelloWorldLib.HelloWorld.(suffix in _C6D5E4A96804CD03B7512662F178D1D8).getter : Swift.String`
-    * becomes: `SwiftHelloWorldLib.HelloWorld.suffix.getter : Swift.String`
-    */
-  private val MemberNameRegex: Regex = """([^(]+)\((.+?)\sin\s_[^)]+\)(.*)""".r
-
   /** Regex to match demangled initializer-like signatures that contain a `->` return type followed by an `(in ...)`
     * clause and a member after a dot.
     *
@@ -637,15 +621,13 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
           .map {
             case ExtensionNameRegex(name, rest) =>
               removeModifier(s"$name<extension>.${rest.stripPrefix(s"$name.")}")
-            case MemberNameRegex(parent, name, rest) =>
-              AstCreatorHelper.stripGenerics(removeModifier(s"$parent$name$rest"))
             case InitNameRegex(name, rest) =>
               AstCreatorHelper.stripGenerics(removeModifier(s"$name.$rest"))
             case other =>
               AstCreatorHelper.stripGenerics(removeModifier(other))
           }
           .map { fullName =>
-            val withExtensionsFixed = replaceInInSignature(replaceExtensionInSignature(fullName))
+            val withExtensionsFixed = replaceInQualifierInSignature(replaceExtensionInSignature(fullName))
             withExtensionsFixed.replace(" ", "")
           }
     )
@@ -691,14 +673,14 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     *   The normalized fullName with `(TypeName in X)` qualifiers rewritten to just `TypeName`.
     */
   @tailrec
-  private def replaceInInSignature(fullName: String): String = {
+  private[utils] final def replaceInQualifierInSignature(fullName: String): String = {
     InNameRegex.findFirstMatchIn(fullName) match {
       case Some(m) =>
         val g1       = m.group(1)
         val name     = m.group(3)
         val g4       = m.group(4)
         val replaced = s"$g1$name$g4"
-        replaceInInSignature(replaced)
+        replaceInQualifierInSignature(replaced)
       case None =>
         fullName
     }
