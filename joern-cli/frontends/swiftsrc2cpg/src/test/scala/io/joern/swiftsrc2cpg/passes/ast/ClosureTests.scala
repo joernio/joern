@@ -109,6 +109,38 @@ class ClosureTests extends SwiftSrc2CpgSuite {
       p2.typeFullName shouldBe "MyType"
     }
 
+    "testClosure6" in {
+      val cpg = code("""
+          |class A {
+          |  var x = 1
+          |  func foo(_ a: ANY, _ b: ANY, _ c: ANY, _ d: ANY, _ x: ANY) {}
+          |  func method() {
+          |    let result = a.closureA { paramA in
+          |      b.closureB { paramB in
+          |        c.closureC { paramC in
+          |          d.closureD { paramD in
+          |            foo(paramA, paramB, paramC, paramD, x)
+          |          }
+          |        }
+          |      }
+          |    }
+          |  }
+          |}
+          |""".stripMargin)
+      val List(closureMethod1) = cpg.method.nameExact("<lambda>0").l
+      closureMethod1.fullName shouldBe "Test0.swift:<global>.A.method.<lambda>0:(ANY)->ANY"
+      closureMethod1.parameter.code.l shouldBe List("paramA")
+      val List(closureMethod2) = cpg.method.nameExact("<lambda>1").l
+      closureMethod2.fullName shouldBe "Test0.swift:<global>.A.method.<lambda>0.<lambda>1:(ANY)->ANY"
+      closureMethod2.parameter.code.l shouldBe List("paramB")
+      val List(closureMethod3) = cpg.method.nameExact("<lambda>2").l
+      closureMethod3.fullName shouldBe "Test0.swift:<global>.A.method.<lambda>0.<lambda>1.<lambda>2:(ANY)->ANY"
+      closureMethod3.parameter.code.l shouldBe List("paramC")
+      val List(closureMethod4) = cpg.method.nameExact("<lambda>3").l
+      closureMethod4.fullName shouldBe "Test0.swift:<global>.A.method.<lambda>0.<lambda>1.<lambda>2.<lambda>3:(ANY)->ANY"
+      closureMethod4.parameter.code.l shouldBe List("paramD")
+      cpg.call.nameExact("foo").argument.code.l shouldBe List("self", "paramA", "paramB", "paramC", "paramD", "self.x")
+    }
   }
 
 }
