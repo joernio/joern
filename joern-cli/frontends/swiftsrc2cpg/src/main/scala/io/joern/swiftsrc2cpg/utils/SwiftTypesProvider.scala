@@ -12,6 +12,7 @@ import versionsort.VersionHelper
 import java.io.{BufferedReader, InputStreamReader, StringReader}
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
+import scala.annotation.tailrec
 import scala.collection.parallel.CollectionConverters.ImmutableSeqIsParallelizable
 import scala.collection.parallel.ExecutionContextTaskSupport
 import scala.collection.{immutable, mutable}
@@ -575,22 +576,6 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     calculateDeclFullname(mangledName).map(_.stripSuffix(".Type"))
   }
 
-  /** This regex is designed to clean up Swift demangled type names by extracting meaningful parts and removing internal
-    * representation details. It has three capture groups:
-    *
-    *   1. `([^(]+)` - Captures everything before the first opening parenthesis, Example:
-    *      `SwiftHelloWorldLib.HelloWorld.`
-    *   1. `\((.+)\sin\s_[^)]+\)` - Matches a pattern with internal identifier details:
-    *      - `\(` - Literal opening parenthesis
-    *      - `(.+)` - Captures the name inside parentheses (before "in _...")
-    *      - `\sin\s_[^)]+\)` - Matches " in _" followed by an identifier and closing parenthesis
-    *   1. `(.*)` - Captures everything after the closing parenthesis. Example: `.getter : Swift.String`
-    *
-    * Full example: `SwiftHelloWorldLib.HelloWorld.(suffix in _C6D5E4A96804CD03B7512662F178D1D8).getter : Swift.String`
-    * becomes: `SwiftHelloWorldLib.HelloWorld.suffix.getter : Swift.String`
-    */
-  private val MemberNameRegex: Regex = """([^(]+)\((.+)\sin\s_[^)]+\)(.*)""".r
-
   /** Regex to match demangled initializer-like signatures that contain a `->` return type followed by an `(in ...)`
     * clause and a member after a dot.
     *
@@ -606,13 +591,15 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     *   - `(.+)\(in.+\)` : capture the module/type name that precedes the `(in ...)` clause
     *   - `\.(.+)` : a dot followed by the captured member/signature tail
     */
-  private val InitNameRegex: Regex = """.+\)\s->\s(.+)\(in.+\)\.(.+)""".r
+  private val InitNameRegex: Regex = """.+\)\s->\s(.+?)\(in.+\)\.(.+)""".r
 
   /** Basically the same as with MemberNameRegex. But here for extension function fullNames.
     *
     * E.g., `(extension in FooExt):Foo.bar() -> Swift.String` becomes `FooExt.Foo.bar() -> Swift.String`.
     */
   private val ExtensionNameRegex: Regex = """^\(extension\sin\s([^)]+)\):(.*)""".r
+
+  private val InNameRegex: Regex = """^(.*?)(\(([^()]+)\s+in\s+_[^)]+\))(.*)$""".r
 
   private val ExtensionInSignatureRegex: Regex = """\(extension in ([^)]+)\):""".r
 
@@ -634,15 +621,13 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
           .map {
             case ExtensionNameRegex(name, rest) =>
               removeModifier(s"$name<extension>.${rest.stripPrefix(s"$name.")}")
-            case MemberNameRegex(parent, name, rest) =>
-              AstCreatorHelper.stripGenerics(removeModifier(s"$parent$name$rest"))
             case InitNameRegex(name, rest) =>
               AstCreatorHelper.stripGenerics(removeModifier(s"$name.$rest"))
             case other =>
               AstCreatorHelper.stripGenerics(removeModifier(other))
           }
           .map { fullName =>
-            val withExtensionsFixed = replaceExtensionInSignature(fullName)
+            val withExtensionsFixed = replaceInQualifierInSignature(replaceExtensionInSignature(fullName))
             withExtensionsFixed.replace(" ", "")
           }
     )
@@ -670,6 +655,32 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
         val rest     = tail.stripPrefix(s"$name.")
         val replaced = s"$head$name.$rest"
         replaceExtensionInSignature(replaced)
+      case None =>
+        fullName
+    }
+  }
+
+  /** Rewrites `...(TypeName in X)...` fragments that can appear inside demangled Swift signatures. This method
+    * normalizes those occurrences by replacing: `(TypeName in X)` with `TypeName`. This is necessary because Swift
+    * demangling may embed context qualifiers like: `(...(TypeName in _ID...).member...)`
+    *
+    * It repeatedly applies the rewrite until no such fragment remains, ensuring nested or multiple occurrences are
+    * handled.
+    *
+    * @param fullName
+    *   The demangled fullName that may contain `(TypeName in X)` qualifiers.
+    * @return
+    *   The normalized fullName with `(TypeName in X)` qualifiers rewritten to just `TypeName`.
+    */
+  @tailrec
+  private[utils] final def replaceInQualifierInSignature(fullName: String): String = {
+    InNameRegex.findFirstMatchIn(fullName) match {
+      case Some(m) =>
+        val g1       = m.group(1)
+        val name     = m.group(3)
+        val g4       = m.group(4)
+        val replaced = s"$g1$name$g4"
+        replaceInQualifierInSignature(replaced)
       case None =>
         fullName
     }
