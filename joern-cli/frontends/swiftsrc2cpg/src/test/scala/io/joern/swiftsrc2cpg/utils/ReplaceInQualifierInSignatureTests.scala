@@ -4,7 +4,7 @@ import io.joern.swiftsrc2cpg.Config
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class ReplaceInQualifierInSignature extends AnyWordSpec with Matchers {
+class ReplaceInQualifierInSignatureTests extends AnyWordSpec with Matchers {
 
   private val provider = SwiftTypesProvider(Config(), parsedSwiftInvocations = Nil)
 
