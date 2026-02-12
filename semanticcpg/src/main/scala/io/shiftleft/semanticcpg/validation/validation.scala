@@ -120,7 +120,7 @@ class PostFrontendValidator(cpg: Cpg, throwOnError: Boolean) extends AbstractVal
           }
           .groupBy(_.order)
           .foreach { case (order, nodes) =>
-            if (order > -1 && nodes.size > 1) {
+            if (nodes.size > 1) {
               registerViolation(DUPLICATE_ORDER, s"Nodes $nodes have same order $order inside node $astNode")
             }
           }
