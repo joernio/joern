@@ -1,5 +1,6 @@
 package io.joern.jssrc2cpg.passes
 
+import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.shiftleft.semanticcpg.language.*
@@ -100,7 +101,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     val cpg = code("""
         |console.log("Hello world");
         |let x = Math.abs(-1);
-        |""".stripMargin)
+        |""".stripMargin).withConfig(Config().withTsTypes(true))
 
     "resolve 'print' and 'max' calls" in {
       val List(printCall) = cpg.call("log").l
@@ -108,8 +109,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
       val List(maxCall) = cpg.call("abs").l
       maxCall.methodFullName shouldBe "__ecma.Math:abs"
       val List(x) = cpg.identifier("x").l
-      // TODO: Ideally we would know the result of `abs` but this can be a future task
-      x.typeFullName shouldBe "__ecma.Math:abs:<returnValue>"
+      x.typeFullName shouldBe "__ecma.Number"
     }
 
   }

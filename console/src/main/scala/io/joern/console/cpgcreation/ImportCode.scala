@@ -173,30 +173,20 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
       extends SourceBasedFrontend(name, Languages.NEWC, "Eclipse CDT Based Frontend for C/C++", extension)
 
   private def withCodeInTmpFile(str: String, filename: String)(f: Path => Cpg): Try[Cpg] = {
-    val dir = Files.createTempDirectory("console")
-
-    val result = Try {
-      Files.writeString((dir / filename), str)
-      f(dir)
+    FileUtil.usingTemporaryDirectory("console") { dir =>
+      Try {
+        Files.writeString((dir / filename), str)
+        f(dir)
+      }
     }
-
-    FileUtil.deleteOnExit(dir, swallowIOExceptions = true)
-    result
   }
 
   private def withFileInTmpFile(inputPath: String)(f: Path => Cpg): Try[Cpg] = {
-    val dir = Files.createTempDirectory("console")
-
-    try {
-      val result = Try {
+    FileUtil.usingTemporaryDirectory("console") { dir =>
+      Try {
         Paths.get(inputPath).copyToDirectory(dir)
         f(dir)
       }
-
-      result
-    } finally {
-      // Always attempt to clean up, regardless of success or failure
-      FileUtil.deleteOnExit(dir)
     }
   }
 

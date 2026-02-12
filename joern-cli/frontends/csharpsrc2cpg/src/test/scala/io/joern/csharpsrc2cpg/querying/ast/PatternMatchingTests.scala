@@ -33,6 +33,7 @@ class PatternMatchingTests extends CSharpCode2CpgFixture {
               number.typeFullName shouldBe "System.Int32"
 
               maybe.name shouldBe "maybe"
+              maybe._astIn.size shouldBe 1
               maybe.typeFullName shouldBe "System.Int32"
             case xs => fail(s"Expected two identifier arguments, instead got [${xs.code.mkString(",")}]")
           }

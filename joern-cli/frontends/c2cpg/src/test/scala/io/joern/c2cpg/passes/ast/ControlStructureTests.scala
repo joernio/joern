@@ -2,7 +2,7 @@ package io.joern.c2cpg.passes.ast
 
 import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.C2CpgSuite
-import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 import org.apache.commons.lang3.StringUtils
 
@@ -105,7 +105,7 @@ class ControlStructureTests extends C2CpgSuite(FileDefaults.CppExt) {
           }
         }
         inside(forLoop.condition.l) { case List(x) =>
-          x.code shouldBe "x"
+          x.code shouldBe "x != 0"
           x.order shouldBe 4
         }
         inside(forLoop.astChildren.order(5).l) { case List(updateX) =>
@@ -118,4 +118,121 @@ class ControlStructureTests extends C2CpgSuite(FileDefaults.CppExt) {
     }
 
   }
+
+  "ControlStructureTest3" should {
+    "should be correct for for-loop with non-expr as condition" in {
+      val cpg = code("""
+          |void foo() {
+          |  for (int x=1; x; --x) { bar(); };
+          |}
+          |""".stripMargin)
+      inside(cpg.controlStructure.l) { case List(forLoop) =>
+        inside(forLoop.condition.isCall.l) { case List(x) =>
+          x.code shouldBe "x != 0"
+          x.order shouldBe 3
+          x.name shouldBe Operators.notEquals
+          x.methodFullName shouldBe Operators.notEquals
+          x.arguments(1).isIdentifier.name.loneElement shouldBe "x"
+          x.arguments(2).isLiteral.code.loneElement shouldBe "0"
+        }
+      }
+    }
+    "should be correct for do-while-loop with non-expr as condition" in {
+      val cpg = code("""
+          |void foo() {
+          |  int x = 0;
+          |  do {
+          |    x++;
+          |   } while (x);
+          |}
+          |""".stripMargin)
+      inside(cpg.controlStructure.l) { case List(doLoop) =>
+        inside(doLoop.condition.isCall.l) { case List(x) =>
+          x.code shouldBe "x != 0"
+          x.order shouldBe 2
+          x.name shouldBe Operators.notEquals
+          x.methodFullName shouldBe Operators.notEquals
+          x.arguments(1).isIdentifier.name.loneElement shouldBe "x"
+          x.arguments(2).isLiteral.code.loneElement shouldBe "0"
+        }
+      }
+    }
+
+    "should be correct for while-loop with non-expr as condition" in {
+      val cpg = code("""
+          |void foo() {
+          |  int x = 0;
+          |  while (x) {
+          |    x++;
+          |  };
+          |}
+          |""".stripMargin)
+      inside(cpg.controlStructure.l) { case List(whileLoop) =>
+        inside(whileLoop.condition.isCall.l) { case List(x) =>
+          x.code shouldBe "x != 0"
+          x.order shouldBe 1
+          x.name shouldBe Operators.notEquals
+          x.methodFullName shouldBe Operators.notEquals
+          x.arguments(1).isIdentifier.name.loneElement shouldBe "x"
+          x.arguments(2).isLiteral.code.loneElement shouldBe "0"
+        }
+      }
+    }
+
+    "should be correct for if-expr with non-expr as condition" in {
+      val cpg = code("""
+          |void foo() {
+          |  int x = 0;
+          |  if (x) {
+          |    bar();
+          |  };
+          |}
+          |""".stripMargin)
+      inside(cpg.controlStructure.l) { case List(whileLoop) =>
+        inside(whileLoop.condition.isCall.l) { case List(x) =>
+          x.code shouldBe "x != 0"
+          x.order shouldBe 1
+          x.name shouldBe Operators.notEquals
+          x.methodFullName shouldBe Operators.notEquals
+          x.arguments(1).isIdentifier.name.loneElement shouldBe "x"
+          x.arguments(2).isLiteral.code.loneElement shouldBe "0"
+        }
+      }
+    }
+
+    "should be correct for NULL comparison" in {
+      val cpg = code(
+        """
+          |struct foo { char member; };
+          |void foo() {
+          |  struct foo *x = malloc(sizeof(struct foo));
+          |  do {
+          |    foo_free(x);
+          |  } while(x);
+          |}
+          |void bar() {
+          |  struct foo *x = malloc(sizeof(struct foo));
+          |  do {
+          |    foo_free(x);
+          |  } while(x == NULL);
+          |}
+          |""".stripMargin,
+        fileName = "foo.c"
+      )
+      inside(cpg.method.nameExact("foo").controlStructure.l) { case List(whileLoop) =>
+        inside(whileLoop.condition.isCall.l) { case List(x) =>
+          x.order shouldBe 2
+          x.code shouldBe "x != NULL"
+        }
+      }
+      inside(cpg.method.nameExact("bar").controlStructure.l) { case List(whileLoop) =>
+        inside(whileLoop.condition.isCall.l) { case List(x) =>
+          x.order shouldBe 2
+          x.code shouldBe "x == NULL"
+        }
+      }
+    }
+
+  }
+
 }

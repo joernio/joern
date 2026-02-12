@@ -43,6 +43,7 @@ import io.joern.javasrc2cpg.util.MultiBindingTableAdapterForJavaparser.{
 import io.joern.javasrc2cpg.util.{
   BindingTable,
   BindingTableAdapterForJavaparser,
+  CaptureUseFinder,
   MultiBindingTableAdapterForJavaparser,
   NameConstants,
   TemporaryNameProvider,
@@ -109,6 +110,7 @@ class AstCreator(
   private[astcreation] val binarySignatureCalculator: BinarySignatureCalculator = new BinarySignatureCalculator(scope)
 
   private[astcreation] val tempNameProvider: TemporaryNameProvider = new TemporaryNameProvider
+  private[astcreation] val captureUseFinder                        = new CaptureUseFinder()
 
   /** Entry point of AST creation. Translates a compilation unit created by JavaParser into a DiffGraph containing the
     * corresponding CPG AST.

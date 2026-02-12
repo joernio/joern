@@ -1,13 +1,12 @@
 package io.joern.jssrc2cpg.passes.ast
 
-import io.joern.jssrc2cpg.testfixtures.AstJsSrc2CpgSuite
+import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgSuite
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
-import io.joern.x2cpg.passes.base.ContainsEdgePass
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Method, TypeDecl, _containsIn}
 import io.shiftleft.semanticcpg.language.*
 
-class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
+class TsDecoratorAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
 
   "AST generation for TS decorator" should {
 
@@ -28,18 +27,22 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
           annotationA.code shouldBe "@a(false)"
           annotationA.name shouldBe "a"
           annotationA.fullName shouldBe "a"
+          annotationA.order shouldBe 1
 
           annotationB.code shouldBe "@b(foo)"
           annotationB.name shouldBe "b"
           annotationB.fullName shouldBe "b"
+          annotationB.order shouldBe 2
 
           annotationC.code shouldBe "@c(foo=false)"
           annotationC.name shouldBe "c"
           annotationC.fullName shouldBe "c"
+          annotationC.order shouldBe 3
 
           annotationD.code shouldBe "@d()"
           annotationD.name shouldBe "d"
           annotationD.fullName shouldBe "d"
+          annotationD.order shouldBe 4
       }
     }
 
@@ -54,6 +57,7 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
         c.code shouldBe "@c(foo=false)"
         c.name shouldBe "c"
         c.fullName shouldBe "c"
+        c.order shouldBe 1
       }
     }
 
@@ -71,11 +75,13 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
         c.code shouldBe "@a.b.c(foo=false)"
         c.name shouldBe "c"
         c.fullName shouldBe "a.b.c"
+        c.order shouldBe 1
       }
       inside(cpg.typeDecl.name("Foo").method.name("bar").parameter.name("x").annotation.l) { case List(c) =>
         c.code shouldBe "@a.b.c"
         c.name shouldBe "c"
         c.fullName shouldBe "a.b.c"
+        c.order shouldBe 1
       }
     }
 
@@ -110,18 +116,22 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
           annotationA.code shouldBe "@a(false)"
           annotationA.name shouldBe "a"
           annotationA.fullName shouldBe "a"
+          annotationA.order shouldBe 1
 
           annotationB.code shouldBe "@b(foo)"
           annotationB.name shouldBe "b"
           annotationB.fullName shouldBe "b"
+          annotationB.order shouldBe 2
 
           annotationC.code shouldBe "@c(foo=false)"
           annotationC.name shouldBe "c"
           annotationC.fullName shouldBe "c"
+          annotationC.order shouldBe 3
 
           annotationD.code shouldBe "@d()"
           annotationD.name shouldBe "d"
           annotationD.fullName shouldBe "d"
+          annotationD.order shouldBe 4
       }
     }
 
@@ -140,19 +150,23 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
           annotationA.code shouldBe "@a(false)"
           annotationA.name shouldBe "a"
           annotationA.fullName shouldBe "a"
+          annotationA.order shouldBe 1
 
           annotationB.code shouldBe "@b(foo)"
           annotationB.name shouldBe "b"
           annotationB.fullName shouldBe "b"
+          annotationB.order shouldBe 2
 
           annotationC.code shouldBe "@c(foo=false)"
           annotationC.name shouldBe "c"
           annotationC.fullName shouldBe "c"
+          annotationC.order shouldBe 3
 
           annotationD.code shouldBe "@d()"
           annotationD.name shouldBe "d"
           annotationD.fullName shouldBe "d"
           annotationD.parameterAssign.l shouldBe empty
+          annotationD.order shouldBe 4
       }
     }
 
@@ -167,6 +181,7 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
         annotationA.code shouldBe "@a('lit')"
         annotationA.name shouldBe "a"
         annotationA.fullName shouldBe "a"
+        annotationA.order shouldBe 1
       }
     }
 
@@ -189,19 +204,23 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
           annotationA.code shouldBe "@a(false)"
           annotationA.name shouldBe "a"
           annotationA.fullName shouldBe "a"
+          annotationA.order shouldBe 1
 
           annotationB.code shouldBe "@b(foo)"
           annotationB.name shouldBe "b"
           annotationB.fullName shouldBe "b"
+          annotationB.order shouldBe 2
 
           annotationC.code shouldBe "@c(foo=false)"
           annotationC.name shouldBe "c"
           annotationC.fullName shouldBe "c"
+          annotationC.order shouldBe 3
 
           annotationD.code shouldBe "@d()"
           annotationD.name shouldBe "d"
           annotationD.fullName shouldBe "d"
           annotationD.parameterAssign.l shouldBe empty
+          annotationD.order shouldBe 4
       }
     }
 
@@ -212,7 +231,6 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
           |@NgModule(() => { })
           |export class MyClass { }
           |""".stripMargin)
-      ContainsEdgePass(cpg).createAndApply()
       cpg.methodRef.where(_._containsIn.collectAll[TypeDecl]) shouldBe empty
 
       val List(constructorRef, annotationLambdaRef) = cpg.methodRef.l
@@ -260,11 +278,14 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
       val List(reqAAnnotation) = cpg.member.nameExact("a").annotation.l
       reqAAnnotation.code shouldBe "@format(\"a, %s\")"
       reqAAnnotation.name shouldBe "format"
+      reqAAnnotation.order shouldBe 1
       val List(bFormatAnnotation, bValidateAnnotation) = cpg.member.nameExact("b").annotation.l
       bFormatAnnotation.code shouldBe "@format(\"b, %s\")"
       bFormatAnnotation.name shouldBe "format"
+      bFormatAnnotation.order shouldBe 1
       bValidateAnnotation.code shouldBe "@validate(\"isString\")"
       bValidateAnnotation.name shouldBe "validate"
+      bValidateAnnotation.order shouldBe 2
 
       val List(decorateACall, decorateBCall) = cpg.call.name("__decorate").l
       decorateACall.code shouldBe """__decorate([format("a, %s")], Foo.prototype, 'a', void 0)"""
@@ -341,11 +362,14 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
       val List(reqAAnnotation) = cpg.method.nameExact("reqA").annotation.l
       reqAAnnotation.code shouldBe "@Get(\"argA\")"
       reqAAnnotation.name shouldBe "Get"
+      reqAAnnotation.order shouldBe 1
       val List(reqBAnnotationGet, reqBAnnotationPut) = cpg.method.nameExact("reqB").annotation.l
       reqBAnnotationGet.code shouldBe "@Get(\"argB\")"
       reqBAnnotationGet.name shouldBe "Get"
+      reqBAnnotationGet.order shouldBe 1
       reqBAnnotationPut.code shouldBe "@Put(\"argC\")"
       reqBAnnotationPut.name shouldBe "Put"
+      reqBAnnotationPut.order shouldBe 2
 
       val List(decorateReqACall, decorateReqBCall) = cpg.call.name("__decorate").l
       decorateReqACall.code shouldBe """__decorate([Get("argA"), __param(0, Req("reqAParam")), __metadata("design:type", Function), __metadata("design:paramtypes", [Object]), __metadata("design:type", String)], Foo.prototype, 'reqA', null)"""
@@ -447,6 +471,18 @@ class TsDecoratorAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
         "_tmp_3.push",
         """__metadata("design:type", Number)"""
       )
+    }
+
+    "not have identifier used multiple times on class method parameters with multiple decorators" in {
+      val cpg = code("""
+          |export class Component {
+          |  constructor(
+          |    @Optional() @Inject(FOO) data: Data
+          |  ) {}
+          |}
+          |
+          |""".stripMargin)
+      cpg.identifier.filter(_._astIn.size != 1) shouldBe empty
     }
   }
 

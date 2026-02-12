@@ -1,12 +1,12 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
+import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
-class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
+class SimpleAstCreationPassTest extends SwiftSrc2CpgSuite {
 
   "AST generation for simple fragments" should {
 
@@ -158,7 +158,8 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
         paramValueFoo.code shouldBe """"y""""
         paramValueFoo.order shouldBe 2
         paramValueFoo.argumentIndex shouldBe 2
-        paramValueFoo.argumentName shouldBe Some("x")
+        paramValueFoo.argumentName shouldBe empty
+        paramValueFoo.argumentLabel.loneElement shouldBe "x"
       }
     }
 
@@ -254,6 +255,21 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
         fLocal.name shouldBe "f"
         fLocal.typeFullName shouldBe Defines.Int
       }
+    }
+
+    "have correct order for global variables and classes" in {
+      val cpg = code("""
+          |let a: String = "a"
+          |let b: String = "a"
+          |class Foo {}
+          |""".stripMargin)
+      cpg.method.nameExact("<global>").block.astChildren.sortBy(_.order).label.toSeq shouldBe Seq(
+        NodeTypes.LOCAL,
+        NodeTypes.LOCAL,
+        NodeTypes.CALL,
+        NodeTypes.CALL,
+        NodeTypes.TYPE_REF
+      )
     }
 
     "have correct structure for implicit self access with shadowing a variable from outer scope" in {
@@ -357,8 +373,8 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
           |    func foo() {
           |      let compare = { (s1: String, s2: String) -> Bool in
           |        let f: Int = 1
-          |        handleB(b)
-          |        handleF(f)
+          |        handleB(b) // accessing b from outer class Foo.Bar
+          |        handleF(f) // accessing f from outer function foo, not the member f of Foo
           |        return s1 > s2
           |	     }
           |    }
@@ -385,7 +401,8 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
       val List(fooMethod)  = cpg.method.nameExact("foo").l
       val List(fooBlock)   = fooMethod.astChildren.isBlock.l
       val List(compareRef) = fooBlock.ast.isMethodRef.l
-      compareRef.captureOut shouldBe empty
+      // capturing self.b where self is of type Foo.Bar
+      compareRef.captureOut.refOut.isParameter.typeFullName.loneElement shouldBe "Test0.swift:<global>.Foo.Bar"
 
       val List(compareClosure)                              = cpg.method.nameExact("<lambda>0").l
       val List(compareClosureBlock)                         = compareClosure.astChildren.isBlock.l
@@ -515,10 +532,17 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
           |""".stripMargin)
       inside(cpg.call.nameExact("logMessage").argument.l) { case List(_, message, prefix, suffix) =>
         message.code shouldBe "\"error message\""
+        message.argumentName shouldBe empty
+        message.argumentLabel shouldBe empty
+        message.argumentIndex shouldBe 1
         prefix.code shouldBe "\">>>\""
-        prefix.argumentName shouldBe Some("prefix")
+        prefix.argumentName shouldBe empty
+        prefix.argumentLabel.loneElement shouldBe "prefix"
+        prefix.argumentIndex shouldBe 2
         suffix.code shouldBe "\"<<<\""
-        suffix.argumentName shouldBe Some("suffix")
+        suffix.argumentName shouldBe empty
+        suffix.argumentLabel.loneElement shouldBe "suffix"
+        suffix.argumentIndex shouldBe 3
       }
     }
   }

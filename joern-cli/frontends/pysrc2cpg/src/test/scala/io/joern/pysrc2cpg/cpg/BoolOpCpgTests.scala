@@ -14,7 +14,7 @@ class BoolOpCpgTests extends AnyFreeSpec with Matchers {
     orCall.code shouldBe "x or y or z"
     orCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     orCall.lineNumber shouldBe Some(1)
-    // TODO orCall.columnNumber shouldBe Some(3)
+    orCall.columnNumber shouldBe Some(1)
   }
 
   "test boolOp 'or' ast children" in {

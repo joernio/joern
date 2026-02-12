@@ -830,13 +830,13 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
           Seq.empty
         } else {
           val paramNodeInfo = createBabelNodeInfo(value)
-          val receiverNode  = identifierNode(paramNodeInfo, "__param")
-          scope.addVariableReference(receiverNode.name, receiverNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
-          val thisNode =
-            identifierNode(paramNodeInfo, "this").dynamicTypeHintFullName(rootTypeDecl.map(_.fullName).toSeq)
-          scope.addVariableReference(thisNode.name, thisNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
-
           paramAsts.map { p =>
+            val receiverNode = identifierNode(paramNodeInfo, "__param")
+            scope.addVariableReference(receiverNode.name, receiverNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+            val thisNode =
+              identifierNode(paramNodeInfo, "this").dynamicTypeHintFullName(rootTypeDecl.map(_.fullName).toSeq)
+            scope.addVariableReference(thisNode.name, thisNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+
             val callNode_ = callNode(
               paramNodeInfo,
               s"__param($idx, ${codeOf(p.nodes.head)})",
