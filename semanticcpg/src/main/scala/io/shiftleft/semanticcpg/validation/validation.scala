@@ -116,12 +116,11 @@ class PostFrontendValidator(cpg: Cpg, throwOnError: Boolean) extends AbstractVal
           .collectAll[nodes.CfgNode]
           .filterNot {
             case _: nodes.Declaration | _: nodes.Annotation => true
-            case n: nodes.TypeRef if n.order == -1          => true
             case _                                          => false
           }
           .groupBy(_.order)
           .foreach { case (order, nodes) =>
-            if (nodes.size > 1) {
+            if (order > -1 && nodes.size > 1) {
               registerViolation(DUPLICATE_ORDER, s"Nodes $nodes have same order $order inside node $astNode")
             }
           }
