@@ -316,15 +316,10 @@ abstract class AstCreatorBase[Node, NodeProcessor](filename: String)(implicit wi
   }
 
   def setArgumentIndices(arguments: Seq[Ast], start: Int = 1): Unit = {
-    var currIndex = start
-    arguments.foreach { a =>
-      a.root match {
-        case Some(x: ExpressionNew) =>
-          x.argumentIndex = currIndex
-          currIndex = currIndex + 1
-        case None => // do nothing
-        case _ =>
-          currIndex = currIndex + 1
+    arguments.zipWithIndex.foreach { case (ast, i) =>
+      ast.root match {
+        case Some(x: ExpressionNew) => x.argumentIndex = start + i
+        case _                      => // do nothing
       }
     }
   }

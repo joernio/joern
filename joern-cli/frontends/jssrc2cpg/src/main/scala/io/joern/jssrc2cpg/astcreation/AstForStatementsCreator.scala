@@ -42,9 +42,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   protected def createBlockStatementAsts(json: Value): List[Ast] = {
     val blockStmts = sortBlockStatements(json.arr.map(createBabelNodeInfo).toList)
-    val blockAsts  = blockStmts.map(stmt => astForNodeWithFunctionReferenceAndCall(stmt.json))
-    setArgumentIndices(blockAsts)
-    blockAsts
+    blockStmts.map(stmt => astForNodeWithFunctionReferenceAndCall(stmt.json))
   }
 
   protected def astForWithStatement(withStatement: BabelNodeInfo): Ast = {
@@ -58,7 +56,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case _              => List(astForNodeWithFunctionReferenceAndCall(bodyNodeInfo.json))
     }
     val blockStatementAsts = objectAst +: bodyAsts
-    setArgumentIndices(blockStatementAsts)
     localAstParentStack.pop()
     scope.popScope()
     blockAst(blockNode_, blockStatementAsts)
@@ -69,7 +66,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.pushNewBlockScope(blockNode_)
     localAstParentStack.push(blockNode_)
     val blockStatementAsts = createBlockStatementAsts(block.json("body"))
-    setArgumentIndices(blockStatementAsts)
     localAstParentStack.pop()
     scope.popScope()
     blockAst(blockNode_, blockStatementAsts)
@@ -95,7 +91,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       .getOrElse(Ast())
     val bodyAsts           = createBlockStatementAsts(catchClause.json("body")("body"))
     val blockStatementAsts = paramAst +: bodyAsts
-    setArgumentIndices(blockStatementAsts)
     localAstParentStack.pop()
     scope.popScope()
     blockAst(blockNode_, blockStatementAsts)
@@ -207,7 +202,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     localAstParentStack.pop()
 
     val labelAsts = List(Ast(labeledNode), bodyAst)
-    setArgumentIndices(labelAsts)
     blockAst(blockNode_, labelAsts)
   }
 
@@ -274,7 +268,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.pushNewBlockScope(blockNode_)
     localAstParentStack.push(blockNode_)
     val casesAsts = switchStmt.json("cases").arr.flatMap(c => astsForSwitchCase(createBabelNodeInfo(c)))
-    setArgumentIndices(casesAsts.toList)
     scope.popScope()
     localAstParentStack.pop()
 
@@ -419,8 +412,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val bodyAst = astForNodeWithFunctionReference(forInOfStmt.json("body"))
 
     val whileLoopBlockChildren = List(loopVariableAssignmentAst, bodyAst)
-    setArgumentIndices(whileLoopBlockChildren)
-    val whileLoopBlockAst = blockAst(whileLoopBlockNode, whileLoopBlockChildren)
+    val whileLoopBlockAst      = blockAst(whileLoopBlockNode, whileLoopBlockChildren)
 
     scope.popScope()
     localAstParentStack.pop()
@@ -431,7 +423,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
     val blockChildren =
       List(iteratorAssignmentAst, Ast(resultNode), Ast(loopVariableNode), whileLoopAst.withChild(whileLoopBlockAst))
-    setArgumentIndices(blockChildren)
     blockAst(blockNode_, blockChildren)
   }
 
@@ -562,8 +553,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val bodyAst = astForNodeWithFunctionReference(forInOfStmt.json("body"))
 
     val whileLoopBlockChildren = List(loopVariableAssignmentAst, bodyAst)
-    setArgumentIndices(whileLoopBlockChildren)
-    val whileLoopBlockAst = blockAst(whileLoopBlockNode, whileLoopBlockChildren)
+    val whileLoopBlockAst      = blockAst(whileLoopBlockNode, whileLoopBlockChildren)
 
     scope.popScope()
     localAstParentStack.pop()
@@ -573,7 +563,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     localAstParentStack.pop()
 
     val blockChildren = List(iteratorAssignmentAst, Ast(resultNode), whileLoopAst.withChild(whileLoopBlockAst))
-    setArgumentIndices(blockChildren)
     blockAst(blockNode_, blockChildren)
   }
 
@@ -712,8 +701,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val bodyAst = astForNodeWithFunctionReference(forInOfStmt.json("body"))
 
     val whileLoopBlockChildren = loopVariableAssignmentAsts :+ bodyAst
-    setArgumentIndices(whileLoopBlockChildren)
-    val whileLoopBlockAst = blockAst(whileLoopBlockNode, whileLoopBlockChildren)
+    val whileLoopBlockAst      = blockAst(whileLoopBlockNode, whileLoopBlockChildren)
 
     scope.popScope()
     localAstParentStack.pop()
@@ -726,7 +714,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       List(iteratorAssignmentAst, Ast(resultNode)) ++ loopVariableNodes.map(Ast(_)) :+ whileLoopAst.withChild(
         whileLoopBlockAst
       )
-    setArgumentIndices(blockNodeChildren)
     blockAst(blockNode_, blockNodeChildren)
   }
 
@@ -864,8 +851,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val bodyAst = astForNodeWithFunctionReference(forInOfStmt.json("body"))
 
     val whileLoopBlockChildren = loopVariableAssignmentAsts :+ bodyAst
-    setArgumentIndices(whileLoopBlockChildren)
-    val whileLoopBlockAst = blockAst(whileLoopBlockNode, whileLoopBlockChildren)
+    val whileLoopBlockAst      = blockAst(whileLoopBlockNode, whileLoopBlockChildren)
 
     scope.popScope()
     localAstParentStack.pop()
@@ -878,7 +864,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       List(iteratorAssignmentAst, Ast(resultNode)) ++ loopVariableNodes.map(Ast(_)) :+ whileLoopAst.withChild(
         whileLoopBlockAst
       )
-    setArgumentIndices(blockNodeChildren)
     blockAst(blockNode_, blockNodeChildren)
   }
 

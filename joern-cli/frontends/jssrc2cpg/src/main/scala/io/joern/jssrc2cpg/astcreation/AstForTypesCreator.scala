@@ -509,8 +509,6 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     scope.popScope()
 
     if (shouldCreateAssignmentCall) {
-      diffGraph.addEdge(localAstParentStack.head, typeRefNode_, EdgeTypes.AST)
-
       // return a synthetic assignment to enable tracing of the implicitly created identifier for
       // the class definition assigned to its constructor
       val classIdNode = identifierNode(clazz, typeName, typeName, Defines.Any, Seq(constructorNode.fullName))
@@ -534,11 +532,15 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       val propertyDecorationAsts = createPropertyDecorationAsts(clazz, classIdNode)
       val methodDecorationAsts   = createMethodDecorationAsts(clazz, classIdNode)
       if (classDecorationAst.root.isDefined || propertyDecorationAsts.nonEmpty || methodDecorationAsts.nonEmpty) {
-        val blockNode_   = blockNode(clazz)
-        val childrenAsts = List(assignmentAst, classDecorationAst) ++ propertyDecorationAsts ++ methodDecorationAsts
-        setArgumentIndices(childrenAsts)
+        val blockNode_ = blockNode(clazz)
+        val childrenAsts =
+          List(Ast(typeRefNode_), assignmentAst, classDecorationAst) ++ propertyDecorationAsts ++ methodDecorationAsts
         Ast(blockNode_).withChildren(childrenAsts)
-      } else assignmentAst
+      } else {
+        val blockNode_   = blockNode(clazz)
+        val childrenAsts = List(Ast(typeRefNode_), assignmentAst)
+        Ast(blockNode_).withChildren(childrenAsts)
+      }
     } else {
       Ast(typeRefNode_)
     }
@@ -697,8 +699,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     localAstParentStack.pop()
 
     val blockChildrenAsts = assignmentTmpArrayCallNode +: elementAsts :+ Ast(tmpArrayReturnNode)
-    setArgumentIndices(blockChildrenAsts)
-    val blockAst_ = blockAst(blockNode_, blockChildrenAsts)
+    val blockAst_         = blockAst(blockNode_, blockChildrenAsts)
 
     val metadataParamTypeCall =
       callNode(
@@ -942,7 +943,6 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     localAstParentStack.pop()
 
     val blockChildrenAsts = assignmentTmpArrayCallNode +: elementAsts :+ Ast(tmpArrayReturnNode)
-    setArgumentIndices(blockChildrenAsts)
     blockAst(blockNode_, blockChildrenAsts)
   }
 
