@@ -434,8 +434,14 @@ class AstCreator(
     val lambdaTypeDecls =
       lambdaBindingInfoQueue.flatMap(_.edgeMeta.collect { case (node: NewTypeDecl, _, _) => Ast(node) })
 
-    val samImplTypeDecls = samImplInfoQueue.values.map { samInfo =>
-      createSamImplTypeDecl(samInfo)
+    val samImplTypeDecls = samImplInfoQueue.values.flatMap { samInfo =>
+      val typeKey = s"${samInfo.samImplClass}"
+      if (Option(global.usedTypes.putIfAbsent(typeKey, true)) == None) {
+        registerType(samInfo.samImplClass)
+        Some(createSamImplTypeDecl(samInfo))
+      } else {
+        None
+      }
     }
 
     methodAstParentStack.pop()
@@ -603,13 +609,13 @@ class AstCreator(
     )
   }
 
-  protected def createReceiverAccessWithCast(
+  protected def createReceiverAccess(
     expr: KtCallableReferenceExpression,
-    receiverType: String,
+    receiverTypeFullName: String,
     receiverTypeName: String,
-    callableReferenceTypeFullName: String
+    implementationTypeFullName: String
   ): Ast = {
-    val thisIdent  = identifierNode(expr, "this", "this", registerType(callableReferenceTypeFullName))
+    val thisIdent  = identifierNode(expr, "this", "this", implementationTypeFullName)
     val fieldIdent = fieldIdentifierNode(expr, "receiver", "receiver")
     val receiverFieldAccess = callNode(
       expr,
@@ -618,21 +624,9 @@ class AstCreator(
       Operators.fieldAccess,
       DispatchTypes.STATIC_DISPATCH,
       None,
-      Some(TypeConstants.JavaLangObject)
+      Some(receiverTypeFullName)
     )
-    val fieldAccessAst = callAst(receiverFieldAccess, Seq(Ast(thisIdent), Ast(fieldIdent)), None)
-
-    val typeRefNode_ = typeRefNode(expr, receiverTypeName, registerType(receiverType))
-    val castCallNode = callNode(
-      expr,
-      s"receiver as ${receiverTypeName}",
-      Operators.cast,
-      Operators.cast,
-      DispatchTypes.STATIC_DISPATCH,
-      None,
-      Some(TypeConstants.Any)
-    )
-    callAst(castCallNode, Seq(fieldAccessAst, Ast(typeRefNode_)), None)
+    callAst(receiverFieldAccess, Seq(Ast(thisIdent), Ast(fieldIdent)), None)
   }
 
   protected def createBindingInfo(
@@ -731,18 +725,14 @@ class AstCreator(
     val receiverTypeName = samInfo.receiverTypeFullName.split('.').last
     val calledMethodName = samInfo.methodRefName.split('.').last
 
-    val callCode   = s"(receiver as ${receiverTypeName}).${calledMethodName}(${paramString})"
+    val callCode   = s"receiver.${calledMethodName}(${paramString})"
     val blockNode_ = blockNode(samInfo.expr, s"return $callCode", TypeConstants.JavaLangVoid)
 
     val (dispatchType, receiverAstOpt) = if (samInfo.isStaticReference) {
       (DispatchTypes.STATIC_DISPATCH, None)
     } else {
-      val receiverAst = createReceiverAccessWithCast(
-        samInfo.expr,
-        samInfo.receiverTypeFullName,
-        receiverTypeName,
-        samInfo.inheritsFrom.last
-      )
+      val receiverAst =
+        createReceiverAccess(samInfo.expr, samInfo.receiverTypeFullName, receiverTypeName, samInfo.inheritsFrom.last)
       (DispatchTypes.DYNAMIC_DISPATCH, Some(receiverAst))
     }
 
@@ -756,9 +746,15 @@ class AstCreator(
       Some(registerType(returnType))
     )
 
-    val callArgumentAsts = samInfo.samMethodParams.zipWithIndex.map { case ((paramName, paramType), idx) =>
-      val identNode = identifierNode(samInfo.expr, paramName, paramName, registerType(paramType)).argumentIndex(idx + 1)
-      astWithRefEdgeMaybe(paramName, identNode)
+    val callArgumentAsts = samInfo.samMethodParams.zipWithIndex.zip(valueParameterAsts).map {
+      case (((paramName, paramType), idx), paramAst) =>
+        val identNode =
+          identifierNode(samInfo.expr, paramName, paramName, registerType(paramType)).argumentIndex(idx + 1)
+        paramAst.root
+          .collect { case p: NewMethodParameterIn =>
+            Ast(identNode).withRefEdge(identNode, p)
+          }
+          .getOrElse(Ast(identNode))
     }
 
     val callAst_    = callAst(callNode_, callArgumentAsts.toList, receiverAstOpt)
@@ -808,14 +804,39 @@ class AstCreator(
       EvaluationStrategies.BY_VALUE,
       registerType(receiverType)
     )
-    val ctorBlock     = blockNode(samInfo.expr, "", registerType(TypeConstants.Void))
+
+    val callableRefType         = registerType("kotlin.jvm.internal.CallableReference")
+    val callableRefCtorFullName = s"$callableRefType.<init>:void($receiverType)"
+    val callableRefCtorCall = callNode(
+      samInfo.expr,
+      s"$callableRefType.<init>($receiverParamName)",
+      "<init>",
+      callableRefCtorFullName,
+      DispatchTypes.STATIC_DISPATCH,
+      Some(s"void($receiverType)"),
+      Some(registerType(TypeConstants.Void))
+    )
+    val receiverArgIdent =
+      identifierNode(samInfo.expr, receiverParamName, receiverParamName, registerType(receiverType))
+        .argumentIndex(1)
+    val receiverArgAst     = Ast(receiverArgIdent).withRefEdge(receiverArgIdent, ctorReceiverParam)
+    val callableRefCtorAst = callAst(callableRefCtorCall, Seq(receiverArgAst))
+
+    val ctorBlock =
+      blockNode(samInfo.expr, s"$callableRefType.<init>($receiverParamName)", registerType(TypeConstants.Void))
     val ctorReturn    = methodReturnNode(samInfo.expr, TypeConstants.Void)
     val ctorModifiers = Seq(modifierNode(samInfo.expr, ModifierTypes.CONSTRUCTOR))
 
     createBindingInfo("<init>", s"void(${receiverType})", ctorFullName, samTypeDecl, ctorNode, None)
 
     val ctorAst =
-      methodAst(ctorNode, Seq(Ast(ctorThisParam), Ast(ctorReceiverParam)), Ast(ctorBlock), ctorReturn, ctorModifiers)
+      methodAst(
+        ctorNode,
+        Seq(Ast(ctorThisParam), Ast(ctorReceiverParam)),
+        blockAst(ctorBlock, List(callableRefCtorAst)),
+        ctorReturn,
+        ctorModifiers
+      )
 
     Ast(samTypeDecl).withChild(methodAst_).withChild(ctorAst).withChild(Ast(methodTypeDecl))
   }

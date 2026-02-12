@@ -846,7 +846,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       else List(inheritsFromTypeFullName)
 
     val samImplClass = s"$fullName$$${inheritsFromTypeFullName}Impl"
-    registerType(samImplClass)
 
     val samMethodInfo = resolveSamMethodInfo(exprType, funcDesc)
 

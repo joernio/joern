@@ -2,10 +2,16 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, MethodRef}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  Binding,
+  Call,
+  FieldIdentifier,
+  Identifier,
+  MethodParameterIn,
+  MethodRef
+}
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.codepropertygraph.generated.nodes.Binding
 
 class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
@@ -46,38 +52,43 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
     }
 
     "forward all parameters to the referenced method" in {
-      val processCall   = invokeMethod.ast.isCall.name("process").head
-      val forwardedArgs = processCall.argument.isIdentifier.l
-      forwardedArgs.size shouldBe 2
-      forwardedArgs.map(_.typeFullName).toSet shouldBe Set("int", "java.lang.String")
+      val processCall = invokeMethod.ast.isCall.name("process").head
+
+      inside(processCall.argument.sortBy(_.argumentIndex).l) {
+        // Call is checked below, focus on arguments only
+        case List(_: Call, intArg: Identifier, stringArg: Identifier) =>
+          intArg.name shouldBe "p1"
+          intArg.typeFullName shouldBe "int"
+          inside(intArg.refsTo.l) { case List(intArgParameter: MethodParameterIn) =>
+            intArgParameter.name shouldBe "p1"
+            intArgParameter.typeFullName shouldBe "int"
+          }
+
+          stringArg.name shouldBe "p2"
+          stringArg.typeFullName shouldBe "java.lang.String"
+          inside(stringArg.refsTo.l) { case List(stringArgParameter: MethodParameterIn) =>
+            stringArgParameter.name shouldBe "p2"
+            stringArgParameter.typeFullName shouldBe "java.lang.String"
+          }
+      }
     }
 
     "use DYNAMIC_DISPATCH with cast and field access to receiver" in {
       val processCall = invokeMethod.ast.isCall.name("process").head
       processCall.dispatchType shouldBe "DYNAMIC_DISPATCH"
 
-      // The receiver should be a cast operation
-      val castCall = processCall.receiver.isCall.name(Operators.cast).head
-      castCall.methodFullName shouldBe Operators.cast
-      castCall.typeFullName shouldBe "ANY"
-      castCall.dispatchType shouldBe "STATIC_DISPATCH"
-
-      // Cast should have field access as first argument
-      val receiverAccess = castCall.argument.argumentIndex(1).isCall.name(Operators.fieldAccess).head
-      receiverAccess.typeFullName shouldBe "java.lang.Object"
+      // Should have fieldAccess
+      val receiverAccess = processCall.receiver.isCall.name(Operators.fieldAccess).head
+      receiverAccess.typeFullName shouldBe "com.test.Handler"
       receiverAccess.ast.isFieldIdentifier.canonicalName.head shouldBe "receiver"
       receiverAccess.ast.isIdentifier
         .name("this")
         .head
         .typeFullName shouldBe "kotlin.jvm.internal.CallableReference"
-
-      // Cast should have TypeRef as second argument
-      val typeRef = castCall.argument.argumentIndex(2).isTypeRef.head
-      typeRef.typeFullName shouldBe "com.test.Handler"
     }
 
     "create a constructor call for the synthetic type with receiver as parameter" in {
-      val ctorCalls = cpg.call.nameExact("<init>").methodFullName(".*Function2Impl.*<init>.*").l
+      val ctorCalls = cpg.method("test").call.methodFullName(".*Function2Impl.*<init>.*").l
       ctorCalls.size shouldBe 1
 
       val ctorCall = ctorCalls.head
@@ -85,7 +96,7 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       ctorCall.typeFullName shouldBe "void"
       ctorCall.signature shouldBe "void(com.test.Handler)"
 
-      val args = ctorCall.argument.l
+      val args = ctorCall.argument.sortBy(_.argumentIndex).l
 
       val receiverArg = args(1).asInstanceOf[Identifier]
       receiverArg.name shouldBe "handler"
@@ -118,6 +129,29 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       ctorModifiers.head.modifierType shouldBe "CONSTRUCTOR"
     }
 
+    "have constructor body that calls CallableReference constructor" in {
+      val constructor         = syntheticTypeDecl.method.name("<init>").head
+      val callableRefCtorCall = constructor.ast.isCall.name("<init>").methodFullName(".*CallableReference.*").head
+
+      callableRefCtorCall.methodFullName shouldBe "kotlin.jvm.internal.CallableReference.<init>:void(com.test.Handler)"
+      callableRefCtorCall.signature shouldBe "void(com.test.Handler)"
+      callableRefCtorCall.dispatchType shouldBe "STATIC_DISPATCH"
+
+      val args = callableRefCtorCall.argument.l
+      args.size shouldBe 1
+
+      val receiverArg = args.head.asInstanceOf[Identifier]
+      receiverArg.name shouldBe "handler"
+      receiverArg.typeFullName shouldBe "com.test.Handler"
+      receiverArg.argumentIndex shouldBe 1
+
+      inside(receiverArg.refsTo.l) { case List(param: MethodParameterIn) =>
+        param.name shouldBe "handler"
+        param.typeFullName shouldBe "com.test.Handler"
+        param.index shouldBe 1
+      }
+    }
+
     "have dynamic type hints on this parameter" in {
       val thisParam = invokeMethod.parameter.index(0).head
       thisParam.dynamicTypeHintFullName shouldBe Seq("com.test.Handler.process$kotlin.jvm.functions.Function2Impl")
@@ -125,8 +159,7 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
 
     "have block code containing the actual method call" in {
       val block = invokeMethod.ast.isBlock.head
-      block.code should include("process")
-      block.code should include("receiver as Handler")
+      block.code shouldBe "return receiver.process(p1, p2)"
     }
 
     "have a nested TypeDecl representing the function type" in {
@@ -337,58 +370,105 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       val syntheticTypeDecl = cpg.typeDecl.fullName(".*Function0Impl.*").head
       val invokeMethod      = syntheticTypeDecl.method.name("invoke").head
 
+      // Check invoke method
+      invokeMethod.fullName shouldBe "Counter.increment$kotlin.jvm.functions.Function0Impl.invoke:int()"
       invokeMethod.signature shouldBe "int()"
-      invokeMethod.parameter.filter(_.index > 0).size shouldBe 0
+      val invokeParams = invokeMethod.parameter.l.sortBy(_.index)
+      invokeParams.size shouldBe 1
+      invokeParams.head.name shouldBe "this"
+      invokeParams.head.typeFullName shouldBe "Counter.increment$kotlin.jvm.functions.Function0Impl"
 
+      // Check constructor
+      val constructor = syntheticTypeDecl.method.name("<init>").head
+      constructor.fullName shouldBe "Counter.increment$kotlin.jvm.functions.Function0Impl.<init>:void(Counter)"
+      constructor.signature shouldBe "void(Counter)"
+      val ctorParams = constructor.parameter.l.sortBy(_.index)
+      ctorParams.size shouldBe 2
+      ctorParams.head.name shouldBe "this"
+      ctorParams.head.typeFullName shouldBe "Counter.increment$kotlin.jvm.functions.Function0Impl"
+      ctorParams(1).name shouldBe "counter"
+      ctorParams(1).typeFullName shouldBe "Counter"
+
+      // Check constructor call
+      val ctorCall = cpg.method("test").call.methodFullName(".*Function0Impl.*<init>.*").head
+      ctorCall.signature shouldBe "void(Counter)"
+      ctorCall.argument.size shouldBe 2
+      val receiverArg = ctorCall.argument.argumentIndex(1).head.asInstanceOf[Identifier]
+      receiverArg.name shouldBe "counter"
+      receiverArg.typeFullName shouldBe "Counter"
+
+      // Check increment call
       val incrementCall = invokeMethod.ast.isCall.name("increment").head
+      incrementCall.signature shouldBe "int()"
+      incrementCall.methodFullName shouldBe "Counter.increment:int()"
       incrementCall.argument.isIdentifier.size shouldBe 0
+
+      // Check dynamic type hints
+      val invokeThisParam = invokeMethod.parameter.index(0).head
+      invokeThisParam.dynamicTypeHintFullName should not be empty
+      invokeThisParam.dynamicTypeHintFullName.head should include("Function0Impl")
+
+      val ctorThisParam = constructor.parameter.index(0).head
+      ctorThisParam.dynamicTypeHintFullName should not be empty
+      ctorThisParam.dynamicTypeHintFullName.head should include("Function0Impl")
     }
 
     "handle nullable parameter types" in {
       val cpg = code("""
           |class Handler {
-          |    fun process(value: String?): Boolean {
-          |        return value != null
+          |    fun process(value: String?): String? {
+          |        return value
           |    }
           |}
           |
           |fun test() {
           |   val handler = Handler()
-          |   val ref: (String?) -> Boolean = handler::process
+          |   val ref: (String?) -> String? = handler::process
           |}
           |""".stripMargin)
 
       val syntheticTypeDecl = cpg.typeDecl.fullName(".*Function1Impl.*").head
       val invokeMethod      = syntheticTypeDecl.method.name("invoke").head
 
-      val param = invokeMethod.parameter.index(1).head
-      param.typeFullName should include("String")
+      // Check invoke method
+      invokeMethod.fullName shouldBe "Handler.process$kotlin.jvm.functions.Function1Impl.invoke:java.lang.String(java.lang.String)"
+      invokeMethod.signature shouldBe "java.lang.String(java.lang.String)"
+      val invokeParams = invokeMethod.parameter.l.sortBy(_.index)
+      invokeParams.size shouldBe 2
+      invokeParams.head.name shouldBe "this"
+      invokeParams(1).name shouldBe "p1"
+      invokeParams(1).typeFullName should include("String")
 
+      // Check constructor
+      val constructor = syntheticTypeDecl.method.name("<init>").head
+      constructor.fullName shouldBe "Handler.process$kotlin.jvm.functions.Function1Impl.<init>:void(Handler)"
+      constructor.signature shouldBe "void(Handler)"
+      val ctorParams = constructor.parameter.l.sortBy(_.index)
+      ctorParams.size shouldBe 2
+      ctorParams(1).name shouldBe "handler"
+      ctorParams(1).typeFullName shouldBe "Handler"
+
+      // Check constructor call
+      val ctorCall = cpg.method("test").call.methodFullName(".*Function1Impl.*<init>.*").head
+      ctorCall.signature shouldBe "void(Handler)"
+      val receiverArg = ctorCall.argument.argumentIndex(1).head.asInstanceOf[Identifier]
+      receiverArg.name shouldBe "handler"
+      receiverArg.typeFullName shouldBe "Handler"
+
+      // Check process call
       val processCall = invokeMethod.ast.isCall.name("process").head
+      processCall.signature should include("String")
+      processCall.methodFullName shouldBe "Handler.process:java.lang.String(java.lang.String)"
       processCall.argument.isIdentifier.size shouldBe 1
-    }
 
-    "handle nullable return types" in {
-      val cpg = code("""
-          |class Finder {
-          |    fun find(id: Int): String? {
-          |        return null
-          |    }
-          |}
-          |
-          |fun test() {
-          |   val finder = Finder()
-          |   val ref: (Int) -> String? = finder::find
-          |}
-          |""".stripMargin)
+      // Check dynamic type hints
+      val invokeThisParam = invokeMethod.parameter.index(0).head
+      invokeThisParam.dynamicTypeHintFullName should not be empty
+      invokeThisParam.dynamicTypeHintFullName.head should include("Function1Impl")
 
-      val syntheticTypeDecl = cpg.typeDecl.fullName(".*Function1Impl.*").head
-      val invokeMethod      = syntheticTypeDecl.method.name("invoke").head
-
-      invokeMethod.signature should include("String")
-
-      val findCall = invokeMethod.ast.isCall.name("find").head
-      findCall.signature should include("String")
+      val ctorThisParam = constructor.parameter.index(0).head
+      ctorThisParam.dynamicTypeHintFullName should not be empty
+      ctorThisParam.dynamicTypeHintFullName.head should include("Function1Impl")
     }
 
     "handle references with 'this' receiver" in {
@@ -407,12 +487,36 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       val syntheticTypeDecl = cpg.typeDecl.fullName(".*Function1Impl.*").head
       val invokeMethod      = syntheticTypeDecl.method.name("invoke").head
 
+      // Check invoke method
+      invokeMethod.fullName shouldBe "com.test.MyClass.method$kotlin.jvm.functions.Function1Impl.invoke:void(int)"
+      invokeMethod.signature shouldBe "void(int)"
+      val invokeParams = invokeMethod.parameter.l.sortBy(_.index)
+      invokeParams.size shouldBe 2
+      invokeParams.head.name shouldBe "this"
+      invokeParams(1).name shouldBe "p1"
+      invokeParams(1).typeFullName shouldBe "int"
+
+      // Check constructor
+      val constructor = syntheticTypeDecl.method.name("<init>").head
+      constructor.fullName shouldBe "com.test.MyClass.method$kotlin.jvm.functions.Function1Impl.<init>:void(com.test.MyClass)"
+      constructor.signature shouldBe "void(com.test.MyClass)"
+      val ctorParams = constructor.parameter.l.sortBy(_.index)
+      ctorParams.size shouldBe 2
+      ctorParams(1).name shouldBe "this"
+      ctorParams(1).typeFullName shouldBe "com.test.MyClass"
+
+      // Check constructor call
+      val ctorCall = cpg.method("setup").call.methodFullName(".*Function1Impl.*<init>.*").head
+      ctorCall.signature shouldBe "void(com.test.MyClass)"
+      val receiverArg = ctorCall.argument.argumentIndex(1).head.asInstanceOf[Identifier]
+      receiverArg.name shouldBe "this"
+      receiverArg.typeFullName shouldBe "com.test.MyClass"
+
+      // Check method call
       val methodCall = invokeMethod.ast.isCall.name("method").head
       methodCall.dispatchType shouldBe "DYNAMIC_DISPATCH"
-
-      val castCall       = methodCall.receiver.isCall.name(Operators.cast).head
-      val receiverAccess = castCall.argument.argumentIndex(1).isCall.name(Operators.fieldAccess).head
-      receiverAccess.ast.isFieldIdentifier.canonicalName.head shouldBe "receiver"
+      methodCall.signature shouldBe "void(int)"
+      methodCall.methodFullName shouldBe "com.test.MyClass.method:void(int)"
     }
 
     "handle complex nested generic types" in {
@@ -438,73 +542,36 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       val syntheticTypeDecl = cpg.typeDecl.fullName(".*MapperImpl.*").head
       syntheticTypeDecl.inheritsFromTypeFullName.exists(_.contains("Mapper")) shouldBe true
 
+      // Check map method (SAM interface method)
       val mapMethod = syntheticTypeDecl.method.name("map").head
-      mapMethod.parameter.index(1).head.typeFullName should include("List")
-    }
+      mapMethod.fullName shouldBe "com.test.Converter.convertStrings$com.test.MapperImpl.map:java.util.List(java.util.List)"
+      mapMethod.signature shouldBe "java.util.List(java.util.List)"
+      val mapParams = mapMethod.parameter.l.sortBy(_.index)
+      mapParams.size shouldBe 2
+      mapParams.head.name shouldBe "this"
+      mapParams(1).name shouldBe "items"
+      mapParams(1).typeFullName should include("List")
 
-    "handle methods with multiple return paths" in {
-      val cpg = code("""
-          |class Validator {
-          |    fun check(x: Int): Boolean {
-          |        if (x > 0) return true
-          |        return false
-          |    }
-          |}
-          |
-          |fun test() {
-          |   val validator = Validator()
-          |   val ref: (Int) -> Boolean = validator::check
-          |}
-          |""".stripMargin)
+      // Check constructor
+      val constructor = syntheticTypeDecl.method.name("<init>").head
+      constructor.fullName shouldBe "com.test.Converter.convertStrings$com.test.MapperImpl.<init>:void(com.test.Converter)"
+      constructor.signature shouldBe "void(com.test.Converter)"
+      val ctorParams = constructor.parameter.l.sortBy(_.index)
+      ctorParams.size shouldBe 2
+      ctorParams(1).name shouldBe "converter"
+      ctorParams(1).typeFullName shouldBe "com.test.Converter"
 
-      val syntheticTypeDecl = cpg.typeDecl.fullName(".*Function1Impl.*").head
-      val invokeMethod      = syntheticTypeDecl.method.name("invoke").head
+      // Check constructor call
+      val ctorCall = cpg.method("test").call.methodFullName(".*MapperImpl.*<init>.*").head
+      ctorCall.signature shouldBe "void(com.test.Converter)"
+      val receiverArg = ctorCall.argument.argumentIndex(1).head.asInstanceOf[Identifier]
+      receiverArg.name shouldBe "converter"
+      receiverArg.typeFullName shouldBe "com.test.Converter"
 
-      invokeMethod.signature shouldBe "boolean(int)"
-      val checkCall = invokeMethod.ast.isCall.name("check").head
-      checkCall.methodFullName shouldBe "Validator.check:boolean(int)"
-    }
-
-    "have dynamic type hints on this parameter in all cases" in {
-      val cpg = code("""
-          |class Handler {
-          |    fun process(value: String?): Boolean {
-          |        return value != null
-          |    }
-          |}
-          |
-          |fun test() {
-          |   val handler = Handler()
-          |   val ref: (String?) -> Boolean = handler::process
-          |}
-          |""".stripMargin)
-
-      val syntheticTypeDecl = cpg.typeDecl.fullName(".*Function1Impl.*").head
-      val invokeMethod      = syntheticTypeDecl.method.name("invoke").head
-      val thisParam         = invokeMethod.parameter.index(0).head
-
-      thisParam.dynamicTypeHintFullName should not be empty
-      thisParam.dynamicTypeHintFullName.head should include("Function1Impl")
-    }
-
-    "have constructor with dynamic type hints on this parameter" in {
-      val cpg = code("""
-          |class Counter {
-          |    fun increment(): Int = 1
-          |}
-          |
-          |fun test() {
-          |   val counter = Counter()
-          |   val ref: () -> Int = counter::increment
-          |}
-          |""".stripMargin)
-
-      val syntheticTypeDecl = cpg.typeDecl.fullName(".*Function0Impl.*").head
-      val constructor       = syntheticTypeDecl.method.name("<init>").head
-      val thisParam         = constructor.parameter.index(0).head
-
-      thisParam.dynamicTypeHintFullName should not be empty
-      thisParam.dynamicTypeHintFullName.head should include("Function0Impl")
+      // Check convertStrings call
+      val convertCall = mapMethod.ast.isCall.name("convertStrings").head
+      convertCall.signature shouldBe "java.util.List(java.util.List)"
+      convertCall.methodFullName shouldBe "com.test.Converter.convertStrings:java.util.List(java.util.List)"
     }
   }
 
@@ -547,6 +614,85 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
         )
         .l
       ctorCalls.size shouldBe 3
+    }
+  }
+
+  "enforce uniqueness across multiple files" should {
+    val cpg = code(
+      """
+        |package com.test
+        |
+        |class Calculator {
+        |    fun add(a: Int, b: Int): Int = a + b
+        |}
+        |""".stripMargin,
+      "Calculator.kt"
+    ).moreCode(
+      """
+        |package com.test
+        |
+        |fun firstFunction() {
+        |   val calc = Calculator()
+        |   val ref: (Int, Int) -> Int = calc::add
+        |}
+        |""".stripMargin,
+      "FirstFile.kt"
+    ).moreCode(
+      """
+        |package com.test
+        |
+        |fun secondFunction() {
+        |   val calc = Calculator()
+        |   val ref: (Int, Int) -> Int = calc::add
+        |}
+        |""".stripMargin,
+      "SecondFile.kt"
+    ).moreCode(
+      """
+        |package com.test
+        |
+        |class ThirdFile {
+        |    fun thirdFunction() {
+        |       val calc = Calculator()
+        |       val ref: (Int, Int) -> Int = calc::add
+        |    }
+        |}
+        |""".stripMargin,
+      "ThirdFile.kt"
+    )
+
+    val syntheticTypeDecls = cpg.typeDecl.fullName(".*Calculator.*Function2Impl.*").filter(_.astParentType == "").l
+
+    "only have ONE synthetic type declaration across all files" in {
+      syntheticTypeDecls.size shouldBe 1
+    }
+
+    val syntheticTypeDecl = syntheticTypeDecls.head
+
+    "should have the correct invoke method" in {
+      val invokeMethod = syntheticTypeDecl.method.name("invoke").head
+      invokeMethod.fullName shouldBe "com.test.Calculator.add$kotlin.jvm.functions.Function2Impl.invoke:int(int,int)"
+      invokeMethod.signature shouldBe "int(int,int)"
+    }
+
+    "should have the correct constructor" in {
+      val constructor = syntheticTypeDecl.method.name("<init>").head
+      constructor.fullName shouldBe "com.test.Calculator.add$kotlin.jvm.functions.Function2Impl.<init>:void(com.test.Calculator)"
+      constructor.signature shouldBe "void(com.test.Calculator)"
+    }
+
+    "the single synthetic type should be used by constructor calls in all three files" in {
+      val ctorCalls = cpg.call
+        .nameExact("<init>")
+        .methodFullNameExact(
+          "com.test.Calculator.add$kotlin.jvm.functions.Function2Impl.<init>:void(com.test.Calculator)"
+        )
+        .l
+      ctorCalls.size shouldBe 3
+
+      // Verify they're in different methods/files
+      val callingMethods = ctorCalls.method.name.toSet
+      callingMethods shouldBe Set("firstFunction", "secondFunction", "thirdFunction")
     }
   }
 }
