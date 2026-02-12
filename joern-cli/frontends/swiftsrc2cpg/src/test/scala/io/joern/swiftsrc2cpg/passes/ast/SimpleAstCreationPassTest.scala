@@ -373,8 +373,8 @@ class SimpleAstCreationPassTest extends SwiftSrc2CpgSuite {
           |    func foo() {
           |      let compare = { (s1: String, s2: String) -> Bool in
           |        let f: Int = 1
-          |        handleB(b)
-          |        handleF(f)
+          |        handleB(b) // accessing b from outer class Foo.Bar
+          |        handleF(f) // accessing f from outer function foo, not the member f of Foo
           |        return s1 > s2
           |	     }
           |    }
@@ -401,7 +401,8 @@ class SimpleAstCreationPassTest extends SwiftSrc2CpgSuite {
       val List(fooMethod)  = cpg.method.nameExact("foo").l
       val List(fooBlock)   = fooMethod.astChildren.isBlock.l
       val List(compareRef) = fooBlock.ast.isMethodRef.l
-      compareRef.captureOut shouldBe empty
+      // capturing self.b where self is of type Foo.Bar
+      compareRef.captureOut.refOut.isParameter.typeFullName.loneElement shouldBe "Test0.swift:<global>.Foo.Bar"
 
       val List(compareClosure)                              = cpg.method.nameExact("<lambda>0").l
       val List(compareClosureBlock)                         = compareClosure.astChildren.isBlock.l
