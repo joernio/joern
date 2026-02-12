@@ -114,7 +114,10 @@ class PostFrontendValidator(cpg: Cpg, throwOnError: Boolean) extends AbstractVal
       case astNode: nodes.AstNode =>
         astNode.astChildren
           .collectAll[nodes.CfgNode]
-          .filterNot(_.isInstanceOf[nodes.Declaration])
+          .filterNot {
+            case _: nodes.Declaration | _: nodes.Annotation | _: nodes.TypeRef => true
+            case _                                                             => false
+          }
           .groupBy(_.order)
           .foreach { case (order, nodes) =>
             if (nodes.size > 1) {
