@@ -680,7 +680,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     callableNameExpr: KtSimpleNameExpression,
     funcDesc: Option[FunctionDescriptor]
   ): AstCreator.ReceiverInfo = {
-    val (ctorParamAst, receiverName, hasReceiver, isStaticReference) = receiverExpr match {
+    val (ctorParamAst, receiverName, hasReceiver, isStaticReference, receiverTypeFullName) = receiverExpr match {
       case Some(r: KtNameReferenceExpression) if typeInfoProvider.isReferenceToClass(r) =>
         val receiverText = r.getText
         val companion    = s"$receiverText.companion"
@@ -720,23 +720,26 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
           ).map(Ast(_))
           val fieldAccessNode =
             operatorCallNode(expr, receiverText, Operators.fieldAccess, Option(companionTypeFullName))
-          (callAst(fieldAccessNode, argAsts), companion, true, true)
+          (callAst(fieldAccessNode, argAsts), companion, true, true, companionTypeFullName)
         } else {
           val identNode = identifierNode(expr, receiverText, receiverText, registerType(companionTypeFullName))
-          (astWithRefEdgeMaybe(receiverText, identNode), companion, true, true)
+          (astWithRefEdgeMaybe(receiverText, identNode), companion, true, true, companionTypeFullName)
         }
       case Some(r: KtThisExpression) =>
         val thisTypeFullName = exprTypeFullName(r).getOrElse(TypeConstants.Any)
         val thisNode         = identifierNode(expr, "this", "this", registerType(thisTypeFullName))
-        (Ast(thisNode), "this", true, false)
+        (Ast(thisNode), "this", true, false, thisTypeFullName)
       case Some(r: KtSuperExpression) =>
         val superTypeFullName = exprTypeFullName(r).getOrElse(TypeConstants.Any)
         val superNode         = identifierNode(expr, "super", "super", registerType(superTypeFullName))
-        (Ast(superNode), "super", true, false)
+        (Ast(superNode), "super", true, false, superTypeFullName)
       case Some(r) =>
         val receiverText = r.getText
         val paramAst     = astsForExpression(r, Some(1)).headOption.getOrElse(Ast())
-        (paramAst, receiverText, true, false)
+        val receiverTypeFullName = paramAst.root
+          .map(_.properties.get("TYPE_FULL_NAME").getOrElse(TypeConstants.JavaLangObject).toString)
+          .getOrElse(TypeConstants.JavaLangObject)
+        (paramAst, receiverText, true, false, receiverTypeFullName)
       case None =>
         val resolvedCall = bindingUtils.getResolvedCallDesc(callableNameExpr)
         resolvedCall match {
@@ -744,13 +747,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
             val thisTypeFullName =
               nameRenderer.typeFullName(call.getDispatchReceiver.getType).getOrElse(TypeConstants.Any)
             val thisNode = identifierNode(expr, "this", "this", registerType(thisTypeFullName))
-            (Ast(thisNode), "this", true, false)
+            (Ast(thisNode), "this", true, false, thisTypeFullName)
           case _ =>
-            (Ast(), "", false, true)
+            (Ast(), "", false, true, TypeConstants.JavaLangObject)
         }
     }
 
-    AstCreator.ReceiverInfo(ctorParamAst, receiverName, hasReceiver, isStaticReference)
+    AstCreator.ReceiverInfo(ctorParamAst, receiverName, hasReceiver, isStaticReference, receiverTypeFullName)
   }
 
   private case class SamMethodInfo(
@@ -874,9 +877,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
 
       Ast(methodRefNode)
     } else {
-      val receiverTypeFullName = receiverInfo.ctorParamAst.root
-        .map(_.properties.get("TYPE_FULL_NAME").getOrElse(TypeConstants.JavaLangObject).toString)
-        .getOrElse(TypeConstants.JavaLangObject)
+      val receiverTypeFullName = receiverInfo.receiverTypeFullName
 
       val samInfo = AstCreator.BoundSamInfo(
         samImplClass,

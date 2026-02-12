@@ -36,7 +36,13 @@ object AstCreator {
   case class BindingInfo(node: NewBinding, edgeMeta: Seq[(NewNode, NewNode, String)])
   case class ClosureBindingDef(node: NewClosureBinding, captureEdgeTo: NewMethodRef, refEdgeTo: NewNode)
 
-  case class ReceiverInfo(ctorParamAst: Ast, receiverName: String, hasReceiver: Boolean, isStaticReference: Boolean)
+  case class ReceiverInfo(
+    ctorParamAst: Ast,
+    receiverName: String,
+    hasReceiver: Boolean,
+    isStaticReference: Boolean,
+    receiverTypeFullName: String
+  )
 
   sealed trait SamImplInfo {
     def samImplClass: String
