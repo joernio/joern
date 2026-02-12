@@ -56,6 +56,14 @@ ThisBuild / libraryDependencies ++= Seq(
   // `Optional` means "not transitive", but still included in "stage/lib"
 )
 
+// CVE remediation - override vulnerable transitive dependencies (see https://github.com/joernio/joern/issues/5781)
+ThisBuild / dependencyOverrides ++= Seq(
+  "com.google.protobuf"  % "protobuf-java"  % Versions.protobuf,
+  "org.msgpack"          % "msgpack-core"   % Versions.msgpack,
+  "io.undertow"          % "undertow-core"  % Versions.undertow,
+  "com.squareup.okhttp3" % "okhttp"         % Versions.okhttp
+)
+
 ThisBuild / compile / javacOptions ++= Seq(
   "-g", // debug symbols
   "-Xlint",
