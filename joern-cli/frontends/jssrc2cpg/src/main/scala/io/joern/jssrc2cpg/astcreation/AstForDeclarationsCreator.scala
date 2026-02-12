@@ -71,8 +71,12 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  protected def astsForDecorators(elem: BabelNodeInfo): List[Ast] = {
-    decoratorElements(elem).map(d => astForDecorator(d))
+  protected def astsForDecorators(elem: BabelNodeInfo): Seq[Ast] = {
+    withIndex(decoratorElements(elem)) { case (ast, idx) =>
+      val decoratorAst = astForDecorator(ast)
+      setOrderExplicitly(decoratorAst, idx)
+      decoratorAst
+    }
   }
 
   protected def astForDecorator(decorator: BabelNodeInfo): Ast = {
