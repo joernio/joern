@@ -8,6 +8,7 @@ import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 
+import java.nio.file.Paths
 import scala.annotation.unused
 
 trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -206,16 +207,15 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     // TODO: handle attributes
     // TODO: handle modifiers
     // TODO: handle defaultValue
-    val label = code(node.firstName)
-    val name  = node.secondName.fold(label)(code)
-    val tpe   = fullnameProvider.typeFullname(node).getOrElse(AstCreatorHelper.cleanType(code(node.`type`)))
-    registerType(tpe)
-    val isVariadic = node.ellipsis.isDefined
 
-    val parameterName = node.firstName match {
-      case _: wildcard => name
-      case _           => label
+    val parameterName = node.secondName match {
+      case Some(name) => code(name)
+      case None       => code(node.firstName)
     }
+    val tpe = fullnameProvider.typeFullname(node).getOrElse(AstCreatorHelper.cleanType(code(node.`type`)))
+    registerType(tpe)
+
+    val isVariadic = node.ellipsis.isDefined
     val parameterNode =
       parameterInNode(
         node,
@@ -227,7 +227,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
         Option(tpe)
       )
 
-    scope.addVariable(name, parameterNode, tpe, VariableScopeManager.ScopeType.MethodScope)
+    scope.addVariable(parameterName, parameterNode, tpe, VariableScopeManager.ScopeType.MethodScope)
     Ast(parameterNode)
   }
 
@@ -260,9 +260,9 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForLabeledExprSyntax(node: LabeledExprSyntax): Ast = {
     node.label match {
       case Some(label) =>
-        val name = code(label)
-        val ast  = astForNode(node.expression)
-        ast.root.collect { case i: ExpressionNew => i.argumentName(name) }
+        val labelName = code(label)
+        val ast       = astForNode(node.expression)
+        ast.root.collect { case i: ExpressionNew => i.argumentLabel(labelName) }
         ast
       case None => astForNode(node.expression)
     }

@@ -1,9 +1,9 @@
 package io.joern.jssrc2cpg.preprocessing
 
-import io.joern.jssrc2cpg.testfixtures.AstJsSrc2CpgSuite
+import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgSuite
 import io.shiftleft.semanticcpg.language.*
 
-class EjsPassTests extends AstJsSrc2CpgSuite {
+class EjsPassTests extends JsSrc2CpgSuite {
 
   "ejs files" should {
 

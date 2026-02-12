@@ -19,18 +19,17 @@ class Php2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndAft
 
   private var port: Int = -1
 
-  private def newProjectUnderTest(index: Option[Int] = None): Path = {
-    val dir  = Files.createTempDirectory("php2cpgTestsHttpTest")
-    val file = dir / "main.php"
-    file.createWithParentsIfNotExists(createParents = true)
-    val indexStr = index.map(_.toString).getOrElse(""""Hello, World!"""")
-    val content = s"""<?php
-                     |print($indexStr);
-                     |""".stripMargin
-    Files.writeString(file, content)
-    FileUtil.deleteOnExit(file)
-    FileUtil.deleteOnExit(dir)
-    dir
+  private def newProjectUnderTest[T](index: Option[Int] = None)(f: Path => T): T = {
+    FileUtil.usingTemporaryDirectory("php2cpgTestsHttpTest") { dir =>
+      val file = dir / "main.php"
+      file.createWithParentsIfNotExists(createParents = true)
+      val indexStr = index.map(_.toString).getOrElse(""""Hello, World!"""")
+      val content = s"""<?php
+                       |print($indexStr);
+                       |""".stripMargin
+      Files.writeString(file, content)
+      f(dir)
+    }
   }
 
   override def beforeAll(): Unit = {
@@ -45,37 +44,39 @@ class Php2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndAft
 
   "Using php2cpg in server mode" should {
     "build CPGs correctly (single test)" in {
-      val cpgOutFile = FileUtil.newTemporaryFile("php2cpg.bin")
-      FileUtil.deleteOnExit(cpgOutFile)
-      val projectUnderTest = newProjectUnderTest()
-      val input            = projectUnderTest.toAbsolutePath.toString
-      val output           = cpgOutFile.toString
-      val client           = FrontendHTTPClient(port)
-      val req              = client.buildRequest(Array(s"input=$input", s"output=$output"))
-      client.sendRequest(req) match {
-        case Failure(exception) => fail(exception.getMessage)
-        case Success(out) =>
-          out shouldBe output
-          val cpg = CpgLoader.load(output)
-          cpg.call.code.l shouldBe List("""print("Hello, World!")""")
+      FileUtil.usingTemporaryFile("php2cpg", ".bin") { cpgOutFile =>
+        newProjectUnderTest() { projectUnderTest =>
+          val input  = projectUnderTest.toAbsolutePath.toString
+          val output = cpgOutFile.toString
+          val client = FrontendHTTPClient(port)
+          val req    = client.buildRequest(Array(s"input=$input", s"output=$output"))
+          client.sendRequest(req) match {
+            case Failure(exception) => fail(exception.getMessage)
+            case Success(out) =>
+              out shouldBe output
+              val cpg = CpgLoader.load(output)
+              cpg.call.code.l shouldBe List("""print("Hello, World!")""")
+          }
+        }
       }
     }
 
     "build CPGs correctly (multi-threaded test)" in {
       (0 until 10).par.foreach { index =>
-        val cpgOutFile = FileUtil.newTemporaryFile("php2cpg.bin")
-        FileUtil.deleteOnExit(cpgOutFile)
-        val projectUnderTest = newProjectUnderTest(Some(index))
-        val input            = projectUnderTest.toAbsolutePath.toString
-        val output           = cpgOutFile.toString
-        val client           = FrontendHTTPClient(port)
-        val req              = client.buildRequest(Array(s"input=$input", s"output=$output"))
-        client.sendRequest(req) match {
-          case Failure(exception) => fail(exception.getMessage)
-          case Success(out) =>
-            out shouldBe output
-            val cpg = CpgLoader.load(output)
-            cpg.call.code.l shouldBe List(s"print($index)")
+        FileUtil.usingTemporaryFile("php2cpg", ".bin") { cpgOutFile =>
+          newProjectUnderTest(Some(index)) { projectUnderTest =>
+            val input  = projectUnderTest.toAbsolutePath.toString
+            val output = cpgOutFile.toString
+            val client = FrontendHTTPClient(port)
+            val req    = client.buildRequest(Array(s"input=$input", s"output=$output"))
+            client.sendRequest(req) match {
+              case Failure(exception) => fail(exception.getMessage)
+              case Success(out) =>
+                out shouldBe output
+                val cpg = CpgLoader.load(output)
+                cpg.call.code.l shouldBe List(s"print($index)")
+            }
+          }
         }
       }
     }

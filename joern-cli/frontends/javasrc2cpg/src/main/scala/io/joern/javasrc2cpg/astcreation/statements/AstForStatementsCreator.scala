@@ -51,7 +51,6 @@ trait AstForStatementsCreator extends AstForSimpleStatementsCreator with AstForF
     // TODO: Implement missing handlers
     // case _: LocalClassDeclarationStmt  => Seq()
     // case _: LocalRecordDeclarationStmt => Seq()
-    // case _: YieldStmt                  => Seq()
     val statementAsts = statement match {
       case x: ExplicitConstructorInvocationStmt =>
         Seq(astForExplicitConstructorInvocation(x))

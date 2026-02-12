@@ -30,15 +30,24 @@ class SwiftSrc2Cpg extends X2CpgFrontend {
         val astCreationPass = new AstCreationPass(cpg, astGenResult, config, report)(config.schemaValidation)
         astCreationPass.createAndApply()
 
-        new BuiltinTypesPass(cpg).createAndApply()
-        new ExtensionMemberPass(cpg, astCreationPass.extensionMembers()).createAndApply()
-        new ExtensionCallPass(cpg, astCreationPass.extensionMethodFullNameMapping()).createAndApply()
-        new ExtensionInheritancePass(cpg, astCreationPass.extensionInherits()).createAndApply()
-
-        SwiftTypeNodePass.withRegisteredTypes(astCreationPass.typesSeen(), cpg).createAndApply()
         new MetaDataPass(cpg, hash, config.inputPath).createAndApply()
+        new BuiltinTypesPass(cpg).createAndApply()
+        SwiftTypeNodePass.withRegisteredTypes(astCreationPass.typesSeen(), cpg).createAndApply()
+
         new ConfigFileCreationPass(cpg, config).createAndApply()
         new DependenciesPass(cpg).createAndApply()
+
+        val extensionsPass = new ExtensionsPass(
+          cpg,
+          astCreationPass.extensionMembers(),
+          astCreationPass.extensionMethodFullNameMapping(),
+          astCreationPass.memberPropertyMapping(),
+          astCreationPass.extensionInherits()
+        )
+        extensionsPass.createAndApply()
+        extensionsPass.setters.createAndApply()
+
+        new ObjcCallFullNamePass(cpg).createAndApply()
         new FullNameUniquenessPass(cpg).createAndApply()
 
         report.print()

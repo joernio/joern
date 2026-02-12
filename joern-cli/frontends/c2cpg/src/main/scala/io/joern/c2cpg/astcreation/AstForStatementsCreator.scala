@@ -4,7 +4,14 @@ import io.joern.c2cpg.parser.CdtParser
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.shiftleft.codepropertygraph.generated.*
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, NewBlock, NewCall, NewLocal}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  AstNodeNew,
+  NewBlock,
+  NewCall,
+  NewIdentifier,
+  NewLiteral,
+  NewLocal
+}
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.core.dom.ast.gnu.IGNUASTGotoStatement
@@ -234,7 +241,7 @@ trait AstForStatementsCreator { this: AstCreator =>
   private def astForDoStatement(doStmt: IASTDoStatement): Ast = {
     val codeString   = code(doStmt)
     val doNode       = controlStructureNode(doStmt, ControlStructureTypes.DO, codeString)
-    val conditionAst = astForConditionExpression(doStmt.getCondition)
+    val conditionAst = wrapInNullComparison(doStmt.getCondition, astForConditionExpression(doStmt.getCondition))
     val bodyAst      = nullSafeAst(doStmt.getBody)
     controlStructureAst(doNode, Option(conditionAst), bodyAst, placeConditionLast = true)
   }
@@ -327,9 +334,10 @@ trait AstForStatementsCreator { this: AstCreator =>
     val (localAsts, initAsts) =
       nullSafeAst(forStmt.getInitializerStatement).partition(_.root.exists(_.isInstanceOf[NewLocal]))
     setArgumentIndices(initAsts)
-    val compareAst = astForConditionExpression(forStmt.getConditionExpression)
-    val updateAst  = nullSafeAst(forStmt.getIterationExpression)
-    val bodyAsts   = nullSafeAst(forStmt.getBody)
+    val compareAst =
+      wrapInNullComparison(forStmt.getConditionExpression, astForConditionExpression(forStmt.getConditionExpression))
+    val updateAst = nullSafeAst(forStmt.getIterationExpression)
+    val bodyAsts  = nullSafeAst(forStmt.getBody)
     forAst(forNode, localAsts, initAsts, Seq(compareAst), Seq(updateAst), bodyAsts)
   }
 
@@ -499,7 +507,7 @@ trait AstForStatementsCreator { this: AstCreator =>
 
   private def astForWhile(whileStmt: IASTWhileStatement): Ast = {
     val code       = s"while (${nullSafeCode(whileStmt.getCondition)})"
-    val compareAst = astForConditionExpression(whileStmt.getCondition)
+    val compareAst = wrapInNullComparison(whileStmt.getCondition, astForConditionExpression(whileStmt.getCondition))
     val bodyAst    = nullSafeAst(whileStmt.getBody)
     whileAst(
       Option(compareAst),
@@ -510,21 +518,56 @@ trait AstForStatementsCreator { this: AstCreator =>
     )
   }
 
+  private def wrapInNullComparison(node: IASTNode, conditionAst: Ast): Ast = {
+    def isWrapCandidate(ast: Ast): Boolean = {
+      ast.root match {
+        case Some(r: NewCall)    => false
+        case Some(r: NewBlock)   => false
+        case Some(r: NewLiteral) => false
+        case _                   => true
+      }
+    }
+
+    if (node == null || conditionAst.root.isEmpty) {
+      return conditionAst
+    }
+    conditionAst match {
+      case ast if !isWrapCandidate(ast) => ast
+      case ast =>
+        val nullNode = conditionAst.root match {
+          case Some(id: NewIdentifier) if id.typeFullName.endsWith("*") => literalNode(node, "NULL", Defines.Any)
+          case _                                                        => literalNode(node, "0", "int")
+        }
+        val notEqualsCallNode = callNode(
+          node,
+          s"${code(node)} != ${nullNode.code}",
+          Operators.notEquals,
+          Operators.notEquals,
+          DispatchTypes.STATIC_DISPATCH,
+          None,
+          Some(registerType("int"))
+        )
+        createCallAst(notEqualsCallNode, Seq(ast, Ast(nullNode)))
+    }
+  }
+
   private def astForIf(ifStmt: IASTIfStatement): Seq[Ast] = {
     val initAsts = ifStmt match {
       case s: ICPPASTIfStatement => nullSafeAst(s.getInitializerStatement)
       case _                     => Seq.empty
     }
-    val conditionAst = ifStmt match {
+    val (conditionAstRaw, node) = ifStmt match {
       case s @ (_: CASTIfStatement | _: CPPASTIfStatement) if s.getConditionExpression != null =>
-        astForConditionExpression(s.getConditionExpression)
+        (astForConditionExpression(s.getConditionExpression), s.getConditionExpression)
       case s: CPPASTIfStatement if s.getConditionExpression == null =>
         val exprBlock = blockNode(s.getConditionDeclaration)
         scope.pushNewBlockScope(exprBlock)
         val declAsts = astsForDeclaration(s.getConditionDeclaration)
         scope.popScope()
-        blockAst(exprBlock, declAsts.toList)
+        (blockAst(exprBlock, declAsts.toList), s.getConditionDeclaration)
     }
+
+    val conditionAst = wrapInNullComparison(node, conditionAstRaw)
 
     val ifNode = controlStructureNode(ifStmt, ControlStructureTypes.IF, code(ifStmt))
 

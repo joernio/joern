@@ -8,10 +8,16 @@ import java.nio.file.{FileVisitOption, FileVisitResult, FileVisitor, Files, Path
 import java.nio.file.attribute.BasicFileAttributes
 import scala.jdk.CollectionConverters.SetHasAsJava
 import scala.util.matching.Regex
+import scala.util.Try
 
 object SourceFiles {
 
   private val logger = LoggerFactory.getLogger(getClass)
+
+  // Max. size for Array[Byte] in JVM is Integer.MAX_VALUE, but String can hold at most Integer.MAX_VALUE - 2 bytes
+  private[x2cpg] val DefaultMaxFileSizeBytes: Long = Integer.MAX_VALUE - 2L
+
+  private def DefaultMaxFileSizeString: String = s"${DefaultMaxFileSizeBytes}B"
 
   /** A failsafe implementation of a [[FileVisitor]] that continues iterating through files even if an [[IOException]]
     * occurs during traversal.
@@ -113,6 +119,27 @@ object SourceFiles {
     }
   }
 
+  /** Returns true if `file` is a regular file whose size exceeds `DefaultMaxFileSizeBytes`.
+    *
+    * Directories and non-regular files (e.g., devices, sockets) are treated as not too large. If the size cannot be
+    * determined (e.g., due to an `IOException`), this function returns `false`.
+    *
+    * @param file
+    *   Path to the file to check.
+    */
+  private def isTooLarge(file: String): Boolean = {
+    val path = Paths.get(file)
+    if (Files.isDirectory(path) || !Files.isRegularFile(path)) return false
+    Try {
+      val size     = Files.size(path)
+      val tooLarge = size > DefaultMaxFileSizeBytes
+      if (tooLarge) {
+        logger.warn(s"'$file' ignored (too large: ${size}B > $DefaultMaxFileSizeString)")
+      }
+      tooLarge
+    }.getOrElse(false)
+  }
+
   /** Filters a file based on the provided ignore rules.
     *
     * This method determines whether a given file should be excluded from processing based on several criteria, such as
@@ -137,9 +164,11 @@ object SourceFiles {
     ignoredDefaultRegex: Option[Seq[Regex]] = None,
     ignoredFilesRegex: Option[Regex] = None,
     ignoredFilesPath: Option[Seq[String]] = None
-  ): Boolean = !ignoredDefaultRegex.exists(isIgnoredByDefaultRegex(file, inputPath, _))
-    && !ignoredFilesRegex.exists(isIgnoredByRegex(file, inputPath, _))
-    && !ignoredFilesPath.exists(isIgnoredByFileList(file, _))
+  ): Boolean =
+    !isTooLarge(file)
+      && !ignoredDefaultRegex.exists(isIgnoredByDefaultRegex(file, inputPath, _))
+      && !ignoredFilesRegex.exists(isIgnoredByRegex(file, inputPath, _))
+      && !ignoredFilesPath.exists(isIgnoredByFileList(file, _))
 
   /** Filters a list of files based on the provided ignore rules.
     *

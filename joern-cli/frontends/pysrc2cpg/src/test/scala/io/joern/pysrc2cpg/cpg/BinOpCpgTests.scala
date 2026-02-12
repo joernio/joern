@@ -14,7 +14,21 @@ class BinOpCpgTests extends AnyFreeSpec with Matchers {
     additionCall.code shouldBe "1 + 2"
     additionCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     additionCall.lineNumber shouldBe Some(1)
-    // TODO additionCall.columnNumber shouldBe Some(1)
+    additionCall.columnNumber shouldBe Some(1)
+  }
+
+  "test 1 literal node properties" in {
+    val literal = cpg.literal("1").head
+    literal.code shouldBe "1"
+    literal.lineNumber shouldBe Some(1)
+    literal.columnNumber shouldBe Some(1)
+  }
+
+  "test 2 literal node properties" in {
+    val literal = cpg.literal("2").head
+    literal.code shouldBe "2"
+    literal.lineNumber shouldBe Some(1)
+    literal.columnNumber shouldBe Some(5)
   }
 
   "test binOp 'add' ast children" in {

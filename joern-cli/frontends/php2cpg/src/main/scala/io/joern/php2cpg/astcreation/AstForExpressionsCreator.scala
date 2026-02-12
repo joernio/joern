@@ -61,7 +61,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val name      = getCallName(call, nameAst)
     val arguments = call.args.map(astForCallArg)
 
-    val inStaticScope = scope.getEnclosingTypeDeclTypeFullName.exists(_.endsWith(Domain.MetaTypeDeclExtension))
     /*
      * A receiver only makes sense if one can track the receiver back to some sort of runtime type information. In the
      * case of a normal top-level call like foo() that is not possible. There is no corresponding foo identifier which
@@ -143,9 +142,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val staticReceiver = call.target.collect {
       case nameExpr: PhpNameExpr if nameExpr.name == NameConstants.Self =>
-        getTypeDeclPrefix.map(name => s"$name$MetaTypeDeclExtension")
+        getTypeDeclPrefix
       case nameExpr: PhpNameExpr =>
-        Option(s"${nameExpr.name}$MetaTypeDeclExtension")
+        Option(s"${nameExpr.name}")
     }.flatten
 
     val callRoot = callNode(call, code, name, fullName, dispatchType, None, Some(Defines.Any), staticReceiver)
@@ -872,7 +871,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val initArgs      = expr.args.map(astForCallArg)
     val initFullName  = s"$className$MethodDelimiter$ConstructorMethodName"
     val initCode      = s"new $className(${initArgs.map(_.rootCodeOrEmpty).mkString(",")})"
-    val maybeTypeHint = scope.resolveIdentifier(className).map(_.name) // consider imported or defined types
+    val maybeTypeHint = scope.resolveClassIdentifier(className).map(_.name) // consider imported or defined types
     val initCallNode = callNode(
       expr,
       initCode,

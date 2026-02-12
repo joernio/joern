@@ -21,16 +21,15 @@ class MemberTests extends PhpCode2CpgFixture {
     val cpg = code(source, "foo.php").withConfig(Config().withDisableFileContent(false))
 
     "have member nodes representing them" in {
-      inside(cpg.typeDecl.name(s"Foo${Domain.MetaTypeDeclExtension}").member.sortBy(_.name).toList) {
-        case List(aMember, bMember, cMember) =>
-          aMember.name shouldBe "A"
-          aMember.code shouldBe "const A"
+      inside(cpg.typeDecl.name(s"Foo").member.sortBy(_.name).toList) { case List(aMember, bMember, cMember) =>
+        aMember.name shouldBe "A"
+        aMember.code shouldBe "const A"
 
-          bMember.name shouldBe "B"
-          bMember.code shouldBe "const B"
+        bMember.name shouldBe "B"
+        bMember.code shouldBe "const B"
 
-          cMember.name shouldBe "C"
-          cMember.code shouldBe "const C"
+        cMember.name shouldBe "C"
+        cMember.code shouldBe "const C"
       }
     }
 

@@ -105,7 +105,7 @@ class AstCreator(
     for {
       startOffset <- node.startOffset
       endOffset   <- node.endOffset
-    } yield (math.max(startOffset, 0), math.min(endOffset, parserResult.fileContent.length))
+    } yield (math.max(startOffset, 0), math.min(endOffset, parserResult.contentBytes.length))
   }
 
   override protected def offset(node: SwiftNode): Option[(Int, Int)] = {
@@ -113,15 +113,15 @@ class AstCreator(
   }
 
   override protected def code(node: SwiftNode): String = {
-    (nodeOffsets(node), node) match {
-      case (Some((startOffset, endOffset)), _: TypeSyntax) =>
-        parserResult.fileContent.substring(startOffset, endOffset).trim.stripSuffix("?").stripSuffix("!")
-      case (Some((startOffset, endOffset)), _: identifier) =>
-        parserResult.fileContent.substring(startOffset, endOffset).trim.stripSuffix("()")
-      case (Some((startOffset, endOffset)), _) =>
-        shortenCode(parserResult.fileContent.substring(startOffset, endOffset).trim)
-      case _ =>
-        PropertyDefaults.Code
+    val (start, end) = nodeOffsets(node) match {
+      case Some(startOffset, endOffset) => (startOffset, endOffset)
+      case _                            => return PropertyDefaults.Code
+    }
+    val code = parserResult.contentBytes.slice(start, end)
+    node match {
+      case _: TypeSyntax => new String(code).trim.stripSuffix("?").stripSuffix("!")
+      case _: identifier => new String(code).trim.stripSuffix("()")
+      case _             => shortenCode(new String(code)).stripLineEnd
     }
   }
 }
