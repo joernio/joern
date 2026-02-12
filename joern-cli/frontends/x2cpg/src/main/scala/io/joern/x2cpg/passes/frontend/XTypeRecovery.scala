@@ -417,8 +417,6 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           .nameExact(memberName)
           .getKnownTypes
         symbolTable.append(LocalVar(alias), memberTypes)
-        // Allow direct calls of imported members to resolve to base module path.
-        symbolTable.append(CallAlias(alias), basePath)
       case UnknownMethod(fullName, alias, receiver, _) =>
         symbolTable.append(CallAlias(alias, receiver), fullName)
       case UnknownTypeDecl(fullName, _) =>
