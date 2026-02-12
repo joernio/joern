@@ -393,6 +393,35 @@ class TsClassesAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
       cpg.call.assignment.astParent.isTypeDecl shouldBe empty
     }
 
+    "have stable order for globally defined JS/TS types" in {
+      val cpg = code("""
+          |class FirstClass {}
+          |
+          |declare class DeclaredClass { constructor(); }
+          |
+          |interface FirstInterface {}
+          |
+          |enum FirstEnum { A }
+          |
+          |type FirstAlias = {}
+          |
+          |namespace N {
+          |  class NsClass {}
+          |  interface NsInterface {}
+          |  enum NsEnum { B }
+          |  type NsAlias = {}
+          |}
+          |""".stripMargin)
+      cpg.method.nameExact(":program").block.astChildren.labelNot("LOCAL").order.l shouldBe (1 to 6).toList
+      cpg.namespaceBlock
+        .nameExact("N")
+        .astChildren
+        .isBlock
+        .astChildren
+        .labelNot("LOCAL")
+        .order
+        .l shouldBe (1 to 4).toList
+    }
   }
 
 }

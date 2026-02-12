@@ -15,7 +15,6 @@ trait AstForTemplateDomCreator(implicit withSchemaValidation: ValidationMode) { 
       .map(e => astForNodeWithFunctionReference(Obj(e)))
       .getOrElse(Ast())
     val allChildrenAsts = openingAst +: childrenAsts :+ closingAst
-    setArgumentIndices(allChildrenAsts)
     Ast(domNode).withChildren(allChildrenAsts)
   }
 
@@ -23,7 +22,6 @@ trait AstForTemplateDomCreator(implicit withSchemaValidation: ValidationMode) { 
     val name         = jsxFragment.node.toString
     val domNode      = templateDomNode(name, jsxFragment.code, jsxFragment.lineNumber, jsxFragment.columnNumber)
     val childrenAsts = astForNodes(jsxFragment.json("children").arr.toList)
-    setArgumentIndices(childrenAsts)
     Ast(domNode).withChildren(childrenAsts)
   }
 
@@ -47,7 +45,6 @@ trait AstForTemplateDomCreator(implicit withSchemaValidation: ValidationMode) { 
     val valueAst = safeObj(jsxAttr.json, "value")
       .map(e => astForNodeWithFunctionReference(Obj(e)))
       .getOrElse(Ast())
-    setArgumentIndices(List(valueAst))
     Ast(domNode).withChild(valueAst)
   }
 
@@ -59,7 +56,6 @@ trait AstForTemplateDomCreator(implicit withSchemaValidation: ValidationMode) { 
       jsxOpeningElem.columnNumber
     )
     val childrenAsts = astForNodes(jsxOpeningElem.json("attributes").arr.toList)
-    setArgumentIndices(childrenAsts)
     Ast(domNode).withChildren(childrenAsts)
   }
 
@@ -88,7 +84,6 @@ trait AstForTemplateDomCreator(implicit withSchemaValidation: ValidationMode) { 
       case JSXEmptyExpression => Ast()
       case _                  => astForNodeWithFunctionReference(nodeInfo.json)
     }
-    setArgumentIndices(List(exprAst))
     Ast(domNode).withChild(exprAst)
   }
 
@@ -100,7 +95,6 @@ trait AstForTemplateDomCreator(implicit withSchemaValidation: ValidationMode) { 
       jsxSpreadAttr.columnNumber
     )
     val argAst = astForNodeWithFunctionReference(jsxSpreadAttr.json("argument"))
-    setArgumentIndices(List(argAst))
     Ast(domNode).withChild(argAst)
   }
 
