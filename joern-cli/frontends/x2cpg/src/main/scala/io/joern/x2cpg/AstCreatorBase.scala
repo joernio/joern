@@ -315,6 +315,17 @@ abstract class AstCreatorBase[Node, NodeProcessor](filename: String)(implicit wi
       .withReceiverEdges(callNode, receiverRoot)
   }
 
+  def staticCallAst(callNode: NewCall, arguments: Seq[Ast] = List(), startArgumentIndex: Option[Int] = None): Ast = {
+    if (startArgumentIndex.nonEmpty)
+      setArgumentIndices(arguments, startArgumentIndex.get)
+    else
+      setArgumentIndices(arguments)
+
+    Ast(callNode)
+      .withChildren(arguments)
+      .withArgEdges(callNode, arguments.flatMap(_.root))
+  }
+
   def setArgumentIndices(arguments: Seq[Ast], start: Int = 1): Unit = {
     arguments.zipWithIndex.foreach { case (ast, i) =>
       ast.root match {

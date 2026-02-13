@@ -101,7 +101,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         inside(fooMethod.parameter.l) { case List(thisParam, xParam) =>
           thisParam.name shouldBe "this"
           thisParam.code shouldBe "this"
-          thisParam.dynamicTypeHintFullName should contain("Foo")
+          thisParam.dynamicTypeHintFullName shouldBe empty
           thisParam.typeFullName shouldBe "Foo"
           thisParam.index shouldBe 0
 
@@ -610,7 +610,11 @@ class TypeDeclTests extends PhpCode2CpgFixture {
     "contain static methods" in {
       inside(cpg.typeDecl.name(s"Foo").method.name("bar").l) {
         case barMethod :: Nil =>
-          barMethod.modifier.modifierType.sorted.l shouldBe List(ModifierTypes.PUBLIC, ModifierTypes.STATIC)
+          barMethod.modifier.modifierType.sorted.l shouldBe List(
+            ModifierTypes.PUBLIC,
+            ModifierTypes.STATIC,
+            ModifierTypes.VIRTUAL
+          )
         case xs => fail(s"Expected one method, got ${xs.code.mkString("[", ",", "]")}")
       }
     }

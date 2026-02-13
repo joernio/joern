@@ -85,8 +85,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     call.target match {
       case None if isCallOnVariable(call) => astForDynamicCall(call, name, arguments, None)
       case None                           => astForStaticCall(call, name, arguments)
-      case _ if call.isStatic             => astForStaticCall(call, name, arguments)
-      case maybeTarget                    => astForDynamicCall(call, name, arguments, maybeTarget)
+      case maybeTarget @ Some(expr: PhpNameExpr) if call.isStatic && expr.name == NameConstants.Static =>
+        // Late static binding calls (static::foo()) are dynamic calls resolved at runtime.
+        astForDynamicCall(call, name, arguments, maybeTarget, isLateStaticBindingCall = true)
+      case _ if call.isStatic => astForStaticCall(call, name, arguments)
+      case maybeTarget        => astForDynamicCall(call, name, arguments, maybeTarget)
     }
   }
 
@@ -94,12 +97,22 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     call: PhpCallExpr,
     name: String,
     arguments: Seq[Ast],
-    maybeTarget: Option[PhpExpr]
+    maybeTarget: Option[PhpExpr],
+    isLateStaticBindingCall: Boolean = false
   ): Ast = {
-    val argsCode   = getArgsCode(call, arguments)
-    val targetAst  = maybeTarget.map(astForExpr)
-    val codePrefix = targetAst.map(codeForMethodCall(call, _, name)).getOrElse(name)
-    val code       = s"$codePrefix($argsCode)"
+    val argsCode = getArgsCode(call, arguments)
+    val targetAst = if (isLateStaticBindingCall) {
+      maybeTarget.flatMap(astForClassScopeResolutionTarget)
+    } else {
+      maybeTarget.map(astForExpr)
+    }
+
+    val codePrefix = if (isLateStaticBindingCall && targetAst.isDefined) {
+      s"${NameConstants.Static}::$name"
+    } else {
+      targetAst.map(codeForMethodCall(call, _, name)).getOrElse(name)
+    }
+    val code = s"$codePrefix($argsCode)"
 
     val dispatchType = DispatchTypes.DYNAMIC_DISPATCH
 
@@ -127,6 +140,19 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   }
 
+  private def astForClassScopeResolutionTarget(expr: PhpExpr): Option[Ast] = {
+    expr match {
+      case t: PhpNameExpr =>
+        scope.surroundingMethodReceiver.map { recv =>
+          val target = t.copy(name = recv)
+          astForNameExpr(target, code = Some(recv))
+        }
+      case t =>
+        logger.warn(s"Expected a PhpNameExpr target but got $t.")
+        None
+    }
+  }
+
   private def astForStaticCall(call: PhpCallExpr, name: String, arguments: Seq[Ast]): Ast = {
     val argsCode   = getArgsCode(call, arguments)
     val codePrefix = codeForStaticMethodCall(call, name)
@@ -140,7 +166,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case _                                             => getMfn(call, name)
     }
 
+    val targetArgument = call.target.collect {
+      case nameExpr: PhpNameExpr if Set(NameConstants.Parent, NameConstants.Self).contains(nameExpr.name) =>
+        astForClassScopeResolutionTarget(nameExpr)
+      case nameExpr: PhpNameExpr =>
+        val typ = typeRefNode(nameExpr, getSimpleName(nameExpr.name), nameExpr.name)
+        Some(Ast(typ))
+    }.flatten
+
     val staticReceiver = call.target.collect {
+      case nameExpr: PhpNameExpr if nameExpr.name == NameConstants.Parent =>
+        getInheritedTypeFullName
       case nameExpr: PhpNameExpr if nameExpr.name == NameConstants.Self =>
         getTypeDeclPrefix
       case nameExpr: PhpNameExpr =>
@@ -149,7 +185,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val callRoot = callNode(call, code, name, fullName, dispatchType, None, Some(Defines.Any), staticReceiver)
 
-    callAst(callRoot, arguments)
+    val allArgs            = List(targetArgument, arguments).flatten
+    val startArgumentIndex = Option.when(targetArgument.isDefined)(0)
+    staticCallAst(callRoot, allArgs, startArgumentIndex = startArgumentIndex)
   }
 
   protected def simpleAssignAst(origin: PhpNode, target: Ast, source: Ast): Ast = {
@@ -476,8 +514,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     valueAst
   }
 
-  private def astForNameExpr(expr: PhpNameExpr): Ast = {
-    val identifier = identifierNode(expr, expr.name, expr.name, Defines.Any)
+  private def astForNameExpr(expr: PhpNameExpr, code: Option[String] = None): Ast = {
+    val identifier = identifierNode(expr, expr.name, code.getOrElse(expr.name), Defines.Any)
 
     val declaringNode = handleVariableOccurrence(expr, identifier.name)
 
