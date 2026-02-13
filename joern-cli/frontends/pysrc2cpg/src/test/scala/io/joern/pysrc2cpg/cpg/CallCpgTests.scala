@@ -7,7 +7,6 @@ import io.shiftleft.semanticcpg.language.*
 import java.io.File
 
 class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
-
   "call on identifier" should {
     lazy val cpg = code("""func(a, b)""".stripMargin, "test.py")
 
@@ -170,6 +169,48 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       namedArg.code shouldBe "c"
       namedArg.argumentIndex shouldBe -1
       namedArg.argumentName shouldBe Some("namedPar")
+    }
+  }
+
+  "call on member chain" should {
+    lazy val cpg = code("""x.y.func(a, b)""".stripMargin, "test.py")
+
+    "test call node properties" in {
+      val callNode = cpg.call.codeExact("x.y.func(a, b)").head
+      callNode.name shouldBe "func"
+      callNode.signature shouldBe ""
+      callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      callNode.lineNumber shouldBe Some(1)
+    }
+
+    "test call receiver" in {
+      val callNode     = cpg.call.codeExact("x.y.func(a, b)").head
+      val callReceiver = callNode.receiver.head
+      callReceiver.code shouldBe "x.y.func"
+
+      callNode.astChildren.order(0).head shouldBe callReceiver
+      callNode.start.argument.b should not contain callReceiver
+    }
+
+    "test call instance param" in {
+      val callNode    = cpg.call.codeExact("x.y.func(a, b)").head
+      val instanceArg = callNode.argument(0)
+      instanceArg.code shouldBe "x.y"
+
+      callNode.astChildren.order(1).head shouldBe instanceArg
+    }
+
+    "test call arguments" in {
+      val callNode = cpg.call.codeExact("x.y.func(a, b)").head
+      val arg1     = callNode.argument(1)
+      arg1.code shouldBe "a"
+
+      callNode.astChildren.order(2).head shouldBe arg1
+
+      val arg2 = callNode.argument(2)
+      arg2.code shouldBe "b"
+
+      callNode.astChildren.order(3).head shouldBe arg2
     }
   }
 
