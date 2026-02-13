@@ -2030,7 +2030,7 @@ class PythonAstVisitor(
         val unrollOperand = convert(starred.value)
         createStarredUnpackOperatorCall(unrollOperand, lineAndColOf(starred))
       case Store =>
-        unhandled(starred)
+        convert(starred.value)
       case Del =>
         // This case is not possible since star operator is not allowed in delete statement.
         unhandled(starred)
