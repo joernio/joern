@@ -299,6 +299,96 @@ class SimpleAstCreationPassTest extends SwiftSrc2CpgSuite {
       bAccess3.arguments(1).isIdentifier.typeFullName.loneElement shouldBe "Test0.swift:<global>.FooBar"
     }
 
+    "have correct structure for implicit Self access in static context with nested class (1)" in {
+      val cpg = code("""
+          |class Foo {
+          |  static let msg2 = "world"
+          |  static func foo() {
+          |    class Bar {
+          |      let msg1 = "hello"
+          |      func bar() {
+          |        print(msg1)
+          |        print(Foo.msg2)
+          |      }
+          |    }
+          |    let numbers = [1]
+          |    numbers.forEach { num in
+          |      print(msg2)
+          |      print(Self.msg2)
+          |    }
+          |  }
+          |}
+          |""".stripMargin)
+      val barInit = cpg.typeDecl.nameExact("Bar").method.isConstructor.loneElement
+      val fooStaticInit =
+        cpg.typeDecl
+          .nameExact("Foo")
+          .method
+          .nameExact(io.joern.x2cpg.Defines.StaticInitMethodName)
+          .isConstructor
+          .loneElement
+      val barMethod = cpg.typeDecl.nameExact("Bar").method.nameExact("bar").loneElement
+      val fooMethod = cpg.typeDecl.nameExact("Foo").method.nameExact("foo").loneElement
+
+      val msg1Access1 = barInit.ast.isCall.codeExact("self.msg1").loneElement
+      msg1Access1.name shouldBe Operators.fieldAccess
+      msg1Access1.arguments(1).isIdentifier.code.loneElement shouldBe "self"
+      msg1Access1.arguments(1).isIdentifier.typeFullName.loneElement shouldBe "Test0.swift:<global>.Foo.foo.Bar"
+      val msg1Access2 = barMethod.ast.isCall.codeExact("self.msg1").loneElement
+      msg1Access2.name shouldBe Operators.fieldAccess
+      msg1Access2.arguments(1).isIdentifier.code.loneElement shouldBe "self"
+      msg1Access2.arguments(1).isIdentifier.typeFullName.loneElement shouldBe "Test0.swift:<global>.Foo.foo.Bar"
+
+      val msg2Access1 = fooStaticInit.ast.isCall.codeExact("Self.msg2").loneElement
+      msg2Access1.name shouldBe Operators.fieldAccess
+      msg2Access1.arguments(1).isTypeRef.code.loneElement shouldBe "Self"
+      msg2Access1.arguments(1).isTypeRef.typeFullName.loneElement shouldBe "Test0.swift:<global>.Foo"
+      val List(msg2Access2, msg2Access3) = fooMethod.ast.isCall.codeExact("Self.msg2").l
+      msg2Access2.name shouldBe Operators.fieldAccess
+      msg2Access2.arguments(1).isTypeRef.code.loneElement shouldBe "Self"
+      msg2Access2.arguments(1).isTypeRef.typeFullName.loneElement shouldBe "Test0.swift:<global>.Foo"
+      msg2Access3.name shouldBe Operators.fieldAccess
+      msg2Access3.arguments(1).isTypeRef.code.loneElement shouldBe "Self"
+      msg2Access3.arguments(1).isTypeRef.typeFullName.loneElement shouldBe "Test0.swift:<global>.Foo"
+    }
+
+    "have correct structure for implicit Self access in static context with nested class (2)" in {
+      val cpg = code("""
+          |class Foo {
+          |  func foo() {
+          |    class Bar {
+          |      static let msg1 = "hello"
+          |      static func bar() {
+          |        print(msg1)
+          |        print(Self.msg1)
+          |      }
+          |    }
+          |  }
+          |}
+          |""".stripMargin)
+      val barStaticInit =
+        cpg.typeDecl
+          .nameExact("Bar")
+          .method
+          .nameExact(io.joern.x2cpg.Defines.StaticInitMethodName)
+          .isConstructor
+          .loneElement
+      val barMethod = cpg.typeDecl.nameExact("Bar").method.nameExact("bar").loneElement
+
+      val msg1Access1 = barStaticInit.ast.isCall.codeExact("Self.msg1").loneElement
+      msg1Access1.name shouldBe Operators.fieldAccess
+      msg1Access1.arguments(1).isTypeRef.code.loneElement shouldBe "Self"
+      msg1Access1.arguments(1).isTypeRef.typeFullName.loneElement shouldBe "Test0.swift:<global>.Foo.foo.Bar"
+
+      val List(msg1Access2, msg1Access3) = barMethod.ast.isCall.codeExact("Self.msg1").l
+      msg1Access2.name shouldBe Operators.fieldAccess
+      msg1Access2.arguments(1).isTypeRef.code.loneElement shouldBe "Self"
+      msg1Access2.arguments(1).isTypeRef.typeFullName.loneElement shouldBe "Test0.swift:<global>.Foo.foo.Bar"
+      msg1Access3.name shouldBe Operators.fieldAccess
+      msg1Access3.arguments(1).isTypeRef.code.loneElement shouldBe "Self"
+      msg1Access3.arguments(1).isTypeRef.typeFullName.loneElement shouldBe "Test0.swift:<global>.Foo.foo.Bar"
+    }
+
     "have correct structure for implicit self access with shadowing a member in class" in {
       val cpg = code("""
           |class Foo {
