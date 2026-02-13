@@ -4,7 +4,7 @@ import com.github.javaparser.ast.body.Parameter
 import com.github.javaparser.ast.expr.TypePatternExpr
 import io.joern.javasrc2cpg.scope.Scope.*
 import io.joern.javasrc2cpg.scope.JavaScopeElement.*
-import io.shiftleft.codepropertygraph.generated.nodes.{NewImport, NewMethod, NewNamespaceBlock, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewImport, NewMethod, NewNamespaceBlock, NewTypeDecl}
 
 import scala.collection.mutable
 import io.joern.javasrc2cpg.astcreation.ExpectedType
@@ -191,6 +191,8 @@ object JavaScopeElement {
     private val usedCaptureParams              = mutable.Set[ScopeVariable]()
     private[scope] val initsToComplete         = mutable.ListBuffer[PartialInit]()
     private[scope] val capturesForTypesInScope = mutable.Map[String, List[ScopeVariable]]()
+    // Maps this() call init nodes to their enclosing constructor's synthetic capture parameters
+    private[scope] val thisCallCaptureParams = mutable.Map[NewCall, List[NewMethodParameterIn]]()
 
     override def lookupVariable(name: String): VariableLookupResult = {
       super.lookupVariable(name) match {
@@ -220,6 +222,14 @@ object JavaScopeElement {
 
     def registerCapturesForType(typeFullName: String, captures: List[ScopeVariable]): Unit = {
       capturesForTypesInScope.put(typeFullName, captures)
+    }
+
+    def registerThisCallCaptureParams(initCall: NewCall, params: List[NewMethodParameterIn]): Unit = {
+      thisCallCaptureParams.put(initCall, params)
+    }
+
+    def getThisCallCaptureParams(initCall: NewCall): Option[List[NewMethodParameterIn]] = {
+      thisCallCaptureParams.get(initCall)
     }
 
     def getUsedCaptures(): List[ScopeVariable] = {
@@ -257,6 +267,8 @@ object JavaScopeElement {
     def getCapturesForType(typeFullName: String): List[ScopeVariable] =
       typeDeclScope.map(_.getUsedCapturesForType(typeFullName)).getOrElse(Nil)
     def getInitsToComplete: List[PartialInit] = typeDeclScope.map(_.initsToComplete.toList).getOrElse(Nil)
+    def getThisCallCaptureParams(initCall: NewCall): Option[List[NewMethodParameterIn]] =
+      typeDeclScope.flatMap(_.getThisCallCaptureParams(initCall))
   }
 
   extension (methodScope: Option[MethodScope]) {
