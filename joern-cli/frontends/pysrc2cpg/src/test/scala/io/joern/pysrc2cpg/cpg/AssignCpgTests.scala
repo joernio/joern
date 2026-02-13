@@ -1,14 +1,14 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.joern.pysrc2cpg.testfixtures.Py2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 
-class AssignCpgTests extends AnyFreeSpec with Matchers {
-  "single target assign" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""x = 2""".stripMargin)
+class AssignCpgTests extends PySrc2CpgFixture with Matchers {
+  "single target assign" should {
+    val cpg = code("""x = 2""".stripMargin)
 
     "test assignment node properties" in {
       val assignCall = cpg.call.methodFullName(Operators.assignment).head
@@ -53,11 +53,11 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "nested decomposing assign" - {
+  "nested decomposing assign" should {
     // Nested decomposing assign statements get lowered to a block with
     // a local variable for the right hand side and an assignment
     // inside the block for each element in the target list.
-    lazy val cpg = Py2CpgTestContext.buildCpg("""x, (y, z) = list""".stripMargin)
+    val cpg = code("""x, (y, z) = list""".stripMargin)
 
     def getSurroundingBlock: nodes.Block = {
       cpg.all.collect { case block: nodes.Block if block.code != "" => block }.head
@@ -102,11 +102,11 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "multi target assign" - {
+  "multi target assign" should {
     // Multi target assign statements get lowered to a block with
     // a local variable for the right hand side and an assignment
     // inside the block for each element in the target list.
-    lazy val cpg = Py2CpgTestContext.buildCpg("""x = y = list""".stripMargin)
+    val cpg = code("""x = y = list""".stripMargin)
 
     def getSurroundingBlock: nodes.Block = {
       cpg.all.collect { case block: nodes.Block if block.code != "" => block }.head
@@ -146,8 +146,8 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "annotated assign" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""x: y = z""".stripMargin)
+  "annotated assign" should {
+    val cpg = code("""x: y = z""".stripMargin)
 
     "test assignment node properties" in {
       val assignCall = cpg.call.methodFullName(Operators.assignment).head
@@ -192,8 +192,8 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "annotated assign without value" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""x: y""".stripMargin)
+  "annotated assign without value" should {
+    val cpg = code("""x: y""".stripMargin)
 
     "test target expression node properties" in {
       val assignCall = cpg.identifier.name("x").head
@@ -203,8 +203,8 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "augmented assign" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""x += y""".stripMargin)
+  "augmented assign" should {
+    val cpg = code("""x += y""".stripMargin)
 
     "test assignment node properties" in {
       val assignCall = cpg.call.methodFullName(Operators.assignmentPlus).head

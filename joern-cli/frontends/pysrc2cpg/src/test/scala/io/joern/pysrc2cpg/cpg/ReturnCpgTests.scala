@@ -1,13 +1,13 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.joern.pysrc2cpg.testfixtures.Py2CpgTestContext
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 
-class ReturnCpgTests extends AnyFreeSpec with Matchers {
-  "void return" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""def func(a, b):
+class ReturnCpgTests extends PySrc2CpgFixture with Matchers {
+  "void return" should {
+    val cpg = code("""def func(a, b):
         |  return
         |""".stripMargin)
 
@@ -18,8 +18,8 @@ class ReturnCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "value return" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""def func(a, b):
+  "value return" should {
+    val cpg = code("""def func(a, b):
         |  return a
         |""".stripMargin)
 
@@ -34,8 +34,8 @@ class ReturnCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "value return with lowering" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""def func(a, b):
+  "value return with lowering" should {
+    val cpg = code("""def func(a, b):
                                                 |  return {a:1}
                                                 |""".stripMargin)
 

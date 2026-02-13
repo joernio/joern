@@ -1,14 +1,14 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.joern.pysrc2cpg.testfixtures.Py2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 
-class FormatStringCpgTests extends AnyFreeSpec with Matchers {
-  "format string" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""f"pre{x}post"""".stripMargin)
+class FormatStringCpgTests extends PySrc2CpgFixture with Matchers {
+  "format string" should {
+    val cpg = code("""f"pre{x}post"""".stripMargin)
 
     "test formatString operator node" in {
       val callNode = cpg.call.methodFullName("<operator>.formatString").head
@@ -45,7 +45,7 @@ class FormatStringCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "test nested format string" in {
-    val cpg = Py2CpgTestContext.buildCpg("""
+    val cpg = code("""
         |f"{f'{a}'} "
         |""".stripMargin)
     val outerCall = cpg.call.methodFullName("<operator>.formatString").columnNumber(1).head
@@ -56,7 +56,7 @@ class FormatStringCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "test format string with multiple replacement fields" in {
-    val cpg = Py2CpgTestContext.buildCpg("""
+    val cpg = code("""
                                            |f"{a} {b}"
                                            |""".stripMargin)
     val callNode = cpg.call.methodFullName("<operator>.formatString").head

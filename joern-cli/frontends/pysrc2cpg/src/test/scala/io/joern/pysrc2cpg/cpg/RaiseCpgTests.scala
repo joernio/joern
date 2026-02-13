@@ -1,14 +1,14 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.joern.pysrc2cpg.testfixtures.Py2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 
-class RaiseCpgTests extends AnyFreeSpec with Matchers {
-  "python3 raise" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""raise x from y
+class RaiseCpgTests extends PySrc2CpgFixture with Matchers {
+  "python3 raise" should {
+    val cpg = code("""raise x from y
         |""".stripMargin)
 
     "test raise node properties" in {

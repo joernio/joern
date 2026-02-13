@@ -1,15 +1,15 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.joern.pysrc2cpg.testfixtures.Py2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 
-class CompareCpgTests extends AnyFreeSpec with Matchers {
-  "single operation comparison" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""x < y""".stripMargin)
+class CompareCpgTests extends PySrc2CpgFixture with Matchers {
+  "single operation comparison" should {
+    val cpg = code("""x < y""".stripMargin)
 
     "test compare node" in {
       val callNode = cpg.call.code("x < y").head
@@ -30,8 +30,8 @@ class CompareCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "multi operation comparison" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""x < y < z""".stripMargin)
+  "multi operation comparison" should {
+    val cpg = code("""x < y < z""".stripMargin)
 
     "test compare node" in {
       val assign1Node = cpg.call.code("tmp0 = y").head

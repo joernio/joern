@@ -1,13 +1,13 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.joern.pysrc2cpg.testfixtures.Py2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 
-class BoolOpCpgTests extends AnyFreeSpec with Matchers {
-  lazy val cpg = Py2CpgTestContext.buildCpg("""x or y or z""".stripMargin)
+class BoolOpCpgTests extends PySrc2CpgFixture with Matchers {
+  val cpg = code("""x or y or z""".stripMargin)
 
   "test boolOp 'or' call node properties" in {
     val orCall = cpg.call.methodFullName(Operators.logicalOr).head

@@ -1,14 +1,14 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.joern.pysrc2cpg.testfixtures.Py2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 
-class DeleteCpgTests extends AnyFreeSpec with Matchers {
-  "delete statement" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""del x, y""".stripMargin)
+class DeleteCpgTests extends PySrc2CpgFixture with Matchers {
+  "delete statement" should {
+    val cpg = code("""del x, y""".stripMargin)
 
     "test call node properties" in {
       val callNode = cpg.call.methodFullNameExact("<operator>.delete").head
