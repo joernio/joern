@@ -176,29 +176,44 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def astForIdentifier(node: SwiftNode): Ast = {
     val identifierName = code(node)
-    if (scope.variableIsInTypeDeclScope(identifierName)) {
+    if (identifierName == "Self") {
+      val tpe      = fullNameOfEnclosingTypeDecl()
+      val selfNode = typeRefNode(node, "Self", tpe)
+      Ast(selfNode)
+    } else if (scope.variableIsInTypeDeclScope(identifierName)) {
       // we found it as member of the surrounding type decl
       // (Swift does not allow to access any member / function of the outer class instance)
-      val tpe      = scope.typeDeclFullNameForMember(identifierName).getOrElse(fullNameOfEnclosingTypeDecl())
-      val selfNode = identifierNode(node, "self", "self", tpe)
-      scope.addVariableReference("self", selfNode, selfNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
+      val tpe = scope.typeDeclFullNameForMember(identifierName).getOrElse(fullNameOfEnclosingTypeDecl())
+
+      val selfNode = if (scope.isInStaticMethodScope) {
+        typeRefNode(node, "Self", tpe)
+      } else {
+        val selfIdNode = identifierNode(node, "self", "self", tpe)
+        scope.addVariableReference("self", selfIdNode, selfIdNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
+        selfIdNode
+      }
 
       val variableOption = scope.lookupVariable(identifierName)
       val callTpe        = variableOption.map(_._2).getOrElse(Defines.Any)
-      fieldAccessAst(node, node, Ast(selfNode), s"self.$identifierName", identifierName, callTpe)
+      fieldAccessAst(node, node, Ast(selfNode), s"${selfNode.code}.$identifierName", identifierName, callTpe)
     } else {
       if (
         config.swiftBuild &&
         scope.lookupVariable(identifierName).isEmpty &&
         fullnameProvider.declFullname(node).nonEmpty
       ) {
-        val tpe      = fullNameOfEnclosingTypeDecl()
-        val selfNode = identifierNode(node, "self", "self", tpe)
-        scope.addVariableReference("self", selfNode, selfNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
+        val tpe = fullNameOfEnclosingTypeDecl()
+        val selfNode = if (scope.isInStaticMethodScope) {
+          typeRefNode(node, "Self", tpe)
+        } else {
+          val selfIdNode = identifierNode(node, "self", "self", tpe)
+          scope.addVariableReference("self", selfIdNode, selfIdNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
+          selfIdNode
+        }
 
         val callTpe = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
         registerType(callTpe)
-        fieldAccessAst(node, node, Ast(selfNode), s"self.$identifierName", identifierName, callTpe)
+        fieldAccessAst(node, node, Ast(selfNode), s"${selfNode.code}.$identifierName", identifierName, callTpe)
       } else {
         // otherwise it must come from a variable (potentially captured from an outer scope)
         val identNode      = identifierNode(node, identifierName)
