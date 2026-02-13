@@ -8,14 +8,23 @@ import io.joern.x2cpg.Defines
 import io.joern.x2cpg.ValidationMode
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
+import io.shiftleft.codepropertygraph.generated.Properties
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodRef
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.lexer.KtToken
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
 
 import scala.jdk.CollectionConverters.*
+import io.joern.x2cpg.AstNodeBuilder.bindingNode
+import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
+import io.joern.kotlin2cpg.ast.AstCreator.BindingInfo
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
+import org.jetbrains.kotlin.types.KotlinType
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
@@ -665,4 +674,262 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       .withChildren(annotations.map(astForAnnotationEntry))
   }
 
+  private def extractReceiverInfo(
+    expr: KtCallableReferenceExpression,
+    receiverExpr: Option[KtExpression],
+    callableNameExpr: KtSimpleNameExpression,
+    funcDesc: Option[FunctionDescriptor]
+  ): AstCreator.ReceiverInfo = {
+    val (ctorParamAst, receiverName, hasReceiver, isStaticReference, receiverTypeFullName) = receiverExpr match {
+      case Some(r: KtNameReferenceExpression) if typeInfoProvider.isReferenceToClass(r) =>
+        val receiverText = r.getText
+        val companion    = s"$receiverText.companion"
+
+        val companionObjectDescOpt = funcDesc.flatMap { desc =>
+          desc.getContainingDeclaration match {
+            case classDesc: ClassDescriptor if classDesc.isCompanionObject => Some(classDesc)
+            case _                                                         => None
+          }
+        }
+
+        val referencesCompanionObject = typeInfoProvider.isRefToCompanionObject(r) || companionObjectDescOpt.isDefined
+
+        val (baseTypeFullName, companionTypeFullName) = if (referencesCompanionObject) {
+          val companionType = companionObjectDescOpt
+            .flatMap(nameRenderer.descFullName)
+            .orElse(exprTypeFullName(r).map(t => s"$t$$Companion"))
+            .getOrElse(s"$receiverText$$Companion")
+
+          val baseType = companionObjectDescOpt
+            .flatMap(c => Option(c.getContainingDeclaration))
+            .collect { case classDesc: ClassDescriptor => classDesc }
+            .flatMap(nameRenderer.descFullName)
+            .orElse(exprTypeFullName(r))
+            .getOrElse(receiverText)
+
+          (baseType, companionType)
+        } else {
+          val baseType = exprTypeFullName(r).getOrElse(receiverText)
+          (baseType, baseType)
+        }
+
+        if (referencesCompanionObject) {
+          val argAsts = List(
+            identifierNode(expr, receiverText, receiverText, registerType(baseTypeFullName)),
+            fieldIdentifierNode(expr, Constants.CompanionObjectMemberName, Constants.CompanionObjectMemberName)
+          ).map(Ast(_))
+          val fieldAccessNode =
+            operatorCallNode(expr, receiverText, Operators.fieldAccess, Option(companionTypeFullName))
+          (callAst(fieldAccessNode, argAsts), companion, true, true, companionTypeFullName)
+        } else {
+          val identNode = identifierNode(expr, receiverText, receiverText, registerType(companionTypeFullName))
+          (astWithRefEdgeMaybe(receiverText, identNode), companion, true, true, companionTypeFullName)
+        }
+      case Some(r: KtThisExpression) =>
+        val thisTypeFullName = exprTypeFullName(r).getOrElse(TypeConstants.Any)
+        val thisNode         = identifierNode(expr, "this", "this", registerType(thisTypeFullName))
+        (Ast(thisNode), "this", true, false, thisTypeFullName)
+      case Some(r: KtSuperExpression) =>
+        val superTypeFullName = exprTypeFullName(r).getOrElse(TypeConstants.Any)
+        val superNode         = identifierNode(expr, "super", "super", registerType(superTypeFullName))
+        (Ast(superNode), "super", true, false, superTypeFullName)
+      case Some(r) =>
+        val receiverText = r.getText
+        val paramAst     = astsForExpression(r, Some(1)).headOption.getOrElse(Ast())
+        val receiverTypeFullName = paramAst.root
+          .map(_.properties.get("TYPE_FULL_NAME").getOrElse(TypeConstants.JavaLangObject).toString)
+          .getOrElse(TypeConstants.JavaLangObject)
+        (paramAst, receiverText, true, false, receiverTypeFullName)
+      case None =>
+        val resolvedCall = bindingUtils.getResolvedCallDesc(callableNameExpr)
+        resolvedCall match {
+          case Some(call) if call.getDispatchReceiver != null =>
+            val thisTypeFullName =
+              nameRenderer.typeFullName(call.getDispatchReceiver.getType).getOrElse(TypeConstants.Any)
+            val thisNode = identifierNode(expr, "this", "this", registerType(thisTypeFullName))
+            (Ast(thisNode), "this", true, false, thisTypeFullName)
+          case _ =>
+            (Ast(), "", false, true, TypeConstants.JavaLangObject)
+        }
+    }
+
+    AstCreator.ReceiverInfo(ctorParamAst, receiverName, hasReceiver, isStaticReference, receiverTypeFullName)
+  }
+
+  private case class SamMethodInfo(
+    methodName: String,
+    params: List[(String, String)],
+    signature: String,
+    genericSignature: Option[String]
+  )
+
+  private def resolveSamMethodInfo(
+    exprType: Option[KotlinType],
+    funcDesc: Option[FunctionDescriptor]
+  ): SamMethodInfo = {
+    val samMethod = exprType.flatMap { ktType =>
+      val classDescriptor = ktType.getConstructor.getDeclarationDescriptor.asInstanceOf[ClassDescriptor]
+      val abstractMethods = classDescriptor.getUnsubstitutedMemberScope
+        .getContributedDescriptors(DescriptorKindFilter.FUNCTIONS, _ => true)
+        .asScala
+        .collect { case f: FunctionDescriptor if f.getModality.toString == "ABSTRACT" => f }
+        .toList
+      abstractMethods.headOption
+    }
+
+    val samMethodName = samMethod.flatMap(f => Some(f.getName().toString)).getOrElse("invoke")
+
+    val (samMethodParams, samMethodSig, samGenericMethodSig) = (samMethod, exprType) match {
+      case (Some(desc), Some(ktType)) =>
+        val typeSubstitutor = org.jetbrains.kotlin.types.TypeSubstitutor.create(ktType)
+
+        val params = desc.getValueParameters.asScala.toList.zipWithIndex.map { case (param, idx) =>
+          val paramName = param.getName.toString match {
+            case "<anonymous>" => s"p$idx"
+            case name          => name
+          }
+          val substitutedType = typeSubstitutor.substitute(param.getType, org.jetbrains.kotlin.types.Variance.INVARIANT)
+          val paramTypeFullName = Option(substitutedType)
+            .flatMap(t => nameRenderer.typeFullName(t))
+            .getOrElse(TypeConstants.Any)
+          (paramName, paramTypeFullName)
+        }
+
+        val substitutedReturnType =
+          typeSubstitutor.substitute(desc.getReturnType, org.jetbrains.kotlin.types.Variance.INVARIANT)
+        val returnTypeFullName = Option(substitutedReturnType)
+          .flatMap(t => nameRenderer.typeFullName(t))
+          .getOrElse(TypeConstants.Any)
+
+        val paramTypes = params.map(_._2).mkString(",")
+        val sig        = s"$returnTypeFullName($paramTypes)"
+
+        val genericSig = createErasedSignature(desc)
+
+        (params, sig, genericSig)
+      case _ =>
+        (List.empty, "java.lang.Object(java.lang.Object[])", None)
+    }
+
+    SamMethodInfo(samMethodName, samMethodParams, samMethodSig, samGenericMethodSig)
+  }
+
+  def astForCallableReferenceExpression(
+    expr: KtCallableReferenceExpression,
+    argIdx: Option[Int],
+    argNameMaybe: Option[String],
+    annotations: Seq[KtAnnotationEntry] = Seq(),
+    argTypeFallback: Option[KotlinType] = None
+  ): Ast = {
+
+    val callableNameExpr = expr.getCallableReference
+    val methodName       = callableNameExpr.getText
+
+    val funcDesc = bindingUtils
+      .getCalledFunctionDesc(callableNameExpr)
+      .orElse(getAmbiguousFuncDescIfSignaturesEqual(callableNameExpr))
+    val fullName = funcDesc.flatMap(nameRenderer.descFullName).getOrElse(methodName)
+    val signature = funcDesc
+      .flatMap(nameRenderer.funcDescSignature)
+      .getOrElse(Defines.UnresolvedSignature)
+
+    val exprFallbackType = bindingUtils.getExpectedExprType(expr)
+    val exprType         = argTypeFallback.orElse(exprFallbackType)
+    val inheritsFromTypeFullName =
+      exprType.flatMap(nameRenderer.typeFullName).getOrElse("kotlin.jvm.functions.FunctionN")
+
+    val receiverExpr = Option(expr.getReceiverExpression)
+
+    val receiverInfo = extractReceiverInfo(expr, receiverExpr, callableNameExpr, funcDesc)
+
+    val isUnboundReference = !receiverInfo.hasReceiver && receiverExpr.isEmpty
+
+    val inheritsList =
+      if (receiverInfo.hasReceiver) List(inheritsFromTypeFullName, "kotlin.jvm.internal.CallableReference")
+      else List(inheritsFromTypeFullName)
+
+    val samImplClass = s"$fullName$$${inheritsFromTypeFullName}Impl"
+
+    val samMethodInfo = resolveSamMethodInfo(exprType, funcDesc)
+
+    if (isUnboundReference) {
+      val methodRefNode = NewMethodRef()
+        .methodFullName(s"$fullName:$signature")
+        .code(code(expr))
+        .typeFullName(samImplClass)
+        .lineNumber(line(expr))
+        .columnNumber(column(expr))
+
+      val samInfo = AstCreator.UnboundSamInfo(
+        samImplClass,
+        fullName,
+        signature,
+        inheritsList,
+        samMethodInfo.methodName,
+        samMethodInfo.signature,
+        samMethodInfo.genericSignature,
+        samMethodInfo.params,
+        expr
+      )
+
+      val samMethodFullName = s"$samImplClass.${samMethodInfo.methodName}:${samMethodInfo.signature}"
+      samImplInfoQueue.getOrElseUpdate(samMethodFullName, samInfo)
+
+      Ast(methodRefNode)
+    } else {
+      val receiverTypeFullName = receiverInfo.receiverTypeFullName
+
+      val samInfo = AstCreator.BoundSamInfo(
+        samImplClass,
+        fullName,
+        signature,
+        inheritsList,
+        samMethodInfo.methodName,
+        samMethodInfo.signature,
+        samMethodInfo.genericSignature,
+        (receiverInfo.ctorParamAst, receiverInfo.receiverName),
+        receiverTypeFullName,
+        samMethodInfo.params,
+        receiverInfo.isStaticReference,
+        expr
+      )
+
+      val samMethodFullName = s"$samImplClass.${samMethodInfo.methodName}:${samMethodInfo.signature}"
+      samImplInfoQueue.getOrElseUpdate(samMethodFullName, samInfo)
+
+      val tmpBlockNode = blockNode(expr, expr.getText, samImplClass)
+      val tmpName      = s"${Constants.TmpLocalPrefix}${tmpKeyPool.next}"
+      val tmpLocalNode = localNode(expr, tmpName, tmpName, samImplClass)
+      scope.addToScope(tmpName, tmpLocalNode)
+      val tmpLocalAst = Ast(tmpLocalNode)
+
+      val assignmentRhsNode = operatorCallNode(expr, Operators.alloc, Operators.alloc, Option(samImplClass))
+      val assignmentLhsNode = identifierNode(expr, tmpName, tmpName, samImplClass)
+      val assignmentLhsAst  = astWithRefEdgeMaybe(tmpName, assignmentLhsNode)
+
+      val assignmentNode = operatorCallNode(expr, Operators.assignment, Operators.assignment, None)
+      val assignmentAst  = callAst(assignmentNode, List(assignmentLhsAst, Ast(assignmentRhsNode)))
+
+      val initReceiverNode = identifierNode(expr, tmpName, tmpName, samImplClass).argumentIndex(0)
+      val initReceiverAst  = astWithRefEdgeMaybe(tmpName, initReceiverNode)
+
+      val ctorSignature = s"void($receiverTypeFullName)"
+      val ctorCallNode = callNode(
+        expr,
+        s"$samImplClass(${receiverInfo.receiverName})",
+        Defines.ConstructorMethodName,
+        s"$samImplClass.${Defines.ConstructorMethodName}:$ctorSignature",
+        DispatchTypes.STATIC_DISPATCH,
+        Some(ctorSignature),
+        Some(TypeConstants.Void)
+      )
+      val ctorArgs    = List(receiverInfo.ctorParamAst)
+      val ctorCallAst = callAst(ctorCallNode, ctorArgs, Option(initReceiverAst))
+
+      val lastIdentifier    = identifierNode(expr, tmpName, tmpName, samImplClass)
+      val lastIdentifierAst = astWithRefEdgeMaybe(tmpName, lastIdentifier)
+
+      blockAst(tmpBlockNode, List(tmpLocalAst, assignmentAst, ctorCallAst, lastIdentifierAst))
+    }
+  }
 }
