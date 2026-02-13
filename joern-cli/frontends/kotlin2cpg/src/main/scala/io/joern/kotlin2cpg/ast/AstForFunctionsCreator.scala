@@ -314,20 +314,23 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       withIndex(fn.getValueParameters.asScala.toSeq) { (p, idx) =>
         astForParameter(p, idx)
       }
-    val bodyAst = Option(fn.getBodyBlockExpression) match {
+    val (bodyAst, usedLocalCaptures) = Option(fn.getBodyBlockExpression) match {
       case Some(bodyBlockExpression) =>
-        astForBlock(bodyBlockExpression, None, None, localsForCaptures = localsForCaptured)
+        astForLambdaBlock(bodyBlockExpression, None, None, localsForCaptures = localsForCaptured)
       case None =>
-        Option(fn.getBodyExpression)
-          .map { expr =>
-            val bodyBlock  = blockNode(expr, expr.getText, TypeConstants.Any)
-            val returnAst_ = returnAst(returnNode(expr, Constants.RetCode), astsForExpression(expr, Some(1)))
-            blockAst(bodyBlock, localsForCaptured.map(Ast(_)) ++ List(returnAst_))
-          }
-          .getOrElse {
-            val bodyBlock = blockNode(fn, "<empty>", TypeConstants.Any)
-            blockAst(bodyBlock, List[Ast]())
-          }
+        (
+          Option(fn.getBodyExpression)
+            .map { expr =>
+              val bodyBlock  = blockNode(expr, expr.getText, TypeConstants.Any)
+              val returnAst_ = returnAst(returnNode(expr, Constants.RetCode), astsForExpression(expr, Some(1)))
+              blockAst(bodyBlock, localsForCaptured.map(Ast(_)) ++ List(returnAst_))
+            }
+            .getOrElse {
+              val bodyBlock = blockNode(fn, "<empty>", TypeConstants.Any)
+              blockAst(bodyBlock, List[Ast]())
+            },
+          List()
+        )
     }
 
     val returnTypeFullName     = TypeConstants.JavaLangObject
@@ -361,8 +364,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     createLambdaBindings(lambdaMethodNode, lambdaTypeDecl, samInterface)
 
     scope.popScope()
-    val closureBindingDefs = closureBindingEntriesForCaptured.collect { case (closureBinding, node) =>
-      ClosureBindingDef(closureBinding, _methodRefNode, node.node)
+    val closureBindingDefs = closureBindingEntriesForCaptured.collect {
+      case (closureBinding, node) if usedLocalCaptures.exists(node.name == _.name) =>
+        ClosureBindingDef(closureBinding, _methodRefNode, node.node)
     }
     closureBindingDefs.foreach(closureBindingDefQueue.prepend)
     lambdaAstQueue.prepend(lambdaMethodAst)
@@ -442,9 +446,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val lastChildNotReturnExpression = !expr.getBodyExpression.getLastChild.isInstanceOf[KtReturnExpression]
     val needsReturnExpression        = lastChildNotReturnExpression
-    val bodyAst = Option(expr.getBodyExpression)
+    val (bodyAst, usedLocalCaptures) = Option(expr.getBodyExpression)
       .map(
-        astForBlock(
+        astForLambdaBlock(
           _,
           None,
           None,
@@ -454,7 +458,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
           Some(destructedParamAsts.toSeq)
         )
       )
-      .getOrElse(Ast(blockNode(expr)))
+      .getOrElse((Ast(blockNode(expr)), List()))
 
     val returnTypeFullName = registerType(
       nameRenderer.typeFullName(funcDesc.getReturnType).getOrElse(TypeConstants.JavaLangObject)
@@ -488,12 +492,42 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     createLambdaBindings(lambdaMethodNode, lambdaTypeDecl, samInterface)
 
     scope.popScope()
-    val closureBindingDefs = closureBindingEntriesForCaptured.collect { case (closureBinding, node) =>
-      ClosureBindingDef(closureBinding, _methodRefNode, node.node)
+    val closureBindingDefs = closureBindingEntriesForCaptured.collect {
+      case (closureBinding, node) if usedLocalCaptures.exists(node.name == _.name) =>
+        ClosureBindingDef(closureBinding, _methodRefNode, node.node)
     }
     closureBindingDefs.foreach(closureBindingDefQueue.prepend)
     lambdaAstQueue.prepend(lambdaMethodAst)
     Ast(_methodRefNode).withChildren(annotations.map(astForAnnotationEntry))
+  }
+
+  private def astForLambdaBlock(
+    expr: KtBlockExpression,
+    argIdxMaybe: Option[Int],
+    argNameMaybe: Option[String],
+    pushToScope: Boolean = true,
+    localsForCaptures: List[NewLocal] = List(),
+    implicitReturnAroundLastStatement: Boolean = false,
+    preStatements: Option[Seq[Ast]] = None
+  ): (Ast, List[NewLocal]) = {
+    val (node, childrenAsts) = buildBlockAst(
+      expr,
+      argIdxMaybe,
+      argNameMaybe,
+      pushToScope,
+      localsForCaptures,
+      implicitReturnAroundLastStatement,
+      preStatements
+    )
+
+    val localCapturesNames = localsForCaptures.map(x => x.name -> x).toMap
+
+    val usedLocalCaptures = childrenAsts.flatMap(_.nodes).collect {
+      case i: NewIdentifier if localCapturesNames.contains(i.name) => localCapturesNames(i.name)
+    }
+    val allChildrenAsts = usedLocalCaptures.map(Ast(_)).toList ++ childrenAsts
+
+    (blockAst(node, allChildrenAsts), usedLocalCaptures.toList)
   }
 
   private def createImplicitParamNode(
