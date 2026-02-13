@@ -227,7 +227,6 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         }
         ast
       case d: VariableDeclSyntax =>
-        val ast = astForVariableDeclSyntax(d, true)
         d.bindings.children.foreach { c =>
           val cCode          = code(c.pattern)
           val tpeFromTypeMap = fullnameProvider.typeFullname(c)
@@ -239,7 +238,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           scope.addVariable(cCode, memberNode_, typeFullName, VariableScopeManager.ScopeType.TypeDeclScope)
           diffGraph.addEdge(typeDeclNode, memberNode_, EdgeTypes.AST)
         }
-        ast
+        astForVariableDeclSyntax(d, true)
       case other => notHandledYet(other)
     }
   }
@@ -297,7 +296,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val blockNode = NewBlock()
     methodAstParentStack.push(methodNode_)
-    scope.pushNewMethodScope(methodFullName, constructorName, blockNode, typeRefIdStack.headOption)
+    scope.pushNewMethodScope(methodFullName, constructorName, blockNode, typeRefIdStack.headOption, true)
     localAstParentStack.push(blockNode)
 
     val initAsts = inits.map(m => astForDeclMember(m, typeDeclNode))
@@ -350,11 +349,6 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val memberInits = allClassMembers.filter(m => !isStaticMember(m) && isInitializedMember(m))
     createDeclConstructor(node, typeDeclNode_, memberInits)
 
-    // adding all class methods / functions and uninitialized members
-    allClassMembers
-      .filter(member => isClassMethodOrUninitializedMember(member))
-      .foreach(m => astForDeclMember(m, typeDeclNode_))
-
     // adding all static members and retrieving their initialization calls
     val staticMemberInits = allClassMembers.filter { member =>
       isStaticMember(member) && !isClassMethodOrUninitializedMember(member)
@@ -363,6 +357,11 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     if (staticMemberInits.nonEmpty) {
       createStaticConstructor(node, staticMemberInits, typeDeclNode_)
     }
+
+    // adding all class methods / functions and uninitialized members
+    allClassMembers
+      .filter(member => isClassMethodOrUninitializedMember(member))
+      .foreach(m => astForDeclMember(m, typeDeclNode_))
 
     methodAstParentStack.pop()
     typeRefIdStack.pop()
@@ -606,6 +605,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val methodInfo                                                    = methodInfoForFunctionDeclLike(node)
     val MethodInfo(methodName, methodFullName, signature, returnType) = methodInfo
     val methodFullNameAndSignature                                    = methodInfo.fullNameAndSignature
+    val isStatic = modifiers.exists(_.modifierType == ModifierTypes.STATIC)
 
     val shouldCreateFunctionReference = typeRefIdStack.isEmpty ||
       methodAstParentStack.headOption.exists(_.isInstanceOf[NewMethod]) ||
@@ -619,7 +619,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val block       = blockNode(node, PropertyDefaults.Code, Defines.Any)
 
     methodAstParentStack.push(methodNode_)
-    scope.pushNewMethodScope(methodFullName, methodName, block, capturingRefNode)
+    scope.pushNewMethodScope(methodFullName, methodName, block, capturingRefNode, isStatic)
     localAstParentStack.push(block)
 
     val (parameterAsts, bodyStmtAsts) = paramAndBodyAstsForFunctionLike(node)
@@ -742,6 +742,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val MethodInfo(methodName, methodFullName, signature, returnType) = methodInfo
     val methodFullNameAndSignature                                    = methodInfo.fullNameAndSignature
     val methodFullNameAndSignatureExt                                 = methodInfo.fullNameAndSignatureExt
+    val isStatic = modifiers.exists(_.modifierType == ModifierTypes.STATIC)
+
     global.addExtensionMethodFullName(methodFullNameAndSignature, methodFullNameAndSignatureExt)
 
     val capturingRefNode = typeRefIdStack.headOption
@@ -750,7 +752,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val block = blockNode(node, PropertyDefaults.Code, Defines.Any)
 
     methodAstParentStack.push(methodNode_)
-    scope.pushNewMethodScope(methodFullName, methodName, block, capturingRefNode)
+    scope.pushNewMethodScope(methodFullName, methodName, block, capturingRefNode, isStatic)
     localAstParentStack.push(block)
 
     val (parameterAsts, bodyStmtAsts) = paramAndBodyAstsForFunctionLike(node)
@@ -908,6 +910,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val methodInfo = methodInfoForAccessorDecl(node, variableName, tpe)
     val MethodInfo(methodName, methodFullName, signature, returnType) = methodInfo
     val methodFullNameAndSignature                                    = methodInfo.fullNameAndSignature
+    val isStatic = modifiers.exists(_.modifierType == ModifierTypes.STATIC)
+
     global.addMemberPropertyFullName(methodFullName, methodFullNameAndSignature)
 
     val methodNode_ = methodNode(node, methodName, code(node), methodFullNameAndSignature, Option(signature), filename)
@@ -1099,6 +1103,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val MethodInfo(methodName, methodFullName, signature, returnType) = methodInfo
     val methodFullNameAndSignature                                    = methodInfo.fullNameAndSignature
     val methodFullNameAndSignatureExt                                 = methodInfo.fullNameAndSignatureExt
+
     global.addMemberPropertyFullName(methodFullName, methodFullNameAndSignatureExt)
 
     val capturingRefNode = typeRefIdStack.headOption
@@ -1224,10 +1229,15 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
             }
             Ast(patternIdentifier)
           } else {
-            // TODO: handle static members
-            val baseNode = identifierNode(node, "self", "self", fullNameOfEnclosingTypeDecl())
-            scope.addVariableReference("self", baseNode, baseNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
-            fieldAccessAst(node, node, Ast(baseNode), s"self.$name", name, typeFullName)
+            val tpe = fullNameOfEnclosingTypeDecl()
+            val selfNode = if (scope.isInStaticMethodScope) {
+              typeRefNode(node, "Self", tpe)
+            } else {
+              val selfIdNode = identifierNode(node, "self", "self", tpe)
+              scope.addVariableReference("self", selfIdNode, selfIdNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
+              selfIdNode
+            }
+            fieldAccessAst(node, node, Ast(selfNode), s"${selfNode.code}.$name", name, typeFullName)
           }
 
           val initCode = binding.initializer.fold("")(i => s" ${code(i).strip()}")

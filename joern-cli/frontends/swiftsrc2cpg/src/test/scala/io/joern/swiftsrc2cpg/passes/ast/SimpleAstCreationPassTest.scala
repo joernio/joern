@@ -237,6 +237,68 @@ class SimpleAstCreationPassTest extends SwiftSrc2CpgSuite {
       }
     }
 
+    "have correct structure for implicit Self access in static context" in {
+      val cpg = code("""
+          |class FooBar {
+          |    private static let a = "a"
+          |    private let b = "b"
+          |
+          |    static func foo1() -> String {
+          |        return a
+          |    }
+          |    static func foo2() -> String {
+          |        return Self.a
+          |    }
+          |
+          |    func bar1() -> String {
+          |        return b
+          |    }
+          |    func bar2() -> String {
+          |        return self.b
+          |    }
+          |}
+          |""".stripMargin)
+      val typeDecl = cpg.typeDecl.nameExact("FooBar").loneElement
+
+      // Accessing static member a via Self in the static initializer and static methods
+      val cInit    = typeDecl.method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).isConstructor.loneElement
+      val aAccess1 = cInit.ast.isCall.codeExact("Self.a").loneElement
+      aAccess1.name shouldBe Operators.fieldAccess
+      aAccess1.arguments(1).isTypeRef.code.loneElement shouldBe "Self"
+      aAccess1.arguments(1).isTypeRef.typeFullName.loneElement shouldBe "Test0.swift:<global>.FooBar"
+
+      val foo1     = typeDecl.method.nameExact("foo1").loneElement
+      val aAccess2 = foo1.ast.isCall.codeExact("Self.a").loneElement
+      aAccess2.name shouldBe Operators.fieldAccess
+      aAccess2.arguments(1).isTypeRef.code.loneElement shouldBe "Self"
+      aAccess2.arguments(1).isTypeRef.typeFullName.loneElement shouldBe "Test0.swift:<global>.FooBar"
+
+      val foo2     = typeDecl.method.nameExact("foo2").loneElement
+      val aAccess3 = foo2.ast.isCall.codeExact("Self.a").loneElement
+      aAccess3.name shouldBe Operators.fieldAccess
+      aAccess3.arguments(1).isTypeRef.code.loneElement shouldBe "Self"
+      aAccess3.arguments(1).isTypeRef.typeFullName.loneElement shouldBe "Test0.swift:<global>.FooBar"
+
+      // Accessing instance member b via self in instance methods
+      val init     = typeDecl.method.nameExact(Defines.ConstructorMethodName).isConstructor.loneElement
+      val bAccess1 = init.ast.isCall.codeExact("self.b").loneElement
+      bAccess1.name shouldBe Operators.fieldAccess
+      bAccess1.arguments(1).isIdentifier.code.loneElement shouldBe "self"
+      bAccess1.arguments(1).isIdentifier.typeFullName.loneElement shouldBe "Test0.swift:<global>.FooBar"
+
+      val bar1     = typeDecl.method.nameExact("bar1").loneElement
+      val bAccess2 = bar1.ast.isCall.codeExact("self.b").loneElement
+      bAccess2.name shouldBe Operators.fieldAccess
+      bAccess2.arguments(1).isIdentifier.code.loneElement shouldBe "self"
+      bAccess2.arguments(1).isIdentifier.typeFullName.loneElement shouldBe "Test0.swift:<global>.FooBar"
+
+      val bar2     = typeDecl.method.nameExact("bar2").loneElement
+      val bAccess3 = bar2.ast.isCall.codeExact("self.b").loneElement
+      bAccess3.name shouldBe Operators.fieldAccess
+      bAccess3.arguments(1).isIdentifier.code.loneElement shouldBe "self"
+      bAccess3.arguments(1).isIdentifier.typeFullName.loneElement shouldBe "Test0.swift:<global>.FooBar"
+    }
+
     "have correct structure for implicit self access with shadowing a member in class" in {
       val cpg = code("""
           |class Foo {
