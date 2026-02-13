@@ -98,7 +98,8 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
   protected def createTransformedImport(
     from: String,
     names: Iterable[ast.Alias],
-    lineAndCol: LineAndColumn
+    lineAndCol: LineAndColumn,
+    importAstNode: ast.iast
   ): NewNode = {
     val importAssignNodes =
       names.map { alias =>
@@ -118,7 +119,14 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
         })
 
         val importCallNode =
-          createCall(createIdentifierNode("import", Load, lineAndCol), "import", lineAndCol, arguments, Nil, None)
+          createCall(
+            createIdentifierNode("import", Load, lineAndCol),
+            "import",
+            lineAndCol,
+            arguments,
+            Nil,
+            Some(importAstNode)
+          )
 
         val assignNode = createAssignment(importAssignLhsIdentifierNode, importCallNode, lineAndCol)
         assignNode
@@ -492,8 +500,13 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
 
     addAstChildrenAsArguments(callNode, 1, lhsNode, rhsNode)
     // Do not include imports or function pointers
-    if (!codeOf(rhsNode).startsWith("import(") && codeOf(rhsNode) != s"def ${codeOf(lhsNode)}(...)")
+    val isImportCall = rhsNode match {
+      case c: NewCall => c.name == "import"
+      case _          => false
+    }
+    if (!isImportCall && codeOf(rhsNode) != s"def ${codeOf(lhsNode)}(...)") {
       contextStack.considerAsGlobalVariable(lhsNode)
+    }
 
     callNode
   }
