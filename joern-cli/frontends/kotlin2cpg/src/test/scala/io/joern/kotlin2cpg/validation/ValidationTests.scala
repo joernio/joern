@@ -909,4 +909,37 @@ class ValidationTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         .l shouldBe List()
     }
   }
+
+  "CPG for mixed Kotlin/Java sources" should {
+    lazy val cpg = code(
+      """
+        |package mypkg
+        |
+        |fun main() {
+        |  println(JavaUtil.msg())
+        |}
+        |""".stripMargin,
+      "Main.kt"
+    ).moreCode(
+      """
+        |package mypkg;
+        |
+        |public class JavaUtil {
+        |  public static String msg() {
+        |    return "HELLO";
+        |  }
+        |}
+        |""".stripMargin,
+      "JavaUtil.java"
+    )
+
+    "should include both Kotlin and Java methods" in {
+      cpg.method.nameExact("main").size shouldBe 1
+      cpg.method.nameExact("msg").size shouldBe 1
+    }
+
+    "should contain exactly one TYPE node for `ANY`" in {
+      cpg.typ.fullNameExact("ANY").size shouldBe 1
+    }
+  }
 }

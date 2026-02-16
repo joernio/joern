@@ -197,7 +197,7 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
     config: Config,
     filesWithJavaExtension: List[String],
     kotlinAstCreatorTypes: List[String]
-  ): Unit = {
+  ): List[String] = {
     if (config.includeJavaSourceFiles && filesWithJavaExtension.nonEmpty) {
       val javaAstCreator = JavaSrcInterop.astCreationPass(config.inputPath, filesWithJavaExtension, cpg)
       javaAstCreator.createAndApply()
@@ -206,9 +206,9 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
       javaAstCreator.sourceParser.cleanupDelombokOutput()
       javaAstCreator.clearJavaParserCaches()
 
-      TypeNodePass
-        .withRegisteredTypes((javaAstCreatorTypes.toSet -- kotlinAstCreatorTypes.toSet).toList, cpg)
-        .createAndApply()
+      javaAstCreatorTypes
+    } else {
+      List.empty
     }
   }
 
@@ -244,9 +244,11 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
       Disposer.dispose(environment.getProjectEnvironment.getParentDisposable)
 
       val kotlinAstCreatorTypes = astCreator.usedTypes()
-      TypeNodePass.withRegisteredTypes(kotlinAstCreatorTypes, cpg).createAndApply()
+      val javaAstCreatorTypes   = runJavaSrcInterop(cpg, config, filesWithJavaExtension, kotlinAstCreatorTypes)
+      val allAstCreatorTypes    = (kotlinAstCreatorTypes.toSet ++ javaAstCreatorTypes.toSet).toList
 
-      runJavaSrcInterop(cpg, config, filesWithJavaExtension, kotlinAstCreatorTypes)
+      TypeNodePass.withRegisteredTypes(allAstCreatorTypes, cpg).createAndApply()
+
       new ConfigPass(configFiles, cpg).createAndApply()
       new DependenciesFromMavenCoordinatesPass(mavenCoordinates, cpg).createAndApply()
     }
