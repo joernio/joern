@@ -43,6 +43,24 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
   }
 
+  "CPG for qualified call with a single lambda argument" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |class Runner {
+        |  fun run(action: () -> String): String = action()
+        |}
+        |
+        |fun main() {
+        |  Runner().run { "ok" }
+        |}
+        |""".stripMargin)
+
+    "should not assign more than one incoming ARGUMENT edge to a METHOD_REF" in {
+      cpg.methodRef.l.forall(_._argumentIn.size <= 1) shouldBe true
+    }
+  }
+
   "CPG for code with a simple lambda which captures a local" should {
     val cpg = code("""
         |package simple.pkg

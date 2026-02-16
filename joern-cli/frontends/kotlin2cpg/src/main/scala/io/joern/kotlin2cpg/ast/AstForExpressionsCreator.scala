@@ -344,15 +344,20 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         },
         argIdx
       ).argumentName(argNameMaybe)
+    val useSingleMethodRefArgAsReceiver =
+      argAsts.sizeIs == 1 && argAsts.head.root.get.isInstanceOf[NewMethodRef]
     val receiverNode =
-      if (argAsts.sizeIs == 1 && argAsts.head.root.get.isInstanceOf[NewMethodRef]) argAsts.head.root.get
+      if (useSingleMethodRefArgAsReceiver) argAsts.head.root.get
       else receiverAst.root.get
+    val argumentNodes =
+      if (useSingleMethodRefArgAsReceiver) Seq.empty
+      else argAsts.map(_.root.get)
 
     Ast(node)
       .withChild(receiverAst)
       .withArgEdge(node, receiverNode)
       .withChildren(argAsts)
-      .withArgEdges(node, argAsts.map(_.root.get))
+      .withArgEdges(node, argumentNodes)
       .withReceiverEdge(node, receiverNode)
   }
 
