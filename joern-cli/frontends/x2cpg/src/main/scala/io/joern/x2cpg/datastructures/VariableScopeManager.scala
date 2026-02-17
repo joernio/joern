@@ -1,7 +1,6 @@
 package io.joern.x2cpg.datastructures
 
 import io.joern.x2cpg.AstNodeBuilder.{closureBindingNode, localNodeWithExplicitPositionInfo}
-import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, EdgeTypes, EvaluationStrategies}
 
@@ -375,23 +374,6 @@ class VariableScopeManager {
       case methodScope: MethodScopeElement => Some(methodScope)
       case other                           => getEnclosingMethodScopeElement(other.surroundingScope)
     }
-  }
-
-  def isInStaticMethodScope: Boolean = {
-    def isClosureScope(methodScope: MethodScopeElement): Boolean = {
-      methodScope.methodName.startsWith(Defines.ClosurePrefix)
-    }
-
-    def nextNonClosureMethodScope(scopeHead: Option[ScopeElement]): Option[MethodScopeElement] = {
-      scopeHead.flatMap {
-        case ms: MethodScopeElement if !isClosureScope(ms) => Some(ms)
-        case ms: MethodScopeElement                        => nextNonClosureMethodScope(ms.surroundingScope)
-        case bs: BlockScopeElement                         => nextNonClosureMethodScope(bs.surroundingScope)
-        case _: TypeDeclScopeElement                       => None
-      }
-    }
-
-    nextNonClosureMethodScope(stack).exists(_.isStatic)
   }
 
   /** Retrieves the enclosing type decl scope element from the given scope head.
