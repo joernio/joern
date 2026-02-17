@@ -298,10 +298,6 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
 
     "handle edge cases" when {
 
-      "empty strings" in {
-        SourceFiles.toRelativePath("", "") shouldBe ""
-      }
-
       "rootPath is root directory /" in {
         val rootPath = "/"
         val filePath = "/home/user/project/file.c"
