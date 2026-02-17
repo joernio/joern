@@ -29,13 +29,7 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
 
   private object UnixOnly
       extends Tag(
-        if (!scala.util.Properties.isWin && !scala.util.Properties.isMac) ""
-        else classOf[Ignore].getName
-      )
-
-  private object MacOnly
-      extends Tag(
-        if (scala.util.Properties.isMac) ""
+        if (!scala.util.Properties.isWin) ""
         else classOf[Ignore].getName
       )
 
