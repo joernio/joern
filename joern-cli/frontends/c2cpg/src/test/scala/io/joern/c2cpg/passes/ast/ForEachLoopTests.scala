@@ -110,9 +110,11 @@ class ForEachLoopTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt) {
     iteratorAssignmentRhs.argument(0) shouldBe iteratorCallReceiver
     iteratorCallReceiver.typeFullName shouldBe expectedCollectionType
 
-    val List(varI) = node.astChildren.isIdentifier.nameExact("item").l
+    val List(varI) = node.astChildren.isLocal.nameExact("item").l
     varI.code shouldBe "item"
     varI.typeFullName shouldBe expectedItemType
+    // referenced by both the loop variable declaration and as "sink" function argument
+    varI.referencingIdentifiers.nameExact("item").typeFullName.l shouldBe List(expectedItemType, expectedItemType)
 
     val List(loop) = node.astChildren.isControlStructure.l
     loop.controlStructureType shouldBe ControlStructureTypes.WHILE

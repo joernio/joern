@@ -235,4 +235,49 @@ class ControlStructureTests extends C2CpgSuite(FileDefaults.CppExt) {
 
   }
 
+  "ControlStructureTest4" should {
+    "should have correct types for shadowed variables" in {
+      val cpg = code("""
+          |void foo(void) {
+          |  int x = 52;
+          |  for (float x = 1.0; x > 0.5; x--) {}
+          |}
+          |""".stripMargin)
+      val List(fooMethod) = cpg.method.nameExact("foo").l
+      val List(fooLocalX) = fooMethod.block.local.l
+      fooLocalX.name shouldBe "x"
+      fooLocalX.typeFullName shouldBe "int"
+      fooLocalX.referencingIdentifiers.nameExact("x").typeFullName.loneElement shouldBe "int"
+      inside(fooMethod.controlStructure.l) { case List(forLoop) =>
+        forLoop.controlStructureType shouldBe ControlStructureTypes.FOR
+        val List(loopLocalX) = forLoop.ast.isLocal.l
+        loopLocalX.name shouldBe "x"
+        loopLocalX.typeFullName shouldBe "float"
+        loopLocalX.referencingIdentifiers.code.l shouldBe List("x", "x", "x")
+        loopLocalX.referencingIdentifiers.typeFullName.l shouldBe List("float", "float", "float")
+      }
+    }
+
+    "should have correct types for shadowed variables with C++ range-based for loop" in {
+      val cpg = code("""
+          |void foo() {
+          |  int x = 1;
+          |  float xs[] = {1.0, 2.0, 3.0};
+          |  for (float x : xs) {}
+          |}
+          |""".stripMargin)
+      val List(fooMethod) = cpg.method.nameExact("foo").l
+      val List(fooLocalX) = fooMethod.block.local.nameExact("x").l
+      fooLocalX.typeFullName shouldBe "int"
+      fooLocalX.referencingIdentifiers.nameExact("x").typeFullName.loneElement shouldBe "int"
+      inside(fooMethod.controlStructure.l) { case List(forLoop) =>
+        val List(loopLoweringBlock) = forLoop.astIn.isBlock.l
+        inside(loopLoweringBlock.astChildren.isLocal.nameExact("x").l) { case List(loopLocalX) =>
+          loopLocalX.typeFullName shouldBe "float"
+          loopLocalX.referencingIdentifiers.nameExact("x").typeFullName.l shouldBe List("float")
+        }
+      }
+    }
+  }
+
 }

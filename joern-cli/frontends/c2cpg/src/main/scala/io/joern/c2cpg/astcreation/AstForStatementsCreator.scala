@@ -239,23 +239,25 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   private def astForDoStatement(doStmt: IASTDoStatement): Ast = {
-    val codeString   = code(doStmt)
-    val doNode       = controlStructureNode(doStmt, ControlStructureTypes.DO, codeString)
+    val codeString = code(doStmt)
+    val doNode     = controlStructureNode(doStmt, ControlStructureTypes.DO, codeString)
+    scope.pushNewBlockScope(doNode)
     val conditionAst = wrapInNullComparison(doStmt.getCondition, astForConditionExpression(doStmt.getCondition))
     val bodyAst      = nullSafeAst(doStmt.getBody)
+    scope.popScope()
     controlStructureAst(doNode, Option(conditionAst), bodyAst, placeConditionLast = true)
   }
 
   private def astForSwitchStatement(switchStmt: IASTSwitchStatement): Seq[Ast] = {
+    val codeString = code(switchStmt)
+    val switchNode = controlStructureNode(switchStmt, ControlStructureTypes.SWITCH, codeString)
+
     val initAsts = switchStmt match {
       case s: ICPPASTSwitchStatement =>
         nullSafeAst(s.getInitializerStatement) ++ nullSafeAst(s.getControllerDeclaration)
       case _ =>
         Seq.empty
     }
-
-    val codeString   = code(switchStmt)
-    val switchNode   = controlStructureNode(switchStmt, ControlStructureTypes.SWITCH, codeString)
     val conditionAst = astForConditionExpression(switchStmt.getControllerExpression)
     val stmtAsts     = nullSafeAst(switchStmt.getBody)
     initAsts :+ controlStructureAst(switchNode, Option(conditionAst), stmtAsts)
@@ -291,8 +293,10 @@ trait AstForStatementsCreator { this: AstCreator =>
 
   private def astForCatchHandler(catchHandler: ICPPASTCatchHandler): Ast = {
     val catchNode = controlStructureNode(catchHandler, ControlStructureTypes.CATCH, "catch")
-    val declAst   = nullSafeAst(catchHandler.getDeclaration)
-    val bodyAst   = nullSafeAst(catchHandler.getCatchBody)
+    scope.pushNewBlockScope(catchNode)
+    val declAst = nullSafeAst(catchHandler.getDeclaration)
+    val bodyAst = nullSafeAst(catchHandler.getCatchBody)
+    scope.popScope()
     Ast(catchNode).withChildren(declAst).withChildren(bodyAst)
   }
 
@@ -331,6 +335,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val code    = s"for ($codeInit$codeCond;$codeIter)"
     val forNode = controlStructureNode(forStmt, ControlStructureTypes.FOR, code)
 
+    scope.pushNewBlockScope(forNode)
     val (localAsts, initAsts) =
       nullSafeAst(forStmt.getInitializerStatement).partition(_.root.exists(_.isInstanceOf[NewLocal]))
     setArgumentIndices(initAsts)
@@ -338,6 +343,7 @@ trait AstForStatementsCreator { this: AstCreator =>
       wrapInNullComparison(forStmt.getConditionExpression, astForConditionExpression(forStmt.getConditionExpression))
     val updateAst = nullSafeAst(forStmt.getIterationExpression)
     val bodyAsts  = nullSafeAst(forStmt.getBody)
+    scope.popScope()
     forAst(forNode, localAsts, initAsts, Seq(compareAst), Seq(updateAst), bodyAsts)
   }
 
@@ -356,10 +362,12 @@ trait AstForStatementsCreator { this: AstCreator =>
     val codeInit = nullSafeCode(forStmt.getInitializerClause)
     val code     = s"for ($codeDecl:$codeInit)"
     val forNode  = controlStructureNode(forStmt, ControlStructureTypes.FOR, code)
+    scope.pushNewBlockScope(forNode)
     val (localAsts, initAsts) = astsForStructuredBindingDeclaration(declaration, Some(forStmt.getInitializerClause))
       .partition(_.root.exists(_.isInstanceOf[NewLocal]))
     setArgumentIndices(initAsts)
     val bodyAst = nullSafeAst(forStmt.getBody)
+    scope.popScope()
     forAst(forNode, localAsts, initAsts.filterNot(_.nodes.isEmpty), Seq.empty, Seq.empty, bodyAst)
   }
 
@@ -424,9 +432,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     }
 
     val loopVariableLocalNode = localNode(forStmt, loopVariableName, loopVariableName, idType).order(0)
-    val loopVariableNode      = identifierNode(forStmt, loopVariableName, loopVariableName, idType)
-    diffGraph.addEdge(blockNode, loopVariableLocalNode, EdgeTypes.AST)
-    scope.addVariableReference(loopVariableName, loopVariableNode, idType, EvaluationStrategies.BY_REFERENCE)
+    scope.addVariable(loopVariableName, loopVariableLocalNode, idType, VariableScopeManager.ScopeType.BlockScope)
 
     // while loop:
     val codeDecl      = code(forStmt.getDeclaration)
@@ -456,6 +462,7 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     // while loop variable assignment:
     val whileLoopVariableNode = identifierNode(forStmt, loopVariableName, loopVariableName, idType)
+    scope.addVariableReference(loopVariableName, whileLoopVariableNode, idType, EvaluationStrategies.BY_REFERENCE)
 
     val nextCallNode =
       callNode(
@@ -501,7 +508,8 @@ trait AstForStatementsCreator { this: AstCreator =>
     // end surrounding block:
     scope.popScope()
 
-    val blockChildren = List(iteratorAssignmentAst, Ast(loopVariableNode), whileLoopAst.withChild(whileLoopBlockAst))
+    val blockChildren =
+      List(iteratorAssignmentAst, Ast(loopVariableLocalNode), whileLoopAst.withChild(whileLoopBlockAst))
     blockAst(blockNode, blockChildren)
   }
 
@@ -552,6 +560,8 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   private def astForIf(ifStmt: IASTIfStatement): Seq[Ast] = {
+    val ifNode = controlStructureNode(ifStmt, ControlStructureTypes.IF, code(ifStmt))
+
     val initAsts = ifStmt match {
       case s: ICPPASTIfStatement => nullSafeAst(s.getInitializerStatement)
       case _                     => Seq.empty
@@ -568,8 +578,6 @@ trait AstForStatementsCreator { this: AstCreator =>
     }
 
     val conditionAst = wrapInNullComparison(node, conditionAstRaw)
-
-    val ifNode = controlStructureNode(ifStmt, ControlStructureTypes.IF, code(ifStmt))
 
     val thenAst = ifStmt.getThenClause match {
       case block: IASTCompoundStatement => astForBlockStatement(block, blockNode(block))
