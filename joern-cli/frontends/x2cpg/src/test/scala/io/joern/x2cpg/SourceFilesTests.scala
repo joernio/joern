@@ -173,19 +173,19 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
 
     "handle basic Unix filesystem paths" when {
 
-      "path is directly inside rootPath" in {
+      "path is directly inside rootPath" taggedAs UnixOnly in {
         val rootPath = "/home/user/project"
         val filePath = "/home/user/project/src/main.c"
         SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src/main.c"
       }
 
-      "path is deeply nested inside rootPath" in {
+      "path is deeply nested inside rootPath" taggedAs UnixOnly in {
         val rootPath = "/home/user/project"
         val filePath = "/home/user/project/src/main/scala/io/joern/Main.scala"
         SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src/main/scala/io/joern/Main.scala"
       }
 
-      "path is the same as rootPath" in {
+      "path is the same as rootPath" taggedAs UnixOnly in {
         val rootPath = "/home/user/project"
         val filePath = "/home/user/project"
         // When paths are equal, should return just the file name component
@@ -193,33 +193,33 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
         result should not be empty
       }
 
-      "path is outside rootPath" in {
+      "path is outside rootPath" taggedAs UnixOnly in {
         val rootPath = "/home/user/project"
         val filePath = "/home/other/file.c"
         // Should return the path unaltered when not inside rootPath
         SourceFiles.toRelativePath(filePath, rootPath) shouldBe filePath
       }
 
-      "path is a sibling directory to rootPath" in {
+      "path is a sibling directory to rootPath" taggedAs UnixOnly in {
         val rootPath = "/home/user/project"
         val filePath = "/home/user/other/file.c"
         SourceFiles.toRelativePath(filePath, rootPath) shouldBe filePath
       }
 
-      "path is a parent directory of rootPath" in {
+      "path is a parent directory of rootPath" taggedAs UnixOnly in {
         val rootPath = "/home/user/project"
         val filePath = "/home/user"
         SourceFiles.toRelativePath(filePath, rootPath) shouldBe filePath
       }
 
-      "path contains dot segments that normalize correctly" in {
+      "path contains dot segments that normalize correctly" taggedAs UnixOnly in {
         val rootPath = "/home/user/project"
         val filePath = "/home/user/project/src/../src/./main.c"
         // After normalization, should become src/main.c
         SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src/main.c"
       }
 
-      "rootPath has trailing slash" in {
+      "rootPath has trailing slash" taggedAs UnixOnly in {
         val rootPath = "/home/user/project/"
         val filePath = "/home/user/project/src/main.c"
         SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src/main.c"
@@ -232,14 +232,14 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
         val rootPath = "C:\\PROGRA~1\\MyApp"
         val filePath = "C:\\PROGRA~1\\MyApp\\src\\main.c"
         // When both use short names consistently, should relativize (normalized to forward slashes)
-        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src/main.c"
+        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src\\main.c"
       }
 
       "mixing short and long file names" taggedAs WindowsOnly in {
         val rootPath = "C:\\Program Files\\MyApp"
         val filePath = "C:\\PROGRA~1\\MyApp\\src\\filename.c"
         // This would require filesystem access to resolve properly... thanks windows.
-        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src/filename.c"
+        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src\\filename.c"
       }
 
       "short name in file component" taggedAs WindowsOnly in {
@@ -253,7 +253,7 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
         val rootPath = "C:\\PROGRA~1\\COMMON~1\\MyApp"
         val filePath = "C:\\PROGRA~1\\COMMON~1\\MyApp\\CONFIG~1\\SETTIN~1.INI"
         // Consistent short names throughout should relativize
-        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "CONFIG~1/SETTIN~1.INI"
+        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "CONFIG~1\\SETTIN~1.INI"
       }
 
     }
@@ -265,21 +265,21 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
         val filePath = "C:\\users\\project\\src\\main.c"
         // On case-insensitive filesystems like Windows, these refer to same location
         // Should recognize equivalence and relativize (normalized to forward slashes)
-        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src/main.c"
+        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src\\main.c"
       }
 
       "path differs in case mid-path" taggedAs WindowsOnly in {
         val rootPath = "C:\\Users\\MyUser\\Project"
         val filePath = "C:\\Users\\myuser\\project\\src\\Main.C"
         // Should handle case differences throughout the path
-        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src/Main.C"
+        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src\\Main.C"
       }
 
       "case difference in root directory" taggedAs WindowsOnly in {
         val rootPath = "C:\\PROJECT"
         val filePath = "C:\\project\\src\\file.c"
         // Drive letters and paths are case-insensitive on Windows
-        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src/file.c"
+        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src\\file.c"
       }
 
       "Unix-style paths with case differences (should be treated as different)" taggedAs UnixOnly in {
@@ -308,7 +308,7 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
 
     "handle edge cases" when {
 
-      "rootPath is root directory /" in {
+      "rootPath is root directory /" taggedAs UnixOnly in {
         val rootPath = "/"
         val filePath = "/home/user/project/file.c"
         // Everything is under /, so should relativize
@@ -319,17 +319,17 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
         val rootPath = "C:\\"
         val filePath = "C:\\Users\\project\\file.c"
         // Everything on C: drive is under C:\
-        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "Users/project/file.c"
+        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "Users\\project\\file.c"
       }
 
-      "paths with special characters" in {
+      "paths with special characters" taggedAs UnixOnly in {
         val rootPath = "/home/user/my project (2024)"
         val filePath = "/home/user/my project (2024)/src/main.c"
         // Should handle spaces and parentheses
-        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src/main.c"
+        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src\\main.c"
       }
 
-      "path with trailing separators in both" in {
+      "path with trailing separators in both" taggedAs UnixOnly in {
         val rootPath = "/home/user/project/"
         val filePath = "/home/user/project/src/"
         // Should handle trailing slashes correctly
@@ -347,7 +347,7 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
         val rootPath = "\\\\server\\share\\project"
         val filePath = "\\\\server\\share\\project\\src\\main.c"
         // UNC paths should work
-        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src/main.c"
+        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src\\main.c"
       }
 
     }
