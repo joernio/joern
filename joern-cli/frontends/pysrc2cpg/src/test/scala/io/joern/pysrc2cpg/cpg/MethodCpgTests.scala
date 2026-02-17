@@ -4,25 +4,28 @@ import io.shiftleft.semanticcpg.language.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
+import java.io.File
 
 class MethodCpgTests extends PySrc2CpgFixture with Matchers {
   "A method" should {
+    val path = Seq("a", "b.py").mkString(File.separator)
 
     val cpg = code(
       """
         |def method():
         |   pass
         |""".stripMargin,
-      "a/b.py"
+      path
     )
 
     "test method full name" in {
       val method = cpg.method.name("method").head
-      method.fullName shouldBe "a/b.py:<module>.method"
+      method.fullName shouldBe s"$path:<module>.method"
     }
   }
 
   "test method redefinition" in {
+    val path = Seq("a", "b.py").mkString(File.separator)
     val cpg = code(
       """
         |class Foo():
@@ -33,21 +36,21 @@ class MethodCpgTests extends PySrc2CpgFixture with Matchers {
         |  def method():
         |    pass
         |""".stripMargin,
-      "a/b.py"
+      path
     )
 
     cpg.method.name("method").map(m => (m.name, m.fullName)).l should contain theSameElementsAs (List(
-      ("method", "a/b.py:<module>.Foo.method"),
-      ("method", "a/b.py:<module>.Foo.method$redefinition1"),
-      ("method", "a/b.py:<module>.Foo.method$redefinition2")
+      ("method", s"$path:<module>.Foo.method"),
+      ("method", s"$path:<module>.Foo.method$$redefinition1"),
+      ("method", s"$path:<module>.Foo.method$$redefinition2")
     ))
 
     cpg.typeDecl.name("Foo").member.name("method").dynamicTypeHintFullName.l should contain theSameElementsAs (
-      List("a/b.py:<module>.Foo.method$redefinition2")
+      List(s"$path:<module>.Foo.method$$redefinition2")
     )
 
     cpg.typeDecl.name("Foo<meta>").member.name("method").dynamicTypeHintFullName.l should contain theSameElementsAs (
-      List("a/b.py:<module>.Foo.method<metaClassAdapter>")
+      List(s"$path:<module>.Foo.method<metaClassAdapter>")
     )
   }
 
