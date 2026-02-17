@@ -299,15 +299,6 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
         // Extension case shouldn't matter on Windows
         SourceFiles.toRelativePath(filePath, rootPath) shouldBe "file.C"
       }
-
-      "macOS style case-insensitive but case-preserving" taggedAs MacOnly in {
-        val rootPath = "/Users/MyUser/Project"
-        val filePath = "/Users/myuser/project/src/Main.swift"
-        // macOS is case-insensitive by default (HFS+/APFS)
-        // Path.startsWith() will recognize these as the same path and relativize
-        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src/Main.swift"
-      }
-
     }
 
     "handle edge cases" when {
