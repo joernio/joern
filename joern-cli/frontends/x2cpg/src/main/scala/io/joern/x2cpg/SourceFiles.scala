@@ -308,7 +308,7 @@ object SourceFiles {
     // - OS-specific path handling
     if (absolutePath.startsWith(projectPath)) {
       if (absolutePath.equals(projectPath)) {
-        absolutePath.toString()
+        absolutePath.fileName
       } else {
         projectPath.relativize(absolutePath).toString
       }
