@@ -326,7 +326,7 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
         val rootPath = "/home/user/my project (2024)"
         val filePath = "/home/user/my project (2024)/src/main.c"
         // Should handle spaces and parentheses
-        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src\\main.c"
+        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src/main.c"
       }
 
       "path with trailing separators in both" taggedAs UnixOnly in {
