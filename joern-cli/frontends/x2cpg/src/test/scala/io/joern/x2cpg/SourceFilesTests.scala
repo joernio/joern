@@ -27,6 +27,18 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
         else classOf[Ignore].getName
       )
 
+  private object UnixOnly
+      extends Tag(
+        if (!scala.util.Properties.isWin && !scala.util.Properties.isMac) ""
+        else classOf[Ignore].getName
+      )
+
+  private object MacOnly
+      extends Tag(
+        if (scala.util.Properties.isMac) ""
+        else classOf[Ignore].getName
+      )
+
   private val cSourceFileExtensions: Set[String] = Set(".c", ".h")
   private val resourcesRoot: String = ProjectRoot.relativise("joern-cli/frontends/x2cpg/src/main/resources")
 
@@ -214,34 +226,34 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
       }
     }
 
-    "handle Windows 8.3 short file names" taggedAs WindowsOnly in {
+    "handle Windows 8.3 short file names" when {
 
-      "path contains 8.3 format directory names" in {
+      "path contains 8.3 format directory names" taggedAs WindowsOnly in {
         val rootPath = "C:\\PROGRA~1\\MyApp"
         val filePath = "C:\\PROGRA~1\\MyApp\\src\\main.c"
-        // When both use short names consistently, should relativize with Windows separators
-        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src\\main.c"
+        // When both use short names consistently, should relativize (normalized to forward slashes)
+        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src/main.c"
       }
 
-      "mixing short and long file names" in {
+      "mixing short and long file names" taggedAs WindowsOnly in {
         val rootPath = "C:\\Program Files\\MyApp"
         val filePath = "C:\\PROGRA~1\\MyApp\\src\\filename.c"
         // This would require filesystem access to resolve properly... thanks windows.
-        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src\\filename.c"
+        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src/filename.c"
       }
 
-      "short name in file component" in {
+      "short name in file component" taggedAs WindowsOnly in {
         val rootPath = "C:\\Users\\LONGUS~1\\project"
         val filePath = "C:\\Users\\LONGUS~1\\project\\SOMEDOC~1.TXT"
-        // Consistent short names
+        // Consistent short names should work
         SourceFiles.toRelativePath(filePath, rootPath) shouldBe "SOMEDOC~1.TXT"
       }
 
-      "multiple levels of short names" in {
+      "multiple levels of short names" taggedAs WindowsOnly in {
         val rootPath = "C:\\PROGRA~1\\COMMON~1\\MyApp"
         val filePath = "C:\\PROGRA~1\\COMMON~1\\MyApp\\CONFIG~1\\SETTIN~1.INI"
         // Consistent short names throughout should relativize
-        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "CONFIG~1\\SETTIN~1.INI"
+        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "CONFIG~1/SETTIN~1.INI"
       }
 
     }
@@ -252,25 +264,25 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
         val rootPath = "C:\\Users\\Project"
         val filePath = "C:\\users\\project\\src\\main.c"
         // On case-insensitive filesystems like Windows, these refer to same location
-        // Should recognize equivalence and relativize (with actual filesystem case)
-        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src\\main.c"
+        // Should recognize equivalence and relativize (normalized to forward slashes)
+        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src/main.c"
       }
 
       "path differs in case mid-path" taggedAs WindowsOnly in {
         val rootPath = "C:\\Users\\MyUser\\Project"
         val filePath = "C:\\Users\\myuser\\project\\src\\Main.C"
         // Should handle case differences throughout the path
-        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src\\Main.C"
+        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src/Main.C"
       }
 
       "case difference in root directory" taggedAs WindowsOnly in {
         val rootPath = "C:\\PROJECT"
         val filePath = "C:\\project\\src\\file.c"
         // Drive letters and paths are case-insensitive on Windows
-        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src\\file.c"
+        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src/file.c"
       }
 
-      "Unix-style paths with case differences (should be treated as different)" in {
+      "Unix-style paths with case differences (should be treated as different)" taggedAs UnixOnly in {
         val rootPath = "/home/user/Project"
         val filePath = "/home/user/project/src/main.c"
         // On case-sensitive filesystems like Linux, these are different paths
@@ -284,14 +296,12 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
         SourceFiles.toRelativePath(filePath, rootPath) shouldBe "file.C"
       }
 
-      "macOS style case-insensitive but case-preserving" in {
+      "macOS style case-insensitive but case-preserving" taggedAs MacOnly in {
         val rootPath = "/Users/MyUser/Project"
         val filePath = "/Users/myuser/project/src/Main.swift"
         // macOS is case-insensitive by default (HFS+/APFS)
-        // With filesystem resolution, should recognize as same and relativize
-        // Without it, string comparison sees them as different
-        // Expected: returns absolute path (string comparison fails)
-        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "/Users/myuser/project/src/Main.swift"
+        // Path.startsWith() will recognize these as the same path and relativize
+        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src/Main.swift"
       }
 
     }
@@ -309,7 +319,7 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
         val rootPath = "C:\\"
         val filePath = "C:\\Users\\project\\file.c"
         // Everything on C: drive is under C:\
-        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "Users\\project\\file.c"
+        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "Users/project/file.c"
       }
 
       "paths with special characters" in {
@@ -337,7 +347,7 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
         val rootPath = "\\\\server\\share\\project"
         val filePath = "\\\\server\\share\\project\\src\\main.c"
         // UNC paths should work
-        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src\\main.c"
+        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src/main.c"
       }
 
     }
