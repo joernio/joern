@@ -236,10 +236,14 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
       }
 
       "mixing short and long file names" taggedAs WindowsOnly in {
-        val rootPath = "C:\\Program Files\\MyApp"
-        val filePath = "C:\\PROGRA~1\\MyApp\\src\\filename.c"
-        // This would require filesystem access to resolve properly... thanks windows.
-        SourceFiles.toRelativePath(filePath, rootPath) shouldBe "src\\filename.c"
+        // Use real Windows paths - Program Files exists on all Windows systems
+        // PROGRA~1 is the 8.3 short name for "Program Files"
+        // Common Files subdirectory also typically exists
+        val rootPath = "C:\\Program Files"
+        val filePath = "C:\\PROGRA~1\\Common Files\\"
+        val result   = SourceFiles.toRelativePath(filePath, rootPath)
+        // toRealPath() will resolve both to the same canonical path
+        result shouldBe "Common Files"
       }
 
       "short name in file component" taggedAs WindowsOnly in {
