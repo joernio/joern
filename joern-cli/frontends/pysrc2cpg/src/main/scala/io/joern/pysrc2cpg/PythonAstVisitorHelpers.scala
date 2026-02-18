@@ -4,6 +4,7 @@ import io.joern.pysrc2cpg.memop.MemoryOperation
 import io.joern.pysrc2cpg.memop.MemoryOperation.{Del, Load, Store}
 import io.joern.pythonparser.{AstPrinter, ast}
 import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.frontendspecific.pysrc2cpg.PythonOperators
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
@@ -166,7 +167,7 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
       // Lowering of x, *y, z = someList:
       //     tmp = someList
       //     x = tmp[0]
-      //     y = slice(tmp, 1, -2, 1)
+      //     y = slice(tmp, 1, -1, 1)
       //     z = tmp[-1]
       val tmpVariableName = getUnusedName()
 
@@ -594,7 +595,7 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
     val upperStr = upperIndex.map(_.toString).getOrElse("")
     val code     = s"${codeOf(baseNode)}[${lowerIndex}:${upperStr}:1]"
     val sliceCallNode =
-      nodeBuilder.callNode(code, "<operator>.slice", DispatchTypes.STATIC_DISPATCH, lineAndColumn)
+      nodeBuilder.callNode(code, PythonOperators.slice, DispatchTypes.STATIC_DISPATCH, lineAndColumn)
 
     val args = baseNode :: lowerNode :: upperNode :: stepNode :: Nil
     addAstChildrenAsArguments(sliceCallNode, 1, args)

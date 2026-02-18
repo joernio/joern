@@ -1,6 +1,7 @@
 package io.joern.pysrc2cpg.cpg
 
 import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
+import io.joern.x2cpg.frontendspecific.pysrc2cpg.PythonOperators
 import io.shiftleft.semanticcpg.language.*
 
 class SliceCpgTests extends PySrc2CpgFixture() {

@@ -1,6 +1,7 @@
 package io.joern.pysrc2cpg.cpg
 
 import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
+import io.joern.x2cpg.frontendspecific.pysrc2cpg.PythonOperators
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.nodes.Call
@@ -15,7 +16,7 @@ class StarredTargetCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       val sliceCall = cpg.call.methodFullName("<operator>.slice").head
       inside(sliceCall.argument.sortBy(_.argumentIndex).l) {
         case List(base: Identifier, lower: Literal, upper: Literal, step: Literal) =>
-          base.code should startWith("tmp")
+          base.code shouldBe "tmp0"
           lower.code shouldBe "1"
           upper.code shouldBe "None"
           step.code shouldBe "1"
@@ -28,7 +29,7 @@ class StarredTargetCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       val sliceCall = cpg.call.methodFullName("<operator>.slice").head
       inside(sliceCall.argument.sortBy(_.argumentIndex).l) {
         case List(base: Identifier, lower: Literal, upper: Literal, step: Literal) =>
-          base.code should startWith("tmp")
+          base.code shouldBe "tmp0"
           lower.code shouldBe "1"
           upper.code shouldBe "-1"
           step.code shouldBe "1"
@@ -45,7 +46,7 @@ class StarredTargetCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
           .sortBy(_.argumentIndex)
           .l
       ) { case List(base: Identifier, index: Literal) =>
-        base.code should startWith("tmp")
+        base.code shouldBe "tmp0"
         index.code shouldBe "0"
       }
       val zAssign = assignments.find(_.argument(1).code == "z").get
@@ -57,7 +58,7 @@ class StarredTargetCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
           .sortBy(_.argumentIndex)
           .l
       ) { case List(base: Identifier, index: Literal) =>
-        base.code should startWith("tmp")
+        base.code shouldBe "tmp0"
         index.code shouldBe "-1"
       }
     }
@@ -68,7 +69,7 @@ class StarredTargetCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       val sliceCall = cpg.call.methodFullName("<operator>.slice").head
       inside(sliceCall.argument.sortBy(_.argumentIndex).l) {
         case List(base: Identifier, lower: Literal, upper: Literal, step: Literal) =>
-          base.code should startWith("tmp")
+          base.code shouldBe "tmp0"
           lower.code shouldBe "1"
           upper.code shouldBe "-2"
           step.code shouldBe "1"
@@ -85,7 +86,7 @@ class StarredTargetCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
           .sortBy(_.argumentIndex)
           .l
       ) { case List(base: Identifier, index: Literal) =>
-        base.code should startWith("tmp")
+        base.code shouldBe "tmp0"
         index.code shouldBe "0"
       }
       val cAssign = assignments.find(_.argument(1).code == "c").get
@@ -97,7 +98,7 @@ class StarredTargetCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
           .sortBy(_.argumentIndex)
           .l
       ) { case List(base: Identifier, index: Literal) =>
-        base.code should startWith("tmp")
+        base.code shouldBe "tmp0"
         index.code shouldBe "-2"
       }
       val dAssign = assignments.find(_.argument(1).code == "d").get
@@ -109,7 +110,7 @@ class StarredTargetCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
           .sortBy(_.argumentIndex)
           .l
       ) { case List(base: Identifier, index: Literal) =>
-        base.code should startWith("tmp")
+        base.code shouldBe "tmp0"
         index.code shouldBe "-1"
       }
     }
@@ -120,7 +121,7 @@ class StarredTargetCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       val sliceCall = cpg.call.methodFullName("<operator>.slice").head
       inside(sliceCall.argument.sortBy(_.argumentIndex).l) {
         case List(base: Identifier, lower: Literal, upper: Literal, step: Literal) =>
-          base.code should startWith("tmp")
+          base.code shouldBe "tmp0"
           lower.code shouldBe "0"
           upper.code shouldBe "-2"
           step.code shouldBe "1"
@@ -137,7 +138,7 @@ class StarredTargetCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
           .sortBy(_.argumentIndex)
           .l
       ) { case List(base: Identifier, index: Literal) =>
-        base.code should startWith("tmp")
+        base.code shouldBe "tmp0"
         index.code shouldBe "-2"
       }
       val zAssign = assignments.find(_.argument(1).code == "z").get
@@ -149,7 +150,7 @@ class StarredTargetCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
           .sortBy(_.argumentIndex)
           .l
       ) { case List(base: Identifier, index: Literal) =>
-        base.code should startWith("tmp")
+        base.code shouldBe "tmp0"
         index.code shouldBe "-1"
       }
     }
@@ -165,7 +166,7 @@ for x, *y in [[1,2,3]]:
       val sliceCall = cpg.call.methodFullName("<operator>.slice").head
       inside(sliceCall.argument.sortBy(_.argumentIndex).l) {
         case List(base: Identifier, lower: Literal, upper: Literal, step: Literal) =>
-          base.code should startWith("tmp")
+          base.code shouldBe "tmp2"
           lower.code shouldBe "1"
           upper.code shouldBe "None"
           step.code shouldBe "1"
@@ -181,7 +182,7 @@ for x, *y, z in [[1,2,3,4]]:
       val sliceCall = cpg.call.methodFullName("<operator>.slice").head
       inside(sliceCall.argument.sortBy(_.argumentIndex).l) {
         case List(base: Identifier, lower: Literal, upper: Literal, step: Literal) =>
-          base.code should startWith("tmp")
+          base.code shouldBe "tmp2"
           lower.code shouldBe "1"
           upper.code shouldBe "-1"
           step.code shouldBe "1"
@@ -198,7 +199,7 @@ for x, *y, z in [[1,2,3,4]]:
           .sortBy(_.argumentIndex)
           .l
       ) { case List(base: Identifier, index: Literal) =>
-        base.code should startWith("tmp")
+        base.code shouldBe "tmp2"
         index.code shouldBe "0"
       }
       val zAssign = assignments.find(_.argument(1).code == "z").get
@@ -210,7 +211,7 @@ for x, *y, z in [[1,2,3,4]]:
           .sortBy(_.argumentIndex)
           .l
       ) { case List(base: Identifier, index: Literal) =>
-        base.code should startWith("tmp")
+        base.code shouldBe "tmp2"
         index.code shouldBe "-1"
       }
     }
@@ -223,7 +224,7 @@ for x, *y, z in [[1,2,3,4]]:
       val sliceCall = cpg.call.methodFullName("<operator>.slice").head
       inside(sliceCall.argument.sortBy(_.argumentIndex).l) {
         case List(base: Identifier, lower: Literal, upper: Literal, step: Literal) =>
-          base.code should startWith("tmp")
+          base.code shouldBe "tmp3"
           lower.code shouldBe "0"
           upper.code shouldBe "-1"
           step.code shouldBe "1"
@@ -236,7 +237,7 @@ for x, *y, z in [[1,2,3,4]]:
       val sliceCall = cpg.call.methodFullName("<operator>.slice").head
       inside(sliceCall.argument.sortBy(_.argumentIndex).l) {
         case List(base: Identifier, lower: Literal, upper: Literal, step: Literal) =>
-          base.code should startWith("tmp")
+          base.code shouldBe "tmp3"
           lower.code shouldBe "1"
           upper.code shouldBe "-1"
           step.code shouldBe "1"
@@ -253,7 +254,7 @@ for x, *y, z in [[1,2,3,4]]:
           .sortBy(_.argumentIndex)
           .l
       ) { case List(base: Identifier, index: Literal) =>
-        base.code should startWith("tmp")
+        base.code shouldBe "tmp3"
         index.code shouldBe "0"
       }
       val cAssign = assignments.find(_.argument(1).code == "c").get
@@ -265,7 +266,7 @@ for x, *y, z in [[1,2,3,4]]:
           .sortBy(_.argumentIndex)
           .l
       ) { case List(base: Identifier, index: Literal) =>
-        base.code should startWith("tmp")
+        base.code shouldBe "tmp3"
         index.code shouldBe "-1"
       }
     }
