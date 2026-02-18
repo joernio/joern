@@ -34,7 +34,7 @@ import org.jetbrains.kotlin.it.unimi.dsi.fastutil.objects.s
 object AstCreator {
   case class AnonymousObjectContext(declaration: KtElement)
   case class BindingInfo(node: NewBinding, edgeMeta: Seq[(NewNode, NewNode, String)])
-  case class ClosureBindingDef(node: NewClosureBinding, captureEdgeTo: NewMethodRef, refEdgeTo: NewNode)
+  case class ClosureBindingDef(node: NewClosureBinding, captureEdgeTo: Option[NewMethodRef], refEdgeTo: NewNode)
 
   case class ReceiverInfo(
     ctorParamAst: Ast,
@@ -259,7 +259,7 @@ class AstCreator(
 
     closureBindingDefQueue.foreach { case ClosureBindingDef(node, captureEdgeTo, refEdgeTo) =>
       diffGraph.addNode(node)
-      diffGraph.addEdge(captureEdgeTo, node, EdgeTypes.CAPTURE)
+      captureEdgeTo.foreach(diffGraph.addEdge(_, node, EdgeTypes.CAPTURE))
       diffGraph.addEdge(node, refEdgeTo, EdgeTypes.REF)
     }
   }
