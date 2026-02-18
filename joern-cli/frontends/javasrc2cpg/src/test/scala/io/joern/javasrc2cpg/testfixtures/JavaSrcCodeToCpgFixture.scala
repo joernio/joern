@@ -8,16 +8,29 @@ import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.frontendspecific.javasrc2cpg
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg, LanguageFrontend}
+import io.joern.x2cpg.utils.{ArtifactFetcher, HttpArtifact}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Expression, Literal}
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.validation.PostFrontendValidator
 
 import java.io.File
+import java.nio.file.Path as JavaPath
 
 trait JavaSrcFrontend extends LanguageFrontend {
   final override type ConfigType = Config
   override val fileSuffix: String = ".java"
+
+  def withRemoteInferenceJars(artifacts: HttpArtifact*): this.type = {
+    artifacts.foreach { artifact =>
+      ArtifactFetcher.fetch(artifact).foreach { jarPath =>
+        val currentConfig = getConfig().getOrElse(JavaSrc2Cpg.DefaultConfig.withDelombokMode("no-delombok"))
+        setConfig(currentConfig.withInferenceJarPaths(currentConfig.inferenceJarPaths + jarPath.toString))
+      }
+    }
+    this
+  }
 
   override def execute(sourceCodeFile: File): Cpg = {
     val config = getConfig()
