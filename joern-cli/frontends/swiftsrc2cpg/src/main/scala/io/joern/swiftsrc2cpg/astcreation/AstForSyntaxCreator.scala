@@ -8,7 +8,6 @@ import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 
-import java.nio.file.Paths
 import scala.annotation.unused
 
 trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -41,7 +40,9 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForAttributeSyntax(node: AttributeSyntax): Ast = {
     val argumentAsts = node.arguments match {
       case Some(argument) =>
-        val argumentAst    = astForNode(argument)
+        // TODO: find a way to represent arbitrary attribute arguments in the CPG.
+        //  For now, we just create a parameter assign with the argument as Unknown node.
+        val argumentAst    = Ast(unknownNode(argument, code(argument)))
         val parameter      = NewAnnotationParameter().code("argument")
         val assign         = NewAnnotationParameterAssign().code(code(argument))
         val assignChildren = List(Ast(parameter), argumentAst)
