@@ -58,38 +58,32 @@ class ArtifactFetcher(val cacheDir: Path) {
     val entryDir = cacheDir.resolve(urlHash)
     val target   = entryDir.resolve(fileName)
 
-    val future   = new CompletableFuture[Option[Path]]()
-    val existing = inFlight.putIfAbsent(artifact.url, future)
-
-    if (existing != null) {
-      // existing != null means another thread is already downloading, so wait for the result
-      try {
-        existing.get(DownloadTimeoutMinutes, TimeUnit.MINUTES)
-      } catch {
-        case e: Exception =>
-          logger.warn(s"Wait for existing download of ${artifact.url} failed or timed out: ${e.getMessage}")
-          None
-      }
-    } else {
-      try {
-        // existing == null means this thread needs to download the file
-        val result = cachedPath(artifact, target).orElse(download(artifact, entryDir, target))
-
-        future.complete(result)
-        result
-      } catch {
-        case e: IOException =>
-          future.completeExceptionally(e)
-          throw e
-        case t: Throwable =>
-          // Notify waiting threads of exception so they wake up immediately
-          logger.error(s"Critical failure fetching ${artifact.url}", t)
-          future.completeExceptionally(t)
-          None
-      } finally {
-        // Always remove from map so subsequent calls can retry
-        inFlight.remove(artifact.url)
-      }
+    val future = new CompletableFuture[Option[Path]]()
+    Option(inFlight.putIfAbsent(artifact.url, future)) match {
+      case Some(existingFuture) =>
+        Try(existingFuture.get(DownloadTimeoutMinutes, TimeUnit.MINUTES)) match {
+          case Success(result) => result
+          case Failure(e) =>
+            logger.warn(s"Wait for existing download of ${artifact.url} failed or timed out: ${e.getMessage}")
+            None
+        }
+      case None =>
+        try {
+          Try(cachedPath(artifact, target).orElse(download(artifact, entryDir, target))) match {
+            case Success(result) =>
+              future.complete(result)
+              result
+            case Failure(e: IOException) =>
+              future.completeExceptionally(e)
+              throw e
+            case Failure(t) =>
+              logger.error(s"Critical failure fetching ${artifact.url}", t)
+              future.completeExceptionally(t)
+              None
+          }
+        } finally {
+          inFlight.remove(artifact.url)
+        }
     }
   }
 
