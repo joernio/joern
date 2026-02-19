@@ -1,10 +1,12 @@
 package io.joern.x2cpg.utils
 
 import io.joern.x2cpg.utils.ArtifactFetcherTests.artifactFetcherTest
+import io.joern.x2cpg.utils.RetryableAssertion.eventually
 import io.shiftleft.semanticcpg.utils.FileUtil
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import java.io.IOException
 import java.nio.file.{Files, Path}
 
 class ArtifactFetcherTests extends AnyWordSpec with Matchers {
@@ -80,6 +82,8 @@ class ArtifactFetcherTests extends AnyWordSpec with Matchers {
 
 object ArtifactFetcherTests {
   def artifactFetcherTest(test: Path => Unit): Unit = {
-    FileUtil.usingTemporaryDirectory("artifact-fetcher-test-")(test(_))
+    eventually[Unit, IOException] {
+      FileUtil.usingTemporaryDirectory("artifact-fetcher-test-")(test(_))
+    }
   }
 }

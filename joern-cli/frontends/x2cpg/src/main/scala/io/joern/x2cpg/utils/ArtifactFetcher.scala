@@ -3,6 +3,7 @@ package io.joern.x2cpg.utils
 import io.shiftleft.semanticcpg.utils.FileUtil
 import org.slf4j.LoggerFactory
 
+import java.io.IOException
 import java.net.URI
 import java.net.http.{HttpClient, HttpRequest, HttpResponse}
 import java.nio.file.{Files, Path, StandardCopyOption}
@@ -69,7 +70,7 @@ class ArtifactFetcher(val cacheDir: Path) {
           logger.warn(s"Wait for existing download of ${artifact.url} failed or timed out: ${e.getMessage}")
           None
       }
-    } else
+    } else {
       try {
         // existing == null means this thread needs to download the file
         val result = cachedPath(artifact, target).orElse(download(artifact, entryDir, target))
@@ -77,6 +78,9 @@ class ArtifactFetcher(val cacheDir: Path) {
         future.complete(result)
         result
       } catch {
+        case e: IOException =>
+          future.completeExceptionally(e)
+          throw e
         case t: Throwable =>
           // Notify waiting threads of exception so they wake up immediately
           logger.error(s"Critical failure fetching ${artifact.url}", t)
@@ -86,6 +90,7 @@ class ArtifactFetcher(val cacheDir: Path) {
         // Always remove from map so subsequent calls can retry
         inFlight.remove(artifact.url)
       }
+    }
   }
 
   private def cachedPath(artifact: HttpArtifact, target: Path): Option[Path] = {
@@ -122,8 +127,14 @@ class ArtifactFetcher(val cacheDir: Path) {
             val request  = requestBuilder.build()
             val response = httpClient.send(request, HttpResponse.BodyHandlers.ofFile(tmpFile))
 
-            if (response.statusCode() != 200) {
-              throw new RuntimeException(s"Status code ${response.statusCode()}")
+            val status = response.statusCode()
+            if (status != 200) {
+              val msg = s"Status code $status"
+              if (RetryableStatusCodes.contains(status)) {
+                throw new IOException(msg)
+              } else {
+                throw new RuntimeException(msg)
+              }
             }
 
             val downloadedHash = HashUtil.sha256(tmpFile)
@@ -135,6 +146,8 @@ class ArtifactFetcher(val cacheDir: Path) {
             logger.debug(s"Cached ${artifact.url} at $target")
             target
           } match {
+            case Failure(e: IOException) =>
+              throw e
             case Failure(e) =>
               logger.warn(s"Failed to download/verify ${artifact.url}: ${e.getMessage}")
               None
@@ -151,6 +164,7 @@ object ArtifactFetcher {
 
   private val logger                 = LoggerFactory.getLogger(getClass)
   private val DownloadTimeoutMinutes = 10
+  private val RetryableStatusCodes   = Set(408, 429, 500, 502, 503, 504)
 
   private lazy val httpClient: HttpClient =
     HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build()
