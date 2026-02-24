@@ -38,21 +38,11 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   }
 
   private def astForAttributeSyntax(node: AttributeSyntax): Ast = {
-    val argumentAsts = node.arguments match {
-      case Some(argument) =>
-        // TODO: find a way to represent arbitrary attribute arguments in the CPG.
-        //  For now, we just create a parameter assign with the argument as Unknown node.
-        val argumentAst    = Ast(unknownNode(argument, code(argument)))
-        val parameter      = NewAnnotationParameter().code("argument")
-        val assign         = NewAnnotationParameterAssign().code(code(argument))
-        val assignChildren = List(Ast(parameter), argumentAst)
-        setArgumentIndices(assignChildren)
-        List(Ast(assign).withChildren(assignChildren))
-      case None => Nil
-    }
+    // TODO: find a way to represent arbitrary attribute arguments in the CPG.
+    //  For now, we just create an AnnotationNode for the annotation itself.
     val attributeCode = code(node)
     val name          = code(node.attributeName)
-    annotationAst(annotationNode(node, attributeCode, name, name), argumentAsts)
+    Ast(annotationNode(node, attributeCode, name, name))
   }
 
   private def astForAvailabilityArgumentSyntax(node: AvailabilityArgumentSyntax): Ast = {

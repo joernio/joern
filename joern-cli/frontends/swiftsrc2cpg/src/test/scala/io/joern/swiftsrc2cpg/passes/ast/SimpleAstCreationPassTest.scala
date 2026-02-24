@@ -148,16 +148,6 @@ class SimpleAstCreationPassTest extends SwiftSrc2CpgSuite {
         bar.code shouldBe """@bar(x: "y")"""
         bar.name shouldBe "bar"
         bar.fullName shouldBe "bar"
-        val List(paramAssignFoo) = bar.parameterAssign.l
-        paramAssignFoo.code shouldBe """x: "y""""
-        paramAssignFoo.order shouldBe 1
-        val List(paramFoo) = paramAssignFoo.parameter.l
-        paramFoo.code shouldBe "argument"
-        paramFoo.order shouldBe 1
-        val List(paramValueFoo) = paramAssignFoo.value.collectAll[Unknown].l
-        paramValueFoo.code shouldBe """x: "y""""
-        paramValueFoo.order shouldBe 2
-        paramValueFoo.argumentIndex shouldBe 2
       }
     }
 
@@ -170,16 +160,6 @@ class SimpleAstCreationPassTest extends SwiftSrc2CpgSuite {
         objc.code shouldBe "@objc(Foo)"
         objc.name shouldBe "objc"
         objc.fullName shouldBe "objc"
-        val List(paramAssignFoo) = objc.parameterAssign.l
-        paramAssignFoo.code shouldBe "Foo"
-        paramAssignFoo.order shouldBe 1
-        val List(paramFoo) = paramAssignFoo.parameter.l
-        paramFoo.code shouldBe "argument"
-        paramFoo.order shouldBe 1
-        val List(paramValueFoo) = paramAssignFoo.value.l
-        paramValueFoo.code shouldBe "Foo"
-        paramValueFoo.order shouldBe 2
-        paramValueFoo.argumentIndex shouldBe 2
       }
     }
 
