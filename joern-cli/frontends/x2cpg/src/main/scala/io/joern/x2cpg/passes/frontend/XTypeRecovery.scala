@@ -1164,6 +1164,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       .methodFullName(methodFullName)
       .lineNumber(lineNo)
       .columnNumber(columnNo)
+      .typeFullName(Defines.Any)
 
   /** Integrate this method ref node into the CPG according to schema rules. Since we're adding this after the base
     * passes, we need to add the necessary linking manually.

@@ -1,19 +1,12 @@
 package io.joern.php2cpg.astcreation
 
-import io.joern.php2cpg.utils.{BlockScope, MethodScope, NamespaceScope, TypeScope}
 import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
 import io.joern.php2cpg.parser.Domain.*
+import io.joern.php2cpg.utils.BlockScope
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{
-  ControlStructureTypes,
-  DispatchTypes,
-  EdgeTypes,
-  Operators,
-  PropertyDefaults
-}
-import io.shiftleft.proto.cpg.Cpg.CpgStruct.Edge.EdgeType
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 
 trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -119,21 +112,12 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
   protected def astForTryStmt(stmt: PhpTryStmt): Ast = {
     val tryBody = stmtBodyBlockAst(stmt)
 
-    scope.pushNewScope(BlockScope(NewBlock(), ""))
     val catches = stmt.catches.map { catchStmt =>
+      val _blockNode = blockNode(catchStmt, "", Defines.Any)
 
       val localCatchVariable = catchStmt.variable
         .collectFirst { case variable @ PhpVariable(name: PhpNameExpr, _) =>
           val local = localNode(variable, name.name, name.name, Defines.Any)
-
-          val node = scope.addToScope(name.name, local) match {
-            case NamespaceScope(namespaceNode, _)       => namespaceNode
-            case TypeScope(typeDeclNode, _)             => typeDeclNode
-            case MethodScope(methodNode, _, _, _, _, _) => methodNode
-            case BlockScope(blockNode, _)               => blockNode
-          }
-
-          diffGraph.addEdge(node, local, EdgeTypes.AST)
           local.dynamicTypeHintFullName(catchStmt.types.map(_.name))
           Ast(local)
         }
@@ -148,9 +132,8 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
       val catchNodeCode = s"catch (${catchStmt.types.map(_.name).mkString(" | ")}$variableName)";
       val catchNode     = controlStructureNode(catchStmt, ControlStructureTypes.CATCH, catchNodeCode)
 
-      Ast(catchNode).withChild(astForCatchStmt(catchStmt)).withChild(localCatchVariable)
+      Ast(catchNode).withChild(astForCatchStmt(localCatchVariable, catchStmt))
     }
-    scope.popScope()
 
     val finallyBody = stmt.finallyStmt.map { fin =>
       val finallyNode = controlStructureNode(fin, ControlStructureTypes.FINALLY, "finally")
@@ -161,8 +144,12 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     tryCatchAst(tryNode, tryBody, catches, finallyBody)
   }
 
-  private def astForCatchStmt(stmt: PhpCatchStmt): Ast = {
-    stmtBodyBlockAst(stmt)
+  private def astForCatchStmt(catchLocalVariableAst: Ast, stmt: PhpCatchStmt): Ast = {
+    val bodyBlock    = blockNode(stmt)
+    val bodyStmtAsts = stmt.stmts.flatMap(astsForStmt)
+    Ast(bodyBlock)
+      .withChild(catchLocalVariableAst)
+      .withChildren(bodyStmtAsts)
   }
 
   protected def astForReturnStmt(stmt: PhpReturnStmt): Ast = {

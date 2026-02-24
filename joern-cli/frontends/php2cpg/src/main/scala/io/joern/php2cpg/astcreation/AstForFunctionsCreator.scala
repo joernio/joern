@@ -305,7 +305,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
         val methodRef = methodRefNode(node, fullName, fullName, Defines.Any)
 
-        val methodBlock = NewBlock()
+        val methodBlock = NewBlock().typeFullName(Defines.Any)
 
         scope.pushNewScope(MethodScope(methodNode_, methodBlock, fullName, methodRefNode = Option(methodRef)))
 
