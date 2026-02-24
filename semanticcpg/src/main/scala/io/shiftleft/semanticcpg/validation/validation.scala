@@ -44,7 +44,7 @@ abstract class AbstractValidator(cpg: Cpg) extends CpgPass(cpg) {
 object PostFrontendValidator {
   private val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  private enum ErrorType:
+  enum ErrorType:
     case FULLNAME_UNIQUE_METHOD, FULLNAME_UNIQUE_TYPE, FULLNAME_UNIQUE_TYPEDECL, MULTI_REF, BAD_REF_TYPE, NONLOCAL_REF,
       MULTI_AST_IN, MULTI_ARG_IN, DUPLICATE_ORDER
 }
@@ -87,6 +87,15 @@ class PostFrontendValidator(cpg: Cpg, throwOnError: Boolean) extends AbstractVal
     case _ =>
   }
 
+  /** Check that an identifier has at most one outgoing REF edge.
+    *
+    * @param id
+    *   the identifier being checked
+    * @param refOut
+    *   outgoing REF targets
+    * @param enclosingMethod
+    *   method enclosing the identifier, if any
+    */
   private def checkRefOutSize(
     id: nodes.Identifier,
     refOut: List[nodes.StoredNode],
@@ -111,6 +120,13 @@ class PostFrontendValidator(cpg: Cpg, throwOnError: Boolean) extends AbstractVal
     }
   }
 
+  /** Validate that the nodes reachable by REF edges are properly typed for the identifier.
+    *
+    * @param id
+    *   the identifier being checked
+    * @param refOut
+    *   outgoing REF targets
+    */
   private def checkRefOutType(id: nodes.Identifier, refOut: List[nodes.StoredNode]): Unit = {
     try {
       id.refsTo.foreach { _ => }
@@ -120,6 +136,15 @@ class PostFrontendValidator(cpg: Cpg, throwOnError: Boolean) extends AbstractVal
     }
   }
 
+  /** Check that outgoing REF edges do not cross method boundaries.
+    *
+    * @param id
+    *   the identifier being checked
+    * @param refOut
+    *   outgoing REF targets
+    * @param enclosingMethod
+    *   method enclosing the identifier, if any
+    */
   private def checkNonLocalRefOut(
     id: nodes.Identifier,
     refOut: List[nodes.StoredNode],
@@ -150,38 +175,50 @@ class PostFrontendValidator(cpg: Cpg, throwOnError: Boolean) extends AbstractVal
     }
   }
 
-  /** Ensure CFG-node orders are unique within an AST node.
+  /** Return CFG children for an AST node, excluding declarations and annotations.
+    *
+    * @param astNode
+    *   the AST node to inspect
+    * @return
+    *   iterator of CFG nodes
     */
+  private def cfgChildren(astNode: nodes.AstNode): Iterator[nodes.CfgNode] = {
+    astNode.astChildren.isCfgNode.filter {
+      // We are not interested in CFG nodes that are also declarations or annotations,
+      // as these can be combined with other CFG nodes without harm.
+      // When CFG and non-CFG nodes collide, that's usually fine, e.g.
+      // CALL and LOCAL: LOCAL yields an empty CFG, so no harm in combining it with CALL under the Cfg.(++) operation.
+      case _: nodes.Declaration | _: nodes.Annotation => false
+      case _                                          => true
+    }
+  }
+
+  /** Ensure CFG-node orders are unique within an AST node. */
   private def checkDuplicateOrder(node: nodes.StoredNode): Unit = node match {
-    // CFG nodes must have different orders. But when CFG and non-CFG nodes collide, that's usually fine, e.g.
-    // CALL and LOCAL: LOCAL yields an empty CFG, so no harm in combining it with CALL under the Cfg.(++) operation.
     case astNode: nodes.AstNode =>
-      astNode.astChildren
-        .collectAll[nodes.CfgNode]
-        .filterNot {
-          case _: nodes.Declaration | _: nodes.Annotation => true
-          case _                                          => false
+      cfgChildren(astNode).groupBy(_.order).foreach { case (order, nodes) =>
+        if (nodes.size > 1) {
+          registerViolation(DUPLICATE_ORDER, s"Nodes $nodes have same order $order inside node $astNode")
         }
-        .groupBy(_.order)
-        .foreach { case (order, nodes) =>
-          if (nodes.size > 1) {
-            registerViolation(DUPLICATE_ORDER, s"Nodes $nodes have same order $order inside node $astNode")
-          }
-        }
+      }
     case _ => // Do nothing: other nodes worth checking?
   }
 
+  /** Ensure a node has at most one incoming AST edge. */
   private def checkAstIn(node: nodes.StoredNode): Unit = {
     if (node._astIn.size > 1) {
       registerViolation(MULTI_AST_IN, s"Node $node should have at most one incoming AST edge")
     }
   }
 
+  /** Ensure a node has at most one incoming ARGUMENT edge. */
   private def checkArgumentIn(node: nodes.StoredNode): Unit = {
     if (node._argumentIn.size > 1) {
       registerViolation(MULTI_ARG_IN, s"Node $node should have at most one incoming ARGUMENT edge")
     }
   }
+
+  /** Log compressed violations and optionally throw on error. */
   private def reportViolations(): Unit = {
     val violations = getViolationsCompressed
     if (violations.nonEmpty) {
