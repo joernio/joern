@@ -98,7 +98,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     scope.popScope()
 
-    if scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL) then {
+    if (scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL)) {
       val typeDeclMember = NewMember()
         .name(className)
         .code(className)
@@ -218,11 +218,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val clinitAst      = astForStaticAndConstInits(stmt).toList
 
     // This needs to be carried over for enums
-    val staticConsts = if (stmt.classLikeType == ClassLikeTypes.Enum) {
-      scope.getConstAndStaticInits
-    } else {
-      List.empty
-    }
+    val staticConsts = if (stmt.classLikeType == ClassLikeTypes.Enum) scope.getConstAndStaticInits else List.empty
 
     staticConsts.foreach(init => scope.addConstOrStaticInitToScope(init.originNode, init.memberNode, init.value))
 

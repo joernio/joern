@@ -67,13 +67,14 @@ class CSharpScope(summary: CSharpProgramSummary)
     if (typeName == Constants.This) {
       surroundingTypeDeclFullName.flatMap(summary.matchingTypes).headOption
     } else {
-      super.tryResolveTypeReference(typeName) match
+      super.tryResolveTypeReference(typeName) match {
         case Some(x) => Some(x)
         case None    =>
           // typeName might be a fully-qualified name e.g. System.Console, in which case, even if we
           // don't import System (i.e. System is not in typesInScope), we should still find it if it's
           // in the type summaries and there's exactly 1 match.
           Some(typeName).filter(_.contains(".")).flatMap(summary.matchingTypes.andThen(singleOrNone))
+      }
     }
   }
 
@@ -95,31 +96,34 @@ class CSharpScope(summary: CSharpProgramSummary)
   /** Pops the scope, adding types from the scope if necessary.
     */
   override def pushNewScope(scopeNode: TypedScopeElement): Unit = {
-    scopeNode match
+    scopeNode match {
       case NamespaceScope(fullName) => typesInScope.addAll(summary.typesUnderNamespace(fullName))
       case TypeScope(name, _)       => typesInScope.addAll(summary.matchingTypes(name))
       case _                        =>
+    }
     super.pushNewScope(scopeNode)
   }
 
   /** Pops the scope, removing types from the scope if necessary.
     */
   override def popScope(): Option[TypedScopeElement] = {
-    super.popScope() match
+    super.popScope() match {
       case Some(NamespaceScope(fullName)) =>
         summary.typesUnderNamespace(fullName).foreach(typesInScope.remove)
         Some(NamespaceScope(fullName))
       case x => x
+    }
   }
 
   /** Returns the top of the scope, without removing it from the stack.
     */
   def peekScope(): Option[TypedScopeElement] = {
-    super.popScope() match
+    super.popScope() match {
       case None => None
       case Some(top) =>
         super.pushNewScope(top)
         Option(top)
+    }
   }
 
   /** Reduces [[typesInScope]] to contain only those types holding an extension method with the desired signature.

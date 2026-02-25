@@ -20,7 +20,7 @@ class DependenciesPass(cpg: Cpg) extends CpgPass(cpg) {
 
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     cpg.file("Package.swift").ast.isCall.nameExact("package").foreach { call =>
-      call.argument.argumentIndexGt(0).l match
+      call.argument.argumentIndexGt(0).l match {
         case Nil => // Do nothing
         case (lit: Literal) :: Nil if lit.argumentLabel.contains("path") =>
           val name = X2Cpg.stripQuotes(lit.code)
@@ -45,6 +45,7 @@ class DependenciesPass(cpg: Cpg) extends CpgPass(cpg) {
           diffGraph.addNode(dep)
         case args =>
           logger.warn(s"Unknown dependency specification: '${args.mkString(", ")}'")
+      }
     }
   }
 

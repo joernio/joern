@@ -124,9 +124,12 @@ class RubyAstGenRunner(config: Config)
           |
           |options[:input] = "${in.replace("\\", "\\\\")}"
           |options[:output] = "${out.toString.replace("\\", "\\\\")}"
-          |${if exclude.isEmpty then "" else s"options[:exclude] = /${exclude.replace("/", "\\/")}/"}
+          |${
+            if (exclude.isEmpty) { "" }
+            else { s"options[:exclude] = /${exclude.replace("/", "\\/")}/" }
+          }
           |
-          |if defined?(RubyAstGen) != 'constant' || defined?(RubyAstGen::parse) != 'method' then
+          |if (defined?(RubyAstGen) != 'constant' || defined?(RubyAstGen::parse) != 'method')
           |  require "$requireFile"
           |end
           |RubyAstGen::parse(options)
@@ -257,7 +260,7 @@ object RubyAstGenRunner {
             val inputStream: InputStream = jarFile.getInputStream(entry)
             try {
               Files.copy(inputStream, entryPath, StandardCopyOption.REPLACE_EXISTING)
-              if entryPath.endsWith("ruby_ast_gen") then entryPath.toFile.setExecutable(true, true)
+              if (entryPath.endsWith("ruby_ast_gen")) { entryPath.toFile.setExecutable(true, true) }
             } finally {
               inputStream.close()
             }

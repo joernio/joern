@@ -27,9 +27,10 @@ abstract class AbstractValidator(cpg: Cpg) extends CpgPass(cpg) {
 object PostFrontendValidator {
   val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  enum ErrorType:
+  enum ErrorType {
     case FULLNAME_UNIQUE_METHOD, FULLNAME_UNIQUE_TYPE, FULLNAME_UNIQUE_TYPEDECL, MULTI_REF, BAD_REF_TYPE, NONLOCAL_REF,
       MULTI_AST_IN, MULTI_ARG_IN, DUPLICATE_ORDER
+  }
 }
 /*This derives from CpgPass in order to get the good logging (e.g. timing, etc).
  * The pass is initially very bare-bones and under-complicated.

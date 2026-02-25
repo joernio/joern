@@ -127,7 +127,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
   ): NewNode = {
     scope.lookupVariable(name) match {
       case None =>
-        val localCode = if name == NameConstants.Self then NameConstants.Self else s"$$$name"
+        val localCode = if (name == NameConstants.Self) NameConstants.Self else s"$$$name"
         val local     = localNode(expr, name, code.getOrElse(localCode), tfn.getOrElse(Defines.Any))
 
         modifiers.foreach { modifier =>

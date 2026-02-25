@@ -43,11 +43,11 @@ class BooleanOperationsTests extends JavaSrcCode2CpgFixture {
     val assignments = cpg.assignment.map(x => (x.target.code, x.typeFullName)).l
     assignments.size shouldBe vars.size
     assignments.toSet shouldBe (vars.toSet)
-    vars.foreach(x => {
+    vars.foreach { x =>
       withClue(s"Assignment to `${x._1}`:") {
         assignments contains x shouldBe true
       }
-    })
+    }
   }
 
   "should contain a call node for the equals operator" in {

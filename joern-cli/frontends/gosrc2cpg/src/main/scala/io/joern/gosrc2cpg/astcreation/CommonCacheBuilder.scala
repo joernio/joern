@@ -20,23 +20,25 @@ trait CommonCacheBuilder(implicit withSchemaValidation: ValidationMode) { this: 
     json(ParserKeys.Decls).arrOpt
       .getOrElse(List())
       .map(createParserNodeInfo)
-      .foreach(decl => {
-        decl.node match
+      .foreach { decl =>
+        decl.node match {
           case GenDecl =>
             decl
               .json(ParserKeys.Specs)
               .arrOpt
               .getOrElse(List())
               .map(createParserNodeInfo)
-              .foreach(spec => {
-                spec.node match
+              .foreach { spec =>
+                spec.node match {
                   case ValueSpec => astForValueSpec(spec, true)
                   case _         =>
                   // Only process ValueSpec
-              })
+                }
+              }
           case _ =>
           // Only process GenDecl
-      })
+        }
+      }
   }
 
   protected def processFuncLiteral(funcLit: Value): Unit = {
@@ -75,11 +77,12 @@ trait CommonCacheBuilder(implicit withSchemaValidation: ValidationMode) { this: 
       // As the functions starting with lower case letters will only be accessible within that package. Which means
       // these methods / functions are not going to get referred from main source code.
       val receiverInfo = getReceiverInfo(Try(funcDeclVal(ParserKeys.Recv)))
-      val (methodFullname, recordNamespace) = receiverInfo match
+      val (methodFullname, recordNamespace) = receiverInfo match {
         case Some(_, typeFullName, _, _) =>
           (s"$typeFullName.$name", typeFullName)
         case _ =>
           (s"$fullyQualifiedPackage.$name", fullyQualifiedPackage)
+      }
       // TODO: handle multiple return type or tuple (int, int)
       val genericTypeMethodMap = processTypeParams(funcDeclVal(ParserKeys.Type))
       val (returnTypeStr, _) =
@@ -88,7 +91,7 @@ trait CommonCacheBuilder(implicit withSchemaValidation: ValidationMode) { this: 
       val params = funcDeclVal(ParserKeys.Type)(ParserKeys.Params)(ParserKeys.List)
       val signature =
         s"$methodFullname(${parameterSignature(params, genericTypeMethodMap)})${
-            if returnTypeStr == Defines.voidTypeName then "" else returnTypeStr
+            if (returnTypeStr == Defines.voidTypeName) "" else returnTypeStr
           }"
       goGlobal.recordMethodMetadata(recordNamespace, name, MethodCacheMetaData(returnTypeStr, signature))
       MethodMetadata(name, methodFullname, signature, params, receiverInfo, genericTypeMethodMap)

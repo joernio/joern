@@ -66,7 +66,7 @@ class RubySrc2Cpg extends X2CpgFrontend {
           case Success(astCreator) => Option(astCreator)
         }
         .filter { x =>
-          if x.fileContent.isBlank then logger.info(s"File content empty, skipping - ${x.fileName}")
+          if (x.fileContent.isBlank) { logger.info(s"File content empty, skipping - ${x.fileName}") }
           !x.fileContent.isBlank || x.fileName.endsWith(".html.erb")
         }
 
@@ -78,16 +78,13 @@ class RubySrc2Cpg extends X2CpgFrontend {
         }
         .foldLeft(RubyProgramSummary(RubyProgramSummary.BuiltinTypes(config.typeStubMetaData)))(_ ++= _)
 
-      val dependencySummary = if (config.downloadDependencies) {
-        DependencyDownloader(cpg).download()
-      } else {
-        RubyProgramSummary()
-      }
+      val dependencySummary =
+        if (config.downloadDependencies) DependencyDownloader(cpg).download() else RubyProgramSummary()
 
       val programSummary = internalProgramSummary ++= dependencySummary
 
       AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary))).createAndApply()
-      if config.downloadDependencies then {
+      if (config.downloadDependencies) {
         DependencySummarySolverPass(cpg, dependencySummary).createAndApply()
       }
       TypeNodePass.withTypesFromCpg(cpg).createAndApply()

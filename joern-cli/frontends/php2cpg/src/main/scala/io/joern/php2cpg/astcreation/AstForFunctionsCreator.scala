@@ -115,11 +115,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     closureMethodRef: Option[NewMethodRef] = None
   ): Ast = {
     val isStatic = decl.modifiers.contains(ModifierTypes.STATIC)
-    val thisParam = if (!isAnonymousMethod && decl.isClassMethod && !isStatic) {
-      Option(thisParamAstForMethod(decl))
-    } else {
-      None
-    }
+    val thisParam =
+      if (!isAnonymousMethod && decl.isClassMethod && !isStatic) Option(thisParamAstForMethod(decl)) else None
 
     val methodName = decl.name.name
     val fullName   = fullNameOverride.getOrElse(composeMethodFullName(methodName))
@@ -144,8 +141,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           .getOrElse("")}"
 
     val methodRef =
-      if methodName == NamespaceTraversal.globalNamespaceName then None
-      else if isAnonymousMethod then closureMethodRef
+      if (methodName == NamespaceTraversal.globalNamespaceName) None
+      else if (isAnonymousMethod) closureMethodRef
       else Option(methodRefNode(decl, s"$methodCode", fullName, Defines.Any))
     val method = methodNode(decl, methodName, methodCode, fullName, None, relativeFileName)
 

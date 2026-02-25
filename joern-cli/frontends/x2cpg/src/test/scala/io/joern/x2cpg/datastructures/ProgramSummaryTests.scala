@@ -44,9 +44,10 @@ class ProgramSummaryTests extends AnyWordSpec with Matchers with Inside {
     }
 
     "return the associated namespace given a type" in {
-      mockSummary.namespaceFor(mockTyp) match
+      mockSummary.namespaceFor(mockTyp) match {
         case None            => fail("Unable to resolve namespace!")
         case Some(namespace) => namespace shouldBe "io.joern"
+      }
     }
 
     "not be able to resolve any types with no entries" in {

@@ -82,12 +82,8 @@ class PythonAstVisitor(
     module.accept(memOpCalculator)
     memOpMap = memOpCalculator.astNodeToMemOp
 
-    val contentOption = if (enableFileContent) {
-      Some(nodeToCode.content)
-    } else {
-      None
-    }
-    val fileNode = nodeBuilder.fileNode(relFileName, contentOption)
+    val contentOption = if (enableFileContent) Some(nodeToCode.content) else None
+    val fileNode      = nodeBuilder.fileNode(relFileName, contentOption)
     val namespaceBlockNode =
       nodeBuilder.namespaceBlockNode(
         Constants.GLOBAL_NAMESPACE,
@@ -251,13 +247,13 @@ class PythonAstVisitor(
     methodRefNode: nodes.NewNode,
     decoratorList: Iterable[ast.iexpr]
   ): nodes.NewNode = {
-    decoratorList.foldRight(methodRefNode)((decorator: ast.iexpr, wrappedMethodRef: nodes.NewNode) =>
+    decoratorList.foldRight(methodRefNode)((decorator: ast.iexpr, wrappedMethodRef: nodes.NewNode) => {
       val (decoratorNode, decoratorName) = convert(decorator) match {
         case decoratorNode: NewIdentifier => decoratorNode -> decoratorNode.name
         case decoratorNode                => decoratorNode -> "" // other decorators are dynamic so we leave this blank
       }
       createCall(decoratorNode, decoratorName, lineAndColOf(decorator), wrappedMethodRef :: Nil, Nil, None)
-    )
+    })
   }
 
   private def convertFunctionInternal(
@@ -330,11 +326,7 @@ class PythonAstVisitor(
     parameters: ast.Arguments,
     isStatic: Boolean
   ): () => MethodParameters = {
-    val startIndex =
-      if (contextStack.isClassContext && !isStatic)
-        0
-      else
-        1
+    val startIndex = if (contextStack.isClassContext && !isStatic) 0 else 1
 
     () => new MethodParameters(startIndex, convert(parameters, startIndex))
   }
@@ -1039,11 +1031,7 @@ class PythonAstVisitor(
 
     if (ifs.nonEmpty) {
       val conditionNode =
-        if (ifs.size == 1) {
-          ifs.head
-        } else {
-          ast.BoolOp(ast.And, ifs.to(mutable.Seq), ifs.head.attributeProvider)
-        }
+        if (ifs.size == 1) ifs.head else ast.BoolOp(ast.And, ifs.to(mutable.Seq), ifs.head.attributeProvider)
       val ifNotContinueNode = convert(
         ast.If(
           ast.UnaryOp(ast.Not, conditionNode, ifs.head.attributeProvider),
@@ -1507,11 +1495,7 @@ class PythonAstVisitor(
     // TODO test lambda expression.
     val lambdaCounter = contextStack.getAndIncLambdaCounter()
     val lambdaNumberSuffix =
-      if (lambdaCounter == 0) {
-        ""
-      } else {
-        lambdaCounter.toString
-      }
+      if (lambdaCounter == 0) "" else lambdaCounter.toString
 
     val name = nextClosureName()
     val (_, methodRefNode) = createMethodAndMethodRef(
@@ -1790,11 +1774,7 @@ class PythonAstVisitor(
 
     val topLevelExprNodes =
       lowerComparatorChain(lhsNode, compare.ops, compare.comparators, lineAndColOf(compare))
-    if (topLevelExprNodes.size > 1) {
-      createBlock(topLevelExprNodes, lineAndColOf(compare))
-    } else {
-      topLevelExprNodes.head
-    }
+    if (topLevelExprNodes.size > 1) createBlock(topLevelExprNodes, lineAndColOf(compare)) else topLevelExprNodes.head
   }
 
   private def compopToOpCodeAndFullName(compareOp: ast.icompop): () => (String, String) = { () =>
@@ -2069,11 +2049,9 @@ class PythonAstVisitor(
     // createValueToTargetsDecomposition.
     assert(memOpMap.get(tuple).get == Load || memOpMap.get(tuple).get == Del)
     val tupleElementNodes = tuple.elts.map(convert)
-    val code = if (tupleElementNodes.size != 1) {
-      tupleElementNodes.map(codeOf).mkString("(", ", ", ")")
-    } else {
-      "(" + codeOf(tupleElementNodes.head) + ",)"
-    }
+    val code =
+      if (tupleElementNodes.size != 1) tupleElementNodes.map(codeOf).mkString("(", ", ", ")")
+      else "(" + codeOf(tupleElementNodes.head) + ",)"
 
     val callNode =
       nodeBuilder.callNode(code, "<operator>.tupleLiteral", DispatchTypes.STATIC_DISPATCH, lineAndColOf(tuple))
@@ -2187,11 +2165,7 @@ class PythonAstVisitor(
 
   private def calculateFullNameFromContext(name: String): String = {
     val contextQualName = contextStack.qualName
-    if (contextQualName != "") {
-      relFileName + ":" + contextQualName + "." + name
-    } else {
-      relFileName + ":" + name
-    }
+    if (contextQualName != "") relFileName + ":" + contextQualName + "." + name else relFileName + ":" + name
   }
 
   override protected def line(node: iast): Option[Int]         = None

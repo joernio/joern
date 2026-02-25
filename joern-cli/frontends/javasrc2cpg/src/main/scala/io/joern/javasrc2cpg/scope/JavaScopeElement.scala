@@ -21,8 +21,9 @@ import io.joern.javasrc2cpg.scope.JavaScopeElement.WildcardImports.{MultipleWild
 import java.util
 import scala.jdk.CollectionConverters.*
 
-enum TypeType:
+enum TypeType {
   case ReferenceTypeType, TypeVariableType
+}
 
 trait JavaScopeElement(disableTypeFallback: Boolean) {
   private val variables                        = mutable.Map[String, ScopeVariable]()
@@ -233,11 +234,11 @@ object JavaScopeElement {
     }
 
     def getUsedCaptures(): List[ScopeVariable] = {
-      val outerScope = outerClassType.map(typ =>
+      val outerScope = outerClassType.map { typ =>
         val localNode = NewLocal().name(NameConstants.OuterClass).typeFullName(typ).code(NameConstants.OuterClass)
         outerClassGenericSignature.foreach(localNode.genericSignature(_))
         ScopeLocal(localNode, NameConstants.OuterClass)
-      )
+      }
 
       val sortedUsedCaptures = usedCaptureParams.toList.sortBy(_.name)
       val usedLocals         = sortedUsedCaptures.collect { case local: ScopeLocal => local }

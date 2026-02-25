@@ -113,22 +113,20 @@ object ProgramHandlingUtil {
     emitOrUnpack: Path => Either[A, Map[Boolean, List[Path]]],
     maxDepth: Int
   ): IterableOnce[A] = {
-    if (maxDepth < -1)
+    if (maxDepth < -1) {
       logger.warn("Maximum recursion depth reached.")
       Seq()
-    else
+    } else {
       emitOrUnpack(src) match {
         case Left(a) => Seq(a)
         case Right(disposeFiles) =>
           disposeFiles.flatMap(x =>
             x._2.flatMap(f =>
-              if (x._1)
-                unfoldArchives(f, emitOrUnpack, maxDepth - 1)
-              else
-                unfoldArchives(f, emitOrUnpack, maxDepth)
+              if (x._1) unfoldArchives(f, emitOrUnpack, maxDepth - 1) else unfoldArchives(f, emitOrUnpack, maxDepth)
             )
           )
       }
+    }
   }
 
   /** Find <pre>.class</pre> files, including those inside archives.

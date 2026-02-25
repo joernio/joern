@@ -69,7 +69,7 @@ class AstCreator(
    */
   protected def astForRubyFile(rootStatements: StatementList): Ast = {
     fileNode =
-      if enableFileContents then Option(NewFile().name(relativeFileName).content(fileContent))
+      if (enableFileContents) Option(NewFile().name(relativeFileName).content(fileContent))
       else Option(NewFile().name(relativeFileName))
     val fullName = s"$relativeUnixStyleFileName:${NamespaceTraversal.globalNamespaceName}".stripPrefix("/")
 

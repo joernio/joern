@@ -88,14 +88,14 @@ object RubyProgramSummary {
 
       val mergedMpks = mergedMpksObj
         .reduceOption((prev, curr) => {
-          curr.keys.foreach(key => {
+          curr.keys.foreach { key =>
             prev.updateWith(key) {
               case Some(x) =>
                 Option(x ++ curr(key))
               case None =>
                 Option(curr(key))
             }
-          })
+          }
           prev
         })
         .getOrElse(collection.mutable.Map[String, Set[RubyStubbedType]]())

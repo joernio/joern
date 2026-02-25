@@ -76,7 +76,7 @@ class DependencyDownloader(cpg: Cpg) {
     }
 
     // If dependency version is not specified, latest is returned
-    val versionOpt = if dependency.version.isBlank then getVersion(dependency.name) else Option(dependency.version)
+    val versionOpt = if (dependency.version.isBlank) getVersion(dependency.name) else Option(dependency.version)
 
     versionOpt match {
       case Some(version) =>
@@ -166,10 +166,10 @@ class DependencyDownloader(cpg: Cpg) {
                 Iterator
                   .continually(dataTarStream.getNextEntry)
                   .takeWhile(_ != null)
-                  .filter(sourceEntry =>
+                  .filter(sourceEntry => {
                     val entryName = sourceEntry.getName
                     !entryName.contains("..") && entryName.startsWith("lib/") && entryName.endsWith(".rb")
-                  )
+                  })
                   .foreach { rubyFile =>
                     try {
                       val fName  = s"lib/${pkgDir.fileName}/${rubyFile.getName.stripPrefix("lib/")}"
@@ -228,7 +228,7 @@ class DependencyDownloader(cpg: Cpg) {
           case Success(astCreator) => Option(astCreator)
         }
         .filter(x => {
-          if x.fileContent.isBlank then logger.info(s"File content empty, skipping - ${x.fileName}")
+          if (x.fileContent.isBlank) { logger.info(s"File content empty, skipping - ${x.fileName}") }
           !x.fileContent.isBlank
         })
 

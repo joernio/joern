@@ -46,10 +46,10 @@ class PhpTypeStubsParserPass(cpg: Cpg, config: XTypeStubsParserConfig = XTypeStu
   override def runOnPart(builder: DiffGraphBuilder, part: KnownFunction): Unit = {
     /* calculate the result of this part - this is done as a concurrent task */
     val builtinMethod = cpg.method.fullNameExact(part.name).l
-    builtinMethod.foreach(mNode => {
+    builtinMethod.foreach { mNode =>
       setTypes(builder, mNode.methodReturn, part.rTypes)
       (mNode.parameter.l zip part.pTypes).map((p, pTypes) => setTypes(builder, p, pTypes))
-    })
+    }
   }
 
   def createKnownFunctionFromLine(line: String): Option[KnownFunction] = {

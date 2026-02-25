@@ -136,12 +136,13 @@ class TestCpgGeneratorFactory(config: ConsoleConfig) extends CpgGeneratorFactory
   }
 
   override def forCodeAt(inputPath: String): Option[CpgGenerator] = {
-    guessLanguage(inputPath) match
+    guessLanguage(inputPath) match {
       case Some(Languages.NEWC)     => Option(newCCpgGenerator())
       case Some(Languages.JSSRC)    => Option(newJsSrcCpgGenerator())
       case Some(Languages.JAVASRC)  => Option(newJavaSrcCpgGenerator())
       case Some(Languages.SWIFTSRC) => Option(newSwiftSrcCpgGenerator())
       case _                        => None // no other languages are tested here
+    }
   }
 
   override def forLanguage(language: String): Option[CpgGenerator] = language match {

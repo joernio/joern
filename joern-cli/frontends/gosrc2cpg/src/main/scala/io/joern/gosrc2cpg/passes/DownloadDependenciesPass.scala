@@ -24,12 +24,12 @@ class DownloadDependenciesPass(cpg: Cpg, parentGoMod: GoModHelper, goGlobal: GoG
     FileUtil.usingTemporaryDirectory("go-temp-download") { projDir =>
       parentGoMod
         .getModMetaData()
-        .foreach(mod => {
+        .foreach { mod =>
           ExternalCommand.run(Seq("go", "mod", "init", "joern.io/temp"), Option(projDir)).toTry match {
             case Success(_) =>
               mod.dependencies
                 .filter(dep => dep.beingUsed)
-                .map(dependency => {
+                .map { dependency =>
                   val cmd     = Seq("go", "get", dependency.dependencyStr())
                   val results = ExternalCommand.run(cmd, Option(projDir)).toTry
                   results match {
@@ -39,11 +39,11 @@ class DownloadDependenciesPass(cpg: Cpg, parentGoMod: GoModHelper, goGlobal: GoG
                     case Failure(f) =>
                       logger.error(s"\t- command '$cmd' failed", f)
                   }
-                })
+                }
             case Failure(f) =>
               logger.error("\t- command 'go mod init joern.io/temp' failed", f)
           }
-        })
+        }
     }
     processor.queue.put(None)
     processorThread.join()

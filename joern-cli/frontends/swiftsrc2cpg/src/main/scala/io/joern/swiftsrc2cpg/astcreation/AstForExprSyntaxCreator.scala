@@ -646,13 +646,14 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         }
         maybeFunctionCallExpr match {
           case Some(functionCallExpr: FunctionCallExprSyntax) =>
-            functionCallExpr.calledExpression match
+            functionCallExpr.calledExpression match {
               case MemberAccessExprSyntax(json) =>
                 val memberChildren = json("children").arr
                 memberChildren.addOne(base.json)
                 astForNode(functionCallExpr)
               case _ =>
                 notHandledYet(node)
+            }
           case _ => notHandledYet(node)
         }
       case None => astForNode(node.config)
@@ -740,11 +741,8 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         }
         val needsSyntheticBreak = !s.statements.children.lastOption.exists(_.item.isInstanceOf[FallThroughStmtSyntax])
         val asts                = flowAst :+ astForNode(s.statements)
-        val cAsts = if (needsSyntheticBreak) {
-          asts :+ Ast(controlStructureNode(s, ControlStructureTypes.BREAK, "break"))
-        } else {
-          asts
-        }
+        val cAsts =
+          if (needsSyntheticBreak) asts :+ Ast(controlStructureNode(s, ControlStructureTypes.BREAK, "break")) else asts
         (tAsts.toList, cAsts.toList)
       case i: IfConfigDeclSyntax =>
         (List.empty, List(astForIfConfigDeclSyntax(i)))

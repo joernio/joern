@@ -13,9 +13,10 @@ class FileTests extends CSharpCode2CpgFixture {
       val programFile = cpg.file.nameExact("Program.cs").head
       programFile.name shouldBe "Program.cs"
       programFile.content should startWith("using System;")
-      programFile.hash match
+      programFile.hash match {
         case Some(hash) => hash should startWith("bd9afc24308")
         case None       => fail("No file hash detected")
+      }
     }
 
   }
@@ -32,16 +33,18 @@ class FileTests extends CSharpCode2CpgFixture {
       val fooFile = cpg.file.nameExact(fooName).head
       fooFile.name shouldBe fooName
       fooFile.content should startWith("using System;")
-      fooFile.hash match
+      fooFile.hash match {
         case Some(hash) => hash should startWith("79d4a0d812")
         case None       => fail("No file hash detected")
+      }
 
       val barFile = cpg.file.nameExact(barName).head
       barFile.name shouldBe barName
       barFile.content should startWith("using System;")
-      barFile.hash match
+      barFile.hash match {
         case Some(hash) => hash should startWith("5847f5ce0e")
         case None       => fail("No file hash detected")
+      }
     }
 
   }

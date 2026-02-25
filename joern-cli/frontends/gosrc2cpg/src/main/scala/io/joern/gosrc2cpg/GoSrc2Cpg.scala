@@ -28,10 +28,10 @@ class GoSrc2Cpg(goGlobalOption: Option[GoGlobal] = Option(GoGlobal())) extends X
       FileUtil.usingTemporaryDirectory("gosrc2cpgOut") { tmpDir =>
         MetaDataPass(cpg, Languages.GOLANG, config.inputPath).createAndApply()
         val astGenResults = new GoAstGenRunner(config).executeForGo(tmpDir)
-        astGenResults.foreach(astGenResult => {
+        astGenResults.foreach { astGenResult =>
           goGlobalOption
             .orElse(Option(GoGlobal()))
-            .foreach(goGlobal => {
+            .foreach { goGlobal =>
               goMod = Some(
                 GoModHelper(
                   Some(astGenResult.modulePath),
@@ -41,8 +41,9 @@ class GoSrc2Cpg(goGlobalOption: Option[GoGlobal] = Option(GoGlobal())) extends X
               )
               goGlobal.mainModule = goMod.flatMap(modHelper => modHelper.getModMetaData().map(mod => mod.module.name))
               InitialMainSrcPass(cpg, astGenResult.parsedFiles, config, goMod.get, goGlobal, tmpDir).createAndApply()
-              if goGlobal.pkgLevelVarAndConstantAstMap.size() > 0 then
+              if (goGlobal.pkgLevelVarAndConstantAstMap.size() > 0) {
                 PackageCtorCreationPass(cpg, config, goGlobal).createAndApply()
+              }
               if (config.fetchDependencies) {
                 goGlobal.processingDependencies = true
                 DownloadDependenciesPass(cpg, goMod.get, goGlobal, config).process()
@@ -51,8 +52,8 @@ class GoSrc2Cpg(goGlobalOption: Option[GoGlobal] = Option(GoGlobal())) extends X
               AstCreationPass(cpg, astGenResult.parsedFiles, config, goMod.get, goGlobal, tmpDir, report)
                 .createAndApply()
               report.print()
-            })
-        })
+            }
+        }
       }
     }
   }

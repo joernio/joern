@@ -303,7 +303,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   protected def astForUnaryExpression(unaryExpr: DotNetNodeInfo): Seq[Ast] = {
     val operatorToken = unaryExpr.json(ParserKeys.OperatorToken)(ParserKeys.Value).str
-    val operatorName = operatorToken match
+    val operatorName = operatorToken match {
       case "+" => Operators.plus
       case "-" => Operators.minus
       case "++" =>
@@ -315,6 +315,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case "~" => Operators.not
       case "!" => Operators.logicalNot
       case "&" => Operators.addressOf
+    }
 
     val args     = createDotNetNodeInfo(unaryExpr.json(ParserKeys.Operand))
     val argsAst  = astForOperand(args)
@@ -383,11 +384,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       Try(elements.map(createDotNetNodeInfo).map(_.json(elementParserKey))).getOrElse(ArrayBuffer.empty).nonEmpty
 
     // We have more expressions in our expressions, which means we have a 2+D array, parse these
-    val args: Seq[Ast] = if (nestedExpressionsExists) {
-      elements.map(createDotNetNodeInfo).flatMap(astForCollectionStaticInitializer(_, elementParserKey)).toSeq
-    } else {
-      elements.slice(0, MAX_INITIALIZERS).map(createDotNetNodeInfo).flatMap(astForNode).toSeq
-    }
+    val args: Seq[Ast] =
+      if (nestedExpressionsExists)
+        elements.map(createDotNetNodeInfo).flatMap(astForCollectionStaticInitializer(_, elementParserKey)).toSeq
+      else elements.slice(0, MAX_INITIALIZERS).map(createDotNetNodeInfo).flatMap(astForNode).toSeq
 
     val typeFullName = elementParserKey match {
       case ParserKeys.Expressions => s"${getTypeFullNameFromAstNode(args)}[]"
@@ -600,11 +600,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .map((typeName, isGetter) => (scope.tryResolveTypeReference(typeName).map(_.name).getOrElse(typeName), isGetter))
       .getOrElse((Defines.Any, false))
 
-    if (isGetter) {
-      astForMemberAccessGetterExpression(byPropertyName.get, baseAst, baseTypeFullName, accessExpr)
-    } else {
-      fieldAccessAst(accessExpr, accessExpr, baseAst, code(accessExpr), fieldIdentifierName, typeFullName) :: Nil
-    }
+    if (isGetter) astForMemberAccessGetterExpression(byPropertyName.get, baseAst, baseTypeFullName, accessExpr)
+    else fieldAccessAst(accessExpr, accessExpr, baseAst, code(accessExpr), fieldIdentifierName, typeFullName) :: Nil
   }
 
   protected def astForElementAccessExpression(elementAccessExpression: DotNetNodeInfo): Seq[Ast] = {
@@ -658,14 +655,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .json(ParserKeys.Arguments)
       .arr
       .map(createDotNetNodeInfo)
-      .flatMap(x =>
+      .flatMap { x =>
         val argExpression = createDotNetNodeInfo(x.json(ParserKeys.Expression))
         argExpression.node match {
           case _: BaseLambdaExpression =>
             astForSimpleLambdaExpression(argExpression, baseTypeHint)
           case _ => astForExpressionStatement(x)
         }
-      )
+      }
       .toSeq
   }
 

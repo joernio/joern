@@ -247,11 +247,12 @@ private case class Package(dist: Dist, @upickle.implicits.key("version_normalize
 
 implicit val packageRw: ReadWriter[PackageReleases] = readwriter[ujson.Value].bimap[PackageReleases](
   x => ujson.Obj("packages" -> write(x.packages)),
-  json =>
+  json => {
     val packagesWithDist = json("packages").obj.map { case (packName, packages) =>
       packName -> packages.arr.filter(_.obj.keySet.contains("dist"))
     }
     PackageReleases(read[Map[String, List[Package]]](packagesWithDist))
+  }
 )
 
 private case class PackageReleases(packages: Map[String, List[Package]])

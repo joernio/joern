@@ -137,7 +137,7 @@ class Jimple2Cpg extends X2CpgFrontend {
       val decompiler     = new Decompiler(classFiles.map(_.file))
       val decompiledJava = decompiler.decompile()
 
-      classFiles.foreach(x => {
+      classFiles.foreach { x =>
         val decompiledJavaSrc = decompiledJava.get(x.fullyQualifiedClassName.get)
         decompiledJavaSrc match {
           case Some(src) =>
@@ -145,7 +145,7 @@ class Jimple2Cpg extends X2CpgFrontend {
             Files.writeString(outputFile, src)
           case None => // Do Nothing
         }
-      })
+      }
     }
   }
 

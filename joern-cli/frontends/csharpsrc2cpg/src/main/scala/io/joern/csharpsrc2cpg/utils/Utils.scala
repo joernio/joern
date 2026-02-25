@@ -35,8 +35,9 @@ object Utils {
     * Useful when handling nested methods, as method full names include signatures. To avoid a nested method's full name
     * containing both its parent's signature and its own, we remove the parent's signature when entering its scope.
     */
-  def withoutSignature(fullName: String): String = fullName.split(':').toList match
+  def withoutSignature(fullName: String): String = fullName.split(':').toList match {
     case fn :: sig :: Nil => fn
     case _                => fullName
+  }
 
 }

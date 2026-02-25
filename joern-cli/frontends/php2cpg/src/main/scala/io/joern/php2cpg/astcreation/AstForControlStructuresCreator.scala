@@ -314,7 +314,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     }
 
     // try to create assignment for key-part
-    val keyAssignOption = stmt.keyVar.map(keyVar =>
+    val keyAssignOption = stmt.keyVar.map { keyVar =>
       val iteratorIdentifierAst = astForIdentifierWithLocalRef(iteratorIdentifier.copy, localN)
       val keyCallCode           = s"${iteratorIdentifierAst.rootCodeOrEmpty}${InstanceMethodDelimiter}key()"
       // `key` function is used to get the key of the current element
@@ -323,7 +323,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
         callNode(stmt, keyCallCode, "key", "Iterator.key", DispatchTypes.DYNAMIC_DISPATCH, None, Some(Defines.Any))
       val keyCallAst = callAst(keyCallNode, base = Option(iteratorIdentifierAst))
       simpleAssignAst(stmt, astForExpr(keyVar), keyCallAst)
-    )
+    }
 
     scope.popScope()
 

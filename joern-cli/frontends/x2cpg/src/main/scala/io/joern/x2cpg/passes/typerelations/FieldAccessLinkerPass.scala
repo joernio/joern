@@ -36,17 +36,19 @@ class FieldAccessLinkerPass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
   private def dstMemberFullNames(call: Call): Seq[String] = {
     if (allFieldAccessTypes.contains(call.name)) {
       val fieldAccess = call.asInstanceOf[OpNodes.FieldAccess]
-      fieldAccess.argumentOption(1) match
+      fieldAccess.argumentOption(1) match {
         case Some(baseNode) =>
-          fieldAccess.fieldIdentifier.canonicalName.headOption match
+          fieldAccess.fieldIdentifier.canonicalName.headOption match {
             case Some(fieldName) =>
               baseNode.evalType.map(x => s"$x$DOT$fieldName").toSeq
             case None =>
               logger.warn(s"Field access ${fieldAccess.code} has no field identifier")
               Seq.empty
+          }
         case None =>
           logger.warn(s"Field access ${fieldAccess.code} has no base node")
           Seq.empty
+      }
     } else {
       Seq.empty
     }

@@ -57,11 +57,7 @@ object AstGenRunner {
       new java.io.File(dir.substring("file:".length, indexOfLib)).toString
     } else {
       val indexOfTarget = dir.lastIndexOf("target")
-      if (indexOfTarget != -1) {
-        new java.io.File(dir.substring("file:".length, indexOfTarget)).toString
-      } else {
-        "."
-      }
+      if (indexOfTarget != -1) new java.io.File(dir.substring("file:".length, indexOfTarget)).toString else "."
     }
     Paths.get(fixedDir, "/bin/astgen").toAbsolutePath.toString
   }
@@ -83,7 +79,7 @@ object AstGenRunner {
     *   the full path to the astgen binary found on the system
     */
   private def compatibleAstGenPath(): String = {
-    AstGenBin match
+    AstGenBin match {
       // 1. case: we try it at env var SWIFTASTGEN_BIN
       case Some(path) if hasCompatibleAstGenVersionAtPath(Option(path)) =>
         path
@@ -98,6 +94,7 @@ object AstGenRunner {
         val localPath = s"$executableDir/$executableName"
         logger.debug(s"Using SwiftAstGen from '$localPath'")
         localPath
+    }
   }
 
   private lazy val astGenCommand = compatibleAstGenPath()

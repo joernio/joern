@@ -192,7 +192,7 @@ object UseAfterFree extends QueryBundle {
           .filter(_.parameter.size == 1)
           .callIn
           .where(_.argument(1).isIdentifier)
-          .flatMap(f => {
+          .flatMap { f =>
             val freedIdentifierCode = f.argument(1).code
             val postDom             = f.postDominatedBy.toSetImmutable
 
@@ -205,7 +205,7 @@ object UseAfterFree extends QueryBundle {
               .removedAll(assignedPostDom)
               .isIdentifier
               .codeExact(freedIdentifierCode)
-          })
+          }
       }),
       tags = List(QueryTags.uaf),
       codeExamples = CodeExamples(

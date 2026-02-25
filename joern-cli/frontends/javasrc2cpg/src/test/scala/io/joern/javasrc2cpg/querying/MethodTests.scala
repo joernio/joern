@@ -186,12 +186,13 @@ class MethodTests4 extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "have correct `code` fields" in {
-      cpg.method("run").parameter.indexFrom(1).l match
+      cpg.method("run").parameter.indexFrom(1).l match {
         case List(arg1, arg2, arg3) =>
           arg1.code shouldBe "int arg1"
           arg2.code shouldBe "int arg2"
           arg3.code shouldBe "int arg3"
         case result => fail(s"Expected 3 parameters but got $result")
+      }
     }
   }
 

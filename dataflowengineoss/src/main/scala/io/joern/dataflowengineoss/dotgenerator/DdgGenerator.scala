@@ -88,7 +88,7 @@ class DdgGenerator {
 
     val allInEdges = v
       .inE(EdgeTypes.REACHING_DEF)
-      .map(x =>
+      .map { x =>
         // note: this looks strange, but let me explain...
         // in overflowdb, edges were allowed multiple properties and this used to be `x.property(Properties.VARIABLE)`
         // in flatgraph an edge may have zero or one properties and they're not named...
@@ -99,7 +99,7 @@ class DdgGenerator {
           case _                        => null
         }
         Edge(x.src.asInstanceOf[StoredNode], v, srcVisible = true, variablePropertyMaybe, edgeType)
-      )
+      }
 
     v match {
       case cfgNode: CfgNode =>

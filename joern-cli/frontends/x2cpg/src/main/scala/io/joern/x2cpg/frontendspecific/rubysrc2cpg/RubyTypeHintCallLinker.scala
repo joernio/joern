@@ -26,11 +26,11 @@ class RubyTypeHintCallLinker(cpg: Cpg) extends XTypeHintCallLinker(cpg) {
       true
     }
     val name =
-      if (methodName.contains(pathSep) && methodName.length > methodName.lastIndexOf(pathSep) + 1)
+      if (methodName.contains(pathSep) && methodName.length > methodName.lastIndexOf(pathSep) + 1) {
         val strippedMethod = methodName.stripPrefix(s"$kernelPrefix.")
-        if kernelFunctions.contains(strippedMethod) then strippedMethod
-        else methodName.substring(methodName.lastIndexOf(pathSep) + pathSep.length)
-      else methodName
+        if (kernelFunctions.contains(strippedMethod)) { strippedMethod }
+        else { methodName.substring(methodName.lastIndexOf(pathSep) + pathSep.length) }
+      } else { methodName }
     createMethodStub(name, methodName, call.argumentOut.size, isExternal, builder)
   }
 }

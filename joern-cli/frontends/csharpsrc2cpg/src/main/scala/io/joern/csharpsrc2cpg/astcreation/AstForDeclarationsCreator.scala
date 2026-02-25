@@ -285,12 +285,12 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       .json(ParserKeys.Variables)
       .arr
       .map(createDotNetNodeInfo)
-      .flatMap(x => {
+      .flatMap { x =>
         val name    = nameFromNode(x)
         val hasInit = !x.json(ParserKeys.Initializer).isNull
         scope.pushField(FieldDecl(name, typeFullName, isStatic, hasInit, x))
         astForVariableDeclarator(x, typeFullName, shouldPushVariable = false)
-      })
+      }
       .toSeq
   }
 
@@ -375,11 +375,14 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val isStaticConstructor = modifiers.exists(_.modifierType == ModifierTypes.STATIC)
 
-    val (name, fullName) = if (isStaticConstructor) {
-      (Defines.StaticInitMethodName, composeMethodFullName(typeDeclFullName, Defines.StaticInitMethodName, signature))
-    } else {
-      (Defines.ConstructorMethodName, composeMethodFullName(typeDeclFullName, Defines.ConstructorMethodName, signature))
-    }
+    val (name, fullName) =
+      if (isStaticConstructor)
+        (Defines.StaticInitMethodName, composeMethodFullName(typeDeclFullName, Defines.StaticInitMethodName, signature))
+      else
+        (
+          Defines.ConstructorMethodName,
+          composeMethodFullName(typeDeclFullName, Defines.ConstructorMethodName, signature)
+        )
 
     scope.pushNewScope(MethodScope(fullName))
 
@@ -511,19 +514,20 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       ModifierTypes.PROTECTED,
       CSharpModifiers.CONST
     )
-    val implicitAccessModifier = accessModifiers match
+    val implicitAccessModifier = accessModifiers match {
       // Internal is default for top-level definitions
       case Nil if scope.isTopLevel => modifierNode(node, ModifierTypes.INTERNAL) :: Nil
       // Private is default for nested definitions
       case Nil => modifierNode(node, ModifierTypes.PRIVATE) :: Nil
       case _   => Nil
+    }
 
     implicitAccessModifier ++ explicitModifiers
   }
 
   private def readModifier(node: DotNetNodeInfo, modifier: ujson.Value): Option[NewModifier] = {
     Option {
-      modifier(ParserKeys.Value).str match
+      modifier(ParserKeys.Value).str match {
         case "public"    => modifierNode(node, ModifierTypes.PUBLIC)
         case "private"   => modifierNode(node, ModifierTypes.PRIVATE)
         case "internal"  => modifierNode(node, ModifierTypes.INTERNAL)
@@ -536,6 +540,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         case x =>
           logger.warn(s"Unhandled modifier name '$x'")
           null
+      }
     }
   }
 
@@ -552,12 +557,13 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForPropertyAccessor(accessorDecl: DotNetNodeInfo, propertyDecl: DotNetNodeInfo): Seq[Ast] = {
-    accessorDecl.node match
+    accessorDecl.node match {
       case GetAccessorDeclaration => astForGetAccessorDeclaration(accessorDecl, propertyDecl)
       case SetAccessorDeclaration => astForSetAccessorDeclaration(accessorDecl, propertyDecl)
       case _ =>
         logger.warn(s"Unhandled property accessor '${accessorDecl.node}'")
         Nil
+    }
   }
 
   private def astForSetAccessorDeclaration(accessorDecl: DotNetNodeInfo, propertyDecl: DotNetNodeInfo): Seq[Ast] = {
@@ -584,7 +590,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val returnType   = nodeTypeFullName(propertyDecl)
     val baseType     = scope.surroundingTypeDeclFullName.getOrElse(Defines.UnresolvedNamespace)
     val isStatic     = modifiers.exists(_.modifierType == ModifierTypes.STATIC)
-    val parameters   = if isStatic then Nil else astForThisParameter(propertyDecl) :: Nil
+    val parameters   = if (isStatic) Nil else astForThisParameter(propertyDecl) :: Nil
     val signature    = composeMethodLikeSignature(returnType, parameters)
     val fullName     = composeMethodFullName(baseType, name, signature)
     val body         = Ast(blockNode(accessorDecl))

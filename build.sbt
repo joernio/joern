@@ -73,7 +73,9 @@ ThisBuild / scalacOptions ++= Seq(
   "-deprecation", // Emit warning and location for usages of deprecated APIs.
   "--release",
   "11",
-  "-Wshadow:type-parameter-shadow"
+  "-Wshadow:type-parameter-shadow",
+  "-no-indent",
+  "-old-syntax"
 )
 
 lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
