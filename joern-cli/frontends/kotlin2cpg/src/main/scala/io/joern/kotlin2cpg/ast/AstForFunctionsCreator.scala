@@ -604,13 +604,19 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     val samMethodName      = samMethod.flatMap(safeFunctionDescriptorName).getOrElse(Constants.UnknownLambdaBindingName)
     val samMethodSignature = samMethod.flatMap(safeFunctionDescriptorSignature)
 
-    if (samMethodSignature.isDefined) {
-      val interfaceLambdaBinding = bindingNode(samMethodName, samMethodSignature.get, lambdaMethodNode.fullName)
-      addToLambdaBindingInfoQueue(interfaceLambdaBinding, lambdaTypeDecl, lambdaMethodNode)
-    }
-
     val nativeLambdaBinding = bindingNode(samMethodName, lambdaMethodNode.signature, lambdaMethodNode.fullName)
-    addToLambdaBindingInfoQueue(nativeLambdaBinding, lambdaTypeDecl, lambdaMethodNode)
+
+    samMethodSignature match {
+      case Some(signature) =>
+        val interfaceLambdaBinding = bindingNode(samMethodName, signature, lambdaMethodNode.fullName)
+        addToLambdaBindingInfoQueue(interfaceLambdaBinding, lambdaTypeDecl, lambdaMethodNode)
+
+        if (signature != lambdaMethodNode.signature) {
+          addToLambdaBindingInfoQueue(nativeLambdaBinding, lambdaTypeDecl, lambdaMethodNode)
+        }
+      case None =>
+        addToLambdaBindingInfoQueue(nativeLambdaBinding, lambdaTypeDecl, lambdaMethodNode)
+    }
   }
 
   def astForReturnExpression(expr: KtReturnExpression): Ast = {
