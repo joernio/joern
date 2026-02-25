@@ -22,16 +22,13 @@ trait UsesService { this: Kotlin2Cpg =>
     } catch {
       case _: MalformedURLException =>
         println(s"The specified jar4import service url parameter `$serviceUrl` is not a valid URL. Exiting.")
-        System.exit(1)
-        None
+        scala.sys.exit(1)
       case _: java.net.ConnectException =>
         println(s"Could not connect to service at url `$serviceUrl`. Exiting.")
-        System.exit(1)
-        None
+        scala.sys.exit(1)
       case _: requests.RequestFailedException =>
         println(s"Request to `$serviceUrl` failed. Exiting.")
-        System.exit(1)
-        None
+        scala.sys.exit(1)
     }
   }
 
@@ -53,8 +50,7 @@ trait UsesService { this: Kotlin2Cpg =>
     } catch {
       case e: Throwable =>
         logger.info("Caught exception while downloading dependencies", e)
-        System.exit(1)
-        Seq()
+        scala.sys.exit(1)
     }
   }
 

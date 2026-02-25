@@ -104,8 +104,7 @@ object AstGenRunner {
                |Please make sure to have a compatible astgen version installed and available
                |on this system or set the environment variable SWIFTASTGEN_BIN to the full path of an executable astgen binary.
                |""".stripMargin)
-          System.exit(1)
-          localPath // this will never be reached but is needed to satisfy the return type
+          scala.sys.exit(1)
         }
   }
 

@@ -158,8 +158,7 @@ abstract class AstGenRunner(metaData: AstGenProgramMetaData, config: X2CpgConfig
         logger.error(s"""Local ${metaData.name} binary not found at '$localPath' or is not executable!
              |Please make sure to have a compatible astgen version installed and available on this system.
              |""".stripMargin)
-        System.exit(1)
-        localPath // this will never be reached but is needed to satisfy the return type
+        scala.sys.exit(1)
       }
     }
   }
