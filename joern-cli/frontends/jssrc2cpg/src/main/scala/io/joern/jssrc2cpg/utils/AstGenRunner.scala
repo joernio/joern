@@ -163,8 +163,17 @@ object AstGenRunner {
         logger.debug(
           s"Did not find any astgen binary on this system (environment variable ASTGEN_BIN not set and no entry in the systems PATH)"
         )
-        val localPath = s"$executableDir${java.io.File.separator}$executableName"
-        localPath
+        val localPath = s"$executableDir/$executableName"
+        if (io.joern.x2cpg.astgen.AstGenRunner.isExecutableFile(localPath)) {
+          localPath
+        } else {
+          logger.error(s"""Local astgen binary not found at '$localPath' or is not executable!
+               |Please make sure to have a compatible astgen version installed and available
+               |on this system or set the environment variable ASTGEN_BIN to the full path of an executable astgen binary.
+               |""".stripMargin)
+          System.exit(1)
+          localPath // this will never be reached but is needed to satisfy the return type
+        }
   }
 
   private lazy val astGenCommand = {

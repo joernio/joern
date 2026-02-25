@@ -96,8 +96,17 @@ object AstGenRunner {
           s"Did not find any SwiftAstGen binary on this system (environment variable SWIFTASTGEN_BIN not set and no entry in the systems PATH)"
         )
         val localPath = s"$executableDir/$executableName"
-        logger.debug(s"Using SwiftAstGen from '$localPath'")
-        localPath
+        if (io.joern.x2cpg.astgen.AstGenRunner.isExecutableFile(localPath)) {
+          logger.debug(s"Using SwiftAstGen from '$localPath'")
+          localPath
+        } else {
+          logger.error(s"""Local SwiftAstGen binary not found at '$localPath' or is not executable!
+               |Please make sure to have a compatible astgen version installed and available
+               |on this system or set the environment variable SWIFTASTGEN_BIN to the full path of an executable astgen binary.
+               |""".stripMargin)
+          System.exit(1)
+          localPath // this will never be reached but is needed to satisfy the return type
+        }
   }
 
   private lazy val astGenCommand = compatibleAstGenPath()
