@@ -9,6 +9,7 @@ object DownloadHelper {
 
   private val CoursierDownloadMaxRetry = 5
   private val CoursierCache = FileCache[Task]()
+    .withLocation(Paths.get(".local/coursier-cache").toString)
     .withRetry(CoursierDownloadMaxRetry)
     /** Can be configured to retry with backoff, but it seems that the default retry strategy is good enough for now
       *
