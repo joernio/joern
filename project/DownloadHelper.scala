@@ -1,15 +1,26 @@
+import lmcoursier.internal.shaded.coursier.cache.FileCache
+import lmcoursier.internal.shaded.coursier.util.{Artifact, Task}
+
 import java.io.File
-import java.net.URI
 import java.nio.file.{Files, Path, Paths}
 
 object DownloadHelper {
-  val LocalStorageDir = Paths.get(".local/source-urls")
+  private val LocalStorageDir = Paths.get(".local/source-urls")
+
+  private val CoursierDownloadMaxRetry = 5
+  private val CoursierCache = FileCache[Task]()
+    .withRetry(CoursierDownloadMaxRetry)
+    /** Can be configured to retry with backoff, but it seems that the default retry strategy is good enough for now
+      *
+      * .withRetryBackoffInitialDelay(500).withRetryBackoffMultiplier(2.0)
+      */
+    .withFollowHttpToHttpsRedirections(true)
 
   /** Downloads the remote file from the given url if either
-    * - the localFile is not available, 
-    * - or the url is different from the previously downloaded file
-    * - or we don't have the original url from the previously downloaded file
-    * We store the information about the previously downloaded urls and the localFile in `.local`
+    *   - the localFile is not available,
+    *   - or the url is different from the previously downloaded file
+    *   - or we don't have the original url from the previously downloaded file We store the information about the
+    *     previously downloaded urls and the localFile in `.local`
     */
   def ensureIsAvailable(url: String, localFile: File): Unit = {
     if (!localFile.exists() || Option(url) != previousUrlForLocalFile(localFile)) {
@@ -17,15 +28,24 @@ object DownloadHelper {
       Files.deleteIfExists(localPath)
 
       println(s"[INFO] downloading $url to $localFile")
-      sbt.io.Using.urlInputStream(new URI(url).toURL) { inputStream =>
-        sbt.IO.transfer(inputStream, localFile)
-      }
+      val file = downloadFile(url)
+      sbt.IO.copyFile(file, localFile)
 
       // persist url in local storage
       val storageFile = storageInfoFileFor(localFile)
       Files.createDirectories(storageFile.getParent)
       Files.writeString(storageFile, url)
     }
+  }
+
+  private def downloadFile(url: String): File = {
+    val artifact = Artifact(url)
+    CoursierCache
+      .file(artifact)
+      .run
+      .unsafeRun()(CoursierCache.ec)
+      // We re-throw if the download still fails after CoursierDownloadMaxRetry retries
+      .fold(e => throw new java.io.IOException(e), identity)
   }
 
   private def relativePathToProjectRoot(path: Path): String =
