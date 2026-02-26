@@ -3,7 +3,7 @@ package io.joern.swiftsrc2cpg.passes.ast
 import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
-import io.shiftleft.codepropertygraph.generated.nodes.Identifier
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, MethodParameterIn}
 import io.shiftleft.semanticcpg.language.*
 
 class ExtensionTests extends SwiftSrc2CpgSuite {
@@ -110,46 +110,25 @@ class ExtensionTests extends SwiftSrc2CpgSuite {
           |}
           |""".stripMargin
       val cpg = code(fooCode, "Foo.swift").moreCode(ext1Code, "Ext1.swift")
+
+      cpg.method.nameExact("subscript") shouldBe empty
+
       inside(cpg.call.nameExact("reduce").receiver.l) { case List(id: Identifier) =>
         id.name shouldBe "path"
         id.typeFullName shouldBe Defines.Array
-        val local = id._localViaRefOut.get
-        local.name shouldBe "path"
-        local.typeFullName shouldBe Defines.Array
-        local.closureBindingId.loneElement shouldBe "Ext1.swift:<global>.Foo.subscript:(path:Swift.Array)->JSON:get:ANY:path"
+        val param = id.refsTo.collectAll[MethodParameterIn].loneElement
+        param.name shouldBe "path"
+        param.typeFullName shouldBe Defines.Array
+        param.method.fullName shouldBe "Ext1.swift:<global>.Foo<extension>.subscript:(path:Swift.Array).getter:JSON"
       }
-
-      val List(subscriptMethod1, subscriptMethod2) = cpg.method.nameExact("subscript").l
-
-      val List(subscriptMethod1Get)      = subscriptMethod1.ast.isMethod.nameExact("get").l
-      val List(subscriptMethod1GetBlock) = subscriptMethod1Get.astChildren.isBlock.l
-      val List(pathParam1)               = subscriptMethod1.parameter.nameExact("path").l
-      val List(getRef1)                  = subscriptMethod1.ast.isMethodRef.code("get").l
-      val List(closureBindingPath1)      = getRef1.captureOut.l
-      closureBindingPath1.closureBindingId shouldBe Option(
-        "Ext1.swift:<global>.Foo.subscript:(path:Swift.Array)->JSON:get:ANY:path"
-      )
-      closureBindingPath1.refOut.head shouldBe pathParam1
-      closureBindingPath1.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-
       inside(cpg.call.codeExact("self[path]").argument(2).l) { case List(id: Identifier) =>
         id.name shouldBe "path"
         id.typeFullName shouldBe "JSONSubscriptType"
-        val local = id._localViaRefOut.get
-        local.name shouldBe "path"
-        local.typeFullName shouldBe "JSONSubscriptType"
-        local.closureBindingId.loneElement shouldBe "Ext1.swift:<global>.Foo.subscript:(path:JSONSubscriptType)->JSON:get:ANY:path"
+        val param = id.refsTo.collectAll[MethodParameterIn].loneElement
+        param.name shouldBe "path"
+        param.typeFullName shouldBe "JSONSubscriptType"
+        param.method.fullName shouldBe "Ext1.swift:<global>.Foo<extension>.subscript:(path:JSONSubscriptType).getter:JSON"
       }
-      val List(subscriptMethod2Get)      = subscriptMethod2.ast.isMethod.nameExact("get").l
-      val List(subscriptMethod2GetBlock) = subscriptMethod2Get.astChildren.isBlock.l
-      val List(pathParam2)               = subscriptMethod2.parameter.nameExact("path").l
-      val List(getRef2)                  = subscriptMethod2.ast.isMethodRef.code("get").l
-      val List(closureBindingPath2)      = getRef2.captureOut.l
-      closureBindingPath2.closureBindingId shouldBe Option(
-        "Ext1.swift:<global>.Foo.subscript:(path:JSONSubscriptType)->JSON:get:ANY:path"
-      )
-      closureBindingPath2.refOut.head shouldBe pathParam2
-      closureBindingPath2.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
     }
 
     "do not create illegal ref edges for global variables accessed in functions" in {

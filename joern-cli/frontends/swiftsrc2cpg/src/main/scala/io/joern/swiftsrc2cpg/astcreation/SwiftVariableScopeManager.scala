@@ -90,14 +90,6 @@ class SwiftVariableScopeManager extends VariableScopeManager {
     collapsed.mkString(ScopePathSeparator)
   }
 
-  def computeScopePathWithSignatures: String = {
-    val collapsed = getAllEnclosingFullNames(stack, appendSignatureLast = true).reverse.foldLeft(Seq.empty[String]) {
-      case (acc, name) if acc.lastOption.contains(name) => acc
-      case (acc, name)                                  => acc :+ name
-    }
-    collapsed.mkString(ScopePathSeparator)
-  }
-
   def isInStaticMethodScope: Boolean = {
     def isClosureScope(methodScope: MethodScopeElement): Boolean = {
       methodScope.methodName.startsWith(Defines.ClosurePrefix)
