@@ -623,7 +623,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     "recover the method full name related" in {
       val Some(methodRef) = cpg.methodRef.code("views.add_student").headOption: @unchecked
       methodRef.methodFullName shouldBe Seq("student", "views.py:<module>.add_student").mkString(File.separator)
-      methodRef.typeFullName shouldBe "<empty>"
+      methodRef.typeFullName shouldBe "ANY"
     }
   }
 

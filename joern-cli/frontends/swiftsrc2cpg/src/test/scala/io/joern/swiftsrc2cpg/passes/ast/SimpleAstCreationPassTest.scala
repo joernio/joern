@@ -124,14 +124,14 @@ class SimpleAstCreationPassTest extends SwiftSrc2CpgSuite {
       val List(fooLocalX)      = fooBlock.astChildren.isLocal.nameExact("x").l
       val List(barRef)         = fooBlock.astChildren.isMethodRef.l
       val List(closureBinding) = barRef.captureOut.l
-      closureBinding.closureBindingId shouldBe Option("Test0.swift:<global>.foo.bar:x")
+      closureBinding.closureBindingId shouldBe Option("Test0.swift:<global>.foo.bar:()->ANY:x")
       closureBinding.refOut.head shouldBe fooLocalX
       closureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
 
       val List(barMethod)      = cpg.method.nameExact("bar").l
       val List(barMethodBlock) = barMethod.astChildren.isBlock.l
       val List(barLocals)      = barMethodBlock.astChildren.isLocal.l
-      barLocals.closureBindingId shouldBe Option("Test0.swift:<global>.foo.bar:x")
+      barLocals.closureBindingId shouldBe Option("Test0.swift:<global>.foo.bar:()->ANY:x")
 
       val List(identifierX) = barMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
       identifierX.refOut.head shouldBe barLocals
@@ -148,18 +148,6 @@ class SimpleAstCreationPassTest extends SwiftSrc2CpgSuite {
         bar.code shouldBe """@bar(x: "y")"""
         bar.name shouldBe "bar"
         bar.fullName shouldBe "bar"
-        val List(paramAssignFoo) = bar.parameterAssign.l
-        paramAssignFoo.code shouldBe """x: "y""""
-        paramAssignFoo.order shouldBe 1
-        val List(paramFoo) = paramAssignFoo.parameter.l
-        paramFoo.code shouldBe "argument"
-        paramFoo.order shouldBe 1
-        val List(paramValueFoo) = paramAssignFoo.value.l
-        paramValueFoo.code shouldBe """"y""""
-        paramValueFoo.order shouldBe 2
-        paramValueFoo.argumentIndex shouldBe 2
-        paramValueFoo.argumentName shouldBe empty
-        paramValueFoo.argumentLabel.loneElement shouldBe "x"
       }
     }
 
@@ -172,16 +160,6 @@ class SimpleAstCreationPassTest extends SwiftSrc2CpgSuite {
         objc.code shouldBe "@objc(Foo)"
         objc.name shouldBe "objc"
         objc.fullName shouldBe "objc"
-        val List(paramAssignFoo) = objc.parameterAssign.l
-        paramAssignFoo.code shouldBe "Foo"
-        paramAssignFoo.order shouldBe 1
-        val List(paramFoo) = paramAssignFoo.parameter.l
-        paramFoo.code shouldBe "argument"
-        paramFoo.order shouldBe 1
-        val List(paramValueFoo) = paramAssignFoo.value.l
-        paramValueFoo.code shouldBe "Foo"
-        paramValueFoo.order shouldBe 2
-        paramValueFoo.argumentIndex shouldBe 2
       }
     }
 
@@ -503,14 +481,14 @@ class SimpleAstCreationPassTest extends SwiftSrc2CpgSuite {
       val List(fooLocalF)       = fooBlock.astChildren.isLocal.nameExact("f").l
       val List(barRef)          = fooBlock.astChildren.isMethodRef.l
       val List(closureBindingF) = barRef.captureOut.l
-      closureBindingF.closureBindingId shouldBe Option("Test0.swift:<global>.Foo.foo.bar:f")
+      closureBindingF.closureBindingId shouldBe Option("Test0.swift:<global>.Foo.foo.bar:()->Swift.String:f")
       closureBindingF.refOut.head shouldBe fooLocalF
       closureBindingF.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
 
       val List(barMethod)      = cpg.method.nameExact("bar").l
       val List(barMethodBlock) = barMethod.astChildren.isBlock.l
       val List(barLocal)       = barMethodBlock.astChildren.isLocal.name("f").l
-      barLocal.closureBindingId shouldBe Option("Test0.swift:<global>.Foo.foo.bar:f")
+      barLocal.closureBindingId shouldBe Option("Test0.swift:<global>.Foo.foo.bar:()->Swift.String:f")
 
       val List(identifierF) = barMethodBlock.ast.isIdentifier.nameExact("f").l
       identifierF.refOut.head shouldBe barLocal

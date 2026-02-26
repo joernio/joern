@@ -15,6 +15,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   Local
 }
 import io.shiftleft.semanticcpg.language.*
+import io.joern.x2cpg.Defines
 
 import scala.util.Try
 
@@ -747,21 +748,32 @@ class ControlStructureTests extends PhpCode2CpgFixture {
     }
 
     "create the catch blocks correctly" in {
-      val List(catchA, catchB) = tryNode.astChildren.isControlStructure.isCatch.l
-      catchA.code shouldBe "catch (A | D $a)"
-      catchB.code shouldBe "catch (B $b)"
+      inside(tryNode.astChildren.isControlStructure.isCatch.l) { case catchA :: catchB :: Nil =>
+        catchA.code shouldBe "catch (A | D $a)"
+        catchB.code shouldBe "catch (B $b)"
+        catchA.lineNumber shouldBe Some(4)
+        catchB.lineNumber shouldBe Some(6)
 
-      val List(catchALocal) = catchA.astChildren.isLocal.l
-      catchALocal.code shouldBe "a"
-      catchALocal.dynamicTypeHintFullName shouldBe IndexedSeq("A", "D")
-      catchA.astChildren.isBlock.astChildren.code.l shouldBe List("$body2")
-      catchA.lineNumber shouldBe Some(4)
+        inside(catchA.astChildren.isBlock.l) { case block :: Nil =>
+          block.typeFullName shouldBe Defines.Any
+          block.astChildren.code.l shouldBe List("a", "$body2")
 
-      val List(catchBLocal) = catchB.astChildren.isLocal.l
-      catchBLocal.code shouldBe "b"
-      catchBLocal.dynamicTypeHintFullName shouldBe IndexedSeq("B")
-      catchB.astChildren.isBlock.astChildren.code.l shouldBe List("$body3")
-      catchB.lineNumber shouldBe Some(6)
+          inside(block.astChildren.l) { case (catchALocal: Local) :: x :: Nil =>
+            catchALocal.code shouldBe "a"
+            catchALocal.dynamicTypeHintFullName shouldBe IndexedSeq("A", "D")
+          }
+        }
+
+        inside(catchB.astChildren.isBlock.l) { case block :: Nil =>
+          block.typeFullName shouldBe Defines.Any
+          block.astChildren.code.l shouldBe List("b", "$body3")
+
+          inside(block.astChildren.l) { case (catchBLocal: Local) :: x :: Nil =>
+            catchBLocal.code shouldBe "b"
+            catchBLocal.dynamicTypeHintFullName shouldBe IndexedSeq("B")
+          }
+        }
+      }
     }
 
     "create the finally block correctly" in {
@@ -816,9 +828,9 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
     "create the catch blocks correctly" in {
       val List(catchA, catchB) = tryNode.astChildren.isControlStructure.isCatch.l
-      catchA.astChildren.isBlock.astChildren.code.l shouldBe List("$body2")
+      catchA.astChildren.isBlock.astChildren.code.l shouldBe List("a", "$body2")
       catchA.lineNumber shouldBe Some(4)
-      catchB.astChildren.isBlock.astChildren.code.l shouldBe List("$body3")
+      catchB.astChildren.isBlock.astChildren.code.l shouldBe List("b", "$body3")
       catchB.lineNumber shouldBe Some(6)
     }
   }

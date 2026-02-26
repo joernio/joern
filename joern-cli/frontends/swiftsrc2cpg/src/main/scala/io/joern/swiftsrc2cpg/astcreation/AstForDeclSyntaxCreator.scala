@@ -619,7 +619,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val block       = blockNode(node, PropertyDefaults.Code, Defines.Any)
 
     methodAstParentStack.push(methodNode_)
-    scope.pushNewMethodScope(methodFullName, methodName, block, capturingRefNode, isStatic)
+    scope.pushNewMethodScope(methodFullNameAndSignature, methodName, block, capturingRefNode, isStatic)
     localAstParentStack.push(block)
 
     val (parameterAsts, bodyStmtAsts) = paramAndBodyAstsForFunctionLike(node)
@@ -627,15 +627,14 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val methodBlockContentAsts = methodBlockContent.map(m => astForDeclMember(m, typeDecl.get))
     val blockAst_              = blockAst(block, methodBlockContentAsts ++ bodyStmtAsts)
-    val astForMethod =
-      methodAstWithAnnotations(
-        methodNode_,
-        parameterAsts,
-        blockAst_,
-        methodReturnNode_,
-        modifiers = modifiers,
-        annotations = attributes
-      )
+    val astForMethod = methodAstWithAnnotations(
+      methodNode_,
+      parameterAsts,
+      blockAst_,
+      methodReturnNode_,
+      modifiers = modifiers,
+      annotations = attributes
+    )
 
     scope.popScope()
     localAstParentStack.pop()
@@ -709,6 +708,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val bodyStmtAsts = body match {
       case Some(bodyNode: AccessorDeclListSyntax) =>
+        // TODO: handle accessors in subscript functions
         bodyNode.children.toList.map(astForNode)
       case Some(bodyNode: CodeBlockSyntax) =>
         bodyNode.statements.children.toList match {
@@ -752,7 +752,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val block = blockNode(node, PropertyDefaults.Code, Defines.Any)
 
     methodAstParentStack.push(methodNode_)
-    scope.pushNewMethodScope(methodFullName, methodName, block, capturingRefNode, isStatic)
+    scope.pushNewMethodScope(methodFullNameAndSignatureExt, methodName, block, capturingRefNode, isStatic)
     localAstParentStack.push(block)
 
     val (parameterAsts, bodyStmtAsts) = paramAndBodyAstsForFunctionLike(node)
@@ -919,7 +919,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val capturingRefNode = typeRefIdStack.headOption
     methodAstParentStack.push(methodNode_)
-    scope.pushNewMethodScope(methodFullName, methodName, block, capturingRefNode)
+    scope.pushNewMethodScope(methodFullNameAndSignature, methodName, block, capturingRefNode)
     localAstParentStack.push(block)
 
     val selfTpe = fullNameOfEnclosingTypeDecl()
@@ -992,7 +992,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val capturingRefNode = typeRefIdStack.headOption
     methodAstParentStack.push(methodNode_)
-    scope.pushNewMethodScope(methodFullName, methodName, block, capturingRefNode)
+    scope.pushNewMethodScope(methodFullNameAndSignature, methodName, block, capturingRefNode)
     localAstParentStack.push(block)
 
     val selfTpe = fullNameOfEnclosingTypeDecl()
@@ -1053,7 +1053,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val capturingRefNode = typeRefIdStack.headOption
     methodAstParentStack.push(methodNode_)
-    scope.pushNewMethodScope(methodFullName, methodName, block, capturingRefNode)
+    scope.pushNewMethodScope(methodFullNameAndSignatureExt, methodName, block, capturingRefNode)
     localAstParentStack.push(block)
 
     val selfTpe = fullNameOfEnclosingTypeDecl()
@@ -1112,7 +1112,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val block = blockNode(node, PropertyDefaults.Code, Defines.Any)
 
     methodAstParentStack.push(methodNode_)
-    scope.pushNewMethodScope(methodFullName, methodName, block, capturingRefNode)
+    scope.pushNewMethodScope(methodFullNameAndSignatureExt, methodName, block, capturingRefNode)
     localAstParentStack.push(block)
 
     val selfTpe = fullNameOfEnclosingTypeDecl()

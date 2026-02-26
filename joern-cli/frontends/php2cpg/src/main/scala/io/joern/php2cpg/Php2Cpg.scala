@@ -70,7 +70,6 @@ class Php2Cpg extends X2CpgFrontend {
               new SymbolSummaryPass(config, cpg, parser, summary => buffer = Option(summary)).createAndApply()
               new AstCreationPass(config, cpg, parser, buffer.getOrElse(Map.empty)).createAndApply()
               new AstParentInfoPass(cpg).createAndApply()
-              new AnyTypePass(cpg).createAndApply()
               TypeNodePass.withTypesFromCpg(cpg).createAndApply()
             }
           case None =>

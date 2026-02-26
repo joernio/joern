@@ -3,6 +3,7 @@ package io.joern.swiftsrc2cpg.astcreation
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, EvaluationStrategies, PropertyNames}
 import org.apache.commons.lang3.StringUtils
 
@@ -259,6 +260,26 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     dst
   }
 
+  /** Try to get legacy node startOffset from modifiers since in older versions of swiftc (<6.2) it is not stored in the
+    * JSON object.
+    */
+  private def legacyNode(node: FunctionDeclLike): Option[SwiftNode] = {
+    (node match {
+      case f: FunctionDeclSyntax      => f.modifiers.children.lastOption
+      case a: AccessorDeclSyntax      => a.modifier
+      case d: DeinitializerDeclSyntax => d.modifiers.children.lastOption
+      case i: InitializerDeclSyntax   => i.modifiers.children.lastOption
+      case s: SubscriptDeclSyntax     => s.modifiers.children.lastOption
+      case c: ClosureExprSyntax       => None
+    }).map(l => transferEndOffsetToStartOffset(l, node))
+  }
+
+  private def isNestedSubscriptAccessorDecl(node: FunctionDeclLike) = {
+    node.isInstanceOf[AccessorDeclSyntax] && methodAstParentStack.headOption.collect {
+      case m: NewMethod if m.name == "subscript" => m
+    }.isDefined
+  }
+
   protected def methodInfoForFunctionDeclLike(node: FunctionDeclLike): MethodInfo = {
     val name = calcMethodName(node)
 
@@ -267,18 +288,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     // We want to keep the original range intact for the actual node.
     val nodeRange = node.asInstanceOf[SwiftNode].json("range").obj.copy()
 
-    // Try to get legacy node startOffset from modifiers since in older versions of swiftc (<6.2) it is not stored in the JSON object.
-    def legacyNode: Option[SwiftNode] = (node match {
-      case f: FunctionDeclSyntax      => f.modifiers.children.lastOption
-      case a: AccessorDeclSyntax      => a.modifier
-      case d: DeinitializerDeclSyntax => d.modifiers.children.lastOption
-      case i: InitializerDeclSyntax   => i.modifiers.children.lastOption
-      case s: SubscriptDeclSyntax     => s.modifiers.children.lastOption
-      case c: ClosureExprSyntax       => None
-    }).map(l => transferEndOffsetToStartOffset(l, node))
-
     val methodInfo =
-      fullnameProvider.declFullname(node).orElse(legacyNode.flatMap(fullnameProvider.declFullname)) match {
+      fullnameProvider.declFullname(node).orElse(legacyNode(node).flatMap(fullnameProvider.declFullname)) match {
         case Some(fullNameWithSignature) =>
           val (fullName, signature) = methodInfoFromFullNameWithSignature(fullNameWithSignature)
           val returnType = node match {
@@ -292,7 +303,9 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
           registerType(returnType)
           MethodInfo(name, fullName, signature, returnType)
         case None =>
-          val (methodName, methodFullName) = calcNameAndFullName(name)
+          val (methodName, methodFullName) =
+            if (isNestedSubscriptAccessorDecl(node)) { calcNameAndFullNameWithSignature(name) }
+            else { calcNameAndFullName(name) }
           val (signature, returnType) = node match {
             case f: FunctionDeclSyntax =>
               val returnType = f.signature.returnClause.fold(Defines.Any)(c => cleanType(code(c.`type`)))
@@ -468,16 +481,21 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     (name, fullName)
   }
 
+  private def calcNameAndFullNameWithSignature(name: String): (String, String) = {
+    val fullNamePrefix = s"${parserResult.filename}:${scope.computeScopePathWithSignatures}"
+    val fullName       = s"$fullNamePrefix:$name"
+    (name, fullName)
+  }
+
   private def calcMethodName(func: SwiftNode): String = {
-    val name = func match {
-      case f: FunctionDeclSyntax      => code(f.name)
+    func match {
+      case f: FunctionDeclSyntax      => cleanName(code(f.name))
       case a: AccessorDeclSyntax      => code(a.accessorSpecifier)
-      case d: DeinitializerDeclSyntax => code(d.deinitKeyword)
-      case i: InitializerDeclSyntax   => code(i.initKeyword)
-      case s: SubscriptDeclSyntax     => code(s.subscriptKeyword)
+      case d: DeinitializerDeclSyntax => "deinit"
+      case i: InitializerDeclSyntax   => "init"
+      case s: SubscriptDeclSyntax     => "subscript"
       case _                          => nextClosureName()
     }
-    cleanName(name)
   }
 
 }
