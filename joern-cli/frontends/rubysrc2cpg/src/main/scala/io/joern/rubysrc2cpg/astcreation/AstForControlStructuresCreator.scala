@@ -303,15 +303,15 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
                 val stmts = x.children.zipWithIndex.flatMap {
                   case (lhs: MatchVariable, idx) if expr.isDefined =>
                     val arrAccess = {
-                      val code = s"${expr.get.text}[$idx]"
-                      val base = expr.get.copy()(expr.get.span.spanStart(expr.get.text))
+                      val code_ = s"${code(expr.get)}[$idx]"
+                      val base  = expr.get.copy()(expr.get.span.spanStart(code(expr.get)))
                       val indices = StaticLiteral(Defines.prefixAsCoreType(Defines.Integer))(
                         expr.get.span.spanStart(idx.toString)
                       ) :: Nil
-                      IndexAccess(base, indices)(lhs.span.spanStart(code))
+                      IndexAccess(base, indices)(lhs.span.spanStart(code_))
                     }
                     val asgn = SingleAssignment(lhs, "=", arrAccess)(
-                      inClause.span.spanStart(s"${lhs.span.text} = ${expr.get.text}[$idx]")
+                      inClause.span.spanStart(s"${lhs.span.text} = ${code(expr.get)}[$idx]")
                     )
                     Option(asgn)
                   case _ => None

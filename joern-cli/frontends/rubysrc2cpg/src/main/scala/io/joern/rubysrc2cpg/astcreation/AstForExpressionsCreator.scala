@@ -83,7 +83,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         val expressionAst = astForExpression(stmtList.statements.head)
         val call = callNode(
           node = stmtList,
-          code = stmtList.text,
+          code = code(stmtList),
           name = Operators.formattedValue,
           methodFullName = Operators.formattedValue,
           dispatchType = DispatchTypes.STATIC_DISPATCH,
@@ -99,7 +99,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       case node =>
         val call = callNode(
           node = node,
-          code = node.text,
+          code = code(node),
           name = Operators.formattedValue,
           methodFullName = Operators.formattedValue,
           dispatchType = DispatchTypes.STATIC_DISPATCH,
@@ -364,9 +364,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val tmpIden = NewIdentifier().name(tmpName).code(tmpName).typeFullName(Defines.Any)
     val tmpIdenAst =
       scope.lookupVariable(tmpName).map(x => Ast(tmpIden).withRefEdge(tmpIden, x)).getOrElse(Ast(tmpIden))
-    val code = s"$tmpName = ${target.text}"
-    if (createAssignmentToTmp) astForAssignment(tmpIdenAst, rhs, target.line, target.column, Option(code)) -> s"($code)"
-    else tmpIdenAst                                                                                        -> s"($code)"
+    val code_ = s"$tmpName = ${code(target)}"
+    if (createAssignmentToTmp) astForAssignment(tmpIdenAst, rhs, target.line, target.column, Option(code_)) -> s"($code_)"
+    else tmpIdenAst                                                                                        -> s"($code_)"
   }
 
   protected def astForIndexAccess(node: IndexAccess): Ast = {
@@ -439,7 +439,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       `return Bar.new`, lowered to
       `return {Bar tmp = Bar.<alloc>(); tmp.<init>(); tmp}`
      */
-    val block = blockNode(node, node.text, Defines.Any)
+    val block = blockNode(node, code(node), Defines.Any)
     scope.pushNewScope(BlockScope(block))
 
     val tmpName     = scope.getNewVarTmp
@@ -459,7 +459,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val allocAst  = callAst(allocCall, Seq.empty)
     val assignmentCall = callNode(
       node,
-      s"${tmp.text} = ${code(node.target)}.${Defines.Initialize}",
+      s"${code(tmp)} = ${code(node.target)}.${Defines.Initialize}",
       Operators.assignment,
       Operators.assignment,
       DispatchTypes.STATIC_DISPATCH
@@ -627,7 +627,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   // This has the benefit of avoiding unnecessary call resolution
   protected def astForAttributeAssignment(node: AttributeAssignment): Ast = {
     val memberAccess = MemberAccess(node.target, ".", s"@${node.attributeName}")(
-      node.span.spanStart(s"${node.target.text}.${node.attributeName}")
+      node.span.spanStart(s"${code(node.target)}.${node.attributeName}")
     )
 
     val assignmentOp = AssignmentOperatorNames(node.assignmentOperator)
@@ -763,7 +763,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
 
       def tmpAst(tmpNode: Option[RubyExpression] = None) = astForSimpleIdentifier(tmpRubyNode(tmpNode))
 
-      val block = blockNode(node, node.text, Defines.Any)
+      val block = blockNode(node, code(node), Defines.Any)
       scope.pushNewScope(BlockScope(block))
       val tmpLocal = NewLocal().name(tmp).code(tmp)
       scope.addToScope(tmp, tmpLocal)
@@ -783,9 +783,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       val argumentAsts = arguments.zipWithIndex.map { case (arg, idx) =>
         val indices = StaticLiteral(Defines.prefixAsCoreType(Defines.Integer))(arg.span.spanStart(idx.toString)) :: Nil
         val base    = tmpRubyNode(Option(arg))
-        val indexAccess = IndexAccess(base, indices)(arg.span.spanStart(s"${base.text}[$idx]"))
+        val indexAccess = IndexAccess(base, indices)(arg.span.spanStart(s"${code(base)}[$idx]"))
         val assignment =
-          SingleAssignment(indexAccess, "=", arg)(arg.span.spanStart(s"${indexAccess.text} = ${arg.text}"))
+          SingleAssignment(indexAccess, "=", arg)(arg.span.spanStart(s"${code(indexAccess)} = ${code(arg)}"))
         astForExpression(assignment)
       }
 
@@ -845,7 +845,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         astForAssociationHash(node.copy(key = mod.toSimpleIdentifier)(node.span), tmp)
       case iden: SimpleIdentifier =>
         // An identifier here will always be interpreted as a symbol
-        val sym = StaticLiteral(Defines.prefixAsCoreType(Defines.Symbol))(iden.span.spanStart(s":${iden.text}"))
+        val sym = StaticLiteral(Defines.prefixAsCoreType(Defines.Symbol))(iden.span.spanStart(s":${code(iden)}"))
         astForAssociationHash(node.copy(key = sym)(node.span), tmp)
       case rangeExpr: RangeExpression =>
         val expandedList = generateStaticLiteralsForRange(rangeExpr).map { x =>

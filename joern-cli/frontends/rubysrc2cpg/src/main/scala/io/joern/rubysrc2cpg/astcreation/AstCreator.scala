@@ -90,11 +90,11 @@ class AstCreator(
     // From the <main> method onwards, we do not embed the <global> namespace name in the full names
     val fullName =
       s"${scope.surroundingScopeFullName.head.stripSuffix(NamespaceTraversal.globalNamespaceName)}$name"
-    val code = rootNode.text
+    val code_ = code(rootNode)
     val methodNode_ = methodNode(
       node = rootNode,
       name = name,
-      code = code,
+      code = code_,
       fullName = fullName,
       signature = None,
       fileName = relativeFileName
