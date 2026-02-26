@@ -2,7 +2,6 @@ package io.joern.swiftsrc2cpg.passes.ast
 
 import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, MethodParameterIn}
 import io.shiftleft.semanticcpg.language.*
 
@@ -91,43 +90,91 @@ class ExtensionTests extends SwiftSrc2CpgSuite {
     }
 
     "do not create illegal ref edges for subscript functions" in {
-      val fooCode = "class Foo {}"
+      val fooCode =
+        """class Foo {
+          |  public subscript(path: [JSONSubscriptType]) -> JSON {
+          |    get {
+          |      return path.reduce(self) { $0[sub: $1] }
+          |    }
+          |  }
+          |
+          |  public subscript(path: JSONSubscriptType...) -> JSON {
+          |    get {
+          |      return self[path]
+          |    }
+          |  }
+          |}""".stripMargin
 
       val ext1Code =
         """
           |extension Foo {
-          |    public subscript(path: [JSONSubscriptType]) -> JSON {
-          |        get {
-          |            return path.reduce(self) { $0[sub: $1] }
-          |        }
+          |  public subscript(pathExt: [JSONSubscriptType]) -> JSON {
+          |    get {
+          |      return pathExt.reduce(self) { $0[sub: $1] }
           |    }
+          |  }
           |
-          |    public subscript(path: JSONSubscriptType...) -> JSON {
-          |        get {
-          |            return self[path]
-          |        }
+          |  public subscript(pathExt: JSONSubscriptType...) -> JSON {
+          |    get {
+          |      return self[pathExt]
           |    }
+          |  }
           |}
           |""".stripMargin
       val cpg = code(fooCode, "Foo.swift").moreCode(ext1Code, "Ext1.swift")
 
       cpg.method.nameExact("subscript") shouldBe empty
 
-      inside(cpg.call.nameExact("reduce").receiver.l) { case List(id: Identifier) =>
+      val subscriptFooGet1 =
+        cpg.method
+          .fullNameExact("Foo.swift:<global>.Foo.subscript:(path:Swift.Array).getter:JSON")
+          .loneElement
+      val subscriptFooGet2 =
+        cpg.method
+          .fullNameExact("Foo.swift:<global>.Foo.subscript:(path:JSONSubscriptType).getter:JSON")
+          .loneElement
+
+      val subscriptFooExtGet1 =
+        cpg.method
+          .fullNameExact("Ext1.swift:<global>.Foo<extension>.subscript:(pathExt:Swift.Array).getter:JSON")
+          .loneElement
+      val subscriptFooExtGet2 =
+        cpg.method
+          .fullNameExact("Ext1.swift:<global>.Foo<extension>.subscript:(pathExt:JSONSubscriptType).getter:JSON")
+          .loneElement
+
+      inside(subscriptFooGet1.ast.isCall.nameExact("reduce").receiver.l) { case List(id: Identifier) =>
         id.name shouldBe "path"
         id.typeFullName shouldBe Defines.Array
         val param = id.refsTo.collectAll[MethodParameterIn].loneElement
         param.name shouldBe "path"
         param.typeFullName shouldBe Defines.Array
-        param.method.fullName shouldBe "Ext1.swift:<global>.Foo<extension>.subscript:(path:Swift.Array).getter:JSON"
+        param.method.fullName shouldBe subscriptFooGet1.fullName
       }
-      inside(cpg.call.codeExact("self[path]").argument(2).l) { case List(id: Identifier) =>
+      inside(subscriptFooGet2.ast.isCall.codeExact("self[path]").argument(2).l) { case List(id: Identifier) =>
         id.name shouldBe "path"
         id.typeFullName shouldBe "JSONSubscriptType"
         val param = id.refsTo.collectAll[MethodParameterIn].loneElement
         param.name shouldBe "path"
         param.typeFullName shouldBe "JSONSubscriptType"
-        param.method.fullName shouldBe "Ext1.swift:<global>.Foo<extension>.subscript:(path:JSONSubscriptType).getter:JSON"
+        param.method.fullName shouldBe subscriptFooGet2.fullName
+      }
+
+      inside(subscriptFooExtGet1.ast.isCall.nameExact("reduce").receiver.l) { case List(id: Identifier) =>
+        id.name shouldBe "pathExt"
+        id.typeFullName shouldBe Defines.Array
+        val param = id.refsTo.collectAll[MethodParameterIn].loneElement
+        param.name shouldBe "pathExt"
+        param.typeFullName shouldBe Defines.Array
+        param.method.fullName shouldBe subscriptFooExtGet1.fullName
+      }
+      inside(subscriptFooExtGet2.ast.isCall.codeExact("self[pathExt]").argument(2).l) { case List(id: Identifier) =>
+        id.name shouldBe "pathExt"
+        id.typeFullName shouldBe "JSONSubscriptType"
+        val param = id.refsTo.collectAll[MethodParameterIn].loneElement
+        param.name shouldBe "pathExt"
+        param.typeFullName shouldBe "JSONSubscriptType"
+        param.method.fullName shouldBe subscriptFooExtGet2.fullName
       }
     }
 
@@ -139,15 +186,16 @@ class ExtensionTests extends SwiftSrc2CpgSuite {
           |var vulnerabilities = ["Plist", "UserDefaults"]
           |
           |extension Foo {
-          |    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-          |        return vulnerabilities.count
-          |    }
-          |    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-          |        let cell = self.tableView.dequeueReusableCell(withIdentifier: "vulnerabilitiesCell", for: indexPath)
-          |        cell.textLabel?.text = vulnerabilities[indexPath.item]
-          |        cell.accessoryType = .disclosureIndicator
-          |        return cell
-          |    }
+          |  func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+          |    return vulnerabilities.count
+          |  }
+          |
+          |  func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+          |    let cell = self.tableView.dequeueReusableCell(withIdentifier: "vulnerabilitiesCell", for: indexPath)
+          |    cell.textLabel?.text = vulnerabilities[indexPath.item]
+          |    cell.accessoryType = .disclosureIndicator
+          |    return cell
+          |  }
           |}
           |""".stripMargin
       val cpg          = code(fooCode, "Foo.swift").moreCode(ext1Code, "Ext1.swift")
