@@ -1,11 +1,12 @@
-import lmcoursier.internal.shaded.coursier.cache.Cache
-import lmcoursier.internal.shaded.coursier.util.Artifact
+import coursier.cache.Cache
+import coursier.util.Artifact
 
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 
 object DownloadHelper {
   private val LocalStorageDir = Paths.get(".local/source-urls")
+  private val CoursierCache   = Cache.default
 
   /** Downloads the remote file from the given url if either:
     *   - the localFile is not available,
@@ -31,10 +32,10 @@ object DownloadHelper {
   }
 
   private def downloadFile(url: String): File = {
-    Cache.default
+    CoursierCache
       .file(Artifact(url))
       .run
-      .unsafeRun()(Cache.default.ec)
+      .unsafeRun()(CoursierCache.ec)
       // We re-throw if the download still fails after CoursierDownloadMaxRetry retries
       .fold(e => throw new java.io.IOException(e), identity)
   }
