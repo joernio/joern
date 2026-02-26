@@ -17,11 +17,12 @@ object DownloadHelper {
       */
     .withFollowHttpToHttpsRedirections(true)
 
-  /** Downloads the remote file from the given url if either
+  /** Downloads the remote file from the given url if either:
     *   - the localFile is not available,
     *   - or the url is different from the previously downloaded file
-    *   - or we don't have the original url from the previously downloaded file We store the information about the
-    *     previously downloaded urls and the localFile in `.local`
+    *   - or we don't have the original url from the previously downloaded file
+    *
+    * We store the information about the previously downloaded urls and the localFile in `.local`
     */
   def ensureIsAvailable(url: String, localFile: File): Unit = {
     if (!localFile.exists() || Option(url) != previousUrlForLocalFile(localFile)) {
