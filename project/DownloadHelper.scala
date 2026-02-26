@@ -1,21 +1,11 @@
-import lmcoursier.internal.shaded.coursier.cache.FileCache
-import lmcoursier.internal.shaded.coursier.util.{Artifact, Task}
+import lmcoursier.internal.shaded.coursier.cache.Cache
+import lmcoursier.internal.shaded.coursier.util.Artifact
 
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 
 object DownloadHelper {
   private val LocalStorageDir = Paths.get(".local/source-urls")
-
-  private val CoursierDownloadMaxRetry = 5
-  private val CoursierCache = FileCache[Task]()
-    .withLocation(Paths.get(".local/coursier-cache").toString)
-    .withRetry(CoursierDownloadMaxRetry)
-    /** Can be configured to retry with backoff, but it seems that the default retry strategy is good enough for now
-      *
-      * .withRetryBackoffInitialDelay(500).withRetryBackoffMultiplier(2.0)
-      */
-    .withFollowHttpToHttpsRedirections(true)
 
   /** Downloads the remote file from the given url if either:
     *   - the localFile is not available,
@@ -41,11 +31,10 @@ object DownloadHelper {
   }
 
   private def downloadFile(url: String): File = {
-    val artifact = Artifact(url)
-    CoursierCache
-      .file(artifact)
+    Cache.default
+      .file(Artifact(url))
       .run
-      .unsafeRun()(CoursierCache.ec)
+      .unsafeRun()(Cache.default.ec)
       // We re-throw if the download still fails after CoursierDownloadMaxRetry retries
       .fold(e => throw new java.io.IOException(e), identity)
   }
