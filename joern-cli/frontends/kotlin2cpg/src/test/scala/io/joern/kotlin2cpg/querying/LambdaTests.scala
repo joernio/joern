@@ -796,6 +796,35 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
   }
 
+  "CPG for code with lambda used as argument for non-generic fun interface parameter" should {
+    val cpg = code("""
+                     |package mypkg
+                     |fun interface SomeInterface {
+                     |  fun method(param: String): String
+                     |}
+                     |fun interfaceUser(someInterface: SomeInterface) {}
+                     |fun invoke() {
+                     |  interfaceUser { obj -> obj }
+                     |}
+                     |""".stripMargin)
+
+    "contain a single BINDING node for the lambda when signatures are equal" in {
+      val List(lambdaMethod) = cpg.method.fullName(".*lambda.*").l
+      lambdaMethod.fullName shouldBe s"mypkg.invoke.${Defines.ClosurePrefix}0:java.lang.String(java.lang.String)"
+      lambdaMethod.signature shouldBe "java.lang.String(java.lang.String)"
+
+      val List(lambdaTypeDecl) = lambdaMethod.bindingTypeDecl.dedup.l
+      lambdaTypeDecl.fullName shouldBe s"mypkg.invoke.${Defines.ClosurePrefix}0"
+      lambdaTypeDecl.inheritsFromTypeFullName should contain theSameElementsAs (List("mypkg.SomeInterface"))
+
+      val List(binding) = lambdaMethod.referencingBinding.l
+      binding.name shouldBe "method"
+      binding.signature shouldBe "java.lang.String(java.lang.String)"
+      binding.methodFullName shouldBe s"mypkg.invoke.${Defines.ClosurePrefix}0:java.lang.String(java.lang.String)"
+      binding.bindingTypeDecl shouldBe lambdaTypeDecl
+    }
+  }
+
   "CPG for code with lambda used as argument to generic function" should {
     val cpg = code("""
                      |package mypkg
