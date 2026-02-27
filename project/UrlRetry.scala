@@ -31,7 +31,7 @@ object UrlRetry {
     *
     *   - Retries for transient HTTP status codes (defaults in TransientStatusCodes) and IOExceptions.
     *   - Retry interval and backoff are configurable.
-    *   - Backoff is applied multiplicatively
+    *   - Backoff is applied multiplicatively.
     *
     * Notes:
     *   - The `block` should perform the full request and either: (a) throw on non-2xx (via `openAndCheck` below), or
