@@ -89,7 +89,52 @@ class ExtensionTests extends SwiftSrc2CpgSuite {
       )
     }
 
-    "do not create illegal ref edges for subscript functions" in {
+    "do not create illegal ref edges for subscript functions without accessors" in {
+      val fooCode =
+        """
+          |struct TimesTable {
+          |  let multiplier: Int
+          |  subscript(index: Int) -> Int {
+          |    return multiplier * index
+          |  }
+          |}""".stripMargin
+
+      val ext1Code =
+        """
+          |extension TimesTable {
+          |  subscript(index: Int) -> Int {
+          |    return multiplier * index * 2
+          |  }
+          |}
+          |""".stripMargin
+      val cpg = code(fooCode, "Foo.swift").moreCode(ext1Code, "Ext1.swift")
+
+      println()
+      val subscript =
+        cpg.method
+          .fullNameExact("Foo.swift:<global>.TimesTable.subscript:(index:Swift.Int)->Swift.Int")
+          .loneElement
+      val subscriptExt =
+        cpg.method
+          .fullNameExact("Ext1.swift:<global>.TimesTable<extension>.subscript:(index:Swift.Int)->Swift.Int")
+          .loneElement
+      inside(subscript.ast.isIdentifier.nameExact("index").l) { case List(id: Identifier) =>
+        id.typeFullName shouldBe Defines.Int
+        val param = id.refsTo.collectAll[MethodParameterIn].loneElement
+        param.name shouldBe "index"
+        param.typeFullName shouldBe Defines.Int
+        param.method.fullName shouldBe subscript.fullName
+      }
+      inside(subscriptExt.ast.isIdentifier.nameExact("index").l) { case List(id: Identifier) =>
+        id.typeFullName shouldBe Defines.Int
+        val param = id.refsTo.collectAll[MethodParameterIn].loneElement
+        param.name shouldBe "index"
+        param.typeFullName shouldBe Defines.Int
+        param.method.fullName shouldBe subscriptExt.fullName
+      }
+    }
+
+    "do not create illegal ref edges for subscript functions with nested accessors" in {
       val fooCode =
         """class Foo {
           |  public subscript(path: [JSONSubscriptType]) -> JSON {

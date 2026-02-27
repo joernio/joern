@@ -606,13 +606,20 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
+  private def replaceSuffixIfEndsWith(in: String, r: String, replacement: String): String = {
+    if (r.isEmpty) in
+    else if (in.endsWith(r)) in.dropRight(r.length) + replacement
+    else in
+  }
+
   private def astForAccessorInSubscript(
     node: SubscriptDeclSyntax,
     handleAccessor: (AccessorDeclSyntax, String, String, String, Seq[SwiftNode]) => Unit
   ): Ast = {
     val methodInfo                                       = methodInfoForFunctionDeclLike(node)
     val MethodInfo(methodName, _, signature, returnType) = methodInfo
-    val subscriptSignaturePrefix                         = s"$methodName:${signature.replace(s"->$returnType", "")}"
+    val paramClause                                      = replaceSuffixIfEndsWith(signature, s"->$returnType", "")
+    val subscriptSignaturePrefix                         = s"$methodName:$paramClause"
 
     val parameters = node.parameterClause.parameters.children
     val accessors = node.accessorBlock.map(_.accessors) match {

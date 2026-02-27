@@ -356,8 +356,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     fullNameSubscriptPrefix: String = ""
   ): MethodInfo = {
     val accessorName = code(node.accessorSpecifier)
-    val namePrefix = if (variableName.nonEmpty) { s"$variableName." }
-    else { "" }
+    val namePrefix   = if (variableName.nonEmpty) s"$variableName." else ""
     val name = accessorName match {
       case "set" => s"${namePrefix}setter"
       case "get" => s"${namePrefix}getter"
@@ -374,14 +373,9 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         }
         MethodInfo(name, fullName, signature, tpe)
       case None =>
-        val (methodName, methodFullName) = calcNameAndFullName(name)
+        val (methodName, methodFullName) = calcNameAndFullName(name, fullNameSubscriptPrefix)
         registerType(tpe)
-        val methodFullNameWithSubscriptPrefix = if (fullNameSubscriptPrefix.nonEmpty) {
-          methodFullName.replaceFirst(s"\\.$methodName", s".$fullNameSubscriptPrefix.$methodName")
-        } else {
-          methodFullName
-        }
-        MethodInfo(methodName, methodFullNameWithSubscriptPrefix, tpe, tpe)
+        MethodInfo(methodName, methodFullName, tpe, tpe)
     }
   }
 
@@ -483,10 +477,14 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }
   }
 
-  private def calcNameAndFullName(name: String): (String, String) = {
+  private def calcNameAndFullName(name: String, fullNameSubscriptPrefix: String = ""): (String, String) = {
     val fullNamePrefix = s"${parserResult.filename}:${scope.computeScopePath}"
-    val fullName       = s"$fullNamePrefix.$name"
-    (name, fullName)
+    val methodFullNameWithSubscriptPrefix = if (fullNameSubscriptPrefix.nonEmpty) {
+      s"$fullNamePrefix.$fullNameSubscriptPrefix.$name"
+    } else {
+      s"$fullNamePrefix.$name"
+    }
+    (name, methodFullNameWithSubscriptPrefix)
   }
 
   private def calcMethodName(func: SwiftNode): String = {
