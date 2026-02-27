@@ -591,7 +591,42 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       secondMethodRef.out(EdgeTypes.CAPTURE).size shouldBe 1
     }
 
-    "should contain two CLOSURE_BINDING nodes" in {
+    "should contain explicit captured locals named `x` for each intermediate lambda" in {
+      val List(outerLambdaMethod) = cpg.method.nameExact(s"${Defines.ClosurePrefix}0").l
+      val List(innerLambdaMethod) = cpg.method.nameExact(s"${Defines.ClosurePrefix}1").l
+
+      val List(outerCapturedLocal) = outerLambdaMethod.local.nameExact("x").l
+      outerCapturedLocal.typeFullName shouldBe "java.lang.String"
+
+      val List(innerCapturedLocal) = innerLambdaMethod.local.nameExact("x").l
+      innerCapturedLocal.typeFullName shouldBe "java.lang.String"
+
+      outerLambdaMethod.local.nameExact("x").size shouldBe 1
+      innerLambdaMethod.local.nameExact("x").size shouldBe 1
+    }
+
+    "should contain two-step closure bindings for `x` (param -> outer lambda local -> inner lambda local)" in {
+      val List(outerLambdaMethod) = cpg.method.nameExact(s"${Defines.ClosurePrefix}0").l
+      val List(innerLambdaMethod) = cpg.method.nameExact(s"${Defines.ClosurePrefix}1").l
+      val outerClosureBindingId   = s"mypkg.foo.${Defines.ClosurePrefix}0.x"
+      val innerClosureBindingId   = s"mypkg.foo.${Defines.ClosurePrefix}0.${Defines.ClosurePrefix}1.x"
+
+      cpg.closureBinding.l.flatMap(_.closureBindingId).toSet shouldBe Set(outerClosureBindingId, innerClosureBindingId)
+
+      val List(outerClosureBinding) = cpg.closureBinding.filter(_.closureBindingId.contains(outerClosureBindingId)).l
+      outerClosureBinding._methodParameterInViaRefOut.name.l shouldBe List("x")
+      outerClosureBinding._methodParameterInViaRefOut.method.fullName.l shouldBe List("mypkg.foo:int(java.lang.String)")
+      outerClosureBinding._localViaRefOut.l shouldBe empty
+
+      val List(innerClosureBinding) = cpg.closureBinding.filter(_.closureBindingId.contains(innerClosureBindingId)).l
+      innerClosureBinding._localViaRefOut.name.l shouldBe List("x")
+      innerClosureBinding._localViaRefOut.method.fullName.l shouldBe List(outerLambdaMethod.fullName)
+      innerClosureBinding._methodParameterInViaRefOut.l shouldBe empty
+
+      innerLambdaMethod.local.nameExact("x").size shouldBe 1
+    }
+
+    "should contain exactly two CLOSURE_BINDING nodes" in {
       cpg.closureBinding.size shouldBe 2
     }
   }
