@@ -1,6 +1,6 @@
+import java.io.{File, IOException}
 import java.net.{HttpURLConnection, URL}
-import scala.annotation.tailrec
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 object UrlRetry {
 
@@ -21,23 +21,23 @@ object UrlRetry {
 
   /** Thrown when we got an HTTP response with a status code. */
   final case class HttpStatusException(status: Int, url: URL, msg: String)
-    extends HttpException(s"HTTP $status for $url: $msg")
+      extends HttpException(s"HTTP $status for $url: $msg")
 
   /** Marker exception used to trigger retries (for transient HTTP statuses). */
   final case class TransientHttpException(status: Int, url: URL, msg: String)
-    extends HttpException(s"Transient HTTP $status for $url: $msg")
+      extends HttpException(s"Transient HTTP $status for $url: $msg")
 
   /** Retries a block that uses URL.openConnection (or any other network I/O) up to `maxRetries`.
     *
-    *   - Retries ONLY for transient HTTP status codes (defaults in TransientStatusCodes).
+    *   - Retries for transient HTTP status codes (defaults in TransientStatusCodes) and IOExceptions.
     *   - Retry interval and backoff are configurable.
-    *   - Backoff is applied multiplicatively: delay(attempt) = baseInterval * backoffFactor^(attempt-1)
+    *   - Backoff is applied multiplicatively
     *
     * Notes:
-    *   - The `block` should perform the full request and either: (a) throw on non-2xx (via `readResponseOrThrow`
-    *     below), or (b) return some value you define after inspecting the response code.
+    *   - The `block` should perform the full request and either: (a) throw on non-2xx (via `openAndCheck` below), or
+    *     (b) return some value you define after inspecting the response code.
     */
-  def withTransientHttpRetries[T](maxRetries: Int, baseInterval: FiniteDuration, backoffFactor: Double = 1.0)(
+  def withTransientHttpRetries[T](maxRetries: Int, baseInterval: FiniteDuration, backoffFactor: Double)(
     block: => T
   ): T = {
     require(maxRetries >= 1, "maxRetries must be >= 1")
@@ -54,11 +54,15 @@ object UrlRetry {
     }
 
     def loop(attempt: Int, lastError: Throwable): T = {
+      if (attempt > 1) println(s"[WARN] Attempt $attempt/$maxRetries failed with: ${lastError.getMessage}")
       sleepForAttempt(attempt)
       try {
-        return block
+        block
       } catch {
         case e: TransientHttpException if TransientStatusCodes.contains(e.status) =>
+          if (attempt >= maxRetries) throw e
+          loop(attempt + 1, e)
+        case e: IOException =>
           if (attempt >= maxRetries) throw e
           loop(attempt + 1, e)
         // If it's an HTTP exception but not transient -> do not retry
@@ -93,6 +97,24 @@ object UrlRetry {
       conn.disconnect()
       if (TransientStatusCodes.contains(status)) throw TransientHttpException(status, url, msg)
       else throw HttpStatusException(status, url, msg)
+    }
+  }
+
+  /** Downloads a URL to a local file with retries for transient HTTP statuses and IOExceptions. */
+  def downloadWithRetries(
+    url: URL,
+    localFile: File,
+    maxRetries: Int = 5,
+    baseInterval: FiniteDuration = 500.millis,
+    backoffFactor: Double = 2.0
+  ): Unit = {
+    withTransientHttpRetries(maxRetries, baseInterval, backoffFactor) {
+      val conn = openAndCheck(url)
+      try {
+        sbt.io.Using.bufferedInputStream(conn.getInputStream) { inputStream =>
+          sbt.IO.transfer(inputStream, localFile)
+        }
+      } finally conn.disconnect()
     }
   }
 }

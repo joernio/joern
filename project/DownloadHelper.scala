@@ -2,7 +2,6 @@ import java.io.File
 import java.net.URI
 import java.nio.file.{Files, Path, Paths}
 
-import scala.concurrent.duration.*
 import UrlRetry.*
 
 object DownloadHelper {
@@ -20,15 +19,7 @@ object DownloadHelper {
       Files.deleteIfExists(localPath)
 
       println(s"[INFO] downloading $url to $localFile")
-      val urlFromString = new URI(url).toURL
-      withTransientHttpRetries(maxRetries = 5, baseInterval = 500.millis, backoffFactor = 2.0) {
-        val conn = openAndCheck(urlFromString)
-        try {
-          sbt.io.Using.bufferedInputStream(conn.getInputStream) { inputStream =>
-            sbt.IO.transfer(inputStream, localFile)
-          }
-        } finally conn.disconnect()
-      }
+      downloadWithRetries(new URI(url).toURL, localFile)
 
       // persist url in local storage
       val storageFile = storageInfoFileFor(localFile)
