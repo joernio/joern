@@ -82,13 +82,9 @@ object UrlRetry {
     */
   def openAndCheck(url: URL): HttpURLConnection = {
     val conn = url.openConnection().asInstanceOf[HttpURLConnection]
-    conn.setInstanceFollowRedirects(true)
-    conn.setConnectTimeout(5000);
-    conn.setReadTimeout(10000)
 
-    // Trigger the request; for GET, calling getResponseCode initiates the connection.
+    // Trigger the request; for GET, calling getResponseCode initiates the connection
     val status = conn.getResponseCode
-
     if (status >= 200 && status <= 299) {
       conn
     } else {
