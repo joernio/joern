@@ -7,12 +7,15 @@ initialize := {
 }
 
 libraryDependencies ++= Seq(
-  "com.typesafe"          % "config"         % "1.4.3",
-  "com.michaelpollmeier"  % "versionsort"    % "1.0.11",
-  "net.lingala.zip4j"     % "zip4j"          % "2.11.5",
-  "com.github.pathikrit" %% "better-files"   % "3.9.2",
-  "net.java.dev.javacc"   % "javacc"         % "7.0.12",
-  "com.lihaoyi"          %% "os-lib"         % "0.10.1",
-  "io.get-coursier"      %% "coursier-core"  % "2.1.25-M23",
-  "io.get-coursier"      %% "coursier-cache" % "2.1.25-M23"
+  "com.typesafe"          % "config"       % "1.4.3",
+  "com.michaelpollmeier"  % "versionsort"  % "1.0.11",
+  "net.lingala.zip4j"     % "zip4j"        % "2.11.5",
+  "com.github.pathikrit" %% "better-files" % "3.9.2",
+  "net.java.dev.javacc"   % "javacc"       % "7.0.12",
+  "com.lihaoyi"          %% "os-lib"       % "0.10.1",
+  // We explicitly depend on a separate courier version here.
+  // The one that comes shadowed from sbt did not work on Windows
+  // (see e.g., https://github.com/coursier/coursier/issues/1276).
+  "io.get-coursier" %% "coursier-core"  % "2.1.25-M23",
+  "io.get-coursier" %% "coursier-cache" % "2.1.25-M23"
 )
