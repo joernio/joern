@@ -200,9 +200,13 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     node match {
       case d: FunctionDeclLike =>
         val ast = astForFunctionLike(d, List.empty, None)
-        Ast.storeInDiffGraph(ast, diffGraph)
-        ast.root.foreach(r => diffGraph.addEdge(typeDeclNode, r, EdgeTypes.AST))
-        Ast()
+        ast.root match {
+          case Some(ref: NewMethodRef) => ast
+          case _ =>
+            Ast.storeInDiffGraph(ast, diffGraph)
+            ast.root.foreach(r => diffGraph.addEdge(typeDeclNode, r, EdgeTypes.AST))
+            Ast()
+        }
       case ifConf: IfConfigDeclSyntax =>
         val declElements = declSyntaxFromIfConfigDeclSyntax(ifConf)
         declElements.foldLeft(Ast()) { (ast, decl) => ast.merge(astForDeclMember(decl, typeDeclNode)) }
@@ -211,9 +215,13 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
             OperatorDeclSyntax | PoundSourceLocationSyntax | PrecedenceGroupDeclSyntax | SubscriptDeclSyntax |
             TypeAliasDeclSyntax) =>
         val ast = astForNode(node)
-        Ast.storeInDiffGraph(ast, diffGraph)
-        ast.root.foreach(r => diffGraph.addEdge(typeDeclNode, r, EdgeTypes.AST))
-        Ast()
+        ast.root match {
+          case Some(ref: NewTypeRef) => ast
+          case _ =>
+            Ast.storeInDiffGraph(ast, diffGraph)
+            ast.root.foreach(r => diffGraph.addEdge(typeDeclNode, r, EdgeTypes.AST))
+            Ast()
+        }
       case d: EnumCaseDeclSyntax =>
         val ast = astForNode(d)
         d.elements.children.foreach { c =>
