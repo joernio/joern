@@ -365,8 +365,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val tmpIdenAst =
       scope.lookupVariable(tmpName).map(x => Ast(tmpIden).withRefEdge(tmpIden, x)).getOrElse(Ast(tmpIden))
     val code_ = s"$tmpName = ${code(target)}"
-    if (createAssignmentToTmp) astForAssignment(tmpIdenAst, rhs, target.line, target.column, Option(code_)) -> s"($code_)"
-    else tmpIdenAst                                                                                        -> s"($code_)"
+    if (createAssignmentToTmp)
+      astForAssignment(tmpIdenAst, rhs, target.line, target.column, Option(code_)) -> s"($code_)"
+    else tmpIdenAst                                                                -> s"($code_)"
   }
 
   protected def astForIndexAccess(node: IndexAccess): Ast = {
