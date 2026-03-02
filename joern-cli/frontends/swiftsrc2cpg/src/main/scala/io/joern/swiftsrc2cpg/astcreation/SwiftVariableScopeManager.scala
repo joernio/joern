@@ -48,17 +48,9 @@ class SwiftVariableScopeManager extends VariableScopeManager {
     }
   }
 
-  private def getAllEnclosingFullNames(
-    scopeHead: Option[ScopeElement],
-    appendSignatureLast: Boolean = false
-  ): Seq[String] = {
+  private def getAllEnclosingFullNames(scopeHead: Option[ScopeElement]): Seq[String] = {
     scopeHead
       .collect {
-        case methodScope: MethodScopeElement if appendSignatureLast =>
-          val name = methodScope.methodName
-          val nameWithSignature =
-            methodScope.methodFullName.substring(methodScope.methodFullName.indexOf(s".$name:") + 1)
-          nameWithSignature +: getAllEnclosingFullNames(methodScope.surroundingScope)
         case methodScope: MethodScopeElement =>
           methodScope.methodName +: getAllEnclosingFullNames(methodScope.surroundingScope)
         case typeDeclScope: TypeDeclScopeElement =>
@@ -84,14 +76,6 @@ class SwiftVariableScopeManager extends VariableScopeManager {
     */
   override def computeScopePath: String = {
     val collapsed = getAllEnclosingFullNames(stack).reverse.foldLeft(Seq.empty[String]) {
-      case (acc, name) if acc.lastOption.contains(name) => acc
-      case (acc, name)                                  => acc :+ name
-    }
-    collapsed.mkString(ScopePathSeparator)
-  }
-
-  def computeScopePathWithSignatures: String = {
-    val collapsed = getAllEnclosingFullNames(stack, appendSignatureLast = true).reverse.foldLeft(Seq.empty[String]) {
       case (acc, name) if acc.lastOption.contains(name) => acc
       case (acc, name)                                  => acc :+ name
     }
