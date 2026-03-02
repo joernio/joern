@@ -827,7 +827,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         .orElse(fullNameByImportPath(expr.getTypeReference, expr.getContainingKtFile))
         .getOrElse(explicitTypeName)
       registerType(typeFullName)
-      val node = localNode(expr, expr.getName, code(expr), typeFullName)
+      val node = localNode(expr, expr.getName, shortenCode(expr.getName), typeFullName)
       scope.addToScope(expr.getName, node)
       val localAst = Ast(node)
 
