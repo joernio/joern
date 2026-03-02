@@ -446,7 +446,7 @@ class AstCreator(
     argNameMaybe: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   ): Ast = {
-    val node = unknownNode(expr, Option(expr).map(_.getText).getOrElse(Constants.CodePropUndefinedValue))
+    val node = unknownNode(expr, Option(expr).map(code).getOrElse(Constants.CodePropUndefinedValue))
     Ast(withArgumentIndex(node, argIdx).argumentName(argNameMaybe))
       .withChildren(annotations.map(astForAnnotationEntry))
   }
@@ -490,7 +490,7 @@ class AstCreator(
       callAst(componentNCallNode, Seq(), Option(rhsBaseAst))
 
     val assignmentCallNode =
-      operatorCallNode(entry, s"${entry.getText} = $componentNCallCode", Operators.assignment, None)
+      operatorCallNode(entry, shortenCode(s"${entry.getText} = $componentNCallCode"), Operators.assignment, None)
     callAst(assignmentCallNode, List(assignmentLHSAst, componentNAst))
   }
 
