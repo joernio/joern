@@ -199,12 +199,12 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     def tmp = SimpleIdentifier()(originSpan.spanStart(tmpName))
 
     val matchCall = {
-      val code = s"${regex.text}.match(${target.text})"
-      MemberCall(regex, ".", "match", target :: Nil)(originSpan.spanStart(code))
+      val code_ = s"${code(regex)}.match(${code(target)})"
+      MemberCall(regex, ".", "match", target :: Nil)(originSpan.spanStart(code_))
     }
     val tmpAssignment = {
-      val code = s"$tmpName = ${matchCall.text}"
-      SingleAssignment(tmp, "=", matchCall)(originSpan.spanStart(code))
+      val code_ = s"$tmpName = ${code(matchCall)}"
+      SingleAssignment(tmp, "=", matchCall)(originSpan.spanStart(code_))
     }
 
     def self            = SelfIdentifier()(originSpan.spanStart(Defines.Self))
