@@ -129,23 +129,27 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       ctorModifiers.head.modifierType shouldBe "CONSTRUCTOR"
     }
 
-    "have constructor body that calls CallableReference constructor" in {
-      val constructor         = syntheticTypeDecl.method.name("<init>").head
-      val callableRefCtorCall = constructor.ast.isCall.name("<init>").methodFullName(".*CallableReference.*").head
+    "have constructor body that assigns receiver field" in {
+      val constructor = syntheticTypeDecl.method.name("<init>").head
 
-      callableRefCtorCall.methodFullName shouldBe "kotlin.jvm.internal.CallableReference.<init>:void(com.test.Handler)"
-      callableRefCtorCall.signature shouldBe "void(com.test.Handler)"
-      callableRefCtorCall.dispatchType shouldBe "STATIC_DISPATCH"
+      constructor.ast.isCall.name("<init>").methodFullName(".*CallableReference.*").l shouldBe List.empty
 
-      val args = callableRefCtorCall.argument.l
-      args.size shouldBe 1
+      val List(memberSetCall: Call) = constructor.ast.isCall.nameExact(Operators.assignment).l: @unchecked
+      memberSetCall.methodFullName shouldBe Operators.assignment
 
-      val receiverArg = args.head.asInstanceOf[Identifier]
-      receiverArg.name shouldBe "handler"
-      receiverArg.typeFullName shouldBe "com.test.Handler"
-      receiverArg.argumentIndex shouldBe 1
+      val List(lhs: Call, rhs: Identifier) = memberSetCall.argument.l: @unchecked
+      lhs.name shouldBe Operators.fieldAccess
+      lhs.typeFullName shouldBe "com.test.Handler"
 
-      inside(receiverArg.refsTo.l) { case List(param: MethodParameterIn) =>
+      val List(thisIdentifier: Identifier, receiverField: FieldIdentifier) = lhs.argument.l: @unchecked
+      thisIdentifier.name shouldBe "this"
+      receiverField.canonicalName shouldBe "receiver"
+
+      rhs.name shouldBe "handler"
+      rhs.typeFullName shouldBe "com.test.Handler"
+      rhs.argumentIndex shouldBe 2
+
+      inside(rhs.refsTo.l) { case List(param: MethodParameterIn) =>
         param.name shouldBe "handler"
         param.typeFullName shouldBe "com.test.Handler"
         param.index shouldBe 1

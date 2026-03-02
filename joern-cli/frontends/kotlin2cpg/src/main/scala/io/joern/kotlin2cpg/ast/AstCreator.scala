@@ -800,25 +800,29 @@ class AstCreator(
       registerType(receiverType)
     )
 
-    val callableRefType         = registerType("kotlin.jvm.internal.CallableReference")
-    val callableRefCtorFullName = s"$callableRefType.<init>:void($receiverType)"
-    val callableRefCtorCall = callNode(
+    val thisIdentifier = identifierNode(
       samInfo.expr,
-      s"$callableRefType.<init>($receiverParamName)",
-      "<init>",
-      callableRefCtorFullName,
-      DispatchTypes.STATIC_DISPATCH,
-      Some(s"void($receiverType)"),
-      Some(registerType(TypeConstants.Void))
+      Constants.ThisName,
+      Constants.ThisName,
+      samInfo.samImplClass,
+      Seq(samInfo.samImplClass)
     )
+    val receiverFieldIdentifier = fieldIdentifierNode(samInfo.expr, "receiver", "receiver")
+    val receiverFieldAccessNode =
+      operatorCallNode(samInfo.expr, s"this.receiver", Operators.fieldAccess, Option(registerType(receiverType)))
+    val receiverFieldAccessAst =
+      callAst(receiverFieldAccessNode, Seq(Ast(thisIdentifier), Ast(receiverFieldIdentifier)))
+
     val receiverArgIdent =
-      identifierNode(samInfo.expr, receiverParamName, receiverParamName, registerType(receiverType))
-        .argumentIndex(1)
-    val receiverArgAst     = Ast(receiverArgIdent).withRefEdge(receiverArgIdent, ctorReceiverParam)
-    val callableRefCtorAst = callAst(callableRefCtorCall, Seq(receiverArgAst))
+      identifierNode(samInfo.expr, receiverParamName, receiverParamName, registerType(receiverType)).argumentIndex(2)
+    val receiverArgAst = Ast(receiverArgIdent).withRefEdge(receiverArgIdent, ctorReceiverParam)
+
+    val receiverAssignmentNode =
+      operatorCallNode(samInfo.expr, s"this.receiver = $receiverParamName", Operators.assignment, None)
+    val receiverAssignmentAst = callAst(receiverAssignmentNode, Seq(receiverFieldAccessAst, receiverArgAst))
 
     val ctorBlock =
-      blockNode(samInfo.expr, s"$callableRefType.<init>($receiverParamName)", registerType(TypeConstants.Void))
+      blockNode(samInfo.expr, s"this.receiver = $receiverParamName", registerType(TypeConstants.Void))
     val ctorReturn    = methodReturnNode(samInfo.expr, TypeConstants.Void)
     val ctorModifiers = Seq(modifierNode(samInfo.expr, ModifierTypes.CONSTRUCTOR))
 
@@ -828,7 +832,7 @@ class AstCreator(
       methodAst(
         ctorNode,
         Seq(Ast(ctorThisParam), Ast(ctorReceiverParam)),
-        blockAst(ctorBlock, List(callableRefCtorAst)),
+        blockAst(ctorBlock, List(receiverAssignmentAst)),
         ctorReturn,
         ctorModifiers
       )
