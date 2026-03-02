@@ -3,7 +3,6 @@ package io.joern.swiftsrc2cpg.astcreation
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, EvaluationStrategies, PropertyNames}
 import org.apache.commons.lang3.StringUtils
 
@@ -274,12 +273,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }).map(l => transferEndOffsetToStartOffset(l, node))
   }
 
-  private def isNestedSubscriptAccessorDecl(node: FunctionDeclLike) = {
-    node.isInstanceOf[AccessorDeclSyntax] && methodAstParentStack.headOption.collect {
-      case m: NewMethod if m.name == "subscript" => m
-    }.isDefined
-  }
-
   protected def methodInfoForFunctionDeclLike(node: FunctionDeclLike): MethodInfo = {
     val name = calcMethodName(node)
 
@@ -303,9 +296,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
           registerType(returnType)
           MethodInfo(name, fullName, signature, returnType)
         case None =>
-          val (methodName, methodFullName) =
-            if (isNestedSubscriptAccessorDecl(node)) { calcNameAndFullNameWithSignature(name) }
-            else { calcNameAndFullName(name) }
+          val (methodName, methodFullName) = calcNameAndFullName(name)
           val (signature, returnType) = node match {
             case f: FunctionDeclSyntax =>
               val returnType = f.signature.returnClause.fold(Defines.Any)(c => cleanType(code(c.`type`)))
@@ -347,18 +338,29 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
   object MethodInfo {
     def fullNameToExtensionFullName(fullName: String, name: String): String = {
-      fullName.replaceFirst(s"\\.$name:", s"<extension>.$name:")
+      val (replacementRegex, replacement) = if (fullName.contains(".subscript:")) {
+        (".subscript:", s"<extension>.subscript:")
+      } else {
+        (s".$name:", s"<extension>.$name:")
+      }
+      fullName.replace(replacementRegex, replacement)
     }
   }
 
   case class TypeInfo(name: String, fullName: String)
 
-  protected def methodInfoForAccessorDecl(node: AccessorDeclSyntax, variableName: String, tpe: String): MethodInfo = {
+  protected def methodInfoForAccessorDecl(
+    node: AccessorDeclSyntax,
+    variableName: String,
+    tpe: String,
+    fullNameSubscriptPrefix: String = ""
+  ): MethodInfo = {
     val accessorName = code(node.accessorSpecifier)
+    val namePrefix   = if (variableName.nonEmpty) s"$variableName." else ""
     val name = accessorName match {
-      case "set" => s"$variableName.setter"
-      case "get" => s"$variableName.getter"
-      case other => s"$variableName.$other"
+      case "set" => s"${namePrefix}setter"
+      case "get" => s"${namePrefix}getter"
+      case other => s"$namePrefix$other"
     }
 
     fullnameProvider.declFullname(node) match {
@@ -371,7 +373,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         }
         MethodInfo(name, fullName, signature, tpe)
       case None =>
-        val (methodName, methodFullName) = calcNameAndFullName(name)
+        val (methodName, methodFullName) = calcNameAndFullName(name, fullNameSubscriptPrefix)
         registerType(tpe)
         MethodInfo(methodName, methodFullName, tpe, tpe)
     }
@@ -475,16 +477,14 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }
   }
 
-  private def calcNameAndFullName(name: String): (String, String) = {
+  private def calcNameAndFullName(name: String, fullNameSubscriptPrefix: String = ""): (String, String) = {
     val fullNamePrefix = s"${parserResult.filename}:${scope.computeScopePath}"
-    val fullName       = s"$fullNamePrefix.$name"
-    (name, fullName)
-  }
-
-  private def calcNameAndFullNameWithSignature(name: String): (String, String) = {
-    val fullNamePrefix = s"${parserResult.filename}:${scope.computeScopePathWithSignatures}"
-    val fullName       = s"$fullNamePrefix:$name"
-    (name, fullName)
+    val methodFullNameWithSubscriptPrefix = if (fullNameSubscriptPrefix.nonEmpty) {
+      s"$fullNamePrefix.$fullNameSubscriptPrefix.$name"
+    } else {
+      s"$fullNamePrefix.$name"
+    }
+    (name, methodFullNameWithSubscriptPrefix)
   }
 
   private def calcMethodName(func: SwiftNode): String = {

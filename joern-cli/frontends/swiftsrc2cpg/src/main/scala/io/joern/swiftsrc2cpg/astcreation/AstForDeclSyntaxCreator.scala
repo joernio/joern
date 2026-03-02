@@ -603,15 +603,62 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     (attributes, modifiers)
   }
 
+  private def hasNestedAccessor(node: FunctionDeclLike): Boolean = {
+    node match {
+      case s: SubscriptDeclSyntax =>
+        s.accessorBlock.exists(_.accessors match {
+          case l: AccessorDeclListSyntax => true
+          case _                         => false
+        })
+      case _ => false
+    }
+  }
+
+  private def replaceSuffixIfEndsWith(in: String, r: String, replacement: String): String = {
+    if (r.isEmpty) in
+    else if (in.endsWith(r)) in.dropRight(r.length) + replacement
+    else in
+  }
+
+  private def astForAccessorInSubscript(
+    node: SubscriptDeclSyntax,
+    handleAccessor: (AccessorDeclSyntax, String, String, String, Seq[SwiftNode]) => Unit
+  ): Ast = {
+    val methodInfo                                       = methodInfoForFunctionDeclLike(node)
+    val MethodInfo(methodName, _, signature, returnType) = methodInfo
+    val paramClause                                      = replaceSuffixIfEndsWith(signature, s"->$returnType", "")
+    val subscriptSignaturePrefix                         = s"$methodName:$paramClause"
+
+    val parameters = node.parameterClause.parameters.children
+    val accessors = node.accessorBlock.map(_.accessors) match {
+      case Some(list: AccessorDeclListSyntax) => list.children.collect { case a: AccessorDeclSyntax => a }
+      case _                                  => Seq.empty
+    }
+    accessors.foreach(handleAccessor(_, "", returnType, subscriptSignaturePrefix, parameters))
+    Ast()
+  }
+
+  private def astForAccessorInSubscript(node: SubscriptDeclSyntax): Ast = {
+    astForAccessorInSubscript(node, astForAccessor)
+  }
+
+  private def astForAccessorInSubscriptInExtension(node: SubscriptDeclSyntax): Ast = {
+    astForAccessorInSubscript(node, astForAccessorInExtension)
+  }
+
   protected def astForFunctionLike(
     node: FunctionDeclLike,
     methodBlockContent: List[DeclSyntax],
     typeDecl: Option[NewTypeDecl]
   ): Ast = {
-    val (attributes, modifiers)                                       = attributeAstsAndModifierForFunctionLike(node)
-    val filename                                                      = parserResult.filename
+    if (hasNestedAccessor(node)) {
+      return astForAccessorInSubscript(node.asInstanceOf[SubscriptDeclSyntax])
+    }
+
     val methodInfo                                                    = methodInfoForFunctionDeclLike(node)
     val MethodInfo(methodName, methodFullName, signature, returnType) = methodInfo
+    val (attributes, modifiers)                                       = attributeAstsAndModifierForFunctionLike(node)
+    val filename                                                      = parserResult.filename
     val methodFullNameAndSignature                                    = methodInfo.fullNameAndSignature
     val isStatic = modifiers.exists(_.modifierType == ModifierTypes.STATIC)
 
@@ -744,10 +791,14 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForFunctionInExtension(node: FunctionDeclLike): Ast = {
-    val (attributes, modifiers)                                       = attributeAstsAndModifierForFunctionLike(node)
-    val filename                                                      = parserResult.filename
+    if (hasNestedAccessor(node)) {
+      return astForAccessorInSubscriptInExtension(node.asInstanceOf[SubscriptDeclSyntax])
+    }
+
     val methodInfo                                                    = methodInfoForFunctionDeclLike(node)
     val MethodInfo(methodName, methodFullName, signature, returnType) = methodInfo
+    val filename                                                      = parserResult.filename
+    val (attributes, modifiers)                                       = attributeAstsAndModifierForFunctionLike(node)
     val methodFullNameAndSignature                                    = methodInfo.fullNameAndSignature
     val methodFullNameAndSignatureExt                                 = methodInfo.fullNameAndSignatureExt
     val isStatic = modifiers.exists(_.modifierType == ModifierTypes.STATIC)
@@ -907,15 +958,21 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     Ast(typeDeclNode_)
   }
 
-  private def astForAccessor(node: AccessorDeclSyntax, variableName: String, tpe: String): Unit = {
+  private def astForAccessor(
+    node: AccessorDeclSyntax,
+    variableName: String,
+    tpe: String,
+    fullNameSubscriptPrefix: String = "",
+    additionalParameter: Seq[SwiftNode] = Seq.empty
+  ): Unit = {
     val attributes = node.attributes.children.map(astForNode)
     val modifiers  = modifiersForFunctionLike(node)
 
     val filename          = parserResult.filename
-    val parameters        = node.parameters.toSeq
+    val parameters        = node.parameters.toSeq ++ additionalParameter
     val accessorSpecifier = code(node.accessorSpecifier)
 
-    val methodInfo = methodInfoForAccessorDecl(node, variableName, tpe)
+    val methodInfo = methodInfoForAccessorDecl(node, variableName, tpe, fullNameSubscriptPrefix)
     val MethodInfo(methodName, methodFullName, signature, returnType) = methodInfo
     val methodFullNameAndSignature                                    = methodInfo.fullNameAndSignature
     val isStatic = modifiers.exists(_.modifierType == ModifierTypes.STATIC)
@@ -1099,17 +1156,22 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     diffGraph.addEdge(methodAstParentStack.head, methodNode_, EdgeTypes.AST)
   }
 
-  private def astForAccessorInExtension(node: AccessorDeclSyntax, variableName: String, tpe: String): Unit = {
+  private def astForAccessorInExtension(
+    node: AccessorDeclSyntax,
+    variableName: String,
+    tpe: String,
+    fullNameSubscriptPrefix: String = "",
+    additionalParameter: Seq[SwiftNode] = Seq.empty
+  ): Unit = {
     val attributes = node.attributes.children.map(astForNode)
     val modifiers  = modifiersForFunctionLike(node)
 
     val filename          = parserResult.filename
-    val parameters        = node.parameters.toSeq
+    val parameters        = node.parameters.toSeq ++ additionalParameter
     val accessorSpecifier = code(node.accessorSpecifier)
 
-    val methodInfo = methodInfoForAccessorDecl(node, variableName, tpe)
+    val methodInfo = methodInfoForAccessorDecl(node, variableName, tpe, fullNameSubscriptPrefix)
     val MethodInfo(methodName, methodFullName, signature, returnType) = methodInfo
-    val methodFullNameAndSignature                                    = methodInfo.fullNameAndSignature
     val methodFullNameAndSignatureExt                                 = methodInfo.fullNameAndSignatureExt
 
     global.addMemberPropertyFullName(methodFullName, methodFullNameAndSignatureExt)
