@@ -7,6 +7,7 @@ import io.joern.x2cpg.ValidationMode
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.AstNodeNew
 import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtBlockExpression
@@ -536,7 +537,10 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     annotations: Seq[KtAnnotationEntry] = Seq()
   ): Ast = {
     val thrownValue = astsForExpression(expr.getThrownExpression, None)
-    val node        = controlStructureNode(expr, ControlStructureTypes.THROW, expr.getText)
+    thrownValue.headOption.flatMap(_.root).collect { case node: AstNodeNew =>
+      node.order(1)
+    }
+    val node = controlStructureNode(expr, ControlStructureTypes.THROW, code(expr))
     Ast(node).withChildren(thrownValue)
   }
 
