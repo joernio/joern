@@ -108,7 +108,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       else expr.getName
     val node = callNode(
       expr,
-      expr.getText,
+      code(expr),
       name,
       fullName,
       DispatchTypes.STATIC_DISPATCH,
@@ -139,11 +139,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val nameReferenceExpr = expr.getSelectorExpression.asInstanceOf[KtNameReferenceExpression]
     val fieldIdentifier = Ast(
-      fieldIdentifierNode(nameReferenceExpr, nameReferenceExpr.getText, nameReferenceExpr.getText).argumentIndex(2)
+      fieldIdentifierNode(nameReferenceExpr, nameReferenceExpr.getText, code(nameReferenceExpr)).argumentIndex(2)
     )
 
     val retType = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
-    val node = withArgumentIndex(operatorCallNode(expr, expr.getText, Operators.fieldAccess, Option(retType)), argIdx)
+    val node = withArgumentIndex(operatorCallNode(expr, code(expr), Operators.fieldAccess, Option(retType)), argIdx)
       .argumentName(argNameMaybe)
     callAst(node, List(exprNode, fieldIdentifier))
   }
@@ -166,15 +166,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val methodName = expr.getSelectorExpression.getFirstChild.getText
     val node =
       withArgumentIndex(
-        callNode(
-          expr,
-          expr.getText,
-          methodName,
-          fullName,
-          DispatchTypes.STATIC_DISPATCH,
-          Some(signature),
-          Some(retType)
-        ),
+        callNode(expr, code(expr), methodName, fullName, DispatchTypes.STATIC_DISPATCH, Some(signature), Some(retType)),
         argIdx
       ).argumentName(argNameMaybe)
 
@@ -202,15 +194,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val methodName = expr.getSelectorExpression.getFirstChild.getText
     val node =
       withArgumentIndex(
-        callNode(
-          expr,
-          expr.getText,
-          methodName,
-          fullName,
-          DispatchTypes.STATIC_DISPATCH,
-          Some(signature),
-          Some(retType)
-        ),
+        callNode(expr, code(expr), methodName, fullName, DispatchTypes.STATIC_DISPATCH, Some(signature), Some(retType)),
         argIdx
       ).argumentName(argNameMaybe)
     callAst(node, argAsts, Option(receiverAst))
@@ -236,7 +220,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         val identifierAst = astWithRefEdgeMaybe(identifier.name, identifier)
 
         val assignmentNode =
-          operatorCallNode(expr, s"${identifier.name} = ${Operators.alloc}", Operators.assignment, None)
+          operatorCallNode(expr, shortenCode(s"${identifier.name} = ${Operators.alloc}"), Operators.assignment, None)
         val assignmentCallAst = callAst(assignmentNode, List(identifierAst) ++ List(rhsAst))
 
         val (fullName, signature) =
@@ -247,7 +231,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
           )
         val initCallNode = callNode(
           callExpr,
-          callExpr.getText,
+          code(callExpr),
           Defines.ConstructorMethodName,
           fullName,
           DispatchTypes.STATIC_DISPATCH,
@@ -263,7 +247,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         val returningIdentifierNode = identifierNode(expr, identifier.name, identifier.name, identifier.typeFullName)
         val returningIdentifierAst  = Ast(returningIdentifierNode).withRefEdge(returningIdentifierNode, local)
 
-        val node = blockNode(expr, expr.getText, localTypeFullName).argumentName(argNameMaybe)
+        val node = blockNode(expr, code(expr), localTypeFullName).argumentName(argNameMaybe)
         argIdx match {
           case Some(idx) => node.argumentIndex(idx)
           case _         =>
@@ -298,7 +282,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val dispatchType = DispatchTypes.STATIC_DISPATCH
 
     val node = withArgumentIndex(
-      callNode(expr, expr.getText, methodName, fullName, dispatchType, Some(signature), Some(retType)),
+      callNode(expr, code(expr), methodName, fullName, dispatchType, Some(signature), Some(retType)),
       argIdx
     ).argumentName(argNameMaybe)
     Ast(node)
@@ -338,9 +322,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val node =
       withArgumentIndex(
         if (fullName.startsWith("<operator>.")) {
-          operatorCallNode(expr, expr.getText, fullName, Option(retType))
+          operatorCallNode(expr, code(expr), fullName, Option(retType))
         } else {
-          callNode(expr, expr.getText, methodName, fullName, dispatchType, Some(signature), Some(retType))
+          callNode(expr, code(expr), methodName, fullName, dispatchType, Some(signature), Some(retType))
         },
         argIdx
       ).argumentName(argNameMaybe)
@@ -411,7 +395,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
     val args = astsForExpression(expr.getLeftHandSide, None) ++
       Seq(astForTypeReference(expr.getTypeReference, None, argName))
-    val node = operatorCallNode(expr, expr.getText, Operators.is, None)
+    val node = operatorCallNode(expr, code(expr), Operators.is, None)
     callAst(withArgumentName(withArgumentIndex(node, argIdx), argName), args.toList)
       .withChildren(annotations.map(astForAnnotationEntry))
   }
@@ -424,7 +408,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   ): Ast = {
     registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
     val args = astsForExpression(expr.getLeft, None) ++ Seq(astForTypeReference(expr.getRight, None, None))
-    val node = operatorCallNode(expr, expr.getText, Operators.cast, None)
+    val node = operatorCallNode(expr, code(expr), Operators.cast, None)
     callAst(withArgumentName(withArgumentIndex(node, argIdx), argName), args.toList)
       .withChildren(annotations.map(astForAnnotationEntry))
   }
@@ -505,7 +489,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     // TODO: add test case to confirm whether the ANY fallback makes sense (could be void)
     val returnType = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
-    val node = callNode(expr, expr.getText, referencedName, fullName, dispatchType, Some(signature), Some(returnType))
+    val node = callNode(expr, code(expr), referencedName, fullName, dispatchType, Some(signature), Some(returnType))
 
     val annotationsAsts = annotations.map(astForAnnotationEntry)
     val astWithAnnotations =
@@ -554,18 +538,18 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val typeFullName = registerType(exprTypeFullName(expr).getOrElse(Defines.UnresolvedNamespace))
     val tmpBlockNode = blockNode(expr, "", typeFullName)
     val tmpName      = s"${Constants.TmpLocalPrefix}${tmpKeyPool.next}"
-    val tmpLocalNode = localNode(expr, tmpName, tmpName, typeFullName)
+    val tmpLocalNode = localNode(expr, tmpName, shortenCode(tmpName), typeFullName)
     scope.addToScope(tmpName, tmpLocalNode)
     val tmpLocalAst = Ast(tmpLocalNode)
 
     val assignmentRhsNode =
       operatorCallNode(expr, Constants.Alloc, Operators.alloc, Option(typeFullName))
-    val assignmentLhsNode = identifierNode(expr, tmpName, tmpName, typeFullName)
+    val assignmentLhsNode = identifierNode(expr, tmpName, shortenCode(tmpName), typeFullName)
     val assignmentLhsAst  = astWithRefEdgeMaybe(tmpName, assignmentLhsNode)
 
     val assignmentNode = operatorCallNode(expr, Operators.assignment, Operators.assignment, None)
     val assignmentAst  = callAst(assignmentNode, List(assignmentLhsAst, Ast(assignmentRhsNode)))
-    val initReceiverNode = identifierNode(expr, tmpName, tmpName, typeFullName)
+    val initReceiverNode = identifierNode(expr, tmpName, shortenCode(tmpName), typeFullName)
       .argumentIndex(0)
     val initReceiverAst = astWithRefEdgeMaybe(tmpName, initReceiverNode)
 
@@ -588,7 +572,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val initCallNode = callNode(
       expr,
-      expr.getText,
+      code(expr),
       Defines.ConstructorMethodName,
       fullName,
       DispatchTypes.STATIC_DISPATCH,
@@ -596,7 +580,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       Some(TypeConstants.Void)
     )
     val initCallAst       = callAst(initCallNode, astsForTrails, Option(initReceiverAst))
-    val lastIdentifier    = identifierNode(expr, tmpName, tmpName, typeFullName)
+    val lastIdentifier    = identifierNode(expr, tmpName, shortenCode(tmpName), typeFullName)
     val lastIdentifierAst = astWithRefEdgeMaybe(tmpName, lastIdentifier)
 
     val annotationsAsts = annotations.map(astForAnnotationEntry)
@@ -625,7 +609,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val args = List(astsForExpression(expr.getBaseExpression, None).headOption.getOrElse(Ast()))
       .filterNot(_.root == null)
     val node =
-      operatorCallNode(expr, expr.getText, operatorType, Option(typeFullName))
+      operatorCallNode(expr, code(expr), operatorType, Option(typeFullName))
     callAst(withArgumentName(withArgumentIndex(node, argIdx), argName), args)
       .withChildren(annotations.map(astForAnnotationEntry))
   }
@@ -647,7 +631,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val args = List(astsForExpression(expr.getBaseExpression, None).headOption.getOrElse(Ast()))
       .filterNot(_.root == null)
     val node =
-      operatorCallNode(expr, expr.getText, operatorType, Option(typeFullName))
+      operatorCallNode(expr, code(expr), operatorType, Option(typeFullName))
     callAst(withArgumentName(withArgumentIndex(node, argIdx), argName), args)
       .withChildren(annotations.map(astForAnnotationEntry))
   }
@@ -664,7 +648,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       astsForExpression(expr, Option(idx + 1))
     }
     val callNode =
-      operatorCallNode(expression, expression.getText, Operators.indexAccess, Option(typeFullName))
+      operatorCallNode(expression, code(expression), Operators.indexAccess, Option(typeFullName))
     callAst(withArgumentName(withArgumentIndex(callNode, argIdx), argName), baseExpressionAst ++ astsForIndexExpr)
       .withChildren(annotations.map(astForAnnotationEntry))
   }
