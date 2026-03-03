@@ -211,6 +211,9 @@ class TestRunner:
             
             # Create test file
             (foo_path / "foo.c").write_text("int foo(int a, int b, int c, int d, int e, int f) {}")
+
+            # Use test file for joern-scan parameter test
+            uaf_c_path = self.script_dir / "tests" / "code" / "c" / "uaf.c"
             
             # Run tests
             self.run_command([self.joern_exe, "--src", str(foo_path), "--run", "scan"],
@@ -221,6 +224,14 @@ class TestRunner:
             
             self.run_command([self.joern_scan_exe, "--dump"],
                            "Joern-scan dump")
+
+            # Run scan on real test file to verify functionality
+            proc = self.run_command([self.joern_scan_exe, "--overwrite", "--tags all", str(uaf_c_path)],
+                           f"Joern-scan on {uaf_c_path}")
+
+            result_count = sum(1 for line in proc.stdout.splitlines() if "Result: 5.0 : A value that is free'd is reused without reassignment." in line)
+            if result_count == 0:
+                raise RuntimeError("Result from joern-scan not found")
 
     @stage
     def slice_test(self):
