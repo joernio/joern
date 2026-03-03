@@ -1,7 +1,7 @@
 package io.joern.javasrc2cpg.astcreation.expressions
 
 import com.github.javaparser.ast.Node
-import com.github.javaparser.ast.expr.{PatternExpr, RecordPatternExpr, TypePatternExpr}
+import com.github.javaparser.ast.expr.{ComponentPatternExpr, PatternExpr, RecordPatternExpr, TypePatternExpr}
 import io.joern.javasrc2cpg.astcreation.AstCreator
 import io.joern.javasrc2cpg.jartypereader.model.Model.TypeConstants
 import io.joern.javasrc2cpg.scope.Scope.NewVariableNode
@@ -279,7 +279,7 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
       .map(_.getDeclaredFields.asScala.map(_.getName).toList)
       .getOrElse(patternList.map(_ => Defines.UnknownField))
 
-    patternList.zip(fieldNames).map { case (childPatternExpr, fieldName) =>
+    patternList.collect { case pat: PatternExpr => pat }.zip(fieldNames).map { case (childPatternExpr, fieldName) =>
       val childTypeFullName = getPatternTypeFullName(childPatternExpr) match {
         case typeFullName if isResolvedTypeFullName(typeFullName) => Option(typeFullName)
         case _                                                    => None
