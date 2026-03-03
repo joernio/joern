@@ -2,13 +2,49 @@ package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.shiftleft.codepropertygraph.generated.nodes.Return
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Return, TypeDecl}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 
-import java.io.File
-
 class NewTypeDeclTests extends JavaSrcCode2CpgFixture {
+  "a Java 25 compact class declaration" should {
+    val cpg = code(
+      """
+        |String s = "hello";
+        |
+        |void main() {
+        |  IO.println(s);
+        |}
+        |""".stripMargin)
+
+    "contain a typeDecl with the correct fields set for the compact class" in {
+      inside(cpg.typeDecl.internal.l) { case List(compactDecl) =>
+        compactDecl.name shouldBe "$COMPACT_CLASS"
+        compactDecl.inheritsFromTypeFullName.l shouldBe List("java.lang.Object")
+      }
+    }
+
+    "contain a member node for s" in {
+      inside(cpg.member.name("s").l) { case List(sMember) =>
+        sMember.name shouldBe "s"
+        sMember.typeFullName shouldBe "java.lang.String"
+
+        sMember.astParent.isInstanceOf[TypeDecl] shouldBe true
+        sMember.astParent.asInstanceOf[TypeDecl].fullName shouldBe "$COMPACT_CLASS"
+      }
+    }
+
+    "contain the main method" in {
+      inside(cpg.method("main").l) { case List(mainMethod) =>
+        mainMethod.fullName shouldBe "$COMPACT_CLASS.main:void()"
+        inside(mainMethod.body.astChildren.l) { case List(printCall: Call) =>
+          printCall.name shouldBe "println"
+          printCall.methodFullName shouldBe "java.io.IO.println:void(java.lang.Object)"
+        }
+      }
+    }
+  }
+
   "constructors with access modifiers" should {
     "have correct public modifier" in {
       val cpg = code("""
