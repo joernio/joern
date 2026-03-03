@@ -232,6 +232,7 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
       //  RuntimeException.<init>(tmp, "boom")
       // }
       val List(throwBlock: Block) = throwNode.astChildren.l
+      throwBlock.order shouldBe 1
       inside(throwBlock.astChildren.isCall.sortBy(_.name).l) { case List(init: Call, assignment: Call) =>
         // Not really testing ctor generation, just a simple check that it does exist and has expected values
         assignment.name shouldBe "<operator>.assignment"
