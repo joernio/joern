@@ -340,6 +340,10 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     def fullNameToExtensionFullName(fullName: String, name: String): String = {
       val (replacementRegex, replacement) = if (fullName.contains(".subscript:")) {
         (".subscript:", s"<extension>.subscript:")
+      } else if (fullName.contains(".subscript.getter:")) {
+        (".subscript.getter:", s"<extension>.subscript.getter:")
+      } else if (fullName.contains(".subscript.setter:")) {
+        (".subscript.setter:", s"<extension>.subscript.setter:")
       } else {
         (s".$name:", s"<extension>.$name:")
       }

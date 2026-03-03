@@ -668,6 +668,10 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     else { Option(methodRefNode(node, methodName, methodFullNameAndSignature, methodFullNameAndSignature)) }
     val capturingRefNode = methodRefNode_.orElse(typeRefIdStack.headOption)
 
+    if (node.isInstanceOf[SubscriptDeclSyntax]) {
+      global.addMemberPropertyFullName(methodFullName, methodFullNameAndSignature)
+    }
+
     val methodNode_ = methodNode(node, methodName, code(node), methodFullNameAndSignature, Option(signature), filename)
     val block       = blockNode(node, PropertyDefaults.Code, Defines.Any)
 
@@ -970,7 +974,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val modifiers  = modifiersForFunctionLike(node)
 
     val filename          = parserResult.filename
-    val parameters        = node.parameters.toSeq ++ additionalParameter
+    val parameters        = node.parameters.toSeq
     val accessorSpecifier = code(node.accessorSpecifier)
 
     val methodInfo = methodInfoForAccessorDecl(node, variableName, tpe, fullNameSubscriptPrefix)
@@ -998,9 +1002,9 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       val name          = "newValue" // Swift default parameter name for set accessors
       val parameterNode = parameterInNode(node, name, name, 1, false, EvaluationStrategies.BY_VALUE, Some(tpe))
       scope.addVariable(name, parameterNode, parameterNode.typeFullName, VariableScopeManager.ScopeType.MethodScope)
-      Seq(Ast(parameterNode))
+      Ast(parameterNode) +: additionalParameter.map(astForNode)
     } else {
-      parameters.map(astForNode)
+      parameters.map(astForNode) ++ additionalParameter.map(astForNode)
     }
 
     val bodyStmtAsts = node.body
@@ -1168,14 +1172,16 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val modifiers  = modifiersForFunctionLike(node)
 
     val filename          = parserResult.filename
-    val parameters        = node.parameters.toSeq ++ additionalParameter
+    val parameters        = node.parameters.toSeq
     val accessorSpecifier = code(node.accessorSpecifier)
 
     val methodInfo = methodInfoForAccessorDecl(node, variableName, tpe, fullNameSubscriptPrefix)
     val MethodInfo(methodName, methodFullName, signature, returnType) = methodInfo
+    val methodFullNameAndSignature                                    = methodInfo.fullNameAndSignature
     val methodFullNameAndSignatureExt                                 = methodInfo.fullNameAndSignatureExt
 
     global.addMemberPropertyFullName(methodFullName, methodFullNameAndSignatureExt)
+    global.addExtensionMethodFullName(methodFullNameAndSignature, methodFullNameAndSignatureExt)
 
     val capturingRefNode = typeRefIdStack.headOption
     val methodNode_ =
@@ -1196,9 +1202,9 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       val name          = "newValue" // Swift default parameter name for set accessors
       val parameterNode = parameterInNode(node, name, name, 1, false, EvaluationStrategies.BY_VALUE, Some(tpe))
       scope.addVariable(name, parameterNode, parameterNode.typeFullName, VariableScopeManager.ScopeType.MethodScope)
-      Seq(Ast(parameterNode))
+      Ast(parameterNode) +: additionalParameter.map(astForNode)
     } else {
-      parameters.map(astForNode)
+      parameters.map(astForNode) ++ additionalParameter.map(astForNode)
     }
 
     val bodyStmtAsts = node.body

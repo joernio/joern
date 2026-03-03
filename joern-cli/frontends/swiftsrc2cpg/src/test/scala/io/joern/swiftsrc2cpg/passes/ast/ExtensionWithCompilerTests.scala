@@ -1,7 +1,9 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
 import io.joern.swiftsrc2cpg.testfixtures.SwiftCompilerSrc2CpgSuite
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, MethodParameterIn}
 import io.shiftleft.semanticcpg.language.*
 
 class ExtensionWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
@@ -152,6 +154,276 @@ class ExtensionWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
       setBCall.methodFullName shouldBe "SwiftTest.Foo<extension>.b.setter:Swift.Int"
       setBCall.receiver shouldBe empty
       setBCall.argument(1).code shouldBe "20"
+    }
+
+    "be correct for subscript functions without accessors" in {
+      val fooCode =
+        """
+          |struct TimesTable {
+          |  let multiplier: Int
+          |  subscript(index: Int) -> Int {
+          |    return multiplier * index
+          |  }
+          |}
+          |
+          |func main() {
+          |  let table = TimesTable(multiplier: 3)
+          |  print(table[6])
+          |}
+          |""".stripMargin
+      val cpg = codeWithSwiftSetup(fooCode)
+
+      val subscriptExt =
+        cpg.method
+          .fullNameExact("SwiftTest.TimesTable.subscript:(Swift.Int)->Swift.Int")
+          .loneElement
+      inside(subscriptExt.ast.isIdentifier.nameExact("index").l) { case List(id: Identifier) =>
+        id.typeFullName shouldBe Defines.Int
+        val param = id.refsTo.collectAll[MethodParameterIn].loneElement
+        param.name shouldBe "index"
+        param.typeFullName shouldBe Defines.Int
+        param.method.fullName shouldBe subscriptExt.fullName
+      }
+      cpg.call.nameExact(Operators.indexAccess) shouldBe empty
+      inside(cpg.call.codeExact("table[6]").l) { case List(subscriptCall) =>
+        subscriptCall.methodFullName shouldBe "SwiftTest.TimesTable.subscript:(Swift.Int)->Swift.Int"
+        subscriptCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        subscriptCall.receiver.argumentIndex.loneElement shouldBe 0
+        subscriptCall.receiver.code.loneElement shouldBe "table"
+        subscriptCall.argument(1).code shouldBe "6"
+      }
+    }
+
+    "be correct for subscript functions with getter" in {
+      val fooCode =
+        """
+          |struct TimesTable {
+          |  let multiplier: Int
+          |  subscript(index: Int) -> Int {
+          |    get {
+          |      return multiplier * index
+          |    }
+          |  }
+          |}
+          |
+          |func main() {
+          |  let table = TimesTable(multiplier: 3)
+          |  print(table[6])
+          |}
+          |""".stripMargin
+      val cpg = codeWithSwiftSetup(fooCode)
+
+      val subscriptExt =
+        cpg.method
+          .fullNameExact("SwiftTest.TimesTable.subscript.getter:(Swift.Int)->Swift.Int")
+          .loneElement
+      inside(subscriptExt.ast.isIdentifier.nameExact("index").l) { case List(id: Identifier) =>
+        id.typeFullName shouldBe Defines.Int
+        val param = id.refsTo.collectAll[MethodParameterIn].loneElement
+        param.name shouldBe "index"
+        param.typeFullName shouldBe Defines.Int
+        param.method.fullName shouldBe subscriptExt.fullName
+      }
+      cpg.call.nameExact(Operators.indexAccess) shouldBe empty
+      inside(cpg.call.codeExact("table[6]").l) { case List(subscriptCall) =>
+        subscriptCall.methodFullName shouldBe "SwiftTest.TimesTable.subscript.getter:(Swift.Int)->Swift.Int"
+        subscriptCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        subscriptCall.receiver.argumentIndex.loneElement shouldBe 0
+        subscriptCall.receiver.code.loneElement shouldBe "table"
+        subscriptCall.argument(1).code shouldBe "6"
+      }
+    }
+
+    "be correct for subscript functions without accessors in extension" in {
+      val fooCode =
+        """
+          |struct TimesTable {
+          |  let multiplier: Int
+          |}
+          |
+          |extension TimesTable {
+          |  subscript(index: Int) -> Int {
+          |    return multiplier * index
+          |  }
+          |}
+          |
+          |func main() {
+          |  let table = TimesTable(multiplier: 3)
+          |  print(table[6])
+          |}
+          |""".stripMargin
+      val cpg = codeWithSwiftSetup(fooCode)
+
+      val subscriptExt =
+        cpg.method
+          .fullNameExact("SwiftTest.TimesTable<extension>.subscript:(Swift.Int)->Swift.Int")
+          .loneElement
+      inside(subscriptExt.ast.isIdentifier.nameExact("index").l) { case List(id: Identifier) =>
+        id.typeFullName shouldBe Defines.Int
+        val param = id.refsTo.collectAll[MethodParameterIn].loneElement
+        param.name shouldBe "index"
+        param.typeFullName shouldBe Defines.Int
+        param.method.fullName shouldBe subscriptExt.fullName
+      }
+      cpg.call.nameExact(Operators.indexAccess) shouldBe empty
+      inside(cpg.call.codeExact("table[6]").l) { case List(subscriptCall) =>
+        subscriptCall.methodFullName shouldBe "SwiftTest.TimesTable<extension>.subscript:(Swift.Int)->Swift.Int"
+        subscriptCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        subscriptCall.receiver shouldBe empty
+        subscriptCall.argument(1).code shouldBe "6"
+      }
+    }
+
+    "be correct for subscript functions with getter in extension" in {
+      val fooCode =
+        """
+          |struct TimesTable {
+          |  let multiplier: Int
+          |}
+          |
+          |extension TimesTable {
+          |  subscript(index: Int) -> Int {
+          |    get {
+          |      return multiplier * index
+          |    }
+          |  }
+          |}
+          |
+          |func main() {
+          |  let table = TimesTable(multiplier: 3)
+          |  print(table[6])
+          |}
+          |""".stripMargin
+      val cpg = codeWithSwiftSetup(fooCode)
+
+      val subscriptExt =
+        cpg.method
+          .fullNameExact("SwiftTest.TimesTable<extension>.subscript.getter:(Swift.Int)->Swift.Int")
+          .loneElement
+      inside(subscriptExt.ast.isIdentifier.nameExact("index").l) { case List(id: Identifier) =>
+        id.typeFullName shouldBe Defines.Int
+        val param = id.refsTo.collectAll[MethodParameterIn].loneElement
+        param.name shouldBe "index"
+        param.typeFullName shouldBe Defines.Int
+        param.method.fullName shouldBe subscriptExt.fullName
+      }
+      cpg.call.nameExact(Operators.indexAccess) shouldBe empty
+      inside(cpg.call.codeExact("table[6]").l) { case List(subscriptCall) =>
+        subscriptCall.methodFullName shouldBe "SwiftTest.TimesTable<extension>.subscript.getter:(Swift.Int)->Swift.Int"
+        subscriptCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        subscriptCall.receiver shouldBe empty
+        subscriptCall.argument(1).code shouldBe "6"
+      }
+    }
+
+    "be correct for subscript functions with setter" in {
+      val fooCode =
+        """
+          |struct TimesTable {
+          |  let multiplier: Int
+          |  subscript(index: Int) -> Int {
+          |    get {
+          |      return multiplier * index
+          |    }
+          |    set {
+          |      print("Setting value \(newValue) at index \(index)")
+          |    }
+          |  }
+          |}
+          |
+          |func main() {
+          |  var table = TimesTable(multiplier: 3)
+          |  table[6] = 1
+          |}
+          |""".stripMargin
+      val cpg = codeWithSwiftSetup(fooCode)
+
+      cpg.method.fullName.sorted shouldBe Seq(
+        "<operator>.alloc",
+        "<operator>.arrayInitializer",
+        "<operator>.assignment",
+        "<operator>.fieldAccess",
+        "<operator>.formatString",
+        "<operator>.multiplication",
+        "Package.swift:<global>",
+        "Sources/main.swift:<global>",
+        "Swift.print:(_:Any...,separator:Swift.String,terminator:Swift.String)->()",
+        "SwiftTest.TimesTable.init:()->SwiftTest.TimesTable",
+        "SwiftTest.TimesTable.init:(multiplier:Swift.Int)->SwiftTest.TimesTable",
+        "SwiftTest.TimesTable.subscript.getter:(Swift.Int)->Swift.Int",
+        "SwiftTest.TimesTable.subscript.setter:(Swift.Int)->Swift.Int",
+        "SwiftTest.main:()->()"
+      )
+
+      cpg.call.nameExact(Operators.indexAccess) shouldBe empty
+      cpg.call.isAssignment.code.l should not contain "table[6] = 1"
+
+      cpg.call.methodFullName.sorted should contain("SwiftTest.TimesTable.subscript.setter:(Swift.Int)->Swift.Int")
+
+      val List(setCall) = cpg.call.nameExact("subscript.setter").codeExact("table[6] = 1").l
+      setCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      setCall.methodFullName shouldBe "SwiftTest.TimesTable.subscript.setter:(Swift.Int)->Swift.Int"
+      setCall.receiver.argumentIndex.loneElement shouldBe 0
+      setCall.receiver.code.loneElement shouldBe "table"
+      setCall.argument(1).code shouldBe "1"
+      setCall.argument(2).code shouldBe "6"
+    }
+
+    "be correct for subscript functions with setter in extension" in {
+      val fooCode =
+        """
+          |struct TimesTable {
+          |  let multiplier: Int
+          |}
+          |
+          |extension TimesTable {
+          |  subscript(index: Int) -> Int {
+          |    get {
+          |      return multiplier * index
+          |    }
+          |    set {
+          |      print("Setting value \(newValue) at index \(index)")
+          |    }
+          |  }
+          |}
+          |
+          |func main() {
+          |  var table = TimesTable(multiplier: 3)
+          |  table[6] = 1
+          |}
+          |""".stripMargin
+      val cpg = codeWithSwiftSetup(fooCode)
+
+      cpg.method.fullName.sorted shouldBe Seq(
+        "<operator>.alloc",
+        "<operator>.arrayInitializer",
+        "<operator>.assignment",
+        "<operator>.fieldAccess",
+        "<operator>.formatString",
+        "<operator>.multiplication",
+        "Package.swift:<global>",
+        "Sources/main.swift:<global>",
+        "Swift.print:(_:Any...,separator:Swift.String,terminator:Swift.String)->()",
+        "SwiftTest.TimesTable.init:()->SwiftTest.TimesTable",
+        "SwiftTest.TimesTable.init:(multiplier:Swift.Int)->SwiftTest.TimesTable",
+        "SwiftTest.TimesTable<extension>.subscript.getter:(Swift.Int)->Swift.Int",
+        "SwiftTest.TimesTable<extension>.subscript.setter:(Swift.Int)->Swift.Int",
+        "SwiftTest.main:()->()"
+      )
+
+      cpg.call.nameExact(Operators.indexAccess) shouldBe empty
+      cpg.call.isAssignment.code.l should not contain "table[6] = 1"
+
+      cpg.call.methodFullName.sorted should contain(
+        "SwiftTest.TimesTable<extension>.subscript.setter:(Swift.Int)->Swift.Int"
+      )
+
+      val List(setCall) = cpg.call.nameExact("subscript.setter").codeExact("table[6] = 1").l
+      setCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      setCall.methodFullName shouldBe "SwiftTest.TimesTable<extension>.subscript.setter:(Swift.Int)->Swift.Int"
+      setCall.receiver shouldBe empty
+      setCall.argument(1).code shouldBe "1"
+      setCall.argument(2).code shouldBe "6"
     }
 
   }
