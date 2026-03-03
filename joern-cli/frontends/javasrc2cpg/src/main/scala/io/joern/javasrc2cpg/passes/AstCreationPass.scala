@@ -6,15 +6,11 @@ import com.github.javaparser.ast.CompilationUnit
 import com.github.javaparser.ast.Node.Parsedness
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
 import com.github.javaparser.symbolsolver.javaparsermodel.JavaParserFacade
-import com.github.javaparser.symbolsolver.resolution.typesolvers.{
-  ClassLoaderTypeSolver,
-  JarTypeSolver,
-  ReflectionTypeSolver
-}
+import com.github.javaparser.symbolsolver.resolution.typesolvers.{ClassLoaderTypeSolver, ReflectionTypeSolver}
 import io.joern.javasrc2cpg.JavaSrc2Cpg.JavaSrcEnvVar
 import io.joern.javasrc2cpg.astcreation.AstCreator
 import io.joern.javasrc2cpg.passes.AstCreationPass.*
-import io.joern.javasrc2cpg.typesolvers.{EagerSourceTypeSolver, JdkJarTypeSolver, SimpleCombinedTypeSolver}
+import io.joern.javasrc2cpg.typesolvers.{EagerSourceTypeSolver, JarTypeSolver, SimpleCombinedTypeSolver}
 import io.joern.javasrc2cpg.util.Delombok.DelombokMode
 import io.joern.javasrc2cpg.util.Delombok.DelombokMode.*
 import io.joern.javasrc2cpg.util.{Delombok, SourceParser}
@@ -148,7 +144,7 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     }
 
     combinedTypeSolver.addNonCachingTypeSolver(
-      JdkJarTypeSolver.fromJdkPath(jdkPath, config.cacheJdkTypeSolver, enableVerboseTypeLogging)
+      JarTypeSolver.fromJdkPath(jdkPath, config.cacheJdkTypeSolver, enableVerboseTypeLogging)
     )
 
     val sourceTypeSolver =
@@ -167,18 +163,16 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     }
     (jarsList ++ dependencies)
       .foreach { path =>
-        Try(new JarTypeSolver(path)) match {
+        Try(
+          JarTypeSolver.fromJdkPath(path, useCache = true, enableVerboseTypeLogging = enableVerboseTypeLogging)
+        ) match {
           case Success(jarTypeSolver) =>
             combinedTypeSolver.addNonCachingTypeSolver(jarTypeSolver)
             if (enableVerboseTypeLogging) {
               logger.debug(s"Added JarTypeSolver for jar at $path")
-              logger.debug(
-                (s"Known classes:" :: jarTypeSolver.getKnownClasses.asScala.toList.sorted)
-                  .mkString(s"${System.lineSeparator()} - ")
-              )
             }
           case Failure(exception) =>
-            logger.warn(s"Could not create JarTypeSolver for jar at $path")
+            logger.warn(s"Could not create JarTypeSolver for jar at $path", exception)
         }
       }
 

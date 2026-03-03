@@ -4,18 +4,23 @@ import com.github.javaparser.resolution.{TypeSolver, UnsolvedSymbolException}
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration
 import com.github.javaparser.resolution.model.SymbolReference
 import com.github.javaparser.symbolsolver.javassistmodel.JavassistFactory
-import io.joern.javasrc2cpg.typesolvers.JdkJarTypeSolver.*
+import io.joern.javasrc2cpg.typesolvers.JarTypeSolver.*
 import io.joern.x2cpg.SourceFiles
 import javassist.{ClassPath, CtClass}
 import org.slf4j.LoggerFactory
 
 import java.io.IOException
+import java.lang.module.ModuleDescriptor
 import java.util.jar.JarFile
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try, Using}
 
-class JdkJarTypeSolver(classPool: NonCachingClassPool, knownPackagePrefixes: Set[String]) extends TypeSolver {
+class JarTypeSolver(
+  classPool: NonCachingClassPool,
+  knownPackagePrefixes: Set[String],
+  exportedPackages: Map[String, List[String]]
+) extends TypeSolver {
 
   private var parent: Option[TypeSolver] = None
 
@@ -29,7 +34,7 @@ class JdkJarTypeSolver(classPool: NonCachingClassPool, knownPackagePrefixes: Set
         this.parent = Some(parent)
 
       case Some(_) =>
-        throw new RuntimeException("JdkJarTypeSolver parent may only be set once")
+        throw new RuntimeException("JarTypeSolver parent may only be set once")
     }
   }
 
@@ -68,16 +73,31 @@ class JdkJarTypeSolver(classPool: NonCachingClassPool, knownPackagePrefixes: Set
   private def refTypeToSymbolReference(refType: RefType): SymbolReference[RefType] = {
     SymbolReference.solved[RefType, RefType](refType)
   }
+
+  override def tryToSolveTypeInModule(qualifiedModuleName: String, simpleTypeName: String): SymbolReference[RefType] = {
+    exportedPackages
+      .get(qualifiedModuleName)
+      .iterator
+      .flatten
+      .map { exportedPackage =>
+        val fullName = s"$exportedPackage.$simpleTypeName"
+        tryToSolveType(fullName)
+      }
+      .collectFirst { case typ if typ.isSolved => typ }
+      .getOrElse(SymbolReference.unsolved())
+  }
 }
 
-class JdkJarTypeSolverBuilder(enableVerboseTypeLogging: Boolean) {
+class JarTypeSolverBuilder(enableVerboseTypeLogging: Boolean) {
 
   private val logger                                    = LoggerFactory.getLogger(this.getClass)
   private val classPool                                 = new NonCachingClassPool()
   private val knownPackagePrefixes: mutable.Set[String] = mutable.Set.empty
+  // A map of module name -> exported package names
+  private val exportedPackages: mutable.Map[String, List[String]] = mutable.Map.empty
 
-  def build: JdkJarTypeSolver = {
-    new JdkJarTypeSolver(classPool, knownPackagePrefixes.toSet)
+  def build: JarTypeSolver = {
+    new JarTypeSolver(classPool, knownPackagePrefixes.toSet, exportedPackages.toMap)
   }
 
   private def addPathToClassPool(archivePath: String): Try[ClassPath] = {
@@ -91,7 +111,7 @@ class JdkJarTypeSolverBuilder(enableVerboseTypeLogging: Boolean) {
     }
   }
 
-  def withJars(archivePaths: Seq[String]): JdkJarTypeSolverBuilder = {
+  def withJars(archivePaths: Seq[String]): JarTypeSolverBuilder = {
     addArchives(archivePaths)
     this
   }
@@ -107,13 +127,27 @@ class JdkJarTypeSolverBuilder(enableVerboseTypeLogging: Boolean) {
     }
   }
 
+  private def registerExportedPackages(jarFile: JarFile): Unit = {
+    jarFile.entries().asScala.filter(_.getName.endsWith("module-info.class")).foreach { moduleInfoEntry =>
+      Using(jarFile.getInputStream(moduleInfoEntry)) { inputStream =>
+        // TODO: Handle qualified exports if the JavaParser type solver adds support for that
+        val descriptor = ModuleDescriptor.read(inputStream)
+        val moduleName = descriptor.name()
+        val exports    = descriptor.exports().asScala.map(_.source()).toList
+
+        exportedPackages.put(moduleName, exports)
+      }
+    }
+  }
+
   private def registerPackagesForJar(archivePath: String): Unit = {
     val entryNameConverter = if (archivePath.isJarPath) packagePrefixForJarEntry else packagePrefixForJmodEntry
     try {
       Using(new JarFile(archivePath)) { jarFile =>
         if (enableVerboseTypeLogging) {
-          logger.debug(s"Adding jar to JdkJarTypeSolver: $archivePath")
+          logger.debug(s"Adding jar to JarTypeSolver: $archivePath")
         }
+        registerExportedPackages(jarFile)
         val newPrefixes = jarFile
           .entries()
           .asIterator()
@@ -136,12 +170,12 @@ class JdkJarTypeSolverBuilder(enableVerboseTypeLogging: Boolean) {
   }
 }
 
-object JdkJarTypeSolver {
-  val ClassExtension: String                                      = ".class"
-  val JmodClassPrefix: String                                     = "classes/"
-  val JarExtension: String                                        = ".jar"
-  val JmodExtension: String                                       = ".jmod"
-  private val cache: mutable.Map[String, JdkJarTypeSolverBuilder] = mutable.Map.empty
+object JarTypeSolver {
+  val ClassExtension: String                                   = ".class"
+  val JmodClassPrefix: String                                  = "classes/"
+  val JarExtension: String                                     = ".jar"
+  val JmodExtension: String                                    = ".jmod"
+  private val cache: mutable.Map[String, JarTypeSolverBuilder] = mutable.Map.empty
 
   extension (path: String) {
     def isJarPath: Boolean  = path.endsWith(JarExtension)
@@ -162,8 +196,8 @@ object JdkJarTypeSolver {
     jdkPath: String,
     useCache: Boolean = false,
     enableVerboseTypeLogging: Boolean = false
-  ): JdkJarTypeSolver = {
-    def createBuilder = new JdkJarTypeSolverBuilder(enableVerboseTypeLogging).withJars(determineJarPaths(jdkPath))
+  ): JarTypeSolver = {
+    def createBuilder = new JarTypeSolverBuilder(enableVerboseTypeLogging).withJars(determineJarPaths(jdkPath))
     if (useCache) {
       cache.getOrElseUpdate(jdkPath, createBuilder).build
     } else {

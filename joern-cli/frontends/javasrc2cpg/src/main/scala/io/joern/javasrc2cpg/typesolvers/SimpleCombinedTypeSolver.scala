@@ -12,6 +12,9 @@ import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
 import scala.jdk.OptionConverters.RichOptional
 
+type TypeCacheKey         = String | (String, String)
+private type TypeLookupFn = TypeSolver => SymbolReference[ResolvedReferenceTypeDeclaration]
+
 class SimpleCombinedTypeSolver(enableVerboseTypeLogging: Boolean) extends TypeSolver {
 
   private val logger             = LoggerFactory.getLogger(this.getClass)
@@ -22,10 +25,10 @@ class SimpleCombinedTypeSolver(enableVerboseTypeLogging: Boolean) extends TypeSo
   private val cachingTypeSolvers: mutable.ArrayBuffer[TypeSolver]    = mutable.ArrayBuffer()
   private val nonCachingTypeSolvers: mutable.ArrayBuffer[TypeSolver] = mutable.ArrayBuffer()
 
-  private val loggedTypes = new ConcurrentHashMap[String, Boolean]()
+  private val loggedTypes = new ConcurrentHashMap[TypeCacheKey, Boolean]()
 
   private val typeCache = new GuavaCache(
-    CacheBuilder.newBuilder().build[String, SymbolReference[ResolvedReferenceTypeDeclaration]]()
+    CacheBuilder.newBuilder().build[TypeCacheKey, SymbolReference[ResolvedReferenceTypeDeclaration]]()
   )
 
   def addCachingTypeSolver(typeSolver: TypeSolver): Unit = {
@@ -39,34 +42,42 @@ class SimpleCombinedTypeSolver(enableVerboseTypeLogging: Boolean) extends TypeSo
   }
 
   override def tryToSolveType(name: String): SymbolReference[ResolvedReferenceTypeDeclaration] = {
-    typeCache.get(name).toScala match {
+    val typeLookupFn: TypeLookupFn = typeSolver => typeSolver.tryToSolveType(name)
+    tryToSolveType(name, typeLookupFn)
+  }
+
+  private def tryToSolveType(
+    cacheKey: TypeCacheKey,
+    typeLookupFn: TypeSolver => SymbolReference[ResolvedReferenceTypeDeclaration]
+  ): SymbolReference[ResolvedReferenceTypeDeclaration] = {
+    typeCache.get(cacheKey).toScala match {
       case Some(result) => result
 
       case None =>
-        val result = findSolvedTypeWithSolvers(cachingTypeSolvers, name)
+        val result = findSolvedType(cachingTypeSolvers, typeLookupFn)
           .getOrElse {
-            val result = findSolvedTypeWithSolvers(nonCachingTypeSolvers, name).getOrElse(SymbolReference.unsolved())
-            typeCache.put(name, result)
+            val result = findSolvedType(nonCachingTypeSolvers, typeLookupFn).getOrElse(SymbolReference.unsolved())
+            typeCache.put(cacheKey, result)
             result
           }
 
-        if (enableVerboseTypeLogging && !loggedTypes.containsKey(name)) {
-          loggedTypes.put(name, true)
-          logger.debug(s"Type resolution result: $name - isSolved=${result.isSolved}")
+        if (enableVerboseTypeLogging && !loggedTypes.containsKey(cacheKey)) {
+          loggedTypes.put(cacheKey, true)
+          logger.debug(s"Type resolution result: $cacheKey - isSolved=${result.isSolved}")
         }
 
         result
     }
   }
 
-  private def findSolvedTypeWithSolvers(
+  private def findSolvedType(
     typeSolvers: mutable.ArrayBuffer[TypeSolver],
-    className: String
+    typeLookupFn: TypeSolver => SymbolReference[ResolvedReferenceTypeDeclaration]
   ): Option[SymbolReference[ResolvedReferenceTypeDeclaration]] = {
     typeSolvers.iterator
       .map { typeSolver =>
         try {
-          val result = typeSolver.tryToSolveType(className): SymbolReference[ResolvedReferenceTypeDeclaration]
+          val result = typeLookupFn(typeSolver)
           Option.when(result.isSolved())(result)
         } catch {
           case _: UnsolvedSymbolException  => None
@@ -104,5 +115,15 @@ class SimpleCombinedTypeSolver(enableVerboseTypeLogging: Boolean) extends TypeSo
     } else {
       this.parent = parent
     }
+  }
+
+  override def tryToSolveTypeInModule(
+    qualifiedModuleName: String,
+    simpleTypeName: String
+  ): SymbolReference[ResolvedReferenceTypeDeclaration] = {
+    val cacheKey = (qualifiedModuleName, simpleTypeName)
+    val typeLookupFn: TypeLookupFn = typeSolver =>
+      typeSolver.tryToSolveTypeInModule(qualifiedModuleName, simpleTypeName)
+    tryToSolveType(cacheKey, typeLookupFn)
   }
 }
