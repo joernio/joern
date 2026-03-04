@@ -328,6 +328,30 @@ class CallTests extends SwiftCompilerSrc2CpgSuite {
       doubleBarCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
 
+    "be correct for static member access" in {
+      val testCode = """
+       |class Foo {
+       |    static let aaa: Int = Foo.source()
+       |
+       |    func outer() {
+       |        sink(Foo.aaa)
+       |    }
+       |
+       |    static func source() -> Int {
+       |        return 1
+       |    }
+       |
+       |    func sink(_ bbb: Int) {
+       |    }
+       |}
+       |""".stripMargin
+      val cpg = codeWithSwiftSetup(testCode)
+
+      val List(aaaAccess) = cpg.fieldAccess.codeExact("Foo.aaa").l
+      val List(fooRef)    = aaaAccess.arguments(1).isTypeRef.l
+      fooRef.typeFullName shouldBe "SwiftTest.Foo"
+    }
+
     "be correct for simple calls to functions from protocols" in {
       val testCode =
         """
