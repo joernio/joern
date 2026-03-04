@@ -109,7 +109,6 @@ class ExtensionTests extends SwiftSrc2CpgSuite {
           |""".stripMargin
       val cpg = code(fooCode, "Foo.swift").moreCode(ext1Code, "Ext1.swift")
 
-      println()
       val subscript =
         cpg.method
           .fullNameExact("Foo.swift:<global>.TimesTable.subscript:(index:Swift.Int)->Swift.Int")
