@@ -333,15 +333,12 @@ class CallTests extends SwiftCompilerSrc2CpgSuite {
        |class Foo {
        |    static let aaa: Int = Foo.source()
        |
-       |    func outer() {
-       |        sink(Foo.aaa)
-       |    }
-       |
        |    static func source() -> Int {
        |        return 1
        |    }
-       |
-       |    func sink(_ bbb: Int) {
+       |    
+       |    func foo() {
+       |        print(Foo.aaa)
        |    }
        |}
        |""".stripMargin
