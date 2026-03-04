@@ -102,7 +102,11 @@ class JarTypeSolverBuilder(enableVerboseTypeLogging: Boolean) {
 
   private def addPathToClassPool(archivePath: String): Try[ClassPath] = {
     if (archivePath.isJarPath) {
-      Try(classPool.appendClassPath(archivePath))
+      Try {
+        val classPath = new PackageAwareJarClassPath(archivePath)
+        classPool.appendClassPath(classPath)
+        classPath
+      }
     } else if (archivePath.isJmodPath) {
       val classPath = new JmodClassPath(archivePath)
       Try(classPool.appendClassPath(classPath))
@@ -119,7 +123,11 @@ class JarTypeSolverBuilder(enableVerboseTypeLogging: Boolean) {
   private def addArchives(archivePaths: Seq[String]): Unit = {
     archivePaths.foreach { archivePath =>
       addPathToClassPool(archivePath) match {
-        case Success(_) => registerPackagesForJar(archivePath)
+        case Success(classPath: PackageAwareJarClassPath) =>
+          registerPackagesFromClassNames(archivePath, classPath.knownClassNames)
+
+        case Success(_) =>
+          registerPackagesFromEntryPaths(archivePath)
 
         case Failure(e) =>
           logger.warn(s"Could not load jar at path $archivePath", e.getMessage())
@@ -140,7 +148,23 @@ class JarTypeSolverBuilder(enableVerboseTypeLogging: Boolean) {
     }
   }
 
-  private def registerPackagesForJar(archivePath: String): Unit = {
+  /** Register package prefixes from actual class names read from bytecode. Used for JAR files where the entry path may
+    * not match the declared package.
+    */
+  private def registerPackagesFromClassNames(archivePath: String, classNames: Set[String]): Unit = {
+    if (enableVerboseTypeLogging) {
+      logger.debug(s"Adding jar to JarTypeSolver: $archivePath")
+      classNames.foreach(name => logger.debug(s" - $name"))
+    }
+    val newPrefixes = classNames.map(packagePrefixForJavaParserName)
+    knownPackagePrefixes ++= newPrefixes
+    registerExportedPackagesForArchive(archivePath)
+  }
+
+  /** Register package prefixes from JAR/JMOD entry paths. Used for JMODs where paths reliably match the package
+    * structure.
+    */
+  private def registerPackagesFromEntryPaths(archivePath: String): Unit = {
     val entryNameConverter = if (archivePath.isJarPath) packagePrefixForJarEntry else packagePrefixForJmodEntry
     try {
       Using(new JarFile(archivePath)) { jarFile =>
@@ -166,6 +190,17 @@ class JarTypeSolverBuilder(enableVerboseTypeLogging: Boolean) {
     } catch {
       case ioException: IOException =>
         logger.warn(s"Could not register classes for archive at $archivePath", ioException.getMessage())
+    }
+  }
+
+  private def registerExportedPackagesForArchive(archivePath: String): Unit = {
+    try {
+      Using(new JarFile(archivePath)) { jarFile =>
+        registerExportedPackages(jarFile)
+      }
+    } catch {
+      case ioException: IOException =>
+        logger.warn(s"Could not register exported packages for archive at $archivePath", ioException.getMessage())
     }
   }
 }
