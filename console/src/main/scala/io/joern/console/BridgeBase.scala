@@ -257,10 +257,12 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
     if (config.pluginToRun.contains("scan")) {
       builder += "import io.joern.joerncli.Scan"
       builder += s"""Scan.defaultOpts.names = Array(${escapeForWindows(
-          config.scanScriptNames.map(n => s""""$n"""").mkString(", ")
+          config.scanScriptNames.map(n => s""""$n"""").mkString(", "),
+          isInteractive
         )})"""
       builder += s"""Scan.defaultOpts.tags = Array(${escapeForWindows(
-          config.scanTagNames.map(n => s""""$n"""").mkString(", ")
+          config.scanTagNames.map(n => s""""$n"""").mkString(", "),
+          isInteractive
         )})"""
       builder += config.scanMaxCallDepth.map(d => s"Scan.defaultOpts.maxCallDepth = $d").getOrElse("")
     }
