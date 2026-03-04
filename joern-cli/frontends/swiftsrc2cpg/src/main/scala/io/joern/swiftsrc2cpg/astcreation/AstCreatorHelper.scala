@@ -70,7 +70,7 @@ object AstCreatorHelper {
 
   def cleanType(rawType: String): String = {
     if (rawType == Defines.Any) return rawType
-    val normalizedTpe = StringUtils.normalizeSpace(rawType.stripSuffix(" ()"))
+    val normalizedTpe = StringUtils.normalizeSpace(rawType.stripSuffix(" ()")).stripSuffix(".Type")
     val tpe = stripGenerics(normalizedTpe) match {
       // Empty or problematic types
       case ""                   => Defines.Any
@@ -215,17 +215,27 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         registerType(callTpe)
         fieldAccessAst(node, node, Ast(selfNode), s"${selfNode.code}.$identifierName", identifierName, callTpe)
       } else {
-        // otherwise it must come from a variable (potentially captured from an outer scope)
-        val identNode      = identifierNode(node, identifierName)
-        val variableOption = scope.lookupVariable(identifierName)
-        val tpe = variableOption match {
-          case Some((_, variableTypeName)) if variableTypeName != Defines.Any => variableTypeName
-          case None if identNode.typeFullName != Defines.Any                  => identNode.typeFullName
-          case _                                                              => Defines.Any
+        if (
+          config.swiftBuild &&
+          scope.lookupVariable(identifierName).isEmpty &&
+          fullnameProvider.typeFullnameRaw(node).exists(_.endsWith(".Type"))
+        ) {
+          val tpe = fullnameProvider.typeFullname(node).get
+          registerType(tpe)
+          Ast(typeRefNode(node, identifierName, tpe))
+        } else {
+          // otherwise it must come from a variable (potentially captured from an outer scope)
+          val identNode      = identifierNode(node, identifierName)
+          val variableOption = scope.lookupVariable(identifierName)
+          val tpe = variableOption match {
+            case Some((_, variableTypeName)) if variableTypeName != Defines.Any => variableTypeName
+            case None if identNode.typeFullName != Defines.Any                  => identNode.typeFullName
+            case _                                                              => Defines.Any
+          }
+          identNode.typeFullName = tpe
+          scope.addVariableReference(identifierName, identNode, tpe, EvaluationStrategies.BY_REFERENCE)
+          Ast(identNode)
         }
-        identNode.typeFullName = tpe
-        scope.addVariableReference(identifierName, identNode, tpe, EvaluationStrategies.BY_REFERENCE)
-        Ast(identNode)
       }
     }
   }

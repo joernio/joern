@@ -573,7 +573,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     *   Some(demangled type fullName) if successful, None otherwise
     */
   private def calculateTypeFullname(mangledName: String): Option[String] = {
-    calculateDeclFullname(mangledName).map(_.stripSuffix(".Type"))
+    calculateDeclFullname(mangledName)
   }
 
   /** Regex to match demangled initializer-like signatures that contain a `->` return type followed by an `(in ...)`
