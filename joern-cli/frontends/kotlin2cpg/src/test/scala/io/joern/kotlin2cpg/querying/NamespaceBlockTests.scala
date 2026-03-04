@@ -28,7 +28,7 @@ class NamespaceBlockTests extends KotlinCode2CpgFixture(withOssDataflow = false)
       val List(x) = cpg.namespaceBlock.filename(".*.kt").l
       x.name shouldBe "PackageFoo"
       x.filename should not be ""
-      x.fullName shouldBe s"com.test.PackageFoo"
+      x.fullName shouldBe s"Test0.kt:com.test.PackageFoo"
       x.order shouldBe 1
     }
 
@@ -67,12 +67,12 @@ class NamespaceBlockTests extends KotlinCode2CpgFixture(withOssDataflow = false)
 
     "should contain a NAMESPACE_BLOCK for the `import android.app.Activity` with the correct props set" in {
       val List(nsb) = cpg.namespaceBlock.name(".*Activity.*").l
-      nsb.fullName shouldBe "android.app.Activity"
+      nsb.fullName shouldBe "Test0.kt:android.app.Activity"
     }
 
     "should contain a NAMESPACE_BLOCK for the `import android.webkit.WebView` with the correct props set" in {
       val List(nsb) = cpg.namespaceBlock.name(".*WebView.*").l
-      nsb.fullName shouldBe "android.webkit.WebView"
+      nsb.fullName shouldBe "Test0.kt:android.webkit.WebView"
     }
   }
 
@@ -101,6 +101,35 @@ class NamespaceBlockTests extends KotlinCode2CpgFixture(withOssDataflow = false)
     "should keep fake global METHOD full names unique" in {
       val fakeGlobalMethodFullNames = cpg.method.nameExact("<global>").filename(".*\\.kt").fullName.l
       fakeGlobalMethodFullNames.size shouldBe fakeGlobalMethodFullNames.distinct.size
+    }
+  }
+
+  "CPG for multiple Kotlin files with the same import dependency" should {
+    val cpg = code(
+      """
+        |package mypkg
+        |
+        |import android.app.Activity
+        |
+        |fun first() = 1
+        |""".stripMargin,
+      "First.kt"
+    ).moreCode(
+      """
+        |package mypkg
+        |
+        |import android.app.Activity
+        |
+        |fun second() = 2
+        |""".stripMargin,
+      "Second.kt"
+    )
+
+    "should keep import namespace block full names unique across files" in {
+      val importNamespaceFullNames = cpg.namespaceBlock.nameExact("android.app.Activity").filename(".*\\.kt").fullName.l
+      importNamespaceFullNames.size shouldBe 2
+      // Should be distinct too
+      importNamespaceFullNames.size shouldBe importNamespaceFullNames.distinct.size
     }
   }
 }
