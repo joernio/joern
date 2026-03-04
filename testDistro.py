@@ -226,10 +226,12 @@ class TestRunner:
                            "Joern-scan dump")
 
             # Run scan on real test file to verify functionality
-            proc = self.run_command([self.joern_scan_exe, "--overwrite", "--tags all", str(uaf_c_path)],
+            proc = self.run_command([self.joern_scan_exe, "--overwrite", "--tags", "all", str(uaf_c_path)],
                            f"Joern-scan on {uaf_c_path}")
 
-            result_count = sum(1 for line in proc.stdout.splitlines() if "Result: 5.0 : A value that is free'd is reused without reassignment." in line)
+            expected_result = "Result: 5.0 : A value that is free'd is reused without reassignment.: uaf.c:7:bad"
+
+            result_count = sum(1 for line in proc.stdout.splitlines() if expected_result in line)
             if result_count == 0:
                 raise RuntimeError("Result from joern-scan not found")
 
