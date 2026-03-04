@@ -52,6 +52,12 @@ object Versions {
   val zip4j          = "2.11.5"
   val asm            = "9.7.1"
 
+  // CVE remediation - override versions for vulnerable transitive deps (see https://github.com/joernio/joern/issues/5781)
+  val protobuf       = "3.25.5"
+  val msgpack        = "0.9.11"
+  val undertow       = "2.3.20.Final"
+  val okhttp         = "4.9.2"
+
   private def parseVersion(key: String): String = {
     val versionRegexp = s""".*val $key[ ]+=[ ]?"(.*?)"""".r
     val versions: List[String] = scala.io.Source
