@@ -48,6 +48,7 @@ class SwiftSrc2Cpg extends X2CpgFrontend {
         extensionsPass.setters.createAndApply()
 
         new ObjcCallFullNamePass(cpg).createAndApply()
+        new ClosureBindingsPass(cpg).createAndApply()
         new FullNameUniquenessPass(cpg).createAndApply()
 
         report.print()
