@@ -1,0 +1,71 @@
+package io.joern.javasrc2cpg.typesolvers
+
+import javassist.ClassPath
+import javassist.bytecode.ClassFile
+import org.slf4j.LoggerFactory
+
+import java.io.{DataInputStream, InputStream}
+import java.net.URL
+import java.nio.file.Paths
+import java.util.jar.{JarEntry, JarFile}
+import scala.jdk.CollectionConverters.*
+import scala.util.{Try, Using}
+
+/** A ClassPath implementation that resolves classes by their actual package declaration in bytecode rather than by their
+  * path within the JAR. This handles non-standard JAR structures (e.g., fat JARs, repackaged JARs) where the entry path
+  * may not match the class's declared package.
+  */
+class PackageAwareJarClassPath(jarPath: String) extends ClassPath {
+
+  private val logger     = LoggerFactory.getLogger(this.getClass)
+  private val jarFile    = new JarFile(jarPath)
+  private val jarFileURL = Paths.get(jarPath).toUri.toURL.toString
+
+  private val classNameToEntry: Map[String, JarEntry] = buildIndex()
+
+  /** The set of fully-qualified class names actually declared in this JAR's bytecode.
+    */
+  val knownClassNames: Set[String] = classNameToEntry.keySet
+
+  private def buildIndex(): Map[String, JarEntry] = {
+    jarFile
+      .entries()
+      .asScala
+      .filter(entry => !entry.isDirectory && entry.getName.endsWith(".class"))
+      .flatMap { entry =>
+        readClassName(entry) match {
+          case Some(className) => Some(className -> entry)
+          case None =>
+            logger.debug(s"Could not read class name from entry ${entry.getName} in $jarPath")
+            None
+        }
+      }
+      .toMap
+  }
+
+  private def readClassName(entry: JarEntry): Option[String] = {
+    Try {
+      Using.resource(jarFile.getInputStream(entry)) { inputStream =>
+        val classFile = new ClassFile(new DataInputStream(inputStream))
+        classFile.getName
+      }
+    }.toOption
+  }
+
+  override def find(classname: String): URL = {
+    classNameToEntry.get(classname) match {
+      case Some(entry) =>
+        Try(new URL(s"jar:${jarFileURL}!/${entry.getName}")).getOrElse(null)
+
+      case None => null
+    }
+  }
+
+  override def openClassfile(classname: String): InputStream = {
+    classNameToEntry.get(classname) match {
+      case Some(entry) => jarFile.getInputStream(entry)
+
+      case None => null
+    }
+  }
+}

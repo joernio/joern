@@ -12,8 +12,8 @@ class NewTypeDeclTests extends JavaSrcCode2CpgFixture {
       """
         |String s = "hello";
         |
-        |void main() {
-        |  IO.println(s);
+        |void main(ArrayList<String> list) {
+        |  list.add(s);
         |}
         |""".stripMargin)
 
@@ -36,10 +36,9 @@ class NewTypeDeclTests extends JavaSrcCode2CpgFixture {
 
     "contain the main method" in {
       inside(cpg.method("main").l) { case List(mainMethod) =>
-        mainMethod.fullName shouldBe "$COMPACT_CLASS.main:void()"
-        inside(mainMethod.body.astChildren.l) { case List(printCall: Call) =>
-          printCall.name shouldBe "println"
-          printCall.methodFullName shouldBe "java.io.IO.println:void(java.lang.Object)"
+        mainMethod.fullName shouldBe "$COMPACT_CLASS.main:void(java.util.ArrayList)"
+        inside(mainMethod.parameter.index(1).l) { case List(listParam) =>
+          listParam.typeFullName shouldBe "java.util.ArrayList"
         }
       }
     }
