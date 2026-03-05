@@ -1,6 +1,8 @@
 package io.joern.swiftsrc2cpg.passes
 
+import flatgraph.DNodeOrNode
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
+import io.joern.x2cpg.passes.base.TypeDeclStubCreator
 import io.shiftleft.codepropertygraph.generated.nodes.NewBinding
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.passes.CpgPass
@@ -16,10 +18,22 @@ import io.shiftleft.semanticcpg.language.*
   */
 class ClosureBindingsPass(cpg: Cpg) extends CpgPass(cpg) {
 
+  private def stubTypeDeclIfNeeded(diffGraph: DiffGraphBuilder, closureMethodFullName: String): DNodeOrNode = {
+    if (cpg.typeDecl.fullNameExact(closureMethodFullName).isEmpty) {
+      val typeDeclStub = TypeDeclStubCreator.createTypeDeclStub(name = "Function", fullName = closureMethodFullName)
+      diffGraph.addNode(typeDeclStub)
+      typeDeclStub
+    } else {
+      cpg.typeDecl.fullNameExact(closureMethodFullName).loneElement
+    }
+  }
+
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     for {
-      closureTypeDecl <- cpg.typeDecl.fullNameExact(Defines.Function).loneElementOption
-      closureMethod   <- cpg.method.filter(_.name.startsWith(io.joern.x2cpg.Defines.ClosurePrefix))
+      closureMethod            <- cpg.method.filter(_.name.startsWith(io.joern.x2cpg.Defines.ClosurePrefix))
+      closureMethodeTypeDecl   <- cpg.typeDecl.fullNameExact(closureMethod.fullName).loneElementOption
+      inheritsFromTypeFullName <- closureMethodeTypeDecl.inheritsFromTypeFullName.loneElementOption
+      closureTypeDecl = stubTypeDeclIfNeeded(diffGraph, inheritsFromTypeFullName)
     } {
       val functionBinding = NewBinding()
         .name(Defines.ClosureApplyMethodName)
