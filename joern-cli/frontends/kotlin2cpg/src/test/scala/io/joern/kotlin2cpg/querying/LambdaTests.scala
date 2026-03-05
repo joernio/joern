@@ -3,8 +3,7 @@ package io.joern.kotlin2cpg.querying
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.joern.kotlin2cpg.{Config, Constants}
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
-import io.shiftleft.codepropertygraph.generated.edges.Capture
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, ModifierTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -14,7 +13,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
 
     "should contain a single METHOD_REF node with a single CAPTURE edge" in {
       cpg.methodRef.size shouldBe 1
-      cpg.methodRef.outE.collectAll[Capture].size shouldBe 1
+      cpg.methodRef._closureBindingViaCaptureOut.size shouldBe 1
     }
 
     "should contain a LOCAL node for the captured method parameter" in {
@@ -79,7 +78,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
 
     "should contain one CAPTURE edge for the METHOD_REF" in {
-      cpg.methodRef.outE.collectAll[Capture].size shouldBe 1
+      cpg.methodRef._closureBindingViaCaptureOut.size shouldBe 1
     }
 
     "should contain a LOCAL node for the captured `baz`" in {
@@ -113,9 +112,12 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
         |""".stripMargin)
 
     "should only capture the used local" in {
-      cpg.methodRef.outE.collectAll[Capture].size shouldBe 1
-      cpg.closureBinding._localViaRefOut.name.toSet shouldBe Set("baz")
-      cpg.closureBinding._methodParameterInViaRefOut.name.toSet shouldBe empty
+      val List(methodRef)              = cpg.methodRef.l
+      val List(capturedClosureBinding) = methodRef._closureBindingViaCaptureOut.l
+
+      methodRef._closureBindingViaCaptureOut.size shouldBe 1
+      capturedClosureBinding._localViaRefOut.name.l shouldBe List("baz")
+      capturedClosureBinding._methodParameterInViaRefOut.l shouldBe empty
     }
   }
 
@@ -291,6 +293,17 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       p1.code shouldBe s"${Constants.DestructedParamNamePrefix}1"
       p1.index shouldBe 1
       p1.typeFullName shouldBe "java.util.Map$Entry"
+    }
+
+    "should wire the synthetic `it` initializer to the generated destructured lambda parameter" in {
+      val List(lambdaMethod)      = cpg.method.fullName(".*lambda.*").l
+      val List(generatedParam)    = lambdaMethod.parameter.l
+      val List(tmpAssignmentCall) = lambdaMethod.ast.isCall.codeExact("tmp_1 = it").l
+      val List(itIdentifier)      = tmpAssignmentCall.astChildren.isIdentifier.nameExact("it").l
+
+      generatedParam.name.shouldBe(s"${Constants.DestructedParamNamePrefix}1")
+      itIdentifier.refsTo.collectAll[MethodParameterIn].name.l.shouldBe(List(generatedParam.name))
+      itIdentifier.refsTo.collectAll[MethodParameterIn].method.fullName.l.shouldBe(List(lambdaMethod.fullName))
     }
 
     "should contain the correct initialization" in {
@@ -587,8 +600,8 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
 
     "should contain METHOD_REF nodes with the correct props set" in {
       val List(firstMethodRef: MethodRef, secondMethodRef: MethodRef) = cpg.methodRef.l
-      firstMethodRef.out(EdgeTypes.CAPTURE).size shouldBe 1
-      secondMethodRef.out(EdgeTypes.CAPTURE).size shouldBe 1
+      firstMethodRef._closureBindingViaCaptureOut.size shouldBe 1
+      secondMethodRef._closureBindingViaCaptureOut.size shouldBe 1
     }
 
     "should contain explicit captured locals named `x` for each intermediate lambda" in {
