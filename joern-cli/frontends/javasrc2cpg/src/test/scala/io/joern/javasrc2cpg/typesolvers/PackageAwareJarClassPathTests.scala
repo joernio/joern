@@ -12,11 +12,11 @@ import scala.compiletime.uninitialized
 
 class PackageAwareJarClassPathTests extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
 
-  private var tempDir: Path                = uninitialized
-  private var standardJarPath: Path        = uninitialized
-  private var nonStandardJarPath: Path     = uninitialized
-  private var mixedJarPath: Path           = uninitialized
-  private var defaultPackageJarPath: Path  = uninitialized
+  private var tempDir: Path               = uninitialized
+  private var standardJarPath: Path       = uninitialized
+  private var nonStandardJarPath: Path    = uninitialized
+  private var mixedJarPath: Path          = uninitialized
+  private var defaultPackageJarPath: Path = uninitialized
 
   override def beforeAll(): Unit = {
     tempDir = Files.createTempDirectory("jar-classpath-test")
@@ -29,10 +29,8 @@ class PackageAwareJarClassPathTests extends AnyFreeSpec with Matchers with Befor
     )
     nonStandardJarPath = createJarWithClasses(
       "nonstandard.jar",
-      classEntries = List(
-        ClassEntry("com.example.Foo", "lib/Foo.class"),
-        ClassEntry("org.other.Bar", "repackaged/Bar.class")
-      )
+      classEntries =
+        List(ClassEntry("com.example.Foo", "lib/Foo.class"), ClassEntry("org.other.Bar", "repackaged/Bar.class"))
     )
     mixedJarPath = createJarWithClasses(
       "mixed.jar",
@@ -41,12 +39,8 @@ class PackageAwareJarClassPathTests extends AnyFreeSpec with Matchers with Befor
         ClassEntry("com.example.Misplaced", "wrong/path/Misplaced.class")
       )
     )
-    defaultPackageJarPath = createJarWithClasses(
-      "defaultpkg.jar",
-      classEntries = List(
-        ClassEntry("RootClass", "RootClass.class")
-      )
-    )
+    defaultPackageJarPath =
+      createJarWithClasses("defaultpkg.jar", classEntries = List(ClassEntry("RootClass", "RootClass.class")))
   }
 
   override def afterAll(): Unit = {
@@ -136,9 +130,9 @@ class PackageAwareJarClassPathTests extends AnyFreeSpec with Matchers with Befor
     val jos = new JarOutputStream(Files.newOutputStream(jarPath))
     try {
       classEntries.foreach { case ClassEntry(className, entryPath) =>
-        val ctClass   = pool.makeClass(className)
-        val bytecode  = ctClass.toBytecode
-        val jarEntry  = new JarEntry(entryPath)
+        val ctClass  = pool.makeClass(className)
+        val bytecode = ctClass.toBytecode
+        val jarEntry = new JarEntry(entryPath)
         jos.putNextEntry(jarEntry)
         jos.write(bytecode)
         jos.closeEntry()

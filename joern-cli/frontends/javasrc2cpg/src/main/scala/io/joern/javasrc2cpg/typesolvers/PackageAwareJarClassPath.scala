@@ -11,9 +11,9 @@ import java.util.jar.{JarEntry, JarFile}
 import scala.jdk.CollectionConverters.*
 import scala.util.{Try, Using}
 
-/** A ClassPath implementation that resolves classes by their actual package declaration in bytecode rather than by their
-  * path within the JAR. This handles non-standard JAR structures (e.g., fat JARs, repackaged JARs) where the entry path
-  * may not match the class's declared package.
+/** A ClassPath implementation that resolves classes by their actual package declaration in bytecode rather than by
+  * their path within the JAR. This handles non-standard JAR structures (e.g., fat JARs, repackaged JARs) where the
+  * entry path may not match the class's declared package.
   */
 class PackageAwareJarClassPath(jarPath: String) extends ClassPath {
 
