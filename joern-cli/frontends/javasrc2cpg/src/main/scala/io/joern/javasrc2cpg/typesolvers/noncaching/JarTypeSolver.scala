@@ -6,7 +6,7 @@ import com.github.javaparser.resolution.model.SymbolReference
 import com.github.javaparser.symbolsolver.javassistmodel.JavassistFactory
 import io.joern.javasrc2cpg.typesolvers.JarTypeSolver.*
 import io.joern.x2cpg.SourceFiles
-import javassist.{ClassPath, CtClass}
+import javassist.CtClass
 import org.slf4j.LoggerFactory
 
 import java.io.IOException
@@ -100,18 +100,15 @@ class JarTypeSolverBuilder(enableVerboseTypeLogging: Boolean) {
     new JarTypeSolver(classPool, knownPackagePrefixes.toSet, exportedPackages.toMap)
   }
 
-  private def addPathToClassPool(archivePath: String): Try[ClassPath] = {
-    if (archivePath.isJarPath) {
+  private def addPathToClassPool(archivePath: String): Try[BytecodeIndexedClassPath] = {
+    if (archivePath.isJarPath || archivePath.isJmodPath) {
       Try {
-        val classPath = new PackageAwareJarClassPath(archivePath)
+        val classPath = new BytecodeIndexedClassPath(archivePath)
         classPool.appendClassPath(classPath)
         classPath
       }
-    } else if (archivePath.isJmodPath) {
-      val classPath = new JmodClassPath(archivePath)
-      Try(classPool.appendClassPath(classPath))
     } else {
-      Failure(new IllegalArgumentException("$archivePath is not a path to a jar/jmod"))
+      Failure(new IllegalArgumentException(s"$archivePath is not a path to a jar/jmod"))
     }
   }
 
@@ -123,11 +120,8 @@ class JarTypeSolverBuilder(enableVerboseTypeLogging: Boolean) {
   private def addArchives(archivePaths: Seq[String]): Unit = {
     archivePaths.foreach { archivePath =>
       addPathToClassPool(archivePath) match {
-        case Success(classPath: PackageAwareJarClassPath) =>
+        case Success(classPath) =>
           registerPackagesFromClassNames(archivePath, classPath.knownClassNames)
-
-        case Success(_) =>
-          registerPackagesFromEntryPaths(archivePath)
 
         case Failure(e) =>
           logger.warn(s"Could not load jar at path $archivePath", e.getMessage())
@@ -161,38 +155,6 @@ class JarTypeSolverBuilder(enableVerboseTypeLogging: Boolean) {
     registerExportedPackagesForArchive(archivePath)
   }
 
-  /** Register package prefixes from JAR/JMOD entry paths. Used for JMODs where paths reliably match the package
-    * structure.
-    */
-  private def registerPackagesFromEntryPaths(archivePath: String): Unit = {
-    val entryNameConverter = if (archivePath.isJarPath) packagePrefixForJarEntry else packagePrefixForJmodEntry
-    try {
-      Using(new JarFile(archivePath)) { jarFile =>
-        if (enableVerboseTypeLogging) {
-          logger.debug(s"Adding jar to JarTypeSolver: $archivePath")
-        }
-        registerExportedPackages(jarFile)
-        val newPrefixes = jarFile
-          .entries()
-          .asIterator()
-          .asScala
-          .filter(entry => !entry.isDirectory() && entry.getName().endsWith(ClassExtension))
-          .map { entry =>
-            if (enableVerboseTypeLogging) {
-              logger.debug(s" - ${entry.getName}")
-            }
-            entryNameConverter(entry.getName())
-          }
-          .toList
-
-        knownPackagePrefixes ++= newPrefixes
-      }
-    } catch {
-      case ioException: IOException =>
-        logger.warn(s"Could not register classes for archive at $archivePath", ioException.getMessage())
-    }
-  }
-
   private def registerExportedPackagesForArchive(archivePath: String): Unit = {
     try {
       Using(new JarFile(archivePath)) { jarFile =>
@@ -206,8 +168,6 @@ class JarTypeSolverBuilder(enableVerboseTypeLogging: Boolean) {
 }
 
 object JarTypeSolver {
-  val ClassExtension: String                                   = ".class"
-  val JmodClassPrefix: String                                  = "classes/"
   val JarExtension: String                                     = ".jar"
   val JmodExtension: String                                    = ".jmod"
   private val cache: mutable.Map[String, JarTypeSolverBuilder] = mutable.Map.empty
@@ -246,22 +206,6 @@ object JarTypeSolver {
     */
   def packagePrefixForJavaParserName(className: String): String = {
     className.split("\\.").take(2).mkString(".")
-  }
-
-  /** Convert Jar entry name foo/bar/qux/Baz.class to package prefix foo.bar Only use first 2 parts since this is
-    * sufficient to deterimine whether a class has been registered in most cases and, if not, the failure is just a slow
-    * lookup.
-    */
-  def packagePrefixForJarEntry(entryName: String): String = {
-    entryName.split("/").take(2).mkString(".")
-  }
-
-  /** Convert jmod entry name classes/foo/bar/qux/Baz.class to package prefix foo.bar Only use first 2 parts since this
-    * is sufficient to deterimine whether a class has been registered in most cases and, if not, the failure is just a
-    * slow lookup.
-    */
-  def packagePrefixForJmodEntry(entryName: String): String = {
-    packagePrefixForJarEntry(entryName.stripPrefix(JmodClassPrefix))
   }
 
   /** JavaParser replaces the `$` in nested class names with a `.`. This means that we cannot know what the standard

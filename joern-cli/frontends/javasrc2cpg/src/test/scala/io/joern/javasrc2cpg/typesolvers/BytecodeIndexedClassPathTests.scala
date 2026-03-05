@@ -10,7 +10,7 @@ import java.nio.file.{Files, Path}
 import java.util.jar.{JarEntry, JarOutputStream}
 import scala.compiletime.uninitialized
 
-class PackageAwareJarClassPathTests extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
+class BytecodeIndexedClassPathTests extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
 
   private var tempDir: Path               = uninitialized
   private var standardJarPath: Path       = uninitialized
@@ -47,9 +47,9 @@ class PackageAwareJarClassPathTests extends AnyFreeSpec with Matchers with Befor
     Files.walk(tempDir).sorted(java.util.Comparator.reverseOrder()).forEach(Files.delete)
   }
 
-  "PackageAwareJarClassPath" - {
+  "BytecodeIndexedClassPath" - {
     "should resolve classes in a standard JAR by their actual names" in {
-      val classPath = new PackageAwareJarClassPath(standardJarPath.toString)
+      val classPath = new BytecodeIndexedClassPath(standardJarPath.toString)
       classPath.knownClassNames should contain allOf ("com.example.Foo", "com.example.Bar")
       classPath.openClassfile("com.example.Foo") should not be null
       classPath.openClassfile("com.example.Bar") should not be null
@@ -57,7 +57,7 @@ class PackageAwareJarClassPathTests extends AnyFreeSpec with Matchers with Befor
     }
 
     "should resolve classes at non-standard paths by their bytecode-declared package" in {
-      val classPath = new PackageAwareJarClassPath(nonStandardJarPath.toString)
+      val classPath = new BytecodeIndexedClassPath(nonStandardJarPath.toString)
       classPath.knownClassNames should contain allOf ("com.example.Foo", "org.other.Bar")
       classPath.openClassfile("com.example.Foo") should not be null
       classPath.openClassfile("org.other.Bar") should not be null
@@ -67,7 +67,7 @@ class PackageAwareJarClassPathTests extends AnyFreeSpec with Matchers with Befor
     }
 
     "should handle mixed JARs with both standard and non-standard paths" in {
-      val classPath = new PackageAwareJarClassPath(mixedJarPath.toString)
+      val classPath = new BytecodeIndexedClassPath(mixedJarPath.toString)
       classPath.knownClassNames should contain allOf ("com.example.Standard", "com.example.Misplaced")
       classPath.openClassfile("com.example.Standard") should not be null
       classPath.openClassfile("com.example.Misplaced") should not be null
@@ -75,13 +75,13 @@ class PackageAwareJarClassPathTests extends AnyFreeSpec with Matchers with Befor
     }
 
     "should handle classes in the default package" in {
-      val classPath = new PackageAwareJarClassPath(defaultPackageJarPath.toString)
+      val classPath = new BytecodeIndexedClassPath(defaultPackageJarPath.toString)
       classPath.knownClassNames should contain("RootClass")
       classPath.openClassfile("RootClass") should not be null
     }
 
     "should return null for unknown classes" in {
-      val classPath = new PackageAwareJarClassPath(standardJarPath.toString)
+      val classPath = new BytecodeIndexedClassPath(standardJarPath.toString)
       classPath.openClassfile("does.not.Exist") shouldBe null
       classPath.find("does.not.Exist") shouldBe null
     }
