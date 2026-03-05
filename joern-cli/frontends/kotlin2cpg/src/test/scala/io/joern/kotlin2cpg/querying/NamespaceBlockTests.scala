@@ -19,21 +19,21 @@ class NamespaceBlockTests extends KotlinCode2CpgFixture(withOssDataflow = false)
         |}
         |""".stripMargin)
 
-    "should contain two namespace blocks in total (<global>, PackageFoo)" in {
+    "should contain two namespace blocks in total (<global>, com.test.PackageFoo)" in {
       cpg.namespaceBlock.size shouldBe 2
-      cpg.namespaceBlock.name.l.toSet shouldBe Set("<global>", "PackageFoo")
+      cpg.namespaceBlock.name.l.toSet shouldBe Set("<global>", "com.test.PackageFoo")
     }
 
     "should contain correct namespace block for known file" in {
       val List(x) = cpg.namespaceBlock.filename(".*.kt").l
-      x.name shouldBe "PackageFoo"
+      x.name shouldBe "com.test.PackageFoo"
       x.filename should not be ""
       x.fullName shouldBe s"Test0.kt:com.test.PackageFoo"
       x.order shouldBe 1
     }
 
     "should allow traversing from namespace block to namespace" in {
-      cpg.namespaceBlock.filename(".*kt").namespace.name.l shouldBe List("PackageFoo")
+      cpg.namespaceBlock.filename(".*kt").namespace.name.l shouldBe List("com.test.PackageFoo")
     }
 
     "should allow traversing from namespace block to type declaration" in {
@@ -65,15 +65,10 @@ class NamespaceBlockTests extends KotlinCode2CpgFixture(withOssDataflow = false)
        |}
        | """.stripMargin)
 
-    "should contain a NAMESPACE_BLOCK for the `import android.app.Activity` with the correct props set" in {
-      val List(nsb) = cpg.namespaceBlock.name(".*Activity.*").l
-      nsb.fullName shouldBe "Test0.kt:android.app.Activity"
+    "should not contain a NAMESPACE_BLOCK for the `import android.*` statements" in {
+      cpg.namespaceBlock.name(".*android.*").size shouldBe 0
     }
 
-    "should contain a NAMESPACE_BLOCK for the `import android.webkit.WebView` with the correct props set" in {
-      val List(nsb) = cpg.namespaceBlock.name(".*WebView.*").l
-      nsb.fullName shouldBe "Test0.kt:android.webkit.WebView"
-    }
   }
 
   "CPG for multiple Kotlin files in the same package" should {
@@ -125,11 +120,11 @@ class NamespaceBlockTests extends KotlinCode2CpgFixture(withOssDataflow = false)
       "Second.kt"
     )
 
-    "should keep import namespace block full names unique across files" in {
-      val importNamespaceFullNames = cpg.namespaceBlock.nameExact("android.app.Activity").filename(".*\\.kt").fullName.l
-      importNamespaceFullNames.size shouldBe 2
+    "should keep namespace block full names unique across files" in {
+      val namespaceFullNames = cpg.namespaceBlock.nameExact("mypkg").filename(".*\\.kt").fullName.l
+      namespaceFullNames.size shouldBe 2
       // Should be distinct too
-      importNamespaceFullNames.size shouldBe importNamespaceFullNames.distinct.size
+      namespaceFullNames.size shouldBe namespaceFullNames.distinct.size
     }
   }
 }

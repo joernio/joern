@@ -346,12 +346,6 @@ class AstCreator(
 
     val importDirectives = ktFile.getImportList.getImports.asScala
     val importAsts       = importDirectives.toList.map(astForImportDirective)
-    val namespaceBlocksForImports =
-      for {
-        node <- importAsts.flatMap(_.root.collectAll[NewImport])
-        name     = getName(node)
-        fullName = s"$relativizedPath:$name"
-      } yield Ast(namespaceBlockNode(fileWithMeta.f, name, fullName, relativizedPath))
 
     val packageName = ktFile.getPackageFqName.toString
     val node =
@@ -363,9 +357,8 @@ class AstCreator(
           relativizedPath
         )
       } else {
-        val name     = packageName.split("\\.").lastOption.getOrElse("")
         val fullName = s"$relativizedPath:$packageName"
-        namespaceBlockNode(fileWithMeta.f, name, fullName, relativizedPath)
+        namespaceBlockNode(fileWithMeta.f, packageName, fullName, relativizedPath)
       }
     methodAstParentStack.push(node)
 
@@ -411,7 +404,7 @@ class AstCreator(
         )
     val namespaceBlockAst =
       Ast(node).withChildren(importAsts).withChild(fakeTypeDeclAst)
-    Ast(fileNode).withChildren(namespaceBlockAst :: namespaceBlocksForImports)
+    Ast(fileNode).withChildren(Seq(namespaceBlockAst))
   }
 
   def astsForDeclaration(decl: KtDeclaration): Seq[Ast] = {
