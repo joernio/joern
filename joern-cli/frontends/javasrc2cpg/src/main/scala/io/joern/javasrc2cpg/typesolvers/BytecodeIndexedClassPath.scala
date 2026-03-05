@@ -5,26 +5,25 @@ import javassist.bytecode.ClassFile
 import org.slf4j.LoggerFactory
 
 import java.io.{DataInputStream, InputStream}
-import java.net.URL
+import java.net.{URI, URL}
 import java.nio.file.Paths
 import java.util.jar.{JarEntry, JarFile}
 import scala.jdk.CollectionConverters.*
 import scala.util.{Try, Using}
 
-/** A ClassPath implementation that resolves classes by their actual package declaration in bytecode rather than by
-  * their path within the JAR. This handles non-standard JAR structures (e.g., fat JARs, repackaged JARs) where the
-  * entry path may not match the class's declared package.
+/** A ClassPath implementation that resolves classes by their actual package declaration in bytecode rather than by their
+  * path within the archive. This handles non-standard archive structures (e.g., fat JARs, repackaged JARs, JMODs)
+  * where the entry path may not match the class's declared package.
   */
-class PackageAwareJarClassPath(jarPath: String) extends ClassPath {
+class BytecodeIndexedClassPath(archivePath: String) extends ClassPath {
 
   private val logger     = LoggerFactory.getLogger(this.getClass)
-  private val jarFile    = new JarFile(jarPath)
-  private val jarFileURL = Paths.get(jarPath).toUri.toURL.toString
+  private val jarFile    = new JarFile(archivePath)
+  private val jarFileURL = Paths.get(archivePath).toUri.toURL.toString
+  private val urlScheme  = if (archivePath.endsWith(".jmod")) "jmod" else "jar"
 
   private val classNameToEntry: Map[String, JarEntry] = buildIndex()
 
-  /** The set of fully-qualified class names actually declared in this JAR's bytecode.
-    */
   val knownClassNames: Set[String] = classNameToEntry.keySet
 
   private def buildIndex(): Map[String, JarEntry] = {
@@ -36,7 +35,7 @@ class PackageAwareJarClassPath(jarPath: String) extends ClassPath {
         readClassName(entry) match {
           case Some(className) => Some(className -> entry)
           case None =>
-            logger.debug(s"Could not read class name from entry ${entry.getName} in $jarPath")
+            logger.debug(s"Could not read class name from entry ${entry.getName} in $archivePath")
             None
         }
       }
@@ -53,19 +52,12 @@ class PackageAwareJarClassPath(jarPath: String) extends ClassPath {
   }
 
   override def find(classname: String): URL = {
-    classNameToEntry.get(classname) match {
-      case Some(entry) =>
-        Try(new URL(s"jar:${jarFileURL}!/${entry.getName}")).getOrElse(null)
-
-      case None => null
-    }
+    classNameToEntry.get(classname).flatMap { entry =>
+      Try(new URI(s"$urlScheme:$jarFileURL!/${entry.getName}").toURL).toOption
+    }.orNull
   }
 
   override def openClassfile(classname: String): InputStream = {
-    classNameToEntry.get(classname) match {
-      case Some(entry) => jarFile.getInputStream(entry)
-
-      case None => null
-    }
+    classNameToEntry.get(classname).map(jarFile.getInputStream).orNull
   }
 }
