@@ -8,8 +8,7 @@ import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 
 class NewTypeDeclTests extends JavaSrcCode2CpgFixture {
   "a Java 25 compact class declaration" should {
-    val cpg = code(
-      """
+    val cpg = code("""
         |String s = "hello";
         |
         |void main(ArrayList<String> list) {
