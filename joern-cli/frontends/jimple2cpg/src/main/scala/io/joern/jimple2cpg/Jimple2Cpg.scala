@@ -42,7 +42,7 @@ class Jimple2Cpg extends X2CpgFrontend {
       case _ =>
         Options.v().set_src_prec(Options.src_prec_apk_c_j)
     }
-    Options.v().set_process_multiple_dex(true)
+//    Options.v().set_process_multiple_dex(true)
     // workaround for Soot's bug while parsing large apk.
     // see: https://github.com/soot-oss/soot/issues/1256
     Options.v().setPhaseOption("jb", "use-original-names:false")

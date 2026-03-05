@@ -35,13 +35,14 @@ object Versions {
   val scalatest              = "3.2.18"
   val scopt                  = "4.1.0"
   val semverParser           = "0.0.6"
-  val soot                   = "4.6.0"
+  val soot                   = "4.7.1"
   val slf4j                  = "2.0.7"
   val log4j                  = "2.20.0"
   val upickle                = "4.0.2"
   val gson                   = "2.13.1"
   val zeroTurnaround         = "1.17"
   val juniversalchardet      = "2.5.0"
+
 
   // Shared with `projects/meta-build.sbt`, which needs to be updated there directly
   val betterFiles    = "3.9.2"

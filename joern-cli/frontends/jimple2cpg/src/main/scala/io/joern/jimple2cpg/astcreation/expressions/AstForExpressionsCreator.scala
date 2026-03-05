@@ -76,8 +76,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
 
     val signature =
-      s"${registerType(callee.getReturnType.toQuotedString)}(${(for (i <- 0 until callee.getParameterTypes.size())
-          yield registerType(callee.getParameterType(i).toQuotedString)).mkString(",")})"
+      s"${registerType(callee.getReturnType.toString)}(${(for (i <- 0 until callee.getParameterTypes.size())
+          yield registerType(callee.getParameterType(i).toString)).mkString(",")})"
     val thisAsts = invokeExpr match {
       case expr: InstanceInvokeExpr => astsForValue(expr.getBase, parentUnit)
       case _                        => Seq(createThisNode(callee, NewIdentifier()))
@@ -89,7 +89,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       else
         callee.getName
 
-    val calleeType = registerType(callee.getDeclaringClass.getType.toQuotedString)
+    val calleeType = registerType(callee.getDeclaringClass.getType.toString)
     val callType =
       if (callee.isConstructor) "void"
       else calleeType
@@ -134,7 +134,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case u: NewMultiArrayExpr =>
         astForArrayCreateExpr(x, u.getSizes.asScala, parentUnit)
       case _ =>
-        val parentType = registerType(x.getType.toQuotedString)
+        val parentType = registerType(x.getType.toString)
         Ast(
           NewCall()
             .name(Operators.alloc)
@@ -151,7 +151,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   private def astForArrayCreateExpr(arrayInitExpr: Expr, sizes: Iterable[Value], parentUnit: soot.Unit): Ast = {
     // Jimple does not have Operators.arrayInitializer
     // to enforce 3 address code form
-    val arrayBaseType = registerType(arrayInitExpr.getType.toQuotedString)
+    val arrayBaseType = registerType(arrayInitExpr.getType.toString)
     val code = s"new ${arrayBaseType.substring(0, arrayBaseType.indexOf('['))}${sizes.map(s => s"[$s]").mkString}"
     val callBlock = NewCall()
       .name(Operators.alloc)
@@ -172,7 +172,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .methodFullName(methodName)
       .code(unaryExpr.toString())
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .typeFullName(registerType(unaryExpr.getType.toQuotedString))
+      .typeFullName(registerType(unaryExpr.getType.toString))
       .lineNumber(line(parentUnit))
       .columnNumber(column(parentUnit))
 
@@ -190,10 +190,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val valueAsts = unaryExpr match {
       case instanceOfExpr: InstanceOfExpr =>
-        val t = registerType(instanceOfExpr.getCheckType.toQuotedString)
+        val t = registerType(instanceOfExpr.getCheckType.toString)
         astsForValue(op, parentUnit) ++ astForTypeRef(t)
       case castExpr: CastExpr =>
-        val t = registerType(castExpr.getCastType.toQuotedString)
+        val t = registerType(castExpr.getCastType.toString)
         astForTypeRef(t) ++ astsForValue(op, parentUnit)
       case _ => astsForValue(op, parentUnit)
     }

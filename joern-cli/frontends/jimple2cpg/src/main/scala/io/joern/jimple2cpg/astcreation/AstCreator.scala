@@ -119,7 +119,7 @@ class AstCreator(
       .code(arrRef.toString())
       .lineNumber(line(parentUnit))
       .columnNumber(column(parentUnit))
-      .typeFullName(registerType(arrRef.getType.toQuotedString))
+      .typeFullName(registerType(arrRef.getType.toString))
 
     val astChildren = astsForValue(arrRef.getBase, parentUnit) ++ astsForValue(arrRef.getIndex, parentUnit)
     Ast(indexAccess)
@@ -129,7 +129,7 @@ class AstCreator(
 
   protected def astForLocal(local: soot.Local, parentUnit: SUnit): Ast = {
     val name         = local.getName
-    val typeFullName = registerType(local.getType.toQuotedString)
+    val typeFullName = registerType(local.getType.toString)
     Ast(
       NewIdentifier()
         .name(name)
@@ -145,7 +145,7 @@ class AstCreator(
       NewIdentifier()
         .code(x.toString())
         .name(x.toString())
-        .typeFullName(registerType(x.getType.toQuotedString))
+        .typeFullName(registerType(x.getType.toString))
         .lineNumber(line(parentUnit))
         .columnNumber(column(parentUnit))
     )
@@ -156,8 +156,8 @@ class AstCreator(
       NewIdentifier()
         .name("this")
         .code("this")
-        .typeFullName(registerType(method.getType.toQuotedString))
-        .dynamicTypeHintFullName(Seq(registerType(method.getType.toQuotedString)))
+        .typeFullName(registerType(method.getType.toString))
+        .dynamicTypeHintFullName(Seq(registerType(method.getType.toString)))
     )
   }
 
@@ -165,7 +165,7 @@ class AstCreator(
 
   protected def createThisNode(method: SootMethodRef, builder: NewNode): Ast = {
     if (!method.isStatic || method.isConstructor) {
-      val parentType = registerType(Try(method.getDeclaringClass.getType.toQuotedString).getOrElse("ANY"))
+      val parentType = registerType(Try(method.getDeclaringClass.getType.toString).getOrElse("ANY"))
       Ast(builder match {
         case x: NewIdentifier =>
           x.name("this")
@@ -205,7 +205,7 @@ class AstCreator(
     val fieldAccessBlock = NewCall()
       .name(Operators.fieldAccess)
       .code(s"$leftOpString.${fieldRef.getFieldRef.name()}")
-      .typeFullName(registerType(fieldRef.getType.toQuotedString))
+      .typeFullName(registerType(fieldRef.getType.toString))
       .methodFullName(Operators.fieldAccess)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .lineNumber(line(parentUnit))
@@ -219,7 +219,7 @@ class AstCreator(
         .columnNumber(column(parentUnit))
         .name(leftOpString)
         .code(leftOpString)
-        .typeFullName(registerType(leftOpType.toQuotedString)),
+        .typeFullName(registerType(leftOpType.toString)),
       NewFieldIdentifier()
         .order(2)
         .argumentIndex(2)
@@ -241,7 +241,7 @@ class AstCreator(
         .columnNumber(column(parentUnit))
         .name(caughtException.toString())
         .code(caughtException.toString())
-        .typeFullName(registerType(caughtException.getType.toQuotedString))
+        .typeFullName(registerType(caughtException.getType.toString))
     )
   }
 
@@ -251,7 +251,7 @@ class AstCreator(
         Ast(
           NewLiteral()
             .code(s"${x.value.parseAsJavaType}.class")
-            .typeFullName(registerType(x.getType.toQuotedString))
+            .typeFullName(registerType(x.getType.toString))
         )
       case _: NullConstant =>
         Ast(
@@ -263,7 +263,7 @@ class AstCreator(
         Ast(
           NewLiteral()
             .code(constant.toString)
-            .typeFullName(registerType(constant.getType.toQuotedString))
+            .typeFullName(registerType(constant.getType.toString))
         )
     }
   }
