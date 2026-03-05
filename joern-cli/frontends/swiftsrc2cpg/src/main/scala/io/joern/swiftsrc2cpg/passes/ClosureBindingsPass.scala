@@ -18,13 +18,13 @@ import io.shiftleft.semanticcpg.language.*
   */
 class ClosureBindingsPass(cpg: Cpg) extends CpgPass(cpg) {
 
-  private val seenTypeDecls = scala.collection.mutable.HashMap[String, NewTypeDecl]()
+  private val seenTypeDecls = scala.collection.mutable.HashMap.empty[String, NewTypeDecl]
 
   private def stubTypeDeclIfNeeded(diffGraph: DiffGraphBuilder, closureMethodFullName: String): DNodeOrNode = {
     if (cpg.typeDecl.fullNameExact(closureMethodFullName).isEmpty) {
       seenTypeDecls.getOrElseUpdate(
         closureMethodFullName, {
-          val typeDeclStub = TypeDeclStubCreator.createTypeDeclStub(name = "Function", fullName = closureMethodFullName)
+          val typeDeclStub = TypeDeclStubCreator.createTypeDeclStub("Function", closureMethodFullName)
           diffGraph.addNode(typeDeclStub)
           typeDeclStub
         }

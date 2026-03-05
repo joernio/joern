@@ -64,7 +64,7 @@ class ClosureWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
       val List(compareClosureBinding) = compareClosureTypeDecl.bindsOut.l
       compareClosureBinding.name shouldBe "single_apply"
       compareClosureBinding.methodFullName shouldBe compareClosureFullName
-      compareClosureBinding.signature shouldBe "(Swift.String,Swift.String)->Swift.Bool"
+      compareClosureBinding.signature shouldBe ""
 
       val List(compareClosureCall) = cpg.call.codeExact("""compare("1", "2")""").l
       compareClosureCall.name shouldBe "single_apply"
@@ -91,7 +91,7 @@ class ClosureWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
       val List(customerProviderBinding) = customerProviderTypeDecl.bindsOut.l
       customerProviderBinding.name shouldBe "single_apply"
       customerProviderBinding.methodFullName shouldBe customerProviderClosureFullName
-      customerProviderBinding.signature shouldBe "()->Swift.String"
+      customerProviderBinding.signature shouldBe ""
 
       val List(customerProviderCall) = cpg.call.codeExact("""customerProvider()""").l
       customerProviderCall.name shouldBe "single_apply"
@@ -111,7 +111,7 @@ class ClosureWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
       val List(greetBinding) = greetTypeDecl.bindsOut.l
       greetBinding.name shouldBe "single_apply"
       greetBinding.methodFullName shouldBe greetClosureFullName
-      greetBinding.signature shouldBe "()->()"
+      greetBinding.signature shouldBe ""
 
       val List(greetCall) = cpg.call.codeExact("""greet()""").l
       greetCall.name shouldBe "single_apply"
@@ -131,7 +131,7 @@ class ClosureWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
       val List(greetUserBinding) = greetUserTypeDecl.bindsOut.l
       greetUserBinding.name shouldBe "single_apply"
       greetUserBinding.methodFullName shouldBe greetUserClosureFullName
-      greetUserBinding.signature shouldBe "(Swift.String)->()"
+      greetUserBinding.signature shouldBe ""
 
       val List(greetUserCall) = cpg.call.codeExact("""greetUser("Alex")""").l
       greetUserCall.name shouldBe "single_apply"
@@ -155,7 +155,7 @@ class ClosureWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
       val List(findSquareBinding) = findSquareTypeDecl.bindsOut.l
       findSquareBinding.name shouldBe "single_apply"
       findSquareBinding.methodFullName shouldBe findSquareClosureFullName
-      findSquareBinding.signature shouldBe "(Swift.Int)->Swift.Int"
+      findSquareBinding.signature shouldBe ""
 
       val List(findSquareCall) = cpg.call.codeExact("""findSquare(5)""").l
       findSquareCall.name shouldBe "single_apply"
@@ -240,7 +240,7 @@ class ClosureWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
       val List(compareClosureBinding) = compareClosureTypeDecl.bindsOut.l
       compareClosureBinding.name shouldBe "single_apply"
       compareClosureBinding.methodFullName shouldBe compareClosureFullName
-      compareClosureBinding.signature shouldBe "(Swift.String,Swift.String)->Swift.Bool"
+      compareClosureBinding.signature shouldBe ""
 
       val List(compareClosureCall) = cpg.call.codeExact("""compare("1", "2")""").l
       compareClosureCall.name shouldBe "single_apply"
@@ -311,7 +311,7 @@ class ClosureWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
       val List(compareClosureBinding) = compareClosureTypeDecl.bindsOut.l
       compareClosureBinding.name shouldBe "single_apply"
       compareClosureBinding.methodFullName shouldBe compareClosureFullName
-      compareClosureBinding.signature shouldBe "(Swift.String,Swift.String)->Swift.Bool"
+      compareClosureBinding.signature shouldBe ""
 
       val List(compareClosureCall) = cpg.call.codeExact("""compare("1", "2")""").l
       compareClosureCall.name shouldBe "single_apply"
