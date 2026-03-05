@@ -13,13 +13,12 @@ object SwiftTypeNodePass {
 
       override def fullToShortName(typeName: String): String = {
         typeName match {
-          case name if name.endsWith(NamespaceTraversal.globalNamespaceName) =>
-            NamespaceTraversal.globalNamespaceName
-          case name if name.startsWith(s"${Defines.Function}<") && name.endsWith(">") =>
-            "Function"
+          case name if name.endsWith(NamespaceTraversal.globalNamespaceName) => NamespaceTraversal.globalNamespaceName
+          case s"${Defines.Function}<$_>"                                    => "Function"
           case name if name.contains(s"${io.joern.x2cpg.Defines.ClosurePrefix}") =>
-            val index = name.indexOf(io.joern.x2cpg.Defines.ClosurePrefix)
-            s"${io.joern.x2cpg.Defines.ClosurePrefix}${name.substring(index + io.joern.x2cpg.Defines.ClosurePrefix.length).takeWhile(_ != ':')}"
+            val index  = name.lastIndexOf(io.joern.x2cpg.Defines.ClosurePrefix)
+            val offset = index + io.joern.x2cpg.Defines.ClosurePrefix.length
+            s"${io.joern.x2cpg.Defines.ClosurePrefix}${name.substring(offset).takeWhile(_.isDigit)}"
           case _ =>
             typeName.split('.').lastOption.map(_.takeWhile(_ != ':')).getOrElse(typeName)
         }

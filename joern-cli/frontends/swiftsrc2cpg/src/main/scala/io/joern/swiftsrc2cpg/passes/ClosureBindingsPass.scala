@@ -30,9 +30,9 @@ class ClosureBindingsPass(cpg: Cpg) extends CpgPass(cpg) {
 
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     for {
-      closureMethod            <- cpg.method.filter(_.name.startsWith(io.joern.x2cpg.Defines.ClosurePrefix))
-      closureMethodeTypeDecl   <- cpg.typeDecl.fullNameExact(closureMethod.fullName).loneElementOption
-      inheritsFromTypeFullName <- closureMethodeTypeDecl.inheritsFromTypeFullName.loneElementOption
+      closureMethod            <- cpg.method.isLambda
+      closureMethodTypeDecl    <- closureMethod.bindingTypeDecl
+      inheritsFromTypeFullName <- closureMethodTypeDecl.inheritsFromTypeFullName.loneElementOption
       closureTypeDecl = stubTypeDeclIfNeeded(diffGraph, inheritsFromTypeFullName)
     } {
       val functionBinding = NewBinding()
