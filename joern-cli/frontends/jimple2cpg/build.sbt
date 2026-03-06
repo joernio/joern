@@ -1,7 +1,7 @@
 name := "jimple2cpg"
 
 dependsOn(
-  Projects.dataflowengineoss  % "compile->compile;test->test",
+  Projects.dataflowengineoss  % "test->test",
   Projects.x2cpg              % "compile->compile;test->test",
   Projects.linterRules % ScalafixConfig
 )
