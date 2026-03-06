@@ -44,9 +44,9 @@ case class TrackedTypeRef(typeRef: TypeRef) extends TrackedMethodOrTypeRef {
   }
 }
 
-case class TrackedAlias(argIndex: Int) extends TrackedBase {
+case class TrackedAlias(alias: Expression) extends TrackedBase {
   override def toString: String = {
-    s"TrackedAlias($argIndex)"
+    s"TrackedAlias(${alias.code})"
   }
 }
 
