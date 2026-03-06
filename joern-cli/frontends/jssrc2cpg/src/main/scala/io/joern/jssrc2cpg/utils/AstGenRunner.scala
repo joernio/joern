@@ -115,7 +115,7 @@ object AstGenRunner {
       .resolve("astgen")
       .toString
   }
-  
+
   private def hasCompatibleAstGenVersionAtPath(astGenVersion: String, path: Option[String]): Boolean = {
     val astGenCommand = path.getOrElse("astgen")
     val localPath     = path.flatMap(Paths.get(_).parentOption)

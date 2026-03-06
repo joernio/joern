@@ -207,8 +207,9 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         fieldAccessAstForSelf(node, name, tpe, callTpe)
       // In swift-build mode, an unresolved identifier whose compiler-reported type ends
       // with `.Type` is a reference to a type (e.g. `MyStruct` used as a value).
-      case name if config.swiftBuild && isUnresolved &&
-        fullnameProvider.typeFullnameRaw(node).exists(_.endsWith(".Type")) =>
+      case name
+          if config.swiftBuild && isUnresolved &&
+            fullnameProvider.typeFullnameRaw(node).exists(_.endsWith(".Type")) =>
         val tpe = fullnameProvider.typeFullname(node).get
         registerType(tpe)
         Ast(typeRefNode(node, name, tpe))
@@ -230,12 +231,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     * receiver is a `Self` type reference; otherwise it is a `self` identifier whose variable reference is registered in
     * the current scope.
     */
-  private def fieldAccessAstForSelf(
-    node: SwiftNode,
-    identifierName: String,
-    selfTpe: String,
-    callTpe: String
-  ): Ast = {
+  private def fieldAccessAstForSelf(node: SwiftNode, identifierName: String, selfTpe: String, callTpe: String): Ast = {
     val selfNode = if (scope.isInStaticMethodScope) {
       typeRefNode(node, "Self", selfTpe)
     } else {
