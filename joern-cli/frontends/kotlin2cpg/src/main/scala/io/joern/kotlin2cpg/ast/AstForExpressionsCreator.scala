@@ -25,6 +25,8 @@ import io.joern.kotlin2cpg.ast.AstCreator.BindingInfo
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.TypeSubstitutor
+import org.jetbrains.kotlin.types.Variance
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
@@ -760,6 +762,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     methodName: String,
     params: List[(String, String)],
     signature: String,
+    returnType: String,
     genericSignature: Option[String]
   )
 
@@ -767,51 +770,59 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     exprType: Option[KotlinType],
     funcDesc: Option[FunctionDescriptor]
   ): SamMethodInfo = {
-    val samMethod = exprType.flatMap { ktType =>
-      val classDescriptor = ktType.getConstructor.getDeclarationDescriptor.asInstanceOf[ClassDescriptor]
-      val abstractMethods = classDescriptor.getUnsubstitutedMemberScope
-        .getContributedDescriptors(DescriptorKindFilter.FUNCTIONS, _ => true)
-        .asScala
-        .collect { case f: FunctionDescriptor if f.getModality.toString == "ABSTRACT" => f }
-        .toList
-      abstractMethods.headOption
+    val samMethodFromExprType = exprType.flatMap { kotlinType =>
+      Option(kotlinType.getConstructor.getDeclarationDescriptor)
+        .collect { case classDescriptor: ClassDescriptor => classDescriptor }
+        .flatMap { classDescriptor =>
+          classDescriptor.getUnsubstitutedMemberScope
+            .getContributedDescriptors(DescriptorKindFilter.FUNCTIONS, _ => true)
+            .asScala
+            .collectFirst {
+              case functionDescriptor: FunctionDescriptor if functionDescriptor.getModality.toString == "ABSTRACT" =>
+                functionDescriptor
+            }
+        }
     }
 
-    val samMethodName = samMethod.flatMap(f => Some(f.getName().toString)).getOrElse("invoke")
+    val samMethod = samMethodFromExprType.orElse(funcDesc)
 
-    val (samMethodParams, samMethodSig, samGenericMethodSig) = (samMethod, exprType) match {
-      case (Some(desc), Some(ktType)) =>
-        val typeSubstitutor = org.jetbrains.kotlin.types.TypeSubstitutor.create(ktType)
+    val samMethodName = samMethod.map(_.getName.toString).getOrElse("invoke")
+
+    val (samMethodParams, samMethodSig, samMethodReturnType, samGenericMethodSig) = samMethod match {
+      case Some(desc) =>
+        val typeSubstitutor = exprType.map(TypeSubstitutor.create)
 
         val params = desc.getValueParameters.asScala.toList.zipWithIndex.map { case (param, idx) =>
           val paramName = param.getName.toString match {
             case "<anonymous>" => s"p$idx"
             case name          => name
           }
-          val substitutedType = typeSubstitutor.substitute(param.getType, org.jetbrains.kotlin.types.Variance.INVARIANT)
-          val paramTypeFullName = Option(substitutedType)
-            .flatMap(t => nameRenderer.typeFullName(t))
-            .getOrElse(TypeConstants.Any)
+
+          val resolvedType = typeSubstitutor
+            .flatMap(substitutor => Option(substitutor.substitute(param.getType, Variance.INVARIANT)))
+            .getOrElse(param.getType)
+
+          val paramTypeFullName = nameRenderer.typeFullName(resolvedType).getOrElse(TypeConstants.Any)
           (paramName, paramTypeFullName)
         }
 
-        val substitutedReturnType =
-          typeSubstitutor.substitute(desc.getReturnType, org.jetbrains.kotlin.types.Variance.INVARIANT)
-        val returnTypeFullName = Option(substitutedReturnType)
-          .flatMap(t => nameRenderer.typeFullName(t))
-          .getOrElse(TypeConstants.Any)
+        val resolvedReturnType = typeSubstitutor
+          .flatMap(substitutor => Option(substitutor.substitute(desc.getReturnType, Variance.INVARIANT)))
+          .getOrElse(desc.getReturnType)
 
-        val paramTypes = params.map(_._2).mkString(",")
-        val sig        = s"$returnTypeFullName($paramTypes)"
+        val returnTypeFullName = nameRenderer.typeFullName(resolvedReturnType).getOrElse(TypeConstants.Any)
+        val paramTypes         = params.map(_._2).mkString(",")
+        val signature          = s"$returnTypeFullName($paramTypes)"
+        val genericSignature   = createErasedSignature(desc)
 
-        val genericSig = createErasedSignature(desc)
+        (params, signature, returnTypeFullName, genericSignature)
 
-        (params, sig, genericSig)
-      case _ =>
-        (List.empty, "java.lang.Object(java.lang.Object[])", None)
+      case None =>
+        val defaultReturnType = TypeConstants.JavaLangObject
+        (List.empty, s"$defaultReturnType(java.lang.Object[])", defaultReturnType, None)
     }
 
-    SamMethodInfo(samMethodName, samMethodParams, samMethodSig, samGenericMethodSig)
+    SamMethodInfo(samMethodName, samMethodParams, samMethodSig, samMethodReturnType, samGenericMethodSig)
   }
 
   def astForCallableReferenceExpression(
@@ -887,8 +898,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         inheritsList,
         samMethodInfo.methodName,
         samMethodInfo.signature,
+        samMethodInfo.returnType,
         samMethodInfo.genericSignature,
-        (receiverInfo.ctorParamAst, receiverInfo.receiverName),
+        receiverInfo.ctorParamAst,
         receiverTypeFullName,
         samMethodInfo.params,
         receiverInfo.isStaticReference,

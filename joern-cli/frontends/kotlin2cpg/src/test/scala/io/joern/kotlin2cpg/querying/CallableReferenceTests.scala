@@ -121,7 +121,7 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       ctorParams.size shouldBe 2
       ctorParams.head.name shouldBe "this"
       ctorParams.head.typeFullName shouldBe "com.test.Handler.process$kotlin.jvm.functions.Function2Impl.invoke:boolean(int,java.lang.String)"
-      ctorParams(1).name shouldBe "handler"
+      ctorParams(1).name shouldBe "receiver"
       ctorParams(1).typeFullName shouldBe "com.test.Handler"
 
       val ctorModifiers = constructor.modifier.l
@@ -145,12 +145,12 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       thisIdentifier.name shouldBe "this"
       receiverField.canonicalName shouldBe "receiver"
 
-      rhs.name shouldBe "handler"
+      rhs.name shouldBe "receiver"
       rhs.typeFullName shouldBe "com.test.Handler"
       rhs.argumentIndex shouldBe 2
 
       inside(rhs.refsTo.l) { case List(param: MethodParameterIn) =>
-        param.name shouldBe "handler"
+        param.name shouldBe "receiver"
         param.typeFullName shouldBe "com.test.Handler"
         param.index shouldBe 1
       }
@@ -380,7 +380,7 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       ctorParams.size shouldBe 2
       ctorParams.head.name shouldBe "this"
       ctorParams.head.typeFullName shouldBe "Counter.increment$kotlin.jvm.functions.Function0Impl.invoke:int()"
-      ctorParams(1).name shouldBe "counter"
+      ctorParams(1).name shouldBe "receiver"
       ctorParams(1).typeFullName shouldBe "Counter"
 
       // Check constructor call
@@ -439,7 +439,7 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       constructor.signature shouldBe "void(Handler)"
       val ctorParams = constructor.parameter.l.sortBy(_.index)
       ctorParams.size shouldBe 2
-      ctorParams(1).name shouldBe "handler"
+      ctorParams(1).name shouldBe "receiver"
       ctorParams(1).typeFullName shouldBe "Handler"
 
       // Check constructor call
@@ -496,7 +496,7 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       constructor.signature shouldBe "void(com.test.MyClass)"
       val ctorParams = constructor.parameter.l.sortBy(_.index)
       ctorParams.size shouldBe 2
-      ctorParams(1).name shouldBe "this"
+      ctorParams(1).name shouldBe "receiver"
       ctorParams(1).typeFullName shouldBe "com.test.MyClass"
 
       // Check constructor call
@@ -552,7 +552,7 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       constructor.signature shouldBe "void(com.test.Converter)"
       val ctorParams = constructor.parameter.l.sortBy(_.index)
       ctorParams.size shouldBe 2
-      ctorParams(1).name shouldBe "converter"
+      ctorParams(1).name shouldBe "receiver"
       ctorParams(1).typeFullName shouldBe "com.test.Converter"
 
       // Check constructor call

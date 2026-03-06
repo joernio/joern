@@ -63,8 +63,9 @@ object AstCreator {
     inheritsFrom: List[String],
     samMethodName: String,
     samMethodSig: String,
+    samMethodReturn: String,
     samGenericMethodSig: Option[String],
-    receiverParam: (Ast, String),
+    receiverParam: Ast,
     receiverTypeFullName: String,
     samMethodParams: List[(String, String)],
     isStaticReference: Boolean,
@@ -103,7 +104,7 @@ class AstCreator(
   protected val bindingInfoQueue: mutable.ArrayBuffer[BindingInfo]             = mutable.ArrayBuffer.empty
   protected val lambdaAstQueue: mutable.ArrayBuffer[Ast]                       = mutable.ArrayBuffer.empty
   protected val lambdaBindingInfoQueue: mutable.ArrayBuffer[BindingInfo]       = mutable.ArrayBuffer.empty
-  protected val samImplInfoQueue: mutable.Map[String, SamImplInfo]             = mutable.Map.empty
+  protected val samImplInfoQueue: mutable.Map[String, SamImplInfo]             = mutable.SeqMap.empty
   protected val methodAstParentStack: Stack[NewNode]                           = new Stack()
 
   protected val tmpKeyPool             = new IntervalKeyPool(first = 1, last = Long.MaxValue)
@@ -572,12 +573,11 @@ class AstCreator(
         .flatMap { funcDesc =>
           val params = funcDesc.getValueParameters.asScala.toList
           if (idx - 1 < params.size) {
-            Some(params(idx - 1))
+            Some(params(idx - 1).getType)
           } else {
             None
           }
         }
-        .flatMap(paramDesc => Some(paramDesc.getType))
 
       astsForExpression(
         arg.getArgumentExpression,
@@ -640,22 +640,14 @@ class AstCreator(
     signature: String,
     methodFullName: String,
     typeDecl: NewTypeDecl,
-    methodNode: NewMethod,
     genericSignature: Option[String]
   ): Unit = {
     val binding = bindingNode(methodName, signature, methodFullName)
-    bindingInfoQueue.prepend(
-      BindingInfo(binding, Seq((typeDecl, binding, EdgeTypes.BINDS), (binding, methodNode, EdgeTypes.REF)))
-    )
+    bindingInfoQueue.prepend(BindingInfo(binding, Seq((typeDecl, binding, EdgeTypes.BINDS))))
 
     genericSignature.foreach { genericSig =>
       val genericBinding = bindingNode(methodName, genericSig, methodFullName)
-      bindingInfoQueue.prepend(
-        BindingInfo(
-          genericBinding,
-          Seq((typeDecl, genericBinding, EdgeTypes.BINDS), (genericBinding, methodNode, EdgeTypes.REF))
-        )
-      )
+      bindingInfoQueue.prepend(BindingInfo(genericBinding, Seq((typeDecl, genericBinding, EdgeTypes.BINDS))))
     }
   }
 
@@ -671,29 +663,18 @@ class AstCreator(
 
     val samMethodFullName = s"${samInfo.methodRefName}:${samInfo.signature}"
 
-    val methodRefBinding =
-      bindingNode(samInfo.samMethodName, samInfo.samMethodSig, samMethodFullName)
-    bindingInfoQueue.prepend(BindingInfo(methodRefBinding, Seq((samTypeDecl, methodRefBinding, EdgeTypes.BINDS))))
-
-    samInfo.samGenericMethodSig.foreach { genericSig =>
-      val genericBinding = bindingNode(samInfo.samMethodName, genericSig, samMethodFullName)
-      bindingInfoQueue.prepend(BindingInfo(genericBinding, Seq((samTypeDecl, genericBinding, EdgeTypes.BINDS))))
-    }
+    createBindingInfo(
+      samInfo.samMethodName,
+      samInfo.samMethodSig,
+      samMethodFullName,
+      samTypeDecl,
+      samInfo.samGenericMethodSig
+    )
 
     Ast(samTypeDecl)
   }
 
-  protected def createBoundSamTypeDecl(samInfo: BoundSamInfo): Ast = {
-    val samTypeDecl = typeDeclNode(
-      samInfo.expr,
-      samInfo.samImplClass.split('.').last,
-      samInfo.samImplClass,
-      relativizedPath,
-      samInfo.inheritsFrom.map(registerType),
-      None
-    )
-
-    val samMethodFullName = s"${samInfo.samImplClass}.${samInfo.samMethodName}:${samInfo.samMethodSig}"
+  protected def createBoundSamMethodAst(samInfo: BoundSamInfo, samMethodFullName: String): Ast = {
     val samMethodNode = methodNode(
       samInfo.expr,
       samInfo.samMethodName,
@@ -710,8 +691,8 @@ class AstCreator(
       Ast(paramNode)
     }
 
-    val valueParameterAsts = samInfo.samMethodParams.zipWithIndex.map { case ((paramName, paramType), idx) =>
-      val paramNode = parameterInNode(
+    val valueParameterNodes = samInfo.samMethodParams.zipWithIndex.map { case ((paramName, paramType), idx) =>
+      parameterInNode(
         samInfo.expr,
         paramName,
         paramName,
@@ -720,13 +701,12 @@ class AstCreator(
         EvaluationStrategies.BY_VALUE,
         registerType(paramType)
       )
-      Ast(paramNode)
     }
 
-    val allParameterAsts = thisParamAst +: valueParameterAsts
+    val allParameterAsts = thisParamAst +: valueParameterNodes.map(Ast(_))
 
     val paramString      = samInfo.samMethodParams.map(_._1).mkString(", ")
-    val returnType       = extractReturnTypeFromSignature(samInfo.samMethodSig)
+    val returnType       = samInfo.samMethodReturn
     val methodReturn     = methodReturnNode(samInfo.expr, registerType(returnType))
     val receiverTypeName = samInfo.receiverTypeFullName.split('.').last
     val calledMethodName = samInfo.methodRefName.split('.').last
@@ -752,15 +732,11 @@ class AstCreator(
       Some(registerType(returnType))
     )
 
-    val callArgumentAsts = samInfo.samMethodParams.zipWithIndex.zip(valueParameterAsts).map {
-      case (((paramName, paramType), idx), paramAst) =>
+    val callArgumentAsts = samInfo.samMethodParams.zipWithIndex.zip(valueParameterNodes).map {
+      case (((paramName, paramType), idx), methodParamNode) =>
         val identNode =
           identifierNode(samInfo.expr, paramName, paramName, registerType(paramType)).argumentIndex(idx + 1)
-        paramAst.root
-          .collect { case p: NewMethodParameterIn =>
-            Ast(identNode).withRefEdge(identNode, p)
-          }
-          .getOrElse(Ast(identNode))
+        Ast(identNode).withRefEdge(identNode, methodParamNode)
     }
 
     val callAst_    = callAst(callNode_, callArgumentAsts.toList, receiverAstOpt)
@@ -769,31 +745,24 @@ class AstCreator(
 
     val modifiers =
       Seq(modifierNode(samInfo.expr, ModifierTypes.PUBLIC), modifierNode(samInfo.expr, ModifierTypes.VIRTUAL))
-    val methodAst_ =
-      methodAst(samMethodNode, allParameterAsts, blockAst(blockNode_, List(returnAst_)), methodReturn, modifiers)
 
-    createBindingInfo(
-      samInfo.samMethodName,
-      samInfo.samMethodSig,
-      samMethodFullName,
-      samTypeDecl,
-      samMethodNode,
-      samInfo.samGenericMethodSig
-    )
+    methodAst(samMethodNode, allParameterAsts, blockAst(blockNode_, List(returnAst_)), methodReturn, modifiers)
+  }
 
+  protected def createBoundSamConstructorAst(samInfo: BoundSamInfo): Ast = {
     val receiverType = samInfo.receiverTypeFullName
     val ctorFullName = s"${samInfo.samImplClass}.<init>:void(${receiverType})"
     val ctorNode =
       methodNode(samInfo.expr, "<init>", "<init>", ctorFullName, Some(s"void(${receiverType})"), relativizedPath)
+
     val ctorThisParam =
       parameterInNode(samInfo.expr, "this", "this", 0, false, EvaluationStrategies.BY_SHARING, samInfo.samImplClass)
         .dynamicTypeHintFullName(IndexedSeq(samInfo.samImplClass))
-    val receiverParamName =
-      samInfo.receiverParam._1.root.collect { case expr: ExpressionNew => expr.code }.getOrElse("receiver")
+
     val ctorReceiverParam = parameterInNode(
       samInfo.expr,
-      receiverParamName,
-      receiverParamName,
+      "receiver",
+      "receiver",
       1,
       false,
       EvaluationStrategies.BY_VALUE,
@@ -807,6 +776,7 @@ class AstCreator(
       samInfo.samImplClass,
       Seq(samInfo.samImplClass)
     )
+
     val receiverFieldIdentifier = fieldIdentifierNode(samInfo.expr, "receiver", "receiver")
     val receiverFieldAccessNode =
       operatorCallNode(samInfo.expr, s"this.receiver", Operators.fieldAccess, Option(registerType(receiverType)))
@@ -814,28 +784,49 @@ class AstCreator(
       callAst(receiverFieldAccessNode, Seq(Ast(thisIdentifier), Ast(receiverFieldIdentifier)))
 
     val receiverArgIdent =
-      identifierNode(samInfo.expr, receiverParamName, receiverParamName, registerType(receiverType)).argumentIndex(2)
+      identifierNode(samInfo.expr, "receiver", shortenCode("receiver"), registerType(receiverType)).argumentIndex(2)
     val receiverArgAst = Ast(receiverArgIdent).withRefEdge(receiverArgIdent, ctorReceiverParam)
 
     val receiverAssignmentNode =
-      operatorCallNode(samInfo.expr, s"this.receiver = $receiverParamName", Operators.assignment, None)
+      operatorCallNode(samInfo.expr, shortenCode(s"this.receiver = receiver"), Operators.assignment, None)
     val receiverAssignmentAst = callAst(receiverAssignmentNode, Seq(receiverFieldAccessAst, receiverArgAst))
 
     val ctorBlock =
-      blockNode(samInfo.expr, s"this.receiver = $receiverParamName", registerType(TypeConstants.Void))
+      blockNode(samInfo.expr, shortenCode(s"this.receiver = receiver"), registerType(TypeConstants.Void))
     val ctorReturn    = methodReturnNode(samInfo.expr, TypeConstants.Void)
     val ctorModifiers = Seq(modifierNode(samInfo.expr, ModifierTypes.CONSTRUCTOR))
 
-    createBindingInfo("<init>", s"void(${receiverType})", ctorFullName, samTypeDecl, ctorNode, None)
+    methodAst(
+      ctorNode,
+      Seq(Ast(ctorThisParam), Ast(ctorReceiverParam)),
+      blockAst(ctorBlock, List(receiverAssignmentAst)),
+      ctorReturn,
+      ctorModifiers
+    )
+  }
 
-    val ctorAst =
-      methodAst(
-        ctorNode,
-        Seq(Ast(ctorThisParam), Ast(ctorReceiverParam)),
-        blockAst(ctorBlock, List(receiverAssignmentAst)),
-        ctorReturn,
-        ctorModifiers
-      )
+  protected def createBoundSamTypeDecl(samInfo: BoundSamInfo): Ast = {
+    val samTypeDecl = typeDeclNode(
+      samInfo.expr,
+      samInfo.samImplClass.split('.').last,
+      samInfo.samImplClass,
+      relativizedPath,
+      samInfo.inheritsFrom.map(registerType),
+      None
+    )
+
+    val samMethodFullName = s"${samInfo.samImplClass}.${samInfo.samMethodName}:${samInfo.samMethodSig}"
+    val methodAst_        = createBoundSamMethodAst(samInfo, samMethodFullName)
+
+    createBindingInfo(
+      samInfo.samMethodName,
+      samInfo.samMethodSig,
+      samMethodFullName,
+      samTypeDecl,
+      samInfo.samGenericMethodSig
+    )
+
+    val ctorAst = createBoundSamConstructorAst(samInfo)
 
     Ast(samTypeDecl).withChild(methodAst_).withChild(ctorAst)
   }
@@ -844,15 +835,6 @@ class AstCreator(
     samInfo match {
       case unbound: UnboundSamInfo => createUnboundSamTypeDecl(unbound)
       case bound: BoundSamInfo     => createBoundSamTypeDecl(bound)
-    }
-  }
-
-  private def extractReturnTypeFromSignature(signature: String): String = {
-    val parenIndex = signature.indexOf('(')
-    if (parenIndex > 0) {
-      signature.substring(0, parenIndex)
-    } else {
-      TypeConstants.Any
     }
   }
 
