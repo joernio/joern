@@ -433,7 +433,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       callName,
       callMethodFullname,
       DispatchTypes.DYNAMIC_DISPATCH,
-      Option(signature),
+      Option(Defines.ErasedSignature),
       Option(tpe)
     )
     callAst(callNode_, args, Option(baseAst))

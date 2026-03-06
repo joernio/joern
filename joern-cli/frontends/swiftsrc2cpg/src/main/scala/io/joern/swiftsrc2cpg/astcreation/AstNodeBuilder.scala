@@ -187,7 +187,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     val (inherits, bindingName, signature) = if (node.isInstanceOf[ClosureExprSyntax]) {
       val inheritsFunctionFullName = s"${Defines.Function}<${methodNode.signature}>"
       registerType(inheritsFunctionFullName)
-      (Seq(inheritsFunctionFullName), Defines.ClosureApplyMethodName, "")
+      (Seq(inheritsFunctionFullName), Defines.ClosureApplyMethodName, Defines.ErasedSignature)
     } else (Seq.empty, methodNode.name, methodNode.signature)
 
     val methodTypeDeclNode = typeDeclNode(
