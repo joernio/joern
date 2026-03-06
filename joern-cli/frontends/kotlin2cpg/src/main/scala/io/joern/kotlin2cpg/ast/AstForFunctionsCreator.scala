@@ -184,7 +184,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       .withChildren(annotationEntries)
   }
 
-  private def astsForDestructuring(param: KtParameter): Seq[Ast] = {
+  private def astsForDestructuring(param: KtParameter, backingParamName: Option[String] = None): Seq[Ast] = {
     val decl             = param.getDestructuringDeclaration
     val tmpName          = s"${Constants.TmpLocalPrefix}${tmpKeyPool.next}"
     var localForTmp      = Option.empty[NewLocal]
@@ -217,9 +217,12 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       val localForIt = localNode(decl, "it", "it", typeFullName)
       additionalLocals.addOne(Ast(localForIt))
       val identifierForIt = identifierNode(param, "it", "it", typeFullName)
-      val initAst         = Ast(identifierForIt).withRefEdge(identifierForIt, localForIt)
-      val tmpIdentifier   = identifierNode(param, tmpName, shortenCode(tmpName), typeFullName)
-      val local           = localNode(decl, tmpName, shortenCode(tmpName), typeFullName)
+      val initTargetNode = backingParamName
+        .flatMap(scope.lookupVariable)
+        .getOrElse(localForIt)
+      val initAst       = Ast(identifierForIt).withRefEdge(identifierForIt, initTargetNode)
+      val tmpIdentifier = identifierNode(param, tmpName, shortenCode(tmpName), typeFullName)
+      val local         = localNode(decl, tmpName, shortenCode(tmpName), typeFullName)
       localForTmp = Some(local)
       scope.addToScope(tmpName, local)
       val tmpIdentifierAst = Ast(tmpIdentifier).withRefEdge(tmpIdentifier, local)
@@ -249,11 +252,13 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       .toSeq ++ additionalLocals ++ localsForDestructuringVars ++ (initCallAst +: assignmentsForEntries)
   }
 
-  def astForParameter(param: KtParameter, order: Int): Ast = {
-    val name = if (param.getDestructuringDeclaration != null) {
-      s"${Constants.DestructedParamNamePrefix}${destructedParamKeyPool.next}"
-    } else {
-      param.getName
+  def astForParameter(param: KtParameter, order: Int, explicitName: Option[String] = None): Ast = {
+    val name = explicitName.getOrElse {
+      if (param.getDestructuringDeclaration != null) {
+        s"${Constants.DestructedParamNamePrefix}${destructedParamKeyPool.next}"
+      } else {
+        param.getName
+      }
     }
 
     val explicitTypeName = Option(param.getTypeReference)
@@ -275,6 +280,48 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
 
   private case class NodeContext(node: NewNode, name: String, typeFullName: String)
 
+  private def referencedCaptureNamesIn(root: KtElement, declaredNames: Set[String]): Set[String] = {
+    val referenced = mutable.Set.empty[String]
+    val declared   = mutable.Set.from(declaredNames)
+
+    val visitor = new KtTreeVisitorVoid {
+      override def visitParameter(parameter: KtParameter): Unit = {
+        Option(parameter.getName).foreach(declared.add)
+        super.visitParameter(parameter)
+      }
+
+      override def visitProperty(property: KtProperty): Unit = {
+        Option(property.getName).foreach(declared.add)
+        super.visitProperty(property)
+      }
+
+      override def visitDestructuringDeclarationEntry(entry: KtDestructuringDeclarationEntry): Unit = {
+        Option(entry.getName).foreach(declared.add)
+        super.visitDestructuringDeclarationEntry(entry)
+      }
+
+      override def visitReferenceExpression(expression: KtReferenceExpression): Unit = {
+        expression match {
+          case nameRef: KtNameReferenceExpression =>
+            referenced.add(nameRef.getReferencedName)
+            if (typeInfoProvider.usedAsImplicitThis(nameRef)) {
+              referenced.add(Constants.ThisName)
+            }
+          case _ =>
+        }
+        super.visitReferenceExpression(expression)
+      }
+
+      override def visitThisExpression(expression: KtThisExpression): Unit = {
+        referenced.add(Constants.ThisName)
+        super.visitThisExpression(expression)
+      }
+    }
+
+    visitor.visitKtElement(root)
+    referenced.diff(declared).toSet
+  }
+
   def astForAnonymousFunction(
     fn: KtNamedFunction,
     argIdxMaybe: Option[Int],
@@ -293,12 +340,22 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val lambdaMethodNode = methodNode(fn, name, fullName, signature, relativizedPath)
 
+    val paramNames = fn.getValueParameters.asScala.flatMap(p => Option(p.getName)).toSet
+    val implicitParamNames =
+      if (funcDesc.getExtensionReceiverParameter != null) Set(Constants.ThisName) else Set.empty[String]
+    val declaredParamNames = paramNames ++ implicitParamNames
+    val referencedNames = Option(fn.getBodyBlockExpression)
+      .orElse(Option(fn.getBodyExpression))
+      .map(referencedCaptureNamesIn(_, declaredParamNames))
+      .getOrElse(Set.empty)
+
     val closureBindingEntriesForCaptured = scope
       .pushClosureScope(lambdaMethodNode)
       .collect {
         case node: NewMethodParameterIn => NodeContext(node, node.name, node.typeFullName)
         case node: NewLocal             => NodeContext(node, node.name, node.typeFullName)
       }
+      .filter(capturedNodeContext => referencedNames.contains(capturedNodeContext.name))
       .map { capturedNodeContext =>
         val closureBindingId = s"$descFullName.${capturedNodeContext.name}"
         val closureBinding   = closureBindingNode(closureBindingId, EvaluationStrategies.BY_REFERENCE)
@@ -395,12 +452,52 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val lambdaMethodNode = methodNode(expr, name, fullName, signature, relativizedPath)
 
+    val declaredParamNames = {
+      val explicitParamNames = funcDesc.getValueParameters.asScala.flatMap { paramDesc =>
+        paramDesc.getSource match {
+          case source: KotlinSourceElement =>
+            source.getPsi match {
+              case param: KtParameter => Option(param.getName)
+              case _                  => None
+            }
+          case _ => None
+        }
+      }.toSet
+      val implicitParamNames = mutable.Set.empty[String]
+      if (funcDesc.getExtensionReceiverParameter != null) {
+        implicitParamNames.add(Constants.ThisName)
+      }
+      if (
+        funcDesc.getValueParameters.size == 1 &&
+        !funcDesc.getValueParameters.asScala.head.getSource.isInstanceOf[KotlinSourceElement]
+      ) {
+        implicitParamNames.add("it")
+      }
+      explicitParamNames ++ implicitParamNames
+    }
+
+    val hasDestructuringParam = funcDesc.getValueParameters.asScala.exists { paramDesc =>
+      paramDesc.getSource match {
+        case source: KotlinSourceElement =>
+          source.getPsi match {
+            case param: KtParameter => param.getDestructuringDeclaration != null
+            case _                  => false
+          }
+        case _ => false
+      }
+    }
+
+    val referencedNames = Option(expr.getBodyExpression)
+      .map(referencedCaptureNamesIn(_, declaredParamNames))
+      .getOrElse(Set.empty)
+
     val closureBindingEntriesForCaptured = scope
       .pushClosureScope(lambdaMethodNode)
       .collect {
         case node: NewMethodParameterIn => NodeContext(node, node.name, node.typeFullName)
         case node: NewLocal             => NodeContext(node, node.name, node.typeFullName)
       }
+      .filter(capturedNodeContext => hasDestructuringParam || referencedNames.contains(capturedNodeContext.name))
       .map { capturedNodeContext =>
         val closureBindingId = s"$descFullName.${capturedNodeContext.name}"
         val closureBinding   = closureBindingNode(closureBindingId, EvaluationStrategies.BY_REFERENCE)
@@ -440,9 +537,12 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       case parameters =>
         parameters.zipWithIndex.foreach { (paramDesc, idx) =>
           val param = paramDesc.getSource.asInstanceOf[KotlinSourceElement].getPsi.asInstanceOf[KtParameter]
-          paramAsts.append(astForParameter(param, valueParamStartIndex + idx))
           if (param.getDestructuringDeclaration != null) {
-            destructedParamAsts.appendAll(astsForDestructuring(param))
+            val generatedName = s"${Constants.DestructedParamNamePrefix}${destructedParamKeyPool.next}"
+            paramAsts.append(astForParameter(param, valueParamStartIndex + idx, Some(generatedName)))
+            destructedParamAsts.appendAll(astsForDestructuring(param, Some(generatedName)))
+          } else {
+            paramAsts.append(astForParameter(param, valueParamStartIndex + idx))
           }
         }
     }

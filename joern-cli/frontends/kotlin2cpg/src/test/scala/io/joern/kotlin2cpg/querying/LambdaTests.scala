@@ -3,8 +3,7 @@ package io.joern.kotlin2cpg.querying
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.joern.kotlin2cpg.{Config, Constants}
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
-import io.shiftleft.codepropertygraph.generated.edges.Capture
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, ModifierTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -14,7 +13,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
 
     "should contain a single METHOD_REF node with a single CAPTURE edge" in {
       cpg.methodRef.size shouldBe 1
-      cpg.methodRef.outE.collectAll[Capture].size shouldBe 1
+      cpg.methodRef._closureBindingViaCaptureOut.size shouldBe 1
     }
 
     "should contain a LOCAL node for the captured method parameter" in {
@@ -78,16 +77,8 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       mr.code should not be null
     }
 
-    "should contain three CAPTURE edges for the METHOD_REF" in {
-      cpg.methodRef.outE.collectAll[Capture].size shouldBe 3
-    }
-
-    "should contain a LOCAL node for the captured `this`" in {
-      cpg.local.code("this").size shouldBe 1
-    }
-
-    "should contain a LOCAL node for the captured `x`" in {
-      cpg.local.code("x").size shouldBe 1
+    "should contain one CAPTURE edge for the METHOD_REF" in {
+      cpg.methodRef._closureBindingViaCaptureOut.size shouldBe 1
     }
 
     "should contain a LOCAL node for the captured `baz`" in {
@@ -102,20 +93,31 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       cb._refOut.size shouldBe 1
     }
 
-    "should contain a CLOSURE_BINDING node for captured `x` with the correct props set" in {
-      val List(cb) = cpg.closureBinding.filter(_._methodParameterInViaRefOut.name.l == List("x")).l
-      cb.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      cb.closureBindingId shouldBe Some("simple.pkg.Bar.foo.<lambda>0.x")
-
-      cb._refOut.size shouldBe 1
+    "should not contain closure bindings for unused params" in {
+      cpg.closureBinding.filter(_._methodParameterInViaRefOut.name.l == List("x")).l shouldBe empty
+      cpg.closureBinding.filter(_._methodParameterInViaRefOut.name.l == List("this")).l shouldBe empty
     }
+  }
 
-    "should contain a CLOSURE_BINDING node for captured `this` with the correct props set" in {
-      val List(cb) = cpg.closureBinding.filter(_._methodParameterInViaRefOut.name.l == List("this")).l
-      cb.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      cb.closureBindingId shouldBe Some("simple.pkg.Bar.foo.<lambda>0.this")
+  "CPG for code with a lambda should not capture unused locals or params" should {
+    val cpg = code("""
+        |package simple.pkg
+        |class Bar {
+        |   fun foo(x: String) {
+        |     val baz: String = "BAZ"
+        |     val unused: String = "UNUSED"
+        |     1.let { println(baz) }
+        |   }
+        |}
+        |""".stripMargin)
 
-      cb._refOut.size shouldBe 1
+    "should only capture the used local" in {
+      val List(methodRef)              = cpg.methodRef.l
+      val List(capturedClosureBinding) = methodRef._closureBindingViaCaptureOut.l
+
+      methodRef._closureBindingViaCaptureOut.size shouldBe 1
+      capturedClosureBinding._localViaRefOut.name.l shouldBe List("baz")
+      capturedClosureBinding._methodParameterInViaRefOut.l shouldBe empty
     }
   }
 
@@ -293,15 +295,29 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       p1.typeFullName shouldBe "java.util.Map$Entry"
     }
 
+    "should wire the synthetic `it` initializer to the generated destructured lambda parameter" in {
+      val List(lambdaMethod)      = cpg.method.fullName(".*lambda.*").l
+      val List(generatedParam)    = lambdaMethod.parameter.l
+      val List(tmpAssignmentCall) = lambdaMethod.ast.isCall.codeExact("tmp_1 = it").l
+      val List(itIdentifier)      = tmpAssignmentCall.astChildren.isIdentifier.nameExact("it").l
+
+      generatedParam.name.shouldBe(s"${Constants.DestructedParamNamePrefix}1")
+      itIdentifier.refsTo.collectAll[MethodParameterIn].name.l.shouldBe(List(generatedParam.name))
+      itIdentifier.refsTo.collectAll[MethodParameterIn].method.fullName.l.shouldBe(List(lambdaMethod.fullName))
+    }
+
     "should contain the correct initialization" in {
-      val List(_, _, localTmp, localIt, localK, localV) = cpg.method.fullName(".*lambda.*").local.l
+      val List(localTmp) = cpg.method.fullName(".*lambda.*").local.nameExact("tmp_1").l
       localTmp.name shouldBe "tmp_1"
       localTmp.typeFullName shouldBe "java.util.Map$Entry"
-      localIt.name shouldBe "it"
+
+      val List(localIt) = cpg.method.fullName(".*lambda.*").local.nameExact("it").l
       localIt.typeFullName shouldBe "java.util.Map$Entry"
-      localK.name shouldBe "k"
+
+      val List(localK) = cpg.method.fullName(".*lambda.*").local.nameExact("k").l
       localK.typeFullName shouldBe "java.lang.String"
-      localV.name shouldBe "v"
+
+      val List(localV) = cpg.method.fullName(".*lambda.*").local.nameExact("v").l
       localV.typeFullName shouldBe "int"
 
       val List(tmpAssignment, kAssignment, vAssignment) = cpg.method.fullName(".*lambda.*").ast.isCall.isAssignment.l
@@ -351,12 +367,14 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
 
     "should contain the correct initialization" in {
-      val List(_, _, localTmp, localIt, localK) = cpg.method.fullName(".*lambda.*").local.l
+      val List(localTmp) = cpg.method.fullName(".*lambda.*").local.nameExact("tmp_1").l
       localTmp.name shouldBe "tmp_1"
       localTmp.typeFullName shouldBe "java.util.Map$Entry"
-      localIt.name shouldBe "it"
+
+      val List(localIt) = cpg.method.fullName(".*lambda.*").local.nameExact("it").l
       localIt.typeFullName shouldBe "java.util.Map$Entry"
-      localK.name shouldBe "k"
+
+      val List(localK) = cpg.method.fullName(".*lambda.*").local.nameExact("k").l
       localK.typeFullName shouldBe "java.lang.String"
 
       val List(tmpAssignment, kAssignment) = cpg.method.fullName(".*lambda.*").ast.isCall.isAssignment.l
@@ -582,12 +600,47 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
 
     "should contain METHOD_REF nodes with the correct props set" in {
       val List(firstMethodRef: MethodRef, secondMethodRef: MethodRef) = cpg.methodRef.l
-      firstMethodRef.out(EdgeTypes.CAPTURE).size shouldBe 1
-      secondMethodRef.out(EdgeTypes.CAPTURE).size shouldBe 2
+      firstMethodRef._closureBindingViaCaptureOut.size shouldBe 1
+      secondMethodRef._closureBindingViaCaptureOut.size shouldBe 1
     }
 
-    "should contain three CLOSURE_BINDING nodes" in {
-      cpg.closureBinding.size shouldBe 3
+    "should contain explicit captured locals named `x` for each intermediate lambda" in {
+      val List(outerLambdaMethod) = cpg.method.nameExact(s"${Defines.ClosurePrefix}0").l
+      val List(innerLambdaMethod) = cpg.method.nameExact(s"${Defines.ClosurePrefix}1").l
+
+      val List(outerCapturedLocal) = outerLambdaMethod.local.nameExact("x").l
+      outerCapturedLocal.typeFullName shouldBe "java.lang.String"
+
+      val List(innerCapturedLocal) = innerLambdaMethod.local.nameExact("x").l
+      innerCapturedLocal.typeFullName shouldBe "java.lang.String"
+
+      outerLambdaMethod.local.nameExact("x").size shouldBe 1
+      innerLambdaMethod.local.nameExact("x").size shouldBe 1
+    }
+
+    "should contain two-step closure bindings for `x` (param -> outer lambda local -> inner lambda local)" in {
+      val List(outerLambdaMethod) = cpg.method.nameExact(s"${Defines.ClosurePrefix}0").l
+      val List(innerLambdaMethod) = cpg.method.nameExact(s"${Defines.ClosurePrefix}1").l
+      val outerClosureBindingId   = s"mypkg.foo.${Defines.ClosurePrefix}0.x"
+      val innerClosureBindingId   = s"mypkg.foo.${Defines.ClosurePrefix}0.${Defines.ClosurePrefix}1.x"
+
+      cpg.closureBinding.l.flatMap(_.closureBindingId).toSet shouldBe Set(outerClosureBindingId, innerClosureBindingId)
+
+      val List(outerClosureBinding) = cpg.closureBinding.filter(_.closureBindingId.contains(outerClosureBindingId)).l
+      outerClosureBinding._methodParameterInViaRefOut.name.l shouldBe List("x")
+      outerClosureBinding._methodParameterInViaRefOut.method.fullName.l shouldBe List("mypkg.foo:int(java.lang.String)")
+      outerClosureBinding._localViaRefOut.l shouldBe empty
+
+      val List(innerClosureBinding) = cpg.closureBinding.filter(_.closureBindingId.contains(innerClosureBindingId)).l
+      innerClosureBinding._localViaRefOut.name.l shouldBe List("x")
+      innerClosureBinding._localViaRefOut.method.fullName.l shouldBe List(outerLambdaMethod.fullName)
+      innerClosureBinding._methodParameterInViaRefOut.l shouldBe empty
+
+      innerLambdaMethod.local.nameExact("x").size shouldBe 1
+    }
+
+    "should contain exactly two CLOSURE_BINDING nodes" in {
+      cpg.closureBinding.size shouldBe 2
     }
   }
 

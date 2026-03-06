@@ -203,8 +203,8 @@ class ObjectExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = fals
         | """.stripMargin)
 
     "should contain a correctly lowered representation" in {
-      val List(_: Local, last: Return) =
-        cpg.method.nameExact("<lambda>0").block.astChildren.l: @unchecked
+      val List(last: Return) =
+        cpg.method.nameExact("<lambda>0").block.astChildren.isReturn.l
 
       val List(c: Call) = last.astChildren.isCall.l
       c.methodFullName shouldBe "mypkg.addListener:void(mypkg.SomeInterface)"
