@@ -174,70 +174,72 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     (astParentType, astParentFullName)
   }
 
+  /** Creates the AST for an identifier expression. Resolves the identifier to one of:
+    *   - A `Self` type reference (enclosing type).
+    *   - An implicit `self.member` field access when the identifier is a member of the enclosing type declaration.
+    *   - An implicit `self.member` field access inferred from compiler metadata (swift-build mode only).
+    *   - A standalone type reference when the compiler reports a `.Type` metatype (swift-build mode only).
+    *   - A regular variable / captured-variable identifier as a fallback.
+    */
   protected def astForIdentifier(node: SwiftNode): Ast = {
     val identifierName = code(node)
-    if (identifierName == "Self") {
-      val tpe      = fullNameOfEnclosingTypeDecl()
-      val selfNode = typeRefNode(node, "Self", tpe)
-      Ast(selfNode)
-    } else if (scope.variableIsInTypeDeclScope(identifierName)) {
-      // we found it as member of the surrounding type decl
-      // (Swift does not allow to access any member / function of the outer class instance)
-      val tpe = scope.typeDeclFullNameForMember(identifierName).getOrElse(fullNameOfEnclosingTypeDecl())
+    val variableOption = scope.lookupVariable(identifierName)
+    val isUnresolved   = variableOption.isEmpty
 
-      val selfNode = if (scope.isInStaticMethodScope) {
-        typeRefNode(node, "Self", tpe)
-      } else {
-        val selfIdNode = identifierNode(node, "self", "self", tpe)
-        scope.addVariableReference("self", selfIdNode, selfIdNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
-        selfIdNode
-      }
-
-      val variableOption = scope.lookupVariable(identifierName)
-      val callTpe        = variableOption.map(_._2).getOrElse(Defines.Any)
-      fieldAccessAst(node, node, Ast(selfNode), s"${selfNode.code}.$identifierName", identifierName, callTpe)
-    } else {
-      if (
-        config.swiftBuild &&
-        scope.lookupVariable(identifierName).isEmpty &&
-        fullnameProvider.declFullname(node).nonEmpty
-      ) {
-        val tpe = fullNameOfEnclosingTypeDecl()
-        val selfNode = if (scope.isInStaticMethodScope) {
-          typeRefNode(node, "Self", tpe)
-        } else {
-          val selfIdNode = identifierNode(node, "self", "self", tpe)
-          scope.addVariableReference("self", selfIdNode, selfIdNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
-          selfIdNode
-        }
-
+    identifierName match {
+      // `Self` always refers to the enclosing type.
+      case "Self" =>
+        Ast(typeRefNode(node, "Self", fullNameOfEnclosingTypeDecl()))
+      // Identifier found as a member of the surrounding type decl.
+      // Swift does not allow accessing members of an outer class instance,
+      // so we synthesise an implicit `self.<member>` (or `Self.<member>` in static contexts).
+      case name if scope.variableIsInTypeDeclScope(name) =>
+        val tpe     = scope.typeDeclFullNameForMember(name).getOrElse(fullNameOfEnclosingTypeDecl())
+        val callTpe = variableOption.map(_._2).getOrElse(Defines.Any)
+        fieldAccessAstForSelf(node, name, tpe, callTpe)
+      // In swift-build mode the compiler may know this identifier is a member even though
+      // it is not yet visible in our scope. If the identifier is unresolved locally but
+      // the compiler provides a declaration full name, treat it as an implicit self-access.
+      case name if config.swiftBuild && isUnresolved && fullnameProvider.declFullname(node).nonEmpty =>
+        val tpe     = fullNameOfEnclosingTypeDecl()
         val callTpe = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
         registerType(callTpe)
-        fieldAccessAst(node, node, Ast(selfNode), s"${selfNode.code}.$identifierName", identifierName, callTpe)
-      } else {
-        if (
-          config.swiftBuild &&
-          scope.lookupVariable(identifierName).isEmpty &&
-          fullnameProvider.typeFullnameRaw(node).exists(_.endsWith(".Type"))
-        ) {
-          val tpe = fullnameProvider.typeFullname(node).get
-          registerType(tpe)
-          Ast(typeRefNode(node, identifierName, tpe))
-        } else {
-          // otherwise it must come from a variable (potentially captured from an outer scope)
-          val identNode      = identifierNode(node, identifierName)
-          val variableOption = scope.lookupVariable(identifierName)
-          val tpe = variableOption match {
-            case Some((_, variableTypeName)) if variableTypeName != Defines.Any => variableTypeName
-            case None if identNode.typeFullName != Defines.Any                  => identNode.typeFullName
-            case _                                                              => Defines.Any
-          }
-          identNode.typeFullName = tpe
-          scope.addVariableReference(identifierName, identNode, tpe, EvaluationStrategies.BY_REFERENCE)
-          Ast(identNode)
+        fieldAccessAstForSelf(node, name, tpe, callTpe)
+      // In swift-build mode, an unresolved identifier whose compiler-reported type ends
+      // with `.Type` is a reference to a type (e.g. `MyStruct` used as a value).
+      case name
+          if config.swiftBuild && isUnresolved &&
+            fullnameProvider.typeFullnameRaw(node).exists(_.endsWith(".Type")) =>
+        val tpe = fullnameProvider.typeFullname(node).get
+        registerType(tpe)
+        Ast(typeRefNode(node, name, tpe))
+      // Fallback: a regular variable or a captured variable from an outer scope.
+      case name =>
+        val identNode = identifierNode(node, name)
+        val tpe = variableOption match {
+          case Some((_, variableTypeName)) if variableTypeName != Defines.Any => variableTypeName
+          case None if identNode.typeFullName != Defines.Any                  => identNode.typeFullName
+          case _                                                              => Defines.Any
         }
-      }
+        identNode.typeFullName = tpe
+        scope.addVariableReference(name, identNode, tpe, EvaluationStrategies.BY_REFERENCE)
+        Ast(identNode)
     }
+  }
+
+  /** Builds a `self.<identifierName>` (or `Self.<identifierName>`) field-access AST. In a static method scope the
+    * receiver is a `Self` type reference; otherwise it is a `self` identifier whose variable reference is registered in
+    * the current scope.
+    */
+  private def fieldAccessAstForSelf(node: SwiftNode, identifierName: String, selfTpe: String, callTpe: String): Ast = {
+    val selfNode = if (scope.isInStaticMethodScope) {
+      typeRefNode(node, "Self", selfTpe)
+    } else {
+      val selfIdNode = identifierNode(node, "self", "self", selfTpe)
+      scope.addVariableReference("self", selfIdNode, selfIdNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
+      selfIdNode
+    }
+    fieldAccessAst(node, node, Ast(selfNode), s"${selfNode.code}.$identifierName", identifierName, callTpe)
   }
 
   protected def registerType(typeFullName: String): Unit = {

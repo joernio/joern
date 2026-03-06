@@ -109,15 +109,11 @@ object AstGenRunner {
   }
 
   lazy private val executableDir: String = {
-    val dir        = getClass.getProtectionDomain.getCodeSource.getLocation.toString
-    val indexOfLib = dir.lastIndexOf("lib")
-    val fixedDir = if (indexOfLib != -1) {
-      new java.io.File(dir.substring("file:".length, indexOfLib)).toString
-    } else {
-      val indexOfTarget = dir.lastIndexOf("target")
-      if (indexOfTarget != -1) new java.io.File(dir.substring("file:".length, indexOfTarget)).toString else "."
-    }
-    Paths.get(fixedDir, "/bin/astgen").toAbsolutePath.toString
+    val packagePath = Paths.get(getClass.getProtectionDomain.getCodeSource.getLocation.toURI)
+    io.shiftleft.semanticcpg.utils.ExternalCommand
+      .executableDir(packagePath)
+      .resolve("astgen")
+      .toString
   }
 
   private def hasCompatibleAstGenVersionAtPath(astGenVersion: String, path: Option[String]): Boolean = {
