@@ -77,7 +77,41 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     val fullName = nameRenderer.combineFunctionFullName(descFullName, signature)
 
     val _methodNode = methodNode(ktFn, ktFn.getName, fullName, signature, relativizedPath)
-    scope.pushNewScope(_methodNode)
+    val closureBindingEntriesForCaptured =
+      if (ktFn.getName == "main") {
+        scope
+          .pushClosureScope(_methodNode)
+          .collect { case node: NewLocal => NodeContext(node, node.name, node.typeFullName) }
+          .map { capturedNodeContext =>
+            val closureBindingId = s"${_methodNode.fullName}:${capturedNodeContext.name}"
+            val closureBinding   = closureBindingNode(closureBindingId, EvaluationStrategies.BY_REFERENCE)
+            (closureBinding, capturedNodeContext)
+          }
+      } else {
+        scope.pushNewScope(_methodNode)
+        List.empty
+      }
+    val methodRefForCapture =
+      if (closureBindingEntriesForCaptured.nonEmpty) {
+        val methodTypeDeclFullName = fullName.split(":").head
+        Some(methodRefNode(ktFn, ktFn.getName, fullName, methodTypeDeclFullName))
+      } else {
+        None
+      }
+
+    val localsForCaptured = closureBindingEntriesForCaptured.map { case (closureBinding, capturedNodeContext) =>
+      val node =
+        localNode(
+          ktFn,
+          capturedNodeContext.name,
+          capturedNodeContext.name,
+          capturedNodeContext.typeFullName,
+          closureBinding.closureBindingId
+        )
+      scope.addToScope(capturedNodeContext.name, node)
+      node
+    }
+
     methodAstParentStack.push(_methodNode)
 
     val isExtensionMethod = funcDesc.getExtensionReceiverParameter != null
@@ -127,7 +161,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
         astForParameter(p, valueParamStartIndex + idx - 1)
       }
     val bodyAst = Option(ktFn.getBodyBlockExpression) match {
-      case Some(bodyBlockExpression) => astForBlock(bodyBlockExpression, None, None)
+      case Some(bodyBlockExpression) =>
+        astForBlock(bodyBlockExpression, None, None, localsForCaptures = localsForCaptured)
       case None =>
         Option(ktFn.getBodyExpression)
           .map { expr =>
@@ -140,15 +175,20 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
                 val returnAst_           = returnAst(returnNode(expr, Constants.RetCode), Seq(lastStatementAst))
                 (allStatementsButLast ++ Seq(returnAst_)).toList
               } else List()
-            blockAst(bodyBlock, blockChildAsts)
+            blockAst(bodyBlock, localsForCaptured.map(Ast(_)) ++ blockChildAsts)
           }
           .getOrElse {
             val bodyBlock = blockNode(ktFn, "<empty>", TypeConstants.Any)
-            blockAst(bodyBlock, List[Ast]())
+            blockAst(bodyBlock, localsForCaptured.map(Ast(_)))
           }
     }
     methodAstParentStack.pop()
     scope.popScope()
+
+    val closureBindingDefs = closureBindingEntriesForCaptured.map { case (closureBinding, node) =>
+      ClosureBindingDef(closureBinding, methodRefForCapture, node.node)
+    }
+    closureBindingDefs.foreach(closureBindingDefQueue.prepend)
 
     val explicitTypeName  = Option(ktFn.getTypeReference).map(_.getText).getOrElse(TypeConstants.Any)
     val typeFullName      = registerType(nameRenderer.typeFullName(funcDesc.getReturnType).getOrElse(explicitTypeName))
@@ -182,6 +222,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     val annotationEntries = ktFn.getAnnotationEntries.asScala.map(astForAnnotationEntry).toSeq
     methodAst(_methodNode, thisParameterAsts ++ methodParametersAsts, bodyAst, _methodReturnNode, modifiers)
       .withChildren(annotationEntries)
+      .withChildren(methodRefForCapture.map(Ast(_)).toSeq)
   }
 
   private def astsForDestructuring(param: KtParameter): Seq[Ast] = {
@@ -369,7 +410,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     scope.popScope()
     val closureBindingDefs = closureBindingEntriesForCaptured.collect { case (closureBinding, node) =>
-      ClosureBindingDef(closureBinding, _methodRefNode, node.node)
+      ClosureBindingDef(closureBinding, Some(_methodRefNode), node.node)
     }
     closureBindingDefs.foreach(closureBindingDefQueue.prepend)
     lambdaAstQueue.prepend(lambdaMethodAst)
@@ -496,7 +537,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     scope.popScope()
     val closureBindingDefs = closureBindingEntriesForCaptured.collect { case (closureBinding, node) =>
-      ClosureBindingDef(closureBinding, _methodRefNode, node.node)
+      ClosureBindingDef(closureBinding, Some(_methodRefNode), node.node)
     }
     closureBindingDefs.foreach(closureBindingDefQueue.prepend)
     lambdaAstQueue.prepend(lambdaMethodAst)
