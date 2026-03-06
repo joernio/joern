@@ -618,11 +618,10 @@ class AstCreator(
   protected def createReceiverAccess(
     expr: KtCallableReferenceExpression,
     receiverTypeFullName: String,
-    receiverTypeName: String,
     implementationTypeFullName: String
   ): Ast = {
     val thisIdent  = identifierNode(expr, "this", "this", implementationTypeFullName)
-    val fieldIdent = fieldIdentifierNode(expr, "receiver", "receiver")
+    val fieldIdent = fieldIdentifierNode(expr, Constants.ReceiverName, Constants.ReceiverName)
     val receiverFieldAccess = callNode(
       expr,
       "this.receiver",
@@ -631,7 +630,7 @@ class AstCreator(
       DispatchTypes.STATIC_DISPATCH,
       None,
       Some(receiverTypeFullName)
-    )
+    ).argumentIndex(0)
     callAst(receiverFieldAccess, Seq(Ast(thisIdent), Ast(fieldIdent)), None)
   }
 
@@ -708,17 +707,18 @@ class AstCreator(
     val paramString      = samInfo.samMethodParams.map(_._1).mkString(", ")
     val returnType       = samInfo.samMethodReturn
     val methodReturn     = methodReturnNode(samInfo.expr, registerType(returnType))
-    val receiverTypeName = samInfo.receiverTypeFullName.split('.').last
     val calledMethodName = samInfo.methodRefName.split('.').last
 
     val callCode   = s"receiver.${calledMethodName}(${paramString})"
     val blockNode_ = blockNode(samInfo.expr, s"return $callCode", TypeConstants.JavaLangVoid)
 
     val (dispatchType, receiverAstOpt) = if (samInfo.isStaticReference) {
-      (DispatchTypes.STATIC_DISPATCH, None)
+      val staticReceiverArg =
+        createReceiverAccess(samInfo.expr, samInfo.receiverTypeFullName, samInfo.samImplClass)
+      (DispatchTypes.STATIC_DISPATCH, Some(staticReceiverArg))
     } else {
       val receiverAst =
-        createReceiverAccess(samInfo.expr, samInfo.receiverTypeFullName, receiverTypeName, samInfo.inheritsFrom.last)
+        createReceiverAccess(samInfo.expr, samInfo.receiverTypeFullName, samInfo.samImplClass)
       (DispatchTypes.DYNAMIC_DISPATCH, Some(receiverAst))
     }
 
@@ -761,8 +761,8 @@ class AstCreator(
 
     val ctorReceiverParam = parameterInNode(
       samInfo.expr,
-      "receiver",
-      "receiver",
+      Constants.ReceiverName,
+      Constants.ReceiverName,
       1,
       false,
       EvaluationStrategies.BY_VALUE,
@@ -777,14 +777,19 @@ class AstCreator(
       Seq(samInfo.samImplClass)
     )
 
-    val receiverFieldIdentifier = fieldIdentifierNode(samInfo.expr, "receiver", "receiver")
+    val receiverFieldIdentifier = fieldIdentifierNode(samInfo.expr, Constants.ReceiverName, Constants.ReceiverName)
     val receiverFieldAccessNode =
       operatorCallNode(samInfo.expr, s"this.receiver", Operators.fieldAccess, Option(registerType(receiverType)))
     val receiverFieldAccessAst =
       callAst(receiverFieldAccessNode, Seq(Ast(thisIdentifier), Ast(receiverFieldIdentifier)))
 
     val receiverArgIdent =
-      identifierNode(samInfo.expr, "receiver", shortenCode("receiver"), registerType(receiverType)).argumentIndex(2)
+      identifierNode(
+        samInfo.expr,
+        Constants.ReceiverName,
+        shortenCode(Constants.ReceiverName),
+        registerType(receiverType)
+      ).argumentIndex(2)
     val receiverArgAst = Ast(receiverArgIdent).withRefEdge(receiverArgIdent, ctorReceiverParam)
 
     val receiverAssignmentNode =

@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeSubstitutor
 import org.jetbrains.kotlin.types.Variance
+import org.jetbrains.kotlin.descriptors.Modality
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
@@ -778,7 +779,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
             .getContributedDescriptors(DescriptorKindFilter.FUNCTIONS, _ => true)
             .asScala
             .collectFirst {
-              case functionDescriptor: FunctionDescriptor if functionDescriptor.getModality.toString == "ABSTRACT" =>
+              case functionDescriptor: FunctionDescriptor if functionDescriptor.getModality == Modality.ABSTRACT =>
                 functionDescriptor
             }
         }

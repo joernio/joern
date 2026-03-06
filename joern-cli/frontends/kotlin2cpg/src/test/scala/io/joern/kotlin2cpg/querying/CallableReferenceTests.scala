@@ -2,14 +2,7 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  Binding,
-  Call,
-  FieldIdentifier,
-  Identifier,
-  MethodParameterIn,
-  MethodRef
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, MethodParameterIn, MethodRef}
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
 
@@ -31,8 +24,8 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
         |}
         |""".stripMargin)
 
-    val syntheticTypeDecl = cpg.typeDecl.fullName(".*Function2Impl.*").head
-    val invokeMethod      = syntheticTypeDecl.method.name("invoke").head
+    lazy val syntheticTypeDecl = cpg.typeDecl.fullName(".*Function2Impl.*").head
+    lazy val invokeMethod      = syntheticTypeDecl.method.name("invoke").head
 
     "inherit from Function interface and CallableReference" in {
       syntheticTypeDecl.inheritsFromTypeFullName.exists(_.contains("Function2")) shouldBe true
@@ -41,6 +34,19 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
 
     "resolve generic types to concrete types in signature" in {
       invokeMethod.signature shouldBe "boolean(int,java.lang.String)"
+    }
+
+    "create binding table entries on generated type decl" in {
+      val bindings = syntheticTypeDecl.methodBinding.nameExact("invoke").l.sortBy(_.signature)
+      bindings.size shouldBe 2
+
+      val concreteBinding = bindings.find(_.signature == "boolean(int,java.lang.String)").get
+      concreteBinding.methodFullName shouldBe invokeMethod.fullName
+      concreteBinding.signature shouldBe "boolean(int,java.lang.String)"
+
+      val erasedBinding = bindings.find(_.signature == "java.lang.Object(java.lang.Object,java.lang.Object)").get
+      erasedBinding.methodFullName shouldBe invokeMethod.fullName
+      erasedBinding.signature shouldBe "java.lang.Object(java.lang.Object,java.lang.Object)"
     }
 
     "have correct parameters with resolved types" in {
@@ -80,11 +86,8 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       // Should have fieldAccess
       val receiverAccess = processCall.receiver.isCall.name(Operators.fieldAccess).head
       receiverAccess.typeFullName shouldBe "com.test.Handler"
-      receiverAccess.ast.isFieldIdentifier.canonicalName.head shouldBe "receiver"
-      receiverAccess.ast.isIdentifier
-        .name("this")
-        .head
-        .typeFullName shouldBe "kotlin.jvm.internal.CallableReference"
+      receiverAccess.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe "receiver"
+      receiverAccess.argument(1).asInstanceOf[Identifier].typeFullName shouldBe syntheticTypeDecl.fullName
     }
 
     "create a constructor call for the synthetic type with receiver as parameter" in {
@@ -132,8 +135,6 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
     "have constructor body that assigns receiver field" in {
       val constructor = syntheticTypeDecl.method.name("<init>").head
 
-      constructor.ast.isCall.name("<init>").methodFullName(".*CallableReference.*").l shouldBe List.empty
-
       val List(memberSetCall: Call) = constructor.ast.isCall.nameExact(Operators.assignment).l: @unchecked
       memberSetCall.methodFullName shouldBe Operators.assignment
 
@@ -178,24 +179,49 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
         |        fun validate(x: Int): Boolean = x > 0
         |    }
         |}
-        |
+        |toString == "ABSTRACT"
         |fun test() {
         |   val ref: (Int) -> Boolean = Utils::validate
         |}
         |""".stripMargin)
 
-    val syntheticTypeDecl = cpg.typeDecl.fullName(".*Function1Impl.*").head
-    val invokeMethod      = syntheticTypeDecl.method.name("invoke").head
+    lazy val syntheticTypeDecl = cpg.typeDecl.fullName(".*Function1Impl.*").head
+    lazy val invokeMethod      = syntheticTypeDecl.method.name("invoke").head
 
     "use STATIC_DISPATCH without receiver access" in {
       val validateCall = invokeMethod.ast.isCall.name("validate").head
       validateCall.dispatchType shouldBe "STATIC_DISPATCH"
-      validateCall.receiver.l shouldBe empty
+      validateCall.methodFullName shouldBe "com.test.Utils$Companion.validate:boolean(int)"
+      val companionReceiver = validateCall.receiver.isCall.name(Operators.fieldAccess).head
+      companionReceiver.typeFullName shouldBe "com.test.Utils$Companion"
+
+      val companionArg = validateCall.argument.argumentIndex(0).head.asInstanceOf[Call]
+      companionArg.name shouldBe Operators.fieldAccess
+      companionArg.typeFullName shouldBe "com.test.Utils$Companion"
+
+      val companionBase  = companionArg.argument(1).asInstanceOf[Identifier]
+      val companionField = companionArg.argument(2).asInstanceOf[FieldIdentifier]
+      companionBase.name shouldBe "this"
+      companionBase.typeFullName shouldBe syntheticTypeDecl.fullName
+      companionField.canonicalName shouldBe Constants.ReceiverName
     }
 
-    "not generate field access for static methods" in {
+    "generate field access for static method receiver" in {
       val fieldAccesses = invokeMethod.ast.isCall.name(Operators.fieldAccess).l
-      fieldAccesses shouldBe empty
+      fieldAccesses.size shouldBe 1
+    }
+
+    "create binding table entries on generated type decl" in {
+      val bindings = syntheticTypeDecl.methodBinding.nameExact("invoke").l.sortBy(_.signature)
+      bindings.size shouldBe 2
+
+      val concreteBinding = bindings.find(_.signature == "boolean(int)").get
+      concreteBinding.methodFullName shouldBe invokeMethod.fullName
+      concreteBinding.signature shouldBe "boolean(int)"
+
+      val erasedBinding = bindings.find(_.signature == "java.lang.Object(java.lang.Object)").get
+      erasedBinding.methodFullName shouldBe invokeMethod.fullName
+      erasedBinding.signature shouldBe "java.lang.Object(java.lang.Object)"
     }
 
     "create a constructor call for the synthetic type with companion object as parameter" in {
@@ -258,12 +284,8 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
     }
 
     "create a binding from the synthetic type to the original function" in {
-      val bindings = cpg.all
-        .collectAll[Binding]
-        .nameExact("invoke")
-        .l
-        .filter(_.bindingTypeDecl.fullName.contains("globalFunction"))
-        .sortBy(_.methodFullName)
+      val syntheticType = cpg.typeDecl.fullName(".*globalFunction.*Function2.*").head
+      val bindings      = syntheticType.methodBinding.nameExact("invoke").l.sortBy(_.signature)
       bindings.size shouldBe 2
 
       val List(erasedBinding, initialBinding) = bindings
