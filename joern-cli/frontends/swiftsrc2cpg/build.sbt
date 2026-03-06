@@ -7,7 +7,7 @@ import scala.util.Try
 name := "swiftsrc2cpg"
 
 dependsOn(
-  Projects.dataflowengineoss % "compile->compile;test->test",
+  Projects.dataflowengineoss % "test->test",
   Projects.x2cpg             % "compile->compile;test->test",
   Projects.linterRules       % ScalafixConfig
 )
@@ -29,7 +29,8 @@ libraryDependencies ++= Seq(
   "com.google.code.gson" % "gson" % Versions.gson,
   // to handle property list files of various formats (i.e., binary and plain XML)
   "com.googlecode.plist" % "dd-plist"  % "1.28",
-  "org.scalatest"       %% "scalatest" % Versions.scalatest % Test
+  "org.scalatest"       %% "scalatest" % Versions.scalatest % Test,
+  "org.scala-lang.modules" %% "scala-parallel-collections" % Versions.scalaParallel
 )
 
 Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc-version", version.value)

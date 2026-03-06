@@ -3,7 +3,7 @@ name := "kotlin2cpg"
 val kotlinVersion = "2.2.20"
 
 dependsOn(
-  Projects.dataflowengineoss  % "compile->compile;test->test",
+  Projects.dataflowengineoss  % "test->test",
   Projects.x2cpg              % "compile->compile;test->test",
   Projects.javasrc2cpg        % "compile->compile;test->test",
   Projects.linterRules % ScalafixConfig
