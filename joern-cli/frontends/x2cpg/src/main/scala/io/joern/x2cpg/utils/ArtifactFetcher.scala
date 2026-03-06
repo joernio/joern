@@ -136,7 +136,13 @@ class ArtifactFetcher(val cacheDir: Path) {
               throw new RuntimeException(s"Hash mismatch: expected ${artifact.sha256}, got $downloadedHash")
             }
 
-            Files.move(tmpFile, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+            try {
+              Files.move(tmpFile, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+            } catch {
+              case _: java.nio.file.AtomicMoveNotSupportedException =>
+                // if the repo and tmp are on different partitions, atomic move isn't supported
+                Files.move(tmpFile, target, StandardCopyOption.REPLACE_EXISTING)
+            }
             logger.debug(s"Cached ${artifact.url} at $target")
             target
           } match {
