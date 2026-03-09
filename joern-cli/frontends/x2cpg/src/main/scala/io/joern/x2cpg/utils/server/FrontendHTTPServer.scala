@@ -48,9 +48,8 @@ class FrontendHTTPServer(executor: ExecutorService, handleRequest: Array[String]
 
   /** Capture the context classloader at construction time so handler threads can use it. This is necessary because
     * com.sun.net.httpserver executor threads may not inherit the correct classloader, which causes issues with
-    * ConfigFactory.load not finding application.conf resources.
-    * Note: this surfaced only with `csharpsrc2cpg/testOnly io.joern.csharpsrc2cpg.io.CSharp2CpgHTTPServerTests` for
-    * some reason...
+    * ConfigFactory.load not finding application.conf resources. Note: this surfaced only with `csharpsrc2cpg/testOnly
+    * io.joern.csharpsrc2cpg.io.CSharp2CpgHTTPServerTests` for some reason...
     */
   private val contextClassLoader: ClassLoader = Thread.currentThread().getContextClassLoader
 
