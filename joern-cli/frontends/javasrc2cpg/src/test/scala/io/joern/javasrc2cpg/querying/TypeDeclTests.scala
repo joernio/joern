@@ -43,6 +43,43 @@ class NewTypeDeclTests extends JavaSrcCode2CpgFixture {
     }
   }
 
+  "a Java 25 compact class declaration with a package declaration" should {
+    val cpg = code("""
+        |package foo.bar;
+        |
+        |String s = "hello";
+        |
+        |void main(ArrayList<String> list) {
+        |  list.add(s);
+        |}
+        |""".stripMargin)
+
+    "contain a typeDecl with the correct fields set for the compact class" in {
+      inside(cpg.typeDecl.internal.l) { case List(compactDecl) =>
+        compactDecl.name shouldBe "$COMPACT_CLASS"
+        compactDecl.fullName shouldBe "foo.bar.$COMPACT_CLASS"
+        compactDecl.inheritsFromTypeFullName.l shouldBe List("java.lang.Object")
+      }
+    }
+
+    "contain a member node for s" in {
+      inside(cpg.member.name("s").l) { case List(sMember) =>
+        sMember.typeFullName shouldBe "java.lang.String"
+        sMember.astParent.isInstanceOf[TypeDecl] shouldBe true
+        sMember.astParent.asInstanceOf[TypeDecl].fullName shouldBe "foo.bar.$COMPACT_CLASS"
+      }
+    }
+
+    "contain the main method with the correct full name" in {
+      inside(cpg.method("main").l) { case List(mainMethod) =>
+        mainMethod.fullName shouldBe "foo.bar.$COMPACT_CLASS.main:void(java.util.ArrayList)"
+        inside(mainMethod.parameter.index(1).l) { case List(listParam) =>
+          listParam.typeFullName shouldBe "java.util.ArrayList"
+        }
+      }
+    }
+  }
+
   "constructors with access modifiers" should {
     "have correct public modifier" in {
       val cpg = code("""

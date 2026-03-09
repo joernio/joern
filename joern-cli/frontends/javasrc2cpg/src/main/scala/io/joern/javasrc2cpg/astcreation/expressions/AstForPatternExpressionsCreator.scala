@@ -279,6 +279,16 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
       .map(_.getDeclaredFields.asScala.map(_.getName).toList)
       .getOrElse(patternList.map(_ => Defines.UnknownField))
 
+    // The PatternExpr type hierarchy is now
+    //
+    // ComponentPatternExpr
+    // |-- MatchAllPatternExpr (doesn't have a type)
+    // |-- PatternExpr (ABC for patterns with types)
+    //     |-- TypePatternExpr
+    //     |-- RecordPatternExpr
+    //
+    // For the purposes of our lowering, we only care about MatchAllPatternExpr when getting the field names
+    // corresponding to the patterns in the list (the zip here), and after that we ignore them.
     patternList.zip(fieldNames).collect { case (pat: PatternExpr, fieldName) => (pat, fieldName) }.map {
       case (childPatternExpr, fieldName) =>
         val childTypeFullName = getPatternTypeFullName(childPatternExpr) match {
