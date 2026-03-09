@@ -115,6 +115,8 @@ object ExternalCommand {
     fixedDir.resolve("bin/").toAbsolutePath
   }
 
+  private val BloopDirPattern = """"directory"\s*:\s*"([^"]+)"""".r
+
   /** Resolves the actual project directory when running under Bloop. Bloop stores compiled classes under
     * `.bloop/<projectName>/...` at the workspace root, so we read the project's Bloop config JSON
     * (`.bloop/<projectName>.json`) to find the real project directory.
@@ -133,11 +135,12 @@ object ExternalCommand {
       val projectName   = if (sepIdx >= 0) afterBloop.substring(0, sepIdx) else afterBloop
       val configFile    = workspaceRoot.resolve(".bloop").resolve(s"$projectName.json")
 
-      val content    = IOUtils.readLinesInFile(configFile).mkString("\n")
-      val dirPattern = """"directory"\s*:\s*"([^"]+)"""".r
-      dirPattern.findFirstMatchIn(content).map(m => Paths.get(m.group(1)))
+      val content = IOUtils.readLinesInFile(configFile).mkString("\n")
+      BloopDirPattern.findFirstMatchIn(content).map(m => Paths.get(m.group(1)))
     } catch {
-      case NonFatal(_) => None
+      case NonFatal(e) =>
+        logger.warn(s"Failed to resolve bloop project directory for $packagePath", e)
+        None
     }
   }
 
