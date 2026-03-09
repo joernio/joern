@@ -279,24 +279,25 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
       .map(_.getDeclaredFields.asScala.map(_.getName).toList)
       .getOrElse(patternList.map(_ => Defines.UnknownField))
 
-    patternList.collect { case pat: PatternExpr => pat }.zip(fieldNames).map { case (childPatternExpr, fieldName) =>
-      val childTypeFullName = getPatternTypeFullName(childPatternExpr) match {
-        case typeFullName if isResolvedTypeFullName(typeFullName) => Option(typeFullName)
-        case _                                                    => None
-      }
+    patternList.zip(fieldNames).collect { case (pat: PatternExpr, fieldName) => (pat, fieldName) }.map {
+      case (childPatternExpr, fieldName) =>
+        val childTypeFullName = getPatternTypeFullName(childPatternExpr) match {
+          case typeFullName if isResolvedTypeFullName(typeFullName) => Option(typeFullName)
+          case _                                                    => None
+        }
 
-      val fieldTypeFullName = resolvedRecordType
-        .flatMap(_.getTypeDeclaration.toScala)
-        .flatMap(typeDecl => tryWithSafeStackOverflow(typeDecl.getField(fieldName).getType).toOption)
-        .flatMap(typeInfoCalc.fullName)
+        val fieldTypeFullName = resolvedRecordType
+          .flatMap(_.getTypeDeclaration.toScala)
+          .flatMap(typeDecl => tryWithSafeStackOverflow(typeDecl.getField(fieldName).getType).toOption)
+          .flatMap(typeInfoCalc.fullName)
 
-      val childIsBranchingNode =
-        childPatternExpr.isRecordPatternExpr && childPatternExpr.asRecordPatternExpr().getPatternList.size() > 1
-      val childTypeIsResolved = childTypeFullName.exists(isResolvedTypeFullName)
-      val requiresTemporaryVariable =
-        childIsBranchingNode || !childTypeIsResolved || childTypeFullName != fieldTypeFullName
+        val childIsBranchingNode =
+          childPatternExpr.isRecordPatternExpr && childPatternExpr.asRecordPatternExpr().getPatternList.size() > 1
+        val childTypeIsResolved = childTypeFullName.exists(isResolvedTypeFullName)
+        val requiresTemporaryVariable =
+          childIsBranchingNode || !childTypeIsResolved || childTypeFullName != fieldTypeFullName
 
-      PatternInitNode(parentInitNode, childPatternExpr, fieldName, fieldTypeFullName, requiresTemporaryVariable)
+        PatternInitNode(parentInitNode, childPatternExpr, fieldName, fieldTypeFullName, requiresTemporaryVariable)
     }
   }
 

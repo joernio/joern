@@ -11,8 +11,8 @@ import java.util.jar.{JarEntry, JarFile}
 import scala.jdk.CollectionConverters.*
 import scala.util.{Try, Using}
 
-/** A ClassPath implementation that resolves classes by their actual package declaration in bytecode rather than by their
-  * path within the archive. This handles non-standard archive structures (e.g., fat JARs, repackaged JARs, JMODs)
+/** A ClassPath implementation that resolves classes by their actual package declaration in bytecode rather than by
+  * their path within the archive. This handles non-standard archive structures (e.g., fat JARs, repackaged JARs, JMODs)
   * where the entry path may not match the class's declared package.
   */
 class BytecodeIndexedClassPath(archivePath: String) extends ClassPath {
@@ -52,9 +52,12 @@ class BytecodeIndexedClassPath(archivePath: String) extends ClassPath {
   }
 
   override def find(classname: String): URL = {
-    classNameToEntry.get(classname).flatMap { entry =>
-      Try(new URI(s"$urlScheme:$jarFileURL!/${entry.getName}").toURL).toOption
-    }.orNull
+    classNameToEntry
+      .get(classname)
+      .flatMap { entry =>
+        Try(new URI(s"$urlScheme:$jarFileURL!/${entry.getName}").toURL).toOption
+      }
+      .orNull
   }
 
   override def openClassfile(classname: String): InputStream = {
