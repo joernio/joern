@@ -20,6 +20,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         typeDecl.fullName shouldBe "A"
         typeDecl.lineNumber shouldBe Some(2)
         typeDecl.code shouldBe "class A extends B implements C, D"
+        typeDecl.astParentFullName shouldBe "Test0.php:<global>"
+        typeDecl.astParentType shouldBe "METHOD"
       }
     }
 
@@ -206,9 +208,13 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       fooDecl.fullName shouldBe "Foo"
       fooDecl.code shouldBe "interface Foo"
       fooDecl.inheritsFromTypeFullName.isEmpty shouldBe true
+      fooDecl.astParentFullName shouldBe "Test0.php:<global>"
+      fooDecl.astParentType shouldBe "METHOD"
 
       inside(fooDecl.astChildren.l) { case List(fooMethodDecl: TypeDecl, fooMethod: Method) =>
         fooMethodDecl.fullName shouldBe "Foo.foo"
+        fooMethodDecl.astParentFullName shouldBe "Foo"
+        fooMethodDecl.astParentType shouldBe "TYPE_DECL"
 
         fooMethod.name shouldBe "foo"
         fooMethod.fullName shouldBe s"Foo.foo"
@@ -229,6 +235,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       fooDecl.fullName shouldBe "Foo"
       fooDecl.code shouldBe "interface Foo extends Bar, Baz"
       fooDecl.inheritsFromTypeFullName should contain theSameElementsAs List("Bar", "Baz")
+      fooDecl.astParentFullName shouldBe "Test0.php:<global>"
+      fooDecl.astParentType shouldBe "METHOD"
     }
   }
 
@@ -268,6 +276,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
     inside(cpg.typeDecl.name("Foo").l) { case List(fooDecl) =>
       fooDecl.fullName shouldBe "Foo"
       fooDecl.code shouldBe "enum Foo"
+      fooDecl.astParentFullName shouldBe "Test0.php:<global>"
+      fooDecl.astParentType shouldBe "METHOD"
 
       inside(fooDecl.astChildren.l) { case List(aMember: Member, bMember: Member) =>
         aMember.name shouldBe "A"
@@ -745,9 +755,13 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         case foo :: fooMethod :: fooDup :: fooDupMethod :: Nil =>
           foo.name shouldBe "Foo"
           foo.fullName shouldBe "Foo"
+          foo.astParentFullName shouldBe "Test0.php:<global>"
+          foo.astParentType shouldBe "METHOD"
 
           fooDup.name shouldBe "Foo"
           fooDup.fullName shouldBe "Foo<duplicate>0"
+          fooDup.astParentFullName shouldBe "Test0.php:<global>"
+          fooDup.astParentType shouldBe "METHOD"
         case xs => fail(s"Expected two typeDecls for Foo, got ${xs.name.mkString("[", ",", "]")}")
       }
     }
