@@ -146,8 +146,10 @@ class FrontendHTTPServer(executor: ExecutorService, handleRequest: Array[String]
     */
   def stop(): Unit = {
     if (isRunning) {
-      executor.shutdown()
       httpServer.stop(0)
+      httpServer = null
+      executor.shutdown()
+      executor.awaitTermination(10, TimeUnit.SECONDS)
       isRunning = false
       logger.debug("Server stopped.")
     }

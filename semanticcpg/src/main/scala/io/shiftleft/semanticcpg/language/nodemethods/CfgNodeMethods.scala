@@ -102,24 +102,30 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
   }
 
   def method: Method = node match {
-    case node: Method => node
-    case _: MethodParameterIn | _: MethodParameterOut | _: MethodReturn =>
-      walkUpAst(node)
-    case _: CallRepr if !node.isInstanceOf[Call] => walkUpAst(node)
-    case _: Annotation | _: AnnotationLiteral =>
-      node.inAst.collectAll[Method].headOption match {
-        case Some(method) =>
-          method
-        case _ =>
-          throw new RuntimeException(s"""|This method cannot be used on ANNOTATION or ANNOTATION_LITERAL nodes as they
-                                         |do not necessarily belong to a METHOD. This problem is caused by annotations
-                                         |invalidly implementing the CFG trait which we sadly cannot easily fix.
-                                         |As workaround you can use the `methodOption` extension on the annotation
-                                         |nodes, manually walk the AST or test a CONTAINS edge expansion to check if 
-                                         |an annotation is part of a method or not.
-                                         |""".stripMargin)
-      }
-    case _: Expression | _: JumpTarget => walkUpContains(node)
+    case method: Method                                                 => method
+    case _: MethodParameterIn | _: MethodParameterOut | _: MethodReturn => walkUpAst(node)
+    case callRepr: CallRepr if !callRepr.isInstanceOf[Call]             => walkUpAst(callRepr)
+    case annotation: Annotation                                         => methodFromAnnotation(annotation)
+    case annotationLiteral: AnnotationLiteral                           => methodFromAnnotation(annotationLiteral)
+    case expr: Expression                                               => methodViaContainsIn(expr)
+    case jumpTarget: JumpTarget                                         => methodViaContainsIn(jumpTarget)
+  }
+
+  private def methodViaContainsIn(node: CfgNode): Method = {
+    node._containsIn.collectAll[Method].head
+  }
+
+  // Annotation nodes may not be attached to a method because of their historic CFG modeling.
+  private def methodFromAnnotation(annotationNode: CfgNode): Method = {
+    annotationNode.inAst.collectAll[Method].headOption.getOrElse {
+      throw new RuntimeException(s"""|This method cannot be used on ANNOTATION or ANNOTATION_LITERAL nodes as they
+                                     |do not necessarily belong to a METHOD. This problem is caused by annotations
+                                     |invalidly implementing the CFG trait which we sadly cannot easily fix.
+                                     |As workaround you can use the `methodOption` extension on the annotation
+                                     |nodes, manually walk the AST or test a CONTAINS edge expansion to check if
+                                     |an annotation is part of a method or not.
+                                     |""".stripMargin)
+    }
   }
 
   /** Obtain hexadecimal string representation of lineNumber field.
@@ -131,35 +137,11 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
     node.lineNumber.map(_.toLong.toHexString)
   }
 
-}
-
-object CfgNodeMethods {
-
   /** Attention: this only works for some special CfgNodes that are guaranteed to always be direct children of a
     * method... that's why it's private!
     */
-  private def walkUpAst(node: CfgNode): Method =
+  private def walkUpAst(node: CfgNode): Method = {
     node.astParent.asInstanceOf[Method]
-
-  /** Attention: this only works for those `CfgNodes` that have `CONTAINS` edges (see `ContainsEdgePass`)... that's why
-    * it's private!
-    */
-  private def walkUpContains(node: StoredNode): Method = {
-    node._containsIn.loneElement("trying to walk `containsIn` edge") match {
-      case method: Method => method
-      case typeDecl: TypeDecl =>
-        typeDecl.astParent match {
-          case namespaceBlock: NamespaceBlock =>
-            // For Typescript, types may be declared in namespaces which we represent as NamespaceBlocks
-            namespaceBlock.inAst.collectAll[Method].headOption.orNull
-          case method: Method =>
-            // For a language such as Javascript, types may be dynamically declared under procedures
-            method
-          case _ =>
-            // there are csharp CPGs that have typedecls here, which is invalid.
-            null
-        }
-    }
   }
 
 }
