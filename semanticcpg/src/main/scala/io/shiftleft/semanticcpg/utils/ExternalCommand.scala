@@ -106,10 +106,8 @@ object ExternalCommand {
         while (dir.toString.contains("target"))
           dir = dir.getParent
         dir
-      } else if (packagePathAbsolute.toString.contains(s"${File.separator}.bloop${File.separator}")) {
-        resolveBloopProjectDir(packagePathAbsolute).getOrElse(Paths.get("."))
       } else {
-        Paths.get(".")
+        resolveBloopProjectDir(packagePathAbsolute).getOrElse(Paths.get("."))
       }
 
     fixedDir.resolve("bin/").toAbsolutePath
@@ -123,20 +121,17 @@ object ExternalCommand {
     */
   private def resolveBloopProjectDir(packagePath: Path): Option[Path] = {
     try {
-      val pathStr     = packagePath.toString
-      val sep         = File.separator
-      val bloopMarker = s"$sep.bloop$sep"
-      val bloopIdx    = pathStr.indexOf(bloopMarker)
-      if (bloopIdx < 0) return None
-
-      val workspaceRoot = Paths.get(pathStr.substring(0, bloopIdx))
-      val afterBloop    = pathStr.substring(bloopIdx + bloopMarker.length)
-      val sepIdx        = afterBloop.indexOf(File.separatorChar)
-      val projectName   = if (sepIdx >= 0) afterBloop.substring(0, sepIdx) else afterBloop
-      val configFile    = workspaceRoot.resolve(".bloop").resolve(s"$projectName.json")
-
-      val content = IOUtils.readLinesInFile(configFile).mkString("\n")
-      BloopDirPattern.findFirstMatchIn(content).map(m => Paths.get(m.group(1)))
+      val bloopDir  = Path.of(".bloop")
+      val nameCount = packagePath.getNameCount
+      (0 until nameCount).find(i => packagePath.getName(i) == bloopDir) match {
+        case Some(i) if i + 1 < nameCount =>
+          val workspaceRoot = packagePath.getRoot.resolve(packagePath.subpath(0, i))
+          val projectName   = packagePath.getName(i + 1).toString
+          val configFile    = workspaceRoot.resolve(".bloop").resolve(s"$projectName.json")
+          val content       = IOUtils.readLinesInFile(configFile).mkString("\n")
+          BloopDirPattern.findFirstMatchIn(content).map(m => Paths.get(m.group(1)))
+        case _ => None
+      }
     } catch {
       case NonFatal(e) =>
         logger.warn(s"Failed to resolve bloop project directory for $packagePath", e)
