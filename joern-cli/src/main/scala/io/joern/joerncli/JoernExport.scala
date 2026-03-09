@@ -116,7 +116,7 @@ object JoernExport {
         exportWithFlatgraphFormat(cpg, representation, outDir, GraphMLExporter)
       case Format.Graphson =>
         exportWithFlatgraphFormat(cpg, representation, outDir, GraphSONExporter)
-      case _ =>
+      case null =>
         throw new NotImplementedError(s"repr=$representation not yet supported for format=$format")
     }
   }
