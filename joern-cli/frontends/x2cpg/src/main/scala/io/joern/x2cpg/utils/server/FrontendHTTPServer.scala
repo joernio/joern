@@ -46,6 +46,14 @@ class FrontendHTTPServer(executor: ExecutorService, handleRequest: Array[String]
     * cached thread pool executor from `FrontendHTTPServer`.
     */
 
+  /** Capture the context classloader at construction time so handler threads can use it. This is necessary because
+    * com.sun.net.httpserver executor threads may not inherit the correct classloader, which causes issues with
+    * ConfigFactory.load not finding application.conf resources.
+    * Note: this surfaced only with `csharpsrc2cpg/testOnly io.joern.csharpsrc2cpg.io.CSharp2CpgHTTPServerTests` for
+    * some reason...
+    */
+  private val contextClassLoader: ClassLoader = Thread.currentThread().getContextClassLoader
+
   private var httpServer: HttpServer = uninitialized
   private var runningRequests        = 0
   private var lastRequest            = System.nanoTime()
@@ -66,6 +74,9 @@ class FrontendHTTPServer(executor: ExecutorService, handleRequest: Array[String]
         sendResponse(exchange, 405, "Method Not Allowed")
         return
       }
+
+      val previousClassLoader = Thread.currentThread().getContextClassLoader
+      Thread.currentThread().setContextClassLoader(contextClassLoader)
 
       synchronized {
         runningRequests += 1
@@ -95,6 +106,7 @@ class FrontendHTTPServer(executor: ExecutorService, handleRequest: Array[String]
             sendResponse(exchange, 200, outputDir)
         }
       } finally {
+        Thread.currentThread().setContextClassLoader(previousClassLoader)
         synchronized {
           runningRequests -= 1
           lastRequest = System.nanoTime()
