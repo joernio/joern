@@ -136,7 +136,7 @@ class ArtifactFetcher(val cacheDir: Path) {
               throw new RuntimeException(s"Hash mismatch: expected ${artifact.sha256}, got $downloadedHash")
             }
 
-            Files.move(tmpFile, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+            Files.move(tmpFile, target, StandardCopyOption.REPLACE_EXISTING)
             logger.debug(s"Cached ${artifact.url} at $target")
             target
           } match {

@@ -9,7 +9,6 @@ libraryDependencies ++= Seq(
   "com.michaelpollmeier" % "versionsort"  % Versions.versionSort,
   "org.apache.commons"   % "commons-exec" % Versions.commonsExec,
   /* End: AST Gen Dependencies */
-  "net.freeutils"  % "jlhttp"             % Versions.jlhttp,
   "org.gradle"     % "gradle-tooling-api" % Versions.gradleTooling % Optional,
   "org.scalatest" %% "scalatest"          % Versions.scalatest     % Test
 )
