@@ -14,9 +14,10 @@ class MetaDataPassTests extends CSharpCode2CpgFixture {
 
       metadata.language shouldBe "CSHARPSRC"
       metadata.root should not be empty
-      metadata.hash match
+      metadata.hash match {
         case Some(hash) => hash should startWith("bd9afc24308")
         case None       => fail("No input hash detected")
+      }
     }
 
   }

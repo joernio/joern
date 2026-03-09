@@ -10,7 +10,8 @@ import scala.util.Try
 
 package object cpgcreation {
 
-  /** For a given language, return CPG generator script
+  /** For a given language, return CPG generator script Note, this doesn't check if the generator is available, that is
+    * done in the ImportCode class.
     */
   def cpgGeneratorForLanguage(
     language: String,
@@ -114,11 +115,10 @@ package object cpgcreation {
   }
 
   def withFileInTmpFile(inputPath: String)(f: Path => Try[String]): Try[String] = {
-    val dir = Files.createTempDirectory("cpgcreation")
-    Paths.get(inputPath).copyToDirectory(dir)
-    val result = f(dir)
-    FileUtil.deleteOnExit(dir, swallowIOExceptions = true)
-    result
+    FileUtil.usingTemporaryDirectory("cpgcreation") { dir =>
+      Paths.get(inputPath).copyToDirectory(dir)
+      f(dir)
+    }
   }
 
 }

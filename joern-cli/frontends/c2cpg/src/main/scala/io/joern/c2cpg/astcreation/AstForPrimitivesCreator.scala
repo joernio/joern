@@ -170,9 +170,8 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     Try(ident.getEvaluation).toOption match {
       case Some(e: EvalMemberAccess) =>
         val ownerTypeRaw = safeGetType(e.getOwnerType)
-        val deref = if (e.isPointerDeref) { "*" }
-        else { "" }
-        val ownerType = registerType(s"$ownerTypeRaw$deref")
+        val deref        = if (e.isPointerDeref) "*" else ""
+        val ownerType    = registerType(s"$ownerTypeRaw$deref")
         if (isInCurrentScope(ident, ownerTypeRaw)) {
           scope.lookupVariable(Defines.This) match {
             case Some(_) =>
@@ -209,8 +208,8 @@ trait AstForPrimitivesCreator { this: AstCreator =>
   protected def astForFieldReference(fieldRef: IASTFieldReference): Ast = {
     val isInConstructor =
       Try(CPPVisitor.findEnclosingFunctionOrClass(fieldRef)).toOption.exists(_.isInstanceOf[ICPPConstructor])
-    val op = if (fieldRef.isPointerDereference && !isInConstructor) { Operators.indirectFieldAccess }
-    else { Operators.fieldAccess }
+    val op =
+      if (fieldRef.isPointerDereference && !isInConstructor) Operators.indirectFieldAccess else Operators.fieldAccess
     val ma =
       callNode(fieldRef, code(fieldRef), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
     val owner  = astForExpression(fieldRef.getFieldOwner)
@@ -226,7 +225,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     safeGetBinding(qualId) match {
       case Some(function: ICPPFunction) =>
         val name      = qualId.getLastName.toString
-        val signature = if function.isExternC then "" else functionTypeToSignature(function.getType)
+        val signature = if (function.isExternC) "" else functionTypeToSignature(function.getType)
         val fullName = if (function.isExternC) {
           StringUtils.normalizeSpace(name)
         } else {

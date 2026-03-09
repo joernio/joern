@@ -57,7 +57,8 @@ object VariableScopeManager {
     methodName: String,
     capturingRefNode: Option[NewNode],
     scopeNode: NewNode,
-    surroundingScope: Option[ScopeElement]
+    surroundingScope: Option[ScopeElement],
+    isStatic: Boolean
   ) extends ScopeElement {
 
     /** Determines if the method scope needs an enclosing scope.
@@ -211,14 +212,17 @@ class VariableScopeManager {
     *   The node representing the method scope.
     * @param capturingRefId
     *   An optional node for capturing references.
+    * @param isStatic
+    *   A flag indicating whether the method is static (i.e., does not capture instance variables).
     */
   def pushNewMethodScope(
     methodFullName: String,
     methodName: String,
     scopeNode: NewNode,
-    capturingRefId: Option[NewNode]
+    capturingRefId: Option[NewNode],
+    isStatic: Boolean = false
   ): Unit = {
-    stack = Option(MethodScopeElement(methodFullName, methodName, capturingRefId, scopeNode, stack))
+    stack = Option(MethodScopeElement(methodFullName, methodName, capturingRefId, scopeNode, stack, isStatic))
   }
 
   /** Pushes a new block scope onto the scope stack.

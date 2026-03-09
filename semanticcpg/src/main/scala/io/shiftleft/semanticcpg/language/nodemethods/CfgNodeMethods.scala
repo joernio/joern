@@ -105,7 +105,7 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
       walkUpAst(node)
     case _: CallRepr if !node.isInstanceOf[Call] => walkUpAst(node)
     case _: Annotation | _: AnnotationLiteral    => node.inAst.collectAll[Method].head
-    case _: Expression | _: JumpTarget           => node._containsIn.collectAll[Method].head
+    case _: Expression | _: JumpTarget           => walkUpContains(node)
   }
 
   /** Obtain hexadecimal string representation of lineNumber field.
@@ -126,5 +126,26 @@ object CfgNodeMethods {
     */
   private def walkUpAst(node: CfgNode): Method =
     node.astParent.asInstanceOf[Method]
+
+  /** Attention: this only works for those `CfgNodes` that have `CONTAINS` edges (see `ContainsEdgePass`)... that's why
+    * it's private!
+    */
+  private def walkUpContains(node: StoredNode): Method = {
+    node._containsIn.loneElement("trying to walk `containsIn` edge") match {
+      case method: Method => method
+      case typeDecl: TypeDecl =>
+        typeDecl.astParent match {
+          case namespaceBlock: NamespaceBlock =>
+            // For Typescript, types may be declared in namespaces which we represent as NamespaceBlocks
+            namespaceBlock.inAst.collectAll[Method].headOption.orNull
+          case method: Method =>
+            // For a language such as Javascript, types may be dynamically declared under procedures
+            method
+          case _ =>
+            // there are csharp CPGs that have typedecls here, which is invalid.
+            null
+        }
+    }
+  }
 
 }

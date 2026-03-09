@@ -1,9 +1,9 @@
 package io.joern.jssrc2cpg.io
 
-import io.joern.jssrc2cpg.testfixtures.AstJsSrc2CpgSuite
+import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgSuite
 import io.shiftleft.semanticcpg.language.*
 
-class MinifiedFileDetectionTests extends AstJsSrc2CpgSuite {
+class MinifiedFileDetectionTests extends JsSrc2CpgSuite {
 
   "Detecting minified files" should {
     "skip minified files by name correctly" in {

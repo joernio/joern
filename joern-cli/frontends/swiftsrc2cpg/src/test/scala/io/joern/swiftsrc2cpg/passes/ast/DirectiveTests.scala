@@ -1,10 +1,10 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
+import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
 import io.joern.swiftsrc2cpg.Config
 import io.shiftleft.semanticcpg.language.*
 
-class DirectiveTests extends AstSwiftSrc2CpgSuite {
+class DirectiveTests extends SwiftSrc2CpgSuite {
 
   private val IfConfigExpressionCode = """
    |foo()

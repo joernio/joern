@@ -2,8 +2,8 @@ package io.joern.x2cpg
 
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.utils.IntervalKeyPool
-import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.*
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import java.nio.file.Paths
@@ -316,15 +316,10 @@ abstract class AstCreatorBase[Node, NodeProcessor](filename: String)(implicit wi
   }
 
   def setArgumentIndices(arguments: Seq[Ast], start: Int = 1): Unit = {
-    var currIndex = start
-    arguments.foreach { a =>
-      a.root match {
-        case Some(x: ExpressionNew) =>
-          x.argumentIndex = currIndex
-          currIndex = currIndex + 1
-        case None => // do nothing
-        case _ =>
-          currIndex = currIndex + 1
+    arguments.zipWithIndex.foreach { case (ast, i) =>
+      ast.root match {
+        case Some(x: ExpressionNew) => x.argumentIndex = start + i
+        case _                      => // do nothing
       }
     }
   }

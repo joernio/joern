@@ -293,6 +293,10 @@ trait LowPrioImplicits {
   implicit def iterOnceToAstNodeDot[A <: AstNode](a: IterableOnce[A]): AstNodeDot[A] =
     new AstNodeDot(a.iterator)
 
+  implicit def toAnnotationNodeMethods(node: Annotation): AnnotationNodeMethods = new AnnotationNodeMethods(node)
+  implicit def toAnnotationLiteralNodeMethods(node: AnnotationLiteral): AnnotationLiteralNodeMethods =
+    new AnnotationLiteralNodeMethods(node)
+
   implicit def toCfgNodeMethods(node: CfgNode): CfgNodeMethods = new CfgNodeMethods(node)
 
   implicit def iterOnceToCfgNodeTraversal[A <: CfgNode](a: IterableOnce[A]): CfgNodeTraversal[A] =

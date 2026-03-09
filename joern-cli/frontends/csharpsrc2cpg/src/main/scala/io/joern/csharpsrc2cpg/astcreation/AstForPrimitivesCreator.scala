@@ -11,7 +11,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
 
   protected def astForIdentifier(ident: DotNetNodeInfo, typeFullName: String = Defines.Any): Ast = {
     val identifierName = nameFromNode(ident)
-    if identifierName != "_" then {
+    if (identifierName != "_") {
       scope.lookupVariable(identifierName) match {
         case Some(variable: DeclarationNew) =>
           val node = identifierFromDecl(variable, Option(ident))

@@ -13,8 +13,8 @@ import scala.util.Try
 
 object TypeNameProvider {
 
-  private type TypeLike = IASTEnumerationSpecifier | ICPPASTNamespaceDefinition | ICPPASTNamespaceAlias |
-    IASTCompositeTypeSpecifier | IASTElaboratedTypeSpecifier
+  private type TypeLike = IASTEnumerationSpecifier | ICPPASTNamespaceDefinition | IASTCompositeTypeSpecifier |
+    IASTElaboratedTypeSpecifier
 
 }
 
@@ -26,19 +26,19 @@ trait TypeNameProvider { this: AstCreator =>
   // Sadly, there is no predefined List / Enum of this within Eclipse CDT:
   private val ReservedKeywordsAtTypes: List[String] =
     List(
-      "const",
-      "static",
-      "restrict",
-      "extern",
-      "typedef",
-      "inline",
-      "constexpr",
       "auto",
-      "virtual",
+      "class",
+      "const",
+      "constexpr",
       "enum",
-      "struct",
+      "extern",
+      "inline",
       "interface",
-      "class"
+      "restrict",
+      "static",
+      "struct",
+      "typedef",
+      "virtual"
     )
 
   private val KeywordsAtTypesToKeep: List[String] = List("unsigned", "volatile")
@@ -174,19 +174,17 @@ trait TypeNameProvider { this: AstCreator =>
         val fullName_ = registerType(cleanType(fullName(typeLike)))
         TypeFullNameInfo(name_, fullName_)
       case e: IASTEnumerationSpecifier =>
-        val name_                              = shortName(e)
-        val fullName_                          = fullName(e)
-        val (uniqueName_, uniqueNameFullName_) = scopeLocalUniqueName(name_, fullName_, "enum")
-        TypeFullNameInfo(uniqueName_, uniqueNameFullName_)
+        val name_                            = shortName(e)
+        val fullName_                        = fullName(e)
+        val (uniqueName, uniqueNameFullName) = scopeLocalUniqueName(name_, fullName_, "enum")
+        TypeFullNameInfo(uniqueName, uniqueNameFullName)
       case n: ICPPASTNamespaceDefinition =>
-        val name_                              = shortName(n)
-        val fullName_                          = fullName(n)
-        val (uniqueName_, uniqueNameFullName_) = scopeLocalUniqueName(name_, fullName_, "namespace")
-        TypeFullNameInfo(uniqueName_, uniqueNameFullName_)
-      case a: ICPPASTNamespaceAlias =>
-        val name_     = shortName(a)
-        val fullName_ = fullName(a)
-        TypeFullNameInfo(name_, fullName_)
+        val name = shortName(n) match {
+          case ""    => "<anonymous>"
+          case other => other
+        }
+        val fullName_ = fullName(n)
+        TypeFullNameInfo(name, scopeLocalUniqueNamespaceFullName(fullName_))
       case s: IASTCompositeTypeSpecifier =>
         val fullName_ = registerType(cleanType(fullName(s)))
         val name_ = shortName(s) match {
@@ -255,11 +253,15 @@ trait TypeNameProvider { this: AstCreator =>
   }
 
   private def typeForIASTName(name: IASTName): String = {
+    val x = safeGetNodeType(name)
     safeGetBinding(name) match {
       case Some(v: IVariable) =>
         v.getType match {
-          case f: IFunctionType => f.getReturnType.toString
-          case other            => other.toString
+          case f: IFunctionType =>
+            f.getReturnType.toString
+          case c: ICPPBinding =>
+            c.getQualifiedName.mkString(".")
+          case other => other.toString
         }
       case _ => safeGetNodeType(name)
     }

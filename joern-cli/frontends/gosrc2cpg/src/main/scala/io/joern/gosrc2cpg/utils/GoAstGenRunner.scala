@@ -120,9 +120,9 @@ class GoAstGenRunner(config: Config, includeFileRegex: String = "")
     if (parsedModFiles.nonEmpty) {
       parsedModFiles
         .sortBy(_.split(UtilityConstants.fileSeparateorPattern).length)
-        .foreach(modFile => {
+        .foreach { modFile =>
           moduleMeta.addModFile(modFile, inputPath, outPath)
-        })
+        }
       parsedFiles.foreach(moduleMeta.addParsedFile)
       skippedFiles.foreach(moduleMeta.addSkippedFile)
       moduleMeta.getOnlyChildren

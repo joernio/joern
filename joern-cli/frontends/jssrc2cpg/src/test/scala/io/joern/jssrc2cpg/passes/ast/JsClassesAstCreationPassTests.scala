@@ -1,12 +1,12 @@
 package io.joern.jssrc2cpg.passes.ast
 
-import io.joern.jssrc2cpg.testfixtures.AstJsSrc2CpgSuite
+import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgSuite
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, MethodRef}
 import io.shiftleft.semanticcpg.language.*
 
-class JsClassesAstCreationPassTests extends AstJsSrc2CpgSuite {
+class JsClassesAstCreationPassTests extends JsSrc2CpgSuite {
 
   "AST generation for JS classes" should {
 

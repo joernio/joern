@@ -1,12 +1,12 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
+import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
 
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
-class ExpressionTests extends AstSwiftSrc2CpgSuite {
+class ExpressionTests extends SwiftSrc2CpgSuite {
 
   "ExpressionTests" should {
 
@@ -469,10 +469,10 @@ class ExpressionTests extends AstSwiftSrc2CpgSuite {
            | var a = "abc";
            | var b = "\\\"abc";
            | var c = "abc\\\"";
-           | var d = ${tripQuote}
+           | var d = $tripQuote
            |abc
            |def
-           |${tripQuote};
+           |$tripQuote;
            |}
            |""".stripMargin)
 

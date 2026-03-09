@@ -40,8 +40,12 @@ class NamespaceTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
       }
 
       inside(cpg.namespaceBlock.nameNot("<global>").sortBy(_.fullName).l) { case List(q, v) =>
-        q.fullName shouldBe "Q"
-        v.fullName shouldBe "Q.V"
+        q.name shouldBe "Q"
+        q.fullName shouldBe "Test0.cpp:Q"
+        q.filename shouldBe "Test0.cpp"
+        v.name shouldBe "V"
+        v.fullName shouldBe "Test0.cpp:Q.V"
+        v.filename shouldBe "Test0.cpp"
 
         inside(v.ast.isTypeDecl.l) { case List(c) =>
           c.name shouldBe "C"
@@ -84,8 +88,12 @@ class NamespaceTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
       }
 
       inside(cpg.namespaceBlock.nameNot("<global>").sortBy(_.fullName).l) { case List(q, v) =>
-        q.fullName shouldBe "Q"
-        v.fullName shouldBe "Q.V"
+        q.name shouldBe "Q"
+        q.fullName shouldBe "Test0.cpp:Q"
+        q.filename shouldBe "Test0.cpp"
+        v.name shouldBe "V"
+        v.fullName shouldBe "Test0.cpp:Q.V"
+        v.filename shouldBe "Test0.cpp"
 
         inside(v.ast.isTypeDecl.l) { case List(c) =>
           c.name shouldBe "C"
@@ -119,9 +127,15 @@ class NamespaceTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
         |  j++;    // ok, increments ::A::(unique)::j
         |}""".stripMargin)
       inside(cpg.namespaceBlock.nameNot("<global>").sortBy(_.fullName).l) { case List(unnamed1, namespaceA, unnamed2) =>
-        unnamed1.fullName shouldBe "<namespace>0"
-        namespaceA.fullName shouldBe "A"
-        unnamed2.fullName shouldBe "A.<namespace>0"
+        unnamed1.name shouldBe "<anonymous>"
+        unnamed1.fullName shouldBe "Test0.cpp:<anonymous>"
+        unnamed1.filename shouldBe "Test0.cpp"
+        namespaceA.name shouldBe "A"
+        namespaceA.fullName shouldBe "Test0.cpp:A"
+        namespaceA.filename shouldBe "Test0.cpp"
+        unnamed2.name shouldBe "<anonymous>"
+        unnamed2.fullName shouldBe "Test0.cpp:A.<anonymous>"
+        unnamed2.filename shouldBe "Test0.cpp"
       }
 
       inside(cpg.method.internal.nameNot("<global>").fullName.l) { case List(f, g, h) =>
@@ -156,8 +170,12 @@ class NamespaceTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
         |  X::g(); // calls A::g
         |}""".stripMargin)
       inside(cpg.namespaceBlock.nameNot("<global>").l) { case List(namespaceA, namespaceX) =>
-        namespaceA.fullName shouldBe "A"
-        namespaceX.fullName shouldBe "X"
+        namespaceA.name shouldBe "A"
+        namespaceA.fullName shouldBe "Test0.cpp:A"
+        namespaceA.filename shouldBe "Test0.cpp"
+        namespaceX.name shouldBe "X"
+        namespaceX.fullName shouldBe "Test0.cpp:X"
+        namespaceX.filename shouldBe "Test0.cpp"
       }
 
       inside(cpg.method.internal.nameNot("<global>").fullName.l) { case List(h, f, g) =>
@@ -194,9 +212,12 @@ class NamespaceTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
         |  f('a');     // calls f(char)
         |}""".stripMargin)
       inside(cpg.namespaceBlock.nameNot("<global>").l) { case List(a1, a2) =>
-        // TODO: how to handle namespace extension?
-        a1.fullName shouldBe "A"
-        a2.fullName shouldBe "A<duplicate>0"
+        a1.name shouldBe "A"
+        a1.fullName shouldBe "Test0.cpp:A"
+        a1.filename shouldBe "Test0.cpp"
+        a2.name shouldBe "A"
+        a2.fullName shouldBe "Test0.cpp:A<extension>0"
+        a2.filename shouldBe "Test0.cpp"
       }
 
       inside(cpg.method.internal.nameNot("<global>").l) { case List(foo, bar, f1, f2) =>
@@ -231,21 +252,21 @@ class NamespaceTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
         |int main() {
         |  int x = fbz::qux;
         |}""".stripMargin)
-      inside(cpg.namespaceBlock.nameNot("<global>").l) { case List(foo, bar, baz, fbz) =>
+      inside(cpg.namespaceBlock.nameNot("<global>").l) { case List(foo, bar, baz) =>
         foo.name shouldBe "foo"
-        foo.fullName shouldBe "foo"
+        foo.fullName shouldBe "Test0.cpp:foo"
+        foo.filename shouldBe "Test0.cpp"
         bar.name shouldBe "bar"
-        bar.fullName shouldBe "foo.bar"
+        bar.fullName shouldBe "Test0.cpp:foo.bar"
+        bar.filename shouldBe "Test0.cpp"
         baz.name shouldBe "baz"
-        baz.fullName shouldBe "foo.bar.baz"
+        baz.fullName shouldBe "Test0.cpp:foo.bar.baz"
+        baz.filename shouldBe "Test0.cpp"
 
         inside(baz.ast.isIdentifier.l) { case List(qux) =>
           qux.name shouldBe "qux"
           qux.typeFullName shouldBe "int"
         }
-
-        fbz.name shouldBe "fbz"
-        fbz.fullName shouldBe "foo.bar.baz<alias>"
       }
 
       inside(cpg.call.l) { case List(c1, c2, c3) =>
@@ -270,15 +291,17 @@ class NamespaceTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
        | 
        |int main() {
        |  namespace x = foo::bar;
+       |  namespace y = foo::bar;
        |};""".stripMargin)
-      inside(cpg.namespaceBlock.nameNot("<global>").sortBy(_.fullName).l) { case List(foo, bar, x) =>
+      inside(cpg.namespaceBlock.nameNot("<global>").sortBy(_.fullName).l) { case List(foo, bar) =>
         foo.name shouldBe "foo"
-        foo.fullName shouldBe "foo"
+        foo.fullName shouldBe "Test0.cpp:foo"
+        foo.filename shouldBe "Test0.cpp"
         bar.name shouldBe "bar"
-        bar.fullName shouldBe "foo.bar"
-        x.name shouldBe "x"
-        x.fullName shouldBe "foo.bar<alias>"
+        bar.fullName shouldBe "Test0.cpp:foo.bar"
+        bar.filename shouldBe "Test0.cpp"
       }
+      cpg.method.nameExact("main").ast.isNamespaceBlock shouldBe empty
     }
 
     "be correct for using namespaces inside of methods" in {
@@ -292,9 +315,11 @@ class NamespaceTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
        |};""".stripMargin)
       inside(cpg.namespaceBlock.nameNot("<global>").l) { case List(foo, bar) =>
         foo.name shouldBe "foo"
-        foo.fullName shouldBe "foo"
+        foo.fullName shouldBe "Test0.cpp:foo"
+        foo.filename shouldBe "Test0.cpp"
         bar.name shouldBe "bar"
-        bar.fullName shouldBe "foo.bar"
+        bar.fullName shouldBe "Test0.cpp:foo.bar"
+        bar.filename shouldBe "Test0.cpp"
       }
     }
 
@@ -361,11 +386,14 @@ class NamespaceTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
       inside(cpg.namespaceBlock.nameNot(NamespaceTraversal.globalNamespaceName).l) {
         case List(baseClasses, interClasses, finalClasses) =>
           baseClasses.name shouldBe "BaseClasses"
-          baseClasses.fullName shouldBe "BaseClasses"
+          baseClasses.fullName shouldBe "Test0.cpp:BaseClasses"
+          baseClasses.filename shouldBe "Test0.cpp"
           interClasses.name shouldBe "IntermediateClasses"
-          interClasses.fullName shouldBe "IntermediateClasses"
+          interClasses.fullName shouldBe "Test0.cpp:IntermediateClasses"
+          interClasses.filename shouldBe "Test0.cpp"
           finalClasses.name shouldBe "FinalClasses"
-          finalClasses.fullName shouldBe "FinalClasses"
+          finalClasses.fullName shouldBe "Test0.cpp:FinalClasses"
+          finalClasses.filename shouldBe "Test0.cpp"
       }
 
       cpg.typ.name("A").derivedTypeTransitive.typeDeclFullName.sorted.l shouldBe List(

@@ -18,7 +18,15 @@ import com.github.javaparser.resolution.declarations.{ResolvedMethodDeclaration,
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
 import io.joern.javasrc2cpg.astcreation.expressions.AstForCallExpressionsCreator.AllocAndInitCallAsts
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
-import io.joern.javasrc2cpg.scope.Scope.typeFullName
+import io.joern.javasrc2cpg.scope.Scope.{
+  FoundVariable,
+  NewVariableNode,
+  ScopeInnerType,
+  ScopeParameter,
+  SimpleVariable,
+  VariableLookupResult,
+  typeFullName
+}
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.{NameConstants, Util}
 import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, composeMethodLikeSignature, composeUnresolvedSignature}
@@ -39,7 +47,6 @@ import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
 import scala.util.{Success, Try}
 import javassist.compiler.ast.CallExpr
-import io.joern.javasrc2cpg.scope.Scope.{NewVariableNode, ScopeInnerType, ScopeParameter, SimpleVariable}
 import io.joern.javasrc2cpg.scope.JavaScopeElement.PartialInit
 import org.slf4j.LoggerFactory
 
@@ -112,7 +119,8 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
     val thisIdentifier =
       identifierNode(call, NameConstants.This, NameConstants.This, typeFullName)
     scope.lookupVariable(NameConstants.This) match {
-      case SimpleVariable(ScopeParameter(thisParam, _)) => diffGraph.addEdge(thisIdentifier, thisParam, EdgeTypes.REF)
+      case foundVariable: FoundVariable =>
+        diffGraph.addEdge(thisIdentifier, foundVariable.getVariable().get.node, EdgeTypes.REF)
       case _ => // Do nothing. This shouldn't happen for valid code, but could occur in cases where methods could not be resolved
     }
     val thisAst = Ast(thisIdentifier)
@@ -170,7 +178,7 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
     val returnedIdentifierAst = Ast(returnedIdentifier).withRefEdge(returnedIdentifier, tmpLocal)
 
     Ast(blockNode(expr).typeFullName(returnedIdentifier.typeFullName))
-      .withChild(Ast(tmpLocal).withRefEdge(assignTarget, tmpLocal))
+      .withChild(Ast(tmpLocal))
       .withChild(allocAssignAst)
       .withChild(allocAndInitAst.initAst)
       .withChild(returnedIdentifierAst)

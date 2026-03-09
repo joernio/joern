@@ -2,9 +2,9 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
+import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
 
-class PoundAssertTests extends AstSwiftSrc2CpgSuite {
+class PoundAssertTests extends SwiftSrc2CpgSuite {
 
   "PoundAssertTests" should {
 

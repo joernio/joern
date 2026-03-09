@@ -24,10 +24,10 @@ trait AstForTypesCreator { this: AstCreator =>
   }
 
   protected def astForNamespaceAlias(namespaceAlias: ICPPASTNamespaceAlias): Ast = {
-    val TypeFullNameInfo(name, fullName) = typeFullNameInfo(namespaceAlias)
-    val codeString                       = code(namespaceAlias)
-    val filename                         = fileName(namespaceAlias)
-    Ast(namespaceBlockNode(namespaceAlias, name, s"$fullName<alias>", filename).code(codeString))
+    // Namespace alias does not create any new AST nodes, so we return an empty AST here.
+    // Ideally, we would create a namespace block node with an alias property, but that's not in the CPG schema.
+    // Anyway, namespace aliases do not affect the AST structure. When used, CDT resolves them to the original namespace.
+    Ast()
   }
 
   private def typeForIASTDeclarator(
@@ -335,8 +335,9 @@ trait AstForTypesCreator { this: AstCreator =>
     val TypeFullNameInfo(name, fullName) = typeFullNameInfo(namespaceDefinition)
     val codeString                       = code(namespaceDefinition)
     val filename                         = fileName(namespaceDefinition)
-    val namespaceBlockNode_ = namespaceBlockNode(namespaceDefinition, name, fullName, filename).code(codeString)
-    val blockNode_          = blockNode(namespaceDefinition)
+    val namespaceBlockNode_ =
+      namespaceBlockNode(namespaceDefinition, name, s"$filename:$fullName", filename).code(codeString)
+    val blockNode_ = blockNode(namespaceDefinition)
     methodAstParentStack.push(blockNode_)
     scope.pushNewMethodScope(fullName, name, namespaceBlockNode_, None)
     scope.pushNewBlockScope(blockNode_)

@@ -1,17 +1,40 @@
 package io.joern.javasrc2cpg.astcreation.expressions
 
-import com.github.javaparser.ast.expr.LambdaExpr
-import com.github.javaparser.ast.stmt.{BlockStmt, Statement}
+import com.github.javaparser.ast.Node
+import com.github.javaparser.ast.body.{
+  FieldDeclaration,
+  MethodDeclaration,
+  Parameter,
+  TypeDeclaration,
+  VariableDeclarator
+}
+import com.github.javaparser.ast.expr.{
+  ConditionalExpr,
+  LambdaExpr,
+  NameExpr,
+  PatternExpr,
+  SwitchExpr,
+  TypePatternExpr,
+  VariableDeclarationExpr
+}
+import com.github.javaparser.ast.stmt.{BlockStmt, ExpressionStmt, IfStmt, Statement, SwitchStmt}
 import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
 import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedType, ResolvedTypeVariable}
+import com.github.javaparser.symbolsolver.javaparsermodel.contexts.{
+  ConditionalExprContext,
+  IfStatementContext,
+  SwitchEntryContext
+}
+import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver
 import io.joern.javasrc2cpg.astcreation.expressions.AstForLambdasCreator.{
   ClosureBindingEntry,
   LambdaBody,
   LambdaImplementedInfo
 }
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
-import io.joern.javasrc2cpg.scope.Scope.ScopeVariable
+import io.joern.javasrc2cpg.scope.Scope
+import io.joern.javasrc2cpg.scope.Scope.{ScopeMember, ScopeVariable}
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.{ObjectMethodSignatures, TypeConstants}
 import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
 import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, composeMethodLikeSignature, composeUnresolvedSignature}
@@ -23,6 +46,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes, PropertyDefaults}
 import org.slf4j.LoggerFactory
 
+import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
 import scala.util.{Failure, Success, Try}
@@ -67,6 +91,11 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
     // TODO: lambda method scope can be static if no non-static captures are used
     scope.pushMethodScope(lambdaMethodNode, expectedLambdaType, isStatic = false)
 
+    parametersWithoutThis.flatMap(_.root).collect { case param: NewMethodParameterIn =>
+      scope.enclosingMethod
+        .foreach(_.addParameter(param, binarySignatureCalculator.variableBinarySignature(param.typeFullName)))
+    }
+
     val lambdaBody = astForLambdaBody(expr, lambdaMethodName, expr.getBody, variablesInScope, returnType)
 
     val thisParam = lambdaBody.nodes
@@ -99,16 +128,12 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
 
     val modifiers = List(virtualModifier, staticModifier, privateModifier, lambdaModifier).flatten.map(Ast(_))
 
-    val lambdaMethodAstWithoutRefs =
+    val lambdaMethodAst =
       Ast(lambdaMethodNode)
         .withChildren(parameters)
         .withChild(lambdaBody.body)
         .withChild(Ast(returnNode))
         .withChildren(modifiers)
-
-    val lambdaMethodAst = identifiersMatchingParams.foldLeft(lambdaMethodAstWithoutRefs)((ast, identifier) =>
-      ast.withRefEdge(identifier, lambdaParameterNamesToNodes(identifier.name))
-    )
 
     scope.popMethodScope()
     scope.addLambdaMethod(lambdaMethodAst)
@@ -298,13 +323,74 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
     variablesInScope: Seq[ScopeVariable],
     returnType: Option[String]
   ): LambdaBody = {
+    scope.pushBlockScope()
     val outerScopeVariableNames = variablesInScope.map(x => x.name -> x).toMap
+
+    val capturedVariableUses = captureUseFinder.getUndeclaredVariables(lambdaExpr)
+    var thisCaptureHandled   = false
+    val closureBindingsAndLocalsForCaptures = capturedVariableUses.toList.sorted.flatMap { name =>
+      val capturedResult = scope.lookupVariable(name)
+
+      capturedResult match {
+        case Scope.NotInScope =>
+          // Either the name is an imported type, or
+          // TODO the name is statically imported and needs to be handled properly.
+          Nil
+        case variable: Scope.FoundVariable if variable.getVariable().get.isInstanceOf[ScopeMember] =>
+          if (thisCaptureHandled) {
+            // Already added local and closure binding for captured `this`, so don't add it again
+            Nil
+          } else {
+            thisCaptureHandled = true
+
+            scope.lookupVariable(NameConstants.This).getVariable() match {
+              case Some(scopeVariable) =>
+                val closureBindingId = s"$filename:$lambdaMethodName:${NameConstants.This}"
+                val closureBinding   = closureBindingNode(closureBindingId, EvaluationStrategies.BY_SHARING)
+
+                val localForCapture = localNode(
+                  lambdaExpr,
+                  scopeVariable.mangledName,
+                  scopeVariable.mangledName,
+                  scopeVariable.typeFullName,
+                  Option(closureBindingId),
+                  Option(scopeVariable.genericSignature)
+                )
+
+                scope.enclosingBlock.foreach(_.addLocal(localForCapture, scopeVariable.name))
+                List((ClosureBindingEntry(scopeVariable, closureBinding), localForCapture))
+
+              case None =>
+                logger.warn(
+                  s"Found captured member without corresponding this param in enclosing method. This is a bug!"
+                )
+                Nil
+            }
+          }
+
+        case variable: Scope.FoundVariable =>
+          val scopeVariable = variable.getVariable().get
+
+          val closureBindingId = s"$filename:$lambdaMethodName:$name"
+          val closureBinding   = closureBindingNode(closureBindingId, EvaluationStrategies.BY_SHARING)
+
+          val localForCapture = localNode(
+            lambdaExpr,
+            scopeVariable.mangledName,
+            scopeVariable.mangledName,
+            scopeVariable.typeFullName,
+            Option(closureBindingId),
+            Option(scopeVariable.genericSignature)
+          )
+
+          scope.enclosingBlock.foreach(_.addLocal(localForCapture, scopeVariable.name))
+          List((ClosureBindingEntry(scopeVariable, closureBinding), localForCapture))
+      }
+    }
 
     val stmts = body match {
       case block: BlockStmt =>
-        scope.pushBlockScope()
         val stmts = block.getStatements.asScala.flatMap(astsForStatement).toSeq
-        scope.popBlockScope()
         stmts
       case stmt if returnType.contains(TypeConstants.Void) => astsForStatement(stmt)
       case stmt =>
@@ -313,14 +399,11 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
         Seq(returnAst(retNode, returnArgs))
     }
 
-    val capturedVariables =
-      stmts.flatMap(_.nodes).collect {
-        case i: NewIdentifier if outerScopeVariableNames.contains(i.name) => outerScopeVariableNames(i.name)
-      }
-    val bindingsToLocals      = defineCapturedVariables(lambdaExpr, lambdaMethodName, capturedVariables)
-    val capturedLocalAsts     = bindingsToLocals.map(_._2).map(Ast(_))
-    val closureBindingEntries = bindingsToLocals.map(_._1)
+    val capturedLocalAsts     = closureBindingsAndLocalsForCaptures.map(_._2).map(Ast(_))
+    val closureBindingEntries = closureBindingsAndLocalsForCaptures.map(_._1)
     val temporaryLocalAsts = scope.enclosingMethod.map(_.getAndClearUnaddedPatternLocals()).getOrElse(Nil).map(Ast(_))
+
+    scope.popBlockScope()
 
     val blockAst = Ast(blockNode(body))
       .withChildren(temporaryLocalAsts)

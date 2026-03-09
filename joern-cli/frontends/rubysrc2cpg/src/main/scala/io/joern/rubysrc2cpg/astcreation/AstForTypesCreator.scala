@@ -20,15 +20,16 @@ import scala.collection.mutable
 trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForClassDeclaration(node: RubyExpression & TypeDeclaration): Seq[Ast] = {
-    node.name match
+    node.name match {
       case name: SimpleIdentifier => astForSimpleNamedClassDeclaration(node, name)
       case name =>
         logger.warn(s"Qualified class names are not supported yet: ${name.text} ($relativeFileName), skipping")
         astForUnknown(node) :: Nil
+    }
   }
 
   private def getBaseClassName(node: RubyExpression): String = {
-    node match
+    node match {
       case simpleIdentifier: SimpleIdentifier =>
         simpleIdentifier.text
       case _: SelfIdentifier =>
@@ -42,6 +43,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
           s"Base class names of type ${x.getClass} are not supported yet: ${code(node)} ($relativeFileName), returning string as-is"
         )
         x.text
+    }
   }
 
   private def astForSimpleNamedClassDeclaration(
@@ -185,7 +187,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     scope.popScope()
 
-    if scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL) then {
+    if (scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL)) {
       val typeDeclMember = NewMember()
         .name(className)
         .code(className)
@@ -214,7 +216,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     (typeDeclAst :: singletonTypeDeclAst :: Nil).foreach(Ast.storeInDiffGraph(_, diffGraph))
 
-    if shouldPopAdditionalScope then scope.popScope()
+    if (shouldPopAdditionalScope) { scope.popScope() }
     popAccessModifier()
     prefixAst :: bodyMemberCallAst :: statementsToForwardUpTheAst.toList
   }
@@ -269,7 +271,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   }
 
   private def astsForSingleFieldDeclaration(node: FieldsDeclaration, nameNode: RubyExpression): Seq[Ast] = {
-    nameNode match
+    nameNode match {
       case nameAsSymbol: StaticLiteral if nameAsSymbol.isSymbol =>
         val fieldName   = nameAsSymbol.innerText.prepended('@')
         val memberNode_ = memberNode(nameAsSymbol, fieldName, code(node), Defines.Any)
@@ -289,6 +291,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
           s"Unsupported field declaration: ${nameNode.text} (${nameNode.getClass}) (${this.relativeFileName}), skipping"
         )
         Seq()
+    }
   }
 
   // creates a `def <name>() { return <fieldName> }` METHOD, for <fieldName> = @<name>.

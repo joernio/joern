@@ -304,7 +304,7 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
         .ast
         .isCall
         .code
-        .l shouldBe List("unlikelyWhile()")
+        .l shouldBe List("unlikely_truthy_condition != 0", "unlikelyWhile()")
     }
 
     "handle deprecate implicit capture of this" in {

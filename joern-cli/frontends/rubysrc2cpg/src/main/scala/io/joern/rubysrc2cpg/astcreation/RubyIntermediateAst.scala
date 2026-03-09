@@ -63,9 +63,10 @@ object RubyIntermediateAst {
   final case class StatementList(statements: List[RubyExpression])(span: TextSpan)
       extends RubyExpression(span)
       with RubyStatement {
-    override def text: String = statements.size match
+    override def text: String = statements.size match {
       case 0 | 1 => span.text
       case _     => "(...)"
+    }
 
     def size: Int = statements.size
   }
@@ -73,9 +74,10 @@ object RubyIntermediateAst {
   final case class SingletonStatementList(statements: List[RubyExpression])(span: TextSpan)
       extends RubyExpression(span)
       with RubyStatement {
-    override def text: String = statements.size match
+    override def text: String = statements.size match {
       case 0 | 1 => span.text
       case _     => "(...)"
+    }
 
     def size: Int = statements.size
   }

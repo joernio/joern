@@ -31,25 +31,25 @@ object CpgGeneratorFactory {
 
 class CpgGeneratorFactory(config: ConsoleConfig) {
 
-  /** For a given input path, try to guess a suitable generator and return it
-    */
+  /** For a given input path, try to guess a suitable generator and return it if it is available */
   def forCodeAt(inputPath: String): Option[CpgGenerator] =
     for {
       language     <- guessLanguage(inputPath)
       cpgGenerator <- cpgGeneratorForLanguage(language, config.frontend, config.install.rootPath, args = Nil)
+      if cpgGenerator.isAvailable
     } yield {
       report(s"Using generator for language: $language: ${cpgGenerator.getClass.getSimpleName}")
       cpgGenerator
     }
 
-  /** For a language, return the generator
-    */
+  /** For a language, return the generator if it is available */
   def forLanguage(language: String): Option[CpgGenerator] = {
-    Option(language)
-      .filter(languageIsKnown)
-      .flatMap { lang =>
-        cpgGeneratorForLanguage(lang, config.frontend, config.install.rootPath, args = Nil)
-      }
+    for {
+      lang <- Option(language)
+      if languageIsKnown(lang)
+      generator <- cpgGeneratorForLanguage(lang, config.frontend, config.install.rootPath, args = Nil)
+      if generator.isAvailable
+    } yield generator
   }
 
   def languageIsKnown(language: String): Boolean = CpgGeneratorFactory.KNOWN_LANGUAGES.contains(language)

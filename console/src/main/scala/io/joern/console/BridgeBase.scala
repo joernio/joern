@@ -37,7 +37,10 @@ case class Config(
   verbose: Boolean = false,
   dependencies: Seq[String] = Seq.empty,
   resolvers: Seq[String] = Seq.empty,
-  maxHeight: Option[Int] = None
+  maxHeight: Option[Int] = None,
+  scanMaxCallDepth: Option[Int] = None,
+  scanScriptNames: Array[String] = Array.empty,
+  scanTagNames: Array[String] = Array.empty
 )
 
 /** Base class for ReplBridge, split by topic into multiple self types.
@@ -250,6 +253,19 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
       builder += s"""openForInputPath("$path")""".stripMargin
     }
     builder ++= config.runBefore.map(code => escapeForWindows(code, isInteractive))
+
+    if (config.pluginToRun.contains("scan")) {
+      builder += "import io.joern.joerncli.Scan"
+      builder += s"""Scan.defaultOpts.names = Array(${escapeForWindows(
+          config.scanScriptNames.map(n => s""""$n"""").mkString(", "),
+          isInteractive
+        )})"""
+      builder += s"""Scan.defaultOpts.tags = Array(${escapeForWindows(
+          config.scanTagNames.map(n => s""""$n"""").mkString(", "),
+          isInteractive
+        )})"""
+      builder += config.scanMaxCallDepth.map(d => s"Scan.defaultOpts.maxCallDepth = $d").getOrElse("")
+    }
     builder.result()
   }
 

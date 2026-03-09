@@ -186,9 +186,9 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
       if (!methodDeclaration.isPhantom && Try(methodDeclaration.retrieveActiveBody()).isSuccess)
         methodDeclaration.retrieveActiveBody().getParameterLocals.asScala.map(_.getName)
       else
-        paramTypes.zipWithIndex.map(x => {
+        paramTypes.zipWithIndex.map { x =>
           s"param${x._2 + 1}"
-        })
+        }
     if (!withParams) {
       "(" + paramTypes.mkString(",") + ")"
     } else {
@@ -274,11 +274,7 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
       stack.push(stack.pop().withChildren(asts))
     }
 
-    if (stack.nonEmpty) {
-      stack.pop()
-    } else {
-      Ast(blockNode(body))
-    }
+    if (stack.nonEmpty) stack.pop() else Ast(blockNode(body))
   }
 
 }

@@ -140,4 +140,27 @@ class ArrayTests extends JavaSrcCode2CpgFixture {
       index.code shouldBe "0"
     }
   }
+
+  "array length field access" should {
+    val cpg = code("""
+        |class Foo {
+        |  public void foo(String[] xs) {
+        |    int l = xs.length;
+        |  }
+        |}""".stripMargin)
+
+    "be represented as <operators>.sizeOf calls" in {
+      inside(cpg.assignment.argument.argumentIndex(2).l) { case List(sizeOfCall: Call) =>
+        sizeOfCall.name shouldBe Operators.sizeOf
+        sizeOfCall.code shouldBe "xs.length"
+        sizeOfCall.typeFullName shouldBe "int"
+
+        inside(sizeOfCall.argument.l) { case List(xsIdentifier: Identifier) =>
+          xsIdentifier.name shouldBe "xs"
+          xsIdentifier.typeFullName shouldBe "java.lang.String[]"
+          xsIdentifier.refsTo.l shouldBe cpg.method.name("foo").parameter.name("xs").l
+        }
+      }
+    }
+  }
 }

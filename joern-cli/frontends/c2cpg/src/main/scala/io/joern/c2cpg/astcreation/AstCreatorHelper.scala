@@ -1,24 +1,18 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.c2cpg.passes.FunctionDeclNodePass
-import io.joern.x2cpg.Ast
-import io.joern.x2cpg.AstNodeBuilder
 import io.joern.x2cpg.AstNodeBuilder.dependencyNode
-import io.joern.x2cpg.SourceFiles
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, ExpressionNew, NewCall, NewNode}
+import io.joern.x2cpg.{Ast, AstNodeBuilder, SourceFiles}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall, NewNode}
 import org.eclipse.cdt.core.dom.ast.*
-import org.eclipse.cdt.core.dom.ast.c.ICASTArrayDesignator
-import org.eclipse.cdt.core.dom.ast.c.ICASTDesignatedInitializer
-import org.eclipse.cdt.core.dom.ast.c.ICASTFieldDesignator
+import org.eclipse.cdt.core.dom.ast.c.{ICASTArrayDesignator, ICASTDesignatedInitializer, ICASTFieldDesignator}
 import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTArrayRangeDesignator
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTArrayRangeDesignator
-import org.eclipse.cdt.internal.core.dom.parser.cpp.ICPPEvaluation
+import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTArrayRangeDesignator, ICPPEvaluation}
 
 import scala.collection.mutable
-import scala.util.Success
-import scala.util.Try
+import scala.util.{Success, Try}
 
 trait AstCreatorHelper { this: AstCreator =>
 
@@ -62,14 +56,28 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   protected def scopeLocalUniqueName(targetName: String, fullName: String = ""): String = {
-    val name = if (targetName.isEmpty) { "<anonymous>" }
-    else { s"<$targetName>" }
-    val scopePath = if (fullName.isEmpty) { scope.computeScopePath }
-    else { fullName.stripSuffix(".") }
-    val key = s"$scopePath:$name"
-    val idx = scopeLocalUniqueNames.getOrElseUpdate(key, 0)
+    val name      = if (targetName.isEmpty) "<anonymous>" else s"<$targetName>"
+    val scopePath = if (fullName.isEmpty) scope.computeScopePath else fullName.stripSuffix(".")
+    val key       = s"$scopePath:$name"
+    val idx       = scopeLocalUniqueNames.getOrElseUpdate(key, 0)
     scopeLocalUniqueNames.update(key, idx + 1)
     s"$name$idx"
+  }
+
+  protected def scopeLocalUniqueNamespaceFullName(fullName: String): String = {
+    val newFullName = fullName match {
+      case ""     => "<anonymous>"
+      case s"$p." => s"$p.<anonymous>"
+      case other  => other
+    }
+    scopeLocalUniqueNames.get(newFullName) match {
+      case None =>
+        scopeLocalUniqueNames.update(newFullName, 0)
+        newFullName
+      case Some(index) =>
+        val suffix = s"${Defines.NamespaceExtension}$index"
+        s"$newFullName$suffix"
+    }
   }
 
   protected def scopeLocalUniqueName(name: String, fullName: String, targetName: String): (String, String) = {
@@ -90,8 +98,8 @@ trait AstCreatorHelper { this: AstCreator =>
 
   protected def offsetToColumn(offset: Int): Int = {
     val index           = java.util.Arrays.binarySearch(file2OffsetTable, offset)
-    val tableIndex      = if index < 0 then -(index + 1) else index + 1
-    val lineStartOffset = if tableIndex == 0 then 0 else file2OffsetTable(tableIndex - 1)
+    val tableIndex      = if (index < 0) -(index + 1) else index + 1
+    val lineStartOffset = if (tableIndex == 0) 0 else file2OffsetTable(tableIndex - 1)
     offset - lineStartOffset + 1
   }
 
@@ -181,11 +189,9 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   protected def astsForComments(iASTTranslationUnit: IASTTranslationUnit): Seq[Ast] = {
-    if (config.includeComments) {
+    if (config.includeComments)
       iASTTranslationUnit.getComments.toList.filterNot(isIncludedNode).map(comment => astForComment(comment))
-    } else {
-      Seq.empty
-    }
+    else Seq.empty
   }
 
   protected def isIncludedNode(node: IASTNode): Boolean = fileName(node) != filename

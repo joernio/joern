@@ -295,6 +295,19 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       cpg.typeDecl.member.nameExact("count").typeFullName.l shouldBe List("int")
     }
 
+    "handle namespace alias" in {
+      val cpg = code("""
+          |namespace A {
+          |  class Foo {};
+          |}
+          |
+          |namespace B = A;
+          |auto f = B::Foo();
+          |""".stripMargin)
+      cpg.typeDecl.nameExact("Foo").fullName.loneElement shouldBe "A.Foo"
+      cpg.identifier.nameExact("f").typeFullName.loneElement shouldBe "A.Foo"
+    }
+
     "handle nested namespaces" in {
       val cpg = code("""
           |namespace A1 { // old
@@ -309,14 +322,111 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |  int i;
           |}
           |""".stripMargin)
-      cpg.namespaceBlock.nameNot("<global>").name.sorted shouldBe List("A1", "A2", "B1", "B2", "C1", "C2")
-      cpg.namespaceBlock.nameNot("<global>").fullName.sorted shouldBe List(
-        "A1",
-        "A1.B1",
-        "A1.B1.C1",
-        "A2",
-        "A2.B2",
-        "A2.B2.C2"
+      cpg.namespaceBlock.nameNot("<global>").name.sorted shouldBe Seq("A1", "A2", "B1", "B2", "C1", "C2")
+      cpg.namespaceBlock.nameNot("<global>").fullName.sorted shouldBe Seq(
+        "Test0.cpp:A1",
+        "Test0.cpp:A1.B1",
+        "Test0.cpp:A1.B1.C1",
+        "Test0.cpp:A2",
+        "Test0.cpp:A2.B2",
+        "Test0.cpp:A2.B2.C2"
+      )
+    }
+
+    "handle namespaces and classes with the same name" in {
+      val cpg = code("""
+          |namespace A {
+          |  class A {}
+          |}
+          |
+          |namespace A {
+          |  class B {}
+          |}
+          |""".stripMargin)
+      cpg.namespaceBlock.nameNot("<global>").name.sorted shouldBe Seq("A", "A")
+      cpg.namespaceBlock.nameNot("<global>").fullName.sorted shouldBe Seq("Test0.cpp:A", "Test0.cpp:A<extension>0")
+
+      cpg.typeDecl.nameNot("<global>").name.sorted shouldBe Seq("A", "B")
+
+      // We get these fullNames directly from CDT, so they do not include the filename prefix.
+      // Classes in anonymous namespaces have no fullName prefix at all according to the CDT fullName resolution.
+      cpg.typeDecl.nameNot("<global>").fullName.sorted shouldBe Seq("A.A", "A.B")
+    }
+
+    "handle the same namespace appearing multiple times in the same file" in {
+      val cpg = code("""
+          |namespace A { // old
+          |  namespace B {
+          |    namespace C {
+          |      class Foo {};
+          |    }
+          |  }
+          |}
+          |
+          |namespace A::B::C { // new
+          |  class Bar {};
+          |}
+          |
+          |namespace X {
+          |  class SomeClass {};
+          |}
+          |
+          |namespace X {
+          |  class SomeOtherClass {};
+          |}
+          |
+          |// anonymous namespaces
+          |namespace {
+          |  class HiddenClass1 {};
+          |}
+          |namespace {
+          |  class HiddenClass2 {};
+          |}
+          |""".stripMargin)
+      cpg.namespaceBlock.nameNot("<global>").name.sorted shouldBe Seq(
+        // Within a translation unit each unnamed namespace definition maps to the same unique name:
+        // multiple unnamed namespace definitions in the same scope denote the same unnamed namespace
+        "<anonymous>",
+        "<anonymous>",
+        "A",
+        "A",
+        "B",
+        "B",
+        "C",
+        "C",
+        "X",
+        "X"
+      )
+      cpg.namespaceBlock.nameNot("<global>").fullName.sorted shouldBe Seq(
+        "Test0.cpp:<anonymous>",
+        "Test0.cpp:<anonymous><extension>0",
+        "Test0.cpp:A",
+        "Test0.cpp:A.B",
+        "Test0.cpp:A.B.C",
+        "Test0.cpp:A.B.C<extension>0",
+        "Test0.cpp:A.B<extension>0",
+        "Test0.cpp:A<extension>0",
+        "Test0.cpp:X",
+        "Test0.cpp:X<extension>0"
+      )
+      cpg.typeDecl.nameNot("<global>").name.sorted shouldBe Seq(
+        "Bar",
+        "Foo",
+        "HiddenClass1",
+        "HiddenClass2",
+        "SomeClass",
+        "SomeOtherClass"
+      )
+
+      // We get these fullNames directly from CDT, so they do not include the filename prefix.
+      // Classes in anonymous namespaces have no fullName prefix at all according to the CDT fullName resolution.
+      cpg.typeDecl.nameNot("<global>").fullName.sorted shouldBe Seq(
+        "A.B.C.Bar",
+        "A.B.C.Foo",
+        "HiddenClass1",
+        "HiddenClass2",
+        "X.SomeClass",
+        "X.SomeOtherClass"
       )
     }
 

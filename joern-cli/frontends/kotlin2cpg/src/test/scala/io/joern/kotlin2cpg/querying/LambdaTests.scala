@@ -43,6 +43,24 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
   }
 
+  "CPG for qualified call with a single lambda argument" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |class Runner {
+        |  fun run(action: () -> String): String = action()
+        |}
+        |
+        |fun main() {
+        |  Runner().run { "ok" }
+        |}
+        |""".stripMargin)
+
+    "should not assign more than one incoming ARGUMENT edge to a METHOD_REF" in {
+      cpg.methodRef.l.forall(_._argumentIn.size <= 1) shouldBe true
+    }
+  }
+
   "CPG for code with a simple lambda which captures a local" should {
     val cpg = code("""
         |package simple.pkg
@@ -775,6 +793,35 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       binding2.signature shouldBe "mypkg.AAA(mypkg.AAA)"
       binding2.methodFullName shouldBe s"mypkg.invoke.${Defines.ClosurePrefix}0:mypkg.BBB(mypkg.BBB)"
       binding2.bindingTypeDecl shouldBe lambdaTypeDecl
+    }
+  }
+
+  "CPG for code with lambda used as argument for non-generic fun interface parameter" should {
+    val cpg = code("""
+                     |package mypkg
+                     |fun interface SomeInterface {
+                     |  fun method(param: String): String
+                     |}
+                     |fun interfaceUser(someInterface: SomeInterface) {}
+                     |fun invoke() {
+                     |  interfaceUser { obj -> obj }
+                     |}
+                     |""".stripMargin)
+
+    "contain a single BINDING node for the lambda when signatures are equal" in {
+      val List(lambdaMethod) = cpg.method.fullName(".*lambda.*").l
+      lambdaMethod.fullName shouldBe s"mypkg.invoke.${Defines.ClosurePrefix}0:java.lang.String(java.lang.String)"
+      lambdaMethod.signature shouldBe "java.lang.String(java.lang.String)"
+
+      val List(lambdaTypeDecl) = lambdaMethod.bindingTypeDecl.dedup.l
+      lambdaTypeDecl.fullName shouldBe s"mypkg.invoke.${Defines.ClosurePrefix}0"
+      lambdaTypeDecl.inheritsFromTypeFullName should contain theSameElementsAs (List("mypkg.SomeInterface"))
+
+      val List(binding) = lambdaMethod.referencingBinding.l
+      binding.name shouldBe "method"
+      binding.signature shouldBe "java.lang.String(java.lang.String)"
+      binding.methodFullName shouldBe s"mypkg.invoke.${Defines.ClosurePrefix}0:java.lang.String(java.lang.String)"
+      binding.bindingTypeDecl shouldBe lambdaTypeDecl
     }
   }
 

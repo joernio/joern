@@ -4,6 +4,7 @@ import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, ControlStructure, Identifier, Local}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.codepropertygraph.generated.nodes.Literal
 
 class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with simple if-else" should {
@@ -209,6 +210,38 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
       val List(c1, c2) = matchTryQ.astChildren.l
       c1.order shouldBe 1
       c2.order shouldBe 2
+    }
+  }
+
+  "CPG for code with throw statement" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |fun main() {
+        |  throw RuntimeException("boom")
+        |}
+        |""".stripMargin)
+
+    "should contain a THROW control structure with the thrown expression as its child" in {
+      val List(throwNode: ControlStructure) = cpg.controlStructure.controlStructureType(ControlStructureTypes.THROW).l
+      throwNode.code shouldBe "throw RuntimeException(\"boom\")"
+
+      // Ctor calls cause the following structure to be emitted for the call to RuntimeException
+      // throw Block {
+      //  var tmp = operator.<alloc>(...)
+      //  RuntimeException.<init>(tmp, "boom")
+      // }
+      val List(throwBlock: Block) = throwNode.astChildren.l
+      throwBlock.order shouldBe 1
+      inside(throwBlock.astChildren.isCall.sortBy(_.name).l) { case List(init: Call, assignment: Call) =>
+        // Not really testing ctor generation, just a simple check that it does exist and has expected values
+        assignment.name shouldBe "<operator>.assignment"
+
+        init.code shouldBe "RuntimeException(\"boom\")"
+        init.name shouldBe "<init>"
+        init.methodFullName shouldBe "java.lang.RuntimeException.<init>:void(java.lang.String)"
+      }
+
     }
   }
 

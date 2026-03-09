@@ -70,7 +70,7 @@ object AstCreatorHelper {
 
   def cleanType(rawType: String): String = {
     if (rawType == Defines.Any) return rawType
-    val normalizedTpe = StringUtils.normalizeSpace(rawType.stripSuffix(" ()"))
+    val normalizedTpe = StringUtils.normalizeSpace(rawType.stripSuffix(" ()")).stripSuffix(".Type")
     val tpe = stripGenerics(normalizedTpe) match {
       // Empty or problematic types
       case ""                   => Defines.Any
@@ -104,6 +104,13 @@ object AstCreatorHelper {
     } else {
       tpe
     }
+  }
+
+  def isObjcCall(callMethodFullName: String): Boolean = {
+    // TODO: there might be more prefixes to consider here, but these are the ones we have seen so far in our test codebases
+    callMethodFullName.startsWith("cobjc") ||
+    callMethodFullName.startsWith("(cs)") ||
+    callMethodFullName.startsWith("(cswift)")
   }
 
 }
@@ -169,41 +176,66 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def astForIdentifier(node: SwiftNode): Ast = {
     val identifierName = code(node)
-    if (scope.variableIsInTypeDeclScope(identifierName)) {
+    if (identifierName == "Self") {
+      val tpe      = fullNameOfEnclosingTypeDecl()
+      val selfNode = typeRefNode(node, "Self", tpe)
+      Ast(selfNode)
+    } else if (scope.variableIsInTypeDeclScope(identifierName)) {
       // we found it as member of the surrounding type decl
       // (Swift does not allow to access any member / function of the outer class instance)
-      val tpe      = scope.typeDeclFullNameForMember(identifierName).getOrElse(fullNameOfEnclosingTypeDecl())
-      val selfNode = identifierNode(node, "self", "self", tpe)
-      scope.addVariableReference("self", selfNode, selfNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
+      val tpe = scope.typeDeclFullNameForMember(identifierName).getOrElse(fullNameOfEnclosingTypeDecl())
+
+      val selfNode = if (scope.isInStaticMethodScope) {
+        typeRefNode(node, "Self", tpe)
+      } else {
+        val selfIdNode = identifierNode(node, "self", "self", tpe)
+        scope.addVariableReference("self", selfIdNode, selfIdNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
+        selfIdNode
+      }
 
       val variableOption = scope.lookupVariable(identifierName)
       val callTpe        = variableOption.map(_._2).getOrElse(Defines.Any)
-      fieldAccessAst(node, node, Ast(selfNode), s"self.$identifierName", identifierName, callTpe)
+      fieldAccessAst(node, node, Ast(selfNode), s"${selfNode.code}.$identifierName", identifierName, callTpe)
     } else {
       if (
         config.swiftBuild &&
         scope.lookupVariable(identifierName).isEmpty &&
         fullnameProvider.declFullname(node).nonEmpty
       ) {
-        val tpe      = fullNameOfEnclosingTypeDecl()
-        val selfNode = identifierNode(node, "self", "self", tpe)
-        scope.addVariableReference("self", selfNode, selfNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
+        val tpe = fullNameOfEnclosingTypeDecl()
+        val selfNode = if (scope.isInStaticMethodScope) {
+          typeRefNode(node, "Self", tpe)
+        } else {
+          val selfIdNode = identifierNode(node, "self", "self", tpe)
+          scope.addVariableReference("self", selfIdNode, selfIdNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
+          selfIdNode
+        }
 
         val callTpe = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
         registerType(callTpe)
-        fieldAccessAst(node, node, Ast(selfNode), s"self.$identifierName", identifierName, callTpe)
+        fieldAccessAst(node, node, Ast(selfNode), s"${selfNode.code}.$identifierName", identifierName, callTpe)
       } else {
-        // otherwise it must come from a variable (potentially captured from an outer scope)
-        val identNode      = identifierNode(node, identifierName)
-        val variableOption = scope.lookupVariable(identifierName)
-        val tpe = variableOption match {
-          case Some((_, variableTypeName)) if variableTypeName != Defines.Any => variableTypeName
-          case None if identNode.typeFullName != Defines.Any                  => identNode.typeFullName
-          case _                                                              => Defines.Any
+        if (
+          config.swiftBuild &&
+          scope.lookupVariable(identifierName).isEmpty &&
+          fullnameProvider.typeFullnameRaw(node).exists(_.endsWith(".Type"))
+        ) {
+          val tpe = fullnameProvider.typeFullname(node).get
+          registerType(tpe)
+          Ast(typeRefNode(node, identifierName, tpe))
+        } else {
+          // otherwise it must come from a variable (potentially captured from an outer scope)
+          val identNode      = identifierNode(node, identifierName)
+          val variableOption = scope.lookupVariable(identifierName)
+          val tpe = variableOption match {
+            case Some((_, variableTypeName)) if variableTypeName != Defines.Any => variableTypeName
+            case None if identNode.typeFullName != Defines.Any                  => identNode.typeFullName
+            case _                                                              => Defines.Any
+          }
+          identNode.typeFullName = tpe
+          scope.addVariableReference(identifierName, identNode, tpe, EvaluationStrategies.BY_REFERENCE)
+          Ast(identNode)
         }
-        identNode.typeFullName = tpe
-        scope.addVariableReference(identifierName, identNode, tpe, EvaluationStrategies.BY_REFERENCE)
-        Ast(identNode)
       }
     }
   }
@@ -232,53 +264,82 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }
   }
 
+  private def transferEndOffsetToStartOffset(src: SwiftNode, dst: SwiftNode): SwiftNode = {
+    dst.json("range")("startOffset") = src.json("range")("endOffset").num + 1
+    dst
+  }
+
+  /** Try to get legacy node startOffset from modifiers since in older versions of swiftc (<6.2) it is not stored in the
+    * JSON object.
+    */
+  private def legacyNode(node: FunctionDeclLike): Option[SwiftNode] = {
+    (node match {
+      case f: FunctionDeclSyntax      => f.modifiers.children.lastOption
+      case a: AccessorDeclSyntax      => a.modifier
+      case d: DeinitializerDeclSyntax => d.modifiers.children.lastOption
+      case i: InitializerDeclSyntax   => i.modifiers.children.lastOption
+      case s: SubscriptDeclSyntax     => s.modifiers.children.lastOption
+      case c: ClosureExprSyntax       => None
+    }).map(l => transferEndOffsetToStartOffset(l, node))
+  }
+
   protected def methodInfoForFunctionDeclLike(node: FunctionDeclLike): MethodInfo = {
     val name = calcMethodName(node)
-    fullnameProvider.declFullname(node) match {
-      case Some(fullNameWithSignature) =>
-        val (fullName, signature) = methodInfoFromFullNameWithSignature(fullNameWithSignature)
-        val returnType = node match {
-          case _: DeinitializerDeclSyntax =>
-            Defines.Void
-          case _: InitializerDeclSyntax =>
-            ReturnTypeMatcher.findFirstMatchIn(signature).map(_.group(2)).getOrElse(fullNameOfEnclosingTypeDecl())
-          case _ =>
-            ReturnTypeMatcher.findFirstMatchIn(signature).map(_.group(2)).getOrElse(Defines.Any)
-        }
-        registerType(returnType)
-        MethodInfo(name, fullName, signature, returnType)
-      case None =>
-        val (methodName, methodFullName) = calcNameAndFullName(name)
-        val (signature, returnType) = node match {
-          case f: FunctionDeclSyntax =>
-            val returnType = f.signature.returnClause.fold(Defines.Any)(c => cleanType(code(c.`type`)))
-            (s"${paramSignature(f.signature.parameterClause)}->$returnType", returnType)
-          case a: AccessorDeclSyntax =>
-            (Defines.Any, Defines.Any)
-          case i: InitializerDeclSyntax =>
-            val returnType = fullNameOfEnclosingTypeDecl()
-            (s"${paramSignature(i.signature.parameterClause)}->$returnType", returnType)
-          case _: DeinitializerDeclSyntax =>
-            val returnType = Defines.Any
-            (s"()->$returnType", returnType)
-          case s: SubscriptDeclSyntax =>
-            val returnType = cleanType(code(s.returnClause.`type`))
-            (s"${paramSignature(s.parameterClause)}->$returnType", returnType)
-          case c: ClosureExprSyntax =>
-            fullnameProvider.typeFullnameRaw(node) match {
-              case Some(tpe) =>
-                val signature  = tpe
-                val returnType = ReturnTypeMatcher.findFirstMatchIn(signature).map(_.group(2)).getOrElse(Defines.Any)
-                (signature, returnType)
-              case _ =>
-                val returnType = c.signature.flatMap(_.returnClause).fold(Defines.Any)(r => cleanType(code(r.`type`)))
-                val paramClauseCode = c.signature.flatMap(_.parameterClause).fold("()")(paramSignature)
-                (s"$paramClauseCode->$returnType", returnType)
-            }
-        }
-        registerType(returnType)
-        MethodInfo(methodName, methodFullName, signature, returnType)
-    }
+
+    // We need to copy the node range here because we might modify it when trying to get the legacy node for older swiftc versions.
+    // (see: transferEndOffsetToStartOffset)
+    // We want to keep the original range intact for the actual node.
+    val nodeRange = node.asInstanceOf[SwiftNode].json("range").obj.copy()
+
+    val methodInfo =
+      fullnameProvider.declFullname(node).orElse(legacyNode(node).flatMap(fullnameProvider.declFullname)) match {
+        case Some(fullNameWithSignature) =>
+          val (fullName, signature) = methodInfoFromFullNameWithSignature(fullNameWithSignature)
+          val returnType = node match {
+            case _: DeinitializerDeclSyntax =>
+              Defines.Void
+            case _: InitializerDeclSyntax =>
+              ReturnTypeMatcher.findFirstMatchIn(signature).map(_.group(2)).getOrElse(fullNameOfEnclosingTypeDecl())
+            case _ =>
+              ReturnTypeMatcher.findFirstMatchIn(signature).map(_.group(2)).getOrElse(Defines.Any)
+          }
+          registerType(returnType)
+          MethodInfo(name, fullName, signature, returnType)
+        case None =>
+          val (methodName, methodFullName) = calcNameAndFullName(name)
+          val (signature, returnType) = node match {
+            case f: FunctionDeclSyntax =>
+              val returnType = f.signature.returnClause.fold(Defines.Any)(c => cleanType(code(c.`type`)))
+              (s"${paramSignature(f.signature.parameterClause)}->$returnType", returnType)
+            case a: AccessorDeclSyntax =>
+              (Defines.Any, Defines.Any)
+            case i: InitializerDeclSyntax =>
+              val returnType = fullNameOfEnclosingTypeDecl()
+              (s"${paramSignature(i.signature.parameterClause)}->$returnType", returnType)
+            case _: DeinitializerDeclSyntax =>
+              val returnType = Defines.Any
+              (s"()->$returnType", returnType)
+            case s: SubscriptDeclSyntax =>
+              val returnType = cleanType(code(s.returnClause.`type`))
+              (s"${paramSignature(s.parameterClause)}->$returnType", returnType)
+            case c: ClosureExprSyntax =>
+              fullnameProvider.typeFullnameRaw(node) match {
+                case Some(tpe) =>
+                  val signature  = tpe
+                  val returnType = ReturnTypeMatcher.findFirstMatchIn(signature).map(_.group(2)).getOrElse(Defines.Any)
+                  (signature, returnType)
+                case _ =>
+                  val returnType = c.signature.flatMap(_.returnClause).fold(Defines.Any)(r => cleanType(code(r.`type`)))
+                  val paramClauseCode = c.signature.flatMap(_.parameterClause).fold("()")(paramSignature)
+                  (s"$paramClauseCode->$returnType", returnType)
+              }
+          }
+          registerType(returnType)
+          MethodInfo(methodName, methodFullName, signature, returnType)
+      }
+
+    node.json("range") = nodeRange
+    methodInfo
   }
 
   case class MethodInfo(name: String, fullName: String, signature: String, returnType: String) {
@@ -287,18 +348,33 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
   object MethodInfo {
     def fullNameToExtensionFullName(fullName: String, name: String): String = {
-      fullName.replaceFirst(s"\\.$name:", s"<extension>.$name:")
+      val (replacementRegex, replacement) = if (fullName.contains(".subscript:")) {
+        (".subscript:", s"<extension>.subscript:")
+      } else if (fullName.contains(".subscript.getter:")) {
+        (".subscript.getter:", s"<extension>.subscript.getter:")
+      } else if (fullName.contains(".subscript.setter:")) {
+        (".subscript.setter:", s"<extension>.subscript.setter:")
+      } else {
+        (s".$name:", s"<extension>.$name:")
+      }
+      fullName.replace(replacementRegex, replacement)
     }
   }
 
   case class TypeInfo(name: String, fullName: String)
 
-  protected def methodInfoForAccessorDecl(node: AccessorDeclSyntax, variableName: String, tpe: String): MethodInfo = {
+  protected def methodInfoForAccessorDecl(
+    node: AccessorDeclSyntax,
+    variableName: String,
+    tpe: String,
+    fullNameSubscriptPrefix: String = ""
+  ): MethodInfo = {
     val accessorName = code(node.accessorSpecifier)
+    val namePrefix   = if (variableName.nonEmpty) s"$variableName." else ""
     val name = accessorName match {
-      case "set" => s"$variableName.setter"
-      case "get" => s"$variableName.getter"
-      case _     => s"$variableName.$accessorName"
+      case "set" => s"${namePrefix}setter"
+      case "get" => s"${namePrefix}getter"
+      case other => s"$namePrefix$other"
     }
 
     fullnameProvider.declFullname(node) match {
@@ -307,11 +383,28 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         var signature = tpe
         if (fullNameWithSignature.contains(":")) {
           fullName = fullNameWithSignature.substring(0, fullNameWithSignature.lastIndexOf(":"))
-          signature = fullNameWithSignature.substring(fullNameWithSignature.lastIndexOf(":"))
+          signature = fullNameWithSignature.substring(fullNameWithSignature.lastIndexOf(":") + 1)
         }
         MethodInfo(name, fullName, signature, tpe)
       case None =>
-        val (methodName, methodFullName) = calcNameAndFullName(name)
+        val (methodName, methodFullName) = calcNameAndFullName(name, fullNameSubscriptPrefix)
+        registerType(tpe)
+        MethodInfo(methodName, methodFullName, tpe, tpe)
+    }
+  }
+
+  protected def methodInfoForAccessorDecl(node: PatternBindingSyntax, variableName: String, tpe: String): MethodInfo = {
+    fullnameProvider.declFullname(node) match {
+      case Some(fullNameWithSignature) =>
+        var fullName  = fullNameWithSignature
+        var signature = tpe
+        if (fullNameWithSignature.contains(":")) {
+          fullName = fullNameWithSignature.substring(0, fullNameWithSignature.lastIndexOf(":"))
+          signature = fullNameWithSignature.substring(fullNameWithSignature.lastIndexOf(":") + 1)
+        }
+        MethodInfo(variableName, fullName, signature, tpe)
+      case None =>
+        val (methodName, methodFullName) = calcNameAndFullName(variableName)
         registerType(tpe)
         MethodInfo(methodName, methodFullName, tpe, tpe)
     }
@@ -398,22 +491,25 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }
   }
 
-  private def calcNameAndFullName(name: String): (String, String) = {
+  private def calcNameAndFullName(name: String, fullNameSubscriptPrefix: String = ""): (String, String) = {
     val fullNamePrefix = s"${parserResult.filename}:${scope.computeScopePath}"
-    val fullName       = s"$fullNamePrefix.$name"
-    (name, fullName)
+    val methodFullNameWithSubscriptPrefix = if (fullNameSubscriptPrefix.nonEmpty) {
+      s"$fullNamePrefix.$fullNameSubscriptPrefix.$name"
+    } else {
+      s"$fullNamePrefix.$name"
+    }
+    (name, methodFullNameWithSubscriptPrefix)
   }
 
   private def calcMethodName(func: SwiftNode): String = {
-    val name = func match {
-      case f: FunctionDeclSyntax      => code(f.name)
+    func match {
+      case f: FunctionDeclSyntax      => cleanName(code(f.name))
       case a: AccessorDeclSyntax      => code(a.accessorSpecifier)
-      case d: DeinitializerDeclSyntax => code(d.deinitKeyword)
-      case i: InitializerDeclSyntax   => code(i.initKeyword)
-      case s: SubscriptDeclSyntax     => code(s.subscriptKeyword)
+      case d: DeinitializerDeclSyntax => "deinit"
+      case i: InitializerDeclSyntax   => "init"
+      case s: SubscriptDeclSyntax     => "subscript"
       case _                          => nextClosureName()
     }
-    cleanName(name)
   }
 
 }

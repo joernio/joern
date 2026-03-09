@@ -37,7 +37,7 @@ trait AstForLambdaCreator(implicit withSchemaValidation: ValidationMode) { this:
     if (!goGlobal.processingDependencies) {
       // Create these lambda AST nodes only for main source code and ignore it while processing dependencies code.
       val typeDeclNode_ = typeDeclNode(funcLiteral, lambdaName, fullName, relPathFileName, lambdaName)
-      if baseFullName == fullyQualifiedPackage then
+      if (baseFullName == fullyQualifiedPackage)
         typeDeclNode_.astParentType(NodeTypes.TYPE_DECL).astParentFullName(fullyQualifiedPackage)
       else typeDeclNode_.astParentType(NodeTypes.METHOD).astParentFullName(baseFullName)
       val structTypes = Option(goGlobal.lambdaSignatureToLambdaTypeMap.get(signature)) match {

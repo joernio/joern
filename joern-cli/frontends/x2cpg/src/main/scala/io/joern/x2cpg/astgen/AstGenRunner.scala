@@ -1,12 +1,11 @@
 package io.joern.x2cpg.astgen
 
 import com.typesafe.config.ConfigFactory
-import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, logger}
-import io.joern.x2cpg.utils.Environment.ArchitectureType
-import io.joern.x2cpg.utils.Environment.OperatingSystemType
+import io.joern.x2cpg.astgen.AstGenRunner.AstGenProgramMetaData
 import io.joern.x2cpg.utils.Environment
-import io.shiftleft.semanticcpg.utils.ExternalCommand
+import io.joern.x2cpg.utils.Environment.{ArchitectureType, OperatingSystemType}
 import io.joern.x2cpg.{SourceFiles, X2CpgConfig}
+import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 import versionsort.VersionHelper
 
@@ -47,6 +46,22 @@ object AstGenRunner {
     val multiArchitectureBuilds: Boolean = false
   ) {
     val packagePath: URL = getClass.getProtectionDomain.getCodeSource.getLocation
+  }
+
+  def isExecutableFile(filePath: String): Boolean = {
+    Paths.get(filePath) match {
+      case path if !Files.exists(path) =>
+        logger.warn(s"File '$filePath' does not exist.")
+        false
+      case path if !Files.isRegularFile(path) =>
+        logger.warn(s"File '$filePath' is not a regular file.")
+        false
+      case path if !Files.isExecutable(path) =>
+        logger.warn(s"File '$filePath' is not executable.")
+        false
+      case _ =>
+        true
+    }
   }
 }
 
@@ -136,7 +151,15 @@ abstract class AstGenRunner(metaData: AstGenProgramMetaData, config: X2CpgConfig
     if (hasCompatibleAstGenVersion(astGenVersion)) {
       metaData.name
     } else {
-      s"$executableDir/$executableName"
+      val localPath = s"$executableDir/$executableName"
+      if (AstGenRunner.isExecutableFile(localPath)) {
+        localPath
+      } else {
+        logger.error(s"""Local ${metaData.name} binary not found at '$localPath' or is not executable!
+             |Please make sure to have a compatible astgen version installed and available on this system.
+             |""".stripMargin)
+        scala.sys.exit(1)
+      }
     }
   }
 

@@ -16,6 +16,7 @@ import com.github.javaparser.ast.expr.{
   MethodReferenceExpr,
   NameExpr,
   SuperExpr,
+  SwitchExpr,
   ThisExpr,
   TypeExpr,
   UnaryExpr
@@ -32,7 +33,7 @@ import io.joern.javasrc2cpg.util.{NameConstants, Util}
 import io.joern.x2cpg.{Ast, Defines}
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, NewCall, NewFieldIdentifier, NewLiteral, NewTypeRef}
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, EdgeTypes, Operators}
 
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
@@ -275,7 +276,18 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
     val fieldIdentifier = expr.getName
     val identifierAsts  = astsForExpression(expr.getScope, ExpectedType.empty)
 
-    fieldAccessAst(expr, fieldIdentifier, identifierAsts.head, expr.toString, fieldIdentifier.toString, typeFullName)
+    val scopeType           = expressionReturnTypeFullName(expr.getScope)
+    val isArrayLengthAccess = fieldIdentifier.toString == NameConstants.Length && scopeType.exists(_.endsWith("[]"))
+
+    if (isArrayLengthAccess) {
+      // <operators>.sizeOf is used for array length lookups to avoid an issue with dataflow tracking where
+      // array.length and array[0] share a wildcard access path indexAccess and fieldAccess are not handled
+      // separately.
+      val callNode = operatorCallNode(expr, expr.toString, Operators.sizeOf, typeFullName = Some(typeFullName))
+      callAst(callNode, Seq(identifierAsts.head))
+    } else {
+      fieldAccessAst(expr, fieldIdentifier, identifierAsts.head, expr.toString, fieldIdentifier.toString, typeFullName)
+    }
   }
 
   private[expressions] def astForInstanceOfExpr(expr: InstanceOfExpr): Ast = {
@@ -400,5 +412,9 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
     val methodFullName = Util.composeMethodFullName(namespacePrefix, methodName, signature)
 
     Ast(methodRefNode(expr, expr.toString, methodFullName, typeFullName.getOrElse(defaultTypeFallback())))
+  }
+
+  private[expressions] def astForSwitchExpr(expr: SwitchExpr, expectedType: ExpectedType): Ast = {
+    astForSwitch(expr, expr.getSelector, expr.getEntries, ControlStructureTypes.MATCH)
   }
 }

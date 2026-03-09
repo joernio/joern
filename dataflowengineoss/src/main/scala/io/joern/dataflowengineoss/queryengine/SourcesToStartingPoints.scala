@@ -29,7 +29,7 @@ object SourcesToStartingPoints {
         .dedup
         .toList
       sources.headOption
-        .map(src => {
+        .map { src =>
           // We need to get Cpg wrapper from graph. Hence we are taking head element from source iterator.
           // This will also ensure if the source list is empty then these tasks are invoked.
           val cpg                           = Cpg(src.graph)
@@ -38,7 +38,7 @@ object SourcesToStartingPoints {
             calculateStatingPointsWithUsageInOtherClasses(methodTasks, cpg, executorService)
           (startingPoints ++ startingPointFromUsageInOtherClasses)
             .sortBy(_.source.id)
-        })
+        }
         .getOrElse(Nil)
     } catch {
       case e: RejectedExecutionException =>

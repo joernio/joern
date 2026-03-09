@@ -283,7 +283,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
           methods.fullName.toSet
         case _ => Set.empty
       }
-      if foundMethodFullNames.nonEmpty then foundMethodFullNames else methodFullNames
+      if (foundMethodFullNames.nonEmpty) foundMethodFullNames else methodFullNames
     }
 
     /* Look up methods in existing CPG */

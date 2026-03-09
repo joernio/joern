@@ -246,7 +246,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def astForRangeStatement(rangeStmt: ParserNodeInfo): Ast = {
 
-    rangeStmt.json.obj.contains(ParserKeys.Key) match
+    rangeStmt.json.obj.contains(ParserKeys.Key) match {
       case true =>
         val keyParserNode  = createParserNodeInfo(rangeStmt.json(ParserKeys.Key))
         val declParserNode = createParserNodeInfo(keyParserNode.json(ParserKeys.Obj)(ParserKeys.Decl))
@@ -262,6 +262,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         val forNode = controlStructureNode(rangeStmt, ControlStructureTypes.FOR, code)
         val stmtAst = astsForStatement(rangeStmt.json(ParserKeys.Body))
         controlStructureAst(forNode, None, initAst ++ stmtAst)
+    }
   }
 
   private def astForBranchStatement(branchStmt: ParserNodeInfo): Ast = {

@@ -58,31 +58,36 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     codes.map(_.replace("...", ""))
   }
 
-  protected def astsForDecorators(elem: BabelNodeInfo): Seq[Ast] = {
+  private def decoratorElements(elem: BabelNodeInfo): List[BabelNodeInfo] = {
     if (hasKey(elem.json, "decorators") && !elem.json("decorators").isNull) {
-      elem.json("decorators").arr.toList.map(d => astForDecorator(createBabelNodeInfo(d)))
-    } else Seq.empty
+      elem.json("decorators").arr.toList.map(createBabelNodeInfo)
+    } else List.empty
   }
 
-  private def astForDecorator(decorator: BabelNodeInfo): Ast = {
+  protected def decoratorExpressionElements(elem: BabelNodeInfo): List[BabelNodeInfo] = {
+    val exprs = decoratorElements(elem).map(e => createBabelNodeInfo(e.json("expression")))
+    exprs.collect {
+      case d if d.node != Identifier && d.node != MemberExpression => d
+    }
+  }
+
+  protected def astsForDecorators(elem: BabelNodeInfo): Seq[Ast] = {
+    withIndex(decoratorElements(elem)) { case (ast, idx) =>
+      val decoratorAst = astForDecorator(ast)
+      setOrderExplicitly(decoratorAst, idx)
+      decoratorAst
+    }
+  }
+
+  protected def astForDecorator(decorator: BabelNodeInfo): Ast = {
     val exprNode = createBabelNodeInfo(decorator.json("expression"))
     exprNode.node match {
       case Identifier | MemberExpression =>
-        val (name, fullName) = namesForDecoratorExpression(code(exprNode.json))
+        val (name, fullName) = namesForDecoratorExpression(exprNode.code)
         annotationAst(annotationNode(decorator, decorator.code, name, fullName), List.empty)
-      case CallExpression =>
-        val (name, fullName) = namesForDecoratorExpression(code(exprNode.json("callee")))
-        val node             = annotationNode(decorator, decorator.code, name, fullName)
-        val assignmentAsts = exprNode.json("arguments").arr.toList.map { arg =>
-          createBabelNodeInfo(arg).node match {
-            case AssignmentExpression =>
-              annotationAssignmentAst(code(arg("left")), code(arg), astForNodeWithFunctionReference(arg("right")))
-            case _ =>
-              annotationAssignmentAst("value", code(arg), astForNodeWithFunctionReference(arg))
-          }
-        }
-        annotationAst(node, assignmentAsts)
-      case _ => Ast()
+      case _ =>
+        val (name, fullName) = namesForDecoratorExpression(exprNode.code.takeWhile(_ != '('))
+        annotationAst(annotationNode(decorator, decorator.code, name, fullName), List.empty)
     }
   }
 
@@ -145,7 +150,6 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     }
 
     val asts = fromAst +: (specifierAsts ++ declAsts)
-    setArgumentIndices(asts)
     blockAst(blockNode(declaration, declaration.code, Defines.Any), asts)
   }
 
@@ -157,7 +161,6 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         createExportAssignmentCallAst(name, exportCallAst, assignment, None)
       }
     }
-    setArgumentIndices(declAsts)
     blockAst(blockNode(assignment, assignment.code, Defines.Any), declAsts)
   }
 
@@ -170,7 +173,6 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         createExportAssignmentCallAst(name, exportCallAst, declaration, None)
       }
     }
-    setArgumentIndices(declAsts)
     blockAst(blockNode(declaration, declaration.code, Defines.Any), declAsts)
   }
 
@@ -187,7 +189,6 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val assignmentCallAst = createExportAssignmentCallAst(s"_$name", exportCallAst, declaration, None)
 
     val childrenAsts = List(fromCallAst, assignmentCallAst)
-    setArgumentIndices(childrenAsts)
     blockAst(blockNode(declaration, declaration.code, Defines.Any), childrenAsts)
   }
 
@@ -538,7 +539,6 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     localAstParentStack.pop()
 
     val blockChildren = assignmentTmpCallAst +: subTreeAsts :+ Ast(returnTmpNode)
-    setArgumentIndices(blockChildren)
     blockAst(blockNode_, blockChildren)
   }
 

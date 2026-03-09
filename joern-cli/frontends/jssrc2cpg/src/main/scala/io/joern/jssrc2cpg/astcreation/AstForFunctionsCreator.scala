@@ -320,7 +320,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   protected def astForTSDeclareFunction(func: BabelNodeInfo): Ast = {
-    val functionNode  = createMethodDefinitionNode(func)
+    val functionNode  = createMethodDefinitionNode(func, ConstructorContent.empty)
     val tpe           = typeFor(func)
     val possibleTypes = Seq(tpe)
     val typeFullName  = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
@@ -331,10 +331,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     Ast()
   }
 
-  protected def createMethodDefinitionNode(
-    func: BabelNodeInfo,
-    methodBlockContent: List[Ast] = List.empty
-  ): NewMethod = {
+  protected def createMethodDefinitionNode(func: BabelNodeInfo, methodBlockContent: ConstructorContent): NewMethod = {
     val (methodName, methodFullName) = calcMethodNameAndFullName(func)
     val methodNode_ = methodNode(func, methodName, func.code, methodFullName, None, parserResult.filename)
     val lambdaModifier = if (methodName.startsWith(io.joern.x2cpg.Defines.ClosurePrefix)) {
@@ -356,6 +353,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       handleParameters(func.json("params").arr.toSeq, mutable.ArrayBuffer.empty[Ast], createLocals = false)
     }
 
+    val blockAsts =
+      methodBlockContent.constructorContent.flatMap(m => methodBlockContent.typeDecl.map(astForClassMember(m, _)))
+
     val methodReturnNode_ = methodReturnNode(func)
 
     methodAstParentStack.pop()
@@ -370,11 +370,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         parserResult.filename
       )
 
-    val mAst = if (methodBlockContent.isEmpty) {
+    val mAst = if (blockAsts.isEmpty) {
       methodStubAst(methodNode_, (thisNode +: paramNodes).map(Ast(_)), methodReturnNode_, modifiers)
     } else {
-      setArgumentIndices(methodBlockContent)
-      val bodyAst = blockAst(NewBlock(), methodBlockContent)
+      val bodyAst = blockAst(NewBlock(), blockAsts)
       methodAstWithAnnotations(
         methodNode_,
         (thisNode +: paramNodes).map(Ast(_)),
@@ -396,7 +395,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     func: BabelNodeInfo,
     shouldCreateFunctionReference: Boolean = false,
     shouldCreateAssignmentCall: Boolean = false,
-    methodBlockContent: List[Ast] = List.empty
+    methodBlockContent: ConstructorContent
   ): MethodAst = {
     val (methodName, methodFullName) = calcMethodNameAndFullName(func)
 
@@ -456,10 +455,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         }
       case _ => createBlockStatementAsts(bodyJson("body"))
     }
-    val methodBlockChildren = methodBlockContent ++ additionalBlockStatements.toList ++ bodyStmtAsts
-    setArgumentIndices(methodBlockChildren)
 
-    val methodReturnNode_ = methodReturnNode(func)
+    val methodBlockChildren = methodBlockContent.constructorContent.flatMap(m =>
+      methodBlockContent.typeDecl.map(astForClassMember(m, _))
+    ) ++ additionalBlockStatements.toList ++ bodyStmtAsts
 
     localAstParentStack.pop()
     scope.popScope()
@@ -480,7 +479,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         methodNode_,
         (thisNode +: paramNodes).map(Ast(_)),
         blockAst(blockNode_, methodBlockChildren),
-        methodReturnNode_,
+        methodReturnNode(func),
         modifierNodes,
         astsForDecorators(func)
       )
@@ -500,6 +499,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     func: BabelNodeInfo,
     shouldCreateFunctionReference: Boolean = false,
     shouldCreateAssignmentCall: Boolean = false
-  ): Ast = createMethodAstAndNode(func, shouldCreateFunctionReference, shouldCreateAssignmentCall).ast
+  ): Ast = createMethodAstAndNode(
+    func,
+    shouldCreateFunctionReference,
+    shouldCreateAssignmentCall,
+    ConstructorContent.empty
+  ).ast
 
 }

@@ -258,7 +258,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
         "HelloWorldSwift.swift",
         "class_decl",
         (20, 237),
-        Some("SwiftHelloWorldLib.HelloWorld"),
+        Some("SwiftHelloWorldLib.HelloWorld.Type"),
         Some("SwiftHelloWorldLib.HelloWorld")
       ),
       (
@@ -357,9 +357,9 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
       ("HelloWorldSwift.swift", "string_literal_expr", (123, 123), Some("Swift.String"), None),
       ("HelloWorldSwift.swift", "string_literal_expr", (206, 206), Some("Swift.String"), None),
       ("HelloWorldSwift.swift", "string_literal_expr", (79, 79), Some("Swift.String"), None),
-      ("HelloWorldSwift.swift", "type_expr", (204, 204), Some("Swift.String"), None),
-      ("HelloWorldSwift.swift", "type_expr", (215, 215), Some("Swift.String"), None),
-      ("HelloWorldSwift.swift", "type_expr", (222, 222), Some("Swift.String"), None),
+      ("HelloWorldSwift.swift", "type_expr", (204, 204), Some("Swift.String.Type"), None),
+      ("HelloWorldSwift.swift", "type_expr", (215, 215), Some("Swift.String.Type"), None),
+      ("HelloWorldSwift.swift", "type_expr", (222, 222), Some("Swift.String.Type"), None),
       (
         "HelloWorldSwift.swift",
         "var_decl",
@@ -438,8 +438,8 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
       ),
       ("Main.swift", "return_stmt", (46, 46), Some("Swift.Void"), None),
       ("Main.swift", "string_literal_expr", (147, 147), Some("Swift.String"), None),
-      ("Main.swift", "struct_decl", (46, 158), Some("SwiftHelloWorld.Main"), Some("SwiftHelloWorld.Main")),
-      ("Main.swift", "type_expr", (112, 112), Some("SwiftHelloWorldLib.HelloWorld"), None),
+      ("Main.swift", "struct_decl", (46, 158), Some("SwiftHelloWorld.Main.Type"), Some("SwiftHelloWorld.Main")),
+      ("Main.swift", "type_expr", (112, 112), Some("SwiftHelloWorldLib.HelloWorld.Type"), None),
       ("Main.swift", "var_decl", (102, 102), Some("SwiftHelloWorldLib.HelloWorld"), None)
     )
 
@@ -615,7 +615,7 @@ class SwiftCompilerTests extends AnyWordSpec with Matchers {
           )
 
           helloWorldMappings should contain(
-            ("class_decl", (1, 478), Some("SwiftHelloWorldLib.HelloWorld"), Some("SwiftHelloWorldLib.HelloWorld"))
+            ("class_decl", (1, 478), Some("SwiftHelloWorldLib.HelloWorld.Type"), Some("SwiftHelloWorldLib.HelloWorld"))
           )
 
           helloWorldMappings should contain oneElementOf List(

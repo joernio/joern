@@ -114,10 +114,10 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     elseClause: Option[RubyExpression],
     astForIf: IfExpression => Ast
   ): List[Ast] = {
-    elsIfClauses match
+    elsIfClauses match {
       case Nil => elseClause.map(astForElseClause).toList
       case elsIfNode :: rest =>
-        elsIfNode match
+        elsIfNode match {
           case elsIfNode: ElsIfClause =>
             val newIf = IfExpression(elsIfNode.condition, elsIfNode.thenClause, rest, elseClause)(elsIfNode.span)
             val wrappingBlock = blockNode(elsIfNode)
@@ -126,6 +126,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           case elsIfNode =>
             logger.warn(s"Expecting elsif clause in ${code(elsIfNode)} ($relativeFileName), skipping")
             Nil
+        }
+    }
   }
 
   protected def astForStatementList(node: StatementList): Ast = {
@@ -172,11 +174,12 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val block = blockNode(node)
     scope.pushNewScope(BlockScope(block))
 
-    val stmtAsts = node.statements.size match
+    val stmtAsts = node.statements.size match {
       case 0 => List()
       case n =>
         val (headStmts, lastStmt) = node.statements.splitAt(n - 1)
         headStmts.flatMap(astsForStatement) ++ lastStmt.flatMap(astsForImplicitReturnStatement)
+    }
 
     scope.popScope()
     blockAst(block, stmtAsts)
@@ -193,7 +196,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       )(span.spanStart("else\n\treturn nil\nend"))
     }
 
-    node match
+    node match {
       case expr: ControlFlowStatement =>
         def transform(e: RubyExpression & ControlFlowStatement): RubyExpression =
           transformLastRubyNodeInControlFlowExpressionBody(e, returnLastNode(_, transform), elseReturnNil)
@@ -271,6 +274,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           s" not supported yet: ${node.text} (${node.getClass.getSimpleName}), only generating statement (${this.relativeFileName})"
         )
         astsForStatement(node).toList
+    }
   }
 
   private def returnAstForRubyCall[C <: RubyCall](node: RubyExpression & RubyCallWithBlock[C]): Seq[Ast] = {

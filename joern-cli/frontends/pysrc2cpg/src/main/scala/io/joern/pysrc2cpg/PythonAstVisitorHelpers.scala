@@ -4,6 +4,7 @@ import io.joern.pysrc2cpg.memop.MemoryOperation
 import io.joern.pysrc2cpg.memop.MemoryOperation.{Del, Load, Store}
 import io.joern.pythonparser.{AstPrinter, ast}
 import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.frontendspecific.pysrc2cpg.PythonOperators
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
@@ -134,7 +135,6 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
 
   // Used for assign statements, for loop target assignment and
   // for comprehension target assignment.
-  // TODO handle Starred target
   protected def createValueToTargetsDecomposition(
     targets: Iterable[ast.iexpr],
     valueNode: NewNode,
@@ -164,6 +164,11 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
       //     x = tmp[0]
       //     y = tmp[1][0]
       //     z = tmp[1][1]
+      // Lowering of x, *y, z = someList:
+      //     tmp = someList
+      //     x = tmp[0]
+      //     y = slice(tmp, 1, -1, 1)
+      //     z = tmp[-1]
       val tmpVariableName = getUnusedName()
 
       val tmpVariableAssignNode =
@@ -174,13 +179,25 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
 
       targets.foreach { target =>
         val targetWithAccessChains = getTargetsWithAccessChains(target)
-        targetWithAccessChains.foreach { case (trgt, accessChain) =>
-          val targetNode = convert(trgt)
-          val tmpIdentifierNode =
-            createIdentifierNode(tmpVariableName, Load, lineAndColumn)
-          val indexTmpIdentifierNode = createIndexAccessChain(tmpIdentifierNode, accessChain, lineAndColumn)
+        targetWithAccessChains.foreach { case (trgt, accessChain, starredInfoOpt) =>
+          val targetNode        = convert(trgt)
+          val tmpIdentifierNode = createIdentifierNode(tmpVariableName, Load, lineAndColumn)
 
-          val targetAssignNode = createAssignment(targetNode, indexTmpIdentifierNode, lineAndColumn)
+          val sourceNode = starredInfoOpt match {
+            case Some(starredInfo) =>
+              val baseNode = if (accessChain.tail.nonEmpty) {
+                createIndexAccessChain(tmpIdentifierNode, accessChain.tail, lineAndColumn)
+              } else {
+                tmpIdentifierNode
+              }
+              val upperIndex = if (starredInfo.countAfter == 0) None else Some(-starredInfo.countAfter)
+              createSliceCall(baseNode, starredInfo.position, upperIndex, lineAndColumn)
+
+            case None =>
+              createIndexAccessChain(tmpIdentifierNode, accessChain, lineAndColumn)
+          }
+
+          val targetAssignNode = createAssignment(targetNode, sourceNode, lineAndColumn)
           loweredAssignNodes.append(targetAssignNode)
         }
       }
@@ -188,26 +205,43 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
     }
   }
 
-  protected def getTargetsWithAccessChains(target: ast.iexpr): Iterable[(ast.iexpr, List[Int])] = {
-    val result = mutable.ArrayBuffer.empty[(ast.iexpr, List[Int])]
+  protected case class StarredInfo(position: Int, totalCount: Int, countAfter: Int)
+
+  protected def getTargetsWithAccessChains(target: ast.iexpr): Iterable[(ast.iexpr, List[Int], Option[StarredInfo])] = {
+    val result = mutable.ArrayBuffer.empty[(ast.iexpr, List[Int], Option[StarredInfo])]
     getTargetsInternal(target, Nil)
 
     def getTargetsInternal(target: ast.iexpr, indexChain: List[Int]): Unit = {
       target match {
         case tuple: ast.Tuple =>
-          var index = 0
-          tuple.elts.foreach { element =>
-            getTargetsInternal(element, index :: indexChain)
-            index += 1
-          }
+          handleSequence(tuple.elts.toSeq, indexChain)
         case list: ast.List =>
-          var index = 0
-          list.elts.foreach { element =>
-            getTargetsInternal(element, index :: indexChain)
-            index += 1
-          }
+          handleSequence(list.elts.toSeq, indexChain)
         case _ =>
-          result.append((target, indexChain))
+          result.append((target, indexChain, None))
+      }
+    }
+
+    def handleSequence(elements: Seq[ast.iexpr], indexChain: List[Int]): Unit = {
+      val starredIndex = elements.indexWhere(_.isInstanceOf[ast.Starred])
+
+      if (starredIndex >= 0) {
+        elements.take(starredIndex).zipWithIndex.foreach { case (element, index) =>
+          getTargetsInternal(element, index :: indexChain)
+        }
+
+        val starred     = elements(starredIndex).asInstanceOf[ast.Starred]
+        val countAfter  = elements.size - starredIndex - 1
+        val starredInfo = StarredInfo(starredIndex, elements.size, countAfter)
+        result.append((starred.value, starredIndex :: indexChain, Some(starredInfo)))
+
+        elements.drop(starredIndex + 1).zipWithIndex.foreach { case (element, idx) =>
+          getTargetsInternal(element, -(countAfter - idx) :: indexChain)
+        }
+      } else {
+        elements.zipWithIndex.foreach { case (element, index) =>
+          getTargetsInternal(element, index :: indexChain)
+        }
       }
     }
 
@@ -543,6 +577,30 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
     addAstChildrenAsArguments(indexAccessNode, 1, baseNode, indexNode)
 
     indexAccessNode
+  }
+
+  protected def createSliceCall(
+    baseNode: NewNode,
+    lowerIndex: Int,
+    upperIndex: Option[Int],
+    lineAndColumn: LineAndColumn
+  ): NewNode = {
+    val lowerNode = nodeBuilder.intLiteralNode(lowerIndex.toString, lineAndColumn)
+    val upperNode = upperIndex match {
+      case Some(idx) => nodeBuilder.intLiteralNode(idx.toString, lineAndColumn)
+      case None      => nodeBuilder.literalNode("None", None, lineAndColumn)
+    }
+    val stepNode = nodeBuilder.intLiteralNode("1", lineAndColumn)
+
+    val upperStr = upperIndex.map(_.toString).getOrElse("")
+    val code     = s"${codeOf(baseNode)}[${lowerIndex}:${upperStr}:1]"
+    val sliceCallNode =
+      nodeBuilder.callNode(code, PythonOperators.slice, DispatchTypes.STATIC_DISPATCH, lineAndColumn)
+
+    val args = baseNode :: lowerNode :: upperNode :: stepNode :: Nil
+    addAstChildrenAsArguments(sliceCallNode, 1, args)
+
+    sliceCallNode
   }
 
   protected def createIndexAccessChain(

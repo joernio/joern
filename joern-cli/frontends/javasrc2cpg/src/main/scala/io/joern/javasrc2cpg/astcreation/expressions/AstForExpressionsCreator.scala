@@ -21,6 +21,7 @@ import com.github.javaparser.ast.expr.{
   NameExpr,
   ObjectCreationExpr,
   SuperExpr,
+  SwitchExpr,
   ThisExpr,
   UnaryExpr,
   VariableDeclarationExpr
@@ -40,7 +41,6 @@ trait AstForExpressionsCreator
     // case _: MethodReferenceExpr     => Seq()
     // case _: PatternExpr             => Seq()
     // case _: SuperExpr               => Seq()
-    // case _: SwitchExpr              => Seq()
     // case _: TypeExpr                => Seq()
     expression match {
       case _: AnnotationExpr          => Seq()
@@ -62,6 +62,7 @@ trait AstForExpressionsCreator
       case x: NameExpr                => Seq(astForNameExpr(x, expectedType))
       case x: ObjectCreationExpr      => Seq(blockAstForObjectCreationExpr(x, expectedType))
       case x: SuperExpr               => Seq(astForSuperExpr(x, expectedType))
+      case x: SwitchExpr              => Seq(astForSwitchExpr(x, expectedType))
       case x: ThisExpr                => Seq(astForThisExpr(x, expectedType))
       case x: UnaryExpr               => Seq(astForUnaryExpr(x, expectedType))
       case x: VariableDeclarationExpr => astsForVariableDeclarationExpr(x)

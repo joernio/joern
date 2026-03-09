@@ -1,12 +1,10 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
+import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
 import io.joern.x2cpg.Defines
-
-import io.joern.swiftsrc2cpg.testfixtures.SwiftAstTestCpg
-import io.joern.x2cpg.testfixtures.Code2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
-class LabeledParamSignatureTests extends Code2CpgFixture(() => new SwiftAstTestCpg(".swift")) {
+class LabeledParamSignatureTests extends SwiftSrc2CpgSuite {
 
   "LabeledParamSignatureTests" should {
 
@@ -44,9 +42,12 @@ class LabeledParamSignatureTests extends Code2CpgFixture(() => new SwiftAstTestC
       c2.methodFullName shouldBe Defines.DynamicCallUnknownFullName
       c3.methodFullName shouldBe Defines.DynamicCallUnknownFullName
 
-      c1.argument.argumentName.l shouldBe List("otherLabel")
+      c1.argument.argumentName shouldBe empty
+      c1.argument.argumentLabel.loneElement shouldBe "otherLabel"
       c2.argument.argumentName shouldBe empty
-      c3.argument.argumentName.l shouldBe List("parameterLabel")
+      c2.argument.argumentLabel shouldBe empty
+      c3.argument.argumentName shouldBe empty
+      c3.argument.argumentLabel.loneElement shouldBe "parameterLabel"
     }
 
     "create correct REF edges for labeled parameters" in {
@@ -61,10 +62,10 @@ class LabeledParamSignatureTests extends Code2CpgFixture(() => new SwiftAstTestC
           |""".stripMargin)
       val List(f1, f2, f3, f4, f5, f6) = cpg.method.nameExact("someFunction").l
 
-      f1.body.ast.isIdentifier.nameExact("parameterName").refsTo.l shouldBe f1.parameter.nameExact("argumentLabel").l
-      f2.body.ast.isIdentifier.nameExact("parameterName").refsTo.l shouldBe f2.parameter.nameExact("argumentLabel").l
-      f3.body.ast.isIdentifier.nameExact("parameterName").refsTo.l shouldBe f3.parameter.nameExact("otherLabel").l
-      f4.body.ast.isIdentifier.nameExact("parameterName").refsTo.l shouldBe f4.parameter.nameExact("otherLabel").l
+      f1.body.ast.isIdentifier.nameExact("parameterName").refsTo.l shouldBe f1.parameter.nameExact("parameterName").l
+      f2.body.ast.isIdentifier.nameExact("parameterName").refsTo.l shouldBe f2.parameter.nameExact("parameterName").l
+      f3.body.ast.isIdentifier.nameExact("parameterName").refsTo.l shouldBe f3.parameter.nameExact("parameterName").l
+      f4.body.ast.isIdentifier.nameExact("parameterName").refsTo.l shouldBe f4.parameter.nameExact("parameterName").l
       f5.body.ast.isIdentifier.nameExact("parameterName").refsTo.l shouldBe f5.parameter.nameExact("parameterName").l
       f6.body.ast.isIdentifier.nameExact("parameterLabel").refsTo.l shouldBe f6.parameter.nameExact("parameterLabel").l
     }

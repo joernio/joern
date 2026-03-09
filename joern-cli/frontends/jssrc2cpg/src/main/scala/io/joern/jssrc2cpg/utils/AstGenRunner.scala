@@ -115,11 +115,7 @@ object AstGenRunner {
       new java.io.File(dir.substring("file:".length, indexOfLib)).toString
     } else {
       val indexOfTarget = dir.lastIndexOf("target")
-      if (indexOfTarget != -1) {
-        new java.io.File(dir.substring("file:".length, indexOfTarget)).toString
-      } else {
-        "."
-      }
+      if (indexOfTarget != -1) new java.io.File(dir.substring("file:".length, indexOfTarget)).toString else "."
     }
     Paths.get(fixedDir, "/bin/astgen").toAbsolutePath.toString
   }
@@ -151,7 +147,7 @@ object AstGenRunner {
     *   the full path to the astgen binary found on the system
     */
   private def compatibleAstGenPath(astGenVersion: String): String = {
-    AstGenBin match
+    AstGenBin match {
       // 1. case: we try it at env var ASTGEN_BIN
       case Some(path) if hasCompatibleAstGenVersionAtPath(astGenVersion, Some(path)) =>
         path
@@ -163,8 +159,17 @@ object AstGenRunner {
         logger.debug(
           s"Did not find any astgen binary on this system (environment variable ASTGEN_BIN not set and no entry in the systems PATH)"
         )
-        val localPath = s"$executableDir${java.io.File.separator}$executableName"
-        localPath
+        val localPath = s"$executableDir/$executableName"
+        if (io.joern.x2cpg.astgen.AstGenRunner.isExecutableFile(localPath)) {
+          localPath
+        } else {
+          logger.error(s"""Local astgen binary not found at '$localPath' or is not executable!
+               |Please make sure to have a compatible astgen version installed and available
+               |on this system or set the environment variable ASTGEN_BIN to the full path of an executable astgen binary.
+               |""".stripMargin)
+          scala.sys.exit(1)
+        }
+    }
   }
 
   private lazy val astGenCommand = {
@@ -187,11 +192,8 @@ class AstGenRunner(config: Config) {
     } else {
       Seq.empty
     }
-    val ignoreFileArgs = if (config.ignoredFiles.nonEmpty) {
-      Seq("--exclude-file") ++ config.ignoredFiles.map(f => s"\"$f\"")
-    } else {
-      Seq.empty
-    }
+    val ignoreFileArgs =
+      if (config.ignoredFiles.nonEmpty) Seq("--exclude-file") ++ config.ignoredFiles.map(f => s"\"$f\"") else Seq.empty
     tsArgs ++ ignoredFilesRegex ++ ignoreFileArgs
   }
 
@@ -277,6 +279,21 @@ class AstGenRunner(config: Config) {
 
   }
 
+  private def hasEjsSourceFile(filePath: String): Boolean = {
+    val file = Paths.get(filePath)
+    if (file.extension().contains(".js")) {
+      val vueFilePath = file.getParent
+        .listFiles()
+        .find { siblingFile =>
+          siblingFile.nameWithoutExtension(includeAll = false) == file.nameWithoutExtension() &&
+          siblingFile.extension().contains(".ejs")
+        }
+      vueFilePath.isDefined
+    } else {
+      false
+    }
+  }
+
   private def filterFiles(files: List[String], out: Path): List[String] = {
     files.filter { file =>
       Try {
@@ -284,11 +301,11 @@ class AstGenRunner(config: Config) {
           // We are not interested in JS / TS type definition files at this stage.
           // TODO: maybe we can enable that later on and use the type definitions there
           //  for enhancing the CPG with additional type information for functions
-          case filePath if TypeDefinitionFileExtensions.exists(filePath.endsWith) => false
-          case filePath if isIgnoredByUserConfig(filePath)                        => false
-          case filePath if isIgnoredByDefault(filePath)                           => false
-          case filePath if isTranspiledFile(filePath)                             => false
-          case _                                                                  => true
+          case filePath if TypeDefinitionFileExtensions.exists(filePath.endsWith)    => false
+          case filePath if isIgnoredByUserConfig(filePath)                           => false
+          case filePath if isIgnoredByDefault(filePath)                              => false
+          case filePath if isTranspiledFile(filePath) && !hasEjsSourceFile(filePath) => false
+          case _                                                                     => true
         }
       } match {
         case Success(result)    => result
@@ -312,12 +329,10 @@ class AstGenRunner(config: Config) {
   }
 
   private def processEjsFiles(in: Path, out: Path, ejsFiles: List[String]): Try[Seq[String]] = {
-    val tmpJsFiles = ejsFiles.map { ejsFilePath =>
+    val tmpJsFiles = ejsFiles.flatMap { ejsFilePath =>
       val ejsFile             = Paths.get(ejsFilePath)
       val maybeTranspiledFile = Paths.get(s"${ejsFilePath.stripSuffix(".ejs")}.js")
-      if (isTranspiledFile(maybeTranspiledFile.toString)) {
-        maybeTranspiledFile
-      } else {
+      if (!isTranspiledFile(maybeTranspiledFile.toString)) {
         val sourceFileContent = IOUtils.readEntireFile(ejsFile)
         val preprocessContent = new EjsPreprocessor().preprocess(sourceFileContent)
         (out / in.relativize(ejsFile).toString).getParent
@@ -328,8 +343,8 @@ class AstGenRunner(config: Config) {
         val jsFile  = Files.writeString(changeExtensionTo(newEjsFile, ".js"), preprocessContent)
         val newFile = Files.createFile(newEjsFile)
         Files.writeString(newFile, sourceFileContent)
-        jsFile
-      }
+        Some(jsFile)
+      } else None
     }
 
     val result =

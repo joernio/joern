@@ -34,14 +34,16 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
     */
   def apply(inputPath: String, projectName: String = "", language: String = ""): Cpg = {
     checkInputPath(inputPath)
+    val errHint =
+      "To get an overview of all available language modules, try `importCode`.\nTo choose a specific language, try `importCode.<language>`."
     if (language != "") {
       generatorFactory.forLanguage(language) match {
-        case None           => throw new ConsoleException(s"No CPG generator exists for language: $language")
+        case None           => throw new ConsoleException(s"No CPG generator exists for language: $language\n$errHint")
         case Some(frontend) => apply(frontend, inputPath, projectName)
       }
     } else {
       generatorFactory.forCodeAt(inputPath) match {
-        case None           => throw new ConsoleException(s"No suitable CPG generator found for: $inputPath")
+        case None           => throw new ConsoleException(s"No suitable CPG generator found for: $inputPath\n$errHint")
         case Some(frontend) => apply(frontend, inputPath, projectName)
       }
     }
@@ -100,8 +102,9 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
       config: FrontendConfig,
       rootPath: Path,
       args: List[String]
-    ): Option[CpgGenerator] =
+    ): Option[CpgGenerator] = {
       io.joern.console.cpgcreation.cpgGeneratorForLanguage(language, config, rootPath, args)
+    }
 
     def isAvailable: Boolean =
       cpgGeneratorForLanguage(language, config.frontend, config.install.rootPath, args = Nil).exists(_.isAvailable)
@@ -173,30 +176,20 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
       extends SourceBasedFrontend(name, Languages.NEWC, "Eclipse CDT Based Frontend for C/C++", extension)
 
   private def withCodeInTmpFile(str: String, filename: String)(f: Path => Cpg): Try[Cpg] = {
-    val dir = Files.createTempDirectory("console")
-
-    val result = Try {
-      Files.writeString((dir / filename), str)
-      f(dir)
+    FileUtil.usingTemporaryDirectory("console") { dir =>
+      Try {
+        Files.writeString((dir / filename), str)
+        f(dir)
+      }
     }
-
-    FileUtil.deleteOnExit(dir, swallowIOExceptions = true)
-    result
   }
 
   private def withFileInTmpFile(inputPath: String)(f: Path => Cpg): Try[Cpg] = {
-    val dir = Files.createTempDirectory("console")
-
-    try {
-      val result = Try {
+    FileUtil.usingTemporaryDirectory("console") { dir =>
+      Try {
         Paths.get(inputPath).copyToDirectory(dir)
         f(dir)
       }
-
-      result
-    } finally {
-      // Always attempt to clean up, regardless of success or failure
-      FileUtil.deleteOnExit(dir)
     }
   }
 

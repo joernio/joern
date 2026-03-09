@@ -239,7 +239,7 @@ object FileUtil {
     def extension(includeDot: Boolean = true): Option[String] = {
       if (hasExtension) {
         val idx    = p.fileName.lastIndexOf(".")
-        val dotIdx = if includeDot then idx else idx + 1
+        val dotIdx = if (includeDot) idx else idx + 1
         Some(p.fileName.substring(dotIdx).toLowerCase)
       } else {
         None

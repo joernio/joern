@@ -2,7 +2,7 @@ name                     := "joern"
 ThisBuild / organization := "io.joern"
 ThisBuild / scalaVersion := "3.6.4"
 
-val cpgVersion = "1.7.49"
+val cpgVersion = "1.7.51"
 
 lazy val joerncli          = Projects.joerncli
 lazy val querydb           = Projects.querydb
@@ -26,28 +26,30 @@ lazy val csharpsrc2cpg     = Projects.csharpsrc2cpg
 lazy val linterRules       = Projects.linterRules
 
 // aggregate project which doesn't include the helper project `linterRules` - we don't want to include it in any standard task
-lazy val root = project.in(file(".")).aggregate(
-  joerncli,
-  querydb,
-  console,
-  dataflowengineoss,
-  macros,
-  semanticcpg,
-  c2cpg,
-  ghidra2cpg,
-  x2cpg,
-  pysrc2cpg,
-  php2cpg,
-  jssrc2cpg,
-  javasrc2cpg,
-  jimple2cpg,
-  kotlin2cpg,
-  rubysrc2cpg,
-  gosrc2cpg,
-  swiftsrc2cpg,
-  csharpsrc2cpg,
-).dependsOn(linterRules % ScalafixConfig)
-
+lazy val root = project
+  .in(file("."))
+  .aggregate(
+    joerncli,
+    querydb,
+    console,
+    dataflowengineoss,
+    macros,
+    semanticcpg,
+    c2cpg,
+    ghidra2cpg,
+    x2cpg,
+    pysrc2cpg,
+    php2cpg,
+    jssrc2cpg,
+    javasrc2cpg,
+    jimple2cpg,
+    kotlin2cpg,
+    rubysrc2cpg,
+    gosrc2cpg,
+    swiftsrc2cpg,
+    csharpsrc2cpg
+  )
+  .dependsOn(linterRules % ScalafixConfig)
 
 ThisBuild / libraryDependencies ++= Seq(
   "org.slf4j"                % "slf4j-api"         % Versions.slf4j,
@@ -71,7 +73,9 @@ ThisBuild / scalacOptions ++= Seq(
   "-deprecation", // Emit warning and location for usages of deprecated APIs.
   "--release",
   "11",
-  "-Wshadow:type-parameter-shadow"
+  "-Wshadow:type-parameter-shadow",
+  "-no-indent",
+  "-old-syntax"
 )
 
 lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")

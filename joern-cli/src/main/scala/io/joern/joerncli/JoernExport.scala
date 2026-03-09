@@ -31,10 +31,11 @@ object JoernExport {
 
   /** Choose from either a subset of the graph, or the entire graph (all).
     */
-  enum Representation:
+  enum Representation {
     case Ast, Cfg, Ddg, Cdg, Pdg, Cpg14, Cpg, All
+  }
 
-  object Representation:
+  object Representation {
     lazy val byNameLowercase: Map[String, Representation] =
       values.map { value =>
         value.toString.toLowerCase -> value
@@ -42,11 +43,13 @@ object JoernExport {
 
     def withNameIgnoreCase(s: String): Representation =
       byNameLowercase.getOrElse(s, throw new NoSuchElementException(s"No value found for '$s'"))
+  }
 
-  enum Format:
+  enum Format {
     case Dot, Neo4jCsv, Graphml, Graphson
+  }
 
-  object Format:
+  object Format {
     lazy val byNameLowercase: Map[String, Format] =
       values.map { value =>
         value.toString.toLowerCase -> value
@@ -54,6 +57,7 @@ object JoernExport {
 
     def withNameIgnoreCase(s: String): Format =
       byNameLowercase.getOrElse(s, throw new NoSuchElementException(s"No value found for '$s'"))
+  }
 
   def main(args: Array[String]): Unit = {
     parseConfig(args).foreach { config =>

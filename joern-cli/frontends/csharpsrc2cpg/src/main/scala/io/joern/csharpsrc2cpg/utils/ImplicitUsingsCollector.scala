@@ -20,9 +20,10 @@ object ImplicitUsingsCollector {
     */
   def collect(buildFiles: List[String]): List[String] = {
     buildFiles.flatMap { csproj =>
-      SecureXmlParsing.parseXml(Paths.get(csproj).fileContent) match
+      SecureXmlParsing.parseXml(Paths.get(csproj).fileContent) match {
         case Some(xml) => from(xml)
         case None      => List.empty
+      }
     }
   }
 
@@ -67,9 +68,10 @@ object ImplicitUsingsCollector {
   /** Extracts implicit usings based on the project type, i.e. based on the `<Project Sdk="XXX">` tag.
     */
   private def from(rootElem: Elem): List[String] = {
-    val projectType = rootElem.label match
+    val projectType = rootElem.label match {
       case "Project" => rootElem.attribute("Sdk").flatMap(_.headOption.map(_.text))
       case _         => None
+    }
 
     val implicitUsingsEnabled = rootElem.child
       .collect { case x if x.label == "PropertyGroup" => x.child }
@@ -77,11 +79,8 @@ object ImplicitUsingsCollector {
       .collect { case x if x.label == "ImplicitUsings" => x.text }
       .exists(x => x == "true" || x == "enable")
 
-    val usingsFromProjectType = if (projectType.isDefined && implicitUsingsEnabled) {
-      projectTypeMapping.getOrElse(projectType.get, Nil)
-    } else {
-      Nil
-    }
+    val usingsFromProjectType =
+      if (projectType.isDefined && implicitUsingsEnabled) projectTypeMapping.getOrElse(projectType.get, Nil) else Nil
 
     // Once we gather the initial set of implicit usings (if any) based on the project type, we
     // process ItemGroup.Using tags. The order in which we process these matters, e.g.
@@ -99,13 +98,15 @@ object ImplicitUsingsCollector {
       .flatten
       .foldLeft(usingsFromProjectType.toSet) { case (acc, node) =>
         if (node.attribute("Remove").isDefined) {
-          node.attribute("Remove").flatMap(_.headOption.map(_.text)) match
+          node.attribute("Remove").flatMap(_.headOption.map(_.text)) match {
             case None           => acc
             case Some(toRemove) => acc.excl(toRemove)
+          }
         } else if (node.attribute("Include").isDefined) {
-          node.attribute("Include").flatMap(_.headOption.map(_.text)) match
+          node.attribute("Include").flatMap(_.headOption.map(_.text)) match {
             case None            => acc
             case Some(toInclude) => acc + toInclude
+          }
         } else {
           acc
         }

@@ -1,14 +1,15 @@
 package io.joern.jssrc2cpg.passes.ast
 
+import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.passes.EcmaBuiltins
-import io.joern.jssrc2cpg.testfixtures.AstJsSrc2CpgSuite
+import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgSuite
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.joern.x2cpg.passes.callgraph.MethodRefLinker
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
-class SimpleAstCreationPassTests extends AstJsSrc2CpgSuite {
+class SimpleAstCreationPassTests extends JsSrc2CpgSuite {
 
   "AST generation for simple fragments" should {
 
@@ -248,7 +249,7 @@ class SimpleAstCreationPassTests extends AstJsSrc2CpgSuite {
       // all other elements are truncated
       val List(literalNode) = pushBlock.astChildren.isLiteral.l
       literalNode.code shouldBe "<too-many-initializers>"
-      literalNode.argumentIndex shouldBe 1002
+      literalNode.order shouldBe 1002
 
       val List(tmpReturn) = pushBlock.astChildren.isIdentifier.l
       tmpReturn.name shouldBe "_tmp_0"
@@ -962,7 +963,7 @@ class SimpleAstCreationPassTests extends AstJsSrc2CpgSuite {
     }
 
     "have correct structure for empty method with rest parameter" in {
-      val cpg              = code("function method(x, ...args) {}")
+      val cpg              = code("function method(x, ...args) {}").withConfig(Config())
       val List(method)     = cpg.method.nameExact("method").l
       val List(t, x, args) = method.parameter.l
       t.index shouldBe 0

@@ -43,7 +43,7 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
   }
 
   private def preReqForCallNode(funcDetails: ParserNodeInfo): (String, String, String, String, Seq[Ast]) = {
-    val (aliasOpt, methodName) = funcDetails.node match
+    val (aliasOpt, methodName) = funcDetails.node match {
       case Ident =>
         (None, funcDetails.json(ParserKeys.Name).str)
       case SelectorExpr =>
@@ -54,32 +54,35 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
           s"Unhandled class ${x.getClass} under astForCallExpression! file -> ${parserResult.fullPath} -> Line no -> ${funcDetails.lineNumber.get}"
         )
         (None, "")
+    }
     callMethodFullNameTypeFullNameAndSignature(methodName, aliasOpt)
   }
 
   private def astForStructureDeclarationArgument(args: Value): Seq[Ast] = {
     args.arrOpt
       .getOrElse(Seq.empty)
-      .flatMap(x => {
+      .flatMap { x =>
         val argument = createParserNodeInfo(x)
-        argument.node match
+        argument.node match {
           case BasicLit => astForNode(argument)
           case Ident    => astForNode(argument)
           case _        => astForNode(argument)
-      })
+        }
+      }
       .toSeq
   }
 
   private def astForArgs(args: Value): Seq[Ast] = {
     args.arrOpt
       .getOrElse(Seq.empty)
-      .flatMap(x => {
+      .flatMap { x =>
         val argNode = createParserNodeInfo(x)
-        argNode.node match
+        argNode.node match {
           case MapType  => Seq(Ast(literalNode(argNode, argNode.code, Defines.map)))
           case ChanType => Seq(Ast(literalNode(argNode, argNode.code, Defines.chan)))
           case _        => astForNode(argNode)
-      })
+        }
+      }
       .toSeq
   }
 
@@ -89,7 +92,7 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
   ): (String, String, String, String, Seq[Ast]) = {
     // NOTE: There is an assumption that the import nodes have been processed before this method is being called
     // and mapping of alias to their respective namespace is already done.
-    aliasName match
+    aliasName match {
       case None =>
         // NOTE: If the given function is not found in builtinFunctions.
         // Then we are assuming that the given function is defined inside same package as that of current file's package.
@@ -100,11 +103,12 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
           .getOrElse(MethodCacheMetaData(Defines.anyTypeName, s"$methodFullName()"))
         val (signature, fullName, returnTypeFullName) =
           Defines.builtinFunctions.getOrElse(methodName, (methodInfo.signature, methodFullName, methodInfo.returnType))
-        val probableLambdaTypeFullName = scope.lookupVariable(methodName) match
+        val probableLambdaTypeFullName = scope.lookupVariable(methodName) match {
           case Some((_, lambdaTypeFullName)) => Some(lambdaTypeFullName)
           case _ =>
             goGlobal.getStructTypeMemberType(fullyQualifiedPackage, methodName)
-        val (postLambdaFullname, postLambdaSignature, postLambdaReturnTypeFullName) = probableLambdaTypeFullName match
+        }
+        val (postLambdaFullname, postLambdaSignature, postLambdaReturnTypeFullName) = probableLambdaTypeFullName match {
           case Some(lambdaTypeFullName) =>
             val (nameSpaceName, lambdaName) = goGlobal.splitNamespaceFromMember(lambdaTypeFullName)
             goGlobal.getMethodMetadata(nameSpaceName, lambdaName) match {
@@ -113,11 +117,12 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
             }
           case _ =>
             (fullName, signature, returnTypeFullName)
+        }
         (methodName, postLambdaSignature, postLambdaFullname, postLambdaReturnTypeFullName, Seq.empty)
       case Some(xnode) =>
-        xnode.node match
+        xnode.node match {
           case Ident =>
-            Try(xnode.json(ParserKeys.Obj)) match
+            Try(xnode.json(ParserKeys.Obj)) match {
               case Success(_) =>
                 // The presence of "Obj" field indicates its variable identifier and not an alias
                 processReceiverAst(methodName, xnode)
@@ -139,10 +144,13 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
                       )
                     )
                 (methodName, signatureCache, lambdaFullName, returnTypeFullNameCache, Seq.empty)
+            }
           case _ =>
             // This will take care of chained method calls. It will call `astForCallExpression` in recursive way,
             // and the call node is used as receiver to this current call node.
             processReceiverAst(methodName, xnode)
+        }
+    }
   }
 
   private def processReceiverAst(

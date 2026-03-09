@@ -387,7 +387,7 @@ object SarifSchema {
         { case location: SarifSchema.PhysicalLocation =>
           val elementMap = Map.newBuilder[String, Any]
           elementMap.addOne("artifactLocation" -> location.artifactLocation)
-          if !location.region.isEmpty then elementMap.addOne("region" -> Extraction.decompose(location.region))
+          if (!location.region.isEmpty) { elementMap.addOne("region" -> Extraction.decompose(location.region)) }
           Extraction.decompose(elementMap.result())
         }
       )
@@ -440,8 +440,9 @@ object SarifSchema {
           // codeFlows may be empty, but thread flows may not have empty arrays
           elementMap.addOne("codeFlows" -> result.codeFlows.filterNot(_.threadFlows.isEmpty))
 
-          if result.partialFingerprints.nonEmpty then
+          if (result.partialFingerprints.nonEmpty) {
             elementMap.addOne("partialFingerprints" -> result.partialFingerprints)
+          }
 
           Extraction.decompose(elementMap.result())
         }

@@ -252,12 +252,14 @@ class ParserTests extends AnyFreeSpec with Matchers {
       testT("for x, y, in l:\n\tpass", s"for (x,y) in l:\n\tpass")
       testT("for *x in l:\n\tpass")
       testT("for x.y in l:\n\tpass")
+      testT("for x[y] in l:\n\tpass")
+      testT("for [x, y] in l:\n\tpass")
+      testT("for (x,y) in l:\n\tpass")
       testT("for x in l,:\n\tpass", s"for x in (l,):\n\tpass")
       testT("for x in *l:\n\tpass")
       testT("for x in l.m:\n\tpass")
       testT("for x in l, m:\n\tpass", s"for x in (l,m):\n\tpass")
       testT("for x in l, m,:\n\tpass", s"for x in (l,m):\n\tpass")
-      // TODO test with parenthesized target an iter
     }
 
     "assign statement tests" in {

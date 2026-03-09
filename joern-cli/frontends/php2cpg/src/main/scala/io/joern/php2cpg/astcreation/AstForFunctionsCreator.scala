@@ -115,11 +115,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     closureMethodRef: Option[NewMethodRef] = None
   ): Ast = {
     val isStatic = decl.modifiers.contains(ModifierTypes.STATIC)
-    val thisParam = if (!isAnonymousMethod && decl.isClassMethod && !isStatic) {
-      Option(thisParamAstForMethod(decl))
-    } else {
-      None
-    }
+    val thisParam =
+      if (!isAnonymousMethod && decl.isClassMethod && !isStatic) Option(thisParamAstForMethod(decl)) else None
 
     val methodName = decl.name.name
     val fullName   = fullNameOverride.getOrElse(composeMethodFullName(methodName))
@@ -144,8 +141,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           .getOrElse("")}"
 
     val methodRef =
-      if methodName == NamespaceTraversal.globalNamespaceName then None
-      else if isAnonymousMethod then closureMethodRef
+      if (methodName == NamespaceTraversal.globalNamespaceName) None
+      else if (isAnonymousMethod) closureMethodRef
       else Option(methodRefNode(decl, s"$methodCode", fullName, Defines.Any))
     val method = methodNode(decl, methodName, methodCode, fullName, None, relativeFileName)
 
@@ -198,7 +195,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     parameters: List[Ast]
   ): Unit = {
     val methodTypeDecl = typeDeclNode(decl, method.name, method.fullName, method.filename, code = method.name)
-    scope.getEnclosingTypeDeclTypeFullName.foreach(tfn => methodTypeDecl.inheritsFromTypeFullName(tfn :: Nil))
 
     val binding = NewBinding().name(NameConstants.Invoke).signature("")
     val methodTypeDeclAst = Ast(methodTypeDecl)
@@ -306,7 +302,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
         val methodRef = methodRefNode(node, fullName, fullName, Defines.Any)
 
-        val methodBlock = NewBlock()
+        val methodBlock = NewBlock().typeFullName(Defines.Any)
 
         scope.pushNewScope(MethodScope(methodNode_, methodBlock, fullName, methodRefNode = Option(methodRef)))
 

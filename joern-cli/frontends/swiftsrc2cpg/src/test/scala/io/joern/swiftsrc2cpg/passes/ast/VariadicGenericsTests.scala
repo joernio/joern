@@ -1,8 +1,8 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
+import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
 
-class VariadicGenericsTests extends AstSwiftSrc2CpgSuite {
+class VariadicGenericsTests extends SwiftSrc2CpgSuite {
 
   "VariadicGenericsTests" should {
 

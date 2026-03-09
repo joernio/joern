@@ -909,4 +909,51 @@ class ValidationTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         .l shouldBe List()
     }
   }
+
+  "CPG for mixed Kotlin/Java sources" should {
+    lazy val cpg = code(
+      """
+        |package mypkg
+        |
+        |fun main() {
+        |  println(JavaUtil.msg())
+        |}
+        |""".stripMargin,
+      "Main.kt"
+    ).moreCode(
+      """
+        |package mypkg;
+        |
+        |public class JavaUtil {
+        |  public static String msg() {
+        |    return "HELLO";
+        |  }
+        |}
+        |""".stripMargin,
+      "JavaUtil.java"
+    )
+
+    "should include both Kotlin and Java methods" in {
+      cpg.method.nameExact("main").size shouldBe 1
+      cpg.method.nameExact("msg").size shouldBe 1
+    }
+
+    "should contain exactly one TYPE node for `ANY`" in {
+      cpg.typ.fullNameExact("ANY").size shouldBe 1
+    }
+
+    "should not contain duplicate TYPE nodes" in {
+      val typeList = cpg.typ.fullName.l
+      // I know it is possible to just add a Set and check that the size of the Set is the same as the size of the list, but this way we can get the actual duplicate type fullNames in the error message, which is more helpful for debugging
+      val duplicates = typeList
+        .groupMapReduce(identity)(_ => 1)(_ + _)
+        .collect { case (typeFullName, count) if count > 1 => s"$typeFullName ($count)" }
+        .toList
+        .sorted
+
+      withClue(s"Duplicate TYPE fullNames: ${duplicates.mkString(", ")}") {
+        duplicates shouldBe List.empty
+      }
+    }
+  }
 }

@@ -19,7 +19,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
   private def astForBreakStmtSyntax(node: BreakStmtSyntax): Ast = {
-    val labelAst = node.label.fold(Ast())(l =>
+    val labelAst = node.label.fold(Ast())(l => {
       val labelCode = code(l)
       Ast(
         NewJumpLabel()
@@ -30,12 +30,12 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           .columnNumber(column(node))
           .order(1)
       )
-    )
+    })
     Ast(controlStructureNode(node, ControlStructureTypes.BREAK, code(node))).withChild(labelAst)
   }
 
   private def astForContinueStmtSyntax(node: ContinueStmtSyntax): Ast = {
-    val labelAst = node.label.fold(Ast())(l =>
+    val labelAst = node.label.fold(Ast())(l => {
       val labelCode = code(l)
       Ast(
         NewJumpLabel()
@@ -46,7 +46,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           .columnNumber(column(node))
           .order(1)
       )
-    )
+    })
     Ast(controlStructureNode(node, ControlStructureTypes.CONTINUE, code(node))).withChild(labelAst)
   }
 
@@ -528,7 +528,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForForStmtSyntax(node: ForStmtSyntax): Ast = {
-    node.pattern match
+    node.pattern match {
       case binding: ValueBindingPatternSyntax =>
         extractLoopVariableNodeInfo(binding) match {
           case Some(id: IdentifierPatternSyntax)                        => astForForStmtSyntaxWithIdentifier(node, id)
@@ -542,6 +542,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case expr: ExpressionPatternSyntax                      => astForForStmtSyntaxWithExpression(node, expr)
       case _: WildcardPatternSyntax | _: MissingPatternSyntax => astForForStmtSyntaxWithWildcard(node)
       case _                                                  => notHandledYet(node)
+    }
   }
 
   private def astForGuardStmtSyntax(node: GuardStmtSyntax): Ast = {

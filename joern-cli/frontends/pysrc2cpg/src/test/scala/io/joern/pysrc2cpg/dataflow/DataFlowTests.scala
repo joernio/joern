@@ -2,14 +2,8 @@ package io.joern.pysrc2cpg.dataflow
 
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.language.toExtendedCfgNode
-import io.joern.dataflowengineoss.semanticsloader.{
-  FlowMapping,
-  FlowSemantic,
-  NilSemantics,
-  NoCrossTaintSemantics,
-  NoSemantics,
-  PassThroughMapping
-}
+import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, NilSemantics, NoCrossTaintSemantics, NoSemantics}
+import io.joern.dataflowengineoss.semanticsloader.FlowPath.{FlowMapping, PassThroughMapping}
 import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Literal, Member, Method}

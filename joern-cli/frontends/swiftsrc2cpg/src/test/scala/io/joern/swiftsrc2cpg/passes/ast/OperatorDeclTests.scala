@@ -2,9 +2,9 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
+import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
 
-class OperatorDeclTests extends AstSwiftSrc2CpgSuite {
+class OperatorDeclTests extends SwiftSrc2CpgSuite {
 
   "OperatorDeclTests" should {
 

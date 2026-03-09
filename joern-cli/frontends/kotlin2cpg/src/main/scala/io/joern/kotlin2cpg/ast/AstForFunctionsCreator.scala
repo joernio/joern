@@ -131,7 +131,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       case None =>
         Option(ktFn.getBodyExpression)
           .map { expr =>
-            val bodyBlock = blockNode(expr, expr.getText, TypeConstants.Any)
+            val bodyBlock = blockNode(expr, code(expr), TypeConstants.Any)
             val asts      = astsForExpression(expr, Some(1))
             val blockChildAsts =
               if (asts.nonEmpty) {
@@ -199,12 +199,13 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
           val block = blockNode(init, "", "")
           blockAst(block, asts.toList)
         }
-      val local = localNode(decl, tmpName, tmpName, TypeConstants.Any)
+      val local = localNode(decl, tmpName, shortenCode(tmpName), TypeConstants.Any)
       localForTmp = Some(local)
       scope.addToScope(tmpName, local)
-      val tmpIdentifier      = identifierNode(param, tmpName, tmpName, TypeConstants.Any)
-      val tmpIdentifierAst   = Ast(tmpIdentifier).withRefEdge(tmpIdentifier, local)
-      val assignmentCallNode = operatorCallNode(init, s"$tmpName = ${init.getText}", Operators.assignment, None)
+      val tmpIdentifier    = identifierNode(param, tmpName, shortenCode(tmpName), TypeConstants.Any)
+      val tmpIdentifierAst = Ast(tmpIdentifier).withRefEdge(tmpIdentifier, local)
+      val assignmentCallNode =
+        operatorCallNode(init, shortenCode(s"$tmpName = ${init.getText}"), Operators.assignment, None)
       callAst(assignmentCallNode, List(tmpIdentifierAst, initAst))
     } else {
       val explicitTypeName = Option(param.getTypeReference)
@@ -217,13 +218,13 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       additionalLocals.addOne(Ast(localForIt))
       val identifierForIt = identifierNode(param, "it", "it", typeFullName)
       val initAst         = Ast(identifierForIt).withRefEdge(identifierForIt, localForIt)
-      val tmpIdentifier   = identifierNode(param, tmpName, tmpName, typeFullName)
-      val local           = localNode(decl, tmpName, tmpName, typeFullName)
+      val tmpIdentifier   = identifierNode(param, tmpName, shortenCode(tmpName), typeFullName)
+      val local           = localNode(decl, tmpName, shortenCode(tmpName), typeFullName)
       localForTmp = Some(local)
       scope.addToScope(tmpName, local)
       val tmpIdentifierAst = Ast(tmpIdentifier).withRefEdge(tmpIdentifier, local)
       val assignmentCallNode =
-        operatorCallNode(decl, s"$tmpName = it", Operators.assignment, None)
+        operatorCallNode(decl, shortenCode(s"$tmpName = it"), Operators.assignment, None)
       callAst(assignmentCallNode, List(tmpIdentifierAst, initAst))
     }
 
@@ -233,7 +234,12 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
         case (entry, idx) =>
           val rhsBaseAst = astWithRefEdgeMaybe(
             tmpName,
-            identifierNode(entry, tmpName, tmpName, localForTmp.map(_.typeFullName).getOrElse(TypeConstants.Any))
+            identifierNode(
+              entry,
+              tmpName,
+              shortenCode(tmpName),
+              localForTmp.map(_.typeFullName).getOrElse(TypeConstants.Any)
+            )
           )
           assignmentAstForDestructuringEntry(entry, rhsBaseAst, idx + 1)
       }
@@ -259,7 +265,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     val typeFullName = registerType(
       nameRenderer.typeFullName(bindingUtils.getVariableDesc(param).get.getType).getOrElse(explicitTypeName)
     )
-    val node = parameterInNode(param, name, name, order, false, EvaluationStrategies.BY_VALUE, typeFullName)
+    val node =
+      parameterInNode(param, name, shortenCode(name), order, false, EvaluationStrategies.BY_VALUE, typeFullName)
     scope.addToScope(name, node)
 
     val annotations = param.getAnnotationEntries.asScala.map(astForAnnotationEntry).toSeq
@@ -303,7 +310,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
         localNode(
           fn,
           capturedNodeContext.name,
-          capturedNodeContext.name,
+          shortenCode(capturedNodeContext.name),
           capturedNodeContext.typeFullName,
           closureBinding.closureBindingId
         )
@@ -320,7 +327,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       case None =>
         Option(fn.getBodyExpression)
           .map { expr =>
-            val bodyBlock  = blockNode(expr, expr.getText, TypeConstants.Any)
+            val bodyBlock  = blockNode(expr, code(expr), TypeConstants.Any)
             val returnAst_ = returnAst(returnNode(expr, Constants.RetCode), astsForExpression(expr, Some(1)))
             blockAst(bodyBlock, localsForCaptured.map(Ast(_)) ++ List(returnAst_))
           }
@@ -342,7 +349,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     )
 
     val _methodRefNode =
-      withArgumentIndex(methodRefNode(fn, fn.getText, fullName, lambdaTypeDeclFullName), argIdxMaybe)
+      withArgumentIndex(methodRefNode(fn, code(fn), fullName, lambdaTypeDeclFullName), argIdxMaybe)
         .argumentName(argNameMaybe)
 
     val samInterface = getSamInterface(fn)
@@ -469,7 +476,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     )
 
     val _methodRefNode =
-      withArgumentIndex(methodRefNode(expr, expr.getText, fullName, lambdaTypeDeclFullName), argIdxMaybe)
+      withArgumentIndex(methodRefNode(expr, code(expr), fullName, lambdaTypeDeclFullName), argIdxMaybe)
         .argumentName(argNameMaybe)
 
     val samInterface = getSamInterface(expr)
@@ -604,13 +611,19 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     val samMethodName      = samMethod.flatMap(safeFunctionDescriptorName).getOrElse(Constants.UnknownLambdaBindingName)
     val samMethodSignature = samMethod.flatMap(safeFunctionDescriptorSignature)
 
-    if (samMethodSignature.isDefined) {
-      val interfaceLambdaBinding = bindingNode(samMethodName, samMethodSignature.get, lambdaMethodNode.fullName)
-      addToLambdaBindingInfoQueue(interfaceLambdaBinding, lambdaTypeDecl, lambdaMethodNode)
-    }
-
     val nativeLambdaBinding = bindingNode(samMethodName, lambdaMethodNode.signature, lambdaMethodNode.fullName)
-    addToLambdaBindingInfoQueue(nativeLambdaBinding, lambdaTypeDecl, lambdaMethodNode)
+
+    samMethodSignature match {
+      case Some(signature) =>
+        val interfaceLambdaBinding = bindingNode(samMethodName, signature, lambdaMethodNode.fullName)
+        addToLambdaBindingInfoQueue(interfaceLambdaBinding, lambdaTypeDecl, lambdaMethodNode)
+
+        if (signature != lambdaMethodNode.signature) {
+          addToLambdaBindingInfoQueue(nativeLambdaBinding, lambdaTypeDecl, lambdaMethodNode)
+        }
+      case None =>
+        addToLambdaBindingInfoQueue(nativeLambdaBinding, lambdaTypeDecl, lambdaMethodNode)
+    }
   }
 
   def astForReturnExpression(expr: KtReturnExpression): Ast = {
@@ -620,6 +633,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       } else {
         Nil
       }
-    returnAst(returnNode(expr, expr.getText), returnedExpr)
+    returnAst(returnNode(expr, code(expr)), returnedExpr)
   }
 }

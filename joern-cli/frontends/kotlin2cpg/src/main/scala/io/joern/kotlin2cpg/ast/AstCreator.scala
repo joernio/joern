@@ -317,7 +317,8 @@ class AstCreator(
         Seq(astForStringTemplate(typedExpr, argIdxMaybe, argNameMaybe, annotations))
       case typedExpr: KtSuperExpression => Seq(astForSuperExpression(typedExpr, argIdxMaybe, argNameMaybe, annotations))
       case typedExpr: KtThisExpression  => Seq(astForThisExpression(typedExpr, argIdxMaybe, argNameMaybe, annotations))
-      case typedExpr: KtThrowExpression => Seq(astForUnknown(typedExpr, argIdxMaybe, argNameMaybe, annotations))
+      case typedExpr: KtThrowExpression =>
+        Seq(astForThrowExpression(typedExpr, argIdxMaybe, argNameMaybe, annotations))
       case typedExpr: KtTryExpression   => Seq(astForTry(typedExpr, argIdxMaybe, argNameMaybe, annotations))
       case typedExpr: KtWhenExpression  => Seq(astForWhen(typedExpr, argIdxMaybe, argNameMaybe, annotations))
       case typedExpr: KtWhileExpression => Seq(astForWhile(typedExpr, annotations))
@@ -345,11 +346,6 @@ class AstCreator(
 
     val importDirectives = ktFile.getImportList.getImports.asScala
     val importAsts       = importDirectives.toList.map(astForImportDirective)
-    val namespaceBlocksForImports =
-      for {
-        node <- importAsts.flatMap(_.root.collectAll[NewImport])
-        name = getName(node)
-      } yield Ast(namespaceBlockNode(fileWithMeta.f, name, name, relativizedPath))
 
     val packageName = ktFile.getPackageFqName.toString
     val node =
@@ -361,19 +357,30 @@ class AstCreator(
           relativizedPath
         )
       } else {
-        val name = packageName.split("\\.").lastOption.getOrElse("")
-        namespaceBlockNode(fileWithMeta.f, name, packageName, relativizedPath)
+        val fullName = s"$relativizedPath:$packageName"
+        namespaceBlockNode(fileWithMeta.f, packageName, fullName, relativizedPath)
       }
     methodAstParentStack.push(node)
 
-    val name     = NamespaceTraversal.globalNamespaceName
-    val fullName = node.fullName
+    val name                       = NamespaceTraversal.globalNamespaceName
+    val fullName                   = node.fullName
+    val fakeGlobalTypeDeclFullName = s"$relativizedPath:$fullName"
+    val fakeGlobalMethodFullName   = s"$fakeGlobalTypeDeclFullName.global"
     val fakeGlobalTypeDecl =
-      typeDeclNode(ktFile, name, fullName, relativizedPath, name, NodeTypes.NAMESPACE_BLOCK, fullName)
+      typeDeclNode(ktFile, name, fakeGlobalTypeDeclFullName, relativizedPath, name, NodeTypes.NAMESPACE_BLOCK, fullName)
     methodAstParentStack.push(fakeGlobalTypeDecl)
 
     val fakeGlobalMethod =
-      methodNode(ktFile, name, name, fullName, None, relativizedPath, Option(NodeTypes.TYPE_DECL), Option(fullName))
+      methodNode(
+        ktFile,
+        name,
+        name,
+        fakeGlobalMethodFullName,
+        None,
+        relativizedPath,
+        Option(NodeTypes.TYPE_DECL),
+        Option(fakeGlobalTypeDeclFullName)
+      )
     methodAstParentStack.push(fakeGlobalMethod)
     scope.pushNewScope(fakeGlobalMethod)
 
@@ -397,7 +404,7 @@ class AstCreator(
         )
     val namespaceBlockAst =
       Ast(node).withChildren(importAsts).withChild(fakeTypeDeclAst)
-    Ast(fileNode).withChildren(namespaceBlockAst :: namespaceBlocksForImports)
+    Ast(fileNode).withChildren(Seq(namespaceBlockAst))
   }
 
   def astsForDeclaration(decl: KtDeclaration): Seq[Ast] = {
@@ -435,7 +442,7 @@ class AstCreator(
     argNameMaybe: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   ): Ast = {
-    val node = unknownNode(expr, Option(expr).map(_.getText).getOrElse(Constants.CodePropUndefinedValue))
+    val node = unknownNode(expr, Option(expr).map(code).getOrElse(Constants.CodePropUndefinedValue))
     Ast(withArgumentIndex(node, argIdx).argumentName(argNameMaybe))
       .withChildren(annotations.map(astForAnnotationEntry))
   }
@@ -479,7 +486,7 @@ class AstCreator(
       callAst(componentNCallNode, Seq(), Option(rhsBaseAst))
 
     val assignmentCallNode =
-      operatorCallNode(entry, s"${entry.getText} = $componentNCallCode", Operators.assignment, None)
+      operatorCallNode(entry, shortenCode(s"${entry.getText} = $componentNCallCode"), Operators.assignment, None)
     callAst(assignmentCallNode, List(assignmentLHSAst, componentNAst))
   }
 

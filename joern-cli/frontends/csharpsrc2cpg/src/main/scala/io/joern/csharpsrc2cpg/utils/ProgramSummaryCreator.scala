@@ -34,10 +34,9 @@ object ProgramSummaryCreator {
   }
 
   private def buildExternalSummary(withBuiltinTypes: Boolean, withJsonFiles: Set[String]): CSharpProgramSummary = {
-    val builtin = if withBuiltinTypes then CSharpProgramSummary.builtinTypesSummary else CSharpProgramSummary()
+    val builtin = if (withBuiltinTypes) CSharpProgramSummary.builtinTypesSummary else CSharpProgramSummary()
     val fromJson =
-      if withJsonFiles.nonEmpty then CSharpProgramSummary.externalTypesSummary(withJsonFiles)
-      else CSharpProgramSummary()
+      if (withJsonFiles.nonEmpty) CSharpProgramSummary.externalTypesSummary(withJsonFiles) else CSharpProgramSummary()
     builtin ++= fromJson
   }
 }

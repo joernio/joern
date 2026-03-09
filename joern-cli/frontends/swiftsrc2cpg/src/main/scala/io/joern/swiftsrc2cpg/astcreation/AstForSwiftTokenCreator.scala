@@ -38,9 +38,10 @@ trait AstForSwiftTokenCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def astForKeywordToken(node: keyword): Ast = {
     val code = this.code(node)
-    code match
+    code match {
       case "true" | "false" => Ast(literalNode(node, code, Option(Defines.Bool)))
       case _                => notHandledYet(node)
+    }
   }
 
   private def astForLeftAngleToken(@unused node: leftAngle): Ast                             = Ast()

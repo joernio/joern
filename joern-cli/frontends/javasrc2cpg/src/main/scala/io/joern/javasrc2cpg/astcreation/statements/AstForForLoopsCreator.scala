@@ -305,25 +305,23 @@ trait AstForForLoopsCreator { this: AstCreator =>
       typeFullName = Some(TypeConstants.Boolean)
     )
     val comparisonIdxIdentifier = identifierNode(stmt, idxName, idxName, idxLocal.typeFullName)
-    val comparisonFieldAccess = operatorCallNode(
+    val sizeOfCall = operatorCallNode(
       stmt,
       code = s"${iterableSource.name}.${NameConstants.Length}",
-      Operators.fieldAccess,
+      Operators.sizeOf,
       typeFullName = Some(TypeConstants.Int)
     )
-    val fieldAccessIdentifier =
+    val sizeOfIdentifier =
       identifierNode(stmt, iterableSource.name, iterableSource.name, iterableSource.typeFullName.getOrElse("ANY"))
-    val fieldAccessFieldIdentifier = fieldIdentifierNode(stmt, NameConstants.Length, NameConstants.Length)
-    val fieldAccessArgs            = List(fieldAccessIdentifier, fieldAccessFieldIdentifier).map(Ast(_))
-    val fieldAccessAst             = callAst(comparisonFieldAccess, fieldAccessArgs)
-    val compareArgs                = List(Ast(comparisonIdxIdentifier), fieldAccessAst)
-
-    // TODO: This is a workaround for a crash when looping over statically imported members. Handle those properly.
-    val iterableSourceNode = localParamOrMemberFromNode(iterableSource)
+    val sizeOfArgs = List(Ast(sizeOfIdentifier))
+    // TODO: localParamOrMemberFromNode is a workaround for a crash when looping over statically imported members.
+    //       It returns None for static imports, so no REF edge is created. Handle those properly.
+    val sizeOfAst =
+      callAst(sizeOfCall, sizeOfArgs).withRefEdges(sizeOfIdentifier, localParamOrMemberFromNode(iterableSource).toList)
+    val compareArgs = List(Ast(comparisonIdxIdentifier), sizeOfAst)
 
     callAst(compareNode, compareArgs)
       .withRefEdge(comparisonIdxIdentifier, idxLocal)
-      .withRefEdges(fieldAccessIdentifier, iterableSourceNode.toList)
   }
 
   private def nativeForEachIncrementAst(stmt: ForEachStmt, idxLocal: NewLocal): Ast = {

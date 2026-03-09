@@ -34,7 +34,7 @@ class ModuleVariableTraversal(traversal: Iterator[OpNodes.ModuleVariable]) exten
   )
   def references: Iterator[Identifier | FieldIdentifier] = {
     val variables = traversal.toList
-    variables.headOption.map(node => Cpg(node.graph)) match
+    variables.headOption.map(node => Cpg(node.graph)) match {
       case Some(cpg) =>
         val modules       = cpg.method.isModule.l
         val variableNames = variables.name.toSet
@@ -57,6 +57,7 @@ class ModuleVariableTraversal(traversal: Iterator[OpNodes.ModuleVariable]) exten
           }
         (immediateRef ++ externalRefs).collectAll[Identifier | FieldIdentifier]
       case None => Iterator.empty
+    }
   }
 
   private def extractAliasNodePair(i: Import): Seq[(String, AstNode)] = {
@@ -80,9 +81,10 @@ class ModuleVariableTraversal(traversal: Iterator[OpNodes.ModuleVariable]) exten
     val variables          = traversal.toList
     lazy val moduleNames   = variables.method.isModule.fullName.dedup.toSeq
     lazy val variableNames = variables.name.toSeq
-    variables.headOption.map(node => Cpg(node.graph)) match
+    variables.headOption.map(node => Cpg(node.graph)) match {
       case Some(cpg) => cpg.typeDecl.fullNameExact(moduleNames*).member.nameExact(variableNames*)
       case None      => Iterator.empty
+    }
   }
 
 }

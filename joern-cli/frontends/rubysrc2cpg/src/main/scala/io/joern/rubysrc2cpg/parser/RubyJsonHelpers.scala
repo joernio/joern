@@ -57,7 +57,8 @@ object RubyJsonHelpers {
     }
 
     def visitOption(key: String)(implicit visit: ujson.Value => RubyExpression): Option[RubyExpression] =
-      if contains(key) then Option(visit(o(key))) else None
+      if (contains(key)) { Option(visit(o(key))) }
+      else { None }
 
     def visitArray(key: String)(implicit visit: ujson.Value => RubyExpression): List[RubyExpression] = {
       o(key).arr.map(visit).toList
@@ -314,7 +315,7 @@ object RubyJsonHelpers {
       }
     } else {
       val diff = rhsNodes.size - lhsNodes.size
-      if diff < 0 then defaultAssignments.dropRight(Math.abs(diff)) else defaultAssignments
+      if (diff < 0) defaultAssignments.dropRight(Math.abs(diff)) else defaultAssignments
     }
     DefaultMultipleAssignment(assignments)(obj.toTextSpan)
   }

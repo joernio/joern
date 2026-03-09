@@ -94,15 +94,11 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
     scope.pushNewMethodScope(fullName, name, blockNode, None)
     localAstParentStack.push(blockNode)
 
-    val thisParam =
-      parameterInNode(astNodeInfo, "this", "this", 0, false, EvaluationStrategies.BY_VALUE)
-        .dynamicTypeHintFullName(typeHintForThisExpression())
+    val thisParam = parameterInNode(astNodeInfo, "this", "this", 0, false, EvaluationStrategies.BY_VALUE)
+      .dynamicTypeHintFullName(typeHintForThisExpression())
     scope.addVariable("this", thisParam, Defines.Any, VariableScopeManager.ScopeType.MethodScope)
 
     val methodChildren = astsForFile(astNodeInfo)
-    setArgumentIndices(methodChildren)
-
-    val methodReturn = methodReturnNode(astNodeInfo, Defines.Any)
 
     localAstParentStack.pop()
     scope.popScope()
@@ -113,7 +109,7 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
         programMethod,
         Ast(thisParam) :: Nil,
         blockAst(blockNode, methodChildren),
-        methodReturn,
+        methodReturnNode(astNodeInfo, Defines.Any),
         modifierNode(astNodeInfo, ModifierTypes.MODULE) :: Nil
       )
     )
@@ -140,6 +136,7 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
       case ClassExpression           => astForClass(nodeInfo)
       case TSInterfaceDeclaration    => astForInterface(nodeInfo)
       case TSModuleDeclaration       => astForModule(nodeInfo)
+      case Decorator                 => astForDecorator(nodeInfo)
       case TSExportAssignment        => astForExportAssignment(nodeInfo)
       case ExportNamedDeclaration    => astForExportNamedDeclaration(nodeInfo)
       case ExportDefaultDeclaration  => astForExportDefaultDeclaration(nodeInfo)

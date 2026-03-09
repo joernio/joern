@@ -125,7 +125,7 @@ class AstCreator(
       case switchStmt: PhpSwitchStmt       => astForSwitchStmt(switchStmt) :: Nil
       case tryStmt: PhpTryStmt             => astForTryStmt(tryStmt) :: Nil
       case returnStmt: PhpReturnStmt       => astForReturnStmt(returnStmt) :: Nil
-      case classLikeStmt: PhpClassLikeStmt => astForClassLikeStmt(classLikeStmt)
+      case classLikeStmt: PhpClassLikeStmt => astForClassLikeStmt(classLikeStmt) :: Nil
       case gotoStmt: PhpGotoStmt           => astForGotoStmt(gotoStmt) :: Nil
       case labelStmt: PhpLabelStmt         => astForLabelStmt(labelStmt) :: Nil
       case namespace: PhpNamespaceStmt     => astForNamespaceStmt(namespace) :: Nil
@@ -217,7 +217,7 @@ class AstCreator(
       s"Trait use statement encountered. This is not yet supported. Location: $relativeFileName:${line(stmt)}"
     )
 
-    Ast(unknownNode(stmt, code(stmt)))
+    Ast(unknownNode(stmt, code(stmt)).typeFullName(Defines.Any))
   }
 
   private def astForUseUse(stmt: PhpUseUse, namePrefix: String = ""): Ast = {

@@ -12,29 +12,11 @@ class TypeNodeTests extends PhpCode2CpgFixture {
      |""".stripMargin)
 
     "have type nodes created for the TypeDecl and inherited types" in {
-      cpg.typ.fullName.toSet shouldEqual Set(
-        "ANY",
-        "foo\\A",
-        "foo\\B",
-        "foo\\C",
-        s"foo\\B${Domain.MetaTypeDeclExtension}",
-        s"foo\\D${Domain.MetaTypeDeclExtension}",
-        "foo\\D",
-        s"foo\\A${Domain.MetaTypeDeclExtension}",
-        s"foo\\C${Domain.MetaTypeDeclExtension}"
-      )
+      cpg.typ.fullName.toSet shouldEqual Set("ANY", "foo\\A", "foo\\B", "foo\\C", "foo\\D")
     }
 
     "have TypeDecl stubs created for inherited types" in {
-      cpg.typeDecl.external.fullName.toSet shouldEqual Set(
-        "ANY",
-        "foo\\B",
-        s"foo\\B${Domain.MetaTypeDeclExtension}",
-        "foo\\C",
-        s"foo\\C${Domain.MetaTypeDeclExtension}",
-        "foo\\D",
-        s"foo\\D${Domain.MetaTypeDeclExtension}"
-      )
+      cpg.typeDecl.external.fullName.toSet shouldEqual Set("ANY", "foo\\B", "foo\\C", "foo\\D")
     }
   }
 
@@ -52,21 +34,6 @@ class TypeNodeTests extends PhpCode2CpgFixture {
     "have baseTypeDecl for dynamic TYPE_DECL" in {
       cpg.typeDecl.name("Baz").baseTypeDecl.l.map(_.name) shouldBe List("Bar", "TraitA", "TraitB", "Foo")
       cpg.typeDecl.name("Baz").baseTypeDeclTransitive.l.map(_.name) shouldBe List("Bar", "TraitA", "TraitB", "Foo")
-    }
-
-    "have baseTypeDecl steps for meta TYPE_DECL (<metaclass>)" in {
-      cpg.typeDecl.name(s"Baz${Domain.MetaTypeDeclExtension}").baseTypeDecl.l.map(_.name) shouldBe List(
-        s"Bar${Domain.MetaTypeDeclExtension}",
-        s"TraitA${Domain.MetaTypeDeclExtension}",
-        s"TraitB${Domain.MetaTypeDeclExtension}",
-        s"Foo${Domain.MetaTypeDeclExtension}"
-      )
-      cpg.typeDecl.name(s"Baz${Domain.MetaTypeDeclExtension}").baseTypeDeclTransitive.l.map(_.name) shouldBe List(
-        s"Bar${Domain.MetaTypeDeclExtension}",
-        s"TraitA${Domain.MetaTypeDeclExtension}",
-        s"TraitB${Domain.MetaTypeDeclExtension}",
-        s"Foo${Domain.MetaTypeDeclExtension}"
-      )
     }
   }
 

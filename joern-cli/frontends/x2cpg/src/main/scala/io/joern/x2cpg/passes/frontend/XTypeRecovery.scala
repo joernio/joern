@@ -1,13 +1,12 @@
 package io.joern.x2cpg.passes.frontend
 
 import io.joern.x2cpg.passes.frontend
-import io.joern.x2cpg.{Defines, ValidationMode, X2CpgConfig}
-import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.joern.x2cpg.{Defines, X2CpgConfig}
 import io.shiftleft.codepropertygraph.generated.*
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.passes.{CpgPass, CpgPassBase, ForkJoinParallelCpgPass}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.importresolver.*
-import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
 import org.slf4j.{Logger, LoggerFactory}
 import scopt.{DefaultOParserSetup, OParser}
@@ -154,12 +153,11 @@ abstract class XTypeRecoveryPassGenerator[CompilationUnitType <: AstNode](
       res.append(generateRecoveryPass(state, i))
     }
     if (postTypeRecoveryAndPropagation)
-      res.append(
-        new CpgPass(cpg):
-          override def run(builder: DiffGraphBuilder): Unit = {
-            XTypeRecoveryPassGenerator.linkMembersToTheirRefs(cpg, builder)
-          }
-      )
+      res.append(new CpgPass(cpg) {
+        override def run(builder: DiffGraphBuilder): Unit = {
+          XTypeRecoveryPassGenerator.linkMembersToTheirRefs(cpg, builder)
+        }
+      })
     res.toList
   }
 
@@ -403,7 +401,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Visits an import and stores references in the symbol table as both an identifier and call.
     */
   protected def visitImport(i: Import): Unit = for {
-    resolvedImport <- (i.tag ++ i.call.tag)
+    resolvedImport <- i.tag ++ i.call.tag
     alias          <- i.importedAs
   } {
     EvaluatedImport.tagToEvaluatedImport(resolvedImport).foreach {
@@ -573,13 +571,14 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def getFieldParents(fa: FieldAccess): Set[String] = {
     getFieldName(fa).split(Pattern.quote(pathSep)).lastOption match {
       case Some(fieldName) =>
-        Try(cpg.member.nameExact(fieldName).typeDecl.fullName.filterNot(_.contains("ANY")).toSet) match
+        Try(cpg.member.nameExact(fieldName).typeDecl.fullName.filterNot(_.contains("ANY")).toSet) match {
           case Failure(exception) =>
             logger.warn(
               s"Unable to obtain name of member's parent type declaration: ${cpg.member.nameExact(fieldName).propertiesMap.mkString(",")}"
             )
             Set.empty
           case Success(typeDeclNames) => typeDeclNames
+        }
       case None =>
         logger.warn(s"Unable to find a fieldName: ${debugLocation(fa)}")
         Set.empty
@@ -802,9 +801,10 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       sb.toString()
     }
 
-    lazy val typesFromBaseCall = fa.argumentOut.headOption match
+    lazy val typesFromBaseCall = fa.argumentOut.headOption match {
       case Some(call: Call) => getTypesFromCall(call)
       case _                => Set.empty[String]
+    }
 
     fa.argumentOut.l match {
       case ::(i: Identifier, ::(f: FieldIdentifier, _)) if i.name.matches("(self|this)") => wrapName(f.canonicalName)
@@ -1141,9 +1141,10 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         .foreach { case (m, mRef) =>
           funcPtr
             .map { ptr =>
-              ptr.astParent match
+              ptr.astParent match {
                 case parent: Call if parent.name.startsWith("<operator>") => ptr
                 case parent                                               => parent
+              }
             }
             .filterNot(_.astChildren.isMethodRef.exists(_.methodFullName == mRef.methodFullName))
             .foreach { inCall =>
@@ -1165,6 +1166,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       .methodFullName(methodFullName)
       .lineNumber(lineNo)
       .columnNumber(columnNo)
+      .typeFullName(Defines.Any)
 
   /** Integrate this method ref node into the CPG according to schema rules. Since we're adding this after the base
     * passes, we need to add the necessary linking manually.
@@ -1279,7 +1281,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   /** Allows one to modify the types assigned to nodes otherwise.
     */
-  protected def storeDefaultTypeInfo(n: StoredNode, types: Seq[String]): Unit =
+  protected def storeDefaultTypeInfo(n: StoredNode, types: Seq[String]): Unit = {
     val hasUnknownType =
       n.propertyOption(Properties.TypeFullName)
         .getOrElse(Defines.Any)
@@ -1288,6 +1290,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     if (types.toSet != n.getKnownTypes || (hasUnknownType && types.nonEmpty)) {
       setTypes(n, (n.propertyOption(PropertyNames.DynamicTypeHintFullName).getOrElse(Seq.empty) ++ types).distinct)
     }
+  }
 
   /** If there is only 1 type hint then this is set to the `typeFullName` property and `dynamicTypeHintFullName` is
     * cleared. If not then `dynamicTypeHintFullName` is set to the types.

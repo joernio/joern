@@ -47,7 +47,7 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
           case local: NewLocal             => Some(local)
           case _                           => None
         }
-        captured.foldLeft(Ast(identifier))((ast, variableNode) => ast.withRefEdge(identifier, variableNode))
+        Ast(identifier).withRefEdges(identifier, captured.toList)
 
       case capturedVariable: CapturedVariable =>
         scope.registerCaptureUse(capturedVariable)

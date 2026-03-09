@@ -38,19 +38,11 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   }
 
   private def astForAttributeSyntax(node: AttributeSyntax): Ast = {
-    val argumentAsts = node.arguments match {
-      case Some(argument) =>
-        val argumentAst    = astForNode(argument)
-        val parameter      = NewAnnotationParameter().code("argument")
-        val assign         = NewAnnotationParameterAssign().code(code(argument))
-        val assignChildren = List(Ast(parameter), argumentAst)
-        setArgumentIndices(assignChildren)
-        List(Ast(assign).withChildren(assignChildren))
-      case None => Nil
-    }
+    // TODO: find a way to represent arbitrary attribute arguments in the CPG.
+    //  For now, we just create an AnnotationNode for the annotation itself.
     val attributeCode = code(node)
     val name          = code(node.attributeName)
-    annotationAst(annotationNode(node, attributeCode, name, name), argumentAsts)
+    Ast(annotationNode(node, attributeCode, name, name))
   }
 
   private def astForAvailabilityArgumentSyntax(node: AvailabilityArgumentSyntax): Ast = {
@@ -206,16 +198,15 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     // TODO: handle attributes
     // TODO: handle modifiers
     // TODO: handle defaultValue
-    val label = code(node.firstName)
-    val name  = node.secondName.fold(label)(code)
-    val tpe   = fullnameProvider.typeFullname(node).getOrElse(AstCreatorHelper.cleanType(code(node.`type`)))
-    registerType(tpe)
-    val isVariadic = node.ellipsis.isDefined
 
-    val parameterName = node.firstName match {
-      case _: wildcard => name
-      case _           => label
+    val parameterName = node.secondName match {
+      case Some(name) => code(name)
+      case None       => code(node.firstName)
     }
+    val tpe = fullnameProvider.typeFullname(node).getOrElse(AstCreatorHelper.cleanType(code(node.`type`)))
+    registerType(tpe)
+
+    val isVariadic = node.ellipsis.isDefined
     val parameterNode =
       parameterInNode(
         node,
@@ -227,7 +218,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
         Option(tpe)
       )
 
-    scope.addVariable(name, parameterNode, tpe, VariableScopeManager.ScopeType.MethodScope)
+    scope.addVariable(parameterName, parameterNode, tpe, VariableScopeManager.ScopeType.MethodScope)
     Ast(parameterNode)
   }
 
@@ -260,9 +251,9 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForLabeledExprSyntax(node: LabeledExprSyntax): Ast = {
     node.label match {
       case Some(label) =>
-        val name = code(label)
-        val ast  = astForNode(node.expression)
-        ast.root.collect { case i: ExpressionNew => i.argumentName(name) }
+        val labelName = code(label)
+        val ast       = astForNode(node.expression)
+        ast.root.collect { case i: ExpressionNew => i.argumentLabel(labelName) }
         ast
       case None => astForNode(node.expression)
     }

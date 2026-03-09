@@ -2,9 +2,9 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
+import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
 
-class EnumElementPatternSwift4Tests extends AstSwiftSrc2CpgSuite {
+class EnumElementPatternSwift4Tests extends SwiftSrc2CpgSuite {
 
   "EnumElementPatternSwift4Tests" should {
 

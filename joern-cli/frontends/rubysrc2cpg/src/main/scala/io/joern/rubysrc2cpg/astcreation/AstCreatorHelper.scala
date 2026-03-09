@@ -51,7 +51,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     useSurroundingTypeFullName: Boolean = false
   ): String = {
     val surroundingName =
-      if useSurroundingTypeFullName then scope.surroundingTypeFullName.head else scope.surroundingScopeFullName.head
+      if (useSurroundingTypeFullName) scope.surroundingTypeFullName.head else scope.surroundingScopeFullName.head
     val candidate = counter match {
       case Some(cnt) => s"$surroundingName.$name$cnt"
       case None      => s"$surroundingName.$name"
@@ -174,8 +174,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   def lowerAssignmentOperator(lhs: RubyExpression, rhs: RubyExpression, op: String, span: TextSpan): RubyExpression &
     ControlFlowStatement = {
     val condition =
-      if op == "||=" then UnaryExpression(op = "!", expression = lhs)(span.spanStart(s"!${lhs.span.text}"))
-      else lhs
+      if (op == "||=") { UnaryExpression(op = "!", expression = lhs)(span.spanStart(s"!${lhs.span.text}")) }
+      else { lhs }
     val thenClause = StatementList(
       List(SingleAssignment(lhs, "=", rhs)(span.spanStart(s"${lhs.span.text} = ${rhs.span.text}")))
     )(span.spanStart(s"${lhs.span.text} = ${rhs.span.text}"))
@@ -199,12 +199,12 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     def tmp = SimpleIdentifier()(originSpan.spanStart(tmpName))
 
     val matchCall = {
-      val code = s"${regex.text}.match(${target.text})"
-      MemberCall(regex, ".", "match", target :: Nil)(originSpan.spanStart(code))
+      val code_ = s"${code(regex)}.match(${code(target)})"
+      MemberCall(regex, ".", "match", target :: Nil)(originSpan.spanStart(code_))
     }
     val tmpAssignment = {
-      val code = s"$tmpName = ${matchCall.text}"
-      SingleAssignment(tmp, "=", matchCall)(originSpan.spanStart(code))
+      val code_ = s"$tmpName = ${code(matchCall)}"
+      SingleAssignment(tmp, "=", matchCall)(originSpan.spanStart(code_))
     }
 
     def self            = SelfIdentifier()(originSpan.spanStart(Defines.Self))

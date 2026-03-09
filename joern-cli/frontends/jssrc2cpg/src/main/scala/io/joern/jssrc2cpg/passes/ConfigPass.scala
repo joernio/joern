@@ -10,7 +10,7 @@ import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.utils.IOUtils
 import org.slf4j.{Logger, LoggerFactory}
 
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Path, Paths}
 
 class ConfigPass(cpg: Cpg, config: Config, report: Report = new Report()) extends ForkJoinParallelCpgPass[Path](cpg) {
 

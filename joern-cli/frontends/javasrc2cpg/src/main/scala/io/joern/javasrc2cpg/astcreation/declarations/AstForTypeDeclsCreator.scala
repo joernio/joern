@@ -491,6 +491,10 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
 
             receiverAst.root.foreach(receiver => diffGraph.addEdge(initRoot, receiver, EdgeTypes.RECEIVER))
 
+            // For this() calls, use the synthetic capture parameters from the enclosing constructor
+            // instead of the original captured variables from the enclosing method
+            val thisCaptureParams = scope.enclosingTypeDecl.getThisCallCaptureParams(initRoot)
+
             val capturesAsts =
               usedCaptures
                 .filterNot(outerClassAst.isDefined && _.name == NameConstants.OuterClass)
@@ -503,7 +507,9 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
                     .lineNumber(initRoot.lineNumber)
                     .columnNumber(initRoot.columnNumber)
 
-                  val refsTo = Option.when(usedCapture.name != NameConstants.OuterClass)(usedCapture.node)
+                  val refsTo = thisCaptureParams
+                    .flatMap(_.lift(index))
+                    .orElse(Option.when(usedCapture.name != NameConstants.OuterClass)(usedCapture.node))
 
                   Ast(identifier).withRefEdges(identifier, refsTo.toList)
                 }
@@ -790,7 +796,6 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
 
   private def codeForTypeDecl(typ: TypeDeclaration[?], isInterface: Boolean): String = {
     val codeBuilder = new mutable.StringBuilder()
-
     typ.getModifiers.asScala
       .foreach { modifier =>
         codeBuilder.append(modifier.getKeyword.asString())
@@ -806,6 +811,15 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
         "class "
     codeBuilder.append(classPrefix)
     codeBuilder.append(typ.getNameAsString)
+
+    val typeParameters = typ match {
+      case classOrInterface: ClassOrInterfaceDeclaration => classOrInterface.getTypeParameters.asScala
+      case recordDeclaration: RecordDeclaration          => recordDeclaration.getTypeParameters.asScala
+      case _                                             => Nil
+    }
+    if (typeParameters.nonEmpty) {
+      codeBuilder.append(typeParameters.mkString("<", ", ", ">"))
+    }
 
     codeBuilder.toString()
   }
