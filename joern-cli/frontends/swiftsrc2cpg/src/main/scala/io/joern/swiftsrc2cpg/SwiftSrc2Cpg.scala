@@ -1,6 +1,5 @@
 package io.joern.swiftsrc2cpg
 
-import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.swiftsrc2cpg.passes.*
 import io.joern.swiftsrc2cpg.utils.AstGenRunner
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
@@ -55,16 +54,4 @@ class SwiftSrc2Cpg extends X2CpgFrontend {
       }
     }
   }
-
-  // This method is intended for internal use only and may be removed at any time.
-  def createCpgWithAllOverlays(config: ConfigType): Try[Cpg] = {
-    val maybeCpg = createCpgWithOverlays(config)
-    maybeCpg.map { cpg =>
-      new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
-      val typeRecoveryConfig = XTypeRecoveryConfig(config.typePropagationIterations, !config.disableDummyTypes)
-      swiftsrc2cpg.postProcessingPasses(cpg, typeRecoveryConfig).foreach(_.createAndApply())
-      cpg
-    }
-  }
-
 }

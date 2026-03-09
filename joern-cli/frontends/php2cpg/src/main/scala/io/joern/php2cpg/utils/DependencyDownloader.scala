@@ -17,7 +17,6 @@ import java.io.{FileOutputStream, IOException}
 import java.nio.file.{CopyOption, Files, Path, StandardCopyOption}
 import java.net.{HttpURLConnection, URI, URL, URLConnection}
 import java.util.zip.ZipEntry
-import javax.json.JsonException
 import scala.util.{Failure, Success, Try, Using}
 import scala.jdk.CollectionConverters.*
 
@@ -228,7 +227,7 @@ implicit val urlRw: ReadWriter[URL] = readwriter[ujson.Value]
     x => ujson.Str(x.toString),
     {
       case json @ (j: ujson.Str) => URI(json.str).toURL
-      case x                     => throw JsonException(s"Unexpected value type for URL strings: ${x.getClass}")
+      case x                     => throw RuntimeException(s"Unexpected value type for URL strings: ${x.getClass}")
     }
   )
 
@@ -237,7 +236,7 @@ implicit val semverRw: ReadWriter[SemVer] = readwriter[ujson.Value]
     x => ujson.Str(x.toString),
     {
       case json @ (j: ujson.Str) => json.str.asSemver
-      case x                     => throw JsonException(s"Unexpected value type for URL strings: ${x.getClass}")
+      case x                     => throw RuntimeException(s"Unexpected value type for URL strings: ${x.getClass}")
     }
   )
 
