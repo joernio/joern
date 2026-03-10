@@ -9,9 +9,11 @@ import io.joern.x2cpg.SourceFiles
 import javassist.CtClass
 import org.slf4j.LoggerFactory
 
-import java.io.IOException
+import java.io.{File, IOException}
 import java.lang.module.ModuleDescriptor
+import java.nio.file.{Files, Path}
 import java.util.jar.JarFile
+import java.util.stream.Collectors
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try, Using}
@@ -168,6 +170,8 @@ class JarTypeSolverBuilder(enableVerboseTypeLogging: Boolean) {
 }
 
 object JarTypeSolver {
+  private val logger = LoggerFactory.getLogger(this.getClass)
+
   val JarExtension: String                                     = ".jar"
   val JmodExtension: String                                    = ".jmod"
   private val cache: mutable.Map[String, JarTypeSolverBuilder] = mutable.Map.empty
@@ -181,6 +185,15 @@ object JarTypeSolver {
     // not following symlinks, because some setups might have a loop, e.g. AWS's Corretto
     // see https://github.com/joernio/joern/pull/3871
     val jarPaths = SourceFiles.determine(jdkPath, Set(JarExtension, JmodExtension))(Seq.empty)
+    val jarsFound = jarPaths.mkString("\n - ")
+    logger.warn(s"Jars found:\n - $jarsFound")
+    Try(new File(jdkPath)).foreach { jdkPathFile =>
+      logger.warn(s"jdkPathFileExists: ${jdkPathFile.exists()}")
+      logger.warn(s"jdkPathIsDirectory: ${jdkPathFile.isDirectory()}")
+      val foundFiles = Files.walk(jdkPathFile.toPath.toAbsolutePath).collect(Collectors.toList).asScala.map(_.toAbsolutePath).mkString("\n - ")
+      logger.warn(s"jdkPathSubfiles:\n - ${foundFiles}")
+    }
+
     if (jarPaths.isEmpty) {
       throw new IllegalArgumentException(s"No .jar or .jmod files found at JDK path ${jdkPath}")
     }
