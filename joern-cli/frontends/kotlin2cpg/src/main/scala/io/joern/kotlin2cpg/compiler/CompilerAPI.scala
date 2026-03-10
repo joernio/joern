@@ -27,7 +27,7 @@ object CompilerAPI {
     messageCollector: MessageCollector
   ): KotlinCoreEnvironment = {
     val config = new CompilerConfiguration()
-    config.put(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, messageCollector)
+    config.put(CommonConfigurationKeys.MESSAGE_COLLECTOR_KEY, messageCollector)
     forDirectories.foreach { p =>
       config.add(CLIConfigurationKeys.CONTENT_ROOTS, new KotlinSourceRoot(p, true, null))
     }
