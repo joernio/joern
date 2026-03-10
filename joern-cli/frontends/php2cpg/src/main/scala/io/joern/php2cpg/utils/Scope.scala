@@ -176,6 +176,13 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)
   def getEnclosingTypeDecl: Option[NewTypeDecl] =
     stack.map(_.scopeNode).collectFirst { case TypeScope(td, _) => td }
 
+  def getEnclosingParentInfo: Option[(String, String)] =
+    stack.map(_.scopeNode).collectFirst {
+      case MethodScope(mn, _, _, _, _, _) => (NodeTypes.METHOD, mn.fullName)
+      case TypeScope(td, _)               => (NodeTypes.TYPE_DECL, td.fullName)
+      case NamespaceScope(ns, _)          => (NodeTypes.NAMESPACE_BLOCK, ns.fullName)
+    }
+
   def createMethodNameWithSurroundingInformation(methodName: String): String = {
     val namespaces =
       getEnclosingNamespaceNames.filterNot(_ == NamespaceTraversal.globalNamespaceName).reverse.mkString("\\")

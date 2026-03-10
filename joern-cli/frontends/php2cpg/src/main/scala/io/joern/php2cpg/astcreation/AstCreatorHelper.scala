@@ -9,7 +9,7 @@ import io.joern.x2cpg.Defines.UnresolvedNamespace
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes, NodeTypes}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import scala.collection.mutable
@@ -79,6 +79,19 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
       case Nil   => name
       case names => names.appended(name).mkString(NamespaceDelimiter)
     }
+  }
+
+  protected def getAstParentInfo: (String, String) = {
+    scope.getEnclosingParentInfo
+      .getOrElse((NameConstants.Unknown, NameConstants.Unknown))
+  }
+
+  protected def getClosureAstParentInfo: (String, String) = {
+    scope.getEnclosingTypeDecl
+      .map { scope =>
+        (NodeTypes.TYPE_DECL, scope.fullName)
+      }
+      .getOrElse(getAstParentInfo)
   }
 
   protected def getTypeDeclPrefix: Option[String] =

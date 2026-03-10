@@ -114,6 +114,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     isAnonymousMethod: Boolean = false,
     closureMethodRef: Option[NewMethodRef] = None
   ): Ast = {
+    val (astParentType, astParentFullName) = if (isAnonymousMethod) {
+      getClosureAstParentInfo
+    } else {
+      getAstParentInfo
+    }
     val isStatic = decl.modifiers.contains(ModifierTypes.STATIC)
     val thisParam =
       if (!isAnonymousMethod && decl.isClassMethod && !isStatic) Option(thisParamAstForMethod(decl)) else None
@@ -144,10 +149,16 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       if (methodName == NamespaceTraversal.globalNamespaceName) None
       else if (isAnonymousMethod) closureMethodRef
       else Option(methodRefNode(decl, s"$methodCode", fullName, Defines.Any))
-    val method = methodNode(decl, methodName, methodCode, fullName, None, relativeFileName)
-
-    scope.surroundingScopeFullName.map(method.astParentFullName(_))
-    scope.surroundingAstLabel.map(method.astParentType(_))
+    val method = methodNode(
+      node = decl,
+      name = methodName,
+      code = methodCode,
+      fullName = fullName,
+      signature = None,
+      fileName = relativeFileName,
+      astParentFullName = Some(astParentFullName),
+      astParentType = Some(astParentType)
+    )
 
     val methodBodyNode = blockNode(decl)
 
@@ -194,7 +205,16 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     isAnonymousDecl: Boolean,
     parameters: List[Ast]
   ): Unit = {
-    val methodTypeDecl = typeDeclNode(decl, method.name, method.fullName, method.filename, code = method.name)
+    val (astParentType, astParentFullName) = getAstParentInfo
+    val methodTypeDecl = typeDeclNode(
+      node = decl,
+      name = method.name,
+      fullName = method.fullName,
+      filename = method.filename,
+      astParentType = astParentType,
+      astParentFullName = astParentFullName,
+      code = method.name
+    )
 
     val binding = NewBinding().name(NameConstants.Invoke).signature("")
     val methodTypeDeclAst = Ast(methodTypeDecl)
@@ -291,13 +311,17 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case Nil => None
 
       case inits =>
-        val fullName = composeMethodFullName(Defines.StaticInitMethodName)
+        val (astParentType, astParentFullName) = getAstParentInfo
+        val fullName                           = composeMethodFullName(Defines.StaticInitMethodName)
         val methodNode_ = methodNode(
-          node,
-          Defines.StaticInitMethodName,
-          fullName,
-          PropertyDefaults.Signature,
-          Option(relativeFileName).getOrElse(PropertyDefaults.Filename)
+          node = node,
+          name = Defines.StaticInitMethodName,
+          code = Defines.StaticInitMethodName,
+          fullName = fullName,
+          signature = Some(PropertyDefaults.Signature),
+          fileName = Option(relativeFileName).getOrElse(PropertyDefaults.Filename),
+          astParentFullName = Some(astParentFullName),
+          astParentType = Some(astParentType)
         )
 
         val methodRef = methodRefNode(node, fullName, fullName, Defines.Any)
