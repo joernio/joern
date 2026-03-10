@@ -73,6 +73,8 @@ ThisBuild / scalacOptions ++= Seq(
   "-deprecation", // Emit warning and location for usages of deprecated APIs.
   "--release",
   "11",
+  "-Xfatal-warnings",
+  "-feature",
   "-Wshadow:type-parameter-shadow",
   "-no-indent",
   "-old-syntax"
