@@ -11,4 +11,6 @@ libraryDependencies ++= Seq(
   "org.scalatest"          %% "scalatest"         % Versions.scalatest % Test
 )
 
+scalacOptions += "-language:implicitConversions"
+
 Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc-version", version.value)
