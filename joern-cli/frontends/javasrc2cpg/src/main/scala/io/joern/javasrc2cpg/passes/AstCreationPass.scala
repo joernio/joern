@@ -144,7 +144,7 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     }
 
     combinedTypeSolver.addNonCachingTypeSolver(
-      JarTypeSolver.fromJdkPath(jdkPath, config.cacheJdkTypeSolver, enableVerboseTypeLogging)
+      JarTypeSolver.fromPath(jdkPath, config.cacheJdkTypeSolver, enableVerboseTypeLogging)
     )
 
     val sourceTypeSolver =
@@ -163,9 +163,7 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     }
     (jarsList ++ dependencies)
       .foreach { path =>
-        Try(
-          JarTypeSolver.fromJdkPath(path, useCache = true, enableVerboseTypeLogging = enableVerboseTypeLogging)
-        ) match {
+        Try(JarTypeSolver.fromPath(path, useCache = true, enableVerboseTypeLogging = enableVerboseTypeLogging)) match {
           case Success(jarTypeSolver) =>
             combinedTypeSolver.addNonCachingTypeSolver(jarTypeSolver)
             if (enableVerboseTypeLogging) {

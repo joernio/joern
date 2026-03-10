@@ -177,24 +177,24 @@ object JarTypeSolver {
     def isJmodPath: Boolean = path.endsWith(JmodExtension)
   }
 
-  private def determineJarPaths(jdkPath: String): List[String] = {
+  private def determineJarPaths(inputPath: String): List[String] = {
     // not following symlinks, because some setups might have a loop, e.g. AWS's Corretto
     // see https://github.com/joernio/joern/pull/3871
-    val jarPaths = SourceFiles.determine(jdkPath, Set(JarExtension, JmodExtension))(Seq.empty)
+    val jarPaths = SourceFiles.determine(inputPath, Set(JarExtension, JmodExtension))(Seq.empty)
     if (jarPaths.isEmpty) {
-      throw new IllegalArgumentException(s"No .jar or .jmod files found at JDK path ${jdkPath}")
+      throw new IllegalArgumentException(s"No .jar or .jmod files found at path: ${inputPath}")
     }
     jarPaths
   }
 
-  def fromJdkPath(
-    jdkPath: String,
+  def fromPath(
+    inputPath: String,
     useCache: Boolean = false,
     enableVerboseTypeLogging: Boolean = false
   ): JarTypeSolver = {
-    def createBuilder = new JarTypeSolverBuilder(enableVerboseTypeLogging).withJars(determineJarPaths(jdkPath))
+    def createBuilder = new JarTypeSolverBuilder(enableVerboseTypeLogging).withJars(determineJarPaths(inputPath))
     if (useCache) {
-      cache.getOrElseUpdate(jdkPath, createBuilder).build
+      cache.getOrElseUpdate(inputPath, createBuilder).build
     } else {
       createBuilder.build
     }
