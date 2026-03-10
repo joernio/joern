@@ -114,9 +114,16 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     "should only capture the used local" in {
       val List(methodRef)              = cpg.methodRef.l
       val List(capturedClosureBinding) = methodRef._closureBindingViaCaptureOut.l
+      val closureBindingPrefix         = methodRef.methodFullName.split(":").head
 
       methodRef._closureBindingViaCaptureOut.size shouldBe 1
+      capturedClosureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+      capturedClosureBinding.closureBindingId shouldBe Some(s"$closureBindingPrefix.baz")
+      capturedClosureBinding._refOut.size shouldBe 1
       capturedClosureBinding._localViaRefOut.name.l shouldBe List("baz")
+      capturedClosureBinding._localViaRefOut.method.fullName.l shouldBe List(
+        "simple.pkg.Bar.foo:void(java.lang.String)"
+      )
       capturedClosureBinding._methodParameterInViaRefOut.l shouldBe empty
     }
   }
@@ -274,13 +281,29 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     val cpg = code("""
         |package mypkg
         |
-        |fun f1(p: String) {
+        |fun f1(p: String, q: String) {
         |  val m = mapOf(p to 1, "two" to 2, "three" to 3)
         |  m.forEach { (k, v) ->
         |    println(k)
         |  }
         |}
         |""".stripMargin)
+
+    "should capture only the referenced outer symbol used to construct the iterated entries" in {
+      val List(methodRef)              = cpg.methodRef.methodFullName(".*lambda.*").l
+      val List(capturedClosureBinding) = methodRef._closureBindingViaCaptureOut.l
+      val closureBindingPrefix         = methodRef.methodFullName.split(":").head
+
+      methodRef._closureBindingViaCaptureOut.size shouldBe 1
+      capturedClosureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+      capturedClosureBinding.closureBindingId shouldBe Some(s"$closureBindingPrefix.p")
+      capturedClosureBinding._refOut.size shouldBe 1
+      capturedClosureBinding._localViaRefOut.l shouldBe empty
+
+      val List(capturedParam) = capturedClosureBinding._methodParameterInViaRefOut.l
+      capturedParam.name shouldBe "p"
+      capturedParam.method.fullName shouldBe "mypkg.f1:void(java.lang.String,java.lang.String)"
+    }
 
     "should contain a METHOD node for the lambda the correct props set" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
@@ -354,9 +377,9 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       |""".stripMargin)
 
     "should contain a METHOD node for the lambda the correct props set" in {
-      val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.fullName shouldBe s"mypkg.f1.${Defines.ClosurePrefix}0:void(java.util.Map$$Entry)"
-      m.signature shouldBe "void(java.util.Map$Entry)"
+      val List(method) = cpg.method.fullName(".*lambda.*").l
+      method.fullName shouldBe s"mypkg.f1.${Defines.ClosurePrefix}0:void(java.util.Map$$Entry)"
+      method.signature shouldBe "void(java.util.Map$Entry)"
     }
 
     "should contain one METHOD_PARAMETER_IN node for the lambda with the correct properties set" in {
@@ -379,17 +402,211 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
 
       val List(tmpAssignment, kAssignment) = cpg.method.fullName(".*lambda.*").ast.isCall.isAssignment.l
       tmpAssignment.code shouldBe "tmp_1 = it"
-      val List(tmp, it) = tmpAssignment.astChildren.isIdentifier.l
+      val List(it, tmp) = tmpAssignment.astChildren.isIdentifier.sortBy(_.name).l
+      tmp.name shouldBe "tmp_1"
       tmp.typeFullName shouldBe "java.util.Map$Entry"
+      it.name shouldBe "it"
       it.typeFullName shouldBe "java.util.Map$Entry"
 
       kAssignment.code shouldBe "k = tmp_1.component1()"
       val List(k) = kAssignment.astChildren.isIdentifier.l
+      k.name shouldBe "k"
       k.typeFullName shouldBe "java.lang.String"
 
       cpg.identifier.filter(_._astIn.isEmpty) shouldBe empty
       cpg.identifier.filter(_.refsTo.isEmpty) shouldBe empty
       cpg.local.filter(_._astIn.isEmpty) shouldBe empty
+    }
+
+    // Kotlin does not allow refrencing the `_` and classifies it as an invalid ref if attempted.
+    // Therefore creating a local should be completely omitted
+    "should not materialize destructuring artifacts for `_`" in {
+      val List(lambdaMethod) = cpg.method.fullName(".*lambda.*").l
+      lambdaMethod.ast.isCall.codeExact("tmp_1.component2()").l shouldBe empty
+      lambdaMethod.local.nameExact("_").l shouldBe empty
+    }
+
+    // Technically this is redundant, but as a sanity check it is good to include.
+    "should keep capture precision with `_` destructuring" in {
+      val List(methodRef)              = cpg.methodRef.methodFullName(".*lambda.*").l
+      val List(capturedClosureBinding) = methodRef._closureBindingViaCaptureOut.l
+      val closureBindingPrefix         = methodRef.methodFullName.split(":").head
+      val capturedMethodParamNames     = methodRef._closureBindingViaCaptureOut._methodParameterInViaRefOut.name.toSet
+      val capturedLocalNames           = methodRef._closureBindingViaCaptureOut._localViaRefOut.name.toSet
+
+      capturedMethodParamNames shouldBe Set("p")
+      capturedLocalNames shouldBe empty
+      capturedClosureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+      capturedClosureBinding.closureBindingId shouldBe Some(s"$closureBindingPrefix.p")
+      capturedClosureBinding._refOut.size shouldBe 1
+      capturedClosureBinding._methodParameterInViaRefOut.method.fullName.l shouldBe List(
+        "mypkg.f1:void(java.lang.String)"
+      )
+    }
+  }
+
+  "CPG for code containing a lambda with parameter destructuring and shadowing" should {
+    val cpg = code("""
+      |package mypkg
+      |
+      |fun f1(p: String) {
+      |    val m = mapOf(p to 1, "two" to 2)
+      |    m.forEach { (p, _) ->
+      |        println(p)
+      |    }
+      |}
+      |""".stripMargin)
+
+    "should capture outer parameter provenance for shadowed destructuring flow" in {
+      val List(methodRef)              = cpg.methodRef.methodFullName(".*lambda.*").l
+      val List(capturedClosureBinding) = methodRef._closureBindingViaCaptureOut.l
+      val closureBindingPrefix         = methodRef.methodFullName.split(":").head
+      val capturedMethodParamNames     = methodRef._closureBindingViaCaptureOut._methodParameterInViaRefOut.name.toSet
+      val capturedLocalNames           = methodRef._closureBindingViaCaptureOut._localViaRefOut.name.toSet
+
+      capturedMethodParamNames shouldBe Set("p")
+      capturedLocalNames shouldBe empty
+      capturedClosureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+      capturedClosureBinding.closureBindingId shouldBe Some(s"$closureBindingPrefix.p")
+      capturedClosureBinding._refOut.size shouldBe 1
+      capturedClosureBinding._methodParameterInViaRefOut.method.fullName.l shouldBe List(
+        "mypkg.f1:void(java.lang.String)"
+      )
+    }
+  }
+
+  "CPG for code containing a lambda with parameter destructuring and unused outer symbols" should {
+    val cpg = code("""
+      |package mypkg
+      |
+      |fun f1(p: String, q: String) {
+      |    val m = mapOf(p to 1, "two" to 2)
+      |    val unusedLocal = q
+      |    m.forEach { (k, _) ->
+      |        println(k)
+      |    }
+      |}
+      |""".stripMargin)
+
+    "should capture only the outer symbol that contributes to destructured value" in {
+      val List(methodRef)              = cpg.methodRef.methodFullName(".*lambda.*").l
+      val List(capturedClosureBinding) = methodRef._closureBindingViaCaptureOut.l
+      val closureBindingPrefix         = methodRef.methodFullName.split(":").head
+      val capturedMethodParamNames     = methodRef._closureBindingViaCaptureOut._methodParameterInViaRefOut.name.toSet
+      val capturedLocalNames           = methodRef._closureBindingViaCaptureOut._localViaRefOut.name.toSet
+
+      capturedMethodParamNames shouldBe Set("p")
+      capturedLocalNames shouldBe empty
+      capturedClosureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+      capturedClosureBinding.closureBindingId shouldBe Some(s"$closureBindingPrefix.p")
+      capturedClosureBinding._refOut.size shouldBe 1
+      capturedClosureBinding._methodParameterInViaRefOut.method.fullName.l shouldBe List(
+        "mypkg.f1:void(java.lang.String,java.lang.String)"
+      )
+    }
+  }
+
+  "CPG for code containing a lambda with destructuring and implicit receiver usage" should {
+    val cpg = code("""
+      |package mypkg
+      |
+      |class C(private val secret: String) {
+      |  fun f1(p: String, q: String) {
+      |    val m = mapOf(p to 1, "two" to 2)
+      |    m.forEach { (k, _) ->
+      |      println(secret + k)
+      |    }
+      |  }
+      |}
+      |""".stripMargin)
+
+    "should capture only this and the relevant outer parameter" in {
+      val List(methodRef)          = cpg.methodRef.methodFullName(".*lambda.*").l
+      val capturedClosureBindings  = methodRef._closureBindingViaCaptureOut.l
+      val closureBindingPrefix     = methodRef.methodFullName.split(":").head
+      val capturedMethodParamNames = methodRef._closureBindingViaCaptureOut._methodParameterInViaRefOut.name.toSet
+
+      capturedMethodParamNames shouldBe Set("this", "p")
+      capturedClosureBindings.size shouldBe 2
+      capturedClosureBindings.map(_.evaluationStrategy).toSet shouldBe Set(EvaluationStrategies.BY_REFERENCE)
+      capturedClosureBindings.flatMap(_.closureBindingId).toSet shouldBe Set(
+        s"$closureBindingPrefix.this",
+        s"$closureBindingPrefix.p"
+      )
+      capturedClosureBindings.foreach { closureBinding =>
+        closureBinding._refOut.size shouldBe 1
+        closureBinding._localViaRefOut.l shouldBe empty
+      }
+      methodRef._closureBindingViaCaptureOut._methodParameterInViaRefOut.method.fullName.toSet shouldBe Set(
+        "mypkg.C.f1:void(java.lang.String,java.lang.String)"
+      )
+    }
+  }
+
+  "CPG for code containing a lambda with parameter destructuring on a safe-qualified receiver" should {
+    val cpg = code("""
+      |package mypkg
+      |
+      |fun f1(p: String) {
+      |  val m: Map<String, Int>? = mapOf(p to 1, "two" to 2)
+      |  m?.forEach { (k, _) ->
+      |    println(k)
+      |  }
+      |}
+      |""".stripMargin)
+
+    "should capture receiver-source provenance from outer parameter" in {
+      val List(methodRef)              = cpg.methodRef.methodFullName(".*lambda.*").l
+      val List(capturedClosureBinding) = methodRef._closureBindingViaCaptureOut.l
+      val closureBindingPrefix         = methodRef.methodFullName.split(":").head
+      val capturedMethodParamNames     = methodRef._closureBindingViaCaptureOut._methodParameterInViaRefOut.name.toSet
+      val capturedLocalNames           = methodRef._closureBindingViaCaptureOut._localViaRefOut.name.toSet
+
+      capturedMethodParamNames shouldBe Set("p")
+      capturedLocalNames shouldBe empty
+      methodRef._closureBindingViaCaptureOut.size shouldBe 1
+      capturedClosureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+      capturedClosureBinding.closureBindingId shouldBe Some(s"$closureBindingPrefix.p")
+      capturedClosureBinding._refOut.size shouldBe 1
+      capturedClosureBinding._localViaRefOut.l shouldBe empty
+      capturedClosureBinding._methodParameterInViaRefOut.name.l shouldBe List("p")
+      capturedClosureBinding._methodParameterInViaRefOut.method.fullName.l shouldBe List(
+        "mypkg.f1:void(java.lang.String)"
+      )
+    }
+  }
+
+  "CPG for code containing a lambda with destructuring sourced from an extension-receiver alias" should {
+    val cpg = code("""
+      |package mypkg
+      |
+      |class C {
+      |  fun Map<String, Int>.f1() {
+      |    val receiverAlias = this
+      |    receiverAlias.forEach { (k, _) ->
+      |      println(k)
+      |    }
+      |  }
+      |}
+      |""".stripMargin)
+
+    "should preserve `this` capture provenance through alias initializers" in {
+      val List(methodRef)              = cpg.methodRef.methodFullName(".*lambda.*").l
+      val List(capturedClosureBinding) = methodRef._closureBindingViaCaptureOut.l
+      val List(enclosingMethod)        = cpg.method.nameExact("f1").l
+      val closureBindingPrefix         = methodRef.methodFullName.split(":").head
+      val capturedMethodParamNames     = methodRef._closureBindingViaCaptureOut._methodParameterInViaRefOut.name.toSet
+      val capturedLocalNames           = methodRef._closureBindingViaCaptureOut._localViaRefOut.name.toSet
+
+      capturedMethodParamNames shouldBe Set("this")
+      capturedLocalNames shouldBe empty
+      methodRef._closureBindingViaCaptureOut.size shouldBe 1
+      capturedClosureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+      capturedClosureBinding.closureBindingId shouldBe Some(s"$closureBindingPrefix.this")
+      capturedClosureBinding._refOut.size shouldBe 1
+      capturedClosureBinding._localViaRefOut.l shouldBe empty
+      capturedClosureBinding._methodParameterInViaRefOut.name.l shouldBe List("this")
+      capturedClosureBinding._methodParameterInViaRefOut.method.fullName.l shouldBe List(enclosingMethod.fullName)
     }
   }
 
@@ -572,6 +789,226 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     "should contain a METHOD node for the lambda with the correct props set" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
       m.signature shouldBe "void(int)"
+    }
+  }
+
+  "CPG for code with lambda capture and lexical shadowing declared later" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |fun foo(x: String) {
+        |  1.let {
+        |    println(x)
+        |    run {
+        |      val x = "inner"
+        |      println(x)
+        |    }
+        |  }
+        |}
+        |""".stripMargin)
+
+    "should capture the outer method parameter used before shadowing" in {
+      val List(methodRef)              = cpg.call.code("1.let.*").argument(2).isMethodRef.l
+      val capturedClosureBindings      = methodRef._closureBindingViaCaptureOut.l
+      val capturedMethodParamNames     = methodRef._closureBindingViaCaptureOut._methodParameterInViaRefOut.name.toSet
+      val capturedLocalNames           = methodRef._closureBindingViaCaptureOut._localViaRefOut.name.toSet
+      val List(capturedClosureBinding) = capturedClosureBindings
+      val closureBindingPrefix         = methodRef.methodFullName.split(":").head
+
+      capturedMethodParamNames shouldBe Set("x")
+      capturedLocalNames shouldBe empty
+      capturedClosureBindings.size shouldBe 1
+      capturedClosureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+      capturedClosureBinding.closureBindingId shouldBe Some(s"$closureBindingPrefix.x")
+      capturedClosureBinding._refOut.size shouldBe 1
+      capturedClosureBinding._localViaRefOut.l shouldBe empty
+      capturedClosureBinding._methodParameterInViaRefOut.name.l shouldBe List("x")
+      capturedClosureBinding._methodParameterInViaRefOut.method.fullName.l shouldBe List(
+        "mypkg.foo:void(java.lang.String)"
+      )
+    }
+  }
+
+  "CPG for code with lambda capture and catch-parameter shadowing declared later" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |fun foo(x: String) {
+        |  1.let {
+        |    println(x)
+        |    try {
+        |      throw RuntimeException("boom")
+        |    } catch (x: Exception) {
+        |      println(x.message)
+        |    }
+        |  }
+        |}
+        |""".stripMargin)
+
+    "should capture the outer method parameter used before catch shadowing" in {
+      val List(methodRef)              = cpg.call.code("1.let.*").argument(2).isMethodRef.l
+      val capturedClosureBindings      = methodRef._closureBindingViaCaptureOut.l
+      val capturedMethodParamNames     = methodRef._closureBindingViaCaptureOut._methodParameterInViaRefOut.name.toSet
+      val capturedLocalNames           = methodRef._closureBindingViaCaptureOut._localViaRefOut.name.toSet
+      val List(capturedClosureBinding) = capturedClosureBindings
+      val closureBindingPrefix         = methodRef.methodFullName.split(":").head
+
+      capturedMethodParamNames shouldBe Set("x")
+      capturedLocalNames shouldBe empty
+      capturedClosureBindings.size shouldBe 1
+      capturedClosureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+      capturedClosureBinding.closureBindingId shouldBe Some(s"$closureBindingPrefix.x")
+      capturedClosureBinding._refOut.size shouldBe 1
+      capturedClosureBinding._localViaRefOut.l shouldBe empty
+      capturedClosureBinding._methodParameterInViaRefOut.name.l shouldBe List("x")
+      capturedClosureBinding._methodParameterInViaRefOut.method.fullName.l shouldBe List(
+        "mypkg.foo:void(java.lang.String)"
+      )
+    }
+  }
+
+  "CPG for code with lambda capture and for-loop variable shadowing declared later" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |fun foo(x: String) {
+        |  1.let {
+        |    println(x)
+        |    for (x in listOf("inner")) {
+        |      println(x)
+        |    }
+        |  }
+        |}
+        |""".stripMargin)
+
+    "should capture the outer method parameter used before for-loop shadowing" in {
+      val List(methodRef)              = cpg.call.code("1.let.*").argument(2).isMethodRef.l
+      val capturedClosureBindings      = methodRef._closureBindingViaCaptureOut.l
+      val capturedMethodParamNames     = methodRef._closureBindingViaCaptureOut._methodParameterInViaRefOut.name.toSet
+      val capturedLocalNames           = methodRef._closureBindingViaCaptureOut._localViaRefOut.name.toSet
+      val List(capturedClosureBinding) = capturedClosureBindings
+      val closureBindingPrefix         = methodRef.methodFullName.split(":").head
+
+      capturedMethodParamNames shouldBe Set("x")
+      capturedLocalNames shouldBe empty
+      capturedClosureBindings.size shouldBe 1
+      capturedClosureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+      capturedClosureBinding.closureBindingId shouldBe Some(s"$closureBindingPrefix.x")
+      capturedClosureBinding._refOut.size shouldBe 1
+      capturedClosureBinding._localViaRefOut.l shouldBe empty
+      capturedClosureBinding._methodParameterInViaRefOut.name.l shouldBe List("x")
+      capturedClosureBinding._methodParameterInViaRefOut.method.fullName.l shouldBe List(
+        "mypkg.foo:void(java.lang.String)"
+      )
+    }
+  }
+
+  "CPG for code with lambda capture and when-subject shadowing declared later" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |fun foo(x: String) {
+        |  1.let {
+        |    println(x)
+        |    when (val x = 1) {
+        |      else -> println(x)
+        |    }
+        |  }
+        |}
+        |""".stripMargin)
+
+    "should capture the outer method parameter used before when-subject shadowing" in {
+      val List(methodRef)              = cpg.call.code("1.let.*").argument(2).isMethodRef.l
+      val capturedClosureBindings      = methodRef._closureBindingViaCaptureOut.l
+      val capturedMethodParamNames     = methodRef._closureBindingViaCaptureOut._methodParameterInViaRefOut.name.toSet
+      val capturedLocalNames           = methodRef._closureBindingViaCaptureOut._localViaRefOut.name.toSet
+      val List(capturedClosureBinding) = capturedClosureBindings
+      val closureBindingPrefix         = methodRef.methodFullName.split(":").head
+
+      capturedMethodParamNames shouldBe Set("x")
+      capturedLocalNames shouldBe empty
+      capturedClosureBindings.size shouldBe 1
+      capturedClosureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+      capturedClosureBinding.closureBindingId shouldBe Some(s"$closureBindingPrefix.x")
+      capturedClosureBinding._refOut.size shouldBe 1
+      capturedClosureBinding._localViaRefOut.l shouldBe empty
+      capturedClosureBinding._methodParameterInViaRefOut.name.l shouldBe List("x")
+      capturedClosureBinding._methodParameterInViaRefOut.method.fullName.l shouldBe List(
+        "mypkg.foo:void(java.lang.String)"
+      )
+    }
+  }
+
+  "CPG for code with lambda capture and local-function parameter shadowing declared later" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |fun foo(x: String) {
+        |  1.let {
+        |    println(x)
+        |    fun inner(x: String) {
+        |      println(x)
+        |    }
+        |    inner("inner")
+        |  }
+        |}
+        |""".stripMargin)
+
+    "should capture the outer method parameter used before local-function shadowing" in {
+      val List(methodRef)              = cpg.call.code("1.let.*").argument(2).isMethodRef.l
+      val capturedClosureBindings      = methodRef._closureBindingViaCaptureOut.l
+      val capturedMethodParamNames     = methodRef._closureBindingViaCaptureOut._methodParameterInViaRefOut.name.toSet
+      val capturedLocalNames           = methodRef._closureBindingViaCaptureOut._localViaRefOut.name.toSet
+      val List(capturedClosureBinding) = capturedClosureBindings
+      val closureBindingPrefix         = methodRef.methodFullName.split(":").head
+
+      capturedMethodParamNames shouldBe Set("x")
+      capturedLocalNames shouldBe empty
+      capturedClosureBindings.size shouldBe 1
+      capturedClosureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+      capturedClosureBinding.closureBindingId shouldBe Some(s"$closureBindingPrefix.x")
+      capturedClosureBinding._refOut.size shouldBe 1
+      capturedClosureBinding._localViaRefOut.l shouldBe empty
+      capturedClosureBinding._methodParameterInViaRefOut.name.l shouldBe List("x")
+      capturedClosureBinding._methodParameterInViaRefOut.method.fullName.l shouldBe List(
+        "mypkg.foo:void(java.lang.String)"
+      )
+    }
+  }
+
+  "CPG for code with lambda using labeled this in extension receiver context" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |class C {
+        |  fun String.foo() {
+        |    1.let {
+        |      println(this@C.toString())
+        |    }
+        |  }
+        |}
+        |""".stripMargin)
+
+    "should capture the enclosing class receiver via labeled this" in {
+      val List(methodRef)                = cpg.call.code("1.let.*").argument(2).isMethodRef.l
+      val capturedClosureBindings        = methodRef._closureBindingViaCaptureOut.l
+      val List(capturedClosureBinding)   = capturedClosureBindings
+      val capturedMethodParamNames       = methodRef._closureBindingViaCaptureOut._methodParameterInViaRefOut.name.toSet
+      val capturedLocalNames             = methodRef._closureBindingViaCaptureOut._localViaRefOut.name.toSet
+      val closureBindingPrefix           = methodRef.methodFullName.split(":").head
+      val List(enclosingExtensionMethod) = cpg.method.nameExact("foo").l
+
+      capturedMethodParamNames shouldBe Set("this")
+      capturedLocalNames shouldBe empty
+      capturedClosureBindings.size shouldBe 1
+      capturedClosureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+      capturedClosureBinding.closureBindingId shouldBe Some(s"$closureBindingPrefix.this")
+      capturedClosureBinding._refOut.size shouldBe 1
+      capturedClosureBinding._localViaRefOut.l shouldBe empty
+      capturedClosureBinding._methodParameterInViaRefOut.name.l shouldBe List("this")
+      capturedClosureBinding._methodParameterInViaRefOut.method.fullName.l shouldBe List(
+        enclosingExtensionMethod.fullName
+      )
     }
   }
 
