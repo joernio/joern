@@ -85,11 +85,13 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     scope.getEnclosingParentInfo
       .getOrElse((NameConstants.Unknown, NameConstants.Unknown))
   }
-  
+
   protected def getClosureAstParentInfo: (String, String) = {
-    scope.getEnclosingTypeDecl.map { scope =>
-      (NodeTypes.TYPE_DECL, scope.fullName)
-    }.getOrElse(getAstParentInfo)
+    scope.getEnclosingTypeDecl
+      .map { scope =>
+        (NodeTypes.TYPE_DECL, scope.fullName)
+      }
+      .getOrElse(getAstParentInfo)
   }
 
   protected def getTypeDeclPrefix: Option[String] =

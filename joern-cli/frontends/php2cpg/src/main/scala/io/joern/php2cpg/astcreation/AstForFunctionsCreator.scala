@@ -312,7 +312,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
       case inits =>
         val (astParentType, astParentFullName) = getAstParentInfo
-        val fullName = composeMethodFullName(Defines.StaticInitMethodName)
+        val fullName                           = composeMethodFullName(Defines.StaticInitMethodName)
         val methodNode_ = methodNode(
           node = node,
           name = Defines.StaticInitMethodName,

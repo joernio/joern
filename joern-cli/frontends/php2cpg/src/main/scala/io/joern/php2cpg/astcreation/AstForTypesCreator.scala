@@ -40,7 +40,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val inheritsFrom = (stmt.extendsNames ++ stmt.implementedInterfaces).map(_.name)
     val code         = codeForClassStmt(stmt, name)
 
-    val fullName = globalNamespace.fullName
+    val fullName                           = globalNamespace.fullName
     val (astParentType, astParentFullName) = getAstParentInfo
 
     val typeDecl = typeDeclNode(
@@ -80,7 +80,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     val classFullName = prependNamespacePrefix(className)
 
-    val code = codeForClassStmt(stmt, PhpNameExpr(className, stmt.attributes))
+    val code                               = codeForClassStmt(stmt, PhpNameExpr(className, stmt.attributes))
     val (astParentType, astParentFullName) = getAstParentInfo
 
     val typeDeclTemp = typeDeclNode(
