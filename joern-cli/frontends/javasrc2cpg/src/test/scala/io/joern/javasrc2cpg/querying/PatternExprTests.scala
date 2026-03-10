@@ -17,6 +17,147 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 import io.shiftleft.semanticcpg.language.*
 
 class PatternExprTests extends JavaSrcCode2CpgFixture {
+  "a non-generic, non-nested record pattern with a match-all pattern is matched" should {
+    val cpg = code("""
+        |package box;
+        |
+        |record Box(String value) {}
+        |
+        |class Foo {
+        |  void foo(Object o) {
+        |    if (o instanceof Box(_)) {
+        |    }
+        |  }
+        |}
+        |""".stripMargin)
+
+    "parse" in {
+      cpg.method.name("foo").nonEmpty shouldBe true
+    }
+
+    "not create any orphan locals" in {
+      cpg.local.filter(_._astIn.isEmpty).map(_.name).l shouldBe Nil
+    }
+
+    "not create a local for the match-all pattern" in {
+      cpg.method.name("foo").local.name("s").l shouldBe Nil
+    }
+
+    "have the correct lowering for the type check" in {
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).condition.l) {
+        case List(andCall: Call) =>
+          andCall.name shouldBe Operators.logicalAnd
+          andCall.code shouldBe "(o instanceof Box) && { true; }"
+
+          inside(andCall.argument.l) { case List(instanceOfBox: Call, trueBlock: Block) =>
+            instanceOfBox.name shouldBe Operators.instanceOf
+            instanceOfBox.methodFullName shouldBe Operators.instanceOf
+            instanceOfBox.code shouldBe "o instanceof Box"
+            instanceOfBox.typeFullName shouldBe "boolean"
+
+            inside(instanceOfBox.argument.l) { case List(oIdentifier: Identifier, boxType: TypeRef) =>
+              oIdentifier.name shouldBe "o"
+              oIdentifier.typeFullName shouldBe "java.lang.Object"
+              oIdentifier.code shouldBe "o"
+              oIdentifier.refsTo.l shouldBe cpg.method.name("foo").parameter.name("o").l
+
+              boxType.typeFullName shouldBe "box.Box"
+              boxType.code shouldBe "Box"
+            }
+
+            inside(trueBlock.astChildren.l) { case List(trueLiteral: Literal) =>
+              trueLiteral.code shouldBe "true"
+            }
+          }
+      }
+    }
+  }
+
+  "a record pattern with a match-all and a binding pattern" should {
+    val cpg = code("""
+        |package box;
+        |
+        |record Pair(Integer first, String second) {}
+        |
+        |class Foo {
+        |  void foo(Object o) {
+        |    if (o instanceof Pair(_, String s)) {
+        |      sink(s);
+        |    }
+        |  }
+        |}
+        |""".stripMargin)
+
+    "parse" in {
+      cpg.call.name("sink").nonEmpty shouldBe true
+    }
+
+    "not create any orphan locals" in {
+      cpg.local.filter(_._astIn.isEmpty).map(_.name).l shouldBe Nil
+    }
+
+    "create only the s local at the start of the method" in {
+      testStandardPatternLocalLowering(cpg)
+    }
+
+    "have the correct lowering for the type check" in {
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).condition.l) {
+        case List(andCall: Call) =>
+          andCall.name shouldBe Operators.logicalAnd
+          andCall.code shouldBe "(o instanceof Pair) && { s = ((Pair) o).second(); true; }"
+
+          inside(andCall.argument.l) { case List(instanceOfPair: Call, assignBlock: Block) =>
+            instanceOfPair.name shouldBe Operators.instanceOf
+            instanceOfPair.methodFullName shouldBe Operators.instanceOf
+            instanceOfPair.code shouldBe "o instanceof Pair"
+            instanceOfPair.typeFullName shouldBe "boolean"
+
+            inside(instanceOfPair.argument.l) { case List(oIdentifier: Identifier, pairType: TypeRef) =>
+              oIdentifier.name shouldBe "o"
+              oIdentifier.typeFullName shouldBe "java.lang.Object"
+              oIdentifier.code shouldBe "o"
+              oIdentifier.refsTo.l shouldBe cpg.method.name("foo").parameter.name("o").l
+
+              pairType.typeFullName shouldBe "box.Pair"
+              pairType.code shouldBe "Pair"
+            }
+
+            inside(assignBlock.astChildren.l) { case List(sAssignment: Call, _: Literal) =>
+              sAssignment.name shouldBe Operators.assignment
+              sAssignment.methodFullName shouldBe Operators.assignment
+              sAssignment.typeFullName shouldBe "java.lang.String"
+              sAssignment.code shouldBe "s = ((Pair) o).second()"
+
+              inside(sAssignment.argument.l) { case List(sIdentifier: Identifier, secondCall: Call) =>
+                sIdentifier.name shouldBe "s"
+                sIdentifier.typeFullName shouldBe "java.lang.String"
+                sIdentifier.code shouldBe "s"
+                sIdentifier.refsTo.l shouldBe cpg.method.name("foo").local.name("s").l
+
+                secondCall.name shouldBe "second"
+                secondCall.methodFullName shouldBe "box.Pair.second:java.lang.String()"
+                secondCall.code shouldBe "((Pair) o).second()"
+                secondCall.typeFullName shouldBe "java.lang.String"
+
+                inside(secondCall.argument.l) { case List(pairCast: Call) =>
+                  pairCast.name shouldBe Operators.cast
+                  pairCast.code shouldBe "(Pair) o"
+                  pairCast.typeFullName shouldBe "box.Pair"
+
+                  inside(pairCast.argument.l) { case List(pairType: TypeRef, oIdentifier: Identifier) =>
+                    pairType.typeFullName shouldBe "box.Pair"
+
+                    oIdentifier.name shouldBe "o"
+                    oIdentifier.typeFullName shouldBe "java.lang.Object"
+                    oIdentifier.refsTo.l shouldBe cpg.parameter.name("o").l
+                  }
+                }
+              }
+            }
+          }
+      }
+    }
+  }
 
   "a pattern initializer in a lambda method" should {
     val cpg = code("""

@@ -65,12 +65,15 @@ object MavenDependencies {
     }
 
     var classPathNext = false
-    val deps = lines.flatMap { line =>
-      val isClassPathNow = classPathNext
-      classPathNext = line.endsWith("Dependencies classpath:")
+    val deps = lines
+      .flatMap { line =>
+        val isClassPathNow = classPathNext
+        classPathNext = line.endsWith("Dependencies classpath:")
 
-      if (isClassPathNow) line.split(File.pathSeparatorChar) else Array.empty[String]
-    }.distinct
+        if (isClassPathNow) line.split(File.pathSeparatorChar) else Array.empty[String]
+      }
+      .filter(_.nonEmpty)
+      .distinct
 
     logger.info("got {} Maven dependencies", deps.size)
     Some(deps)

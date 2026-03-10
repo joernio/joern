@@ -600,12 +600,27 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
   }
 
   "call to method in derived class using external package" should {
+
     lazy val cpg = code("""
-        |import org.hibernate.Query;
-        |import org.hibernate.Session;
-        |import org.hibernate.SessionFactory;
+        |class Session {
+        |  public Query createQuery() {
+        |    return new Query();
+        |  }
+        |}
+        |
+        |class Query { }
+        |
+        |class SessionFactory {
+        |  private Session session;
+        |
+        |  public Session getCurrentSession() {
+        |    return session;
+        |  }
+        |}
         |
         |class Base {
+        |  SessionFactory sessionFactory;
+        |
         |  Session getCurrentSession() {
         |		return this.sessionFactory.getCurrentSession();
         |	}
@@ -613,18 +628,18 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
         |
         |class Derived extends Base{
         | void foo() {
-        |		Query q = getCurrentSession().createQuery("FROM User");
+        |		Query q = getCurrentSession().createQuery();
         |		return;
         |	}
         |}
         |""".stripMargin)
 
     "have correct methodFullName" in {
-      cpg.call.nameExact("createQuery").methodFullName.head.split(":").head shouldBe "org.hibernate.Session.createQuery"
+      cpg.call.nameExact("createQuery").methodFullName.head.split(":").head shouldBe "Session.createQuery"
       cpg.call
         .nameExact("getCurrentSession")
         .methodFullName
-        .last shouldBe "Derived.getCurrentSession:org.hibernate.Session()"
+        .last shouldBe "Derived.getCurrentSession:Session()"
     }
   }
 

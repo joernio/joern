@@ -1,7 +1,7 @@
 package io.joern.javasrc2cpg.astcreation.expressions
 
 import com.github.javaparser.ast.Node
-import com.github.javaparser.ast.expr.{PatternExpr, RecordPatternExpr, TypePatternExpr}
+import com.github.javaparser.ast.expr.{ComponentPatternExpr, PatternExpr, RecordPatternExpr, TypePatternExpr}
 import io.joern.javasrc2cpg.astcreation.AstCreator
 import io.joern.javasrc2cpg.jartypereader.model.Model.TypeConstants
 import io.joern.javasrc2cpg.scope.Scope.NewVariableNode
@@ -279,24 +279,35 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
       .map(_.getDeclaredFields.asScala.map(_.getName).toList)
       .getOrElse(patternList.map(_ => Defines.UnknownField))
 
-    patternList.zip(fieldNames).map { case (childPatternExpr, fieldName) =>
-      val childTypeFullName = getPatternTypeFullName(childPatternExpr) match {
-        case typeFullName if isResolvedTypeFullName(typeFullName) => Option(typeFullName)
-        case _                                                    => None
-      }
+    // The PatternExpr type hierarchy is now
+    //
+    // ComponentPatternExpr
+    // |-- MatchAllPatternExpr (doesn't have a type)
+    // |-- PatternExpr (ABC for patterns with types)
+    //     |-- TypePatternExpr
+    //     |-- RecordPatternExpr
+    //
+    // For the purposes of our lowering, we only care about MatchAllPatternExpr when getting the field names
+    // corresponding to the patterns in the list (the zip here), and after that we ignore them.
+    patternList.zip(fieldNames).collect { case (pat: PatternExpr, fieldName) => (pat, fieldName) }.map {
+      case (childPatternExpr, fieldName) =>
+        val childTypeFullName = getPatternTypeFullName(childPatternExpr) match {
+          case typeFullName if isResolvedTypeFullName(typeFullName) => Option(typeFullName)
+          case _                                                    => None
+        }
 
-      val fieldTypeFullName = resolvedRecordType
-        .flatMap(_.getTypeDeclaration.toScala)
-        .flatMap(typeDecl => tryWithSafeStackOverflow(typeDecl.getField(fieldName).getType).toOption)
-        .flatMap(typeInfoCalc.fullName)
+        val fieldTypeFullName = resolvedRecordType
+          .flatMap(_.getTypeDeclaration.toScala)
+          .flatMap(typeDecl => tryWithSafeStackOverflow(typeDecl.getField(fieldName).getType).toOption)
+          .flatMap(typeInfoCalc.fullName)
 
-      val childIsBranchingNode =
-        childPatternExpr.isRecordPatternExpr && childPatternExpr.asRecordPatternExpr().getPatternList.size() > 1
-      val childTypeIsResolved = childTypeFullName.exists(isResolvedTypeFullName)
-      val requiresTemporaryVariable =
-        childIsBranchingNode || !childTypeIsResolved || childTypeFullName != fieldTypeFullName
+        val childIsBranchingNode =
+          childPatternExpr.isRecordPatternExpr && childPatternExpr.asRecordPatternExpr().getPatternList.size() > 1
+        val childTypeIsResolved = childTypeFullName.exists(isResolvedTypeFullName)
+        val requiresTemporaryVariable =
+          childIsBranchingNode || !childTypeIsResolved || childTypeFullName != fieldTypeFullName
 
-      PatternInitNode(parentInitNode, childPatternExpr, fieldName, fieldTypeFullName, requiresTemporaryVariable)
+        PatternInitNode(parentInitNode, childPatternExpr, fieldName, fieldTypeFullName, requiresTemporaryVariable)
     }
   }
 
