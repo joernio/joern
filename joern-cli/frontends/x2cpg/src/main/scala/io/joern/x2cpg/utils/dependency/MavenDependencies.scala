@@ -70,7 +70,7 @@ object MavenDependencies {
       classPathNext = line.endsWith("Dependencies classpath:")
 
       if (isClassPathNow) line.split(File.pathSeparatorChar) else Array.empty[String]
-    }.distinct
+    }.filter(_.nonEmpty).distinct
 
     logger.info("got {} Maven dependencies", deps.size)
     Some(deps)
