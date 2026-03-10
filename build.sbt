@@ -61,6 +61,7 @@ ThisBuild / libraryDependencies ++= Seq(
 ThisBuild / compile / javacOptions ++= Seq(
   "-g", // debug symbols
   "-Xlint",
+  "-proc:none",
   "--release=11"
 ) ++ {
   // Require Java 13+ due to FileSystems.newFileSystem(Path) API used in project/FileUtils.scala
