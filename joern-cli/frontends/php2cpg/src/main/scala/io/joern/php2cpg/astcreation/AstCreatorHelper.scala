@@ -149,9 +149,9 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
         }
 
         scope.addToScope(name, local) match {
-          case BlockScope(block, _)              => diffGraph.addEdge(block, local, EdgeTypes.AST)
-          case MethodScope(_, block, _, _, _, _) => diffGraph.addEdge(block, local, EdgeTypes.AST)
-          case _                                 => // do nothing
+          case BlockScope(block, _)                 => diffGraph.addEdge(block, local, EdgeTypes.AST)
+          case MethodScope(_, block, _, _, _, _, _) => diffGraph.addEdge(block, local, EdgeTypes.AST)
+          case _                                    => // do nothing
         }
 
         local
@@ -183,8 +183,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
           if (!isInClosure) {
             scope.getMethodRef(innerMethodNode.fullName) match {
               case None =>
-                diffGraph.addNode(methodRef)
-                diffGraph.addEdge(currentMethod.bodyNode, methodRef, EdgeTypes.AST)
+                currentMethod.additionalBodyChildren.append(methodRef)
                 scope.addMethodRef(innerMethodNode.fullName, methodRef)
               case _ =>
             }
