@@ -328,7 +328,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
   /** Creates an erased signature for a function descriptor, replacing type parameters with their upper bounds.
     */
-  private def createErasedSignature(functionDesc: FunctionDescriptor): Option[String] = {
+  def createErasedSignature(functionDesc: FunctionDescriptor): Option[String] = {
     val extRecvType = Option(functionDesc.getExtensionReceiverParameter) match {
       case None        => Some(None)
       case Some(param) => eraseType(param.getType).map(Some(_))
