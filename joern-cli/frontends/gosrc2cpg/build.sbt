@@ -19,10 +19,6 @@ libraryDependencies ++= Seq(
   "com.lihaoyi"   %% "os-lib"            % Versions.osLib
 )
 
-scalacOptions ++= Seq(
-  "-deprecation" // Emit warning and location for usages of deprecated APIs.
-)
-
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
 lazy val appProperties = settingKey[Config]("App Properties")

@@ -61,6 +61,7 @@ ThisBuild / libraryDependencies ++= Seq(
 ThisBuild / compile / javacOptions ++= Seq(
   "-g", // debug symbols
   "-Xlint",
+  "-proc:none",
   "--release=11"
 ) ++ {
   // Require Java 13+ due to FileSystems.newFileSystem(Path) API used in project/FileUtils.scala
@@ -73,6 +74,8 @@ ThisBuild / scalacOptions ++= Seq(
   "-deprecation", // Emit warning and location for usages of deprecated APIs.
   "--release",
   "11",
+  "-Xfatal-warnings",
+  "-feature",
   "-Wshadow:type-parameter-shadow",
   "-no-indent",
   "-old-syntax"

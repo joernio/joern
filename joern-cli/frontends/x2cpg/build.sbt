@@ -17,6 +17,7 @@ Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc
 
 compile / javacOptions ++= Seq("-Xlint:all", "-Xlint:-cast", "-g")
 Test / fork := true
+Test / scalacOptions += "-language:implicitConversions"
 
 enablePlugins(JavaAppPackaging)
 

@@ -22,4 +22,5 @@ excludeDependencies ++= Seq(
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
 fork        := true
+Test / scalacOptions += "-language:implicitConversions"
 javaOptions := Seq("-Djava.protocol.handler.pkgs=ghidra.framework.protocol")
