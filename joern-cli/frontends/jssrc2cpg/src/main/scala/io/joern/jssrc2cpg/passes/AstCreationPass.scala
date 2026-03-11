@@ -5,33 +5,41 @@ import io.joern.jssrc2cpg.astcreation.AstCreator
 import io.joern.jssrc2cpg.parser.BabelJsonParser
 import io.joern.jssrc2cpg.utils.AstGenRunner.AstGenRunnerResult
 import io.joern.x2cpg.ValidationMode
-import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
+import io.joern.x2cpg.passes.ForkJoinParallelCpgPassWithAccumulator
 import io.joern.x2cpg.utils.Report
 import io.joern.x2cpg.utils.TimeUtils
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.utils.IOUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
-import scala.jdk.CollectionConverters.*
+import scala.collection.mutable
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
 class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: Config, report: Report = new Report())(
   implicit withSchemaValidation: ValidationMode
-) extends ForkJoinParallelCpgPass[(String, String)](cpg) {
+) extends ForkJoinParallelCpgPassWithAccumulator[(String, String), mutable.Set[String]](cpg) {
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
-  private val global = new Global()
+  private var _typesSeen: List[String] = Nil
 
-  def typesSeen(): List[String] = global.usedTypes.keys().asScala.filterNot(_ == Defines.Any).toList
+  def typesSeen(): List[String] = _typesSeen
 
   override def generateParts(): Array[(String, String)] = astGenRunnerResult.parsedFiles.toArray
+
+  override protected def newAccumulator(): mutable.Set[String] = mutable.Set.empty[String]
+
+  override protected def mergeAccumulators(left: mutable.Set[String], right: mutable.Set[String]): mutable.Set[String] =
+    left ++= right
+
+  override protected def onAccumulatorComplete(acc: mutable.Set[String]): Unit = {
+    _typesSeen = acc.filterNot(_ == Defines.Any).toList
+  }
 
   override def finish(): Unit = {
     astGenRunnerResult.skippedFiles.foreach { skippedFile =>
@@ -45,9 +53,14 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
       }
       report.addReportInfo(fileName, fileLOC)
     }
+    super.finish()
   }
 
-  override def runOnPart(diffGraph: DiffGraphBuilder, input: (String, String)): Unit = {
+  override protected def runOnPartWithAccumulator(
+    diffGraph: DiffGraphBuilder,
+    usedTypes: mutable.Set[String],
+    input: (String, String)
+  ): Unit = {
     val (rootPath, jsonFilename) = input
     val parseResultMaybe         = BabelJsonParser.readFile(Paths.get(rootPath), Paths.get(jsonFilename))
     val ((gotCpg, filename), duration) = TimeUtils.time {
@@ -55,7 +68,7 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
         case Success(parseResult) =>
           report.addReportInfo(parseResult.filename, parseResult.fileLoc, parsed = true)
           Try {
-            val localDiff = new AstCreator(config, global, parseResult).createAst()
+            val localDiff = new AstCreator(config, usedTypes, parseResult).createAst()
             diffGraph.absorb(localDiff)
           } match {
             case Failure(exception) =>
