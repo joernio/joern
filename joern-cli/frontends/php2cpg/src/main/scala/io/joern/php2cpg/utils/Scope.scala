@@ -178,9 +178,9 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)
 
   def getEnclosingParentInfo: Option[(String, String)] =
     stack.map(_.scopeNode).collectFirst {
-      case MethodScope(mn, _, _, _, _, _) => (NodeTypes.METHOD, mn.fullName)
-      case TypeScope(td, _)               => (NodeTypes.TYPE_DECL, td.fullName)
-      case NamespaceScope(ns, _)          => (NodeTypes.NAMESPACE_BLOCK, ns.fullName)
+      case MethodScope(mn, _, _, _, _, _, _) => (NodeTypes.METHOD, mn.fullName)
+      case TypeScope(td, _)                  => (NodeTypes.TYPE_DECL, td.fullName)
+      case NamespaceScope(ns, _)             => (NodeTypes.NAMESPACE_BLOCK, ns.fullName)
     }
 
   def createMethodNameWithSurroundingInformation(methodName: String): String = {
@@ -192,7 +192,7 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)
       .collectFirst {
         case NamespaceScope(nm, _) if nm.name != NamespaceTraversal.globalNamespaceName => s"${nm.name}\\$methodName"
         case TypeScope(td, _) if td.name != NamespaceTraversal.globalNamespaceName      => s"${td.fullName}.$methodName"
-        case MethodScope(nm, _, _, _, _, _) if nm.name != NamespaceTraversal.globalNamespaceName =>
+        case MethodScope(nm, _, _, _, _, _, _) if nm.name != NamespaceTraversal.globalNamespaceName =>
           if (namespaces.isEmpty) {
             s"${nm.fullName}.$methodName"
           } else {

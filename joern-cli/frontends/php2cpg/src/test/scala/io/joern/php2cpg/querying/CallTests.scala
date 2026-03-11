@@ -353,7 +353,7 @@ class CallTests extends PhpCode2CpgFixture {
         | public function bar() {
         |        $batches = 0;
         |        BatchBuilder::factory()
-        |            ->transferWith(function () {
+        |            ->transferWith(function () use (&$batches) {
         |                $batches++;
         |            })
         |            ->build();

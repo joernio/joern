@@ -179,8 +179,21 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val attributeAsts = decl.attributeGroups.flatMap(astForAttributeGroup)
     val methodBody    = blockAst(methodBodyNode, methodBodyStmts)
 
-    scope.popScope()
-    val methodAst = methodAstWithAnnotations(method, parameters, methodBody, methodReturn, modifiers, attributeAsts)
+    val scope_ = scope.popScope()
+    val additionalBodyChildren = scope_ match {
+      case Some(ms: MethodScope) =>
+        ms.additionalBodyChildren.map(Ast(_)).toList
+      case _ =>
+        List()
+    }
+    val methodAst = methodAstWithAnnotations(
+      method,
+      parameters,
+      methodBody.withChildren(additionalBodyChildren),
+      methodReturn,
+      modifiers,
+      attributeAsts
+    )
 
     if (decl.isClassMethod && !isStatic && !isConstructor) {
       val paramCopies = parameters.map(paramAst => (paramAst, paramAst.root)).collect {
