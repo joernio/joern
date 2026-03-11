@@ -243,7 +243,7 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
 
   protected def buildRunBeforeCode(config: Config, isInteractive: Boolean = false): Seq[String] = {
     val builder = Seq.newBuilder[String]
-    builder ++= runBeforeCode.map(code => escapeForWindows(code, isInteractive))
+    builder ++= runBeforeCode
     config.cpgToLoad.foreach { cpgFile =>
       val path = escapeForWindows(cpgFile.toString, isInteractive)
       builder += s"""importCpg("$path")"""
@@ -252,7 +252,7 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
       val path = escapeForWindows(name, isInteractive)
       builder += s"""openForInputPath("$path")""".stripMargin
     }
-    builder ++= config.runBefore.map(code => escapeForWindows(code, isInteractive))
+    builder ++= config.runBefore
 
     if (config.pluginToRun.contains("scan")) {
       builder += "import io.joern.joerncli.Scan"
