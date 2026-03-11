@@ -12,4 +12,5 @@ class ImportTraversal(val traversal: Iterator[Import]) extends AnyVal {
   def namespaceBlock: Iterator[NamespaceBlock] =
     call.method.namespaceBlock
 
+  def moduleImport: Iterator[Import] = traversal.filter(_.isModuleImport.contains(true))
 }
