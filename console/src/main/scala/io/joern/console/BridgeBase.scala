@@ -233,17 +233,23 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
   /** code that is executed on startup */
   protected def runBeforeCode: Seq[String]
 
-  private def escapeForWindows(s: String, isInteractive: Boolean) = {
-    if (!isInteractive && scala.util.Properties.isWin) {
+  private def escapeForWindows(s: String, isInteractive: Boolean, isServer: Boolean = false): String = {
+    if (isServer) {
+      s // no escaping for server mode
+    } else if (!isInteractive && scala.util.Properties.isWin) {
       s.replace("\\", "\\\\").replace("\"", "\\\"")
     } else {
       s
     }
   }
 
-  protected def buildRunBeforeCode(config: Config, isInteractive: Boolean = false): Seq[String] = {
+  protected def buildRunBeforeCode(
+    config: Config,
+    isInteractive: Boolean = false,
+    isServer: Boolean = false
+  ): Seq[String] = {
     val builder = Seq.newBuilder[String]
-    builder ++= runBeforeCode.map(code => escapeForWindows(code, isInteractive))
+    builder ++= runBeforeCode.map(code => escapeForWindows(code, isInteractive, isServer))
     config.cpgToLoad.foreach { cpgFile =>
       val path = escapeForWindows(cpgFile.toString, isInteractive)
       builder += s"""importCpg("$path")"""
@@ -440,7 +446,7 @@ trait ServerHandling { this: BridgeBase =>
   protected def startHttpServer(config: Config): Unit = {
     val baseConfig = replpp.Config(
       predefFiles = config.predefFiles,
-      runBefore = buildRunBeforeCode(config),
+      runBefore = buildRunBeforeCode(config, isServer = true),
       runAfter = buildRunAfterCode(config),
       verbose = true, // always print what's happening - helps debugging
       classpathConfig = replpp.Config
