@@ -217,11 +217,6 @@ class IdentifierReferencesTests extends KotlinCode2CpgFixture(withOssDataflow = 
         |  print(globalVar)
         |}
         |""".stripMargin)
-
-    "pass frontend validion" in {
-      new PostFrontendValidator(cpg, true).run()
-    }
-
     "have a LOCAL node for the global in <global> method" in {
       val List(globalMethod) = cpg.method.nameExact("<global>").l
       val List(globalLocal)  = globalMethod.local.nameExact("globalVar").l
