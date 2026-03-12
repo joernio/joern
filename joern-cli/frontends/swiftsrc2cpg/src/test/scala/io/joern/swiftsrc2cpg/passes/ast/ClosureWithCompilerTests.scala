@@ -180,19 +180,19 @@ class ClosureWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
       val binding5 = closureTypeDecl5.bindsOut.loneElement
 
       binding1.name shouldBe "single_apply"
-      binding1.methodFullName shouldBe "Sources/main.swift:<global>.main.<lambda>0:(Swift.String,Swift.String)->Swift.Bool"
+      binding1.methodFullName shouldBe "Swift.Function<(Swift.String,Swift.String)->Swift.Bool>.single_apply:(Swift.String,Swift.String)->Swift.Bool"
       binding1.signature shouldBe "(Swift.String,Swift.String)->Swift.Bool"
       binding2.name shouldBe "single_apply"
-      binding2.methodFullName shouldBe "Sources/main.swift:<global>.main.<lambda>1:()->Swift.String"
+      binding2.methodFullName shouldBe "Swift.Function<()->Swift.String>.single_apply:()->Swift.String"
       binding2.signature shouldBe "()->Swift.String"
       binding3.name shouldBe "single_apply"
-      binding3.methodFullName shouldBe "Sources/main.swift:<global>.main.<lambda>2:()->()"
+      binding3.methodFullName shouldBe "Swift.Function<()->()>.single_apply:()->()"
       binding3.signature shouldBe "()->()"
       binding4.name shouldBe "single_apply"
-      binding4.methodFullName shouldBe "Sources/main.swift:<global>.main.<lambda>3:(Swift.String)->()"
+      binding4.methodFullName shouldBe "Swift.Function<(Swift.String)->()>.single_apply:(Swift.String)->()"
       binding4.signature shouldBe "(Swift.String)->()"
       binding5.name shouldBe "single_apply"
-      binding5.methodFullName shouldBe "Sources/main.swift:<global>.main.<lambda>4:(Swift.Int)->Swift.Int"
+      binding5.methodFullName shouldBe "Swift.Function<(Swift.Int)->Swift.Int>.single_apply:(Swift.Int)->Swift.Int"
       binding5.signature shouldBe "(Swift.Int)->Swift.Int"
     }
 
@@ -271,7 +271,7 @@ class ClosureWithCompilerTests extends SwiftCompilerSrc2CpgSuite {
       val List(closureTypeDecl) = cpg.typeDecl.fullNameExact(compareClosureTypeDecl.inheritsFromTypeFullName.head).l
       val List(closureTypeDeclBinding) = closureTypeDecl.bindsOut.l
       closureTypeDeclBinding.name shouldBe "single_apply"
-      closureTypeDeclBinding.methodFullName shouldBe compareClosureFullName
+      closureTypeDeclBinding.methodFullName shouldBe "Swift.Function<(Swift.String,Swift.String)->Swift.Bool>.single_apply:(Swift.String,Swift.String)->Swift.Bool"
       closureTypeDeclBinding.signature shouldBe "(Swift.String,Swift.String)->Swift.Bool"
     }
 

@@ -36,6 +36,7 @@ class ToplevelLibraryTests extends SwiftSrc2CpgSuite {
       cpg.method.fullName.sorted.l shouldBe List(
         "<operator>.addition",
         "<operator>.assignment",
+        "Swift.Function<()->ANY>.single_apply:()->ANY",
         "Test0.swift:<global>",
         "Test0.swift:<global>.<lambda>0:()->ANY",
         "Test0.swift:<global>.<lambda>1:()->ANY"

@@ -31,8 +31,8 @@ class ValidationTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       cpg.typ.fullNameExact("kotlin.Pair").size should not be 0
     }
 
-    "should contain CLOSURE_BINDING nodes for the lambdas" in {
-      cpg.closureBinding.size should not be 0
+    "should not contain CLOSURE_BINDING nodes when lambdas do not capture outer variables" in {
+      cpg.closureBinding.size shouldBe 0
     }
   }
 
