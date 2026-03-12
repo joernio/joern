@@ -126,7 +126,7 @@ class Jimple2Cpg extends X2CpgFrontend {
 
     val global = globalFromAstCreation()
     TypeNodePass
-      .withRegisteredTypes(global.usedTypes.keys().asScala.toList, cpg)
+      .withRegisteredTypes(global.usedTypes.keys().asScala.toSet, cpg)
       .createAndApply()
     DeclarationRefPass(cpg).createAndApply()
     JavaConfigFileCreationPass(cpg, Option(tmpDir.toString), config).createAndApply()

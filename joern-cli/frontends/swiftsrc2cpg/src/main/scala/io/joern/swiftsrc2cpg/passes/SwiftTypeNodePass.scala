@@ -8,7 +8,7 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 object SwiftTypeNodePass {
 
-  def withRegisteredTypes(registeredTypes: List[String], cpg: Cpg): TypeNodePass = {
+  def withRegisteredTypes(registeredTypes: Set[String], cpg: Cpg): TypeNodePass = {
     new TypeNodePass(registeredTypes, cpg, getTypesFromCpg = false) {
 
       override def fullToShortName(typeName: String): String = {

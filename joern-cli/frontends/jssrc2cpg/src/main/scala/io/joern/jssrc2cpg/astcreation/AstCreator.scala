@@ -7,7 +7,6 @@ import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.AstCreatorBase
 import io.joern.x2cpg.ValidationMode
-import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
@@ -26,7 +25,7 @@ import ujson.Value
 
 import scala.collection.mutable
 
-class AstCreator(val config: Config, val global: Global, val parserResult: ParseResult)(implicit
+class AstCreator(val config: Config, val usedTypes: mutable.HashSet[String], val parserResult: ParseResult)(implicit
   withSchemaValidation: ValidationMode
 ) extends AstCreatorBase[BabelNodeInfo, AstCreator](parserResult.filename)
     with AstForExpressionsCreator

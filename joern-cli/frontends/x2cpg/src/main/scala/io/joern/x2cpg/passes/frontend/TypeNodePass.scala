@@ -14,7 +14,7 @@ import scala.collection.mutable
   * Alternatively, set `getTypesFromCpg = true`. If this is set, the `registeredTypes` argument will be ignored.
   * Instead, type nodes will be created for every unique `TYPE_FULL_NAME` value in the CPG.
   */
-class TypeNodePass protected (registeredTypes: List[String], cpg: Cpg, getTypesFromCpg: Boolean)
+class TypeNodePass protected (registeredTypes: Set[String], cpg: Cpg, getTypesFromCpg: Boolean)
     extends CpgPass(cpg, "types") {
 
   protected def typeDeclTypes: mutable.Set[String] = {
@@ -37,17 +37,14 @@ class TypeNodePass protected (registeredTypes: List[String], cpg: Cpg, getTypesF
 
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     val typeFullNameValues =
-      if (getTypesFromCpg)
-        typeFullNamesFromCpg
-      else
-        registeredTypes.toSet
+      if (getTypesFromCpg) typeFullNamesFromCpg
+      else registeredTypes
 
     val usedTypesSet = typeDeclTypes ++ typeFullNameValues
     usedTypesSet.remove("<empty>")
-    val usedTypes =
-      (usedTypesSet
-        .filterInPlace(!_.endsWith(NamespaceTraversal.globalNamespaceName))
-        .toArray :+ Defines.Any).toSet.sorted
+    usedTypesSet.addOne(Defines.Any)
+
+    val usedTypes = usedTypesSet.filterInPlace(!_.endsWith(NamespaceTraversal.globalNamespaceName)).sorted
 
     usedTypes.foreach { typeName =>
       val shortName = fullToShortName(typeName)
@@ -62,10 +59,10 @@ class TypeNodePass protected (registeredTypes: List[String], cpg: Cpg, getTypesF
 
 object TypeNodePass {
   def withTypesFromCpg(cpg: Cpg): TypeNodePass = {
-    new TypeNodePass(Nil, cpg, getTypesFromCpg = true)
+    new TypeNodePass(Set.empty, cpg, getTypesFromCpg = true)
   }
 
-  def withRegisteredTypes(registeredTypes: List[String], cpg: Cpg): TypeNodePass = {
+  def withRegisteredTypes(registeredTypes: Set[String], cpg: Cpg): TypeNodePass = {
     new TypeNodePass(registeredTypes, cpg, getTypesFromCpg = false)
   }
 
