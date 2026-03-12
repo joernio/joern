@@ -2,8 +2,11 @@ package io.joern.kotlin2cpg.validation
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.edges.Capture
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Local, MethodParameterIn}
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.validation.PostFrontendValidator
+import io.shiftleft.codepropertygraph.generated.nodes.Member
 
 // TODO: also add test with refs inside TYPE_DECL
 
@@ -201,6 +204,51 @@ class IdentifierReferencesTests extends KotlinCode2CpgFixture(withOssDataflow = 
       thisIdentifier.refsTo.size shouldBe 1
       val List(methodParam) = thisIdentifier.refsTo.collectAll[MethodParameterIn].l
       methodParam.name shouldBe "this"
+    }
+  }
+
+  "CPG for code with a package-level global referenced from main" should {
+    lazy val cpg = code("""
+        |package com.example
+        |
+        |val globalVar = 42
+        |
+        |fun main(): Unit {
+        |  print(globalVar)
+        |}
+        |""".stripMargin)
+    "have a LOCAL node for the global in <global> method" in {
+      val List(globalMethod) = cpg.method.nameExact("<global>").l
+      val List(globalLocal)  = globalMethod.local.nameExact("globalVar").l
+      globalLocal.name shouldBe "globalVar"
+      globalLocal.typeFullName shouldBe "int"
+      globalLocal.closureBindingId shouldBe None
+    }
+
+    "have a LOCAL with closure binding in main method" in {
+      val List(mainLocal) = cpg.method.nameExact("main").local.nameExact("globalVar").l
+      mainLocal.closureBindingId should not be None
+      mainLocal.closureBindingId.get shouldBe "com.example.main:void():globalVar"
+    }
+
+    "have a CLOSURE_BINDING connecting the two LOCALs" in {
+      val List(globalMethod) = cpg.method.nameExact("<global>").l
+      val List(globalLocal)  = globalMethod.local.nameExact("globalVar").l
+      val bindings           = globalLocal.closureBinding.l
+      bindings.size shouldBe 1
+      bindings.head.closureBindingId should not be None
+      bindings.head.closureBindingId.get shouldBe "com.example.main:void():globalVar"
+    }
+
+    "have a CAPTURE edge from a METHOD_REF for main to the CLOSURE_BINDING" in {
+      cpg.methodRef.methodFullNameExact("com.example.main:void()").size shouldBe 1
+      cpg.methodRef.methodFullNameExact("com.example.main:void()").outE.collectAll[Capture].size shouldBe 1
+    }
+
+    "have identifier in main referencing the LOCAL in main" in {
+      val List(idInMain)    = cpg.method.nameExact("main").ast.isIdentifier.nameExact("globalVar").l
+      val List(localInMain) = cpg.method.nameExact("main").local.nameExact("globalVar").l
+      idInMain.refsTo.l shouldBe List(localInMain)
     }
   }
 }
