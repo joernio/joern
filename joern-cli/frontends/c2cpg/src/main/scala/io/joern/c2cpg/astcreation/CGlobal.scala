@@ -19,8 +19,8 @@ class CGlobal extends Global {
   // 4) in this map with value HeaderFileParserLanguage.Both -> included from at least one C and one C++ source file, so we will have to parse it twice
   val headerIncludes: ConcurrentHashMap[String, HeaderFileParserLanguage] = new ConcurrentHashMap()
 
-  def typesSeen(): List[String] = {
-    usedTypes.keys().asScala.toList
+  def typesSeen(): Set[String] = {
+    usedTypes.keys().asScala.toSet
   }
 
   def unhandledMethodDeclarations(): Map[String, MethodInfo] = {
