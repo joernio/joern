@@ -1,10 +1,9 @@
 package io.joern.swiftsrc2cpg.passes
 
-import flatgraph.DNodeOrNode
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
-import io.joern.x2cpg.passes.base.TypeDeclStubCreator
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBinding, NewTypeDecl}
-import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
+import io.joern.x2cpg.passes.base.{MethodStubCreator, TypeDeclStubCreator}
+import io.shiftleft.codepropertygraph.generated.nodes.{Method, NewBinding, NewMethod, NewTypeDecl, TypeDecl}
+import io.shiftleft.codepropertygraph.generated.{Cpg, DispatchTypes, EdgeTypes}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
 
@@ -18,36 +17,64 @@ import io.shiftleft.semanticcpg.language.*
   */
 class ClosureBindingsPass(cpg: Cpg) extends CpgPass(cpg) {
 
-  private val seenTypeDecls = scala.collection.mutable.HashMap.empty[String, NewTypeDecl]
+  private val seenTypeDecls    = scala.collection.mutable.HashMap.empty[String, NewTypeDecl]
+  private val seenBoundMethods = scala.collection.mutable.HashMap.empty[String, NewMethod]
 
-  private def stubTypeDeclIfNeeded(diffGraph: DiffGraphBuilder, closureMethodFullName: String): DNodeOrNode = {
-    if (cpg.typeDecl.fullNameExact(closureMethodFullName).isEmpty) {
+  private def stubTypeDeclIfNeeded(diffGraph: DiffGraphBuilder, fullName: String): TypeDecl | NewTypeDecl = {
+    if (cpg.typeDecl.fullNameExact(fullName).isEmpty) {
       seenTypeDecls.getOrElseUpdate(
-        closureMethodFullName, {
-          val typeDeclStub = TypeDeclStubCreator.createTypeDeclStub("Function", closureMethodFullName)
+        fullName, {
+          val typeDeclStub = TypeDeclStubCreator.createTypeDeclStub("Function", fullName)
           diffGraph.addNode(typeDeclStub)
           typeDeclStub
         }
       )
     } else {
-      cpg.typeDecl.fullNameExact(closureMethodFullName).loneElement
+      cpg.typeDecl.fullNameExact(fullName).loneElement
+    }
+  }
+
+  private def stubBoundMethodIfNeeded(
+    diffGraph: DiffGraphBuilder,
+    closureMethodFullName: String,
+    closureMethod: Method
+  ): Method | NewMethod = {
+    val methodFullName = s"$closureMethodFullName.${Defines.ClosureApplyMethodName}:${closureMethod.signature}"
+    val numArgs        = closureMethod.parameter.size
+    if (cpg.method.fullNameExact(methodFullName).isEmpty) {
+      seenBoundMethods.getOrElseUpdate(
+        methodFullName, {
+          MethodStubCreator.createMethodStub(
+            Defines.ClosureApplyMethodName,
+            methodFullName,
+            closureMethod.signature,
+            DispatchTypes.DYNAMIC_DISPATCH,
+            numArgs,
+            diffGraph
+          )
+        }
+      )
+    } else {
+      cpg.method.fullNameExact(methodFullName).loneElement
     }
   }
 
   override def run(diffGraph: DiffGraphBuilder): Unit = {
+    val x = cpg.method.fullName.l
     for {
       closureMethod            <- cpg.method.isLambda
       closureMethodTypeDecl    <- closureMethod.bindingTypeDecl
       inheritsFromTypeFullName <- closureMethodTypeDecl.inheritsFromTypeFullName.loneElementOption
       closureTypeDecl = stubTypeDeclIfNeeded(diffGraph, inheritsFromTypeFullName)
+      boundMethod     = stubBoundMethodIfNeeded(diffGraph, inheritsFromTypeFullName, closureMethod)
     } {
       val functionBinding = NewBinding()
         .name(Defines.ClosureApplyMethodName)
-        .methodFullName(closureMethod.fullName)
-        .signature(closureMethod.signature)
+        .methodFullName(boundMethod.fullName)
+        .signature(boundMethod.signature)
       diffGraph.addNode(functionBinding)
       diffGraph.addEdge(closureTypeDecl, functionBinding, EdgeTypes.BINDS)
-      diffGraph.addEdge(functionBinding, closureMethod, EdgeTypes.REF)
+      diffGraph.addEdge(functionBinding, boundMethod, EdgeTypes.REF)
     }
   }
 
