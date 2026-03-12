@@ -21,8 +21,7 @@ class ModuleTests extends JavaSrcCode2CpgFixture {
       "represent the module import correctly" in {
         inside(cpg.imports.l) { case List(javaBaseImport) =>
           javaBaseImport.importedEntity shouldBe Some("java.base")
-        // TODO
-        // javaBaseImport.isModule shouldBe true
+          javaBaseImport.isModuleImport shouldBe Some(true)
         }
       }
 
