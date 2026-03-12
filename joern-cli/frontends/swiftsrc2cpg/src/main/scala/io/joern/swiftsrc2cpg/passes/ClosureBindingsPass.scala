@@ -60,7 +60,6 @@ class ClosureBindingsPass(cpg: Cpg) extends CpgPass(cpg) {
   }
 
   override def run(diffGraph: DiffGraphBuilder): Unit = {
-    val x = cpg.method.fullName.l
     for {
       closureMethod            <- cpg.method.isLambda
       closureMethodTypeDecl    <- closureMethod.bindingTypeDecl
