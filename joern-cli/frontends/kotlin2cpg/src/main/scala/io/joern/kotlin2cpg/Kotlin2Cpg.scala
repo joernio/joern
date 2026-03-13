@@ -196,19 +196,19 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
     cpg: Cpg,
     config: Config,
     filesWithJavaExtension: List[String],
-    kotlinAstCreatorTypes: List[String]
-  ): List[String] = {
+    kotlinAstCreatorTypes: Set[String]
+  ): Set[String] = {
     if (config.includeJavaSourceFiles && filesWithJavaExtension.nonEmpty) {
       val javaAstCreator = JavaSrcInterop.astCreationPass(config.inputPath, filesWithJavaExtension, cpg)
       javaAstCreator.createAndApply()
-      val javaAstCreatorTypes = javaAstCreator.global.usedTypes.keys().asScala.toList
+      val javaAstCreatorTypes = javaAstCreator.global.usedTypes.keys().asScala.toSet
 
       javaAstCreator.sourceParser.cleanupDelombokOutput()
       javaAstCreator.clearJavaParserCaches()
 
       javaAstCreatorTypes
     } else {
-      List.empty
+      Set.empty
     }
   }
 
@@ -241,11 +241,13 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
         new AstCreationPass(sourceFiles, bindingContext, cpg, config.disableFileContent)(config.schemaValidation)
       astCreator.createAndApply()
 
+      new SamTypeDeclPass(cpg, astCreator.samInfoEntries())(config.schemaValidation).createAndApply()
+
       Disposer.dispose(environment.getProjectEnvironment.getParentDisposable)
 
       val kotlinAstCreatorTypes = astCreator.usedTypes()
       val javaAstCreatorTypes   = runJavaSrcInterop(cpg, config, filesWithJavaExtension, kotlinAstCreatorTypes)
-      val allAstCreatorTypes    = kotlinAstCreatorTypes.toSet ++ javaAstCreatorTypes.toSet
+      val allAstCreatorTypes    = kotlinAstCreatorTypes ++ javaAstCreatorTypes
 
       TypeNodePass.withRegisteredTypes(allAstCreatorTypes, cpg).createAndApply()
 

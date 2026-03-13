@@ -4,8 +4,6 @@ import io.joern.kotlin2cpg.{Constants, KtFileWithMeta}
 import io.joern.kotlin2cpg.datastructures.Scope
 import io.joern.kotlin2cpg.types.{NameRenderer, TypeConstants, TypeInfoProvider}
 import io.joern.x2cpg.{Ast, AstCreatorBase, Defines, ValidationMode}
-import io.joern.x2cpg.AstNodeBuilder.bindingNode
-import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.IntervalKeyPool
 import io.shiftleft.codepropertygraph.generated.*
@@ -45,6 +43,7 @@ object AstCreator {
   )
 
   sealed trait SamImplInfo {
+    def relativizedPath: String
     def samImplClass: String
     def methodRefName: String
     def signature: String
@@ -57,6 +56,7 @@ object AstCreator {
   }
 
   case class BoundSamInfo(
+    relativizedPath: String,
     samImplClass: String,
     methodRefName: String,
     signature: String,
@@ -73,6 +73,7 @@ object AstCreator {
   ) extends SamImplInfo
 
   case class UnboundSamInfo(
+    relativizedPath: String,
     samImplClass: String,
     methodRefName: String,
     signature: String,
@@ -88,7 +89,8 @@ object AstCreator {
 class AstCreator(
   fileWithMeta: KtFileWithMeta,
   bindingContext: BindingContext,
-  global: Global,
+  usedTypes: mutable.Set[String],
+  samInfoEntriesByImplClass: mutable.Map[String, AstCreator.SamImplInfo],
   disableFileContent: Boolean
 )(implicit withSchemaValidation: ValidationMode)
     extends AstCreatorBase[PsiElement, AstCreator](fileWithMeta.filename)
@@ -98,13 +100,12 @@ class AstCreator(
     with AstForStatementsCreator
     with AstForExpressionsCreator {
 
-  import AstCreator.{BindingInfo, ClosureBindingDef, SamImplInfo, BoundSamInfo, UnboundSamInfo, ReceiverInfo}
+  import AstCreator.{BindingInfo, ClosureBindingDef, SamImplInfo}
 
   protected val closureBindingDefQueue: mutable.ArrayBuffer[ClosureBindingDef] = mutable.ArrayBuffer.empty
   protected val bindingInfoQueue: mutable.ArrayBuffer[BindingInfo]             = mutable.ArrayBuffer.empty
   protected val lambdaAstQueue: mutable.ArrayBuffer[Ast]                       = mutable.ArrayBuffer.empty
   protected val lambdaBindingInfoQueue: mutable.ArrayBuffer[BindingInfo]       = mutable.ArrayBuffer.empty
-  protected val samImplInfoQueue: mutable.Map[String, SamImplInfo]             = mutable.SeqMap.empty
   protected val methodAstParentStack: Stack[NewNode]                           = new Stack()
 
   protected val tmpKeyPool             = new IntervalKeyPool(first = 1, last = Long.MaxValue)
@@ -134,8 +135,12 @@ class AstCreator(
     * key in the map.
     */
   protected def registerType(typeName: String): String = {
-    global.usedTypes.putIfAbsent(typeName, true)
+    usedTypes.add(typeName)
     typeName
+  }
+
+  protected def registerSamInfo(samInfo: SamImplInfo): Unit = {
+    samInfoEntriesByImplClass.getOrElseUpdate(samInfo.samImplClass, samInfo)
   }
 
   protected def getFallback[T](
@@ -448,19 +453,9 @@ class AstCreator(
     val lambdaTypeDecls =
       lambdaBindingInfoQueue.flatMap(_.edgeMeta.collect { case (node: NewTypeDecl, _, _) => Ast(node) })
 
-    val samImplTypeDecls = samImplInfoQueue.values.flatMap { samInfo =>
-      val typeKey = s"${samInfo.samImplClass}"
-      if (Option(global.usedTypes.putIfAbsent(typeKey, true)) == None) {
-        registerType(samInfo.samImplClass)
-        Some(createSamImplTypeDecl(samInfo))
-      } else {
-        None
-      }
-    }
-
     methodAstParentStack.pop()
 
-    val allDeclarationAsts = declarationsAsts ++ lambdaAstQueue ++ lambdaTypeDecls.distinct ++ samImplTypeDecls
+    val allDeclarationAsts = declarationsAsts ++ lambdaAstQueue ++ lambdaTypeDecls.distinct
     val fakeTypeDeclAst =
       Ast(fakeGlobalTypeDecl)
         .withChild(
@@ -620,234 +615,6 @@ class AstCreator(
     lambdaBindingInfoQueue.prepend(
       BindingInfo(bindingNode, Seq((typeDecl, bindingNode, EdgeTypes.BINDS), (bindingNode, methodNode, EdgeTypes.REF)))
     )
-  }
-
-  protected def createReceiverAccess(
-    expr: KtCallableReferenceExpression,
-    receiverTypeFullName: String,
-    implementationTypeFullName: String
-  ): Ast = {
-    val thisIdent  = identifierNode(expr, "this", "this", implementationTypeFullName)
-    val fieldIdent = fieldIdentifierNode(expr, Constants.ReceiverName, Constants.ReceiverName)
-    val receiverFieldAccess = callNode(
-      expr,
-      "this.receiver",
-      Operators.fieldAccess,
-      Operators.fieldAccess,
-      DispatchTypes.STATIC_DISPATCH,
-      None,
-      Some(receiverTypeFullName)
-    ).argumentIndex(0)
-    callAst(receiverFieldAccess, Seq(Ast(thisIdent), Ast(fieldIdent)), None)
-  }
-
-  protected def createBindingInfo(
-    methodName: String,
-    signature: String,
-    methodFullName: String,
-    typeDecl: NewTypeDecl,
-    genericSignature: Option[String]
-  ): Unit = {
-    val binding = bindingNode(methodName, signature, methodFullName)
-    bindingInfoQueue.prepend(BindingInfo(binding, Seq((typeDecl, binding, EdgeTypes.BINDS))))
-
-    genericSignature.foreach { genericSig =>
-      val genericBinding = bindingNode(methodName, genericSig, methodFullName)
-      bindingInfoQueue.prepend(BindingInfo(genericBinding, Seq((typeDecl, genericBinding, EdgeTypes.BINDS))))
-    }
-  }
-
-  protected def createUnboundSamTypeDecl(samInfo: UnboundSamInfo): Ast = {
-    val samTypeDecl = typeDeclNode(
-      samInfo.expr,
-      samInfo.samImplClass.split('.').last,
-      samInfo.samImplClass,
-      relativizedPath,
-      samInfo.inheritsFrom.map(registerType),
-      None
-    )
-
-    val samMethodFullName = s"${samInfo.methodRefName}:${samInfo.signature}"
-
-    createBindingInfo(
-      samInfo.samMethodName,
-      samInfo.samMethodSig,
-      samMethodFullName,
-      samTypeDecl,
-      samInfo.samGenericMethodSig
-    )
-
-    Ast(samTypeDecl)
-  }
-
-  protected def createBoundSamMethodAst(samInfo: BoundSamInfo, samMethodFullName: String): Ast = {
-    val samMethodNode = methodNode(
-      samInfo.expr,
-      samInfo.samMethodName,
-      samInfo.samMethodName,
-      samMethodFullName,
-      Some(samInfo.samMethodSig),
-      relativizedPath
-    )
-
-    val thisParamAst = {
-      val paramNode =
-        parameterInNode(samInfo.expr, "this", "this", 0, false, EvaluationStrategies.BY_SHARING, samInfo.samImplClass)
-          .dynamicTypeHintFullName(IndexedSeq(samInfo.samImplClass))
-      Ast(paramNode)
-    }
-
-    val valueParameterNodes = samInfo.samMethodParams.zipWithIndex.map { case ((paramName, paramType), idx) =>
-      parameterInNode(
-        samInfo.expr,
-        paramName,
-        paramName,
-        idx + 1,
-        false,
-        EvaluationStrategies.BY_VALUE,
-        registerType(paramType)
-      )
-    }
-
-    val allParameterAsts = thisParamAst +: valueParameterNodes.map(Ast(_))
-
-    val paramString      = samInfo.samMethodParams.map(_._1).mkString(", ")
-    val returnType       = samInfo.samMethodReturn
-    val methodReturn     = methodReturnNode(samInfo.expr, registerType(returnType))
-    val calledMethodName = samInfo.methodRefName.split('.').last
-
-    val callCode   = s"receiver.${calledMethodName}(${paramString})"
-    val blockNode_ = blockNode(samInfo.expr, s"return $callCode", TypeConstants.JavaLangVoid)
-
-    val (dispatchType, receiverAstOpt) = if (samInfo.isStaticReference) {
-      val staticReceiverArg =
-        createReceiverAccess(samInfo.expr, samInfo.receiverTypeFullName, samInfo.samImplClass)
-      (DispatchTypes.STATIC_DISPATCH, Some(staticReceiverArg))
-    } else {
-      val receiverAst =
-        createReceiverAccess(samInfo.expr, samInfo.receiverTypeFullName, samInfo.samImplClass)
-      (DispatchTypes.DYNAMIC_DISPATCH, Some(receiverAst))
-    }
-
-    val callNode_ = callNode(
-      samInfo.expr,
-      callCode,
-      calledMethodName,
-      s"${samInfo.methodRefName}:${samInfo.signature}",
-      dispatchType,
-      Some(samInfo.signature),
-      Some(registerType(returnType))
-    )
-
-    val callArgumentAsts = samInfo.samMethodParams.zipWithIndex.zip(valueParameterNodes).map {
-      case (((paramName, paramType), idx), methodParamNode) =>
-        val identNode =
-          identifierNode(samInfo.expr, paramName, paramName, registerType(paramType)).argumentIndex(idx + 1)
-        Ast(identNode).withRefEdge(identNode, methodParamNode)
-    }
-
-    val callAst_    = callAst(callNode_, callArgumentAsts.toList, receiverAstOpt)
-    val returnNode_ = returnNode(samInfo.expr, s"return ${callCode}")
-    val returnAst_  = returnAst(returnNode_, List(callAst_))
-
-    val modifiers =
-      Seq(modifierNode(samInfo.expr, ModifierTypes.PUBLIC), modifierNode(samInfo.expr, ModifierTypes.VIRTUAL))
-
-    methodAst(samMethodNode, allParameterAsts, blockAst(blockNode_, List(returnAst_)), methodReturn, modifiers)
-  }
-
-  protected def createBoundSamConstructorAst(samInfo: BoundSamInfo): Ast = {
-    val receiverType = samInfo.receiverTypeFullName
-    val ctorFullName = s"${samInfo.samImplClass}.<init>:void(${receiverType})"
-    val ctorNode =
-      methodNode(samInfo.expr, "<init>", "<init>", ctorFullName, Some(s"void(${receiverType})"), relativizedPath)
-
-    val ctorThisParam =
-      parameterInNode(samInfo.expr, "this", "this", 0, false, EvaluationStrategies.BY_SHARING, samInfo.samImplClass)
-        .dynamicTypeHintFullName(IndexedSeq(samInfo.samImplClass))
-
-    val ctorReceiverParam = parameterInNode(
-      samInfo.expr,
-      Constants.ReceiverName,
-      Constants.ReceiverName,
-      1,
-      false,
-      EvaluationStrategies.BY_VALUE,
-      registerType(receiverType)
-    )
-
-    val thisIdentifier = identifierNode(
-      samInfo.expr,
-      Constants.ThisName,
-      Constants.ThisName,
-      samInfo.samImplClass,
-      Seq(samInfo.samImplClass)
-    )
-
-    val receiverFieldIdentifier = fieldIdentifierNode(samInfo.expr, Constants.ReceiverName, Constants.ReceiverName)
-    val receiverFieldAccessNode =
-      operatorCallNode(samInfo.expr, s"this.receiver", Operators.fieldAccess, Option(registerType(receiverType)))
-    val receiverFieldAccessAst =
-      callAst(receiverFieldAccessNode, Seq(Ast(thisIdentifier), Ast(receiverFieldIdentifier)))
-
-    val receiverArgIdent =
-      identifierNode(
-        samInfo.expr,
-        Constants.ReceiverName,
-        shortenCode(Constants.ReceiverName),
-        registerType(receiverType)
-      ).argumentIndex(2)
-    val receiverArgAst = Ast(receiverArgIdent).withRefEdge(receiverArgIdent, ctorReceiverParam)
-
-    val receiverAssignmentNode =
-      operatorCallNode(samInfo.expr, shortenCode(s"this.receiver = receiver"), Operators.assignment, None)
-    val receiverAssignmentAst = callAst(receiverAssignmentNode, Seq(receiverFieldAccessAst, receiverArgAst))
-
-    val ctorBlock =
-      blockNode(samInfo.expr, shortenCode(s"this.receiver = receiver"), registerType(TypeConstants.Void))
-    val ctorReturn    = methodReturnNode(samInfo.expr, TypeConstants.Void)
-    val ctorModifiers = Seq(modifierNode(samInfo.expr, ModifierTypes.CONSTRUCTOR))
-
-    methodAst(
-      ctorNode,
-      Seq(Ast(ctorThisParam), Ast(ctorReceiverParam)),
-      blockAst(ctorBlock, List(receiverAssignmentAst)),
-      ctorReturn,
-      ctorModifiers
-    )
-  }
-
-  protected def createBoundSamTypeDecl(samInfo: BoundSamInfo): Ast = {
-    val samTypeDecl = typeDeclNode(
-      samInfo.expr,
-      samInfo.samImplClass.split('.').last,
-      samInfo.samImplClass,
-      relativizedPath,
-      samInfo.inheritsFrom.map(registerType),
-      None
-    )
-
-    val samMethodFullName = s"${samInfo.samImplClass}.${samInfo.samMethodName}:${samInfo.samMethodSig}"
-    val methodAst_        = createBoundSamMethodAst(samInfo, samMethodFullName)
-
-    createBindingInfo(
-      samInfo.samMethodName,
-      samInfo.samMethodSig,
-      samMethodFullName,
-      samTypeDecl,
-      samInfo.samGenericMethodSig
-    )
-
-    val ctorAst = createBoundSamConstructorAst(samInfo)
-
-    Ast(samTypeDecl).withChild(methodAst_).withChild(ctorAst)
-  }
-
-  protected def createSamImplTypeDecl(samInfo: SamImplInfo): Ast = {
-    samInfo match {
-      case unbound: UnboundSamInfo => createUnboundSamTypeDecl(unbound)
-      case bound: BoundSamInfo     => createBoundSamTypeDecl(bound)
-    }
   }
 
   protected def exprTypeFullName(expr: KtExpression): Option[String] = {
