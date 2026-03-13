@@ -862,6 +862,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         .columnNumber(column(expr))
 
       val samInfo = AstCreator.UnboundSamInfo(
+        relativizedPath,
         samImplClass,
         fullName,
         signature,
@@ -873,14 +874,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         expr
       )
 
-      val samMethodFullName = samImplClass
-      samImplInfoQueue.getOrElseUpdate(samMethodFullName, samInfo)
+      registerSamInfo(samInfo)
 
       Ast(methodRefNode)
     } else {
       val receiverTypeFullName = receiverInfo.receiverTypeFullName
 
       val samInfo = AstCreator.BoundSamInfo(
+        relativizedPath,
         samImplClass,
         fullName,
         signature,
@@ -896,8 +897,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         expr
       )
 
-      val samMethodFullName = s"$samImplClass.${samMethodInfo.methodName}:${samMethodInfo.signature}"
-      samImplInfoQueue.getOrElseUpdate(samMethodFullName, samInfo)
+      registerSamInfo(samInfo)
 
       val tmpBlockNode = blockNode(expr, expr.getText, samImplClass)
       val tmpName      = s"${Constants.TmpLocalPrefix}${tmpKeyPool.next}"
