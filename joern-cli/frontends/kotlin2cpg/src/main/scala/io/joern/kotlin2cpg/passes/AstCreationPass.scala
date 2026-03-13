@@ -24,7 +24,7 @@ class AstCreationPass(
   private var collectedTypes: Set[String]                                  = Set.empty
   private var collectedSamInfoEntries: Map[String, AstCreator.SamImplInfo] = Map.empty
 
-  def usedTypes(): List[String] = collectedTypes.toList
+  def usedTypes(): Set[String] = collectedTypes
 
   def samInfoEntries(): Iterable[AstCreator.SamImplInfo] = collectedSamInfoEntries.values
 
