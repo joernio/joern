@@ -91,8 +91,8 @@ object DotSerializer {
     }).map(l => StringEscapeUtils.escapeHtml4(StringUtils.normalizeSpace(l)))
 
     (lineOpt match {
-      case Some(line) => s"${attrList.head}, $line" :: attrList.tail
-      case None       => attrList
+      case Some(line) if attrList.nonEmpty => s"${attrList.head}, $line" :: attrList.tail
+      case _                               => Nil
     }).distinct.mkString("<BR/>")
   }
 
