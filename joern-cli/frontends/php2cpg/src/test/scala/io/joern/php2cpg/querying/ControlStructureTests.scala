@@ -1345,10 +1345,10 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         lhsIdent.code shouldBe s"$$${variableName}"
 
         rhsIdxAccess.methodFullName shouldBe Operators.indexAccess
-        rhsIdxAccess.code shouldBe s"$$foo@tmp-0[${arrayIndex}]" // $foo@tmp-0 is the name of the variable holding the current value
+        rhsIdxAccess.code shouldBe s"$$foo@tmp-1[${arrayIndex}]" // $foo@tmp-1 is the name of the variable holding the current value
         val List(idxLhs: Identifier, idxRhs: Literal) = rhsIdxAccess.argument.l: @unchecked
-        idxLhs.name shouldBe "foo@tmp-0"
-        idxLhs.code shouldBe "$foo@tmp-0"
+        idxLhs.name shouldBe "foo@tmp-1"
+        idxLhs.code shouldBe "$foo@tmp-1"
       }
     }
 
@@ -1383,10 +1383,10 @@ class ControlStructureTests extends PhpCode2CpgFixture {
             val List(valInit: Call, aInit: Call, bInit: Call, cInit: Call) =
               valInitBlock.astChildren.isBlock.astChildren.l: @unchecked
             valInit.name shouldBe Operators.assignment
-            valInit.code shouldBe "$foo@tmp-0 = $foo@iter_tmp-0->current()"
+            valInit.code shouldBe "$foo@tmp-1 = $foo@iter_tmp-0->current()"
             inside(valInit.argument.l) { case List(valId: Identifier, currentCall: Call) =>
-              valId.name shouldBe "foo@tmp-0"
-              valId.code shouldBe "$foo@tmp-0"
+              valId.name shouldBe "foo@tmp-1"
+              valId.code shouldBe "$foo@tmp-1"
               valId.argumentIndex shouldBe 1
 
               currentCall.name shouldBe "current"
@@ -1422,10 +1422,10 @@ class ControlStructureTests extends PhpCode2CpgFixture {
             val List(valInit: Call, aInit: Call, bInit: Call, cInit: Call) =
               valAssignBlock.astChildren.isBlock.astChildren.l: @unchecked
             valInit.name shouldBe Operators.assignment
-            valInit.code shouldBe "$foo@tmp-0 = $foo@iter_tmp-0->current()"
+            valInit.code shouldBe "$foo@tmp-1 = $foo@iter_tmp-0->current()"
             inside(valInit.argument.l) { case List(valId: Identifier, currentCall: Call) =>
-              valId.name shouldBe "foo@tmp-0"
-              valId.code shouldBe "$foo@tmp-0"
+              valId.name shouldBe "foo@tmp-1"
+              valId.code shouldBe "$foo@tmp-1"
               valId.argumentIndex shouldBe 1
 
               currentCall.name shouldBe "current"
@@ -1549,10 +1549,10 @@ class ControlStructureTests extends PhpCode2CpgFixture {
             val List(valInit: Call, aInit: Call, tmp1Init: Call, tmp2Init: Call, bInit: Call, cInit: Call) =
               valInitBlock.astChildren.isBlock.astChildren.l: @unchecked
             valInit.name shouldBe Operators.assignment
-            valInit.code shouldBe "$foo@tmp-0 = $foo@iter_tmp-0->current()"
+            valInit.code shouldBe "$foo@tmp-1 = $foo@iter_tmp-0->current()"
             inside(valInit.argument.l) { case List(valId: Identifier, currentCall: Call) =>
-              valId.name shouldBe "foo@tmp-0"
-              valId.code shouldBe "$foo@tmp-0"
+              valId.name shouldBe "foo@tmp-1"
+              valId.code shouldBe "$foo@tmp-1"
               valId.argumentIndex shouldBe 1
 
               currentCall.name shouldBe "current"
@@ -1565,20 +1565,20 @@ class ControlStructureTests extends PhpCode2CpgFixture {
             }
 
             tmp2Init.methodFullName shouldBe Operators.assignment
-            tmp2Init.code shouldBe "$foo@tmp-2 = $foo@tmp-1"
+            tmp2Init.code shouldBe "$foo@tmp-3 = $foo@tmp-2"
             inside(tmp2Init.argument.l) { case List(lhsIdent: Identifier, rhsIdent: Identifier) =>
-              lhsIdent.name shouldBe "foo@tmp-2"
-              lhsIdent.code shouldBe "$foo@tmp-2"
+              lhsIdent.name shouldBe "foo@tmp-3"
+              lhsIdent.code shouldBe "$foo@tmp-3"
 
-              rhsIdent.name shouldBe "foo@tmp-1"
-              rhsIdent.code shouldBe "$foo@tmp-1"
+              rhsIdent.name shouldBe "foo@tmp-2"
+              rhsIdent.code shouldBe "$foo@tmp-2"
             }
 
-            assignmentTests(aInit, variableName = "a", tmpIndex = 0, arrayIndex = 0)
-            assignmentTests(bInit, variableName = "b", tmpIndex = 2, arrayIndex = 0)
-            assignmentTests(cInit, variableName = "c", tmpIndex = 2, arrayIndex = 1)
+            assignmentTests(aInit, variableName = "a", tmpIndex = 1, arrayIndex = 0)
+            assignmentTests(bInit, variableName = "b", tmpIndex = 3, arrayIndex = 0)
+            assignmentTests(cInit, variableName = "c", tmpIndex = 3, arrayIndex = 1)
 
-            assignmentTests(tmp1Init, variableName = "foo@tmp-1", tmpIndex = 0, arrayIndex = 1)
+            assignmentTests(tmp1Init, variableName = "foo@tmp-2", tmpIndex = 1, arrayIndex = 1)
           }
         case xs => fail(s"Expected four children for control structure, got ${xs.code.mkString("[", ",", "]")}")
       }
@@ -1600,10 +1600,10 @@ class ControlStructureTests extends PhpCode2CpgFixture {
             val List(valInit: Call, aInit: Call, tmp1Init: Call, tmp2Init: Call, bInit: Call, cInit: Call) =
               valAssignBlock.astChildren.isBlock.astChildren.l: @unchecked
             valInit.name shouldBe Operators.assignment
-            valInit.code shouldBe "$foo@tmp-0 = $foo@iter_tmp-0->current()"
+            valInit.code shouldBe "$foo@tmp-1 = $foo@iter_tmp-0->current()"
             inside(valInit.argument.l) { case List(valId: Identifier, currentCall: Call) =>
-              valId.name shouldBe "foo@tmp-0"
-              valId.code shouldBe "$foo@tmp-0"
+              valId.name shouldBe "foo@tmp-1"
+              valId.code shouldBe "$foo@tmp-1"
               valId.argumentIndex shouldBe 1
 
               currentCall.name shouldBe "current"
@@ -1616,20 +1616,20 @@ class ControlStructureTests extends PhpCode2CpgFixture {
             }
 
             tmp2Init.methodFullName shouldBe Operators.assignment
-            tmp2Init.code shouldBe "$foo@tmp-2 = $foo@tmp-1"
+            tmp2Init.code shouldBe "$foo@tmp-3 = $foo@tmp-2"
             inside(tmp2Init.argument.l) { case List(lhsIdent: Identifier, rhsIdent: Identifier) =>
-              lhsIdent.name shouldBe "foo@tmp-2"
-              lhsIdent.code shouldBe "$foo@tmp-2"
+              lhsIdent.name shouldBe "foo@tmp-3"
+              lhsIdent.code shouldBe "$foo@tmp-3"
 
-              rhsIdent.name shouldBe "foo@tmp-1"
-              rhsIdent.code shouldBe "$foo@tmp-1"
+              rhsIdent.name shouldBe "foo@tmp-2"
+              rhsIdent.code shouldBe "$foo@tmp-2"
             }
 
-            assignmentTests(aInit, variableName = "a", tmpIndex = 0, arrayIndex = 0)
-            assignmentTests(bInit, variableName = "b", tmpIndex = 2, arrayIndex = 0)
-            assignmentTests(cInit, variableName = "c", tmpIndex = 2, arrayIndex = 1)
+            assignmentTests(aInit, variableName = "a", tmpIndex = 1, arrayIndex = 0)
+            assignmentTests(bInit, variableName = "b", tmpIndex = 3, arrayIndex = 0)
+            assignmentTests(cInit, variableName = "c", tmpIndex = 3, arrayIndex = 1)
 
-            assignmentTests(tmp1Init, variableName = "foo@tmp-1", tmpIndex = 0, arrayIndex = 1)
+            assignmentTests(tmp1Init, variableName = "foo@tmp-2", tmpIndex = 1, arrayIndex = 1)
           }
 
           inside(body.astChildren.l) { case List(echoCallA: Call, echoCallB: Call) =>
