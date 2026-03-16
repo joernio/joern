@@ -183,20 +183,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         callAst(callNode, List(targetAst, sourceAst))
     }
   }
-  
-  private def phpSingleItemArrayAssign(target: PhpExpr, arrayItemKey: Option[PhpExpr], arrayItemVal: PhpExpr): PhpAssignment = {
+
+  private def phpSingleItemArrayAssign(
+    target: PhpExpr,
+    arrayItemKey: Option[PhpExpr],
+    arrayItemVal: PhpExpr
+  ): PhpAssignment = {
     val attrs = target.attributes
-    val arrayItems = List(Some(PhpArrayItem(
-      key = arrayItemKey,
-      value = arrayItemVal,
-      byRef = false,
-      unpack = false,
-      attributes = attrs
-    )))
-    val assignSource = PhpArrayExpr(
-      items = arrayItems,
-      attributes = attrs
+    val arrayItems = List(
+      Some(PhpArrayItem(key = arrayItemKey, value = arrayItemVal, byRef = false, unpack = false, attributes = attrs))
     )
+    val assignSource = PhpArrayExpr(items = arrayItems, attributes = attrs)
     PhpAssignment(
       target = target,
       source = assignSource,
@@ -207,12 +204,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   /** This is used to rewrite the short form $xs[][$expr] = <value_expr> as a combination of multiple assignments and
-   * array_push(...) calls.
-   *
-   * All index accesses from the right except the one on the variable are lowered as assignments to tmp variables.
-   * The leftmost index access is represented as either an array_push(...) call if dimensionless
-   * (see [[astForEmptyArrayDimAssign]]), or an index assignment if there is a dimension.
-   */
+    * array_push(...) calls.
+    *
+    * All index accesses from the right except the one on the variable are lowered as assignments to tmp variables. The
+    * leftmost index access is represented as either an array_push(...) call if dimensionless (see
+    * [[astForEmptyArrayDimAssign]]), or an index assignment if there is a dimension.
+    */
   private def astForMultiArrayDimAssign(assignment: PhpAssignment, arrayDimFetchExpr: PhpArrayDimFetchExpr): Ast = {
     val attrs = assignment.attributes
 
@@ -229,10 +226,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           List(astForExpr(phpAssignment))
 
         case innerArrayDimFetchExpr: PhpArrayDimFetchExpr =>
-          val tmpVariable = this.scope.getNewVarTmp()
-          val phpVariable = PhpVariable(PhpNameExpr(tmpVariable, attrs), attrs)
-          val phpAssignment = phpSingleItemArrayAssign(phpVariable, expr.dimension, lastAssignName)
-          val exprAst = astForExpr(phpAssignment)
+          val tmpVariable      = this.scope.getNewVarTmp()
+          val phpVariable      = PhpVariable(PhpNameExpr(tmpVariable, attrs), attrs)
+          val phpAssignment    = phpSingleItemArrayAssign(phpVariable, expr.dimension, lastAssignName)
+          val exprAst          = astForExpr(phpAssignment)
           val exprCodeOverride = codeForSingleArrayElemAssign(tmpVariable, expr.dimension, lastAssignName)
           exprAst.root.collect { case rootNode: NewCall => rootNode.code(exprCodeOverride) }
 
@@ -243,14 +240,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           Nil
       }
     }
-    
+
     arrayDimFetchExpr.variable match {
       case innerArrayDimFetchExpr: PhpArrayDimFetchExpr =>
         // use a BlockScope to ensure new tmp locals are not in the enclosing scope
         val block = blockNode(assignment)
         scope.pushNewScope(BlockScope(block, ""))
 
-        val tmpRhsName = this.scope.getNewVarTmp()
+        val tmpRhsName     = this.scope.getNewVarTmp()
         val rhsPhpVariable = PhpVariable(PhpNameExpr(tmpRhsName, attrs), attrs)
         val rhsAssignment = PhpAssignment(
           target = rhsPhpVariable,
@@ -261,10 +258,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         )
         val rhsEvalAst = astForExpr(rhsAssignment)
 
-        val tmpVariable = this.scope.getNewVarTmp()
-        val phpVariable = PhpVariable(PhpNameExpr(tmpVariable, attrs), attrs)
-        val phpAssignment = phpSingleItemArrayAssign(phpVariable, arrayDimFetchExpr.dimension, rhsPhpVariable)
-        val exprAst = astForExpr(phpAssignment)
+        val tmpVariable      = this.scope.getNewVarTmp()
+        val phpVariable      = PhpVariable(PhpNameExpr(tmpVariable, attrs), attrs)
+        val phpAssignment    = phpSingleItemArrayAssign(phpVariable, arrayDimFetchExpr.dimension, rhsPhpVariable)
+        val exprAst          = astForExpr(phpAssignment)
         val exprCodeOverride = codeForSingleArrayElemAssign(tmpVariable, arrayDimFetchExpr.dimension, rhsPhpVariable)
         exprAst.root.collect { case rootNode: NewCall => rootNode.code(exprCodeOverride) }
 
@@ -274,7 +271,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
         val targetCode = codeForMultiArrayDimAccess(arrayDimFetchExpr)
         val sourceCode = astForExpr(assignment.source).rootCodeOrEmpty
-        val blockCode = s"$targetCode = $sourceCode"
+        val blockCode  = s"$targetCode = $sourceCode"
         block.code(blockCode)
         scope.popScope()
 
