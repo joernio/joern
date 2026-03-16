@@ -160,6 +160,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   protected def astForAssignment(assignment: PhpAssignment): Ast = {
     assignment.target match {
+      case arrayDimFetch @ PhpArrayDimFetchExpr(innerArrayDimFetch: PhpArrayDimFetchExpr, _, _) =>
+        // Rewrite `$xs[][$expr] = <value_expr>` as multiple assignments/pushes
+        astForMultiArrayDimAssign(assignment, arrayDimFetch)
       case arrayDimFetch: PhpArrayDimFetchExpr if arrayDimFetch.dimension.isEmpty =>
         // Rewrite `$xs[] = <value_expr>` as `array_push($xs, <value_expr>)` to simplify finding dataflows.
         astForEmptyArrayDimAssign(assignment, arrayDimFetch)
@@ -178,6 +181,111 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
         val callNode = operatorCallNode(assignment, code, operatorName, None)
         callAst(callNode, List(targetAst, sourceAst))
+    }
+  }
+  
+  private def phpSingleItemArrayAssign(target: PhpExpr, arrayItemKey: Option[PhpExpr], arrayItemVal: PhpExpr): PhpAssignment = {
+    val attrs = target.attributes
+    val arrayItems = List(Some(PhpArrayItem(
+      key = arrayItemKey,
+      value = arrayItemVal,
+      byRef = false,
+      unpack = false,
+      attributes = attrs
+    )))
+    val assignSource = PhpArrayExpr(
+      items = arrayItems,
+      attributes = attrs
+    )
+    PhpAssignment(
+      target = target,
+      source = assignSource,
+      assignOp = Operators.assignment,
+      isRefAssign = false,
+      attributes = attrs
+    )
+  }
+
+  /** This is used to rewrite the short form $xs[][$expr] = <value_expr> as a combination of multiple assignments and
+   * array_push(...) calls.
+   *
+   * All index accesses from the right except the one on the variable are lowered as assignments to tmp variables.
+   * The leftmost index access is represented as either an array_push(...) call if dimensionless
+   * (see [[astForEmptyArrayDimAssign]]), or an index assignment if there is a dimension.
+   */
+  private def astForMultiArrayDimAssign(assignment: PhpAssignment, arrayDimFetchExpr: PhpArrayDimFetchExpr): Ast = {
+    val attrs = assignment.attributes
+
+    def traverseArrayDimExpr(expr: PhpArrayDimFetchExpr, lastAssignName: PhpVariable): List[Ast] = {
+      expr.variable match {
+        case variable: PhpVariable =>
+          val phpAssignment = PhpAssignment(
+            target = expr,
+            source = lastAssignName,
+            assignOp = Operators.assignment,
+            isRefAssign = false,
+            attributes = attrs
+          )
+          List(astForExpr(phpAssignment))
+
+        case innerArrayDimFetchExpr: PhpArrayDimFetchExpr =>
+          val tmpVariable = this.scope.getNewVarTmp()
+          val phpVariable = PhpVariable(PhpNameExpr(tmpVariable, attrs), attrs)
+          val phpAssignment = phpSingleItemArrayAssign(phpVariable, expr.dimension, lastAssignName)
+          val exprAst = astForExpr(phpAssignment)
+          val exprCodeOverride = codeForSingleArrayElemAssign(tmpVariable, expr.dimension, lastAssignName)
+          exprAst.root.collect { case rootNode: NewCall => rootNode.code(exprCodeOverride) }
+
+          exprAst :: traverseArrayDimExpr(innerArrayDimFetchExpr, phpVariable)
+        case variable =>
+          val errorPosition = s"${line(assignment).getOrElse("")}:$relativeFileName"
+          logger.warn(s"Unknown variable found in ArrayDimFetchExpr: $errorPosition")
+          Nil
+      }
+    }
+    
+    arrayDimFetchExpr.variable match {
+      case innerArrayDimFetchExpr: PhpArrayDimFetchExpr =>
+        // use a BlockScope to ensure new tmp locals are not in the enclosing scope
+        val block = blockNode(assignment)
+        scope.pushNewScope(BlockScope(block, ""))
+
+        val tmpRhsName = this.scope.getNewVarTmp()
+        val rhsPhpVariable = PhpVariable(PhpNameExpr(tmpRhsName, attrs), attrs)
+        val rhsAssignment = PhpAssignment(
+          target = rhsPhpVariable,
+          source = assignment.source,
+          assignOp = Operators.assignment,
+          isRefAssign = false,
+          attributes = attrs
+        )
+        val rhsEvalAst = astForExpr(rhsAssignment)
+
+        val tmpVariable = this.scope.getNewVarTmp()
+        val phpVariable = PhpVariable(PhpNameExpr(tmpVariable, attrs), attrs)
+        val phpAssignment = phpSingleItemArrayAssign(phpVariable, arrayDimFetchExpr.dimension, rhsPhpVariable)
+        val exprAst = astForExpr(phpAssignment)
+        val exprCodeOverride = codeForSingleArrayElemAssign(tmpVariable, arrayDimFetchExpr.dimension, rhsPhpVariable)
+        exprAst.root.collect { case rootNode: NewCall => rootNode.code(exprCodeOverride) }
+
+        val loweringAsts = exprAst :: traverseArrayDimExpr(innerArrayDimFetchExpr, phpVariable)
+
+        val returnAst = astForExpr(rhsPhpVariable)
+
+        val targetCode = codeForMultiArrayDimAccess(arrayDimFetchExpr)
+        val sourceCode = astForExpr(assignment.source).rootCodeOrEmpty
+        val blockCode = s"$targetCode = $sourceCode"
+        block.code(blockCode)
+        scope.popScope()
+
+        Ast(block)
+          .withChild(rhsEvalAst)
+          .withChildren(loweringAsts)
+          .withChild(returnAst)
+      case _ =>
+        val errorPosition = s"${line(assignment).getOrElse("")}:$relativeFileName"
+        logger.warn(s"ArrayDimFetchExpr without ArrayDimFetchExpr should be handled in assignment: $errorPosition")
+        Ast()
     }
   }
 

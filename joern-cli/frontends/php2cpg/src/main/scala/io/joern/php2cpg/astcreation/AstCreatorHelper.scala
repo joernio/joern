@@ -110,6 +110,29 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
       .getOrElse(name)
   }
 
+  protected def codeForSingleArrayElemAssign(targetName: String, key: Option[PhpExpr], value: PhpExpr): String = {
+    val keyCode = key
+      .map(astForExpr)
+      .flatMap(_.rootCode)
+      .map(k => s"$k => ")
+      .getOrElse("")
+    val valueCode = astForExpr(value).rootCodeOrEmpty
+
+    s"$$$targetName = array($keyCode$valueCode)"
+  }
+
+  protected def codeForMultiArrayDimAccess(arrayDimFetchExpr: PhpArrayDimFetchExpr): String = {
+    val dimensionCode = arrayDimFetchExpr.dimension.map(astForExpr).flatMap(_.rootCode).getOrElse("")
+
+    arrayDimFetchExpr.variable match {
+      case innerArrayDimFetchExpr: PhpArrayDimFetchExpr =>
+        s"${codeForMultiArrayDimAccess(innerArrayDimFetchExpr)}[$dimensionCode]"
+      case phpExpr: PhpExpr =>
+        val nameCode = astForExpr(phpExpr).rootCodeOrEmpty
+        s"$nameCode[$dimensionCode]"
+    }
+  }
+
   protected def dimensionFromSimpleScalar(scalar: PhpSimpleScalar, idxTracker: ArrayIndexTracker): PhpExpr = {
     val maybeIntValue = scalar match {
       case string: PhpString =>

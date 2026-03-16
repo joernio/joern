@@ -65,6 +65,108 @@ class ArrayTests extends PhpCode2CpgFixture {
     }
   }
 
+  "assignments using the multi array dimension fetch syntax without last dimension should be rewritten as multiple assignments" in {
+    val cpg = code(
+      """<?php
+        |function foo($val) {
+        |  $xs[][2][] = $val;
+        |}
+        |""".stripMargin)
+
+    inside(cpg.method.name("foo").body.astChildren.l) { case List(block: Block) =>
+      block.code shouldBe "$xs[][2][] = $val"
+      block.lineNumber shouldBe Some(3)
+
+      inside(block.astChildren.isLocal.l) { case List(tmp0, tmp1, tmp2, tmp3, tmp4, xs) =>
+        tmp0.name shouldBe "foo@tmp-0"
+        tmp0.code shouldBe "$foo@tmp-0"
+        tmp1.name shouldBe "foo@tmp-1"
+        tmp1.code shouldBe "$foo@tmp-1"
+        tmp2.name shouldBe "foo@tmp-2"
+        tmp2.code shouldBe "$foo@tmp-2"
+        tmp3.name shouldBe "foo@tmp-3"
+        tmp3.code shouldBe "$foo@tmp-3"
+        tmp4.name shouldBe "foo@tmp-4"
+        tmp4.code shouldBe "$foo@tmp-4"
+        xs.name shouldBe "xs"
+        xs.code shouldBe "$xs"
+      }
+
+      inside(block.astChildren.not(_.isLocal).l) { case List(assignOne: Call, assignTwo: Call, assignThree: Call, arrayPushCall: Call, retIden: Identifier) =>
+        assignOne.name shouldBe Operators.assignment
+        assignOne.code shouldBe "$foo@tmp-0 = $val"
+        assignOne.order shouldBe 1
+
+        assignTwo.name shouldBe Operators.assignment
+        assignTwo.code shouldBe "$foo@tmp-1 = array($foo@tmp-0)"
+        assignTwo.order shouldBe 2
+
+        assignThree.name shouldBe Operators.assignment
+        assignThree.code shouldBe "$foo@tmp-3 = array(2 => $foo@tmp-1)"
+        assignThree.order shouldBe 3
+
+        arrayPushCall.name shouldBe "array_push"
+        arrayPushCall.code shouldBe "$xs[] = $foo@tmp-3"
+        arrayPushCall.order shouldBe 4
+
+        retIden.name shouldBe "foo@tmp-0"
+        retIden.code shouldBe "$foo@tmp-0"
+        retIden.order shouldBe 5
+      }
+    }
+  }
+
+  "assignments using the multi array dimension fetch syntax with last dimension should be rewritten as multiple assignments" in {
+    val cpg = code(
+      """<?php
+        |function foo($val) {
+        |  $xs[1][2][] = $val;
+        |}
+        |""".stripMargin)
+
+    inside(cpg.method.name("foo").body.astChildren.l) { case List(block: Block) =>
+      block.code shouldBe "$xs[1][2][] = $val"
+      block.lineNumber shouldBe Some(3)
+
+      inside(block.astChildren.isLocal.l) { case List(tmp0, tmp1, tmp2, tmp3, tmp4, xs) =>
+        tmp0.name shouldBe "foo@tmp-0"
+        tmp0.code shouldBe "$foo@tmp-0"
+        tmp1.name shouldBe "foo@tmp-1"
+        tmp1.code shouldBe "$foo@tmp-1"
+        tmp2.name shouldBe "foo@tmp-2"
+        tmp2.code shouldBe "$foo@tmp-2"
+        tmp3.name shouldBe "foo@tmp-3"
+        tmp3.code shouldBe "$foo@tmp-3"
+        tmp4.name shouldBe "foo@tmp-4"
+        tmp4.code shouldBe "$foo@tmp-4"
+        xs.name shouldBe "xs"
+        xs.code shouldBe "$xs"
+      }
+
+      inside(block.astChildren.not(_.isLocal).l) { case List(assignOne: Call, assignTwo: Call, assignThree: Call, assignFour: Call, retIden: Identifier) =>
+        assignOne.name shouldBe Operators.assignment
+        assignOne.code shouldBe "$foo@tmp-0 = $val"
+        assignOne.order shouldBe 1
+
+        assignTwo.name shouldBe Operators.assignment
+        assignTwo.code shouldBe "$foo@tmp-1 = array($foo@tmp-0)"
+        assignTwo.order shouldBe 2
+
+        assignThree.name shouldBe Operators.assignment
+        assignThree.code shouldBe "$foo@tmp-3 = array(2 => $foo@tmp-1)"
+        assignThree.order shouldBe 3
+
+        assignFour.name shouldBe Operators.assignment
+        assignFour.code shouldBe "$xs[1] = $foo@tmp-3"
+        assignFour.order shouldBe 4
+
+        retIden.name shouldBe "foo@tmp-0"
+        retIden.code shouldBe "$foo@tmp-0"
+        retIden.order shouldBe 5
+      }
+    }
+  }
+
   "associative array definitions should be lowered with the correct assignments" in {
     val cpg = code("""<?php
         |array(
