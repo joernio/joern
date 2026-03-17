@@ -79,7 +79,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) exte
 
     val _methodNode = methodNode(ktFn, ktFn.getName, fullName, signature, relativizedPath)
     val closureBindingEntriesForCaptured =
-      if (ktFn.getName == "main") {
+      if (ktFn.getParent.isInstanceOf[KtFile]) {
         scope
           .pushClosureScope(_methodNode)
           .collect { case node: NewLocal => NodeContext(node, node.name, node.typeFullName) }
