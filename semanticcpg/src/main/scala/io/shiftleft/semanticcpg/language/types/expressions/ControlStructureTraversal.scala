@@ -26,23 +26,19 @@ class ControlStructureTraversal(val traversal: Iterator[ControlStructure]) exten
   @Doc(info = "Sub tree taken when condition evaluates to true")
   def whenTrue: Iterator[AstNode] =
     traversal.flatMap { controlStructure =>
-      val trueBody = controlStructure.trueBodyOut.collectAll[AstNode].toList
-      if (trueBody.nonEmpty) {
-        trueBody.iterator
-      } else {
-        controlStructure.out.collectAll[AstNode].order(secondChildIndex)
-      }
+      Iterator(controlStructure).coalesce(
+        _.trueBodyOut.collectAll[AstNode],
+        _.out.collectAll[AstNode].order(secondChildIndex)
+      )
     }
 
   @Doc(info = "Sub tree taken when condition evaluates to false")
   def whenFalse: Iterator[AstNode] =
     traversal.flatMap { controlStructure =>
-      val falseBody = controlStructure.falseBodyOut.collectAll[AstNode].toList
-      if (falseBody.nonEmpty) {
-        falseBody.iterator
-      } else {
-        controlStructure.out.collectAll[AstNode].order(thirdChildIndex)
-      }
+      Iterator(controlStructure).coalesce(
+        _.falseBodyOut.collectAll[AstNode],
+        _.out.collectAll[AstNode].order(thirdChildIndex)
+      )
     }
 
   @Doc(info = "Only `Try` control structures")

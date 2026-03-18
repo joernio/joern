@@ -185,10 +185,9 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     }
 
   protected def cfgForThrowStatement(node: ControlStructure): Cfg = {
-    val throwExprCfg = node._argumentOut
-      .cast[AstNode]
+    val throwExprCfg = Iterator(node)
+      .coalesce(_._argumentOut.cast[AstNode], _.astChildren.order(1))
       .headOption
-      .orElse(node.astChildren.find(_.order == 1))
       .map(cfgFor)
       .getOrElse(Cfg.empty)
     val concatedNatedCfg = throwExprCfg ++ Cfg(entryNode = Option(node))
@@ -380,23 +379,20 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
   protected def cfgForForStatement(node: ControlStructure): Cfg = {
     val children = node.astChildren.l
     val nLocals  = children.count(_.isLocal)
-    val initExprCfg = node._forInitOut
-      .cast[AstNode]
+    val initExprCfg = Iterator(node)
+      .coalesce(_._forInitOut.cast[AstNode], _.astChildren.order(nLocals + 1))
       .headOption
-      .orElse(children.find(_.order == nLocals + 1))
       .map(cfgFor)
       .getOrElse(Cfg.empty)
     val conditionCfg = children.find(_.order == nLocals + 2).map(cfgFor).getOrElse(Cfg.empty)
-    val loopExprCfg = node._forUpdateOut
-      .cast[AstNode]
+    val loopExprCfg = Iterator(node)
+      .coalesce(_._forUpdateOut.cast[AstNode], _.astChildren.order(nLocals + 3))
       .headOption
-      .orElse(children.find(_.order == nLocals + 3))
       .map(cfgFor)
       .getOrElse(Cfg.empty)
-    val bodyCfg = node._forBodyOut
-      .cast[AstNode]
+    val bodyCfg = Iterator(node)
+      .coalesce(_._forBodyOut.cast[AstNode], _.astChildren.order(nLocals + 4))
       .headOption
-      .orElse(children.find(_.order == nLocals + 4))
       .map(cfgFor)
       .getOrElse(Cfg.empty)
 
@@ -429,10 +425,9 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     * inner CFG as bodyCfg ++ conditionCfg and then connect edges according to the semantics of do-while.
     */
   protected def cfgForDoStatement(node: ControlStructure): Cfg = {
-    val bodyCfg = node._doBodyOut
-      .cast[AstNode]
+    val bodyCfg = Iterator(node)
+      .coalesce(_._doBodyOut.cast[AstNode], _.astChildren.order(1))
       .headOption
-      .orElse(node.astChildren.where(_.order(1)).headOption)
       .map(cfgFor)
       .getOrElse(Cfg.empty)
     val conditionCfg = node.condition.headOption.map(cfgFor).getOrElse(Cfg.empty)
@@ -541,52 +536,42 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     * field of the `Block` node must be set to `finally`.
     */
   protected def cfgForTryStatement(node: ControlStructure): Cfg = {
-    val tryBodiesByEdge = node._tryBodyOut.cast[AstNode].toList
-    val maybeTryBlock =
-      tryBodiesByEdge
-        .find(_.astChildren.nonEmpty)
-        .orElse(
-          node.astChildren
-            .order(1)
-            .where(_.astChildren) // Filter out empty `try` bodies
-            .headOption
-        )
+    val maybeTryBlock = Iterator(node)
+      .coalesce(
+        _._tryBodyOut.cast[AstNode].filter(_.astChildren.nonEmpty),
+        _.astChildren.order(1).where(_.astChildren) // Filter out empty `try` bodies
+      )
+      .headOption
 
     val tryBodyCfg: Cfg = maybeTryBlock.map(cfgFor).getOrElse(Cfg.empty)
 
     val catchControlStructures =
       (node.astChildren.isControlStructure.isCatch ++ node.astChildren.isControlStructure.isElse).toList
-    val catchBodiesByEdge = node._catchBodyOut.cast[AstNode].toList
-    val catchBodyCfgs = if (catchBodiesByEdge.nonEmpty) {
-      catchBodiesByEdge.map(cfgFor)
-    } else if (catchControlStructures.isEmpty) {
-      node.astChildren.order(2).toList match {
-        case Nil  => List(Cfg.empty)
-        case asts => asts.map(cfgFor)
-      }
-    } else {
-      catchControlStructures match {
-        case Nil  => List(Cfg.empty)
-        case asts => asts.map(cfgFor)
-      }
+    val catchBodyFallback =
+      if (catchControlStructures.isEmpty) node.astChildren.order(2)
+      else catchControlStructures.iterator
+
+    val catchBodyCfgs = Iterator(node)
+      .coalesce(_._catchBodyOut.cast[AstNode], _ => catchBodyFallback)
+      .map(cfgFor)
+      .toList match {
+      case Nil  => List(Cfg.empty)
+      case asts => asts
     }
 
     val finallyControlStructures = node.astChildren.isControlStructure.isFinally.toList
-    val finallyBodiesByEdge      = node._finallyBodyOut.cast[AstNode].toList
-    val maybeFinallyBodyCfg = if (finallyBodiesByEdge.nonEmpty) {
-      finallyBodiesByEdge.map(cfgFor).headOption.toList
-    } else if (catchControlStructures.isEmpty && finallyControlStructures.isEmpty) {
-      node.astChildren
-        .order(3)
-        .map(cfgFor)
-        .headOption // Assume there can only be one
-        .toList
-    } else {
-      finallyControlStructures
-        .map(cfgFor)
-        .headOption // Assume there can only be one
-        .toList
-    }
+    val finallyBodyFallback =
+      if (catchControlStructures.isEmpty && finallyControlStructures.isEmpty) {
+        node.astChildren.order(3)
+      } else {
+        finallyControlStructures.iterator
+      }
+
+    val maybeFinallyBodyCfg = Iterator(node)
+      .coalesce(_._finallyBodyOut.cast[AstNode], _ => finallyBodyFallback)
+      .map(cfgFor)
+      .headOption // Assume there can only be one
+      .toList
 
     val tryToCatchEdges = catchBodyCfgs.flatMap { catchBodyCfg =>
       edgesFromFringeTo(tryBodyCfg, catchBodyCfg.entryNode)

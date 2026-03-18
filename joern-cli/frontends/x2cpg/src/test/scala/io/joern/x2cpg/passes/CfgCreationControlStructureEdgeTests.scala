@@ -28,8 +28,10 @@ class CfgCreationControlStructureEdgeTests extends AnyWordSpec with Matchers {
       val methodBlock  = graph.addNode(NewBlock().code("methodBlock").order(1))
 
       val doStructure = graph.addNode(NewControlStructure().controlStructureType(ControlStructureTypes.DO).code("do"))
-      val condition   = graph.addNode(NewLiteral().code("cond").order(1))
-      val doBodyCall  = graph.addNode(NewCall().name("bodyCall").code("bodyCall").order(2))
+      // Intentionally inverted wrt legacy do-while order semantics: condition is order(1)
+      // and body call is order(2), so this only works if DO_BODY is preferred over ORDER.
+      val condition  = graph.addNode(NewLiteral().code("cond").order(1))
+      val doBodyCall = graph.addNode(NewCall().name("bodyCall").code("bodyCall").order(2))
 
       graph.applyDiff { diffGraphBuilder =>
         diffGraphBuilder.addEdge(method, methodReturn, EdgeTypes.AST)
@@ -44,6 +46,7 @@ class CfgCreationControlStructureEdgeTests extends AnyWordSpec with Matchers {
 
       new CfgCreationPass(cpg).createAndApply()
 
+      // CFG must enter loop body via DO_BODY edge despite reversed legacy order.
       method.out(EdgeTypes.CFG).cast[CfgNode].code.toList.shouldBe(List("bodyCall"))
     }
 
