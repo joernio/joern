@@ -3,8 +3,14 @@ package io.shiftleft.semanticcpg.language.nodemethods
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.*
+import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.*
+import scala.util.Try
+
+object CfgNodeMethods {
+  private val logger = LoggerFactory.getLogger(classOf[CfgNodeMethods])
+}
 
 class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
   import CfgNodeMethods.*
@@ -107,8 +113,16 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
     case callRepr: CallRepr if !callRepr.isInstanceOf[Call]             => walkUpAst(callRepr)
     case annotation: Annotation                                         => methodFromAnnotation(annotation)
     case annotationLiteral: AnnotationLiteral                           => methodFromAnnotation(annotationLiteral)
-    case expr: Expression                                               => methodViaContainsIn(expr)
-    case jumpTarget: JumpTarget                                         => methodViaContainsIn(jumpTarget)
+    case expr: Expression =>
+      Try(methodViaContainsIn(expr)).recover { exception =>
+        logger.info("Unable to expand to method from expr {}. Exception: {}", expr.code, exception)
+        null
+      }.get
+    case jumpTarget: JumpTarget =>
+      Try(methodViaContainsIn(jumpTarget)).recover { exception =>
+        logger.info("Unable to expand to method from jumpTarget {}. Exception: {}", jumpTarget.code, exception)
+        null
+      }.get
   }
 
   private def methodViaContainsIn(node: CfgNode): Method = {
