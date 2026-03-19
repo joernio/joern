@@ -221,7 +221,7 @@ class CapturingTests extends JavaSrcCode2CpgFixture with Inside {
     }
   }
 
-  // TODO Ignored until support for LocalRecordDeclarationStmt is added
+  // TODO Fix closure binding ID and local record scoping for shadowed field captures
   "LocalRecordDeclarationStmt shadowing a field capture" ignore {
     val cpg = code("""
                      |public class Foo {

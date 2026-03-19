@@ -61,6 +61,7 @@ import scala.jdk.CollectionConverters.*
 import scala.util.{Success, Try}
 import com.github.javaparser.ast.expr.ObjectCreationExpr
 import com.github.javaparser.ast.stmt.LocalClassDeclarationStmt
+import com.github.javaparser.ast.stmt.LocalRecordDeclarationStmt
 import io.joern.javasrc2cpg.scope.Scope.ScopeVariable
 import com.github.javaparser.ast.{Modifier, Node}
 import com.github.javaparser.resolution.types.ResolvedReferenceType
@@ -172,6 +173,14 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     val fullName              = s"$enclosingMethodPrefix.$name"
     scope.addInnerType(name, fullName, fullName)
     astForTypeDeclaration(localClassDecl.getClassDeclaration, fullNameOverride = Some(fullName), isLocalClass = true)
+  }
+
+  def astForLocalRecordDeclaration(localRecordDecl: LocalRecordDeclarationStmt): Ast = {
+    val name                  = localRecordDecl.getRecordDeclaration.getNameAsString
+    val enclosingMethodPrefix = scope.enclosingMethod.getMethodFullName.takeWhile(_ != ':')
+    val fullName              = s"$enclosingMethodPrefix.$name"
+    scope.addInnerType(name, fullName, fullName)
+    astForTypeDeclaration(localRecordDecl.getRecordDeclaration, fullNameOverride = Some(fullName), isLocalClass = true)
   }
 
   def astForTypeDeclaration(
@@ -808,6 +817,8 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
         "interface "
       else if (typ.isEnumDeclaration)
         "enum "
+      else if (typ.isRecordDeclaration)
+        "record "
       else
         "class "
     codeBuilder.append(classPrefix)
