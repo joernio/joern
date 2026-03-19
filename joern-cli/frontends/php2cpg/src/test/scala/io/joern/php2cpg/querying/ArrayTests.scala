@@ -95,6 +95,27 @@ class ArrayTests extends PhpCode2CpgFixture {
     }
   }
 
+  "arrays in blocks should contain unique tmp locals" in {
+    // using "array(...)" as its lowering generates tmp variables
+    val cpg = code("""<?php
+        |array(1);
+        |
+        |if (true) {
+        |  array(2);
+        |}
+        |""".stripMargin)
+
+    inside(cpg.method.name("<global>").block.astChildren.l) { case List(tmp0Local: Local, tmp1Local: Local, _, _) =>
+      tmp0Local.name shouldBe "Test0.php:<global>@tmp-0"
+      tmp0Local.name shouldBe "Test0.php:<global>@tmp-0"
+      tmp0Local.lineNumber shouldBe Some(2)
+
+      tmp1Local.name shouldBe "Test0.php:<global>@tmp-1"
+      tmp1Local.name shouldBe "Test0.php:<global>@tmp-1"
+      tmp1Local.lineNumber shouldBe Some(5)
+    }
+  }
+
   "non-associative array definitions should be lowered with the correct index accesses and assignments" in {
     val cpg = code("""<?php
         |array(
