@@ -120,14 +120,15 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)
   }
 
   def getNewVarTmp(varPrefix: String = ""): String = {
-    stack.collectFirst {
-      case ScopeElement(namespace: NamespaceScope, _) =>
-        s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${namespace.getNextVarTmp}"
-      case ScopeElement(typeScope: TypeScope, _) =>
-        s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${typeScope.getNextVarTmp}"
-      case ScopeElement(methodScope: MethodScope, _) =>
-        s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${methodScope.getNextVarTmp}"
-    }
+    stack
+      .collectFirst {
+        case ScopeElement(namespace: NamespaceScope, _) =>
+          s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${namespace.getNextVarTmp}"
+        case ScopeElement(typeScope: TypeScope, _) =>
+          s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${typeScope.getNextVarTmp}"
+        case ScopeElement(methodScope: MethodScope, _) =>
+          s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${methodScope.getNextVarTmp}"
+      }
       .getOrElse(s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${this.getNextVarTmp}")
   }
 
