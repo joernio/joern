@@ -13,6 +13,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
+import scala.annotation.tailrec
 import scala.collection.mutable
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -160,10 +161,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   protected def astForAssignment(assignment: PhpAssignment): Ast = {
     assignment.target match {
-      case arrayDimFetch @ PhpArrayDimFetchExpr(innerArrayDimFetch: PhpArrayDimFetchExpr, _, _) =>
+      case arrayDimFetch @ PhpArrayDimFetchExpr(innerArrayDimFetch: PhpArrayDimFetchExpr, _, _)
+          if !isVariableIndexAccessWithDimensions(arrayDimFetch) =>
         // Rewrite `$xs[][$expr] = <value_expr>` as multiple assignments/pushes
         astForMultiArrayDimAssign(assignment, arrayDimFetch)
-      case arrayDimFetch: PhpArrayDimFetchExpr if arrayDimFetch.dimension.isEmpty =>
+      case arrayDimFetch @ PhpArrayDimFetchExpr(_: PhpVariable, _, _) if arrayDimFetch.dimension.isEmpty =>
         // Rewrite `$xs[] = <value_expr>` as `array_push($xs, <value_expr>)` to simplify finding dataflows.
         astForEmptyArrayDimAssign(assignment, arrayDimFetch)
       case arrayExpr: (PhpArrayExpr | PhpListExpr) =>
@@ -203,6 +205,26 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     )
   }
 
+  @tailrec
+  private def isVariableIndexAccessWithDimensions(expr: PhpExpr): Boolean = {
+    expr match {
+      case arrayDimFetchExpr: PhpArrayDimFetchExpr =>
+        val hasDimension     = arrayDimFetchExpr.dimension.nonEmpty
+        val accessOnVariable = arrayDimFetchExpr.variable.isInstanceOf[PhpVariable]
+
+        arrayDimFetchExpr.variable match {
+          case phpVar: PhpVariable =>
+            hasDimension
+          case innerArrayDimFetchExpr: PhpArrayDimFetchExpr if hasDimension =>
+            isVariableIndexAccessWithDimensions(innerArrayDimFetchExpr)
+          case _ =>
+            false
+        }
+      case _ =>
+        false
+    }
+  }
+
   /** This is used to rewrite the short form $xs[][$expr] = <value_expr> as a combination of multiple assignments and
     * array_push(...) calls.
     *
@@ -215,7 +237,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     def traverseArrayDimExpr(expr: PhpArrayDimFetchExpr, lastAssignName: PhpVariable): List[Ast] = {
       expr.variable match {
-        case variable: PhpVariable =>
+        case variable if variable.isInstanceOf[PhpVariable] || isVariableIndexAccessWithDimensions(expr) =>
           val phpAssignment = PhpAssignment(
             target = expr,
             source = lastAssignName,
@@ -258,14 +280,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         )
         val rhsEvalAst = astForExpr(rhsAssignment)
 
-        val tmpVariable      = this.scope.getNewVarTmp()
-        val phpVariable      = PhpVariable(PhpNameExpr(tmpVariable, attrs), attrs)
-        val phpAssignment    = phpSingleItemArrayAssign(phpVariable, arrayDimFetchExpr.dimension, rhsPhpVariable)
-        val exprAst          = astForExpr(phpAssignment)
-        val exprCodeOverride = codeForSingleArrayElemAssign(tmpVariable, arrayDimFetchExpr.dimension, rhsPhpVariable)
-        exprAst.root.collect { case rootNode: NewCall => rootNode.code(exprCodeOverride) }
-
-        val loweringAsts = exprAst :: traverseArrayDimExpr(innerArrayDimFetchExpr, phpVariable)
+        val loweringAsts = traverseArrayDimExpr(arrayDimFetchExpr, rhsPhpVariable)
 
         val returnAst = astForExpr(rhsPhpVariable)
 
