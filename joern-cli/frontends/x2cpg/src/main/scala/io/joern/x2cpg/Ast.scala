@@ -32,6 +32,33 @@ object Ast {
     ast.conditionEdges.foreach { edge =>
       diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.CONDITION)
     }
+    ast.trueBodyEdges.foreach { edge =>
+      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.TRUE_BODY)
+    }
+    ast.falseBodyEdges.foreach { edge =>
+      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.FALSE_BODY)
+    }
+    ast.doBodyEdges.foreach { edge =>
+      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.DO_BODY)
+    }
+    ast.tryBodyEdges.foreach { edge =>
+      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.TRY_BODY)
+    }
+    ast.catchBodyEdges.foreach { edge =>
+      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.CATCH_BODY)
+    }
+    ast.finallyBodyEdges.foreach { edge =>
+      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.FINALLY_BODY)
+    }
+    ast.forInitEdges.foreach { edge =>
+      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.FOR_INIT)
+    }
+    ast.forUpdateEdges.foreach { edge =>
+      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.FOR_UPDATE)
+    }
+    ast.forBodyEdges.foreach { edge =>
+      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.FOR_BODY)
+    }
     ast.receiverEdges.foreach { edge =>
       diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.RECEIVER)
     }
@@ -90,6 +117,15 @@ case class Ast(
   ], // technically this should be a Seq[AstNewNode], but we also use it for non-ast nodes like Binding...
   edges: collection.Seq[AstEdge] = Vector.empty,
   conditionEdges: collection.Seq[AstEdge] = Vector.empty,
+  trueBodyEdges: collection.Seq[AstEdge] = Vector.empty,
+  falseBodyEdges: collection.Seq[AstEdge] = Vector.empty,
+  doBodyEdges: collection.Seq[AstEdge] = Vector.empty,
+  tryBodyEdges: collection.Seq[AstEdge] = Vector.empty,
+  catchBodyEdges: collection.Seq[AstEdge] = Vector.empty,
+  finallyBodyEdges: collection.Seq[AstEdge] = Vector.empty,
+  forInitEdges: collection.Seq[AstEdge] = Vector.empty,
+  forUpdateEdges: collection.Seq[AstEdge] = Vector.empty,
+  forBodyEdges: collection.Seq[AstEdge] = Vector.empty,
   refEdges: collection.Seq[AstEdge] = Vector.empty,
   bindsEdges: collection.Seq[AstEdge] = Vector.empty,
   receiverEdges: collection.Seq[AstEdge] = Vector.empty,
@@ -113,6 +149,15 @@ case class Ast(
         }
       ),
       conditionEdges = conditionEdges ++ other.conditionEdges,
+      trueBodyEdges = trueBodyEdges ++ other.trueBodyEdges,
+      falseBodyEdges = falseBodyEdges ++ other.falseBodyEdges,
+      doBodyEdges = doBodyEdges ++ other.doBodyEdges,
+      tryBodyEdges = tryBodyEdges ++ other.tryBodyEdges,
+      catchBodyEdges = catchBodyEdges ++ other.catchBodyEdges,
+      finallyBodyEdges = finallyBodyEdges ++ other.finallyBodyEdges,
+      forInitEdges = forInitEdges ++ other.forInitEdges,
+      forUpdateEdges = forUpdateEdges ++ other.forUpdateEdges,
+      forBodyEdges = forBodyEdges ++ other.forBodyEdges,
       argEdges = argEdges ++ other.argEdges,
       receiverEdges = receiverEdges ++ other.receiverEdges,
       refEdges = refEdges ++ other.refEdges,
@@ -126,6 +171,15 @@ case class Ast(
       nodes ++ other.nodes,
       edges = edges ++ other.edges,
       conditionEdges = conditionEdges ++ other.conditionEdges,
+      trueBodyEdges = trueBodyEdges ++ other.trueBodyEdges,
+      falseBodyEdges = falseBodyEdges ++ other.falseBodyEdges,
+      doBodyEdges = doBodyEdges ++ other.doBodyEdges,
+      tryBodyEdges = tryBodyEdges ++ other.tryBodyEdges,
+      catchBodyEdges = catchBodyEdges ++ other.catchBodyEdges,
+      finallyBodyEdges = finallyBodyEdges ++ other.finallyBodyEdges,
+      forInitEdges = forInitEdges ++ other.forInitEdges,
+      forUpdateEdges = forUpdateEdges ++ other.forUpdateEdges,
+      forBodyEdges = forBodyEdges ++ other.forBodyEdges,
       argEdges = argEdges ++ other.argEdges,
       receiverEdges = receiverEdges ++ other.receiverEdges,
       refEdges = refEdges ++ other.refEdges,
@@ -152,6 +206,56 @@ case class Ast(
   def withConditionEdge(src: NewNode, dst: NewNode): Ast = {
     Ast.neighbourValidation(src, dst, EdgeTypes.CONDITION)
     this.copy(conditionEdges = conditionEdges ++ List(AstEdge(src, dst)))
+  }
+
+  def withTrueBodyEdge(src: NewNode, dst: NewNode): Ast = {
+    Ast.neighbourValidation(src, dst, EdgeTypes.TRUE_BODY)
+    this.copy(trueBodyEdges = trueBodyEdges ++ List(AstEdge(src, dst)))
+  }
+
+  def withFalseBodyEdge(src: NewNode, dst: NewNode): Ast = {
+    Ast.neighbourValidation(src, dst, EdgeTypes.FALSE_BODY)
+    this.copy(falseBodyEdges = falseBodyEdges ++ List(AstEdge(src, dst)))
+  }
+
+  def withDoBodyEdge(src: NewNode, dst: NewNode): Ast = {
+    Ast.neighbourValidation(src, dst, EdgeTypes.DO_BODY)
+    this.copy(doBodyEdges = doBodyEdges ++ List(AstEdge(src, dst)))
+  }
+
+  def withTryBodyEdge(src: NewNode, dst: NewNode): Ast = {
+    Ast.neighbourValidation(src, dst, EdgeTypes.TRY_BODY)
+    this.copy(tryBodyEdges = tryBodyEdges ++ List(AstEdge(src, dst)))
+  }
+
+  def withCatchBodyEdge(src: NewNode, dst: NewNode): Ast = {
+    Ast.neighbourValidation(src, dst, EdgeTypes.CATCH_BODY)
+    this.copy(catchBodyEdges = catchBodyEdges ++ List(AstEdge(src, dst)))
+  }
+
+  def withCatchBodyEdges(src: NewNode, dsts: List[NewNode]): Ast = {
+    dsts.foreach(dst => Ast.neighbourValidation(src, dst, EdgeTypes.CATCH_BODY))
+    this.copy(catchBodyEdges = catchBodyEdges ++ dsts.map(AstEdge(src, _)))
+  }
+
+  def withFinallyBodyEdge(src: NewNode, dst: NewNode): Ast = {
+    Ast.neighbourValidation(src, dst, EdgeTypes.FINALLY_BODY)
+    this.copy(finallyBodyEdges = finallyBodyEdges ++ List(AstEdge(src, dst)))
+  }
+
+  def withForInitEdge(src: NewNode, dst: NewNode): Ast = {
+    Ast.neighbourValidation(src, dst, EdgeTypes.FOR_INIT)
+    this.copy(forInitEdges = forInitEdges ++ List(AstEdge(src, dst)))
+  }
+
+  def withForUpdateEdge(src: NewNode, dst: NewNode): Ast = {
+    Ast.neighbourValidation(src, dst, EdgeTypes.FOR_UPDATE)
+    this.copy(forUpdateEdges = forUpdateEdges ++ List(AstEdge(src, dst)))
+  }
+
+  def withForBodyEdge(src: NewNode, dst: NewNode): Ast = {
+    Ast.neighbourValidation(src, dst, EdgeTypes.FOR_BODY)
+    this.copy(forBodyEdges = forBodyEdges ++ List(AstEdge(src, dst)))
   }
 
   def withRefEdge(src: NewNode, dst: NewNode): Ast = {
@@ -259,6 +363,15 @@ case class Ast(
 
     val newArgEdges       = argEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
     val newConditionEdges = conditionEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
+    val newTrueBodyEdges  = trueBodyEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
+    val newFalseBodyEdges = falseBodyEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
+    val newDoBodyEdges    = doBodyEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
+    val newTryBodyEdges   = tryBodyEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
+    val newCatchBodyEdges = catchBodyEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
+    val newFinallyEdges   = finallyBodyEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
+    val newForInitEdges   = forInitEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
+    val newForUpdateEdges = forUpdateEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
+    val newForBodyEdges   = forBodyEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
     val newRefEdges       = refEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
     val newBindsEdges     = bindsEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
     val newReceiverEdges  = receiverEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
@@ -268,6 +381,15 @@ case class Ast(
       .copy(
         argEdges = newArgEdges,
         conditionEdges = newConditionEdges,
+        trueBodyEdges = newTrueBodyEdges,
+        falseBodyEdges = newFalseBodyEdges,
+        doBodyEdges = newDoBodyEdges,
+        tryBodyEdges = newTryBodyEdges,
+        catchBodyEdges = newCatchBodyEdges,
+        finallyBodyEdges = newFinallyEdges,
+        forInitEdges = newForInitEdges,
+        forUpdateEdges = newForUpdateEdges,
+        forBodyEdges = newForBodyEdges,
         refEdges = newRefEdges,
         bindsEdges = newBindsEdges,
         receiverEdges = newReceiverEdges,
