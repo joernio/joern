@@ -453,7 +453,7 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
     "have a `this` local for the captured outer class" in {
       inside(cpg.method.name(".*lambda.*").local.l) { case List(thisLocal) =>
         thisLocal.name shouldBe "this"
-        thisLocal.typeFullName shouldBe "Test.test.LocalClass"
+        thisLocal.typeFullName shouldBe "Test.test:void().LocalClass"
         thisLocal.closureBindingId shouldBe Some("Test0.java:<lambda>0:this")
       }
     }
@@ -464,7 +464,7 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
         inside(thisClosureBinding._refOut.l) { case List(capturedParam: MethodParameterIn) =>
           capturedParam.name shouldBe "this"
           capturedParam.index shouldBe 0
-          capturedParam.method.fullName shouldBe "Test.test.LocalClass.localClassMethod:void()"
+          capturedParam.method.fullName shouldBe "Test.test:void().LocalClass.localClassMethod:void()"
         }
       }
     }
@@ -480,11 +480,11 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
             inside(outerClassAccess.argument.l) {
               case List(thisIdentifier: Identifier, outerClassField: FieldIdentifier) =>
                 thisIdentifier.name shouldBe "this"
-                thisIdentifier.typeFullName shouldBe "Test.test.LocalClass"
+                thisIdentifier.typeFullName shouldBe "Test.test:void().LocalClass"
                 inside(thisIdentifier._refOut.l) { case List(thisLocal: Local) =>
                   thisLocal.name shouldBe "this"
                   thisLocal.closureBindingId shouldBe Some("Test0.java:<lambda>0:this")
-                  thisLocal.method.fullName.l shouldBe List("Test.test.LocalClass.<lambda>0:java.lang.String()")
+                  thisLocal.method.fullName.l shouldBe List("Test.test:void().LocalClass.<lambda>0:java.lang.String()")
                 }
 
                 outerClassField.canonicalName shouldBe "outerClass"
@@ -523,7 +523,7 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
     "have a `this` local for the captured outer class" in {
       inside(cpg.method.name(".*lambda.*").local.l) { case List(thisLocal) =>
         thisLocal.name shouldBe "this"
-        thisLocal.typeFullName shouldBe "Test.test.LocalClass"
+        thisLocal.typeFullName shouldBe "Test.test:void().LocalClass"
         thisLocal.closureBindingId shouldBe Some("Test0.java:<lambda>0:this")
       }
     }
@@ -534,7 +534,7 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
         inside(thisClosureBinding._refOut.l) { case List(capturedParam: MethodParameterIn) =>
           capturedParam.name shouldBe "this"
           capturedParam.index shouldBe 0
-          capturedParam.method.fullName shouldBe "Test.test.LocalClass.localClassMethod:void()"
+          capturedParam.method.fullName shouldBe "Test.test:void().LocalClass.localClassMethod:void()"
         }
       }
     }
@@ -546,11 +546,11 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
         inside(valueFieldAccess.argument.l) {
           case List(thisIdentifier: Identifier, valueFieldIdentifier: FieldIdentifier) =>
             thisIdentifier.name shouldBe "this"
-            thisIdentifier.typeFullName shouldBe "Test.test.LocalClass"
+            thisIdentifier.typeFullName shouldBe "Test.test:void().LocalClass"
             inside(thisIdentifier._refOut.l) { case List(thisLocal: Local) =>
               thisLocal.name shouldBe "this"
               thisLocal.closureBindingId shouldBe Some("Test0.java:<lambda>0:this")
-              thisLocal.method.fullName.l shouldBe List("Test.test.LocalClass.<lambda>0:java.lang.String()")
+              thisLocal.method.fullName.l shouldBe List("Test.test:void().LocalClass.<lambda>0:java.lang.String()")
             }
 
             // When a local class captures a parameter, it's stored as a field in the local class
