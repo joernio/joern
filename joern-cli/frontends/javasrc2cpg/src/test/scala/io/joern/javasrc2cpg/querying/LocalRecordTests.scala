@@ -43,7 +43,7 @@ class LocalRecordTests extends JavaSrcCode2CpgFixture {
     "have a private field for the record parameter" in {
       inside(localDecl.member.name("value").l) { case List(valueMember) =>
         valueMember.typeFullName shouldBe "java.lang.String"
-        valueMember.modifier.modifierType.l shouldBe List(ModifierTypes.PRIVATE)
+        valueMember.modifier.modifierType.toSet shouldBe Set(ModifierTypes.PRIVATE, ModifierTypes.FINAL)
       }
     }
 
@@ -186,7 +186,7 @@ class LocalRecordTests extends JavaSrcCode2CpgFixture {
     "have private field for the record parameter" in {
       inside(localDecl.member.name("value").l) { case List(valueMember) =>
         valueMember.typeFullName shouldBe "java.lang.String"
-        valueMember.modifier.modifierType.l shouldBe List(ModifierTypes.PRIVATE)
+        valueMember.modifier.modifierType.toSet shouldBe Set(ModifierTypes.PRIVATE, ModifierTypes.FINAL)
       }
     }
 
@@ -252,7 +252,7 @@ class LocalRecordTests extends JavaSrcCode2CpgFixture {
     "have a private field for the record parameter" in {
       inside(localDecl.member.name("value").l) { case List(valueMember) =>
         valueMember.typeFullName shouldBe "java.lang.String"
-        valueMember.modifier.modifierType.l shouldBe List(ModifierTypes.PRIVATE)
+        valueMember.modifier.modifierType.toSet shouldBe Set(ModifierTypes.PRIVATE, ModifierTypes.FINAL)
       }
     }
   }

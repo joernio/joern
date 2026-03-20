@@ -304,7 +304,8 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
         genericSignature = Option(genericSignature)
       )
       val privateModifier = modifierNode(parameter, ModifierTypes.PRIVATE)
-      val memberAst       = Ast(parameterMember).withChild(Ast(privateModifier))
+      val finalModifier   = modifierNode(parameter, ModifierTypes.FINAL)
+      val memberAst       = Ast(parameterMember).withChild(Ast(privateModifier)).withChild(Ast(finalModifier))
 
       scope.enclosingTypeDecl.get.addMember(parameterMember, isStatic = false)
 
