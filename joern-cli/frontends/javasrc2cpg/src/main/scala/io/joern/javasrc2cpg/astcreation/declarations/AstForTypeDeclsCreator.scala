@@ -306,6 +306,8 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
       val privateModifier = modifierNode(parameter, ModifierTypes.PRIVATE)
       val memberAst       = Ast(parameterMember).withChild(Ast(privateModifier))
 
+      scope.enclosingTypeDecl.get.addMember(parameterMember, isStatic = false)
+
       val accessorMethodAst = Option.unless(explicitMethodNames.contains(parameterName))(
         astForRecordParameterAccessor(parameter, recordTypeFullName, parameterName, parameterTypeFullName)
       )
