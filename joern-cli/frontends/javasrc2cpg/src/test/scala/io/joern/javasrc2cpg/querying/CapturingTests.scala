@@ -272,6 +272,36 @@ class CapturingTests extends JavaSrcCode2CpgFixture with Inside {
       }
     }
 
+    "not confuse the synthetic constructor references with captured variables" in {
+      inside(cpg.method.fullNameExact("Foo.<lambda>0:void().LocalRecord.<init>:void(java.lang.String)").l) {
+        case List(constructor) =>
+          inside(constructor.body.astChildren.l) { case List(valueAssign: Call) =>
+            valueAssign.name shouldBe Operators.assignment
+            valueAssign.code shouldBe "this.value = value"
+
+            inside(valueAssign.argument.l) { case List(fieldAccess: Call, valueId: Identifier) =>
+              inside(fieldAccess.argument.l) { case List(thisId: Identifier, valueFieldId: FieldIdentifier) =>
+                thisId.name shouldBe "this"
+                inside(thisId.refsTo.l) { case List(thisParam: MethodParameterIn) =>
+                  thisParam.name shouldBe "this"
+                  thisParam.index shouldBe 0
+                  thisParam.method shouldBe constructor
+                }
+
+                valueFieldId.canonicalName shouldBe "value"
+              }
+
+              valueId.name shouldBe "value"
+              inside(valueId.refsTo.l) { case List(valueParam: MethodParameterIn) =>
+                valueParam.name shouldBe "value"
+                valueParam.index shouldBe 1
+                valueParam.method shouldBe constructor
+              }
+            }
+          }
+      }
+    }
+
     "correctly handle the scope of the local record parameter in the local record" in {
       inside(cpg.method.name("print").call.name("println").argument.argumentIndex(1).l) { case List(localValue: Call) =>
         localValue.name shouldBe Operators.fieldAccess
