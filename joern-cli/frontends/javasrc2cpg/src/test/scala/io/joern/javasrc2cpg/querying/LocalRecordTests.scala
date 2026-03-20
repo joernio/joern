@@ -26,10 +26,10 @@ class LocalRecordTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    @inline def localDecl = cpg.typeDecl.fullName("foo.Foo.enclosingMethod.LocalRecord")
+    @inline def localDecl = cpg.typeDecl.fullNameExact("foo.Foo.enclosingMethod:void().LocalRecord")
 
     "have only one LocalRecord typeDecl" in {
-      cpg.typeDecl.name(".*LocalRecord.*").fullName.toSet shouldBe Set("foo.Foo.enclosingMethod.LocalRecord")
+      cpg.typeDecl.name(".*LocalRecord.*").fullName.toSet shouldBe Set("foo.Foo.enclosingMethod:void().LocalRecord")
     }
 
     "have the correct code set" in {
@@ -49,7 +49,7 @@ class LocalRecordTests extends JavaSrcCode2CpgFixture {
 
     "have a public accessor method for the record parameter" in {
       inside(localDecl.method.name("value").l) { case List(valueMethod) =>
-        valueMethod.fullName shouldBe "foo.Foo.enclosingMethod.LocalRecord.value:java.lang.String()"
+        valueMethod.fullName shouldBe "foo.Foo.enclosingMethod:void().LocalRecord.value:java.lang.String()"
 
         inside(valueMethod.body.astChildren.l) { case List(returnStmt: Return) =>
           returnStmt.code shouldBe "return this.value"
@@ -65,11 +65,11 @@ class LocalRecordTests extends JavaSrcCode2CpgFixture {
 
     "have a default canonical constructor with a parameter for the record component" in {
       inside(localDecl.method.nameExact("<init>").l) { case List(constructor) =>
-        constructor.fullName shouldBe "foo.Foo.enclosingMethod.LocalRecord.<init>:void(java.lang.String)"
+        constructor.fullName shouldBe "foo.Foo.enclosingMethod:void().LocalRecord.<init>:void(java.lang.String)"
 
         inside(constructor.parameter.l) { case List(thisParam, valueParam) =>
           thisParam.name shouldBe "this"
-          thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod.LocalRecord"
+          thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod:void().LocalRecord"
           thisParam.index shouldBe 0
 
           valueParam.name shouldBe "value"
@@ -87,8 +87,8 @@ class LocalRecordTests extends JavaSrcCode2CpgFixture {
     "have the correct binding for the canonical constructor" in {
       inside(cpg.all.collectAll[Binding].nameExact("<init>").methodFullName(".*LocalRecord.*").l) {
         case List(initBinding) =>
-          initBinding.methodFullName shouldBe "foo.Foo.enclosingMethod.LocalRecord.<init>:void(java.lang.String)"
-          initBinding.bindingTypeDecl.fullName shouldBe "foo.Foo.enclosingMethod.LocalRecord"
+          initBinding.methodFullName shouldBe "foo.Foo.enclosingMethod:void().LocalRecord.<init>:void(java.lang.String)"
+          initBinding.bindingTypeDecl.fullName shouldBe "foo.Foo.enclosingMethod:void().LocalRecord"
           initBinding.signature shouldBe "void(java.lang.String)"
       }
     }
@@ -105,7 +105,7 @@ class LocalRecordTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    @inline def localDecl = cpg.typeDecl.fullName("foo.Foo.enclosingMethod.Point")
+    @inline def localDecl = cpg.typeDecl.fullNameExact("foo.Foo.enclosingMethod:void().Point")
 
     "have private fields for each record parameter" in {
       localDecl.member.name("x").typeFullName.l shouldBe List("int")
@@ -113,13 +113,13 @@ class LocalRecordTests extends JavaSrcCode2CpgFixture {
     }
 
     "have accessor methods for each record parameter" in {
-      localDecl.method.name("x").fullName.l shouldBe List("foo.Foo.enclosingMethod.Point.x:int()")
-      localDecl.method.name("y").fullName.l shouldBe List("foo.Foo.enclosingMethod.Point.y:int()")
+      localDecl.method.name("x").fullName.l shouldBe List("foo.Foo.enclosingMethod:void().Point.x:int()")
+      localDecl.method.name("y").fullName.l shouldBe List("foo.Foo.enclosingMethod:void().Point.y:int()")
     }
 
     "have a canonical constructor with both parameters" in {
       inside(localDecl.method.nameExact("<init>").l) { case List(constructor) =>
-        constructor.fullName shouldBe "foo.Foo.enclosingMethod.Point.<init>:void(int,int)"
+        constructor.fullName shouldBe "foo.Foo.enclosingMethod:void().Point.<init>:void(int,int)"
 
         inside(constructor.parameter.l) { case List(thisParam, xParam, yParam) =>
           thisParam.name shouldBe "this"
@@ -147,12 +147,12 @@ class LocalRecordTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    @inline def localDecl = cpg.typeDecl.fullName("foo.Foo.enclosingMethod.LocalRecord")
+    @inline def localDecl = cpg.typeDecl.fullNameExact("foo.Foo.enclosingMethod:void().LocalRecord")
 
     "have the correct bindings for the explicit method" in {
       inside(cpg.all.collectAll[Binding].nameExact("upper").l) { case List(upperBinding) =>
-        upperBinding.methodFullName shouldBe "foo.Foo.enclosingMethod.LocalRecord.upper:java.lang.String()"
-        upperBinding.bindingTypeDecl.fullName shouldBe "foo.Foo.enclosingMethod.LocalRecord"
+        upperBinding.methodFullName shouldBe "foo.Foo.enclosingMethod:void().LocalRecord.upper:java.lang.String()"
+        upperBinding.bindingTypeDecl.fullName shouldBe "foo.Foo.enclosingMethod:void().LocalRecord"
         upperBinding.signature shouldBe "java.lang.String()"
       }
     }
@@ -181,7 +181,7 @@ class LocalRecordTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    @inline def localDecl = cpg.typeDecl.fullName("foo.Foo.enclosingMethod.LocalRecord")
+    @inline def localDecl = cpg.typeDecl.fullNameExact("foo.Foo.enclosingMethod:void(int).LocalRecord")
 
     "have private field for the record parameter" in {
       inside(localDecl.member.name("value").l) { case List(valueMember) =>
@@ -201,7 +201,7 @@ class LocalRecordTests extends JavaSrcCode2CpgFixture {
 
     "have a canonical constructor with record params and capture params" in {
       inside(localDecl.method.nameExact("<init>").l) { case List(constructor) =>
-        constructor.fullName shouldBe "foo.Foo.enclosingMethod.LocalRecord.<init>:void(java.lang.String)"
+        constructor.fullName shouldBe "foo.Foo.enclosingMethod:void(int).LocalRecord.<init>:void(java.lang.String)"
 
         val params = constructor.parameter.l
         params.map(_.name) should contain("this")
@@ -234,7 +234,7 @@ class LocalRecordTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    @inline def localDecl = cpg.typeDecl.fullName("foo.Foo.enclosingMethod.LocalRecord")
+    @inline def localDecl = cpg.typeDecl.fullNameExact("foo.Foo.enclosingMethod:void(int).LocalRecord")
 
     "not have an outerClass member" in {
       localDecl.member.name("outerClass").isEmpty shouldBe true
@@ -272,15 +272,15 @@ class LocalRecordTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    @inline def localDecl = cpg.typeDecl.fullName("foo.Foo.enclosingMethod.LocalRecord")
+    @inline def localDecl = cpg.typeDecl.fullNameExact("foo.Foo.enclosingMethod:void().LocalRecord")
 
     "have the correct constructor with assignment before body" in {
       inside(localDecl.method.nameExact("<init>").l) { case List(constructor) =>
-        constructor.fullName shouldBe "foo.Foo.enclosingMethod.LocalRecord.<init>:void(java.lang.String)"
+        constructor.fullName shouldBe "foo.Foo.enclosingMethod:void().LocalRecord.<init>:void(java.lang.String)"
 
         inside(constructor.parameter.l) { case List(thisParam, valueParam) =>
           thisParam.name shouldBe "this"
-          thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod.LocalRecord"
+          thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod:void().LocalRecord"
 
           valueParam.name shouldBe "value"
           valueParam.typeFullName shouldBe "java.lang.String"

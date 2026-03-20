@@ -277,11 +277,11 @@ class CapturingTests extends JavaSrcCode2CpgFixture with Inside {
         localValue.name shouldBe Operators.fieldAccess
         inside(localValue.argument.l) { case List(thisId: Identifier, valueFieldId: FieldIdentifier) =>
           thisId.name shouldBe "this"
-          thisId.typeFullName shouldBe "Foo.<lambda>0.LocalRecord"
+          thisId.typeFullName shouldBe "Foo.<lambda>0:void().LocalRecord"
           inside(thisId.refsTo.l) { case List(thisParam: MethodParameterIn) =>
             thisParam.name shouldBe "this"
             thisParam.index shouldBe 0
-            thisParam.method.fullName shouldBe "Foo.<lambda>0.LocalRecord.print:void()"
+            thisParam.method.fullName shouldBe "Foo.<lambda>0:void().LocalRecord.print:void()"
           }
 
           valueFieldId.canonicalName shouldBe "value"

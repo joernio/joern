@@ -169,7 +169,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
 
   def astForLocalClassDeclaration(localClassDecl: LocalClassDeclarationStmt): Ast = {
     val name                  = localClassDecl.getClassDeclaration.getNameAsString
-    val enclosingMethodPrefix = scope.enclosingMethod.getMethodFullName.takeWhile(_ != ':')
+    val enclosingMethodPrefix = scope.enclosingMethod.getMethodFullName
     val fullName              = s"$enclosingMethodPrefix.$name"
     scope.addInnerType(name, fullName, fullName)
     astForTypeDeclaration(localClassDecl.getClassDeclaration, fullNameOverride = Some(fullName), isLocalClass = true)
@@ -177,7 +177,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
 
   def astForLocalRecordDeclaration(localRecordDecl: LocalRecordDeclarationStmt): Ast = {
     val name                  = localRecordDecl.getRecordDeclaration.getNameAsString
-    val enclosingMethodPrefix = scope.enclosingMethod.getMethodFullName.takeWhile(_ != ':')
+    val enclosingMethodPrefix = scope.enclosingMethod.getMethodFullName
     val fullName              = s"$enclosingMethodPrefix.$name"
     scope.addInnerType(name, fullName, fullName)
     astForTypeDeclaration(localRecordDecl.getRecordDeclaration, fullNameOverride = Some(fullName), isLocalClass = true)
