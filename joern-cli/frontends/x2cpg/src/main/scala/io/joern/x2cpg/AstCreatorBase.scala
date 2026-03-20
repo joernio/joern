@@ -182,7 +182,11 @@ abstract class AstCreatorBase[Node, NodeProcessor](filename: String)(implicit wi
     if (code.isDefined) {
       doWhileNode = doWhileNode.code(code.get)
     }
-    controlStructureAst(doWhileNode, condition, body, placeConditionLast = true)
+    val astWithChildren = controlStructureAst(doWhileNode, condition, body, placeConditionLast = true)
+    body.headOption.flatMap(_.root) match {
+      case Some(doBodyRoot) => astWithChildren.withDoBodyEdge(doWhileNode, doBodyRoot)
+      case None             => astWithChildren
+    }
   }
 
   def forAst(
@@ -210,17 +214,35 @@ abstract class AstCreatorBase[Node, NodeProcessor](filename: String)(implicit wi
     updateAsts: Seq[Ast],
     bodyAsts: Seq[Ast]
   ): Ast = {
-    val lineNumber  = forNode.lineNumber
-    val numOfLocals = locals.size
+    val lineNumber     = forNode.lineNumber
+    val numOfLocals    = locals.size
+    val initBlock      = setOrderExplicitly(wrapMultipleInBlock(initAsts, lineNumber), numOfLocals + 1)
+    val conditionBlock = setOrderExplicitly(wrapMultipleInBlock(conditionAsts, lineNumber), numOfLocals + 2)
+    val updateBlock    = setOrderExplicitly(wrapMultipleInBlock(updateAsts, lineNumber), numOfLocals + 3)
     // for the expected orders see CfgCreator.cfgForForStatement
     if (bodyAsts.nonEmpty) setOrderExplicitly(bodyAsts.head, numOfLocals + 4)
-    Ast(forNode)
+    val astWithChildren = Ast(forNode)
       .withChildren(locals)
-      .withChild(setOrderExplicitly(wrapMultipleInBlock(initAsts, lineNumber), numOfLocals + 1))
-      .withChild(setOrderExplicitly(wrapMultipleInBlock(conditionAsts, lineNumber), numOfLocals + 2))
-      .withChild(setOrderExplicitly(wrapMultipleInBlock(updateAsts, lineNumber), numOfLocals + 3))
+      .withChild(initBlock)
+      .withChild(conditionBlock)
+      .withChild(updateBlock)
       .withChildren(bodyAsts)
       .withConditionEdges(forNode, conditionAsts.flatMap(_.root).toList)
+
+    val astWithForInit = initBlock.root match {
+      case Some(initRoot) => astWithChildren.withForInitEdge(forNode, initRoot)
+      case None           => astWithChildren
+    }
+
+    val astWithForUpdate = updateBlock.root match {
+      case Some(updateRoot) => astWithForInit.withForUpdateEdge(forNode, updateRoot)
+      case None             => astWithForInit
+    }
+
+    bodyAsts.headOption.flatMap(_.root) match {
+      case Some(bodyRoot) => astWithForUpdate.withForBodyEdge(forNode, bodyRoot)
+      case None           => astWithForUpdate
+    }
   }
 
   /** For the given try body, catch ASTs and finally AST, create a try-catch-finally AST with orders set correctly for
@@ -248,10 +270,22 @@ abstract class AstCreatorBase[Node, NodeProcessor](filename: String)(implicit wi
     */
   def tryCatchAst(tryNode: NewControlStructure, tryBodyAst: Ast, catchAsts: Seq[Ast], finallyAst: Option[Ast]): Ast = {
     setArgumentIndices(tryBodyAst +: (catchAsts ++ finallyAst.toSeq))
-    Ast(tryNode)
+    val astWithChildren = Ast(tryNode)
       .withChild(tryBodyAst)
       .withChildren(catchAsts)
       .withChildren(finallyAst.toSeq)
+
+    val astWithTryBody = tryBodyAst.root match {
+      case Some(tryBodyRoot) => astWithChildren.withTryBodyEdge(tryNode, tryBodyRoot)
+      case None              => astWithChildren
+    }
+
+    val astWithCatchBodies = astWithTryBody.withCatchBodyEdges(tryNode, catchAsts.flatMap(_.root).toList)
+
+    finallyAst.flatMap(_.root) match {
+      case Some(finallyRoot) => astWithCatchBodies.withFinallyBodyEdge(tryNode, finallyRoot)
+      case None              => astWithCatchBodies
+    }
   }
 
   /** For a given block node and statement ASTs, create an AST that represents the block. The main purpose of this
