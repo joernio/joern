@@ -2,7 +2,7 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, ControlStructure, Identifier, Local}
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.nodes.Literal
 
@@ -21,6 +21,12 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
     "should contain CODE node for the expression inside the `if`" in {
       val List(c) = cpg.call.code("x > 0").l
       c.code shouldBe "x > 0"
+    }
+
+    "should connect then and else branches via TRUE_BODY/FALSE_BODY edges" in {
+      val List(controlStructure) = cpg.controlStructure.isIf.l
+      controlStructure.trueBodyOut.code.l shouldBe List("return 1")
+      controlStructure.falseBodyOut.code.l shouldBe List()
     }
   }
 
@@ -110,6 +116,11 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
     "should identify `do` block" in {
       cpg.method.name("methodFoo").doBlock.code.size shouldBe 1
     }
+
+    "should connect do-while body via DO_BODY edge" in {
+      val List(doNode) = cpg.method.name("methodFoo").doBlock.l
+      doNode.doBodyOut.size shouldBe 1
+    }
   }
 
   "CPG for code with simple `for`-statements" should {
@@ -186,6 +197,13 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
       val List(finallyBlock) = tryNode.astChildren.isControlStructure.isFinally.astChildren.l
       finallyBlock.astChildren.isCall.code.l shouldBe List("""print("reached `finally`-block.")""")
     }
+
+    "should connect try, catch and finally bodies via explicit edges" in {
+      val List(tryNode) = cpg.controlStructure.isTry.l
+      tryNode.tryBodyOut.size shouldBe 1
+      tryNode.catchBodyOut.size shouldBe 1
+      tryNode.finallyBodyOut.size shouldBe 1
+    }
   }
 
   "CPG for code with try-catch statement" should {
@@ -225,6 +243,7 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
     "should contain a THROW control structure with the thrown expression as its child" in {
       val List(throwNode: ControlStructure) = cpg.controlStructure.controlStructureType(ControlStructureTypes.THROW).l
       throwNode.code shouldBe "throw RuntimeException(\"boom\")"
+      throwNode.argumentOut.size shouldBe 1
 
       // Ctor calls cause the following structure to be emitted for the call to RuntimeException
       // throw Block {
