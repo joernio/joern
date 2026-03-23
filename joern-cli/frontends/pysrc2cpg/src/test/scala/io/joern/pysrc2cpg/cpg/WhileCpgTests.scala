@@ -64,5 +64,11 @@ class WhileCpgTests extends PySrc2CpgFixture with Matchers {
       elseNode.code shouldBe "z"
       cpg.controlStructure.astChildren.order(3).head shouldBe elseNode
     }
+
+    "connect loop body and else block via TRUE_BODY/FALSE_BODY edges" in {
+      val whileNode = cpg.controlStructure.isWhile.head
+      whileNode.trueBodyOut.code.l shouldBe List("y")
+      whileNode.falseBodyOut.code.l shouldBe List("z")
+    }
   }
 }

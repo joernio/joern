@@ -93,6 +93,9 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
     }
 
     addAstChildNodes(controlStructureNode, 1, Seq(bodyBlockNode) ++ handlersAsts ++ elseAsts ++ finallyAsts)
+    edgeBuilder.tryBodyEdge(bodyBlockNode, controlStructureNode)
+    handlersAsts.foreach(handlerNode => edgeBuilder.catchBodyEdge(handlerNode, controlStructureNode))
+    finallyAsts.foreach(finallyNode => edgeBuilder.finallyBodyEdge(finallyNode, controlStructureNode))
     controlStructureNode
   }
 

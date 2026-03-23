@@ -64,5 +64,11 @@ class IfCpgTests extends PySrc2CpgFixture with Matchers {
       elseNode.code shouldBe "z"
       cpg.controlStructure.astChildren.order(3).head shouldBe elseNode
     }
+
+    "connect then and else blocks via TRUE_BODY/FALSE_BODY edges" in {
+      val ifNode = cpg.controlStructure.isIf.head
+      ifNode.trueBodyOut.code.l shouldBe List("y")
+      ifNode.falseBodyOut.code.l shouldBe List("z")
+    }
   }
 }

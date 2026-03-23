@@ -52,6 +52,26 @@ class EdgeBuilder(diffGraph: DiffGraphBuilder) {
     diffGraph.addEdge(srcNode, dstNode, EdgeTypes.CONDITION)
   }
 
+  def trueBodyEdge(dstNode: nodes.NewNode, srcNode: nodes.NewNode): Unit = {
+    diffGraph.addEdge(srcNode, dstNode, EdgeTypes.TRUE_BODY)
+  }
+
+  def falseBodyEdge(dstNode: nodes.NewNode, srcNode: nodes.NewNode): Unit = {
+    diffGraph.addEdge(srcNode, dstNode, EdgeTypes.FALSE_BODY)
+  }
+
+  def tryBodyEdge(dstNode: nodes.NewNode, srcNode: nodes.NewNode): Unit = {
+    diffGraph.addEdge(srcNode, dstNode, EdgeTypes.TRY_BODY)
+  }
+
+  def catchBodyEdge(dstNode: nodes.NewNode, srcNode: nodes.NewNode): Unit = {
+    diffGraph.addEdge(srcNode, dstNode, EdgeTypes.CATCH_BODY)
+  }
+
+  def finallyBodyEdge(dstNode: nodes.NewNode, srcNode: nodes.NewNode): Unit = {
+    diffGraph.addEdge(srcNode, dstNode, EdgeTypes.FINALLY_BODY)
+  }
+
   def refEdge(dstNode: nodes.NewNode, srcNode: nodes.NewNode): Unit = {
     diffGraph.addEdge(srcNode, dstNode, EdgeTypes.REF)
   }
