@@ -98,22 +98,23 @@ class ArrayTests extends PhpCode2CpgFixture {
   "arrays in blocks should contain unique tmp locals" in {
     // using "array(...)" as its lowering generates tmp variables
     val cpg = code("""<?php
-        |array(1);
+        |function foo() {
+        |  $arr = array(1, 2);
         |
-        |if (true) {
-        |  array(2);
+        |  foreach ($arr as list($a, $b)) {
+        |    echo $a, $b;
+        |  }
         |}
         |""".stripMargin)
 
-    inside(cpg.method.name("<global>").block.astChildren.l) { case List(tmp0Local: Local, tmp1Local: Local, _, _) =>
-      tmp0Local.name shouldBe "Test0.php:<global>@tmp-0"
-      tmp0Local.name shouldBe "Test0.php:<global>@tmp-0"
-      tmp0Local.lineNumber shouldBe Some(2)
+    val tmp0Identifiers = cpg.identifier.nameExact("foo@tmp-0").l
+    tmp0Identifiers.flatMap(_.lineNumber).distinct shouldBe List(3)
 
-      tmp1Local.name shouldBe "Test0.php:<global>@tmp-1"
-      tmp1Local.name shouldBe "Test0.php:<global>@tmp-1"
-      tmp1Local.lineNumber shouldBe Some(5)
-    }
+    val tmp1Identifiers = cpg.identifier.nameExact("foo@iter_tmp-1").l
+    tmp1Identifiers.flatMap(_.lineNumber).distinct shouldBe List(5)
+
+    val tmp2Identifiers = cpg.identifier.nameExact("foo@tmp-2").l
+    tmp2Identifiers.flatMap(_.lineNumber).distinct shouldBe List(5)
   }
 
   "non-associative array definitions should be lowered with the correct index accesses and assignments" in {
