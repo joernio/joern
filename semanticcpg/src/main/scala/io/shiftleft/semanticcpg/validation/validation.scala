@@ -73,7 +73,7 @@ object PostFrontendValidator {
   * Goal is to improve the pass once we fixed current violations, and then have new ideas what to check. Then plug in
   * faster checking code, then enable in sptests and prod.
   */
-class PostFrontendValidator(cpg: Cpg, throwOnError: Boolean, validationLevel: Int = Int.MaxValue)
+class PostFrontendValidator(cpg: Cpg, throwOnError: Boolean = true, validationLevel: Int = Int.MaxValue)
     extends AbstractValidator(cpg) {
   import PostFrontendValidator.logger
   import PostFrontendValidator.ErrorType.*
