@@ -61,6 +61,7 @@ import scala.jdk.CollectionConverters.*
 import scala.util.{Success, Try}
 import com.github.javaparser.ast.expr.ObjectCreationExpr
 import com.github.javaparser.ast.stmt.LocalClassDeclarationStmt
+import com.github.javaparser.ast.stmt.LocalRecordDeclarationStmt
 import io.joern.javasrc2cpg.scope.Scope.ScopeVariable
 import com.github.javaparser.ast.{Modifier, Node}
 import com.github.javaparser.resolution.types.ResolvedReferenceType
@@ -168,10 +169,18 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
 
   def astForLocalClassDeclaration(localClassDecl: LocalClassDeclarationStmt): Ast = {
     val name                  = localClassDecl.getClassDeclaration.getNameAsString
-    val enclosingMethodPrefix = scope.enclosingMethod.getMethodFullName.takeWhile(_ != ':')
+    val enclosingMethodPrefix = scope.enclosingMethod.getMethodFullName
     val fullName              = s"$enclosingMethodPrefix.$name"
     scope.addInnerType(name, fullName, fullName)
     astForTypeDeclaration(localClassDecl.getClassDeclaration, fullNameOverride = Some(fullName), isLocalClass = true)
+  }
+
+  def astForLocalRecordDeclaration(localRecordDecl: LocalRecordDeclarationStmt): Ast = {
+    val name                  = localRecordDecl.getRecordDeclaration.getNameAsString
+    val enclosingMethodPrefix = scope.enclosingMethod.getMethodFullName
+    val fullName              = s"$enclosingMethodPrefix.$name"
+    scope.addInnerType(name, fullName, fullName)
+    astForTypeDeclaration(localRecordDecl.getRecordDeclaration, fullNameOverride = Some(fullName), isLocalClass = true)
   }
 
   def astForTypeDeclaration(
@@ -295,7 +304,10 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
         genericSignature = Option(genericSignature)
       )
       val privateModifier = modifierNode(parameter, ModifierTypes.PRIVATE)
-      val memberAst       = Ast(parameterMember).withChild(Ast(privateModifier))
+      val finalModifier   = modifierNode(parameter, ModifierTypes.FINAL)
+      val memberAst       = Ast(parameterMember).withChild(Ast(privateModifier)).withChild(Ast(finalModifier))
+
+      scope.enclosingTypeDecl.get.addMember(parameterMember, isStatic = false)
 
       val accessorMethodAst = Option.unless(explicitMethodNames.contains(parameterName))(
         astForRecordParameterAccessor(parameter, recordTypeFullName, parameterName, parameterTypeFullName)
@@ -491,6 +503,10 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
 
             receiverAst.root.foreach(receiver => diffGraph.addEdge(initRoot, receiver, EdgeTypes.RECEIVER))
 
+            // For this() calls, use the synthetic capture parameters from the enclosing constructor
+            // instead of the original captured variables from the enclosing method
+            val thisCaptureParams = scope.enclosingTypeDecl.getThisCallCaptureParams(initRoot)
+
             val capturesAsts =
               usedCaptures
                 .filterNot(outerClassAst.isDefined && _.name == NameConstants.OuterClass)
@@ -503,7 +519,9 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
                     .lineNumber(initRoot.lineNumber)
                     .columnNumber(initRoot.columnNumber)
 
-                  val refsTo = Option.when(usedCapture.name != NameConstants.OuterClass)(usedCapture.node)
+                  val refsTo = thisCaptureParams
+                    .flatMap(_.lift(index))
+                    .orElse(Option.when(usedCapture.name != NameConstants.OuterClass)(usedCapture.node))
 
                   Ast(identifier).withRefEdges(identifier, refsTo.toList)
                 }
@@ -661,22 +679,23 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
       isInterface && !modifiers.exists(_.getKeyword == Keyword.ABSTRACT)
     )(modifierNode(typ, ModifierTypes.ABSTRACT))
 
-    val explicitModifiers = typ.getModifiers.asScala
-      .collect {
-        case modifier if modifier.getKeyword == Keyword.PUBLIC     => (modifier, ModifierTypes.PUBLIC)
-        case modifier if modifier.getKeyword == Keyword.PROTECTED  => (modifier, ModifierTypes.PROTECTED)
-        case modifier if modifier.getKeyword == Keyword.PRIVATE    => (modifier, ModifierTypes.PRIVATE)
-        case modifier if modifier.getKeyword == Keyword.ABSTRACT   => (modifier, ModifierTypes.ABSTRACT)
-        case modifier if modifier.getKeyword == Keyword.STATIC     => (modifier, ModifierTypes.STATIC)
-        case modifier if modifier.getKeyword == Keyword.FINAL      => (modifier, ModifierTypes.FINAL)
-        case modifier if modifier.getKeyword == Keyword.SEALED     => (modifier, JavaModifierTypes.Sealed)
-        case modifier if modifier.getKeyword == Keyword.NON_SEALED => (modifier, JavaModifierTypes.NonSealed)
-        case modifier if modifier.getKeyword == Keyword.STRICTFP   => (modifier, JavaModifierTypes.Strictfp)
-        // This should never be reached since the above list was taken directly from the Java Language Specification
-        case unhandled => logger.warn(s"BUG! Encountered unhandled class modifier $unhandled")
+    val explicitModifiers = typ.getModifiers.asScala.flatMap { modifier =>
+      modifier.getKeyword match {
+        case Keyword.PUBLIC     => Some(modifierNode(modifier, ModifierTypes.PUBLIC))
+        case Keyword.PROTECTED  => Some(modifierNode(modifier, ModifierTypes.PROTECTED))
+        case Keyword.PRIVATE    => Some(modifierNode(modifier, ModifierTypes.PRIVATE))
+        case Keyword.ABSTRACT   => Some(modifierNode(modifier, ModifierTypes.ABSTRACT))
+        case Keyword.STATIC     => Some(modifierNode(modifier, ModifierTypes.STATIC))
+        case Keyword.FINAL      => Some(modifierNode(modifier, ModifierTypes.FINAL))
+        case Keyword.SEALED     => Some(modifierNode(modifier, JavaModifierTypes.Sealed))
+        case Keyword.NON_SEALED => Some(modifierNode(modifier, JavaModifierTypes.NonSealed))
+        case Keyword.STRICTFP   => Some(modifierNode(modifier, JavaModifierTypes.Strictfp))
+        case _                  =>
+          // This should never be reached since the above list was taken directly from the Java Language Specification
+          logger.warn(s"BUG! Encountered unhandled class modifier $modifier")
+          None
       }
-      .map { case (node, modifierType) => modifierNode(node, modifierType) }
-      .toList
+    }.toList
 
     // This isn't technically necessary, but ensures that the implicit abstract modifier for interfaces is inserted
     // in the standard order, provided the explicit modifiers follow this order.
@@ -801,6 +820,8 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
         "interface "
       else if (typ.isEnumDeclaration)
         "enum "
+      else if (typ.isRecordDeclaration)
+        "record "
       else
         "class "
     codeBuilder.append(classPrefix)

@@ -23,6 +23,7 @@ object Constants {
   val OperatorSuffix               = "<operator>"
   val DestructedParamNamePrefix    = "<destructed_param>"
   val RetCode                      = "RET"
+  val ReceiverName                 = "receiver"
   val Root                         = "<root>"
   val ThisName                     = "this"
   val TmpLocalPrefix               = "tmp_"

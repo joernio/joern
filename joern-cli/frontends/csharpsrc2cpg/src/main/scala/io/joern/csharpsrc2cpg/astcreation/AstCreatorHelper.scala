@@ -23,12 +23,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     AstCreatorHelper.createDotNetNodeInfo(json, Option(this.relativeFileName))
 
   protected def nullSafeCreateParserNodeInfo(json: Option[Value]): DotNetNodeInfo = {
-    json match
+    json match {
       case Some(value) if !value.isNull => createDotNetNodeInfo(value)
       case _ => {
         logger.warn("Key not found in json. Defaulting to a null node.")
         DotNetNodeInfo(DotNetJsonAst.Unknown, ujson.Null, "", None, None, None, None)
       }
+    }
   }
 
   protected def notHandledYet(node: DotNetNodeInfo): Seq[Ast] = {
@@ -44,9 +45,10 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   protected def astFullName(node: DotNetNodeInfo): String = {
-    scope.surroundingScopeFullName match
+    scope.surroundingScopeFullName match {
       case Some(fullName) => s"${withoutSignature(fullName)}.${nameFromNode(node)}"
       case _              => nameFromNode(node)
+    }
   }
 
   protected def getTypeFullNameFromAstNode(ast: Seq[Ast]): String = {
@@ -70,7 +72,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def nameFromNode(identifierNode: DotNetNodeInfo): String = AstCreatorHelper.nameFromNode(identifierNode)
 
   protected def identifierFromDecl(decl: DeclarationNew, dotNetNode: Option[DotNetNodeInfo] = None): NewIdentifier = {
-    decl match
+    decl match {
       case x: NewLocal =>
         identifierNode(dotNetNode.orNull, x.name, x.code, x.typeFullName, x.dynamicTypeHintFullName)
       case x: NewMethodParameterIn =>
@@ -78,6 +80,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case x =>
         logger.warn(s"Unhandled declaration type '${x.label}' for ${x.name}")
         identifierNode(dotNetNode.orNull, x.name, x.name, Defines.Any)
+    }
   }
 
   protected val fixedTypeOperators: Map[String, String] = Map(
@@ -181,12 +184,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
           .orElse(BuiltinTypes.DotNetTypeMap.get(typeString))
           .getOrElse(typeString)
       case _ =>
-        Try(node.json(ParserKeys.Type)).map(createDotNetNodeInfo) match
+        Try(node.json(ParserKeys.Type)).map(createDotNetNodeInfo) match {
           case Success(typeNode) =>
             nodeTypeFullName(typeNode)
           case Failure(e) =>
             logger.debug(e.getMessage)
             Defines.Any
+        }
     }
   }
 }
@@ -217,7 +221,7 @@ object AstCreatorHelper {
 
   @tailrec
   def nameFromNode(node: DotNetNodeInfo): String = {
-    node.node match
+    node.node match {
       case NamespaceDeclaration | UsingDirective | FileScopedNamespaceDeclaration => nameFromNamespaceDeclaration(node)
       case IdentifierName | Parameter | _: DeclarationExpr | GenericName | SingleVariableDesignation =>
         nameFromIdentifier(node)
@@ -227,6 +231,7 @@ object AstCreatorHelper {
       case ObjectCreationExpression | CastExpression => nameFromNode(createDotNetNodeInfo(node.json(ParserKeys.Type)))
       case ThisExpression                            => Constants.This
       case _                                         => "<empty>"
+    }
   }
 
   private def nameFromNamespaceDeclaration(namespace: DotNetNodeInfo): String = {

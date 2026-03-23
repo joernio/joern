@@ -27,6 +27,7 @@ object Defines {
   val ClosureApplyMethodName: String = "single_apply"
   val DuplicateSuffix: String        = "<duplicate>"
   val GlobalNamespace: String        = NamespaceTraversal.globalNamespaceName
+  val ErasedSignature: String        = "<erased>"
 
   val SwiftTypes: List[String] =
     List(

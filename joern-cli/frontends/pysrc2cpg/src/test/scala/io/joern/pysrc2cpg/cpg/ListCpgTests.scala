@@ -1,14 +1,14 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.joern.pysrc2cpg.testfixtures.Py2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.Inside.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 
-class ListCpgTests extends AnyFreeSpec with Matchers {
-  lazy val cpg = Py2CpgTestContext.buildCpg("""[1,2,3]""".stripMargin)
+class ListCpgTests extends PySrc2CpgFixture with Matchers {
+  val cpg = code("""[1,2,3]""".stripMargin)
 
   "test list expression node properties" in {
     inside(cpg.call.methodFullName("<operator>.listLiteral").l) { case call :: Nil =>

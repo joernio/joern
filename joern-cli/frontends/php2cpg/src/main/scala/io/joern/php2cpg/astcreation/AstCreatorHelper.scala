@@ -9,7 +9,7 @@ import io.joern.x2cpg.Defines.UnresolvedNamespace
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes, NodeTypes}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import scala.collection.mutable
@@ -81,6 +81,19 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     }
   }
 
+  protected def getAstParentInfo: (String, String) = {
+    scope.getEnclosingParentInfo
+      .getOrElse((NameConstants.Unknown, NameConstants.Unknown))
+  }
+
+  protected def getClosureAstParentInfo: (String, String) = {
+    scope.getEnclosingTypeDecl
+      .map { scope =>
+        (NodeTypes.TYPE_DECL, scope.fullName)
+      }
+      .getOrElse(getAstParentInfo)
+  }
+
   protected def getTypeDeclPrefix: Option[String] =
     scope.getEnclosingTypeDeclTypeName.filterNot(_ == NamespaceTraversal.globalNamespaceName)
 
@@ -127,7 +140,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
   ): NewNode = {
     scope.lookupVariable(name) match {
       case None =>
-        val localCode = if name == NameConstants.Self then NameConstants.Self else s"$$$name"
+        val localCode = if (name == NameConstants.Self) NameConstants.Self else s"$$$name"
         val local     = localNode(expr, name, code.getOrElse(localCode), tfn.getOrElse(Defines.Any))
 
         modifiers.foreach { modifier =>
@@ -136,9 +149,9 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
         }
 
         scope.addToScope(name, local) match {
-          case BlockScope(block, _)              => diffGraph.addEdge(block, local, EdgeTypes.AST)
-          case MethodScope(_, block, _, _, _, _) => diffGraph.addEdge(block, local, EdgeTypes.AST)
-          case _                                 => // do nothing
+          case BlockScope(block, _)                 => diffGraph.addEdge(block, local, EdgeTypes.AST)
+          case MethodScope(_, block, _, _, _, _, _) => diffGraph.addEdge(block, local, EdgeTypes.AST)
+          case _                                    => // do nothing
         }
 
         local
@@ -170,8 +183,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
           if (!isInClosure) {
             scope.getMethodRef(innerMethodNode.fullName) match {
               case None =>
-                diffGraph.addNode(methodRef)
-                diffGraph.addEdge(currentMethod.bodyNode, methodRef, EdgeTypes.AST)
+                currentMethod.additionalBodyChildren.append(methodRef)
                 scope.addMethodRef(innerMethodNode.fullName, methodRef)
               case _ =>
             }

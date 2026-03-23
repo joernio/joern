@@ -53,9 +53,6 @@ class ConsoleTests extends AnyWordSpec with Matchers {
       intercept[ConsoleException] {
         console.importCode.swiftsrc(nonExistentDir)
       }.getMessage shouldBe s"Input path does not exist: '$nonExistentDir'"
-      intercept[ConsoleException] {
-        console.importCode.java(nonExistentDir)
-      }.getMessage shouldBe s"Input path does not exist: '$nonExistentDir'"
     }
 
     "provide overview of available language modules" in ConsoleFixture() { (console, _) =>

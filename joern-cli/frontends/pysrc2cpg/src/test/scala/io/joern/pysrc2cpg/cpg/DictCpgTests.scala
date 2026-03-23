@@ -1,13 +1,12 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.joern.pysrc2cpg.testfixtures.Py2CpgTestContext
 import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
 class DictCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
   "empty dict" should {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""{}""".stripMargin)
+    val cpg = code("""{}""".stripMargin)
 
     "be represented as `dictLiteral`" in {
       val callOption = cpg.call.methodFullName("<operator>.dictLiteral").nextOption()

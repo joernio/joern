@@ -10,7 +10,8 @@ import scala.util.Try
 
 package object cpgcreation {
 
-  /** For a given language, return CPG generator script
+  /** For a given language, return CPG generator script Note, this doesn't check if the generator is available, that is
+    * done in the ImportCode class.
     */
   def cpgGeneratorForLanguage(
     language: String,

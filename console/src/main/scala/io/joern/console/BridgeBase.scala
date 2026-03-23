@@ -37,7 +37,10 @@ case class Config(
   verbose: Boolean = false,
   dependencies: Seq[String] = Seq.empty,
   resolvers: Seq[String] = Seq.empty,
-  maxHeight: Option[Int] = None
+  maxHeight: Option[Int] = None,
+  scanMaxCallDepth: Option[Int] = None,
+  scanScriptNames: Array[String] = Array.empty,
+  scanTagNames: Array[String] = Array.empty
 )
 
 /** Base class for ReplBridge, split by topic into multiple self types.
@@ -230,17 +233,23 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
   /** code that is executed on startup */
   protected def runBeforeCode: Seq[String]
 
-  private def escapeForWindows(s: String, isInteractive: Boolean) = {
-    if (!isInteractive && scala.util.Properties.isWin) {
+  private def escapeForWindows(s: String, isInteractive: Boolean, isServer: Boolean = false): String = {
+    if (isServer) {
+      s // no escaping for server mode
+    } else if (!isInteractive && scala.util.Properties.isWin) {
       s.replace("\\", "\\\\").replace("\"", "\\\"")
     } else {
       s
     }
   }
 
-  protected def buildRunBeforeCode(config: Config, isInteractive: Boolean = false): Seq[String] = {
+  protected def buildRunBeforeCode(
+    config: Config,
+    isInteractive: Boolean = false,
+    isServer: Boolean = false
+  ): Seq[String] = {
     val builder = Seq.newBuilder[String]
-    builder ++= runBeforeCode.map(code => escapeForWindows(code, isInteractive))
+    builder ++= runBeforeCode.map(code => escapeForWindows(code, isInteractive, isServer))
     config.cpgToLoad.foreach { cpgFile =>
       val path = escapeForWindows(cpgFile.toString, isInteractive)
       builder += s"""importCpg("$path")"""
@@ -250,6 +259,19 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
       builder += s"""openForInputPath("$path")""".stripMargin
     }
     builder ++= config.runBefore.map(code => escapeForWindows(code, isInteractive))
+
+    if (config.pluginToRun.contains("scan")) {
+      builder += "import io.joern.joerncli.Scan"
+      builder += s"""Scan.defaultOpts.names = Array(${escapeForWindows(
+          config.scanScriptNames.map(n => s""""$n"""").mkString(", "),
+          isInteractive
+        )})"""
+      builder += s"""Scan.defaultOpts.tags = Array(${escapeForWindows(
+          config.scanTagNames.map(n => s""""$n"""").mkString(", "),
+          isInteractive
+        )})"""
+      builder += config.scanMaxCallDepth.map(d => s"Scan.defaultOpts.maxCallDepth = $d").getOrElse("")
+    }
     builder.result()
   }
 
@@ -424,7 +446,7 @@ trait ServerHandling { this: BridgeBase =>
   protected def startHttpServer(config: Config): Unit = {
     val baseConfig = replpp.Config(
       predefFiles = config.predefFiles,
-      runBefore = buildRunBeforeCode(config),
+      runBefore = buildRunBeforeCode(config, isServer = true),
       runAfter = buildRunAfterCode(config),
       verbose = true, // always print what's happening - helps debugging
       classpathConfig = replpp.Config

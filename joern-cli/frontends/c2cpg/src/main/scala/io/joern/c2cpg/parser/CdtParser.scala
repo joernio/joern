@@ -183,8 +183,7 @@ class CdtParser(
     } catch {
       case u: UnsupportedClassVersionError =>
         logger.error("c2cpg requires at least JRE-17 to run. Please check your Java Runtime Environment!", u)
-        System.exit(1)
-        ParseResult(None, failure = Option(u)) // return value to make the compiler happy
+        scala.sys.exit(1)
       case s: StackOverflowError =>
         /**   - Eclipse CDT’s C/C++ parser is heavily recursive (recursive-descent parsing, macro expansion, template
           *     instantiation, deep include chains). For certain real-world inputs this can create extremely deep call

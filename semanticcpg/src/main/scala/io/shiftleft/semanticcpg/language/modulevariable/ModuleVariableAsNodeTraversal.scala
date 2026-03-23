@@ -34,11 +34,13 @@ class ModuleVariableAsFieldIdentifierTraversal(traversal: Iterator[FieldIdentifi
   @Doc(info = "Field identifiers representing module variables")
   def moduleVariables: Iterator[OpNodes.ModuleVariable] = {
     traversal.flatMap { fieldIdentifier =>
-      Cpg(fieldIdentifier.graph).method
-        .fullNameExact(fieldIdentifier.inFieldAccess.argument(1).isIdentifier.typeFullName.toSeq*)
-        .isModule
-        .local
-        .nameExact(fieldIdentifier.canonicalName)
+      {
+        Cpg(fieldIdentifier.graph).method
+          .fullNameExact(fieldIdentifier.inFieldAccess.argument(1).isIdentifier.typeFullName.toSeq*)
+          .isModule
+          .local
+          .nameExact(fieldIdentifier.canonicalName)
+      }
     }.moduleVariables
   }
 
@@ -51,13 +53,14 @@ class ModuleVariableAsMemberTraversal(traversal: Iterator[Member]) extends AnyVa
   def moduleVariables: Iterator[OpNodes.ModuleVariable] = {
     val members          = traversal.toList
     lazy val memberNames = members.name.toSeq
-    members.headOption.map(m => Cpg(m.graph)) match
+    members.headOption.map(m => Cpg(m.graph)) match {
       case Some(cpg) =>
         cpg.method
           .fullNameExact(members.typeDecl.fullName.toSeq*)
           .isModule
           .flatMap(_.local.nameExact(memberNames*).moduleVariables)
       case None => Iterator.empty
+    }
   }
 
 }

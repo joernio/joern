@@ -60,10 +60,10 @@ abstract class FunctionPass(
 
   override def generateParts(): Array[Function] = functions.toArray
 
-  implicit def intToIntegerOption(intOption: Option[Int]): Option[Int] = intOption.map(intValue => {
+  implicit def intToIntegerOption(intOption: Option[Int]): Option[Int] = intOption.map { intValue =>
     val integerValue = intValue
     integerValue
-  })
+  }
 
   def handleParameters(diffGraphBuilder: DiffGraphBuilder, function: Function, methodNode: NewMethod): Unit = {
     if (function.isThunk)

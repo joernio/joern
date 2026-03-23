@@ -114,12 +114,14 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     isAnonymousMethod: Boolean = false,
     closureMethodRef: Option[NewMethodRef] = None
   ): Ast = {
-    val isStatic = decl.modifiers.contains(ModifierTypes.STATIC)
-    val thisParam = if (!isAnonymousMethod && decl.isClassMethod && !isStatic) {
-      Option(thisParamAstForMethod(decl))
+    val (astParentType, astParentFullName) = if (isAnonymousMethod) {
+      getClosureAstParentInfo
     } else {
-      None
+      getAstParentInfo
     }
+    val isStatic = decl.modifiers.contains(ModifierTypes.STATIC)
+    val thisParam =
+      if (!isAnonymousMethod && decl.isClassMethod && !isStatic) Option(thisParamAstForMethod(decl)) else None
 
     val methodName = decl.name.name
     val fullName   = fullNameOverride.getOrElse(composeMethodFullName(methodName))
@@ -144,13 +146,19 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           .getOrElse("")}"
 
     val methodRef =
-      if methodName == NamespaceTraversal.globalNamespaceName then None
-      else if isAnonymousMethod then closureMethodRef
+      if (methodName == NamespaceTraversal.globalNamespaceName) None
+      else if (isAnonymousMethod) closureMethodRef
       else Option(methodRefNode(decl, s"$methodCode", fullName, Defines.Any))
-    val method = methodNode(decl, methodName, methodCode, fullName, None, relativeFileName)
-
-    scope.surroundingScopeFullName.map(method.astParentFullName(_))
-    scope.surroundingAstLabel.map(method.astParentType(_))
+    val method = methodNode(
+      node = decl,
+      name = methodName,
+      code = methodCode,
+      fullName = fullName,
+      signature = None,
+      fileName = relativeFileName,
+      astParentFullName = Some(astParentFullName),
+      astParentType = Some(astParentType)
+    )
 
     val methodBodyNode = blockNode(decl)
 
@@ -171,8 +179,21 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val attributeAsts = decl.attributeGroups.flatMap(astForAttributeGroup)
     val methodBody    = blockAst(methodBodyNode, methodBodyStmts)
 
-    scope.popScope()
-    val methodAst = methodAstWithAnnotations(method, parameters, methodBody, methodReturn, modifiers, attributeAsts)
+    val scope_ = scope.popScope()
+    val additionalBodyChildren = scope_ match {
+      case Some(ms: MethodScope) =>
+        ms.additionalBodyChildren.map(Ast(_)).toList
+      case _ =>
+        List()
+    }
+    val methodAst = methodAstWithAnnotations(
+      method,
+      parameters,
+      methodBody.withChildren(additionalBodyChildren),
+      methodReturn,
+      modifiers,
+      attributeAsts
+    )
 
     if (decl.isClassMethod && !isStatic && !isConstructor) {
       val paramCopies = parameters.map(paramAst => (paramAst, paramAst.root)).collect {
@@ -197,8 +218,16 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     isAnonymousDecl: Boolean,
     parameters: List[Ast]
   ): Unit = {
-    val methodTypeDecl = typeDeclNode(decl, method.name, method.fullName, method.filename, code = method.name)
-    scope.getEnclosingTypeDeclTypeFullName.foreach(tfn => methodTypeDecl.inheritsFromTypeFullName(tfn :: Nil))
+    val (astParentType, astParentFullName) = getAstParentInfo
+    val methodTypeDecl = typeDeclNode(
+      node = decl,
+      name = method.name,
+      fullName = method.fullName,
+      filename = method.filename,
+      astParentType = astParentType,
+      astParentFullName = astParentFullName,
+      code = method.name
+    )
 
     val binding = NewBinding().name(NameConstants.Invoke).signature("")
     val methodTypeDeclAst = Ast(methodTypeDecl)
@@ -295,18 +324,22 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case Nil => None
 
       case inits =>
-        val fullName = composeMethodFullName(Defines.StaticInitMethodName)
+        val (astParentType, astParentFullName) = getAstParentInfo
+        val fullName                           = composeMethodFullName(Defines.StaticInitMethodName)
         val methodNode_ = methodNode(
-          node,
-          Defines.StaticInitMethodName,
-          fullName,
-          PropertyDefaults.Signature,
-          Option(relativeFileName).getOrElse(PropertyDefaults.Filename)
+          node = node,
+          name = Defines.StaticInitMethodName,
+          code = Defines.StaticInitMethodName,
+          fullName = fullName,
+          signature = Some(PropertyDefaults.Signature),
+          fileName = Option(relativeFileName).getOrElse(PropertyDefaults.Filename),
+          astParentFullName = Some(astParentFullName),
+          astParentType = Some(astParentType)
         )
 
         val methodRef = methodRefNode(node, fullName, fullName, Defines.Any)
 
-        val methodBlock = NewBlock()
+        val methodBlock = NewBlock().typeFullName(Defines.Any)
 
         scope.pushNewScope(MethodScope(methodNode_, methodBlock, fullName, methodRefNode = Option(methodRef)))
 

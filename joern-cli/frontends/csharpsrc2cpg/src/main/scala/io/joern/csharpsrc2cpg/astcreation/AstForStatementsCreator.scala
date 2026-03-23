@@ -50,9 +50,10 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val thenAst: Ast = astForBlock(thenNode, prefixAsts = prependIfBody)
     val ifNode =
       controlStructureNode(ifStmt, ControlStructureTypes.IF, s"if (${conditionNode.code})")
-    val elseAst = ifStmt.json(ParserKeys.Else) match
+    val elseAst = ifStmt.json(ParserKeys.Else) match {
       case elseStmt: ujson.Obj => astForElseStatement(createDotNetNodeInfo(elseStmt))
       case _                   => Ast()
+    }
 
     Seq(controlStructureAst(ifNode, Some(conditionAst), Seq(thenAst, elseAst)))
   }
@@ -82,7 +83,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def astForSwitchLabel(labelNode: DotNetNodeInfo): Seq[Ast] = {
     val caseNode = jumpTargetNode(labelNode, "case", labelNode.code)
-    labelNode.node match
+    labelNode.node match {
       case CasePatternSwitchLabel =>
         val patternNode = createDotNetNodeInfo(labelNode.json(ParserKeys.Pattern)(ParserKeys.Expression))
         Ast(caseNode) +: astForNode(patternNode)
@@ -91,6 +92,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         Ast(caseNode) +: astForNode(valueNode)
       case DefaultSwitchLabel => Seq(Ast(caseNode))
       case _                  => Seq(Ast())
+    }
   }
 
   private def astForSwitchStatement(switchStmt: DotNetNodeInfo): Seq[Ast] = {
@@ -100,14 +102,15 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val switchBodyAsts: Seq[Ast] = switchStmt
       .json(ParserKeys.Sections)
       .arr
-      .flatMap(section =>
-        val sectionNode = section match
+      .flatMap { section =>
+        val sectionNode = section match {
           case value: ujson.Obj   => createDotNetNodeInfo(value)
           case value: ujson.Value => nullSafeCreateParserNodeInfo(Option(value))
+        }
 
         val labelNodes = sectionNode.json(ParserKeys.Labels).arr
         labelNodes.flatMap(labelNode => astForSwitchLabel(createDotNetNodeInfo(labelNode))) :+ astForBlock(sectionNode)
-      )
+      }
       .toSeq
 
     val switchNode = controlStructureNode(switchStmt, ControlStructureTypes.SWITCH, s"switch (${comparatorNode.code})")
@@ -266,39 +269,42 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   private def astForElseStatement(elseParserNode: DotNetNodeInfo): Ast = {
     val elseNode = controlStructureNode(elseParserNode, ControlStructureTypes.ELSE, "else")
 
-    Option(elseParserNode.json(ParserKeys.Statement)) match
+    Option(elseParserNode.json(ParserKeys.Statement)) match {
       case Some(elseStmt: ujson.Value) if createDotNetNodeInfo(elseStmt).node == Block =>
         val blockAst: Ast = astForBlock(createDotNetNodeInfo(elseParserNode.json(ParserKeys.Statement)))
         Ast(elseNode).withChild(blockAst)
       case Some(elseStmt) =>
         astForNode(createDotNetNodeInfo(elseParserNode.json(ParserKeys.Statement))).headOption.getOrElse(Ast())
       case None => Ast()
-
+    }
   }
 
   private def astForGlobalStatement(globalStatement: DotNetNodeInfo): Seq[Ast] = {
     val stmtNodeInfo = createDotNetNodeInfo(globalStatement.json(ParserKeys.Statement))
-    stmtNodeInfo.node match
+    stmtNodeInfo.node match {
       // Denotes a top-level method declaration. These shall be added to the fictitious "main" created
       // by `astForTopLevelStatements`.
       case LocalFunctionStatement =>
         astForMethodDeclaration(stmtNodeInfo, extraModifiers = modifierNode(stmtNodeInfo, ModifierTypes.STATIC) :: Nil)
       case _ => astForNode(stmtNodeInfo)
+    }
   }
 
   private def astForJumpStatement(jumpStmt: DotNetNodeInfo): Seq[Ast] = {
-    jumpStmt.node match
+    jumpStmt.node match {
       case BreakStatement    => Seq(Ast(controlStructureNode(jumpStmt, ControlStructureTypes.BREAK, jumpStmt.code)))
       case ContinueStatement => Seq(Ast(controlStructureNode(jumpStmt, ControlStructureTypes.CONTINUE, jumpStmt.code)))
       case GotoStatement     => astForGotoStatement(jumpStmt)
       case ReturnStatement   => astForReturnStatement(jumpStmt)
       case _                 => Seq.empty
+    }
   }
 
   private def astForGotoStatement(gotoStmt: DotNetNodeInfo): Seq[Ast] = {
-    val identifierAst = Option(gotoStmt.json(ParserKeys.Expression)) match
+    val identifierAst = Option(gotoStmt.json(ParserKeys.Expression)) match {
       case Some(value: ujson.Obj) => astForNode(createDotNetNodeInfo(value))
       case _                      => Seq.empty
+    }
 
     val gotoAst = Ast(controlStructureNode(gotoStmt, ControlStructureTypes.GOTO, gotoStmt.code))
 

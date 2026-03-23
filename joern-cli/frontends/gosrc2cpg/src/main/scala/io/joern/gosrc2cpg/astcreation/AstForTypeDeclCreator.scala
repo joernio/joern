@@ -26,34 +26,35 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
   }
 
   protected def astForStructType(expr: ParserNodeInfo, typeDeclFullName: String): Seq[Ast] = {
-    Try(expr.json(ParserKeys.Fields)) match
+    Try(expr.json(ParserKeys.Fields)) match {
       case Success(fields) if fields != null =>
         fields(ParserKeys.List).arrOpt
           .getOrElse(List())
-          .flatMap(x => {
+          .flatMap { x =>
             val typeInfo                = createParserNodeInfo(x(ParserKeys.Type))
             val (typeFullName, _, _, _) = processTypeInfo(typeInfo)
             x(ParserKeys.Names).arrOpt
               .getOrElse(List())
-              .map(fieldInfo => {
+              .map { fieldInfo =>
                 val fieldNodeInfo = createParserNodeInfo(fieldInfo)
                 val fieldName     = fieldNodeInfo.json(ParserKeys.Name).str
                 if (goGlobal.checkForDependencyFlags(fieldName)) {
                   goGlobal.recordStructTypeMemberTypeInfo(typeDeclFullName, fieldName, typeFullName)
                 }
                 Ast(memberNode(typeInfo, fieldName, fieldNodeInfo.code, typeFullName))
-              })
-          })
+              }
+          }
           .toSeq
       case _ => Seq.empty
+    }
   }
 
   private def processReceiver(info: ParserNodeInfo): (Seq[Ast], String) = {
     val xnode           = createParserNodeInfo(info.json(ParserKeys.X))
     val fieldIdentifier = info.json(ParserKeys.Sel)(ParserKeys.Name).str
-    xnode.node match
+    xnode.node match {
       case Ident =>
-        Try(xnode.json(ParserKeys.Obj)) match
+        Try(xnode.json(ParserKeys.Obj)) match {
           case Success(_) =>
             // The presence of "Obj" field indicates its variable identifier and not an alias
             receiverAstAndFullName(xnode, fieldIdentifier)
@@ -69,9 +70,11 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
                   s"$nameSpace.$fieldIdentifier${Defines.dot}${Defines.FieldAccess}${Defines.dot}${XDefines.Unknown}"
                 )
             )
+        }
       case _ =>
         // This will take care of chained calls
         receiverAstAndFullName(xnode, fieldIdentifier)
+    }
   }
 
   private def receiverAstAndFullName(xnode: ParserNodeInfo, fieldIdentifier: String): (Seq[Ast], String) = {

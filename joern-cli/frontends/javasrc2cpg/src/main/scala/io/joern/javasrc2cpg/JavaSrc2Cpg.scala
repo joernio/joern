@@ -29,7 +29,7 @@ class JavaSrc2Cpg extends X2CpgFrontend {
       new OuterClassRefPass(cpg).createAndApply()
       JavaConfigFileCreationPass(cpg, config = config).createAndApply()
       if (!config.skipTypeInfPass) {
-        TypeNodePass.withRegisteredTypes(astCreationPass.global.usedTypes.keys().asScala.toList, cpg).createAndApply()
+        TypeNodePass.withRegisteredTypes(astCreationPass.global.usedTypes.keys().asScala.toSet, cpg).createAndApply()
         new TypeInferencePass(cpg).createAndApply()
       }
     }

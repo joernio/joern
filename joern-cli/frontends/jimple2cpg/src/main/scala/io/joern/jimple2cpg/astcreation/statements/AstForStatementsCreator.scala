@@ -159,9 +159,10 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astsForIdentityStmt(x: IdentityStmt): Seq[Ast] = {
-    x.getRightOp match
+    x.getRightOp match {
       case _: CaughtExceptionRef => astsForDefinition(x)
       case _                     => Seq.empty // Other identity statements redefine parameters as locals
+    }
   }
 
   private def astForUnknownStmt(stmt: Unit, maybeOp: Option[Value]): Ast = {

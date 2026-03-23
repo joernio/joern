@@ -56,12 +56,10 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   protected def scopeLocalUniqueName(targetName: String, fullName: String = ""): String = {
-    val name = if (targetName.isEmpty) { "<anonymous>" }
-    else { s"<$targetName>" }
-    val scopePath = if (fullName.isEmpty) { scope.computeScopePath }
-    else { fullName.stripSuffix(".") }
-    val key = s"$scopePath:$name"
-    val idx = scopeLocalUniqueNames.getOrElseUpdate(key, 0)
+    val name      = if (targetName.isEmpty) "<anonymous>" else s"<$targetName>"
+    val scopePath = if (fullName.isEmpty) scope.computeScopePath else fullName.stripSuffix(".")
+    val key       = s"$scopePath:$name"
+    val idx       = scopeLocalUniqueNames.getOrElseUpdate(key, 0)
     scopeLocalUniqueNames.update(key, idx + 1)
     s"$name$idx"
   }
@@ -100,8 +98,8 @@ trait AstCreatorHelper { this: AstCreator =>
 
   protected def offsetToColumn(offset: Int): Int = {
     val index           = java.util.Arrays.binarySearch(file2OffsetTable, offset)
-    val tableIndex      = if index < 0 then -(index + 1) else index + 1
-    val lineStartOffset = if tableIndex == 0 then 0 else file2OffsetTable(tableIndex - 1)
+    val tableIndex      = if (index < 0) -(index + 1) else index + 1
+    val lineStartOffset = if (tableIndex == 0) 0 else file2OffsetTable(tableIndex - 1)
     offset - lineStartOffset + 1
   }
 
@@ -191,11 +189,9 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   protected def astsForComments(iASTTranslationUnit: IASTTranslationUnit): Seq[Ast] = {
-    if (config.includeComments) {
+    if (config.includeComments)
       iASTTranslationUnit.getComments.toList.filterNot(isIncludedNode).map(comment => astForComment(comment))
-    } else {
-      Seq.empty
-    }
+    else Seq.empty
   }
 
   protected def isIncludedNode(node: IASTNode): Boolean = fileName(node) != filename

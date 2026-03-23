@@ -1,7 +1,7 @@
 package io.joern.swiftsrc2cpg.passes
 
 import io.joern.swiftsrc2cpg.astcreation.SwiftSrcGlobal
-import io.shiftleft.codepropertygraph.generated.{Cpg, DispatchTypes, EdgeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{Cpg, DispatchTypes, EdgeTypes, Operators, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.{Expression, NewMember, TypeDecl}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
@@ -32,23 +32,26 @@ class ExtensionsPass(
 ) extends CpgPass(cpg) {
 
   override def run(diffGraph: DiffGraphBuilder): Unit = {
+    handleSubscriptGetterCalls(diffGraph)
     handleExtensionMembers(diffGraph)
     handleExtensionCalls(diffGraph)
     handleMemberPropertyGetterCalls(diffGraph)
     handleInherits(diffGraph)
   }
 
-  /** Creates a pass that rewrites computed-property member accesses to use the corresponding setter calls. We need to
-    * separate this from the main pass as setter handling needs to happen after getter handling. (For the case where a
-    * setter is called on the result of a getter, i.e. `foo.bar.baz = ...`.)
+  /** Creates a pass that rewrites computed-property member accesses and subscript setter calls to use the corresponding
+    * setter calls. We need to separate this from the main pass as setter handling needs to happen after getter
+    * handling. (For the case where a setter is called on the result of a getter, i.e. `foo.bar.baz = ...`.)
     *
     * @return
-    *   A pass that rewrites computed-property member accesses to use the corresponding setter calls.
+    *   A pass that rewrites computed-property member accesses and subscript setter calls to use the corresponding
+    *   setter calls.
     */
   def setters: ExtensionsPass =
     new ExtensionsPass(cpg, extensionMembers, extensionFullNameMapping, memberPropertyMapping, inheritsMapping) {
       override def run(diffGraph: DiffGraphBuilder): Unit = {
         handleMemberPropertySetterCalls(diffGraph)
+        handleSubscriptSetterCalls(diffGraph)
       }
     }
 
@@ -136,7 +139,7 @@ class ExtensionsPass(
     *   - if a match exists in `memberPropertyMapping`, updates the access to reference the getter by setting:
     *     - `NAME` and `METHOD_FULL_NAME` to the resolved getter
     *     - `DISPATCH_TYPE` to `DYNAMIC_DISPATCH`
-    *     - ensures a `RECEIVER` edge from the access to the base expression and fixes argument indices/orders if its
+    *     - ensures a `RECEIVER` edge from the access to the base expression and fixes argument indices/orders if it's
     *       not from an extension
     */
   private def handleMemberPropertyGetterCalls(diffGraph: DiffGraphBuilder): Unit = {
@@ -163,6 +166,49 @@ class ExtensionsPass(
           }
 
           diffGraph.removeNode(fieldIdentifierNode)
+        }
+      }
+    }
+  }
+
+  /** Rewrites index accesses to the corresponding subscript get call when resolvable.
+    *
+    * For each `indexAccess` call node:
+    *   - reads the base expression's `TYPE_FULL_NAME` and the subscript call signature from the access arguments
+    *   - derives candidate subscript fullNames (e.g., `T.subscript` and `T.subscript.getter`)
+    *   - if a match exists in `extensionFullNameMapping` or `memberPropertyMapping`, updates the access by setting:
+    *     - `NAME` and `METHOD_FULL_NAME` to the resolved subscript method
+    *     - `DISPATCH_TYPE` to `DYNAMIC_DISPATCH`
+    *     - ensures a `RECEIVER` edge from the access to the base expression and fixes argument indices/orders if it's
+    *       not from an extension
+    */
+  private def handleSubscriptGetterCalls(diffGraph: DiffGraphBuilder): Unit = {
+    for {
+      subscriptCall <- cpg.call.nameExact(Operators.indexAccess)
+      if !subscriptCall.astIn.isCall.isAssignment.target.contains(subscriptCall)
+      baseNode          <- subscriptCall.arguments(1).headOption
+      indexNode         <- subscriptCall.arguments(2).headOption
+      baseFullName      <- typeFullNameOf(baseNode)
+      indexTypeFullName <- typeFullNameOf(indexNode)
+    } {
+      Seq(s"subscript.getter", "subscript").foreach { memberName =>
+        val subscriptFullNameAndSignature = s"$baseFullName.$memberName:($indexTypeFullName)->$indexTypeFullName"
+        val fullNamesFromExtensions       = extensionFullNameMapping.get(subscriptFullNameAndSignature).toList
+        val fullNamesFromMembers          = memberPropertyMapping.values.find(_ == subscriptFullNameAndSignature).toList
+        (fullNamesFromExtensions ++ fullNamesFromMembers).foreach { subscriptFullName =>
+          diffGraph.setNodeProperty(subscriptCall, PropertyNames.Name, memberName)
+          diffGraph.setNodeProperty(subscriptCall, PropertyNames.MethodFullName, subscriptFullName)
+          diffGraph.setNodeProperty(baseNode, PropertyNames.ArgumentIndex, 0)
+          diffGraph.setNodeProperty(baseNode, PropertyNames.Order, 1)
+
+          if (!subscriptFullName.contains("<extension>")) {
+            // Ensure receiver edge from subscriptCall to baseNode only if the access is not from an extension.
+            diffGraph.setNodeProperty(subscriptCall, PropertyNames.DispatchType, DispatchTypes.DYNAMIC_DISPATCH)
+            diffGraph.addEdge(subscriptCall, baseNode, EdgeTypes.RECEIVER)
+          }
+
+          diffGraph.setNodeProperty(indexNode, PropertyNames.ArgumentIndex, 1)
+          diffGraph.setNodeProperty(indexNode, PropertyNames.Order, 2)
         }
       }
     }
@@ -198,7 +244,7 @@ class ExtensionsPass(
         diffGraph.setNodeProperty(baseNode, PropertyNames.Order, 1)
 
         if (!propertyFullName.contains("<extension>")) {
-          // Ensure receiver edge from fieldAccess to baseNode only if the access is not from an extension.
+          // Ensure receiver edge to baseNode only if the access is not from an extension.
           diffGraph.setNodeProperty(assignmentCall, PropertyNames.DispatchType, DispatchTypes.DYNAMIC_DISPATCH)
           diffGraph.addEdge(assignmentCall, baseNode, EdgeTypes.RECEIVER)
         }
@@ -212,6 +258,63 @@ class ExtensionsPass(
         fieldAccess.outE(EdgeTypes.ARGUMENT).foreach(diffGraph.removeEdge)
         diffGraph.removeNode(fieldAccess)
         diffGraph.removeNode(fieldIdentifierNode)
+      }
+    }
+  }
+
+  /** Rewrites subscript setter accesses (assignments to a subscript) to the corresponding setter call if resolvable.
+    *
+    * For each assignment call node:
+    *   - identifies the `indexAccess` on the assignment target and extracts the base expression and index node
+    *   - derives the setter member fullName candidate as `T.subscript.setter`
+    *   - if a match exists in `memberPropertyMapping`, updates the assignment call to reference the setter by setting:
+    *     - `NAME` and `METHOD_FULL_NAME` to the resolved setter
+    *     - `DISPATCH_TYPE` to `DYNAMIC_DISPATCH` (only when not an extension)
+    *     - fixes argument indices/orders and ensures `RECEIVER`, `AST`, and `ARGUMENT` edges are consistent
+    *     - removes intermediate `indexAccess` and index nodes/edges that are no longer needed
+    */
+  private def handleSubscriptSetterCalls(diffGraph: DiffGraphBuilder): Unit = {
+    for {
+      assignmentCall    <- cpg.assignment
+      sourceNode        <- assignmentCall.source
+      indexAccess       <- assignmentCall.arguments(1).isCall.nameExact(Operators.indexAccess)
+      baseNode          <- indexAccess.arguments(1).headOption
+      indexNode         <- indexAccess.arguments(2).headOption
+      baseFullName      <- typeFullNameOf(baseNode)
+      indexTypeFullName <- typeFullNameOf(indexNode)
+    } {
+      val memberName                    = "subscript.setter"
+      val subscriptFullNameAndSignature = s"$baseFullName.$memberName:($indexTypeFullName)->$indexTypeFullName"
+      val fullNamesFromExtensions       = extensionFullNameMapping.get(subscriptFullNameAndSignature).toList
+      val fullNamesFromMembers          = memberPropertyMapping.values.find(_ == subscriptFullNameAndSignature).toList
+      (fullNamesFromExtensions ++ fullNamesFromMembers).foreach { subscriptFullName =>
+        diffGraph.setNodeProperty(assignmentCall, PropertyNames.Name, memberName)
+        diffGraph.setNodeProperty(assignmentCall, PropertyNames.MethodFullName, subscriptFullName)
+        diffGraph.setNodeProperty(baseNode, PropertyNames.ArgumentIndex, 0)
+        diffGraph.setNodeProperty(baseNode, PropertyNames.Order, 1)
+
+        if (!subscriptFullName.contains("<extension>")) {
+          // Ensure receiver edge to baseNode only if the access is not from an extension.
+          diffGraph.setNodeProperty(assignmentCall, PropertyNames.DispatchType, DispatchTypes.DYNAMIC_DISPATCH)
+          diffGraph.addEdge(assignmentCall, baseNode, EdgeTypes.RECEIVER)
+        }
+
+        diffGraph.addEdge(assignmentCall, baseNode, EdgeTypes.AST)
+        diffGraph.addEdge(assignmentCall, baseNode, EdgeTypes.ARGUMENT)
+
+        indexAccess.outE(EdgeTypes.AST).foreach(diffGraph.removeEdge)
+        indexAccess.outE(EdgeTypes.ARGUMENT).foreach(diffGraph.removeEdge)
+        diffGraph.addEdge(assignmentCall, indexNode, EdgeTypes.AST)
+        diffGraph.addEdge(assignmentCall, indexNode, EdgeTypes.ARGUMENT)
+
+        diffGraph.setNodeProperty(sourceNode, PropertyNames.ArgumentIndex, 1)
+        diffGraph.setNodeProperty(sourceNode, PropertyNames.Order, 2)
+        diffGraph.setNodeProperty(indexNode, PropertyNames.ArgumentIndex, 2)
+        diffGraph.setNodeProperty(indexNode, PropertyNames.Order, 3)
+
+        indexAccess.outE(EdgeTypes.AST).foreach(diffGraph.removeEdge)
+        indexAccess.outE(EdgeTypes.ARGUMENT).foreach(diffGraph.removeEdge)
+        diffGraph.removeNode(indexAccess)
       }
     }
   }

@@ -7,8 +7,9 @@ import org.slf4j.LoggerFactory
 import java.nio.file.{Files, Path}
 import scala.util.{Failure, Success}
 
-enum GradleConfigKeys:
+enum GradleConfigKeys {
   case ProjectName, ConfigurationName
+}
 
 case class DependencyResolverParams(
   forMaven: Map[String, String] = Map(),

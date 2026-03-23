@@ -924,7 +924,7 @@ class GenericSignatureTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "have the correct generic signature" in {
-      cpg.typeDecl.nameExact("Bar").genericSignature.l shouldBe List("LTest.test.Foo;")
+      cpg.typeDecl.nameExact("Bar").genericSignature.l shouldBe List("LTest.test:void().Foo;")
     }
   }
 

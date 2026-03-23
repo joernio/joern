@@ -53,6 +53,7 @@ class MatchCpgTests extends PySrc2CpgFixture() {
 
           blockThirdCase.label shouldBe NodeTypes.BLOCK
           blockThirdCase.code shouldBe "print(3)"
+        case other => fail(s"Expected 6 AST children, but got ${other.size}: $other")
       }
     }
   }
@@ -90,6 +91,7 @@ class MatchCpgTests extends PySrc2CpgFixture() {
 
           blockSecondCase.label shouldBe NodeTypes.BLOCK
           blockSecondCase.code shouldBe "print(2)"
+        case other => fail(s"Expected 4 AST children, but got ${other.size}: $other")
       }
     }
 
@@ -98,6 +100,7 @@ class MatchCpgTests extends PySrc2CpgFixture() {
       methodNode.cfgOut.l match {
         case List(firstConditionExpr) =>
           firstConditionExpr.code shouldBe "1"
+        case other => fail(s"Expected 1 CFG successor, but got ${other.size}: $other")
       }
 
       val conditionCall = cpg.call.codeExact("[1, 2]").head
@@ -108,18 +111,21 @@ class MatchCpgTests extends PySrc2CpgFixture() {
 
           jumpTargetSecondCase.label shouldBe NodeTypes.JUMP_TARGET
           jumpTargetSecondCase.code shouldBe "default"
+        case other => fail(s"Expected 2 CFG successors, but got ${other.size}: $other")
       }
 
       val print1Block = cpg.block.codeExact("print(1)").head
       print1Block.cfgOut.l match {
         case List(methodReturn) =>
           methodReturn.label shouldBe NodeTypes.METHOD_RETURN
+        case other => fail(s"Expected 1 CFG successor, but got ${other.size}: $other")
       }
 
       val print2Block = cpg.block.codeExact("print(2)").head
       print2Block.cfgOut.l match {
         case List(methodReturn) =>
           methodReturn.label shouldBe NodeTypes.METHOD_RETURN
+        case other => fail(s"Expected 1 CFG successor, but got ${other.size}: $other")
       }
 
     }

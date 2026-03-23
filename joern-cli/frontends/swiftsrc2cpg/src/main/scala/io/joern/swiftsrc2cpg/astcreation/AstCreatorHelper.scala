@@ -70,7 +70,7 @@ object AstCreatorHelper {
 
   def cleanType(rawType: String): String = {
     if (rawType == Defines.Any) return rawType
-    val normalizedTpe = StringUtils.normalizeSpace(rawType.stripSuffix(" ()"))
+    val normalizedTpe = StringUtils.normalizeSpace(rawType.stripSuffix(" ()")).stripSuffix(".Type")
     val tpe = stripGenerics(normalizedTpe) match {
       // Empty or problematic types
       case ""                   => Defines.Any
@@ -174,45 +174,72 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     (astParentType, astParentFullName)
   }
 
+  /** Creates the AST for an identifier expression. Resolves the identifier to one of:
+    *   - A `Self` type reference (enclosing type).
+    *   - An implicit `self.member` field access when the identifier is a member of the enclosing type declaration.
+    *   - An implicit `self.member` field access inferred from compiler metadata (swift-build mode only).
+    *   - A standalone type reference when the compiler reports a `.Type` metatype (swift-build mode only).
+    *   - A regular variable / captured-variable identifier as a fallback.
+    */
   protected def astForIdentifier(node: SwiftNode): Ast = {
     val identifierName = code(node)
-    if (scope.variableIsInTypeDeclScope(identifierName)) {
-      // we found it as member of the surrounding type decl
-      // (Swift does not allow to access any member / function of the outer class instance)
-      val tpe      = scope.typeDeclFullNameForMember(identifierName).getOrElse(fullNameOfEnclosingTypeDecl())
-      val selfNode = identifierNode(node, "self", "self", tpe)
-      scope.addVariableReference("self", selfNode, selfNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
+    val variableOption = scope.lookupVariable(identifierName)
+    val isUnresolved   = variableOption.isEmpty
 
-      val variableOption = scope.lookupVariable(identifierName)
-      val callTpe        = variableOption.map(_._2).getOrElse(Defines.Any)
-      fieldAccessAst(node, node, Ast(selfNode), s"self.$identifierName", identifierName, callTpe)
-    } else {
-      if (
-        config.swiftBuild &&
-        scope.lookupVariable(identifierName).isEmpty &&
-        fullnameProvider.declFullname(node).nonEmpty
-      ) {
-        val tpe      = fullNameOfEnclosingTypeDecl()
-        val selfNode = identifierNode(node, "self", "self", tpe)
-        scope.addVariableReference("self", selfNode, selfNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
-
+    identifierName match {
+      // `Self` always refers to the enclosing type.
+      case "Self" =>
+        Ast(typeRefNode(node, "Self", fullNameOfEnclosingTypeDecl()))
+      // Identifier found as a member of the surrounding type decl.
+      // Swift does not allow accessing members of an outer class instance,
+      // so we synthesise an implicit `self.<member>` (or `Self.<member>` in static contexts).
+      case name if scope.variableIsInTypeDeclScope(name) =>
+        val tpe     = scope.typeDeclFullNameForMember(name).getOrElse(fullNameOfEnclosingTypeDecl())
+        val callTpe = variableOption.map(_._2).getOrElse(Defines.Any)
+        fieldAccessAstForSelf(node, name, tpe, callTpe)
+      // In swift-build mode the compiler may know this identifier is a member even though
+      // it is not yet visible in our scope. If the identifier is unresolved locally but
+      // the compiler provides a declaration full name, treat it as an implicit self-access.
+      case name if config.swiftBuild && isUnresolved && fullnameProvider.declFullname(node).nonEmpty =>
+        val tpe     = fullNameOfEnclosingTypeDecl()
         val callTpe = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
         registerType(callTpe)
-        fieldAccessAst(node, node, Ast(selfNode), s"self.$identifierName", identifierName, callTpe)
-      } else {
-        // otherwise it must come from a variable (potentially captured from an outer scope)
-        val identNode      = identifierNode(node, identifierName)
-        val variableOption = scope.lookupVariable(identifierName)
+        fieldAccessAstForSelf(node, name, tpe, callTpe)
+      // In swift-build mode, an unresolved identifier whose compiler-reported type ends
+      // with `.Type` is a reference to a type (e.g. `MyStruct` used as a value).
+      case name
+          if config.swiftBuild && isUnresolved &&
+            fullnameProvider.typeFullnameRaw(node).exists(_.endsWith(".Type")) =>
+        val tpe = fullnameProvider.typeFullname(node).get
+        registerType(tpe)
+        Ast(typeRefNode(node, name, tpe))
+      // Fallback: a regular variable or a captured variable from an outer scope.
+      case name =>
+        val identNode = identifierNode(node, name)
         val tpe = variableOption match {
           case Some((_, variableTypeName)) if variableTypeName != Defines.Any => variableTypeName
           case None if identNode.typeFullName != Defines.Any                  => identNode.typeFullName
           case _                                                              => Defines.Any
         }
         identNode.typeFullName = tpe
-        scope.addVariableReference(identifierName, identNode, tpe, EvaluationStrategies.BY_REFERENCE)
+        scope.addVariableReference(name, identNode, tpe, EvaluationStrategies.BY_REFERENCE)
         Ast(identNode)
-      }
     }
+  }
+
+  /** Builds a `self.<identifierName>` (or `Self.<identifierName>`) field-access AST. In a static method scope the
+    * receiver is a `Self` type reference; otherwise it is a `self` identifier whose variable reference is registered in
+    * the current scope.
+    */
+  private def fieldAccessAstForSelf(node: SwiftNode, identifierName: String, selfTpe: String, callTpe: String): Ast = {
+    val selfNode = if (scope.isInStaticMethodScope) {
+      typeRefNode(node, "Self", selfTpe)
+    } else {
+      val selfIdNode = identifierNode(node, "self", "self", selfTpe)
+      scope.addVariableReference("self", selfIdNode, selfIdNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
+      selfIdNode
+    }
+    fieldAccessAst(node, node, Ast(selfNode), s"${selfNode.code}.$identifierName", identifierName, callTpe)
   }
 
   protected def registerType(typeFullName: String): Unit = {
@@ -244,6 +271,20 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     dst
   }
 
+  /** Try to get legacy node startOffset from modifiers since in older versions of swiftc (<6.2) it is not stored in the
+    * JSON object.
+    */
+  private def legacyNode(node: FunctionDeclLike): Option[SwiftNode] = {
+    (node match {
+      case f: FunctionDeclSyntax      => f.modifiers.children.lastOption
+      case a: AccessorDeclSyntax      => a.modifier
+      case d: DeinitializerDeclSyntax => d.modifiers.children.lastOption
+      case i: InitializerDeclSyntax   => i.modifiers.children.lastOption
+      case s: SubscriptDeclSyntax     => s.modifiers.children.lastOption
+      case c: ClosureExprSyntax       => None
+    }).map(l => transferEndOffsetToStartOffset(l, node))
+  }
+
   protected def methodInfoForFunctionDeclLike(node: FunctionDeclLike): MethodInfo = {
     val name = calcMethodName(node)
 
@@ -252,18 +293,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     // We want to keep the original range intact for the actual node.
     val nodeRange = node.asInstanceOf[SwiftNode].json("range").obj.copy()
 
-    // Try to get legacy node startOffset from modifiers since in older versions of swiftc (<6.2) it is not stored in the JSON object.
-    def legacyNode: Option[SwiftNode] = (node match {
-      case f: FunctionDeclSyntax      => f.modifiers.children.lastOption
-      case a: AccessorDeclSyntax      => a.modifier
-      case d: DeinitializerDeclSyntax => d.modifiers.children.lastOption
-      case i: InitializerDeclSyntax   => i.modifiers.children.lastOption
-      case s: SubscriptDeclSyntax     => s.modifiers.children.lastOption
-      case c: ClosureExprSyntax       => None
-    }).map(l => transferEndOffsetToStartOffset(l, node))
-
     val methodInfo =
-      fullnameProvider.declFullname(node).orElse(legacyNode.flatMap(fullnameProvider.declFullname)) match {
+      fullnameProvider.declFullname(node).orElse(legacyNode(node).flatMap(fullnameProvider.declFullname)) match {
         case Some(fullNameWithSignature) =>
           val (fullName, signature) = methodInfoFromFullNameWithSignature(fullNameWithSignature)
           val returnType = node match {
@@ -319,18 +350,33 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
   object MethodInfo {
     def fullNameToExtensionFullName(fullName: String, name: String): String = {
-      fullName.replaceFirst(s"\\.$name:", s"<extension>.$name:")
+      val (replacementRegex, replacement) = if (fullName.contains(".subscript:")) {
+        (".subscript:", s"<extension>.subscript:")
+      } else if (fullName.contains(".subscript.getter:")) {
+        (".subscript.getter:", s"<extension>.subscript.getter:")
+      } else if (fullName.contains(".subscript.setter:")) {
+        (".subscript.setter:", s"<extension>.subscript.setter:")
+      } else {
+        (s".$name:", s"<extension>.$name:")
+      }
+      fullName.replace(replacementRegex, replacement)
     }
   }
 
   case class TypeInfo(name: String, fullName: String)
 
-  protected def methodInfoForAccessorDecl(node: AccessorDeclSyntax, variableName: String, tpe: String): MethodInfo = {
+  protected def methodInfoForAccessorDecl(
+    node: AccessorDeclSyntax,
+    variableName: String,
+    tpe: String,
+    fullNameSubscriptPrefix: String = ""
+  ): MethodInfo = {
     val accessorName = code(node.accessorSpecifier)
+    val namePrefix   = if (variableName.nonEmpty) s"$variableName." else ""
     val name = accessorName match {
-      case "set" => s"$variableName.setter"
-      case "get" => s"$variableName.getter"
-      case other => s"$variableName.$other"
+      case "set" => s"${namePrefix}setter"
+      case "get" => s"${namePrefix}getter"
+      case other => s"$namePrefix$other"
     }
 
     fullnameProvider.declFullname(node) match {
@@ -343,7 +389,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         }
         MethodInfo(name, fullName, signature, tpe)
       case None =>
-        val (methodName, methodFullName) = calcNameAndFullName(name)
+        val (methodName, methodFullName) = calcNameAndFullName(name, fullNameSubscriptPrefix)
         registerType(tpe)
         MethodInfo(methodName, methodFullName, tpe, tpe)
     }
@@ -447,22 +493,25 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }
   }
 
-  private def calcNameAndFullName(name: String): (String, String) = {
+  private def calcNameAndFullName(name: String, fullNameSubscriptPrefix: String = ""): (String, String) = {
     val fullNamePrefix = s"${parserResult.filename}:${scope.computeScopePath}"
-    val fullName       = s"$fullNamePrefix.$name"
-    (name, fullName)
+    val methodFullNameWithSubscriptPrefix = if (fullNameSubscriptPrefix.nonEmpty) {
+      s"$fullNamePrefix.$fullNameSubscriptPrefix.$name"
+    } else {
+      s"$fullNamePrefix.$name"
+    }
+    (name, methodFullNameWithSubscriptPrefix)
   }
 
   private def calcMethodName(func: SwiftNode): String = {
-    val name = func match {
-      case f: FunctionDeclSyntax      => code(f.name)
+    func match {
+      case f: FunctionDeclSyntax      => cleanName(code(f.name))
       case a: AccessorDeclSyntax      => code(a.accessorSpecifier)
-      case d: DeinitializerDeclSyntax => code(d.deinitKeyword)
-      case i: InitializerDeclSyntax   => code(i.initKeyword)
-      case s: SubscriptDeclSyntax     => code(s.subscriptKeyword)
+      case d: DeinitializerDeclSyntax => "deinit"
+      case i: InitializerDeclSyntax   => "init"
+      case s: SubscriptDeclSyntax     => "subscript"
       case _                          => nextClosureName()
     }
-    cleanName(name)
   }
 
 }

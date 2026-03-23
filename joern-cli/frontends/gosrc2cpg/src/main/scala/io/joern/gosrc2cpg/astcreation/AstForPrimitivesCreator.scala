@@ -24,11 +24,12 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     typeNode: ParserNodeInfo,
     compositeLiteralNode: ParserNodeInfo
   ): Seq[Ast] = {
-    typeNode.node match
+    typeNode.node match {
       case ArrayType =>
-        val elementsAsts = Try(compositeLiteralNode.json(ParserKeys.Elts)) match
+        val elementsAsts = Try(compositeLiteralNode.json(ParserKeys.Elts)) match {
           case Success(value) if !value.isNull => value.arr.flatMap(e => astForNode(createParserNodeInfo(e))).toSeq
           case _                               => Seq.empty
+        }
         val arrayInitCallNode = astForArrayInitializer(compositeLiteralNode)
         Seq(callAst(arrayInitCallNode, elementsAsts))
       // Handling structure initialisation by creating a call node and arguments
@@ -39,19 +40,22 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
         astForConstructorCall(compositeLiteralNode)
       case _ =>
         Seq.empty
+    }
   }
 
   private def astForCompositeLiteral(compositeLiteralNodeInfo: ParserNodeInfo): Seq[Ast] = {
-    Try(createParserNodeInfo(compositeLiteralNodeInfo.json(ParserKeys.Type))) match
+    Try(createParserNodeInfo(compositeLiteralNodeInfo.json(ParserKeys.Type))) match {
       case Success(typeNode) =>
         astForCompositeLiteralHavingTypeKey(typeNode, compositeLiteralNodeInfo)
       case _ =>
-        val elementsAsts = Try(compositeLiteralNodeInfo.json(ParserKeys.Elts)) match
+        val elementsAsts = Try(compositeLiteralNodeInfo.json(ParserKeys.Elts)) match {
           case Success(compositeElements) if !compositeElements.isNull =>
             compositeElements.arr.flatMap(e => astForNode(createParserNodeInfo(e))).toSeq
           case _ => Seq.empty
           // TODO: merge array initializer node Seq(astForArrayInitializer(compositeLiteralNodeInfo))
+        }
         elementsAsts
+    }
   }
 
   private def astForLiteral(stringLiteral: ParserNodeInfo): Ast = {
@@ -62,7 +66,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def astForIdentifier(ident: ParserNodeInfo): Ast = {
     val identifierName = ident.json(ParserKeys.Name).str
-    if identifierName != "_" then {
+    if (identifierName != "_") {
       val variableOption = scope.lookupVariable(identifierName)
       variableOption match {
         case Some((variable, variableTypeName)) =>
@@ -115,7 +119,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def astForBooleanLiteral(rhsParserNode: ParserNodeInfo): Seq[Ast] = {
-    rhsParserNode.node match
+    rhsParserNode.node match {
       case Ident
           // NOTE: This is very corner case where for boolean literals true and false.
           // We don't get node of type BasicLit as is the case with other literals. Hence we have to handle it here
@@ -125,6 +129,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
         Seq(Ast(literalNode(rhsParserNode, rhsParserNode.code, Defines.Bool)))
       case _ =>
         astForNode(rhsParserNode)
+    }
   }
 
   private def astForArrayInitializer(primitive: ParserNodeInfo): NewCall = {

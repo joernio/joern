@@ -100,7 +100,7 @@ class DependencyDownloader(
 
     // If dependency version is not specified, latest is returned
     val versionOpt =
-      if dependency.version.isBlank then getVersion(dependencyName) else Option(dependency.version)
+      if (dependency.version.isBlank) getVersion(dependencyName) else Option(dependency.version)
 
     versionOpt match {
       case Some(version) =>
@@ -131,7 +131,7 @@ class DependencyDownloader(
           connection.foreach(_.setRequestProperty("Accept-Encoding", "gzip, deflate"))
           connection match {
             case Some(conn: HttpURLConnection) if conn.getResponseCode == HttpURLConnection.HTTP_OK =>
-              val ext      = if url.toString.contains("/package/") then "nupkg" else "snupkg"
+              val ext      = if (url.toString.contains("/package/")) "nupkg" else "snupkg"
               val fileName = targetDir / s"${dependency.name}.$ext"
 
               val inputStream = Option(conn.getContentEncoding) match {

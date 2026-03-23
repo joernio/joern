@@ -107,7 +107,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   protected def registerType(typeFullName: String): Unit = {
-    global.usedTypes.putIfAbsent(typeFullName, true)
+    usedTypes.add(typeFullName)
   }
 
   protected def codeForNodes(nodes: Seq[NewNode]): Option[String] = nodes.collectFirst {

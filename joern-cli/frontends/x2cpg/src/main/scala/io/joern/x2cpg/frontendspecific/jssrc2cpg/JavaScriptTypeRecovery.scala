@@ -129,7 +129,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
         case Some(id) if GlobalBuiltins.builtins.contains(id.name) => Set(s"__ecma.${id.name}")
         case Some(id) =>
           val typs = symbolTable.get(CallAlias(id.name, Option("this")))
-          if typs.nonEmpty then newOp.foreach(symbolTable.put(_, typs))
+          if (typs.nonEmpty) { newOp.foreach(symbolTable.put(_, typs)) }
           symbolTable.get(id)
         case None => Set.empty[String]
       }

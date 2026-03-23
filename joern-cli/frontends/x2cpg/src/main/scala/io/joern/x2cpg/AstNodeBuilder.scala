@@ -251,6 +251,7 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
         .staticReceiver(staticReceiver)
         .lineNumber(line(node))
         .columnNumber(column(node))
+        .typeFullName(typeFullName.getOrElse(Defines.Any))
     signature.foreach { s => node_.signature(s) }
     typeFullName.foreach { t => node_.typeFullName(t) }
     setOffset(node, node_)

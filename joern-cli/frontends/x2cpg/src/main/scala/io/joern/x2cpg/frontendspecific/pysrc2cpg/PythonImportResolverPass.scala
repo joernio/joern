@@ -59,9 +59,10 @@ class PythonImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
     importedAs: String,
     diffGraph: DiffGraphBuilder
   ): Unit = {
-    val currDir = Paths.get(codeRootDir) / fileName match
+    val currDir = Paths.get(codeRootDir) / fileName match {
       case x if Files.isDirectory(x) => x
       case x                         => x.getParent
+    }
 
     val importedEntityAsFullyQualifiedImport =
       // If the path/entity uses Python's `from .import x` syntax, we will need to remove these
@@ -114,11 +115,12 @@ class PythonImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
       }
     }
 
-    expEntity.split(pathSep).reverse.toList match
+    expEntity.split(pathSep).reverse.toList match {
       case name :: Nil => toUnresolvedImport(s"$name.py:${Constants.moduleName}")
       case name :: xs =>
         toUnresolvedImport(s"${xs.reverse.mkString(JFile.separator)}.py:${Constants.moduleName}$pathSep$name")
       case Nil => Set.empty
+    }
   }
 
   private sealed trait ImportableEntity {

@@ -249,7 +249,7 @@ class SimpleAstCreationPassTests extends JsSrc2CpgSuite {
       // all other elements are truncated
       val List(literalNode) = pushBlock.astChildren.isLiteral.l
       literalNode.code shouldBe "<too-many-initializers>"
-      literalNode.argumentIndex shouldBe 1002
+      literalNode.order shouldBe 1002
 
       val List(tmpReturn) = pushBlock.astChildren.isIdentifier.l
       tmpReturn.name shouldBe "_tmp_0"
@@ -963,7 +963,7 @@ class SimpleAstCreationPassTests extends JsSrc2CpgSuite {
     }
 
     "have correct structure for empty method with rest parameter" in {
-      val cpg              = code("function method(x, ...args) {}").withConfig(Config(tsTypes = true))
+      val cpg              = code("function method(x, ...args) {}").withConfig(Config())
       val List(method)     = cpg.method.nameExact("method").l
       val List(t, x, args) = method.parameter.l
       t.index shouldBe 0

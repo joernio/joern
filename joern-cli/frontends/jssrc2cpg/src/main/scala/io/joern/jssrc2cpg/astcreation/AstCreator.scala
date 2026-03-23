@@ -7,7 +7,6 @@ import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.AstCreatorBase
 import io.joern.x2cpg.ValidationMode
-import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
@@ -26,7 +25,7 @@ import ujson.Value
 
 import scala.collection.mutable
 
-class AstCreator(val config: Config, val global: Global, val parserResult: ParseResult)(implicit
+class AstCreator(val config: Config, val usedTypes: mutable.HashSet[String], val parserResult: ParseResult)(implicit
   withSchemaValidation: ValidationMode
 ) extends AstCreatorBase[BabelNodeInfo, AstCreator](parserResult.filename)
     with AstForExpressionsCreator
@@ -94,15 +93,11 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
     scope.pushNewMethodScope(fullName, name, blockNode, None)
     localAstParentStack.push(blockNode)
 
-    val thisParam =
-      parameterInNode(astNodeInfo, "this", "this", 0, false, EvaluationStrategies.BY_VALUE)
-        .dynamicTypeHintFullName(typeHintForThisExpression())
+    val thisParam = parameterInNode(astNodeInfo, "this", "this", 0, false, EvaluationStrategies.BY_VALUE)
+      .dynamicTypeHintFullName(typeHintForThisExpression())
     scope.addVariable("this", thisParam, Defines.Any, VariableScopeManager.ScopeType.MethodScope)
 
     val methodChildren = astsForFile(astNodeInfo)
-    setArgumentIndices(methodChildren)
-
-    val methodReturn = methodReturnNode(astNodeInfo, Defines.Any)
 
     localAstParentStack.pop()
     scope.popScope()
@@ -113,7 +108,7 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
         programMethod,
         Ast(thisParam) :: Nil,
         blockAst(blockNode, methodChildren),
-        methodReturn,
+        methodReturnNode(astNodeInfo, Defines.Any),
         modifierNode(astNodeInfo, ModifierTypes.MODULE) :: Nil
       )
     )

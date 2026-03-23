@@ -1,14 +1,14 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.joern.pysrc2cpg.testfixtures.Py2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 
-class StringExpressionListCpgTests extends AnyFreeSpec with Matchers {
-  "string expression list" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(""""one" "two" "three"""".stripMargin)
+class StringExpressionListCpgTests extends PySrc2CpgFixture with Matchers {
+  "string expression list" should {
+    val cpg = code(""""one" "two" "three"""".stripMargin)
 
     "test stringExpressionList operator node" in {
       val callNode = cpg.call.methodFullName("<operator>.stringExpressionList").head

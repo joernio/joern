@@ -41,9 +41,9 @@ class ArithmeticOperationsTests extends JimpleCode2CpgFixture {
       .map(x => (x.target.code, x.typeFullName))
       .l
     assignments.size shouldBe 8 // includes casting and 3-address code manipulations
-    vars.foreach(x => {
+    vars.foreach { x =>
       assignments contains x shouldBe true
-    })
+    }
   }
 
   "should contain a call node for the addition operator" in {

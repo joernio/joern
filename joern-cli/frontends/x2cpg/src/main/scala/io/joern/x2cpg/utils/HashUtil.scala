@@ -12,6 +12,12 @@ object HashUtil {
   def sha256(file: String): String =
     sha256(Seq(Path.of(file)))
 
+  def sha256(bytes: Array[Byte]): String = {
+    val md = MessageDigest.getInstance("SHA-256")
+    md.update(bytes)
+    md.digest().map(b => String.format("%02x", Byte.box(b))).mkString
+  }
+
   def sha256(files: Seq[Path]): String = {
     val md     = MessageDigest.getInstance("SHA-256")
     val buffer = new Array[Byte](4096)

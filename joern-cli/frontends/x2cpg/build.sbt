@@ -9,7 +9,6 @@ libraryDependencies ++= Seq(
   "com.michaelpollmeier" % "versionsort"  % Versions.versionSort,
   "org.apache.commons"   % "commons-exec" % Versions.commonsExec,
   /* End: AST Gen Dependencies */
-  "net.freeutils"  % "jlhttp"             % Versions.jlhttp,
   "org.gradle"     % "gradle-tooling-api" % Versions.gradleTooling % Optional,
   "org.scalatest" %% "scalatest"          % Versions.scalatest     % Test
 )
@@ -18,6 +17,7 @@ Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc
 
 compile / javacOptions ++= Seq("-Xlint:all", "-Xlint:-cast", "-g")
 Test / fork := true
+Test / scalacOptions += "-language:implicitConversions"
 
 enablePlugins(JavaAppPackaging)
 

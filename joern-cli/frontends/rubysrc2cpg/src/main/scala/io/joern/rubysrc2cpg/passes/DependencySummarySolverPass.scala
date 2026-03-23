@@ -16,8 +16,8 @@ class DependencySummarySolverPass(cpg: Cpg, dependencySummary: RubyProgramSummar
   override def runOnPart(diffGraph: DiffGraphBuilder, dependency: Dependency): Unit = {
     dependencySummary.namespaceToType.filter(_._1.startsWith(dependency.name)).flatMap(_._2).foreach { x =>
       val typeDeclName =
-        if x.name.endsWith(RDefines.Main) then RDefines.Main
-        else x.name.split("[.]").lastOption.getOrElse(Defines.Unknown)
+        if (x.name.endsWith(RDefines.Main)) { RDefines.Main }
+        else { x.name.split("[.]").lastOption.getOrElse(Defines.Unknown) }
 
       val dependencyTypeDecl = TypeDeclStubCreator
         .createTypeDeclStub(name = typeDeclName, fullName = x.name, fileName = s"${dependency.name}.rb")

@@ -1,6 +1,6 @@
 name := "ghidra2cpg"
 
-dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test", Projects.linterRules % ScalafixConfig)
+dependsOn(Projects.dataflowengineoss % Test, Projects.x2cpg % "compile->compile;test->test", Projects.linterRules % ScalafixConfig)
 
 libraryDependencies ++= Seq(
   "io.joern"          % "ghidra"                   % Versions.ghidra,
@@ -22,4 +22,5 @@ excludeDependencies ++= Seq(
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
 fork        := true
+Test / scalacOptions += "-language:implicitConversions"
 javaOptions := Seq("-Djava.protocol.handler.pkgs=ghidra.framework.protocol")

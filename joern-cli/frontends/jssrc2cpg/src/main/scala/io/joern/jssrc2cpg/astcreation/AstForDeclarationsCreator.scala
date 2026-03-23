@@ -150,7 +150,6 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     }
 
     val asts = fromAst +: (specifierAsts ++ declAsts)
-    setArgumentIndices(asts)
     blockAst(blockNode(declaration, declaration.code, Defines.Any), asts)
   }
 
@@ -162,7 +161,6 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         createExportAssignmentCallAst(name, exportCallAst, assignment, None)
       }
     }
-    setArgumentIndices(declAsts)
     blockAst(blockNode(assignment, assignment.code, Defines.Any), declAsts)
   }
 
@@ -175,7 +173,6 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         createExportAssignmentCallAst(name, exportCallAst, declaration, None)
       }
     }
-    setArgumentIndices(declAsts)
     blockAst(blockNode(declaration, declaration.code, Defines.Any), declAsts)
   }
 
@@ -192,7 +189,6 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val assignmentCallAst = createExportAssignmentCallAst(s"_$name", exportCallAst, declaration, None)
 
     val childrenAsts = List(fromCallAst, assignmentCallAst)
-    setArgumentIndices(childrenAsts)
     blockAst(blockNode(declaration, declaration.code, Defines.Any), childrenAsts)
   }
 
@@ -543,7 +539,6 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     localAstParentStack.pop()
 
     val blockChildren = assignmentTmpCallAst +: subTreeAsts :+ Ast(returnTmpNode)
-    setArgumentIndices(blockChildren)
     blockAst(blockNode_, blockChildren)
   }
 

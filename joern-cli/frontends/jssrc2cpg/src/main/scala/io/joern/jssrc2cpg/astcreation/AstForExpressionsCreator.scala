@@ -138,7 +138,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     localAstParentStack.pop()
 
     val blockChildren = List(assignmentTmpAllocCallNode, callAst, tmpAllocReturnNode)
-    setArgumentIndices(blockChildren)
     blockAst(blockNode_, blockChildren)
   }
 
@@ -321,7 +320,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     scope.pushNewBlockScope(blockNode_)
     localAstParentStack.push(blockNode_)
     val sequenceExpressionAsts = createBlockStatementAsts(seq.json("expressions"))
-    setArgumentIndices(sequenceExpressionAsts)
     localAstParentStack.pop()
     scope.popScope()
     blockAst(blockNode_, sequenceExpressionAsts)
@@ -398,7 +396,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         val placeholder = literalNode(arrExpr, "<too-many-initializers>", Defines.Any)
         assignmentTmpArrayCallNode +: elementAsts :+ Ast(placeholder) :+ Ast(tmpArrayReturnNode)
       } else { assignmentTmpArrayCallNode +: elementAsts :+ Ast(tmpArrayReturnNode) }
-      setArgumentIndices(blockChildrenAsts)
       blockAst(blockNode_, blockChildrenAsts)
     }
   }
@@ -504,7 +501,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     localAstParentStack.pop()
 
     val childrenAsts = propertiesAsts :+ Ast(tmpNode)
-    setArgumentIndices(childrenAsts)
     blockAst(blockNode_, childrenAsts)
   }
 

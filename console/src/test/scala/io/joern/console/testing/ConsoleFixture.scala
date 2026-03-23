@@ -3,7 +3,7 @@ package io.joern.console.testing
 import io.joern.console.cpgcreation.{CCpgGenerator, CpgGenerator, CpgGeneratorFactory, ImportCode}
 import io.joern.console.workspacehandling.{Project, ProjectFile, WorkspaceLoader}
 import io.joern.console.{Console, ConsoleConfig, FrontendConfig, InstallConfig}
-import io.joern.console.cpgcreation.{JsSrcCpgGenerator, SwiftSrcCpgGenerator}
+import io.joern.console.cpgcreation.{JavaSrcCpgGenerator, JsSrcCpgGenerator, SwiftSrcCpgGenerator}
 import io.joern.console.cpgcreation.guessLanguage
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Languages
@@ -12,6 +12,7 @@ import io.shiftleft.utils.ProjectRoot
 
 import java.nio.file.{Files, Path, Paths}
 import scala.util.Try
+import io.joern.console.cpgcreation.JavaSrcCpgGenerator
 
 object ConsoleFixture {
   def apply[T <: Console[Project]](constructor: String => T = { x =>
@@ -77,6 +78,19 @@ class TestConsole(workspaceDir: String) extends Console[Project](TestWorkspaceLo
         }
       }
 
+    override def java: SourceBasedFrontend =
+      new SourceBasedFrontend("testJavaSrcFrontend", Languages.JAVASRC, "", "java") {
+        override def cpgGeneratorForLanguage(
+          language: String,
+          config: FrontendConfig,
+          rootPath: Path,
+          args: List[String]
+        ): Option[CpgGenerator] = {
+          val newConfig = new ConsoleConfig(TestConsole.this.config.install, config.withArgs(args))
+          new TestCpgGeneratorFactory(newConfig).forLanguage(language)
+        }
+      }
+
     override def swiftsrc: SourceBasedFrontend =
       new SwiftSrcFrontend("testSwiftSrcFrontend", Languages.SWIFTSRC, "", "swift") {
         override def cpgGeneratorForLanguage(
@@ -107,6 +121,13 @@ class TestCpgGeneratorFactory(config: ConsoleConfig) extends CpgGeneratorFactory
     )
   }
 
+  private def newJavaSrcCpgGenerator(): JavaSrcCpgGenerator = {
+    JavaSrcCpgGenerator(
+      config.frontend,
+      Path.of(ProjectRoot.relativise("joern-cli/frontends/javasrc2cpg/target/universal/stage/bin"))
+    )
+  }
+
   private def newSwiftSrcCpgGenerator(): SwiftSrcCpgGenerator = {
     SwiftSrcCpgGenerator(
       config.frontend,
@@ -115,11 +136,13 @@ class TestCpgGeneratorFactory(config: ConsoleConfig) extends CpgGeneratorFactory
   }
 
   override def forCodeAt(inputPath: String): Option[CpgGenerator] = {
-    guessLanguage(inputPath) match
+    guessLanguage(inputPath) match {
       case Some(Languages.NEWC)     => Option(newCCpgGenerator())
       case Some(Languages.JSSRC)    => Option(newJsSrcCpgGenerator())
+      case Some(Languages.JAVASRC)  => Option(newJavaSrcCpgGenerator())
       case Some(Languages.SWIFTSRC) => Option(newSwiftSrcCpgGenerator())
       case _                        => None // no other languages are tested here
+    }
   }
 
   override def forLanguage(language: String): Option[CpgGenerator] = language match {

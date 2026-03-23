@@ -1,26 +1,18 @@
 package io.joern.x2cpg.utils.server
 
-import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.X2CpgConfig
-import io.joern.x2cpg.X2CpgFrontend
-import io.joern.x2cpg.X2CpgMain
-import io.joern.x2cpg.utils.Environment
-import net.freeutils.httpserver.HTTPServer
-import net.freeutils.httpserver.HTTPServer.Context
 import org.slf4j.LoggerFactory
-import scopt.OParser
 
-import java.net.ServerSocket
-import java.nio.file.Paths
-import java.util.concurrent.{ExecutorService, Executors, Phaser, Semaphore, TimeUnit}
-import scala.annotation.tailrec
-import scala.concurrent.TimeoutException
-import scala.concurrent.duration.Duration
-import scala.jdk.CollectionConverters.ListHasAsScala
+import com.sun.net.httpserver.{HttpExchange, HttpHandler, HttpServer}
+import java.net.{InetSocketAddress, URLDecoder}
+import java.nio.charset.StandardCharsets
+import java.util.concurrent.{ExecutorService, Executors, TimeUnit}
+import scala.compiletime.uninitialized
+import scala.io.Source
 import scala.util.Failure
-import scala.util.Random
 import scala.util.Success
 import scala.util.Try
+import scala.util.Using
 
 /** Companion object for `FrontendHTTPServer` providing default executor configurations. */
 object FrontendHTTPServer {
@@ -54,100 +46,131 @@ class FrontendHTTPServer(executor: ExecutorService, handleRequest: Array[String]
     * cached thread pool executor from `FrontendHTTPServer`.
     */
 
-  private object server extends HTTPServer(0 /* port 0 means the OS chooses a random open port for us */ ) {
-    def chosenPort: Int = serv.getLocalPort
-
-    server.getVirtualHost(null).addContexts(frontendHTTPHandler)
-    setExecutor(FrontendHTTPServer.this.executor)
-  }
-
-  /** Handler for HTTP requests, providing functionality to handle specific routes.
-    *
-    * @param server
-    *   The underlying HTTP server instance.
+  /** Capture the context classloader at construction time so handler threads can use it. This is necessary because
+    * com.sun.net.httpserver executor threads may not inherit the correct classloader, which causes issues with
+    * ConfigFactory.load not finding application.conf resources. Note: this surfaced only with `csharpsrc2cpg/testOnly
+    * io.joern.csharpsrc2cpg.io.CSharp2CpgHTTPServerTests` for some reason...
     */
-  private object frontendHTTPHandler {
+  private val contextClassLoader: ClassLoader = Thread.currentThread().getContextClassLoader
+
+  private var httpServer: HttpServer = uninitialized
+  private var runningRequests        = 0
+  private var lastRequest            = System.nanoTime()
+  private var isRunning              = false
+
+  /** Handler for HTTP requests, providing functionality to handle specific routes. */
+  private class RunHandler extends HttpHandler {
 
     /** Handles POST requests to the "/run" endpoint.
       *
-      * This method is annotated to handle POST requests directed to the `/run` path. The request `req` is expected to
-      * include `input`, `output`, and (optionally) frontend arguments (unbounded). The request is expected to be sent
-      * `application/x-www-form-urlencoded`. The provided `X2CpgFrontend` is run with these input/output/arguments and
-      * the resulting CPG output path is returned in the response `resp` and status code 200. In case of a failure,
-      * status code 400 is sent together with a response containing the reason.
-      *
-      * @param req
-      *   The HTTP request received by the server.
-      * @param resp
-      *   The HTTP response to be sent by the server.
-      * @return
-      *   The HTTP status code for the response.
+      * The request is expected to include `input`, `output`, and (optionally) frontend arguments (unbounded). The
+      * request is expected to be sent `application/x-www-form-urlencoded`. The provided `X2CpgFrontend` is run with
+      * these input/output/arguments and the resulting CPG output path is returned in the response and status code 200.
+      * In case of a failure, status code 400 is sent together with a response containing the reason.
       */
-    @Context(value = "/run", methods = Array("POST"))
-    def run(req: server.Request, resp: server.Response): Int = {
+    override def handle(exchange: HttpExchange): Unit = {
+      if (exchange.getRequestMethod != "POST") {
+        sendResponse(exchange, 405, "Method Not Allowed")
+        return
+      }
+
+      val previousClassLoader = Thread.currentThread().getContextClassLoader
+      Thread.currentThread().setContextClassLoader(contextClassLoader)
+
       synchronized {
         runningRequests += 1
       }
 
       try {
-        resp.getHeaders.add("Content-Type", "text/plain")
-        resp.getHeaders.add("Connection", "close")
+        val requestBody = Using(Source.fromInputStream(exchange.getRequestBody, StandardCharsets.UTF_8.name())) {
+          _.mkString
+        }.getOrElse("")
 
-        val params = req.getParamsList.asScala
-        val outputDir = params
-          .collectFirst { case Array(arg, value) if arg == "output" => value }
-          .getOrElse(X2CpgConfig.defaultOutputPath)
-        val arguments = params.collect {
-          case Array(arg, value) if arg == "input"        => Array(value)
-          case Array(arg, value) if value.strip().isEmpty => Array(s"--$arg")
-          case Array(arg, value)                          => Array(s"--$arg", value)
-        }.flatten
+        val params = parseFormUrlEncoded(requestBody)
+
+        val outputDir = params.getOrElse("output", X2CpgConfig.defaultOutputPath)
+        val arguments = params.flatMap {
+          case ("input", value)                      => List(value)
+          case (arg, value) if value.strip().isEmpty => List(s"--$arg")
+          case (arg, value)                          => List(s"--$arg", value)
+        }.toArray
+
         logger.debug("Got POST with arguments: " + arguments.mkString(" "))
 
-        Try(handleRequest(arguments.toArray)) match {
+        Try(handleRequest(arguments)) match {
           case Failure(exception) =>
             exception.printStackTrace()
-            resp.send(400, exception.getMessage)
+            sendResponse(exchange, 400, exception.getMessage)
           case Success(_) =>
-            resp.send(200, outputDir)
+            sendResponse(exchange, 200, outputDir)
         }
       } finally {
+        Thread.currentThread().setContextClassLoader(previousClassLoader)
         synchronized {
           runningRequests -= 1
           lastRequest = System.nanoTime()
           notifyAll()
         }
       }
+    }
 
-      0
+    /** Parses an application/x-www-form-urlencoded body (e.g. "key1=val1&key2=val2") into key-value pairs. */
+    private def parseFormUrlEncoded(body: String): Map[String, String] = {
+      if (body.isEmpty) return Map.empty
+
+      def decode(s: String): String = URLDecoder.decode(s, StandardCharsets.UTF_8)
+
+      val pairs = body.split("&")
+      pairs.map { pair =>
+        val keyAndValue = pair.split("=", 2) // limit 2 so value may contain '='
+        val key         = decode(keyAndValue(0))
+        val value       = if (keyAndValue.length > 1) decode(keyAndValue(1)) else ""
+        key -> value
+      }.toMap
+    }
+
+    private def sendResponse(exchange: HttpExchange, statusCode: Int, body: String): Unit = {
+      val responseBytes = body.getBytes(StandardCharsets.UTF_8)
+      exchange.getResponseHeaders.add("Content-Type", "text/plain; charset=UTF-8")
+      exchange.getResponseHeaders.add("Connection", "close")
+      exchange.sendResponseHeaders(statusCode, responseBytes.length)
+      exchange.getResponseBody.write(responseBytes)
+      exchange.getResponseBody.close()
     }
   }
 
   /** Stops the underlying HTTP server if it is running.
     *
-    * This method checks if the `underlyingServer` is defined and, if so, stops the server. It also logs a debug message
-    * indicating that the server has been stopped. If the server is not running, this method does nothing.
+    * This method checks if the server is running and, if so, stops the server. It also logs a debug message indicating
+    * that the server has been stopped. If the server is not running, this method does nothing.
     */
   def stop(): Unit = {
     if (isRunning) {
+      httpServer.stop(0)
+      httpServer = null
       executor.shutdown()
-      server.stop()
-      isRunning = false;
+      executor.awaitTermination(10, TimeUnit.SECONDS)
+      isRunning = false
       logger.debug("Server stopped.")
     }
   }
-
-  private var runningRequests = 0
-  private var lastRequest     = System.nanoTime()
-  private var isRunning       = false
 
   /** Starts the server and returns the server's randomly chosen port
     */
   def startup(): Int = {
     require(!isRunning)
-    server.start()
 
-    server.chosenPort
+    // Create server on port 0 (OS chooses random available port)
+    httpServer = HttpServer.create(new InetSocketAddress(0), 0)
+    httpServer.createContext("/run", new RunHandler())
+    httpServer.setExecutor(executor)
+    httpServer.start()
+
+    isRunning = true
+
+    val port = httpServer.getAddress.getPort
+    logger.debug(s"Server started on port $port")
+    port
   }
 
   /** Stops the server, once it hasn't served any new requests for longer than timeout seconds

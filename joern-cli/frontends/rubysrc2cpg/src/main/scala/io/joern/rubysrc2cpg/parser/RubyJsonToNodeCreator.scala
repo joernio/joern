@@ -338,8 +338,7 @@ class RubyJsonToNodeCreator(
       IndexAccess(lhsBase, List(args.head))(obj.toTextSpan.spanStart(s"${lhsBase.span.text}[${args.head.span.text}]"))
 
     val rhs =
-      if args.size == 2 then args(1)
-      else SimpleIdentifier()(obj.toTextSpan.spanStart("*"))
+      if (args.size == 2) args(1) else SimpleIdentifier()(obj.toTextSpan.spanStart("*"))
 
     SingleAssignment(lhs, "=", rhs)(obj.toTextSpan)
   }
@@ -545,11 +544,10 @@ class RubyJsonToNodeCreator(
 
     obj.visitArray(ParserKeys.Children) match {
       case (assoc: Association) :: Nil =>
-        if isHashLiteral then HashLiteral(List(assoc))(obj.toTextSpan)
+        if (isHashLiteral) HashLiteral(List(assoc))(obj.toTextSpan)
         else assoc // 2 => 1 is interpreted as {2: 1}, so we lower this for now
       case children =>
-        if isHashLiteral then HashLiteral(children)(obj.toTextSpan)
-        else AssociationList(children)(obj.toTextSpan)
+        if (isHashLiteral) HashLiteral(children)(obj.toTextSpan) else AssociationList(children)(obj.toTextSpan)
     }
   }
 
@@ -662,7 +660,9 @@ class RubyJsonToNodeCreator(
   private def visitKwOptArg(obj: Obj): RubyExpression = visitKwArg(obj)
 
   private def visitKwRestArg(obj: Obj): RubyExpression = {
-    val name = if obj.contains(ParserKeys.Value) then obj(ParserKeys.Value).str else obj.toTextSpan.text
+    val name =
+      if (obj.contains(ParserKeys.Value)) { obj(ParserKeys.Value).str }
+      else { obj.toTextSpan.text }
     HashParameter(name)(obj.toTextSpan)
   }
 
@@ -953,7 +953,7 @@ class RubyJsonToNodeCreator(
     val identifier = obj(ParserKeys.Name).str
     if (obj.contains(ParserKeys.Base)) {
       val target = visit(obj(ParserKeys.Base))
-      val op     = if obj.toTextSpan.text.contains("::") then "::" else "."
+      val op     = if (obj.toTextSpan.text.contains("::")) "::" else "."
       MemberAccess(target, op, identifier)(obj.toTextSpan)
     } else {
       SimpleIdentifier()(obj.toTextSpan)
@@ -1012,8 +1012,8 @@ class RubyJsonToNodeCreator(
       val base         = visit(obj(ParserKeys.Receiver))
       val isMemberCall = usesParenthesis || callName == "<<" || hasArguments
       val op = {
-        val dot = if objSpan.text.stripPrefix(base.text).startsWith("::") then "::" else "."
-        if isConditional then s"&$dot" else dot
+        val dot = if (objSpan.text.stripPrefix(base.text).startsWith("::")) "::" else "."
+        if (isConditional) s"&$dot" else dot
       }
 
       // This is specifically for ERB lowering, where we append some ERBTemplateCall to a buffer
@@ -1158,7 +1158,9 @@ class RubyJsonToNodeCreator(
     val originalSpan = obj.toTextSpan
     val value        = obj(ParserKeys.Value).str
     // In general, we want the quotations, unless it is a HEREDOC string, then we'd prefer the value
-    val span = if !originalSpan.text.contains(value) then originalSpan.spanStart(value) else originalSpan
+    val span =
+      if (!originalSpan.text.contains(value)) { originalSpan.spanStart(value) }
+      else { originalSpan }
     StaticLiteral(typeFullName)(span)
   }
 
@@ -1166,8 +1168,8 @@ class RubyJsonToNodeCreator(
     val typeFullName = Defines.prefixAsCoreType(Defines.Symbol)
     val objTextSpan  = obj.toTextSpan
 
-    if objTextSpan.text.startsWith(":") then StaticLiteral(typeFullName)(obj.toTextSpan)
-    else StaticLiteral(typeFullName)(objTextSpan.spanStart(s":${objTextSpan.text}"))
+    if (objTextSpan.text.startsWith(":")) { StaticLiteral(typeFullName)(obj.toTextSpan) }
+    else { StaticLiteral(typeFullName)(objTextSpan.spanStart(s":${objTextSpan.text}")) }
   }
 
   private def visitSuper(obj: Obj): RubyExpression = {

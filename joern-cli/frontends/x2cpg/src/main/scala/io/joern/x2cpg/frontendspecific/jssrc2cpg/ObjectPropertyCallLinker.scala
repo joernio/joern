@@ -15,7 +15,7 @@ class ObjectPropertyCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   override def run(builder: DiffGraphBuilder): Unit = {
 
     def propertyCallRegexPattern(withMatchingGroup: Boolean): String =
-      "^(?:\\{.*\\}|.*<returnValue>):<member>\\(" + (if withMatchingGroup then "(.*)" else ".*") + "\\):.*$"
+      "^(?:\\{.*\\}|.*<returnValue>):<member>\\(" + (if (withMatchingGroup) "(.*)" else ".*") + "\\):.*$"
 
     val propertyCallRegex = propertyCallRegexPattern(true).r
     val objectCalls       = cpg.call.methodFullName(propertyCallRegexPattern(false)).l

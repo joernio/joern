@@ -42,16 +42,16 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    @inline def localDecl = cpg.typeDecl.fullName("foo.Foo.enclosingMethod.Local")
+    @inline def localDecl = cpg.typeDecl.fullNameExact("foo.Foo.enclosingMethod:void(int).Local")
 
     "have only one Local typeDecl" in {
-      cpg.typeDecl.name(".*Local.*").fullName.toSet shouldBe Set("foo.Foo.enclosingMethod.Local")
+      cpg.typeDecl.name(".*Local.*").fullName.toSet shouldBe Set("foo.Foo.enclosingMethod:void(int).Local")
     }
 
     "have the correct bindings for methods defined in the local class" in {
       inside(cpg.all.collectAll[Binding].nameExact("noCaptures").l) { case List(noCapturesBinding) =>
-        noCapturesBinding.methodFullName shouldBe "foo.Foo.enclosingMethod.Local.noCaptures:void(int)"
-        noCapturesBinding.bindingTypeDecl.fullName shouldBe "foo.Foo.enclosingMethod.Local"
+        noCapturesBinding.methodFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local.noCaptures:void(int)"
+        noCapturesBinding.bindingTypeDecl.fullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
         noCapturesBinding.signature shouldBe "void(int)"
       }
     }
@@ -59,8 +59,8 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
     "have the correct binding for the default constructor" in {
       inside(cpg.all.collectAll[Binding].nameExact("<init>").methodFullName(".*Local.*").l) {
         case List(noCapturesBinding) =>
-          noCapturesBinding.methodFullName shouldBe "foo.Foo.enclosingMethod.Local.<init>:void()"
-          noCapturesBinding.bindingTypeDecl.fullName shouldBe "foo.Foo.enclosingMethod.Local"
+          noCapturesBinding.methodFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local.<init>:void()"
+          noCapturesBinding.bindingTypeDecl.fullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
           noCapturesBinding.signature shouldBe "void()"
       }
     }
@@ -106,9 +106,9 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       localDecl.method.nameExact("<init>").parameter.l match {
         case List(thisParam, outerClassParam, capturedLocalParam, capturedParamParam) =>
           thisParam.name shouldBe "this"
-          thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod.Local"
+          thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
           thisParam.index shouldBe 0
-          thisParam.dynamicTypeHintFullName shouldBe List("foo.Foo.enclosingMethod.Local")
+          thisParam.dynamicTypeHintFullName shouldBe List("foo.Foo.enclosingMethod:void(int).Local")
 
           outerClassParam.name shouldBe "outerClass"
           outerClassParam.typeFullName shouldBe "foo.Foo"
@@ -141,7 +141,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
                   thisOuterClass.argument.l match {
                     case List(thisIdentifier: Identifier, field: FieldIdentifier) =>
                       thisIdentifier.name shouldBe "this"
-                      thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod.Local"
+                      thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
                       thisIdentifier.refOut.l shouldBe localInit.parameter.name("this").l
 
                       field.canonicalName shouldBe "outerClass"
@@ -162,7 +162,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
                   thisCapturedLocal.argument.l match {
                     case List(thisIdentifier: Identifier, field: FieldIdentifier) =>
                       thisIdentifier.name shouldBe "this"
-                      thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod.Local"
+                      thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
                       thisIdentifier.refOut.l shouldBe localInit.parameter.name("this").l
 
                       field.canonicalName shouldBe "capturedLocal"
@@ -181,7 +181,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
                   thisCapturedParam.argument.l match {
                     case List(thisIdentifier: Identifier, field: FieldIdentifier) =>
                       thisIdentifier.name shouldBe "this"
-                      thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod.Local"
+                      thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
                       thisIdentifier.refOut.l shouldBe localInit.parameter.name("this").l
 
                       field.canonicalName shouldBe "capturedParam"
@@ -236,10 +236,10 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    @inline def localDecl = cpg.typeDecl.fullName("foo.Foo.enclosingMethod.Local")
+    @inline def localDecl = cpg.typeDecl.fullNameExact("foo.Foo.enclosingMethod:void(int).Local")
 
     "have only one Local typeDecl" in {
-      cpg.typeDecl.name(".*Local.*").fullName.toSet shouldBe Set("foo.Foo.enclosingMethod.Local")
+      cpg.typeDecl.name(".*Local.*").fullName.toSet shouldBe Set("foo.Foo.enclosingMethod:void(int).Local")
     }
 
     "have the correct number of members created for captures" in {
@@ -270,9 +270,9 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       localDecl.method.nameExact("<init>").parameter.l match {
         case List(thisParam, capturedLocalParam, capturedParamParam) =>
           thisParam.name shouldBe "this"
-          thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod.Local"
+          thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
           thisParam.index shouldBe 0
-          thisParam.dynamicTypeHintFullName shouldBe List("foo.Foo.enclosingMethod.Local")
+          thisParam.dynamicTypeHintFullName shouldBe List("foo.Foo.enclosingMethod:void(int).Local")
 
           capturedLocalParam.name shouldBe "capturedLocal"
           capturedLocalParam.typeFullName shouldBe "int"
@@ -299,7 +299,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
                   thisCapturedParam.argument.l match {
                     case List(thisIdentifier: Identifier, field: FieldIdentifier) =>
                       thisIdentifier.name shouldBe "this"
-                      thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod.Local"
+                      thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
                       thisIdentifier.refOut.l shouldBe localInit.parameter.name("this").l
 
                       field.canonicalName shouldBe "capturedParam"
@@ -318,7 +318,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
                   thisCapturedLocal.argument.l match {
                     case List(thisIdentifier: Identifier, field: FieldIdentifier) =>
                       thisIdentifier.name shouldBe "this"
-                      thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod.Local"
+                      thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
                       thisIdentifier.refOut.l shouldBe localInit.parameter.name("this").l
 
                       field.canonicalName shouldBe "capturedLocal"
@@ -354,10 +354,10 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    @inline def localDecl = cpg.typeDecl.fullName("foo.Foo.enclosingMethod.Local")
+    @inline def localDecl = cpg.typeDecl.fullNameExact("foo.Foo.enclosingMethod:void(int).Local")
 
     "have only one Local typeDecl" in {
-      cpg.typeDecl.name(".*Local.*").fullName.toSet shouldBe Set("foo.Foo.enclosingMethod.Local")
+      cpg.typeDecl.name(".*Local.*").fullName.toSet shouldBe Set("foo.Foo.enclosingMethod:void(int).Local")
     }
 
     "have a field for the captured outer class" in {
@@ -374,8 +374,8 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
         case List(thisParam, outerClassParam) =>
           thisParam.name shouldBe "this"
           thisParam.index shouldBe 0
-          thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod.Local"
-          thisParam.dynamicTypeHintFullName shouldBe List("foo.Foo.enclosingMethod.Local")
+          thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
+          thisParam.dynamicTypeHintFullName shouldBe List("foo.Foo.enclosingMethod:void(int).Local")
 
           outerClassParam.name shouldBe "outerClass"
           outerClassParam.typeFullName shouldBe "foo.Foo"
@@ -397,7 +397,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
                   thisOuterClass.argument.l match {
                     case List(thisIdentifier: Identifier, field: FieldIdentifier) =>
                       thisIdentifier.name shouldBe "this"
-                      thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod.Local"
+                      thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
                       thisIdentifier.refOut.l shouldBe localInit.parameter.name("this").l
 
                       field.canonicalName shouldBe "outerClass"
@@ -433,10 +433,10 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    @inline def localDecl = cpg.typeDecl.fullName("foo.Foo.enclosingMethod.Local")
+    @inline def localDecl = cpg.typeDecl.fullNameExact("foo.Foo.enclosingMethod:void(int).Local")
 
     "have only one Local typeDecl" in {
-      cpg.typeDecl.name(".*Local.*").fullName.toSet shouldBe Set("foo.Foo.enclosingMethod.Local")
+      cpg.typeDecl.name(".*Local.*").fullName.toSet shouldBe Set("foo.Foo.enclosingMethod:void(int).Local")
     }
 
     "not have a field for the captured outer class" in {
@@ -448,8 +448,8 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
         case List(thisParam) =>
           thisParam.name shouldBe "this"
           thisParam.index shouldBe 0
-          thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod.Local"
-          thisParam.dynamicTypeHintFullName shouldBe List("foo.Foo.enclosingMethod.Local")
+          thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
+          thisParam.dynamicTypeHintFullName shouldBe List("foo.Foo.enclosingMethod:void(int).Local")
         case result => fail(s"Unexpected result ${result}")
       }
     }
@@ -490,14 +490,14 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    @inline def localDecl = cpg.typeDecl.fullName("foo.Foo.enclosingMethod.Local")
+    @inline def localDecl = cpg.typeDecl.fullNameExact("foo.Foo.enclosingMethod:void(int).Local")
 
     "have only one Local typeDecl" in {
-      cpg.typeDecl.name(".*Local.*").fullName.toSet shouldBe Set("foo.Foo.enclosingMethod.Local")
+      cpg.typeDecl.name(".*Local.*").fullName.toSet shouldBe Set("foo.Foo.enclosingMethod:void(int).Local")
     }
 
     "have the correct full name set" in {
-      localDecl.fullName.l shouldBe List("foo.Foo.enclosingMethod.Local")
+      localDecl.fullName.l shouldBe List("foo.Foo.enclosingMethod:void(int).Local")
     }
 
     "have the correct code set" in {
@@ -541,9 +541,9 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       localDecl.method.nameExact("<init>").parameter.l match {
         case List(thisParam, outerClassParam, capturedLocalParam) =>
           thisParam.name shouldBe "this"
-          thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod.Local"
+          thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
           thisParam.index shouldBe 0
-          thisParam.dynamicTypeHintFullName shouldBe List("foo.Foo.enclosingMethod.Local")
+          thisParam.dynamicTypeHintFullName shouldBe List("foo.Foo.enclosingMethod:void(int).Local")
 
           outerClassParam.name shouldBe "outerClass"
           outerClassParam.typeFullName shouldBe "foo.Foo"
@@ -571,7 +571,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
                   thisOuterClass.argument.l match {
                     case List(thisIdentifier: Identifier, field: FieldIdentifier) =>
                       thisIdentifier.name shouldBe "this"
-                      thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod.Local"
+                      thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
                       thisIdentifier.refOut.l shouldBe localInit.parameter.name("this").l
 
                       field.canonicalName shouldBe "outerClass"
@@ -590,7 +590,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
                   thisCapturedLocal.argument.l match {
                     case List(thisIdentifier: Identifier, field: FieldIdentifier) =>
                       thisIdentifier.name shouldBe "this"
-                      thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod.Local"
+                      thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
                       thisIdentifier.refOut.l shouldBe localInit.parameter.name("this").l
 
                       field.canonicalName shouldBe "capturedLocal"
@@ -685,18 +685,22 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     @inline def constructors =
-      cpg.typeDecl.fullName("foo.Foo.enclosingMethod.Local").method.nameExact("<init>").sortBy(_.parameter.size)
+      cpg.typeDecl
+        .fullNameExact("foo.Foo.enclosingMethod:void(int).Local")
+        .method
+        .nameExact("<init>")
+        .sortBy(_.parameter.size)
 
     "have correct bindings for the explicit constructors" in {
       val bindings = cpg.all.collectAll[Binding].toList
       inside(cpg.all.collectAll[Binding].nameExact("<init>").methodFullName(".*Local.*").sortBy(_.signature.length).l) {
         case List(noArgBinding, explicitArgBinding) =>
-          noArgBinding.methodFullName shouldBe "foo.Foo.enclosingMethod.Local.<init>:void()"
-          noArgBinding.bindingTypeDecl.fullName shouldBe "foo.Foo.enclosingMethod.Local"
+          noArgBinding.methodFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local.<init>:void()"
+          noArgBinding.bindingTypeDecl.fullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
           noArgBinding.signature shouldBe "void()"
 
-          explicitArgBinding.methodFullName shouldBe "foo.Foo.enclosingMethod.Local.<init>:void(int)"
-          explicitArgBinding.bindingTypeDecl.fullName shouldBe "foo.Foo.enclosingMethod.Local"
+          explicitArgBinding.methodFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local.<init>:void(int)"
+          explicitArgBinding.bindingTypeDecl.fullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
           explicitArgBinding.signature shouldBe "void(int)"
       }
     }
@@ -742,7 +746,11 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     @inline def constructors =
-      cpg.typeDecl.fullName("foo.Foo.enclosingMethod.Local").method.nameExact("<init>").sortBy(_.parameter.size)
+      cpg.typeDecl
+        .fullNameExact("foo.Foo.enclosingMethod:void(int).Local")
+        .method
+        .nameExact("<init>")
+        .sortBy(_.parameter.size)
 
     "not have any orphan locals or parameters" in {
       cpg.local.filter(_.astIn.isEmpty).l shouldBe List()
@@ -765,9 +773,20 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
         "this.outerClass = outerClass",
         "this.outerParam = outerParam"
       )
-      val lastBody = constructors.last.body.astChildren.l
-      inside(constructors.last.body.astChildren.l) { case List(thisCall: Call, sinkCall: Call) =>
-        thisCall.argument.code.l shouldBe List("this", "outerClass", "outerParam")
+      val lastCtx  = constructors.last
+      val lastBody = lastCtx.body.astChildren.l
+      inside(lastBody) { case List(thisCall: Call, sinkCall: Call) =>
+        inside(thisCall.argument.l) {
+          case List(thisArg: Identifier, outerClassArg: Identifier, outerParamArg: Identifier) =>
+            thisArg.name shouldBe "this"
+            thisArg.refsTo.l shouldBe lastCtx.parameter.name("this").l
+
+            outerClassArg.name shouldBe "outerClass"
+            outerClassArg.refsTo.l shouldBe lastCtx.parameter.name("outerClass").l
+
+            outerParamArg.name shouldBe "outerParam"
+            outerParamArg.refsTo.l shouldBe lastCtx.parameter.name("outerParam").l
+        }
         sinkCall.code shouldBe "sink(ctxParam)"
       }
     }
@@ -807,7 +826,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
               receiverFieldAccess.argument.l match {
                 case List(thisIdentifier: Identifier, outerClassFieldId: FieldIdentifier) =>
                   thisIdentifier.name shouldBe "this"
-                  thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod.Local"
+                  thisIdentifier.typeFullName shouldBe "foo.Foo.enclosingMethod:void(int).Local"
 
                   outerClassFieldId.canonicalName shouldBe "outerClass"
                 case result => fail(s"Unexpected result ${result}")
@@ -878,7 +897,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       "have the correct init node properties" in {
         initCall.l match {
           case List(call) =>
-            call.methodFullName shouldBe "foo.Foo.fooMethod.Local.<init>:void(int)"
+            call.methodFullName shouldBe "foo.Foo.fooMethod:void(int).Local.<init>:void(int)"
             call.signature shouldBe "void(int)"
           // pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
           case result => fail(s"Unexpected result ${result}")
@@ -888,7 +907,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       "have the correct init receiver" in {
         initCall.receiver.l match {
           case List(receiver: Identifier) =>
-            receiver.typeFullName shouldBe "foo.Foo.fooMethod.Local"
+            receiver.typeFullName shouldBe "foo.Foo.fooMethod:void(int).Local"
           case result => fail(s"Unexpected result ${result}")
         }
       }
@@ -949,7 +968,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       "have the correct init node properties" in {
         initCall.l match {
           case List(call) =>
-            call.methodFullName shouldBe "foo.Foo.foo.Local.<init>:void()"
+            call.methodFullName shouldBe "foo.Foo.foo:void(int).Local.<init>:void()"
             call.signature shouldBe "void()"
           // pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
           case result => fail(s"Unexpected result ${result}")
@@ -959,7 +978,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       "have the correct init receiver" in {
         initCall.receiver.l match {
           case List(receiver: Identifier) =>
-            receiver.typeFullName shouldBe "foo.Foo.foo.Local"
+            receiver.typeFullName shouldBe "foo.Foo.foo:void(int).Local"
           case result => fail(s"Unexpected result ${result}")
         }
       }
@@ -1010,7 +1029,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       "have the correct init node properties" in {
         initCall.l match {
           case List(call) =>
-            call.methodFullName shouldBe "foo.Foo.fooMethod.Local.<init>:void()"
+            call.methodFullName shouldBe "foo.Foo.fooMethod:void(int).Local.<init>:void()"
             call.signature shouldBe "void()"
           // pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
           case result => fail(s"Unexpected result ${result}")
@@ -1020,7 +1039,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       "have the correct init receiver" in {
         initCall.receiver.l match {
           case List(receiver: Identifier) =>
-            receiver.typeFullName shouldBe "foo.Foo.fooMethod.Local"
+            receiver.typeFullName shouldBe "foo.Foo.fooMethod:void(int).Local"
           case result => fail(s"Unexpected result ${result}")
         }
       }
@@ -1064,7 +1083,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       "have the correct init node properties" in {
         initCall.l match {
           case List(call) =>
-            call.methodFullName shouldBe "foo.Foo.fooMethod.Local.<init>:void()"
+            call.methodFullName shouldBe "foo.Foo.fooMethod:void(int).Local.<init>:void()"
             call.signature shouldBe "void()"
           // pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
           case result => fail(s"Unexpected result ${result}")
@@ -1074,7 +1093,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       "have the correct init receiver" in {
         initCall.receiver.l match {
           case List(receiver: Identifier) =>
-            receiver.typeFullName shouldBe "foo.Foo.fooMethod.Local"
+            receiver.typeFullName shouldBe "foo.Foo.fooMethod:void(int).Local"
           case result => fail(s"Unexpected result ${result}")
         }
       }
@@ -1117,7 +1136,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       "have the correct init node properties" in {
         initCall.l match {
           case List(call) =>
-            call.methodFullName shouldBe "foo.Foo.fooMethod.Local.<init>:void(int)"
+            call.methodFullName shouldBe "foo.Foo.fooMethod:void(int).Local.<init>:void(int)"
             call.signature shouldBe "void(int)"
           // pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
           case result => fail(s"Unexpected result ${result}")
@@ -1127,7 +1146,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       "have the correct init receiver" in {
         initCall.receiver.l match {
           case List(receiver: Identifier) =>
-            receiver.typeFullName shouldBe "foo.Foo.fooMethod.Local"
+            receiver.typeFullName shouldBe "foo.Foo.fooMethod:void(int).Local"
           case result => fail(s"Unexpected result ${result}")
         }
       }
@@ -1177,7 +1196,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       "have the correct init node properties" in {
         initCall.l match {
           case List(call) =>
-            call.methodFullName shouldBe "foo.Foo.fooMethod.Local.<init>:void()"
+            call.methodFullName shouldBe "foo.Foo.fooMethod:void(int).Local.<init>:void()"
             call.signature shouldBe "void()"
           // pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
           case result => fail(s"Unexpected result ${result}")
@@ -1187,7 +1206,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       "have the correct init receiver" in {
         initCall.receiver.l match {
           case List(receiver: Identifier) =>
-            receiver.typeFullName shouldBe "foo.Foo.fooMethod.Local"
+            receiver.typeFullName shouldBe "foo.Foo.fooMethod:void(int).Local"
           case result => fail(s"Unexpected result ${result}")
         }
       }
@@ -1226,7 +1245,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       "have the correct init node properties" in {
         initCall.l match {
           case List(call) =>
-            call.methodFullName shouldBe "foo.Foo.fooMethod.Local.<init>:void(int)"
+            call.methodFullName shouldBe "foo.Foo.fooMethod:void(int).Local.<init>:void(int)"
             call.signature shouldBe "void(int)"
           // pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
           case result => fail(s"Unexpected result ${result}")
@@ -1236,7 +1255,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       "have the correct init receiver" in {
         initCall.receiver.l match {
           case List(receiver: Identifier) =>
-            receiver.typeFullName shouldBe "foo.Foo.fooMethod.Local"
+            receiver.typeFullName shouldBe "foo.Foo.fooMethod:void(int).Local"
           case result => fail(s"Unexpected result ${result}")
         }
       }
@@ -1283,12 +1302,12 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
             fooAccess.argument.l match {
               case List(outerClassAccess: Call, fooFieldIdentifier: FieldIdentifier) =>
                 outerClassAccess.name shouldBe Operators.fieldAccess
-                outerClassAccess.typeFullName shouldBe "foo.Foo.foo.Bar"
+                outerClassAccess.typeFullName shouldBe "foo.Foo.foo:void(int).Bar"
 
                 outerClassAccess.argument.l match {
                   case List(thisIdentifier: Identifier, outerFieldIdentifier: FieldIdentifier) =>
                     thisIdentifier.name shouldBe "this"
-                    thisIdentifier.typeFullName shouldBe "foo.Foo.foo.Bar.bar.Baz"
+                    thisIdentifier.typeFullName shouldBe "foo.Foo.foo:void(int).Bar.bar:void().Baz"
                     thisIdentifier.refOut.l shouldBe cpg.method.name("baz").parameter.index(0).l
 
                     outerFieldIdentifier.canonicalName shouldBe "outerClass"
@@ -1306,7 +1325,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
         cpg.typeDecl.name("Bar").method.nameExact("<init>").parameter.l match {
           case List(thisParam, outerClassParam, capturedParamParam) =>
             thisParam.name shouldBe "this"
-            thisParam.typeFullName shouldBe "foo.Foo.foo.Bar"
+            thisParam.typeFullName shouldBe "foo.Foo.foo:void(int).Bar"
 
             outerClassParam.name shouldBe "outerClass"
             outerClassParam.typeFullName shouldBe "foo.Foo"
@@ -1321,10 +1340,10 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
         cpg.typeDecl.name("Baz").method.nameExact("<init>").parameter.l match {
           case List(thisParam, outerClassParam) =>
             thisParam.name shouldBe "this"
-            thisParam.typeFullName shouldBe "foo.Foo.foo.Bar.bar.Baz"
+            thisParam.typeFullName shouldBe "foo.Foo.foo:void(int).Bar.bar:void().Baz"
 
             outerClassParam.name shouldBe "outerClass"
-            outerClassParam.typeFullName shouldBe "foo.Foo.foo.Bar"
+            outerClassParam.typeFullName shouldBe "foo.Foo.foo:void(int).Bar"
           case result => fail(s"Unexpected result ${result}")
         }
       }
@@ -1373,13 +1392,13 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
 
                     bazMemberAccess.name shouldBe Operators.fieldAccess
                     bazMemberAccess.code shouldBe "this.outerClass"
-                    bazMemberAccess.typeFullName shouldBe "foo.Foo.foo.Bar"
+                    bazMemberAccess.typeFullName shouldBe "foo.Foo.foo:void().Bar"
 
                     bazMemberAccess.argument.l match {
                       case List(thisIdentifier: Identifier, bazClassIdentifier: FieldIdentifier) =>
                         thisIdentifier.name shouldBe "this"
                         thisIdentifier.refOut.l shouldBe cpg.method.name("baz").parameter.index(0).l
-                        thisIdentifier.typeFullName shouldBe "foo.Foo.foo.Bar.bar.Baz"
+                        thisIdentifier.typeFullName shouldBe "foo.Foo.foo:void().Bar.bar:void().Baz"
 
                         bazClassIdentifier.canonicalName shouldBe "outerClass"
                       case result => fail(s"Unexpected result ${result}")
@@ -1430,13 +1449,13 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
 
                     bazMemberAccess.name shouldBe Operators.fieldAccess
                     bazMemberAccess.code shouldBe "this.outerClass"
-                    bazMemberAccess.typeFullName shouldBe "foo.Foo.foo.Bar"
+                    bazMemberAccess.typeFullName shouldBe "foo.Foo.foo:void().Bar"
 
                     bazMemberAccess.argument.l match {
                       case List(thisIdentifier: Identifier, bazClassIdentifier: FieldIdentifier) =>
                         thisIdentifier.name shouldBe "this"
                         thisIdentifier.refOut.l shouldBe cpg.method.name("baz").parameter.index(0).l
-                        thisIdentifier.typeFullName shouldBe "foo.Foo.foo.Bar.bar.Baz"
+                        thisIdentifier.typeFullName shouldBe "foo.Foo.foo:void().Bar.bar:void().Baz"
 
                         bazClassIdentifier.canonicalName shouldBe "outerClass"
                       case result => fail(s"Unexpected result ${result}")
@@ -1493,7 +1512,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       cpg.typeDecl.name("Foo").method.nameExact("<init>").parameter.l match {
         case List(thisParam, outerClassParam, capturedLocalParam, capturedParamParam) =>
           thisParam.name shouldBe "this"
-          thisParam.typeFullName shouldBe "Test.test.Foo"
+          thisParam.typeFullName shouldBe "Test.test:void(int).Foo"
 
           outerClassParam.name shouldBe "outerClass"
           outerClassParam.typeFullName shouldBe "Test"
@@ -1511,7 +1530,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       cpg.typeDecl.name("Bar").method.nameExact("<init>").parameter.l match {
         case List(thisParam, capturedLocalParam, capturedParamParam) =>
           thisParam.name shouldBe "this"
-          thisParam.typeFullName shouldBe "Test.test.Foo.foo.Bar"
+          thisParam.typeFullName shouldBe "Test.test:void(int).Foo.foo:void(int).Bar"
 
           capturedLocalParam.name shouldBe "fooLocal"
           capturedLocalParam.typeFullName shouldBe "int"
@@ -1526,10 +1545,10 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       cpg.typeDecl.name("Baz").method.nameExact("<init>").parameter.l match {
         case List(thisParam, outerClassParam, capturedLocalParam, capturedParamParam) =>
           thisParam.name shouldBe "this"
-          thisParam.typeFullName shouldBe "Test.test.Foo.foo.Bar.bar.Baz"
+          thisParam.typeFullName shouldBe "Test.test:void(int).Foo.foo:void(int).Bar.bar:void(int).Baz"
 
           outerClassParam.name shouldBe "outerClass"
-          outerClassParam.typeFullName shouldBe "Test.test.Foo.foo.Bar"
+          outerClassParam.typeFullName shouldBe "Test.test:void(int).Foo.foo:void(int).Bar"
 
           capturedLocalParam.name shouldBe "barLocal"
           capturedLocalParam.typeFullName shouldBe "int"
@@ -1577,7 +1596,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       cpg.typeDecl.name("Baz").member.l match {
         case List(outerClassMember, capturedLocalMember, capturedParamMember) =>
           outerClassMember.name shouldBe "outerClass"
-          outerClassMember.typeFullName shouldBe "Test.test.Foo.foo.Bar"
+          outerClassMember.typeFullName shouldBe "Test.test:void(int).Foo.foo:void(int).Bar"
 
           capturedLocalMember.name shouldBe "barLocal"
           capturedLocalMember.typeFullName shouldBe "int"

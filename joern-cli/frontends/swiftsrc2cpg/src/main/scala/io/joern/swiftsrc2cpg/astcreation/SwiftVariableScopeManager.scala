@@ -1,5 +1,6 @@
 package io.joern.swiftsrc2cpg.astcreation
 
+import io.joern.x2cpg.Defines
 import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.datastructures.VariableScopeManager.*
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
@@ -79,6 +80,23 @@ class SwiftVariableScopeManager extends VariableScopeManager {
       case (acc, name)                                  => acc :+ name
     }
     collapsed.mkString(ScopePathSeparator)
+  }
+
+  def isInStaticMethodScope: Boolean = {
+    def isClosureScope(methodScope: MethodScopeElement): Boolean = {
+      methodScope.methodName.startsWith(Defines.ClosurePrefix)
+    }
+
+    def nextNonClosureMethodScope(scopeHead: Option[ScopeElement]): Option[MethodScopeElement] = {
+      scopeHead.flatMap {
+        case ms: MethodScopeElement if !isClosureScope(ms) => Some(ms)
+        case ms: MethodScopeElement                        => nextNonClosureMethodScope(ms.surroundingScope)
+        case bs: BlockScopeElement                         => nextNonClosureMethodScope(bs.surroundingScope)
+        case _: TypeDeclScopeElement                       => None
+      }
+    }
+
+    nextNonClosureMethodScope(stack).exists(_.isStatic)
   }
 
 }

@@ -355,7 +355,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val blockAsts =
       methodBlockContent.constructorContent.flatMap(m => methodBlockContent.typeDecl.map(astForClassMember(m, _)))
-    setArgumentIndices(blockAsts)
 
     val methodReturnNode_ = methodReturnNode(func)
 
@@ -460,9 +459,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val methodBlockChildren = methodBlockContent.constructorContent.flatMap(m =>
       methodBlockContent.typeDecl.map(astForClassMember(m, _))
     ) ++ additionalBlockStatements.toList ++ bodyStmtAsts
-    setArgumentIndices(methodBlockChildren)
-
-    val methodReturnNode_ = methodReturnNode(func)
 
     localAstParentStack.pop()
     scope.popScope()
@@ -483,7 +479,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         methodNode_,
         (thisNode +: paramNodes).map(Ast(_)),
         blockAst(blockNode_, methodBlockChildren),
-        methodReturnNode_,
+        methodReturnNode(func),
         modifierNodes,
         astsForDecorators(func)
       )

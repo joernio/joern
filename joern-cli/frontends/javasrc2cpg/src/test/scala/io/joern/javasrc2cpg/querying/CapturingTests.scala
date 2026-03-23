@@ -221,8 +221,7 @@ class CapturingTests extends JavaSrcCode2CpgFixture with Inside {
     }
   }
 
-  // TODO Ignored until support for LocalRecordDeclarationStmt is added
-  "LocalRecordDeclarationStmt shadowing a field capture" ignore {
+  "LocalRecordDeclarationStmt shadowing a field capture" should {
     val cpg = code("""
                      |public class Foo {
                      |  String value;
@@ -249,7 +248,7 @@ class CapturingTests extends JavaSrcCode2CpgFixture with Inside {
             thisId.typeFullName shouldBe "Foo"
             inside(thisId.refsTo.l) { case List(thisLocal: Local) =>
               thisLocal.name shouldBe "this"
-              thisLocal.closureBindingId shouldBe Some("Test0.java:Foo.<lambda>0:this")
+              thisLocal.closureBindingId shouldBe Some("Test0.java:<lambda>0:this")
             }
 
             valueFieldId.canonicalName shouldBe "value"
@@ -257,19 +256,66 @@ class CapturingTests extends JavaSrcCode2CpgFixture with Inside {
       }
     }
 
-    "correctly handle the scope of the local record parameter in the local record" in {
-      inside(cpg.method.name("print").call.name("println").argument.argumentIndex(1).l) {
-        case List(localValue: Call, capturedReader: Call) =>
-          localValue.name shouldBe Operators.fieldAccess
-          inside(localValue.argument.l) { case List(thisId: Identifier, valueFieldId: FieldIdentifier) =>
-            thisId.name shouldBe "this"
-            thisId.typeFullName shouldBe "Foo.test.LocalRecord"
-            inside(thisId.refsTo.l) { case List(thisParam: MethodParameterIn) =>
-              thisParam.name shouldBe "this"
-              thisParam.index shouldBe 0
-              thisParam.method.fullName shouldBe "Foo.test.LocalRecord.print:void(java.lang.String)"
+    "have closure bindings with the correct properties" in {
+      inside(cpg.closureBinding.sortBy(_.closureBindingId).l) { case List(capturedClosureBinding, thisClosureBinding) =>
+        capturedClosureBinding.closureBindingId shouldBe Some("Test0.java:<lambda>0:captured")
+        inside(capturedClosureBinding._methodParameterInViaRefOut) { case Some(capturedParam) =>
+          capturedParam.name shouldBe "captured"
+          capturedParam.method.fullName shouldBe "Foo.test:void(java.lang.String)"
+        }
+
+        thisClosureBinding.closureBindingId shouldBe Some("Test0.java:<lambda>0:this")
+        inside(thisClosureBinding._methodParameterInViaRefOut) { case Some(thisParam) =>
+          thisParam.name shouldBe "this"
+          thisParam.method.fullName shouldBe "Foo.test:void(java.lang.String)"
+        }
+      }
+    }
+
+    "not confuse the synthetic constructor references with captured variables" in {
+      inside(cpg.method.fullNameExact("Foo.<lambda>0:void().LocalRecord.<init>:void(java.lang.String)").l) {
+        case List(constructor) =>
+          inside(constructor.body.astChildren.l) { case List(valueAssign: Call) =>
+            valueAssign.name shouldBe Operators.assignment
+            valueAssign.code shouldBe "this.value = value"
+
+            inside(valueAssign.argument.l) { case List(fieldAccess: Call, valueId: Identifier) =>
+              inside(fieldAccess.argument.l) { case List(thisId: Identifier, valueFieldId: FieldIdentifier) =>
+                thisId.name shouldBe "this"
+                inside(thisId.refsTo.l) { case List(thisParam: MethodParameterIn) =>
+                  thisParam.name shouldBe "this"
+                  thisParam.index shouldBe 0
+                  thisParam.method shouldBe constructor
+                }
+
+                valueFieldId.canonicalName shouldBe "value"
+              }
+
+              valueId.name shouldBe "value"
+              inside(valueId.refsTo.l) { case List(valueParam: MethodParameterIn) =>
+                valueParam.name shouldBe "value"
+                valueParam.index shouldBe 1
+                valueParam.method shouldBe constructor
+              }
             }
           }
+      }
+    }
+
+    "correctly handle the scope of the local record parameter in the local record" in {
+      inside(cpg.method.name("print").call.name("println").argument.argumentIndex(1).l) { case List(localValue: Call) =>
+        localValue.name shouldBe Operators.fieldAccess
+        inside(localValue.argument.l) { case List(thisId: Identifier, valueFieldId: FieldIdentifier) =>
+          thisId.name shouldBe "this"
+          thisId.typeFullName shouldBe "Foo.<lambda>0:void().LocalRecord"
+          inside(thisId.refsTo.l) { case List(thisParam: MethodParameterIn) =>
+            thisParam.name shouldBe "this"
+            thisParam.index shouldBe 0
+            thisParam.method.fullName shouldBe "Foo.<lambda>0:void().LocalRecord.print:void()"
+          }
+
+          valueFieldId.canonicalName shouldBe "value"
+        }
       }
     }
   }

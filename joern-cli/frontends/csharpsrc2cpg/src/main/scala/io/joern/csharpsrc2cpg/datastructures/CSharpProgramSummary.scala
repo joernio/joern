@@ -155,14 +155,14 @@ object CSharpProgramSummary {
 
     val mergedJson = jsonObjects
       .reduceOption((prev, curr) => {
-        curr.keys.foreach(key => {
+        curr.keys.foreach { key =>
           prev.updateWith(key) {
             case Some(x) =>
               Option(x.arr.addAll(curr.get(key).get.arr))
             case None =>
               Option(curr.get(key).get.arr)
           }
-        })
+        }
         prev
       })
       .getOrElse(LinkedHashMap[String, ujson.Value]())
@@ -198,16 +198,16 @@ object CSharpProgramSummary {
           .fromResource(builtinDirectory)
           .getLines()
           .toList
-          .flatMap(u => {
+          .flatMap { u =>
             val basePath = s"$builtinDirectory/$u"
             Source
               .fromResource(basePath)
               .getLines()
               .toList
-              .map(p => {
+              .map { p =>
                 s"$basePath/$p"
-              })
-          })
+              }
+          }
     }
     if (resourcePaths.isEmpty) {
       logger.warn("No JSON files found.")

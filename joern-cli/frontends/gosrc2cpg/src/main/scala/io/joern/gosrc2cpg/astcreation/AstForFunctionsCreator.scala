@@ -40,18 +40,19 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       )
     scope.popScope()
     methodAstParentStack.pop()
-    methodMetadata.receiverInfo match
+    methodMetadata.receiverInfo match {
       case Some(_, typeFullName, _, _) =>
         // if method is related to Struct then fill astParentFullName and astParentType
         methodNode_.astParentType(NodeTypes.TYPE_DECL).astParentFullName(typeFullName)
       case _ =>
         methodNode_.astParentType(NodeTypes.TYPE_DECL).astParentFullName(fullyQualifiedPackage)
+    }
     Ast.storeInDiffGraph(astForMethod, diffGraph)
     Seq.empty
   }
 
   private def astForReceiver(receiverInfo: Option[(String, String, String, ParserNodeInfo)]): Seq[Ast] = {
-    receiverInfo match
+    receiverInfo match {
       case Some(recName, typeFullName, evaluationStrategy, recNode) =>
         val recParamNode = parameterInNode(
           recNode,
@@ -65,16 +66,17 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         scope.addToScope(recName, (recParamNode, typeFullName))
         Seq(Ast(recParamNode))
       case _ => Seq.empty
+    }
   }
 
   protected def getReceiverInfo(receiver: Try[Value]): Option[(String, String, String, ParserNodeInfo)] = {
-    receiver match
+    receiver match {
       case Success(rec) if rec != null =>
         val recnode = createParserNodeInfo(rec)
-        rec(ParserKeys.List).arr.headOption.map(recValue => {
+        rec(ParserKeys.List).arr.headOption.map { recValue =>
           val recName        = Try(recValue(ParserKeys.Names).arr.head(ParserKeys.Name).str).getOrElse(Defines.This)
           val typeParserNode = createParserNodeInfo(recValue(ParserKeys.Type))
-          val (typeFullName, evaluationStrategy) = typeParserNode.node match
+          val (typeFullName, evaluationStrategy) = typeParserNode.node match {
             case Ident =>
               (
                 generateTypeFullName(typeName = typeParserNode.json(ParserKeys.Name).strOpt),
@@ -88,22 +90,24 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
             case x =>
               logger.warn(s"Unhandled class ${x.getClass} under getReceiverInfo! file -> ${parserResult.fullPath}")
               ("", "")
+          }
           (recName, typeFullName, evaluationStrategy, recnode)
-        })
+        }
       case _ => None
+    }
   }
 
   protected def astForMethodParameter(params: Value, genericTypeMethodMap: Map[String, List[String]]): Seq[Ast] = {
     var index = 1
     params.arrOpt
       .getOrElse(List())
-      .flatMap(x =>
+      .flatMap { x =>
         val typeInfo = createParserNodeInfo(x(ParserKeys.Type))
         val (typeFullName, typeFullNameForcode, isVariadic, evaluationStrategy) =
           processTypeInfo(typeInfo, genericTypeMethodMap)
         x(ParserKeys.Names).arrOpt
           .getOrElse(List())
-          .map(y => {
+          .map { y =>
             // We are returning same type from x object for each name in the names array.
             val parameterInfo = createParserNodeInfo(y)
             val paramName     = parameterInfo.json(ParserKeys.Name).str
@@ -119,8 +123,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
             index += 1
             scope.addToScope(paramName, (parameterNode, typeFullName))
             Ast(parameterNode)
-          })
-      )
+          }
+      }
       .toSeq
   }
 
@@ -129,7 +133,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     // We get params -> list -> names [argc, something], type (int)
     params.arrOpt
       .getOrElse(ArrayBuffer())
-      .map(x =>
+      .map { x =>
         val typeInfo                                           = createParserNodeInfo(x(ParserKeys.Type))
         val (typeFullName, typeFullNameForcode, isVariadic, _) = processTypeInfo(typeInfo, genericTypeMethodMap)
         x(ParserKeys.Names).arrOpt
@@ -145,12 +149,12 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           which only facilitates adding the parameter type to list.
            */
           .getOrElse(List(""))
-          .map(_ => {
+          .map { _ =>
             // We are returning same type from x object for each name in the names array.
             typeFullName
-          })
+          }
           .mkString(", ")
-      )
+      }
       .mkString(", ")
   }
 
@@ -158,17 +162,18 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     methodTypes: Value,
     genericTypeMethodMap: Map[String, List[String]] = Map.empty
   ): Seq[(String, ParserNodeInfo)] = {
-    Try(methodTypes(ParserKeys.Results)) match
+    Try(methodTypes(ParserKeys.Results)) match {
       case Success(returnType) =>
         returnType(ParserKeys.List).arrOpt
           .getOrElse(List())
-          .map(x =>
+          .map { x =>
             val typeInfo                = createParserNodeInfo(x(ParserKeys.Type))
             val (typeFullName, _, _, _) = processTypeInfo(typeInfo, genericTypeMethodMap)
             (typeFullName, typeInfo)
-          )
+          }
           .toSeq
       case Failure(exception) => Seq.empty
+    }
   }
 
   def astForMethodBody(body: Value): Ast = {
@@ -188,7 +193,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           typeParams
             .obj(ParserKeys.List)
             .arr
-            .foreach(params => {
+            .foreach { params =>
               if (params.obj.contains(ParserKeys.Type)) {
                 val genericTypeName = params
                   .obj(ParserKeys.Names)
@@ -201,7 +206,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
                 processGenericType(params(ParserKeys.Type), genericMethodList)
                 genericTypeMethodMap.put(genericTypeName, genericMethodList.toList)
               }
-            })
+            }
         }
       case _ =>
         Map()

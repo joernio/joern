@@ -21,9 +21,10 @@ class MethodTests extends CSharpCode2CpgFixture {
           |    {
           |      Console.WriteLine("Hello, world!");
           |    }""".stripMargin
-      x.typeDecl match
+      x.typeDecl match {
         case Some(typeDecl) => typeDecl.name shouldBe "Program"
         case None           => fail("No TYPE_DECL parent found!")
+      }
     }
 
     "generate a method node with the correct modifiers" in {

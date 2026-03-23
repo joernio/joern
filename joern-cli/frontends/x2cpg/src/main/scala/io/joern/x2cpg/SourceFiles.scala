@@ -298,10 +298,23 @@ object SourceFiles {
     * Otherwise, the path relative to rootPath is returned.
     */
   def toRelativePath(path: String, rootPath: String): String = {
-    if (path.startsWith(rootPath)) {
-      val absolutePath = Paths.get(path).toAbsolutePath
-      val projectPath  = Paths.get(rootPath).toAbsolutePath
-      if (absolutePath.compareTo(projectPath) == 0) {
+    // Helper to resolve path, using toRealPath() if file exists (which resolves Windows 8.3 short names),
+    // otherwise fall back to toAbsolutePath.normalize()
+    def resolvePath(p: String): Path = {
+      val pathObj = Paths.get(p)
+      Try(pathObj.toRealPath()).getOrElse(pathObj.toAbsolutePath.normalize())
+    }
+
+    // Convert to absolute, normalized paths for proper comparison
+    val absolutePath = resolvePath(path)
+    val projectPath  = resolvePath(rootPath)
+
+    // Use Path.startsWith() instead of String.startsWith() to handle:
+    // - Case-insensitive filesystems (Windows, macOS)
+    // - Proper path component boundaries
+    // - OS-specific path handling
+    if (absolutePath.startsWith(projectPath)) {
+      if (absolutePath.equals(projectPath)) {
         absolutePath.fileName
       } else {
         projectPath.relativize(absolutePath).toString

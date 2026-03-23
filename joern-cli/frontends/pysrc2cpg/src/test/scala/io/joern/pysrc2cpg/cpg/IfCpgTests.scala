@@ -1,14 +1,14 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.joern.pysrc2cpg.testfixtures.Py2CpgTestContext
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, nodes}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 
-class IfCpgTests extends AnyFreeSpec with Matchers {
-  "if statement" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""if x :
+class IfCpgTests extends PySrc2CpgFixture with Matchers {
+  "if statement" should {
+    val cpg = code("""if x :
         |  y""".stripMargin)
 
     "test control structure node properties" in {
@@ -32,8 +32,8 @@ class IfCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
-  "if else statement" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""if x :
+  "if else statement" should {
+    val cpg = code("""if x :
         |  y
         |else:
         |  z""".stripMargin)

@@ -217,7 +217,7 @@ class AstCreator(
       s"Trait use statement encountered. This is not yet supported. Location: $relativeFileName:${line(stmt)}"
     )
 
-    Ast(unknownNode(stmt, code(stmt)))
+    Ast(unknownNode(stmt, code(stmt)).typeFullName(Defines.Any))
   }
 
   private def astForUseUse(stmt: PhpUseUse, namePrefix: String = ""): Ast = {

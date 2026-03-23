@@ -74,7 +74,7 @@ class RecordTests extends JavaSrcCode2CpgFixture {
         valueMember.name shouldBe "value"
         valueMember.code shouldBe "String value"
         valueMember.typeFullName shouldBe "java.lang.String"
-        valueMember.modifier.modifierType.l shouldBe List(ModifierTypes.PRIVATE)
+        valueMember.modifier.modifierType.toSet shouldBe Set(ModifierTypes.PRIVATE, ModifierTypes.FINAL)
       }
     }
 
@@ -219,7 +219,7 @@ class RecordTests extends JavaSrcCode2CpgFixture {
         valueMember.name shouldBe "value"
         valueMember.code shouldBe "String value"
         valueMember.typeFullName shouldBe "java.lang.String"
-        valueMember.modifier.modifierType.l shouldBe List(ModifierTypes.PRIVATE)
+        valueMember.modifier.modifierType.toSet shouldBe Set(ModifierTypes.PRIVATE, ModifierTypes.FINAL)
       }
     }
 
@@ -335,7 +335,7 @@ class RecordTests extends JavaSrcCode2CpgFixture {
         valueMember.name shouldBe "value"
         valueMember.code shouldBe "String value"
         valueMember.typeFullName shouldBe "java.lang.String"
-        valueMember.modifier.modifierType.l shouldBe List(ModifierTypes.PRIVATE)
+        valueMember.modifier.modifierType.toSet shouldBe Set(ModifierTypes.PRIVATE, ModifierTypes.FINAL)
       }
     }
 
@@ -443,7 +443,7 @@ class RecordTests extends JavaSrcCode2CpgFixture {
         valueMember.name shouldBe "value"
         valueMember.code shouldBe "T value"
         valueMember.typeFullName shouldBe "java.lang.Object"
-        valueMember.modifier.modifierType.l shouldBe List(ModifierTypes.PRIVATE)
+        valueMember.modifier.modifierType.toSet shouldBe Set(ModifierTypes.PRIVATE, ModifierTypes.FINAL)
       }
     }
 
@@ -551,7 +551,7 @@ class RecordTests extends JavaSrcCode2CpgFixture {
         valueMember.name shouldBe "value"
         valueMember.code shouldBe "String value"
         valueMember.typeFullName shouldBe "java.lang.String"
-        valueMember.modifier.modifierType.l shouldBe List(ModifierTypes.PRIVATE)
+        valueMember.modifier.modifierType.toSet shouldBe Set(ModifierTypes.PRIVATE, ModifierTypes.FINAL)
       }
     }
 

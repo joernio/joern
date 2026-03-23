@@ -51,19 +51,11 @@ object AstGenRunner {
   }
 
   lazy private val executableDir: String = {
-    val dir        = getClass.getProtectionDomain.getCodeSource.getLocation.toString
-    val indexOfLib = dir.lastIndexOf("lib")
-    val fixedDir = if (indexOfLib != -1) {
-      new java.io.File(dir.substring("file:".length, indexOfLib)).toString
-    } else {
-      val indexOfTarget = dir.lastIndexOf("target")
-      if (indexOfTarget != -1) {
-        new java.io.File(dir.substring("file:".length, indexOfTarget)).toString
-      } else {
-        "."
-      }
-    }
-    Paths.get(fixedDir, "/bin/astgen").toAbsolutePath.toString
+    val packagePath = Paths.get(getClass.getProtectionDomain.getCodeSource.getLocation.toURI)
+    io.shiftleft.semanticcpg.utils.ExternalCommand
+      .executableDir(packagePath)
+      .resolve("astgen")
+      .toString
   }
 
   private def hasCompatibleAstGenVersionAtPath(path: Option[String]): Boolean = {
@@ -83,7 +75,7 @@ object AstGenRunner {
     *   the full path to the astgen binary found on the system
     */
   private def compatibleAstGenPath(): String = {
-    AstGenBin match
+    AstGenBin match {
       // 1. case: we try it at env var SWIFTASTGEN_BIN
       case Some(path) if hasCompatibleAstGenVersionAtPath(Option(path)) =>
         path
@@ -96,8 +88,17 @@ object AstGenRunner {
           s"Did not find any SwiftAstGen binary on this system (environment variable SWIFTASTGEN_BIN not set and no entry in the systems PATH)"
         )
         val localPath = s"$executableDir/$executableName"
-        logger.debug(s"Using SwiftAstGen from '$localPath'")
-        localPath
+        if (io.joern.x2cpg.astgen.AstGenRunner.isExecutableFile(localPath)) {
+          logger.debug(s"Using SwiftAstGen from '$localPath'")
+          localPath
+        } else {
+          logger.error(s"""Local SwiftAstGen binary not found at '$localPath' or is not executable!
+               |Please make sure to have a compatible astgen version installed and available
+               |on this system or set the environment variable SWIFTASTGEN_BIN to the full path of an executable astgen binary.
+               |""".stripMargin)
+          scala.sys.exit(1)
+        }
+    }
   }
 
   private lazy val astGenCommand = compatibleAstGenPath()

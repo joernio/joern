@@ -196,19 +196,19 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
     cpg: Cpg,
     config: Config,
     filesWithJavaExtension: List[String],
-    kotlinAstCreatorTypes: List[String]
-  ): Unit = {
+    kotlinAstCreatorTypes: Set[String]
+  ): Set[String] = {
     if (config.includeJavaSourceFiles && filesWithJavaExtension.nonEmpty) {
       val javaAstCreator = JavaSrcInterop.astCreationPass(config.inputPath, filesWithJavaExtension, cpg)
       javaAstCreator.createAndApply()
-      val javaAstCreatorTypes = javaAstCreator.global.usedTypes.keys().asScala.toList
+      val javaAstCreatorTypes = javaAstCreator.global.usedTypes.keys().asScala.toSet
 
       javaAstCreator.sourceParser.cleanupDelombokOutput()
       javaAstCreator.clearJavaParserCaches()
 
-      TypeNodePass
-        .withRegisteredTypes((javaAstCreatorTypes.toSet -- kotlinAstCreatorTypes.toSet).toList, cpg)
-        .createAndApply()
+      javaAstCreatorTypes
+    } else {
+      Set.empty
     }
   }
 
@@ -241,12 +241,16 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
         new AstCreationPass(sourceFiles, bindingContext, cpg, config.disableFileContent)(config.schemaValidation)
       astCreator.createAndApply()
 
+      new SamTypeDeclPass(cpg, astCreator.samInfoEntries())(config.schemaValidation).createAndApply()
+
       Disposer.dispose(environment.getProjectEnvironment.getParentDisposable)
 
       val kotlinAstCreatorTypes = astCreator.usedTypes()
-      TypeNodePass.withRegisteredTypes(kotlinAstCreatorTypes, cpg).createAndApply()
+      val javaAstCreatorTypes   = runJavaSrcInterop(cpg, config, filesWithJavaExtension, kotlinAstCreatorTypes)
+      val allAstCreatorTypes    = kotlinAstCreatorTypes ++ javaAstCreatorTypes
 
-      runJavaSrcInterop(cpg, config, filesWithJavaExtension, kotlinAstCreatorTypes)
+      TypeNodePass.withRegisteredTypes(allAstCreatorTypes, cpg).createAndApply()
+
       new ConfigPass(configFiles, cpg).createAndApply()
       new DependenciesFromMavenCoordinatesPass(mavenCoordinates, cpg).createAndApply()
     }

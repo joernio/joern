@@ -79,11 +79,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     def builder(node: IfExpression, conditionAst: Ast, thenAst: Ast, elseAsts: List[Ast]): Ast = {
       // We want to make sure there's always an «else» clause in a ternary operator.
       // The default value is a `nil` literal.
-      val elseAsts_ = if (elseAsts.isEmpty) {
-        List(astForNilBlock)
-      } else {
-        elseAsts
-      }
+      val elseAsts_ = if (elseAsts.isEmpty) List(astForNilBlock) else elseAsts
 
       val call = callNode(node, code(node), Operators.conditional, Operators.conditional, DispatchTypes.STATIC_DISPATCH)
       callAst(call, conditionAst :: thenAst :: elseAsts_)
@@ -121,25 +117,28 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
   // `unless T do B` is lowered as `if !T then B`
   private def astForUnlessStatement(node: UnlessExpression): Ast = {
     val notConditionAst = astForExpression(UnaryExpression("!", node.condition)(node.condition.span))
-    val thenAst = node.trueBranch match
+    val thenAst = node.trueBranch match {
       case stmtList: StatementList => astForStatementList(stmtList)
       case _                       => astForStatementList(StatementList(List(node.trueBranch))(node.trueBranch.span))
+    }
     val elseAsts = node.falseBranch.map(astForElseClause).toList
     val ifNode   = controlStructureNode(node, ControlStructureTypes.IF, code(node))
     controlStructureAst(ifNode, Some(notConditionAst), thenAst :: elseAsts)
   }
 
   protected def astForElseClause(node: RubyExpression): Ast = {
-    node match
+    node match {
       case elseNode: ElseClause =>
-        elseNode.thenClause match
+        elseNode.thenClause match {
           case stmtList: StatementList => astForStatementList(stmtList)
           case node =>
             logger.warn(s"Expecting statement list in ${code(node)} ($relativeFileName), skipping")
             astForUnknown(node)
+        }
       case elseNode =>
         logger.warn(s"Expecting else clause in ${code(elseNode)} ($relativeFileName), skipping")
         astForUnknown(elseNode)
+    }
   }
 
   private def astForForExpression(node: ForExpression): Ast = {
@@ -304,15 +303,15 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
                 val stmts = x.children.zipWithIndex.flatMap {
                   case (lhs: MatchVariable, idx) if expr.isDefined =>
                     val arrAccess = {
-                      val code = s"${expr.get.text}[$idx]"
-                      val base = expr.get.copy()(expr.get.span.spanStart(expr.get.text))
+                      val code_ = s"${code(expr.get)}[$idx]"
+                      val base  = expr.get.copy()(expr.get.span.spanStart(code(expr.get)))
                       val indices = StaticLiteral(Defines.prefixAsCoreType(Defines.Integer))(
                         expr.get.span.spanStart(idx.toString)
                       ) :: Nil
-                      IndexAccess(base, indices)(lhs.span.spanStart(code))
+                      IndexAccess(base, indices)(lhs.span.spanStart(code_))
                     }
                     val asgn = SingleAssignment(lhs, "=", arrAccess)(
-                      inClause.span.spanStart(s"${lhs.span.text} = ${expr.get.text}[$idx]")
+                      inClause.span.spanStart(s"${lhs.span.text} = ${code(expr.get)}[$idx]")
                     )
                     Option(asgn)
                   case _ => None

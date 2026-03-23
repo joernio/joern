@@ -19,21 +19,21 @@ class NamespaceBlockTests extends KotlinCode2CpgFixture(withOssDataflow = false)
         |}
         |""".stripMargin)
 
-    "should contain two namespace blocks in total (<global>, PackageFoo)" in {
+    "should contain two namespace blocks in total (<global>, com.test.PackageFoo)" in {
       cpg.namespaceBlock.size shouldBe 2
-      cpg.namespaceBlock.name.l.toSet shouldBe Set("<global>", "PackageFoo")
+      cpg.namespaceBlock.name.l.toSet shouldBe Set("<global>", "com.test.PackageFoo")
     }
 
     "should contain correct namespace block for known file" in {
       val List(x) = cpg.namespaceBlock.filename(".*.kt").l
-      x.name shouldBe "PackageFoo"
+      x.name shouldBe "com.test.PackageFoo"
       x.filename should not be ""
-      x.fullName shouldBe s"com.test.PackageFoo"
+      x.fullName shouldBe s"Test0.kt:com.test.PackageFoo"
       x.order shouldBe 1
     }
 
     "should allow traversing from namespace block to namespace" in {
-      cpg.namespaceBlock.filename(".*kt").namespace.name.l shouldBe List("PackageFoo")
+      cpg.namespaceBlock.filename(".*kt").namespace.name.l shouldBe List("com.test.PackageFoo")
     }
 
     "should allow traversing from namespace block to type declaration" in {
@@ -65,14 +65,66 @@ class NamespaceBlockTests extends KotlinCode2CpgFixture(withOssDataflow = false)
        |}
        | """.stripMargin)
 
-    "should contain a NAMESPACE_BLOCK for the `import android.app.Activity` with the correct props set" in {
-      val List(nsb) = cpg.namespaceBlock.name(".*Activity.*").l
-      nsb.fullName shouldBe "android.app.Activity"
+    "should not contain a NAMESPACE_BLOCK for the `import android.*` statements" in {
+      cpg.namespaceBlock.name(".*android.*").size shouldBe 0
     }
 
-    "should contain a NAMESPACE_BLOCK for the `import android.webkit.WebView` with the correct props set" in {
-      val List(nsb) = cpg.namespaceBlock.name(".*WebView.*").l
-      nsb.fullName shouldBe "android.webkit.WebView"
+  }
+
+  "CPG for multiple Kotlin files in the same package" should {
+    val cpg = code(
+      """
+        |package mypkg
+        |
+        |fun first() = 1
+        |""".stripMargin,
+      "First.kt"
+    ).moreCode(
+      """
+        |package mypkg
+        |
+        |fun second() = 2
+        |""".stripMargin,
+      "Second.kt"
+    )
+
+    "should keep fake global TYPE_DECL full names unique" in {
+      val fakeGlobalTypeDeclFullNames = cpg.typeDecl.nameExact("<global>").filename(".*\\.kt").fullName.l
+      fakeGlobalTypeDeclFullNames.size shouldBe fakeGlobalTypeDeclFullNames.distinct.size
+    }
+
+    "should keep fake global METHOD full names unique" in {
+      val fakeGlobalMethodFullNames = cpg.method.nameExact("<global>").filename(".*\\.kt").fullName.l
+      fakeGlobalMethodFullNames.size shouldBe fakeGlobalMethodFullNames.distinct.size
+    }
+  }
+
+  "CPG for multiple Kotlin files with the same import dependency" should {
+    val cpg = code(
+      """
+        |package mypkg
+        |
+        |import android.app.Activity
+        |
+        |fun first() = 1
+        |""".stripMargin,
+      "First.kt"
+    ).moreCode(
+      """
+        |package mypkg
+        |
+        |import android.app.Activity
+        |
+        |fun second() = 2
+        |""".stripMargin,
+      "Second.kt"
+    )
+
+    "should keep namespace block full names unique across files" in {
+      val namespaceFullNames = cpg.namespaceBlock.nameExact("mypkg").filename(".*\\.kt").fullName.l
+      namespaceFullNames.size shouldBe 2
+      // Should be distinct too
+      namespaceFullNames.size shouldBe namespaceFullNames.distinct.size
     }
   }
 }

@@ -18,12 +18,12 @@ class LiteralMethods(val literal: Literal) extends AnyVal with NodeExtension {
 
     stringDelimiters
       .filter(literal.code.startsWith(_))
-      .map(delimiter =>
+      .map { delimiter =>
         val start = literal.code.indexOf(delimiter) + delimiter.length
         val end   = literal.code.lastIndexOf(delimiter)
 
         literal.code.substring(start, end)
-      )
+      }
       .headOption
       .getOrElse(literal.code)
   }

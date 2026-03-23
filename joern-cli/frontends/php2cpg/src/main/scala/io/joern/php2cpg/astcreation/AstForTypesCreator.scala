@@ -40,9 +40,19 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val inheritsFrom = (stmt.extendsNames ++ stmt.implementedInterfaces).map(_.name)
     val code         = codeForClassStmt(stmt, name)
 
-    val fullName = globalNamespace.fullName
+    val fullName                           = globalNamespace.fullName
+    val (astParentType, astParentFullName) = getAstParentInfo
 
-    val typeDecl = typeDeclNode(stmt, name.name, fullName, relativeFileName, code, inherits = inheritsFrom)
+    val typeDecl = typeDeclNode(
+      node = stmt,
+      name = name.name,
+      fullName = fullName,
+      filename = relativeFileName,
+      code = code,
+      astParentType = astParentType,
+      astParentFullName = astParentFullName,
+      inherits = inheritsFrom
+    )
     val createDefaultConstructor = stmt.hasConstructor
 
     scope.pushNewScope(TypeScope(typeDecl, fullName))
@@ -70,7 +80,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     val classFullName = prependNamespacePrefix(className)
 
-    val code = codeForClassStmt(stmt, PhpNameExpr(className, stmt.attributes))
+    val code                               = codeForClassStmt(stmt, PhpNameExpr(className, stmt.attributes))
+    val (astParentType, astParentFullName) = getAstParentInfo
 
     val typeDeclTemp = typeDeclNode(
       node = stmt,
@@ -78,6 +89,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       fullName = classFullName,
       filename = relativeFileName,
       code = code,
+      astParentType = astParentType,
+      astParentFullName = astParentFullName,
       inherits = inheritsFrom,
       alias = None
     )
@@ -98,7 +111,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     scope.popScope()
 
-    if scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL) then {
+    if (scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL)) {
       val typeDeclMember = NewMember()
         .name(className)
         .code(className)
@@ -203,7 +216,18 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         (name.name, prependNamespacePrefix(dedupClassName))
       }
 
-    val typeDecl = typeDeclNode(stmt, dedupedName, fullName, relativeFileName, code, inherits = inheritsFrom)
+    val (astParentType, astParentFullName) = getAstParentInfo
+
+    val typeDecl = typeDeclNode(
+      node = stmt,
+      name = dedupedName,
+      fullName = fullName,
+      filename = relativeFileName,
+      code = code,
+      astParentType = astParentType,
+      astParentFullName = astParentFullName,
+      inherits = inheritsFrom
+    )
 
     // Add this to scope for symbol resolution
     scope.useTypeDecl(dedupedName, fullName)
@@ -218,11 +242,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val clinitAst      = astForStaticAndConstInits(stmt).toList
 
     // This needs to be carried over for enums
-    val staticConsts = if (stmt.classLikeType == ClassLikeTypes.Enum) {
-      scope.getConstAndStaticInits
-    } else {
-      List.empty
-    }
+    val staticConsts = if (stmt.classLikeType == ClassLikeTypes.Enum) scope.getConstAndStaticInits else List.empty
 
     staticConsts.foreach(init => scope.addConstOrStaticInitToScope(init.originNode, init.memberNode, init.value))
 

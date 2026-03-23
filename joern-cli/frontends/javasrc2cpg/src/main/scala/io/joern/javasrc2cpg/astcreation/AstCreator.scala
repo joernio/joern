@@ -207,8 +207,9 @@ class AstCreator(
         .importedAs(name)
         .importedEntity(typeFullName)
         .code(getImportCode(importStmt))
+        .isModuleImport(importStmt.isModule)
 
-      if (!importStmt.isStatic) {
+      if (!importStmt.isStatic && !importStmt.isModule) {
         scope.addTopLevelType(name, typeFullName)
       }
       importNode

@@ -8,7 +8,7 @@ import io.joern.joerncli.JoernScan.getQueriesFromQueryDb
 import io.joern.joerncli.Scan.{allTag, defaultTag}
 import io.joern.joerncli.console.ReplBridge
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder, locationCreator}
+import io.shiftleft.semanticcpg.language.locationCreator
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
 import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.utils.FileUtil.*
@@ -174,7 +174,10 @@ object JoernScan extends BridgeBase {
         overwrite = config.overwrite,
         store = config.store,
         language = config.language,
-        frontendArgs = frontendArgs.toArray
+        frontendArgs = frontendArgs.toArray,
+        scanMaxCallDepth = Some(Scan.defaultOpts.maxCallDepth),
+        scanScriptNames = Scan.defaultOpts.names,
+        scanTagNames = Scan.defaultOpts.tags
       )
     run(shellConfig)
     println(s"Run `joern --for-input-path ${config.src}` to explore interactively")
@@ -263,12 +266,17 @@ class Scan(options: ScanOptions)(implicit engineContext: EngineContext) extends 
   override val description: String = Scan.description
 
   override def create(context: LayerCreatorContext): Unit = {
-    val allQueries = getQueriesFromQueryDb(new JoernDefaultArgumentProvider(options.maxCallDepth))
+    val maxCallDepth =
+      if (options.maxCallDepth == 2 && Scan.defaultOpts.maxCallDepth != 2) Scan.defaultOpts.maxCallDepth
+      else options.maxCallDepth
+    val allQueries = getQueriesFromQueryDb(new JoernDefaultArgumentProvider(maxCallDepth))
     if (allQueries.isEmpty) {
       println("No queries found, you probably forgot to install a query database.")
       return
     }
-    val queriesAfterFilter = filteredQueries(allQueries, options.names, options.tags)
+    val names              = if (options.names.isEmpty) Scan.defaultOpts.names else options.names
+    val tags               = if (options.tags.isEmpty) Scan.defaultOpts.tags else options.tags
+    val queriesAfterFilter = filteredQueries(allQueries, names, tags)
     if (queriesAfterFilter.isEmpty) {
       println("No queries matched current filter selection (total number of queries: `" + allQueries.length + "`)")
       return

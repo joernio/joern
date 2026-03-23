@@ -184,11 +184,11 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
   protected def createFunctionTypeAndTypeDecl(node: SwiftNode, methodNode: NewMethod): Unit = {
     registerType(methodNode.fullName)
 
-    val (inherits, bindingName) = if (node.isInstanceOf[ClosureExprSyntax]) {
+    val (inherits, bindingName, signature) = if (node.isInstanceOf[ClosureExprSyntax]) {
       val inheritsFunctionFullName = s"${Defines.Function}<${methodNode.signature}>"
       registerType(inheritsFunctionFullName)
-      (Seq(inheritsFunctionFullName), Defines.ClosureApplyMethodName)
-    } else (Seq.empty, methodNode.name)
+      (Seq(inheritsFunctionFullName), Defines.ClosureApplyMethodName, Defines.ErasedSignature)
+    } else (Seq.empty, methodNode.name, methodNode.signature)
 
     val methodTypeDeclNode = typeDeclNode(
       node,
@@ -204,7 +204,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     val functionBinding = NewBinding()
       .name(bindingName)
       .methodFullName(methodNode.fullName)
-      .signature(methodNode.signature)
+      .signature(signature)
 
     val functionBindAst = Ast(functionBinding)
       .withBindsEdge(methodTypeDeclNode, functionBinding)
