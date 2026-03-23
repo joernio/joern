@@ -128,8 +128,8 @@ class FunctionDeclNodePass(cpg: Cpg, methodDeclarations: Map[String, FunctionDec
         methodNodeInfo.signature,
         dstGraph
       )
-      val ast = stubAst.merge(typeDeclAst)
-      Ast.storeInDiffGraph(ast, dstGraph)
+      Ast.storeInDiffGraph(stubAst, dstGraph)
+      Ast.storeInDiffGraph(typeDeclAst, dstGraph)
     }
   }
 
@@ -199,7 +199,7 @@ class FunctionDeclNodePass(cpg: Cpg, methodDeclarations: Map[String, FunctionDec
     val normalizedFullName = StringUtils.normalizeSpace(methodFullName)
 
     if (methodInfo.astParentType == NodeTypes.TYPE_DECL) {
-      val parentTypeDecl = cpg.typeDecl.nameExact(methodInfo.astParentFullName).headOption
+      val parentTypeDecl = cpg.typeDecl.fullNameExact(methodInfo.astParentFullName).headOption
       parentTypeDecl
         .map { typeDecl =>
           val functionBinding =

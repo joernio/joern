@@ -238,18 +238,27 @@ trait AstForPrimitivesCreator { this: AstCreator =>
         val ma =
           callNode(qualId, code(qualId), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
 
-        def fieldAccesses(names: List[IASTNode], argIndex: Int = -1): Ast = names match {
+        def fieldAccesses(names: List[IASTNode]): Ast = names match {
           case Nil => Ast()
           case head :: Nil =>
             astForNode(head)
-          case head :: tail =>
-            val codeString = s"${code(head)}::${tail.map(code).mkString("::")}"
+          case head :: id :: Nil =>
+            val codeString = s"${code(head)}::${code(id)}"
             val callNode_ =
-              callNode(head, code(head), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
-                .argumentIndex(argIndex)
-            callNode_.code = codeString
-            val arg1 = astForNode(head)
-            val arg2 = fieldAccesses(tail)
+              callNode(head, codeString, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
+            val arg1   = astForNode(head)
+            val idCode = code(id)
+            val arg2   = Ast(fieldIdentifierNode(id, idCode, idCode))
+            callAst(callNode_, List(arg1, arg2))
+          case _ =>
+            val init       = names.init
+            val last       = names.last
+            val codeString = names.map(code).mkString("::")
+            val callNode_ =
+              callNode(names.head, codeString, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
+            val arg1     = fieldAccesses(init)
+            val lastCode = code(last)
+            val arg2     = Ast(fieldIdentifierNode(last, lastCode, lastCode))
             callAst(callNode_, List(arg1, arg2))
         }
         val qualifier = fieldAccesses(qualId.getQualifier.toIndexedSeq.toList)
