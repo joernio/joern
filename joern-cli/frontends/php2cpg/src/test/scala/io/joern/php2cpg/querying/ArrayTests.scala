@@ -95,6 +95,28 @@ class ArrayTests extends PhpCode2CpgFixture {
     }
   }
 
+  "arrays in blocks should contain unique tmp locals" in {
+    // using "array(...)" as its lowering generates tmp variables
+    val cpg = code("""<?php
+        |function foo() {
+        |  $arr = array(1, 2);
+        |
+        |  foreach ($arr as list($a, $b)) {
+        |    echo $a, $b;
+        |  }
+        |}
+        |""".stripMargin)
+
+    val tmp0Identifiers = cpg.identifier.nameExact("foo@tmp-0").l
+    tmp0Identifiers.flatMap(_.lineNumber).distinct shouldBe List(3)
+
+    val tmp1Identifiers = cpg.identifier.nameExact("foo@iter_tmp-1").l
+    tmp1Identifiers.flatMap(_.lineNumber).distinct shouldBe List(5)
+
+    val tmp2Identifiers = cpg.identifier.nameExact("foo@tmp-2").l
+    tmp2Identifiers.flatMap(_.lineNumber).distinct shouldBe List(5)
+  }
+
   "non-associative array definitions should be lowered with the correct index accesses and assignments" in {
     val cpg = code("""<?php
         |array(
