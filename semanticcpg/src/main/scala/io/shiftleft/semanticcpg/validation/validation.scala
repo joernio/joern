@@ -6,7 +6,7 @@ import io.shiftleft.passes.CpgPass
 
 import scala.collection.mutable
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.validation.PostFrontendValidator.ErrorType
+import io.shiftleft.semanticcpg.validation.PostFrontendValidator.{ErrorType, ValidationName}
 import org.slf4j.{Logger, LoggerFactory}
 
 class ValidationError(msg: String) extends RuntimeException(msg) {}
@@ -26,16 +26,16 @@ abstract class AbstractValidator(cpg: Cpg) extends CpgPass(cpg) {
   }
 
   /** @return
-    *   compressed violations as (message, count) pairs in stable key order
+    *   compressed violations as (key, message, count) tuples in stable key order
     */
-  def getViolationsCompressed: mutable.ArrayBuffer[(String, Int)] = {
+  def getViolationsCompressedWithKey: mutable.ArrayBuffer[(Any, String, Int)] = {
     mutable.ArrayBuffer.from(
       violationsBuffer.iterator
         .groupByStable(_._1)
         .iterator
-        .map { (_, violations) => (violations.head._2, violations.size) }
+        .map { case (key, violations) => (key, violations.head._2, violations.size) }
         .toSeq
-        .sortBy(_._1)
+        .sortBy(_._1.toString)
     )
   }
 }
@@ -44,10 +44,27 @@ abstract class AbstractValidator(cpg: Cpg) extends CpgPass(cpg) {
 object PostFrontendValidator {
   private val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  enum ErrorType {
-    case FULLNAME_UNIQUE_METHOD, FULLNAME_UNIQUE_TYPE, FULLNAME_UNIQUE_TYPEDECL, MULTI_REF, BAD_REF_TYPE, NONLOCAL_REF,
-      MULTI_AST_IN, MULTI_ARG_IN, DUPLICATE_ORDER
+  /** Newly added checks should have an `addedInLevel` 1 level higher than the highest */
+  enum ValidationName(val addedInLevel: Int) {
+    case FULLNAME_UNIQUENESS extends ValidationName(1)
+    case REFS                extends ValidationName(1)
+    case AST_IN              extends ValidationName(1)
+    case ARGUMENT_IN         extends ValidationName(1)
+    case DUPLICATE_ORDER     extends ValidationName(1)
   }
+
+  enum ErrorType(val category: ValidationName) {
+    case FULLNAME_UNIQUE_METHOD   extends ErrorType(ValidationName.FULLNAME_UNIQUENESS)
+    case FULLNAME_UNIQUE_TYPE     extends ErrorType(ValidationName.FULLNAME_UNIQUENESS)
+    case FULLNAME_UNIQUE_TYPEDECL extends ErrorType(ValidationName.FULLNAME_UNIQUENESS)
+    case MULTI_REF                extends ErrorType(ValidationName.REFS)
+    case BAD_REF_TYPE             extends ErrorType(ValidationName.REFS)
+    case NONLOCAL_REF             extends ErrorType(ValidationName.REFS)
+    case MULTI_AST_IN             extends ErrorType(ValidationName.AST_IN)
+    case MULTI_ARG_IN             extends ErrorType(ValidationName.ARGUMENT_IN)
+    case DUPLICATE_ORDER          extends ErrorType(ValidationName.DUPLICATE_ORDER)
+  }
+
 }
 
 /** This derives from CpgPass in order to get the good logging (e.g. timing, etc.). The pass is initially very
@@ -56,7 +73,8 @@ object PostFrontendValidator {
   * Goal is to improve the pass once we fixed current violations, and then have new ideas what to check. Then plug in
   * faster checking code, then enable in sptests and prod.
   */
-class PostFrontendValidator(cpg: Cpg, throwOnError: Boolean) extends AbstractValidator(cpg) {
+class PostFrontendValidator(cpg: Cpg, throwOnError: Boolean, validationLevel: Int = Int.MaxValue)
+    extends AbstractValidator(cpg) {
   import PostFrontendValidator.logger
   import PostFrontendValidator.ErrorType.*
 
@@ -221,11 +239,35 @@ class PostFrontendValidator(cpg: Cpg, throwOnError: Boolean) extends AbstractVal
 
   /** Log compressed violations and optionally throw on error. */
   private def reportViolations(): Unit = {
-    val violations = getViolationsCompressed
+    val violations = getViolationsCompressedWithKey
     if (violations.nonEmpty) {
-      val err = violations.map { (msg, n) => s"$msg ($n instances)" }.mkString("\n")
+      val err = violations.map { (_, msg, n) => s"$msg ($n instances)" }.mkString("\n")
       logger.warn(s"Graph validation failure:\n$err")
-      if (throwOnError) throw new ValidationError(err)
+
+      val fatalViolations = violations.filter { case (key, _, _) =>
+        key match {
+          case err: ErrorType => err.category.addedInLevel <= validationLevel
+          case _              => true
+        }
+      }
+
+      if (throwOnError && fatalViolations.nonEmpty) {
+        val fatalErr = fatalViolations.map { case (_, msg, n) => s"$msg ($n instances)" }.mkString("\n")
+        throw new ValidationError(s"Fatal graph validation errors (Level <= $validationLevel):\n$fatalErr")
+      }
+    }
+  }
+
+  private def reportLowValidationLevel(): Unit = {
+    val maxAvailableLevel = ValidationName.values.map(_.addedInLevel).maxOption.getOrElse(1)
+    if (validationLevel < maxAvailableLevel) {
+      logger.warn(s"""
+           |======================================================================
+           | Note: You are running PostFrontendValidator checks at Level $validationLevel.
+           | This version of Joern supports stricter validation up to Level $maxAvailableLevel.
+           | Consider bumping your validation level to catch more potential issues.
+           |======================================================================
+           |""".stripMargin)
     }
   }
 
@@ -238,6 +280,7 @@ class PostFrontendValidator(cpg: Cpg, throwOnError: Boolean) extends AbstractVal
       checkArgumentIn(node)
       checkDuplicateOrder(node)
     }
+    reportLowValidationLevel()
     reportViolations()
   }
 
