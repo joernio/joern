@@ -255,7 +255,15 @@ trait AstForPrimitivesCreator { this: AstCreator =>
             val last       = names.last
             val codeString = names.map(code).mkString("::")
             val callNode_ =
-              callNode(names.head, codeString, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
+              callNode(
+                names.head,
+                codeString,
+                op,
+                op,
+                DispatchTypes.STATIC_DISPATCH,
+                None,
+                Some(registerType(Defines.Any))
+              )
             val arg1     = fieldAccesses(init)
             val lastCode = code(last)
             val arg2     = Ast(fieldIdentifierNode(last, lastCode, lastCode))
