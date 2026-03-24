@@ -313,8 +313,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
   }
 
-  /** This is used to rewrite the short form $xs[] = <value_expr> as array_push($xs, <value_expr>) to avoid having to
-    * handle the empty array access operator as a special case in the dataflow engine.
+  /** This is used to rewrite the short form $expr[] = [[$value_expr]] as array_push($expr, [[$value_expr]]), where
+    * [[$expr]] is either a variable or an indexAccess, to avoid having to handle the empty array access operator as a
+    * special case in the dataflow engine.
     *
     * This representation is technically wrong in the case where the shorthand is used to initialise a new array (since
     * PHP expects the first argument to array_push to be an existing array). This shouldn't affect dataflow, however.
