@@ -28,7 +28,7 @@ trait RubyFrontend(withDownloadDependencies: Boolean, disableFileContent: Boolea
 
   override def execute(sourceCodeFile: File): Cpg = {
     val tmp = Using.resource(new RubySrc2Cpg())(_.createCpg(config.withInputPath(sourceCodeFile.getAbsolutePath)).get)
-    new PostFrontendValidator(tmp, false).run()
+    new PostFrontendValidator(tmp, fatalValidationLevel = 0).run()
     tmp
   }
 

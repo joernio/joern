@@ -16,7 +16,7 @@ trait C2CpgFrontend extends LanguageFrontend {
       .fold(Config())(_.asInstanceOf[Config])
       .withInputPath(sourceCodePath.getAbsolutePath)
     val res = c2cpg.createCpg(config).get
-    new PostFrontendValidator(res, false).run()
+    new PostFrontendValidator(res, fatalValidationLevel = 0).run()
     res
   }
 }

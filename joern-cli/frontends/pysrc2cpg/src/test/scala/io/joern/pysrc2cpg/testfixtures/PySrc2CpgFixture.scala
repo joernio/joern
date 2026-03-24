@@ -41,7 +41,7 @@ trait PythonFrontend extends LanguageFrontend {
           .withInputPath(sourceCodePath.getAbsolutePath)
       )
       .get
-    new PostFrontendValidator(tmp, false).run()
+    new PostFrontendValidator(tmp, fatalValidationLevel = 0).run()
     tmp
   }
 }

@@ -12,7 +12,7 @@ trait JsSrc2CpgFrontend extends LanguageFrontend {
     val jssrc2cpg = new JsSrc2Cpg()
     val config    = getConfig().getOrElse(Config(tsTypes = false)).withInputPath(sourceCodePath.getAbsolutePath)
     val res       = jssrc2cpg.createCpg(config).get
-    new PostFrontendValidator(res, true).run()
+    new PostFrontendValidator(res, fatalValidationLevel = 1).run()
     res
   }
 }

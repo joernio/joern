@@ -24,7 +24,7 @@ class BinToCpgFixture(val frontend: LanguageFrontend) extends AnyWordSpec with M
     val bin = new File(binDirectory, binName)
     cpg = frontend.execute(bin)
     passes(cpg)
-    new PostFrontendValidator(cpg, false).run()
+    new PostFrontendValidator(cpg, fatalValidationLevel = 0).run()
   }
 
   override def afterAll(): Unit = {

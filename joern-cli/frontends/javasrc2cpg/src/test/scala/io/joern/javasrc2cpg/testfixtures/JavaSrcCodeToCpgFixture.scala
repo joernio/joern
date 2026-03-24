@@ -37,7 +37,7 @@ trait JavaSrcFrontend extends LanguageFrontend {
       .getOrElse(JavaSrc2Cpg.DefaultConfig.withDelombokMode("no-delombok"))
       .withCacheJdkTypeSolver(true)
     val res = new JavaSrc2Cpg().createCpg(config.withInputPath(sourceCodeFile.getAbsolutePath)).get
-    new PostFrontendValidator(res, true, validationLevel = 0).run()
+    new PostFrontendValidator(res, fatalValidationLevel = 0).run()
     res
   }
 }

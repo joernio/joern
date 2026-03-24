@@ -20,7 +20,7 @@ trait PhpFrontend extends LanguageFrontend {
   override def execute(sourceCodeFile: File): Cpg = {
     val defaultConfig: Config = getConfig().getOrElse(Config())
     val cpg                   = new Php2Cpg().createCpg(defaultConfig.withInputPath(sourceCodeFile.getAbsolutePath)).get
-    new PostFrontendValidator(cpg, true).run()
+    new PostFrontendValidator(cpg, fatalValidationLevel = 1).run()
     cpg
   }
 }

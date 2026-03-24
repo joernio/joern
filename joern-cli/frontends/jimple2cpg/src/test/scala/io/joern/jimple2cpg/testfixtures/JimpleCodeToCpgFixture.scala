@@ -24,7 +24,7 @@ trait Jimple2CpgFrontend extends LanguageFrontend {
   override def execute(sourceCodeFile: File): Cpg = {
     val config = getConfig().getOrElse(Config())
     val cpg    = new Jimple2Cpg().createCpg(config.withInputPath(sourceCodeFile.getAbsolutePath)).get
-    new PostFrontendValidator(cpg, false).run()
+    new PostFrontendValidator(cpg, fatalValidationLevel = 0).run()
     cpg
   }
 }
