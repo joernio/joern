@@ -110,27 +110,22 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
       .getOrElse(name)
   }
 
-  protected def codeForSingleArrayElemAssign(targetName: String, key: Option[PhpExpr], value: PhpExpr): String = {
-    val keyCode = key
-      .map(astForExpr)
-      .flatMap(_.rootCode)
-      .map(k => s"$k => ")
-      .getOrElse("")
-    val valueCode = astForExpr(value).rootCodeOrEmpty
-
-    s"$$$targetName = array($keyCode$valueCode)"
+  protected def codeForExpr(expr: PhpExpr): String = {
+    fileContentString.substring(expr.attributes.startFilePos, expr.attributes.endFilePos)
   }
 
-  protected def codeForMultiArrayDimAccess(arrayDimFetchExpr: PhpArrayDimFetchExpr): String = {
-    val dimensionCode = arrayDimFetchExpr.dimension.map(astForExpr).flatMap(_.rootCode).getOrElse("")
-
-    arrayDimFetchExpr.variable match {
-      case innerArrayDimFetchExpr: PhpArrayDimFetchExpr =>
-        s"${codeForMultiArrayDimAccess(innerArrayDimFetchExpr)}[$dimensionCode]"
-      case phpExpr: PhpExpr =>
-        val nameCode = astForExpr(phpExpr).rootCodeOrEmpty
-        s"$nameCode[$dimensionCode]"
+  protected def codeForSingleArrayTmpElemAssign(targetName: String, key: Option[PhpExpr], value: PhpExpr): String = {
+    val keyCode = key
+      .map(codeForExpr)
+      .map(k => s"$k => ")
+      .getOrElse("")
+    val valueCode = value match {
+      case PhpVariable(name: PhpNameExpr, _) =>
+        s"$$${name.name}"
+      case _ => ""
     }
+
+    s"$$$targetName = array($keyCode$valueCode)"
   }
 
   protected def dimensionFromSimpleScalar(scalar: PhpSimpleScalar, idxTracker: ArrayIndexTracker): PhpExpr = {

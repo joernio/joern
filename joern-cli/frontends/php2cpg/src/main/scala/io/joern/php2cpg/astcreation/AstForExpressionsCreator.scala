@@ -266,7 +266,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           val phpVariable      = PhpVariable(PhpNameExpr(tmpVariable, attrs), attrs)
           val phpAssignment    = phpSingleItemArrayAssign(phpVariable, expr.dimension, lastAssignName)
           val exprAst          = astForExpr(phpAssignment)
-          val exprCodeOverride = codeForSingleArrayElemAssign(tmpVariable, expr.dimension, lastAssignName)
+          val exprCodeOverride = codeForSingleArrayTmpElemAssign(tmpVariable, expr.dimension, lastAssignName)
           exprAst.root.collect { case rootNode: NewCall => rootNode.code(exprCodeOverride) }
 
           exprAst :: traverseArrayDimExpr(innerArrayDimFetchExpr, phpVariable)
@@ -298,9 +298,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
         val returnAst = astForExpr(rhsPhpVariable)
 
-        val targetCode = codeForMultiArrayDimAccess(arrayDimFetchExpr)
-        val sourceCode = astForExpr(assignment.source).rootCodeOrEmpty
-        val blockCode  = s"$targetCode = $sourceCode"
+        val blockCode = codeForExpr(assignment)
         block.code(blockCode)
         scope.popScope()
 
