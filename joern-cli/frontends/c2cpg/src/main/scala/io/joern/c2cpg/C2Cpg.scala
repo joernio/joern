@@ -2,21 +2,17 @@ package io.joern.c2cpg
 
 import io.joern.c2cpg.astcreation.CGlobal
 import io.joern.c2cpg.parser.FileDefaults
-import io.joern.c2cpg.passes.{AstCreationPass, PreprocessorPass, TypeDeclNodePass}
-import io.joern.c2cpg.passes.FunctionDeclNodePass
-import io.joern.c2cpg.passes.FullNameUniquenessPass
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.Languages
-import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
+import io.joern.c2cpg.passes.*
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
-import io.joern.x2cpg.X2CpgFrontend
+import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
+import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.utils.Report
-import io.joern.x2cpg.SourceFiles
+import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import org.slf4j.LoggerFactory
 
 import java.util.regex.Pattern
-import scala.util.control.NonFatal
 import scala.util.Try
+import scala.util.control.NonFatal
 import scala.util.matching.Regex
 
 class C2Cpg extends X2CpgFrontend {

@@ -7,8 +7,8 @@ import ujson.Value
 
 import java.nio.file.Paths
 import scala.collection.mutable
-import scala.util.control.NonFatal
 import scala.util.Try
+import scala.util.control.NonFatal
 
 object JSONCompilationDatabaseParser {
 

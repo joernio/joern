@@ -1,9 +1,9 @@
 package io.joern.c2cpg.passes
 
-import io.joern.c2cpg.{C2Cpg, Config}
 import io.joern.c2cpg.astcreation.{AstCreator, CGlobal}
-import io.joern.c2cpg.parser.{CdtParser, FileDefaults, HeaderFileFinder, JSONCompilationDatabaseParser}
 import io.joern.c2cpg.parser.JSONCompilationDatabaseParser.CompilationDatabase
+import io.joern.c2cpg.parser.{CdtParser, FileDefaults, HeaderFileFinder, JSONCompilationDatabaseParser}
+import io.joern.c2cpg.{C2Cpg, Config}
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.generated.Cpg

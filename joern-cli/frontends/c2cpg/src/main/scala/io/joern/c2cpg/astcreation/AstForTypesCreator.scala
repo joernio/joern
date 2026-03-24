@@ -18,7 +18,7 @@ trait AstForTypesCreator { this: AstCreator =>
   protected def astForDecltypeSpecifier(decl: ICPPASTDecltypeSpecifier): Ast = {
     val op = Defines.OperatorTypeOf
     val cpgUnary =
-      callNode(decl, code(decl), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
+      callNode(decl, code(decl), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
     val operand = nullSafeAst(decl.getDecltypeExpression)
     callAst(cpgUnary, List(operand))
   }
@@ -319,7 +319,7 @@ trait AstForTypesCreator { this: AstCreator =>
   private def astForIASTArrayDeclarator(arrayDecl: IASTArrayDeclarator): Ast = {
     val op = Operators.arrayInitializer
     val initCallNode =
-      callNode(arrayDecl, code(arrayDecl), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
+      callNode(arrayDecl, code(arrayDecl), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
     val initArgs = arrayDecl.getArrayModifiers.toList.filter(m => m.getConstantExpression != null).map(astForNode)
     callAst(initCallNode, initArgs)
   }

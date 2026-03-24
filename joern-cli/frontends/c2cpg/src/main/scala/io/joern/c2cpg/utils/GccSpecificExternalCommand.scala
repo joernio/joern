@@ -1,7 +1,6 @@
 package io.joern.c2cpg.utils
 
-import io.shiftleft.semanticcpg.utils.ExternalCommand
-import io.shiftleft.semanticcpg.utils.ExternalCommandResult
+import io.shiftleft.semanticcpg.utils.{ExternalCommand, ExternalCommandResult}
 
 import java.nio.file.Paths
 import scala.util.{Failure, Success, Try}
