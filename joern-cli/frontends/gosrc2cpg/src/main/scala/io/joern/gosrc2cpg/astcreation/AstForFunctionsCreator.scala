@@ -31,11 +31,17 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     methodAstParentStack.push(methodNode_)
     scope.pushNewScope(methodNode_)
     val receiverNode = astForReceiver(methodMetadata.receiverInfo)
+    val body = Try (funcDecl.json(ParserKeys.Body)) match {
+      case Failure(_) =>
+        logger.warn(s"Cannot get function body ast at filename ${parserResult.fullPath} line ${funcDecl.lineNumber}")
+        return Seq.empty
+      case Success(value) => value
+    }
     val astForMethod =
       methodAst(
         methodNode_,
         receiverNode ++ astForMethodParameter(methodMetadata.params, methodMetadata.genericTypeMethodMap),
-        astForMethodBody(funcDecl.json(ParserKeys.Body)),
+        astForMethodBody(body),
         methodReturn
       )
     scope.popScope()

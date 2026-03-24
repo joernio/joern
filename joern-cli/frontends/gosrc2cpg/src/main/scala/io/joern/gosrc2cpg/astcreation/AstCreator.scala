@@ -16,6 +16,7 @@ import ujson.Value
 
 import java.nio.file.Paths
 import scala.collection.mutable
+import scala.util.{Failure, Success, Try}
 
 class AstCreator(
   val jsonAstFilePath: String,
@@ -74,9 +75,14 @@ class AstCreator(
     scope.pushNewScope(fakeGlobalMethodForFile)
     val blockNode_   = blockNode(rootNode, Defines.empty, Defines.anyTypeName)
     val methodReturn = methodReturnNode(rootNode, Defines.anyTypeName)
-    val declsAsts = rootNode
-      .json(ParserKeys.Decls)
-      .arr
+
+    val declsArr = Try(rootNode.json(ParserKeys.Decls).arr) match {
+      case Success(arr) => arr
+      case Failure(_) =>
+        logger.warn(s"No declarations in root node of file $jsonAstFilePath")
+        List()
+    }
+    val declsAsts = declsArr
       .flatMap { item =>
         val node = createParserNodeInfo(item)
         astForNode(node, true)
