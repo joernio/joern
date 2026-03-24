@@ -64,8 +64,8 @@ object PostFrontendValidator {
   * Goal is to improve the pass once we fixed current violations, and then have new ideas what to check. Then plug in
   * faster checking code, then enable in sptests and prod.
   *
-  * NOTE: All validation checks with a level lower or equal to [[fatalValidationLevel]] will result in an exception.
-  * See [[ErrorType]] for the highest validation level.
+  * NOTE: All validation checks with a level lower or equal to [[fatalValidationLevel]] will result in an exception. See
+  * [[ErrorType]] for the highest validation level.
   */
 class PostFrontendValidator(cpg: Cpg, fatalValidationLevel: Int = Int.MaxValue) extends AbstractValidator(cpg) {
   import PostFrontendValidator.logger
