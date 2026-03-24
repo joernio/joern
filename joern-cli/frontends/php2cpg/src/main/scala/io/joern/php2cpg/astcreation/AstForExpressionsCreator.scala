@@ -247,6 +247,20 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           )
           List(astForExpr(phpAssignment))
 
+        case innerArrayDimFetchExpr: PhpArrayDimFetchExpr
+            if expr.dimension.isEmpty && isVariableIndexAccessWithDimensions(innerArrayDimFetchExpr) =>
+          val tmpVariable = this.scope.getNewVarTmp()
+          val phpVariable = PhpVariable(PhpNameExpr(tmpVariable, attrs), attrs)
+          val phpAssignment = PhpAssignment(
+            target = expr,
+            source = lastAssignName,
+            assignOp = Operators.assignment,
+            isRefAssign = false,
+            attributes = attrs
+          )
+
+          List(astForEmptyArrayDimAssign(phpAssignment, expr))
+
         case innerArrayDimFetchExpr: PhpArrayDimFetchExpr =>
           val tmpVariable      = this.scope.getNewVarTmp()
           val phpVariable      = PhpVariable(PhpNameExpr(tmpVariable, attrs), attrs)
