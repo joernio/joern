@@ -464,7 +464,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val inherits = inheritsFrom(node)
     if (inherits.nonEmpty) {
-      global.addExtensionInherits(extendedTypeFullName, inherits)
+      accumulator.addExtensionInherits(extendedTypeFullName, inherits)
     }
 
     typeRefIdStack.push(typeRefNode_)
@@ -484,7 +484,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           binding.typeAnnotation.map(t => AstCreatorHelper.cleanType(code(t.`type`))).getOrElse(Defines.Any)
         )
         registerType(typeFullName)
-        global.addExtensionMember(extendedTypeFullName, name, cCode, typeFullName)
+        accumulator.addExtensionMember(extendedTypeFullName, name, cCode, typeFullName)
 
         binding.accessorBlock.map(_.accessors).collect {
           case accessorList: AccessorDeclListSyntax =>
@@ -669,7 +669,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val capturingRefNode = methodRefNode_.orElse(typeRefIdStack.headOption)
 
     if (node.isInstanceOf[SubscriptDeclSyntax]) {
-      global.addMemberPropertyFullName(methodFullName, methodFullNameAndSignature)
+      accumulator.addMemberPropertyFullName(methodFullName, methodFullNameAndSignature)
     }
 
     val methodNode_ = methodNode(node, methodName, code(node), methodFullNameAndSignature, Option(signature), filename)
@@ -808,7 +808,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val methodFullNameAndSignatureExt                                 = methodInfo.fullNameAndSignatureExt
     val isStatic = modifiers.exists(_.modifierType == ModifierTypes.STATIC)
 
-    global.addExtensionMethodFullName(methodFullNameAndSignature, methodFullNameAndSignatureExt)
+    accumulator.addExtensionMethodFullName(methodFullNameAndSignature, methodFullNameAndSignatureExt)
 
     val capturingRefNode = typeRefIdStack.headOption
     val methodNode_ =
@@ -982,7 +982,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val methodFullNameAndSignature                                    = methodInfo.fullNameAndSignature
     val isStatic = modifiers.exists(_.modifierType == ModifierTypes.STATIC)
 
-    global.addMemberPropertyFullName(methodFullName, methodFullNameAndSignature)
+    accumulator.addMemberPropertyFullName(methodFullName, methodFullNameAndSignature)
 
     val methodNode_ = methodNode(node, methodName, code(node), methodFullNameAndSignature, Option(signature), filename)
     val block       = blockNode(node, PropertyDefaults.Code, Defines.Any)
@@ -1055,7 +1055,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val methodInfo = methodInfoForAccessorDecl(binding, variableName, tpe)
     val MethodInfo(methodName, methodFullName, signature, returnType) = methodInfo
     val methodFullNameAndSignature                                    = methodInfo.fullNameAndSignature
-    global.addMemberPropertyFullName(methodFullName, methodFullNameAndSignature)
+    accumulator.addMemberPropertyFullName(methodFullName, methodFullNameAndSignature)
 
     val methodNode_ = methodNode(node, methodName, code(node), methodFullNameAndSignature, Option(signature), filename)
     val block       = blockNode(node, PropertyDefaults.Code, Defines.Any)
@@ -1115,7 +1115,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val MethodInfo(methodName, methodFullName, signature, returnType) = methodInfo
     val methodFullNameAndSignature                                    = methodInfo.fullNameAndSignature
     val methodFullNameAndSignatureExt                                 = methodInfo.fullNameAndSignatureExt
-    global.addMemberPropertyFullName(methodFullName, methodFullNameAndSignatureExt)
+    accumulator.addMemberPropertyFullName(methodFullName, methodFullNameAndSignatureExt)
 
     val methodNode_ =
       methodNode(node, methodName, code(node), methodFullNameAndSignatureExt, Option(signature), filename)
@@ -1180,8 +1180,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val methodFullNameAndSignature                                    = methodInfo.fullNameAndSignature
     val methodFullNameAndSignatureExt                                 = methodInfo.fullNameAndSignatureExt
 
-    global.addMemberPropertyFullName(methodFullName, methodFullNameAndSignatureExt)
-    global.addExtensionMethodFullName(methodFullNameAndSignature, methodFullNameAndSignatureExt)
+    accumulator.addMemberPropertyFullName(methodFullName, methodFullNameAndSignatureExt)
+    accumulator.addExtensionMethodFullName(methodFullNameAndSignature, methodFullNameAndSignatureExt)
 
     val capturingRefNode = typeRefIdStack.headOption
     val methodNode_ =

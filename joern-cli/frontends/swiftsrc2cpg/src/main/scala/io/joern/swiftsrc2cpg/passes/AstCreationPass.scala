@@ -1,7 +1,7 @@
 package io.joern.swiftsrc2cpg.passes
 
 import io.joern.swiftsrc2cpg.Config
-import io.joern.swiftsrc2cpg.astcreation.{AstCreator, SwiftSrcGlobal}
+import io.joern.swiftsrc2cpg.astcreation.AstCreator
 import io.joern.swiftsrc2cpg.parser.SwiftJsonParser
 import io.joern.swiftsrc2cpg.parser.SwiftJsonParser.ParseResult
 import io.joern.swiftsrc2cpg.utils.AstGenRunner.AstGenRunnerResult
@@ -11,37 +11,75 @@ import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.ForkJoinParallelCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPassWithAccumulator
 import io.shiftleft.utils.IOUtils
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.nio.file.Paths
-import scala.jdk.CollectionConverters.*
+import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
 class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: Config, report: Report = new Report())(
   implicit withSchemaValidation: ValidationMode
-) extends ForkJoinParallelCpgPass[String](cpg) {
+) extends ForkJoinParallelCpgPassWithAccumulator[String, AstCreationPass.Accumulator](cpg) {
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
-  private val global  = new SwiftSrcGlobal()
   private var typeMap = SwiftTypesProvider(config).map(_.retrieveMappings()).getOrElse(Map.empty)
 
-  def typesSeen(): Set[String] =
-    global.usedTypes.keys().asScala.toSet.removedAll(Defines.SwiftTypes)
+  private var collectedTypes: Set[String]                                              = Set.empty
+  private var collectedExtensionInherits: Map[String, Set[String]]                     = Map.empty
+  private var collectedExtensionMembers: Map[String, List[AstCreationPass.MemberInfo]] = Map.empty
+  private var collectedExtensionMethodFullNameMapping: Map[String, String]             = Map.empty
+  private var collectedMemberPropertyMapping: Map[String, String]                      = Map.empty
 
-  def extensionInherits(): Map[String, Set[String]] =
-    global.extensionInheritMapping.asScala.view.mapValues(_.toSet).toMap
+  def typesSeen(): Set[String]                                          = collectedTypes
+  def extensionInherits(): Map[String, Set[String]]                     = collectedExtensionInherits
+  def extensionMembers(): Map[String, List[AstCreationPass.MemberInfo]] = collectedExtensionMembers
+  def extensionMethodFullNameMapping(): Map[String, String]             = collectedExtensionMethodFullNameMapping
+  def memberPropertyMapping(): Map[String, String]                      = collectedMemberPropertyMapping
 
-  def extensionMembers(): Map[String, List[SwiftSrcGlobal.MemberInfo]] =
-    global.extensionMemberMapping.asScala.view.mapValues(_.toList).toMap
+  override def createAccumulator(): AstCreationPass.Accumulator = AstCreationPass.Accumulator(
+    usedTypes = mutable.HashSet.empty,
+    extensionInheritMapping = mutable.HashMap.empty,
+    extensionMethodFullNameMapping = mutable.HashMap.empty,
+    extensionMemberMapping = mutable.HashMap.empty,
+    memberPropertyMapping = mutable.HashMap.empty
+  )
 
-  def extensionMethodFullNameMapping(): Map[String, String] =
-    global.extensionMethodFullNameMapping.asScala.toMap
+  override def mergeAccumulator(left: AstCreationPass.Accumulator, right: AstCreationPass.Accumulator): Unit = {
+    left.usedTypes ++= right.usedTypes
 
-  def memberPropertyMapping(): Map[String, String] =
-    global.memberPropertyMapping.asScala.toMap
+    right.extensionInheritMapping.foreach { case (key, rightSet) =>
+      left.extensionInheritMapping.updateWith(key) {
+        case Some(leftSet) => Some(leftSet ++= rightSet)
+        case None          => Some(rightSet)
+      }
+    }
+
+    right.extensionMethodFullNameMapping.foreach { case (key, value) =>
+      left.extensionMethodFullNameMapping.getOrElseUpdate(key, value)
+    }
+
+    right.extensionMemberMapping.foreach { case (key, rightBuf) =>
+      left.extensionMemberMapping.updateWith(key) {
+        case Some(leftBuf) => Some(leftBuf ++= rightBuf)
+        case None          => Some(rightBuf)
+      }
+    }
+
+    right.memberPropertyMapping.foreach { case (key, value) =>
+      left.memberPropertyMapping.getOrElseUpdate(key, value)
+    }
+  }
+
+  override def onAccumulatorComplete(builder: DiffGraphBuilder, accumulator: AstCreationPass.Accumulator): Unit = {
+    collectedTypes = accumulator.usedTypes.toSet.removedAll(Defines.SwiftTypes)
+    collectedExtensionInherits = accumulator.extensionInheritMapping.view.mapValues(_.toSet).toMap
+    collectedExtensionMembers = accumulator.extensionMemberMapping.view.mapValues(_.toList).toMap
+    collectedExtensionMethodFullNameMapping = accumulator.extensionMethodFullNameMapping.toMap
+    collectedMemberPropertyMapping = accumulator.memberPropertyMapping.toMap
+  }
 
   override def generateParts(): Array[String] = astGenRunnerResult.parsedFiles.toArray
 
@@ -73,14 +111,14 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
       .getOrElse(Map.empty)
   }
 
-  override def runOnPart(diffGraph: DiffGraphBuilder, input: String): Unit = {
+  override def runOnPart(diffGraph: DiffGraphBuilder, input: String, accumulator: AstCreationPass.Accumulator): Unit = {
     val ((gotCpg, filename), duration) = TimeUtils.time {
       SwiftJsonParser.readFile(Paths.get(input)) match {
         case Success(parseResult) =>
           report.addReportInfo(parseResult.filename, parseResult.loc, parsed = true)
           Try {
             val fileLocalTypesMap = extractFileLocalTypeMap(parseResult)
-            val astCreator        = new AstCreator(config, global, parseResult, fileLocalTypesMap)
+            val astCreator        = new AstCreator(config, accumulator, parseResult, fileLocalTypesMap)
             val localDiff         = astCreator.createAst()
             diffGraph.absorb(localDiff)
           } match {
@@ -97,6 +135,68 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
       }
     }
     report.updateReport(filename, cpg = gotCpg, duration)
+  }
+
+}
+
+object AstCreationPass {
+
+  case class MemberInfo(name: String, code: String, typeFullName: String)
+
+  /** Per-thread accumulator for data collected during AST creation. Each thread receives its own instance; the
+    * framework merges them after all parts complete.
+    *
+    * @param usedTypes
+    *   Set of type full names encountered during AST creation.
+    * @param extensionInheritMapping
+    *   Mapping from extension fullName to the set of names it inherits from.
+    * @param extensionMethodFullNameMapping
+    *   Mapping from extension method fullName (provided by the compiler) to the fullName the frontend generates for
+    *   fullName uniqueness.
+    * @param extensionMemberMapping
+    *   Mapping from extension fullName to the members it defines as computed properties.
+    * @param memberPropertyMapping
+    *   Mapping from member fullName to method fullName from its computed property.
+    */
+  case class Accumulator(
+    usedTypes: mutable.HashSet[String],
+    extensionInheritMapping: mutable.HashMap[String, mutable.HashSet[String]],
+    extensionMethodFullNameMapping: mutable.HashMap[String, String],
+    extensionMemberMapping: mutable.HashMap[String, mutable.ArrayBuffer[MemberInfo]],
+    memberPropertyMapping: mutable.HashMap[String, String]
+  ) {
+
+    def addExtensionMember(
+      extensionFullName: String,
+      memberName: String,
+      memberCode: String,
+      memberTypeFullName: String
+    ): Unit = {
+      val memberInfo = MemberInfo(memberName, memberCode, memberTypeFullName)
+      extensionMemberMapping.updateWith(extensionFullName) {
+        case Some(buf) => Some(buf += memberInfo)
+        case None      => Some(mutable.ArrayBuffer(memberInfo))
+      }
+    }
+
+    def addExtensionInherits(extensionFullName: String, inheritNames: Seq[String]): Unit = {
+      extensionInheritMapping.updateWith(extensionFullName) {
+        case Some(set) => Some(set ++= inheritNames)
+        case None      => Some(mutable.HashSet.from(inheritNames))
+      }
+    }
+
+    def addExtensionMethodFullName(extensionMethodFullName: String, fullName: String): Unit = {
+      extensionMethodFullNameMapping.getOrElseUpdate(extensionMethodFullName, fullName)
+    }
+
+    def addMemberPropertyFullName(memberFullName: String, propertyFullName: String): Unit = {
+      memberPropertyMapping.getOrElseUpdate(memberFullName, propertyFullName)
+    }
+
+    def registerType(typeFullName: String): Unit = {
+      usedTypes.add(typeFullName)
+    }
   }
 
 }

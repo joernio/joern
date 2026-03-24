@@ -243,7 +243,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   protected def registerType(typeFullName: String): Unit = {
-    global.usedTypes.putIfAbsent(typeFullName, true)
+    accumulator.registerType(typeFullName)
   }
 
   protected def scopeLocalUniqueName(targetName: String): String = {

@@ -3,6 +3,7 @@ package io.joern.swiftsrc2cpg.astcreation
 import io.joern.swiftsrc2cpg.Config
 import io.joern.swiftsrc2cpg.parser.SwiftJsonParser.ParseResult
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
+import io.joern.swiftsrc2cpg.passes.AstCreationPass
 import io.joern.swiftsrc2cpg.utils.FullnameProvider
 import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.SwiftFileLocalTypeMapping
 import io.joern.x2cpg.datastructures.Stack.*
@@ -17,7 +18,7 @@ import scala.collection.mutable
 
 class AstCreator(
   val config: Config,
-  val global: SwiftSrcGlobal,
+  val accumulator: AstCreationPass.Accumulator,
   val parserResult: ParseResult,
   val typeMap: SwiftFileLocalTypeMapping
 )(implicit withSchemaValidation: ValidationMode)
