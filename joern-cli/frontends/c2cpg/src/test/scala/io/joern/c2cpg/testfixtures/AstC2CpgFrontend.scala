@@ -1,7 +1,6 @@
 package io.joern.c2cpg.testfixtures
 
 import io.joern.c2cpg.Config
-import io.joern.c2cpg.astcreation.CGlobal
 import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.passes.AstCreationPass
 import io.joern.c2cpg.passes.FunctionDeclNodePass
@@ -21,10 +20,9 @@ trait AstC2CpgFrontend extends LanguageFrontend {
     val cpg          = newEmptyCpg()
     val pathAsString = sourceCodePath.getAbsolutePath
     val config = getConfig()
-      .fold(Config())(_.asInstanceOf[Config])
+      .getOrElse(Config())
       .withInputPath(pathAsString)
       .withSchemaValidation(ValidationMode.Enabled)
-    val global = new CGlobal()
 
     val preprocessedFiles = if (config.withPreprocessedFiles) {
       SourceFiles
@@ -39,9 +37,18 @@ trait AstC2CpgFrontend extends LanguageFrontend {
 
     val sourceFileExtensions = FileDefaults.SourceFileExtensions ++
       Option.when(config.withPreprocessedFiles)(FileDefaults.PreprocessedExt).toList
-    new AstCreationPass(cpg, preprocessedFiles, sourceFileExtensions, config, global).createAndApply()
-    new AstCreationPass(cpg, preprocessedFiles, FileDefaults.HeaderFileExtensions, config, global).createAndApply()
-    new FunctionDeclNodePass(cpg, global.unhandledMethodDeclarations(), config).createAndApply()
+    val sourcePass = new AstCreationPass(cpg, preprocessedFiles, sourceFileExtensions, config)
+    sourcePass.createAndApply()
+    val headerPass =
+      new AstCreationPass(
+        cpg,
+        preprocessedFiles,
+        FileDefaults.HeaderFileExtensions,
+        config,
+        previousAccumulator = Some(sourcePass.accumulatedState())
+      )
+    headerPass.createAndApply()
+    new FunctionDeclNodePass(cpg, headerPass.unhandledMethodDeclarations(), config).createAndApply()
     new PostFrontendValidator(cpg, false).run()
     cpg
   }

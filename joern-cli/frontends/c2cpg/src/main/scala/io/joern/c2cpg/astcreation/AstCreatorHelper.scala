@@ -1,6 +1,6 @@
 package io.joern.c2cpg.astcreation
 
-import io.joern.c2cpg.passes.FunctionDeclNodePass
+import io.joern.c2cpg.passes.{AstCreationPass, FunctionDeclNodePass}
 import io.joern.x2cpg.AstNodeBuilder.dependencyNode
 import io.joern.x2cpg.{Ast, AstNodeBuilder, SourceFiles}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
@@ -105,16 +105,16 @@ trait AstCreatorHelper { this: AstCreator =>
 
   protected def registerType(typeName: String): String = {
     val fixedTypeName = replaceQualifiedNameSeparator(typeName)
-    global.usedTypes.putIfAbsent(fixedTypeName, true)
+    accumulator.registerType(fixedTypeName)
     fixedTypeName
   }
 
   protected def registerMethodDeclaration(fullName: String, methodInfo: FunctionDeclNodePass.MethodInfo): Unit = {
-    global.methodDeclarations.putIfAbsent(fullName, methodInfo)
+    accumulator.registerMethodDeclaration(fullName, methodInfo)
   }
 
   protected def registerMethodDefinition(fullName: String): Unit = {
-    global.methodDefinitions.putIfAbsent(fullName, true)
+    accumulator.registerMethodDefinition(fullName)
   }
 
   protected def safeGetEvaluation(expr: ICPPASTExpression): Option[ICPPEvaluation] = {

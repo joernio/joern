@@ -2,7 +2,6 @@ package io.joern.c2cpg.passes
 
 import io.joern.c2cpg.C2Cpg.DefaultIgnoredFolders
 import io.joern.c2cpg.Config
-import io.joern.c2cpg.astcreation.CGlobal
 import io.joern.c2cpg.parser.CdtParser
 import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.parser.HeaderFileFinder
@@ -26,8 +25,8 @@ class PreprocessorPass(config: Config) {
     config.compilationDatabaseFilename.flatMap(JSONCompilationDatabaseParser.parse)
 
   private val headerFileFinder = new HeaderFileFinder(config)
-  private val global: CGlobal  = new CGlobal()
-  private val parser           = new CdtParser(config, headerFileFinder, compilationDatabase, global)
+  private val parser           = new CdtParser(config, headerFileFinder, compilationDatabase)
+  private val accumulator      = AstCreationPass.Accumulator()
 
   def run(): Iterable[String] = {
     val sourceFiles = if (config.compilationDatabaseFilename.isEmpty) {
@@ -38,7 +37,7 @@ class PreprocessorPass(config: Config) {
     sourceFiles
       .flatMap { file =>
         val path = Paths.get(file).toAbsolutePath
-        CdtParser.languageMappingForSourceFile(path, global, config)
+        CdtParser.languageMappingForSourceFile(path, Map.empty, config)
       }
       .flatMap(runOnPart)
   }
@@ -83,7 +82,7 @@ class PreprocessorPass(config: Config) {
 
   private def runOnPart(fileAndLanguage: (Path, ILanguage)): Iterable[String] = {
     val (path, language) = fileAndLanguage
-    parser.preprocessorStatements(path, language).flatMap(preprocessorStatement2String).toSet
+    parser.preprocessorStatements(path, language, accumulator).flatMap(preprocessorStatement2String).toSet
   }
 
 }
