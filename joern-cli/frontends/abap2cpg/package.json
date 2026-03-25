@@ -1,0 +1,27 @@
+{
+  "name": "abapgen",
+  "version": "1.0.0",
+  "description": "ABAP parser for Joern/Ocular CPG generation",
+  "main": "parse-abap.js",
+  "bin": "parse-abap.js",
+  "scripts": {
+    "build": "pkg parse-abap.js --targets node18-linux-x64,node18-linux-arm64,node18-macos-x64,node18-macos-arm64,node18-win-x64 --output bin/astgen/abapgen",
+    "build:current": "pkg parse-abap.js --output bin/astgen/abapgen"
+  },
+  "dependencies": {
+    "@abaplint/core": "^2.116.0"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
+  },
+  "pkg": {
+    "assets": [],
+    "targets": [
+      "node18-linux-x64",
+      "node18-linux-arm64",
+      "node18-macos-x64",
+      "node18-macos-arm64",
+      "node18-win-x64"
+    ]
+  }
+}
