@@ -50,8 +50,15 @@ slices.json
 **/.antlr
 /joern-cli/frontends/*/bin
 /joern-cli/frontends/*/type_stubs
+/joern-cli/frontends/*/node_modules
+/joern-cli/frontends/*/package-lock.json
 **/.gradle
 **/build/gatheredDependencies
+**/abapgen-win.exe
+**/abapgen-linux
+**/abapgen-linux-arm
+**/abapgen-macos
+**/abapgen-macos-arm
 
 ##############
 # Nix flakes #

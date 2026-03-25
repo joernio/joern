@@ -60,6 +60,17 @@ This will create the following binaries in `bin/astgen/`:
 
 **Development tip:** Use `npm run build:current` to build only for your current platform (much faster).
 
+**Note:** The `build:current` script is currently hardcoded for macOS ARM. If you're on a different platform, modify the `build:current` script in `package.json` or manually run:
+```bash
+pkg parse-abap.js --targets node18-<platform>-<arch> -o bin/astgen/abapgen-<name>
+```
+Platform mappings:
+- Linux x64: `node18-linux-x64` → `abapgen-linux`
+- Linux ARM: `node18-linux-arm64` → `abapgen-linux-arm`
+- macOS x64: `node18-macos-x64` → `abapgen-macos`
+- macOS ARM: `node18-macos-arm64` → `abapgen-macos-arm`
+- Windows: `node18-win-x64` → `abapgen-win.exe`
+
 #### Step 2: Build the CPG generator
 
 From the repository root:
@@ -78,15 +89,22 @@ The staged build will be available at `joern-cli/frontends/abap2cpg/target/unive
 
 ### Building for distribution
 
-To build for all platforms (e.g., for CI/CD or release):
+To build for all platforms (required for `sbt stage` or creating distributions):
 
 ```bash
 cd joern-cli/frontends/abap2cpg
 npm install
-npm run build  # builds all platform binaries
+npm run build  # builds all 5 platform binaries (slower)
 cd ../../..
-sbt abap2cpg/stage
+sbt stage  # or sbt createDistribution
 ```
+
+The `stage` task automatically sets `ALL_PLATFORMS=TRUE`, which requires all platform binaries:
+- `abapgen-linux` (Linux x64)
+- `abapgen-linux-arm` (Linux ARM64)
+- `abapgen-macos` (macOS Intel)
+- `abapgen-macos-arm` (macOS Apple Silicon)
+- `abapgen-win.exe` (Windows x64)
 
 ## Running
 
