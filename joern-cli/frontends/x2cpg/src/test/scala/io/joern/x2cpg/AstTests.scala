@@ -84,6 +84,60 @@ class AstTests extends AnyWordSpec with Matchers {
 
   }
 
+  "explicit control-structure edge collections" should {
+
+    implicit val mode: ValidationMode = ValidationMode.Disabled
+
+    "be preserved by subTreeCopy" in {
+      val controlStructure = NewCall().name("control")
+      val condition        = NewCall().name("condition")
+      val trueBody         = NewCall().name("trueBody")
+      val falseBody        = NewCall().name("falseBody")
+      val doBody           = NewCall().name("doBody")
+      val tryBody          = NewCall().name("tryBody")
+      val catchBody        = NewCall().name("catchBody")
+      val finallyBody      = NewCall().name("finallyBody")
+      val forInit          = NewCall().name("forInit")
+      val forUpdate        = NewCall().name("forUpdate")
+      val forBody          = NewCall().name("forBody")
+
+      val tree = Ast(controlStructure)
+        .withChild(Ast(condition))
+        .withChild(Ast(trueBody))
+        .withChild(Ast(falseBody))
+        .withChild(Ast(doBody))
+        .withChild(Ast(tryBody))
+        .withChild(Ast(catchBody))
+        .withChild(Ast(finallyBody))
+        .withChild(Ast(forInit))
+        .withChild(Ast(forUpdate))
+        .withChild(Ast(forBody))
+        .withConditionEdge(controlStructure, condition)
+        .withTrueBodyEdge(controlStructure, trueBody)
+        .withFalseBodyEdge(controlStructure, falseBody)
+        .withDoBodyEdge(controlStructure, doBody)
+        .withTryBodyEdge(controlStructure, tryBody)
+        .withCatchBodyEdge(controlStructure, catchBody)
+        .withFinallyBodyEdge(controlStructure, finallyBody)
+        .withForInitEdge(controlStructure, forInit)
+        .withForUpdateEdge(controlStructure, forUpdate)
+        .withForBodyEdge(controlStructure, forBody)
+
+      val copied = tree.subTreeCopy(controlStructure.asInstanceOf[AstNodeNew])
+
+      copied.conditionEdges.size shouldBe 1
+      copied.trueBodyEdges.size shouldBe 1
+      copied.falseBodyEdges.size shouldBe 1
+      copied.doBodyEdges.size shouldBe 1
+      copied.tryBodyEdges.size shouldBe 1
+      copied.catchBodyEdges.size shouldBe 1
+      copied.finallyBodyEdges.size shouldBe 1
+      copied.forInitEdges.size shouldBe 1
+      copied.forUpdateEdges.size shouldBe 1
+      copied.forBodyEdges.size shouldBe 1
+    }
+  }
+
   "early AST validation" should {
 
     val call           = NewCall().name("foo")

@@ -120,16 +120,16 @@ class Scope(summary: Map[String, Seq[SymbolSummary]] = Map.empty)
   }
 
   def getNewVarTmp(varPrefix: String = ""): String = {
-    stack.headOption match {
-      case Some(ScopeElement(namespace: NamespaceScope, _)) =>
-        s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${namespace.getNextVarTmp}"
-      case Some(ScopeElement(typeScope: TypeScope, _)) =>
-        s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${typeScope.getNextVarTmp}"
-      case Some(ScopeElement(methodScope: MethodScope, _)) =>
-        s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${methodScope.getNextVarTmp}"
-      case _ =>
-        s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${this.getNextVarTmp}"
-    }
+    stack
+      .collectFirst {
+        case ScopeElement(namespace: NamespaceScope, _) =>
+          s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${namespace.getNextVarTmp}"
+        case ScopeElement(typeScope: TypeScope, _) =>
+          s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${typeScope.getNextVarTmp}"
+        case ScopeElement(methodScope: MethodScope, _) =>
+          s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${methodScope.getNextVarTmp}"
+      }
+      .getOrElse(s"${this.surroundingScopeFullName.getOrElse("<global>")}@$varPrefix${this.getNextVarTmp}")
   }
 
   def addMethodRef(methodRefName: String, methodRef: NewMethodRef): Unit = methodRefsInAst.put(methodRefName, methodRef)

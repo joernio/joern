@@ -2,7 +2,10 @@ package io.joern.c2cpg.astcreation
 
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.parser.HeaderFileFinder
-import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
+import io.joern.c2cpg.passes.AstCreationPass
+import io.joern.x2cpg.Ast
+import io.joern.x2cpg.AstCreatorBase
+import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, NodeTypes}
@@ -16,7 +19,7 @@ import scala.collection.mutable
 /** Translates the Eclipse CDT AST into a CPG AST. */
 class AstCreator(
   val filename: String,
-  val global: CGlobal,
+  val accumulator: AstCreationPass.Accumulator,
   val config: Config,
   val cdtAst: IASTTranslationUnit,
   val headerFileFinder: HeaderFileFinder

@@ -1,6 +1,6 @@
 package io.joern.swiftsrc2cpg.passes
 
-import io.joern.swiftsrc2cpg.astcreation.SwiftSrcGlobal
+import io.joern.swiftsrc2cpg.passes.AstCreationPass
 import io.shiftleft.codepropertygraph.generated.{Cpg, DispatchTypes, EdgeTypes, Operators, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.{Expression, NewMember, TypeDecl}
 import io.shiftleft.passes.CpgPass
@@ -25,7 +25,7 @@ import io.shiftleft.semanticcpg.language.*
   */
 class ExtensionsPass(
   cpg: Cpg,
-  extensionMembers: Map[String, List[SwiftSrcGlobal.MemberInfo]],
+  extensionMembers: Map[String, List[AstCreationPass.MemberInfo]],
   extensionFullNameMapping: Map[String, String],
   memberPropertyMapping: Map[String, String],
   inheritsMapping: Map[String, Set[String]]
@@ -72,7 +72,7 @@ class ExtensionsPass(
   private def addMembers(
     diffGraph: DiffGraphBuilder,
     decl: TypeDecl,
-    members: List[SwiftSrcGlobal.MemberInfo]
+    members: List[AstCreationPass.MemberInfo]
   ): Unit = {
     members.foreach { member =>
       val memberNode = NewMember()

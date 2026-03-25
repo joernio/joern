@@ -1,6 +1,5 @@
 package io.joern.c2cpg
 
-import io.joern.c2cpg.astcreation.CGlobal
 import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.passes.*
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
@@ -26,17 +25,26 @@ class C2Cpg extends X2CpgFrontend {
       val report = new Report()
       new MetaDataPass(cpg, Languages.NEWC, config.inputPath).createAndApply()
 
-      val global            = new CGlobal()
-      val preprocessedFiles = allPreprocessedFiles(config)
+      val preprocessedFiles    = allPreprocessedFiles(config)
+      val srcFileExtensions    = gatherFileExtensions(config)
+      val headerFileExtensions = Set(FileDefaults.CHeaderFileExtension)
 
-      new AstCreationPass(cpg, preprocessedFiles, gatherFileExtensions(config), config, global, report)
-        .createAndApply()
-      new AstCreationPass(cpg, preprocessedFiles, Set(FileDefaults.CHeaderFileExtension), config, global, report)
-        .createAndApply()
+      val sourcePass = new AstCreationPass(cpg, preprocessedFiles, srcFileExtensions, config, report = report)
+      sourcePass.createAndApply()
 
-      TypeNodePass.withRegisteredTypes(global.typesSeen(), cpg).createAndApply()
+      val headerPass = new AstCreationPass(
+        cpg,
+        preprocessedFiles,
+        headerFileExtensions,
+        config,
+        previousAccumulator = Some(sourcePass.accumulatedState()),
+        report = report
+      )
+      headerPass.createAndApply()
+
+      TypeNodePass.withRegisteredTypes(headerPass.typesSeen(), cpg).createAndApply()
       new TypeDeclNodePass(cpg, config).createAndApply()
-      new FunctionDeclNodePass(cpg, global.unhandledMethodDeclarations(), config).createAndApply()
+      new FunctionDeclNodePass(cpg, headerPass.unhandledMethodDeclarations(), config).createAndApply()
       new FullNameUniquenessPass(cpg).createAndApply()
       report.print()
     }
