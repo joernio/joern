@@ -27,7 +27,7 @@ class CpgGenerator {
 
     // Create metadata node
     val metaData = NewMetaData()
-      .language("NEWC")
+      .language("ABAP")
       .version("1.0")
       .root(program.fileName)
 

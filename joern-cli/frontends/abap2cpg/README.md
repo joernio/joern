@@ -26,15 +26,17 @@ The build process has been verified on Linux and macOS. You will need:
 
 ### Quick start (development)
 
-From the Joern repository root:
+For development, build only for your current platform:
 
 ```bash
 cd joern-cli/frontends/abap2cpg
 npm install
 npm run build:current  # builds for your current platform only
 cd ../../..
-sbt abap2cpg/stage
+sbt abap2cpg/compile   # or sbt abap2cpg/stage
 ```
+
+**Important:** Use `sbt abap2cpg/compile` (not `sbt compile` from root), as the root build triggers stage tasks that require all platform binaries.
 
 ### Detailed build steps
 

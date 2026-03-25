@@ -16,7 +16,7 @@ class Abap2Cpg extends X2CpgFrontend {
   override def createCpg(config: Config): Try[Cpg] = {
     X2Cpg.withNewEmptyCpg(config.outputPath, config) { (cpg, _) =>
       FileUtil.usingTemporaryDirectory("abap2cpgOut") { tmpDir =>
-        MetaDataPass(cpg, Languages.NEWC, config.inputPath).createAndApply()
+        MetaDataPass(cpg, Languages.ABAP, config.inputPath).createAndApply()
 
         val runner  = new AbapAstGenRunner(config)
         val result  = runner.execute(tmpDir)
