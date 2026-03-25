@@ -11,6 +11,13 @@ import org.slf4j.{Logger, LoggerFactory}
 
 class ValidationError(msg: String) extends RuntimeException(msg) {}
 
+enum ValidationLevel(val value: Int) extends Ordered[ValidationLevel] {
+  case V0 extends ValidationLevel(0)
+  case V1 extends ValidationLevel(1)
+
+  override def compare(that: ValidationLevel): Int = this.value.compareTo(that.value)
+}
+
 /** Base validator pass that collects validation violations during graph traversal.
   *
   * @param cpg
@@ -44,17 +51,17 @@ abstract class AbstractValidator(cpg: Cpg) extends CpgPass(cpg) {
 object PostFrontendValidator {
   private val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  /** Newly added error types should have an `addedInLevel` 1 level higher than the highest */
-  enum ErrorType(val addedInLevel: Int) {
-    case FULLNAME_UNIQUE_METHOD   extends ErrorType(1)
-    case FULLNAME_UNIQUE_TYPE     extends ErrorType(1)
-    case FULLNAME_UNIQUE_TYPEDECL extends ErrorType(1)
-    case MULTI_REF                extends ErrorType(1)
-    case BAD_REF_TYPE             extends ErrorType(1)
-    case NONLOCAL_REF             extends ErrorType(1)
-    case MULTI_AST_IN             extends ErrorType(1)
-    case MULTI_ARG_IN             extends ErrorType(1)
-    case DUPLICATE_ORDER          extends ErrorType(1)
+  /** Newly added error types should have an `addedInLevel` one level higher than the highest */
+  enum ErrorType(val addedInLevel: ValidationLevel) {
+    case FULLNAME_UNIQUE_METHOD   extends ErrorType(ValidationLevel.V1)
+    case FULLNAME_UNIQUE_TYPE     extends ErrorType(ValidationLevel.V1)
+    case FULLNAME_UNIQUE_TYPEDECL extends ErrorType(ValidationLevel.V1)
+    case MULTI_REF                extends ErrorType(ValidationLevel.V1)
+    case BAD_REF_TYPE             extends ErrorType(ValidationLevel.V1)
+    case NONLOCAL_REF             extends ErrorType(ValidationLevel.V1)
+    case MULTI_AST_IN             extends ErrorType(ValidationLevel.V1)
+    case MULTI_ARG_IN             extends ErrorType(ValidationLevel.V1)
+    case DUPLICATE_ORDER          extends ErrorType(ValidationLevel.V1)
   }
 }
 
@@ -65,9 +72,9 @@ object PostFrontendValidator {
   * faster checking code, then enable in sptests and prod.
   *
   * NOTE: All validation checks with a level lower or equal to [[fatalValidationLevel]] will result in an exception. See
-  * [[ErrorType]] for the highest validation level.
+  * [[ValidationLevel]] and [[ErrorType]] for the highest validation level.
   */
-class PostFrontendValidator(cpg: Cpg, fatalValidationLevel: Int = Int.MaxValue) extends AbstractValidator(cpg) {
+class PostFrontendValidator(cpg: Cpg, fatalValidationLevel: ValidationLevel) extends AbstractValidator(cpg) {
   import PostFrontendValidator.logger
   import PostFrontendValidator.ErrorType.*
 

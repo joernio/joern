@@ -22,7 +22,7 @@ import io.joern.x2cpg.testfixtures.LanguageFrontend
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.ICallResolver
 import io.shiftleft.semanticcpg.language.NoResolve
-import io.shiftleft.semanticcpg.validation.PostFrontendValidator
+import io.shiftleft.semanticcpg.validation.{PostFrontendValidator, ValidationLevel}
 
 trait PythonFrontend extends LanguageFrontend {
   override type ConfigType = Py2CpgOnFileSystemConfig
@@ -41,7 +41,7 @@ trait PythonFrontend extends LanguageFrontend {
           .withInputPath(sourceCodePath.getAbsolutePath)
       )
       .get
-    new PostFrontendValidator(tmp, fatalValidationLevel = 0).run()
+    new PostFrontendValidator(tmp, ValidationLevel.V0).run()
     tmp
   }
 }

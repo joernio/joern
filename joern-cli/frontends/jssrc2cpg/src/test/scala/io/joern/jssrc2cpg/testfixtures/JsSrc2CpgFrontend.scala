@@ -3,7 +3,7 @@ package io.joern.jssrc2cpg.testfixtures
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.joern.x2cpg.testfixtures.LanguageFrontend
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.validation.PostFrontendValidator
+import io.shiftleft.semanticcpg.validation.{PostFrontendValidator, ValidationLevel}
 
 trait JsSrc2CpgFrontend extends LanguageFrontend {
   override type ConfigType = Config
@@ -12,7 +12,7 @@ trait JsSrc2CpgFrontend extends LanguageFrontend {
     val jssrc2cpg = new JsSrc2Cpg()
     val config    = getConfig().getOrElse(Config(tsTypes = false)).withInputPath(sourceCodePath.getAbsolutePath)
     val res       = jssrc2cpg.createCpg(config).get
-    new PostFrontendValidator(res, fatalValidationLevel = 1).run()
+    new PostFrontendValidator(res, ValidationLevel.V1).run()
     res
   }
 }

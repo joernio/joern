@@ -10,7 +10,7 @@ import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 import io.shiftleft.semanticcpg.utils.FileUtil
-import io.shiftleft.semanticcpg.validation.PostFrontendValidator
+import io.shiftleft.semanticcpg.validation.{PostFrontendValidator, ValidationLevel}
 import org.scalatest.Inside
 class DefaultTestCpgWithGo(val fileSuffix: String) extends DefaultTestCpg with SemanticTestCpg {
   override type ConfigType = Config
@@ -41,7 +41,7 @@ class DefaultTestCpgWithGo(val fileSuffix: String) extends DefaultTestCpg with S
       .getOrElse(Config())
       .withInputPath(sourceCodePath.getAbsolutePath)
     val res = goSrc2Cpg.get.createCpg(config).get
-    new PostFrontendValidator(res, fatalValidationLevel = 0).run()
+    new PostFrontendValidator(res, ValidationLevel.V0).run()
     res
   }
 
