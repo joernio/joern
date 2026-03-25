@@ -9,7 +9,8 @@ import soot.{Scene, SootClass, SourceLocator}
 
 /** Creates the AST layer from the given class file and stores all types in the given global parameter.
   */
-class SootAstCreationPass(cpg: Cpg, config: Config) extends ForkJoinParallelCpgPassWithAccumulator[SootClass, AstCreationPass.Accumulator](cpg) {
+class SootAstCreationPass(cpg: Cpg, config: Config)
+    extends ForkJoinParallelCpgPassWithAccumulator[SootClass, AstCreationPass.Accumulator](cpg) {
 
   private val logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 

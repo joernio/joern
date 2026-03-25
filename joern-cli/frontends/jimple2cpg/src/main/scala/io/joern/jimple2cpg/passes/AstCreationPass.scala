@@ -42,7 +42,11 @@ class AstCreationPass(classFiles: List[ClassFile], cpg: Cpg, config: Config)
 
   override def generateParts(): Array[? <: AnyRef] = classFiles.toArray
 
-  override def runOnPart(builder: DiffGraphBuilder, classFile: ClassFile, accumulator: AstCreationPass.Accumulator): Unit = {
+  override def runOnPart(
+    builder: DiffGraphBuilder,
+    classFile: ClassFile,
+    accumulator: AstCreationPass.Accumulator
+  ): Unit = {
     try {
       val sootClass = Scene.v().loadClassAndSupport(classFile.fullyQualifiedClassName.get)
       sootClass.setApplicationClass()

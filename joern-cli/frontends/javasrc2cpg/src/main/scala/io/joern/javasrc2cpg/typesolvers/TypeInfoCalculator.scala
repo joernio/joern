@@ -21,7 +21,11 @@ import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
 import scala.util.{Failure, Try}
 
-class TypeInfoCalculator(accumulator: AstCreationPass.Accumulator, symbolResolver: SymbolResolver, keepTypeArguments: Boolean) {
+class TypeInfoCalculator(
+  accumulator: AstCreationPass.Accumulator,
+  symbolResolver: SymbolResolver,
+  keepTypeArguments: Boolean
+) {
   private val logger               = LoggerFactory.getLogger(this.getClass)
   private val emptyTypeParamValues = ResolvedTypeParametersMap.empty()
 

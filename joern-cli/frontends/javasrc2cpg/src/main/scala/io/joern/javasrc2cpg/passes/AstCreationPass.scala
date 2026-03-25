@@ -58,7 +58,11 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
 
   override def generateParts(): Array[String] = sourceParser.relativeFilenames.toArray
 
-  override def runOnPart(diffGraph: DiffGraphBuilder, filename: String, accumulator: AstCreationPass.Accumulator): Unit = {
+  override def runOnPart(
+    diffGraph: DiffGraphBuilder,
+    filename: String,
+    accumulator: AstCreationPass.Accumulator
+  ): Unit = {
     sourceParser.parseAnalysisFile(filename, !config.disableFileContent) match {
       case Some(compilationUnit, fileContent) =>
         symbolSolver.inject(compilationUnit)
