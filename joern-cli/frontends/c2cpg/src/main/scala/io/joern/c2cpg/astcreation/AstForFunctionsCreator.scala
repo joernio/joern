@@ -44,11 +44,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
   protected def astForFunctionDeclarator(funcDecl: IASTFunctionDeclarator): Ast = {
     safeGetBinding(funcDecl.getName) match {
-      // ProblemBinding indicates an issue with type resolving but the code below
-      // is robust enough to still figure out the required fullNames.
-      // Otherwise, we end up with Unknown nodes (which are CPG expressions)
-      // directly under TypeDecls which is not allowed.
-      case Some(_: IFunction | _: IProblemBinding) =>
+      case Some(_: IFunction) =>
         val MethodFullNameInfo(name, fullName, signature, returnType) = methodFullNameInfo(funcDecl)
         val codeString                                                = code(funcDecl.getParent)
         val filename                                                  = fileName(funcDecl)

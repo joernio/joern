@@ -145,14 +145,8 @@ trait AstCreatorHelper { this: AstCreator =>
     if (!node.isInstanceOf[IASTProblem] && !node.isInstanceOf[IASTProblemHolder]) {
       val text = notHandledText(node)
       logger.info(text)
-      Ast(unknownNode(node, code(node)))
-    } else {
-      val text = notParsedText(node)
-      logger.info(text)
-      // We do not generate an Unknown node here.
-      // Unknown is a CPG expression and is not allowed directly under TypeDecls which may happen.
-      Ast()
     }
+    Ast(unknownNode(node, code(node)))
   }
 
   protected def nullSafeCode(node: IASTNode): String = {
@@ -245,16 +239,7 @@ trait AstCreatorHelper { this: AstCreator =>
        |  Code: '${shortenCode(node.getRawSignature)}'
        |  File: '$filename'
        |  Line: ${line(node).getOrElse(-1)}
-       |""".stripMargin
-  }
-
-  private def notParsedText(node: IASTNode): String = {
-    s"""Node '${node.getClass.getSimpleName}' was not parsed!
-       |  Code: '${shortenCode(node.getRawSignature)}'
-       |  File: '$filename'
-       |  Line: ${line(node).getOrElse(-1)}
-       |This indicates missing (system) header includes. Try again with --with-include-auto-discovery.
-       |""".stripMargin
+       |  """.stripMargin
   }
 
 }
