@@ -57,7 +57,9 @@ class AbapIntegrationTests extends Abap2CpgSuite {
     "create accessible importing parameters" in {
       val cpg   = code(abapCode, fileName)
       val greet = cpg.method.fullNameExact("zcl_simple::greet").head
-      greet.parameter.name.l should contain("iv_name")
+      withClue(s"All method full names: ${cpg.method.fullName.l}\nAll params in CPG: ${cpg.parameter.name.l}\ngreet params: ${greet.parameter.name.l}") {
+        greet.parameter.name.l should contain("iv_name")
+      }
     }
 
     "create accessible locals" in {
