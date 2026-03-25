@@ -5,8 +5,8 @@
   "main": "parse-abap.js",
   "bin": "parse-abap.js",
   "scripts": {
-    "build": "pkg parse-abap.js --targets node18-linux-x64,node18-linux-arm64,node18-macos-x64,node18-macos-arm64,node18-win-x64 --output bin/astgen/abapgen",
-    "build:current": "pkg parse-abap.js --output bin/astgen/abapgen"
+    "build": "pkg parse-abap.js --targets node18-linux-x64 -o bin/astgen/abapgen-linux && pkg parse-abap.js --targets node18-linux-arm64 -o bin/astgen/abapgen-linux-arm && pkg parse-abap.js --targets node18-macos-x64 -o bin/astgen/abapgen-macos && pkg parse-abap.js --targets node18-macos-arm64 -o bin/astgen/abapgen-macos-arm && pkg parse-abap.js --targets node18-win-x64 -o bin/astgen/abapgen-win.exe",
+    "build:current": "pkg parse-abap.js --targets node18-macos-arm64 -o bin/astgen/abapgen-macos-arm"
   },
   "dependencies": {
     "@abaplint/core": "^2.116.0"
