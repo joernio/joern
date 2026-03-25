@@ -201,7 +201,7 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
     if (config.includeJavaSourceFiles && filesWithJavaExtension.nonEmpty) {
       val javaAstCreator = JavaSrcInterop.astCreationPass(config.inputPath, filesWithJavaExtension, cpg)
       javaAstCreator.createAndApply()
-      val javaAstCreatorTypes = javaAstCreator.global.usedTypes.keys().asScala.toSet
+      val javaAstCreatorTypes = javaAstCreator.usedTypes()
 
       javaAstCreator.sourceParser.cleanupDelombokOutput()
       javaAstCreator.clearJavaParserCaches()
