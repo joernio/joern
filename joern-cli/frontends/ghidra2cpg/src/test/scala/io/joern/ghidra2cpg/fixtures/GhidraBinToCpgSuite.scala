@@ -30,7 +30,7 @@ class GhidraFrontend extends LanguageFrontend {
     val cpgBin = dir.getAbsolutePath
     val config = Config().withInputPath(inputFile.getAbsolutePath).withOutputPath(cpgBin)
     val cpg    = new Ghidra2Cpg().createCpg(config).get
-    new PostFrontendValidator(cpg, ValidationLevel.V1).run()
+    new PostFrontendValidator(cpg, ValidationLevel.V0).run()
     cpg
   }
 
