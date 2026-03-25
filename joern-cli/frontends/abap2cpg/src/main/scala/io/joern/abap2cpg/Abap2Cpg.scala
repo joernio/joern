@@ -4,7 +4,7 @@ import io.joern.abap2cpg.parser.AbapAstGenRunner
 import io.joern.abap2cpg.passes.{AstCreationPass, RefEdgePass}
 import io.joern.x2cpg.{X2Cpg, X2CpgFrontend}
 import io.joern.x2cpg.passes.base.ContainsEdgePass
-import io.joern.x2cpg.passes.frontend.MetaDataPass
+import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import io.shiftleft.semanticcpg.utils.FileUtil
 
@@ -34,6 +34,7 @@ class Abap2Cpg extends X2CpgFrontend {
 
         new AstCreationPass(cpg, parsed, config).createAndApply()
         new ContainsEdgePass(cpg).createAndApply()
+        TypeNodePass.withTypesFromCpg(cpg).createAndApply()
         new RefEdgePass(cpg).createAndApply()
       }
     }

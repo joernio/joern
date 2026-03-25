@@ -155,8 +155,8 @@ class AstCreator(program: ProgramRoot, filename: String)(implicit withSchemaVali
     }
 
     // Start method scope
+    // order is NOT set here — setOrderWhereNotSet will assign it after parameters (correct position)
     val blockNode = NewBlock()
-      .order(1)
       .typeFullName("void")
     scope.pushNewMethodScope(fullName, method.name, blockNode, None)
 
@@ -190,7 +190,7 @@ class AstCreator(program: ProgramRoot, filename: String)(implicit withSchemaVali
       paramOrder += 1
     }
 
-    // Create method return
+    // Create method return — order NOT set here, setOrderWhereNotSet places it after the block
     val methodReturn = method.parameters.returning match {
       case Some(returnParam) => createMethodReturn(returnParam)
       case None =>
@@ -198,7 +198,6 @@ class AstCreator(program: ProgramRoot, filename: String)(implicit withSchemaVali
           .evaluationStrategy(EvaluationStrategies.BY_REFERENCE)
           .typeFullName("void")
           .code("void")
-          .order(paramOrder)
     }
 
     // Create body block with statements
@@ -368,6 +367,7 @@ class AstCreator(program: ProgramRoot, filename: String)(implicit withSchemaVali
           identNode.lineNumber(pos.row).columnNumber(pos.col)
         }
 
+        scope.addVariableReference(ident.name, identNode, "ANY", EvaluationStrategies.BY_REFERENCE)
         Ast(identNode)
 
       case lit: LiteralExpr =>
@@ -474,7 +474,6 @@ class AstCreator(program: ProgramRoot, filename: String)(implicit withSchemaVali
       .evaluationStrategy(evaluationStrategy)
       .typeFullName(returnParam.typeName)
       .code(returnParam.name)
-      .order(0)
   }
 
   /** Create method signature string */

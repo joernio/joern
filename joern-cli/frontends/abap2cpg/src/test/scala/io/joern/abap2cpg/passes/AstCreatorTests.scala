@@ -7,6 +7,227 @@ import io.shiftleft.semanticcpg.language.*
 
 class AstCreatorTests extends AbapCpgFixture {
 
+  "AstCreator method and parameter name correctness" should {
+
+    "produce exact method names from the source" in {
+      val cpg = cpgForProgram(programWithClass("MY_CLASS", "MY_METHOD"))
+      cpg.method.nameExact("MY_METHOD").size shouldBe 1
+    }
+
+    "produce exact parameter names from the source" in {
+      val cpg = cpgForProgram(
+        programWithMethod("MY_METHOD",
+          importing = Seq(Parameter("IV_NAME", "string"), Parameter("IV_FLAG", "abap_bool"))
+        )
+      )
+      val paramNames = cpg.method.nameExact("MY_METHOD").parameter.name.l
+      paramNames should contain allOf ("IV_NAME", "IV_FLAG")
+      paramNames should not contain "TYPE"
+      paramNames should not contain "IMPORTING"
+      paramNames should not contain "string"
+    }
+
+    "not produce method names containing spaces" in {
+      val cpg = cpgForProgram(programWithClass("MY_CLASS", "MY_METHOD"))
+      cpg.method.name.filter(_.contains(" ")).l shouldBe empty
+    }
+
+    "not produce parameter names containing spaces or punctuation" in {
+      val cpg = cpgForProgram(
+        programWithMethod("MY_METHOD", importing = Seq(Parameter("IV_X", "i")))
+      )
+      cpg.parameter.name.filter(n => n.contains(" ") || n.contains("(") || n.contains(")")).l shouldBe empty
+    }
+
+    "produce class-qualified fullName for class methods" in {
+      val cpg = cpgForProgram(programWithClass("ZCL_SIMPLE", "GREET"))
+      cpg.method.nameExact("GREET").head.fullName shouldBe "ZCL_SIMPLE::GREET"
+    }
+  }
+
+  "AstCreator file and namespace nodes" should {
+
+    "create a file node with the program file name" in {
+      val program = programWithMethod("MY_METHOD").copy(fileName = "my_program.abap")
+      val cpg     = cpgForProgram(program)
+      cpg.file.nameExact("my_program.abap").size shouldBe 1
+    }
+
+    "set order 0 on the file node" in {
+      val cpg = cpgForProgram(programWithMethod("MY_METHOD"))
+      cpg.file.head.order shouldBe 0
+    }
+
+    "create a namespace block linked to the file" in {
+      val cpg = cpgForProgram(programWithMethod("MY_METHOD"))
+      cpg.namespaceBlock.size shouldBe 1
+    }
+
+    "create a global namespace node" in {
+      val cpg = cpgForProgram(programWithMethod("MY_METHOD"))
+      cpg.namespace.size shouldBe 1
+      cpg.namespace.name.head shouldBe "<global>"
+    }
+  }
+
+  "AstCreator for type declarations" should {
+
+    "create a TypeDecl for a class" in {
+      val cpg = cpgForProgram(programWithClass("MY_CLASS", "MY_METHOD"))
+      cpg.typeDecl.nameExact("MY_CLASS").size shouldBe 1
+    }
+
+    "set the correct fullName on TypeDecl" in {
+      val cpg = cpgForProgram(programWithClass("MY_CLASS", "MY_METHOD"))
+      val td  = cpg.typeDecl.nameExact("MY_CLASS").head
+      td.fullName shouldBe "MY_CLASS"
+    }
+
+    "set isExternal to false on TypeDecl" in {
+      val cpg = cpgForProgram(programWithClass("MY_CLASS", "MY_METHOD"))
+      cpg.typeDecl.nameExact("MY_CLASS").head.isExternal shouldBe false
+    }
+
+    "set the filename on TypeDecl" in {
+      val program = programWithClass("MY_CLASS", "MY_METHOD").copy(fileName = "my_class.clas.abap")
+      val cpg     = cpgForProgram(program)
+      cpg.typeDecl.nameExact("MY_CLASS").head.filename shouldBe "my_class.clas.abap"
+    }
+
+    "set order 1 on the first TypeDecl" in {
+      val cpg = cpgForProgram(programWithClass("MY_CLASS", "MY_METHOD"))
+      cpg.typeDecl.nameExact("MY_CLASS").head.order shouldBe 1
+    }
+  }
+
+  "AstCreator method properties" should {
+
+    "set correct name" in {
+      val cpg = cpgForProgram(programWithMethod("MY_METHOD"))
+      cpg.method.nameExact("MY_METHOD").head.name shouldBe "MY_METHOD"
+    }
+
+    "set correct fullName for standalone method" in {
+      val cpg = cpgForProgram(programWithMethod("MY_METHOD"))
+      cpg.method.nameExact("MY_METHOD").head.fullName shouldBe "MY_METHOD"
+    }
+
+    "set correct fullName for class method (CLASS::METHOD)" in {
+      val cpg = cpgForProgram(programWithClass("MY_CLASS", "MY_METHOD"))
+      cpg.method.nameExact("MY_METHOD").head.fullName shouldBe "MY_CLASS::MY_METHOD"
+    }
+
+    "set filename on method" in {
+      val program = programWithMethod("MY_METHOD").copy(fileName = "my_program.abap")
+      val cpg     = cpgForProgram(program)
+      cpg.method.nameExact("MY_METHOD").head.filename shouldBe "my_program.abap"
+    }
+
+    "set isExternal to false" in {
+      val cpg = cpgForProgram(programWithMethod("MY_METHOD"))
+      cpg.method.nameExact("MY_METHOD").head.isExternal shouldBe false
+    }
+
+    "set order 1 for first method" in {
+      val cpg = cpgForProgram(programWithMethod("MY_METHOD"))
+      cpg.method.nameExact("MY_METHOD").head.order shouldBe 1
+    }
+
+    "set signature with no params as '() -> void'" in {
+      val cpg = cpgForProgram(programWithMethod("MY_METHOD"))
+      cpg.method.nameExact("MY_METHOD").head.signature shouldBe "() -> void"
+    }
+
+    "set signature with importing params" in {
+      val cpg = cpgForProgram(
+        programWithMethod("MY_METHOD", importing = Seq(Parameter("IV_X", "string"), Parameter("IV_Y", "int")))
+      )
+      cpg.method.nameExact("MY_METHOD").head.signature shouldBe "(string, int) -> void"
+    }
+
+    "set signature with returning param" in {
+      val cpg = cpgForProgram(
+        programWithMethod("MY_METHOD", returning = Some(Parameter("RV_RESULT", "string")))
+      )
+      cpg.method.nameExact("MY_METHOD").head.signature shouldBe "() -> string"
+    }
+
+    "set lineNumber when span has position" in {
+      val span    = TextSpan(start = Some(Position(row = 6, col = 5)))
+      val program = programWithMethod("MY_METHOD").copy(methods = Seq(
+        MethodDef("MY_METHOD", None, false, MethodParameters(), span = span)
+      ))
+      val cpg = cpgForProgram(program)
+      cpg.method.nameExact("MY_METHOD").head.lineNumber shouldBe Some(6)
+    }
+
+    "set columnNumber when span has position" in {
+      val span    = TextSpan(start = Some(Position(row = 6, col = 5)))
+      val program = programWithMethod("MY_METHOD").copy(methods = Seq(
+        MethodDef("MY_METHOD", None, false, MethodParameters(), span = span)
+      ))
+      val cpg = cpgForProgram(program)
+      cpg.method.nameExact("MY_METHOD").head.columnNumber shouldBe Some(5)
+    }
+  }
+
+  "AstCreator parameter properties" should {
+
+    "set correct name and code on parameter" in {
+      val cpg   = cpgForProgram(programWithMethod("MY_METHOD", importing = Seq(Parameter("IV_INPUT", "string"))))
+      val param = cpg.method.nameExact("MY_METHOD").parameter.head
+      param.name shouldBe "IV_INPUT"
+      param.code shouldBe "IV_INPUT"
+    }
+
+    "set correct typeFullName on parameter" in {
+      val cpg   = cpgForProgram(programWithMethod("MY_METHOD", importing = Seq(Parameter("IV_INPUT", "string"))))
+      val param = cpg.method.nameExact("MY_METHOD").parameter.nameExact("IV_INPUT").head
+      param.typeFullName shouldBe "string"
+    }
+
+    "set index starting at 1 for first parameter" in {
+      val cpg   = cpgForProgram(programWithMethod("MY_METHOD", importing = Seq(Parameter("IV_INPUT", "string"))))
+      val param = cpg.method.nameExact("MY_METHOD").parameter.nameExact("IV_INPUT").head
+      param.index shouldBe 1
+    }
+
+    "set order equal to index" in {
+      val cpg   = cpgForProgram(programWithMethod("MY_METHOD", importing = Seq(Parameter("IV_INPUT", "string"))))
+      val param = cpg.method.nameExact("MY_METHOD").parameter.nameExact("IV_INPUT").head
+      param.order shouldBe 1
+    }
+
+    "set evaluationStrategy BY_VALUE when isValue=true" in {
+      val cpg   = cpgForProgram(programWithMethod("MY_METHOD", importing = Seq(Parameter("IV_INPUT", "string", isValue = true))))
+      val param = cpg.method.nameExact("MY_METHOD").parameter.nameExact("IV_INPUT").head
+      param.evaluationStrategy shouldBe "BY_VALUE"
+    }
+
+    "set evaluationStrategy BY_REFERENCE when isValue=false" in {
+      val cpg   = cpgForProgram(programWithMethod("MY_METHOD", importing = Seq(Parameter("IV_INPUT", "string", isValue = false))))
+      val param = cpg.method.nameExact("MY_METHOD").parameter.nameExact("IV_INPUT").head
+      param.evaluationStrategy shouldBe "BY_REFERENCE"
+    }
+
+    "set isVariadic to false on regular parameters" in {
+      val cpg   = cpgForProgram(programWithMethod("MY_METHOD", importing = Seq(Parameter("IV_INPUT", "string"))))
+      val param = cpg.method.nameExact("MY_METHOD").parameter.nameExact("IV_INPUT").head
+      param.isVariadic shouldBe false
+    }
+
+    "set sequential indices for multiple parameters" in {
+      val cpg    = cpgForProgram(programWithMethod("MY_METHOD",
+        importing = Seq(Parameter("IV_A", "i"), Parameter("IV_B", "i"))
+      ))
+      val params = cpg.method.nameExact("MY_METHOD").parameter.l.sortBy(_.index)
+      params(0).name shouldBe "IV_A"
+      params(0).index shouldBe 1
+      params(1).name shouldBe "IV_B"
+      params(1).index shouldBe 2
+    }
+  }
+
   "AstCreator for a standalone method" should {
 
     "create a method node with correct name" in {
@@ -77,6 +298,55 @@ class AstCreatorTests extends AbapCpgFixture {
       val method = cpg.method.nameExact("MY_METHOD").head
       method.local.size shouldBe 1
       method.local.name.head shouldBe "LV_RESULT"
+    }
+  }
+
+  "AstCreator call node properties" should {
+
+    "set name to method name on call" in {
+      val body = StatementList(Seq(CallExpr("obj", Some("run"), span = noSpan)), noSpan)
+      val cpg  = cpgForProgram(programWithMethod("MY_METHOD", body = Some(body)))
+      cpg.method.nameExact("MY_METHOD").ast.isCall.nameExact("run").size shouldBe 1
+    }
+
+    "set methodFullName as target.method for instance call" in {
+      val body = StatementList(Seq(CallExpr("obj", Some("run"), isStatic = false, span = noSpan)), noSpan)
+      val cpg  = cpgForProgram(programWithMethod("MY_METHOD", body = Some(body)))
+      val call = cpg.method.nameExact("MY_METHOD").ast.isCall.nameExact("run").head
+      call.methodFullName shouldBe "obj.run"
+    }
+
+    "set DYNAMIC_DISPATCH for instance call" in {
+      val body = StatementList(Seq(CallExpr("obj", Some("run"), isStatic = false, span = noSpan)), noSpan)
+      val cpg  = cpgForProgram(programWithMethod("MY_METHOD", body = Some(body)))
+      val call = cpg.method.nameExact("MY_METHOD").ast.isCall.nameExact("run").head
+      call.dispatchType shouldBe "DYNAMIC_DISPATCH"
+    }
+
+    "set STATIC_DISPATCH for static call" in {
+      val body = StatementList(Seq(CallExpr("CL_CLASS", Some("method"), isStatic = true, span = noSpan)), noSpan)
+      val cpg  = cpgForProgram(programWithMethod("MY_METHOD", body = Some(body)))
+      val call = cpg.method.nameExact("MY_METHOD").ast.isCall.nameExact("method").head
+      call.dispatchType shouldBe "STATIC_DISPATCH"
+    }
+
+    "set CLASS::method fullName for class-qualified call within class" in {
+      val body = StatementList(Seq(CallExpr("", Some("helper"), span = noSpan)), noSpan)
+      val cpg  = cpgForProgram(programWithClass("MY_CLASS", "MY_METHOD", body = Some(body)))
+      val call = cpg.method.nameExact("MY_METHOD").ast.isCall.nameExact("helper").head
+      call.methodFullName shouldBe "MY_CLASS::helper"
+    }
+
+    "link call arguments via ARGUMENT edges" in {
+      val body = StatementList(Seq(
+        CallExpr("obj", Some("run"),
+          arguments = Seq(Argument(Some("iv_x"), IdentifierExpr("lv_val", noSpan))),
+          span = noSpan)
+      ), noSpan)
+      val cpg  = cpgForProgram(programWithMethod("MY_METHOD", body = Some(body)))
+      val call = cpg.method.nameExact("MY_METHOD").ast.isCall.nameExact("run").head
+      call.argument.size shouldBe 1
+      call.argument.isIdentifier.nameExact("lv_val").size shouldBe 1
     }
   }
 

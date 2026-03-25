@@ -1,9 +1,10 @@
 package io.joern.abap2cpg.testfixtures
 
 import io.joern.abap2cpg.parser.AbapIntermediateAst.*
-import io.joern.abap2cpg.passes.{AstCreator, RefEdgePass}
+import io.joern.abap2cpg.passes.{AstCreator, NamespacePass, RefEdgePass}
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.passes.base.ContainsEdgePass
+import io.joern.x2cpg.passes.frontend.TypeNodePass
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
 import flatgraph.DiffGraphApplier
@@ -23,6 +24,8 @@ trait AbapCpgFixture extends AnyWordSpec with Matchers {
     val generated                                 = astCreator.createAst()
     DiffGraphApplier.applyDiff(cpg.graph, generated)
     new ContainsEdgePass(cpg).createAndApply()
+    TypeNodePass.withTypesFromCpg(cpg).createAndApply()
+    new NamespacePass(cpg).createAndApply()
     new RefEdgePass(cpg).createAndApply()
     cpg
   }

@@ -20,19 +20,22 @@ class AbapJsonParser {
 
   /** Parse the top-level program structure */
   private def parseProgram(json: Value): ProgramRoot = {
-    val fileName = json("file").str
+    val fileName   = json("file").str
     val objectType = json("objectType").str
-    val methodImpls = json("methods").arr.map(parseMethod).toSeq
 
-    // Parse method signatures from "Unknown" statements (METHOD definitions)
+    // Parse method implementations (body only) from the methods array
+    val methodImpls = json("methods").arr
+      .filter(m => m("type").strOpt.contains("method_implementation"))
+      .map(parseMethod)
+      .toSeq
+
+    // Parse full method signatures (params + position) from MethodDef statements
     val methodSigs = json("statements").arr.collect {
-      case stmt if stmt("type").str == "Unknown" &&
-                   stmt("tokens").arr.headOption.exists(_.obj("str").str == "METHODS") =>
-        parseMethodSignature(stmt)
+      case stmt if stmt("type").str == "MethodDef" => parseMethodSignature(stmt)
     }.toSeq
 
-    // Combine implementations with signatures
-    val methods = methodImpls ++ methodSigs
+    // Merge: signatures provide params; implementations provide body
+    val methods = mergeMethods(methodSigs ++ methodImpls)
 
     // Extract class name from ClassDefinition statement if present
     val classOpt = json("statements").arr.collectFirst {
@@ -65,14 +68,11 @@ class AbapJsonParser {
     val isPublic = tokens.exists(_ == "PUBLIC")
     val visibility = if (isPublic) "PUBLIC" else "PRIVATE"
 
-    // Merge method definitions with implementations
-    val mergedMethods = mergeMethods(methods)
-
     ClassDef(
       name = className,
       visibility = visibility,
       isFinal = false,
-      methods = mergedMethods,
+      methods = methods,
       attributes = Seq.empty,
       span = parseTextSpan(stmt)
     )
@@ -80,10 +80,12 @@ class AbapJsonParser {
 
   /** Merge method definitions with their implementations */
   private def mergeMethods(methods: Seq[MethodDef]): Seq[MethodDef] = {
-    // Group methods by name
+    // Preserve declaration order by tracking first-seen index per name
+    val seenOrder  = scala.collection.mutable.LinkedHashMap.empty[String, Int]
+    methods.zipWithIndex.foreach { case (m, i) => seenOrder.getOrElseUpdate(m.name, i) }
     val methodsByName = methods.groupBy(_.name)
 
-    methodsByName.values.map { methodsWithSameName =>
+    seenOrder.keys.toSeq.flatMap { name => methodsByName.get(name) }.map { methodsWithSameName =>
       if (methodsWithSameName.length == 1) {
         // Only one entry (either definition or implementation)
         methodsWithSameName.head
@@ -115,7 +117,7 @@ class AbapJsonParser {
             methodsWithSameName.head
         }
       }
-    }.toSeq
+    }
   }
 
   /** Parse an interface definition */
@@ -132,7 +134,15 @@ class AbapJsonParser {
     )
   }
 
-  /** Parse method signature from Unknown statement with METHODS tokens */
+  private val parameterKeywords = Set(
+    "IMPORTING", "EXPORTING", "CHANGING", "RETURNING", "RAISING", "EXCEPTIONS",
+    "TYPE", "REF", "TO", "VALUE", "DEFAULT", "OPTIONAL", "LENGTH", "DECIMALS",
+    "LIKE", "STRUCTURE", "TABLE"
+  )
+
+  private def isParameterKeyword(token: String): Boolean = parameterKeywords.contains(token)
+
+  /** Parse method signature from MethodDef statement with METHODS tokens */
   private def parseMethodSignature(stmt: Value): MethodDef = {
     val tokens = stmt("tokens").arr.map(_.obj("str").str).toSeq
 
@@ -170,35 +180,51 @@ class AbapJsonParser {
           if (i < tokens.size && tokens(i) == "VALUE") i += 1
           if (i < tokens.size && tokens(i) == "(") i += 1
 
-        case paramName if paramName != "TYPE" && paramName != "LENGTH" && paramName != "DECIMALS" &&
-                         paramName != "VALUE" && !paramName.forall(_.isDigit) && paramName != ")" =>
-          // This is a parameter name
+        case tok if isParameterKeyword(tok) || tok == "." || tok == "(" || tok == ")" ||
+                    tok == ":" || tok.forall(_.isDigit) =>
+          // Skip structural tokens and keywords that are not parameter names
+          i += 1
+
+        case paramName if currentSection.nonEmpty =>
+          // This is a parameter name — only parsed when inside a section
           val pname = paramName
           i += 1
+
+          // Skip optional VALUE( wrapper in non-RETURNING sections
+          if (i < tokens.size && tokens(i) == "VALUE") { i += 1 }
+          if (i < tokens.size && tokens(i) == "(") { i += 1 }
 
           // Skip TYPE keyword
           if (i < tokens.size && tokens(i) == "TYPE") i += 1
 
-          // Get type
-          val ptype = if (i < tokens.size) tokens(i) else "ANY"
-          i += 1
-
-          // Skip LENGTH/DECIMALS modifiers
-          while (i < tokens.size && (tokens(i) == "LENGTH" || tokens(i) == "DECIMALS")) {
-            i += 2 // Skip keyword and value
+          // Handle REF TO <type>
+          val ptype = if (i < tokens.size && tokens(i) == "REF") {
+            i += 1 // skip REF
+            if (i < tokens.size && tokens(i) == "TO") i += 1 // skip TO
+            if (i < tokens.size) { val t = tokens(i); i += 1; t } else "ANY"
+          } else if (i < tokens.size && !isParameterKeyword(tokens(i)) && tokens(i) != "." && tokens(i) != ")") {
+            val t = tokens(i); i += 1; t
+          } else {
+            "ANY"
           }
 
-          // Skip closing paren for RETURNING
+          // Skip OPTIONAL, DEFAULT <val>, LENGTH/DECIMALS <val>, closing paren
+          while (i < tokens.size && (tokens(i) == "OPTIONAL" || tokens(i) == "DEFAULT" ||
+                                     tokens(i) == "LENGTH" || tokens(i) == "DECIMALS")) {
+            i += 1 // skip keyword
+            if (i < tokens.size && !isParameterKeyword(tokens(i)) && tokens(i) != ".") i += 1 // skip value
+          }
           if (i < tokens.size && tokens(i) == ")") i += 1
 
-          val param = Parameter(name = pname, typeName = ptype, isValue = true)
+          val isValue = currentSection == "RETURNING"
+          val param = Parameter(name = pname, typeName = ptype, isValue = isValue)
 
           currentSection match {
             case "IMPORTING" => importing :+= param
             case "EXPORTING" => exporting :+= param
-            case "CHANGING" => changing :+= param
+            case "CHANGING"  => changing :+= param
             case "RETURNING" => returning = Some(param)
-            case _ => ()
+            case _           => ()
           }
 
         case _ =>
@@ -531,12 +557,34 @@ class AbapJsonParser {
       }
     }
     else {
-      // Complex expression - for now, treat as unknown
-      IdentifierExpr(tokens.mkString(" "), span)
+      // Complex expression we can't parse cleanly — return unknown
+      UnknownNode("complex-expression", span)
     }
   }
 
   /** Parse function call: name(args) */
+  // ABAP constructor keywords mapped to CPG operator names
+  private val abapConstructorOperators: Map[String, String] = Map(
+    "NEW"           -> "<operator>.new",
+    "VALUE"         -> "<operator>.valueConstruct",
+    "REDUCE"        -> "<operator>.reduce",
+    "COND"          -> "<operator>.conditional",
+    "FILTER"        -> "<operator>.filter",
+    "CORRESPONDING" -> "<operator>.corresponding",
+    "CAST"          -> "<operator>.cast",
+    "CONV"          -> "<operator>.conv",
+    "SWITCH"        -> "<operator>.switch",
+    "EXACT"         -> "<operator>.exact"
+  )
+
+  private val abapConstructorKeywords: Set[String] = abapConstructorOperators.keySet
+
+  // ABAP keywords that signal we're inside a complex constructor body (not a simple call)
+  private val abapConstructorBodyKeywords = Set(
+    "LET", "IN", "INIT", "NEXT", "WHEN", "FOR", "WHILE", "UNTIL", "FROM", "STEP",
+    "WHERE", "GROUP", "BASE", "THEN", "ELSE", "USING"
+  )
+
   private def parseFunctionCall(tokens: Seq[String], span: TextSpan): AbapNode = {
     // Find opening parenthesis
     val openParen = tokens.indexOf("(")
@@ -545,8 +593,33 @@ class AbapJsonParser {
       return IdentifierExpr(tokens.mkString(" "), span)
     }
 
-    // Function name is everything before (
-    val functionName = tokens.take(openParen).mkString("")
+    val tokensBeforeParen = tokens.take(openParen)
+
+    // If tokens before ( contain ABAP constructor body keywords, this is a complex
+    // inline expression (REDUCE body, FOR loop, etc.) — not a simple call
+    if (tokensBeforeParen.exists(abapConstructorBodyKeywords.contains)) {
+      return UnknownNode("constructor-body-expr", span)
+    }
+
+    // ABAP constructor expressions: VALUE type(...), REDUCE type(...), COND type(...), type#(...)
+    val functionName = if (tokensBeforeParen.length == 1) {
+      val name = tokensBeforeParen.head
+      if (name == "#") return UnknownNode("constructor-expr", span)
+      name.stripSuffix("#")
+    } else if (tokensBeforeParen.headOption.exists(abapConstructorKeywords.contains)) {
+      // Constructor expression — use operator-style name to avoid polluting method stubs
+      abapConstructorOperators.getOrElse(tokensBeforeParen.head, tokensBeforeParen.head)
+    } else if (tokensBeforeParen.last == "#") {
+      tokensBeforeParen.dropRight(1).lastOption.getOrElse("UNKNOWN")
+    } else if (tokensBeforeParen.length <= 2) {
+      // Small multi-token name — take last clean token
+      val last = tokensBeforeParen.last
+      if (last.forall(c => c.isLetterOrDigit || c == '_')) last
+      else return UnknownNode("complex-expr", span)
+    } else {
+      // Too many tokens and no recognized pattern — this is complex expression content
+      return UnknownNode("complex-expr", span)
+    }
 
     // Find matching closing parenthesis
     val closeParen = tokens.lastIndexOf(")")
@@ -778,8 +851,13 @@ class AbapJsonParser {
     }
     // Pattern 3: Simple function call without arrows
     else {
-      // Simple method call: method_name()
-      val methodName = tokens.headOption.getOrElse("UNKNOWN")
+      // Use first clean token as method name; map constructor keywords to operators
+      val firstToken = tokens.headOption.getOrElse("UNKNOWN")
+      val methodName = abapConstructorOperators.getOrElse(
+        firstToken,
+        if (firstToken.forall(c => c.isLetterOrDigit || c == '_' || c == '#' || c == '~')) firstToken
+        else "UNKNOWN"
+      )
       CallExpr(
         targetName = methodName,
         methodName = None,
