@@ -192,26 +192,20 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
       tryNode.columnNumber shouldBe Some(3)
 
       val List(tryBlock) = tryNode.astChildren.order(1).l
-      tryBlock.astChildren.isCall.code.l shouldBe List("""println("INSIDE_TRY")""")
+      tryBlock.astChildren.code.l shouldBe List("""println("INSIDE_TRY")""")
 
       val List(catchBlock) = tryNode.astChildren.isControlStructure.isCatch.astChildren.l
-      catchBlock.astChildren.isCall.code.l shouldBe List("""print("Exception caught.")""")
+      catchBlock.astChildren.code.l shouldBe List("""print("Exception caught.")""")
 
       val List(finallyBlock) = tryNode.astChildren.isControlStructure.isFinally.astChildren.l
-      finallyBlock.astChildren.isCall.code.l shouldBe List("""print("reached `finally`-block.")""")
+      finallyBlock.astChildren.code.l shouldBe List("""print("reached `finally`-block.")""")
     }
 
     "should connect try, catch and finally bodies via explicit edges" in {
       val List(tryNode) = cpg.controlStructure.isTry.l
       tryNode.tryBodyOut.code.l shouldBe List("""println("INSIDE_TRY")""")
-      val List(catchBodyCode)   = tryNode.catchBodyOut.code.l
-      val List(finallyBodyCode) = tryNode.finallyBodyOut.code.l
-      catchBodyCode.startsWith("catch (e: Exception)") shouldBe true
-      finallyBodyCode.contains("finally") shouldBe true
-
-      tryNode.tryBodyOut.ast.isCall.code.l shouldBe List("""println("INSIDE_TRY")""")
-      tryNode.catchBodyOut.ast.isCall.code.l shouldBe List("""print("Exception caught.")""")
-      tryNode.finallyBodyOut.ast.isCall.code.l shouldBe List("""print("reached `finally`-block.")""")
+      tryNode.catchBodyOut.code.l shouldBe List("catch (e: Exception) {\n      print(\"Exception caught.\")\n    }")
+      tryNode.finallyBodyOut.code.l shouldBe List("{\n      print(\"reached `finally`-block.\")\n    }")
     }
   }
 
