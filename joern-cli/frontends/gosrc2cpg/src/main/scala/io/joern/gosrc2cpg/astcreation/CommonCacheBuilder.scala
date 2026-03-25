@@ -57,8 +57,7 @@ trait CommonCacheBuilder(implicit withSchemaValidation: ValidationMode) { this: 
       val fullName = fullyQualifiedPackage + Defines.dot + name
       val typeNode = createParserNodeInfo(typeSepc.json(ParserKeys.Type))
       val ast = typeNode.node match {
-        // As of don't see any use case where InterfaceType needs to be handled.
-        case InterfaceType => Seq.empty
+        case InterfaceType => processInterfaceType(typeNode, fullName)
         // astForStructType() function will record the member types
         case StructType => astForStructType(typeNode, fullName)
         // Process lambda function types to record lambda function signature mapped to TypeFullName
@@ -83,11 +82,13 @@ trait CommonCacheBuilder(implicit withSchemaValidation: ValidationMode) { this: 
         case _ =>
           (s"$fullyQualifiedPackage.$name", fullyQualifiedPackage)
       }
-      // TODO: handle multiple return type or tuple (int, int)
       val genericTypeMethodMap = processTypeParams(funcDeclVal(ParserKeys.Type))
-      val (returnTypeStr, _) =
-        getReturnType(funcDeclVal(ParserKeys.Type), genericTypeMethodMap).headOption
-          .getOrElse((Defines.voidTypeName, null))
+      val returnTypes = getReturnType(funcDeclVal(ParserKeys.Type), genericTypeMethodMap)
+      val returnTypeStr = returnTypes match {
+        case Seq()    => Defines.voidTypeName
+        case Seq(one) => one._1
+        case multiple => s"(${multiple.map(_._1).mkString(", ")})"
+      }
       val params = funcDeclVal(ParserKeys.Type)(ParserKeys.Params)(ParserKeys.List)
       val signature =
         s"$methodFullname(${parameterSignature(params, genericTypeMethodMap)})${
@@ -113,6 +114,45 @@ trait CommonCacheBuilder(implicit withSchemaValidation: ValidationMode) { this: 
         aliasToNameSpaceMapping.put(derivedImportedAs, importedEntity)
         (importedEntity, derivedImportedAs)
     }
+  }
+
+  private def processInterfaceType(typeNode: ParserNodeInfo, fullName: String): Seq[Ast] = {
+    // Interface methods may be under "Methods" key (Go AST field name) or "Fields" key (some serializers)
+    val methodsList = Try(typeNode.json(ParserKeys.Methods)(ParserKeys.List)).toOption
+      .flatMap(_.arrOpt)
+      .orElse(Try(typeNode.json(ParserKeys.Fields)(ParserKeys.List)).toOption.flatMap(_.arrOpt))
+      .getOrElse(List())
+    val methods = methodsList.flatMap { field =>
+      val methodNames = Try(field(ParserKeys.Names).arr).toOption.getOrElse(List())
+      methodNames.flatMap { nameVal =>
+        val methodName = Try(nameVal(ParserKeys.Name).str).toOption
+        val returnType = Try {
+          val funcType    = field(ParserKeys.Type)
+          val returnTypes = getReturnType(funcType)
+          returnTypes match {
+            case Seq()    => Defines.voidTypeName
+            case Seq(one) => one._1
+            case multiple => s"(${multiple.map(_._1).mkString(", ")})"
+          }
+        }.toOption.getOrElse(Defines.anyTypeName)
+        val paramSig = Try {
+          val params = field(ParserKeys.Type)(ParserKeys.Params)(ParserKeys.List)
+          parameterSignature(params, Map.empty)
+        }.toOption.getOrElse("")
+        methodName.map(name => (name, returnType, paramSig))
+      }
+    }.toSeq
+    if (methods.nonEmpty) {
+      goGlobal.recordInterfaceMethodSet(fullName, methods.map { case (name, retType, _) => (name, retType) })
+      // Also record each method in methodMetaMap so it can be resolved during method calls
+      methods.foreach { case (methodName, returnType, paramSig) =>
+        val methodFullName = s"$fullName.$methodName"
+        val signature =
+          s"$methodFullName($paramSig)${if (returnType == Defines.voidTypeName) "" else returnType}"
+        goGlobal.recordMethodMetadata(fullName, methodName, MethodCacheMetaData(returnType, signature))
+      }
+    }
+    Seq.empty
   }
 }
 

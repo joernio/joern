@@ -262,4 +262,39 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
   }
 
+  "call with **kwargs unpacking" should {
+    lazy val cpg = code("""func(a, **my_dict)""".stripMargin, "test.py")
+
+    "test call node properties" in {
+      val callNode = cpg.call.codeExact("func(a, **my_dict)").head
+      callNode.name shouldBe "func"
+      callNode.signature shouldBe ""
+      callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      callNode.lineNumber shouldBe Some(1)
+    }
+
+    "test that the unpacked dict appears as an argument" in {
+      val callNode = cpg.call.codeExact("func(a, **my_dict)").head
+      val arg1     = callNode.argument(1)
+      arg1.code shouldBe "a"
+
+      val kwargsArg = callNode.argument.isIdentifier.nameExact("my_dict").head
+      kwargsArg.code shouldBe "my_dict"
+      kwargsArg.argumentIndex shouldBe -1
+      kwargsArg.argumentName shouldBe Some("**")
+    }
+  }
+
+  "call on member with **kwargs unpacking" should {
+    lazy val cpg = code("""x.func(a, **my_dict)""".stripMargin, "test.py")
+
+    "test that the unpacked dict appears as an argument" in {
+      val callNode = cpg.call.codeExact("x.func(a, **my_dict)").head
+      val kwargsArg = callNode.argument.isIdentifier.nameExact("my_dict").head
+      kwargsArg.code shouldBe "my_dict"
+      kwargsArg.argumentIndex shouldBe -1
+      kwargsArg.argumentName shouldBe Some("**")
+    }
+  }
+
 }

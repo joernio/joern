@@ -72,6 +72,12 @@ class PythonImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
       importedEntityAsFullyQualifiedImport
     ).filterNot(_.isBlank).mkString(".")
 
+    // Handle star imports (from module import *) by expanding to all module-level definitions
+    if (importedAs == "*") {
+      resolveStarImport(importedEntityAsRelativeImport, importedEntityAsFullyQualifiedImport, importCall, diffGraph)
+      return
+    }
+
     // We evaluated both variations, based on what we could expect from different versions of Python and how the package
     // layout is interpreted by the presence of lack of `__init__.py` files. Additionally, external packages are always
     // fully qualified.
@@ -87,6 +93,39 @@ class PythonImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
     } else {
       // Here we use heuristics to guess the correct paths, and make the types look friendly for querying
       createPseudoImports(importedEntity, importedAs).map(x => evaluatedImportToTag(x, importCall, diffGraph)).l
+    }
+  }
+
+  /** Resolves a star import (`from module import *`) by finding all top-level definitions in the target module and
+    * creating resolved import tags for each one. If the module cannot be found in the cache, falls back to creating a
+    * pseudo import.
+    */
+  private def resolveStarImport(
+    relativeModulePath: String,
+    fullyQualifiedModulePath: String,
+    importCall: Call,
+    diffGraph: DiffGraphBuilder
+  ): Unit = {
+    // Strip the trailing .* to get the module path
+    val relModulePath = relativeModulePath.stripSuffix(".*")
+    val fqModulePath  = fullyQualifiedModulePath.stripSuffix(".*")
+
+    // Try to find the module in cache using both relative and fully-qualified paths
+    val modulePath = Seq(relModulePath, fqModulePath).find(moduleCache.get(_).exists(_.isInstanceOf[Module]))
+
+    modulePath match {
+      case Some(modPath) =>
+        // Find all child entities of this module in the cache and create resolved imports for each
+        val prefix = s"$modPath."
+        moduleCache.foreach { case (key, entity) =>
+          if (key.startsWith(prefix) && !key.substring(prefix.length).contains('.')) {
+            val entityName = key.substring(prefix.length)
+            entity.toResolvedImport(entityName).foreach(x => evaluatedImportToTag(x, importCall, diffGraph))
+          }
+        }
+      case None =>
+        // Module not found in cache, fall back to pseudo import using the fully qualified path
+        createPseudoImports(fqModulePath, "*").foreach(x => evaluatedImportToTag(x, importCall, diffGraph))
     }
   }
 

@@ -248,4 +248,32 @@ class AssignCpgTests extends PySrc2CpgFixture with Matchers {
         .code shouldBe "y"
     }
   }
+
+  "walrus operator (named expression)" should {
+    val cpg = code(
+      """
+        |if (x := 10) > 5:
+        |  print(x)
+        |""".stripMargin,
+      "test.py"
+    )
+
+    "create an assignment call node" in {
+      val assignCall = cpg.call.methodFullName(Operators.assignment).codeExact("x = 10").head
+      assignCall.code shouldBe "x = 10"
+    }
+
+    "have correct ast children" in {
+      val assignCall = cpg.call.methodFullName(Operators.assignment).codeExact("x = 10").head
+      assignCall.argument(1).code shouldBe "x"
+      assignCall.argument(2).code shouldBe "10"
+    }
+
+    "be used as a subexpression in the if condition" in {
+      val gtCall = cpg.call.methodFullName(Operators.greaterThan).head
+      val arg1   = gtCall.argument(1)
+      arg1.isInstanceOf[nodes.Call] shouldBe true
+      arg1.asInstanceOf[nodes.Call].methodFullName shouldBe Operators.assignment
+    }
+  }
 }

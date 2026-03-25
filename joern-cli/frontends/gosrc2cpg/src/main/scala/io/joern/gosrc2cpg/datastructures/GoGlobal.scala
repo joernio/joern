@@ -35,6 +35,11 @@ class GoGlobal {
 
   val nameSpaceMetaDataMap: ConcurrentHashMap[String, NameSpaceMetaData] = new ConcurrentHashMap()
 
+  /** Maps an interface type full name to its method set. Each method is represented as a tuple of (methodName,
+    * returnTypeFullName). This is used for resolving method calls on interface-typed receivers.
+    */
+  val interfaceMethodsMap: ConcurrentHashMap[String, Seq[(String, String)]] = new ConcurrentHashMap()
+
   def recordAliasToNamespaceMapping(alias: String, namespace: String): Unit = synchronized {
     val existingVal = aliasToNameSpaceMapping.putIfAbsent(alias, namespace)
     // NOTE: !namespace.startsWith(mainModule.get) this check will not add the mapping for main source code imports.
@@ -64,6 +69,14 @@ class GoGlobal {
       case _ =>
         None
     }
+  }
+
+  def recordInterfaceMethodSet(interfaceFullName: String, methods: Seq[(String, String)]): Unit = {
+    interfaceMethodsMap.put(interfaceFullName, methods)
+  }
+
+  def getInterfaceMethodSet(interfaceFullName: String): Option[Seq[(String, String)]] = {
+    Option(interfaceMethodsMap.get(interfaceFullName))
   }
 
   def recordMethodMetadata(namespace: String, methodName: String, methodMetaData: MethodCacheMetaData): Unit = {

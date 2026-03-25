@@ -135,16 +135,15 @@ class MethodTests extends GoCodeToCpgSuite {
         |}
         |""".stripMargin)
 
-    "Be correct with method node properties" ignore {
+    "Be correct with method node properties" in {
       val List(x) = cpg.method.name("foo").l
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
       x.code should startWith("func foo() (fpkg.Sample,error){")
-      // TODO: Tuple handling needs to be done properly to return both the types.
-      x.signature shouldBe "main.foo()(joern.io/sample/fpkg.Sample,error)"
+      x.signature shouldBe "main.foo()(joern.io/sample/fpkg.Sample, error)"
       x.isExternal shouldBe false
 
-      x.order shouldBe 2
+      x.order shouldBe 1
       x.filename shouldBe "Test0.go"
       x.lineNumber shouldBe Option(4)
       x.lineNumberEnd shouldBe Option(6)
@@ -153,8 +152,7 @@ class MethodTests extends GoCodeToCpgSuite {
     "Be correct with return node" in {
       cpg.method.name("foo").methodReturn.size shouldBe 1
       val List(x) = cpg.method.name("foo").methodReturn.l
-      // TODO: Tuple handling needs to be done properly to return both the types.
-      x.typeFullName shouldBe "joern.io/sample/fpkg.Sample"
+      x.typeFullName shouldBe "(joern.io/sample/fpkg.Sample, error)"
     }
   }
 
@@ -1607,5 +1605,23 @@ class MethodTests extends GoCodeToCpgSuite {
   //		sem := make(chan int, concurrency)
   // As well as example of "map"
   // TODO: Add unit tests for lambda expression as a parameter
-  // TODO: Add unit test for tuple return
+
+  "Function with tuple return type" should {
+    val cpg = code("""
+        |package main
+        |func divide(a, b float64) (float64, error) {
+        |  return a / b, nil
+        |}
+        |""".stripMargin)
+
+    "Be correct with method return type" in {
+      val List(x) = cpg.method.name("divide").methodReturn.l
+      x.typeFullName shouldBe "(float64, error)"
+    }
+
+    "Be correct with method signature" in {
+      val List(x) = cpg.method.name("divide").l
+      x.signature shouldBe "main.divide(float64, float64)(float64, error)"
+    }
+  }
 }

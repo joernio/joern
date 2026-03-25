@@ -9,6 +9,7 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, Prope
 import ujson.Value
 
 import scala.collection.immutable.Seq
+import scala.util.{Success, Try}
 trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
   def astsForExpression(expr: ParserNodeInfo): Seq[Ast] = {
     expr.node match {
@@ -16,7 +17,7 @@ trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { t
       case StarExpr       => astForStarExpr(expr)
       case UnaryExpr      => astForUnaryExpr(expr)
       case ParenExpr      => astsForExpression(createParserNodeInfo(expr.json(ParserKeys.X)))
-      case TypeAssertExpr => astForNode(expr.json(ParserKeys.X))
+      case TypeAssertExpr => Seq(astForTypeAssertExpr(expr))
       case CallExpr       => astForCallExpression(expr)
       case SelectorExpr   => astForFieldAccess(expr)
       case KeyValueExpr   => astForNode(createParserNodeInfo(expr.json(ParserKeys.Value)))
@@ -115,6 +116,28 @@ trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { t
       .stripPrefix("*")
       .stripPrefix("[]")
     (identifierAst, identifierTypeFullName)
+  }
+
+  private def astForTypeAssertExpr(expr: ParserNodeInfo): Ast = {
+    val operandAst = astForNode(expr.json(ParserKeys.X))
+    // Type may be null for type switch expressions like x.(type)
+    Try(createParserNodeInfo(expr.json(ParserKeys.Type))) match {
+      case Success(typeNode) =>
+        val (typeFullName, _, _, _) = processTypeInfo(typeNode)
+        val castCall = callNode(
+          expr,
+          expr.code,
+          Operators.cast,
+          Operators.cast,
+          DispatchTypes.STATIC_DISPATCH,
+          None,
+          Some(typeFullName)
+        )
+        callAst(castCall, operandAst)
+      case _ =>
+        // For x.(type) in type switch statements, just return the operand AST
+        operandAst.headOption.getOrElse(Ast())
+    }
   }
 //
 //  private def extractBaseType(input: String): String = {

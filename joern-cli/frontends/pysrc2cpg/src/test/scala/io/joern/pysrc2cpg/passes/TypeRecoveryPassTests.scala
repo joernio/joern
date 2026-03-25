@@ -1661,4 +1661,53 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       }
     }
   }
+
+  "type hints on function parameters and return types" should {
+    lazy val cpg = code("""
+        |def greet(name: str) -> str:
+        |    return "Hello, " + name
+        |
+        |def add(a: int, b: int) -> int:
+        |    return a + b
+        |
+        |result = greet("world")
+        |total = add(1, 2)
+        |""".stripMargin).cpg
+
+    "propagate parameter type hints to identifiers" in {
+      val List(nameParam) = cpg.method("greet").parameter.nameExact("name").l
+      nameParam.typeFullName shouldBe "__builtin.str"
+    }
+
+    "propagate return type hints to method return" in {
+      val List(greetReturn) = cpg.method("greet").methodReturn.l
+      greetReturn.typeFullName shouldBe "__builtin.str"
+    }
+
+    "propagate return type to call site assignment" in {
+      val resultTypes = cpg.identifier("result").typeFullName.toSet
+      resultTypes should contain("__builtin.str")
+    }
+  }
+
+  "Optional type hints" should {
+    lazy val cpg = code("""
+        |from typing import Optional
+        |
+        |def find(x: Optional[str]) -> Optional[int]:
+        |    if x is None:
+        |        return None
+        |    return len(x)
+        |""".stripMargin).cpg
+
+    "resolve Optional[str] parameter to str|None" in {
+      val List(xParam) = cpg.method("find").parameter.nameExact("x").l
+      xParam.typeFullName shouldBe "__builtin.str|__builtin.None"
+    }
+
+    "resolve Optional[int] return type to int|None" in {
+      val List(findReturn) = cpg.method("find").methodReturn.l
+      findReturn.typeFullName shouldBe "__builtin.int|__builtin.None"
+    }
+  }
 }

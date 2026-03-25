@@ -47,6 +47,10 @@ object ParserAst {
   object ForStmt             extends BaseStmt
   object RangeStmt           extends BaseStmt
   object BranchStmt          extends BaseStmt
+  object DeferStmt           extends BaseStmt
+  object GoStmt              extends BaseStmt
+  object SelectStmt          extends BaseStmt
+  object SendStmt            extends BaseStmt
   object LabeledStmt         extends BaseStmt
   sealed trait BasePrimitive extends ParserNode
   object BasicLit            extends BasePrimitive
@@ -59,6 +63,7 @@ object ParserAst {
   object FuncDecl            extends ParserNode
   object ValueSpec           extends ParserNode
   object CaseClause          extends ParserNode
+  object CommClause          extends ParserNode
   object InterfaceType       extends ParserNode
   object FuncType            extends ParserNode
   object Ellipsis            extends ParserNode
@@ -74,6 +79,9 @@ object ParserKeys {
 
   val Assign          = "Assign"
   val Body            = "Body"
+  val Call            = "Call"
+  val Chan            = "Chan"
+  val Comm            = "Comm"
   val Cond            = "Cond"
   val Decl            = "Decl"
   val Decls           = "Decls"
@@ -118,4 +126,5 @@ object ParserKeys {
   val Args            = "Args"
   val Recv            = "Recv"
   val Index           = "Index"
+  val Methods         = "Methods"
 }
