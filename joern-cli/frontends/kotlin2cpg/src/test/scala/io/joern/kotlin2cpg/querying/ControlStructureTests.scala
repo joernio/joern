@@ -14,6 +14,8 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
         |fun foo(x: Int): Int {
         |  if(x > 0) {
         |    return 1
+        |  } else {
+        |    return 0
         |  }
         |}
         | """.stripMargin)
@@ -26,7 +28,7 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
     "should connect then and else branches via TRUE_BODY/FALSE_BODY edges" in {
       val List(controlStructure) = cpg.controlStructure.isIf.l
       controlStructure.trueBodyOut.code.l shouldBe List("return 1")
-      controlStructure.falseBodyOut.code.l shouldBe List()
+      controlStructure.falseBodyOut.code.l shouldBe List("return 0")
     }
   }
 
@@ -118,8 +120,9 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
     }
 
     "should connect do-while body via DO_BODY edge" in {
-      val List(doNode) = cpg.method.name("methodFoo").doBlock.l
-      doNode.doBodyOut.size shouldBe 1
+      val List(doNode)        = cpg.method.name("methodFoo").doBlock.l
+      val List(doBody: Block) = doNode.doBodyOut.isBlock.l
+      doBody.astChildren.isCall.code.l shouldBe List("val q =  Random.nextInt(0, 100)", "print(q)")
     }
   }
 
@@ -200,9 +203,15 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
 
     "should connect try, catch and finally bodies via explicit edges" in {
       val List(tryNode) = cpg.controlStructure.isTry.l
-      tryNode.tryBodyOut.size shouldBe 1
-      tryNode.catchBodyOut.size shouldBe 1
-      tryNode.finallyBodyOut.size shouldBe 1
+      tryNode.tryBodyOut.code.l shouldBe List("""println("INSIDE_TRY")""")
+      val List(catchBodyCode)   = tryNode.catchBodyOut.code.l
+      val List(finallyBodyCode) = tryNode.finallyBodyOut.code.l
+      catchBodyCode.startsWith("catch (e: Exception)") shouldBe true
+      finallyBodyCode.contains("finally") shouldBe true
+
+      tryNode.tryBodyOut.ast.isCall.code.l shouldBe List("""println("INSIDE_TRY")""")
+      tryNode.catchBodyOut.ast.isCall.code.l shouldBe List("""print("Exception caught.")""")
+      tryNode.finallyBodyOut.ast.isCall.code.l shouldBe List("""print("reached `finally`-block.")""")
     }
   }
 
@@ -243,7 +252,8 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
     "should contain a THROW control structure with the thrown expression as its child" in {
       val List(throwNode: ControlStructure) = cpg.controlStructure.controlStructureType(ControlStructureTypes.THROW).l
       throwNode.code shouldBe "throw RuntimeException(\"boom\")"
-      throwNode.argumentOut.size shouldBe 1
+      val List(throwExpression: Block) = throwNode.argumentOut.isBlock.l
+      throwExpression.astChildren.isCall.sortBy(_.name).name.l shouldBe List("<init>", "<operator>.assignment")
 
       // Ctor calls cause the following structure to be emitted for the call to RuntimeException
       // throw Block {
