@@ -1,7 +1,7 @@
 {
   "name": "abapgen",
   "version": "1.0.0",
-  "description": "ABAP parser for Joern/Ocular CPG generation",
+  "description": "ABAP parser for Joern CPG generation",
   "main": "parse-abap.js",
   "bin": "parse-abap.js",
   "scripts": {
