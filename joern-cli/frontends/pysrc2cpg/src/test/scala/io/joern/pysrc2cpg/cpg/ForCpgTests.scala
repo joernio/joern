@@ -14,7 +14,7 @@ class ForCpgTests extends PySrc2CpgFixture with Matchers {
     "emit while-based control structure with explicit true/false body edges" in {
       // For loops use a while-loop based lowering, so get the while loop node
       val List(whileNode) = cpg.controlStructure.isWhile.l
-      whileNode.trueBodyOut.isBlock.size shouldBe 1
+      whileNode.trueBodyOut.code.l shouldBe List("x = tmp0.__next__()\nz")
       whileNode.falseBodyOut.code.l shouldBe List("w")
     }
   }
