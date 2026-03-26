@@ -287,9 +287,17 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     val thenAsts     = astsForExpression(expr.getThen, None)
     val elseAsts     = Option(expr.getElse).toSeq.flatMap(astsForExpression(_, None))
 
-    val node = controlStructureNode(expr, ControlStructureTypes.IF, code(expr))
-    controlStructureAst(node, conditionAst, List(thenAsts ++ elseAsts).flatten)
-      .withChildren(annotations.map(astForAnnotationEntry))
+    val node            = controlStructureNode(expr, ControlStructureTypes.IF, code(expr))
+    val astWithChildren = controlStructureAst(node, conditionAst, thenAsts ++ elseAsts)
+    val astWithTrueBody = thenAsts.headOption.flatMap(_.root) match {
+      case Some(thenRoot) => astWithChildren.withTrueBodyEdge(node, thenRoot)
+      case None           => astWithChildren
+    }
+    val astWithBodies = elseAsts.headOption.flatMap(_.root) match {
+      case Some(elseRoot) => astWithTrueBody.withFalseBodyEdge(node, elseRoot)
+      case None           => astWithTrueBody
+    }
+    astWithBodies.withChildren(annotations.map(astForAnnotationEntry))
   }
 
   def astForIfAsExpression(
@@ -540,8 +548,12 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     thrownValue.headOption.flatMap(_.root).collect { case node: AstNodeNew =>
       node.order(1)
     }
-    val node = controlStructureNode(expr, ControlStructureTypes.THROW, code(expr))
-    Ast(node).withChildren(thrownValue)
+    val node            = controlStructureNode(expr, ControlStructureTypes.THROW, code(expr))
+    val astWithChildren = Ast(node).withChildren(thrownValue)
+    thrownValue.headOption.flatMap(_.root) match {
+      case Some(thrownRoot) => astWithChildren.withArgEdge(node, thrownRoot)
+      case None             => astWithChildren
+    }
   }
 
   def astForBlock(
