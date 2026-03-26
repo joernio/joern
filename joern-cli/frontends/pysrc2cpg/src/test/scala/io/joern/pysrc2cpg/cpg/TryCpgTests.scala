@@ -37,4 +37,11 @@ class TryCpgTests extends PySrc2CpgFixture with Matchers {
     finallyBlock.order shouldBe 5
     finallyBlock.ast.isCall.code.l shouldBe List("""print("executing finally clause")""")
   }
+
+  "connect try, catch and finally via explicit body edges" in {
+    val List(tryNode) = cpg.tryBlock.l
+    tryNode.tryBodyOut.code.l shouldBe List("result = x / y")
+    tryNode.catchBodyOut.code.sorted.l shouldBe List("""print("division by zero!")""", """print("other error")""")
+    tryNode.finallyBodyOut.code.l shouldBe List("""print("executing finally clause")""")
+  }
 }

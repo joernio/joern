@@ -1047,10 +1047,12 @@ class PythonAstVisitor(
 
     val bodyBlockNode = createBlock(blockStmtNodes, lineAndColumn)
     addAstChildNodes(controlStructureNode, 1, conditionNode, bodyBlockNode)
+    edgeBuilder.trueBodyEdge(bodyBlockNode, controlStructureNode)
 
     if (orelseNodes.nonEmpty) {
       val elseBlockNode = createBlock(orelseNodes, lineAndColumn)
       addAstChildNodes(controlStructureNode, 3, elseBlockNode)
+      edgeBuilder.falseBodyEdge(elseBlockNode, controlStructureNode)
     }
 
     createBlock(iterAssignNode :: controlStructureNode :: Nil, lineAndColumn)
@@ -1066,12 +1068,14 @@ class PythonAstVisitor(
 
     val bodyBlockNode = createBlock(bodyStmtNodes, lineAndColOf(astWhile))
     addAstChildNodes(controlStructureNode, 1, conditionNode, bodyBlockNode)
+    edgeBuilder.trueBodyEdge(bodyBlockNode, controlStructureNode)
 
     if (astWhile.orelse.nonEmpty) {
       val elseStmtNodes = astWhile.orelse.map(convert)
       val elseBlockNode =
         createBlock(elseStmtNodes, lineAndColOf(astWhile.orelse.head))
       addAstChildNodes(controlStructureNode, 3, elseBlockNode)
+      edgeBuilder.falseBodyEdge(elseBlockNode, controlStructureNode)
     }
 
     controlStructureNode
@@ -1087,11 +1091,13 @@ class PythonAstVisitor(
 
     val bodyBlockNode = createBlock(bodyStmtNodes, lineAndColOf(astIf))
     addAstChildNodes(controlStructureNode, 1, conditionNode, bodyBlockNode)
+    edgeBuilder.trueBodyEdge(bodyBlockNode, controlStructureNode)
 
     if (astIf.orelse.nonEmpty) {
       val elseStmtNodes = astIf.orelse.map(convert)
       val elseBlockNode = createBlock(elseStmtNodes, lineAndColOf(astIf.orelse.head))
       addAstChildNodes(controlStructureNode, 3, elseBlockNode)
+      edgeBuilder.falseBodyEdge(elseBlockNode, controlStructureNode)
     }
 
     controlStructureNode
