@@ -5,7 +5,6 @@ import io.joern.jimple2cpg.util.Decompiler
 import io.joern.jimple2cpg.util.ProgramHandlingUtil.{ClassFile, extractClassesInPackageLayout}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
-import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.passes.frontend.{JavaConfigFileCreationPass, MetaDataPass, TypeNodePass}
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -15,7 +14,7 @@ import soot.options.Options
 import soot.{G, Scene}
 
 import java.nio.file.{Files, Path, Paths}
-import scala.jdk.CollectionConverters.{EnumerationHasAsScala, SeqHasAsJava}
+import scala.jdk.CollectionConverters.SeqHasAsJava
 import scala.language.postfixOps
 import scala.util.Try
 
@@ -101,13 +100,13 @@ class Jimple2Cpg extends X2CpgFrontend {
     val input = Paths.get(config.inputPath)
     configureSoot(config, tmpDir)
     new MetaDataPass(cpg, language, config.inputPath).createAndApply()
-    val globalFromAstCreation: () => Global = input.extension() match {
+    val usedTypesFromAstCreation: () => Set[String] = input.extension() match {
       case Some(".apk" | ".dex") if Files.isRegularFile(input) =>
         sootLoadApk(input, config.android)
         { () =>
           val astCreator = SootAstCreationPass(cpg, config)
           astCreator.createAndApply()
-          astCreator.global
+          astCreator.usedTypes()
         }
       case _ =>
         val classFiles = sootLoad(input, tmpDir, config.recurse, config.depth)
@@ -116,7 +115,7 @@ class Jimple2Cpg extends X2CpgFrontend {
         { () =>
           val astCreator = AstCreationPass(classFiles, cpg, config)
           astCreator.createAndApply()
-          astCreator.global
+          astCreator.usedTypes()
         }
     }
 
@@ -124,9 +123,9 @@ class Jimple2Cpg extends X2CpgFrontend {
     Scene.v().loadNecessaryClasses()
     logger.info(s"Loaded ${Scene.v().getApplicationClasses.size()} classes")
 
-    val global = globalFromAstCreation()
+    val usedTypes = usedTypesFromAstCreation()
     TypeNodePass
-      .withRegisteredTypes(global.usedTypes.keys().asScala.toSet, cpg)
+      .withRegisteredTypes(usedTypes, cpg)
       .createAndApply()
     DeclarationRefPass(cpg).createAndApply()
     JavaConfigFileCreationPass(cpg, Option(tmpDir.toString), config).createAndApply()

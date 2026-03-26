@@ -9,7 +9,6 @@ import io.shiftleft.codepropertygraph.generated.Languages
 import org.slf4j.LoggerFactory
 
 import java.util.regex.Pattern
-import scala.jdk.CollectionConverters.*
 import scala.util.Try
 import scala.util.matching.Regex
 
@@ -29,7 +28,7 @@ class JavaSrc2Cpg extends X2CpgFrontend {
       new OuterClassRefPass(cpg).createAndApply()
       JavaConfigFileCreationPass(cpg, config = config).createAndApply()
       if (!config.skipTypeInfPass) {
-        TypeNodePass.withRegisteredTypes(astCreationPass.global.usedTypes.keys().asScala.toSet, cpg).createAndApply()
+        TypeNodePass.withRegisteredTypes(astCreationPass.usedTypes(), cpg).createAndApply()
         new TypeInferencePass(cpg).createAndApply()
       }
     }
