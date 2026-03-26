@@ -2,8 +2,8 @@ package io.joern.c2cpg.astcreation
 
 import io.joern.c2cpg.passes.FunctionDeclNodePass
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.eclipse.cdt.core.dom.ast.{
   IASTBinaryExpression,
@@ -145,7 +145,7 @@ trait MacroHandler { this: AstCreator =>
         evaluationStrategy = EvaluationStrategies.BY_VALUE,
         lineNumber = lineNumber,
         columnNumber = columnNumber,
-        typeFullName = registerType(Defines.Any)
+        typeFullName = Defines.Any
       )
     }
 

@@ -1,9 +1,9 @@
 package io.joern.c2cpg.parser
 
-import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.joern.c2cpg.C2Cpg.DefaultIgnoredFolders
 import io.joern.c2cpg.Config
 import io.joern.x2cpg.SourceFiles
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import org.jline.utils.Levenshtein
 
 import java.nio.file.Paths

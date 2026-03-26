@@ -18,7 +18,7 @@ trait AstForTypesCreator { this: AstCreator =>
   protected def astForDecltypeSpecifier(decl: ICPPASTDecltypeSpecifier): Ast = {
     val op = Defines.OperatorTypeOf
     val cpgUnary =
-      callNode(decl, code(decl), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
+      callNode(decl, code(decl), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
     val operand = nullSafeAst(decl.getDecltypeExpression)
     callAst(cpgUnary, List(operand))
   }
@@ -319,7 +319,7 @@ trait AstForTypesCreator { this: AstCreator =>
   private def astForIASTArrayDeclarator(arrayDecl: IASTArrayDeclarator): Ast = {
     val op = Operators.arrayInitializer
     val initCallNode =
-      callNode(arrayDecl, code(arrayDecl), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
+      callNode(arrayDecl, code(arrayDecl), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
     val initArgs = arrayDecl.getArrayModifiers.toList.filter(m => m.getConstantExpression != null).map(astForNode)
     callAst(initCallNode, initArgs)
   }
@@ -399,16 +399,20 @@ trait AstForTypesCreator { this: AstCreator =>
       case other =>
         typeDeclNode(other, name, fullName, filename, codeString, alias = alias)
     }
-    val typeRefNode_ = typeRefNode(typeSpecifier, codeString, fullName)
+
+    val typeRefNodeMaybe = typeRefIdStack.headOption match {
+      case None => Some(typeRefNode(typeSpecifier, codeString, fullName))
+      case _    => None
+    }
 
     methodAstParentStack.push(typeDecl)
-    typeRefIdStack.push(typeRefNode_)
+    typeRefNodeMaybe.foreach(typeRefIdStack.push)
     scope.pushNewMethodScope(typeDecl.fullName, typeDecl.name, typeDecl, None)
 
     val memberAsts = typeSpecifier.getDeclarations(true).toList.flatMap(astsForDeclaration)
 
     methodAstParentStack.pop()
-    typeRefIdStack.pop()
+    typeRefNodeMaybe.foreach(_ => typeRefIdStack.pop())
     scope.popScope()
 
     val (calls, member) = memberAsts.partition(_.nodes.headOption.exists(_.isInstanceOf[NewCall]))
@@ -429,7 +433,7 @@ trait AstForTypesCreator { this: AstCreator =>
       Ast.storeInDiffGraph(ast, diffGraph)
       ast.root.foreach(r => diffGraph.addEdge(methodAstParentStack.head, r, EdgeTypes.AST))
     }
-    Seq(Ast(typeRefNode_))
+    typeRefNodeMaybe.map(Ast(_)).toSeq
   }
 
   private def astsForElaboratedType(
@@ -503,15 +507,18 @@ trait AstForTypesCreator { this: AstCreator =>
         codeString,
         alias = newAlias
       )
-    val typeRefNode_ = typeRefNode(typeSpecifier, codeString, fullName)
+    val typeRefNodeMaybe = typeRefIdStack.headOption match {
+      case None => Some(typeRefNode(typeSpecifier, codeString, fullName))
+      case _    => None
+    }
 
     methodAstParentStack.push(typeDecl)
-    typeRefIdStack.push(typeRefNode_)
+    typeRefNodeMaybe.foreach(typeRefIdStack.push)
     scope.pushNewMethodScope(typeDecl.fullName, typeDecl.name, typeDecl, None)
     val memberAsts = typeSpecifier.getEnumerators.toList.flatMap { e =>
       astsForEnumerator(e)
     }
-    typeRefIdStack.pop()
+    typeRefNodeMaybe.foreach(_ => typeRefIdStack.pop())
     methodAstParentStack.pop()
     scope.popScope()
 
@@ -533,7 +540,7 @@ trait AstForTypesCreator { this: AstCreator =>
       Ast.storeInDiffGraph(ast, diffGraph)
       ast.root.foreach(r => diffGraph.addEdge(methodAstParentStack.head, r, EdgeTypes.AST))
     }
-    Seq(Ast(typeRefNode_))
+    typeRefNodeMaybe.map(Ast(_)).toSeq
   }
 
 }

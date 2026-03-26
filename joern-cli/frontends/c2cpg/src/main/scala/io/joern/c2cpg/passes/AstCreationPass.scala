@@ -1,9 +1,13 @@
 package io.joern.c2cpg.passes
 
-import io.joern.c2cpg.{C2Cpg, Config}
+import io.joern.c2cpg.C2Cpg
+import io.joern.c2cpg.Config
 import io.joern.c2cpg.astcreation.AstCreator
+import io.joern.c2cpg.parser.CdtParser
 import io.joern.c2cpg.parser.CdtParser.HeaderFileParserLanguage
-import io.joern.c2cpg.parser.{CdtParser, FileDefaults, HeaderFileFinder, JSONCompilationDatabaseParser}
+import io.joern.c2cpg.parser.FileDefaults
+import io.joern.c2cpg.parser.HeaderFileFinder
+import io.joern.c2cpg.parser.JSONCompilationDatabaseParser
 import io.joern.c2cpg.parser.JSONCompilationDatabaseParser.CompilationDatabase
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.utils.{Report, TimeUtils}
