@@ -11,6 +11,13 @@ import org.slf4j.{Logger, LoggerFactory}
 
 class ValidationError(msg: String) extends RuntimeException(msg) {}
 
+enum ValidationLevel(val value: Int) extends Ordered[ValidationLevel] {
+  case V0 extends ValidationLevel(0)
+  case V1 extends ValidationLevel(1)
+
+  override def compare(that: ValidationLevel): Int = this.value.compareTo(that.value)
+}
+
 /** Base validator pass that collects validation violations during graph traversal.
   *
   * @param cpg
@@ -26,16 +33,16 @@ abstract class AbstractValidator(cpg: Cpg) extends CpgPass(cpg) {
   }
 
   /** @return
-    *   compressed violations as (message, count) pairs in stable key order
+    *   compressed violations as (key, message, count) tuples in stable key order
     */
-  def getViolationsCompressed: mutable.ArrayBuffer[(String, Int)] = {
+  def getViolationsCompressedWithKey: mutable.ArrayBuffer[(Any, String, Int)] = {
     mutable.ArrayBuffer.from(
       violationsBuffer.iterator
         .groupByStable(_._1)
         .iterator
-        .map { (_, violations) => (violations.head._2, violations.size) }
+        .map { case (key, violations) => (key, violations.head._2, violations.size) }
         .toSeq
-        .sortBy(_._1)
+        .sortBy(_._1.toString)
     )
   }
 }
@@ -44,9 +51,17 @@ abstract class AbstractValidator(cpg: Cpg) extends CpgPass(cpg) {
 object PostFrontendValidator {
   private val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  enum ErrorType {
-    case FULLNAME_UNIQUE_METHOD, FULLNAME_UNIQUE_TYPE, FULLNAME_UNIQUE_TYPEDECL, MULTI_REF, BAD_REF_TYPE, NONLOCAL_REF,
-      MULTI_AST_IN, MULTI_ARG_IN, DUPLICATE_ORDER
+  /** Newly added error types should have an `addedInLevel` one level higher than the highest */
+  enum ErrorType(val addedInLevel: ValidationLevel) {
+    case FULLNAME_UNIQUE_METHOD   extends ErrorType(ValidationLevel.V1)
+    case FULLNAME_UNIQUE_TYPE     extends ErrorType(ValidationLevel.V1)
+    case FULLNAME_UNIQUE_TYPEDECL extends ErrorType(ValidationLevel.V1)
+    case MULTI_REF                extends ErrorType(ValidationLevel.V1)
+    case BAD_REF_TYPE             extends ErrorType(ValidationLevel.V1)
+    case NONLOCAL_REF             extends ErrorType(ValidationLevel.V1)
+    case MULTI_AST_IN             extends ErrorType(ValidationLevel.V1)
+    case MULTI_ARG_IN             extends ErrorType(ValidationLevel.V1)
+    case DUPLICATE_ORDER          extends ErrorType(ValidationLevel.V1)
   }
 }
 
@@ -55,8 +70,11 @@ object PostFrontendValidator {
   *
   * Goal is to improve the pass once we fixed current violations, and then have new ideas what to check. Then plug in
   * faster checking code, then enable in sptests and prod.
+  *
+  * NOTE: All validation checks with a level lower or equal to [[fatalValidationLevel]] will result in an exception. See
+  * [[ValidationLevel]] and [[ErrorType]] for the highest validation level.
   */
-class PostFrontendValidator(cpg: Cpg, throwOnError: Boolean) extends AbstractValidator(cpg) {
+class PostFrontendValidator(cpg: Cpg, fatalValidationLevel: ValidationLevel) extends AbstractValidator(cpg) {
   import PostFrontendValidator.logger
   import PostFrontendValidator.ErrorType.*
 
@@ -221,11 +239,22 @@ class PostFrontendValidator(cpg: Cpg, throwOnError: Boolean) extends AbstractVal
 
   /** Log compressed violations and optionally throw on error. */
   private def reportViolations(): Unit = {
-    val violations = getViolationsCompressed
+    val violations = getViolationsCompressedWithKey
     if (violations.nonEmpty) {
-      val err = violations.map { (msg, n) => s"$msg ($n instances)" }.mkString("\n")
+      val err = violations.map { (_, msg, n) => s"$msg ($n instances)" }.mkString("\n")
       logger.warn(s"Graph validation failure:\n$err")
-      if (throwOnError) throw new ValidationError(err)
+
+      val fatalViolations = violations.filter { case (key, _, _) =>
+        key match {
+          case err: ErrorType => err.addedInLevel <= fatalValidationLevel
+          case _              => true
+        }
+      }
+
+      if (fatalViolations.nonEmpty) {
+        val fatalErr = fatalViolations.map { case (_, msg, n) => s"$msg ($n instances)" }.mkString("\n")
+        throw new ValidationError(s"Fatal graph validation errors (Level <= $fatalValidationLevel):\n$fatalErr")
+      }
     }
   }
 
