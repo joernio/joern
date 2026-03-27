@@ -14,32 +14,32 @@ import scala.collection.{Set, mutable}
   * necessary, but it greatly improves readability.
   */
 object Definition {
-  def fromNode(node: StoredNode, nodeToNumber: Map[StoredNode, Int]): Definition = {
+  def fromNode(node: CfgNode, nodeToNumber: Map[CfgNode, Int]): Definition = {
     nodeToNumber(node)
   }
 }
 
 object ReachingDefProblem {
-  def create(method: Method): DataFlowProblem[StoredNode, mutable.BitSet] = {
+  def create(method: Method): DataFlowProblem[CfgNode, mutable.BitSet] = {
     val flowGraph = new ReachingDefFlowGraph(method)
     val transfer  = new OptimizedReachingDefTransferFunction(flowGraph)
     val init      = new ReachingDefInit(transfer.gen)
     def meet: (mutable.BitSet, mutable.BitSet) => mutable.BitSet =
       (x: mutable.BitSet, y: mutable.BitSet) => { x.union(y) }
 
-    new DataFlowProblem[StoredNode, mutable.BitSet](flowGraph, transfer, meet, init, true, mutable.BitSet())
+    new DataFlowProblem(flowGraph, transfer, meet, init, true, mutable.BitSet())
   }
 
 }
 
 /** The control flow graph as viewed by the data flow solver.
   */
-class ReachingDefFlowGraph(val method: Method) extends FlowGraph[StoredNode] {
+class ReachingDefFlowGraph(val method: Method) extends FlowGraph[CfgNode] {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
-  val entryNode: StoredNode = method
-  val exitNode: StoredNode  = method.methodReturn
+  val entryNode: CfgNode = method
+  val exitNode: CfgNode  = method.methodReturn
 
   private val params           = method.parameter.sortBy(_.index)
   private val firstParam       = params.headOption
@@ -47,34 +47,34 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph[StoredNode] {
   private val firstOutputParam = firstParam.flatMap(_.asOutput.headOption)
   private val lastOutputParam  = method.parameter.sortBy(_.index).asOutput.lastOption
 
-  private val lastActualCfgNode = exitNode._cfgIn.nextOption()
+  private val lastActualCfgNode = exitNode.cfgIn.nextOption
 
-  val allNodesReversePostOrder: List[StoredNode] =
+  override val allNodesReversePostOrder: List[CfgNode] =
     List(entryNode) ++ method.parameter.toList ++ method.reversePostOrder.toList.filter(x =>
       x.id != entryNode.id && x.id != exitNode.id
     ) ++ method.parameter.asOutput.toList ++ List(exitNode)
 
   private val allNodesEvenUnreachable =
     allNodesReversePostOrder ++ method.cfgNode.l.filterNot(x => allNodesReversePostOrder.contains(x))
-  val nodeToNumber: Map[StoredNode, Int] = allNodesEvenUnreachable.zipWithIndex.map { case (x, i) => x -> i }.toMap
-  val numberToNode: Map[Int, StoredNode] = allNodesEvenUnreachable.zipWithIndex.map { case (x, i) => i -> x }.toMap
+  val nodeToNumber: Map[CfgNode, Int] = allNodesEvenUnreachable.zipWithIndex.map { case (x, i) => x -> i }.toMap
+  val numberToNode: Map[Int, CfgNode] = allNodesEvenUnreachable.zipWithIndex.map { case (x, i) => i -> x }.toMap
 
-  val allNodesPostOrder: List[StoredNode] = allNodesReversePostOrder.reverse
+  override val allNodesPostOrder: List[CfgNode] = allNodesReversePostOrder.reverse
 
-  private val _succ: Map[StoredNode, List[StoredNode]] = initSucc(allNodesReversePostOrder)
-  private val _pred: Map[StoredNode, List[StoredNode]] = initPred(allNodesReversePostOrder, method)
+  private val _succ: Map[CfgNode, List[CfgNode]] = initSucc(allNodesReversePostOrder)
+  private val _pred: Map[CfgNode, List[CfgNode]] = initPred(allNodesReversePostOrder, method)
 
-  override def succ(node: StoredNode): IterableOnce[StoredNode] = {
+  override def succ(node: CfgNode): IterableOnce[CfgNode] = {
     _succ.apply(node)
   }
 
-  override def pred(node: StoredNode): IterableOnce[StoredNode] = {
+  override def pred(node: CfgNode): IterableOnce[CfgNode] = {
     _pred.apply(node)
   }
 
   /** Create a map that allows CFG successors to be retrieved for each node
     */
-  private def initSucc(ns: List[StoredNode]): Map[StoredNode, List[StoredNode]] = {
+  private def initSucc(ns: List[CfgNode]): Map[CfgNode, List[CfgNode]] = {
     ns.map {
       case n: Method   => n   -> firstParamOrBody(n)
       case ret: Return => ret -> List(firstOutputParam.getOrElse(exitNode))
@@ -82,28 +82,22 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph[StoredNode] {
         param -> nextParamOrBody(param)
       case paramOut: MethodParameterOut => paramOut -> nextParamOutOrExit(paramOut)
       case cfgNode: CfgNode             => cfgNode  -> cfgNextOrFirstOutParam(cfgNode)
-      case n =>
-        logger.warn(s"Node type ${n.getClass.getSimpleName} should not be part of the CFG")
-        n -> List()
     }.toMap
   }
 
   /** Create a map that allows CFG predecessors to be retrieved for each node
     */
-  private def initPred(ns: List[StoredNode], method: Method): Map[StoredNode, List[StoredNode]] = {
+  private def initPred(ns: List[CfgNode], method: Method): Map[CfgNode, List[CfgNode]] = {
     ns.map {
       case param: MethodParameterIn     => param    -> previousParamOrEntry(param)
       case paramOut: MethodParameterOut => paramOut -> previousOutputParamOrLastNodeOfBody(paramOut)
       case n: CfgNode if method.cfgFirst.headOption.contains(n) => n -> List(lastParam.getOrElse(method))
       case n if n == exitNode                                   => n -> lastOutputParamOrLastNodeOfBody()
       case n @ (cfgNode: CfgNode)                               => n -> cfgNode.cfgPrev.l
-      case n =>
-        logger.warn(s"Node type ${n.getClass.getSimpleName} should not be part of the CFG")
-        n -> List()
     }.toMap
   }
 
-  private def firstParamOrBody(n: Method): List[StoredNode] = {
+  private def firstParamOrBody(n: Method): List[CfgNode] = {
     if (firstParam.isDefined) {
       firstParam.toList
     } else {
@@ -111,24 +105,24 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph[StoredNode] {
     }
   }
 
-  private def cfgNext(n: CfgNode): List[StoredNode] =
-    n.out(EdgeTypes.CFG).map(_.asInstanceOf[StoredNode]).l
+  private def cfgNext(n: CfgNode): List[CfgNode] =
+    n.out(EdgeTypes.CFG).map(_.asInstanceOf[CfgNode]).l
 
-  private def nextParamOrBody(param: MethodParameterIn): List[StoredNode] = {
+  private def nextParamOrBody(param: MethodParameterIn): List[CfgNode] = {
     val nextParam = param.method.parameter.index(param.index + 1).headOption
     if (nextParam.isDefined) { nextParam.toList }
     else { param.method.cfgFirst.l }
   }
 
-  private def nextParamOutOrExit(paramOut: MethodParameterOut): List[StoredNode] = {
+  private def nextParamOutOrExit(paramOut: MethodParameterOut): List[CfgNode] = {
     val nextParam = paramOut.method.parameter.index(paramOut.index + 1).asOutput.headOption
     if (nextParam.isDefined) { nextParam.toList }
     else { List(exitNode) }
   }
 
-  private def cfgNextOrFirstOutParam(cfgNode: CfgNode): List[StoredNode] = {
+  private def cfgNextOrFirstOutParam(cfgNode: CfgNode): List[CfgNode] = {
     // `.cfgNext` would be wrong here because it filters `METHOD_RETURN`
-    val successors = cfgNode.out(EdgeTypes.CFG).map(_.asInstanceOf[StoredNode]).l
+    val successors = cfgNode.out(EdgeTypes.CFG).map(_.asInstanceOf[CfgNode]).l
     if (successors == List(exitNode) && firstOutputParam.isDefined) {
       List(firstOutputParam.get)
     } else {
@@ -136,19 +130,19 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph[StoredNode] {
     }
   }
 
-  private def previousParamOrEntry(param: MethodParameterIn): List[StoredNode] = {
+  private def previousParamOrEntry(param: MethodParameterIn): List[CfgNode] = {
     val prevParam = param.method.parameter.index(param.index - 1).headOption
     if (prevParam.isDefined) { prevParam.toList }
     else { List(method) }
   }
 
-  private def previousOutputParamOrLastNodeOfBody(paramOut: MethodParameterOut): List[StoredNode] = {
+  private def previousOutputParamOrLastNodeOfBody(paramOut: MethodParameterOut): List[CfgNode] = {
     val prevParam = paramOut.method.parameter.index(paramOut.index - 1).asOutput.headOption
     if (prevParam.isDefined) { prevParam.toList }
     else { lastActualCfgNode.toList }
   }
 
-  private def lastOutputParamOrLastNodeOfBody(): List[StoredNode] = {
+  private def lastOutputParamOrLastNodeOfBody(): List[CfgNode] = {
     if (lastOutputParam.isDefined) { lastOutputParam.toList }
     else { lastActualCfgNode.toList }
   }
@@ -157,32 +151,31 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph[StoredNode] {
 
 /** For each node of the graph, this transfer function defines how it affects the propagation of definitions.
   */
-class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph)
-    extends TransferFunction[StoredNode, mutable.BitSet] {
+class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph) extends TransferFunction[CfgNode, mutable.BitSet] {
 
   private val nodeToNumber = flowGraph.nodeToNumber
 
   val method: Method = flowGraph.method
 
-  val gen: Map[StoredNode, mutable.BitSet] =
+  val gen: Map[CfgNode, mutable.BitSet] =
     initGen(method).withDefaultValue(mutable.BitSet())
 
-  val kill: Map[StoredNode, mutable.BitSet] =
+  val kill: Map[CfgNode, mutable.BitSet] =
     initKill(method, gen).withDefaultValue(mutable.BitSet())
 
   /** For a given flow graph node `n` and set of definitions, apply the transfer function to obtain the updated set of
     * definitions, considering `gen(n)` and `kill(n)`.
     */
-  override def apply(n: StoredNode, x: mutable.BitSet): mutable.BitSet = {
+  override def apply(n: CfgNode, x: mutable.BitSet): mutable.BitSet = {
     gen(n).union(x.diff(kill(n)))
   }
 
   /** Initialize the map `gen`, a map that contains generated definitions for each flow graph node.
     */
-  def initGen(method: Method): Map[StoredNode, mutable.BitSet] = {
+  def initGen(method: Method): Map[CfgNode, mutable.BitSet] = {
 
     val defsForParams = method.parameter.l.map { param =>
-      param -> mutable.BitSet(Definition.fromNode(param.asInstanceOf[StoredNode], nodeToNumber))
+      param -> mutable.BitSet(Definition.fromNode(param.asInstanceOf[CfgNode], nodeToNumber))
     }
 
     // We filter out field accesses to ensure that they propagate
@@ -201,7 +194,7 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph)
             (retVal ++ args)
               .collect {
                 case x if nodeToNumber.contains(x) =>
-                  Definition.fromNode(x.asInstanceOf[StoredNode], nodeToNumber)
+                  Definition.fromNode(x.asInstanceOf[CfgNode], nodeToNumber)
               }*
           )
         }
@@ -224,7 +217,7 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph)
     * All operations in our graph are represented by calls and non-operations such as identifiers or field-identifiers
     * have empty gen and kill sets, meaning that they just pass on definitions unaltered.
     */
-  private def initKill(method: Method, gen: Map[StoredNode, mutable.BitSet]): Map[StoredNode, mutable.BitSet] = {
+  private def initKill(method: Method, gen: Map[CfgNode, mutable.BitSet]): Map[CfgNode, mutable.BitSet] = {
 
     val allIdentifiers: Map[String, List[CfgNode]] = {
       val results             = mutable.Map.empty[String, List[CfgNode]]
@@ -334,10 +327,10 @@ class OptimizedReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph)
       }
   }
 
-  override def initGen(method: Method): Map[StoredNode, mutable.BitSet] =
+  override def initGen(method: Method): Map[CfgNode, mutable.BitSet] =
     withoutLoneIdentifiers(super.initGen(method))
 
-  private def withoutLoneIdentifiers(g: Map[StoredNode, mutable.BitSet]): Map[StoredNode, mutable.BitSet] = {
+  private def withoutLoneIdentifiers(g: Map[CfgNode, mutable.BitSet]): Map[CfgNode, mutable.BitSet] = {
     g.map { case (k, defs) =>
       k match {
         case call: Call if loneIdentifiers.contains(call) =>
@@ -348,11 +341,11 @@ class OptimizedReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph)
   }
 }
 
-class ReachingDefInit(gen: Map[StoredNode, mutable.BitSet]) extends InOutInit[StoredNode, mutable.BitSet] {
-  override def initIn: Map[StoredNode, mutable.BitSet] =
+class ReachingDefInit(gen: Map[CfgNode, mutable.BitSet]) extends InOutInit[CfgNode, mutable.BitSet] {
+  override def initIn: Map[CfgNode, mutable.BitSet] =
     Map
-      .empty[StoredNode, mutable.BitSet]
+      .empty[CfgNode, mutable.BitSet]
       .withDefaultValue(mutable.BitSet())
 
-  override def initOut: Map[StoredNode, mutable.BitSet] = gen
+  override def initOut: Map[CfgNode, mutable.BitSet] = gen
 }
