@@ -122,6 +122,15 @@ class GoGlobal {
     }
   }
 
+  val interfaceMethodsMap: java.util.concurrent.ConcurrentHashMap[String, java.util.Set[String]] = new java.util.concurrent.ConcurrentHashMap()
+
+  def recordInterfaceMethods(interfaceFullName: String, methodName: String): Unit = {
+    interfaceMethodsMap.computeIfAbsent(interfaceFullName, _ => java.util.concurrent.ConcurrentHashMap.newKeySet[String]()).add(methodName)
+  }
+
+  def getInterfaceMethods(interfaceFullName: String): Option[java.util.Set[String]] =
+    Option(interfaceMethodsMap.get(interfaceFullName))
+
   def splitNamespaceFromMember(fullName: String): (String, String) = {
     if (fullName.contains('.')) {
       val lastDotIndex  = fullName.lastIndexOf('.')
