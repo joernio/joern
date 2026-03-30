@@ -158,13 +158,38 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
       case Some(hint) =>
         val nameSequence = hint match {
           case n: ast.Name => Option(n.id)
-          // TODO: Definitely a place for follow up handling of generics - currently only take the polymorphic type
-          //  without type args. To see the type arguments, see ast.Subscript.slice
           case attr: ast.Attribute =>
             extractTypesFromHint(Some(attr.value)).map { x => x + "." + attr.attr }
-          case n: ast.Subscript if n.value.isInstanceOf[ast.Name] => Option(n.value.asInstanceOf[ast.Name].id)
+          case n: ast.Subscript if n.value.isInstanceOf[ast.Name] =>
+            val outerName = n.value.asInstanceOf[ast.Name].id
+            outerName match {
+              case "Optional" =>
+                extractTypesFromHint(Some(n.slice)).map(inner => s"$inner|${builtinPrefix}None")
+              case "List" | "Set" | "FrozenSet" | "Deque" =>
+                Some(s"${builtinPrefix}${outerName.toLowerCase}")
+              case "Dict" | "DefaultDict" | "OrderedDict" =>
+                Some(s"${builtinPrefix}dict")
+              case "Tuple" =>
+                Some(s"${builtinPrefix}tuple")
+              case "Union" =>
+                n.slice match {
+                  case t: ast.Tuple =>
+                    Some(t.elts.flatMap(e => extractTypesFromHint(Some(e))).mkString("|"))
+                  case _ => Some(s"${typingPrefix}$outerName")
+                }
+              case _ => Option(outerName)
+            }
           case n: ast.Constant if n.value.isInstanceOf[ast.StringConstant] =>
             Option(n.value.asInstanceOf[ast.StringConstant].value)
+          case n: ast.BinOp if n.op == ast.BitOr =>
+            val left  = extractTypesFromHint(Some(n.left))
+            val right = extractTypesFromHint(Some(n.right))
+            (left, right) match {
+              case (Some(l), Some(r)) => Some(s"$l|$r")
+              case (Some(l), _)      => Some(l)
+              case (_, Some(r))      => Some(r)
+              case _                 => None
+            }
           case _ => None
         }
         nameSequence.map { typeName =>
