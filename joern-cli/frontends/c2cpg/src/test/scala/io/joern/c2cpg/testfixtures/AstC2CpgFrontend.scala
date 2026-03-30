@@ -1,16 +1,13 @@
 package io.joern.c2cpg.testfixtures
 
+import io.joern.c2cpg.C2Cpg.DefaultIgnoredFolders
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.parser.FileDefaults
-import io.joern.c2cpg.passes.AstCreationPass
-import io.joern.c2cpg.passes.FunctionDeclNodePass
-import io.joern.c2cpg.C2Cpg.DefaultIgnoredFolders
-import io.joern.x2cpg.testfixtures.LanguageFrontend
-import io.joern.x2cpg.SourceFiles
-import io.joern.x2cpg.ValidationMode
+import io.joern.c2cpg.passes.{AstCreationPass, FunctionDeclNodePass}
+import io.joern.x2cpg.{SourceFiles, ValidationMode}
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
+import io.joern.x2cpg.testfixtures.LanguageFrontend
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.validation.{PostFrontendValidator, ValidationLevel}
 
 trait AstC2CpgFrontend extends LanguageFrontend {
@@ -49,7 +46,7 @@ trait AstC2CpgFrontend extends LanguageFrontend {
       )
     headerPass.createAndApply()
     new FunctionDeclNodePass(cpg, headerPass.unhandledMethodDeclarations(), config).createAndApply()
-    new PostFrontendValidator(cpg, ValidationLevel.V0).run()
+    new PostFrontendValidator(cpg, ValidationLevel.V1).run()
     cpg
   }
 }

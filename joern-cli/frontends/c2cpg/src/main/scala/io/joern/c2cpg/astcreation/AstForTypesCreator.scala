@@ -4,7 +4,7 @@ import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes, Operators}
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.*
@@ -249,7 +249,7 @@ trait AstForTypesCreator { this: AstCreator =>
     }
   }
 
-  protected def astsForDeclaration(decl: IASTDeclaration): Seq[Ast] = {
+  protected def astsForDeclaration(decl: IASTDeclaration, underTypeDecl: Boolean = false): Seq[Ast] = {
     if (isUnsupportedCoroutineKeyword(decl)) {
       return Seq(astForUnsupportedCoroutineNode(decl))
     }
@@ -290,7 +290,8 @@ trait AstForTypesCreator { this: AstCreator =>
       case functionDefinition: IASTFunctionDefinition            => Seq(astForFunctionDefinition(functionDefinition))
       case namespaceAlias: ICPPASTNamespaceAlias                 => Seq(astForNamespaceAlias(namespaceAlias))
       case namespaceDefinition: ICPPASTNamespaceDefinition       => Seq(astForNamespaceDefinition(namespaceDefinition))
-      case a: ICPPASTStaticAssertDeclaration                     => Seq(astForStaticAssert(a))
+      case a: ICPPASTStaticAssertDeclaration if !underTypeDecl   => Seq(astForStaticAssert(a))
+      case a: ICPPASTStaticAssertDeclaration                     => Seq.empty
       case asm: IASTASMDeclaration                               => Seq(astForASMDeclaration(asm))
       case t: ICPPASTTemplateDeclaration                         => astsForDeclaration(t.getDeclaration)
       case l: ICPPASTLinkageSpecification                        => astsForLinkageSpecification(l)
@@ -300,7 +301,31 @@ trait AstForTypesCreator { this: AstCreator =>
       case _                                                     => Seq(astForNode(decl))
     }
 
-    val initAsts = decl match {
+    val initAsts = if (underTypeDecl) Seq.empty else astsForDeclarationInit(decl)
+    declAsts ++ initAsts
+  }
+
+  private def declHasInit(decl: IASTNode): Boolean = {
+    decl match {
+      case a: ICPPASTStaticAssertDeclaration => true
+      case declaration: IASTSimpleDeclaration if declaration.getDeclarators.nonEmpty =>
+        declaration.getDeclarators.exists {
+          case d: ICPPASTDeclarator if d.getInitializer == null && isCPPClassLike(declaration) => true
+          case d: IASTDeclarator if d.getInitializer != null                                   => true
+          case arrayDecl: IASTArrayDeclarator                                                  => true
+          case _                                                                               => false
+        }
+      case _ => false
+    }
+  }
+
+  private def astsForDeclarationInit(decl: IASTDeclaration): Seq[Ast] = {
+    if (isUnsupportedCoroutineKeyword(decl)) {
+      return Seq(astForUnsupportedCoroutineNode(decl))
+    }
+
+    decl match {
+      case a: ICPPASTStaticAssertDeclaration => Seq(astForStaticAssert(a))
       case declaration: IASTSimpleDeclaration if declaration.getDeclarators.nonEmpty =>
         declaration.getDeclarators.toList.map {
           case d: ICPPASTDeclarator if d.getInitializer == null && isCPPClassLike(declaration) =>
@@ -313,7 +338,6 @@ trait AstForTypesCreator { this: AstCreator =>
         }
       case _ => Nil
     }
-    declAsts ++ initAsts
   }
 
   private def astForIASTArrayDeclarator(arrayDecl: IASTArrayDeclarator): Ast = {
@@ -341,7 +365,7 @@ trait AstForTypesCreator { this: AstCreator =>
     methodAstParentStack.push(blockNode_)
     scope.pushNewMethodScope(fullName, name, namespaceBlockNode_, None)
     scope.pushNewBlockScope(blockNode_)
-    val childrenAsts = namespaceDefinition.getDeclarations.flatMap(astsForDeclaration).toIndexedSeq
+    val childrenAsts = namespaceDefinition.getDeclarations.flatMap(d => astsForDeclaration(d)).toIndexedSeq
     methodAstParentStack.pop()
     scope.popScope()
     scope.popScope()
@@ -373,7 +397,7 @@ trait AstForTypesCreator { this: AstCreator =>
   }
 
   private def astsForLinkageSpecification(l: ICPPASTLinkageSpecification): Seq[Ast] = {
-    l.getDeclarations.toIndexedSeq.flatMap(astsForDeclaration)
+    l.getDeclarations.toIndexedSeq.flatMap(d => astsForDeclaration(d))
   }
 
   private def filterNameAlias(nameAlias: Option[String], fullName: String): Option[String] = {
@@ -409,25 +433,19 @@ trait AstForTypesCreator { this: AstCreator =>
     typeRefNodeMaybe.foreach(typeRefIdStack.push)
     scope.pushNewMethodScope(typeDecl.fullName, typeDecl.name, typeDecl, None)
 
-    val memberAsts = typeSpecifier.getDeclarations(true).toList.flatMap(astsForDeclaration)
+    val memberDecls                = typeSpecifier.getDeclarations(true).toList
+    val memberAsts                 = memberDecls.flatMap(d => astsForDeclaration(d, true))
+    val memberNodesWithInitializer = memberDecls.filter(d => declHasInit(d))
 
     methodAstParentStack.pop()
     typeRefNodeMaybe.foreach(_ => typeRefIdStack.pop())
     scope.popScope()
 
-    val (calls, member) = memberAsts.partition(_.nodes.headOption.exists(_.isInstanceOf[NewCall]))
-    val asts = if (calls.isEmpty) {
-      Ast(typeDecl).withChildren(member) +: declAsts
+    val asts = if (memberNodesWithInitializer.isEmpty) {
+      Ast(typeDecl).withChildren(memberAsts) +: declAsts
     } else {
-      val init = staticInitMethodAst(
-        typeSpecifier,
-        calls,
-        s"$fullName.${io.joern.x2cpg.Defines.StaticInitMethodName}",
-        None,
-        Defines.Any,
-        Some(filename)
-      )
-      Ast(typeDecl).withChildren(member).withChild(init) +: declAsts
+      val initAst = createStaticConstructor(typeSpecifier, memberNodesWithInitializer, typeDecl)
+      Ast(typeDecl).withChildren(memberAsts).withChild(initAst) +: declAsts
     }
     asts.foreach { ast =>
       Ast.storeInDiffGraph(ast, diffGraph)
@@ -440,29 +458,33 @@ trait AstForTypesCreator { this: AstCreator =>
     typeSpecifier: IASTElaboratedTypeSpecifier,
     decls: List[IASTDeclarator]
   ): Seq[Ast] = {
-    val filename                         = fileName(typeSpecifier)
     val TypeFullNameInfo(name, fullName) = typeFullNameInfo(typeSpecifier)
+    val nameAlias                        = decls.headOption.map(d => registerType(shortName(d))).filter(_.nonEmpty)
 
+    val alias = filterNameAlias(nameAlias, fullName)
     val declAsts = decls.zipWithIndex.map { case (d, i) =>
       astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d, i)
     }
 
-    val nameAlias = decls.headOption.map(d => registerType(shortName(d))).filter(_.nonEmpty)
-    val alias     = filterNameAlias(nameAlias, fullName)
-
-    val typeDecl = typeDeclNode(typeSpecifier, name, fullName, filename, code(typeSpecifier), alias = alias)
-    Ast(typeDecl) +: declAsts
+    if (alias.isEmpty) {
+      val filename = fileName(typeSpecifier)
+      val typeDecl = typeDeclNode(typeSpecifier, name, fullName, filename, code(typeSpecifier))
+      Ast(typeDecl) +: declAsts
+    } else {
+      declAsts
+    }
   }
 
-  private def astsForEnumerator(enumerator: IASTEnumerationSpecifier.IASTEnumerator): Seq[Ast] = {
+  private def memberAstForEnumerator(enumerator: IASTEnumerationSpecifier.IASTEnumerator): Ast = {
     val tpe = enumerator.getParent match {
       case enumeration: ICPPASTEnumerationSpecifier if enumeration.getBaseType != null =>
         enumeration.getBaseType.toString
       case _ => typeFor(enumerator)
     }
-    val cpgMember =
-      memberNode(enumerator, ASTStringUtil.getSimpleName(enumerator.getName), code(enumerator), registerType(tpe))
+    Ast(memberNode(enumerator, ASTStringUtil.getSimpleName(enumerator.getName), code(enumerator), registerType(tpe)))
+  }
 
+  protected def astForEnumeratorWithInit(enumerator: IASTEnumerationSpecifier.IASTEnumerator): Ast = {
     if (enumerator.getValue != null) {
       val operatorName = Operators.assignment
       val callNode_ = callNode(
@@ -476,11 +498,38 @@ trait AstForTypesCreator { this: AstCreator =>
       )
       val left  = astForNode(enumerator.getName)
       val right = astForNode(enumerator.getValue)
-      val ast   = callAst(callNode_, List(left, right))
-      Seq(Ast(cpgMember), ast)
+      callAst(callNode_, List(left, right))
     } else {
-      Seq(Ast(cpgMember))
+      Ast()
     }
+  }
+
+  private def createStaticConstructor(node: IASTNode, inits: List[IASTNode], typeDeclNode: NewTypeDecl): Ast = {
+    val constructorName = io.joern.x2cpg.Defines.StaticInitMethodName
+    val fullName        = s"${typeDeclNode.fullName}.$constructorName:${typeDeclNode.fullName}()"
+    val methodNode_     = methodNode(node, constructorName, constructorName, fullName, None, filename)
+    val modifiers =
+      Seq(NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), NewModifier().modifierType(ModifierTypes.STATIC))
+
+    val blockNode = NewBlock()
+    methodAstParentStack.push(methodNode_)
+    scope.pushNewMethodScope(fullName, constructorName, blockNode, typeRefIdStack.headOption, true)
+
+    val initAsts = inits.flatMap {
+      case d: IASTDeclaration if declHasInit(d) => astsForDeclarationInit(d)
+      case node                                 => Seq(astForNode(node))
+    }
+
+    scope.popScope()
+    methodAstParentStack.pop()
+
+    val bodyAst           = blockAst(blockNode, initAsts)
+    val methodReturnNode_ = methodReturnNode(node, typeDeclNode.fullName)
+    val mAst              = methodAst(methodNode_, Nil, bodyAst, methodReturnNode_, modifiers)
+
+    val functionBindingAst = createFunctionBinding(methodNode_)
+    Ast.storeInDiffGraph(functionBindingAst, diffGraph)
+    mAst
   }
 
   private def astsForEnum(typeSpecifier: IASTEnumerationSpecifier, decls: List[IASTDeclarator]): Seq[Ast] = {
@@ -515,26 +564,19 @@ trait AstForTypesCreator { this: AstCreator =>
     methodAstParentStack.push(typeDecl)
     typeRefNodeMaybe.foreach(typeRefIdStack.push)
     scope.pushNewMethodScope(typeDecl.fullName, typeDecl.name, typeDecl, None)
-    val memberAsts = typeSpecifier.getEnumerators.toList.flatMap { e =>
-      astsForEnumerator(e)
-    }
+
+    val memberNodesWithInitializer = typeSpecifier.getEnumerators.toList.filter(_.getValue != null)
+    val memberAsts                 = typeSpecifier.getEnumerators.toList.map(memberAstForEnumerator)
+
     typeRefNodeMaybe.foreach(_ => typeRefIdStack.pop())
     methodAstParentStack.pop()
     scope.popScope()
 
-    val (calls, member) = memberAsts.partition(_.nodes.headOption.exists(_.isInstanceOf[NewCall]))
-    val asts = if (calls.isEmpty) {
-      Ast(typeDecl).withChildren(member) +: declAsts
+    val asts = if (memberNodesWithInitializer.isEmpty) {
+      Ast(typeDecl).withChildren(memberAsts) +: declAsts
     } else {
-      val init = staticInitMethodAst(
-        typeSpecifier,
-        calls,
-        s"$deAliasedFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}",
-        None,
-        Defines.Any,
-        Some(filename)
-      )
-      Ast(typeDecl).withChildren(member).withChild(init) +: declAsts
+      val init = createStaticConstructor(typeSpecifier, memberNodesWithInitializer, typeDecl)
+      Ast(typeDecl).withChildren(memberAsts).withChild(init) +: declAsts
     }
     asts.foreach { ast =>
       Ast.storeInDiffGraph(ast, diffGraph)
