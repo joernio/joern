@@ -148,8 +148,7 @@ class SwitchTests extends GoCodeToCpgSuite {
     )
   }
 
-  // TODO Need to handle `fallthrough` statements
-  "ast creation for fallthrough" ignore {
+  "ast creation for fallthrough" should {
     "be correct" in {
 
       val cpg = code("""package main

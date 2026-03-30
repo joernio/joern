@@ -8,4 +8,5 @@ object UtilityConstants {
 }
 object Operator {
   val unknown = "<operator>.unknown"
+  val send    = "<operator>.send"
 }
