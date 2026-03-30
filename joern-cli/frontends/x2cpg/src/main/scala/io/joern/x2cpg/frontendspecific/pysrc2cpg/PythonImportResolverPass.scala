@@ -72,6 +72,32 @@ class PythonImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
       importedEntityAsFullyQualifiedImport
     ).filterNot(_.isBlank).mkString(".")
 
+    // Handle star imports: `from module import *`
+    if (importedAs == "*") {
+      val baseEntity = importedEntity.stripSuffix(".*")
+      val baseEntityAsFullyQualified = fileToPythonImportNotation(baseEntity.replaceFirst("^\\.+", ""))
+      val baseEntityAsRelative = Seq(
+        fileToPythonImportNotation(currDir.toString.stripPrefix(codeRootDir).stripPrefix(JFile.separator)),
+        baseEntityAsFullyQualified
+      ).filterNot(_.isBlank).mkString(".")
+
+      val modulePaths = Seq(baseEntityAsRelative, baseEntityAsFullyQualified).distinct
+      val starImports = modulePaths.flatMap { basePath =>
+        moduleCache.collect {
+          case (key, entity) if key.startsWith(basePath + ".") && !key.drop(basePath.length + 1).contains(".") =>
+            val memberName = key.drop(basePath.length + 1)
+            entity.toResolvedImport(memberName)
+        }.flatten
+      }
+
+      if (starImports.nonEmpty) {
+        starImports.foreach(x => evaluatedImportToTag(x, importCall, diffGraph))
+      } else {
+        createPseudoImports(importedEntity, importedAs).map(x => evaluatedImportToTag(x, importCall, diffGraph)).l
+      }
+      return
+    }
+
     // We evaluated both variations, based on what we could expect from different versions of Python and how the package
     // layout is interpreted by the presence of lack of `__init__.py` files. Additionally, external packages are always
     // fully qualified.
