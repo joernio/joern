@@ -516,9 +516,8 @@ trait AstForTypesCreator { this: AstCreator =>
     scope.pushNewMethodScope(fullName, constructorName, blockNode, typeRefIdStack.headOption, true)
 
     val initAsts = inits.flatMap {
-      case a: ICPPASTStaticAssertDeclaration                     => astsForDeclarationInit(a)
-      case d: IASTSimpleDeclaration if d.getDeclarators.nonEmpty => astsForDeclarationInit(d)
-      case node                                                  => Seq(astForNode(node))
+      case d: IASTDeclaration if declHasInit(d) => astsForDeclarationInit(d)
+      case node                                 => Seq(astForNode(node))
     }
 
     scope.popScope()
