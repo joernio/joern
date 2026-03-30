@@ -60,6 +60,9 @@ slices.json
 **/abapgen-macos
 **/abapgen-macos-arm
 
+# Explicitly track abap2cpg documentation
+!/joern-cli/frontends/abap2cpg/*.md
+
 ##############
 # Nix flakes #
 ##############
