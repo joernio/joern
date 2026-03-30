@@ -85,7 +85,7 @@ class AstCreator(
 
     val blockNode_ = blockNode(iASTTranslationUnit)
     scope.pushNewMethodScope(fakeGlobalMethod.fullName, fakeGlobalMethod.name, blockNode_, None)
-    val declsAsts = allDecls.flatMap(astsForDeclaration)
+    val declsAsts = allDecls.flatMap(d => astsForDeclaration(d))
 
     val methodReturn = methodReturnNode(iASTTranslationUnit, Defines.Any)
     Ast(fakeGlobalTypeDecl).withChild(

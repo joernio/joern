@@ -1241,7 +1241,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
         x.name shouldBe "x"
         x.typeFullName shouldBe "int"
       }
-      cpg.typeDecl.nameExact("B").size shouldBe 1
+      cpg.typeDecl.nameExact("B") shouldBe empty // b is an instance of B
       inside(cpg.local.l) { case List(localA, localB) =>
         localA.name shouldBe "a"
         localA.typeFullName shouldBe "A"
@@ -1282,9 +1282,9 @@ class AstCreationPassTests extends AstC2CpgSuite {
       localMyOtherFs.order shouldBe 2
       localMyOtherFs.referencingIdentifiers.name.l shouldBe List("my_other_fs")
       val List(localMyFs) = cpg.local.nameExact("my_fs").l
-      localMyFs.order shouldBe 4
+      localMyFs.order shouldBe 3
       localMyFs.referencingIdentifiers.name.l shouldBe List("my_fs")
-      cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).fullName.l.distinct shouldBe List(
+      cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).fullName.l shouldBe List(
         "filesystem",
         "my_open",
         "main"
