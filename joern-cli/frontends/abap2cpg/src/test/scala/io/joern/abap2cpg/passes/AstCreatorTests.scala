@@ -345,8 +345,63 @@ class AstCreatorTests extends AbapCpgFixture {
       ), noSpan)
       val cpg  = cpgForProgram(programWithMethod("MY_METHOD", body = Some(body)))
       val call = cpg.method.nameExact("MY_METHOD").ast.isCall.nameExact("run").head
-      call.argument.size shouldBe 1
+      // receiver "obj" is argument index 0; "lv_val" is index 1
+      call.argument.size shouldBe 2
+      call.argument.isIdentifier.nameExact("obj").argumentIndex.head shouldBe 0
       call.argument.isIdentifier.nameExact("lv_val").size shouldBe 1
+    }
+  }
+
+  "AstCreator literal nodes" should {
+
+    "create a LITERAL node as child of an assignment" in {
+      val body = StatementList(Seq(
+        AssignmentStmt(IdentifierExpr("LV_X", noSpan), LiteralExpr("42", "NUMBER", noSpan), noSpan)
+      ), noSpan)
+      val cpg = cpgForProgram(programWithMethod("MY_METHOD", body = Some(body)))
+      cpg.method.nameExact("MY_METHOD").ast.isLiteral.code.l shouldBe List("42")
+    }
+
+    "set typeFullName NUMBER on integer literals" in {
+      val body = StatementList(Seq(
+        AssignmentStmt(IdentifierExpr("LV_X", noSpan), LiteralExpr("42", "NUMBER", noSpan), noSpan)
+      ), noSpan)
+      val cpg = cpgForProgram(programWithMethod("MY_METHOD", body = Some(body)))
+      cpg.method.nameExact("MY_METHOD").ast.isLiteral.typeFullName.l shouldBe List("NUMBER")
+    }
+
+    "set typeFullName STRING on quoted string literals" in {
+      val body = StatementList(Seq(
+        AssignmentStmt(IdentifierExpr("LV_X", noSpan), LiteralExpr("'hello'", "STRING", noSpan), noSpan)
+      ), noSpan)
+      val cpg = cpgForProgram(programWithMethod("MY_METHOD", body = Some(body)))
+      cpg.method.nameExact("MY_METHOD").ast.isLiteral.typeFullName.l shouldBe List("STRING")
+    }
+
+    "set typeFullName STRING on string template literals (|...|)" in {
+      val body = StatementList(Seq(
+        AssignmentStmt(IdentifierExpr("LV_X", noSpan), LiteralExpr("||", "STRING", noSpan), noSpan)
+      ), noSpan)
+      val cpg = cpgForProgram(programWithMethod("MY_METHOD", body = Some(body)))
+      cpg.method.nameExact("MY_METHOD").ast.isLiteral.code.l shouldBe List("||")
+      cpg.method.nameExact("MY_METHOD").ast.isLiteral.typeFullName.l shouldBe List("STRING")
+    }
+
+    "set code to the exact literal text" in {
+      val body = StatementList(Seq(
+        AssignmentStmt(IdentifierExpr("LV_X", noSpan), LiteralExpr("'test value'", "STRING", noSpan), noSpan)
+      ), noSpan)
+      val cpg = cpgForProgram(programWithMethod("MY_METHOD", body = Some(body)))
+      cpg.method.nameExact("MY_METHOD").ast.isLiteral.head.code shouldBe "'test value'"
+    }
+
+    "not produce literals for abap_false / abap_true (they are identifiers)" in {
+      val body = StatementList(Seq(
+        AssignmentStmt(IdentifierExpr("LV_BOOL", noSpan), IdentifierExpr("abap_false", noSpan), noSpan)
+      ), noSpan)
+      val cpg = cpgForProgram(programWithMethod("MY_METHOD", body = Some(body)))
+      cpg.method.nameExact("MY_METHOD").ast.isLiteral.l shouldBe empty
+      cpg.method.nameExact("MY_METHOD").ast.isIdentifier.nameExact("abap_false").size shouldBe 1
     }
   }
 
@@ -403,6 +458,40 @@ class AstCreatorTests extends AbapCpgFixture {
       val method = cpg.method.fullNameExact("MY_CLASS::MY_METHOD").head
       method.parameter.size shouldBe 1
       method.parameter.name.head shouldBe "IV_VALUE"
+    }
+  }
+
+  "RETURNING parameter" should {
+
+    "be exposed as METHOD_PARAMETER_IN accessible via method.parameter" in {
+      val cpg = cpgForProgram(
+        programWithMethod("MY_METHOD", returning = Some(Parameter("RV_RESULT", "string", isValue = true)))
+      )
+      cpg.method.nameExact("MY_METHOD").parameter.name.l should contain("RV_RESULT")
+    }
+
+    "not use the type name as the parameter name" in {
+      val cpg = cpgForProgram(
+        programWithMethod("MY_METHOD", returning = Some(Parameter("RV_RESULT", "string", isValue = true)))
+      )
+      cpg.method.nameExact("MY_METHOD").parameter.name.l should not contain "string"
+    }
+
+    "create a REF edge from an identifier referencing the return variable to the parameter" in {
+      val body = StatementList(
+        statements = Seq(
+          AssignmentStmt(IdentifierExpr("RV_RESULT", noSpan), LiteralExpr("42", "string", noSpan), noSpan)
+        ),
+        span = noSpan
+      )
+      val cpg = cpgForProgram(
+        programWithMethod("MY_METHOD",
+          returning = Some(Parameter("RV_RESULT", "string", isValue = true)),
+          body = Some(body))
+      )
+      val param = cpg.method.nameExact("MY_METHOD").parameter.nameExact("RV_RESULT").head
+      cpg.method.nameExact("MY_METHOD").ast.isIdentifier.nameExact("RV_RESULT")
+        .flatMap(_._refOut).headOption shouldBe Some(param)
     }
   }
 

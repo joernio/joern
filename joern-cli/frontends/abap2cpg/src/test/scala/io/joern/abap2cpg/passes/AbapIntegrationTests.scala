@@ -127,6 +127,29 @@ class AbapIntegrationTests extends Abap2CpgSuite {
         badParams shouldBe empty
       }
     }
+
+    "expose RETURNING parameter rv_result as METHOD_PARAMETER_IN on greet" in {
+      val cpg   = code(abapCode, fileName)
+      val greet = cpg.method.fullNameExact("zcl_simple::greet").head
+      greet.parameter.name.l should contain("rv_result")
+    }
+
+    "not use type names as parameter names" in {
+      val cpg        = code(abapCode, fileName)
+      val typeNames  = Set("string", "i", "abap_bool", "void", "ANY")
+      val paramNames = cpg.method.filter(!_.isExternal).parameter.name.toSet
+      val overlap    = paramNames.intersect(typeNames)
+      withClue(s"Type names found as parameter names: $overlap") {
+        overlap shouldBe empty
+      }
+    }
+
+    "create REF edge from rv_result identifier to its RETURNING parameter" in {
+      val cpg   = code(abapCode, fileName)
+      val greet = cpg.method.fullNameExact("zcl_simple::greet").head
+      val param = greet.parameter.nameExact("rv_result").head
+      greet.ast.isIdentifier.nameExact("rv_result").flatMap(_._refOut).headOption shouldBe Some(param)
+    }
   }
 
   "CPG metadata" should {
@@ -197,23 +220,23 @@ class AbapIntegrationTests extends Abap2CpgSuite {
 
   "CPG method parameters" should {
 
-    // Note: abapgen represents class method parameters differently depending on the section.
-    // Parameters exist in the global CPG (cpg.parameter) even when not yet linked by name.
-    // Named parameter linking is verified at unit test level (AstCreatorTests).
+    // Stub methods (isExternal=true) are created by MethodStubCreator for unresolved calls
+    // and may have parameters at index 0 (for the receiver argument). These tests scope to
+    // parameters of parsed methods only (isExternal=false).
 
     "create MethodParameterIn nodes in the CPG" in {
       val cpg = code(abapCode, fileName)
       cpg.parameter.size should be >= 1
     }
 
-    "set index starting at 1 on all parameters" in {
+    "set index starting at 1 on parsed method parameters" in {
       val cpg = code(abapCode, fileName)
-      cpg.parameter.index.l.foreach(idx => idx should be >= 1)
+      cpg.parameter.filter(!_.method.isExternal).index.l.foreach(idx => idx should be >= 1)
     }
 
-    "set order equal to index on all parameters" in {
+    "set order equal to index on parsed method parameters" in {
       val cpg = code(abapCode, fileName)
-      cpg.parameter.l.foreach(p => p.order shouldBe p.index)
+      cpg.parameter.filter(!_.method.isExternal).l.foreach(p => p.order shouldBe p.index)
     }
 
     "set isVariadic to false on all parameters" in {
@@ -221,9 +244,9 @@ class AbapIntegrationTests extends Abap2CpgSuite {
       cpg.parameter.isVariadic.l.distinct shouldBe List(false)
     }
 
-    "set name and code consistently on all parameters" in {
+    "set name and code consistently on parsed method parameters" in {
       val cpg = code(abapCode, fileName)
-      cpg.parameter.l.foreach(p => p.code shouldBe p.name)
+      cpg.parameter.filter(!_.method.isExternal).l.foreach(p => p.code shouldBe p.name)
     }
   }
 
@@ -356,6 +379,61 @@ class AbapIntegrationTests extends Abap2CpgSuite {
         .isCall
         .nameExact("<operator>.assignment")
         .size should be >= 1
+    }
+  }
+
+  // Separate ABAP snippet with explicit literals for literal-specific tests
+  val literalFileName = "zcl_literals.clas.abap"
+  val literalCode =
+    """CLASS zcl_literals DEFINITION PUBLIC.
+      |  PUBLIC SECTION.
+      |    METHODS with_number RETURNING VALUE(rv_result) TYPE i.
+      |    METHODS with_string RETURNING VALUE(rv_result) TYPE string.
+      |    METHODS with_template RETURNING VALUE(rv_result) TYPE string.
+      |ENDCLASS.
+      |CLASS zcl_literals IMPLEMENTATION.
+      |  METHOD with_number.
+      |    rv_result = 42.
+      |  ENDMETHOD.
+      |  METHOD with_string.
+      |    rv_result = 'hello'.
+      |  ENDMETHOD.
+      |  METHOD with_template.
+      |    rv_result = |world|.
+      |  ENDMETHOD.
+      |ENDCLASS.
+      |""".stripMargin
+
+  "CPG literals" should {
+
+    "create a NUMBER literal for an integer constant" in {
+      val cpg = code(literalCode, literalFileName)
+      cpg.method.fullNameExact("zcl_literals::with_number").ast.isLiteral.code.l should contain("42")
+    }
+
+    "set typeFullName NUMBER on integer literals" in {
+      val cpg = code(literalCode, literalFileName)
+      cpg.method.fullNameExact("zcl_literals::with_number").ast.isLiteral.typeFullName.l should contain("NUMBER")
+    }
+
+    "create a STRING literal for a quoted string constant" in {
+      val cpg = code(literalCode, literalFileName)
+      cpg.method.fullNameExact("zcl_literals::with_string").ast.isLiteral.code.l should contain("'hello'")
+    }
+
+    "set typeFullName STRING on quoted string literals" in {
+      val cpg = code(literalCode, literalFileName)
+      cpg.method.fullNameExact("zcl_literals::with_string").ast.isLiteral.typeFullName.l should contain("STRING")
+    }
+
+    "create a STRING literal for a string template (|...|)" in {
+      val cpg = code(literalCode, literalFileName)
+      cpg.method.fullNameExact("zcl_literals::with_template").ast.isLiteral.typeFullName.l should contain("STRING")
+    }
+
+    "not create literals for abap_false or abap_true (they are identifiers)" in {
+      val cpg = code(abapCode, fileName)
+      cpg.literal.code.filter(c => c == "abap_false" || c == "abap_true").l shouldBe empty
     }
   }
 }

@@ -42,22 +42,6 @@ object AbapIntermediateAst {
     visibility: String,
     isFinal: Boolean = false,
     methods: Seq[MethodDef] = Seq.empty,
-    attributes: Seq[AttributeDef] = Seq.empty,
-    span: TextSpan
-  ) extends AbapNode
-
-  case class InterfaceDef(
-    name: String,
-    visibility: String,
-    methods: Seq[MethodDef] = Seq.empty,
-    span: TextSpan
-  ) extends AbapNode
-
-  case class AttributeDef(
-    name: String,
-    typeName: String,
-    visibility: String,
-    isStatic: Boolean,
     span: TextSpan
   ) extends AbapNode
 
@@ -81,22 +65,16 @@ object AbapIntermediateAst {
 
   case class IdentifierExpr(name: String, span: TextSpan) extends AbapNode
   case class LiteralExpr(value: String, literalType: String, span: TextSpan) extends AbapNode
-  case class LocalVar(name: String, typeName: String, initialValue: Option[AbapNode] = None, span: TextSpan) extends AbapNode
   case class AssignmentStmt(target: AbapNode, value: AbapNode, span: TextSpan) extends AbapNode
   case class OperatorCall(operatorName: String, arguments: Seq[AbapNode], span: TextSpan) extends AbapNode
   case class FieldAccessExpr(target: AbapNode, fieldName: String, span: TextSpan) extends AbapNode
-  case class IfStmt(condition: AbapNode, thenBlock: StatementList, elseBlock: Option[StatementList] = None, span: TextSpan) extends AbapNode
-  case class LoopStmt(condition: Option[AbapNode], body: StatementList, span: TextSpan) extends AbapNode
-  case class ReturnStmt(value: Option[AbapNode] = None, span: TextSpan) extends AbapNode
   case class DataDeclaration(name: String, typeName: String, initialValue: Option[AbapNode] = None, span: TextSpan) extends AbapNode
 
   case class ProgramRoot(
     fileName: String,
     objectType: String,
     classes: Seq[ClassDef] = Seq.empty,
-    interfaces: Seq[InterfaceDef] = Seq.empty,
     methods: Seq[MethodDef] = Seq.empty,
-    statements: Seq[AbapNode] = Seq.empty,
     span: TextSpan
   ) extends AbapNode
 

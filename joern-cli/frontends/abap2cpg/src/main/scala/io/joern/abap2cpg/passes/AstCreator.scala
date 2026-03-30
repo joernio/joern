@@ -17,20 +17,33 @@ class AstCreator(program: ProgramRoot, filename: String)(implicit withSchemaVali
   private val scope = new VariableScopeManager()
 
   /** Get code string from expression */
-  private def codeFromExpr(expr: AbapNode): String = {
-    expr match {
-      case ident: IdentifierExpr => ident.name
-      case lit: LiteralExpr      => lit.value
-      case call: CallExpr =>
-        call.methodName match {
-          case Some(method) =>
-            val arrow = if (call.isStatic) "=>" else "->"
-            s"${call.targetName}${arrow}${method}()"
-          case None => s"${call.targetName}()"
-        }
-      case fieldAccess: FieldAccessExpr =>
-        s"${codeFromExpr(fieldAccess.target)}-${fieldAccess.fieldName}"
-      case _ => "?"
+  private def codeFromExpr(expr: AbapNode): String = expr match {
+    case ident: IdentifierExpr => ident.name
+    case lit: LiteralExpr      => lit.value
+    case call: CallExpr =>
+      call.methodName match {
+        case Some(method) =>
+          val arrow = if (call.isStatic) "=>" else "->"
+          s"${call.targetName}${arrow}${method}()"
+        case None => s"${call.targetName}()"
+      }
+    case fieldAccess: FieldAccessExpr =>
+      s"${codeFromExpr(fieldAccess.target)}-${fieldAccess.fieldName}"
+    case op: OperatorCall => operatorCode(op)
+    case _                => "?"
+  }
+
+  private def operatorCode(op: OperatorCall): String = {
+    val args = op.arguments.map(codeFromExpr)
+    op.operatorName match {
+      case "<operator>.indirectFieldAccess" if args.size == 2 => s"${args(0)}->${args(1)}"
+      case "<operator>.indirection"         if args.size == 1 => s"${args(0)}->*"
+      case "<operator>.fieldAccess"         if args.size == 2 => s"${args(0)}-${args(1)}"
+      case "<operator>.addition"            if args.size == 2 => s"${args(0)} + ${args(1)}"
+      case "<operator>.subtraction"         if args.size == 2 => s"${args(0)} - ${args(1)}"
+      case "<operator>.multiplication"      if args.size == 2 => s"${args(0)} * ${args(1)}"
+      case "<operator>.division"            if args.size == 2 => s"${args(0)} / ${args(1)}"
+      case _                                                   => args.mkString(" ")
     }
   }
 
@@ -190,9 +203,15 @@ class AstCreator(program: ProgramRoot, filename: String)(implicit withSchemaVali
       paramOrder += 1
     }
 
-    // Create method return — order NOT set here, setOrderWhereNotSet places it after the block
+    // RETURNING is a named output variable — add it to scope as METHOD_PARAMETER_IN so that
+    // body references to it get a REF edge (METHOD_RETURN is unnamed per the CPG spec).
     val methodReturn = method.parameters.returning match {
-      case Some(returnParam) => createMethodReturn(returnParam)
+      case Some(returnParam) =>
+        val paramNode = createParameterIn(returnParam, paramOrder)
+        scope.addVariable(returnParam.name, paramNode, returnParam.typeName, VariableScopeManager.ScopeType.MethodScope)
+        parameterAsts += Ast(paramNode)
+        paramOrder += 1
+        createMethodReturn(returnParam)
       case None =>
         NewMethodReturn()
           .evaluationStrategy(EvaluationStrategies.BY_REFERENCE)
@@ -295,6 +314,8 @@ class AstCreator(program: ProgramRoot, filename: String)(implicit withSchemaVali
   /** Create a call expression */
   private def astForCall(callExpr: CallExpr, order: Int, className: Option[String]): Ast = {
     val methodFullName = (callExpr.targetName.isEmpty, callExpr.methodName) match {
+      case (true, Some(method)) if method.startsWith("<operator>") =>
+        method  // operators are never class-qualified
       case (true, Some(method)) =>
         className match {
           case Some(cls) => s"$cls::$method"
@@ -324,18 +345,37 @@ class AstCreator(program: ProgramRoot, filename: String)(implicit withSchemaVali
       callNode.lineNumber(pos.row).columnNumber(pos.col)
     }
 
+    // Build receiver/base node for calls that have a target object or class.
+    // The base is placed at argumentIndex=0 and wired via both ARGUMENT and RECEIVER
+    // edges by callAst, making the receiver visible to the dataflow engine.
+    // We skip placeholder targets ("<chained-result>") that have no source identity.
+    val baseAst: Option[Ast] =
+      if (callExpr.targetName.isEmpty || callExpr.targetName == "<chained-result>") {
+        None
+      } else {
+        val receiverNode = NewIdentifier()
+          .name(callExpr.targetName)
+          .code(callExpr.targetName)
+          .typeFullName("ANY")
+        callExpr.span.start.foreach { pos =>
+          receiverNode.lineNumber(pos.row).columnNumber(pos.col)
+        }
+        scope.addVariableReference(callExpr.targetName, receiverNode, "ANY", EvaluationStrategies.BY_REFERENCE)
+        Some(Ast(receiverNode))
+      }
+
     val argAsts = callExpr.arguments.zipWithIndex.map { case (arg, idx) =>
       astForExpression(arg.value, idx + 1, className)
     }
 
-    callAst(callNode, argAsts)
+    callAst(callNode, argAsts, base = baseAst)
   }
 
   /** Create operator call */
   private def astForOperatorCall(opCall: OperatorCall, order: Int, className: Option[String]): Ast = {
     val callNode = NewCall()
       .name(opCall.operatorName)
-      .code(opCall.arguments.map(codeFromExpr).mkString(" "))
+      .code(operatorCode(opCall))
       .methodFullName(opCall.operatorName)
       .typeFullName("ANY")
       .dispatchType("STATIC_DISPATCH")
@@ -345,8 +385,24 @@ class AstCreator(program: ProgramRoot, filename: String)(implicit withSchemaVali
       callNode.lineNumber(pos.row).columnNumber(pos.col)
     }
 
-    val argAsts = opCall.arguments.zipWithIndex.map { case (arg, idx) =>
-      astForExpression(arg, idx + 1, className)
+    // fieldAccess and indirectFieldAccess require a FIELD_IDENTIFIER as the second argument.
+    val argAsts = opCall.operatorName match {
+      case "<operator>.fieldAccess" | "<operator>.indirectFieldAccess" if opCall.arguments.size == 2 =>
+        val targetAst = astForExpression(opCall.arguments(0), 1, className)
+        val fieldName = opCall.arguments(1) match {
+          case IdentifierExpr(name, _) => name
+          case other                   => codeFromExpr(other)
+        }
+        val fieldIdent = NewFieldIdentifier()
+          .canonicalName(fieldName)
+          .code(fieldName)
+          .argumentIndex(2)
+          .order(2)
+        Seq(targetAst, Ast(fieldIdent))
+      case _ =>
+        opCall.arguments.zipWithIndex.map { case (arg, idx) =>
+          astForExpression(arg, idx + 1, className)
+        }
     }
 
     callAst(callNode, argAsts)
