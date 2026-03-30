@@ -5,7 +5,7 @@ import io.joern.pysrc2cpg.memop.*
 import io.joern.pysrc2cpg.memop.MemoryOperation.{Del, Load, Store}
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants.builtinPrefix
 import io.joern.pythonparser.{AstPrinter, ast}
-import io.joern.pythonparser.ast.{Arguments, MatchAs, iast, iexpr, istmt}
+import io.joern.pythonparser.ast.{Arguments, MatchAs, MatchClass, MatchMapping, MatchOr, MatchSequence, MatchSingleton, MatchStar, MatchValue, iast, iexpr, ipattern, istmt}
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants
 import io.joern.x2cpg.{AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
@@ -1243,8 +1243,6 @@ class PythonAstVisitor(
     createBlock(blockStmts, lineAndCol)
   }
 
-  // TODO add case pattern and guard statements to not just as string in the JUMP_TARGET to the CPG
-  // but rather as proper AST constructs.
   def convert(matchStmt: ast.Match): NewNode = {
     val controlStructureNode =
       nodeBuilder.controlStructureNode("match ... : ...", ControlStructureTypes.MATCH, lineAndColOf(matchStmt))
@@ -1263,8 +1261,11 @@ class PythonAstVisitor(
             "case " + printer.print(pattern) + caseStmt.guard.map(g => " if " + printer.print(g)).getOrElse("")
         }
       val jumpTarget = nodeBuilder.jumpNode(jumpTargetCode)
-      val bodyNodes  = caseStmt.body.map(convert)
-      jumpTarget :: createBlock(bodyNodes, lineAndColOf(caseStmt.pattern)) :: Nil
+      val patternNodes = convertMatchPattern(caseStmt.pattern)
+      val guardNodes   = caseStmt.guard.map(convert).toSeq
+      val bodyNodes    = caseStmt.body.map(convert)
+      val allBodyNodes = patternNodes ++ guardNodes ++ bodyNodes
+      jumpTarget :: createBlock(allBodyNodes, lineAndColOf(caseStmt.pattern)) :: Nil
     }
 
     val switchBodyBlock = createBlock(caseBlocks, lineAndColOf(matchStmt))
@@ -1274,6 +1275,23 @@ class PythonAstVisitor(
     addAstChildNodes(controlStructureNode, 2, switchBodyBlock)
 
     controlStructureNode
+  }
+
+  private def convertMatchPattern(pattern: ipattern): Seq[nodes.NewNode] = {
+    pattern match {
+      case MatchValue(value, _)                => Seq(convert(value))
+      case MatchSingleton(value, ap)           => Seq(convert(ast.Constant(value, ap)))
+      case MatchSequence(patterns, _)          => patterns.flatMap(convertMatchPattern).toSeq
+      case MatchMapping(keys, _, _, _)         => keys.map(convert).toSeq
+      case MatchClass(cls, _, _, _, _)         => Seq(convert(cls))
+      case MatchStar(Some(name), _)            => Seq(createIdentifierNode(name, Load, lineAndColOf(pattern)))
+      case MatchAs(Some(inner), Some(name), _) =>
+        convertMatchPattern(inner) ++ Seq(createIdentifierNode(name, Store, lineAndColOf(pattern)))
+      case MatchAs(None, Some(name), _) =>
+        Seq(createIdentifierNode(name, Store, lineAndColOf(pattern)))
+      case MatchOr(patterns, _) => patterns.flatMap(convertMatchPattern).toSeq
+      case _                    => Seq.empty
+    }
   }
 
   def convert(raise: ast.Raise): NewNode = {
@@ -1444,7 +1462,6 @@ class PythonAstVisitor(
     createNAryOperatorCall(boolOpToCodeAndFullName(boolOp.op), operandNodes, lineAndColOf(boolOp))
   }
 
-  // TODO test
   def convert(namedExpr: ast.NamedExpr): NewNode = {
     val targetNode = convert(namedExpr.target)
     val valueNode  = convert(namedExpr.value)
@@ -1848,13 +1865,14 @@ class PythonAstVisitor(
     */
   def convert(call: ast.Call): nodes.NewNode = {
     val argumentNodes = call.args.map(convert).toSeq
-    val keywordArgNodes = call.keywords.flatMap { keyword =>
+    val keywordArgNodes = call.keywords.map { keyword =>
       if (keyword.arg.isDefined) {
-        Some((keyword.arg.get, convert(keyword.value)))
+        (keyword.arg.get, convert(keyword.value))
       } else {
         // keyword.arg == None. This is the case for func(**dict) style arguments.
-        // TODO implement handling for this case.
-        None
+        // We use a synthetic argument name to preserve the unpacked dict as an argument
+        // in the CPG so that data flow tracking can follow through it.
+        ("**", convert(keyword.value))
       }
     }
 
