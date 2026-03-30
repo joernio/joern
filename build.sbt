@@ -1,8 +1,8 @@
 name                     := "joern"
 ThisBuild / organization := "io.joern"
-ThisBuild / scalaVersion := "3.6.4"
+ThisBuild / scalaVersion := "3.7.4"
 
-val cpgVersion = "1.7.61"
+val cpgVersion = "1.7.62"
 
 lazy val joerncli          = Projects.joerncli
 lazy val querydb           = Projects.querydb
@@ -78,7 +78,8 @@ ThisBuild / scalacOptions ++= Seq(
   "-feature",
   "-Wshadow:type-parameter-shadow",
   "-no-indent",
-  "-old-syntax"
+  "-old-syntax",
+  "-Wconf:msg=Implicit parameters should be provided with a `using` clause:s",
 )
 
 lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
