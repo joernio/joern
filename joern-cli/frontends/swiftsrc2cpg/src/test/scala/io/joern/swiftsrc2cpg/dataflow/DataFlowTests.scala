@@ -3,7 +3,7 @@ package io.joern.swiftsrc2cpg.dataflow
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.swiftsrc2cpg.testfixtures.DataFlowCodeToCpgSuite
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.Literal
 import io.shiftleft.semanticcpg.language.*
 
@@ -1343,6 +1343,62 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
           List(("return 42", 3), ("RET", 2), ("source()", 7), ("sink(source())", 7))
         )
       }
+    }
+  }
+
+  "DataFlowSwitchTupleEqualityChain" should {
+    val cpg = code("""
+      |func source() -> Int { return 42 }
+      |func sink(x: Int) {}
+      |
+      |func testFlow() {
+      |  let x = source()
+      |  switch (x, 0) {
+      |    case (1, 0):
+      |      sink(x: x)
+      |    default:
+      |      break
+      |  }
+      |}
+      |""".stripMargin)
+
+    "find flow from source through equality chain to equals check" in {
+      implicit val callResolver: NoResolve.type = NoResolve
+      val source                                = cpg.call.nameExact("source")
+      val sink                                  = cpg.call.nameExact(Operators.equals).argument(1)
+      val flows                                 = sink.reachableByFlows(source)
+
+      // shows that source() -> let x = source() -> (x, 0) -> subject assignment <subject>0 = (x, 0) -> both
+      // <subject>0.0 == 1 and <subject>0.1 == 0 in the case pattern
+      // (because taint from <subject>0 propagates to all its field accesses)
+      flows.map(flowToResultPairs).toSetMutable shouldBe
+        Set(
+          List(
+            ("source()", 6),
+            ("let x = source()", 6),
+            ("(x, 0)", 7),
+            ("<subject>0 = (x, 0)", 7),
+            ("<subject>0.0 == 1", 8)
+          ),
+          List(
+            ("source()", 6),
+            ("let x = source()", 6),
+            ("(x, 0)", 7),
+            ("<subject>0 = (x, 0)", 7),
+            ("<subject>0.1 == 0", 8)
+          )
+        )
+    }
+
+    "find flow from source through equality chain to sink" in {
+      implicit val callResolver: NoResolve.type = NoResolve
+      val source                                = cpg.call.nameExact("source")
+      val sink                                  = cpg.call.nameExact("sink").argument.codeExact("x")
+      val flows                                 = sink.reachableByFlows(source)
+
+      // shows that the tainted value also flows through the switch tuple subject into sink(x: x)
+      flows.map(flowToResultPairs).toSetMutable shouldBe
+        Set(List(("source()", 6), ("let x = source()", 6), ("(x, 0)", 7), ("sink(x: x)", 9)))
     }
   }
 

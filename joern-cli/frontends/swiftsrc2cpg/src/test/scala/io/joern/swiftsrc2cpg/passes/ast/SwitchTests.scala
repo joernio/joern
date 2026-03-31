@@ -3,9 +3,8 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
 import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
-
+import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.*
-import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
 class SwitchTests extends SwiftSrc2CpgSuite {
@@ -225,12 +224,13 @@ class SwitchTests extends SwiftSrc2CpgSuite {
       // Switch condition is the temp identifier, not the original expression
       val List(switchCond) = switchStmt.astChildren.isIdentifier.l
       switchCond.name should startWith("<subject>")
+      switchCond.typeFullName shouldBe Defines.Tuple
       switchCond.order shouldBe 1
       val List(switchBlock) = switchStmt.astChildren.isBlock.l
       val List(caseLabel)   = switchBlock._jumpTargetViaAstOut.codeExact("case (1, 2):").l
       caseLabel.order shouldBe 1
       // Bare arrayInitializer replaced by equality chain
-      switchBlock.astChildren.isCall.nameExact(Operators.arrayInitializer).size shouldBe 0
+      switchBlock.astChildren.isCall.nameExact(Operators.arrayInitializer).l shouldBe empty
       val List(testCall) = switchBlock.astChildren.isCall.nameExact(Operators.logicalAnd).l
       testCall.order shouldBe 2
       val List(eq1, eq2) = testCall.argument.isCall.nameExact(Operators.equals).l
@@ -241,7 +241,11 @@ class SwitchTests extends SwiftSrc2CpgSuite {
         .nameExact(Operators.assignment)
         .codeExact(s"${switchCond.name} = (x, y)")
         .l
-      stmtAssign.argument.order(2).isCall.nameExact(Operators.arrayInitializer).size shouldBe 1
+      val List(arrayInit) = stmtAssign.argument.order(2).isCall.nameExact(Operators.arrayInitializer).l
+      arrayInit.code shouldBe "(x, y)"
+      // Subject local has Tuple type
+      val List(subjectLocal) = cpg.local.nameExact(switchCond.name).l
+      subjectLocal.typeFullName shouldBe Defines.Tuple
     }
 
     "testSwitchBindingTuplePatternLet" in {
@@ -272,8 +276,10 @@ class SwitchTests extends SwiftSrc2CpgSuite {
       assignA.order shouldBe 2
       assignB.order shouldBe 3
       // Locals declared
-      cpg.local.nameExact("a").size shouldBe 1
-      cpg.local.nameExact("b").size shouldBe 1
+      val List(localA) = cpg.local.nameExact("a").l
+      localA.name shouldBe "a"
+      val List(localB) = cpg.local.nameExact("b").l
+      localB.name shouldBe "b"
     }
 
     "testSwitchBindingTuplePatternVar" in {
@@ -300,6 +306,11 @@ class SwitchTests extends SwiftSrc2CpgSuite {
         .l
       assignA.order shouldBe 2
       assignB.order shouldBe 3
+      // Locals declared
+      val List(localA) = cpg.local.nameExact("a").l
+      localA.name shouldBe "a"
+      val List(localB) = cpg.local.nameExact("b").l
+      localB.name shouldBe "b"
     }
 
     "testSwitchMixedTupleAndSimpleCase" in {
@@ -318,11 +329,15 @@ class SwitchTests extends SwiftSrc2CpgSuite {
       switchCond.name should startWith("<subject>")
       val List(switchBlock) = switchStmt.astChildren.isBlock.l
       // Two equality chains
-      switchBlock.astChildren.isCall.nameExact(Operators.logicalAnd).size shouldBe 2
+      val List(and1, and2) = switchBlock.astChildren.isCall.nameExact(Operators.logicalAnd).l
+      and1.code shouldBe s"${switchCond.name}.0 == 1 && ${switchCond.name}.1 == 2"
+      and2.code shouldBe s"${switchCond.name}.0 == 3 && ${switchCond.name}.1 == 4"
       // No bare arrayInitializer patterns
-      switchBlock.astChildren.isCall.nameExact(Operators.arrayInitializer).size shouldBe 0
+      switchBlock.astChildren.isCall.nameExact(Operators.arrayInitializer).l shouldBe empty
       // Two case labels
-      switchBlock._jumpTargetViaAstOut.size shouldBe 2
+      val List(label1, label2) = switchBlock._jumpTargetViaAstOut.l
+      label1.code shouldBe "case (1, 2):"
+      label2.code shouldBe "case (3, 4):"
     }
 
     "testSwitchNestedTuplePattern" in {
@@ -388,8 +403,9 @@ class SwitchTests extends SwiftSrc2CpgSuite {
       switchCond.name should startWith("<subject>")
       val List(switchBlock) = switchStmt.astChildren.isBlock.l
       // Two cases with tuple patterns: both should produce logicalAnd (equality chains)
-      val andCalls = switchBlock.astChildren.isCall.nameExact(Operators.logicalAnd).l
-      andCalls.size shouldBe 2
+      val List(andCall1, andCall2) = switchBlock.astChildren.isCall.nameExact(Operators.logicalAnd).l
+      andCall1.code shouldBe s"${switchCond.name}.0 == 1 && ${switchCond.name}.1 == 2"
+      andCall2.code shouldBe s"${switchCond.name}.0 == .min && ${switchCond.name}.1 == 0"
     }
 
     "testSwitchMixedBindingAndEnumCaseInTuple" in {
@@ -408,13 +424,17 @@ class SwitchTests extends SwiftSrc2CpgSuite {
       switchCond.name should startWith("<subject>")
       val List(switchBlock) = switchStmt.astChildren.isBlock.l
       // Binding for 'a'
-      switchBlock.astChildren.isCall
+      val List(assignA) = switchBlock.astChildren.isCall
         .nameExact(Operators.assignment)
         .codeExact(s"a = ${switchCond.name}.0")
-        .size shouldBe 1
+        .l
+      assignA.order shouldBe 2
       // Equality check for .min
       val List(eqCall) = switchBlock.astChildren.isCall.nameExact(Operators.equals).l
       eqCall.code shouldBe s"${switchCond.name}.1 == .min"
+      // Local declared
+      val List(localA) = cpg.local.nameExact("a").l
+      localA.name shouldBe "a"
     }
 
     "testSwitch34" ignore {

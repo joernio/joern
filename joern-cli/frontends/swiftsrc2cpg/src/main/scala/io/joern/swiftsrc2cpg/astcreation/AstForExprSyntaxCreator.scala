@@ -1045,18 +1045,19 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
       // The subject may have side effects - assign it to a temp so it is evaluated only once.
       val subjectTmpName   = scopeLocalUniqueName("subject")
-      val subjectLocalNode = localNode(node, subjectTmpName, subjectTmpName, Defines.Any).order(0)
+      val subjectLocalNode = localNode(node, subjectTmpName, subjectTmpName, Defines.Tuple).order(0)
       diffGraph.addEdge(localAstParentStack.head, subjectLocalNode, EdgeTypes.AST)
+      scope.addVariable(subjectTmpName, subjectLocalNode, Defines.Tuple, VariableScopeManager.ScopeType.BlockScope)
 
       val subjectExprAst   = astForNode(node.subject)
-      val subjectIdentNode = identifierNode(node, subjectTmpName)
-      scope.addVariableReference(subjectTmpName, subjectIdentNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+      val subjectIdentNode = identifierNode(node, subjectTmpName, subjectTmpName, Defines.Tuple)
+      scope.addVariableReference(subjectTmpName, subjectIdentNode, Defines.Tuple, EvaluationStrategies.BY_REFERENCE)
       val subjectAssignAst =
         createAssignmentCallAst(node, Ast(subjectIdentNode), subjectExprAst, s"$subjectTmpName = ${code(node.subject)}")
 
       val switchNode    = controlStructureNode(node, ControlStructureTypes.SWITCH, code(node))
-      val condIdentNode = identifierNode(node, subjectTmpName)
-      scope.addVariableReference(subjectTmpName, condIdentNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+      val condIdentNode = identifierNode(node, subjectTmpName, subjectTmpName, Defines.Tuple)
+      scope.addVariableReference(subjectTmpName, condIdentNode, Defines.Tuple, EvaluationStrategies.BY_REFERENCE)
       val condAst = Ast(condIdentNode)
       setOrderExplicitly(condAst, 1)
 
