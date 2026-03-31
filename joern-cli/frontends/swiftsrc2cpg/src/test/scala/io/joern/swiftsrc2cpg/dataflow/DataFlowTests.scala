@@ -1103,6 +1103,226 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
+  "DataFlowSwitchTupleBindingLet" should {
+    val cpg = code("""
+      |func source() -> Int { return 42 }
+      |func sink(x: Int) {}
+      |
+      |func testFlow() {
+      |  let t = (source(), 0)
+      |  switch t {
+      |    case let (a, b):
+      |      sink(x: a)
+      |  }
+      |}
+      |""".stripMargin)
+
+    "find flow from source through 'case let (a, b):' to sink via first component" in {
+      implicit val callResolver: NoResolve.type = NoResolve
+      val source                                = cpg.call.nameExact("source")
+      val sink                                  = cpg.call.nameExact("sink").argument.codeExact("a")
+      val flows                                 = sink.reachableByFlows(source)
+
+      flows.map(flowToResultPairs).toSetMutable shouldBe
+        Set(
+          List(
+            ("source()", 6),
+            ("(source(), 0)", 6),
+            ("let t = (source(), 0)", 6),
+            ("<subject>0 = t", 7),
+            ("a = <subject>0.0", 8),
+            ("sink(x: a)", 9)
+          )
+        )
+    }
+  }
+
+  "DataFlowSwitchTupleBindingVar" should {
+    val cpg = code("""
+      |func source() -> Int { return 42 }
+      |func sink(x: Int) {}
+      |
+      |func testFlow() {
+      |  switch (source(), 0) {
+      |    case (var a, var b):
+      |      sink(x: a)
+      |  }
+      |}
+      |""".stripMargin)
+
+    "find flow from source through 'case (var a, var b):' to sink" in {
+      implicit val callResolver: NoResolve.type = NoResolve
+      val source                                = cpg.call.nameExact("source")
+      val sink                                  = cpg.call.nameExact("sink").argument.codeExact("a")
+      val flows                                 = sink.reachableByFlows(source)
+
+      flows.map(flowToResultPairs).toSetMutable shouldBe
+        Set(
+          List(
+            ("source()", 6),
+            ("(source(), 0)", 6),
+            ("<subject>0 = (source(), 0)", 6),
+            ("a = <subject>0.0", 7),
+            ("sink(x: a)", 8)
+          )
+        )
+    }
+  }
+
+  "DataFlowSwitchTupleSecondComponent" should {
+    val cpg = code("""
+      |func source() -> Int { return 42 }
+      |func sink(x: Int) {}
+      |
+      |func testFlow() {
+      |  switch (0, source()) {
+      |    case let (a, b):
+      |      sink(x: b)
+      |  }
+      |}
+      |""".stripMargin)
+
+    "find flow from source through second tuple component to sink" in {
+      implicit val callResolver: NoResolve.type = NoResolve
+      val source                                = cpg.call.nameExact("source")
+      val sink                                  = cpg.call.nameExact("sink").argument.codeExact("b")
+      val flows                                 = sink.reachableByFlows(source)
+
+      flows.map(flowToResultPairs).toSetMutable shouldBe
+        Set(
+          List(
+            ("source()", 6),
+            ("(0, source())", 6),
+            ("<subject>0 = (0, source())", 6),
+            ("b = <subject>0.1", 7),
+            ("sink(x: b)", 8)
+          )
+        )
+    }
+  }
+
+  "DataFlowSwitchTupleNested" should {
+    val cpg = code("""
+      |func source() -> Int { return 42 }
+      |func sink(x: Int) {}
+      |
+      |func testFlow() {
+      |  let t = ((0, 1), source())
+      |  switch t {
+      |    case let ((a, b), c):
+      |      sink(x: c)
+      |  }
+      |}
+      |""".stripMargin)
+
+    "find flow from source through nested binding tuple pattern to sink via outer component" in {
+      implicit val callResolver: NoResolve.type = NoResolve
+      val source                                = cpg.call.nameExact("source")
+      val sink                                  = cpg.call.nameExact("sink").argument.codeExact("c")
+      val flows                                 = sink.reachableByFlows(source)
+
+      flows.map(flowToResultPairs).toSetMutable shouldBe
+        Set(
+          List(
+            ("source()", 6),
+            ("((0, 1), source())", 6),
+            ("let t = ((0, 1), source())", 6),
+            ("<subject>0 = t", 7),
+            ("c = <subject>0.1", 8),
+            ("sink(x: c)", 9)
+          )
+        )
+    }
+  }
+
+  "DataFlowSwitchTupleExpressionPattern" should {
+    val cpg = code("""
+      |func source() -> Int { return 42 }
+      |func sink(x: Int) {}
+      |
+      |func testFlow() {
+      |  let x = source()
+      |  switch (x, 0) {
+      |    case (1, 2):
+      |      sink(x: x)
+      |  }
+      |}
+      |""".stripMargin)
+
+    "find flow from source through expression tuple pattern to sink" in {
+      implicit val callResolver: NoResolve.type = NoResolve
+      val source                                = cpg.call.nameExact("source")
+      val sink                                  = cpg.call.nameExact("sink").argument.codeExact("x")
+      val flows                                 = sink.reachableByFlows(source)
+
+      flows.map(flowToResultPairs).toSetMutable shouldBe
+        Set(List(("source()", 6), ("let x = source()", 6), ("(x, 0)", 7), ("sink(x: x)", 9)))
+    }
+  }
+
+  "DataFlowSwitchTupleIsTypePattern" should {
+    val cpg = code("""
+      |func source() -> Any { return 42 }
+      |func sink(x: Any) {}
+      |
+      |func testFlow() {
+      |  let x = source()
+      |  switch (x, 0) {
+      |    case (is String, 0):
+      |      sink(x: x)
+      |    default:
+      |      break
+      |  }
+      |}
+      |""".stripMargin)
+
+    "find flow from source through is-type tuple pattern to sink" in {
+      implicit val callResolver: NoResolve.type = NoResolve
+      val source                                = cpg.call.nameExact("source")
+      val sink                                  = cpg.call.nameExact("sink").argument.codeExact("x")
+      val flows                                 = sink.reachableByFlows(source)
+
+      flows.map(flowToResultPairs).toSetMutable shouldBe
+        Set(List(("source()", 6), ("let x = source()", 6), ("(x, 0)", 7), ("sink(x: x)", 9)))
+    }
+  }
+
+  "DataFlowSwitchTupleMixedBindingAndEnumCase" should {
+    val cpg = code("""
+      |func source() -> Int { return 42 }
+      |func sink(x: Int) {}
+      |
+      |func testFlow() {
+      |  let x = source()
+      |  switch (x, 0) {
+      |    case (var a, .min):
+      |      sink(x: a)
+      |    default:
+      |      break
+      |  }
+      |}
+      |""".stripMargin)
+
+    "find flow from source through mixed binding/enum tuple pattern to sink" in {
+      implicit val callResolver: NoResolve.type = NoResolve
+      val source                                = cpg.call.nameExact("source")
+      val sink                                  = cpg.call.nameExact("sink").argument.codeExact("a")
+      val flows                                 = sink.reachableByFlows(source)
+
+      flows.map(flowToResultPairs).toSetMutable shouldBe
+        Set(
+          List(
+            ("source()", 6),
+            ("let x = source()", 6),
+            ("(x, 0)", 7),
+            ("<subject>0 = (x, 0)", 7),
+            ("a = <subject>0.0", 8),
+            ("sink(x: a)", 9)
+          )
+        )
+    }
+  }
+
   "DataFlowTest70" should {
     val cpg = code("""
       |func source() -> Int {
