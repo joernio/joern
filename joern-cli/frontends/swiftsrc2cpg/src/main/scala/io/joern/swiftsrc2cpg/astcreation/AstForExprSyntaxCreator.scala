@@ -10,7 +10,7 @@ import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall}
 
-import scala.annotation.unused
+import scala.annotation.{tailrec, unused}
 
 trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
@@ -700,14 +700,295 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     Ast(identifierNode(node, "super"))
   }
 
-  protected def astsForSwitchCase(switchCase: SwitchCaseSyntax | IfConfigDeclSyntax): List[Ast] = {
+  private def hasTuplePattern(switchCase: SwitchCaseSyntax | IfConfigDeclSyntax): Boolean = {
+    @tailrec
+    def isTupleLikePattern(pattern: PatternSyntax): Boolean = pattern match {
+      case _: TuplePatternSyntax        => true
+      case e: ExpressionPatternSyntax   => e.expression.isInstanceOf[TupleExprSyntax]
+      case v: ValueBindingPatternSyntax => isTupleLikePattern(v.pattern)
+      case _                            => false
+    }
+    switchCase match {
+      case s: SwitchCaseSyntax =>
+        s.label match {
+          case i: SwitchCaseLabelSyntax => i.caseItems.children.exists(item => isTupleLikePattern(item.pattern))
+          case _                        => false
+        }
+      case _ => false
+    }
+  }
+
+  /** Creates a chain of field accesses: identifierNode(baseName)._fields(0)._fields(1)... Each call creates fresh
+    * identifier/field-identifier nodes so the resulting AST can be safely used as an argument without node-sharing
+    * issues.
+    */
+  private def createFieldAccessChain(baseName: String, fields: List[String], node: SwiftNode): Ast = {
+    val baseAst = Ast(identifierNode(node, baseName))
+    fields.foldLeft(baseAst) { (accAst, field) =>
+      createFieldAccessCallAst(node, accAst, fieldIdentifierNode(node, field, field))
+    }
+  }
+
+  /** De-sugaring from:
+    *
+    * case (1, 2): where subject is <subject>
+    *
+    * to:
+    *
+    * <subject>.0 == 1 && <subject>.1 == 2
+    *
+    * Nested tuples like case ((1, 2), 3): are handled recursively: <subject>.0.0 == 1 && <subject>.0.1 == 2 &&
+    * <subject>.1 == 3
+    */
+  private def astForExpressionTuplePatternInSwitchContext(
+    tupleExpr: TupleExprSyntax,
+    subjectBase: String,
+    subjectFieldPath: List[String],
+    node: SwiftNode
+  ): Ast = {
+    val elements = tupleExpr.elements.children.toList
+    val equalityAsts = elements.zipWithIndex.map { case (element, idx) =>
+      val currentPath = subjectFieldPath :+ s"$idx"
+      val subjectCode = (subjectBase :: currentPath).mkString(".")
+      val subjectAst  = createFieldAccessChain(subjectBase, currentPath, node)
+      element.expression match {
+        case inner: TupleExprSyntax =>
+          astForExpressionTuplePatternInSwitchContext(inner, subjectBase, currentPath, node)
+        case _ =>
+          val rhsAst = astForNode(element)
+          val eqCode = s"$subjectCode == ${code(element.expression)}"
+          val eqNode = createStaticCallNode(node, eqCode, Operators.equals, Operators.equals, Defines.Bool)
+          callAst(eqNode, List(subjectAst, rhsAst))
+      }
+    }
+    equalityAsts.reduceLeft { (accAst, nextAst) =>
+      val andCode = s"${codeOf(accAst.nodes.head)} && ${codeOf(nextAst.nodes.head)}"
+      val andNode = createStaticCallNode(node, andCode, Operators.logicalAnd, Operators.logicalAnd, Defines.Bool)
+      callAst(andNode, List(accAst, nextAst))
+    }
+  }
+
+  private def isBindingTupleExpr(tupleExpr: TupleExprSyntax): Boolean = {
+    tupleExpr.elements.children.exists { elem =>
+      elem.expression.isInstanceOf[PatternExprSyntax]
+    }
+  }
+
+  private def astsForCaseItemPattern(item: SwitchCaseItemSyntax, subjectTmpName: Option[String]): List[Ast] = {
+    subjectTmpName match {
+      case None => List(astForNode(item.pattern))
+      case Some(tmpName) =>
+        item.pattern match {
+          case ep: ExpressionPatternSyntax if ep.expression.isInstanceOf[TupleExprSyntax] =>
+            val tupleExpr = ep.expression.asInstanceOf[TupleExprSyntax]
+            if (isBindingTupleExpr(tupleExpr)) {
+              astsForBindingTupleExprInSwitchContext(tupleExpr, tmpName, List.empty, ep)
+            } else {
+              List(astForExpressionTuplePatternInSwitchContext(tupleExpr, tmpName, List.empty, ep))
+            }
+          case vb: ValueBindingPatternSyntax =>
+            vb.pattern match {
+              case tp: TuplePatternSyntax =>
+                astsForBindingTuplePatternInSwitchContext(tp, tmpName, List.empty, vb)
+              case ep: ExpressionPatternSyntax if ep.expression.isInstanceOf[TupleExprSyntax] =>
+                astsForBindingTupleExprInSwitchContext(
+                  ep.expression.asInstanceOf[TupleExprSyntax],
+                  tmpName,
+                  List.empty,
+                  vb,
+                  allBindings = true
+                )
+              case _ => List(astForNode(item.pattern))
+            }
+          case tuple: TuplePatternSyntax =>
+            astsForBindingTuplePatternInSwitchContext(tuple, tmpName, List.empty, tuple)
+          case _ =>
+            List(astForNode(item.pattern))
+        }
+    }
+  }
+
+  /** De-sugaring from:
+    *
+    * case let (a, b): where subject is <subject>
+    *
+    * to (emitted at the start of the case block):
+    *
+    * var a = <subject>.0 var b = <subject>.1
+    *
+    * Works with both TuplePatternSyntax and TupleExprSyntax representations, since the Swift parser may produce either
+    * form depending on whether `let`/`var` is on the outside (`case let (a, b):`) or per-element (`case (var a, var
+    * b):`).
+    *
+    * Tuple elements that are not bindings (e.g. `is Type`, `.enumCase`, literal expressions, or `_` wildcards) are
+    * de-sugared into the appropriate condition checks (instanceOf, equality) or skipped.
+    */
+
+  /** Creates an instanceOf check for an IsTypePatternSyntax against a subject field access. */
+  private def astForIsTypePatternInTupleContext(
+    isType: IsTypePatternSyntax,
+    subjectAst: Ast,
+    subjectCode: String,
+    node: SwiftNode
+  ): List[Ast] = {
+    val tpeNode = isType.`type`
+    val tpe     = simpleTypeNameForTypeSyntax(tpeNode)
+    registerType(tpe)
+    val op             = Operators.instanceOf
+    val instanceOfCode = s"$subjectCode is ${code(tpeNode)}"
+    val instanceOfNode = createStaticCallNode(node, instanceOfCode, op, op, Defines.Bool)
+    val typeRefNode_   = typeRefNode(isType, code(tpeNode), tpe)
+    List(callAst(instanceOfNode, List(subjectAst, Ast(typeRefNode_))))
+  }
+
+  /** Creates an equality check for an expression pattern against a subject field access. */
+  private def astForExpressionPatternInTupleContext(
+    ep: ExpressionPatternSyntax,
+    subjectAst: Ast,
+    subjectCode: String,
+    node: SwiftNode
+  ): List[Ast] = {
+    val rhsAst = astForNode(ep.expression)
+    val eqCode = s"$subjectCode == ${code(ep.expression)}"
+    val eqNode = createStaticCallNode(node, eqCode, Operators.equals, Operators.equals, Defines.Bool)
+    List(callAst(eqNode, List(subjectAst, rhsAst)))
+  }
+
+  /** Creates a variable binding assignment for a pattern element against a subject field access. */
+  private def astForBindingInTupleContext(
+    varName: String,
+    subjectAst: Ast,
+    subjectCode: String,
+    anchorNode: SwiftNode
+  ): List[Ast] = {
+    val localNode_ = localNode(anchorNode, varName, varName, Defines.Any).order(0)
+    diffGraph.addEdge(localAstParentStack.head, localNode_, EdgeTypes.AST)
+    scope.addVariable(varName, localNode_, Defines.Any, VariableScopeManager.ScopeType.BlockScope)
+    val lhsNode    = identifierNode(anchorNode, varName)
+    val assignCode = s"$varName = $subjectCode"
+    List(createAssignmentCallAst(anchorNode, Ast(lhsNode), subjectAst, assignCode))
+  }
+
+  private def astsForBindingTuplePatternInSwitchContext(
+    tuplePat: TuplePatternSyntax,
+    subjectBase: String,
+    subjectFieldPath: List[String],
+    node: SwiftNode
+  ): List[Ast] = {
+    tuplePat.elements.children.toList.zipWithIndex.flatMap { case (element, idx) =>
+      val currentPath = subjectFieldPath :+ s"$idx"
+      val subjectCode = (subjectBase :: currentPath).mkString(".")
+      val subjectAst  = createFieldAccessChain(subjectBase, currentPath, node)
+      element.pattern match {
+        case inner: TuplePatternSyntax =>
+          astsForBindingTuplePatternInSwitchContext(inner, subjectBase, currentPath, node)
+        case isType: IsTypePatternSyntax =>
+          astForIsTypePatternInTupleContext(isType, subjectAst, subjectCode, node)
+        case ep: ExpressionPatternSyntax =>
+          astForExpressionPatternInTupleContext(ep, subjectAst, subjectCode, node)
+        case _: WildcardPatternSyntax =>
+          List.empty
+        case vb: ValueBindingPatternSyntax =>
+          vb.pattern match {
+            case inner: TuplePatternSyntax =>
+              astsForBindingTuplePatternInSwitchContext(inner, subjectBase, currentPath, node)
+            case _ =>
+              astForBindingInTupleContext(code(vb.pattern), subjectAst, subjectCode, tuplePat)
+          }
+        case _ =>
+          astForBindingInTupleContext(code(element.pattern), subjectAst, subjectCode, tuplePat)
+      }
+    }
+  }
+
+  /** Determines whether an expression inside a tuple represents a binding (let/var pattern). */
+  private def isBindingExpression(expr: ExprSyntax): Boolean = expr match {
+    case p: PatternExprSyntax =>
+      p.pattern match {
+        case _: ValueBindingPatternSyntax => true
+        case _: IdentifierPatternSyntax   => true
+        case _                            => false
+      }
+    case _ => false
+  }
+
+  /** Dispatches a PatternSyntax inside a tuple context to the appropriate de-sugaring. */
+  private def astsForPatternInTupleContext(
+    pattern: PatternSyntax,
+    subjectAst: Ast,
+    subjectCode: String,
+    node: SwiftNode
+  ): List[Ast] = pattern match {
+    case isType: IsTypePatternSyntax =>
+      astForIsTypePatternInTupleContext(isType, subjectAst, subjectCode, node)
+    case ep: ExpressionPatternSyntax =>
+      astForExpressionPatternInTupleContext(ep, subjectAst, subjectCode, node)
+    case _: WildcardPatternSyntax =>
+      List.empty
+    case other =>
+      val rhsAst = astForNode(other)
+      val eqCode = s"$subjectCode == ${code(other)}"
+      val eqNode = createStaticCallNode(node, eqCode, Operators.equals, Operators.equals, Defines.Bool)
+      List(callAst(eqNode, List(subjectAst, rhsAst)))
+  }
+
+  private def astsForBindingTupleExprInSwitchContext(
+    tupleExpr: TupleExprSyntax,
+    subjectBase: String,
+    subjectFieldPath: List[String],
+    node: SwiftNode,
+    allBindings: Boolean = false
+  ): List[Ast] = {
+    tupleExpr.elements.children.toList.zipWithIndex.flatMap { case (element, idx) =>
+      val currentPath = subjectFieldPath :+ s"$idx"
+      val subjectCode = (subjectBase :: currentPath).mkString(".")
+      val subjectAst  = createFieldAccessChain(subjectBase, currentPath, node)
+      element.expression match {
+        case inner: TupleExprSyntax =>
+          astsForBindingTupleExprInSwitchContext(inner, subjectBase, currentPath, node, allBindings)
+        case _ if allBindings || isBindingExpression(element.expression) =>
+          val varName = extractBindingName(element.expression)
+          astForBindingInTupleContext(varName, subjectAst, subjectCode, tupleExpr)
+        case p: PatternExprSyntax =>
+          astsForPatternInTupleContext(p.pattern, subjectAst, subjectCode, node)
+        case _: DiscardAssignmentExprSyntax =>
+          List.empty
+        case _ =>
+          val rhsAst = astForNode(element)
+          val eqCode = s"$subjectCode == ${code(element.expression)}"
+          val eqNode = createStaticCallNode(node, eqCode, Operators.equals, Operators.equals, Defines.Bool)
+          List(callAst(eqNode, List(subjectAst, rhsAst)))
+      }
+    }
+  }
+
+  /** Extract the variable name from a binding expression element. Handles:
+    *   - `DeclReferenceExprSyntax` (`a` in `case let (a, b):`)
+    *   - `PatternExprSyntax(ValueBindingPatternSyntax(IdentifierPatternSyntax))` (`var a` in `case (var a, var b):`)
+    */
+  private def extractBindingName(expr: ExprSyntax): String = {
+    expr match {
+      case d: DeclReferenceExprSyntax => code(d)
+      case p: PatternExprSyntax =>
+        p.pattern match {
+          case vb: ValueBindingPatternSyntax => code(vb.pattern)
+          case other                         => code(other)
+        }
+      case other => code(other)
+    }
+  }
+
+  protected def astsForSwitchCase(
+    switchCase: SwitchCaseSyntax | IfConfigDeclSyntax,
+    subjectTmpName: Option[String] = None
+  ): List[Ast] = {
     val labelAst = Ast(createJumpTarget(switchCase))
     val (testAsts, consequentAsts) = switchCase match {
       case s: SwitchCaseSyntax =>
         val (tAsts, flowAst) = s.label match {
           case i: SwitchCaseLabelSyntax =>
             val children         = i.caseItems.children
-            val childrenTestAsts = children.map(c => astForNode(c.pattern))
+            val childrenTestAsts = children.toList.flatMap(c => astsForCaseItemPattern(c, subjectTmpName))
             val childrenFlowAsts = children.collect {
               case child if child.whereClause.isDefined =>
                 val whereClause = child.whereClause.get
@@ -741,9 +1022,10 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         }
         val needsSyntheticBreak = !s.statements.children.lastOption.exists(_.item.isInstanceOf[FallThroughStmtSyntax])
         val asts                = flowAst :+ astForNode(s.statements)
-        val cAsts =
-          if (needsSyntheticBreak) asts :+ Ast(controlStructureNode(s, ControlStructureTypes.BREAK, "break")) else asts
-        (tAsts.toList, cAsts.toList)
+        val cAsts = if (needsSyntheticBreak) {
+          asts :+ Ast(controlStructureNode(s, ControlStructureTypes.BREAK, "break"))
+        } else asts
+        (tAsts, cAsts.toList)
       case i: IfConfigDeclSyntax =>
         (List.empty, List(astForIfConfigDeclSyntax(i)))
     }
@@ -751,25 +1033,71 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForSwitchExprSyntax(node: SwitchExprSyntax): Ast = {
-    val switchNode = controlStructureNode(node, ControlStructureTypes.SWITCH, code(node))
+    val cases            = node.cases.children.toList
+    val hasTuplePatterns = cases.exists(hasTuplePattern)
 
-    // The semantics of switch statement children is partially defined by their order value.
-    // The blockAst must have order == 2. Only to avoid collision we set switchExpressionAst to 1
-    // because the semantics of it is already indicated via the condition edge.
-    val switchExpressionAst = astForNode(node.subject)
-    setOrderExplicitly(switchExpressionAst, 1)
+    if (hasTuplePatterns) {
+      // TODO: The whole branch here is not yet using types from the subject expression.
+      //  Query the type from the subject expression and use it to set the type of the temp and index access nodes where appropriate.
+      val outerBlockNode = blockNode(node)
+      scope.pushNewBlockScope(outerBlockNode)
+      localAstParentStack.push(outerBlockNode)
 
-    val blockNode_ = blockNode(node).order(2)
-    scope.pushNewBlockScope(blockNode_)
-    localAstParentStack.push(blockNode_)
-    val casesAsts = node.cases.children.toList.flatMap(astsForSwitchCase)
-    scope.popScope()
-    localAstParentStack.pop()
+      // The subject may have side effects - assign it to a temp so it is evaluated only once.
+      val subjectTmpName   = scopeLocalUniqueName("subject")
+      val subjectLocalNode = localNode(node, subjectTmpName, subjectTmpName, Defines.Tuple).order(0)
+      diffGraph.addEdge(localAstParentStack.head, subjectLocalNode, EdgeTypes.AST)
+      scope.addVariable(subjectTmpName, subjectLocalNode, Defines.Tuple, VariableScopeManager.ScopeType.BlockScope)
 
-    Ast(switchNode)
-      .withChild(switchExpressionAst)
-      .withConditionEdge(switchNode, switchExpressionAst.nodes.head)
-      .withChild(blockAst(blockNode_, casesAsts))
+      val subjectExprAst   = astForNode(node.subject)
+      val subjectIdentNode = identifierNode(node, subjectTmpName, subjectTmpName, Defines.Tuple)
+      scope.addVariableReference(subjectTmpName, subjectIdentNode, Defines.Tuple, EvaluationStrategies.BY_REFERENCE)
+      val subjectAssignAst =
+        createAssignmentCallAst(node, Ast(subjectIdentNode), subjectExprAst, s"$subjectTmpName = ${code(node.subject)}")
+
+      val switchNode    = controlStructureNode(node, ControlStructureTypes.SWITCH, code(node))
+      val condIdentNode = identifierNode(node, subjectTmpName, subjectTmpName, Defines.Tuple)
+      scope.addVariableReference(subjectTmpName, condIdentNode, Defines.Tuple, EvaluationStrategies.BY_REFERENCE)
+      val condAst = Ast(condIdentNode)
+      setOrderExplicitly(condAst, 1)
+
+      val switchBlockNode = blockNode(node).order(2)
+      scope.pushNewBlockScope(switchBlockNode)
+      localAstParentStack.push(switchBlockNode)
+      val casesAsts = cases.flatMap(astsForSwitchCase(_, Some(subjectTmpName)))
+      scope.popScope()
+      localAstParentStack.pop()
+
+      val switchAst = Ast(switchNode)
+        .withChild(condAst)
+        .withConditionEdge(switchNode, condIdentNode)
+        .withChild(blockAst(switchBlockNode, casesAsts))
+
+      scope.popScope()
+      localAstParentStack.pop()
+
+      blockAst(outerBlockNode, List(subjectAssignAst, switchAst))
+    } else {
+      // The semantics of switch statement children is partially defined by their order value.
+      // The blockAst must have order == 2. Only to avoid collision we set switchExpressionAst to 1
+      // because the semantics of it is already indicated via the condition edge.
+      val switchNode = controlStructureNode(node, ControlStructureTypes.SWITCH, code(node))
+
+      val switchExpressionAst = astForNode(node.subject)
+      setOrderExplicitly(switchExpressionAst, 1)
+
+      val blockNode_ = blockNode(node).order(2)
+      scope.pushNewBlockScope(blockNode_)
+      localAstParentStack.push(blockNode_)
+      val casesAsts = cases.flatMap(astsForSwitchCase(_, None))
+      scope.popScope()
+      localAstParentStack.pop()
+
+      Ast(switchNode)
+        .withChild(switchExpressionAst)
+        .withConditionEdge(switchNode, switchExpressionAst.nodes.head)
+        .withChild(blockAst(blockNode_, casesAsts))
+    }
   }
 
   private def astForTernaryExprSyntax(node: TernaryExprSyntax): Ast = {

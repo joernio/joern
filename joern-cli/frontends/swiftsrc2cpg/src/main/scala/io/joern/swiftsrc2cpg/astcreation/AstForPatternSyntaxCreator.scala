@@ -35,6 +35,8 @@ trait AstForPatternSyntaxCreator(implicit withSchemaValidation: ValidationMode) 
 
   private def astForMissingPatternSyntax(@unused node: MissingPatternSyntax): Ast = Ast()
 
+  // TODO: implement astForTuplePatternSyntax for non-switch contexts (e.g. if-case expressions).
+  // Switch-context handling is done via astsForBindingTuplePatternInSwitchContext in AstForExprSyntaxCreator.
   private def astForTuplePatternSyntax(node: TuplePatternSyntax): Ast = notHandledYet(node)
 
   private def localForValueBindingPatternSyntax(
