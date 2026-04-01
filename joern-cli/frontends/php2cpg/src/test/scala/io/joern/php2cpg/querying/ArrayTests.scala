@@ -104,7 +104,7 @@ class ArrayTests extends PhpCode2CpgFixture {
       block.code shouldBe "$xs[][2][] = $val"
       block.lineNumber shouldBe Some(3)
 
-      inside(block.astChildren.isLocal.l) { case List(tmp0, tmp1, tmp2, tmp3, tmp4, xs) =>
+      inside(block.astChildren.isLocal.l) { case List(tmp0, tmp1, tmp2, tmp3, xs) =>
         tmp0.name shouldBe "foo@tmp-0"
         tmp0.code shouldBe "$foo@tmp-0"
         tmp1.name shouldBe "foo@tmp-1"
@@ -113,33 +113,34 @@ class ArrayTests extends PhpCode2CpgFixture {
         tmp2.code shouldBe "$foo@tmp-2"
         tmp3.name shouldBe "foo@tmp-3"
         tmp3.code shouldBe "$foo@tmp-3"
-        tmp4.name shouldBe "foo@tmp-4"
-        tmp4.code shouldBe "$foo@tmp-4"
         xs.name shouldBe "xs"
         xs.code shouldBe "$xs"
       }
 
       inside(block.astChildren.not(_.isLocal).l) {
-        case List(assignOne: Call, assignTwo: Call, assignThree: Call, arrayPushCall: Call, retIden: Identifier) =>
+        case List(assignOne: Call, assignTwo: Call, arrayPushCall: Call, retIden: Identifier) =>
           assignOne.name shouldBe Operators.assignment
-          assignOne.code shouldBe "$foo@tmp-0 = $val"
+          assignOne.code shouldBe "$foo@tmp-0 = array($val)"
           assignOne.order shouldBe 1
 
           assignTwo.name shouldBe Operators.assignment
-          assignTwo.code shouldBe "$foo@tmp-1 = array($foo@tmp-0)"
+          assignTwo.code shouldBe "$foo@tmp-2 = array(2 => $foo@tmp-0)"
           assignTwo.order shouldBe 2
 
-          assignThree.name shouldBe Operators.assignment
-          assignThree.code shouldBe "$foo@tmp-3 = array(2 => $foo@tmp-1)"
-          assignThree.order shouldBe 3
-
           arrayPushCall.name shouldBe "array_push"
-          arrayPushCall.code shouldBe "$xs[] = $foo@tmp-3"
-          arrayPushCall.order shouldBe 4
+          arrayPushCall.code shouldBe "$xs[] = $foo@tmp-2"
+          arrayPushCall.order shouldBe 3
+          inside(arrayPushCall.argument.l) { case List(lhsIdentifier: Identifier, rhsIdentifier: Identifier) =>
+            lhsIdentifier.name shouldBe "xs"
+            lhsIdentifier.code shouldBe "$xs"
 
-          retIden.name shouldBe "foo@tmp-0"
-          retIden.code shouldBe "$foo@tmp-0"
-          retIden.order shouldBe 5
+            rhsIdentifier.name shouldBe "foo@tmp-2"
+            rhsIdentifier.code shouldBe "$foo@tmp-2"
+          }
+
+          retIden.name shouldBe "val"
+          retIden.code shouldBe "$val"
+          retIden.order shouldBe 4
       }
     }
   }
@@ -155,32 +156,26 @@ class ArrayTests extends PhpCode2CpgFixture {
       block.code shouldBe "$xs[1][2][] = $val"
       block.lineNumber shouldBe Some(3)
 
-      inside(block.astChildren.isLocal.l) { case List(tmp0, xs) =>
-        tmp0.name shouldBe "foo@tmp-0"
-        tmp0.code shouldBe "$foo@tmp-0"
+      inside(block.astChildren.isLocal.l) { case List(xs) =>
         xs.name shouldBe "xs"
         xs.code shouldBe "$xs"
       }
 
-      inside(block.astChildren.not(_.isLocal).l) { case List(assignOne: Call, assignTwo: Call, retIden: Identifier) =>
-        assignOne.name shouldBe Operators.assignment
-        assignOne.code shouldBe "$foo@tmp-0 = $val"
-        assignOne.order shouldBe 1
-
-        assignTwo.name shouldBe "array_push"
-        assignTwo.code shouldBe "$xs[1][2][] = $foo@tmp-0"
-        assignTwo.order shouldBe 2
-        inside(assignTwo.argument.l) { case List(indexAccess: Call, identifier: Identifier) =>
+      inside(block.astChildren.not(_.isLocal).l) { case List(arrayPushCall: Call, retIden: Identifier) =>
+        arrayPushCall.name shouldBe "array_push"
+        arrayPushCall.code shouldBe "$xs[1][2][] = $val"
+        arrayPushCall.order shouldBe 1
+        inside(arrayPushCall.argument.l) { case List(indexAccess: Call, identifier: Identifier) =>
           indexAccess.name shouldBe Operators.indexAccess
           indexAccess.code shouldBe "$xs[1][2]"
 
-          identifier.name shouldBe "foo@tmp-0"
-          identifier.code shouldBe "$foo@tmp-0"
+          identifier.name shouldBe "val"
+          identifier.code shouldBe "$val"
         }
 
-        retIden.name shouldBe "foo@tmp-0"
-        retIden.code shouldBe "$foo@tmp-0"
-        retIden.order shouldBe 3
+        retIden.name shouldBe "val"
+        retIden.code shouldBe "$val"
+        retIden.order shouldBe 2
       }
     }
   }
@@ -220,41 +215,35 @@ class ArrayTests extends PhpCode2CpgFixture {
       block.code shouldBe "$xs[1][][2] = $val"
       block.lineNumber shouldBe Some(3)
 
-      inside(block.astChildren.isLocal.l) { case List(tmp0, tmp1, tmp2, xs) =>
+      inside(block.astChildren.isLocal.l) { case List(tmp0, tmp1, xs) =>
         tmp0.name shouldBe "foo@tmp-0"
         tmp0.code shouldBe "$foo@tmp-0"
         tmp1.name shouldBe "foo@tmp-1"
         tmp1.code shouldBe "$foo@tmp-1"
-        tmp2.name shouldBe "foo@tmp-2"
-        tmp2.code shouldBe "$foo@tmp-2"
         xs.name shouldBe "xs"
         xs.code shouldBe "$xs"
       }
 
       inside(block.astChildren.not(_.isLocal).l) {
-        case List(assignOne: Call, assignTwo: Call, assignThree: Call, retIden: Identifier) =>
+        case List(assignOne: Call, arrayPushCall: Call, retIden: Identifier) =>
           assignOne.name shouldBe Operators.assignment
-          assignOne.code shouldBe "$foo@tmp-0 = $val"
+          assignOne.code shouldBe "$foo@tmp-0 = array(2 => $val)"
           assignOne.order shouldBe 1
 
-          assignTwo.name shouldBe Operators.assignment
-          assignTwo.code shouldBe "$foo@tmp-1 = array(2 => $foo@tmp-0)"
-          assignTwo.order shouldBe 2
-
-          assignThree.name shouldBe "array_push"
-          assignThree.code shouldBe "$xs[1][] = $foo@tmp-1"
-          assignThree.order shouldBe 3
-          inside(assignThree.argument.l) { case List(indexAccess: Call, identifier: Identifier) =>
+          arrayPushCall.name shouldBe "array_push"
+          arrayPushCall.code shouldBe "$xs[1][] = $foo@tmp-0"
+          arrayPushCall.order shouldBe 2
+          inside(arrayPushCall.argument.l) { case List(indexAccess: Call, identifier: Identifier) =>
             indexAccess.name shouldBe Operators.indexAccess
             indexAccess.code shouldBe "$xs[1]"
 
-            identifier.name shouldBe "foo@tmp-1"
-            identifier.code shouldBe "$foo@tmp-1"
+            identifier.name shouldBe "foo@tmp-0"
+            identifier.code shouldBe "$foo@tmp-0"
           }
 
-          retIden.name shouldBe "foo@tmp-0"
-          retIden.code shouldBe "$foo@tmp-0"
-          retIden.order shouldBe 4
+          retIden.name shouldBe "val"
+          retIden.code shouldBe "$val"
+          retIden.order shouldBe 3
       }
     }
   }
