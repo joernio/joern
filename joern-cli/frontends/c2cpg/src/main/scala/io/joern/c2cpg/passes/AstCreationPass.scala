@@ -14,6 +14,7 @@ import io.joern.x2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPassWithAccumulator
 import org.apache.commons.lang3.StringUtils
+import org.eclipse.cdt.core.dom.ast.gnu.cpp.GPPLanguage
 import org.eclipse.cdt.core.model.ILanguage
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -163,6 +164,11 @@ class AstCreationPass(
     }
   }
 
+  private def suffixFromLanguage(relPath: String, language: ILanguage): String = {
+    if (FileDefaults.hasCHeaderFileExtension(relPath) && language.isInstanceOf[GPPLanguage]) { "<cpp>" }
+    else ""
+  }
+
   override def runOnPart(
     diffGraph: DiffGraphBuilder,
     fileAndLanguage: (Path, ILanguage),
@@ -177,7 +183,10 @@ class AstCreationPass(
           val fileLOC = translationUnit.getRawSignature.linesIterator.size
           report.addReportInfo(relPath, fileLOC, parsed = true)
           try {
-            val localDiff = new AstCreator(relPath, accumulator, config, translationUnit, headerFileFinder).createAst()
+            val languageSuffix = suffixFromLanguage(relPath, language)
+            val localDiff =
+              new AstCreator(relPath, accumulator, config, translationUnit, headerFileFinder, languageSuffix)
+                .createAst()
             diffGraph.absorb(localDiff)
             logger.debug(s"Generated a CPG for: '$relPath'")
             true

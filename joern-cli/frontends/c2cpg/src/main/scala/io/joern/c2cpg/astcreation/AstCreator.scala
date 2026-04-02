@@ -22,7 +22,8 @@ class AstCreator(
   val accumulator: AstCreationPass.Accumulator,
   val config: Config,
   val cdtAst: IASTTranslationUnit,
-  val headerFileFinder: HeaderFileFinder
+  val headerFileFinder: HeaderFileFinder,
+  val languageSuffix: String = ""
 ) extends AstCreatorBase[IASTNode, AstCreator](filename)(config.schemaValidation)
     with AstForTypesCreator
     with AstForFunctionsCreator
@@ -58,7 +59,9 @@ class AstCreator(
   }
 
   private def astForTranslationUnit(iASTTranslationUnit: IASTTranslationUnit): Ast = {
-    val namespaceBlock = globalNamespaceBlock()
+    val namespaceBlock               = globalNamespaceBlock()
+    val fakeMethodFullNameWithSuffix = s"${namespaceBlock.fullName}$languageSuffix"
+    namespaceBlock.fullName(fakeMethodFullNameWithSuffix)
     methodAstParentStack.push(namespaceBlock)
     val translationUnitAst =
       astInFakeMethod(namespaceBlock.fullName, fileName(iASTTranslationUnit), iASTTranslationUnit)
