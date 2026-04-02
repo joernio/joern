@@ -248,6 +248,63 @@ class ArrayTests extends PhpCode2CpgFixture {
     }
   }
 
+  "assignments using the multi array dimension fetch syntax with a complex source expression should use a tmp for the rhs" in {
+    val cpg = code("""<?php
+        |function foo($val) {
+        |  $xs[1][][2] = bar($val);
+        |}
+        |""".stripMargin)
+
+    inside(cpg.method.name("foo").body.astChildren.l) { case List(block: Block) =>
+      block.code shouldBe "$xs[1][][2] = bar($val)"
+      block.lineNumber shouldBe Some(3)
+
+      inside(block.astChildren.isLocal.l) { case List(tmp0, tmp1, tmp2, xs) =>
+        tmp0.name shouldBe "foo@tmp-0"
+        tmp0.code shouldBe "$foo@tmp-0"
+        tmp1.name shouldBe "foo@tmp-1"
+        tmp1.code shouldBe "$foo@tmp-1"
+        tmp2.name shouldBe "foo@tmp-2"
+        tmp2.code shouldBe "$foo@tmp-2"
+        xs.name shouldBe "xs"
+        xs.code shouldBe "$xs"
+      }
+
+      inside(block.astChildren.not(_.isLocal).l) {
+        case List(assignOne: Call, assignTwo: Call, arrayPushCall: Call, retIden: Identifier) =>
+          assignOne.name shouldBe Operators.assignment
+          assignOne.code shouldBe "$foo@tmp-0 = bar($val)"
+          assignOne.order shouldBe 1
+          inside(assignOne.argument.l) { case List(identifier: Identifier, call: Call) =>
+            identifier.name shouldBe "foo@tmp-0"
+            identifier.code shouldBe "$foo@tmp-0"
+
+            call.name shouldBe "bar"
+            call.code shouldBe "bar($val)"
+          }
+
+          assignTwo.name shouldBe Operators.assignment
+          assignTwo.code shouldBe "$foo@tmp-1 = array(2 => $foo@tmp-0)"
+          assignTwo.order shouldBe 2
+
+          arrayPushCall.name shouldBe "array_push"
+          arrayPushCall.code shouldBe "$xs[1][] = $foo@tmp-1"
+          arrayPushCall.order shouldBe 3
+          inside(arrayPushCall.argument.l) { case List(indexAccess: Call, identifier: Identifier) =>
+            indexAccess.name shouldBe Operators.indexAccess
+            indexAccess.code shouldBe "$xs[1]"
+
+            identifier.name shouldBe "foo@tmp-1"
+            identifier.code shouldBe "$foo@tmp-1"
+          }
+
+          retIden.name shouldBe "foo@tmp-0"
+          retIden.code shouldBe "$foo@tmp-0"
+          retIden.order shouldBe 4
+      }
+    }
+  }
+
   "associative array definitions should be lowered with the correct assignments" in {
     val cpg = code("""<?php
         |array(

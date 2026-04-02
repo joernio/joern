@@ -249,12 +249,20 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
   }
 
+  private def isSimpleExpression(expr: PhpExpr): Boolean = expr match {
+    case _: PhpVariable | _: PhpScalar | _: PhpNameExpr | _: PhpConstFetchExpr => true
+    case _                                                                     => false
+  }
+
   /** This is used to rewrite the short form $xs[][$expr] = <value_expr> as a combination of multiple assignments and
     * array_push(...) calls.
     *
     * All index accesses from the right except the one on the variable are lowered as assignments to tmp variables. The
     * leftmost index access is represented as either an array_push(...) call if dimensionless (see
     * [[astForEmptyArrayDimAssign]]), or an index assignment if there is a dimension.
+    *
+    * For simple expressions (variables, literals), we evaluate the RHS twice to avoid a tmp variable. For complex
+    * expressions (calls, operators), we use a tmp to avoid duplicate evaluation.
     */
   private def astForMultiArrayDimAssign(assignment: PhpAssignment, arrayDimFetchExpr: PhpArrayDimFetchExpr): Ast = {
     val attrs = assignment.attributes
@@ -296,15 +304,30 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         val block = blockNode(assignment)
         scope.pushNewScope(BlockScope(block, ""))
 
-        val sourceAst = astForExpr(assignment.source)
-
-        val loweringAsts = traverseArrayDimExpr(arrayDimFetchExpr, sourceAst)
+        // For complex expressions, use a tmp to avoid duplicate evaluation
+        // For simple expressions (variables, literals), evaluate twice to avoid tmp overhead
+        val (loweringAsts, returnAst) = if (isSimpleExpression(assignment.source)) {
+          // Simple expression - safe to evaluate twice
+          val sourceAst = astForExpr(assignment.source)
+          val lowering  = traverseArrayDimExpr(arrayDimFetchExpr, sourceAst)
+          val return_   = astForExpr(assignment.source)
+          (lowering, return_)
+        } else {
+          // Complex expression (call, operator, etc.) - use tmp to evaluate once
+          val tmpName             = this.scope.getNewVarTmp()
+          val tmpLocal            = handleVariableOccurrence(assignment, tmpName)
+          val sourceAst           = astForExpr(assignment.source)
+          val tmpIdent            = createTmpIdentifierAst(assignment, tmpName, tmpLocal)
+          val tmpAssign           = simpleAssignAst(assignment, tmpIdent, sourceAst)
+          val tmpIdentForTraverse = createTmpIdentifierAst(assignment, tmpName, tmpLocal)
+          val lowering            = tmpAssign :: traverseArrayDimExpr(arrayDimFetchExpr, tmpIdentForTraverse)
+          val return_             = createTmpIdentifierAst(assignment, tmpName, tmpLocal)
+          (lowering, return_)
+        }
 
         val blockCode = codeForExpr(assignment)
         block.code(blockCode)
         scope.popScope()
-
-        val returnAst = astForExpr(assignment.source)
 
         Ast(block)
           .withChildren(loweringAsts)
