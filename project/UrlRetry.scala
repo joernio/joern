@@ -105,7 +105,7 @@ object UrlRetry {
     url: URL,
     localFile: File,
     maxRetries: Int = 5,
-    baseInterval: FiniteDuration = 500.millis,
+    baseInterval: FiniteDuration = 2.seconds,
     backoffFactor: Double = 2.0
   ): Unit = {
     withTransientHttpRetries(maxRetries, baseInterval, backoffFactor) {
