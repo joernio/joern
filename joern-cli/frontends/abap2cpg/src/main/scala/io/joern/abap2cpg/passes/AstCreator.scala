@@ -203,20 +203,21 @@ class AstCreator(program: ProgramRoot, filename: String)(implicit withSchemaVali
       paramOrder += 1
     }
 
-    // RETURNING is a named output variable — add it to scope as METHOD_PARAMETER_IN so that
-    // body references to it get a REF edge (METHOD_RETURN is unnamed per the CPG spec).
-    val methodReturn = method.parameters.returning match {
+    // RETURNING is a named output variable — create a LOCAL for it so body references
+    // can find it via REF edges (METHOD_RETURN itself is unnamed per CPG spec).
+    val (methodReturn, returningLocalAst) = method.parameters.returning match {
       case Some(returnParam) =>
-        val paramNode = createParameterIn(returnParam, paramOrder)
-        scope.addVariable(returnParam.name, paramNode, returnParam.typeName, VariableScopeManager.ScopeType.MethodScope)
-        parameterAsts += Ast(paramNode)
-        paramOrder += 1
-        createMethodReturn(returnParam)
+        val localNode = NewLocal()
+          .name(returnParam.name)
+          .code(returnParam.name)
+          .typeFullName(returnParam.typeName)
+        scope.addVariable(returnParam.name, localNode, returnParam.typeName, VariableScopeManager.ScopeType.MethodScope)
+        (createMethodReturn(returnParam), Some(Ast(localNode)))
       case None =>
-        NewMethodReturn()
+        (NewMethodReturn()
           .evaluationStrategy(EvaluationStrategies.BY_REFERENCE)
           .typeFullName("void")
-          .code("void")
+          .code("void"), None)
     }
 
     // Create body block with statements
@@ -225,7 +226,9 @@ class AstCreator(program: ProgramRoot, filename: String)(implicit withSchemaVali
       case None           => Seq.empty
     }
 
-    val blockAst = Ast(blockNode).withChildren(stmtAsts)
+    // Add RETURNING local to block if it exists
+    val allBlockChildren = returningLocalAst.toSeq ++ stmtAsts
+    val blockAst = Ast(blockNode).withChildren(allBlockChildren)
 
     scope.popScope()
 

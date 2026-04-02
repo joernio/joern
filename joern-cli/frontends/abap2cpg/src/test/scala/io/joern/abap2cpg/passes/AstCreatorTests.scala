@@ -463,21 +463,54 @@ class AstCreatorTests extends AbapCpgFixture {
 
   "RETURNING parameter" should {
 
-    "be exposed as METHOD_PARAMETER_IN accessible via method.parameter" in {
+    "create a LOCAL node for the return variable" in {
       val cpg = cpgForProgram(
         programWithMethod("MY_METHOD", returning = Some(Parameter("RV_RESULT", "string", isValue = true)))
       )
-      cpg.method.nameExact("MY_METHOD").parameter.name.l should contain("RV_RESULT")
+      cpg.method.nameExact("MY_METHOD").local.name.l should contain("RV_RESULT")
     }
 
-    "not use the type name as the parameter name" in {
+    "create a METHOD_RETURN node with correct type" in {
       val cpg = cpgForProgram(
         programWithMethod("MY_METHOD", returning = Some(Parameter("RV_RESULT", "string", isValue = true)))
       )
-      cpg.method.nameExact("MY_METHOD").parameter.name.l should not contain "string"
+      val methodReturn = cpg.method.nameExact("MY_METHOD").methodReturn.head
+      methodReturn.typeFullName shouldBe "string"
+      methodReturn.code shouldBe "RV_RESULT"
     }
 
-    "create a REF edge from an identifier referencing the return variable to the parameter" in {
+    "create a METHOD_RETURN node with BY_VALUE evaluation strategy when isValue=true" in {
+      val cpg = cpgForProgram(
+        programWithMethod("MY_METHOD", returning = Some(Parameter("RV_RESULT", "string", isValue = true)))
+      )
+      val methodReturn = cpg.method.nameExact("MY_METHOD").methodReturn.head
+      methodReturn.evaluationStrategy shouldBe "BY_VALUE"
+    }
+
+    "create a METHOD_RETURN node with BY_REFERENCE evaluation strategy when isValue=false" in {
+      val cpg = cpgForProgram(
+        programWithMethod("MY_METHOD", returning = Some(Parameter("RV_RESULT", "string", isValue = false)))
+      )
+      val methodReturn = cpg.method.nameExact("MY_METHOD").methodReturn.head
+      methodReturn.evaluationStrategy shouldBe "BY_REFERENCE"
+    }
+
+    "set correct typeFullName on LOCAL node" in {
+      val cpg = cpgForProgram(
+        programWithMethod("MY_METHOD", returning = Some(Parameter("RV_RESULT", "string", isValue = true)))
+      )
+      val local = cpg.method.nameExact("MY_METHOD").local.nameExact("RV_RESULT").head
+      local.typeFullName shouldBe "string"
+    }
+
+    "not use the type name as the LOCAL name" in {
+      val cpg = cpgForProgram(
+        programWithMethod("MY_METHOD", returning = Some(Parameter("RV_RESULT", "string", isValue = true)))
+      )
+      cpg.method.nameExact("MY_METHOD").local.name.l should not contain "string"
+    }
+
+    "create a REF edge from an identifier referencing the return variable to the LOCAL node" in {
       val body = StatementList(
         statements = Seq(
           AssignmentStmt(IdentifierExpr("RV_RESULT", noSpan), LiteralExpr("42", "string", noSpan), noSpan)
@@ -489,9 +522,39 @@ class AstCreatorTests extends AbapCpgFixture {
           returning = Some(Parameter("RV_RESULT", "string", isValue = true)),
           body = Some(body))
       )
-      val param = cpg.method.nameExact("MY_METHOD").parameter.nameExact("RV_RESULT").head
+      val local = cpg.method.nameExact("MY_METHOD").local.nameExact("RV_RESULT").head
       cpg.method.nameExact("MY_METHOD").ast.isIdentifier.nameExact("RV_RESULT")
-        .flatMap(_._refOut).headOption shouldBe Some(param)
+        .flatMap(_._refOut).headOption shouldBe Some(local)
+    }
+
+    "handle parameter name 'return' correctly" in {
+      val body = StatementList(
+        statements = Seq(
+          AssignmentStmt(IdentifierExpr("return", noSpan), LiteralExpr("value", "string", noSpan), noSpan)
+        ),
+        span = noSpan
+      )
+      val cpg = cpgForProgram(
+        programWithMethod("MY_METHOD",
+          returning = Some(Parameter("return", "string", isValue = true)),
+          body = Some(body))
+      )
+      // LOCAL node should exist with name "return"
+      val local = cpg.method.nameExact("MY_METHOD").local.nameExact("return").head
+      local.name shouldBe "return"
+      local.typeFullName shouldBe "string"
+
+      // Identifier should reference the LOCAL node
+      val identifier = cpg.method.nameExact("MY_METHOD").ast.isIdentifier.nameExact("return").head
+      identifier._refOut.headOption shouldBe Some(local)
+    }
+
+    "not create METHOD_PARAMETER_IN for RETURNING parameter" in {
+      val cpg = cpgForProgram(
+        programWithMethod("MY_METHOD", returning = Some(Parameter("RV_RESULT", "string", isValue = true)))
+      )
+      // RETURNING should NOT create a parameter node
+      cpg.method.nameExact("MY_METHOD").parameter.name.l should not contain "RV_RESULT"
     }
   }
 

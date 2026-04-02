@@ -128,10 +128,10 @@ class AbapIntegrationTests extends Abap2CpgSuite {
       }
     }
 
-    "expose RETURNING parameter rv_result as METHOD_PARAMETER_IN on greet" in {
+    "expose RETURNING parameter rv_result as LOCAL on greet" in {
       val cpg   = code(abapCode, fileName)
       val greet = cpg.method.fullNameExact("zcl_simple::greet").head
-      greet.parameter.name.l should contain("rv_result")
+      greet.local.name.l should contain("rv_result")
     }
 
     "not use type names as parameter names" in {
@@ -144,11 +144,11 @@ class AbapIntegrationTests extends Abap2CpgSuite {
       }
     }
 
-    "create REF edge from rv_result identifier to its RETURNING parameter" in {
+    "create REF edge from rv_result identifier to its RETURNING LOCAL" in {
       val cpg   = code(abapCode, fileName)
       val greet = cpg.method.fullNameExact("zcl_simple::greet").head
-      val param = greet.parameter.nameExact("rv_result").head
-      greet.ast.isIdentifier.nameExact("rv_result").flatMap(_._refOut).headOption shouldBe Some(param)
+      val local = greet.local.nameExact("rv_result").head
+      greet.ast.isIdentifier.nameExact("rv_result").flatMap(_._refOut).headOption shouldBe Some(local)
     }
   }
 
