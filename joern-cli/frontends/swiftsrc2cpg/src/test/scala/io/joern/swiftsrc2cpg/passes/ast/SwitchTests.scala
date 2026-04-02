@@ -3,9 +3,8 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
 import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
-
+import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.*
-import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
 class SwitchTests extends SwiftSrc2CpgSuite {
@@ -210,6 +209,232 @@ class SwitchTests extends SwiftSrc2CpgSuite {
         |    x += 1
         |}""".stripMargin)
       ???
+    }
+
+    "testSwitchExpressionTuplePattern" in {
+      val cpg = code("""
+        |func foo(x: Int, y: Int) {
+        |  switch (x, y) {
+        |    case (1, 2):
+        |      x = 0
+        |  }
+        |}
+        |""".stripMargin)
+      val List(switchStmt) = cpg.switchBlock.l
+      // Switch condition is the temp identifier, not the original expression
+      val List(switchCond) = switchStmt.astChildren.isIdentifier.l
+      switchCond.name should startWith("<subject>")
+      switchCond.typeFullName shouldBe Defines.Tuple
+      switchCond.order shouldBe 1
+      val List(switchBlock) = switchStmt.astChildren.isBlock.l
+      val List(caseLabel)   = switchBlock._jumpTargetViaAstOut.codeExact("case (1, 2):").l
+      caseLabel.order shouldBe 1
+      // Bare arrayInitializer replaced by equality chain
+      switchBlock.astChildren.isCall.nameExact(Operators.arrayInitializer).l shouldBe empty
+      val List(testCall) = switchBlock.astChildren.isCall.nameExact(Operators.logicalAnd).l
+      testCall.order shouldBe 2
+      val List(eq1, eq2) = testCall.argument.isCall.nameExact(Operators.equals).l
+      eq1.code shouldBe s"${switchCond.name}.0 == 1"
+      eq2.code shouldBe s"${switchCond.name}.1 == 2"
+      // Subject temp assigned before switch
+      val List(stmtAssign) = cpg.call
+        .nameExact(Operators.assignment)
+        .codeExact(s"${switchCond.name} = (x, y)")
+        .l
+      val List(arrayInit) = stmtAssign.argument.order(2).isCall.nameExact(Operators.arrayInitializer).l
+      arrayInit.code shouldBe "(x, y)"
+      // Subject local has Tuple type
+      val List(subjectLocal) = cpg.local.nameExact(switchCond.name).l
+      subjectLocal.typeFullName shouldBe Defines.Tuple
+    }
+
+    "testSwitchBindingTuplePatternLet" in {
+      val cpg = code("""
+        |func foo(x: Int, y: Int) -> Int {
+        |  switch (x, y) {
+        |    case let (a, b):
+        |      return a + b
+        |  }
+        |  return 0
+        |}
+        |""".stripMargin)
+      val List(switchStmt) = cpg.switchBlock.l
+      val List(switchCond) = switchStmt.astChildren.isIdentifier.l
+      switchCond.name should startWith("<subject>")
+      val List(switchBlock) = switchStmt.astChildren.isBlock.l
+      val List(caseLabel)   = switchBlock._jumpTargetViaAstOut.codeExact("case let (a, b):").l
+      caseLabel.order shouldBe 1
+      // Binding assignments at the start of the case block
+      val List(assignA) = switchBlock.astChildren.isCall
+        .nameExact(Operators.assignment)
+        .codeExact(s"a = ${switchCond.name}.0")
+        .l
+      val List(assignB) = switchBlock.astChildren.isCall
+        .nameExact(Operators.assignment)
+        .codeExact(s"b = ${switchCond.name}.1")
+        .l
+      assignA.order shouldBe 2
+      assignB.order shouldBe 3
+      // Locals declared
+      val List(localA) = cpg.local.nameExact("a").l
+      localA.name shouldBe "a"
+      val List(localB) = cpg.local.nameExact("b").l
+      localB.name shouldBe "b"
+    }
+
+    "testSwitchBindingTuplePatternVar" in {
+      val cpg = code("""
+        |func foo(x: Int, y: Int) -> Int {
+        |  switch (x, y) {
+        |    case (var a, var b):
+        |      return a + b
+        |  }
+        |  return 0
+        |}
+        |""".stripMargin)
+      val List(switchStmt) = cpg.switchBlock.l
+      val List(switchCond) = switchStmt.astChildren.isIdentifier.l
+      switchCond.name should startWith("<subject>")
+      val List(switchBlock) = switchStmt.astChildren.isBlock.l
+      val List(assignA) = switchBlock.astChildren.isCall
+        .nameExact(Operators.assignment)
+        .codeExact(s"a = ${switchCond.name}.0")
+        .l
+      val List(assignB) = switchBlock.astChildren.isCall
+        .nameExact(Operators.assignment)
+        .codeExact(s"b = ${switchCond.name}.1")
+        .l
+      assignA.order shouldBe 2
+      assignB.order shouldBe 3
+      // Locals declared
+      val List(localA) = cpg.local.nameExact("a").l
+      localA.name shouldBe "a"
+      val List(localB) = cpg.local.nameExact("b").l
+      localB.name shouldBe "b"
+    }
+
+    "testSwitchMixedTupleAndSimpleCase" in {
+      val cpg = code("""
+        |func foo(x: Int, y: Int) {
+        |  switch (x, y) {
+        |    case (1, 2):
+        |      x = 0
+        |    case (3, 4):
+        |      x = 1
+        |  }
+        |}
+        |""".stripMargin)
+      val List(switchStmt) = cpg.switchBlock.l
+      val List(switchCond) = switchStmt.astChildren.isIdentifier.l
+      switchCond.name should startWith("<subject>")
+      val List(switchBlock) = switchStmt.astChildren.isBlock.l
+      // Two equality chains
+      val List(and1, and2) = switchBlock.astChildren.isCall.nameExact(Operators.logicalAnd).l
+      and1.code shouldBe s"${switchCond.name}.0 == 1 && ${switchCond.name}.1 == 2"
+      and2.code shouldBe s"${switchCond.name}.0 == 3 && ${switchCond.name}.1 == 4"
+      // No bare arrayInitializer patterns
+      switchBlock.astChildren.isCall.nameExact(Operators.arrayInitializer).l shouldBe empty
+      // Two case labels
+      val List(label1, label2) = switchBlock._jumpTargetViaAstOut.l
+      label1.code shouldBe "case (1, 2):"
+      label2.code shouldBe "case (3, 4):"
+    }
+
+    "testSwitchNestedTuplePattern" in {
+      val cpg = code("""
+        |func foo(x: Int, y: Int, z: Int) {
+        |  switch ((x, y), z) {
+        |    case ((1, 2), 3):
+        |      x = 0
+        |  }
+        |}
+        |""".stripMargin)
+      val List(switchStmt) = cpg.switchBlock.l
+      val List(switchCond) = switchStmt.astChildren.isIdentifier.l
+      switchCond.name should startWith("<subject>")
+      val List(switchBlock) = switchStmt.astChildren.isBlock.l
+      // Top-level and is: (_subject.0.0 == 1 && _subject.0.1 == 2) && _subject.1 == 3
+      val List(outerAnd) = switchBlock.astChildren.isCall
+        .nameExact(Operators.logicalAnd)
+        .filter(_.argument.isCall.nameExact(Operators.logicalAnd).nonEmpty)
+        .l
+      outerAnd.code shouldBe
+        s"${switchCond.name}.0.0 == 1 && ${switchCond.name}.0.1 == 2 && ${switchCond.name}.1 == 3"
+    }
+
+    "testSwitchIsTypePatternInTuple" in {
+      val cpg = code("""
+        |func foo(x: Any, y: Int) {
+        |  switch (x, y) {
+        |    case (is String, 42):
+        |      print("match")
+        |    default:
+        |      break
+        |  }
+        |}
+        |""".stripMargin)
+      val List(switchStmt) = cpg.switchBlock.l
+      val List(switchCond) = switchStmt.astChildren.isIdentifier.l
+      switchCond.name should startWith("<subject>")
+      val List(switchBlock) = switchStmt.astChildren.isBlock.l
+      // The is-type pattern should produce an instanceOf check
+      val List(instanceOfCall) = switchBlock.astChildren.isCall.nameExact(Operators.instanceOf).l
+      instanceOfCall.code shouldBe s"${switchCond.name}.0 is String"
+      // The literal pattern should produce an equality check
+      val List(eqCall) = switchBlock.astChildren.isCall.nameExact(Operators.equals).l
+      eqCall.code shouldBe s"${switchCond.name}.1 == 42"
+    }
+
+    "testSwitchEnumCasePatternInTuple" in {
+      val cpg = code("""
+        |func foo(x: Int, y: Int) {
+        |  switch (x, y) {
+        |    case (1, 2):
+        |      print("1,2")
+        |    case (.min, 0):
+        |      print("min,0")
+        |    default:
+        |      break
+        |  }
+        |}
+        |""".stripMargin)
+      val List(switchStmt) = cpg.switchBlock.l
+      val List(switchCond) = switchStmt.astChildren.isIdentifier.l
+      switchCond.name should startWith("<subject>")
+      val List(switchBlock) = switchStmt.astChildren.isBlock.l
+      // Two cases with tuple patterns: both should produce logicalAnd (equality chains)
+      val List(andCall1, andCall2) = switchBlock.astChildren.isCall.nameExact(Operators.logicalAnd).l
+      andCall1.code shouldBe s"${switchCond.name}.0 == 1 && ${switchCond.name}.1 == 2"
+      andCall2.code shouldBe s"${switchCond.name}.0 == .min && ${switchCond.name}.1 == 0"
+    }
+
+    "testSwitchMixedBindingAndEnumCaseInTuple" in {
+      val cpg = code("""
+        |func foo(x: Int, y: Int) -> Int {
+        |  switch (x, y) {
+        |    case (var a, .min):
+        |      return a
+        |    default:
+        |      return 0
+        |  }
+        |}
+        |""".stripMargin)
+      val List(switchStmt) = cpg.switchBlock.l
+      val List(switchCond) = switchStmt.astChildren.isIdentifier.l
+      switchCond.name should startWith("<subject>")
+      val List(switchBlock) = switchStmt.astChildren.isBlock.l
+      // Binding for 'a'
+      val List(assignA) = switchBlock.astChildren.isCall
+        .nameExact(Operators.assignment)
+        .codeExact(s"a = ${switchCond.name}.0")
+        .l
+      assignA.order shouldBe 2
+      // Equality check for .min
+      val List(eqCall) = switchBlock.astChildren.isCall.nameExact(Operators.equals).l
+      eqCall.code shouldBe s"${switchCond.name}.1 == .min"
+      // Local declared
+      val List(localA) = cpg.local.nameExact("a").l
+      localA.name shouldBe "a"
     }
 
     "testSwitch34" ignore {
