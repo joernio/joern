@@ -368,7 +368,19 @@ class AstCreator(program: ProgramRoot, filename: String)(implicit withSchemaVali
       }
 
     val argAsts = callExpr.arguments.zipWithIndex.map { case (arg, idx) =>
-      astForExpression(arg.value, idx + 1, className)
+      val argAst = astForExpression(arg.value, idx + 1, className)
+
+      // Set argumentName if provided (ABAP uses named parameters heavily)
+      arg.name.foreach { paramName =>
+        argAst.root.foreach {
+          case expr: NewIdentifier => expr.argumentName(paramName)
+          case expr: NewLiteral => expr.argumentName(paramName)
+          case expr: NewCall => expr.argumentName(paramName)
+          case _ => ()
+        }
+      }
+
+      argAst
     }
 
     callAst(callNode, argAsts, base = baseAst)

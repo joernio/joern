@@ -506,7 +506,19 @@ class AbapJsonParser {
     if (closeParen <= openParen) return IdentifierExpr(tokens.mkString(" "), span)
     val argToks = tokens.slice(openParen + 1, closeParen)
     val arguments = if (argToks.isEmpty) Seq.empty[Argument]
-                    else splitByComma(argToks).map(a => Argument(None, parseExpression(a, span)))
+                    else splitByComma(argToks).map { argChunk =>
+                      // Check for named parameter syntax: param = value
+                      val eqIdx = argChunk.indexOf("=")
+                      if (eqIdx > 0 && eqIdx < argChunk.length - 1) {
+                        // Named parameter
+                        val paramName = argChunk.take(eqIdx).mkString(" ").trim
+                        val valueExpr = parseExpression(argChunk.drop(eqIdx + 1), span)
+                        Argument(Some(paramName), valueExpr)
+                      } else {
+                        // Positional parameter
+                        Argument(None, parseExpression(argChunk, span))
+                      }
+                    }
 
     CallExpr(targetName = "", methodName = Some(functionName), arguments = arguments,
              isStatic = false, span = span)
@@ -568,11 +580,19 @@ class AbapJsonParser {
       val parenEnd   = if (parenStart >= 0) tokens.indexWhere(_ == ")", parenStart) else -1
       val args = if (parenStart >= 0 && parenEnd > parenStart) {
         val argToks = tokens.slice(parenStart + 1, parenEnd)
-        val identOk = (t: String) => t.nonEmpty && t != "," && t != "=" && t != "." &&
-          t != "(" && t != ")" && t != "-" && t != "+" && t != "*" && t != "/" && t != "#" &&
-          !isParameterKeyword(t) && !abapConstructorBodyKeywords.contains(t) &&
-          t.forall(c => c.isLetterOrDigit || c == '_' || c == '~' || c == '|')
-        argToks.filter(identOk).map(a => Argument(None, IdentifierExpr(a, span)))
+        // Split by comma and check for named parameter syntax (param = value)
+        splitByComma(argToks).map { argChunk =>
+          val eqIdx = argChunk.indexOf("=")
+          if (eqIdx > 0 && eqIdx < argChunk.length - 1) {
+            // Named parameter
+            val paramName = argChunk.take(eqIdx).mkString(" ").trim
+            val valueExpr = parseExpression(argChunk.drop(eqIdx + 1), span)
+            Argument(Some(paramName), valueExpr)
+          } else {
+            // Positional parameter
+            Argument(None, parseExpression(argChunk, span))
+          }
+        }
       } else Seq.empty
 
       val (target, method) = normalizeCallTarget(actualTarget, Some(nextTok))

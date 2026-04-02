@@ -350,6 +350,49 @@ class AstCreatorTests extends AbapCpgFixture {
       call.argument.isIdentifier.nameExact("obj").argumentIndex.head shouldBe 0
       call.argument.isIdentifier.nameExact("lv_val").size shouldBe 1
     }
+
+    "set argumentName for named parameters" in {
+      val body = StatementList(Seq(
+        CallExpr("obj", Some("method"),
+          arguments = Seq(
+            Argument(Some("iv_name"), IdentifierExpr("lv_value", noSpan)),
+            Argument(Some("iv_count"), LiteralExpr("42", "NUMBER", noSpan))
+          ),
+          span = noSpan)
+      ), noSpan)
+      val cpg  = cpgForProgram(programWithMethod("MY_METHOD", body = Some(body)))
+      val call = cpg.method.nameExact("MY_METHOD").ast.isCall.nameExact("method").head
+
+      // Filter out receiver (index 0) to get actual arguments
+      val args = call.argument.filter(_.argumentIndex > 0).l
+      args.size shouldBe 2
+
+      // Check argument names are set
+      val argNames = args.flatMap(_.argumentName).sorted
+      argNames shouldBe List("iv_count", "iv_name")
+
+      // Check codes match
+      args.find(_.argumentName.contains("iv_name")).map(_.code) shouldBe Some("lv_value")
+      args.find(_.argumentName.contains("iv_count")).map(_.code) shouldBe Some("42")
+    }
+
+    "handle arguments without names (positional)" in {
+      val body = StatementList(Seq(
+        CallExpr("obj", Some("method"),
+          arguments = Seq(
+            Argument(None, IdentifierExpr("lv_value", noSpan)),
+            Argument(None, LiteralExpr("42", "NUMBER", noSpan))
+          ),
+          span = noSpan)
+      ), noSpan)
+      val cpg  = cpgForProgram(programWithMethod("MY_METHOD", body = Some(body)))
+      val call = cpg.method.nameExact("MY_METHOD").ast.isCall.nameExact("method").head
+
+      // Arguments without names should have empty argumentName
+      val args = call.argument.filter(_.argumentIndex > 0).l
+      args.size shouldBe 2
+      args.forall(_.argumentName.isEmpty) shouldBe true
+    }
   }
 
   "AstCreator literal nodes" should {
