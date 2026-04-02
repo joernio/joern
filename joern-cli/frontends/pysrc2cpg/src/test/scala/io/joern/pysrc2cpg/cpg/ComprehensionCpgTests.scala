@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language.*
 class ComprehensionCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
   "list comprehension" should {
-    lazy val cpg = code("""x = [i * 2 for i in range(10)]""".stripMargin, "test.py")
+    val cpg = code("""x = [i * 2 for i in range(10)]""".stripMargin)
 
     "create a call to range" in {
       cpg.call.codeExact("range(10)").head.name shouldBe "range"
@@ -19,7 +19,7 @@ class ComprehensionCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
   }
 
   "set comprehension" should {
-    lazy val cpg = code("""x = {i * 2 for i in range(10)}""".stripMargin, "test.py")
+    val cpg = code("""x = {i * 2 for i in range(10)}""".stripMargin)
 
     "create a call to range" in {
       cpg.call.codeExact("range(10)").head.name shouldBe "range"
@@ -31,7 +31,7 @@ class ComprehensionCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
   }
 
   "dict comprehension" should {
-    lazy val cpg = code("""x = {k: v for k, v in items.items()}""".stripMargin, "test.py")
+    val cpg = code("""x = {k: v for k, v in items.items()}""".stripMargin)
 
     "create a call to items()" in {
       cpg.call.codeExact("items.items()").head.name shouldBe "items"
@@ -44,7 +44,7 @@ class ComprehensionCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
   }
 
   "generator expression" should {
-    lazy val cpg = code("""x = sum(i * 2 for i in range(10))""".stripMargin, "test.py")
+    val cpg = code("""x = sum(i * 2 for i in range(10))""".stripMargin)
 
     "create a call to sum" in {
       cpg.call.codeExact("sum(i * 2 for i in range(10))").head.name shouldBe "sum"

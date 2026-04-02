@@ -1,11 +1,11 @@
 package io.joern.pysrc2cpg
 
-import PythonAstVisitor.{logger, metaClassSuffix, noLineAndColumn}
+import PythonAstVisitor.{keywordDictArgName, logger, metaClassSuffix, noLineAndColumn}
 import io.joern.pysrc2cpg.memop.*
 import io.joern.pysrc2cpg.memop.MemoryOperation.{Del, Load, Store}
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants.builtinPrefix
 import io.joern.pythonparser.{AstPrinter, ast}
-import io.joern.pythonparser.ast.{Arguments, MatchAs, MatchClass, MatchMapping, MatchOr, MatchSequence, MatchSingleton, MatchStar, MatchValue, iast, iexpr, ipattern, istmt}
+import io.joern.pythonparser.ast.{Arguments, MatchAs, iast, iexpr, istmt}
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants
 import io.joern.x2cpg.{AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
@@ -1243,6 +1243,8 @@ class PythonAstVisitor(
     createBlock(blockStmts, lineAndCol)
   }
 
+  // TODO add case pattern and guard statements to not just as string in the JUMP_TARGET to the CPG
+  // but rather as proper AST constructs.
   def convert(matchStmt: ast.Match): NewNode = {
     val controlStructureNode =
       nodeBuilder.controlStructureNode("match ... : ...", ControlStructureTypes.MATCH, lineAndColOf(matchStmt))
@@ -1261,11 +1263,8 @@ class PythonAstVisitor(
             "case " + printer.print(pattern) + caseStmt.guard.map(g => " if " + printer.print(g)).getOrElse("")
         }
       val jumpTarget = nodeBuilder.jumpNode(jumpTargetCode)
-      val patternNodes = convertMatchPattern(caseStmt.pattern)
-      val guardNodes   = caseStmt.guard.map(convert).toSeq
-      val bodyNodes    = caseStmt.body.map(convert)
-      val allBodyNodes = patternNodes ++ guardNodes ++ bodyNodes
-      jumpTarget :: createBlock(allBodyNodes, lineAndColOf(caseStmt.pattern)) :: Nil
+      val bodyNodes  = caseStmt.body.map(convert)
+      jumpTarget :: createBlock(bodyNodes, lineAndColOf(caseStmt.pattern)) :: Nil
     }
 
     val switchBodyBlock = createBlock(caseBlocks, lineAndColOf(matchStmt))
@@ -1275,23 +1274,6 @@ class PythonAstVisitor(
     addAstChildNodes(controlStructureNode, 2, switchBodyBlock)
 
     controlStructureNode
-  }
-
-  private def convertMatchPattern(pattern: ipattern): Seq[nodes.NewNode] = {
-    pattern match {
-      case MatchValue(value, _)                => Seq(convert(value))
-      case MatchSingleton(value, ap)           => Seq(convert(ast.Constant(value, ap)))
-      case MatchSequence(patterns, _)          => patterns.flatMap(convertMatchPattern).toSeq
-      case MatchMapping(keys, _, _, _)         => keys.map(convert).toSeq
-      case MatchClass(cls, _, _, _, _)         => Seq(convert(cls))
-      case MatchStar(Some(name), _)            => Seq(createIdentifierNode(name, Load, lineAndColOf(pattern)))
-      case MatchAs(Some(inner), Some(name), _) =>
-        convertMatchPattern(inner) ++ Seq(createIdentifierNode(name, Store, lineAndColOf(pattern)))
-      case MatchAs(None, Some(name), _) =>
-        Seq(createIdentifierNode(name, Store, lineAndColOf(pattern)))
-      case MatchOr(patterns, _) => patterns.flatMap(convertMatchPattern).toSeq
-      case _                    => Seq.empty
-    }
   }
 
   def convert(raise: ast.Raise): NewNode = {
@@ -1872,7 +1854,7 @@ class PythonAstVisitor(
         // keyword.arg == None. This is the case for func(**dict) style arguments.
         // We use a synthetic argument name to preserve the unpacked dict as an argument
         // in the CPG so that data flow tracking can follow through it.
-        ("**", convert(keyword.value))
+        (keywordDictArgName, convert(keyword.value))
       }
     }
 
@@ -2202,8 +2184,9 @@ class PythonAstVisitor(
 object PythonAstVisitor {
   private val logger = LoggerFactory.getLogger(getClass)
 
-  val typingPrefix    = "typing."
-  val metaClassSuffix = "<meta>"
+  val typingPrefix      = "typing."
+  val metaClassSuffix   = "<meta>"
+  val keywordDictArgName = "<keyword_dict>"
 
   val noLineAndColumn = LineAndColumn(-1, -1, -1, -1, -1, -1)
 

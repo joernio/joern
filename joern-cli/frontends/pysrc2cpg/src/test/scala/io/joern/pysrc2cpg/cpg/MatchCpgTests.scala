@@ -40,13 +40,13 @@ class MatchCpgTests extends PySrc2CpgFixture() {
           jumpTargetFirstCase.code shouldBe "case [a, b] if 3 == 4"
 
           blockFirstCase.label shouldBe NodeTypes.BLOCK
-          blockFirstCase.astChildren.code.l should contain allOf ("a", "b", "print(1)")
+          blockFirstCase.code shouldBe "print(1)"
 
           jumpTargetSecondCase.label shouldBe NodeTypes.JUMP_TARGET
           jumpTargetSecondCase.code shouldBe "case _ if 5 == 6"
 
           blockSecondCase.label shouldBe NodeTypes.BLOCK
-          blockSecondCase.astChildren.code.l should contain("print(2)")
+          blockSecondCase.code shouldBe "print(2)"
 
           jumpTargetThirdCase.label shouldBe NodeTypes.JUMP_TARGET
           jumpTargetThirdCase.code shouldBe "default"
@@ -84,7 +84,7 @@ class MatchCpgTests extends PySrc2CpgFixture() {
           jumpTargetFirstCase.code shouldBe "case [a, b]"
 
           blockFirstCase.label shouldBe NodeTypes.BLOCK
-          blockFirstCase.astChildren.code.l should contain allOf ("a", "b", "print(1)")
+          blockFirstCase.code shouldBe "print(1)"
 
           jumpTargetSecondCase.label shouldBe NodeTypes.JUMP_TARGET
           jumpTargetSecondCase.code shouldBe "default"
@@ -114,36 +114,22 @@ class MatchCpgTests extends PySrc2CpgFixture() {
         case other => fail(s"Expected 2 CFG successors, but got ${other.size}: $other")
       }
 
-      cpg.call.codeExact("print(1)").head should not be null
-      cpg.call.codeExact("print(2)").head should not be null
-    }
-
-  }
-
-  "match statement with literal pattern" should {
-    val cpg = code("""
-        |def someFunc():
-        |  match x:
-        |    case 42:
-        |      print("found")
-        |""".stripMargin)
-
-    "have pattern value in case block" in {
-      val matchStmt = cpg.controlStructure.head
-      val matchBodyBlock = matchStmt.astChildren.order(2).head
-      matchBodyBlock.label shouldBe NodeTypes.BLOCK
-
-      matchBodyBlock.astChildren.l match {
-        case List(jumpTarget, block) =>
-          jumpTarget.label shouldBe NodeTypes.JUMP_TARGET
-          jumpTarget.code shouldBe "case 42"
-
-          block.label shouldBe NodeTypes.BLOCK
-          block.astChildren.code.l should contain("42")
-          block.astChildren.code.l should contain("print(\"found\")")
-        case other => fail(s"Expected 2 AST children, but got ${other.size}: $other")
+      val print1Block = cpg.block.codeExact("print(1)").head
+      print1Block.cfgOut.l match {
+        case List(methodReturn) =>
+          methodReturn.label shouldBe NodeTypes.METHOD_RETURN
+        case other => fail(s"Expected 1 CFG successor, but got ${other.size}: $other")
       }
+
+      val print2Block = cpg.block.codeExact("print(2)").head
+      print2Block.cfgOut.l match {
+        case List(methodReturn) =>
+          methodReturn.label shouldBe NodeTypes.METHOD_RETURN
+        case other => fail(s"Expected 1 CFG successor, but got ${other.size}: $other")
+      }
+
     }
+
   }
 
 }
