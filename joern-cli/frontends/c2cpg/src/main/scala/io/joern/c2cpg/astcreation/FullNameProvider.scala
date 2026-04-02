@@ -206,7 +206,7 @@ trait FullNameProvider { this: AstCreator =>
     signature: String,
     methodLike: MethodLike
   ): String = {
-    fullName match {
+    fullName.stripSuffix(".") match {
       case f if methodLike.isInstanceOf[ICPPASTLambdaExpression] && (f.contains("[") || f.contains("{")) =>
         s"${X2CpgDefines.UnresolvedNamespace}.$name:$signature"
       case f if methodLike.isInstanceOf[ICPPASTLambdaExpression] && f.isEmpty =>
