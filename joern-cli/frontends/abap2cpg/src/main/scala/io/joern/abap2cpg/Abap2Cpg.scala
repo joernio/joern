@@ -19,8 +19,8 @@ class Abap2Cpg extends X2CpgFrontend {
       FileUtil.usingTemporaryDirectory("abap2cpgOut") { tmpDir =>
         MetaDataPass(cpg, Languages.ABAP, config.inputPath).createAndApply()
 
-        val runner  = new AbapAstGenRunner(config)
-        val result  = runner.execute(tmpDir)
+        val runner = new AbapAstGenRunner(config)
+        val result = runner.execute(tmpDir)
 
         val parsed  = result.parsedFiles
         val skipped = result.skippedFiles

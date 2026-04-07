@@ -14,10 +14,10 @@ class RefEdgePass(cpg: Cpg) extends CpgPass(cpg) {
   private val logger = org.slf4j.LoggerFactory.getLogger(classOf[RefEdgePass])
 
   override def run(diffGraph: DiffGraphBuilder): Unit = {
-    var totalEdges = 0
+    var totalEdges       = 0
     var totalIdentifiers = 0
-    var totalDecls = 0
-    var methodCount = 0
+    var totalDecls       = 0
+    var methodCount      = 0
 
     logger.info(s"RefEdgePass: Starting with ${cpg.method.size} methods")
 
@@ -57,6 +57,8 @@ class RefEdgePass(cpg: Cpg) extends CpgPass(cpg) {
       }
     }
 
-    logger.info(s"RefEdgePass: Created $totalEdges REF edges for $totalIdentifiers identifiers (${totalDecls} declarations in ${methodCount} methods)")
+    logger.info(
+      s"RefEdgePass: Created $totalEdges REF edges for $totalIdentifiers identifiers (${totalDecls} declarations in ${methodCount} methods)"
+    )
   }
 }

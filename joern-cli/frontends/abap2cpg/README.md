@@ -1,8 +1,27 @@
-# abap2cpg
+# abap2cpg - ABAP Code Property Graph Frontend
 
-An ABAP to CPG (Code Property Graph) converter based on [@abaplint/core](https://github.com/abaplint/abaplint).
+An ABAP to CPG (Code Property Graph) converter for Joern, based on [@abaplint/core](https://github.com/abaplint/abaplint).
 
-This frontend parses ABAP source code and generates code property graphs that can be analyzed using Joern/Ocular for security vulnerabilities, code quality issues, and architectural insights.
+This frontend parses ABAP source code and generates code property graphs using Joern.
+
+## Quick Start
+
+```bash
+# 1. Build the parser and frontend
+cd joern-cli/frontends/abap2cpg
+npm install && npm run build:current
+cd ../../..
+sbt abap2cpg/stage
+
+# 2. Generate CPG
+./abap2cpg.sh /path/to/abap/sources -o cpg.bin
+
+# 3. Analyze in Joern
+joern
+joern> importCpg("cpg.bin")
+joern> cpg.call.name("AUTHORITY_CHECK").l  // Find authorization checks
+joern> cpg.call.name(".*EXEC.*").l         // Find potential command injection
+```
 
 ## Prerequisites
 
@@ -140,16 +159,230 @@ Common options include:
 - `--exclude`: Files or folders to exclude during CPG generation
 - `--exclude-regex`: Regex pattern for files to exclude
 
-## Supported ABAP Constructs
+## Usage Examples
 
-Currently supported:
-- **Method definitions** (class methods and instance methods)
-- **Method implementations** with body analysis
-- **FORM routines** (subroutines)
-- **Function modules**
-- **Parameters** (IMPORTING, EXPORTING, CHANGING, RETURNING)
-- **Statement-level analysis** with token information
-- **Position tracking** (line and column information)
+### Analyzing ABAP Code in Joern
+
+After generating a CPG, load it in Joern for analysis:
+
+```bash
+joern
+```
+
+```scala
+// Load the CPG
+importCpg("cpg.bin")
+
+// Find all method calls
+cpg.call.name.l
+
+// Find potential SQL injection sinks
+cpg.call.name(".*EXEC.*|.*QUERY.*").l
+```
+
+## Development
+
+### Running Tests
+
+```bash
+# Run all tests
+sbt "project abap2cpg" test
+
+# Run specific test suite
+sbt "project abap2cpg" "testOnly io.joern.abap2cpg.passes.AstCreatorTests"
+
+# Run with detailed output
+sbt "project abap2cpg" "testOnly io.joern.abap2cpg.passes.AstCreatorTests -- -oF"
+```
+
+**Current Test Coverage:**
+- 149 tests, 100% passing
+- 70 AstCreator tests (node creation, edges, properties)
+- 47 Security statement tests
+- 27 Integration tests
+- 5 Parser tests
+
+
+### Debugging
+
+```bash
+# Enable debug logging
+export ABAP2CPG_DEBUG=1
+./abap2cpg.sh /path/to/source -o cpg.bin
+
+# Test parser directly
+cd joern-cli/frontends/abap2cpg
+node parse-abap.js /path/to/file.abap
+
+# Inspect intermediate AST in sbt console
+sbt "project abap2cpg" console
+scala> import io.joern.abap2cpg.parser.*
+scala> val parser = new AbapJsonParser()
+scala> val result = parser.parseFile(Path.of("test.abap.json"))
+```
+
+## CPG Nodes and Edges
+
+### Currently Generated Nodes
+
+**File Structure:**
+- `FILE` - Source file node
+- `NAMESPACE_BLOCK` - Namespace block (global namespace)
+- `NAMESPACE` - Namespace node
+
+**Type Declarations:**
+- `TYPE_DECL` - Class definitions
+  - Properties: name, fullName, isExternal, filename
+  - Line/column information from source
+
+**Methods:**
+- `METHOD` - Method definitions
+  - Properties: name, fullName, signature, filename, isExternal
+  - Line/column information
+  - Signature format: `(param_types) -> return_type`
+
+**Parameters:**
+- `METHOD_PARAMETER_IN` - Input parameters (IMPORTING, CHANGING input)
+  - Properties: name, code, typeFullName, evaluationStrategy, index, order
+  - BY_VALUE or BY_REFERENCE evaluation strategy
+- `METHOD_PARAMETER_OUT` - Output parameters (EXPORTING, CHANGING output)
+  - Same properties as PARAMETER_IN
+- `METHOD_RETURN` - Return value (RETURNING parameter)
+  - Properties: evaluationStrategy, typeFullName, code
+
+**Variables:**
+- `LOCAL` - Local variables (DATA declarations)
+  - Properties: name, code, typeFullName, order
+  - Line/column information
+
+**Blocks:**
+- `BLOCK` - Method body blocks
+  - typeFullName: "void"
+
+**Expressions:**
+- `IDENTIFIER` - Variable/parameter references
+  - Properties: name, code, typeFullName, argumentIndex, order
+  - Line/column information
+- `LITERAL` - Literal values (strings, numbers)
+  - Properties: code, typeFullName, argumentIndex, order
+  - typeFullName: "STRING", "NUMBER", etc.
+- `FIELD_IDENTIFIER` - Field identifiers in field access operations
+  - Properties: canonicalName, code, argumentIndex, order
+
+**Calls:**
+- `CALL` - Method calls and operators
+  - Properties: name, code, methodFullName, typeFullName, dispatchType, order
+  - dispatchType: STATIC_DISPATCH or DYNAMIC_DISPATCH
+  - Operators: assignment, fieldAccess, indirectFieldAccess, addition, subtraction, multiplication, division, indirection
+  - Line/column information
+
+### Currently Generated Edges
+
+**AST Structure:**
+- `AST` - Tree structure edges connecting parents to children
+  - ORDER property for sibling ordering
+
+**Arguments:**
+- `ARGUMENT` - Connects CALL to argument expressions
+  - Properties: argumentIndex (1-based), argumentName (for named parameters)
+
+**Receiver:**
+- `RECEIVER` - Connects CALL to receiver object (for instance methods)
+  - argumentIndex: 0
+
+**Variable References:**
+- `REF` - Connects IDENTIFIER to declaration (LOCAL, PARAMETER_IN, etc.)
+  - Created by RefEdgePass
+
+**Control Flow:**
+- `CFG` - Control flow edges between statements
+  - Basic sequential flow only (no branching yet)
+
+### Not Yet Generated Nodes
+
+**Control Flow:**
+- `CONTROL_STRUCTURE` - IF, LOOP, CASE, TRY blocks
+- `JUMP_TARGET` - Labels for jumps
+- `UNKNOWN` - Fallback for unrecognized constructs
+
+**Type System:**
+- `TYPE` - Type definitions
+- `TYPE_PARAMETER` - Generic type parameters
+- `TYPE_ARGUMENT` - Instantiated type arguments
+
+**Annotations:**
+- `ANNOTATION` - ABAP annotations
+- `ANNOTATION_PARAMETER` - Annotation parameters
+
+**Comments:**
+- `COMMENT` - Code comments
+
+### Not Yet Generated Edges
+
+**Type Information:**
+- `EVAL_TYPE` - Type evaluation results
+- `INHERITS_FROM` - Class inheritance relationships
+- `BINDS_TO` - Interface implementation
+
+**Control Flow:**
+- `TRUE` / `FALSE` - Conditional branch edges
+- `REACHING_DEF` - Reaching definitions
+
+**Dataflow:**
+- Currently relies on built-in dataflow engine
+- No custom dataflow edges
+
+**Call Graph:**
+- Currently relies on built-in call graph construction
+- No custom call edges
+
+### Possible Future Extensions
+
+**Additional Nodes:**
+- `MEMBER` - Class fields/attributes
+- `MODIFIER` - Access modifiers (PUBLIC, PRIVATE, PROTECTED)
+- `ARRAY_INITIALIZER` - Internal table initializations
+- `CLOSURE_BINDING` - Captures for nested contexts
+
+**Additional Edges:**
+- `CONTAINS` - Containment relationships
+- `SOURCE_FILE` - Links to source file
+- `VTABLE` - Virtual method table for inheritance
+- `ALIAS` - Aliasing relationships
+
+### Known Limitations
+
+1. **No control flow structures** - IF, LOOP, CASE not yet implemented
+2. **Limited type inference** - Using "ANY" placeholder for all types
+3. **No class inheritance** - INHERITS_FROM edges not created
+4. **No ABAP SQL** - SELECT, INSERT, UPDATE not parsed yet
+5. **Basic operators only** - Missing logical and comparison operators
+
+## Contributing
+
+Contributions welcome! Priority areas:
+
+**High Priority:**
+- Control flow structures (IF, LOOP, CASE, TRY)
+- Type inference system
+- ABAP SQL support (SELECT, INSERT, UPDATE, DELETE)
+
+**Medium Priority:**
+- Class inheritance (INHERITS_FROM edges)
+- Internal tables operations (LOOP AT, READ TABLE)
+- More operator support (logical, comparison, string)
+
+**Low Priority:**
+- Interface implementation (BINDS_TO edges)
+- Screen fields and events
+- ALV operations
+
+## Resources
+
+**ABAP Documentation:**
+- [Official ABAP Documentation](https://help.sap.com/doc/abapdocu_latest_index_htm/latest/en-US/index.htm)
+- [@abaplint/core](https://github.com/abaplint/abaplint) - Parser library
+- [ABAP Language Reference](https://help.sap.com/doc/abapdocu_latest_index_htm/latest/en-US/index.htm?file=abenabap.htm)
 
 ## How it works
 
@@ -187,18 +420,53 @@ The generated CPG can then be analyzed using Joern/Ocular for:
 
 ## Architecture
 
+### Pipeline Overview
+
 ```
 ABAP Source (.abap)
     ↓
-parse-abap.js (@abaplint/core)
+[1] parse-abap.js (@abaplint/core)
     ↓
-JSON AST
+JSON AST (raw tokens + structure)
     ↓
-AbapJsonParser (Scala)
+[2] AbapJsonParser (Scala)
     ↓
-Intermediate AST
+Intermediate AST (typed nodes)
     ↓
-AstCreationPass
+[3] AstCreator (trait-based modules)
     ↓
 Code Property Graph (.bin)
+```
+
+### Module Structure
+
+The codebase follows a trait-based architecture (refactored April 2026):
+
+```
+abap2cpg/
+├── parser/
+│   ├── AbapAstGenRunner.scala      # Invokes Node.js parser
+│   ├── AbapJsonParser.scala        # JSON → Intermediate AST
+│   └── AbapIntermediateAst.scala   # AST data structures
+│
+├── astcreation/
+│   ├── AstCreator.scala            # Main orchestrator (126 lines)
+│   ├── AstHelpers.scala            # Code generation utilities
+│   │
+│   ├── declarations/
+│   │   ├── AstForDeclarationsCreator.scala   # Methods, types
+│   │   └── AstForParametersCreator.scala     # Parameters, locals
+│   │
+│   ├── expressions/
+│   │   ├── AstForExpressionsCreator.scala    # Expression dispatcher
+│   │   ├── AstForCallsCreator.scala          # Call expressions
+│   │   └── AstForSimpleExpressionsCreator.scala  # Identifiers, literals
+│   │
+│   └── statements/
+│       └── AstForStatementsCreator.scala     # Assignments, declarations
+│
+└── passes/
+    ├── AstCreationPass.scala       # CPG creation pass
+    ├── RefEdgePass.scala           # Variable reference edges
+    └── NamespacePass.scala         # Namespace creation
 ```

@@ -8,18 +8,9 @@ object AbapIntermediateAst {
 
   case class Position(row: Int, col: Int)
 
-  case class TextSpan(
-    start: Option[Position] = None,
-    end: Option[Position] = None,
-    code: String = ""
-  )
+  case class TextSpan(start: Option[Position] = None, end: Option[Position] = None, code: String = "")
 
-  case class Parameter(
-    name: String,
-    typeName: String,
-    isValue: Boolean = false,
-    isOptional: Boolean = false
-  )
+  case class Parameter(name: String, typeName: String, isValue: Boolean = false, isOptional: Boolean = false)
 
   case class MethodParameters(
     importing: Seq[Parameter] = Seq.empty,
@@ -45,10 +36,7 @@ object AbapIntermediateAst {
     span: TextSpan
   ) extends AbapNode
 
-  case class StatementList(
-    statements: Seq[AbapNode],
-    span: TextSpan
-  ) extends AbapNode
+  case class StatementList(statements: Seq[AbapNode], span: TextSpan) extends AbapNode
 
   case class CallExpr(
     targetName: String,
@@ -58,17 +46,15 @@ object AbapIntermediateAst {
     span: TextSpan
   ) extends AbapNode
 
-  case class Argument(
-    name: Option[String],
-    value: AbapNode
-  )
+  case class Argument(name: Option[String], value: AbapNode)
 
-  case class IdentifierExpr(name: String, span: TextSpan) extends AbapNode
-  case class LiteralExpr(value: String, literalType: String, span: TextSpan) extends AbapNode
-  case class AssignmentStmt(target: AbapNode, value: AbapNode, span: TextSpan) extends AbapNode
+  case class IdentifierExpr(name: String, span: TextSpan)                                 extends AbapNode
+  case class LiteralExpr(value: String, literalType: String, span: TextSpan)              extends AbapNode
+  case class AssignmentStmt(target: AbapNode, value: AbapNode, span: TextSpan)            extends AbapNode
   case class OperatorCall(operatorName: String, arguments: Seq[AbapNode], span: TextSpan) extends AbapNode
-  case class FieldAccessExpr(target: AbapNode, fieldName: String, span: TextSpan) extends AbapNode
-  case class DataDeclaration(name: String, typeName: String, initialValue: Option[AbapNode] = None, span: TextSpan) extends AbapNode
+  case class FieldAccessExpr(target: AbapNode, fieldName: String, span: TextSpan)         extends AbapNode
+  case class DataDeclaration(name: String, typeName: String, initialValue: Option[AbapNode] = None, span: TextSpan)
+      extends AbapNode
 
   case class ProgramRoot(
     fileName: String,

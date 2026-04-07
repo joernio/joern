@@ -4,7 +4,7 @@ import io.joern.abap2cpg.astcreation.AstHelpers
 import io.joern.abap2cpg.parser.AbapIntermediateAst.*
 import io.joern.abap2cpg.passes.AstCreator
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
+import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 
 /** Methods for creating call expression nodes (method calls, operators, field access) */
@@ -14,7 +14,7 @@ trait AstForCallsCreator { this: AstCreator & AstHelpers =>
   protected def astForCall(callExpr: CallExpr, order: Int, className: Option[String]): Ast = {
     val methodFullName = (callExpr.targetName.isEmpty, callExpr.methodName) match {
       case (true, Some(method)) if method.startsWith("<operator>") =>
-        method  // operators are never class-qualified
+        method // operators are never class-qualified
       case (true, Some(method)) =>
         className match {
           case Some(cls) => s"$cls::$method"
@@ -25,7 +25,7 @@ trait AstForCallsCreator { this: AstCreator & AstHelpers =>
     }
 
     val code = (callExpr.targetName.isEmpty, callExpr.methodName) match {
-      case (true, Some(method))  => s"${method}()"
+      case (true, Some(method)) => s"${method}()"
       case (false, Some(method)) =>
         val arrow = if (callExpr.isStatic) "=>" else "->"
         s"${callExpr.targetName}${arrow}${method}()"
@@ -70,9 +70,9 @@ trait AstForCallsCreator { this: AstCreator & AstHelpers =>
       arg.name.foreach { paramName =>
         argAst.root.foreach {
           case expr: NewIdentifier => expr.argumentName(paramName)
-          case expr: NewLiteral => expr.argumentName(paramName)
-          case expr: NewCall => expr.argumentName(paramName)
-          case _ => ()
+          case expr: NewLiteral    => expr.argumentName(paramName)
+          case expr: NewCall       => expr.argumentName(paramName)
+          case _                   => ()
         }
       }
 
@@ -98,7 +98,7 @@ trait AstForCallsCreator { this: AstCreator & AstHelpers =>
 
     // fieldAccess and indirectFieldAccess require a FIELD_IDENTIFIER as the second argument.
     val argAsts = opCall.operatorName match {
-      case "<operator>.fieldAccess" | "<operator>.indirectFieldAccess" if opCall.arguments.size == 2 =>
+      case Operators.fieldAccess | Operators.indirectFieldAccess if opCall.arguments.size == 2 =>
         val targetAst = astForExpression(opCall.arguments(0), 1, className)
         val fieldName = opCall.arguments(1) match {
           case IdentifierExpr(name, _) => name
@@ -122,9 +122,9 @@ trait AstForCallsCreator { this: AstCreator & AstHelpers =>
   /** Create field access call */
   protected def astForFieldAccess(fieldAccess: FieldAccessExpr, order: Int): Ast = {
     val callNode = NewCall()
-      .name("<operator>.fieldAccess")
+      .name(Operators.fieldAccess)
       .code(s"${codeFromExpr(fieldAccess.target)}-${fieldAccess.fieldName}")
-      .methodFullName("<operator>.fieldAccess")
+      .methodFullName(Operators.fieldAccess)
       .typeFullName("ANY")
       .dispatchType("STATIC_DISPATCH")
       .order(order)

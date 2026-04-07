@@ -12,8 +12,7 @@ import scala.util.{Failure, Success, Try}
 object AbapAstGenRunner {
   private val logger = LoggerFactory.getLogger(getClass)
 
-  private object astGenMetaData
-      extends AstGenProgramMetaData(name = "abapgen", configPrefix = "abap2cpg")
+  private object astGenMetaData extends AstGenProgramMetaData(name = "abapgen", configPrefix = "abap2cpg")
 }
 
 class AbapAstGenRunner(config: Config) extends AstGenRunner(AbapAstGenRunner.astGenMetaData, config) {

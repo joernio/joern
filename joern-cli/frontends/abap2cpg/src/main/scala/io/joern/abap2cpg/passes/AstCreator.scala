@@ -29,51 +29,51 @@ class AstCreator(val program: ProgramRoot, filename: String)(implicit val withSc
   protected def code(node: AbapNode): String = codeFromExpr(node)
 
   protected def line(node: AbapNode): Option[Int] = node match {
-    case n: MethodDef => n.span.start.map(_.row)
-    case n: CallExpr => n.span.start.map(_.row)
-    case n: AssignmentStmt => n.span.start.map(_.row)
-    case n: OperatorCall => n.span.start.map(_.row)
+    case n: MethodDef       => n.span.start.map(_.row)
+    case n: CallExpr        => n.span.start.map(_.row)
+    case n: AssignmentStmt  => n.span.start.map(_.row)
+    case n: OperatorCall    => n.span.start.map(_.row)
     case n: DataDeclaration => n.span.start.map(_.row)
-    case n: IdentifierExpr => n.span.start.map(_.row)
-    case n: LiteralExpr => n.span.start.map(_.row)
+    case n: IdentifierExpr  => n.span.start.map(_.row)
+    case n: LiteralExpr     => n.span.start.map(_.row)
     case n: FieldAccessExpr => n.span.start.map(_.row)
-    case _ => None
+    case _                  => None
   }
 
   protected def column(node: AbapNode): Option[Int] = node match {
-    case n: MethodDef => n.span.start.map(_.col)
-    case n: CallExpr => n.span.start.map(_.col)
-    case n: AssignmentStmt => n.span.start.map(_.col)
-    case n: OperatorCall => n.span.start.map(_.col)
+    case n: MethodDef       => n.span.start.map(_.col)
+    case n: CallExpr        => n.span.start.map(_.col)
+    case n: AssignmentStmt  => n.span.start.map(_.col)
+    case n: OperatorCall    => n.span.start.map(_.col)
     case n: DataDeclaration => n.span.start.map(_.col)
-    case n: IdentifierExpr => n.span.start.map(_.col)
-    case n: LiteralExpr => n.span.start.map(_.col)
+    case n: IdentifierExpr  => n.span.start.map(_.col)
+    case n: LiteralExpr     => n.span.start.map(_.col)
     case n: FieldAccessExpr => n.span.start.map(_.col)
-    case _ => None
+    case _                  => None
   }
 
   protected def lineEnd(node: AbapNode): Option[Int] = node match {
-    case n: MethodDef => n.span.end.map(_.row)
-    case n: CallExpr => n.span.end.map(_.row)
-    case n: AssignmentStmt => n.span.end.map(_.row)
-    case n: OperatorCall => n.span.end.map(_.row)
+    case n: MethodDef       => n.span.end.map(_.row)
+    case n: CallExpr        => n.span.end.map(_.row)
+    case n: AssignmentStmt  => n.span.end.map(_.row)
+    case n: OperatorCall    => n.span.end.map(_.row)
     case n: DataDeclaration => n.span.end.map(_.row)
-    case n: IdentifierExpr => n.span.end.map(_.row)
-    case n: LiteralExpr => n.span.end.map(_.row)
+    case n: IdentifierExpr  => n.span.end.map(_.row)
+    case n: LiteralExpr     => n.span.end.map(_.row)
     case n: FieldAccessExpr => n.span.end.map(_.row)
-    case _ => None
+    case _                  => None
   }
 
   protected def columnEnd(node: AbapNode): Option[Int] = node match {
-    case n: MethodDef => n.span.end.map(_.col)
-    case n: CallExpr => n.span.end.map(_.col)
-    case n: AssignmentStmt => n.span.end.map(_.col)
-    case n: OperatorCall => n.span.end.map(_.col)
+    case n: MethodDef       => n.span.end.map(_.col)
+    case n: CallExpr        => n.span.end.map(_.col)
+    case n: AssignmentStmt  => n.span.end.map(_.col)
+    case n: OperatorCall    => n.span.end.map(_.col)
     case n: DataDeclaration => n.span.end.map(_.col)
-    case n: IdentifierExpr => n.span.end.map(_.col)
-    case n: LiteralExpr => n.span.end.map(_.col)
+    case n: IdentifierExpr  => n.span.end.map(_.col)
+    case n: LiteralExpr     => n.span.end.map(_.col)
     case n: FieldAccessExpr => n.span.end.map(_.col)
-    case _ => None
+    case _                  => None
   }
 
   /** Main entry point - creates the full CPG for a program */

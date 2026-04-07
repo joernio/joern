@@ -40,7 +40,7 @@ trait AstForDeclarationsCreator {
     scope.pushNewMethodScope(fullName, method.name, blockNode, None)
 
     // Add parameters
-    var paramOrder = 1
+    var paramOrder    = 1
     val parameterAsts = scala.collection.mutable.ArrayBuffer[Ast]()
 
     // IMPORTING parameters
@@ -80,10 +80,13 @@ trait AstForDeclarationsCreator {
         scope.addVariable(returnParam.name, localNode, returnParam.typeName, VariableScopeManager.ScopeType.MethodScope)
         (createMethodReturn(returnParam), Some(Ast(localNode)))
       case None =>
-        (NewMethodReturn()
-          .evaluationStrategy(EvaluationStrategies.BY_REFERENCE)
-          .typeFullName("void")
-          .code("void"), None)
+        (
+          NewMethodReturn()
+            .evaluationStrategy(EvaluationStrategies.BY_REFERENCE)
+            .typeFullName("void")
+            .code("void"),
+          None
+        )
     }
 
     // Create body block with statements
@@ -94,7 +97,7 @@ trait AstForDeclarationsCreator {
 
     // Add RETURNING local to block if it exists
     val allBlockChildren = returningLocalAst.toSeq ++ stmtAsts
-    val blockAst = Ast(blockNode).withChildren(allBlockChildren)
+    val blockAst         = Ast(blockNode).withChildren(allBlockChildren)
 
     scope.popScope()
 
@@ -105,8 +108,8 @@ trait AstForDeclarationsCreator {
   protected def createSignature(params: MethodParameters): String = {
     val importingTypes = params.importing.map(_.typeName).mkString(", ")
     val exportingTypes = params.exporting.map(_.typeName).mkString(", ")
-    val changingTypes = params.changing.map(_.typeName).mkString(", ")
-    val returnType = params.returning.map(_.typeName).getOrElse("void")
+    val changingTypes  = params.changing.map(_.typeName).mkString(", ")
+    val returnType     = params.returning.map(_.typeName).getOrElse("void")
 
     val allParams = Seq(importingTypes, exportingTypes, changingTypes)
       .filter(_.nonEmpty)

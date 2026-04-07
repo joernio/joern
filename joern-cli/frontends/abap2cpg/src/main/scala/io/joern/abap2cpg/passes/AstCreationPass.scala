@@ -10,8 +10,7 @@ import org.slf4j.LoggerFactory
 import java.nio.file.Paths
 import scala.util.{Failure, Success}
 
-class AstCreationPass(cpg: Cpg, jsonFiles: List[String], config: Config)
-    extends ForkJoinParallelCpgPass[String](cpg) {
+class AstCreationPass(cpg: Cpg, jsonFiles: List[String], config: Config) extends ForkJoinParallelCpgPass[String](cpg) {
 
   private val logger = LoggerFactory.getLogger(classOf[AstCreationPass])
   private val parser = AbapJsonParser()
@@ -25,7 +24,7 @@ class AstCreationPass(cpg: Cpg, jsonFiles: List[String], config: Config)
       case Success(program) =>
         logger.debug(s"Generating CPG for: ${program.fileName}")
         val astCreator = new AstCreator(program, program.fileName)
-        val generated = astCreator.createAst()
+        val generated  = astCreator.createAst()
         diffGraph.absorb(generated)
       case Failure(exception) =>
         logger.warn(s"Failed to parse '$jsonFile': ${exception.getMessage}")

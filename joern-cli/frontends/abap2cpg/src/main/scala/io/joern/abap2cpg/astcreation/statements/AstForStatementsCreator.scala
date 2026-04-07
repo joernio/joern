@@ -7,6 +7,7 @@ import io.joern.abap2cpg.parser.AbapIntermediateAst.*
 import io.joern.abap2cpg.passes.AstCreator
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.VariableScopeManager
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.*
 
 /** Methods for creating statement ASTs */
@@ -53,9 +54,9 @@ trait AstForStatementsCreator {
   /** Create an assignment call */
   protected def astForAssignment(assignStmt: AssignmentStmt, order: Int, className: Option[String]): Ast = {
     val callNode = NewCall()
-      .name("<operator>.assignment")
+      .name(Operators.assignment)
       .code(s"${codeFromExpr(assignStmt.target)} = ${codeFromExpr(assignStmt.value)}")
-      .methodFullName("<operator>.assignment")
+      .methodFullName(Operators.assignment)
       .typeFullName("ANY")
       .dispatchType("STATIC_DISPATCH")
       .order(order)
@@ -64,7 +65,7 @@ trait AstForStatementsCreator {
       callNode.lineNumber(pos.row).columnNumber(pos.col)
     }
 
-    val leftAst = astForExpression(assignStmt.target, 1, className)
+    val leftAst  = astForExpression(assignStmt.target, 1, className)
     val rightAst = astForExpression(assignStmt.value, 2, className)
 
     callAst(callNode, Seq(leftAst, rightAst))

@@ -1,16 +1,23 @@
 package io.joern.abap2cpg.passes
 
 import io.shiftleft.codepropertygraph.generated.{Cpg, PropertyNames}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Local, Method, MethodParameterIn, MethodReturn, StoredNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  Call,
+  Identifier,
+  Local,
+  Method,
+  MethodParameterIn,
+  MethodReturn,
+  StoredNode
+}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 
 /** Type inference pass for ABAP.
   *
   * Propagates type information through the CPG:
-  * 1. Identifiers get types from their declarations (LOCAL, METHOD_PARAMETER_IN)
-  * 2. Calls get types from method return types
-  * 3. Assignments propagate types from RHS to LHS
+  *   1. Identifiers get types from their declarations (LOCAL, METHOD_PARAMETER_IN) 2. Calls get types from method
+  *      return types 3. Assignments propagate types from RHS to LHS
   *
   * After this pass, TypeEvalPass can create EVAL_TYPE edges from nodes to TYPE nodes.
   */
@@ -74,7 +81,9 @@ class AbapTypeInferencePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cp
     call.name match {
       case "<operator>.assignment" =>
         // Assignment returns the type of RHS
-        call.argument.argumentIndex(2).headOption
+        call.argument
+          .argumentIndex(2)
+          .headOption
           .flatMap(_.propertyOption(PropertyNames.TypeFullName))
           .getOrElse("ANY")
 
