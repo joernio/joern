@@ -263,14 +263,115 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForLayoutRequirementSyntax(node: LayoutRequirementSyntax): Ast                 = notHandledYet(node)
 
   private def astForMatchingPatternConditionSyntax(node: MatchingPatternConditionSyntax): Ast = {
-    val lhsAst = astForNode(node.pattern)
-    val rhsAst = astForNode(node.initializer.value)
+    val initValue = node.initializer.value
 
-    val tpe       = Defines.Bool
-    val op        = Operators.equals
-    val callNode_ = createStaticCallNode(node, code(node), op, op, tpe)
-    val argAsts   = List(lhsAst, rhsAst)
-    callAst(callNode_, argAsts)
+    // Detect tuple pattern variants
+    val maybeTuplePattern: Option[TuplePatternSyntax] = node.pattern match {
+      case tp: TuplePatternSyntax => Some(tp)
+      case vb: ValueBindingPatternSyntax =>
+        vb.pattern match {
+          case tp: TuplePatternSyntax => Some(tp)
+          case _                      => None
+        }
+      case _ => None
+    }
+
+    val maybeTupleExpr: Option[TupleExprSyntax] = node.pattern match {
+      case ep: ExpressionPatternSyntax =>
+        ep.expression match {
+          case te: TupleExprSyntax => Some(te)
+          case _                   => None
+        }
+      case vb: ValueBindingPatternSyntax =>
+        vb.pattern match {
+          case ep: ExpressionPatternSyntax =>
+            ep.expression match {
+              case te: TupleExprSyntax => Some(te)
+              case _                   => None
+            }
+          case _ => None
+        }
+      case _ => None
+    }
+
+    (maybeTuplePattern, maybeTupleExpr) match {
+      case (Some(tuplePat), _) =>
+        astForTuplePatternInConditionContext(node, tuplePat, initValue)
+      case (_, Some(tupleExpr)) =>
+        astForTupleExprInConditionContext(node, tupleExpr, initValue)
+      case _ =>
+        // Original behavior for non-tuple patterns
+        val lhsAst    = astForNode(node.pattern)
+        val rhsAst    = astForNode(initValue)
+        val tpe       = Defines.Bool
+        val op        = Operators.equals
+        val callNode_ = createStaticCallNode(node, code(node), op, op, tpe)
+        val argAsts   = List(lhsAst, rhsAst)
+        callAst(callNode_, argAsts)
+    }
+  }
+
+  /** De-sugars a tuple in an if-case / guard-case condition.
+    *
+    * Creates a block: { <tmp> = initValue; ...desugarAsts... } where the de-sugaring is provided by `desugarFn`.
+    *
+    * Locals are added to `localAstParentStack.head`. For `if` conditions this is the IF control structure node. For
+    * `guard` conditions this is the enclosing method/block scope (matching existing `guard let` behavior).
+    */
+  private def astForTupleInConditionContext(
+    node: SwiftNode,
+    initValue: SwiftNode,
+    desugarFn: String => List[Ast]
+  ): Ast = {
+    val blockNode_ = blockNode(node)
+    scope.pushNewBlockScope(blockNode_)
+    localAstParentStack.push(blockNode_)
+
+    val tmpName      = scopeLocalUniqueName("tmp")
+    val tmpLocalNode = localNode(node, tmpName, tmpName, Defines.Any).order(0)
+    diffGraph.addEdge(localAstParentStack.head, tmpLocalNode, EdgeTypes.AST)
+    scope.addVariable(tmpName, tmpLocalNode, Defines.Any, VariableScopeManager.ScopeType.BlockScope)
+
+    val tmpIdentNode = identifierNode(node, tmpName, tmpName, Defines.Any)
+    scope.addVariableReference(tmpName, tmpIdentNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+    val initAst   = astForNode(initValue)
+    val assignAst = createAssignmentCallAst(node, Ast(tmpIdentNode), initAst, s"$tmpName = ${code(initValue)}")
+
+    val desugarAsts = desugarFn(tmpName)
+
+    scope.popScope()
+    localAstParentStack.pop()
+
+    blockAst(blockNode_, assignAst +: desugarAsts)
+  }
+
+  private def astForTuplePatternInConditionContext(
+    node: SwiftNode,
+    tuplePat: TuplePatternSyntax,
+    initValue: SwiftNode
+  ): Ast = {
+    astForTupleInConditionContext(
+      node,
+      initValue,
+      tmpName => astsForBindingTuplePattern(tuplePat, tmpName, List.empty, node)
+    )
+  }
+
+  private def astForTupleExprInConditionContext(
+    node: SwiftNode,
+    tupleExpr: TupleExprSyntax,
+    initValue: SwiftNode
+  ): Ast = {
+    astForTupleInConditionContext(
+      node,
+      initValue,
+      tmpName =>
+        if (isBindingTupleExpr(tupleExpr)) {
+          astsForBindingTupleExpr(tupleExpr, tmpName, List.empty, node)
+        } else {
+          List(astForExpressionTuplePattern(tupleExpr, tmpName, List.empty, node))
+        }
+    )
   }
 
   private def astForMemberBlockItemSyntax(node: MemberBlockItemSyntax): Ast = notHandledYet(node)
@@ -305,24 +406,50 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForOptionalBindingConditionSyntax(node: OptionalBindingConditionSyntax): Ast = {
     val typeFullName = node.typeAnnotation.fold(Defines.Any)(t => AstCreatorHelper.cleanType(code(t.`type`)))
 
-    node.pattern match {
-      case ident: IdentifierPatternSyntax =>
-        val tpeFromTypeMap = fullnameProvider.typeFullname(ident)
-        localForOptionalBindingConditionSyntax(node, code(ident.identifier), tpeFromTypeMap.getOrElse(typeFullName))
-      case _ => // do nothing
+    // Detect tuple pattern: Swift parser may produce TuplePatternSyntax or
+    // ExpressionPatternSyntax wrapping TupleExprSyntax for `if let (a, b) = x`
+    val maybeTupleExpr: Option[TupleExprSyntax] = node.pattern match {
+      case tp: TuplePatternSyntax =>
+        // Direct tuple pattern — use TuplePatternInConditionContext
+        return node.initializer match {
+          case Some(init) => astForTuplePatternInConditionContext(node, tp, init.value)
+          case None       => Ast()
+        }
+      case ep: ExpressionPatternSyntax =>
+        ep.expression match {
+          case te: TupleExprSyntax => Some(te)
+          case _                   => None
+        }
+      case _ => None
     }
 
-    val initAst = node.initializer.map(astForNode)
-    if (initAst.isEmpty) {
-      Ast()
-    } else {
-      val patternAst = astForNode(node.pattern)
-      val tpe        = fullnameProvider.typeFullname(node.pattern).getOrElse(typeFullName)
-      registerType(tpe)
-      patternAst.root
-        .collect { case i: NewIdentifier => i }
-        .foreach(_.typeFullName(tpe))
-      createAssignmentCallAst(node, patternAst, initAst.head, code(node))
+    maybeTupleExpr match {
+      case Some(tupleExpr) =>
+        node.initializer match {
+          case Some(init) => astForTupleExprInConditionContext(node, tupleExpr, init.value)
+          case None       => Ast()
+        }
+      case None =>
+        // Original behavior for non-tuple patterns
+        node.pattern match {
+          case ident: IdentifierPatternSyntax =>
+            val tpeFromTypeMap = fullnameProvider.typeFullname(ident)
+            localForOptionalBindingConditionSyntax(node, code(ident.identifier), tpeFromTypeMap.getOrElse(typeFullName))
+          case _ => // do nothing
+        }
+
+        val initAst = node.initializer.map(astForNode)
+        if (initAst.isEmpty) {
+          Ast()
+        } else {
+          val patternAst = astForNode(node.pattern)
+          val tpe        = fullnameProvider.typeFullname(node.pattern).getOrElse(typeFullName)
+          registerType(tpe)
+          patternAst.root
+            .collect { case i: NewIdentifier => i }
+            .foreach(_.typeFullName(tpe))
+          createAssignmentCallAst(node, patternAst, initAst.head, code(node))
+        }
     }
   }
 

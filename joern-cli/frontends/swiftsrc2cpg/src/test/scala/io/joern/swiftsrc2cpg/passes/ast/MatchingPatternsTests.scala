@@ -3,6 +3,10 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
 import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
+import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
+import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.semanticcpg.language.*
 
 class MatchingPatternsTests extends SwiftSrc2CpgSuite {
 
@@ -221,6 +225,160 @@ class MatchingPatternsTests extends SwiftSrc2CpgSuite {
       |}
       |""".stripMargin)
       ???
+    }
+
+    "testIfCaseExpressionTuplePattern" in {
+      val cpg = code("""
+        |func foo(x: (Int, Int)) {
+        |  if case (1, 2) = x {
+        |    print("matched")
+        |  }
+        |}
+        |""".stripMargin)
+      val List(ifNode) = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l
+      val condBlock    = ifNode.condition.isBlock.l.head
+      // Temp local
+      val List(tmpLocal) = condBlock.astChildren.isLocal.l
+      val tmpName        = tmpLocal.name
+      // Temp assignment
+      val List(tmpAssign) = condBlock.astChildren.isCall.nameExact(Operators.assignment).l
+      tmpAssign.code shouldBe s"$tmpName = x"
+      // Equality chain
+      val List(andCall) = condBlock.astChildren.isCall.nameExact(Operators.logicalAnd).l
+      andCall.code shouldBe s"$tmpName.0 == 1 && $tmpName.1 == 2"
+      val List(eq1, eq2) = andCall.argument.isCall.nameExact(Operators.equals).l
+      eq1.code shouldBe s"$tmpName.0 == 1"
+      eq2.code shouldBe s"$tmpName.1 == 2"
+    }
+
+    "testIfCaseBindingTuplePattern" in {
+      val cpg = code("""
+        |func foo(x: (Int, Int)) {
+        |  if case let (a, b) = x {
+        |    print(a)
+        |    print(b)
+        |  }
+        |}
+        |""".stripMargin)
+      val List(ifNode) = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l
+      val condBlock    = ifNode.condition.isBlock.l.head
+      // Temp local + binding locals
+      val tmpName = condBlock.ast.isLocal.name.filter(_.startsWith("<tmp>")).loneElement
+      condBlock.ast.isLocal.nameExact("a").size shouldBe 1
+      condBlock.ast.isLocal.nameExact("b").size shouldBe 1
+      // Temp assignment
+      val allAssigns = condBlock.astChildren.isCall.nameExact(Operators.assignment).l
+      allAssigns.size shouldBe 3
+      allAssigns.head.code shouldBe s"$tmpName = x"
+      // Binding assignments with field accesses
+      val List(assignA) = condBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact(s"a = $tmpName.0").l
+      val List(assignB) = condBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact(s"b = $tmpName.1").l
+      assignA.order shouldBe 2
+      assignB.order shouldBe 3
+    }
+
+    "testIfCaseMixedTuplePattern" in {
+      val cpg = code("""
+        |func foo(x: (Int, Int)) {
+        |  if case (let a, 1) = x {
+        |    print(a)
+        |  }
+        |}
+        |""".stripMargin)
+      val List(ifNode) = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l
+      val condBlock    = ifNode.condition.isBlock.l.head
+      // Temp local + binding local for a
+      val tmpName = condBlock.ast.isLocal.name.filter(_.startsWith("<tmp>")).loneElement
+      condBlock.ast.isLocal.nameExact("a").size shouldBe 1
+      // Temp assignment
+      val allAssigns = condBlock.astChildren.isCall.nameExact(Operators.assignment).l
+      allAssigns.head.code shouldBe s"$tmpName = x"
+      // Binding assignment for a
+      val List(assignA) = condBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact(s"a = $tmpName.0").l
+      assignA.order shouldBe 2
+      // Equality check for second element
+      val List(eqCall) = condBlock.astChildren.isCall.nameExact(Operators.equals).l
+      eqCall.code shouldBe s"$tmpName.1 == 1"
+    }
+
+    "testGuardCaseBindingTuplePattern" in {
+      val cpg = code("""
+        |func foo(x: (Int, Int)) {
+        |  guard case let (a, b) = x else { return }
+        |  print(a)
+        |  print(b)
+        |}
+        |""".stripMargin)
+      val List(methodBlock) = cpg.method.nameExact("foo").block.l
+      // Locals for a and b should be under the enclosing method block (guard scoping)
+      methodBlock.local.nameExact("a").size shouldBe 1
+      methodBlock.local.nameExact("b").size shouldBe 1
+      val List(guardIf) = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l
+      val condBlock     = guardIf.condition.isBlock.l.head
+      // Temp local
+      val tmpName = condBlock.astChildren.isLocal.name.filter(_.startsWith("<tmp>")).loneElement
+      // Temp + binding assignments
+      val allAssigns = condBlock.astChildren.isCall.nameExact(Operators.assignment).l
+      allAssigns.size shouldBe 3
+      allAssigns.head.code shouldBe s"$tmpName = x"
+      // Binding assignments with field accesses
+      val List(assignA) = condBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact(s"a = $tmpName.0").l
+      val List(assignB) = condBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact(s"b = $tmpName.1").l
+      assignA.order shouldBe 2
+      assignB.order shouldBe 3
+    }
+
+    "testIfCaseNestedBindingTuplePattern" in {
+      val cpg = code("""
+        |func foo(x: ((Int, Int), Int)) {
+        |  if case let ((a, b), c) = x {
+        |    print(a)
+        |  }
+        |}
+        |""".stripMargin)
+      val List(ifNode) = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l
+      val condBlock    = ifNode.condition.isBlock.l.head
+      // Tmp local + binding locals
+      val tmpName = condBlock.ast.isLocal.name.filter(_.startsWith("<tmp>")).loneElement
+      condBlock.ast.isLocal.name.toSet shouldBe Set("a", "b", "c", tmpName)
+      // Temp assignment
+      val allAssigns = condBlock.astChildren.isCall.nameExact(Operators.assignment).l
+      allAssigns.head.code shouldBe s"$tmpName = x"
+      // Nested field access: a = <tmp>.0.0, b = <tmp>.0.1, c = <tmp>.1
+      val List(assignA) =
+        condBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact(s"a = $tmpName.0.0").l
+      val List(assignB) =
+        condBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact(s"b = $tmpName.0.1").l
+      val List(assignC) = condBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact(s"c = $tmpName.1").l
+      assignA.order shouldBe 2
+      assignB.order shouldBe 3
+      assignC.order shouldBe 4
+    }
+
+    "testIfLetTuplePattern" in {
+      val cpg = code("""
+        |func foo(x: (Int, Int)?) {
+        |  if let (a, b) = x {
+        |    print(a)
+        |    print(b)
+        |  }
+        |}
+        |""".stripMargin)
+      val List(ifNode) = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l
+      val condBlock    = ifNode.condition.isBlock.l.head
+      // Tmp local + binding locals
+      val tmpName = condBlock.ast.isLocal.name.filter(_.startsWith("<tmp>")).loneElement
+      condBlock.ast.isLocal.nameExact("a").size shouldBe 1
+      condBlock.ast.isLocal.nameExact("b").size shouldBe 1
+      // Temp + binding assignments
+      val allAssigns = condBlock.astChildren.isCall.nameExact(Operators.assignment).l
+      allAssigns.size shouldBe 3
+      allAssigns.head.code shouldBe s"$tmpName = x"
+      // Binding assignments with field accesses
+      val List(assignA) = condBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact(s"a = $tmpName.0").l
+      val List(assignB) = condBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact(s"b = $tmpName.1").l
+      assignA.order shouldBe 2
+      assignB.order shouldBe 3
     }
 
   }

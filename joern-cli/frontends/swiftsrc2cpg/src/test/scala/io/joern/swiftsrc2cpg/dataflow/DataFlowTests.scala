@@ -1402,6 +1402,71 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
+  "DataFlowIfCaseTupleBindingLet" should {
+    val cpg = code("""
+      |func source() -> Int { return 42 }
+      |func sink(x: Int) {}
+      |
+      |func testFlow() {
+      |  let t: (Int, Int) = (source(), 0)
+      |  if case let (a, b) = t {
+      |    sink(x: a)
+      |  }
+      |}
+      |""".stripMargin)
+
+    "find flow from source through 'if case let (a, b):' to sink via first component" in {
+      implicit val callResolver: NoResolve.type = NoResolve
+      val source                                = cpg.call.nameExact("source")
+      val sink                                  = cpg.call.nameExact("sink").argument.codeExact("a")
+      val flows                                 = sink.reachableByFlows(source)
+
+      flows.map(flowToResultPairs).toSetMutable shouldBe
+        Set(
+          List(
+            ("source()", 6),
+            ("(source(), 0)", 6),
+            ("let t: (Int, Int) = (source(), 0)", 6),
+            ("<tmp>0 = t", 7),
+            ("a = <tmp>0.0", 7),
+            ("sink(x: a)", 8)
+          )
+        )
+    }
+  }
+
+  "DataFlowGuardCaseTupleBindingLet" should {
+    val cpg = code("""
+      |func source() -> Int { return 42 }
+      |func sink(x: Int) {}
+      |
+      |func testFlow() {
+      |  let t: (Int, Int) = (0, source())
+      |  guard case let (a, b) = t else { return }
+      |  sink(x: b)
+      |}
+      |""".stripMargin)
+
+    "find flow from source through 'guard case let (a, b):' to sink via second component" in {
+      implicit val callResolver: NoResolve.type = NoResolve
+      val source                                = cpg.call.nameExact("source")
+      val sink                                  = cpg.call.nameExact("sink").argument.codeExact("b")
+      val flows                                 = sink.reachableByFlows(source)
+
+      flows.map(flowToResultPairs).toSetMutable shouldBe
+        Set(
+          List(
+            ("source()", 6),
+            ("(0, source())", 6),
+            ("let t: (Int, Int) = (0, source())", 6),
+            ("<tmp>0 = t", 7),
+            ("b = <tmp>0.1", 7),
+            ("sink(x: b)", 8)
+          )
+        )
+    }
+  }
+
 }
 
 class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
