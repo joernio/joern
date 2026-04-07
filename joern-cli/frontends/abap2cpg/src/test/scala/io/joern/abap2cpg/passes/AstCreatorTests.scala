@@ -16,7 +16,8 @@ class AstCreatorTests extends AbapCpgFixture {
 
     "produce exact parameter names from the source" in {
       val cpg = cpgForProgram(
-        programWithMethod("MY_METHOD",
+        programWithMethod(
+          "MY_METHOD",
           importing = Seq(Parameter("IV_NAME", "string"), Parameter("IV_FLAG", "abap_bool"))
         )
       )
@@ -33,9 +34,7 @@ class AstCreatorTests extends AbapCpgFixture {
     }
 
     "not produce parameter names containing spaces or punctuation" in {
-      val cpg = cpgForProgram(
-        programWithMethod("MY_METHOD", importing = Seq(Parameter("IV_X", "i")))
-      )
+      val cpg = cpgForProgram(programWithMethod("MY_METHOD", importing = Seq(Parameter("IV_X", "i"))))
       cpg.parameter.name.filter(n => n.contains(" ") || n.contains("(") || n.contains(")")).l shouldBe empty
     }
 
@@ -146,26 +145,24 @@ class AstCreatorTests extends AbapCpgFixture {
     }
 
     "set signature with returning param" in {
-      val cpg = cpgForProgram(
-        programWithMethod("MY_METHOD", returning = Some(Parameter("RV_RESULT", "string")))
-      )
+      val cpg = cpgForProgram(programWithMethod("MY_METHOD", returning = Some(Parameter("RV_RESULT", "string"))))
       cpg.method.nameExact("MY_METHOD").head.signature shouldBe "() -> string"
     }
 
     "set lineNumber when span has position" in {
-      val span    = TextSpan(start = Some(Position(row = 6, col = 5)))
-      val program = programWithMethod("MY_METHOD").copy(methods = Seq(
-        MethodDef("MY_METHOD", None, false, MethodParameters(), span = span)
-      ))
+      val span = TextSpan(start = Some(Position(row = 6, col = 5)))
+      val program = programWithMethod("MY_METHOD").copy(methods =
+        Seq(MethodDef("MY_METHOD", None, false, MethodParameters(), span = span))
+      )
       val cpg = cpgForProgram(program)
       cpg.method.nameExact("MY_METHOD").head.lineNumber shouldBe Some(6)
     }
 
     "set columnNumber when span has position" in {
-      val span    = TextSpan(start = Some(Position(row = 6, col = 5)))
-      val program = programWithMethod("MY_METHOD").copy(methods = Seq(
-        MethodDef("MY_METHOD", None, false, MethodParameters(), span = span)
-      ))
+      val span = TextSpan(start = Some(Position(row = 6, col = 5)))
+      val program = programWithMethod("MY_METHOD").copy(methods =
+        Seq(MethodDef("MY_METHOD", None, false, MethodParameters(), span = span))
+      )
       val cpg = cpgForProgram(program)
       cpg.method.nameExact("MY_METHOD").head.columnNumber shouldBe Some(5)
     }
@@ -199,13 +196,15 @@ class AstCreatorTests extends AbapCpgFixture {
     }
 
     "set evaluationStrategy BY_VALUE when isValue=true" in {
-      val cpg   = cpgForProgram(programWithMethod("MY_METHOD", importing = Seq(Parameter("IV_INPUT", "string", isValue = true))))
+      val cpg =
+        cpgForProgram(programWithMethod("MY_METHOD", importing = Seq(Parameter("IV_INPUT", "string", isValue = true))))
       val param = cpg.method.nameExact("MY_METHOD").parameter.nameExact("IV_INPUT").head
       param.evaluationStrategy shouldBe "BY_VALUE"
     }
 
     "set evaluationStrategy BY_REFERENCE when isValue=false" in {
-      val cpg   = cpgForProgram(programWithMethod("MY_METHOD", importing = Seq(Parameter("IV_INPUT", "string", isValue = false))))
+      val cpg =
+        cpgForProgram(programWithMethod("MY_METHOD", importing = Seq(Parameter("IV_INPUT", "string", isValue = false))))
       val param = cpg.method.nameExact("MY_METHOD").parameter.nameExact("IV_INPUT").head
       param.evaluationStrategy shouldBe "BY_REFERENCE"
     }
@@ -217,9 +216,8 @@ class AstCreatorTests extends AbapCpgFixture {
     }
 
     "set sequential indices for multiple parameters" in {
-      val cpg    = cpgForProgram(programWithMethod("MY_METHOD",
-        importing = Seq(Parameter("IV_A", "i"), Parameter("IV_B", "i"))
-      ))
+      val cpg =
+        cpgForProgram(programWithMethod("MY_METHOD", importing = Seq(Parameter("IV_A", "i"), Parameter("IV_B", "i"))))
       val params = cpg.method.nameExact("MY_METHOD").parameter.l.sortBy(_.index)
       params(0).name shouldBe "IV_A"
       params(0).index shouldBe 1
@@ -239,10 +237,7 @@ class AstCreatorTests extends AbapCpgFixture {
       val cpg = cpgForProgram(
         programWithMethod(
           "MY_METHOD",
-          importing = Seq(
-            Parameter("IV_INPUT", "string"),
-            Parameter("IV_FLAG", "abap_bool")
-          )
+          importing = Seq(Parameter("IV_INPUT", "string"), Parameter("IV_FLAG", "abap_bool"))
         )
       )
       val method = cpg.method.nameExact("MY_METHOD").head
@@ -251,25 +246,14 @@ class AstCreatorTests extends AbapCpgFixture {
     }
 
     "have parameters with correct types" in {
-      val cpg = cpgForProgram(
-        programWithMethod(
-          "MY_METHOD",
-          importing = Seq(Parameter("IV_INPUT", "string"))
-        )
-      )
+      val cpg   = cpgForProgram(programWithMethod("MY_METHOD", importing = Seq(Parameter("IV_INPUT", "string"))))
       val param = cpg.method.nameExact("MY_METHOD").parameter.nameExact("IV_INPUT").head
       param.typeFullName shouldBe "string"
     }
 
     "have parameters with correct indices" in {
       val cpg = cpgForProgram(
-        programWithMethod(
-          "MY_METHOD",
-          importing = Seq(
-            Parameter("IV_FIRST", "string"),
-            Parameter("IV_SECOND", "int")
-          )
-        )
+        programWithMethod("MY_METHOD", importing = Seq(Parameter("IV_FIRST", "string"), Parameter("IV_SECOND", "int")))
       )
       val params = cpg.method.nameExact("MY_METHOD").parameter.l
       params.find(_.name == "IV_FIRST").map(_.index) shouldBe Some(1)
@@ -287,13 +271,8 @@ class AstCreatorTests extends AbapCpgFixture {
     }
 
     "create a local variable accessible via method.local" in {
-      val body = StatementList(
-        statements = Seq(
-          DataDeclaration("LV_RESULT", "string", span = noSpan)
-        ),
-        span = noSpan
-      )
-      val cpg = cpgForProgram(programWithMethod("MY_METHOD", body = Some(body)))
+      val body = StatementList(statements = Seq(DataDeclaration("LV_RESULT", "string", span = noSpan)), span = noSpan)
+      val cpg  = cpgForProgram(programWithMethod("MY_METHOD", body = Some(body)))
 
       val method = cpg.method.nameExact("MY_METHOD").head
       method.local.size shouldBe 1
@@ -338,11 +317,17 @@ class AstCreatorTests extends AbapCpgFixture {
     }
 
     "link call arguments via ARGUMENT edges" in {
-      val body = StatementList(Seq(
-        CallExpr("obj", Some("run"),
-          arguments = Seq(Argument(Some("iv_x"), IdentifierExpr("lv_val", noSpan))),
-          span = noSpan)
-      ), noSpan)
+      val body = StatementList(
+        Seq(
+          CallExpr(
+            "obj",
+            Some("run"),
+            arguments = Seq(Argument(Some("iv_x"), IdentifierExpr("lv_val", noSpan))),
+            span = noSpan
+          )
+        ),
+        noSpan
+      )
       val cpg  = cpgForProgram(programWithMethod("MY_METHOD", body = Some(body)))
       val call = cpg.method.nameExact("MY_METHOD").ast.isCall.nameExact("run").head
       // receiver "obj" is argument index 0; "lv_val" is index 1
@@ -352,14 +337,20 @@ class AstCreatorTests extends AbapCpgFixture {
     }
 
     "set argumentName for named parameters" in {
-      val body = StatementList(Seq(
-        CallExpr("obj", Some("method"),
-          arguments = Seq(
-            Argument(Some("iv_name"), IdentifierExpr("lv_value", noSpan)),
-            Argument(Some("iv_count"), LiteralExpr("42", "NUMBER", noSpan))
-          ),
-          span = noSpan)
-      ), noSpan)
+      val body = StatementList(
+        Seq(
+          CallExpr(
+            "obj",
+            Some("method"),
+            arguments = Seq(
+              Argument(Some("iv_name"), IdentifierExpr("lv_value", noSpan)),
+              Argument(Some("iv_count"), LiteralExpr("42", "NUMBER", noSpan))
+            ),
+            span = noSpan
+          )
+        ),
+        noSpan
+      )
       val cpg  = cpgForProgram(programWithMethod("MY_METHOD", body = Some(body)))
       val call = cpg.method.nameExact("MY_METHOD").ast.isCall.nameExact("method").head
 
@@ -377,14 +368,20 @@ class AstCreatorTests extends AbapCpgFixture {
     }
 
     "handle arguments without names (positional)" in {
-      val body = StatementList(Seq(
-        CallExpr("obj", Some("method"),
-          arguments = Seq(
-            Argument(None, IdentifierExpr("lv_value", noSpan)),
-            Argument(None, LiteralExpr("42", "NUMBER", noSpan))
-          ),
-          span = noSpan)
-      ), noSpan)
+      val body = StatementList(
+        Seq(
+          CallExpr(
+            "obj",
+            Some("method"),
+            arguments = Seq(
+              Argument(None, IdentifierExpr("lv_value", noSpan)),
+              Argument(None, LiteralExpr("42", "NUMBER", noSpan))
+            ),
+            span = noSpan
+          )
+        ),
+        noSpan
+      )
       val cpg  = cpgForProgram(programWithMethod("MY_METHOD", body = Some(body)))
       val call = cpg.method.nameExact("MY_METHOD").ast.isCall.nameExact("method").head
 
@@ -398,50 +395,56 @@ class AstCreatorTests extends AbapCpgFixture {
   "AstCreator literal nodes" should {
 
     "create a LITERAL node as child of an assignment" in {
-      val body = StatementList(Seq(
-        AssignmentStmt(IdentifierExpr("LV_X", noSpan), LiteralExpr("42", "NUMBER", noSpan), noSpan)
-      ), noSpan)
+      val body = StatementList(
+        Seq(AssignmentStmt(IdentifierExpr("LV_X", noSpan), LiteralExpr("42", "NUMBER", noSpan), noSpan)),
+        noSpan
+      )
       val cpg = cpgForProgram(programWithMethod("MY_METHOD", body = Some(body)))
       cpg.method.nameExact("MY_METHOD").ast.isLiteral.code.l shouldBe List("42")
     }
 
     "set typeFullName NUMBER on integer literals" in {
-      val body = StatementList(Seq(
-        AssignmentStmt(IdentifierExpr("LV_X", noSpan), LiteralExpr("42", "NUMBER", noSpan), noSpan)
-      ), noSpan)
+      val body = StatementList(
+        Seq(AssignmentStmt(IdentifierExpr("LV_X", noSpan), LiteralExpr("42", "NUMBER", noSpan), noSpan)),
+        noSpan
+      )
       val cpg = cpgForProgram(programWithMethod("MY_METHOD", body = Some(body)))
       cpg.method.nameExact("MY_METHOD").ast.isLiteral.typeFullName.l shouldBe List("NUMBER")
     }
 
     "set typeFullName STRING on quoted string literals" in {
-      val body = StatementList(Seq(
-        AssignmentStmt(IdentifierExpr("LV_X", noSpan), LiteralExpr("'hello'", "STRING", noSpan), noSpan)
-      ), noSpan)
+      val body = StatementList(
+        Seq(AssignmentStmt(IdentifierExpr("LV_X", noSpan), LiteralExpr("'hello'", "STRING", noSpan), noSpan)),
+        noSpan
+      )
       val cpg = cpgForProgram(programWithMethod("MY_METHOD", body = Some(body)))
       cpg.method.nameExact("MY_METHOD").ast.isLiteral.typeFullName.l shouldBe List("STRING")
     }
 
     "set typeFullName STRING on string template literals (|...|)" in {
-      val body = StatementList(Seq(
-        AssignmentStmt(IdentifierExpr("LV_X", noSpan), LiteralExpr("||", "STRING", noSpan), noSpan)
-      ), noSpan)
+      val body = StatementList(
+        Seq(AssignmentStmt(IdentifierExpr("LV_X", noSpan), LiteralExpr("||", "STRING", noSpan), noSpan)),
+        noSpan
+      )
       val cpg = cpgForProgram(programWithMethod("MY_METHOD", body = Some(body)))
       cpg.method.nameExact("MY_METHOD").ast.isLiteral.code.l shouldBe List("||")
       cpg.method.nameExact("MY_METHOD").ast.isLiteral.typeFullName.l shouldBe List("STRING")
     }
 
     "set code to the exact literal text" in {
-      val body = StatementList(Seq(
-        AssignmentStmt(IdentifierExpr("LV_X", noSpan), LiteralExpr("'test value'", "STRING", noSpan), noSpan)
-      ), noSpan)
+      val body = StatementList(
+        Seq(AssignmentStmt(IdentifierExpr("LV_X", noSpan), LiteralExpr("'test value'", "STRING", noSpan), noSpan)),
+        noSpan
+      )
       val cpg = cpgForProgram(programWithMethod("MY_METHOD", body = Some(body)))
       cpg.method.nameExact("MY_METHOD").ast.isLiteral.head.code shouldBe "'test value'"
     }
 
     "not produce literals for abap_false / abap_true (they are identifiers)" in {
-      val body = StatementList(Seq(
-        AssignmentStmt(IdentifierExpr("LV_BOOL", noSpan), IdentifierExpr("abap_false", noSpan), noSpan)
-      ), noSpan)
+      val body = StatementList(
+        Seq(AssignmentStmt(IdentifierExpr("LV_BOOL", noSpan), IdentifierExpr("abap_false", noSpan), noSpan)),
+        noSpan
+      )
       val cpg = cpgForProgram(programWithMethod("MY_METHOD", body = Some(body)))
       cpg.method.nameExact("MY_METHOD").ast.isLiteral.l shouldBe empty
       cpg.method.nameExact("MY_METHOD").ast.isIdentifier.nameExact("abap_false").size shouldBe 1
@@ -452,9 +455,7 @@ class AstCreatorTests extends AbapCpgFixture {
 
     "create call nodes for method calls" in {
       val body = StatementList(
-        statements = Seq(
-          CallExpr(targetName = "HELPER", methodName = Some("RUN"), span = noSpan)
-        ),
+        statements = Seq(CallExpr(targetName = "HELPER", methodName = Some("RUN"), span = noSpan)),
         span = noSpan
       )
       val cpg    = cpgForProgram(programWithMethod("MY_METHOD", body = Some(body)))
@@ -491,13 +492,7 @@ class AstCreatorTests extends AbapCpgFixture {
     }
 
     "create accessible parameters for class methods" in {
-      val cpg = cpgForProgram(
-        programWithClass(
-          "MY_CLASS",
-          "MY_METHOD",
-          importing = Seq(Parameter("IV_VALUE", "int"))
-        )
-      )
+      val cpg = cpgForProgram(programWithClass("MY_CLASS", "MY_METHOD", importing = Seq(Parameter("IV_VALUE", "int"))))
       val method = cpg.method.fullNameExact("MY_CLASS::MY_METHOD").head
       method.parameter.size shouldBe 1
       method.parameter.name.head shouldBe "IV_VALUE"
@@ -555,32 +550,39 @@ class AstCreatorTests extends AbapCpgFixture {
 
     "create a REF edge from an identifier referencing the return variable to the LOCAL node" in {
       val body = StatementList(
-        statements = Seq(
-          AssignmentStmt(IdentifierExpr("RV_RESULT", noSpan), LiteralExpr("42", "string", noSpan), noSpan)
-        ),
+        statements =
+          Seq(AssignmentStmt(IdentifierExpr("RV_RESULT", noSpan), LiteralExpr("42", "string", noSpan), noSpan)),
         span = noSpan
       )
       val cpg = cpgForProgram(
-        programWithMethod("MY_METHOD",
+        programWithMethod(
+          "MY_METHOD",
           returning = Some(Parameter("RV_RESULT", "string", isValue = true)),
-          body = Some(body))
+          body = Some(body)
+        )
       )
       val local = cpg.method.nameExact("MY_METHOD").local.nameExact("RV_RESULT").head
-      cpg.method.nameExact("MY_METHOD").ast.isIdentifier.nameExact("RV_RESULT")
-        .flatMap(_._refOut).headOption shouldBe Some(local)
+      cpg.method
+        .nameExact("MY_METHOD")
+        .ast
+        .isIdentifier
+        .nameExact("RV_RESULT")
+        .flatMap(_._refOut)
+        .headOption shouldBe Some(local)
     }
 
     "handle parameter name 'return' correctly" in {
       val body = StatementList(
-        statements = Seq(
-          AssignmentStmt(IdentifierExpr("return", noSpan), LiteralExpr("value", "string", noSpan), noSpan)
-        ),
+        statements =
+          Seq(AssignmentStmt(IdentifierExpr("return", noSpan), LiteralExpr("value", "string", noSpan), noSpan)),
         span = noSpan
       )
       val cpg = cpgForProgram(
-        programWithMethod("MY_METHOD",
+        programWithMethod(
+          "MY_METHOD",
           returning = Some(Parameter("return", "string", isValue = true)),
-          body = Some(body))
+          body = Some(body)
+        )
       )
       // LOCAL node should exist with name "return"
       val local = cpg.method.nameExact("MY_METHOD").local.nameExact("return").head
@@ -615,11 +617,7 @@ class AstCreatorTests extends AbapCpgFixture {
         span = noSpan
       )
       val cpg = cpgForProgram(
-        programWithMethod(
-          "MY_METHOD",
-          importing = Seq(Parameter("IV_INPUT", "string")),
-          body = Some(body)
-        )
+        programWithMethod("MY_METHOD", importing = Seq(Parameter("IV_INPUT", "string")), body = Some(body))
       )
 
       val param      = cpg.method.nameExact("MY_METHOD").parameter.nameExact("IV_INPUT").head

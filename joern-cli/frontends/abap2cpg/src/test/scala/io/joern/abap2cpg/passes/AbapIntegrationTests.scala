@@ -48,18 +48,35 @@ class AbapIntegrationTests extends Abap2CpgSuite {
   "CPG method names" should {
 
     "contain exactly the defined class methods" in {
-      val cpg         = code(abapCode, fileName)
+      val cpg          = code(abapCode, fileName)
       val classMethods = cpg.method.fullName.filter(_.startsWith("zcl_simple::")).l
       classMethods.sorted shouldBe List("zcl_simple::add", "zcl_simple::greet", "zcl_simple::run")
     }
 
     "not contain any ABAP keyword as a method name" in {
-      val abapKeywords = Set("VALUE", "REDUCE", "COND", "NEW", "FOR", "WHILE", "LET", "IN",
-                             "INIT", "NEXT", "TYPE", "IMPORTING", "EXPORTING", "RETURNING",
-                             "CHANGING", "OPTIONAL", "DEFAULT", "DATA")
-      val cpg = code(abapCode, fileName)
+      val abapKeywords = Set(
+        "VALUE",
+        "REDUCE",
+        "COND",
+        "NEW",
+        "FOR",
+        "WHILE",
+        "LET",
+        "IN",
+        "INIT",
+        "NEXT",
+        "TYPE",
+        "IMPORTING",
+        "EXPORTING",
+        "RETURNING",
+        "CHANGING",
+        "OPTIONAL",
+        "DEFAULT",
+        "DATA"
+      )
+      val cpg         = code(abapCode, fileName)
       val methodNames = cpg.method.name.toSet
-      val overlap = methodNames.intersect(abapKeywords)
+      val overlap     = methodNames.intersect(abapKeywords)
       withClue(s"Methods named after ABAP keywords: $overlap") {
         overlap shouldBe empty
       }
@@ -67,9 +84,8 @@ class AbapIntegrationTests extends Abap2CpgSuite {
 
     "not contain method names with spaces or special characters (no garbage names)" in {
       val cpg = code(abapCode, fileName)
-      val garbageNames = cpg.method.name.filter(n =>
-        n.contains(" ") || n.contains("=") || n.contains("(") || n.contains(")")
-      ).l
+      val garbageNames =
+        cpg.method.name.filter(n => n.contains(" ") || n.contains("=") || n.contains("(") || n.contains(")")).l
       withClue(s"Garbage method names: $garbageNames") {
         garbageNames shouldBe empty
       }
@@ -105,10 +121,11 @@ class AbapIntegrationTests extends Abap2CpgSuite {
     }
 
     "not contain ABAP keywords as parameter names" in {
-      val abapParamKeywords = Set("TYPE", "IMPORTING", "EXPORTING", "RETURNING",
-                                   "OPTIONAL", "DEFAULT", "TO", "(", ")", ".", ":")
+      val abapParamKeywords =
+        Set("TYPE", "IMPORTING", "EXPORTING", "RETURNING", "OPTIONAL", "DEFAULT", "TO", "(", ")", ".", ":")
       val cpg = code(abapCode, fileName)
-      val paramNames = cpg.method.fullName.filter(_.startsWith("zcl_simple::"))
+      val paramNames = cpg.method.fullName
+        .filter(_.startsWith("zcl_simple::"))
         .flatMap(_.split("::").lastOption)
         .flatMap(name => cpg.method.fullNameExact(s"zcl_simple::$name").parameter.name.l)
         .toSet
@@ -120,9 +137,8 @@ class AbapIntegrationTests extends Abap2CpgSuite {
 
     "not contain parameter names with spaces or punctuation" in {
       val cpg = code(abapCode, fileName)
-      val badParams = cpg.parameter.name.filter(n =>
-        n.contains(" ") || n.contains("=") || n.contains("(") || n.contains(")")
-      ).l
+      val badParams =
+        cpg.parameter.name.filter(n => n.contains(" ") || n.contains("=") || n.contains("(") || n.contains(")")).l
       withClue(s"Garbage parameter names: $badParams") {
         badParams shouldBe empty
       }
@@ -308,7 +324,7 @@ class AbapIntegrationTests extends Abap2CpgSuite {
     "set signature as '() -> <type>' for methods with returning" in {
       // greet returns string, add returns i — signature reflects that
       val cpg = code(abapCode, fileName)
-      cpg.method.fullNameExact("zcl_simple::greet").head.signature should include ("->")
+      cpg.method.fullNameExact("zcl_simple::greet").head.signature should include("->")
     }
 
     "set lineNumber from source position" in {

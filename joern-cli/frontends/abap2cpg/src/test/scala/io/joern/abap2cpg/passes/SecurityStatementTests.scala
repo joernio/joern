@@ -16,7 +16,9 @@ class SecurityStatementTests extends AbapCpgFixture {
       val body = StatementList(
         statements = Seq(
           // DELETE DYNPRO program screen
-          CallExpr("DELETE_DYNPRO", None,
+          CallExpr(
+            "DELETE_DYNPRO",
+            None,
             Seq(
               Argument(Some("PROGRAM"), IdentifierExpr("lv_program", noSpan)),
               Argument(Some("SCREEN"), IdentifierExpr("lv_screen", noSpan))
@@ -28,7 +30,7 @@ class SecurityStatementTests extends AbapCpgFixture {
         span = noSpan
       )
 
-      val cpg = cpgForProgram(programWithMethod("TEST", body = Some(body)))
+      val cpg  = cpgForProgram(programWithMethod("TEST", body = Some(body)))
       val call = cpg.call.name("DELETE_DYNPRO").head
 
       call.name shouldBe "DELETE_DYNPRO"
@@ -46,7 +48,9 @@ class SecurityStatementTests extends AbapCpgFixture {
     "have PROGRAM and SCREEN arguments with names" in {
       val body = StatementList(
         statements = Seq(
-          CallExpr("DELETE_DYNPRO", None,
+          CallExpr(
+            "DELETE_DYNPRO",
+            None,
             Seq(
               Argument(Some("PROGRAM"), IdentifierExpr("prog_name", noSpan)),
               Argument(Some("SCREEN"), LiteralExpr("100", "NUMBER", noSpan))
@@ -58,7 +62,7 @@ class SecurityStatementTests extends AbapCpgFixture {
         span = noSpan
       )
 
-      val cpg = cpgForProgram(programWithMethod("TEST", body = Some(body)))
+      val cpg  = cpgForProgram(programWithMethod("TEST", body = Some(body)))
       val call = cpg.call.name("DELETE_DYNPRO").head
 
       // After ARGUMENT_NAME fix (P0), this should work:
@@ -78,10 +82,10 @@ class SecurityStatementTests extends AbapCpgFixture {
       val body = StatementList(
         statements = Seq(
           // CALL 'SYSTEM' ID 'COMMAND' FIELD lv_command
-          CallExpr("CALL_SYSTEM_COMMAND", None,
-            Seq(
-              Argument(Some("COMMAND"), IdentifierExpr("lv_command", noSpan))
-            ),
+          CallExpr(
+            "CALL_SYSTEM_COMMAND",
+            None,
+            Seq(Argument(Some("COMMAND"), IdentifierExpr("lv_command", noSpan))),
             isStatic = true,
             span = noSpan
           )
@@ -89,7 +93,7 @@ class SecurityStatementTests extends AbapCpgFixture {
         span = noSpan
       )
 
-      val cpg = cpgForProgram(programWithMethod("TEST", body = Some(body)))
+      val cpg  = cpgForProgram(programWithMethod("TEST", body = Some(body)))
       val call = cpg.call.name("CALL_SYSTEM_COMMAND").head
 
       call.name shouldBe "CALL_SYSTEM_COMMAND"
@@ -104,7 +108,9 @@ class SecurityStatementTests extends AbapCpgFixture {
       val body = StatementList(
         statements = Seq(
           // CALL 'C_SAPGPARAM' ID 'NAME' FIELD lv_name ID 'VALUE' FIELD lv_value
-          CallExpr("C_SAPGPARAM", None,
+          CallExpr(
+            "C_SAPGPARAM",
+            None,
             Seq(
               Argument(Some("NAME"), IdentifierExpr("lv_name", noSpan)),
               Argument(Some("VALUE"), IdentifierExpr("lv_value", noSpan))
@@ -116,7 +122,7 @@ class SecurityStatementTests extends AbapCpgFixture {
         span = noSpan
       )
 
-      val cpg = cpgForProgram(programWithMethod("TEST", body = Some(body)))
+      val cpg  = cpgForProgram(programWithMethod("TEST", body = Some(body)))
       val call = cpg.call.name("C_SAPGPARAM").head
 
       call.name shouldBe "C_SAPGPARAM"
@@ -134,7 +140,9 @@ class SecurityStatementTests extends AbapCpgFixture {
     "preserve ID parameter names" in {
       val body = StatementList(
         statements = Seq(
-          CallExpr("C_RSTRB_READ_BUFFERED", None,
+          CallExpr(
+            "C_RSTRB_READ_BUFFERED",
+            None,
             Seq(
               Argument(Some("FILE"), IdentifierExpr("lv_file", noSpan)),
               Argument(Some("BUFFER"), IdentifierExpr("lv_buffer", noSpan))
@@ -146,7 +154,7 @@ class SecurityStatementTests extends AbapCpgFixture {
         span = noSpan
       )
 
-      val cpg = cpgForProgram(programWithMethod("TEST", body = Some(body)))
+      val cpg  = cpgForProgram(programWithMethod("TEST", body = Some(body)))
       val call = cpg.call.name("C_RSTRB_READ_BUFFERED").head
 
       val args = call.argument.l
@@ -160,10 +168,10 @@ class SecurityStatementTests extends AbapCpgFixture {
     "create CALL node for request->get_form_field" in {
       val body = StatementList(
         statements = Seq(
-          CallExpr("request", Some("get_form_field"),
-            Seq(
-              Argument(Some("name"), LiteralExpr("'username'", "STRING", noSpan))
-            ),
+          CallExpr(
+            "request",
+            Some("get_form_field"),
+            Seq(Argument(Some("name"), LiteralExpr("'username'", "STRING", noSpan))),
             isStatic = false,
             span = noSpan
           )
@@ -171,7 +179,7 @@ class SecurityStatementTests extends AbapCpgFixture {
         span = noSpan
       )
 
-      val cpg = cpgForProgram(programWithMethod("TEST", body = Some(body)))
+      val cpg  = cpgForProgram(programWithMethod("TEST", body = Some(body)))
       val call = cpg.call.name("get_form_field").head
 
       call.name shouldBe "get_form_field"
@@ -185,10 +193,10 @@ class SecurityStatementTests extends AbapCpgFixture {
     "create CALL node for out->print_string" in {
       val body = StatementList(
         statements = Seq(
-          CallExpr("out", Some("print_string"),
-            Seq(
-              Argument(None, IdentifierExpr("lv_output", noSpan))
-            ),
+          CallExpr(
+            "out",
+            Some("print_string"),
+            Seq(Argument(None, IdentifierExpr("lv_output", noSpan))),
             isStatic = false,
             span = noSpan
           )
@@ -196,7 +204,7 @@ class SecurityStatementTests extends AbapCpgFixture {
         span = noSpan
       )
 
-      val cpg = cpgForProgram(programWithMethod("TEST", body = Some(body)))
+      val cpg  = cpgForProgram(programWithMethod("TEST", body = Some(body)))
       val call = cpg.call.name("print_string").head
 
       call.name shouldBe "print_string"
@@ -207,10 +215,10 @@ class SecurityStatementTests extends AbapCpgFixture {
     "create CALL node for escape function" in {
       val body = StatementList(
         statements = Seq(
-          CallExpr("escape", None,
-            Seq(
-              Argument(Some("val"), IdentifierExpr("lv_input", noSpan))
-            ),
+          CallExpr(
+            "escape",
+            None,
+            Seq(Argument(Some("val"), IdentifierExpr("lv_input", noSpan))),
             isStatic = false,
             span = noSpan
           )
@@ -218,7 +226,7 @@ class SecurityStatementTests extends AbapCpgFixture {
         span = noSpan
       )
 
-      val cpg = cpgForProgram(programWithMethod("TEST", body = Some(body)))
+      val cpg  = cpgForProgram(programWithMethod("TEST", body = Some(body)))
       val call = cpg.call.name("escape").head
 
       call.name shouldBe "escape"
@@ -231,17 +239,12 @@ class SecurityStatementTests extends AbapCpgFixture {
 
     "detect MD5 string literal" in {
       val body = StatementList(
-        statements = Seq(
-          AssignmentStmt(
-            IdentifierExpr("lv_algo", noSpan),
-            LiteralExpr("'MD5'", "STRING", noSpan),
-            noSpan
-          )
-        ),
+        statements =
+          Seq(AssignmentStmt(IdentifierExpr("lv_algo", noSpan), LiteralExpr("'MD5'", "STRING", noSpan), noSpan)),
         span = noSpan
       )
 
-      val cpg = cpgForProgram(programWithMethod("TEST", body = Some(body)))
+      val cpg         = cpgForProgram(programWithMethod("TEST", body = Some(body)))
       val md5Literals = cpg.literal.code("'MD5'").l
 
       md5Literals.size shouldBe 1
@@ -250,17 +253,12 @@ class SecurityStatementTests extends AbapCpgFixture {
 
     "detect SHA1 string literal" in {
       val body = StatementList(
-        statements = Seq(
-          AssignmentStmt(
-            IdentifierExpr("lv_algo", noSpan),
-            LiteralExpr("'SHA1'", "STRING", noSpan),
-            noSpan
-          )
-        ),
+        statements =
+          Seq(AssignmentStmt(IdentifierExpr("lv_algo", noSpan), LiteralExpr("'SHA1'", "STRING", noSpan), noSpan)),
         span = noSpan
       )
 
-      val cpg = cpgForProgram(programWithMethod("TEST", body = Some(body)))
+      val cpg          = cpgForProgram(programWithMethod("TEST", body = Some(body)))
       val sha1Literals = cpg.literal.code.l.filter(_.contains("SHA1"))
 
       sha1Literals should not be empty
@@ -269,26 +267,14 @@ class SecurityStatementTests extends AbapCpgFixture {
     "detect multiple weak algorithms" in {
       val body = StatementList(
         statements = Seq(
-          AssignmentStmt(
-            IdentifierExpr("lv_algo1", noSpan),
-            LiteralExpr("'MD5'", "STRING", noSpan),
-            noSpan
-          ),
-          AssignmentStmt(
-            IdentifierExpr("lv_algo2", noSpan),
-            LiteralExpr("'HMACMD5'", "STRING", noSpan),
-            noSpan
-          ),
-          AssignmentStmt(
-            IdentifierExpr("lv_algo3", noSpan),
-            LiteralExpr("'HAVAL128'", "STRING", noSpan),
-            noSpan
-          )
+          AssignmentStmt(IdentifierExpr("lv_algo1", noSpan), LiteralExpr("'MD5'", "STRING", noSpan), noSpan),
+          AssignmentStmt(IdentifierExpr("lv_algo2", noSpan), LiteralExpr("'HMACMD5'", "STRING", noSpan), noSpan),
+          AssignmentStmt(IdentifierExpr("lv_algo3", noSpan), LiteralExpr("'HAVAL128'", "STRING", noSpan), noSpan)
         ),
         span = noSpan
       )
 
-      val cpg = cpgForProgram(programWithMethod("TEST", body = Some(body)))
+      val cpg       = cpgForProgram(programWithMethod("TEST", body = Some(body)))
       val weakAlgos = List("MD5", "HMACMD5", "HAVAL128")
 
       weakAlgos.foreach { algo =>
@@ -305,7 +291,9 @@ class SecurityStatementTests extends AbapCpgFixture {
     "create CALL node with correct methodFullName" in {
       val body = StatementList(
         statements = Seq(
-          CallExpr("cl_gui_frontend_services", Some("execute"),
+          CallExpr(
+            "cl_gui_frontend_services",
+            Some("execute"),
             Seq(
               Argument(Some("application"), IdentifierExpr("lv_app", noSpan)),
               Argument(Some("parameter"), IdentifierExpr("lv_params", noSpan))
@@ -317,7 +305,7 @@ class SecurityStatementTests extends AbapCpgFixture {
         span = noSpan
       )
 
-      val cpg = cpgForProgram(programWithMethod("TEST", body = Some(body)))
+      val cpg  = cpgForProgram(programWithMethod("TEST", body = Some(body)))
       val call = cpg.call.name("execute").head
 
       call.name shouldBe "execute"
@@ -335,7 +323,9 @@ class SecurityStatementTests extends AbapCpgFixture {
     "create OPEN_DATASET CALL node" in {
       val body = StatementList(
         statements = Seq(
-          CallExpr("OPEN_DATASET", None,
+          CallExpr(
+            "OPEN_DATASET",
+            None,
             Seq(
               Argument(Some("FILENAME"), IdentifierExpr("lv_file", noSpan)),
               Argument(Some("FILTER"), IdentifierExpr("lv_filter", noSpan))
@@ -354,10 +344,10 @@ class SecurityStatementTests extends AbapCpgFixture {
     "create READ_DATASET CALL node" in {
       val body = StatementList(
         statements = Seq(
-          CallExpr("READ_DATASET", None,
-            Seq(
-              Argument(Some("FILENAME"), IdentifierExpr("lv_file", noSpan))
-            ),
+          CallExpr(
+            "READ_DATASET",
+            None,
+            Seq(Argument(Some("FILENAME"), IdentifierExpr("lv_file", noSpan))),
             isStatic = true,
             span = noSpan
           )
@@ -372,10 +362,10 @@ class SecurityStatementTests extends AbapCpgFixture {
     "create DELETE_DATASET CALL node" in {
       val body = StatementList(
         statements = Seq(
-          CallExpr("DELETE_DATASET", None,
-            Seq(
-              Argument(Some("FILENAME"), IdentifierExpr("lv_file", noSpan))
-            ),
+          CallExpr(
+            "DELETE_DATASET",
+            None,
+            Seq(Argument(Some("FILENAME"), IdentifierExpr("lv_file", noSpan))),
             isStatic = true,
             span = noSpan
           )
@@ -390,7 +380,9 @@ class SecurityStatementTests extends AbapCpgFixture {
     "create TRANSFER CALL node" in {
       val body = StatementList(
         statements = Seq(
-          CallExpr("TRANSFER", None,
+          CallExpr(
+            "TRANSFER",
+            None,
             Seq(
               Argument(Some("DATA"), IdentifierExpr("lv_data", noSpan)),
               Argument(Some("TO"), IdentifierExpr("lv_file", noSpan))
@@ -409,7 +401,9 @@ class SecurityStatementTests extends AbapCpgFixture {
     "create AUTHORITY_CHECK CALL node" in {
       val body = StatementList(
         statements = Seq(
-          CallExpr("AUTHORITY_CHECK", None,
+          CallExpr(
+            "AUTHORITY_CHECK",
+            None,
             Seq(
               Argument(Some("OBJECT"), LiteralExpr("'S_TCODE'", "STRING", noSpan)),
               Argument(Some("FIELD"), IdentifierExpr("lv_field", noSpan))
@@ -428,7 +422,9 @@ class SecurityStatementTests extends AbapCpgFixture {
     "create GENERATE_SUBROUTINE_POOL CALL node" in {
       val body = StatementList(
         statements = Seq(
-          CallExpr("GENERATE_SUBROUTINE_POOL", None,
+          CallExpr(
+            "GENERATE_SUBROUTINE_POOL",
+            None,
             Seq(
               Argument(Some("POOL"), IdentifierExpr("lv_code", noSpan)),
               Argument(Some("NAME"), IdentifierExpr("lv_prog", noSpan))
@@ -447,10 +443,10 @@ class SecurityStatementTests extends AbapCpgFixture {
     "create CALL_TRANSFORMATION CALL node" in {
       val body = StatementList(
         statements = Seq(
-          CallExpr("CALL_TRANSFORMATION", None,
-            Seq(
-              Argument(None, LiteralExpr("'XSLT_TRANSFORM'", "STRING", noSpan))
-            ),
+          CallExpr(
+            "CALL_TRANSFORMATION",
+            None,
+            Seq(Argument(None, LiteralExpr("'XSLT_TRANSFORM'", "STRING", noSpan))),
             isStatic = true,
             span = noSpan
           )
@@ -465,10 +461,10 @@ class SecurityStatementTests extends AbapCpgFixture {
     "create EDITOR_CALL CALL node" in {
       val body = StatementList(
         statements = Seq(
-          CallExpr("EDITOR_CALL", None,
-            Seq(
-              Argument(Some("REPORT"), IdentifierExpr("lv_prog", noSpan))
-            ),
+          CallExpr(
+            "EDITOR_CALL",
+            None,
+            Seq(Argument(Some("REPORT"), IdentifierExpr("lv_prog", noSpan))),
             isStatic = true,
             span = noSpan
           )
@@ -483,10 +479,10 @@ class SecurityStatementTests extends AbapCpgFixture {
     "create DO_TIMES CALL node" in {
       val body = StatementList(
         statements = Seq(
-          CallExpr("DO_TIMES", None,
-            Seq(
-              Argument(Some("TIMES"), LiteralExpr("10", "NUMBER", noSpan))
-            ),
+          CallExpr(
+            "DO_TIMES",
+            None,
+            Seq(Argument(Some("TIMES"), LiteralExpr("10", "NUMBER", noSpan))),
             isStatic = true,
             span = noSpan
           )
@@ -503,17 +499,11 @@ class SecurityStatementTests extends AbapCpgFixture {
 
     "create CALL node for SXPG_COMMAND_EXECUTE" in {
       val body = StatementList(
-        statements = Seq(
-          CallExpr("SXPG_COMMAND_EXECUTE", None,
-            Seq.empty,
-            isStatic = true,
-            span = noSpan
-          )
-        ),
+        statements = Seq(CallExpr("SXPG_COMMAND_EXECUTE", None, Seq.empty, isStatic = true, span = noSpan)),
         span = noSpan
       )
 
-      val cpg = cpgForProgram(programWithMethod("TEST", body = Some(body)))
+      val cpg  = cpgForProgram(programWithMethod("TEST", body = Some(body)))
       val call = cpg.call.name("SXPG_COMMAND_EXECUTE").head
 
       call.name shouldBe "SXPG_COMMAND_EXECUTE"
@@ -522,13 +512,7 @@ class SecurityStatementTests extends AbapCpgFixture {
 
     "create CALL node for RFC_REMOTE_EXEC" in {
       val body = StatementList(
-        statements = Seq(
-          CallExpr("RFC_REMOTE_EXEC", None,
-            Seq.empty,
-            isStatic = true,
-            span = noSpan
-          )
-        ),
+        statements = Seq(CallExpr("RFC_REMOTE_EXEC", None, Seq.empty, isStatic = true, span = noSpan)),
         span = noSpan
       )
 
@@ -538,13 +522,7 @@ class SecurityStatementTests extends AbapCpgFixture {
 
     "create CALL node for RFC_REMOTE_PIPE" in {
       val body = StatementList(
-        statements = Seq(
-          CallExpr("RFC_REMOTE_PIPE", None,
-            Seq.empty,
-            isStatic = true,
-            span = noSpan
-          )
-        ),
+        statements = Seq(CallExpr("RFC_REMOTE_PIPE", None, Seq.empty, isStatic = true, span = noSpan)),
         span = noSpan
       )
 
@@ -554,13 +532,7 @@ class SecurityStatementTests extends AbapCpgFixture {
 
     "create CALL node for RFC_REMOTE_FILE" in {
       val body = StatementList(
-        statements = Seq(
-          CallExpr("RFC_REMOTE_FILE", None,
-            Seq.empty,
-            isStatic = true,
-            span = noSpan
-          )
-        ),
+        statements = Seq(CallExpr("RFC_REMOTE_FILE", None, Seq.empty, isStatic = true, span = noSpan)),
         span = noSpan
       )
 
@@ -570,13 +542,7 @@ class SecurityStatementTests extends AbapCpgFixture {
 
     "create CALL node for FTP_CONNECT" in {
       val body = StatementList(
-        statements = Seq(
-          CallExpr("FTP_CONNECT", None,
-            Seq.empty,
-            isStatic = true,
-            span = noSpan
-          )
-        ),
+        statements = Seq(CallExpr("FTP_CONNECT", None, Seq.empty, isStatic = true, span = noSpan)),
         span = noSpan
       )
 
@@ -587,10 +553,10 @@ class SecurityStatementTests extends AbapCpgFixture {
     "create CALL node for execute_procedure" in {
       val body = StatementList(
         statements = Seq(
-          CallExpr("obj", Some("execute_procedure"),
-            Seq(
-              Argument(None, IdentifierExpr("lv_sql", noSpan))
-            ),
+          CallExpr(
+            "obj",
+            Some("execute_procedure"),
+            Seq(Argument(None, IdentifierExpr("lv_sql", noSpan))),
             isStatic = false,
             span = noSpan
           )
@@ -598,7 +564,7 @@ class SecurityStatementTests extends AbapCpgFixture {
         span = noSpan
       )
 
-      val cpg = cpgForProgram(programWithMethod("TEST", body = Some(body)))
+      val cpg  = cpgForProgram(programWithMethod("TEST", body = Some(body)))
       val call = cpg.call.name("execute_procedure").head
 
       call.methodFullName shouldBe "obj.execute_procedure"
@@ -607,10 +573,10 @@ class SecurityStatementTests extends AbapCpgFixture {
     "create CALL node for get_persistent_by_query" in {
       val body = StatementList(
         statements = Seq(
-          CallExpr("cl_persistent", Some("get_persistent_by_query"),
-            Seq(
-              Argument(None, IdentifierExpr("lv_query", noSpan))
-            ),
+          CallExpr(
+            "cl_persistent",
+            Some("get_persistent_by_query"),
+            Seq(Argument(None, IdentifierExpr("lv_query", noSpan))),
             isStatic = true,
             span = noSpan
           )
@@ -618,7 +584,7 @@ class SecurityStatementTests extends AbapCpgFixture {
         span = noSpan
       )
 
-      val cpg = cpgForProgram(programWithMethod("TEST", body = Some(body)))
+      val cpg  = cpgForProgram(programWithMethod("TEST", body = Some(body)))
       val call = cpg.call.name("get_persistent_by_query").head
 
       call.methodFullName shouldBe "cl_persistent.get_persistent_by_query"

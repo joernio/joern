@@ -43,21 +43,12 @@ trait AbapCpgFixture extends AnyWordSpec with Matchers {
       name = methodName,
       visibility = None,
       isStatic = false,
-      parameters = MethodParameters(
-        importing = importing,
-        exporting = exporting,
-        changing = changing,
-        returning = returning
-      ),
+      parameters =
+        MethodParameters(importing = importing, exporting = exporting, changing = changing, returning = returning),
       body = body,
       span = noSpan
     )
-    ProgramRoot(
-      fileName = "test.abap",
-      objectType = "PROG",
-      methods = Seq(method),
-      span = noSpan
-    )
+    ProgramRoot(fileName = "test.abap", objectType = "PROG", methods = Seq(method), span = noSpan)
   }
 
   /** Build a ProgramRoot with a class containing one method. */
@@ -75,17 +66,7 @@ trait AbapCpgFixture extends AnyWordSpec with Matchers {
       body = body,
       span = noSpan
     )
-    val classDef = ClassDef(
-      name = className,
-      visibility = "PUBLIC",
-      methods = Seq(method),
-      span = noSpan
-    )
-    ProgramRoot(
-      fileName = "test.abap",
-      objectType = "CLAS",
-      classes = Seq(classDef),
-      span = noSpan
-    )
+    val classDef = ClassDef(name = className, visibility = "PUBLIC", methods = Seq(method), span = noSpan)
+    ProgramRoot(fileName = "test.abap", objectType = "CLAS", classes = Seq(classDef), span = noSpan)
   }
 }
