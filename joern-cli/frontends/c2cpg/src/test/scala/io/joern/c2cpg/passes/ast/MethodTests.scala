@@ -539,5 +539,64 @@ class MethodTests extends C2CpgSuite {
       memberCall.argument.isIdentifier.typeFullName.l shouldBe List("Outer.Inner*")
       memberCall.argument.isFieldIdentifier.code.l shouldBe List("member")
     }
+
+    "have distinct fullNames for extern C class operator overloads" in {
+      val cpg = code(
+        """extern "C" {
+          |  typedef struct _json_value {
+          |    int type;
+          |    inline const struct _json_value &operator [] (int index) const {
+          |      return *this;
+          |    }
+          |    inline const struct _json_value &operator [] (const char * index) const {
+          |      return *this;
+          |    }
+          |  } json_value;
+          |}
+          |""".stripMargin,
+        "test.cpp"
+      )
+      val ops = cpg.method.name("\\[\\].*").fullName.sorted.l
+      ops shouldBe List("_json_value.[]:_json_value&(char*)<const>", "_json_value.[]:_json_value&(int)<const>")
+    }
+
+    "not produce cross-method refs for static members with external definitions" in {
+      val cpg = code(
+        """namespace Opm {
+          |template <class S, unsigned d, unsigned t> class Geom;
+          |template <class S> class Geom<S, 1, 0> {
+          |  enum { numScv = 2 };
+          |public:
+          |  static void init() { for (unsigned i = 0; i < numScv; ++i) scvGeoms_[i] = 0; }
+          |private:
+          |  static int scvGeoms_[numScv];
+          |};
+          |template <class S> int Geom<S, 1, 0>::scvGeoms_[Geom<S, 1, 0>::numScv];
+          |template <class S> class Geom<S, 2, 0> {
+          |  enum { numScv = 3 };
+          |public:
+          |  static void init() { for (unsigned i = 0; i < numScv; ++i) scvGeoms_[i] = 0; }
+          |private:
+          |  static int scvGeoms_[numScv];
+          |};
+          |template <class S> int Geom<S, 2, 0>::scvGeoms_[Geom<S, 2, 0>::numScv];
+          |template <class S> class Geom<S, 3, 0> {
+          |  enum { numScv = 4 };
+          |public:
+          |  static void init() { for (unsigned i = 0; i < numScv; ++i) scvGeoms_[i] = 0; }
+          |private:
+          |  static int scvGeoms_[numScv];
+          |};
+          |template <class S> int Geom<S, 3, 0>::scvGeoms_[Geom<S, 3, 0>::numScv];
+          |}
+          |""".stripMargin,
+        "test.hh"
+      )
+      val initMethods = cpg.method.fullName(".*\\.init.*:void\\(\\)").l
+      initMethods.size shouldBe 3
+      initMethods.foreach { method =>
+        method.block.astChildren.isLocal.nameExact("scvGeoms_").size shouldBe 1
+      }
+    }
   }
 }
