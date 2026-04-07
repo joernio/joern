@@ -343,7 +343,11 @@ trait FullNameProvider { this: AstCreator =>
             Option(fn)
           case Some(function: ICPPFunction) =>
             val fullNameNoSig = replaceQualifiedNameSeparator(replaceOperator(function.getQualifiedName.mkString(".")))
-            val fn = if (function.isExternC) {
+            // For plain extern "C" free functions, use just the unqualified name (C linkage,
+            // no mangling). However, class methods inside extern "C" blocks (ICPPMethod) must
+            // retain their qualified name and signature. Otherwise overloaded operators like
+            // operator[](int) and operator[](const char*) collapse to the same fullName "[]".
+            val fn = if (function.isExternC && !function.isInstanceOf[ICPPMethod]) {
               replaceOperator(function.getName)
             } else {
               val returnTpe = declarator.getParent match {

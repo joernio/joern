@@ -62,6 +62,11 @@ trait AstForTypesCreator { this: AstCreator =>
         Ast(memberNode(declarator, name, code(declarator), tpe))
       case d if isAssignmentFromBrokenMacro(d, declarator) && scope.lookupVariable(name).nonEmpty =>
         Ast()
+      case _ if declarator.getName.isInstanceOf[ICPPASTQualifiedName] =>
+        // Out-of-class static member definition (e.g. `int Foo::bar[N]`).
+        // The member already exists in the class; creating a local here
+        // would pollute the enclosing scope and cause cross-method REF edges.
+        Ast()
       case _ =>
         val tpe  = typeForIASTDeclarator(declaration, declarator, index)
         val code = codeForDeclarator(declaration, declarator)
@@ -310,6 +315,11 @@ trait AstForTypesCreator { this: AstCreator =>
       case a: ICPPASTStaticAssertDeclaration => true
       case declaration: IASTSimpleDeclaration if declaration.getDeclarators.nonEmpty =>
         declaration.getDeclarators.exists {
+          // Out-of-class static member definitions (qualified names like `Foo::bar[N]`) must
+          // not be treated as having an initializer. Processing them would create identifier
+          // nodes at namespace scope via astForConstructorCall, polluting the shared scope
+          // chain and causing cross-method REF edges (NONLOCAL_REF validation errors).
+          case d: IASTDeclarator if d.getName.isInstanceOf[ICPPASTQualifiedName]               => false
           case d: ICPPASTDeclarator if d.getInitializer == null && isCPPClassLike(declaration) => true
           case d: IASTDeclarator if d.getInitializer != null                                   => true
           case arrayDecl: IASTArrayDeclarator                                                  => true
@@ -328,6 +338,9 @@ trait AstForTypesCreator { this: AstCreator =>
       case a: ICPPASTStaticAssertDeclaration => Seq(astForStaticAssert(a))
       case declaration: IASTSimpleDeclaration if declaration.getDeclarators.nonEmpty =>
         declaration.getDeclarators.toList.map {
+          // Skip out-of-class static member definitions; see comment in declHasInit.
+          case d: IASTDeclarator if d.getName.isInstanceOf[ICPPASTQualifiedName] =>
+            Ast()
           case d: ICPPASTDeclarator if d.getInitializer == null && isCPPClassLike(declaration) =>
             astForConstructorCall(d)
           case d: IASTDeclarator if d.getInitializer != null =>
