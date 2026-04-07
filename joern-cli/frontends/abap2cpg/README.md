@@ -55,8 +55,6 @@ cd ../../..
 sbt abap2cpg/compile   # or sbt abap2cpg/stage
 ```
 
-**Important:** Use `sbt abap2cpg/compile` (not `sbt compile` from root), as the root build triggers stage tasks that require all platform binaries.
-
 ### Detailed build steps
 
 #### Step 1: Build the ABAP parser binaries
