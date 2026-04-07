@@ -2184,8 +2184,8 @@ class PythonAstVisitor(
 object PythonAstVisitor {
   private val logger = LoggerFactory.getLogger(getClass)
 
-  val typingPrefix      = "typing."
-  val metaClassSuffix   = "<meta>"
+  val typingPrefix       = "typing."
+  val metaClassSuffix    = "<meta>"
   val keywordDictArgName = "<keyword_dict>"
 
   val noLineAndColumn = LineAndColumn(-1, -1, -1, -1, -1, -1)
