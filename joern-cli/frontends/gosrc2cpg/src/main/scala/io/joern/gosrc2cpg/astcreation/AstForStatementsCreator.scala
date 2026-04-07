@@ -35,12 +35,17 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case BranchStmt     => Seq(astForBranchStatement(statement))
       case BlockStmt      => Seq(astForBlockStatement(statement, argIndex))
       case CaseClause     => astForCaseClause(statement)
+      case CommClause     => astForCommClause(statement)
       case DeclStmt       => astForNode(statement.json(ParserKeys.Decl))
+      case DeferStmt      => Seq(astForDeferStatement(statement))
       case ExprStmt       => astsForExpression(createParserNodeInfo(statement.json(ParserKeys.X)))
       case ForStmt        => Seq(astForForStatement(statement))
+      case GoStmt         => Seq(astForGoStatement(statement))
       case IfStmt         => astForIfStatement(statement)
       case IncDecStmt     => Seq(astForIncDecStatement(statement))
       case RangeStmt      => Seq(astForRangeStatement(statement))
+      case SelectStmt     => Seq(astForSelectStatement(statement))
+      case SendStmt       => Seq(astForSendStatement(statement))
       case SwitchStmt     => Seq(astForSwitchStatement(statement))
       case TypeSwitchStmt => Seq(astForTypeSwitchStatement(statement))
       case ReturnStmt     => Seq(astForReturnStatement(statement))
@@ -51,7 +56,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astForReturnStatement(returnStmt: ParserNodeInfo): Ast = {
-    // TODO: Need to handle the tuple return node handling
     val cpgReturn = returnNode(returnStmt, returnStmt.code)
     val expast = returnStmt
       .json(ParserKeys.Results)
@@ -273,8 +277,49 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         // To update the cache of parserNode with the labelled statement
         Try(createParserNodeInfo(branchStmt.json(ParserKeys.Label)(ParserKeys.Obj)(ParserKeys.Decl)))
         Ast(controlStructureNode(branchStmt, ControlStructureTypes.GOTO, branchStmt.code))
-      case "fallthrough" => // TODO handling for FALLTHROUGH
-        Ast()
+      case "fallthrough" =>
+        Ast(controlStructureNode(branchStmt, "fallthrough", branchStmt.code))
     }
+  }
+
+  private def astForDeferStatement(deferStmt: ParserNodeInfo): Ast = {
+    val callAsts = astForNode(deferStmt.json(ParserKeys.Call))
+    callAsts.headOption.getOrElse(Ast())
+  }
+
+  private def astForGoStatement(goStmt: ParserNodeInfo): Ast = {
+    val callAsts = astForNode(goStmt.json(ParserKeys.Call))
+    callAsts.headOption.getOrElse(Ast())
+  }
+
+  private def astForSendStatement(sendStmt: ParserNodeInfo): Ast = {
+    val channelAst = astForNode(sendStmt.json(ParserKeys.Chan))
+    val valueAst   = astForNode(sendStmt.json(ParserKeys.Value))
+    val arguments  = channelAst ++ valueAst
+    val cNode =
+      callNode(sendStmt, sendStmt.code, Operator.send, Operator.send, DispatchTypes.STATIC_DISPATCH)
+    callAst(cNode, arguments)
+  }
+
+  private def astForSelectStatement(selectStmt: ParserNodeInfo): Ast = {
+    val selectNode = controlStructureNode(selectStmt, ControlStructureTypes.SWITCH, s"select")
+    val stmtAsts   = astsForStatement(createParserNodeInfo(selectStmt.json(ParserKeys.Body)))
+    controlStructureAst(selectNode, None, stmtAsts)
+  }
+
+  private def astForCommClause(commClause: ParserNodeInfo): Seq[Ast] = {
+    val commAst = Try(commClause.json(ParserKeys.Comm)).toOption match {
+      case Some(commJson) =>
+        val commParserNode = createParserNodeInfo(commJson)
+        val jumpTarget     = jumpTargetNode(commClause, "case", s"case ${commParserNode.code}")
+        val commStmtAsts   = astsForStatement(commParserNode).toList
+        Ast(jumpTarget) :: commStmtAsts
+      case _ =>
+        val target = jumpTargetNode(commClause, "default", "default")
+        Seq(Ast(target))
+    }
+
+    val bodyAst = commClause.json(ParserKeys.Body).arr.map(createParserNodeInfo).flatMap(astsForStatement(_)).toList
+    commAst ++: bodyAst
   }
 }

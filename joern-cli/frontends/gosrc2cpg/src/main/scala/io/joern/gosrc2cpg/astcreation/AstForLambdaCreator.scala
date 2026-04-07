@@ -57,10 +57,12 @@ trait AstForLambdaCreator(implicit withSchemaValidation: ValidationMode) { this:
 
   protected def generateLambdaSignature(funcType: ParserNodeInfo): LambdaFunctionMetaData = {
     val genericTypeMethodMap: Map[String, List[String]] = Map()
-    // TODO: While handling the tuple return type we need to handle it here as well.
-    val (returnTypeStr, returnTypeInfo) =
-      getReturnType(funcType.json, genericTypeMethodMap).headOption
-        .getOrElse((Defines.voidTypeName, funcType))
+    val returnTypes = getReturnType(funcType.json, genericTypeMethodMap)
+    val (returnTypeStr, returnTypeInfo) = returnTypes match {
+      case Seq()        => (Defines.voidTypeName, funcType)
+      case Seq(single)  => single
+      case multiple     => (s"(${multiple.map(_._1).mkString(", ")})", multiple.head._2)
+    }
     val methodReturn = methodReturnNode(returnTypeInfo, returnTypeStr)
 
     val params         = funcType.json(ParserKeys.Params)(ParserKeys.List)
