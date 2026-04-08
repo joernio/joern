@@ -122,10 +122,42 @@ class ArrayTests extends PhpCode2CpgFixture {
           assignOne.name shouldBe Operators.assignment
           assignOne.code shouldBe "$foo@tmp-0 = array($val)"
           assignOne.order shouldBe 1
+          inside(assignOne.astChildren.l) { case List(lhsIdentifier: Identifier, rhsBlock: Block) =>
+            lhsIdentifier.name shouldBe "foo@tmp-0"
+            lhsIdentifier.code shouldBe "$foo@tmp-0"
+
+            inside(rhsBlock.astChildren.l) {
+              case List(arrayAssignCall: Call, indexAssignCall: Call, retIdentifier: Identifier) =>
+                arrayAssignCall.name shouldBe Operators.assignment
+                arrayAssignCall.code shouldBe "$foo@tmp-1 = array()"
+
+                indexAssignCall.name shouldBe Operators.assignment
+                indexAssignCall.code shouldBe "$foo@tmp-1[0] = $val"
+
+                retIdentifier.name shouldBe "foo@tmp-1"
+                retIdentifier.code shouldBe "$foo@tmp-1"
+            }
+          }
 
           assignTwo.name shouldBe Operators.assignment
           assignTwo.code shouldBe "$foo@tmp-2 = array(2 => $foo@tmp-0)"
           assignTwo.order shouldBe 2
+          inside(assignTwo.astChildren.l) { case List(lhsIdentifier: Identifier, rhsBlock: Block) =>
+            lhsIdentifier.name shouldBe "foo@tmp-2"
+            lhsIdentifier.code shouldBe "$foo@tmp-2"
+
+            inside(rhsBlock.astChildren.l) {
+              case List(arrayAssignCall: Call, indexAssignCall: Call, retIdentifier: Identifier) =>
+                arrayAssignCall.name shouldBe Operators.assignment
+                arrayAssignCall.code shouldBe "$foo@tmp-3 = array()"
+
+                indexAssignCall.name shouldBe Operators.assignment
+                indexAssignCall.code shouldBe "$foo@tmp-3[2] = $foo@tmp-0"
+
+                retIdentifier.name shouldBe "foo@tmp-3"
+                retIdentifier.code shouldBe "$foo@tmp-3"
+            }
+          }
 
           arrayPushCall.name shouldBe "array_push"
           arrayPushCall.code shouldBe "$xs[] = $foo@tmp-2"
@@ -229,6 +261,22 @@ class ArrayTests extends PhpCode2CpgFixture {
           assignOne.name shouldBe Operators.assignment
           assignOne.code shouldBe "$foo@tmp-0 = array(2 => $val)"
           assignOne.order shouldBe 1
+          inside(assignOne.astChildren.l) { case List(lhsIdentifier: Identifier, rhsBlock: Block) =>
+            lhsIdentifier.name shouldBe "foo@tmp-0"
+            lhsIdentifier.code shouldBe "$foo@tmp-0"
+
+            inside(rhsBlock.astChildren.l) {
+              case List(arrayAssignCall: Call, indexAssignCall: Call, retIdentifier: Identifier) =>
+                arrayAssignCall.name shouldBe Operators.assignment
+                arrayAssignCall.code shouldBe "$foo@tmp-1 = array()"
+
+                indexAssignCall.name shouldBe Operators.assignment
+                indexAssignCall.code shouldBe "$foo@tmp-1[2] = $val"
+
+                retIdentifier.name shouldBe "foo@tmp-1"
+                retIdentifier.code shouldBe "$foo@tmp-1"
+            }
+          }
 
           arrayPushCall.name shouldBe "array_push"
           arrayPushCall.code shouldBe "$xs[1][] = $foo@tmp-0"

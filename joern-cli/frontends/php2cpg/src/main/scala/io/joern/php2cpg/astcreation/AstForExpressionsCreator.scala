@@ -201,15 +201,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val targetIdentifier = identifierNode(origin, targetName, s"$$$targetName", Defines.Any)
     val targetAst        = astForIdentifierWithLocalRef(targetIdentifier, targetLocal)
 
-    val indexAccessAst = key match {
+    val keyAst = key match {
       case Some(keyExpr) =>
-        val keyAst          = astForExpr(keyExpr)
-        val indexAccessCode = s"$$$targetName[${keyAst.rootCodeOrEmpty}]"
-        val indexAccessNode = operatorCallNode(origin, indexAccessCode, Operators.indexAccess, None)
-        callAst(indexAccessNode, targetAst :: keyAst :: Nil)
+        astForExpr(keyExpr)
       case None =>
-        targetAst
+        val zeroLiteral = literalNode(origin, "0", TypeConstants.Int)
+        Ast(zeroLiteral)
     }
+
+    val indexAccessCode = s"$$$targetName[${keyAst.rootCodeOrEmpty}]"
+    val indexAccessNode = operatorCallNode(origin, indexAccessCode, Operators.indexAccess, None)
+    val indexAccessAst  = callAst(indexAccessNode, targetAst :: keyAst :: Nil)
 
     simpleAssignAst(origin, indexAccessAst, value)
   }
