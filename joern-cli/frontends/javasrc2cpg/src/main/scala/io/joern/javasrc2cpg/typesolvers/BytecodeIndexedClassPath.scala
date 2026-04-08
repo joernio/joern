@@ -11,6 +11,13 @@ import java.util.jar.{JarEntry, JarFile}
 import scala.jdk.CollectionConverters.*
 import scala.util.{Try, Using}
 
+object BytecodeIndexedClassPath {
+
+  /** Read the declared class name from an open `.class` file stream using javassist. */
+  def readClassNameFrom(inputStream: InputStream): String =
+    new ClassFile(new DataInputStream(inputStream)).getName
+}
+
 /** A ClassPath implementation that resolves classes by their actual package declaration in bytecode rather than by
   * their path within the archive. This handles non-standard archive structures (e.g., fat JARs, repackaged JARs, JMODs)
   * where the entry path may not match the class's declared package.
@@ -42,14 +49,8 @@ class BytecodeIndexedClassPath(archivePath: String) extends ClassPath {
       .toMap
   }
 
-  private def readClassName(entry: JarEntry): Option[String] = {
-    Try {
-      Using.resource(jarFile.getInputStream(entry)) { inputStream =>
-        val classFile = new ClassFile(new DataInputStream(inputStream))
-        classFile.getName
-      }
-    }.toOption
-  }
+  private def readClassName(entry: JarEntry): Option[String] =
+    Try(Using.resource(jarFile.getInputStream(entry))(BytecodeIndexedClassPath.readClassNameFrom)).toOption
 
   override def find(classname: String): URL = {
     classNameToEntry
