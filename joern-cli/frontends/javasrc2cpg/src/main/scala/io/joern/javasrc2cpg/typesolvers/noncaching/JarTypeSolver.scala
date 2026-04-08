@@ -10,7 +10,7 @@ import javassist.CtClass
 import org.slf4j.LoggerFactory
 
 import java.io.IOException
-import java.lang.module.ModuleDescriptor
+import java.nio.file.{Path, Paths}
 import java.util.jar.JarFile
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
@@ -121,7 +121,11 @@ class JarTypeSolverBuilder(enableVerboseTypeLogging: Boolean) {
     archivePaths.foreach { archivePath =>
       addPathToClassPool(archivePath) match {
         case Success(classPath) =>
-          registerPackagesFromClassNames(archivePath, classPath.knownClassNames)
+          registerPackagesFromClassNames(
+            archivePath,
+            classPath.knownClassNames,
+            jarExportArchivePath = Some(archivePath)
+          )
 
         case Failure(e) =>
           logger.warn(s"Could not load jar at path $archivePath", e.getMessage())
@@ -129,30 +133,42 @@ class JarTypeSolverBuilder(enableVerboseTypeLogging: Boolean) {
     }
   }
 
+  /** Load the `jrt:` runtime image (`lib/modules`) for a minimal JDK/jlink layout. */
+  def addRuntimeImage(jdkRoot: Path): Try[Unit] = {
+    Try {
+      val jrt = new JrtRuntimeImageClassPath(jdkRoot)
+      classPool.appendClassPath(jrt)
+      registerPackagesFromClassNames(jdkRoot.toString, jrt.knownClassNames, jarExportArchivePath = None)
+      exportedPackages ++= jrt.moduleExportsMap
+    }
+  }
+
   private def registerExportedPackages(jarFile: JarFile): Unit = {
     jarFile.entries().asScala.filter(_.getName.endsWith("module-info.class")).foreach { moduleInfoEntry =>
       Using(jarFile.getInputStream(moduleInfoEntry)) { inputStream =>
         // TODO: Handle qualified exports if the JavaParser type solver adds support for that
-        val descriptor = ModuleDescriptor.read(inputStream)
-        val moduleName = descriptor.name()
-        val exports    = descriptor.exports().asScala.map(_.source()).toList
-
+        val (moduleName, exports) = JrtRuntimeImageClassPath.readModuleExports(inputStream)
         exportedPackages.put(moduleName, exports)
       }
     }
   }
 
   /** Register package prefixes from actual class names read from bytecode. Used for JAR files where the entry path may
-    * not match the declared package.
+    * not match the declared package. When `jarExportArchivePath` is set, also reads `module-info.class` from that JAR;
+    * for the `jrt:` runtime image, exports are registered separately in [[addRuntimeImage]].
     */
-  private def registerPackagesFromClassNames(archivePath: String, classNames: Set[String]): Unit = {
+  private def registerPackagesFromClassNames(
+    sourceLabel: String,
+    classNames: Set[String],
+    jarExportArchivePath: Option[String]
+  ): Unit = {
     if (enableVerboseTypeLogging) {
-      logger.debug(s"Adding jar to JarTypeSolver: $archivePath")
+      logger.debug(s"Adding types to JarTypeSolver: $sourceLabel")
       classNames.foreach(name => logger.debug(s" - $name"))
     }
     val newPrefixes = classNames.map(packagePrefixForJavaParserName)
     knownPackagePrefixes ++= newPrefixes
-    registerExportedPackagesForArchive(archivePath)
+    jarExportArchivePath.foreach(registerExportedPackagesForArchive)
   }
 
   private def registerExportedPackagesForArchive(archivePath: String): Unit = {
@@ -171,20 +187,20 @@ object JarTypeSolver {
   val JarExtension: String                                     = ".jar"
   val JmodExtension: String                                    = ".jmod"
   private val cache: mutable.Map[String, JarTypeSolverBuilder] = mutable.Map.empty
+  private val logger                                           = LoggerFactory.getLogger(classOf[JarTypeSolver])
 
   extension (path: String) {
     def isJarPath: Boolean  = path.endsWith(JarExtension)
     def isJmodPath: Boolean = path.endsWith(JmodExtension)
   }
 
-  private def determineJarPaths(inputPath: String): List[String] = {
+  /** All `.jar` / `.jmod` paths under `inputPath`, or empty if none (may still use `lib/modules` via
+    * [[JrtRuntimeImageClassPath]]).
+    */
+  private def determineJarPathsAllowEmpty(inputPath: String): List[String] = {
     // not following symlinks, because some setups might have a loop, e.g. AWS's Corretto
     // see https://github.com/joernio/joern/pull/3871
-    val jarPaths = SourceFiles.determine(inputPath, Set(JarExtension, JmodExtension))(Seq.empty)
-    if (jarPaths.isEmpty) {
-      throw new IllegalArgumentException(s"No .jar or .jmod files found at path: ${inputPath}")
-    }
-    jarPaths
+    SourceFiles.determine(inputPath, Set(JarExtension, JmodExtension))(Seq.empty)
   }
 
   def fromPath(
@@ -192,7 +208,35 @@ object JarTypeSolver {
     useCache: Boolean = false,
     enableVerboseTypeLogging: Boolean = false
   ): JarTypeSolver = {
-    def createBuilder = new JarTypeSolverBuilder(enableVerboseTypeLogging).withJars(determineJarPaths(inputPath))
+    def createBuilder: JarTypeSolverBuilder = {
+      val jarPaths = determineJarPathsAllowEmpty(inputPath)
+      val builder  = new JarTypeSolverBuilder(enableVerboseTypeLogging)
+      if (jarPaths.nonEmpty) {
+        logger.info(s"JDK type solver: using ${jarPaths.size} jar/jmod archive(s) under $inputPath")
+        builder.withJars(jarPaths)
+      } else {
+        JrtRuntimeImageClassPath.findRuntimeImage(Paths.get(inputPath)) match {
+          case Some(layout) =>
+            logger.info(
+              s"JDK type solver: using runtime image at ${layout.javaHome} (modules file: ${layout.modulesImageFile}; search root: $inputPath)"
+            )
+            builder
+              .addRuntimeImage(layout.javaHome)
+              .fold(
+                e =>
+                  throw new IllegalArgumentException(
+                    s"Could not load JDK runtime image (jrt:) for java.home=${layout.javaHome}",
+                    e
+                  ),
+                _ => builder
+              )
+          case None =>
+            throw new IllegalArgumentException(
+              s"No .jar or .jmod files found under $inputPath, and no runtime image file at .../lib/modules beneath that path (see JrtRuntimeImageClassPath.findRuntimeImage)"
+            )
+        }
+      }
+    }
     if (useCache) {
       cache.getOrElseUpdate(inputPath, createBuilder).build
     } else {
