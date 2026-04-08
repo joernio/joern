@@ -1663,8 +1663,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
   }
 
   "type recovery from annotations and stubs" should {
-    lazy val cpg = code(
-      """from typing import Optional
+    lazy val cpg = code("""from typing import Optional
         |
         |def greet(name: str) -> str:
         |    return "Hello, " + name
@@ -1673,8 +1672,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |    return str(x)
         |
         |result = greet("world")
-        |""".stripMargin
-    ).cpg
+        |""".stripMargin).cpg
 
     "resolve annotated parameter type for 'name'" in {
       cpg.method.name("greet").parameter.name("name").typeFullName.head shouldBe "__builtin.str"

@@ -186,9 +186,9 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
             val right = extractTypesFromHint(Some(n.right))
             (left, right) match {
               case (Some(l), Some(r)) => Some(s"$l|$r")
-              case (Some(l), _)      => Some(l)
-              case (_, Some(r))      => Some(r)
-              case _                 => None
+              case (Some(l), _)       => Some(l)
+              case (_, Some(r))       => Some(r)
+              case _                  => None
             }
           case _ => None
         }
