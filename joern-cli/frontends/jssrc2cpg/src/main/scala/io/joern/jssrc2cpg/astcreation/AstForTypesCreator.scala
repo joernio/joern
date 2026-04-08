@@ -19,8 +19,6 @@ import io.shiftleft.codepropertygraph.generated.{
 }
 import ujson.Value
 
-import scala.util.Try
-
 trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForTypeAlias(alias: BabelNodeInfo): Ast = {
@@ -66,23 +64,23 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     // adding all class methods / functions and uninitialized, non-static members
     (alias.node match {
       case TSTypeLiteral => classMembersForTypeAlias(alias)
-      case ObjectPattern => Try(alias.json("properties").arr).toOption.toSeq.flatten
+      case ObjectPattern => alias.json.obj.get("properties").flatMap(_.arrOpt).toSeq.flatten
       case _             => classMembersForTypeAlias(createBabelNodeInfo(alias.json("typeAnnotation")))
     }).filter(member => isClassMethodOrUninitializedMemberOrObjectProperty(member) && !isStaticMember(member))
       .map(m => astForClassMember(m, aliasTypeDeclNode, ignoreInitCalls = true))
     Ast(aliasTypeDeclNode)
   }
 
-  private def isConstructor(json: Value): Boolean = createBabelNodeInfo(json).node match {
+  private def isConstructor(json: Value): Boolean = nodeTypeOf(json) match {
     case TSConstructSignatureDeclaration => true
     case _                               => safeStr(json, "kind").contains("constructor")
   }
 
   private def classMembers(clazz: BabelNodeInfo, withConstructor: Boolean = true): Seq[Value] = {
-    val allMembers                 = Try(clazz.json("body")("body").arr).toOption.toSeq.flatten
-    val constructor                = allMembers.find(isConstructor)
-    val constructorBody            = constructor.flatMap(c => Try(c("body")("body").arr).toOption)
-    val constructorParameters      = constructor.flatMap(c => Try(c("params").arr).toOption)
+    val allMembers            = clazz.json.obj.get("body").flatMap(_.obj.get("body")).flatMap(_.arrOpt).toSeq.flatten
+    val constructor           = allMembers.find(isConstructor)
+    val constructorBody       = constructor.flatMap(c => c.obj.get("body").flatMap(_.obj.get("body")).flatMap(_.arrOpt))
+    val constructorParameters = constructor.flatMap(c => c.obj.get("params").flatMap(_.arrOpt))
     val dynamicallyDeclaredMembers = constructorBody.toSeq.flatten.filter(isInitializedMember)
     val parameterProperties        = constructorParameters.toSeq.flatten.filter(isParameterProperty)
     if (withConstructor) {
@@ -93,7 +91,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   }
 
   private def classMembersForTypeAlias(alias: BabelNodeInfo): Seq[Value] =
-    Try(alias.json("members").arr).toOption.toSeq.flatten
+    alias.json.obj.get("members").flatMap(_.arrOpt).toSeq.flatten
 
   private def createFakeConstructor(
     code: String,
@@ -322,42 +320,39 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   }
 
   private def isStaticMember(json: Value): Boolean = {
-    val nodeInfo = createBabelNodeInfo(json).node
+    val node     = nodeTypeOf(json)
     val isStatic = safeBool(json, "static").contains(true)
-    nodeInfo != ClassMethod && nodeInfo != ClassPrivateMethod && isStatic
+    node != ClassMethod && node != ClassPrivateMethod && isStatic
   }
 
   private def isInitializedMember(json: Value): Boolean = {
     val hasInitializedValue = hasKey(json, "value") && !json("value").isNull
-    val isAssignment = createBabelNodeInfo(json) match {
-      case node if node.node == ExpressionStatement =>
-        val exprNode = createBabelNodeInfo(node.json("expression"))
-        exprNode.node == AssignmentExpression &&
-        createBabelNodeInfo(exprNode.json("left")).node == MemberExpression &&
-        code(exprNode.json("left")("object")) == "this"
+    val isAssignment = nodeTypeOf(json) match {
+      case ExpressionStatement =>
+        val exprJson = json("expression")
+        nodeTypeOf(exprJson) == AssignmentExpression &&
+        nodeTypeOf(exprJson("left")) == MemberExpression &&
+        code(exprJson("left")("object")) == "this"
       case _ => false
     }
     hasInitializedValue || isAssignment
   }
 
-  private def isParameterProperty(json: Value): Boolean = {
-    createBabelNodeInfo(json).node == TSParameterProperty
-  }
+  private def isParameterProperty(json: Value): Boolean =
+    nodeTypeOf(json) == TSParameterProperty
 
-  private def isStaticInitBlock(json: Value): Boolean = createBabelNodeInfo(json).node == StaticBlock
+  private def isStaticInitBlock(json: Value): Boolean = nodeTypeOf(json) == StaticBlock
 
   private def isClassMethodOrUninitializedMember(json: Value): Boolean = {
-    val nodeInfo = createBabelNodeInfo(json).node
-    !isStaticInitBlock(json) &&
-    (nodeInfo == ClassMethod || nodeInfo == ClassPrivateMethod || !isInitializedMember(json))
+    val node = nodeTypeOf(json)
+    node != StaticBlock &&
+    (node == ClassMethod || node == ClassPrivateMethod || !isInitializedMember(json))
   }
 
   private def isClassMethodOrUninitializedMemberOrObjectProperty(json: Value): Boolean = {
-    val nodeInfo = createBabelNodeInfo(json).node
-    !isStaticInitBlock(json) &&
-    (nodeInfo == ObjectProperty || nodeInfo == ClassMethod || nodeInfo == ClassPrivateMethod || !isInitializedMember(
-      json
-    ))
+    val node = nodeTypeOf(json)
+    node != StaticBlock &&
+    (node == ObjectProperty || node == ClassMethod || node == ClassPrivateMethod || !isInitializedMember(json))
   }
 
   private def staticClassInitMethodAst(
@@ -436,9 +431,10 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val astParentType     = methodAstParentStack.head.label
     val astParentFullName = methodAstParentStack.head.properties(PropertyNames.FullName).toString
 
-    val superClass = Try(createBabelNodeInfo(clazz.json("superClass")).code).toOption.toSeq
-    val implements = Try(clazz.json("implements").arr.map(createBabelNodeInfo(_).code)).toOption.toSeq.flatten
-    val mixins     = Try(clazz.json("mixins").arr.map(createBabelNodeInfo(_).code)).toOption.toSeq.flatten
+    val superClass = clazz.json.obj.get("superClass").filter(!_.isNull).map(v => createBabelNodeInfo(v).code).toSeq
+    val implements =
+      clazz.json.obj.get("implements").flatMap(_.arrOpt).toSeq.flatten.map(v => createBabelNodeInfo(v).code)
+    val mixins = clazz.json.obj.get("mixins").flatMap(_.arrOpt).toSeq.flatten.map(v => createBabelNodeInfo(v).code)
 
     val typeDeclNode_ = typeDeclNode(
       clazz,
@@ -1005,7 +1001,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val astParentType     = methodAstParentStack.head.label
     val astParentFullName = methodAstParentStack.head.properties(PropertyNames.FullName).toString
 
-    val extendz = Try(tsInterface.json("extends").arr.map(createBabelNodeInfo(_).code)).toOption.toSeq.flatten
+    val extendz =
+      tsInterface.json.obj.get("extends").flatMap(_.arrOpt).toSeq.flatten.map(v => createBabelNodeInfo(v).code)
 
     val typeDeclNode_ = typeDeclNode(
       tsInterface,

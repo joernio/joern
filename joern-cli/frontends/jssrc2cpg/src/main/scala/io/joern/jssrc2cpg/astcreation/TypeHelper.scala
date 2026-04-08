@@ -28,9 +28,9 @@ trait TypeHelper { this: AstCreator =>
   )
 
   protected def isPlainTypeAlias(alias: BabelNodeInfo): Boolean = if (hasKey(alias.json, "right")) {
-    createBabelNodeInfo(alias.json("right")).node.toString == TSTypeReference.toString
+    nodeTypeOf(alias.json("right")) == TSTypeReference
   } else {
-    createBabelNodeInfo(alias.json("typeAnnotation")).node.toString == TSTypeReference.toString
+    nodeTypeOf(alias.json("typeAnnotation")) == TSTypeReference
   }
 
   private def typeForFlowType(flowType: BabelNodeInfo): String = flowType.node match {
@@ -120,7 +120,9 @@ trait TypeHelper { this: AstCreator =>
       case Some(key) => typeForTypeAnnotation(createBabelNodeInfo(node.json(key)))
       case None      => typeFromTypeMap(node)
     }
-    val tpeWithTypeReplacements = TypeReplacements.foldLeft(tpe) { case (typeStr, (m, r)) => typeStr.replace(m, r) }
+    val tpeWithTypeReplacements = TypeReplacements.foldLeft(tpe) { case (typeStr, (m, r)) =>
+      if (typeStr.contains(m)) typeStr.replace(m, r) else typeStr
+    }
     val tpeWithArrayReplacements = if (tpeWithTypeReplacements.endsWith("[]")) {
       Defines.Array
     } else {
