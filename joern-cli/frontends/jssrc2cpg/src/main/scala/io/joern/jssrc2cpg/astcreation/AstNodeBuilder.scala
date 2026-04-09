@@ -34,13 +34,10 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
   }
 
   protected def createIndexAccessCallAst(baseAst: Ast, partAst: Ast, line: Option[Int], column: Option[Int]): Ast = {
-    val callNode_ = callNode(
-      s"${codeOf(baseAst.nodes.head)}[${codeOf(partAst.nodes.head)}]",
-      Operators.indexAccess,
-      DispatchTypes.STATIC_DISPATCH,
-      line,
-      column
-    )
+    val baseCode = codeOf(baseAst.nodes.head)
+    val partCode = codeOf(partAst.nodes.head)
+    val callNode_ =
+      callNode(s"$baseCode[$partCode]", Operators.indexAccess, DispatchTypes.STATIC_DISPATCH, line, column)
     val arguments = List(baseAst, partAst)
     callAst(callNode_, arguments)
   }
@@ -51,13 +48,9 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     line: Option[Int],
     column: Option[Int]
   ): Ast = {
-    val callNode_ = callNode(
-      s"${codeOf(baseNode)}.${codeOf(partNode)}",
-      Operators.fieldAccess,
-      DispatchTypes.STATIC_DISPATCH,
-      line,
-      column
-    )
+    val baseCode  = codeOf(baseNode)
+    val partCode  = codeOf(partNode)
+    val callNode_ = callNode(s"$baseCode.$partCode", Operators.fieldAccess, DispatchTypes.STATIC_DISPATCH, line, column)
     val arguments = List(Ast(baseNode), Ast(partNode))
     callAst(callNode_, arguments)
   }
@@ -68,13 +61,9 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     line: Option[Int],
     column: Option[Int]
   ): Ast = {
-    val callNode_ = callNode(
-      s"${codeOf(baseAst.nodes.head)}.${codeOf(partNode)}",
-      Operators.fieldAccess,
-      DispatchTypes.STATIC_DISPATCH,
-      line,
-      column
-    )
+    val baseCode  = codeOf(baseAst.nodes.head)
+    val partCode  = codeOf(partNode)
+    val callNode_ = callNode(s"$baseCode.$partCode", Operators.fieldAccess, DispatchTypes.STATIC_DISPATCH, line, column)
     val arguments = List(baseAst, Ast(partNode))
     callAst(callNode_, arguments)
   }
@@ -86,7 +75,10 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     line: Option[Int],
     column: Option[Int]
   ): Ast = {
-    val code      = s"${codeOf(testAst.nodes.head)} ? ${codeOf(trueAst.nodes.head)} : ${codeOf(falseAst.nodes.head)}"
+    val testCode  = codeOf(testAst.nodes.head)
+    val trueCode  = codeOf(trueAst.nodes.head)
+    val falseCode = codeOf(falseAst.nodes.head)
+    val code      = s"$testCode ? $trueCode : $falseCode"
     val callNode_ = callNode(code, Operators.conditional, DispatchTypes.STATIC_DISPATCH, line, column)
     val arguments = List(testAst, trueAst, falseAst)
     callAst(callNode_, arguments)
@@ -104,9 +96,11 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
   }
 
   protected def createEqualsCallAst(dest: Ast, source: Ast, line: Option[Int], column: Option[Int]): Ast = {
-    val code      = s"${codeOf(dest.nodes.head)} === ${codeOf(source.nodes.head)}"
-    val callNode_ = callNode(code, Operators.equals, DispatchTypes.STATIC_DISPATCH, line, column)
-    val arguments = List(dest, source)
+    val destCode   = codeOf(dest.nodes.head)
+    val sourceCode = codeOf(source.nodes.head)
+    val code       = s"$destCode === $sourceCode"
+    val callNode_  = callNode(code, Operators.equals, DispatchTypes.STATIC_DISPATCH, line, column)
+    val arguments  = List(dest, source)
     callAst(callNode_, arguments)
   }
 

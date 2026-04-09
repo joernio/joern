@@ -136,9 +136,9 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     usedVariableNames: mutable.HashMap[String, Int],
     variableName: String
   ): String = {
-    val counter             = usedVariableNames.get(variableName).map(_ + 1).getOrElse(0)
+    val counter             = usedVariableNames.getOrElse(variableName, -1) + 1
     val currentVariableName = s"${variableName}_$counter"
-    usedVariableNames.put(variableName, counter)
+    usedVariableNames.update(variableName, counter)
     currentVariableName
   }
 
@@ -252,7 +252,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     (name, fullName)
   }
 
-  /** In JS it is possible to create anonymous classes. We have to handle this here.
+  /** In JS, it is possible to create anonymous classes. We have to handle this here.
     */
   private def calcTypeName(classNode: BabelNodeInfo): String =
     if (hasKey(classNode.json, "id") && !classNode.json("id").isNull) code(classNode.json("id"))
@@ -270,6 +270,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def hasKey(node: Value, key: String): Boolean =
     node.objOpt.exists(_.contains(key))
 
-  protected def nextAnonClassName(): String = s"<anon-class>${anonClassKeyPool.next}"
+  private def nextAnonClassName(): String = s"<anon-class>${anonClassKeyPool.next}"
 
 }

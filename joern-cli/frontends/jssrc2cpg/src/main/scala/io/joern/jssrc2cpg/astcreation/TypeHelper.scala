@@ -120,7 +120,9 @@ trait TypeHelper { this: AstCreator =>
       case Some(key) => typeForTypeAnnotation(createBabelNodeInfo(node.json(key)))
       case None      => typeFromTypeMap(node)
     }
-    val tpeWithTypeReplacements = TypeReplacements.foldLeft(tpe) { case (typeStr, (m, r)) => typeStr.replace(m, r) }
+    val tpeWithTypeReplacements = TypeReplacements.foldLeft(tpe) { case (typeStr, (m, r)) =>
+      if (typeStr.contains(m)) typeStr.replace(m, r) else typeStr
+    }
     val tpeWithArrayReplacements = if (tpeWithTypeReplacements.endsWith("[]")) {
       Defines.Array
     } else {
