@@ -15,11 +15,11 @@ class SwiftVariableScopeManager extends VariableScopeManager {
 
   // mapping from TypDecl fullname to members to access members from extensions
   private val typeDeclToMemberMap = mutable.HashMap.empty[String, mutable.ArrayBuffer[MemberElement]]
+  // reverse index: member variable name -> typeDecl fullName for O(1) lookup
+  private val memberToTypeDeclMap = mutable.HashMap.empty[String, String]
 
   def typeDeclFullNameForMember(variableName: String): Option[String] = {
-    typeDeclToMemberMap.collectFirst {
-      case (typeDeclFullName, members) if members.exists(_.variableName == variableName) => typeDeclFullName
-    }
+    memberToTypeDeclMap.get(variableName)
   }
 
   def restoreMembersForExtension(typeDeclFullName: String): Unit = {
@@ -41,9 +41,11 @@ class SwiftVariableScopeManager extends VariableScopeManager {
     if (scopeType == ScopeType.TypeDeclScope) {
       val typeDeclFullName = this.getEnclosingTypeDeclFullName
       if (typeDeclFullName.isDefined) {
-        val members = typeDeclToMemberMap.getOrElse(typeDeclFullName.get, mutable.ArrayBuffer.empty)
+        val fullName = typeDeclFullName.get
+        val members  = typeDeclToMemberMap.getOrElse(fullName, mutable.ArrayBuffer.empty)
         members.addOne(MemberElement(variableName, variableNode, tpe))
-        typeDeclToMemberMap(typeDeclFullName.get) = members
+        typeDeclToMemberMap(fullName) = members
+        memberToTypeDeclMap.getOrElseUpdate(variableName, fullName)
       }
     }
   }
