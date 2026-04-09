@@ -170,7 +170,7 @@ object SwiftTypesProvider {
     * Example: The string {{{file1.swift file\ with\ spaces.swift -o output}}} would be split into
     * {{{["file1.swift", "file\ with\ spaces.swift", "-o", "output"]}}}.
     */
-  private val SwiftCompilerArgSplit = "(?<!\\\\) "
+  private val SwiftCompilerArgSplit = java.util.regex.Pattern.compile("(?<!\\\\) ")
 
   private val SwiftCompilerIgnoredArgs =
     Seq(
@@ -429,7 +429,7 @@ object SwiftTypesProvider {
     *   A list of individual arguments
     */
   private def argsFromLine(line: String): List[String] = {
-    line.replace("\\ -", " -").replace("/ -", " -").replace("\\=", "=").split(SwiftCompilerArgSplit).toList
+    SwiftCompilerArgSplit.split(line.replace("\\ -", " -").replace("/ -", " -").replace("\\=", "=")).toList
   }
 
   /** Lists all readable directories under the given path.
