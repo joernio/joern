@@ -75,9 +75,12 @@ class SwiftVariableScopeManager extends VariableScopeManager {
     * The final path is the collapsed segments joined by `ScopePathSeparator`.
     */
   override def computeScopePath: String = {
-    val collapsed = getAllEnclosingFullNames(stack).reverse.foldLeft(Seq.empty[String]) {
-      case (acc, name) if acc.lastOption.contains(name) => acc
-      case (acc, name)                                  => acc :+ name
+    val names     = getAllEnclosingFullNames(stack).reverse
+    val collapsed = mutable.ArrayBuffer.empty[String]
+    names.foreach { name =>
+      if (collapsed.isEmpty || collapsed.last != name) {
+        collapsed += name
+      }
     }
     collapsed.mkString(ScopePathSeparator)
   }
