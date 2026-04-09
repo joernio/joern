@@ -18,7 +18,7 @@ import scala.util.{Failure, Success, Try, Using}
   * The FileSystem is kept open for the lifetime of this instance (same lifecycle as BytecodeIndexedClassPath holding a
   * JarFile).
   */
-class JrtRuntimeImageClassPath(javaHome: Path) extends ClassPath {
+class JrtRuntimeImageClassPath(javaHome: Path) extends ClassPath with AutoCloseable {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -95,6 +95,8 @@ class JrtRuntimeImageClassPath(javaHome: Path) extends ClassPath {
   override def openClassfile(classname: String): InputStream = {
     classNameToPath.get(classname).map(p => Files.newInputStream(p)).orNull
   }
+
+  override def close(): Unit = jrtFileSystem.close()
 }
 
 object JrtRuntimeImageClassPath {
@@ -109,7 +111,7 @@ object JrtRuntimeImageClassPath {
   }
 
   /** Max directory depth when searching under findRuntimeImage (avoids scanning huge trees). */
-  val DefaultRuntimeImageSearchMaxDepth: Int = 48
+  val DefaultRuntimeImageSearchMaxDepth: Int = 4
 
   /** Walk searchRoot once; return java.home and the modules file path used for jrt (no second tree walk). */
   def findRuntimeImage(

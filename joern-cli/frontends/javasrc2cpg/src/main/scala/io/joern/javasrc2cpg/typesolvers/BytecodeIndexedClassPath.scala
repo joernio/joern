@@ -22,7 +22,7 @@ object BytecodeIndexedClassPath {
   * their path within the archive. This handles non-standard archive structures (e.g., fat JARs, repackaged JARs, JMODs)
   * where the entry path may not match the class's declared package.
   */
-class BytecodeIndexedClassPath(archivePath: String) extends ClassPath {
+class BytecodeIndexedClassPath(archivePath: String) extends ClassPath with AutoCloseable {
 
   private val logger     = LoggerFactory.getLogger(this.getClass)
   private val jarFile    = new JarFile(archivePath)
@@ -64,4 +64,6 @@ class BytecodeIndexedClassPath(archivePath: String) extends ClassPath {
   override def openClassfile(classname: String): InputStream = {
     classNameToEntry.get(classname).map(jarFile.getInputStream).orNull
   }
+
+  override def close(): Unit = jarFile.close()
 }

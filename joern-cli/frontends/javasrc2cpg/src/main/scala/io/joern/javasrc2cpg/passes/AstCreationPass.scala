@@ -44,7 +44,7 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
 
   def usedTypes(): Set[String] = _usedTypes
 
-  val (sourceParser, symbolSolver) = initParserAndUtils(config)
+  val (sourceParser, symbolSolver, combinedTypeSolver) = initParserAndUtils(config)
 
   override def createAccumulator(): AstCreationPass.Accumulator = AstCreationPass.Accumulator()
 
@@ -92,11 +92,16 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     JavaParserFacade.clearInstances()
   }
 
-  private def initParserAndUtils(config: Config): (SourceParser, JavaSymbolSolver) = {
-    val dependencies = getDependencyList(config.inputPath)
-    val sourceParser = SourceParser(config, sourcesOverride)
-    val symbolSolver = createSymbolSolver(config, dependencies, sourceParser)
-    (sourceParser, symbolSolver)
+  /** Close type solver resources (open JAR files, jrt: file systems). Should be called after all AST creation is done
+    * and [[clearJavaParserCaches]] has been called.
+    */
+  def closeTypeSolvers(): Unit = combinedTypeSolver.close()
+
+  private def initParserAndUtils(config: Config): (SourceParser, JavaSymbolSolver, SimpleCombinedTypeSolver) = {
+    val dependencies                   = getDependencyList(config.inputPath)
+    val sourceParser                   = SourceParser(config, sourcesOverride)
+    val (symbolSolver, combinedSolver) = createSymbolSolver(config, dependencies, sourceParser)
+    (sourceParser, symbolSolver, combinedSolver)
   }
 
   private def getDependencyList(inputPath: String): List[String] = {
@@ -131,7 +136,7 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     config: Config,
     dependencies: List[String],
     sourceParser: SourceParser
-  ): JavaSymbolSolver = {
+  ): (JavaSymbolSolver, SimpleCombinedTypeSolver) = {
     val verboseDebugLoggingEnvVarValue = Option(System.getenv(JavaSrcEnvVar.EnableVerboseTypeLogging.name))
     val enableVerboseTypeLogging       = verboseDebugLoggingEnvVarValue.isDefined || config.enableVerboseTypeLogging
     if (enableVerboseTypeLogging) {
@@ -191,7 +196,7 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
         }
       }
 
-    symbolSolver
+    (symbolSolver, combinedTypeSolver)
   }
 
   private def recursiveJarsFromPath(path: String): List[String] = {

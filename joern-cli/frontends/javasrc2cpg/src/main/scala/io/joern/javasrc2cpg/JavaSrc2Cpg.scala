@@ -25,6 +25,7 @@ class JavaSrc2Cpg extends X2CpgFrontend {
       astCreationPass.createAndApply()
       astCreationPass.sourceParser.cleanupDelombokOutput()
       astCreationPass.clearJavaParserCaches()
+      astCreationPass.closeTypeSolvers()
       new OuterClassRefPass(cpg).createAndApply()
       JavaConfigFileCreationPass(cpg, config = config).createAndApply()
       if (!config.skipTypeInfPass) {

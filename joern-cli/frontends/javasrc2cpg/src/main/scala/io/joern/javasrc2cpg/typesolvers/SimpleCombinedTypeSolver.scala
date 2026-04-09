@@ -11,11 +11,12 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
 import scala.jdk.OptionConverters.RichOptional
+import scala.util.Try
 
 type TypeCacheKey         = String | (String, String)
 private type TypeLookupFn = TypeSolver => SymbolReference[ResolvedReferenceTypeDeclaration]
 
-class SimpleCombinedTypeSolver(enableVerboseTypeLogging: Boolean) extends TypeSolver {
+class SimpleCombinedTypeSolver(enableVerboseTypeLogging: Boolean) extends TypeSolver with AutoCloseable {
 
   private val logger             = LoggerFactory.getLogger(this.getClass)
   private var parent: TypeSolver = scala.compiletime.uninitialized
@@ -116,6 +117,12 @@ class SimpleCombinedTypeSolver(enableVerboseTypeLogging: Boolean) extends TypeSo
       this.parent = parent
     }
   }
+
+  override def close(): Unit =
+    (cachingTypeSolvers ++ nonCachingTypeSolvers).foreach {
+      case c: AutoCloseable => Try(c.close())
+      case _                =>
+    }
 
   override def tryToSolveTypeInModule(
     qualifiedModuleName: String,

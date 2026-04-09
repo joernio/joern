@@ -19,8 +19,10 @@ import scala.util.{Failure, Success, Try, Using}
 class JarTypeSolver(
   classPool: NonCachingClassPool,
   knownPackagePrefixes: Set[String],
-  exportedPackages: Map[String, List[String]]
-) extends TypeSolver {
+  exportedPackages: Map[String, List[String]],
+  private val closeables: Seq[AutoCloseable] = Seq.empty
+) extends TypeSolver
+    with AutoCloseable {
 
   private var parent: Option[TypeSolver] = None
 
@@ -74,6 +76,8 @@ class JarTypeSolver(
     SymbolReference.solved[RefType, RefType](refType)
   }
 
+  override def close(): Unit = closeables.foreach(c => Try(c.close()))
+
   override def tryToSolveTypeInModule(qualifiedModuleName: String, simpleTypeName: String): SymbolReference[RefType] = {
     exportedPackages
       .get(qualifiedModuleName)
@@ -95,16 +99,24 @@ class JarTypeSolverBuilder(enableVerboseTypeLogging: Boolean) {
   private val knownPackagePrefixes: mutable.Set[String] = mutable.Set.empty
   // A map of module name -> exported package names
   private val exportedPackages: mutable.Map[String, List[String]] = mutable.Map.empty
+  private val ownedCloseables: mutable.ArrayBuffer[AutoCloseable] = mutable.ArrayBuffer.empty
 
-  def build: JarTypeSolver = {
+  /** Build a solver that owns its classpath resources and closes them when [[JarTypeSolver.close]] is called. */
+  def build: JarTypeSolver =
+    new JarTypeSolver(classPool, knownPackagePrefixes.toSet, exportedPackages.toMap, ownedCloseables.toSeq)
+
+  /** Build a solver that does NOT own the classpath resources (used for cached builders whose resources must outlive
+    * any single solver instance).
+    */
+  private[typesolvers] def buildShared: JarTypeSolver =
     new JarTypeSolver(classPool, knownPackagePrefixes.toSet, exportedPackages.toMap)
-  }
 
   private def addPathToClassPool(archivePath: String): Try[BytecodeIndexedClassPath] = {
     if (archivePath.isJarPath || archivePath.isJmodPath) {
       Try {
         val classPath = new BytecodeIndexedClassPath(archivePath)
         classPool.appendClassPath(classPath)
+        ownedCloseables += classPath
         classPath
       }
     } else {
@@ -138,6 +150,7 @@ class JarTypeSolverBuilder(enableVerboseTypeLogging: Boolean) {
     Try {
       val jrt = new JrtRuntimeImageClassPath(jdkRoot)
       classPool.appendClassPath(jrt)
+      ownedCloseables += jrt
       registerPackagesFromClassNames(jdkRoot.toString, jrt.knownClassNames, jarExportArchivePath = None)
       exportedPackages ++= jrt.moduleExportsMap
     }
@@ -238,7 +251,7 @@ object JarTypeSolver {
       }
     }
     if (useCache) {
-      cache.getOrElseUpdate(inputPath, createBuilder).build
+      cache.getOrElseUpdate(inputPath, createBuilder).buildShared
     } else {
       createBuilder.build
     }
