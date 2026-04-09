@@ -1,15 +1,24 @@
 package io.joern.javasrc2cpg.typesolvers
 
 import io.shiftleft.semanticcpg.utils.FileUtil
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 import java.nio.file.{Files, Paths}
-import scala.util.{Success, Using}
+import scala.util.{Success, Try, Using}
 
-class JrtRuntimeImageClassPathTests extends AnyFreeSpec with Matchers {
+class JrtRuntimeImageClassPathTests extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
 
   private def javaHome = Paths.get(System.getProperty("java.home"))
+
+  /** Shared instance — only constructed if a test actually needs it (lazy), and closed after all tests run. */
+  private lazy val cp = new JrtRuntimeImageClassPath(javaHome)
+
+  override def afterAll(): Unit = {
+    Try(cp.close())
+    super.afterAll()
+  }
 
   private def assumeRuntimeImage(): Unit = {
     assume(
@@ -49,7 +58,6 @@ class JrtRuntimeImageClassPathTests extends AnyFreeSpec with Matchers {
 
     "should index and open java.lang.String from the running JDK's runtime image" in {
       assumeRuntimeImage()
-      val cp = new JrtRuntimeImageClassPath(javaHome)
       cp.knownClassNames should contain("java.lang.String")
       Using.resource(cp.openClassfile("java.lang.String")) { in =>
         in should not be null
@@ -60,7 +68,6 @@ class JrtRuntimeImageClassPathTests extends AnyFreeSpec with Matchers {
 
     "should expose module exports for java.base" in {
       assumeRuntimeImage()
-      val cp = new JrtRuntimeImageClassPath(javaHome)
       cp.moduleExportsMap.get("java.base") should not be empty
       cp.moduleExportsMap("java.base") should contain("java.lang")
     }
