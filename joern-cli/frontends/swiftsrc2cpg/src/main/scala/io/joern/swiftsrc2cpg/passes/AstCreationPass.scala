@@ -16,7 +16,9 @@ import io.shiftleft.utils.IOUtils
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.nio.file.Paths
+
 import scala.collection.mutable
+import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
 
 class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: Config, report: Report = new Report())(
@@ -25,7 +27,14 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
-  private var typeMap = SwiftTypesProvider(config).map(_.retrieveMappings()).getOrElse(Map.empty)
+  private val typeMap: java.util.concurrent.ConcurrentHashMap[String, SwiftFileLocalTypeMapping] = {
+    val m      = new java.util.concurrent.ConcurrentHashMap[String, SwiftFileLocalTypeMapping]()
+    val source = SwiftTypesProvider(config).map(_.retrieveMappings()).getOrElse(Map.empty)
+    source.foreach { case (filename, mapping) =>
+      m.put(filename.replace("\\", "/"), mapping)
+    }
+    m
+  }
 
   private var collectedTypes: Set[String]                                              = Set.empty
   private var collectedExtensionInherits: Map[String, Set[String]]                     = Map.empty
@@ -97,17 +106,17 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
   }
 
   private def extractFileLocalTypeMap(parseResult: ParseResult): SwiftFileLocalTypeMapping = {
+    // Try exact match first (O(1)), then fall back to suffix match for CI path differences
+    // (Windows short paths, macOS /private/var vs /var symlinks).
+    val normalizedFilename = parseResult.filename.replace("\\", "/")
+    val exactMatch         = typeMap.remove(normalizedFilename)
+    if (exactMatch != null) return exactMatch
+
     typeMap
-      .collectFirst {
-        // special handling for GitHub Windows and MacOS runner
-        // Windows: C:\Users\RUNNER~1\AppData\Local\Temp\hash\Input\file.swift vs. C:\Users\runneradmin\AppData\Local\Temp\hash\Input\file.swift
-        // macOS: /private/var/folders/y6/hash/T/Input/file.swift vs. /var/folders/y6/hash/T/Input/file.swift
-        case (filename, map) if filename.replace("\\", "/").endsWith(parseResult.filename) => (filename, map)
-      }
-      .map { case (filename, map) =>
-        typeMap = typeMap.removed(filename)
-        map
-      }
+      .keys()
+      .asScala
+      .find(_.endsWith(normalizedFilename))
+      .flatMap(key => Option(typeMap.remove(key)))
       .getOrElse(Map.empty)
   }
 
