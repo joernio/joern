@@ -9,8 +9,6 @@ import io.joern.x2cpg.frontendspecific.jssrc2cpg.{Defines, GlobalBuiltins}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewIdentifier, NewMethodRef, NewNode}
 
-import scala.util.Try
-
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForExpressionStatement(exprStmt: BabelNodeInfo): Ast =
@@ -333,7 +331,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   protected def astForArrayExpression(arrExpr: BabelNodeInfo, elementsKey: String = "elements"): Ast = {
     val MAX_INITIALIZERS = 1000
-    val elementsJsons    = Try(arrExpr.json(elementsKey).arr).toOption.toList.flatten
+    val elementsJsons    = arrExpr.json.obj.get(elementsKey).flatMap(_.arrOpt).toList.flatten
     val elements         = elementsJsons.slice(0, MAX_INITIALIZERS)
     if (elements.isEmpty) {
       Ast(

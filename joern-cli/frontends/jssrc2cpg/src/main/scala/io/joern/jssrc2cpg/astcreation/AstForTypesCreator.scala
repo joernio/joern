@@ -19,8 +19,6 @@ import io.shiftleft.codepropertygraph.generated.{
 }
 import ujson.Value
 
-import scala.util.Try
-
 trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForTypeAlias(alias: BabelNodeInfo): Ast = {
@@ -66,7 +64,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     // adding all class methods / functions and uninitialized, non-static members
     (alias.node match {
       case TSTypeLiteral => classMembersForTypeAlias(alias)
-      case ObjectPattern => Try(alias.json("properties").arr).toOption.toSeq.flatten
+      case ObjectPattern => alias.json.obj.get("properties").flatMap(_.arrOpt).toSeq.flatten
       case _             => classMembersForTypeAlias(createBabelNodeInfo(alias.json("typeAnnotation")))
     }).filter(member => isClassMethodOrUninitializedMemberOrObjectProperty(member) && !isStaticMember(member))
       .map(m => astForClassMember(m, aliasTypeDeclNode, ignoreInitCalls = true))
@@ -79,10 +77,10 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   }
 
   private def classMembers(clazz: BabelNodeInfo, withConstructor: Boolean = true): Seq[Value] = {
-    val allMembers                 = Try(clazz.json("body")("body").arr).toOption.toSeq.flatten
-    val constructor                = allMembers.find(isConstructor)
-    val constructorBody            = constructor.flatMap(c => Try(c("body")("body").arr).toOption)
-    val constructorParameters      = constructor.flatMap(c => Try(c("params").arr).toOption)
+    val allMembers            = clazz.json.obj.get("body").flatMap(_.obj.get("body")).flatMap(_.arrOpt).toSeq.flatten
+    val constructor           = allMembers.find(isConstructor)
+    val constructorBody       = constructor.flatMap(c => c.obj.get("body").flatMap(_.obj.get("body")).flatMap(_.arrOpt))
+    val constructorParameters = constructor.flatMap(c => c.obj.get("params").flatMap(_.arrOpt))
     val dynamicallyDeclaredMembers = constructorBody.toSeq.flatten.filter(isInitializedMember)
     val parameterProperties        = constructorParameters.toSeq.flatten.filter(isParameterProperty)
     if (withConstructor) {
@@ -93,7 +91,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   }
 
   private def classMembersForTypeAlias(alias: BabelNodeInfo): Seq[Value] =
-    Try(alias.json("members").arr).toOption.toSeq.flatten
+    alias.json.obj.get("members").flatMap(_.arrOpt).toSeq.flatten
 
   private def createFakeConstructor(
     code: String,
@@ -436,9 +434,10 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val astParentType     = methodAstParentStack.head.label
     val astParentFullName = methodAstParentStack.head.properties(PropertyNames.FullName).toString
 
-    val superClass = Try(createBabelNodeInfo(clazz.json("superClass")).code).toOption.toSeq
-    val implements = Try(clazz.json("implements").arr.map(createBabelNodeInfo(_).code)).toOption.toSeq.flatten
-    val mixins     = Try(clazz.json("mixins").arr.map(createBabelNodeInfo(_).code)).toOption.toSeq.flatten
+    val superClass = clazz.json.obj.get("superClass").filter(!_.isNull).map(v => createBabelNodeInfo(v).code).toSeq
+    val implements =
+      clazz.json.obj.get("implements").flatMap(_.arrOpt).toSeq.flatten.map(v => createBabelNodeInfo(v).code)
+    val mixins = clazz.json.obj.get("mixins").flatMap(_.arrOpt).toSeq.flatten.map(v => createBabelNodeInfo(v).code)
 
     val typeDeclNode_ = typeDeclNode(
       clazz,
@@ -1005,7 +1004,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val astParentType     = methodAstParentStack.head.label
     val astParentFullName = methodAstParentStack.head.properties(PropertyNames.FullName).toString
 
-    val extendz = Try(tsInterface.json("extends").arr.map(createBabelNodeInfo(_).code)).toOption.toSeq.flatten
+    val extendz =
+      tsInterface.json.obj.get("extends").flatMap(_.arrOpt).toSeq.flatten.map(v => createBabelNodeInfo(v).code)
 
     val typeDeclNode_ = typeDeclNode(
       tsInterface,

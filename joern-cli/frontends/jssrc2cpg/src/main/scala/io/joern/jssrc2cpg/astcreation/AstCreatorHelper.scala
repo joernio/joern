@@ -10,7 +10,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import ujson.Value
 
 import scala.collection.{SortedMap, mutable}
-import scala.util.Try
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -30,7 +29,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def line(node: Value): Option[Int] = start(node).map(getLineOfSource)
 
-  protected def start(node: Value): Option[Int] = Try(node("start").num.toInt).toOption
+  protected def start(node: Value): Option[Int] =
+    node.obj.get("start").flatMap(_.numOpt).map(_.toInt)
 
   protected def range(node: Value): Option[String] = {
     for {
@@ -47,7 +47,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def lineEnd(node: Value): Option[Int] = end(node).map(getLineOfSource)
 
-  protected def end(node: Value): Option[Int] = Try(node("end").num.toInt).toOption
+  protected def end(node: Value): Option[Int] =
+    node.obj.get("end").flatMap(_.numOpt).map(_.toInt)
 
   protected def column(node: Value): Option[Int] = start(node).map(getColumnOfSource)
 
@@ -137,10 +138,10 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   protected def safeBool(node: Value, key: String): Option[Boolean] =
-    if (hasKey(node, key)) Try(node(key).bool).toOption else None
+    node.obj.get(key).flatMap(_.boolOpt)
 
   protected def safeObj(node: Value, key: String): Option[upickle.core.LinkedHashMap[String, Value]] =
-    Try(node(key).obj).toOption.filter(_.nonEmpty)
+    node.obj.get(key).flatMap(_.objOpt).filter(_.nonEmpty)
 
   protected def positionLookupTables(source: String): (SortedMap[Int, Int], SortedMap[Int, Int]) = {
     val positionToLineNumber, positionToFirstPositionInLine = mutable.TreeMap.empty[Int, Int]
@@ -216,7 +217,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   protected def safeStr(node: Value, key: String): Option[String] =
-    if (hasKey(node, key)) Try(node(key).str).toOption else None
+    node.obj.get(key).flatMap(_.strOpt)
 
   private def isMethodOrGetSet(func: BabelNodeInfo): Boolean = {
     if (hasKey(func.json, "kind") && !func.json("kind").isNull) {
@@ -263,7 +264,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }
   }
 
-  protected def hasKey(node: Value, key: String): Boolean = Try(node(key)).isSuccess
+  protected def hasKey(node: Value, key: String): Boolean =
+    node.objOpt.exists(_.contains(key))
 
   protected def nextAnonClassName(): String = s"<anon-class>${anonClassKeyPool.next}"
 

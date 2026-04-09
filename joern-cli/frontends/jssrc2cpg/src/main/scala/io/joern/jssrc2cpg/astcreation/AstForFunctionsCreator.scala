@@ -11,7 +11,6 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Evalu
 import ujson.Value
 
 import scala.collection.mutable
-import scala.util.Try
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -225,7 +224,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           // Handle types declared as `credentials: { username: string; password: string; }`
           val tpe          = typeFor(nodeInfo)
           var typeFullName = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
-          val possibleType = Try(createBabelNodeInfo(nodeInfo.json("typeAnnotation")("typeAnnotation")))
+          val possibleType = nodeInfo.json.obj
+            .get("typeAnnotation")
+            .flatMap(_.obj.get("typeAnnotation"))
+            .map(createBabelNodeInfo)
             .map(x =>
               x.node match {
                 case TSTypeLiteral =>

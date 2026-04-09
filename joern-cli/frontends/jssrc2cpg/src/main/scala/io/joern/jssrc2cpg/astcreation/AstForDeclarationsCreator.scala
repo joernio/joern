@@ -13,8 +13,6 @@ import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.Operators
 import ujson.Value
 
-import scala.util.Try
-
 trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   private val DefaultsKey    = "default"
@@ -584,7 +582,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   ): Ast = {
     val idNodeInfo     = createBabelNodeInfo(declarator("id"))
     val declNodeInfo   = createBabelNodeInfo(declarator)
-    val initNodeInfo   = Try(createBabelNodeInfo(declarator("init"))).toOption
+    val initNodeInfo   = declarator.obj.get("init").filter(!_.isNull).map(createBabelNodeInfo)
     val declaratorCode = s"$kind ${code(declarator)}"
     val tpe            = typeFor(declNodeInfo)
     val typeFullName   = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
