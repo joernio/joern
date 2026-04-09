@@ -58,7 +58,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def decoratorElements(elem: BabelNodeInfo): List[BabelNodeInfo] = {
     if (hasKey(elem.json, "decorators") && !elem.json("decorators").isNull) {
-      elem.json("decorators").arr.toList.map(createBabelNodeInfo)
+      elem.json("decorators").arr.map(createBabelNodeInfo).toList
     } else List.empty
   }
 
@@ -102,7 +102,6 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val specifiers = declaration
       .json("specifiers")
       .arr
-      .toList
       .map { spec =>
         if (createBabelNodeInfo(spec).node == ExportNamespaceSpecifier) {
           val exported = createBabelNodeInfo(spec("exported"))
@@ -147,7 +146,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       case _ => Ast()
     }
 
-    val asts = fromAst +: (specifierAsts ++ declAsts)
+    val asts = (fromAst +: (specifierAsts ++ declAsts)).toList
     blockAst(blockNode(declaration, declaration.code, Defines.Any), asts)
   }
 
@@ -306,7 +305,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val kind = declaration.json("kind").str
     val scopeType = if (kind == "let") { VariableScopeManager.ScopeType.BlockScope }
     else { VariableScopeManager.ScopeType.MethodScope }
-    val declAsts = declaration.json("declarations").arr.toList.map(astForVariableDeclarator(_, scopeType, kind))
+    val declAsts = declaration.json("declarations").arr.map(astForVariableDeclarator(_, scopeType, kind)).toList
     declAsts match {
       case Nil         => Ast()
       case head :: Nil => head
@@ -344,7 +343,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       diffGraph.addEdge(importNode, _dependencyNode, EdgeTypes.IMPORTS)
       assignment
     } else {
-      val specs = impDecl.json("specifiers").arr.toList
+      val specs = impDecl.json("specifiers").arr
       val requireCalls = specs.map { importSpecifier =>
         val isImportN = createBabelNodeInfo(importSpecifier).node match {
           case ImportSpecifier => true
@@ -366,7 +365,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       } else if (requireCalls.sizeIs == 1) {
         requireCalls.head
       } else {
-        blockAst(blockNode(impDecl, impDecl.code, Defines.Any), requireCalls)
+        blockAst(blockNode(impDecl, impDecl.code, Defines.Any), requireCalls.toList)
       }
     }
   }
@@ -488,7 +487,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val subTreeAsts = pattern.node match {
       case ObjectPattern =>
-        pattern.json("properties").arr.toList.map { element =>
+        pattern.json("properties").arr.map { element =>
           val nodeInfo = createBabelNodeInfo(element)
           nodeInfo.node match {
             case RestElement =>
@@ -510,7 +509,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
           }
         }
       case ArrayPattern =>
-        pattern.json("elements").arr.toList.zipWithIndex.map {
+        pattern.json("elements").arr.zipWithIndex.map {
           case (element, index) if !element.isNull =>
             val nodeInfo = createBabelNodeInfo(element)
             nodeInfo.node match {
@@ -536,7 +535,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     scope.popScope()
     localAstParentStack.pop()
 
-    val blockChildren = assignmentTmpCallAst +: subTreeAsts :+ Ast(returnTmpNode)
+    val blockChildren = (assignmentTmpCallAst +: subTreeAsts :+ Ast(returnTmpNode)).toList
     blockAst(blockNode_, blockChildren)
   }
 
@@ -563,8 +562,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val groupId  = rhsCode.substring(rhsCode.indexOf(s"$RequireKeyword(") + 9, rhsCode.indexOf(")") - 1)
     val nodeInfo = createBabelNodeInfo(lhs)
     val names = nodeInfo.node match {
-      case ArrayPattern  => nodeInfo.json("elements").arr.toList.map(code)
-      case ObjectPattern => nodeInfo.json("properties").arr.toList.map(code)
+      case ArrayPattern  => nodeInfo.json("elements").arr.map(code).toList
+      case ObjectPattern => nodeInfo.json("properties").arr.map(code).toList
       case _             => List(code(lhs))
     }
     names.foreach { name =>
