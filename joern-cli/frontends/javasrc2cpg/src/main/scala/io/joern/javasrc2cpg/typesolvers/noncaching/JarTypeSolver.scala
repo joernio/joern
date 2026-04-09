@@ -146,7 +146,7 @@ class JarTypeSolverBuilder(enableVerboseTypeLogging: Boolean) {
   }
 
   /** Load the `jrt:` runtime image (`lib/modules`) for a minimal JDK/jlink layout. */
-  def addRuntimeImage(jdkRoot: Path): Try[Unit] = {
+  private[typesolvers] def addRuntimeImage(jdkRoot: Path): Try[Unit] = {
     Try {
       val jrt = new JrtRuntimeImageClassPath(jdkRoot)
       classPool.appendClassPath(jrt)
