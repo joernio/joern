@@ -71,7 +71,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     Ast(aliasTypeDeclNode)
   }
 
-  private def isConstructor(json: Value): Boolean = createBabelNodeInfo(json).node match {
+  private def isConstructor(json: Value): Boolean = nodeTypeOf(json) match {
     case TSConstructSignatureDeclaration => true
     case _                               => safeStr(json, "kind").contains("constructor")
   }
@@ -320,42 +320,39 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   }
 
   private def isStaticMember(json: Value): Boolean = {
-    val nodeInfo = createBabelNodeInfo(json).node
+    val node     = nodeTypeOf(json)
     val isStatic = safeBool(json, "static").contains(true)
-    nodeInfo != ClassMethod && nodeInfo != ClassPrivateMethod && isStatic
+    node != ClassMethod && node != ClassPrivateMethod && isStatic
   }
 
   private def isInitializedMember(json: Value): Boolean = {
     val hasInitializedValue = hasKey(json, "value") && !json("value").isNull
-    val isAssignment = createBabelNodeInfo(json) match {
-      case node if node.node == ExpressionStatement =>
-        val exprNode = createBabelNodeInfo(node.json("expression"))
-        exprNode.node == AssignmentExpression &&
-        createBabelNodeInfo(exprNode.json("left")).node == MemberExpression &&
-        code(exprNode.json("left")("object")) == "this"
+    val isAssignment = nodeTypeOf(json) match {
+      case ExpressionStatement =>
+        val exprJson = json("expression")
+        nodeTypeOf(exprJson) == AssignmentExpression &&
+        nodeTypeOf(exprJson("left")) == MemberExpression &&
+        code(exprJson("left")("object")) == "this"
       case _ => false
     }
     hasInitializedValue || isAssignment
   }
 
-  private def isParameterProperty(json: Value): Boolean = {
-    createBabelNodeInfo(json).node == TSParameterProperty
-  }
+  private def isParameterProperty(json: Value): Boolean =
+    nodeTypeOf(json) == TSParameterProperty
 
-  private def isStaticInitBlock(json: Value): Boolean = createBabelNodeInfo(json).node == StaticBlock
+  private def isStaticInitBlock(json: Value): Boolean = nodeTypeOf(json) == StaticBlock
 
   private def isClassMethodOrUninitializedMember(json: Value): Boolean = {
-    val nodeInfo = createBabelNodeInfo(json).node
-    !isStaticInitBlock(json) &&
-    (nodeInfo == ClassMethod || nodeInfo == ClassPrivateMethod || !isInitializedMember(json))
+    val node = nodeTypeOf(json)
+    node != StaticBlock &&
+    (node == ClassMethod || node == ClassPrivateMethod || !isInitializedMember(json))
   }
 
   private def isClassMethodOrUninitializedMemberOrObjectProperty(json: Value): Boolean = {
-    val nodeInfo = createBabelNodeInfo(json).node
-    !isStaticInitBlock(json) &&
-    (nodeInfo == ObjectProperty || nodeInfo == ClassMethod || nodeInfo == ClassPrivateMethod || !isInitializedMember(
-      json
-    ))
+    val node = nodeTypeOf(json)
+    node != StaticBlock &&
+    (node == ObjectProperty || node == ClassMethod || node == ClassPrivateMethod || !isInitializedMember(json))
   }
 
   private def staticClassInitMethodAst(

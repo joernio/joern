@@ -15,17 +15,17 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   private val anonClassKeyPool = new IntervalKeyPool(first = 0, last = Long.MaxValue)
 
+  protected def nodeTypeOf(json: Value): BabelNode = fromString(json("type").str)
+
   protected def createBabelNodeInfo(json: Value): BabelNodeInfo = {
     val c     = code(json)
     val ln    = line(json)
     val cn    = column(json)
     val lnEnd = lineEnd(json)
     val cnEnd = columnEnd(json)
-    val node  = nodeType(json)
+    val node  = nodeTypeOf(json)
     BabelNodeInfo(node, json, c, ln, cn, lnEnd, cnEnd)
   }
-
-  private def nodeType(node: Value): BabelNode = fromString(node("type").str)
 
   protected def line(node: Value): Option[Int] = start(node).map(getLineOfSource)
 

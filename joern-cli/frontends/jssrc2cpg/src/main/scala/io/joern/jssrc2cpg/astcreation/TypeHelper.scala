@@ -28,9 +28,9 @@ trait TypeHelper { this: AstCreator =>
   )
 
   protected def isPlainTypeAlias(alias: BabelNodeInfo): Boolean = if (hasKey(alias.json, "right")) {
-    createBabelNodeInfo(alias.json("right")).node.toString == TSTypeReference.toString
+    nodeTypeOf(alias.json("right")) == TSTypeReference
   } else {
-    createBabelNodeInfo(alias.json("typeAnnotation")).node.toString == TSTypeReference.toString
+    nodeTypeOf(alias.json("typeAnnotation")) == TSTypeReference
   }
 
   private def typeForFlowType(flowType: BabelNodeInfo): String = flowType.node match {
