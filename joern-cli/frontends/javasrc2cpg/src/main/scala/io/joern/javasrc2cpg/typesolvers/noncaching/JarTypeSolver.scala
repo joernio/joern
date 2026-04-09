@@ -245,7 +245,7 @@ object JarTypeSolver {
               )
           case None =>
             throw new IllegalArgumentException(
-              s"No .jar or .jmod files found under $inputPath, and no runtime image file at .../lib/modules beneath that path (see JrtRuntimeImageClassPath.findRuntimeImage)"
+              s"No .jar or .jmod files found under $inputPath, and no runtime image file at .../lib/modules beneath that path"
             )
         }
       }

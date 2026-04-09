@@ -114,7 +114,7 @@ object JrtRuntimeImageClassPath {
   /** Max directory depth (in terms of file depth from the search root) when searching under findRuntimeImage. Since
     * `lib/modules` sits 2 levels below a java.home, a maxDepth of 6 allows java.home directories up to 4 levels deep.
     */
-  val DefaultRuntimeImageSearchMaxDepth: Int = 4
+  val DefaultRuntimeImageSearchMaxDepth: Int = 10
 
   /** Find the shallowest `<java.home>/lib/modules` layout under searchRoot. maxDepth limits how deep the `modules` file
     * itself can be. Does not follow symbolic links (avoids symlink loops, consistent with jar discovery).
