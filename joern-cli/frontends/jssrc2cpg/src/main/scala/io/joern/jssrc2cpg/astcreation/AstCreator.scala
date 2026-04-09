@@ -58,8 +58,8 @@ class AstCreator(val config: Config, val usedTypes: mutable.HashSet[String], val
 
   // we track line and column numbers manually because astgen / @babel-parser sometimes
   // fails to deliver them at all -  strange, but this even happens with its latest version
-  protected val (positionToLineNumberMapping, positionToFirstPositionInLineMapping) =
-    positionLookupTables(parserResult.fileContent)
+  protected val (lineEndPositions, lineStartPositions) =
+    buildPositionArrays(parserResult.fileContent)
 
   override def createAst(): DiffGraphBuilder = {
     val fileContent = if (!config.disableFileContent) Option(parserResult.fileContent) else None
