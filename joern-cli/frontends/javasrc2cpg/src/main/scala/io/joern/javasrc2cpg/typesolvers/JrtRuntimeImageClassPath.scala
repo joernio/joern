@@ -66,10 +66,11 @@ class JrtRuntimeImageClassPath(javaHome: Path) extends ClassPath with AutoClosea
                 Using.resource(Files.newInputStream(path))(BytecodeIndexedClassPath.readClassNameFrom)
               ).toOption match {
                 case Some(className) =>
-                  if (indexMutable.contains(className)) {
+                  if (!indexMutable.contains(className)) {
+                    indexMutable(className) = path
+                  } else {
                     duplicateCount += 1
                   }
-                  indexMutable(className) = path
                 case None =>
                   logger.debug(s"Could not read class name from $path")
               }
@@ -78,7 +79,7 @@ class JrtRuntimeImageClassPath(javaHome: Path) extends ClassPath with AutoClosea
         }
       }
       if (duplicateCount > 0) {
-        logger.debug(s"JRT index: $duplicateCount duplicate internal class names (last path wins)")
+        logger.debug(s"JRT index: $duplicateCount duplicate class names across modules (first module wins)")
       }
 
       (indexMutable.toMap, exports)
@@ -110,10 +111,14 @@ object JrtRuntimeImageClassPath {
     (descriptor.name(), descriptor.exports().asScala.map(_.source()).toList)
   }
 
-  /** Max directory depth when searching under findRuntimeImage (avoids scanning huge trees). */
-  val DefaultRuntimeImageSearchMaxDepth: Int = 4
+  /** Max directory depth (in terms of file depth from the search root) when searching under findRuntimeImage. Since
+    * `lib/modules` sits 2 levels below a java.home, a maxDepth of 6 allows java.home directories up to 4 levels deep.
+    */
+  val DefaultRuntimeImageSearchMaxDepth: Int = 6
 
-  /** Walk searchRoot once; return java.home and the modules file path used for jrt (no second tree walk). */
+  /** Find the shallowest `<java.home>/lib/modules` layout under searchRoot. maxDepth limits how deep the `modules` file
+    * itself can be. Does not follow symbolic links (avoids symlink loops, consistent with jar discovery).
+    */
   def findRuntimeImage(
     searchRoot: Path,
     maxDepth: Int = DefaultRuntimeImageSearchMaxDepth
@@ -121,31 +126,20 @@ object JrtRuntimeImageClassPath {
     if (!Files.exists(searchRoot)) {
       None
     } else {
-      val root       = searchRoot.toAbsolutePath.normalize()
-      val candidates = mutable.ArrayBuffer.empty[RuntimeImageLayout]
-      // Two-arg walk does not follow symbolic links (consistent with jar discovery; avoids symlink loops).
+      val root = searchRoot.toAbsolutePath.normalize()
       Using.resource(Files.walk(root, maxDepth)) { stream =>
-        stream.iterator().asScala.foreach { p =>
-          if (Files.isRegularFile(p) && !Files.isSymbolicLink(p) && p.getFileName.toString == "modules") {
-            val lib = p.getParent
-            if (
-              lib != null && lib.getFileName != null && lib.getFileName.toString == "lib" && !Files.isSymbolicLink(lib)
-            ) {
-              val javaHome = lib.getParent
-              if (javaHome != null) {
-                candidates += RuntimeImageLayout(javaHome, p)
-              }
-            }
+        stream
+          .iterator()
+          .asScala
+          .filter(p => Files.isRegularFile(p) && !Files.isSymbolicLink(p) && p.getFileName.toString == "modules")
+          .flatMap { p =>
+            for {
+              lib <- Option(p.getParent)
+              if lib.getFileName != null && lib.getFileName.toString == "lib" && !Files.isSymbolicLink(lib)
+              javaHome <- Option(lib.getParent)
+            } yield RuntimeImageLayout(javaHome, p)
           }
-        }
-      }
-      if (candidates.isEmpty) None
-      else {
-        // Prefer the shallowest match (e.g. jdkRoot/lib/modules over jdkRoot/extra/nested/lib/modules).
-        Some(candidates.minBy { layout =>
-          val rel = root.relativize(layout.javaHome)
-          (rel.getNameCount, rel.toString)
-        })
+          .minByOption(layout => root.relativize(layout.javaHome).getNameCount)
       }
     }
   }
