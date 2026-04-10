@@ -35,9 +35,9 @@ class StaticCallGraphTests extends JimpleCode2CpgFixture {
     cpg.method.name("main").call.code.toSetMutable shouldBe
       Set(
         "add(3, 3)",
-        "$stack2.println($stack3)",
+        "$stack2.println(argc)",
         "$stack2 = java.lang.System.out",
-        "$stack3 = add(3, 3)",
+        "argc = add(3, 3)",
         "java.lang.System.out"
       )
   }
