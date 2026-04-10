@@ -3,7 +3,6 @@ package io.joern.swiftsrc2cpg.passes
 import io.joern.swiftsrc2cpg.Config
 import io.joern.swiftsrc2cpg.astcreation.AstCreator
 import io.joern.swiftsrc2cpg.parser.SwiftJsonParser
-import io.joern.swiftsrc2cpg.parser.SwiftJsonParser.ParseResult
 import io.joern.swiftsrc2cpg.passes.AstCreationPass.FileAndTypesMap
 import io.joern.swiftsrc2cpg.utils.AstGenRunner.AstGenRunnerResult
 import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider
@@ -83,12 +82,18 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
 
   override def generateParts(): Array[FileAndTypesMap] = {
     val typesMap = SwiftTypesProvider(config).map(_.retrieveMappings()).getOrElse(new MutableSwiftTypeMapping())
-    astGenRunnerResult.parsedFiles.map { jsonPath =>
-      SwiftJsonParser.readRelativeFilePath(Paths.get(jsonPath)) match {
-        case Success(sourceFilename) => FileAndTypesMap(jsonPath, extractFileLocalTypesMap(sourceFilename, typesMap))
-        case _                       => FileAndTypesMap(jsonPath, Map.empty)
-      }
-    }.toArray
+    if (typesMap.isEmpty) {
+      // early return to skip the readRelativeFilePath calls completely
+      astGenRunnerResult.parsedFiles.map(FileAndTypesMap(_, Map.empty)).toArray
+    } else {
+      astGenRunnerResult.parsedFiles.map { jsonPath =>
+        // we need to read the json files (lazily) to get the actual relative source file path
+        SwiftJsonParser.readRelativeFilePath(Paths.get(jsonPath)) match {
+          case Success(sourceFilename) => FileAndTypesMap(jsonPath, extractFileLocalTypesMap(sourceFilename, typesMap))
+          case _                       => FileAndTypesMap(jsonPath, Map.empty)
+        }
+      }.toArray
+    }
   }
 
   override def finish(): Unit = {
