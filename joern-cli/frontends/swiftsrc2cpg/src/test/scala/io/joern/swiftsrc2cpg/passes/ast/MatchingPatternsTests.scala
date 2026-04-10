@@ -243,12 +243,19 @@ class MatchingPatternsTests extends SwiftSrc2CpgSuite {
       // Temp assignment
       val List(tmpAssign) = condBlock.astChildren.isCall.nameExact(Operators.assignment).l
       tmpAssign.code shouldBe s"$tmpName = x"
+      tmpAssign.order shouldBe 1
       // Equality chain
       val List(andCall) = condBlock.astChildren.isCall.nameExact(Operators.logicalAnd).l
       andCall.code shouldBe s"$tmpName.0 == 1 && $tmpName.1 == 2"
+      andCall.order shouldBe 2
       val List(eq1, eq2) = andCall.argument.isCall.nameExact(Operators.equals).l
       eq1.code shouldBe s"$tmpName.0 == 1"
       eq2.code shouldBe s"$tmpName.1 == 2"
+      // isTuple check
+      val isTupleOp         = Defines.createIsTupleOperator(2)
+      val List(isTupleCall) = condBlock.astChildren.isCall.nameExact(isTupleOp).l
+      isTupleCall.code shouldBe s"$isTupleOp($tmpName)"
+      isTupleCall.order shouldBe 3
     }
 
     "testIfCaseBindingTuplePattern" in {
@@ -270,11 +277,17 @@ class MatchingPatternsTests extends SwiftSrc2CpgSuite {
       val allAssigns = condBlock.astChildren.isCall.nameExact(Operators.assignment).l
       allAssigns.size shouldBe 3
       allAssigns.head.code shouldBe s"$tmpName = x"
+      allAssigns.head.order shouldBe 1
       // Binding assignments with field accesses
       val List(assignA) = condBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact(s"a = $tmpName.0").l
       val List(assignB) = condBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact(s"b = $tmpName.1").l
       assignA.order shouldBe 2
       assignB.order shouldBe 3
+      // isTuple check
+      val isTupleOp         = Defines.createIsTupleOperator(2)
+      val List(isTupleCall) = condBlock.astChildren.isCall.nameExact(isTupleOp).l
+      isTupleCall.code shouldBe s"$isTupleOp($tmpName)"
+      isTupleCall.order shouldBe 4
     }
 
     "testIfCaseMixedTuplePattern" in {
@@ -293,12 +306,17 @@ class MatchingPatternsTests extends SwiftSrc2CpgSuite {
       // Temp assignment
       val allAssigns = condBlock.astChildren.isCall.nameExact(Operators.assignment).l
       allAssigns.head.code shouldBe s"$tmpName = x"
+      allAssigns.head.order shouldBe 1
       // Binding assignment for a
       val List(assignA) = condBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact(s"a = $tmpName.0").l
       assignA.order shouldBe 2
       // Equality check for second element
       val List(eqCall) = condBlock.astChildren.isCall.nameExact(Operators.equals).l
       eqCall.code shouldBe s"$tmpName.1 == 1"
+      // isTuple check
+      val isTupleOp         = Defines.createIsTupleOperator(2)
+      val List(isTupleCall) = condBlock.astChildren.isCall.nameExact(isTupleOp).l
+      isTupleCall.code shouldBe s"$isTupleOp($tmpName)"
     }
 
     "testGuardCaseBindingTuplePattern" in {
@@ -321,11 +339,19 @@ class MatchingPatternsTests extends SwiftSrc2CpgSuite {
       val allAssigns = condBlock.astChildren.isCall.nameExact(Operators.assignment).l
       allAssigns.size shouldBe 3
       allAssigns.head.code shouldBe s"$tmpName = x"
+      allAssigns.head.order shouldBe 1
       // Binding assignments with field accesses
       val List(assignA) = condBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact(s"a = $tmpName.0").l
       val List(assignB) = condBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact(s"b = $tmpName.1").l
       assignA.order shouldBe 2
       assignB.order shouldBe 3
+      // isTuple check
+      val isTupleOp         = Defines.createIsTupleOperator(2)
+      val List(isTupleCall) = condBlock.astChildren.isCall.nameExact(isTupleOp).l
+      isTupleCall.code shouldBe s"$isTupleOp($tmpName)"
+      isTupleCall.order shouldBe 4
+      // Guard: else branch contains the return
+      guardIf.astChildren.order(3).ast.isReturn.size shouldBe 1
     }
 
     "testIfCaseNestedBindingTuplePattern" in {
@@ -344,6 +370,7 @@ class MatchingPatternsTests extends SwiftSrc2CpgSuite {
       // Temp assignment
       val allAssigns = condBlock.astChildren.isCall.nameExact(Operators.assignment).l
       allAssigns.head.code shouldBe s"$tmpName = x"
+      allAssigns.head.order shouldBe 1
       // Nested field access: a = <tmp>.0.0, b = <tmp>.0.1, c = <tmp>.1
       val List(assignA) =
         condBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact(s"a = $tmpName.0.0").l
@@ -353,6 +380,11 @@ class MatchingPatternsTests extends SwiftSrc2CpgSuite {
       assignA.order shouldBe 2
       assignB.order shouldBe 3
       assignC.order shouldBe 4
+      // isTuple check (outer tuple has 2 elements)
+      val isTupleOp         = Defines.createIsTupleOperator(2)
+      val List(isTupleCall) = condBlock.astChildren.isCall.nameExact(isTupleOp).l
+      isTupleCall.code shouldBe s"$isTupleOp($tmpName)"
+      isTupleCall.order shouldBe 5
     }
 
     "testIfLetTuplePattern" in {
@@ -374,11 +406,17 @@ class MatchingPatternsTests extends SwiftSrc2CpgSuite {
       val allAssigns = condBlock.astChildren.isCall.nameExact(Operators.assignment).l
       allAssigns.size shouldBe 3
       allAssigns.head.code shouldBe s"$tmpName = x"
+      allAssigns.head.order shouldBe 1
       // Binding assignments with field accesses
       val List(assignA) = condBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact(s"a = $tmpName.0").l
       val List(assignB) = condBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact(s"b = $tmpName.1").l
       assignA.order shouldBe 2
       assignB.order shouldBe 3
+      // isTuple check
+      val isTupleOp         = Defines.createIsTupleOperator(2)
+      val List(isTupleCall) = condBlock.astChildren.isCall.nameExact(isTupleOp).l
+      isTupleCall.code shouldBe s"$isTupleOp($tmpName)"
+      isTupleCall.order shouldBe 4
     }
 
   }

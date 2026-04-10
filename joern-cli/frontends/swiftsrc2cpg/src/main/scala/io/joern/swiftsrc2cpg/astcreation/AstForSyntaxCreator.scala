@@ -321,6 +321,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForTupleInConditionContext(
     node: SwiftNode,
     initValue: SwiftNode,
+    arity: Int,
     desugarFn: String => List[Ast]
   ): Ast = {
     val blockNode_ = blockNode(node)
@@ -339,10 +340,18 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
 
     val desugarAsts = desugarFn(tmpName)
 
+    // Emit an isTupleN check as the final expression in the condition block
+    val op               = Defines.createIsTupleOperator(arity)
+    val isTupleCode      = s"$op($tmpName)"
+    val isTupleNode      = createStaticCallNode(node, isTupleCode, op, op, Defines.Bool)
+    val tmpIdentForCheck = identifierNode(node, tmpName, tmpName, Defines.Any)
+    scope.addVariableReference(tmpName, tmpIdentForCheck, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+    val isTupleAst = callAst(isTupleNode, List(Ast(tmpIdentForCheck)))
+
     scope.popScope()
     localAstParentStack.pop()
 
-    blockAst(blockNode_, assignAst +: desugarAsts)
+    blockAst(blockNode_, (assignAst +: desugarAsts) :+ isTupleAst)
   }
 
   private def astForTuplePatternInConditionContext(
@@ -350,9 +359,11 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     tuplePat: TuplePatternSyntax,
     initValue: SwiftNode
   ): Ast = {
+    val arity = tuplePat.elements.children.size
     astForTupleInConditionContext(
       node,
       initValue,
+      arity,
       tmpName => astsForBindingTuplePattern(tuplePat, tmpName, List.empty, node)
     )
   }
@@ -362,9 +373,11 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     tupleExpr: TupleExprSyntax,
     initValue: SwiftNode
   ): Ast = {
+    val arity = tupleExpr.elements.children.size
     astForTupleInConditionContext(
       node,
       initValue,
+      arity,
       tmpName =>
         if (isBindingTupleExpr(tupleExpr)) {
           astsForBindingTupleExpr(tupleExpr, tmpName, List.empty, node)
