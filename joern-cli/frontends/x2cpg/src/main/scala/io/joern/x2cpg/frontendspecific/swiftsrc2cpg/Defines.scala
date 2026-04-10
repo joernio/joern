@@ -29,6 +29,9 @@ object Defines {
   val GlobalNamespace: String        = NamespaceTraversal.globalNamespaceName
   val ErasedSignature: String        = "<erased>"
 
+  /** Returns `<operator>.isTupleN` for the given arity, e.g. `<operator>.isTuple2`. */
+  def createIsTupleOperator(arity: Int): String = s"<operator>.isTuple$arity"
+
   val SwiftTypes: List[String] =
     List(
       Any,

@@ -722,7 +722,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     * identifier/field-identifier nodes so the resulting AST can be safely used as an argument without node-sharing
     * issues.
     */
-  private def createFieldAccessChain(baseName: String, fields: List[String], node: SwiftNode): Ast = {
+  protected def createFieldAccessChain(baseName: String, fields: List[String], node: SwiftNode): Ast = {
     val baseAst = Ast(identifierNode(node, baseName))
     fields.foldLeft(baseAst) { (accAst, field) =>
       createFieldAccessCallAst(node, accAst, fieldIdentifierNode(node, field, field))
@@ -740,7 +740,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     * Nested tuples like case ((1, 2), 3): are handled recursively: <subject>.0.0 == 1 && <subject>.0.1 == 2 &&
     * <subject>.1 == 3
     */
-  private def astForExpressionTuplePatternInSwitchContext(
+  protected def astForExpressionTuplePattern(
     tupleExpr: TupleExprSyntax,
     subjectBase: String,
     subjectFieldPath: List[String],
@@ -753,7 +753,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       val subjectAst  = createFieldAccessChain(subjectBase, currentPath, node)
       element.expression match {
         case inner: TupleExprSyntax =>
-          astForExpressionTuplePatternInSwitchContext(inner, subjectBase, currentPath, node)
+          astForExpressionTuplePattern(inner, subjectBase, currentPath, node)
         case _ =>
           val rhsAst = astForNode(element)
           val eqCode = s"$subjectCode == ${code(element.expression)}"
@@ -768,7 +768,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  private def isBindingTupleExpr(tupleExpr: TupleExprSyntax): Boolean = {
+  protected def isBindingTupleExpr(tupleExpr: TupleExprSyntax): Boolean = {
     tupleExpr.elements.children.exists { elem =>
       elem.expression.isInstanceOf[PatternExprSyntax]
     }
@@ -782,16 +782,16 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           case ep: ExpressionPatternSyntax if ep.expression.isInstanceOf[TupleExprSyntax] =>
             val tupleExpr = ep.expression.asInstanceOf[TupleExprSyntax]
             if (isBindingTupleExpr(tupleExpr)) {
-              astsForBindingTupleExprInSwitchContext(tupleExpr, tmpName, List.empty, ep)
+              astsForBindingTupleExpr(tupleExpr, tmpName, List.empty, ep)
             } else {
-              List(astForExpressionTuplePatternInSwitchContext(tupleExpr, tmpName, List.empty, ep))
+              List(astForExpressionTuplePattern(tupleExpr, tmpName, List.empty, ep))
             }
           case vb: ValueBindingPatternSyntax =>
             vb.pattern match {
               case tp: TuplePatternSyntax =>
-                astsForBindingTuplePatternInSwitchContext(tp, tmpName, List.empty, vb)
+                astsForBindingTuplePattern(tp, tmpName, List.empty, vb)
               case ep: ExpressionPatternSyntax if ep.expression.isInstanceOf[TupleExprSyntax] =>
-                astsForBindingTupleExprInSwitchContext(
+                astsForBindingTupleExpr(
                   ep.expression.asInstanceOf[TupleExprSyntax],
                   tmpName,
                   List.empty,
@@ -801,7 +801,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
               case _ => List(astForNode(item.pattern))
             }
           case tuple: TuplePatternSyntax =>
-            astsForBindingTuplePatternInSwitchContext(tuple, tmpName, List.empty, tuple)
+            astsForBindingTuplePattern(tuple, tmpName, List.empty, tuple)
           case _ =>
             List(astForNode(item.pattern))
         }
@@ -825,7 +825,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     */
 
   /** Creates an instanceOf check for an IsTypePatternSyntax against a subject field access. */
-  private def astForIsTypePatternInTupleContext(
+  protected def astForIsTypePatternInTupleContext(
     isType: IsTypePatternSyntax,
     subjectAst: Ast,
     subjectCode: String,
@@ -842,7 +842,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   /** Creates an equality check for an expression pattern against a subject field access. */
-  private def astForExpressionPatternInTupleContext(
+  protected def astForExpressionPatternInTupleContext(
     ep: ExpressionPatternSyntax,
     subjectAst: Ast,
     subjectCode: String,
@@ -855,7 +855,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   /** Creates a variable binding assignment for a pattern element against a subject field access. */
-  private def astForBindingInTupleContext(
+  protected def astForBindingInTupleContext(
     varName: String,
     subjectAst: Ast,
     subjectCode: String,
@@ -869,7 +869,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     List(createAssignmentCallAst(anchorNode, Ast(lhsNode), subjectAst, assignCode))
   }
 
-  private def astsForBindingTuplePatternInSwitchContext(
+  protected def astsForBindingTuplePattern(
     tuplePat: TuplePatternSyntax,
     subjectBase: String,
     subjectFieldPath: List[String],
@@ -881,7 +881,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       val subjectAst  = createFieldAccessChain(subjectBase, currentPath, node)
       element.pattern match {
         case inner: TuplePatternSyntax =>
-          astsForBindingTuplePatternInSwitchContext(inner, subjectBase, currentPath, node)
+          astsForBindingTuplePattern(inner, subjectBase, currentPath, node)
         case isType: IsTypePatternSyntax =>
           astForIsTypePatternInTupleContext(isType, subjectAst, subjectCode, node)
         case ep: ExpressionPatternSyntax =>
@@ -891,7 +891,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         case vb: ValueBindingPatternSyntax =>
           vb.pattern match {
             case inner: TuplePatternSyntax =>
-              astsForBindingTuplePatternInSwitchContext(inner, subjectBase, currentPath, node)
+              astsForBindingTuplePattern(inner, subjectBase, currentPath, node)
             case _ =>
               astForBindingInTupleContext(code(vb.pattern), subjectAst, subjectCode, tuplePat)
           }
@@ -902,7 +902,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   /** Determines whether an expression inside a tuple represents a binding (let/var pattern). */
-  private def isBindingExpression(expr: ExprSyntax): Boolean = expr match {
+  protected def isBindingExpression(expr: ExprSyntax): Boolean = expr match {
     case p: PatternExprSyntax =>
       p.pattern match {
         case _: ValueBindingPatternSyntax => true
@@ -913,7 +913,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   /** Dispatches a PatternSyntax inside a tuple context to the appropriate de-sugaring. */
-  private def astsForPatternInTupleContext(
+  protected def astsForPatternInTupleContext(
     pattern: PatternSyntax,
     subjectAst: Ast,
     subjectCode: String,
@@ -932,7 +932,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       List(callAst(eqNode, List(subjectAst, rhsAst)))
   }
 
-  private def astsForBindingTupleExprInSwitchContext(
+  protected def astsForBindingTupleExpr(
     tupleExpr: TupleExprSyntax,
     subjectBase: String,
     subjectFieldPath: List[String],
@@ -945,7 +945,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       val subjectAst  = createFieldAccessChain(subjectBase, currentPath, node)
       element.expression match {
         case inner: TupleExprSyntax =>
-          astsForBindingTupleExprInSwitchContext(inner, subjectBase, currentPath, node, allBindings)
+          astsForBindingTupleExpr(inner, subjectBase, currentPath, node, allBindings)
         case _ if allBindings || isBindingExpression(element.expression) =>
           val varName = extractBindingName(element.expression)
           astForBindingInTupleContext(varName, subjectAst, subjectCode, tupleExpr)
@@ -966,7 +966,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     *   - `DeclReferenceExprSyntax` (`a` in `case let (a, b):`)
     *   - `PatternExprSyntax(ValueBindingPatternSyntax(IdentifierPatternSyntax))` (`var a` in `case (var a, var b):`)
     */
-  private def extractBindingName(expr: ExprSyntax): String = {
+  protected def extractBindingName(expr: ExprSyntax): String = {
     expr match {
       case d: DeclReferenceExprSyntax => code(d)
       case p: PatternExprSyntax =>
