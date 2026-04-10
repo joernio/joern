@@ -9,8 +9,6 @@ import io.joern.x2cpg.frontendspecific.jssrc2cpg.{Defines, GlobalBuiltins}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewIdentifier, NewMethodRef, NewNode}
 
-import scala.util.Try
-
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForExpressionStatement(exprStmt: BabelNodeInfo): Ast =
@@ -333,7 +331,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   protected def astForArrayExpression(arrExpr: BabelNodeInfo, elementsKey: String = "elements"): Ast = {
     val MAX_INITIALIZERS = 1000
-    val elementsJsons    = Try(arrExpr.json(elementsKey).arr).toOption.toList.flatten
+    val elementsJsons    = arrExpr.json.obj.get(elementsKey).flatMap(_.arrOpt).toList.flatten
     val elements         = elementsJsons.slice(0, MAX_INITIALIZERS)
     if (elements.isEmpty) {
       Ast(
@@ -401,7 +399,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def handleTemplateExpressionArgs(templateExpr: BabelNodeInfo, callExpressionInfo: CallExpressionInfo): Ast = {
-    val expressionArgs = templateExpr.json("quasi")("expressions").arr.toList.map(astForNodeWithFunctionReference)
+    val expressionArgs = templateExpr.json("quasi")("expressions").arr.map(astForNodeWithFunctionReference).toSeq
     val quasisArg      = astForArrayExpression(createBabelNodeInfo(templateExpr.json("quasi")), "quasis")
     val callNode_ =
       callNode(templateExpr, templateExpr.code, callExpressionInfo.callName, DispatchTypes.DYNAMIC_DISPATCH)
@@ -440,7 +438,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val localTmpNode = localNode(objExpr, tmpName, tmpName, Defines.Any).order(0)
     diffGraph.addEdge(localAstParentStack.head, localTmpNode, EdgeTypes.AST)
 
-    val propertiesAsts = objExpr.json("properties").arr.toList.map { property =>
+    val propertiesAsts = objExpr.json("properties").arr.map { property =>
       val nodeInfo = createBabelNodeInfo(property)
       nodeInfo.node match {
         case SpreadElement | RestElement =>
@@ -500,7 +498,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     scope.popScope()
     localAstParentStack.pop()
 
-    val childrenAsts = propertiesAsts :+ Ast(tmpNode)
+    val childrenAsts = (propertiesAsts :+ Ast(tmpNode)).toList
     blockAst(blockNode_, childrenAsts)
   }
 
