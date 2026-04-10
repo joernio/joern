@@ -714,12 +714,12 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     Using.resource(new StringReader(jsonString)) { reader =>
       GsonTypeInfoReader.collectTypeInfo(reader).foreach { typeInfo =>
         val range    = typeInfo.range
-        val filename = typeInfo.filename
+        val filename = typeInfo.filename.replace("\\", "/")
         result.compute(
           filename,
           {
             case (_, null) =>
-              logger.debug(s"Generating type map for: $filename")
+              logger.debug(s"Generating type map for: ${typeInfo.filename}")
               val rangeMapping = new MutableSwiftFileLocalTypeMapping()
               rangeMapping.put(range, new mutable.HashSet[ResolvedTypeInfo]().addOne(resolve(typeInfo)))
               rangeMapping
