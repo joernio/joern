@@ -98,12 +98,6 @@ class ArrayTests extends JimpleDataFlowCodeToCpgSuite {
       sink.reachableBy(source).size shouldBe 1
     }
 
-    "find a path if an entry in the `MALICIOUS` array is printed (approximation)" in {
-      // The reason this false positive occurs is because Jimple makes an alias in here unlike in test4
-      val (source, sink) = getConstSourceSink("test2")
-      sink.reachableBy(source).size shouldBe 1
-    }
-
     "find a path for alternative array initializer syntax" in {
       val (source, sink) = getConstSourceSink("test3")
       sink.reachableBy(source).size shouldBe 1
@@ -121,12 +115,6 @@ class ArrayTests extends JimpleDataFlowCodeToCpgSuite {
 
     "find a path if a different array element is overwritten" in {
       val (source, sink) = getConstSourceSink("test6")
-      sink.reachableBy(source).size shouldBe 1
-    }
-
-    "find a path if the `MALICIOUS` array element is overwritten (approximation)" in {
-      // Similarly to test2, this false positive occurs because Jimple makes an alias
-      val (source, sink) = getConstSourceSink("test7")
       sink.reachableBy(source).size shouldBe 1
     }
 

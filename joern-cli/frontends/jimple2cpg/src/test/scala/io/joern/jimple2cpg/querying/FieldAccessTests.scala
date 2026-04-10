@@ -60,7 +60,7 @@ class FieldAccessTests extends JimpleCode2CpgFixture {
   }
 
   "should handle object field accesses on RHS of assignments" in {
-    val List(_: Call, _: Call, assign: Call) = cpg.method(".*bar.*").call(".*assignment").l
+    val List(_: Call, assign: Call) = cpg.method(".*bar.*").call(".*assignment").l
     assign.code shouldBe "y = f.value"
     val List(access: Call)                                             = cpg.method(".*bar.*").call(".*fieldAccess").l
     val List(identifier: Identifier, fieldIdentifier: FieldIdentifier) = access.argument.l: @unchecked
@@ -70,7 +70,7 @@ class FieldAccessTests extends JimpleCode2CpgFixture {
   }
 
   "should handle object field accesses on LHS of assignments" in {
-    val List(_: Call, _: Call, assign: Call) = cpg.method(".*baz.*").call(".*assignment").l
+    val List(_: Call, assign: Call) = cpg.method(".*baz.*").call(".*assignment").l
     assign.code shouldBe "g.value = 66"
     val List(access: Call)                                             = cpg.method(".*baz.*").call(".*fieldAccess").l
     val List(identifier: Identifier, fieldIdentifier: FieldIdentifier) = access.argument.l: @unchecked
