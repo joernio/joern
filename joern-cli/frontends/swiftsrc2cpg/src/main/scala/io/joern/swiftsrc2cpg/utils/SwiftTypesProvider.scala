@@ -744,9 +744,9 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     * information, and builds a comprehensive type mapping. Progress and errors are logged appropriately.
     *
     * @return
-    *   A Map containing filename-to-type mappings for Swift source files
+    *   A ConcurrentHashMap containing filename-to-type mappings for Swift source files
     */
-  def retrieveMappings(): SwiftTypeMapping = {
+  def retrieveMappings(): MutableSwiftTypeMapping = {
     val mapping = new MutableSwiftTypeMapping
     // We want to use the same pool for parallel Swift compiler invocations and their type mapping work
     val pool = java.util.concurrent.Executors.newCachedThreadPool()
@@ -769,11 +769,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
         }
       }
       logger.info(s"Got ${mapping.size} type map entries.")
-      mapping.asScala.toMap.map { case (filename, mapping) =>
-        filename -> mapping.asScala.toMap.map { case (range, set) =>
-          range -> set.toSet
-        }
-      }
+      mapping
     } finally {
       pool.shutdown()
     }

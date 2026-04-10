@@ -6,7 +6,7 @@ import io.joern.swiftsrc2cpg.parser.SwiftJsonParser
 import io.joern.swiftsrc2cpg.parser.SwiftJsonParser.ParseResult
 import io.joern.swiftsrc2cpg.utils.AstGenRunner.AstGenRunnerResult
 import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider
-import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.SwiftFileLocalTypeMapping
+import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{MutableSwiftTypeMapping, SwiftFileLocalTypeMapping}
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.utils.{Report, TimeUtils}
@@ -27,14 +27,8 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
-  private val typeMap: java.util.concurrent.ConcurrentHashMap[String, SwiftFileLocalTypeMapping] = {
-    val m      = new java.util.concurrent.ConcurrentHashMap[String, SwiftFileLocalTypeMapping]()
-    val source = SwiftTypesProvider(config).map(_.retrieveMappings()).getOrElse(Map.empty)
-    source.foreach { case (filename, mapping) =>
-      m.put(filename.replace("\\", "/"), mapping)
-    }
-    m
-  }
+  private val typeMap: MutableSwiftTypeMapping =
+    SwiftTypesProvider(config).map(_.retrieveMappings()).getOrElse(new MutableSwiftTypeMapping())
 
   private var collectedTypes: Set[String]                                              = Set.empty
   private var collectedExtensionInherits: Map[String, Set[String]]                     = Map.empty
@@ -109,15 +103,17 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
     // Try exact match first (O(1)), then fall back to suffix match for CI path differences
     // (Windows short paths, macOS /private/var vs /var symlinks).
     val normalizedFilename = parseResult.filename.replace("\\", "/")
-    val exactMatch         = typeMap.remove(normalizedFilename)
-    if (exactMatch != null) return exactMatch
-
-    typeMap
-      .keys()
-      .asScala
-      .find(_.endsWith(normalizedFilename))
-      .flatMap(key => Option(typeMap.remove(key)))
-      .getOrElse(Map.empty)
+    val mutableMap = Option(typeMap.get(normalizedFilename)).orElse {
+      typeMap
+        .keys()
+        .asScala
+        .find(_.endsWith(normalizedFilename))
+        .flatMap(key => Option(typeMap.remove(key)))
+    }
+    mutableMap match {
+      case Some(m) => m.asScala.toMap.map { case (range, set) => range -> set.toSet }
+      case None    => Map.empty
+    }
   }
 
   override def runOnPart(diffGraph: DiffGraphBuilder, input: String, accumulator: AstCreationPass.Accumulator): Unit = {
