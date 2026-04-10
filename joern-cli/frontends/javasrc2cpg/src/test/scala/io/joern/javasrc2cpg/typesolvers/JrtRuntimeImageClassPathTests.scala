@@ -2,13 +2,13 @@ package io.joern.javasrc2cpg.typesolvers
 
 import io.shiftleft.semanticcpg.utils.FileUtil
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 import java.nio.file.{Files, Paths}
 import scala.util.{Success, Try, Using}
 
-class JrtRuntimeImageClassPathTests extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
+class JrtRuntimeImageClassPathTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   private def javaHome = Paths.get(System.getProperty("java.home"))
 
@@ -22,41 +22,27 @@ class JrtRuntimeImageClassPathTests extends AnyFreeSpec with Matchers with Befor
 
   private def assumeRuntimeImage(): Unit = {
     assume(
-      JrtRuntimeImageClassPath.findRuntimeImageRoot(javaHome).isDefined,
+      JrtRuntimeImageClassPath.findRuntimeImage(javaHome).isDefined,
       s"Skipping: no lib/modules at $javaHome (not a modular JDK layout)"
     )
   }
 
-  "findRuntimeImageRoot" - {
+  "findRuntimeImageRoot" should {
 
-    "should find lib/modules nested under the search root (single walk returns java.home and modules path)" in {
+    "find lib/modules nested under the search root (single walk returns java.home and modules path)" in {
       FileUtil.usingTemporaryDirectory("jrt-nested-modules") { tmp =>
         val imageRoot   = tmp.resolve("vendor").resolve("my-jlink")
         val modulesFile = imageRoot.resolve("lib").resolve("modules")
         Files.createDirectories(imageRoot.resolve("lib"))
         Files.createFile(modulesFile)
-        val layout = JrtRuntimeImageClassPath.findRuntimeImage(tmp).get
-        layout.javaHome shouldEqual imageRoot
-        layout.modulesImageFile shouldEqual modulesFile
-      }
-    }
-
-    "should prefer the shallowest runtime image when several exist" in {
-      FileUtil.usingTemporaryDirectory("jrt-shallow-wins") { tmp =>
-        val deep = tmp.resolve("a").resolve("b").resolve("c")
-        Files.createDirectories(deep.resolve("lib"))
-        Files.createFile(deep.resolve("lib").resolve("modules"))
-        val shallow = tmp.resolve("z")
-        Files.createDirectories(shallow.resolve("lib"))
-        Files.createFile(shallow.resolve("lib").resolve("modules"))
-        JrtRuntimeImageClassPath.findRuntimeImageRoot(tmp) shouldEqual Some(shallow)
+        JrtRuntimeImageClassPath.findRuntimeImage(tmp) shouldEqual Some(imageRoot)
       }
     }
   }
 
-  "JrtRuntimeImageClassPath" - {
+  "JrtRuntimeImageClassPath" should {
 
-    "should index and open java.lang.String from the running JDK's runtime image" in {
+    "index and open java.lang.String from the running JDK's runtime image" in {
       assumeRuntimeImage()
       cp.knownClassNames should contain("java.lang.String")
       Using.resource(cp.openClassfile("java.lang.String")) { in =>
@@ -66,16 +52,16 @@ class JrtRuntimeImageClassPathTests extends AnyFreeSpec with Matchers with Befor
       cp.find("java.lang.String") should not be null
     }
 
-    "should expose module exports for java.base" in {
+    "expose module exports for java.base" in {
       assumeRuntimeImage()
       cp.moduleExportsMap.get("java.base") should not be empty
       cp.moduleExportsMap("java.base") should contain("java.lang")
     }
   }
 
-  "JarTypeSolver with runtime image only" - {
+  "JarTypeSolver with runtime image only" should {
 
-    "should resolve java.lang.String via tryToSolveTypeInModule" in {
+    "resolve java.lang.String via tryToSolveTypeInModule" in {
       assumeRuntimeImage()
       val builder = new JarTypeSolverBuilder(enableVerboseTypeLogging = false)
       builder.addRuntimeImage(javaHome) shouldEqual Success(())
@@ -89,9 +75,9 @@ class JrtRuntimeImageClassPathTests extends AnyFreeSpec with Matchers with Befor
     }
   }
 
-  "JarTypeSolver.fromPath" - {
+  "JarTypeSolver.fromPath" should {
 
-    "should throw IllegalArgumentException when no jars and no runtime image are found" in {
+    "throw IllegalArgumentException when no jars and no runtime image are found" in {
       FileUtil.usingTemporaryDirectory("jrt-no-jars-no-modules") { tmp =>
         val exception = the[IllegalArgumentException] thrownBy {
           JarTypeSolver.fromPath(tmp.toString)

@@ -229,20 +229,18 @@ object JarTypeSolver {
         builder.withJars(jarPaths)
       } else {
         JrtRuntimeImageClassPath.findRuntimeImage(Paths.get(inputPath)) match {
-          case Some(layout) =>
+          case Some(imageRootPath) =>
             logger.info(
-              s"JDK type solver: using runtime image at ${layout.javaHome} (modules file: ${layout.modulesImageFile}; search root: $inputPath)"
+              s"JDK type solver: using runtime image at $imageRootPath; search root: $inputPath)"
             )
-            builder
-              .addRuntimeImage(layout.javaHome)
-              .fold(
-                e =>
-                  throw new IllegalArgumentException(
-                    s"Could not load JDK runtime image (jrt:) for java.home=${layout.javaHome}",
-                    e
-                  ),
-                _ => builder
-              )
+            builder.addRuntimeImage(imageRootPath) match {
+              case Success(_) => builder
+              case Failure(exception) =>
+                throw new IllegalArgumentException(
+                  s"Could not load JDK runtime image (jrt:) for image root path=$imageRootPath",
+                  exception
+                )
+            }
           case None =>
             throw new IllegalArgumentException(
               s"No .jar or .jmod files found under $inputPath, and no runtime image file at .../lib/modules beneath that path"

@@ -1,5 +1,6 @@
 package io.joern.javasrc2cpg.typesolvers
 
+import io.joern.javasrc2cpg.typesolvers.JrtRuntimeImageClassPath.logger
 import javassist.ClassPath
 import org.slf4j.LoggerFactory
 
@@ -20,8 +21,6 @@ import scala.util.{Failure, Success, Try, Using}
   */
 class JrtRuntimeImageClassPath(javaHome: Path) extends ClassPath with AutoCloseable {
 
-  private val logger = LoggerFactory.getLogger(this.getClass)
-
   private val jrtFileSystem = JrtRuntimeImageClassPath.openJrtFileSystem(javaHome)
 
   private val (classNameToPath: Map[String, Path], moduleExports: Map[String, List[String]]) = buildIndexAndExports()
@@ -30,6 +29,8 @@ class JrtRuntimeImageClassPath(javaHome: Path) extends ClassPath with AutoClosea
 
   /** Module name to exported package names (for JarTypeSolver.tryToSolveTypeInModule). */
   val moduleExportsMap: Map[String, List[String]] = moduleExports
+
+  private def buildExports(): Map[String, List[String]] = {}
 
   private def buildIndexAndExports(): (Map[String, Path], Map[String, List[String]]) = {
     val modulesRoot = jrtFileSystem.getPath("/modules")
@@ -89,18 +90,20 @@ class JrtRuntimeImageClassPath(javaHome: Path) extends ClassPath with AutoClosea
   override def find(classname: String): URL = {
     classNameToPath
       .get(classname)
-      .flatMap(p => Try(p.toUri.toURL).toOption)
+      .flatMap(path => Try(path.toUri.toURL).toOption)
       .orNull
   }
 
   override def openClassfile(classname: String): InputStream = {
-    classNameToPath.get(classname).map(p => Files.newInputStream(p)).orNull
+    classNameToPath.get(classname).map(path => Files.newInputStream(path)).orNull
   }
 
   override def close(): Unit = jrtFileSystem.close()
 }
 
 object JrtRuntimeImageClassPath {
+
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
   /** Result of a single filesystem walk: the jrt java.home directory and the exact lib/modules jimage path. */
   final case class RuntimeImageLayout(javaHome: Path, modulesImageFile: Path)
@@ -122,31 +125,40 @@ object JrtRuntimeImageClassPath {
   def findRuntimeImage(
     searchRoot: Path,
     maxDepth: Int = DefaultRuntimeImageSearchMaxDepth
-  ): Option[RuntimeImageLayout] = {
+  ): Option[Path] = {
     if (!Files.exists(searchRoot)) {
       None
     } else {
       val root = searchRoot.toAbsolutePath.normalize()
-      Using.resource(Files.walk(root, maxDepth)) { stream =>
-        stream
+      Using.resource(Files.walk(root, maxDepth)) { fileStream =>
+        fileStream
           .iterator()
           .asScala
           .filter(p => Files.isRegularFile(p) && !Files.isSymbolicLink(p) && p.getFileName.toString == "modules")
-          .flatMap { p =>
+          .flatMap { path =>
             for {
-              lib <- Option(p.getParent)
-              if lib.getFileName != null && lib.getFileName.toString == "lib" && !Files.isSymbolicLink(lib)
+              lib <- Option(path.getParent)
+              if (lib.getFileName != null && lib.getFileName.toString == "lib" && !Files.isSymbolicLink(lib))
               javaHome <- Option(lib.getParent)
-            } yield RuntimeImageLayout(javaHome, p)
+            } yield javaHome
           }
-          .minByOption(layout => root.relativize(layout.javaHome).getNameCount)
+          .toList
+          .match {
+            case Nil =>
+              logger.debug("No modules runtime image found")
+              None
+
+            case singleResult :: Nil =>
+              Some(singleResult)
+
+            case firstResult :: _ =>
+              logger.warn(s"Found multiple modules runtime images. Using the first found at ${firstResult}")
+              Some(firstResult)
+
+          }
       }
     }
   }
-
-  /** Directory layout root for a JDK / jlink image (java.home); see findRuntimeImage for the modules file path. */
-  def findRuntimeImageRoot(searchRoot: Path, maxDepth: Int = DefaultRuntimeImageSearchMaxDepth): Option[Path] =
-    findRuntimeImage(searchRoot, maxDepth).map(_.javaHome)
 
   private def openJrtFileSystem(javaHome: Path) = {
     val env = new java.util.HashMap[String, String]()
