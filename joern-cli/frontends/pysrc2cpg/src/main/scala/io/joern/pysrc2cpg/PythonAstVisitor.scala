@@ -1,6 +1,6 @@
 package io.joern.pysrc2cpg
 
-import PythonAstVisitor.{logger, metaClassSuffix, noLineAndColumn}
+import PythonAstVisitor.{keywordDictArgName, logger, metaClassSuffix, noLineAndColumn}
 import io.joern.pysrc2cpg.memop.*
 import io.joern.pysrc2cpg.memop.MemoryOperation.{Del, Load, Store}
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants.builtinPrefix
@@ -1444,7 +1444,6 @@ class PythonAstVisitor(
     createNAryOperatorCall(boolOpToCodeAndFullName(boolOp.op), operandNodes, lineAndColOf(boolOp))
   }
 
-  // TODO test
   def convert(namedExpr: ast.NamedExpr): NewNode = {
     val targetNode = convert(namedExpr.target)
     val valueNode  = convert(namedExpr.value)
@@ -1848,13 +1847,14 @@ class PythonAstVisitor(
     */
   def convert(call: ast.Call): nodes.NewNode = {
     val argumentNodes = call.args.map(convert).toSeq
-    val keywordArgNodes = call.keywords.flatMap { keyword =>
+    val keywordArgNodes = call.keywords.map { keyword =>
       if (keyword.arg.isDefined) {
-        Some((keyword.arg.get, convert(keyword.value)))
+        (keyword.arg.get, convert(keyword.value))
       } else {
         // keyword.arg == None. This is the case for func(**dict) style arguments.
-        // TODO implement handling for this case.
-        None
+        // We use a synthetic argument name to preserve the unpacked dict as an argument
+        // in the CPG so that data flow tracking can follow through it.
+        (keywordDictArgName, convert(keyword.value))
       }
     }
 
@@ -2184,8 +2184,9 @@ class PythonAstVisitor(
 object PythonAstVisitor {
   private val logger = LoggerFactory.getLogger(getClass)
 
-  val typingPrefix    = "typing."
-  val metaClassSuffix = "<meta>"
+  val typingPrefix       = "typing."
+  val metaClassSuffix    = "<meta>"
+  val keywordDictArgName = "<keyword_dict>"
 
   val noLineAndColumn = LineAndColumn(-1, -1, -1, -1, -1, -1)
 
