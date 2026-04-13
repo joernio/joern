@@ -162,10 +162,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForAssignment(assignment: PhpAssignment): Ast = {
     assignment.target match {
       case arrayDimFetch @ PhpArrayDimFetchExpr(innerArrayDimFetch: PhpArrayDimFetchExpr, _, _)
-          if !isVariableIndexAccessWithDimensions(arrayDimFetch) =>
+          if !isIndexAccessWithDimensions(arrayDimFetch) =>
         // Rewrite `$xs[][$expr] = <value_expr>` as multiple assignments/pushes
         astForMultiArrayDimAssign(assignment, arrayDimFetch)
-      case arrayDimFetch @ PhpArrayDimFetchExpr(_: PhpVariable, _, _) if arrayDimFetch.dimension.isEmpty =>
+      case arrayDimFetch @ PhpArrayDimFetchExpr(_, _, _) if arrayDimFetch.dimension.isEmpty =>
         // Rewrite `$xs[] = <value_expr>` as `array_push($xs, <value_expr>)` to simplify finding dataflows.
         astForEmptyArrayDimAssign(assignment, arrayDimFetch)
       case arrayExpr: (PhpArrayExpr | PhpListExpr) =>
@@ -232,19 +232,19 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   @tailrec
-  private def isVariableIndexAccessWithDimensions(expr: PhpExpr): Boolean = {
+  private def isIndexAccessWithDimensions(expr: PhpExpr): Boolean = {
     expr match {
       case arrayDimFetchExpr: PhpArrayDimFetchExpr =>
-        val hasDimension     = arrayDimFetchExpr.dimension.nonEmpty
-        val accessOnVariable = arrayDimFetchExpr.variable.isInstanceOf[PhpVariable]
+        val hasDimension = arrayDimFetchExpr.dimension.nonEmpty
 
         arrayDimFetchExpr.variable match {
-          case phpVar: PhpVariable =>
-            hasDimension
           case innerArrayDimFetchExpr: PhpArrayDimFetchExpr if hasDimension =>
-            isVariableIndexAccessWithDimensions(innerArrayDimFetchExpr)
-          case _ =>
+            isIndexAccessWithDimensions(innerArrayDimFetchExpr)
+          case _: PhpArrayDimFetchExpr =>
+            // has no dimensions ($xs...[])
             false
+          case _ =>
+            hasDimension
         }
       case _ =>
         false
@@ -271,8 +271,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     def traverseArrayDimExpr(expr: PhpArrayDimFetchExpr, lastValueAst: Ast): List[Ast] = {
       expr.variable match {
-        case variable if variable.isInstanceOf[PhpVariable] || isVariableIndexAccessWithDimensions(expr) =>
-          if (expr.dimension.isEmpty && variable.isInstanceOf[PhpVariable]) {
+        case variable if !variable.isInstanceOf[PhpArrayDimFetchExpr] || isIndexAccessWithDimensions(expr) =>
+          if (expr.dimension.isEmpty && !variable.isInstanceOf[PhpArrayDimFetchExpr]) {
             List(createArrayPushAssignment(assignment, variable, lastValueAst))
           } else {
             val targetAst = astForExpr(expr)
@@ -280,7 +280,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           }
 
         case innerArrayDimFetchExpr: PhpArrayDimFetchExpr
-            if expr.dimension.isEmpty && isVariableIndexAccessWithDimensions(innerArrayDimFetchExpr) =>
+            if expr.dimension.isEmpty && isIndexAccessWithDimensions(innerArrayDimFetchExpr) =>
           List(createArrayPushAssignment(assignment, innerArrayDimFetchExpr, lastValueAst))
 
         case innerArrayDimFetchExpr: PhpArrayDimFetchExpr =>

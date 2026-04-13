@@ -93,18 +93,41 @@ class ArrayTests extends PhpCode2CpgFixture {
     }
   }
 
-  "assignments using the multi array dimension fetch syntax without last dimension should be rewritten as multiple assignments" in {
+  "assignments using the empty array dimension fetch syntax with a property fetch variable should be rewritten as array_push" in {
     val cpg = code("""<?php
         |function foo($val) {
-        |  $xs[][2][] = $val;
+        |  $cls->field[] = $val;
+        |}
+        |""".stripMargin)
+
+    inside(cpg.method.name("foo").body.astChildren.l) { case List(xsLocal: Local, arrayPush: Call) =>
+      xsLocal.name shouldBe "cls"
+      xsLocal.lineNumber shouldBe Some(3)
+
+      arrayPush.name shouldBe "array_push"
+      arrayPush.code shouldBe "$cls->field[] = $val"
+      inside(arrayPush.argument.l) { case List(fieldAccess: Call, identifier: Identifier) =>
+        fieldAccess.name shouldBe Operators.fieldAccess
+        fieldAccess.code shouldBe "$cls->field"
+
+        identifier.name shouldBe "val"
+        identifier.code shouldBe "$val"
+      }
+    }
+  }
+
+  "assignments using the multi array dimension fetch syntax with a property fetch variable and without last dimension should be rewritten as multiple assignments" in {
+    val cpg = code("""<?php
+        |function foo($val) {
+        |  $cls->field[][2][] = $val;
         |}
         |""".stripMargin)
 
     inside(cpg.method.name("foo").body.astChildren.l) { case List(block: Block) =>
-      block.code shouldBe "$xs[][2][] = $val"
+      block.code shouldBe "$cls->field[][2][] = $val"
       block.lineNumber shouldBe Some(3)
 
-      inside(block.astChildren.isLocal.l) { case List(tmp0, tmp1, tmp2, tmp3, xs) =>
+      inside(block.astChildren.isLocal.l) { case List(tmp0, tmp1, tmp2, tmp3, cls) =>
         tmp0.name shouldBe "foo@tmp-0"
         tmp0.code shouldBe "$foo@tmp-0"
         tmp1.name shouldBe "foo@tmp-1"
@@ -113,8 +136,8 @@ class ArrayTests extends PhpCode2CpgFixture {
         tmp2.code shouldBe "$foo@tmp-2"
         tmp3.name shouldBe "foo@tmp-3"
         tmp3.code shouldBe "$foo@tmp-3"
-        xs.name shouldBe "xs"
-        xs.code shouldBe "$xs"
+        cls.name shouldBe "cls"
+        cls.code shouldBe "$cls"
       }
 
       inside(block.astChildren.not(_.isLocal).l) {
@@ -160,11 +183,11 @@ class ArrayTests extends PhpCode2CpgFixture {
           }
 
           arrayPushCall.name shouldBe "array_push"
-          arrayPushCall.code shouldBe "$xs[] = $foo@tmp-2"
+          arrayPushCall.code shouldBe "$cls->field[] = $foo@tmp-2"
           arrayPushCall.order shouldBe 3
-          inside(arrayPushCall.argument.l) { case List(lhsIdentifier: Identifier, rhsIdentifier: Identifier) =>
-            lhsIdentifier.name shouldBe "xs"
-            lhsIdentifier.code shouldBe "$xs"
+          inside(arrayPushCall.argument.l) { case List(fieldAccess: Call, rhsIdentifier: Identifier) =>
+            fieldAccess.name shouldBe Operators.fieldAccess
+            fieldAccess.code shouldBe "$cls->field"
 
             rhsIdentifier.name shouldBe "foo@tmp-2"
             rhsIdentifier.code shouldBe "$foo@tmp-2"
