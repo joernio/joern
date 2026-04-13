@@ -34,14 +34,7 @@ class RubyAstGenRunner(config: Config, sharedJRubyEnv: Option[JRubyEnvironment] 
 
   override def close(): Unit = {
     if (ownsEnvironment) {
-      val closeContainer = Try(container.terminate())
-      if (closeContainer.isFailure) {
-        logger.error("Error occurred while terminating JRuby scripting container!", closeContainer.failed.get)
-      }
-      val closeEnv = Try(env.close())
-      if (closeEnv.isFailure) {
-        logger.error("Error occurred while cleaning up JRuby execution directory!", closeEnv.failed.get)
-      }
+      jrubyEnv.close()
     }
   }
 
