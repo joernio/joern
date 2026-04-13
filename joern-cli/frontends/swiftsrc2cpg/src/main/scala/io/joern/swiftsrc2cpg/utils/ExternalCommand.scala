@@ -3,7 +3,7 @@ package io.joern.swiftsrc2cpg.utils
 import io.shiftleft.semanticcpg.utils.ExternalCommandResult
 import org.slf4j.LoggerFactory
 
-import java.io.{BufferedReader, InputStream, InputStreamReader}
+import java.io.{BufferedReader, InputStreamReader}
 import java.nio.file.Paths
 import scala.util.{Failure, Success, Try, Using}
 
