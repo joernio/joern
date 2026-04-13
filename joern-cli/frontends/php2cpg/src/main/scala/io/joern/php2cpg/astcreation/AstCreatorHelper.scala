@@ -110,6 +110,24 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
       .getOrElse(name)
   }
 
+  protected def codeForExpr(expr: PhpExpr): String = {
+    fileContentString.substring(expr.attributes.startFilePos, expr.attributes.endFilePos)
+  }
+
+  protected def codeForSingleArrayTmpElemAssign(targetName: String, key: Option[PhpExpr], value: PhpExpr): String = {
+    val keyCode = key
+      .map(codeForExpr)
+      .map(k => s"$k => ")
+      .getOrElse("")
+    val valueCode = value match {
+      case PhpVariable(name: PhpNameExpr, _) =>
+        s"$$${name.name}"
+      case _ => ""
+    }
+
+    s"$$$targetName = array($keyCode$valueCode)"
+  }
+
   protected def dimensionFromSimpleScalar(scalar: PhpSimpleScalar, idxTracker: ArrayIndexTracker): PhpExpr = {
     val maybeIntValue = scalar match {
       case string: PhpString =>

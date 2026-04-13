@@ -49,6 +49,34 @@ class ArrayTests extends PhpCode2CpgFixture {
     }
   }
 
+  "array accesses with multiple literal keys should be represented as index accesses" in {
+    val cpg = code("""<?php
+        |$arr[1][2];
+        |""".stripMargin)
+
+    inside(cpg.method.name("<global>").block.astChildren.l) { case List(local: Local, indexAccess: Call) =>
+      local.name shouldBe "arr"
+      local.code shouldBe "$arr"
+
+      indexAccess.name shouldBe Operators.indexAccess
+      indexAccess.code shouldBe "$arr[1][2]"
+
+      inside(indexAccess.argument.l) { case List(indexAccessTwo: Call, twoLiteral: Literal) =>
+        twoLiteral.code shouldBe "2"
+
+        indexAccessTwo.name shouldBe Operators.indexAccess
+        indexAccessTwo.code shouldBe "$arr[1]"
+
+        inside(indexAccessTwo.argument.l) { case List(identifier: Identifier, twoLiteral: Literal) =>
+          twoLiteral.code shouldBe "1"
+
+          identifier.name shouldBe "arr"
+          identifier.code shouldBe "$arr"
+        }
+      }
+    }
+  }
+
   "assignments using the empty array dimension fetch syntax should be rewritten as array_push" in {
     val cpg = code("""<?php
         |function foo($val) {
@@ -62,6 +90,289 @@ class ArrayTests extends PhpCode2CpgFixture {
 
       arrayPush.name shouldBe "array_push"
       arrayPush.code shouldBe "$xs[] = $val"
+    }
+  }
+
+  "assignments using the empty array dimension fetch syntax with a property fetch variable should be rewritten as array_push" in {
+    val cpg = code("""<?php
+        |function foo($val) {
+        |  $cls->field[] = $val;
+        |}
+        |""".stripMargin)
+
+    inside(cpg.method.name("foo").body.astChildren.l) { case List(xsLocal: Local, arrayPush: Call) =>
+      xsLocal.name shouldBe "cls"
+      xsLocal.lineNumber shouldBe Some(3)
+
+      arrayPush.name shouldBe "array_push"
+      arrayPush.code shouldBe "$cls->field[] = $val"
+      inside(arrayPush.argument.l) { case List(fieldAccess: Call, identifier: Identifier) =>
+        fieldAccess.name shouldBe Operators.fieldAccess
+        fieldAccess.code shouldBe "$cls->field"
+
+        identifier.name shouldBe "val"
+        identifier.code shouldBe "$val"
+      }
+    }
+  }
+
+  "assignments using the multi array dimension fetch syntax with a property fetch variable and without last dimension should be rewritten as multiple assignments" in {
+    val cpg = code("""<?php
+        |function foo($val) {
+        |  $cls->field[][2][] = $val;
+        |}
+        |""".stripMargin)
+
+    inside(cpg.method.name("foo").body.astChildren.l) { case List(block: Block) =>
+      block.code shouldBe "$cls->field[][2][] = $val"
+      block.lineNumber shouldBe Some(3)
+
+      inside(block.astChildren.isLocal.l) { case List(tmp0, tmp1, tmp2, tmp3, cls) =>
+        tmp0.name shouldBe "foo@tmp-0"
+        tmp0.code shouldBe "$foo@tmp-0"
+        tmp1.name shouldBe "foo@tmp-1"
+        tmp1.code shouldBe "$foo@tmp-1"
+        tmp2.name shouldBe "foo@tmp-2"
+        tmp2.code shouldBe "$foo@tmp-2"
+        tmp3.name shouldBe "foo@tmp-3"
+        tmp3.code shouldBe "$foo@tmp-3"
+        cls.name shouldBe "cls"
+        cls.code shouldBe "$cls"
+      }
+
+      inside(block.astChildren.not(_.isLocal).l) {
+        case List(assignOne: Call, assignTwo: Call, arrayPushCall: Call, retIden: Identifier) =>
+          assignOne.name shouldBe Operators.assignment
+          assignOne.code shouldBe "$foo@tmp-0 = array($val)"
+          assignOne.order shouldBe 1
+          inside(assignOne.astChildren.l) { case List(lhsIdentifier: Identifier, rhsBlock: Block) =>
+            lhsIdentifier.name shouldBe "foo@tmp-0"
+            lhsIdentifier.code shouldBe "$foo@tmp-0"
+
+            inside(rhsBlock.astChildren.l) {
+              case List(arrayAssignCall: Call, indexAssignCall: Call, retIdentifier: Identifier) =>
+                arrayAssignCall.name shouldBe Operators.assignment
+                arrayAssignCall.code shouldBe "$foo@tmp-1 = array()"
+
+                indexAssignCall.name shouldBe Operators.assignment
+                indexAssignCall.code shouldBe "$foo@tmp-1[0] = $val"
+
+                retIdentifier.name shouldBe "foo@tmp-1"
+                retIdentifier.code shouldBe "$foo@tmp-1"
+            }
+          }
+
+          assignTwo.name shouldBe Operators.assignment
+          assignTwo.code shouldBe "$foo@tmp-2 = array(2 => $foo@tmp-0)"
+          assignTwo.order shouldBe 2
+          inside(assignTwo.astChildren.l) { case List(lhsIdentifier: Identifier, rhsBlock: Block) =>
+            lhsIdentifier.name shouldBe "foo@tmp-2"
+            lhsIdentifier.code shouldBe "$foo@tmp-2"
+
+            inside(rhsBlock.astChildren.l) {
+              case List(arrayAssignCall: Call, indexAssignCall: Call, retIdentifier: Identifier) =>
+                arrayAssignCall.name shouldBe Operators.assignment
+                arrayAssignCall.code shouldBe "$foo@tmp-3 = array()"
+
+                indexAssignCall.name shouldBe Operators.assignment
+                indexAssignCall.code shouldBe "$foo@tmp-3[2] = $foo@tmp-0"
+
+                retIdentifier.name shouldBe "foo@tmp-3"
+                retIdentifier.code shouldBe "$foo@tmp-3"
+            }
+          }
+
+          arrayPushCall.name shouldBe "array_push"
+          arrayPushCall.code shouldBe "$cls->field[] = $foo@tmp-2"
+          arrayPushCall.order shouldBe 3
+          inside(arrayPushCall.argument.l) { case List(fieldAccess: Call, rhsIdentifier: Identifier) =>
+            fieldAccess.name shouldBe Operators.fieldAccess
+            fieldAccess.code shouldBe "$cls->field"
+
+            rhsIdentifier.name shouldBe "foo@tmp-2"
+            rhsIdentifier.code shouldBe "$foo@tmp-2"
+          }
+
+          retIden.name shouldBe "val"
+          retIden.code shouldBe "$val"
+          retIden.order shouldBe 4
+      }
+    }
+  }
+
+  "assignments using the multi array dimension fetch syntax with last dimension should be rewritten as multiple assignments and index assignment" in {
+    val cpg = code("""<?php
+        |function foo($val) {
+        |  $xs[1][2][] = $val;
+        |}
+        |""".stripMargin)
+
+    inside(cpg.method.name("foo").body.astChildren.l) { case List(block: Block) =>
+      block.code shouldBe "$xs[1][2][] = $val"
+      block.lineNumber shouldBe Some(3)
+
+      inside(block.astChildren.isLocal.l) { case List(xs) =>
+        xs.name shouldBe "xs"
+        xs.code shouldBe "$xs"
+      }
+
+      inside(block.astChildren.not(_.isLocal).l) { case List(arrayPushCall: Call, retIden: Identifier) =>
+        arrayPushCall.name shouldBe "array_push"
+        arrayPushCall.code shouldBe "$xs[1][2][] = $val"
+        arrayPushCall.order shouldBe 1
+        inside(arrayPushCall.argument.l) { case List(indexAccess: Call, identifier: Identifier) =>
+          indexAccess.name shouldBe Operators.indexAccess
+          indexAccess.code shouldBe "$xs[1][2]"
+
+          identifier.name shouldBe "val"
+          identifier.code shouldBe "$val"
+        }
+
+        retIden.name shouldBe "val"
+        retIden.code shouldBe "$val"
+        retIden.order shouldBe 2
+      }
+    }
+  }
+
+  "assignments using the multi array dimension fetch syntax with no dimensionless access should be an indexAccess" in {
+    val cpg = code("""<?php
+        |function foo($val) {
+        |  $xs[1][2] = $val;
+        |}
+        |""".stripMargin)
+
+    inside(cpg.method.name("foo").body.astChildren.l) { case List(local: Local, assignment: Call) =>
+      local.name shouldBe "xs"
+      local.code shouldBe "$xs"
+
+      assignment.name shouldBe Operators.assignment
+      assignment.code shouldBe "$xs[1][2] = $val"
+
+      inside(assignment.argument.l) { case List(indexAccess: Call, identifier: Identifier) =>
+        identifier.name shouldBe "val"
+        identifier.code shouldBe "$val"
+
+        indexAccess.name shouldBe Operators.indexAccess
+        indexAccess.code shouldBe "$xs[1][2]"
+      }
+    }
+  }
+
+  "assignments using the multi array dimension fetch syntax with first dimension should be rewritten as multiple assignments" in {
+    val cpg = code("""<?php
+        |function foo($val) {
+        |  $xs[1][][2] = $val;
+        |}
+        |""".stripMargin)
+
+    inside(cpg.method.name("foo").body.astChildren.l) { case List(block: Block) =>
+      block.code shouldBe "$xs[1][][2] = $val"
+      block.lineNumber shouldBe Some(3)
+
+      inside(block.astChildren.isLocal.l) { case List(tmp0, tmp1, xs) =>
+        tmp0.name shouldBe "foo@tmp-0"
+        tmp0.code shouldBe "$foo@tmp-0"
+        tmp1.name shouldBe "foo@tmp-1"
+        tmp1.code shouldBe "$foo@tmp-1"
+        xs.name shouldBe "xs"
+        xs.code shouldBe "$xs"
+      }
+
+      inside(block.astChildren.not(_.isLocal).l) {
+        case List(assignOne: Call, arrayPushCall: Call, retIden: Identifier) =>
+          assignOne.name shouldBe Operators.assignment
+          assignOne.code shouldBe "$foo@tmp-0 = array(2 => $val)"
+          assignOne.order shouldBe 1
+          inside(assignOne.astChildren.l) { case List(lhsIdentifier: Identifier, rhsBlock: Block) =>
+            lhsIdentifier.name shouldBe "foo@tmp-0"
+            lhsIdentifier.code shouldBe "$foo@tmp-0"
+
+            inside(rhsBlock.astChildren.l) {
+              case List(arrayAssignCall: Call, indexAssignCall: Call, retIdentifier: Identifier) =>
+                arrayAssignCall.name shouldBe Operators.assignment
+                arrayAssignCall.code shouldBe "$foo@tmp-1 = array()"
+
+                indexAssignCall.name shouldBe Operators.assignment
+                indexAssignCall.code shouldBe "$foo@tmp-1[2] = $val"
+
+                retIdentifier.name shouldBe "foo@tmp-1"
+                retIdentifier.code shouldBe "$foo@tmp-1"
+            }
+          }
+
+          arrayPushCall.name shouldBe "array_push"
+          arrayPushCall.code shouldBe "$xs[1][] = $foo@tmp-0"
+          arrayPushCall.order shouldBe 2
+          inside(arrayPushCall.argument.l) { case List(indexAccess: Call, identifier: Identifier) =>
+            indexAccess.name shouldBe Operators.indexAccess
+            indexAccess.code shouldBe "$xs[1]"
+
+            identifier.name shouldBe "foo@tmp-0"
+            identifier.code shouldBe "$foo@tmp-0"
+          }
+
+          retIden.name shouldBe "val"
+          retIden.code shouldBe "$val"
+          retIden.order shouldBe 3
+      }
+    }
+  }
+
+  "assignments using the multi array dimension fetch syntax with a complex source expression should use a tmp for the rhs" in {
+    val cpg = code("""<?php
+        |function foo($val) {
+        |  $xs[1][][2] = bar($val);
+        |}
+        |""".stripMargin)
+
+    inside(cpg.method.name("foo").body.astChildren.l) { case List(block: Block) =>
+      block.code shouldBe "$xs[1][][2] = bar($val)"
+      block.lineNumber shouldBe Some(3)
+
+      inside(block.astChildren.isLocal.l) { case List(tmp0, tmp1, tmp2, xs) =>
+        tmp0.name shouldBe "foo@tmp-0"
+        tmp0.code shouldBe "$foo@tmp-0"
+        tmp1.name shouldBe "foo@tmp-1"
+        tmp1.code shouldBe "$foo@tmp-1"
+        tmp2.name shouldBe "foo@tmp-2"
+        tmp2.code shouldBe "$foo@tmp-2"
+        xs.name shouldBe "xs"
+        xs.code shouldBe "$xs"
+      }
+
+      inside(block.astChildren.not(_.isLocal).l) {
+        case List(assignOne: Call, assignTwo: Call, arrayPushCall: Call, retIden: Identifier) =>
+          assignOne.name shouldBe Operators.assignment
+          assignOne.code shouldBe "$foo@tmp-0 = bar($val)"
+          assignOne.order shouldBe 1
+          inside(assignOne.argument.l) { case List(identifier: Identifier, call: Call) =>
+            identifier.name shouldBe "foo@tmp-0"
+            identifier.code shouldBe "$foo@tmp-0"
+
+            call.name shouldBe "bar"
+            call.code shouldBe "bar($val)"
+          }
+
+          assignTwo.name shouldBe Operators.assignment
+          assignTwo.code shouldBe "$foo@tmp-1 = array(2 => $foo@tmp-0)"
+          assignTwo.order shouldBe 2
+
+          arrayPushCall.name shouldBe "array_push"
+          arrayPushCall.code shouldBe "$xs[1][] = $foo@tmp-1"
+          arrayPushCall.order shouldBe 3
+          inside(arrayPushCall.argument.l) { case List(indexAccess: Call, identifier: Identifier) =>
+            indexAccess.name shouldBe Operators.indexAccess
+            indexAccess.code shouldBe "$xs[1]"
+
+            identifier.name shouldBe "foo@tmp-1"
+            identifier.code shouldBe "$foo@tmp-1"
+          }
+
+          retIden.name shouldBe "foo@tmp-0"
+          retIden.code shouldBe "$foo@tmp-0"
+          retIden.order shouldBe 4
+      }
     }
   }
 

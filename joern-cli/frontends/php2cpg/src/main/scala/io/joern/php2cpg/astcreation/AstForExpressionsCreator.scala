@@ -13,6 +13,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
+import scala.annotation.tailrec
 import scala.collection.mutable
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -160,7 +161,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   protected def astForAssignment(assignment: PhpAssignment): Ast = {
     assignment.target match {
-      case arrayDimFetch: PhpArrayDimFetchExpr if arrayDimFetch.dimension.isEmpty =>
+      case arrayDimFetch @ PhpArrayDimFetchExpr(innerArrayDimFetch: PhpArrayDimFetchExpr, _, _)
+          if !isIndexAccessWithDimensions(arrayDimFetch) =>
+        // Rewrite `$xs[][$expr] = <value_expr>` as multiple assignments/pushes
+        astForMultiArrayDimAssign(assignment, arrayDimFetch)
+      case arrayDimFetch @ PhpArrayDimFetchExpr(_, _, _) if arrayDimFetch.dimension.isEmpty =>
         // Rewrite `$xs[] = <value_expr>` as `array_push($xs, <value_expr>)` to simplify finding dataflows.
         astForEmptyArrayDimAssign(assignment, arrayDimFetch)
       case arrayExpr: (PhpArrayExpr | PhpListExpr) =>
@@ -181,8 +186,223 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
   }
 
-  /** This is used to rewrite the short form $xs[] = <value_expr> as array_push($xs, <value_expr>) to avoid having to
-    * handle the empty array access operator as a special case in the dataflow engine.
+  private def createTmpIdentifierAst(origin: PhpNode, tmpName: String, local: NewNode): Ast = {
+    val identifier = identifierNode(origin, tmpName, s"$$$tmpName", Defines.Any)
+    astForIdentifierWithLocalRef(identifier, local)
+  }
+
+  private def createArrayElementAssignment(
+    origin: PhpNode,
+    targetName: String,
+    targetLocal: NewNode,
+    key: Option[PhpExpr],
+    value: Ast
+  ): Ast = {
+    val targetIdentifier = identifierNode(origin, targetName, s"$$$targetName", Defines.Any)
+    val targetAst        = astForIdentifierWithLocalRef(targetIdentifier, targetLocal)
+
+    val keyAst = key match {
+      case Some(keyExpr) =>
+        astForExpr(keyExpr)
+      case None =>
+        val zeroLiteral = literalNode(origin, "0", TypeConstants.Int)
+        Ast(zeroLiteral)
+    }
+
+    val indexAccessCode = s"$$$targetName[${keyAst.rootCodeOrEmpty}]"
+    val indexAccessNode = operatorCallNode(origin, indexAccessCode, Operators.indexAccess, None)
+    val indexAccessAst  = callAst(indexAccessNode, targetAst :: keyAst :: Nil)
+
+    simpleAssignAst(origin, indexAccessAst, value)
+  }
+
+  private def createArrayPushAssignment(origin: PhpNode, arrayVar: PhpExpr, valueAst: Ast): Ast = {
+    val arrayAst      = astForExpr(arrayVar)
+    val arrayPushCode = s"${arrayAst.rootCodeOrEmpty}[] = ${valueAst.rootCodeOrEmpty}"
+    val arrayPushCallNode = callNode(
+      origin,
+      arrayPushCode,
+      "array_push",
+      "array_push",
+      DispatchTypes.STATIC_DISPATCH,
+      Some(arrayPushCode),
+      Some(Defines.Any)
+    )
+    callAst(arrayPushCallNode, arrayAst :: valueAst :: Nil)
+  }
+
+  @tailrec
+  private def isIndexAccessWithDimensions(expr: PhpExpr): Boolean = {
+    expr match {
+      case arrayDimFetchExpr: PhpArrayDimFetchExpr =>
+        val hasDimension = arrayDimFetchExpr.dimension.nonEmpty
+
+        arrayDimFetchExpr.variable match {
+          case innerArrayDimFetchExpr: PhpArrayDimFetchExpr if hasDimension =>
+            isIndexAccessWithDimensions(innerArrayDimFetchExpr)
+          case _: PhpArrayDimFetchExpr =>
+            // has no dimensions ($xs...[])
+            false
+          case _ =>
+            hasDimension
+        }
+      case _ =>
+        false
+    }
+  }
+
+  private def isSimpleExpression(expr: PhpExpr): Boolean = expr match {
+    case _: PhpVariable | _: PhpScalar | _: PhpNameExpr | _: PhpConstFetchExpr => true
+    case _                                                                     => false
+  }
+
+  /** This is used to rewrite the short form $xs[][$expr] = <value_expr> as a combination of multiple assignments and
+    * array_push(...) calls.
+    *
+    * All index accesses from the right except the one on the variable are lowered as assignments to tmp variables. The
+    * leftmost index access is represented as either an array_push(...) call if dimensionless (see
+    * [[astForEmptyArrayDimAssign]]), or an index assignment if there is a dimension.
+    *
+    * For simple expressions (variables, literals), we evaluate the RHS twice to avoid a tmp variable. For complex
+    * expressions (calls, operators), we use a tmp to avoid duplicate evaluation.
+    */
+  private def astForMultiArrayDimAssign(assignment: PhpAssignment, arrayDimFetchExpr: PhpArrayDimFetchExpr): Ast = {
+    val attrs = assignment.attributes
+
+    def traverseArrayDimExpr(expr: PhpArrayDimFetchExpr, lastValueAst: Ast): List[Ast] = {
+      expr.variable match {
+        case variable if !variable.isInstanceOf[PhpArrayDimFetchExpr] || isIndexAccessWithDimensions(expr) =>
+          if (expr.dimension.isEmpty && !variable.isInstanceOf[PhpArrayDimFetchExpr]) {
+            List(createArrayPushAssignment(assignment, variable, lastValueAst))
+          } else {
+            val targetAst = astForExpr(expr)
+            List(simpleAssignAst(assignment, targetAst, lastValueAst))
+          }
+
+        case innerArrayDimFetchExpr: PhpArrayDimFetchExpr
+            if expr.dimension.isEmpty && isIndexAccessWithDimensions(innerArrayDimFetchExpr) =>
+          List(createArrayPushAssignment(assignment, innerArrayDimFetchExpr, lastValueAst))
+
+        case innerArrayDimFetchExpr: PhpArrayDimFetchExpr =>
+          val tmpName  = this.scope.getNewVarTmp()
+          val tmpLocal = handleVariableOccurrence(assignment, tmpName)
+
+          val singleElemArray =
+            createSingleElementArrayAssignment(assignment, tmpName, tmpLocal, expr.dimension, lastValueAst)
+
+          val tmpIdentAst = createTmpIdentifierAst(assignment, tmpName, tmpLocal)
+          singleElemArray :: traverseArrayDimExpr(innerArrayDimFetchExpr, tmpIdentAst)
+
+        case variable =>
+          val errorPosition = s"${line(assignment).getOrElse("")}:$relativeFileName"
+          logger.warn(s"Unknown variable found in ArrayDimFetchExpr: $errorPosition")
+          Nil
+      }
+    }
+
+    arrayDimFetchExpr.variable match {
+      case innerArrayDimFetchExpr: PhpArrayDimFetchExpr =>
+        // use a BlockScope to ensure new tmp locals are not in the enclosing scope
+        val block = blockNode(assignment)
+        scope.pushNewScope(BlockScope(block, ""))
+
+        // For complex expressions, use a tmp to avoid duplicate evaluation
+        // For simple expressions (variables, literals), evaluate twice to avoid tmp overhead
+        val (loweringAsts, returnAst) = if (isSimpleExpression(assignment.source)) {
+          // Simple expression - safe to evaluate twice
+          val sourceAst = astForExpr(assignment.source)
+          val lowering  = traverseArrayDimExpr(arrayDimFetchExpr, sourceAst)
+          val return_   = astForExpr(assignment.source)
+          (lowering, return_)
+        } else {
+          // Complex expression (call, operator, etc.) - use tmp to evaluate once
+          val tmpName             = this.scope.getNewVarTmp()
+          val tmpLocal            = handleVariableOccurrence(assignment, tmpName)
+          val sourceAst           = astForExpr(assignment.source)
+          val tmpIdent            = createTmpIdentifierAst(assignment, tmpName, tmpLocal)
+          val tmpAssign           = simpleAssignAst(assignment, tmpIdent, sourceAst)
+          val tmpIdentForTraverse = createTmpIdentifierAst(assignment, tmpName, tmpLocal)
+          val lowering            = tmpAssign :: traverseArrayDimExpr(arrayDimFetchExpr, tmpIdentForTraverse)
+          val return_             = createTmpIdentifierAst(assignment, tmpName, tmpLocal)
+          (lowering, return_)
+        }
+
+        val blockCode = codeForExpr(assignment)
+        block.code(blockCode)
+        scope.popScope()
+
+        Ast(block)
+          .withChildren(loweringAsts)
+          .withChild(returnAst)
+      case _ =>
+        val errorPosition = s"${line(assignment).getOrElse("")}:$relativeFileName"
+        logger.warn(s"ArrayDimFetchExpr without ArrayDimFetchExpr should be handled in assignment: $errorPosition")
+        Ast()
+    }
+  }
+
+  /** Create assignment AST for single-element array: tmpVar = array(key => value) This mimics the structure created by
+    * [[astForArrayExpr]], which creates its own tmp variable.
+    */
+  private def createSingleElementArrayAssignment(
+    origin: PhpNode,
+    targetTmpName: String,
+    targetTmpLocal: NewNode,
+    key: Option[PhpExpr],
+    valueAst: Ast
+  ): Ast = {
+    val arrayTmpName  = this.scope.getNewVarTmp()
+    val arrayTmpLocal = handleVariableOccurrence(origin, arrayTmpName)
+
+    // Create the array initialization: arrayTmp = array()
+    val initArrayCode = "array()"
+    val initArrayCallNode = callNode(
+      origin,
+      initArrayCode,
+      "array",
+      "array",
+      DispatchTypes.STATIC_DISPATCH,
+      Some(initArrayCode),
+      Some(TypeConstants.Array)
+    )
+    val initArrayAst      = callAst(initArrayCallNode)
+    val arrayTmpIdentAst1 = createTmpIdentifierAst(origin, arrayTmpName, arrayTmpLocal)
+    val initAssign        = simpleAssignAst(origin, arrayTmpIdentAst1, initArrayAst)
+
+    // Assign element: arrayTmp[key] = value
+    val elemAssign = createArrayElementAssignment(origin, arrayTmpName, arrayTmpLocal, key, valueAst)
+
+    // Return the array tmp identifier
+    val arrayTmpIdentAst2 = createTmpIdentifierAst(origin, arrayTmpName, arrayTmpLocal)
+
+    // Create a block for the array creation
+    val arrayBlock = blockNode(origin)
+    val arrayBlockAst = Ast(arrayBlock)
+      .withChild(initAssign)
+      .withChild(elemAssign)
+      .withChild(arrayTmpIdentAst2)
+
+    // Now assign this block to the target tmp: targetTmp = <arrayBlock>
+    val targetTmpIdentAst = createTmpIdentifierAst(origin, targetTmpName, targetTmpLocal)
+    val targetAssign      = simpleAssignAst(origin, targetTmpIdentAst, arrayBlockAst)
+
+    val keyCode = key
+      .map(codeForExpr)
+      .map(k => s"$k => ")
+      .getOrElse("")
+    val valueCode    = valueAst.rootCodeOrEmpty
+    val overrideCode = s"$$$targetTmpName = array($keyCode$valueCode)"
+
+    targetAssign.root.collect { case rootNode: NewCall =>
+      rootNode.code(overrideCode)
+    }
+
+    targetAssign
+  }
+
+  /** This is used to rewrite the short form $expr[] = [[$value_expr]] as array_push($expr, [[$value_expr]]), where
+    * [[$expr]] is either a variable or an indexAccess, to avoid having to handle the empty array access operator as a
+    * special case in the dataflow engine.
     *
     * This representation is technically wrong in the case where the shorthand is used to initialise a new array (since
     * PHP expects the first argument to array_push to be an existing array). This shouldn't affect dataflow, however.
