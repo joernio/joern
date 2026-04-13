@@ -4,6 +4,7 @@ import io.joern.rubysrc2cpg.astcreation.AstCreator
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.StatementList
 import io.joern.rubysrc2cpg.datastructures.RubyProgramSummary
 import io.joern.rubysrc2cpg.parser.*
+import io.joern.rubysrc2cpg.parser.RubyAstGenRunner.JRubyEnvironment
 import io.joern.rubysrc2cpg.passes.{
   AstCreationPass,
   ConfigFileCreationPass,
@@ -30,7 +31,7 @@ import java.nio.file.{Files, Paths}
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try, Using}
 
-class RubySrc2Cpg extends X2CpgFrontend {
+class RubySrc2Cpg(sharedJRubyEnv: Option[JRubyEnvironment] = None) extends X2CpgFrontend {
   override type ConfigType = Config
   override val defaultConfig: Config = Config()
 
@@ -52,7 +53,7 @@ class RubySrc2Cpg extends X2CpgFrontend {
         case Some(astGenRunner) =>
           astGenRunner.execute(tmpDir, config)
         case None =>
-          val astGenRunner = RubyAstGenRunner(config)
+          val astGenRunner = RubyAstGenRunner(config, sharedJRubyEnv)
           rubyAstGenRunner = Option(astGenRunner)
           astGenRunner.execute(tmpDir, config)
       }
