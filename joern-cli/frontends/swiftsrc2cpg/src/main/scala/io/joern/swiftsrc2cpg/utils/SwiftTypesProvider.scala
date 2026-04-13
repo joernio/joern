@@ -170,7 +170,7 @@ object SwiftTypesProvider {
     * Example: The string {{{file1.swift file\ with\ spaces.swift -o output}}} would be split into
     * {{{["file1.swift", "file\ with\ spaces.swift", "-o", "output"]}}}.
     */
-  private val SwiftCompilerArgSplit = "(?<!\\\\) "
+  private val SwiftCompilerArgSplit = java.util.regex.Pattern.compile("(?<!\\\\) ")
 
   private val SwiftCompilerIgnoredArgs =
     Seq(
@@ -429,7 +429,7 @@ object SwiftTypesProvider {
     *   A list of individual arguments
     */
   private def argsFromLine(line: String): List[String] = {
-    line.replace("\\ -", " -").replace("/ -", " -").replace("\\=", "=").split(SwiftCompilerArgSplit).toList
+    SwiftCompilerArgSplit.split(line.replace("\\ -", " -").replace("/ -", " -").replace("\\=", "=")).toList
   }
 
   /** Lists all readable directories under the given path.
@@ -714,12 +714,12 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     Using.resource(new StringReader(jsonString)) { reader =>
       GsonTypeInfoReader.collectTypeInfo(reader).foreach { typeInfo =>
         val range    = typeInfo.range
-        val filename = typeInfo.filename
+        val filename = typeInfo.filename.replace("\\", "/")
         result.compute(
           filename,
           {
             case (_, null) =>
-              logger.debug(s"Generating type map for: $filename")
+              logger.debug(s"Generating type map for: ${typeInfo.filename}")
               val rangeMapping = new MutableSwiftFileLocalTypeMapping()
               rangeMapping.put(range, new mutable.HashSet[ResolvedTypeInfo]().addOne(resolve(typeInfo)))
               rangeMapping
@@ -744,9 +744,9 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     * information, and builds a comprehensive type mapping. Progress and errors are logged appropriately.
     *
     * @return
-    *   A Map containing filename-to-type mappings for Swift source files
+    *   A ConcurrentHashMap containing filename-to-type mappings for Swift source files
     */
-  def retrieveMappings(): SwiftTypeMapping = {
+  def retrieveMappings(): MutableSwiftTypeMapping = {
     val mapping = new MutableSwiftTypeMapping
     // We want to use the same pool for parallel Swift compiler invocations and their type mapping work
     val pool = java.util.concurrent.Executors.newCachedThreadPool()
@@ -769,11 +769,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
         }
       }
       logger.info(s"Got ${mapping.size} type map entries.")
-      mapping.asScala.toMap.map { case (filename, mapping) =>
-        filename -> mapping.asScala.toMap.map { case (range, set) =>
-          range -> set.toSet
-        }
-      }
+      mapping
     } finally {
       pool.shutdown()
     }

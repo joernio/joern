@@ -3,10 +3,10 @@ package io.joern.swiftsrc2cpg.passes
 import io.joern.swiftsrc2cpg.Config
 import io.joern.swiftsrc2cpg.astcreation.AstCreator
 import io.joern.swiftsrc2cpg.parser.SwiftJsonParser
-import io.joern.swiftsrc2cpg.parser.SwiftJsonParser.ParseResult
+import io.joern.swiftsrc2cpg.passes.AstCreationPass.FileAndTypesMap
 import io.joern.swiftsrc2cpg.utils.AstGenRunner.AstGenRunnerResult
 import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider
-import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.SwiftFileLocalTypeMapping
+import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{MutableSwiftTypeMapping, SwiftFileLocalTypeMapping}
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.utils.{Report, TimeUtils}
@@ -17,15 +17,14 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import java.nio.file.Paths
 import scala.collection.mutable
+import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
 
 class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: Config, report: Report = new Report())(
   implicit withSchemaValidation: ValidationMode
-) extends ForkJoinParallelCpgPassWithAccumulator[String, AstCreationPass.Accumulator](cpg) {
+) extends ForkJoinParallelCpgPassWithAccumulator[FileAndTypesMap, AstCreationPass.Accumulator](cpg) {
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])
-
-  private var typeMap = SwiftTypesProvider(config).map(_.retrieveMappings()).getOrElse(Map.empty)
 
   private var collectedTypes: Set[String]                                              = Set.empty
   private var collectedExtensionInherits: Map[String, Set[String]]                     = Map.empty
@@ -81,7 +80,21 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
     collectedMemberPropertyMapping = accumulator.memberPropertyMapping.toMap
   }
 
-  override def generateParts(): Array[String] = astGenRunnerResult.parsedFiles.toArray
+  override def generateParts(): Array[FileAndTypesMap] = {
+    val typesMap = SwiftTypesProvider(config).map(_.retrieveMappings()).getOrElse(new MutableSwiftTypeMapping())
+    if (typesMap.isEmpty) {
+      // early return to skip the readRelativeFilePath calls completely
+      astGenRunnerResult.parsedFiles.map(FileAndTypesMap(_, Map.empty)).toArray
+    } else {
+      astGenRunnerResult.parsedFiles.map { jsonPath =>
+        // we need to read the json files (lazily) to get the actual relative source file path
+        SwiftJsonParser.readRelativeFilePath(Paths.get(jsonPath)) match {
+          case Success(sourceFilename) => FileAndTypesMap(jsonPath, extractFileLocalTypesMap(sourceFilename, typesMap))
+          case _                       => FileAndTypesMap(jsonPath, Map.empty)
+        }
+      }.toArray
+    }
+  }
 
   override def finish(): Unit = {
     astGenRunnerResult.skippedFiles.foreach { skippedFile =>
@@ -96,30 +109,42 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
     }
   }
 
-  private def extractFileLocalTypeMap(parseResult: ParseResult): SwiftFileLocalTypeMapping = {
-    typeMap
-      .collectFirst {
-        // special handling for GitHub Windows and MacOS runner
-        // Windows: C:\Users\RUNNER~1\AppData\Local\Temp\hash\Input\file.swift vs. C:\Users\runneradmin\AppData\Local\Temp\hash\Input\file.swift
-        // macOS: /private/var/folders/y6/hash/T/Input/file.swift vs. /var/folders/y6/hash/T/Input/file.swift
-        case (filename, map) if filename.replace("\\", "/").endsWith(parseResult.filename) => (filename, map)
-      }
-      .map { case (filename, map) =>
-        typeMap = typeMap.removed(filename)
-        map
-      }
-      .getOrElse(Map.empty)
+  private def extractFileLocalTypesMap(
+    filename: String,
+    typesMap: MutableSwiftTypeMapping
+  ): SwiftFileLocalTypeMapping = {
+    // early exit
+    if (typesMap.isEmpty) return Map.empty
+
+    // Try exact match first (O(1)), then fall back to suffix match for CI path differences
+    // (Windows short paths, macOS /private/var vs /var symlinks).
+    val normalizedFilename = filename.replace("\\", "/")
+    val mutableMap = Option(typesMap.remove(normalizedFilename)).orElse {
+      typesMap
+        .keys()
+        .asScala
+        .find(_.endsWith(normalizedFilename))
+        .flatMap(key => Option(typesMap.remove(key)))
+    }
+    mutableMap match {
+      case Some(m) => m.asScala.toMap.map { case (range, set) => range -> set.toSet }
+      case None    => Map.empty
+    }
   }
 
-  override def runOnPart(diffGraph: DiffGraphBuilder, input: String, accumulator: AstCreationPass.Accumulator): Unit = {
+  override def runOnPart(
+    diffGraph: DiffGraphBuilder,
+    part: FileAndTypesMap,
+    accumulator: AstCreationPass.Accumulator
+  ): Unit = {
     val ((gotCpg, filename), duration) = TimeUtils.time {
-      SwiftJsonParser.readFile(Paths.get(input)) match {
+      SwiftJsonParser.readFile(Paths.get(part.filename)) match {
         case Success(parseResult) =>
           report.addReportInfo(parseResult.filename, parseResult.loc, parsed = true)
           Try {
-            val fileLocalTypesMap = extractFileLocalTypeMap(parseResult)
-            val astCreator        = new AstCreator(config, accumulator, parseResult, fileLocalTypesMap)
-            val localDiff         = astCreator.createAst()
+            val astCreator = new AstCreator(config, accumulator, parseResult, part.fileLocalTypesMap)
+            val localDiff  = astCreator.createAst()
+            part.fileLocalTypesMap = null // null this map out to keep heap pressure low
             diffGraph.absorb(localDiff)
           } match {
             case Failure(exception) =>
@@ -130,8 +155,8 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
               (true, parseResult.filename)
           }
         case Failure(exception) =>
-          logger.warn(s"Failed to read '$input'", exception)
-          (false, input)
+          logger.warn(s"Failed to read '${part.filename}'", exception)
+          (false, part.filename)
       }
     }
     report.updateReport(filename, cpg = gotCpg, duration)
@@ -142,6 +167,8 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
 object AstCreationPass {
 
   case class MemberInfo(name: String, code: String, typeFullName: String)
+
+  class FileAndTypesMap(val filename: String, var fileLocalTypesMap: SwiftFileLocalTypeMapping)
 
   /** Per-thread accumulator for data collected during AST creation. Each thread receives its own instance; the
     * framework merges them after all parts complete.

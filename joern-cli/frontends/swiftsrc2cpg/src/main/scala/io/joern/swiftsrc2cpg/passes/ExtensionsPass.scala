@@ -312,8 +312,6 @@ class ExtensionsPass(
         diffGraph.setNodeProperty(indexNode, PropertyNames.ArgumentIndex, 2)
         diffGraph.setNodeProperty(indexNode, PropertyNames.Order, 3)
 
-        indexAccess.outE(EdgeTypes.AST).foreach(diffGraph.removeEdge)
-        indexAccess.outE(EdgeTypes.ARGUMENT).foreach(diffGraph.removeEdge)
         diffGraph.removeNode(indexAccess)
       }
     }
