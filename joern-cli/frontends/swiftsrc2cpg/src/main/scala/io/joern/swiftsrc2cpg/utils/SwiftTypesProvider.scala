@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory
 import versionsort.VersionHelper
 
 import java.io.{BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter, StringReader}
+import java.util.concurrent.{Callable, Executors}
 import scala.jdk.CollectionConverters.*
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
@@ -588,22 +589,35 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     try {
       val process = pb.start()
       try {
+        // Read stdout on a separate thread to avoid deadlock: if the pipe buffer fills up,
+        // swift-demangle blocks on writing stdout, and we would block on writing stdin.
+        val readerExecutor = Executors.newSingleThreadExecutor()
+        val readFuture = readerExecutor.submit(new Callable[Unit] {
+          override def call(): Unit = {
+            Using.resource(new BufferedReader(new InputStreamReader(process.getInputStream))) { reader =>
+              orderedStripped.foreach { stripped =>
+                val outputLine = reader.readLine()
+                if (outputLine != null) {
+                  val processed = Some(postProcessDemangled(outputLine.trim))
+                  // Store the final result for every original name that maps to this stripped name
+                  grouped(stripped).foreach(original => mangledNameCache.put(original, processed))
+                }
+              }
+            }
+          }
+        })
+        readerExecutor.shutdown()
+
+        // Write all names to stdin on the current thread.
         Using.resource(new BufferedWriter(new OutputStreamWriter(process.getOutputStream))) { writer =>
           stdinNames.foreach { name =>
             writer.write(name)
             writer.newLine()
           }
         }
-        Using.resource(new BufferedReader(new InputStreamReader(process.getInputStream))) { reader =>
-          orderedStripped.foreach { stripped =>
-            val outputLine = reader.readLine()
-            if (outputLine != null) {
-              val processed = Some(postProcessDemangled(outputLine.trim))
-              // Store the final result for every original name that maps to this stripped name
-              grouped(stripped).foreach(original => mangledNameCache.put(original, processed))
-            }
-          }
-        }
+
+        // Wait for the reader thread to finish processing all output.
+        readFuture.get()
         process.waitFor()
       } finally {
         process.destroyForcibly()

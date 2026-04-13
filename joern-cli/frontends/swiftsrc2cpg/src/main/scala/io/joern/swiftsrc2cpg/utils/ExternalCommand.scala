@@ -3,7 +3,7 @@ package io.joern.swiftsrc2cpg.utils
 import io.shiftleft.semanticcpg.utils.ExternalCommandResult
 import org.slf4j.LoggerFactory
 
-import java.io.{BufferedReader, InputStreamReader}
+import java.io.{BufferedReader, InputStreamReader, Writer}
 import java.nio.file.Paths
 import scala.util.{Failure, Success, Try, Using}
 
@@ -67,7 +67,7 @@ object ExternalCommand {
       val reader  = use(new BufferedReader(input))
       val iter    = Iterator.continually(reader.readLine()).takeWhile(_ != null)
       val result  = iter.find(find)
-      while (iter.hasNext) iter.next()
+      reader.transferTo(Writer.nullWriter)
       if (process.waitFor() == 0) { result }
       else None
     } match {
