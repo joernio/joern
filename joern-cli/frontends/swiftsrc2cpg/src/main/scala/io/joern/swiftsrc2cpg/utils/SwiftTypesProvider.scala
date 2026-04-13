@@ -13,11 +13,10 @@ import java.io.{BufferedReader, InputStreamReader, StringReader}
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
 import scala.annotation.tailrec
+import scala.collection.mutable
 import scala.collection.parallel.CollectionConverters.ImmutableSeqIsParallelizable
 import scala.collection.parallel.ExecutionContextTaskSupport
-import scala.collection.{immutable, mutable}
 import scala.concurrent.ExecutionContext
-import scala.jdk.CollectionConverters.*
 import scala.util.matching.Regex
 import scala.util.{Failure, Try, Using}
 
@@ -715,20 +714,21 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
       GsonTypeInfoReader.collectTypeInfo(reader).foreach { typeInfo =>
         val range    = typeInfo.range
         val filename = typeInfo.filename.replace("\\", "/")
+        val resolved = resolve(typeInfo)
         result.compute(
           filename,
           {
             case (_, null) =>
               logger.debug(s"Generating type map for: ${typeInfo.filename}")
               val rangeMapping = new MutableSwiftFileLocalTypeMapping()
-              rangeMapping.put(range, new mutable.HashSet[ResolvedTypeInfo]().addOne(resolve(typeInfo)))
+              rangeMapping.put(range, new mutable.HashSet[ResolvedTypeInfo]().addOne(resolved))
               rangeMapping
             case (_, rangeMapping) =>
               rangeMapping.compute(
                 range,
                 {
-                  case (_, null) => new mutable.HashSet[ResolvedTypeInfo]().addOne(resolve(typeInfo))
-                  case (_, set)  => set.addOne(resolve(typeInfo))
+                  case (_, null) => new mutable.HashSet[ResolvedTypeInfo]().addOne(resolved)
+                  case (_, set)  => set.addOne(resolved)
                 }
               )
               rangeMapping
@@ -756,7 +756,9 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
       parInvocations.tasksupport = new ExecutionContextTaskSupport(ec)
       parInvocations.foreach { invocationCommand =>
         Using.Manager { use =>
-          val reader = use(new InputStreamReader(inputStreamFromCommand(invocationCommand, config.inputPath)))
+          val process = processFromCommand(invocationCommand, config.inputPath)
+          use(new AutoCloseable { def close(): Unit = { process.destroyForcibly().waitFor(); () } })
+          val reader = use(new InputStreamReader(process.getInputStream))
           val stdOut = use(new BufferedReader(reader))
           ParallelLineProcessor.processLinesParallel(stdOut, pool, _.startsWith("{"))(jsonString =>
             mappingFromJson(jsonString, mapping)

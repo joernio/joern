@@ -65,10 +65,9 @@ object ExternalCommand {
       val process = pb.start()
       val input   = use(new InputStreamReader(process.getInputStream))
       val reader  = use(new BufferedReader(input))
-      val result = Iterator
-        .continually(reader.readLine())
-        .takeWhile(_ != null)
-        .find(find)
+      val iter    = Iterator.continually(reader.readLine()).takeWhile(_ != null)
+      val result  = iter.find(find)
+      while (iter.hasNext) iter.next()
       if (process.waitFor() == 0) { result }
       else None
     } match {
@@ -81,23 +80,23 @@ object ExternalCommand {
     }
   }
 
-  /** Executes a command and returns its output as an InputStream.
+  /** Executes a command and returns the started [[Process]].
     *
-    * This method builds and starts a process with the given command, configuring it to merge stderr into stdout and
-    * setting the working directory.
+    * Callers are responsible for destroying the process when done (e.g. via `destroyForcibly().waitFor()`). The
+    * process's stdout and stderr are merged into a single stream accessible via `process.getInputStream`.
     *
     * @param command
     *   The command to execute
     * @param workingDir
     *   The directory to execute the command in
     * @return
-    *   An InputStream containing the output of the Swift compiler process
+    *   The started Process whose merged stdout/stderr can be read via `getInputStream`
     */
-  def inputStreamFromCommand(command: Seq[String], workingDir: String): InputStream = {
+  def processFromCommand(command: Seq[String], workingDir: String): Process = {
     val builder = new ProcessBuilder(command*)
     builder.directory(Paths.get(workingDir).toFile)
     builder.redirectErrorStream(true)
-    builder.start().getInputStream
+    builder.start()
   }
 
 }
