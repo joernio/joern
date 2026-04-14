@@ -20,6 +20,14 @@ object GsonTypeInfoReader {
   /** Field names that can contain type fullNames in the Swift AST */
   private val TypeFullNameFieldNames = Set("type", "type_usr", "result", "interface_type", "extended_type")
 
+  /** Child object/array field names actually accessed by `extractTypeInfo` and its helpers (`range`,
+    * `declFromCallExpr`, `resultFromReturnStmt`, `declFromMemberRefExpr`, `conformancesFromNode`,
+    * `superClassesFromNode`). Children with names outside this set are still recursed for side effects but not retained
+    * on the parent `JsonObject`, avoiding retention of large irrelevant subtrees.
+    */
+  private val RelevantChildFieldNames =
+    Set("range", "fn", "decl", "sub_expr", "result", "inherits", "conformances", "attrs")
+
   /** AST node kinds that require special handling.
     *
     * TODO: there are maybe more AST node kinds that need special handling
@@ -280,12 +288,14 @@ object GsonTypeInfoReader {
         } else {
           jsonReader.peek() match {
             case JsonToken.BEGIN_OBJECT if hasKind && !isFromBuild =>
-              obj.add(name, parseObject())
+              val child = parseObject()
+              if (RelevantChildFieldNames.contains(name)) obj.add(name, child)
             case JsonToken.BEGIN_OBJECT =>
               // don't descend
               jsonReader.skipValue()
             case JsonToken.BEGIN_ARRAY if hasKind && !isFromBuild =>
-              obj.add(name, parseArray())
+              val child = parseArray()
+              if (RelevantChildFieldNames.contains(name)) obj.add(name, child)
             case JsonToken.BEGIN_ARRAY =>
               // don't descend
               jsonReader.skipValue()
