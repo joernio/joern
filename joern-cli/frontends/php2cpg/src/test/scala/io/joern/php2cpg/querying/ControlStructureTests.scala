@@ -431,6 +431,28 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         }
       }
     }
+
+    "should connect then and else branches via TRUE_BODY/FALSE_BODY edges" in {
+      val cpg = code("""<?php
+          |if ($cond1) {
+          |  $body1;
+          |} else if ($cond2) {
+          |  $body2;
+          |} else {
+          |  $body3;
+          |};
+          |""".stripMargin)
+
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).headOption.l) {
+        case List(ifControl: ControlStructure) =>
+          ifControl.trueBodyOut.astChildren.code.l shouldBe List("$body1")
+
+          inside(ifControl.falseBodyOut.astChildren.l) { case List(elseIfControl: ControlStructure) =>
+            elseIfControl.trueBodyOut.astChildren.code.l shouldBe List("$body2")
+            elseIfControl.falseBodyOut.astChildren.code.l shouldBe List("$body3")
+          }
+      }
+    }
   }
 
   "break statements" should {
