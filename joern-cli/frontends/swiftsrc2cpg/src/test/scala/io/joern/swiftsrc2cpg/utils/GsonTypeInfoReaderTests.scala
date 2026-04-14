@@ -46,6 +46,7 @@ class GsonTypeInfoReaderTests extends AnyWordSpec with Matchers {
           |]""".stripMargin
 
       val result = GsonTypeInfoReader.collectTypeInfo(new StringReader(json))
+      // Expected ranges preserve existing behavior: end offsets are +1 for most node kinds.
       result should contain(TypeInfo("/tmp/F.swift", (10, 21), Some("Swift.Int"), Some("usr.fn"), Seq.empty, "call_expr"))
       result should contain(
         TypeInfo("/tmp/F.swift", (30, 41), Some("Swift.String"), None, Seq.empty, "return_stmt")

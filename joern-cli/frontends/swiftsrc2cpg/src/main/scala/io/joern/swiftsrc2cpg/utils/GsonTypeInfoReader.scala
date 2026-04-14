@@ -35,6 +35,10 @@ object GsonTypeInfoReader {
     val DotCallExpr            = "dot_syntax_call_expr"
   }
 
+  /** Minimal mutable node model used while token-streaming JSON with JsonReader.
+    *
+    * This avoids Gson DOM allocations while retaining only fields needed for TypeInfo extraction.
+    */
   private final class AstNode {
     var kind: String               = null
     var hasStart: Boolean          = false
@@ -232,7 +236,7 @@ object GsonTypeInfoReader {
 
     def extractTypeInfo(node: AstNode, filename: String, rangeOpt: Option[(Int, Int)]): Unit = {
       val nodeKind = node.kind
-      val range_   = rangeOpt.getOrElse(safeRange(node).get)
+      val maybeRange = rangeOpt.orElse(safeRange(node))
       lazy val declObj = nodeKind match {
         case kind if kind.endsWith(NodeKinds.CallExpr) => declFromCallExpr(node)
         case NodeKinds.MemberRefExpr                   => declFromMemberRefExpr(node)
@@ -249,7 +253,9 @@ object GsonTypeInfoReader {
       val conformances    = conformancesFromNode(node)
       val superClassTypes = superClassesFromNode(node) ++ superClassesFromNodeLegacy(node)
 
-      found.add(TypeInfo(filename, range_, typeFullName, declFullName, superClassTypes ++ conformances, nodeKind))
+      maybeRange.foreach { range_ =>
+        found.add(TypeInfo(filename, range_, typeFullName, declFullName, superClassTypes ++ conformances, nodeKind))
+      }
     }
 
     def parseArray(parent: AstNode, fieldName: String): Unit = {
