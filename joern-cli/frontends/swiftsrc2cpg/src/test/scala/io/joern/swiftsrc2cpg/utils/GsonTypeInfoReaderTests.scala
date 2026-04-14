@@ -5,6 +5,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 import java.io.StringReader
+import scala.collection.mutable
 
 class GsonTypeInfoReaderTests extends AnyWordSpec with Matchers {
 
@@ -45,7 +46,8 @@ class GsonTypeInfoReaderTests extends AnyWordSpec with Matchers {
           |  }
           |]""".stripMargin
 
-      val result = GsonTypeInfoReader.collectTypeInfo(new StringReader(json))
+      val result = mutable.HashSet.empty[TypeInfo]
+      GsonTypeInfoReader.collectTypeInfo(new StringReader(json), result.add)
       // Expected ranges preserve existing behavior: end offsets are +1 for most node kinds.
       result should contain(TypeInfo("/tmp/F.swift", (10, 21), Some("Swift.Int"), Some("usr.fn"), Seq.empty, "call_expr"))
       result should contain(
@@ -97,7 +99,8 @@ class GsonTypeInfoReaderTests extends AnyWordSpec with Matchers {
           |  }
           |]""".stripMargin
 
-      val result = GsonTypeInfoReader.collectTypeInfo(new StringReader(json))
+      val result = mutable.HashSet.empty[TypeInfo]
+      GsonTypeInfoReader.collectTypeInfo(new StringReader(json), result.add)
 
       result should contain(TypeInfo("/tmp/F.swift", (95, 121), Some("Swift.Void"), None, Seq.empty, "function_decl"))
       result should contain(TypeInfo("/tmp/F.swift", (95, 121), Some("Swift.Int"), None, Seq.empty, "parameter"))

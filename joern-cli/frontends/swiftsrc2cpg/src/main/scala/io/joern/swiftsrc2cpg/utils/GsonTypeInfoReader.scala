@@ -169,15 +169,15 @@ object GsonTypeInfoReader {
     filename.contains("/.build/") || filename.contains("\\.build\\") || filename.contains("/Build/")
   }
 
-  /** Collects type information from Swift AST JSON.
+  /** Collects type information from Swift AST JSON, emitting each [[TypeInfo]] via the provided callback as it is
+    * discovered during streaming token-by-token parsing. No intermediate collection is built.
     *
     * @param reader
     *   The reader providing the JSON input
-    * @return
-    *   A set of TypeInfo objects extracted from the JSON
+    * @param emit
+    *   Called once for each [[TypeInfo]] extracted from the JSON stream
     */
-  def collectTypeInfo(reader: Reader): Set[TypeInfo] = {
-    val found        = mutable.HashSet.empty[TypeInfo]
+  def collectTypeInfo(reader: Reader, emit: TypeInfo => Unit): Unit = {
     val jsonReader   = new JsonReader(reader)
     var filename     = ""
     var currentRange = Option.empty[(Int, Int)]
@@ -254,7 +254,7 @@ object GsonTypeInfoReader {
       val superClassTypes = superClassesFromNode(node) ++ superClassesFromNodeLegacy(node)
 
       maybeRange.foreach { range_ =>
-        found.add(TypeInfo(filename, range_, typeFullName, declFullName, superClassTypes ++ conformances, nodeKind))
+        emit(TypeInfo(filename, range_, typeFullName, declFullName, superClassTypes ++ conformances, nodeKind))
       }
     }
 
@@ -372,6 +372,5 @@ object GsonTypeInfoReader {
     }
 
     jsonReader.close()
-    found.toSet
   }
 }
