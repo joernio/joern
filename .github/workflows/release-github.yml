@@ -33,7 +33,20 @@ jobs:
       - run: sbt stage createDistribution
       - run: sha512sum target/joern-cli.zip > target/joern-cli.zip.sha512
       - run: sbt "querydb/runMain io.joern.dumpq.Main"
+      - name: Check if release exists
+        id: check_release
+        run: |
+          if gh release view "${{ github.ref_name }}" > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Release ${{ github.ref_name }} already exists, will skip creation"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Release ${{ github.ref_name }} does not exist, will create it"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
       - name: Create Release and Upload Assets
+        if: steps.check_release.outputs.exists == 'false'
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
