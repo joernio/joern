@@ -606,6 +606,10 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       doAst.code shouldBe "do {...} while ($a)"
       doAst.lineNumber shouldBe Some(2)
 
+      inside(doAst.doBodyOut.isBlock.l) { case List(doBody: Block) =>
+        doBody.astChildren.isIdentifier.code.l shouldBe List("$b", "$c")
+      }
+
       inside(doAst.astChildren.collectAll[Block].l) { case List(block) =>
         block.lineNumber shouldBe Some(2)
 
@@ -802,6 +806,21 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       val List(finallyNode) = tryNode.astChildren.isControlStructure.isFinally.l
       finallyNode.astChildren.isBlock.astChildren.code.l shouldBe List("$body4")
       finallyNode.lineNumber shouldBe Some(8)
+    }
+
+    "should connect try, catch and finally bodies via explicit edges" in {
+      inside(cpg.controlStructure.isTry.l) { case List(tryControl: ControlStructure) =>
+        tryControl.code shouldBe "try { ... }"
+        tryControl.tryBodyOut.astChildren.code.l shouldBe List("$body1")
+
+        inside(tryControl.catchBodyOut.l) { case List(catchA: ControlStructure, catchB: ControlStructure) =>
+          catchA.code shouldBe "catch (A | D $a)"
+          catchB.code shouldBe "catch (B $b)"
+        }
+
+        tryControl.finallyBodyOut.code.l shouldBe List("finally")
+        tryControl.finallyBodyOut.astChildren.isBlock.astChildren.code.l shouldBe List("$body4")
+      }
     }
   }
 
