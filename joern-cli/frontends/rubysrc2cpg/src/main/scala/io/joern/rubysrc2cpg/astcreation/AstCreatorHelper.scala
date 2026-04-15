@@ -27,7 +27,7 @@ import io.joern.rubysrc2cpg.passes.GlobalTypes.{kernelFunctions, kernelPrefix}
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg.Constants
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, Operators}
 
 import scala.collection.mutable
 
@@ -126,6 +126,24 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         }
     }
 
+  }
+
+  protected def conditionalStatementBuilder(
+    node: ControlFlowStatement,
+    conditionAst: Ast,
+    thenAst: Ast,
+    elseAsts: List[Ast]
+  ): Ast = {
+    val ifNode          = controlStructureNode(node, ControlStructureTypes.IF, code(node))
+    val astWithChildren = controlStructureAst(ifNode, Some(conditionAst), thenAst :: elseAsts)
+    val astWithTrueBody = thenAst.root match {
+      case Some(thenRoot) => astWithChildren.withTrueBodyEdge(ifNode, thenRoot)
+      case None           => astWithChildren
+    }
+    elseAsts.headOption.flatMap(_.root) match {
+      case Some(elseRoot) => astWithTrueBody.withFalseBodyEdge(ifNode, elseRoot)
+      case None           => astWithTrueBody
+    }
   }
 
   protected def astForAssignment(

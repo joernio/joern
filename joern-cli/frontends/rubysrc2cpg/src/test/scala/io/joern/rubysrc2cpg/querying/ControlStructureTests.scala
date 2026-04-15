@@ -175,6 +175,44 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     elsIfStr.lineNumber shouldBe Some(5)
   }
 
+  "`if-elsif-else-end` should connect then and else branches via TRUE_BODY/FALSE_BODY edges" in {
+    val cpg = code("""
+                     |if __LINE__ == 0 then
+                     | '= 0'
+                     |elsif __LINE__ > 0 then
+                     | '> 0'
+                     |else
+                     | '< 0'
+                     |end
+                     |""".stripMargin)
+
+    inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).headOption.l) {
+      case List(ifControl: ControlStructure) =>
+        ifControl.trueBodyOut.astChildren.code.l shouldBe List("'= 0'")
+
+        inside(ifControl.falseBodyOut.astChildren.l) { case List(elseIfControl: ControlStructure) =>
+          elseIfControl.trueBodyOut.astChildren.code.l shouldBe List("'> 0'")
+          elseIfControl.falseBodyOut.astChildren.code.l shouldBe List("'< 0'")
+        }
+    }
+  }
+
+  "`if-else-end` should connect then and else branches via TRUE_BODY/FALSE_BODY edges" in {
+    val cpg = code("""
+        |if __LINE__ == 0 then
+        | '= 0'
+        |else
+        | '< 0 || > 0'
+        |end
+        |""".stripMargin)
+
+    inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).headOption.l) {
+      case List(ifControl: ControlStructure) =>
+        ifControl.trueBodyOut.astChildren.code.l shouldBe List("'= 0'")
+        ifControl.falseBodyOut.astChildren.code.l shouldBe List("'< 0 || > 0'")
+    }
+  }
+
   "`unless-end` statement is represented by a negated `IF` CONTROL_STRUCTURE node" in {
     val cpg = code("""
                      |unless __LINE__ == 0 then
@@ -218,6 +256,22 @@ class ControlStructureTests extends RubyCode2CpgFixture {
 
     elseAssignment.code shouldBe "x = '!= 0'"
     elseAssignment.lineNumber shouldBe Some(3)
+  }
+
+  "`unless-else-end` should connect then and else branches via TRUE_BODY/FALSE_BODY edges" in {
+    val cpg = code("""
+                     |unless __LINE__ == 0 then
+                     | x = '!= 0'
+                     |else
+                     | x = '= 0'
+                     |end
+                     |""".stripMargin)
+
+    inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).headOption.l) {
+      case List(ifControl: ControlStructure) =>
+        ifControl.trueBodyOut.astChildren.code.l shouldBe List("x = '= 0'")
+        ifControl.falseBodyOut.astChildren.code.l shouldBe List("x = '!= 0'")
+    }
   }
 
   "`... unless ...` statement is represented by a negated `IF` CONTROL_STRUCTURE node" in {
@@ -474,6 +528,33 @@ class ControlStructureTests extends RubyCode2CpgFixture {
           elseAssignment.code shouldBe "a = 456"
         case xs => fail(s"Expected four assignments, instead found ${xs.code.mkString(", ")}")
       }
+    }
+  }
+
+  "implicit `if-elsif-else-end` assignment should connect then and else branches via TRUE_BODY/FALSE_BODY edges" in {
+    val cpg = code("""
+        |a = if __LINE__ == 0 then '= 0' elsif __LINE__ > 0 then '> 0' else '< 0' end
+        |""".stripMargin)
+
+    inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).headOption.l) {
+      case List(ifControl: ControlStructure) =>
+        ifControl.code shouldBe "if __LINE__ == 0 then '= 0' elsif __LINE__ > 0 then '> 0' el..."
+        inside(ifControl.trueBodyOut.astChildren.l) { case List(call: Call) =>
+          call.name shouldBe Operators.assignment
+          call.code shouldBe "a = '= 0'"
+        }
+
+        inside(ifControl.falseBodyOut.astChildren.l) { case List(elseIfControl: ControlStructure) =>
+          elseIfControl.code shouldBe "elsif __LINE__ > 0 then '> 0' else '< 0'"
+          inside(elseIfControl.trueBodyOut.astChildren.l) { case List(call: Call) =>
+            call.name shouldBe Operators.assignment
+            call.code shouldBe "a = '> 0'"
+          }
+          inside(elseIfControl.falseBodyOut.astChildren.l) { case List(call: Call) =>
+            call.name shouldBe Operators.assignment
+            call.code shouldBe "a = '< 0'"
+          }
+        }
     }
   }
 

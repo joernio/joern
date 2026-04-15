@@ -15,7 +15,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   protected def astsForStatement(node: RubyExpression): Seq[Ast] = {
     baseAstCache.clear() // A safe approximation on where to reset the cache
     node match {
-      case node: IfExpression               => astForIfStatement(node)
+      case node: IfExpression               => astForIfStatement(node) :: Nil
       case node: OperatorAssignment         => astForOperatorAssignment(node)
       case node: CaseExpression             => astsForCaseExpression(node)
       case node: StatementList              => astForStatementList(node) :: Nil
@@ -35,21 +35,16 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     }
   }
 
-  private def astForIfStatement(node: IfExpression): Seq[Ast] = {
-    def builder(node: IfExpression, conditionAst: Ast, thenAst: Ast, elseAsts: List[Ast]): Ast = {
-      val ifNode = controlStructureNode(node, ControlStructureTypes.IF, code(node))
-      controlStructureAst(ifNode, Some(conditionAst), thenAst :: elseAsts)
-    }
-
+  private def astForIfStatement(node: IfExpression): Ast = {
     // TODO: Remove or modify the builder pattern when we are no longer using ANTLR
     node.elseClause match {
       case Some(elseClause) =>
         elseClause match {
           case _: IfExpression => astForJsonIfStatement(node)
-          case _               => foldIfExpression(builder)(node) :: Nil
+          case _               => foldIfExpression(conditionalStatementBuilder)(node)
         }
       case None =>
-        foldIfExpression(builder)(node) :: Nil
+        foldIfExpression(conditionalStatementBuilder)(node)
     }
   }
 
@@ -58,21 +53,20 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     astsForStatement(loweredAssignment)
   }
 
-  private def astForJsonIfStatement(node: IfExpression): Seq[Ast] = {
+  private def astForJsonIfStatement(node: IfExpression): Ast = {
     val conditionAst = astForExpression(node.condition)
     val thenAst      = astForThenClause(node.thenClause)
     val elseAsts = node.elseClause
       .map {
         case x: IfExpression =>
           val wrappedBlock = blockNode(x)
-          Ast(wrappedBlock).withChildren(astForJsonIfStatement(x)) :: Nil
+          Ast(wrappedBlock).withChild(astForJsonIfStatement(x)) :: Nil
         case x =>
           astForElseClause(x) :: Nil
       }
       .getOrElse(Ast() :: Nil)
 
-    val ifNode = controlStructureNode(node, ControlStructureTypes.IF, code(node))
-    controlStructureAst(ifNode, Some(conditionAst), thenAst +: elseAsts) :: Nil
+    conditionalStatementBuilder(node, conditionAst, thenAst, elseAsts)
   }
 
   private def astForAccessModifier(node: AccessModifier): Seq[Ast] = {

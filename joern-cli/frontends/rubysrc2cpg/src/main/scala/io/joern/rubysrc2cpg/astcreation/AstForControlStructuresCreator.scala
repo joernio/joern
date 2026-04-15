@@ -110,8 +110,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
       }
       .getOrElse(Ast())
 
-    val ifNode = controlStructureNode(node, ControlStructureTypes.IF, code(node))
-    controlStructureAst(ifNode, Some(conditionAst), thenAst :: elseAsts :: Nil)
+    conditionalStatementBuilder(node, conditionAst, thenAst, List(elseAsts))
   }
 
   // `unless T do B` is lowered as `if !T then B`
@@ -122,8 +121,8 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
       case _                       => astForStatementList(StatementList(List(node.trueBranch))(node.trueBranch.span))
     }
     val elseAsts = node.falseBranch.map(astForElseClause).toList
-    val ifNode   = controlStructureNode(node, ControlStructureTypes.IF, code(node))
-    controlStructureAst(ifNode, Some(notConditionAst), thenAst :: elseAsts)
+
+    conditionalStatementBuilder(node, notConditionAst, thenAst, elseAsts)
   }
 
   protected def astForElseClause(node: RubyExpression): Ast = {
