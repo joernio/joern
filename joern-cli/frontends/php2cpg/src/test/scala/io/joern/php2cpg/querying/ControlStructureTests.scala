@@ -682,6 +682,16 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         body.astChildren.code.l shouldBe List("echo $i")
       }
     }
+
+    "connect for-loop and body branches via FOR_BODY edges" in {
+      inside(cpg.controlStructure.l) { case List(forNode: ControlStructure) =>
+        forNode.code shouldBe "for ($i = 0;$i < 42;$i++)"
+
+        forNode.forInitOut.code.l shouldBe List("$i = 0")
+        forNode.forUpdateOut.code.l shouldBe List("$i++")
+        forNode.forBodyOut.isBlock.astChildren.code.l shouldBe List("echo $i")
+      }
+    }
   }
 
   "for statements with multiple inits, conditions and updates" should {
