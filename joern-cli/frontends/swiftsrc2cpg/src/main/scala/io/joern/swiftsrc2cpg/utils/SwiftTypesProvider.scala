@@ -790,15 +790,10 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
   }
 
   /** Parses Swift compiler JSON output and collects raw type information without demangling.
-    *
-    * @param jsonString
-    *   The JSON string from the Swift compiler
-    * @return
-    *   The set of TypeInfo objects extracted from the JSON
     */
-  private def collectTypeInfoFromJson(jsonString: String): Set[TypeInfo] = {
+  private def collectTypeInfoFromJson(jsonString: String, emit: TypeInfo => Unit): Unit = {
     Using.resource(new StringReader(jsonString)) { reader =>
-      GsonTypeInfoReader.collectTypeInfo(reader)
+      GsonTypeInfoReader.collectTypeInfo(reader, emit)
     }
   }
 
@@ -845,7 +840,9 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
     *   The type mapping to update with extracted information
     */
   def mappingFromJson(jsonString: String, result: MutableSwiftTypeMapping): Unit = {
-    collectTypeInfoFromJson(jsonString).foreach(addToMapping(_, result))
+    Using.resource(new StringReader(jsonString)) { reader =>
+      GsonTypeInfoReader.collectTypeInfo(reader, addToMapping(_, result))
+    }
   }
 
   /** Retrieves Swift type mappings by executing Swift compiler commands and processing output.
@@ -875,7 +872,7 @@ case class SwiftTypesProvider(config: Config, parsedSwiftInvocations: Seq[Seq[St
           val reader = use(new InputStreamReader(process.getInputStream))
           val stdOut = use(new BufferedReader(reader))
           ParallelLineProcessor.processLinesParallel(stdOut, pool, _.startsWith("{")) { jsonString =>
-            collectTypeInfoFromJson(jsonString).foreach(allTypeInfos.add)
+            collectTypeInfoFromJson(jsonString, allTypeInfos.add)
           }
         } match {
           case Failure(exception) =>
