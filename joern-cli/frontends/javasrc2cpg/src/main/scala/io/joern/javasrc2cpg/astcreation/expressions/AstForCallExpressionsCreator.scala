@@ -45,7 +45,7 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Opera
 
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
 import javassist.compiler.ast.CallExpr
 import io.joern.javasrc2cpg.scope.JavaScopeElement.PartialInit
 import org.slf4j.LoggerFactory
@@ -97,8 +97,21 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
       .getOrElse(codePrefixForMethodCall(call))
     val callCode = s"$codePrefix${call.getNameAsString}($argumentsCode)"
 
-    val callName       = call.getNameAsString
-    val namespace      = receiverType.filter(_ != TypeConstants.Any).getOrElse(Defines.UnresolvedNamespace)
+    val callName = call.getNameAsString
+    val namespace = maybeResolvedCall.toOption
+      .collect {
+        case resolvedCall if resolvedCall.isStatic =>
+          for {
+            packageName <- Option(resolvedCall.getPackageName)
+            className   <- Option(resolvedCall.getClassName)
+          } yield List(packageName, className.replace(".", "$")).filter(_.nonEmpty).mkString(".")
+      }
+      .flatten
+      .getOrElse {
+        // Fall back to the scope type in case it could be resolved when the full call could not
+        receiverType.filter(_ != TypeConstants.Any).getOrElse(Defines.UnresolvedNamespace)
+      }
+
     val signature      = composeSignature(returnType, argumentTypes, argumentAsts.size)
     val methodFullName = composeMethodFullName(namespace, callName, signature)
     val callRoot = NewCall()

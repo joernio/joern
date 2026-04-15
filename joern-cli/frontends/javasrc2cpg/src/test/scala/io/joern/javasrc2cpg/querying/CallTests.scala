@@ -599,6 +599,58 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
     }
   }
 
+  "a static call to an inherited method" should {
+    val cpg = code("""
+        |package foo;
+        |
+        |class Foo {
+        |  static String foo() { return "hello"; }
+        |}
+        |
+        |class Bar extends Foo {}
+        |
+        |public class Test {
+        |  public static String test() {
+        |    return Bar.foo();
+        |  }
+        |}
+        |""".stripMargin)
+
+    "use the defining class name for the method full name" in {
+      inside(cpg.call.name("foo").l) { case List(fooCall) =>
+        fooCall.code shouldBe "Bar.foo()"
+        fooCall.methodFullName shouldBe "foo.Foo.foo:java.lang.String()"
+      }
+    }
+  }
+
+  "a static call to a nested inherited method" should {
+    val cpg = code("""
+                     |package foo;
+                     |
+                     |class Outer {
+                     |  static class Foo {
+                     |    static String foo() { return "hello"; }
+                     |  }
+                     |}
+                     |
+                     |class Bar extends Outer.Foo {}
+                     |
+                     |public class Test {
+                     |  public static String test() {
+                     |    return Bar.foo();
+                     |  }
+                     |}
+                     |""".stripMargin)
+
+    "use the defining class name for the method full name" in {
+      inside(cpg.call.name("foo").l) { case List(fooCall) =>
+        fooCall.code shouldBe "Bar.foo()"
+        fooCall.methodFullName shouldBe "foo.Outer$Foo.foo:java.lang.String()"
+      }
+    }
+  }
+
   "call to method in derived class using external package" should {
 
     lazy val cpg = code("""
