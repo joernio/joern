@@ -23,68 +23,71 @@ class JrtRuntimeImageClassPath(javaHome: Path) extends ClassPath with AutoClosea
 
   private val jrtFileSystem = JrtRuntimeImageClassPath.openJrtFileSystem(javaHome)
 
-  private val (classNameToPath: Map[String, Path], moduleExports: Map[String, List[String]]) = buildIndexAndExports()
+  private val (classNameToPath: Map[String, Path], moduleExports: Map[String, List[String]]) = {
+    val modulesRoot = jrtFileSystem.getPath("/modules")
+    if (!Files.exists(modulesRoot)) {
+      logger.warn(s"jrt: file system has no /modules root for java.home=$javaHome")
+      (Map.empty[String, Path], Map.empty[String, List[String]])
+    } else {
+      val exports = buildExports(modulesRoot)
+
+      val index = buildIndex(modulesRoot)
+
+      (index, exports)
+    }
+  }
 
   val knownClassNames: Set[String] = classNameToPath.keySet
 
   /** Module name to exported package names (for JarTypeSolver.tryToSolveTypeInModule). */
   val moduleExportsMap: Map[String, List[String]] = moduleExports
 
-  private def buildExports(): Map[String, List[String]] = {}
-
-  private def buildIndexAndExports(): (Map[String, Path], Map[String, List[String]]) = {
-    val modulesRoot = jrtFileSystem.getPath("/modules")
-    if (!Files.exists(modulesRoot)) {
-      logger.warn(s"jrt: file system has no /modules root for java.home=$javaHome")
-      (Map.empty, Map.empty)
-    } else {
-      val exportsBuilder = Map.newBuilder[String, List[String]]
-      Using.resource(Files.list(modulesRoot)) { stream =>
-        stream.iterator().asScala.foreach { moduleDir =>
-          if (Files.isDirectory(moduleDir)) {
-            val moduleInfo = moduleDir.resolve("module-info.class")
-            if (Files.isRegularFile(moduleInfo)) {
-              Try(Using.resource(Files.newInputStream(moduleInfo)) { in =>
-                val (moduleName, exportPkgs) = JrtRuntimeImageClassPath.readModuleExports(in)
-                exportsBuilder += moduleName -> exportPkgs
-              }) match {
-                case Failure(e) => logger.debug(s"Could not read module descriptor at $moduleInfo", e)
-                case Success(_) =>
-              }
-            }
+  private def buildExports(modulesRoot: Path): Map[String, List[String]] = {
+    val exportsBuilder = Map.newBuilder[String, List[String]]
+    Using.resource(Files.walk(modulesRoot)) { recursiveFiles =>
+      recursiveFiles.iterator().asScala.foreach { moduleDir =>
+        if (Files.isDirectory(moduleDir)) {
+          val moduleInfo = moduleDir.resolve("module-info.class")
+          if (Files.isRegularFile(moduleInfo)) {
+            Try(Using.resource(Files.newInputStream(moduleInfo)) { in =>
+              val (moduleName, exportPkgs) = JrtRuntimeImageClassPath.readModuleExports(in)
+              exportsBuilder += moduleName -> exportPkgs
+            }).recover(e => logger.debug(s"Could not read module descriptor at $moduleInfo", e))
           }
         }
       }
-      val exports = exportsBuilder.result()
-
-      val indexMutable   = mutable.Map.empty[String, Path]
-      var duplicateCount = 0
-      Using.resource(Files.walk(modulesRoot)) { stream =>
-        stream.iterator().asScala.foreach { path =>
-          if (Files.isRegularFile(path) && path.getFileName.toString.endsWith(".class")) {
-            if (path.getFileName.toString != "module-info.class") {
-              Try(
-                Using.resource(Files.newInputStream(path))(BytecodeIndexedClassPath.readClassNameFrom)
-              ).toOption match {
-                case Some(className) =>
-                  if (!indexMutable.contains(className)) {
-                    indexMutable(className) = path
-                  } else {
-                    duplicateCount += 1
-                  }
-                case None =>
-                  logger.debug(s"Could not read class name from $path")
-              }
-            }
-          }
-        }
-      }
-      if (duplicateCount > 0) {
-        logger.debug(s"JRT index: $duplicateCount duplicate class names across modules (first module wins)")
-      }
-
-      (indexMutable.toMap, exports)
     }
+    exportsBuilder.result()
+  }
+
+  private def buildIndex(modulesRoot: Path): Map[String, Path] = {
+    val indexMutable = mutable.Map.empty[String, Path]
+    var duplicateCount = 0
+    Using.resource(Files.walk(modulesRoot)) { recursiveFiles =>
+      recursiveFiles.iterator().asScala.foreach { path =>
+        if (Files.isRegularFile(path) && path.getFileName.toString.endsWith(".class")) {
+          if (path.getFileName.toString != "module-info.class") {
+            Try(
+              Using.resource(Files.newInputStream(path))(BytecodeIndexedClassPath.readClassNameFrom)
+            ).toOption match {
+              case Some(className) =>
+                if (!indexMutable.contains(className)) {
+                  indexMutable(className) = path
+                } else {
+                  duplicateCount += 1
+                }
+              case None =>
+                logger.debug(s"Could not read class name from $path")
+            }
+          }
+        }
+      }
+    }
+    if (duplicateCount > 0) {
+      logger.debug(s"JRT index: $duplicateCount duplicate class names across modules (first module wins)")
+    }
+
+    indexMutable.toMap
   }
 
   override def find(classname: String): URL = {
@@ -117,21 +120,21 @@ object JrtRuntimeImageClassPath {
   /** Max directory depth (in terms of file depth from the search root) when searching under findRuntimeImage. Since
     * `lib/modules` sits 2 levels below a java.home, a maxDepth of 6 allows java.home directories up to 4 levels deep.
     */
-  val DefaultRuntimeImageSearchMaxDepth: Int = 10
+  val DefaultRuntimeImageRootSearchMaxDepth: Int = 10
 
   /** Find the shallowest `<java.home>/lib/modules` layout under searchRoot. maxDepth limits how deep the `modules` file
     * itself can be. Does not follow symbolic links (avoids symlink loops, consistent with jar discovery).
     */
   def findRuntimeImage(
     searchRoot: Path,
-    maxDepth: Int = DefaultRuntimeImageSearchMaxDepth
+    maxDepth: Int = DefaultRuntimeImageRootSearchMaxDepth
   ): Option[Path] = {
     if (!Files.exists(searchRoot)) {
       None
     } else {
       val root = searchRoot.toAbsolutePath.normalize()
-      Using.resource(Files.walk(root, maxDepth)) { fileStream =>
-        fileStream
+      Using.resource(Files.walk(root, maxDepth)) { recursiveFiles =>
+        recursiveFiles
           .iterator()
           .asScala
           .filter(p => Files.isRegularFile(p) && !Files.isSymbolicLink(p) && p.getFileName.toString == "modules")
