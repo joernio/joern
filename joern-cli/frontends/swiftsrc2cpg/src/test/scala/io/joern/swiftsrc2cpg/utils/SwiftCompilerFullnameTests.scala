@@ -2,7 +2,6 @@ package io.joern.swiftsrc2cpg.utils
 
 import io.joern.swiftsrc2cpg.testfixtures.SwiftCompilerSrc2CpgSuite
 import io.shiftleft.codepropertygraph.generated.*
-import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
 class SwiftCompilerFullnameTests extends SwiftCompilerSrc2CpgSuite {
