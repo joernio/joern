@@ -230,9 +230,7 @@ object JarTypeSolver {
       } else {
         JrtRuntimeImageClassPath.findRuntimeImage(Paths.get(inputPath)) match {
           case Some(imageRootPath) =>
-            logger.info(
-              s"JDK type solver: using runtime image at $imageRootPath; search root: $inputPath)"
-            )
+            logger.info(s"JDK type solver: using runtime image at $imageRootPath; search root: $inputPath)")
             builder.addRuntimeImage(imageRootPath) match {
               case Success(_) => builder
               case Failure(exception) =>

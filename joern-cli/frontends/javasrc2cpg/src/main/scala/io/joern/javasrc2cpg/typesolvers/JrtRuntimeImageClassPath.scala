@@ -29,11 +29,7 @@ class JrtRuntimeImageClassPath(javaHome: Path) extends ClassPath with AutoClosea
       logger.warn(s"jrt: file system has no /modules root for java.home=$javaHome")
       (Map.empty[String, Path], Map.empty[String, List[String]])
     } else {
-      val exports = buildExports(modulesRoot)
-
-      val index = buildIndex(modulesRoot)
-
-      (index, exports)
+      buildExportsAndIndex(modulesRoot)
     }
   }
 
@@ -42,52 +38,51 @@ class JrtRuntimeImageClassPath(javaHome: Path) extends ClassPath with AutoClosea
   /** Module name to exported package names (for JarTypeSolver.tryToSolveTypeInModule). */
   val moduleExportsMap: Map[String, List[String]] = moduleExports
 
-  private def buildExports(modulesRoot: Path): Map[String, List[String]] = {
+  private def buildExportsAndIndex(modulesRoot: Path): (Map[String, Path], Map[String, List[String]]) = {
     val exportsBuilder = Map.newBuilder[String, List[String]]
-    Using.resource(Files.walk(modulesRoot)) { recursiveFiles =>
-      recursiveFiles.iterator().asScala.foreach { moduleDir =>
-        if (Files.isDirectory(moduleDir)) {
-          val moduleInfo = moduleDir.resolve("module-info.class")
-          if (Files.isRegularFile(moduleInfo)) {
-            Try(Using.resource(Files.newInputStream(moduleInfo)) { in =>
-              val (moduleName, exportPkgs) = JrtRuntimeImageClassPath.readModuleExports(in)
-              exportsBuilder += moduleName -> exportPkgs
-            }).recover(e => logger.debug(s"Could not read module descriptor at $moduleInfo", e))
-          }
-        }
-      }
-    }
-    exportsBuilder.result()
-  }
-
-  private def buildIndex(modulesRoot: Path): Map[String, Path] = {
-    val indexMutable = mutable.Map.empty[String, Path]
+    val indexMutable   = mutable.Map.empty[String, Path]
     var duplicateCount = 0
+
     Using.resource(Files.walk(modulesRoot)) { recursiveFiles =>
       recursiveFiles.iterator().asScala.foreach { path =>
         if (Files.isRegularFile(path) && path.getFileName.toString.endsWith(".class")) {
-          if (path.getFileName.toString != "module-info.class") {
-            Try(
-              Using.resource(Files.newInputStream(path))(BytecodeIndexedClassPath.readClassNameFrom)
-            ).toOption match {
-              case Some(className) =>
-                if (!indexMutable.contains(className)) {
-                  indexMutable(className) = path
-                } else {
-                  duplicateCount += 1
-                }
-              case None =>
-                logger.debug(s"Could not read class name from $path")
+          Try(Using.resource(Files.newInputStream(path)) { recursiveFiles =>
+            if (path.getFileName.toString == "module-info.class") {
+              handleModuleInfo(recursiveFiles, exportsBuilder)
+            } else {
+              if (handleClassFile(recursiveFiles, path, indexMutable)) {
+                duplicateCount += 1
+              }
             }
-          }
+          }).recover { case e => logger.debug(s"Could not read class files at $path", e) }
         }
       }
     }
+
     if (duplicateCount > 0) {
       logger.debug(s"JRT index: $duplicateCount duplicate class names across modules (first module wins)")
     }
 
-    indexMutable.toMap
+    (indexMutable.toMap, exportsBuilder.result())
+  }
+
+  private def handleModuleInfo(
+    in: InputStream,
+    exportsBuilder: mutable.Builder[(String, List[String]), Map[String, List[String]]]
+  ): Unit = {
+    val (moduleName, exportPkgs) = JrtRuntimeImageClassPath.readModuleExports(in)
+    exportsBuilder += moduleName -> exportPkgs
+  }
+
+  /** Returns true if the class name was a duplicate. */
+  private def handleClassFile(in: InputStream, path: Path, indexMutable: mutable.Map[String, Path]): Boolean = {
+    val className = BytecodeIndexedClassPath.readClassNameFrom(in)
+    if (!indexMutable.contains(className)) {
+      indexMutable(className) = path
+      false
+    } else {
+      true
+    }
   }
 
   override def find(classname: String): URL = {
@@ -125,10 +120,7 @@ object JrtRuntimeImageClassPath {
   /** Find the shallowest `<java.home>/lib/modules` layout under searchRoot. maxDepth limits how deep the `modules` file
     * itself can be. Does not follow symbolic links (avoids symlink loops, consistent with jar discovery).
     */
-  def findRuntimeImage(
-    searchRoot: Path,
-    maxDepth: Int = DefaultRuntimeImageRootSearchMaxDepth
-  ): Option[Path] = {
+  def findRuntimeImage(searchRoot: Path, maxDepth: Int = DefaultRuntimeImageRootSearchMaxDepth): Option[Path] = {
     if (!Files.exists(searchRoot)) {
       None
     } else {
