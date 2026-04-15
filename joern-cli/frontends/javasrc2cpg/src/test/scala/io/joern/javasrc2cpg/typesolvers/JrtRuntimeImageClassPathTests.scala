@@ -45,9 +45,9 @@ class JrtRuntimeImageClassPathTests extends AnyWordSpec with Matchers with Befor
     "index and open java.lang.String from the running JDK's runtime image" in {
       assumeRuntimeImage()
       cp.knownClassNames should contain("java.lang.String")
-      Using.resource(cp.openClassfile("java.lang.String")) { in =>
-        in should not be null
-        in.available() should be > 0
+      Using.resource(cp.openClassfile("java.lang.String")) { stringClassFile =>
+        stringClassFile should not be null
+        stringClassFile.available() should be > 0
       }
       cp.find("java.lang.String") should not be null
     }
