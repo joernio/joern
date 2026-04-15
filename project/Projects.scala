@@ -24,6 +24,7 @@ object Projects {
   lazy val rubysrc2cpg   = project.in(frontendsRoot / "rubysrc2cpg")
   lazy val gosrc2cpg     = project.in(frontendsRoot / "gosrc2cpg")
   lazy val csharpsrc2cpg = project.in(frontendsRoot / "csharpsrc2cpg")
+  lazy val rust2cpg      = project.in(frontendsRoot / "rust2cpg")
 
   lazy val linterRules = project.in(file("linter-rules"))
 

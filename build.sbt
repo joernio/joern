@@ -2,7 +2,7 @@ name                     := "joern"
 ThisBuild / organization := "io.joern"
 ThisBuild / scalaVersion := "3.7.4"
 
-val cpgVersion = "1.7.62"
+val cpgVersion = "1.7.64"
 
 lazy val joerncli          = Projects.joerncli
 lazy val querydb           = Projects.querydb
@@ -23,6 +23,7 @@ lazy val rubysrc2cpg       = Projects.rubysrc2cpg
 lazy val gosrc2cpg         = Projects.gosrc2cpg
 lazy val swiftsrc2cpg      = Projects.swiftsrc2cpg
 lazy val csharpsrc2cpg     = Projects.csharpsrc2cpg
+lazy val rust2cpg          = Projects.rust2cpg
 lazy val linterRules       = Projects.linterRules
 
 // aggregate project which doesn't include the helper project `linterRules` - we don't want to include it in any standard task
@@ -47,7 +48,8 @@ lazy val root = project
     rubysrc2cpg,
     gosrc2cpg,
     swiftsrc2cpg,
-    csharpsrc2cpg
+    csharpsrc2cpg,
+    rust2cpg
   )
   .dependsOn(linterRules % ScalafixConfig)
 
