@@ -546,6 +546,16 @@ class ControlStructureTests extends RubyCode2CpgFixture {
         case _ => fail("No control structure node found for `for-in`.")
       }
     }
+
+    "connect for-loop and body branches via FOR_BODY edges" in {
+      inside(cpg.method("foo1").controlStructure.l) { case List(forNode: ControlStructure) =>
+        forNode.code shouldBe "for i in x do\n   puts x - i\n end"
+
+        forNode.forInitOut.code.l shouldBe List("_idx_ = 0")
+        forNode.forUpdateOut.code.l shouldBe List("i = x[_idx_++]")
+        forNode.forBodyOut.isBlock.astChildren.code.l shouldBe List("puts x - i")
+      }
+    }
   }
 
   "implicit if-elsif-else assignment" should {
