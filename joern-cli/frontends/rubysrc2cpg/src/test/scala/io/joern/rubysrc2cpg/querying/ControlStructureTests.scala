@@ -51,6 +51,9 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     assignment.code shouldBe "num = i + 3"
     assignment.lineNumber shouldBe Some(5)
 
+    inside(whileNode.doBodyOut.isBlock.l) { case List(doBody: Block) =>
+      doBody.astChildren.code.l shouldBe List("num = i + 3")
+    }
   }
 
   "`until-end` statement is represented by a negated `WHILE` CONTROL_STRUCTURE node" in {
@@ -424,6 +427,37 @@ class ControlStructureTests extends RubyCode2CpgFixture {
         ensureStruct.ast.isLiteral.code.l shouldBe List("2")
 
       case xs => fail(s"Expected two structures, got ${xs.code.mkString(",")}")
+    }
+  }
+
+  "`begin-rescue-ensure-else-end` should connect begin, rescue, else and ensure bodies via explicit edges" in {
+    val cpg = code("""
+        |def test2
+        |  begin
+        |   1
+        |  rescue Exception
+        |   2
+        |  else
+        |   3
+        |  ensure
+        |   4
+        |  end
+        |end
+        |""".stripMargin)
+
+    inside(cpg.controlStructure.isTry.l) { case List(tryControl: ControlStructure) =>
+      tryControl.code shouldBe "try"
+      tryControl.tryBodyOut.astChildren.code.l shouldBe List("1")
+
+      inside(tryControl.catchBodyOut.l) { case List(catchA: ControlStructure, catchB: ControlStructure) =>
+        catchA.code shouldBe "catch"
+        catchA.astChildren.isBlock.astChildren.code.l shouldBe List("2")
+        catchB.code shouldBe "else"
+        catchB.astChildren.isBlock.astChildren.code.l shouldBe List("3")
+      }
+
+      tryControl.finallyBodyOut.code.l shouldBe List("finally")
+      tryControl.finallyBodyOut.astChildren.isBlock.astChildren.code.l shouldBe List("4")
     }
   }
 
