@@ -132,15 +132,15 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     node: ControlFlowStatement,
     conditionAst: Ast,
     thenAst: Ast,
-    elseAsts: List[Ast]
+    elseAst: Option[Ast]
   ): Ast = {
     val ifNode          = controlStructureNode(node, ControlStructureTypes.IF, code(node))
-    val astWithChildren = controlStructureAst(ifNode, Some(conditionAst), thenAst :: elseAsts)
+    val astWithChildren = controlStructureAst(ifNode, Some(conditionAst), thenAst :: elseAst.toList)
     val astWithTrueBody = thenAst.root match {
       case Some(thenRoot) => astWithChildren.withTrueBodyEdge(ifNode, thenRoot)
       case None           => astWithChildren
     }
-    elseAsts.headOption.flatMap(_.root) match {
+    elseAst.flatMap(_.root) match {
       case Some(elseRoot) => astWithTrueBody.withFalseBodyEdge(ifNode, elseRoot)
       case None           => astWithTrueBody
     }

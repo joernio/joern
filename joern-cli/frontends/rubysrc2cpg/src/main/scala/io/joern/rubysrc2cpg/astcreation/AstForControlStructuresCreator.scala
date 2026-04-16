@@ -76,13 +76,13 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
 
   // Recursively lowers into a ternary conditional call
   private def astForIfExpression(node: IfExpression): Ast = {
-    def builder(node: IfExpression, conditionAst: Ast, thenAst: Ast, elseAsts: List[Ast]): Ast = {
+    def builder(node: IfExpression, conditionAst: Ast, thenAst: Ast, elseAst: Option[Ast]): Ast = {
       // We want to make sure there's always an «else» clause in a ternary operator.
       // The default value is a `nil` literal.
-      val elseAsts_ = if (elseAsts.isEmpty) List(astForNilBlock) else elseAsts
+      val elseAst_ = elseAst.getOrElse(astForNilBlock)
 
       val call = callNode(node, code(node), Operators.conditional, Operators.conditional, DispatchTypes.STATIC_DISPATCH)
-      callAst(call, conditionAst :: thenAst :: elseAsts_)
+      callAst(call, conditionAst :: thenAst :: elseAst_ :: Nil)
     }
 
     // TODO: Remove or modify the builder pattern when we are no longer using ANTLR
@@ -100,7 +100,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
   private def astForJsonIfStatement(node: IfExpression): Ast = {
     val conditionAst = astForExpression(node.condition)
     val thenAst      = astForThenClause(node.thenClause)
-    val elseAsts = node.elseClause
+    val elseAst = node.elseClause
       .map {
         case x: IfExpression =>
           val wrappedBlock = blockNode(x)
@@ -108,9 +108,8 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
         case x =>
           astForElseClause(x)
       }
-      .getOrElse(Ast())
 
-    conditionalStatementBuilder(node, conditionAst, thenAst, List(elseAsts))
+    conditionalStatementBuilder(node, conditionAst, thenAst, elseAst)
   }
 
   // `unless T do B` is lowered as `if !T then B`
@@ -120,9 +119,9 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
       case stmtList: StatementList => astForStatementList(stmtList)
       case _                       => astForStatementList(StatementList(List(node.trueBranch))(node.trueBranch.span))
     }
-    val elseAsts = node.falseBranch.map(astForElseClause).toList
+    val elseAst = node.falseBranch.map(astForElseClause)
 
-    conditionalStatementBuilder(node, notConditionAst, thenAst, elseAsts)
+    conditionalStatementBuilder(node, notConditionAst, thenAst, elseAst)
   }
 
   protected def astForElseClause(node: RubyExpression): Ast = {
