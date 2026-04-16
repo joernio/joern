@@ -77,10 +77,18 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
         wrappedAst
     }
 
-    val conditionCode = condition.rootCodeOrEmpty
-    val ifNode        = controlStructureNode(ifStmt, ControlStructureTypes.IF, s"if ($conditionCode)")
+    val conditionCode   = condition.rootCodeOrEmpty
+    val ifNode          = controlStructureNode(ifStmt, ControlStructureTypes.IF, s"if ($conditionCode)")
+    val astWithChildren = controlStructureAst(ifNode, Option(condition), thenAst :: elseAst)
+    val astWithTrueBody = thenAst.root match {
+      case Some(thenRoot) => astWithChildren.withTrueBodyEdge(ifNode, thenRoot)
+      case None           => astWithChildren
+    }
 
-    controlStructureAst(ifNode, Option(condition), thenAst :: elseAst)
+    elseAst.headOption.flatMap(_.root) match {
+      case Some(elseRoot) => astWithTrueBody.withFalseBodyEdge(ifNode, elseRoot)
+      case None           => astWithTrueBody
+    }
   }
 
   protected def astForSwitchStmt(stmt: PhpSwitchStmt): Ast = {

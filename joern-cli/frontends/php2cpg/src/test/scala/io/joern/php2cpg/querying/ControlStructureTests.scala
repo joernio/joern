@@ -431,6 +431,28 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         }
       }
     }
+
+    "should connect then and else branches via TRUE_BODY/FALSE_BODY edges" in {
+      val cpg = code("""<?php
+          |if ($cond1) {
+          |  $body1;
+          |} else if ($cond2) {
+          |  $body2;
+          |} else {
+          |  $body3;
+          |};
+          |""".stripMargin)
+
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).headOption.l) {
+        case List(ifControl: ControlStructure) =>
+          ifControl.trueBodyOut.astChildren.code.l shouldBe List("$body1")
+
+          inside(ifControl.falseBodyOut.astChildren.l) { case List(elseIfControl: ControlStructure) =>
+            elseIfControl.trueBodyOut.astChildren.code.l shouldBe List("$body2")
+            elseIfControl.falseBodyOut.astChildren.code.l shouldBe List("$body3")
+          }
+      }
+    }
   }
 
   "break statements" should {
@@ -584,6 +606,10 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       doAst.code shouldBe "do {...} while ($a)"
       doAst.lineNumber shouldBe Some(2)
 
+      inside(doAst.doBodyOut.isBlock.l) { case List(doBody: Block) =>
+        doBody.astChildren.isIdentifier.code.l shouldBe List("$b", "$c")
+      }
+
       inside(doAst.astChildren.collectAll[Block].l) { case List(block) =>
         block.lineNumber shouldBe Some(2)
 
@@ -654,6 +680,16 @@ class ControlStructureTests extends PhpCode2CpgFixture {
     "create the correct body AST" in {
       inside(cpg.controlStructure.astChildren.l) { case List(_, _, _, body: Block) =>
         body.astChildren.code.l shouldBe List("echo $i")
+      }
+    }
+
+    "connect for-loop and body branches via FOR_BODY edges" in {
+      inside(cpg.controlStructure.l) { case List(forNode: ControlStructure) =>
+        forNode.code shouldBe "for ($i = 0;$i < 42;$i++)"
+
+        forNode.forInitOut.code.l shouldBe List("$i = 0")
+        forNode.forUpdateOut.code.l shouldBe List("$i++")
+        forNode.forBodyOut.isBlock.astChildren.code.l shouldBe List("echo $i")
       }
     }
   }
@@ -780,6 +816,21 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       val List(finallyNode) = tryNode.astChildren.isControlStructure.isFinally.l
       finallyNode.astChildren.isBlock.astChildren.code.l shouldBe List("$body4")
       finallyNode.lineNumber shouldBe Some(8)
+    }
+
+    "should connect try, catch and finally bodies via explicit edges" in {
+      inside(cpg.controlStructure.isTry.l) { case List(tryControl: ControlStructure) =>
+        tryControl.code shouldBe "try { ... }"
+        tryControl.tryBodyOut.astChildren.code.l shouldBe List("$body1")
+
+        inside(tryControl.catchBodyOut.l) { case List(catchA: ControlStructure, catchB: ControlStructure) =>
+          catchA.code shouldBe "catch (A | D $a)"
+          catchB.code shouldBe "catch (B $b)"
+        }
+
+        tryControl.finallyBodyOut.code.l shouldBe List("finally")
+        tryControl.finallyBodyOut.astChildren.isBlock.astChildren.code.l shouldBe List("$body4")
+      }
     }
   }
 
