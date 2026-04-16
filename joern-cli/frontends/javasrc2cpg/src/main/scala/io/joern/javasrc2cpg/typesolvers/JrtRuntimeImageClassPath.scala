@@ -21,6 +21,8 @@ import scala.util.{Failure, Success, Try, Using}
   */
 class JrtRuntimeImageClassPath(javaHome: Path) extends ClassPath with AutoCloseable {
 
+  // The jrtFileSystem needs to stay open for the entire javasrc2cpg lifetime since all paths indexed
+  // and used here are paths within the jrtfs, so it is kept as a private member here.
   private val jrtFileSystem = JrtRuntimeImageClassPath.openJrtFileSystem(javaHome)
 
   private val (classNameToPath: Map[String, Path], moduleExports: Map[String, List[String]]) = {

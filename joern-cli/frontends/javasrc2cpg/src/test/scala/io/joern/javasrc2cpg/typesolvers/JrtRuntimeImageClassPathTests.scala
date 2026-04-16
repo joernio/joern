@@ -20,13 +20,6 @@ class JrtRuntimeImageClassPathTests extends AnyWordSpec with Matchers with Befor
     super.afterAll()
   }
 
-  private def assumeRuntimeImage(): Unit = {
-    assume(
-      JrtRuntimeImageClassPath.findRuntimeImage(javaHome).isDefined,
-      s"Skipping: no lib/modules at $javaHome (not a modular JDK layout)"
-    )
-  }
-
   "findRuntimeImageRoot" should {
 
     "find lib/modules nested under the search root (single walk returns java.home and modules path)" in {
@@ -43,7 +36,6 @@ class JrtRuntimeImageClassPathTests extends AnyWordSpec with Matchers with Befor
   "JrtRuntimeImageClassPath" should {
 
     "index and open java.lang.String from the running JDK's runtime image" in {
-      assumeRuntimeImage()
       cp.knownClassNames should contain("java.lang.String")
       Using.resource(cp.openClassfile("java.lang.String")) { stringClassFile =>
         stringClassFile should not be null
@@ -53,7 +45,6 @@ class JrtRuntimeImageClassPathTests extends AnyWordSpec with Matchers with Befor
     }
 
     "expose module exports for java.base" in {
-      assumeRuntimeImage()
       cp.moduleExportsMap.get("java.base") should not be empty
       cp.moduleExportsMap("java.base") should contain("java.lang")
     }
@@ -62,9 +53,8 @@ class JrtRuntimeImageClassPathTests extends AnyWordSpec with Matchers with Befor
   "JarTypeSolver with runtime image only" should {
 
     "resolve java.lang.String via tryToSolveTypeInModule" in {
-      assumeRuntimeImage()
       val builder = new JarTypeSolverBuilder(enableVerboseTypeLogging = false)
-      builder.addRuntimeImage(javaHome) shouldEqual Success(())
+      builder.addRuntimeImage(javaHome).isSuccess shouldBe true
       val jarTypeSolver  = builder.build
       val combinedSolver = new SimpleCombinedTypeSolver(enableVerboseTypeLogging = false)
       combinedSolver.addNonCachingTypeSolver(jarTypeSolver)

@@ -146,13 +146,14 @@ class JarTypeSolverBuilder(enableVerboseTypeLogging: Boolean) {
   }
 
   /** Load the `jrt:` runtime image (`lib/modules`) for a minimal JDK/jlink layout. */
-  private[typesolvers] def addRuntimeImage(jdkRoot: Path): Try[Unit] = {
+  private[typesolvers] def addRuntimeImage(jdkRoot: Path): Try[JarTypeSolverBuilder] = {
     Try {
       val jrt = new JrtRuntimeImageClassPath(jdkRoot)
       classPool.appendClassPath(jrt)
       ownedCloseables += jrt
       registerPackagesFromClassNames(jdkRoot.toString, jrt.knownClassNames, jarExportArchivePath = None)
       exportedPackages ++= jrt.moduleExportsMap
+      this
     }
   }
 
@@ -231,14 +232,15 @@ object JarTypeSolver {
         JrtRuntimeImageClassPath.findRuntimeImage(Paths.get(inputPath)) match {
           case Some(imageRootPath) =>
             logger.info(s"JDK type solver: using runtime image at $imageRootPath; search root: $inputPath)")
-            builder.addRuntimeImage(imageRootPath) match {
-              case Success(_) => builder
-              case Failure(exception) =>
+            builder
+              .addRuntimeImage(imageRootPath)
+              .recover(exception =>
                 throw new IllegalArgumentException(
-                  s"Could not load JDK runtime image (jrt:) for image root path=$imageRootPath",
+                  s"Could not load JDK runtime image (jrt:) for the image root path=$imageRootPath",
                   exception
                 )
-            }
+              )
+              .get
           case None =>
             throw new IllegalArgumentException(
               s"No .jar or .jmod files found under $inputPath, and no runtime image file at .../lib/modules beneath that path"
