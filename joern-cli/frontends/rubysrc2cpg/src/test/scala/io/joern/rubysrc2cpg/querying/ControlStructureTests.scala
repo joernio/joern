@@ -51,6 +51,9 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     assignment.code shouldBe "num = i + 3"
     assignment.lineNumber shouldBe Some(5)
 
+    inside(whileNode.doBodyOut.isBlock.l) { case List(doBody: Block) =>
+      doBody.astChildren.code.l shouldBe List("num = i + 3")
+    }
   }
 
   "`until-end` statement is represented by a negated `WHILE` CONTROL_STRUCTURE node" in {
@@ -175,6 +178,44 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     elsIfStr.lineNumber shouldBe Some(5)
   }
 
+  "`if-elsif-else-end` should connect then and else branches via TRUE_BODY/FALSE_BODY edges" in {
+    val cpg = code("""
+                     |if __LINE__ == 0 then
+                     | '= 0'
+                     |elsif __LINE__ > 0 then
+                     | '> 0'
+                     |else
+                     | '< 0'
+                     |end
+                     |""".stripMargin)
+
+    inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).headOption.l) {
+      case List(ifControl: ControlStructure) =>
+        ifControl.trueBodyOut.astChildren.code.l shouldBe List("'= 0'")
+
+        inside(ifControl.falseBodyOut.astChildren.l) { case List(elseIfControl: ControlStructure) =>
+          elseIfControl.trueBodyOut.astChildren.code.l shouldBe List("'> 0'")
+          elseIfControl.falseBodyOut.astChildren.code.l shouldBe List("'< 0'")
+        }
+    }
+  }
+
+  "`if-else-end` should connect then and else branches via TRUE_BODY/FALSE_BODY edges" in {
+    val cpg = code("""
+        |if __LINE__ == 0 then
+        | '= 0'
+        |else
+        | '< 0 || > 0'
+        |end
+        |""".stripMargin)
+
+    inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).headOption.l) {
+      case List(ifControl: ControlStructure) =>
+        ifControl.trueBodyOut.astChildren.code.l shouldBe List("'= 0'")
+        ifControl.falseBodyOut.astChildren.code.l shouldBe List("'< 0 || > 0'")
+    }
+  }
+
   "`unless-end` statement is represented by a negated `IF` CONTROL_STRUCTURE node" in {
     val cpg = code("""
                      |unless __LINE__ == 0 then
@@ -218,6 +259,22 @@ class ControlStructureTests extends RubyCode2CpgFixture {
 
     elseAssignment.code shouldBe "x = '!= 0'"
     elseAssignment.lineNumber shouldBe Some(3)
+  }
+
+  "`unless-else-end` should connect then and else branches via TRUE_BODY/FALSE_BODY edges" in {
+    val cpg = code("""
+                     |unless __LINE__ == 0 then
+                     | x = '!= 0'
+                     |else
+                     | x = '= 0'
+                     |end
+                     |""".stripMargin)
+
+    inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).headOption.l) {
+      case List(ifControl: ControlStructure) =>
+        ifControl.trueBodyOut.astChildren.code.l shouldBe List("x = '= 0'")
+        ifControl.falseBodyOut.astChildren.code.l shouldBe List("x = '!= 0'")
+    }
   }
 
   "`... unless ...` statement is represented by a negated `IF` CONTROL_STRUCTURE node" in {
@@ -373,6 +430,37 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     }
   }
 
+  "`begin-rescue-ensure-else-end` should connect begin, rescue, else and ensure bodies via explicit edges" in {
+    val cpg = code("""
+        |def test2
+        |  begin
+        |   1
+        |  rescue Exception
+        |   2
+        |  else
+        |   3
+        |  ensure
+        |   4
+        |  end
+        |end
+        |""".stripMargin)
+
+    inside(cpg.controlStructure.isTry.l) { case List(tryControl: ControlStructure) =>
+      tryControl.code shouldBe "try"
+      tryControl.tryBodyOut.astChildren.code.l shouldBe List("1")
+
+      inside(tryControl.catchBodyOut.l) { case List(catchA: ControlStructure, catchB: ControlStructure) =>
+        catchA.code shouldBe "catch"
+        catchA.astChildren.isBlock.astChildren.code.l shouldBe List("2")
+        catchB.code shouldBe "else"
+        catchB.astChildren.isBlock.astChildren.code.l shouldBe List("3")
+      }
+
+      tryControl.finallyBodyOut.code.l shouldBe List("finally")
+      tryControl.finallyBodyOut.astChildren.isBlock.astChildren.code.l shouldBe List("4")
+    }
+  }
+
   "`for .. in` control structure" should {
     val cpg = code("""
                      |def foo1
@@ -458,6 +546,16 @@ class ControlStructureTests extends RubyCode2CpgFixture {
         case _ => fail("No control structure node found for `for-in`.")
       }
     }
+
+    "connect for-loop and body branches via FOR_BODY edges" in {
+      inside(cpg.method("foo1").controlStructure.l) { case List(forNode: ControlStructure) =>
+        forNode.code shouldBe "for i in x do\n   puts x - i\n end"
+
+        forNode.forInitOut.code.l shouldBe List("_idx_ = 0")
+        forNode.forUpdateOut.code.l shouldBe List("i = x[_idx_++]")
+        forNode.forBodyOut.isBlock.astChildren.code.l shouldBe List("puts x - i")
+      }
+    }
   }
 
   "implicit if-elsif-else assignment" should {
@@ -474,6 +572,33 @@ class ControlStructureTests extends RubyCode2CpgFixture {
           elseAssignment.code shouldBe "a = 456"
         case xs => fail(s"Expected four assignments, instead found ${xs.code.mkString(", ")}")
       }
+    }
+  }
+
+  "implicit `if-elsif-else-end` assignment should connect then and else branches via TRUE_BODY/FALSE_BODY edges" in {
+    val cpg = code("""
+        |a = if __LINE__ == 0 then '= 0' elsif __LINE__ > 0 then '> 0' else '< 0' end
+        |""".stripMargin)
+
+    inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).headOption.l) {
+      case List(ifControl: ControlStructure) =>
+        ifControl.code shouldBe "if __LINE__ == 0 then '= 0' elsif __LINE__ > 0 then '> 0' el..."
+        inside(ifControl.trueBodyOut.astChildren.l) { case List(call: Call) =>
+          call.name shouldBe Operators.assignment
+          call.code shouldBe "a = '= 0'"
+        }
+
+        inside(ifControl.falseBodyOut.astChildren.l) { case List(elseIfControl: ControlStructure) =>
+          elseIfControl.code shouldBe "elsif __LINE__ > 0 then '> 0' else '< 0'"
+          inside(elseIfControl.trueBodyOut.astChildren.l) { case List(call: Call) =>
+            call.name shouldBe Operators.assignment
+            call.code shouldBe "a = '> 0'"
+          }
+          inside(elseIfControl.falseBodyOut.astChildren.l) { case List(call: Call) =>
+            call.name shouldBe Operators.assignment
+            call.code shouldBe "a = '< 0'"
+          }
+        }
     }
   }
 
