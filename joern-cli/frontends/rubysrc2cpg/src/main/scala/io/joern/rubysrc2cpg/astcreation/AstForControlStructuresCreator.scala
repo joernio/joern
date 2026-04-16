@@ -85,31 +85,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
       callAst(call, conditionAst :: thenAst :: elseAst_ :: Nil)
     }
 
-    // TODO: Remove or modify the builder pattern when we are no longer using ANTLR
-    node.elseClause match {
-      case Some(elseClause) =>
-        elseClause match {
-          case _: IfExpression => astForJsonIfStatement(node)
-          case _               => foldIfExpression(builder)(node)
-        }
-      case None =>
-        foldIfExpression(builder)(node)
-    }
-  }
-
-  private def astForJsonIfStatement(node: IfExpression): Ast = {
-    val conditionAst = astForExpression(node.condition)
-    val thenAst      = astForThenClause(node.thenClause)
-    val elseAst = node.elseClause
-      .map {
-        case x: IfExpression =>
-          val wrappedBlock = blockNode(x)
-          Ast(wrappedBlock).withChild(astForJsonIfStatement(x))
-        case x =>
-          astForElseClause(x)
-      }
-
-    conditionalStatementBuilder(node, conditionAst, thenAst, elseAst)
+    astForIfStatement(builder)(node)
   }
 
   // `unless T do B` is lowered as `if !T then B`

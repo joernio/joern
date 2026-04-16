@@ -128,6 +128,34 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   }
 
+  protected def astForIfStatement(builder: (IfExpression, Ast, Ast, Option[Ast]) => Ast)(node: IfExpression): Ast = {
+    def astForJsonIfStatement(node: IfExpression): Ast = {
+      val conditionAst = astForExpression(node.condition)
+      val thenAst      = astForThenClause(node.thenClause)
+      val elseAst = node.elseClause
+        .map {
+          case x: IfExpression =>
+            val wrappedBlock = blockNode(x)
+            Ast(wrappedBlock).withChild(astForJsonIfStatement(x))
+          case x =>
+            astForElseClause(x)
+        }
+
+      conditionalStatementBuilder(node, conditionAst, thenAst, elseAst)
+    }
+
+    // TODO: Remove or modify the builder pattern when we are no longer using ANTLR
+    node.elseClause match {
+      case Some(elseClause) =>
+        elseClause match {
+          case _: IfExpression => astForJsonIfStatement(node)
+          case _               => foldIfExpression(builder)(node)
+        }
+      case None =>
+        foldIfExpression(builder)(node)
+    }
+  }
+
   protected def conditionalStatementBuilder(
     node: ControlFlowStatement,
     conditionAst: Ast,

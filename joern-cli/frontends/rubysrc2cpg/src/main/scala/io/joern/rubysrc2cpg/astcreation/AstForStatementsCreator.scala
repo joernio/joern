@@ -15,7 +15,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   protected def astsForStatement(node: RubyExpression): Seq[Ast] = {
     baseAstCache.clear() // A safe approximation on where to reset the cache
     node match {
-      case node: IfExpression               => astForIfStatement(node) :: Nil
+      case node: IfExpression               => astForIfStatement(conditionalStatementBuilder)(node) :: Nil
       case node: OperatorAssignment         => astForOperatorAssignment(node)
       case node: CaseExpression             => astsForCaseExpression(node)
       case node: StatementList              => astForStatementList(node) :: Nil
@@ -35,37 +35,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     }
   }
 
-  private def astForIfStatement(node: IfExpression): Ast = {
-    // TODO: Remove or modify the builder pattern when we are no longer using ANTLR
-    node.elseClause match {
-      case Some(elseClause) =>
-        elseClause match {
-          case _: IfExpression => astForJsonIfStatement(node)
-          case _               => foldIfExpression(conditionalStatementBuilder)(node)
-        }
-      case None =>
-        foldIfExpression(conditionalStatementBuilder)(node)
-    }
-  }
-
   private def astForOperatorAssignment(node: OperatorAssignment): Seq[Ast] = {
     val loweredAssignment = lowerAssignmentOperator(node.lhs, node.rhs, node.op, node.span)
     astsForStatement(loweredAssignment)
-  }
-
-  private def astForJsonIfStatement(node: IfExpression): Ast = {
-    val conditionAst = astForExpression(node.condition)
-    val thenAst      = astForThenClause(node.thenClause)
-    val elseAst = node.elseClause
-      .map {
-        case x: IfExpression =>
-          val wrappedBlock = blockNode(x)
-          Ast(wrappedBlock).withChild(astForJsonIfStatement(x))
-        case x =>
-          astForElseClause(x)
-      }
-
-    conditionalStatementBuilder(node, conditionAst, thenAst, elseAst)
   }
 
   private def astForAccessModifier(node: AccessModifier): Seq[Ast] = {
