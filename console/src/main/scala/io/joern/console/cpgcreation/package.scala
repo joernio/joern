@@ -39,6 +39,7 @@ package object cpgcreation {
       case Languages.KOTLIN    => Some(KotlinCpgGenerator(conf, rootPath))
       case Languages.RUBYSRC   => Some(RubyCpgGenerator(conf, rootPath))
       case Languages.SWIFTSRC  => Some(SwiftSrcCpgGenerator(conf, rootPath))
+      case Languages.RUST      => Some(RustCpgGenerator(conf, rootPath))
       case _                   => None
     }
   }
@@ -95,6 +96,9 @@ package object cpgcreation {
   private def isCFile(filename: String): Boolean =
     Seq(".c", ".cc", ".cpp", ".h", ".hpp", ".hh").exists(filename.endsWith)
 
+  private def isRustFile(filename: String): Boolean =
+    filename.endsWith(".rs") || Set("cargo.toml", "cargo.lock").contains(filename)
+
   private def guessLanguageForRegularFile(file: Path): Option[String] = {
     file.fileName.toLowerCase match {
       case f if isJavaBinary(f)      => Some(Languages.JAVA)
@@ -110,6 +114,7 @@ package object cpgcreation {
       case f if f.endsWith(".swift") => Some(Languages.SWIFTSRC)
       case f if isLlvmFile(f)        => Some(Languages.LLVM)
       case f if isCFile(f)           => Some(Languages.NEWC)
+      case f if isRustFile(f)        => Some(Languages.RUST)
       case _                         => None
     }
   }

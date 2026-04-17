@@ -72,6 +72,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
   def llvm: Frontend            = new BinaryFrontend("llvm", Languages.LLVM, "LLVM Bitcode Frontend")
   def php: SourceBasedFrontend  = new SourceBasedFrontend("php", Languages.PHP, "PHP source frontend", "php")
   def ruby: SourceBasedFrontend = SourceBasedFrontend("ruby", Languages.RUBYSRC, "Ruby source frontend", "rb")
+  def rust: SourceBasedFrontend = new SourceBasedFrontend("rust", Languages.RUST, "Rust Source Frontend", "rs")
 
   private def allFrontends: List[Frontend] =
     List(
@@ -90,7 +91,8 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
       python,
       csharp,
       ruby,
-      csharpsrc
+      csharpsrc,
+      rust
     )
 
   // this is only abstract to force people adding frontends to make a decision whether the frontend consumes binaries or source
