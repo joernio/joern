@@ -158,7 +158,7 @@ object GradleDependencies {
           logger.info(s"Task $taskName resolved `$dependencyCount` dependency files.")
           result
         case Failure(ex) =>
-          logger.warn(s"Caught exception while executing Gradle task: ${ex.getMessage}")
+          logger.warn(s"Caught exception while executing Gradle task: ${ex.getMessage}", ex)
           val androidSdkError = "Define a valid SDK location with an ANDROID_HOME environment variable"
           if (stderrStream.toString.contains(androidSdkError)) {
             logger.warn(
