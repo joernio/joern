@@ -748,6 +748,41 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       }
     }
   }
+
+  "`if-elseif-else` statements" should {
+    val cpg = code("""
+        |public class Foo {
+        |  public static void foo(int c) {
+        |    if (c > 10) {
+        |      c -= 10;
+        |    } else if (c < 10) {
+        |      c += 10;
+        |    } else {
+        |      c = 10;
+        |    }
+        |  }
+        |}
+        |""".stripMargin)
+
+    "should connect then and else branches via TRUE_BODY/FALSE_BODY edges" in {
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l) {
+        case List(ifOne: ControlStructure, ifTwo: ControlStructure) =>
+          ifOne.condition.code.l shouldBe List("c > 10")
+          ifOne.trueBodyOut.astChildren.code.l shouldBe List("c -= 10")
+          inside(ifOne.falseBodyOut.l) { case List(elseNode: ControlStructure) =>
+            elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
+            elseNode.astChildren.isBlock.astChildren.l shouldBe List(ifTwo)
+          }
+
+          ifTwo.condition.code.l shouldBe List("c < 10")
+          ifTwo.trueBodyOut.astChildren.code.l shouldBe List("c += 10")
+          inside(ifTwo.falseBodyOut.l) { case List(elseNode: ControlStructure) =>
+            elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
+            elseNode.astChildren.isBlock.astChildren.code.l shouldBe List("c = 10")
+          }
+      }
+    }
+  }
 }
 
 class ControlStructureTests extends JavaSrcCode2CpgFixture {
