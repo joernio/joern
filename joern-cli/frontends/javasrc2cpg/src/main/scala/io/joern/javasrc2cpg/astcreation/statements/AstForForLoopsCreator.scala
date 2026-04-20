@@ -502,7 +502,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
 
   private def getForCode(stmt: ForStmt): String = {
     val init    = stmt.getInitialization.asScala.map(_.toString).mkString(", ")
-    val compare = stmt.getCompare.toScala.map(_.toString)
+    val compare = stmt.getCompare.toScala.map(_.toString).getOrElse("")
     val update  = stmt.getUpdate.asScala.map(_.toString).mkString(", ")
     s"for ($init; $compare; $update)"
   }
