@@ -86,19 +86,9 @@ trait AstForForLoopsCreator { this: AstCreator =>
 
     scope.addLocalsForPatternsToEnclosingBlock(patternPartition.patternsIntroducedByStatement)
 
-    val ast = Ast(forNode)
-      .withChildren(initAsts)
-      .withChildren(compareAsts)
-      .withChildren(updateAsts)
-      .withChild(bodyAst)
+    val ast = forAst(forNode, Nil, initAsts.toSeq, compareAsts, updateAsts, bodyAst)
 
-    val astWithConditionEdge = compareAsts.flatMap(_.root) match {
-      case c :: Nil =>
-        ast.withConditionEdge(forNode, c)
-      case _ => ast
-    }
-
-    patternLocals :+ astWithConditionEdge
+    patternLocals :+ ast
   }
 
   def astForForEach(stmt: ForEachStmt): Seq[Ast] = {
