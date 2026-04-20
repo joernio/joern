@@ -783,6 +783,53 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       }
     }
   }
+
+  "`do-while` statements" should {
+    val cpg = code("""
+        |public class Foo {
+        |  public static void foo(int c) {
+        |    do {
+        |      c += 1;
+        |    } while (c < 10);
+        |  }
+        |}
+        |""".stripMargin)
+
+    "connect do-while body via DO_BODY edge" in {
+      inside(cpg.method.name("foo").doBlock.l) { case List(doBlock: ControlStructure) =>
+        doBlock.condition.code.l shouldBe List("c < 10")
+        doBlock.doBodyOut.isBlock.astChildren.code.l shouldBe List("c += 1")
+      }
+    }
+  }
+
+  "`try-catch-finally` statements" should {
+    val cpg = code("""
+        |public class Foo {
+        |  public static int foo(int c) {
+        |    try {
+        |      return 5 / c;
+        |    } catch (Exception ex) {
+        |      printf("catch");
+        |    } finally {
+        |      printf("finally");
+        |    }
+        |  }
+        |}
+        |""".stripMargin)
+
+    "connect try, catch and finally bodies via explicit edges" in {
+      inside(cpg.controlStructure.isTry.l) { case List(tryNode: ControlStructure) =>
+        tryNode.tryBodyOut.isBlock.astChildren.code.l shouldBe List("return 5 / c;")
+        inside(tryNode.catchBodyOut.l) { case List(catchNode: ControlStructure) =>
+          catchNode.astChildren.isBlock.astChildren.code.l shouldBe List("printf(\"catch\")")
+        }
+        inside(tryNode.finallyBodyOut.l) { case List(finallyNode: ControlStructure) =>
+          finallyNode.astChildren.isBlock.astChildren.code.l shouldBe List("printf(\"finally\")")
+        }
+      }
+    }
+  }
 }
 
 class ControlStructureTests extends JavaSrcCode2CpgFixture {
