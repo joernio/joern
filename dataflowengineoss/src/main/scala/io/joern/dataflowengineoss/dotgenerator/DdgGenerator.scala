@@ -35,15 +35,15 @@ class DdgGenerator {
     val ddgNodes = visibleNodes
       .filter(node => allIdsReferencedByEdges.contains(node.id))
       .map(surroundingCall)
-      .filterNot(node => node.isInstanceOf[Call] && isGenericMemberAccessName(node.asInstanceOf[Call].name))
+      .filterNot(node => shouldFilterMemberAccessNode(node))
 
     val ddgEdges = edges.flatten
       .map { edge =>
         edge.copy(src = surroundingCall(edge.src), dst = surroundingCall(edge.dst))
       }
       .filter(e => e.src != e.dst)
-      .filterNot(e => e.dst.isInstanceOf[Call] && isGenericMemberAccessName(e.dst.asInstanceOf[Call].name))
-      .filterNot(e => e.src.isInstanceOf[Call] && isGenericMemberAccessName(e.src.asInstanceOf[Call].name))
+      .filterNot(e => shouldFilterMemberAccessNode(e.dst))
+      .filterNot(e => shouldFilterMemberAccessNode(e.src))
       .distinct
 
     edgeCache.clear()
@@ -52,8 +52,38 @@ class DdgGenerator {
 
   private def surroundingCall(node: StoredNode): StoredNode = {
     node match {
-      case arg: Expression => arg.inCall.headOption.getOrElse(node)
-      case _               => node
+      case call: Call =>
+        // Keep Call nodes as-is - they represent operations
+        call
+      case arg: Expression =>
+        // For non-Call expressions (identifiers, literals), group with their containing call
+        arg.inCall.headOption.getOrElse(node)
+      case _ =>
+        node
+    }
+  }
+
+  /** Determines if a generic member access node should be filtered from the DDG visualization.
+    *
+    * A generic member access operator (like indirection, fieldAccess, etc.) should only be filtered if it's truly
+    * pass-through and doesn't contribute meaningful information. We keep these operators when they are:
+    *   - Direct arguments to control structure conditions (if, while, for)
+    *   - Part of important expressions like logical operators
+    *
+    * This ensures operations like `*glob` in `if (*glob)` or `while (x && *ptr)` remain visible.
+    */
+  private def shouldFilterMemberAccessNode(node: StoredNode): Boolean = {
+    node match {
+      case call: Call if isGenericMemberAccessName(call.name) =>
+        // Check if this node is an argument to a control structure condition
+        val isInCondition = call.inCall.exists { parentCall =>
+          parentCall.astParent.exists(_.isInstanceOf[ControlStructure])
+        }
+
+        // Don't filter if it's in a control structure condition
+        !isInCondition
+
+      case _ => false
     }
   }
 
