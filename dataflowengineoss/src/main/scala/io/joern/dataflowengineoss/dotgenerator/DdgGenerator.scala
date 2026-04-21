@@ -101,7 +101,7 @@ class DdgGenerator {
             // Check if we reach a node with an incoming CONDITION edge
             _.in(EdgeTypes.CONDITION),
             // Check if we're the first argument of a ternary operator
-            _.inCall.nameExact(Operators.conditional).argument.order(1).filter(_ == expr)
+            _.argumentIndex(1).inCall.nameExact(Operators.conditional)
           )
           .hasNext
       case _ => false
