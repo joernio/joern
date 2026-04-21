@@ -2,7 +2,7 @@ package io.joern.dataflowengineoss.dotgenerator
 
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.semanticcpg.dotgenerator.DotSerializer.{Edge, Graph}
@@ -75,27 +75,46 @@ class DdgGenerator {
   private def shouldFilterMemberAccessNode(node: StoredNode): Boolean = {
     node match {
       case call: Call if isGenericMemberAccessName(call.name) =>
-        // Check if this node is an argument to a control structure condition
-        val isInCondition = call.inCall.exists { parentCall =>
-          parentCall.astParent.exists(_.isInstanceOf[ControlStructure])
-        }
-
         // Don't filter if it's in a control structure condition
-        !isInCondition
+        !isInCondition(call)
+      case _ => false
+    }
+  }
 
+  /** Checks if a node is part of a condition expression.
+    *
+    * A node is considered to be in a condition if:
+    *   1. It has an incoming CONDITION edge from a ControlStructure
+    *   1. Walking up the AST via parent expressions leads to either:
+    *      - A node with an incoming CONDITION edge (control structure condition)
+    *      - The first argument of `Operators.conditional` (ternary operator)
+    *
+    * This handles arbitrarily nested boolean operators like `while (((x) && *xx) || *glob)`.
+    */
+  private def isInCondition(node: StoredNode): Boolean = {
+    node match {
+      case expr: Expression =>
+        // Walk up parent expressions until we find a condition context
+        expr.start
+          .repeat(_.parentExpression)(_.emit)
+          .or(
+            // Check if we reach a node with an incoming CONDITION edge
+            _.in(EdgeTypes.CONDITION),
+            // Check if we're the first argument of a ternary operator
+            _.inCall.nameExact(Operators.conditional).argument.order(1).filter(_ == expr)
+          )
+          .hasNext
       case _ => false
     }
   }
 
   private def shouldBeDisplayed(v: StoredNode): Boolean = !(
-    v.isInstanceOf[ControlStructure] ||
-      v.isInstanceOf[JumpTarget]
+    v.isInstanceOf[ControlStructure] || v.isInstanceOf[JumpTarget]
   )
 
   private def inEdgesToDisplay(dstNode: StoredNode, visited: List[StoredNode] = List())(implicit
     semantics: Semantics
   ): List[Edge] = {
-
     if (edgeCache.contains(dstNode)) {
       return edgeCache(dstNode)
     }
@@ -115,7 +134,6 @@ class DdgGenerator {
   }
 
   private def expand(v: StoredNode)(implicit semantics: Semantics): Iterator[Edge] = {
-
     val allInEdges = v
       .inE(EdgeTypes.REACHING_DEF)
       .map { x =>
@@ -140,7 +158,6 @@ class DdgGenerator {
       case _ =>
         allInEdges.iterator
     }
-
   }
 
 }

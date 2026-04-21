@@ -8,9 +8,6 @@ import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 
-import scala.io.Source
-import scala.util.Using
-
 class DotDdgGeneratorTests extends DataFlowCodeToCpgSuite {
 
   "DotDdgGeneratorTest1" should {
@@ -75,10 +72,8 @@ class DotDdgGeneratorTests extends DataFlowCodeToCpgSuite {
         val layerContext = new LayerCreatorContext(cpg)
         new DumpDdg(opts).run(layerContext)
 
-        val dotFile = tmpDir / "0-ddg.dot"
-        val dotContent = Using.resource(Source.fromFile(dotFile.toFile)) { source =>
-          source.getLines().mkString("\n")
-        }
+        val dotFile    = tmpDir / "0-ddg.dot"
+        val dotContent = java.nio.file.Files.readString(tmpDir / "0-ddg.dot")
 
         // The *glob indirection operator should be present as a node (HTML-escaped in DOT format)
         dotContent should include("&lt;operator&gt;.indirection")
@@ -107,10 +102,8 @@ class DotDdgGeneratorTests extends DataFlowCodeToCpgSuite {
         val layerContext = new LayerCreatorContext(cpg2)
         new DumpDdg(opts).run(layerContext)
 
-        val dotFile = tmpDir / "0-ddg.dot"
-        val dotContent = Using.resource(Source.fromFile(dotFile.toFile)) { source =>
-          source.getLines().mkString("\n")
-        }
+        val dotFile    = tmpDir / "0-ddg.dot"
+        val dotContent = java.nio.file.Files.readString(tmpDir / "0-ddg.dot")
 
         // The simple *glob in assignment should be filtered out (not in a condition)
         // We should NOT see indirection operator nodes
