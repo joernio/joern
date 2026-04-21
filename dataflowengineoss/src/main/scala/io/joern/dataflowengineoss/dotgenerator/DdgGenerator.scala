@@ -2,7 +2,7 @@ package io.joern.dataflowengineoss.dotgenerator
 
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.semanticcpg.dotgenerator.DotSerializer.{Edge, Graph}
@@ -35,15 +35,15 @@ class DdgGenerator {
     val ddgNodes = visibleNodes
       .filter(node => allIdsReferencedByEdges.contains(node.id))
       .map(surroundingCall)
-      .filterNot(node => node.isInstanceOf[Call] && isGenericMemberAccessName(node.asInstanceOf[Call].name))
+      .filterNot(node => shouldFilterMemberAccessNode(node))
 
     val ddgEdges = edges.flatten
       .map { edge =>
         edge.copy(src = surroundingCall(edge.src), dst = surroundingCall(edge.dst))
       }
       .filter(e => e.src != e.dst)
-      .filterNot(e => e.dst.isInstanceOf[Call] && isGenericMemberAccessName(e.dst.asInstanceOf[Call].name))
-      .filterNot(e => e.src.isInstanceOf[Call] && isGenericMemberAccessName(e.src.asInstanceOf[Call].name))
+      .filterNot(e => shouldFilterMemberAccessNode(e.dst))
+      .filterNot(e => shouldFilterMemberAccessNode(e.src))
       .distinct
 
     edgeCache.clear()
@@ -52,20 +52,69 @@ class DdgGenerator {
 
   private def surroundingCall(node: StoredNode): StoredNode = {
     node match {
-      case arg: Expression => arg.inCall.headOption.getOrElse(node)
-      case _               => node
+      case call: Call =>
+        // Keep Call nodes as-is - they represent operations
+        call
+      case arg: Expression =>
+        // For non-Call expressions (identifiers, literals), group with their containing call
+        arg.inCall.headOption.getOrElse(node)
+      case _ =>
+        node
+    }
+  }
+
+  /** Determines if a generic member access node should be filtered from the DDG visualization.
+    *
+    * A generic member access operator (like indirection, fieldAccess, etc.) should only be filtered if it's truly
+    * pass-through and doesn't contribute meaningful information. We keep these operators when they are:
+    *   - Direct arguments to control structure conditions (if, while, for)
+    *   - Part of important expressions like logical operators
+    *
+    * This ensures operations like `*glob` in `if (*glob)` or `while (x && *ptr)` remain visible.
+    */
+  private def shouldFilterMemberAccessNode(node: StoredNode): Boolean = {
+    node match {
+      case call: Call if isGenericMemberAccessName(call.name) =>
+        // Don't filter if it's in a control structure condition
+        !isInCondition(call)
+      case _ => false
+    }
+  }
+
+  /** Checks if a node is part of a condition expression.
+    *
+    * A node is considered to be in a condition if:
+    *   1. It has an incoming CONDITION edge from a ControlStructure
+    *   1. Walking up the AST via parent expressions leads to either:
+    *      - A node with an incoming CONDITION edge (control structure condition)
+    *      - The first argument of `Operators.conditional` (ternary operator)
+    *
+    * This handles arbitrarily nested boolean operators like `while (((x) && *xx) || *glob)`.
+    */
+  private def isInCondition(node: StoredNode): Boolean = {
+    node match {
+      case expr: Expression =>
+        // Walk up parent expressions until we find a condition context
+        expr.start
+          .repeat(_.parentExpression)(_.emit)
+          .or(
+            // Check if we reach a node with an incoming CONDITION edge
+            _.in(EdgeTypes.CONDITION),
+            // Check if we're the first argument of a ternary operator
+            _.argumentIndex(1).inCall.nameExact(Operators.conditional)
+          )
+          .hasNext
+      case _ => false
     }
   }
 
   private def shouldBeDisplayed(v: StoredNode): Boolean = !(
-    v.isInstanceOf[ControlStructure] ||
-      v.isInstanceOf[JumpTarget]
+    v.isInstanceOf[ControlStructure] || v.isInstanceOf[JumpTarget]
   )
 
   private def inEdgesToDisplay(dstNode: StoredNode, visited: List[StoredNode] = List())(implicit
     semantics: Semantics
   ): List[Edge] = {
-
     if (edgeCache.contains(dstNode)) {
       return edgeCache(dstNode)
     }
@@ -85,7 +134,6 @@ class DdgGenerator {
   }
 
   private def expand(v: StoredNode)(implicit semantics: Semantics): Iterator[Edge] = {
-
     val allInEdges = v
       .inE(EdgeTypes.REACHING_DEF)
       .map { x =>
@@ -110,7 +158,6 @@ class DdgGenerator {
       case _ =>
         allInEdges.iterator
     }
-
   }
 
 }
