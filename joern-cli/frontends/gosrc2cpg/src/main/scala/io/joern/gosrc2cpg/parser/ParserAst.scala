@@ -118,4 +118,5 @@ object ParserKeys {
   val Args            = "Args"
   val Recv            = "Recv"
   val Index           = "Index"
+  val Methods         = "Methods"
 }
