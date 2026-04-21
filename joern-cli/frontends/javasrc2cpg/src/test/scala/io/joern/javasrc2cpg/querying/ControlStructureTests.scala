@@ -830,6 +830,35 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       }
     }
   }
+
+  "`for-loop` statements" should {
+    val cpg = code("""
+        |public class Foo {
+        |  public static int foo(int c) {
+        |    for (int i = 0; i < c; i++) {
+        |      printf("%d ", i);
+        |    }
+        |  }
+        |}
+        |""".stripMargin)
+
+    "connect for-loop and branches via control structure edges" in {
+      inside(cpg.controlStructure.l) { case List(forNode: ControlStructure) =>
+        forNode.code shouldBe "for (int i = 0; i < c; i++)"
+
+        inside(forNode.forInitOut.isBlock.astChildren.l) { case List(local: Local, call: Call) =>
+          local.name shouldBe "i"
+          local.code shouldBe "int i"
+
+          call.name shouldBe Operators.assignment
+          call.code shouldBe "int i = 0"
+        }
+
+        forNode.forUpdateOut.code.l shouldBe List("i++")
+        forNode.forBodyOut.isBlock.astChildren.code.l shouldBe List("printf(\"%d \", i)")
+      }
+    }
+  }
 }
 
 class ControlStructureTests extends JavaSrcCode2CpgFixture {
