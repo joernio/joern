@@ -133,13 +133,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   }
 
   private def astForConformanceRequirementSyntax(node: ConformanceRequirementSyntax): Ast = notHandledYet(node)
-  private def astForConventionAttributeArgumentsSyntax(node: ConventionAttributeArgumentsSyntax): Ast = notHandledYet(
-    node
-  )
-  private def astForConventionWitnessMethodAttributeArgumentsSyntax(
-    node: ConventionWitnessMethodAttributeArgumentsSyntax
-  ): Ast = notHandledYet(node)
-  private def astForDeclModifierDetailSyntax(node: DeclModifierDetailSyntax): Ast = notHandledYet(node)
+  private def astForDeclModifierDetailSyntax(node: DeclModifierDetailSyntax): Ast         = notHandledYet(node)
 
   private def astForDeclModifierSyntax(node: DeclModifierSyntax): Ast = {
     val modifierType = code(node.name) match {
@@ -182,10 +176,9 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     notHandledYet(node)
   private def astForDynamicReplacementAttributeArgumentsSyntax(node: DynamicReplacementAttributeArgumentsSyntax): Ast =
     notHandledYet(node)
-  private def astForEnumCaseElementSyntax(node: EnumCaseElementSyntax): Ast                   = notHandledYet(node)
-  private def astForEnumCaseParameterClauseSyntax(node: EnumCaseParameterClauseSyntax): Ast   = notHandledYet(node)
-  private def astForEnumCaseParameterSyntax(node: EnumCaseParameterSyntax): Ast               = notHandledYet(node)
-  private def astForExposeAttributeArgumentsSyntax(node: ExposeAttributeArgumentsSyntax): Ast = notHandledYet(node)
+  private def astForEnumCaseElementSyntax(node: EnumCaseElementSyntax): Ast                 = notHandledYet(node)
+  private def astForEnumCaseParameterClauseSyntax(node: EnumCaseParameterClauseSyntax): Ast = notHandledYet(node)
+  private def astForEnumCaseParameterSyntax(node: EnumCaseParameterSyntax): Ast             = notHandledYet(node)
 
   private def astForExpressionSegmentSyntax(node: ExpressionSegmentSyntax): Ast = {
     astForNode(node.expressions)
@@ -398,8 +391,6 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForObjCSelectorPieceSyntax(node: ObjCSelectorPieceSyntax): Ast =
     Ast(literalNode(node, code(node), Option(Defines.String)))
 
-  private def astForOpaqueReturnTypeOfAttributeArgumentsSyntax(node: OpaqueReturnTypeOfAttributeArgumentsSyntax): Ast =
-    notHandledYet(node)
   private def astForOperatorPrecedenceAndTypesSyntax(node: OperatorPrecedenceAndTypesSyntax): Ast = notHandledYet(node)
 
   private def localForOptionalBindingConditionSyntax(
@@ -529,14 +520,6 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     astForTypeSyntax(node.value)
   }
 
-  private def astForUnavailableFromAsyncAttributeArgumentsSyntax(
-    node: UnavailableFromAsyncAttributeArgumentsSyntax
-  ): Ast = {
-    Ast(literalNode(node, code(node.message), Option(Defines.String)))
-  }
-
-  private def astForUnderscorePrivateAttributeArgumentsSyntax(node: UnderscorePrivateAttributeArgumentsSyntax): Ast =
-    notHandledYet(node)
   private def astForVersionComponentSyntax(node: VersionComponentSyntax): Ast = notHandledYet(node)
   private def astForVersionTupleSyntax(node: VersionTupleSyntax): Ast         = notHandledYet(node)
 
@@ -548,32 +531,29 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForYieldedExpressionsClauseSyntax(node: YieldedExpressionsClauseSyntax): Ast = notHandledYet(node)
 
   protected def astForSyntax(syntax: Syntax): Ast = syntax match {
-    case node: AccessorBlockSyntax                  => astForAccessorBlockSyntax(node)
-    case node: AccessorEffectSpecifiersSyntax       => astForAccessorEffectSpecifiersSyntax(node)
-    case node: AccessorParametersSyntax             => astForAccessorParametersSyntax(node)
-    case node: ArrayElementSyntax                   => astForArrayElementSyntax(node)
-    case node: AttributeSyntax                      => astForAttributeSyntax(node)
-    case node: AvailabilityArgumentSyntax           => astForAvailabilityArgumentSyntax(node)
-    case node: AvailabilityConditionSyntax          => astForAvailabilityConditionSyntax(node)
-    case node: AvailabilityLabeledArgumentSyntax    => astForAvailabilityLabeledArgumentSyntax(node)
-    case node: BackDeployedAttributeArgumentsSyntax => astForBackDeployedAttributeArgumentsSyntax(node)
-    case node: CatchClauseSyntax                    => astForCatchClauseSyntax(node)
-    case node: CatchItemSyntax                      => astForCatchItemSyntax(node)
-    case node: ClosureCaptureClauseSyntax           => astForClosureCaptureClauseSyntax(node)
-    case node: ClosureCaptureSpecifierSyntax        => astForClosureCaptureSpecifierSyntax(node)
-    case node: ClosureCaptureSyntax                 => astForClosureCaptureSyntax(node)
-    case node: ClosureParameterClauseSyntax         => astForClosureParameterClauseSyntax(node)
-    case node: ClosureParameterSyntax               => astForClosureParameterSyntax(node)
-    case node: ClosureShorthandParameterSyntax      => astForClosureShorthandParameterSyntax(node)
-    case node: ClosureSignatureSyntax               => astForClosureSignatureSyntax(node)
-    case node: CodeBlockItemSyntax                  => astForCodeBlockItemSyntax(node)
-    case node: CodeBlockSyntax                      => astForCodeBlockSyntax(node)
-    case node: CompositionTypeElementSyntax         => astForCompositionTypeElementSyntax(node)
-    case node: ConditionElementSyntax               => astForConditionElementSyntax(node)
-    case node: ConformanceRequirementSyntax         => astForConformanceRequirementSyntax(node)
-    case node: ConventionAttributeArgumentsSyntax   => astForConventionAttributeArgumentsSyntax(node)
-    case node: ConventionWitnessMethodAttributeArgumentsSyntax =>
-      astForConventionWitnessMethodAttributeArgumentsSyntax(node)
+    case node: AccessorBlockSyntax                          => astForAccessorBlockSyntax(node)
+    case node: AccessorEffectSpecifiersSyntax               => astForAccessorEffectSpecifiersSyntax(node)
+    case node: AccessorParametersSyntax                     => astForAccessorParametersSyntax(node)
+    case node: ArrayElementSyntax                           => astForArrayElementSyntax(node)
+    case node: AttributeSyntax                              => astForAttributeSyntax(node)
+    case node: AvailabilityArgumentSyntax                   => astForAvailabilityArgumentSyntax(node)
+    case node: AvailabilityConditionSyntax                  => astForAvailabilityConditionSyntax(node)
+    case node: AvailabilityLabeledArgumentSyntax            => astForAvailabilityLabeledArgumentSyntax(node)
+    case node: BackDeployedAttributeArgumentsSyntax         => astForBackDeployedAttributeArgumentsSyntax(node)
+    case node: CatchClauseSyntax                            => astForCatchClauseSyntax(node)
+    case node: CatchItemSyntax                              => astForCatchItemSyntax(node)
+    case node: ClosureCaptureClauseSyntax                   => astForClosureCaptureClauseSyntax(node)
+    case node: ClosureCaptureSpecifierSyntax                => astForClosureCaptureSpecifierSyntax(node)
+    case node: ClosureCaptureSyntax                         => astForClosureCaptureSyntax(node)
+    case node: ClosureParameterClauseSyntax                 => astForClosureParameterClauseSyntax(node)
+    case node: ClosureParameterSyntax                       => astForClosureParameterSyntax(node)
+    case node: ClosureShorthandParameterSyntax              => astForClosureShorthandParameterSyntax(node)
+    case node: ClosureSignatureSyntax                       => astForClosureSignatureSyntax(node)
+    case node: CodeBlockItemSyntax                          => astForCodeBlockItemSyntax(node)
+    case node: CodeBlockSyntax                              => astForCodeBlockSyntax(node)
+    case node: CompositionTypeElementSyntax                 => astForCompositionTypeElementSyntax(node)
+    case node: ConditionElementSyntax                       => astForConditionElementSyntax(node)
+    case node: ConformanceRequirementSyntax                 => astForConformanceRequirementSyntax(node)
     case node: DeclModifierDetailSyntax                     => astForDeclModifierDetailSyntax(node)
     case node: DeclModifierSyntax                           => astForDeclModifierSyntax(node)
     case node: DeclNameArgumentSyntax                       => astForDeclNameArgumentSyntax(node)
@@ -591,7 +571,6 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     case node: EnumCaseElementSyntax                        => astForEnumCaseElementSyntax(node)
     case node: EnumCaseParameterClauseSyntax                => astForEnumCaseParameterClauseSyntax(node)
     case node: EnumCaseParameterSyntax                      => astForEnumCaseParameterSyntax(node)
-    case node: ExposeAttributeArgumentsSyntax               => astForExposeAttributeArgumentsSyntax(node)
     case node: ExpressionSegmentSyntax                      => astForExpressionSegmentSyntax(node)
     case node: FunctionEffectSpecifiersSyntax               => astForFunctionEffectSpecifiersSyntax(node)
     case node: FunctionParameterClauseSyntax                => astForFunctionParameterClauseSyntax(node)
@@ -622,7 +601,6 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     case node: MissingSyntax                                => astForMissingSyntax(node)
     case node: MultipleTrailingClosureElementSyntax         => astForMultipleTrailingClosureElementSyntax(node)
     case node: ObjCSelectorPieceSyntax                      => astForObjCSelectorPieceSyntax(node)
-    case node: OpaqueReturnTypeOfAttributeArgumentsSyntax   => astForOpaqueReturnTypeOfAttributeArgumentsSyntax(node)
     case node: OperatorPrecedenceAndTypesSyntax             => astForOperatorPrecedenceAndTypesSyntax(node)
     case node: OptionalBindingConditionSyntax               => astForOptionalBindingConditionSyntax(node)
     case node: OriginallyDefinedInAttributeArgumentsSyntax  => astForOriginallyDefinedInAttributeArgumentsSyntax(node)
@@ -651,8 +629,6 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     case node: TypeAnnotationSyntax                         => astForTypeAnnotationSyntax(node)
     case node: TypeEffectSpecifiersSyntax                   => astForTypeEffectSpecifiersSyntax(node)
     case node: TypeInitializerClauseSyntax                  => astForTypeInitializerClauseSyntax(node)
-    case node: UnavailableFromAsyncAttributeArgumentsSyntax => astForUnavailableFromAsyncAttributeArgumentsSyntax(node)
-    case node: UnderscorePrivateAttributeArgumentsSyntax    => astForUnderscorePrivateAttributeArgumentsSyntax(node)
     case node: VersionComponentSyntax                       => astForVersionComponentSyntax(node)
     case node: VersionTupleSyntax                           => astForVersionTupleSyntax(node)
     case node: WhereClauseSyntax                            => astForWhereClauseSyntax(node)

@@ -138,8 +138,8 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     astForNode(node.expression)
   }
 
-  private def astForCanImportExprSyntax(node: CanImportExprSyntax): Ast               = notHandledYet(node)
-  private def astForCanImportVersionInfoSyntax(node: CanImportVersionInfoSyntax): Ast = notHandledYet(node)
+  private def astForCanImportExprSyntax(node: _CanImportExprSyntax): Ast               = notHandledYet(node)
+  private def astForCanImportVersionInfoSyntax(node: _CanImportVersionInfoSyntax): Ast = notHandledYet(node)
 
   private def astForClosureExprSyntax(node: ClosureExprSyntax): Ast = {
     astForNode(node)
@@ -1139,6 +1139,8 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForUnresolvedIsExprSyntax(node: UnresolvedIsExprSyntax): Ast           = notHandledYet(node)
   private def astForUnresolvedTernaryExprSyntax(node: UnresolvedTernaryExprSyntax): Ast = notHandledYet(node)
 
+  private def astForUnsafeExprSyntax(node: UnsafeExprSyntax): Ast = astForNode(node.expression)
+
   protected def astForExprSyntax(exprSyntax: ExprSyntax): Ast = exprSyntax match {
     case node: ArrayExprSyntax                 => astForArrayExprSyntax(node)
     case node: ArrowExprSyntax                 => astForArrowExprSyntax(node)
@@ -1148,8 +1150,8 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     case node: BinaryOperatorExprSyntax        => astForBinaryOperatorExprSyntax(node)
     case node: BooleanLiteralExprSyntax        => astForBooleanLiteralExprSyntax(node)
     case node: BorrowExprSyntax                => astForBorrowExprSyntax(node)
-    case node: CanImportExprSyntax             => astForCanImportExprSyntax(node)
-    case node: CanImportVersionInfoSyntax      => astForCanImportVersionInfoSyntax(node)
+    case node: _CanImportExprSyntax            => astForCanImportExprSyntax(node)
+    case node: _CanImportVersionInfoSyntax     => astForCanImportVersionInfoSyntax(node)
     case node: ClosureExprSyntax               => astForClosureExprSyntax(node)
     case node: ConsumeExprSyntax               => astForConsumeExprSyntax(node)
     case node: CopyExprSyntax                  => astForCopyExprSyntax(node)
@@ -1193,5 +1195,6 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     case node: UnresolvedAsExprSyntax          => astForUnresolvedAsExprSyntax(node)
     case node: UnresolvedIsExprSyntax          => astForUnresolvedIsExprSyntax(node)
     case node: UnresolvedTernaryExprSyntax     => astForUnresolvedTernaryExprSyntax(node)
+    case node: UnsafeExprSyntax                => astForUnsafeExprSyntax(node)
   }
 }

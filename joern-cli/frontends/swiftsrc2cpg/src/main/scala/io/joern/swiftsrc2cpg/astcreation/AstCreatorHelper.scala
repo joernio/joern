@@ -426,6 +426,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case _: DictionaryTypeSyntax                  => "dictionary-type"
       case _: FunctionTypeSyntax                    => Defines.Function
       case id: IdentifierTypeSyntax                 => code(id.name)
+      case _: InlineArrayTypeSyntax                 => "inline-array-type"
       case w: ImplicitlyUnwrappedOptionalTypeSyntax => nameForTypeSyntax(w.wrappedType)
       case m: MemberTypeSyntax                      => code(m)
       case m: MetatypeTypeSyntax                    => code(m)
@@ -450,6 +451,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case _: DictionaryTypeSyntax                  => Defines.Dictionary
       case _: FunctionTypeSyntax                    => Defines.Function
       case id: IdentifierTypeSyntax                 => scopeLocalUniqueName(cleanType(code(id.name)))
+      case _: InlineArrayTypeSyntax                 => Defines.Array
       case w: ImplicitlyUnwrappedOptionalTypeSyntax => simpleTypeNameForTypeSyntax(w.wrappedType)
       case m: MemberTypeSyntax                      => scopeLocalUniqueName(cleanType(code(m)))
       case m: MetatypeTypeSyntax                    => simpleTypeNameForTypeSyntax(m.baseType)
