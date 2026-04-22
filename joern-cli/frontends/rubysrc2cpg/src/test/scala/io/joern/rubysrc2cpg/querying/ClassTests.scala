@@ -363,32 +363,26 @@ class ClassTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "generate a type decl with the associated members" in {
-      inside(cpg.typeDecl.nameExact(s"Test0.rb:$Main.<anon-class-0>").l) {
-        case anonClass :: Nil =>
-          anonClass.name shouldBe s"Test0.rb:$Main.<anon-class-0>"
-          anonClass.fullName shouldBe s"Test0.rb:$Main.<anon-class-0>"
-          inside(anonClass.method.l) {
-            case hello :: defaultConstructor :: Nil =>
-              defaultConstructor.name shouldBe RubyDefines.Initialize
-              defaultConstructor.fullName shouldBe s"Test0.rb:$Main.<anon-class-0>.${RubyDefines.Initialize}"
+      inside(cpg.typeDecl.nameExact(s"Test0.rb:$Main.<anon-class-0>").l) { case anonClass :: Nil =>
+        anonClass.name shouldBe s"Test0.rb:$Main.<anon-class-0>"
+        anonClass.fullName shouldBe s"Test0.rb:$Main.<anon-class-0>"
+        inside(anonClass.method.l) { case hello :: defaultConstructor :: Nil =>
+          defaultConstructor.name shouldBe RubyDefines.Initialize
+          defaultConstructor.fullName shouldBe s"Test0.rb:$Main.<anon-class-0>.${RubyDefines.Initialize}"
 
-              hello.name shouldBe "hello"
-              hello.fullName shouldBe s"Test0.rb:$Main.<anon-class-0>.hello"
-            case xs => fail(s"Expected a single method, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
-          }
-        case xs => fail(s"Expected a single anonymous class, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
+          hello.name shouldBe "hello"
+          hello.fullName shouldBe s"Test0.rb:$Main.<anon-class-0>.hello"
+        }
       }
     }
 
     "generate an assignment to the variable `a` with the source being a constructor invocation of the class" in {
-      inside(cpg.method.isModule.assignment.l) {
-        case aAssignment :: tmpAssign :: Nil =>
-          aAssignment.target.code shouldBe "a"
-          aAssignment.source.code shouldBe s"(<tmp-0> = Class.new Test0.rb:$Main.<anon-class-0> (...)).new"
+      inside(cpg.method.isModule.assignment.l) { case aAssignment :: tmpAssign :: Nil =>
+        aAssignment.target.code shouldBe "a"
+        aAssignment.source.code shouldBe s"(<tmp-0> = Class.new Test0.rb:$Main.<anon-class-0> (...)).new"
 
-          tmpAssign.target.code shouldBe "<tmp-0>"
-          tmpAssign.source.code shouldBe s"self.Class.new Test0.rb:$Main.<anon-class-0> (...)"
-        case xs => fail(s"Expected a single assignment, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
+        tmpAssign.target.code shouldBe "<tmp-0>"
+        tmpAssign.source.code shouldBe s"self.Class.new Test0.rb:$Main.<anon-class-0> (...)"
       }
     }
 
@@ -412,37 +406,29 @@ class ClassTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "Create assignments to method refs for methods on singleton object" in {
-      inside(cpg.method.isModule.block.assignment.l) {
-        case _ :: _ :: _ :: barkAssignment :: legsAssignment :: Nil =>
-          inside(barkAssignment.argument.l) {
-            case (lhs: Call) :: (rhs: TypeRef) :: Nil =>
-              val List(identifier, fieldIdentifier) = lhs.argument.l: @unchecked
-              identifier.code shouldBe "animal"
-              fieldIdentifier.code shouldBe "bark"
+      inside(cpg.method.isModule.block.assignment.l) { case _ :: _ :: _ :: barkAssignment :: legsAssignment :: Nil =>
+        inside(barkAssignment.argument.l) { case (lhs: Call) :: (rhs: TypeRef) :: Nil =>
+          val List(identifier, fieldIdentifier) = lhs.argument.l: @unchecked
+          identifier.code shouldBe "animal"
+          fieldIdentifier.code shouldBe "bark"
 
-              rhs.typeFullName shouldBe s"Test0.rb:$Main.class<<animal.bark"
-            case xs => fail(s"Expected two arguments for assignment, got [${xs.code.mkString(",")}]")
-          }
+          rhs.typeFullName shouldBe s"Test0.rb:$Main.class<<animal.bark"
+        }
 
-          inside(legsAssignment.argument.l) {
-            case (lhs: Call) :: (rhs: TypeRef) :: Nil =>
-              val List(identifier, fieldIdentifier) = lhs.argument.l: @unchecked
-              identifier.code shouldBe "animal"
-              fieldIdentifier.code shouldBe "legs"
+        inside(legsAssignment.argument.l) { case (lhs: Call) :: (rhs: TypeRef) :: Nil =>
+          val List(identifier, fieldIdentifier) = lhs.argument.l: @unchecked
+          identifier.code shouldBe "animal"
+          fieldIdentifier.code shouldBe "legs"
 
-              rhs.typeFullName shouldBe s"Test0.rb:$Main.class<<animal.legs"
-            case xs => fail(s"Expected two arguments for assignment, got [${xs.code.mkString(",")}]")
-          }
-        case xs => fail(s"Expected five assignments, got [${xs.code.mkString(",")}]")
+          rhs.typeFullName shouldBe s"Test0.rb:$Main.class<<animal.legs"
+        }
       }
     }
 
     "Create TYPE_DECL nodes for two singleton methods" in {
-      inside(cpg.typeDecl.name("(bark|legs)").l) {
-        case barkTypeDecl :: legsTypeDecl :: Nil =>
-          barkTypeDecl.fullName shouldBe s"Test0.rb:$Main.class<<animal.bark"
-          legsTypeDecl.fullName shouldBe s"Test0.rb:$Main.class<<animal.legs"
-        case xs => fail(s"Expected two type_decls, got [${xs.code.mkString(",")}]")
+      inside(cpg.typeDecl.name("(bark|legs)").l) { case barkTypeDecl :: legsTypeDecl :: Nil =>
+        barkTypeDecl.fullName shouldBe s"Test0.rb:$Main.class<<animal.bark"
+        legsTypeDecl.fullName shouldBe s"Test0.rb:$Main.class<<animal.legs"
       }
     }
   }
@@ -458,28 +444,21 @@ class ClassTests extends RubyCode2CpgFixture {
           |                        if: :password
           |  end
           |""".stripMargin)
-      inside(cpg.typeDecl.name("User").l) {
-        case userType :: Nil =>
-          inside(userType.method.name(RubyDefines.TypeDeclBody).l) {
-            case constructor :: Nil =>
-              inside(constructor.astChildren.isBlock.l) {
-                case methodBlock :: Nil =>
-                  val List(validateCall: Call) = methodBlock.astChildren.isCall.l: @unchecked
+      inside(cpg.typeDecl.name("User").l) { case userType :: Nil =>
+        inside(userType.method.name(RubyDefines.TypeDeclBody).l) { case constructor :: Nil =>
+          inside(constructor.astChildren.isBlock.l) { case methodBlock :: Nil =>
+            val List(validateCall: Call) = methodBlock.astChildren.isCall.l: @unchecked
 
-                  inside(validateCall.argument.l) {
-                    case (identArg: Identifier) :: (passwordArg: Literal) :: (presenceArg: Literal) :: (confirmationArg: Literal) :: (_: Block) :: (onArg: Literal) :: (ifArg: Literal) :: Nil =>
-                      passwordArg.code shouldBe ":password"
-                      presenceArg.code shouldBe "true"
-                      confirmationArg.code shouldBe "true"
-                      onArg.code shouldBe ":create"
-                      ifArg.code shouldBe ":password"
-                    case xs => fail(s"Expected 7 arguments, got ${xs.code.mkString(", ")} instead")
-                  }
-                case xs => fail(s"Expected one block for method body, got ${xs.code.mkString(", ")} instead")
-              }
-            case xs => fail(s"Expected one constructor method, got ${xs.name.mkString(", ")} instead")
+            inside(validateCall.argument.l) {
+              case (identArg: Identifier) :: (passwordArg: Literal) :: (presenceArg: Literal) :: (confirmationArg: Literal) :: (_: Block) :: (onArg: Literal) :: (ifArg: Literal) :: Nil =>
+                passwordArg.code shouldBe ":password"
+                presenceArg.code shouldBe "true"
+                confirmationArg.code shouldBe "true"
+                onArg.code shouldBe ":create"
+                ifArg.code shouldBe ":password"
+            }
           }
-        case _ => fail("Expected typeDecl for user, none found instead")
+        }
       }
     }
 
@@ -492,29 +471,20 @@ class ClassTests extends RubyCode2CpgFixture {
           | end
           |""".stripMargin)
 
-      inside(cpg.typeDecl.name("AdminController").l) {
-        case adminTypeDecl :: Nil =>
-          inside(adminTypeDecl.method.name(RubyDefines.TypeDeclBody).l) {
-            case constructor :: Nil =>
-              inside(constructor.astChildren.isBlock.l) {
-                case methodBlock :: Nil =>
-                  inside(methodBlock.astChildren.isCall.l) {
-                    case beforeActionCall :: skipBeforeActionCall :: layoutCall :: Nil =>
-                      inside(beforeActionCall.argument.l) {
-                        case identArg :: adminArg :: ifArg :: exceptArg :: Nil =>
-                          adminArg.code shouldBe ":administrative"
-                          ifArg.code shouldBe ":admin_param"
-                          exceptArg.code shouldBe "[:get_user]"
-                        case xs => fail(s"Expected 4 args, instead found ${xs.code.mkString(", ")}")
-                      }
-                    case xs => fail(s"Expected 3 calls, instead found ${xs.code.mkString(", ")}")
-                  }
-                case xs => fail(s"Expected one block for method body, got ${xs.code.mkString(", ")} instead")
-              }
-            case xs => fail(s"Expected one constructor method, got ${xs.name.mkString(", ")} instead")
+      inside(cpg.typeDecl.name("AdminController").l) { case adminTypeDecl :: Nil =>
+        inside(adminTypeDecl.method.name(RubyDefines.TypeDeclBody).l) { case constructor :: Nil =>
+          inside(constructor.astChildren.isBlock.l) { case methodBlock :: Nil =>
+            inside(methodBlock.astChildren.isCall.l) {
+              case beforeActionCall :: skipBeforeActionCall :: layoutCall :: Nil =>
+                inside(beforeActionCall.argument.l) { case identArg :: adminArg :: ifArg :: exceptArg :: Nil =>
+                  adminArg.code shouldBe ":administrative"
+                  ifArg.code shouldBe ":admin_param"
+                  exceptArg.code shouldBe "[:get_user]"
+                }
+            }
           }
+        }
 
-        case _ => fail("Expected one typeDecl for AdminController")
       }
     }
   }
@@ -579,56 +549,43 @@ class ClassTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "create respective member nodes" in {
-      inside(cpg.typeDecl.name("Foo").l) {
-        case fooType :: Nil =>
-          inside(fooType.member.name("@.*").l) {
-            case aMember :: bMember :: cMember :: dMember :: oMember :: Nil =>
-              // Test that all members in class are present
-              aMember.code shouldBe "@a"
-              bMember.code shouldBe "@b"
-              cMember.code shouldBe "@c"
-              dMember.code shouldBe "@d"
-              oMember.code shouldBe "@o"
-            case _ => fail("Expected 5 members")
-          }
-        case xs => fail(s"Expected TypeDecl for Foo, instead got ${xs.name.mkString(", ")}")
+      inside(cpg.typeDecl.name("Foo").l) { case fooType :: Nil =>
+        inside(fooType.member.name("@.*").l) { case aMember :: bMember :: cMember :: dMember :: oMember :: Nil =>
+          // Test that all members in class are present
+          aMember.code shouldBe "@a"
+          bMember.code shouldBe "@b"
+          cMember.code shouldBe "@c"
+          dMember.code shouldBe "@d"
+          oMember.code shouldBe "@o"
+        }
       }
     }
 
     "create nil assignments under the class initializer" in {
-      inside(cpg.typeDecl.name("Foo").l) {
-        case fooType :: Nil =>
-          inside(fooType.method.name(RubyDefines.TypeDeclBody).l) {
-            case initMethod :: Nil =>
-              inside(initMethod.block.astChildren.isCall.name(Operators.assignment).l) {
-                case aAssignment :: bAssignment :: cAssignment :: dAssignment :: oAssignment :: Nil =>
-                  aAssignment.code shouldBe "@a = nil"
+      inside(cpg.typeDecl.name("Foo").l) { case fooType :: Nil =>
+        inside(fooType.method.name(RubyDefines.TypeDeclBody).l) { case initMethod :: Nil =>
+          inside(initMethod.block.astChildren.isCall.name(Operators.assignment).l) {
+            case aAssignment :: bAssignment :: cAssignment :: dAssignment :: oAssignment :: Nil =>
+              aAssignment.code shouldBe "@a = nil"
 
-                  bAssignment.code shouldBe "@b = nil"
-                  cAssignment.code shouldBe "@c = nil"
-                  dAssignment.code shouldBe "@d = nil"
-                  oAssignment.code shouldBe "@o = nil"
+              bAssignment.code shouldBe "@b = nil"
+              cAssignment.code shouldBe "@c = nil"
+              dAssignment.code shouldBe "@d = nil"
+              oAssignment.code shouldBe "@o = nil"
 
-                  inside(aAssignment.argument.l) {
-                    case (lhs: Call) :: (rhs: Literal) :: Nil =>
-                      lhs.code shouldBe s"${RubyDefines.Self}.@a"
-                      lhs.methodFullName shouldBe Operators.fieldAccess
+              inside(aAssignment.argument.l) { case (lhs: Call) :: (rhs: Literal) :: Nil =>
+                lhs.code shouldBe s"${RubyDefines.Self}.@a"
+                lhs.methodFullName shouldBe Operators.fieldAccess
 
-                      inside(lhs.argument.l) {
-                        case (identifier: Identifier) :: (fieldIdentifier: FieldIdentifier) :: Nil =>
-                          identifier.code shouldBe RubyDefines.Self
-                          fieldIdentifier.code shouldBe "@a"
-                        case _ => fail("Expected identifier and fieldIdentifier for fieldAccess")
-                      }
+                inside(lhs.argument.l) { case (identifier: Identifier) :: (fieldIdentifier: FieldIdentifier) :: Nil =>
+                  identifier.code shouldBe RubyDefines.Self
+                  fieldIdentifier.code shouldBe "@a"
+                }
 
-                      rhs.code shouldBe "nil"
-                    case _ => fail("Expected only LHS and RHS for assignment call")
-                  }
-                case xs => fail(s"Expected assignments, got [${xs.code.mkString}]")
+                rhs.code shouldBe "nil"
               }
-            case xs => fail(s"Expected one method for init, instead got ${xs.name.mkString(", ")}")
           }
-        case xs => fail(s"Expected TypeDecl for Foo, instead got ${xs.name.mkString(", ")}")
+        }
       }
     }
 
@@ -668,56 +625,44 @@ class ClassTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "create respective member nodes" in {
-      inside(cpg.typeDecl.nameExact("Foo<class>").l) {
-        case fooType :: Nil =>
-          inside(fooType.member.name("@.*").l) {
-            case aMember :: bMember :: cMember :: dMember :: oMember :: Nil =>
-              // Test that all members in class are present
-              aMember.code shouldBe "@@a"
-              bMember.code shouldBe "@@b"
-              cMember.code shouldBe "@@c"
-              dMember.code shouldBe "@@d"
-              oMember.code shouldBe "@@o"
-            case xs => fail(s"Expected 5 members, instead got ${xs.size}: [${xs.code.mkString(",")}]")
-          }
-        case xs => fail(s"Expected TypeDecl for Foo, instead got ${xs.name.mkString(", ")}")
+      inside(cpg.typeDecl.nameExact("Foo<class>").l) { case fooType :: Nil =>
+        inside(fooType.member.name("@.*").l) { case aMember :: bMember :: cMember :: dMember :: oMember :: Nil =>
+          // Test that all members in class are present
+          aMember.code shouldBe "@@a"
+          bMember.code shouldBe "@@b"
+          cMember.code shouldBe "@@c"
+          dMember.code shouldBe "@@d"
+          oMember.code shouldBe "@@o"
+        }
       }
     }
 
     "create nil assignments under the class initializer" in {
-      inside(cpg.typeDecl.name("Foo").l) {
-        case fooType :: Nil =>
-          inside(fooType.method.name(RubyDefines.TypeDeclBody).l) {
-            case clinitMethod :: Nil =>
-              inside(clinitMethod.block.astChildren.isCall.name(Operators.assignment).l) {
-                case aAssignment :: bAssignment :: cAssignment :: dAssignment :: oAssignment :: Nil =>
-                  aAssignment.code shouldBe "@@a = nil"
-                  bAssignment.code shouldBe "@@b = nil"
-                  cAssignment.code shouldBe "@@c = nil"
-                  dAssignment.code shouldBe "@@d = nil"
-                  oAssignment.code shouldBe "@@o = nil"
+      inside(cpg.typeDecl.name("Foo").l) { case fooType :: Nil =>
+        inside(fooType.method.name(RubyDefines.TypeDeclBody).l) { case clinitMethod :: Nil =>
+          inside(clinitMethod.block.astChildren.isCall.name(Operators.assignment).l) {
+            case aAssignment :: bAssignment :: cAssignment :: dAssignment :: oAssignment :: Nil =>
+              aAssignment.code shouldBe "@@a = nil"
+              bAssignment.code shouldBe "@@b = nil"
+              cAssignment.code shouldBe "@@c = nil"
+              dAssignment.code shouldBe "@@d = nil"
+              oAssignment.code shouldBe "@@o = nil"
 
-                  inside(aAssignment.argument.l) {
-                    case (lhs: Call) :: (rhs: Literal) :: Nil =>
-                      lhs.code shouldBe s"${RubyDefines.Self}.@@a"
-                      lhs.methodFullName shouldBe Operators.fieldAccess
+              inside(aAssignment.argument.l) { case (lhs: Call) :: (rhs: Literal) :: Nil =>
+                lhs.code shouldBe s"${RubyDefines.Self}.@@a"
+                lhs.methodFullName shouldBe Operators.fieldAccess
 
-                      inside(lhs.argument.l) {
-                        case (identifier: Identifier) :: (fieldIdentifier: FieldIdentifier) :: Nil =>
-                          identifier.code shouldBe RubyDefines.Self
-                          fieldIdentifier.code shouldBe "@@a"
-                        case _ => fail("Expected identifier and fieldIdentifier for fieldAccess")
-                      }
+                inside(lhs.argument.l) { case (identifier: Identifier) :: (fieldIdentifier: FieldIdentifier) :: Nil =>
+                  identifier.code shouldBe RubyDefines.Self
+                  fieldIdentifier.code shouldBe "@@a"
+                }
 
-                      rhs.code shouldBe "nil"
-                    case _ => fail("Expected only LHS and RHS for assignment call")
-                  }
-                case xs =>
-                  fail(s"Expected 5 fields initializers, got ${xs.size} instead ${xs.code.mkString(", ")}")
+                rhs.code shouldBe "nil"
               }
-            case xs => fail(s"Expected one method for <body>, instead got ${xs.name.mkString(", ")}")
+            case xs =>
+              fail(s"Expected 5 fields initializers, got ${xs.size} instead ${xs.code.mkString(", ")}")
           }
-        case xs => fail(s"Expected TypeDecl for Foo, instead got ${xs.name.mkString(", ")}")
+        }
       }
     }
   }
@@ -767,25 +712,17 @@ class ClassTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "be moved to <init> constructor method" in {
-      inside(cpg.typeDecl.name("Foo").l) {
-        case fooClass :: Nil =>
-          inside(fooClass.method.name(RubyDefines.TypeDeclBody).l) {
-            case initMethod :: Nil =>
-              inside(initMethod.astChildren.isBlock.astChildren.isCall.l) {
-                case scopeCall :: Nil =>
-                  scopeCall.code shouldBe "scope :published, -> { where(status: \"Published\") }"
+      inside(cpg.typeDecl.name("Foo").l) { case fooClass :: Nil =>
+        inside(fooClass.method.name(RubyDefines.TypeDeclBody).l) { case initMethod :: Nil =>
+          inside(initMethod.astChildren.isBlock.astChildren.isCall.l) { case scopeCall :: Nil =>
+            scopeCall.code shouldBe "scope :published, -> { where(status: \"Published\") }"
 
-                  inside(scopeCall.argument.l) {
-                    case (self: Identifier) :: (literalArg: Literal) :: unknownArg :: Nil =>
-                      self.code shouldBe "self"
-                      literalArg.code shouldBe ":published"
-                    case xs => fail(s"Expected three arguments, got ${xs.code.mkString(", ")} instead")
-                  }
-                case xs => fail(s"Expected one call under constructor, got ${xs.code.mkString(", ")} instead")
-              }
-            case xs => fail(s"Expected one init method, got ${xs.code.mkString(", ")} instead")
+            inside(scopeCall.argument.l) { case (self: Identifier) :: (literalArg: Literal) :: unknownArg :: Nil =>
+              self.code shouldBe "self"
+              literalArg.code shouldBe ":published"
+            }
           }
-        case xs => fail(s"Expected one class, got ${xs.code.mkString(", ")} instead")
+        }
       }
     }
   }
@@ -801,38 +738,27 @@ class ClassTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "correct method full name for method ref under call" in {
-      inside(cpg.typeDecl.name("Foo").l) {
-        case fooClass :: Nil =>
-          inside(fooClass.method.name(RubyDefines.TypeDeclBody).l) {
-            case initMethod :: Nil =>
-              initMethod.code shouldBe "def <body>; (...); end"
-              inside(initMethod.astChildren.isBlock.l) {
-                case methodBlock :: Nil =>
-                  inside(methodBlock.astChildren.l) {
-                    case methodCall :: Nil =>
-                      inside(methodCall.astChildren.l) {
-                        case (base: Call) :: (self: Identifier) :: (literal: Literal) :: (typeRef: TypeRef) :: Nil =>
-                          base.code shouldBe "self.scope"
-                          self.name shouldBe "self"
-                          literal.code shouldBe ":hits_by_ip"
-                          typeRef.typeFullName shouldBe s"Test0.rb:$Main.Foo.${RubyDefines.TypeDeclBody}.<lambda>0&Proc"
-                          cpg.method
-                            .fullNameExact(
-                              typeRef.typ.referencedTypeDecl.member.name("call").dynamicTypeHintFullName.toSeq*
-                            )
-                            .parameter
-                            .indexGt(0)
-                            .name
-                            .l shouldBe List("ip", "col")
-                        case xs => fail(s"Expected three children, got ${xs.code.mkString(", ")} instead")
-                      }
-                    case xs => fail(s"Expected one call, got ${xs.code.mkString(", ")} instead")
-                  }
-                case xs => fail(s"Expected one block under method, got ${xs.code.mkString(", ")} instead")
+      inside(cpg.typeDecl.name("Foo").l) { case fooClass :: Nil =>
+        inside(fooClass.method.name(RubyDefines.TypeDeclBody).l) { case initMethod :: Nil =>
+          initMethod.code shouldBe "def <body>; (...); end"
+          inside(initMethod.astChildren.isBlock.l) { case methodBlock :: Nil =>
+            inside(methodBlock.astChildren.l) { case methodCall :: Nil =>
+              inside(methodCall.astChildren.l) {
+                case (base: Call) :: (self: Identifier) :: (literal: Literal) :: (typeRef: TypeRef) :: Nil =>
+                  base.code shouldBe "self.scope"
+                  self.name shouldBe "self"
+                  literal.code shouldBe ":hits_by_ip"
+                  typeRef.typeFullName shouldBe s"Test0.rb:$Main.Foo.${RubyDefines.TypeDeclBody}.<lambda>0&Proc"
+                  cpg.method
+                    .fullNameExact(typeRef.typ.referencedTypeDecl.member.name("call").dynamicTypeHintFullName.toSeq*)
+                    .parameter
+                    .indexGt(0)
+                    .name
+                    .l shouldBe List("ip", "col")
               }
-            case xs => fail(s"Expected one init method, got ${xs.code.mkString(", ")} instead")
+            }
           }
-        case xs => fail(s"Expected one class, got ${xs.code.mkString(", ")} instead")
+        }
       }
     }
   }
@@ -846,14 +772,10 @@ class ClassTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "resolve call type" in {
-      inside(cpg.call.nameExact(Operators.assignment).l) {
-        case assignCall :: Nil =>
-          inside(assignCall.argument.l) {
-            case lhs :: (rhs: Call) :: Nil =>
-              rhs.typeFullName shouldBe "__builtin.Encoding.Converter.asciicompat_encoding"
-            case xs => fail(s"Expected lhs and rhs for assignment call, got [${xs.code.mkString(",")}]")
-          }
-        case xs => fail(s"Expected one call for assignment, got [${xs.code.mkString(",")}]")
+      inside(cpg.call.nameExact(Operators.assignment).l) { case assignCall :: Nil =>
+        inside(assignCall.argument.l) { case lhs :: (rhs: Call) :: Nil =>
+          rhs.typeFullName shouldBe "__builtin.Encoding.Converter.asciicompat_encoding"
+        }
       }
     }
   }
@@ -864,18 +786,12 @@ class ClassTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "create TYPE_DECL" in {
-      inside(cpg.typeDecl.name("X").l) {
-        case xClass :: Nil =>
-          inside(xClass.astChildren.isMethod.l) {
-            case bodyMethod :: initMethod :: Nil =>
-              inside(bodyMethod.block.astChildren.l) {
-                case (literal: Literal) :: Nil =>
-                  literal.code shouldBe "1"
-                case xs => fail(s"Expected literal for body method, got [${xs.code.mkString(",")}]")
-              }
-            case xs => fail(s"Expected body and init method, got [${xs.code.mkString(",")}]")
+      inside(cpg.typeDecl.name("X").l) { case xClass :: Nil =>
+        inside(xClass.astChildren.isMethod.l) { case bodyMethod :: initMethod :: Nil =>
+          inside(bodyMethod.block.astChildren.l) { case (literal: Literal) :: Nil =>
+            literal.code shouldBe "1"
           }
-        case xs => fail(s"Expected one class, got [${xs.code.mkString(",")}]")
+        }
       }
     }
   }
@@ -941,32 +857,24 @@ class ClassTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "have an explicit init method" in {
-      inside(cpg.typeDecl.nameExact("Foo").method.l) {
-        case bodyMethod :: initMethod :: Nil =>
-          bodyMethod.name shouldBe TypeDeclBody
+      inside(cpg.typeDecl.nameExact("Foo").method.l) { case bodyMethod :: initMethod :: Nil =>
+        bodyMethod.name shouldBe TypeDeclBody
 
-          initMethod.name shouldBe Initialize
-          inside(initMethod.parameter.l) {
-            case selfParam :: barParam :: Nil =>
-              selfParam.name shouldBe "self"
-              barParam.name shouldBe "bar"
-            case xs => fail(s"Expected two params, got [${xs.code.mkString(",")}]")
-          }
+        initMethod.name shouldBe Initialize
+        inside(initMethod.parameter.l) { case selfParam :: barParam :: Nil =>
+          selfParam.name shouldBe "self"
+          barParam.name shouldBe "bar"
+        }
 
-          inside(initMethod.block.astChildren.l) {
-            case (putsCall: Call) :: Nil =>
-              putsCall.name shouldBe "puts"
-            case xs => fail(s"Expected one call, got [${xs.code.mkString(",")}]")
-          }
+        inside(initMethod.block.astChildren.l) { case (putsCall: Call) :: Nil =>
+          putsCall.name shouldBe "puts"
+        }
 
-          inside(bodyMethod.block.astChildren.l) {
-            case (one: Literal) :: Nil =>
-              one.code shouldBe "1"
-              one.typeFullName shouldBe RubyDefines.prefixAsCoreType("Integer")
-            case xs => fail(s"Expected one literal, got [${xs.code.mkString(",")}]")
-          }
+        inside(bodyMethod.block.astChildren.l) { case (one: Literal) :: Nil =>
+          one.code shouldBe "1"
+          one.typeFullName shouldBe RubyDefines.prefixAsCoreType("Integer")
+        }
 
-        case xs => fail(s"Expected body method and init method, got [${xs.code.mkString(",")}]")
       }
     }
   }
@@ -984,27 +892,24 @@ class ClassTests extends RubyCode2CpgFixture {
 
         mobileClassNamespace.name shouldBe "MobileController<class>"
         mobileClassNamespace.fullName shouldBe s"Test0.rb:$Main.Api.V1.MobileController<class>"
-      case xs => fail(s"Expected two namespace blocks, got ${xs.code.mkString(",")}")
     }
 
-    inside(cpg.typeDecl.name("MobileController").l) {
-      case mobileTypeDecl :: Nil =>
-        mobileTypeDecl.name shouldBe "MobileController"
-        mobileTypeDecl.fullName shouldBe s"Test0.rb:$Main.Api.V1.MobileController"
-        mobileTypeDecl.astParentFullName shouldBe "Test0.rb:<main>.Api.V1"
-        mobileTypeDecl.astParentType shouldBe NodeTypes.NAMESPACE_BLOCK
+    inside(cpg.typeDecl.name("MobileController").l) { case mobileTypeDecl :: Nil =>
+      mobileTypeDecl.name shouldBe "MobileController"
+      mobileTypeDecl.fullName shouldBe s"Test0.rb:$Main.Api.V1.MobileController"
+      mobileTypeDecl.astParentFullName shouldBe "Test0.rb:<main>.Api.V1"
+      mobileTypeDecl.astParentType shouldBe NodeTypes.NAMESPACE_BLOCK
 
-        mobileTypeDecl.astParent.isNamespaceBlock shouldBe true
+      mobileTypeDecl.astParent.isNamespaceBlock shouldBe true
 
-        val namespaceDecl = mobileTypeDecl.astParent.asInstanceOf[NamespaceBlock]
-        namespaceDecl.name shouldBe "Api.V1"
-        namespaceDecl.filename shouldBe "Test0.rb"
+      val namespaceDecl = mobileTypeDecl.astParent.asInstanceOf[NamespaceBlock]
+      namespaceDecl.name shouldBe "Api.V1"
+      namespaceDecl.filename shouldBe "Test0.rb"
 
-        namespaceDecl.astParent.isFile shouldBe true
-        val parentFileDecl = namespaceDecl.astParent.asInstanceOf[File]
-        parentFileDecl.name shouldBe "Test0.rb"
+      namespaceDecl.astParent.isFile shouldBe true
+      val parentFileDecl = namespaceDecl.astParent.asInstanceOf[File]
+      parentFileDecl.name shouldBe "Test0.rb"
 
-      case xs => fail(s"Expected one class decl, got [${xs.code.mkString(",")}]")
     }
   }
 
@@ -1017,10 +922,8 @@ class ClassTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    inside(cpg.typeDecl.name("Baz").l) {
-      case bazTypeDecl :: Nil =>
-        bazTypeDecl.fullName shouldBe s"Test0.rb:$Main.Baz"
-      case xs => fail(s"Expected one type decl, got [${xs.code.mkString(",")}]")
+    inside(cpg.typeDecl.name("Baz").l) { case bazTypeDecl :: Nil =>
+      bazTypeDecl.fullName shouldBe s"Test0.rb:$Main.Baz"
     }
   }
 
@@ -1053,27 +956,19 @@ class ClassTests extends RubyCode2CpgFixture {
     val List(itunesMethod) = cpg.method.name("itunes_subtitle").l
     val List(bodyMethod)   = cpg.method.name("<body>").l
 
-    inside(titleMethod.methodReturn.toReturn.l) {
-      case methodReturn :: Nil =>
-        methodReturn.code shouldBe "@title"
-      case xs => fail(s"Expected one return, got [${xs.code.mkString(",")}]")
+    inside(titleMethod.methodReturn.toReturn.l) { case methodReturn :: Nil =>
+      methodReturn.code shouldBe "@title"
     }
 
-    inside(itunesMethod.methodReturn.toReturn.l) {
-      case methodReturn :: Nil =>
-        methodReturn.code shouldBe "@itunes_subtitle"
-      case xs => fail(s"Expected one return, got [${xs.code.mkString(",")}]")
+    inside(itunesMethod.methodReturn.toReturn.l) { case methodReturn :: Nil =>
+      methodReturn.code shouldBe "@itunes_subtitle"
     }
 
-    inside(bodyMethod.call.name("attr_reader").l) {
-      case notFoundCall :: Nil =>
-        notFoundCall.code shouldBe "attr_reader(*NOT_FOUND)"
-        inside(notFoundCall.argument.l) {
-          case _ :: splatArg :: Nil =>
-            splatArg.code shouldBe "*NOT_FOUND"
-          case xs => fail(s"Expected two args, got ${xs.size}: [${xs.code.mkString(",")}]")
-        }
-      case xs => fail(s"Expected one call, got [${xs.code.mkString(",")}]")
+    inside(bodyMethod.call.name("attr_reader").l) { case notFoundCall :: Nil =>
+      notFoundCall.code shouldBe "attr_reader(*NOT_FOUND)"
+      inside(notFoundCall.argument.l) { case _ :: splatArg :: Nil =>
+        splatArg.code shouldBe "*NOT_FOUND"
+      }
     }
   }
 
@@ -1086,15 +981,11 @@ class ClassTests extends RubyCode2CpgFixture {
 
     val List(bodyMethod) = cpg.method.name("<body>").l
 
-    inside(bodyMethod.call.name("attr_reader").l) {
-      case notFoundCall :: Nil =>
-        notFoundCall.code shouldBe "attr_reader(*NOT_FOUND)"
-        inside(notFoundCall.argument.l) {
-          case _ :: splatArg :: Nil =>
-            splatArg.code shouldBe "*NOT_FOUND"
-          case xs => fail(s"Expected two args, got ${xs.size}: [${xs.code.mkString(",")}]")
-        }
-      case xs => fail(s"Expected one call, got [${xs.code.mkString(",")}]")
+    inside(bodyMethod.call.name("attr_reader").l) { case notFoundCall :: Nil =>
+      notFoundCall.code shouldBe "attr_reader(*NOT_FOUND)"
+      inside(notFoundCall.argument.l) { case _ :: splatArg :: Nil =>
+        splatArg.code shouldBe "*NOT_FOUND"
+      }
     }
   }
 
@@ -1109,32 +1000,26 @@ class ClassTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "Create required getters and setters directly under TYPE_DECL" in {
-      inside(cpg.typeDecl.name("Foo").astChildren.isMethod.name("bar=?").l) {
-        case barGetter :: barSetter :: Nil =>
-          barGetter.name shouldBe "bar"
-          barGetter.fullName shouldBe s"Test0.rb:$Main.Foo.bar"
+      inside(cpg.typeDecl.name("Foo").astChildren.isMethod.name("bar=?").l) { case barGetter :: barSetter :: Nil =>
+        barGetter.name shouldBe "bar"
+        barGetter.fullName shouldBe s"Test0.rb:$Main.Foo.bar"
 
-          barSetter.name shouldBe "bar="
-          barSetter.fullName shouldBe s"Test0.rb:$Main.Foo.bar="
-        case xs => fail(s"Expected two method calls for getter and setter, got [${xs.code.mkString(",")}]")
+        barSetter.name shouldBe "bar="
+        barSetter.fullName shouldBe s"Test0.rb:$Main.Foo.bar="
       }
     }
 
     "Create required TYPE_DECL nodes directly under class TYPE_DECL" in {
-      inside(cpg.typeDecl.name("Foo").astChildren.isTypeDecl.name("bar=?").l) {
-        case barGetter :: barSetter :: Nil =>
-          barGetter.name shouldBe "bar"
-          barSetter.name shouldBe "bar="
-        case xs => fail(s"Expected two type decls, got [${xs.code.mkString(",")}]")
+      inside(cpg.typeDecl.name("Foo").astChildren.isTypeDecl.name("bar=?").l) { case barGetter :: barSetter :: Nil =>
+        barGetter.name shouldBe "bar"
+        barSetter.name shouldBe "bar="
       }
     }
 
     "Create required MEMBER nodes directly under class TYPE_DECL" in {
-      inside(cpg.typeDecl.name("Foo").astChildren.isMember.name("bar=?").l) {
-        case barGetter :: barSetter :: Nil =>
-          barGetter.name shouldBe "bar"
-          barSetter.name shouldBe "bar="
-        case xs => fail(s"Expected two member nodes, got [${xs.code.mkString(",")}]")
+      inside(cpg.typeDecl.name("Foo").astChildren.isMember.name("bar=?").l) { case barGetter :: barSetter :: Nil =>
+        barGetter.name shouldBe "bar"
+        barSetter.name shouldBe "bar="
       }
     }
   }
@@ -1160,7 +1045,6 @@ class ClassTests extends RubyCode2CpgFixture {
 
           bazGetter.name shouldBe "baz"
           bazGetter.fullName shouldBe s"Test0.rb:$Main.Foo.baz"
-        case xs => fail(s"Expected three method defs for getter and setter, got [${xs.code.mkString(",")}]")
       }
     }
 
@@ -1170,7 +1054,6 @@ class ClassTests extends RubyCode2CpgFixture {
           barGetter.name shouldBe "bar"
           barSetter.name shouldBe "bar="
           bazGetter.name shouldBe "baz"
-        case xs => fail(s"Expected two type decls, got [${xs.code.mkString(",")}]")
       }
     }
 
@@ -1180,7 +1063,6 @@ class ClassTests extends RubyCode2CpgFixture {
           barGetter.name shouldBe "bar"
           barSetter.name shouldBe "bar="
           bazGetter.name shouldBe "baz"
-        case xs => fail(s"Expected two member nodes, got [${xs.code.mkString(",")}]")
       }
     }
   }
@@ -1209,32 +1091,25 @@ class ClassTests extends RubyCode2CpgFixture {
           args.code shouldBe "*args"
           blockArg.code shouldBe "&block"
 
-          inside(lockAliasMethodDef.body.astChildren.isReturn.astChildren.isCall.l) {
-            case origLockCall :: Nil =>
-              origLockCall.name shouldBe "orig_lock!"
-              origLockCall.code shouldBe "orig_lock!(*args, &block)"
-            case xs => fail(s"Expected one call, got ${xs.size}: [${xs.code.mkString(",")}]")
+          inside(lockAliasMethodDef.body.astChildren.isReturn.astChildren.isCall.l) { case origLockCall :: Nil =>
+            origLockCall.name shouldBe "orig_lock!"
+            origLockCall.code shouldBe "orig_lock!(*args, &block)"
           }
 
-        case xs => fail(s"Expected two method defs, got ${xs.size}: [${xs.code.mkString(",")}]")
       }
     }
 
     "Lower method def to directly under TYPE_DECL" in {
-      inside(cpg.typeDecl.name("Pessimistic").astChildren.isMethod.name("lock!").l) {
-        case _ :: lockMethodDef :: Nil =>
-          lockMethodDef.name shouldBe "lock!"
+      inside(cpg.typeDecl.name("Pessimistic").astChildren.isMethod.name("lock!").l) { case _ :: lockMethodDef :: Nil =>
+        lockMethodDef.name shouldBe "lock!"
 
-          val List(_, lockArg) = lockMethodDef.parameter.l
-          lockArg.code shouldBe "lock = true"
+        val List(_, lockArg) = lockMethodDef.parameter.l
+        lockArg.code shouldBe "lock = true"
 
-          inside(lockMethodDef.body.astChildren.isReturn.astChildren.isCall.l) {
-            case origLockCall :: Nil =>
-              origLockCall.name shouldBe "orig_lock!"
-              origLockCall.code shouldBe "orig_lock!(lock)"
-            case xs => fail(s"Expected one call, got ${xs.size}: [${xs.code.mkString(",")}]")
-          }
-        case xs => fail(s"Expected two method defs, got ${xs.size}: [${xs.code.mkString(",")}]")
+        inside(lockMethodDef.body.astChildren.isReturn.astChildren.isCall.l) { case origLockCall :: Nil =>
+          origLockCall.name shouldBe "orig_lock!"
+          origLockCall.code shouldBe "orig_lock!(lock)"
+        }
       }
     }
   }
@@ -1251,19 +1126,17 @@ class ClassTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    inside(cpg.typeDecl.name("Foo").astChildren.isMethod.l) {
-      case lambdaMethod :: _ :: _ :: _ :: Nil =>
-        val List(lambdaReturn) = lambdaMethod.body.astChildren.isReturn.l
+    inside(cpg.typeDecl.name("Foo").astChildren.isMethod.l) { case lambdaMethod :: _ :: _ :: _ :: Nil =>
+      val List(lambdaReturn) = lambdaMethod.body.astChildren.isReturn.l
 
-        lambdaReturn.code shouldBe "private_class_method :case_sensitive_find_by"
+      lambdaReturn.code shouldBe "private_class_method :case_sensitive_find_by"
 
-        val List(returnCall) = lambdaReturn.astChildren.isCall.l
-        returnCall.code shouldBe "private_class_method :case_sensitive_find_by"
+      val List(returnCall) = lambdaReturn.astChildren.isCall.l
+      returnCall.code shouldBe "private_class_method :case_sensitive_find_by"
 
-        val List(_, methodNameArg) = returnCall.argument.l
-        methodNameArg.code shouldBe "self.:case_sensitive_find_by"
+      val List(_, methodNameArg) = returnCall.argument.l
+      methodNameArg.code shouldBe "self.:case_sensitive_find_by"
 
-      case xs => fail(s"Expected 5 methods, got [${xs.code.mkString(",")}]")
     }
   }
 
@@ -1279,18 +1152,16 @@ class ClassTests extends RubyCode2CpgFixture {
         |  end
         |end
         |""".stripMargin)
-    inside(cpg.typeDecl.name("List").l) {
-      case listTypeDecl :: Nil =>
-        val List(lambdaMethod) = listTypeDecl.astChildren.isMethod.isLambda.l
+    inside(cpg.typeDecl.name("List").l) { case listTypeDecl :: Nil =>
+      val List(lambdaMethod) = listTypeDecl.astChildren.isMethod.isLambda.l
 
-        val List(lambdaReturn) = lambdaMethod.astChildren.isBlock.astChildren.isReturn.l
-        lambdaReturn.code shouldBe "return nil"
+      val List(lambdaReturn) = lambdaMethod.astChildren.isBlock.astChildren.isReturn.l
+      lambdaReturn.code shouldBe "return nil"
 
-        val List(lambdaTypeDecl, lambdaTypeDeclClass) = lambdaMethod.astChildren.isTypeDecl.l
-        lambdaTypeDecl.name shouldBe s"Test0.rb:$Main.Taskbar.List.<body>.<lambda>0.<anon-class-0>"
-        lambdaTypeDeclClass.name shouldBe s"Test0.rb:$Main.Taskbar.List.<body>.<lambda>0.<anon-class-0><class>"
+      val List(lambdaTypeDecl, lambdaTypeDeclClass) = lambdaMethod.astChildren.isTypeDecl.l
+      lambdaTypeDecl.name shouldBe s"Test0.rb:$Main.Taskbar.List.<body>.<lambda>0.<anon-class-0>"
+      lambdaTypeDeclClass.name shouldBe s"Test0.rb:$Main.Taskbar.List.<body>.<lambda>0.<anon-class-0><class>"
 
-      case xs => fail(s"expected 1 type, got ${xs.size}: [${xs.code.mkString(", ")}]")
     }
   }
 
@@ -1325,11 +1196,9 @@ class ClassTests extends RubyCode2CpgFixture {
 
     inside(cpg.method.name("as_batches").l) {
       case batchesMethod :: Nil =>
-        inside(batchesMethod.parameter.l) {
-          case _ :: _ :: procParam :: Nil =>
-            procParam.code shouldBe "&"
-            procParam.name shouldBe "<proc-param-0>"
-          case xs => fail(s"Expected three parameters, got (${xs.size}) [${xs.code.mkString(",")}]")
+        inside(batchesMethod.parameter.l) { case _ :: _ :: procParam :: Nil =>
+          procParam.code shouldBe "&"
+          procParam.name shouldBe "<proc-param-0>"
         }
       case xs =>
     }
@@ -1352,34 +1221,28 @@ class ClassTests extends RubyCode2CpgFixture {
                      |""".stripMargin)
 
     "generate a type decl that does not clash" in {
-      inside(cpg.typeDecl.name(".*<anon-class-0>").l) {
-        case outerAnonClass :: nestedAnonClass :: Nil =>
-          outerAnonClass.name shouldBe s"Test0.rb:$Main.<anon-class-0>"
-          outerAnonClass.fullName shouldBe s"Test0.rb:$Main.<anon-class-0>"
-          inside(outerAnonClass.method.l) {
-            case hello :: defaultConstructor :: Nil =>
-              defaultConstructor.name shouldBe RubyDefines.Initialize
-              defaultConstructor.fullName shouldBe s"Test0.rb:$Main.<anon-class-0>.${RubyDefines.Initialize}"
+      inside(cpg.typeDecl.name(".*<anon-class-0>").l) { case outerAnonClass :: nestedAnonClass :: Nil =>
+        outerAnonClass.name shouldBe s"Test0.rb:$Main.<anon-class-0>"
+        outerAnonClass.fullName shouldBe s"Test0.rb:$Main.<anon-class-0>"
+        inside(outerAnonClass.method.l) { case hello :: defaultConstructor :: Nil =>
+          defaultConstructor.name shouldBe RubyDefines.Initialize
+          defaultConstructor.fullName shouldBe s"Test0.rb:$Main.<anon-class-0>.${RubyDefines.Initialize}"
 
-              hello.name shouldBe "hello"
-              hello.fullName shouldBe s"Test0.rb:$Main.<anon-class-0>.hello"
-            case xs => fail(s"Expected a single method, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
-          }
+          hello.name shouldBe "hello"
+          hello.fullName shouldBe s"Test0.rb:$Main.<anon-class-0>.hello"
+        }
 
-          nestedAnonClass.name shouldBe s"Test0.rb:$Main.Foo.<body>.<anon-class-0>"
-          nestedAnonClass.fullName shouldBe s"Test0.rb:$Main.Foo.<body>.<anon-class-0>"
+        nestedAnonClass.name shouldBe s"Test0.rb:$Main.Foo.<body>.<anon-class-0>"
+        nestedAnonClass.fullName shouldBe s"Test0.rb:$Main.Foo.<body>.<anon-class-0>"
 
-          inside(nestedAnonClass.method.l) {
-            case hello :: defaultConstructor :: Nil =>
-              defaultConstructor.name shouldBe RubyDefines.Initialize
-              defaultConstructor.fullName shouldBe s"Test0.rb:$Main.Foo.<body>.<anon-class-0>.${RubyDefines.Initialize}"
+        inside(nestedAnonClass.method.l) { case hello :: defaultConstructor :: Nil =>
+          defaultConstructor.name shouldBe RubyDefines.Initialize
+          defaultConstructor.fullName shouldBe s"Test0.rb:$Main.Foo.<body>.<anon-class-0>.${RubyDefines.Initialize}"
 
-              hello.name shouldBe "hello"
-              hello.fullName shouldBe s"Test0.rb:$Main.Foo.<body>.<anon-class-0>.hello"
-            case xs => fail(s"Expected a single method, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
-          }
+          hello.name shouldBe "hello"
+          hello.fullName shouldBe s"Test0.rb:$Main.Foo.<body>.<anon-class-0>.hello"
+        }
 
-        case xs => fail(s"Expected a single anonymous class, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
       }
     }
   }
@@ -1409,17 +1272,15 @@ class ClassTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "generate type decls with independent incrementors" in {
-      inside(cpg.typeDecl.name(".*<anon-class-\\d>").l) {
-        case a :: b :: c :: d :: e :: f :: Nil =>
-          a.fullName shouldBe s"Test0.rb:$Main.<anon-class-0>"
-          b.fullName shouldBe s"Test0.rb:$Main.<anon-class-1>"
-          c.fullName shouldBe s"Test0.rb:$Main.<anon-class-2>"
+      inside(cpg.typeDecl.name(".*<anon-class-\\d>").l) { case a :: b :: c :: d :: e :: f :: Nil =>
+        a.fullName shouldBe s"Test0.rb:$Main.<anon-class-0>"
+        b.fullName shouldBe s"Test0.rb:$Main.<anon-class-1>"
+        c.fullName shouldBe s"Test0.rb:$Main.<anon-class-2>"
 
-          d.fullName shouldBe s"Test0.rb:$Main.Foo.<body>.<anon-class-0>"
-          e.fullName shouldBe s"Test0.rb:$Main.Foo.<body>.<anon-class-1>"
+        d.fullName shouldBe s"Test0.rb:$Main.Foo.<body>.<anon-class-0>"
+        e.fullName shouldBe s"Test0.rb:$Main.Foo.<body>.<anon-class-1>"
 
-          f.fullName shouldBe s"Test0.rb:$Main.Foo.hello.<anon-class-0>"
-        case xs => fail(s"Expected 5 anonymous class decls, got ${xs.name.mkString("[", ",", "]")}")
+        f.fullName shouldBe s"Test0.rb:$Main.Foo.hello.<anon-class-0>"
       }
     }
   }

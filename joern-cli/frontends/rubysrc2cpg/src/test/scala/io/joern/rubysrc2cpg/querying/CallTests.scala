@@ -147,7 +147,6 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
           baz.code shouldBe "\"baz\""
           baz.argumentIndex shouldBe 2
           baz.argumentName shouldBe Option("bar")
-        case xs => fail(s"Invalid call arguments! Got [${xs.code.mkString(", ")}]")
       }
     }
   }
@@ -166,57 +165,46 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
       inside(cpg.method.isModule.assignment.and(_.target.isIdentifier.name("a"), _.source.isBlock).l) {
         case assignment :: Nil =>
           assignment.code shouldBe "a = A.new 1, 2"
-          inside(assignment.argument.l) {
-            case (a: Identifier) :: (_: Block) :: Nil =>
-              a.name shouldBe "a"
-              a.dynamicTypeHintFullName should contain(s"Test0.rb:$Main.A")
-            case xs => fail(s"Expected one identifier and one call argument, got [${xs.code.mkString(",")}]")
+          inside(assignment.argument.l) { case (a: Identifier) :: (_: Block) :: Nil =>
+            a.name shouldBe "a"
+            a.dynamicTypeHintFullName should contain(s"Test0.rb:$Main.A")
           }
-        case xs => fail(s"Expected a single assignment, got [${xs.code.mkString(",")}]")
       }
     }
 
     "create an assignment from a temp variable to the alloc call" in {
-      inside(cpg.method.isModule.assignment.where(_.target.isIdentifier.name("<tmp-1>")).l) {
-        case assignment :: Nil =>
-          inside(assignment.argument.l) {
-            case (a: Identifier) :: (alloc: Call) :: Nil =>
-              a.name shouldBe "<tmp-1>"
+      inside(cpg.method.isModule.assignment.where(_.target.isIdentifier.name("<tmp-1>")).l) { case assignment :: Nil =>
+        inside(assignment.argument.l) { case (a: Identifier) :: (alloc: Call) :: Nil =>
+          a.name shouldBe "<tmp-1>"
 
-              alloc.name shouldBe Operators.alloc
-              alloc.methodFullName shouldBe Operators.alloc
-              alloc.code shouldBe "A.new 1, 2"
-              alloc.argument.size shouldBe 0
-            case xs => fail(s"Expected one identifier and one call argument, got [${xs.code.mkString(",")}]")
-          }
-        case xs => fail(s"Expected a single assignment, got [${xs.code.mkString(",")}]")
+          alloc.name shouldBe Operators.alloc
+          alloc.methodFullName shouldBe Operators.alloc
+          alloc.code shouldBe "A.new 1, 2"
+          alloc.argument.size shouldBe 0
+        }
       }
     }
 
     "create a call to the object's constructor, with the temp variable receiver" in {
-      inside(cpg.call.nameExact(RubyDefines.Initialize).l) {
-        case constructor :: Nil =>
-          inside(constructor.argument.l) {
-            case (a: Identifier) :: (one: Literal) :: (two: Literal) :: Nil =>
-              a.name shouldBe "<tmp-1>"
-              a.typeFullName shouldBe s"Test0.rb:$Main.A"
-              a.argumentIndex shouldBe 0
+      inside(cpg.call.nameExact(RubyDefines.Initialize).l) { case constructor :: Nil =>
+        inside(constructor.argument.l) { case (a: Identifier) :: (one: Literal) :: (two: Literal) :: Nil =>
+          a.name shouldBe "<tmp-1>"
+          a.typeFullName shouldBe s"Test0.rb:$Main.A"
+          a.argumentIndex shouldBe 0
 
-              one.code shouldBe "1"
-              two.code shouldBe "2"
-            case xs => fail(s"Expected one identifier and one call argument, got [${xs.code.mkString(",")}]")
-          }
+          one.code shouldBe "1"
+          two.code shouldBe "2"
+        }
 
-          val recv = constructor.receiver.head.asInstanceOf[Call]
-          recv.methodFullName shouldBe Operators.fieldAccess
-          recv.name shouldBe Operators.fieldAccess
-          recv.code shouldBe s"A.${RubyDefines.Initialize}"
+        val recv = constructor.receiver.head.asInstanceOf[Call]
+        recv.methodFullName shouldBe Operators.fieldAccess
+        recv.name shouldBe Operators.fieldAccess
+        recv.code shouldBe s"A.${RubyDefines.Initialize}"
 
-          recv.argument(1).label shouldBe NodeTypes.CALL
-          recv.argument(1).code shouldBe "self.A"
-          recv.argument(2).label shouldBe NodeTypes.FIELD_IDENTIFIER
-          recv.argument(2).code shouldBe RubyDefines.Initialize
-        case xs => fail(s"Expected a single alloc, got [${xs.code.mkString(",")}]")
+        recv.argument(1).label shouldBe NodeTypes.CALL
+        recv.argument(1).code shouldBe "self.A"
+        recv.argument(2).label shouldBe NodeTypes.FIELD_IDENTIFIER
+        recv.argument(2).code shouldBe RubyDefines.Initialize
       }
     }
   }
@@ -228,38 +216,34 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
         |""".stripMargin)
 
     "create a call node on the receiver end of the constructor lowering" in {
-      inside(cpg.call.nameExact(RubyDefines.Initialize).l) {
-        case constructor :: Nil =>
-          inside(constructor.argument.l) {
-            case (a: Identifier) :: (selfPath: Call) :: Nil =>
-              a.name shouldBe "<tmp-0>"
-              a.typeFullName shouldBe Defines.Any
-              a.argumentIndex shouldBe 0
+      inside(cpg.call.nameExact(RubyDefines.Initialize).l) { case constructor :: Nil =>
+        inside(constructor.argument.l) { case (a: Identifier) :: (selfPath: Call) :: Nil =>
+          a.name shouldBe "<tmp-0>"
+          a.typeFullName shouldBe Defines.Any
+          a.argumentIndex shouldBe 0
 
-              selfPath.code shouldBe "self.path"
-            case xs => fail(s"Expected one identifier and one call argument, got [${xs.code.mkString(",")}]")
-          }
+          selfPath.code shouldBe "self.path"
+        }
 
-          val recv = constructor.receiver.head.asInstanceOf[Call]
-          recv.methodFullName shouldBe Operators.fieldAccess
-          recv.name shouldBe Operators.fieldAccess
-          recv.code shouldBe s"(<tmp-2> = params[:type].constantize).${RubyDefines.Initialize}"
+        val recv = constructor.receiver.head.asInstanceOf[Call]
+        recv.methodFullName shouldBe Operators.fieldAccess
+        recv.name shouldBe Operators.fieldAccess
+        recv.code shouldBe s"(<tmp-2> = params[:type].constantize).${RubyDefines.Initialize}"
 
-          recv.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe RubyDefines.Initialize
+        recv.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe RubyDefines.Initialize
 
-          inside(recv.argument(1).start.isCall.argument(2).isCall.argument.l) {
-            case (paramsAssign: Call) :: (constantize: FieldIdentifier) :: Nil =>
-              paramsAssign.code shouldBe "<tmp-1> = params[:type]"
-              inside(paramsAssign.argument.l) { case (tmpIdent: Identifier) :: (indexAccess: Call) :: Nil =>
-                tmpIdent.name shouldBe "<tmp-1>"
+        inside(recv.argument(1).start.isCall.argument(2).isCall.argument.l) {
+          case (paramsAssign: Call) :: (constantize: FieldIdentifier) :: Nil =>
+            paramsAssign.code shouldBe "<tmp-1> = params[:type]"
+            inside(paramsAssign.argument.l) { case (tmpIdent: Identifier) :: (indexAccess: Call) :: Nil =>
+              tmpIdent.name shouldBe "<tmp-1>"
 
-                indexAccess.name shouldBe Operators.indexAccess
-                indexAccess.code shouldBe "params[:type]"
-              }
+              indexAccess.name shouldBe Operators.indexAccess
+              indexAccess.code shouldBe "params[:type]"
+            }
 
-              constantize.canonicalName shouldBe "constantize"
-          }
-        case xs => fail(s"Expected a single alloc, got [${xs.code.mkString(",")}]")
+            constantize.canonicalName shouldBe "constantize"
+        }
       }
     }
   }
@@ -274,11 +258,9 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
         |""".stripMargin)
 
     "correctly create a `src` call instead of identifier" in {
-      inside(cpg.call("src").l) {
-        case src :: Nil =>
-          src.name shouldBe "src"
-          src.methodFullName shouldBe s"Test0.rb:$Main.src"
-        case xs => fail(s"Expected exactly one `src` call, instead got [${xs.code.mkString(",")}]")
+      inside(cpg.call("src").l) { case src :: Nil =>
+        src.name shouldBe "src"
+        src.methodFullName shouldBe s"Test0.rb:$Main.src"
       }
     }
   }
@@ -293,11 +275,9 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
         |""".stripMargin)
 
     "correctly create a `src` call instead of identifier" in {
-      inside(cpg.call("src").l) {
-        case src :: Nil =>
-          src.name shouldBe "src"
-          src.methodFullName shouldBe s"Test0.rb:$Main.src"
-        case xs => fail(s"Expected exactly one `src` call, instead got [${xs.code.mkString(",")}]")
+      inside(cpg.call("src").l) { case src :: Nil =>
+        src.name shouldBe "src"
+        src.methodFullName shouldBe s"Test0.rb:$Main.src"
       }
     }
   }
@@ -322,12 +302,10 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
         |foo(*args)
         |""".stripMargin)
 
-    inside(cpg.call("foo").argument.l) {
-      case _ :: (args: Call) :: Nil =>
-        args.methodFullName shouldBe RubyOperators.splat
-        args.code shouldBe "*args"
-        args.lineNumber shouldBe Some(3)
-      case xs => fail(s"Expected a single `*args` argument under `foo`, got [${xs.code.mkString(",")}]")
+    inside(cpg.call("foo").argument.l) { case _ :: (args: Call) :: Nil =>
+      args.methodFullName shouldBe RubyOperators.splat
+      args.code shouldBe "*args"
+      args.lineNumber shouldBe Some(3)
     }
   }
 
@@ -387,10 +365,8 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
   "Object initialize calls should be DynamicUnknown" in {
     val cpg = code("""Date.new(2013, 19, 20)""")
 
-    inside(cpg.call.name(RubyDefines.Initialize).l) {
-      case initCall :: Nil =>
-        initCall.methodFullName shouldBe Defines.DynamicCallUnknownFullName
-      case xs => fail(s"Expected one call to initialize, got ${xs.code.mkString}")
+    inside(cpg.call.name(RubyDefines.Initialize).l) { case initCall :: Nil =>
+      initCall.methodFullName shouldBe Defines.DynamicCallUnknownFullName
     }
   }
 
@@ -433,25 +409,19 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
         |foo([:b, :c => 1])
         |""".stripMargin)
 
-    inside(cpg.call.name("foo").l) {
-      case fooCall :: Nil =>
-        inside(fooCall.argument.l) {
-          case _ :: (arrayArg: Block) :: Nil =>
-            arrayArg.code shouldBe "[:b, :c => 1]"
+    inside(cpg.call.name("foo").l) { case fooCall :: Nil =>
+      inside(fooCall.argument.l) { case _ :: (arrayArg: Block) :: Nil =>
+        arrayArg.code shouldBe "[:b, :c => 1]"
 
-            inside(arrayArg.astChildren.l) {
-              case (_: Call) :: (elem1: Call) :: (elem2: Call) :: (_: Identifier) :: Nil =>
-                elem1.code shouldBe "<tmp-1>[0] = :b"
-                elem2.code shouldBe "<tmp-1>[1] = :c => 1"
+        inside(arrayArg.astChildren.l) { case (_: Call) :: (elem1: Call) :: (elem2: Call) :: (_: Identifier) :: Nil =>
+          elem1.code shouldBe "<tmp-1>[0] = :b"
+          elem2.code shouldBe "<tmp-1>[1] = :c => 1"
 
-                elem1.methodFullName shouldBe Operators.assignment
-                elem2.methodFullName shouldBe Operators.assignment
-                elem2.argument(2).asInstanceOf[Call].methodFullName shouldBe RubyOperators.association
-              case xs => fail(s"Expected two args for elements, got ${xs.code.mkString(",")}")
-            }
-          case xs => fail(s"Expected two args, got ${xs.map(x => x.label -> x.code).mkString(",")}")
+          elem1.methodFullName shouldBe Operators.assignment
+          elem2.methodFullName shouldBe Operators.assignment
+          elem2.argument(2).asInstanceOf[Call].methodFullName shouldBe RubyOperators.association
         }
-      case xs => fail(s"Expected one call for foo, got ${xs.code.mkString}")
+      }
     }
   }
 
@@ -494,7 +464,6 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
         registryScopeSplat.code shouldBe "*::Gitlab::Auth::REGISTRY_SCOPES"
         registryScopeSplat.methodFullName shouldBe RubyOperators.splat
 
-      case xs => fail(s"Expected 5 arguments for call, got [${xs.code.mkString(",")}]")
     }
   }
 
@@ -520,7 +489,6 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
 
         numericLiteral.code shouldBe "10"
         numericLiteral.typeFullName shouldBe RubyDefines.prefixAsCoreType(RubyDefines.Integer)
-      case xs => fail(s"Expected 6 parameters for call, got [${xs.code.mkString(", ")}]")
     }
   }
 
@@ -529,20 +497,16 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
         |foo(bar[:baz] => nil)
         |""".stripMargin)
 
-    inside(cpg.call.name("foo").argument.l) {
-      case _ :: (assocParam: Call) :: Nil =>
-        assocParam.methodFullName shouldBe RubyOperators.association
-        assocParam.code shouldBe "bar[:baz] => nil"
+    inside(cpg.call.name("foo").argument.l) { case _ :: (assocParam: Call) :: Nil =>
+      assocParam.methodFullName shouldBe RubyOperators.association
+      assocParam.code shouldBe "bar[:baz] => nil"
 
-        inside(assocParam.argument.l) {
-          case (lhs: Call) :: (rhs: Literal) :: Nil =>
-            lhs.methodFullName shouldBe Operators.indexAccess
-            lhs.code shouldBe "bar[:baz]"
+      inside(assocParam.argument.l) { case (lhs: Call) :: (rhs: Literal) :: Nil =>
+        lhs.methodFullName shouldBe Operators.indexAccess
+        lhs.code shouldBe "bar[:baz]"
 
-            rhs.code shouldBe "nil"
-          case xs => fail(s"Expected lhs and rhs for association, got [${xs.code.mkString(",")}]")
-        }
-      case xs => fail(s"Expected two params, got [${xs.code.mkString(",")}]")
+        rhs.code shouldBe "nil"
+      }
     }
   }
 
@@ -551,20 +515,16 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
         |foo(bar.baz => nil)
         |""".stripMargin)
 
-    inside(cpg.call.name("foo").argument.l) {
-      case _ :: (assocParam: Call) :: Nil =>
-        assocParam.methodFullName shouldBe RubyOperators.association
-        assocParam.code shouldBe "bar.baz => nil"
+    inside(cpg.call.name("foo").argument.l) { case _ :: (assocParam: Call) :: Nil =>
+      assocParam.methodFullName shouldBe RubyOperators.association
+      assocParam.code shouldBe "bar.baz => nil"
 
-        inside(assocParam.argument.l) {
-          case (lhs: Call) :: (rhs: Literal) :: Nil =>
-            lhs.methodFullName shouldBe Operators.fieldAccess
-            lhs.code shouldBe "bar.baz"
+      inside(assocParam.argument.l) { case (lhs: Call) :: (rhs: Literal) :: Nil =>
+        lhs.methodFullName shouldBe Operators.fieldAccess
+        lhs.code shouldBe "bar.baz"
 
-            rhs.code shouldBe "nil"
-          case xs => fail(s"Expected lhs and rhs for association, got [${xs.code.mkString(",")}]")
-        }
-      case xs => fail(s"Expected two params, got [${xs.code.mkString(",")}]")
+        rhs.code shouldBe "nil"
+      }
     }
   }
 

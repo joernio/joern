@@ -15,24 +15,22 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
                     |""".stripMargin)
 
     "separate the assignments into three separate assignment nodes" in {
-      inside(cpg.assignment.l) {
-        case aAssignment :: bAssignment :: cAssignment :: Nil =>
-          aAssignment.code shouldBe "a, b, c = 1, 2, 3"
-          bAssignment.code shouldBe "a, b, c = 1, 2, 3"
-          cAssignment.code shouldBe "a, b, c = 1, 2, 3"
+      inside(cpg.assignment.l) { case aAssignment :: bAssignment :: cAssignment :: Nil =>
+        aAssignment.code shouldBe "a, b, c = 1, 2, 3"
+        bAssignment.code shouldBe "a, b, c = 1, 2, 3"
+        cAssignment.code shouldBe "a, b, c = 1, 2, 3"
 
-          val List(a: Identifier, one: Literal) = aAssignment.argumentOut.toList: @unchecked
-          a.name shouldBe "a"
-          one.code shouldBe "1"
+        val List(a: Identifier, one: Literal) = aAssignment.argumentOut.toList: @unchecked
+        a.name shouldBe "a"
+        one.code shouldBe "1"
 
-          val List(b: Identifier, two: Literal) = bAssignment.argumentOut.toList: @unchecked
-          b.name shouldBe "b"
-          two.code shouldBe "2"
+        val List(b: Identifier, two: Literal) = bAssignment.argumentOut.toList: @unchecked
+        b.name shouldBe "b"
+        two.code shouldBe "2"
 
-          val List(c: Identifier, three: Literal) = cAssignment.argumentOut.toList: @unchecked
-          c.name shouldBe "c"
-          three.code shouldBe "3"
-        case _ => fail("Unexpected number of assignments found")
+        val List(c: Identifier, three: Literal) = cAssignment.argumentOut.toList: @unchecked
+        c.name shouldBe "c"
+        three.code shouldBe "3"
       }
 
     }
@@ -46,24 +44,22 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
                     |""".stripMargin)
 
     "separate the assignments into 3 and leave `d` undefined" in {
-      inside(cpg.assignment.l) {
-        case aAssignment :: bAssignment :: cAssignment :: Nil =>
-          aAssignment.code shouldBe "a, b, c, d = 1, 2, 3"
-          bAssignment.code shouldBe "a, b, c, d = 1, 2, 3"
-          cAssignment.code shouldBe "a, b, c, d = 1, 2, 3"
+      inside(cpg.assignment.l) { case aAssignment :: bAssignment :: cAssignment :: Nil =>
+        aAssignment.code shouldBe "a, b, c, d = 1, 2, 3"
+        bAssignment.code shouldBe "a, b, c, d = 1, 2, 3"
+        cAssignment.code shouldBe "a, b, c, d = 1, 2, 3"
 
-          val List(a: Identifier, one: Literal) = aAssignment.argumentOut.toList: @unchecked
-          a.name shouldBe "a"
-          one.code shouldBe "1"
+        val List(a: Identifier, one: Literal) = aAssignment.argumentOut.toList: @unchecked
+        a.name shouldBe "a"
+        one.code shouldBe "1"
 
-          val List(b: Identifier, two: Literal) = bAssignment.argumentOut.toList: @unchecked
-          b.name shouldBe "b"
-          two.code shouldBe "2"
+        val List(b: Identifier, two: Literal) = bAssignment.argumentOut.toList: @unchecked
+        b.name shouldBe "b"
+        two.code shouldBe "2"
 
-          val List(c: Identifier, three: Literal) = cAssignment.argumentOut.toList: @unchecked
-          c.name shouldBe "c"
-          three.code shouldBe "3"
-        case _ => fail("Unexpected number of assignments found")
+        val List(c: Identifier, three: Literal) = cAssignment.argumentOut.toList: @unchecked
+        c.name shouldBe "c"
+        three.code shouldBe "3"
       }
 
     }
@@ -96,14 +92,11 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
           arr.code shouldBe "a, b, *c = 1, 2, 3, 4"
 
           val asgns = arr.astChildren.assignment.where(_.target.isCall.nameExact(Operators.indexAccess)).l
-          inside(asgns.map(_.source)) {
-            case (three: Literal) :: (four: Literal) :: Nil =>
-              three.code shouldBe "3"
-              four.code shouldBe "4"
-            case _ => fail("Unexpected number of array elements in `c`'s assignment")
+          inside(asgns.map(_.source)) { case (three: Literal) :: (four: Literal) :: Nil =>
+            three.code shouldBe "3"
+            four.code shouldBe "4"
           }
 
-        case _ => fail("Unexpected number of assignments found")
       }
 
     }
@@ -128,18 +121,15 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
           arr.code shouldBe "a, *b, c = 1, 2, 3, 4"
 
           val asgns = arr.astChildren.assignment.where(_.target.isCall.nameExact(Operators.indexAccess)).l
-          inside(asgns.map(_.source)) {
-            case (two: Literal) :: (three: Literal) :: Nil =>
-              two.code shouldBe "2"
-              three.code shouldBe "3"
-            case _ => fail("Unexpected number of array elements in `c`'s assignment")
+          inside(asgns.map(_.source)) { case (two: Literal) :: (three: Literal) :: Nil =>
+            two.code shouldBe "2"
+            three.code shouldBe "3"
           }
 
           val List(c: Identifier, four: Literal) = cAssignment.argumentOut.toList: @unchecked
           c.name shouldBe "c"
           four.code shouldBe "4"
 
-        case _ => fail("Unexpected number of assignments found")
       }
 
     }
@@ -160,11 +150,9 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
           arr.code shouldBe "*a, b, c = 1, 2, 3, 4"
 
           val asgns = arr.astChildren.assignment.where(_.target.isCall.nameExact(Operators.indexAccess)).l
-          inside(asgns.map(_.source)) {
-            case (one: Literal) :: (two: Literal) :: Nil =>
-              one.code shouldBe "1"
-              two.code shouldBe "2"
-            case _ => fail("Unexpected number of array elements in `c`'s assignment")
+          inside(asgns.map(_.source)) { case (one: Literal) :: (two: Literal) :: Nil =>
+            one.code shouldBe "1"
+            two.code shouldBe "2"
           }
 
           val List(b: Identifier, three: Literal) = bAssignment.argumentOut.toList: @unchecked
@@ -175,7 +163,6 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
           c.name shouldBe "c"
           four.code shouldBe "4"
 
-        case _ => fail("Unexpected number of assignments found")
       }
 
     }
@@ -185,24 +172,21 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
                 |a = 1, 2, 3, 4
                 |""".stripMargin)
 
-      inside(cpg.assignment.codeExact("a = 1, 2, 3, 4").l) {
-        case aAssignment :: Nil =>
-          aAssignment.code shouldBe "a = 1, 2, 3, 4"
+      inside(cpg.assignment.codeExact("a = 1, 2, 3, 4").l) { case aAssignment :: Nil =>
+        aAssignment.code shouldBe "a = 1, 2, 3, 4"
 
-          val List(a: Identifier, arr: Block) = aAssignment.argumentOut.toList: @unchecked
-          a.name shouldBe "a"
-          arr.code shouldBe "1, 2, 3, 4"
-          val asgns = arr.astChildren.assignment.where(_.target.isCall.nameExact(Operators.indexAccess)).l
-          inside(asgns.map(_.source)) {
-            case (one: Literal) :: (two: Literal) :: (three: Literal) :: (four: Literal) :: Nil =>
-              one.code shouldBe "1"
-              two.code shouldBe "2"
-              three.code shouldBe "3"
-              four.code shouldBe "4"
-            case _ => fail("Unexpected number of array elements in `a`'s assignment")
-          }
+        val List(a: Identifier, arr: Block) = aAssignment.argumentOut.toList: @unchecked
+        a.name shouldBe "a"
+        arr.code shouldBe "1, 2, 3, 4"
+        val asgns = arr.astChildren.assignment.where(_.target.isCall.nameExact(Operators.indexAccess)).l
+        inside(asgns.map(_.source)) {
+          case (one: Literal) :: (two: Literal) :: (three: Literal) :: (four: Literal) :: Nil =>
+            one.code shouldBe "1"
+            two.code shouldBe "2"
+            three.code shouldBe "3"
+            four.code shouldBe "4"
+        }
 
-        case _ => fail("Unexpected number of assignments found")
       }
 
     }
@@ -235,13 +219,10 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
           val List(c: Identifier, splat: Call) = cAssignment.argumentOut.toList: @unchecked
           c.name shouldBe "c"
           splat.name shouldBe RubyOperators.splat
-          inside(splat.argumentOut.l) {
-            case (list: Identifier) :: Nil =>
-              list.name shouldBe "list"
-            case _ => fail("Unexpected number of array elements in `c`'s assignment")
+          inside(splat.argumentOut.l) { case (list: Identifier) :: Nil =>
+            list.name shouldBe "list"
           }
 
-        case _ => fail("Unexpected number of assignments found")
       }
 
     }
@@ -266,22 +247,17 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
           val List(b: Identifier, splatB: Call) = bAssignment.argumentOut.toList: @unchecked
           b.name shouldBe "b"
           splatB.name shouldBe RubyOperators.splat
-          inside(splatB.argumentOut.l) {
-            case (list: Identifier) :: Nil =>
-              list.name shouldBe "list"
-            case _ => fail("Unexpected number of array elements in `b`'s assignment")
+          inside(splatB.argumentOut.l) { case (list: Identifier) :: Nil =>
+            list.name shouldBe "list"
           }
 
           val List(c: Identifier, splatC: Call) = cAssignment.argumentOut.toList: @unchecked
           c.name shouldBe "c"
           splatC.name shouldBe RubyOperators.splat
-          inside(splatC.argumentOut.l) {
-            case (list: Identifier) :: Nil =>
-              list.name shouldBe "list"
-            case _ => fail("Unexpected number of array elements in `c`'s assignment")
+          inside(splatC.argumentOut.l) { case (list: Identifier) :: Nil =>
+            list.name shouldBe "list"
           }
 
-        case _ => fail("Unexpected number of assignments found")
       }
 
     }
@@ -313,13 +289,11 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
             three.code shouldBe "3"
             four.code shouldBe "4"
             five.code shouldBe "5"
-          case _ => fail("Unexpected number of array elements in `*`'s assignment")
         }
 
         val List(c: Identifier, cLiteral: Literal) = cAssignment.argumentOut.toList: @unchecked
         c.name shouldBe "c"
         cLiteral.code shouldBe "6"
-      case xs => fail(s"Expected three assignments, got ${xs.code.mkString(",")}")
     }
   }
 
@@ -328,26 +302,22 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
         |*, a = 1, 2, 3
         |""".stripMargin)
 
-    inside(cpg.assignment.codeExact("*, a = 1, 2, 3").l) {
-      case splatAssignment :: _ :: aAssignment :: Nil =>
-        aAssignment.code shouldBe "*, a = 1, 2, 3"
-        splatAssignment.code shouldBe "*, a = 1, 2, 3"
+    inside(cpg.assignment.codeExact("*, a = 1, 2, 3").l) { case splatAssignment :: _ :: aAssignment :: Nil =>
+      aAssignment.code shouldBe "*, a = 1, 2, 3"
+      splatAssignment.code shouldBe "*, a = 1, 2, 3"
 
-        val List(a: Identifier, lit: Literal) = aAssignment.argumentOut.toList: @unchecked
-        a.name shouldBe "a"
-        lit.code shouldBe "3"
+      val List(a: Identifier, lit: Literal) = aAssignment.argumentOut.toList: @unchecked
+      a.name shouldBe "a"
+      lit.code shouldBe "3"
 
-        val List(splat: Identifier, arr: Block) = splatAssignment.argumentOut.toList: @unchecked
-        splat.name shouldBe "_"
-        arr.code shouldBe "*, a = 1, 2, 3"
-        val asgns = arr.astChildren.assignment.where(_.target.isCall.nameExact(Operators.indexAccess)).l
-        inside(asgns.map(_.source)) {
-          case (one: Literal) :: (two: Literal) :: Nil =>
-            one.code shouldBe "1"
-            two.code shouldBe "2"
-          case _ => fail("Unexpected number of array elements in `*`'s assignment")
-        }
-      case _ => fail("Unexpected number of assignments found")
+      val List(splat: Identifier, arr: Block) = splatAssignment.argumentOut.toList: @unchecked
+      splat.name shouldBe "_"
+      arr.code shouldBe "*, a = 1, 2, 3"
+      val asgns = arr.astChildren.assignment.where(_.target.isCall.nameExact(Operators.indexAccess)).l
+      inside(asgns.map(_.source)) { case (one: Literal) :: (two: Literal) :: Nil =>
+        one.code shouldBe "1"
+        two.code shouldBe "2"
+      }
     }
   }
 
@@ -371,24 +341,21 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
         arr.code shouldBe "a, *b, c = 1, 2, *d, *f, 4"
 
         val asgns = arr.astChildren.assignment.where(_.target.isCall.nameExact(Operators.indexAccess)).l
-        inside(asgns.map(_.source)) {
-          case (two: Literal) :: (d: Call) :: (f: Call) :: Nil =>
-            two.code shouldBe "2"
+        inside(asgns.map(_.source)) { case (two: Literal) :: (d: Call) :: (f: Call) :: Nil =>
+          two.code shouldBe "2"
 
-            d.code shouldBe "*d"
-            d.methodFullName shouldBe RubyOperators.splat
+          d.code shouldBe "*d"
+          d.methodFullName shouldBe RubyOperators.splat
 
-            f.code shouldBe "*f"
-            f.methodFullName shouldBe RubyOperators.splat
+          f.code shouldBe "*f"
+          f.methodFullName shouldBe RubyOperators.splat
 
-          case xs => fail(s"Unexpected number of array elements in `*`'s assignment, got ${xs.code.mkString(",")}")
         }
 
         val List(c: Identifier, cLiteral: Literal) = cAssignment.argumentOut.toList: @unchecked
         c.name shouldBe "c"
         cLiteral.code shouldBe "4"
 
-      case xs => fail(s"Expected 3 assignments, got ${xs.code.mkString(",")}")
     }
   }
 

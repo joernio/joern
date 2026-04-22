@@ -119,27 +119,19 @@ class MethodTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "generated IF control structure for only the default value" in {
-      inside(cpg.method.name("foo").l) {
-        case fooFunc :: Nil =>
-          inside(fooFunc.controlStructure.isIf.l) {
-            case defaultIf :: Nil =>
-              inside(defaultIf.condition.isCall.l) {
-                case defaultIfCond :: Nil =>
-                  defaultIfCond.code shouldBe "!defined?(x)"
-                  defaultIfCond.methodFullName shouldBe Operators.logicalNot
-                case _ => fail("Only expected on call for condition")
-              }
-
-              inside(defaultIf.whenTrue.isBlock.astChildren.isCall.l) {
-                case thenCall :: Nil =>
-                  thenCall.code shouldBe "x=\"default\""
-                  thenCall.methodFullName shouldBe Operators.assignment
-                case _ => fail("Only one call expected in true block for default parameter")
-              }
-
-            case _ => fail("Expected single if statement for default parameter")
+      inside(cpg.method.name("foo").l) { case fooFunc :: Nil =>
+        inside(fooFunc.controlStructure.isIf.l) { case defaultIf :: Nil =>
+          inside(defaultIf.condition.isCall.l) { case defaultIfCond :: Nil =>
+            defaultIfCond.code shouldBe "!defined?(x)"
+            defaultIfCond.methodFullName shouldBe Operators.logicalNot
           }
-        case _ => fail("Expected one method")
+
+          inside(defaultIf.whenTrue.isBlock.astChildren.isCall.l) { case thenCall :: Nil =>
+            thenCall.code shouldBe "x=\"default\""
+            thenCall.methodFullName shouldBe Operators.assignment
+          }
+
+        }
       }
     }
   }
@@ -152,41 +144,29 @@ class MethodTests extends RubyCode2CpgFixture {
                      |""".stripMargin)
 
     "generated IF control structure for only the default value" in {
-      inside(cpg.method.name("foo").l) {
-        case fooFunc :: Nil =>
-          inside(fooFunc.controlStructure.isIf.l) {
-            case defaultIfForX :: defaultIfForY :: Nil =>
-              inside(defaultIfForX.condition.isCall.l) {
-                case defaultIfCond :: Nil =>
-                  defaultIfCond.code shouldBe "!defined?(x)"
-                  defaultIfCond.methodFullName shouldBe Operators.logicalNot
-                case _ => fail("Only expected one call for condition")
-              }
-
-              inside(defaultIfForX.whenTrue.isBlock.astChildren.isCall.l) {
-                case thenCall :: Nil =>
-                  thenCall.code shouldBe "x=\"default\""
-                  thenCall.methodFullName shouldBe Operators.assignment
-                case _ => fail("Only one call expected in true block for default parameter")
-              }
-
-              inside(defaultIfForY.condition.isCall.l) {
-                case defaultIfCond :: Nil =>
-                  defaultIfCond.code shouldBe "!defined?(y)"
-                  defaultIfCond.methodFullName shouldBe Operators.logicalNot
-                case _ => fail("Only expected one call for condition")
-              }
-
-              inside(defaultIfForY.whenTrue.isBlock.astChildren.isCall.l) {
-                case thenCall :: Nil =>
-                  thenCall.code shouldBe "y=123"
-                  thenCall.methodFullName shouldBe Operators.assignment
-                case _ => fail("Only one call expected in true block for default parameter")
-              }
-
-            case _ => fail("Expected two if statements for two default parameters")
+      inside(cpg.method.name("foo").l) { case fooFunc :: Nil =>
+        inside(fooFunc.controlStructure.isIf.l) { case defaultIfForX :: defaultIfForY :: Nil =>
+          inside(defaultIfForX.condition.isCall.l) { case defaultIfCond :: Nil =>
+            defaultIfCond.code shouldBe "!defined?(x)"
+            defaultIfCond.methodFullName shouldBe Operators.logicalNot
           }
-        case _ => fail("Expected one method")
+
+          inside(defaultIfForX.whenTrue.isBlock.astChildren.isCall.l) { case thenCall :: Nil =>
+            thenCall.code shouldBe "x=\"default\""
+            thenCall.methodFullName shouldBe Operators.assignment
+          }
+
+          inside(defaultIfForY.condition.isCall.l) { case defaultIfCond :: Nil =>
+            defaultIfCond.code shouldBe "!defined?(y)"
+            defaultIfCond.methodFullName shouldBe Operators.logicalNot
+          }
+
+          inside(defaultIfForY.whenTrue.isBlock.astChildren.isCall.l) { case thenCall :: Nil =>
+            thenCall.code shouldBe "y=123"
+            thenCall.methodFullName shouldBe Operators.assignment
+          }
+
+        }
       }
     }
   }
@@ -200,26 +180,20 @@ class MethodTests extends RubyCode2CpgFixture {
                      |end
                      |""".stripMargin)
 
-    inside(cpg.typeDecl.name("C").l) {
-      case classC :: Nil =>
-        inside(classC.method.name("f").l) {
-          case funcF :: Nil =>
-            inside(funcF.parameter.l) {
-              case thisParam :: xParam :: Nil =>
-                thisParam.code shouldBe RDefines.Self
-                thisParam.typeFullName shouldBe s"Test0.rb:$Main.C<class>"
-                thisParam.index shouldBe 0
-                thisParam.isVariadic shouldBe false
+    inside(cpg.typeDecl.name("C").l) { case classC :: Nil =>
+      inside(classC.method.name("f").l) { case funcF :: Nil =>
+        inside(funcF.parameter.l) { case thisParam :: xParam :: Nil =>
+          thisParam.code shouldBe RDefines.Self
+          thisParam.typeFullName shouldBe s"Test0.rb:$Main.C<class>"
+          thisParam.index shouldBe 0
+          thisParam.isVariadic shouldBe false
 
-                xParam.code shouldBe "x"
-                xParam.index shouldBe 1
-                xParam.isVariadic shouldBe false
+          xParam.code shouldBe "x"
+          xParam.index shouldBe 1
+          xParam.isVariadic shouldBe false
 
-              case _ => fail("Expected two parameters")
-            }
-          case _ => fail("Expected one method")
         }
-      case _ => fail("Expected one class definition")
+      }
     }
   }
 
@@ -234,25 +208,19 @@ class MethodTests extends RubyCode2CpgFixture {
                      |end
                      |""".stripMargin)
 
-    inside(cpg.typeDecl.name("C").l) {
-      case classC :: Nil =>
-        inside(classC.method.name("f").l) {
-          case funcF :: Nil =>
-            inside(funcF.parameter.l) {
-              case thisParam :: xParam :: Nil =>
-                thisParam.code shouldBe RDefines.Self
-                thisParam.typeFullName shouldBe s"Test0.rb:$Main.C<class>"
-                thisParam.index shouldBe 0
-                thisParam.isVariadic shouldBe false
+    inside(cpg.typeDecl.name("C").l) { case classC :: Nil =>
+      inside(classC.method.name("f").l) { case funcF :: Nil =>
+        inside(funcF.parameter.l) { case thisParam :: xParam :: Nil =>
+          thisParam.code shouldBe RDefines.Self
+          thisParam.typeFullName shouldBe s"Test0.rb:$Main.C<class>"
+          thisParam.index shouldBe 0
+          thisParam.isVariadic shouldBe false
 
-                xParam.code shouldBe "x"
-                xParam.index shouldBe 1
-                xParam.isVariadic shouldBe false
-              case _ => fail("Expected two parameters")
-            }
-          case _ => fail("Expected one method")
+          xParam.code shouldBe "x"
+          xParam.index shouldBe 1
+          xParam.isVariadic shouldBe false
         }
-      case _ => fail("Expected one class definition")
+      }
     }
   }
 
@@ -267,24 +235,20 @@ class MethodTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "be interpreted as an array type parameter if a single star given" in {
-      inside(cpg.method("foo").parameter.indexGt(0).l) {
-        case xs :: Nil =>
-          xs.name shouldBe "xs"
-          xs.code shouldBe "*xs"
-          xs.isVariadic shouldBe true
-          xs.typeFullName shouldBe RDefines.prefixAsCoreType("Array")
-        case xs => fail(s"Expected `foo` to have one parameter, got [${xs.code.mkString(", ")}]")
+      inside(cpg.method("foo").parameter.indexGt(0).l) { case xs :: Nil =>
+        xs.name shouldBe "xs"
+        xs.code shouldBe "*xs"
+        xs.isVariadic shouldBe true
+        xs.typeFullName shouldBe RDefines.prefixAsCoreType("Array")
       }
     }
 
     "be interpreted as a hash type parameter if two stars given" in {
-      inside(cpg.method("bar").parameter.indexGt(0).l) {
-        case ys :: Nil =>
-          ys.name shouldBe "ys"
-          ys.code shouldBe "**ys"
-          ys.isVariadic shouldBe true
-          ys.typeFullName shouldBe RDefines.prefixAsCoreType("Hash")
-        case xs => fail(s"Expected `foo` to have one parameter, got [${xs.code.mkString(", ")}]")
+      inside(cpg.method("bar").parameter.indexGt(0).l) { case ys :: Nil =>
+        ys.name shouldBe "ys"
+        ys.code shouldBe "**ys"
+        ys.isVariadic shouldBe true
+        ys.typeFullName shouldBe RDefines.prefixAsCoreType("Hash")
       }
     }
 
@@ -314,36 +278,30 @@ class MethodTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "create a method under `Foo` for both `x=`, `x`, and `bar=`, where `bar=` forwards parameters to a call to `x=`" in {
-      inside(cpg.typeDecl("Foo").l) {
-        case foo :: Nil =>
-          inside(foo.method.nameNot(RDefines.Initialize, RDefines.TypeDeclBody).l) {
-            case xeq :: x :: bar :: Nil =>
-              xeq.name shouldBe "x="
-              x.name shouldBe "x"
-              bar.name shouldBe "bar="
+      inside(cpg.typeDecl("Foo").l) { case foo :: Nil =>
+        inside(foo.method.nameNot(RDefines.Initialize, RDefines.TypeDeclBody).l) { case xeq :: x :: bar :: Nil =>
+          xeq.name shouldBe "x="
+          x.name shouldBe "x"
+          bar.name shouldBe "bar="
 
-              bar.parameter.name.l shouldBe List("self", "args", "&block")
-              // bar forwards parameters to a call to the aliased method
-              inside(bar.call.name("x=").l) {
-                case barCall :: Nil =>
-                  inside(barCall.argument.l) {
-                    case _ :: (args: Call) :: (blockId: Identifier) :: Nil =>
-                      args.name shouldBe RubyOperators.splat
-                      args.code shouldBe "*args"
-                      args.argumentIndex shouldBe 1
+          bar.parameter.name.l shouldBe List("self", "args", "&block")
+          // bar forwards parameters to a call to the aliased method
+          inside(bar.call.name("x=").l) { case barCall :: Nil =>
+            inside(barCall.argument.l) {
+              case _ :: (args: Call) :: (blockId: Identifier) :: Nil =>
+                args.name shouldBe RubyOperators.splat
+                args.code shouldBe "*args"
+                args.argumentIndex shouldBe 1
 
-                      blockId.name shouldBe "&block"
-                      blockId.code shouldBe "&block"
-                      blockId.argumentIndex shouldBe 2
-                    case xs =>
-                      fail(s"Expected a two arguments for the call `x=`,  instead got [${xs.code.mkString(",")}]")
-                  }
-                  barCall.code shouldBe "x=(*args, &block)"
-                case xs => fail(s"Expected a single call to `bar=`,  instead got [${xs.code.mkString(",")}]")
-              }
-            case xs => fail(s"Expected a three virtual methods under `Foo`, instead got [${xs.code.mkString(",")}]")
+                blockId.name shouldBe "&block"
+                blockId.code shouldBe "&block"
+                blockId.argumentIndex shouldBe 2
+              case xs =>
+                fail(s"Expected a two arguments for the call `x=`,  instead got [${xs.code.mkString(",")}]")
+            }
+            barCall.code shouldBe "x=(*args, &block)"
           }
-        case xs => fail(s"Expected a single type decl for `Foo`, instead got [${xs.code.mkString(",")}]")
+        }
       }
     }
   }
@@ -365,38 +323,30 @@ class MethodTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "similarly alias the method as if it were calling `alias`" in {
-      inside(cpg.typeDecl("Foo").l) {
-        case foo :: Nil =>
-          inside(foo.method.nameNot(RDefines.Initialize, RDefines.TypeDeclBody).l) {
-            case a :: p :: s :: Nil =>
-              a.name shouldBe "aliasable"
-              p.name shouldBe "print_something"
-              s.name shouldBe "someMethod"
+      inside(cpg.typeDecl("Foo").l) { case foo :: Nil =>
+        inside(foo.method.nameNot(RDefines.Initialize, RDefines.TypeDeclBody).l) { case a :: p :: s :: Nil =>
+          a.name shouldBe "aliasable"
+          p.name shouldBe "print_something"
+          s.name shouldBe "someMethod"
 
-              p.parameter.name.l shouldBe List("self", "args", "&block")
-              // bar forwards parameters to a call to the aliased method
-              inside(p.call.name("aliasable").l) {
-                case aliasableCall :: Nil =>
-                  inside(aliasableCall.argument.l) {
-                    case _ :: (args: Call) :: (blockId: Identifier) :: Nil =>
-                      args.name shouldBe RubyOperators.splat
-                      args.code shouldBe "*args"
-                      args.argumentIndex shouldBe 1
+          p.parameter.name.l shouldBe List("self", "args", "&block")
+          // bar forwards parameters to a call to the aliased method
+          inside(p.call.name("aliasable").l) { case aliasableCall :: Nil =>
+            inside(aliasableCall.argument.l) {
+              case _ :: (args: Call) :: (blockId: Identifier) :: Nil =>
+                args.name shouldBe RubyOperators.splat
+                args.code shouldBe "*args"
+                args.argumentIndex shouldBe 1
 
-                      blockId.name shouldBe "&block"
-                      blockId.code shouldBe "&block"
-                      blockId.argumentIndex shouldBe 2
-                    case xs =>
-                      fail(
-                        s"Expected a two arguments for the call `aliasable`,  instead got [${xs.code.mkString(",")}]"
-                      )
-                  }
-                  aliasableCall.code shouldBe "aliasable(*args, &block)"
-                case xs => fail(s"Expected a single call to `aliasable`,  instead got [${xs.code.mkString(",")}]")
-              }
-            case xs => fail(s"Expected a three virtual methods under `Foo`, instead got [${xs.code.mkString(",")}]")
+                blockId.name shouldBe "&block"
+                blockId.code shouldBe "&block"
+                blockId.argumentIndex shouldBe 2
+              case xs =>
+                fail(s"Expected a two arguments for the call `aliasable`,  instead got [${xs.code.mkString(",")}]")
+            }
+            aliasableCall.code shouldBe "aliasable(*args, &block)"
           }
-        case xs => fail(s"Expected a single type decl for `Foo`, instead got [${xs.code.mkString(",")}]")
+        }
       }
     }
 
@@ -418,29 +368,23 @@ class MethodTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "exist under the module TYPE_DECL" in {
-      inside(cpg.typeDecl.name("F").method.nameExact("bar", "baz").l) {
-        case bar :: baz :: Nil =>
-          inside(bar.parameter.l) {
-            case thisParam :: xParam :: Nil =>
-              thisParam.name shouldBe RDefines.Self
-              thisParam.code shouldBe "F"
-              thisParam.typeFullName shouldBe s"Test0.rb:$Main.F<class>"
+      inside(cpg.typeDecl.name("F").method.nameExact("bar", "baz").l) { case bar :: baz :: Nil =>
+        inside(bar.parameter.l) { case thisParam :: xParam :: Nil =>
+          thisParam.name shouldBe RDefines.Self
+          thisParam.code shouldBe "F"
+          thisParam.typeFullName shouldBe s"Test0.rb:$Main.F<class>"
 
-              xParam.name shouldBe "x"
-            case xs => fail(s"Expected two parameters, got ${xs.name.mkString(", ")}")
-          }
+          xParam.name shouldBe "x"
+        }
 
-          inside(baz.parameter.l) {
-            case thisParam :: xParam :: Nil =>
-              thisParam.name shouldBe RDefines.Self
-              thisParam.code shouldBe "F"
-              thisParam.typeFullName shouldBe s"Test0.rb:$Main.F<class>"
+        inside(baz.parameter.l) { case thisParam :: xParam :: Nil =>
+          thisParam.name shouldBe RDefines.Self
+          thisParam.code shouldBe "F"
+          thisParam.typeFullName shouldBe s"Test0.rb:$Main.F<class>"
 
-              xParam.name shouldBe "x"
-              xParam.code shouldBe "x"
-            case xs => fail(s"Expected two parameters, got ${xs.name.mkString(", ")}")
-          }
-        case xs => fail(s"Expected bar and baz to exist under F, instead got ${xs.code.mkString(", ")}")
+          xParam.name shouldBe "x"
+          xParam.code shouldBe "x"
+        }
       }
     }
 
@@ -451,13 +395,11 @@ class MethodTests extends RubyCode2CpgFixture {
     }
 
     "baz should not exist in the <main> block" in {
-      inside(cpg.method.isModule.l) {
-        case prog :: Nil =>
-          inside(prog.block.astChildren.isMethod.name("baz").l) {
-            case Nil => // passing case
-            case _   => fail("Baz should not exist under program method block")
-          }
-        case _ => fail("Expected one Method for <block>")
+      inside(cpg.method.isModule.l) { case prog :: Nil =>
+        inside(prog.block.astChildren.isMethod.name("baz").l) {
+          case Nil => // passing case
+          case _   => fail("Baz should not exist under program method block")
+        }
       }
     }
   }
@@ -484,18 +426,14 @@ class MethodTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "be represented by a METHOD node" in {
-      inside(cpg.method.name("exists\\?").l) {
-        case existsMethod :: Nil =>
-          existsMethod.fullName shouldBe s"Test0.rb:$Main.exists?"
-          existsMethod.isExternal shouldBe false
+      inside(cpg.method.name("exists\\?").l) { case existsMethod :: Nil =>
+        existsMethod.fullName shouldBe s"Test0.rb:$Main.exists?"
+        existsMethod.isExternal shouldBe false
 
-          inside(existsMethod.methodReturn.cfgIn.l) {
-            case existsMethodReturn :: Nil =>
-              existsMethodReturn.code shouldBe "true"
-            case _ => fail("Expected return for method")
-          }
+        inside(existsMethod.methodReturn.cfgIn.l) { case existsMethodReturn :: Nil =>
+          existsMethodReturn.code shouldBe "true"
+        }
 
-        case xs => fail(s"Expected one method, found ${xs.name.mkString(", ")}")
       }
     }
   }
@@ -508,22 +446,18 @@ class MethodTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "Represented by Return Node" in {
-      inside(cpg.method.name("foo").l) {
-        case fooMethod :: Nil =>
-          inside(fooMethod.methodReturn.toReturn.l) {
-            case returnTrue :: returnNil :: Nil =>
-              returnTrue.code shouldBe "return true"
+      inside(cpg.method.name("foo").l) { case fooMethod :: Nil =>
+        inside(fooMethod.methodReturn.toReturn.l) { case returnTrue :: returnNil :: Nil =>
+          returnTrue.code shouldBe "return true"
 
-              val List(trueVal: Literal) = returnTrue.astChildren.isLiteral.l: @unchecked
-              trueVal.code shouldBe "true"
+          val List(trueVal: Literal) = returnTrue.astChildren.isLiteral.l: @unchecked
+          trueVal.code shouldBe "true"
 
-              returnNil.code shouldBe "return nil"
+          returnNil.code shouldBe "return nil"
 
-              val List(nilVal: Literal) = returnNil.astChildren.isLiteral.l: @unchecked
-              nilVal.code shouldBe "nil"
-            case xs => fail(s"Expected two returns, got ${xs.code.mkString(", ")} instead")
-          }
-        case xs => fail(s"Expected one method for foo, got ${xs.name.mkString(", ")} instead")
+          val List(nilVal: Literal) = returnNil.astChildren.isLiteral.l: @unchecked
+          nilVal.code shouldBe "nil"
+        }
       }
     }
   }
@@ -538,49 +472,33 @@ class MethodTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "generate control structure for break" in {
-      inside(cpg.method.name("foo").l) {
-        case fooMethod :: Nil =>
-          inside(fooMethod.astChildren.isMethod.name("<lambda>0").l) {
-            case loopMethod :: Nil =>
-              inside(loopMethod.block.astChildren.isControlStructure.l) {
-                case ifStruct :: Nil =>
-                  inside(ifStruct.astChildren.isBlock.l) {
-                    case nilBlock :: breakBlock :: Nil =>
-                      inside(breakBlock.astChildren.isControlStructure.l) {
-                        case breakStruct :: Nil =>
-                          breakStruct.code shouldBe "break"
-                        case xs =>
-                          fail(s"Expected on control structure for break, got ${xs.code.mkString(", ")} instead")
-                      }
-                    case xs => fail(s"Expected block for break and nil, got ${xs.code.mkString(", ")} instead")
-                  }
-                case xs => fail(s"Expected one control structure for if, got ${xs.code.mkString(", ")} instead")
+      inside(cpg.method.name("foo").l) { case fooMethod :: Nil =>
+        inside(fooMethod.astChildren.isMethod.name("<lambda>0").l) { case loopMethod :: Nil =>
+          inside(loopMethod.block.astChildren.isControlStructure.l) { case ifStruct :: Nil =>
+            inside(ifStruct.astChildren.isBlock.l) { case nilBlock :: breakBlock :: Nil =>
+              inside(breakBlock.astChildren.isControlStructure.l) {
+                case breakStruct :: Nil =>
+                  breakStruct.code shouldBe "break"
+                case xs =>
+                  fail(s"Expected on control structure for break, got ${xs.code.mkString(", ")} instead")
               }
-
-              inside(loopMethod.methodReturn.toReturn.l) {
-                case lambdaRet :: Nil =>
-                  lambdaRet.code shouldBe "return nil" // break statements cannot be returned, so only false branch should be present which returns nil for UnlessExpression
-                case xs => fail(s"Expected one return for lambda function, got ${xs.code.mkString(", ")} instead")
-              }
-            case xs => fail(s"Expected one lambda method, got ${xs.name.mkString(", ")} instead")
+            }
           }
-        case xs => fail(s"Expected one method for foo, got ${xs.name.mkString(", ")} instead")
+
+          inside(loopMethod.methodReturn.toReturn.l) { case lambdaRet :: Nil =>
+            lambdaRet.code shouldBe "return nil" // break statements cannot be returned, so only false branch should be present which returns nil for UnlessExpression
+          }
+        }
       }
     }
 
     "generate one return for lambda loop do block" in {
-      inside(cpg.method.name("foo").l) {
-        case fooMethod :: Nil =>
-          inside(fooMethod.astChildren.isMethod.name("<lambda>0").l) {
-            case loopMethod :: Nil =>
-              inside(loopMethod.methodReturn.toReturn.l) {
-                case lambdaRet :: Nil =>
-                  lambdaRet.code shouldBe "return nil" // break statements cannot be returned, so only false branch should be present which returns nil for UnlessExpression
-                case xs => fail(s"Expected one return for lambda function, got ${xs.code.mkString(", ")} instead")
-              }
-            case xs => fail(s"Expected one lambda method, got ${xs.name.mkString(", ")} instead")
+      inside(cpg.method.name("foo").l) { case fooMethod :: Nil =>
+        inside(fooMethod.astChildren.isMethod.name("<lambda>0").l) { case loopMethod :: Nil =>
+          inside(loopMethod.methodReturn.toReturn.l) { case lambdaRet :: Nil =>
+            lambdaRet.code shouldBe "return nil" // break statements cannot be returned, so only false branch should be present which returns nil for UnlessExpression
           }
-        case xs => fail(s"Expected one method for foo, got ${xs.name.mkString(", ")} instead")
+        }
       }
     }
   }
@@ -596,19 +514,17 @@ class MethodTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "Should be represented as a TRY structure" in {
-      inside(cpg.method.name("foo").controlStructure.l) {
-        case tryStruct :: emptyElseStruct :: ensureStruct :: Nil =>
-          tryStruct.controlStructureType shouldBe ControlStructureTypes.TRY
-          val body = tryStruct.astChildren.head
-          body.ast.isLiteral.code.l shouldBe List("1")
+      inside(cpg.method.name("foo").controlStructure.l) { case tryStruct :: emptyElseStruct :: ensureStruct :: Nil =>
+        tryStruct.controlStructureType shouldBe ControlStructureTypes.TRY
+        val body = tryStruct.astChildren.head
+        body.ast.isLiteral.code.l shouldBe List("1")
 
-          emptyElseStruct.controlStructureType shouldBe ControlStructureTypes.ELSE
-          emptyElseStruct.ast.isLiteral.code.l shouldBe List("nil")
+        emptyElseStruct.controlStructureType shouldBe ControlStructureTypes.ELSE
+        emptyElseStruct.ast.isLiteral.code.l shouldBe List("nil")
 
-          ensureStruct.controlStructureType shouldBe ControlStructureTypes.FINALLY
-          ensureStruct.ast.isLiteral.code.l shouldBe List("2")
+        ensureStruct.controlStructureType shouldBe ControlStructureTypes.FINALLY
+        ensureStruct.ast.isLiteral.code.l shouldBe List("2")
 
-        case xs => fail(s"Expected three structures, got ${xs.code.mkString(",")}")
       }
     }
   }
@@ -629,29 +545,27 @@ class MethodTests extends RubyCode2CpgFixture {
     "have chained calls" in {
       inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).condition.headOption) {
         case Some(ifCond: Call) =>
-          inside(ifCond.argument.l) {
-            case (leftArg: Identifier) :: (rightArg: Call) :: Nil =>
-              leftArg.name shouldBe "a"
+          inside(ifCond.argument.l) { case (leftArg: Identifier) :: (rightArg: Call) :: Nil =>
+            leftArg.name shouldBe "a"
 
-              rightArg.name shouldBe "hexdigest"
-              rightArg.code shouldBe "(<tmp-1> = Digest::MD5).hexdigest(password)"
+            rightArg.name shouldBe "hexdigest"
+            rightArg.code shouldBe "(<tmp-1> = Digest::MD5).hexdigest(password)"
 
-              val hexDigestFa = rightArg.receiver.head.asInstanceOf[FieldAccess]
-              hexDigestFa.code shouldBe "(<tmp-1> = Digest::MD5).hexdigest"
+            val hexDigestFa = rightArg.receiver.head.asInstanceOf[FieldAccess]
+            hexDigestFa.code shouldBe "(<tmp-1> = Digest::MD5).hexdigest"
 
-              val tmp1Assign = hexDigestFa.argument(1).asInstanceOf[Assignment]
-              tmp1Assign.code shouldBe "<tmp-1> = Digest::MD5"
+            val tmp1Assign = hexDigestFa.argument(1).asInstanceOf[Assignment]
+            tmp1Assign.code shouldBe "<tmp-1> = Digest::MD5"
 
-              val md5Fa = tmp1Assign.source.asInstanceOf[FieldAccess]
-              md5Fa.code shouldBe "(<tmp-0> = Digest)::MD5"
+            val md5Fa = tmp1Assign.source.asInstanceOf[FieldAccess]
+            md5Fa.code shouldBe "(<tmp-0> = Digest)::MD5"
 
-              val tmp0Assign = md5Fa.argument(1).asInstanceOf[Assignment]
-              tmp0Assign.code shouldBe "<tmp-0> = Digest"
+            val tmp0Assign = md5Fa.argument(1).asInstanceOf[Assignment]
+            tmp0Assign.code shouldBe "<tmp-0> = Digest"
 
-              val digestFa = tmp0Assign.source.asInstanceOf[FieldAccess]
-              digestFa.argument(1).asInstanceOf[Identifier].name shouldBe RDefines.Self
-              digestFa.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe "Digest"
-            case xs => fail(s"Expected 2 arguments, got ${xs.code.mkString(", ")} instead")
+            val digestFa = tmp0Assign.source.asInstanceOf[FieldAccess]
+            digestFa.argument(1).asInstanceOf[Identifier].name shouldBe RDefines.Self
+            digestFa.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe "Digest"
           }
         case None => fail("Expected if-condition")
       }
@@ -693,32 +607,25 @@ class MethodTests extends RubyCode2CpgFixture {
           classAssignment.code shouldBe "self.B = class B (...)"
           methodAssignment.code shouldBe "self.c = def c (...)"
 
-          inside(moduleAssignment.argument.l) {
-            case (lhs: Call) :: (rhs: TypeRef) :: Nil =>
-              lhs.code shouldBe "self.A"
-              lhs.name shouldBe Operators.fieldAccess
-              rhs.typeFullName shouldBe s"t1.rb:$Main.A<class>"
-            case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
+          inside(moduleAssignment.argument.l) { case (lhs: Call) :: (rhs: TypeRef) :: Nil =>
+            lhs.code shouldBe "self.A"
+            lhs.name shouldBe Operators.fieldAccess
+            rhs.typeFullName shouldBe s"t1.rb:$Main.A<class>"
           }
 
-          inside(classAssignment.argument.l) {
-            case (lhs: Call) :: (rhs: TypeRef) :: Nil =>
-              lhs.code shouldBe "self.B"
-              lhs.name shouldBe Operators.fieldAccess
-              rhs.typeFullName shouldBe s"t1.rb:$Main.B<class>"
-            case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
+          inside(classAssignment.argument.l) { case (lhs: Call) :: (rhs: TypeRef) :: Nil =>
+            lhs.code shouldBe "self.B"
+            lhs.name shouldBe Operators.fieldAccess
+            rhs.typeFullName shouldBe s"t1.rb:$Main.B<class>"
           }
 
-          inside(methodAssignment.argument.l) {
-            case (lhs: Call) :: (rhs: MethodRef) :: Nil =>
-              lhs.code shouldBe "self.c"
-              lhs.name shouldBe Operators.fieldAccess
-              rhs.methodFullName shouldBe s"t1.rb:$Main.c"
-              rhs.typeFullName shouldBe s"t1.rb:$Main.c"
-            case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
+          inside(methodAssignment.argument.l) { case (lhs: Call) :: (rhs: MethodRef) :: Nil =>
+            lhs.code shouldBe "self.c"
+            lhs.name shouldBe Operators.fieldAccess
+            rhs.methodFullName shouldBe s"t1.rb:$Main.c"
+            rhs.typeFullName shouldBe s"t1.rb:$Main.c"
           }
 
-        case xs => fail(s"Expected three assignments, got [${xs.code.mkString(",")}]")
       }
     }
 
@@ -728,24 +635,19 @@ class MethodTests extends RubyCode2CpgFixture {
           classAssignment.code shouldBe "self.D = class D (...)"
           methodAssignment.code shouldBe "self.e = def e (...)"
 
-          inside(classAssignment.argument.l) {
-            case (lhs: Call) :: (rhs: TypeRef) :: Nil =>
-              lhs.code shouldBe "self.D"
-              lhs.name shouldBe Operators.fieldAccess
-              rhs.typeFullName shouldBe s"t2.rb:$Main.D<class>"
-            case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
+          inside(classAssignment.argument.l) { case (lhs: Call) :: (rhs: TypeRef) :: Nil =>
+            lhs.code shouldBe "self.D"
+            lhs.name shouldBe Operators.fieldAccess
+            rhs.typeFullName shouldBe s"t2.rb:$Main.D<class>"
           }
 
-          inside(methodAssignment.argument.l) {
-            case (lhs: Call) :: (rhs: MethodRef) :: Nil =>
-              lhs.code shouldBe "self.e"
-              lhs.name shouldBe Operators.fieldAccess
-              rhs.methodFullName shouldBe s"t2.rb:$Main.e"
-              rhs.typeFullName shouldBe s"t2.rb:$Main.e"
-            case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
+          inside(methodAssignment.argument.l) { case (lhs: Call) :: (rhs: MethodRef) :: Nil =>
+            lhs.code shouldBe "self.e"
+            lhs.name shouldBe Operators.fieldAccess
+            rhs.methodFullName shouldBe s"t2.rb:$Main.e"
+            rhs.typeFullName shouldBe s"t2.rb:$Main.e"
           }
 
-        case xs => fail(s"Expected two assignments, got [${xs.code.mkString(",")}]")
       }
     }
 
@@ -757,7 +659,6 @@ class MethodTests extends RubyCode2CpgFixture {
           a3.code shouldBe "self.B = class B (...)"
           a4.code shouldBe "(<tmp-1> = self::B)::<body>()"
           a5.code shouldBe "self.c = def c (...)"
-        case xs => fail(s"Expected assignments to appear before definitions, instead got [${xs.mkString("\n")}]")
       }
     }
   }
@@ -768,18 +669,14 @@ class MethodTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    inside(cpg.method.name("foo").l) {
-      case fooMethod :: Nil =>
-        inside(fooMethod.method.parameter.l) {
-          case selfArg :: splatArg :: normalArg :: Nil =>
-            splatArg.code shouldBe "*x"
-            splatArg.index shouldBe 1
+    inside(cpg.method.name("foo").l) { case fooMethod :: Nil =>
+      inside(fooMethod.method.parameter.l) { case selfArg :: splatArg :: normalArg :: Nil =>
+        splatArg.code shouldBe "*x"
+        splatArg.index shouldBe 1
 
-            normalArg.code shouldBe "y"
-            normalArg.index shouldBe 2
-          case xs => fail(s"Expected two parameters, got [${xs.code.mkString(",")}]")
-        }
-      case xs => fail(s"Expected one method, got [${xs.code.mkString(",")}]")
+        normalArg.code shouldBe "y"
+        normalArg.index shouldBe 2
+      }
     }
   }
 
@@ -792,15 +689,11 @@ class MethodTests extends RubyCode2CpgFixture {
         |foo(*x, y)
         |""".stripMargin)
 
-    inside(cpg.call.name("foo").l) {
-      case fooCall :: Nil =>
-        inside(fooCall.argument.l) {
-          case selfArg :: xArg :: yArg :: Nil =>
-            xArg.code shouldBe "*x"
-            yArg.code shouldBe "self.y"
-          case xs => fail(s"Expected two args, got [${xs.code.mkString(",")}]")
-        }
-      case xs => fail(s"Expected one call to foo, got [${xs.code.mkString(",")}]")
+    inside(cpg.call.name("foo").l) { case fooCall :: Nil =>
+      inside(fooCall.argument.l) { case selfArg :: xArg :: yArg :: Nil =>
+        xArg.code shouldBe "*x"
+        yArg.code shouldBe "self.y"
+      }
     }
   }
 
@@ -839,26 +732,22 @@ class MethodTests extends RubyCode2CpgFixture {
         |batch.retry!()
         |""".stripMargin)
 
-    inside(cpg.call.name(".*retry!").l) {
-      case batchCall :: Nil =>
-        batchCall.name shouldBe "retry!"
-        batchCall.code shouldBe "(<tmp-0> = batch).retry!()"
+    inside(cpg.call.name(".*retry!").l) { case batchCall :: Nil =>
+      batchCall.name shouldBe "retry!"
+      batchCall.code shouldBe "(<tmp-0> = batch).retry!()"
 
-        inside(batchCall.receiver.l) {
-          case (receiverCall: Call) :: Nil =>
-            receiverCall.name shouldBe Operators.fieldAccess
-            receiverCall.code shouldBe "(<tmp-0> = batch).retry!"
+      inside(batchCall.receiver.l) { case (receiverCall: Call) :: Nil =>
+        receiverCall.name shouldBe Operators.fieldAccess
+        receiverCall.code shouldBe "(<tmp-0> = batch).retry!"
 
-            val selfBatch = receiverCall.argument(1).asInstanceOf[Call]
-            selfBatch.code shouldBe "<tmp-0> = batch"
+        val selfBatch = receiverCall.argument(1).asInstanceOf[Call]
+        selfBatch.code shouldBe "<tmp-0> = batch"
 
-            val retry = receiverCall.argument(2).asInstanceOf[FieldIdentifier]
-            retry.code shouldBe "retry!"
+        val retry = receiverCall.argument(2).asInstanceOf[FieldIdentifier]
+        retry.code shouldBe "retry!"
 
-          case xs => fail(s"Expected one receiver for call, got [${xs.code.mkString(",")}]")
-        }
+      }
 
-      case xs => fail(s"Expected one method for batch.retry, got [${xs.code.mkString(",")}]")
     }
   }
 
@@ -867,26 +756,22 @@ class MethodTests extends RubyCode2CpgFixture {
         |batch::retry!()
         |""".stripMargin)
 
-    inside(cpg.call.name(".*retry!").l) {
-      case batchCall :: Nil =>
-        batchCall.name shouldBe "retry!"
-        batchCall.code shouldBe "(<tmp-0> = batch)::retry!()"
+    inside(cpg.call.name(".*retry!").l) { case batchCall :: Nil =>
+      batchCall.name shouldBe "retry!"
+      batchCall.code shouldBe "(<tmp-0> = batch)::retry!()"
 
-        inside(batchCall.receiver.l) {
-          case (receiverCall: Call) :: Nil =>
-            receiverCall.name shouldBe Operators.fieldAccess
-            receiverCall.code shouldBe "(<tmp-0> = batch).retry!"
+      inside(batchCall.receiver.l) { case (receiverCall: Call) :: Nil =>
+        receiverCall.name shouldBe Operators.fieldAccess
+        receiverCall.code shouldBe "(<tmp-0> = batch).retry!"
 
-            val selfBatch = receiverCall.argument(1).asInstanceOf[Call]
-            selfBatch.code shouldBe "<tmp-0> = batch"
+        val selfBatch = receiverCall.argument(1).asInstanceOf[Call]
+        selfBatch.code shouldBe "<tmp-0> = batch"
 
-            val retry = receiverCall.argument(2).asInstanceOf[FieldIdentifier]
-            retry.code shouldBe "retry!"
+        val retry = receiverCall.argument(2).asInstanceOf[FieldIdentifier]
+        retry.code shouldBe "retry!"
 
-          case xs => fail(s"Expected one receiver for call, got [${xs.code.mkString(",")}]")
-        }
+      }
 
-      case xs => fail(s"Expected one method for batch.retry, got [${xs.code.mkString(",")}]")
     }
   }
 
@@ -895,26 +780,22 @@ class MethodTests extends RubyCode2CpgFixture {
         |retry.retry!()
         |""".stripMargin)
 
-    inside(cpg.call.name(".*retry!").l) {
-      case batchCall :: Nil =>
-        batchCall.name shouldBe "retry!"
-        batchCall.code shouldBe "(<tmp-0> = retry).retry!()"
+    inside(cpg.call.name(".*retry!").l) { case batchCall :: Nil =>
+      batchCall.name shouldBe "retry!"
+      batchCall.code shouldBe "(<tmp-0> = retry).retry!()"
 
-        inside(batchCall.receiver.l) {
-          case (receiverCall: Call) :: Nil =>
-            receiverCall.name shouldBe Operators.fieldAccess
-            receiverCall.code shouldBe "(<tmp-0> = retry).retry!"
+      inside(batchCall.receiver.l) { case (receiverCall: Call) :: Nil =>
+        receiverCall.name shouldBe Operators.fieldAccess
+        receiverCall.code shouldBe "(<tmp-0> = retry).retry!"
 
-            val selfBatch = receiverCall.argument(1).asInstanceOf[Call]
-            selfBatch.code shouldBe "<tmp-0> = retry"
+        val selfBatch = receiverCall.argument(1).asInstanceOf[Call]
+        selfBatch.code shouldBe "<tmp-0> = retry"
 
-            val retry = receiverCall.argument(2).asInstanceOf[FieldIdentifier]
-            retry.code shouldBe "retry!"
+        val retry = receiverCall.argument(2).asInstanceOf[FieldIdentifier]
+        retry.code shouldBe "retry!"
 
-          case xs => fail(s"Expected one receiver for call, got [${xs.code.mkString(",")}]")
-        }
+      }
 
-      case xs => fail(s"Expected one method for batch.retry, got [${xs.code.mkString(",")}]")
     }
   }
 
@@ -923,26 +804,22 @@ class MethodTests extends RubyCode2CpgFixture {
         |retry::retry!()
         |""".stripMargin)
 
-    inside(cpg.call.name(".*retry!").l) {
-      case batchCall :: Nil =>
-        batchCall.name shouldBe "retry!"
-        batchCall.code shouldBe "(<tmp-0> = retry)::retry!()"
+    inside(cpg.call.name(".*retry!").l) { case batchCall :: Nil =>
+      batchCall.name shouldBe "retry!"
+      batchCall.code shouldBe "(<tmp-0> = retry)::retry!()"
 
-        inside(batchCall.receiver.l) {
-          case (receiverCall: Call) :: Nil =>
-            receiverCall.name shouldBe Operators.fieldAccess
-            receiverCall.code shouldBe "(<tmp-0> = retry).retry!"
+      inside(batchCall.receiver.l) { case (receiverCall: Call) :: Nil =>
+        receiverCall.name shouldBe Operators.fieldAccess
+        receiverCall.code shouldBe "(<tmp-0> = retry).retry!"
 
-            val selfBatch = receiverCall.argument(1).asInstanceOf[Call]
-            selfBatch.code shouldBe "<tmp-0> = retry"
+        val selfBatch = receiverCall.argument(1).asInstanceOf[Call]
+        selfBatch.code shouldBe "<tmp-0> = retry"
 
-            val retry = receiverCall.argument(2).asInstanceOf[FieldIdentifier]
-            retry.code shouldBe "retry!"
+        val retry = receiverCall.argument(2).asInstanceOf[FieldIdentifier]
+        retry.code shouldBe "retry!"
 
-          case xs => fail(s"Expected one receiver for call, got [${xs.code.mkString(",")}]")
-        }
+      }
 
-      case xs => fail(s"Expected one method for batch.retry, got [${xs.code.mkString(",")}]")
     }
   }
 
@@ -951,35 +828,27 @@ class MethodTests extends RubyCode2CpgFixture {
         |%x(ls -l)
         |""".stripMargin)
 
-    inside(cpg.call.name(RubyOperators.backticks).l) {
-      case execCall :: Nil =>
-        execCall.name shouldBe RubyOperators.backticks
-        inside(execCall.argument.l) {
-          case selfArg :: lsArg :: Nil =>
-            selfArg.code shouldBe "self"
-            lsArg.code shouldBe "ls -l"
-          case xs => fail(s"expected 2 arguments, got [${xs.code.mkString(",")}]")
-        }
-      case xs => fail(s"Expected one call to exec, got [${xs.code.mkString(",")}]")
+    inside(cpg.call.name(RubyOperators.backticks).l) { case execCall :: Nil =>
+      execCall.name shouldBe RubyOperators.backticks
+      inside(execCall.argument.l) { case selfArg :: lsArg :: Nil =>
+        selfArg.code shouldBe "self"
+        lsArg.code shouldBe "ls -l"
+      }
     }
   }
 
   "MemberAccessCommand with two parameters" in {
     val cpg = code("foo&.bar 1,2")
 
-    inside(cpg.call.name("bar").l) {
-      case barCall :: Nil =>
-        inside(barCall.argument.l) {
-          case _ :: (arg1: Literal) :: (arg2: Literal) :: Nil =>
-            arg1.code shouldBe "1"
-            arg1.typeFullName shouldBe RDefines.prefixAsCoreType(RDefines.Integer)
+    inside(cpg.call.name("bar").l) { case barCall :: Nil =>
+      inside(barCall.argument.l) { case _ :: (arg1: Literal) :: (arg2: Literal) :: Nil =>
+        arg1.code shouldBe "1"
+        arg1.typeFullName shouldBe RDefines.prefixAsCoreType(RDefines.Integer)
 
-            arg2.code shouldBe "2"
-            arg2.typeFullName shouldBe RDefines.prefixAsCoreType(RDefines.Integer)
-          case xs => fail(s"Expected three args, got [${xs.code.mkString(",")}]")
-        }
+        arg2.code shouldBe "2"
+        arg2.typeFullName shouldBe RDefines.prefixAsCoreType(RDefines.Integer)
+      }
 
-      case xs => fail(s"Expected one call, got [${xs.code.mkString(",")}]")
     }
   }
 
@@ -991,11 +860,9 @@ class MethodTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    inside(cpg.method.name("show").l) {
-      case showMethod :: Nil =>
-        showMethod.astParentFullName shouldBe "Test0.rb:<main>.Api.V1.MobileController"
-        showMethod.astParentType shouldBe NodeTypes.TYPE_DECL
-      case xs => fail(s"Expected one methood, got ${xs.name.mkString(",")}")
+    inside(cpg.method.name("show").l) { case showMethod :: Nil =>
+      showMethod.astParentFullName shouldBe "Test0.rb:<main>.Api.V1.MobileController"
+      showMethod.astParentType shouldBe NodeTypes.TYPE_DECL
     }
   }
 
@@ -1005,12 +872,10 @@ class MethodTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    inside(cpg.method.name("foo").parameter.l) {
-      case _ :: aParam :: bParam :: cParam :: Nil =>
-        aParam.code shouldBe "a=1"
-        bParam.code shouldBe "*b"
-        cParam.code shouldBe "c"
-      case xs => fail(s"Expected 4 params, got ${xs.code.mkString(",")}")
+    inside(cpg.method.name("foo").parameter.l) { case _ :: aParam :: bParam :: cParam :: Nil =>
+      aParam.code shouldBe "a=1"
+      bParam.code shouldBe "*b"
+      cParam.code shouldBe "c"
     }
   }
 
@@ -1032,30 +897,24 @@ class MethodTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "generate and reference proc param" in {
-      inside(cpg.method.name("outer_method").l) {
-        case outerMethod :: Nil =>
-          val List(_, procParam) = outerMethod.parameter.l
-          procParam.name shouldBe "<proc-param-0>"
+      inside(cpg.method.name("outer_method").l) { case outerMethod :: Nil =>
+        val List(_, procParam) = outerMethod.parameter.l
+        procParam.name shouldBe "<proc-param-0>"
 
-          inside(outerMethod.call.name("inner_method").argument.l) {
-            case _ :: procParamArg :: Nil =>
-              procParamArg.code shouldBe "<proc-param-0>"
-            case xs => fail(s"Expected two arguments, got [${xs.code.mkString(",")}]")
-          }
+        inside(outerMethod.call.name("inner_method").argument.l) { case _ :: procParamArg :: Nil =>
+          procParamArg.code shouldBe "<proc-param-0>"
+        }
 
-        case xs => fail(s"Expected one method def, got [${xs.name.mkString(",")}]")
       }
     }
 
     "call correct proc param in `yield`" in {
-      inside(cpg.method.name("inner_method").l) {
-        case innerMethod :: Nil =>
-          val List(_, procParam) = innerMethod.parameter.l
-          procParam.name shouldBe "<proc-param-1>"
+      inside(cpg.method.name("inner_method").l) { case innerMethod :: Nil =>
+        val List(_, procParam) = innerMethod.parameter.l
+        procParam.name shouldBe "<proc-param-1>"
 
-          innerMethod.call.nameExact("call").argument.isIdentifier.name.l shouldBe List("<proc-param-1>")
+        innerMethod.call.nameExact("call").argument.isIdentifier.name.l shouldBe List("<proc-param-1>")
 
-        case xs => fail(s"Expected one method def, got [${xs.name.mkString(",")}]")
       }
     }
   }
@@ -1117,18 +976,16 @@ class MethodTests extends RubyCode2CpgFixture {
                      |    1..MAX_FILE_SIZE
                      |end""".stripMargin)
 
-    inside(cpg.method.name("size_range").methodReturn.toReturn.l) {
-      case rangeReturn :: Nil =>
-        rangeReturn.code shouldBe "1..MAX_FILE_SIZE"
+    inside(cpg.method.name("size_range").methodReturn.toReturn.l) { case rangeReturn :: Nil =>
+      rangeReturn.code shouldBe "1..MAX_FILE_SIZE"
 
-        val List(rangeOp) = rangeReturn.astChildren.isCall.l
-        rangeOp.methodFullName shouldBe Operators.range
+      val List(rangeOp) = rangeReturn.astChildren.isCall.l
+      rangeOp.methodFullName shouldBe Operators.range
 
-        val List(lhs: Literal, rhs: Call) = rangeOp.argument.l: @unchecked
-        lhs.code shouldBe "1"
+      val List(lhs: Literal, rhs: Call) = rangeOp.argument.l: @unchecked
+      lhs.code shouldBe "1"
 
-        rhs.code shouldBe "self.MAX_FILE_SIZE"
-      case xs => fail(s"Expected one return, got [${xs.code.mkString(",")}]")
+      rhs.code shouldBe "self.MAX_FILE_SIZE"
     }
   }
 
@@ -1154,15 +1011,12 @@ class MethodTests extends RubyCode2CpgFixture {
         publicCall.code shouldBe "public"
 
         val List(selfArg) = publicCall.argument.l
-      case xs => fail(s"Expected one call, got ${xs.code.mkString(",")}")
     }
 
-    inside(cpg.method.name("not_notifiable").body.astChildren.isCall.name("public").l) {
-      case publicCall :: Nil =>
-        publicCall.code shouldBe "public"
+    inside(cpg.method.name("not_notifiable").body.astChildren.isCall.name("public").l) { case publicCall :: Nil =>
+      publicCall.code shouldBe "public"
 
-        val List(selfArg) = publicCall.argument.l
-      case xs => fail(s"Expected one call, got ${xs.code.mkString(",")}")
+      val List(selfArg) = publicCall.argument.l
     }
   }
 
@@ -1202,7 +1056,6 @@ class MethodTests extends RubyCode2CpgFixture {
         aMethod.name shouldBe "a"
         bMethod.name shouldBe "b"
 
-      case xs => fail(s"Expected seven <tmp-#> vars, got ${xs.code.mkString("[", ",", "]")}")
     }
   }
 }

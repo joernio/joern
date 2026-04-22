@@ -171,20 +171,16 @@ class ArrayTests extends RubyCode2CpgFixture {
         |x = Array [1, 2, 3]
         |""".stripMargin)
 
-    inside(cpg.call.nameExact("[]").l) {
-      case bracketCall :: Nil =>
-        bracketCall.name shouldBe "[]"
-        bracketCall.methodFullName shouldBe s"${Defines.prefixAsCoreType("Array")}.[]"
-        bracketCall.typeFullName shouldBe Defines.prefixAsCoreType("Array")
+    inside(cpg.call.nameExact("[]").l) { case bracketCall :: Nil =>
+      bracketCall.name shouldBe "[]"
+      bracketCall.methodFullName shouldBe s"${Defines.prefixAsCoreType("Array")}.[]"
+      bracketCall.typeFullName shouldBe Defines.prefixAsCoreType("Array")
 
-        inside(bracketCall.argument.l) {
-          case _ :: one :: two :: three :: Nil =>
-            one.code shouldBe "1"
-            two.code shouldBe "2"
-            three.code shouldBe "3"
-          case xs => fail(s"Expected 3 literals under the array initializer, instead got [${xs.code.mkString(", ")}]")
-        }
-      case xs => fail(s"Expected a single array initializer call ([]), instead got [${xs.code.mkString(", ")}]")
+      inside(bracketCall.argument.l) { case _ :: one :: two :: three :: Nil =>
+        one.code shouldBe "1"
+        two.code shouldBe "2"
+        three.code shouldBe "3"
+      }
     }
 
   }

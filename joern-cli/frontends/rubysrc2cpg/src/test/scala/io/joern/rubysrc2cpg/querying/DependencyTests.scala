@@ -25,7 +25,6 @@ class DependencyTests extends RubyCode2CpgFixture {
           betterErrors.name shouldBe "better_errors"
           betterErrors.version shouldBe "2.5.1"
 
-        case xs => fail(s"Expected exactly three dependencies, instead got [${xs.name.mkString(",")}]")
       }
     }
 
@@ -47,7 +46,6 @@ class DependencyTests extends RubyCode2CpgFixture {
           coffeeRails.name shouldBe "coffee-rails"
           coffeeRails.version shouldBe ""
 
-        case xs => fail(s"Expected exactly three dependencies, instead got [${xs.name.mkString(",")}]")
       }
     }
 
@@ -103,7 +101,6 @@ class DownloadDependencyTest extends RubyCode2CpgFixture(downloadDependencies = 
               constructorCall.methodFullName shouldBe Defines.DynamicCallUnknownFullName
             case None => fail(s"Expected constructor call, did not find one")
           }
-        case xs => fail(s"Expected two arguments under the constructor assignment, got [${xs.code.mkString(", ")}]")
       }
     }
 
@@ -117,7 +114,6 @@ class DownloadDependencyTest extends RubyCode2CpgFixture(downloadDependencies = 
               constructorCall.methodFullName shouldBe Defines.DynamicCallUnknownFullName
             case None => fail(s"Expected constructor call, did not find one")
           }
-        case xs => fail(s"Expected two arguments under the constructor assignment, got [${xs.code.mkString(", ")}]")
       }
     }
 
