@@ -22,6 +22,10 @@ trait AstForTypeSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     Ast(typeDeclForTypeSyntax(node))
   }
 
+  private def astForInlineArrayTypeSyntax(node: InlineArrayTypeSyntax): Ast = {
+    Ast(typeDeclForTypeSyntax(node))
+  }
+
   private def astForAttributedTypeSyntax(node: AttributedTypeSyntax): Ast = {
     astForTypeSyntax(node.baseType)
   }
@@ -108,6 +112,7 @@ trait AstForTypeSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     case node: FunctionTypeSyntax                    => astForFunctionTypeSyntax(node)
     case node: IdentifierTypeSyntax                  => astForIdentifierTypeSyntax(node)
     case node: ImplicitlyUnwrappedOptionalTypeSyntax => astForImplicitlyUnwrappedOptionalTypeSyntax(node)
+    case node: InlineArrayTypeSyntax                 => astForInlineArrayTypeSyntax(node)
     case node: MemberTypeSyntax                      => astForMemberTypeSyntax(node)
     case node: MetatypeTypeSyntax                    => astForMetatypeTypeSyntax(node)
     case node: MissingTypeSyntax                     => astForMissingTypeSyntax(node)

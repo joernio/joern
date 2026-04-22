@@ -14,7 +14,7 @@ class BorrowExprTests extends SwiftSrc2CpgSuite {
         |func useString(_ str: String) {}
         |var global: String = "123"
         |func testGlobal() {
-        |  useString(_borrow global)
+        |  useString(borrow global)
         |}
         |""".stripMargin)
       cpg.call.nameExact("useString").argument(1).isIdentifier.name.l shouldBe List("global")
@@ -26,7 +26,7 @@ class BorrowExprTests extends SwiftSrc2CpgSuite {
         |func testVar() {
         |  var t = String()
         |  t = String()
-        |  useString(_borrow t)
+        |  useString(borrow t)
         |}
         |""".stripMargin)
       cpg.call.nameExact("useString").argument(1).isIdentifier.name.l shouldBe List("t")

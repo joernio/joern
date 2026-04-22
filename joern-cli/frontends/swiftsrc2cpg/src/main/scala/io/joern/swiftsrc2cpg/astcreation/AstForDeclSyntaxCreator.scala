@@ -123,6 +123,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     case d: ProtocolDeclSyntax          => d.modifiers.children.map(c => code(c.name)).contains("static")
     case d: StructDeclSyntax            => d.modifiers.children.map(c => code(c.name)).contains("static")
     case d: SubscriptDeclSyntax         => d.modifiers.children.map(c => code(c.name)).contains("static")
+    case _: UsingDeclSyntax             => false
+    case _: UnexpectedCodeDeclSyntax    => false
     case d: TypeAliasDeclSyntax         => d.modifiers.children.map(c => code(c.name)).contains("static")
     case d: VariableDeclSyntax          => d.modifiers.children.map(c => code(c.name)).contains("static")
   }
