@@ -23,7 +23,9 @@ class ConfigFileCreationPass(cpg: Cpg, requirementsTxt: String = "requirement.tx
     pathEndFilter(requirementsTxt),
     // Pipfile
     pathEndFilter("Pipfile"),
-    pathEndFilter("Pipfile.lock")
+    pathEndFilter("Pipfile.lock"),
+    // setup.cfg
+    pathEndFilter("setup.cfg")
   )
 
 }
