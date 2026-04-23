@@ -332,7 +332,9 @@ private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], i
   def uses(node: CfgNode): Set[CfgNode] = {
     val n: Set[CfgNode] = node match {
       case ret: Return                  => ret.astChildren.collect { case x: Expression => x }.toSet
-      case call: Call                   => call.argument.toSet
+      case call: Call =>
+        val parameterReceivers = call.receiver.collectAll[Identifier].filter(_.refsTo.collectAll[MethodParameterIn].nonEmpty)
+        (call.argument ++ parameterReceivers).toSet
       case paramOut: MethodParameterOut => Set(paramOut)
       case _                            => Set()
     }
