@@ -38,7 +38,7 @@ lazy val GoAstgenMac      = "goastgen-macos"
 lazy val GoAstgenMacArm   = "goastgen-macos-arm64"
 
 lazy val goAstGenDlUrl = settingKey[String]("goastgen download url")
-goAstGenDlUrl := s"https://github.com/joernio/goastgen/releases/download/v${goAstGenVersion.value}/"
+goAstGenDlUrl := s"https://github.com/joernio/astgen-monorepo/releases/download/go-astgen/v${goAstGenVersion.value}/"
 
 def hasCompatibleAstGenVersion(goAstGenVersion: String): Boolean = {
   Try("goastgen -version".!!).toOption.map(_.strip()) match {

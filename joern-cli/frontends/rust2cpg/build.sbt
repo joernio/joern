@@ -38,7 +38,7 @@ lazy val AstgenMac      = "rust_ast_gen-macos"
 lazy val AstgenMacArm   = "rust_ast_gen-macos-arm"
 
 lazy val astGenDlUrl = settingKey[String]("rust_ast_gen download url")
-astGenDlUrl := s"https://github.com/joernio/rust_ast_gen/releases/download/v${astGenVersion.value}/"
+astGenDlUrl := s"https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen/v${astGenVersion.value}/"
 
 def hasCompatibleAstGenVersion(astGenVersion: String): Boolean = {
   Try("rust_ast_gen --version".!!).toOption.map(_.strip().stripPrefix("rust_ast_gen ")) match {

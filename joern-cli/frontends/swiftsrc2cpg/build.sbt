@@ -46,7 +46,7 @@ lazy val AstgenLinuxArm = "SwiftAstGen-linux-arm64"
 lazy val AstgenMac      = "SwiftAstGen-mac"
 
 lazy val astGenDlUrl = settingKey[String]("astgen download url")
-astGenDlUrl := s"https://github.com/joernio/swiftastgen/releases/download/v${astGenVersion.value}/"
+astGenDlUrl := s"https://github.com/joernio/astgen-monorepo/releases/download/swift-astgen/v${astGenVersion.value}/"
 
 def hasCompatibleAstGenVersion(astGenVersion: String): Boolean = {
   Try("SwiftAstGen -h".!).toOption match {

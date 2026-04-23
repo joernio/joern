@@ -43,7 +43,7 @@ lazy val AstgenMac      = "dotnetastgen-macos"
 lazy val AllPlatforms = Seq(AstgenWin, AstgenLinux, AstgenLinuxArm, AstgenMac)
 
 lazy val astGenDlUrl = settingKey[String]("astgen download url")
-astGenDlUrl := s"https://github.com/joernio/DotNetAstGen/releases/download/v${astGenVersion.value}/"
+astGenDlUrl := s"https://github.com/joernio/astgen-monorepo/releases/download/dotnet-astgen/v${astGenVersion.value}/"
 
 def hasCompatibleAstGenVersion(astGenVersion: String): Boolean = {
   Try("dotnetastgen --version".!!).toOption.map(_.strip()) match {
