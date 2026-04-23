@@ -15,14 +15,12 @@ class FieldAccessTests extends RubyCode2CpgFixture {
         |x.y
         |""".stripMargin)
 
-    inside(cpg.fieldAccess.code("x.y").headOption) {
-      case Some(xyCall) =>
-        xyCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-        xyCall.name shouldBe Operators.fieldAccess
-        xyCall.methodFullName shouldBe Operators.fieldAccess
-        xyCall.lineNumber shouldBe Some(3)
-        xyCall.code shouldBe "x.y"
-      case None => fail("Expected a field access with the code `x.y`")
+    inside(cpg.fieldAccess.code("x.y").headOption) { case Some(xyCall) =>
+      xyCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      xyCall.name shouldBe Operators.fieldAccess
+      xyCall.methodFullName shouldBe Operators.fieldAccess
+      xyCall.lineNumber shouldBe Some(3)
+      xyCall.code shouldBe "x.y"
     }
   }
 
@@ -40,22 +38,20 @@ class FieldAccessTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    inside(cpg.fieldAccess.code("self.sick_days_earned").l) {
-      case sickDays :: _ =>
-        sickDays.code shouldBe "self.sick_days_earned"
-        sickDays.name shouldBe Operators.fieldAccess
-        sickDays.methodFullName shouldBe Operators.fieldAccess
-        sickDays.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    inside(cpg.fieldAccess.code("self.sick_days_earned").l) { case sickDays :: _ =>
+      sickDays.code shouldBe "self.sick_days_earned"
+      sickDays.name shouldBe Operators.fieldAccess
+      sickDays.methodFullName shouldBe Operators.fieldAccess
+      sickDays.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-        inside(sickDays.argument.l) { case (self: Identifier) :: (sickDaysId: FieldIdentifier) :: Nil =>
-          self.name shouldBe "self"
-          self.code shouldBe "self"
-          self.typeFullName should endWith("PaidTimeOff")
+      inside(sickDays.argument.l) { case (self: Identifier) :: (sickDaysId: FieldIdentifier) :: Nil =>
+        self.name shouldBe "self"
+        self.code shouldBe "self"
+        self.typeFullName should endWith("PaidTimeOff")
 
-          sickDaysId.canonicalName shouldBe "@sick_days_earned"
-          sickDaysId.code shouldBe "sick_days_earned"
-        }
-      case Nil => fail("Expected at least one call with `self` base, but got none.")
+        sickDaysId.canonicalName shouldBe "@sick_days_earned"
+        sickDaysId.code shouldBe "sick_days_earned"
+      }
     }
   }
 

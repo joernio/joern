@@ -353,22 +353,16 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
       )
 
     "be explicitly detected and imported for a constructor type" in {
-      inside(cpg.imports.where(_.call.file.name(".*Foo.*")).headOption) {
-        case Some(i) =>
-          i.importedAs shouldBe Some("A")
-          i.importedEntity shouldBe Some("A")
-        case None =>
-          fail("Expected `A` to be explicitly imported into `Foo.rb`")
+      inside(cpg.imports.where(_.call.file.name(".*Foo.*")).headOption) { case Some(i) =>
+        i.importedAs shouldBe Some("A")
+        i.importedEntity shouldBe Some("A")
       }
     }
 
     "be explicitly detected and imported for a call invocation" in {
-      inside(cpg.imports.where(_.call.file.name(".*Bar.*")).headOption) {
-        case Some(i) =>
-          i.importedAs shouldBe Some("bar/B")
-          i.importedEntity shouldBe Some("bar/B")
-        case None =>
-          fail("Expected `B` to be explicitly imported into `Foo.rb`")
+      inside(cpg.imports.where(_.call.file.name(".*Bar.*")).headOption) { case Some(i) =>
+        i.importedAs shouldBe Some("bar/B")
+        i.importedEntity shouldBe Some("bar/B")
       }
     }
 

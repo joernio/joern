@@ -217,14 +217,12 @@ class ArrayTests extends RubyCode2CpgFixture {
   "shift-left operator interpreted as a call (append)" in {
     val cpg = code("[1, 2, 3] << 4")
 
-    inside(cpg.call("<<").headOption) {
-      case Some(append) =>
-        append.name shouldBe "<<"
-        append.methodFullName shouldBe XDefines.DynamicCallUnknownFullName
-        append.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-        append.argument(0).code shouldBe "[1, 2, 3]"
-        append.argument(1).code shouldBe "4"
-      case None => fail(s"Expected call `<<`")
+    inside(cpg.call("<<").headOption) { case Some(append) =>
+      append.name shouldBe "<<"
+      append.methodFullName shouldBe XDefines.DynamicCallUnknownFullName
+      append.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      append.argument(0).code shouldBe "[1, 2, 3]"
+      append.argument(1).code shouldBe "4"
     }
   }
 

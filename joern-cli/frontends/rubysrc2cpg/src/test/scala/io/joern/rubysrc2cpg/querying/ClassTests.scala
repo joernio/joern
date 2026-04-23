@@ -510,18 +510,14 @@ class ClassTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "handle a qualified base type from an external type correctly" in {
-      inside(cpg.typeDecl("Application").headOption) {
-        case Some(app) =>
-          app.inheritsFromTypeFullName.head shouldBe "Rails.Application"
-        case None => fail("Expected a type decl for 'Application', instead got nothing")
+      inside(cpg.typeDecl("Application").headOption) { case Some(app) =>
+        app.inheritsFromTypeFullName.head shouldBe "Rails.Application"
       }
     }
 
     "handle a deeply qualified internal base type correctly" in {
-      inside(cpg.typeDecl("Foo").headOption) {
-        case Some(app) =>
-          app.inheritsFromTypeFullName.head shouldBe "Bar.Baz.Boz"
-        case None => fail("Expected a type decl for 'Foo', instead got nothing")
+      inside(cpg.typeDecl("Foo").headOption) { case Some(app) =>
+        app.inheritsFromTypeFullName.head shouldBe "Bar.Baz.Boz"
       }
     }
   }
@@ -590,14 +586,12 @@ class ClassTests extends RubyCode2CpgFixture {
     }
 
     "call the body method" in {
-      inside(cpg.call.nameExact(RubyDefines.TypeDeclBody).headOption) {
-        case Some(bodyCall) =>
-          bodyCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-          bodyCall.methodFullName shouldBe s"Test0.rb:$Main.Foo.${RubyDefines.TypeDeclBody}"
-          bodyCall.code shouldBe "(<tmp-0> = self::Foo)::<body>()"
-          bodyCall.receiver.isEmpty shouldBe true
-          bodyCall.argument(0).code shouldBe "<tmp-0>"
-        case None => fail("Expected <body> call")
+      inside(cpg.call.nameExact(RubyDefines.TypeDeclBody).headOption) { case Some(bodyCall) =>
+        bodyCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        bodyCall.methodFullName shouldBe s"Test0.rb:$Main.Foo.${RubyDefines.TypeDeclBody}"
+        bodyCall.code shouldBe "(<tmp-0> = self::Foo)::<body>()"
+        bodyCall.receiver.isEmpty shouldBe true
+        bodyCall.argument(0).code shouldBe "<tmp-0>"
       }
     }
   }
@@ -659,8 +653,6 @@ class ClassTests extends RubyCode2CpgFixture {
 
                 rhs.code shouldBe "nil"
               }
-            case xs =>
-              fail(s"Expected 5 fields initializers, got ${xs.size} instead ${xs.code.mkString(", ")}")
           }
         }
       }

@@ -287,17 +287,14 @@ class MethodTests extends RubyCode2CpgFixture {
           bar.parameter.name.l shouldBe List("self", "args", "&block")
           // bar forwards parameters to a call to the aliased method
           inside(bar.call.name("x=").l) { case barCall :: Nil =>
-            inside(barCall.argument.l) {
-              case _ :: (args: Call) :: (blockId: Identifier) :: Nil =>
-                args.name shouldBe RubyOperators.splat
-                args.code shouldBe "*args"
-                args.argumentIndex shouldBe 1
+            inside(barCall.argument.l) { case _ :: (args: Call) :: (blockId: Identifier) :: Nil =>
+              args.name shouldBe RubyOperators.splat
+              args.code shouldBe "*args"
+              args.argumentIndex shouldBe 1
 
-                blockId.name shouldBe "&block"
-                blockId.code shouldBe "&block"
-                blockId.argumentIndex shouldBe 2
-              case xs =>
-                fail(s"Expected a two arguments for the call `x=`,  instead got [${xs.code.mkString(",")}]")
+              blockId.name shouldBe "&block"
+              blockId.code shouldBe "&block"
+              blockId.argumentIndex shouldBe 2
             }
             barCall.code shouldBe "x=(*args, &block)"
           }
@@ -332,17 +329,14 @@ class MethodTests extends RubyCode2CpgFixture {
           p.parameter.name.l shouldBe List("self", "args", "&block")
           // bar forwards parameters to a call to the aliased method
           inside(p.call.name("aliasable").l) { case aliasableCall :: Nil =>
-            inside(aliasableCall.argument.l) {
-              case _ :: (args: Call) :: (blockId: Identifier) :: Nil =>
-                args.name shouldBe RubyOperators.splat
-                args.code shouldBe "*args"
-                args.argumentIndex shouldBe 1
+            inside(aliasableCall.argument.l) { case _ :: (args: Call) :: (blockId: Identifier) :: Nil =>
+              args.name shouldBe RubyOperators.splat
+              args.code shouldBe "*args"
+              args.argumentIndex shouldBe 1
 
-                blockId.name shouldBe "&block"
-                blockId.code shouldBe "&block"
-                blockId.argumentIndex shouldBe 2
-              case xs =>
-                fail(s"Expected a two arguments for the call `aliasable`,  instead got [${xs.code.mkString(",")}]")
+              blockId.name shouldBe "&block"
+              blockId.code shouldBe "&block"
+              blockId.argumentIndex shouldBe 2
             }
             aliasableCall.code shouldBe "aliasable(*args, &block)"
           }
@@ -396,10 +390,7 @@ class MethodTests extends RubyCode2CpgFixture {
 
     "baz should not exist in the <main> block" in {
       inside(cpg.method.isModule.l) { case prog :: Nil =>
-        inside(prog.block.astChildren.isMethod.name("baz").l) {
-          case Nil => // passing case
-          case _   => fail("Baz should not exist under program method block")
-        }
+        prog.block.astChildren.isMethod.name("baz").l shouldBe empty
       }
     }
   }
@@ -476,11 +467,8 @@ class MethodTests extends RubyCode2CpgFixture {
         inside(fooMethod.astChildren.isMethod.name("<lambda>0").l) { case loopMethod :: Nil =>
           inside(loopMethod.block.astChildren.isControlStructure.l) { case ifStruct :: Nil =>
             inside(ifStruct.astChildren.isBlock.l) { case nilBlock :: breakBlock :: Nil =>
-              inside(breakBlock.astChildren.isControlStructure.l) {
-                case breakStruct :: Nil =>
-                  breakStruct.code shouldBe "break"
-                case xs =>
-                  fail(s"Expected on control structure for break, got ${xs.code.mkString(", ")} instead")
+              inside(breakBlock.astChildren.isControlStructure.l) { case breakStruct :: Nil =>
+                breakStruct.code shouldBe "break"
               }
             }
           }
@@ -567,7 +555,6 @@ class MethodTests extends RubyCode2CpgFixture {
             digestFa.argument(1).asInstanceOf[Identifier].name shouldBe RDefines.Self
             digestFa.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe "Digest"
           }
-        case None => fail("Expected if-condition")
       }
     }
   }

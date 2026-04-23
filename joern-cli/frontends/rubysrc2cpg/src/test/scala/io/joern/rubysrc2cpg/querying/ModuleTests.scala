@@ -154,10 +154,7 @@ class ModuleTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     inside(cpg.typeDecl.name("ArticlesHelper").method.l) { case bodyMethod :: _ :: _ :: Nil =>
-      inside(bodyMethod.block.astChildren.l) {
-        case Nil => // bodyMethod should be empty
-        case xs  => fail(s"Expected empty body, got [${xs.code.mkString(",")}]")
-      }
+      bodyMethod.block.astChildren.l shouldBe empty
     }
   }
 }

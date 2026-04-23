@@ -223,12 +223,9 @@ class ErbTests extends RubyCode2CpgFixture {
         formCall.lineNumber shouldBe None
         formCall.code shouldBe "form_with(url: some_url)"
 
-        inside(formCall.receiver.l) {
-          case (formCallReceiver: Call) :: Nil =>
-            formCallReceiver.code shouldBe "self.form_with"
-            formCallReceiver.methodFullName shouldBe "<operator>.fieldAccess"
-          case xs =>
-            fail(s"Expected one receiver call to `self.form_with`, got ${xs.code.mkString("[", ",", "]")}")
+        inside(formCall.receiver.l) { case (formCallReceiver: Call) :: Nil =>
+          formCallReceiver.code shouldBe "self.form_with"
+          formCallReceiver.methodFullName shouldBe "<operator>.fieldAccess"
         }
       }
     }

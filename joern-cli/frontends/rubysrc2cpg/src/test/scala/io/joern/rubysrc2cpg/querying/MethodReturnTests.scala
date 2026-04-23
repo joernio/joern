@@ -372,10 +372,7 @@ class MethodReturnTests extends RubyCode2CpgFixture {
     }
 
     "have no parameters in the closure declaration" in {
-      inside(cpg.method("<lambda>0").parameter.indexGt(0).l) {
-        case Nil => // pass
-        case xs  => fail(s"Expected the closure to have no parameters, instead got [${xs.code.mkString(", ")}]")
-      }
+      cpg.method("<lambda>0").parameter.indexGt(0).l shouldBe empty
     }
 
     "have the return node under the closure (returning the literal)" in {
@@ -428,18 +425,16 @@ class MethodReturnTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    inside(cpg.method.nameExact("foo").ast.isReturn.headOption) {
-      case Some(ret) =>
-        val List(oneLiteral: Literal, zAssoc: Call) = ret.astChildren.l: @unchecked
-        oneLiteral.code shouldBe "1"
-        zAssoc.code shouldBe ":z => 1"
-        zAssoc.methodFullName shouldBe RubyOperators.association
+    inside(cpg.method.nameExact("foo").ast.isReturn.headOption) { case Some(ret) =>
+      val List(oneLiteral: Literal, zAssoc: Call) = ret.astChildren.l: @unchecked
+      oneLiteral.code shouldBe "1"
+      zAssoc.code shouldBe ":z => 1"
+      zAssoc.methodFullName shouldBe RubyOperators.association
 
-        inside(zAssoc.argument.l) { case (key: Literal) :: (value: Literal) :: Nil =>
-          key.code shouldBe ":z"
-          value.code shouldBe "1"
-        }
-      case None => fail(s"Expected at least one return node")
+      inside(zAssoc.argument.l) { case (key: Literal) :: (value: Literal) :: Nil =>
+        key.code shouldBe ":z"
+        value.code shouldBe "1"
+      }
     }
   }
 
