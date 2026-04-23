@@ -173,9 +173,13 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     val iterIdentifier = getTmpIdentifier(stmt, maybeTypeFullName = None, prefix = "iter_")
     val localN         = handleVariableOccurrence(stmt, iterIdentifier.name)
 
+    stmt.keyVar.collect { case PhpVariable(name: PhpNameExpr, _) =>
+      handleVariableOccurrence(stmt, name.name)
+    }
+
     // keep this just used to construct the `code` field
     val assignItemTargetString = stmt.keyVar match {
-      case Some(key) => astForKeyValPair(stmt, key, stmt.valueVar).rootCodeOrEmpty
+      case Some(key) => s"${codeForExpr(key)} => ${codeForExpr(stmt.valueVar)}"
       case None =>
         stmt.valueVar match {
           case x: PhpListExpr => createListExprCodeField(x)

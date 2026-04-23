@@ -1378,6 +1378,55 @@ class ControlStructureTests extends PhpCode2CpgFixture {
     }
   }
 
+  "foreach statements with key and list destructuring should be represented as a for" in {
+    val cpg = code("""<?php
+      |function foo($arr) {
+      |  foreach ($arr as $key => list($a, $b)) {
+      |    echo $key;
+      |    echo $a;
+      |    echo $b;
+      |  }
+      |}
+      |""".stripMargin)
+
+    val foreachStruct = inside(cpg.method.name("foo").body.astChildren.l) {
+      case List(iterLocal: Local, keyLocal: Local, aLocal: Local, bLocal: Local, foreachStruct: ControlStructure) =>
+        iterLocal.name shouldBe "foo@iter_tmp-0"
+        keyLocal.name shouldBe "key"
+        aLocal.name shouldBe "a"
+        bLocal.name shouldBe "b"
+
+        foreachStruct
+    }
+
+    foreachStruct.code shouldBe "foreach ($arr as $key => list($a, $b))"
+
+    val (initAsts, updateAsts, body) = inside(foreachStruct.astChildren.l) {
+      case List(initAsts: Block, _, updateAsts: Block, body: Block) =>
+        (initAsts, updateAsts, body)
+    }
+
+    inside(initAsts.assignment.l) { case List(_: Call, keyInit: Call, tmpInit: Call, aInit: Call, bInit: Call) =>
+      keyInit.code shouldBe "$key = $foo@iter_tmp-0->key()"
+      tmpInit.code shouldBe "$foo@tmp-1 = $foo@iter_tmp-0->current()"
+      aInit.code shouldBe "$a = $foo@tmp-1[0]"
+      bInit.code shouldBe "$b = $foo@tmp-1[1]"
+    }
+
+    inside(updateAsts.assignment.l) { case List(keyInit: Call, tmpAssign: Call, aAssign: Call, bAssign: Call) =>
+      keyInit.code shouldBe "$key = $foo@iter_tmp-0->key()"
+      tmpAssign.code shouldBe "$foo@tmp-1 = $foo@iter_tmp-0->current()"
+      aAssign.code shouldBe "$a = $foo@tmp-1[0]"
+      bAssign.code shouldBe "$b = $foo@tmp-1[1]"
+    }
+
+    inside(body.astChildren.l) { case List(echoKey: Call, echoA: Call, echoB: Call) =>
+      echoKey.code shouldBe "echo $key"
+      echoA.code shouldBe "echo $a"
+      echoB.code shouldBe "echo $b"
+    }
+  }
+
   "foreach loop with listExpr" should {
     val cpg = code("""<?php
         |function foo($data) {
