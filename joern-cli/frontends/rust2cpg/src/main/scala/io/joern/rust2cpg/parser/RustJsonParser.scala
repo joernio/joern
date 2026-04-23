@@ -4,7 +4,7 @@ import io.joern.rust2cpg.parser.RustNodeSyntax.RustNode
 import io.shiftleft.utils.IOUtils
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Path, Paths}
+import java.nio.file.Path
 import scala.util.Try
 
 object RustJsonParser {
@@ -24,12 +24,12 @@ object RustJsonParser {
   def readJsonString(jsonContent: String): Try[ParseResult] = Try {
     val json              = ujson.read(jsonContent)
     val filename          = json("relativeFilePath").str
-    val fullPath          = Paths.get(json("fullFilePath").str)
+    val fullPath          = json("fullFilePath").str
     val sourceFileContent = json("content").str
     val contentBytes      = sourceFileContent.getBytes(StandardCharsets.UTF_8)
     val ast               = RustNodeSyntax.createRustNode(json("children").arr.head)
     val loc               = json("loc").num.toInt
-    ParseResult(filename, fullPath.toString, ast, sourceFileContent, contentBytes, loc)
+    ParseResult(filename, fullPath, ast, sourceFileContent, contentBytes, loc)
   }
 
 }
