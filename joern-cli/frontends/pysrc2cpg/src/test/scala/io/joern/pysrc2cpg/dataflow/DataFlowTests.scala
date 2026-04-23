@@ -859,6 +859,30 @@ class InternalMethodCustomSemanticsDataFlowTest
     val flows  = sink.reachableByFlows(source)
     flows shouldBe empty
   }
+
+  "data flow through match pattern sequence binding" in {
+    val cpg = code("""
+        |def process(user_input):
+        |  match user_input:
+        |    case [action, target]:
+        |      print(action)
+        |""".stripMargin)
+    val source = cpg.method("process").parameter.nameExact("user_input")
+    val sink   = cpg.call("print").argument(1)
+    sink.reachableByFlows(source).size shouldBe 1
+  }
+
+  "data flow through match pattern catch-all binding" in {
+    val cpg = code("""
+        |def process(user_input):
+        |  match user_input:
+        |    case x:
+        |      print(x)
+        |""".stripMargin)
+    val source = cpg.method("process").parameter.nameExact("user_input")
+    val sink   = cpg.call("print").argument(1)
+    sink.reachableByFlows(source).size shouldBe 1
+  }
 }
 
 class DefaultSemanticsDataFlowTest1 extends PySrc2CpgFixture(withOssDataflow = true, semantics = DefaultSemantics()) {

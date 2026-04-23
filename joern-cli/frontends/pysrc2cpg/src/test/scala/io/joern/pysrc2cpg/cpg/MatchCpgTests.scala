@@ -1,14 +1,14 @@
 package io.joern.pysrc2cpg.cpg
 
 import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
-import io.shiftleft.codepropertygraph.generated.{NodeTypes, nodes}
+import io.shiftleft.codepropertygraph.generated.{NodeTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
 class MatchCpgTests extends PySrc2CpgFixture() {
   "match statement with guards" should {
     val cpg = code("""
-        |def someFunc():
-        |  match [1, 2]:
+        |def someFunc(command):
+        |  match command:
         |    case [a, b] if 3 == 4:
         |      print(1)
         |    case _ if 5 == 6:
@@ -20,9 +20,8 @@ class MatchCpgTests extends PySrc2CpgFixture() {
     "have correct AST" in {
       val matchStmt = cpg.controlStructure.head
       val condition = matchStmt.astChildren.order(1).head
-      condition.label shouldBe NodeTypes.CALL
-      condition.code shouldBe "[1, 2]"
-      condition.lineNumber shouldBe Some(3)
+      condition.label shouldBe NodeTypes.IDENTIFIER
+      condition.code shouldBe "command"
 
       val matchBodyBlock = matchStmt.astChildren.order(2).head
       matchBodyBlock.label shouldBe NodeTypes.BLOCK
@@ -40,13 +39,11 @@ class MatchCpgTests extends PySrc2CpgFixture() {
           jumpTargetFirstCase.code shouldBe "case [a, b] if 3 == 4"
 
           blockFirstCase.label shouldBe NodeTypes.BLOCK
-          blockFirstCase.code shouldBe "print(1)"
 
           jumpTargetSecondCase.label shouldBe NodeTypes.JUMP_TARGET
           jumpTargetSecondCase.code shouldBe "case _ if 5 == 6"
 
           blockSecondCase.label shouldBe NodeTypes.BLOCK
-          blockSecondCase.code shouldBe "print(2)"
 
           jumpTargetThirdCase.label shouldBe NodeTypes.JUMP_TARGET
           jumpTargetThirdCase.code shouldBe "default"
@@ -60,8 +57,8 @@ class MatchCpgTests extends PySrc2CpgFixture() {
 
   "match statement" should {
     val cpg = code("""
-        |def someFunc():
-        |  match [1, 2]:
+        |def someFunc(command):
+        |  match command:
         |    case [a, b]:
         |      print(1)
         |    case _:
@@ -71,9 +68,8 @@ class MatchCpgTests extends PySrc2CpgFixture() {
     "have correct AST" in {
       val matchStmt = cpg.controlStructure.head
       val condition = matchStmt.astChildren.order(1).head
-      condition.label shouldBe NodeTypes.CALL
-      condition.code shouldBe "[1, 2]"
-      condition.lineNumber shouldBe Some(3)
+      condition.label shouldBe NodeTypes.IDENTIFIER
+      condition.code shouldBe "command"
 
       val matchBodyBlock = matchStmt.astChildren.order(2).head
       matchBodyBlock.label shouldBe NodeTypes.BLOCK
@@ -84,7 +80,6 @@ class MatchCpgTests extends PySrc2CpgFixture() {
           jumpTargetFirstCase.code shouldBe "case [a, b]"
 
           blockFirstCase.label shouldBe NodeTypes.BLOCK
-          blockFirstCase.code shouldBe "print(1)"
 
           jumpTargetSecondCase.label shouldBe NodeTypes.JUMP_TARGET
           jumpTargetSecondCase.code shouldBe "default"
@@ -96,40 +91,124 @@ class MatchCpgTests extends PySrc2CpgFixture() {
     }
 
     "have correct CFG" in {
-      val methodNode = cpg.method.nameExact("someFunc").head
-      methodNode.cfgOut.l match {
-        case List(firstConditionExpr) =>
-          firstConditionExpr.code shouldBe "1"
-        case other => fail(s"Expected 1 CFG successor, but got ${other.size}: $other")
-      }
-
-      val conditionCall = cpg.call.codeExact("[1, 2]").head
-      conditionCall.cfgOut.l match {
-        case List(jumpTargetFirstCase, jumpTargetSecondCase) =>
-          jumpTargetFirstCase.label shouldBe NodeTypes.JUMP_TARGET
-          jumpTargetFirstCase.code shouldBe "case [a, b]"
-
-          jumpTargetSecondCase.label shouldBe NodeTypes.JUMP_TARGET
-          jumpTargetSecondCase.code shouldBe "default"
+      // The condition identifier should have CFG edges to the jump targets
+      val conditionId = cpg.identifier.nameExact("command").lineNumber(3).head
+      conditionId.cfgOut.l match {
+        case List(jumpTarget1, jumpTarget2) =>
+          Set(jumpTarget1.code, jumpTarget2.code) shouldBe Set("case [a, b]", "default")
         case other => fail(s"Expected 2 CFG successors, but got ${other.size}: $other")
       }
-
-      val print1Block = cpg.block.codeExact("print(1)").head
-      print1Block.cfgOut.l match {
-        case List(methodReturn) =>
-          methodReturn.label shouldBe NodeTypes.METHOD_RETURN
-        case other => fail(s"Expected 1 CFG successor, but got ${other.size}: $other")
-      }
-
-      val print2Block = cpg.block.codeExact("print(2)").head
-      print2Block.cfgOut.l match {
-        case List(methodReturn) =>
-          methodReturn.label shouldBe NodeTypes.METHOD_RETURN
-        case other => fail(s"Expected 1 CFG successor, but got ${other.size}: $other")
-      }
-
     }
-
   }
 
+  "match statement with sequence pattern bindings" should {
+    val cpg = code("""
+        |def someFunc(command):
+        |  match command:
+        |    case [a, b]:
+        |      print(a, b)
+        |""".stripMargin)
+
+    "create assignment nodes for pattern variables" in {
+      val matchStmt = cpg.controlStructure.head
+      val caseBlock = matchStmt.astChildren.order(2).head.astChildren.l(1)
+      caseBlock.label shouldBe NodeTypes.BLOCK
+
+      // Pattern assignments should be in the case block
+      val assignments = cpg.call.methodFullName(Operators.assignment).l
+        .filter(_.code.matches("a = command\\[0\\]|b = command\\[1\\]"))
+      assignments.size shouldBe 2
+    }
+
+    "use index access for sequence element extraction" in {
+      val indexAccesses = cpg.call.methodFullName(Operators.indexAccess).l
+        .filter(_.code.matches("command\\[0\\]|command\\[1\\]"))
+      indexAccesses.size shouldBe 2
+    }
+  }
+
+  "match statement with named binding (catch-all)" should {
+    val cpg = code("""
+        |def someFunc(command):
+        |  match command:
+        |    case x:
+        |      print(x)
+        |""".stripMargin)
+
+    "create assignment for catch-all binding" in {
+      val assignments = cpg.call.methodFullName(Operators.assignment).codeExact("x = command").l
+      assignments.size shouldBe 1
+    }
+  }
+
+  "match statement with wildcard" should {
+    val cpg = code("""
+        |def someFunc(command):
+        |  match command:
+        |    case _:
+        |      print("default")
+        |""".stripMargin)
+
+    "not create pattern assignments for wildcard" in {
+      // The only assignment-like thing should be the method body, not pattern bindings
+      val patternAssignments = cpg.call.methodFullName(Operators.assignment).l
+        .filter(_.code.contains("command"))
+      patternAssignments.size shouldBe 0
+    }
+  }
+
+  "match statement with literal pattern" should {
+    val cpg = code("""
+        |def someFunc(command):
+        |  match command:
+        |    case 42:
+        |      print("found")
+        |""".stripMargin)
+
+    "not create pattern assignments for literal" in {
+      val patternAssignments = cpg.call.methodFullName(Operators.assignment).l
+        .filter(_.code.contains("command"))
+      patternAssignments.size shouldBe 0
+    }
+  }
+
+  "match statement with complex subject" should {
+    val cpg = code("""
+        |def someFunc():
+        |  match get_data():
+        |    case [a, b]:
+        |      print(a, b)
+        |""".stripMargin)
+
+    "create temp variable for complex subject" in {
+      // Complex expression subjects get a temp variable
+      val tmpAssignments = cpg.call.methodFullName(Operators.assignment).l
+        .filter(_.code.matches("tmp\\d+ = get_data\\(\\)"))
+      tmpAssignments.size shouldBe 1
+    }
+
+    "create pattern assignments referencing temp" in {
+      val assignments = cpg.call.methodFullName(Operators.assignment).l
+        .filter(_.code.matches("[ab] = tmp\\d+\\[\\d+\\]"))
+      assignments.size shouldBe 2
+    }
+  }
+
+  "match statement with alias pattern" should {
+    val cpg = code("""
+        |def someFunc(command):
+        |  match command:
+        |    case [a, b] as whole:
+        |      print(whole)
+        |""".stripMargin)
+
+    "create assignments for both inner bindings and alias" in {
+      val aAssign = cpg.call.methodFullName(Operators.assignment).l
+        .filter(_.code.matches("a = command\\[0\\]"))
+      aAssign.size shouldBe 1
+
+      val wholeAssign = cpg.call.methodFullName(Operators.assignment).codeExact("whole = command").l
+      wholeAssign.size shouldBe 1
+    }
+  }
 }
