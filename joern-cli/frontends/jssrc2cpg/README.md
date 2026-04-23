@@ -18,13 +18,13 @@ of the build process. To build jssrc2cpg issue the command `sbt stage`.
 
 ## JS/TS AST Generation
 
-jssrc2cpg uses [joernio/astgen](https://github.com/joernio/astgen) under the hood.
-Native binaries for Linux, macOS, and Windows are generated as described [here](https://github.com/joernio/astgen#building).
+jssrc2cpg uses [joernio/astgen-monorepo](https://github.com/joernio/astgen-monorepo/tree/main/javascript-astgen) under the hood.
+Native binaries for Linux, macOS, and Windows are generated as described [here](https://github.com/joernio/astgen-monorepo/tree/main/javascript-astgen#building).
 To build your own native binaries run the following commands:
 
 ```shell script
-git clone https://github.com/joernio/astgen.git
-cd astgen
+git clone https://github.com/joernio/astgen-monorepo.git
+cd astgen-monorepo/javascript-astgen
 yarn install
 ```
 (requires `yarn`).

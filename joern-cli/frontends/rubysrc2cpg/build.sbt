@@ -38,7 +38,7 @@ lazy val astGenVersion = settingKey[String]("`ruby_ast_gen` version")
 astGenVersion := appProperties.value.getString("rubysrc2cpg.ruby_ast_gen_version")
 
 lazy val astGenDlUrl = settingKey[String]("astgen download url")
-astGenDlUrl := s"https://github.com/joernio/ruby_ast_gen/releases/download/v${astGenVersion.value}/"
+astGenDlUrl := s"https://github.com/joernio/astgen-monorepo/releases/download/ruby-astgen/v${astGenVersion.value}/"
 
 def hasCompatibleAstGenVersion(astGenBaseDir: File, astGenVersion: String): Boolean = {
   val versionFile = astGenBaseDir / "lib" / "ruby_ast_gen" / "version.rb"

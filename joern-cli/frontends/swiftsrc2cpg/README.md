@@ -18,13 +18,13 @@ of the build process. To build swiftsrc2cpg issue the command `sbt stage`.
 
 ## Swift AST Generation
 
-swiftsrc2cpg uses [joernio/swiftastgen](https://github.com/joernio/swiftastgen) under the hood.
-Native binaries for Linux, macOS, and Windows are generated as described [here](https://github.com/joernio/swiftastgen#building).
+swiftsrc2cpg uses [joernio/astgen-monorepo](https://github.com/joernio/astgen-monorepo/tree/main/swift-astgen) under the hood.
+Native binaries for Linux, macOS, and Windows are generated as described [here](https://github.com/joernio/astgen-monorepo/tree/main/swift-astgen#building).
 To build your own native binaries run the following commands:
 
 ```shell script
-git clone https://github.com/joernio/swiftastgen.git
-cd swiftastgen
+git clone https://github.com/joernio/astgen-monorepo.git
+cd astgen-monorepo/swift-astgen
 swift build
 ```
 (requires `swift`).
