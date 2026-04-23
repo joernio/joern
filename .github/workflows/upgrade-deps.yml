@@ -24,6 +24,8 @@ jobs:
         uses: SwiftyLab/setup-swift@latest
         with:
           swift-version: "6.1"
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
       - uses: sbt/setup-sbt@v1
       - name: Upgrade all (internal) dependencies
         run: ./updateDependencies.sh --non-interactive
