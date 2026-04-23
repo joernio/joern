@@ -111,7 +111,7 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
   }
 
   protected def codeForExpr(expr: PhpExpr): String = {
-    fileContentString.substring(expr.attributes.startFilePos, expr.attributes.endFilePos)
+    new String(fileContentBytes.slice(expr.attributes.startFilePos, expr.attributes.endFilePos), fileCharset)
   }
 
   protected def codeForSingleArrayTmpElemAssign(targetName: String, key: Option[PhpExpr], value: PhpExpr): String = {
