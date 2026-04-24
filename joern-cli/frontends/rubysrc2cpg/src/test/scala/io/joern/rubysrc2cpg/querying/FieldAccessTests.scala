@@ -15,14 +15,12 @@ class FieldAccessTests extends RubyCode2CpgFixture {
         |x.y
         |""".stripMargin)
 
-    inside(cpg.fieldAccess.code("x.y").headOption) {
-      case Some(xyCall) =>
-        xyCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-        xyCall.name shouldBe Operators.fieldAccess
-        xyCall.methodFullName shouldBe Operators.fieldAccess
-        xyCall.lineNumber shouldBe Some(3)
-        xyCall.code shouldBe "x.y"
-      case None => fail("Expected a field access with the code `x.y`")
+    inside(cpg.fieldAccess.code("x.y").headOption) { case Some(xyCall) =>
+      xyCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      xyCall.name shouldBe Operators.fieldAccess
+      xyCall.methodFullName shouldBe Operators.fieldAccess
+      xyCall.lineNumber shouldBe Some(3)
+      xyCall.code shouldBe "x.y"
     }
   }
 
@@ -40,24 +38,20 @@ class FieldAccessTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    inside(cpg.fieldAccess.code("self.sick_days_earned").l) {
-      case sickDays :: _ =>
-        sickDays.code shouldBe "self.sick_days_earned"
-        sickDays.name shouldBe Operators.fieldAccess
-        sickDays.methodFullName shouldBe Operators.fieldAccess
-        sickDays.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    inside(cpg.fieldAccess.code("self.sick_days_earned").l) { case sickDays :: _ =>
+      sickDays.code shouldBe "self.sick_days_earned"
+      sickDays.name shouldBe Operators.fieldAccess
+      sickDays.methodFullName shouldBe Operators.fieldAccess
+      sickDays.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-        inside(sickDays.argument.l) {
-          case (self: Identifier) :: (sickDaysId: FieldIdentifier) :: Nil =>
-            self.name shouldBe "self"
-            self.code shouldBe "self"
-            self.typeFullName should endWith("PaidTimeOff")
+      inside(sickDays.argument.l) { case (self: Identifier) :: (sickDaysId: FieldIdentifier) :: Nil =>
+        self.name shouldBe "self"
+        self.code shouldBe "self"
+        self.typeFullName should endWith("PaidTimeOff")
 
-            sickDaysId.canonicalName shouldBe "@sick_days_earned"
-            sickDaysId.code shouldBe "sick_days_earned"
-          case xs => fail(s"Expected exactly two field access arguments, instead got [${xs.code.mkString(", ")}]")
-        }
-      case Nil => fail("Expected at least one call with `self` base, but got none.")
+        sickDaysId.canonicalName shouldBe "@sick_days_earned"
+        sickDaysId.code shouldBe "sick_days_earned"
+      }
     }
   }
 
@@ -86,24 +80,22 @@ class FieldAccessTests extends RubyCode2CpgFixture {
         |f.func()           # self.f.func
         |""".stripMargin)
     "assign an alias for type declarations to the singleton" in {
-      inside(cpg.method.isModule.assignment.where(_.source.isTypeRef).l) {
-        case baz :: foo :: Nil =>
-          val bazAssign = baz.argument(1).asInstanceOf[Call]
-          bazAssign.name shouldBe Operators.fieldAccess
-          bazAssign.code shouldBe "self.Baz"
+      inside(cpg.method.isModule.assignment.where(_.source.isTypeRef).l) { case baz :: foo :: Nil =>
+        val bazAssign = baz.argument(1).asInstanceOf[Call]
+        bazAssign.name shouldBe Operators.fieldAccess
+        bazAssign.code shouldBe "self.Baz"
 
-          val bazTypeRef = baz.argument(2).asInstanceOf[TypeRef]
-          bazTypeRef.typeFullName shouldBe s"Test0.rb:$Main.Baz<class>"
-          bazTypeRef.code shouldBe "module Baz (...)"
+        val bazTypeRef = baz.argument(2).asInstanceOf[TypeRef]
+        bazTypeRef.typeFullName shouldBe s"Test0.rb:$Main.Baz<class>"
+        bazTypeRef.code shouldBe "module Baz (...)"
 
-          val fooAssign = foo.argument(1).asInstanceOf[Call]
-          fooAssign.name shouldBe Operators.fieldAccess
-          fooAssign.code shouldBe "self.Foo"
+        val fooAssign = foo.argument(1).asInstanceOf[Call]
+        fooAssign.name shouldBe Operators.fieldAccess
+        fooAssign.code shouldBe "self.Foo"
 
-          val fooTypeRef = foo.argument(2).asInstanceOf[TypeRef]
-          fooTypeRef.typeFullName shouldBe s"Test0.rb:$Main.Foo<class>"
-          fooTypeRef.code shouldBe "class Foo (...)"
-        case _ => fail(s"Expected two type ref assignments on the module level")
+        val fooTypeRef = foo.argument(2).asInstanceOf[TypeRef]
+        fooTypeRef.typeFullName shouldBe s"Test0.rb:$Main.Foo<class>"
+        fooTypeRef.code shouldBe "class Foo (...)"
       }
     }
 

@@ -13,25 +13,21 @@ class AttributeAccessorTests extends RubyCode2CpgFixture {
                      |x.y = 1
                      |""".stripMargin)
 
-    inside(cpg.assignment.where(_.source.isLiteral.codeExact("1")).l) {
-      case xyAssign :: Nil =>
-        xyAssign.lineNumber shouldBe Some(2)
-        xyAssign.code shouldBe "x.y = 1"
+    inside(cpg.assignment.where(_.source.isLiteral.codeExact("1")).l) { case xyAssign :: Nil =>
+      xyAssign.lineNumber shouldBe Some(2)
+      xyAssign.code shouldBe "x.y = 1"
 
-        val fieldTarget = xyAssign.target.asInstanceOf[Call]
-        fieldTarget.code shouldBe "x.y"
-        fieldTarget.name shouldBe Operators.fieldAccess
-        fieldTarget.methodFullName shouldBe Operators.fieldAccess
-        fieldTarget.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      val fieldTarget = xyAssign.target.asInstanceOf[Call]
+      fieldTarget.code shouldBe "x.y"
+      fieldTarget.name shouldBe Operators.fieldAccess
+      fieldTarget.methodFullName shouldBe Operators.fieldAccess
+      fieldTarget.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-        inside(fieldTarget.argument.l) {
-          case (base: Identifier) :: (field: FieldIdentifier) :: Nil =>
-            base.name shouldBe "x"
-            field.canonicalName shouldBe "@y"
-            field.code shouldBe "y"
-          case xs => fail("Expected field access to have two targets")
-        }
-      case xs => fail("Expected a single assignment to the literal `1`")
+      inside(fieldTarget.argument.l) { case (base: Identifier) :: (field: FieldIdentifier) :: Nil =>
+        base.name shouldBe "x"
+        field.canonicalName shouldBe "@y"
+        field.code shouldBe "y"
+      }
     }
   }
 
@@ -41,22 +37,18 @@ class AttributeAccessorTests extends RubyCode2CpgFixture {
                      |b = x.z()
                      |""".stripMargin)
     // Test the field access
-    inside(cpg.fieldAccess.lineNumber(2).codeExact("x.y").l) {
-      case xyCall :: Nil =>
-        xyCall.lineNumber shouldBe Some(2)
-        xyCall.code shouldBe "x.y"
-        xyCall.methodFullName shouldBe Operators.fieldAccess
-        xyCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      case xs => fail("Expected a single field access for `x.y`")
+    inside(cpg.fieldAccess.lineNumber(2).codeExact("x.y").l) { case xyCall :: Nil =>
+      xyCall.lineNumber shouldBe Some(2)
+      xyCall.code shouldBe "x.y"
+      xyCall.methodFullName shouldBe Operators.fieldAccess
+      xyCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
     }
     // Test an explicit call with parenthesis
-    inside(cpg.call("z").lineNumber(3).l) {
-      case xzCall :: Nil =>
-        xzCall.lineNumber shouldBe Some(3)
-        xzCall.code shouldBe "x.z()"
-        xzCall.methodFullName shouldBe Defines.DynamicCallUnknownFullName
-        xzCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-      case xs => fail("Expected a single call for `x.z()`")
+    inside(cpg.call("z").lineNumber(3).l) { case xzCall :: Nil =>
+      xzCall.lineNumber shouldBe Some(3)
+      xzCall.code shouldBe "x.z()"
+      xzCall.methodFullName shouldBe Defines.DynamicCallUnknownFullName
+      xzCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
     }
   }
 

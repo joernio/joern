@@ -54,27 +54,24 @@ class ModuleTests extends RubyCode2CpgFixture {
 
         mobileClassNamespace.name shouldBe "MobileController<class>"
         mobileClassNamespace.fullName shouldBe "Test0.rb:<main>.Api.V1.MobileController<class>"
-      case xs => fail(s"Expected two namespace blocks, got ${xs.code.mkString(",")}")
     }
 
-    inside(cpg.typeDecl.name("MobileController").l) {
-      case mobileTypeDecl :: Nil =>
-        mobileTypeDecl.name shouldBe "MobileController"
-        mobileTypeDecl.fullName shouldBe "Test0.rb:<main>.Api.V1.MobileController"
-        mobileTypeDecl.astParentFullName shouldBe "Test0.rb:<main>.Api.V1"
-        mobileTypeDecl.astParentType shouldBe NodeTypes.NAMESPACE_BLOCK
+    inside(cpg.typeDecl.name("MobileController").l) { case mobileTypeDecl :: Nil =>
+      mobileTypeDecl.name shouldBe "MobileController"
+      mobileTypeDecl.fullName shouldBe "Test0.rb:<main>.Api.V1.MobileController"
+      mobileTypeDecl.astParentFullName shouldBe "Test0.rb:<main>.Api.V1"
+      mobileTypeDecl.astParentType shouldBe NodeTypes.NAMESPACE_BLOCK
 
-        mobileTypeDecl.astParent.isNamespaceBlock shouldBe true
+      mobileTypeDecl.astParent.isNamespaceBlock shouldBe true
 
-        val namespaceDecl = mobileTypeDecl.astParent.asInstanceOf[NamespaceBlock]
-        namespaceDecl.name shouldBe "Api.V1"
-        namespaceDecl.filename shouldBe "Test0.rb"
+      val namespaceDecl = mobileTypeDecl.astParent.asInstanceOf[NamespaceBlock]
+      namespaceDecl.name shouldBe "Api.V1"
+      namespaceDecl.filename shouldBe "Test0.rb"
 
-        namespaceDecl.astParent.isFile shouldBe true
-        val parentFileDecl = namespaceDecl.astParent.asInstanceOf[File]
-        parentFileDecl.name shouldBe "Test0.rb"
+      namespaceDecl.astParent.isFile shouldBe true
+      val parentFileDecl = namespaceDecl.astParent.asInstanceOf[File]
+      parentFileDecl.name shouldBe "Test0.rb"
 
-      case xs => fail(s"Expected one class decl, got [${xs.code.mkString(",")}]")
     }
   }
 
@@ -106,7 +103,6 @@ class ModuleTests extends RubyCode2CpgFixture {
         case virtualModifier :: privateModifier :: Nil =>
           virtualModifier.modifierType shouldBe ModifierTypes.VIRTUAL
           privateModifier.modifierType shouldBe ModifierTypes.PRIVATE
-        case xs => fail(s"Expected two modifiers, got [${xs.modifierType.mkString(",")}]")
       }
     }
 
@@ -115,7 +111,6 @@ class ModuleTests extends RubyCode2CpgFixture {
         case virtualModifier :: publicModifier :: Nil =>
           virtualModifier.modifierType shouldBe ModifierTypes.VIRTUAL
           publicModifier.modifierType shouldBe ModifierTypes.PUBLIC
-        case xs => fail(s"Expected got [${xs.modifierType.mkString(",")}]")
       }
     }
   }
@@ -130,22 +125,18 @@ class ModuleTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "Have the correct proc arg in call" in {
-      inside(cpg.call.name("protected").argument.l) {
-        case _ :: (proc: TypeRef) :: Nil =>
-          proc.typeFullName shouldBe s"Test0.rb:$Main.QA.<body>.<lambda>0.<lambda>0&Proc"
-          proc.code shouldBe "<lambda>0&Proc"
-        case xs => fail(s"Expected one call for protected, got [${xs.code.mkString(",")}]")
+      inside(cpg.call.name("protected").argument.l) { case _ :: (proc: TypeRef) :: Nil =>
+        proc.typeFullName shouldBe s"Test0.rb:$Main.QA.<body>.<lambda>0.<lambda>0&Proc"
+        proc.code shouldBe "<lambda>0&Proc"
       }
     }
 
     "Generate a lambda with true body" in {
-      inside(cpg.method.isLambda.l) {
-        case protectedLambda :: _ :: Nil =>
-          protectedLambda.name shouldBe "<lambda>0"
-          protectedLambda.fullName shouldBe s"Test0.rb:$Main.QA.<body>.<lambda>0.<lambda>0"
-          val List(lambdaReturn) = protectedLambda.body.astChildren.isReturn.l
-          lambdaReturn.code shouldBe "true"
-        case xs => fail(s"Expected two lambdas, got [${xs.code.mkString(",")}]")
+      inside(cpg.method.isLambda.l) { case protectedLambda :: _ :: Nil =>
+        protectedLambda.name shouldBe "<lambda>0"
+        protectedLambda.fullName shouldBe s"Test0.rb:$Main.QA.<body>.<lambda>0.<lambda>0"
+        val List(lambdaReturn) = protectedLambda.body.astChildren.isReturn.l
+        lambdaReturn.code shouldBe "true"
       }
     }
   }
@@ -162,13 +153,8 @@ class ModuleTests extends RubyCode2CpgFixture {
         |
         |""".stripMargin)
 
-    inside(cpg.typeDecl.name("ArticlesHelper").method.l) {
-      case bodyMethod :: _ :: _ :: Nil =>
-        inside(bodyMethod.block.astChildren.l) {
-          case Nil => // bodyMethod should be empty
-          case xs  => fail(s"Expected empty body, got [${xs.code.mkString(",")}]")
-        }
-      case xs => fail(s"Expected three methods got [${xs.name.mkString(",")}]")
+    inside(cpg.typeDecl.name("ArticlesHelper").method.l) { case bodyMethod :: _ :: _ :: Nil =>
+      bodyMethod.block.astChildren.l shouldBe empty
     }
   }
 }
