@@ -79,7 +79,8 @@ object ProgramHandlingUtil {
     }
 
     def isConfigFile: Boolean = {
-      val configExt = Set(".xml", ".properties", ".yaml", ".yml", ".tf", ".tfvars", ".vm", ".jsp", ".conf", ".mf")
+      val configExt =
+        Set(".xml", ".properties", ".yaml", ".yml", ".tf", ".tfvars", ".vm", ".json", ".conf", ".mf", ".html")
 
       def hasConfigExt(f: Path): Boolean = configExt.exists(f.extension().map(_.toLowerCase).contains(_))
 
