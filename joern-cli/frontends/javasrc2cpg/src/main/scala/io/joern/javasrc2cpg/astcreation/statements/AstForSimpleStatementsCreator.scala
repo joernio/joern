@@ -219,15 +219,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
 
     scope.addLocalsForPatternsToEnclosingBlock(patternPartition.patternsIntroducedByStatement)
 
-    val astWithChildren = controlStructureAst(ifNode, conditionAst, thenAst :: elseAst.toList)
-    val astWithTrueBody = thenAst.root match {
-      case Some(thenRoot) => astWithChildren.withTrueBodyEdge(ifNode, thenRoot)
-      case None           => astWithChildren
-    }
-    val astWithBodies = elseAst.flatMap(_.root) match {
-      case Some(elseRoot) => astWithTrueBody.withFalseBodyEdge(ifNode, elseRoot)
-      case None           => astWithTrueBody
-    }
+    val astWithBodies = ifThenElseAst(ifNode, conditionAst, thenAst, elseAst)
 
     patternLocals :+ astWithBodies
   }
