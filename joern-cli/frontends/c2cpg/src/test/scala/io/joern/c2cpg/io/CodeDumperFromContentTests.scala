@@ -18,15 +18,14 @@ class CodeDumperFromContentTests extends C2CpgSuite {
         |""".stripMargin).withConfig(Config().withDisableFileContent(false))
 
     "allow one to dump a method node's source code from `File.contents`" in {
-      inside(cpg.method.nameExact("my_func").dumpRaw.l) {
-        case content :: Nil =>
-          content.linesIterator.map(_.strip).l shouldBe List(
-            "int my_func(int param1) /* <=== my_func */",
-            "{",
-            "int x = foo(param1);",
-            "}"
-          )
-        case content => fail(s"Expected exactly 1 content dump, but got: $content")
+      inside(cpg.method.nameExact("my_func").dumpRaw.l) { case content :: Nil =>
+        content.linesIterator.map(_.strip).l shouldBe List(
+          "int my_func(int param1) /* <=== my_func */",
+          "{",
+          "int x = foo(param1);",
+          "}"
+        )
+
       }
     }
   }
