@@ -585,13 +585,12 @@ class ClosureTests extends PhpCode2CpgFixture {
     }
 
     "should only have two methodRefs" in {
-      inside(cpg.all.collectAll[MethodRef].l) {
-        case fooMethodRef :: fooBarMethodRef :: Nil =>
-          fooMethodRef.methodFullName shouldBe "foo"
-          fooMethodRef.astParent.astParent.asInstanceOf[Method].fullName shouldBe "Test0.php:<global>"
+      inside(cpg.all.collectAll[MethodRef].l) { case fooMethodRef :: fooBarMethodRef :: Nil =>
+        fooMethodRef.methodFullName shouldBe "foo"
+        fooMethodRef.astParent.astParent.asInstanceOf[Method].fullName shouldBe "Test0.php:<global>"
 
-          fooBarMethodRef.methodFullName shouldBe "foo.bar"
-          fooBarMethodRef.astParent.astParent.asInstanceOf[Method].fullName shouldBe "foo"
+        fooBarMethodRef.methodFullName shouldBe "foo.bar"
+        fooBarMethodRef.astParent.astParent.asInstanceOf[Method].fullName shouldBe "foo"
       }
     }
   }
@@ -629,10 +628,9 @@ class ClosureTests extends PhpCode2CpgFixture {
     }
 
     "have a methodRef for construct" in {
-      inside(cpg.all.collectAll[MethodRef].l) {
-        case constructorRef :: Nil =>
-          constructorRef.methodFullName shouldBe "Foo.__construct"
-          constructorRef.astParent.astParent.asInstanceOf[Method].fullName shouldBe "Test0.php:<global>"
+      inside(cpg.all.collectAll[MethodRef].l) { case constructorRef :: Nil =>
+        constructorRef.methodFullName shouldBe "Foo.__construct"
+        constructorRef.astParent.astParent.asInstanceOf[Method].fullName shouldBe "Test0.php:<global>"
       }
     }
   }
@@ -706,10 +704,9 @@ class ClosureTests extends PhpCode2CpgFixture {
     }
 
     "create two method refs" in {
-      inside(cpg.methodRefWithName("foo.*").l) {
-        case methodRef :: duplicateMethodRef :: Nil =>
-          methodRef.methodFullName shouldBe "foo"
-          duplicateMethodRef.methodFullName shouldBe "foo<duplicate>0"
+      inside(cpg.methodRefWithName("foo.*").l) { case methodRef :: duplicateMethodRef :: Nil =>
+        methodRef.methodFullName shouldBe "foo"
+        duplicateMethodRef.methodFullName shouldBe "foo<duplicate>0"
       }
     }
   }

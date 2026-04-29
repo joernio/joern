@@ -533,16 +533,14 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture(withPostProcessing = t
     }
 
     "resolve the correct full name for `leftJoin` based on the QueryBuilder return value" in {
-      inside(cpg.call.nameExact("leftJoin").l) {
-        case setParamCall :: Nil =>
-          setParamCall.methodFullName shouldBe "Doctrine\\ORM\\QueryBuilder.leftJoin"
+      inside(cpg.call.nameExact("leftJoin").l) { case setParamCall :: Nil =>
+        setParamCall.methodFullName shouldBe "Doctrine\\ORM\\QueryBuilder.leftJoin"
       }
     }
 
     "resolve the correct full name for `setParameter` based on the QueryBuilder return value" in {
-      inside(cpg.call.nameExact("setParameter").l) {
-        case setParamCall :: Nil =>
-          setParamCall.methodFullName shouldBe "Doctrine\\ORM\\QueryBuilder.leftJoin.setParameter"
+      inside(cpg.call.nameExact("setParameter").l) { case setParamCall :: Nil =>
+        setParamCall.methodFullName shouldBe "Doctrine\\ORM\\QueryBuilder.leftJoin.setParameter"
       }
     }
   }
@@ -634,10 +632,9 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture(withPostProcessing = t
     )
 
     "resolve the correct full name for `setParameter` in a long call chain based on the QueryBuilder return value" in {
-      inside(cpg.method("findSomethingElse").call.nameExact("setParameter").l) {
-        case setParamCall :: Nil =>
-          setParamCall.methodFullName shouldBe
-            "Doctrine\\ORM\\QueryBuilder.leftJoin.leftJoin.leftJoin.andWhere.groupBy.having.orderBy.setParameter"
+      inside(cpg.method("findSomethingElse").call.nameExact("setParameter").l) { case setParamCall :: Nil =>
+        setParamCall.methodFullName shouldBe
+          "Doctrine\\ORM\\QueryBuilder.leftJoin.leftJoin.leftJoin.andWhere.groupBy.having.orderBy.setParameter"
       }
     }
   }

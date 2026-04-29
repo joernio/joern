@@ -272,13 +272,12 @@ class MethodTests extends PhpCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    inside(cpg.method.name("foo.*").l) {
-      case foo :: duplicateFoo :: Nil =>
-        foo.name shouldBe "foo"
-        foo.fullName shouldBe "Foo.__construct.foo"
+    inside(cpg.method.name("foo.*").l) { case foo :: duplicateFoo :: Nil =>
+      foo.name shouldBe "foo"
+      foo.fullName shouldBe "Foo.__construct.foo"
 
-        duplicateFoo.name shouldBe "foo"
-        duplicateFoo.fullName shouldBe "Foo.__construct.foo<duplicate>0"
+      duplicateFoo.name shouldBe "foo"
+      duplicateFoo.fullName shouldBe "Foo.__construct.foo<duplicate>0"
     }
 
     inside(cpg.method.name("bar.*").l) {

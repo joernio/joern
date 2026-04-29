@@ -689,13 +689,12 @@ class OperatorTests extends PhpCode2CpgFixture {
       | global $a, $$a;
       |}
       |""".stripMargin)
-    inside(cpg.method.name("foo").local.l) {
-      case memA :: Nil => memA.name shouldBe "a"
+    inside(cpg.method.name("foo").local.l) { case memA :: Nil =>
+      memA.name shouldBe "a"
     }
-    inside(cpg.all.collectAll[ClosureBinding].l) {
-      case bindA :: Nil =>
-        bindA.closureBindingId shouldBe Some("Test0.php:foo:a")
-        bindA._localViaRefOut.name.l shouldBe List("a")
+    inside(cpg.all.collectAll[ClosureBinding].l) { case bindA :: Nil =>
+      bindA.closureBindingId shouldBe Some("Test0.php:foo:a")
+      bindA._localViaRefOut.name.l shouldBe List("a")
     }
   }
 
