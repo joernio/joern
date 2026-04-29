@@ -17,11 +17,9 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "be lowered into a set_* method" in {
-      inside(cpg.method.nameExact("set_MyProperty").l) {
-        case method :: Nil =>
-          method.fullName shouldBe "C.set_MyProperty:void(C,System.Int32)"
-          method.signature shouldBe "void(C,System.Int32)"
-        case xs => fail(s"Expected single set_MyProperty method, but got $xs")
+      inside(cpg.method.nameExact("set_MyProperty").l) { case method :: Nil =>
+        method.fullName shouldBe "C.set_MyProperty:void(C,System.Int32)"
+        method.signature shouldBe "void(C,System.Int32)"
       }
     }
 
@@ -30,25 +28,21 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
     }
 
     "have correct parameters" in {
-      inside(cpg.method.nameExact("set_MyProperty").parameter.sortBy(_.index).l) {
-        case thisArg :: valueArg :: Nil =>
-          thisArg.index shouldBe 0
-          thisArg.name shouldBe "this"
-          thisArg.typeFullName shouldBe "C"
+      inside(cpg.method.nameExact("set_MyProperty").parameter.sortBy(_.index).l) { case thisArg :: valueArg :: Nil =>
+        thisArg.index shouldBe 0
+        thisArg.name shouldBe "this"
+        thisArg.typeFullName shouldBe "C"
 
-          valueArg.index shouldBe 1
-          valueArg.name shouldBe "value"
-          valueArg.typeFullName shouldBe "System.Int32"
-        case xs => fail(s"Expected two arguments to set_MyProperty, but got $xs")
+        valueArg.index shouldBe 1
+        valueArg.name shouldBe "value"
+        valueArg.typeFullName shouldBe "System.Int32"
       }
     }
 
     "have correct body" in {
-      inside(cpg.method.nameExact("set_MyProperty").body.flatMap(_.astChildren).l) {
-        case (writeLine: Call) :: Nil =>
-          writeLine.code shouldBe "Console.WriteLine(value)"
-          writeLine.methodFullName shouldBe "System.Console.WriteLine:System.Void(System.Boolean)"
-        case xs => fail(s"Expected single node inside set_MyProperty's body, but got $xs")
+      inside(cpg.method.nameExact("set_MyProperty").body.flatMap(_.astChildren).l) { case (writeLine: Call) :: Nil =>
+        writeLine.code shouldBe "Console.WriteLine(value)"
+        writeLine.methodFullName shouldBe "System.Console.WriteLine:System.Void(System.Boolean)"
       }
     }
   }
@@ -62,11 +56,9 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "be lowered into a set_* method" in {
-      inside(cpg.method.nameExact("set_MyProperty").l) {
-        case method :: Nil =>
-          method.fullName shouldBe "C.set_MyProperty:void(System.Int32)"
-          method.signature shouldBe "void(System.Int32)"
-        case xs => fail(s"Expected single set_MyProperty method, but got $xs")
+      inside(cpg.method.nameExact("set_MyProperty").l) { case method :: Nil =>
+        method.fullName shouldBe "C.set_MyProperty:void(System.Int32)"
+        method.signature shouldBe "void(System.Int32)"
       }
     }
 
@@ -78,12 +70,10 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
     }
 
     "have correct parameters" in {
-      inside(cpg.method.nameExact("set_MyProperty").parameter.sortBy(_.index).l) {
-        case valueArg :: Nil =>
-          valueArg.index shouldBe 1
-          valueArg.name shouldBe "value"
-          valueArg.typeFullName shouldBe "System.Int32"
-        case xs => fail(s"Expected two arguments to set_MyProperty, but got $xs")
+      inside(cpg.method.nameExact("set_MyProperty").parameter.sortBy(_.index).l) { case valueArg :: Nil =>
+        valueArg.index shouldBe 1
+        valueArg.name shouldBe "value"
+        valueArg.typeFullName shouldBe "System.Int32"
       }
     }
 
@@ -109,12 +99,10 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "be translated to that property's set_* method" in {
-      inside(cpg.call.nameExact("set_MyProperty").l) {
-        case setter :: Nil =>
-          setter.code shouldBe "m.MyProperty = 3"
-          setter.methodFullName shouldBe "MyData.set_MyProperty:System.Void(System.Int32)"
-          setter.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-        case xs => fail(s"Expected single call to set_MyProperty, but got $xs")
+      inside(cpg.call.nameExact("set_MyProperty").l) { case setter :: Nil =>
+        setter.code shouldBe "m.MyProperty = 3"
+        setter.methodFullName shouldBe "MyData.set_MyProperty:System.Void(System.Int32)"
+        setter.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       }
     }
 
@@ -127,7 +115,6 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
           three.code shouldBe "3"
           three.typeFullName shouldBe "System.Int32"
           three.argumentIndex shouldBe 1
-        case xs => fail(s"Unexpected arguments to set_MyProperty, got $xs")
       }
     }
   }
@@ -148,12 +135,10 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "be translated to that property's set_* method" in {
-      inside(cpg.call.nameExact("set_MyProperty").l) {
-        case setter :: Nil =>
-          setter.code shouldBe "m.MyProperty = 3"
-          setter.methodFullName shouldBe "MyData.set_MyProperty:System.Void(System.Int32)"
-          setter.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-        case xs => fail(s"Expected single call to set_MyProperty, but got $xs")
+      inside(cpg.call.nameExact("set_MyProperty").l) { case setter :: Nil =>
+        setter.code shouldBe "m.MyProperty = 3"
+        setter.methodFullName shouldBe "MyData.set_MyProperty:System.Void(System.Int32)"
+        setter.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       }
     }
 
@@ -166,7 +151,6 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
           three.code shouldBe "3"
           three.typeFullName shouldBe "System.Int32"
           three.argumentIndex shouldBe 1
-        case xs => fail(s"Unexpected arguments to set_MyProperty, got $xs")
       }
     }
   }
@@ -184,12 +168,10 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "be translated to that property's set_* method" in {
-      inside(cpg.call.nameExact("set_MyProperty").l) {
-        case setter :: Nil =>
-          setter.code shouldBe "this.MyProperty = 3"
-          setter.methodFullName shouldBe "MyData.set_MyProperty:System.Void(System.Int32)"
-          setter.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-        case xs => fail(s"Expected single call to set_MyProperty, but got $xs")
+      inside(cpg.call.nameExact("set_MyProperty").l) { case setter :: Nil =>
+        setter.code shouldBe "this.MyProperty = 3"
+        setter.methodFullName shouldBe "MyData.set_MyProperty:System.Void(System.Int32)"
+        setter.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       }
     }
 
@@ -202,7 +184,6 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
           three.code shouldBe "3"
           three.typeFullName shouldBe "System.Int32"
           three.argumentIndex shouldBe 1
-        case xs => fail(s"Unexpected arguments to set_MyProperty, got $xs")
       }
     }
   }
@@ -220,12 +201,10 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "be translated to that property's set_* method" in {
-      inside(cpg.call.nameExact("set_MyProperty").l) {
-        case setter :: Nil =>
-          setter.code shouldBe "MyProperty = 3"
-          setter.methodFullName shouldBe "MyData.set_MyProperty:System.Void(System.Int32)"
-          setter.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-        case xs => fail(s"Expected single call to set_MyProperty, but got $xs")
+      inside(cpg.call.nameExact("set_MyProperty").l) { case setter :: Nil =>
+        setter.code shouldBe "MyProperty = 3"
+        setter.methodFullName shouldBe "MyData.set_MyProperty:System.Void(System.Int32)"
+        setter.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       }
     }
 
@@ -238,7 +217,6 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
           three.code shouldBe "3"
           three.typeFullName shouldBe "System.Int32"
           three.argumentIndex shouldBe 1
-        case xs => fail(s"Unexpected arguments to set_MyProperty, got $xs")
       }
     }
   }
@@ -256,12 +234,10 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "be translated to that property's set_* method" in {
-      inside(cpg.call.nameExact("set_MyProperty").l) {
-        case setter :: Nil =>
-          setter.code shouldBe "MyProperty *= 3"
-          setter.methodFullName shouldBe "MyData.set_MyProperty:System.Void(System.Int32)"
-          setter.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-        case xs => fail(s"Expected single call to set_MyProperty, but got $xs")
+      inside(cpg.call.nameExact("set_MyProperty").l) { case setter :: Nil =>
+        setter.code shouldBe "MyProperty *= 3"
+        setter.methodFullName shouldBe "MyData.set_MyProperty:System.Void(System.Int32)"
+        setter.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       }
     }
 
@@ -276,7 +252,6 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
           timesCall.code shouldBe "MyProperty *= 3"
           timesCall.methodFullName shouldBe Operators.multiplication
           timesCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-        case xs => fail(s"Unexpected arguments to set_MyProperty, got $xs")
       }
     }
 
@@ -292,7 +267,6 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
           three.argumentIndex shouldBe 2
           three.code shouldBe "3"
           three.typeFullName shouldBe "System.Int32"
-        case xs => fail(s"Expected two arguments for +, but got $xs")
       }
     }
 
@@ -303,7 +277,6 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
           receiver.typeFullName shouldBe "MyData"
           receiver.code shouldBe "this"
           receiver.name shouldBe "this"
-        case xs => fail(s"Expected single argument to get_MyProperty, but got $xs")
       }
     }
   }
@@ -321,22 +294,18 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "be translated to that property's set_* method" in {
-      inside(cpg.call.nameExact("set_MyProperty").l) {
-        case setter :: Nil =>
-          setter.code shouldBe "MyProperty = 3"
-          setter.methodFullName shouldBe "MyData.set_MyProperty:System.Void(System.Int32)"
-          setter.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-        case xs => fail(s"Expected single call to set_MyProperty, but got $xs")
+      inside(cpg.call.nameExact("set_MyProperty").l) { case setter :: Nil =>
+        setter.code shouldBe "MyProperty = 3"
+        setter.methodFullName shouldBe "MyData.set_MyProperty:System.Void(System.Int32)"
+        setter.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       }
     }
 
     "have correct arguments to the set_* method" in {
-      inside(cpg.call.nameExact("set_MyProperty").argument.sortBy(_.argumentIndex).l) {
-        case (three: Literal) :: Nil =>
-          three.code shouldBe "3"
-          three.typeFullName shouldBe "System.Int32"
-          three.argumentIndex shouldBe 1
-        case xs => fail(s"Unexpected arguments to set_MyProperty, got $xs")
+      inside(cpg.call.nameExact("set_MyProperty").argument.sortBy(_.argumentIndex).l) { case (three: Literal) :: Nil =>
+        three.code shouldBe "3"
+        three.typeFullName shouldBe "System.Int32"
+        three.argumentIndex shouldBe 1
       }
     }
   }
@@ -357,22 +326,18 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "be translated to that property's set_* method" in {
-      inside(cpg.call.nameExact("set_MyProperty").l) {
-        case setter :: Nil =>
-          setter.code shouldBe "MyData.MyProperty = 3"
-          setter.methodFullName shouldBe "MyData.set_MyProperty:System.Void(System.Int32)"
-          setter.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-        case xs => fail(s"Expected single call to set_MyProperty, but got $xs")
+      inside(cpg.call.nameExact("set_MyProperty").l) { case setter :: Nil =>
+        setter.code shouldBe "MyData.MyProperty = 3"
+        setter.methodFullName shouldBe "MyData.set_MyProperty:System.Void(System.Int32)"
+        setter.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       }
     }
 
     "have correct arguments to the set_* method" in {
-      inside(cpg.call.nameExact("set_MyProperty").argument.sortBy(_.argumentIndex).l) {
-        case (three: Literal) :: Nil =>
-          three.code shouldBe "3"
-          three.typeFullName shouldBe "System.Int32"
-          three.argumentIndex shouldBe 1
-        case xs => fail(s"Unexpected arguments to set_MyProperty, got $xs")
+      inside(cpg.call.nameExact("set_MyProperty").argument.sortBy(_.argumentIndex).l) { case (three: Literal) :: Nil =>
+        three.code shouldBe "3"
+        three.typeFullName shouldBe "System.Int32"
+        three.argumentIndex shouldBe 1
       }
     }
   }
@@ -394,13 +359,11 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "be translated to that property's set_* method" in {
-      inside(cpg.call.nameExact("set_MyProperty").l) {
-        case setter :: Nil =>
-          setter.code shouldBe "m.MyProperty += 3"
-          setter.name shouldBe "set_MyProperty"
-          setter.methodFullName shouldBe "MyData.set_MyProperty:System.Void(System.Int32)"
-          setter.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-        case xs => fail(s"Expected single call to set_MyProperty, but got $xs")
+      inside(cpg.call.nameExact("set_MyProperty").l) { case setter :: Nil =>
+        setter.code shouldBe "m.MyProperty += 3"
+        setter.name shouldBe "set_MyProperty"
+        setter.methodFullName shouldBe "MyData.set_MyProperty:System.Void(System.Int32)"
+        setter.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       }
     }
 
@@ -415,7 +378,6 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
           plusCall.code shouldBe "m.MyProperty += 3"
           plusCall.methodFullName shouldBe Operators.plus
           plusCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-        case xs => fail(s"Unexpected arguments to set_MyProperty, got $xs")
       }
     }
 
@@ -431,7 +393,6 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
           three.argumentIndex shouldBe 2
           three.code shouldBe "3"
           three.typeFullName shouldBe "System.Int32"
-        case xs => fail(s"Expected two arguments for +, but got $xs")
       }
     }
 
@@ -442,7 +403,6 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
           receiver.typeFullName shouldBe "MyData"
           receiver.code shouldBe "m"
           receiver.name shouldBe "m"
-        case xs => fail(s"Expected single argument to get_MyProperty, but got $xs")
       }
     }
   }
@@ -463,24 +423,20 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "be translated to that property's set_* method" in {
-      inside(cpg.call.nameExact("set_MyProperty").l) {
-        case setter :: Nil =>
-          setter.code shouldBe "MyData.MyProperty += 3"
-          setter.name shouldBe "set_MyProperty"
-          setter.methodFullName shouldBe "MyData.set_MyProperty:System.Void(System.Int32)"
-          setter.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-        case xs => fail(s"Expected single call to set_MyProperty, but got $xs")
+      inside(cpg.call.nameExact("set_MyProperty").l) { case setter :: Nil =>
+        setter.code shouldBe "MyData.MyProperty += 3"
+        setter.name shouldBe "set_MyProperty"
+        setter.methodFullName shouldBe "MyData.set_MyProperty:System.Void(System.Int32)"
+        setter.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       }
     }
 
     "have correct arguments to the set_* method" in {
-      inside(cpg.call.nameExact("set_MyProperty").argument.sortBy(_.argumentIndex).l) {
-        case (plusCall: Call) :: Nil =>
-          plusCall.argumentIndex shouldBe 1
-          plusCall.code shouldBe "MyData.MyProperty += 3"
-          plusCall.methodFullName shouldBe Operators.plus
-          plusCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-        case xs => fail(s"Unexpected arguments to set_MyProperty, got $xs")
+      inside(cpg.call.nameExact("set_MyProperty").argument.sortBy(_.argumentIndex).l) { case (plusCall: Call) :: Nil =>
+        plusCall.argumentIndex shouldBe 1
+        plusCall.code shouldBe "MyData.MyProperty += 3"
+        plusCall.methodFullName shouldBe Operators.plus
+        plusCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       }
     }
 
@@ -496,7 +452,6 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
           three.argumentIndex shouldBe 2
           three.code shouldBe "3"
           three.typeFullName shouldBe "System.Int32"
-        case xs => fail(s"Expected two arguments for +, but got $xs")
       }
     }
 

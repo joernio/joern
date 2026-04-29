@@ -166,28 +166,22 @@ class OperatorsTests extends CSharpCode2CpgFixture {
         |var foo = $"Hello, {world}";
         |""".stripMargin))
 
-    inside(cpg.call(Operators.formatString).l) {
-      case interpolatedString :: Nil =>
-        interpolatedString.code shouldBe "$\"Hello, {world}\""
-        interpolatedString.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
-        interpolatedString.methodFullName shouldBe Operators.formatString
+    inside(cpg.call(Operators.formatString).l) { case interpolatedString :: Nil =>
+      interpolatedString.code shouldBe "$\"Hello, {world}\""
+      interpolatedString.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
+      interpolatedString.methodFullName shouldBe Operators.formatString
 
-        inside(interpolatedString.argument.l) {
-          case (hello: Literal) :: (world: Identifier) :: Nil =>
-            hello.code shouldBe "Hello,"
-            hello.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
+      inside(interpolatedString.argument.l) { case (hello: Literal) :: (world: Identifier) :: Nil =>
+        hello.code shouldBe "Hello,"
+        hello.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
 
-            world.code shouldBe "world"
-            world.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
-          case _ => fail("Expected 2 parts of the interpolated string.")
-        }
+        world.code shouldBe "world"
+        world.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
+      }
 
-        inside(cpg.local("foo").l) {
-          case foo :: Nil =>
-            foo.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
-          case _ => fail("Expected a variable declaration for `foo`")
-        }
-      case _ => fail("Expected 1 `formatString` call.`")
+      inside(cpg.local("foo").l) { case foo :: Nil =>
+        foo.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
+      }
     }
   }
 }

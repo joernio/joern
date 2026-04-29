@@ -25,28 +25,22 @@ class ImportTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "create the respective import node for a simple base-level namespace" in {
-      inside(cpg.imports.l) {
-        case sysImport :: _ :: Nil =>
-          sysImport.importedAs shouldBe Option("System")
-          sysImport.importedEntity shouldBe Option("System")
-        case _ => fail("Unexpected import node structure")
+      inside(cpg.imports.l) { case sysImport :: _ :: Nil =>
+        sysImport.importedAs shouldBe Option("System")
+        sysImport.importedEntity shouldBe Option("System")
       }
     }
 
     "create the respective import node for a fully-qualified namespace" in {
-      inside(cpg.imports.l) {
-        case _ :: textImport :: Nil =>
-          textImport.importedAs shouldBe Option("Text")
-          textImport.importedEntity shouldBe Option("System.Text")
-        case _ => fail("Unexpected import node structure")
+      inside(cpg.imports.l) { case _ :: textImport :: Nil =>
+        textImport.importedAs shouldBe Option("Text")
+        textImport.importedEntity shouldBe Option("System.Text")
       }
     }
 
     "allow for the type of `Console` to be known" in {
-      inside(cpg.identifier.nameExact("Console").l) {
-        case textImport :: Nil =>
-          textImport.typeFullName shouldBe "System.Console"
-        case _ => fail("Unexpected identifier node structure")
+      inside(cpg.identifier.nameExact("Console").l) { case textImport :: Nil =>
+        textImport.typeFullName shouldBe "System.Console"
       }
     }
 

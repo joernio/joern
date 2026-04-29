@@ -18,14 +18,12 @@ class PropertyGetterTests extends CSharpCode2CpgFixture {
     }
 
     "have System.Console.Out correctly set" in {
-      inside(cpg.call.code("System.Console.Out").l) {
-        case consoleOut :: Nil =>
-          consoleOut.name shouldBe "get_Out"
-          consoleOut.methodFullName shouldBe "System.Console.get_Out:System.IO.TextWriter()"
-          consoleOut.argument shouldBe empty
-          consoleOut.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-          consoleOut.typeFullName shouldBe "System.IO.TextWriter"
-        case xs => fail(s"Expected single call for System.Console.Out, but got $xs")
+      inside(cpg.call.code("System.Console.Out").l) { case consoleOut :: Nil =>
+        consoleOut.name shouldBe "get_Out"
+        consoleOut.methodFullName shouldBe "System.Console.get_Out:System.IO.TextWriter()"
+        consoleOut.argument shouldBe empty
+        consoleOut.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        consoleOut.typeFullName shouldBe "System.IO.TextWriter"
       }
     }
   }
@@ -38,12 +36,10 @@ class PropertyGetterTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "have correct properties for WriteLine" in {
-      inside(cpg.call.nameExact("WriteLine").l) {
-        case writeLine :: Nil =>
-          writeLine.code shouldBe "System.Console.Out.WriteLine(\"X\")"
-          writeLine.methodFullName shouldBe "System.IO.TextWriter.WriteLine:System.Void(System.String)"
-          writeLine.typeFullName shouldBe "System.Void"
-        case xs => fail(s"Expected single WriteLine call, but got $xs")
+      inside(cpg.call.nameExact("WriteLine").l) { case writeLine :: Nil =>
+        writeLine.code shouldBe "System.Console.Out.WriteLine(\"X\")"
+        writeLine.methodFullName shouldBe "System.IO.TextWriter.WriteLine:System.Void(System.String)"
+        writeLine.typeFullName shouldBe "System.Void"
       }
     }
 
@@ -58,19 +54,15 @@ class PropertyGetterTests extends CSharpCode2CpgFixture {
           literal.argumentIndex shouldBe 1
           literal.code shouldBe "\"X\""
           literal.typeFullName shouldBe "System.String"
-        case xs => fail(s"Expected two arguments for WriteLine, but got $xs")
       }
     }
 
     "have correct properties for System.Console.Out" in {
-      inside(cpg.call.code("System.Console.Out").l) {
-        case out :: Nil =>
-          out.name shouldBe "get_Out"
-          out.typeFullName shouldBe "System.IO.TextWriter"
-          out.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-          out.methodFullName shouldBe "System.Console.get_Out:System.IO.TextWriter()"
-        case xs =>
-          fail(s"Expected single call for System.Console.Out, but got $xs")
+      inside(cpg.call.code("System.Console.Out").l) { case out :: Nil =>
+        out.name shouldBe "get_Out"
+        out.typeFullName shouldBe "System.IO.TextWriter"
+        out.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        out.methodFullName shouldBe "System.Console.get_Out:System.IO.TextWriter()"
       }
     }
 
@@ -86,12 +78,10 @@ class PropertyGetterTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "have correct properties for WriteLine" in {
-      inside(cpg.call.nameExact("WriteLine").l) {
-        case writeLine :: Nil =>
-          writeLine.code shouldBe "System.Console.Out.WriteLine(\"X\")"
-          writeLine.methodFullName shouldBe "System.IO.TextWriter.WriteLine:System.Void(System.String)"
-          writeLine.typeFullName shouldBe "System.Void"
-        case xs => fail(s"Expected single WriteLine call, but got $xs")
+      inside(cpg.call.nameExact("WriteLine").l) { case writeLine :: Nil =>
+        writeLine.code shouldBe "System.Console.Out.WriteLine(\"X\")"
+        writeLine.methodFullName shouldBe "System.IO.TextWriter.WriteLine:System.Void(System.String)"
+        writeLine.typeFullName shouldBe "System.Void"
       }
     }
 
@@ -106,19 +96,15 @@ class PropertyGetterTests extends CSharpCode2CpgFixture {
           literal.argumentIndex shouldBe 1
           literal.code shouldBe "\"X\""
           literal.typeFullName shouldBe "System.String"
-        case xs => fail(s"Expected two arguments for WriteLine, but got $xs")
       }
     }
 
     "have correct properties for System.Console.Out" in {
-      inside(cpg.call.code("System.Console.Out").l) {
-        case out :: Nil =>
-          out.name shouldBe "get_Out"
-          out.typeFullName shouldBe "System.IO.TextWriter"
-          out.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-          out.methodFullName shouldBe "System.Console.get_Out:System.IO.TextWriter()"
-        case xs =>
-          fail(s"Expected single call for System.Console.Out, but got $xs")
+      inside(cpg.call.code("System.Console.Out").l) { case out :: Nil =>
+        out.name shouldBe "get_Out"
+        out.typeFullName shouldBe "System.IO.TextWriter"
+        out.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        out.methodFullName shouldBe "System.Console.get_Out:System.IO.TextWriter()"
       }
     }
 
@@ -140,24 +126,20 @@ class PropertyGetterTests extends CSharpCode2CpgFixture {
     }
 
     "have correct properties for KeyChar call" in {
-      inside(cpg.call.code("x.KeyChar").l) {
-        case keyChar :: Nil =>
-          keyChar.name shouldBe "get_KeyChar"
-          keyChar.methodFullName shouldBe "System.ConsoleKeyInfo.get_KeyChar:System.Char(System.ConsoleKeyInfo)"
-          keyChar.typeFullName shouldBe "System.Char"
-          keyChar.signature shouldBe "System.Char(System.ConsoleKeyInfo)"
-        case xs => fail(s"Expected single call to KeyChar, but got $xs")
+      inside(cpg.call.code("x.KeyChar").l) { case keyChar :: Nil =>
+        keyChar.name shouldBe "get_KeyChar"
+        keyChar.methodFullName shouldBe "System.ConsoleKeyInfo.get_KeyChar:System.Char(System.ConsoleKeyInfo)"
+        keyChar.typeFullName shouldBe "System.Char"
+        keyChar.signature shouldBe "System.Char(System.ConsoleKeyInfo)"
       }
     }
 
     "have correct arguments for KeyChar call" in {
-      inside(cpg.call.code("x.KeyChar").argument.sortBy(_.argumentIndex).l) {
-        case (x: Identifier) :: Nil =>
-          x.typeFullName shouldBe "System.ConsoleKeyInfo"
-          x.code shouldBe "x"
-          x.name shouldBe "x"
-          x.argumentIndex shouldBe 0
-        case xs => fail(s"Expected single identifier argument to KeyChar, but got $xs")
+      inside(cpg.call.code("x.KeyChar").argument.sortBy(_.argumentIndex).l) { case (x: Identifier) :: Nil =>
+        x.typeFullName shouldBe "System.ConsoleKeyInfo"
+        x.code shouldBe "x"
+        x.name shouldBe "x"
+        x.argumentIndex shouldBe 0
       }
     }
   }
@@ -171,11 +153,9 @@ class PropertyGetterTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "be lowered into a get_* method" in {
-      inside(cpg.method.nameExact("get_MyProperty").l) {
-        case method :: Nil =>
-          method.fullName shouldBe "C.get_MyProperty:System.Int32(C)"
-          method.signature shouldBe "System.Int32(C)"
-        case xs => fail(s"Expected single get_MyProperty method, but got $xs")
+      inside(cpg.method.nameExact("get_MyProperty").l) { case method :: Nil =>
+        method.fullName shouldBe "C.get_MyProperty:System.Int32(C)"
+        method.signature shouldBe "System.Int32(C)"
       }
     }
 
@@ -184,11 +164,9 @@ class PropertyGetterTests extends CSharpCode2CpgFixture {
     }
 
     "have correct parameters" in {
-      inside(cpg.method.nameExact("get_MyProperty").parameter.l) {
-        case thisParam :: Nil =>
-          thisParam.typeFullName shouldBe "C"
-          thisParam.name shouldBe "this"
-        case xs => fail(s"Expected this parameter for get_MyProperty, but got $xs")
+      inside(cpg.method.nameExact("get_MyProperty").parameter.l) { case thisParam :: Nil =>
+        thisParam.typeFullName shouldBe "C"
+        thisParam.name shouldBe "this"
       }
     }
 
@@ -211,14 +189,12 @@ class PropertyGetterTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "have a get_* method call on the RHS" in {
-      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("x")).source.l) {
-        case (rhs: Call) :: Nil =>
-          rhs.code shouldBe "c.MyProperty"
-          rhs.name shouldBe "get_MyProperty"
-          rhs.methodFullName shouldBe "C.get_MyProperty:System.Int32(C)"
-          rhs.typeFullName shouldBe "System.Int32"
-          rhs.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-        case xs => fail(s"Expected single RHS call for the assignment of x, but got $xs")
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("x")).source.l) { case (rhs: Call) :: Nil =>
+        rhs.code shouldBe "c.MyProperty"
+        rhs.name shouldBe "get_MyProperty"
+        rhs.methodFullName shouldBe "C.get_MyProperty:System.Int32(C)"
+        rhs.typeFullName shouldBe "System.Int32"
+        rhs.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       }
     }
 
@@ -228,7 +204,6 @@ class PropertyGetterTests extends CSharpCode2CpgFixture {
           baseArg.argumentIndex shouldBe 0
           baseArg.code shouldBe "c"
           baseArg.typeFullName shouldBe "C"
-        case xs => fail(s"Expected single identifier argument to c.MyProperty, but got $xs")
       }
     }
 
@@ -251,14 +226,12 @@ class PropertyGetterTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "have a get_* method call on the RHS" in {
-      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("x")).source.l) {
-        case (rhs: Call) :: Nil =>
-          rhs.code shouldBe "c.MyProperty"
-          rhs.name shouldBe "get_MyProperty"
-          rhs.methodFullName shouldBe "C.get_MyProperty:System.Int32()"
-          rhs.typeFullName shouldBe "System.Int32"
-          rhs.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-        case xs => fail(s"Expected single RHS call for the assignment of x, but got $xs")
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("x")).source.l) { case (rhs: Call) :: Nil =>
+        rhs.code shouldBe "c.MyProperty"
+        rhs.name shouldBe "get_MyProperty"
+        rhs.methodFullName shouldBe "C.get_MyProperty:System.Int32()"
+        rhs.typeFullName shouldBe "System.Int32"
+        rhs.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       }
     }
 
@@ -280,11 +253,9 @@ class PropertyGetterTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "be lowered into a get_* method" in {
-      inside(cpg.method.nameExact("get_MyProperty").l) {
-        case method :: Nil =>
-          method.fullName shouldBe "C.get_MyProperty:System.String()"
-          method.signature shouldBe "System.String()"
-        case xs => fail(s"Expected single get_MyProperty method, but got $xs")
+      inside(cpg.method.nameExact("get_MyProperty").l) { case method :: Nil =>
+        method.fullName shouldBe "C.get_MyProperty:System.String()"
+        method.signature shouldBe "System.String()"
       }
     }
 

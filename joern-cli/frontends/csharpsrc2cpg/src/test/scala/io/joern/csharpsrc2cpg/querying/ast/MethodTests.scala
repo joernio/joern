@@ -21,9 +21,8 @@ class MethodTests extends CSharpCode2CpgFixture {
           |    {
           |      Console.WriteLine("Hello, world!");
           |    }""".stripMargin
-      x.typeDecl match {
-        case Some(typeDecl) => typeDecl.name shouldBe "Program"
-        case None           => fail("No TYPE_DECL parent found!")
+      inside(x.typeDecl) { case Some(typeDecl) =>
+        typeDecl.name shouldBe "Program"
       }
     }
 
@@ -60,19 +59,17 @@ class MethodTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "have correct method properties" in {
-      inside(cpg.method("getInt").l) {
-        case methodNode :: Nil =>
-          methodNode.name shouldBe "getInt"
-          methodNode.fullName shouldBe "HelloWorld.Program.getInt:System.Int32(System.Int32)"
-          methodNode.code should startWith("public int getInt(int foo)")
-          methodNode.signature shouldBe "System.Int32(System.Int32)"
-          methodNode.isExternal shouldBe false
+      inside(cpg.method("getInt").l) { case methodNode :: Nil =>
+        methodNode.name shouldBe "getInt"
+        methodNode.fullName shouldBe "HelloWorld.Program.getInt:System.Int32(System.Int32)"
+        methodNode.code should startWith("public int getInt(int foo)")
+        methodNode.signature shouldBe "System.Int32(System.Int32)"
+        methodNode.isExternal shouldBe false
 
-          methodNode.order shouldBe 3
-          methodNode.filename shouldBe "Test0.cs"
-          methodNode.lineNumber shouldBe Option(8)
-          methodNode.lineNumberEnd shouldBe Option(10)
-        case _ => fail("No method with name `getInt` found.")
+        methodNode.order shouldBe 3
+        methodNode.filename shouldBe "Test0.cs"
+        methodNode.lineNumber shouldBe Option(8)
+        methodNode.lineNumberEnd shouldBe Option(10)
       }
     }
 
@@ -122,21 +119,18 @@ class MethodTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "have correct properties for the nested method" in {
-      inside(cpg.method.nameExact("MySubMethod").l) {
-        case sub :: Nil =>
-          sub.fullName shouldBe "Test0_cs_Program.<Main>$.MyMain.MySubMethod:System.Int32()"
-          sub.signature shouldBe "System.Int32()"
-          sub.modifier.modifierType.sorted.l shouldBe List(ModifierTypes.INTERNAL)
-          sub.methodReturn.typeFullName shouldBe "System.Int32"
-          sub.parentBlock.method.l shouldBe cpg.method.fullNameExact("Test0_cs_Program.<Main>$.MyMain:System.Int32()").l
-        case xs => fail(s"Expected single MySubMethod METHOD, but got $xs")
+      inside(cpg.method.nameExact("MySubMethod").l) { case sub :: Nil =>
+        sub.fullName shouldBe "Test0_cs_Program.<Main>$.MyMain.MySubMethod:System.Int32()"
+        sub.signature shouldBe "System.Int32()"
+        sub.modifier.modifierType.sorted.l shouldBe List(ModifierTypes.INTERNAL)
+        sub.methodReturn.typeFullName shouldBe "System.Int32"
+        sub.parentBlock.method.l shouldBe cpg.method.fullNameExact("Test0_cs_Program.<Main>$.MyMain:System.Int32()").l
       }
     }
 
     "have correct body for the nested method" in {
-      inside(cpg.method.nameExact("MySubMethod").block.astChildren.l) {
-        case (ret: Return) :: Nil => ret.code shouldBe "return 1;"
-        case xs                   => fail(s"Expected single RETURN node, but got $xs")
+      inside(cpg.method.nameExact("MySubMethod").block.astChildren.l) { case (ret: Return) :: Nil =>
+        ret.code shouldBe "return 1;"
       }
     }
   }
@@ -153,21 +147,18 @@ class MethodTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "have correct properties for the nested method" in {
-      inside(cpg.method.nameExact("MySubMethod").l) {
-        case sub :: Nil =>
-          sub.fullName shouldBe "MyClass.MyMain.MySubMethod:System.Int32()"
-          sub.signature shouldBe "System.Int32()"
-          sub.modifier.modifierType.sorted.l shouldBe List(ModifierTypes.INTERNAL)
-          sub.methodReturn.typeFullName shouldBe "System.Int32"
-          sub.parentBlock.method.l shouldBe cpg.method.fullNameExact("MyClass.MyMain:System.Int32()").l
-        case xs => fail(s"Expected single MySubMethod METHOD, but got $xs")
+      inside(cpg.method.nameExact("MySubMethod").l) { case sub :: Nil =>
+        sub.fullName shouldBe "MyClass.MyMain.MySubMethod:System.Int32()"
+        sub.signature shouldBe "System.Int32()"
+        sub.modifier.modifierType.sorted.l shouldBe List(ModifierTypes.INTERNAL)
+        sub.methodReturn.typeFullName shouldBe "System.Int32"
+        sub.parentBlock.method.l shouldBe cpg.method.fullNameExact("MyClass.MyMain:System.Int32()").l
       }
     }
 
     "have correct body for the nested method" in {
-      inside(cpg.method.nameExact("MySubMethod").block.astChildren.l) {
-        case (ret: Return) :: Nil => ret.code shouldBe "return 1;"
-        case xs                   => fail(s"Expected single RETURN node, but got $xs")
+      inside(cpg.method.nameExact("MySubMethod").block.astChildren.l) { case (ret: Return) :: Nil =>
+        ret.code shouldBe "return 1;"
       }
     }
   }

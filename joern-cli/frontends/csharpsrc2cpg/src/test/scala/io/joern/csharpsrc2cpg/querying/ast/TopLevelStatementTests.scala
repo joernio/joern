@@ -12,12 +12,10 @@ class TopLevelStatementTests extends CSharpCode2CpgFixture {
         |Console.WriteLine("Foo");
         |""".stripMargin)
 
-    inside(cpg.call("WriteLine").method.l) {
-      case method :: Nil =>
-        method.fullName shouldBe "Test0_cs_Program.<Main>$:System.Void(System.String[])"
-        method.signature shouldBe "System.Void(System.String[])"
-        method.typeDecl.l shouldBe cpg.typeDecl("Test0_cs_Program").l
-      case xs => fail(s"Expected a method above WriteLine, but found $xs")
+    inside(cpg.call("WriteLine").method.l) { case method :: Nil =>
+      method.fullName shouldBe "Test0_cs_Program.<Main>$:System.Void(System.String[])"
+      method.signature shouldBe "System.Void(System.String[])"
+      method.typeDecl.l shouldBe cpg.typeDecl("Test0_cs_Program").l
     }
   }
 
@@ -28,12 +26,10 @@ class TopLevelStatementTests extends CSharpCode2CpgFixture {
         |""".stripMargin,
       "MyProject/Main.cs"
     )
-    inside(cpg.call("WriteLine").method.l) {
-      case method :: Nil =>
-        method.fullName shouldBe "MyProject_Main_cs_Program.<Main>$:System.Void(System.String[])"
-        method.signature shouldBe "System.Void(System.String[])"
-        method.typeDecl.l shouldBe cpg.typeDecl("MyProject_Main_cs_Program").l
-      case xs => fail(s"Expected a method above WriteLine, but found $xs")
+    inside(cpg.call("WriteLine").method.l) { case method :: Nil =>
+      method.fullName shouldBe "MyProject_Main_cs_Program.<Main>$:System.Void(System.String[])"
+      method.signature shouldBe "System.Void(System.String[])"
+      method.typeDecl.l shouldBe cpg.typeDecl("MyProject_Main_cs_Program").l
     }
   }
 
@@ -41,11 +37,9 @@ class TopLevelStatementTests extends CSharpCode2CpgFixture {
     val cpg = code("""
         |System.Console.WriteLine(args);
         |""".stripMargin)
-    inside(cpg.parameter("args").l) {
-      case args :: Nil =>
-        args.typeFullName shouldBe "System.String[]"
-        args.method.fullName shouldBe "Test0_cs_Program.<Main>$:System.Void(System.String[])"
-      case xs => fail(s"Expected single parameter named `args`, but found $xs")
+    inside(cpg.parameter("args").l) { case args :: Nil =>
+      args.typeFullName shouldBe "System.String[]"
+      args.method.fullName shouldBe "Test0_cs_Program.<Main>$:System.Void(System.String[])"
     }
   }
 
@@ -55,9 +49,8 @@ class TopLevelStatementTests extends CSharpCode2CpgFixture {
         |class XYZ
         |{
         |}""".stripMargin)
-    inside(cpg.typeDecl("XYZ").l) {
-      case xyz :: Nil => xyz.fullName shouldBe "XYZ"
-      case xs         => fail(s"Expected single TYPE_DECL named `XYZ`, but found $xs")
+    inside(cpg.typeDecl("XYZ").l) { case xyz :: Nil =>
+      xyz.fullName shouldBe "XYZ"
     }
   }
 
@@ -65,16 +58,13 @@ class TopLevelStatementTests extends CSharpCode2CpgFixture {
     val cpg = code("""
         |void Run() {}
         |""".stripMargin)
-    inside(cpg.method.nameExact("Run").l) {
-      case run :: Nil =>
-        run.methodReturn.typeFullName shouldBe "System.Void"
-        run.fullName shouldBe "Test0_cs_Program.<Main>$.Run:System.Void()"
-        run.modifier.modifierType.toSet shouldBe Set(ModifierTypes.STATIC, ModifierTypes.INTERNAL)
-        run.parentBlock.method.l shouldBe cpg.method
-          .fullNameExact("Test0_cs_Program.<Main>$:System.Void(System.String[])")
-          .l
-      case xs =>
-        fail(s"Expected single METHOD named Run, but found $xs")
+    inside(cpg.method.nameExact("Run").l) { case run :: Nil =>
+      run.methodReturn.typeFullName shouldBe "System.Void"
+      run.fullName shouldBe "Test0_cs_Program.<Main>$.Run:System.Void()"
+      run.modifier.modifierType.toSet shouldBe Set(ModifierTypes.STATIC, ModifierTypes.INTERNAL)
+      run.parentBlock.method.l shouldBe cpg.method
+        .fullNameExact("Test0_cs_Program.<Main>$:System.Void(System.String[])")
+        .l
     }
   }
 }

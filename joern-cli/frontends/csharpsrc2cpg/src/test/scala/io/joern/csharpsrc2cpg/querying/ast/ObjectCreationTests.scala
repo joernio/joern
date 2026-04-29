@@ -14,11 +14,9 @@ class ObjectCreationTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "have correct constructor call properties" in {
-      inside(cpg.call.nameExact(Defines.ConstructorMethodName).headOption) {
-        case Some(ctor) =>
-          ctor.typeFullName shouldBe "System.Text.StringBuilder"
-          ctor.methodFullName shouldBe "System.Text.StringBuilder.<init>"
-        case None => fail(s"Expected a constructor call")
+      inside(cpg.call.nameExact(Defines.ConstructorMethodName).headOption) { case Some(ctor) =>
+        ctor.typeFullName shouldBe "System.Text.StringBuilder"
+        ctor.methodFullName shouldBe "System.Text.StringBuilder.<init>"
       }
     }
 
@@ -33,11 +31,9 @@ class ObjectCreationTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "have correct constructor call properties" in {
-      inside(cpg.call.nameExact(Defines.ConstructorMethodName).headOption) {
-        case Some(ctor) =>
-          ctor.typeFullName shouldBe "System.Text.StringBuilder"
-          ctor.methodFullName shouldBe "System.Text.StringBuilder.<init>"
-        case None => fail(s"Expected a constructor CALL")
+      inside(cpg.call.nameExact(Defines.ConstructorMethodName).headOption) { case Some(ctor) =>
+        ctor.typeFullName shouldBe "System.Text.StringBuilder"
+        ctor.methodFullName shouldBe "System.Text.StringBuilder.<init>"
       }
     }
 
