@@ -279,7 +279,6 @@ class MethodTests extends PhpCode2CpgFixture {
 
         duplicateFoo.name shouldBe "foo"
         duplicateFoo.fullName shouldBe "Foo.__construct.foo<duplicate>0"
-      case xs => fail(s"Expected two functions for `foo`, got ${xs.name.mkString("[", ",", "]")}")
     }
 
     inside(cpg.method.name("bar.*").l) {
@@ -301,7 +300,6 @@ class MethodTests extends PhpCode2CpgFixture {
 
         barDedupTwoTwo.name shouldBe "bar"
         barDedupTwoTwo.fullName shouldBe "Foo.__construct.foo<duplicate>0.bar<duplicate>1"
-      case xs => fail(s"Expected four `bar` functions, got ${xs.name.mkString("[", ",", "]")}")
     }
   }
 }

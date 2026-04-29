@@ -273,7 +273,6 @@ class ClosureTests extends PhpCode2CpgFixture {
           firstOuterLambda.name shouldBe "foo.php:<global>.<lambda>0"
           secondOuterInnerLambda.name shouldBe "foo.php:<global>.<lambda>1.<lambda>0"
           secondOuterLambda.name shouldBe "foo.php:<global>.<lambda>1"
-        case xs => fail(s"Expected four lambdas, instead got ${xs.name.mkString(", ")}")
       }
     }
   }
@@ -593,7 +592,6 @@ class ClosureTests extends PhpCode2CpgFixture {
 
           fooBarMethodRef.methodFullName shouldBe "foo.bar"
           fooBarMethodRef.astParent.astParent.asInstanceOf[Method].fullName shouldBe "foo"
-        case xs => fail(s"Expected two methodRefs, got ${xs.methodFullName.mkString("[", ",", "]")}")
       }
     }
   }
@@ -635,7 +633,6 @@ class ClosureTests extends PhpCode2CpgFixture {
         case constructorRef :: Nil =>
           constructorRef.methodFullName shouldBe "Foo.__construct"
           constructorRef.astParent.astParent.asInstanceOf[Method].fullName shouldBe "Test0.php:<global>"
-        case xs => fail(s"Expected one methodRef for constructor, got ${xs.methodFullName.mkString("[", ",", "]")}")
       }
     }
   }
@@ -713,7 +710,6 @@ class ClosureTests extends PhpCode2CpgFixture {
         case methodRef :: duplicateMethodRef :: Nil =>
           methodRef.methodFullName shouldBe "foo"
           duplicateMethodRef.methodFullName shouldBe "foo<duplicate>0"
-        case xs => fail(s"Expected two method refs, got ${xs.methodFullName.mkString("[", ",", "]")}")
       }
     }
   }

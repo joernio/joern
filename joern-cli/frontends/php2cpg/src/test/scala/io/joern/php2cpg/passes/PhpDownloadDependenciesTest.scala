@@ -52,7 +52,7 @@ class PhpDownloadDependenciesTest extends PhpCode2CpgFixture(withPostProcessing 
         case Some(s3Client) =>
           s3Client.isExternal shouldBe true
           s3Client.method.size should be > 0
-        case None => fail("Expected a fully qualified AWS S3Client type stub")
+
       }
     }
 

@@ -1460,7 +1460,6 @@ class ControlStructureTests extends PhpCode2CpgFixture {
           bLocal.name shouldBe "b"
           cLocal.name shouldBe "c"
           foreachStruct.code shouldBe "foreach ($data as list($a,$b,$c))"
-        case xs => fail(s"Expected five astChildren, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
@@ -1502,7 +1501,6 @@ class ControlStructureTests extends PhpCode2CpgFixture {
             assignmentTests(bInit, variableName = "b", arrayIndex = 1)
             assignmentTests(cInit, variableName = "c", arrayIndex = 2)
           }
-        case xs => fail(s"Expected four children for control structure, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
@@ -1546,7 +1544,6 @@ class ControlStructureTests extends PhpCode2CpgFixture {
             echoCallA.code shouldBe "echo $a"
             echoCallB.code shouldBe "echo $b"
           }
-        case xs => fail(s"Expected four children for control structure, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
@@ -1587,9 +1584,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
               val List(cVar: Identifier) = notArg.argument.l: @unchecked
               cVar.code shouldBe "$c"
 
-            case xs => fail(s"Expected two children calls for condition, got, ${xs.code.mkString("[", ",", "]")}")
           }
-        case xs => fail(s"Expected one condition for FOR construct, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
   }
@@ -1626,7 +1621,6 @@ class ControlStructureTests extends PhpCode2CpgFixture {
           bLocal.name shouldBe "b"
           cLocal.name shouldBe "c"
           foreachStruct.code shouldBe "foreach ($data as list($a,list($b,$c)))"
-        case xs => fail(s"Expected five astChildren, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
@@ -1680,7 +1674,6 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
             assignmentTests(tmp1Init, variableName = "foo@tmp-2", tmpIndex = 1, arrayIndex = 1)
           }
-        case xs => fail(s"Expected four children for control structure, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
@@ -1736,7 +1729,6 @@ class ControlStructureTests extends PhpCode2CpgFixture {
             echoCallA.code shouldBe "echo $a"
             echoCallB.code shouldBe "echo $b"
           }
-        case xs => fail(s"Expected four children for control structure, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
@@ -1773,9 +1765,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
               val List(aVar: Identifier) = notArg.argument.l: @unchecked
               aVar.code shouldBe "$a"
 
-            case xs => fail(s"Expected two children calls for condition, got, ${xs.code.mkString("[", ",", "]")}")
           }
-        case xs => fail(s"Expected one condition for FOR construct, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
   }

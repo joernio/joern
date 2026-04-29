@@ -351,7 +351,6 @@ class TypeDeclTests extends PhpCode2CpgFixture {
             }
           }
         }
-      case xs => fail(s"Expected one type decl, got ${xs.name.mkString("[", ",", "]")}")
     }
   }
 
@@ -368,7 +367,6 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       case fooMethod :: Nil =>
         fooMethod.name shouldBe "foo"
         fooMethod.fullName shouldBe s"Foo.foo"
-      case xs => fail(s"Expected one typeDecl, got ${xs.name.mkString("[", ",", "]")}")
     }
   }
 
@@ -480,7 +478,6 @@ class TypeDeclTests extends PhpCode2CpgFixture {
               val List(lhs, rhs) = assignmentCall.argument.l
               lhs.code shouldBe "$this->x"
               rhs.code shouldBe "$x"
-            case xs => fail(s"Expected assignment call, got ${xs.code.mkString("[", ",", "]")}")
           }
 
           val List(memberY) = anonClass1.member.l
@@ -498,10 +495,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
               val List(lhs, rhs) = assignmentCall.argument.l
               lhs.code shouldBe "$this->y"
               rhs.code shouldBe "$y"
-            case xs => fail(s"Expected assignment call, got ${xs.code.mkString("[", ",", "]")}")
           }
 
-        case xs => fail(s"Expected two anonymous type-decls, instead got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
@@ -512,7 +507,6 @@ class TypeDeclTests extends PhpCode2CpgFixture {
           tmp0Local.name shouldBe "Test0.php:<global>@tmp-0"
           tmp1Local.typeFullName shouldBe "Test0.php:<global>.anon-class-1"
           tmp1Local.name shouldBe "Test0.php:<global>@tmp-1"
-        case xs => fail(s"Expected two locals, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
@@ -528,7 +522,6 @@ class TypeDeclTests extends PhpCode2CpgFixture {
           val List(anonClass1Param1: Identifier, anonClass1Param2: Literal) = constructAnonClass1.argument.l: @unchecked
           anonClass1Param1.code shouldBe "$Test0.php:<global>@tmp-1"
           anonClass1Param2.code shouldBe "30"
-        case xs => fail(s"Expected two construct calls, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
@@ -543,7 +536,6 @@ class TypeDeclTests extends PhpCode2CpgFixture {
               allocSource.code shouldBe "Test0.php:<global>.anon-class-0.<alloc>()"
               allocSource.methodFullName shouldBe Operators.alloc
               allocTarget.typeFullName shouldBe "Test0.php:<global>.anon-class-0"
-            case xs => fail(s"Expected one assignment, got ${xs.code.mkString("[", ",", "]")}")
           }
 
           inside(constructBlock2.astChildren.assignment.l) {
@@ -554,10 +546,8 @@ class TypeDeclTests extends PhpCode2CpgFixture {
               allocSource.code shouldBe "Test0.php:<global>.anon-class-1.<alloc>()"
               allocSource.methodFullName shouldBe Operators.alloc
               allocTarget.typeFullName shouldBe "Test0.php:<global>.anon-class-1"
-            case xs => fail(s"Expected target and source")
           }
 
-        case xs => fail(s"Expected one assignment, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
   }
@@ -587,7 +577,6 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       case anonClass :: Nil =>
         anonClass.fullName shouldBe s"C.D.anon-class-0"
         anonClass.member.code.l shouldBe List("$x")
-      case xs => fail(s"Expected one anonymous class, got ${xs.code.mkString("[", ",", "]")}")
     }
 
     inside(cpg.method.name("D").body.astChildren.l) {
@@ -606,9 +595,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
             constructCall.methodFullName shouldBe "C.D.anon-class-0.__construct"
 
             tmpIdentifier.code shouldBe "$C.D@tmp-0"
-          case xs => fail(s"Expected three children, got ${xs.code.mkString("[", ",", "]")}")
         }
-      case xs => fail(s"expected localNode and body, got ${xs.code.mkString("[", ",", "]")}")
     }
   }
 
@@ -625,7 +612,6 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       inside(cpg.typeDecl.name(s"Foo").l) {
         case fooTypeDecl :: Nil =>
           fooTypeDecl.fullName shouldBe s"Foo"
-        case xs => fail(s"Expected one singleton type decl, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
@@ -633,7 +619,6 @@ class TypeDeclTests extends PhpCode2CpgFixture {
       inside(cpg.typeDecl.name(s"Foo").method.name("bar").l) {
         case barMethod :: Nil =>
           barMethod.modifier.modifierType.sorted.l shouldBe List(ModifierTypes.PUBLIC, ModifierTypes.STATIC)
-        case xs => fail(s"Expected one method, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
@@ -643,7 +628,6 @@ class TypeDeclTests extends PhpCode2CpgFixture {
           bazzMember.name shouldBe "BAZZ"
           fooMember.name shouldBe "foo"
           bazMember.name shouldBe "baz"
-        case xs => fail(s"Expected two members, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
@@ -665,9 +649,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
               fooLhs.code shouldBe "self::$foo"
               fooRhs.code shouldBe "\"foo\""
 
-            case xs => fail(s"Expected three children, got ${xs.code.mkString("[", ",", "]")}")
           }
-        case xs => fail(s"Expected one static constructor, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
@@ -702,7 +684,6 @@ class TypeDeclTests extends PhpCode2CpgFixture {
           barMethod.name shouldBe "bar"
           barMethod.modifier.modifierType.l.contains(ModifierTypes.STATIC) shouldBe true
 
-        case xs => fail(s"Expected one method, got ${xs.name.mkString("[", ",", "]")}")
       }
     }
 
@@ -731,9 +712,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
               val List(fooLhs, fooRhs) = fooAssignment.argument.l
               fooLhs.code shouldBe "self::$foo"
               fooRhs.code shouldBe "\"foo\""
-            case xs => fail(s"Expected three astChildren, got ${xs.code.mkString("[", ",", "]")}")
           }
-        case xs => fail(s"Expected one method, got ${xs.name.mkString("[", ",", "]")}")
       }
     }
   }
@@ -762,7 +741,6 @@ class TypeDeclTests extends PhpCode2CpgFixture {
           fooDup.fullName shouldBe "Foo<duplicate>0"
           fooDup.astParentFullName shouldBe "Test0.php:<global>"
           fooDup.astParentType shouldBe "METHOD"
-        case xs => fail(s"Expected two typeDecls for Foo, got ${xs.name.mkString("[", ",", "]")}")
       }
     }
 
@@ -774,7 +752,6 @@ class TypeDeclTests extends PhpCode2CpgFixture {
 
           fooDedup.name shouldBe "foo"
           fooDedup.fullName shouldBe "Foo<duplicate>0.foo"
-        case xs => fail(s"Expected two methods for foo, got ${xs.name.mkString("[", ",", "]")}")
       }
     }
   }

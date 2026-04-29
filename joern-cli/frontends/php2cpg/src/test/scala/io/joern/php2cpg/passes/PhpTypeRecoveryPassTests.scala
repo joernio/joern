@@ -519,7 +519,6 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture(withPostProcessing = t
       inside(cpg.method.nameExact("createQueryBuilder").call.name(".*createQueryBuilder").l) {
         case queryBuilderCall :: Nil =>
           queryBuilderCall.methodFullName shouldBe "Doctrine\\ORM\\EntityManagerInterface.createQueryBuilder.<returnValue>"
-        case xs => fail(s"Expected one call, instead got [$xs]")
       }
     }
 
@@ -537,7 +536,6 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture(withPostProcessing = t
       inside(cpg.call.nameExact("leftJoin").l) {
         case setParamCall :: Nil =>
           setParamCall.methodFullName shouldBe "Doctrine\\ORM\\QueryBuilder.leftJoin"
-        case xs => fail(s"Expected one call, instead got [$xs]")
       }
     }
 
@@ -545,7 +543,6 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture(withPostProcessing = t
       inside(cpg.call.nameExact("setParameter").l) {
         case setParamCall :: Nil =>
           setParamCall.methodFullName shouldBe "Doctrine\\ORM\\QueryBuilder.leftJoin.setParameter"
-        case xs => fail(s"Expected one call, instead got [$xs]")
       }
     }
   }
@@ -641,7 +638,6 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture(withPostProcessing = t
         case setParamCall :: Nil =>
           setParamCall.methodFullName shouldBe
             "Doctrine\\ORM\\QueryBuilder.leftJoin.leftJoin.leftJoin.andWhere.groupBy.having.orderBy.setParameter"
-        case xs => fail(s"Expected one call, instead got [$xs]")
       }
     }
   }
