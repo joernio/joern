@@ -379,6 +379,20 @@ abstract class AstCreatorBase[Node, NodeProcessor](filename: String)(implicit wi
     callAst(callNode_, Seq(base, Ast(fieldIdentifierNode_)))
   }
 
+  def ifThenElseAst(ifNode: NewControlStructure, conditionAst: Option[Ast], thenAst: Ast, elseAst: Option[Ast]): Ast = {
+    val astWithChildren = controlStructureAst(ifNode, conditionAst, thenAst :: elseAst.toList)
+    val astWithTrueBody = thenAst.root match {
+      case Some(thenRoot) => astWithChildren.withTrueBodyEdge(ifNode, thenRoot)
+      case None           => astWithChildren
+    }
+    val astWithBodies = elseAst.flatMap(_.root) match {
+      case Some(elseRoot) => astWithTrueBody.withFalseBodyEdge(ifNode, elseRoot)
+      case None           => astWithTrueBody
+    }
+
+    astWithBodies
+  }
+
   def withIndex[T, X](nodes: Seq[T])(f: (T, Int) => X): Seq[X] =
     nodes.zipWithIndex.map { case (x, i) =>
       f(x, i + 1)

@@ -178,7 +178,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
   private[statements] def astsForIf(stmt: IfStmt): Seq[Ast] = {
 
     val conditionAst =
-      astsForExpression(stmt.getCondition, ExpectedType.Boolean).headOption.toList
+      astsForExpression(stmt.getCondition, ExpectedType.Boolean).headOption
 
     val patternLocals = scope.enclosingMethod.get.getAndClearUnaddedPatternLocals().map(Ast(_))
 
@@ -215,22 +215,13 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
         .controlStructureType(ControlStructureTypes.IF)
         .lineNumber(line(stmt))
         .columnNumber(column(stmt))
-        .code(s"if (${conditionAst.headOption.flatMap(_.rootCode).getOrElse("")})")
+        .code(s"if (${conditionAst.flatMap(_.rootCode).getOrElse("")})")
 
     scope.addLocalsForPatternsToEnclosingBlock(patternPartition.patternsIntroducedByStatement)
-    val ast = Ast(ifNode)
-      .withChildren(conditionAst)
-      .withChild(thenAst)
-      .withChildren(elseAst.toList)
 
-    val astWithConditionEdge = conditionAst.flatMap(_.root.toList) match {
-      case r :: Nil =>
-        ast.withConditionEdge(ifNode, r)
-      case _ =>
-        ast
-    }
+    val astWithBodies = ifThenElseAst(ifNode, conditionAst, thenAst, elseAst)
 
-    patternLocals :+ astWithConditionEdge
+    patternLocals :+ astWithBodies
   }
 
   private[statements] def astForElse(maybeStmt: Option[Statement]): Option[Ast] = {
