@@ -1305,7 +1305,6 @@ ArrayList<istmt> simpleStatement(): {
   } catch (ParseException exception) {
     Token lastCorrectToken = token;
     try {
-      token = reparseStartToken;
       setCurrentToken(reparseStartToken);
       Name name = name();
 
@@ -2622,22 +2621,7 @@ istmt withStatement(boolean isAsync, Token asyncToken): {
   ArrayList<istmt> blockStmts;
 } {
   <WITH> { if (!isAsync) {startToken = token;} }
-  // The following choice starts with an ambiguity because the first Withitem could
-  // be a parenthesized expression. Without LOOKAHEAD(2) JavaCC thus complains as
-  // expected. With LOOKAHEAD(2) there is still an ambiguity but JavaCC for whatever
-  // reason stops complaining an opportunistically takes the first choice if possible
-  // which is what we want here, although i dont fully understand it.
-  (LOOKAHEAD(2)
-    (
-      <PAREN_OPEN>
-      items = withItems()
-      <PAREN_CLOSE>
-    )
-  | (
-      items = withItems()
-    )
-  )
-  <COLON>
+  items = withItemsAndColon()
   blockStmts = block()
   {
     if (isAsync) {
@@ -2646,6 +2630,52 @@ istmt withStatement(boolean isAsync, Token asyncToken): {
       return new With(items, blockStmts, null, attributes(startToken, token));
     }
   }
+}
+
+ArrayList<Withitem> withItemsAndColon(): {
+  ArrayList<Withitem> items;
+  Token reparseStartToken = null;
+} {
+  try {
+    // The following choice starts with an ambiguity because the first Withitem could
+    // be a parenthesized expression. Without LOOKAHEAD(2) JavaCC thus complains as
+    // expected. With LOOKAHEAD(2) there is still an ambiguity but JavaCC for whatever
+    // reason stops complaining an opportunistically takes the first choice if possible
+    // which is what we want here.
+    // In case the opportunistic first choice fails we end up in the catch block and
+    // try the alternative. The performance impact of this is negligible because the
+    // reparsed code is usually very small.
+    (LOOKAHEAD(2)
+      (
+        { reparseStartToken = token; }
+        <PAREN_OPEN>
+        items = withItems()
+        <PAREN_CLOSE>
+      )
+    |
+     (
+        items = withItems()
+      )
+    )
+    <COLON>
+    { return items; }
+  } catch (ParseException exception) {
+    if (reparseStartToken != null) {
+      setCurrentToken(reparseStartToken);
+
+      items = withItems();
+      consumeColon();
+      return items;
+    } else {
+      throw exception;
+    }
+  }
+}
+
+void consumeColon(): {
+
+} {
+  <COLON>
 }
 
 ArrayList<Withitem> withItems(): {
