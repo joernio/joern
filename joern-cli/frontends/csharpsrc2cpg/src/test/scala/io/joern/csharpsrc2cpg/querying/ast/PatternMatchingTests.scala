@@ -22,23 +22,19 @@ class PatternMatchingTests extends CSharpCode2CpgFixture {
         |""".stripMargin))
 
     "lower an assignment from `maybe` to `number` as the first statement of the if-body" in {
-      inside(cpg.assignment.where(_.target.isIdentifier.name("number")).headOption) {
-        case Some(assignment) =>
-          assignment.order shouldBe 1
-          assignment.inAst.exists(_.label == NodeTypes.CONTROL_STRUCTURE) shouldBe true
+      inside(cpg.assignment.where(_.target.isIdentifier.name("number")).headOption) { case Some(assignment) =>
+        assignment.order shouldBe 1
+        assignment.inAst.exists(_.label == NodeTypes.CONTROL_STRUCTURE) shouldBe true
 
-          inside(assignment.argument.l) {
-            case (number: Identifier) :: (maybe: Identifier) :: Nil =>
-              number.name shouldBe "number"
-              number.typeFullName shouldBe "System.Int32"
+        inside(assignment.argument.l) { case (number: Identifier) :: (maybe: Identifier) :: Nil =>
+          number.name shouldBe "number"
+          number.typeFullName shouldBe "System.Int32"
 
-              maybe.name shouldBe "maybe"
-              maybe._astIn.size shouldBe 1
-              maybe.typeFullName shouldBe "System.Int32"
-            case xs => fail(s"Expected two identifier arguments, instead got [${xs.code.mkString(",")}]")
-          }
+          maybe.name shouldBe "maybe"
+          maybe._astIn.size shouldBe 1
+          maybe.typeFullName shouldBe "System.Int32"
+        }
 
-        case None => fail("Expected an assignment `number = maybe`")
       }
     }
 
@@ -46,18 +42,12 @@ class PatternMatchingTests extends CSharpCode2CpgFixture {
       inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).condition.headOption) {
         case Some(condition: Call) =>
           condition.name shouldBe Operators.instanceOf
-          inside(condition.argument.l) {
-            case (maybe: Identifier) :: (intType: TypeRef) :: Nil =>
-              maybe.name shouldBe "maybe"
-              maybe.typeFullName shouldBe "System.Int32"
+          inside(condition.argument.l) { case (maybe: Identifier) :: (intType: TypeRef) :: Nil =>
+            maybe.name shouldBe "maybe"
+            maybe.typeFullName shouldBe "System.Int32"
 
-              intType.typeFullName shouldBe "System.Int32"
-            case xs =>
-              fail(
-                s"Expected an identifier and type ref argument to `instanceOf`, instead got [${xs.code.mkString(",")}]"
-              )
+            intType.typeFullName shouldBe "System.Int32"
           }
-        case _ => fail("Expected an if-statement with a condition call")
 
       }
     }
@@ -78,15 +68,12 @@ class PatternMatchingTests extends CSharpCode2CpgFixture {
         case Some(condition: Call) =>
           condition.name shouldBe Operators.equals
 
-          inside(condition.argument.l) {
-            case (maybe: Identifier) :: (nullType: Literal) :: Nil =>
-              maybe.name shouldBe "maybe"
-              maybe.typeFullName shouldBe "System.Int32"
+          inside(condition.argument.l) { case (maybe: Identifier) :: (nullType: Literal) :: Nil =>
+            maybe.name shouldBe "maybe"
+            maybe.typeFullName shouldBe "System.Int32"
 
-              nullType.typeFullName shouldBe "null"
-            case xs => fail(s"Expect identifier and literal, instead got [${xs.code.mkString(", ")}]")
+            nullType.typeFullName shouldBe "null"
           }
-        case _ => fail("Expected an if-statement with condition call")
       }
     }
   }

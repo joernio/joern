@@ -18,21 +18,17 @@ class ControlStructureTests extends CSharpCode2CpgFixture {
         |""".stripMargin))
 
     "create a throw operation with exception constructor" in {
-      inside(cpg.call.nameExact(CSharpOperators.throws).headOption) {
-        case Some(x: Call) =>
-          x.methodFullName shouldBe CSharpOperators.throws
-          x.code shouldBe "throw new Exception(\"Error!\");"
-          x.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      inside(cpg.call.nameExact(CSharpOperators.throws).headOption) { case Some(x: Call) =>
+        x.methodFullName shouldBe CSharpOperators.throws
+        x.code shouldBe "throw new Exception(\"Error!\");"
+        x.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-          inside(x.argumentOption(1)) {
-            case Some(exp: Call) =>
-              exp.code shouldBe "new Exception(\"Error!\")"
-              exp.name shouldBe Defines.ConstructorMethodName
-              exp.typeFullName shouldBe "System.Exception"
-            case _ => fail("No exception constructor node found!")
-          }
+        inside(x.argumentOption(1)) { case Some(exp: Call) =>
+          exp.code shouldBe "new Exception(\"Error!\")"
+          exp.name shouldBe Defines.ConstructorMethodName
+          exp.typeFullName shouldBe "System.Exception"
+        }
 
-        case None => fail("No 'throw' call node found!")
       }
     }
   }
@@ -199,9 +195,8 @@ class ControlStructureTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "partially resolve calls on the defined variable" in {
-      inside(cpg.call.name("Open").methodFullName.l) {
-        case x :: Nil => x shouldBe "SqlConnection.Open:<unresolvedSignature>"
-        case _        => fail("Unexpected call node structure")
+      inside(cpg.call.name("Open").methodFullName.l) { case x :: Nil =>
+        x shouldBe "SqlConnection.Open:<unresolvedSignature>"
       }
     }
   }

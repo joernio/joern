@@ -17,23 +17,19 @@ class ExtensionMethodTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "have correct properties" in {
-      inside(cpg.method.nameExact("DoStuff").l) {
-        case doStuff :: Nil =>
-          doStuff.fullName shouldBe "Extensions.DoStuff:System.Void(MyClass)"
-          doStuff.signature shouldBe "System.Void(MyClass)"
-          doStuff.methodReturn.typeFullName shouldBe "System.Void"
-          doStuff.modifier.modifierType.toSet shouldBe Set(ModifierTypes.STATIC, ModifierTypes.PUBLIC)
-        case xs => fail(s"Expected single DoStuff method, but got $xs")
+      inside(cpg.method.nameExact("DoStuff").l) { case doStuff :: Nil =>
+        doStuff.fullName shouldBe "Extensions.DoStuff:System.Void(MyClass)"
+        doStuff.signature shouldBe "System.Void(MyClass)"
+        doStuff.methodReturn.typeFullName shouldBe "System.Void"
+        doStuff.modifier.modifierType.toSet shouldBe Set(ModifierTypes.STATIC, ModifierTypes.PUBLIC)
       }
     }
 
     "have correct parameters" in {
-      inside(cpg.method.nameExact("DoStuff").parameter.sortBy(_.index).l) {
-        case myClass :: Nil =>
-          myClass.typeFullName shouldBe "MyClass"
-          myClass.code shouldBe "this MyClass myClass"
-          myClass.name shouldBe "myClass"
-        case xs => fail(s"Expected single parameter, but got $xs")
+      inside(cpg.method.nameExact("DoStuff").parameter.sortBy(_.index).l) { case myClass :: Nil =>
+        myClass.typeFullName shouldBe "MyClass"
+        myClass.code shouldBe "this MyClass myClass"
+        myClass.name shouldBe "myClass"
       }
     }
   }
@@ -51,23 +47,19 @@ class ExtensionMethodTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "have correct properties" in {
-      inside(cpg.call.nameExact("DoStuff").l) {
-        case doStuff :: Nil =>
-          doStuff.code shouldBe "x.DoStuff()"
-          doStuff.methodFullName shouldBe "Extensions.DoStuff:System.Void(MyClass)"
-          doStuff.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-        case xs => fail(s"Expected single DoStuff call, but got $xs")
+      inside(cpg.call.nameExact("DoStuff").l) { case doStuff :: Nil =>
+        doStuff.code shouldBe "x.DoStuff()"
+        doStuff.methodFullName shouldBe "Extensions.DoStuff:System.Void(MyClass)"
+        doStuff.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       }
     }
 
     "have correct arguments" in {
-      inside(cpg.call.nameExact("DoStuff").argument.sortBy(_.argumentIndex).l) {
-        case (x: Identifier) :: Nil =>
-          x.argumentIndex shouldBe 0
-          x.name shouldBe "x"
-          x.typeFullName shouldBe "MyClass"
-          x.code shouldBe "x"
-        case xs => fail(s"Expected single identifier argument to DoStuff, but got $xs")
+      inside(cpg.call.nameExact("DoStuff").argument.sortBy(_.argumentIndex).l) { case (x: Identifier) :: Nil =>
+        x.argumentIndex shouldBe 0
+        x.name shouldBe "x"
+        x.typeFullName shouldBe "MyClass"
+        x.code shouldBe "x"
       }
     }
   }
@@ -98,11 +90,9 @@ class ExtensionMethodTests extends CSharpCode2CpgFixture {
           |""".stripMargin)
 
     "find the correct extension method" in {
-      inside(cpg.call.nameExact("DoStuff").l) {
-        case doStuff :: Nil =>
-          doStuff.code shouldBe "x.DoStuff(0)"
-          doStuff.methodFullName shouldBe "Version1.Extension1.DoStuff:System.Void(MyClass,System.Int32)"
-        case xs => fail(s"Expected single DoStuff call, but got $xs")
+      inside(cpg.call.nameExact("DoStuff").l) { case doStuff :: Nil =>
+        doStuff.code shouldBe "x.DoStuff(0)"
+        doStuff.methodFullName shouldBe "Version1.Extension1.DoStuff:System.Void(MyClass,System.Int32)"
       }
     }
   }
@@ -227,26 +217,20 @@ class ExtensionMethodTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "have correct properties and arguments" in {
-      inside(cpg.call.nameExact("Bar").l) {
-        case bar :: Nil =>
-          bar.code shouldBe "x.Foo().Bar()"
-          bar.methodFullName shouldBe "Extensions.Bar:System.Int32(MyClass)"
-          bar.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-          inside(bar.argument.sortBy(_.argumentIndex).l) {
-            case (foo: Call) :: Nil =>
-              foo.code shouldBe "x.Foo()"
-              foo.methodFullName shouldBe "Extensions.Foo:MyClass(MyClass)"
-              foo.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-              inside(foo.argument.sortBy(_.argumentIndex).l) {
-                case (x: Identifier) :: Nil =>
-                  x.code shouldBe "x"
-                  x.name shouldBe "x"
-                  x.typeFullName shouldBe "MyClass"
-                case xs => fail(s"Expected identifier argument to Foo, but got $xs")
-              }
-            case xs => fail(s"Expected single call argument to Bar, but got $xs")
+      inside(cpg.call.nameExact("Bar").l) { case bar :: Nil =>
+        bar.code shouldBe "x.Foo().Bar()"
+        bar.methodFullName shouldBe "Extensions.Bar:System.Int32(MyClass)"
+        bar.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        inside(bar.argument.sortBy(_.argumentIndex).l) { case (foo: Call) :: Nil =>
+          foo.code shouldBe "x.Foo()"
+          foo.methodFullName shouldBe "Extensions.Foo:MyClass(MyClass)"
+          foo.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+          inside(foo.argument.sortBy(_.argumentIndex).l) { case (x: Identifier) :: Nil =>
+            x.code shouldBe "x"
+            x.name shouldBe "x"
+            x.typeFullName shouldBe "MyClass"
           }
-        case xs => fail(s"Expected single call to Bar, but got $xs")
+        }
       }
     }
 

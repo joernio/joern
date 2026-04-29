@@ -23,15 +23,11 @@ class MemberAccessTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "have correct types both on the LHS and RHS" in {
-      inside(cpg.assignment.l.sortBy(_.lineNumber).drop(1)) {
-        case a :: Nil =>
-          inside(a.argument.l) {
-            case (lhs: Identifier) :: (rhs: Call) :: Nil =>
-              lhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
-              rhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
-            case _ => fail("Expected 2 arguments under the assignment call.")
-          }
-        case _ => fail("Expected 1 assignment call.")
+      inside(cpg.assignment.l.sortBy(_.lineNumber).drop(1)) { case a :: Nil =>
+        inside(a.argument.l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
+          rhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
+        }
       }
     }
   }
@@ -52,15 +48,11 @@ class MemberAccessTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "have correct types both on the LHS and RHS" in {
-      inside(cpg.assignment.l.sortBy(_.lineNumber).drop(1)) {
-        case a :: Nil =>
-          inside(a.argument.l) {
-            case (lhs: Identifier) :: (rhs: Call) :: Nil =>
-              lhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
-              rhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
-            case _ => fail("Expected 2 arguments under the assignment call.")
-          }
-        case _ => fail("Expected 1 assignment call.")
+      inside(cpg.assignment.l.sortBy(_.lineNumber).drop(1)) { case a :: Nil =>
+        inside(a.argument.l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
+          rhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
+        }
       }
     }
   }
@@ -97,20 +89,16 @@ class MemberAccessTests extends CSharpCode2CpgFixture {
     }
 
     "have correct properties for the outermost field access" in {
-      inside(cpg.fieldAccess.where(_.fieldIdentifier.canonicalNameExact("Field2")).l) {
-        case field2 :: Nil =>
-          field2.typeFullName shouldBe "Foo.Bar"
-          field2.referencedMember.l shouldBe cpg.typeDecl.nameExact("Bar").member.nameExact("Field2").l
-        case _ => fail("Expected single field access to `Field2`")
+      inside(cpg.fieldAccess.where(_.fieldIdentifier.canonicalNameExact("Field2")).l) { case field2 :: Nil =>
+        field2.typeFullName shouldBe "Foo.Bar"
+        field2.referencedMember.l shouldBe cpg.typeDecl.nameExact("Bar").member.nameExact("Field2").l
       }
     }
 
     "have correct properties for the innermost field access" in {
-      inside(cpg.fieldAccess.where(_.fieldIdentifier.canonicalNameExact("Field1")).l) {
-        case field1 :: Nil =>
-          field1.typeFullName shouldBe "Foo.Bar"
-          field1.referencedMember.l shouldBe cpg.typeDecl.nameExact("Bar").member.nameExact("Field1").l
-        case _ => fail("Expected single field access to `Field1`")
+      inside(cpg.fieldAccess.where(_.fieldIdentifier.canonicalNameExact("Field1")).l) { case field1 :: Nil =>
+        field1.typeFullName shouldBe "Foo.Bar"
+        field1.referencedMember.l shouldBe cpg.typeDecl.nameExact("Bar").member.nameExact("Field1").l
       }
     }
 
@@ -134,30 +122,22 @@ class MemberAccessTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "have correct types and attributes both on the LHS and RHS" in {
-      inside(cpg.assignment.l.sortBy(_.lineNumber).drop(1)) {
-        case a :: b :: Nil =>
-          inside(a.argument.l) {
-            case (lhs: Identifier) :: (rhs: Call) :: Nil =>
-              lhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
-              rhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
-            case _ => fail("Expected 2 arguments under the assignment call")
-          }
+      inside(cpg.assignment.l.sortBy(_.lineNumber).drop(1)) { case a :: b :: Nil =>
+        inside(a.argument.l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
+          rhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
+        }
 
-          inside(b.argument.l) {
-            case (lhs: Identifier) :: (rhs: Call) :: Nil =>
-              lhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
-              rhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
-            case _ => fail("Expected 2 arguments under the assignment call")
-          }
+        inside(b.argument.l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
+          rhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
+        }
 
-          inside(cpg.call.nameExact("Fred").l) {
-            case fred :: Nil =>
-              fred.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
-              fred.methodFullName shouldBe "Foo.Baz.Fred:System.String(System.Int32)"
-            case _ => fail("Expected a call named `Fred`")
+        inside(cpg.call.nameExact("Fred").l) { case fred :: Nil =>
+          fred.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
+          fred.methodFullName shouldBe "Foo.Baz.Fred:System.String(System.Int32)"
 
-          }
-        case _ => fail("Expected 2 assignment call.")
+        }
       }
     }
   }
@@ -178,13 +158,11 @@ class MemberAccessTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "have correct types both on the LHS and RHS" in {
-      inside(cpg.assignment.l.sortBy(_.lineNumber).drop(1)) {
-        case a :: Nil =>
-          inside(a.argument.l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
-            lhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
-            rhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
-          }
-        case _ => fail("Expected 1 assignment call.")
+      inside(cpg.assignment.l.sortBy(_.lineNumber).drop(1)) { case a :: Nil =>
+        inside(a.argument.l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
+          rhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
+        }
       }
     }
   }
@@ -207,30 +185,22 @@ class MemberAccessTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "have correct types and attributes both on the LHS and RHS" in {
-      inside(cpg.assignment.l.sortBy(_.lineNumber).drop(1)) {
-        case a :: b :: Nil =>
-          inside(a.argument.l) {
-            case (lhs: Identifier) :: (rhs: Call) :: Nil =>
-              lhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
-              rhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
-            case _ => fail("Expected 2 arguments under the assignment call")
-          }
+      inside(cpg.assignment.l.sortBy(_.lineNumber).drop(1)) { case a :: b :: Nil =>
+        inside(a.argument.l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
+          rhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
+        }
 
-          inside(b.argument.l) {
-            case (lhs: Identifier) :: (rhs: Call) :: Nil =>
-              lhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
-              rhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
-            case _ => fail("Expected 2 arguments under the assignment call")
-          }
+        inside(b.argument.l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
+          rhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
+        }
 
-          inside(cpg.call.nameExact("Fred").l) {
-            case fred :: Nil =>
-              fred.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
-              fred.methodFullName shouldBe "Foo.Baz.Fred:System.String(System.Int32)"
-            case _ => fail("Expected a call named `Fred`")
+        inside(cpg.call.nameExact("Fred").l) { case fred :: Nil =>
+          fred.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
+          fred.methodFullName shouldBe "Foo.Baz.Fred:System.String(System.Int32)"
 
-          }
-        case _ => fail("Expected 2 assignment call.")
+        }
       }
     }
   }
@@ -252,15 +222,11 @@ class MemberAccessTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "have correct types and attributes both on the LHS and RHS" in {
-      inside(cpg.assignment.l.sortBy(_.lineNumber).drop(1).l) {
-        case a :: Nil =>
-          inside(a.argument.l) {
-            case (lhs: Identifier) :: (rhs: Call) :: Nil =>
-              lhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
-              rhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
-            case _ => fail("Expected 2 arguments under the assignment call")
-          }
-        case _ => fail("Expected 1 assignment call.")
+      inside(cpg.assignment.l.sortBy(_.lineNumber).drop(1).l) { case a :: Nil =>
+        inside(a.argument.l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
+          rhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
+        }
       }
     }
   }
@@ -283,15 +249,11 @@ class MemberAccessTests extends CSharpCode2CpgFixture {
           |""".stripMargin)
 
       "have correct types and attributes both on the LHS and RHS" in {
-        inside(cpg.assignment.l.sortBy(_.lineNumber).drop(1).l) {
-          case a :: Nil =>
-            inside(a.argument.l) {
-              case (lhs: Identifier) :: (rhs: Call) :: Nil =>
-                lhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
-                rhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
-              case _ => fail("Expected 2 arguments under the assignment call")
-            }
-          case _ => fail("Expected 1 assignment call.")
+        inside(cpg.assignment.l.sortBy(_.lineNumber).drop(1).l) { case a :: Nil =>
+          inside(a.argument.l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+            lhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
+            rhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
+          }
         }
       }
     }
@@ -317,15 +279,11 @@ class MemberAccessTests extends CSharpCode2CpgFixture {
       |""".stripMargin)
 
     "have correct types and attributes both on the LHS and RHS" in {
-      inside(cpg.assignment.l.sortBy(_.lineNumber).drop(1).l) {
-        case a :: Nil =>
-          inside(a.argument.l) {
-            case (lhs: Identifier) :: (rhs: Call) :: Nil =>
-              lhs.typeFullName shouldBe "Foo.Baz"
-              rhs.typeFullName shouldBe "Foo.Baz"
-            case _ => fail("Expected 2 arguments under the assignment call")
-          }
-        case _ => fail("Expected 1 assignment call.")
+      inside(cpg.assignment.l.sortBy(_.lineNumber).drop(1).l) { case a :: Nil =>
+        inside(a.argument.l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.typeFullName shouldBe "Foo.Baz"
+          rhs.typeFullName shouldBe "Foo.Baz"
+        }
       }
     }
   }
@@ -346,15 +304,11 @@ class MemberAccessTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "have correct types and attributes both on the LHS and RHS" in {
-      inside(cpg.assignment.l.sortBy(_.lineNumber).drop(1).l) {
-        case a :: Nil =>
-          inside(a.argument.l) {
-            case (lhs: Identifier) :: (rhs: Call) :: Nil =>
-              lhs.typeFullName shouldBe "Foo.Baz"
-              rhs.typeFullName shouldBe "Foo.Baz"
-            case _ => fail("Expected 2 arguments under the assignment call")
-          }
-        case _ => fail("Expected 1 assignment call.")
+      inside(cpg.assignment.l.sortBy(_.lineNumber).drop(1).l) { case a :: Nil =>
+        inside(a.argument.l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.typeFullName shouldBe "Foo.Baz"
+          rhs.typeFullName shouldBe "Foo.Baz"
+        }
       }
     }
   }
@@ -376,15 +330,11 @@ class MemberAccessTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "have correct types and attributes both on the LHS and RHS" in {
-      inside(cpg.assignment.l.sortBy(_.lineNumber).drop(1).l) {
-        case a :: Nil =>
-          inside(a.argument.l) {
-            case (lhs: Identifier) :: (rhs: Call) :: Nil =>
-              lhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
-              rhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
-            case _ => fail("Expected 2 arguments under the assignment call")
-          }
-        case _ => fail("Expected 1 assignment call.")
+      inside(cpg.assignment.l.sortBy(_.lineNumber).drop(1).l) { case a :: Nil =>
+        inside(a.argument.l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
+          rhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
+        }
       }
     }
   }
