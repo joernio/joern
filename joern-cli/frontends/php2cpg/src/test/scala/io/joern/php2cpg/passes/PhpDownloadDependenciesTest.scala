@@ -48,11 +48,10 @@ class PhpDownloadDependenciesTest extends PhpCode2CpgFixture(withPostProcessing 
       .withConfig(Config().withDownloadDependencies(true))
 
     "download the AWS library and populate the CPG with external high-level nodes" in {
-      inside(cpg.typeDecl.fullNameExact("Aws\\S3\\S3Client").headOption) {
-        case Some(s3Client) =>
-          s3Client.isExternal shouldBe true
-          s3Client.method.size should be > 0
-        case None => fail("Expected a fully qualified AWS S3Client type stub")
+      inside(cpg.typeDecl.fullNameExact("Aws\\S3\\S3Client").headOption) { case Some(s3Client) =>
+        s3Client.isExternal shouldBe true
+        s3Client.method.size should be > 0
+
       }
     }
 

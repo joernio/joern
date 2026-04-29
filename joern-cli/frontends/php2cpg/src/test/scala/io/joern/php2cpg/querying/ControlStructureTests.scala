@@ -1470,7 +1470,6 @@ class ControlStructureTests extends PhpCode2CpgFixture {
           bLocal.name shouldBe "b"
           cLocal.name shouldBe "c"
           foreachStruct.code shouldBe "foreach ($data as list($a,$b,$c))"
-        case xs => fail(s"Expected five astChildren, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
@@ -1512,7 +1511,6 @@ class ControlStructureTests extends PhpCode2CpgFixture {
             assignmentTests(bInit, variableName = "b", arrayIndex = 1)
             assignmentTests(cInit, variableName = "c", arrayIndex = 2)
           }
-        case xs => fail(s"Expected four children for control structure, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
@@ -1556,7 +1554,6 @@ class ControlStructureTests extends PhpCode2CpgFixture {
             echoCallA.code shouldBe "echo $a"
             echoCallB.code shouldBe "echo $b"
           }
-        case xs => fail(s"Expected four children for control structure, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
@@ -1569,37 +1566,33 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       The above sample is still valid Php code and runs as long as we don't use the $c variable in the loop (only a warning is emitted when running the code). This means
       that the `!isNull` condition should be an OR since the loop still executes above, even though $c is a null-value
        */
-      inside(cpg.controlStructure.isFor.condition.l) {
-        case parentOr :: Nil =>
-          inside(parentOr.astChildren.l) {
-            case (nestedOr: Call) :: (logicalNot: Call) :: Nil =>
-              nestedOr.methodFullName shouldBe Operators.or
-              val List(orLeftArg: Call, orRightArg: Call) = nestedOr.argument.l: @unchecked
-              orLeftArg.methodFullName shouldBe Operators.logicalNot
-              orRightArg.methodFullName shouldBe Operators.logicalNot
+      inside(cpg.controlStructure.isFor.condition.l) { case parentOr :: Nil =>
+        inside(parentOr.astChildren.l) { case (nestedOr: Call) :: (logicalNot: Call) :: Nil =>
+          nestedOr.methodFullName shouldBe Operators.or
+          val List(orLeftArg: Call, orRightArg: Call) = nestedOr.argument.l: @unchecked
+          orLeftArg.methodFullName shouldBe Operators.logicalNot
+          orRightArg.methodFullName shouldBe Operators.logicalNot
 
-              val List(orLeftArgNullCall: Call) = orLeftArg.argument.l: @unchecked
-              orLeftArgNullCall.methodFullName shouldBe PhpOperators.isNull
+          val List(orLeftArgNullCall: Call) = orLeftArg.argument.l: @unchecked
+          orLeftArgNullCall.methodFullName shouldBe PhpOperators.isNull
 
-              val List(aVar) = orLeftArgNullCall.argument.l: @unchecked
-              aVar.code shouldBe "$a"
+          val List(aVar) = orLeftArgNullCall.argument.l: @unchecked
+          aVar.code shouldBe "$a"
 
-              val List(orRightArgNullCall: Call) = orRightArg.argument.l: @unchecked
-              orRightArgNullCall.methodFullName shouldBe PhpOperators.isNull
+          val List(orRightArgNullCall: Call) = orRightArg.argument.l: @unchecked
+          orRightArgNullCall.methodFullName shouldBe PhpOperators.isNull
 
-              val List(bVar) = orRightArgNullCall.argument.l: @unchecked
-              bVar.code shouldBe "$b"
+          val List(bVar) = orRightArgNullCall.argument.l: @unchecked
+          bVar.code shouldBe "$b"
 
-              logicalNot.methodFullName shouldBe Operators.logicalNot
-              val List(notArg: Call) = logicalNot.argument.l: @unchecked
-              notArg.methodFullName shouldBe PhpOperators.isNull
+          logicalNot.methodFullName shouldBe Operators.logicalNot
+          val List(notArg: Call) = logicalNot.argument.l: @unchecked
+          notArg.methodFullName shouldBe PhpOperators.isNull
 
-              val List(cVar: Identifier) = notArg.argument.l: @unchecked
-              cVar.code shouldBe "$c"
+          val List(cVar: Identifier) = notArg.argument.l: @unchecked
+          cVar.code shouldBe "$c"
 
-            case xs => fail(s"Expected two children calls for condition, got, ${xs.code.mkString("[", ",", "]")}")
-          }
-        case xs => fail(s"Expected one condition for FOR construct, got ${xs.code.mkString("[", ",", "]")}")
+        }
       }
     }
   }
@@ -1636,7 +1629,6 @@ class ControlStructureTests extends PhpCode2CpgFixture {
           bLocal.name shouldBe "b"
           cLocal.name shouldBe "c"
           foreachStruct.code shouldBe "foreach ($data as list($a,list($b,$c)))"
-        case xs => fail(s"Expected five astChildren, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
@@ -1690,7 +1682,6 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
             assignmentTests(tmp1Init, variableName = "foo@tmp-2", tmpIndex = 1, arrayIndex = 1)
           }
-        case xs => fail(s"Expected four children for control structure, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
@@ -1746,7 +1737,6 @@ class ControlStructureTests extends PhpCode2CpgFixture {
             echoCallA.code shouldBe "echo $a"
             echoCallB.code shouldBe "echo $b"
           }
-        case xs => fail(s"Expected four children for control structure, got ${xs.code.mkString("[", ",", "]")}")
       }
     }
 
@@ -1755,37 +1745,33 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       For nested list deconstruction, we have !a || (!b || !c) instead of (!a || !b) || !c because we process
       the nested list first, which gives the (!b || !c), and then we use that result to create the !a || (!b || !c)
        */
-      inside(cpg.controlStructure.isFor.condition.l) {
-        case parentOr :: Nil =>
-          inside(parentOr.astChildren.l) {
-            case (logicalNot: Call) :: (nestedOr: Call) :: Nil =>
-              nestedOr.methodFullName shouldBe Operators.or
-              val List(orLeftArg: Call, orRightArg: Call) = nestedOr.argument.l: @unchecked
-              orLeftArg.methodFullName shouldBe Operators.logicalNot
-              orRightArg.methodFullName shouldBe Operators.logicalNot
+      inside(cpg.controlStructure.isFor.condition.l) { case parentOr :: Nil =>
+        inside(parentOr.astChildren.l) { case (logicalNot: Call) :: (nestedOr: Call) :: Nil =>
+          nestedOr.methodFullName shouldBe Operators.or
+          val List(orLeftArg: Call, orRightArg: Call) = nestedOr.argument.l: @unchecked
+          orLeftArg.methodFullName shouldBe Operators.logicalNot
+          orRightArg.methodFullName shouldBe Operators.logicalNot
 
-              val List(orLeftArgNullCall: Call) = orLeftArg.argument.l: @unchecked
-              orLeftArgNullCall.methodFullName shouldBe PhpOperators.isNull
+          val List(orLeftArgNullCall: Call) = orLeftArg.argument.l: @unchecked
+          orLeftArgNullCall.methodFullName shouldBe PhpOperators.isNull
 
-              val List(bVar) = orLeftArgNullCall.argument.l: @unchecked
-              bVar.code shouldBe "$b"
+          val List(bVar) = orLeftArgNullCall.argument.l: @unchecked
+          bVar.code shouldBe "$b"
 
-              val List(orRightArgNullCall: Call) = orRightArg.argument.l: @unchecked
-              orRightArgNullCall.methodFullName shouldBe PhpOperators.isNull
+          val List(orRightArgNullCall: Call) = orRightArg.argument.l: @unchecked
+          orRightArgNullCall.methodFullName shouldBe PhpOperators.isNull
 
-              val List(cVar) = orRightArgNullCall.argument.l: @unchecked
-              cVar.code shouldBe "$c"
+          val List(cVar) = orRightArgNullCall.argument.l: @unchecked
+          cVar.code shouldBe "$c"
 
-              logicalNot.methodFullName shouldBe Operators.logicalNot
-              val List(notArg: Call) = logicalNot.argument.l: @unchecked
-              notArg.methodFullName shouldBe PhpOperators.isNull
+          logicalNot.methodFullName shouldBe Operators.logicalNot
+          val List(notArg: Call) = logicalNot.argument.l: @unchecked
+          notArg.methodFullName shouldBe PhpOperators.isNull
 
-              val List(aVar: Identifier) = notArg.argument.l: @unchecked
-              aVar.code shouldBe "$a"
+          val List(aVar: Identifier) = notArg.argument.l: @unchecked
+          aVar.code shouldBe "$a"
 
-            case xs => fail(s"Expected two children calls for condition, got, ${xs.code.mkString("[", ",", "]")}")
-          }
-        case xs => fail(s"Expected one condition for FOR construct, got ${xs.code.mkString("[", ",", "]")}")
+        }
       }
     }
   }

@@ -23,52 +23,41 @@ class PocTest extends PhpCode2CpgFixture {
     )
 
     "have the correct namespace set" in {
-      cpg.namespaceBlock.fullName(".*printhello.php.*").l match {
-        case namespaceBlock :: Nil =>
-          namespaceBlock.name shouldBe "<global>"
-        case result => fail(s"expected namespaceBlock found $result")
+      inside(cpg.namespaceBlock.fullName(".*printhello.php.*").l) { case namespaceBlock :: Nil =>
+        namespaceBlock.name shouldBe "<global>"
       }
     }
 
     "have a call node for the printHello call" in {
-      cpg.call.nameExact("printHello").l match {
-        case call :: Nil =>
-          call.lineNumber shouldBe Some(7)
-
-        case result => fail(s"Expected printHello call got $result")
+      inside(cpg.call.nameExact("printHello").l) { case call :: Nil =>
+        call.lineNumber shouldBe Some(7)
       }
     }
 
     "have the correct method ast for the printHello method" in {
-      cpg.method.internal.name("printHello").l match {
-        case method :: Nil =>
-          val List(param) = method.parameter.l
-          param.name shouldBe "name"
-          param.code shouldBe "$name"
-          method.methodReturn.typeFullName shouldBe Defines.Any
+      inside(cpg.method.internal.name("printHello").l) { case method :: Nil =>
+        val List(param) = method.parameter.l
+        param.name shouldBe "name"
+        param.code shouldBe "$name"
+        method.methodReturn.typeFullName shouldBe Defines.Any
 
-          val List(echoCall) = method.body.astChildren.collectAll[Call].l
-          echoCall.name shouldBe "echo"
-          echoCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-          val encapsCall = echoCall.argument.l match {
-            case List(encapsCall: Call) => encapsCall
-            case result                 => fail(s"Expected encaps call but got $result")
-          }
+        val List(echoCall) = method.body.astChildren.collectAll[Call].l
+        echoCall.name shouldBe "echo"
+        echoCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        val encapsCall = inside(echoCall.argument.l) { case List(encapsCall: Call) =>
+          encapsCall
+        }
 
-          encapsCall.argument.l match {
-            case List(str1: Literal, identifier: Identifier, str2: Literal) =>
-              str1.typeFullName shouldBe TypeConstants.String
-              str1.code shouldBe "\"Hello, \""
+        inside(encapsCall.argument.l) { case List(str1: Literal, identifier: Identifier, str2: Literal) =>
+          str1.typeFullName shouldBe TypeConstants.String
+          str1.code shouldBe "\"Hello, \""
 
-              identifier.name shouldBe "name"
+          identifier.name shouldBe "name"
 
-              str2.typeFullName shouldBe TypeConstants.String
-              str2.code shouldBe "\"\\n\""
+          str2.typeFullName shouldBe TypeConstants.String
+          str2.code shouldBe "\"\\n\""
+        }
 
-            case result => fail(s"Expected 3 part encaps call but got $result")
-          }
-
-        case result => fail(s"Expected printHello method but got $result")
       }
     }
 
