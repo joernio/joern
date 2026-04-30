@@ -100,7 +100,7 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     case x: MatchExpr                   => notHandledYet(x)
     case methodCallExpr: MethodCallExpr => visitMethodCallExpr(methodCallExpr)
     case x: OffsetOfExpr                => notHandledYet(x)
-    case expr: ParenExpr                => visitExpr(expr)
+    case expr: ParenExpr                => visitExpr(expr.expr)
     case pathExpr: PathExpr             => visitPathExpr(pathExpr)
     case prefixExpr: PrefixExpr         => visitPrefixExpr(prefixExpr)
     case x: RangeExpr                   => notHandledYet(x)

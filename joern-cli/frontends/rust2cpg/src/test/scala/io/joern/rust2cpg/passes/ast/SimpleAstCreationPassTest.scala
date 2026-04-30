@@ -749,4 +749,26 @@ class SimpleAstCreationPassTest extends Rust2CpgSuite {
     }
   }
 
+  "test 34" in {
+    val cpg = code("""
+        |fn foo() -> i32 {
+        | (24)
+        |}
+        |""".stripMargin)
+
+    inside(cpg.method.name("foo").methodReturn.l) { case (methodRet: MethodReturn) :: Nil =>
+      methodRet.typeFullName shouldBe "i32"
+      methodRet.code shouldBe "RET"
+    }
+
+    inside(cpg.method.name("foo").block.astChildren.isReturn.l) { case (ret: Return) :: Nil =>
+      ret.code shouldBe "(24)"
+
+      inside(ret.astChildren.l) { case (lit: Literal) :: Nil =>
+        lit.code shouldBe "24"
+        lit.typeFullName shouldBe "i32"
+      }
+    }
+  }
+
 }
