@@ -5,35 +5,43 @@ import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+
+import java.nio.file.Paths
 
 class SimpleAstCreationPassTest extends Rust2CpgSuite {
 
   "test 01" in {
-    val cpg = code("", "src/lib.rs")
-    cpg.file.name.sorted.l shouldBe List("<unknown>", "src/lib.rs")
+    val libPath = (Paths.get("src") / "lib.rs").toString
+    val cpg     = code("", libPath)
+    cpg.file.name.sorted.l shouldBe List("<unknown>", libPath)
   }
 
   "test 02" in {
-    val cpg = code("", "src/lib.rs").moreCode("", "src/main.rs")
-    cpg.file.name.sorted.l shouldBe List("<unknown>", "src/lib.rs", "src/main.rs")
+    val libPath  = (Paths.get("src") / "lib.rs").toString
+    val mainPath = (Paths.get("src") / "main.rs").toString
+    val cpg      = code("", libPath).moreCode("", mainPath)
+    cpg.file.name.sorted.l shouldBe List("<unknown>", libPath, mainPath)
   }
 
   "test 03" in {
-    val cpg = code("", "src/main.rs")
-    inside(cpg.namespaceBlock.filename("src/main.rs").l) { case namespaceBlock :: Nil =>
+    val mainPath = (Paths.get("src") / "main.rs").toString
+    val cpg      = code("", mainPath)
+    inside(cpg.namespaceBlock.filename(mainPath).l) { case namespaceBlock :: Nil =>
       namespaceBlock.name shouldBe "<global>"
-      namespaceBlock.fullName shouldBe "src/main.rs:<global>"
+      namespaceBlock.fullName shouldBe s"$mainPath:<global>"
     }
   }
 
   "test 04" in {
-    val cpg = code("", "src/main.rs")
-    inside(cpg.namespaceBlock.filename("src/main.rs").astChildren.l) { case (method: Method) :: Nil =>
+    val mainPath = (Paths.get("src") / "main.rs").toString
+    val cpg      = code("", mainPath)
+    inside(cpg.namespaceBlock.filename(mainPath).astChildren.l) { case (method: Method) :: Nil =>
       method.name shouldBe "<global>"
-      method.fullName shouldBe "src/main.rs:<global>"
+      method.fullName shouldBe s"$mainPath:<global>"
       method.code shouldBe "<global>"
       method.astParentType shouldBe NodeTypes.NAMESPACE_BLOCK
-      method.astParentFullName shouldBe "src/main.rs:<global>"
+      method.astParentFullName shouldBe s"$mainPath:<global>"
 
       inside(method.start.methodReturn.l) { case methodRet :: Nil =>
         methodRet.typeFullName shouldBe Defines.Any
@@ -511,13 +519,14 @@ class SimpleAstCreationPassTest extends Rust2CpgSuite {
   }
 
   "test 25" in {
+    val filePath = (Paths.get("src") / "lib.rs").toString
     val cpg = code("""
         |fn main() {}
         |""".stripMargin)
 
     inside(cpg.method.name("main").l) { case main :: Nil =>
-      main.fullName shouldBe "src/lib.rs:<global>.main"
-      // TODO: main.astParentFullName shouldBe "src/lib.rs:<global>"
+      main.fullName shouldBe s"$filePath:<global>.main"
+      // TODO: main.astParentFullName shouldBe s"$filePath:<global>"
       main.parameter shouldBe empty
       main.methodReturn.typeFullName shouldBe "()"
       main.block.typeFullName shouldBe Defines.Any
@@ -565,6 +574,7 @@ class SimpleAstCreationPassTest extends Rust2CpgSuite {
   }
 
   "test 28" in {
+    val filePath = (Paths.get("src") / "lib.rs").toString
     val cpg = code("""
         |fn id(x: i32) -> i32 {
         | x
@@ -572,7 +582,7 @@ class SimpleAstCreationPassTest extends Rust2CpgSuite {
         |""".stripMargin)
 
     inside(cpg.method.name("id").l) { case (method: Method) :: Nil =>
-      method.fullName shouldBe "src/lib.rs:<global>.id"
+      method.fullName shouldBe s"$filePath:<global>.id"
     }
 
     inside(cpg.method.name("id").parameter.sortBy(_.order).l) { case (param: MethodParameterIn) :: Nil =>
@@ -593,12 +603,16 @@ class SimpleAstCreationPassTest extends Rust2CpgSuite {
   }
 
   "test 29" in {
-    val cpg = code("""
+    val filePath = (Paths.get("src") / "lib.rs").toString
+    val cpg = code(
+      """
         |fn foo(p1: i32, p2: i64, p3: f32) {}
-        |""".stripMargin)
+        |""".stripMargin,
+      filePath
+    )
 
     inside(cpg.method.name("foo").l) { case (method: Method) :: Nil =>
-      method.fullName shouldBe "src/lib.rs:<global>.foo"
+      method.fullName shouldBe s"$filePath:<global>.foo"
     }
 
     inside(cpg.method.name("foo").parameter.sortBy(_.order).l) { case p1 :: p2 :: p3 :: Nil =>
