@@ -5,6 +5,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
+import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
 
 /** Translation of abstract syntax trees into control flow graphs
   *
@@ -186,7 +188,13 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
 
   protected def cfgForThrowStatement(node: ControlStructure): Cfg = {
     val throwExprCfg = Iterator(node)
-      .coalesce(_._argumentOut.cast[AstNode], _.astChildren.order(1))
+      .coalesce(
+        _._argumentOut.cast[AstNode],
+        { n =>
+          CfgCreator.warnOnce("Using order fallback for throw statement argument")
+          n.astChildren.order(1)
+        }
+      )
       .headOption
       .map(cfgFor)
       .getOrElse(Cfg.empty)
@@ -200,7 +208,17 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     * to "jumpsToLabel".
     */
   protected def cfgForBreakStatement(node: ControlStructure): Cfg = {
-    node.astChildren.find(_.order == 1) match {
+    val jumpArgument = Iterator(node)
+      .coalesce(
+        _._jumpArgumentOut.cast[AstNode],
+        { n =>
+          CfgCreator.warnOnce("Using order fallback for break statement jump argument")
+          n.astChildren.order(1)
+        }
+      )
+      .headOption
+
+    jumpArgument match {
       case Some(jumpLabel: JumpLabel) =>
         val labelName = jumpLabel.name
         Cfg(entryNode = Option(node), jumpsToLabel = List((node, labelName)))
@@ -219,7 +237,17 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
   }
 
   protected def cfgForContinueStatement(node: ControlStructure): Cfg = {
-    node.astChildren.find(_.order == 1) match {
+    val jumpArgument = Iterator(node)
+      .coalesce(
+        _._jumpArgumentOut.cast[AstNode],
+        { n =>
+          CfgCreator.warnOnce("Using order fallback for continue statement jump argument")
+          n.astChildren.order(1)
+        }
+      )
+      .headOption
+
+    jumpArgument match {
       case Some(jumpLabel: JumpLabel) =>
         val labelName = jumpLabel.name
         Cfg(entryNode = Option(node), jumpsToLabel = List((node, labelName)))
@@ -380,18 +408,46 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     val children = node.astChildren.l
     val nLocals  = children.count(_.isLocal)
     val initExprCfg = Iterator(node)
-      .coalesce(_._forInitOut.cast[AstNode], _.astChildren.order(nLocals + 1))
+      .coalesce(
+        _._forInitOut.cast[AstNode],
+        { n =>
+          CfgCreator.warnOnce("Using order fallback for for statement init")
+          n.astChildren.order(nLocals + 1)
+        }
+      )
       .headOption
       .map(cfgFor)
       .getOrElse(Cfg.empty)
-    val conditionCfg = children.find(_.order == nLocals + 2).map(cfgFor).getOrElse(Cfg.empty)
+    val conditionCfg = Iterator(node)
+      .coalesce(
+        _._conditionOut.cast[AstNode],
+        { n =>
+          CfgCreator.warnOnce("Using order fallback for for statement condition")
+          n.astChildren.order(nLocals + 2)
+        }
+      )
+      .headOption
+      .map(cfgFor)
+      .getOrElse(Cfg.empty)
     val loopExprCfg = Iterator(node)
-      .coalesce(_._forUpdateOut.cast[AstNode], _.astChildren.order(nLocals + 3))
+      .coalesce(
+        _._forUpdateOut.cast[AstNode],
+        { n =>
+          CfgCreator.warnOnce("Using order fallback for for statement update")
+          n.astChildren.order(nLocals + 3)
+        }
+      )
       .headOption
       .map(cfgFor)
       .getOrElse(Cfg.empty)
     val bodyCfg = Iterator(node)
-      .coalesce(_._forBodyOut.cast[AstNode], _.astChildren.order(nLocals + 4))
+      .coalesce(
+        _._forBodyOut.cast[AstNode],
+        { n =>
+          CfgCreator.warnOnce("Using order fallback for for statement body")
+          n.astChildren.order(nLocals + 4)
+        }
+      )
       .headOption
       .map(cfgFor)
       .getOrElse(Cfg.empty)
@@ -426,7 +482,13 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     */
   protected def cfgForDoStatement(node: ControlStructure): Cfg = {
     val bodyCfg = Iterator(node)
-      .coalesce(_._doBodyOut.cast[AstNode], _.astChildren.order(1))
+      .coalesce(
+        _._doBodyOut.cast[AstNode],
+        { n =>
+          CfgCreator.warnOnce("Using order fallback for do-while statement body")
+          n.astChildren.order(1)
+        }
+      )
       .headOption
       .map(cfgFor)
       .getOrElse(Cfg.empty)
@@ -539,7 +601,10 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     val maybeTryBlock = Iterator(node)
       .coalesce(
         _._tryBodyOut.cast[AstNode].filter(_.astChildren.nonEmpty),
-        _.astChildren.order(1).where(_.astChildren) // Filter out empty `try` bodies
+        { n =>
+          CfgCreator.warnOnce("Using order fallback for try statement body")
+          n.astChildren.order(1).where(_.astChildren)
+        }
       )
       .headOption
 
@@ -552,7 +617,13 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       else catchControlStructures.iterator
 
     val catchBodyCfgs = Iterator(node)
-      .coalesce(_._catchBodyOut.cast[AstNode], _ => catchBodyFallback)
+      .coalesce(
+        _._catchBodyOut.cast[AstNode],
+        { _ =>
+          CfgCreator.warnOnce("Using order fallback for try statement catch body")
+          catchBodyFallback
+        }
+      )
       .map(cfgFor)
       .toList match {
       case Nil  => List(Cfg.empty)
@@ -568,7 +639,13 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       }
 
     val maybeFinallyBodyCfg = Iterator(node)
-      .coalesce(_._finallyBodyOut.cast[AstNode], _ => finallyBodyFallback)
+      .coalesce(
+        _._finallyBodyOut.cast[AstNode],
+        { _ =>
+          CfgCreator.warnOnce("Using order fallback for try statement finally body")
+          finallyBodyFallback
+        }
+      )
       .map(cfgFor)
       .headOption // Assume there can only be one
       .toList
@@ -664,6 +741,16 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
 }
 
 object CfgCreator {
+
+  private val logger         = LoggerFactory.getLogger(getClass)
+  private val loggedWarnings = ConcurrentHashMap.newKeySet[String]()
+
+  def warnOnce(msg: String): Unit = {
+    // Adds a point of contention, but log spam would be worse. This should be triggered less and less anyways as frontends get updated.
+    if (loggedWarnings.add(msg)) {
+      logger.warn(msg)
+    }
+  }
 
   implicit class FringeWrapper(fringe: List[(CfgNode, CfgEdgeType)]) {
     def withEdgeType(edgeType: CfgEdgeType): List[(CfgNode, CfgEdgeType)] = {

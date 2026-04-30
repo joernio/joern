@@ -305,5 +305,130 @@ class CfgCreationControlStructureEdgeTests extends AnyWordSpec with Matchers {
 
       method.out(EdgeTypes.CFG).cast[CfgNode].code.toList.shouldBe(List("realThrowExpr"))
     }
+
+    "prefer CONDITION edge over legacy AST order in FOR loops" in {
+      val cpg   = Cpg.empty
+      val graph = cpg.graph
+
+      val method       = graph.addNode(NewMethod().name("testFor").fullName("testFor").signature("void()"))
+      val methodReturn = graph.addNode(NewMethodReturn().typeFullName("void").order(2))
+      val methodBlock  = graph.addNode(NewBlock().code("methodBlock").order(1))
+
+      val forStructure =
+        graph.addNode(NewControlStructure().controlStructureType(ControlStructureTypes.FOR).code("for"))
+      val local = graph.addNode(NewControlStructure().code("local").order(1)) // Local node pushes indices by +1
+
+      // Legacy order would expect condition at `nLocals + 2` -> order(3).
+      // We put condition at order(4) and body call at order(3) so that legacy fallback fails.
+      val condition = graph.addNode(NewLiteral().code("cond").order(4))
+      val bodyCall  = graph.addNode(NewCall().name("bodyCall").code("bodyCall").order(3))
+
+      graph.applyDiff { diffGraphBuilder =>
+        diffGraphBuilder.addEdge(method, methodReturn, EdgeTypes.AST)
+        diffGraphBuilder.addEdge(method, methodBlock, EdgeTypes.AST)
+        diffGraphBuilder.addEdge(methodBlock, forStructure, EdgeTypes.AST)
+
+        diffGraphBuilder.addEdge(forStructure, local, EdgeTypes.AST)
+        diffGraphBuilder.addEdge(forStructure, condition, EdgeTypes.AST)
+        diffGraphBuilder.addEdge(forStructure, bodyCall, EdgeTypes.AST)
+
+        // Use explicit new edges, missing update and init intentionally
+        diffGraphBuilder.addEdge(forStructure, condition, EdgeTypes.CONDITION)
+        diffGraphBuilder.addEdge(forStructure, bodyCall, EdgeTypes.FOR_BODY)
+      }
+
+      new CfgCreationPass(cpg).createAndApply()
+
+      // The condition gets evaluated first, passing condition check goes to body
+      val condCfgNode = method.out(EdgeTypes.CFG).cast[CfgNode].head
+      condCfgNode.code shouldBe "cond"
+      condCfgNode.out(EdgeTypes.CFG).cast[CfgNode].code.filterNot(_ == "<empty>").toList shouldBe List("bodyCall")
+    }
+
+    "prefer JUMP_ARGUMENT edge over legacy AST order in BREAK statements" in {
+      val cpg   = Cpg.empty
+      val graph = cpg.graph
+
+      val method       = graph.addNode(NewMethod().name("testBreak").fullName("testBreak").signature("void()"))
+      val methodReturn = graph.addNode(NewMethodReturn().typeFullName("void").order(2))
+      val methodBlock  = graph.addNode(NewBlock().code("methodBlock").order(1))
+
+      val doStructure = graph.addNode(NewControlStructure().controlStructureType(ControlStructureTypes.DO).code("do"))
+      val doBodyBlock = graph.addNode(NewBlock().code("doBody").order(1))
+      val condition   = graph.addNode(NewLiteral().code("cond").order(2))
+
+      val breakStatement =
+        graph.addNode(NewControlStructure().controlStructureType(ControlStructureTypes.BREAK).code("break").order(1))
+      // Break with 2 levels, but at order(2) instead of the assumed legacy order(1)
+      val breakArg = graph.addNode(NewLiteral().code("2").order(2))
+      val dummyArg = graph.addNode(NewLiteral().code("1").order(1)) // This is the old order fallback
+
+      graph.applyDiff { diffGraphBuilder =>
+        diffGraphBuilder.addEdge(method, methodReturn, EdgeTypes.AST)
+        diffGraphBuilder.addEdge(method, methodBlock, EdgeTypes.AST)
+        diffGraphBuilder.addEdge(methodBlock, doStructure, EdgeTypes.AST)
+
+        diffGraphBuilder.addEdge(doStructure, doBodyBlock, EdgeTypes.AST)
+        diffGraphBuilder.addEdge(doStructure, condition, EdgeTypes.AST)
+        diffGraphBuilder.addEdge(doStructure, doBodyBlock, EdgeTypes.DO_BODY)
+        diffGraphBuilder.addEdge(doStructure, condition, EdgeTypes.CONDITION)
+
+        diffGraphBuilder.addEdge(doBodyBlock, breakStatement, EdgeTypes.AST)
+
+        diffGraphBuilder.addEdge(breakStatement, dummyArg, EdgeTypes.AST)
+        diffGraphBuilder.addEdge(breakStatement, breakArg, EdgeTypes.AST)
+        // Set JUMP_ARGUMENT specifically to breakArg
+        diffGraphBuilder.addEdge(breakStatement, breakArg, EdgeTypes.JUMP_ARGUMENT)
+      }
+
+      new CfgCreationPass(cpg).createAndApply()
+
+      val breakCfgNode = method.out(EdgeTypes.CFG).cast[CfgNode].head
+      breakCfgNode.code shouldBe "break"
+    }
+
+    "prefer JUMP_ARGUMENT edge over legacy AST order in CONTINUE statements" in {
+      val cpg   = Cpg.empty
+      val graph = cpg.graph
+
+      val method       = graph.addNode(NewMethod().name("testContinue").fullName("testContinue").signature("void()"))
+      val methodReturn = graph.addNode(NewMethodReturn().typeFullName("void").order(2))
+      val methodBlock  = graph.addNode(NewBlock().code("methodBlock").order(1))
+
+      val doStructure = graph.addNode(NewControlStructure().controlStructureType(ControlStructureTypes.DO).code("do"))
+      val doBodyBlock = graph.addNode(NewBlock().code("doBody").order(1))
+      val condition   = graph.addNode(NewLiteral().code("cond").order(2))
+
+      val continueStatement = graph.addNode(
+        NewControlStructure().controlStructureType(ControlStructureTypes.CONTINUE).code("continue").order(1)
+      )
+      // Continue with 2 levels, but at order(2) instead of the assumed legacy order(1)
+      val continueArg = graph.addNode(NewLiteral().code("2").order(2))
+      val dummyArg    = graph.addNode(NewLiteral().code("1").order(1)) // This is the old order fallback
+
+      graph.applyDiff { diffGraphBuilder =>
+        diffGraphBuilder.addEdge(method, methodReturn, EdgeTypes.AST)
+        diffGraphBuilder.addEdge(method, methodBlock, EdgeTypes.AST)
+        diffGraphBuilder.addEdge(methodBlock, doStructure, EdgeTypes.AST)
+
+        diffGraphBuilder.addEdge(doStructure, doBodyBlock, EdgeTypes.AST)
+        diffGraphBuilder.addEdge(doStructure, condition, EdgeTypes.AST)
+        diffGraphBuilder.addEdge(doStructure, doBodyBlock, EdgeTypes.DO_BODY)
+        diffGraphBuilder.addEdge(doStructure, condition, EdgeTypes.CONDITION)
+
+        diffGraphBuilder.addEdge(doBodyBlock, continueStatement, EdgeTypes.AST)
+
+        diffGraphBuilder.addEdge(continueStatement, dummyArg, EdgeTypes.AST)
+        diffGraphBuilder.addEdge(continueStatement, continueArg, EdgeTypes.AST)
+        // Set JUMP_ARGUMENT specifically to continueArg
+        diffGraphBuilder.addEdge(continueStatement, continueArg, EdgeTypes.JUMP_ARGUMENT)
+      }
+
+      new CfgCreationPass(cpg).createAndApply()
+
+      val continueCfgNode = method.out(EdgeTypes.CFG).cast[CfgNode].head
+      continueCfgNode.code shouldBe "continue"
+    }
+
   }
 }
