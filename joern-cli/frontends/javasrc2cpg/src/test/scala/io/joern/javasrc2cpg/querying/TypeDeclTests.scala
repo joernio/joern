@@ -404,47 +404,34 @@ class TypeDeclTests extends JavaSrcCode2CpgFixture {
   }
 
   "should create a correct type decl for inner interface" in {
-    cpg.typeDecl.nameExact("OuterClass$InnerInterface").l match {
-      case List(interface) =>
-        interface.fullName shouldBe "a.b.c.d.OuterClass$InnerInterface"
-        interface.inheritsFromTypeFullName.toList shouldBe List("java.lang.Object")
-        interface.isExternal shouldBe false
-        interface.method.name("id").toList match {
-          case List(method) =>
-            method.fullName shouldBe "a.b.c.d.OuterClass$InnerInterface.id:int(int)"
-            method.signature shouldBe "int(int)"
-            method.parameter.size shouldBe 2
-          // TODO: Add and check modifiers
-
-          case res => fail(s"Expected method id on interface but got $res")
-        }
-
-      case res =>
-        fail(s"Expected typeDecl for interface but got $res")
+    inside(cpg.typeDecl.nameExact("OuterClass$InnerInterface").l) { case List(interface) =>
+      interface.fullName shouldBe "a.b.c.d.OuterClass$InnerInterface"
+      interface.inheritsFromTypeFullName.toList shouldBe List("java.lang.Object")
+      interface.isExternal shouldBe false
+      inside(interface.method.name("id").toList) { case List(method) =>
+        method.fullName shouldBe "a.b.c.d.OuterClass$InnerInterface.id:int(int)"
+        method.signature shouldBe "int(int)"
+        method.parameter.size shouldBe 2
+      // TODO: Add and check modifiers
+      }
     }
   }
 
   "should create type decl for inner class implementing interface" in {
-    cpg.typeDecl.nameExact("OuterClass$InnerClass").l match {
-      case List(innerClass) =>
-        innerClass.fullName shouldBe "a.b.c.d.OuterClass$InnerClass"
-        innerClass.inheritsFromTypeFullName should contain theSameElementsAs List(
-          "java.lang.Object",
-          "a.b.c.d.OuterClass$InnerInterface"
-        )
-        innerClass.isExternal shouldBe false
+    inside(cpg.typeDecl.nameExact("OuterClass$InnerClass").l) { case List(innerClass) =>
+      innerClass.fullName shouldBe "a.b.c.d.OuterClass$InnerClass"
+      innerClass.inheritsFromTypeFullName should contain theSameElementsAs List(
+        "java.lang.Object",
+        "a.b.c.d.OuterClass$InnerInterface"
+      )
+      innerClass.isExternal shouldBe false
 
-        innerClass.method.nameExact("id").l match {
-          case List(method) =>
-            method.fullName shouldBe "a.b.c.d.OuterClass$InnerClass.id:int(int)"
-            method.signature shouldBe "int(int)"
-            method.block.astChildren.head shouldBe a[Return]
-            method.block.ast.isIdentifier.head.name shouldBe "x"
-
-          case res => fail(s"Expected id method in InnerClass but got $res")
-        }
-
-      case res => fail(s"Expected type decl for inner class but got $res")
+      inside(innerClass.method.nameExact("id").l) { case List(method) =>
+        method.fullName shouldBe "a.b.c.d.OuterClass$InnerClass.id:int(int)"
+        method.signature shouldBe "int(int)"
+        method.block.astChildren.head shouldBe a[Return]
+        method.block.ast.isIdentifier.head.name shouldBe "x"
+      }
     }
   }
 

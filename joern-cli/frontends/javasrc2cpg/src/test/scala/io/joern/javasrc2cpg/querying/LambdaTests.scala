@@ -81,21 +81,15 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
     }
 
     "create a method node for the lambda" in {
-      cpg.typeDecl.name("Foo").method.name(".*lambda.*").isLambda.l match {
-        case List(lambdaMethod) =>
-          // Lambda body creation tested separately
-          lambdaMethod.name shouldBe "<lambda>0"
-          lambdaMethod.fullName shouldBe "Foo.<lambda>0:java.lang.String(java.lang.String)"
-          lambdaMethod.parameter.l match {
-            case List(lambdaInput) =>
-              lambdaInput.name shouldBe "lambdaInput"
-              lambdaInput.typeFullName shouldBe "java.lang.String"
-
-            case result => fail(s"Expected single lambda parameter but got $result")
-          }
-          lambdaMethod.methodReturn.typeFullName shouldBe "java.lang.String"
-
-        case result => fail(s"Expected single lambda method but got $result")
+      inside(cpg.typeDecl.name("Foo").method.name(".*lambda.*").isLambda.l) { case List(lambdaMethod) =>
+        // Lambda body creation tested separately
+        lambdaMethod.name shouldBe "<lambda>0"
+        lambdaMethod.fullName shouldBe "Foo.<lambda>0:java.lang.String(java.lang.String)"
+        inside(lambdaMethod.parameter.l) { case List(lambdaInput) =>
+          lambdaInput.name shouldBe "lambdaInput"
+          lambdaInput.typeFullName shouldBe "java.lang.String"
+        }
+        lambdaMethod.methodReturn.typeFullName shouldBe "java.lang.String"
       }
     }
 
@@ -104,18 +98,13 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
     }
 
     "create a method body for the lambda method" in {
-      cpg.typeDecl.name("Foo").method.name(".*lambda.*").block.astChildren.l match {
+      inside(cpg.typeDecl.name("Foo").method.name(".*lambda.*").block.astChildren.l) {
         case List(fallBack: Local, returnNode: Return) =>
           returnNode.code shouldBe "return lambdaInput.length() > 5 ? \"Long\" : fallback;"
-          returnNode.astChildren.l match {
-            case List(expr: Call) =>
-              expr.methodFullName shouldBe Operators.conditional
-
-            case result => fail(s"Expected return conditional, but got $result")
+          inside(returnNode.astChildren.l) { case List(expr: Call) =>
+            expr.methodFullName shouldBe Operators.conditional
           }
           fallBack.name shouldBe "fallback"
-
-        case result => fail(s"Expected lambda body with single return but got $result")
       }
     }
 
@@ -135,8 +124,6 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
           fallbackLocal.name shouldBe "fallback"
           fallbackLocal.code shouldBe "fallback"
           fallbackLocal.typeFullName shouldBe "java.lang.String"
-
-        case result => fail(s"Expected single local for fallback but got $result")
       }
     }
 
@@ -152,40 +139,31 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
     }
 
     "create closure bindings for captured identifiers" in {
-      cpg.closureBinding.l match {
-        case List(fallbackClosureBinding) =>
-          val fallbackLocal = cpg.method.name(".*lambda.*").local.name("fallback").head
-          fallbackClosureBinding.closureBindingId shouldBe fallbackLocal.closureBindingId
+      inside(cpg.closureBinding.l) { case List(fallbackClosureBinding) =>
+        val fallbackLocal = cpg.method.name(".*lambda.*").local.name("fallback").head
+        fallbackClosureBinding.closureBindingId shouldBe fallbackLocal.closureBindingId
 
-          fallbackClosureBinding._refOut.l match {
-            case List(capturedParam: MethodParameterIn) =>
-              capturedParam.name shouldBe "fallback"
-              capturedParam.method.fullName shouldBe "Foo.test1:void(java.lang.String,java.lang.String)"
-            case result => fail(s"Expected single capturedParam but got $result")
-          }
+        inside(fallbackClosureBinding._refOut.l) { case List(capturedParam: MethodParameterIn) =>
+          capturedParam.name shouldBe "fallback"
+          capturedParam.method.fullName shouldBe "Foo.test1:void(java.lang.String,java.lang.String)"
+        }
 
-          fallbackClosureBinding._captureIn.l match {
-            case List(outMethod: MethodRef) =>
-              outMethod.methodFullName shouldBe "Foo.<lambda>0:java.lang.String(java.lang.String)"
-            case result => fail(s"Expected single METHOD_REF but got $result")
-          }
-        case result => fail(s"Expected 2 closure bindings for captured variables but got $result")
+        inside(fallbackClosureBinding._captureIn.l) { case List(outMethod: MethodRef) =>
+          outMethod.methodFullName shouldBe "Foo.<lambda>0:java.lang.String(java.lang.String)"
+        }
       }
     }
 
     "create a typeDecl node inheriting from correct interface" in {
-      cpg.typeDecl.name(".*lambda.*").l match {
-        case List(lambdaDecl) =>
-          lambdaDecl.name shouldBe "<lambda>0"
-          lambdaDecl.fullName shouldBe "Foo.<lambda>0:java.lang.String(java.lang.String)"
-          lambdaDecl.inheritsFromTypeFullName should contain theSameElementsAs List("java.util.function.Function")
-
-        case result => fail(s"Expected a single typeDecl for the lambda but got $result")
+      inside(cpg.typeDecl.name(".*lambda.*").l) { case List(lambdaDecl) =>
+        lambdaDecl.name shouldBe "<lambda>0"
+        lambdaDecl.fullName shouldBe "Foo.<lambda>0:java.lang.String(java.lang.String)"
+        lambdaDecl.inheritsFromTypeFullName should contain theSameElementsAs List("java.util.function.Function")
       }
     }
 
     "create bindings to implemented method" in {
-      cpg.all.collectAll[Binding].nameExact("apply").sortBy(_.signature).toList match {
+      inside(cpg.all.collectAll[Binding].nameExact("apply").sortBy(_.signature).toList) {
         case List(erasedBinding, binding) =>
           binding.methodFullName shouldBe "Foo.<lambda>0:java.lang.String(java.lang.String)"
           binding.signature shouldBe "java.lang.String(java.lang.String)"
@@ -194,8 +172,6 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
           erasedBinding.methodFullName shouldBe "Foo.<lambda>0:java.lang.String(java.lang.String)"
           erasedBinding.signature shouldBe "java.lang.Object(java.lang.Object)"
           erasedBinding.bindingTypeDecl.fullName shouldBe "Foo.<lambda>0:java.lang.String(java.lang.String)"
-
-        case result => fail(s"Expected two bindings to apply method but got $result")
       }
     }
   }
@@ -214,21 +190,16 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
     // Only test the method node for type info, since this is effectively the same test as above
     // with a different source for the expected type.
     "create a method node for the lambda" in {
-      cpg.typeDecl.name("Foo").method.name(".*lambda.*").isLambda.l match {
-        case List(lambdaMethod) =>
-          // Lambda body creation tested separately
-          lambdaMethod.name shouldBe "<lambda>0"
-          lambdaMethod.fullName shouldBe "Foo.<lambda>0:java.lang.String(java.lang.String)"
-          lambdaMethod.parameter.l match {
-            case List(lambdaInput) =>
-              lambdaInput.name shouldBe "lambdaInput"
-              lambdaInput.typeFullName shouldBe "java.lang.String"
+      inside(cpg.typeDecl.name("Foo").method.name(".*lambda.*").isLambda.l) { case List(lambdaMethod) =>
+        // Lambda body creation tested separately
+        lambdaMethod.name shouldBe "<lambda>0"
+        lambdaMethod.fullName shouldBe "Foo.<lambda>0:java.lang.String(java.lang.String)"
+        inside(lambdaMethod.parameter.l) { case List(lambdaInput) =>
+          lambdaInput.name shouldBe "lambdaInput"
+          lambdaInput.typeFullName shouldBe "java.lang.String"
 
-            case result => fail(s"Expected single lambda parameter but got $result")
-          }
-          lambdaMethod.methodReturn.typeFullName shouldBe "java.lang.String"
-
-        case result => fail(s"Expected single lambda method but got $result")
+        }
+        lambdaMethod.methodReturn.typeFullName shouldBe "java.lang.String"
       }
     }
   }
@@ -247,21 +218,16 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
     // Only test the method node for type info, since this is effectively the same test as above
     // with a different source for the expected type.
     "create a method node for the lambda" in {
-      cpg.typeDecl.name("Foo").method.name(".*lambda.*").isLambda.l match {
-        case List(lambdaMethod) =>
-          // Lambda body creation tested separately
-          lambdaMethod.name shouldBe "<lambda>0"
-          lambdaMethod.fullName shouldBe "Foo.<lambda>0:java.lang.String(java.lang.String)"
-          lambdaMethod.parameter.l match {
-            case List(lambdaInput) =>
-              lambdaInput.name shouldBe "lambdaInput"
-              lambdaInput.typeFullName shouldBe "java.lang.String"
+      inside(cpg.typeDecl.name("Foo").method.name(".*lambda.*").isLambda.l) { case List(lambdaMethod) =>
+        // Lambda body creation tested separately
+        lambdaMethod.name shouldBe "<lambda>0"
+        lambdaMethod.fullName shouldBe "Foo.<lambda>0:java.lang.String(java.lang.String)"
+        inside(lambdaMethod.parameter.l) { case List(lambdaInput) =>
+          lambdaInput.name shouldBe "lambdaInput"
+          lambdaInput.typeFullName shouldBe "java.lang.String"
 
-            case result => fail(s"Expected single lambda parameter but got $result")
-          }
-          lambdaMethod.methodReturn.typeFullName shouldBe "java.lang.String"
-
-        case result => fail(s"Expected single lambda method but got $result")
+        }
+        lambdaMethod.methodReturn.typeFullName shouldBe "java.lang.String"
       }
     }
   }
@@ -280,21 +246,16 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
     // Only test the method node for type info, since this is effectively the same test as above
     // with a different source for the expected type.
     "create a method node for the lambda" in {
-      cpg.typeDecl.name("Foo").method.name(".*lambda.*").isLambda.l match {
-        case List(lambdaMethod) =>
-          // Lambda body creation tested separately
-          lambdaMethod.name shouldBe "<lambda>0"
-          lambdaMethod.fullName shouldBe "Foo.<lambda>0:java.lang.String(java.lang.String)"
-          lambdaMethod.parameter.l match {
-            case List(lambdaInput) =>
-              lambdaInput.name shouldBe "lambdaInput"
-              lambdaInput.typeFullName shouldBe "java.lang.String"
+      inside(cpg.typeDecl.name("Foo").method.name(".*lambda.*").isLambda.l) { case List(lambdaMethod) =>
+        // Lambda body creation tested separately
+        lambdaMethod.name shouldBe "<lambda>0"
+        lambdaMethod.fullName shouldBe "Foo.<lambda>0:java.lang.String(java.lang.String)"
+        inside(lambdaMethod.parameter.l) { case List(lambdaInput) =>
+          lambdaInput.name shouldBe "lambdaInput"
+          lambdaInput.typeFullName shouldBe "java.lang.String"
 
-            case result => fail(s"Expected single lambda parameter but got $result")
-          }
-          lambdaMethod.methodReturn.typeFullName shouldBe "java.lang.String"
-
-        case result => fail(s"Expected single lambda method but got $result")
+        }
+        lambdaMethod.methodReturn.typeFullName shouldBe "java.lang.String"
       }
     }
   }
@@ -315,18 +276,15 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "create a 0th `this` parameter" in {
-      cpg.method.name(".*lambda.*").parameter.l match {
-        case List(thisParam, inputParam) =>
-          thisParam.name shouldBe "this"
-          thisParam.code shouldBe "this"
-          thisParam.typeFullName shouldBe "Foo"
-          thisParam.index shouldBe 0
+      inside(cpg.method.name(".*lambda.*").parameter.l) { case List(thisParam, inputParam) =>
+        thisParam.name shouldBe "this"
+        thisParam.code shouldBe "this"
+        thisParam.typeFullName shouldBe "Foo"
+        thisParam.index shouldBe 0
 
-          inputParam.name shouldBe "input"
-          inputParam.typeFullName shouldBe "java.lang.String"
-          inputParam.index shouldBe 1
-
-        case result => fail(s"Expected two params for lambda method but got $result")
+        inputParam.name shouldBe "input"
+        inputParam.typeFullName shouldBe "java.lang.String"
+        inputParam.index shouldBe 1
       }
     }
   }
@@ -348,20 +306,17 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
 
     // TODO: Add 0th parameter logic
     "create a 0th `this` parameter" in {
-      cpg.method.name(".*lambda.*").parameter.l match {
-        case List(thisParam, inputParam) =>
-          thisParam.name shouldBe "this"
-          thisParam.code shouldBe "this"
-          thisParam.typeFullName shouldBe "Foo"
-          thisParam.order shouldBe 0
-          thisParam.index shouldBe 0
+      inside(cpg.method.name(".*lambda.*").parameter.l) { case List(thisParam, inputParam) =>
+        thisParam.name shouldBe "this"
+        thisParam.code shouldBe "this"
+        thisParam.typeFullName shouldBe "Foo"
+        thisParam.order shouldBe 0
+        thisParam.index shouldBe 0
 
-          inputParam.name shouldBe "input"
-          inputParam.typeFullName shouldBe "java.lang.String"
-          inputParam.order shouldBe 1
-          inputParam.index shouldBe 1
-
-        case result => fail(s"Expected two params for lambda method but got $result")
+        inputParam.name shouldBe "input"
+        inputParam.typeFullName shouldBe "java.lang.String"
+        inputParam.order shouldBe 1
+        inputParam.index shouldBe 1
       }
     }
   }
@@ -577,14 +532,11 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "not create a 0th `this` parameter" in {
-      cpg.method.name(".*lambda.*").parameter.l match {
-        case List(inputParam) =>
-          inputParam.name shouldBe "input"
-          inputParam.typeFullName shouldBe "java.lang.String"
-          inputParam.order shouldBe 1
-          inputParam.index shouldBe 1
-
-        case result => fail(s"Expected a single param for lambda method but got $result")
+      inside(cpg.method.name(".*lambda.*").parameter.l) { case List(inputParam) =>
+        inputParam.name shouldBe "input"
+        inputParam.typeFullName shouldBe "java.lang.String"
+        inputParam.order shouldBe 1
+        inputParam.index shouldBe 1
       }
     }
   }
@@ -645,16 +597,12 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "have a method body block without a return statement" in {
-      cpg.method.name(".*lambda.*").body.astChildren.l match {
-        case List(call: Call) =>
-          call.methodFullName shouldBe "Foo.sink:void(java.lang.String)"
-          call.argument.l match {
-            case List(identifier: Identifier) =>
-              identifier.name shouldBe "input"
-              identifier.typeFullName shouldBe "java.lang.String"
-            case result => fail(s"Expected single String identifier a call arg but got $result")
-          }
-        case result => fail(s"Expected single call in body but got $result")
+      inside(cpg.method.name(".*lambda.*").body.astChildren.l) { case List(call: Call) =>
+        call.methodFullName shouldBe "Foo.sink:void(java.lang.String)"
+        inside(call.argument.l) { case List(identifier: Identifier) =>
+          identifier.name shouldBe "input"
+          identifier.typeFullName shouldBe "java.lang.String"
+        }
       }
     }
   }
@@ -672,12 +620,9 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "resolve calls in the body of the lambda" in {
-      cpg.method.name(".*lambda.*").call.name("sink").l match {
-        case sink :: Nil =>
-          sink.methodFullName shouldBe "Foo.sink:void(java.lang.Float,java.lang.String)"
-          sink.signature shouldBe "void(java.lang.Float,java.lang.String)"
-
-        case result => fail(s"Expected single call to sink but got $result")
+      inside(cpg.method.name(".*lambda.*").call.name("sink").l) { case sink :: Nil =>
+        sink.methodFullName shouldBe "Foo.sink:void(java.lang.Float,java.lang.String)"
+        sink.signature shouldBe "void(java.lang.Float,java.lang.String)"
       }
     }
   }
@@ -711,35 +656,29 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "create a method node for the lambda" in {
-      cpg.typeDecl.name("TestClass").method.name(".*lambda.*").l match {
-        case List(lambdaMethod) =>
-          lambdaMethod.name shouldBe "<lambda>0"
-          lambdaMethod.fullName shouldBe "TestClass.<lambda>0:java.lang.String(java.lang.Integer,java.lang.Integer)"
-          lambdaMethod.signature shouldBe "java.lang.String(java.lang.Integer,java.lang.Integer)"
-          lambdaMethod.methodReturn.typeFullName shouldBe "java.lang.String"
-          lambdaMethod.parameter.l match {
-            case List(input, moreInput) =>
-              input.name shouldBe "input"
-              input.code shouldBe "java.lang.Integer input"
-              input.typeFullName shouldBe "java.lang.Integer"
-              input.order shouldBe 1
-              input.index shouldBe 1
+      inside(cpg.typeDecl.name("TestClass").method.name(".*lambda.*").l) { case List(lambdaMethod) =>
+        lambdaMethod.name shouldBe "<lambda>0"
+        lambdaMethod.fullName shouldBe "TestClass.<lambda>0:java.lang.String(java.lang.Integer,java.lang.Integer)"
+        lambdaMethod.signature shouldBe "java.lang.String(java.lang.Integer,java.lang.Integer)"
+        lambdaMethod.methodReturn.typeFullName shouldBe "java.lang.String"
+        inside(lambdaMethod.parameter.l) { case List(input, moreInput) =>
+          input.name shouldBe "input"
+          input.code shouldBe "java.lang.Integer input"
+          input.typeFullName shouldBe "java.lang.Integer"
+          input.order shouldBe 1
+          input.index shouldBe 1
 
-              moreInput.name shouldBe "moreInput"
-              moreInput.code shouldBe "java.lang.Integer moreInput"
-              moreInput.typeFullName shouldBe "java.lang.Integer"
-              moreInput.order shouldBe 2
-              moreInput.index shouldBe 2
-
-            case result => fail(s"Expected two lambda parameters but got $result")
-          }
-
-        case result => fail(s"Expected single lambda method but got $result")
+          moreInput.name shouldBe "moreInput"
+          moreInput.code shouldBe "java.lang.Integer moreInput"
+          moreInput.typeFullName shouldBe "java.lang.Integer"
+          moreInput.order shouldBe 2
+          moreInput.index shouldBe 2
+        }
       }
     }
 
     "create the method body for the lambda" in {
-      cpg.typeDecl.name("TestClass").method.name(".*lambda.*").body.astChildren.l match {
+      inside(cpg.typeDecl.name("TestClass").method.name(".*lambda.*").body.astChildren.l) {
         case List(capturedLocal: Local, ret: Return) =>
           capturedLocal.name shouldBe "captured"
           capturedLocal.typeFullName shouldBe "java.lang.String"
@@ -754,21 +693,16 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
           fooCall.signature shouldBe "java.lang.String(java.lang.Integer,java.lang.Integer,java.lang.String)"
           fooCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-          fooCall.argument.l match {
-            case List(input: Identifier, moreInput: Identifier, captured: Identifier) =>
-              input.name shouldBe "input"
-              input.typeFullName shouldBe "java.lang.Integer"
+          inside(fooCall.argument.l) { case List(input: Identifier, moreInput: Identifier, captured: Identifier) =>
+            input.name shouldBe "input"
+            input.typeFullName shouldBe "java.lang.Integer"
 
-              moreInput.name shouldBe "moreInput"
-              moreInput.typeFullName shouldBe "java.lang.Integer"
+            moreInput.name shouldBe "moreInput"
+            moreInput.typeFullName shouldBe "java.lang.Integer"
 
-              captured.name shouldBe "captured"
-              captured.typeFullName shouldBe "java.lang.String"
-
-            case result => fail(s"Expected three identifier arguments to foo but got $result")
+            captured.name shouldBe "captured"
+            captured.typeFullName shouldBe "java.lang.String"
           }
-
-        case result => fail(s"Expected single captured local and return in method body but got $result")
       }
     }
 
@@ -777,44 +711,34 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
     }
 
     "create closure bindings for captured identifiers" in {
-      cpg.closureBinding.l match {
-        case List(capturedClosureBinding) =>
-          capturedClosureBinding.label shouldBe "CLOSURE_BINDING"
+      inside(cpg.closureBinding.l) { case List(capturedClosureBinding) =>
+        capturedClosureBinding.label shouldBe "CLOSURE_BINDING"
 
-          val capturedLocal = cpg.method.name(".*lambda.*").local.name("captured").head
-          capturedClosureBinding.closureBindingId shouldBe capturedLocal.closureBindingId
+        val capturedLocal = cpg.method.name(".*lambda.*").local.name("captured").head
+        capturedClosureBinding.closureBindingId shouldBe capturedLocal.closureBindingId
 
-          capturedClosureBinding._refOut.l match {
-            case List(capturedParam: MethodParameterIn) =>
-              capturedParam.name shouldBe "captured"
-              capturedParam.method.fullName shouldBe "TestClass.test:Foo(java.lang.String)"
-            case result => fail(s"Expected single capturedParam but got $result")
-          }
+        inside(capturedClosureBinding._refOut.l) { case List(capturedParam: MethodParameterIn) =>
+          capturedParam.name shouldBe "captured"
+          capturedParam.method.fullName shouldBe "TestClass.test:Foo(java.lang.String)"
+        }
 
-          capturedClosureBinding._captureIn.l match {
-            case List(outMethod: MethodRef) =>
-              outMethod.methodFullName shouldBe "TestClass.<lambda>0:java.lang.String(java.lang.Integer,java.lang.Integer)"
-            case result => fail(s"Expected single out METHOD_REF but got $result")
-          }
-
-        case result => fail(s"Expected 2 closure bindings for captured variables but got $result")
+        inside(capturedClosureBinding._captureIn.l) { case List(outMethod: MethodRef) =>
+          outMethod.methodFullName shouldBe "TestClass.<lambda>0:java.lang.String(java.lang.Integer,java.lang.Integer)"
+        }
       }
     }
 
     "create a typeDecl node inheriting from correct interface" in {
-      cpg.typeDecl.name(".*lambda.*").l match {
-        case List(lambdaDecl) =>
-          lambdaDecl.name shouldBe "<lambda>0"
-          lambdaDecl.fullName shouldBe "TestClass.<lambda>0:java.lang.String(java.lang.Integer,java.lang.Integer)"
-          lambdaDecl.inheritsFromTypeFullName should contain theSameElementsAs List("Foo")
-
-        case result => fail(s"Expected a single typeDecl for the lambda but got $result")
+      inside(cpg.typeDecl.name(".*lambda.*").l) { case List(lambdaDecl) =>
+        lambdaDecl.name shouldBe "<lambda>0"
+        lambdaDecl.fullName shouldBe "TestClass.<lambda>0:java.lang.String(java.lang.Integer,java.lang.Integer)"
+        lambdaDecl.inheritsFromTypeFullName should contain theSameElementsAs List("Foo")
       }
     }
 
     // TODO: Fix typeDecl for interfaceBinding
     "create bindings to implemented method" in {
-      cpg.all.collectAll[Binding].nameExact("baz").sortBy(_.methodFullName).toList match {
+      inside(cpg.all.collectAll[Binding].nameExact("baz").sortBy(_.methodFullName).toList) {
         case List(interfaceBinding, binding, erasedBinding) =>
           interfaceBinding.methodFullName shouldBe "Foo.baz:java.lang.String(java.lang.Object,java.lang.Object)"
           interfaceBinding.signature shouldBe "java.lang.String(java.lang.Object,java.lang.Object)"
@@ -827,8 +751,6 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
           erasedBinding.methodFullName shouldBe "TestClass.<lambda>0:java.lang.String(java.lang.Integer,java.lang.Integer)"
           erasedBinding.signature shouldBe "java.lang.String(java.lang.Object,java.lang.Object)"
           erasedBinding.bindingTypeDecl.fullName shouldBe "TestClass.<lambda>0:java.lang.String(java.lang.Integer,java.lang.Integer)"
-
-        case result => fail(s"Expected three bindings to baz method but got $result")
       }
     }
   }
@@ -850,30 +772,21 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "create the correct code string for call chains involving lambdas" in {
-      cpg.call.name("collect").l match {
-        case List(collectCall) =>
-          collectCall.code shouldBe "list.stream().map(<lambda>).collect(Collectors.toList())"
-
-        case result => fail(s"Expected single call to collect but got $result")
+      inside(cpg.call.name("collect").l) { case List(collectCall) =>
+        collectCall.code shouldBe "list.stream().map(<lambda>).collect(Collectors.toList())"
       }
     }
 
     "create a method node for the lambda" in {
-      cpg.typeDecl.name("Foo").method.name(".*lambda.*").l match {
-        case List(lambdaMethod) =>
-          // Lambda body creation tested separately
-          lambdaMethod.name shouldBe "<lambda>0"
-          lambdaMethod.fullName shouldBe "Foo.<lambda>0:java.lang.Object(java.lang.Object)"
-          lambdaMethod.parameter.l match {
-            case List(lambdaInput) =>
-              lambdaInput.name shouldBe "string"
-              lambdaInput.typeFullName shouldBe "java.lang.Object"
-
-            case result => fail(s"Expected single lambda parameter but got $result")
-          }
-          lambdaMethod.methodReturn.typeFullName shouldBe "java.lang.Object"
-
-        case result => fail(s"Expected single lambda method but got $result")
+      inside(cpg.typeDecl.name("Foo").method.name(".*lambda.*").l) { case List(lambdaMethod) =>
+        // Lambda body creation tested separately
+        lambdaMethod.name shouldBe "<lambda>0"
+        lambdaMethod.fullName shouldBe "Foo.<lambda>0:java.lang.Object(java.lang.Object)"
+        inside(lambdaMethod.parameter.l) { case List(lambdaInput) =>
+          lambdaInput.name shouldBe "string"
+          lambdaInput.typeFullName shouldBe "java.lang.Object"
+        }
+        lambdaMethod.methodReturn.typeFullName shouldBe "java.lang.Object"
       }
     }
 
@@ -882,24 +795,18 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
     }
 
     "create a typeDecl node inheriting from correct interface" in {
-      cpg.typeDecl.name(".*lambda.*").l match {
-        case List(lambdaDecl) =>
-          lambdaDecl.name shouldBe "<lambda>0"
-          lambdaDecl.fullName shouldBe "Foo.<lambda>0:java.lang.Object(java.lang.Object)"
-          lambdaDecl.inheritsFromTypeFullName should contain theSameElementsAs List("java.util.function.Function")
-
-        case result => fail(s"Expected a single typeDecl for the lambda but got $result")
+      inside(cpg.typeDecl.name(".*lambda.*").l) { case List(lambdaDecl) =>
+        lambdaDecl.name shouldBe "<lambda>0"
+        lambdaDecl.fullName shouldBe "Foo.<lambda>0:java.lang.Object(java.lang.Object)"
+        lambdaDecl.inheritsFromTypeFullName should contain theSameElementsAs List("java.util.function.Function")
       }
     }
 
     "create bindings to implemented method" in {
-      cpg.all.collectAll[Binding].nameExact("apply").sortBy(_.signature).toList match {
-        case List(binding) =>
-          binding.methodFullName shouldBe "Foo.<lambda>0:java.lang.Object(java.lang.Object)"
-          binding.signature shouldBe "java.lang.Object(java.lang.Object)"
-          binding.bindingTypeDecl.fullName shouldBe "Foo.<lambda>0:java.lang.Object(java.lang.Object)"
-
-        case result => fail(s"Expected single binding to apply method but got $result")
+      inside(cpg.all.collectAll[Binding].nameExact("apply").sortBy(_.signature).toList) { case List(binding) =>
+        binding.methodFullName shouldBe "Foo.<lambda>0:java.lang.Object(java.lang.Object)"
+        binding.signature shouldBe "java.lang.Object(java.lang.Object)"
+        binding.bindingTypeDecl.fullName shouldBe "Foo.<lambda>0:java.lang.Object(java.lang.Object)"
       }
     }
   }

@@ -136,37 +136,29 @@ class NewMemberTests extends JavaSrcCode2CpgFixture {
              |    int x = 1;
              |}""".stripMargin)
 
-      val constructor = cpg.method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l match {
+      val constructor = inside(cpg.method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l) {
         case constructor :: Nil => constructor
-        case result             => fail(s"Expected single constructor method but found $result")
       }
 
       constructor.fullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
-      val xAssign = constructor.body.astChildren.l match {
-        case List(xAssign: Call) => xAssign
-        case result              => fail(s"Expected xAssign in constructor but found $result")
+      val xAssign = inside(constructor.body.astChildren.l) { case List(xAssign: Call) =>
+        xAssign
       }
 
       xAssign.name shouldBe Operators.assignment
       xAssign.methodFullName shouldBe Operators.assignment
 
-      xAssign.argument.l match {
-        case List(fieldAccess: Call, value: Literal) =>
-          fieldAccess.name shouldBe Operators.fieldAccess
-          fieldAccess.argument.l match {
-            case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
-              identifier.name shouldBe "this"
-              identifier.typeFullName shouldBe "Foo"
-              fieldIdentifier.canonicalName shouldBe "x"
+      inside(xAssign.argument.l) { case List(fieldAccess: Call, value: Literal) =>
+        fieldAccess.name shouldBe Operators.fieldAccess
+        inside(fieldAccess.argument.l) { case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
+          identifier.name shouldBe "this"
+          identifier.typeFullName shouldBe "Foo"
+          fieldIdentifier.canonicalName shouldBe "x"
+        }
 
-            case result => fail(s"Expected field identifier args but got $result")
-          }
-
-          value.code shouldBe "1"
-          value.typeFullName shouldBe "int"
-          value.argumentIndex shouldBe 2
-
-        case result => fail(s"Expected field assign args but got $result")
+        value.code shouldBe "1"
+        value.typeFullName shouldBe "int"
+        value.argumentIndex shouldBe 2
       }
     }
 
@@ -176,37 +168,29 @@ class NewMemberTests extends JavaSrcCode2CpgFixture {
              |    int x = 1;
              |    public Foo() {}
              |}""".stripMargin)
-      val constructor = cpg.method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l match {
+      val constructor = inside(cpg.method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l) {
         case constructor :: Nil => constructor
-        case result             => fail(s"Expected single constructor method but found $result")
       }
 
       constructor.fullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
-      val xAssign = constructor.body.astChildren.l match {
-        case List(xAssign: Call) => xAssign
-        case result              => fail(s"Expected xAssign in constructor but found $result")
+      val xAssign = inside(constructor.body.astChildren.l) { case List(xAssign: Call) =>
+        xAssign
       }
 
       xAssign.name shouldBe Operators.assignment
       xAssign.methodFullName shouldBe Operators.assignment
 
-      xAssign.argument.l match {
-        case List(fieldAccess: Call, value: Literal) =>
-          fieldAccess.name shouldBe Operators.fieldAccess
-          fieldAccess.argument.l match {
-            case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
-              identifier.name shouldBe "this"
-              identifier.typeFullName shouldBe "Foo"
-              fieldIdentifier.canonicalName shouldBe "x"
+      inside(xAssign.argument.l) { case List(fieldAccess: Call, value: Literal) =>
+        fieldAccess.name shouldBe Operators.fieldAccess
+        inside(fieldAccess.argument.l) { case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
+          identifier.name shouldBe "this"
+          identifier.typeFullName shouldBe "Foo"
+          fieldIdentifier.canonicalName shouldBe "x"
+        }
 
-            case result => fail(s"Expected field identifier args but got $result")
-          }
-
-          value.code shouldBe "1"
-          value.typeFullName shouldBe "int"
-          value.argumentIndex shouldBe 2
-
-        case result => fail(s"Expected field assign args but got $result")
+        value.code shouldBe "1"
+        value.typeFullName shouldBe "int"
+        value.argumentIndex shouldBe 2
       }
     }
 
@@ -221,60 +205,47 @@ class NewMemberTests extends JavaSrcCode2CpgFixture {
 			 |    }
 			 |}""".stripMargin)
 
-      val constructor = cpg.method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l match {
+      val constructor = inside(cpg.method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l) {
         case constructor :: Nil => constructor
-        case result             => fail(s"Expected single constructor method but found $result")
       }
 
       constructor.fullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
-      val (xAssign, yAssign) = constructor.body.astChildren.l match {
-        case List(xAssign: Call, yAssign: Call) => (xAssign, yAssign)
-        case result                             => fail(s"Expected two assigns in constructor but found $result")
+      val (xAssign, yAssign) = inside(constructor.body.astChildren.l) { case List(xAssign: Call, yAssign: Call) =>
+        (xAssign, yAssign)
       }
 
       xAssign.name shouldBe Operators.assignment
       xAssign.methodFullName shouldBe Operators.assignment
 
-      xAssign.argument.l match {
-        case List(fieldAccess: Call, value: Literal) =>
-          fieldAccess.name shouldBe Operators.fieldAccess
-          fieldAccess.argument.l match {
-            case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
-              identifier.name shouldBe "this"
-              identifier.typeFullName shouldBe "Foo"
-              fieldIdentifier.canonicalName shouldBe "x"
+      inside(xAssign.argument.l) { case List(fieldAccess: Call, value: Literal) =>
+        fieldAccess.name shouldBe Operators.fieldAccess
+        inside(fieldAccess.argument.l) { case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
+          identifier.name shouldBe "this"
+          identifier.typeFullName shouldBe "Foo"
+          fieldIdentifier.canonicalName shouldBe "x"
 
-            case result => fail(s"Expected field identifier args but got $result")
-          }
+        }
 
-          value.code shouldBe "1"
-          value.typeFullName shouldBe "int"
-          value.argumentIndex shouldBe 2
-
-        case result => fail(s"Expected field assign args but got $result")
+        value.code shouldBe "1"
+        value.typeFullName shouldBe "int"
+        value.argumentIndex shouldBe 2
       }
 
       yAssign.name shouldBe Operators.assignment
       yAssign.methodFullName shouldBe Operators.assignment
 
-      yAssign.argument.l match {
-        case List(fieldAccess: Call, value: Identifier) =>
-          fieldAccess.name shouldBe Operators.fieldAccess
-          fieldAccess.argument.l match {
-            case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
-              identifier.name shouldBe "this"
-              identifier.typeFullName shouldBe "Foo"
-              fieldIdentifier.canonicalName shouldBe "y"
+      inside(yAssign.argument.l) { case List(fieldAccess: Call, value: Identifier) =>
+        fieldAccess.name shouldBe Operators.fieldAccess
+        inside(fieldAccess.argument.l) { case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
+          identifier.name shouldBe "this"
+          identifier.typeFullName shouldBe "Foo"
+          fieldIdentifier.canonicalName shouldBe "y"
+        }
 
-            case result => fail(s"Expected field identifier args but got $result")
-          }
-
-          value.name shouldBe "y"
-          value.code shouldBe "y"
-          value.typeFullName shouldBe "int"
-          value.argumentIndex shouldBe 2
-
-        case result => fail(s"Expected field assign args but got $result")
+        value.name shouldBe "y"
+        value.code shouldBe "y"
+        value.typeFullName shouldBe "int"
+        value.argumentIndex shouldBe 2
       }
     }
 
@@ -294,68 +265,51 @@ class NewMemberTests extends JavaSrcCode2CpgFixture {
 			 |}""".stripMargin)
 
       val constructorWithParam =
-        cpg.method.fullNameExact(s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)").l match {
+        inside(cpg.method.fullNameExact(s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)").l) {
           case constructor :: Nil => constructor
-          case result             => fail(s"Expected single constructor method but found $result")
         }
 
-      val (xAssign, yAssign) = constructorWithParam.body.astChildren.l match {
+      val (xAssign, yAssign) = inside(constructorWithParam.body.astChildren.l) {
         case List(xAssign: Call, yAssign: Call) => (xAssign, yAssign)
-        case result                             => fail(s"Expected two assigns in constructor but found $result")
       }
 
       xAssign.name shouldBe Operators.assignment
       xAssign.methodFullName shouldBe Operators.assignment
 
-      xAssign.argument.l match {
-        case List(fieldAccess: Call, value: Literal) =>
-          fieldAccess.name shouldBe Operators.fieldAccess
-          fieldAccess.argument.l match {
-            case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
-              identifier.name shouldBe "this"
-              identifier.typeFullName shouldBe "Foo"
-              fieldIdentifier.canonicalName shouldBe "x"
+      inside(xAssign.argument.l) { case List(fieldAccess: Call, value: Literal) =>
+        fieldAccess.name shouldBe Operators.fieldAccess
+        inside(fieldAccess.argument.l) { case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
+          identifier.name shouldBe "this"
+          identifier.typeFullName shouldBe "Foo"
+          fieldIdentifier.canonicalName shouldBe "x"
+        }
 
-            case result => fail(s"Expected field identifier args but got $result")
-          }
-
-          value.code shouldBe "1"
-          value.typeFullName shouldBe "int"
-          value.argumentIndex shouldBe 2
-
-        case result => fail(s"Expected field assign args but got $result")
+        value.code shouldBe "1"
+        value.typeFullName shouldBe "int"
+        value.argumentIndex shouldBe 2
       }
 
       yAssign.name shouldBe Operators.assignment
       yAssign.methodFullName shouldBe Operators.assignment
 
-      yAssign.argument.l match {
-        case List(fieldAccess: Call, value: Identifier) =>
-          fieldAccess.name shouldBe Operators.fieldAccess
-          fieldAccess.argument.l match {
-            case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
-              identifier.name shouldBe "this"
-              identifier.typeFullName shouldBe "Foo"
-              fieldIdentifier.canonicalName shouldBe "y"
+      inside(yAssign.argument.l) { case List(fieldAccess: Call, value: Identifier) =>
+        fieldAccess.name shouldBe Operators.fieldAccess
+        inside(fieldAccess.argument.l) { case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
+          identifier.name shouldBe "this"
+          identifier.typeFullName shouldBe "Foo"
+          fieldIdentifier.canonicalName shouldBe "y"
+        }
 
-            case result => fail(s"Expected field identifier args but got $result")
-          }
-
-          value.name shouldBe "y"
-          value.code shouldBe "y"
-          value.typeFullName shouldBe "int"
-          value.argumentIndex shouldBe 2
-
-        case result => fail(s"Expected field assign args but got $result")
+        value.name shouldBe "y"
+        value.code shouldBe "y"
+        value.typeFullName shouldBe "int"
+        value.argumentIndex shouldBe 2
       }
 
       val ctorWithExplInvocation =
         cpg.method.fullNameExact(s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()")
-      ctorWithExplInvocation.body.astChildren.l match {
-        case List(explConsInvocation: Call) =>
-          explConsInvocation.methodFullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
-
-        case result => fail(s"Expected single explicit constructor invocation call but found $result")
+      inside(ctorWithExplInvocation.body.astChildren.l) { case List(explConsInvocation: Call) =>
+        explConsInvocation.methodFullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
       }
     }
   }
@@ -410,7 +364,7 @@ class MemberTests extends JavaSrcCode2CpgFixture {
   }
 
   "should create correct static and non-static members for class with both" in {
-    cpg.typeDecl.name("Bar").member.l match {
+    inside(cpg.typeDecl.name("Bar").member.l) {
       case List(nonStatic, isStatic, isAlsoStatic, isStaticObject, anotherNonStatic) =>
         nonStatic.name shouldBe "nonStatic"
         nonStatic.typeFullName shouldBe "int"
@@ -431,8 +385,6 @@ class MemberTests extends JavaSrcCode2CpgFixture {
         anotherNonStatic.name shouldBe "anotherNonStatic"
         anotherNonStatic.typeFullName shouldBe "Bar"
         hasStaticMod(anotherNonStatic) shouldBe false
-
-      case res => fail(s"Expected 4 members but found $res")
     }
   }
 
@@ -445,7 +397,7 @@ class MemberTests extends JavaSrcCode2CpgFixture {
       clinit.signature shouldBe "void()"
       clinit.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.StaticInitMethodName}:void()"
 
-      clinit.body.astChildren.l match {
+      inside(clinit.body.astChildren.l) {
         case List(
               isStaticInit: Call,
               isStaticObjectAssign: Call,
@@ -455,24 +407,20 @@ class MemberTests extends JavaSrcCode2CpgFixture {
             ) =>
           isStaticInit.methodFullName shouldBe Operators.assignment
           isStaticInit.argument.size shouldBe 2
-          isStaticInit.argument.headOption match {
-            case Some(fieldAccess: Call) =>
-              fieldAccess.argument.size shouldBe 2
-              fieldAccess.code shouldBe "Bar.isStatic"
-              fieldAccess.typeFullName shouldBe "int"
-              fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+          inside(isStaticInit.argument.headOption) { case Some(fieldAccess: Call) =>
+            fieldAccess.argument.size shouldBe 2
+            fieldAccess.code shouldBe "Bar.isStatic"
+            fieldAccess.typeFullName shouldBe "int"
+            fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-              val List(identifier: Identifier, field: FieldIdentifier) = fieldAccess.argument.l: @unchecked
-              identifier.name shouldBe "Bar"
-              identifier.typeFullName shouldBe "Bar"
-              identifier.order shouldBe 1
-              identifier.argumentIndex shouldBe 1
+            val List(identifier: Identifier, field: FieldIdentifier) = fieldAccess.argument.l: @unchecked
+            identifier.name shouldBe "Bar"
+            identifier.typeFullName shouldBe "Bar"
+            identifier.order shouldBe 1
+            identifier.argumentIndex shouldBe 1
 
-              field.canonicalName shouldBe "isStatic"
-              field.code shouldBe "isStatic"
-
-            case res =>
-              fail(s"Expected member field access but got $res")
+            field.canonicalName shouldBe "isStatic"
+            field.code shouldBe "isStatic"
           }
 
           isStaticObjectInit.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
@@ -480,8 +428,6 @@ class MemberTests extends JavaSrcCode2CpgFixture {
           isAlsoStaticInit.methodFullName shouldBe Operators.assignment
 
           printStmt.methodFullName shouldBe "java.io.PrintStream.println:void(java.lang.String)"
-
-        case res => fail(s"Expected 4 calls in <clinit> body but found $res")
       }
     }
   }

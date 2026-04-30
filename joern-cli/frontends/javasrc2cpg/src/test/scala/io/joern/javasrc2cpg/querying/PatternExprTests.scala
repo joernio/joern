@@ -1068,20 +1068,17 @@ class PatternExprTests extends JavaSrcCode2CpgFixture {
   ): Unit = {
     val localNamesAndTypes = cpg.method.name("foo").body.astChildren.take(expectedNamesAndTypes.length).map {
       case local: Local => (local.name, local.typeFullName)
-      case other        => fail(s"Expected local at start of method body but got ${other}")
     }
     localNamesAndTypes.l shouldBe expectedNamesAndTypes
   }
 
   def testStandardTypePatternAssignmentLowering(cpg: Cpg, controlStructureType: String): Unit = {
 
-    val andCall = cpg.controlStructure.controlStructureType(controlStructureType).condition.l match {
+    val andCall = inside(cpg.controlStructure.controlStructureType(controlStructureType).condition.l) {
       case List(notCall: Call) if notCall.name == Operators.logicalNot =>
         notCall.astChildren.isCall.head
 
       case List(andCall: Call) => andCall
-
-      case result => fail(s"Expected and or not call as condition for standard type pattern lowering")
     }
 
     andCall.name shouldBe Operators.logicalAnd

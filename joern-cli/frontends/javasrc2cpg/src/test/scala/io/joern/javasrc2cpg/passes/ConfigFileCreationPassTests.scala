@@ -55,12 +55,9 @@ class ConfigFileCreationPassTests extends JavaSrcCode2CpgFixture {
       .moreCode(code = "key=value", fileName = "config.properties")
 
     cpg.typeDecl.name("Foo").nonEmpty shouldBe true
-    cpg.configFile.l match {
-      case List(configFile) =>
-        configFile.name shouldBe "config.properties"
-        configFile.content shouldBe "key=value"
-
-      case result => fail(s"Expected single config file but got $result")
+    inside(cpg.configFile.l) { case List(configFile) =>
+      configFile.name shouldBe "config.properties"
+      configFile.content shouldBe "key=value"
     }
   }
 
@@ -73,15 +70,12 @@ class ConfigFileCreationPassTests extends JavaSrcCode2CpgFixture {
       .moreCode(code = "config.file=2", fileName = configFile2Path)
 
     cpg.typeDecl.name("Foo").nonEmpty shouldBe true
-    cpg.configFile.sortBy(_.name).l match {
-      case List(configFile1, configFile2) =>
-        configFile1.name shouldBe configFile1Path
-        configFile1.content shouldBe "config.file=1"
+    inside(cpg.configFile.sortBy(_.name).l) { case List(configFile1, configFile2) =>
+      configFile1.name shouldBe configFile1Path
+      configFile1.content shouldBe "config.file=1"
 
-        configFile2.name shouldBe configFile2Path
-        configFile2.content shouldBe "config.file=2"
-
-      case result => fail(s"Expected two config files but got $result")
+      configFile2.name shouldBe configFile2Path
+      configFile2.content shouldBe "config.file=2"
     }
   }
 
