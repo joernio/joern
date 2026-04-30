@@ -27,7 +27,7 @@ class SimpleAstCreationPassTest extends Rust2CpgSuite {
   "test 03" in {
     val mainPath = (Paths.get("src") / "main.rs").toString
     val cpg      = code("", mainPath)
-    inside(cpg.namespaceBlock.filename(mainPath).l) { case namespaceBlock :: Nil =>
+    inside(cpg.namespaceBlock.filenameExact(mainPath).l) { case namespaceBlock :: Nil =>
       namespaceBlock.name shouldBe "<global>"
       namespaceBlock.fullName shouldBe s"$mainPath:<global>"
     }
@@ -36,7 +36,7 @@ class SimpleAstCreationPassTest extends Rust2CpgSuite {
   "test 04" in {
     val mainPath = (Paths.get("src") / "main.rs").toString
     val cpg      = code("", mainPath)
-    inside(cpg.namespaceBlock.filename(mainPath).astChildren.l) { case (method: Method) :: Nil =>
+    inside(cpg.namespaceBlock.filenameExact(mainPath).astChildren.l) { case (method: Method) :: Nil =>
       method.name shouldBe "<global>"
       method.fullName shouldBe s"$mainPath:<global>"
       method.code shouldBe "<global>"
