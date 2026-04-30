@@ -42,18 +42,14 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
     }
 
     "create a method node for the lambda" in {
-      cpg.typeDecl.name("Foo").method.name(".*lambda.*").isLambda.l match {
-        case List(lambdaMethod) =>
-          lambdaMethod.name shouldBe "<lambda>0"
-          lambdaMethod.fullName shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:string(string)"
-          lambdaMethod.parameter.l match {
-            case List(lambdaInput) =>
-              lambdaInput.name shouldBe "lambdaInput"
-              lambdaInput.typeFullName shouldBe "string"
-            case result => fail(s"Expected single lambda parameter but got $result")
-          }
-          lambdaMethod.methodReturn.typeFullName shouldBe "string"
-        case result => fail(s"Expected single lambda method but got $result")
+      inside(cpg.typeDecl.name("Foo").method.name(".*lambda.*").isLambda.l) { case List(lambdaMethod) =>
+        lambdaMethod.name shouldBe "<lambda>0"
+        lambdaMethod.fullName shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:string(string)"
+        inside(lambdaMethod.parameter.l) { case List(lambdaInput) =>
+          lambdaInput.name shouldBe "lambdaInput"
+          lambdaInput.typeFullName shouldBe "string"
+        }
+        lambdaMethod.methodReturn.typeFullName shouldBe "string"
       }
     }
 
@@ -70,62 +66,50 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
     }
 
     "create a method body for the lambda method" in {
-      cpg.typeDecl.name("Foo").method.name(".*lambda.*").block.astChildren.l match {
+      inside(cpg.typeDecl.name("Foo").method.name(".*lambda.*").block.astChildren.l) {
         case List(fallBack: Local, returnNode: Return) =>
           returnNode.code shouldBe "return lambdaInput.length() > 5 ? \"Long\" : fallback;"
-          returnNode.astChildren.l match {
-            case List(expr: Call) =>
-              expr.methodFullName shouldBe Operators.conditional
-            case result => fail(s"Expected return conditional, but got $result")
+          inside(returnNode.astChildren.l) { case List(expr: Call) =>
+            expr.methodFullName shouldBe Operators.conditional
           }
           fallBack.name shouldBe "fallback"
           fallBack.typeFullName shouldBe "string"
           fallBack.closureBindingId shouldBe Some("Test0.cpp:<global>.Foo.foo.<lambda>0:string(string):fallback")
-        case result => fail(s"Expected lambda body with single return but got $result")
       }
     }
 
     "create locals for captured identifiers in the lambda method" in {
-      cpg.typeDecl.name("Foo").method.name(".*lambda.*").local.sortBy(_.name) match {
+      inside(cpg.typeDecl.name("Foo").method.name(".*lambda.*").local.sortBy(_.name)) {
         case Seq(fallbackLocal: Local) =>
           fallbackLocal.name shouldBe "fallback"
           fallbackLocal.code shouldBe "fallback"
           fallbackLocal.typeFullName shouldBe "string"
           cpg.identifier.nameExact("fallback").refsTo.l shouldBe List(fallbackLocal)
-        case result => fail(s"Expected single local for fallback but got $result")
       }
     }
 
     "create closure bindings for captured identifiers" in {
-      cpg.closureBinding.l match {
-        case List(fallbackClosureBinding) =>
-          val fallbackLocal = cpg.method.name(".*lambda.*").local.name("fallback").head
-          fallbackClosureBinding.closureBindingId shouldBe fallbackLocal.closureBindingId
+      inside(cpg.closureBinding.l) { case List(fallbackClosureBinding) =>
+        val fallbackLocal = cpg.method.name(".*lambda.*").local.name("fallback").head
+        fallbackClosureBinding.closureBindingId shouldBe fallbackLocal.closureBindingId
 
-          fallbackClosureBinding._refOut.l match {
-            case List(capturedParam: MethodParameterIn) =>
-              capturedParam.name shouldBe "fallback"
-              capturedParam.method.fullName shouldBe "Foo.foo:void(string,string)"
-            case result => fail(s"Expected single capturedParam but got $result")
-          }
+        inside(fallbackClosureBinding._refOut.l) { case List(capturedParam: MethodParameterIn) =>
+          capturedParam.name shouldBe "fallback"
+          capturedParam.method.fullName shouldBe "Foo.foo:void(string,string)"
+        }
 
-          fallbackClosureBinding._captureIn.l match {
-            case List(outMethod: MethodRef) =>
-              outMethod.typeFullName shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:string(string)"
-              outMethod.methodFullName shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:string(string)"
-            case result => fail(s"Expected single METHOD_REF but got $result")
-          }
-        case result => fail(s"Expected 1 closure binding for captured variables but got $result")
+        inside(fallbackClosureBinding._captureIn.l) { case List(outMethod: MethodRef) =>
+          outMethod.typeFullName shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:string(string)"
+          outMethod.methodFullName shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:string(string)"
+        }
       }
     }
 
     "create a typeDecl node inheriting from correct interface" in {
-      cpg.typeDecl.name(".*lambda.*").l match {
-        case List(lambdaDecl) =>
-          lambdaDecl.name shouldBe "<lambda>0"
-          lambdaDecl.fullName shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:string(string)"
-          lambdaDecl.inheritsFromTypeFullName should contain theSameElementsAs List("std.function")
-        case result => fail(s"Expected a single typeDecl for the lambda but got $result")
+      inside(cpg.typeDecl.name(".*lambda.*").l) { case List(lambdaDecl) =>
+        lambdaDecl.name shouldBe "<lambda>0"
+        lambdaDecl.fullName shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:string(string)"
+        lambdaDecl.inheritsFromTypeFullName should contain theSameElementsAs List("std.function")
       }
     }
   }
@@ -165,28 +149,22 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
     "ref this correctly" in {
       val List(lambda) = cpg.method.name(".*lambda.*").l
       lambda.fullName shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:bool()"
-      cpg.closureBinding.l match {
-        case List(thisClosureBinding) =>
-          val thisLocal = cpg.method.name(".*lambda.*").local.nameExact(Defines.This).head
-          thisClosureBinding.closureBindingId shouldBe thisLocal.closureBindingId
+      inside(cpg.closureBinding.l) { case List(thisClosureBinding) =>
+        val thisLocal = cpg.method.name(".*lambda.*").local.nameExact(Defines.This).head
+        thisClosureBinding.closureBindingId shouldBe thisLocal.closureBindingId
 
-          cpg.identifier.nameExact(Defines.This).refsTo.l shouldBe List(thisLocal)
+        cpg.identifier.nameExact(Defines.This).refsTo.l shouldBe List(thisLocal)
 
-          thisClosureBinding._refOut.l match {
-            case List(capturedThisParam: MethodParameterIn) =>
-              capturedThisParam.name shouldBe Defines.This
-              capturedThisParam.typeFullName shouldBe "Foo*"
-              capturedThisParam.method.fullName shouldBe "Foo.foo:void()"
-            case result => fail(s"Expected single capturedParam but got $result")
-          }
+        inside(thisClosureBinding._refOut.l) { case List(capturedThisParam: MethodParameterIn) =>
+          capturedThisParam.name shouldBe Defines.This
+          capturedThisParam.typeFullName shouldBe "Foo*"
+          capturedThisParam.method.fullName shouldBe "Foo.foo:void()"
+        }
 
-          thisClosureBinding._captureIn.l match {
-            case List(outMethod: MethodRef) =>
-              outMethod.typeFullName shouldBe lambda.fullName
-              outMethod.methodFullName shouldBe lambda.fullName
-            case result => fail(s"Expected single METHOD_REF but got $result")
-          }
-        case result => fail(s"Expected 1 closure binding for captured variables but got $result")
+        inside(thisClosureBinding._captureIn.l) { case List(outMethod: MethodRef) =>
+          outMethod.typeFullName shouldBe lambda.fullName
+          outMethod.methodFullName shouldBe lambda.fullName
+        }
       }
     }
   }
@@ -221,28 +199,22 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
 
     "ref the shadowed variable correctly" in {
       val List(lambdaF, lambdaNested) = cpg.method.name(".*lambda.*").sortBy(_.lineNumber.get).l
-      cpg.closureBinding.l match {
-        case List(xClosureBinding) =>
-          val List(xLocalCaptured) = lambdaF.block.local.nameExact("x").l
-          xClosureBinding.closureBindingId shouldBe xLocalCaptured.closureBindingId
+      inside(cpg.closureBinding.l) { case List(xClosureBinding) =>
+        val List(xLocalCaptured) = lambdaF.block.local.nameExact("x").l
+        xClosureBinding.closureBindingId shouldBe xLocalCaptured.closureBindingId
 
-          cpg.identifier.nameExact("x").lineNumber(4).refsTo.l shouldBe List(xLocalCaptured)
+        cpg.identifier.nameExact("x").lineNumber(4).refsTo.l shouldBe List(xLocalCaptured)
 
-          xClosureBinding._refOut.l match {
-            case List(capturedThisParam: MethodParameterIn) =>
-              capturedThisParam.name shouldBe "x"
-              capturedThisParam.typeFullName shouldBe "int*"
-              capturedThisParam.method.fullName shouldBe "foo:void(int*)"
-            case result => fail(s"Expected single capturedParam but got $result")
-          }
+        inside(xClosureBinding._refOut.l) { case List(capturedThisParam: MethodParameterIn) =>
+          capturedThisParam.name shouldBe "x"
+          capturedThisParam.typeFullName shouldBe "int*"
+          capturedThisParam.method.fullName shouldBe "foo:void(int*)"
+        }
 
-          xClosureBinding._captureIn.l match {
-            case List(outMethod: MethodRef) =>
-              outMethod.typeFullName shouldBe lambdaF.fullName
-              outMethod.methodFullName shouldBe lambdaF.fullName
-            case result => fail(s"Expected single METHOD_REF but got $result")
-          }
-        case result => fail(s"Expected 1 closure binding for captured variables but got $result")
+        inside(xClosureBinding._captureIn.l) { case List(outMethod: MethodRef) =>
+          outMethod.typeFullName shouldBe lambdaF.fullName
+          outMethod.methodFullName shouldBe lambdaF.fullName
+        }
       }
 
       val List(xLocalNested) = lambdaNested.block.local.nameExact("x").l
@@ -400,28 +372,22 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
     "ref this correctly" in {
       val List(lambda) = cpg.method.name(".*lambda.*").l
       lambda.fullName shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:bool()"
-      cpg.closureBinding.l match {
-        case List(thisClosureBinding) =>
-          val thisLocal = cpg.method.name(".*lambda.*").local.nameExact(Defines.This).head
-          thisClosureBinding.closureBindingId shouldBe thisLocal.closureBindingId
+      inside(cpg.closureBinding.l) { case List(thisClosureBinding) =>
+        val thisLocal = cpg.method.name(".*lambda.*").local.nameExact(Defines.This).head
+        thisClosureBinding.closureBindingId shouldBe thisLocal.closureBindingId
 
-          cpg.identifier.nameExact(Defines.This).refsTo.l shouldBe List(thisLocal)
+        cpg.identifier.nameExact(Defines.This).refsTo.l shouldBe List(thisLocal)
 
-          thisClosureBinding._refOut.l match {
-            case List(capturedThisParam: MethodParameterIn) =>
-              capturedThisParam.name shouldBe Defines.This
-              capturedThisParam.typeFullName shouldBe "Foo*"
-              capturedThisParam.method.fullName shouldBe "Foo.foo:void()"
-            case result => fail(s"Expected single capturedParam but got $result")
-          }
+        inside(thisClosureBinding._refOut.l) { case List(capturedThisParam: MethodParameterIn) =>
+          capturedThisParam.name shouldBe Defines.This
+          capturedThisParam.typeFullName shouldBe "Foo*"
+          capturedThisParam.method.fullName shouldBe "Foo.foo:void()"
+        }
 
-          thisClosureBinding._captureIn.l match {
-            case List(outMethod: MethodRef) =>
-              outMethod.typeFullName shouldBe lambda.fullName
-              outMethod.methodFullName shouldBe lambda.fullName
-            case result => fail(s"Expected single METHOD_REF but got $result")
-          }
-        case result => fail(s"Expected 1 closure binding for captured variables but got $result")
+        inside(thisClosureBinding._captureIn.l) { case List(outMethod: MethodRef) =>
+          outMethod.typeFullName shouldBe lambda.fullName
+          outMethod.methodFullName shouldBe lambda.fullName
+        }
       }
     }
   }
@@ -444,16 +410,13 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
         |""".stripMargin)
 
     "be captured precisely" in {
-      cpg.closureBinding.l match {
-        case List(myValue) =>
-          myValue.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
-          myValue.closureBindingId shouldBe Some("Test0.cpp:<global>.Foo.foo.<lambda>0:string(string):myValue")
-          myValue._localViaRefOut.get.name shouldBe "myValue"
-          myValue._captureIn.collectFirst { case x: MethodRef =>
-            x.methodFullName
-          }.head shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:string(string)"
-        case result =>
-          fail(s"Expected single closure binding to collect but got $result")
+      inside(cpg.closureBinding.l) { case List(myValue) =>
+        myValue.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
+        myValue.closureBindingId shouldBe Some("Test0.cpp:<global>.Foo.foo.<lambda>0:string(string):myValue")
+        myValue._localViaRefOut.get.name shouldBe "myValue"
+        myValue._captureIn.collectFirst { case x: MethodRef =>
+          x.methodFullName
+        }.head shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:string(string)"
       }
     }
 
@@ -477,16 +440,13 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
         |""".stripMargin)
 
     "be captured precisely" in {
-      cpg.closureBinding.l match {
-        case List(myValue) =>
-          myValue.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-          myValue.closureBindingId shouldBe Some("Test0.cpp:<global>.Foo.foo.<lambda>0:string(string):myValue")
-          myValue._localViaRefOut.get.name shouldBe "myValue"
-          myValue._captureIn.collectFirst { case x: MethodRef =>
-            x.methodFullName
-          }.head shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:string(string)"
-        case result =>
-          fail(s"Expected single closure binding to collect but got $result")
+      inside(cpg.closureBinding.l) { case List(myValue) =>
+        myValue.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+        myValue.closureBindingId shouldBe Some("Test0.cpp:<global>.Foo.foo.<lambda>0:string(string):myValue")
+        myValue._localViaRefOut.get.name shouldBe "myValue"
+        myValue._captureIn.collectFirst { case x: MethodRef =>
+          x.methodFullName
+        }.head shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:string(string)"
       }
     }
 
