@@ -40,8 +40,15 @@ case class Config(
   maxHeight: Option[Int] = None,
   scanMaxCallDepth: Option[Int] = None,
   scanScriptNames: Array[String] = Array.empty,
-  scanTagNames: Array[String] = Array.empty
+  scanTagNames: Array[String] = Array.empty,
+  scalacOptions: Seq[String] = Config.DefaultScalacOptions
 )
+
+object Config {
+  val DefaultScalacOptions: Seq[String] = Seq(
+    "-Wconf:msg=Implicit parameters should be provided with a `using` clause:s"
+  )
+}
 
 /** Base class for ReplBridge, split by topic into multiple self types.
   */
@@ -198,6 +205,13 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
         .action((x, c) => c.copy(maxHeight = Some(x)))
         .text("Maximum number lines to print before output gets truncated (default: no limit)")
 
+      opt[String]("scalacOption")
+        .valueName("-Xfatal-warnings")
+        .unbounded()
+        .optional()
+        .action((x, c) => c.copy(scalacOptions = c.scalacOptions :+ x))
+        .text("additional scalac option passed to the underlying compiler - may be passed multiple times")
+
       help("help")
         .text("Print this help text")
     }
@@ -303,7 +317,8 @@ trait InteractiveShell { this: BridgeBase =>
           ),
         greeting = Option(greeting),
         prompt = Option(promptStr),
-        maxHeight = config.maxHeight
+        maxHeight = config.maxHeight,
+        scalacOptions = config.scalacOptions
       )
     )
   }
@@ -327,7 +342,8 @@ trait ScriptExecution { this: BridgeBase =>
           params = config.params,
           verbose = config.verbose,
           classpathConfig = replpp.Config
-            .ForClasspath(inheritClasspath = true, dependencies = config.dependencies, resolvers = config.resolvers)
+            .ForClasspath(inheritClasspath = true, dependencies = config.dependencies, resolvers = config.resolvers),
+          scalacOptions = config.scalacOptions
         )
       )
       if (config.verbose && scriptReturn.isFailure) {
@@ -450,7 +466,8 @@ trait ServerHandling { this: BridgeBase =>
       runAfter = buildRunAfterCode(config),
       verbose = true, // always print what's happening - helps debugging
       classpathConfig = replpp.Config
-        .ForClasspath(inheritClasspath = true, dependencies = config.dependencies, resolvers = config.resolvers)
+        .ForClasspath(inheritClasspath = true, dependencies = config.dependencies, resolvers = config.resolvers),
+      scalacOptions = config.scalacOptions
     )
 
     replpp.server.ReplServer.startHttpServer(
