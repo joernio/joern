@@ -1,0 +1,39 @@
+joern-cli/frontends/abap2cpg/src/main/resources/application.conf
+  human 2
+---
+{
+  "attestations": [
+    {
+      "entries": [
+        {
+          "accepted_lines": 1,
+          "added_lines": 1,
+          "deleted_lines": 0,
+          "hash": "human",
+          "lines": "2",
+          "overridden_lines": 0
+        }
+      ],
+      "file": "joern-cli/frontends/abap2cpg/src/main/resources/application.conf"
+    }
+  ],
+  "base_commit_sha": "dc9cb31112975927063e9eb45893429cb6edc468",
+  "branch": "niko/abap2cpg",
+  "commit_sha": "c5a85ef2a2ef3820f80b8ab9de9a866d6f8edc83",
+  "commit_time": "2026-05-05T14:15:51+02:00",
+  "commit_type": "direct_commit",
+  "git_ai_version": "1.4.2",
+  "prompts": {
+    "human": {
+      "accepted_lines": 1,
+      "agent_id": null,
+      "human_author": "Niko Schmidt <niko.schmidt@harness.io>",
+      "messages": [],
+      "overriden_lines": 0,
+      "total_additions": 1,
+      "total_deletions": 0
+    }
+  },
+  "repo": "https://github.com/joernio/joern.git",
+  "schema_version": "authorship/3.0.0"
+}
