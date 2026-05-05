@@ -50,7 +50,7 @@ lazy val root = project
     gosrc2cpg,
     swiftsrc2cpg,
     csharpsrc2cpg,
-    abap2cpg
+    abap2cpg,
     rust2cpg
   )
   .dependsOn(linterRules % ScalafixConfig)
