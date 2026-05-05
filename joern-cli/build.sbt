@@ -36,6 +36,7 @@ def frontendMappings(frontendName: String, stagedProject: File): Seq[(File, Stri
 }
 
 lazy val x2cpg         = project.in(file("frontends/x2cpg"))
+lazy val abap2cpg      = project.in(file("frontends/abap2cpg"))
 lazy val kotlin2cpg    = project.in(file("frontends/kotlin2cpg"))
 lazy val javasrc2cpg   = project.in(file("frontends/javasrc2cpg"))
 lazy val pysrc2cpg     = project.in(file("frontends/pysrc2cpg"))
@@ -49,6 +50,7 @@ lazy val csharpsrc2cpg = project.in(file("frontends/csharpsrc2cpg"))
 lazy val rust2cpg      = project.in(file("frontends/rust2cpg"))
 
 Universal / mappings ++= frontendMappings("kotlin2cpg", (kotlin2cpg / stage).value)
+Universal / mappings ++= frontendMappings("abap2cpg", (abap2cpg / stage).value)
 Universal / mappings ++= frontendMappings("javasrc2cpg", (javasrc2cpg / stage).value)
 Universal / mappings ++= frontendMappings("c2cpg", (Projects.c2cpg / stage).value)
 Universal / mappings ++= frontendMappings("ghidra2cpg", (Projects.ghidra2cpg / stage).value)
