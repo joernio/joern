@@ -70,6 +70,7 @@ class ExtendedCfgNode(val traversal: Iterator[CfgNode]) extends AnyVal {
   }
 
   private def removeConsecutiveDuplicates[T](l: Vector[T]): List[T] = {
+    // test comment to trigger linting
     l.headOption.map(x => x :: l.sliding(2).collect { case Seq(a, b) if a != b => b }.toList).getOrElse(List())
   }
 

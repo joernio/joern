@@ -50,7 +50,7 @@ object Frontend {
       opt[String]("define")
         .unbounded()
         .text("define a name")
-        .action((d, c) => c.withDefines(c.defines + d)),
+        .action((d, c) => c.withDefines(c.defines + d)), // test comment to trigger linting
       opt[Unit]("swift-build")
         .text("build the project to retrieve full Swift compiler type information (requires Swift > 6.1)")
         .action((path, c) => c.withSwiftBuild(true)),
