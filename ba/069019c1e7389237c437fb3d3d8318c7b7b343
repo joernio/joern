@@ -1,0 +1,34 @@
+.github/workflows/pr.yml
+  dcdd5a01-d7b5-4f2c-8db1-6ded9484e122 75-76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.2",
+  "base_commit_sha": "ba069019c1e7389237c437fb3d3d8318c7b7b343",
+  "commit_sha": "",
+  "commit_type": "rebase_interactive",
+  "prompts": {
+    "dcdd5a01-d7b5-4f2c-8db1-6ded9484e122": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dcdd5a01-d7b5-4f2c-8db1-6ded9484e122",
+        "model": "claude-sonnet-4-5-20250929"
+      },
+      "human_author": "Max Leuthäuser <1417198+max-leuthaeuser@users.noreply.github.com>",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 2,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    },
+    "human": {
+      "agent_id": null,
+      "human_author": "Max Leuthäuser <1417198+max-leuthaeuser@users.noreply.github.com>",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 0,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    }
+  }
+}
