@@ -1,0 +1,43 @@
+build.sbt
+  4899938f-73eb-43d4-b677-d3c412b968aa 53
+---
+{
+  "attestations": [
+    {
+      "entries": [
+        {
+          "accepted_lines": 1,
+          "added_lines": 1,
+          "deleted_lines": 1,
+          "hash": "4899938f-73eb-43d4-b677-d3c412b968aa",
+          "lines": "53",
+          "overridden_lines": 0
+        }
+      ],
+      "file": "build.sbt"
+    }
+  ],
+  "base_commit_sha": "2dd3ff7854f26028953d010e1fe37809ebff30a2",
+  "branch": "niko/abap2cpg",
+  "commit_sha": "dc9cb31112975927063e9eb45893429cb6edc468",
+  "commit_time": "2026-05-05T11:34:43+02:00",
+  "commit_type": "direct_commit",
+  "git_ai_version": "1.4.2",
+  "prompts": {
+    "4899938f-73eb-43d4-b677-d3c412b968aa": {
+      "accepted_lines": 1,
+      "agent_id": {
+        "id": "4899938f-73eb-43d4-b677-d3c412b968aa",
+        "model": "claude-sonnet-4-6",
+        "tool": "claude"
+      },
+      "human_author": "Niko Schmidt <niko.schmidt@harness.io>",
+      "messages": [],
+      "overriden_lines": 0,
+      "total_additions": 1,
+      "total_deletions": 1
+    }
+  },
+  "repo": "https://github.com/joernio/joern.git",
+  "schema_version": "authorship/3.0.0"
+}
