@@ -85,54 +85,46 @@ class HashTests extends RubyCode2CpgFixture {
         |{'a'..'c' => "abc"}
         |""".stripMargin)
 
-    inside(cpg.call.name(RubyOperators.hashInitializer).l) {
-      case hashInitializerInt :: hashInitializerString :: Nil =>
-        inside(hashInitializerInt.inCall.astSiblings.assignment.l) {
-          case firstCall :: secondCall :: thirdCall :: fourthCall :: fifthCall :: Nil =>
-            firstCall.code shouldBe "<tmp-0>[1] = \"abc\""
-            secondCall.code shouldBe "<tmp-0>[2] = \"abc\""
-            thirdCall.code shouldBe "<tmp-0>[3] = \"abc\""
-            fourthCall.code shouldBe "<tmp-0>[4] = \"ade\""
-            fifthCall.code shouldBe "<tmp-0>[5] = \"ade\""
+    inside(cpg.call.name(RubyOperators.hashInitializer).l) { case hashInitializerInt :: hashInitializerString :: Nil =>
+      inside(hashInitializerInt.inCall.astSiblings.assignment.l) {
+        case firstCall :: secondCall :: thirdCall :: fourthCall :: fifthCall :: Nil =>
+          firstCall.code shouldBe "<tmp-0>[1] = \"abc\""
+          secondCall.code shouldBe "<tmp-0>[2] = \"abc\""
+          thirdCall.code shouldBe "<tmp-0>[3] = \"abc\""
+          fourthCall.code shouldBe "<tmp-0>[4] = \"ade\""
+          fifthCall.code shouldBe "<tmp-0>[5] = \"ade\""
 
-            inside(firstCall.argument.l) {
-              case (lhs: Call) :: (rhs: Literal) :: Nil =>
-                lhs.code shouldBe "<tmp-0>[1]"
-                lhs.name shouldBe Operators.indexAccess
+          inside(firstCall.argument.l) { case (lhs: Call) :: (rhs: Literal) :: Nil =>
+            lhs.code shouldBe "<tmp-0>[1]"
+            lhs.name shouldBe Operators.indexAccess
 
-                rhs.code shouldBe "\"abc\""
-                rhs.typeFullName shouldBe Defines.prefixAsCoreType("String")
-              case _ => fail("Expected LHS and RHS after lowering")
-            }
+            rhs.code shouldBe "\"abc\""
+            rhs.typeFullName shouldBe Defines.prefixAsCoreType("String")
+          }
 
-            inside(fourthCall.argument.l) { case (lhs: Call) :: (rhs: Literal) :: Nil =>
-              lhs.code shouldBe "<tmp-0>[4]"
-              lhs.name shouldBe Operators.indexAccess
+          inside(fourthCall.argument.l) { case (lhs: Call) :: (rhs: Literal) :: Nil =>
+            lhs.code shouldBe "<tmp-0>[4]"
+            lhs.name shouldBe Operators.indexAccess
 
-              rhs.code shouldBe "\"ade\""
-              rhs.typeFullName shouldBe Defines.prefixAsCoreType("String")
-            }
-          case _ => fail("Expected 5 calls (one per item in range)")
-        }
+            rhs.code shouldBe "\"ade\""
+            rhs.typeFullName shouldBe Defines.prefixAsCoreType("String")
+          }
+      }
 
-        inside(hashInitializerString.inCall.astSiblings.assignment.l) {
-          case firstCall :: secondCall :: thirdCall :: Nil =>
-            firstCall.code shouldBe "<tmp-1>['a'] = \"abc\""
-            secondCall.code shouldBe "<tmp-1>['b'] = \"abc\""
-            thirdCall.code shouldBe "<tmp-1>['c'] = \"abc\""
+      inside(hashInitializerString.inCall.astSiblings.assignment.l) {
+        case firstCall :: secondCall :: thirdCall :: Nil =>
+          firstCall.code shouldBe "<tmp-1>['a'] = \"abc\""
+          secondCall.code shouldBe "<tmp-1>['b'] = \"abc\""
+          thirdCall.code shouldBe "<tmp-1>['c'] = \"abc\""
 
-            inside(firstCall.argument.l) {
-              case (lhs: Call) :: (rhs: Literal) :: Nil =>
-                lhs.code shouldBe "<tmp-1>['a']"
-                lhs.name shouldBe Operators.indexAccess
+          inside(firstCall.argument.l) { case (lhs: Call) :: (rhs: Literal) :: Nil =>
+            lhs.code shouldBe "<tmp-1>['a']"
+            lhs.name shouldBe Operators.indexAccess
 
-                rhs.code shouldBe "\"abc\""
-                rhs.typeFullName shouldBe Defines.prefixAsCoreType("String")
-              case _ => fail("Expected LHS and RHS after lowering")
-            }
-          case _ => fail("Expected 3 calls (one per item in range)")
-        }
-      case _ => fail("Expected two hash initializer functions")
+            rhs.code shouldBe "\"abc\""
+            rhs.typeFullName shouldBe Defines.prefixAsCoreType("String")
+          }
+      }
     }
 
   }
@@ -142,16 +134,13 @@ class HashTests extends RubyCode2CpgFixture {
                      |{1...3 => "abc"}
                      |""".stripMargin)
 
-    inside(cpg.call.name(RubyOperators.hashInitializer).l) {
-      case hashInitializer :: Nil =>
-        inside(hashInitializer.inCall.astSiblings.l) {
-          case (firstCall: Call) :: (secondCall: Call) :: (tmp: Identifier) :: Nil =>
-            firstCall.code shouldBe "<tmp-0>[1] = \"abc\""
-            secondCall.code shouldBe "<tmp-0>[2] = \"abc\""
-            tmp.name shouldBe "<tmp-0>"
-          case _ => fail("Expected 2 calls (one per item in range)")
-        }
-      case _ => fail("Expected one hash initializer function")
+    inside(cpg.call.name(RubyOperators.hashInitializer).l) { case hashInitializer :: Nil =>
+      inside(hashInitializer.inCall.astSiblings.l) {
+        case (firstCall: Call) :: (secondCall: Call) :: (tmp: Identifier) :: Nil =>
+          firstCall.code shouldBe "<tmp-0>[1] = \"abc\""
+          secondCall.code shouldBe "<tmp-0>[2] = \"abc\""
+          tmp.name shouldBe "<tmp-0>"
+      }
     }
   }
 
@@ -160,29 +149,21 @@ class HashTests extends RubyCode2CpgFixture {
         |{:a...:b => "a"}
         |""".stripMargin)
 
-    inside(cpg.call.name(RubyOperators.hashInitializer).l) {
-      case hashInitializer :: Nil =>
-        inside(hashInitializer.inCall.astSiblings.assignment.l) {
-          case rangeExprArg :: Nil =>
-            inside(rangeExprArg.argument.l) {
-              case (lhs: Call) :: (rhs: Literal) :: Nil =>
-                lhs.name shouldBe Operators.indexAccess
-                lhs.code shouldBe "<tmp-0>[:a...:b]"
+    inside(cpg.call.name(RubyOperators.hashInitializer).l) { case hashInitializer :: Nil =>
+      inside(hashInitializer.inCall.astSiblings.assignment.l) { case rangeExprArg :: Nil =>
+        inside(rangeExprArg.argument.l) { case (lhs: Call) :: (rhs: Literal) :: Nil =>
+          lhs.name shouldBe Operators.indexAccess
+          lhs.code shouldBe "<tmp-0>[:a...:b]"
 
-                inside(lhs.argument.isCall.l) {
-                  case rangeExp :: Nil =>
-                    rangeExp.name shouldBe Operators.range
-                  case _ => fail("Expected range operator for non-primitive range key")
-                }
+          inside(lhs.argument.isCall.l) { case rangeExp :: Nil =>
+            rangeExp.name shouldBe Operators.range
+          }
 
-                rhs.typeFullName shouldBe Defines.prefixAsCoreType("String")
-                rhs.code shouldBe "\"a\""
-              case _ => fail("Expected LHS and RHS for association")
-            }
-
-          case _ => fail("Expected one argument for range expression")
+          rhs.typeFullName shouldBe Defines.prefixAsCoreType("String")
+          rhs.code shouldBe "\"a\""
         }
-      case _ => fail("Expected one hash initializer function")
+
+      }
     }
   }
 
@@ -191,21 +172,18 @@ class HashTests extends RubyCode2CpgFixture {
         |x = Hash [1 => "a", 2 => "b", 3 => "c"]
         |""".stripMargin)
 
-    inside(cpg.call.nameExact("[]").l) {
-      case hashCall :: Nil =>
-        hashCall.code shouldBe "Hash [1 => \"a\", 2 => \"b\", 3 => \"c\"]"
-        hashCall.lineNumber shouldBe Some(2)
-        hashCall.methodFullName shouldBe s"${Defines.prefixAsCoreType("Hash")}.[]"
-        hashCall.typeFullName shouldBe Defines.prefixAsCoreType("Hash")
+    inside(cpg.call.nameExact("[]").l) { case hashCall :: Nil =>
+      hashCall.code shouldBe "Hash [1 => \"a\", 2 => \"b\", 3 => \"c\"]"
+      hashCall.lineNumber shouldBe Some(2)
+      hashCall.methodFullName shouldBe s"${Defines.prefixAsCoreType("Hash")}.[]"
+      hashCall.typeFullName shouldBe Defines.prefixAsCoreType("Hash")
 
-        inside(hashCall.astChildren.l) {
-          case (_: Call) :: (_: TypeRef) :: (one: Call) :: (two: Call) :: (three: Call) :: Nil =>
-            one.code shouldBe "1 => \"a\""
-            two.code shouldBe "2 => \"b\""
-            three.code shouldBe "3 => \"c\""
-          case xs => fail(s"Expected 3 literals under the hash initializer, instead got [${xs.code.mkString(", ")}]")
-        }
-      case xs => fail(s"Expected a single array initializer call, instead got [${xs.code.mkString(", ")}]")
+      inside(hashCall.astChildren.l) {
+        case (_: Call) :: (_: TypeRef) :: (one: Call) :: (two: Call) :: (three: Call) :: Nil =>
+          one.code shouldBe "1 => \"a\""
+          two.code shouldBe "2 => \"b\""
+          three.code shouldBe "3 => \"c\""
+      }
     }
   }
 
@@ -214,15 +192,13 @@ class HashTests extends RubyCode2CpgFixture {
         |a = {**x, **y}
         |""".stripMargin)
 
-    inside(cpg.call.name(RubyOperators.hashInitializer).l) {
-      case hashCall :: Nil =>
-        val List(xSplatCall, ySplatCall) = hashCall.inCall.astSiblings.isCall.l
-        xSplatCall.code shouldBe "**x"
-        xSplatCall.methodFullName shouldBe RubyOperators.splat
+    inside(cpg.call.name(RubyOperators.hashInitializer).l) { case hashCall :: Nil =>
+      val List(xSplatCall, ySplatCall) = hashCall.inCall.astSiblings.isCall.l
+      xSplatCall.code shouldBe "**x"
+      xSplatCall.methodFullName shouldBe RubyOperators.splat
 
-        ySplatCall.code shouldBe "**y"
-        ySplatCall.methodFullName shouldBe RubyOperators.splat
-      case xs => fail(s"Expected call to hashInitializer, [${xs.code.mkString(",")}]")
+      ySplatCall.code shouldBe "**y"
+      ySplatCall.methodFullName shouldBe RubyOperators.splat
     }
   }
 
@@ -232,19 +208,17 @@ class HashTests extends RubyCode2CpgFixture {
         |a = {**foo(bar)}
         |""".stripMargin)
 
-    inside(cpg.call.name(RubyOperators.hashInitializer).l) {
-      case hashInitializer :: Nil =>
-        val List(splatCall) = hashInitializer.inCall.astSiblings.isCall.l
-        splatCall.code shouldBe "**foo(bar)"
-        splatCall.name shouldBe RubyOperators.splat
+    inside(cpg.call.name(RubyOperators.hashInitializer).l) { case hashInitializer :: Nil =>
+      val List(splatCall) = hashInitializer.inCall.astSiblings.isCall.l
+      splatCall.code shouldBe "**foo(bar)"
+      splatCall.name shouldBe RubyOperators.splat
 
-        val List(splatCallArg: Call) = splatCall.argument.l: @unchecked
+      val List(splatCallArg: Call) = splatCall.argument.l: @unchecked
 
-        splatCallArg.code shouldBe "foo(bar)"
+      splatCallArg.code shouldBe "foo(bar)"
 
-        val List(_, barCallArg) = splatCallArg.argument.l
-        barCallArg.code shouldBe "bar"
-      case xs => fail(s"Expected one call for init, got [${xs.code.mkString(",")}]")
+      val List(_, barCallArg) = splatCallArg.argument.l
+      barCallArg.code shouldBe "bar"
     }
   }
 
@@ -253,19 +227,17 @@ class HashTests extends RubyCode2CpgFixture {
         |a = {**(foo 13)}
         |""".stripMargin)
 
-    inside(cpg.call.name(RubyOperators.hashInitializer).l) {
-      case hashInitializer :: Nil =>
-        val List(splatCall) = hashInitializer.inCall.astSiblings.isCall.l
-        splatCall.code shouldBe "**(foo 13)"
-        splatCall.name shouldBe RubyOperators.splat
+    inside(cpg.call.name(RubyOperators.hashInitializer).l) { case hashInitializer :: Nil =>
+      val List(splatCall) = hashInitializer.inCall.astSiblings.isCall.l
+      splatCall.code shouldBe "**(foo 13)"
+      splatCall.name shouldBe RubyOperators.splat
 
-        val List(splatCallArg: Call) = splatCall.argument.l: @unchecked
+      val List(splatCallArg: Call) = splatCall.argument.l: @unchecked
 
-        splatCallArg.code shouldBe "foo 13"
+      splatCallArg.code shouldBe "foo 13"
 
-        val List(selfCallArg, literalCallArg) = splatCallArg.argument.l
-        literalCallArg.code shouldBe "13"
-      case xs => fail(s"Expected one call for init, got [${xs.code.mkString(",")}]")
+      val List(selfCallArg, literalCallArg) = splatCallArg.argument.l
+      literalCallArg.code shouldBe "13"
     }
   }
 }

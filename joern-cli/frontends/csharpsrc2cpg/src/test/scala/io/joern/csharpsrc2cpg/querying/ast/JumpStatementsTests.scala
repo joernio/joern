@@ -29,7 +29,6 @@ class JumpStatementsTests extends CSharpCode2CpgFixture {
               .isBlock
               .l
               .head
-        case _ => fail("No break statement found.")
       }
     }
 
@@ -59,7 +58,6 @@ class JumpStatementsTests extends CSharpCode2CpgFixture {
               .isBlock
               .l
               .head
-        case _ => fail("No continue statement found.")
       }
     }
 
@@ -91,7 +89,6 @@ class JumpStatementsTests extends CSharpCode2CpgFixture {
               .isBlock
               .l
               .head
-        case _ => fail("No goto statement found.")
       }
     }
 
@@ -102,22 +99,20 @@ class JumpStatementsTests extends CSharpCode2CpgFixture {
           |}
           |""".stripMargin))
 
-      inside(cpg.method("Main").ast.isReturn.l) {
-        case returnStatement :: Nil =>
-          returnStatement.code shouldBe "return 0;"
-          returnStatement.lineNumber shouldBe Some(10)
-          returnStatement.columnNumber shouldBe Some(1)
+      inside(cpg.method("Main").ast.isReturn.l) { case returnStatement :: Nil =>
+        returnStatement.code shouldBe "return 0;"
+        returnStatement.lineNumber shouldBe Some(10)
+        returnStatement.columnNumber shouldBe Some(1)
 
-          returnStatement.astParent shouldBe
-            cpg
-              .method("Main")
-              .controlStructure
-              .controlStructureTypeExact(ControlStructureTypes.IF)
-              .astChildren
-              .isBlock
-              .l
-              .head
-        case _ => fail("No return statement found.")
+        returnStatement.astParent shouldBe
+          cpg
+            .method("Main")
+            .controlStructure
+            .controlStructureTypeExact(ControlStructureTypes.IF)
+            .astChildren
+            .isBlock
+            .l
+            .head
       }
     }
   }

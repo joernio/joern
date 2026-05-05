@@ -15,7 +15,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   protected def astsForStatement(node: RubyExpression): Seq[Ast] = {
     baseAstCache.clear() // A safe approximation on where to reset the cache
     node match {
-      case node: IfExpression               => astForIfStatement(node)
+      case node: IfExpression               => astForIfStatement(conditionalStatementBuilder)(node) :: Nil
       case node: OperatorAssignment         => astForOperatorAssignment(node)
       case node: CaseExpression             => astsForCaseExpression(node)
       case node: StatementList              => astForStatementList(node) :: Nil
@@ -35,44 +35,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     }
   }
 
-  private def astForIfStatement(node: IfExpression): Seq[Ast] = {
-    def builder(node: IfExpression, conditionAst: Ast, thenAst: Ast, elseAsts: List[Ast]): Ast = {
-      val ifNode = controlStructureNode(node, ControlStructureTypes.IF, code(node))
-      controlStructureAst(ifNode, Some(conditionAst), thenAst :: elseAsts)
-    }
-
-    // TODO: Remove or modify the builder pattern when we are no longer using ANTLR
-    node.elseClause match {
-      case Some(elseClause) =>
-        elseClause match {
-          case _: IfExpression => astForJsonIfStatement(node)
-          case _               => foldIfExpression(builder)(node) :: Nil
-        }
-      case None =>
-        foldIfExpression(builder)(node) :: Nil
-    }
-  }
-
   private def astForOperatorAssignment(node: OperatorAssignment): Seq[Ast] = {
     val loweredAssignment = lowerAssignmentOperator(node.lhs, node.rhs, node.op, node.span)
     astsForStatement(loweredAssignment)
-  }
-
-  private def astForJsonIfStatement(node: IfExpression): Seq[Ast] = {
-    val conditionAst = astForExpression(node.condition)
-    val thenAst      = astForThenClause(node.thenClause)
-    val elseAsts = node.elseClause
-      .map {
-        case x: IfExpression =>
-          val wrappedBlock = blockNode(x)
-          Ast(wrappedBlock).withChildren(astForJsonIfStatement(x)) :: Nil
-        case x =>
-          astForElseClause(x) :: Nil
-      }
-      .getOrElse(Ast() :: Nil)
-
-    val ifNode = controlStructureNode(node, ControlStructureTypes.IF, code(node))
-    controlStructureAst(ifNode, Some(conditionAst), thenAst +: elseAsts) :: Nil
   }
 
   private def astForAccessModifier(node: AccessModifier): Seq[Ast] = {
@@ -100,11 +65,11 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   // Rewrites a nested `if T_1 then E_1 elsif T_2 then E_2 elsif ... elsif T_n then E_n else E_{n+1}`
   // as `B(T_1, E_1, B(T_2, E_2, ..., B(T_n, E_n, E_{n+1})..)`
-  protected def foldIfExpression(builder: (IfExpression, Ast, Ast, List[Ast]) => Ast)(node: IfExpression): Ast = {
+  protected def foldIfExpression(builder: (IfExpression, Ast, Ast, Option[Ast]) => Ast)(node: IfExpression): Ast = {
     val conditionAst = astForExpression(node.condition)
     val thenAst      = astForThenClause(node.thenClause)
-    val elseAsts     = astsForElseClauses(node.elsifClauses, node.elseClause, foldIfExpression(builder))
-    builder(node, conditionAst, thenAst, elseAsts)
+    val elseAst      = astsForElseClauses(node.elsifClauses, node.elseClause, foldIfExpression(builder))
+    builder(node, conditionAst, thenAst, elseAst)
   }
 
   protected def astForThenClause(node: RubyExpression): Ast = astForStatementList(node.asStatementList)
@@ -113,19 +78,19 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     elsIfClauses: List[RubyExpression],
     elseClause: Option[RubyExpression],
     astForIf: IfExpression => Ast
-  ): List[Ast] = {
+  ): Option[Ast] = {
     elsIfClauses match {
-      case Nil => elseClause.map(astForElseClause).toList
+      case Nil => elseClause.map(astForElseClause)
       case elsIfNode :: rest =>
         elsIfNode match {
           case elsIfNode: ElsIfClause =>
             val newIf = IfExpression(elsIfNode.condition, elsIfNode.thenClause, rest, elseClause)(elsIfNode.span)
             val wrappingBlock = blockNode(elsIfNode)
             val wrappedAst    = Ast(wrappingBlock).withChild(astForIf(newIf))
-            wrappedAst :: Nil
+            Some(wrappedAst)
           case elsIfNode =>
             logger.warn(s"Expecting elsif clause in ${code(elsIfNode)} ($relativeFileName), skipping")
-            Nil
+            None
         }
     }
   }

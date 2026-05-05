@@ -61,24 +61,21 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "generate a type declaration with correct properties" in {
-      inside(cpg.typeDecl.nameExact("Coords").headOption) {
-        case Some(struct) => struct.fullName shouldBe "Coords"
-        case None         => fail("Unable to find `Coords` type decl node")
+      inside(cpg.typeDecl.nameExact("Coords").headOption) { case Some(struct) =>
+        struct.fullName shouldBe "Coords"
 
       }
     }
 
     "generate a type declaration with correct modifiers" in {
-      inside(cpg.typeDecl.nameExact("Coords").headOption) {
-        case Some(struct) => struct.modifier.modifierType.head shouldBe ModifierTypes.PUBLIC
-        case None         => fail("Unable to find modifier for `Coords` type decl node")
+      inside(cpg.typeDecl.nameExact("Coords").headOption) { case Some(struct) =>
+        struct.modifier.modifierType.head shouldBe ModifierTypes.PUBLIC
       }
     }
 
     "generate a type declaration with correct member" in {
-      inside(cpg.typeDecl.nameExact("Coords").headOption) {
-        case Some(struct) => struct.member.name.head shouldBe "y"
-        case None         => fail("Unable to find member for `Coords` type decl node")
+      inside(cpg.typeDecl.nameExact("Coords").headOption) { case Some(struct) =>
+        struct.member.name.head shouldBe "y"
       }
     }
   }
@@ -95,25 +92,21 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "generate a type declaration with properties for first declaration style" in {
-      inside(cpg.typeDecl.nameExact("Person").headOption) {
-        case Some(rec) =>
-          rec.fullName shouldBe "Person"
-          rec.member.name.head shouldBe "Name"
-          rec.member.name.last shouldBe "Mood"
-          rec.modifier.modifierType.head shouldBe ModifierTypes.PRIVATE
-        case None => fail("Unable to find `Person` type decl node with correct properties")
+      inside(cpg.typeDecl.nameExact("Person").headOption) { case Some(rec) =>
+        rec.fullName shouldBe "Person"
+        rec.member.name.head shouldBe "Name"
+        rec.member.name.last shouldBe "Mood"
+        rec.modifier.modifierType.head shouldBe ModifierTypes.PRIVATE
 
       }
     }
 
     "generate a type declaration with properties for second declaration style" in {
-      inside(cpg.typeDecl.nameExact("Car").headOption) {
-        case Some(rec) =>
-          rec.fullName shouldBe "Car"
-          rec.member.name.head shouldBe "Model"
-          rec.member.name.last shouldBe "Year"
-          rec.modifier.modifierType.head shouldBe ModifierTypes.PUBLIC
-        case None => fail("Unable to find `Car` type decl node with correct properties")
+      inside(cpg.typeDecl.nameExact("Car").headOption) { case Some(rec) =>
+        rec.fullName shouldBe "Car"
+        rec.member.name.head shouldBe "Model"
+        rec.member.name.last shouldBe "Year"
+        rec.modifier.modifierType.head shouldBe ModifierTypes.PUBLIC
 
       }
     }
@@ -135,30 +128,25 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
     )
 
     "generate a type declaration enum members" in {
-      inside(cpg.typeDecl.nameExact("Season").headOption) {
-        case Some(season) =>
-          season.fullName shouldBe "Season"
-          inside(season.member.l) {
-            case xs if xs.isEmpty => fail("No enum members found!")
-            case spring :: summer :: autumn :: winter :: Nil =>
-              spring.name shouldBe "Spring"
-              spring.code shouldBe "Spring"
-              spring.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.Int)
+      inside(cpg.typeDecl.nameExact("Season").headOption) { case Some(season) =>
+        season.fullName shouldBe "Season"
+        inside(season.member.l) { case spring :: summer :: autumn :: winter :: Nil =>
+          spring.name shouldBe "Spring"
+          spring.code shouldBe "Spring"
+          spring.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.Int)
 
-              summer.name shouldBe "Summer"
-              summer.code shouldBe "Summer"
-              summer.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.Int)
+          summer.name shouldBe "Summer"
+          summer.code shouldBe "Summer"
+          summer.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.Int)
 
-              autumn.name shouldBe "Autumn"
-              autumn.code shouldBe "Autumn"
-              autumn.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.Int)
+          autumn.name shouldBe "Autumn"
+          autumn.code shouldBe "Autumn"
+          autumn.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.Int)
 
-              winter.name shouldBe "Winter"
-              winter.code shouldBe "Winter"
-              winter.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.Int)
-            case _ => fail("Unexpected number of enum members!")
-          }
-        case None => fail("Unable to find `Season` type decl node")
+          winter.name shouldBe "Winter"
+          winter.code shouldBe "Winter"
+          winter.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.Int)
+        }
       }
     }
   }
@@ -177,47 +165,38 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "generate a type declaration enum members" in {
-      inside(cpg.typeDecl.nameExact("ErrorCode").headOption) {
-        case Some(errCode) =>
-          errCode.fullName shouldBe "ErrorCode"
-          inside(errCode.member.l) {
-            case Nil => fail("No enum members found!")
-            case none :: unknown :: connectionLost :: outlierReading :: Nil =>
-              none.name shouldBe "None"
-              none.code shouldBe "None = 0"
-              none.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.UShort)
+      inside(cpg.typeDecl.nameExact("ErrorCode").headOption) { case Some(errCode) =>
+        errCode.fullName shouldBe "ErrorCode"
+        inside(errCode.member.l) { case none :: unknown :: connectionLost :: outlierReading :: Nil =>
+          none.name shouldBe "None"
+          none.code shouldBe "None = 0"
+          none.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.UShort)
 
-              unknown.name shouldBe "Unknown"
-              unknown.code shouldBe "Unknown = 1"
-              unknown.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.UShort)
+          unknown.name shouldBe "Unknown"
+          unknown.code shouldBe "Unknown = 1"
+          unknown.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.UShort)
 
-              connectionLost.name shouldBe "ConnectionLost"
-              connectionLost.code shouldBe "ConnectionLost = 100"
-              connectionLost.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.UShort)
+          connectionLost.name shouldBe "ConnectionLost"
+          connectionLost.code shouldBe "ConnectionLost = 100"
+          connectionLost.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.UShort)
 
-              outlierReading.name shouldBe "OutlierReading"
-              outlierReading.code shouldBe "OutlierReading = 200"
-              outlierReading.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.UShort)
-            case _ => fail("Unexpected number of enum members!")
-          }
-        case None => fail("Unable to find `ErrorCode` type decl node")
+          outlierReading.name shouldBe "OutlierReading"
+          outlierReading.code shouldBe "OutlierReading = 200"
+          outlierReading.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.UShort)
+        }
       }
     }
 
     // TODO: Requires <clinit> issue to be done
     "initialize the members in a <clinit> class" ignore {
-      inside(cpg.typeDecl.nameExact("ErrorCode").method.nameExact(Defines.StaticInitMethodName).l) {
-        case m :: Nil =>
-          m.fullName shouldBe s"ErrorCode.${Defines.StaticInitMethodName}"
-          inside(m.assignment.l) {
-            case none :: unknown :: connectionLost :: outlierReading :: Nil =>
-              none.code shouldBe "None = 0"
-              unknown.code shouldBe "Unknown = 1"
-              connectionLost.code shouldBe "ConnectionLost = 100"
-              outlierReading.code shouldBe "OutlierReading = 200"
-            case _ => fail("Exactly 4 assignments expected")
-          }
-        case _ => fail("`ErrorCode` has no static initializer method!")
+      inside(cpg.typeDecl.nameExact("ErrorCode").method.nameExact(Defines.StaticInitMethodName).l) { case m :: Nil =>
+        m.fullName shouldBe s"ErrorCode.${Defines.StaticInitMethodName}"
+        inside(m.assignment.l) { case none :: unknown :: connectionLost :: outlierReading :: Nil =>
+          none.code shouldBe "None = 0"
+          unknown.code shouldBe "Unknown = 1"
+          connectionLost.code shouldBe "ConnectionLost = 100"
+          outlierReading.code shouldBe "OutlierReading = 200"
+        }
       }
     }
 
@@ -255,31 +234,26 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "have a corresponding TYPE_DECL node" in {
-      inside(cpg.typeDecl.name("ISampleInterface").headOption) {
-        case Some(typeDecl) =>
-          typeDecl.fullName shouldBe "Foo.ISampleInterface"
-          typeDecl.code shouldBe
-            """interface ISampleInterface
+      inside(cpg.typeDecl.name("ISampleInterface").headOption) { case Some(typeDecl) =>
+        typeDecl.fullName shouldBe "Foo.ISampleInterface"
+        typeDecl.code shouldBe
+          """interface ISampleInterface
               | {
               |     void SampleMethod();
               | }""".stripMargin
-        case None => fail("No interface type declaration node found!")
       }
     }
 
     "have a child method" in {
-      inside(cpg.typeDecl.name("ISampleInterface").method.l) {
-        case sampleMethod :: Nil =>
-          sampleMethod.name shouldBe "SampleMethod"
-          sampleMethod.code shouldBe "void SampleMethod();"
-        case _ => fail("No child method found for interface!")
+      inside(cpg.typeDecl.name("ISampleInterface").method.l) { case sampleMethod :: Nil =>
+        sampleMethod.name shouldBe "SampleMethod"
+        sampleMethod.code shouldBe "void SampleMethod();"
       }
     }
 
     "be inherited by the implementation class" ignore {
       inside(cpg.typeDecl.name("ISampleInterface", "ImplementationClass").l) {
         case interface :: implementation :: Nil => // TODO: For issue #3992
-        case _                                  => fail("Unexpected number of type declarations")
       }
     }
   }
@@ -290,12 +264,10 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
         |""".stripMargin))
 
     "create a TypeDecl node" in {
-      inside(cpg.method("Main").astChildren.isTypeDecl.l) {
-        case anonType :: Nil =>
-          anonType.fullName shouldBe "HelloWorld.Program.Main.<anon>0"
-          anonType.astParentType shouldBe "METHOD"
-          anonType.astParentFullName shouldBe "HelloWorld.Program.Main:System.Void(System.String[])"
-        case _ => fail("No TypeDecl node for anonymous object found")
+      inside(cpg.method("Main").astChildren.isTypeDecl.l) { case anonType :: Nil =>
+        anonType.fullName shouldBe "HelloWorld.Program.Main.<anon>0"
+        anonType.astParentType shouldBe "METHOD"
+        anonType.astParentFullName shouldBe "HelloWorld.Program.Main:System.Void(System.String[])"
       }
     }
 
@@ -306,21 +278,17 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
     }
 
     "have correct members" in {
-      inside(cpg.method("Main").astChildren.isTypeDecl.l) {
-        case anonType :: Nil =>
-          inside(anonType.astChildren.isMember.l) {
-            case bar :: baz :: Nil =>
-              bar.code shouldBe "Bar = 10"
-              baz.code shouldBe "Baz = \"Hello, World\""
+      inside(cpg.method("Main").astChildren.isTypeDecl.l) { case anonType :: Nil =>
+        inside(anonType.astChildren.isMember.l) { case bar :: baz :: Nil =>
+          bar.code shouldBe "Bar = 10"
+          baz.code shouldBe "Baz = \"Hello, World\""
 
-              bar.typeFullName shouldBe "System.Int32"
-              baz.typeFullName shouldBe "System.String"
+          bar.typeFullName shouldBe "System.Int32"
+          baz.typeFullName shouldBe "System.String"
 
-              bar.astParent shouldBe anonType
-              baz.astParent shouldBe anonType
-            case _ => fail("There should be exactly 2 members inside the anonymous object")
-          }
-        case _ => fail("No TypeDecl node for anonymous object found")
+          bar.astParent shouldBe anonType
+          baz.astParent shouldBe anonType
+        }
       }
     }
   }
@@ -340,12 +308,10 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "create a TypeDecl node" in {
-      inside(cpg.method("Main").astChildren.isTypeDecl.l) {
-        case anonType :: Nil =>
-          anonType.fullName shouldBe "Foo.Bar.Main.<anon>0"
-          anonType.astParentType shouldBe "METHOD"
-          anonType.astParentFullName shouldBe "Foo.Bar.Main:System.Void()"
-        case _ => fail("No TypeDecl node for anonymous object found")
+      inside(cpg.method("Main").astChildren.isTypeDecl.l) { case anonType :: Nil =>
+        anonType.fullName shouldBe "Foo.Bar.Main.<anon>0"
+        anonType.astParentType shouldBe "METHOD"
+        anonType.astParentFullName shouldBe "Foo.Bar.Main:System.Void()"
       }
     }
 
@@ -356,21 +322,17 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
     }
 
     "have correct members" in {
-      inside(cpg.method("Main").astChildren.isTypeDecl.l) {
-        case anonType :: Nil =>
-          inside(anonType.astChildren.isMember.l) {
-            case bar :: q :: Nil =>
-              bar.code shouldBe "MBar = 10"
-              q.code shouldBe "q"
+      inside(cpg.method("Main").astChildren.isTypeDecl.l) { case anonType :: Nil =>
+        inside(anonType.astChildren.isMember.l) { case bar :: q :: Nil =>
+          bar.code shouldBe "MBar = 10"
+          q.code shouldBe "q"
 
-              bar.typeFullName shouldBe "System.Int32"
-              q.typeFullName shouldBe "Foo.Qux"
+          bar.typeFullName shouldBe "System.Int32"
+          q.typeFullName shouldBe "Foo.Qux"
 
-              bar.astParent shouldBe anonType
-              q.astParent shouldBe anonType
-            case _ => fail("There should be exactly 2 members inside the anonymous object")
-          }
-        case _ => fail("No TypeDecl node for anonymous object found")
+          bar.astParent shouldBe anonType
+          q.astParent shouldBe anonType
+        }
       }
     }
   }
@@ -382,25 +344,21 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
           |""".stripMargin))
 
     "have correct attributes" in {
-      inside(cpg.method("Main").astChildren.isTypeDecl.l) {
-        case anonType :: anonType2 :: Nil =>
-          anonType.fullName shouldBe "HelloWorld.Program.Main.<anon>0"
-          anonType.astParentType shouldBe "METHOD"
-          anonType.astParentFullName shouldBe "HelloWorld.Program.Main:System.Void(System.String[])"
+      inside(cpg.method("Main").astChildren.isTypeDecl.l) { case anonType :: anonType2 :: Nil =>
+        anonType.fullName shouldBe "HelloWorld.Program.Main.<anon>0"
+        anonType.astParentType shouldBe "METHOD"
+        anonType.astParentFullName shouldBe "HelloWorld.Program.Main:System.Void(System.String[])"
 
-          anonType2.fullName shouldBe "HelloWorld.Program.Main.<anon>1"
-          anonType2.astParentType shouldBe "METHOD"
-          anonType2.astParentFullName shouldBe "HelloWorld.Program.Main:System.Void(System.String[])"
-        case _ => fail("There should be exactly 2 anonymous types present")
+        anonType2.fullName shouldBe "HelloWorld.Program.Main.<anon>1"
+        anonType2.astParentType shouldBe "METHOD"
+        anonType2.astParentFullName shouldBe "HelloWorld.Program.Main:System.Void(System.String[])"
       }
     }
 
     "propagate type to the LHS" in {
-      inside(cpg.method("Main").astChildren.isBlock.astChildren.isLocal.l) {
-        case loc :: loc2 :: Nil =>
-          loc.typeFullName shouldBe "HelloWorld.Program.Main.<anon>0"
-          loc2.typeFullName shouldBe "HelloWorld.Program.Main.<anon>1"
-        case _ => fail("Exactly two locals should be present")
+      inside(cpg.method("Main").astChildren.isBlock.astChildren.isLocal.l) { case loc :: loc2 :: Nil =>
+        loc.typeFullName shouldBe "HelloWorld.Program.Main.<anon>0"
+        loc2.typeFullName shouldBe "HelloWorld.Program.Main.<anon>1"
       }
     }
   }

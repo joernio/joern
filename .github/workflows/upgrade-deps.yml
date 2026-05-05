@@ -11,11 +11,11 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 1
       - name: Set up JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
@@ -24,6 +24,8 @@ jobs:
         uses: SwiftyLab/setup-swift@latest
         with:
           swift-version: "6.1"
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
       - uses: sbt/setup-sbt@v1
       - name: Upgrade all (internal) dependencies
         run: ./updateDependencies.sh --non-interactive

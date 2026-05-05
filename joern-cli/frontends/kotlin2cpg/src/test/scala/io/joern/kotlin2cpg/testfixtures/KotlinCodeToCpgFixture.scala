@@ -12,7 +12,7 @@ import io.joern.x2cpg.testfixtures.DefaultTestCpg
 import io.joern.x2cpg.testfixtures.LanguageFrontend
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.validation.PostFrontendValidator
+import io.shiftleft.semanticcpg.validation.{PostFrontendValidator, ValidationLevel}
 import io.shiftleft.utils.ProjectRoot
 
 import java.io.File
@@ -41,7 +41,7 @@ trait KotlinFrontend extends LanguageFrontend {
     }
 
     val tmp = new Kotlin2Cpg().createCpg(config.withInputPath(sourceCodeFile.getAbsolutePath)).get
-    new PostFrontendValidator(tmp, true).run()
+    new PostFrontendValidator(tmp, ValidationLevel.V1).run()
     tmp
   }
 }

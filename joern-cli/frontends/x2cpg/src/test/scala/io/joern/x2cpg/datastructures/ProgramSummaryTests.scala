@@ -34,19 +34,14 @@ class ProgramSummaryTests extends AnyWordSpec with Matchers with Inside {
     val mockSummary = SummaryImpl(mutable.Map("io.joern" -> mutable.Set(mockTyp)))
 
     "provide the types within a given namespace" in {
-      inside(mockSummary.typesUnderNamespace("io.joern").toList) {
-        case typ :: Nil =>
-          typ.name shouldBe "io.joern.Foo"
-        case Nil =>
-          fail("Unable to resolve the types for the given namespace!")
-        case _ => fail("Unexpected number of types for the given namespace")
+      inside(mockSummary.typesUnderNamespace("io.joern").toList) { case typ :: Nil =>
+        typ.name shouldBe "io.joern.Foo"
       }
     }
 
     "return the associated namespace given a type" in {
-      mockSummary.namespaceFor(mockTyp) match {
-        case None            => fail("Unable to resolve namespace!")
-        case Some(namespace) => namespace shouldBe "io.joern"
+      inside(mockSummary.namespaceFor(mockTyp)) { case Some(namespace) =>
+        namespace shouldBe "io.joern"
       }
     }
 
@@ -59,9 +54,8 @@ class ProgramSummaryTests extends AnyWordSpec with Matchers with Inside {
     "successfully resolve a type once the namespace scope is pushed" in {
       val mockScope = DefaultTypedScope(summary = mockSummary)
       mockScope.pushNewScope(NamespaceScope("io.joern"))
-      mockScope.tryResolveTypeReference("Foo") match {
-        case None      => fail("Unable to resolve type!")
-        case Some(typ) => typ.name shouldBe "io.joern.Foo"
+      inside(mockScope.tryResolveTypeReference("Foo")) { case Some(typ) =>
+        typ.name shouldBe "io.joern.Foo"
       }
     }
 
@@ -69,10 +63,7 @@ class ProgramSummaryTests extends AnyWordSpec with Matchers with Inside {
       val mockScope = DefaultTypedScope(summary = mockSummary)
       mockScope.pushNewScope(NamespaceScope("io.joern"))
       mockScope.popScope()
-      mockScope.tryResolveTypeReference("Foo") match {
-        case None      => // correct behaviour
-        case Some(typ) => fail("Type should no longer be on the stack!")
-      }
+      mockScope.tryResolveTypeReference("Foo") shouldBe None
     }
 
   }
@@ -99,9 +90,8 @@ class ProgramSummaryTests extends AnyWordSpec with Matchers with Inside {
        */
       val mockScope = DefaultTypedScope(summary = mockSummary)
       mockScope.addImportedMember("foo.py:<module>")
-      mockScope.tryResolveFieldAccess("a") match {
-        case None    => fail("Unable to resolve type!")
-        case Some(f) => f.name shouldBe "a"
+      inside(mockScope.tryResolveFieldAccess("a")) { case Some(f) =>
+        f.name shouldBe "a"
       }
     }
 

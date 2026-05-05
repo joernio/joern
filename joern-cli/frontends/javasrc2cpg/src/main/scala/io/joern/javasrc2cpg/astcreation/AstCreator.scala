@@ -49,7 +49,7 @@ import io.joern.javasrc2cpg.util.{
   TemporaryNameProvider,
   Util
 }
-import io.joern.x2cpg.datastructures.Global
+import io.joern.javasrc2cpg.passes.AstCreationPass
 import io.joern.x2cpg.utils.OffsetUtils
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.NodeTypes
@@ -90,7 +90,7 @@ class AstCreator(
   val filename: String,
   javaParserAst: CompilationUnit,
   fileContent: Option[String],
-  global: Global,
+  accumulator: AstCreationPass.Accumulator,
   val symbolSolver: JavaSymbolSolver,
   protected val keepTypeArguments: Boolean,
   val loggedExceptionCounts: scala.collection.concurrent.Map[Class[?], Int]
@@ -105,7 +105,7 @@ class AstCreator(
   private[astcreation] val scope = Scope()
 
   private[astcreation] val typeInfoCalc: TypeInfoCalculator =
-    TypeInfoCalculator(global, symbolSolver, keepTypeArguments)
+    TypeInfoCalculator(accumulator, symbolSolver, keepTypeArguments)
   private[astcreation] val bindingTableCache = mutable.HashMap.empty[String, BindingTable]
   private[astcreation] val binarySignatureCalculator: BinarySignatureCalculator = new BinarySignatureCalculator(scope)
 

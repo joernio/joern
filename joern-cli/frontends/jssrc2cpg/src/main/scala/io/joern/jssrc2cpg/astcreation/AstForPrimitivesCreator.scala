@@ -72,9 +72,9 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     Ast(literalNode(booleanLiteral, booleanLiteral.code, Option(Defines.Boolean)))
 
   protected def astForTemplateLiteral(templateLiteral: BabelNodeInfo): Ast = {
-    val expressions = templateLiteral.json("expressions").arr.toList
-    val quasis      = templateLiteral.json("quasis").arr.toList.filterNot(_("tail").bool)
-    val quasisTail  = templateLiteral.json("quasis").arr.toList.filter(_("tail").bool).head
+    val expressions = templateLiteral.json("expressions").arr
+    val quasis      = templateLiteral.json("quasis").arr.filterNot(_("tail").bool)
+    val quasisTail  = templateLiteral.json("quasis").arr.filter(_("tail").bool).head
 
     if (expressions.isEmpty && quasis.isEmpty) {
       astForTemplateElement(createBabelNodeInfo(quasisTail))
@@ -89,7 +89,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
       val argumentAsts = expressions.zip(quasis).flatMap { case (expression, quasi) =>
         List(astForNodeWithFunctionReference(quasi), astForNodeWithFunctionReference(expression))
       }
-      val argAsts = argumentAsts :+ astForNodeWithFunctionReference(quasisTail)
+      val argAsts = (argumentAsts :+ astForNodeWithFunctionReference(quasisTail)).toSeq
       callAst(templateCall, argAsts)
     }
   }

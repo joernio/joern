@@ -8,14 +8,11 @@ import io.joern.x2cpg.AstCreatorBase
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.datastructures.VariableScopeManager
-import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, NodeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import org.eclipse.cdt.core.dom.ast.IASTNode
-import org.eclipse.cdt.core.dom.ast.IASTTranslationUnit
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import org.eclipse.cdt.core.dom.ast.{IASTNode, IASTTranslationUnit}
+import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
 
@@ -25,7 +22,8 @@ class AstCreator(
   val accumulator: AstCreationPass.Accumulator,
   val config: Config,
   val cdtAst: IASTTranslationUnit,
-  val headerFileFinder: HeaderFileFinder
+  val headerFileFinder: HeaderFileFinder,
+  val languageSuffix: String = ""
 ) extends AstCreatorBase[IASTNode, AstCreator](filename)(config.schemaValidation)
     with AstForTypesCreator
     with AstForFunctionsCreator
@@ -61,7 +59,9 @@ class AstCreator(
   }
 
   private def astForTranslationUnit(iASTTranslationUnit: IASTTranslationUnit): Ast = {
-    val namespaceBlock = globalNamespaceBlock()
+    val namespaceBlock               = globalNamespaceBlock()
+    val fakeMethodFullNameWithSuffix = s"${namespaceBlock.fullName}$languageSuffix"
+    namespaceBlock.fullName(fakeMethodFullNameWithSuffix)
     methodAstParentStack.push(namespaceBlock)
     val translationUnitAst =
       astInFakeMethod(namespaceBlock.fullName, fileName(iASTTranslationUnit), iASTTranslationUnit)
@@ -88,7 +88,7 @@ class AstCreator(
 
     val blockNode_ = blockNode(iASTTranslationUnit)
     scope.pushNewMethodScope(fakeGlobalMethod.fullName, fakeGlobalMethod.name, blockNode_, None)
-    val declsAsts = allDecls.flatMap(astsForDeclaration)
+    val declsAsts = allDecls.flatMap(d => astsForDeclaration(d))
 
     val methodReturn = methodReturnNode(iASTTranslationUnit, Defines.Any)
     Ast(fakeGlobalTypeDecl).withChild(

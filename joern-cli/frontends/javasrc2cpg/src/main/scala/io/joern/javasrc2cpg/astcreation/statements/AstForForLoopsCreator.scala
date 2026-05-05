@@ -86,19 +86,9 @@ trait AstForForLoopsCreator { this: AstCreator =>
 
     scope.addLocalsForPatternsToEnclosingBlock(patternPartition.patternsIntroducedByStatement)
 
-    val ast = Ast(forNode)
-      .withChildren(initAsts)
-      .withChildren(compareAsts)
-      .withChildren(updateAsts)
-      .withChild(bodyAst)
+    val ast = forAst(forNode, Nil, initAsts.toSeq, compareAsts, updateAsts, bodyAst)
 
-    val astWithConditionEdge = compareAsts.flatMap(_.root) match {
-      case c :: Nil =>
-        ast.withConditionEdge(forNode, c)
-      case _ => ast
-    }
-
-    patternLocals :+ astWithConditionEdge
+    patternLocals :+ ast
   }
 
   def astForForEach(stmt: ForEachStmt): Seq[Ast] = {
@@ -512,7 +502,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
 
   private def getForCode(stmt: ForStmt): String = {
     val init    = stmt.getInitialization.asScala.map(_.toString).mkString(", ")
-    val compare = stmt.getCompare.toScala.map(_.toString)
+    val compare = stmt.getCompare.toScala.map(_.toString).getOrElse("")
     val update  = stmt.getUpdate.asScala.map(_.toString).mkString(", ")
     s"for ($init; $compare; $update)"
   }

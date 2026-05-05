@@ -16,41 +16,33 @@ class LambdaTests extends CSharpCode2CpgFixture {
         |""".stripMargin))
 
     "create an anonymous method declaration" in {
-      inside(cpg.method("Main").astChildren.collectAll[Method].l) {
-        case anon :: Nil =>
-          anon.name shouldBe "<lambda>0"
-          anon.fullName shouldBe "HelloWorld.Program.Main.<lambda>0:<unresolvedSignature>"
+      inside(cpg.method("Main").astChildren.collectAll[Method].l) { case anon :: Nil =>
+        anon.name shouldBe "<lambda>0"
+        anon.fullName shouldBe "HelloWorld.Program.Main.<lambda>0:<unresolvedSignature>"
 
-          inside(anon.parameter.l) {
-            case x :: Nil =>
-              x.name shouldBe "x"
-              x.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.Int)
-              x.index shouldBe 1
-            case xs => fail(s"Expected a single parameter, got [${xs.code.mkString(",")}]")
-          }
+        inside(anon.parameter.l) { case x :: Nil =>
+          x.name shouldBe "x"
+          x.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.Int)
+          x.index shouldBe 1
+        }
 
-        case xs => fail(s"Expected a single anonymous method declaration, got [${xs.code.mkString(",")}]")
       }
     }
 
     "create an anonymous type declaration" in {
-      inside(cpg.method("Main").astChildren.collectAll[TypeDecl].l) {
-        case anon :: Nil =>
-          anon.name shouldBe "<lambda>0"
-          anon.fullName shouldBe "HelloWorld.Program.Main.<lambda>0:<unresolvedSignature>"
-        case xs => fail(s"Expected a single anonymous type declaration, got [${xs.code.mkString(",")}]")
+      inside(cpg.method("Main").astChildren.collectAll[TypeDecl].l) { case anon :: Nil =>
+        anon.name shouldBe "<lambda>0"
+        anon.fullName shouldBe "HelloWorld.Program.Main.<lambda>0:<unresolvedSignature>"
       }
     }
 
     "pass a method reference to the anonymous function in the call `Select`" in {
-      inside(cpg.call("Select").argument.l) {
-        case (numbers: Identifier) :: (closure: MethodRef) :: Nil =>
-          numbers.name shouldBe "numbers"
-          numbers.typeFullName shouldBe s"${DotNetTypeMap(BuiltinTypes.Int)}[]"
+      inside(cpg.call("Select").argument.l) { case (numbers: Identifier) :: (closure: MethodRef) :: Nil =>
+        numbers.name shouldBe "numbers"
+        numbers.typeFullName shouldBe s"${DotNetTypeMap(BuiltinTypes.Int)}[]"
 
-          closure.methodFullName shouldBe "HelloWorld.Program.Main.<lambda>0:<unresolvedSignature>"
-          closure.referencedMethod.name shouldBe "<lambda>0"
-        case xs => fail(s"Expected two `Select` call argument, got [${xs.code.mkString(",")}]")
+        closure.methodFullName shouldBe "HelloWorld.Program.Main.<lambda>0:<unresolvedSignature>"
+        closure.referencedMethod.name shouldBe "<lambda>0"
       }
     }
 
@@ -66,45 +58,37 @@ class LambdaTests extends CSharpCode2CpgFixture {
         |""".stripMargin))
 
     "create an anonymous method declaration" in {
-      inside(cpg.method("Main").astChildren.collectAll[Method].l) {
-        case anon :: Nil =>
-          anon.name shouldBe "<lambda>0"
-          anon.fullName shouldBe "HelloWorld.Program.Main.<lambda>0:<unresolvedSignature>"
+      inside(cpg.method("Main").astChildren.collectAll[Method].l) { case anon :: Nil =>
+        anon.name shouldBe "<lambda>0"
+        anon.fullName shouldBe "HelloWorld.Program.Main.<lambda>0:<unresolvedSignature>"
 
-          inside(anon.parameter.l) {
-            case x :: y :: Nil =>
-              x.name shouldBe "x"
-              x.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.Int)
-              x.index shouldBe 1
+        inside(anon.parameter.l) { case x :: y :: Nil =>
+          x.name shouldBe "x"
+          x.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.Int)
+          x.index shouldBe 1
 
-              y.name shouldBe "y"
-              y.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.Int)
-              y.index shouldBe 2
-            case xs => fail(s"Expected two parameters, got [${xs.code.mkString(",")}]")
-          }
+          y.name shouldBe "y"
+          y.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.Int)
+          y.index shouldBe 2
+        }
 
-        case xs => fail(s"Expected a single anonymous method declaration, got [${xs.code.mkString(",")}]")
       }
     }
 
     "create an anonymous type declaration" in {
-      inside(cpg.method("Main").astChildren.collectAll[TypeDecl].l) {
-        case anon :: Nil =>
-          anon.name shouldBe "<lambda>0"
-          anon.fullName shouldBe "HelloWorld.Program.Main.<lambda>0:<unresolvedSignature>"
-        case xs => fail(s"Expected a single anonymous type declaration, got [${xs.code.mkString(",")}]")
+      inside(cpg.method("Main").astChildren.collectAll[TypeDecl].l) { case anon :: Nil =>
+        anon.name shouldBe "<lambda>0"
+        anon.fullName shouldBe "HelloWorld.Program.Main.<lambda>0:<unresolvedSignature>"
       }
     }
 
     "pass a method reference to the anonymous function in the call `Select`" in {
-      inside(cpg.call("Select").argument.l) {
-        case (numbers: Identifier) :: (closure: MethodRef) :: Nil =>
-          numbers.name shouldBe "numbers"
-          numbers.typeFullName shouldBe s"${DotNetTypeMap(BuiltinTypes.Int)}[]"
+      inside(cpg.call("Select").argument.l) { case (numbers: Identifier) :: (closure: MethodRef) :: Nil =>
+        numbers.name shouldBe "numbers"
+        numbers.typeFullName shouldBe s"${DotNetTypeMap(BuiltinTypes.Int)}[]"
 
-          closure.methodFullName shouldBe "HelloWorld.Program.Main.<lambda>0:<unresolvedSignature>"
-          closure.referencedMethod.name shouldBe "<lambda>0"
-        case xs => fail(s"Expected two `Select` call argument, got [${xs.code.mkString(",")}]")
+        closure.methodFullName shouldBe "HelloWorld.Program.Main.<lambda>0:<unresolvedSignature>"
+        closure.referencedMethod.name shouldBe "<lambda>0"
       }
     }
 

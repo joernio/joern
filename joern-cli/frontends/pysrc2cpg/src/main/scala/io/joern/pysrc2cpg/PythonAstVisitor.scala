@@ -1,6 +1,6 @@
 package io.joern.pysrc2cpg
 
-import PythonAstVisitor.{logger, metaClassSuffix, noLineAndColumn}
+import PythonAstVisitor.{keywordDictArgName, logger, metaClassSuffix, noLineAndColumn}
 import io.joern.pysrc2cpg.memop.*
 import io.joern.pysrc2cpg.memop.MemoryOperation.{Del, Load, Store}
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants.builtinPrefix
@@ -1047,10 +1047,12 @@ class PythonAstVisitor(
 
     val bodyBlockNode = createBlock(blockStmtNodes, lineAndColumn)
     addAstChildNodes(controlStructureNode, 1, conditionNode, bodyBlockNode)
+    edgeBuilder.trueBodyEdge(bodyBlockNode, controlStructureNode)
 
     if (orelseNodes.nonEmpty) {
       val elseBlockNode = createBlock(orelseNodes, lineAndColumn)
       addAstChildNodes(controlStructureNode, 3, elseBlockNode)
+      edgeBuilder.falseBodyEdge(elseBlockNode, controlStructureNode)
     }
 
     createBlock(iterAssignNode :: controlStructureNode :: Nil, lineAndColumn)
@@ -1066,12 +1068,14 @@ class PythonAstVisitor(
 
     val bodyBlockNode = createBlock(bodyStmtNodes, lineAndColOf(astWhile))
     addAstChildNodes(controlStructureNode, 1, conditionNode, bodyBlockNode)
+    edgeBuilder.trueBodyEdge(bodyBlockNode, controlStructureNode)
 
     if (astWhile.orelse.nonEmpty) {
       val elseStmtNodes = astWhile.orelse.map(convert)
       val elseBlockNode =
         createBlock(elseStmtNodes, lineAndColOf(astWhile.orelse.head))
       addAstChildNodes(controlStructureNode, 3, elseBlockNode)
+      edgeBuilder.falseBodyEdge(elseBlockNode, controlStructureNode)
     }
 
     controlStructureNode
@@ -1087,11 +1091,13 @@ class PythonAstVisitor(
 
     val bodyBlockNode = createBlock(bodyStmtNodes, lineAndColOf(astIf))
     addAstChildNodes(controlStructureNode, 1, conditionNode, bodyBlockNode)
+    edgeBuilder.trueBodyEdge(bodyBlockNode, controlStructureNode)
 
     if (astIf.orelse.nonEmpty) {
       val elseStmtNodes = astIf.orelse.map(convert)
       val elseBlockNode = createBlock(elseStmtNodes, lineAndColOf(astIf.orelse.head))
       addAstChildNodes(controlStructureNode, 3, elseBlockNode)
+      edgeBuilder.falseBodyEdge(elseBlockNode, controlStructureNode)
     }
 
     controlStructureNode
@@ -1323,7 +1329,7 @@ class PythonAstVisitor(
   //     y = import("", "y")
   //   }
   def convert(importStmt: ast.Import): NewNode = {
-    createTransformedImport("", importStmt.names, lineAndColOf(importStmt))
+    createTransformedImport("", importStmt.names, lineAndColOf(importStmt), importStmt)
   }
 
   // Lowering of from x import y:
@@ -1343,7 +1349,7 @@ class PythonAstVisitor(
     }
     moduleName += importFrom.module.getOrElse("")
 
-    createTransformedImport(moduleName, importFrom.names, lineAndColOf(importFrom))
+    createTransformedImport(moduleName, importFrom.names, lineAndColOf(importFrom), importFrom)
   }
 
   def convert(global: ast.Global): NewNode = {
@@ -1438,7 +1444,6 @@ class PythonAstVisitor(
     createNAryOperatorCall(boolOpToCodeAndFullName(boolOp.op), operandNodes, lineAndColOf(boolOp))
   }
 
-  // TODO test
   def convert(namedExpr: ast.NamedExpr): NewNode = {
     val targetNode = convert(namedExpr.target)
     val valueNode  = convert(namedExpr.value)
@@ -1842,13 +1847,14 @@ class PythonAstVisitor(
     */
   def convert(call: ast.Call): nodes.NewNode = {
     val argumentNodes = call.args.map(convert).toSeq
-    val keywordArgNodes = call.keywords.flatMap { keyword =>
+    val keywordArgNodes = call.keywords.map { keyword =>
       if (keyword.arg.isDefined) {
-        Some((keyword.arg.get, convert(keyword.value)))
+        (keyword.arg.get, convert(keyword.value))
       } else {
         // keyword.arg == None. This is the case for func(**dict) style arguments.
-        // TODO implement handling for this case.
-        None
+        // We use a synthetic argument name to preserve the unpacked dict as an argument
+        // in the CPG so that data flow tracking can follow through it.
+        (keywordDictArgName, convert(keyword.value))
       }
     }
 
@@ -2178,8 +2184,9 @@ class PythonAstVisitor(
 object PythonAstVisitor {
   private val logger = LoggerFactory.getLogger(getClass)
 
-  val typingPrefix    = "typing."
-  val metaClassSuffix = "<meta>"
+  val typingPrefix       = "typing."
+  val metaClassSuffix    = "<meta>"
+  val keywordDictArgName = "<keyword_dict>"
 
   val noLineAndColumn = LineAndColumn(-1, -1, -1, -1, -1, -1)
 

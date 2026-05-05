@@ -243,6 +243,7 @@ class ParserTests extends AnyFreeSpec with Matchers {
       testT("with x as y, z:\n\tpass")
       testT("with x as y, z as a:\n\tpass")
       testT("with x as y, z as a,:\n\tpass", s"with x as y, z as a:\n\tpass")
+      testT("with (x).y:\n\tpass", "with x.y:\n\tpass")
     }
 
     "for statement tests" in {

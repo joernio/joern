@@ -86,19 +86,15 @@ class RubyInternalTypeRecoveryTests extends RubyCode2CpgFixture(withPostProcessi
                      |""".stripMargin)
 
     "propagate function return types" in {
-      inside(cpg.method.name("func2?").l) {
-        case func :: func2 :: Nil =>
-          func.methodReturn.typeFullName shouldBe Defines.prefixAsCoreType("String")
-          func2.methodReturn.typeFullName shouldBe Defines.prefixAsCoreType("String")
-        case xs => fail(s"Expected 2 functions, got [${xs.name.mkString(",")}]")
+      inside(cpg.method.name("func2?").l) { case func :: func2 :: Nil =>
+        func.methodReturn.typeFullName shouldBe Defines.prefixAsCoreType("String")
+        func2.methodReturn.typeFullName shouldBe Defines.prefixAsCoreType("String")
       }
     }
 
     "propagate return type to identifier c" in {
-      inside(cpg.identifier.name("c").l) {
-        case cIdent :: Nil =>
-          cIdent.typeFullName shouldBe Defines.prefixAsCoreType("String")
-        case xs => fail(s"Expected one identifier for c, got [${xs.name.mkString(",")}]")
+      inside(cpg.identifier.name("c").l) { case cIdent :: Nil =>
+        cIdent.typeFullName shouldBe Defines.prefixAsCoreType("String")
       }
     }
   }
@@ -133,18 +129,13 @@ class RubyInternalTypeRecoveryTests extends RubyCode2CpgFixture(withPostProcessi
     "propagate to assigned variable" ignore {
       inside(cpg.file("test1.rb").method.name(":program").call.nameExact("<operator>.assignment").l) {
         case funcAssignment :: constructAssignment :: tmpAssignment :: Nil =>
-          inside(funcAssignment.argument.l) {
-            case (lhs: Identifier) :: rhs :: Nil =>
-              lhs.typeFullName shouldBe Defines.prefixAsCoreType("String")
-            case xs => fail(s"Expected lhs and rhs, got [${xs.code.mkString(",")}] ")
+          inside(funcAssignment.argument.l) { case (lhs: Identifier) :: rhs :: Nil =>
+            lhs.typeFullName shouldBe Defines.prefixAsCoreType("String")
           }
 
-          inside(constructAssignment.argument.l) {
-            case (lhs: Identifier) :: rhs :: Nil =>
-              lhs.typeFullName shouldBe s"test2.rb:$Main.Test2A"
-            case xs => fail(s"Expected lhs and rhs, got [${xs.code.mkString(",")}]")
+          inside(constructAssignment.argument.l) { case (lhs: Identifier) :: rhs :: Nil =>
+            lhs.typeFullName shouldBe s"test2.rb:$Main.Test2A"
           }
-        case xs => fail(s"Expected lhs and rhs, got [${xs.code.mkString(",")}]")
       }
     }
   }
@@ -165,11 +156,9 @@ class RubyInternalTypeRecoveryTests extends RubyCode2CpgFixture(withPostProcessi
 
     // TODO: Revisit
     "propagate to identifier" ignore {
-      inside(cpg.identifier.name("(a|b)").l) {
-        case aIdent :: bIdent :: Nil =>
-          aIdent.typeFullName shouldBe s"Test0.rb:$Main.A"
-          bIdent.typeFullName shouldBe s"Test0.rb:$Main.A"
-        case xs => fail(s"Expected one identifier, got [${xs.name.mkString(",")}]")
+      inside(cpg.identifier.name("(a|b)").l) { case aIdent :: bIdent :: Nil =>
+        aIdent.typeFullName shouldBe s"Test0.rb:$Main.A"
+        bIdent.typeFullName shouldBe s"Test0.rb:$Main.A"
       }
     }
   }
@@ -200,21 +189,17 @@ class RubyExternalTypeRecoveryTests
     }
 
     "resolve correct imports via tag nodes" in {
-      inside(cpg.call.where(_.referencedImports).l) {
-        case sendgridImport :: Nil =>
-          inside(
-            sendgridImport.tag._toEvaluatedImport
-              .filter(_.label == EvaluatedImport.RESOLVED_METHOD)
-              .map(_.asInstanceOf[ResolvedMethod])
-              .filter(_.fullName.startsWith("sendgrid-ruby.SendGrid.API"))
-              .l
-          ) {
-            case apiClassInit :: apiInit :: Nil =>
-              apiInit.fullName shouldBe s"sendgrid-ruby.SendGrid.API.${Defines.Initialize}"
-              apiClassInit.fullName shouldBe s"sendgrid-ruby.SendGrid.API<class>.${Defines.Initialize}"
-            case xs => fail(s"Two ResolvedMethods expected, got [${xs.mkString(",")}]")
-          }
-        case xs => fail(s"Only sendgrid-ruby should be referenced, got [${xs.name.mkString}]")
+      inside(cpg.call.where(_.referencedImports).l) { case sendgridImport :: Nil =>
+        inside(
+          sendgridImport.tag._toEvaluatedImport
+            .filter(_.label == EvaluatedImport.RESOLVED_METHOD)
+            .map(_.asInstanceOf[ResolvedMethod])
+            .filter(_.fullName.startsWith("sendgrid-ruby.SendGrid.API"))
+            .l
+        ) { case apiClassInit :: apiInit :: Nil =>
+          apiInit.fullName shouldBe s"sendgrid-ruby.SendGrid.API.${Defines.Initialize}"
+          apiClassInit.fullName shouldBe s"sendgrid-ruby.SendGrid.API<class>.${Defines.Initialize}"
+        }
       }
     }
 
@@ -320,20 +305,16 @@ class RubyExternalTypeRecoveryTests
       .moreCode(RubyExternalTypeRecoveryTests.LOGGER_GEMFILE, "Gemfile")
 
     "resolve correct imports via tag nodes" in {
-      inside(cpg.call.where(_.referencedImports).l) {
-        case loggerImport :: Nil =>
-          inside(
-            loggerImport.tag._toEvaluatedImport
-              .filter(_.label == EvaluatedImport.RESOLVED_METHOD)
-              .map(_.asInstanceOf[ResolvedMethod])
-              .filter(_.fullName == s"logger.Logger.${Defines.Initialize}")
-              .l
-          ) {
-            case loggerInit :: Nil =>
-              loggerInit.fullName shouldBe s"logger.Logger.${Defines.Initialize}"
-            case xs => fail(s"Two ResolvedMethods expected, got [${xs.mkString(",")}]")
-          }
-        case xs => fail(s"Only logger library should be referenced, got [${xs.name.mkString}]")
+      inside(cpg.call.where(_.referencedImports).l) { case loggerImport :: Nil =>
+        inside(
+          loggerImport.tag._toEvaluatedImport
+            .filter(_.label == EvaluatedImport.RESOLVED_METHOD)
+            .map(_.asInstanceOf[ResolvedMethod])
+            .filter(_.fullName == s"logger.Logger.${Defines.Initialize}")
+            .l
+        ) { case loggerInit :: Nil =>
+          loggerInit.fullName shouldBe s"logger.Logger.${Defines.Initialize}"
+        }
       }
     }
 

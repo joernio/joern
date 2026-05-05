@@ -2,7 +2,7 @@ package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.Config
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, ControlStructure}
 import io.shiftleft.semanticcpg.language.*
 
 import java.nio.charset.StandardCharsets
@@ -16,28 +16,23 @@ class OffsetTests extends PhpCode2CpgFixture {
         |
         |// ääú
         |
-        |print("hello");
+        |foreach ($arr as $key => $val) {};
         |""".stripMargin,
       "test.php",
       StandardCharsets.ISO_8859_1
     ).withConfig(contentEnabled)
 
     "have correct offsets" in {
-      inside(cpg.call.name("print").l) {
-        case (printCall: Call) :: Nil =>
-          printCall.offset shouldBe Some(15)
-          printCall.offsetEnd shouldBe Some(29)
-        case xs =>
-          fail(s"Expected a single 'print' call, instead got ${xs.count}")
+      inside(cpg.controlStructure.l) { case (forEach: ControlStructure) :: Nil =>
+        forEach.code shouldBe "foreach ($arr as $key => $val)"
+        forEach.offset shouldBe Some(15)
+        forEach.offsetEnd shouldBe Some(48)
       }
     }
 
     "contain the correct symbol for the print call" in {
-      inside(cpg.call.name("print").l) {
-        case (printCall: Call) :: Nil =>
-          printCall.location.symbol shouldBe """print("hello")"""
-        case xs =>
-          fail(s"Expected a single 'print' call, instead got ${xs.count}")
+      inside(cpg.controlStructure.l) { case (forEach: ControlStructure) :: Nil =>
+        forEach.location.symbol shouldBe """foreach ($arr as $key => $val) {}"""
       }
     }
   }
@@ -48,28 +43,23 @@ class OffsetTests extends PhpCode2CpgFixture {
         |
         |// ääú
         |
-        |print("hello");
+        |foreach ($arr as $key => $val) {};
         |""".stripMargin,
       "test.php",
       StandardCharsets.UTF_8
     ).withConfig(contentEnabled)
 
     "have correct offsets" in {
-      inside(cpg.call.name("print").l) {
-        case (printCall: Call) :: Nil =>
-          printCall.offset shouldBe Some(15)
-          printCall.offsetEnd shouldBe Some(29)
-        case xs =>
-          fail(s"Expected a single 'print' call, instead got ${xs.count}")
+      inside(cpg.controlStructure.l) { case (forEach: ControlStructure) :: Nil =>
+        forEach.code shouldBe "foreach ($arr as $key => $val)"
+        forEach.offset shouldBe Some(15)
+        forEach.offsetEnd shouldBe Some(48)
       }
     }
 
     "contain the correct symbol for the print call" in {
-      inside(cpg.call.name("print").l) {
-        case (printCall: Call) :: Nil =>
-          printCall.location.symbol shouldBe """print("hello")"""
-        case xs =>
-          fail(s"Expected a single 'print' call, instead got ${xs.count}")
+      inside(cpg.controlStructure.l) { case (forEach: ControlStructure) :: Nil =>
+        forEach.location.symbol shouldBe """foreach ($arr as $key => $val) {}"""
       }
     }
   }

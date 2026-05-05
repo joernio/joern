@@ -13,7 +13,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Expression, Literal}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.utils.FileUtil
-import io.shiftleft.semanticcpg.validation.PostFrontendValidator
+import io.shiftleft.semanticcpg.validation.{PostFrontendValidator, ValidationLevel}
 
 import java.io.File
 import java.nio.file.Path as JavaPath
@@ -37,7 +37,7 @@ trait JavaSrcFrontend extends LanguageFrontend {
       .getOrElse(JavaSrc2Cpg.DefaultConfig.withDelombokMode("no-delombok"))
       .withCacheJdkTypeSolver(true)
     val res = new JavaSrc2Cpg().createCpg(config.withInputPath(sourceCodeFile.getAbsolutePath)).get
-    new PostFrontendValidator(res, false).run()
+    new PostFrontendValidator(res, ValidationLevel.V0).run()
     res
   }
 }

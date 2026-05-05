@@ -16,18 +16,18 @@ import io.joern.javasrc2cpg.util.Delombok.DelombokMode.*
 import io.joern.javasrc2cpg.util.{Delombok, SourceParser}
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.SourceFiles
-import io.joern.x2cpg.datastructures.Global
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
 import io.joern.x2cpg.utils.dependency.DependencyResolver
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.ForkJoinParallelCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPassWithAccumulator
 import io.shiftleft.semanticcpg.utils.FileUtil
 import org.slf4j.LoggerFactory
 
 import java.net.URLClassLoader
 import java.nio.file.{Files, Path, Paths}
 import java.util.concurrent.ConcurrentHashMap
+import scala.collection.mutable
 import scala.collection.parallel.CollectionConverters.*
 import scala.collection.concurrent
 import scala.jdk.CollectionConverters.*
@@ -35,17 +35,34 @@ import scala.jdk.OptionConverters.RichOptional
 import scala.util.{Failure, Success, Try}
 
 class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[String]] = None)
-    extends ForkJoinParallelCpgPass[String](cpg) {
+    extends ForkJoinParallelCpgPassWithAccumulator[String, AstCreationPass.Accumulator](cpg) {
 
-  val global: Global                = new Global()
   private val logger                = LoggerFactory.getLogger(classOf[AstCreationPass])
   private val loggedExceptionCounts = new ConcurrentHashMap[Class[?], Int]().asScala
 
-  val (sourceParser, symbolSolver) = initParserAndUtils(config)
+  private var _usedTypes: Set[String] = Set.empty
+
+  def usedTypes(): Set[String] = _usedTypes
+
+  val (sourceParser, symbolSolver, combinedTypeSolver) = initParserAndUtils(config)
+
+  override def createAccumulator(): AstCreationPass.Accumulator = AstCreationPass.Accumulator()
+
+  override def mergeAccumulator(left: AstCreationPass.Accumulator, right: AstCreationPass.Accumulator): Unit = {
+    left.usedTypes ++= right.usedTypes
+  }
+
+  override def onAccumulatorComplete(builder: DiffGraphBuilder, accumulator: AstCreationPass.Accumulator): Unit = {
+    _usedTypes = accumulator.usedTypes.toSet
+  }
 
   override def generateParts(): Array[String] = sourceParser.relativeFilenames.toArray
 
-  override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {
+  override def runOnPart(
+    diffGraph: DiffGraphBuilder,
+    filename: String,
+    accumulator: AstCreationPass.Accumulator
+  ): Unit = {
     sourceParser.parseAnalysisFile(filename, !config.disableFileContent) match {
       case Some(compilationUnit, fileContent) =>
         symbolSolver.inject(compilationUnit)
@@ -56,7 +73,7 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
             filename,
             compilationUnit,
             contentToUse,
-            global,
+            accumulator,
             symbolSolver,
             config.keepTypeArguments,
             loggedExceptionCounts
@@ -75,11 +92,16 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     JavaParserFacade.clearInstances()
   }
 
-  private def initParserAndUtils(config: Config): (SourceParser, JavaSymbolSolver) = {
-    val dependencies = getDependencyList(config.inputPath)
-    val sourceParser = SourceParser(config, sourcesOverride)
-    val symbolSolver = createSymbolSolver(config, dependencies, sourceParser)
-    (sourceParser, symbolSolver)
+  /** Close type solver resources (open JAR files, jrt: file systems). Should be called after all AST creation is done
+    * and [[clearJavaParserCaches]] has been called.
+    */
+  def closeTypeSolvers(): Unit = combinedTypeSolver.close()
+
+  private def initParserAndUtils(config: Config): (SourceParser, JavaSymbolSolver, SimpleCombinedTypeSolver) = {
+    val dependencies                   = getDependencyList(config.inputPath)
+    val sourceParser                   = SourceParser(config, sourcesOverride)
+    val (symbolSolver, combinedSolver) = createSymbolSolver(config, dependencies, sourceParser)
+    (sourceParser, symbolSolver, combinedSolver)
   }
 
   private def getDependencyList(inputPath: String): List[String] = {
@@ -114,7 +136,7 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     config: Config,
     dependencies: List[String],
     sourceParser: SourceParser
-  ): JavaSymbolSolver = {
+  ): (JavaSymbolSolver, SimpleCombinedTypeSolver) = {
     val verboseDebugLoggingEnvVarValue = Option(System.getenv(JavaSrcEnvVar.EnableVerboseTypeLogging.name))
     val enableVerboseTypeLogging       = verboseDebugLoggingEnvVarValue.isDefined || config.enableVerboseTypeLogging
     if (enableVerboseTypeLogging) {
@@ -174,7 +196,7 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
         }
       }
 
-    symbolSolver
+    (symbolSolver, combinedTypeSolver)
   }
 
   private def recursiveJarsFromPath(path: String): List[String] = {
@@ -193,5 +215,11 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
       case _ =>
         Nil
     }
+  }
+}
+
+object AstCreationPass {
+  case class Accumulator(usedTypes: mutable.HashSet[String] = mutable.HashSet.empty) {
+    def registerType(typeName: String): Unit = usedTypes.add(typeName)
   }
 }

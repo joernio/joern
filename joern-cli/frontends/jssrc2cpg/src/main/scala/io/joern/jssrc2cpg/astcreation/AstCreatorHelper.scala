@@ -9,12 +9,13 @@ import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyDefaults, Pr
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import ujson.Value
 
-import scala.collection.{SortedMap, mutable}
-import scala.util.Try
+import scala.collection.mutable
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   private val anonClassKeyPool = new IntervalKeyPool(first = 0, last = Long.MaxValue)
+
+  protected def nodeTypeOf(json: Value): BabelNode = fromString(json("type").str)
 
   protected def createBabelNodeInfo(json: Value): BabelNodeInfo = {
     val c     = code(json)
@@ -22,15 +23,14 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     val cn    = column(json)
     val lnEnd = lineEnd(json)
     val cnEnd = columnEnd(json)
-    val node  = nodeType(json)
+    val node  = nodeTypeOf(json)
     BabelNodeInfo(node, json, c, ln, cn, lnEnd, cnEnd)
   }
 
-  private def nodeType(node: Value): BabelNode = fromString(node("type").str)
-
   protected def line(node: Value): Option[Int] = start(node).map(getLineOfSource)
 
-  protected def start(node: Value): Option[Int] = Try(node("start").num.toInt).toOption
+  protected def start(node: Value): Option[Int] =
+    node.obj.get("start").flatMap(_.numOpt).map(_.toInt)
 
   protected def range(node: Value): Option[String] = {
     for {
@@ -39,22 +39,28 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     } yield s"$nodeStart:$nodeEnd"
   }
 
-  // Returns the line number for a given position in the source.
+  // Binary search: find first line whose end-position >= position
   private def getLineOfSource(position: Int): Int = {
-    val (_, lineNumber) = positionToLineNumberMapping.minAfter(position).get
-    lineNumber
+    var lo = 0
+    var hi = lineEndPositions.length - 1
+    while (lo < hi) {
+      val mid = (lo + hi) >>> 1
+      if (lineEndPositions(mid) < position) lo = mid + 1
+      else hi = mid
+    }
+    lo + 1 // 1-based line numbers
   }
 
   protected def lineEnd(node: Value): Option[Int] = end(node).map(getLineOfSource)
 
-  protected def end(node: Value): Option[Int] = Try(node("end").num.toInt).toOption
+  protected def end(node: Value): Option[Int] =
+    node.obj.get("end").flatMap(_.numOpt).map(_.toInt)
 
   protected def column(node: Value): Option[Int] = start(node).map(getColumnOfSource)
 
-  // Returns the column number for a given position in the source.
   private def getColumnOfSource(position: Int): Int = {
-    val (_, firstPositionInLine) = positionToFirstPositionInLineMapping.minAfter(position).get
-    position - firstPositionInLine
+    val lineIdx = getLineOfSource(position) - 1
+    position - lineStartPositions(lineIdx)
   }
 
   protected def columnEnd(node: Value): Option[Int] = end(node).map(getColumnOfSource)
@@ -130,41 +136,39 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     usedVariableNames: mutable.HashMap[String, Int],
     variableName: String
   ): String = {
-    val counter             = usedVariableNames.get(variableName).map(_ + 1).getOrElse(0)
+    val counter             = usedVariableNames.getOrElse(variableName, -1) + 1
     val currentVariableName = s"${variableName}_$counter"
-    usedVariableNames.put(variableName, counter)
+    usedVariableNames.update(variableName, counter)
     currentVariableName
   }
 
   protected def safeBool(node: Value, key: String): Option[Boolean] =
-    if (hasKey(node, key)) Try(node(key).bool).toOption else None
+    node.obj.get(key).flatMap(_.boolOpt)
 
   protected def safeObj(node: Value, key: String): Option[upickle.core.LinkedHashMap[String, Value]] =
-    Try(node(key).obj).toOption.filter(_.nonEmpty)
+    node.obj.get(key).flatMap(_.objOpt).filter(_.nonEmpty)
 
-  protected def positionLookupTables(source: String): (SortedMap[Int, Int], SortedMap[Int, Int]) = {
-    val positionToLineNumber, positionToFirstPositionInLine = mutable.TreeMap.empty[Int, Int]
-    val data                                                = source.toCharArray
-    var lineNumber                                          = 1
-    var firstPositionInLine                                 = 0
-    var position                                            = 0
+  protected def buildPositionArrays(source: String): (Array[Int], Array[Int]) = {
+    val ends                = mutable.ArrayBuffer[Int]()
+    val starts              = mutable.ArrayBuffer[Int]()
+    var firstPositionInLine = 0
+    var position            = 0
+    val data                = source.toCharArray
     while (position < data.length) {
-      val isNewLine = data(position) == '\n'
-      if (isNewLine) {
-        positionToLineNumber.put(position, lineNumber)
-        lineNumber += 1
-        positionToFirstPositionInLine.put(position, firstPositionInLine)
+      if (data(position) == '\n') {
+        ends += position
+        starts += firstPositionInLine
         firstPositionInLine = position + 1
       }
       position += 1
     }
-    positionToLineNumber.put(position, lineNumber)
-    positionToFirstPositionInLine.put(position, firstPositionInLine)
-
-    // for empty line at the end of each JS/TS file generated by BabelJsonParser:
-    positionToLineNumber.put(position + 1, lineNumber + 1)
-    positionToFirstPositionInLine.put(position + 1, 0)
-    (positionToLineNumber, positionToFirstPositionInLine)
+    // Final line (may not end with newline)
+    ends += position
+    starts += firstPositionInLine
+    // Extra entry for empty line at end of file (matches current BabelJsonParser behavior)
+    ends += (position + 1)
+    starts += 0
+    (ends.toArray, starts.toArray)
   }
 
   protected def calcMethodNameAndFullName(func: BabelNodeInfo): (String, String) = {
@@ -216,7 +220,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   protected def safeStr(node: Value, key: String): Option[String] =
-    if (hasKey(node, key)) Try(node(key).str).toOption else None
+    node.obj.get(key).flatMap(_.strOpt)
 
   private def isMethodOrGetSet(func: BabelNodeInfo): Boolean = {
     if (hasKey(func.json, "kind") && !func.json("kind").isNull) {
@@ -248,7 +252,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     (name, fullName)
   }
 
-  /** In JS it is possible to create anonymous classes. We have to handle this here.
+  /** In JS, it is possible to create anonymous classes. We have to handle this here.
     */
   private def calcTypeName(classNode: BabelNodeInfo): String =
     if (hasKey(classNode.json, "id") && !classNode.json("id").isNull) code(classNode.json("id"))
@@ -263,8 +267,9 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }
   }
 
-  protected def hasKey(node: Value, key: String): Boolean = Try(node(key)).isSuccess
+  protected def hasKey(node: Value, key: String): Boolean =
+    node.objOpt.exists(_.contains(key))
 
-  protected def nextAnonClassName(): String = s"<anon-class>${anonClassKeyPool.next}"
+  private def nextAnonClassName(): String = s"<anon-class>${anonClassKeyPool.next}"
 
 }

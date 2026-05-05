@@ -3,15 +3,8 @@ package io.joern.c2cpg.passes
 import io.joern.c2cpg.Config
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.{
-  Cpg,
-  EdgeTypes,
-  EvaluationStrategies,
-  NodeTypes,
-  PropertyDefaults,
-  PropertyNames
-}
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
@@ -128,8 +121,8 @@ class FunctionDeclNodePass(cpg: Cpg, methodDeclarations: Map[String, FunctionDec
         methodNodeInfo.signature,
         dstGraph
       )
-      val ast = stubAst.merge(typeDeclAst)
-      Ast.storeInDiffGraph(ast, dstGraph)
+      Ast.storeInDiffGraph(stubAst, dstGraph)
+      Ast.storeInDiffGraph(typeDeclAst, dstGraph)
     }
   }
 
@@ -199,7 +192,7 @@ class FunctionDeclNodePass(cpg: Cpg, methodDeclarations: Map[String, FunctionDec
     val normalizedFullName = StringUtils.normalizeSpace(methodFullName)
 
     if (methodInfo.astParentType == NodeTypes.TYPE_DECL) {
-      val parentTypeDecl = cpg.typeDecl.nameExact(methodInfo.astParentFullName).headOption
+      val parentTypeDecl = cpg.typeDecl.fullNameExact(methodInfo.astParentFullName).headOption
       parentTypeDecl
         .map { typeDecl =>
           val functionBinding =

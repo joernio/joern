@@ -25,7 +25,6 @@ class DependencyTests extends RubyCode2CpgFixture {
           betterErrors.name shouldBe "better_errors"
           betterErrors.version shouldBe "2.5.1"
 
-        case xs => fail(s"Expected exactly three dependencies, instead got [${xs.name.mkString(",")}]")
       }
     }
 
@@ -47,7 +46,6 @@ class DependencyTests extends RubyCode2CpgFixture {
           coffeeRails.name shouldBe "coffee-rails"
           coffeeRails.version shouldBe ""
 
-        case xs => fail(s"Expected exactly three dependencies, instead got [${xs.name.mkString(",")}]")
       }
     }
 
@@ -98,12 +96,9 @@ class DownloadDependencyTest extends RubyCode2CpgFixture(downloadDependencies = 
         case (v: Identifier) :: (block: Block) :: Nil =>
           v.dynamicTypeHintFullName should contain("dummy_logger.Main_module.Main_outer_class")
 
-          inside(block.astChildren.isCall.nameExact(RubyDefines.Initialize).headOption) {
-            case Some(constructorCall) =>
-              constructorCall.methodFullName shouldBe Defines.DynamicCallUnknownFullName
-            case None => fail(s"Expected constructor call, did not find one")
+          inside(block.astChildren.isCall.nameExact(RubyDefines.Initialize).headOption) { case Some(constructorCall) =>
+            constructorCall.methodFullName shouldBe Defines.DynamicCallUnknownFullName
           }
-        case xs => fail(s"Expected two arguments under the constructor assignment, got [${xs.code.mkString(", ")}]")
       }
     }
 
@@ -112,12 +107,9 @@ class DownloadDependencyTest extends RubyCode2CpgFixture(downloadDependencies = 
         case (g: Identifier) :: (block: Block) :: Nil =>
           g.dynamicTypeHintFullName should contain("dummy_logger.Help")
 
-          inside(block.astChildren.isCall.name(RubyDefines.Initialize).headOption) {
-            case Some(constructorCall) =>
-              constructorCall.methodFullName shouldBe Defines.DynamicCallUnknownFullName
-            case None => fail(s"Expected constructor call, did not find one")
+          inside(block.astChildren.isCall.name(RubyDefines.Initialize).headOption) { case Some(constructorCall) =>
+            constructorCall.methodFullName shouldBe Defines.DynamicCallUnknownFullName
           }
-        case xs => fail(s"Expected two arguments under the constructor assignment, got [${xs.code.mkString(", ")}]")
       }
     }
 

@@ -1,15 +1,14 @@
 package io.joern.c2cpg.passes
 
-import io.joern.x2cpg.AstNodeBuilder
-import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.Config
-import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, NodeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.passes.CpgPass
-import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import io.shiftleft.semanticcpg.language.*
+import io.joern.c2cpg.astcreation.Defines
 import io.joern.x2cpg.passes.frontend.MetaDataPass
-import io.joern.x2cpg.{Ast, ValidationMode}
+import io.joern.x2cpg.{Ast, AstNodeBuilder, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, NodeTypes}
+import io.shiftleft.passes.CpgPass
+import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 class TypeDeclNodePass(cpg: Cpg, config: Config) extends CpgPass(cpg) {
 

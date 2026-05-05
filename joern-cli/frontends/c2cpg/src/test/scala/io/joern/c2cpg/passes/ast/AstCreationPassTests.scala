@@ -536,6 +536,66 @@ class AstCreationPassTests extends AstC2CpgSuite {
       }
     }
 
+    "be correct for qualified name with multiple :: parts" in {
+      val cpg = code(
+        """
+        |namespace A {
+        |  namespace B {
+        |    struct C {
+        |      static int value;
+        |    };
+        |  }
+        |}
+        |void foo() {
+        |  int x = A::B::C::value;
+        |}
+        |""".stripMargin,
+        "test.cpp"
+      )
+      inside(cpg.method.nameExact("foo").block.astChildren.isCall.nameExact(Operators.assignment).l) {
+        case List(assignment) =>
+          inside(assignment.arguments(2).l) { case List(outerAccess: Call) =>
+            outerAccess.methodFullName shouldBe Operators.fieldAccess
+            outerAccess.code shouldBe "A::B::C::value"
+            outerAccess.arguments(2).isFieldIdentifier.code.loneElement shouldBe "value"
+            inside(outerAccess.arguments(1).l) { case List(midAccess: Call) =>
+              midAccess.methodFullName shouldBe Operators.fieldAccess
+              midAccess.code shouldBe "A::B::C"
+              midAccess.arguments(2).isFieldIdentifier.code.loneElement shouldBe "C"
+              inside(midAccess.arguments(1).l) { case List(innerAccess: Call) =>
+                innerAccess.methodFullName shouldBe Operators.fieldAccess
+                innerAccess.code shouldBe "A::B"
+                innerAccess.argument(1).code shouldBe "A"
+                innerAccess.arguments(2).isFieldIdentifier.code.loneElement shouldBe "B"
+              }
+            }
+          }
+      }
+    }
+
+    "be correct for qualified name with two :: parts" in {
+      val cpg = code(
+        """
+        |struct Foo {
+        |  static int bar;
+        |};
+        |void test() {
+        |  int x = Foo::bar;
+        |}
+        |""".stripMargin,
+        "test.cpp"
+      )
+      inside(cpg.method.nameExact("test").block.astChildren.isCall.nameExact(Operators.assignment).l) {
+        case List(assignment) =>
+          inside(assignment.arguments(2).l) { case List(access: Call) =>
+            access.methodFullName shouldBe Operators.fieldAccess
+            access.code shouldBe "Foo::bar"
+            access.argument(2).code shouldBe "bar"
+            access.argument(1).code shouldBe "Foo"
+          }
+      }
+    }
+
     "be correct for decl assignment with identifier on the right" in {
       val cpg = code("""
           |void method(int x) {
@@ -1105,6 +1165,56 @@ class AstCreationPassTests extends AstC2CpgSuite {
       }
     }
 
+    "not create TYPE_REF nodes under TYPE_DECL for nested structs" in {
+      val cpg = code(
+        """
+        |struct Outer {
+        |  struct InnerA {
+        |    int a;
+        |  };
+        |  struct InnerB field;
+        |};
+        |""".stripMargin,
+        "file.c"
+      )
+      inside(cpg.typeDecl.nameExact("Outer").l) { case List(outer) =>
+        outer.astChildren.isTypeDecl.nameExact("InnerA").size shouldBe 1
+        outer.astChildren.isTypeRef.size shouldBe 0
+      }
+      // Only the top-level Outer should produce a TYPE_REF (to capture global variables)
+      // and not the nested Inner.
+      cpg.typeRef.typeFullNameExact("Outer").size shouldBe 1
+      cpg.typeRef.typeFullNameExact("Outer.InnerA").size shouldBe 0
+      cpg.typeRef.typeFullNameExact("Outer.InnerB").size shouldBe 0
+    }
+
+    "not create TYPE_REF nodes under TYPE_DECL for nested classes" in {
+      val cpg = code(
+        """
+        |class A {
+        |  class B {
+        |    class C {
+        |      int x;
+        |    };
+        |    int y;
+        |  };
+        |  int z;
+        |};
+        |""".stripMargin,
+        "file.cpp"
+      )
+      inside(cpg.typeDecl.nameExact("A").l) { case List(a) =>
+        a.astChildren.isTypeRef.size shouldBe 0
+        inside(a.astChildren.isTypeDecl.nameExact("B").l) { case List(b) =>
+          b.astChildren.isTypeRef.size shouldBe 0
+          b.astChildren.isTypeDecl.nameExact("C").size shouldBe 1
+        }
+      }
+      cpg.typeRef.typeFullNameExact("A").size shouldBe 1
+      cpg.typeRef.typeFullNameExact("A.B").size shouldBe 0
+      cpg.typeRef.typeFullNameExact("A.B.C").size shouldBe 0
+    }
+
     "be correct for typedef struct" in {
       val cpg = code("""
         |typedef struct foo {
@@ -1131,7 +1241,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
         x.name shouldBe "x"
         x.typeFullName shouldBe "int"
       }
-      cpg.typeDecl.nameExact("B").size shouldBe 1
+      cpg.typeDecl.nameExact("B") shouldBe empty // b is an instance of B
       inside(cpg.local.l) { case List(localA, localB) =>
         localA.name shouldBe "a"
         localA.typeFullName shouldBe "A"
@@ -1172,9 +1282,9 @@ class AstCreationPassTests extends AstC2CpgSuite {
       localMyOtherFs.order shouldBe 2
       localMyOtherFs.referencingIdentifiers.name.l shouldBe List("my_other_fs")
       val List(localMyFs) = cpg.local.nameExact("my_fs").l
-      localMyFs.order shouldBe 4
+      localMyFs.order shouldBe 3
       localMyFs.referencingIdentifiers.name.l shouldBe List("my_fs")
-      cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).fullName.l.distinct shouldBe List(
+      cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).fullName.l shouldBe List(
         "filesystem",
         "my_open",
         "main"

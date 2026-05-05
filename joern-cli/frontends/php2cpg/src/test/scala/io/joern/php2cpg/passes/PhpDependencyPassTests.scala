@@ -36,7 +36,6 @@ class PhpDependencyPassTests extends PhpCode2CpgFixture() {
           aws.version shouldBe "3.*"
           php.name shouldBe "php"
           php.version shouldBe ">=7.4.3"
-        case xs => fail(s"Expected exactly 3 dependencies, instead got [${xs.name.mkString(",")}]")
       }
     }
 
@@ -49,7 +48,6 @@ class PhpDependencyPassTests extends PhpCode2CpgFixture() {
           monologSrc.version shouldBe s"${PhpOperators.autoload}src/"
           monologLib.name shouldBe "Monolog\\"
           monologLib.version shouldBe s"${PhpOperators.autoload}lib/"
-        case xs => fail(s"Expected exactly 3 dependencies, instead got [${xs.name.mkString(",")}]")
       }
     }
 

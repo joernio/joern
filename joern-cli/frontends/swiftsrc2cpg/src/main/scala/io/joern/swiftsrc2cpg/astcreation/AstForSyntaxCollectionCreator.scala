@@ -157,7 +157,7 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
     val blockNode_ = blockNode(node, PropertyDefaults.Code, Defines.Any)
     scope.pushNewBlockScope(blockNode_)
     localAstParentStack.push(blockNode_)
-    val asts = node.children.toList.flatMap(astsForSwitchCase)
+    val asts = node.children.toList.flatMap(astsForSwitchCase(_, None))
     localAstParentStack.pop()
     scope.popScope()
     blockAst(blockNode_, asts)

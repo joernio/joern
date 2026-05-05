@@ -25,7 +25,8 @@ object CpgGeneratorFactory {
     Languages.KOTLIN,
     Languages.NEWC,
     Languages.JAVASRC,
-    Languages.SWIFTSRC
+    Languages.SWIFTSRC,
+    Languages.RUST
   )
 }
 

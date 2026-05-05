@@ -53,6 +53,11 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
             .filterNot(_ == Defines.Any)
             .toSet
           symbolTable.put(LocalVar(entityName), memberTypes)
+          // If the imported member is called, seed the call type directly.
+          val fullName = createCallFromIdentifierTypeFullName(basePath, memberName)
+          i.call.inAst.collectAll[Method].headOption.foreach { method =>
+            method.ast.isCall.nameExact(entityName).foreach(call => symbolTable.append(call, Set(fullName)))
+          }
         case UnknownMethod(fullName, alias, receiver, _) =>
           symbolTable.put(CallAlias(alias, receiver), fullName)
         case UnknownTypeDecl(fullName, _) =>

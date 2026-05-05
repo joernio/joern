@@ -442,10 +442,11 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
         case scopeElement if scopeElement.variables.contains(identifier) =>
           scopeElement
       }
-      .map {
-        case ScopeElement(x: NamespaceLikeScope, _) => x.fullName
-        case ScopeElement(x: TypeLikeScope, _)      => x.fullName
-        case ScopeElement(x: MethodLikeScope, _)    => x.fullName
+      .flatMap {
+        case ScopeElement(x: NamespaceLikeScope, _) => Some(x.fullName)
+        case ScopeElement(x: TypeLikeScope, _)      => Some(x.fullName)
+        case ScopeElement(x: MethodLikeScope, _)    => Some(x.fullName)
+        case _                                      => None
       }
   }
 

@@ -51,6 +51,9 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     assignment.code shouldBe "num = i + 3"
     assignment.lineNumber shouldBe Some(5)
 
+    inside(whileNode.doBodyOut.isBlock.l) { case List(doBody: Block) =>
+      doBody.astChildren.code.l shouldBe List("num = i + 3")
+    }
   }
 
   "`until-end` statement is represented by a negated `WHILE` CONTROL_STRUCTURE node" in {
@@ -175,6 +178,44 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     elsIfStr.lineNumber shouldBe Some(5)
   }
 
+  "`if-elsif-else-end` should connect then and else branches via TRUE_BODY/FALSE_BODY edges" in {
+    val cpg = code("""
+                     |if __LINE__ == 0 then
+                     | '= 0'
+                     |elsif __LINE__ > 0 then
+                     | '> 0'
+                     |else
+                     | '< 0'
+                     |end
+                     |""".stripMargin)
+
+    inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).headOption.l) {
+      case List(ifControl: ControlStructure) =>
+        ifControl.trueBodyOut.astChildren.code.l shouldBe List("'= 0'")
+
+        inside(ifControl.falseBodyOut.astChildren.l) { case List(elseIfControl: ControlStructure) =>
+          elseIfControl.trueBodyOut.astChildren.code.l shouldBe List("'> 0'")
+          elseIfControl.falseBodyOut.astChildren.code.l shouldBe List("'< 0'")
+        }
+    }
+  }
+
+  "`if-else-end` should connect then and else branches via TRUE_BODY/FALSE_BODY edges" in {
+    val cpg = code("""
+        |if __LINE__ == 0 then
+        | '= 0'
+        |else
+        | '< 0 || > 0'
+        |end
+        |""".stripMargin)
+
+    inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).headOption.l) {
+      case List(ifControl: ControlStructure) =>
+        ifControl.trueBodyOut.astChildren.code.l shouldBe List("'= 0'")
+        ifControl.falseBodyOut.astChildren.code.l shouldBe List("'< 0 || > 0'")
+    }
+  }
+
   "`unless-end` statement is represented by a negated `IF` CONTROL_STRUCTURE node" in {
     val cpg = code("""
                      |unless __LINE__ == 0 then
@@ -218,6 +259,22 @@ class ControlStructureTests extends RubyCode2CpgFixture {
 
     elseAssignment.code shouldBe "x = '!= 0'"
     elseAssignment.lineNumber shouldBe Some(3)
+  }
+
+  "`unless-else-end` should connect then and else branches via TRUE_BODY/FALSE_BODY edges" in {
+    val cpg = code("""
+                     |unless __LINE__ == 0 then
+                     | x = '!= 0'
+                     |else
+                     | x = '= 0'
+                     |end
+                     |""".stripMargin)
+
+    inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).headOption.l) {
+      case List(ifControl: ControlStructure) =>
+        ifControl.trueBodyOut.astChildren.code.l shouldBe List("x = '= 0'")
+        ifControl.falseBodyOut.astChildren.code.l shouldBe List("x = '!= 0'")
+    }
   }
 
   "`... unless ...` statement is represented by a negated `IF` CONTROL_STRUCTURE node" in {
@@ -342,7 +399,6 @@ class ControlStructureTests extends RubyCode2CpgFixture {
 
         ensureStruct.controlStructureType shouldBe ControlStructureTypes.FINALLY
         ensureStruct.ast.isLiteral.code.l shouldBe List("6")
-      case xs => fail(s"Expected 6 structures, got ${xs.code.mkString(",")}")
     }
   }
 
@@ -357,19 +413,48 @@ class ControlStructureTests extends RubyCode2CpgFixture {
                      |end
                      |""".stripMargin)
 
-    inside(cpg.method("test2").controlStructure.l) {
-      case tryStruct :: defaultElseStruct :: ensureStruct :: Nil =>
-        tryStruct.controlStructureType shouldBe ControlStructureTypes.TRY
-        val body = tryStruct.astChildren.head
-        body.ast.isLiteral.code.l shouldBe List("1")
+    inside(cpg.method("test2").controlStructure.l) { case tryStruct :: defaultElseStruct :: ensureStruct :: Nil =>
+      tryStruct.controlStructureType shouldBe ControlStructureTypes.TRY
+      val body = tryStruct.astChildren.head
+      body.ast.isLiteral.code.l shouldBe List("1")
 
-        defaultElseStruct.controlStructureType shouldBe ControlStructureTypes.ELSE
-        defaultElseStruct.ast.isLiteral.code.l shouldBe List("nil")
+      defaultElseStruct.controlStructureType shouldBe ControlStructureTypes.ELSE
+      defaultElseStruct.ast.isLiteral.code.l shouldBe List("nil")
 
-        ensureStruct.controlStructureType shouldBe ControlStructureTypes.FINALLY
-        ensureStruct.ast.isLiteral.code.l shouldBe List("2")
+      ensureStruct.controlStructureType shouldBe ControlStructureTypes.FINALLY
+      ensureStruct.ast.isLiteral.code.l shouldBe List("2")
 
-      case xs => fail(s"Expected two structures, got ${xs.code.mkString(",")}")
+    }
+  }
+
+  "`begin-rescue-ensure-else-end` should connect begin, rescue, else and ensure bodies via explicit edges" in {
+    val cpg = code("""
+        |def test2
+        |  begin
+        |   1
+        |  rescue Exception
+        |   2
+        |  else
+        |   3
+        |  ensure
+        |   4
+        |  end
+        |end
+        |""".stripMargin)
+
+    inside(cpg.controlStructure.isTry.l) { case List(tryControl: ControlStructure) =>
+      tryControl.code shouldBe "try"
+      tryControl.tryBodyOut.astChildren.code.l shouldBe List("1")
+
+      inside(tryControl.catchBodyOut.l) { case List(catchA: ControlStructure, catchB: ControlStructure) =>
+        catchA.code shouldBe "catch"
+        catchA.astChildren.isBlock.astChildren.code.l shouldBe List("2")
+        catchB.code shouldBe "else"
+        catchB.astChildren.isBlock.astChildren.code.l shouldBe List("3")
+      }
+
+      tryControl.finallyBodyOut.code.l shouldBe List("finally")
+      tryControl.finallyBodyOut.astChildren.isBlock.astChildren.code.l shouldBe List("4")
     }
   }
 
@@ -391,71 +476,73 @@ class ControlStructureTests extends RubyCode2CpgFixture {
                      |""".stripMargin)
 
     "create a FOR control structure node with body with an array iterable" in {
-      inside(cpg.method("foo1").controlStructure.l) {
-        case forEachNode :: Nil =>
-          forEachNode.controlStructureType shouldBe ControlStructureTypes.FOR
+      inside(cpg.method("foo1").controlStructure.l) { case forEachNode :: Nil =>
+        forEachNode.controlStructureType shouldBe ControlStructureTypes.FOR
 
-          inside(forEachNode.astChildren.l) {
-            case (idxLocal: Local) :: (iVarLocal: Local) :: (initAssign: Call) :: (cond: Call) :: (update: Call) :: (forBlock: Block) :: Nil =>
-              idxLocal.name shouldBe "_idx_"
-              idxLocal.typeFullName shouldBe Defines.prefixAsCoreType(Defines.Integer)
+        inside(forEachNode.astChildren.l) {
+          case (idxLocal: Local) :: (iVarLocal: Local) :: (initAssign: Call) :: (cond: Call) :: (update: Call) :: (forBlock: Block) :: Nil =>
+            idxLocal.name shouldBe "_idx_"
+            idxLocal.typeFullName shouldBe Defines.prefixAsCoreType(Defines.Integer)
 
-              iVarLocal.name shouldBe "i"
+            iVarLocal.name shouldBe "i"
 
-              initAssign.code shouldBe "_idx_ = 0"
-              initAssign.name shouldBe Operators.assignment
-              initAssign.methodFullName shouldBe Operators.assignment
+            initAssign.code shouldBe "_idx_ = 0"
+            initAssign.name shouldBe Operators.assignment
+            initAssign.methodFullName shouldBe Operators.assignment
 
-              cond.code shouldBe "_idx_ < x.length"
-              cond.name shouldBe Operators.lessThan
-              cond.methodFullName shouldBe Operators.lessThan
+            cond.code shouldBe "_idx_ < x.length"
+            cond.name shouldBe Operators.lessThan
+            cond.methodFullName shouldBe Operators.lessThan
 
-              update.code shouldBe "i = x[_idx_++]"
-              update.name shouldBe Operators.assignment
-              update.methodFullName shouldBe Operators.assignment
+            update.code shouldBe "i = x[_idx_++]"
+            update.name shouldBe Operators.assignment
+            update.methodFullName shouldBe Operators.assignment
 
-            case xs => fail(s"Expected 6 children for `forEachNode`, got [${xs.code.mkString(",")}]")
-          }
+        }
 
-          inside(forEachNode.astChildren.isBlock.l) {
-            case blockNode :: Nil =>
-              val List(puts) = blockNode.ast.isCall.nameExact("puts").l
-              puts.parentBlock.head shouldBe blockNode
-            case _ => fail("Correct blockNode as child not found for `for-in` statement")
-          }
+        inside(forEachNode.astChildren.isBlock.l) { case blockNode :: Nil =>
+          val List(puts) = blockNode.ast.isCall.nameExact("puts").l
+          puts.parentBlock.head shouldBe blockNode
+        }
 
-        case _ => fail("No control structure node found for `for-in`.")
       }
     }
 
     "create a FOR control structure node with body with a 'range' iterable" in {
-      inside(cpg.method("foo2").controlStructure.l) {
-        case forEachNode :: Nil =>
-          forEachNode.controlStructureType shouldBe ControlStructureTypes.FOR
+      inside(cpg.method("foo2").controlStructure.l) { case forEachNode :: Nil =>
+        forEachNode.controlStructureType shouldBe ControlStructureTypes.FOR
 
-          inside(forEachNode.astChildren.l) {
-            case (idxLocal: Local) :: (iVarLocal: Local) :: (initAssign: Call) :: (cond: Call) :: (update: Call) :: (forBlock: Block) :: Nil =>
-              idxLocal.name shouldBe "_idx_"
-              idxLocal.typeFullName shouldBe Defines.prefixAsCoreType(Defines.Integer)
+        inside(forEachNode.astChildren.l) {
+          case (idxLocal: Local) :: (iVarLocal: Local) :: (initAssign: Call) :: (cond: Call) :: (update: Call) :: (forBlock: Block) :: Nil =>
+            idxLocal.name shouldBe "_idx_"
+            idxLocal.typeFullName shouldBe Defines.prefixAsCoreType(Defines.Integer)
 
-              iVarLocal.name shouldBe "i"
+            iVarLocal.name shouldBe "i"
 
-              initAssign.code shouldBe "_idx_ = 0"
-              initAssign.name shouldBe Operators.assignment
-              initAssign.methodFullName shouldBe Operators.assignment
+            initAssign.code shouldBe "_idx_ = 0"
+            initAssign.name shouldBe Operators.assignment
+            initAssign.methodFullName shouldBe Operators.assignment
 
-              cond.code shouldBe "_idx_ < 1..x.length"
-              cond.name shouldBe Operators.lessThan
-              cond.methodFullName shouldBe Operators.lessThan
+            cond.code shouldBe "_idx_ < 1..x.length"
+            cond.name shouldBe Operators.lessThan
+            cond.methodFullName shouldBe Operators.lessThan
 
-              update.code shouldBe "i = 1..x[_idx_++]"
-              update.name shouldBe Operators.assignment
-              update.methodFullName shouldBe Operators.assignment
+            update.code shouldBe "i = 1..x[_idx_++]"
+            update.name shouldBe Operators.assignment
+            update.methodFullName shouldBe Operators.assignment
 
-            case xs => fail(s"Expected 6 children for `forEachNode`, got [${xs.code.mkString(",")}]")
-          }
+        }
 
-        case _ => fail("No control structure node found for `for-in`.")
+      }
+    }
+
+    "connect for-loop and body branches via FOR_BODY edges" in {
+      inside(cpg.method("foo1").controlStructure.l) { case List(forNode: ControlStructure) =>
+        forNode.code shouldBe "for i in x do\n   puts x - i\n end"
+
+        forNode.forInitOut.code.l shouldBe List("_idx_ = 0")
+        forNode.forUpdateOut.code.l shouldBe List("i = x[_idx_++]")
+        forNode.forBodyOut.isBlock.astChildren.code.l shouldBe List("puts x - i")
       }
     }
   }
@@ -472,8 +559,34 @@ class ControlStructureTests extends RubyCode2CpgFixture {
           elsifOneAssignment.code shouldBe "a = 2003"
           elsifTwoAssignment.code shouldBe "a = 982"
           elseAssignment.code shouldBe "a = 456"
-        case xs => fail(s"Expected four assignments, instead found ${xs.code.mkString(", ")}")
       }
+    }
+  }
+
+  "implicit `if-elsif-else-end` assignment should connect then and else branches via TRUE_BODY/FALSE_BODY edges" in {
+    val cpg = code("""
+        |a = if __LINE__ == 0 then '= 0' elsif __LINE__ > 0 then '> 0' else '< 0' end
+        |""".stripMargin)
+
+    inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).headOption.l) {
+      case List(ifControl: ControlStructure) =>
+        ifControl.code shouldBe "if __LINE__ == 0 then '= 0' elsif __LINE__ > 0 then '> 0' el..."
+        inside(ifControl.trueBodyOut.astChildren.l) { case List(call: Call) =>
+          call.name shouldBe Operators.assignment
+          call.code shouldBe "a = '= 0'"
+        }
+
+        inside(ifControl.falseBodyOut.astChildren.l) { case List(elseIfControl: ControlStructure) =>
+          elseIfControl.code shouldBe "elsif __LINE__ > 0 then '> 0' else '< 0'"
+          inside(elseIfControl.trueBodyOut.astChildren.l) { case List(call: Call) =>
+            call.name shouldBe Operators.assignment
+            call.code shouldBe "a = '> 0'"
+          }
+          inside(elseIfControl.falseBodyOut.astChildren.l) { case List(call: Call) =>
+            call.name shouldBe Operators.assignment
+            call.code shouldBe "a = '< 0'"
+          }
+        }
     }
   }
 
@@ -483,11 +596,9 @@ class ControlStructureTests extends RubyCode2CpgFixture {
                      |""".stripMargin)
 
     "create assignment operators for if and default else branch" in {
-      inside(cpg.call.name(Operators.assignment).l) {
-        case ifAssignment :: defaultElseAssignment :: Nil =>
-          ifAssignment.code shouldBe "a = 123"
-          defaultElseAssignment.code shouldBe "a = nil"
-        case xs => fail(s"Expected two assignments, instead found ${xs.code.mkString(", ")}")
+      inside(cpg.call.name(Operators.assignment).l) { case ifAssignment :: defaultElseAssignment :: Nil =>
+        ifAssignment.code shouldBe "a = 123"
+        defaultElseAssignment.code shouldBe "a = nil"
       }
     }
 
@@ -507,31 +618,23 @@ class ControlStructureTests extends RubyCode2CpgFixture {
                      |""".stripMargin)
 
     "Generate return nodes without unknown nodes" in {
-      inside(cpg.method.name("foo").methodReturn.toReturn.l) {
-        case returnZero :: returnX :: returnY :: Nil =>
-          returnZero.code shouldBe "return 0"
-          // Confirms that returnZero child is `Literal` and not `UNKNOWN`
-          inside(returnZero.astChildren.l) {
-            case (zeroLiteral: Literal) :: Nil =>
-              zeroLiteral.code shouldBe "0"
-            case _ => fail("Expected literal for return astChild")
-          }
+      inside(cpg.method.name("foo").methodReturn.toReturn.l) { case returnZero :: returnX :: returnY :: Nil =>
+        returnZero.code shouldBe "return 0"
+        // Confirms that returnZero child is `Literal` and not `UNKNOWN`
+        inside(returnZero.astChildren.l) { case (zeroLiteral: Literal) :: Nil =>
+          zeroLiteral.code shouldBe "0"
+        }
 
-          returnX.code shouldBe "return x"
-          inside(returnX.astChildren.l) {
-            case (x: Identifier) :: Nil =>
-              x.code shouldBe "x"
-            case _ => fail("Expected Identifier for return child")
-          }
+        returnX.code shouldBe "return x"
+        inside(returnX.astChildren.l) { case (x: Identifier) :: Nil =>
+          x.code shouldBe "x"
+        }
 
-          returnY.code shouldBe "return y"
-          inside(returnY.astChildren.l) {
-            case (y: Identifier) :: Nil =>
-              y.code shouldBe "y"
-            case _ => fail("Expected identifier for return child")
-          }
+        returnY.code shouldBe "return y"
+        inside(returnY.astChildren.l) { case (y: Identifier) :: Nil =>
+          y.code shouldBe "y"
+        }
 
-        case xs => fail(s"Expected three return expressions, instead found ${xs.code.mkString(", ")}")
       }
     }
   }
@@ -543,46 +646,40 @@ class ControlStructureTests extends RubyCode2CpgFixture {
                      |end
                      |""".stripMargin)
 
-    inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.CONTINUE).l) {
-      case nextControl :: Nil =>
-        nextControl.code shouldBe "next"
-      case xs => fail(s"Expected next to be continue, got [${xs.code.mkString(",")}]")
+    inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.CONTINUE).l) { case nextControl :: Nil =>
+      nextControl.code shouldBe "next"
     }
   }
 
   "A `raise` call with a string argument should generate a `throw` control structure with explicit `StandardError.new` call" in {
     val cpg = code("raise 'Hello, world!'")
-    inside(cpg.controlStructure.l) {
-      case (ctrlStruct: ControlStructure) :: Nil =>
-        ctrlStruct.code shouldBe "raise 'Hello, world!'"
-        ctrlStruct.controlStructureType shouldBe ControlStructureTypes.THROW
+    inside(cpg.controlStructure.l) { case (ctrlStruct: ControlStructure) :: Nil =>
+      ctrlStruct.code shouldBe "raise 'Hello, world!'"
+      ctrlStruct.controlStructureType shouldBe ControlStructureTypes.THROW
 
-        val constructorBlock = ctrlStruct.astChildren.head.asInstanceOf[Block]
-        constructorBlock.ast.isCall.where(_.name(Operators.alloc)).nonEmpty shouldBe true
+      val constructorBlock = ctrlStruct.astChildren.head.asInstanceOf[Block]
+      constructorBlock.ast.isCall.where(_.name(Operators.alloc)).nonEmpty shouldBe true
 
-        val initialize = constructorBlock.ast.isCall.name(Defines.Initialize).head
-        initialize.code shouldBe "StandardError.new('Hello, world!')"
-        val helloWorld = initialize.argument(1).asInstanceOf[Literal]
-        helloWorld.code shouldBe "'Hello, world!'"
-      case xs => fail(s"Expected single `throw` call, got [${xs.code.mkString(",")}]")
+      val initialize = constructorBlock.ast.isCall.name(Defines.Initialize).head
+      initialize.code shouldBe "StandardError.new('Hello, world!')"
+      val helloWorld = initialize.argument(1).asInstanceOf[Literal]
+      helloWorld.code shouldBe "'Hello, world!'"
     }
   }
 
   "A `raise` call with an explicit error argument should generate a `throw` control structure" in {
     val cpg = code("raise ZeroDivisionError.new 'b should not be 0'")
-    inside(cpg.controlStructure.l) {
-      case (ctrlStruct: ControlStructure) :: Nil =>
-        ctrlStruct.code shouldBe "raise ZeroDivisionError.new 'b should not be 0'"
-        ctrlStruct.controlStructureType shouldBe ControlStructureTypes.THROW
+    inside(cpg.controlStructure.l) { case (ctrlStruct: ControlStructure) :: Nil =>
+      ctrlStruct.code shouldBe "raise ZeroDivisionError.new 'b should not be 0'"
+      ctrlStruct.controlStructureType shouldBe ControlStructureTypes.THROW
 
-        val constructorBlock = ctrlStruct.astChildren.head.asInstanceOf[Block]
-        constructorBlock.ast.isCall.where(_.name(Operators.alloc)).nonEmpty shouldBe true
+      val constructorBlock = ctrlStruct.astChildren.head.asInstanceOf[Block]
+      constructorBlock.ast.isCall.where(_.name(Operators.alloc)).nonEmpty shouldBe true
 
-        val initialize = constructorBlock.ast.isCall.name(Defines.Initialize).head
-        initialize.code shouldBe "ZeroDivisionError.new 'b should not be 0'"
-        val errMsg = initialize.argument(1).asInstanceOf[Literal]
-        errMsg.code shouldBe "'b should not be 0'"
-      case xs => fail(s"Expected single `throw` call, got [${xs.code.mkString(",")}]")
+      val initialize = constructorBlock.ast.isCall.name(Defines.Initialize).head
+      initialize.code shouldBe "ZeroDivisionError.new 'b should not be 0'"
+      val errMsg = initialize.argument(1).asInstanceOf[Literal]
+      errMsg.code shouldBe "'b should not be 0'"
     }
   }
 
@@ -595,28 +692,22 @@ class ControlStructureTests extends RubyCode2CpgFixture {
                      |end
                      |""".stripMargin)
 
-    inside(cpg.method.name("index").l) {
-      case indexMethod :: Nil =>
-        inside(indexMethod.call.name(Operators.conditional).l) {
-          case ternary :: Nil =>
-            ternary.code shouldBe "@user.admin ? User.all : @user"
+    inside(cpg.method.name("index").l) { case indexMethod :: Nil =>
+      inside(indexMethod.call.name(Operators.conditional).l) { case ternary :: Nil =>
+        ternary.code shouldBe "@user.admin ? User.all : @user"
 
-            inside(ternary.argument.l) {
-              case condition :: (leftOpt: Block) :: (rightOpt: Block) :: Nil =>
-                condition.code shouldBe "(<tmp-0> = @user).admin"
-                condition.ast.isFieldIdentifier.code.l shouldBe List("@user", "admin")
+        inside(ternary.argument.l) { case condition :: (leftOpt: Block) :: (rightOpt: Block) :: Nil =>
+          condition.code shouldBe "(<tmp-0> = @user).admin"
+          condition.ast.isFieldIdentifier.code.l shouldBe List("@user", "admin")
 
-                leftOpt.ast.fieldAccess.code.head shouldBe "User.all"
-                leftOpt.ast.isFieldIdentifier.code.l shouldBe List("User", "all")
+          leftOpt.ast.fieldAccess.code.head shouldBe "User.all"
+          leftOpt.ast.isFieldIdentifier.code.l shouldBe List("User", "all")
 
-                rightOpt.ast.fieldAccess.code.head shouldBe "self.@user"
-                rightOpt.ast.isFieldIdentifier.code.head shouldBe "@user"
+          rightOpt.ast.fieldAccess.code.head shouldBe "self.@user"
+          rightOpt.ast.isFieldIdentifier.code.head shouldBe "@user"
 
-              case xs => fail(s"Expected two arguments, got ${xs.code.mkString(",")}")
-            }
-          case xs => fail(s"Expected one call for ternary, got ${xs.code.mkString(",")}")
         }
-      case xs => fail(s"Expected one method, got ${xs.name.mkString(",")}")
+      }
     }
   }
 
@@ -629,14 +720,12 @@ class ControlStructureTests extends RubyCode2CpgFixture {
                      |end
                      |""".stripMargin)
 
-    inside(cpg.method.name("foo").controlStructure.l) {
-      case ifStruct :: Nil =>
-        ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
+    inside(cpg.method.name("foo").controlStructure.l) { case ifStruct :: Nil =>
+      ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
 
-        val List(_: Call, returnCall: Return) = ifStruct.condition.isBlock.astChildren.isCall.argument.l: @unchecked
-        returnCall.code shouldBe "return"
+      val List(_: Call, returnCall: Return) = ifStruct.condition.isBlock.astChildren.isCall.argument.l: @unchecked
+      returnCall.code shouldBe "return"
 
-      case xs => fail(s"Expected one control strucuture, got [${xs.code.mkString(",")}]")
     }
   }
 
@@ -649,13 +738,11 @@ class ControlStructureTests extends RubyCode2CpgFixture {
                      |end
                      |""".stripMargin)
 
-    inside(cpg.method.name("foo").controlStructure.l) {
-      case orIfStruct :: Nil =>
-        orIfStruct.controlStructureType shouldBe ControlStructureTypes.IF
+    inside(cpg.method.name("foo").controlStructure.l) { case orIfStruct :: Nil =>
+      orIfStruct.controlStructureType shouldBe ControlStructureTypes.IF
 
-        val List(_: Call, returnCall: Return) = orIfStruct.condition.isBlock.astChildren.isCall.argument.l: @unchecked
-        returnCall.code shouldBe "return"
-      case xs => fail(s"Expected one IF structure, got [${xs.code.mkString(",")}]")
+      val List(_: Call, returnCall: Return) = orIfStruct.condition.isBlock.astChildren.isCall.argument.l: @unchecked
+      returnCall.code shouldBe "return"
     }
   }
 
@@ -667,35 +754,32 @@ class ControlStructureTests extends RubyCode2CpgFixture {
                      |end
                      |""".stripMargin)
 
-    inside(cpg.method.isModule.controlStructure.l) {
-      case forEachNode :: Nil =>
-        forEachNode.controlStructureType shouldBe ControlStructureTypes.FOR
+    inside(cpg.method.isModule.controlStructure.l) { case forEachNode :: Nil =>
+      forEachNode.controlStructureType shouldBe ControlStructureTypes.FOR
 
-        inside(forEachNode.astChildren.l) {
-          case (idxLocal: Local) :: (numLocal: Local) :: (initAssign: Call) :: (cond: Call) :: (update: Call) :: (forBlock: Block) :: Nil =>
-            idxLocal.name shouldBe "_idx_"
-            idxLocal.typeFullName shouldBe Defines.prefixAsCoreType(Defines.Integer)
+      inside(forEachNode.astChildren.l) {
+        case (idxLocal: Local) :: (numLocal: Local) :: (initAssign: Call) :: (cond: Call) :: (update: Call) :: (forBlock: Block) :: Nil =>
+          idxLocal.name shouldBe "_idx_"
+          idxLocal.typeFullName shouldBe Defines.prefixAsCoreType(Defines.Integer)
 
-            numLocal.name shouldBe "num"
+          numLocal.name shouldBe "num"
 
-            initAssign.code shouldBe "_idx_ = 0"
-            initAssign.name shouldBe Operators.assignment
-            initAssign.methodFullName shouldBe Operators.assignment
+          initAssign.code shouldBe "_idx_ = 0"
+          initAssign.name shouldBe Operators.assignment
+          initAssign.methodFullName shouldBe Operators.assignment
 
-            cond.code shouldBe "_idx_ < fibNumbers.length"
-            cond.name shouldBe Operators.lessThan
-            cond.methodFullName shouldBe Operators.lessThan
+          cond.code shouldBe "_idx_ < fibNumbers.length"
+          cond.name shouldBe Operators.lessThan
+          cond.methodFullName shouldBe Operators.lessThan
 
-            update.code shouldBe "num = fibNumbers[_idx_++]"
-            update.name shouldBe Operators.assignment
-            update.methodFullName shouldBe Operators.assignment
+          update.code shouldBe "num = fibNumbers[_idx_++]"
+          update.name shouldBe Operators.assignment
+          update.methodFullName shouldBe Operators.assignment
 
-            val List(putsCall) = cpg.call.nameExact("puts").l
-            putsCall.astParent shouldBe forBlock
+          val List(putsCall) = cpg.call.nameExact("puts").l
+          putsCall.astParent shouldBe forBlock
 
-          case xs => fail(s"Expected 6 children for `forEachNode`, got [${xs.code.mkString(",")}]")
-        }
-      case xs => fail(s"Expected one node for `forEach` loop, got [${xs.code.mkString(",")}]")
+      }
     }
   }
 }

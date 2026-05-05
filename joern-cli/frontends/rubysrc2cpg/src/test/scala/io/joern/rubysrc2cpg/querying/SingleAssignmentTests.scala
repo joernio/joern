@@ -50,21 +50,17 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    inside(cpg.method.name("foo").controlStructure.l) {
-      case ifStruct :: Nil =>
-        ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
-        ifStruct.condition.code.l shouldBe List("!x")
+    inside(cpg.method.name("foo").controlStructure.l) { case ifStruct :: Nil =>
+      ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
+      ifStruct.condition.code.l shouldBe List("!x")
 
-        inside(ifStruct.whenTrue.ast.isCall.name(Operators.assignment).l) {
-          case assignmentCall :: Nil =>
-            assignmentCall.code shouldBe "x = false"
-            val List(lhs, rhs) = assignmentCall.argument.l
-            lhs.code shouldBe "x"
-            rhs.code shouldBe "false"
-          case xs => fail(s"Expected assignment call in true branch, got ${xs.code.mkString}")
-        }
+      inside(ifStruct.whenTrue.ast.isCall.name(Operators.assignment).l) { case assignmentCall :: Nil =>
+        assignmentCall.code shouldBe "x = false"
+        val List(lhs, rhs) = assignmentCall.argument.l
+        lhs.code shouldBe "x"
+        rhs.code shouldBe "false"
+      }
 
-      case xs => fail(s"Expected one control structure, got ${xs.code.mkString(",")}")
     }
   }
 
@@ -75,21 +71,17 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    inside(cpg.method.name("foo").controlStructure.l) {
-      case ifStruct :: Nil =>
-        ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
-        ifStruct.condition.code.l shouldBe List("x")
+    inside(cpg.method.name("foo").controlStructure.l) { case ifStruct :: Nil =>
+      ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
+      ifStruct.condition.code.l shouldBe List("x")
 
-        inside(ifStruct.whenTrue.ast.isCall.name(Operators.assignment).l) {
-          case assignmentCall :: Nil =>
-            assignmentCall.code shouldBe "x = true"
-            val List(lhs, rhs) = assignmentCall.argument.l
-            lhs.code shouldBe "x"
-            rhs.code shouldBe "true"
-          case xs => fail(s"Expected assignment call in true branch, got ${xs.code.mkString}")
-        }
+      inside(ifStruct.whenTrue.ast.isCall.name(Operators.assignment).l) { case assignmentCall :: Nil =>
+        assignmentCall.code shouldBe "x = true"
+        val List(lhs, rhs) = assignmentCall.argument.l
+        lhs.code shouldBe "x"
+        rhs.code shouldBe "true"
+      }
 
-      case xs => fail(s"Expected one control structure, got ${xs.code.mkString(",")}")
     }
   }
 
@@ -181,28 +173,26 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
       |
       |""".stripMargin)
 
-    inside(cpg.assignment.l) {
-      case assign1 :: assign2 :: assign3 :: assign4 :: Nil =>
-        assign1.lineNumber shouldBe Some(4)
-        assign1.argument(1).code shouldBe "x"
-        assign1.argument(2).code shouldBe "1"
-        assign1.argument(2).lineNumber shouldBe Some(4)
+    inside(cpg.assignment.l) { case assign1 :: assign2 :: assign3 :: assign4 :: Nil =>
+      assign1.lineNumber shouldBe Some(4)
+      assign1.argument(1).code shouldBe "x"
+      assign1.argument(2).code shouldBe "1"
+      assign1.argument(2).lineNumber shouldBe Some(4)
 
-        assign2.lineNumber shouldBe Some(6)
-        assign2.argument(1).code shouldBe "x"
-        assign2.argument(2).code shouldBe "2"
-        assign2.argument(2).lineNumber shouldBe Some(6)
+      assign2.lineNumber shouldBe Some(6)
+      assign2.argument(1).code shouldBe "x"
+      assign2.argument(2).code shouldBe "2"
+      assign2.argument(2).lineNumber shouldBe Some(6)
 
-        assign3.lineNumber shouldBe Some(10)
-        assign3.argument(1).code shouldBe "x"
-        assign3.argument(2).code shouldBe "3"
-        assign3.argument(2).lineNumber shouldBe Some(10)
+      assign3.lineNumber shouldBe Some(10)
+      assign3.argument(1).code shouldBe "x"
+      assign3.argument(2).code shouldBe "3"
+      assign3.argument(2).lineNumber shouldBe Some(10)
 
-        assign4.lineNumber shouldBe Some(12)
-        assign4.argument(1).code shouldBe "x"
-        assign4.argument(2).code shouldBe "4"
-        assign4.argument(2).lineNumber shouldBe Some(12)
-      case xs => fail(s"Expected 4 assignments, instead got [${xs.code.mkString(",")}]")
+      assign4.lineNumber shouldBe Some(12)
+      assign4.argument(1).code shouldBe "x"
+      assign4.argument(2).code shouldBe "4"
+      assign4.argument(2).lineNumber shouldBe Some(12)
     }
 
   }
@@ -217,20 +207,18 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
       |""".stripMargin)
 
     val assigns = cpg.assignment.l
-    inside(cpg.assignment.l) {
-      case assign1 :: assignNil1 :: assignNil2 :: Nil =>
-        assign1.argument(1).code shouldBe "x"
-        assign1.argument(2).code shouldBe "1"
-        assign1.lineNumber shouldBe Some(4)
+    inside(cpg.assignment.l) { case assign1 :: assignNil1 :: assignNil2 :: Nil =>
+      assign1.argument(1).code shouldBe "x"
+      assign1.argument(2).code shouldBe "1"
+      assign1.lineNumber shouldBe Some(4)
 
-        assignNil1.argument(1).code shouldBe "x"
-        assignNil1.argument(2).code shouldBe "nil"
-        assignNil1.lineNumber shouldBe Some(3)
+      assignNil1.argument(1).code shouldBe "x"
+      assignNil1.argument(2).code shouldBe "nil"
+      assignNil1.lineNumber shouldBe Some(3)
 
-        assignNil2.argument(1).code shouldBe "x"
-        assignNil2.argument(2).code shouldBe "nil"
-        assignNil2.lineNumber shouldBe Some(2)
-      case xs => fail(s"Expected 3 assignments, instead got [${xs.code.mkString(",")}]")
+      assignNil2.argument(1).code shouldBe "x"
+      assignNil2.argument(2).code shouldBe "nil"
+      assignNil2.lineNumber shouldBe Some(2)
     }
   }
 
@@ -242,15 +230,11 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    inside(cpg.assignment.code("y = p").l) {
-      case assign :: Nil =>
-        inside(assign.argument.l) {
-          case (y: Identifier) :: (p: Identifier) :: Nil =>
-            y.name shouldBe "y"
-            p.name shouldBe "p"
-          case _ => fail(s"Expected two assigment identifiers arguments")
-        }
-      case _ => fail("Unable to find assignment `y = p`")
+    inside(cpg.assignment.code("y = p").l) { case assign :: Nil =>
+      inside(assign.argument.l) { case (y: Identifier) :: (p: Identifier) :: Nil =>
+        y.name shouldBe "y"
+        p.name shouldBe "p"
+      }
     }
   }
 
@@ -276,37 +260,27 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
                      |  end
                      |""".stripMargin)
 
-    inside(cpg.method.isLambda.l) {
-      case scheduleLambda :: _ :: _ :: Nil =>
-        inside(scheduleLambda.call.name(Operators.assignment).l) {
-          case _ :: id :: title :: start :: end :: _ :: Nil =>
-            id.code shouldBe "hash[:id] = s[:id]"
+    inside(cpg.method.isLambda.l) { case scheduleLambda :: _ :: _ :: Nil =>
+      inside(scheduleLambda.call.name(Operators.assignment).l) { case _ :: id :: title :: start :: end :: _ :: Nil =>
+        id.code shouldBe "hash[:id] = s[:id]"
 
-            inside(id.argument.l) {
-              case (lhs: Call) :: (rhs: Call) :: Nil =>
-                lhs.methodFullName shouldBe Operators.indexAccess
-                lhs.code shouldBe "hash[:id]"
+        inside(id.argument.l) { case (lhs: Call) :: (rhs: Call) :: Nil =>
+          lhs.methodFullName shouldBe Operators.indexAccess
+          lhs.code shouldBe "hash[:id]"
 
-                rhs.methodFullName shouldBe Operators.indexAccess
-                rhs.code shouldBe "s[:id]"
+          rhs.methodFullName shouldBe Operators.indexAccess
+          rhs.code shouldBe "s[:id]"
 
-                inside(lhs.argument.l) {
-                  case base :: (index: Literal) :: Nil =>
-                    index.typeFullName shouldBe RubyDefines.prefixAsCoreType(RubyDefines.Symbol)
-                  case xs => fail(s"Expected base and index, got [${xs.code.mkString(",")}]")
-                }
+          inside(lhs.argument.l) { case base :: (index: Literal) :: Nil =>
+            index.typeFullName shouldBe RubyDefines.prefixAsCoreType(RubyDefines.Symbol)
+          }
 
-                inside(rhs.argument.l) {
-                  case base :: (index: Literal) :: Nil =>
-                    index.typeFullName shouldBe RubyDefines.prefixAsCoreType(RubyDefines.Symbol)
-                  case xs => fail(s"Expected base and index, got [${xs.code.mkString(",")}]")
-                }
+          inside(rhs.argument.l) { case base :: (index: Literal) :: Nil =>
+            index.typeFullName shouldBe RubyDefines.prefixAsCoreType(RubyDefines.Symbol)
+          }
 
-              case xs => fail(s"Expected lhs and rhs, got ${xs.code.mkString(";")}]")
-            }
-          case xs => fail(s"Expected six assignments, got [${xs.code.mkString(";")}]")
         }
-      case xs => fail(s"Expected three lambdas, got ${xs.size} lambdas instead")
+      }
     }
   }
 
@@ -316,21 +290,17 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
         |  hash[:id] ||= s[:id]
         |end
         |""".stripMargin)
-    inside(cpg.method.name("foo").controlStructure.l) {
-      case ifStruct :: Nil =>
-        ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
-        ifStruct.condition.code.l shouldBe List("!hash[:id]")
+    inside(cpg.method.name("foo").controlStructure.l) { case ifStruct :: Nil =>
+      ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
+      ifStruct.condition.code.l shouldBe List("!hash[:id]")
 
-        inside(ifStruct.whenTrue.ast.isCall.name(Operators.assignment).l) {
-          case assignmentCall :: Nil =>
-            assignmentCall.code shouldBe "hash[:id] = s[:id]"
-            val List(lhs, rhs) = assignmentCall.argument.l
-            lhs.code shouldBe "hash[:id]"
-            rhs.code shouldBe "s[:id]"
-          case xs => fail(s"Expected assignment call in true branch, got ${xs.code.mkString}")
-        }
+      inside(ifStruct.whenTrue.ast.isCall.name(Operators.assignment).l) { case assignmentCall :: Nil =>
+        assignmentCall.code shouldBe "hash[:id] = s[:id]"
+        val List(lhs, rhs) = assignmentCall.argument.l
+        lhs.code shouldBe "hash[:id]"
+        rhs.code shouldBe "s[:id]"
+      }
 
-      case xs => fail(s"Expected one control structure, got ${xs.code.mkString(",")}")
     }
   }
 
@@ -339,18 +309,14 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
         |hash[:id] += s[:id]
         |""".stripMargin)
 
-    inside(cpg.call.name(Operators.assignmentPlus).l) {
-      case assignmentCall :: Nil =>
-        assignmentCall.code shouldBe "hash[:id] += s[:id]"
-        assignmentCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    inside(cpg.call.name(Operators.assignmentPlus).l) { case assignmentCall :: Nil =>
+      assignmentCall.code shouldBe "hash[:id] += s[:id]"
+      assignmentCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-        inside(assignmentCall.argument.l) {
-          case lhs :: rhs :: Nil =>
-            lhs.code shouldBe "hash[:id]"
-            rhs.code shouldBe "s[:id]"
-          case xs => fail(s"Expected lhs and rhs arguments, got ${xs.code.mkString(",")}")
-        }
-      case xs => fail(s"Expected on assignmentOr call, got ${xs.code.mkString(",")}")
+      inside(assignmentCall.argument.l) { case lhs :: rhs :: Nil =>
+        lhs.code shouldBe "hash[:id]"
+        rhs.code shouldBe "s[:id]"
+      }
     }
   }
 
@@ -360,21 +326,17 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
                      |  hash[:id] &&= s[:id]
                      |end
                      |""".stripMargin)
-    inside(cpg.method.name("foo").controlStructure.l) {
-      case ifStruct :: Nil =>
-        ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
-        ifStruct.condition.code.l shouldBe List("hash[:id]")
+    inside(cpg.method.name("foo").controlStructure.l) { case ifStruct :: Nil =>
+      ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
+      ifStruct.condition.code.l shouldBe List("hash[:id]")
 
-        inside(ifStruct.whenTrue.ast.isCall.name(Operators.assignment).l) {
-          case assignmentCall :: Nil =>
-            assignmentCall.code shouldBe "hash[:id] = s[:id]"
-            val List(lhs, rhs) = assignmentCall.argument.l
-            lhs.code shouldBe "hash[:id]"
-            rhs.code shouldBe "s[:id]"
-          case xs => fail(s"Expected assignment call in true branch, got ${xs.code.mkString}")
-        }
+      inside(ifStruct.whenTrue.ast.isCall.name(Operators.assignment).l) { case assignmentCall :: Nil =>
+        assignmentCall.code shouldBe "hash[:id] = s[:id]"
+        val List(lhs, rhs) = assignmentCall.argument.l
+        lhs.code shouldBe "hash[:id]"
+        rhs.code shouldBe "s[:id]"
+      }
 
-      case xs => fail(s"Expected one control structure, got ${xs.code.mkString(",")}")
     }
   }
 
@@ -383,18 +345,14 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
         |hash[:id] /= s[:id]
         |""".stripMargin)
 
-    inside(cpg.call.name(Operators.assignmentDivision).l) {
-      case assignmentCall :: Nil =>
-        assignmentCall.code shouldBe "hash[:id] /= s[:id]"
-        assignmentCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    inside(cpg.call.name(Operators.assignmentDivision).l) { case assignmentCall :: Nil =>
+      assignmentCall.code shouldBe "hash[:id] /= s[:id]"
+      assignmentCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-        inside(assignmentCall.argument.l) {
-          case lhs :: rhs :: Nil =>
-            lhs.code shouldBe "hash[:id]"
-            rhs.code shouldBe "s[:id]"
-          case xs => fail(s"Expected lhs and rhs arguments, got ${xs.code.mkString(",")}")
-        }
-      case xs => fail(s"Expected on assignmentOr call, got ${xs.code.mkString(",")}")
+      inside(assignmentCall.argument.l) { case lhs :: rhs :: Nil =>
+        lhs.code shouldBe "hash[:id]"
+        rhs.code shouldBe "s[:id]"
+      }
     }
   }
 
@@ -405,24 +363,20 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    inside(cpg.method.name("foo").controlStructure.l) {
-      case ifStruct :: Nil =>
-        ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
-        ifStruct.condition.code.l shouldBe List("!A.B")
+    inside(cpg.method.name("foo").controlStructure.l) { case ifStruct :: Nil =>
+      ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
+      ifStruct.condition.code.l shouldBe List("!A.B")
 
-        inside(ifStruct.whenTrue.ast.isCall.name(Operators.assignment).l) {
-          case assignmentCall :: Nil =>
-            assignmentCall.code shouldBe "A.B = c 1"
-            val List(lhs, rhs: Call) = assignmentCall.argument.l: @unchecked
-            lhs.code shouldBe "A.B"
+      inside(ifStruct.whenTrue.ast.isCall.name(Operators.assignment).l) { case assignmentCall :: Nil =>
+        assignmentCall.code shouldBe "A.B = c 1"
+        val List(lhs, rhs: Call) = assignmentCall.argument.l: @unchecked
+        lhs.code shouldBe "A.B"
 
-            rhs.code shouldBe "c 1"
-            val List(_, litArg) = rhs.argument.l
-            litArg.code shouldBe "1"
-          case xs => fail(s"Expected assignment call in true branch, got ${xs.code.mkString}")
-        }
+        rhs.code shouldBe "c 1"
+        val List(_, litArg) = rhs.argument.l
+        litArg.code shouldBe "1"
+      }
 
-      case xs => fail(s"Expected one if statement, got ${xs.code.mkString(",")}")
     }
   }
 
@@ -433,25 +387,21 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
                      |end
                      |""".stripMargin)
 
-    inside(cpg.method.name("foo").controlStructure.l) {
-      case ifStruct :: Nil =>
-        ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
-        ifStruct.condition.code.l shouldBe List("A.B")
+    inside(cpg.method.name("foo").controlStructure.l) { case ifStruct :: Nil =>
+      ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
+      ifStruct.condition.code.l shouldBe List("A.B")
 
-        inside(ifStruct.whenTrue.ast.isCall.name(Operators.assignment).l) {
-          case assignmentCall :: Nil =>
-            assignmentCall.code shouldBe "A.B = c 1"
-            val List(lhs: Call, rhs: Call) = assignmentCall.argument.l: @unchecked
-            lhs.code shouldBe "A.B"
-            lhs.methodFullName shouldBe Operators.fieldAccess
+      inside(ifStruct.whenTrue.ast.isCall.name(Operators.assignment).l) { case assignmentCall :: Nil =>
+        assignmentCall.code shouldBe "A.B = c 1"
+        val List(lhs: Call, rhs: Call) = assignmentCall.argument.l: @unchecked
+        lhs.code shouldBe "A.B"
+        lhs.methodFullName shouldBe Operators.fieldAccess
 
-            rhs.code shouldBe "c 1"
-            val List(_, litArg) = rhs.argument.l
-            litArg.code shouldBe "1"
-          case xs => fail(s"Expected assignment call in true branch, got ${xs.code.mkString}")
-        }
+        rhs.code shouldBe "c 1"
+        val List(_, litArg) = rhs.argument.l
+        litArg.code shouldBe "1"
+      }
 
-      case xs => fail(s"Expected one if statement, got ${xs.code.mkString(",")}")
     }
   }
 
@@ -460,15 +410,13 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
         |A::b += 1
         |""".stripMargin)
 
-    inside(cpg.call.name(Operators.assignmentPlus).l) {
-      case assignmentCall :: Nil =>
-        val List(lhs: Call, rhs) = assignmentCall.argument.l: @unchecked
+    inside(cpg.call.name(Operators.assignmentPlus).l) { case assignmentCall :: Nil =>
+      val List(lhs: Call, rhs) = assignmentCall.argument.l: @unchecked
 
-        lhs.code shouldBe "A::b"
-        lhs.methodFullName shouldBe Operators.fieldAccess
+      lhs.code shouldBe "A::b"
+      lhs.methodFullName shouldBe Operators.fieldAccess
 
-        rhs.code shouldBe "1"
-      case xs => fail(s"Expected one call for assignment, got ${xs.code.mkString(",")}")
+      rhs.code shouldBe "1"
     }
   }
 
@@ -477,16 +425,14 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
         |A::b *= 1
         |""".stripMargin)
 
-    inside(cpg.call.name(Operators.assignmentMultiplication).l) {
-      case assignmentCall :: Nil =>
-        assignmentCall.code shouldBe "A::b *= 1"
-        val List(lhs: Call, rhs) = assignmentCall.argument.l: @unchecked
+    inside(cpg.call.name(Operators.assignmentMultiplication).l) { case assignmentCall :: Nil =>
+      assignmentCall.code shouldBe "A::b *= 1"
+      val List(lhs: Call, rhs) = assignmentCall.argument.l: @unchecked
 
-        lhs.code shouldBe "A::b"
-        lhs.methodFullName shouldBe Operators.fieldAccess
+      lhs.code shouldBe "A::b"
+      lhs.methodFullName shouldBe Operators.fieldAccess
 
-        rhs.code shouldBe "1"
-      case xs => fail(s"Expected one call for assignment, got ${xs.code.mkString(",")}")
+      rhs.code shouldBe "1"
     }
   }
 
@@ -497,12 +443,10 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    inside(cpg.call.name("render").argument.l) {
-      case _ :: (symbolArg: Literal) :: (blockArg: Identifier) :: Nil =>
-        symbolArg.code shouldBe ":some_symbol"
-        blockArg.code shouldBe "block"
+    inside(cpg.call.name("render").argument.l) { case _ :: (symbolArg: Literal) :: (blockArg: Identifier) :: Nil =>
+      symbolArg.code shouldBe ":some_symbol"
+      blockArg.code shouldBe "block"
 
-      case xs => fail(s"Expected two args, found [${xs.code.mkString(",")}]")
     }
   }
 
@@ -543,17 +487,15 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
         |$alfred = "123"
         |""".stripMargin)
 
-    inside(cpg.call.name(Operators.assignment).l) {
-      case alfredAssign :: Nil =>
-        alfredAssign.code shouldBe "$alfred = \"123\""
+    inside(cpg.call.name(Operators.assignment).l) { case alfredAssign :: Nil =>
+      alfredAssign.code shouldBe "$alfred = \"123\""
 
-        val List(lhs: Call, rhs: Literal) = alfredAssign.argument.l: @unchecked
+      val List(lhs: Call, rhs: Literal) = alfredAssign.argument.l: @unchecked
 
-        lhs.methodFullName shouldBe Operators.fieldAccess
-        lhs.code shouldBe "self.$alfred"
+      lhs.methodFullName shouldBe Operators.fieldAccess
+      lhs.code shouldBe "self.$alfred"
 
-        rhs.code shouldBe "\"123\""
-      case xs => fail(s"Expected one assignment call, got [${xs.code.mkString(",")}]")
+      rhs.code shouldBe "\"123\""
     }
   }
 }

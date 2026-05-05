@@ -11,18 +11,13 @@ class CallTests extends CSharpCode2CpgFixture {
     val cpg = code(basicBoilerplate())
 
     "create a call node with arguments" in {
-      val writeLine = cpg.call.nameExact("WriteLine").headOption match {
-        case Some(callNode) => callNode
-        case None           => fail("Node not found!")
-      }
+      inside(cpg.call.nameExact("WriteLine").headOption) { case Some(writeLine) =>
+        writeLine.name shouldBe "WriteLine"
+        writeLine.methodFullName shouldBe "System.Console.WriteLine:System.Void(System.String)"
+        writeLine.typeFullName shouldBe "System.Void"
+        writeLine.code shouldBe "Console.WriteLine(\"Hello, world!\")"
 
-      writeLine.name shouldBe "WriteLine"
-      writeLine.methodFullName shouldBe "System.Console.WriteLine:System.Void(System.String)"
-      writeLine.typeFullName shouldBe "System.Void"
-      writeLine.code shouldBe "Console.WriteLine(\"Hello, world!\")"
-
-      inside(writeLine.argument.l) {
-        case (base: Identifier) :: (strArg: Literal) :: Nil =>
+        inside(writeLine.argument.l) { case (base: Identifier) :: (strArg: Literal) :: Nil =>
           base.typeFullName shouldBe "System.Console"
           base.name shouldBe "Console"
           base.code shouldBe "Console"
@@ -31,7 +26,7 @@ class CallTests extends CSharpCode2CpgFixture {
           strArg.typeFullName shouldBe "System.String"
           strArg.code shouldBe "\"Hello, world!\""
           strArg.argumentIndex shouldBe 1
-        case _ => fail("Arguments malformed or not found!")
+        }
       }
     }
 
@@ -55,13 +50,11 @@ class CallTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "create a call node for mBaz" in {
-      inside(cpg.call.nameExact("mBaz").l) {
-        case mBazCall :: Nil =>
-          mBazCall.code shouldBe "new Baz().mBaz(\"hello\")"
-          mBazCall.methodFullName shouldBe "Foo.Baz.mBaz:System.String(System.String)"
-          mBazCall.typeFullName shouldBe "System.String"
+      inside(cpg.call.nameExact("mBaz").l) { case mBazCall :: Nil =>
+        mBazCall.code shouldBe "new Baz().mBaz(\"hello\")"
+        mBazCall.methodFullName shouldBe "Foo.Baz.mBaz:System.String(System.String)"
+        mBazCall.typeFullName shouldBe "System.String"
 
-        case _ => fail("No call node for `mBaz` found")
       }
     }
   }
@@ -83,12 +76,10 @@ class CallTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "create a call node for mBaz" in {
-      inside(cpg.call.nameExact("mBaz").l) {
-        case mBazCall :: Nil =>
-          mBazCall.code shouldBe "this.mBaz(\"hello\")"
-          mBazCall.methodFullName shouldBe "Foo.Bar.mBaz:System.String(System.String)"
-          mBazCall.typeFullName shouldBe "System.String"
-        case _ => fail("No call node for `mBaz` found")
+      inside(cpg.call.nameExact("mBaz").l) { case mBazCall :: Nil =>
+        mBazCall.code shouldBe "this.mBaz(\"hello\")"
+        mBazCall.methodFullName shouldBe "Foo.Bar.mBaz:System.String(System.String)"
+        mBazCall.typeFullName shouldBe "System.String"
       }
     }
 
@@ -115,10 +106,8 @@ class CallTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "resolve type for Bar in a hierarchical namespace" in {
-      inside(cpg.identifier.nameExact("c").l) {
-        case c :: Nil =>
-          c.typeFullName shouldBe "HelloWorld.Bar"
-        case _ => fail("No identifier named `c` found")
+      inside(cpg.identifier.nameExact("c").l) { case c :: Nil =>
+        c.typeFullName shouldBe "HelloWorld.Bar"
       }
     }
 
@@ -145,12 +134,10 @@ class CallTests extends CSharpCode2CpgFixture {
 
     cpg.typeDecl.nameExact("Baz").inheritsFromTypeFullName.l shouldBe List("Foo.Bar.Bar.SomeClass")
 
-    inside(cpg.call.nameExact("SomeOtherMethod").l) {
-      case callNode :: Nil =>
-        callNode.code shouldBe "SomeOtherMethod()"
-        callNode.typeFullName shouldBe "System.Int32"
-        callNode.methodFullName shouldBe "Foo.Bar.Bar.SomeClass.SomeOtherMethod:System.Int32()"
-      case _ => fail("No call for `SomeOtherMethod` found")
+    inside(cpg.call.nameExact("SomeOtherMethod").l) { case callNode :: Nil =>
+      callNode.code shouldBe "SomeOtherMethod()"
+      callNode.typeFullName shouldBe "System.Int32"
+      callNode.methodFullName shouldBe "Foo.Bar.Bar.SomeClass.SomeOtherMethod:System.Int32()"
     }
   }
 
@@ -168,9 +155,8 @@ class CallTests extends CSharpCode2CpgFixture {
         |}
         |""".stripMargin)
     "resolve the ToLower call even without `using System`" ignore {
-      inside(cpg.call.name("ToLower").methodFullName.l) {
-        case x :: Nil => x shouldBe "System.String.ToLower:System.String()"
-        case _        => fail("Unexpected call node structure")
+      inside(cpg.call.name("ToLower").methodFullName.l) { case x :: Nil =>
+        x shouldBe "System.String.ToLower:System.String()"
       }
     }
   }
@@ -190,9 +176,8 @@ class CallTests extends CSharpCode2CpgFixture {
         |}
         |""".stripMargin)
     "resolve the ToLower call even without `using System`" ignore {
-      inside(cpg.call.name("ToLower").methodFullName.l) {
-        case x :: Nil => x shouldBe "System.String.ToLower:System.String()"
-        case _        => fail("Unexpected call node structure")
+      inside(cpg.call.name("ToLower").methodFullName.l) { case x :: Nil =>
+        x shouldBe "System.String.ToLower:System.String()"
       }
     }
   }

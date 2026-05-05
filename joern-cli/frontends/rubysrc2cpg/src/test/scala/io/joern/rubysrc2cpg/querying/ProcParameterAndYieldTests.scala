@@ -101,20 +101,16 @@ class ProcParameterAndYieldTests extends RubyCode2CpgFixture with Inspectors {
         |end
         |""".stripMargin)
 
-    inside(cpg.method.name("foo").call.nameExact("call").l) {
-      case yieldCall :: Nil =>
-        inside(yieldCall.argument.l) {
-          case (base: Identifier) :: (oneLiteral: Literal) :: (twoLiteral: Literal) :: Nil =>
-            base.name shouldBe "<proc-param-0>"
-            base.code shouldBe "<proc-param-0>"
+    inside(cpg.method.name("foo").call.nameExact("call").l) { case yieldCall :: Nil =>
+      inside(yieldCall.argument.l) { case (base: Identifier) :: (oneLiteral: Literal) :: (twoLiteral: Literal) :: Nil =>
+        base.name shouldBe "<proc-param-0>"
+        base.code shouldBe "<proc-param-0>"
 
-            oneLiteral.code shouldBe "1"
-            oneLiteral.argumentIndex shouldBe 1
-            twoLiteral.code shouldBe "2"
-            twoLiteral.argumentName shouldBe Some("z")
-          case xs => fail(s"Expected two arguments for yieldCall, got ${xs.code.mkString(",")}")
-        }
-      case xs => fail(s"Expected one call for yield, got ${xs.code.mkString(",")}")
+        oneLiteral.code shouldBe "1"
+        oneLiteral.argumentIndex shouldBe 1
+        twoLiteral.code shouldBe "2"
+        twoLiteral.argumentName shouldBe Some("z")
+      }
     }
   }
 
@@ -129,14 +125,12 @@ class ProcParameterAndYieldTests extends RubyCode2CpgFixture with Inspectors {
 
     val initMethod = cpg.method.name("initialize").head
 
-    inside(initMethod.parameter.l) {
-      case _ :: procParam :: Nil =>
-        // This seems a bit strange, but the `<body>` method is being processed first which generates a procParam
-        // for the `MethodScope` which is why the procParam for this ConstructorScope is [1] instead of [0]
-        procParam.name shouldBe "<proc-param-1>"
-        procParam.code shouldBe "&<proc-param-1>"
-        procParam.index shouldBe 1
-      case xs => fail(s"Expected two arguments, got [${xs.code.mkString(",")}]")
+    inside(initMethod.parameter.l) { case _ :: procParam :: Nil =>
+      // This seems a bit strange, but the `<body>` method is being processed first which generates a procParam
+      // for the `MethodScope` which is why the procParam for this ConstructorScope is [1] instead of [0]
+      procParam.name shouldBe "<proc-param-1>"
+      procParam.code shouldBe "&<proc-param-1>"
+      procParam.index shouldBe 1
     }
 
     inside(initMethod.call.nameExact("call").argument.l) { case selfBase :: selfParam :: Nil =>

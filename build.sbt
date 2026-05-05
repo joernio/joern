@@ -1,8 +1,8 @@
 name                     := "joern"
 ThisBuild / organization := "io.joern"
-ThisBuild / scalaVersion := "3.6.4"
+ThisBuild / scalaVersion := "3.7.4"
 
-val cpgVersion = "1.7.61"
+val cpgVersion = "1.7.65"
 
 lazy val joerncli          = Projects.joerncli
 lazy val querydb           = Projects.querydb
@@ -24,6 +24,7 @@ lazy val gosrc2cpg         = Projects.gosrc2cpg
 lazy val swiftsrc2cpg      = Projects.swiftsrc2cpg
 lazy val csharpsrc2cpg     = Projects.csharpsrc2cpg
 lazy val abap2cpg          = Projects.abap2cpg
+lazy val rust2cpg          = Projects.rust2cpg
 lazy val linterRules       = Projects.linterRules
 
 // aggregate project which doesn't include the helper project `linterRules` - we don't want to include it in any standard task
@@ -50,6 +51,7 @@ lazy val root = project
     swiftsrc2cpg,
     csharpsrc2cpg,
     abap2cpg
+    rust2cpg
   )
   .dependsOn(linterRules % ScalafixConfig)
 
@@ -80,7 +82,8 @@ ThisBuild / scalacOptions ++= Seq(
   "-feature",
   "-Wshadow:type-parameter-shadow",
   "-no-indent",
-  "-old-syntax"
+  "-old-syntax",
+  "-Wconf:msg=Implicit parameters should be provided with a `using` clause:s",
 )
 
 lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")

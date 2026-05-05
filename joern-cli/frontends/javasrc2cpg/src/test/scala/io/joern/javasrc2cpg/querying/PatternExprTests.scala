@@ -1475,16 +1475,18 @@ class PatternExprTests extends JavaSrcCode2CpgFixture {
       "lower the init, update, and body correctly" in {
         inside(cpg.method.name("foo").body.astChildren.l) { case List(_: Local, forStmt: ControlStructure) =>
           forStmt.controlStructureType shouldBe ControlStructureTypes.FOR
-          inside(forStmt.astChildren.l) { case List(iLocal: Local, iAssign: Call, _: Call, update: Call, body: Block) =>
-            iLocal.name shouldBe "i"
+          inside(forStmt.astChildren.l) { case List(block: Block, _: Call, update: Call, body: Block) =>
+            inside(block.astChildren.l) { case List(iLocal: Local, iAssign: Call) =>
+              iLocal.name shouldBe "i"
 
-            iAssign.methodFullName shouldBe Operators.assignment
-            iAssign.code shouldBe "int i = 0"
+              iAssign.methodFullName shouldBe Operators.assignment
+              iAssign.code shouldBe "int i = 0"
+            }
 
             update.methodFullName shouldBe Operators.assignmentPlus
             inside(update.argument.l) { case List(iIdentifier: Identifier, lengthCall: Call) =>
               iIdentifier.name shouldBe "i"
-              iIdentifier.refsTo.l shouldBe List(iLocal)
+              iIdentifier.refsTo.l shouldBe block.astChildren.isLocal.l
 
               lengthCall.name shouldBe "length"
               lengthCall.methodFullName shouldBe "java.lang.String.length:int()"

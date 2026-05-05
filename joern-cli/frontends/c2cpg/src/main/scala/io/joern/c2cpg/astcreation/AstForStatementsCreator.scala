@@ -4,14 +4,7 @@ import io.joern.c2cpg.parser.CdtParser
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.shiftleft.codepropertygraph.generated.*
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  AstNodeNew,
-  NewBlock,
-  NewCall,
-  NewIdentifier,
-  NewLiteral,
-  NewLocal
-}
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.core.dom.ast.gnu.IGNUASTGotoStatement
@@ -23,7 +16,11 @@ import java.nio.file.Paths
 
 trait AstForStatementsCreator { this: AstCreator =>
 
-  protected def astForBlockStatement(blockStmt: IASTCompoundStatement, blockNode: NewBlock): Ast = {
+  protected def astForBlockStatement(
+    blockStmt: IASTCompoundStatement,
+    blockNode: NewBlock,
+    additionalChildrenAsts: Seq[Ast] = Seq.empty
+  ): Ast = {
     val codeString  = code(blockStmt)
     val blockLine   = line(blockStmt)
     val blockColumn = column(blockStmt)
@@ -33,7 +30,7 @@ trait AstForStatementsCreator { this: AstCreator =>
       .columnNumber(blockColumn)
       .typeFullName(registerType(Defines.Void))
     scope.pushNewBlockScope(node)
-    val childAsts = blockStmt.getStatements.flatMap(astsForStatement).toList
+    val childAsts = blockStmt.getStatements.flatMap(astsForStatement).toList ++ additionalChildrenAsts
     scope.popScope()
     blockAst(node, childAsts)
   }
@@ -310,7 +307,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val asts = if (isFromMacroExpansion) {
       new CdtParser(config, headerFileFinder, None).parse(code, file, accumulator) match {
         case Some(translationUnit: IASTTranslationUnit) =>
-          translationUnit.getDeclarations.toIndexedSeq.flatMap(astsForDeclaration)
+          translationUnit.getDeclarations.toIndexedSeq.flatMap(d => astsForDeclaration(d))
         case None =>
           Seq.empty
       }
@@ -472,7 +469,7 @@ trait AstForStatementsCreator { this: AstCreator =>
         s"${Defines.Iterator}.next:${Defines.Any}()",
         DispatchTypes.DYNAMIC_DISPATCH,
         Some(s"${Defines.Any}()"),
-        Some(registerType(Defines.Any))
+        Some(Defines.Any)
       )
 
     val nextReceiverNode = identifierNode(forStmt, iteratorName, iteratorName, Defines.Iterator)

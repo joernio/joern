@@ -4,11 +4,11 @@ import io.joern.c2cpg.passes.FunctionDeclNodePass
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.datastructures.VariableScopeManager
-import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.*
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.eclipse.cdt.core.dom.ast.*
-import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression.CaptureDefault
 import org.eclipse.cdt.core.dom.ast.cpp.*
+import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression.CaptureDefault
 import org.eclipse.cdt.core.dom.ast.gnu.c.ICASTKnRFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.c.{CASTFunctionDeclarator, CASTParameterDeclaration, CVariable}
 import org.eclipse.cdt.internal.core.dom.parser.cpp.*
@@ -149,11 +149,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
       )
     }
 
-    memberInitializations(funcDef).foreach { callAst =>
-      Ast.storeInDiffGraph(callAst, diffGraph)
-      callAst.root.foreach(r => diffGraph.addEdge(methodBlockNode, r, EdgeTypes.AST))
-    }
-    val methodBodyAst = astForMethodBody(Option(funcDef.getBody), methodBlockNode)
+    val methodBodyAst = astForMethodBody(Option(funcDef.getBody), methodBlockNode, memberInitializations(funcDef))
 
     scope.popScope()
     methodAstParentStack.pop()
@@ -178,8 +174,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
         }
         Ast(ref)
       case None =>
-        val typeDeclAst = createFunctionTypeAndTypeDecl(methodNode_)
-        astForMethod.merge(typeDeclAst)
+        val bindingAst = createFunctionBinding(methodNode_)
+        astForMethod.merge(bindingAst)
     }
   }
 
@@ -195,7 +191,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     }
   }
 
-  private def createFunctionTypeAndTypeDecl(method: NewMethod): Ast = {
+  protected def createFunctionBinding(method: NewMethod): Ast = {
     val parentNode: NewTypeDecl = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.get
     method.astParentFullName = parentNode.fullName
     method.astParentType = parentNode.label
@@ -319,12 +315,10 @@ trait AstForFunctionsCreator { this: AstCreator =>
     }
   }
 
-  private def memberInitializations(func: IASTNode): Seq[Ast] = {
+  private def memberInitializations(func: IASTNode): Seq[ICPPASTConstructorChainInitializer] = {
     func match {
-      case f: ICPPASTFunctionDefinition =>
-        f.getMemberInitializers.toIndexedSeq.map(astForICPPASTConstructorChainInitializer)
-      case _ =>
-        Seq.empty
+      case f: ICPPASTFunctionDefinition => f.getMemberInitializers.toIndexedSeq
+      case _                            => Seq.empty
     }
   }
 
@@ -482,19 +476,25 @@ trait AstForFunctionsCreator { this: AstCreator =>
     parameterNode
   }
 
-  private def astForMethodBody(body: Option[IASTStatement], blockNode: NewBlock): Ast = body match {
+  private def astForMethodBody(
+    body: Option[IASTStatement],
+    blockNode: NewBlock,
+    chainInits: Seq[ICPPASTConstructorChainInitializer]
+  ): Ast = body match {
     case Some(b: IASTCompoundStatement) =>
       methodAstParentStack.push(blockNode)
-      val ast = astForBlockStatement(b, blockNode)
+      val chainInitAsts = chainInits.map(astForICPPASTConstructorChainInitializer)
+      val ast           = astForBlockStatement(b, blockNode, chainInitAsts)
       methodAstParentStack.pop()
       ast
     case Some(b) =>
       scope.pushNewBlockScope(blockNode)
       methodAstParentStack.push(blockNode)
-      val childAst = astForNode(b)
+      val chainInitAsts = chainInits.map(astForICPPASTConstructorChainInitializer)
+      val childAst      = astForNode(b)
       methodAstParentStack.pop()
       scope.popScope()
-      blockAst(blockNode).withChild(childAst)
+      blockAst(blockNode).withChild(childAst).withChildren(chainInitAsts)
     case None =>
       blockAst(blockNode)
   }
@@ -555,7 +555,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     }
 
     val parameterAsts = (parameterNodes ++ variadicParams).map(Ast(_))
-    val lambdaBodyAst = astForMethodBody(Option(lambdaExpression.getBody), lambdaMethodBlockNode)
+    val lambdaBodyAst = astForMethodBody(Option(lambdaExpression.getBody), lambdaMethodBlockNode, Seq.empty)
     setEvaluationStrategyForCaptures(lambdaExpression, lambdaBodyAst)
 
     scope.popScope()

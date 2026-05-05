@@ -40,7 +40,7 @@ abstract class FetchDependencies extends DefaultTask {
         .filter(variant -> variant.getDisplayName() == configurationName)
         .findFirst()
 
-    if (maybeRootVariant.isPresent()) {
+    if (maybeRootVariant.isPresent() && maybeRootVariant.get() != null) {
       def rootVariant = maybeRootVariant.get()
       seen.add(rootVariant)
 
@@ -71,7 +71,9 @@ abstract class FetchDependencies extends DefaultTask {
           if (!dependency.constraint) {
             def toVariant = resolved.resolvedVariant
 
-            if (seen.add(toVariant)) {
+            if (toVariant == null) {
+              System.err.println("Found null toVariant for $dependency")
+            } else if (seen.add(toVariant)) {
               stack.addFirst(new Tuple2(toVariant, resolved.selected))
             }
           }

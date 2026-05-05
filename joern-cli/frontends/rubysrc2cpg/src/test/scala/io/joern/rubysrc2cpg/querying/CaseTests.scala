@@ -200,24 +200,19 @@ class CaseTests extends RubyCode2CpgFixture {
 
     inside(ifStmts.whenTrue.isBlock.astChildren.isCall.name(Operators.assignment).l) {
       case resultMatchAssignment :: notResultMatchAssignment :: Nil =>
-        inside(resultMatchAssignment.argument.l) {
-          case (lhs: Identifier) :: (rhs: Call) :: Nil =>
-            lhs.name shouldBe "result"
+        inside(resultMatchAssignment.argument.l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.name shouldBe "result"
 
-            rhs.methodFullName shouldBe Operators.indexAccess
-            rhs.code shouldBe s"<tmp-0>[1]"
-          case xs => fail(s"Expected lhs and rhs, got [${xs.code.mkString(",")}]")
+          rhs.methodFullName shouldBe Operators.indexAccess
+          rhs.code shouldBe s"<tmp-0>[1]"
         }
 
-        inside(notResultMatchAssignment.argument.l) {
-          case (lhs: Identifier) :: (rhs: Call) :: Nil =>
-            lhs.name shouldBe "notResult"
+        inside(notResultMatchAssignment.argument.l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+          lhs.name shouldBe "notResult"
 
-            rhs.methodFullName shouldBe Operators.indexAccess
-            rhs.code shouldBe s"<tmp-0>[1]"
-          case xs => fail(s"Expected lhs and rhs, got [${xs.code.mkString(",")}]")
+          rhs.methodFullName shouldBe Operators.indexAccess
+          rhs.code shouldBe s"<tmp-0>[1]"
         }
-      case _ => fail(s"Expected two true branches")
     }
   }
 }

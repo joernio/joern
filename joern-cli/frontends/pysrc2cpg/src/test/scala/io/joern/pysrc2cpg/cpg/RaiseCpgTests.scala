@@ -37,6 +37,10 @@ class RaiseCpgTests extends PySrc2CpgFixture with Matchers {
     "test raise node arguments" in {
       cpg.call
         .methodFullName("<operator>.raise")
+        .argumentOut
+        .size shouldBe 2
+      cpg.call
+        .methodFullName("<operator>.raise")
         .argument
         .argumentIndex(1)
         .isIdentifier

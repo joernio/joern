@@ -1,9 +1,8 @@
 package io.joern.c2cpg
 
 import io.joern.c2cpg.Frontend.*
-import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import io.joern.x2cpg.utils.server.FrontendHTTPServer
-import io.joern.x2cpg.SourceFiles
+import io.joern.x2cpg.{SourceFiles, X2CpgConfig, X2CpgMain}
 import org.slf4j.LoggerFactory
 import scopt.OParser
 
@@ -69,7 +68,7 @@ private object Frontend {
 
   val cmdLineParser: OParser[Unit, Config] = {
     val builder = OParser.builder[Config]
-    import builder._
+    import builder.*
     OParser.sequence(
       programName(classOf[C2Cpg].getSimpleName),
       opt[Unit]("include-comments")

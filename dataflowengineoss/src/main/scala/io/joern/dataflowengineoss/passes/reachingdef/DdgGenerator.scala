@@ -30,8 +30,8 @@ class DdgGenerator(semantics: Semantics) {
   def addReachingDefEdges(
     dstGraph: DiffGraphBuilder,
     method: Method,
-    problem: DataFlowProblem[StoredNode, mutable.BitSet],
-    solution: Solution[StoredNode, mutable.BitSet]
+    problem: DataFlowProblem[CfgNode, mutable.BitSet],
+    solution: Solution[CfgNode, mutable.BitSet]
   ): Unit = {
     implicit val implicitDst: DiffGraphBuilder = dstGraph
 
@@ -54,7 +54,7 @@ class DdgGenerator(semantics: Semantics) {
     }
 
     // This handles `foo(new Bar()) or return new Bar()`
-    def addEdgeForBlock(block: Block, towards: StoredNode): Unit = {
+    def addEdgeForBlock(block: Block, towards: CfgNode): Unit = {
       block.astChildren.lastOption match {
         case None => // Do nothing
         case Some(node: Identifier) =>
@@ -213,7 +213,7 @@ class DdgGenerator(semantics: Semantics) {
     addEdgesFromLoneIdentifiersToExit(method)
   }
 
-  private def addEdge(fromNode: StoredNode, toNode: StoredNode, variable: String = "")(implicit
+  private def addEdge(fromNode: CfgNode, toNode: CfgNode, variable: String = "")(implicit
     dstGraph: DiffGraphBuilder
   ): Unit = {
     if (fromNode.isInstanceOf[Unknown] || toNode.isInstanceOf[Unknown])
@@ -231,7 +231,7 @@ class DdgGenerator(semantics: Semantics) {
     * (c) have a special meaning in the DDG. This function indicates whether the given node is just a regular DDG node
     * instead.
     */
-  private def isDdgNode(x: StoredNode): Boolean = {
+  private def isDdgNode(x: CfgNode): Boolean = {
     x match {
       case _: Method           => false
       case _: ControlStructure => false
@@ -242,11 +242,10 @@ class DdgGenerator(semantics: Semantics) {
     }
   }
 
-  private def nodeToEdgeLabel(node: StoredNode): String = {
+  private def nodeToEdgeLabel(node: CfgNode): String = {
     node match {
       case n: MethodParameterIn => n.name
       case n: CfgNode           => n.code
-      case _                    => ""
     }
   }
 }
@@ -255,26 +254,23 @@ class DdgGenerator(semantics: Semantics) {
   * `n` of the flow graph. This component determines those of the incoming definitions that are relevant as the value
   * they define is actually used by `n`.
   */
-private class UsageAnalyzer(
-  problem: DataFlowProblem[StoredNode, mutable.BitSet],
-  in: Map[StoredNode, Set[Definition]]
-) {
+private class UsageAnalyzer(problem: DataFlowProblem[CfgNode, mutable.BitSet], in: Map[CfgNode, Set[Definition]]) {
 
-  val numberToNode: Map[Definition, StoredNode] = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
+  val numberToNode: Map[Definition, CfgNode] = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
 
   private val allNodes = in.keys.toList
   private val containerSet =
     Set(Operators.fieldAccess, Operators.indexAccess, Operators.indirectIndexAccess, Operators.indirectFieldAccess)
-  private val indirectionAccessSet = Set(Operators.addressOf, Operators.indirection)
-  val usedIncomingDefs: Map[StoredNode, Map[StoredNode, Set[Definition]]] = initUsedIncomingDefs()
+  private val indirectionAccessSet                                  = Set(Operators.addressOf, Operators.indirection)
+  val usedIncomingDefs: Map[CfgNode, Map[CfgNode, Set[Definition]]] = initUsedIncomingDefs()
 
-  def initUsedIncomingDefs(): Map[StoredNode, Map[StoredNode, Set[Definition]]] = {
+  def initUsedIncomingDefs(): Map[CfgNode, Map[CfgNode, Set[Definition]]] = {
     allNodes.map { node =>
       node -> usedIncomingDefsForNode(node)
     }.toMap
   }
 
-  private def usedIncomingDefsForNode(node: StoredNode): Map[StoredNode, Set[Definition]] = {
+  private def usedIncomingDefsForNode(node: CfgNode): Map[CfgNode, Set[Definition]] = {
     uses(node).map { use =>
       use -> in(node).filter { inElement =>
         val inElemNode = numberToNode(inElement)
@@ -283,13 +279,13 @@ private class UsageAnalyzer(
     }.toMap
   }
 
-  def isUsing(use: StoredNode, inElemNode: StoredNode): Boolean =
+  def isUsing(use: CfgNode, inElemNode: CfgNode): Boolean =
     sameVariable(use, inElemNode) || isContainer(use, inElemNode) || isPart(use, inElemNode) || isAlias(use, inElemNode)
 
   /** Determine whether the node `use` describes a container for `inElement`, e.g., use = `ptr` while inElement =
     * `ptr->foo`.
     */
-  private def isContainer(use: StoredNode, inElement: StoredNode): Boolean = {
+  private def isContainer(use: CfgNode, inElement: CfgNode): Boolean = {
     inElement match {
       case call: Call if containerSet.contains(call.name) =>
         call.argument.headOption.exists { base =>
@@ -301,7 +297,7 @@ private class UsageAnalyzer(
 
   /** Determine whether `use` is a part of `inElement`, e.g., use = `argv[0]` while inElement = `argv`
     */
-  private def isPart(use: StoredNode, inElement: StoredNode): Boolean = {
+  private def isPart(use: CfgNode, inElement: CfgNode): Boolean = {
     use match {
       case call: Call if containerSet.contains(call.name) =>
         inElement match {
@@ -319,7 +315,7 @@ private class UsageAnalyzer(
     }
   }
 
-  private def isAlias(use: StoredNode, inElement: StoredNode): Boolean = {
+  private def isAlias(use: CfgNode, inElement: CfgNode): Boolean = {
     use match {
       case useCall: Call =>
         inElement match {
@@ -333,8 +329,8 @@ private class UsageAnalyzer(
     }
   }
 
-  def uses(node: StoredNode): Set[StoredNode] = {
-    val n: Set[StoredNode] = node match {
+  def uses(node: CfgNode): Set[CfgNode] = {
+    val n: Set[CfgNode] = node match {
       case ret: Return                  => ret.astChildren.collect { case x: Expression => x }.toSet
       case call: Call                   => call.argument.toSet
       case paramOut: MethodParameterOut => Set(paramOut)
@@ -345,7 +341,7 @@ private class UsageAnalyzer(
 
   /** Compares arguments of calls with incoming definitions to see if they refer to the same variable
     */
-  private def sameVariable(use: StoredNode, inElement: StoredNode): Boolean = {
+  private def sameVariable(use: CfgNode, inElement: CfgNode): Boolean = {
     inElement match {
       case param: MethodParameterIn =>
         nodeToString(use).contains(param.name)
@@ -358,7 +354,7 @@ private class UsageAnalyzer(
     }
   }
 
-  private def nodeToString(node: StoredNode): Option[String] = {
+  private def nodeToString(node: CfgNode): Option[String] = {
     node match {
       case ident: Identifier     => Some(ident.name)
       case exp: Expression       => Some(exp.code)

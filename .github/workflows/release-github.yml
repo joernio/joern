@@ -5,12 +5,14 @@ jobs:
   release-github:
     concurrency: release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Set up JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
@@ -31,58 +33,29 @@ jobs:
       - run: sbt stage createDistribution
       - run: sha512sum target/joern-cli.zip > target/joern-cli.zip.sha512
       - run: sbt "querydb/runMain io.joern.dumpq.Main"
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
+      - name: Check if release exists
+        id: check_release
+        run: |
+          if gh release view "${{ github.ref_name }}" > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Release ${{ github.ref_name }} already exists, will skip creation"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Release ${{ github.ref_name }} does not exist, will create it"
+          fi
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+      - name: Create Release and Upload Assets
+        if: steps.check_release.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
-          release_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
           draft: false
           prerelease: false
-      - name: Upload joern-install.sh
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./joern-install.sh
-          asset_name: joern-install.sh
-          asset_content_type: text/plain
-      - name: Upload joern-cli.zip
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: target/joern-cli.zip
-          asset_name: joern-cli.zip
-          asset_content_type: application/zip
-      - name: Upload joern-cli.zip.sha512
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: target/joern-cli.zip.sha512
-          asset_name: joern-cli.zip.sha512
-          asset_content_type: text/plain
-      - name: Upload querydb.zip
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: querydb/target/querydb.zip
-          asset_name: querydb.zip
-          asset_content_type: application/zip
-      - name: Upload querydb.json
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: /tmp/querydb.json
-          asset_name: querydb.json
-          asset_content_type: application/json
+          files: |
+            ./joern-install.sh
+            target/joern-cli.zip
+            target/joern-cli.zip.sha512
+            querydb/target/querydb.zip
+            /tmp/querydb.json

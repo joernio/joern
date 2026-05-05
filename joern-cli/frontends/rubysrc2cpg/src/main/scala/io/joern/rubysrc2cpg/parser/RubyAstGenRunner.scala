@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.parser
 
 import io.joern.rubysrc2cpg.Config
-import io.joern.rubysrc2cpg.parser.RubyAstGenRunner.{ExecutionEnvironment, astGenMetaData}
+import io.joern.rubysrc2cpg.parser.RubyAstGenRunner.{ExecutionEnvironment, JRubyEnvironment, astGenMetaData}
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, AstGenRunnerResult, DefaultAstGenRunnerResult}
 import io.joern.x2cpg.astgen.AstGenRunner
@@ -21,41 +21,20 @@ import scala.util.{Failure, Success, Try, Using}
 /** Creates a JRuby scripting environment using `ruby_ast_gen` within a temporary directory allowing for re-usable
   * execution.
   */
-class RubyAstGenRunner(config: Config)
+class RubyAstGenRunner(config: Config, sharedJRubyEnv: Option[JRubyEnvironment] = None)
     extends AstGenRunner(RubyAstGenRunner.astGenMetaData, config)
     with AutoCloseable {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  private val env: ExecutionEnvironment = RubyAstGenRunner.prepareExecutionEnvironment("ruby_ast_gen")
-  // The scripting container is re-used as it persists any previously imported definitions. The cost to import and
-  // construct class and method definitions is quite expensive, so it makes sense to persist and create the container
-  // on-demand.
-  private val container: ScriptingContainer = {
-    val cwd       = env.path.toAbsolutePath.toString
-    val gemPath   = Seq(cwd, "vendor", "bundle", "jruby", "3.1.0").mkString(separator)
-    val container = new ScriptingContainer(LocalContextScope.THREADSAFE, LocalVariableBehavior.TRANSIENT)
-    val config    = container.getProvider.getRubyInstanceConfig
-    container.setCompileMode(RubyInstanceConfig.CompileMode.OFF)
-    container.setNativeEnabled(false)
-    container.setObjectSpaceEnabled(true)
-    container.setCurrentDirectory(cwd)
-    config.setLoadGemfile(true)
-    container.setEnvironment(Map("GEM_PATH" -> gemPath, "GEM_FILE" -> gemPath).asJava)
-    config.setHasShebangLine(true)
-    config.setHardExit(false)
-
-    container
-  }
+  private val ownsEnvironment            = sharedJRubyEnv.isEmpty
+  private val jrubyEnv: JRubyEnvironment = sharedJRubyEnv.getOrElse(JRubyEnvironment())
+  private val env                        = jrubyEnv.env
+  private val container                  = jrubyEnv.container
 
   override def close(): Unit = {
-    val closeContainer = Try(container.terminate())
-    if (closeContainer.isFailure) {
-      logger.error("Error occurred while terminating JRuby scripting container!", closeContainer.failed.get)
-    }
-    val closeEnv = Try(env.close())
-    if (closeEnv.isFailure) {
-      logger.error("Error occurred while cleaning up JRuby execution directory!", closeEnv.failed.get)
+    if (ownsEnvironment) {
+      jrubyEnv.close()
     }
   }
 
@@ -214,6 +193,43 @@ object RubyAstGenRunner {
 
   private object astGenMetaData
       extends AstGenProgramMetaData(name = "ruby_ast_gen", configPrefix = "rubysrc2cpg", multiArchitectureBuilds = true)
+
+  /** Encapsulates the expensive JRuby runtime setup (execution environment and scripting container). Can be shared
+    * across multiple RubyAstGenRunner instances to avoid repeated JRuby initialization.
+    */
+  class JRubyEnvironment(val env: ExecutionEnvironment, val container: ScriptingContainer) extends AutoCloseable {
+    private val logger = LoggerFactory.getLogger(getClass)
+
+    override def close(): Unit = {
+      val closeContainer = Try(container.terminate())
+      if (closeContainer.isFailure) {
+        logger.error("Error terminating JRuby scripting container!", closeContainer.failed.get)
+      }
+      val closeEnv = Try(env.close())
+      if (closeEnv.isFailure) {
+        logger.error("Error cleaning up JRuby execution directory!", closeEnv.failed.get)
+      }
+    }
+  }
+
+  object JRubyEnvironment {
+    def apply(): JRubyEnvironment = {
+      val env       = prepareExecutionEnvironment("ruby_ast_gen")
+      val cwd       = env.path.toAbsolutePath.toString
+      val gemPath   = Seq(cwd, "vendor", "bundle", "jruby", "3.1.0").mkString(separator)
+      val container = new ScriptingContainer(LocalContextScope.THREADSAFE, LocalVariableBehavior.TRANSIENT)
+      val config    = container.getProvider.getRubyInstanceConfig
+      container.setCompileMode(RubyInstanceConfig.CompileMode.OFF)
+      container.setNativeEnabled(false)
+      container.setObjectSpaceEnabled(true)
+      container.setCurrentDirectory(cwd)
+      config.setLoadGemfile(true)
+      container.setEnvironment(Map("GEM_PATH" -> gemPath, "GEM_FILE" -> gemPath).asJava)
+      config.setHasShebangLine(true)
+      config.setHardExit(false)
+      new JRubyEnvironment(env, container)
+    }
+  }
 
   sealed trait ExecutionEnvironment extends AutoCloseable {
     def path: Path

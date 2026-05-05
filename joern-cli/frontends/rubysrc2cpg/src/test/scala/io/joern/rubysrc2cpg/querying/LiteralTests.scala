@@ -261,16 +261,12 @@ class LiteralTests extends RubyCode2CpgFixture {
         |-> (a, *b, &c) {}
         |""".stripMargin)
 
-    inside(cpg.method.isLambda.l) {
-      case lambdaLiteral :: Nil =>
-        inside(lambdaLiteral.parameter.l) {
-          case aParam :: bParam :: cParam :: Nil =>
-            aParam.code shouldBe "a"
-            bParam.code shouldBe "*b"
-            cParam.code shouldBe "&c"
-          case xs => fail(s"Expected four parameters, got [${xs.code.mkString(",")}]")
-        }
-      case xs => fail(s"Expected one lambda, got [${xs.name.mkString(",")}]")
+    inside(cpg.method.isLambda.l) { case lambdaLiteral :: Nil =>
+      inside(lambdaLiteral.parameter.l) { case aParam :: bParam :: cParam :: Nil =>
+        aParam.code shouldBe "a"
+        bParam.code shouldBe "*b"
+        cParam.code shouldBe "&c"
+      }
     }
   }
 

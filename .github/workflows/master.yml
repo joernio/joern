@@ -9,11 +9,11 @@ jobs:
     concurrency: master
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Set up JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
@@ -29,12 +29,8 @@ jobs:
           swift-version: "6.1"
       - name: Install Bundler
         run: gem install bundler -v 2.4.22
-      - name: Delete `.rustup` directory
-        run: rm -rf /home/runner/.rustup # to save disk space
-        if: runner.os == 'Linux'
-      - name: Delete `.cargo` directory # to save disk space
-        run: rm -rf /home/runner/.cargo
-        if: runner.os == 'Linux'
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
       - run: sbt scalafmtCheck test
       - name: Test distribution
         run: |

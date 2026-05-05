@@ -748,6 +748,117 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       }
     }
   }
+
+  "`if-elseif-else` statements" should {
+    val cpg = code("""
+        |public class Foo {
+        |  public static void foo(int c) {
+        |    if (c > 10) {
+        |      c -= 10;
+        |    } else if (c < 10) {
+        |      c += 10;
+        |    } else {
+        |      c = 10;
+        |    }
+        |  }
+        |}
+        |""".stripMargin)
+
+    "should connect then and else branches via TRUE_BODY/FALSE_BODY edges" in {
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l) {
+        case List(ifOne: ControlStructure, ifTwo: ControlStructure) =>
+          ifOne.condition.code.l shouldBe List("c > 10")
+          ifOne.trueBodyOut.astChildren.code.l shouldBe List("c -= 10")
+          inside(ifOne.falseBodyOut.l) { case List(elseNode: ControlStructure) =>
+            elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
+            elseNode.astChildren.isBlock.astChildren.l shouldBe List(ifTwo)
+          }
+
+          ifTwo.condition.code.l shouldBe List("c < 10")
+          ifTwo.trueBodyOut.astChildren.code.l shouldBe List("c += 10")
+          inside(ifTwo.falseBodyOut.l) { case List(elseNode: ControlStructure) =>
+            elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
+            elseNode.astChildren.isBlock.astChildren.code.l shouldBe List("c = 10")
+          }
+      }
+    }
+  }
+
+  "`do-while` statements" should {
+    val cpg = code("""
+        |public class Foo {
+        |  public static void foo(int c) {
+        |    do {
+        |      c += 1;
+        |    } while (c < 10);
+        |  }
+        |}
+        |""".stripMargin)
+
+    "connect do-while body via DO_BODY edge" in {
+      inside(cpg.method.name("foo").doBlock.l) { case List(doBlock: ControlStructure) =>
+        doBlock.condition.code.l shouldBe List("c < 10")
+        doBlock.doBodyOut.isBlock.astChildren.code.l shouldBe List("c += 1")
+      }
+    }
+  }
+
+  "`try-catch-finally` statements" should {
+    val cpg = code("""
+        |public class Foo {
+        |  public static int foo(int c) {
+        |    try {
+        |      return 5 / c;
+        |    } catch (Exception ex) {
+        |      printf("catch");
+        |    } finally {
+        |      printf("finally");
+        |    }
+        |  }
+        |}
+        |""".stripMargin)
+
+    "connect try, catch and finally bodies via explicit edges" in {
+      inside(cpg.controlStructure.isTry.l) { case List(tryNode: ControlStructure) =>
+        tryNode.tryBodyOut.isBlock.astChildren.code.l shouldBe List("return 5 / c;")
+        inside(tryNode.catchBodyOut.l) { case List(catchNode: ControlStructure) =>
+          catchNode.astChildren.isBlock.astChildren.code.l shouldBe List("printf(\"catch\")")
+        }
+        inside(tryNode.finallyBodyOut.l) { case List(finallyNode: ControlStructure) =>
+          finallyNode.astChildren.isBlock.astChildren.code.l shouldBe List("printf(\"finally\")")
+        }
+      }
+    }
+  }
+
+  "`for-loop` statements" should {
+    val cpg = code("""
+        |public class Foo {
+        |  public static int foo(int c) {
+        |    for (int i = 0; i < c; i++) {
+        |      printf("%d ", i);
+        |    }
+        |  }
+        |}
+        |""".stripMargin)
+
+    "connect for-loop and branches via control structure edges" in {
+      inside(cpg.controlStructure.l) { case List(forNode: ControlStructure) =>
+        forNode.code shouldBe "for (int i = 0; i < c; i++)"
+
+        inside(forNode.forInitOut.isBlock.astChildren.l) { case List(local: Local, call: Call) =>
+          local.name shouldBe "i"
+          local.code shouldBe "int i"
+
+          call.name shouldBe Operators.assignment
+          call.code shouldBe "int i = 0"
+        }
+
+        forNode.forUpdateOut.code.l shouldBe List("i++")
+        forNode.forBodyOut.isBlock.astChildren.code.l shouldBe List("printf(\"%d \", i)")
+      }
+    }
+  }
 }
 
 class ControlStructureTests extends JavaSrcCode2CpgFixture {

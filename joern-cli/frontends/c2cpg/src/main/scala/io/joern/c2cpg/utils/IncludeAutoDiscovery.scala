@@ -5,10 +5,9 @@ import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import org.slf4j.LoggerFactory
 
-import java.nio.file.{Path, Paths, Files}
+import java.nio.file.{Files, Path, Paths}
 import scala.collection.mutable
-import scala.util.Failure
-import scala.util.Success
+import scala.util.{Failure, Success}
 
 object IncludeAutoDiscovery {
 

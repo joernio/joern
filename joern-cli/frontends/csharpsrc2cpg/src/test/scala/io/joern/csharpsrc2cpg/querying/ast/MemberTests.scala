@@ -17,24 +17,18 @@ class MemberTests extends CSharpCode2CpgFixture {
         |}""".stripMargin)
 
     "have the non-static member correctly set" in {
-      inside(cpg.member.nameExact("color").l) {
-        case color :: Nil =>
-          color.typeFullName shouldBe "System.String"
-          color.code shouldBe "string color"
-          color.modifier.modifierType.l shouldBe List(ModifierTypes.INTERNAL)
-        case xs =>
-          fail(s"Expected single `color` member, but got $xs")
+      inside(cpg.member.nameExact("color").l) { case color :: Nil =>
+        color.typeFullName shouldBe "System.String"
+        color.code shouldBe "string color"
+        color.modifier.modifierType.l shouldBe List(ModifierTypes.INTERNAL)
       }
     }
 
     "have the static member correctly set`" in {
-      inside(cpg.member.nameExact("maxSpeed").l) {
-        case maxSpeed :: Nil =>
-          maxSpeed.typeFullName shouldBe "System.Int32"
-          maxSpeed.code shouldBe "int maxSpeed = 200"
-          maxSpeed.modifier.modifierType.toSet shouldBe Set(ModifierTypes.INTERNAL, ModifierTypes.STATIC)
-        case xs =>
-          fail(s"Expected single `maxSpeed` member, but got $xs")
+      inside(cpg.member.nameExact("maxSpeed").l) { case maxSpeed :: Nil =>
+        maxSpeed.typeFullName shouldBe "System.Int32"
+        maxSpeed.code shouldBe "int maxSpeed = 200"
+        maxSpeed.modifier.modifierType.toSet shouldBe Set(ModifierTypes.INTERNAL, ModifierTypes.STATIC)
       }
     }
   }
@@ -48,28 +42,22 @@ class MemberTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "have the static member correctly set" in {
-      inside(cpg.member.nameExact("nonInitMaxSpeed").l) {
-        case nonInitMaxSpeed :: Nil =>
-          nonInitMaxSpeed.typeFullName shouldBe "System.Int32"
-          nonInitMaxSpeed.code shouldBe "int nonInitMaxSpeed = 200"
-          nonInitMaxSpeed.modifier.modifierType.l shouldBe List(ModifierTypes.INTERNAL, ModifierTypes.STATIC)
-        case xs =>
-          fail(s"Expected single `nonInitMaxSpeed` member, but got $xs")
+      inside(cpg.member.nameExact("nonInitMaxSpeed").l) { case nonInitMaxSpeed :: Nil =>
+        nonInitMaxSpeed.typeFullName shouldBe "System.Int32"
+        nonInitMaxSpeed.code shouldBe "int nonInitMaxSpeed = 200"
+        nonInitMaxSpeed.modifier.modifierType.l shouldBe List(ModifierTypes.INTERNAL, ModifierTypes.STATIC)
       }
     }
 
     "have a static constructor" in {
-      inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.StaticInitMethodName).l) {
-        case cctor :: Nil =>
-          cctor.fullName shouldBe s"Car.${Defines.StaticInitMethodName}:System.Void()"
-          cctor.modifier.modifierType.toSet shouldBe Set(
-            ModifierTypes.STATIC,
-            ModifierTypes.CONSTRUCTOR,
-            ModifierTypes.INTERNAL
-          )
-          cctor.methodReturn.typeFullName shouldBe "System.Void"
-        case xs =>
-          fail(s"Expected single static constructor, but got $xs")
+      inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.StaticInitMethodName).l) { case cctor :: Nil =>
+        cctor.fullName shouldBe s"Car.${Defines.StaticInitMethodName}:System.Void()"
+        cctor.modifier.modifierType.toSet shouldBe Set(
+          ModifierTypes.STATIC,
+          ModifierTypes.CONSTRUCTOR,
+          ModifierTypes.INTERNAL
+        )
+        cctor.methodReturn.typeFullName shouldBe "System.Void"
       }
     }
 
@@ -78,8 +66,6 @@ class MemberTests extends CSharpCode2CpgFixture {
         case assignment :: Nil =>
           assignment.target.code shouldBe "nonInitMaxSpeed"
           assignment.source.code shouldBe "200"
-        case xs =>
-          fail(s"Expected single assignment inside the static constructor, but got $xs")
       }
     }
   }
@@ -93,24 +79,18 @@ class MemberTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "have the member correctly set" in {
-      inside(cpg.member.nameExact("color").l) {
-        case color :: Nil =>
-          color.typeFullName shouldBe "System.String"
-          color.code shouldBe "string color = \"red\""
-          color.modifier.modifierType.l shouldBe List(ModifierTypes.INTERNAL)
-        case xs =>
-          fail(s"Expected single `color` member, but got $xs")
+      inside(cpg.member.nameExact("color").l) { case color :: Nil =>
+        color.typeFullName shouldBe "System.String"
+        color.code shouldBe "string color = \"red\""
+        color.modifier.modifierType.l shouldBe List(ModifierTypes.INTERNAL)
       }
     }
 
     "have a constructor" in {
-      inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.ConstructorMethodName).l) {
-        case ctor :: Nil =>
-          ctor.fullName shouldBe s"Car.${Defines.ConstructorMethodName}:System.Void()"
-          ctor.modifier.modifierType.toSet shouldBe Set(ModifierTypes.INTERNAL, ModifierTypes.CONSTRUCTOR)
-          ctor.methodReturn.typeFullName shouldBe "System.Void"
-        case xs =>
-          fail(s"Expected single constructor, but got $xs")
+      inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.ConstructorMethodName).l) { case ctor :: Nil =>
+        ctor.fullName shouldBe s"Car.${Defines.ConstructorMethodName}:System.Void()"
+        ctor.modifier.modifierType.toSet shouldBe Set(ModifierTypes.INTERNAL, ModifierTypes.CONSTRUCTOR)
+        ctor.methodReturn.typeFullName shouldBe "System.Void"
       }
     }
 
@@ -119,8 +99,6 @@ class MemberTests extends CSharpCode2CpgFixture {
         case assignment :: Nil =>
           assignment.target.code shouldBe "color"
           assignment.source.code shouldBe "\"red\""
-        case xs =>
-          fail(s"Expected single assignment inside the constructor, but got $xs")
       }
     }
   }
@@ -134,13 +112,10 @@ class MemberTests extends CSharpCode2CpgFixture {
         | }
         |}""".stripMargin)
     "have a static constructor correctly set" in {
-      inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.StaticInitMethodName).l) {
-        case cctor :: Nil =>
-          cctor.fullName shouldBe s"Car.${Defines.StaticInitMethodName}:System.Void()"
-          cctor.modifier.modifierType.toSet shouldBe Set(ModifierTypes.STATIC, ModifierTypes.CONSTRUCTOR)
-          cctor.methodReturn.typeFullName shouldBe "System.Void"
-        case xs =>
-          fail(s"Expected single static constructor, but got $xs")
+      inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.StaticInitMethodName).l) { case cctor :: Nil =>
+        cctor.fullName shouldBe s"Car.${Defines.StaticInitMethodName}:System.Void()"
+        cctor.modifier.modifierType.toSet shouldBe Set(ModifierTypes.STATIC, ModifierTypes.CONSTRUCTOR)
+        cctor.methodReturn.typeFullName shouldBe "System.Void"
       }
     }
   }
@@ -161,8 +136,6 @@ class MemberTests extends CSharpCode2CpgFixture {
           assignment.source.code shouldBe "200"
           // TODO: target is currently an identifier. Should it be `Car.maxSpeed` instead?
           assignment.target.code shouldBe "maxSpeed"
-        case xs =>
-          fail(s"Expected single assignment inside static constructor, but got $xs")
       }
     }
   }
@@ -188,8 +161,6 @@ class MemberTests extends CSharpCode2CpgFixture {
           // TODO: They should have the same representation
           maxSpeedAssignment.target.code shouldBe "maxSpeed"
           nonInitMaxSpeedAssignment.target.code shouldBe "Car.nonInitMaxSpeed"
-        case xs =>
-          fail(s"Expected two assignments, but got $xs")
       }
     }
   }
@@ -204,13 +175,10 @@ class MemberTests extends CSharpCode2CpgFixture {
         | }
         |}""".stripMargin)
     "have a constructor" in {
-      inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.ConstructorMethodName).l) {
-        case ctor :: Nil =>
-          ctor.fullName shouldBe s"Car.${Defines.ConstructorMethodName}:System.Void()"
-          ctor.modifier.modifierType.toSet shouldBe Set(ModifierTypes.CONSTRUCTOR)
-          ctor.methodReturn.typeFullName shouldBe "System.Void"
-        case xs =>
-          fail(s"Expected single constructor, but got $xs")
+      inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.ConstructorMethodName).l) { case ctor :: Nil =>
+        ctor.fullName shouldBe s"Car.${Defines.ConstructorMethodName}:System.Void()"
+        ctor.modifier.modifierType.toSet shouldBe Set(ModifierTypes.CONSTRUCTOR)
+        ctor.methodReturn.typeFullName shouldBe "System.Void"
       }
     }
 
@@ -220,8 +188,6 @@ class MemberTests extends CSharpCode2CpgFixture {
           // TODO: test LHS: shouldn't it resemble `this.color`?
           assignment.target.code shouldBe "color"
           assignment.source.code shouldBe "\"red\""
-        case xs =>
-          fail(s"Expected single assignment inside the constructor, but got $xs")
       }
     }
   }
@@ -250,19 +216,15 @@ class MemberTests extends CSharpCode2CpgFixture {
     )
 
     "generate one constructor" in {
-      inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.ConstructorMethodName).l) {
-        case m :: Nil =>
-          m.fullName shouldBe s"Car.${Defines.ConstructorMethodName}:System.Void()"
-          m.modifier.modifierType.l shouldBe ModifierTypes.PUBLIC :: ModifierTypes.CONSTRUCTOR :: Nil
-          m.methodReturn.typeFullName shouldBe "System.Void"
+      inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.ConstructorMethodName).l) { case m :: Nil =>
+        m.fullName shouldBe s"Car.${Defines.ConstructorMethodName}:System.Void()"
+        m.modifier.modifierType.l shouldBe ModifierTypes.PUBLIC :: ModifierTypes.CONSTRUCTOR :: Nil
+        m.methodReturn.typeFullName shouldBe "System.Void"
 
-          inside(m.assignment.l) {
-            case color :: initMaxSpeed :: Nil =>
-              color.code shouldBe "color = \"abc\""
-              initMaxSpeed.code shouldBe "initMaxSpeed = 220"
-            case _ => fail("Exactly 2 assignments expected")
-          }
-        case _ => fail("`Car` has no constructor initializer method")
+        inside(m.assignment.l) { case color :: initMaxSpeed :: Nil =>
+          color.code shouldBe "color = \"abc\""
+          initMaxSpeed.code shouldBe "initMaxSpeed = 220"
+        }
       }
     }
   }
@@ -291,29 +253,23 @@ class MemberTests extends CSharpCode2CpgFixture {
     )
 
     "generate one constructor with necessary parameters" in {
-      inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.ConstructorMethodName).l) {
-        case m :: Nil =>
-          m.fullName shouldBe s"Car.${Defines.ConstructorMethodName}:System.Void(System.Int32)"
-          m.modifier.modifierType.l shouldBe ModifierTypes.PUBLIC :: ModifierTypes.CONSTRUCTOR :: Nil
-          m.methodReturn.typeFullName shouldBe "System.Void"
+      inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.ConstructorMethodName).l) { case m :: Nil =>
+        m.fullName shouldBe s"Car.${Defines.ConstructorMethodName}:System.Void(System.Int32)"
+        m.modifier.modifierType.l shouldBe ModifierTypes.PUBLIC :: ModifierTypes.CONSTRUCTOR :: Nil
+        m.methodReturn.typeFullName shouldBe "System.Void"
 
-          inside(m.assignment.l) {
-            case color :: initMaxSpeed :: Nil =>
-              color.code shouldBe "color = \"abc\""
-              initMaxSpeed.code shouldBe "initMaxSpeed = 220"
-            case _ => fail("Exactly 2 assignments expected")
-          }
+        inside(m.assignment.l) { case color :: initMaxSpeed :: Nil =>
+          color.code shouldBe "color = \"abc\""
+          initMaxSpeed.code shouldBe "initMaxSpeed = 220"
+        }
 
-          inside(m.parameter.l) {
-            case thisVariable :: minSpeed :: Nil =>
-              thisVariable.code shouldBe "this"
-              thisVariable.typeFullName shouldBe "Car"
+        inside(m.parameter.l) { case thisVariable :: minSpeed :: Nil =>
+          thisVariable.code shouldBe "this"
+          thisVariable.typeFullName shouldBe "Car"
 
-              minSpeed.code shouldBe "int minSpeed"
-              minSpeed.typeFullName shouldBe "System.Int32"
-            case _ => fail("Exactly 2 parameters expected for constructor")
-          }
-        case _ => fail("`Car` has no constructor initializer method")
+          minSpeed.code shouldBe "int minSpeed"
+          minSpeed.typeFullName shouldBe "System.Int32"
+        }
       }
     }
   }
@@ -342,77 +298,61 @@ class MemberTests extends CSharpCode2CpgFixture {
     )
 
     "generate one static constructor" in {
-      inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.StaticInitMethodName).l) {
-        case m :: Nil =>
-          inside(m.body.astChildren.isCall.l) {
-            case staticImplicit :: staticExplicit :: Nil =>
-              staticExplicit.methodFullName shouldBe Operators.assignment
-              staticExplicit.code shouldBe "nonInitMaxSpeed = 2000"
+      inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.StaticInitMethodName).l) { case m :: Nil =>
+        inside(m.body.astChildren.isCall.l) { case staticImplicit :: staticExplicit :: Nil =>
+          staticExplicit.methodFullName shouldBe Operators.assignment
+          staticExplicit.code shouldBe "nonInitMaxSpeed = 2000"
 
-              inside(staticExplicit.argument.fieldAccess.l) {
-                case fieldAccess :: Nil =>
-                  fieldAccess.methodFullName shouldBe Operators.fieldAccess
-                  fieldAccess.code shouldBe "Car.nonInitMaxSpeed"
-                  fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-                  fieldAccess.typeFullName shouldBe "System.Int32"
+          inside(staticExplicit.argument.fieldAccess.l) { case fieldAccess :: Nil =>
+            fieldAccess.methodFullName shouldBe Operators.fieldAccess
+            fieldAccess.code shouldBe "Car.nonInitMaxSpeed"
+            fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+            fieldAccess.typeFullName shouldBe "System.Int32"
 
-                case res => fail("Expected fieldAccess for explicit `this` member access")
-              }
-
-              staticImplicit.methodFullName shouldBe Operators.assignment
-              staticImplicit.code shouldBe "maxSpeed = 200"
-
-            case res => fail("Expected 2 static calls")
           }
-        case _ => fail("`Car` has no static initializer method")
+
+          staticImplicit.methodFullName shouldBe Operators.assignment
+          staticImplicit.code shouldBe "maxSpeed = 200"
+
+        }
       }
     }
 
     "generate one constructor with correct field access" in {
-      inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.ConstructorMethodName).l) {
-        case m :: Nil =>
-          inside(m.body.astChildren.isCall.l) {
-            case explicitFieldAccess :: implicitFieldAccessAssignment :: implicitFieldAccessUnary :: Nil =>
-              explicitFieldAccess.methodFullName shouldBe Operators.assignment
-              explicitFieldAccess.code shouldBe "this.color = \"red\""
+      inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.ConstructorMethodName).l) { case m :: Nil =>
+        inside(m.body.astChildren.isCall.l) {
+          case explicitFieldAccess :: implicitFieldAccessAssignment :: implicitFieldAccessUnary :: Nil =>
+            explicitFieldAccess.methodFullName shouldBe Operators.assignment
+            explicitFieldAccess.code shouldBe "this.color = \"red\""
 
-              implicitFieldAccessAssignment.methodFullName shouldBe Operators.assignment
-              implicitFieldAccessAssignment.code shouldBe "b = 1000"
+            implicitFieldAccessAssignment.methodFullName shouldBe Operators.assignment
+            implicitFieldAccessAssignment.code shouldBe "b = 1000"
 
-              implicitFieldAccessUnary.methodFullName shouldBe Operators.postIncrement
-              implicitFieldAccessUnary.code shouldBe "b++"
+            implicitFieldAccessUnary.methodFullName shouldBe Operators.postIncrement
+            implicitFieldAccessUnary.code shouldBe "b++"
 
-              inside(explicitFieldAccess.argument.fieldAccess.l) {
-                case fieldAccessNode :: Nil =>
-                  fieldAccessNode.methodFullName shouldBe Operators.fieldAccess
-                  fieldAccessNode.code shouldBe "this.color"
-                  fieldAccessNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-                  fieldAccessNode.typeFullName shouldBe "System.String"
-                case res => fail("Only expected one field access")
-              }
-
-              inside(implicitFieldAccessAssignment.argument.fieldAccess.l) {
-                case fieldAccessNode :: Nil =>
-                  fieldAccessNode.methodFullName shouldBe Operators.fieldAccess
-                  fieldAccessNode.code shouldBe "this.b"
-                  fieldAccessNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-                  fieldAccessNode.typeFullName shouldBe "System.Int32"
-                case res => fail("Only expected one field access")
-              }
-
-              inside(implicitFieldAccessUnary.argument.fieldAccess.l) {
-                case fieldAccessNode :: Nil =>
-                  fieldAccessNode.methodFullName shouldBe Operators.fieldAccess
-                  fieldAccessNode.code shouldBe "this.b"
-                  fieldAccessNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-                  fieldAccessNode.typeFullName shouldBe "System.Int32"
-                case res => fail("Only expected one field access")
-              }
-            case res => {
-              fail("Only expected three field access in constructor")
+            inside(explicitFieldAccess.argument.fieldAccess.l) { case fieldAccessNode :: Nil =>
+              fieldAccessNode.methodFullName shouldBe Operators.fieldAccess
+              fieldAccessNode.code shouldBe "this.color"
+              fieldAccessNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+              fieldAccessNode.typeFullName shouldBe "System.String"
             }
-          }
-        case _ => fail("`Car` has no constructor")
+
+            inside(implicitFieldAccessAssignment.argument.fieldAccess.l) { case fieldAccessNode :: Nil =>
+              fieldAccessNode.methodFullName shouldBe Operators.fieldAccess
+              fieldAccessNode.code shouldBe "this.b"
+              fieldAccessNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+              fieldAccessNode.typeFullName shouldBe "System.Int32"
+            }
+
+            inside(implicitFieldAccessUnary.argument.fieldAccess.l) { case fieldAccessNode :: Nil =>
+              fieldAccessNode.methodFullName shouldBe Operators.fieldAccess
+              fieldAccessNode.code shouldBe "this.b"
+              fieldAccessNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+              fieldAccessNode.typeFullName shouldBe "System.Int32"
+            }
+
+        }
       }
     }
   }
@@ -432,14 +372,11 @@ class MemberTests extends CSharpCode2CpgFixture {
     "create a non field access node" in {
       inside(cpg.typeDecl.nameExact("Foo").method.nameExact(Defines.ConstructorMethodName).l) {
         case fooConstructor :: Nil =>
-          inside(fooConstructor.body.astChildren.isCall.assignment.l) {
-            case localCall :: thisCall :: Nil =>
-              localCall.target.fieldAccess.size shouldBe 0
-              thisCall.target.fieldAccess.size shouldBe 1
+          inside(fooConstructor.body.astChildren.isCall.assignment.l) { case localCall :: thisCall :: Nil =>
+            localCall.target.fieldAccess.size shouldBe 0
+            thisCall.target.fieldAccess.size shouldBe 1
 
-            case res => fail("Only two calls expected for assignments")
           }
-        case res => fail("Only one constructor expected")
       }
     }
   }
@@ -454,16 +391,12 @@ class MemberTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "create a member for Bar with appropriate properties" in {
-      inside(cpg.typeDecl.nameExact("Foo").l) {
-        case fooClass :: Nil =>
-          inside(fooClass.astChildren.isMember.nameExact("Bar").l) {
-            case bar :: Nil =>
-              bar.code shouldBe "public int Bar"
-              bar.typeFullName shouldBe "System.Int32"
-              bar.astParent shouldBe fooClass
-            case _ => fail("No member named Bar found inside Foo")
-          }
-        case _ => fail("No class named Foo found.")
+      inside(cpg.typeDecl.nameExact("Foo").l) { case fooClass :: Nil =>
+        inside(fooClass.astChildren.isMember.nameExact("Bar").l) { case bar :: Nil =>
+          bar.code shouldBe "public int Bar"
+          bar.typeFullName shouldBe "System.Int32"
+          bar.astParent shouldBe fooClass
+        }
       }
     }
   }
@@ -476,16 +409,12 @@ class MemberTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "create a member for Bar with appropriate properties" in {
-      inside(cpg.typeDecl.nameExact("Foo").l) {
-        case fooClass :: Nil =>
-          inside(fooClass.astChildren.isMember.nameExact("Bar").l) {
-            case bar :: Nil =>
-              bar.code shouldBe "int Bar"
-              bar.typeFullName shouldBe "System.Int32"
-              bar.astParent shouldBe fooClass
-            case _ => fail("No member named Bar found inside Foo")
-          }
-        case _ => fail("No class named Foo found.")
+      inside(cpg.typeDecl.nameExact("Foo").l) { case fooClass :: Nil =>
+        inside(fooClass.astChildren.isMember.nameExact("Bar").l) { case bar :: Nil =>
+          bar.code shouldBe "int Bar"
+          bar.typeFullName shouldBe "System.Int32"
+          bar.astParent shouldBe fooClass
+        }
       }
     }
   }

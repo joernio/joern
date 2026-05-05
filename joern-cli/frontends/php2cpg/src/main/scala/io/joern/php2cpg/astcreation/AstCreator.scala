@@ -32,18 +32,17 @@ class AstCreator(
     with AstForFunctionsCreator
     with AstForTypesCreator {
 
-  protected val logger: Logger       = LoggerFactory.getLogger(AstCreator.getClass)
-  protected val scope                = new Scope(summary)
-  protected var fileContentBytes     = Array.empty[Byte]
-  protected var fileContent          = Option.empty[String]
-  protected var fileCharset: Charset = StandardCharsets.UTF_8
+  protected val logger: Logger   = LoggerFactory.getLogger(AstCreator.getClass)
+  protected val scope            = new Scope(summary)
+  protected val filePath         = Path.of(fileName)
+  protected val fileContentBytes = Files.readAllBytes(filePath)
+  protected val fileCharset: Charset =
+    Try(Charset.forName(UniversalDetector.detectCharset(filePath))).getOrElse(StandardCharsets.UTF_8)
+  protected var fileContent = Option.empty[String]
 
   override def createAst(): DiffGraphBuilder = {
     if (!disableFileContent) {
-      val filePath = Path.of(fileName)
-      fileContentBytes = Files.readAllBytes(filePath)
-      fileCharset = Try(Charset.forName(UniversalDetector.detectCharset(filePath))).getOrElse(StandardCharsets.UTF_8)
-      fileContent = Some(new String(fileContentBytes, fileCharset))
+      fileContent = Option(new String(fileContentBytes, fileCharset))
     }
 
     val ast = astForPhpFile(phpAst)

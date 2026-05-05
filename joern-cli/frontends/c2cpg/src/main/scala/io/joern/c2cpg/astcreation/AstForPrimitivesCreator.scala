@@ -208,12 +208,13 @@ trait AstForPrimitivesCreator { this: AstCreator =>
   protected def astForFieldReference(fieldRef: IASTFieldReference): Ast = {
     val isInConstructor =
       Try(CPPVisitor.findEnclosingFunctionOrClass(fieldRef)).toOption.exists(_.isInstanceOf[ICPPConstructor])
-    val op =
-      if (fieldRef.isPointerDereference && !isInConstructor) Operators.indirectFieldAccess else Operators.fieldAccess
-    val ma =
-      callNode(fieldRef, code(fieldRef), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
-    val owner  = astForExpression(fieldRef.getFieldOwner)
-    val member = fieldIdentifierNode(fieldRef, fieldRef.getFieldName.toString, fieldRef.getFieldName.toString)
+    val dispatchType = DispatchTypes.STATIC_DISPATCH
+    val isDeref      = fieldRef.isPointerDereference && !isInConstructor
+    val op           = if (isDeref) Operators.indirectFieldAccess else Operators.fieldAccess
+    val ma           = callNode(fieldRef, code(fieldRef), op, op, dispatchType, None, Some(Defines.Any))
+    val owner        = astForExpression(fieldRef.getFieldOwner)
+    val memberName   = fieldRef.getFieldName.toString
+    val member       = fieldIdentifierNode(fieldRef, memberName, memberName)
     callAst(ma, List(owner, Ast(member)))
   }
 
@@ -232,32 +233,29 @@ trait AstForPrimitivesCreator { this: AstCreator =>
           val fullNameNoSig = StringUtils.normalizeSpace(function.getQualifiedName.mkString("."))
           s"$fullNameNoSig:$signature"
         }
-        Ast(methodRefNode(qualId, name, fullName, registerType(function.getType.toString)))
+        val functionType = cleanType(safeGetType(function.getType))
+        Ast(methodRefNode(qualId, name, fullName, registerType(functionType)))
       case _ =>
-        val op = Operators.fieldAccess
-        val ma =
-          callNode(qualId, code(qualId), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
+        val op           = Operators.fieldAccess
+        val dispatchType = DispatchTypes.STATIC_DISPATCH
+        val ma           = callNode(qualId, code(qualId), op, op, dispatchType, None, Some(Defines.Any))
 
-        def fieldAccesses(names: List[IASTNode], argIndex: Int = -1): Ast = names match {
-          case Nil => Ast()
-          case head :: Nil =>
-            astForNode(head)
-          case head :: tail =>
-            val codeString = s"${code(head)}::${tail.map(code).mkString("::")}"
-            val callNode_ =
-              callNode(head, code(head), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(Defines.Any)))
-                .argumentIndex(argIndex)
-            callNode_.code = codeString
-            val arg1 = astForNode(head)
-            val arg2 = fieldAccesses(tail)
+        def fieldAccesses(names: List[IASTNode]): Ast = names match {
+          case Nil         => Ast()
+          case head :: Nil => astForNode(head)
+          case _ =>
+            val init       = names.init
+            val last       = names.last
+            val codeString = names.map(code).mkString("::")
+            val callNode_  = callNode(names.head, codeString, op, op, dispatchType, None, Some(Defines.Any))
+            val arg1       = fieldAccesses(init)
+            val lastCode   = code(last)
+            val arg2       = Ast(fieldIdentifierNode(last, lastCode, lastCode))
             callAst(callNode_, List(arg1, arg2))
         }
         val qualifier = fieldAccesses(qualId.getQualifier.toIndexedSeq.toList)
-        val owner = if (qualifier != Ast()) {
-          qualifier
-        } else {
-          Ast(literalNode(qualId.getLastName, "<global>", Defines.Any))
-        }
+        val owner = if (qualifier != Ast()) { qualifier }
+        else { Ast(literalNode(qualId.getLastName, "<global>", Defines.Any)) }
         val member = fieldIdentifierNode(
           qualId.getLastName,
           replaceQualifiedNameSeparator(qualId.getLastName.toString),

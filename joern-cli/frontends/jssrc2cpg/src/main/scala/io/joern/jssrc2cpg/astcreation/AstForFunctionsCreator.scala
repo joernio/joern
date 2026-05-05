@@ -11,7 +11,6 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Evalu
 import ujson.Value
 
 import scala.collection.mutable
-import scala.util.Try
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -113,7 +112,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
             EvaluationStrategies.BY_VALUE,
             typeFullName
           ).possibleTypes(possibleTypes)
-          additionalBlockStatements.addAll(nodeInfo.json("elements").arr.toList.map {
+          additionalBlockStatements.addAll(nodeInfo.json("elements").arr.map {
             case element if !element.isNull =>
               val elementNodeInfo = createBabelNodeInfo(element)
               elementNodeInfo.node match {
@@ -181,7 +180,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           ).possibleTypes(possibleTypes)
           scope.addVariable(paramName, param, typeFullName, VariableScopeManager.ScopeType.MethodScope)
 
-          additionalBlockStatements.addAll(nodeInfo.json("properties").arr.toList.map { element =>
+          additionalBlockStatements.addAll(nodeInfo.json("properties").arr.map { element =>
             val elementNodeInfo = createBabelNodeInfo(element)
             elementNodeInfo.node match {
               case ObjectProperty =>
@@ -225,7 +224,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           // Handle types declared as `credentials: { username: string; password: string; }`
           val tpe          = typeFor(nodeInfo)
           var typeFullName = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
-          val possibleType = Try(createBabelNodeInfo(nodeInfo.json("typeAnnotation")("typeAnnotation")))
+          val possibleType = nodeInfo.json.obj
+            .get("typeAnnotation")
+            .flatMap(_.obj.get("typeAnnotation"))
+            .map(createBabelNodeInfo)
             .map(x =>
               x.node match {
                 case TSTypeLiteral =>
