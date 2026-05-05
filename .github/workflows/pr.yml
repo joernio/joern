@@ -59,7 +59,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 1
+          fetch-depth: 0
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:
@@ -67,8 +67,30 @@ jobs:
           java-version: 21
           cache: sbt
       - uses: sbt/setup-sbt@v1
-      - name: Check for usage of restricted imports
-        run: sbt "scalafix RestrictedImports"
+      - name: Run scalafix linting
+        run: |
+          # Get base branch
+          BASE_BRANCH="${{ github.base_ref }}"
+
+          # Get list of changed Scala files (excluding linter-rules/)
+          CHANGED_FILES=$(git diff --name-only --diff-filter=d origin/$BASE_BRANCH...HEAD | grep '\.scala$' | grep -v '^linter-rules/' || true)
+
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No Scala files changed in this PR, running RestrictedImports on entire codebase"
+            sbt "scalafix RestrictedImports"
+          else
+            echo "Changed Scala files:"
+            echo "$CHANGED_FILES"
+
+            # Build scalafix command with repeated --files and --rules flags (as per scalafix docs)
+            FILES_ARGS=""
+            for file in $CHANGED_FILES; do
+              FILES_ARGS="$FILES_ARGS --files $file"
+            done
+
+            echo "Running linters on changed files..."
+            sbt "scalafix $FILES_ARGS --rules RestrictedImports --rules SingleLetterIdentifiers"
+          fi
       - run: echo "Previous step failed because certain coding quality expectations were violated. Please check the logs."
         if: ${{ failure() }}
 
