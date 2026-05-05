@@ -1,0 +1,39 @@
+linter-rules/src/main/scala/fix/SingleLetterIdentifiers.scala
+  human 9-10,37,42-45,49-52,76
+---
+{
+  "attestations": [
+    {
+      "entries": [
+        {
+          "accepted_lines": 12,
+          "added_lines": 12,
+          "deleted_lines": 0,
+          "hash": "human",
+          "lines": "9-10,37,42-45,49-52,76",
+          "overridden_lines": 0
+        }
+      ],
+      "file": "linter-rules/src/main/scala/fix/SingleLetterIdentifiers.scala"
+    }
+  ],
+  "base_commit_sha": "ec6a833bf309a0d9c3fdcda9e696bee653e43435",
+  "branch": "max/single-letter-linter",
+  "commit_sha": "7a7aa9a8e2b48c3fb83f1785f76214c5001ee598",
+  "commit_time": "2026-05-05T10:50:00+02:00",
+  "commit_type": "direct_commit",
+  "git_ai_version": "1.4.2",
+  "prompts": {
+    "human": {
+      "accepted_lines": 12,
+      "agent_id": null,
+      "human_author": "Max Leuthäuser <1417198+max-leuthaeuser@users.noreply.github.com>",
+      "messages": [],
+      "overriden_lines": 0,
+      "total_additions": 12,
+      "total_deletions": 0
+    }
+  },
+  "repo": "https://github.com/joernio/joern.git",
+  "schema_version": "authorship/3.0.0"
+}
