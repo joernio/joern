@@ -1,0 +1,101 @@
+.github/workflows/pr.yml
+  e0711063-68cd-4d30-a1f9-f892a7446722 62,71
+  dcdd5a01-d7b5-4f2c-8db1-6ded9484e122 73-84,86-93
+  0f4b0ac0-ca5d-4e13-ae39-07847dd2a2f3
+  human 72,85
+---
+{
+  "attestations": [
+    {
+      "entries": [
+        {
+          "accepted_lines": 2,
+          "added_lines": 4,
+          "deleted_lines": 2,
+          "hash": "e0711063-68cd-4d30-a1f9-f892a7446722",
+          "lines": "62,71",
+          "overridden_lines": 0
+        },
+        {
+          "accepted_lines": 20,
+          "added_lines": 20,
+          "deleted_lines": 2,
+          "hash": "dcdd5a01-d7b5-4f2c-8db1-6ded9484e122",
+          "lines": "73-84,86-93",
+          "overridden_lines": 2
+        },
+        {
+          "hash": "0f4b0ac0-ca5d-4e13-ae39-07847dd2a2f3",
+          "lines": ""
+        },
+        {
+          "accepted_lines": 2,
+          "added_lines": 2,
+          "deleted_lines": 0,
+          "hash": "human",
+          "lines": "72,85",
+          "overridden_lines": 0
+        }
+      ],
+      "file": ".github/workflows/pr.yml"
+    }
+  ],
+  "base_commit_sha": "d04847a92decdab7e0ec916bd8a4a8d83aa930b7",
+  "branch": "max/single-letter-linter",
+  "commit_sha": "03211cfc727f2f533093f16ae78c38ea0c11d3c8",
+  "commit_time": "2026-05-05T09:47:52+02:00",
+  "commit_type": "direct_commit",
+  "git_ai_version": "1.4.2",
+  "prompts": {
+    "0f4b0ac0-ca5d-4e13-ae39-07847dd2a2f3": {
+      "accepted_lines": 0,
+      "agent_id": {
+        "id": "0f4b0ac0-ca5d-4e13-ae39-07847dd2a2f3",
+        "model": "claude-sonnet-4-5-20250929",
+        "tool": "claude"
+      },
+      "human_author": "Max Leuthäuser <1417198+max-leuthaeuser@users.noreply.github.com>",
+      "messages": [],
+      "overriden_lines": 0,
+      "total_additions": 2,
+      "total_deletions": 2
+    },
+    "dcdd5a01-d7b5-4f2c-8db1-6ded9484e122": {
+      "accepted_lines": 20,
+      "agent_id": {
+        "id": "dcdd5a01-d7b5-4f2c-8db1-6ded9484e122",
+        "model": "claude-sonnet-4-5-20250929",
+        "tool": "claude"
+      },
+      "human_author": "Max Leuthäuser <1417198+max-leuthaeuser@users.noreply.github.com>",
+      "messages": [],
+      "overriden_lines": 2,
+      "total_additions": 20,
+      "total_deletions": 2
+    },
+    "e0711063-68cd-4d30-a1f9-f892a7446722": {
+      "accepted_lines": 2,
+      "agent_id": {
+        "id": "e0711063-68cd-4d30-a1f9-f892a7446722",
+        "model": "claude-sonnet-4-5-20250929",
+        "tool": "claude"
+      },
+      "human_author": "Max Leuthäuser <1417198+max-leuthaeuser@users.noreply.github.com>",
+      "messages": [],
+      "overriden_lines": 0,
+      "total_additions": 4,
+      "total_deletions": 2
+    },
+    "human": {
+      "accepted_lines": 2,
+      "agent_id": null,
+      "human_author": "Max Leuthäuser <1417198+max-leuthaeuser@users.noreply.github.com>",
+      "messages": [],
+      "overriden_lines": 0,
+      "total_additions": 2,
+      "total_deletions": 0
+    }
+  },
+  "repo": "https://github.com/joernio/joern.git",
+  "schema_version": "authorship/3.0.0"
+}

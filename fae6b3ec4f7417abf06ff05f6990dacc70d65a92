@@ -1,0 +1,48 @@
+.github/workflows/pr.yml
+  a2cf5aa9-ee7f-440a-a07f-248b785c755b 62-65,73-74,76
+  dcdd5a01-d7b5-4f2c-8db1-6ded9484e122 75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.2",
+  "base_commit_sha": "fae6b3ec4f7417abf06ff05f6990dacc70d65a92",
+  "commit_sha": "",
+  "commit_type": "rebase_interactive",
+  "prompts": {
+    "a2cf5aa9-ee7f-440a-a07f-248b785c755b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a2cf5aa9-ee7f-440a-a07f-248b785c755b",
+        "model": "claude-sonnet-4-5-20250929"
+      },
+      "human_author": "Max Leuthäuser <1417198+max-leuthaeuser@users.noreply.github.com>",
+      "messages": [],
+      "total_additions": 7,
+      "total_deletions": 2,
+      "accepted_lines": 7,
+      "overriden_lines": 0
+    },
+    "dcdd5a01-d7b5-4f2c-8db1-6ded9484e122": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dcdd5a01-d7b5-4f2c-8db1-6ded9484e122",
+        "model": "claude-sonnet-4-5-20250929"
+      },
+      "human_author": "Max Leuthäuser <1417198+max-leuthaeuser@users.noreply.github.com>",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 2,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "human": {
+      "agent_id": null,
+      "human_author": "Max Leuthäuser <1417198+max-leuthaeuser@users.noreply.github.com>",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 0,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    }
+  }
+}

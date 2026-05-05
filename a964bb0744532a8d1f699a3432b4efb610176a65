@@ -1,0 +1,61 @@
+.github/workflows/pr.yml
+  human 71
+  dcdd5a01-d7b5-4f2c-8db1-6ded9484e122 75-76
+---
+{
+  "attestations": [
+    {
+      "entries": [
+        {
+          "accepted_lines": 1,
+          "added_lines": 1,
+          "deleted_lines": 0,
+          "hash": "human",
+          "lines": "71",
+          "overridden_lines": 0
+        },
+        {
+          "accepted_lines": 2,
+          "added_lines": 0,
+          "deleted_lines": 0,
+          "hash": "dcdd5a01-d7b5-4f2c-8db1-6ded9484e122",
+          "lines": "75-76",
+          "overridden_lines": 0
+        }
+      ],
+      "file": ".github/workflows/pr.yml"
+    }
+  ],
+  "base_commit_sha": "8c20a111f163aa5ace951dc3723c2cb72cb6e9c7",
+  "branch": "max/single-letter-linter",
+  "commit_sha": "a964bb0744532a8d1f699a3432b4efb610176a65",
+  "commit_time": "2026-05-05T10:31:14+02:00",
+  "commit_type": "direct_commit",
+  "git_ai_version": "1.4.2",
+  "prompts": {
+    "dcdd5a01-d7b5-4f2c-8db1-6ded9484e122": {
+      "accepted_lines": 2,
+      "agent_id": {
+        "id": "dcdd5a01-d7b5-4f2c-8db1-6ded9484e122",
+        "model": "claude-sonnet-4-5-20250929",
+        "tool": "claude"
+      },
+      "human_author": "Max Leuthäuser <1417198+max-leuthaeuser@users.noreply.github.com>",
+      "messages": [],
+      "overriden_lines": 0,
+      "total_additions": 2,
+      "total_deletions": 2
+    },
+    "human": {
+      "accepted_lines": 1,
+      "agent_id": null,
+      "human_author": "Max Leuthäuser <1417198+max-leuthaeuser@users.noreply.github.com>",
+      "messages": [],
+      "overriden_lines": 0,
+      "total_additions": 1,
+      "total_deletions": 0
+    }
+  },
+  "repo": "https://github.com/joernio/joern.git",
+  "schema_version": "authorship/3.0.0"
+}
