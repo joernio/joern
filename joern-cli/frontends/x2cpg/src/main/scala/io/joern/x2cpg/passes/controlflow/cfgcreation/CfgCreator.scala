@@ -190,9 +190,9 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     val throwExprCfg = Iterator(node)
       .coalesce(
         _._argumentOut.cast[AstNode],
-        { n =>
+        { node =>
           CfgCreator.warnOnce("Using order fallback for throw statement argument")
-          n.astChildren.order(1)
+          node.astChildren.order(1)
         }
       )
       .headOption
@@ -211,9 +211,9 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     val jumpArgument = Iterator(node)
       .coalesce(
         _._jumpArgumentOut.cast[AstNode],
-        { n =>
+        { node =>
           CfgCreator.warnOnce("Using order fallback for break statement jump argument")
-          n.astChildren.order(1)
+          node.astChildren.order(1)
         }
       )
       .headOption
@@ -240,9 +240,9 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     val jumpArgument = Iterator(node)
       .coalesce(
         _._jumpArgumentOut.cast[AstNode],
-        { n =>
+        { node =>
           CfgCreator.warnOnce("Using order fallback for continue statement jump argument")
-          n.astChildren.order(1)
+          node.astChildren.order(1)
         }
       )
       .headOption
@@ -410,9 +410,9 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     val initExprCfg = Iterator(node)
       .coalesce(
         _._forInitOut.cast[AstNode],
-        { n =>
+        { node =>
           CfgCreator.warnOnce("Using order fallback for for statement init")
-          n.astChildren.order(nLocals + 1)
+          node.astChildren.order(nLocals + 1)
         }
       )
       .headOption
@@ -421,9 +421,9 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     val conditionCfg = Iterator(node)
       .coalesce(
         _._conditionOut.cast[AstNode],
-        { n =>
+        { node =>
           CfgCreator.warnOnce("Using order fallback for for statement condition")
-          n.astChildren.order(nLocals + 2)
+          node.astChildren.order(nLocals + 2)
         }
       )
       .headOption
@@ -432,9 +432,9 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     val loopExprCfg = Iterator(node)
       .coalesce(
         _._forUpdateOut.cast[AstNode],
-        { n =>
+        { node =>
           CfgCreator.warnOnce("Using order fallback for for statement update")
-          n.astChildren.order(nLocals + 3)
+          node.astChildren.order(nLocals + 3)
         }
       )
       .headOption
@@ -443,9 +443,9 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     val bodyCfg = Iterator(node)
       .coalesce(
         _._forBodyOut.cast[AstNode],
-        { n =>
+        { node =>
           CfgCreator.warnOnce("Using order fallback for for statement body")
-          n.astChildren.order(nLocals + 4)
+          node.astChildren.order(nLocals + 4)
         }
       )
       .headOption
@@ -484,9 +484,9 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     val bodyCfg = Iterator(node)
       .coalesce(
         _._doBodyOut.cast[AstNode],
-        { n =>
+        { node =>
           CfgCreator.warnOnce("Using order fallback for do-while statement body")
-          n.astChildren.order(1)
+          node.astChildren.order(1)
         }
       )
       .headOption
@@ -601,9 +601,9 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     val maybeTryBlock = Iterator(node)
       .coalesce(
         _._tryBodyOut.cast[AstNode].filter(_.astChildren.nonEmpty),
-        { n =>
+        { node =>
           CfgCreator.warnOnce("Using order fallback for try statement body")
-          n.astChildren.order(1).where(_.astChildren)
+          node.astChildren.order(1).where(_.astChildren)
         }
       )
       .headOption
