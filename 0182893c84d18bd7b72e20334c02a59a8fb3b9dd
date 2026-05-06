@@ -1,0 +1,43 @@
+console/src/main/scala/io/joern/console/cpgcreation/package.scala
+  30bc3b8c-b5fa-406a-b5a5-6b0110220ee9 105-120
+---
+{
+  "attestations": [
+    {
+      "entries": [
+        {
+          "accepted_lines": 16,
+          "added_lines": 16,
+          "deleted_lines": 16,
+          "hash": "30bc3b8c-b5fa-406a-b5a5-6b0110220ee9",
+          "lines": "105-120",
+          "overridden_lines": 0
+        }
+      ],
+      "file": "console/src/main/scala/io/joern/console/cpgcreation/package.scala"
+    }
+  ],
+  "base_commit_sha": "592a9c5d7d886a16cb483528eedd745db44ceb41",
+  "branch": "niko/abap2cpgwiring",
+  "commit_sha": "0182893c84d18bd7b72e20334c02a59a8fb3b9dd",
+  "commit_time": "2026-05-06T12:05:49+02:00",
+  "commit_type": "direct_commit",
+  "git_ai_version": "1.4.2",
+  "prompts": {
+    "30bc3b8c-b5fa-406a-b5a5-6b0110220ee9": {
+      "accepted_lines": 16,
+      "agent_id": {
+        "id": "30bc3b8c-b5fa-406a-b5a5-6b0110220ee9",
+        "model": "claude-opus-4-7",
+        "tool": "claude"
+      },
+      "human_author": "Niko Schmidt <niko.schmidt@harness.io>",
+      "messages": [],
+      "overriden_lines": 0,
+      "total_additions": 16,
+      "total_deletions": 16
+    }
+  },
+  "repo": "https://github.com/joernio/joern.git",
+  "schema_version": "authorship/3.0.0"
+}
