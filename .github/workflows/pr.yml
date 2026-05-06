@@ -60,6 +60,8 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 1
+      - name: Fetch base branch with depth 1
+        run: git fetch --depth=1 origin ${{ github.event.pull_request.base.ref }}:refs/remotes/origin/${{ github.event.pull_request.base.ref }}
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:
@@ -67,8 +69,8 @@ jobs:
           java-version: 21
           cache: sbt
       - uses: sbt/setup-sbt@v1
-      - name: Check for usage of restricted imports
-        run: sbt "scalafix RestrictedImports"
+      - name: Run scalafix linting
+        run: sbt "scalafix --diff-base origin/${{ github.event.pull_request.base.ref }} RestrictedImports SingleLetterIdentifiers"
       - run: echo "Previous step failed because certain coding quality expectations were violated. Please check the logs."
         if: ${{ failure() }}
 
