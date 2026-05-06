@@ -73,6 +73,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
   def php: SourceBasedFrontend  = new SourceBasedFrontend("php", Languages.PHP, "PHP source frontend", "php")
   def ruby: SourceBasedFrontend = SourceBasedFrontend("ruby", Languages.RUBYSRC, "Ruby source frontend", "rb")
   def rust: SourceBasedFrontend = new SourceBasedFrontend("rust", Languages.RUST, "Rust Source Frontend", "rs")
+  def abap: SourceBasedFrontend = new SourceBasedFrontend("abap", Languages.ABAP, "ABAP Source Frontend", "abap")
 
   private def allFrontends: List[Frontend] =
     List(
@@ -92,6 +93,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
       csharp,
       ruby,
       csharpsrc,
+      abap,
       rust
     )
 
