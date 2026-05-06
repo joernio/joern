@@ -40,6 +40,7 @@ package object cpgcreation {
       case Languages.RUBYSRC   => Some(RubyCpgGenerator(conf, rootPath))
       case Languages.SWIFTSRC  => Some(SwiftSrcCpgGenerator(conf, rootPath))
       case Languages.RUST      => Some(RustCpgGenerator(conf, rootPath))
+      case Languages.ABAP      => Some(AbapSrcCpgGenerator(conf, rootPath))
       case _                   => None
     }
   }
@@ -115,6 +116,7 @@ package object cpgcreation {
       case f if isLlvmFile(f)        => Some(Languages.LLVM)
       case f if isCFile(f)           => Some(Languages.NEWC)
       case f if isRustFile(f)        => Some(Languages.RUST)
+      case f if f.endsWith(".abap")  => Some(Languages.ABAP)
       case _                         => None
     }
   }

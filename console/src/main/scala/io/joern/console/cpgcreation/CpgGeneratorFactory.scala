@@ -26,7 +26,8 @@ object CpgGeneratorFactory {
     Languages.NEWC,
     Languages.JAVASRC,
     Languages.SWIFTSRC,
-    Languages.RUST
+    Languages.RUST,
+    Languages.ABAP
   )
 }
 

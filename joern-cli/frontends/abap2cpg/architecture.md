@@ -28,18 +28,19 @@ ABAP source files
 └─────────────────────┘
       │
       ▼
-┌─────────────────────┐  ┌──────────────────┐  ┌──────────────┐  ┌─────────────┐
-│  ContainsEdgePass   │→ │  TypeNodePass    │→ │ RefEdgePass  │→ │  CPG (.bin) │
-└─────────────────────┘  └──────────────────┘  └─────────────-┘  └─────────────┘
+┌───────────────────┐  ┌──────────────┐  ┌──────────────┐  ┌────────────────────────┐  ┌──────────────┐  ┌─────────────┐
+│ ContainsEdgePass  │→ │ TypeNodePass │→ │ RefEdgePass  │→ │ AbapTypeInferencePass  │→ │ TypeEvalPass │→ │  CPG (.bin) │
+└───────────────────┘  └──────────────┘  └──────────────┘  └────────────────────────┘  └──────────────┘  └─────────────┘
 ```
 
 ## Components
 
-### Stage 1 — ABAP Parser (`parse-abap.js` / `abapgen` binary)
+### Stage 1 — ABAP Parser (`abapgen` binary)
 
 - Written in Node.js (~40 lines), uses [@abaplint/core](https://github.com/abaplint/abaplint) to parse ABAP source.
+- Lives in the [joernio/astgen-monorepo](https://github.com/joernio/astgen-monorepo) repository under `abap-astgen/parse-abap.js`; published as self-contained native binaries per platform (`abapgen-{linux-x64,linux-arm64,macos-x64,macos-arm64,win-x64.exe}`).
 - Does **no interpretation** — dumps a flat list of raw statements (type + tokens + position) per file.
-- Compiled into self-contained native binaries per platform (`bin/astgen/abapgen-{linux,linux-arm,macos,macos-arm,win.exe}`).
+- `build.sbt` downloads the binaries from a pinned astgen-monorepo release into `bin/astgen/`.
 - JSON schema is documented in [`parser-output.md`](parser-output.md).
 
 This follows the same pattern as `jssrc2cpg`'s `astgen`: the JS layer only does what `@abaplint/core` uniquely provides (ABAP grammar + tokenisation); all semantic understanding lives in Scala where it is testable.
@@ -78,14 +79,16 @@ The main `AstCreator` manages a `VariableScopeManager` for tracking declared var
 | 1 | `MetaDataPass` | Records language = ABAP |
 | 2 | `AstCreationPass` | Parallel creation of FILE, NAMESPACE_BLOCK, TYPEDECL, METHOD, CALL, … nodes |
 | 3 | `ContainsEdgePass` | Adds `CONTAINS` edges (x2cpg built-in) |
-| 4 | `TypeNodePass` | Creates TYPE nodes from type full names (x2cpg built-in) |
+| 4 | `TypeNodePass.withTypesFromCpg` | Creates TYPE nodes from type full names (x2cpg built-in) |
 | 5 | `RefEdgePass` | Creates `REF` edges from IDENTIFIER to LOCAL/PARAMETER |
+| 6 | `AbapTypeInferencePass` | Propagates inferred type information across nodes |
+| 7 | `TypeEvalPass` | Resolves `TYPE_FULL_NAME` references to TYPE nodes (x2cpg built-in) |
 
 ## Key Design Decisions
 
 **Two-stage architecture** — The ABAP grammar is complex and already well-handled by `@abaplint/core`. Delegating lexing/parsing to Node.js keeps the Scala code focused on CPG semantics.
 
-**Platform-bundled binary** — `pkg` bundles the Node.js runtime and script into a single executable per target platform. The runner selects the right one at startup. Binaries are excluded from git (see `.gitignore`) and downloaded/built separately.
+**Platform-bundled binary** — `@yao-pkg/pkg` (in astgen-monorepo) bundles the Node.js runtime and script into a single executable per target platform. The runner selects the right one at startup. Binaries are not vendored here; `build.sbt` downloads them from astgen-monorepo releases into `bin/astgen/`.
 
 **Intermediate AST** — Rather than converting JSON directly to CPG nodes, an intermediate representation (`AbapIntermediateAst`) decouples JSON parsing from CPG generation. This makes both layers independently testable. See [`intermediate-ast.md`](intermediate-ast.md).
 
@@ -103,10 +106,8 @@ The main `AstCreator` manages a `VariableScopeManager` for tracking declared var
 
 ```
 joern-cli/frontends/abap2cpg/
-├── bin/astgen/                          # Platform binaries (git-ignored)
-├── parse-abap.js                        # Node.js ABAP → JSON parser
-├── package.json                         # npm deps; build scripts for pkg
-├── build.sbt                            # Scala build; downloads binaries
+├── bin/astgen/                          # Platform binaries (downloaded by build.sbt from astgen-monorepo)
+├── build.sbt                            # Scala build; downloads abapgen binaries
 ├── abap2cpg.sh                          # Shell runner wrapper
 └── src/
     ├── main/scala/io/joern/abap2cpg/
@@ -128,13 +129,15 @@ joern-cli/frontends/abap2cpg/
     │   │   └── statements/
     │   │       └── AstForStatementsCreator.scala    # Assignments, declarations
     │   └── passes/
-    │       ├── AstCreationPass.scala    # Parallel CPG creation pass
-    │       ├── AstCreator.scala         # Main orchestrator (trait composition)
-    │       ├── RefEdgePass.scala        # REF edges for dataflow
-    │       └── NamespacePass.scala      # NAMESPACE nodes
+    │       ├── AstCreationPass.scala          # Parallel CPG creation pass
+    │       ├── AstCreator.scala               # Main orchestrator (trait composition)
+    │       ├── RefEdgePass.scala              # REF edges for dataflow
+    │       ├── AbapTypeInferencePass.scala    # Propagates inferred types
+    │       └── NamespacePass.scala            # NAMESPACE nodes
     └── test/scala/io/joern/abap2cpg/
         ├── passes/AbapIntegrationTests.scala
         ├── passes/AstCreatorTests.scala
+        ├── passes/SecurityStatementTests.scala
         └── testfixtures/
             ├── Abap2CpgFrontend.scala   # LanguageFrontend wrapper
             ├── Abap2CpgSuite.scala      # Code2CpgFixture wired to abapgen
@@ -177,17 +180,15 @@ sbt "abap2cpg/testOnly *.AstCreatorTests"   # unit tests only, no binary needed
 ## Building
 
 ```bash
-# Stage 1: build parser binary for the current platform
-cd joern-cli/frontends/abap2cpg
-npm install
-npm run build:current   # macOS ARM only; use `npm run build` for all platforms
-
-# Stage 2: compile and package the Scala frontend
+# Compile and package the Scala frontend
+# (build.sbt downloads prebuilt abapgen binaries from astgen-monorepo releases)
 sbt abap2cpg/stage      # produces target/universal/stage/
 
 # Run
 ./abap2cpg.sh <input-dir> -o cpg.bin
 ```
+
+To rebuild the parser itself, work in [joernio/astgen-monorepo](https://github.com/joernio/astgen-monorepo) under `abap-astgen/` and publish a new release; the pinned version here lives in `build.sbt`.
 
 ## Security Analysis Coverage
 
@@ -217,8 +218,8 @@ See `cpg-nodes.md` for where abap2cpg currently deviates from the spec.
 
 | Layer | Dependency | Purpose |
 |-------|-----------|---------|
-| Node.js | `@abaplint/core` | ABAP grammar + AST |
-| Node.js | `pkg` | Bundle Node.js into native binary |
+| Node.js (external, in [astgen-monorepo](https://github.com/joernio/astgen-monorepo)) | `@abaplint/core` | ABAP grammar + AST |
+| Node.js (external) | `@yao-pkg/pkg` | Bundle Node.js into native binary |
 | Scala | `x2cpg` | Frontend framework, pass base classes |
 | Scala | `codepropertygraph` | CPG node/edge types |
 | Scala | `dataflowengineoss` | Dataflow analysis engine |

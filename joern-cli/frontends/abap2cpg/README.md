@@ -1,16 +1,13 @@
 # abap2cpg - ABAP Code Property Graph Frontend
 
-An ABAP to CPG (Code Property Graph) converter for Joern, based on [@abaplint/core](https://github.com/abaplint/abaplint).
+An ABAP to CPG (Code Property Graph) converter for Joern.
 
-This frontend parses ABAP source code and generates code property graphs using Joern.
+The Node.js-based ABAP parser (`abapgen`, built on [@abaplint/core](https://github.com/abaplint/abaplint)) lives in the [joernio/astgen-monorepo](https://github.com/joernio/astgen-monorepo) repository under `abap-astgen/`. This frontend consumes the prebuilt `abapgen` binaries and generates CPGs from their JSON output.
 
 ## Quick Start
 
 ```bash
-# 1. Build the parser and frontend
-cd joern-cli/frontends/abap2cpg
-npm install && npm run build:current
-cd ../../..
+# 1. Build the frontend (abapgen binaries are downloaded from astgen-monorepo by build.sbt)
 sbt abap2cpg/stage
 
 # 2. Generate CPG
@@ -36,59 +33,9 @@ The build process has been verified on Linux and macOS. You will need:
   - Link: https://www.scala-sbt.org/
   - Verify: `sbt --version`
 
-* **Node.js v18 or higher** (for building the ABAP parser)
-  - Link: https://nodejs.org/
-  - Verify: `node --version`
-  - Required for: `npm install` and building native binaries with `pkg`
+Node.js is **not** required to build this frontend — `build.sbt` downloads prebuilt `abapgen` binaries from the [astgen-monorepo](https://github.com/joernio/astgen-monorepo) releases. Node.js is only needed if you want to rebuild the parser yourself in that repository.
 
 ## Building the code
-
-### Quick start (development)
-
-For development, build only for your current platform:
-
-```bash
-cd joern-cli/frontends/abap2cpg
-npm install
-npm run build:current  # builds for your current platform only
-cd ../../..
-sbt abap2cpg/compile   # or sbt abap2cpg/stage
-```
-
-### Detailed build steps
-
-#### Step 1: Build the ABAP parser binaries
-
-abap2cpg uses a Node.js-based parser that leverages @abaplint/core to generate abstract syntax trees.
-Native binaries for Linux, macOS, and Windows are built using [pkg](https://github.com/vercel/pkg).
-
-```bash
-cd joern-cli/frontends/abap2cpg
-npm install
-npm run build
-```
-
-This will create the following binaries in `bin/astgen/`:
-- `abapgen-linux` (Linux x64)
-- `abapgen-linux-arm` (Linux ARM64)
-- `abapgen-macos` (macOS x64)
-- `abapgen-macos-arm` (macOS ARM64)
-- `abapgen-win.exe` (Windows x64)
-
-**Development tip:** Use `npm run build:current` to build only for your current platform (much faster).
-
-**Note:** The `build:current` script is currently hardcoded for macOS ARM. If you're on a different platform, modify the `build:current` script in `package.json` or manually run:
-```bash
-pkg parse-abap.js --targets node18-<platform>-<arch> -o bin/astgen/abapgen-<name>
-```
-Platform mappings:
-- Linux x64: `node18-linux-x64` → `abapgen-linux`
-- Linux ARM: `node18-linux-arm64` → `abapgen-linux-arm`
-- macOS x64: `node18-macos-x64` → `abapgen-macos`
-- macOS ARM: `node18-macos-arm64` → `abapgen-macos-arm`
-- Windows: `node18-win-x64` → `abapgen-win.exe`
-
-#### Step 2: Build the CPG generator
 
 From the repository root:
 
@@ -97,31 +44,16 @@ sbt abap2cpg/stage
 ```
 
 This will:
+- Download the prebuilt `abapgen` binaries (linux-x64, linux-arm64, macos-x64, macos-arm64, win-x64) from the [astgen-monorepo](https://github.com/joernio/astgen-monorepo) release into `bin/astgen/`
 - Compile the Scala sources
-- Check that the required `abapgen` binaries exist in `bin/astgen/`
 - Package the frontend for execution
 - Create the launcher script and dependencies
 
-The staged build will be available at `joern-cli/frontends/abap2cpg/target/universal/stage/`
+The staged build will be available at `joern-cli/frontends/abap2cpg/target/universal/stage/`.
 
-### Building for distribution
+### Rebuilding the parser
 
-To build for all platforms (required for `sbt stage` or creating distributions):
-
-```bash
-cd joern-cli/frontends/abap2cpg
-npm install
-npm run build  # builds all 5 platform binaries (slower)
-cd ../../..
-sbt stage  # or sbt createDistribution
-```
-
-The `stage` task automatically sets `ALL_PLATFORMS=TRUE`, which requires all platform binaries:
-- `abapgen-linux` (Linux x64)
-- `abapgen-linux-arm` (Linux ARM64)
-- `abapgen-macos` (macOS Intel)
-- `abapgen-macos-arm` (macOS Apple Silicon)
-- `abapgen-win.exe` (Windows x64)
+If you need to modify the ABAP parser itself, clone [joernio/astgen-monorepo](https://github.com/joernio/astgen-monorepo), edit `abap-astgen/parse-abap.js`, run `npm run binary` to produce the native binaries, and publish a new release — `build.sbt` here picks up the binaries from the pinned release tag.
 
 ## Running
 
@@ -208,8 +140,8 @@ sbt "project abap2cpg" "testOnly io.joern.abap2cpg.passes.AstCreatorTests -- -oF
 export ABAP2CPG_DEBUG=1
 ./abap2cpg.sh /path/to/source -o cpg.bin
 
-# Test parser directly
-cd joern-cli/frontends/abap2cpg
+# Test the parser directly (from the astgen-monorepo checkout)
+cd /path/to/astgen-monorepo/abap-astgen
 node parse-abap.js /path/to/file.abap
 
 # Inspect intermediate AST in sbt console
@@ -404,10 +336,10 @@ The parser outputs structured JSON containing:
 ### Stage 2: CPG Generation (Scala)
 
 The Scala-based CPG generator processes the JSON ASTs:
-1. **AbapJsonParser** reads and validates the JSON output
-2. **AbapAstGenRunner** manages the parser execution and file processing
-3. **AstCreationPass** traverses the intermediate AST
-4. **CpgGenerator** creates CPG nodes according to the [Code Property Graph specification](https://github.com/ShiftLeftSecurity/codepropertygraph)
+1. **AbapAstGenRunner** manages the parser execution and file processing
+2. **AbapJsonParser** reads and validates the JSON output, producing an intermediate AST
+3. **AstCreationPass** drives **AstCreator** (trait-composed) over the intermediate AST to emit CPG nodes/edges, following the [Code Property Graph specification](https://github.com/ShiftLeftSecurity/codepropertygraph)
+4. Follow-up passes (`ContainsEdgePass`, `TypeNodePass`, `RefEdgePass`, `AbapTypeInferencePass`, `TypeEvalPass`) finish the graph
 
 The generated CPG can then be analyzed using Joern/Ocular for:
 - Security vulnerability detection
