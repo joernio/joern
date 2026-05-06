@@ -59,7 +59,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 0 # Fetch full history for diff comparison
+          fetch-depth: 1
+      - name: Fetch base branch with depth 1
+        run: git fetch --depth=1 origin ${{ github.event.pull_request.base.ref }}:refs/remotes/origin/${{ github.event.pull_request.base.ref }}
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:
