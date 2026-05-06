@@ -77,7 +77,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       assignStmt,
       Operators.assignment,
       s"$lhsCode = $rhsCode",
-      Option(registerType(leftOp.getType.toQuotedString))
+      Option(registerType(leftOp.getType.toString))
     )
     Seq(callAst(assignment, identifier ++ initAsts))
   }

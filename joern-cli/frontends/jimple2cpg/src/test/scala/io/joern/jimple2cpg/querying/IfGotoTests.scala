@@ -40,7 +40,7 @@ class IfGotoTests extends JimpleCode2CpgFixture {
         x.cfgOut.size > 1
       }
       .code
-      .toSetMutable shouldBe Set("i < 11", "$stack6 >= x", "x <= y", "i >= 10")
+      .toSetMutable shouldBe Set("i#3 < 11", "$stack4 >= x", "x > y", "i >= 10")
   }
 
 }

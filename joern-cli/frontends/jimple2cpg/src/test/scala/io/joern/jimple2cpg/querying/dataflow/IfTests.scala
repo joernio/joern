@@ -53,6 +53,7 @@ class IfTests extends JimpleDataFlowCodeToCpgSuite {
     |
     |    public void test5(boolean b) {
     |        String s = "MALICIOUS";
+    |        System.out.printf("do not optimize away: %s", s);
     |
     |        if (b) {
     |            s = "SAFE";

@@ -43,12 +43,12 @@ class SynchronizedTests extends JimpleCode2CpgFixture {
     enterThis.lineNumber shouldBe Some(8)
     enterThis.columnNumber shouldBe None
 
-    exit1.code shouldBe "exitmonitor l2"
+    exit1.code shouldBe "exitmonitor this"
     exit1.lineNumber shouldBe Some(10)
     exit1.columnNumber shouldBe None
 
-    exit2.code shouldBe "exitmonitor l2"
-    exit2.lineNumber shouldBe Some(11)
+    exit2.code shouldBe "exitmonitor this"
+    exit2.lineNumber shouldBe Some(10)
     exit2.columnNumber shouldBe None
   }
 }

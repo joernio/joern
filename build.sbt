@@ -102,7 +102,8 @@ ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,
   "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public",
   "Atlassian" at "https://packages.atlassian.com/mvn/maven-atlassian-external",
-  "Gradle Releases" at "https://repo.gradle.org/gradle/libs-releases/"
+  "Gradle Releases" at "https://repo.gradle.org/gradle/libs-releases/",
+  "Google Maven" at "https://maven.google.com/"
 )
 
 ThisBuild / Test / fork := true
