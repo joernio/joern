@@ -71,13 +71,10 @@ class LombokTests extends JavaSrcCode2CpgFixture {
     ).withConfig(config)
 
     "delombok the source correctly" in {
-      cpg.method.name("getValue").l match {
-        case method :: Nil =>
-          method.fullName shouldBe "foo.Foo.getValue:int()"
-          method.body.astChildren.size shouldBe 1
-          method.filename.contains("delombok") shouldBe false
-
-        case result => fail(s"Expected single getValue method but got $result")
+      inside(cpg.method.name("getValue").l) { case method :: Nil =>
+        method.fullName shouldBe "foo.Foo.getValue:int()"
+        method.body.astChildren.size shouldBe 1
+        method.filename.contains("delombok") shouldBe false
       }
     }
 
@@ -98,13 +95,10 @@ class LombokTests extends JavaSrcCode2CpgFixture {
     ).withConfig(config)
 
     "delombok the source correctly" in {
-      cpg.method.name("getValue").l match {
-        case method :: Nil =>
-          method.fullName shouldBe "Foo.getValue:int()"
-          method.body.astChildren.size shouldBe 1
-          method.filename.contains("delombok") shouldBe false
-
-        case result => fail(s"Expected single getValue method but got $result")
+      inside(cpg.method.name("getValue").l) { case method :: Nil =>
+        method.fullName shouldBe "Foo.getValue:int()"
+        method.body.astChildren.size shouldBe 1
+        method.filename.contains("delombok") shouldBe false
       }
     }
 

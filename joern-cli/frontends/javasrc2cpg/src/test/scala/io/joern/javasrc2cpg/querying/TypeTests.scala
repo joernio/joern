@@ -72,61 +72,46 @@ class NewTypeTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "use an array type to represent varargs in the method signature" in {
-      cpg.method.name("foo").l match {
-        case fooMethod :: Nil =>
-          fooMethod.fullName shouldBe "Foo.foo:java.lang.String[](boolean,java.lang.String[])"
-          fooMethod.signature shouldBe "java.lang.String[](boolean,java.lang.String[])"
-
-        case result => fail(s"Expected single foo method but got $result")
+      inside(cpg.method.name("foo").l) { case fooMethod :: Nil =>
+        fooMethod.fullName shouldBe "Foo.foo:java.lang.String[](boolean,java.lang.String[])"
+        fooMethod.signature shouldBe "java.lang.String[](boolean,java.lang.String[])"
       }
     }
 
     "create an array parameter node to represent varargs" in {
       def fooMethods = cpg.method.name("foo").l
       fooMethods.size shouldBe 1
-      fooMethods.parameter.l match {
-        case bParam :: itemsParam :: Nil =>
-          bParam.typeFullName shouldBe "boolean"
-          bParam.name shouldBe "b"
-          bParam.code shouldBe "boolean b"
+      inside(fooMethods.parameter.l) { case bParam :: itemsParam :: Nil =>
+        bParam.typeFullName shouldBe "boolean"
+        bParam.name shouldBe "b"
+        bParam.code shouldBe "boolean b"
 
-          itemsParam.typeFullName shouldBe "java.lang.String[]"
-          itemsParam.name shouldBe "items"
-          itemsParam.code shouldBe "String... items"
-
-        case result => fail(s"Expected 2 parameters for foo method but got $result")
+        itemsParam.typeFullName shouldBe "java.lang.String[]"
+        itemsParam.name shouldBe "items"
+        itemsParam.code shouldBe "String... items"
       }
     }
 
     "use an array type to represent varargs in the call signature" in {
-      cpg.call.name("foo").l match {
-        case fooCall :: Nil =>
-          fooCall.methodFullName shouldBe "Foo.foo:java.lang.String[](boolean,java.lang.String[])"
-          fooCall.signature shouldBe "java.lang.String[](boolean,java.lang.String[])"
-
-        case result => fail(s"Expected single foo call but got $result")
+      inside(cpg.call.name("foo").l) { case fooCall :: Nil =>
+        fooCall.methodFullName shouldBe "Foo.foo:java.lang.String[](boolean,java.lang.String[])"
+        fooCall.signature shouldBe "java.lang.String[](boolean,java.lang.String[])"
       }
     }
 
     "use an arrayInitializer call node to represent varargs in the call AST" in {
       def call = cpg.call.name("foo")
       call.size shouldBe 1
-      call.argument.l match {
-        case List(_: Identifier, varargs: Call) =>
-          varargs.methodFullName shouldBe Operators.arrayInitializer
-          varargs.typeFullName shouldBe "java.lang.String[]"
-          varargs.argument.l match {
-            case List(item1: Identifier, item2: Identifier) =>
-              item1.name shouldBe "item1"
-              item1.typeFullName shouldBe "java.lang.String"
+      inside(call.argument.l) { case List(_: Identifier, varargs: Call) =>
+        varargs.methodFullName shouldBe Operators.arrayInitializer
+        varargs.typeFullName shouldBe "java.lang.String[]"
+        inside(varargs.argument.l) { case List(item1: Identifier, item2: Identifier) =>
+          item1.name shouldBe "item1"
+          item1.typeFullName shouldBe "java.lang.String"
 
-              item2.name shouldBe "item2"
-              item2.typeFullName shouldBe "java.lang.String"
-
-            case result => fail(s"Expected array initializer args matching 2 items but got $result")
-          }
-
-        case result => fail(s"Expected identifier and arrayInitializer arguments but got $result")
+          item2.name shouldBe "item2"
+          item2.typeFullName shouldBe "java.lang.String"
+        }
       }
     }
 
@@ -141,10 +126,8 @@ class NewTypeTests extends JavaSrcCode2CpgFixture {
           |    }
           |}
           |""".stripMargin)
-      cpg.method.nameExact("<lambda>0").fullName.l match {
-        case List(fullName) => fullName shouldBe "Test.<lambda>0:int(java.lang.Object,java.lang.Object)"
-
-        case res => fail(s"Expected fullName but got $res")
+      inside(cpg.method.nameExact("<lambda>0").fullName.l) { case List(fullName) =>
+        fullName shouldBe "Test.<lambda>0:int(java.lang.Object,java.lang.Object)"
       }
     }
   }
@@ -249,24 +232,18 @@ class TypeTests extends JavaSrcCode2CpgFixture {
   }
 
   "should handle primitive type arrays" in {
-    cpg.method.name("bar").parameter.name("xs").headOption match {
-      case Some(param) =>
-        param.typeFullName shouldBe "int[]"
-        param.typ.name shouldBe "int[]"
-        param.typ.fullName shouldBe "int[]"
-
-      case res => fail(s"Expected single param xs but got $res")
+    inside(cpg.method.name("bar").parameter.name("xs").headOption) { case Some(param) =>
+      param.typeFullName shouldBe "int[]"
+      param.typ.name shouldBe "int[]"
+      param.typ.fullName shouldBe "int[]"
     }
   }
 
   "should handle reference type arrays" in {
-    cpg.method.name("baz").parameter.name("fs").headOption match {
-      case Some(param) =>
-        param.typeFullName shouldBe "foo.Foo[]"
-        param.typ.name shouldBe "Foo[]"
-        param.typ.fullName shouldBe "foo.Foo[]"
-
-      case res => fail(s"Expected array parameter fs but got $res")
+    inside(cpg.method.name("baz").parameter.name("fs").headOption) { case Some(param) =>
+      param.typeFullName shouldBe "foo.Foo[]"
+      param.typ.name shouldBe "Foo[]"
+      param.typ.fullName shouldBe "foo.Foo[]"
     }
   }
 
@@ -276,14 +253,11 @@ class TypeTests extends JavaSrcCode2CpgFixture {
     call.typeFullName shouldBe "void"
     call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
 
-    call.argument(0).collect { case identifier: Identifier => identifier }.l match {
-      case identifier :: Nil =>
-        identifier.name shouldBe "this"
-        identifier.typeFullName shouldBe "java.lang.Object"
-        identifier.order shouldBe 1
-        identifier.argumentIndex shouldBe 0
-
-      case _ => fail("No receiver for super call found")
+    inside(call.argument(0).collect { case identifier: Identifier => identifier }.l) { case identifier :: Nil =>
+      identifier.name shouldBe "this"
+      identifier.typeFullName shouldBe "java.lang.Object"
+      identifier.order shouldBe 1
+      identifier.argumentIndex shouldBe 0
     }
 
   }

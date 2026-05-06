@@ -294,22 +294,18 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
 			 |}
 			 |""".stripMargin)
 
-      cpg.method
-        .fullNameExact(s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()")
-        .call
-        .nameExact(io.joern.x2cpg.Defines.ConstructorMethodName)
-        .argument(0)
-        .l match {
-        case List(thisNode: Identifier) =>
-          thisNode._refOut.l match {
-            case List(paramNode: MethodParameterIn) =>
-              paramNode.name shouldBe "this"
-              paramNode.method.fullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
-
-            case result => fail(s"Expected REF edge to method parameter but found $result")
-          }
-
-        case result => fail(s"Expected <init> call with `this` receiver but found $result")
+      inside(
+        cpg.method
+          .fullNameExact(s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()")
+          .call
+          .nameExact(io.joern.x2cpg.Defines.ConstructorMethodName)
+          .argument(0)
+          .l
+      ) { case List(thisNode: Identifier) =>
+        inside(thisNode._refOut.l) { case List(paramNode: MethodParameterIn) =>
+          paramNode.name shouldBe "this"
+          paramNode.method.fullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
+        }
       }
     }
     "have ref edges from implicit `this` to method parameter" in {
@@ -322,18 +318,12 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
 			 |  public void foo(int x) {}
 			 |}""".stripMargin)
 
-      cpg.method.name("test").call.name("foo").argument(0).outE.collectAll[Ref].l match {
-        case List(ref) =>
-          ref.dst match {
-            case param: MethodParameterIn =>
-              param.name shouldBe "this"
-              param.index shouldBe 0
-              param.method.fullName shouldBe "Foo.test:void()"
-
-            case result => fail(s"Expected ref edge to method param but found $result")
-          }
-
-        case result => fail(s"Expected out ref edge but got $result")
+      inside(cpg.method.name("test").call.name("foo").argument(0).outE.collectAll[Ref].l) { case List(ref) =>
+        inside(ref.dst) { case param: MethodParameterIn =>
+          param.name shouldBe "this"
+          param.index shouldBe 0
+          param.method.fullName shouldBe "Foo.test:void()"
+        }
       }
     }
 
@@ -347,18 +337,12 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
                       |  public void foo(int x) {}
                       |}""".stripMargin)
 
-      cpg.method.name("test").call.name("foo").argument(0).outE.collectAll[Ref].l match {
-        case List(ref) =>
-          ref.dst match {
-            case param: MethodParameterIn =>
-              param.name shouldBe "this"
-              param.index shouldBe 0
-              param.method.fullName shouldBe "Foo.test:void()"
-
-            case result => fail(s"Expected ref edge to method param but found $result")
-          }
-
-        case result => fail(s"Expected out ref edge but got $result")
+      inside(cpg.method.name("test").call.name("foo").argument(0).outE.collectAll[Ref].l) { case List(ref) =>
+        inside(ref.dst) { case param: MethodParameterIn =>
+          param.name shouldBe "this"
+          param.index shouldBe 0
+          param.method.fullName shouldBe "Foo.test:void()"
+        }
       }
     }
   }
@@ -432,11 +416,8 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
           |}
           |""".stripMargin)
 
-      cpg.call.name("getValue").l match {
-        case List(getValueCall) =>
-          getValueCall.code shouldBe "new Foo().getValue()"
-
-        case result => fail(s"Expected single getValue call but got $result")
+      inside(cpg.call.name("getValue").l) { case List(getValueCall) =>
+        getValueCall.code shouldBe "new Foo().getValue()"
       }
     }
 
@@ -457,11 +438,8 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
           |}
           |""".stripMargin)
 
-      cpg.call.name("getValue").l match {
-        case List(getValueCall) =>
-          getValueCall.code shouldBe "new Foo().getValue()"
-
-        case result => fail(s"Expected single getValue call but got $result")
+      inside(cpg.call.name("getValue").l) { case List(getValueCall) =>
+        getValueCall.code shouldBe "new Foo().getValue()"
       }
     }
 
@@ -474,11 +452,8 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
           |  }
           |}
           |""".stripMargin)
-      cpg.call.name(io.joern.x2cpg.Defines.ConstructorMethodName).l match {
-        case List(initCall: Call) =>
-          initCall.code shouldBe "new Foo()"
-
-        case result => fail(s"Expected single init call but got $result")
+      inside(cpg.call.name(io.joern.x2cpg.Defines.ConstructorMethodName).l) { case List(initCall: Call) =>
+        initCall.code shouldBe "new Foo()"
       }
     }
 
@@ -494,11 +469,9 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
           |}
           |""".stripMargin)
 
-      cpg.call.name("create").argument.argumentIndexGt(0).l match {
-        case List(username: Literal, password: Literal) =>
-          username.code shouldBe "\"username\""
-          password.code shouldBe "\"password\""
-        case result => fail(s"Expected two arguments but got $result")
+      inside(cpg.call.name("create").argument.argumentIndexGt(0).l) { case List(username: Literal, password: Literal) =>
+        username.code shouldBe "\"username\""
+        password.code shouldBe "\"password\""
       }
     }
 
@@ -515,11 +488,9 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
           |}
           |""".stripMargin)
 
-      cpg.call.name("create").argument.argumentIndexGt(0).l match {
-        case List(username: Literal, password: Literal) =>
-          username.code shouldBe "\"username\""
-          password.code shouldBe "\"password\""
-        case result => fail(s"Expected two arguments but got $result")
+      inside(cpg.call.name("create").argument.argumentIndexGt(0).l) { case List(username: Literal, password: Literal) =>
+        username.code shouldBe "\"username\""
+        password.code shouldBe "\"password\""
       }
     }
   }
@@ -710,18 +681,14 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "have correct method full name for `buildClient` call on line 8" in {
-      cpg.call("buildClient").lineNumber(8).l match {
-        case List(buildClient) =>
-          buildClient.methodFullName shouldBe "<unresolvedNamespace>.buildClient:<unresolvedSignature>(0)"
-        case result => fail(s"Expected single buildClient call but got $result")
+      inside(cpg.call("buildClient").lineNumber(8).l) { case List(buildClient) =>
+        buildClient.methodFullName shouldBe "<unresolvedNamespace>.buildClient:<unresolvedSignature>(0)"
       }
     }
 
     "have correct method full name for `buildClient` call on line 9" in {
-      cpg.call("buildClient").lineNumber(9).l match {
-        case List(buildClient) =>
-          buildClient.methodFullName shouldBe "<unresolvedNamespace>.buildClient:<unresolvedSignature>(0)"
-        case result => fail(s"Expected single buildClient call but got $result")
+      inside(cpg.call("buildClient").lineNumber(9).l) { case List(buildClient) =>
+        buildClient.methodFullName shouldBe "<unresolvedNamespace>.buildClient:<unresolvedSignature>(0)"
       }
     }
   }

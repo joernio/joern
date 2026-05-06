@@ -18,19 +18,16 @@ class ArrayTests extends JavaSrcCode2CpgFixture {
                        |}
                        |""".stripMargin)
 
-      cpg.method.name("foo").assignment.argument.l match {
-        case List(target: Identifier, arrayInitializer: Call) =>
-          target.name shouldBe "xs"
-          target.code shouldBe "xs"
-          target.argumentIndex shouldBe 1
-          target.typeFullName shouldBe "int[]"
+      inside(cpg.method.name("foo").assignment.argument.l) { case List(target: Identifier, arrayInitializer: Call) =>
+        target.name shouldBe "xs"
+        target.code shouldBe "xs"
+        target.argumentIndex shouldBe 1
+        target.typeFullName shouldBe "int[]"
 
-          arrayInitializer.name shouldBe Operators.arrayInitializer
-          arrayInitializer.methodFullName shouldBe Operators.arrayInitializer
-          arrayInitializer.code shouldBe "new int[] { 1, 2, 3 }"
-          arrayInitializer.typeFullName shouldBe "int[]"
-
-        case result => fail(s"Expected array initializer assignment args but got $result")
+        arrayInitializer.name shouldBe Operators.arrayInitializer
+        arrayInitializer.methodFullName shouldBe Operators.arrayInitializer
+        arrayInitializer.code shouldBe "new int[] { 1, 2, 3 }"
+        arrayInitializer.typeFullName shouldBe "int[]"
       }
     }
     "take preference in combined declaration and initializations" in {
@@ -42,19 +39,16 @@ class ArrayTests extends JavaSrcCode2CpgFixture {
                        |}
                        |""".stripMargin)
 
-      cpg.method.name("foo").assignment.argument.l match {
-        case List(target: Identifier, arrayInitializer: Call) =>
-          target.name shouldBe "xs"
-          target.code shouldBe "xs"
-          target.argumentIndex shouldBe 1
-          target.typeFullName shouldBe "int[]"
+      inside(cpg.method.name("foo").assignment.argument.l) { case List(target: Identifier, arrayInitializer: Call) =>
+        target.name shouldBe "xs"
+        target.code shouldBe "xs"
+        target.argumentIndex shouldBe 1
+        target.typeFullName shouldBe "int[]"
 
-          arrayInitializer.name shouldBe Operators.arrayInitializer
-          arrayInitializer.methodFullName shouldBe Operators.arrayInitializer
-          arrayInitializer.code shouldBe "new int[] { 1, 2, 3 }"
-          arrayInitializer.typeFullName shouldBe "int[]"
-
-        case result => fail(s"Expected array initializer assignment args but got $result")
+        arrayInitializer.name shouldBe Operators.arrayInitializer
+        arrayInitializer.methodFullName shouldBe Operators.arrayInitializer
+        arrayInitializer.code shouldBe "new int[] { 1, 2, 3 }"
+        arrayInitializer.typeFullName shouldBe "int[]"
       }
     }
 

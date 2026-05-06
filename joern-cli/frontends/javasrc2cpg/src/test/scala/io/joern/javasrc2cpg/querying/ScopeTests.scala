@@ -116,86 +116,58 @@ class ScopeTests extends JavaSrcCode2CpgFixture {
       |""".stripMargin)
 
   "it should create field access for simple non-static access as call scope" in {
-    cpg.method.name("test8").call.name("toString").argument.l match {
-      case List(fieldAccess: Call) =>
-        fieldAccess.methodFullName shouldBe Operators.fieldAccess
-        fieldAccess.argument.l match {
-          case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
-            identifier.name shouldBe "this"
-            fieldIdentifier.canonicalName shouldBe "o"
-          case res => fail(s"Expected field access args but got $res")
-        }
-
-      case res => fail(s"Expected field access call but got $res")
+    inside(cpg.method.name("test8").call.name("toString").argument.l) { case List(fieldAccess: Call) =>
+      fieldAccess.methodFullName shouldBe Operators.fieldAccess
+      inside(fieldAccess.argument.l) { case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
+        identifier.name shouldBe "this"
+        fieldIdentifier.canonicalName shouldBe "o"
+      }
     }
   }
 
   "it should create field access for simple non-static access with explicit this as call scope" in {
-    cpg.method.name("test9").call.name("toString").argument.l match {
-      case List(fieldAccess: Call) =>
-        fieldAccess.methodFullName shouldBe Operators.fieldAccess
-        fieldAccess.argument.l match {
-          case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
-            identifier.name shouldBe "this"
-            fieldIdentifier.canonicalName shouldBe "o"
-          case res => fail(s"Expected field access args but got $res")
-        }
-
-      case res => fail(s"Expected field access call but got $res")
+    inside(cpg.method.name("test9").call.name("toString").argument.l) { case List(fieldAccess: Call) =>
+      fieldAccess.methodFullName shouldBe Operators.fieldAccess
+      inside(fieldAccess.argument.l) { case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
+        identifier.name shouldBe "this"
+        fieldIdentifier.canonicalName shouldBe "o"
+      }
     }
   }
 
   "it should create field access for implicit static member as call scope" in {
-    cpg.method.name("test10").call.name("toString").argument.l match {
-      case List(fieldAccess: Call) =>
-        fieldAccess.methodFullName shouldBe Operators.fieldAccess
-        fieldAccess.typeFullName shouldBe "java.lang.Object"
-        fieldAccess.argument.l match {
-          case List(typeRef: TypeRef, fieldIdentifier: FieldIdentifier) =>
-            typeRef.typeFullName shouldBe "Test"
-            fieldIdentifier.canonicalName shouldBe "staticO"
-          case res => fail(s"Expected field access args but got $res")
-        }
-
-      case res => fail(s"Expected field access call but got $res")
+    inside(cpg.method.name("test10").call.name("toString").argument.l) { case List(fieldAccess: Call) =>
+      fieldAccess.methodFullName shouldBe Operators.fieldAccess
+      fieldAccess.typeFullName shouldBe "java.lang.Object"
+      inside(fieldAccess.argument.l) { case List(typeRef: TypeRef, fieldIdentifier: FieldIdentifier) =>
+        typeRef.typeFullName shouldBe "Test"
+        fieldIdentifier.canonicalName shouldBe "staticO"
+      }
     }
   }
 
   "it should create field access for explicit static member as call scope" in {
-    cpg.method.name("test11").call.name("toString").argument.l match {
-      case List(fieldAccess: Call) =>
-        fieldAccess.methodFullName shouldBe Operators.fieldAccess
-        fieldAccess.argument.l match {
-          case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
-            identifier.name shouldBe "Test"
-            fieldIdentifier.canonicalName shouldBe "staticO"
-          case res => fail(s"Expected field access args but got $res")
-        }
-
-      case res => fail(s"Expected field access call but got $res")
+    inside(cpg.method.name("test11").call.name("toString").argument.l) { case List(fieldAccess: Call) =>
+      fieldAccess.methodFullName shouldBe Operators.fieldAccess
+      inside(fieldAccess.argument.l) { case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
+        identifier.name shouldBe "Test"
+        fieldIdentifier.canonicalName shouldBe "staticO"
+      }
     }
   }
 
   "it should create nested field accesses as call scope" in {
-    cpg.method.name("test12").call.name("toString").argument.l match {
-      case List(boAccess: Call) =>
-        boAccess.methodFullName shouldBe Operators.fieldAccess
-        boAccess.argument.l match {
-          case List(bOnlyAccess: Call, oFieldIdentifier: FieldIdentifier) =>
-            oFieldIdentifier.canonicalName shouldBe "o"
+    inside(cpg.method.name("test12").call.name("toString").argument.l) { case List(boAccess: Call) =>
+      boAccess.methodFullName shouldBe Operators.fieldAccess
+      inside(boAccess.argument.l) { case List(bOnlyAccess: Call, oFieldIdentifier: FieldIdentifier) =>
+        oFieldIdentifier.canonicalName shouldBe "o"
 
-            bOnlyAccess.methodFullName shouldBe Operators.fieldAccess
-            bOnlyAccess.argument.l match {
-              case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
-                identifier.name shouldBe "this"
-                fieldIdentifier.canonicalName shouldBe "b"
-
-              case res => fail(s"Expected identifier and field Identifier for this.b access but got $res")
-            }
-
-          case res => fail(s"Expected field access call but got $res")
+        bOnlyAccess.methodFullName shouldBe Operators.fieldAccess
+        inside(bOnlyAccess.argument.l) { case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
+          identifier.name shouldBe "this"
+          fieldIdentifier.canonicalName shouldBe "b"
         }
-      case res => fail(s"Expected b.o field access but got $res")
+      }
     }
   }
 }

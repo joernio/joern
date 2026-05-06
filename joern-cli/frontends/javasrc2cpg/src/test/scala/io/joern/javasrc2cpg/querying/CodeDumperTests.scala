@@ -20,16 +20,14 @@ class CodeDumperTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin).withConfig(JavaSrc2Cpg.DefaultConfig.withDisableFileContent(false))
 
     "allow one to dump a method node's source code from `File.contents`" in {
-      inside(cpg.method.nameExact("test").dumpRaw.l) {
-        case content :: Nil =>
-          content.linesIterator.map(_.strip).l shouldBe List(
-            "public void test() { /* <=== Foo.test:void() */",
-            "var a = 1;",
-            "var b = 2;",
-            "var c = a + b;",
-            "}"
-          )
-        case content => fail(s"Expected exactly 1 content dump, but got: $content")
+      inside(cpg.method.nameExact("test").dumpRaw.l) { case content :: Nil =>
+        content.linesIterator.map(_.strip).l shouldBe List(
+          "public void test() { /* <=== Foo.test:void() */",
+          "var a = 1;",
+          "var b = 2;",
+          "var c = a + b;",
+          "}"
+        )
       }
     }
 

@@ -19,10 +19,8 @@ class VarDeclTests extends JavaSrcCode2CpgFixture {
     val methodBody = cpg.method.name("test1").astChildren.collect { case b: Block => b }.head
     methodBody.astChildren.size shouldBe 2
 
-    val (local, assig) = methodBody.astChildren.l match {
-      case List(local: Local, assig: Call) => (local, assig)
-
-      case res => fail(s"Expected List(Local, Call) but got ${res.map(_.label)}")
+    val (local, assig) = inside(methodBody.astChildren.l) { case List(local: Local, assig: Call) =>
+      (local, assig)
     }
 
     local.name shouldBe "x"
@@ -44,10 +42,8 @@ class VarDeclTests extends JavaSrcCode2CpgFixture {
     val methodBody = cpg.method.name("test2").astChildren.collect { case b: Block => b }.head
     methodBody.astChildren.size shouldBe 2
 
-    val (local, assig) = methodBody.astChildren.l match {
-      case List(local: Local, assig: Call) => (local, assig)
-
-      case res => fail(s"Expected List(Local, Call) but got ${res.map(_.label)}")
+    val (local, assig) = inside(methodBody.astChildren.l) { case List(local: Local, assig: Call) =>
+      (local, assig)
     }
 
     local.name shouldBe "x"
@@ -70,10 +66,8 @@ class VarDeclTests extends JavaSrcCode2CpgFixture {
     val methodBody = cpg.method.name("test3").astChildren.collect { case b: Block => b }.head
     methodBody.astChildren.size shouldBe 4
 
-    val (localX, localY, assigX, assigY) = methodBody.astChildren.l match {
+    val (localX, localY, assigX, assigY) = inside(methodBody.astChildren.l) {
       case List(localX: Local, localY: Local, assigX: Call, assigY: Call) => (localX, localY, assigX, assigY)
-
-      case res => fail(s"Expected List(Local, Local, Call, Call) but got ${res.map(_.label)}")
     }
 
     localX.name shouldBe "x"
@@ -100,10 +94,8 @@ class VarDeclTests extends JavaSrcCode2CpgFixture {
     val methodBody = cpg.method.name("test4").astChildren.collect { case b: Block => b }.head
     methodBody.astChildren.size shouldBe 6
 
-    val (localX, localY, localZ, assigY, assigX, assigZ) = methodBody.astChildren.l match {
+    val (localX, localY, localZ, assigY, assigX, assigZ) = inside(methodBody.astChildren.l) {
       case List(lX: Local, lY: Local, lZ: Local, aY: Call, aX: Call, aZ: Call) => (lX, lY, lZ, aY, aX, aZ)
-
-      case res => fail(s"Expected List(Local, Local, Local, Call, Call, Call) but got ${res.map(_.label)}")
     }
 
     localX.name shouldBe "x"
@@ -134,10 +126,8 @@ class VarDeclTests extends JavaSrcCode2CpgFixture {
     val methodBody = cpg.method.name("test5").astChildren.collect { case b: Block => b }.head
     methodBody.astChildren.size shouldBe 6
 
-    val (localX, localY, assigY, localZ, assigZ, assigX) = methodBody.astChildren.l match {
+    val (localX, localY, assigY, localZ, assigZ, assigX) = inside(methodBody.astChildren.l) {
       case List(lX: Local, lY: Local, aY: Call, lZ: Local, aZ: Call, aX: Call) => (lX, lY, aY, lZ, aZ, aX)
-
-      case res => fail(s"Expected List(Local, Local, Call, Local, Call, Call) but got ${res.map(_.label)}")
     }
 
     localX.name shouldBe "x"

@@ -321,23 +321,20 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
 				|""".stripMargin)
 
     "have correct types set from imports" in {
-      cpg.typeDecl.name("Foo").annotation.l match {
-        case List(specific, wildcard1, wildcard2) =>
-          specific.name shouldBe "Specific"
-          specific.fullName shouldBe "a.Specific"
-          specific.code shouldBe "@Specific"
+      inside(cpg.typeDecl.name("Foo").annotation.l) { case List(specific, wildcard1, wildcard2) =>
+        specific.name shouldBe "Specific"
+        specific.fullName shouldBe "a.Specific"
+        specific.code shouldBe "@Specific"
 
-          wildcard1.name shouldBe "Wildcard1"
-          wildcard1.fullName shouldBe "b.Wildcard1"
-          wildcard1.code shouldBe "@Wildcard1"
-          wildcard1.lineNumber shouldBe Some(6)
+        wildcard1.name shouldBe "Wildcard1"
+        wildcard1.fullName shouldBe "b.Wildcard1"
+        wildcard1.code shouldBe "@Wildcard1"
+        wildcard1.lineNumber shouldBe Some(6)
 
-          wildcard2.name shouldBe "Wildcard2"
-          wildcard2.fullName shouldBe "b.Wildcard2"
-          wildcard2.code shouldBe "@Wildcard2"
-          wildcard2.lineNumber shouldBe Some(7)
-
-        case result => fail(s"Expected 3 annotations for Foo but got $result")
+        wildcard2.name shouldBe "Wildcard2"
+        wildcard2.fullName shouldBe "b.Wildcard2"
+        wildcard2.code shouldBe "@Wildcard2"
+        wildcard2.lineNumber shouldBe Some(7)
       }
     }
   }
