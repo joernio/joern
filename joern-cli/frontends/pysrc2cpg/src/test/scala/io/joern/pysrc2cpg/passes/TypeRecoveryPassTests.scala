@@ -1661,4 +1661,34 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       }
     }
   }
+
+  "type recovery from annotations and stubs" should {
+    lazy val cpg = code("""from typing import Optional
+        |
+        |def greet(name: str) -> str:
+        |    return "Hello, " + name
+        |
+        |def maybe(x: Optional[int]) -> str:
+        |    return str(x)
+        |
+        |result = greet("world")
+        |""".stripMargin).cpg
+
+    "resolve annotated parameter type for 'name'" in {
+      cpg.method.name("greet").parameter.name("name").typeFullName.head shouldBe "__builtin.str"
+    }
+
+    "resolve annotated return type for 'greet'" in {
+      cpg.method.name("greet").methodReturn.typeFullName.head shouldBe "__builtin.str"
+    }
+
+    "resolve Optional[int] parameter to union type" in {
+      cpg.method.name("maybe").parameter.name("x").typeFullName.head shouldBe "__builtin.int|__builtin.None"
+    }
+
+    "propagate return type to call site 'result'" in {
+      val resultTypes = cpg.identifier.name("result").typeFullName.toSet
+      resultTypes should contain("__builtin.str")
+    }
+  }
 }

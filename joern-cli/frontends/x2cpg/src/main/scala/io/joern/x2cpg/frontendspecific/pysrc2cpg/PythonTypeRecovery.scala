@@ -139,7 +139,11 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
     case "<operator>.tupleLiteral" => Set(s"${Constants.builtinPrefix}tuple")
     case "<operator>.dictLiteral"  => Set(s"${Constants.builtinPrefix}dict")
     case "<operator>.setLiteral"   => Set(s"${Constants.builtinPrefix}set")
-    case _                         => super.getTypesFromCall(c)
+    case _ =>
+      PythonTypeStubs.returnTypeFor(c.methodFullName).orElse(PythonTypeStubs.returnTypeFor(c.name)) match {
+        case Some(rt) => Set(rt)
+        case None     => super.getTypesFromCall(c)
+      }
   }
 
   override def getFieldParents(fa: FieldAccess): Set[String] = {
@@ -196,6 +200,25 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
   }
 
   override def prepopulateSymbolTable(): Unit = {
+    // Seed symbol table from Python type annotations on parameters
+    cu.method.parameter
+      .filterNot(_.typeFullName == Constants.ANY)
+      .filterNot(_.name == "self")
+      .foreach { param =>
+        symbolTable.append(LocalVar(param.name), Set(param.typeFullName))
+      }
+    // Seed from local variable type annotations
+    cu.method.local
+      .filterNot(_.typeFullName == Constants.ANY)
+      .foreach { local =>
+        symbolTable.append(LocalVar(local.name), Set(local.typeFullName))
+      }
+    // Seed from method return type annotations
+    cu.method
+      .filterNot(_.methodReturn.typeFullName == Constants.ANY)
+      .foreach { m =>
+        symbolTable.append(CallAlias(m.name, None), Set(m.methodReturn.typeFullName))
+      }
     cu.ast.isMethodRef.where(_.astSiblings.isIdentifier.nameExact("classmethod")).referencedMethod.foreach {
       classMethod =>
         classMethod.parameter
