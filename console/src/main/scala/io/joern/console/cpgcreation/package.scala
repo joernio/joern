@@ -102,22 +102,22 @@ package object cpgcreation {
 
   private def guessLanguageForRegularFile(file: Path): Option[String] = {
     file.fileName.toLowerCase match {
-      case f if isJavaBinary(f)      => Some(Languages.JAVA)
-      case f if isCsharpFile(f)      => Some(Languages.CSHARPSRC)
-      case f if isGoFile(f)          => Some(Languages.GOLANG)
-      case f if isJsFile(f)          => Some(Languages.JSSRC)
-      case f if f.endsWith(".java")  => Some(Languages.JAVASRC)
-      case f if f.endsWith(".class") => Some(Languages.JAVA)
-      case f if f.endsWith(".kt")    => Some(Languages.KOTLIN)
-      case f if f.endsWith(".php")   => Some(Languages.PHP)
-      case f if f.endsWith(".py")    => Some(Languages.PYTHONSRC)
-      case f if f.endsWith(".rb")    => Some(Languages.RUBYSRC)
-      case f if f.endsWith(".swift") => Some(Languages.SWIFTSRC)
-      case f if isLlvmFile(f)        => Some(Languages.LLVM)
-      case f if isCFile(f)           => Some(Languages.NEWC)
-      case f if isRustFile(f)        => Some(Languages.RUST)
-      case f if f.endsWith(".abap")  => Some(Languages.ABAP)
-      case _                         => None
+      case fileName if isJavaBinary(fileName)      => Some(Languages.JAVA)
+      case fileName if isCsharpFile(fileName)      => Some(Languages.CSHARPSRC)
+      case fileName if isGoFile(fileName)          => Some(Languages.GOLANG)
+      case fileName if isJsFile(fileName)          => Some(Languages.JSSRC)
+      case fileName if fileName.endsWith(".java")  => Some(Languages.JAVASRC)
+      case fileName if fileName.endsWith(".class") => Some(Languages.JAVA)
+      case fileName if fileName.endsWith(".kt")    => Some(Languages.KOTLIN)
+      case fileName if fileName.endsWith(".php")   => Some(Languages.PHP)
+      case fileName if fileName.endsWith(".py")    => Some(Languages.PYTHONSRC)
+      case fileName if fileName.endsWith(".rb")    => Some(Languages.RUBYSRC)
+      case fileName if fileName.endsWith(".swift") => Some(Languages.SWIFTSRC)
+      case fileName if isLlvmFile(fileName)        => Some(Languages.LLVM)
+      case fileName if isCFile(fileName)           => Some(Languages.NEWC)
+      case fileName if isRustFile(fileName)        => Some(Languages.RUST)
+      case fileName if fileName.endsWith(".abap")  => Some(Languages.ABAP)
+      case _                                       => None
     }
   }
 
