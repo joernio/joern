@@ -25,6 +25,8 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
       .typeFullName(Constants.ANY)
       .lineNumber(lineAndColumn.line)
       .columnNumber(lineAndColumn.column)
+      .offset(lineAndColumn.offset)
+      .offsetEnd(lineAndColumn.endOffset)
     addNodeToDiff(callNode)
   }
 
@@ -66,6 +68,8 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
       .typeFullName(typeFullName)
       .lineNumber(lineAndColumn.line)
       .columnNumber(lineAndColumn.column)
+      .offset(lineAndColumn.offset)
+      .offsetEnd(lineAndColumn.endOffset)
     addNodeToDiff(typeRefNode)
   }
 
@@ -82,6 +86,8 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
     memberNode(name)
       .lineNumber(lineAndColumn.line)
       .columnNumber(lineAndColumn.column)
+      .offset(lineAndColumn.offset)
+      .offsetEnd(lineAndColumn.endOffset)
   }
 
   def memberNode(name: String, dynamicTypeHintFullName: String): nodes.NewMember =
@@ -122,6 +128,8 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
       .typeFullName(fullName)
       .lineNumber(lineAndColumn.line)
       .columnNumber(lineAndColumn.column)
+      .offset(lineAndColumn.offset)
+      .offsetEnd(lineAndColumn.endOffset)
     addNodeToDiff(methodRefNode)
   }
 
@@ -149,6 +157,8 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
       .isVariadic(isVariadic)
       .lineNumber(lineAndColumn.line)
       .columnNumber(lineAndColumn.column)
+      .offset(lineAndColumn.offset)
+      .offsetEnd(lineAndColumn.endOffset)
     index.foreach(idx => methodParameterNode.index(idx))
     addNodeToDiff(methodParameterNode)
   }
@@ -189,6 +199,8 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
       .columnNumber(lineAndColumn.column)
       .code("RET")
       .evaluationStrategy(EvaluationStrategies.BY_SHARING)
+      .offset(lineAndColumn.offset)
+      .offsetEnd(lineAndColumn.endOffset)
 
     addNodeToDiff(methodReturnNode)
   }
@@ -199,6 +211,8 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
       .code(code)
       .lineNumber(lineAndColumn.line)
       .columnNumber(lineAndColumn.column)
+      .offset(lineAndColumn.offset)
+      .offsetEnd(lineAndColumn.endOffset)
 
     addNodeToDiff(returnNode)
   }
@@ -211,6 +225,8 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
       .typeFullName(Constants.ANY)
       .lineNumber(lineAndColumn.line)
       .columnNumber(lineAndColumn.column)
+      .offset(lineAndColumn.offset)
+      .offsetEnd(lineAndColumn.endOffset)
     addNodeToDiff(identifierNode)
   }
 
@@ -221,6 +237,8 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
       .canonicalName(name)
       .lineNumber(lineAndColumn.line)
       .columnNumber(lineAndColumn.column)
+      .offset(lineAndColumn.offset)
+      .offsetEnd(lineAndColumn.endOffset)
     addNodeToDiff(fieldIdentifierNode)
   }
 
@@ -232,6 +250,8 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
       .dynamicTypeHintFullName(dynamicTypeHint.toList)
       .lineNumber(lineAndColumn.line)
       .columnNumber(lineAndColumn.column)
+      .offset(lineAndColumn.offset)
+      .offsetEnd(lineAndColumn.endOffset)
     addNodeToDiff(literalNode)
   }
 
@@ -262,6 +282,8 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
       .typeFullName(Constants.ANY)
       .lineNumber(lineAndColumn.line)
       .columnNumber(lineAndColumn.column)
+      .offset(lineAndColumn.offset)
+      .offsetEnd(lineAndColumn.endOffset)
     addNodeToDiff(blockNode)
   }
 
@@ -276,6 +298,8 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
       .controlStructureType(controlStructureName)
       .lineNumber(lineAndColumn.line)
       .columnNumber(lineAndColumn.column)
+      .offset(lineAndColumn.offset)
+      .offsetEnd(lineAndColumn.endOffset)
     addNodeToDiff(controlStructureNode)
   }
 
@@ -339,6 +363,8 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
       .typeFullName(Constants.ANY)
       .lineNumber(lineAndColumn.line)
       .columnNumber(lineAndColumn.column)
+      .offset(lineAndColumn.offset)
+      .offsetEnd(lineAndColumn.endOffset)
     addNodeToDiff(unknownNode)
   }
 }
