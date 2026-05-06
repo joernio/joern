@@ -1,0 +1,70 @@
+joern-cli/frontends/abap2cpg/architecture.md
+  human 31-33,41,43,82,84-85,91,183-184,191,221-222
+  human 38,192
+  30bc3b8c-b5fa-406a-b5a5-6b0110220ee9 31-33,41,43,82,84-85,91,109-110,132-136,140,183-184,191,221-222
+---
+{
+  "attestations": [
+    {
+      "entries": [
+        {
+          "accepted_lines": 0,
+          "added_lines": 0,
+          "deleted_lines": 14,
+          "hash": "human",
+          "lines": "31-33,41,43,82,84-85,91,183-184,191,221-222",
+          "overridden_lines": 0
+        },
+        {
+          "accepted_lines": 0,
+          "added_lines": 0,
+          "deleted_lines": 2,
+          "hash": "human",
+          "lines": "38,192",
+          "overridden_lines": 0
+        },
+        {
+          "accepted_lines": 8,
+          "added_lines": 0,
+          "deleted_lines": 14,
+          "hash": "30bc3b8c-b5fa-406a-b5a5-6b0110220ee9",
+          "lines": "31-33,41,43,82,84-85,91,109-110,132-136,140,183-184,191,221-222",
+          "overridden_lines": 0
+        }
+      ],
+      "file": "joern-cli/frontends/abap2cpg/architecture.md"
+    }
+  ],
+  "base_commit_sha": "d549875e1f0fc8cb082b1502893dddcd53a38543",
+  "branch": "niko/abap2cpgwiring",
+  "commit_sha": "b0ce379d07d34de2553b17f3b4eebe1b9b3a9abb",
+  "commit_time": "2026-05-06T11:37:56+02:00",
+  "commit_type": "direct_commit",
+  "git_ai_version": "1.4.2",
+  "prompts": {
+    "30bc3b8c-b5fa-406a-b5a5-6b0110220ee9": {
+      "accepted_lines": 84,
+      "agent_id": {
+        "id": "30bc3b8c-b5fa-406a-b5a5-6b0110220ee9",
+        "model": "claude-opus-4-7",
+        "tool": "claude"
+      },
+      "human_author": "Niko Schmidt <niko.schmidt@harness.io>",
+      "messages": [],
+      "overriden_lines": 0,
+      "total_additions": 85,
+      "total_deletions": 106
+    },
+    "human": {
+      "accepted_lines": 0,
+      "agent_id": null,
+      "human_author": "Niko Schmidt <niko.schmidt@harness.io>",
+      "messages": [],
+      "overriden_lines": 0,
+      "total_additions": 0,
+      "total_deletions": 14
+    }
+  },
+  "repo": "https://github.com/joernio/joern.git",
+  "schema_version": "authorship/3.0.0"
+}
