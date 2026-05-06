@@ -289,8 +289,8 @@ class RubyJsonToNodeCreator(
     }
 
     val body = obj.visitOption(ParserKeys.Body) match {
-      case Some(stmt: StatementList) => stmt.copy(stmt.statements ++ assignments)(stmt.span)
-      case Some(expr)                => StatementList(expr +: assignments)(expr.span)
+      case Some(stmt: StatementList) => stmt.copy(assignments ++ stmt.statements)(stmt.span)
+      case Some(expr)                => StatementList(assignments :+ expr)(expr.span)
       case None                      => StatementList(Nil)(obj.toTextSpan)
     }
 

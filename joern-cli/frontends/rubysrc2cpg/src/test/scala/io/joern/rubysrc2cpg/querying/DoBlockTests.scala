@@ -402,9 +402,10 @@ class DoBlockTests extends RubyCode2CpgFixture {
       }
     }
 
-    "Return nil and not the desugaring" in {
-      val nilLiteral = cpg.method.isLambda.methodReturn.toReturn.astChildren.isLiteral.head
-      nilLiteral.code shouldBe "return nil"
+    "Return the 'puts' call" in {
+      val returnCall = cpg.method.isLambda.methodReturn.toReturn.astChildren.isCall.head
+      returnCall.code shouldBe "puts a"
+      returnCall.name shouldBe "puts"
     }
   }
 
@@ -418,7 +419,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     inside(cpg.method.isLambda.body.astChildren.isCall.name(Operators.assignment).l) {
-      case _ :: groupedParam :: countAssignment :: Nil =>
+      case groupedParam :: countAssignment :: _ :: Nil =>
         inside(groupedParam.argument.l) {
           case (labelIdAssign: Call) :: (dateAssign: Call) :: (tmp0Splat: Call) :: Nil =>
             inside(labelIdAssign.argument.l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
