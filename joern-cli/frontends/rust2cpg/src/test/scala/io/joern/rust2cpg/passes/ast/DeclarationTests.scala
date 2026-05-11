@@ -126,6 +126,36 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
     cpg.literal.code("false").typeFullName.l shouldBe List("bool")
   }
 
+  "untyped uninitialized `let` emits LOCAL (with ANY type) but no assignment" in {
+    val cpg = code("""
+        |fn main() {
+        | let x;
+        |}
+        |""".stripMargin)
+
+    inside(cpg.method.name("main").block.local.name("x").l) { case local :: Nil =>
+      local.typeFullName shouldBe Defines.Any
+      local.code shouldBe "x"
+    }
+
+    cpg.method.name("main").block.assignment.l shouldBe Nil
+  }
+
+  "typed uninitialized `let` emits LOCAL (with corresponding type) but no assignment" in {
+    val cpg = code("""
+        |fn main() {
+        | let x: i32;
+        |}
+        |""".stripMargin)
+
+    inside(cpg.method.name("main").block.local.name("x").l) { case local :: Nil =>
+      local.typeFullName shouldBe "i32"
+      local.code shouldBe "x"
+    }
+
+    cpg.method.name("main").block.assignment.l shouldBe Nil
+  }
+
   "untyped `let` for a string literal has type `&str`" in {
     val cpg = code("""
         |fn main() {

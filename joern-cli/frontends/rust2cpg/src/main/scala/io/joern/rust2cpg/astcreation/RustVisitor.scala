@@ -6,6 +6,7 @@ import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewModifier, NewNamespaceBlock}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EvaluationStrategies, Operators}
 
+import scala.util.Try
 import scala.annotation.tailrec
 
 trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreator =>
@@ -126,7 +127,7 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     (const.name.flatMap(_.identToken), const.expr) match {
       case (Some(identToken), Some(rhsExpr)) =>
         val typeFullName = typeFullNameForType(const.`type`)
-        lowerIdentifierDecl(identToken, rhsExpr, typeFullName, code(const))
+        lowerIdentifierDecl(identToken, Some(rhsExpr), typeFullName, code(const))
       case _ => notHandledYet(const) :: Nil
     }
   }
@@ -141,7 +142,15 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
       identPat.name.identToken match {
         case Some(identToken) =>
           val typeFullName = letStmt.`type`.map(typeFullNameForType).getOrElse(typeFullNameForIdentPat(identPat))
-          lowerIdentifierDecl(identToken, letStmt.expr, typeFullName, code(letStmt))
+          // TODO: there's a mismatch between `rust.ungram` and the auto-generated `SyntaxNode` from rust-analyzer.
+          //  The grammar says that `initializer` is mandatory, but the generated `LetStmt` sees it as optional.
+          //  In this case, `let x;` is indeed valid.
+          //  We should look into xtask again: it looks like all mandatory nodes are generated as optional,
+          //  cf. https://github.com/rust-lang/rust-analyzer/blob/7c3fc8671f83f6e46305358b98354f0611ebb3cd/xtask/src/codegen/grammar.rs#L923
+          //  and https://github.com/rust-lang/rust-analyzer/blob/7c3fc8671f83f6e46305358b98354f0611ebb3cd/crates/syntax/src/ast/generated/nodes.rs#L923
+          //  If so, we should update rust_ast_gen to follow that approach.
+          val maybeRhs = Try(letStmt.expr).toOption
+          lowerIdentifierDecl(identToken, maybeRhs, typeFullName, code(letStmt))
         case None => notHandledYet(letStmt) :: Nil
       }
     case _ => notHandledYet(letStmt) :: Nil
@@ -149,24 +158,27 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
 
   // Creates:
   // - LOCAL (lhsToken) with given typeFullName
-  // - CALL (assignment) for lhsToken = rhsExpr
+  // - CALL (assignment) for lhsToken = rhsExpr, when present
   private def lowerIdentifierDecl(
     lhsToken: IdentToken,
-    rhsExpr: Expr,
+    rhsExpr: Option[Expr],
     typeFullName: String,
     declCode: String
   ): Seq[Ast] = {
-    val lhsName = code(lhsToken)
+    val lhsName  = code(lhsToken)
+    val local    = localNode(lhsToken, lhsName, code(lhsToken), typeFullName)
+    val localAst = Ast(local)
 
-    val local = localNode(lhsToken, lhsName, code(lhsToken), typeFullName)
-    val ident = identifierNode(lhsToken, lhsName, code(lhsToken), typeFullName)
-
-    val lhsAst        = Ast(ident).withRefEdge(ident, local)
-    val rhsAst        = visitExpr(rhsExpr)
-    val localAst      = Ast(local)
-    val assignmentAst = callAst(assignmentNode(lhsToken, declCode), Seq(lhsAst, rhsAst))
-
-    Seq(localAst, assignmentAst)
+    rhsExpr match {
+      case Some(expr) =>
+        val ident         = identifierNode(lhsToken, lhsName, code(lhsToken), typeFullName)
+        val lhsAst        = Ast(ident).withRefEdge(ident, local)
+        val rhsAst        = visitExpr(expr)
+        val assignmentAst = callAst(assignmentNode(lhsToken, declCode), Seq(lhsAst, rhsAst))
+        Seq(localAst, assignmentAst)
+      case None =>
+        Seq(localAst)
+    }
   }
 
   // Name =
