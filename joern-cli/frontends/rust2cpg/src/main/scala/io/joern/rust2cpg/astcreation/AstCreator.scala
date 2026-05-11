@@ -87,11 +87,6 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     Defines.Any
   }
 
-  // TODO
-  protected def typeFullNameForPath(path: RustNodeSyntax.Path): String = {
-    Defines.Any
-  }
-
   protected def typeFullNameForLiteral(lit: RustNodeSyntax.Literal): String = {
     lit.value.map(typeFullNameForLiteralToken).getOrElse(Defines.Any)
   }

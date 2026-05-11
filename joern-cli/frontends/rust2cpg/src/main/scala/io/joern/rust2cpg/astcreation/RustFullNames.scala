@@ -1,5 +1,7 @@
 package io.joern.rust2cpg.astcreation
 
+import io.joern.rust2cpg.parser.RustNodeSyntax
+import io.joern.rust2cpg.parser.RustNodeSyntax.RustNode
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 
@@ -19,5 +21,15 @@ trait RustFullNames { this: AstCreator =>
   protected def composeFullName(name: String): String = {
     val parentFullName = methodAstParentStack.head.properties(PropertyNames.FullName).toString
     s"$parentFullName::$name"
+  }
+
+  private def rustAstGenTypeFullName(node: RustNode): Option[String] = {
+    node.json.obj.get("typeFullName").flatMap(_.strOpt)
+  }
+
+  protected def typeFullNameForPath(path: RustNodeSyntax.Path): String = {
+    rustAstGenTypeFullName(path)
+      .orElse(path.pathSegment.nameRef.flatMap(rustAstGenTypeFullName))
+      .getOrElse(Defines.Any)
   }
 }
