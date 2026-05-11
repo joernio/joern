@@ -86,6 +86,81 @@ class OperatorTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "named struct field access lowers to `<operator>.fieldAccess`" in {
+    val cpg = code("""
+        |struct Point {
+        | x: i32,
+        |}
+        |
+        |fn foo(point: Point) -> i32 {
+        | point.x
+        |}
+        |""".stripMargin)
+
+    inside(cpg.call.nameExact(Operators.fieldAccess).l) { case fieldAccess :: Nil =>
+      fieldAccess.code shouldBe "point.x"
+      fieldAccess.methodFullName shouldBe Operators.fieldAccess
+      fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+      inside(fieldAccess.argument.l) { case (base: Identifier) :: (field: FieldIdentifier) :: Nil =>
+        base.code shouldBe "point"
+        base.argumentIndex shouldBe 1
+
+        field.code shouldBe "x"
+        field.canonicalName shouldBe "x"
+        field.argumentIndex shouldBe 2
+      }
+    }
+  }
+
+  "tuple positional access lowers to `<operator>.fieldAccess` with the index as field name" in {
+    val cpg = code("""
+        |fn foo(pair: (i32, i32)) -> i32 {
+        | pair.0
+        |}
+        |""".stripMargin)
+
+    inside(cpg.call.nameExact(Operators.fieldAccess).l) { case fieldAccess :: Nil =>
+      fieldAccess.code shouldBe "pair.0"
+      fieldAccess.methodFullName shouldBe Operators.fieldAccess
+      fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+      inside(fieldAccess.argument.l) { case (base: Identifier) :: (field: FieldIdentifier) :: Nil =>
+        base.code shouldBe "pair"
+        base.argumentIndex shouldBe 1
+
+        field.code shouldBe "0"
+        field.canonicalName shouldBe "0"
+        field.argumentIndex shouldBe 2
+      }
+    }
+  }
+
+  "tuple-struct positional access lowers to `<operator>.fieldAccess` with the index as field name" in {
+    val cpg = code("""
+        |struct Pair(i32, bool);
+        |
+        |fn foo(pair: Pair) -> i32 {
+        | pair.0
+        |}
+        |""".stripMargin)
+
+    inside(cpg.call.nameExact(Operators.fieldAccess).l) { case fieldAccess :: Nil =>
+      fieldAccess.code shouldBe "pair.0"
+      fieldAccess.methodFullName shouldBe Operators.fieldAccess
+      fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+      inside(fieldAccess.argument.l) { case (base: Identifier) :: (field: FieldIdentifier) :: Nil =>
+        base.code shouldBe "pair"
+        base.argumentIndex shouldBe 1
+
+        field.code shouldBe "0"
+        field.canonicalName shouldBe "0"
+        field.argumentIndex shouldBe 2
+      }
+    }
+  }
+
   "unary `-`, `!` and `*` lower to minus, logicalNot, and indirection calls" in {
     val cpg = code("""
         |fn main(x: i32, b: bool, p: *const i32) {

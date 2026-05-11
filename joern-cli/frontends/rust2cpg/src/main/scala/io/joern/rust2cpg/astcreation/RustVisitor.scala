@@ -592,22 +592,11 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   // FieldExpr =
   //  Attr* Expr '.' NameRef
   private def visitFieldExpr(fieldExpr: FieldExpr): Ast = {
-    val baseAst = visitExpr(fieldExpr.expr)
-    fieldExpr.nameRef.intNumberToken match {
-      case Some(indexNode) =>
-        // `x.0` becomes `x[0]`
-        // NB: this could change depending on how we lower `struct MyStruct(SomeType1, SomeType2, etc)`
-        val literalTypeFullName = typeFullNameForLiteralToken(indexNode)
-        val literalIndex        = literalNode(indexNode, code(indexNode), literalTypeFullName)
-        // TODO: typeFullName
-        val callNode = operatorCallNode(fieldExpr, code(fieldExpr), Operators.indexAccess, None)
-        callAst(callNode, Seq(baseAst, Ast(literalIndex)))
-      case None =>
-        // TODO: typeFullName
-        val nameRef   = fieldExpr.nameRef
-        val fieldName = code(nameRef)
-        fieldAccessAst(fieldExpr, nameRef, baseAst, code(fieldExpr), fieldName, Defines.Any)
-    }
+    val baseAst      = visitExpr(fieldExpr.expr)
+    val typeFullName = typeFullNameForExpr(fieldExpr)
+    val nameRef      = fieldExpr.nameRef
+    val fieldName    = code(nameRef)
+    fieldAccessAst(fieldExpr, nameRef, baseAst, code(fieldExpr), fieldName, typeFullName)
   }
 
   // MethodCallExpr =
