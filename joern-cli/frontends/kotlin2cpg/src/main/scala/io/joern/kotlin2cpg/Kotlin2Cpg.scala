@@ -34,7 +34,7 @@ import java.util.regex.Pattern
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 import scala.jdk.StreamConverters.StreamHasToScala
-import scala.util.Try
+import scala.util.{Failure, Try}
 import scala.util.matching.Regex
 
 object Kotlin2Cpg {
@@ -112,25 +112,6 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
     filesWithJavaExtension
   }
 
-  private def gatherDependenciesPaths(
-    sourceDir: String,
-    config: Config,
-    filesWithJavaExtension: List[String]
-  ): Seq[String] = {
-    val jar4ImportServiceOpt = config.jar4importServiceUrl.flatMap(reachableServiceMaybe)
-    if (jar4ImportServiceOpt.isDefined) {
-      val filesWithKtExtension = gatherFilesWithKtExtension(sourceDir, config)
-      val importNames          = importNamesForFilesAtPaths(filesWithKtExtension ++ filesWithJavaExtension)
-      logger.trace(s"Found imports: `$importNames`")
-      dependenciesFromService(jar4ImportServiceOpt.get, importNames)
-    } else if (config.downloadDependencies) {
-      downloadDependencies(sourceDir, config)
-    } else {
-      logger.info(s"Not downloading any dependencies.")
-      Seq()
-    }
-  }
-
   private def gatherMavenCoordinates(sourceDir: String, config: Config): Seq[String] = {
     if (config.generateNodesForDependencies) {
       logger.info(s"Fetching maven coordinates.")
@@ -138,7 +119,39 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
     } else Seq()
   }
 
-  private def gatherJarsAtConfigClassPath(config: Config): Seq[String] = {
+  private def gatherJarsOfDependencies(
+    sourceDir: String,
+    config: Config,
+    filesWithJavaExtension: List[String]
+  ): Seq[DefaultContentRootJarPath] = {
+    val jar4ImportServiceOpt = config.jar4importServiceUrl.flatMap(reachableServiceMaybe)
+    val dependencies =
+      if (jar4ImportServiceOpt.isDefined) {
+        val filesWithKtExtension = gatherFilesWithKtExtension(sourceDir, config)
+        val importNames          = importNamesForFilesAtPaths(filesWithKtExtension ++ filesWithJavaExtension)
+        logger.trace(s"Found imports: `$importNames`")
+        dependenciesFromService(jar4ImportServiceOpt.get, importNames)
+      } else if (config.downloadDependencies) {
+        downloadDependencies(sourceDir, config)
+      } else {
+        logger.info(s"Not downloading any dependencies.")
+        Seq()
+      }
+
+    dependencies.map { path =>
+      DefaultContentRootJarPath(path, isResource = false)
+    }
+  }
+
+  private def gatherJarsFromStdLib(config: Config): Seq[DefaultContentRootJarPath] = {
+    if (config.withStdlibJarsInClassPath) {
+      defaultKotlinStdlibContentRootJarPaths
+    } else {
+      Seq()
+    }
+  }
+
+  private def gatherJarsFromConfigClassPath(config: Config): Seq[DefaultContentRootJarPath] = {
     val jarsAtConfigClassPath = findJarsIn(config.classpath)
     if (config.classpath.nonEmpty) {
       if (jarsAtConfigClassPath.nonEmpty) {
@@ -147,23 +160,7 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
         logger.warn("No jars found in the specified classpath.")
       }
     }
-    jarsAtConfigClassPath
-  }
-
-  private def gatherDefaultContentRootJars(
-    sourceDir: String,
-    config: Config,
-    filesWithJavaExtension: List[String]
-  ): Seq[DefaultContentRootJarPath] = {
-    val stdlibJars            = if (config.withStdlibJarsInClassPath) defaultKotlinStdlibContentRootJarPaths else Seq()
-    val jarsAtConfigClassPath = gatherJarsAtConfigClassPath(config)
-    val dependenciesPaths     = gatherDependenciesPaths(sourceDir, config, filesWithJavaExtension)
-    val defaultContentRootJars = stdlibJars ++
-      jarsAtConfigClassPath.map { path => DefaultContentRootJarPath(path, isResource = false) } ++
-      dependenciesPaths.map { path =>
-        DefaultContentRootJarPath(path, isResource = false)
-      }
-    defaultContentRootJars
+    jarsAtConfigClassPath.map { path => DefaultContentRootJarPath(path, isResource = false) }
   }
 
   private def gatherDirsForSourcesToCompile(sourceDir: String): Seq[String] = {
@@ -222,12 +219,16 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
 
       val filesWithJavaExtension  = gatherFilesWithJavaExtension(sourceDir, config)
       val mavenCoordinates        = gatherMavenCoordinates(sourceDir, config)
-      val defaultContentRootJars  = gatherDefaultContentRootJars(sourceDir, config, filesWithJavaExtension)
+      val stdlibJars              = gatherJarsFromStdLib(config)
+      val classPathJars           = gatherJarsFromConfigClassPath(config)
+      val dependencyJars          = gatherJarsOfDependencies(sourceDir, config, filesWithJavaExtension)
       val dirsForSourcesToCompile = gatherDirsForSourcesToCompile(sourceDir)
+      val dependencyContentRoots  = stdlibJars ++ classPathJars ++ dependencyJars
+
       val environment = CompilerAPI.makeEnvironment(
         dirsForSourcesToCompile,
         filesWithJavaExtension,
-        defaultContentRootJars,
+        dependencyContentRoots,
         new ErrorLoggingMessageCollector
       )
 
@@ -236,7 +237,31 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
 
       new MetaDataPass(cpg, Languages.KOTLIN, config.inputPath).createAndApply()
 
-      val bindingContext = createBindingContext(environment)
+      val bindingContext =
+        createBindingContext(environment)
+          .recoverWith { exception =>
+            if (dependencyContentRoots != stdlibJars) {
+              logger.warn("Kotlin compiler analysis failed with exception", exception)
+              logger.warn("Fallback: Reconfiguring kotlin compiler environment without dependencies")
+
+              val fallbackEnvironment = CompilerAPI.makeEnvironment(
+                dirsForSourcesToCompile,
+                filesWithJavaExtension,
+                stdlibJars,
+                new ErrorLoggingMessageCollector
+              )
+
+              createBindingContext(fallbackEnvironment)
+            } else {
+              Failure(exception)
+            }
+          }
+          .recover { exception =>
+            logger.error("Kotlin compiler analysis failed with exception", exception)
+            BindingContext.EMPTY
+          }
+          .get
+
       val astCreator =
         new AstCreationPass(sourceFiles, bindingContext, cpg, config.disableFileContent)(config.schemaValidation)
       astCreator.createAndApply()
@@ -335,18 +360,14 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
     } yield FileContentAtPath(fileContents, relPath, fileName)
   }
 
-  private def createBindingContext(environment: KotlinCoreEnvironment): BindingContext = {
-    try {
+  private def createBindingContext(environment: KotlinCoreEnvironment): Try[BindingContext] = {
+    Try {
       logger.info("Running Kotlin compiler analysis...")
       val t0             = System.nanoTime()
       val analysisResult = KotlinToJVMBytecodeCompiler.INSTANCE.analyze(environment)
       val t1             = System.nanoTime()
       logger.info(s"Kotlin compiler analysis finished in `${(t1 - t0) / 1000000}` ms.")
       analysisResult.getBindingContext
-    } catch {
-      case exc: Exception =>
-        logger.error(s"Kotlin compiler analysis failed with exception `${exc.toString}`:`${exc.getMessage}`.", exc)
-        BindingContext.EMPTY
     }
   }
 }
