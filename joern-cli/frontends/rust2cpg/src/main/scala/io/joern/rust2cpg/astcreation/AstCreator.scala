@@ -87,23 +87,6 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     Defines.Any
   }
 
-  protected def typeFullNameForLiteral(lit: RustNodeSyntax.Literal): String = {
-    lit.value.map(typeFullNameForLiteralToken).getOrElse(Defines.Any)
-  }
-
-  protected def typeFullNameForLiteralToken(tok: RustNodeSyntax.RustToken): String = tok match {
-    case _: RustNodeSyntax.IntNumberToken   => "i32"
-    case _: RustNodeSyntax.FloatNumberToken => "f64"
-    case _: RustNodeSyntax.StringToken      => "&str"
-    case _: RustNodeSyntax.ByteStringToken  => "&[u8]"
-    case _: RustNodeSyntax.CStringToken     => "&CStr"
-    case _: RustNodeSyntax.CharToken        => "char"
-    case _: RustNodeSyntax.ByteToken        => "u8"
-    case _: RustNodeSyntax.TrueKwToken      => "bool"
-    case _: RustNodeSyntax.FalseKwToken     => "bool"
-    case _                                  => Defines.Any
-  }
-
   protected def operatorNameFor(binExpr: RustNodeSyntax.BinExpr): Option[String] = binExpr.op match {
     case Some(_: RustNodeSyntax.Pipe2Token)     => Some(Operators.logicalOr)
     case Some(_: RustNodeSyntax.Amp2Token)      => Some(Operators.logicalAnd)

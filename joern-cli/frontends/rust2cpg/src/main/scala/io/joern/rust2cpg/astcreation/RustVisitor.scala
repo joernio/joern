@@ -136,13 +136,15 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   //  '=' initializer:Expr
   //  LetElse?
   //  ';'
-  private def visitLetStmt(letStmt: LetStmt): Seq[Ast] = {
-    viewPatAsIdentPat(letStmt.pat).flatMap(_.name.identToken) match {
-      case Some(identToken) =>
-        val typeFullName = letStmt.`type`.map(typeFullNameForType).getOrElse(Defines.Any)
-        lowerIdentifierDecl(identToken, letStmt.expr, typeFullName, code(letStmt))
-      case None => notHandledYet(letStmt) :: Nil
-    }
+  private def visitLetStmt(letStmt: LetStmt): Seq[Ast] = letStmt.pat match {
+    case identPat: IdentPat =>
+      identPat.name.identToken match {
+        case Some(identToken) =>
+          val typeFullName = letStmt.`type`.map(typeFullNameForType).getOrElse(typeFullNameForIdentPat(identPat))
+          lowerIdentifierDecl(identToken, letStmt.expr, typeFullName, code(letStmt))
+        case None => notHandledYet(letStmt) :: Nil
+      }
+    case _ => notHandledYet(letStmt) :: Nil
   }
 
   // Creates:
@@ -165,11 +167,6 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     val assignmentAst = callAst(assignmentNode(lhsToken, declCode), Seq(lhsAst, rhsAst))
 
     Seq(localAst, assignmentAst)
-  }
-
-  private def viewPatAsIdentPat(pat: Pat): Option[IdentPat] = pat match {
-    case identPat: IdentPat => Some(identPat)
-    case _                  => None
   }
 
   // Name =

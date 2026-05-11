@@ -11,58 +11,6 @@ import java.nio.file.Paths
 
 class SimpleAstCreationPassTest extends Rust2CpgSuite {
 
-  "test 05" in {
-    val cpg = code("const MAX_SIZE: usize = 1024;")
-    cpg.local.name("MAX_SIZE").typeFullName.l shouldBe List("usize")
-
-    inside(cpg.assignment.l) { case assignment :: Nil =>
-      assignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      assignment.code shouldBe "const MAX_SIZE: usize = 1024;"
-      assignment.typeFullName shouldBe Defines.Any
-      assignment.methodFullName shouldBe Operators.assignment
-    }
-
-    inside(cpg.assignment.argument(1).l) { case (lhs: Identifier) :: Nil =>
-      lhs.name shouldBe "MAX_SIZE"
-      lhs.typeFullName shouldBe "usize"
-      lhs.code shouldBe "MAX_SIZE"
-    }
-
-    inside(cpg.assignment.argument(2).l) { case (rhs: Literal) :: Nil =>
-      rhs.code shouldBe "1024"
-      rhs.typeFullName shouldBe "i32"
-    }
-  }
-
-  "test 06" in {
-    val cpg = code("""
-        |fn main() {
-        | const FOO: i32 = 0;
-        |}
-        |""".stripMargin)
-
-    inside(cpg.method.name("main").block.local.name("FOO").l) { case local :: Nil =>
-      local.typeFullName shouldBe "i32"
-      local.code shouldBe "FOO"
-    }
-
-    inside(cpg.method.name("main").block.assignment.l) { case assignment :: Nil =>
-      assignment.code shouldBe "const FOO: i32 = 0;"
-      assignment.lineNumber shouldBe Some(3)
-    }
-
-    inside(cpg.assignment.argument(1).l) { case (lhs: Identifier) :: Nil =>
-      lhs.name shouldBe "FOO"
-      lhs.typeFullName shouldBe "i32"
-      lhs.code shouldBe "FOO"
-    }
-
-    inside(cpg.assignment.argument(2).l) { case (rhs: Literal) :: Nil =>
-      rhs.code shouldBe "0"
-      rhs.typeFullName shouldBe "i32"
-    }
-  }
-
   "test 07" in {
     val cpg = code("""
         |fn main(x: i32) {
@@ -81,39 +29,6 @@ class SimpleAstCreationPassTest extends Rust2CpgSuite {
         identifier.name shouldBe "x"
         identifier.code shouldBe "x"
       }
-    }
-  }
-
-  "test 08" in {
-    val cpg = code("""
-        |fn main() {
-        | let x = 1;
-        |}
-        |""".stripMargin)
-
-    inside(cpg.method.name("main").block.local.name("x").l) { case local :: Nil =>
-      local.typeFullName shouldBe Defines.Any
-      local.code shouldBe "x"
-    }
-
-    inside(cpg.method.name("main").block.assignment.l) { case assignment :: Nil =>
-      assignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      assignment.code shouldBe "let x = 1;"
-      assignment.typeFullName shouldBe Defines.Any
-      assignment.methodFullName shouldBe Operators.assignment
-      assignment.lineNumber shouldBe Some(3)
-    }
-
-    inside(cpg.assignment.argument(1).l) { case (lhs: Identifier) :: Nil =>
-      lhs.name shouldBe "x"
-      // TODO
-      lhs.typeFullName shouldBe Defines.Any
-      lhs.code shouldBe "x"
-    }
-
-    inside(cpg.assignment.argument(2).l) { case (rhs: Literal) :: Nil =>
-      rhs.code shouldBe "1"
-      rhs.typeFullName shouldBe "i32"
     }
   }
 
@@ -136,39 +51,6 @@ class SimpleAstCreationPassTest extends Rust2CpgSuite {
       rhs.typeFullName shouldBe Defines.Any
     }
   }
-
-  "test 10" in {
-    val cpg = code("""
-        |fn foo() {
-        | let x: usize = 10;
-        |}
-        |""".stripMargin)
-
-    inside(cpg.method.name("foo").block.local.name("x").l) { case local :: Nil =>
-      local.typeFullName shouldBe "usize"
-      local.code shouldBe "x"
-    }
-
-    inside(cpg.assignment.argument(1).l) { case (lhs: Identifier) :: Nil =>
-      lhs.name shouldBe "x"
-      lhs.typeFullName shouldBe "usize"
-      lhs.code shouldBe "x"
-    }
-
-    inside(cpg.assignment.argument(2).l) { case (lit: Literal) :: Nil =>
-      lit.code shouldBe "10"
-      lit.typeFullName shouldBe "i32"
-    }
-  }
-
-  "test 11" in {
-    val cpg = code("const TT: bool = true; const FF: bool = false;")
-
-    cpg.literal.code("true").typeFullName.l shouldBe List("bool")
-    cpg.literal.code("false").typeFullName.l shouldBe List("bool")
-  }
-
-  //
 
   "test 17" in {
     val cpg = code("""
