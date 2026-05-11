@@ -1,0 +1,9 @@
+#common --override_module=codepropertygraph=/home/ml/work/codepropertygraph
+#common --override_module=flatgraph=/home/ml/work/flatgraph
+#common --override_module=mypkg=/home/ml/work/experiments/bazelTest/mypkg/
+common --tool_java_language_version=21
+common --tool_java_runtime_version=21
+common --java_runtime_version=21
+common --registry=file:///Users/ml/work/bazelRegistry
+common --registry=https://bcr.bazel.build/
+try-import .bazelrc.user
