@@ -34,7 +34,7 @@ import java.util.regex.Pattern
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 import scala.jdk.StreamConverters.StreamHasToScala
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Try, Using}
 import scala.util.matching.Regex
 
 object Kotlin2Cpg {
@@ -244,14 +244,17 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
               logger.warn("Kotlin compiler analysis failed with exception", exception)
               logger.warn("Fallback: Reconfiguring kotlin compiler environment without dependencies")
 
-              val fallbackEnvironment = CompilerAPI.makeEnvironment(
-                dirsForSourcesToCompile,
-                filesWithJavaExtension,
-                stdlibJars,
-                new ErrorLoggingMessageCollector
-              )
+              Using.resource(
+                CompilerAPI.makeEnvironment(
+                  dirsForSourcesToCompile,
+                  filesWithJavaExtension,
+                  stdlibJars,
+                  new ErrorLoggingMessageCollector
+                )
+              ) { fallbackEnvironment =>
+                createBindingContext(fallbackEnvironment)
+              }(fallbackEnvironment => Disposer.dispose(fallbackEnvironment.getProjectEnvironment.getParentDisposable))
 
-              createBindingContext(fallbackEnvironment)
             } else {
               Failure(exception)
             }
