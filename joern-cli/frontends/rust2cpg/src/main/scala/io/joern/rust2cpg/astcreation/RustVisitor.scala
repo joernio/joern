@@ -5,6 +5,13 @@ import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewModifier, NewNamespaceBlock}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EvaluationStrategies, Operators}
+import io.shiftleft.codepropertygraph.generated.{
+  ControlStructureTypes,
+  DispatchTypes,
+  EvaluationStrategies,
+  Operators,
+  PropertyNames
+}
 
 import scala.util.Try
 import scala.annotation.tailrec
@@ -638,23 +645,57 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   //  | TupleFieldList WhereClause? ';'
   //  )
   private def visitStruct(struct: Struct): Ast = {
-    // TODO
-    Ast()
+    val name     = code(struct.name)
+    val fullName = typeFullNameForStruct(struct)
+    val parent   = methodAstParentStack.head
+    val typeDecl = typeDeclNode(
+      node = struct,
+      name = name,
+      fullName = fullName,
+      filename = parseResult.filename,
+      code = code(struct),
+      astParentType = parent.label,
+      astParentFullName = parent.properties(PropertyNames.FullName).toString,
+      inherits = Nil
+    )
+
+    methodAstParentStack.push(typeDecl)
+    val memberAsts = struct.recordFieldList
+      .map(visitRecordFieldList)
+      .orElse(struct.tupleFieldList.map(visitTupleFieldList))
+      .getOrElse(Nil)
+    methodAstParentStack.pop()
+
+    Ast(typeDecl).withChildren(memberAsts)
   }
 
   // RecordFieldList =
   // '{' fields:(RecordField (',' RecordField)* ','?)? '}'
   private def visitRecordFieldList(recordFieldList: RecordFieldList): Seq[Ast] = {
-    // TODO
-    Nil
+    recordFieldList.recordField.map(visitRecordField)
   }
 
   // RecordField =
   //  Attr* Visibility? 'unsafe'?
   //  Name ':' Type ('=' default_val:ConstArg)?
   private def visitRecordField(recordField: RecordField): Ast = {
-    // TODO
-    Ast()
+    val name         = code(recordField.name)
+    val typeFullName = typeFullNameForType(recordField.`type`)
+    Ast(memberNode(recordField, name, code(recordField), typeFullName))
+  }
+
+  // TupleFieldList =
+  //  '(' fields:(TupleField (',' TupleField)* ','?)? ')'
+  private def visitTupleFieldList(tupleFieldList: TupleFieldList): Seq[Ast] = {
+    tupleFieldList.tupleField.zipWithIndex.map { case (tupleField, idx) => visitTupleField(tupleField, idx) }
+  }
+
+  // TupleField =
+  //  Attr* Visibility?
+  //  Type
+  private def visitTupleField(tupleField: TupleField, index: Int): Ast = {
+    val typeFullName = typeFullNameForType(tupleField.`type`)
+    Ast(memberNode(tupleField, index.toString, code(tupleField), typeFullName))
   }
 
 }
