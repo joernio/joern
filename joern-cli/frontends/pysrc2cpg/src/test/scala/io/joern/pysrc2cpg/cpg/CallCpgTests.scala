@@ -17,6 +17,8 @@ class CallCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
       callNode.signature shouldBe ""
       callNode.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       callNode.lineNumber shouldBe Some(1)
+      callNode.offset shouldBe Some(0)
+      callNode.offsetEnd shouldBe Some(10)
     }
 
     "test call receiver" in {
