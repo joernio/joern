@@ -417,8 +417,9 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   private def visitBinExpr(binExpr: BinExpr): Ast = {
     operatorNameFor(binExpr) match {
       case Some(opName) =>
-        val callNode = operatorCallNode(node = binExpr, code = code(binExpr), name = opName, typeFullName = None)
-        val lhsRhs   = binExpr.expr.map(visitExpr)
+        val typeFullName = typeFullNameForExpr(binExpr)
+        val callNode     = operatorCallNode(binExpr, code(binExpr), opName, Some(typeFullName))
+        val lhsRhs       = binExpr.expr.map(visitExpr)
         callAst(callNode, lhsRhs)
       case None => notHandledYet(binExpr)
     }
@@ -462,8 +463,9 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   private def visitPrefixExpr(prefixExpr: PrefixExpr): Ast = {
     operatorNameFor(prefixExpr) match {
       case Some(opName) =>
-        val callNode = operatorCallNode(node = prefixExpr, code = code(prefixExpr), name = opName, typeFullName = None)
-        val exprAst  = visitExpr(prefixExpr.expr)
+        val typeFullName = typeFullNameForExpr(prefixExpr)
+        val callNode     = operatorCallNode(prefixExpr, code(prefixExpr), opName, Some(typeFullName))
+        val exprAst      = visitExpr(prefixExpr.expr)
         callAst(callNode, Seq(exprAst))
       case None => notHandledYet(prefixExpr)
     }

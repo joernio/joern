@@ -68,6 +68,31 @@ class ControlStructureTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "`if !b` lowers to a logicalNot call in the condition" in {
+    val cpg = code(
+      """
+        |fn main(b: bool) {
+        | if !b {
+        |  foo();
+        | }
+        |}
+        |""".stripMargin)
+
+    inside(cpg.controlStructure.controlStructureTypeExact(ControlStructureTypes.IF).condition.isCall.l) {
+      case (condition: Call) :: Nil =>
+        condition.code shouldBe "!b"
+        condition.name shouldBe Operators.logicalNot
+        condition.methodFullName shouldBe Operators.logicalNot
+        condition.typeFullName shouldBe "bool"
+
+        inside(condition.argument.l) { case (b: Identifier) :: Nil =>
+          b.typeFullName shouldBe "bool"
+          b.code shouldBe "b"
+          b.name shouldBe b.code
+        }
+    }
+  }
+
   "`while` is lowered correctly" in {
     val cpg = code("""
         |fn main(x: i32, y: i32) {

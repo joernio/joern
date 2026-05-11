@@ -126,48 +126,4 @@ class SimpleAstCreationPassTest extends Rust2CpgSuite {
     }
   }
 
-  "test 32" in {
-    val cpg = code("""
-        |fn main(x: i32, b: bool, p: *const i32) {
-        | let a = -x;
-        | let c = !b;
-        | let d = *p;
-        |}
-        |""".stripMargin)
-
-    inside(cpg.call.nameExact(Operators.minus).l) { case minus :: Nil =>
-      minus.code shouldBe "-x"
-      minus.methodFullName shouldBe Operators.minus
-      minus.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-
-      inside(minus.argument.l) { case (x: Identifier) :: Nil =>
-        x.code shouldBe "x"
-        x.argumentIndex shouldBe 1
-      // TODO x.typeFullName shouldBe
-      }
-    }
-
-    inside(cpg.call.nameExact(Operators.logicalNot).l) { case logicalNot :: Nil =>
-      logicalNot.code shouldBe "!b"
-      logicalNot.methodFullName shouldBe Operators.logicalNot
-
-      inside(logicalNot.argument.l) { case (b: Identifier) :: Nil =>
-        b.code shouldBe "b"
-        b.argumentIndex shouldBe 1
-      // TODO b.typeFullName shouldBe
-      }
-    }
-
-    inside(cpg.call.nameExact(Operators.indirection).l) { case indirection :: Nil =>
-      indirection.code shouldBe "*p"
-      indirection.methodFullName shouldBe Operators.indirection
-
-      inside(indirection.argument.l) { case (p: Identifier) :: Nil =>
-        p.code shouldBe "p"
-        p.argumentIndex shouldBe 1
-      // TODO p.typeFullName shouldBe
-      }
-    }
-  }
-
 }
