@@ -27,7 +27,6 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.util.Try
 import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.it.unimi.dsi.fastutil.objects.s
 
 object AstCreator {
   case class AnonymousObjectContext(declaration: KtElement)
