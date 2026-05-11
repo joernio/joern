@@ -110,13 +110,16 @@ class FrontendHTTPServer(executor: ExecutorService, handleRequest: Array[String]
           _.mkString
         }.getOrElse("")
 
-        val params = parseFormUrlEncoded(requestBody)
+        val params = parseFromJson(requestBody)
 
-        val outputDir = params.getOrElse("output", X2CpgConfig.defaultOutputPath)
+        var outputDir = X2CpgConfig.defaultOutputPath
         val arguments = params.flatMap {
-          case ("input", value)                      => List(value)
-          case (arg, value) if value.strip().isEmpty => List(s"--$arg")
-          case (arg, value)                          => List(s"--$arg", value)
+          case ("output", Some(value)) =>
+            outputDir = value
+            List("--output", value)
+          case ("input", Some(value)) => List(value)
+          case (arg, None)            => List(s"--$arg")
+          case (arg, Some(value))     => List(s"--$arg", value)
         }.toArray
 
         logger.debug("Got POST with arguments: " + arguments.mkString(" "))
@@ -139,18 +142,12 @@ class FrontendHTTPServer(executor: ExecutorService, handleRequest: Array[String]
     }
 
     /** Parses an application/x-www-form-urlencoded body (e.g. "key1=val1&key2=val2") into key-value pairs. */
-    private def parseFormUrlEncoded(body: String): Map[String, String] = {
-      if (body.isEmpty) return Map.empty
-
-      def decode(s: String): String = URLDecoder.decode(s, StandardCharsets.UTF_8)
-
-      val pairs = body.split("&")
-      pairs.map { pair =>
-        val keyAndValue = pair.split("=", 2) // limit 2 so value may contain '='
-        val key         = decode(keyAndValue(0))
-        val value       = if (keyAndValue.length > 1) decode(keyAndValue(1)) else ""
-        key -> value
-      }.toMap
+    private def parseFromJson(body: String): List[(String, Option[String])] = {
+      val list = ujson.read(body).obj.toList
+      list.map {
+        case (key, ujson.Str(value)) => (key, Some(value))
+        case (key, ujson.Null)       => (key, None)
+      }
     }
 
     private def sendResponse(exchange: HttpExchange, statusCode: Int, body: String): Unit = {
