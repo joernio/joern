@@ -6,18 +6,17 @@ import io.joern.rust2cpg.parser.RustJsonParser.ParseResult
 import io.joern.rust2cpg.parser.RustNodeSyntax
 import io.joern.rust2cpg.parser.RustNodeSyntax.RustNode
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.{Ast, AstCreatorBase, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewMethod, NewNode}
-import io.shiftleft.codepropertygraph.generated.{NodeTypes, Operators, PropertyDefaults, PropertyNames}
-import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
+import io.shiftleft.codepropertygraph.generated.{Operators, PropertyDefaults, PropertyNames}
 import org.slf4j.LoggerFactory
 
 import java.nio.charset.StandardCharsets
 
 class AstCreator(val config: Config, val parseResult: ParseResult)(implicit withSchemaValidation: ValidationMode)
     extends AstCreatorBase[RustNode, AstCreator](parseResult.filename)
-    with RustVisitor {
+    with RustVisitor
+    with RustFullNames {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -42,18 +41,6 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     case _                        => None
   }
 
-  protected def globalMethodNode(): NewMethod = {
-    val name     = NamespaceTraversal.globalNamespaceName
-    val fullName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(parseResult.filename))
-    NewMethod()
-      .name(name)
-      .code(name)
-      .fullName(fullName)
-      .filename(parseResult.filename)
-      .astParentType(NodeTypes.NAMESPACE_BLOCK)
-      .astParentFullName(fullName)
-  }
-
   protected def notHandledYet(node: RustNode): Ast = {
     val text =
       s"""Node type '${node.getClass.getSimpleName}' not handled yet!
@@ -70,27 +57,23 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     operatorCallNode(node = node, name = Operators.assignment, code = code, typeFullName = None)
   }
 
-  private def composeMethodFullName(name: String): String = {
-    // TODO
-    val astParentFullName = methodAstParentStack.head.properties(PropertyNames.FullName).toString
-    formatMethodFullName(Seq(astParentFullName, name))
-  }
-
   private def formatMethodFullName(names: Seq[String]): String = {
     // TODO
     names.mkString(".")
   }
 
-  protected def methodNode(node: RustNodeSyntax.RustNode, name: String): NewMethod = {
-    // TODO
-    val methodFullName  = composeMethodFullName(name)
-    val methodSignature = ""
+  protected def methodNode(node: RustNode, name: String): NewMethod = {
+    val parent            = methodAstParentStack.head
+    val astParentFullName = parent.properties(PropertyNames.FullName).toString
     methodNode(
       node = node,
       name = name,
-      fullName = methodFullName,
-      signature = methodSignature,
-      fileName = parseResult.filename
+      code = name,
+      fullName = composeFullName(name),
+      signature = Some(""),
+      fileName = parseResult.filename,
+      astParentType = Some(parent.label),
+      astParentFullName = Some(astParentFullName)
     )
   }
 

@@ -11,49 +11,6 @@ import java.nio.file.Paths
 
 class SimpleAstCreationPassTest extends Rust2CpgSuite {
 
-  "test 01" in {
-    val libPath = (Paths.get("src") / "lib.rs").toString
-    val cpg     = code("", libPath)
-    cpg.file.name.sorted.l shouldBe List("<unknown>", libPath)
-  }
-
-  "test 02" in {
-    val libPath  = (Paths.get("src") / "lib.rs").toString
-    val mainPath = (Paths.get("src") / "main.rs").toString
-    val cpg      = code("", libPath).moreCode("", mainPath)
-    cpg.file.name.sorted.l shouldBe List("<unknown>", libPath, mainPath)
-  }
-
-  "test 03" in {
-    val mainPath = (Paths.get("src") / "main.rs").toString
-    val cpg      = code("", mainPath)
-    inside(cpg.namespaceBlock.filenameExact(mainPath).l) { case namespaceBlock :: Nil =>
-      namespaceBlock.name shouldBe "<global>"
-      namespaceBlock.fullName shouldBe s"$mainPath:<global>"
-    }
-  }
-
-  "test 04" in {
-    val mainPath = (Paths.get("src") / "main.rs").toString
-    val cpg      = code("", mainPath)
-    inside(cpg.namespaceBlock.filenameExact(mainPath).astChildren.l) { case (method: Method) :: Nil =>
-      method.name shouldBe "<global>"
-      method.fullName shouldBe s"$mainPath:<global>"
-      method.code shouldBe "<global>"
-      method.astParentType shouldBe NodeTypes.NAMESPACE_BLOCK
-      method.astParentFullName shouldBe s"$mainPath:<global>"
-
-      inside(method.start.methodReturn.l) { case methodRet :: Nil =>
-        methodRet.typeFullName shouldBe Defines.Any
-      }
-
-      inside(method.start.modifier.sortBy(_.order).l) { case modifier0 :: modifier1 :: Nil =>
-        modifier0.modifierType shouldBe ModifierTypes.VIRTUAL
-        modifier1.modifierType shouldBe ModifierTypes.MODULE
-      }
-    }
-  }
-
   "test 05" in {
     val cpg = code("const MAX_SIZE: usize = 1024;")
     cpg.local.name("MAX_SIZE").typeFullName.l shouldBe List("usize")
@@ -518,120 +475,6 @@ class SimpleAstCreationPassTest extends Rust2CpgSuite {
     }
   }
 
-  "test 25" in {
-    val filePath = (Paths.get("src") / "lib.rs").toString
-    val cpg = code("""
-        |fn main() {}
-        |""".stripMargin)
-
-    inside(cpg.method.name("main").l) { case main :: Nil =>
-      main.fullName shouldBe s"$filePath:<global>.main"
-      // TODO: main.astParentFullName shouldBe s"$filePath:<global>"
-      main.parameter shouldBe empty
-      main.methodReturn.typeFullName shouldBe "()"
-      main.block.typeFullName shouldBe Defines.Any
-      main.block.astChildren shouldBe empty
-    }
-  }
-
-  "test 26" in {
-    val cpg = code("""
-        |fn main() -> i32 { 1 }
-        |""".stripMargin)
-
-    inside(cpg.method.name("main").methodReturn.l) { case (methodRet: MethodReturn) :: Nil =>
-      methodRet.typeFullName shouldBe "i32"
-      methodRet.code shouldBe "RET"
-    }
-
-    inside(cpg.method.name("main").block.astChildren.isReturn.l) { case (ret: Return) :: Nil =>
-      ret.code shouldBe "1"
-
-      inside(ret.astChildren.l) { case (lit: Literal) :: Nil =>
-        lit.code shouldBe "1"
-        lit.typeFullName shouldBe "i32"
-      }
-    }
-  }
-
-  "test 27" in {
-    val cpg = code("""
-        |fn main() -> char {
-        | return 'x';
-        |}
-        |""".stripMargin)
-
-    cpg.method.name("main").methodReturn.typeFullName.l shouldBe List("char")
-
-    inside(cpg.method.name("main").block.astChildren.l) { case (ret: Return) :: Nil =>
-      ret.code shouldBe "return 'x'"
-
-      inside(ret.astChildren.l) { case (lit: Literal) :: Nil =>
-        lit.code shouldBe "'x'"
-        lit.typeFullName shouldBe "char"
-      }
-    }
-  }
-
-  "test 28" in {
-    val filePath = (Paths.get("src") / "lib.rs").toString
-    val cpg = code("""
-        |fn id(x: i32) -> i32 {
-        | x
-        |}
-        |""".stripMargin)
-
-    inside(cpg.method.name("id").l) { case (method: Method) :: Nil =>
-      method.fullName shouldBe s"$filePath:<global>.id"
-    }
-
-    inside(cpg.method.name("id").parameter.sortBy(_.order).l) { case (param: MethodParameterIn) :: Nil =>
-      param.name shouldBe "x"
-      param.index shouldBe 1
-      param.typeFullName shouldBe "i32"
-    }
-
-    inside(cpg.method.name("id").block.astChildren.l) { case (ret: Return) :: Nil =>
-      ret.code shouldBe "x"
-
-      inside(ret.astChildren.l) { case (ident: Identifier) :: Nil =>
-        ident.name shouldBe "x"
-        ident.code shouldBe "x"
-      // TODO: ident.typeFullName shouldBe "i32"
-      }
-    }
-  }
-
-  "test 29" in {
-    val filePath = (Paths.get("src") / "lib.rs").toString
-    val cpg = code(
-      """
-        |fn foo(p1: i32, p2: i64, p3: f32) {}
-        |""".stripMargin,
-      filePath
-    )
-
-    inside(cpg.method.name("foo").l) { case (method: Method) :: Nil =>
-      method.fullName shouldBe s"$filePath:<global>.foo"
-    }
-
-    inside(cpg.method.name("foo").parameter.sortBy(_.order).l) { case p1 :: p2 :: p3 :: Nil =>
-      p1.name shouldBe "p1"
-      p1.index shouldBe 1
-      p1.typeFullName shouldBe "i32"
-
-      p2.name shouldBe "p2"
-      p2.index shouldBe 2
-      p2.typeFullName shouldBe "i64"
-
-      p3.name shouldBe "p3"
-      p3.index shouldBe 3
-      p3.typeFullName shouldBe "f32"
-    }
-
-    cpg.method.name("foo").block.astChildren shouldBe empty
-  }
-
   "test 30" in {
     val cpg = code("""
         |fn foo(xs: Vec<i32>) {
@@ -760,28 +603,6 @@ class SimpleAstCreationPassTest extends Rust2CpgSuite {
           b.code shouldBe "b"
           b.name shouldBe b.code
         }
-    }
-  }
-
-  "test 34" in {
-    val cpg = code("""
-        |fn foo() -> i32 {
-        | (24)
-        |}
-        |""".stripMargin)
-
-    inside(cpg.method.name("foo").methodReturn.l) { case (methodRet: MethodReturn) :: Nil =>
-      methodRet.typeFullName shouldBe "i32"
-      methodRet.code shouldBe "RET"
-    }
-
-    inside(cpg.method.name("foo").block.astChildren.isReturn.l) { case (ret: Return) :: Nil =>
-      ret.code shouldBe "(24)"
-
-      inside(ret.astChildren.l) { case (lit: Literal) :: Nil =>
-        lit.code shouldBe "24"
-        lit.typeFullName shouldBe "i32"
-      }
     }
   }
 

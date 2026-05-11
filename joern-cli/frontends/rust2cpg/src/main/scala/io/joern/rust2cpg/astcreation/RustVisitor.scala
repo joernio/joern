@@ -3,14 +3,8 @@ package io.joern.rust2cpg.astcreation
 import io.joern.rust2cpg.parser.RustNodeSyntax.*
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.{
-  ControlStructureTypes,
-  DispatchTypes,
-  EvaluationStrategies,
-  ModifierTypes,
-  Operators
-}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewModifier}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewModifier, NewNamespaceBlock}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EvaluationStrategies, Operators}
 
 import scala.annotation.tailrec
 
@@ -25,30 +19,18 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     val fileNode = NewFile().name(parseResult.filename).order(0)
     Option.unless(config.disableFileContent)(parseResult.fileContent).foreach(fileNode.content(_))
 
-    val namespaceBlockNode = globalNamespaceBlock()
+    // TODO: `name` is the rust fully qualified name. `fullName` needs to be unique - to be fixed.
+    val namespaceBlockNode = NewNamespaceBlock()
+      .name(namespaceFullName)
+      .fullName(namespaceFullName)
+      .filename(parseResult.filename)
+      .order(1)
+
     methodAstParentStack.push(namespaceBlockNode)
-
-    val methodNode = globalMethodNode()
-    methodAstParentStack.push(methodNode)
-
     val itemAsts = sourceFile.item.flatMap(visitItem)
-
-    methodAstParentStack.pop()
     methodAstParentStack.pop()
 
-    val globalMethodAst =
-      methodAst(
-        method = methodNode,
-        parameters = Nil,
-        body = Ast(blockNode(sourceFile)).withChildren(itemAsts),
-        methodReturn = methodReturnNode(sourceFile, Defines.Any),
-        modifiers = Seq(
-          modifierNode(sourceFile, ModifierTypes.VIRTUAL).order(0),
-          modifierNode(sourceFile, ModifierTypes.MODULE).order(1)
-        )
-      )
-
-    Ast(fileNode).withChild(Ast(namespaceBlockNode).withChild(globalMethodAst))
+    Ast(fileNode).withChild(Ast(namespaceBlockNode).withChildren(itemAsts))
   }
 
   private def visitItem(item: Item): Seq[Ast] = item match {
