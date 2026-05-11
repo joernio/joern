@@ -608,13 +608,13 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
           |}
           |""".stripMargin)
 
-    val syntheticTypeDecls = cpg.typeDecl.fullName(".*Calculator.*Function2Impl.*").filter(_.astParentType == "").l
+    lazy val syntheticTypeDecls = cpg.typeDecl.fullName(".*Calculator.*Function2Impl.*").filter(_.astParentType == "").l
 
     "only have ONE synthetic type declaration for Calculator::add with Function2<Int, Int, Int>" in {
       syntheticTypeDecls.size shouldBe 1
     }
 
-    val syntheticTypeDecl = syntheticTypeDecls.head
+    lazy val syntheticTypeDecl = syntheticTypeDecls.head
 
     "should have the invoke method with the correct signature" in {
       val invokeMethod = syntheticTypeDecl.method.name("invoke").head
@@ -677,13 +677,13 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       "ThirdFile.kt"
     )
 
-    val syntheticTypeDecls = cpg.typeDecl.fullName(".*Calculator.*Function2Impl.*").filter(_.astParentType == "").l
+    lazy val syntheticTypeDecls = cpg.typeDecl.fullName(".*Calculator.*Function2Impl.*").filter(_.astParentType == "").l
 
     "only have ONE synthetic type declaration across all files" in {
       syntheticTypeDecls.size shouldBe 1
     }
 
-    val syntheticTypeDecl = syntheticTypeDecls.head
+    lazy val syntheticTypeDecl = syntheticTypeDecls.head
 
     "should have the correct invoke method" in {
       val invokeMethod = syntheticTypeDecl.method.name("invoke").head
