@@ -268,10 +268,12 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     viewExprAsPathExpr(callExpr.expr) match {
       case Some(nameRefs) =>
         val name           = code(nameRefs.last)
-        val methodFullName = methodFullNameForCallExpr(nameRefs)
+        val methodFullName = methodFullNameForCallExpr(callExpr, nameRefs)
+        val typeFullName   = typeFullNameForExpr(callExpr)
         val dispatch       = DispatchTypes.STATIC_DISPATCH
-        val call           = callNode(callExpr, code(callExpr), name, methodFullName, dispatch)
-        val args           = callExpr.argList.expr.map(visitExpr)
+        val call =
+          callNode(callExpr, code(callExpr), name, methodFullName, dispatch, None, Some(typeFullName))
+        val args = callExpr.argList.expr.map(visitExpr)
         callAst(call, args)
       case None => notHandledYet(callExpr)
     }
@@ -603,7 +605,7 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   private def visitMethodCallExpr(methodCallExpr: MethodCallExpr): Ast = {
     val methodName     = code(methodCallExpr.nameRef)
     val methodFullName = methodFullNameForMethodCallExpr(methodCallExpr)
-    val typeFullName   = typeFullNameForMethodCallExpr(methodCallExpr)
+    val typeFullName   = typeFullNameForExpr(methodCallExpr)
     // TODO dispatch should be STATIC unless the receiver type is `dyn ...`
     val call = callNode(
       methodCallExpr,

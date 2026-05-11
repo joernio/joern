@@ -127,22 +127,4 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     case _                                  => None
   }
 
-  protected def methodFullNameForCallExpr(nameRefs: Seq[RustNodeSyntax.NameRef]): String = {
-    // TODO
-    nameRefs.map(code) match {
-      case Nil   => Defines.Unknown
-      case names => formatMethodFullName(names)
-    }
-  }
-
-  protected def methodFullNameForMethodCallExpr(methodCallExpr: RustNodeSyntax.MethodCallExpr): String = {
-    // TODO
-    Defines.DynamicCallUnknownFullName
-  }
-
-  protected def typeFullNameForMethodCallExpr(methodCallExpr: RustNodeSyntax.MethodCallExpr): String = {
-    // TODO
-    Defines.Any
-  }
-
 }

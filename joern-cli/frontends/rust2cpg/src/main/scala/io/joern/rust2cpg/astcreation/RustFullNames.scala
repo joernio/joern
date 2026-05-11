@@ -27,17 +27,25 @@ trait RustFullNames { this: AstCreator =>
     node.json.obj.get("typeFullName").flatMap(_.strOpt)
   }
 
+  private def rustAstGenMethodFullName(node: RustNode): Option[String] = {
+    node.json.obj.get("methodFullName").flatMap(_.strOpt)
+  }
+
   protected def typeFullNameForPath(path: RustNodeSyntax.Path): String = {
     rustAstGenTypeFullName(path)
       .orElse(path.pathSegment.nameRef.flatMap(rustAstGenTypeFullName))
       .getOrElse(Defines.Any)
   }
-  
+
+  protected def typeFullNameForExpr(expr: RustNodeSyntax.Expr): String = {
+    rustAstGenTypeFullName(expr).getOrElse(Defines.Any)
+  }
+
   protected def typeFullNameForLiteral(lit: RustNodeSyntax.Literal): String =
     rustAstGenTypeFullName(lit)
       .orElse(lit.value.map(typeFullNameForLiteralToken))
       .getOrElse(Defines.Any)
-  
+
   protected def typeFullNameForIdentPat(identPat: RustNodeSyntax.IdentPat): String = {
     rustAstGenTypeFullName(identPat).getOrElse(Defines.Any)
   }
@@ -53,5 +61,20 @@ trait RustFullNames { this: AstCreator =>
     case _: RustNodeSyntax.TrueKwToken      => "bool"
     case _: RustNodeSyntax.FalseKwToken     => "bool"
     case _                                  => Defines.Any
+  }
+
+  protected def methodFullNameForCallExpr(
+    callExpr: RustNodeSyntax.CallExpr,
+    nameRefs: Seq[RustNodeSyntax.NameRef]
+  ): String =
+    rustAstGenMethodFullName(callExpr).getOrElse {
+      nameRefs.map(code) match {
+        case Nil   => Defines.Unknown
+        case names => names.mkString("::")
+      }
+    }
+
+  protected def methodFullNameForMethodCallExpr(methodCallExpr: RustNodeSyntax.MethodCallExpr): String = {
+    rustAstGenMethodFullName(methodCallExpr).getOrElse(Defines.DynamicCallUnknownFullName)
   }
 }
