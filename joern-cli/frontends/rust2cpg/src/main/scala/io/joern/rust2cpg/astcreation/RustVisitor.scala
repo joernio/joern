@@ -570,9 +570,10 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   // IndexExpr =
   //  Attr* base:Expr '[' index:Expr ']'
   private def visitIndexExpr(indexExpr: IndexExpr): Ast = {
-    val callNode = operatorCallNode(indexExpr, code(indexExpr), Operators.indexAccess, None)
-    val baseAst  = visitExpr(indexExpr.base)
-    val indexAst = visitExpr(indexExpr.index)
+    val typeFullName = typeFullNameForExpr(indexExpr)
+    val callNode     = operatorCallNode(indexExpr, code(indexExpr), Operators.indexAccess, Some(typeFullName))
+    val baseAst      = visitExpr(indexExpr.base)
+    val indexAst     = visitExpr(indexExpr.index)
     callAst(callNode, Seq(baseAst, indexAst))
   }
 

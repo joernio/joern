@@ -1,11 +1,90 @@
 package io.joern.rust2cpg.passes.ast
 
 import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
 class OperatorTests extends Rust2CpgSuite(noSysRoot = true) {
+
+  "`as` lowers to `<operator>.cast`" in {
+    val cpg = code("""
+        |fn main(x: i32) {
+        | let y = x as i64;
+        |}
+        |""".stripMargin)
+
+    inside(cpg.call.nameExact(Operators.cast).l) { case cast :: Nil =>
+      cast.code shouldBe "x as i64"
+      cast.methodFullName shouldBe Operators.cast
+      cast.typeFullName shouldBe "i64"
+
+      inside(cast.argument.sortBy(_.argumentIndex).l) { case (typeRef: TypeRef) :: (identifier: Identifier) :: Nil =>
+        typeRef.code shouldBe "i64"
+        typeRef.typeFullName shouldBe "i64"
+        typeRef.argumentIndex shouldBe 1
+
+        identifier.name shouldBe "x"
+        identifier.code shouldBe "x"
+        identifier.typeFullName shouldBe "i32"
+        identifier.argumentIndex shouldBe 2
+      }
+    }
+  }
+
+  "`[i]` lowers to `<operator>.indexAccess`" in {
+    val cpg = code("""
+        |fn foo(xs: Vec<i32>, i: usize) -> i32 {
+        | xs[i]
+        |}
+        |""".stripMargin)
+
+    inside(cpg.call.nameExact(Operators.indexAccess).l) { case indexAccess :: Nil =>
+      indexAccess.code shouldBe "xs[i]"
+      indexAccess.methodFullName shouldBe Operators.indexAccess
+      indexAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      indexAccess.typeFullName shouldBe "i32"
+
+      inside(indexAccess.argument.l) { case (xs: Identifier) :: (i: Identifier) :: Nil =>
+        xs.code shouldBe "xs"
+        xs.argumentIndex shouldBe 1
+        xs.name shouldBe "xs"
+        // TODO (rust_ast_gen): confirm why it doesn't have a type
+        xs.typeFullName shouldBe Defines.Any
+
+        i.code shouldBe "i"
+        i.argumentIndex shouldBe 2
+        i.typeFullName shouldBe "usize"
+      }
+    }
+  }
+
+  "`[i][j]` lowers to nested `<operator>.indexAccess`" in {
+    val cpg = code("""
+        |fn foo(xs: Vec<Vec<i32>>, i: usize, j: usize) -> i32 {
+        | xs[i][j]
+        |}
+        |""".stripMargin)
+
+    inside(cpg.call.nameExact(Operators.indexAccess).l.sortBy(_.code.length)) { case inner :: outer :: Nil =>
+      inner.code shouldBe "xs[i]"
+      outer.code shouldBe "xs[i][j]"
+      outer.typeFullName shouldBe "i32"
+      // TODO (rust_ast_gen): confirm that no type for the inner is to be expected
+      inner.typeFullName shouldBe Defines.Any
+
+      inside(outer.argument.l) { case (innerArg: Call) :: (indexArg: Identifier) :: Nil =>
+        innerArg shouldBe inner
+        innerArg.argumentIndex shouldBe 1
+        innerArg.typeFullName shouldBe Defines.Any
+
+        indexArg.code shouldBe "j"
+        indexArg.argumentIndex shouldBe 2
+        indexArg.typeFullName shouldBe "usize"
+      }
+    }
+  }
 
   "unary `-`, `!` and `*` lower to minus, logicalNot, and indirection calls" in {
     val cpg = code("""
