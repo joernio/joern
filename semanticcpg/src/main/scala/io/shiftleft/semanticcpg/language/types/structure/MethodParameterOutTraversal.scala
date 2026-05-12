@@ -15,15 +15,24 @@ class MethodParameterOutTraversal(val traversal: Iterator[MethodParameterOut]) e
   def index(num: Int): Iterator[MethodParameterOut] =
     traversal.filter { _.index == num }
 
+  def index(num: Option[Int]): Iterator[MethodParameterOut] =
+    num match { case Some(value) => index(value); case None => Iterator.empty }
+
   /* get all parameters from (and including)
    * method parameter indexes are  based, i.e. first parameter has index  (that's how java2cpg generates it) */
   def indexFrom(num: Int): Iterator[MethodParameterOut] =
     traversal.filter(_.index >= num)
 
+  def indexFrom(num: Option[Int]): Iterator[MethodParameterOut] =
+    num match { case Some(value) => indexFrom(value); case None => Iterator.empty }
+
   /* get all parameters up to (and including)
    * method parameter indexes are  based, i.e. first parameter has index  (that's how java2cpg generates it) */
   def indexTo(num: Int): Iterator[MethodParameterOut] =
     traversal.filter(_.index <= num)
+
+  def indexTo(num: Option[Int]): Iterator[MethodParameterOut] =
+    num match { case Some(value) => indexTo(value); case None => Iterator.empty }
 
   @Doc(info = "Traverse to arguments (actual parameters) associated with this formal parameter")
   def argument(implicit callResolver: ICallResolver): Iterator[Expression] =

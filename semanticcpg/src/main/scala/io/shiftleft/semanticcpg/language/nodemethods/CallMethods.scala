@@ -24,6 +24,9 @@ class CallMethods(val node: Call) extends AnyVal with NodeExtension {
       case expr: Expression if expr.argumentIndex == index => expr
     }
 
+  def arguments(index: Option[Int]): Iterator[Expression] =
+    index match { case Some(idx) => arguments(idx); case None => Iterator.empty }
+
   def arguments(pattern: String): Iterator[Expression] =
     argument.argumentName(pattern)
   def argumentsExact(name: String): Iterator[Expression] =
