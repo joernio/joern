@@ -29,6 +29,16 @@ swift build
 ```
 (requires `swift`).
 
+### Binary Resolution Order
+
+At runtime swiftsrc2cpg locates the `SwiftAstGen` binary in this order:
+
+1. The `SWIFTASTGEN_BIN` environment variable, if set. May point at the binary itself or at a directory containing it.
+2. A `SwiftAstGen` binary on the system `PATH`.
+3. The bundled binary at `bin/astgen/`, which is downloaded automatically by the build.
+
+Each candidate is probed via `SwiftAstGen -h`; SwiftAstGen does not expose a comparable version string, so any successful exit is treated as compatible.
+
 ## Running
 
 ### Required Runtime Dependencies:

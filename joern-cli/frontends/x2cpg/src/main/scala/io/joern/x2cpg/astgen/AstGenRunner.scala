@@ -36,6 +36,16 @@ object AstGenRunner {
     *   the prefix of the executable's respective configuration path.
     * @param multiArchitectureBuilds
     *   whether there is a binary for specific architectures or not.
+    * @param binEnvVar
+    *   optional environment variable that may point to a user-provided binary location, e.g. `ASTGEN_BIN`.
+    * @param versionFlag
+    *   the CLI flag used to query the binary's version (or any flag whose successful exit indicates a working binary).
+    * @param skipVersionComparison
+    *   if true, only the successful exit of the version probe is required - the output is not compared against the
+    *   configured version. Useful for binaries that do not expose a comparable version string.
+    * @param versionConfigKey
+    *   optional override for the `application.conf` key holding the required binary version. Defaults to
+    *   `${configPrefix}.${name}_version` when not provided.
     *
     * This class must be abstract, because it determines the path of the ast gen binary from the class path location of
     * its derived class.
@@ -43,9 +53,14 @@ object AstGenRunner {
   abstract class AstGenProgramMetaData(
     val name: String,
     val configPrefix: String,
-    val multiArchitectureBuilds: Boolean = false
+    val multiArchitectureBuilds: Boolean = false,
+    val binEnvVar: Option[String] = None,
+    val versionFlag: String = "-version",
+    val skipVersionComparison: Boolean = false,
+    versionConfigKey: Option[String] = None
   ) {
-    val packagePath: URL = getClass.getProtectionDomain.getCodeSource.getLocation
+    val packagePath: URL                 = getClass.getProtectionDomain.getCodeSource.getLocation
+    val resolvedVersionConfigKey: String = versionConfigKey.getOrElse(s"$configPrefix.${name}_version")
   }
 
   def isExecutableFile(filePath: String): Boolean = {
@@ -145,22 +160,46 @@ abstract class AstGenRunner(metaData: AstGenProgramMetaData, config: X2CpgConfig
 
   protected def runAstGenNative(in: String, out: Path, exclude: String, include: String): Try[Seq[String]]
 
-  protected def astGenCommand: String = {
+  // Lazy so path resolution and the version probe run at most once per runner instance.
+  protected lazy val astGenCommand: String = {
     val conf          = ConfigFactory.load
-    val astGenVersion = conf.getString(s"${metaData.configPrefix}.${metaData.name}_version")
-    if (hasCompatibleAstGenVersion(astGenVersion)) {
-      metaData.name
-    } else {
-      val localPath = s"$executableDir/$executableName"
-      if (AstGenRunner.isExecutableFile(localPath)) {
-        localPath
-      } else {
-        logger.error(s"""Local ${metaData.name} binary not found at '$localPath' or is not executable!
-             |Please make sure to have a compatible astgen version installed and available on this system.
-             |""".stripMargin)
-        scala.sys.exit(1)
+    val astGenVersion = conf.getString(metaData.resolvedVersionConfigKey)
+    val resolvedPath  = resolveAstGenPath(astGenVersion)
+    logger.info(s"Using ${metaData.name} from '$resolvedPath'")
+    resolvedPath
+  }
+
+  /** Resolution order:
+    *
+    *   - user-provided path via `metaData.binEnvVar` (if set and binary passes the version probe)
+    *   - binary on the system `PATH` named `metaData.name` (if it passes the version probe)
+    *   - bundled binary at `$executableDir/$executableName`
+    */
+  private def resolveAstGenPath(astGenVersion: String): String = {
+    binFromEnvVar
+      .filter(path => hasCompatibleAstGenVersion(astGenVersion, Option(path)))
+      .orElse(Option.when(hasCompatibleAstGenVersion(astGenVersion, None))(metaData.name))
+      .getOrElse {
+        val localPath = s"$executableDir/$executableName"
+        if (AstGenRunner.isExecutableFile(localPath)) {
+          localPath
+        } else {
+          val envHint =
+            metaData.binEnvVar
+              .map(envVar => s" or set the environment variable $envVar to a working binary")
+              .getOrElse("")
+          logger.error(s"""Local ${metaData.name} binary not found at '$localPath' or is not executable!
+               |Please make sure to have a compatible ${metaData.name} version installed and available on this system$envHint.
+               |""".stripMargin)
+          scala.sys.exit(1)
+        }
       }
-    }
+  }
+
+  private def binFromEnvVar: Option[String] = metaData.binEnvVar.flatMap(scala.util.Properties.envOrNone).flatMap {
+    case path if Files.isDirectory(Paths.get(path)) => Some(Paths.get(path).resolve(metaData.name).toString)
+    case path if Files.exists(Paths.get(path))      => Some(Paths.get(path).toString)
+    case _                                          => None
   }
 
   def execute(out: Path): AstGenRunnerResult = {
@@ -189,18 +228,31 @@ abstract class AstGenRunner(metaData: AstGenProgramMetaData, config: X2CpgConfig
       .resolve("astgen")
       .toString
 
-  def hasCompatibleAstGenVersion(compatibleVersion: String): Boolean = {
-    ExternalCommand.run(Seq(metaData.name, "-version")).successOption.map(_.mkString.strip()) match {
-      case Some(installedVersion)
-          if installedVersion != "unknown" &&
-            Try(VersionHelper.compare(installedVersion, compatibleVersion)).toOption.getOrElse(-1) >= 0 =>
-        logger.debug(s"Using local ${metaData.name} v$installedVersion from systems PATH")
+  def hasCompatibleAstGenVersion(compatibleVersion: String): Boolean =
+    hasCompatibleAstGenVersion(compatibleVersion, None)
+
+  def hasCompatibleAstGenVersion(compatibleVersion: String, path: Option[String]): Boolean = {
+    val command      = path.getOrElse(metaData.name)
+    val workingDir   = path.flatMap(binPath => Option(Paths.get(binPath).getParent))
+    val debugMsgPath = path.getOrElse("PATH")
+    ExternalCommand.run(Seq(command, metaData.versionFlag), workingDir).successOption match {
+      case Some(_) if metaData.skipVersionComparison =>
+        logger.debug(s"Using ${metaData.name} from '$debugMsgPath'")
         true
-      case Some(installedVersion) =>
-        logger.debug(
-          s"Found local ${metaData.name} v$installedVersion in systems PATH but ${metaData.name} requires at least v$compatibleVersion"
-        )
-        false
+      case Some(out) =>
+        val installedVersion = out.mkString.strip()
+        if (
+          installedVersion != "unknown" &&
+          Try(VersionHelper.compare(installedVersion, compatibleVersion)).toOption.getOrElse(-1) >= 0
+        ) {
+          logger.debug(s"Using ${metaData.name} v$installedVersion from '$debugMsgPath'")
+          true
+        } else {
+          logger.debug(
+            s"Found ${metaData.name} v$installedVersion in '$debugMsgPath' but ${metaData.name} requires at least v$compatibleVersion"
+          )
+          false
+        }
       case _ =>
         false
     }
