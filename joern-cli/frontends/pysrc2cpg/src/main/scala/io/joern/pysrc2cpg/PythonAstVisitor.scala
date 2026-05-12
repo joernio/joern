@@ -1408,8 +1408,8 @@ class PythonAstVisitor(
       case node: ast.DictComp       => convert(node)
       case node: ast.GeneratorExp   => convert(node)
       case node: ast.Await          => convert(node)
-      case node: ast.Yield          => unhandled(node)
-      case node: ast.YieldFrom      => unhandled(node)
+      case node: ast.Yield          => convert(node)
+      case node: ast.YieldFrom      => convert(node)
       case node: ast.Compare        => convert(node)
       case node: ast.Call           => convert(node)
       case node: ast.FormattedValue => convert(node)
@@ -1754,9 +1754,17 @@ class PythonAstVisitor(
     convert(await.value)
   }
 
-  def convert(yieldExpr: ast.Yield): NewNode = unhandled(yieldExpr)
+  def convert(yieldExpr: ast.Yield): NewNode = {
+    val valueNode = yieldExpr.value.map(convert)
+    val code      = "yield" + valueNode.map(n => " " + codeOf(n)).getOrElse("")
+    createReturn(valueNode, Some(code), lineAndColOf(yieldExpr))
+  }
 
-  def convert(yieldFrom: ast.YieldFrom): NewNode = unhandled(yieldFrom)
+  def convert(yieldFrom: ast.YieldFrom): NewNode = {
+    val valueNode = convert(yieldFrom.value)
+    val code      = "yield from " + codeOf(valueNode)
+    createReturn(Some(valueNode), Some(code), lineAndColOf(yieldFrom))
+  }
 
   // In case of a single compare operation there is no lowering applied.
   // So e.g. x < y stay untouched.
