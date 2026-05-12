@@ -69,8 +69,7 @@ class ControlStructureTests extends Rust2CpgSuite(noSysRoot = true) {
   }
 
   "`if !b` lowers to a logicalNot call in the condition" in {
-    val cpg = code(
-      """
+    val cpg = code("""
         |fn main(b: bool) {
         | if !b {
         |  foo();

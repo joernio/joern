@@ -18,9 +18,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite(noSysRoot = true) {
     val sink   = cpg.method.name("add_one").methodReturn
     val flows  = sink.reachableByFlows(source).map(flowToResultPairs).l
 
-    flows shouldBe List(
-      List(("add_one(x: i32)", 2), ("x + 1", 3), ("let y = x + 1;", 3), ("y", 4), ("RET", 2))
-    )
+    flows shouldBe List(List(("add_one(x: i32)", 2), ("x + 1", 3), ("let y = x + 1;", 3), ("y", 4), ("RET", 2)))
   }
 
   "flow from literal through `let` to call argument" in {
@@ -35,9 +33,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite(noSysRoot = true) {
     val sink   = cpg.call.name("sink").argument
     val flows  = sink.reachableByFlows(source).map(flowToResultPairs).l
 
-    flows shouldBe List(
-      List(("let x = 42;", 3), ("sink(x)", 4))
-    )
+    flows shouldBe List(List(("let x = 42;", 3), ("sink(x)", 4)))
   }
 
   "flow through both `if/else` branches reaches the sink" in {
@@ -57,10 +53,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite(noSysRoot = true) {
     val sink   = cpg.call.name("sink").argument
     val flows  = sink.reachableByFlows(source).map(flowToResultPairs).toSet
 
-    flows shouldBe Set(
-      List(("x = 1", 5), ("sink(x)", 9)),
-      List(("x = 2", 7), ("sink(x)", 9))
-    )
+    flows shouldBe Set(List(("x = 1", 5), ("sink(x)", 9)), List(("x = 2", 7), ("sink(x)", 9)))
   }
 
   "flow from function parameter through same-crate call to sink" in {

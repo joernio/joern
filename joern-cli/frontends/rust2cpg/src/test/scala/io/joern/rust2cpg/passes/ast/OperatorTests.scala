@@ -219,4 +219,3 @@ class OperatorTests extends Rust2CpgSuite(noSysRoot = true) {
     cpg.call.nameExact(Operators.greaterThan).typeFullName.l shouldBe List("bool")
   }
 }
-
