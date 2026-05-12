@@ -5,15 +5,19 @@ import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal.globalNamespaceName
 
 class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
 
-  // TODO: confirm this is correct.
-  "top-level `const` emits a LOCAL and an assignment" in {
+  "top-level `const` emits a LOCAL and an assignment in the file's `<global>` method" in {
     val cpg = code("const MAX_SIZE: usize = 1024;")
-    cpg.local.name("MAX_SIZE").typeFullName.l shouldBe List("usize")
 
-    inside(cpg.assignment.l) { case assignment :: Nil =>
+    inside(cpg.method.name(globalNamespaceName).block.local.name("MAX_SIZE").l) { case local :: Nil =>
+      local.typeFullName shouldBe "usize"
+      local.code shouldBe "MAX_SIZE"
+    }
+
+    inside(cpg.method.name(globalNamespaceName).block.assignment.l) { case assignment :: Nil =>
       assignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       assignment.code shouldBe "const MAX_SIZE: usize = 1024;"
       assignment.typeFullName shouldBe Defines.Any

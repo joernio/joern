@@ -5,18 +5,22 @@ import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal.globalNamespaceName
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+
+import java.nio.file.Paths
 
 class MethodTests extends Rust2CpgSuite(noSysRoot = true) {
 
-  "`main` lives under the crate namespace" in {
+  "`main` lives inside the file's `<global>` method" in {
     val cpg = code("""
         |fn main() {}
         |""".stripMargin)
 
     inside(cpg.method.name("main").l) { case main :: Nil =>
       main.fullName shouldBe "rust2cpgtest::main"
-      main.astParentFullName shouldBe "rust2cpgtest"
-      main.astParentType shouldBe NodeTypes.NAMESPACE_BLOCK
+      main.astParentType shouldBe NodeTypes.METHOD
+      main.astParentFullName shouldBe s"${(Paths.get("src") / "lib.rs").toString}:rust2cpgtest:$globalNamespaceName"
       main.parameter shouldBe empty
       main.methodReturn.typeFullName shouldBe "()"
       main.block.typeFullName shouldBe Defines.Any

@@ -3,6 +3,10 @@ package io.joern.rust2cpg.passes.ast
 import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal.globalNamespaceName
+import io.shiftleft.semanticcpg.utils.FileUtil.*
+
+import java.nio.file.Paths
 
 class StructTests extends Rust2CpgSuite(noSysRoot = true) {
 
@@ -16,8 +20,8 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
 
     inside(cpg.typeDecl.name("Point").l) { case point :: Nil =>
       point.fullName shouldBe "rust2cpgtest::Point"
-      point.astParentType shouldBe NodeTypes.NAMESPACE_BLOCK
-      point.astParentFullName shouldBe "rust2cpgtest"
+      point.astParentType shouldBe NodeTypes.METHOD
+      point.astParentFullName shouldBe s"${(Paths.get("src") / "lib.rs").toString}:rust2cpgtest:$globalNamespaceName"
       point.member.map(member => (member.name, member.typeFullName)).sorted.l shouldBe List(("x", "i32"), ("y", "i32"))
     }
   }
@@ -40,8 +44,8 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
 
     inside(cpg.typeDecl.name("Marker").l) { case marker :: Nil =>
       marker.fullName shouldBe "rust2cpgtest::Marker"
-      marker.astParentType shouldBe NodeTypes.NAMESPACE_BLOCK
-      marker.astParentFullName shouldBe "rust2cpgtest"
+      marker.astParentType shouldBe NodeTypes.METHOD
+      marker.astParentFullName shouldBe s"${(Paths.get("src") / "lib.rs").toString}:rust2cpgtest:$globalNamespaceName"
       marker.member shouldBe empty
     }
   }

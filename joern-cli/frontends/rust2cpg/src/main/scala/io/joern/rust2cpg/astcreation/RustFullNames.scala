@@ -4,6 +4,8 @@ import io.joern.rust2cpg.parser.RustNodeSyntax
 import io.joern.rust2cpg.parser.RustNodeSyntax.RustNode
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.PropertyNames
+import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewNamespaceBlock}
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 // Computes rust-style full names, e.g. `crate::module::item`.
 // ast_gen provided methodFullName/typeFullName are always preferred.
@@ -19,8 +21,24 @@ trait RustFullNames { this: AstCreator =>
   }
 
   protected def composeFullName(name: String): String = {
-    val parentFullName = methodAstParentStack.head.properties(PropertyNames.FullName).toString
-    s"$parentFullName::$name"
+    s"$parentPrefix::$name"
+  }
+
+  // We don't want to have the `<global>` method's full name propagated since that would not
+  // match rust_ast_gen's full names.
+  // When the parent is a namespace_block, we also don't want its fullName, since it's file-prefixed
+  // in order to be unique, but rather its name.
+  private def parentPrefix: String = {
+    val parent = methodAstParentStack
+      .find {
+        case method: NewMethod if method.name == NamespaceTraversal.globalNamespaceName => false
+        case other                                                                      => true
+      }
+      .getOrElse(methodAstParentStack.head)
+    parent match {
+      case ns: NewNamespaceBlock => ns.name
+      case other                 => other.properties(PropertyNames.FullName).toString
+    }
   }
 
   protected def qualifyInCurrentNamespaceUnlessQualified(name: String): String =

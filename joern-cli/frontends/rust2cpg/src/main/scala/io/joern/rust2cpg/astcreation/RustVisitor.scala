@@ -3,19 +3,13 @@ package io.joern.rust2cpg.astcreation
 import io.joern.rust2cpg.parser.RustNodeSyntax
 import io.joern.rust2cpg.parser.RustNodeSyntax.*
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.{Ast, Defines, ValidationMode}
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewNamespaceBlock, NewTypeDecl}
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EvaluationStrategies, Operators}
-import io.shiftleft.codepropertygraph.generated.{
-  ControlStructureTypes,
-  DispatchTypes,
-  EvaluationStrategies,
-  Operators,
-  PropertyNames
-}
+import io.shiftleft.codepropertygraph.generated.*
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
-import scala.util.Try
 import scala.annotation.tailrec
+import scala.util.Try
 
 trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreator =>
 
@@ -28,18 +22,39 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     val fileNode = NewFile().name(parseResult.filename).order(0)
     Option.unless(config.disableFileContent)(parseResult.fileContent).foreach(fileNode.content(_))
 
-    // TODO: `name` is the rust fully qualified name. `fullName` needs to be unique - to be fixed.
     val namespaceBlockNode = NewNamespaceBlock()
       .name(namespaceFullName)
-      .fullName(namespaceFullName)
+      .fullName(s"${parseResult.filename}:$namespaceFullName")
       .filename(parseResult.filename)
       .order(1)
 
+    val globalMethodAst = astInFakeMethod(sourceFile, namespaceBlockNode)
+    Ast(fileNode).withChild(Ast(namespaceBlockNode).withChild(globalMethodAst))
+  }
+
+  private def astInFakeMethod(sourceFile: SourceFile, namespaceBlockNode: NewNamespaceBlock): Ast = {
+    val name = NamespaceTraversal.globalNamespaceName
+    val method = methodNode(
+      node = sourceFile,
+      name = name,
+      code = name,
+      fullName = s"${namespaceBlockNode.fullName}:$name",
+      signature = Some(""),
+      fileName = parseResult.filename,
+      astParentType = Some(NodeTypes.NAMESPACE_BLOCK),
+      astParentFullName = Some(namespaceBlockNode.fullName)
+    )
+
     methodAstParentStack.push(namespaceBlockNode)
+    methodAstParentStack.push(method)
     val itemAsts = sourceFile.item.flatMap(visitItem)
     methodAstParentStack.pop()
+    methodAstParentStack.pop()
 
-    Ast(fileNode).withChild(Ast(namespaceBlockNode).withChildren(itemAsts))
+    val block        = blockNode(sourceFile)
+    val methodReturn = methodReturnNode(sourceFile, "()")
+    val modifiers    = Seq(ModifierTypes.VIRTUAL, ModifierTypes.MODULE).map(modifierNode(sourceFile, _))
+    methodAst(method, parameters = Nil, body = Ast(block).withChildren(itemAsts), methodReturn, modifiers)
   }
 
   private def visitItem(item: Item): Seq[Ast] = item match {
