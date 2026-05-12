@@ -20,7 +20,7 @@ private object Frontend {
     OParser.sequence(
       programName("rust2cpg"),
       opt[Unit]("no-sysroot")
-        .action((_, c) => c.withNoSysRoot(true))
+        .action((_, config) => config.withNoSysRoot(true))
         .text("Skip sysroot loading. Faster but will not resolve std symbols")
     )
   }

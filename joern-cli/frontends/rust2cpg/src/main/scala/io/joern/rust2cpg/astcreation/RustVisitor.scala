@@ -741,7 +741,7 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     protected def assocItems: Seq[RustNodeSyntax.RustNode] = {
       val assocKinds = Set("FN", "CONST", "MACRO_CALL", "TYPE_ALIAS")
       assocItemList.children.collect {
-        case c if assocKinds(c("nodeKind").str) => RustNodeSyntax.createRustNode(c)
+        case child if assocKinds(child("nodeKind").str) => RustNodeSyntax.createRustNode(child)
       }
     }
   }
