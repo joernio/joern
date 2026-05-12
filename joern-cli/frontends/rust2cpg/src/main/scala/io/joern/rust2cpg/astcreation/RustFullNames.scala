@@ -80,7 +80,7 @@ trait RustFullNames { this: AstCreator =>
   protected def methodFullNameForMethodCallExpr(methodCallExpr: RustNodeSyntax.MethodCallExpr): String = {
     rustAstGenMethodFullName(methodCallExpr).getOrElse(Defines.DynamicCallUnknownFullName)
   }
-  
+
   protected def typeFullNameForStruct(struct: RustNodeSyntax.Struct): String = {
     rustAstGenTypeFullName(struct).getOrElse(composeFullName(text(struct.name).getOrElse(Defines.Unknown)))
   }
