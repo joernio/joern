@@ -1756,7 +1756,7 @@ class PythonAstVisitor(
 
   def convert(yieldExpr: ast.Yield): NewNode = {
     val valueNode = yieldExpr.value.map(convert)
-    val code      = "yield" + valueNode.map(n => " " + codeOf(n)).getOrElse("")
+    val code      = "yield" + valueNode.map(node => " " + codeOf(node)).getOrElse("")
     createReturn(valueNode, Some(code), lineAndColOf(yieldExpr))
   }
 
