@@ -1,9 +1,10 @@
 package io.joern.rust2cpg.astcreation
 
+import io.joern.rust2cpg.parser.RustNodeSyntax
 import io.joern.rust2cpg.parser.RustNodeSyntax.*
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewModifier, NewNamespaceBlock}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewNamespaceBlock, NewTypeDecl}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EvaluationStrategies, Operators}
 import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
@@ -47,7 +48,7 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     case x: ExternBlock => notHandledYet(x) :: Nil
     case x: ExternCrate => notHandledYet(x) :: Nil
     case fn: Fn         => visitFn(fn) :: Nil
-    case x: Impl        => notHandledYet(x) :: Nil
+    case impl: Impl     => visitImpl(impl)
     case x: MacroCall   => notHandledYet(x) :: Nil
     case x: MacroRules  => notHandledYet(x) :: Nil
     case x: MacroDef    => notHandledYet(x) :: Nil
@@ -221,17 +222,21 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   // 'fn' Name GenericParamList? ParamList RetType? WhereClause?
   // (body:BlockExpr | ';')
   private def visitFn(fn: Fn): Ast = {
-    val method          = methodNode(node = fn, name = code(fn.name))
+    // TODO: add modifiers
+    lowerFn(fn, selfTypeFullName = None)
+  }
+
+  private def lowerFn(fn: Fn, selfTypeFullName: Option[String]): Ast = {
+    val method          = methodNode(fn, code(fn.name))
     val retTypeFullName = fn.retType.map(_.`type`).map(typeFullNameForType).getOrElse("()")
     val methodRet       = methodReturnNode(fn, retTypeFullName)
-    val methodMods      = Seq[NewModifier]()
 
     methodAstParentStack.push(method)
-    val paramAsts = visitParamList(fn.paramList)
+    val paramAsts = lowerParamList(fn.paramList, selfTypeFullName)
     val bodyAst   = fn.blockExpr.map(lowerFnBody).getOrElse(blockAst(blockNode(fn)))
     methodAstParentStack.pop()
 
-    methodAst(method = method, parameters = paramAsts, body = bodyAst, methodReturn = methodRet, modifiers = methodMods)
+    methodAst(method = method, parameters = paramAsts, body = bodyAst, methodReturn = methodRet, modifiers = Nil)
   }
 
   // Creates:
@@ -328,8 +333,11 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   //  | (SelfParam ',')? (Param (',' Param)* ','?)?
   //  )')'
   // | '|' (Param (',' Param)* ','?)? '|'
-  private def visitParamList(paramList: ParamList): Seq[Ast] = {
-    paramList.param.zipWithIndex.map { case (param, paramIdx) =>
+  private def lowerParamList(paramList: ParamList, selfTypeFullName: Option[String]): Seq[Ast] = {
+    val selfAst = paramList.selfParam.zip(selfTypeFullName).map { case (selfParam, ownerType) =>
+      lowerSelfParam(selfParam, ownerType)
+    }
+    val paramAsts = paramList.param.zipWithIndex.map { case (param, paramIdx) =>
       val paramName         = param.pat.collect { case x: IdentPat => x }
       val paramTypeFullName = param.`type`.map(typeFullNameForType)
 
@@ -348,16 +356,29 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
         case _ => notHandledYet(param)
       }
     }
+    selfAst.toList ++ paramAsts
   }
 
-  // Param =
+  // SelfParam =
   //  Attr* (
-  //    Pat (':' Type)?
-  //  | Type
-  //  | '...'
+  //    ('&' Lifetime?)? 'mut'? Name
+  //  | 'mut'? Name ':' Type
   //  )
-  private def visitParam(param: Param): Ast = {
-    notHandledYet(param)
+  private def lowerSelfParam(selfParam: SelfParam, ownerTypeFullName: String): Ast = {
+    val evaluationStrategy =
+      if (selfParam.ampToken.isDefined) EvaluationStrategies.BY_REFERENCE else EvaluationStrategies.BY_SHARING
+    val typeFullName = selfParam.`type`.map(typeFullNameForType).getOrElse(ownerTypeFullName)
+    Ast(
+      parameterInNode(
+        node = selfParam,
+        name = code(selfParam.name),
+        code = code(selfParam),
+        index = 0,
+        isVariadic = false,
+        evaluationStrategy = evaluationStrategy,
+        typeFullName = typeFullName
+      )
+    )
   }
 
   // PathExpr =
@@ -685,6 +706,44 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   private def visitTupleField(tupleField: TupleField, index: Int): Ast = {
     val typeFullName = typeFullNameForType(tupleField.`type`)
     Ast(memberNode(tupleField, index.toString, code(tupleField), typeFullName))
+  }
+
+  // Impl =
+  //  Attr* Visibility?
+  //  'default'? 'unsafe'?
+  //  'impl' GenericParamList? ('const'? '!'? trait:Type 'for')? self_ty:Type WhereClause?
+  //  AssocItemList
+  private def visitImpl(impl: Impl): Seq[Ast] = {
+    val selfFullName = typeFullNameForImpl(impl)
+    val selfName     = simpleNameFromFullName(selfFullName)
+
+    // We compute full names based on what's in methodAstParentStack.
+    // And the methods inside an `impl` block should have their "Self" type prefixed.
+    // As a workaround, we push a fake TypeDecl onto methodAstParentStack only
+    // as a way to store the "Self" name/fullname. Not great...
+    val fakeTypeDecl = NewTypeDecl()
+      .name(selfName)
+      .fullName(selfFullName)
+
+    methodAstParentStack.push(fakeTypeDecl)
+    val methodAsts = impl.assocItemList.assocItems.flatMap {
+      case fn: Fn => Some(lowerFn(fn, Some(selfFullName)))
+      case other =>
+        notHandledYet(other)
+        None
+    }
+    methodAstParentStack.pop()
+    methodAsts
+  }
+
+  // TODO (rust_ast_gen): AssocItem should be a trait. Once it is we can remove this workaround.
+  extension (assocItemList: AssocItemList) {
+    protected def assocItems: Seq[RustNodeSyntax.RustNode] = {
+      val assocKinds = Set("FN", "CONST", "MACRO_CALL", "TYPE_ALIAS")
+      assocItemList.children.collect {
+        case c if assocKinds(c("nodeKind").str) => RustNodeSyntax.createRustNode(c)
+      }
+    }
   }
 
 }

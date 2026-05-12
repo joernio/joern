@@ -23,6 +23,9 @@ trait RustFullNames { this: AstCreator =>
     s"$parentFullName::$name"
   }
 
+  protected def qualifyInCurrentNamespaceUnlessQualified(name: String): String =
+    if (name.contains("::")) name else composeFullName(name)
+
   private def rustAstGenTypeFullName(node: RustNode): Option[String] = {
     node.json.obj.get("typeFullName").flatMap(_.strOpt)
   }
@@ -80,5 +83,14 @@ trait RustFullNames { this: AstCreator =>
   
   protected def typeFullNameForStruct(struct: RustNodeSyntax.Struct): String = {
     rustAstGenTypeFullName(struct).getOrElse(composeFullName(text(struct.name).getOrElse(Defines.Unknown)))
+  }
+
+  protected def typeFullNameForImpl(impl: RustNodeSyntax.Impl): String = {
+    val selfType = if (impl.forKwToken.isDefined) impl.`type`.lift(1) else impl.`type`.headOption
+    selfType.map(typeFullNameForType).map(qualifyInCurrentNamespaceUnlessQualified).getOrElse(Defines.Unknown)
+  }
+
+  protected def simpleNameFromFullName(fullName: String): String = {
+    fullName.split("::").lastOption.getOrElse(fullName)
   }
 }
