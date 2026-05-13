@@ -20,10 +20,16 @@ class MethodParameterTraversal(val traversal: Iterator[MethodParameterIn]) exten
   def indexFrom(num: Int): Iterator[MethodParameterIn] =
     traversal.filter(_.index >= num)
 
+  def indexFrom(num: Option[Int]): Iterator[MethodParameterIn] =
+    num match { case Some(value) => indexFrom(value); case None => Iterator.empty }
+
   /** Traverse to all parameters with index smaller or equal than `num` */
   @Doc(info = "Traverse to all parameters with index smaller or equal than `num`")
   def indexTo(num: Int): Iterator[MethodParameterIn] =
     traversal.filter(_.index <= num)
+
+  def indexTo(num: Option[Int]): Iterator[MethodParameterIn] =
+    num match { case Some(value) => indexTo(value); case None => Iterator.empty }
 
   /** Traverse to arguments (actual parameters) associated with this formal parameter */
   @Doc(info = "Traverse to arguments (actual parameters) associated with this formal parameter")
