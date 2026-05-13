@@ -1,39 +1,6 @@
 name: pr
 on: pull_request
 jobs:
-  test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 1
-      - name: Set up JDK
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 21
-          cache: sbt
-      - uses: sbt/setup-sbt@v1
-      - name: Install php
-        if: matrix.os == 'macos-latest'
-        run: brew install php
-      - name: Set up Go
-        uses: actions/setup-go@v6
-        with:
-          cache: false
-          go-version: 1.25
-      - name: Set up Swift
-        uses: SwiftyLab/setup-swift@latest
-        with:
-          swift-version: "6.1"
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-      - name: Run tests
-        run: sbt clean test
-
   formatting:
     runs-on: ubuntu-latest
     steps:
@@ -74,7 +41,42 @@ jobs:
       - run: echo "Previous step failed because certain coding quality expectations were violated. Please check the logs."
         if: ${{ failure() }}
 
+  test:
+    needs: [formatting, linting]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: sbt
+      - uses: sbt/setup-sbt@v1
+      - name: Install php
+        if: matrix.os == 'macos-latest'
+        run: brew install php
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          cache: false
+          go-version: 1.25
+      - name: Set up Swift
+        uses: SwiftyLab/setup-swift@latest
+        with:
+          swift-version: "6.1"
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Run tests
+        run: sbt clean test
+
   test-scripts:
+    needs: [formatting, linting]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
