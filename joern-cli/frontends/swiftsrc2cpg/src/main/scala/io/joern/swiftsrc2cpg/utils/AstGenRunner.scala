@@ -57,7 +57,9 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
     skipped.flatten
   }
 
-  override protected def runAstGenNative(in: String, out: Path, exclude: String, include: String): Try[Seq[String]] =
-    ExternalCommand.run(Seq(astGenCommand, "-o", out.toString), in)
+  override protected def runAstGenNative(in: String, out: Path, exclude: String, include: String): Try[Seq[String]] = {
+    val excludeArgs = if (exclude.nonEmpty) Seq("--exclude-regex", exclude) else Seq.empty
+    ExternalCommand.run(Seq(astGenCommand, "-o", out.toString) ++ excludeArgs, in)
+  }
 
 }
