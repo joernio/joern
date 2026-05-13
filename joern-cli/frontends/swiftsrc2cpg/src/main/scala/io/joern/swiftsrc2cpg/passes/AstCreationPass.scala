@@ -4,7 +4,7 @@ import io.joern.swiftsrc2cpg.Config
 import io.joern.swiftsrc2cpg.astcreation.AstCreator
 import io.joern.swiftsrc2cpg.parser.SwiftJsonParser
 import io.joern.swiftsrc2cpg.passes.AstCreationPass.FileAndTypesMap
-import io.joern.swiftsrc2cpg.utils.AstGenRunner.AstGenRunnerResult
+import io.joern.x2cpg.astgen.AstGenRunner.AstGenRunnerResult
 import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider
 import io.joern.swiftsrc2cpg.utils.SwiftTypesProvider.{MutableSwiftTypeMapping, SwiftFileLocalTypeMapping}
 import io.joern.x2cpg.ValidationMode

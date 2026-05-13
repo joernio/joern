@@ -3,8 +3,8 @@ package io.joern.jssrc2cpg.passes
 import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.astcreation.AstCreator
 import io.joern.jssrc2cpg.parser.BabelJsonParser
-import io.joern.jssrc2cpg.utils.AstGenRunner.AstGenRunnerResult
 import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.astgen.AstGenRunner.AstGenRunnerResult
 import io.joern.x2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPassWithAccumulator
@@ -17,7 +17,7 @@ import scala.util.{Failure, Success, Try}
 
 class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: Config, report: Report = new Report())(
   implicit withSchemaValidation: ValidationMode
-) extends ForkJoinParallelCpgPassWithAccumulator[(String, String), mutable.HashSet[String]](cpg) {
+) extends ForkJoinParallelCpgPassWithAccumulator[String, mutable.HashSet[String]](cpg) {
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
@@ -33,12 +33,11 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
     collectedTypes = accumulator.toSet
   }
 
-  override def generateParts(): Array[(String, String)] = astGenRunnerResult.parsedFiles.toArray
+  override def generateParts(): Array[String] = astGenRunnerResult.parsedFiles.toArray
 
   override def finish(): Unit = {
-    astGenRunnerResult.skippedFiles.foreach { skippedFile =>
-      val (rootPath, fileName) = skippedFile
-      val filePath             = Paths.get(rootPath, fileName)
+    astGenRunnerResult.skippedFiles.foreach { fileName =>
+      val filePath = Paths.get(config.inputPath, fileName)
       val fileLOC = Try(IOUtils.readLinesInFile(filePath)) match {
         case Success(fileContent) => fileContent.size
         case Failure(exception) =>
@@ -51,11 +50,10 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
 
   override def runOnPart(
     diffGraph: DiffGraphBuilder,
-    input: (String, String),
+    jsonFilename: String,
     usedTypes: mutable.HashSet[String]
   ): Unit = {
-    val (rootPath, jsonFilename) = input
-    val parseResultMaybe         = BabelJsonParser.readFile(Paths.get(rootPath), Paths.get(jsonFilename))
+    val parseResultMaybe = BabelJsonParser.readFile(Paths.get(config.inputPath), Paths.get(jsonFilename))
     val ((gotCpg, filename), duration) = TimeUtils.time {
       parseResultMaybe match {
         case Success(parseResult) =>

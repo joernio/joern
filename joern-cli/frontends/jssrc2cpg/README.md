@@ -31,6 +31,16 @@ yarn install
 
 Copy the resulting `astgen-linux`, `astgen-macos`, `astgen-macos-arm`, and `astgen-win.exe` to `joern/joern-cli/frontends/jssrc2cpg/bin/astgen`.
 
+### Binary Resolution Order
+
+At runtime jssrc2cpg locates the `astgen` binary in this order:
+
+1. The `ASTGEN_BIN` environment variable, if set. May point at the binary itself or at a directory containing it.
+2. An `astgen` binary on the system `PATH`.
+3. The bundled binary at `bin/astgen/`, which is downloaded automatically by the build.
+
+Each candidate is probed via `astgen --version` and skipped if it does not pass the version check.
+
 ## Running
 
 To produce a code property graph  issue the command:
