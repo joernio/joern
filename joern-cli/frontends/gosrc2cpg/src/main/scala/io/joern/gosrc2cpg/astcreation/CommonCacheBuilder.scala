@@ -6,7 +6,7 @@ import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.{Ast, ValidationMode}
 import ujson.Value
 
-import scala.util.Try
+import scala.util.{Success, Try}
 
 trait CommonCacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -57,8 +57,7 @@ trait CommonCacheBuilder(implicit withSchemaValidation: ValidationMode) { this: 
       val fullName = fullyQualifiedPackage + Defines.dot + name
       val typeNode = createParserNodeInfo(typeSepc.json(ParserKeys.Type))
       val ast = typeNode.node match {
-        // As of don't see any use case where InterfaceType needs to be handled.
-        case InterfaceType => Seq.empty
+        case InterfaceType => processInterfaceType(typeNode, fullName)
         // astForStructType() function will record the member types
         case StructType => astForStructType(typeNode, fullName)
         // Process lambda function types to record lambda function signature mapped to TypeFullName
@@ -97,6 +96,31 @@ trait CommonCacheBuilder(implicit withSchemaValidation: ValidationMode) { this: 
       MethodMetadata(name, methodFullname, signature, params, receiverInfo, genericTypeMethodMap)
     } else
       MethodMetadata()
+  }
+
+  private def processInterfaceType(typeNode: ParserNodeInfo, fullName: String): Seq[Ast] = {
+    val methodFields = Try(typeNode.json(ParserKeys.Methods)(ParserKeys.List))
+      .orElse(Try(typeNode.json(ParserKeys.Fields)(ParserKeys.List)))
+    methodFields.toOption.foreach { fields =>
+      fields.arr.foreach { field =>
+        Try(field(ParserKeys.Names).arr.head(ParserKeys.Name).str).toOption.foreach { name =>
+          val methodTypeNode = createParserNodeInfo(field(ParserKeys.Type))
+          val returnTypes = getReturnType(methodTypeNode.json, Map.empty)
+          val returnTypeStr = returnTypes match {
+            case Seq()    => Defines.voidTypeName
+            case Seq(one) => one._1
+            case multiple => s"(${multiple.map(_._1).mkString(", ")})"
+          }
+          val params = Try(methodTypeNode.json(ParserKeys.Params)(ParserKeys.List)).getOrElse(ujson.Arr())
+          val sig = parameterSignature(params, Map.empty)
+          val methodFullName = s"$fullName.$name"
+          val signature = s"$methodFullName($sig)${if (returnTypeStr == Defines.voidTypeName) "" else returnTypeStr}"
+          goGlobal.recordMethodMetadata(fullName, name, MethodCacheMetaData(returnTypeStr, signature))
+          goGlobal.recordInterfaceMethods(fullName, name)
+        }
+      }
+    }
+    Seq.empty
   }
 
   protected def processImports(importDecl: Value): (String, String) = {

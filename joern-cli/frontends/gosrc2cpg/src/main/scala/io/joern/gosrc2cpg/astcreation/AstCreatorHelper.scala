@@ -243,8 +243,8 @@ trait AstCreatorHelper { this: AstCreator =>
   ): (String, String, String) = {
     nodeInfo.node match {
       case StarExpr =>
-        // TODO: Need to handle pointer to pointer use case.
-        val (fullName, typeNameForcode) = internalArrayTypeHandler(createParserNodeInfo(nodeInfo.json(ParserKeys.X)))
+        val innerNode = createParserNodeInfo(nodeInfo.json(ParserKeys.X))
+        val (fullName, typeNameForcode, _) = internalStarExpHandler(innerNode)
         (s"*$fullName", s"*$typeNameForcode", EvaluationStrategies.BY_SHARING)
       case _ =>
         val (fullName, typeNameForcode) = internalArrayTypeHandler(nodeInfo, genericTypeMethodMap)
