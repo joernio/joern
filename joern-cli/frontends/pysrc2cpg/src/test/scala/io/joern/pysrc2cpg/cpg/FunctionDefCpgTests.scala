@@ -183,7 +183,7 @@ class FunctionDefCpgTests extends PySrc2CpgFixture with Matchers {
         .parameter
         .typeFullName
         .dedup
-        .l shouldBe Seq("typing.Optional")
+        .l shouldBe Seq("__builtin.str|__builtin.None")
     }
 
     "test return hint of method definition using built-in types" in {
@@ -201,7 +201,7 @@ class FunctionDefCpgTests extends PySrc2CpgFixture with Matchers {
         .methodReturn
         .typeFullName
         .dedup
-        .l shouldBe Seq("typing.List")
+        .l shouldBe Seq("__builtin.list")
     }
 
     "test parameter hint of the form abc.def" in {
