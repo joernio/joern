@@ -13,6 +13,14 @@ object RustJsonParser {
     filename: String,
     fullPath: String,
     ast: RustNode,
+
+    /** The resolved crate name this file belongs to. */
+    crateName: Option[String],
+
+    /** The fully qualified module this file belongs to excluding the crateName. It can be None when: the module is the
+      * crate root, or when rust_ast_gen failed to resolve it.
+      */
+    modulePath: Option[String],
     fileContent: String,
     contentBytes: Array[Byte],
     loc: Int
@@ -26,10 +34,12 @@ object RustJsonParser {
     val filename          = json("relativeFilePath").str
     val fullPath          = json("fullFilePath").str
     val sourceFileContent = json("content").str
+    val crateName         = json.obj.get("crateName").flatMap(_.strOpt)
+    val modulePath        = json.obj.get("modulePath").flatMap(_.strOpt)
     val contentBytes      = sourceFileContent.getBytes(StandardCharsets.UTF_8)
     val ast               = RustNodeSyntax.createRustNode(json("children").arr.head)
     val loc               = json("loc").num.toInt
-    ParseResult(filename, fullPath, ast, sourceFileContent, contentBytes, loc)
+    ParseResult(filename, fullPath, ast, crateName, modulePath, sourceFileContent, contentBytes, loc)
   }
 
 }

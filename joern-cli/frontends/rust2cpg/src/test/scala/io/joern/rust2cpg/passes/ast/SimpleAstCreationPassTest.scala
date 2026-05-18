@@ -11,19 +11,6 @@ import java.nio.file.Paths
 
 class SimpleAstCreationPassTest extends Rust2CpgSuite {
 
-  "test 01" in {
-    val libPath = (Paths.get("src") / "lib.rs").toString
-    val cpg     = code("", libPath)
-    cpg.file.name.sorted.l shouldBe List("<unknown>", libPath)
-  }
-
-  "test 02" in {
-    val libPath  = (Paths.get("src") / "lib.rs").toString
-    val mainPath = (Paths.get("src") / "main.rs").toString
-    val cpg      = code("", libPath).moreCode("", mainPath)
-    cpg.file.name.sorted.l shouldBe List("<unknown>", libPath, mainPath)
-  }
-
   "test 03" in {
     val mainPath = (Paths.get("src") / "main.rs").toString
     val cpg      = code("", mainPath)

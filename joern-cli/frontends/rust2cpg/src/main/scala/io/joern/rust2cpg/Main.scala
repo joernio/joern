@@ -4,16 +4,25 @@ import io.joern.rust2cpg.Frontend.*
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import scopt.OParser
 
-final case class Config(override val genericConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig())
-    extends X2CpgConfig[Config] {
+final case class Config(
+  override val genericConfig: X2CpgConfig.GenericConfig = X2CpgConfig.GenericConfig(),
+  noSysRoot: Boolean = false
+) extends X2CpgConfig[Config] {
   override def withGenericConfig(value: X2CpgConfig.GenericConfig): Config = copy(genericConfig = value)
+
+  def withNoSysRoot(value: Boolean): Config = copy(noSysRoot = value)
 }
 
 private object Frontend {
   val cmdLineParser: OParser[Unit, Config] = {
     val builder = OParser.builder[Config]
     import builder._
-    OParser.sequence(programName("rust2cpg"))
+    OParser.sequence(
+      programName("rust2cpg"),
+      opt[Unit]("no-sysroot")
+        .action((_, config) => config.withNoSysRoot(true))
+        .text("Skip sysroot loading. Faster but will not resolve std symbols")
+    )
   }
 }
 
