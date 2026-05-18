@@ -10,7 +10,7 @@ import io.shiftleft.codepropertygraph.generated.{
   ModifierTypes,
   Operators
 }
-import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewModifier}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewModifier, NewNamespaceBlock}
 
 import scala.annotation.tailrec
 
@@ -25,30 +25,25 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     val fileNode = NewFile().name(parseResult.filename).order(0)
     Option.unless(config.disableFileContent)(parseResult.fileContent).foreach(fileNode.content(_))
 
-    val namespaceBlockNode = globalNamespaceBlock()
-    methodAstParentStack.push(namespaceBlockNode)
-
-    val methodNode = globalMethodNode()
-    methodAstParentStack.push(methodNode)
-
-    val itemAsts = sourceFile.item.flatMap(visitItem)
-
-    methodAstParentStack.pop()
-    methodAstParentStack.pop()
-
-    val globalMethodAst =
-      methodAst(
-        method = methodNode,
-        parameters = Nil,
-        body = Ast(blockNode(sourceFile)).withChildren(itemAsts),
-        methodReturn = methodReturnNode(sourceFile, Defines.Any),
-        modifiers = Seq(
-          modifierNode(sourceFile, ModifierTypes.VIRTUAL).order(0),
-          modifierNode(sourceFile, ModifierTypes.MODULE).order(1)
-        )
-      )
+    val namespaceBlockNode = globalNamespaceBlockNode()
+    val globalMethodAst    = astInFakeMethod(sourceFile, namespaceBlockNode)
 
     Ast(fileNode).withChild(Ast(namespaceBlockNode).withChild(globalMethodAst))
+  }
+
+  private def astInFakeMethod(sourceFile: SourceFile, namespaceBlockNode: NewNamespaceBlock): Ast = {
+    val method = globalFakeMethodNode(sourceFile, namespaceBlockNode)
+
+    methodAstParentStack.push(namespaceBlockNode)
+    methodAstParentStack.push(method)
+    val itemAsts = sourceFile.item.flatMap(visitItem)
+    methodAstParentStack.pop()
+    methodAstParentStack.pop()
+
+    val block        = blockNode(sourceFile)
+    val methodReturn = methodReturnNode(sourceFile, "()")
+    val modifiers    = Seq(ModifierTypes.VIRTUAL, ModifierTypes.MODULE).map(modifierNode(sourceFile, _))
+    methodAst(method, parameters = Nil, body = Ast(block).withChildren(itemAsts), methodReturn, modifiers)
   }
 
   private def visitItem(item: Item): Seq[Ast] = item match {
@@ -277,7 +272,7 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     viewExprAsPathExpr(callExpr.expr) match {
       case Some(nameRefs) =>
         val name           = code(nameRefs.last)
-        val methodFullName = methodFullNameForCallExpr(nameRefs)
+        val methodFullName = methodFullNameForCallExpr(callExpr, nameRefs)
         val dispatch       = DispatchTypes.STATIC_DISPATCH
         val call           = callNode(callExpr, code(callExpr), name, methodFullName, dispatch)
         val args           = callExpr.argList.expr.map(visitExpr)
