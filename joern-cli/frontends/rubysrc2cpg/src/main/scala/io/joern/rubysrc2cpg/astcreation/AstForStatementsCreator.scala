@@ -201,6 +201,10 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           simpleIdent.span.spanStart(s"${simpleIdent.span.text} ${methodIdent.span.text}")
         )
         astForReturnExpression(ReturnExpression(List(simpleCall))(node.span)) :: Nil
+      case node: FieldsDeclaration =>
+        val nilReturnSpan    = node.span.spanStart("return nil")
+        val nilReturnLiteral = StaticLiteral(Defines.prefixAsCoreType(Defines.NilClass))(nilReturnSpan)
+        astsForFieldDeclarations(node) ++ astsForImplicitReturnStatement(nilReturnLiteral)
       case node: SingletonClassDeclaration =>
         astForAnonymousTypeDeclaration(node)
         val nilReturnSpan    = node.span.spanStart("return nil")
