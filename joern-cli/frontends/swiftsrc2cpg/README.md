@@ -37,7 +37,7 @@ At runtime swiftsrc2cpg locates the `SwiftAstGen` binary in this order:
 2. A `SwiftAstGen` binary on the system `PATH`.
 3. The bundled binary at `bin/astgen/`, which is downloaded automatically by the build.
 
-Each candidate is probed via `astgen --version` and skipped if it does not pass the version check.
+Each candidate is probed via `SwiftAstGen --version` and skipped if it does not pass the version check.
 
 ## Running
 
