@@ -1,5 +1,6 @@
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.sbt.packager.Keys.stagingDirectory
+import versionsort.VersionHelper
 
 import scala.sys.process.stringToProcess
 import scala.util.Try
@@ -49,9 +50,10 @@ lazy val astGenDlUrl = settingKey[String]("astgen download url")
 astGenDlUrl := s"https://github.com/joernio/astgen-monorepo/releases/download/swift-astgen/v${astGenVersion.value}/"
 
 def hasCompatibleAstGenVersion(astGenVersion: String): Boolean = {
-  Try("SwiftAstGen -h".!).toOption match {
-    case Some(0) => true
-    case _       => false
+  Try("SwiftAstGen --version".!!).toOption.map(_.strip()) match {
+    case Some(installedVersion) if installedVersion != "unknown" =>
+      VersionHelper.compare(installedVersion, astGenVersion) >= 0
+    case _ => false
   }
 }
 

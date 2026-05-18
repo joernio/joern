@@ -21,15 +21,12 @@ object AstGenRunner {
       s"spec${Pattern.quote(java.io.File.separator)}.*".r
     )
 
-  // SwiftAstGen does not expose a comparable version string; `-h` is used purely as a
-  // "is this a working binary?" probe, and any successful exit is treated as compatible.
   private object astGenMetaData
       extends AstGenProgramMetaData(
         name = "SwiftAstGen",
         configPrefix = "swiftsrc2cpg",
         binEnvVar = Some("SWIFTASTGEN_BIN"),
-        versionFlag = "-h",
-        skipVersionComparison = true,
+        versionFlag = "--version",
         versionConfigKey = Some("swiftsrc2cpg.astgen_version")
       )
 }
