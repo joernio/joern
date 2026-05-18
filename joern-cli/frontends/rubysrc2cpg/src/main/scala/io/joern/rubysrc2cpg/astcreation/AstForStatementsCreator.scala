@@ -180,10 +180,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case ret: ReturnExpression => astForReturnExpression(ret) :: Nil
       case node: (MethodDeclaration | SingletonMethodDeclaration) =>
         (astsForStatement(node) :+ astForReturnMethodDeclarationSymbolName(node)).toList
-      case node: AccessModifier =>
-        val simpleIdent = node.toSimpleIdentifier
-        val simpleCall  = SimpleCall(simpleIdent, List.empty)(simpleIdent.span)
-        astForReturnExpression(ReturnExpression(List(simpleCall))(node.span)) :: Nil
       case node: MethodAccessModifier =>
         val simpleIdent = node.toSimpleIdentifier
 
