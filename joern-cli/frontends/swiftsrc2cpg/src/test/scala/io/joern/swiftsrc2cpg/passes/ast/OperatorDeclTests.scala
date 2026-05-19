@@ -3,58 +3,68 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
 import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
+import io.shiftleft.semanticcpg.language.*
 
 class OperatorDeclTests extends SwiftSrc2CpgSuite {
 
+  // Top-level operator/precedencegroup decls are parser-only — they leave the user file's
+  // <global> method body empty and produce no user-defined methods or type decls.
+  private def assertNoOpCpg(cpg: io.shiftleft.codepropertygraph.generated.Cpg): org.scalatest.Assertion = {
+    val List(globalMethod) = cpg.method.nameExact("<global>").filename("Test0.swift").l
+    globalMethod.block.astChildren.l shouldBe empty
+    cpg.method.filename("Test0.swift").nameNot("<global>").l shouldBe empty
+    cpg.typeDecl.filename("Test0.swift").nameNot("<global>").l shouldBe empty
+  }
+
   "OperatorDeclTests" should {
 
-    "testOperatorDecl3" ignore {
+    "testOperatorDecl3" in {
       val cpg = code("prefix operator ++*++ : A")
-      ???
+      assertNoOpCpg(cpg)
     }
 
-    "testOperatorDecl5" ignore {
+    "testOperatorDecl5" in {
       val cpg = code("postfix operator ++**+ : A")
-      ???
+      assertNoOpCpg(cpg)
     }
 
-    "testOperatorDecl11a" ignore {
+    "testOperatorDecl11a" in {
       val cpg = code("prefix operator ??")
-      ???
+      assertNoOpCpg(cpg)
     }
 
-    "testOperatorDecl11b" ignore {
+    "testOperatorDecl11b" in {
       val cpg = code("postfix operator ??")
-      ???
+      assertNoOpCpg(cpg)
     }
 
-    "testOperatorDecl11c" ignore {
+    "testOperatorDecl11c" in {
       val cpg = code("prefix operator !!")
-      ???
+      assertNoOpCpg(cpg)
     }
 
-    "testOperatorDecl11d" ignore {
+    "testOperatorDecl11d" in {
       val cpg = code("postfix operator !!")
-      ???
+      assertNoOpCpg(cpg)
     }
 
-    "testOperatorDecl16" ignore {
+    "testOperatorDecl16" in {
       val cpg = code("""
         |precedencegroup F {
         |  higherThan: A, B, C
         |}
         |""".stripMargin)
-      ???
+      assertNoOpCpg(cpg)
     }
 
-    "testOperatorDecl17" ignore {
+    "testOperatorDecl17" in {
       val cpg = code("""
         |precedencegroup BangBangBang {
         |  associativity: none
         |  associativity: left
         |}
         |""".stripMargin)
-      ???
+      assertNoOpCpg(cpg)
     }
 
     "testOperatorDecl19" ignore {
@@ -66,9 +76,9 @@ class OperatorDeclTests extends SwiftSrc2CpgSuite {
       ???
     }
 
-    "testOperatorDecl20" ignore {
+    "testOperatorDecl20" in {
       val cpg = code("infix operator **<< : UndeclaredPrecedenceGroup")
-      ???
+      assertNoOpCpg(cpg)
     }
 
     "testOperatorDecl21" ignore {
@@ -79,9 +89,9 @@ class OperatorDeclTests extends SwiftSrc2CpgSuite {
       ???
     }
 
-    "testRegexLikeOperator" ignore {
+    "testRegexLikeOperator" in {
       val cpg = code("prefix operator /^/")
-      ???
+      assertNoOpCpg(cpg)
     }
 
   }
