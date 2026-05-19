@@ -6,7 +6,7 @@ import io.joern.rust2cpg.parser.RustJsonParser.ParseResult
 import io.joern.rust2cpg.parser.RustNodeSyntax
 import io.joern.rust2cpg.parser.RustNodeSyntax.RustNode
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.{Ast, AstCreatorBase, Defines, ValidationMode}
+import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewMethod, NewNamespaceBlock, NewNode}
 import io.shiftleft.codepropertygraph.generated.{NodeTypes, Operators, PropertyDefaults, PropertyNames}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
@@ -100,38 +100,6 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     )
   }
 
-  // TODO
-  protected def typeFullNameForType(typ: RustNodeSyntax.Type): String = {
-    text(typ).getOrElse(Defines.Any)
-  }
-
-  // TODO
-  protected def typeFullNameForNameRef(nameRef: RustNodeSyntax.NameRef): String = {
-    Defines.Any
-  }
-
-  // TODO
-  protected def typeFullNameForPath(path: RustNodeSyntax.Path): String = {
-    Defines.Any
-  }
-
-  protected def typeFullNameForLiteral(lit: RustNodeSyntax.Literal): String = {
-    lit.value.map(typeFullNameForLiteralToken).getOrElse(Defines.Any)
-  }
-
-  protected def typeFullNameForLiteralToken(tok: RustNodeSyntax.RustToken): String = tok match {
-    case _: RustNodeSyntax.IntNumberToken   => "i32"
-    case _: RustNodeSyntax.FloatNumberToken => "f64"
-    case _: RustNodeSyntax.StringToken      => "&str"
-    case _: RustNodeSyntax.ByteStringToken  => "&[u8]"
-    case _: RustNodeSyntax.CStringToken     => "&CStr"
-    case _: RustNodeSyntax.CharToken        => "char"
-    case _: RustNodeSyntax.ByteToken        => "u8"
-    case _: RustNodeSyntax.TrueKwToken      => "bool"
-    case _: RustNodeSyntax.FalseKwToken     => "bool"
-    case _                                  => Defines.Any
-  }
-
   protected def operatorNameFor(binExpr: RustNodeSyntax.BinExpr): Option[String] = binExpr.op match {
     case Some(_: RustNodeSyntax.Pipe2Token)     => Some(Operators.logicalOr)
     case Some(_: RustNodeSyntax.Amp2Token)      => Some(Operators.logicalAnd)
@@ -170,11 +138,6 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     case Some(_: RustNodeSyntax.BangToken)  => Some(Operators.logicalNot)
     case Some(_: RustNodeSyntax.StarToken)  => Some(Operators.indirection)
     case _                                  => None
-  }
-
-  protected def typeFullNameForMethodCallExpr(methodCallExpr: RustNodeSyntax.MethodCallExpr): String = {
-    // TODO
-    Defines.Any
   }
 
 }

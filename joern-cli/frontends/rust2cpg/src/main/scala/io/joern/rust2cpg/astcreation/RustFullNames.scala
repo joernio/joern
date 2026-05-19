@@ -47,8 +47,15 @@ trait RustFullNames { this: AstCreator =>
     }
   }
 
-  private def rustAstGenMethodFullName(node: RustNode): Option[String] =
+  private def rustAstGenMethodFullName(node: RustNode): Option[String] = {
+    // TODO: move this key into a constant in RustNodeSyntax, or provide the accessor there.
     node.json.obj.get("methodFullName").flatMap(_.strOpt)
+  }
+
+  private def rustAstGenTypeFullName(node: RustNode): Option[String] = {
+    // TODO: move this key into a constant in RustNodeSyntax, or provide the accessor there.
+    node.json.obj.get("typeFullName").flatMap(_.strOpt)
+  }
 
   protected def methodFullNameForCallExpr(
     callExpr: RustNodeSyntax.CallExpr,
@@ -64,7 +71,49 @@ trait RustFullNames { this: AstCreator =>
     }
   }
 
-  protected def methodFullNameForMethodCallExpr(methodCallExpr: RustNodeSyntax.MethodCallExpr): String =
+  protected def methodFullNameForMethodCallExpr(methodCallExpr: RustNodeSyntax.MethodCallExpr): String = {
     rustAstGenMethodFullName(methodCallExpr).getOrElse(Defines.DynamicCallUnknownFullName)
+  }
+
+  // TODO
+  protected def typeFullNameForType(typ: RustNodeSyntax.Type): String = {
+    text(typ).getOrElse(Defines.Any)
+  }
+
+  // TODO
+  protected def typeFullNameForNameRef(nameRef: RustNodeSyntax.NameRef): String = {
+    Defines.Any
+  }
+
+  protected def typeFullNameForPath(path: RustNodeSyntax.Path): String = {
+    rustAstGenTypeFullName(path)
+      .orElse(path.pathSegment.nameRef.flatMap(rustAstGenTypeFullName))
+      .getOrElse(Defines.Any)
+  }
+
+  protected def typeFullNameForExpr(expr: RustNodeSyntax.Expr): String = {
+    rustAstGenTypeFullName(expr).getOrElse(Defines.Any)
+  }
+
+  protected def typeFullNameForLiteral(lit: RustNodeSyntax.Literal): String = {
+    rustAstGenTypeFullName(lit).orElse(lit.value.map(typeFullNameForLiteralToken)).getOrElse(Defines.Any)
+  }
+
+  protected def typeFullNameForIdentPat(identPat: RustNodeSyntax.IdentPat): String = {
+    rustAstGenTypeFullName(identPat).getOrElse(Defines.Any)
+  }
+
+  protected def typeFullNameForLiteralToken(tok: RustNodeSyntax.RustToken): String = tok match {
+    case _: RustNodeSyntax.IntNumberToken   => "i32"
+    case _: RustNodeSyntax.FloatNumberToken => "f64"
+    case _: RustNodeSyntax.StringToken      => "&str"
+    case _: RustNodeSyntax.ByteStringToken  => "&[u8]"
+    case _: RustNodeSyntax.CStringToken     => "&CStr"
+    case _: RustNodeSyntax.CharToken        => "char"
+    case _: RustNodeSyntax.ByteToken        => "u8"
+    case _: RustNodeSyntax.TrueKwToken      => "bool"
+    case _: RustNodeSyntax.FalseKwToken     => "bool"
+    case _                                  => Defines.Any
+  }
 
 }

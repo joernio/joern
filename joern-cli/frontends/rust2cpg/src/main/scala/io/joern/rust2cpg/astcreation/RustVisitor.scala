@@ -150,11 +150,15 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   //  LetElse?
   //  ';'
   private def visitLetStmt(letStmt: LetStmt): Seq[Ast] = {
-    viewPatAsIdentPat(letStmt.pat).flatMap(_.name.identToken) match {
-      case Some(identToken) =>
-        val typeFullName = letStmt.`type`.map(typeFullNameForType).getOrElse(Defines.Any)
-        lowerIdentifierDecl(identToken, letStmt.expr, typeFullName, code(letStmt))
-      case None => notHandledYet(letStmt) :: Nil
+    letStmt.pat match {
+      case identPat: IdentPat =>
+        identPat.name.identToken match {
+          case Some(identToken) =>
+            val typeFullName = letStmt.`type`.map(typeFullNameForType).getOrElse(typeFullNameForIdentPat(identPat))
+            lowerIdentifierDecl(identToken, letStmt.expr, typeFullName, code(letStmt))
+          case None => notHandledYet(letStmt) :: Nil
+        }
+      case _ => notHandledYet(letStmt) :: Nil
     }
   }
 
@@ -178,11 +182,6 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     val assignmentAst = callAst(assignmentNode(lhsToken, declCode), Seq(lhsAst, rhsAst))
 
     Seq(localAst, assignmentAst)
-  }
-
-  private def viewPatAsIdentPat(pat: Pat): Option[IdentPat] = pat match {
-    case identPat: IdentPat => Some(identPat)
-    case _                  => None
   }
 
   // Name =
@@ -273,9 +272,11 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
       case Some(nameRefs) =>
         val name           = code(nameRefs.last)
         val methodFullName = methodFullNameForCallExpr(callExpr, nameRefs)
+        val typeFullName   = typeFullNameForExpr(callExpr)
         val dispatch       = DispatchTypes.STATIC_DISPATCH
-        val call           = callNode(callExpr, code(callExpr), name, methodFullName, dispatch)
-        val args           = callExpr.argList.expr.map(visitExpr)
+        val call =
+          callNode(callExpr, code(callExpr), name, methodFullName, dispatch, None, Some(typeFullName))
+        val args = callExpr.argList.expr.map(visitExpr)
         callAst(call, args)
       case None => notHandledYet(callExpr)
     }
@@ -419,8 +420,9 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   private def visitBinExpr(binExpr: BinExpr): Ast = {
     operatorNameFor(binExpr) match {
       case Some(opName) =>
-        val callNode = operatorCallNode(node = binExpr, code = code(binExpr), name = opName, typeFullName = None)
-        val lhsRhs   = binExpr.expr.map(visitExpr)
+        val typeFullName = typeFullNameForExpr(binExpr)
+        val callNode     = operatorCallNode(binExpr, code(binExpr), opName, Some(typeFullName))
+        val lhsRhs       = binExpr.expr.map(visitExpr)
         callAst(callNode, lhsRhs)
       case None => notHandledYet(binExpr)
     }
@@ -464,8 +466,9 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   private def visitPrefixExpr(prefixExpr: PrefixExpr): Ast = {
     operatorNameFor(prefixExpr) match {
       case Some(opName) =>
-        val callNode = operatorCallNode(node = prefixExpr, code = code(prefixExpr), name = opName, typeFullName = None)
-        val exprAst  = visitExpr(prefixExpr.expr)
+        val typeFullName = typeFullNameForExpr(prefixExpr)
+        val callNode     = operatorCallNode(prefixExpr, code(prefixExpr), opName, Some(typeFullName))
+        val exprAst      = visitExpr(prefixExpr.expr)
         callAst(callNode, Seq(exprAst))
       case None => notHandledYet(prefixExpr)
     }
@@ -570,9 +573,10 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   // IndexExpr =
   //  Attr* base:Expr '[' index:Expr ']'
   private def visitIndexExpr(indexExpr: IndexExpr): Ast = {
-    val callNode = operatorCallNode(indexExpr, code(indexExpr), Operators.indexAccess, None)
-    val baseAst  = visitExpr(indexExpr.base)
-    val indexAst = visitExpr(indexExpr.index)
+    val typeFullName = typeFullNameForExpr(indexExpr)
+    val callNode     = operatorCallNode(indexExpr, code(indexExpr), Operators.indexAccess, Some(typeFullName))
+    val baseAst      = visitExpr(indexExpr.base)
+    val indexAst     = visitExpr(indexExpr.index)
     callAst(callNode, Seq(baseAst, indexAst))
   }
 
@@ -607,17 +611,13 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   private def visitMethodCallExpr(methodCallExpr: MethodCallExpr): Ast = {
     val methodName     = code(methodCallExpr.nameRef)
     val methodFullName = methodFullNameForMethodCallExpr(methodCallExpr)
-    val typeFullName   = typeFullNameForMethodCallExpr(methodCallExpr)
-    // TODO dispatch should be STATIC unless the receiver type is `dyn ...`
-    val call = callNode(
-      methodCallExpr,
-      code(methodCallExpr),
-      methodName,
-      methodFullName,
-      DispatchTypes.STATIC_DISPATCH,
-      None,
-      Some(typeFullName)
-    )
+    val typeFullName   = typeFullNameForExpr(methodCallExpr)
+    // TODO: should also be DYNAMIC_DISPATCH when the type is `dyn`.
+    val dispatch =
+      if (methodFullName == Defines.DynamicCallUnknownFullName) DispatchTypes.DYNAMIC_DISPATCH
+      else DispatchTypes.STATIC_DISPATCH
+    val call =
+      callNode(methodCallExpr, code(methodCallExpr), methodName, methodFullName, dispatch, None, Some(typeFullName))
     val receiverAst = visitExpr(methodCallExpr.expr)
     val args        = methodCallExpr.argList.expr.map(visitExpr)
     callAst(call, args, base = Some(receiverAst))
