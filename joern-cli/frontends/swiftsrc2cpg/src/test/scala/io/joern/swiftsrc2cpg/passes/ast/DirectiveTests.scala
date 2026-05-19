@@ -77,14 +77,20 @@ class DirectiveTests extends SwiftSrc2CpgSuite {
       cpg.call.code.l shouldBe List("foo.bar().oneMore(x: 1)", "foo.bar()")
     }
 
-    "testSourceLocation1" ignore {
+    "testSourceLocation1" in {
       val cpg = code("#sourceLocation()")
-      ???
+      // #sourceLocation is a parser-only directive — it must not produce CPG calls/locals.
+      cpg.call.l shouldBe empty
+      cpg.local.l shouldBe empty
+      cpg.method.nameExact("<global>").size shouldBe 1
     }
 
-    "testSourceLocation2" ignore {
+    "testSourceLocation2" in {
       val cpg = code("""#sourceLocation(file: "foo", line: 42)""")
-      ???
+      // Same as above: parser-only directive, no CPG calls.
+      cpg.call.l shouldBe empty
+      cpg.local.l shouldBe empty
+      cpg.method.nameExact("<global>").size shouldBe 1
     }
 
     "testHasAttribute" ignore {
