@@ -69,19 +69,25 @@ class AsyncTests extends SwiftSrc2CpgSuite {
       cpg.typeDecl.fullNameExact("Test0.swift:<global>.<Swift.Function>0").size shouldBe 1
     }
 
-    "testAsync11a" ignore {
+    "testAsync11a" in {
       val cpg = code("let _ = [() async -> ()]()")
-      ???
+      cpg.call.nameExact(Operators.arrayInitializer).code.l should contain("[() async -> ()]")
+      val List(invokeCall) = cpg.call.code("\\[\\(\\) async -> \\(\\)\\]\\(\\)").l
+      invokeCall.code shouldBe "[() async -> ()]()"
     }
 
-    "testAsync11b" ignore {
+    "testAsync11b" in {
       val cpg = code("let _ = [() async throws -> ()]()")
-      ???
+      cpg.call.nameExact(Operators.arrayInitializer).code.l should contain("[() async throws -> ()]")
+      val List(invokeCall) = cpg.call.code("\\[\\(\\) async throws -> \\(\\)\\]\\(\\)").l
+      invokeCall.code shouldBe "[() async throws -> ()]()"
     }
 
-    "testAsync11d" ignore {
+    "testAsync11d" in {
       val cpg = code("let _ = [() async -> ()]()")
-      ???
+      cpg.call.nameExact(Operators.arrayInitializer).code.l should contain("[() async -> ()]")
+      val List(invokeCall) = cpg.call.code("\\[\\(\\) async -> \\(\\)\\]\\(\\)").l
+      invokeCall.code shouldBe "[() async -> ()]()"
     }
 
     "testAsync12" in {
