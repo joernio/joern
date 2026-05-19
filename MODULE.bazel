@@ -44,6 +44,7 @@ maven.install(
       "com.michaelpollmeier:versionsort:1.0.11",
       "org.scala-lang.modules:scala-parser-combinators_3:2.4.0",
       "org.scala-lang.modules:scala-parallel-collections_3:1.0.4",
+      "net.java.dev.javacc:javacc:7.0.12",
     ],
     use_credentials_from_home_netrc_file = True,
     fetch_sources = True,
@@ -54,3 +55,5 @@ maven.install(
     lock_file = "//:maven_install.json",
 )
 use_repo(maven, "joern_maven")
+
+bazel_dep(name = "rules_java", version = "9.6.1")

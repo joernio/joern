@@ -7,6 +7,7 @@
     "com.michaelpollmeier:versionsort": 605653562,
     "com.typesafe:config": 324143406,
     "io.shiftleft:codepropertygraph_3": -905169632,
+    "net.java.dev.javacc:javacc": -1966826500,
     "net.lingala.zip4j:zip4j": 967189992,
     "org.apache.commons:commons-exec": -1728178411,
     "org.apache.commons:commons-lang3": -375486971,
@@ -81,6 +82,10 @@
     "io.shiftleft:overflowdb-core_3:jar:sources": 422126785,
     "io.spray:spray-json_3": -1381838919,
     "io.spray:spray-json_3:jar:sources": 690403605,
+    "junit:junit": -598348821,
+    "junit:junit:jar:sources": 2062615800,
+    "net.java.dev.javacc:javacc": -586481278,
+    "net.java.dev.javacc:javacc:jar:sources": -95346707,
     "net.lingala.zip4j:zip4j": 795169078,
     "net.lingala.zip4j:zip4j:jar:sources": 1552174381,
     "net.oneandone.reflections8:reflections8": -182915410,
@@ -364,6 +369,20 @@
         "sources": "b5b916e3f67947679d7a0f5536dc6f71efb0c316d3ac2653a51e651db662d08a"
       },
       "version": "1.3.6"
+    },
+    "junit:junit": {
+      "shasums": {
+        "jar": "b58e459509e190bed737f3592bc1950485322846cf10e78ded1d065153012d70",
+        "sources": "ce253192093fb24dae717ea5b6863e67087416796ce366d7a53fa467b0d14ead"
+      },
+      "version": "3.8.1"
+    },
+    "net.java.dev.javacc:javacc": {
+      "shasums": {
+        "jar": "067da95992b900106afa7b775dcd32a4a044078863d6e57bb7b551f44baf5d13",
+        "sources": "df9e48d878daa57efb42154de264ad5a3d754df6536c9b8e68a0d7608cbae2fe"
+      },
+      "version": "7.0.12"
     },
     "net.lingala.zip4j:zip4j": {
       "shasums": {
@@ -701,6 +720,9 @@
     "io.spray:spray-json_3": [
       "org.scala-lang:scala3-library_3"
     ],
+    "net.java.dev.javacc:javacc": [
+      "junit:junit"
+    ],
     "net.oneandone.reflections8:reflections8": [
       "org.javassist:javassist"
     ],
@@ -980,6 +1002,22 @@
     ],
     "io.spray:spray-json_3": [
       "spray.json"
+    ],
+    "junit:junit": [
+      "junit.awtui",
+      "junit.extensions",
+      "junit.framework",
+      "junit.runner",
+      "junit.swingui",
+      "junit.textui"
+    ],
+    "net.java.dev.javacc:javacc": [
+      "",
+      "org.javacc",
+      "org.javacc.jjdoc",
+      "org.javacc.jjtree",
+      "org.javacc.parser",
+      "org.javacc.utils"
     ],
     "net.lingala.zip4j:zip4j": [
       "net.lingala.zip4j",
@@ -1522,6 +1560,10 @@
       "io.shiftleft:overflowdb-core_3:jar:sources",
       "io.spray:spray-json_3",
       "io.spray:spray-json_3:jar:sources",
+      "junit:junit",
+      "junit:junit:jar:sources",
+      "net.java.dev.javacc:javacc",
+      "net.java.dev.javacc:javacc:jar:sources",
       "net.lingala.zip4j:zip4j",
       "net.lingala.zip4j:zip4j:jar:sources",
       "net.oneandone.reflections8:reflections8",
@@ -1651,6 +1693,10 @@
       "io.shiftleft:overflowdb-core_3:jar:sources",
       "io.spray:spray-json_3",
       "io.spray:spray-json_3:jar:sources",
+      "junit:junit",
+      "junit:junit:jar:sources",
+      "net.java.dev.javacc:javacc",
+      "net.java.dev.javacc:javacc:jar:sources",
       "net.lingala.zip4j:zip4j",
       "net.lingala.zip4j:zip4j:jar:sources",
       "net.oneandone.reflections8:reflections8",
