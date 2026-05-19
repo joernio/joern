@@ -11,3 +11,16 @@ scala_library(
   ],
   visibility = [ "//visibility:public" ],
 )
+
+scala_library(
+  name = "com_lihaoyi_upickle_with_deps",
+  deps = [
+  ],
+  exports = [
+    "@joern_maven//:com_lihaoyi_upickle_3",
+    "@joern_maven//:com_lihaoyi_ujson_3",
+    "@joern_maven//:com_lihaoyi_upickle_core_3",
+    "@joern_maven//:com_lihaoyi_geny_3",
+  ],
+  visibility = [ "//visibility:public" ],
+)

@@ -3,36 +3,37 @@ load("@rules_scala//scala:scala.bzl", "scala_test")
 load("@rules_java//java:defs.bzl", "java_binary")
 
 java_binary(
-  name = "java_cc_tool",
-  main_class = "org.javacc.parser.Main",
+  name = "antlr_tool",
+  main_class = "org.antlr.v4.Tool",
   runtime_deps = [
-    "@joern_maven//:net_java_dev_javacc_javacc",
+    "@joern_maven//:org_antlr_antlr4",
   ],
 )
 
 genrule(
   name = "generated_parser_code",
-  srcs = ["pythonGrammar.jj"],
+  srcs = ["src/main/antlr4/io/joern/dataflowengineoss/Semantics.g4"],
   outs = ["generated_classes.srcjar"],
-  tools = [":java_cc_tool"],
+  tools = [":antlr_tool"],
   toolchains = ["@bazel_tools//tools/jdk:current_java_runtime"],
   cmd = """
-  $(location :java_cc_tool) -OUTPUT_DIRECTORY=$(RULEDIR)/generated_classes/io/joern/pythonparser $(SRCS)
+  $(location :antlr_tool) -package io.joern.dataflowengineoss $< -o $(RULEDIR)/generated_classes
   $(JAVABASE)/bin/jar --create --file $@ -C $(RULEDIR)/generated_classes .
   """,
 )
 
 scala_library(
-  name = "pysrc2cpg",
-  srcs = glob(["src/main/scala/**/*.scala", "src/main/java/**/*.java"]) + [
-    ":generated_parser_code",
-  ],
+  name = "dataflowengineoss",
+  srcs = glob(["src/main/scala/**/*.scala"]) + [":generated_parser_code"],
   scalacopts = [ 
   ],  
   deps = [ 
     "//:io_shiftleft_codepropertygraph_with_deps",
+    "//semanticcpg",
     "//joern-cli/frontends/x2cpg",
-    "@joern_maven//:com_google_protobuf_protobuf_java",
+    "@joern_maven//:org_antlr_antlr4_runtime",
+    "//:com_lihaoyi_upickle_with_deps",
+    "@joern_maven//:org_scala_lang_modules_scala_parallel_collections_3",
   ],
   visibility = [ "//visibility:public" ],
 )
@@ -40,16 +41,12 @@ scala_library(
 scala_test(
   name = "tests",
   srcs = glob(["src/test/scala/**/*.scala"]),
-  deps = [
-    ":pysrc2cpg",
-    "//:io_shiftleft_codepropertygraph_with_deps",
-    "//semanticcpg",
-    "//dataflowengineoss:tests",
+  scalacopts = [ 
+  ],  
+  deps = [ 
+    ":dataflowengineoss",
     "//joern-cli/frontends/x2cpg:tests",
-    "@joern_maven//:org_scala_lang_modules_scala_parallel_collections_3",
+    "//:io_shiftleft_codepropertygraph_with_deps",
   ],
-  runtime_deps = [
-  ],
-  data = [
-  ],
+  visibility = [ "//visibility:public" ],
 )

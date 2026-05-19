@@ -3,12 +3,15 @@
   "__INPUT_ARTIFACTS_HASH": {
     "com.github.javaparser:javaparser-symbol-solver-core": -446379192,
     "com.lihaoyi:ujson_3": 1587972631,
+    "com.lihaoyi:upickle_3": -1467042423,
     "com.michaelpollmeier:scala-repl-pp_3.3.6": -995643616,
     "com.michaelpollmeier:versionsort": 605653562,
     "com.typesafe:config": 324143406,
     "io.shiftleft:codepropertygraph_3": -905169632,
     "net.java.dev.javacc:javacc": -1966826500,
     "net.lingala.zip4j:zip4j": 967189992,
+    "org.antlr:antlr4": 1718243761,
+    "org.antlr:antlr4-runtime": 1843802748,
     "org.apache.commons:commons-exec": -1728178411,
     "org.apache.commons:commons-lang3": -375486971,
     "org.apache.commons:commons-text": 792100473,
@@ -48,12 +51,20 @@
     "com.google.protobuf:protobuf-java:jar:sources": -86916801,
     "com.h2database:h2-mvstore": -1004445531,
     "com.h2database:h2-mvstore:jar:sources": 1948738169,
+    "com.ibm.icu:icu4j": -929741173,
+    "com.ibm.icu:icu4j:jar:sources": -1959435318,
     "com.lihaoyi:geny_3": 1074501011,
     "com.lihaoyi:geny_3:jar:sources": 1575781288,
     "com.lihaoyi:ujson_3": 106030058,
     "com.lihaoyi:ujson_3:jar:sources": 195752142,
+    "com.lihaoyi:upack_3": 582664171,
+    "com.lihaoyi:upack_3:jar:sources": -440068608,
     "com.lihaoyi:upickle-core_3": -1160606444,
     "com.lihaoyi:upickle-core_3:jar:sources": 174541473,
+    "com.lihaoyi:upickle-implicits_3": -1277658446,
+    "com.lihaoyi:upickle-implicits_3:jar:sources": -1242861604,
+    "com.lihaoyi:upickle_3": 1932908449,
+    "com.lihaoyi:upickle_3:jar:sources": -590395021,
     "com.michaelpollmeier:scala-repl-pp-shaded-libs_3": 319576595,
     "com.michaelpollmeier:scala-repl-pp-shaded-libs_3:jar:sources": 822914801,
     "com.michaelpollmeier:scala-repl-pp_3.3.6": -1500908702,
@@ -92,6 +103,16 @@
     "net.oneandone.reflections8:reflections8:jar:sources": 510005338,
     "net.sf.trove4j:core": 1052714240,
     "net.sf.trove4j:core:jar:sources": -1038049585,
+    "org.abego.treelayout:org.abego.treelayout.core": 1772863105,
+    "org.abego.treelayout:org.abego.treelayout.core:jar:sources": 1973705229,
+    "org.antlr:ST4": -899608189,
+    "org.antlr:ST4:jar:sources": 423740008,
+    "org.antlr:antlr-runtime": -1636816377,
+    "org.antlr:antlr-runtime:jar:sources": 290715958,
+    "org.antlr:antlr4": -431670617,
+    "org.antlr:antlr4-runtime": -63006028,
+    "org.antlr:antlr4-runtime:jar:sources": 766615199,
+    "org.antlr:antlr4:jar:sources": -1956498415,
     "org.apache.commons:commons-exec": 601232227,
     "org.apache.commons:commons-exec:jar:sources": -716664838,
     "org.apache.commons:commons-lang3": 1415496185,
@@ -100,6 +121,8 @@
     "org.apache.commons:commons-text:jar:sources": 318262210,
     "org.checkerframework:checker-qual": -1521111878,
     "org.checkerframework:checker-qual:jar:sources": -705637224,
+    "org.glassfish:javax.json": -1685151775,
+    "org.glassfish:javax.json:jar:sources": 956591699,
     "org.gradle:gradle-tooling-api": 514375711,
     "org.gradle:gradle-tooling-api:jar:sources": 1844214922,
     "org.javassist:javassist": 1095674094,
@@ -251,6 +274,13 @@
       },
       "version": "1.4.200"
     },
+    "com.ibm.icu:icu4j": {
+      "shasums": {
+        "jar": "55c98eb1838b2a4bb9a07dc36bd378532d64d0cdcb7ceee914236866a7de4464",
+        "sources": "1294ff98e33904e26b184790805139c24dd3d4ee9f0fa0cc814a8bc60e536a7f"
+      },
+      "version": "61.1"
+    },
     "com.lihaoyi:geny_3": {
       "shasums": {
         "jar": "39658649f90b631a4fd63187724f16ba8a045e1b10a513528f34517fb2edf98b",
@@ -265,12 +295,33 @@
       },
       "version": "4.1.0"
     },
+    "com.lihaoyi:upack_3": {
+      "shasums": {
+        "jar": "294b2cf0a4ba6a2803412f0b9a3dbbc2dc1dc420a48c3746d582c7f3f16a4181",
+        "sources": "c206f023be6f51092285500a75fcbb76f474f5543394df7c566f608853433519"
+      },
+      "version": "4.0.2"
+    },
     "com.lihaoyi:upickle-core_3": {
       "shasums": {
         "jar": "3d4dbd23edca088a83d722998472c1c5c27678bd01f13572c36627d7061cf596",
         "sources": "4b34cc2c27bc1abfa4161d157f8be1185ebb6bfe501a544e9650b555f4d2bdda"
       },
       "version": "4.1.0"
+    },
+    "com.lihaoyi:upickle-implicits_3": {
+      "shasums": {
+        "jar": "58bea28a70561054701074ca2f7fcc7a4b1abbe2ef7cb5017708e995b61d36ba",
+        "sources": "78e9eeca22e5d62c1cd3062ccb6c956bcb2e3112a7292938f346936d088e56e7"
+      },
+      "version": "4.0.2"
+    },
+    "com.lihaoyi:upickle_3": {
+      "shasums": {
+        "jar": "b19a95c92c2d104ab2feb8ce68dacca1271adce6dcf90d8a40488af3f03dfdfd",
+        "sources": "75e9d31fe320cbc87b5bd1e86f559a07e10a531f0e2c0e68a118f6e5cd0178c1"
+      },
+      "version": "4.0.2"
     },
     "com.michaelpollmeier:scala-repl-pp-shaded-libs_3": {
       "shasums": {
@@ -405,6 +456,41 @@
       },
       "version": "3.1.0"
     },
+    "org.abego.treelayout:org.abego.treelayout.core": {
+      "shasums": {
+        "jar": "fa5e31395c39c2e7d46aca0f81f72060931607b2fa41bd36038eb2cb6fb93326",
+        "sources": "2b87037e8a650f41b2425bf69e4cc30cc842c0615eac1ba1ca2141dd544b1dd6"
+      },
+      "version": "1.0.3"
+    },
+    "org.antlr:ST4": {
+      "shasums": {
+        "jar": "8b1ccaed9edc55cd255d9c19c4d8da4756d9b6fcb435671292b43470b16d75d8",
+        "sources": "998c4508d431912552397dacb2d72f252230e62f2f07c87d2fcb99754eca35c3"
+      },
+      "version": "4.1"
+    },
+    "org.antlr:antlr-runtime": {
+      "shasums": {
+        "jar": "ce3fc8ecb10f39e9a3cddcbb2ce350d272d9cd3d0b1e18e6fe73c3b9389c8734",
+        "sources": "3a8fde6cabadd1f6c6dcddc92edbe17501448e0553fee893cfc62becce57531a"
+      },
+      "version": "3.5.2"
+    },
+    "org.antlr:antlr4": {
+      "shasums": {
+        "jar": "a3811fad1e4cb6dde62c189c204cf931c5fa40e06e43839ead4a9f2e188f2fe5",
+        "sources": "3b3c2cb849f64be92d90b12cfc812605324784a74aaeec713d06a7cb2b9b0e96"
+      },
+      "version": "4.7.2"
+    },
+    "org.antlr:antlr4-runtime": {
+      "shasums": {
+        "jar": "4c518b87d4bdff8b44cd8cbc1af816e944b62a3fe5b80b781501cf1f4759bbc4",
+        "sources": "6290b44cc5abaae2d747c966704e80cdfd742b4e2e0c8f9597f84a550e0d7f47"
+      },
+      "version": "4.7.2"
+    },
     "org.apache.commons:commons-exec": {
       "shasums": {
         "jar": "f51cf8bee467efe2be76e46fc08078d96afa280a794283364291beda892a67ef",
@@ -432,6 +518,13 @@
         "sources": "8e0fc17e3ed2e60f3aea6204149a086f4a448d0275088fc199bac27a3611874b"
       },
       "version": "3.53.0"
+    },
+    "org.glassfish:javax.json": {
+      "shasums": {
+        "jar": "0e1dec40a1ede965941251eda968aeee052cc4f50378bc316cc48e8159bdbeb4",
+        "sources": "be17886d75e6d4ff1dd59ed7cbbb8a95b8ab90b4795cc5c70af034186c4ab1bf"
+      },
+      "version": "1.0.4"
     },
     "org.gradle:gradle-tooling-api": {
       "shasums": {
@@ -653,8 +746,22 @@
       "com.lihaoyi:upickle-core_3",
       "org.scala-lang:scala3-library_3"
     ],
+    "com.lihaoyi:upack_3": [
+      "com.lihaoyi:upickle-core_3",
+      "org.scala-lang:scala3-library_3"
+    ],
     "com.lihaoyi:upickle-core_3": [
       "com.lihaoyi:geny_3",
+      "org.scala-lang:scala3-library_3"
+    ],
+    "com.lihaoyi:upickle-implicits_3": [
+      "com.lihaoyi:upickle-core_3",
+      "org.scala-lang:scala3-library_3"
+    ],
+    "com.lihaoyi:upickle_3": [
+      "com.lihaoyi:ujson_3",
+      "com.lihaoyi:upack_3",
+      "com.lihaoyi:upickle-implicits_3",
       "org.scala-lang:scala3-library_3"
     ],
     "com.michaelpollmeier:scala-repl-pp-shaded-libs_3": [
@@ -725,6 +832,17 @@
     ],
     "net.oneandone.reflections8:reflections8": [
       "org.javassist:javassist"
+    ],
+    "org.antlr:ST4": [
+      "org.antlr:antlr-runtime"
+    ],
+    "org.antlr:antlr4": [
+      "com.ibm.icu:icu4j",
+      "org.abego.treelayout:org.abego.treelayout.core",
+      "org.antlr:ST4",
+      "org.antlr:antlr-runtime",
+      "org.antlr:antlr4-runtime",
+      "org.glassfish:javax.json"
     ],
     "org.apache.commons:commons-text": [
       "org.apache.commons:commons-lang3"
@@ -917,15 +1035,40 @@
       "org.h2.util",
       "org.h2.value"
     ],
+    "com.ibm.icu:icu4j": [
+      "com.ibm.icu.impl",
+      "com.ibm.icu.impl.coll",
+      "com.ibm.icu.impl.data",
+      "com.ibm.icu.impl.duration",
+      "com.ibm.icu.impl.duration.impl",
+      "com.ibm.icu.impl.locale",
+      "com.ibm.icu.impl.number",
+      "com.ibm.icu.impl.number.parse",
+      "com.ibm.icu.impl.text",
+      "com.ibm.icu.lang",
+      "com.ibm.icu.math",
+      "com.ibm.icu.number",
+      "com.ibm.icu.text",
+      "com.ibm.icu.util"
+    ],
     "com.lihaoyi:geny_3": [
       "geny"
     ],
     "com.lihaoyi:ujson_3": [
       "ujson"
     ],
+    "com.lihaoyi:upack_3": [
+      "upack"
+    ],
     "com.lihaoyi:upickle-core_3": [
       "upickle.core",
       "upickle.core.compat"
+    ],
+    "com.lihaoyi:upickle-implicits_3": [
+      "upickle.implicits"
+    ],
+    "com.lihaoyi:upickle_3": [
+      "upickle"
     ],
     "com.michaelpollmeier:scala-repl-pp-shaded-libs_3": [
       "replpp.shaded.coursier.core",
@@ -1067,6 +1210,53 @@
       "gnu.trove.stack.array",
       "gnu.trove.strategy"
     ],
+    "org.abego.treelayout:org.abego.treelayout.core": [
+      "org.abego.treelayout",
+      "org.abego.treelayout.internal.util",
+      "org.abego.treelayout.internal.util.java.lang",
+      "org.abego.treelayout.internal.util.java.lang.string",
+      "org.abego.treelayout.internal.util.java.util",
+      "org.abego.treelayout.util"
+    ],
+    "org.antlr:ST4": [
+      "org.stringtemplate.v4",
+      "org.stringtemplate.v4.compiler",
+      "org.stringtemplate.v4.debug",
+      "org.stringtemplate.v4.gui",
+      "org.stringtemplate.v4.misc"
+    ],
+    "org.antlr:antlr-runtime": [
+      "org.antlr.runtime",
+      "org.antlr.runtime.debug",
+      "org.antlr.runtime.misc",
+      "org.antlr.runtime.tree"
+    ],
+    "org.antlr:antlr4": [
+      "org.antlr.v4",
+      "org.antlr.v4.analysis",
+      "org.antlr.v4.automata",
+      "org.antlr.v4.codegen",
+      "org.antlr.v4.codegen.model",
+      "org.antlr.v4.codegen.model.chunk",
+      "org.antlr.v4.codegen.model.decl",
+      "org.antlr.v4.codegen.target",
+      "org.antlr.v4.gui",
+      "org.antlr.v4.misc",
+      "org.antlr.v4.parse",
+      "org.antlr.v4.semantics",
+      "org.antlr.v4.tool",
+      "org.antlr.v4.tool.ast",
+      "org.antlr.v4.unicode"
+    ],
+    "org.antlr:antlr4-runtime": [
+      "org.antlr.v4.runtime",
+      "org.antlr.v4.runtime.atn",
+      "org.antlr.v4.runtime.dfa",
+      "org.antlr.v4.runtime.misc",
+      "org.antlr.v4.runtime.tree",
+      "org.antlr.v4.runtime.tree.pattern",
+      "org.antlr.v4.runtime.tree.xpath"
+    ],
     "org.apache.commons:commons-exec": [
       "org.apache.commons.exec",
       "org.apache.commons.exec.environment",
@@ -1136,6 +1326,13 @@
       "org.checkerframework.common.value.qual",
       "org.checkerframework.dataflow.qual",
       "org.checkerframework.framework.qual"
+    ],
+    "org.glassfish:javax.json": [
+      "javax.json",
+      "javax.json.spi",
+      "javax.json.stream",
+      "org.glassfish.json",
+      "org.glassfish.json.api"
     ],
     "org.gradle:gradle-tooling-api": [
       "org.gradle",
@@ -1526,12 +1723,20 @@
       "com.google.protobuf:protobuf-java:jar:sources",
       "com.h2database:h2-mvstore",
       "com.h2database:h2-mvstore:jar:sources",
+      "com.ibm.icu:icu4j",
+      "com.ibm.icu:icu4j:jar:sources",
       "com.lihaoyi:geny_3",
       "com.lihaoyi:geny_3:jar:sources",
       "com.lihaoyi:ujson_3",
       "com.lihaoyi:ujson_3:jar:sources",
+      "com.lihaoyi:upack_3",
+      "com.lihaoyi:upack_3:jar:sources",
       "com.lihaoyi:upickle-core_3",
       "com.lihaoyi:upickle-core_3:jar:sources",
+      "com.lihaoyi:upickle-implicits_3",
+      "com.lihaoyi:upickle-implicits_3:jar:sources",
+      "com.lihaoyi:upickle_3",
+      "com.lihaoyi:upickle_3:jar:sources",
       "com.michaelpollmeier:scala-repl-pp-shaded-libs_3",
       "com.michaelpollmeier:scala-repl-pp-shaded-libs_3:jar:sources",
       "com.michaelpollmeier:scala-repl-pp_3.3.6",
@@ -1570,6 +1775,16 @@
       "net.oneandone.reflections8:reflections8:jar:sources",
       "net.sf.trove4j:core",
       "net.sf.trove4j:core:jar:sources",
+      "org.abego.treelayout:org.abego.treelayout.core",
+      "org.abego.treelayout:org.abego.treelayout.core:jar:sources",
+      "org.antlr:ST4",
+      "org.antlr:ST4:jar:sources",
+      "org.antlr:antlr-runtime",
+      "org.antlr:antlr-runtime:jar:sources",
+      "org.antlr:antlr4",
+      "org.antlr:antlr4-runtime",
+      "org.antlr:antlr4-runtime:jar:sources",
+      "org.antlr:antlr4:jar:sources",
       "org.apache.commons:commons-exec",
       "org.apache.commons:commons-exec:jar:sources",
       "org.apache.commons:commons-lang3",
@@ -1578,6 +1793,8 @@
       "org.apache.commons:commons-text:jar:sources",
       "org.checkerframework:checker-qual",
       "org.checkerframework:checker-qual:jar:sources",
+      "org.glassfish:javax.json",
+      "org.glassfish:javax.json:jar:sources",
       "org.gradle:gradle-tooling-api",
       "org.gradle:gradle-tooling-api:jar:sources",
       "org.javassist:javassist",
@@ -1659,12 +1876,20 @@
       "com.google.protobuf:protobuf-java:jar:sources",
       "com.h2database:h2-mvstore",
       "com.h2database:h2-mvstore:jar:sources",
+      "com.ibm.icu:icu4j",
+      "com.ibm.icu:icu4j:jar:sources",
       "com.lihaoyi:geny_3",
       "com.lihaoyi:geny_3:jar:sources",
       "com.lihaoyi:ujson_3",
       "com.lihaoyi:ujson_3:jar:sources",
+      "com.lihaoyi:upack_3",
+      "com.lihaoyi:upack_3:jar:sources",
       "com.lihaoyi:upickle-core_3",
       "com.lihaoyi:upickle-core_3:jar:sources",
+      "com.lihaoyi:upickle-implicits_3",
+      "com.lihaoyi:upickle-implicits_3:jar:sources",
+      "com.lihaoyi:upickle_3",
+      "com.lihaoyi:upickle_3:jar:sources",
       "com.michaelpollmeier:scala-repl-pp-shaded-libs_3",
       "com.michaelpollmeier:scala-repl-pp-shaded-libs_3:jar:sources",
       "com.michaelpollmeier:scala-repl-pp_3.3.6",
@@ -1703,6 +1928,16 @@
       "net.oneandone.reflections8:reflections8:jar:sources",
       "net.sf.trove4j:core",
       "net.sf.trove4j:core:jar:sources",
+      "org.abego.treelayout:org.abego.treelayout.core",
+      "org.abego.treelayout:org.abego.treelayout.core:jar:sources",
+      "org.antlr:ST4",
+      "org.antlr:ST4:jar:sources",
+      "org.antlr:antlr-runtime",
+      "org.antlr:antlr-runtime:jar:sources",
+      "org.antlr:antlr4",
+      "org.antlr:antlr4-runtime",
+      "org.antlr:antlr4-runtime:jar:sources",
+      "org.antlr:antlr4:jar:sources",
       "org.apache.commons:commons-exec",
       "org.apache.commons:commons-exec:jar:sources",
       "org.apache.commons:commons-lang3",
@@ -1711,6 +1946,8 @@
       "org.apache.commons:commons-text:jar:sources",
       "org.checkerframework:checker-qual",
       "org.checkerframework:checker-qual:jar:sources",
+      "org.glassfish:javax.json",
+      "org.glassfish:javax.json:jar:sources",
       "org.gradle:gradle-tooling-api",
       "org.gradle:gradle-tooling-api:jar:sources",
       "org.javassist:javassist",

@@ -1,4 +1,5 @@
 load("@rules_scala//scala:scala.bzl", "scala_library")
+load("@rules_scala//scala:scala.bzl", "scala_test")
 
 scala_library(
   name = "x2cpg",
@@ -15,5 +16,24 @@ scala_library(
     "@joern_maven//:org_gradle_gradle_tooling_api",
     "@joern_maven//:org_apache_commons_commons_exec",
   ],
+  visibility = [ "//visibility:public" ],
+)
+
+scala_test(
+  name = "tests",
+  srcs = glob(["src/test/scala/**/*.scala"]),
+  scalacopts = [ 
+  ],  
+  deps = [ 
+    ":x2cpg",
+    "//:io_shiftleft_codepropertygraph_with_deps",
+    "@joern_maven//:org_apache_commons_commons_lang3",
+    "@joern_maven//:com_google_protobuf_protobuf_java",
+  ],
+  # TODO tests should not depend on main resources
+  data = glob(["src/test/resources/**/*", "src/main/resources/**/*"]),
+  env = {
+    "FILE_IN_PROJECT_ROOT": "joern-cli/frontends/x2cpg",
+  },
   visibility = [ "//visibility:public" ],
 )
