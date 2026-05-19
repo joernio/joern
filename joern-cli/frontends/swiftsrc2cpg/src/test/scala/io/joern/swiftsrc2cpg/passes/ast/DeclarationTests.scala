@@ -155,7 +155,7 @@ class DeclarationTests extends SwiftSrc2CpgSuite {
       ???
     }
 
-    "testPrecedenceGroup" ignore {
+    "testPrecedenceGroup" in {
       val cpg = code("""
       |precedencegroup FooGroup {
       |  higherThan: Group1, Group2
@@ -168,10 +168,13 @@ class DeclarationTests extends SwiftSrc2CpgSuite {
       |  higherThan: MultiplicationPrecedence
       |}
       |""".stripMargin)
-      ???
+      // precedencegroup declarations are parser-only — the global method body is empty.
+      val List(globalMethod) = cpg.method.nameExact("<global>").filename("Test0.swift").l
+      globalMethod.block.astChildren.l shouldBe empty
+      cpg.typeDecl.filename("Test0.swift").nameNot("<global>").l shouldBe empty
     }
 
-    "testOperators" ignore {
+    "testOperators" in {
       val cpg = code("""
       |infix operator *-* : FunnyPrecedence
       |infix operator  <*<<< : MediumPrecedence, &
@@ -180,7 +183,11 @@ class DeclarationTests extends SwiftSrc2CpgSuite {
       |postfix operator ^^ : PostfixMagicOperatorProtocol
       |infix operator ^^ : PostfixMagicOperatorProtocol, Class, Struct
       |""".stripMargin)
-      ???
+      // Top-level operator declarations are parser-only — the global method body is empty.
+      val List(globalMethod) = cpg.method.nameExact("<global>").filename("Test0.swift").l
+      globalMethod.block.astChildren.l shouldBe empty
+      cpg.method.filename("Test0.swift").nameNot("<global>").l shouldBe empty
+      cpg.typeDecl.filename("Test0.swift").nameNot("<global>").l shouldBe empty
     }
 
     "testObjCAttribute" ignore {
@@ -195,14 +202,26 @@ class DeclarationTests extends SwiftSrc2CpgSuite {
       ???
     }
 
-    "testParsePoundError" ignore {
+    "testParsePoundError" in {
       val cpg = code("""#error("Unsupported platform")""")
-      ???
+      // #error is parsed as a macro expansion call.
+      val List(errorCall) = cpg.call.nameExact("error").l
+      errorCall.code shouldBe """#error("Unsupported platform")"""
+      errorCall.methodFullName shouldBe "error"
+      val List(arg) = errorCall.argument.isLiteral.l
+      arg.code shouldBe "\"Unsupported platform\""
+      arg.typeFullName shouldBe Defines.String
     }
 
-    "testParsePoundWarning" ignore {
+    "testParsePoundWarning" in {
       val cpg = code("""#warning("Unsupported platform")""")
-      ???
+      // #warning is parsed as a macro expansion call.
+      val List(warnCall) = cpg.call.nameExact("warning").l
+      warnCall.code shouldBe """#warning("Unsupported platform")"""
+      warnCall.methodFullName shouldBe "warning"
+      val List(arg) = warnCall.argument.isLiteral.l
+      arg.code shouldBe "\"Unsupported platform\""
+      arg.typeFullName shouldBe Defines.String
     }
 
     "testParseRetroactiveExtension" ignore {
