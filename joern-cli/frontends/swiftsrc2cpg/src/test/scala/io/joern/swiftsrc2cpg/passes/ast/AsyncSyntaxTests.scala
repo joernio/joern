@@ -47,11 +47,16 @@ class AsyncSyntaxTests extends SwiftSrc2CpgSuite {
       cpg.typeDecl.fullNameExact("Test0.swift:<global>.<Swift.Function>2").size shouldBe 1
     }
 
-    "testAsyncSyntax3" ignore {
+    "testAsyncSyntax3" in {
       val cpg = code("""
         |let _ = [() async -> ()]()
         |let _ = [() async throws -> ()]()""".stripMargin)
-      ???
+      val asyncCalls = cpg.call.code(".*\\(\\)$").nameNot(Operators.assignment).code.l
+      asyncCalls should contain allOf ("[() async -> ()]()", "[() async throws -> ()]()")
+      cpg.call.nameExact(Operators.arrayInitializer).code.l should contain allOf (
+        "[() async -> ()]",
+        "[() async throws -> ()]"
+      )
     }
 
     "testAsyncSyntax4" in {
@@ -75,7 +80,7 @@ class AsyncSyntaxTests extends SwiftSrc2CpgSuite {
       f3.fullName shouldBe "Test0.swift:<global>.<lambda>2:()->ANY"
     }
 
-    "testAsyncSyntax6" ignore {
+    "testAsyncSyntax6" in {
       val cpg = code("""
         |func testAwait() async {
         |  let _ = await asyncGlobal1()
