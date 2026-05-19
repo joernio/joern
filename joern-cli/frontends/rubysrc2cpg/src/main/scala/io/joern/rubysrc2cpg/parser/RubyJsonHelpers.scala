@@ -248,6 +248,15 @@ object RubyJsonHelpers {
     }
   }
 
+  def expandMethodDeclSymbols(stmts: List[RubyExpression]): List[RubyExpression] = {
+    stmts.flatMap {
+      case node: (MethodDeclaration | SingletonMethodDeclaration) =>
+        val symbolSpan = node.span.spanStart(s":${node.methodName}")
+        node :: StaticLiteral(prefixAsCoreType(Defines.Symbol))(symbolSpan) :: Nil
+      case other => other :: Nil
+    }
+  }
+
   def lowerMultipleAssignment(
     obj: ujson.Obj,
     lhsNodes: List[RubyExpression],

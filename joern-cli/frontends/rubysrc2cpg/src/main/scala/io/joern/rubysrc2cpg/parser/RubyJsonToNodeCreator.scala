@@ -720,7 +720,7 @@ class RubyJsonToNodeCreator(
       .visitOption(ParserKeys.Body)
       .map {
         case x: StatementList => x
-        case x                => StatementList(List(x))(x.span)
+        case x                => StatementList(RubyJsonHelpers.expandMethodDeclSymbols(List(x)))(x.span)
       }
       .getOrElse(StatementList(Nil)(obj.toTextSpan.spanStart("<empty>")))
     MethodDeclaration(name, parameters, body)(obj.toTextSpan)
@@ -1073,7 +1073,7 @@ class RubyJsonToNodeCreator(
     val body =
       obj.visitOption(ParserKeys.Body).getOrElse(StatementList(Nil)(obj.toTextSpan.spanStart("<empty>"))) match {
         case stmtList: StatementList => stmtList
-        case expr                    => StatementList(expr :: Nil)(expr.span)
+        case expr                    => StatementList(RubyJsonHelpers.expandMethodDeclSymbols(expr :: Nil))(expr.span)
       }
     SingletonMethodDeclaration(base, name, parameters, body)(obj.toTextSpan)
   }

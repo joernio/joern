@@ -139,10 +139,11 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val block = blockNode(node)
     scope.pushNewScope(BlockScope(block))
 
-    val stmtAsts = node.statements.size match {
+    val expandedStmts = RubyJsonHelpers.expandMethodDeclSymbols(node.statements)
+    val stmtAsts = expandedStmts.size match {
       case 0 => List()
       case n =>
-        val (headStmts, lastStmt) = node.statements.splitAt(n - 1)
+        val (headStmts, lastStmt) = expandedStmts.splitAt(n - 1)
         headStmts.flatMap(astsForStatement) ++ lastStmt.flatMap(astsForImplicitReturnStatement)
     }
 
@@ -173,13 +174,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           case x =>
             astsForStatement(transform(expr))
         }
-      case node: SingleAssignment =>
-        astForSingleAssignment(node) :: List(astForReturnExpression(ReturnExpression(List(node.lhs))(node.span)))
       case node: DefaultMultipleAssignment =>
         astsForStatement(node) ++ astsForImplicitReturnStatement(ArrayLiteral(node.assignments.map(_.lhs))(node.span))
       case ret: ReturnExpression => astForReturnExpression(ret) :: Nil
-      case node: (MethodDeclaration | SingletonMethodDeclaration) =>
-        (astsForStatement(node) :+ astForReturnMethodDeclarationSymbolName(node)).toList
       case node: MethodAccessModifier =>
         val simpleIdent = node.toSimpleIdentifier
 
@@ -214,14 +211,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   private def returnAst(node: RubyExpression): Ast = {
     val nodeAst = astsForStatement(node)
     returnAst(returnNode(node, code(node)), nodeAst)
-  }
-
-  // The evaluation of a MethodDeclaration returns its name in symbol form.
-  // E.g. `def f = 0` ===> `:f`
-  private def astForReturnMethodDeclarationSymbolName(node: RubyExpression & ProcedureDeclaration): Ast = {
-    val literalNode_ = literalNode(node, s":${node.methodName}", prefixAsCoreType(Defines.Symbol))
-    val returnNode_  = returnNode(node, literalNode_.code)
-    returnAst(returnNode_, Seq(Ast(literalNode_)))
   }
 
   protected def astForBreakExpression(node: BreakExpression): Ast = {
@@ -269,11 +258,15 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     }
 
     x match {
-      case StatementList(statements)  => StatementList(statementListReturningLastExpression(statements))(x.span)
+      case StatementList(statements) =>
+        StatementList(statementListReturningLastExpression(RubyJsonHelpers.expandMethodDeclSymbols(statements)))(x.span)
       case clause: ControlFlowClause  => clauseReturningLastExpression(clause)
       case node: ControlFlowStatement => transform(node)
       case node: ReturnExpression     => node
-      case _                          => ReturnExpression(x :: Nil)(x.span)
+      case node: (MethodDeclaration | SingletonMethodDeclaration) =>
+        val expanded = RubyJsonHelpers.expandMethodDeclSymbols(List(node))
+        StatementList(statementListReturningLastExpression(expanded))(x.span)
+      case _ => ReturnExpression(x :: Nil)(x.span)
     }
   }
 
