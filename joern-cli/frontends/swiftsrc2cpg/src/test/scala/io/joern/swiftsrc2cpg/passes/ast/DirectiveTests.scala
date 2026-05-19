@@ -77,17 +77,23 @@ class DirectiveTests extends SwiftSrc2CpgSuite {
       cpg.call.code.l shouldBe List("foo.bar().oneMore(x: 1)", "foo.bar()")
     }
 
-    "testSourceLocation1" ignore {
+    "testSourceLocation1" in {
       val cpg = code("#sourceLocation()")
-      ???
+      // #sourceLocation is a parser-only directive — it must not produce CPG calls/locals.
+      cpg.call.l shouldBe empty
+      cpg.local.l shouldBe empty
+      cpg.method.nameExact("<global>").size shouldBe 1
     }
 
-    "testSourceLocation2" ignore {
+    "testSourceLocation2" in {
       val cpg = code("""#sourceLocation(file: "foo", line: 42)""")
-      ???
+      // Same as above: parser-only directive, no CPG calls.
+      cpg.call.l shouldBe empty
+      cpg.local.l shouldBe empty
+      cpg.method.nameExact("<global>").size shouldBe 1
     }
 
-    "testHasAttribute" ignore {
+    "testHasAttribute" in {
       val cpg = code("""
       |@frozen
       |#if hasAttribute(foo)
@@ -95,7 +101,12 @@ class DirectiveTests extends SwiftSrc2CpgSuite {
       |#endif
       |public struct S2 { }
       |""".stripMargin)
-      ???
+      val List(s2) = cpg.typeDecl.nameExact("S2").l
+      s2.fullName shouldBe "Test0.swift:<global>.S2"
+      // Conditional `#if hasAttribute(foo) @foo #endif` block is skipped by default
+      // and contributes no calls; struct still gets its synthesized init.
+      cpg.call.l shouldBe empty
+      cpg.method.nameExact("init").fullName.l should contain("Test0.swift:<global>.S2.init:()->Test0.swift:<global>.S2")
     }
   }
 
