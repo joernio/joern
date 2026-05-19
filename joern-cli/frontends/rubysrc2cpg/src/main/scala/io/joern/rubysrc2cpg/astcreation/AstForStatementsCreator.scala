@@ -173,41 +173,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           case x =>
             astsForStatement(transform(expr))
         }
-      case node: MemberCallWithBlock => returnAstForRubyCall(node)
-      case node: SimpleCallWithBlock => returnAstForRubyCall(node)
-      case _: (LiteralExpr | BinaryExpression | UnaryExpression | SimpleIdentifier | SelfIdentifier | IndexAccess |
-            Association | YieldExpr | RubyCall | RubyFieldIdentifier | HereDocNode | Unknown) =>
-        astForReturnExpression(ReturnExpression(List(node))(node.span)) :: Nil
       case node: SingleAssignment =>
         astForSingleAssignment(node) :: List(astForReturnExpression(ReturnExpression(List(node.lhs))(node.span)))
       case node: DefaultMultipleAssignment =>
         astsForStatement(node) ++ astsForImplicitReturnStatement(ArrayLiteral(node.assignments.map(_.lhs))(node.span))
-      case node: GroupedParameterDesugaring =>
-        // If the desugaring is the last expression, then we should return nil
-        val nilReturnSpan    = node.span.spanStart("return nil")
-        val nilReturnLiteral = StaticLiteral(Defines.prefixAsCoreType(Defines.NilClass))(nilReturnSpan)
-        astsForStatement(node) ++ astsForImplicitReturnStatement(nilReturnLiteral)
-      case node: AttributeAssignment =>
-        List(
-          astForAttributeAssignment(node),
-          astForReturnFieldAccess(MemberAccess(node.target, node.op, node.attributeName)(node.span))
-        )
-      case node: MemberAccess    => astForReturnMemberCall(node) :: Nil
       case ret: ReturnExpression => astForReturnExpression(ret) :: Nil
       case node: (MethodDeclaration | SingletonMethodDeclaration) =>
         (astsForStatement(node) :+ astForReturnMethodDeclarationSymbolName(node)).toList
-      case stmtList: StatementList if stmtList.statements.lastOption.exists(_.isInstanceOf[ReturnExpression]) =>
-        stmtList.statements.map(astForExpression)
-      case StatementList(stmts) =>
-        val nilReturnSpan    = node.span.spanStart("return nil")
-        val nilReturnLiteral = StaticLiteral(Defines.prefixAsCoreType(Defines.NilClass))(nilReturnSpan)
-        stmts.map(astForExpression) ++ astsForImplicitReturnStatement(nilReturnLiteral)
-      case x: RangeExpression =>
-        astForReturnRangeExpression(x) :: Nil
-      case node: AccessModifier =>
-        val simpleIdent = node.toSimpleIdentifier
-        val simpleCall  = SimpleCall(simpleIdent, List.empty)(simpleIdent.span)
-        astForReturnExpression(ReturnExpression(List(simpleCall))(node.span)) :: Nil
       case node: MethodAccessModifier =>
         val simpleIdent = node.toSimpleIdentifier
 
@@ -235,20 +207,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         val nilReturnLiteral = StaticLiteral(Defines.prefixAsCoreType(Defines.NilClass))(nilReturnSpan)
         astsForImplicitReturnStatement(nilReturnLiteral)
       case node =>
-        logger.warn(
-          s" not supported yet: ${node.text} (${node.getClass.getSimpleName}), only generating statement (${this.relativeFileName})"
-        )
-        astsForStatement(node).toList
+        returnAst(node) :: Nil
     }
   }
 
-  private def returnAstForRubyCall[C <: RubyCall](node: RubyExpression & RubyCallWithBlock[C]): Seq[Ast] = {
-    val callAst = astForCallWithBlock(node)
-    returnAst(returnNode(node, code(node)), List(callAst)) :: Nil
-  }
-
-  private def astForReturnFieldAccess(node: MemberAccess): Ast = {
-    returnAst(returnNode(node, code(node)), List(astForFieldAccess(node)))
+  private def returnAst(node: RubyExpression): Ast = {
+    val nodeAst = astsForStatement(node)
+    returnAst(returnNode(node, code(node)), nodeAst)
   }
 
   // The evaluation of a MethodDeclaration returns its name in symbol form.
@@ -257,14 +222,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val literalNode_ = literalNode(node, s":${node.methodName}", prefixAsCoreType(Defines.Symbol))
     val returnNode_  = returnNode(node, literalNode_.code)
     returnAst(returnNode_, Seq(Ast(literalNode_)))
-  }
-
-  private def astForReturnRangeExpression(node: RangeExpression): Ast = {
-    returnAst(returnNode(node, code(node)), List(astForRange(node)))
-  }
-
-  private def astForReturnMemberCall(node: MemberAccess): Ast = {
-    returnAst(returnNode(node, code(node)), List(astForMemberAccess(node)))
   }
 
   protected def astForBreakExpression(node: BreakExpression): Ast = {
