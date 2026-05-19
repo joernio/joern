@@ -196,7 +196,7 @@ class SwitchTests extends SwiftSrc2CpgSuite {
         .size shouldBe 1
     }
 
-    "testSwitch29" ignore {
+    "testSwitch29" in {
       val cpg = code("""
         |// Fallthrough can transfer control anywhere within a case and can appear
         |// multiple times in the same case.
@@ -208,7 +208,16 @@ class SwitchTests extends SwiftSrc2CpgSuite {
         |  default:
         |    x += 1
         |}""".stripMargin)
-      ???
+      val List(switchStmt)  = cpg.switchBlock.l
+      val List(switchBlock) = switchStmt.astChildren.isBlock.l
+      switchBlock._jumpTargetViaAstOut.code.l shouldBe List("case 0:", "default:")
+      // Two `if` statements inside `case 0:` body, each containing a `fallthrough` continue
+      val ifs = switchBlock.ast.isControlStructure.controlStructureType(ControlStructureTypes.IF).l
+      ifs.code.l shouldBe List("if true { fallthrough }", "if false { fallthrough }")
+      ifs.ast.isControlStructure.controlStructureType(ControlStructureTypes.CONTINUE).code.l shouldBe
+        List("fallthrough", "fallthrough")
+      // Both case bodies contain `x += 1`
+      switchBlock.ast.isCall.nameExact(Operators.assignmentPlus).code.l shouldBe List("x += 1", "x += 1")
     }
 
     "testSwitchExpressionTuplePattern" in {
@@ -437,7 +446,7 @@ class SwitchTests extends SwiftSrc2CpgSuite {
       localA.name shouldBe "a"
     }
 
-    "testSwitch34" ignore {
+    "testSwitch34" in {
       val cpg = code("""
         |// Fallthroughs can only transfer control into a case label with bindings if the previous case binds a superset of those vars.
         |switch t {
@@ -447,7 +456,27 @@ class SwitchTests extends SwiftSrc2CpgSuite {
         |    t = (b, a)
         |}
         |""".stripMargin)
-      ???
+      val List(switchStmt) = cpg.switchBlock.l
+      val List(switchCond) = switchStmt.astChildren.isIdentifier.l
+      switchCond.name should startWith("<subject>")
+      val List(switchBlock) = switchStmt.astChildren.isBlock.l
+      switchBlock._jumpTargetViaAstOut.code.l shouldBe List("case (1, 2):", "case (var a, var b):")
+      // First case: equality chain on (1, 2)
+      val List(andCall) = switchBlock.astChildren.isCall.nameExact(Operators.logicalAnd).l
+      andCall.code shouldBe s"${switchCond.name}.0 == 1 && ${switchCond.name}.1 == 2"
+      // Fallthrough is a CONTINUE control structure
+      switchBlock.ast.isControlStructure
+        .controlStructureType(ControlStructureTypes.CONTINUE)
+        .codeExact("fallthrough")
+        .l should not be empty
+      // Bindings for `var a` and `var b`
+      val List(assignA) =
+        switchBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact(s"a = ${switchCond.name}.0").l
+      val List(assignB) =
+        switchBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact(s"b = ${switchCond.name}.1").l
+      assignA.order should be < assignB.order
+      cpg.local.nameExact("a").l should not be empty
+      cpg.local.nameExact("b").l should not be empty
     }
 
     "testSwitch35" in {
@@ -490,7 +519,7 @@ class SwitchTests extends SwiftSrc2CpgSuite {
       child3CaseLabel2.order shouldBe 8
     }
 
-    "testSwitch36" ignore {
+    "testSwitch36" in {
       val cpg = code("""
         |func patternVarDiffType(x: Int, y: Double) {
         |  switch (x, y) {
@@ -500,10 +529,26 @@ class SwitchTests extends SwiftSrc2CpgSuite {
         |  break
         |    }
         |}""".stripMargin)
-      ???
+      val List(switchStmt) = cpg.switchBlock.l
+      val List(switchCond) = switchStmt.astChildren.isIdentifier.l
+      switchCond.name should startWith("<subject>")
+      val List(switchBlock) = switchStmt.astChildren.isBlock.l
+      switchBlock._jumpTargetViaAstOut.code.l shouldBe List("case (1, let a):", "case (let a, _):")
+      // First case: equality on .0 == 1, binding for `a` from .1
+      val List(eq1) = switchBlock.astChildren.isCall.nameExact(Operators.equals).l
+      eq1.code shouldBe s"${switchCond.name}.0 == 1"
+      val assigns =
+        switchBlock.astChildren.isCall.nameExact(Operators.assignment).code.l
+      assigns should contain(s"a = ${switchCond.name}.1")
+      assigns should contain(s"a = ${switchCond.name}.0")
+      // Fallthrough emitted
+      switchBlock.ast.isControlStructure
+        .controlStructureType(ControlStructureTypes.CONTINUE)
+        .codeExact("fallthrough")
+        .l should not be empty
     }
 
-    "testSwitch38" ignore {
+    "testSwitch38" in {
       val cpg = code("""
         |func test_label(x : Int) {
         |  Gronk:
@@ -512,20 +557,30 @@ class SwitchTests extends SwiftSrc2CpgSuite {
         |    }
         |  }
         |""".stripMargin)
-      ???
+      val List(switchStmt) = cpg.switchBlock.l
+      val List(switchExpr) = switchStmt.astChildren.isIdentifier.nameExact("x").l
+      switchExpr.code shouldBe "x"
+      val List(switchBlock) = switchStmt.astChildren.isBlock.l
+      switchBlock._jumpTargetViaAstOut.code.l shouldBe List("case 42:")
+      val List(retNode) = switchBlock.ast.isReturn.l
+      retNode.code should startWith("return")
     }
 
-    "testSwitch42" ignore {
+    "testSwitch42" in {
       val cpg = code("""
         |switch Whatever.Thing {
         |  case .Thing:
         |  @unknown case _:
         |    x = 0
         |}""".stripMargin)
-      ???
+      val List(switchStmt)  = cpg.switchBlock.l
+      val List(switchBlock) = switchStmt.astChildren.isBlock.l
+      switchBlock._jumpTargetViaAstOut.code.l shouldBe List("case .Thing:", "case _:")
+      val List(assign) = switchBlock.astChildren.isCall.nameExact(Operators.assignment).l
+      assign.code shouldBe "x = 0"
     }
 
-    "testSwitch43" ignore {
+    "testSwitch43" in {
       val cpg = code("""
         |switch Whatever.Thing {
         |  case .Thing:
@@ -533,74 +588,108 @@ class SwitchTests extends SwiftSrc2CpgSuite {
         |    x = 0
         |}
         |""".stripMargin)
-      ???
+      val List(switchStmt)  = cpg.switchBlock.l
+      val List(switchBlock) = switchStmt.astChildren.isBlock.l
+      switchBlock._jumpTargetViaAstOut.code.l shouldBe List("case .Thing:", "default:")
+      val List(assign) = switchBlock.astChildren.isCall.nameExact(Operators.assignment).l
+      assign.code shouldBe "x = 0"
     }
 
-    "testSwitch54" ignore {
+    "testSwitch54" in {
       val cpg = code("""
         |switch Whatever.Thing {
         |  @unknown case _, _, _:
         |    break
         |}
         |""".stripMargin)
-      ???
+      val List(switchStmt)  = cpg.switchBlock.l
+      val List(switchBlock) = switchStmt.astChildren.isBlock.l
+      switchBlock._jumpTargetViaAstOut.code.l shouldBe List("case _, _, _:")
+      switchBlock.ast.isControlStructure.controlStructureType(ControlStructureTypes.BREAK).code.l should
+        contain("break")
     }
 
-    "testSwitch55" ignore {
+    "testSwitch55" in {
       val cpg = code("""
         |switch Whatever.Thing {
         |  @unknown case let value:
         |    _ = value
         |}
         |""".stripMargin)
-      ???
+      val List(switchStmt)  = cpg.switchBlock.l
+      val List(switchBlock) = switchStmt.astChildren.isBlock.l
+      switchBlock._jumpTargetViaAstOut.code.l shouldBe List("case let value:")
+      cpg.local.nameExact("value").l should not be empty
     }
 
-    "testSwitch56" ignore {
+    "testSwitch56" in {
       val cpg = code("""
         |switch (Whatever.Thing, Whatever.Thing) {
         |  @unknown case (_, _):
         |    break
         |}
         |""".stripMargin)
-      ???
+      val List(switchStmt) = cpg.switchBlock.l
+      val List(switchCond) = switchStmt.astChildren.isIdentifier.l
+      switchCond.name should startWith("<subject>")
+      val List(switchBlock) = switchStmt.astChildren.isBlock.l
+      switchBlock._jumpTargetViaAstOut.code.l shouldBe List("case (_, _):")
+      switchBlock.ast.isControlStructure.controlStructureType(ControlStructureTypes.BREAK).code.l should
+        contain("break")
     }
 
-    "testSwitch57" ignore {
+    "testSwitch57" in {
       val cpg = code("""
        |switch Whatever.Thing {
        |  @unknown case is Whatever:
        |    break
        |}
        |""".stripMargin)
-      ???
+      val List(switchStmt)  = cpg.switchBlock.l
+      val List(switchBlock) = switchStmt.astChildren.isBlock.l
+      switchBlock._jumpTargetViaAstOut.code.l shouldBe List("case is Whatever:")
+      switchBlock.ast.isControlStructure.controlStructureType(ControlStructureTypes.BREAK).code.l should
+        contain("break")
     }
 
-    "testSwitch58" ignore {
+    "testSwitch58" in {
       val cpg = code("""
         |switch Whatever.Thing {
         |  @unknown case .Thing:
         |    break
         |}""".stripMargin)
-      ???
+      val List(switchStmt)  = cpg.switchBlock.l
+      val List(switchBlock) = switchStmt.astChildren.isBlock.l
+      switchBlock._jumpTargetViaAstOut.code.l shouldBe List("case .Thing:")
+      switchBlock.ast.isControlStructure.controlStructureType(ControlStructureTypes.BREAK).code.l should
+        contain("break")
     }
 
-    "testSwitch59" ignore {
+    "testSwitch59" in {
       val cpg = code("""
         |switch Whatever.Thing {
         |  @unknown case (_): // okay
         |    break
         |}""".stripMargin)
-      ???
+      val List(switchStmt)  = cpg.switchBlock.l
+      val List(switchBlock) = switchStmt.astChildren.isBlock.l
+      switchBlock._jumpTargetViaAstOut.code.l shouldBe List("case (_):")
+      switchBlock.ast.isControlStructure.controlStructureType(ControlStructureTypes.BREAK).code.l should
+        contain("break")
     }
 
-    "testSwitch60" ignore {
+    "testSwitch60" in {
       val cpg = code("""
         |switch Whatever.Thing {
         |  @unknown case _ where x == 0:
         |    break
         |}""".stripMargin)
-      ???
+      val List(switchStmt)  = cpg.switchBlock.l
+      val List(switchBlock) = switchStmt.astChildren.isBlock.l
+      switchBlock._jumpTargetViaAstOut.code.l shouldBe List("case _ where x == 0:")
+      // `where` clause emits an IF guarding the case body with a CONTINUE on the negation
+      val ifs = switchBlock.ast.isControlStructure.controlStructureType(ControlStructureTypes.IF).l
+      ifs.astChildren.code.l should contain("!(x == 0)")
     }
 
   }
