@@ -15,6 +15,7 @@ import org.jetbrains.kotlin.cli.common.messages.{
   CompilerMessageSourceLocation,
   MessageCollector
 }
+import org.jetbrains.kotlin.com.intellij.openapi.diagnostic.Logger
 import org.slf4j.LoggerFactory
 
 object CompilerAPI {
@@ -26,6 +27,8 @@ object CompilerAPI {
     defaultContentRootJarPaths: Seq[DefaultContentRootJarPath] = List(),
     messageCollector: MessageCollector
   ): KotlinCoreEnvironment = {
+    Logger.setFactory(classOf[NoAssertionErrorLoggerFactory])
+
     val config = new CompilerConfiguration()
     config.put(CommonConfigurationKeys.MESSAGE_COLLECTOR_KEY, messageCollector)
     forDirectories.foreach { p =>
@@ -100,4 +103,29 @@ class ErrorLoggingMessageCollector extends MessageCollector {
   override def hasErrors: Boolean = false
   override def clear(): Unit      = {}
 
+}
+
+class NoAssertionErrorLogger(category: String)
+    extends org.jetbrains.kotlin.com.intellij.openapi.diagnostic.DefaultLogger(category) {
+
+  override def error(message: String, throwable: Throwable, details: String*): Unit = {
+    try {
+      super.error(message, throwable, details*)
+    } catch {
+      case _: AssertionError =>
+      // The DefaultLogger throws an AssertionError on error log messages.
+      // We do not want that and rather want to try to continue the analyis on best effort
+      // base.
+      // As far as I understand this, error logs are only created for internal errors and
+      // not for errors in the analyzed code and thus we can basically ignore them unless
+      // we want to fix the compiler code.
+    }
+  }
+}
+
+class NoAssertionErrorLoggerFactory extends org.jetbrains.kotlin.com.intellij.openapi.diagnostic.Logger.Factory {
+
+  override def getLoggerInstance(category: String): Logger = {
+    new NoAssertionErrorLogger(category)
+  }
 }
