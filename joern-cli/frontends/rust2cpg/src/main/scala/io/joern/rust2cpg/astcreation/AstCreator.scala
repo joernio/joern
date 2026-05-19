@@ -6,9 +6,8 @@ import io.joern.rust2cpg.parser.RustJsonParser.ParseResult
 import io.joern.rust2cpg.parser.RustNodeSyntax
 import io.joern.rust2cpg.parser.RustNodeSyntax.RustNode
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.{Ast, AstCreatorBase, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewMethod, NewNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewMethod, NewNamespaceBlock, NewNode}
 import io.shiftleft.codepropertygraph.generated.{NodeTypes, Operators, PropertyDefaults, PropertyNames}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
@@ -17,7 +16,8 @@ import java.nio.charset.StandardCharsets
 
 class AstCreator(val config: Config, val parseResult: ParseResult)(implicit withSchemaValidation: ValidationMode)
     extends AstCreatorBase[RustNode, AstCreator](parseResult.filename)
-    with RustVisitor {
+    with RustVisitor
+    with RustFullNames {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -42,18 +42,6 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     case _                        => None
   }
 
-  protected def globalMethodNode(): NewMethod = {
-    val name     = NamespaceTraversal.globalNamespaceName
-    val fullName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(parseResult.filename))
-    NewMethod()
-      .name(name)
-      .code(name)
-      .fullName(fullName)
-      .filename(parseResult.filename)
-      .astParentType(NodeTypes.NAMESPACE_BLOCK)
-      .astParentFullName(fullName)
-  }
-
   protected def notHandledYet(node: RustNode): Ast = {
     val text =
       s"""Node type '${node.getClass.getSimpleName}' not handled yet!
@@ -70,27 +58,45 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     operatorCallNode(node = node, name = Operators.assignment, code = code, typeFullName = None)
   }
 
-  private def composeMethodFullName(name: String): String = {
-    // TODO
-    val astParentFullName = methodAstParentStack.head.properties(PropertyNames.FullName).toString
-    formatMethodFullName(Seq(astParentFullName, name))
-  }
-
-  private def formatMethodFullName(names: Seq[String]): String = {
-    // TODO
-    names.mkString(".")
-  }
-
-  protected def methodNode(node: RustNodeSyntax.RustNode, name: String): NewMethod = {
-    // TODO
-    val methodFullName  = composeMethodFullName(name)
-    val methodSignature = ""
+  protected def methodNode(node: RustNode, name: String): NewMethod = {
     methodNode(
       node = node,
       name = name,
-      fullName = methodFullName,
-      signature = methodSignature,
-      fileName = parseResult.filename
+      code = code(node),
+      fullName = composeRustFullName(name),
+      signature = Some(""),
+      fileName = parseResult.filename,
+      astParentType = Some(methodAstParentStack.head.label),
+      astParentFullName = Some(methodAstParentStack.head.properties(PropertyNames.FullName).toString)
+    )
+  }
+
+  protected def globalNamespaceBlockNode(): NewNamespaceBlock = {
+    NewNamespaceBlock()
+      .name(rustNamespaceFullName)
+      .fullName(globalNamespaceFullName)
+      .filename(parseResult.filename)
+      .order(1)
+  }
+
+  private def globalNamespaceFullName: String = {
+    s"${parseResult.filename}:$rustNamespaceFullName"
+  }
+
+  protected def globalFakeMethodNode(
+    sourceFile: RustNodeSyntax.SourceFile,
+    namespaceBlock: NewNamespaceBlock
+  ): NewMethod = {
+    val name = NamespaceTraversal.globalNamespaceName
+    methodNode(
+      node = sourceFile,
+      name = name,
+      code = name,
+      fullName = combineRustFullName(namespaceBlock.fullName, name),
+      signature = Some(""),
+      fileName = parseResult.filename,
+      astParentType = Some(NodeTypes.NAMESPACE_BLOCK),
+      astParentFullName = Some(namespaceBlock.fullName)
     )
   }
 
@@ -164,19 +170,6 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     case Some(_: RustNodeSyntax.BangToken)  => Some(Operators.logicalNot)
     case Some(_: RustNodeSyntax.StarToken)  => Some(Operators.indirection)
     case _                                  => None
-  }
-
-  protected def methodFullNameForCallExpr(nameRefs: Seq[RustNodeSyntax.NameRef]): String = {
-    // TODO
-    nameRefs.map(code) match {
-      case Nil   => Defines.Unknown
-      case names => formatMethodFullName(names)
-    }
-  }
-
-  protected def methodFullNameForMethodCallExpr(methodCallExpr: RustNodeSyntax.MethodCallExpr): String = {
-    // TODO
-    Defines.DynamicCallUnknownFullName
   }
 
   protected def typeFullNameForMethodCallExpr(methodCallExpr: RustNodeSyntax.MethodCallExpr): String = {
