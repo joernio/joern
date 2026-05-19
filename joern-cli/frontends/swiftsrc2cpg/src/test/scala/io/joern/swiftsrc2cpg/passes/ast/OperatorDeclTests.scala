@@ -67,13 +67,21 @@ class OperatorDeclTests extends SwiftSrc2CpgSuite {
       assertNoOpCpg(cpg)
     }
 
-    "testOperatorDecl19" ignore {
+    "testOperatorDecl19" in {
       val cpg = code("""
         |class Foo {
         |  infix operator |||
         |}
         |""".stripMargin)
-      ???
+      // Class body's `infix operator |||` declaration is parser-only — the class still
+      // produces a typeDecl and synthesized init, but no method named `|||`.
+      val List(foo) = cpg.typeDecl.nameExact("Foo").l
+      foo.fullName shouldBe "Test0.swift:<global>.Foo"
+      cpg.method.nameExact("init").fullName.l should contain(
+        "Test0.swift:<global>.Foo.init:()->Test0.swift:<global>.Foo"
+      )
+      cpg.method.nameExact("|||").l shouldBe empty
+      cpg.call.l shouldBe empty
     }
 
     "testOperatorDecl20" in {
@@ -81,12 +89,19 @@ class OperatorDeclTests extends SwiftSrc2CpgSuite {
       assertNoOpCpg(cpg)
     }
 
-    "testOperatorDecl21" ignore {
+    "testOperatorDecl21" in {
       val cpg = code("""
         |protocol Proto {}
         |infix operator *<*< : F, Proto
         |""".stripMargin)
-      ???
+      // Protocol contributes a typeDecl; the `infix operator` declaration is parser-only.
+      val List(proto) = cpg.typeDecl.nameExact("Proto").l
+      proto.fullName shouldBe "Test0.swift:<global>.Proto"
+      cpg.method.nameExact("init").fullName.l should contain(
+        "Test0.swift:<global>.Proto.init:()->Test0.swift:<global>.Proto"
+      )
+      cpg.method.nameExact("*<*<").l shouldBe empty
+      cpg.call.l shouldBe empty
     }
 
     "testRegexLikeOperator" in {
