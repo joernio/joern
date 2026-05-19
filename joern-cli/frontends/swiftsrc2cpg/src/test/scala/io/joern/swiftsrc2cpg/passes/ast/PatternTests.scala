@@ -8,19 +8,25 @@ class PatternTests extends SwiftSrc2CpgSuite {
 
   "PatternTests" should {
 
-    "testNonBinding1" ignore {
-      val cpg = code("if case let E<Int>.e(y) = x {}")
-      ???
+    "testNonBinding1" in {
+      val cpg          = code("if case let E<Int>.e(y) = x {}")
+      val List(ifNode) = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l
+      ifNode.code shouldBe "if case let E<Int>.e(y) = x {}"
+      cpg.call.code.l should contain allOf ("case let E<Int>.e(y) = x", "E<Int>.e(y)")
+      cpg.local.name.l should contain allOf ("x", "y")
     }
 
-    "testNonBinding2" ignore {
+    "testNonBinding2" in {
       val cpg = code("""
         |switch e {
         |  case let E<Int>.e(y):
         |    y
         |}
         |""".stripMargin)
-      ???
+      val List(switchNode) = cpg.controlStructure.controlStructureType(ControlStructureTypes.SWITCH).l
+      switchNode.code should startWith("switch e")
+      cpg.jumpTarget.code.l shouldBe List("case let E<Int>.e(y):")
+      cpg.call.code.l should contain("E<Int>.e(y)")
     }
 
     // testNonBinding3-6 contain invalid Swift patterns (subscript inside binding). The parser
