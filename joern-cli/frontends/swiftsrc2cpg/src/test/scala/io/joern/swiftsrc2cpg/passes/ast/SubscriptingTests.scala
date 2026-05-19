@@ -3,6 +3,7 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
 import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
+import io.shiftleft.semanticcpg.language.*
 
 class SubscriptingTests extends SwiftSrc2CpgSuite {
 
@@ -60,7 +61,9 @@ class SubscriptingTests extends SwiftSrc2CpgSuite {
       ???
     }
 
-    "testSubscripting19" ignore {
+    "testSubscripting19" in {
+      // Invalid: `class` cannot be used as a modifier on subscript inside a struct.
+      // The struct still produces a TypeDecl; assert that.
       val cpg = code("""
         |struct A7 {
         |  class subscript(a: Float) -> Int {
@@ -69,10 +72,12 @@ class SubscriptingTests extends SwiftSrc2CpgSuite {
         |    }
         |  }
         |}""".stripMargin)
-      ???
+      val List(structDecl) = cpg.typeDecl.nameExact("A7").l
+      structDecl.fullName shouldBe "Test0.swift:<global>.A7"
     }
 
-    "testSubscripting20" ignore {
+    "testSubscripting20" in {
+      // Invalid modifier ordering (`class static subscript`); class TypeDecl is still produced.
       val cpg = code("""
         |class A7b {
         |  class static subscript(a: Float) -> Int {
@@ -82,7 +87,8 @@ class SubscriptingTests extends SwiftSrc2CpgSuite {
         |  }
         |}
         |""".stripMargin)
-      ???
+      val List(classDecl) = cpg.typeDecl.nameExact("A7b").l
+      classDecl.fullName shouldBe "Test0.swift:<global>.A7b"
     }
 
   }
