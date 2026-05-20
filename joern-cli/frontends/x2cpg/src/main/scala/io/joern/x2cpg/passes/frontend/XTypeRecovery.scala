@@ -88,15 +88,22 @@ object XTypeRecoveryConfig {
 
 /** @param config
   *   the user defined config.
-  * @param currentIteration
-  *   the current iteration.
+  * @param initialIteration
+  *   the iteration this state starts at.
   */
-class XTypeRecoveryState(val config: XTypeRecoveryConfig = XTypeRecoveryConfig(), var currentIteration: Int = 0) {
-  def isFinalIteration: Boolean = currentIteration == config.iterations - 1
+class XTypeRecoveryState(val config: XTypeRecoveryConfig = XTypeRecoveryConfig(), initialIteration: Int = 0) {
+  private var iteration: Int = initialIteration
+
+  def currentIteration: Int = iteration
+
+  /** Advances the state to the given iteration. Called from `XTypeRecovery.init`. */
+  private[frontend] def setIteration(value: Int): Unit = iteration = value
+
+  def isFinalIteration: Boolean = iteration == config.iterations - 1
 
   def enableDummyTypesForThisIteration: Boolean = isFinalIteration && config.enabledDummyTypes
 
-  def isFirstIteration: Boolean = currentIteration == 0
+  def isFirstIteration: Boolean = iteration == 0
 }
 
 object XTypeRecoveryPassGenerator {
@@ -217,7 +224,7 @@ abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, state: XT
   override def isParallel: Boolean = true
   override def init(): Unit = {
     super.init()
-    state.currentIteration = iteration
+    state.setIteration(iteration)
   }
 
   override def generateParts(): Array[AnyRef] = compilationUnits.toArray[AnyRef]
