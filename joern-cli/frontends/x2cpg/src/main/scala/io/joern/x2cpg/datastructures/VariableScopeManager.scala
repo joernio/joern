@@ -39,6 +39,23 @@ object VariableScopeManager {
     case MethodScope, BlockScope, TypeDeclScope
   }
 
+  /** Result of one iteration of the link-creation loop in `createVariableReferenceLinks`.
+    *
+    * Encoding the three outcomes as an ADT makes the loop's invariant structural: every iteration that adds a REF edge
+    * either terminates the chain (`Terminate`) or names the next reference to chain from (`Capture`).
+    */
+  private enum LinkStep {
+
+    /** Add a REF edge from the current reference to `target` and stop walking the scope stack. */
+    case Terminate(target: NewNode)
+
+    /** Add a REF edge from the current reference to `target` and continue walking from `next`. */
+    case Capture(target: NewNode, next: NewNode)
+
+    /** Add no edge and continue walking the scope stack. */
+    case Skip
+  }
+
   /** Case class representing a method scope element.
     *
     * @param methodFullName
@@ -319,45 +336,60 @@ class VariableScopeManager {
     val capturedLocals     = mutable.HashMap.empty[String, NewNode]
 
     resolvedReferences.foreach { case VariableScopeManager.ResolvedReference(variableNodeId, origin) =>
-      var nextReference: NewNode                  = null
       var maybeScopeElement: Option[ScopeElement] = origin.stack
       var currentReference: NewNode               = origin.referenceNode
       var done: Boolean                           = false
       while (!done) {
-        val localOrCapturedLocalNodeOption =
-          if (maybeScopeElement.exists(_.nameToVariableNode.contains(origin.variableName))) {
+        val step = nextLinkStep(diffGraph, filename, capturedLocals, variableNodeId, origin, maybeScopeElement)
+        step match {
+          case LinkStep.Terminate(target) =>
+            transferLineAndColumnInfo(currentReference, target)
+            diffGraph.addEdge(currentReference, target, EdgeTypes.REF)
             done = true
-            Option(variableNodeId)
-          } else {
-            maybeScopeElement.flatMap {
-              case methodScope: VariableScopeManager.MethodScopeElement if methodScope.needsEnclosingScope =>
-                maybeScopeElement = getEnclosingMethodScopeElement(maybeScopeElement)
-                None
-              case methodScope: VariableScopeManager.MethodScopeElement =>
-                val prefix = if (methodScope.methodFullName.startsWith(filename)) { "" }
-                else { s"$filename:" }
-                val id = s"$prefix${methodScope.methodFullName}:${origin.variableName}"
-                capturedLocals.updateWith(id) {
-                  case None =>
-                    val closureBinding = closureBindingNode(id, origin.evaluationStrategy)
-                    methodScope.capturingRefNode.foreach(diffGraph.addEdge(_, closureBinding, EdgeTypes.CAPTURE))
-                    nextReference = closureBinding
-                    val localNode = createLocalForUnresolvedReference(diffGraph, methodScope.scopeNode, origin)
-                    Option(localNode.closureBindingId(id))
-                  case someLocalNode =>
-                    done = true
-                    someLocalNode
-                }
-              case _ => None
-            }
-          }
-
-        localOrCapturedLocalNodeOption.foreach { localOrCapturedLocalNode =>
-          transferLineAndColumnInfo(currentReference, localOrCapturedLocalNode)
-          diffGraph.addEdge(currentReference, localOrCapturedLocalNode, EdgeTypes.REF)
-          currentReference = nextReference
+          case LinkStep.Capture(target, next) =>
+            transferLineAndColumnInfo(currentReference, target)
+            diffGraph.addEdge(currentReference, target, EdgeTypes.REF)
+            currentReference = next
+          case LinkStep.Skip =>
         }
         maybeScopeElement = maybeScopeElement.flatMap(_.surroundingScope)
+      }
+    }
+  }
+
+  /** Decide what to do at the current scope while walking the scope stack for a single resolved reference.
+    *
+    * Returns one of three structurally distinct outcomes — see [[VariableScopeManager.LinkStep]] — so that the loop
+    * body in `createVariableReferenceLinks` cannot accidentally emit a REF edge without either terminating the chain or
+    * naming the next reference to chain from.
+    */
+  private def nextLinkStep(
+    diffGraph: DiffGraphBuilder,
+    filename: String,
+    capturedLocals: mutable.HashMap[String, NewNode],
+    variableNodeId: NewNode,
+    origin: PendingReference,
+    maybeScopeElement: Option[ScopeElement]
+  ): LinkStep = {
+    if (maybeScopeElement.exists(_.nameToVariableNode.contains(origin.variableName))) {
+      LinkStep.Terminate(variableNodeId)
+    } else {
+      maybeScopeElement match {
+        case Some(methodScope: MethodScopeElement) if !methodScope.needsEnclosingScope =>
+          val prefix = if (methodScope.methodFullName.startsWith(filename)) "" else s"$filename:"
+          val id     = s"$prefix${methodScope.methodFullName}:${origin.variableName}"
+          capturedLocals.get(id) match {
+            case Some(existing) =>
+              LinkStep.Terminate(existing)
+            case None =>
+              val closureBinding = closureBindingNode(id, origin.evaluationStrategy)
+              methodScope.capturingRefNode.foreach(diffGraph.addEdge(_, closureBinding, EdgeTypes.CAPTURE))
+              val localNode = createLocalForUnresolvedReference(diffGraph, methodScope.scopeNode, origin)
+              val captured  = localNode.closureBindingId(id)
+              capturedLocals.update(id, captured)
+              LinkStep.Capture(target = captured, next = closureBinding)
+          }
+        case _ => LinkStep.Skip
       }
     }
   }
