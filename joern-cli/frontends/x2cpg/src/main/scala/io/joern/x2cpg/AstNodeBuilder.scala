@@ -224,7 +224,7 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .evaluationStrategy(evaluationStrategy)
       .lineNumber(line(node))
       .columnNumber(column(node))
-      .typeFullName(typeFullName.getOrElse("ANY"))
+      .typeFullName(typeFullName.getOrElse(Defines.Any))
       .dynamicTypeHintFullName(dynamicTypeHintFullName)
     setOffset(node, node_)
   }
