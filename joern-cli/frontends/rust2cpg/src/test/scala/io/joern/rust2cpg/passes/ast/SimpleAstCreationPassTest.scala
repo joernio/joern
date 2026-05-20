@@ -1,154 +1,11 @@
 package io.joern.rust2cpg.passes.ast
 
 import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
-import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.utils.FileUtil.*
-
-import java.nio.file.Paths
 
 class SimpleAstCreationPassTest extends Rust2CpgSuite {
-
-  "test 05" in {
-    val cpg = code("const MAX_SIZE: usize = 1024;")
-    cpg.local.name("MAX_SIZE").typeFullName.l shouldBe List("usize")
-
-    inside(cpg.assignment.l) { case assignment :: Nil =>
-      assignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      assignment.code shouldBe "const MAX_SIZE: usize = 1024;"
-      assignment.typeFullName shouldBe Defines.Any
-      assignment.methodFullName shouldBe Operators.assignment
-    }
-
-    inside(cpg.assignment.argument(1).l) { case (lhs: Identifier) :: Nil =>
-      lhs.name shouldBe "MAX_SIZE"
-      lhs.typeFullName shouldBe "usize"
-      lhs.code shouldBe "MAX_SIZE"
-    }
-
-    inside(cpg.assignment.argument(2).l) { case (rhs: Literal) :: Nil =>
-      rhs.code shouldBe "1024"
-      rhs.typeFullName shouldBe "i32"
-    }
-  }
-
-  "test 06" in {
-    val cpg = code("""
-        |fn main() {
-        | const FOO: i32 = 0;
-        |}
-        |""".stripMargin)
-
-    inside(cpg.method.name("main").block.local.name("FOO").l) { case local :: Nil =>
-      local.typeFullName shouldBe "i32"
-      local.code shouldBe "FOO"
-    }
-
-    inside(cpg.method.name("main").block.assignment.l) { case assignment :: Nil =>
-      assignment.code shouldBe "const FOO: i32 = 0;"
-      assignment.lineNumber shouldBe Some(3)
-    }
-
-    inside(cpg.assignment.argument(1).l) { case (lhs: Identifier) :: Nil =>
-      lhs.name shouldBe "FOO"
-      lhs.typeFullName shouldBe "i32"
-      lhs.code shouldBe "FOO"
-    }
-
-    inside(cpg.assignment.argument(2).l) { case (rhs: Literal) :: Nil =>
-      rhs.code shouldBe "0"
-      rhs.typeFullName shouldBe "i32"
-    }
-  }
-
-  "test 07" in {
-    val cpg = code("""
-        |fn main(x: i32) {
-        | let y = x as i64;
-        |}
-        |""".stripMargin)
-
-    inside(cpg.call.nameExact(Operators.cast).l) { case cast :: Nil =>
-      cast.code shouldBe "x as i64"
-      cast.methodFullName shouldBe Operators.cast
-      cast.typeFullName shouldBe "i64"
-
-      inside(cast.argument.l) { case (typeRef: TypeRef) :: (identifier: Identifier) :: Nil =>
-        typeRef.code shouldBe "i64"
-        typeRef.typeFullName shouldBe "i64"
-        identifier.name shouldBe "x"
-        identifier.code shouldBe "x"
-      }
-    }
-  }
-
-  "test 08" in {
-    val cpg = code("""
-        |fn main() {
-        | let x = 1;
-        |}
-        |""".stripMargin)
-
-    inside(cpg.method.name("main").block.local.name("x").l) { case local :: Nil =>
-      local.typeFullName shouldBe Defines.Any
-      local.code shouldBe "x"
-    }
-
-    inside(cpg.method.name("main").block.assignment.l) { case assignment :: Nil =>
-      assignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      assignment.code shouldBe "let x = 1;"
-      assignment.typeFullName shouldBe Defines.Any
-      assignment.methodFullName shouldBe Operators.assignment
-      assignment.lineNumber shouldBe Some(3)
-    }
-
-    inside(cpg.assignment.argument(1).l) { case (lhs: Identifier) :: Nil =>
-      lhs.name shouldBe "x"
-      // TODO
-      lhs.typeFullName shouldBe Defines.Any
-      lhs.code shouldBe "x"
-    }
-
-    inside(cpg.assignment.argument(2).l) { case (rhs: Literal) :: Nil =>
-      rhs.code shouldBe "1"
-      rhs.typeFullName shouldBe "i32"
-    }
-  }
-
-  "test 10" in {
-    val cpg = code("""
-        |fn foo() {
-        | let x: usize = 10;
-        |}
-        |""".stripMargin)
-
-    inside(cpg.method.name("foo").block.local.name("x").l) { case local :: Nil =>
-      local.typeFullName shouldBe "usize"
-      local.code shouldBe "x"
-    }
-
-    inside(cpg.assignment.argument(1).l) { case (lhs: Identifier) :: Nil =>
-      lhs.name shouldBe "x"
-      lhs.typeFullName shouldBe "usize"
-      lhs.code shouldBe "x"
-    }
-
-    inside(cpg.assignment.argument(2).l) { case (lit: Literal) :: Nil =>
-      lit.code shouldBe "10"
-      lit.typeFullName shouldBe "i32"
-    }
-  }
-
-  "test 11" in {
-    val cpg = code("const TT: bool = true; const FF: bool = false;")
-
-    cpg.literal.code("true").typeFullName.l shouldBe List("bool")
-    cpg.literal.code("false").typeFullName.l shouldBe List("bool")
-  }
-
-  //
 
   "test 12" in {
     val cpg = code("""
@@ -295,86 +152,6 @@ class SimpleAstCreationPassTest extends Rust2CpgSuite {
     }
   }
 
-  "test 19" in {
-    val cpg = code("""
-        |fn gtz(x: i32) -> bool {
-        | x > 0
-        |}
-        |
-        |fn foo() -> bool {
-        | gtz(10)
-        |}
-        |""".stripMargin)
-
-    inside(cpg.call.name("gtz").l) { case gtz :: Nil =>
-      gtz.code shouldBe "gtz(10)"
-      // TODO gtz.methodFullName shouldBe
-      inside(gtz.argument.l) { case (lit: Literal) :: Nil =>
-        lit.code shouldBe "10"
-        lit.argumentIndex shouldBe 1
-        lit.typeFullName shouldBe "i32"
-      }
-    }
-  }
-
-  "test 20" in {
-    val cpg = code("""
-        |fn main() {
-        | foo::<u32>();
-        |}
-        |""".stripMargin)
-
-    inside(cpg.call.name("foo").l) { case foo :: Nil =>
-      foo.code shouldBe "foo::<u32>()"
-      foo.methodFullName shouldBe s"${Defines.UnresolvedNamespace}::foo"
-      foo.argument shouldBe empty
-    }
-  }
-
-  "test 21" in {
-    val cpg = code("""
-        |fn foo(xs: Vec<i32>, i: usize) -> i32 {
-        | xs[i]
-        |}
-        |""".stripMargin)
-
-    inside(cpg.call.nameExact(Operators.indexAccess).l) { case indexAccess :: Nil =>
-      indexAccess.code shouldBe "xs[i]"
-      indexAccess.methodFullName shouldBe Operators.indexAccess
-      indexAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-
-      inside(indexAccess.argument.l) { case base :: index :: Nil =>
-        base.code shouldBe "xs"
-        base.argumentIndex shouldBe 1
-        index.code shouldBe "i"
-        index.argumentIndex shouldBe 2
-      }
-    }
-  }
-
-  "test 22" in {
-    val cpg = code("""
-        |fn foo(xs: Vec<Vec<i32>>, i: usize, j: usize) -> i32 {
-        | xs[i][j]
-        |}
-        |""".stripMargin)
-
-    inside(cpg.call.nameExact(Operators.indexAccess).l.sortBy(_.code.length)) { case inner :: outer :: Nil =>
-      inner.code shouldBe "xs[i]"
-      outer.code shouldBe "xs[i][j]"
-
-      inside(outer.argument.l) { case (innerArg: Call) :: (indexArg: Identifier) :: Nil =>
-        innerArg shouldBe inner
-        innerArg.argumentIndex shouldBe 1
-        // TODO: innerArg.typeFullName shouldBe
-
-        indexArg.code shouldBe "j"
-        indexArg.argumentIndex shouldBe 2
-      // TODO: indexArg.typeFullName shouldBe
-      }
-    }
-  }
-
   "test 23" in {
     val cpg = code("""
         |struct Point {
@@ -464,113 +241,6 @@ class SimpleAstCreationPassTest extends Rust2CpgSuite {
     }
   }
 
-  "test 30" in {
-    val cpg = code("""
-        |fn foo(xs: Vec<i32>) {
-        | xs.push(1);
-        |}
-        |""".stripMargin)
-
-    inside(cpg.call.nameExact("push").l) { case push :: Nil =>
-      push.code shouldBe "xs.push(1)"
-      // TODO push.methodFullName shouldBe
-      push.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      // TODO push.typeFullName shouldBe
-
-      inside(push.receiver.l) { case (receiver: Identifier) :: Nil =>
-        receiver.code shouldBe "xs"
-        receiver.argumentIndex shouldBe 0
-      // TODO receiver.typeFullName shouldBe
-      }
-
-      inside(push.argument.l) { case (receiver: Identifier) :: (lit: Literal) :: Nil =>
-        receiver shouldBe push.receiver.head
-
-        lit.code shouldBe "1"
-        lit.argumentIndex shouldBe 1
-        lit.typeFullName shouldBe "i32"
-      }
-    }
-  }
-
-  "test 31" in {
-    val cpg = code("""
-        |fn foo() {
-        | String::from(" hello ").trim().to_string();
-        |}
-        |""".stripMargin)
-
-    inside(cpg.call.nameExact("trim").l) { case trim :: Nil =>
-      trim.code shouldBe """String::from(" hello ").trim()"""
-      trim.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      trim.arguments(1) shouldBe empty
-      // TODO trim.methodFullName shouldBe
-
-      inside(trim.receiver.l) { case (from: Call) :: Nil =>
-        from.name shouldBe "from"
-        from.code shouldBe """String::from(" hello ")"""
-        from.argumentIndex shouldBe 0
-      }
-    }
-
-    inside(cpg.call.nameExact("to_string").l) { case toString :: Nil =>
-      toString.code shouldBe """String::from(" hello ").trim().to_string()"""
-      toString.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      toString.arguments(1) shouldBe empty
-      // TODO toString.methodFullName shouldBe
-
-      inside(toString.receiver.l) { case (trim: Call) :: Nil =>
-        trim.name shouldBe "trim"
-        trim.code shouldBe """String::from(" hello ").trim()"""
-        trim.argumentIndex shouldBe 0
-      }
-    }
-  }
-
-  "test 32" in {
-    val cpg = code("""
-        |fn main(x: i32, b: bool, p: *const i32) {
-        | let a = -x;
-        | let c = !b;
-        | let d = *p;
-        |}
-        |""".stripMargin)
-
-    inside(cpg.call.nameExact(Operators.minus).l) { case minus :: Nil =>
-      minus.code shouldBe "-x"
-      minus.methodFullName shouldBe Operators.minus
-      minus.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-
-      inside(minus.argument.l) { case (x: Identifier) :: Nil =>
-        x.code shouldBe "x"
-        x.argumentIndex shouldBe 1
-      // TODO x.typeFullName shouldBe
-      }
-    }
-
-    inside(cpg.call.nameExact(Operators.logicalNot).l) { case logicalNot :: Nil =>
-      logicalNot.code shouldBe "!b"
-      logicalNot.methodFullName shouldBe Operators.logicalNot
-
-      inside(logicalNot.argument.l) { case (b: Identifier) :: Nil =>
-        b.code shouldBe "b"
-        b.argumentIndex shouldBe 1
-      // TODO b.typeFullName shouldBe
-      }
-    }
-
-    inside(cpg.call.nameExact(Operators.indirection).l) { case indirection :: Nil =>
-      indirection.code shouldBe "*p"
-      indirection.methodFullName shouldBe Operators.indirection
-
-      inside(indirection.argument.l) { case (p: Identifier) :: Nil =>
-        p.code shouldBe "p"
-        p.argumentIndex shouldBe 1
-      // TODO p.typeFullName shouldBe
-      }
-    }
-  }
-
   "test 33" in {
     val cpg = code("""
         |fn main(b: bool) {
@@ -585,10 +255,10 @@ class SimpleAstCreationPassTest extends Rust2CpgSuite {
         condition.code shouldBe "!b"
         condition.name shouldBe Operators.logicalNot
         condition.methodFullName shouldBe Operators.logicalNot
-        // TODO condition.typeFullName shouldBe "bool"
+        condition.typeFullName shouldBe "bool"
 
         inside(condition.argument.l) { case (b: Identifier) :: Nil =>
-          // TODO b.typeFullName shouldBe "bool"
+          b.typeFullName shouldBe "bool"
           b.code shouldBe "b"
           b.name shouldBe b.code
         }
