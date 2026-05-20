@@ -95,6 +95,13 @@ trait RustFullNames { this: AstCreator =>
     rustAstGenTypeFullName(expr).getOrElse(Defines.Any)
   }
 
+  protected def typeFullNameForTupleExpr(tupleExpr: RustNodeSyntax.TupleExpr): String = {
+    rustAstGenTypeFullName(tupleExpr).getOrElse {
+      val childTypes = tupleExpr.expr.map(typeFullNameForExpr)
+      s"(${childTypes.mkString(", ")})"
+    }
+  }
+
   protected def typeFullNameForLiteral(lit: RustNodeSyntax.Literal): String = {
     rustAstGenTypeFullName(lit).orElse(lit.value.map(typeFullNameForLiteralToken)).getOrElse(Defines.Any)
   }

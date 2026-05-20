@@ -104,7 +104,7 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     case returnExpr: ReturnExpr         => visitReturnExpr(returnExpr)
     case x: BecomeExpr                  => notHandledYet(x)
     case x: TryExpr                     => notHandledYet(x)
-    case x: TupleExpr                   => notHandledYet(x)
+    case tupleExpr: TupleExpr           => visitTupleExpr(tupleExpr)
     case whileExpr: WhileExpr           => visitWhileExpr(whileExpr)
     case x: YieldExpr                   => notHandledYet(x)
     case x: YeetExpr                    => notHandledYet(x)
@@ -583,6 +583,19 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   extension (indexExpr: IndexExpr) {
     protected def base: Expr  = indexExpr.expr.head
     protected def index: Expr = indexExpr.expr.last
+  }
+
+  // TupleExpr =
+  //  Attr* '(' (Expr (',' Expr)* ','?)? ')'
+  private def visitTupleExpr(tupleExpr: TupleExpr): Ast = {
+    if (tupleExpr.expr.isEmpty) {
+      Ast(literalNode(tupleExpr, code(tupleExpr), "()"))
+    } else {
+      val typeFullName = typeFullNameForTupleExpr(tupleExpr)
+      val callNode     = operatorCallNode(tupleExpr, code(tupleExpr), "<operator>.tupleLiteral", Some(typeFullName))
+      val argAsts      = tupleExpr.expr.map(visitExpr)
+      callAst(callNode, argAsts)
+    }
   }
 
   // FieldExpr =
