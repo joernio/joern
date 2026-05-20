@@ -17,65 +17,35 @@ object Ast {
   def apply(node: NewNode)(implicit withSchemaValidation: ValidationMode): Ast = Ast(Vector.empty :+ node)
   def apply()(implicit withSchemaValidation: ValidationMode): Ast              = new Ast(Vector.empty)
 
+  /** Single source of truth for the non-AST edge collections carried by `Ast`. Each entry pairs the wire-level edge
+    * label with a getter for the corresponding edge collection on an `Ast` instance.
+    */
+  private[x2cpg] val typedEdgeKinds: Seq[(String, Ast => collection.Seq[AstEdge])] = Seq(
+    EdgeTypes.CONDITION    -> (_.conditionEdges),
+    EdgeTypes.TRUE_BODY    -> (_.trueBodyEdges),
+    EdgeTypes.FALSE_BODY   -> (_.falseBodyEdges),
+    EdgeTypes.DO_BODY      -> (_.doBodyEdges),
+    EdgeTypes.TRY_BODY     -> (_.tryBodyEdges),
+    EdgeTypes.CATCH_BODY   -> (_.catchBodyEdges),
+    EdgeTypes.FINALLY_BODY -> (_.finallyBodyEdges),
+    EdgeTypes.FOR_INIT     -> (_.forInitEdges),
+    EdgeTypes.FOR_UPDATE   -> (_.forUpdateEdges),
+    EdgeTypes.FOR_BODY     -> (_.forBodyEdges),
+    EdgeTypes.RECEIVER     -> (_.receiverEdges),
+    EdgeTypes.REF          -> (_.refEdges),
+    EdgeTypes.ARGUMENT     -> (_.argEdges),
+    EdgeTypes.BINDS        -> (_.bindsEdges),
+    EdgeTypes.CAPTURE      -> (_.captureEdges)
+  )
+
   /** Copy nodes/edges of given `AST` into the given `diffGraph`.
     */
   def storeInDiffGraph(ast: Ast, diffGraph: DiffGraphBuilder): Unit = {
-
     setOrderWhereNotSet(ast)
-
-    ast.nodes.foreach { node =>
-      diffGraph.addNode(node)
-    }
-    ast.edges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.AST)
-    }
-    ast.conditionEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.CONDITION)
-    }
-    ast.trueBodyEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.TRUE_BODY)
-    }
-    ast.falseBodyEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.FALSE_BODY)
-    }
-    ast.doBodyEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.DO_BODY)
-    }
-    ast.tryBodyEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.TRY_BODY)
-    }
-    ast.catchBodyEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.CATCH_BODY)
-    }
-    ast.finallyBodyEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.FINALLY_BODY)
-    }
-    ast.forInitEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.FOR_INIT)
-    }
-    ast.forUpdateEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.FOR_UPDATE)
-    }
-    ast.forBodyEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.FOR_BODY)
-    }
-    ast.receiverEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.RECEIVER)
-    }
-    ast.refEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.REF)
-    }
-
-    ast.argEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.ARGUMENT)
-    }
-
-    ast.bindsEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.BINDS)
-    }
-
-    ast.captureEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.CAPTURE)
+    ast.nodes.foreach(diffGraph.addNode)
+    ast.edges.foreach(edge => diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.AST))
+    typedEdgeKinds.foreach { case (label, getter) =>
+      getter(ast).foreach(edge => diffGraph.addEdge(edge.src, edge.dst, label))
     }
   }
 
@@ -140,36 +110,21 @@ case class Ast(
   /** AST that results when adding `other` as a child to this AST. `other` is connected to this AST's root node.
     */
   def withChild(other: Ast): Ast = {
-    Ast(
-      nodes ++ other.nodes,
-      edges = edges ++ other.edges ++ root.toList.flatMap(r =>
-        other.root.toList.map { rc =>
-          Ast.neighbourValidation(r, rc, EdgeTypes.AST)
-          AstEdge(r, rc)
-        }
-      ),
-      conditionEdges = conditionEdges ++ other.conditionEdges,
-      trueBodyEdges = trueBodyEdges ++ other.trueBodyEdges,
-      falseBodyEdges = falseBodyEdges ++ other.falseBodyEdges,
-      doBodyEdges = doBodyEdges ++ other.doBodyEdges,
-      tryBodyEdges = tryBodyEdges ++ other.tryBodyEdges,
-      catchBodyEdges = catchBodyEdges ++ other.catchBodyEdges,
-      finallyBodyEdges = finallyBodyEdges ++ other.finallyBodyEdges,
-      forInitEdges = forInitEdges ++ other.forInitEdges,
-      forUpdateEdges = forUpdateEdges ++ other.forUpdateEdges,
-      forBodyEdges = forBodyEdges ++ other.forBodyEdges,
-      argEdges = argEdges ++ other.argEdges,
-      receiverEdges = receiverEdges ++ other.receiverEdges,
-      refEdges = refEdges ++ other.refEdges,
-      bindsEdges = bindsEdges ++ other.bindsEdges,
-      captureEdges = captureEdges ++ other.captureEdges
+    val newAstEdges = edges ++ other.edges ++ root.toList.flatMap(r =>
+      other.root.toList.map { rc =>
+        Ast.neighbourValidation(r, rc, EdgeTypes.AST)
+        AstEdge(r, rc)
+      }
     )
+    mergedWith(other, newAstEdges)
   }
 
-  def merge(other: Ast): Ast = {
+  def merge(other: Ast): Ast = mergedWith(other, edges ++ other.edges)
+
+  private def mergedWith(other: Ast, newAstEdges: collection.Seq[AstEdge]): Ast = {
     Ast(
       nodes ++ other.nodes,
-      edges = edges ++ other.edges,
+      edges = newAstEdges,
       conditionEdges = conditionEdges ++ other.conditionEdges,
       trueBodyEdges = trueBodyEdges ++ other.trueBodyEdges,
       falseBodyEdges = falseBodyEdges ++ other.falseBodyEdges,
@@ -293,16 +248,8 @@ case class Ast(
     })
   }
   private def addArgumentIndex(node: NewNode, argIndex: Int): Unit = node match {
-    case n: NewBlock            => n.argumentIndex = argIndex
-    case n: NewCall             => n.argumentIndex = argIndex
-    case n: NewFieldIdentifier  => n.argumentIndex = argIndex
-    case n: NewIdentifier       => n.argumentIndex = argIndex
-    case n: NewMethodRef        => n.argumentIndex = argIndex
-    case n: NewTypeRef          => n.argumentIndex = argIndex
-    case n: NewUnknown          => n.argumentIndex = argIndex
-    case n: NewControlStructure => n.argumentIndex = argIndex
-    case n: NewLiteral          => n.argumentIndex = argIndex
-    case n: NewReturn           => n.argumentIndex = argIndex
+    case expr: ExpressionNew => expr.argumentIndex = argIndex
+    case _                   =>
   }
 
   def withConditionEdges(src: NewNode, dsts: List[NewNode]): Ast = {
@@ -356,44 +303,28 @@ case class Ast(
       this.subTreeCopy(x.asInstanceOf[AstNodeNew])
     }
 
-    val oldToNew = astChildren.zip(newChildren).map { case (old, n) => old -> n.root.get }.toMap
-    def newIfExists(x: NewNode) = {
-      oldToNew.getOrElse(x, x)
-    }
-
-    val newArgEdges       = argEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
-    val newConditionEdges = conditionEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
-    val newTrueBodyEdges  = trueBodyEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
-    val newFalseBodyEdges = falseBodyEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
-    val newDoBodyEdges    = doBodyEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
-    val newTryBodyEdges   = tryBodyEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
-    val newCatchBodyEdges = catchBodyEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
-    val newFinallyEdges   = finallyBodyEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
-    val newForInitEdges   = forInitEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
-    val newForUpdateEdges = forUpdateEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
-    val newForBodyEdges   = forBodyEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
-    val newRefEdges       = refEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
-    val newBindsEdges     = bindsEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
-    val newReceiverEdges  = receiverEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
-    val newCaptureEdges   = captureEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
+    val oldToNew                = astChildren.zip(newChildren).map { case (old, n) => old -> n.root.get }.toMap
+    def newIfExists(x: NewNode) = oldToNew.getOrElse(x, x)
+    def remap(in: collection.Seq[AstEdge]): collection.Seq[AstEdge] =
+      in.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
 
     Ast(newNode)
       .copy(
-        argEdges = newArgEdges,
-        conditionEdges = newConditionEdges,
-        trueBodyEdges = newTrueBodyEdges,
-        falseBodyEdges = newFalseBodyEdges,
-        doBodyEdges = newDoBodyEdges,
-        tryBodyEdges = newTryBodyEdges,
-        catchBodyEdges = newCatchBodyEdges,
-        finallyBodyEdges = newFinallyEdges,
-        forInitEdges = newForInitEdges,
-        forUpdateEdges = newForUpdateEdges,
-        forBodyEdges = newForBodyEdges,
-        refEdges = newRefEdges,
-        bindsEdges = newBindsEdges,
-        receiverEdges = newReceiverEdges,
-        captureEdges = newCaptureEdges
+        argEdges = remap(argEdges),
+        conditionEdges = remap(conditionEdges),
+        trueBodyEdges = remap(trueBodyEdges),
+        falseBodyEdges = remap(falseBodyEdges),
+        doBodyEdges = remap(doBodyEdges),
+        tryBodyEdges = remap(tryBodyEdges),
+        catchBodyEdges = remap(catchBodyEdges),
+        finallyBodyEdges = remap(finallyBodyEdges),
+        forInitEdges = remap(forInitEdges),
+        forUpdateEdges = remap(forUpdateEdges),
+        forBodyEdges = remap(forBodyEdges),
+        refEdges = remap(refEdges),
+        bindsEdges = remap(bindsEdges),
+        receiverEdges = remap(receiverEdges),
+        captureEdges = remap(captureEdges)
       )
       .withChildren(newChildren)
   }
