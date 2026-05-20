@@ -6,8 +6,8 @@ import org.slf4j.LoggerFactory
 import com.sun.net.httpserver.{HttpExchange, HttpHandler, HttpServer}
 import java.net.{InetSocketAddress, URLDecoder}
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ExecutorService, Executors, TimeUnit}
-import scala.compiletime.uninitialized
 import scala.io.Source
 import scala.util.Failure
 import scala.util.Success
@@ -34,6 +34,22 @@ object FrontendHTTPServer {
   * related to `X2CpgMain`. It includes handling request execution either in a single-threaded or multi-threaded manner,
   * depending on the executor configuration.
   *
+  * Concurrency model:
+  *   - `httpServerRef` is the canonical liveness flag. Reads (`isRunning`) and the at-most-once shutdown claim in
+  *     `stop()` go through `AtomicReference`, so cross-thread visibility is guaranteed without holding the intrinsic
+  *     monitor.
+  *   - The intrinsic monitor (`synchronized`) protects `runningRequests` and `lastRequest`, and is used by
+  *     `stopServerAfterTimeout` to `wait`/`notifyAll` on liveness changes. It is held only for short, non-blocking
+  *     critical sections.
+  *   - `stop()` deliberately does NOT hold the monitor while running `server.stop(0)`/`executor.awaitTermination`,
+  *     because in-flight `RunHandler.handle` calls need that same monitor for their `runningRequests -= 1` finally
+  *     block — holding it across shutdown would deadlock against them. A brief `synchronized { notifyAll() }` runs
+  *     before `awaitTermination` so any thread parked in `stopServerAfterTimeout` is released without waiting for the
+  *     executor to drain.
+  *   - `startup()` synchronizes on a dedicated `startupLock` only to make the `require(!isRunning)` precondition and
+  *     the subsequent server bind/start atomic relative to other `startup()` calls. It uses a separate monitor from the
+  *     intrinsic one because it protects unrelated state and never needs to wait on handlers.
+  *
   * @param executor
   *   ExecutorService used to execute HTTP requests.
   * @param handleRequest
@@ -53,10 +69,18 @@ class FrontendHTTPServer(executor: ExecutorService, handleRequest: Array[String]
     */
   private val contextClassLoader: ClassLoader = Thread.currentThread().getContextClassLoader
 
-  private var httpServer: HttpServer = uninitialized
-  private var runningRequests        = 0
-  private var lastRequest            = System.nanoTime()
-  private var isRunning              = false
+  // Atomic so concurrent stop() calls race on a single CAS rather than racing on a `var` write; a non-null value
+  // also serves as the canonical liveness flag, read without holding the monitor via `isRunning`.
+  private val httpServerRef: AtomicReference[HttpServer] = new AtomicReference(null)
+  // Guarded by the intrinsic monitor of `this`. Mutated by RunHandler (in/out of `handle`) and read by
+  // `stopServerAfterTimeout` to decide when the server has been idle long enough to shut down.
+  private var runningRequests = 0
+  private var lastRequest     = System.nanoTime()
+  // Dedicated monitor for `startup()`'s precondition-check + bind/start, kept separate from the intrinsic monitor
+  // of `this` so it does not interact with the request/idle-tracking lock used by handlers and the timeout loop.
+  private val startupLock = new Object
+
+  private def isRunning: Boolean = httpServerRef.get() != null
 
   /** Handler for HTTP requests, providing functionality to handle specific routes. */
   private class RunHandler extends HttpHandler {
@@ -141,39 +165,52 @@ class FrontendHTTPServer(executor: ExecutorService, handleRequest: Array[String]
 
   /** Stops the underlying HTTP server if it is running.
     *
-    * This method checks if the server is running and, if so, stops the server. It also logs a debug message indicating
-    * that the server has been stopped. If the server is not running, this method does nothing.
+    * `httpServerRef.getAndSet(null)` atomically claims the server, so concurrent `stop()` calls run the shutdown
+    * sequence at most once — only the caller that observes a non-null value proceeds. The intrinsic monitor is NOT held
+    * during `server.stop(0)`/`executor.awaitTermination`, because in-flight handlers need that same monitor for their
+    * `runningRequests -= 1` finally block; holding it across shutdown would deadlock. `synchronized { notifyAll() }`
+    * runs before `awaitTermination` so any thread parked in `stopServerAfterTimeout` is released without waiting for
+    * the executor to drain — the loop's `isRunning` predicate already sees `httpServerRef` as `null`.
     */
   def stop(): Unit = {
-    if (isRunning) {
-      httpServer.stop(0)
-      httpServer = null
+    val server = httpServerRef.getAndSet(null)
+    if (server != null) {
+      server.stop(0)
       executor.shutdown()
+      synchronized { notifyAll() }
       executor.awaitTermination(10, TimeUnit.SECONDS)
-      isRunning = false
       logger.debug("Server stopped.")
     }
   }
 
-  /** Starts the server and returns the server's randomly chosen port
+  /** Starts the server and returns the server's randomly chosen port.
+    *
+    * Synchronizes on `startupLock` (not the intrinsic monitor of `this`) to make the `require(!isRunning)` check and
+    * the subsequent bind/start atomic against other `startup()` calls. Using a dedicated lock keeps this independent of
+    * the request/idle-tracking monitor used by handlers and `stopServerAfterTimeout`, since the state being protected
+    * here (the bind sequence) is unrelated.
     */
-  def startup(): Int = {
+  def startup(): Int = startupLock.synchronized {
     require(!isRunning)
 
     // Create server on port 0 (OS chooses random available port)
-    httpServer = HttpServer.create(new InetSocketAddress(0), 0)
-    httpServer.createContext("/run", new RunHandler())
-    httpServer.setExecutor(executor)
-    httpServer.start()
+    val server = HttpServer.create(new InetSocketAddress(0), 0)
+    server.createContext("/run", new RunHandler())
+    server.setExecutor(executor)
+    // Start before publishing so `stop()` never sees an unstarted server.
+    server.start()
+    httpServerRef.set(server)
 
-    isRunning = true
-
-    val port = httpServer.getAddress.getPort
+    val port = server.getAddress.getPort
     logger.debug(s"Server started on port $port")
     port
   }
 
-  /** Stops the server, once it hasn't served any new requests for longer than timeout seconds
+  /** Stops the server, once it hasn't served any new requests for longer than timeout seconds.
+    *
+    * Loops on the intrinsic monitor: `wait` is woken either by a finishing handler (which calls `notifyAll` in its
+    * finally block) or by `stop()`'s trailing `synchronized { notifyAll() }`. The loop predicate uses `isRunning`
+    * (atomic read) so that once `stop()` flips `httpServerRef` to `null` the next iteration exits cleanly.
     */
   def stopServerAfterTimeout(timeoutSeconds: Long): Unit = {
     synchronized {
