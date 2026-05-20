@@ -64,16 +64,16 @@ object Ast {
     * child among its siblings.
     */
   private def setOrderWhereNotSet(ast: Ast): Unit = {
-    ast.root.collect { case r: AstNodeNew =>
-      if (r.order == PropertyDefaults.Order) {
-        r.order = 1
+    ast.root.collect { case rootNode: AstNodeNew =>
+      if (rootNode.order == PropertyDefaults.Order) {
+        rootNode.order = 1
       }
     }
     val siblings = ast.edges.groupBy(_.src).map { case (_, edgeToChild) => edgeToChild.map(_.dst) }
     siblings.foreach { children =>
-      children.zipWithIndex.collect { case (c: AstNodeNew, i) =>
-        if (c.order == PropertyDefaults.Order) {
-          c.order = i + 1
+      children.zipWithIndex.collect { case (child: AstNodeNew, index) =>
+        if (child.order == PropertyDefaults.Order) {
+          child.order = index + 1
         }
       }
     }
@@ -110,10 +110,10 @@ case class Ast(
   /** AST that results when adding `other` as a child to this AST. `other` is connected to this AST's root node.
     */
   def withChild(other: Ast): Ast = {
-    val newAstEdges = edges ++ other.edges ++ root.toList.flatMap(r =>
-      other.root.toList.map { rc =>
-        Ast.neighbourValidation(r, rc, EdgeTypes.AST)
-        AstEdge(r, rc)
+    val newAstEdges = edges ++ other.edges ++ root.toList.flatMap(thisRoot =>
+      other.root.toList.map { otherRoot =>
+        Ast.neighbourValidation(thisRoot, otherRoot, EdgeTypes.AST)
+        AstEdge(thisRoot, otherRoot)
       }
     )
     mergedWith(other, newAstEdges)
@@ -153,7 +153,7 @@ case class Ast(
       // we do this iteratively as a recursive solution which will fail with
       // a StackOverflowException if there are too many elements in .tail.
       var ast = withChild(asts.head)
-      asts.tail.foreach(c => ast = ast.withChild(c))
+      asts.tail.foreach(child => ast = ast.withChild(child))
       ast
     }
   }
@@ -288,8 +288,8 @@ case class Ast(
     */
   def subTreeCopy(node: AstNodeNew, argIndex: Int = -1, replacementNode: Option[AstNodeNew] = None): Ast = {
     val newNode = replacementNode match {
-      case Some(n) => n
-      case None    => node.copy
+      case Some(replacement) => replacement
+      case None              => node.copy
     }
     if (argIndex != -1) {
       newNode match {
@@ -299,14 +299,14 @@ case class Ast(
     }
 
     val astChildren = edges.filter(_.src == node).map(_.dst)
-    val newChildren = astChildren.map { x =>
-      this.subTreeCopy(x.asInstanceOf[AstNodeNew])
+    val newChildren = astChildren.map { oldChild =>
+      this.subTreeCopy(oldChild.asInstanceOf[AstNodeNew])
     }
 
-    val oldToNew                = astChildren.zip(newChildren).map { case (old, n) => old -> n.root.get }.toMap
-    def newIfExists(x: NewNode) = oldToNew.getOrElse(x, x)
+    val oldToNew = astChildren.zip(newChildren).map { case (old, newChild) => old -> newChild.root.get }.toMap
+    def newIfExists(oldNode: NewNode) = oldToNew.getOrElse(oldNode, oldNode)
     def remap(in: collection.Seq[AstEdge]): collection.Seq[AstEdge] =
-      in.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
+      in.filter(_.src == node).map(edge => AstEdge(newNode, newIfExists(edge.dst)))
 
     Ast(newNode)
       .copy(
