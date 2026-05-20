@@ -50,8 +50,8 @@ class IntervalKeyPool(val first: Long, val last: Long) extends KeyPool {
   */
 class SequenceKeyPool(seq: Seq[Long]) extends KeyPool {
 
-  val seqLen: Int = seq.size
-  var cur         = new AtomicInteger(-1)
+  private val seqLen: Int        = seq.size
+  private val cur: AtomicInteger = new AtomicInteger(-1)
 
   override def next: Long = {
     val i = cur.incrementAndGet()
