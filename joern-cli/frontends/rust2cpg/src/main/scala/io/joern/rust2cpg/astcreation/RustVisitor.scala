@@ -56,7 +56,7 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     case x: MacroCall   => notHandledYet(x) :: Nil
     case x: MacroRules  => notHandledYet(x) :: Nil
     case x: MacroDef    => notHandledYet(x) :: Nil
-    case x: Module      => notHandledYet(x) :: Nil
+    case module: Module => visitModule(module)
     case x: Static      => notHandledYet(x) :: Nil
     case struct: Struct => visitStruct(struct) :: Nil
     case x: Trait       => notHandledYet(x) :: Nil
@@ -127,6 +127,21 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     case x: RefType       => notHandledYet(x)
     case x: SliceType     => notHandledYet(x)
     case x: TupleType     => notHandledYet(x)
+  }
+
+  // Module =
+  //  Attr* Visibility?
+  //  'mod' Name (ItemList | ';')
+  private def visitModule(module: Module): Seq[Ast] = {
+    module.itemList match {
+      case None => Nil
+      case Some(itemList) =>
+        val namespaceBlock = moduleNamespaceBlockNode(module)
+        methodAstParentStack.push(namespaceBlock)
+        val itemAsts = itemList.item.flatMap(visitItem)
+        methodAstParentStack.pop()
+        Ast(namespaceBlock).withChildren(itemAsts) :: Nil
+    }
   }
 
   // Const =
