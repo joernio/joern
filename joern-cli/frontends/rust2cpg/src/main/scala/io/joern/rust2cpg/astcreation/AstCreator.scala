@@ -83,6 +83,11 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     s"${parseResult.filename}:$rustNamespaceFullName"
   }
 
+  protected def moduleNamespaceBlockNode(module: RustNodeSyntax.Module): NewNamespaceBlock = {
+    val name = composeRustFullName(code(module.name))
+    namespaceBlockNode(module, name, s"${parseResult.filename}:$name", parseResult.filename)
+  }
+
   protected def globalFakeMethodNode(
     sourceFile: RustNodeSyntax.SourceFile,
     namespaceBlock: NewNamespaceBlock
