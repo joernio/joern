@@ -1014,6 +1014,13 @@ class ClassTests extends RubyCode2CpgFixture {
         barSetter.name shouldBe "bar="
       }
     }
+
+    "not be used as a return value" in {
+      inside(cpg.method.nameExact("<lambda>0").methodReturn.toReturn.l) { case lambdaReturn :: Nil =>
+        lambdaReturn.code shouldBe "return nil"
+        lambdaReturn.astOut.isLiteral.code.l shouldBe List("return nil")
+      }
+    }
   }
 
   "Multiple FieldsDeclaration in included" should {

@@ -143,7 +143,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case 0 => List()
       case n =>
         val (headStmts, lastStmt) = node.statements.splitAt(n - 1)
-        headStmts.flatMap(astsForStatement) ++ lastStmt.flatMap(astsForImplicitReturnStatement)
+        val (actualHead, actualLast) = lastStmt.lastOption match {
+          case Some(x: (FieldsDeclaration | SingletonClassDeclaration)) =>
+            val nilLiteral = StaticLiteral(Defines.prefixAsCoreType(Defines.NilClass))(x.span.spanStart("return nil"))
+            (headStmts ++ lastStmt, List(nilLiteral))
+          case _ => (headStmts, lastStmt)
+        }
+        actualHead.flatMap(astsForStatement) ++ actualLast.flatMap(astsForImplicitReturnStatement)
     }
 
     scope.popScope()
@@ -197,15 +203,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           simpleIdent.span.spanStart(s"${simpleIdent.span.text} ${methodIdent.span.text}")
         )
         astForReturnExpression(ReturnExpression(List(simpleCall))(node.span)) :: Nil
-      case node: FieldsDeclaration =>
-        val nilReturnSpan    = node.span.spanStart("return nil")
-        val nilReturnLiteral = StaticLiteral(Defines.prefixAsCoreType(Defines.NilClass))(nilReturnSpan)
-        astsForFieldDeclarations(node) ++ astsForImplicitReturnStatement(nilReturnLiteral)
-      case node: SingletonClassDeclaration =>
-        astForAnonymousTypeDeclaration(node)
-        val nilReturnSpan    = node.span.spanStart("return nil")
-        val nilReturnLiteral = StaticLiteral(Defines.prefixAsCoreType(Defines.NilClass))(nilReturnSpan)
-        astsForImplicitReturnStatement(nilReturnLiteral)
       case node =>
         returnAst(node) :: Nil
     }
