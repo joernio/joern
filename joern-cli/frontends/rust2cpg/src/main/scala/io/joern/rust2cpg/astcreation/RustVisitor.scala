@@ -42,7 +42,7 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
 
     val block        = blockNode(sourceFile)
     val methodReturn = methodReturnNode(sourceFile, "()")
-    val modifiers    = Seq(ModifierTypes.VIRTUAL, ModifierTypes.MODULE).map(modifierNode(sourceFile, _))
+    val modifiers    = Seq(modifierNode(sourceFile, ModifierTypes.MODULE))
     methodAst(method, parameters = Nil, body = Ast(block).withChildren(itemAsts), methodReturn, modifiers)
   }
 
@@ -134,8 +134,17 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   //  'mod' Name (ItemList | ';')
   private def visitModule(module: Module): Seq[Ast] = {
     module.itemList match {
-      case None => Nil
+      case None =>
+        // It's a forward declaration for which we don't have an AST use.
+        Nil
       case Some(itemList) =>
+        // NB: two same-named `mod foo {}` declarations in the same file are not valid, e.g.
+        // ```
+        // mod foo {...}
+        // ...
+        // mod foo {...}
+        // ```
+        // So we don't need to disambiguate its occurrence like in other languages.
         val namespaceBlock = moduleNamespaceBlockNode(module)
         methodAstParentStack.push(namespaceBlock)
         val itemAsts = itemList.item.flatMap(visitItem)
