@@ -163,7 +163,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       val elseAst = astForNode(guardStmt.body)
       setOrderExplicitly(elseAst, 3)
 
-      val ifAst = controlStructureAst(ifNode, Option(conditionAst), Seq(thenAst, elseAst))
+      val ifAst = ifThenElseAst(ifNode, Option(conditionAst), thenAst, Option(elseAst))
       astsForBlockElements(elementsBeforeGuard) :+ ifAst
     }
   }

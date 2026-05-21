@@ -502,11 +502,8 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val ifNode       = controlStructureNode(node, ControlStructureTypes.IF, code)
     val conditionAst = astForNode(node.conditions)
     val thenAst      = astForNode(node.body)
-    val elseAst = node.elseBody match {
-      case Some(value) => astForNode(value)
-      case None        => Ast()
-    }
-    controlStructureAst(ifNode, Option(conditionAst), Seq(thenAst, elseAst))
+    val elseAst      = node.elseBody.map(astForNode)
+    ifThenElseAst(ifNode, Option(conditionAst), thenAst, elseAst)
   }
 
   private def astForInOutExprSyntax(node: InOutExprSyntax): Ast = {
@@ -1012,10 +1009,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
                   Ast(controlStructureNode(whereClause.condition, ControlStructureTypes.CONTINUE, "continue"))
                 setOrderExplicitly(testAst, 1)
                 setOrderExplicitly(consequentAst, 2)
-                Ast(ifNode)
-                  .withChild(testAst)
-                  .withConditionEdge(ifNode, testAst.nodes.head)
-                  .withChild(consequentAst)
+                ifThenElseAst(ifNode, Option(testAst), consequentAst, None)
             }
             (childrenTestAsts, childrenFlowAsts)
           case other => (List(astForNode(other)), List.empty)
