@@ -173,8 +173,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           case x =>
             astsForStatement(transform(expr))
         }
-      case node: SingleAssignment =>
-        astForSingleAssignment(node) :: List(astForReturnExpression(ReturnExpression(List(node.lhs))(node.span)))
       case node: DefaultMultipleAssignment =>
         astsForStatement(node) ++ astsForImplicitReturnStatement(ArrayLiteral(node.assignments.map(_.lhs))(node.span))
       case ret: ReturnExpression => astForReturnExpression(ret) :: Nil
