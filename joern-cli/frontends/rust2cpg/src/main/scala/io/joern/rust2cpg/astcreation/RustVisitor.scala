@@ -674,23 +674,27 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   //  | TupleFieldList WhereClause? ';'
   //  )
   private def visitStruct(struct: Struct): Ast = {
-    // TODO
-    Ast()
+    (struct.recordFieldList, struct.tupleFieldList) match {
+      case (Some(recordFieldList), _) =>
+        Ast(typeDeclForStruct(struct)).withChildren(visitRecordFieldList(recordFieldList))
+      case (None, Some(_)) =>
+        notHandledYet(struct)
+      case (None, None) =>
+        Ast(typeDeclForStruct(struct))
+    }
   }
 
   // RecordFieldList =
   // '{' fields:(RecordField (',' RecordField)* ','?)? '}'
   private def visitRecordFieldList(recordFieldList: RecordFieldList): Seq[Ast] = {
-    // TODO
-    Nil
+    recordFieldList.recordField.map(visitRecordField)
   }
 
   // RecordField =
   //  Attr* Visibility? 'unsafe'?
   //  Name ':' Type ('=' default_val:ConstArg)?
   private def visitRecordField(recordField: RecordField): Ast = {
-    // TODO
-    Ast()
+    Ast(memberNode(recordField, code(recordField.name), code(recordField), typeFullNameForType(recordField.`type`)))
   }
 
 }
