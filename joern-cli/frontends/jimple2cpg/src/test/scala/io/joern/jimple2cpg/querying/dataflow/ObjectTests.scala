@@ -180,8 +180,7 @@ class ObjectTests extends JimpleDataFlowCodeToCpgSuite {
 
     "find a path if a field is reassigned to `MALICIOUS` via an alias" in {
       val (source, sink) = getConstSourceSink("test10")
-      // TODO: The data flow appears to be alias insensitive and taints the whole object instance
-      sink.reachableBy(source).size shouldBe 0
+      sink.reachableBy(source).size shouldBe 1
     }
 
     // TODO this isn't supported yet

@@ -86,6 +86,7 @@ class LoopTests extends JimpleDataFlowCodeToCpgSuite {
         |
         |    public void test12(boolean b) {
         |        String s = "MALICIOUS";
+        |        System.out.printf("do not optimize away: %s", s);
         |        do {
         |            s = "SAFE";
         |            b = !b;
