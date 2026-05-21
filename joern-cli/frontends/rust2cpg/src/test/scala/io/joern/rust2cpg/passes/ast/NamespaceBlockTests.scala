@@ -61,9 +61,8 @@ class NamespaceBlockTests extends Rust2CpgSuite(noSysRoot = true) {
       cpg.method.nameExact(globalNamespaceName).methodReturn.typeFullName.l shouldBe List("()")
     }
 
-    "have VIRTUAL and MODULE modifiers" in {
-      cpg.method.nameExact(globalNamespaceName).modifier.modifierType.toSet shouldBe
-        Set(ModifierTypes.VIRTUAL, ModifierTypes.MODULE)
+    "have MODULE modifier" in {
+      cpg.method.nameExact(globalNamespaceName).modifier.modifierType.l shouldBe List(ModifierTypes.MODULE)
     }
 
     "own top-level fns as AST children" in {
