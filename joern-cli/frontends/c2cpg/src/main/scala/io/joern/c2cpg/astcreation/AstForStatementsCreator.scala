@@ -242,7 +242,11 @@ trait AstForStatementsCreator { this: AstCreator =>
     val conditionAst = wrapInNullComparison(doStmt.getCondition, astForConditionExpression(doStmt.getCondition))
     val bodyAst      = nullSafeAst(doStmt.getBody)
     scope.popScope()
-    controlStructureAst(doNode, Option(conditionAst), bodyAst, placeConditionLast = true)
+    val astWithChildren = controlStructureAst(doNode, Option(conditionAst), bodyAst, placeConditionLast = true)
+    bodyAst.headOption.flatMap(_.root) match {
+      case Some(bodyRoot) => astWithChildren.withDoBodyEdge(doNode, bodyRoot)
+      case None           => astWithChildren
+    }
   }
 
   private def astForSwitchStatement(switchStmt: IASTSwitchStatement): Seq[Ast] = {
@@ -591,16 +595,16 @@ trait AstForStatementsCreator { this: AstCreator =>
       case block: IASTCompoundStatement =>
         val elseNode = controlStructureNode(ifStmt.getElseClause, ControlStructureTypes.ELSE, "else")
         val elseAst  = astForBlockStatement(block, blockNode(block))
-        Ast(elseNode).withChild(elseAst)
+        Some(Ast(elseNode).withChild(elseAst))
       case other if other != null =>
         val elseNode  = controlStructureNode(ifStmt.getElseClause, ControlStructureTypes.ELSE, "else")
         val elseBlock = blockNode(other)
         scope.pushNewBlockScope(elseBlock)
         val statementAsts = astsForStatement(other)
         scope.popScope()
-        Ast(elseNode).withChild(blockAst(elseBlock, statementAsts.toList))
-      case _ => Ast()
+        Some(Ast(elseNode).withChild(blockAst(elseBlock, statementAsts.toList)))
+      case _ => None
     }
-    initAsts :+ controlStructureAst(ifNode, Option(conditionAst), Seq(thenAst, elseAst))
+    initAsts :+ ifThenElseAst(ifNode, Option(conditionAst), thenAst, elseAst)
   }
 }

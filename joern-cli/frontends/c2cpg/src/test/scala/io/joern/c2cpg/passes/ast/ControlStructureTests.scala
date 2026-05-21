@@ -3,6 +3,7 @@ package io.joern.c2cpg.passes.ast
 import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import org.apache.commons.lang3.StringUtils
 
@@ -233,6 +234,106 @@ class ControlStructureTests extends C2CpgSuite(FileDefaults.CppExt) {
       }
     }
 
+  }
+
+  "`if-elseif-else` statements" should {
+    val cpg = code("""
+        |void foo(int c) {
+        |  if (c > 10) {
+        |    c -= 10;
+        |  } else if (c < 10) {
+        |    c += 10;
+        |  } else {
+        |    c = 10;
+        |  }
+        |}
+        |""".stripMargin)
+
+    "connect then and else branches via TRUE_BODY/FALSE_BODY edges" in {
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l) {
+        case List(ifOne: ControlStructure, ifTwo: ControlStructure) =>
+          ifOne.condition.code.l shouldBe List("c > 10")
+          ifOne.trueBodyOut.astChildren.code.l shouldBe List("c -= 10")
+          inside(ifOne.falseBodyOut.l) { case List(elseNode: ControlStructure) =>
+            elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
+            elseNode.astChildren.isBlock.astChildren.l shouldBe List(ifTwo)
+          }
+
+          ifTwo.condition.code.l shouldBe List("c < 10")
+          ifTwo.trueBodyOut.astChildren.code.l shouldBe List("c += 10")
+          inside(ifTwo.falseBodyOut.l) { case List(elseNode: ControlStructure) =>
+            elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
+            elseNode.astChildren.isBlock.astChildren.code.l shouldBe List("c = 10")
+          }
+      }
+    }
+  }
+
+  "`if` without `else` has no FALSE_BODY edge" in {
+    val cpg = code("""
+        |void foo(int x) {
+        |  if (x > 0) { sink(x); }
+        |}
+        |""".stripMargin)
+
+    inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l) {
+      case List(ifNode: ControlStructure) =>
+        ifNode.trueBodyOut.astChildren.code.l shouldBe List("sink(x)")
+        ifNode.falseBodyOut.l shouldBe List.empty
+    }
+  }
+
+  "`do-while` statement connects body via DO_BODY edge" in {
+    val cpg = code("""
+        |void foo(int c) {
+        |  do {
+        |    c += 1;
+        |  } while (c < 10);
+        |}
+        |""".stripMargin)
+
+    inside(cpg.method.name("foo").doBlock.l) { case List(doNode: ControlStructure) =>
+      doNode.condition.code.l shouldBe List("c < 10")
+      doNode.doBodyOut.astChildren.code.l shouldBe List("c += 1")
+    }
+  }
+
+  "`for-loop` statement connects init, update and body via dedicated edges" in {
+    val cpg = code("""
+        |void foo(int c) {
+        |  for (int i = 0; i < c; i++) {
+        |    sink(i);
+        |  }
+        |}
+        |""".stripMargin)
+
+    inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.FOR).l) {
+      case List(forNode: ControlStructure) =>
+        forNode.forInitOut.code.l shouldBe List("i = 0")
+        forNode.forUpdateOut.code.l shouldBe List("i++")
+        forNode.forBodyOut.astChildren.code.l shouldBe List("sink(i)")
+    }
+  }
+
+  "`try-catch` statement connects try and catch bodies via explicit edges" in {
+    val cpg = code("""
+        |void foo() {
+        |  try {
+        |    sink();
+        |  } catch (int e) {
+        |    sinkCatch(e);
+        |  }
+        |}
+        |""".stripMargin)
+
+    inside(cpg.controlStructure.isTry.l) { case List(tryNode: ControlStructure) =>
+      tryNode.tryBodyOut.astChildren.code.l shouldBe List("sink()")
+      inside(tryNode.catchBodyOut.l) { case List(catchNode: ControlStructure) =>
+        catchNode.controlStructureType shouldBe ControlStructureTypes.CATCH
+        catchNode.astChildren.isBlock.astChildren.code.l shouldBe List("sinkCatch(e)")
+      }
+      tryNode.finallyBodyOut.l shouldBe List.empty
+    }
   }
 
   "ControlStructureTest4" should {
