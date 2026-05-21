@@ -7,7 +7,7 @@ import io.joern.rust2cpg.parser.RustNodeSyntax
 import io.joern.rust2cpg.parser.RustNodeSyntax.RustNode
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewMethod, NewNamespaceBlock, NewNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
 import io.shiftleft.codepropertygraph.generated.{NodeTypes, Operators, PropertyDefaults, PropertyNames}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
@@ -102,6 +102,20 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
       fileName = parseResult.filename,
       astParentType = Some(NodeTypes.NAMESPACE_BLOCK),
       astParentFullName = Some(namespaceBlock.fullName)
+    )
+  }
+
+  protected def typeDeclForStruct(struct: RustNodeSyntax.Struct): NewTypeDecl = {
+    val name   = code(struct.name)
+    val parent = methodAstParentStack.head
+    typeDeclNode(
+      node = struct,
+      name = name,
+      fullName = composeRustFullName(name),
+      filename = parseResult.filename,
+      code = code(struct),
+      astParentType = parent.label,
+      astParentFullName = parent.properties(PropertyNames.FullName).toString
     )
   }
 
