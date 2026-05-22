@@ -3,4 +3,4 @@ common --tool_java_runtime_version=21
 common --java_runtime_version=21
 common --registry=file:///Users/ml/work/bazelRegistry
 common --registry=https://bcr.bazel.build/
-try-import .bazelrc.user
+try-import user.bazelrc
