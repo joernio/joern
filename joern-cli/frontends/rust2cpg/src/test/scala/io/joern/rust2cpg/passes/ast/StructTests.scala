@@ -37,6 +37,57 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "a top-level tuple struct" should {
+    val libPath = (Paths.get("src") / "lib.rs").toString
+    val cpg     = code("struct Pair(i32, bool);")
+
+    "have a crate-prefixed fullName TYPE_DECL" in {
+      cpg.typeDecl.nameExact("Pair").fullName.l shouldBe List("rust2cpgtest::Pair")
+    }
+
+    "be parented by the fake global method" in {
+      inside(cpg.typeDecl.nameExact("Pair").l) { case pair :: Nil =>
+        pair.astParentType shouldBe NodeTypes.METHOD
+        pair.astParentFullName shouldBe s"$libPath:rust2cpgtest::$globalNamespaceName"
+      }
+    }
+
+    "have one MEMBER per field, named by positional index" in {
+      inside(cpg.typeDecl.nameExact("Pair").member.l) { case zero :: one :: Nil =>
+        zero.name shouldBe "0"
+        zero.code shouldBe "i32"
+        zero.typeFullName shouldBe "i32"
+        one.name shouldBe "1"
+        one.code shouldBe "bool"
+        one.typeFullName shouldBe "bool"
+      }
+    }
+  }
+
+  "a top-level tuple struct with one field" should {
+    val cpg = code("struct Wrapper(i32);")
+
+    "have a single MEMBER named `0`" in {
+      inside(cpg.typeDecl.nameExact("Wrapper").member.l) { case zero :: Nil =>
+        zero.name shouldBe "0"
+        zero.code shouldBe "i32"
+        zero.typeFullName shouldBe "i32"
+      }
+    }
+  }
+
+  "a top-level tuple struct with no fields" should {
+    val cpg = code("struct Empty();")
+
+    "have a crate-prefixed fullName TYPE_DECL" in {
+      cpg.typeDecl.nameExact("Empty").fullName.l shouldBe List("rust2cpgtest::Empty")
+    }
+
+    "have no members" in {
+      cpg.typeDecl.nameExact("Empty").member shouldBe empty
+    }
+  }
+
   "a top-level unit struct" should {
     val cpg = code("struct Bar;")
 

@@ -683,8 +683,8 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     (struct.recordFieldList, struct.tupleFieldList) match {
       case (Some(recordFieldList), _) =>
         Ast(typeDeclForStruct(struct)).withChildren(visitRecordFieldList(recordFieldList))
-      case (None, Some(_)) =>
-        notHandledYet(struct)
+      case (None, Some(tupleFieldList)) =>
+        Ast(typeDeclForStruct(struct)).withChildren(visitTupleFieldList(tupleFieldList))
       case (None, None) =>
         Ast(typeDeclForStruct(struct))
     }
@@ -701,6 +701,19 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   //  Name ':' Type ('=' default_val:ConstArg)?
   private def visitRecordField(recordField: RecordField): Ast = {
     Ast(memberNode(recordField, code(recordField.name), code(recordField), typeFullNameForType(recordField.`type`)))
+  }
+
+  // TupleFieldList =
+  //  '(' fields:(TupleField (',' TupleField)* ','?)? ')'
+  private def visitTupleFieldList(tupleFieldList: TupleFieldList): Seq[Ast] = {
+    tupleFieldList.tupleField.zipWithIndex.map { case (tupleField, index) => visitTupleField(tupleField, index) }
+  }
+
+  // TupleField =
+  //  Attr* Visibility?
+  //  Type
+  private def visitTupleField(tupleField: TupleField, index: Int): Ast = {
+    Ast(memberNode(tupleField, index.toString, code(tupleField), typeFullNameForType(tupleField.`type`)))
   }
 
 }
