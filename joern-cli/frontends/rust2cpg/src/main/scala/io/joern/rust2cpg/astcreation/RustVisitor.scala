@@ -170,7 +170,7 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
 
   // LetStmt =
   //  Attr* 'super'? 'let' Pat (':' Type)?
-  //  '=' initializer:Expr
+  //  '=' initializer:Expr?
   //  LetElse?
   //  ';'
   private def visitLetStmt(letStmt: LetStmt): Seq[Ast] = {
@@ -179,7 +179,13 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
         identPat.name.identToken match {
           case Some(identToken) =>
             val typeFullName = letStmt.`type`.map(typeFullNameForType).getOrElse(typeFullNameForIdentPat(identPat))
-            lowerIdentifierDecl(identToken, letStmt.expr, typeFullName, code(letStmt))
+            letStmt.expr match {
+              case Some(rhsExpr) => lowerIdentifierDecl(identToken, rhsExpr, typeFullName, code(letStmt))
+              case None =>
+                val lhsName = code(identToken)
+                val local   = localNode(identToken, lhsName, lhsName, typeFullName)
+                Ast(local) :: Nil
+            }
           case None => notHandledYet(letStmt) :: Nil
         }
       case _ => notHandledYet(letStmt) :: Nil

@@ -181,4 +181,50 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
   }
+
+  "`let x: i32;`" should {
+    val cpg = code("""
+        |fn main() {
+        | let x: i32;
+        |}
+        |""".stripMargin)
+
+    "have a LOCAL i32" in {
+      inside(cpg.method.name("main").block.local.name("x").l) { case local :: Nil =>
+        local.typeFullName shouldBe "i32"
+        local.code shouldBe "x"
+      }
+    }
+  }
+
+  "`let x;`" should {
+    val cpg = code("""
+        |fn main() {
+        | let x;
+        |}
+        |""".stripMargin)
+
+    "have a LOCAL Any" in {
+      inside(cpg.method.name("main").block.local.name("x").l) { case local :: Nil =>
+        local.typeFullName shouldBe Defines.Any
+        local.code shouldBe "x"
+      }
+    }
+  }
+
+  "`let x;` followed by `x = 5;`" should {
+    val cpg = code("""
+        |fn main() {
+        | let x;
+        | x = 5;
+        |}
+        |""".stripMargin)
+
+    "have a LOCAL i32" in {
+      inside(cpg.method.name("main").block.local.name("x").l) { case local :: Nil =>
+        local.typeFullName shouldBe "i32"
+        local.code shouldBe "x"
+      }
+    }
+  }
 }
