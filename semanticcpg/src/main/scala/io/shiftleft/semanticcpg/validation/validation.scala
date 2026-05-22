@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.validation
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, EdgeTypes, nodes}
 import io.shiftleft.passes.CpgPass
 
 import scala.collection.mutable
@@ -14,6 +14,7 @@ class ValidationError(msg: String) extends RuntimeException(msg) {}
 enum ValidationLevel(val value: Int) extends Ordered[ValidationLevel] {
   case V0 extends ValidationLevel(0)
   case V1 extends ValidationLevel(1)
+  case V2 extends ValidationLevel(2)
 
   override def compare(that: ValidationLevel): Int = this.value.compareTo(that.value)
 }
@@ -51,17 +52,22 @@ abstract class AbstractValidator(cpg: Cpg) extends CpgPass(cpg) {
 object PostFrontendValidator {
   private val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  /** Newly added error types should have an `addedInLevel` one level higher than the highest */
+  /** Newly added error types should have an `addedInLevel` one level higher than the highest (currently V2) */
   enum ErrorType(val addedInLevel: ValidationLevel) {
-    case FULLNAME_UNIQUE_METHOD   extends ErrorType(ValidationLevel.V1)
-    case FULLNAME_UNIQUE_TYPE     extends ErrorType(ValidationLevel.V1)
-    case FULLNAME_UNIQUE_TYPEDECL extends ErrorType(ValidationLevel.V1)
-    case MULTI_REF                extends ErrorType(ValidationLevel.V1)
-    case BAD_REF_TYPE             extends ErrorType(ValidationLevel.V1)
-    case NONLOCAL_REF             extends ErrorType(ValidationLevel.V1)
-    case MULTI_AST_IN             extends ErrorType(ValidationLevel.V1)
-    case MULTI_ARG_IN             extends ErrorType(ValidationLevel.V1)
-    case DUPLICATE_ORDER          extends ErrorType(ValidationLevel.V1)
+    case FULLNAME_UNIQUE_METHOD                    extends ErrorType(ValidationLevel.V1)
+    case FULLNAME_UNIQUE_TYPE                      extends ErrorType(ValidationLevel.V1)
+    case FULLNAME_UNIQUE_TYPEDECL                  extends ErrorType(ValidationLevel.V1)
+    case MULTI_REF                                 extends ErrorType(ValidationLevel.V1)
+    case BAD_REF_TYPE                              extends ErrorType(ValidationLevel.V1)
+    case NONLOCAL_REF                              extends ErrorType(ValidationLevel.V1)
+    case MULTI_AST_IN                              extends ErrorType(ValidationLevel.V1)
+    case MULTI_ARG_IN                              extends ErrorType(ValidationLevel.V1)
+    case DUPLICATE_ORDER                           extends ErrorType(ValidationLevel.V1)
+    case CTRL_EDGE_WRONG_SOURCE                    extends ErrorType(ValidationLevel.V2)
+    case CTRL_EDGE_MULTI_OUT                       extends ErrorType(ValidationLevel.V2)
+    case CTRL_EDGE_CONTROL_STRUCTURE_TYPE_MISMATCH extends ErrorType(ValidationLevel.V2)
+    case CTRL_EDGE_USING_LEGACY                    extends ErrorType(ValidationLevel.V2)
+    case CTRL_EDGE_REQUIRED_MISSING                extends ErrorType(ValidationLevel.V2)
   }
 }
 
@@ -237,6 +243,237 @@ class PostFrontendValidator(cpg: Cpg, fatalValidationLevel: ValidationLevel) ext
     }
   }
 
+  /** Validate control structure body edges (TRUE_BODY, FALSE_BODY, DO_BODY, TRY_BODY, CATCH_BODY, FINALLY_BODY,
+    * FOR_INIT, FOR_UPDATE, FOR_BODY):
+    *   - Only ControlStructure nodes may emit them.
+    *   - All singleton edge types must have at most one outgoing edge per node (CATCH_BODY is exempt: a TRY node may
+    *     have one CATCH_BODY edge per catch clause).
+    *   - The edge type must be compatible with the control structure type (e.g. DO_BODY only on DO nodes).
+    *   - Required edges must be present: IF/WHILE/DO need CONDITION; IF/WHILE need TRUE_BODY; DO needs DO_BODY; TRY
+    *     needs TRY_BODY.
+    */
+  private def checkControlStructureEdges(node: nodes.StoredNode): Unit = {
+    val hasControlStructureBodyEdge =
+      node._trueBodyOut.nonEmpty || node._falseBodyOut.nonEmpty || node._doBodyOut.nonEmpty ||
+        node._tryBodyOut.nonEmpty || node._catchBodyOut.nonEmpty || node._finallyBodyOut.nonEmpty ||
+        node._forInitOut.nonEmpty || node._forUpdateOut.nonEmpty || node._forBodyOut.nonEmpty
+
+    if (hasControlStructureBodyEdge && !node.isInstanceOf[nodes.ControlStructure]) {
+      registerViolation(
+        CTRL_EDGE_WRONG_SOURCE,
+        s"Node $node is not a ControlStructure but has outgoing control structure body edges"
+      )
+    }
+
+    node match {
+      case controlStructure: nodes.ControlStructure =>
+        val structureType = controlStructure.controlStructureType
+
+        List(
+          (EdgeTypes.TRUE_BODY, controlStructure._trueBodyOut.size),
+          (EdgeTypes.FALSE_BODY, controlStructure._falseBodyOut.size),
+          (EdgeTypes.DO_BODY, controlStructure._doBodyOut.size),
+          (EdgeTypes.TRY_BODY, controlStructure._tryBodyOut.size),
+          (EdgeTypes.FINALLY_BODY, controlStructure._finallyBodyOut.size),
+          (EdgeTypes.FOR_INIT, controlStructure._forInitOut.size),
+          (EdgeTypes.FOR_UPDATE, controlStructure._forUpdateOut.size),
+          (EdgeTypes.FOR_BODY, controlStructure._forBodyOut.size)
+        ).foreach { case (edgeName, count) =>
+          if (count > 1)
+            registerViolation(
+              CTRL_EDGE_MULTI_OUT,
+              s"ControlStructure '${controlStructure.code}' ($structureType) has $count outgoing $edgeName edges (expected at most 1)"
+            )
+        }
+
+        if (controlStructure._doBodyOut.nonEmpty && structureType != ControlStructureTypes.DO)
+          registerViolation(
+            CTRL_EDGE_CONTROL_STRUCTURE_TYPE_MISMATCH,
+            s"ControlStructure '${controlStructure.code}' has DO_BODY edge but type is $structureType"
+          )
+
+        if (controlStructure._tryBodyOut.nonEmpty && structureType != ControlStructureTypes.TRY)
+          registerViolation(
+            CTRL_EDGE_CONTROL_STRUCTURE_TYPE_MISMATCH,
+            s"ControlStructure '${controlStructure.code}' has TRY_BODY edge but type is $structureType"
+          )
+        if (controlStructure._catchBodyOut.nonEmpty && structureType != ControlStructureTypes.TRY)
+          registerViolation(
+            CTRL_EDGE_CONTROL_STRUCTURE_TYPE_MISMATCH,
+            s"ControlStructure '${controlStructure.code}' has CATCH_BODY edge but type is $structureType"
+          )
+        if (controlStructure._finallyBodyOut.nonEmpty && structureType != ControlStructureTypes.TRY)
+          registerViolation(
+            CTRL_EDGE_CONTROL_STRUCTURE_TYPE_MISMATCH,
+            s"ControlStructure '${controlStructure.code}' has FINALLY_BODY edge but type is $structureType"
+          )
+
+        if (controlStructure._forInitOut.nonEmpty && structureType != ControlStructureTypes.FOR)
+          registerViolation(
+            CTRL_EDGE_CONTROL_STRUCTURE_TYPE_MISMATCH,
+            s"ControlStructure '${controlStructure.code}' has FOR_INIT edge but type is $structureType"
+          )
+        if (controlStructure._forUpdateOut.nonEmpty && structureType != ControlStructureTypes.FOR)
+          registerViolation(
+            CTRL_EDGE_CONTROL_STRUCTURE_TYPE_MISMATCH,
+            s"ControlStructure '${controlStructure.code}' has FOR_UPDATE edge but type is $structureType"
+          )
+        if (controlStructure._forBodyOut.nonEmpty && structureType != ControlStructureTypes.FOR)
+          registerViolation(
+            CTRL_EDGE_CONTROL_STRUCTURE_TYPE_MISMATCH,
+            s"ControlStructure '${controlStructure.code}' has FOR_BODY edge but type is $structureType"
+          )
+
+        val trueBodyValidTypes = Set(
+          ControlStructureTypes.IF,
+          ControlStructureTypes.WHILE,
+          ControlStructureTypes.SWITCH,
+          ControlStructureTypes.FOR,
+          ControlStructureTypes.MATCH
+        )
+        if (controlStructure._trueBodyOut.nonEmpty && !trueBodyValidTypes.contains(structureType))
+          registerViolation(
+            CTRL_EDGE_CONTROL_STRUCTURE_TYPE_MISMATCH,
+            s"ControlStructure '${controlStructure.code}' has TRUE_BODY edge but type is $structureType (expected one of: ${trueBodyValidTypes
+                .mkString(", ")})"
+          )
+
+        val falseBodyValidTypes = Set(ControlStructureTypes.IF, ControlStructureTypes.WHILE)
+        if (controlStructure._falseBodyOut.nonEmpty && !falseBodyValidTypes.contains(structureType))
+          registerViolation(
+            CTRL_EDGE_CONTROL_STRUCTURE_TYPE_MISMATCH,
+            s"ControlStructure '${controlStructure.code}' has FALSE_BODY edge but type is $structureType (expected one of: ${falseBodyValidTypes
+                .mkString(", ")})"
+          )
+
+        structureType match {
+          case t @ (ControlStructureTypes.IF | ControlStructureTypes.WHILE | ControlStructureTypes.DO) =>
+            if (controlStructure._conditionOut.isEmpty)
+              registerViolation(
+                CTRL_EDGE_REQUIRED_MISSING,
+                s"$t ControlStructure '${controlStructure.code}' is missing required CONDITION edge"
+              )
+          case _ =>
+        }
+        structureType match {
+          case t @ (ControlStructureTypes.IF | ControlStructureTypes.WHILE) =>
+            if (controlStructure._trueBodyOut.isEmpty)
+              registerViolation(
+                CTRL_EDGE_REQUIRED_MISSING,
+                s"$t ControlStructure '${controlStructure.code}' is missing required TRUE_BODY edge"
+              )
+          case ControlStructureTypes.DO =>
+            if (controlStructure._doBodyOut.isEmpty)
+              registerViolation(
+                CTRL_EDGE_REQUIRED_MISSING,
+                s"DO ControlStructure '${controlStructure.code}' is missing required DO_BODY edge"
+              )
+          case ControlStructureTypes.TRY =>
+            if (controlStructure._tryBodyOut.isEmpty)
+              registerViolation(
+                CTRL_EDGE_REQUIRED_MISSING,
+                s"TRY ControlStructure '${controlStructure.code}' is missing required TRY_BODY edge"
+              )
+          case _ =>
+        }
+
+      case _ =>
+    }
+  }
+
+  /** Detect control structures using the legacy AST-order fallback in CfgCreator instead of the dedicated body edges.
+    * Mirrors the exact fallback conditions in CfgCreator: each check fires when the corresponding new edge is absent
+    * but the order-based AST child that CfgCreator would use as a fallback is present.
+    *
+    * Checks covered (matching each CfgCreator warnOnce call):
+    *   - DO: no DO_BODY edge, but astChildren.order(1) exists
+    *   - FOR: no FOR_INIT/FOR_UPDATE/FOR_BODY edge, but astChildren.order(nLocals+1/3/4) exists
+    *   - IF/WHILE/SWITCH: no TRUE_BODY or FALSE_BODY edge, but astChildren at order 2/3 exist
+    *   - TRY: no TRY_BODY/CATCH_BODY/FINALLY_BODY edge, but matching AST children exist
+    */
+  private def checkControlStructureLegacyFallback(node: nodes.StoredNode): Unit = {
+    node match {
+      case controlStructure: nodes.ControlStructure =>
+        val structureType = controlStructure.controlStructureType
+        structureType match {
+          case ControlStructureTypes.DO =>
+            if (controlStructure._doBodyOut.isEmpty && controlStructure.astChildren.order(1).nonEmpty)
+              registerViolation(
+                CTRL_EDGE_USING_LEGACY,
+                s"DO ControlStructure '${controlStructure.code}' is missing DO_BODY edge (CfgCreator will use legacy order fallback)"
+              )
+
+          case ControlStructureTypes.FOR =>
+            val numLocals = controlStructure.astChildren.count(_.isInstanceOf[nodes.Local])
+            if (controlStructure._forInitOut.isEmpty && controlStructure.astChildren.order(numLocals + 1).nonEmpty)
+              registerViolation(
+                CTRL_EDGE_USING_LEGACY,
+                s"FOR ControlStructure '${controlStructure.code}' is missing FOR_INIT edge (CfgCreator will use legacy order fallback)"
+              )
+            if (controlStructure._forUpdateOut.isEmpty && controlStructure.astChildren.order(numLocals + 3).nonEmpty)
+              registerViolation(
+                CTRL_EDGE_USING_LEGACY,
+                s"FOR ControlStructure '${controlStructure.code}' is missing FOR_UPDATE edge (CfgCreator will use legacy order fallback)"
+              )
+            if (controlStructure._forBodyOut.isEmpty && controlStructure.astChildren.order(numLocals + 4).nonEmpty)
+              registerViolation(
+                CTRL_EDGE_USING_LEGACY,
+                s"FOR ControlStructure '${controlStructure.code}' is missing FOR_BODY edge (CfgCreator will use legacy order fallback)"
+              )
+
+          case ControlStructureTypes.IF | ControlStructureTypes.WHILE | ControlStructureTypes.SWITCH =>
+            if (controlStructure._trueBodyOut.isEmpty && controlStructure.astChildren.order(2).nonEmpty)
+              registerViolation(
+                CTRL_EDGE_USING_LEGACY,
+                s"$structureType ControlStructure '${controlStructure.code}' is missing TRUE_BODY edge (CfgCreator will use legacy order fallback)"
+              )
+            if (controlStructure._falseBodyOut.isEmpty && controlStructure.astChildren.order(3).nonEmpty)
+              registerViolation(
+                CTRL_EDGE_USING_LEGACY,
+                s"$structureType ControlStructure '${controlStructure.code}' is missing FALSE_BODY edge (CfgCreator will use legacy order fallback)"
+              )
+
+          case ControlStructureTypes.TRY =>
+            // TRY_BODY: CfgCreator falls back to astChildren.order(1).where(_.astChildren)
+            if (
+              controlStructure._tryBodyOut.isEmpty && controlStructure.astChildren
+                .order(1)
+                .where(_.astChildren)
+                .nonEmpty
+            )
+              registerViolation(
+                CTRL_EDGE_USING_LEGACY,
+                s"TRY ControlStructure '${controlStructure.code}' is missing TRY_BODY edge (CfgCreator will use legacy order fallback)"
+              )
+            // CATCH_BODY: CfgCreator falls back to CATCH ControlStructure children, or astChildren.order(2)
+            val hasCatchFallback =
+              controlStructure.astChildren.isControlStructure
+                .filter(_.controlStructureType == ControlStructureTypes.CATCH)
+                .nonEmpty ||
+                controlStructure.astChildren.order(2).nonEmpty
+            if (controlStructure._catchBodyOut.isEmpty && hasCatchFallback)
+              registerViolation(
+                CTRL_EDGE_USING_LEGACY,
+                s"TRY ControlStructure '${controlStructure.code}' is missing CATCH_BODY edge (CfgCreator will use legacy order fallback)"
+              )
+            // FINALLY_BODY: CfgCreator falls back to FINALLY ControlStructure children, or astChildren.order(3)
+            val hasFinallyFallback =
+              controlStructure.astChildren.isControlStructure
+                .filter(_.controlStructureType == ControlStructureTypes.FINALLY)
+                .nonEmpty ||
+                controlStructure.astChildren.order(3).nonEmpty
+            if (controlStructure._finallyBodyOut.isEmpty && hasFinallyFallback)
+              registerViolation(
+                CTRL_EDGE_USING_LEGACY,
+                s"TRY ControlStructure '${controlStructure.code}' is missing FINALLY_BODY edge (CfgCreator will use legacy order fallback)"
+              )
+
+          case _ =>
+        }
+      case _ =>
+    }
+  }
+
   /** Log compressed violations and optionally throw on error. */
   private def reportViolations(): Unit = {
     val violations = getViolationsCompressedWithKey
@@ -266,6 +503,8 @@ class PostFrontendValidator(cpg: Cpg, fatalValidationLevel: ValidationLevel) ext
       checkAstIn(node)
       checkArgumentIn(node)
       checkDuplicateOrder(node)
+      checkControlStructureEdges(node)
+      checkControlStructureLegacyFallback(node)
     }
     reportViolations()
   }
