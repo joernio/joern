@@ -518,9 +518,9 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     val ifNode       = controlStructureNode(ifExpr, ControlStructureTypes.IF, code(ifExpr))
     val conditionAst = visitExpr(ifExpr.expr)
     val thenAst      = visitBlockExpr(ifExpr.thenBranch)
-    val elseAst      = ifExpr.elseBranch.map(visitElseBranch).getOrElse(Ast())
+    val elseAst      = ifExpr.elseBranch.map(visitElseBranch)
 
-    controlStructureAst(ifNode, Some(conditionAst), Seq(thenAst, elseAst))
+    ifThenElseAst(ifNode, Some(conditionAst), thenAst, elseAst)
   }
 
   private def visitElseBranch(elseBranch: IfExpr | BlockExpr): Ast = {
@@ -563,7 +563,7 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     val conditionAst = visitExpr(whileExpr.expr)
     val bodyAst      = visitBlockExpr(whileExpr.blockExpr)
 
-    controlStructureAst(whileNode, Some(conditionAst), Seq(bodyAst))
+    whileBodyAst(whileNode, conditionAst, bodyAst)
   }
 
   // LoopExpr =
@@ -574,7 +574,7 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     val conditionAst = Ast(literalNode(loopExpr.loopKwToken, "true", "bool"))
     val bodyAst      = visitBlockExpr(loopExpr.blockExpr)
 
-    controlStructureAst(loopNode, Some(conditionAst), Seq(bodyAst))
+    whileBodyAst(loopNode, conditionAst, bodyAst)
   }
 
   // ForExpr =
