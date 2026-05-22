@@ -7,7 +7,14 @@ import io.joern.rust2cpg.parser.RustNodeSyntax
 import io.joern.rust2cpg.parser.RustNodeSyntax.RustNode
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewCall,
+  NewControlStructure,
+  NewMethod,
+  NewNamespaceBlock,
+  NewNode,
+  NewTypeDecl
+}
 import io.shiftleft.codepropertygraph.generated.{NodeTypes, Operators, PropertyDefaults, PropertyNames}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
@@ -157,6 +164,14 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     case Some(_: RustNodeSyntax.BangToken)  => Some(Operators.logicalNot)
     case Some(_: RustNodeSyntax.StarToken)  => Some(Operators.indirection)
     case _                                  => None
+  }
+
+  protected def whileBodyAst(whileNode: NewControlStructure, conditionAst: Ast, bodyAst: Ast): Ast = {
+    val ast = controlStructureAst(whileNode, Some(conditionAst), Seq(bodyAst))
+    bodyAst.root match {
+      case Some(bodyRoot) => ast.withTrueBodyEdge(whileNode, bodyRoot)
+      case None           => ast
+    }
   }
 
 }
