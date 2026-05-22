@@ -94,8 +94,6 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         val ifNode  = controlStructureNode(whereClause.condition, ControlStructureTypes.IF, code(whereClause.condition))
         val testAst = astForNode(whereClause)
         val consequentAst = astForNode(node.body)
-        setOrderExplicitly(testAst, 1)
-        setOrderExplicitly(consequentAst, 2)
         ifThenElseAst(ifNode, Option(testAst), consequentAst, None)
       case None => astForNode(node.body)
     }
@@ -548,7 +546,6 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val conditionAst = astForNode(node.conditions)
     val thenAst      = Ast()
     val elseAst      = astForNode(node.body)
-    setOrderExplicitly(elseAst, 3)
     ifThenElseAst(ifNode, Option(conditionAst), thenAst, Option(elseAst))
   }
 

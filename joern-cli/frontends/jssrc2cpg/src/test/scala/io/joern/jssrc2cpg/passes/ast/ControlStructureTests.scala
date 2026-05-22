@@ -94,18 +94,20 @@ class ControlStructureTests extends JsSrc2CpgSuite {
     inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.FOR).l) {
       case List(forNode: ControlStructure) =>
         forNode.forInitOut.code.l shouldBe List("var i = 0")
+        forNode.condition.code.l shouldBe List("i < c")
         forNode.forUpdateOut.code.l shouldBe List("i++")
         forNode.forBodyOut.astChildren.code.l shouldBe List("sink(i)")
     }
   }
 
-  "`for-loop` statements without init, test or update emit no FOR_INIT/FOR_UPDATE edges" in {
+  "`for-loop` statements without init, test or update emit empty block FOR_INIT/FOR_UPDATE edges" in {
     val cpg = code("for(;;){ sink(); }")
 
     inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.FOR).l) {
       case List(forNode: ControlStructure) =>
-        forNode.forInitOut.l shouldBe List.empty
-        forNode.forUpdateOut.l shouldBe List.empty
+        forNode.forInitOut.isBlock.astChildren.l shouldBe List.empty
+        forNode.condition.isBlock.astChildren.l shouldBe List.empty
+        forNode.forUpdateOut.isBlock.astChildren.l shouldBe List.empty
         forNode.forBodyOut.astChildren.code.l shouldBe List("sink()")
     }
   }
