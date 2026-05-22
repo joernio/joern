@@ -1,5 +1,4 @@
-load("@rules_scala//scala:scala.bzl", "scala_library")
-load("@rules_scala//scala:scala.bzl", "scala_test")
+load("//bazel:scala.bzl", "scala_library", "scala_test")
 
 scala_library(
   name = "x2cpg",

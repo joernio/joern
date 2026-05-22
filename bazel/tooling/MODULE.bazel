@@ -1,0 +1,4 @@
+module(name = "bazel_tooling")
+
+bazel_dep(name = "rules_scala", version = "7.2.4")
+bazel_dep(name = "rules_java", version = "9.6.1")

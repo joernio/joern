@@ -1,6 +1,5 @@
-load("@rules_scala//scala:scala.bzl", "scala_library")
-load("@rules_scala//scala:scala.bzl", "scala_test")
-load("@rules_java//java:defs.bzl", "java_binary")
+load("//bazel:scala.bzl", "scala_library", "scala_test")
+load("//bazel:java.bzl", "java_binary")
 
 java_binary(
   name = "antlr_tool",

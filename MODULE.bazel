@@ -59,4 +59,4 @@ maven.install(
 )
 use_repo(maven, "joern_maven")
 
-bazel_dep(name = "rules_java", version = "9.6.1")
+bazel_dep(name = "bazel_tooling", version = "0.1.0")

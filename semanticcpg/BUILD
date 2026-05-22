@@ -1,4 +1,4 @@
-load("@rules_scala//scala:scala.bzl", "scala_library")
+load("//bazel:scala.bzl", "scala_library")
 
 scala_library(
   name = "semanticcpg",
