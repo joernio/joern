@@ -134,10 +134,14 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def astForWhileStatement(whileStmt: BabelNodeInfo): Ast = {
-    val whileNode = controlStructureNode(whileStmt, ControlStructureTypes.WHILE, code(whileStmt))
-    val testAst   = astForNodeWithFunctionReference(whileStmt.json("test"))
-    val bodyAst   = astForNodeWithFunctionReference(whileStmt.json("body"))
-    controlStructureAst(whileNode, Option(testAst), Seq(bodyAst))
+    val whileNode       = controlStructureNode(whileStmt, ControlStructureTypes.WHILE, code(whileStmt))
+    val testAst         = astForNodeWithFunctionReference(whileStmt.json("test"))
+    val bodyAst         = astForNodeWithFunctionReference(whileStmt.json("body"))
+    val astWithChildren = controlStructureAst(whileNode, Option(testAst), Seq(bodyAst))
+    bodyAst.root match {
+      case Some(bodyRoot) => astWithChildren.withTrueBodyEdge(whileNode, bodyRoot)
+      case None           => astWithChildren
+    }
   }
 
   protected def astForForStatement(forStmt: BabelNodeInfo): Ast = {
@@ -243,10 +247,16 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.popScope()
     localAstParentStack.pop()
 
-    Ast(switchNode)
+    val switchBlockAst = blockAst(blockNode_, casesAsts.toList)
+    val astWithChildren = Ast(switchNode)
       .withChild(switchExpressionAst)
       .withConditionEdge(switchNode, switchExpressionAst.nodes.head)
-      .withChild(blockAst(blockNode_, casesAsts.toList))
+      .withChild(switchBlockAst)
+
+    switchBlockAst.root match {
+      case Some(blockRoot) => astWithChildren.withTrueBodyEdge(switchNode, blockRoot)
+      case None            => astWithChildren
+    }
   }
 
   /** De-sugaring from:
@@ -393,8 +403,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.popScope()
     localAstParentStack.pop()
 
+    val whileLoopAstWithBody = whileLoopBlockAst.root match {
+      case Some(blockRoot) => whileLoopAst.withChild(whileLoopBlockAst).withTrueBodyEdge(whileLoopNode, blockRoot)
+      case None            => whileLoopAst.withChild(whileLoopBlockAst)
+    }
+
     val blockChildren =
-      List(iteratorAssignmentAst, Ast(resultNode), Ast(loopVariableNode), whileLoopAst.withChild(whileLoopBlockAst))
+      List(iteratorAssignmentAst, Ast(resultNode), Ast(loopVariableNode), whileLoopAstWithBody)
     blockAst(blockNode_, blockChildren)
   }
 
@@ -534,7 +549,12 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.popScope()
     localAstParentStack.pop()
 
-    val blockChildren = List(iteratorAssignmentAst, Ast(resultNode), whileLoopAst.withChild(whileLoopBlockAst))
+    val whileLoopAstWithBody = whileLoopBlockAst.root match {
+      case Some(blockRoot) => whileLoopAst.withChild(whileLoopBlockAst).withTrueBodyEdge(whileLoopNode, blockRoot)
+      case None            => whileLoopAst.withChild(whileLoopBlockAst)
+    }
+
+    val blockChildren = List(iteratorAssignmentAst, Ast(resultNode), whileLoopAstWithBody)
     blockAst(blockNode_, blockChildren)
   }
 
@@ -682,10 +702,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.popScope()
     localAstParentStack.pop()
 
+    val whileLoopAstWithBody = whileLoopBlockAst.root match {
+      case Some(blockRoot) => whileLoopAst.withChild(whileLoopBlockAst).withTrueBodyEdge(whileLoopNode, blockRoot)
+      case None            => whileLoopAst.withChild(whileLoopBlockAst)
+    }
+
     val blockNodeChildren =
-      List(iteratorAssignmentAst, Ast(resultNode)) ++ loopVariableNodes.map(Ast(_)) :+ whileLoopAst.withChild(
-        whileLoopBlockAst
-      )
+      List(iteratorAssignmentAst, Ast(resultNode)) ++ loopVariableNodes.map(Ast(_)) :+ whileLoopAstWithBody
     blockAst(blockNode_, blockNodeChildren)
   }
 
@@ -832,10 +855,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.popScope()
     localAstParentStack.pop()
 
+    val whileLoopAstWithBody = whileLoopBlockAst.root match {
+      case Some(blockRoot) => whileLoopAst.withChild(whileLoopBlockAst).withTrueBodyEdge(whileLoopNode, blockRoot)
+      case None            => whileLoopAst.withChild(whileLoopBlockAst)
+    }
+
     val blockNodeChildren =
-      List(iteratorAssignmentAst, Ast(resultNode)) ++ loopVariableNodes.map(Ast(_)) :+ whileLoopAst.withChild(
-        whileLoopBlockAst
-      )
+      List(iteratorAssignmentAst, Ast(resultNode)) ++ loopVariableNodes.map(Ast(_)) :+ whileLoopAstWithBody
     blockAst(blockNode_, blockNodeChildren)
   }
 
