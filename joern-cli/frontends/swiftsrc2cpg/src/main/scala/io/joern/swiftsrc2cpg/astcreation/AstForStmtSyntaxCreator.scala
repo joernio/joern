@@ -96,10 +96,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         val consequentAst = astForNode(node.body)
         setOrderExplicitly(testAst, 1)
         setOrderExplicitly(consequentAst, 2)
-        Ast(ifNode)
-          .withChild(testAst)
-          .withConditionEdge(ifNode, testAst.nodes.head)
-          .withChild(consequentAst)
+        ifThenElseAst(ifNode, Option(testAst), consequentAst, None)
       case None => astForNode(node.body)
     }
   }
@@ -552,7 +549,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val thenAst      = Ast()
     val elseAst      = astForNode(node.body)
     setOrderExplicitly(elseAst, 3)
-    controlStructureAst(ifNode, Option(conditionAst), Seq(thenAst, elseAst))
+    ifThenElseAst(ifNode, Option(conditionAst), thenAst, Option(elseAst))
   }
 
   private def astForLabeledStmtSyntax(node: LabeledStmtSyntax): Ast = {
@@ -576,7 +573,11 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val bodyAst      = astForNode(node.body)
     setOrderExplicitly(conditionAst, 1)
     setOrderExplicitly(bodyAst, 2)
-    controlStructureAst(doNode, Option(conditionAst), Seq(bodyAst), placeConditionLast = true)
+    val astWithChildren = controlStructureAst(doNode, Option(conditionAst), Seq(bodyAst), placeConditionLast = true)
+    bodyAst.root match {
+      case Some(bodyRoot) => astWithChildren.withDoBodyEdge(doNode, bodyRoot)
+      case None           => astWithChildren
+    }
   }
 
   private def astForReturnStmtSyntax(node: ReturnStmtSyntax): Ast = {
