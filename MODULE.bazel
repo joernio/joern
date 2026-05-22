@@ -18,8 +18,8 @@ scala_deps = use_extension(
 scala_deps.scala()
 scala_deps.scalatest()
 
-bazel_dep(name = "scala-toolchain", version = "0.1.0")
-register_toolchains("@scala-toolchain//:plus_one_toolchain")
+bazel_dep(name = "bazel_tooling", version = "0.1.0")
+register_toolchains("@bazel_tooling//scala_toolchain:plus_one_toolchain")
 
 bazel_dep(name = "rules_jvm_external", version = "7.0")
 maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
@@ -59,4 +59,3 @@ maven.install(
 )
 use_repo(maven, "joern_maven")
 
-bazel_dep(name = "bazel_tooling", version = "0.1.0")
