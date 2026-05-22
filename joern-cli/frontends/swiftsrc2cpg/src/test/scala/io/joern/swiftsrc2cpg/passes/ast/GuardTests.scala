@@ -24,7 +24,7 @@ class GuardTests extends SwiftSrc2CpgSuite {
       guardIf.code shouldBe "guard {} else {}"
       guardIf.controlStructureType shouldBe ControlStructureTypes.IF
       guardIf.condition.code.l shouldBe List("<lambda>0")
-      guardIf.whenTrue.code.l shouldBe empty
+      guardIf.whenTrue.astChildren.code.l shouldBe empty
       methodBlock.astChildren.isControlStructure.whenFalse.astChildren.code.l shouldBe empty
     }
 

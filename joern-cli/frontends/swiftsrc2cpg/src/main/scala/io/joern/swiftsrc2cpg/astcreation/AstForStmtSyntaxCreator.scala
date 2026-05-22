@@ -91,9 +91,17 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForForStmtBody(node: ForStmtSyntax): Ast = {
     node.whereClause match {
       case Some(whereClause: WhereClauseSyntax) =>
-        val ifNode  = controlStructureNode(whereClause.condition, ControlStructureTypes.IF, code(whereClause.condition))
-        val testAst = astForNode(whereClause)
-        val consequentAst = astForNode(node.body)
+        val ifNode = controlStructureNode(whereClause.condition, ControlStructureTypes.IF, code(whereClause.condition))
+        val testAstRaw = astForNode(whereClause)
+        val testAst = testAstRaw.root match {
+          case Some(_) => testAstRaw
+          case None    => blockAst(blockNode(whereClause), List.empty)
+        }
+        val consequentAstRaw = astForNode(node.body)
+        val consequentAst = consequentAstRaw.root match {
+          case Some(_) => consequentAstRaw
+          case None    => blockAst(blockNode(node.body), List.empty)
+        }
         ifThenElseAst(ifNode, Option(testAst), consequentAst, None)
       case None => astForNode(node.body)
     }
@@ -240,8 +248,13 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     scope.popScope()
     localAstParentStack.pop()
 
+    val whileLoopAstWithBody = whileLoopBlockAst.root match {
+      case Some(blockRoot) => whileLoopAst.withChild(whileLoopBlockAst).withTrueBodyEdge(whileLoopNode, blockRoot)
+      case None            => whileLoopAst.withChild(whileLoopBlockAst)
+    }
+
     val blockChildren =
-      List(iteratorAssignmentAst, Ast(resultNode), Ast(loopVariableNode), whileLoopAst.withChild(whileLoopBlockAst))
+      List(iteratorAssignmentAst, Ast(resultNode), Ast(loopVariableNode), whileLoopAstWithBody)
     blockAst(blockNode_, blockChildren)
   }
 
@@ -372,7 +385,12 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     scope.popScope()
     localAstParentStack.pop()
 
-    val blockChildren = List(iteratorAssignmentAst, Ast(resultNode), whileLoopAst.withChild(whileLoopBlockAst))
+    val whileLoopAstWithBody = whileLoopBlockAst.root match {
+      case Some(blockRoot) => whileLoopAst.withChild(whileLoopBlockAst).withTrueBodyEdge(whileLoopNode, blockRoot)
+      case None            => whileLoopAst.withChild(whileLoopBlockAst)
+    }
+
+    val blockChildren = List(iteratorAssignmentAst, Ast(resultNode), whileLoopAstWithBody)
     blockAst(blockNode_, blockChildren)
   }
 
@@ -515,10 +533,13 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     scope.popScope()
     localAstParentStack.pop()
 
+    val whileLoopAstWithBody = whileLoopBlockAst.root match {
+      case Some(blockRoot) => whileLoopAst.withChild(whileLoopBlockAst).withTrueBodyEdge(whileLoopNode, blockRoot)
+      case None            => whileLoopAst.withChild(whileLoopBlockAst)
+    }
+
     val blockNodeChildren =
-      List(iteratorAssignmentAst, Ast(resultNode)) ++ loopVariableNodes.map(Ast(_)) :+ whileLoopAst.withChild(
-        whileLoopBlockAst
-      )
+      List(iteratorAssignmentAst, Ast(resultNode)) ++ loopVariableNodes.map(Ast(_)) :+ whileLoopAstWithBody
     blockAst(blockNode_, blockNodeChildren)
   }
 
@@ -544,7 +565,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val code         = this.code(node)
     val ifNode       = controlStructureNode(node, ControlStructureTypes.IF, code)
     val conditionAst = astForNode(node.conditions)
-    val thenAst      = Ast()
+    val thenAst      = blockAst(blockNode(node), List.empty)
     val elseAst      = astForNode(node.body)
     ifThenElseAst(ifNode, Option(conditionAst), thenAst, Option(elseAst))
   }
@@ -604,18 +625,15 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForWhileStmtSyntax(node: WhileStmtSyntax): Ast = {
-    val code         = this.code(node)
-    val conditionAst = astForNode(node.conditions)
-    val bodyAst      = astForNode(node.body)
-    setOrderExplicitly(conditionAst, 1)
-    setOrderExplicitly(bodyAst, 2)
-    whileAst(
-      Option(conditionAst),
-      Seq(bodyAst),
-      code = Option(code),
-      lineNumber = line(node),
-      columnNumber = column(node)
-    )
+    val code            = this.code(node)
+    val whileNode       = controlStructureNode(node, ControlStructureTypes.WHILE, code)
+    val conditionAst    = astForNode(node.conditions)
+    val bodyAst         = astForNode(node.body)
+    val astWithChildren = controlStructureAst(whileNode, Option(conditionAst), Seq(bodyAst))
+    bodyAst.root match {
+      case Some(bodyRoot) => astWithChildren.withTrueBodyEdge(whileNode, bodyRoot)
+      case None           => astWithChildren
+    }
   }
 
   private def astForYieldStmtSyntax(node: YieldStmtSyntax): Ast = {

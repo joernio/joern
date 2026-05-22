@@ -152,12 +152,12 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       val conditionAst = astForNode(guardStmt.conditions)
 
       val thenAst = astsForBlockElements(elementsAfterGuard) ++ deferElementsAstsOrdered match {
-        case Nil => Ast()
+        case Nil =>
+          blockAst(blockNode(guardStmt), List.empty)
         case blockElement :: Nil =>
-          setOrderExplicitly(blockElement, 2)
           blockElement
         case blockChildren =>
-          val block = blockNode(elementsAfterGuard.head).order(2)
+          val block = blockNode(elementsAfterGuard.head)
           blockAst(block, blockChildren)
       }
       val elseAst = astForNode(guardStmt.body)

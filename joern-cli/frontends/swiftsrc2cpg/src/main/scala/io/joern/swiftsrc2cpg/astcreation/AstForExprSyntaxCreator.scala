@@ -498,11 +498,19 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForIfExprSyntax(node: IfExprSyntax): Ast = {
-    val code         = this.code(node)
-    val ifNode       = controlStructureNode(node, ControlStructureTypes.IF, code)
-    val conditionAst = astForNode(node.conditions)
-    val thenAst      = astForNode(node.body)
-    val elseAst      = node.elseBody.map(astForNode)
+    val code            = this.code(node)
+    val ifNode          = controlStructureNode(node, ControlStructureTypes.IF, code)
+    val conditionAstRaw = astForNode(node.conditions)
+    val conditionAst = conditionAstRaw.root match {
+      case Some(_) => conditionAstRaw
+      case None    => blockAst(blockNode(node.conditions), List.empty)
+    }
+    val bodyAst = astForNode(node.body)
+    val thenAst = bodyAst.root match {
+      case Some(_) => bodyAst
+      case None    => blockAst(blockNode(node.body), List.empty)
+    }
+    val elseAst = node.elseBody.map(astForNode)
     ifThenElseAst(ifNode, Option(conditionAst), thenAst, elseAst)
   }
 
@@ -1060,10 +1068,16 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       scope.popScope()
       localAstParentStack.pop()
 
-      val switchAst = Ast(switchNode)
+      val switchBlockAst = blockAst(switchBlockNode, casesAsts)
+      val astWithChildren = Ast(switchNode)
         .withChild(condAst)
         .withConditionEdge(switchNode, condIdentNode)
-        .withChild(blockAst(switchBlockNode, casesAsts))
+        .withChild(switchBlockAst)
+
+      val switchAst = switchBlockAst.root match {
+        case Some(blockRoot) => astWithChildren.withTrueBodyEdge(switchNode, blockRoot)
+        case None            => astWithChildren
+      }
 
       scope.popScope()
       localAstParentStack.pop()
@@ -1085,10 +1099,16 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       scope.popScope()
       localAstParentStack.pop()
 
-      Ast(switchNode)
+      val switchBlockAst = blockAst(blockNode_, casesAsts)
+      val astWithChildren = Ast(switchNode)
         .withChild(switchExpressionAst)
         .withConditionEdge(switchNode, switchExpressionAst.nodes.head)
-        .withChild(blockAst(blockNode_, casesAsts))
+        .withChild(switchBlockAst)
+
+      switchBlockAst.root match {
+        case Some(blockRoot) => astWithChildren.withTrueBodyEdge(switchNode, blockRoot)
+        case None            => astWithChildren
+      }
     }
   }
 
