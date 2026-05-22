@@ -259,9 +259,14 @@ trait AstForStatementsCreator { this: AstCreator =>
       case _ =>
         Seq.empty
     }
-    val conditionAst = astForConditionExpression(switchStmt.getControllerExpression)
-    val stmtAsts     = nullSafeAst(switchStmt.getBody)
-    initAsts :+ controlStructureAst(switchNode, Option(conditionAst), stmtAsts)
+    val conditionAst    = astForConditionExpression(switchStmt.getControllerExpression)
+    val stmtAsts        = nullSafeAst(switchStmt.getBody)
+    val astWithChildren = controlStructureAst(switchNode, Option(conditionAst), stmtAsts)
+    val astWithEdge = stmtAsts.headOption.flatMap(_.root) match {
+      case Some(bodyRoot) => astWithChildren.withTrueBodyEdge(switchNode, bodyRoot)
+      case None           => astWithChildren
+    }
+    initAsts :+ astWithEdge
   }
 
   private def astsForCaseStatement(caseStmt: IASTCaseStatement): Seq[Ast] = {
@@ -509,22 +514,26 @@ trait AstForStatementsCreator { this: AstCreator =>
     // end surrounding block:
     scope.popScope()
 
+    val whileLoopAstWithBody = whileLoopBlockAst.root match {
+      case Some(blockRoot) => whileLoopAst.withChild(whileLoopBlockAst).withTrueBodyEdge(whileLoopNode, blockRoot)
+      case None            => whileLoopAst.withChild(whileLoopBlockAst)
+    }
+
     val blockChildren =
-      List(iteratorAssignmentAst, Ast(loopVariableLocalNode), whileLoopAst.withChild(whileLoopBlockAst))
+      List(iteratorAssignmentAst, Ast(loopVariableLocalNode), whileLoopAstWithBody)
     blockAst(blockNode, blockChildren)
   }
 
   private def astForWhile(whileStmt: IASTWhileStatement): Ast = {
     val code       = s"while (${nullSafeCode(whileStmt.getCondition)})"
+    val whileNode  = controlStructureNode(whileStmt, ControlStructureTypes.WHILE, code)
     val compareAst = wrapInNullComparison(whileStmt.getCondition, astForConditionExpression(whileStmt.getCondition))
     val bodyAst    = nullSafeAst(whileStmt.getBody)
-    whileAst(
-      Option(compareAst),
-      bodyAst,
-      code = Option(code),
-      lineNumber = line(whileStmt),
-      columnNumber = column(whileStmt)
-    )
+    val astWithChildren = controlStructureAst(whileNode, Option(compareAst), bodyAst)
+    bodyAst.headOption.flatMap(_.root) match {
+      case Some(bodyRoot) => astWithChildren.withTrueBodyEdge(whileNode, bodyRoot)
+      case None           => astWithChildren
+    }
   }
 
   private def wrapInNullComparison(node: IASTNode, conditionAst: Ast): Ast = {
