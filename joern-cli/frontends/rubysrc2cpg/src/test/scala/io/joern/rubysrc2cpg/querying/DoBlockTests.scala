@@ -419,7 +419,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     inside(cpg.method.isLambda.body.astChildren.isCall.name(Operators.assignment).l) {
-      case groupedParam :: countAssignment :: _ :: Nil =>
+      case groupedParam :: countAssignment :: Nil =>
         inside(groupedParam.argument.l) {
           case (labelIdAssign: Call) :: (dateAssign: Call) :: (tmp0Splat: Call) :: Nil =>
             inside(labelIdAssign.argument.l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
