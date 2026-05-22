@@ -1007,8 +1007,6 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
                 val testAst = callAst(whereClauseCallNode, argAsts)
                 val consequentAst =
                   Ast(controlStructureNode(whereClause.condition, ControlStructureTypes.CONTINUE, "continue"))
-                setOrderExplicitly(testAst, 1)
-                setOrderExplicitly(consequentAst, 2)
                 ifThenElseAst(ifNode, Option(testAst), consequentAst, None)
             }
             (childrenTestAsts, childrenFlowAsts)
