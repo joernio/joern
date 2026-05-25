@@ -5,7 +5,7 @@ java_binary(
   name = "antlr_tool",
   main_class = "org.antlr.v4.Tool",
   runtime_deps = [
-    "@joern_maven//:org_antlr_antlr4",
+    "@maven//:org_antlr_antlr4",
   ],
 )
 
@@ -30,9 +30,9 @@ scala_library(
     "//:io_shiftleft_codepropertygraph_with_deps",
     "//semanticcpg",
     "//joern-cli/frontends/x2cpg",
-    "@joern_maven//:org_antlr_antlr4_runtime",
+    "@maven//:org_antlr_antlr4_runtime",
     "//:com_lihaoyi_upickle_with_deps",
-    "@joern_maven//:org_scala_lang_modules_scala_parallel_collections_3",
+    "@maven//:org_scala_lang_modules_scala_parallel_collections_3",
   ],
   visibility = [ "//visibility:public" ],
 )

@@ -8,12 +8,12 @@ scala_library(
   deps = [ 
     "//semanticcpg",
     "//:io_shiftleft_codepropertygraph_with_deps",
-    "@joern_maven//:com_lihaoyi_ujson_3",
-    "@joern_maven//:com_lihaoyi_geny_3",
-    "@joern_maven//:com_typesafe_config",
-    "@joern_maven//:com_michaelpollmeier_versionsort",
-    "@joern_maven//:org_gradle_gradle_tooling_api",
-    "@joern_maven//:org_apache_commons_commons_exec",
+    "@maven//:com_lihaoyi_ujson_3",
+    "@maven//:com_lihaoyi_geny_3",
+    "@maven//:com_typesafe_config",
+    "@maven//:com_michaelpollmeier_versionsort",
+    "@maven//:org_gradle_gradle_tooling_api",
+    "@maven//:org_apache_commons_commons_exec",
   ],
   visibility = [ "//visibility:public" ],
 )
@@ -26,8 +26,8 @@ scala_test(
   deps = [ 
     ":x2cpg",
     "//:io_shiftleft_codepropertygraph_with_deps",
-    "@joern_maven//:org_apache_commons_commons_lang3",
-    "@joern_maven//:com_google_protobuf_protobuf_java",
+    "@maven//:org_apache_commons_commons_lang3",
+    "@maven//:com_google_protobuf_protobuf_java",
   ],
   # TODO tests should not depend on main resources
   data = glob(["src/test/resources/**/*", "src/main/resources/**/*"]),

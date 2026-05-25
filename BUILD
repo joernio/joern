@@ -5,9 +5,9 @@ scala_library(
   deps = [
   ],
   exports = [
-    "@joern_maven//:io_shiftleft_codepropertygraph_3",
-    "@joern_maven//:io_joern_flatgraph_core_3",
-    "@joern_maven//:io_joern_flatgraph_help_3",
+    "@maven//:io_shiftleft_codepropertygraph_3",
+    "@maven//:io_joern_flatgraph_core_3",
+    "@maven//:io_joern_flatgraph_help_3",
   ],
   visibility = [ "//visibility:public" ],
 )
@@ -17,10 +17,10 @@ scala_library(
   deps = [
   ],
   exports = [
-    "@joern_maven//:com_lihaoyi_upickle_3",
-    "@joern_maven//:com_lihaoyi_ujson_3",
-    "@joern_maven//:com_lihaoyi_upickle_core_3",
-    "@joern_maven//:com_lihaoyi_geny_3",
+    "@maven//:com_lihaoyi_upickle_3",
+    "@maven//:com_lihaoyi_ujson_3",
+    "@maven//:com_lihaoyi_upickle_core_3",
+    "@maven//:com_lihaoyi_geny_3",
   ],
   visibility = [ "//visibility:public" ],
 )

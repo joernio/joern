@@ -5,7 +5,7 @@ java_binary(
   name = "java_cc_tool",
   main_class = "org.javacc.parser.Main",
   runtime_deps = [
-    "@joern_maven//:net_java_dev_javacc_javacc",
+    "@maven//:net_java_dev_javacc_javacc",
   ],
 )
 
@@ -31,7 +31,7 @@ scala_library(
   deps = [ 
     "//:io_shiftleft_codepropertygraph_with_deps",
     "//joern-cli/frontends/x2cpg",
-    "@joern_maven//:com_google_protobuf_protobuf_java",
+    "@maven//:com_google_protobuf_protobuf_java",
   ],
   visibility = [ "//visibility:public" ],
 )
@@ -45,7 +45,7 @@ scala_test(
     "//semanticcpg",
     "//dataflowengineoss:tests",
     "//joern-cli/frontends/x2cpg:tests",
-    "@joern_maven//:org_scala_lang_modules_scala_parallel_collections_3",
+    "@maven//:org_scala_lang_modules_scala_parallel_collections_3",
   ],
   runtime_deps = [
   ],

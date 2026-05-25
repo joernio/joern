@@ -24,7 +24,7 @@ register_toolchains("@bazel_tooling//scala_toolchain:plus_one_toolchain")
 bazel_dep(name = "rules_jvm_external", version = "7.0")
 maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
 maven.install(
-    name = "joern_maven",
+    name = "maven",
     artifacts = [
       "io.shiftleft:codepropertygraph_3:1.7.65",
       "org.slf4j:slf4j-api:2.0.17",
@@ -57,5 +57,5 @@ maven.install(
     ],
     lock_file = "//:maven_install.json",
 )
-use_repo(maven, "joern_maven")
+use_repo(maven, "maven")
 
