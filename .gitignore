@@ -99,3 +99,4 @@ flake.lock
 # Bazel      #
 ##############
 user.bazelrc
+bazel-*
