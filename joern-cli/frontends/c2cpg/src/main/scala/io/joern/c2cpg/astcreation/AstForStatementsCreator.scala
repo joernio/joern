@@ -259,14 +259,9 @@ trait AstForStatementsCreator { this: AstCreator =>
       case _ =>
         Seq.empty
     }
-    val conditionAst    = astForConditionExpression(switchStmt.getControllerExpression)
-    val stmtAsts        = nullSafeAst(switchStmt.getBody)
-    val astWithChildren = controlStructureAst(switchNode, Option(conditionAst), stmtAsts)
-    val astWithEdge = stmtAsts.headOption.flatMap(_.root) match {
-      case Some(bodyRoot) => astWithChildren.withTrueBodyEdge(switchNode, bodyRoot)
-      case None           => astWithChildren
-    }
-    initAsts :+ astWithEdge
+    val conditionAst = astForConditionExpression(switchStmt.getControllerExpression)
+    val stmtAsts     = nullSafeAst(switchStmt.getBody)
+    initAsts :+ switchAst(switchNode, conditionAst, stmtAsts)
   }
 
   private def astsForCaseStatement(caseStmt: IASTCaseStatement): Seq[Ast] = {
@@ -526,14 +521,15 @@ trait AstForStatementsCreator { this: AstCreator =>
 
   private def astForWhile(whileStmt: IASTWhileStatement): Ast = {
     val code       = s"while (${nullSafeCode(whileStmt.getCondition)})"
-    val whileNode  = controlStructureNode(whileStmt, ControlStructureTypes.WHILE, code)
     val compareAst = wrapInNullComparison(whileStmt.getCondition, astForConditionExpression(whileStmt.getCondition))
     val bodyAst    = nullSafeAst(whileStmt.getBody)
-    val astWithChildren = controlStructureAst(whileNode, Option(compareAst), bodyAst)
-    bodyAst.headOption.flatMap(_.root) match {
-      case Some(bodyRoot) => astWithChildren.withTrueBodyEdge(whileNode, bodyRoot)
-      case None           => astWithChildren
-    }
+    whileAst(
+      Option(compareAst),
+      bodyAst,
+      code = Option(code),
+      lineNumber = line(whileStmt),
+      columnNumber = column(whileStmt)
+    )
   }
 
   private def wrapInNullComparison(node: IASTNode, conditionAst: Ast): Ast = {
