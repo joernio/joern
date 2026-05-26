@@ -285,12 +285,21 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     * calculated.
     */
   protected def cfgForGotoStatement(node: ControlStructure): Cfg = {
-    node.astChildren.find(_.order == 1) match {
-      case Some(jumpLabel) =>
-        val labelName = jumpLabel.asInstanceOf[JumpLabel].name
-        Cfg(entryNode = Option(node), jumpsToLabel = List((node, labelName)))
-      case None =>
-        // Support for old format where the label name is parsed from the code field.
+    val jumpLabel = Iterator(node)
+      .coalesce(
+        _._jumpArgumentOut.cast[AstNode],
+        { node =>
+          CfgCreator.warnOnce("Using order fallback for goto statement jump argument")
+          node.astChildren.order(1)
+        }
+      )
+      .headOption
+
+    jumpLabel match {
+      case Some(jumpLabelNode: JumpLabel) =>
+        Cfg(entryNode = Option(node), jumpsToLabel = List((node, jumpLabelNode.name)))
+      case _ =>
+        // Legacy fallback: label name parsed from the code field (e.g. "goto label;")
         val target = node.code.split(" ").lastOption.map(x => x.slice(0, x.length - 1))
         target.map(t => Cfg(entryNode = Some(node), jumpsToLabel = List((node, t)))).getOrElse(Cfg.empty)
     }
