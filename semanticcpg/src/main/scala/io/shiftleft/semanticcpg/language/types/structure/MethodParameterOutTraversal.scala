@@ -13,17 +13,23 @@ class MethodParameterOutTraversal(val traversal: Iterator[MethodParameterOut]) e
 
   /* method parameter indexes are  based, i.e. first parameter has index  (that's how java2cpg generates it) */
   def index(num: Int): Iterator[MethodParameterOut] =
-    traversal.filter { _.index == num }
+    traversal.filter(_.index.contains(num))
+
+  def index(num: Option[Int]): Iterator[MethodParameterOut] =
+    num.fold(traversal.filter(_.index.isEmpty))(index)
+
+  def indexIfPresent(num: Option[Int]): Iterator[MethodParameterOut] =
+    num.fold(Iterator.empty[MethodParameterOut])(index)
 
   /* get all parameters from (and including)
    * method parameter indexes are  based, i.e. first parameter has index  (that's how java2cpg generates it) */
   def indexFrom(num: Int): Iterator[MethodParameterOut] =
-    traversal.filter(_.index >= num)
+    traversal.filter(_.index.exists(_ >= num))
 
   /* get all parameters up to (and including)
    * method parameter indexes are  based, i.e. first parameter has index  (that's how java2cpg generates it) */
   def indexTo(num: Int): Iterator[MethodParameterOut] =
-    traversal.filter(_.index <= num)
+    traversal.filter(_.index.exists(_ <= num))
 
   @Doc(info = "Traverse to arguments (actual parameters) associated with this formal parameter")
   def argument(implicit callResolver: ICallResolver): Iterator[Expression] =

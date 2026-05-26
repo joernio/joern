@@ -186,7 +186,7 @@ class AstCreatorTests extends AbapCpgFixture {
     "set index starting at 1 for first parameter" in {
       val cpg   = cpgForProgram(programWithMethod("MY_METHOD", importing = Seq(Parameter("IV_INPUT", "string"))))
       val param = cpg.method.nameExact("MY_METHOD").parameter.nameExact("IV_INPUT").head
-      param.index shouldBe 1
+      param.index shouldBe Some(1)
     }
 
     "set order equal to index" in {
@@ -218,11 +218,11 @@ class AstCreatorTests extends AbapCpgFixture {
     "set sequential indices for multiple parameters" in {
       val cpg =
         cpgForProgram(programWithMethod("MY_METHOD", importing = Seq(Parameter("IV_A", "i"), Parameter("IV_B", "i"))))
-      val params = cpg.method.nameExact("MY_METHOD").parameter.l.sortBy(_.index)
+      val params = cpg.method.nameExact("MY_METHOD").parameter.l.sortBy(_.index.getOrElse(Int.MaxValue))
       params(0).name shouldBe "IV_A"
-      params(0).index shouldBe 1
+      params(0).index shouldBe Some(1)
       params(1).name shouldBe "IV_B"
-      params(1).index shouldBe 2
+      params(1).index shouldBe Some(2)
     }
   }
 

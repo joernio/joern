@@ -23,7 +23,7 @@ class LambdaTests extends CSharpCode2CpgFixture {
         inside(anon.parameter.l) { case x :: Nil =>
           x.name shouldBe "x"
           x.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.Int)
-          x.index shouldBe 1
+          x.index shouldBe Some(1)
         }
 
       }
@@ -65,11 +65,11 @@ class LambdaTests extends CSharpCode2CpgFixture {
         inside(anon.parameter.l) { case x :: y :: Nil =>
           x.name shouldBe "x"
           x.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.Int)
-          x.index shouldBe 1
+          x.index shouldBe Some(1)
 
           y.name shouldBe "y"
           y.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.Int)
-          y.index shouldBe 2
+          y.index shouldBe Some(2)
         }
 
       }

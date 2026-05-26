@@ -107,7 +107,7 @@ class TsAstCreationPassTests extends JsSrc2CpgSuite(".ts") {
       arg.name shouldBe "arg"
       arg.typeFullName shouldBe Defines.String
       arg.code shouldBe "arg: string"
-      arg.index shouldBe 1
+      arg.index shouldBe Some(1)
       cpg.method("foo").bindingTypeDecl.fullName.l shouldBe List("Test0.ts::program:foo")
       func.astIn.size shouldBe 1
     }

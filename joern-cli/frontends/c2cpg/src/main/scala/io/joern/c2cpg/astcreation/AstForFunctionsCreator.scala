@@ -358,7 +358,8 @@ trait AstForFunctionsCreator { this: AstCreator =>
     }
     variadicParam.map { p =>
       p.isVariadic = false
-      val index = p.index + 1
+      // C/C++ parameters always have positional indices; None is not expected here.
+      val index = p.index.getOrElse(0) + 1
       new FunctionDeclNodePass.ParameterInfo(
         s"<param>$index",
         s"<param>$index...",

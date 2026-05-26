@@ -284,7 +284,7 @@ class CapturingTests extends JavaSrcCode2CpgFixture with Inside {
                 thisId.name shouldBe "this"
                 inside(thisId.refsTo.l) { case List(thisParam: MethodParameterIn) =>
                   thisParam.name shouldBe "this"
-                  thisParam.index shouldBe 0
+                  thisParam.index shouldBe Some(0)
                   thisParam.method shouldBe constructor
                 }
 
@@ -294,7 +294,7 @@ class CapturingTests extends JavaSrcCode2CpgFixture with Inside {
               valueId.name shouldBe "value"
               inside(valueId.refsTo.l) { case List(valueParam: MethodParameterIn) =>
                 valueParam.name shouldBe "value"
-                valueParam.index shouldBe 1
+                valueParam.index shouldBe Some(1)
                 valueParam.method shouldBe constructor
               }
             }
@@ -310,7 +310,7 @@ class CapturingTests extends JavaSrcCode2CpgFixture with Inside {
           thisId.typeFullName shouldBe "Foo.<lambda>0:void().LocalRecord"
           inside(thisId.refsTo.l) { case List(thisParam: MethodParameterIn) =>
             thisParam.name shouldBe "this"
-            thisParam.index shouldBe 0
+            thisParam.index shouldBe Some(0)
             thisParam.method.fullName shouldBe "Foo.<lambda>0:void().LocalRecord.print:void()"
           }
 
