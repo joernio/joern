@@ -505,8 +505,8 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case Some(_) => conditionAstRaw
       case None    => blockAst(blockNode(node.conditions), List.empty)
     }
-    val thenAst      = astForNode(node.body)
-    val elseAst      = node.elseBody.map(astForNode)
+    val thenAst = astForNode(node.body)
+    val elseAst = node.elseBody.map(astForNode)
     ifThenElseAst(ifNode, Option(conditionAst), thenAst, elseAst)
   }
 
@@ -1017,7 +1017,8 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           case other => (List(astForNode(other)), List.empty)
         }
         val needsSyntheticBreak = !s.statements.children.lastOption.exists(_.item.isInstanceOf[FallThroughStmtSyntax])
-        val asts                = flowAst :+ astForNode(s.statements)
+        val statementsAsts      = if (s.statements.children.isEmpty) List.empty else List(astForNode(s.statements))
+        val asts                = flowAst ++ statementsAsts
         val cAsts = if (needsSyntheticBreak) {
           asts :+ Ast(controlStructureNode(s, ControlStructureTypes.BREAK, "break"))
         } else asts
