@@ -134,14 +134,15 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def astForWhileStatement(whileStmt: BabelNodeInfo): Ast = {
-    val whileNode       = controlStructureNode(whileStmt, ControlStructureTypes.WHILE, code(whileStmt))
-    val testAst         = astForNodeWithFunctionReference(whileStmt.json("test"))
-    val bodyAst         = astForNodeWithFunctionReference(whileStmt.json("body"))
-    val astWithChildren = controlStructureAst(whileNode, Option(testAst), Seq(bodyAst))
-    bodyAst.root match {
-      case Some(bodyRoot) => astWithChildren.withTrueBodyEdge(whileNode, bodyRoot)
-      case None           => astWithChildren
-    }
+    val testAst = astForNodeWithFunctionReference(whileStmt.json("test"))
+    val bodyAst = astForNodeWithFunctionReference(whileStmt.json("body"))
+    whileAst(
+      Option(testAst),
+      Seq(bodyAst),
+      code = Option(code(whileStmt)),
+      lineNumber = line(whileStmt),
+      columnNumber = column(whileStmt)
+    )
   }
 
   protected def astForForStatement(forStmt: BabelNodeInfo): Ast = {
@@ -248,15 +249,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     localAstParentStack.pop()
 
     val switchBlockAst = blockAst(blockNode_, casesAsts.toList)
-    val astWithChildren = Ast(switchNode)
-      .withChild(switchExpressionAst)
-      .withConditionEdge(switchNode, switchExpressionAst.nodes.head)
-      .withChild(switchBlockAst)
-
-    switchBlockAst.root match {
-      case Some(blockRoot) => astWithChildren.withTrueBodyEdge(switchNode, blockRoot)
-      case None            => astWithChildren
-    }
+    switchAst(switchNode, switchExpressionAst, Seq(switchBlockAst))
   }
 
   /** De-sugaring from:
