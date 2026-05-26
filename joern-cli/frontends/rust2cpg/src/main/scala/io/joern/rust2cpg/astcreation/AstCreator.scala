@@ -174,4 +174,14 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     }
   }
 
+  // A tuple-like constructor call like `Foo(x, y)` has matching methodFullName/typeFullName
+  // from rust_ast_gen. In other words, it's as if there was a function named `Foo(x:X,y:Y) -> Foo`.
+  // TODO: this doesn't account for generics yet.
+  protected def isStructCtorCall(callExpr: RustNodeSyntax.CallExpr): Boolean = {
+    (callExpr.methodFullName, callExpr.typeFullName) match {
+      case (Some(methodFullName), Some(typeFullName)) => methodFullName == typeFullName
+      case _                                          => false
+    }
+  }
+
 }

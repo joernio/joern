@@ -225,4 +225,156 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
   }
+
+  "an internal tuple-struct call" should {
+    val cpg = code("""
+        |struct Foo(i32, bool);
+        |fn main() {
+        | Foo(1, true);
+        |}
+        |""".stripMargin)
+
+    "lower into a block with appropriate type and number of children" in {
+      inside(cpg.method.name("main").body.astChildren.isBlock.l) { case block :: Nil =>
+        block.code shouldBe "Foo(1, true)"
+        block.typeFullName shouldBe "rust2cpgtest::Foo"
+        block.astChildren.size shouldBe 5 // 1 (local) + 1 (.alloc) + 2 (tmp.i = arg) + 1 (ident)
+      }
+    }
+
+    "the block's first child is a LOCAL declaration" in {
+      inside(cpg.block.codeExact("Foo(1, true)").astChildren.order(1).l) { case (local: Local) :: Nil =>
+        local.name shouldBe "tmp"
+        local.typeFullName shouldBe "rust2cpgtest::Foo"
+      }
+    }
+
+    "the block's second child is an alloc assignment" in {
+      inside(cpg.block.codeExact("Foo(1, true)").astChildren.order(2).l) { case (assign: Call) :: Nil =>
+        assign.code shouldBe s"tmp = ${Operators.alloc}"
+
+        inside(assign.argument(1)) { case tmp: Identifier =>
+          tmp.typeFullName shouldBe "rust2cpgtest::Foo"
+          tmp.name shouldBe "tmp"
+          tmp.code shouldBe "tmp"
+        }
+
+        inside(assign.argument(2)) { case alloc: Call =>
+          alloc.methodFullName shouldBe Operators.alloc
+          alloc.name shouldBe Operators.alloc
+          alloc.argument shouldBe empty
+        }
+      }
+    }
+
+    "the block's third child is a field assignment" in {
+      inside(cpg.block.codeExact("Foo(1, true)").astChildren.order(3).l) { case (assign: Call) :: Nil =>
+        assign.code shouldBe "tmp.0 = 1"
+
+        inside(assign.argument(1)) { case fieldAccess: Call =>
+          fieldAccess.code shouldBe "tmp.0"
+          fieldAccess.methodFullName shouldBe Operators.fieldAccess
+          fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+          inside(fieldAccess.argument(1)) { case tmp: Identifier =>
+            tmp.code shouldBe "tmp"
+            tmp.typeFullName shouldBe "rust2cpgtest::Foo"
+          }
+
+          inside(fieldAccess.argument(2)) { case zero: FieldIdentifier =>
+            zero.code shouldBe "0"
+            zero.canonicalName shouldBe "0"
+          }
+        }
+
+        inside(assign.argument(2)) { case lit: Literal =>
+          lit.code shouldBe "1"
+          lit.typeFullName shouldBe "i32"
+        }
+      }
+    }
+
+    "the block's fourth child is a field assignment" in {
+      inside(cpg.block.codeExact("Foo(1, true)").astChildren.order(4).l) { case (assign: Call) :: Nil =>
+        assign.code shouldBe "tmp.1 = true"
+
+        inside(assign.argument(1)) { case fieldAccess: Call =>
+          fieldAccess.code shouldBe "tmp.1"
+          fieldAccess.methodFullName shouldBe Operators.fieldAccess
+          fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+          inside(fieldAccess.argument(1)) { case tmp: Identifier =>
+            tmp.code shouldBe "tmp"
+            tmp.typeFullName shouldBe "rust2cpgtest::Foo"
+          }
+
+          inside(fieldAccess.argument(2)) { case one: FieldIdentifier =>
+            one.code shouldBe "1"
+            one.canonicalName shouldBe "1"
+          }
+        }
+
+        inside(assign.argument(2)) { case lit: Literal =>
+          lit.code shouldBe "true"
+          lit.typeFullName shouldBe "bool"
+        }
+      }
+    }
+
+    "the block's fifth child is an identifier" in {
+      inside(cpg.block.codeExact("Foo(1, true)").astChildren.order(5).l) { case (ident: Identifier) :: Nil =>
+        ident.name shouldBe "tmp"
+        ident.typeFullName shouldBe "rust2cpgtest::Foo"
+      }
+    }
+  }
+
+  "an internal empty tuple-struct call" should {
+    val cpg = code("""
+        |struct Empty();
+        |fn main() {
+        | Empty();
+        |}
+        |""".stripMargin)
+
+    "lower into a block with appropriate type and number of children" in {
+      inside(cpg.method.name("main").body.astChildren.isBlock.l) { case block :: Nil =>
+        block.code shouldBe "Empty()"
+        block.typeFullName shouldBe "rust2cpgtest::Empty"
+        block.astChildren.size shouldBe 3 // 1 (local) + 1 (.alloc) + 1 (ident)
+      }
+    }
+
+    "the block's first child is a LOCAL declaration" in {
+      inside(cpg.block.codeExact("Empty()").astChildren.order(1).l) { case (local: Local) :: Nil =>
+        local.name shouldBe "tmp"
+        local.typeFullName shouldBe "rust2cpgtest::Empty"
+      }
+    }
+
+    "the block's second child is an alloc assignment" in {
+      inside(cpg.block.codeExact("Empty()").astChildren.order(2).l) { case (assign: Call) :: Nil =>
+        assign.code shouldBe s"tmp = ${Operators.alloc}"
+
+        inside(assign.argument(1)) { case tmp: Identifier =>
+          tmp.typeFullName shouldBe "rust2cpgtest::Empty"
+          tmp.name shouldBe "tmp"
+          tmp.code shouldBe "tmp"
+        }
+
+        inside(assign.argument(2)) { case alloc: Call =>
+          alloc.methodFullName shouldBe Operators.alloc
+          alloc.name shouldBe Operators.alloc
+          alloc.argument shouldBe empty
+        }
+      }
+    }
+
+    "the block's third child is an identifier" in {
+      inside(cpg.block.codeExact("Empty()").astChildren.order(3).l) { case (ident: Identifier) :: Nil =>
+        ident.name shouldBe "tmp"
+        ident.typeFullName shouldBe "rust2cpgtest::Empty"
+      }
+    }
+  }
 }

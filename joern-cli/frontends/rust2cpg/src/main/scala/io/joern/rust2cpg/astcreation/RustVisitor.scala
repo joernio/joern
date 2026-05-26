@@ -298,18 +298,69 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   // CallExpr =
   //  Attr* Expr ArgList
   private def visitCallExpr(callExpr: CallExpr): Ast = {
-    viewExprAsPathExpr(callExpr.expr) match {
-      case Some(nameRefs) =>
-        val name           = code(nameRefs.last)
-        val methodFullName = methodFullNameForCallExpr(callExpr, nameRefs)
-        val typeFullName   = typeFullNameForExpr(callExpr)
-        val dispatch       = DispatchTypes.STATIC_DISPATCH
-        val call =
-          callNode(callExpr, code(callExpr), name, methodFullName, dispatch, None, Some(typeFullName))
-        val args = callExpr.argList.expr.map(visitExpr)
-        callAst(call, args)
-      case None => notHandledYet(callExpr)
+    if (isStructCtorCall(callExpr)) {
+      lowerStructCtorCall(callExpr)
+    } else {
+      viewExprAsPathExpr(callExpr.expr) match {
+        case Some(nameRefs) =>
+          val name           = code(nameRefs.last)
+          val methodFullName = methodFullNameForCallExpr(callExpr, nameRefs)
+          val typeFullName   = typeFullNameForExpr(callExpr)
+          val dispatch       = DispatchTypes.STATIC_DISPATCH
+          val call =
+            callNode(callExpr, code(callExpr), name, methodFullName, dispatch, None, Some(typeFullName))
+          val args = callExpr.argList.expr.map(visitExpr)
+          callAst(call, args)
+        case None => notHandledYet(callExpr)
+      }
     }
+  }
+
+  // Lowers a tuple-like struct call e.g. `Foo(x,y)` into an alloc-followed-by-field-assignments-block:
+  // BLOCK
+  //   LOCAL tmp
+  //   tmp = <operator>.alloc
+  //   tmp.0 = x
+  //   tmp.1 = y
+  //   tmp
+  // We perform this lowering regardless of where the struct is defined (internal/external).
+  // For internal structs, it would be easy to add a fake "<init>" method that performs the assignments.
+  // But to do the same for external structs, we would have to track them all, and visit the file
+  // more than once.
+  private def lowerStructCtorCall(callExpr: CallExpr): Ast = {
+    // LOCAL tmp
+    val typeFullName = typeFullNameForExpr(callExpr)
+    val local        = localNode(callExpr, name = "tmp", code = "tmp", typeFullName)
+
+    // tmp = <operator>.alloc
+    val allocAssignAst = {
+      val tmp       = identifierNode(callExpr, name = "tmp", code = "tmp", typeFullName)
+      val tmpAst    = Ast(tmp).withRefEdge(tmp, local)
+      val allocCall = operatorCallNode(callExpr, Operators.alloc, Operators.alloc, Some(typeFullName))
+      val assign    = assignmentNode(callExpr, s"tmp = ${Operators.alloc}")
+      callAst(assign, Seq(tmpAst, Ast(allocCall)))
+    }
+
+    // tmp.0 = x; tmp.1 = y; etc.
+    val fieldAssignAsts = callExpr.argList.expr.zipWithIndex.map { case (argExpr, i) =>
+      val argAst      = visitExpr(argExpr)
+      val argType     = typeFullNameForExpr(argExpr)
+      val tmp         = identifierNode(argExpr, "tmp", "tmp", typeFullName)
+      val baseAst     = Ast(tmp).withRefEdge(tmp, local)
+      val fieldAccess = fieldAccessAst(argExpr, argExpr, baseAst, s"tmp.$i", i.toString, argType)
+      val assign      = assignmentNode(argExpr, s"tmp.$i = ${code(argExpr)}")
+      callAst(assign, Seq(fieldAccess, argAst))
+    }
+
+    // tmp
+    val retAst = {
+      val tmp = identifierNode(callExpr, name = "tmp", code = "tmp", typeFullName)
+      Ast(tmp).withRefEdge(tmp, local)
+    }
+
+    // BLOCK { ... }
+    val block = blockNode(callExpr, code(callExpr), typeFullName)
+    Ast(block).withChildren(Seq(Ast(local), allocAssignAst) ++ fieldAssignAsts ++ Seq(retAst))
   }
 
   private def viewExprAsNameRef(expr: Expr): Option[NameRef] = {
