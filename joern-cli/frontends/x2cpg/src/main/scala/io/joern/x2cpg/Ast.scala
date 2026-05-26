@@ -21,21 +21,22 @@ object Ast {
     * label with a getter for the corresponding edge collection on an `Ast` instance.
     */
   private[x2cpg] val typedEdgeKinds: Seq[(String, Ast => collection.Seq[AstEdge])] = Seq(
-    EdgeTypes.CONDITION    -> (_.conditionEdges),
-    EdgeTypes.TRUE_BODY    -> (_.trueBodyEdges),
-    EdgeTypes.FALSE_BODY   -> (_.falseBodyEdges),
-    EdgeTypes.DO_BODY      -> (_.doBodyEdges),
-    EdgeTypes.TRY_BODY     -> (_.tryBodyEdges),
-    EdgeTypes.CATCH_BODY   -> (_.catchBodyEdges),
-    EdgeTypes.FINALLY_BODY -> (_.finallyBodyEdges),
-    EdgeTypes.FOR_INIT     -> (_.forInitEdges),
-    EdgeTypes.FOR_UPDATE   -> (_.forUpdateEdges),
-    EdgeTypes.FOR_BODY     -> (_.forBodyEdges),
-    EdgeTypes.RECEIVER     -> (_.receiverEdges),
-    EdgeTypes.REF          -> (_.refEdges),
-    EdgeTypes.ARGUMENT     -> (_.argEdges),
-    EdgeTypes.BINDS        -> (_.bindsEdges),
-    EdgeTypes.CAPTURE      -> (_.captureEdges)
+    EdgeTypes.CONDITION     -> (_.conditionEdges),
+    EdgeTypes.TRUE_BODY     -> (_.trueBodyEdges),
+    EdgeTypes.FALSE_BODY    -> (_.falseBodyEdges),
+    EdgeTypes.DO_BODY       -> (_.doBodyEdges),
+    EdgeTypes.TRY_BODY      -> (_.tryBodyEdges),
+    EdgeTypes.CATCH_BODY    -> (_.catchBodyEdges),
+    EdgeTypes.FINALLY_BODY  -> (_.finallyBodyEdges),
+    EdgeTypes.FOR_INIT      -> (_.forInitEdges),
+    EdgeTypes.FOR_UPDATE    -> (_.forUpdateEdges),
+    EdgeTypes.FOR_BODY      -> (_.forBodyEdges),
+    EdgeTypes.RECEIVER      -> (_.receiverEdges),
+    EdgeTypes.REF           -> (_.refEdges),
+    EdgeTypes.ARGUMENT      -> (_.argEdges),
+    EdgeTypes.BINDS         -> (_.bindsEdges),
+    EdgeTypes.CAPTURE       -> (_.captureEdges),
+    EdgeTypes.JUMP_ARGUMENT -> (_.jumpArgumentEdges)
   )
 
   /** Copy nodes/edges of given `AST` into the given `diffGraph`.
@@ -100,7 +101,8 @@ case class Ast(
   bindsEdges: collection.Seq[AstEdge] = Vector.empty,
   receiverEdges: collection.Seq[AstEdge] = Vector.empty,
   argEdges: collection.Seq[AstEdge] = Vector.empty,
-  captureEdges: collection.Seq[AstEdge] = Vector.empty
+  captureEdges: collection.Seq[AstEdge] = Vector.empty,
+  jumpArgumentEdges: collection.Seq[AstEdge] = Vector.empty
 )(implicit withSchemaValidation: ValidationMode = ValidationMode.Disabled) {
 
   def root: Option[NewNode] = nodes.headOption
@@ -139,7 +141,8 @@ case class Ast(
       receiverEdges = receiverEdges ++ other.receiverEdges,
       refEdges = refEdges ++ other.refEdges,
       bindsEdges = bindsEdges ++ other.bindsEdges,
-      captureEdges = captureEdges ++ other.captureEdges
+      captureEdges = captureEdges ++ other.captureEdges,
+      jumpArgumentEdges = jumpArgumentEdges ++ other.jumpArgumentEdges
     )
   }
 
@@ -282,6 +285,11 @@ case class Ast(
     this.copy(captureEdges = captureEdges ++ dsts.map(AstEdge(src, _)))
   }
 
+  def withJumpArgumentEdge(src: NewNode, dst: NewNode): Ast = {
+    Ast.neighbourValidation(src, dst, EdgeTypes.JUMP_ARGUMENT)
+    this.copy(jumpArgumentEdges = jumpArgumentEdges ++ List(AstEdge(src, dst)))
+  }
+
   /** Returns a deep copy of the sub tree rooted in `node`. If `order` is set, then the `order` and `argumentIndex`
     * fields of the new root node are set to `order`. If `replacementNode` is set, then this replaces `node` in the new
     * copy.
@@ -324,7 +332,8 @@ case class Ast(
         refEdges = remap(refEdges),
         bindsEdges = remap(bindsEdges),
         receiverEdges = remap(receiverEdges),
-        captureEdges = remap(captureEdges)
+        captureEdges = remap(captureEdges),
+        jumpArgumentEdges = remap(jumpArgumentEdges)
       )
       .withChildren(newChildren)
   }
