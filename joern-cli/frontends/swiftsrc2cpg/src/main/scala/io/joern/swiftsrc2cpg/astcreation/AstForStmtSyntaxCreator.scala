@@ -97,12 +97,8 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           case Some(_) => testAstRaw
           case None    => blockAst(blockNode(whereClause), List.empty)
         }
-        val consequentAstRaw = astForNode(node.body)
-        val consequentAst = consequentAstRaw.root match {
-          case Some(_) => consequentAstRaw
-          case None    => blockAst(blockNode(node.body), List.empty)
-        }
-        ifThenElseAst(ifNode, Option(testAst), consequentAst, None)
+        val thenAst = astForNode(node.body)
+        ifThenElseAst(ifNode, Option(testAst), thenAst, None)
       case None => astForNode(node.body)
     }
   }

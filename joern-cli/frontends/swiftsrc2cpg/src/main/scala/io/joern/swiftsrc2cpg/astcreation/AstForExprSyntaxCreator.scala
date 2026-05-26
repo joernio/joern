@@ -505,12 +505,8 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case Some(_) => conditionAstRaw
       case None    => blockAst(blockNode(node.conditions), List.empty)
     }
-    val bodyAst = astForNode(node.body)
-    val thenAst = bodyAst.root match {
-      case Some(_) => bodyAst
-      case None    => blockAst(blockNode(node.body), List.empty)
-    }
-    val elseAst = node.elseBody.map(astForNode)
+    val thenAst      = astForNode(node.body)
+    val elseAst      = node.elseBody.map(astForNode)
     ifThenElseAst(ifNode, Option(conditionAst), thenAst, elseAst)
   }
 
