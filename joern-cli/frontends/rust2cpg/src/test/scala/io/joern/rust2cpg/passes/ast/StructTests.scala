@@ -1,7 +1,8 @@
 package io.joern.rust2cpg.passes.ast
 
 import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
-import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal.globalNamespaceName
 import io.shiftleft.semanticcpg.utils.FileUtil.*
@@ -149,6 +150,78 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
       inside(cpg.typeDecl.nameExact("Inner").l) { case inner :: Nil =>
         inner.astParentType shouldBe NodeTypes.METHOD
         inner.astParentFullName shouldBe "rust2cpgtest::outer"
+      }
+    }
+  }
+
+  "a named-field struct field access" should {
+    val cpg = code("""
+        |struct Point {
+        | x: i32,
+        |}
+        |
+        |fn foo(point: Point) -> i32 {
+        | point.x
+        |}
+        |""".stripMargin)
+
+    "lower to a fieldAccess call" in {
+      inside(cpg.call.nameExact(Operators.fieldAccess).l) { case fieldAccess :: Nil =>
+        fieldAccess.code shouldBe "point.x"
+        fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        fieldAccess.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have the lhs as the first argument" in {
+      inside(cpg.call.nameExact(Operators.fieldAccess).argument(1).l) { case (base: Identifier) :: Nil =>
+        base.code shouldBe "point"
+        base.argumentIndex shouldBe 1
+        base.typeFullName shouldBe "rust2cpgtest::Point"
+      }
+    }
+
+    "have the field as the second argument" in {
+      inside(cpg.call.nameExact(Operators.fieldAccess).argument(2).l) { case (field: FieldIdentifier) :: Nil =>
+        field.code shouldBe "x"
+        field.canonicalName shouldBe "x"
+        field.argumentIndex shouldBe 2
+      }
+    }
+  }
+
+  "a tuple-struct positional field access" should {
+    val cpg = code("""
+        |struct Pair(i32, bool);
+        |
+        |fn foo(pair: Pair) -> i32 {
+        | pair.0
+        |}
+        |""".stripMargin)
+
+    "lower to a fieldAccess call" in {
+      inside(cpg.call.nameExact(Operators.fieldAccess).l) { case fieldAccess :: Nil =>
+        fieldAccess.code shouldBe "pair.0"
+        fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        fieldAccess.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have the lhs as the first argument" in {
+      inside(cpg.call.nameExact(Operators.fieldAccess).argument(1).l) { case (base: Identifier) :: Nil =>
+        base.code shouldBe "pair"
+        base.argumentIndex shouldBe 1
+        base.typeFullName shouldBe "rust2cpgtest::Pair"
+      }
+    }
+
+    "have the positional index as the second argument" in {
+      inside(cpg.call.nameExact(Operators.fieldAccess).argument(2).l) { case (field: FieldIdentifier) :: Nil =>
+        field.code shouldBe "0"
+        field.canonicalName shouldBe "0"
+        field.argumentIndex shouldBe 2
       }
     }
   }

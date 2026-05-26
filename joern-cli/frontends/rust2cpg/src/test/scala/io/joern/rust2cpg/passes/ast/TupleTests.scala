@@ -1,7 +1,8 @@
 package io.joern.rust2cpg.passes.ast
 
 import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.joern.x2cpg.Defines
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -104,6 +105,39 @@ class TupleTests extends Rust2CpgSuite(noSysRoot = true) {
       inside(cpg.call.nameExact(tupleLiteral).codeExact("((1, 2), 3)").argument(2).l) { case (rest: Literal) :: Nil =>
         rest.code shouldBe "3"
         rest.typeFullName shouldBe "i32"
+      }
+    }
+  }
+
+  "a tuple positional field access" should {
+    val cpg = code("""
+        |fn foo(pair: (i32, i32)) -> i32 {
+        | pair.0
+        |}
+        |""".stripMargin)
+
+    "lower to a fieldAccess call" in {
+      inside(cpg.call.nameExact(Operators.fieldAccess).l) { case fieldAccess :: Nil =>
+        fieldAccess.code shouldBe "pair.0"
+        fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        fieldAccess.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have the lhs as the first argument" in {
+      inside(cpg.call.nameExact(Operators.fieldAccess).argument(1).l) { case (base: Identifier) :: Nil =>
+        base.code shouldBe "pair"
+        base.argumentIndex shouldBe 1
+        base.typeFullName shouldBe "(i32, i32)"
+      }
+    }
+
+    "have the index as the second argument" in {
+      inside(cpg.call.nameExact(Operators.fieldAccess).argument(2).l) { case (field: FieldIdentifier) :: Nil =>
+        field.code shouldBe "0"
+        field.canonicalName shouldBe "0"
+        field.argumentIndex shouldBe 2
       }
     }
   }
