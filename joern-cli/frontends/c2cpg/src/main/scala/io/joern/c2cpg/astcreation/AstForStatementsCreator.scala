@@ -459,8 +459,6 @@ trait AstForStatementsCreator { this: AstCreator =>
     val testAst =
       createCallAst(testCallNode, base = Some(Ast(hasNextReceiverNode)), receiver = Some(Ast(hasNextReceiverNode)))
 
-    val whileLoopAst = Ast(whileLoopNode).withChild(testAst).withConditionEdge(whileLoopNode, testCallNode)
-
     // while loop variable assignment:
     val whileLoopVariableNode = identifierNode(forStmt, loopVariableName, loopVariableName, idType)
     scope.addVariableReference(loopVariableName, whileLoopVariableNode, idType, EvaluationStrategies.BY_REFERENCE)
@@ -509,13 +507,16 @@ trait AstForStatementsCreator { this: AstCreator =>
     // end surrounding block:
     scope.popScope()
 
-    val whileLoopAstWithBody = whileLoopBlockAst.root match {
-      case Some(blockRoot) => whileLoopAst.withChild(whileLoopBlockAst).withTrueBodyEdge(whileLoopNode, blockRoot)
-      case None            => whileLoopAst.withChild(whileLoopBlockAst)
-    }
+    val whileLoopAst = whileAst(
+      Option(testAst),
+      List(whileLoopBlockAst),
+      code = Option(whileLoopCode),
+      lineNumber = line(forStmt),
+      columnNumber = column(forStmt)
+    )
 
     val blockChildren =
-      List(iteratorAssignmentAst, Ast(loopVariableLocalNode), whileLoopAstWithBody)
+      List(iteratorAssignmentAst, Ast(loopVariableLocalNode), whileLoopAst)
     blockAst(blockNode, blockChildren)
   }
 
