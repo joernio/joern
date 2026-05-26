@@ -1068,21 +1068,13 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       scope.popScope()
       localAstParentStack.pop()
 
-      val switchBlockAst = blockAst(switchBlockNode, casesAsts)
-      val astWithChildren = Ast(switchNode)
-        .withChild(condAst)
-        .withConditionEdge(switchNode, condIdentNode)
-        .withChild(switchBlockAst)
-
-      val switchAst = switchBlockAst.root match {
-        case Some(blockRoot) => astWithChildren.withTrueBodyEdge(switchNode, blockRoot)
-        case None            => astWithChildren
-      }
+      val switchBlockAst  = blockAst(switchBlockNode, casesAsts)
+      val switchAstResult = switchAst(switchNode, condAst, Seq(switchBlockAst))
 
       scope.popScope()
       localAstParentStack.pop()
 
-      blockAst(outerBlockNode, List(subjectAssignAst, switchAst))
+      blockAst(outerBlockNode, List(subjectAssignAst, switchAstResult))
     } else {
       // The semantics of switch statement children is partially defined by their order value.
       // The blockAst must have order == 2. Only to avoid collision we set switchExpressionAst to 1
@@ -1100,15 +1092,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       localAstParentStack.pop()
 
       val switchBlockAst = blockAst(blockNode_, casesAsts)
-      val astWithChildren = Ast(switchNode)
-        .withChild(switchExpressionAst)
-        .withConditionEdge(switchNode, switchExpressionAst.nodes.head)
-        .withChild(switchBlockAst)
-
-      switchBlockAst.root match {
-        case Some(blockRoot) => astWithChildren.withTrueBodyEdge(switchNode, blockRoot)
-        case None            => astWithChildren
-      }
+      switchAst(switchNode, switchExpressionAst, Seq(switchBlockAst))
     }
   }
 

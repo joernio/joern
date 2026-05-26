@@ -625,15 +625,16 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForWhileStmtSyntax(node: WhileStmtSyntax): Ast = {
-    val code            = this.code(node)
-    val whileNode       = controlStructureNode(node, ControlStructureTypes.WHILE, code)
-    val conditionAst    = astForNode(node.conditions)
-    val bodyAst         = astForNode(node.body)
-    val astWithChildren = controlStructureAst(whileNode, Option(conditionAst), Seq(bodyAst))
-    bodyAst.root match {
-      case Some(bodyRoot) => astWithChildren.withTrueBodyEdge(whileNode, bodyRoot)
-      case None           => astWithChildren
-    }
+    val code         = this.code(node)
+    val conditionAst = astForNode(node.conditions)
+    val bodyAst      = astForNode(node.body)
+    whileAst(
+      Option(conditionAst),
+      Seq(bodyAst),
+      code = Option(code),
+      lineNumber = line(node),
+      columnNumber = column(node)
+    )
   }
 
   private def astForYieldStmtSyntax(node: YieldStmtSyntax): Ast = {
