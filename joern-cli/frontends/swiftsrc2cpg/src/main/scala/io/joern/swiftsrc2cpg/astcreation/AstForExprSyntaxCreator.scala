@@ -498,11 +498,15 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForIfExprSyntax(node: IfExprSyntax): Ast = {
-    val code         = this.code(node)
-    val ifNode       = controlStructureNode(node, ControlStructureTypes.IF, code)
-    val conditionAst = astForNode(node.conditions)
-    val thenAst      = astForNode(node.body)
-    val elseAst      = node.elseBody.map(astForNode)
+    val code            = this.code(node)
+    val ifNode          = controlStructureNode(node, ControlStructureTypes.IF, code)
+    val conditionAstRaw = astForNode(node.conditions)
+    val conditionAst = conditionAstRaw.root match {
+      case Some(_) => conditionAstRaw
+      case None    => blockAst(blockNode(node.conditions), List.empty)
+    }
+    val thenAst = astForNode(node.body)
+    val elseAst = node.elseBody.map(astForNode)
     ifThenElseAst(ifNode, Option(conditionAst), thenAst, elseAst)
   }
 
@@ -1013,7 +1017,8 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           case other => (List(astForNode(other)), List.empty)
         }
         val needsSyntheticBreak = !s.statements.children.lastOption.exists(_.item.isInstanceOf[FallThroughStmtSyntax])
-        val asts                = flowAst :+ astForNode(s.statements)
+        val statementsAsts      = if (s.statements.children.isEmpty) List.empty else List(astForNode(s.statements))
+        val asts                = flowAst ++ statementsAsts
         val cAsts = if (needsSyntheticBreak) {
           asts :+ Ast(controlStructureNode(s, ControlStructureTypes.BREAK, "break"))
         } else asts
@@ -1060,15 +1065,13 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       scope.popScope()
       localAstParentStack.pop()
 
-      val switchAst = Ast(switchNode)
-        .withChild(condAst)
-        .withConditionEdge(switchNode, condIdentNode)
-        .withChild(blockAst(switchBlockNode, casesAsts))
+      val switchBlockAst  = blockAst(switchBlockNode, casesAsts)
+      val switchAstResult = switchAst(switchNode, condAst, Seq(switchBlockAst))
 
       scope.popScope()
       localAstParentStack.pop()
 
-      blockAst(outerBlockNode, List(subjectAssignAst, switchAst))
+      blockAst(outerBlockNode, List(subjectAssignAst, switchAstResult))
     } else {
       // The semantics of switch statement children is partially defined by their order value.
       // The blockAst must have order == 2. Only to avoid collision we set switchExpressionAst to 1
@@ -1085,10 +1088,8 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       scope.popScope()
       localAstParentStack.pop()
 
-      Ast(switchNode)
-        .withChild(switchExpressionAst)
-        .withConditionEdge(switchNode, switchExpressionAst.nodes.head)
-        .withChild(blockAst(blockNode_, casesAsts))
+      val switchBlockAst = blockAst(blockNode_, casesAsts)
+      switchAst(switchNode, switchExpressionAst, Seq(switchBlockAst))
     }
   }
 

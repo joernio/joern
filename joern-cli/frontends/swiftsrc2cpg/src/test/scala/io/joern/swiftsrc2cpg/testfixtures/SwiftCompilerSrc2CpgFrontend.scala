@@ -12,7 +12,7 @@ trait SwiftCompilerSrc2CpgFrontend extends LanguageFrontend {
     val pathAsString = sourceCodePath.toPath.resolve("SwiftTest").toAbsolutePath.toString
     val config       = getConfig().getOrElse(Config()).withInputPath(pathAsString)
     val cpg          = new SwiftSrc2Cpg().createCpg(config).get
-    new PostFrontendValidator(cpg, ValidationLevel.V1).run()
+    new PostFrontendValidator(cpg, ValidationLevel.V2).run()
     cpg
   }
 

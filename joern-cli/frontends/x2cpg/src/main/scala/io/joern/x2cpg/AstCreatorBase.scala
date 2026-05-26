@@ -165,7 +165,11 @@ abstract class AstCreatorBase[Node, NodeProcessor](filename: String)(implicit wi
     if (code.isDefined) {
       whileNode = whileNode.code(code.get)
     }
-    controlStructureAst(whileNode, condition, body)
+    val astWithChildren = controlStructureAst(whileNode, condition, body)
+    body.headOption.flatMap(_.root) match {
+      case Some(bodyRoot) => astWithChildren.withTrueBodyEdge(whileNode, bodyRoot)
+      case None           => astWithChildren
+    }
   }
 
   def doWhileAst(
@@ -186,6 +190,14 @@ abstract class AstCreatorBase[Node, NodeProcessor](filename: String)(implicit wi
     body.headOption.flatMap(_.root) match {
       case Some(doBodyRoot) => astWithChildren.withDoBodyEdge(doWhileNode, doBodyRoot)
       case None             => astWithChildren
+    }
+  }
+
+  def switchAst(switchNode: NewControlStructure, condition: Ast, body: Seq[Ast]): Ast = {
+    val astWithChildren = controlStructureAst(switchNode, Option(condition), body)
+    body.headOption.flatMap(_.root) match {
+      case Some(bodyRoot) => astWithChildren.withTrueBodyEdge(switchNode, bodyRoot)
+      case None           => astWithChildren
     }
   }
 

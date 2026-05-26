@@ -11,8 +11,11 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
 
   protected def astForListSyntaxChildren(node: SwiftNode, children: Seq[SwiftNode]): Ast = {
     children.toList match {
-      case Nil         => Ast()
-      case head :: Nil => astForNode(head)
+      case Nil =>
+        val blockNode_ = blockNode(node, PropertyDefaults.Code, Defines.Any)
+        blockAst(blockNode_, List.empty)
+      case head :: Nil =>
+        astForNode(head)
       case elements =>
         val blockNode_ = blockNode(node, PropertyDefaults.Code, Defines.Any)
         scope.pushNewBlockScope(blockNode_)

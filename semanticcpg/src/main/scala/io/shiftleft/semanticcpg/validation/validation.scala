@@ -446,22 +446,36 @@ class PostFrontendValidator(cpg: Cpg, fatalValidationLevel: ValidationLevel) ext
                 s"TRY ControlStructure '${controlStructure.code}' is missing TRY_BODY edge (CfgCreator will use legacy order fallback)"
               )
             // CATCH_BODY: CfgCreator falls back to CATCH ControlStructure children, or astChildren.order(2)
+            // but we should not warn if the child at order(2) is a FINALLY control structure (try-finally case)
             val hasCatchFallback =
               controlStructure.astChildren.isControlStructure
                 .filter(_.controlStructureType == ControlStructureTypes.CATCH)
                 .nonEmpty ||
-                controlStructure.astChildren.order(2).nonEmpty
+                (controlStructure.astChildren.order(2).nonEmpty &&
+                  controlStructure.astChildren
+                    .order(2)
+                    .collectFirst {
+                      case cs: nodes.ControlStructure if cs.controlStructureType == ControlStructureTypes.FINALLY => cs
+                    }
+                    .isEmpty)
             if (controlStructure._catchBodyOut.isEmpty && hasCatchFallback)
               registerViolation(
                 CTRL_EDGE_USING_LEGACY,
                 s"TRY ControlStructure '${controlStructure.code}' is missing CATCH_BODY edge (CfgCreator will use legacy order fallback)"
               )
             // FINALLY_BODY: CfgCreator falls back to FINALLY ControlStructure children, or astChildren.order(3)
+            // but we should not warn if the child at order(3) is a CATCH control structure (multiple catches case)
             val hasFinallyFallback =
               controlStructure.astChildren.isControlStructure
                 .filter(_.controlStructureType == ControlStructureTypes.FINALLY)
                 .nonEmpty ||
-                controlStructure.astChildren.order(3).nonEmpty
+                (controlStructure.astChildren.order(3).nonEmpty &&
+                  controlStructure.astChildren
+                    .order(3)
+                    .collectFirst {
+                      case cs: nodes.ControlStructure if cs.controlStructureType == ControlStructureTypes.CATCH => cs
+                    }
+                    .isEmpty)
             if (controlStructure._finallyBodyOut.isEmpty && hasFinallyFallback)
               registerViolation(
                 CTRL_EDGE_USING_LEGACY,

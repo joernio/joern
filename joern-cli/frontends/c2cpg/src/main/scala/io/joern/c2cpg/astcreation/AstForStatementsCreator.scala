@@ -261,7 +261,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     }
     val conditionAst = astForConditionExpression(switchStmt.getControllerExpression)
     val stmtAsts     = nullSafeAst(switchStmt.getBody)
-    initAsts :+ controlStructureAst(switchNode, Option(conditionAst), stmtAsts)
+    initAsts :+ switchAst(switchNode, conditionAst, stmtAsts)
   }
 
   private def astsForCaseStatement(caseStmt: IASTCaseStatement): Seq[Ast] = {
@@ -459,8 +459,6 @@ trait AstForStatementsCreator { this: AstCreator =>
     val testAst =
       createCallAst(testCallNode, base = Some(Ast(hasNextReceiverNode)), receiver = Some(Ast(hasNextReceiverNode)))
 
-    val whileLoopAst = Ast(whileLoopNode).withChild(testAst).withConditionEdge(whileLoopNode, testCallNode)
-
     // while loop variable assignment:
     val whileLoopVariableNode = identifierNode(forStmt, loopVariableName, loopVariableName, idType)
     scope.addVariableReference(loopVariableName, whileLoopVariableNode, idType, EvaluationStrategies.BY_REFERENCE)
@@ -509,8 +507,16 @@ trait AstForStatementsCreator { this: AstCreator =>
     // end surrounding block:
     scope.popScope()
 
+    val whileLoopAst = whileAst(
+      Option(testAst),
+      List(whileLoopBlockAst),
+      code = Option(whileLoopCode),
+      lineNumber = line(forStmt),
+      columnNumber = column(forStmt)
+    )
+
     val blockChildren =
-      List(iteratorAssignmentAst, Ast(loopVariableLocalNode), whileLoopAst.withChild(whileLoopBlockAst))
+      List(iteratorAssignmentAst, Ast(loopVariableLocalNode), whileLoopAst)
     blockAst(blockNode, blockChildren)
   }
 
