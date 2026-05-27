@@ -60,6 +60,8 @@ class SingleLetterIdentifiers extends SyntacticRule("SingleLetterIdentifiers") {
             Patch.empty
         }
 
+      /* There is some consideration whether to allow single-letter case identifiers.
+         This very linter-rule serves as proof that such a rule would be needlessly intrusive.
       // case x =>
       case c: Case =>
         c.pat match {
@@ -68,6 +70,7 @@ class SingleLetterIdentifiers extends SyntacticRule("SingleLetterIdentifiers") {
           case _ =>
             Patch.empty
         }
+       */
     }
 
     Patch.fromIterable(patches)
