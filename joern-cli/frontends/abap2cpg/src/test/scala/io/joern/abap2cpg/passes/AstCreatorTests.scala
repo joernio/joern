@@ -256,8 +256,8 @@ class AstCreatorTests extends AbapCpgFixture {
         programWithMethod("MY_METHOD", importing = Seq(Parameter("IV_FIRST", "string"), Parameter("IV_SECOND", "int")))
       )
       val params = cpg.method.nameExact("MY_METHOD").parameter.l
-      params.find(_.name == "IV_FIRST").map(_.index) shouldBe Some(1)
-      params.find(_.name == "IV_SECOND").map(_.index) shouldBe Some(2)
+      params.find(_.name == "IV_FIRST").flatMap(_.index) shouldBe Some(1)
+      params.find(_.name == "IV_SECOND").flatMap(_.index) shouldBe Some(2)
     }
 
     "create a method return node" in {
