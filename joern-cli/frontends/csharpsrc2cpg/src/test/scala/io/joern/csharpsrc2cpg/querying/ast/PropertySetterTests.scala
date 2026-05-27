@@ -28,15 +28,14 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
     }
 
     "have correct parameters" in {
-      inside(cpg.method.nameExact("set_MyProperty").parameter.sortBy(_.index.getOrElse(Int.MaxValue)).l) {
-        case thisArg :: valueArg :: Nil =>
-          thisArg.index shouldBe Some(0)
-          thisArg.name shouldBe "this"
-          thisArg.typeFullName shouldBe "C"
+      inside(cpg.method.nameExact("set_MyProperty").parameter.sortBy(_.order).l) { case thisArg :: valueArg :: Nil =>
+        thisArg.index shouldBe Some(0)
+        thisArg.name shouldBe "this"
+        thisArg.typeFullName shouldBe "C"
 
-          valueArg.index shouldBe Some(1)
-          valueArg.name shouldBe "value"
-          valueArg.typeFullName shouldBe "System.Int32"
+        valueArg.index shouldBe Some(1)
+        valueArg.name shouldBe "value"
+        valueArg.typeFullName shouldBe "System.Int32"
       }
     }
 
@@ -71,11 +70,10 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
     }
 
     "have correct parameters" in {
-      inside(cpg.method.nameExact("set_MyProperty").parameter.sortBy(_.index.getOrElse(Int.MaxValue)).l) {
-        case valueArg :: Nil =>
-          valueArg.index shouldBe Some(1)
-          valueArg.name shouldBe "value"
-          valueArg.typeFullName shouldBe "System.Int32"
+      inside(cpg.method.nameExact("set_MyProperty").parameter.l) { case valueArg :: Nil =>
+        valueArg.index shouldBe Some(1)
+        valueArg.name shouldBe "value"
+        valueArg.typeFullName shouldBe "System.Int32"
       }
     }
 

@@ -218,7 +218,7 @@ class AstCreatorTests extends AbapCpgFixture {
     "set sequential indices for multiple parameters" in {
       val cpg =
         cpgForProgram(programWithMethod("MY_METHOD", importing = Seq(Parameter("IV_A", "i"), Parameter("IV_B", "i"))))
-      val params = cpg.method.nameExact("MY_METHOD").parameter.l.sortBy(_.index.getOrElse(Int.MaxValue))
+      val params = cpg.method.nameExact("MY_METHOD").parameter.l.sortBy(_.order)
       params(0).name shouldBe "IV_A"
       params(0).index shouldBe Some(1)
       params(1).name shouldBe "IV_B"

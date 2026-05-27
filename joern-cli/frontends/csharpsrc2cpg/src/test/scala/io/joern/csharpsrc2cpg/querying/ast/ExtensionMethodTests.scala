@@ -26,11 +26,10 @@ class ExtensionMethodTests extends CSharpCode2CpgFixture {
     }
 
     "have correct parameters" in {
-      inside(cpg.method.nameExact("DoStuff").parameter.sortBy(_.index.getOrElse(Int.MaxValue)).l) {
-        case myClass :: Nil =>
-          myClass.typeFullName shouldBe "MyClass"
-          myClass.code shouldBe "this MyClass myClass"
-          myClass.name shouldBe "myClass"
+      inside(cpg.method.nameExact("DoStuff").parameter.l) { case myClass :: Nil =>
+        myClass.typeFullName shouldBe "MyClass"
+        myClass.code shouldBe "this MyClass myClass"
+        myClass.name shouldBe "myClass"
       }
     }
   }

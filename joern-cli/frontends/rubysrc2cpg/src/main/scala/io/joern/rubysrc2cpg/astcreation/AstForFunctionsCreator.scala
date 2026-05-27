@@ -126,9 +126,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       val nextIndex =
         parameterAsts
           .flatMap(_.root)
-          .lastOption
-          .map { case m: NewMethodParameterIn => m.index.map(_ + 1).getOrElse(0) }
-          .getOrElse(0)
+          .collect { case m: NewMethodParameterIn => m.index }
+          .flatten
+          .maxOption
+          .map(_ + 1)
+          .getOrElse(1)
 
       Ast(p.index(nextIndex))
     }
@@ -466,9 +468,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           val nextIndex =
             parameterAsts
               .flatMap(_.root)
-              .lastOption
-              .map { case m: NewMethodParameterIn => m.index.map(_ + 1).getOrElse(0) }
-              .getOrElse(0)
+              .collect { case m: NewMethodParameterIn => m.index }
+              .flatten
+              .maxOption
+              .map(_ + 1)
+              .getOrElse(1)
 
           Ast(p.index(nextIndex))
         }

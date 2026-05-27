@@ -16,7 +16,7 @@ class MethodParameterOutTraversal(val traversal: Iterator[MethodParameterOut]) e
     traversal.filter(_.index.contains(num))
 
   def index(num: Option[Int]): Iterator[MethodParameterOut] =
-    num.fold(traversal.filter(_.index.isEmpty))(index)
+    traversal.filter(_.index == num)
 
   def indexIfPresent(num: Option[Int]): Iterator[MethodParameterOut] =
     num.fold(Iterator.empty[MethodParameterOut])(index)
