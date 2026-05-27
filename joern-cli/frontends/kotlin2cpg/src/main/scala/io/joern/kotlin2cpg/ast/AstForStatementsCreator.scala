@@ -8,7 +8,6 @@ import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.AstNodeNew
-import io.shiftleft.codepropertygraph.generated.nodes.NewJumpLabel
 import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtBlockExpression
@@ -529,43 +528,11 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     else astForTryAsExpression(expr, argIdx, argNameMaybe, annotations)
   }
 
-  def astForBreak(expr: KtBreakExpression): Ast = {
-    val node = controlStructureNode(expr, ControlStructureTypes.BREAK, code(expr))
-    Option(expr.getLabelName) match {
-      case Some(labelName) =>
-        val jumpLabelNode = NewJumpLabel()
-          .parserTypeName(expr.getClass.getSimpleName)
-          .name(labelName)
-          .code(labelName)
-          .lineNumber(line(expr))
-          .columnNumber(column(expr))
-          .order(1)
-        Ast(node)
-          .withChild(Ast(jumpLabelNode))
-          .withJumpArgumentEdge(node, jumpLabelNode)
-      case None =>
-        Ast(node)
-    }
-  }
+  def astForBreak(expr: KtBreakExpression): Ast =
+    breakAst(expr, code(expr), Option(expr.getLabelName))
 
-  def astForContinue(expr: KtContinueExpression): Ast = {
-    val node = controlStructureNode(expr, ControlStructureTypes.CONTINUE, code(expr))
-    Option(expr.getLabelName) match {
-      case Some(labelName) =>
-        val jumpLabelNode = NewJumpLabel()
-          .parserTypeName(expr.getClass.getSimpleName)
-          .name(labelName)
-          .code(labelName)
-          .lineNumber(line(expr))
-          .columnNumber(column(expr))
-          .order(1)
-        Ast(node)
-          .withChild(Ast(jumpLabelNode))
-          .withJumpArgumentEdge(node, jumpLabelNode)
-      case None =>
-        Ast(node)
-    }
-  }
+  def astForContinue(expr: KtContinueExpression): Ast =
+    continueAst(expr, code(expr), Option(expr.getLabelName))
 
   def astForThrowExpression(
     expr: KtThrowExpression,

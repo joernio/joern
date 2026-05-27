@@ -245,6 +245,42 @@ abstract class AstCreatorBase[Node, NodeProcessor](filename: String)(implicit wi
     }
   }
 
+  /** Creates an AST for a break statement. When `labelName` is present a `JumpLabel` child is created at order 1 and
+    * connected to the break node via a `JUMP_ARGUMENT` edge.
+    */
+  def breakAst(node: Node, codeStr: String, labelName: Option[String]): Ast =
+    labeledJumpAst(node, ControlStructureTypes.BREAK, codeStr, labelName)
+
+  /** Creates an AST for a continue statement. When `labelName` is present a `JumpLabel` child is created at order 1 and
+    * connected to the continue node via a `JUMP_ARGUMENT` edge.
+    */
+  def continueAst(node: Node, codeStr: String, labelName: Option[String]): Ast =
+    labeledJumpAst(node, ControlStructureTypes.CONTINUE, codeStr, labelName)
+
+  def labeledJumpAst(node: Node, jumpType: String, codeStr: String, labelName: Option[String]): Ast = {
+    val jumpNode = NewControlStructure()
+      .parserTypeName(node.getClass.getSimpleName)
+      .controlStructureType(jumpType)
+      .code(codeStr)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+    labelName match {
+      case Some(name) =>
+        val jumpLabelNode = NewJumpLabel()
+          .parserTypeName(node.getClass.getSimpleName)
+          .name(name)
+          .code(name)
+          .lineNumber(line(node))
+          .columnNumber(column(node))
+          .order(1)
+        Ast(jumpNode)
+          .withChild(Ast(jumpLabelNode))
+          .withJumpArgumentEdge(jumpNode, jumpLabelNode)
+      case None =>
+        Ast(jumpNode)
+    }
+  }
+
   /** For the given try body, catch ASTs and finally AST, create a try-catch-finally AST with orders set correctly for
     * the ossdataflow engine.
     */
