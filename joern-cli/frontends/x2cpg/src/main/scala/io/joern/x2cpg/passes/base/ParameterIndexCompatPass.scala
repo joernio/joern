@@ -18,7 +18,7 @@ class ParameterIndexCompatPass(cpg: Cpg) extends CpgPass(cpg) {
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     cpg.method.foreach { method =>
       val params        = method.parameter.l
-      val anyIndexIsSet = params.exists(_.index.isDefined)
+      val anyIndexIsSet = params.exists(param => param.index.exists(index => index != -1))
       if (!anyIndexIsSet) {
         // Old-style CPG: no parameter in this method has an explicit index. copy order for all.
         params.foreach { param =>
