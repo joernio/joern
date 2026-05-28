@@ -1,6 +1,8 @@
 package io.joern.ghidra2cpg
 
 import ghidra.GhidraJarApplicationLayout
+import ghidra.app.plugin.core.analysis.AutoAnalysisManager
+import ghidra.app.util.importer.ProgramLoader
 import ghidra.base.project.GhidraProject
 import ghidra.framework.protocol.ghidra.Handler
 import ghidra.framework.{Application, HeadlessGhidraApplicationConfiguration}
@@ -8,6 +10,7 @@ import ghidra.program.flatapi.FlatProgramAPI
 import ghidra.program.model.listing.Program
 import ghidra.program.util.{DefinedStringIterator, GhidraProgramUtilities}
 import ghidra.util.exception.InvalidInputException
+import ghidra.util.task.TaskMonitor
 import io.joern.ghidra2cpg.passes.*
 import io.joern.ghidra2cpg.passes.arm.ArmFunctionPass
 import io.joern.ghidra2cpg.passes.mips.{LoHiPass, MipsFunctionPass}
@@ -48,14 +51,25 @@ class Ghidra2Cpg extends X2CpgFrontend {
           // The 'true' parameter indicates this is a temporary project
           project =
             GhidraProject.createProject(tempWorkingDir.absolutePathAsString, CommandLineConfig.projectName, true)
-          program = project.importProgram(inputFile)
-          addProgramToCpg(program, inputFile.getCanonicalPath, cpg)
+          val loadResults = ProgramLoader.builder()
+            .source(inputFile)
+            .project(project.getProject)
+            .monitor(TaskMonitor.DUMMY)
+            .load()
+          program = loadResults.getPrimaryDomainObject(this)
+          val txId = program.startTransaction("Batch Processing")
+          AutoAnalysisManager.getAnalysisManager(program).initializeOptions()
+          try {
+            addProgramToCpg(program, inputFile.getCanonicalPath, cpg)
+          } finally {
+            program.endTransaction(txId, true)
+            program.release(this)
+          }
         } catch {
           case e: Exception =>
             e.printStackTrace()
         } finally {
           // Closing deletes the project (since we created a temporary project)
-          // Closing also releases the program
           project.close()
         }
       }
