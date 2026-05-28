@@ -6,7 +6,7 @@ import ghidra.framework.protocol.ghidra.Handler
 import ghidra.framework.{Application, HeadlessGhidraApplicationConfiguration}
 import ghidra.program.flatapi.FlatProgramAPI
 import ghidra.program.model.listing.Program
-import ghidra.program.util.{DefinedDataIterator, GhidraProgramUtilities}
+import ghidra.program.util.{DefinedStringIterator, GhidraProgramUtilities}
 import ghidra.util.exception.InvalidInputException
 import io.joern.ghidra2cpg.passes.*
 import io.joern.ghidra2cpg.passes.arm.ArmFunctionPass
@@ -99,8 +99,8 @@ class Ghidra2Cpg extends X2CpgFrontend {
     val functionIterator = listing.getFunctions(true)
     val functions        = functionIterator.iterator.asScala.toList
 
-    val address2Literals: Map[Long, String] = DefinedDataIterator
-      .definedStrings(program)
+    val address2Literals: Map[Long, String] = DefinedStringIterator
+      .forProgram(program)
       .iterator()
       .asScala
       .toList

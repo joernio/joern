@@ -303,8 +303,6 @@ class PCodeMapper(
         handleSingleArgument(pcodeOp, "<operator>.cast", pcodeOp.getMnemonic)
       case CPOOLREF =>
         handleSingleArgument(pcodeOp, "<operator>.cpoolref", pcodeOp.getMnemonic)
-      case EXTRACT =>
-        handleSingleArgument(pcodeOp, "<operator>.extract", pcodeOp.getMnemonic)
       case FLOAT_ABS =>
         handleSingleArgument(pcodeOp, "<operator>.abs", pcodeOp.getMnemonic)
       case FLOAT_CEIL =>
