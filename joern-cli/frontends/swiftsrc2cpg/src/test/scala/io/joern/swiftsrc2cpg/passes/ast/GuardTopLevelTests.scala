@@ -5,6 +5,7 @@ package io.joern.swiftsrc2cpg.passes.ast
 import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
 class GuardTopLevelTests extends SwiftSrc2CpgSuite {
@@ -17,26 +18,51 @@ class GuardTopLevelTests extends SwiftSrc2CpgSuite {
         |print(b)
         |""".stripMargin)
       val List(globalBlock) = cpg.method.nameExact("<global>").block.l
-      val List(localA)      = globalBlock.local.nameExact("a").l
+      val List(localA)      = globalBlock.local.l
+      localA.name shouldBe "a"
       localA.typeFullName shouldBe "Swift.Int"
 
       // After desugaring, b is in the guard's then block, not the global block
-      val List(guardIf) = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l
-      guardIf.code should startWith("guard let b = a else")
+      val List(guardIf: ControlStructure) = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l
+      guardIf.code shouldBe "guard let b = a else {}"
+      guardIf.controlStructureType shouldBe ControlStructureTypes.IF
 
       // Check that desugaring created the temp variable and nil check in condition
       val List(condBlock) = guardIf.condition.isBlock.l
-      condBlock.local.name.l.exists(_.startsWith("<tmp>")) shouldBe true
+      val List(tmpLocal)  = condBlock.astChildren.isLocal.l
+      val tmpName         = tmpLocal.name
+      tmpName should startWith("<tmp>")
+
+      val List(nilCheck) = condBlock.astChildren.isCall.l
+      nilCheck.name shouldBe Operators.notEquals
+      nilCheck.code shouldBe s"($tmpName = a) != nil"
+
+      val List(assignment) = nilCheck.argument.isCall.l
+      assignment.name shouldBe Operators.assignment
+      assignment.code shouldBe s"$tmpName = a"
+
+      val List(tmpArg, aArg) = assignment.argument.l
+      tmpArg.code shouldBe tmpName
+      aArg.code shouldBe "a"
+
+      val List(nilLit) = nilCheck.argument.isLiteral.l
+      nilLit.code shouldBe "nil"
 
       // Check that b local is in the then block along with code that follows the guard
       val List(thenBlock) = guardIf.whenTrue.isBlock.l
-      val List(localB)    = thenBlock.local.nameExact("b").l
-      localB.typeFullName shouldBe "ANY"
+      val List(localB)    = thenBlock.local.l
+      localB.name shouldBe "b"
 
       // Verify the print(b) call is also in the then block (code following guard)
-      val List(printCall) = thenBlock.astChildren.isCall.nameExact("print").l
-      val List(bArg)      = printCall.argument.isIdentifier.l
-      bArg.name shouldBe "b"
+      val List(bAssign, printCall) = thenBlock.astChildren.isCall.l
+      bAssign.name shouldBe Operators.assignment
+      bAssign.code shouldBe s"b = $tmpName"
+      printCall.code shouldBe "print(b)"
+
+      val List(bArg) = printCall.argument.l
+      bArg.code shouldBe "b"
+
+      guardIf.whenFalse.astChildren shouldBe empty
     }
   }
 

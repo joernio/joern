@@ -682,7 +682,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         info.tmpName.foreach { tmpName =>
           val tmpLocalNode = localNode(info.binding, tmpName, tmpName, Defines.Any).order(0)
           diffGraph.addEdge(condBlockNode, tmpLocalNode, EdgeTypes.AST)
-          scope.addVariable(tmpName, tmpLocalNode, Defines.Any, VariableScopeManager.ScopeType.BlockScope)
         }
       }
 
@@ -699,8 +698,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
               s"$tmpName = ${code(info.binding.initializer.get.value)}"
             )
 
-            val tmpIdentForCheck = identifierNode(info.binding, tmpName, tmpName, Defines.Any)
-            scope.addVariableReference(tmpName, tmpIdentForCheck, Defines.Any, EvaluationStrategies.BY_REFERENCE)
             val nilNode = literalNode(info.binding, "nil", Option(Defines.Nil))
             val checkCallNode = createStaticCallNode(
               info.binding,
