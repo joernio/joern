@@ -51,7 +51,8 @@ class Ghidra2Cpg extends X2CpgFrontend {
           // The 'true' parameter indicates this is a temporary project
           project =
             GhidraProject.createProject(tempWorkingDir.absolutePathAsString, CommandLineConfig.projectName, true)
-          val loadResults = ProgramLoader.builder()
+          val loadResults = ProgramLoader
+            .builder()
             .source(inputFile)
             .project(project.getProject)
             .monitor(TaskMonitor.DUMMY)
