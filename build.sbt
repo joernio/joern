@@ -27,7 +27,6 @@ lazy val abap2cpg          = Projects.abap2cpg
 lazy val rust2cpg          = Projects.rust2cpg
 lazy val linterRules       = Projects.linterRules
 
-// aggregate project which doesn't include the helper project `linterRules` - we don't want to include it in any standard task
 lazy val root = project
   .in(file("."))
   .aggregate(
@@ -51,7 +50,8 @@ lazy val root = project
     swiftsrc2cpg,
     csharpsrc2cpg,
     abap2cpg,
-    rust2cpg
+    rust2cpg,
+    linterRules
   )
   .dependsOn(linterRules % ScalafixConfig)
 
