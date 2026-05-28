@@ -44,20 +44,20 @@ class AvailabilityQueryTests extends SwiftSrc2CpgSuite {
       val List(ifControlStructure) = cpg.controlStructure.isIf.l
       ifControlStructure.whenTrue.astChildren shouldBe empty
 
-      // Condition is desugared: { <tmp>0 = Optional(5); <tmp>0 != nil && #unavailable(...) }
+      // Condition is desugared: { let <tmp>0; (<tmp>0 = Optional(5)) != nil && #unavailable(...) }
       val List(condBlock) = ifControlStructure.condition.isBlock.l
       val List(tmpLocal)  = condBlock.astChildren.isLocal.l
       val tmpName         = tmpLocal.name
 
-      val List(assignment) = condBlock.astChildren.isCall.nameExact(Operators.assignment).l
-      assignment.code shouldBe s"$tmpName = Optional(5)"
-
       val List(andCheck)              = condBlock.astChildren.isCall.nameExact(Operators.logicalAnd).l
       val List(nilCheck, unavailable) = andCheck.argument.isCall.l
       nilCheck.name shouldBe Operators.notEquals
-      nilCheck.code shouldBe s"$tmpName != nil"
+      nilCheck.code shouldBe s"($tmpName = Optional(5)) != nil"
       unavailable.code shouldBe "#unavailable(OSX 10.52, *)"
       unavailable.name shouldBe "#unavailable"
+
+      val List(assignment) = nilCheck.argument.assignment.l
+      assignment.code shouldBe s"$tmpName = Optional(5)"
 
       ifControlStructure.whenFalse shouldBe empty
     }

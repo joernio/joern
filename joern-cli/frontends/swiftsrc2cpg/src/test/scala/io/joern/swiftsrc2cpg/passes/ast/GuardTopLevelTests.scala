@@ -14,6 +14,7 @@ class GuardTopLevelTests extends SwiftSrc2CpgSuite {
       val cpg = code("""
         |let a: Int? = 1
         |guard let b = a else {}
+        |print(b)
         |""".stripMargin)
       val List(globalBlock) = cpg.method.nameExact("<global>").block.l
       val List(localA)      = globalBlock.local.nameExact("a").l
@@ -24,15 +25,18 @@ class GuardTopLevelTests extends SwiftSrc2CpgSuite {
       guardIf.code should startWith("guard let b = a else")
 
       // Check that desugaring created the temp variable and nil check in condition
-      val condBlock = guardIf.condition.isBlock.l
-      condBlock should not be empty
-      condBlock.head.local.name.l.exists(_.startsWith("<tmp>")) shouldBe true
+      val List(condBlock) = guardIf.condition.isBlock.l
+      condBlock.local.name.l.exists(_.startsWith("<tmp>")) shouldBe true
 
-      // Check that b local is in the then block
-      val thenBlock = guardIf.whenTrue.isBlock.l
-      thenBlock should not be empty
-      val List(localB) = thenBlock.head.local.nameExact("b").l
+      // Check that b local is in the then block along with code that follows the guard
+      val List(thenBlock) = guardIf.whenTrue.isBlock.l
+      val List(localB)    = thenBlock.local.nameExact("b").l
       localB.typeFullName shouldBe "ANY"
+
+      // Verify the print(b) call is also in the then block (code following guard)
+      val List(printCall) = thenBlock.astChildren.isCall.nameExact("print").l
+      val List(bArg)      = printCall.argument.isIdentifier.l
+      bArg.name shouldBe "b"
     }
   }
 

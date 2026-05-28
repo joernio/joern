@@ -154,7 +154,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       val ifNode = controlStructureNode(guardStmt, ControlStructureTypes.IF, code)
 
       // Apply optional binding desugaring for guard let
-      // First, create the block that will hold the unwrapped variables
+      // Create the block that will hold the unwrapped variables (blockNode argument is only used for location info)
       val thenBlockNode = if (elementsAfterGuard.nonEmpty) blockNode(elementsAfterGuard.head) else blockNode(guardStmt)
       scope.pushNewBlockScope(thenBlockNode)
       localAstParentStack.push(thenBlockNode)
@@ -563,12 +563,18 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   /** Information about an optional binding for desugaring if-let/while-let constructs.
     *
+    * Contains the CPG-level names for optional binding desugaring. The localName is the unwrapped variable name that
+    * appears in the then/body block. The tmpName (when present) holds the optional value from the initializer and is
+    * used for the nil check in the condition block, ensuring single evaluation of the initializer expression.
+    *
     * @param localName
-    *   The name of the local variable to be created in the then/body block
+    *   CPG name for the unwrapped variable in the then/body block (e.g., "a" in `if let a = foo()`)
     * @param tmpName
-    *   Optional temp variable name (Some if has initializer, None otherwise)
+    *   CPG name for temporary holding the optional value in condition (e.g., "<tmp>0" in the nil check)
     * @param binding
-    *   The original OptionalBindingConditionSyntax node
+    *   The source-level OptionalBindingConditionSyntax node
+    * @param isWildcard
+    *   True if the pattern is a wildcard (e.g., `if let _ = foo()`), requiring generated name
     */
   protected case class BindingInfo(
     localName: String,
@@ -577,13 +583,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     isWildcard: Boolean
   )
 
-  /** Collects binding information from optional binding conditions for desugaring.
-    *
-    * @param bindings
-    *   The optional binding condition nodes
-    * @return
-    *   Sequence of BindingInfo with local name, optional temp name, binding node, and wildcard flag
-    */
   protected def collectBindingInfos(bindings: Seq[OptionalBindingConditionSyntax]): Seq[BindingInfo] = {
     bindings.map { binding =>
       val (localName, isWildcard) = binding.pattern match {
@@ -595,21 +594,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }
   }
 
-  /** Analyzes conditions to determine optional binding desugaring strategy.
-    *
-    * @param conditions
-    *   The condition elements to analyze
-    * @param onAllSimple
-    *   Handler for all simple optional bindings
-    * @param onMixed
-    *   Handler for mixed simple and tuple optional bindings
-    * @param onPartial
-    *   Handler for partial desugaring (simple bindings + other conditions)
-    * @param onStandard
-    *   Handler for standard conditions (no simple bindings to desugar)
-    * @return
-    *   The result from the appropriate handler
-    */
   protected def handleOptionalBindingConditions[T](
     conditions: Iterable[ConditionElementSyntax],
     onAllSimple: Seq[OptionalBindingConditionSyntax] => T,
@@ -690,51 +674,57 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     val hasAnyInitializer = bindingInfos.exists(_.tmpName.isDefined)
 
     if (hasAnyInitializer) {
-      // Create condition block with assignments and checks
       val condBlockNode = blockNode(node)
       scope.pushNewBlockScope(condBlockNode)
       localAstParentStack.push(condBlockNode)
 
-      val assignmentAsts = bindingInfos.flatMap { info =>
-        info.tmpName.map { tmpName =>
+      bindingInfos.foreach { info =>
+        info.tmpName.foreach { tmpName =>
           val tmpLocalNode = localNode(info.binding, tmpName, tmpName, Defines.Any).order(0)
           diffGraph.addEdge(condBlockNode, tmpLocalNode, EdgeTypes.AST)
           scope.addVariable(tmpName, tmpLocalNode, Defines.Any, VariableScopeManager.ScopeType.BlockScope)
-
-          val tmpIdentNode = identifierNode(info.binding, tmpName, tmpName, Defines.Any)
-          scope.addVariableReference(tmpName, tmpIdentNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
-          val initAst = astForNode(info.binding.initializer.get.value)
-          createAssignmentCallAst(
-            info.binding,
-            Ast(tmpIdentNode),
-            initAst,
-            s"$tmpName = ${code(info.binding.initializer.get.value)}"
-          )
         }
       }
 
-      // Create nil checks for all bindings
       val nilCheckAsts = bindingInfos.map { info =>
-        val (checkName, checkNode) = info.tmpName match {
+        info.tmpName match {
           case Some(tmpName) =>
+            val tmpIdentNode = identifierNode(info.binding, tmpName, tmpName, Defines.Any)
+            scope.addVariableReference(tmpName, tmpIdentNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+            val initAst = astForNode(info.binding.initializer.get.value)
+            val assignAst = createAssignmentCallAst(
+              info.binding,
+              Ast(tmpIdentNode),
+              initAst,
+              s"$tmpName = ${code(info.binding.initializer.get.value)}"
+            )
+
             val tmpIdentForCheck = identifierNode(info.binding, tmpName, tmpName, Defines.Any)
             scope.addVariableReference(tmpName, tmpIdentForCheck, Defines.Any, EvaluationStrategies.BY_REFERENCE)
-            (tmpName, Ast(tmpIdentForCheck))
+            val nilNode = literalNode(info.binding, "nil", Option(Defines.Nil))
+            val checkCallNode = createStaticCallNode(
+              info.binding,
+              s"($tmpName = ${code(info.binding.initializer.get.value)}) != nil",
+              Operators.notEquals,
+              Operators.notEquals,
+              Defines.Bool
+            )
+            callAst(checkCallNode, List(assignAst, Ast(nilNode)))
+
           case None =>
-            (info.localName, astForNode(info.binding.pattern))
+            val patternAst = astForNode(info.binding.pattern)
+            val nilNode    = literalNode(info.binding, "nil", Option(Defines.Nil))
+            val checkCallNode = createStaticCallNode(
+              info.binding,
+              s"${info.localName} != nil",
+              Operators.notEquals,
+              Operators.notEquals,
+              Defines.Bool
+            )
+            callAst(checkCallNode, List(patternAst, Ast(nilNode)))
         }
-        val nilNode = literalNode(info.binding, "nil", Option(Defines.Nil))
-        val checkCallNode = createStaticCallNode(
-          info.binding,
-          s"$checkName != nil",
-          Operators.notEquals,
-          Operators.notEquals,
-          Defines.Bool
-        )
-        callAst(checkCallNode, List(checkNode, Ast(nilNode)))
       }
 
-      // Combine nil checks with additional conditions using &&
       val additionalConditionAsts = additionalConditions.map(condElem => astForNode(condElem.condition))
       val allChecks               = nilCheckAsts ++ additionalConditionAsts
       val combinedCheckAst        = combineNilChecksWithAnd(node, allChecks)
@@ -742,9 +732,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       scope.popScope()
       localAstParentStack.pop()
 
-      blockAst(condBlockNode, assignmentAsts.toList :+ combinedCheckAst)
+      blockAst(condBlockNode, List(combinedCheckAst))
     } else {
-      // All bindings have no initializer: create combined != nil check without block
       val nilCheckAsts = bindingInfos.map { info =>
         val patternAst = astForNode(info.binding.pattern)
         val nilNode    = literalNode(info.binding, "nil", Option(Defines.Nil))
@@ -825,19 +814,10 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         blockAst(bodyBlockNode, unwrapAsts.toList ++ bodyAsts)
       }
     } else {
-      // All bindings have no initializer: just use original body
       astForNode(bodyNode)
     }
   }
 
-  /** Builds unwrap assignment ASTs for optional binding info without wrapping in a body block. Used for guard let where
-    * bindings need to be in parent scope.
-    *
-    * @param bindingInfos
-    *   The binding information
-    * @return
-    *   List of assignment ASTs for unwrapping
-    */
   protected def buildUnwrapAssignments(bindingInfos: Seq[BindingInfo]): List[Ast] = {
     val bindingsWithInitializer = bindingInfos.filter(info => info.tmpName.isDefined && !info.isWildcard)
 

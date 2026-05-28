@@ -19,22 +19,20 @@ class StatementTests extends SwiftSrc2CpgSuite {
 
       val List(ifNode) = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l
 
-      // Condition: desugared to { <tmp>0 = optionalValue; <tmp>0 != nil }
+      // Condition: desugared to { let <tmp>0; (<tmp>0 = optionalValue) != nil }
       val List(condBlock) = ifNode.condition.isBlock.l
 
       val List(tmpLocal) = condBlock.astChildren.isLocal.l
       tmpLocal.name should startWith("<tmp>")
       val tmpName = tmpLocal.name
 
-      val List(condAssign) = condBlock.astChildren.isCall.nameExact(Operators.assignment).l
+      val List(condCheck) = condBlock.astChildren.isCall.nameExact(Operators.notEquals).l
+      condCheck.code shouldBe s"($tmpName = optionalValue) != nil"
+
+      val List(condAssign) = condCheck.argument.assignment.l
       condAssign.code shouldBe s"$tmpName = optionalValue"
       condAssign.argument(1).code shouldBe tmpName
       condAssign.argument(2).code shouldBe "optionalValue"
-
-      val List(condCheck) = condBlock.astChildren.isCall.nameExact(Operators.notEquals).l
-      condCheck.code shouldBe s"$tmpName != nil"
-      condCheck.argument(1).code shouldBe tmpName
-      condCheck.argument(2).code shouldBe "nil"
 
       // Then block: { let baz = <tmp>0; print(baz) }
       val List(thenBlock) = ifNode.whenTrue.isBlock.l
@@ -192,22 +190,20 @@ class StatementTests extends SwiftSrc2CpgSuite {
 
       val List(whileNode) = cpg.controlStructure.controlStructureType(ControlStructureTypes.WHILE).l
 
-      // Condition: desugared to { <tmp>0 = iterator.next(); <tmp>0 != nil }
+      // Condition: desugared to { let <tmp>0; (<tmp>0 = iterator.next()) != nil }
       val List(condBlock) = whileNode.condition.isBlock.l
 
       val List(tmpLocal) = condBlock.astChildren.isLocal.l
       tmpLocal.name should startWith("<tmp>")
       val tmpName = tmpLocal.name
 
-      val List(condAssign) = condBlock.astChildren.isCall.nameExact(Operators.assignment).l
+      val List(condCheck) = condBlock.astChildren.isCall.nameExact(Operators.notEquals).l
+      condCheck.code shouldBe s"($tmpName = iterator.next()) != nil"
+
+      val List(condAssign) = condCheck.argument.assignment.l
       condAssign.code shouldBe s"$tmpName = iterator.next()"
       condAssign.argument(1).code shouldBe tmpName
       condAssign.argument(2).code shouldBe "iterator.next()"
-
-      val List(condCheck) = condBlock.astChildren.isCall.nameExact(Operators.notEquals).l
-      condCheck.code shouldBe s"$tmpName != nil"
-      condCheck.argument(1).code shouldBe tmpName
-      condCheck.argument(2).code shouldBe "nil"
 
       // Loop body: { let item = <tmp>0; print(item) }
       val List(bodyBlock) = whileNode.whenTrue.isBlock.l
@@ -265,7 +261,7 @@ class StatementTests extends SwiftSrc2CpgSuite {
 
       val List(ifNode) = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l
 
-      // Condition: { <tmp>0 = Optional(1); <tmp>1 = Optional(2); <tmp>0 != nil && <tmp>1 != nil }
+      // Condition: { let <tmp>0; let <tmp>1; (<tmp>0 = Optional(1)) != nil && (<tmp>1 = Optional(2)) != nil }
       val List(condBlock) = ifNode.condition.isBlock.l
 
       val List(tmp1Local, tmp2Local) = condBlock.astChildren.isLocal.l
@@ -274,14 +270,14 @@ class StatementTests extends SwiftSrc2CpgSuite {
       val tmp1Name = tmp1Local.name
       val tmp2Name = tmp2Local.name
 
-      val List(assign1, assign2) = condBlock.astChildren.isCall.nameExact(Operators.assignment).l
-      assign1.code shouldBe s"$tmp1Name = Optional(1)"
-      assign2.code shouldBe s"$tmp2Name = Optional(2)"
-
       val List(andCheck)       = condBlock.astChildren.isCall.nameExact(Operators.logicalAnd).l
       val List(check1, check2) = andCheck.argument.isCall.nameExact(Operators.notEquals).l
-      check1.code shouldBe s"$tmp1Name != nil"
-      check2.code shouldBe s"$tmp2Name != nil"
+      check1.code shouldBe s"($tmp1Name = Optional(1)) != nil"
+      check2.code shouldBe s"($tmp2Name = Optional(2)) != nil"
+
+      val List(assign1, assign2) = andCheck.argument.isCall.argument.assignment.l
+      assign1.code shouldBe s"$tmp1Name = Optional(1)"
+      assign2.code shouldBe s"$tmp2Name = Optional(2)"
 
       // Then block: { a = <tmp>0; b = <tmp>1; print(a, b) }
       val List(thenBlock) = ifNode.whenTrue.isBlock.l
@@ -306,19 +302,19 @@ class StatementTests extends SwiftSrc2CpgSuite {
 
       val List(ifNode) = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l
 
-      // Condition: { <tmp>0 = Optional(1); <tmp>0 != nil && opt2 != nil }
+      // Condition: { let <tmp>0; (<tmp>0 = Optional(1)) != nil && opt2 != nil }
       val List(condBlock) = ifNode.condition.isBlock.l
 
       val List(tmp1Local) = condBlock.astChildren.isLocal.l
       val tmp1Name        = tmp1Local.name
 
-      val List(assign1) = condBlock.astChildren.isCall.nameExact(Operators.assignment).l
-      assign1.code shouldBe s"$tmp1Name = Optional(1)"
-
       val List(andCheck)       = condBlock.astChildren.isCall.nameExact(Operators.logicalAnd).l
       val List(check1, check2) = andCheck.argument.isCall.nameExact(Operators.notEquals).l
-      check1.code shouldBe s"$tmp1Name != nil"
+      check1.code shouldBe s"($tmp1Name = Optional(1)) != nil"
       check2.code shouldBe "opt2 != nil"
+
+      val List(assign1) = check1.argument.assignment.l
+      assign1.code shouldBe s"$tmp1Name = Optional(1)"
 
       // Then block: { a = <tmp>0; print(a, opt2) }
       val List(thenBlock) = ifNode.whenTrue.isBlock.l
@@ -341,21 +337,21 @@ class StatementTests extends SwiftSrc2CpgSuite {
 
       val List(whileNode) = cpg.controlStructure.controlStructureType(ControlStructureTypes.WHILE).l
 
-      // Condition: { <tmp>0 = iterator1.next(); <tmp>1 = iterator2.next(); <tmp>0 != nil && <tmp>1 != nil }
+      // Condition: { let <tmp>0; let <tmp>1; (<tmp>0 = iterator1.next()) != nil && (<tmp>1 = iterator2.next()) != nil }
       val List(condBlock) = whileNode.condition.isBlock.l
 
       val List(tmp1Local, tmp2Local) = condBlock.astChildren.isLocal.l
       val tmp1Name                   = tmp1Local.name
       val tmp2Name                   = tmp2Local.name
 
-      val List(assign1, assign2) = condBlock.astChildren.isCall.nameExact(Operators.assignment).l
-      assign1.code shouldBe s"$tmp1Name = iterator1.next()"
-      assign2.code shouldBe s"$tmp2Name = iterator2.next()"
-
       val List(andCheck)       = condBlock.astChildren.isCall.nameExact(Operators.logicalAnd).l
       val List(check1, check2) = andCheck.argument.isCall.nameExact(Operators.notEquals).l
-      check1.code shouldBe s"$tmp1Name != nil"
-      check2.code shouldBe s"$tmp2Name != nil"
+      check1.code shouldBe s"($tmp1Name = iterator1.next()) != nil"
+      check2.code shouldBe s"($tmp2Name = iterator2.next()) != nil"
+
+      val List(assign1, assign2) = andCheck.argument.isCall.argument.assignment.l
+      assign1.code shouldBe s"$tmp1Name = iterator1.next()"
+      assign2.code shouldBe s"$tmp2Name = iterator2.next()"
 
       // Loop body: { a = <tmp>0; b = <tmp>1; print(a, b) }
       val List(bodyBlock) = whileNode.whenTrue.isBlock.l
@@ -380,21 +376,19 @@ class StatementTests extends SwiftSrc2CpgSuite {
 
       val List(ifNode) = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l
 
-      // Condition: { <tmp>0 = foo(); <tmp>0 != nil } (tuple pattern excluded from condition)
+      // Condition: { let <tmp>0; (<tmp>0 = foo()) != nil } (tuple pattern excluded from condition)
       val List(condBlock) = ifNode.condition.isBlock.l
 
       val List(tmp1Local) = condBlock.astChildren.isLocal.l
       val tmp1Name        = tmp1Local.name
 
-      val List(assign1) = condBlock.astChildren.isCall.nameExact(Operators.assignment).l
+      val List(check1) = condBlock.astChildren.isCall.nameExact(Operators.notEquals).l
+      check1.code shouldBe s"($tmp1Name = foo()) != nil"
+
+      val List(assign1) = check1.argument.assignment.l
       assign1.code shouldBe s"$tmp1Name = foo()"
       assign1.argument(1).code shouldBe tmp1Name
       assign1.argument(2).code shouldBe "foo()"
-
-      val List(check1) = condBlock.astChildren.isCall.nameExact(Operators.notEquals).l
-      check1.code shouldBe s"$tmp1Name != nil"
-      check1.argument(1).code shouldBe tmp1Name
-      check1.argument(2).code shouldBe "nil"
 
       // Then block: { a = <tmp>0; let (b, c) = bar(); print(a, b, c) }
       val List(thenBlock) = ifNode.whenTrue.isBlock.l
@@ -427,21 +421,19 @@ class StatementTests extends SwiftSrc2CpgSuite {
 
       val List(whileNode) = cpg.controlStructure.controlStructureType(ControlStructureTypes.WHILE).l
 
-      // Condition: { <tmp>0 = foo(); <tmp>0 != nil } (tuple pattern excluded from condition)
+      // Condition: { let <tmp>0; (<tmp>0 = foo()) != nil } (tuple pattern excluded from condition)
       val List(condBlock) = whileNode.condition.isBlock.l
 
       val List(tmp1Local) = condBlock.astChildren.isLocal.l
       val tmp1Name        = tmp1Local.name
 
-      val List(assign1) = condBlock.astChildren.isCall.nameExact(Operators.assignment).l
+      val List(check1) = condBlock.astChildren.isCall.nameExact(Operators.notEquals).l
+      check1.code shouldBe s"($tmp1Name = foo()) != nil"
+
+      val List(assign1) = check1.argument.assignment.l
       assign1.code shouldBe s"$tmp1Name = foo()"
       assign1.argument(1).code shouldBe tmp1Name
       assign1.argument(2).code shouldBe "foo()"
-
-      val List(check1) = condBlock.astChildren.isCall.nameExact(Operators.notEquals).l
-      check1.code shouldBe s"$tmp1Name != nil"
-      check1.argument(1).code shouldBe tmp1Name
-      check1.argument(2).code shouldBe "nil"
 
       // Loop body: { a = <tmp>0; let (b, c) = bar(); print(a, b, c) }
       val List(bodyBlock) = whileNode.whenTrue.isBlock.l

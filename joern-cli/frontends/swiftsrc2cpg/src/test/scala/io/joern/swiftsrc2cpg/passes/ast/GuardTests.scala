@@ -4,6 +4,7 @@ package io.joern.swiftsrc2cpg.passes.ast
 
 import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
 import io.shiftleft.codepropertygraph.generated.*
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
 class GuardTests extends SwiftSrc2CpgSuite {
@@ -222,22 +223,20 @@ class GuardTests extends SwiftSrc2CpgSuite {
 
       val List(guardIf) = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l
 
-      // Condition: desugared to { <tmp>0 = optionalValue; <tmp>0 != nil }
+      // Condition: desugared to { let <tmp>0; (<tmp>0 = optionalValue) != nil }
       val List(condBlock) = guardIf.condition.isBlock.l
 
       val List(tmpLocal) = condBlock.astChildren.isLocal.l
       tmpLocal.name should startWith("<tmp>")
       val tmpName = tmpLocal.name
 
-      val List(condAssign) = condBlock.astChildren.isCall.nameExact(Operators.assignment).l
+      val List(condCheck) = condBlock.astChildren.isCall.nameExact(Operators.notEquals).l
+      condCheck.code shouldBe s"($tmpName = optionalValue) != nil"
+
+      val List(condAssign) = condCheck.argument.isCall.nameExact(Operators.assignment).l
       condAssign.code shouldBe s"$tmpName = optionalValue"
       condAssign.argument(1).code shouldBe tmpName
       condAssign.argument(2).code shouldBe "optionalValue"
-
-      val List(condCheck) = condBlock.astChildren.isCall.nameExact(Operators.notEquals).l
-      condCheck.code shouldBe s"$tmpName != nil"
-      condCheck.argument(1).code shouldBe tmpName
-      condCheck.argument(2).code shouldBe "nil"
 
       // Then block: { let value = <tmp>0 }
       val List(thenBlock) = guardIf.whenTrue.isBlock.l
@@ -271,18 +270,12 @@ class GuardTests extends SwiftSrc2CpgSuite {
       condCheck.argument(1).code shouldBe "optionalValue"
       condCheck.argument(2).code shouldBe "nil"
 
-      // Then branch: empty block (no new local or assignment for optionalValue)
-      val thenNodes = guardIf.whenTrue.l
-      thenNodes should not be empty
-
-      // Verify no new local named "optionalValue" was created in the then branch
-      val localsInThen = thenNodes.flatMap(_.ast.isLocal.nameExact("optionalValue").l)
-      localsInThen shouldBe empty
-
-      // Verify no assignment to optionalValue in the then branch
-      val assignmentsInThen        = thenNodes.flatMap(_.ast.isCall.nameExact(Operators.assignment).l)
-      val optionalValueAssignments = assignmentsInThen.filter(_.argument(1).code == "optionalValue")
-      optionalValueAssignments shouldBe empty
+      // Then branch: print(optionalValue) but no new local or assignment for optionalValue
+      inside(guardIf.whenTrue.l) { case List(thenBlock) =>
+        thenBlock.astChildren.isLocal.nameExact("optionalValue").l shouldBe empty
+        val assignments = thenBlock.astChildren.isCall.nameExact(Operators.assignment).l
+        assignments.filter(_.argument(1).code == "optionalValue") shouldBe empty
+      }
     }
 
     "testGuardLetMultipleBindings" in {
@@ -304,14 +297,10 @@ class GuardTests extends SwiftSrc2CpgSuite {
       tmp0.name shouldBe "<tmp>0"
       tmp1.name shouldBe "<tmp>1"
 
-      val List(tmp0Assign, tmp1Assign) = condBlock.astChildren.assignment.l
-      tmp0Assign.code shouldBe s"${tmp0.name} = foo()"
-      tmp1Assign.code shouldBe s"${tmp1.name} = bar()"
-
       val List(andCheck)             = condBlock.astChildren.isCall.nameExact(Operators.logicalAnd).l
       val List(tmp0Check, tmp1Check) = andCheck.argument.isCall.nameExact(Operators.notEquals).l
-      tmp0Check.code shouldBe s"${tmp0.name} != nil"
-      tmp1Check.code shouldBe s"${tmp1.name} != nil"
+      tmp0Check.code shouldBe s"(${tmp0.name} = foo()) != nil"
+      tmp1Check.code shouldBe s"(${tmp1.name} = bar()) != nil"
 
       // Then block: { let a = <tmp>0; let b = <tmp>1 }
       val List(thenBlock) = guardIf.whenTrue.isBlock.l
@@ -335,21 +324,21 @@ class GuardTests extends SwiftSrc2CpgSuite {
 
       val List(guardIf) = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l
 
-      // Condition: { <tmp>0 = foo(); <tmp>0 != nil && existing != nil }
+      // Condition: { let <tmp>0; (<tmp>0 = foo()) != nil && existing != nil }
       val List(condBlock) = guardIf.condition.isBlock.l
 
       val List(tmpLocal) = condBlock.astChildren.isLocal.l
       val tmpName        = tmpLocal.name
       tmpName should startWith("<tmp>")
 
-      val List(tmpAssign) = condBlock.astChildren.isCall.nameExact(Operators.assignment).l
-      tmpAssign.code shouldBe s"$tmpName = foo()"
-
       val List(andCheck)      = condBlock.astChildren.isCall.nameExact(Operators.logicalAnd).l
       val List(tmpCheck)      = andCheck.arguments(1).isCall.nameExact(Operators.notEquals).l
       val List(existingCheck) = andCheck.arguments(2).isCall.nameExact(Operators.notEquals).l
-      tmpCheck.code shouldBe s"$tmpName != nil"
+      tmpCheck.code shouldBe s"($tmpName = foo()) != nil"
       existingCheck.code shouldBe "existing != nil"
+
+      val List(tmpAssign) = tmpCheck.argument.isCall.nameExact(Operators.assignment).l
+      tmpAssign.code shouldBe s"$tmpName = foo()"
 
       // Then block: { let a = <tmp>0 } (no assignment for 'existing')
       val List(thenBlock) = guardIf.whenTrue.isBlock.l
@@ -380,16 +369,14 @@ class GuardTests extends SwiftSrc2CpgSuite {
       val tmpName        = tmpLocal.name
 
       val List(andCheck) = condBlock.astChildren.isCall.nameExact(Operators.logicalAnd).l
-      val arguments      = andCheck.argument.l
-      arguments should have size 2
-
-      // One should be the nil check, the other should be the flag identifier
-      val nilChecks =
-        arguments.collect { case c if c.isCall => c }.flatMap(_.ast.isCall.nameExact(Operators.notEquals).l)
-      val flags = arguments.collect { case i if i.isIdentifier => i }.flatMap(_.ast.isIdentifier.nameExact("flag").l)
-
-      nilChecks.code.l should contain(s"$tmpName != nil")
-      flags should not be empty
+      inside(andCheck.argument.l) {
+        case List(nilCheck: Call, flag: Identifier) =>
+          nilCheck.code shouldBe s"($tmpName = foo()) != nil"
+          flag.name shouldBe "flag"
+        case List(flag: Identifier, nilCheck: Call) =>
+          nilCheck.code shouldBe s"($tmpName = foo()) != nil"
+          flag.name shouldBe "flag"
+      }
     }
 
   }
