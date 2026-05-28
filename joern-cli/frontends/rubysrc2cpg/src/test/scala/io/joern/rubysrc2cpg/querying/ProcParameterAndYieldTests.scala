@@ -16,7 +16,7 @@ class ProcParameterAndYieldTests extends RubyCode2CpgFixture with Inspectors {
     val bParam = foo.parameter.last
     bParam.name shouldBe "b"
     bParam.code shouldBe "&b"
-    bParam.index shouldBe 1
+    bParam.index shouldBe Some(1)
 
     inside(foo.call.nameExact("call").argument.l) { case selfBase :: Nil =>
       selfBase.code shouldBe "b"
@@ -31,7 +31,7 @@ class ProcParameterAndYieldTests extends RubyCode2CpgFixture with Inspectors {
     val bParam = foo.parameter.last
     bParam.name shouldBe "b"
     bParam.code shouldBe "&b"
-    bParam.index shouldBe 1
+    bParam.index shouldBe Some(1)
 
     inside(foo.call.nameExact("call").argument.l) { case selfBase :: Nil =>
       selfBase.code shouldBe "b"
@@ -50,12 +50,12 @@ class ProcParameterAndYieldTests extends RubyCode2CpgFixture with Inspectors {
     val fooParam = foo.parameter.last
     fooParam.name shouldBe "<proc-param-0>"
     fooParam.code shouldBe "&<proc-param-0>"
-    fooParam.index shouldBe 1
+    fooParam.index shouldBe Some(1)
 
     val barParam = bar.parameter.last
     barParam.name shouldBe "<proc-param-1>"
     barParam.code shouldBe "&<proc-param-1>"
-    barParam.index shouldBe 1
+    barParam.index shouldBe Some(1)
 
     foo.call.nameExact("call").argument.isIdentifier.name.l shouldBe List("<proc-param-0>")
     bar.call.nameExact("call").argument.isIdentifier.name.l shouldBe List("<proc-param-1>")
@@ -69,11 +69,11 @@ class ProcParameterAndYieldTests extends RubyCode2CpgFixture with Inspectors {
     val List(xParam, procParam) = foo.parameter.l.takeRight(2)
 
     xParam.name shouldBe "x"
-    xParam.index shouldBe 1
+    xParam.index shouldBe Some(1)
 
     procParam.name shouldBe "<proc-param-0>"
     procParam.code shouldBe "&<proc-param-0>"
-    procParam.index shouldBe 2
+    procParam.index shouldBe Some(2)
 
     inside(foo.call.nameExact("call").argument.l) { case selfBase :: x :: Nil =>
       selfBase.code shouldBe "<proc-param-0>"
@@ -130,7 +130,7 @@ class ProcParameterAndYieldTests extends RubyCode2CpgFixture with Inspectors {
       // for the `MethodScope` which is why the procParam for this ConstructorScope is [1] instead of [0]
       procParam.name shouldBe "<proc-param-1>"
       procParam.code shouldBe "&<proc-param-1>"
-      procParam.index shouldBe 1
+      procParam.index shouldBe Some(1)
     }
 
     inside(initMethod.call.nameExact("call").argument.l) { case selfBase :: selfParam :: Nil =>

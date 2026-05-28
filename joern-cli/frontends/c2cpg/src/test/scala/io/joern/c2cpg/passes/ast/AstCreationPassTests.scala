@@ -42,12 +42,12 @@ class AstCreationPassTests extends AstC2CpgSuite {
       a1.name shouldBe "a"
       a1.code shouldBe "const char *a"
       a1.typeFullName shouldBe "char*"
-      a1.index shouldBe 1
+      a1.index shouldBe Some(1)
       a1.isVariadic shouldBe false
       ellipsis1.name shouldBe "<param>2"
       ellipsis1.code shouldBe "<param>2..."
       ellipsis1.typeFullName shouldBe "char*"
-      ellipsis1.index shouldBe 2
+      ellipsis1.index shouldBe Some(2)
       ellipsis1.isVariadic shouldBe true
 
       val List(bar) = cpg.method("bar").l
@@ -57,12 +57,12 @@ class AstCreationPassTests extends AstC2CpgSuite {
       a2.name shouldBe "a"
       a2.code shouldBe "const char *a"
       a2.typeFullName shouldBe "char*"
-      a2.index shouldBe 1
+      a2.index shouldBe Some(1)
       a2.isVariadic shouldBe false
       ellipsis2.name shouldBe "<param>2"
       ellipsis2.code shouldBe "<param>2..."
       ellipsis2.typeFullName shouldBe "char*"
-      ellipsis2.index shouldBe 2
+      ellipsis2.index shouldBe Some(2)
       ellipsis2.isVariadic shouldBe true
     }
 
@@ -89,12 +89,12 @@ class AstCreationPassTests extends AstC2CpgSuite {
       a1.name shouldBe "a"
       a1.code shouldBe "const char *a"
       a1.typeFullName shouldBe "char*"
-      a1.index shouldBe 1
+      a1.index shouldBe Some(1)
       a1.isVariadic shouldBe false
       ellipsis1.name shouldBe "<param>2"
       ellipsis1.code shouldBe "<param>2..."
       ellipsis1.typeFullName shouldBe "char*"
-      ellipsis1.index shouldBe 2
+      ellipsis1.index shouldBe Some(2)
       ellipsis1.isVariadic shouldBe true
 
       val List(bar) = cpg.method("bar").l
@@ -104,12 +104,12 @@ class AstCreationPassTests extends AstC2CpgSuite {
       a2.name shouldBe "a"
       a2.code shouldBe "const char *a"
       a2.typeFullName shouldBe "char*"
-      a2.index shouldBe 1
+      a2.index shouldBe Some(1)
       a2.isVariadic shouldBe false
       ellipsis2.name shouldBe "<param>2"
       ellipsis2.code shouldBe "<param>2..."
       ellipsis2.typeFullName shouldBe "char*"
-      ellipsis2.index shouldBe 2
+      ellipsis2.index shouldBe Some(2)
       ellipsis2.isVariadic shouldBe true
     }
 
@@ -144,12 +144,12 @@ class AstCreationPassTests extends AstC2CpgSuite {
           x.code shouldBe "int x"
           x.typeFullName shouldBe "int"
           x.isVariadic shouldBe false
-          x.index shouldBe 1
+          x.index shouldBe Some(1)
           args.name shouldBe "args"
           args.code shouldBe "int*... args"
           args.typeFullName shouldBe "int*"
           args.isVariadic shouldBe true
-          args.index shouldBe 2
+          args.index shouldBe Some(2)
         }
       }
     }
@@ -163,17 +163,17 @@ class AstCreationPassTests extends AstC2CpgSuite {
           x.code shouldBe "int x"
           x.typeFullName shouldBe "int"
           x.isVariadic shouldBe false
-          x.index shouldBe 1
+          x.index shouldBe Some(1)
           args.name shouldBe "args"
           args.code shouldBe "int args"
           args.typeFullName shouldBe "int"
           args.isVariadic shouldBe false
-          args.index shouldBe 2
+          args.index shouldBe Some(2)
           param3.name shouldBe "<param>3"
           param3.code shouldBe "<param>3..."
           param3.typeFullName shouldBe "int"
           param3.isVariadic shouldBe true
-          param3.index shouldBe 3
+          param3.index shouldBe Some(3)
         }
       }
     }

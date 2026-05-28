@@ -32,13 +32,13 @@ class TSTypesTests extends JsSrc2CpgSuite {
     method.methodReturn.typeFullName shouldBe Defines.Any
 
     val List(t, x, args) = method.parameter.l
-    t.index shouldBe 0
+    t.index shouldBe Some(0)
     t.name shouldBe "this"
     t.typeFullName shouldBe Defines.Any
-    x.index shouldBe 1
+    x.index shouldBe Some(1)
     x.name shouldBe "x"
     x.typeFullName shouldBe Defines.Any
-    args.index shouldBe 2
+    args.index shouldBe Some(2)
     args.name shouldBe "args"
     args.code shouldBe "...args"
     args.isVariadic shouldBe true

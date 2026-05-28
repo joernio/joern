@@ -117,11 +117,11 @@ class TypeDeclTests extends PhpCode2CpgFixture {
           thisParam.code shouldBe "this"
           thisParam.dynamicTypeHintFullName should contain("Foo")
           thisParam.typeFullName shouldBe "Foo"
-          thisParam.index shouldBe 0
+          thisParam.index shouldBe Some(0)
 
           xParam.code shouldBe "$x"
           xParam.typeFullName shouldBe "int"
-          xParam.index shouldBe 1
+          xParam.index shouldBe Some(1)
         }
       }
     }

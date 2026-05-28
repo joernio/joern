@@ -42,7 +42,8 @@ object Path {
             val methodName = method.name
             val statement = cfgNode match {
               case _: MethodParameterIn =>
-                val paramsPretty = method.parameter.toList.sortBy(_.index).map(_.code).mkString(", ")
+                val paramsPretty =
+                  method.parameter.toList.sortBy(_.index.getOrElse(Int.MaxValue)).map(_.code).mkString(", ")
                 s"$methodName($paramsPretty)"
               case _ => cfgNode.statement.repr
             }

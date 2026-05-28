@@ -41,11 +41,11 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph[CfgNode] {
   val entryNode: CfgNode = method
   val exitNode: CfgNode  = method.methodReturn
 
-  private val params           = method.parameter.sortBy(_.index)
+  private val params           = method.parameter.sortBy(_.index.getOrElse(Int.MaxValue))
   private val firstParam       = params.headOption
   private val lastParam        = params.lastOption
   private val firstOutputParam = firstParam.flatMap(_.asOutput.headOption)
-  private val lastOutputParam  = method.parameter.sortBy(_.index).asOutput.lastOption
+  private val lastOutputParam  = method.parameter.sortBy(_.index.getOrElse(Int.MaxValue)).asOutput.lastOption
 
   private val lastActualCfgNode = exitNode.cfgIn.nextOption
 
@@ -109,13 +109,13 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph[CfgNode] {
     n.out(EdgeTypes.CFG).map(_.asInstanceOf[CfgNode]).l
 
   private def nextParamOrBody(param: MethodParameterIn): List[CfgNode] = {
-    val nextParam = param.method.parameter.index(param.index + 1).headOption
+    val nextParam = param.method.parameter.indexIfPresent(param.index.map(_ + 1)).headOption
     if (nextParam.isDefined) { nextParam.toList }
     else { param.method.cfgFirst.l }
   }
 
   private def nextParamOutOrExit(paramOut: MethodParameterOut): List[CfgNode] = {
-    val nextParam = paramOut.method.parameter.index(paramOut.index + 1).asOutput.headOption
+    val nextParam = paramOut.method.parameter.indexIfPresent(paramOut.index.map(_ + 1)).asOutput.headOption
     if (nextParam.isDefined) { nextParam.toList }
     else { List(exitNode) }
   }
@@ -131,13 +131,13 @@ class ReachingDefFlowGraph(val method: Method) extends FlowGraph[CfgNode] {
   }
 
   private def previousParamOrEntry(param: MethodParameterIn): List[CfgNode] = {
-    val prevParam = param.method.parameter.index(param.index - 1).headOption
+    val prevParam = param.method.parameter.indexIfPresent(param.index.map(_ - 1)).headOption
     if (prevParam.isDefined) { prevParam.toList }
     else { List(method) }
   }
 
   private def previousOutputParamOrLastNodeOfBody(paramOut: MethodParameterOut): List[CfgNode] = {
-    val prevParam = paramOut.method.parameter.index(paramOut.index - 1).asOutput.headOption
+    val prevParam = paramOut.method.parameter.indexIfPresent(paramOut.index.map(_ - 1)).asOutput.headOption
     if (prevParam.isDefined) { prevParam.toList }
     else { lastActualCfgNode.toList }
   }

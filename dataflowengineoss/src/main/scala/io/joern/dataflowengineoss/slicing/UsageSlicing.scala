@@ -280,7 +280,7 @@ object UsageSlicing {
                 slices.get(resolvedMethod).flatMap { calleeSlices =>
                   calleeSlices.find { s =>
                     s.targetObj match {
-                      case p: ParamDef => p.position == argIdx
+                      case p: ParamDef => p.position.contains(argIdx)
                       case _           => false
                     }
                   }

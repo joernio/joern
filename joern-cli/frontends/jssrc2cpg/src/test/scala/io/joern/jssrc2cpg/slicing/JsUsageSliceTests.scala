@@ -138,8 +138,8 @@ class JsUsageSliceTests extends DataFlowCodeToCpgSuite {
     "extract 'y' local variable" in {
       val slice =
         programSlice.objectSlices.find(x => x.fullName == "main.js::program:bar").flatMap(_.slices.headOption).get
-      slice.targetObj shouldBe ParamDef("y", "ANY", 1, Option(14), Option(13))
-      slice.definedBy shouldBe Option(ParamDef("y", "ANY", 1, Option(14), Option(13)))
+      slice.targetObj shouldBe ParamDef("y", "ANY", Some(1), Option(14), Option(13))
+      slice.definedBy shouldBe Option(ParamDef("y", "ANY", Some(1), Option(14), Option(13)))
 
       val inv1 = slice.invokedCalls.find(_.callName == "getA").get
 

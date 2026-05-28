@@ -253,7 +253,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       val List(p) = cpg.method.fullName(".*lambda.*").parameter.l
       p.code shouldBe "this"
       p.typeFullName shouldBe "java.lang.String"
-      p.index shouldBe 1
+      p.index shouldBe Some(1)
     }
   }
 
@@ -271,10 +271,10 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     val List(thisParam, itParam) = cpg.method.fullName(".*lambda.*").parameter.l
     thisParam.code shouldBe "this"
     thisParam.typeFullName shouldBe "java.lang.String"
-    thisParam.index shouldBe 1
+    thisParam.index shouldBe Some(1)
     itParam.code shouldBe "it"
     itParam.typeFullName shouldBe "int"
-    itParam.index shouldBe 2
+    itParam.index shouldBe Some(2)
   }
 
   "CPG for code containing a lambda with parameter destructuring" should {
@@ -314,7 +314,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     "should contain METHOD_PARAMETER_IN nodes for the lambda with the correct properties set" in {
       val List(p1) = cpg.method.fullName(".*lambda.*").parameter.l
       p1.code shouldBe s"${Constants.DestructedParamNamePrefix}1"
-      p1.index shouldBe 1
+      p1.index shouldBe Some(1)
       p1.typeFullName shouldBe "java.util.Map$Entry"
     }
 
@@ -385,7 +385,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     "should contain one METHOD_PARAMETER_IN node for the lambda with the correct properties set" in {
       val List(p1) = cpg.method.fullName(".*lambda.*").parameter.l
       p1.code shouldBe s"${Constants.DestructedParamNamePrefix}1"
-      p1.index shouldBe 1
+      p1.index shouldBe Some(1)
       p1.typeFullName shouldBe "java.util.Map$Entry"
     }
 
@@ -641,7 +641,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       val List(p) = cpg.method.fullName(".*lambda.*").parameter.l
       p.code shouldBe "arg"
       p.typeFullName shouldBe "java.lang.String"
-      p.index shouldBe 1
+      p.index shouldBe Some(1)
     }
 
     "should contain a CALL node for `takeIf` with the correct properties set" in {
@@ -1164,7 +1164,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       m.signature shouldBe "void(java.lang.String)"
       val List(p) = m.parameter.l
       p.name shouldBe "it"
-      p.index shouldBe 1
+      p.index shouldBe Some(1)
     }
   }
 

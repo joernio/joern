@@ -123,8 +123,8 @@ class TsUsageSliceTests extends DataFlowCodeToCpgSuite {
           .find(x => x.fullName == "main.ts::program:Game:loop:<lambda>1")
           .flatMap(_.slices.headOption)
           .get
-      slice.definedBy shouldBe Option(ParamDef("time", "ANY", 1, Option(68), Option(31)))
-      slice.targetObj shouldBe ParamDef("time", "ANY", 1, Option(68), Option(31))
+      slice.definedBy shouldBe Option(ParamDef("time", "ANY", Some(1), Option(68), Option(31)))
+      slice.targetObj shouldBe ParamDef("time", "ANY", Some(1), Option(68), Option(31))
 
       val arg1 = slice.argToCalls.find(_.callName == "loop").get
 
