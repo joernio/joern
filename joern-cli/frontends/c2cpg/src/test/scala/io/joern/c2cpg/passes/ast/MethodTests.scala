@@ -92,7 +92,7 @@ class MethodTests extends C2CpgSuite {
 
     "should be correct for pointer dereference parameter" in {
       inside(cpg.method("foo").parameter.l) { case List(data) =>
-        data.index shouldBe Some(1)
+        data.index shouldBe 1
         data.name shouldBe "data"
         data.code shouldBe "int &data"
         data.typeFullName shouldBe "int&"

@@ -25,18 +25,18 @@ class MethodTests extends RubyCode2CpgFixture {
       f.numberOfLines shouldBe 1
 
       val List(x) = f.parameter.name("x").l
-      x.index shouldBe Some(1)
+      x.index shouldBe 1
       x.isVariadic shouldBe false
       x.lineNumber shouldBe Some(2)
 
       val List(fSelf) = f.parameter.name(RDefines.Self).l
-      fSelf.index shouldBe Some(0)
+      fSelf.index shouldBe 0
       fSelf.isVariadic shouldBe false
       fSelf.lineNumber shouldBe Some(2)
       fSelf.referencingIdentifiers.size shouldBe 0
 
       val List(mSelf) = cpg.method.isModule.parameter.name(RDefines.Self).l
-      mSelf.index shouldBe Some(0)
+      mSelf.index shouldBe 0
       mSelf.isVariadic shouldBe false
       mSelf.lineNumber shouldBe Some(2)
       mSelf.referencingIdentifiers.size shouldBe 3
@@ -185,11 +185,11 @@ class MethodTests extends RubyCode2CpgFixture {
         inside(funcF.parameter.l) { case thisParam :: xParam :: Nil =>
           thisParam.code shouldBe RDefines.Self
           thisParam.typeFullName shouldBe s"Test0.rb:$Main.C<class>"
-          thisParam.index shouldBe Some(0)
+          thisParam.index shouldBe 0
           thisParam.isVariadic shouldBe false
 
           xParam.code shouldBe "x"
-          xParam.index shouldBe Some(1)
+          xParam.index shouldBe 1
           xParam.isVariadic shouldBe false
 
         }
@@ -213,11 +213,11 @@ class MethodTests extends RubyCode2CpgFixture {
         inside(funcF.parameter.l) { case thisParam :: xParam :: Nil =>
           thisParam.code shouldBe RDefines.Self
           thisParam.typeFullName shouldBe s"Test0.rb:$Main.C<class>"
-          thisParam.index shouldBe Some(0)
+          thisParam.index shouldBe 0
           thisParam.isVariadic shouldBe false
 
           xParam.code shouldBe "x"
-          xParam.index shouldBe Some(1)
+          xParam.index shouldBe 1
           xParam.isVariadic shouldBe false
         }
       }
@@ -659,10 +659,10 @@ class MethodTests extends RubyCode2CpgFixture {
     inside(cpg.method.name("foo").l) { case fooMethod :: Nil =>
       inside(fooMethod.method.parameter.l) { case selfArg :: splatArg :: normalArg :: Nil =>
         splatArg.code shouldBe "*x"
-        splatArg.index shouldBe Some(1)
+        splatArg.index shouldBe 1
 
         normalArg.code shouldBe "y"
-        normalArg.index shouldBe Some(2)
+        normalArg.index shouldBe 2
       }
     }
   }

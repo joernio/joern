@@ -70,11 +70,11 @@ class LocalRecordTests extends JavaSrcCode2CpgFixture {
         inside(constructor.parameter.l) { case List(thisParam, valueParam) =>
           thisParam.name shouldBe "this"
           thisParam.typeFullName shouldBe "foo.Foo.enclosingMethod:void().LocalRecord"
-          thisParam.index shouldBe Some(0)
+          thisParam.index shouldBe 0
 
           valueParam.name shouldBe "value"
           valueParam.typeFullName shouldBe "java.lang.String"
-          valueParam.index shouldBe Some(1)
+          valueParam.index shouldBe 1
         }
 
         inside(constructor.body.astChildren.l) { case List(valueAssign: Call) =>

@@ -15,7 +15,7 @@ class ParameterTests extends CSharpCode2CpgFixture {
       args.name shouldBe "args"
       args.typeFullName shouldBe "System.String[]"
       args.code shouldBe "string[] args"
-      args.index shouldBe Some(1)
+      args.index shouldBe 1
       args.isVariadic shouldBe false
     }
 
@@ -47,19 +47,19 @@ class ParameterTests extends CSharpCode2CpgFixture {
       thisNode.name shouldBe "this"
       thisNode.typeFullName shouldBe "HelloWorld.Program"
       thisNode.code shouldBe "this"
-      thisNode.index shouldBe Some(0)
+      thisNode.index shouldBe 0
       thisNode.isVariadic shouldBe false
 
       a.name shouldBe "a"
       a.typeFullName shouldBe "System.String"
       a.code shouldBe "string a"
-      a.index shouldBe Some(1)
+      a.index shouldBe 1
       a.isVariadic shouldBe false
 
       b.name shouldBe "b"
       b.typeFullName shouldBe "System.Int32"
       b.code shouldBe "int b"
-      b.index shouldBe Some(2)
+      b.index shouldBe 2
       b.isVariadic shouldBe false
     }
 
