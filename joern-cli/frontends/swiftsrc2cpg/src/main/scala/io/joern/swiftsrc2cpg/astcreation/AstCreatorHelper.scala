@@ -155,31 +155,38 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
       // Apply optional binding desugaring for guard let
       // Create the block that will hold the unwrapped variables (blockNode argument is only used for location info)
-      val thenBlockNode = if (elementsAfterGuard.nonEmpty) blockNode(elementsAfterGuard.head) else blockNode(guardStmt)
-      scope.pushNewBlockScope(thenBlockNode)
-      localAstParentStack.push(thenBlockNode)
+      val thenBlockNode =
+        if (elementsAfterGuard.nonEmpty) blockNode(elementsAfterGuard.head) else blockNode(guardStmt)
 
       val (conditionAst, unwrapAsts) = handleOptionalBindingConditions(
         guardStmt.conditions.children,
         onAllSimple = simpleBindings => {
           val bindingInfos = collectBindingInfos(simpleBindings)
           val condAst      = buildOptionalBindingCondition(guardStmt, bindingInfos)
-          val unwraps      = buildUnwrapAssignments(bindingInfos)
+          scope.pushNewBlockScope(thenBlockNode)
+          localAstParentStack.push(thenBlockNode)
+          val unwraps = buildUnwrapAssignments(bindingInfos)
           (condAst, unwraps)
         },
         onMixed = (simpleBindings, tupleBindings) => {
           val bindingInfos = collectBindingInfos(simpleBindings)
           val condAst      = buildOptionalBindingCondition(guardStmt, bindingInfos)
-          val unwraps      = buildUnwrapAssignments(bindingInfos) ++ tupleBindings.map(astForNode)
+          scope.pushNewBlockScope(thenBlockNode)
+          localAstParentStack.push(thenBlockNode)
+          val unwraps = buildUnwrapAssignments(bindingInfos) ++ tupleBindings.map(astForNode)
           (condAst, unwraps)
         },
         onPartial = (simpleBindings, tupleBindings, otherConditions) => {
           val bindingInfos = collectBindingInfos(simpleBindings)
           val condAst      = buildOptionalBindingCondition(guardStmt, bindingInfos, otherConditions)
-          val unwraps      = buildUnwrapAssignments(bindingInfos) ++ tupleBindings.map(astForNode)
+          scope.pushNewBlockScope(thenBlockNode)
+          localAstParentStack.push(thenBlockNode)
+          val unwraps = buildUnwrapAssignments(bindingInfos) ++ tupleBindings.map(astForNode)
           (condAst, unwraps)
         },
         onStandard = () => {
+          scope.pushNewBlockScope(thenBlockNode)
+          localAstParentStack.push(thenBlockNode)
           val condAst = astForNode(guardStmt.conditions)
           (condAst, List.empty)
         }
@@ -674,16 +681,17 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     val hasAnyInitializer = bindingInfos.exists(_.tmpName.isDefined)
 
     if (hasAnyInitializer) {
-      val condBlockNode = blockNode(node)
-      scope.pushNewBlockScope(condBlockNode)
-      localAstParentStack.push(condBlockNode)
-
       bindingInfos.foreach { info =>
         info.tmpName.foreach { tmpName =>
           val tmpLocalNode = localNode(info.binding, tmpName, tmpName, Defines.Any).order(0)
-          diffGraph.addEdge(condBlockNode, tmpLocalNode, EdgeTypes.AST)
+          diffGraph.addEdge(localAstParentStack.head, tmpLocalNode, EdgeTypes.AST)
+          scope.addVariable(tmpName, tmpLocalNode, Defines.Any, VariableScopeManager.ScopeType.BlockScope)
         }
       }
+
+      val condBlockNode = blockNode(node)
+      scope.pushNewBlockScope(condBlockNode)
+      localAstParentStack.push(condBlockNode)
 
       val nilCheckAsts = bindingInfos.map { info =>
         info.tmpName match {

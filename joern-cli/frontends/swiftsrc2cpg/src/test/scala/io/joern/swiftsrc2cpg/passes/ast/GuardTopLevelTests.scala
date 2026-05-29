@@ -18,7 +18,11 @@ class GuardTopLevelTests extends SwiftSrc2CpgSuite {
         |print(b)
         |""".stripMargin)
       val List(globalBlock) = cpg.method.nameExact("<global>").block.l
-      val List(localA)      = globalBlock.local.l
+
+      // After desugaring: <tmp>0 and `a` in global block
+      val List(tmpLocal, localA) = globalBlock.local.l
+      val tmpName                = tmpLocal.name
+      tmpName shouldBe "<tmp>0"
       localA.name shouldBe "a"
       localA.typeFullName shouldBe "Swift.Int"
 
@@ -29,9 +33,6 @@ class GuardTopLevelTests extends SwiftSrc2CpgSuite {
 
       // Check that desugaring created the temp variable and nil check in condition
       val List(condBlock) = guardIf.condition.isBlock.l
-      val List(tmpLocal)  = condBlock.astChildren.isLocal.l
-      val tmpName         = tmpLocal.name
-      tmpName should startWith("<tmp>")
 
       val List(nilCheck) = condBlock.astChildren.isCall.l
       nilCheck.name shouldBe Operators.notEquals

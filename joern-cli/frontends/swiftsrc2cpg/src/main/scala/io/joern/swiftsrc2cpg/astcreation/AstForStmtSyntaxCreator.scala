@@ -556,30 +556,15 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForGuardStmtSyntax(node: GuardStmtSyntax): Ast = {
-    val code   = this.code(node)
-    val ifNode = controlStructureNode(node, ControlStructureTypes.IF, code)
-
-    handleOptionalBindingConditions(
-      node.conditions.children,
-      onAllSimple = simpleBindings => astForGuardLetStmtSyntax(node, ifNode, simpleBindings),
-      onMixed =
-        (simpleBindings, tupleBindings) => astForGuardLetStmtSyntaxMixed(node, ifNode, simpleBindings, tupleBindings),
-      onPartial = (simpleBindings, tupleBindings, otherConditions) =>
-        astForGuardLetStmtSyntaxPartial(node, ifNode, simpleBindings, tupleBindings, otherConditions),
-      onStandard = () => {
-        val conditionAst = astForNode(node.conditions)
-        val thenAst      = blockAst(blockNode(node), List.empty)
-        val elseAst      = astForNode(node.body)
-        ifThenElseAst(ifNode, Option(conditionAst), thenAst, Option(elseAst))
-      }
-    )
+    // This is already handled in AstCreatorHelper.astsForBlockElements
+    Ast()
   }
 
   /** Handles Swift optional binding (guard-let) constructs.
     *
     * De-sugars `guard let x = foo() else { exit }` into:
     *
-    * Condition: { let <tmp>0 = foo(); <tmp>0 != nil }
+    * Condition: { <tmp>0 = foo(); <tmp>0 != nil }
     *
     * Then block: { let x = <tmp>0 }
     *
@@ -759,7 +744,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     *
     * De-sugars `while let item = iterator.next() { body }` into:
     *
-    * Condition: { let <tmp>0 = iterator.next(); <tmp>0 != nil }
+    * Condition: { <tmp>0 = iterator.next(); <tmp>0 != nil }
     *
     * Loop body: { let item = <tmp>0; body }
     *

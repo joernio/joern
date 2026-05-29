@@ -133,11 +133,11 @@ class GuardTests extends SwiftSrc2CpgSuite {
         |}
         |""".stripMargin)
       val List(methodBlock) = cpg.method.nameExact("checkAge").block.l
-      // After desugaring: age in method block, <tmp>0 in condition block, myAge in then block
-      // TODO(BUG): <tmp> local is incorrectly appearing as direct child of method block
-      // It should only be in the condition block. For now, filter it out.
-      val List(ageLocal) = methodBlock.astChildren.isLocal.filterNot(_.name.startsWith("<tmp>")).l
+      // After desugaring: age, <tmp>0 in method block, myAge in then block
+      val List(tmpLocal, ageLocal) = methodBlock.astChildren.isLocal.l
       ageLocal.name shouldBe "age"
+      val tmpName = tmpLocal.name
+      tmpName should startWith("<tmp>")
 
       val List(call) = methodBlock.astChildren.isCall.l
       call.code shouldBe "var age: Int? = 22"
@@ -147,11 +147,7 @@ class GuardTests extends SwiftSrc2CpgSuite {
 
       // Condition is desugared to block with temp assignment and nil check
       val List(condBlock) = guardIf.condition.isBlock.l
-      val List(tmpLocal)  = condBlock.astChildren.isLocal.l
-      val tmpName         = tmpLocal.name
-      tmpName should startWith("<tmp>")
-
-      val List(nilCheck) = condBlock.astChildren.isCall.l
+      val List(nilCheck)  = condBlock.astChildren.isCall.l
       nilCheck.name shouldBe Operators.notEquals
       nilCheck.code shouldBe s"($tmpName = age) != nil"
 
@@ -295,16 +291,16 @@ class GuardTests extends SwiftSrc2CpgSuite {
       |  print(value)
       |}
       |""".stripMargin)
-
-      val List(guardIf) = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l
-
-      // Condition: desugared to { let <tmp>0; (<tmp>0 = optionalValue) != nil }
-      val List(condBlock) = guardIf.condition.isBlock.l
-
-      val List(tmpLocal) = condBlock.astChildren.isLocal.l
+      val List(methodBlock) = cpg.method.nameExact("test").block.l
+      // After desugaring: <tmp>0 in method block
+      val List(tmpLocal) = methodBlock.astChildren.isLocal.l
       val tmpName        = tmpLocal.name
       tmpName should startWith("<tmp>")
 
+      val List(guardIf) = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l
+
+      // Condition: desugared to { (<tmp>0 = optionalValue) != nil }
+      val List(condBlock) = guardIf.condition.isBlock.l
       val List(condCheck) = condBlock.astChildren.isCall.l
       condCheck.name shouldBe Operators.notEquals
       condCheck.code shouldBe s"($tmpName = optionalValue) != nil"
@@ -376,35 +372,38 @@ class GuardTests extends SwiftSrc2CpgSuite {
       |  print(a, b)
       |}
       |""".stripMargin)
+      val List(methodBlock) = cpg.method.nameExact("test").block.l
+      // After desugaring: <tmp>0, <tmp>1 in method block
+      val List(tmp0Local, tmp1Local) = methodBlock.astChildren.isLocal.nameNot("self").l
+      val tmp0Name                   = tmp0Local.name
+      tmp0Name shouldBe "<tmp>0"
+      val tmp1Name = tmp1Local.name
+      tmp1Name shouldBe "<tmp>1"
 
       val List(guardIf) = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l
 
       // Condition: desugared to { <tmp>0 = foo(); <tmp>1 = bar(); <tmp>0 != nil && <tmp>1 != nil }
       val List(condBlock) = guardIf.condition.isBlock.l
 
-      val List(tmp0, tmp1) = condBlock.astChildren.isLocal.l
-      tmp0.name shouldBe "<tmp>0"
-      tmp1.name shouldBe "<tmp>1"
-
       val List(andCheck) = condBlock.astChildren.isCall.l
       andCheck.name shouldBe Operators.logicalAnd
 
       val List(tmp0Check, tmp1Check) = andCheck.argument.isCall.l
       tmp0Check.name shouldBe Operators.notEquals
-      tmp0Check.code shouldBe s"(${tmp0.name} = foo()) != nil"
+      tmp0Check.code shouldBe s"($tmp0Name = foo()) != nil"
       tmp1Check.name shouldBe Operators.notEquals
-      tmp1Check.code shouldBe s"(${tmp1.name} = bar()) != nil"
+      tmp1Check.code shouldBe s"($tmp1Name = bar()) != nil"
 
       val List(tmp0Assign) = tmp0Check.argument.isCall.l
       tmp0Assign.name shouldBe Operators.assignment
-      tmp0Assign.code shouldBe s"${tmp0.name} = foo()"
+      tmp0Assign.code shouldBe s"$tmp0Name = foo()"
 
       val List(tmp0Nil) = tmp0Check.argument.isLiteral.l
       tmp0Nil.code shouldBe "nil"
 
       val List(tmp1Assign) = tmp1Check.argument.isCall.l
       tmp1Assign.name shouldBe Operators.assignment
-      tmp1Assign.code shouldBe s"${tmp1.name} = bar()"
+      tmp1Assign.code shouldBe s"$tmp1Name = bar()"
 
       val List(tmp1Nil) = tmp1Check.argument.isLiteral.l
       tmp1Nil.code shouldBe "nil"
@@ -418,9 +417,9 @@ class GuardTests extends SwiftSrc2CpgSuite {
 
       val List(aAssignment, bAssignment, printCall) = thenBlock.astChildren.isCall.l
       aAssignment.name shouldBe Operators.assignment
-      aAssignment.code shouldBe s"a = ${tmp0.name}"
+      aAssignment.code shouldBe s"a = $tmp0Name"
       bAssignment.name shouldBe Operators.assignment
-      bAssignment.code shouldBe s"b = ${tmp1.name}"
+      bAssignment.code shouldBe s"b = $tmp1Name"
       printCall.code shouldBe "print(a, b)"
 
       val List(elseReturn) = guardIf.whenFalse.l
@@ -436,15 +435,16 @@ class GuardTests extends SwiftSrc2CpgSuite {
       |  print(a, existing)
       |}
       |""".stripMargin)
+      val List(methodBlock) = cpg.method.nameExact("test").block.l
+      // After desugaring: <tmp>0 in method block
+      val List(tmpLocal) = methodBlock.astChildren.isLocal.nameNot("self").l
+      val tmpName        = tmpLocal.name
+      tmpName shouldBe "<tmp>0"
 
       val List(guardIf) = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l
 
-      // Condition: { let <tmp>0; (<tmp>0 = foo()) != nil && existing != nil }
+      // Condition: { (<tmp>0 = foo()) != nil && existing != nil }
       val List(condBlock) = guardIf.condition.isBlock.l
-
-      val List(tmpLocal) = condBlock.astChildren.isLocal.l
-      val tmpName        = tmpLocal.name
-      tmpName should startWith("<tmp>")
 
       val List(andCheck) = condBlock.astChildren.isCall.l
       andCheck.name shouldBe Operators.logicalAnd
@@ -493,17 +493,17 @@ class GuardTests extends SwiftSrc2CpgSuite {
       |  print(a)
       |}
       |""".stripMargin)
+      val List(methodBlock) = cpg.method.nameExact("test").block.l
+      // After desugaring: <tmp>0 in method block
+      val List(tmpLocal) = methodBlock.astChildren.isLocal.nameNot("self").l
+      val tmpName        = tmpLocal.name
+      tmpName shouldBe "<tmp>0"
 
       val List(guardIf) = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l
 
       // Condition: { <tmp>0 = foo(); <tmp>0 != nil && flag }
       val List(condBlock) = guardIf.condition.isBlock.l
-
-      val List(tmpLocal) = condBlock.astChildren.isLocal.l
-      val tmpName        = tmpLocal.name
-      tmpName should startWith("<tmp>")
-
-      val List(andCheck) = condBlock.astChildren.isCall.l
+      val List(andCheck)  = condBlock.astChildren.isCall.l
       andCheck.name shouldBe Operators.logicalAnd
 
       inside(andCheck.argument.l) {

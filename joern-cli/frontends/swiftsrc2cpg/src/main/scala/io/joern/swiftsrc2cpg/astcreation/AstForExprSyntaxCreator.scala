@@ -529,19 +529,19 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     *
     * De-sugars `if let baz = foo() { body }` into:
     *
-    * Condition: { let <tmp>0; (<tmp>0 = foo()) != nil }
+    * Condition: { (<tmp>0 = foo()) != nil }
     *
     * Then block: { let baz = <tmp>0; body }
     *
     * For multiple bindings `if let a = foo(), let b = bar() { body }`:
     *
-    * Condition: { let <tmp>0; let <tmp>1; (<tmp>0 = foo()) != nil && (<tmp>1 = bar()) != nil }
+    * Condition: { (<tmp>0 = foo()) != nil && (<tmp>1 = bar()) != nil }
     *
     * Then block: { a = <tmp>0; b = <tmp>1; body }
     *
     * For mixed cases with/without initializers `if let a = foo(), let b { body }`:
     *
-    * Condition: { let <tmp>0; (<tmp>0 = foo()) != nil && b != nil }
+    * Condition: { (<tmp>0 = foo()) != nil && b != nil }
     *
     * Then block: { a = <tmp>0; body }
     */
