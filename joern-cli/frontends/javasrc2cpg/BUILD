@@ -4,7 +4,7 @@ scala_library(
   name = "javasrc2cpg",
   srcs = glob(["src/main/scala/**/*.scala"]),
   deps = [
-    "//:io_shiftleft_codepropertygraph_with_deps",
+    "//bazel/reexports:io_shiftleft_codepropertygraph_with_deps",
     "//joern-cli/frontends/x2cpg",
     "@maven//:com_github_javaparser_javaparser_symbol_solver_core",
     "@maven//:org_ow2_asm_asm",
@@ -23,7 +23,7 @@ scala_test(
   name = "tests",
   srcs = glob(["src/test/scala/**/*.scala"]),
   deps = [
-    "//:io_shiftleft_codepropertygraph_with_deps",
+    "//bazel/reexports:io_shiftleft_codepropertygraph_with_deps",
     ":javasrc2cpg",
     "//semanticcpg",
     "//joern-cli/frontends/x2cpg:tests",

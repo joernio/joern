@@ -5,8 +5,8 @@ scala_library(
   srcs = glob(["src/main/scala/**/*.scala"]),
   scalacopts = [ 
   ],  
-  deps = [ 
-    "//:io_shiftleft_codepropertygraph_with_deps",
+  deps = [
+    "//bazel/reexports:io_shiftleft_codepropertygraph_with_deps",
     "@maven//:org_slf4j_slf4j_api",
     "@maven//:com_michaelpollmeier_scala_repl_pp_3_3_6",
     "@maven//:org_apache_commons_commons_text",

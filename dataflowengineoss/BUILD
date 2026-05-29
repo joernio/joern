@@ -27,11 +27,11 @@ scala_library(
   scalacopts = [ 
   ],  
   deps = [ 
-    "//:io_shiftleft_codepropertygraph_with_deps",
+    "//bazel/reexports:io_shiftleft_codepropertygraph_with_deps",
     "//semanticcpg",
     "//joern-cli/frontends/x2cpg",
     "@maven//:org_antlr_antlr4_runtime",
-    "//:com_lihaoyi_upickle_with_deps",
+    "//bazel/reexports:com_lihaoyi_upickle_with_deps",
     "@maven//:org_scala_lang_modules_scala_parallel_collections_3",
   ],
   visibility = [ "//visibility:public" ],
@@ -45,7 +45,7 @@ scala_test(
   deps = [ 
     ":dataflowengineoss",
     "//joern-cli/frontends/x2cpg:tests",
-    "//:io_shiftleft_codepropertygraph_with_deps",
+    "//bazel/reexports:io_shiftleft_codepropertygraph_with_deps",
   ],
   visibility = [ "//visibility:public" ],
 )

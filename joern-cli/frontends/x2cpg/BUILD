@@ -7,7 +7,7 @@ scala_library(
   ],  
   deps = [ 
     "//semanticcpg",
-    "//:io_shiftleft_codepropertygraph_with_deps",
+    "//bazel/reexports:io_shiftleft_codepropertygraph_with_deps",
     "@maven//:com_lihaoyi_ujson_3",
     "@maven//:com_lihaoyi_geny_3",
     "@maven//:com_typesafe_config",
@@ -25,7 +25,7 @@ scala_test(
   ],  
   deps = [ 
     ":x2cpg",
-    "//:io_shiftleft_codepropertygraph_with_deps",
+    "//bazel/reexports:io_shiftleft_codepropertygraph_with_deps",
     "@maven//:org_apache_commons_commons_lang3",
     "@maven//:com_google_protobuf_protobuf_java",
   ],
