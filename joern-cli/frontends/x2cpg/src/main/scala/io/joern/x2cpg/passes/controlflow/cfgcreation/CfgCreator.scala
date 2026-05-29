@@ -83,13 +83,13 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
   /** The CFG for all children is obtained by translating child ASTs one by one from left to right and appending them.
     */
   private def cfgForChildren(node: AstNode): Cfg =
-    node.astChildren.l.map(cfgFor).reduceOption((x, y) => x ++ y).getOrElse(Cfg.empty)
+    node.astChildren.l.map(cfgFor).reduceOption((accumCfg, nextCfg) => accumCfg ++ nextCfg).getOrElse(Cfg.empty)
 
   /** Returns true if this node is a child to some `try` control structure, false if otherwise.
     */
-  private def withinATryBlock(x: AstNode): Boolean = {
-    if (x._astIn.hasNext) {
-      val parentNode = x.parentBlock.astParent
+  private def withinATryBlock(node: AstNode): Boolean = {
+    if (node._astIn.hasNext) {
+      val parentNode = node.parentBlock.astParent
       parentNode.isControlStructure.isTry.nonEmpty
     } else false
   }
@@ -270,13 +270,13 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     * `cfgForSingleNode` on the label node. Just like for breaks and continues, we record labels. We store case/default
     * labels separately from other labels, but that is not a relevant implementation detail.
     */
-  protected def cfgForJumpTarget(n: JumpTarget): Cfg = {
-    val labelName = n.name
-    val cfg       = cfgForSingleNode(n)
+  protected def cfgForJumpTarget(jumpTarget: JumpTarget): Cfg = {
+    val labelName = jumpTarget.name
+    val cfg       = cfgForSingleNode(jumpTarget)
     if (labelName.startsWith("case") || labelName.startsWith("default")) {
-      cfg.copy(caseLabels = List(n))
+      cfg.copy(caseLabels = List(jumpTarget))
     } else {
-      cfg.copy(labeledNodes = Map(labelName -> n))
+      cfg.copy(labeledNodes = Map(labelName -> jumpTarget))
     }
   }
 
@@ -300,8 +300,10 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
         Cfg(entryNode = Option(node), jumpsToLabel = List((node, jumpLabelNode.name)))
       case _ =>
         // Legacy fallback: label name parsed from the code field (e.g. "goto label;")
-        val target = node.code.split(" ").lastOption.map(x => x.slice(0, x.length - 1))
-        target.map(t => Cfg(entryNode = Some(node), jumpsToLabel = List((node, t)))).getOrElse(Cfg.empty)
+        val target = node.code.split(" ").lastOption.map(rawLabel => rawLabel.slice(0, rawLabel.length - 1))
+        target
+          .map(labelName => Cfg(entryNode = Some(node), jumpsToLabel = List((node, labelName))))
+          .getOrElse(Cfg.empty)
     }
   }
 
@@ -394,7 +396,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
   def cfgForInlinedCall(call: Call): Cfg = {
     val cfgForMacroCall = call.argument.l
       .map(cfgFor)
-      .reduceOption((x, y) => x ++ y)
+      .reduceOption((accumCfg, nextCfg) => accumCfg ++ nextCfg)
       .getOrElse(Cfg.empty) ++ cfgForSingleNode(call)
     val cfgForExpansion = call.astChildren.lastOption.map(cfgFor).getOrElse(Cfg.empty)
     val cfg = Cfg
@@ -402,7 +404,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       .copy(
         entryNode = cfgForMacroCall.entryNode,
         edges = cfgForMacroCall.edges ++ cfgForExpansion.edges ++ cfgForExpansion.entryNode.toList
-          .flatMap(x => singleEdge(call, x)),
+          .flatMap(expansionEntryNode => singleEdge(call, expansionEntryNode)),
         fringe = cfgForMacroCall.fringe ++ cfgForExpansion.fringe
       )
     cfg
@@ -729,9 +731,10 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
   }
 
   protected def cfgForSwitchLike(conditionCfg: Cfg, bodyCfgs: List[Cfg]): Cfg = {
-    val hasDefaultCase = bodyCfgs.flatMap(_.caseLabels).exists(x => x.asInstanceOf[JumpTarget].name == "default")
-    val caseEdges      = edgesToMultiple(conditionCfg.fringe.map(_._1), bodyCfgs.flatMap(_.caseLabels), CaseEdge)
-    val breakFringe    = takeCurrentLevel(bodyCfgs.flatMap(_.breaks)).map((_, AlwaysEdge))
+    val hasDefaultCase =
+      bodyCfgs.flatMap(_.caseLabels).exists(caseLabel => caseLabel.asInstanceOf[JumpTarget].name == "default")
+    val caseEdges   = edgesToMultiple(conditionCfg.fringe.map(_._1), bodyCfgs.flatMap(_.caseLabels), CaseEdge)
+    val breakFringe = takeCurrentLevel(bodyCfgs.flatMap(_.breaks)).map((_, AlwaysEdge))
 
     Cfg
       .from(conditionCfg :: bodyCfgs*)
@@ -763,7 +766,7 @@ object CfgCreator {
 
   implicit class FringeWrapper(fringe: List[(CfgNode, CfgEdgeType)]) {
     def withEdgeType(edgeType: CfgEdgeType): List[(CfgNode, CfgEdgeType)] = {
-      fringe.map { case (x, _) => (x, edgeType) }
+      fringe.map { case (cfgNode, _) => (cfgNode, edgeType) }
     }
   }
 
