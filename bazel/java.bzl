@@ -1,6 +1,13 @@
 load("@bazel_tooling//:java_rule_factory.bzl", "make_java_rules")
 
-_rules = make_java_rules(java_common_opts = [])
+_rules = make_java_rules(
+    java_common_opts = [
+        "-g",
+        "-Xlint",
+        "-proc:none",
+        "--release=11",
+    ]
+)
 
 java_library = _rules.java_library
 java_binary = _rules.java_binary

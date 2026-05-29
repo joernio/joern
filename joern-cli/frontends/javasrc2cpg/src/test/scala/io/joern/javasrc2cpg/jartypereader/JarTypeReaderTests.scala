@@ -10,6 +10,8 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 import java.nio.file.Paths
+import java.nio.file.Files
+import java.nio.file.Path
 
 class JarTypeReaderTests extends AnyFreeSpec with Matchers {
   private val packagePrefix = "io.joern.javasrc2cpg.jartypereader.testcode"
@@ -222,7 +224,13 @@ class JarTypeReaderTests extends AnyFreeSpec with Matchers {
 
   private def getTypes(name: String): List[ResolvedTypeDecl] = {
     val path      = Paths.get("joern-cli", "frontends", "javasrc2cpg", "target", "testjars", s"$name.jar")
-    val inputPath = ProjectRoot.relativise(path.toString)
+    var inputPath = ProjectRoot.relativise(path.toString)
+    if (!Files.exists(Path.of(inputPath))) {
+      inputPath = Path.of(
+        sys.env("RUNFILES_DIR"),
+        s"_main/joern-cli/frontends/javasrc2cpg/src/test/java/io/joern/javasrc2cpg/jartypereader/testcode/$name/lib$name.jar",
+      ).toString
+    }
     JarTypeReader.getTypes(inputPath)
   }
 }

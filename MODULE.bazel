@@ -48,6 +48,8 @@ maven.install(
       "net.java.dev.javacc:javacc:7.0.12",
       "org.antlr:antlr4:4.7.2",
       "org.antlr:antlr4-runtime:4.7.2",
+      "com.github.scopt:scopt_3:4.1.0",
+      "org.apache.logging.log4j:log4j-slf4j2-impl:2.23.1",
     ],
     use_credentials_from_home_netrc_file = True,
     fetch_sources = True,
