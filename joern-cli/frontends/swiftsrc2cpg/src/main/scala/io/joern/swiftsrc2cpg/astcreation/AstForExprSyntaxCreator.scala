@@ -564,7 +564,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     *
     * De-sugars `if let a = foo(), let (b, c) = bar() { body }` into:
     *
-    * Condition: { <tmp>0 = foo(); <tmp>0 != nil }
+    * Condition: { (<tmp>0 = foo()) != nil }
     *
     * Then block: { let a = <tmp>0; let (b, c) = bar(); body }
     */
@@ -588,7 +588,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     *
     * De-sugars `if let a = foo(), #unavailable(...) { body }` into:
     *
-    * Condition: { <tmp>0 = foo(); <tmp>0 != nil && #unavailable(...) }
+    * Condition: { ((<tmp>0 = foo()) != nil) && #unavailable(...) }
     *
     * Then block: { let a = <tmp>0; body }
     */

@@ -382,7 +382,7 @@ class GuardTests extends SwiftSrc2CpgSuite {
 
       val List(guardIf) = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l
 
-      // Condition: desugared to { <tmp>0 = foo(); <tmp>1 = bar(); <tmp>0 != nil && <tmp>1 != nil }
+      // Condition: desugared to { ((<tmp>0 = foo()) != nil) && ((<tmp>1 = bar()) != nil) }
       val List(condBlock) = guardIf.condition.isBlock.l
 
       val List(andCheck) = condBlock.astChildren.isCall.l
@@ -424,6 +424,66 @@ class GuardTests extends SwiftSrc2CpgSuite {
 
       val List(elseReturn) = guardIf.whenFalse.l
       elseReturn.code shouldBe "return"
+    }
+
+    "testGuardLetThreeBindings" in {
+      val cpg = code("""
+      |func test() {
+      |  guard let a = foo(), let b = bar(), let c = baz() else {
+      |    return
+      |  }
+      |  print(a, b, c)
+      |}
+      |""".stripMargin)
+      val List(methodBlock) = cpg.method.nameExact("test").block.l
+      // After desugaring: <tmp>0, <tmp>1, <tmp>2 in method block
+      val List(tmp0Local, tmp1Local, tmp2Local) = methodBlock.astChildren.isLocal.nameNot("self").l
+      val tmp0Name                              = tmp0Local.name
+      tmp0Name shouldBe "<tmp>0"
+      val tmp1Name = tmp1Local.name
+      tmp1Name shouldBe "<tmp>1"
+      val tmp2Name = tmp2Local.name
+      tmp2Name shouldBe "<tmp>2"
+
+      val List(guardIf) = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l
+
+      // Condition: desugared to { (((<tmp>0 = foo()) != nil) && ((<tmp>1 = bar()) != nil)) && ((<tmp>2 = baz()) != nil) }
+      // The && operators are left-associated: (check0 && check1) && check2
+      val List(condBlock) = guardIf.condition.isBlock.l
+
+      val List(outerAndCheck) = condBlock.astChildren.isCall.l
+      outerAndCheck.name shouldBe Operators.logicalAnd
+      outerAndCheck.code shouldBe s"((($tmp0Name = foo()) != nil) && (($tmp1Name = bar()) != nil)) && (($tmp2Name = baz()) != nil)"
+
+      val List(innerAndCheck, tmp2Check) = outerAndCheck.argument.isCall.l
+      innerAndCheck.name shouldBe Operators.logicalAnd
+      innerAndCheck.code shouldBe s"(($tmp0Name = foo()) != nil) && (($tmp1Name = bar()) != nil)"
+
+      tmp2Check.name shouldBe Operators.notEquals
+      tmp2Check.code shouldBe s"($tmp2Name = baz()) != nil"
+
+      val List(tmp0Check, tmp1Check) = innerAndCheck.argument.isCall.l
+      tmp0Check.name shouldBe Operators.notEquals
+      tmp0Check.code shouldBe s"($tmp0Name = foo()) != nil"
+      tmp1Check.name shouldBe Operators.notEquals
+      tmp1Check.code shouldBe s"($tmp1Name = bar()) != nil"
+
+      // Then block: { let a = <tmp>0; let b = <tmp>1; let c = <tmp>2; print(a, b, c) }
+      val List(thenBlock) = guardIf.whenTrue.isBlock.l
+
+      val List(aLocal, bLocal, cLocal) = thenBlock.astChildren.isLocal.l
+      aLocal.name shouldBe "a"
+      bLocal.name shouldBe "b"
+      cLocal.name shouldBe "c"
+
+      val List(aAssignment, bAssignment, cAssignment, printCall) = thenBlock.astChildren.isCall.l
+      aAssignment.name shouldBe Operators.assignment
+      aAssignment.code shouldBe s"a = $tmp0Name"
+      bAssignment.name shouldBe Operators.assignment
+      bAssignment.code shouldBe s"b = $tmp1Name"
+      cAssignment.name shouldBe Operators.assignment
+      cAssignment.code shouldBe s"c = $tmp2Name"
+      printCall.code shouldBe "print(a, b, c)"
     }
 
     "testGuardLetMixedWithAndWithoutInitializer" in {
@@ -501,7 +561,7 @@ class GuardTests extends SwiftSrc2CpgSuite {
 
       val List(guardIf) = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l
 
-      // Condition: { <tmp>0 = foo(); <tmp>0 != nil && flag }
+      // Condition: { ((<tmp>0 = foo()) != nil) && flag }
       val List(condBlock) = guardIf.condition.isBlock.l
       val List(andCheck)  = condBlock.astChildren.isCall.l
       andCheck.name shouldBe Operators.logicalAnd

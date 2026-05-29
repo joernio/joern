@@ -193,6 +193,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       )
 
       val allThenChildren = unwrapAsts ++ astsForBlockElements(elementsAfterGuard) ++ deferElementsAstsOrdered
+
+      // Closing the scope opened at the handleOptionalBindingConditions handler
       scope.popScope()
       localAstParentStack.pop()
 
@@ -651,11 +653,10 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       nilCheckAsts.head
     } else {
       nilCheckAsts.reduce { (left, right) =>
-        val leftCode  = left.root.map(codeOf).getOrElse("")
-        val rightCode = right.root.map(codeOf).getOrElse("")
-        val andCode   = s"$leftCode && $rightCode"
-        val andCallNode =
-          createStaticCallNode(node, andCode, Operators.logicalAnd, Operators.logicalAnd, Defines.Bool)
+        val leftCode    = left.root.map(codeOf).getOrElse("")
+        val rightCode   = right.root.map(codeOf).getOrElse("")
+        val andCode     = s"($leftCode) && ($rightCode)"
+        val andCallNode = createStaticCallNode(node, andCode, Operators.logicalAnd, Operators.logicalAnd, Defines.Bool)
         callAst(andCallNode, List(left, right))
       }
     }

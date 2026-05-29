@@ -564,7 +564,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     *
     * De-sugars `guard let x = foo() else { exit }` into:
     *
-    * Condition: { <tmp>0 = foo(); <tmp>0 != nil }
+    * Condition: { (<tmp>0 = foo()) != nil }
     *
     * Then block: { let x = <tmp>0 }
     *
@@ -572,13 +572,13 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     *
     * For multiple bindings `guard let a = foo(), let b = bar() else { exit }`:
     *
-    * Condition: { <tmp>0 = foo(); <tmp>1 = bar(); <tmp>0 != nil && <tmp>1 != nil }
+    * Condition: { ((<tmp>0 = foo()) != nil) && ((<tmp>1 = bar()) != nil) }
     *
     * Then block: { a = <tmp>0; b = <tmp>1 }
     *
     * For mixed cases with/without initializers `guard let a = foo(), let b else { exit }`:
     *
-    * Condition: { <tmp>0 = foo(); <tmp>0 != nil && b != nil }
+    * Condition: { ((<tmp>0 = foo()) != nil) && (b != nil) }
     *
     * Then block: { a = <tmp>0 }
     */
@@ -608,7 +608,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     *
     * De-sugars `guard let a = foo(), let (b, c) = bar() else { exit }` into:
     *
-    * Condition: { <tmp>0 = foo(); <tmp>0 != nil }
+    * Condition: { (<tmp>0 = foo()) != nil }
     *
     * Then block: { let a = <tmp>0; let (b, c) = bar() }
     */
@@ -638,7 +638,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     *
     * De-sugars `guard let a = foo(), someCondition else { exit }` into:
     *
-    * Condition: { <tmp>0 = foo(); <tmp>0 != nil && someCondition }
+    * Condition: { ((<tmp>0 = foo()) != nil) && someCondition }
     *
     * Then block: { let a = <tmp>0 }
     */
@@ -744,19 +744,19 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     *
     * De-sugars `while let item = iterator.next() { body }` into:
     *
-    * Condition: { <tmp>0 = iterator.next(); <tmp>0 != nil }
+    * Condition: { (<tmp>0 = iterator.next()) != nil }
     *
     * Loop body: { let item = <tmp>0; body }
     *
     * For multiple bindings `while let a = foo(), let b = bar() { body }`:
     *
-    * Condition: { <tmp>0 = foo(); <tmp>1 = bar(); <tmp>0 != nil && <tmp>1 != nil }
+    * Condition: { ((<tmp>0 = foo()) != nil) && ((<tmp>1 = bar()) != nil) }
     *
     * Loop body: { a = <tmp>0; b = <tmp>1; body }
     *
     * For mixed cases with/without initializers `while let a = foo(), let b { body }`:
     *
-    * Condition: { <tmp>0 = foo(); <tmp>0 != nil && b != nil }
+    * Condition: { ((<tmp>0 = foo()) != nil) && (b != nil) }
     *
     * Loop body: { a = <tmp>0; body }
     */
@@ -781,7 +781,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     *
     * De-sugars `while let a = foo(), let (b, c) = bar() { body }` into:
     *
-    * Condition: { <tmp>0 = foo(); <tmp>0 != nil }
+    * Condition: { (<tmp>0 = foo()) != nil }
     *
     * Loop body: { let a = <tmp>0; let (b, c) = bar(); body }
     */
@@ -807,7 +807,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     *
     * De-sugars `while let a = foo(), someCondition { body }` into:
     *
-    * Condition: { <tmp>0 = foo(); <tmp>0 != nil && someCondition }
+    * Condition: { ((<tmp>0 = foo()) != nil) && someCondition }
     *
     * Loop body: { let a = <tmp>0; body }
     */
