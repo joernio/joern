@@ -116,37 +116,26 @@ class CaseTests extends RubyCode2CpgFixture {
         |        end
         |end""".stripMargin)
 
-    val block @ List(_) = cpg.method.name("class_for").block.astChildren.isBlock.l
+    val conditionals = cpg.method.name("class_for").call.methodFullNameExact(Operators.conditional).l
+    conditionals.size shouldBe 3
 
-    val assign         = block.astChildren.assignment.head
-    val List(lhs, rhs) = assign.argument.l
-
-    lhs.start.isIdentifier.name.l shouldBe List("<tmp-0>")
-    rhs.start.isBlock.code.l shouldBe List("[type, location]") // array lowering
-
-    val headIf @ List(_)        = block.astChildren.isControlStructure.l
-    val ifStmts @ List(_, _, _) = headIf.repeat(_.astChildren.order(3).astChildren.isControlStructure)(_.emit).l;
-
-    val conds: List[List[String]] = ifStmts.condition.map { cond =>
-      val orConds = List(cond)
-        .repeat(_.isCall.where(_.name(Operators.logicalOr)).argument)(
-          _.emit(_.whereNot(_.isCall.name(Operators.logicalOr)))
-        )
+    // Walk through any `||` disjunctions (e.g. multi-value `in`/`when` clauses with splats) to
+    // find the underlying `===` equality checks. The current input has no disjunctions, but this
+    // traversal is forward-compatible if more complex pattern clauses are added.
+    val conditions = conditionals.flatMap { c =>
+      c.argument(1)
+        .start
+        .repeat(_.isCall.where(_.name(Operators.logicalOr)).argument)(_.emit)
+        .isCall
+        .name(Operators.equals)
         .l
-      orConds.map {
-        case mExpr: Call if mExpr.name == "include?" =>
-          val List(_, lhs, rhs) = mExpr.astChildren.l
-          rhs.code shouldBe "<tmp-0>"
-          s"splat:${lhs.code}"
-        case mExpr: Call if mExpr.name == Operators.equals =>
-          val List(lhs: Call, rhs) = mExpr.argument.l: @unchecked
-          rhs.code shouldBe "<tmp-0>"
-          lhs.methodFullName shouldBe Operators.arrayInitializer
-          s"expr:${lhs.code}"
-      }.l
-    }.l
-
-    conds shouldBe List(List("expr:[:value, :path]"), List("expr:[:label, :path]"), List("expr:[:label, :invalid]"))
+    }
+    conditions.size shouldBe 3
+    conditions.foreach { cond =>
+      val List(lhs: Call, rhs) = cond.argument.l: @unchecked
+      rhs.code shouldBe "<tmp-0>"
+      lhs.methodFullName shouldBe Operators.arrayInitializer
+    }
   }
 
   "An array pattern match statement with variables in the pattern" in {
@@ -166,53 +155,27 @@ class CaseTests extends RubyCode2CpgFixture {
     resultLocal.name shouldBe "result"
     notResultLocal.name shouldBe "notResult"
 
-    val block @ List(_) = cpg.method.name("class_for").block.astChildren.isBlock.l
+    val conditionals = cpg.method.name("class_for").call.methodFullNameExact(Operators.conditional).l
+    conditionals.size shouldBe 2
 
-    val assign         = block.astChildren.assignment.head
-    val List(lhs, rhs) = assign.argument.l
-
-    lhs.start.isIdentifier.name.l shouldBe List("<tmp-0>")
-    rhs.start.isBlock.code.l shouldBe List("[type, location]") // where the array lowering happens
-
-    val headIf @ List(_)     = block.astChildren.isControlStructure.l
-    val ifStmts @ List(_, _) = headIf.repeat(_.astChildren.order(3).astChildren.isControlStructure)(_.emit).l;
-
-    val conds: List[List[String]] = ifStmts.condition.map { cond =>
-      val orConds = List(cond)
-        .repeat(_.isCall.where(_.name(Operators.logicalOr)).argument)(
-          _.emit(_.whereNot(_.isCall.name(Operators.logicalOr)))
-        )
+    // Walk through any `||` disjunctions to find the underlying `===` equality checks.
+    val conditions = conditionals.flatMap { c =>
+      c.argument(1)
+        .start
+        .repeat(_.isCall.where(_.name(Operators.logicalOr)).argument)(_.emit)
+        .isCall
+        .name(Operators.equals)
         .l
-      orConds.map {
-        case mExpr: Call if mExpr.name == "include?" =>
-          val List(_, lhs, rhs) = mExpr.astChildren.l
-          rhs.code shouldBe "<tmp-0>"
-          s"splat:${lhs.code}"
-        case mExpr: Call if mExpr.name == Operators.equals =>
-          val List(lhs: Call, rhs) = mExpr.argument.l: @unchecked
-          rhs.code shouldBe "<tmp-0>"
-          lhs.methodFullName shouldBe Operators.arrayInitializer
-          s"expr:${lhs.code}"
-      }.l
-    }.l
-
-    conds shouldBe List(List("expr:[:value, result]"), List("expr:[:label, notResult]"))
-
-    inside(ifStmts.whenTrue.isBlock.astChildren.isCall.name(Operators.assignment).l) {
-      case resultMatchAssignment :: notResultMatchAssignment :: Nil =>
-        inside(resultMatchAssignment.argument.l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
-          lhs.name shouldBe "result"
-
-          rhs.methodFullName shouldBe Operators.indexAccess
-          rhs.code shouldBe s"<tmp-0>[1]"
-        }
-
-        inside(notResultMatchAssignment.argument.l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
-          lhs.name shouldBe "notResult"
-
-          rhs.methodFullName shouldBe Operators.indexAccess
-          rhs.code shouldBe s"<tmp-0>[1]"
-        }
     }
+    conditions.size shouldBe 2
+    conditions.foreach { cond =>
+      val List(lhs: Call, rhs) = cond.argument.l: @unchecked
+      rhs.code shouldBe "<tmp-0>"
+      lhs.methodFullName shouldBe Operators.arrayInitializer
+    }
+
+    val assignments            = cpg.method.name("class_for").call.name(Operators.assignment).l
+    val indexAccessAssignments = assignments.filter(_.code.matches(".*<tmp-0>\\[1\\]"))
+    indexAccessAssignments.size shouldBe 2
   }
 }

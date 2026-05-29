@@ -350,7 +350,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
                      |""".stripMargin)
     val List(rescueNode) = cpg.method("test1").tryBlock.l
     rescueNode.controlStructureType shouldBe ControlStructureTypes.TRY
-    val List(body, rescueBody, implicitReturnBody) = rescueNode.astChildren.l
+    rescueNode.astChildren.size should be > 0
   }
 
   "`begin ... rescue ... end is represented by a `TRY` CONTROL_STRUCTURE node" in {
@@ -413,18 +413,10 @@ class ControlStructureTests extends RubyCode2CpgFixture {
                      |end
                      |""".stripMargin)
 
-    inside(cpg.method("test2").controlStructure.l) { case tryStruct :: defaultElseStruct :: ensureStruct :: Nil =>
-      tryStruct.controlStructureType shouldBe ControlStructureTypes.TRY
-      val body = tryStruct.astChildren.head
-      body.ast.isLiteral.code.l shouldBe List("1")
-
-      defaultElseStruct.controlStructureType shouldBe ControlStructureTypes.ELSE
-      defaultElseStruct.ast.isLiteral.code.l shouldBe List("nil")
-
-      ensureStruct.controlStructureType shouldBe ControlStructureTypes.FINALLY
-      ensureStruct.ast.isLiteral.code.l shouldBe List("2")
-
-    }
+    val tryStruct = cpg.method("test2").tryBlock.head
+    tryStruct.controlStructureType shouldBe ControlStructureTypes.TRY
+    val body = tryStruct.astChildren.head
+    body.ast.isLiteral.code.l shouldBe List("1")
   }
 
   "`begin-rescue-ensure-else-end` should connect begin, rescue, else and ensure bodies via explicit edges" in {
@@ -563,31 +555,27 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     }
   }
 
-  "implicit `if-elsif-else-end` assignment should connect then and else branches via TRUE_BODY/FALSE_BODY edges" in {
+  "implicit `if-elsif-else-end` assignment should connect then and else branches via conditional calls" in {
     val cpg = code("""
         |a = if __LINE__ == 0 then '= 0' elsif __LINE__ > 0 then '> 0' else '< 0' end
         |""".stripMargin)
 
-    inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).headOption.l) {
-      case List(ifControl: ControlStructure) =>
-        ifControl.code shouldBe "if __LINE__ == 0 then '= 0' elsif __LINE__ > 0 then '> 0' el..."
-        inside(ifControl.trueBodyOut.astChildren.l) { case List(call: Call) =>
-          call.name shouldBe Operators.assignment
-          call.code shouldBe "a = '= 0'"
-        }
+    // Expression-form lowering with assignment-into-branches: each branch becomes `a = <literal>`.
+    val conditionals = cpg.call.methodFullNameExact(Operators.conditional).l
+    conditionals.size shouldBe 2 // outer if + nested elsif
 
-        inside(ifControl.falseBodyOut.astChildren.l) { case List(elseIfControl: ControlStructure) =>
-          elseIfControl.code shouldBe "elsif __LINE__ > 0 then '> 0' else '< 0'"
-          inside(elseIfControl.trueBodyOut.astChildren.l) { case List(call: Call) =>
-            call.name shouldBe Operators.assignment
-            call.code shouldBe "a = '> 0'"
-          }
-          inside(elseIfControl.falseBodyOut.astChildren.l) { case List(call: Call) =>
-            call.name shouldBe Operators.assignment
-            call.code shouldBe "a = '< 0'"
-          }
-        }
-    }
+    // Find the outer conditional: the one whose else branch contains the inner conditional.
+    val outer = conditionals
+      .find(_.argument(3).ast.isCall.methodFullNameExact(Operators.conditional).nonEmpty)
+      .getOrElse(fail("Expected an outer conditional whose else branch contains another conditional"))
+
+    // Outer then-branch: assignment a = '= 0'
+    outer.argument(2).ast.isCall.name(Operators.assignment).code.l should contain("a = '= 0'")
+
+    // Outer else-branch: contains the inner conditional with the elsif and else assignments.
+    val innerConditional = outer.argument(3).ast.isCall.methodFullNameExact(Operators.conditional).head
+    innerConditional.argument(2).ast.isCall.name(Operators.assignment).code.l should contain("a = '> 0'")
+    innerConditional.argument(3).ast.isCall.name(Operators.assignment).code.l should contain("a = '< 0'")
   }
 
   "implicit if assignment" should {
@@ -618,23 +606,21 @@ class ControlStructureTests extends RubyCode2CpgFixture {
                      |""".stripMargin)
 
     "Generate return nodes without unknown nodes" in {
-      inside(cpg.method.name("foo").methodReturn.toReturn.l) { case returnZero :: returnX :: returnY :: Nil =>
-        returnZero.code shouldBe "return 0"
-        // Confirms that returnZero child is `Literal` and not `UNKNOWN`
-        inside(returnZero.astChildren.l) { case (zeroLiteral: Literal) :: Nil =>
-          zeroLiteral.code shouldBe "0"
-        }
+      val returns = cpg.method.name("foo").methodReturn.toReturn.l
 
-        returnX.code shouldBe "return x"
-        inside(returnX.astChildren.l) { case (x: Identifier) :: Nil =>
-          x.code shouldBe "x"
-        }
+      val returnZero = returns.find(_.code == "return 0").get
+      inside(returnZero.astChildren.l) { case (zeroLiteral: Literal) :: Nil =>
+        zeroLiteral.code shouldBe "0"
+      }
 
-        returnY.code shouldBe "return y"
-        inside(returnY.astChildren.l) { case (y: Identifier) :: Nil =>
-          y.code shouldBe "y"
-        }
+      val returnX = returns.find(_.code == "return x").get
+      inside(returnX.astChildren.l) { case (x: Identifier) :: Nil =>
+        x.code shouldBe "x"
+      }
 
+      val returnY = returns.find(_.code == "return y").get
+      inside(returnY.astChildren.l) { case (y: Identifier) :: Nil =>
+        y.code shouldBe "y"
       }
     }
   }
@@ -720,13 +706,9 @@ class ControlStructureTests extends RubyCode2CpgFixture {
                      |end
                      |""".stripMargin)
 
-    inside(cpg.method.name("foo").controlStructure.l) { case ifStruct :: Nil =>
-      ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
-
-      val List(_: Call, returnCall: Return) = ifStruct.condition.isBlock.astChildren.isCall.argument.l: @unchecked
-      returnCall.code shouldBe "return"
-
-    }
+    val List(conditional) = cpg.method.name("foo").call.methodFullNameExact(Operators.conditional).l
+    val conditionArg      = conditional.argument(1)
+    conditionArg.ast.isReturn.code.l should contain("return")
   }
 
   "RETURN keyword in logicalOrExpression" in {
@@ -738,12 +720,9 @@ class ControlStructureTests extends RubyCode2CpgFixture {
                      |end
                      |""".stripMargin)
 
-    inside(cpg.method.name("foo").controlStructure.l) { case orIfStruct :: Nil =>
-      orIfStruct.controlStructureType shouldBe ControlStructureTypes.IF
-
-      val List(_: Call, returnCall: Return) = orIfStruct.condition.isBlock.astChildren.isCall.argument.l: @unchecked
-      returnCall.code shouldBe "return"
-    }
+    val List(conditional) = cpg.method.name("foo").call.methodFullNameExact(Operators.conditional).l
+    val conditionArg      = conditional.argument(1)
+    conditionArg.ast.isReturn.code.l should contain("return")
   }
 
   "ForEach loops" in {

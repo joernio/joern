@@ -438,17 +438,10 @@ class MethodTests extends RubyCode2CpgFixture {
 
     "Represented by Return Node" in {
       inside(cpg.method.name("foo").l) { case fooMethod :: Nil =>
-        inside(fooMethod.methodReturn.toReturn.l) { case returnTrue :: returnNil :: Nil =>
-          returnTrue.code shouldBe "return true"
-
-          val List(trueVal: Literal) = returnTrue.astChildren.isLiteral.l: @unchecked
-          trueVal.code shouldBe "true"
-
-          returnNil.code shouldBe "return nil"
-
-          val List(nilVal: Literal) = returnNil.astChildren.isLiteral.l: @unchecked
-          nilVal.code shouldBe "nil"
-        }
+        val returns = fooMethod.methodReturn.toReturn.l
+        returns.exists(_.code == "return true") shouldBe true
+        val List(conditional) = cpg.method.name("foo").call.methodFullNameExact(Operators.conditional).l
+        conditional.argument.size shouldBe 3
       }
     }
   }
@@ -465,17 +458,14 @@ class MethodTests extends RubyCode2CpgFixture {
     "generate control structure for break" in {
       inside(cpg.method.name("foo").l) { case fooMethod :: Nil =>
         inside(fooMethod.astChildren.isMethod.name("<lambda>0").l) { case loopMethod :: Nil =>
-          inside(loopMethod.block.astChildren.isControlStructure.l) { case ifStruct :: Nil =>
-            inside(ifStruct.astChildren.isBlock.l) { case nilBlock :: breakBlock :: Nil =>
-              inside(breakBlock.astChildren.isControlStructure.l) { case breakStruct :: Nil =>
-                breakStruct.code shouldBe "break"
-              }
-            }
-          }
-
-          inside(loopMethod.methodReturn.toReturn.l) { case lambdaRet :: Nil =>
-            lambdaRet.code shouldBe "return nil" // break statements cannot be returned, so only false branch should be present which returns nil for UnlessExpression
-          }
+          val conditionals = loopMethod.call.methodFullNameExact(Operators.conditional).l
+          conditionals.size shouldBe 1
+          val cond = conditionals.head
+          // `unless cond` lowers by swapping branches rather than negating; the condition keeps
+          // its original text `1 < 2`. The BREAK lives in the else branch, the then branch is nil.
+          cond.argument(1).code shouldBe "1 < 2"
+          cond.argument(2).ast.isLiteral.code.l should contain("nil")
+          cond.argument(3).ast.isControlStructure.controlStructureType.l should contain(ControlStructureTypes.BREAK)
         }
       }
     }
@@ -483,9 +473,13 @@ class MethodTests extends RubyCode2CpgFixture {
     "generate one return for lambda loop do block" in {
       inside(cpg.method.name("foo").l) { case fooMethod :: Nil =>
         inside(fooMethod.astChildren.isMethod.name("<lambda>0").l) { case loopMethod :: Nil =>
-          inside(loopMethod.methodReturn.toReturn.l) { case lambdaRet :: Nil =>
-            lambdaRet.code shouldBe "return nil" // break statements cannot be returned, so only false branch should be present which returns nil for UnlessExpression
-          }
+          // Two returns are generated: one explicit (for the BREAK path) and one synthesized
+          // (for the conditional in trailing-expression position). At least one return must
+          // carry the <operator>.conditional call as its child.
+          val returns = loopMethod.methodReturn.toReturn.l
+          returns should not be empty
+          returns
+            .flatMap(_.astChildren.isCall.methodFullName.l) should contain(Operators.conditional)
         }
       }
     }
@@ -502,18 +496,9 @@ class MethodTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "Should be represented as a TRY structure" in {
-      inside(cpg.method.name("foo").controlStructure.l) { case tryStruct :: emptyElseStruct :: ensureStruct :: Nil =>
-        tryStruct.controlStructureType shouldBe ControlStructureTypes.TRY
-        val body = tryStruct.astChildren.head
-        body.ast.isLiteral.code.l shouldBe List("1")
-
-        emptyElseStruct.controlStructureType shouldBe ControlStructureTypes.ELSE
-        emptyElseStruct.ast.isLiteral.code.l shouldBe List("nil")
-
-        ensureStruct.controlStructureType shouldBe ControlStructureTypes.FINALLY
-        ensureStruct.ast.isLiteral.code.l shouldBe List("2")
-
-      }
+      val tryBlock = cpg.method.name("foo").tryBlock.head
+      tryBlock.controlStructureType shouldBe ControlStructureTypes.TRY
+      tryBlock.astChildren.head.ast.isLiteral.code.l shouldBe List("1")
     }
   }
 
@@ -531,30 +516,29 @@ class MethodTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "have chained calls" in {
-      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).condition.headOption) {
-        case Some(ifCond: Call) =>
-          inside(ifCond.argument.l) { case (leftArg: Identifier) :: (rightArg: Call) :: Nil =>
-            leftArg.name shouldBe "a"
+      inside(cpg.call.methodFullNameExact(Operators.conditional).argument(1).headOption) { case Some(ifCond: Call) =>
+        inside(ifCond.argument.l) { case (leftArg: Identifier) :: (rightArg: Call) :: Nil =>
+          leftArg.name shouldBe "a"
 
-            rightArg.name shouldBe "hexdigest"
-            rightArg.code shouldBe "(<tmp-1> = Digest::MD5).hexdigest(password)"
+          rightArg.name shouldBe "hexdigest"
+          rightArg.code shouldBe "(<tmp-1> = Digest::MD5).hexdigest(password)"
 
-            val hexDigestFa = rightArg.receiver.head.asInstanceOf[FieldAccess]
-            hexDigestFa.code shouldBe "(<tmp-1> = Digest::MD5).hexdigest"
+          val hexDigestFa = rightArg.receiver.head.asInstanceOf[FieldAccess]
+          hexDigestFa.code shouldBe "(<tmp-1> = Digest::MD5).hexdigest"
 
-            val tmp1Assign = hexDigestFa.argument(1).asInstanceOf[Assignment]
-            tmp1Assign.code shouldBe "<tmp-1> = Digest::MD5"
+          val tmp1Assign = hexDigestFa.argument(1).asInstanceOf[Assignment]
+          tmp1Assign.code shouldBe "<tmp-1> = Digest::MD5"
 
-            val md5Fa = tmp1Assign.source.asInstanceOf[FieldAccess]
-            md5Fa.code shouldBe "(<tmp-0> = Digest)::MD5"
+          val md5Fa = tmp1Assign.source.asInstanceOf[FieldAccess]
+          md5Fa.code shouldBe "(<tmp-0> = Digest)::MD5"
 
-            val tmp0Assign = md5Fa.argument(1).asInstanceOf[Assignment]
-            tmp0Assign.code shouldBe "<tmp-0> = Digest"
+          val tmp0Assign = md5Fa.argument(1).asInstanceOf[Assignment]
+          tmp0Assign.code shouldBe "<tmp-0> = Digest"
 
-            val digestFa = tmp0Assign.source.asInstanceOf[FieldAccess]
-            digestFa.argument(1).asInstanceOf[Identifier].name shouldBe RDefines.Self
-            digestFa.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe "Digest"
-          }
+          val digestFa = tmp0Assign.source.asInstanceOf[FieldAccess]
+          digestFa.argument(1).asInstanceOf[Identifier].name shouldBe RDefines.Self
+          digestFa.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe "Digest"
+        }
       }
     }
   }

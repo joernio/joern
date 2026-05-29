@@ -43,46 +43,44 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
     rhs.code shouldBe "1"
   }
 
-  "`||=` is represented by a lowered if call to .nil?" in {
+  "`||=` is represented by a lowered conditional call" in {
     val cpg = code("""
         |def foo(x)
         |  x ||= false
         |end
         |""".stripMargin)
 
-    inside(cpg.method.name("foo").controlStructure.l) { case ifStruct :: Nil =>
-      ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
-      ifStruct.condition.code.l shouldBe List("!x")
+    val List(conditional) = cpg.method.name("foo").call.methodFullNameExact(Operators.conditional).l
+    conditional.argument(1).code shouldBe "!x"
 
-      inside(ifStruct.whenTrue.ast.isCall.name(Operators.assignment).l) { case assignmentCall :: Nil =>
-        assignmentCall.code shouldBe "x = false"
-        val List(lhs, rhs) = assignmentCall.argument.l
-        lhs.code shouldBe "x"
-        rhs.code shouldBe "false"
-      }
-
+    inside(conditional.argument(2).ast.isCall.name(Operators.assignment).l) { case assignmentCall :: Nil =>
+      assignmentCall.code shouldBe "x = false"
+      val List(lhs, rhs) = assignmentCall.argument.l
+      lhs.code shouldBe "x"
+      rhs.code shouldBe "false"
     }
+
+    conditional.argument(3).ast.isLiteral.code.l shouldBe List("nil")
   }
 
-  "`&&=` is represented by lowered if call to .nil?" in {
+  "`&&=` is represented by a lowered conditional call" in {
     val cpg = code("""
         |def foo(x)
         |  x &&= true
         |end
         |""".stripMargin)
 
-    inside(cpg.method.name("foo").controlStructure.l) { case ifStruct :: Nil =>
-      ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
-      ifStruct.condition.code.l shouldBe List("x")
+    val List(conditional) = cpg.method.name("foo").call.methodFullNameExact(Operators.conditional).l
+    conditional.argument(1).code shouldBe "x"
 
-      inside(ifStruct.whenTrue.ast.isCall.name(Operators.assignment).l) { case assignmentCall :: Nil =>
-        assignmentCall.code shouldBe "x = true"
-        val List(lhs, rhs) = assignmentCall.argument.l
-        lhs.code shouldBe "x"
-        rhs.code shouldBe "true"
-      }
-
+    inside(conditional.argument(2).ast.isCall.name(Operators.assignment).l) { case assignmentCall :: Nil =>
+      assignmentCall.code shouldBe "x = true"
+      val List(lhs, rhs) = assignmentCall.argument.l
+      lhs.code shouldBe "x"
+      rhs.code shouldBe "true"
     }
+
+    conditional.argument(3).ast.isLiteral.code.l shouldBe List("nil")
   }
 
   "`/=` is represented by an `assignmentDivision` operator call" in {
@@ -284,24 +282,24 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
     }
   }
 
-  "Bracketed ||= is represented by a lowered if call to .nil?" in {
+  "Bracketed ||= is represented by a lowered conditional call" in {
     val cpg = code("""
         |def foo
         |  hash[:id] ||= s[:id]
         |end
         |""".stripMargin)
-    inside(cpg.method.name("foo").controlStructure.l) { case ifStruct :: Nil =>
-      ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
-      ifStruct.condition.code.l shouldBe List("!hash[:id]")
 
-      inside(ifStruct.whenTrue.ast.isCall.name(Operators.assignment).l) { case assignmentCall :: Nil =>
-        assignmentCall.code shouldBe "hash[:id] = s[:id]"
-        val List(lhs, rhs) = assignmentCall.argument.l
-        lhs.code shouldBe "hash[:id]"
-        rhs.code shouldBe "s[:id]"
-      }
+    val List(conditional) = cpg.method.name("foo").call.methodFullNameExact(Operators.conditional).l
+    conditional.argument(1).code shouldBe "!hash[:id]"
 
+    inside(conditional.argument(2).ast.isCall.name(Operators.assignment).l) { case assignmentCall :: Nil =>
+      assignmentCall.code shouldBe "hash[:id] = s[:id]"
+      val List(lhs, rhs) = assignmentCall.argument.l
+      lhs.code shouldBe "hash[:id]"
+      rhs.code shouldBe "s[:id]"
     }
+
+    conditional.argument(3).ast.isLiteral.code.l shouldBe List("nil")
   }
 
   "Bracketed +=" in {
@@ -320,24 +318,24 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
     }
   }
 
-  "Bracketed &&= is represented by a lowere if call to .nil?" in {
+  "Bracketed &&= is represented by a lowered conditional call" in {
     val cpg = code("""
                      |def foo
                      |  hash[:id] &&= s[:id]
                      |end
                      |""".stripMargin)
-    inside(cpg.method.name("foo").controlStructure.l) { case ifStruct :: Nil =>
-      ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
-      ifStruct.condition.code.l shouldBe List("hash[:id]")
 
-      inside(ifStruct.whenTrue.ast.isCall.name(Operators.assignment).l) { case assignmentCall :: Nil =>
-        assignmentCall.code shouldBe "hash[:id] = s[:id]"
-        val List(lhs, rhs) = assignmentCall.argument.l
-        lhs.code shouldBe "hash[:id]"
-        rhs.code shouldBe "s[:id]"
-      }
+    val List(conditional) = cpg.method.name("foo").call.methodFullNameExact(Operators.conditional).l
+    conditional.argument(1).code shouldBe "hash[:id]"
 
+    inside(conditional.argument(2).ast.isCall.name(Operators.assignment).l) { case assignmentCall :: Nil =>
+      assignmentCall.code shouldBe "hash[:id] = s[:id]"
+      val List(lhs, rhs) = assignmentCall.argument.l
+      lhs.code shouldBe "hash[:id]"
+      rhs.code shouldBe "s[:id]"
     }
+
+    conditional.argument(3).ast.isLiteral.code.l shouldBe List("nil")
   }
 
   "Bracketed /=" in {
@@ -363,21 +361,20 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    inside(cpg.method.name("foo").controlStructure.l) { case ifStruct :: Nil =>
-      ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
-      ifStruct.condition.code.l shouldBe List("!A.B")
+    val List(conditional) = cpg.method.name("foo").call.methodFullNameExact(Operators.conditional).l
+    conditional.argument(1).code shouldBe "!A.B"
 
-      inside(ifStruct.whenTrue.ast.isCall.name(Operators.assignment).l) { case assignmentCall :: Nil =>
-        assignmentCall.code shouldBe "A.B = c 1"
-        val List(lhs, rhs: Call) = assignmentCall.argument.l: @unchecked
-        lhs.code shouldBe "A.B"
+    inside(conditional.argument(2).ast.isCall.name(Operators.assignment).l) { case assignmentCall :: Nil =>
+      assignmentCall.code shouldBe "A.B = c 1"
+      val List(lhs, rhs: Call) = assignmentCall.argument.l: @unchecked
+      lhs.code shouldBe "A.B"
 
-        rhs.code shouldBe "c 1"
-        val List(_, litArg) = rhs.argument.l
-        litArg.code shouldBe "1"
-      }
-
+      rhs.code shouldBe "c 1"
+      val List(_, litArg) = rhs.argument.l
+      litArg.code shouldBe "1"
     }
+
+    conditional.argument(3).ast.isLiteral.code.l shouldBe List("nil")
   }
 
   "Single &&= Assignment" in {
@@ -387,22 +384,21 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
                      |end
                      |""".stripMargin)
 
-    inside(cpg.method.name("foo").controlStructure.l) { case ifStruct :: Nil =>
-      ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
-      ifStruct.condition.code.l shouldBe List("A.B")
+    val List(conditional) = cpg.method.name("foo").call.methodFullNameExact(Operators.conditional).l
+    conditional.argument(1).code shouldBe "A.B"
 
-      inside(ifStruct.whenTrue.ast.isCall.name(Operators.assignment).l) { case assignmentCall :: Nil =>
-        assignmentCall.code shouldBe "A.B = c 1"
-        val List(lhs: Call, rhs: Call) = assignmentCall.argument.l: @unchecked
-        lhs.code shouldBe "A.B"
-        lhs.methodFullName shouldBe Operators.fieldAccess
+    inside(conditional.argument(2).ast.isCall.name(Operators.assignment).l) { case assignmentCall :: Nil =>
+      assignmentCall.code shouldBe "A.B = c 1"
+      val List(lhs: Call, rhs: Call) = assignmentCall.argument.l: @unchecked
+      lhs.code shouldBe "A.B"
+      lhs.methodFullName shouldBe Operators.fieldAccess
 
-        rhs.code shouldBe "c 1"
-        val List(_, litArg) = rhs.argument.l
-        litArg.code shouldBe "1"
-      }
-
+      rhs.code shouldBe "c 1"
+      val List(_, litArg) = rhs.argument.l
+      litArg.code shouldBe "1"
     }
+
+    conditional.argument(3).ast.isLiteral.code.l shouldBe List("nil")
   }
 
   "+= assignment operator" in {

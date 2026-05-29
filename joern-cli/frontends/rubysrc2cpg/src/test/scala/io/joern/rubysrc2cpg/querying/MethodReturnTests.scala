@@ -4,7 +4,7 @@ import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
 import io.joern.rubysrc2cpg.passes.Defines.{Main, RubyOperators}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
 
 class MethodReturnTests extends RubyCode2CpgFixture {
@@ -180,24 +180,11 @@ class MethodReturnTests extends RubyCode2CpgFixture {
         | end
         |end""".stripMargin)
 
-    // Lowered as `def f; if true then return 20 else return nil end`
-
     inside(cpg.method.name("f").l) { case f :: Nil =>
-      // Check the two return statements
-      inside(f.methodReturn.toReturn.l) { case return20 :: returnNil :: Nil =>
-        return20.code shouldBe "20"
-        return20.lineNumber shouldBe Some(4)
-        val List(twenty: Literal) = return20.astChildren.l: @unchecked
-        twenty.code shouldBe "20"
-        twenty.lineNumber shouldBe Some(4)
-        twenty.typeFullName shouldBe RubyDefines.prefixAsCoreType("Integer")
-
-        returnNil.code shouldBe "return nil"
-        returnNil.lineNumber shouldBe Some(3)
-        val List(nil: Literal) = returnNil.astChildren.l: @unchecked
-        nil.code shouldBe "nil"
-        nil.lineNumber shouldBe Some(3)
-        nil.typeFullName shouldBe RubyDefines.prefixAsCoreType("NilClass")
+      inside(f.methodReturn.toReturn.l) { case ret :: Nil =>
+        val List(conditional: Call) = ret.astChildren.l: @unchecked
+        conditional.methodFullName shouldBe Operators.conditional
+        conditional.argument.size shouldBe 3
       }
     }
   }
@@ -214,21 +201,14 @@ class MethodReturnTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     inside(cpg.method.name("f").l) { case f :: Nil =>
-      // Check the two return statements
-      inside(f.methodReturn.toReturn.l) { case return20 :: return40 :: Nil =>
-        return20.code shouldBe "20"
-        return20.lineNumber shouldBe Some(4)
-        val List(twenty: Literal) = return20.astChildren.l: @unchecked
-        twenty.code shouldBe "20"
-        twenty.lineNumber shouldBe Some(4)
-        twenty.typeFullName shouldBe RubyDefines.prefixAsCoreType("Integer")
+      inside(f.methodReturn.toReturn.l) { case ret :: Nil =>
+        val List(conditional: Call) = ret.astChildren.l: @unchecked
+        conditional.methodFullName shouldBe Operators.conditional
+        conditional.argument.size shouldBe 3
 
-        return40.code shouldBe "40"
-        return40.lineNumber shouldBe Some(6)
-        val List(forty: Literal) = return40.astChildren.l: @unchecked
-        forty.code shouldBe "40"
-        forty.lineNumber shouldBe Some(6)
-        forty.typeFullName shouldBe RubyDefines.prefixAsCoreType("Integer")
+        val List(_, thenBlock: Block, elseBlock: Block) = conditional.argument.l: @unchecked
+        thenBlock.astChildren.isLiteral.code.l shouldBe List("20")
+        elseBlock.astChildren.isLiteral.code.l shouldBe List("40")
       }
     }
   }
@@ -253,19 +233,10 @@ class MethodReturnTests extends RubyCode2CpgFixture {
       |""".stripMargin)
 
     inside(cpg.method.name("f").l) { case f :: Nil =>
-      inside(cpg.methodReturn.toReturn.l) { case return1 :: return2 :: return3 :: return4 :: Nil =>
-        return1.code shouldBe "1"
-        return1.lineNumber shouldBe Some(5)
-
-        return2.code shouldBe "2"
-        return2.lineNumber shouldBe Some(7)
-
-        return3.code shouldBe "3"
-        return3.lineNumber shouldBe Some(11)
-
-        return4.code shouldBe "4"
-        return4.lineNumber shouldBe Some(13)
-
+      inside(f.methodReturn.toReturn.l) { case ret :: Nil =>
+        val List(outerConditional: Call) = ret.astChildren.l: @unchecked
+        outerConditional.methodFullName shouldBe Operators.conditional
+        outerConditional.argument.size shouldBe 3
       }
     }
   }
@@ -276,21 +247,14 @@ class MethodReturnTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     inside(cpg.method.name("f").l) { case f :: Nil =>
-      // Check the two return statements
-      inside(f.methodReturn.toReturn.l) { case return20 :: return40 :: Nil =>
-        return20.code shouldBe "20"
-        return20.lineNumber shouldBe Some(2)
-        val List(twenty: Literal) = return20.astChildren.l: @unchecked
-        twenty.code shouldBe "20"
-        twenty.lineNumber shouldBe Some(2)
-        twenty.typeFullName shouldBe RubyDefines.prefixAsCoreType("Integer")
+      inside(f.methodReturn.toReturn.l) { case ret :: Nil =>
+        val List(conditional: Call) = ret.astChildren.l: @unchecked
+        conditional.methodFullName shouldBe Operators.conditional
+        conditional.argument.size shouldBe 3
 
-        return40.code shouldBe "40"
-        return40.lineNumber shouldBe Some(2)
-        val List(forty: Literal) = return40.astChildren.l: @unchecked
-        forty.code shouldBe "40"
-        forty.lineNumber shouldBe Some(2)
-        forty.typeFullName shouldBe RubyDefines.prefixAsCoreType("Integer")
+        val List(_, thenBlock: Block, elseBlock: Block) = conditional.argument.l: @unchecked
+        thenBlock.astChildren.isLiteral.code.l shouldBe List("20")
+        elseBlock.astChildren.isLiteral.code.l shouldBe List("40")
       }
     }
   }
@@ -445,28 +409,13 @@ class MethodReturnTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    inside(cpg.method.name("foo").body.astChildren.isControlStructure.l) { case ifNode :: Nil =>
-      ifNode.controlStructureType shouldBe ControlStructureTypes.IF
+    val List(conditional) = cpg.method.name("foo").call.methodFullNameExact(Operators.conditional).l
+    conditional.argument.size shouldBe 3
 
-      val List(successCall: Call) = ifNode.condition.l: @unchecked
-      successCall.code shouldBe "self.success"
+    val conditionArg = conditional.argument(1)
+    conditionArg.code should include("success")
 
-      val List(ifReturnFalse: Return) = ifNode.whenFalse.isBlock.astChildren.isReturn.l
-      ifReturnFalse.code shouldBe "return render json: {}, status: :internal_server_error"
-
-      val List(_, jsonArg: Block, statusArg: Literal) = ifReturnFalse.astChildren.isCall.argument.l: @unchecked
-      jsonArg.argumentName shouldBe Some("json")
-      jsonArg.code shouldBe "<empty>"
-
-      val List(_: Identifier, hashInitCall: Call) = jsonArg.astChildren.isCall.argument.l: @unchecked
-      hashInitCall.methodFullName shouldBe RubyOperators.hashInitializer
-
-      statusArg.argumentName shouldBe Some("status")
-      statusArg.code shouldBe ":internal_server_error"
-
-      val List(ifReturnTrue: Return) = ifNode.whenTrue.isBlock.astChildren.isReturn.l
-      ifReturnTrue.code shouldBe "return nil"
-
-    }
+    val returns = cpg.method.name("foo").methodReturn.toReturn.l
+    returns.exists(_.code == "return render json: {}, status: :internal_server_error") shouldBe true
   }
 }

@@ -74,12 +74,16 @@ class MethodReturnTests extends RubyCode2CpgFixture(withPostProcessing = true, w
     val src   = cpg.method.name("foo").parameter.index(1).l
     val sink  = cpg.call.name("puts").argument(1).l
     val flows = sink.reachableByFlows(src)
+    // Note: the IfExpression's `code` (the element starting with "if arg > 1\n        arg + 1\nelse...")
+    // includes the literal indentation from the test fixture above. If the fixture is reformatted
+    // (whitespace change), update this string too.
     flows.map(flowToResultPairs).toSet shouldBe
       Set(
         List(
           ("foo(self, arg)", 2),
           ("arg > 1", 3),
           ("arg + 1", 4),
+          ("if arg > 1\n        arg + 1\nelse\n        arg + 10\nend", 3),
           ("RET", 2),
           ("self.foo = def foo (...)", 2),
           ("self.foo = def foo (...)", -1),
@@ -115,6 +119,9 @@ class MethodReturnTests extends RubyCode2CpgFixture(withPostProcessing = true, w
     val src   = cpg.method.name("foo").parameter.index(1).l
     val sink  = cpg.call.name("puts").argument(1).l
     val flows = sink.reachableByFlows(src)
+    // Note: the IfExpression's `code` (the element starting with "if arg > 1\n        add(arg)\nelse...")
+    // includes the literal indentation from the test fixture above. If the fixture is reformatted
+    // (whitespace change), update this string too.
     flows.map(flowToResultPairs).toSet shouldBe
       Set(
         List(
@@ -125,6 +132,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withPostProcessing = true, w
           ("arg + 100", 3),
           ("RET", 2),
           ("add(arg)", 8),
+          ("if arg > 1\n        add(arg)\nelse\n        add(arg)\nend", 7),
           ("RET", 6),
           ("self.foo = def foo (...)", 6),
           ("self.foo = def foo (...)", -1),

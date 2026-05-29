@@ -33,6 +33,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   WhenClause,
   WhileExpression
 }
+import io.joern.rubysrc2cpg.datastructures.BlockScope
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.x2cpg.{Ast, ValidationMode}
@@ -42,17 +43,36 @@ import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Dispatch
 trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForControlStructureExpression(node: ControlFlowStatement): Ast = node match {
-    case node: WhileExpression    => astForWhileStatement(node)
-    case node: DoWhileExpression  => astForDoWhileStatement(node)
-    case node: UntilExpression    => astForUntilStatement(node)
-    case node: CaseExpression     => blockAst(NewBlock(), astsForCaseExpression(node).toList)
+    case node: WhileExpression    => astForWhileExpression(node)
+    case node: DoWhileExpression  => astForDoWhileExpression(node)
+    case node: UntilExpression    => astForUntilExpression(node)
+    case node: CaseExpression     => astForCaseAsExpression(node)
     case node: IfExpression       => astForIfExpression(node)
-    case node: UnlessExpression   => astForUnlessStatement(node)
+    case node: UnlessExpression   => astForUnlessExpression(node)
     case node: ForExpression      => astForForExpression(node)
     case node: RescueExpression   => astForRescueExpression(node)
     case node: NextExpression     => astForNextExpression(node)
     case node: BreakExpression    => astForBreakExpression(node)
     case node: OperatorAssignment => astForOperatorAssignmentExpression(node)
+  }
+
+  private def astForWhileExpression(node: WhileExpression): Ast =
+    loopExpressionAst(astForWhileStatement(node), node)
+
+  private def astForDoWhileExpression(node: DoWhileExpression): Ast =
+    loopExpressionAst(astForDoWhileStatement(node), node)
+
+  private def astForUntilExpression(node: UntilExpression): Ast =
+    loopExpressionAst(astForUntilStatement(node), node)
+
+  private def loopExpressionAst(loopAst: Ast, node: RubyExpression): Ast = {
+    val nilSpan = node.span.spanStart("nil")
+    val nilLit = literalNode(
+      StaticLiteral(Defines.prefixAsCoreType(Defines.NilClass))(nilSpan),
+      "nil",
+      Defines.prefixAsCoreType(Defines.NilClass)
+    )
+    blockAst(blockNode(node), List(loopAst, Ast(nilLit)))
   }
 
   private def astForWhileStatement(node: WhileExpression): Ast = {
@@ -74,30 +94,43 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     whileAst(Some(notCondition), bodyAsts, Option(code(node)), line(node), column(node))
   }
 
-  // Recursively lowers into a ternary conditional call
-  private def astForIfExpression(node: IfExpression): Ast = {
-    def builder(node: IfExpression, conditionAst: Ast, thenAst: Ast, elseAst: Option[Ast]): Ast = {
-      // We want to make sure there's always an «else» clause in a ternary operator.
-      // The default value is a `nil` literal.
-      val elseAst_ = elseAst.getOrElse(astForNilBlock)
+  private def wrapNestedIf(nested: IfExpression): Ast =
+    Ast(blockNode(nested)).withChild(astForIfExpression(nested))
 
-      val call = callNode(node, code(node), Operators.conditional, Operators.conditional, DispatchTypes.STATIC_DISPATCH)
-      callAst(call, conditionAst :: thenAst :: elseAst_ :: Nil)
+  private def astForIfExpression(node: IfExpression): Ast = {
+    val conditionAst = astForExpression(node.condition)
+    val thenAst      = astForThenClause(node.thenClause)
+    val elseAst = node.elseClause match {
+      case Some(nested: IfExpression)                                  => wrapNestedIf(nested)
+      case Some(ElseClause(StatementList(List(nested: IfExpression)))) => wrapNestedIf(nested)
+      case Some(other)                                                 => astForElseClause(other)
+      case None                                                        => astForNilBlock
     }
 
-    astForIfStatement(builder)(node)
+    val call = callNode(node, code(node), Operators.conditional, Operators.conditional, DispatchTypes.STATIC_DISPATCH)
+    callAst(call, conditionAst :: thenAst :: elseAst :: Nil)
   }
 
-  // `unless T do B` is lowered as `if !T then B`
-  private def astForUnlessStatement(node: UnlessExpression): Ast = {
-    val notConditionAst = astForExpression(UnaryExpression("!", node.condition)(node.condition.span))
-    val thenAst = node.trueBranch match {
-      case stmtList: StatementList => astForStatementList(stmtList)
-      case _                       => astForStatementList(StatementList(List(node.trueBranch))(node.trueBranch.span))
+  protected def astForUnlessExpression(node: UnlessExpression): Ast = {
+    val conditionAst = astForExpression(node.condition)
+    val notCall = callNode(
+      node.condition,
+      s"!${code(node.condition)}",
+      Operators.logicalNot,
+      Operators.logicalNot,
+      DispatchTypes.STATIC_DISPATCH
+    )
+    val notConditionAst = callAst(notCall, List(conditionAst))
+    val thenAst         = astForThenClause(node.trueBranch)
+    val elseAst = node.falseBranch match {
+      case Some(nested: IfExpression)                                  => wrapNestedIf(nested)
+      case Some(ElseClause(StatementList(List(nested: IfExpression)))) => wrapNestedIf(nested)
+      case Some(other)                                                 => astForElseClause(other)
+      case None                                                        => astForNilBlock
     }
-    val elseAst = node.falseBranch.map(astForElseClause)
 
-    conditionalStatementBuilder(node, notConditionAst, thenAst, elseAst)
+    val call = callNode(node, code(node), Operators.conditional, Operators.conditional, DispatchTypes.STATIC_DISPATCH)
+    callAst(call, notConditionAst :: thenAst :: elseAst :: Nil)
   }
 
   protected def astForElseClause(node: RubyExpression): Ast = {
@@ -116,6 +149,10 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
   }
 
   private def astForForExpression(node: ForExpression): Ast = {
+    blockAst(blockNode(node), List(astForForStatement(node), astForExpression(node.iterableVariable)))
+  }
+
+  private def astForForStatement(node: ForExpression): Ast = {
     val forEachNode = controlStructureNode(node, ControlStructureTypes.FOR, code(node))
 
     def collectionAst  = astForExpression(node.iterableVariable)
@@ -213,8 +250,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     )
   }
 
-  protected def astsForCaseExpression(node: CaseExpression): Seq[Ast] = {
-    // TODO: Clean up the below
+  protected def lowerCaseToStatementList(node: CaseExpression): StatementList = {
     def goCase(expr: Option[SimpleIdentifier]): List[RubyExpression] = {
       val elseThenClause: Option[RubyExpression] = node.elseClause.map(_.asInstanceOf[ElseClause].thenClause)
       val whenClauses                            = node.matchClauses.collect { case x: WhenClause => x }
@@ -309,7 +345,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
       ifElseChain.iterator.toList
     }
 
-    val caseExpr = node.expression
+    node.expression
       .map {
         case arrayLiteral: ArrayLiteral =>
           val tmp             = SimpleIdentifier(None)(arrayLiteral.span.spanStart(scope.getNewVarTmp))
@@ -321,8 +357,26 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
       }
       .map((tmp, e) => StatementList(List(SingleAssignment(tmp, "=", e)(e.span)) ++ goCase(Some(tmp)))(node.span))
       .getOrElse(StatementList(goCase(None))(node.span))
+  }
 
-    astsForStatement(caseExpr)
+  protected def astsForCaseExpression(node: CaseExpression): Seq[Ast] = {
+    astsForStatement(lowerCaseToStatementList(node))
+  }
+
+  protected def astForCaseAsExpression(node: CaseExpression): Ast = {
+    val lowered = lowerCaseToStatementList(node)
+    val stmts   = lowered.statements
+    val block   = blockNode(node)
+    scope.pushNewScope(BlockScope(block))
+    val (init, last) = stmts.splitAt(stmts.length - 1)
+    val initAsts     = init.flatMap(astsForStatement)
+    val exprAst = last.headOption match {
+      case Some(other) => astForExpression(other)
+      case None        => astForNilBlock
+    }
+    val result = blockAst(block, initAsts :+ exprAst)
+    scope.popScope()
+    result
   }
 
   private def astForOperatorAssignmentExpression(node: OperatorAssignment): Ast = {
