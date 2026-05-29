@@ -381,113 +381,6 @@ class PostFrontendValidator(cpg: Cpg, fatalValidationLevel: ValidationLevel) ext
     }
   }
 
-  /** Detect control structures using the legacy AST-order fallback in CfgCreator instead of the dedicated body edges.
-    * Mirrors the exact fallback conditions in CfgCreator: each check fires when the corresponding new edge is absent
-    * but the order-based AST child that CfgCreator would use as a fallback is present.
-    *
-    * Checks covered (matching each CfgCreator warnOnce call):
-    *   - DO: no DO_BODY edge, but astChildren.order(1) exists
-    *   - FOR: no FOR_INIT/FOR_UPDATE/FOR_BODY edge, but astChildren.order(nLocals+1/3/4) exists
-    *   - IF/WHILE/SWITCH: no TRUE_BODY or FALSE_BODY edge, but astChildren at order 2/3 exist
-    *   - TRY: no TRY_BODY/CATCH_BODY/FINALLY_BODY edge, but matching AST children exist
-    */
-  private def checkControlStructureLegacyFallback(node: nodes.StoredNode): Unit = {
-    node match {
-      case controlStructure: nodes.ControlStructure =>
-        val structureType = controlStructure.controlStructureType
-        structureType match {
-          case ControlStructureTypes.DO =>
-            if (controlStructure._doBodyOut.isEmpty && controlStructure.astChildren.order(1).nonEmpty)
-              registerViolation(
-                CTRL_EDGE_USING_LEGACY,
-                s"DO ControlStructure '${controlStructure.code}' is missing DO_BODY edge (CfgCreator will use legacy order fallback)"
-              )
-
-          case ControlStructureTypes.FOR =>
-            val numLocals = controlStructure.astChildren.count(_.isInstanceOf[nodes.Local])
-            if (controlStructure._forInitOut.isEmpty && controlStructure.astChildren.order(numLocals + 1).nonEmpty)
-              registerViolation(
-                CTRL_EDGE_USING_LEGACY,
-                s"FOR ControlStructure '${controlStructure.code}' is missing FOR_INIT edge (CfgCreator will use legacy order fallback)"
-              )
-            if (controlStructure._forUpdateOut.isEmpty && controlStructure.astChildren.order(numLocals + 3).nonEmpty)
-              registerViolation(
-                CTRL_EDGE_USING_LEGACY,
-                s"FOR ControlStructure '${controlStructure.code}' is missing FOR_UPDATE edge (CfgCreator will use legacy order fallback)"
-              )
-            if (controlStructure._forBodyOut.isEmpty && controlStructure.astChildren.order(numLocals + 4).nonEmpty)
-              registerViolation(
-                CTRL_EDGE_USING_LEGACY,
-                s"FOR ControlStructure '${controlStructure.code}' is missing FOR_BODY edge (CfgCreator will use legacy order fallback)"
-              )
-
-          case ControlStructureTypes.IF | ControlStructureTypes.WHILE | ControlStructureTypes.SWITCH =>
-            if (controlStructure._trueBodyOut.isEmpty && controlStructure.astChildren.order(2).nonEmpty)
-              registerViolation(
-                CTRL_EDGE_USING_LEGACY,
-                s"$structureType ControlStructure '${controlStructure.code}' is missing TRUE_BODY edge (CfgCreator will use legacy order fallback)"
-              )
-            if (controlStructure._falseBodyOut.isEmpty && controlStructure.astChildren.order(3).nonEmpty)
-              registerViolation(
-                CTRL_EDGE_USING_LEGACY,
-                s"$structureType ControlStructure '${controlStructure.code}' is missing FALSE_BODY edge (CfgCreator will use legacy order fallback)"
-              )
-
-          case ControlStructureTypes.TRY =>
-            // TRY_BODY: CfgCreator falls back to astChildren.order(1).where(_.astChildren)
-            if (
-              controlStructure._tryBodyOut.isEmpty && controlStructure.astChildren
-                .order(1)
-                .where(_.astChildren)
-                .nonEmpty
-            )
-              registerViolation(
-                CTRL_EDGE_USING_LEGACY,
-                s"TRY ControlStructure '${controlStructure.code}' is missing TRY_BODY edge (CfgCreator will use legacy order fallback)"
-              )
-            // CATCH_BODY: CfgCreator falls back to CATCH ControlStructure children, or astChildren.order(2)
-            // but we should not warn if the child at order(2) is a FINALLY control structure (try-finally case)
-            val hasCatchFallback =
-              controlStructure.astChildren.isControlStructure
-                .filter(_.controlStructureType == ControlStructureTypes.CATCH)
-                .nonEmpty ||
-                (controlStructure.astChildren.order(2).nonEmpty &&
-                  controlStructure.astChildren
-                    .order(2)
-                    .collectFirst {
-                      case cs: nodes.ControlStructure if cs.controlStructureType == ControlStructureTypes.FINALLY => cs
-                    }
-                    .isEmpty)
-            if (controlStructure._catchBodyOut.isEmpty && hasCatchFallback)
-              registerViolation(
-                CTRL_EDGE_USING_LEGACY,
-                s"TRY ControlStructure '${controlStructure.code}' is missing CATCH_BODY edge (CfgCreator will use legacy order fallback)"
-              )
-            // FINALLY_BODY: CfgCreator falls back to FINALLY ControlStructure children, or astChildren.order(3)
-            // but we should not warn if the child at order(3) is a CATCH control structure (multiple catches case)
-            val hasFinallyFallback =
-              controlStructure.astChildren.isControlStructure
-                .filter(_.controlStructureType == ControlStructureTypes.FINALLY)
-                .nonEmpty ||
-                (controlStructure.astChildren.order(3).nonEmpty &&
-                  controlStructure.astChildren
-                    .order(3)
-                    .collectFirst {
-                      case cs: nodes.ControlStructure if cs.controlStructureType == ControlStructureTypes.CATCH => cs
-                    }
-                    .isEmpty)
-            if (controlStructure._finallyBodyOut.isEmpty && hasFinallyFallback)
-              registerViolation(
-                CTRL_EDGE_USING_LEGACY,
-                s"TRY ControlStructure '${controlStructure.code}' is missing FINALLY_BODY edge (CfgCreator will use legacy order fallback)"
-              )
-
-          case _ =>
-        }
-      case _ =>
-    }
-  }
-
   /** Log compressed violations and optionally throw on error. */
   private def reportViolations(): Unit = {
     val violations = getViolationsCompressedWithKey
@@ -518,7 +411,6 @@ class PostFrontendValidator(cpg: Cpg, fatalValidationLevel: ValidationLevel) ext
       checkArgumentIn(node)
       checkDuplicateOrder(node)
       checkControlStructureEdges(node)
-      checkControlStructureLegacyFallback(node)
     }
     reportViolations()
   }
