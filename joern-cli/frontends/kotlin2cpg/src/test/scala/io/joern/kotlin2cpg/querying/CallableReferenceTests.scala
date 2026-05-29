@@ -50,7 +50,7 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
     }
 
     "have correct parameters with resolved types" in {
-      val params = invokeMethod.parameter.l.sortBy(_.order)
+      val params = invokeMethod.parameter.l.sortBy(_.index)
       params.size shouldBe 3
       params.head.name shouldBe "this"
       params(1).typeFullName shouldBe "int"
@@ -120,7 +120,7 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       constructor.fullName shouldBe "com.test.Handler.process$kotlin.jvm.functions.Function2Impl.invoke:boolean(int,java.lang.String).<init>:void(com.test.Handler)"
       constructor.signature shouldBe "void(com.test.Handler)"
 
-      val ctorParams = constructor.parameter.l.sortBy(_.order)
+      val ctorParams = constructor.parameter.l.sortBy(_.index)
       ctorParams.size shouldBe 2
       ctorParams.head.name shouldBe "this"
       ctorParams.head.typeFullName shouldBe "com.test.Handler.process$kotlin.jvm.functions.Function2Impl.invoke:boolean(int,java.lang.String)"
@@ -153,7 +153,7 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       inside(rhs.refsTo.l) { case List(param: MethodParameterIn) =>
         param.name shouldBe "receiver"
         param.typeFullName shouldBe "com.test.Handler"
-        param.index shouldBe Some(1)
+        param.index shouldBe 1
       }
     }
 
@@ -389,7 +389,7 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       // Check invoke method
       invokeMethod.fullName shouldBe "Counter.increment$kotlin.jvm.functions.Function0Impl.invoke:int().invoke:int()"
       invokeMethod.signature shouldBe "int()"
-      val invokeParams = invokeMethod.parameter.l
+      val invokeParams = invokeMethod.parameter.l.sortBy(_.index)
       invokeParams.size shouldBe 1
       invokeParams.head.name shouldBe "this"
       invokeParams.head.typeFullName shouldBe "Counter.increment$kotlin.jvm.functions.Function0Impl.invoke:int()"
@@ -398,7 +398,7 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       val constructor = syntheticTypeDecl.method.name("<init>").head
       constructor.fullName shouldBe "Counter.increment$kotlin.jvm.functions.Function0Impl.invoke:int().<init>:void(Counter)"
       constructor.signature shouldBe "void(Counter)"
-      val ctorParams = constructor.parameter.l.sortBy(_.order)
+      val ctorParams = constructor.parameter.l.sortBy(_.index)
       ctorParams.size shouldBe 2
       ctorParams.head.name shouldBe "this"
       ctorParams.head.typeFullName shouldBe "Counter.increment$kotlin.jvm.functions.Function0Impl.invoke:int()"
@@ -449,7 +449,7 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       // Check invoke method
       invokeMethod.fullName shouldBe "Handler.process$kotlin.jvm.functions.Function1Impl.invoke:java.lang.String(java.lang.String).invoke:java.lang.String(java.lang.String)"
       invokeMethod.signature shouldBe "java.lang.String(java.lang.String)"
-      val invokeParams = invokeMethod.parameter.l.sortBy(_.order)
+      val invokeParams = invokeMethod.parameter.l.sortBy(_.index)
       invokeParams.size shouldBe 2
       invokeParams.head.name shouldBe "this"
       invokeParams(1).name shouldBe "p1"
@@ -459,7 +459,7 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       val constructor = syntheticTypeDecl.method.name("<init>").head
       constructor.fullName shouldBe "Handler.process$kotlin.jvm.functions.Function1Impl.invoke:java.lang.String(java.lang.String).<init>:void(Handler)"
       constructor.signature shouldBe "void(Handler)"
-      val ctorParams = constructor.parameter.l.sortBy(_.order)
+      val ctorParams = constructor.parameter.l.sortBy(_.index)
       ctorParams.size shouldBe 2
       ctorParams(1).name shouldBe "receiver"
       ctorParams(1).typeFullName shouldBe "Handler"
@@ -506,7 +506,7 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       // Check invoke method
       invokeMethod.fullName shouldBe "com.test.MyClass.method$kotlin.jvm.functions.Function1Impl.invoke:void(int).invoke:void(int)"
       invokeMethod.signature shouldBe "void(int)"
-      val invokeParams = invokeMethod.parameter.l.sortBy(_.order)
+      val invokeParams = invokeMethod.parameter.l.sortBy(_.index)
       invokeParams.size shouldBe 2
       invokeParams.head.name shouldBe "this"
       invokeParams(1).name shouldBe "p1"
@@ -516,7 +516,7 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       val constructor = syntheticTypeDecl.method.name("<init>").head
       constructor.fullName shouldBe "com.test.MyClass.method$kotlin.jvm.functions.Function1Impl.invoke:void(int).<init>:void(com.test.MyClass)"
       constructor.signature shouldBe "void(com.test.MyClass)"
-      val ctorParams = constructor.parameter.l.sortBy(_.order)
+      val ctorParams = constructor.parameter.l.sortBy(_.index)
       ctorParams.size shouldBe 2
       ctorParams(1).name shouldBe "receiver"
       ctorParams(1).typeFullName shouldBe "com.test.MyClass"
@@ -562,7 +562,7 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       val mapMethod = syntheticTypeDecl.method.name("map").head
       mapMethod.fullName shouldBe "com.test.Converter.convertStrings$com.test.MapperImpl.map:java.util.List(java.util.List).map:java.util.List(java.util.List)"
       mapMethod.signature shouldBe "java.util.List(java.util.List)"
-      val mapParams = mapMethod.parameter.l.sortBy(_.order)
+      val mapParams = mapMethod.parameter.l.sortBy(_.index)
       mapParams.size shouldBe 2
       mapParams.head.name shouldBe "this"
       mapParams(1).name shouldBe "items"
@@ -572,7 +572,7 @@ class CallableReferenceTests extends KotlinCode2CpgFixture(withOssDataflow = fal
       val constructor = syntheticTypeDecl.method.name("<init>").head
       constructor.fullName shouldBe "com.test.Converter.convertStrings$com.test.MapperImpl.map:java.util.List(java.util.List).<init>:void(com.test.Converter)"
       constructor.signature shouldBe "void(com.test.Converter)"
-      val ctorParams = constructor.parameter.l.sortBy(_.order)
+      val ctorParams = constructor.parameter.l.sortBy(_.index)
       ctorParams.size shouldBe 2
       ctorParams(1).name shouldBe "receiver"
       ctorParams(1).typeFullName shouldBe "com.test.Converter"

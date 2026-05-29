@@ -674,11 +674,11 @@ class SimpleAstCreationPassTests extends JsSrc2CpgSuite {
       val List(lambdaBlock) = lambda.astChildren.isBlock.l
 
       val List(param1, param2) = lambda.parameter.l
-      param1.index shouldBe Some(0)
+      param1.index shouldBe 0
       param1.name shouldBe "this"
       param1.code shouldBe "this"
 
-      param2.index shouldBe Some(1)
+      param2.index shouldBe 1
       param2.name shouldBe "param1_0"
       param2.code shouldBe "[, param]"
 
@@ -693,13 +693,13 @@ class SimpleAstCreationPassTests extends JsSrc2CpgSuite {
       val List(lambdaBlock) = lambda.astChildren.isBlock.l
 
       val List(param1, param2) = lambda.parameter.l
-      param1.index shouldBe Some(0)
+      param1.index shouldBe 0
       param1.name shouldBe "this"
       param1.code shouldBe "this"
       param1.typeFullName shouldBe Defines.Any
       param1.dynamicTypeHintFullName shouldBe Seq("Test0.js::program")
 
-      param2.index shouldBe Some(1)
+      param2.index shouldBe 1
       param2.name shouldBe "param1_0"
       param2.code shouldBe "{x, ...rest}"
 
@@ -715,13 +715,13 @@ class SimpleAstCreationPassTests extends JsSrc2CpgSuite {
       val List(lambdaBlock) = lambda.astChildren.isBlock.l
 
       val List(param1, param2) = lambda.parameter.l
-      param1.index shouldBe Some(0)
+      param1.index shouldBe 0
       param1.name shouldBe "this"
       param1.code shouldBe "this"
       param1.typeFullName shouldBe Defines.Any
       param1.dynamicTypeHintFullName shouldBe Seq("Test0.js::program")
 
-      param2.index shouldBe Some(1)
+      param2.index shouldBe 1
       param2.name shouldBe "param1_0"
       param2.code shouldBe "[x, ...rest]"
 
@@ -966,14 +966,14 @@ class SimpleAstCreationPassTests extends JsSrc2CpgSuite {
       val cpg              = code("function method(x, ...args) {}").withConfig(Config())
       val List(method)     = cpg.method.nameExact("method").l
       val List(t, x, args) = method.parameter.l
-      t.index shouldBe Some(0)
+      t.index shouldBe 0
       t.name shouldBe "this"
       t.typeFullName shouldBe Defines.Any
       t.dynamicTypeHintFullName shouldBe Seq("Test0.js::program")
-      x.index shouldBe Some(1)
+      x.index shouldBe 1
       x.name shouldBe "x"
       x.typeFullName shouldBe Defines.Any
-      args.index shouldBe Some(2)
+      args.index shouldBe 2
       args.name shouldBe "args"
       args.code shouldBe "...args"
       args.isVariadic shouldBe true
@@ -986,11 +986,11 @@ class SimpleAstCreationPassTests extends JsSrc2CpgSuite {
       val List(block)  = method.astChildren.isBlock.l
 
       val List(t, x) = method.parameter.l
-      t.index shouldBe Some(0)
+      t.index shouldBe 0
       t.name shouldBe "this"
       t.typeFullName shouldBe Defines.Any
       t.dynamicTypeHintFullName shouldBe Seq("Test0.js::program")
-      x.index shouldBe Some(1)
+      x.index shouldBe 1
       x.name shouldBe "x"
       x.typeFullName shouldBe Defines.Any
 
@@ -1008,11 +1008,11 @@ class SimpleAstCreationPassTests extends JsSrc2CpgSuite {
       val List(block)  = method.astChildren.isBlock.l
 
       val List(t, x) = method.parameter.l
-      t.index shouldBe Some(0)
+      t.index shouldBe 0
       t.name shouldBe "this"
       t.typeFullName shouldBe Defines.Any
       t.dynamicTypeHintFullName shouldBe Seq("Test0.js::program")
-      x.index shouldBe Some(1)
+      x.index shouldBe 1
       x.name shouldBe "x"
       x.typeFullName shouldBe Defines.Any
 
@@ -1031,14 +1031,14 @@ class SimpleAstCreationPassTests extends JsSrc2CpgSuite {
       val List(block)  = method.astChildren.isBlock.l
 
       val List(t, x, y) = method.parameter.l
-      t.index shouldBe Some(0)
+      t.index shouldBe 0
       t.name shouldBe "this"
       t.typeFullName shouldBe Defines.Any
       t.dynamicTypeHintFullName shouldBe Seq("Test0.js::program")
-      x.index shouldBe Some(1)
+      x.index shouldBe 1
       x.name shouldBe "x"
       x.typeFullName shouldBe Defines.Any
-      y.index shouldBe Some(2)
+      y.index shouldBe 2
       y.name shouldBe "y"
       y.typeFullName shouldBe Defines.Any
 

@@ -321,7 +321,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
       inside(cpg.method.name("test").call.name("foo").argument(0).outE.collectAll[Ref].l) { case List(ref) =>
         inside(ref.dst) { case param: MethodParameterIn =>
           param.name shouldBe "this"
-          param.index shouldBe Some(0)
+          param.index shouldBe 0
           param.method.fullName shouldBe "Foo.test:void()"
         }
       }
@@ -340,7 +340,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
       inside(cpg.method.name("test").call.name("foo").argument(0).outE.collectAll[Ref].l) { case List(ref) =>
         inside(ref.dst) { case param: MethodParameterIn =>
           param.name shouldBe "this"
-          param.index shouldBe Some(0)
+          param.index shouldBe 0
           param.method.fullName shouldBe "Foo.test:void()"
         }
       }

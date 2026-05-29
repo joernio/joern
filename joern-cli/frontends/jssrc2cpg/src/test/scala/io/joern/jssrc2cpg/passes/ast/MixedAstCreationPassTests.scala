@@ -826,10 +826,10 @@ class MixedAstCreationPassTests extends JsSrc2CpgSuite {
       val List(fooMethod) = program.astChildren.isMethod.nameExact("foo").l
       val List(a)         = fooMethod.parameter.nameExact("param1_0").l
       a.code shouldBe "{ a }"
-      a.index shouldBe Some(1)
+      a.index shouldBe 1
       val List(b) = fooMethod.parameter.nameExact("b").l
       b.code shouldBe "b"
-      b.index shouldBe Some(2)
+      b.index shouldBe 2
     }
 
     "have correct structure for object destruction assignment in call argument" in {
@@ -1255,7 +1255,7 @@ class MixedAstCreationPassTests extends JsSrc2CpgSuite {
       val List(foo) = cpg.method.nameExact("foo").l
 
       val List(paramA) = foo.parameter.nameExact("a").l
-      paramA.index shouldBe Some(1)
+      paramA.index shouldBe 1
 
       val List(block)      = foo.astChildren.isBlock.l
       val List(assignment) = block.astChildren.isCall.l
@@ -1273,10 +1273,10 @@ class MixedAstCreationPassTests extends JsSrc2CpgSuite {
       val cpg          = code("function foo(a = 1, b = 2) {}")
       val List(foo)    = cpg.method.nameExact("foo").l
       val List(paramA) = foo.parameter.nameExact("a").l
-      paramA.index shouldBe Some(1)
+      paramA.index shouldBe 1
 
       val List(paramB) = foo.parameter.nameExact("b").l
-      paramB.index shouldBe Some(2)
+      paramB.index shouldBe 2
 
       val List(block) = foo.astChildren.isBlock.l
 
@@ -1306,9 +1306,9 @@ class MixedAstCreationPassTests extends JsSrc2CpgSuite {
       val cpg          = code("function foo(a, b = 1) {}")
       val List(foo)    = cpg.method.nameExact("foo").l
       val List(paramA) = foo.parameter.nameExact("a").l
-      paramA.index shouldBe Some(1)
+      paramA.index shouldBe 1
       val List(paramB) = foo.parameter.nameExact("b").l
-      paramB.index shouldBe Some(2)
+      paramB.index shouldBe 2
 
       val List(block) = foo.astChildren.isBlock.l
 
@@ -1327,11 +1327,11 @@ class MixedAstCreationPassTests extends JsSrc2CpgSuite {
       val cpg          = code("function foo(a, b = 1, c = 2) {}")
       val List(foo)    = cpg.method.nameExact("foo").l
       val List(paramA) = foo.parameter.nameExact("a").l
-      paramA.index shouldBe Some(1)
+      paramA.index shouldBe 1
       val List(paramB) = foo.parameter.nameExact("b").l
-      paramB.index shouldBe Some(2)
+      paramB.index shouldBe 2
       val List(paramC) = foo.parameter.nameExact("c").l
-      paramC.index shouldBe Some(3)
+      paramC.index shouldBe 3
 
       val List(block) = foo.astChildren.isBlock.l
 

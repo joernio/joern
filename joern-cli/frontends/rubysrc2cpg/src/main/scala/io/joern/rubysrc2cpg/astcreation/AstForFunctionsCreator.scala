@@ -124,13 +124,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     // For yield statements where there isn't an explicit proc parameter
     val anonProcParam = scope.procParamName.map { p =>
       val nextIndex =
-        parameterAsts
-          .flatMap(_.root)
-          .collect { case m: NewMethodParameterIn => m.index }
-          .flatten
-          .maxOption
-          .map(_ + 1)
-          .getOrElse(1)
+        parameterAsts.flatMap(_.root).lastOption.map { case m: NewMethodParameterIn => m.index + 1 }.getOrElse(0)
 
       Ast(p.index(nextIndex))
     }
@@ -466,13 +460,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
         val anonProcParam = scope.procParamName.map { p =>
           val nextIndex =
-            parameterAsts
-              .flatMap(_.root)
-              .collect { case m: NewMethodParameterIn => m.index }
-              .flatten
-              .maxOption
-              .map(_ + 1)
-              .getOrElse(1)
+            parameterAsts.flatMap(_.root).lastOption.map { case m: NewMethodParameterIn => m.index + 1 }.getOrElse(0)
 
           Ast(p.index(nextIndex))
         }

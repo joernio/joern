@@ -37,7 +37,7 @@ class MethodTests extends Rust2CpgSuite(noSysRoot = true) {
     "have the parameter at index 1 with its declared type" in {
       inside(cpg.method.name("id").parameter.sortBy(_.order).l) { case (param: MethodParameterIn) :: Nil =>
         param.name shouldBe "x"
-        param.index shouldBe Some(1)
+        param.index shouldBe 1
         param.typeFullName shouldBe "i32"
       }
     }
@@ -62,15 +62,15 @@ class MethodTests extends Rust2CpgSuite(noSysRoot = true) {
     "preserve their order and declared types" in {
       inside(cpg.method.name("foo").parameter.sortBy(_.order).l) { case p1 :: p2 :: p3 :: Nil =>
         p1.name shouldBe "p1"
-        p1.index shouldBe Some(1)
+        p1.index shouldBe 1
         p1.typeFullName shouldBe "i32"
 
         p2.name shouldBe "p2"
-        p2.index shouldBe Some(2)
+        p2.index shouldBe 2
         p2.typeFullName shouldBe "i64"
 
         p3.name shouldBe "p3"
-        p3.index shouldBe Some(3)
+        p3.index shouldBe 3
         p3.typeFullName shouldBe "f32"
       }
     }
