@@ -3,4 +3,5 @@ common --tool_java_runtime_version=remotejdk_21
 common --java_runtime_version=remotejdk_21
 common --registry=file:///Users/ml/work/bazelRegistry
 common --registry=https://bcr.bazel.build/
+common --sandbox_default_allow_network=false
 try-import user.bazelrc
