@@ -103,6 +103,27 @@ abstract class AstGenRunner(metaData: AstGenProgramMetaData, config: X2CpgConfig
     Environment.OperatingSystemType.Mac     -> Environment.ArchitectureType.ARMv8
   )
 
+  protected def bazelRunfileRepo(frontendName: String, astgenBaseName: String): String = {
+    val osArchitecturePair = (Environment.operatingSystem, Environment.architecture)
+    if (!SupportedBinaries.contains(osArchitecturePair)) {
+      throw new UnsupportedOperationException(s"No compatible binary of $astgenBaseName for your operating system!")
+    } else {
+      val prefix = s"+http_file+${frontendName}_${astgenBaseName}"
+      osArchitecturePair match {
+        case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.ARMv8) =>
+          s"${prefix}_macos_arm"
+        case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.X86) =>
+          s"${prefix}_macos_x86"
+        case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.ARMv8) =>
+          s"${prefix}_linux_arm"
+        case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.X86) =>
+          s"${prefix}_linux_x86"
+        case (Environment.OperatingSystemType.Windows, Environment.ArchitectureType.X86) =>
+          s"${prefix}_win_x86"
+      }
+    }
+  }
+
   /** Determines the name of the executable to run, based on the host system. Usually, AST GEN binaries support three
     * operating systems, and two architectures. Some binaries are multiplatform, in which case the suffix for x86 is
     * used for both architectures.
@@ -166,7 +187,7 @@ abstract class AstGenRunner(metaData: AstGenProgramMetaData, config: X2CpgConfig
     val astGenVersion = conf.getString(metaData.resolvedVersionConfigKey)
     val resolvedPath  = resolveAstGenPath(astGenVersion)
     logger.info(s"Using ${metaData.name} from '$resolvedPath'")
-    resolvedPath
+    Paths.get(resolvedPath).toAbsolutePath.toString
   }
 
   /** Resolution order:
@@ -179,6 +200,15 @@ abstract class AstGenRunner(metaData: AstGenProgramMetaData, config: X2CpgConfig
     binFromEnvVar
       .filter(path => hasCompatibleAstGenVersion(astGenVersion, Option(path)))
       .orElse(Option.when(hasCompatibleAstGenVersion(astGenVersion, None))(metaData.name))
+      .orElse {
+        val runfileRepo = bazelRunfileRepo(metaData.configPrefix, metaData.name)
+        val path = s"${sys.env("JAVA_RUNFILES")}/$runfileRepo/file/downloaded"
+        if (Files.exists(Paths.get(path))) {
+          Some(path)
+        } else {
+          None
+        }
+      }
       .getOrElse {
         val localPath = s"$executableDir/$executableName"
         if (AstGenRunner.isExecutableFile(localPath)) {

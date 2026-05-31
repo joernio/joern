@@ -61,3 +61,40 @@ maven.install(
 )
 use_repo(maven, "maven")
 
+bazel_dep(name = "platforms", version = "1.1.0")
+bazel_dep(name = "bazel_skylib", version = "1.8.2")
+bazel_dep(name = "rules_pkg", version = "1.0.1")
+
+http_file = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
+
+# jssrc2cpg astgen binary imports
+http_file(
+    name = "jssrc2cpg_astgen_macos_arm",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2Fv3.46.0/astgen-macos-arm",
+    sha256 = "530494524a94a2ef64ac2217290b8d1feaae59ec39be4433008b950a6f512a06",
+    executable = True,
+)
+http_file(
+    name = "jssrc2cpg_astgen_macos_x86",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2Fv3.46.0/astgen-macos",
+    sha256 = "ce07e0266938d17c559d48a1e70bd2f7b4b431d505571133db4a5566fd2c19d5",
+    executable = True,
+)
+http_file(
+    name = "jssrc2cpg_astgen_linux_arm",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2fv3.46.0/astgen-linux-arm",
+    sha256 = "eaed227be1674c03418db3784e6da0d0c88bc8112a8835cc82260d62e20c986c",
+    executable = True,
+)
+http_file(
+    name = "jssrc2cpg_astgen_linux_x86",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2Fv3.46.0/astgen-linux",
+    sha256 = "8c54c044d5e759cb49f4bf06e6c08721ba882ca4a3f1d4b479706f1aa3d1603b",
+    executable = True,
+)
+http_file(
+    name = "jssrc2cpg_astgen_win_x86",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2Fv3.46.0/astgen-win.exe",
+    sha256 = "ee4ddc128fe30749868e44e04c39bd50f72f8cc7a5a72d7d0cc4994a8c781840",
+    executable = True,
+)
