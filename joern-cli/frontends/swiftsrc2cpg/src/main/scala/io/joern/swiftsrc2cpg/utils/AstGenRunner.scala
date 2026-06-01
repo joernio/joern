@@ -40,6 +40,9 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
   override val MacArm: String   = "mac"
   override val LinuxArm: String = "linux-arm64"
 
+  override val MacX86BazelRuleSuffix = "_macos"
+  override val MacArmBazelRuleSuffix = "_macos"
+
   override protected def skippedFiles(in: Path, astGenOut: List[String]): List[String] = {
     val skipped = astGenOut.collect {
       case out if !out.startsWith("Generated") =>

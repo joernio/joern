@@ -50,6 +50,8 @@ maven.install(
       "org.antlr:antlr4-runtime:4.7.2",
       "com.github.scopt:scopt_3:4.1.0",
       "org.apache.logging.log4j:log4j-slf4j2-impl:2.23.1",
+      "com.google.code.gson:gson:2.13.1",
+      "com.googlecode.plist:dd-plist:1.28",
     ],
     use_credentials_from_home_netrc_file = True,
     fetch_sources = True,
@@ -96,5 +98,31 @@ http_file(
     name = "jssrc2cpg_astgen_win_x86",
     url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2Fv3.46.0/astgen-win.exe",
     sha256 = "ee4ddc128fe30749868e44e04c39bd50f72f8cc7a5a72d7d0cc4994a8c781840",
+    executable = True,
+)
+
+#swiftsrc2cpg astgen binary imports
+http_file(
+    name = "swiftsrc2cpg_astgen_macos",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/swift-astgen%2Fv0.4.2/SwiftAstGen-mac",
+    sha256 = "2ea737b2fb7e3e87a6e930753bb69601fc37bcb7ed36ac39cfdd29560d5810c3",
+    executable = True,
+)
+http_file(
+    name = "swiftsrc2cpg_astgen_linux_arm",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/swift-astgen%2Fv0.4.2/SwiftAstGen-linux-arm64",
+    sha256 = "49da64aa0ebb3ef1ddd00742fb378081adc2e972d97b6766ac25208510e3503b",
+    executable = True,
+)
+http_file(
+    name = "swiftsrc2cpg_astgen_linux_x86",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/swift-astgen%2Fv0.4.2/SwiftAstGen-linux",
+    sha256 = "1697e43e720768480d32468e02625129817ac770b58f536273f78378c064832e",
+    executable = True,
+)
+http_file(
+    name = "swiftsrc2cpg_astgen_win_x86",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/swift-astgen%2Fv0.4.2/SwiftAstGen-win.exe",
+    sha256 = "f7d0e15f69c971a169b27819166ff01201e59908fa440f4d61a0ec7dc77f1f65",
     executable = True,
 )

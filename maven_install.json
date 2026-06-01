@@ -4,10 +4,11 @@
     "com.github.javaparser:javaparser-symbol-solver-core": -446379192,
     "com.github.scopt:scopt_3": -544942275,
     "com.google.code.findbugs:jsr305": 495355163,
-    "com.google.code.gson:gson": 597770368,
+    "com.google.code.gson:gson": 2052553708,
     "com.google.errorprone:error_prone_annotations": -1035138750,
     "com.google.guava:guava": 1943808618,
     "com.google.j2objc:j2objc-annotations": 2003271689,
+    "com.googlecode.plist:dd-plist": -594010571,
     "com.lihaoyi:ujson_3": 1587972631,
     "com.lihaoyi:upickle_3": -1467042423,
     "com.michaelpollmeier:scala-repl-pp_3.3.6": -995643616,
@@ -47,8 +48,8 @@
     "com.github.tototoshi:scala-csv_3:jar:sources": 99062729,
     "com.google.code.findbugs:jsr305": 870839855,
     "com.google.code.findbugs:jsr305:jar:sources": -935881202,
-    "com.google.code.gson:gson": -1575757252,
-    "com.google.code.gson:gson:jar:sources": -350708227,
+    "com.google.code.gson:gson": 1550101141,
+    "com.google.code.gson:gson:jar:sources": 1299601104,
     "com.google.errorprone:error_prone_annotations": 1527418394,
     "com.google.errorprone:error_prone_annotations:jar:sources": 1371598517,
     "com.google.guava:failureaccess": 1715931538,
@@ -60,6 +61,8 @@
     "com.google.j2objc:j2objc-annotations:jar:sources": -1518668002,
     "com.google.protobuf:protobuf-java": 1272252895,
     "com.google.protobuf:protobuf-java:jar:sources": -86916801,
+    "com.googlecode.plist:dd-plist": -216330262,
+    "com.googlecode.plist:dd-plist:jar:sources": -1633100160,
     "com.h2database:h2-mvstore": -1004445531,
     "com.h2database:h2-mvstore:jar:sources": 1948738169,
     "com.ibm.icu:icu4j": -929741173,
@@ -255,10 +258,10 @@
     },
     "com.google.code.gson:gson": {
       "shasums": {
-        "jar": "d3999291855de495c94c743761b8ab5176cfeabe281a5ab0d8e8d45326fd703e",
-        "sources": "ba5bddb1a89eb721fcca39f3b34294532060f851e2407a82d82134a41eec4719"
+        "jar": "94855942d4992f112946d3de1c334e709237b8126d8130bf07807c018a4a2120",
+        "sources": "3317b8662ebc2b7a5ff34af2214cd0f8d74d37a9fa9757be494ad8824e96eee7"
       },
-      "version": "2.8.9"
+      "version": "2.13.1"
     },
     "com.google.errorprone:error_prone_annotations": {
       "shasums": {
@@ -300,6 +303,13 @@
         "sources": "36b6a8d40ce26455f004f488d6ebfdd559f5ad126d7eebce7e351d5f77c777d2"
       },
       "version": "3.20.1"
+    },
+    "com.googlecode.plist:dd-plist": {
+      "shasums": {
+        "jar": "88ed8e730f7386297485176c4387146c6914a38c0e58fc296e8a01cdc3b621e1",
+        "sources": "42f755c3f5ae9cd40caa74884315e41a9eeab78744bceeb4e820c75e79e8b53a"
+      },
+      "version": "1.28"
     },
     "com.h2database:h2-mvstore": {
       "shasums": {
@@ -787,6 +797,9 @@
     "com.github.tototoshi:scala-csv_3": [
       "org.scala-lang:scala3-library_3"
     ],
+    "com.google.code.gson:gson": [
+      "com.google.errorprone:error_prone_annotations"
+    ],
     "com.google.guava:guava": [
       "com.google.errorprone:error_prone_annotations",
       "com.google.guava:failureaccess",
@@ -1097,6 +1110,9 @@
     "com.google.protobuf:protobuf-java": [
       "com.google.protobuf",
       "com.google.protobuf.compiler"
+    ],
+    "com.googlecode.plist:dd-plist": [
+      "com.dd.plist"
     ],
     "com.h2database:h2-mvstore": [
       "org.h2.api",
@@ -1873,6 +1889,8 @@
       "com.google.j2objc:j2objc-annotations:jar:sources",
       "com.google.protobuf:protobuf-java",
       "com.google.protobuf:protobuf-java:jar:sources",
+      "com.googlecode.plist:dd-plist",
+      "com.googlecode.plist:dd-plist:jar:sources",
       "com.h2database:h2-mvstore",
       "com.h2database:h2-mvstore:jar:sources",
       "com.ibm.icu:icu4j",
@@ -2036,6 +2054,8 @@
       "com.google.j2objc:j2objc-annotations:jar:sources",
       "com.google.protobuf:protobuf-java",
       "com.google.protobuf:protobuf-java:jar:sources",
+      "com.googlecode.plist:dd-plist",
+      "com.googlecode.plist:dd-plist:jar:sources",
       "com.h2database:h2-mvstore",
       "com.h2database:h2-mvstore:jar:sources",
       "com.ibm.icu:icu4j",

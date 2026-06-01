@@ -9,6 +9,7 @@ import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 import versionsort.VersionHelper
 
+import java.io.FileNotFoundException
 import java.net.URL
 import java.nio.file.{Files, Path, Paths}
 import scala.util.{Failure, Success, Try}
@@ -92,6 +93,13 @@ abstract class AstGenRunner(metaData: AstGenProgramMetaData, config: X2CpgConfig
   protected val MacX86   = "macos"
   protected val MacArm   = "macos-arm"
 
+  protected val WinX86BazelRuleSuffix = "_win_x86"
+  protected val WinArmBazelRuleSuffix = "_win_arm"
+  protected val LinuxX86BazelRuleSuffix = "_linux_x86"
+  protected val LinuxArmBazelRuleSuffix = "_linux_arm"
+  protected val MacX86BazelRuleSuffix = "_macos_x86"
+  protected val MacArmBazelRuleSuffix = "_macos_arm"
+
   /** All the supported combinations of architectures.
     */
   protected val SupportedBinaries: Set[(OperatingSystemType, ArchitectureType)] = Set(
@@ -103,23 +111,25 @@ abstract class AstGenRunner(metaData: AstGenProgramMetaData, config: X2CpgConfig
     Environment.OperatingSystemType.Mac     -> Environment.ArchitectureType.ARMv8
   )
 
-  protected def bazelRunfileRepo(frontendName: String, astgenBaseName: String): String = {
+  protected def bazelRunfileRepo(frontendName: String): String = {
     val osArchitecturePair = (Environment.operatingSystem, Environment.architecture)
     if (!SupportedBinaries.contains(osArchitecturePair)) {
-      throw new UnsupportedOperationException(s"No compatible binary of $astgenBaseName for your operating system!")
+      throw new UnsupportedOperationException(s"No compatible astgen binary for your operating system!")
     } else {
-      val prefix = s"+http_file+${frontendName}_${astgenBaseName}"
+      val prefix = s"+http_file+${frontendName}_astgen"
       osArchitecturePair match {
         case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.ARMv8) =>
-          s"${prefix}_macos_arm"
+          s"${prefix}$MacArmBazelRuleSuffix"
         case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.X86) =>
-          s"${prefix}_macos_x86"
+          s"${prefix}$MacX86BazelRuleSuffix"
         case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.ARMv8) =>
-          s"${prefix}_linux_arm"
+          s"${prefix}$LinuxArmBazelRuleSuffix"
         case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.X86) =>
-          s"${prefix}_linux_x86"
+          s"${prefix}$LinuxX86BazelRuleSuffix"
         case (Environment.OperatingSystemType.Windows, Environment.ArchitectureType.X86) =>
-          s"${prefix}_win_x86"
+          s"${prefix}$WinX86BazelRuleSuffix"
+        case (Environment.OperatingSystemType.Windows, Environment.ArchitectureType.ARMv8) =>
+          s"${prefix}$WinArmBazelRuleSuffix"
       }
     }
   }
@@ -201,7 +211,7 @@ abstract class AstGenRunner(metaData: AstGenProgramMetaData, config: X2CpgConfig
       .filter(path => hasCompatibleAstGenVersion(astGenVersion, Option(path)))
       .orElse(Option.when(hasCompatibleAstGenVersion(astGenVersion, None))(metaData.name))
       .orElse {
-        val runfileRepo = bazelRunfileRepo(metaData.configPrefix, metaData.name)
+        val runfileRepo = bazelRunfileRepo(metaData.configPrefix)
         val path = s"${sys.env("JAVA_RUNFILES")}/$runfileRepo/file/downloaded"
         if (Files.exists(Paths.get(path))) {
           Some(path)
@@ -221,7 +231,7 @@ abstract class AstGenRunner(metaData: AstGenProgramMetaData, config: X2CpgConfig
           logger.error(s"""Local ${metaData.name} binary not found at '$localPath' or is not executable!
                |Please make sure to have a compatible ${metaData.name} version installed and available on this system$envHint.
                |""".stripMargin)
-          scala.sys.exit(1)
+          throw new FileNotFoundException(localPath)
         }
       }
   }
