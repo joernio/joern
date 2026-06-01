@@ -1,4 +1,6 @@
 load("//bazel:scala.bzl", "scala_library", "scala_test")
+load("//bazel:java.bzl", "java_binary")
+load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
 
 scala_library(
   name = "javasrc2cpg",
@@ -47,4 +49,22 @@ scala_test(
     "JAVA_HOME": "$(JAVABASE_ROOTPATH)",
   },
   toolchains = ["@bazel_tools//tools/jdk:current_java_runtime"],
+)
+
+java_binary(
+  name = "javasrc2cpg-bin",
+  main_class = "io.joern.javasrc2cpg.Main",
+  runtime_deps = [
+    ":javasrc2cpg",
+    "@maven//:org_apache_logging_log4j_log4j_slf4j2_impl",
+  ],
+  resources = glob(["src/main/resources/log4j2.xml"]),
+  visibility = ["//visibility:public"],
+)
+
+pkg_tar(
+  name = "javasrc2cpg-dist",
+  srcs = [":javasrc2cpg-bin"],
+  include_runfiles = True,
+  visibility = ["//visibility:public"],
 )
