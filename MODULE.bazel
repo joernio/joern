@@ -52,6 +52,13 @@ maven.install(
       "org.apache.logging.log4j:log4j-slf4j2-impl:2.23.1",
       "com.google.code.gson:gson:2.13.1",
       "com.googlecode.plist:dd-plist:1.28",
+      "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.3.21",
+      "org.jetbrains.kotlin:kotlin-stdlib:2.3.21",
+      "org.jetbrains.kotlin:kotlin-compiler-embeddable:2.3.21",
+      "org.jetbrains.kotlin:kotlin-allopen:2.3.21",
+      # TODO remove dependencies below this. They do not have production quality.
+      "com.squareup.tools.build:maven-archeologist:0.0.10",
+      "com.lihaoyi:requests_3:0.8.0",
     ],
     use_credentials_from_home_netrc_file = True,
     fetch_sources = True,
