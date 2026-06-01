@@ -274,7 +274,7 @@ class FrontendHTTPServerTests extends AnyWordSpec with Matchers {
       val captured = new AtomicReference[Array[String]](Array.empty)
       withServer(args => captured.set(args)) { (_, port) =>
         val client = FrontendHTTPClient(port)
-        val req    = client.buildRequest(Array("input=/tmp/in", "output=/tmp/out"))
+        val req    = client.buildRequest(Array(("input", Some("/tmp/in")), ("output", Some("/tmp/out"))))
         client.sendRequest(req).get shouldBe "/tmp/out"
         captured.get().toSet should contain("/tmp/in")
       }
@@ -283,7 +283,7 @@ class FrontendHTTPServerTests extends AnyWordSpec with Matchers {
     "return a Failure when the handler throws" in {
       withServer(_ => throw new RuntimeException("nope")) { (_, port) =>
         val client = FrontendHTTPClient(port)
-        val req    = client.buildRequest(Array("input=/tmp/in"))
+        val req    = client.buildRequest(Array(("input", Some("/tmp/in"))))
         val result = client.sendRequest(req)
         result.isFailure shouldBe true
         result.failed.get.getMessage should include("400")
