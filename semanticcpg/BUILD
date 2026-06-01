@@ -1,10 +1,8 @@
-load("//bazel:scala.bzl", "scala_library")
+load("//bazel:scala.bzl", "scala_library", "scala_test")
 
 scala_library(
   name = "semanticcpg",
   srcs = glob(["src/main/scala/**/*.scala"]),
-  scalacopts = [ 
-  ],  
   deps = [
     "//bazel/reexports:io_shiftleft_codepropertygraph_with_deps",
     "@maven//:org_slf4j_slf4j_api",
@@ -17,6 +15,16 @@ scala_library(
     "@maven//:org_json4s_json4s_ast_3",
     "@maven//:org_scala_lang_modules_scala_xml_3",
     "@maven//:com_google_protobuf_protobuf_java",
+  ],
+  visibility = [ "//visibility:public" ],
+)
+
+scala_test(
+  name = "tests",
+  srcs = glob(["src/test/scala/**/*.scala"]),
+  deps = [
+    ":semanticcpg",
+    "//bazel/reexports:io_shiftleft_codepropertygraph_with_deps",
   ],
   visibility = [ "//visibility:public" ],
 )
