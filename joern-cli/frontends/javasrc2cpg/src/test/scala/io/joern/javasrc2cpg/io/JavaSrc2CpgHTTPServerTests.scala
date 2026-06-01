@@ -51,7 +51,7 @@ class JavaSrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAn
           val input  = projectUnderTest.toAbsolutePath.toString
           val output = cpgOutFile.toString
           val client = FrontendHTTPClient(port)
-          val req    = client.buildRequest(Array(("input", Some(input)), ("output", Some(output))))
+          val req    = client.buildRequest(Array(s"input=$input", s"output=$output"))
           client.sendRequest(req) match {
             case Failure(exception) => fail(exception.getMessage)
             case Success(out) =>
@@ -71,7 +71,7 @@ class JavaSrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAn
             val input  = projectUnderTest.toAbsolutePath.toString
             val output = cpgOutFile.toString
             val client = FrontendHTTPClient(port)
-            val req = client.buildRequest(Array(("input", Some(input)), ("output", Some(output))))
+            val req    = client.buildRequest(Array(s"input=$input", s"output=$output"))
             client.sendRequest(req) match {
               case Failure(exception) => fail(exception.getMessage)
               case Success(out) =>

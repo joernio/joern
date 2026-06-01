@@ -3,7 +3,7 @@ package io.joern.x2cpg.utils.server
 import java.io.IOException
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
-import java.net.{URI, URLEncoder}
+import java.net.URI
 import java.net.http.HttpRequest.BodyPublishers
 import java.net.http.HttpResponse.BodyHandlers
 import scala.util.Failure
@@ -34,18 +34,12 @@ case class FrontendHTTPClient(port: Int) {
     * @return
     *   The constructed `HttpRequest` object.
     */
-  def buildRequest(args: Array[(String, Option[String])]): HttpRequest = {
-    val data = ujson.Obj
-      .from(args.map {
-        case (key, Some(value)) => (key, ujson.Str(value))
-        case (key, None)        => (key, ujson.Null)
-      })
-      .render()
+  def buildRequest(args: Array[String]): HttpRequest = {
     HttpRequest
       .newBuilder()
       .uri(URI.create(s"http://localhost:$port/run"))
-      .header("Content-Type", "application/json")
-      .POST(BodyPublishers.ofString(data))
+      .header("Content-Type", "application/x-www-form-urlencoded")
+      .POST(BodyPublishers.ofString(args.mkString("&")))
       .build()
   }
 
