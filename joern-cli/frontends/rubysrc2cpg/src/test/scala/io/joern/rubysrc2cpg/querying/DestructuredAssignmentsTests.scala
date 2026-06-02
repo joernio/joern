@@ -381,4 +381,28 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
 
   }
 
+  "multi-assignments with complex LHS as a return value" should {
+    val cpg = code("""
+        |def f(arr)
+        | arr[0], arr[1] = 1, 2
+        |end
+        |""".stripMargin)
+
+    "use temporary variables for the complex LHS expressions" in {
+      val retBlock = cpg.method.name("f").methodReturn.toReturn.astChildren.isBlock.head
+      retBlock.code shouldBe "arr[0], arr[1] = 1, 2"
+
+      val directAssignments = retBlock.astChildren.isCall.nameExact(Operators.assignment).l
+      directAssignments.size shouldBe 4
+
+      val tmpAssignments = directAssignments.filter(_.argument(1).code.startsWith("<tmp-"))
+      tmpAssignments.size shouldBe 2
+      tmpAssignments.map(_.code).toSet shouldBe Set("<tmp-0> = 1", "<tmp-1> = 2")
+
+      val lhsAssignments = directAssignments.filter(_.argument(2).code.startsWith("<tmp-"))
+      lhsAssignments.size shouldBe 2
+      lhsAssignments.map(_.code).toSet shouldBe Set("arr[0] = <tmp-0>", "arr[1] = <tmp-1>")
+    }
+  }
+
 }

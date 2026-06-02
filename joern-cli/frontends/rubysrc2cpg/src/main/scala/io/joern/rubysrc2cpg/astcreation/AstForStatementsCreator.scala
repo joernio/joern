@@ -8,7 +8,15 @@ import io.joern.rubysrc2cpg.passes.Defines.prefixAsKernelDefined
 import io.joern.x2cpg.datastructures.MethodLike
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewControlStructure}
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, ModifierTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.{
+  ControlStructureTypes,
+  DispatchTypes,
+  ModifierTypes,
+  NodeTypes,
+  Operators
+}
+
+import scala.collection.mutable
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -27,6 +35,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case node: MethodDeclaration          => astForMethodDeclaration(node)
       case node: MethodAccessModifier       => astForMethodAccessModifier(node)
       case node: SingletonMethodDeclaration => astForSingletonMethodDeclaration(node)
+      case node: DefaultMultipleAssignment  => astForDefaultMultipleAssignment(node)
       case node: MultipleAssignment         => node.assignments.map(astForExpression)
       case node: BreakExpression            => astForBreakExpression(node) :: Nil
       case node: SingletonStatementList     => astForSingletonStatementList(node)
@@ -173,8 +182,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           case x =>
             astsForStatement(transform(expr))
         }
-      case node: DefaultMultipleAssignment =>
-        astsForStatement(node) ++ astsForImplicitReturnStatement(ArrayLiteral(node.assignments.map(_.lhs))(node.span))
       case ret: ReturnExpression => astForReturnExpression(ret) :: Nil
       case node: (MethodDeclaration | SingletonMethodDeclaration) =>
         (astsForStatement(node) :+ astForReturnMethodDeclarationSymbolName(node)).toList
@@ -210,8 +217,61 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def returnAst(node: RubyExpression): Ast = {
-    val nodeAst = astsForStatement(node)
-    returnAst(returnNode(node, code(node)), nodeAst)
+    val nodeAst = astForExpression(node)
+    returnAst(returnNode(node, code(node)), nodeAst :: Nil)
+  }
+
+  protected def astForDefaultMultipleAssignment(
+    node: DefaultMultipleAssignment,
+    isExpression: Boolean = false
+  ): Seq[Ast] = {
+    if (!isExpression) {
+      node.assignments.map(astForExpression)
+    } else {
+      val assignmentAsts = mutable.ListBuffer.empty[Ast]
+      val returnExprs    = mutable.ListBuffer.empty[RubyExpression]
+
+      node.assignments.foreach { assignment =>
+        if (isSimpleExpression(assignment.lhs)) {
+          assignmentAsts += astForExpression(assignment)
+          returnExprs += assignment.lhs
+        } else {
+          val tmpName  = scope.getNewVarTmp
+          val tmpIdent = SimpleIdentifier()(assignment.span.spanStart(tmpName))
+
+          val tmpLhsAst = handleVariableOccurrence(tmpIdent)
+          val rhsAst    = astForExpression(assignment.rhs)
+          val tmpAssignCall = callNode(
+            assignment,
+            s"$tmpName = ${code(assignment.rhs)}",
+            Operators.assignment,
+            Operators.assignment,
+            DispatchTypes.STATIC_DISPATCH
+          )
+          assignmentAsts += callAst(tmpAssignCall, Seq(tmpLhsAst, rhsAst))
+
+          val lhsAst    = astForExpression(assignment.lhs)
+          val tmpRhsAst = handleVariableOccurrence(tmpIdent)
+          val lhsAssignCall = callNode(
+            assignment,
+            s"${code(assignment.lhs)} = $tmpName",
+            Operators.assignment,
+            Operators.assignment,
+            DispatchTypes.STATIC_DISPATCH
+          )
+          assignmentAsts += callAst(lhsAssignCall, Seq(lhsAst, tmpRhsAst))
+
+          returnExprs += tmpIdent
+        }
+      }
+      assignmentAsts.toSeq :+ astForExpression(ArrayLiteral(returnExprs.toList)(node.span))
+    }
+  }
+
+  private def isSimpleExpression(expr: RubyExpression): Boolean = expr match {
+    case _: RubyIdentifier | _: SelfIdentifier => true
+    case _: LiteralExpr                        => true
+    case _                                     => false
   }
 
   // The evaluation of a MethodDeclaration returns its name in symbol form.
