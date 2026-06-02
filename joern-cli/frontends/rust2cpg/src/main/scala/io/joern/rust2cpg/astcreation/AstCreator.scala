@@ -6,6 +6,7 @@ import io.joern.rust2cpg.parser.RustJsonParser.ParseResult
 import io.joern.rust2cpg.parser.RustNodeSyntax
 import io.joern.rust2cpg.parser.RustNodeSyntax.RustNode
 import io.joern.x2cpg.datastructures.Stack.*
+import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewCall,
@@ -29,11 +30,13 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
   private val logger = LoggerFactory.getLogger(getClass)
 
   protected val methodAstParentStack = new Stack[NewNode]
+  protected val variableScope        = new VariableScopeManager()
 
   override def createAst(): DiffGraphBuilder = {
     val sourceFile = parseResult.ast.asInstanceOf[RustNodeSyntax.SourceFile]
     val ast        = visitSourceFile(sourceFile)
     Ast.storeInDiffGraph(ast, diffGraph)
+    variableScope.createVariableReferenceLinks(diffGraph, parseResult.filename)
     diffGraph
   }
 

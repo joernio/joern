@@ -80,11 +80,6 @@ trait RustFullNames { this: AstCreator =>
     text(typ).getOrElse(Defines.Any)
   }
 
-  // TODO
-  protected def typeFullNameForNameRef(nameRef: RustNodeSyntax.NameRef): String = {
-    Defines.Any
-  }
-
   protected def typeFullNameForPath(path: RustNodeSyntax.Path): String = {
     rustAstGenTypeFullName(path)
       .orElse(path.pathSegment.nameRef.flatMap(rustAstGenTypeFullName))

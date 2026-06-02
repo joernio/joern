@@ -226,5 +226,9 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
         local.code shouldBe "x"
       }
     }
+
+    "have the LHS of the assignment reference the declaration" in {
+      cpg.method("main").assignment.target.isIdentifier.name("x").refsTo.l shouldBe cpg.method("main").local.name("x").l
+    }
   }
 }

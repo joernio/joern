@@ -2,6 +2,7 @@ package io.joern.rust2cpg.astcreation
 
 import io.joern.rust2cpg.parser.RustNodeSyntax.*
 import io.joern.x2cpg.datastructures.Stack.*
+import io.joern.x2cpg.datastructures.VariableScopeManager.ScopeType
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
@@ -184,6 +185,7 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
               case None =>
                 val lhsName = code(identToken)
                 val local   = localNode(identToken, lhsName, lhsName, typeFullName)
+                variableScope.addVariable(local.name, local, local.typeFullName, ScopeType.BlockScope)
                 Ast(local) :: Nil
             }
           case None => notHandledYet(letStmt) :: Nil
@@ -252,10 +254,12 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     val methodRet       = methodReturnNode(fn, retTypeFullName)
     val methodMods      = Seq[NewModifier]()
 
+    variableScope.pushNewMethodScope(method.fullName, method.name, method, None)
     methodAstParentStack.push(method)
     val paramAsts = visitParamList(fn.paramList)
     val bodyAst   = fn.blockExpr.map(lowerFnBody).getOrElse(blockAst(blockNode(fn)))
     methodAstParentStack.pop()
+    variableScope.popScope()
 
     methodAst(method = method, parameters = paramAsts, body = bodyAst, methodReturn = methodRet, modifiers = methodMods)
   }
@@ -266,9 +270,12 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   //   RETURN (expr) // if (expr) exists
   // }
   private def lowerFnBody(blockExpr: BlockExpr): Ast = {
+    val block = blockNode(blockExpr)
+    variableScope.pushNewBlockScope(block)
     val stmtAsts   = blockExpr.stmtList.stmt.flatMap(visitStmt)
     val retExprAst = blockExpr.stmtList.expr.map(lowerReturnExpr).toList
-    Ast(blockNode(blockExpr)).withChildren(stmtAsts ++ retExprAst)
+    variableScope.popScope()
+    Ast(block).withChildren(stmtAsts ++ retExprAst)
   }
 
   // Creates:
@@ -370,6 +377,7 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
             evaluationStrategy = EvaluationStrategies.BY_SHARING,
             typeFullName = typeFullName
           )
+          variableScope.addVariable(paramNode.name, paramNode, typeFullName, ScopeType.MethodScope)
           Ast(paramNode)
         case _ => notHandledYet(param)
       }
@@ -394,47 +402,15 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
 
   // Path =
   //  (qualifier:Path '::')? segment:PathSegment
-  private def visitPath(path: Path): Ast = {
-    lowerPathAsFieldAccess(path)
-  }
-
-  // TODO
-  private def lowerPathAsFieldAccess(path: Path): Ast = {
-    val lhs = path.path.map(lowerPathAsFieldAccess)
-    val rhs = visitPathSegment(path.pathSegment)
-
-    val name         = code(path.pathSegment)
-    val typeFullName = typeFullNameForPath(path)
-
-    lhs match {
-      case None      => Ast(identifierNode(path.pathSegment, name, code(path), typeFullName))
-      case Some(lhs) => notHandledYet(path)
-    }
-  }
-
-  // PathSegment =
-  //  '::'? NameRef
-  // | NameRef GenericArgList?
-  // | NameRef ParenthesizedArgList RetType?
-  // | NameRef ReturnTypeSyntax
-  // | TypeAnchor
-  private def visitPathSegment(pathSegment: PathSegment): Ast = {
-    pathSegment.nameRef match {
-      case Some(nameRef) => visitNameRef(nameRef)
-      case None          => notHandledYet(pathSegment)
-    }
-  }
-
-  // NameRef =
-  //  '#ident' | '@int_number' | 'self' | 'super' | 'crate' | 'Self'
-  private def visitNameRef(nameRef: NameRef): Ast = {
-    nameRef.identToken match {
-      case Some(ident) =>
-        val typeFullName = typeFullNameForNameRef(nameRef)
-        val name         = code(ident)
-        Ast(identifierNode(nameRef, name, code(nameRef), typeFullName))
-      case None => notHandledYet(nameRef)
-    }
+  private def visitPath(path: Path): Ast = path.path match {
+    case None =>
+      // TODO: this doesn't yet account for imported items, i.e. we are assuming that identifiers denote variables.
+      val name         = code(path.pathSegment)
+      val typeFullName = typeFullNameForPath(path)
+      val ident        = identifierNode(path.pathSegment, name, code(path), typeFullName)
+      variableScope.addVariableReference(name, ident, typeFullName, EvaluationStrategies.BY_REFERENCE)
+      Ast(ident)
+    case Some(_) => notHandledYet(path)
   }
 
   // BinExpr =

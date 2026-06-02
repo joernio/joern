@@ -32,6 +32,11 @@ class ControlStructureTests extends Rust2CpgSuite(noSysRoot = true) {
       cpg.ifBlock.condition.isCall.argument.isIdentifier.name.l shouldBe List("x", "y")
     }
 
+    "have x and y reference the parameters" in {
+      cpg.identifier("x").refsTo.l shouldBe cpg.parameter("x").l
+      cpg.identifier("y").refsTo.l shouldBe cpg.parameter("y").l
+    }
+
     "place foo in the then-branch" in {
       cpg.ifBlock.whenTrue.isBlock.astChildren.isCall.name.l shouldBe List("foo")
     }

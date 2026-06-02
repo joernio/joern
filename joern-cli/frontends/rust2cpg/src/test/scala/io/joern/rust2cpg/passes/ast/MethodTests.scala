@@ -49,8 +49,8 @@ class MethodTests extends Rust2CpgSuite(noSysRoot = true) {
         inside(ret.astChildren.l) { case (ident: Identifier) :: Nil =>
           ident.name shouldBe "x"
           ident.code shouldBe "x"
-        // TODO: update once typeFullNames are recorded.
-        //  ident.typeFullName shouldBe "i32"
+          ident.typeFullName shouldBe "i32"
+          ident.refsTo.l shouldBe cpg.method.name("id").parameter.l
         }
       }
     }
