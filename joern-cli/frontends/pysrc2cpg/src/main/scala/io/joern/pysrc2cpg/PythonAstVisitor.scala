@@ -505,7 +505,7 @@ class PythonAstVisitor(
       parameterProvider = () =>
         MethodParameters(
           0,
-          nodeBuilder.methodParameterNode("cls", isVariadic = false, lineAndColOf(classDef), Option(0)) :: Nil
+          nodeBuilder.methodParameterNode("cls", isVariadic = false, lineAndColOf(classDef), 0) :: Nil
         ),
       bodyProvider = () => classDef.body.map(convert),
       None,
@@ -665,7 +665,7 @@ class PythonAstVisitor(
       parameterProvider = () => {
         MethodParameters(
           0,
-          nodeBuilder.methodParameterNode("cls", isVariadic = false, lineAndColumn, Option(0)) :: Nil ++
+          nodeBuilder.methodParameterNode("cls", isVariadic = false, lineAndColumn, 0) :: Nil ++
             convert(parameters, 1)
         )
       },
@@ -809,7 +809,7 @@ class PythonAstVisitor(
       parameterProvider = () => {
         MethodParameters(
           0,
-          nodeBuilder.methodParameterNode("cls", isVariadic = false, lineAndColumn, Some(0)) :: Nil ++
+          nodeBuilder.methodParameterNode("cls", isVariadic = false, lineAndColumn, 0) :: Nil ++
             convert(parametersWithoutSelf, 1)
         )
       },
@@ -2132,43 +2132,31 @@ class PythonAstVisitor(
     parameters.posonlyargs.map(convertPosOnlyArg(_, autoIncIndex)) ++
       parameters.args.map(convertNormalArg(_, autoIncIndex)) ++
       parameters.vararg.map(convertVarArg(_, autoIncIndex)) ++
-      parameters.kwonlyargs.map(convertKeywordOnlyArg) ++
-      parameters.kw_arg.map(convertKwArg)
+      parameters.kwonlyargs.map(convertKeywordOnlyArg(_, autoIncIndex)) ++
+      parameters.kw_arg.map(convertKwArg(_, autoIncIndex))
   }
 
   // TODO for now the different arg convert functions are all the same but
   // will all be slightly different in the future when we can represent the
   // different types in the cpg.
   private def convertPosOnlyArg(arg: ast.Arg, index: AutoIncIndex): nodes.NewMethodParameterIn = {
-    nodeBuilder.methodParameterNode(
-      arg.arg,
-      isVariadic = false,
-      lineAndColOf(arg),
-      Option(index.getAndInc),
-      arg.annotation
-    )
+    nodeBuilder.methodParameterNode(arg.arg, isVariadic = false, lineAndColOf(arg), index.getAndInc, arg.annotation)
   }
 
   private def convertNormalArg(arg: ast.Arg, index: AutoIncIndex): nodes.NewMethodParameterIn = {
-    nodeBuilder.methodParameterNode(
-      arg.arg,
-      isVariadic = false,
-      lineAndColOf(arg),
-      Option(index.getAndInc),
-      arg.annotation
-    )
+    nodeBuilder.methodParameterNode(arg.arg, isVariadic = false, lineAndColOf(arg), index.getAndInc, arg.annotation)
   }
 
   private def convertVarArg(arg: ast.Arg, index: AutoIncIndex): nodes.NewMethodParameterIn = {
-    nodeBuilder.methodParameterNode(arg.arg, isVariadic = true, lineAndColOf(arg), Option(index.getAndInc))
+    nodeBuilder.methodParameterNode(arg.arg, isVariadic = true, lineAndColOf(arg), index.getAndInc)
   }
 
-  private def convertKeywordOnlyArg(arg: ast.Arg): nodes.NewMethodParameterIn = {
-    nodeBuilder.methodParameterNode(arg.arg, isVariadic = false, lineAndColOf(arg))
+  private def convertKeywordOnlyArg(arg: ast.Arg, index: AutoIncIndex): nodes.NewMethodParameterIn = {
+    nodeBuilder.methodParameterNode(arg.arg, isVariadic = false, lineAndColOf(arg), index.getAndInc)
   }
 
-  private def convertKwArg(arg: ast.Arg): nodes.NewMethodParameterIn = {
-    nodeBuilder.methodParameterNode(arg.arg, isVariadic = false, lineAndColOf(arg))
+  private def convertKwArg(arg: ast.Arg, index: AutoIncIndex): nodes.NewMethodParameterIn = {
+    nodeBuilder.methodParameterNode(arg.arg, isVariadic = false, lineAndColOf(arg), index.getAndInc)
   }
 
   def convert(keyword: ast.Keyword): NewNode = unhandled(keyword)
