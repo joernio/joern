@@ -35,7 +35,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case node: MethodDeclaration          => astForMethodDeclaration(node)
       case node: MethodAccessModifier       => astForMethodAccessModifier(node)
       case node: SingletonMethodDeclaration => astForSingletonMethodDeclaration(node)
-      case node: DefaultMultipleAssignment  => astForDefaultMultipleAssignment(node)
+      case node: DefaultMultipleAssignment  => astForDefaultMultipleAssignment(node, isExpression = false)
       case node: MultipleAssignment         => node.assignments.map(astForExpression)
       case node: BreakExpression            => astForBreakExpression(node) :: Nil
       case node: SingletonStatementList     => astForSingletonStatementList(node)
@@ -221,10 +221,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     returnAst(returnNode(node, code(node)), nodeAst :: Nil)
   }
 
-  protected def astForDefaultMultipleAssignment(
-    node: DefaultMultipleAssignment,
-    isExpression: Boolean = false
-  ): Seq[Ast] = {
+  protected def astForDefaultMultipleAssignment(node: DefaultMultipleAssignment, isExpression: Boolean): Seq[Ast] = {
     if (!isExpression) {
       node.assignments.map(astForExpression)
     } else {
