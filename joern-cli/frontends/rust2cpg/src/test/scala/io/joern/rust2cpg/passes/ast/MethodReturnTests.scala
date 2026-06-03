@@ -78,4 +78,15 @@ class MethodReturnTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
   }
+
+  "a struct return type" should {
+    val cpg = code("""
+        |struct Foo;
+        |fn make() -> Foo { Foo }
+        |""".stripMargin)
+
+    "have correct typeFullName for METHOD_RETURN" in {
+      cpg.method.name("make").methodReturn.typeFullName.l shouldBe List("rust2cpgtest::Foo")
+    }
+  }
 }

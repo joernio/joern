@@ -191,6 +191,19 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "a struct-typed member" should {
+    val cpg = code("""
+        |struct Foo { x: i32 }
+        |struct Bar { baz: Foo }
+        |""".stripMargin)
+
+    "have correct typeFullName for `baz`" in {
+      inside(cpg.typeDecl.nameExact("Bar").member.nameExact("baz").l) { case baz :: Nil =>
+        baz.typeFullName shouldBe "rust2cpgtest::Foo"
+      }
+    }
+  }
+
   "a tuple-struct positional field access" should {
     val cpg = code("""
         |struct Pair(i32, bool);
