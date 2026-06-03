@@ -198,6 +198,18 @@ class VariableScopeManager {
     getEnclosingMethodScopeElement(stack).exists(_.nameToVariableNode.contains(identifier))
   }
 
+  /** Checks if a variable is in the current (i.e. innermost) scope only.
+    *
+    * @param identifier
+    *   The name of the variable.
+    *
+    * @return
+    *   True if the variable is in the current scope, false otherwise.
+    */
+  def variableIsInCurrentScope(identifier: String): Boolean = {
+    stack.exists(_.nameToVariableNode.contains(identifier))
+  }
+
   /** Checks whether a variable with the given identifier is declared in the type decl scope.
     *
     * This method inspects the current scope stack:

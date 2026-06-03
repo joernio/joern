@@ -231,4 +231,64 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
       cpg.method("main").assignment.target.isIdentifier.name("x").refsTo.l shouldBe cpg.method("main").local.name("x").l
     }
   }
+
+  "two consecutive `let x = ...`" should {
+    val cpg = code("""
+        |fn main() {
+        | let x = 123;    // 3
+        | let x = x + 1;  // 4
+        | let y = x;      // 5
+        |}
+        |""".stripMargin)
+
+    "have exactly one LOCAL i32 for `x`" in {
+      inside(cpg.method.name("main").block.local.name("x").l) { case local :: Nil =>
+        local.typeFullName shouldBe "i32"
+        local.code shouldBe "x"
+        local.lineNumber shouldBe Some(3)
+      }
+    }
+
+    "`x+1` refs `x` on line 3" in {
+      inside(cpg.assignment.lineNumber(4).argument(2).astChildren.isIdentifier.name("x").l) { case xUse :: Nil =>
+        xUse.refsTo.l shouldBe cpg.local("x").lineNumber(3).l
+      }
+    }
+
+    "`x` on line 4 refs `x` on line 3" in {
+      inside(cpg.assignment.lineNumber(4).argument(1).isIdentifier.name("x").l) { case xLhs :: Nil =>
+        xLhs.refsTo.l shouldBe cpg.local("x").lineNumber(3).l
+      }
+    }
+
+  }
+
+  "shadowed `let x` via nested block" should {
+    val cpg = code("""
+        |fn main() {
+        | let x = 1;     // 3
+        | {
+        |   let x = 2;   // 5
+        |   let y = x;   // 6
+        | }
+        | let z = x;     // 8
+        |}
+        |""".stripMargin)
+
+    "have a distinct LOCAL `x` per block" in {
+      cpg.method("main").local.name("x").lineNumber.sorted.l shouldBe List(3, 5)
+    }
+
+    "have the inner `y = x` ref the inner `x`" in {
+      inside(cpg.assignment.lineNumber(6).argument(2).isIdentifier.name("x").l) { case xUse :: Nil =>
+        xUse.refsTo.l shouldBe cpg.local("x").lineNumber(5).l
+      }
+    }
+
+    "have the outer `z = x` ref the outer `x`" in {
+      inside(cpg.assignment.lineNumber(8).argument(2).isIdentifier.name("x").l) { case xUse :: Nil =>
+        xUse.refsTo.l shouldBe cpg.local("x").lineNumber(3).l
+      }
+    }
+  }
 }

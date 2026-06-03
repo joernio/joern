@@ -3,6 +3,7 @@ package io.joern.rust2cpg.astcreation
 import io.joern.rust2cpg.parser.RustNodeSyntax.*
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.datastructures.VariableScopeManager.ScopeType
+import io.joern.x2cpg.datastructures.VariableScopeManager.ScopeType.BlockScope
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
@@ -181,15 +182,33 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
           case Some(identToken) =>
             val typeFullName = letStmt.`type`.map(typeFullNameForType).getOrElse(typeFullNameForIdentPat(identPat))
             letStmt.expr match {
-              case Some(rhsExpr) => lowerIdentifierDecl(identToken, rhsExpr, typeFullName, code(letStmt))
+              case Some(rhsExpr) =>
+                if (variableScope.variableIsInCurrentScope(code(identToken))) {
+                  // Shadowing: only create the assignment.
+                  val rhsAst  = visitExpr(rhsExpr)
+                  val lhsNode = identifierNode(identToken, code(identToken), code(identToken), typeFullName)
+                  val lhsAst  = Ast(lhsNode)
+                  variableScope.addVariableReference(
+                    lhsNode.name,
+                    lhsNode,
+                    lhsNode.typeFullName,
+                    EvaluationStrategies.BY_REFERENCE
+                  )
+                  callAst(assignmentNode(letStmt, code(letStmt)), Seq(lhsAst, rhsAst)) :: Nil
+                } else {
+                  // A fresh identifier in the current scope. Create a LOCAL and the assignment.
+                  lowerIdentifierDecl(identToken, rhsExpr, typeFullName, code(letStmt))
+                }
               case None =>
                 val lhsName = code(identToken)
                 val local   = localNode(identToken, lhsName, lhsName, typeFullName)
                 variableScope.addVariable(local.name, local, local.typeFullName, ScopeType.BlockScope)
                 Ast(local) :: Nil
             }
+          // TODO: should actually be unreachable. The other scenario from `identPat.name` is `self`, which isn't valid.
           case None => notHandledYet(letStmt) :: Nil
         }
+      // TODO: support other LHS patterns other than identifiers.
       case _ => notHandledYet(letStmt) :: Nil
     }
   }
@@ -206,9 +225,12 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     val lhsName = code(lhsToken)
 
     val local = localNode(lhsToken, lhsName, code(lhsToken), typeFullName)
-    val ident = identifierNode(lhsToken, lhsName, code(lhsToken), typeFullName)
+    variableScope.addVariable(local.name, local, local.typeFullName, BlockScope)
 
-    val lhsAst        = Ast(ident).withRefEdge(ident, local)
+    val ident = identifierNode(lhsToken, lhsName, code(lhsToken), typeFullName)
+    variableScope.addVariableReference(ident.name, ident, ident.typeFullName, EvaluationStrategies.BY_REFERENCE)
+
+    val lhsAst        = Ast(ident)
     val rhsAst        = visitExpr(rhsExpr)
     val localAst      = Ast(local)
     val assignmentAst = callAst(assignmentNode(lhsToken, declCode), Seq(lhsAst, rhsAst))
@@ -289,8 +311,10 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   // BlockExpr =
   //  Attr* Label? (TryBlockModifier | 'unsafe' | ('async' 'move'?) | ('gen' 'move'?) | 'const') StmtList
   private def visitBlockExpr(blockExpr: BlockExpr): Ast = {
-    val stmts = visitStmtList(blockExpr.stmtList)
     val block = blockNode(blockExpr)
+    variableScope.pushNewBlockScope(block)
+    val stmts = visitStmtList(blockExpr.stmtList)
+    variableScope.popScope()
     Ast(block).withChildren(stmts)
   }
 
