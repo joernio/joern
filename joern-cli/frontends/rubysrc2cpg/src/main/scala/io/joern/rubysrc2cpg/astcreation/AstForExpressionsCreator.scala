@@ -51,19 +51,15 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     case node: RubyCallWithBlock[_]             => astForCallWithBlock(node)
     case node: SelfIdentifier                   => astForSelfIdentifier(node)
     case node: StatementList                    => astForStatementList(node)
-    case node: DefaultMultipleAssignment =>
-      blockAst(
-        blockNode(node, code(node), Defines.Any),
-        astForDefaultMultipleAssignment(node, isExpression = true).toList
-      )
-    case node: MultipleAssignment => blockAst(blockNode(node), astsForStatement(node).toList)
-    case node: ReturnExpression   => astForReturnExpression(node)
-    case node: AccessModifier     => astForSimpleIdentifier(node.toSimpleIdentifier)
-    case node: ArrayPattern       => astForArrayPattern(node)
-    case node: DummyNode          => Ast(node.node)
-    case node: DummyAst           => node.ast
-    case node: EmptyExpression    => Ast()
-    case node: Unknown            => astForUnknown(node)
+    case node: DefaultMultipleAssignment        => astForDefaultMultipleAssignmentExpr(node)
+    case node: MultipleAssignment               => blockAst(blockNode(node), astsForStatement(node).toList)
+    case node: ReturnExpression                 => astForReturnExpression(node)
+    case node: AccessModifier                   => astForSimpleIdentifier(node.toSimpleIdentifier)
+    case node: ArrayPattern                     => astForArrayPattern(node)
+    case node: DummyNode                        => Ast(node.node)
+    case node: DummyAst                         => node.ast
+    case node: EmptyExpression                  => Ast()
+    case node: Unknown                          => astForUnknown(node)
     case xs =>
       logger.warn(s"Unhandled expression of type ${xs.getClass.getSimpleName}")
       astForUnknown(node)

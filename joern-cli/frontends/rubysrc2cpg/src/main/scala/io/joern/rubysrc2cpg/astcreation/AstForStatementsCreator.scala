@@ -221,6 +221,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     returnAst(returnNode(node, code(node)), nodeAst :: Nil)
   }
 
+  protected def astForDefaultMultipleAssignmentExpr(node: DefaultMultipleAssignment): Ast = {
+    blockAst(
+      blockNode(node, code(node), Defines.Any),
+      astForDefaultMultipleAssignment(node, isExpression = true).toList
+    )
+  }
+
   protected def astForDefaultMultipleAssignment(node: DefaultMultipleAssignment, isExpression: Boolean): Seq[Ast] = {
     if (!isExpression) {
       node.assignments.map(astForExpression)
