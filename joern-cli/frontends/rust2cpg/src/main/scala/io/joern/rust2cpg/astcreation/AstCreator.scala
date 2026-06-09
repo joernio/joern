@@ -2,7 +2,7 @@ package io.joern.rust2cpg.astcreation
 
 import flatgraph.DiffGraphBuilder
 import io.joern.rust2cpg.Config
-import io.joern.rust2cpg.parser.RustJsonParser.ParseResult
+import io.joern.rust2cpg.parser.RustJsonParser.{ParseResult, isMacroExpanded}
 import io.joern.rust2cpg.parser.RustNodeSyntax
 import io.joern.rust2cpg.parser.RustNodeSyntax.RustNode
 import io.joern.x2cpg.datastructures.Stack.*
@@ -38,15 +38,22 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
   }
 
   // NB: rust_ast_gen uses 0-based line/column
-  override protected def line(node: RustNode): Option[Int]      = node.startLine.map(_ + 1)
-  override protected def column(node: RustNode): Option[Int]    = node.startColumn.map(_ + 1)
+  override protected def line(node: RustNode): Option[Int] =
+    if (node.isMacroExpanded) None else node.startLine.map(_ + 1)
+  override protected def column(node: RustNode): Option[Int] =
+    if (node.isMacroExpanded) None else node.startColumn.map(_ + 1)
+
   override protected def lineEnd(node: RustNode): Option[Int]   = None
   override protected def columnEnd(node: RustNode): Option[Int] = None
   override protected def code(node: RustNode): String = text(node).map(shortenCode(_)).getOrElse(PropertyDefaults.Code)
 
-  protected def text(node: RustNode): Option[String] = (node.startOffset, node.endOffset) match {
-    case (Some(start), Some(end)) => Some(String(parseResult.contentBytes.slice(start, end), StandardCharsets.UTF_8))
-    case _                        => None
+  protected def text(node: RustNode): Option[String] = if (node.isMacroExpanded) {
+    node.text
+  } else {
+    (node.startOffset, node.endOffset) match {
+      case (Some(start), Some(end)) => Some(String(parseResult.contentBytes.slice(start, end), StandardCharsets.UTF_8))
+      case _                        => None
+    }
   }
 
   protected def notHandledYet(node: RustNode): Ast = {
@@ -59,6 +66,19 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
          |  """.stripMargin
     logger.warn(text)
     Ast(unknownNode(node, code(node)))
+  }
+
+  protected def macroNotExpanded(macroCall: RustNodeSyntax.MacroCall): Ast = {
+    val name = code(macroCall.path)
+    val text =
+      s"""Macro '$name' not expanded!
+         |  Code: '${code(macroCall)}'
+         |  File: '${parseResult.fullPath}'
+         |  Line: ${line(macroCall).getOrElse(-1)}
+         |  Column: ${column(macroCall).getOrElse(-1)}
+         |  """.stripMargin
+    logger.warn(text)
+    Ast(unknownNode(macroCall, code(macroCall)))
   }
 
   protected def assignmentNode(node: RustNodeSyntax.RustNode, code: String): NewCall = {
