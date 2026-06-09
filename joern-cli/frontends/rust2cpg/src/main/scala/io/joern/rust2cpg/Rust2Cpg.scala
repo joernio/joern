@@ -24,7 +24,7 @@ class Rust2Cpg extends X2CpgFrontend {
         val hash         = HashUtil.sha256(astGenResult.parsedFiles.map(Paths.get(_)))
         new MetaDataPass(cpg, Languages.RUST, config.inputPath, Option(hash)).createAndApply()
         new AstCreationPass(cpg, astGenResult.parsedFiles, config)(config.schemaValidation).createAndApply()
-        RustTypeNodePass.withTypesFromCpg(cpg).createAndApply()
+        new RustTypeNodePass(cpg).createAndApply()
       }
     }
   }
