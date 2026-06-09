@@ -70,18 +70,18 @@ trait RustFullNames { this: AstCreator =>
         typeFullNameForPath(pathType.path)
       case refType: RustNodeSyntax.RefType =>
         val mut = Option.when(refType.mutKwToken.isDefined)("mut ").getOrElse("")
-        s"&$mut${typeFullNameForType(refType.`type`)}"
+        s"&$mut${typeFullNameForType(refType.typ)}"
       case ptrType: RustNodeSyntax.PtrType =>
         val qualifier = if (ptrType.constKwToken.isDefined) "const " else "mut "
-        s"*$qualifier${typeFullNameForType(ptrType.`type`)}"
+        s"*$qualifier${typeFullNameForType(ptrType.typ)}"
       case sliceType: RustNodeSyntax.SliceType =>
-        s"[${typeFullNameForType(sliceType.`type`)}]"
+        s"[${typeFullNameForType(sliceType.typ)}]"
       case arrayType: RustNodeSyntax.ArrayType =>
-        s"[${typeFullNameForType(arrayType.`type`)}; ${text(arrayType.constArg).getOrElse("")}]"
+        s"[${typeFullNameForType(arrayType.typ)}; ${text(arrayType.constArg).getOrElse("")}]"
       case tupleType: RustNodeSyntax.TupleType =>
-        s"(${tupleType.`type`.map(typeFullNameForType).mkString(", ")})"
+        s"(${tupleType.typ.map(typeFullNameForType).mkString(", ")})"
       case parenType: RustNodeSyntax.ParenType =>
-        typeFullNameForType(parenType.`type`)
+        typeFullNameForType(parenType.typ)
       case _: RustNodeSyntax.NeverType =>
         "!"
 

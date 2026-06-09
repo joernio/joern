@@ -162,7 +162,7 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   private def visitConst(const: Const): Seq[Ast] = {
     (const.name.flatMap(_.identToken), const.expr) match {
       case (Some(identToken), Some(rhsExpr)) =>
-        val typeFullName = typeFullNameForType(const.`type`)
+        val typeFullName = typeFullNameForType(const.typ)
         lowerIdentifierDecl(identToken, rhsExpr, typeFullName, code(const))
       case _ => notHandledYet(const) :: Nil
     }
@@ -178,7 +178,7 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
       case identPat: IdentPat =>
         identPat.name.identToken match {
           case Some(identToken) =>
-            val typeFullName = letStmt.`type`.map(typeFullNameForType).getOrElse(typeFullNameForIdentPat(identPat))
+            val typeFullName = letStmt.typ.map(typeFullNameForType).getOrElse(typeFullNameForIdentPat(identPat))
             letStmt.expr match {
               case Some(rhsExpr) => lowerIdentifierDecl(identToken, rhsExpr, typeFullName, code(letStmt))
               case None =>
@@ -248,7 +248,7 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   // (body:BlockExpr | ';')
   private def visitFn(fn: Fn): Ast = {
     val method          = methodNode(node = fn, name = code(fn.name))
-    val retTypeFullName = fn.retType.map(_.`type`).map(typeFullNameForType).getOrElse("()")
+    val retTypeFullName = fn.retType.map(_.typ).map(typeFullNameForType).getOrElse("()")
     val methodRet       = methodReturnNode(fn, retTypeFullName)
     val methodMods      = Seq[NewModifier]()
 
@@ -357,7 +357,7 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   private def visitParamList(paramList: ParamList): Seq[Ast] = {
     paramList.param.zipWithIndex.map { case (param, paramIdx) =>
       val paramName         = param.pat.collect { case x: IdentPat => x }
-      val paramTypeFullName = param.`type`.map(typeFullNameForType)
+      val paramTypeFullName = param.typ.map(typeFullNameForType)
 
       (paramName, paramTypeFullName) match {
         case (Some(name), Some(typeFullName)) =>
@@ -547,9 +547,9 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   // CastExpr =
   //  Attr* Expr 'as' Type
   private def visitCastExpr(castExpr: CastExpr): Ast = {
-    val typeFullName = typeFullNameForType(castExpr.`type`)
+    val typeFullName = typeFullNameForType(castExpr.typ)
     val castNode     = operatorCallNode(castExpr, code(castExpr), Operators.cast, Some(typeFullName))
-    val typeRefAst   = Ast(typeRefNode(castExpr.`type`, code(castExpr.`type`), typeFullName))
+    val typeRefAst   = Ast(typeRefNode(castExpr.typ, code(castExpr.typ), typeFullName))
     val exprAst      = visitExpr(castExpr.expr)
 
     callAst(castNode, Seq(typeRefAst, exprAst))
@@ -689,7 +689,7 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   //  Attr* Visibility? 'unsafe'?
   //  Name ':' Type ('=' default_val:ConstArg)?
   private def visitRecordField(recordField: RecordField): Ast = {
-    Ast(memberNode(recordField, code(recordField.name), code(recordField), typeFullNameForType(recordField.`type`)))
+    Ast(memberNode(recordField, code(recordField.name), code(recordField), typeFullNameForType(recordField.typ)))
   }
 
   // TupleFieldList =
@@ -702,7 +702,7 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   //  Attr* Visibility?
   //  Type
   private def visitTupleField(tupleField: TupleField, index: Int): Ast = {
-    Ast(memberNode(tupleField, index.toString, code(tupleField), typeFullNameForType(tupleField.`type`)))
+    Ast(memberNode(tupleField, index.toString, code(tupleField), typeFullNameForType(tupleField.typ)))
   }
 
 }
