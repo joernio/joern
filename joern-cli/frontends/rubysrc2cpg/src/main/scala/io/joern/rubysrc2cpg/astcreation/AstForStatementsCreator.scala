@@ -232,18 +232,17 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     if (!isExpression) {
       node.assignments.map(astForExpression)
     } else {
-      val assignmentAsts = mutable.ListBuffer.empty[Ast]
-      val returnExprs    = mutable.ListBuffer.empty[RubyExpression]
+      val assignmentAsts  = mutable.ListBuffer.empty[Ast]
+      val returnExprNames = mutable.ListBuffer.empty[String]
 
       node.assignments.foreach { assignment =>
         if (isSimpleExpression(assignment.lhs)) {
           assignmentAsts += astForExpression(assignment)
-          returnExprs += assignment.lhs
+          returnExprNames += simpleExpressionName(assignment.lhs)
         } else {
-          val tmpName  = scope.getNewVarTmp
-          val tmpIdent = SimpleIdentifier()(assignment.span.spanStart(tmpName))
+          val tmpName = scope.getNewVarTmp
 
-          val tmpLhsAst = handleVariableOccurrence(tmpIdent)
+          val tmpLhsAst = handleVariableOccurrence(tmpName, assignment)
           val rhsAst    = astForExpression(assignment.rhs)
           val tmpAssignCall = callNode(
             assignment,
@@ -255,7 +254,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           assignmentAsts += callAst(tmpAssignCall, Seq(tmpLhsAst, rhsAst))
 
           val lhsAst    = astForExpression(assignment.lhs)
-          val tmpRhsAst = handleVariableOccurrence(tmpIdent)
+          val tmpRhsAst = handleVariableOccurrence(tmpName, assignment)
           val lhsAssignCall = callNode(
             assignment,
             s"${code(assignment.lhs)} = $tmpName",
@@ -265,10 +264,46 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           )
           assignmentAsts += callAst(lhsAssignCall, Seq(lhsAst, tmpRhsAst))
 
-          returnExprs += tmpIdent
+          returnExprNames += tmpName
         }
       }
-      assignmentAsts.toSeq :+ astForExpression(ArrayLiteral(returnExprs.toList)(node.span))
+      val arrayTmpName = scope.getNewVarTmp
+
+      val allocCall = callNode(node, Operators.alloc, Operators.alloc, Operators.alloc, DispatchTypes.STATIC_DISPATCH)
+      val arrayAssignCall = callNode(
+        node,
+        s"$arrayTmpName = ${Operators.alloc}",
+        Operators.assignment,
+        Operators.assignment,
+        DispatchTypes.STATIC_DISPATCH
+      )
+      assignmentAsts += callAst(arrayAssignCall, Seq(handleVariableOccurrence(arrayTmpName, node), callAst(allocCall)))
+
+      returnExprNames.toList.zipWithIndex.foreach { case (exprName, idx) =>
+        val idxLiteral = literalNode(node, idx.toString, Defines.prefixAsCoreType(Defines.Integer))
+        val indexAccessCall =
+          callNode(
+            node,
+            s"$arrayTmpName[$idx]",
+            Operators.indexAccess,
+            Operators.indexAccess,
+            DispatchTypes.STATIC_DISPATCH
+          )
+        val indexAccessAst =
+          callAst(indexAccessCall, Seq(handleVariableOccurrence(arrayTmpName, node), Ast(idxLiteral)))
+
+        val elemAssignCall = callNode(
+          node,
+          s"$arrayTmpName[$idx] = $exprName",
+          Operators.assignment,
+          Operators.assignment,
+          DispatchTypes.STATIC_DISPATCH
+        )
+        assignmentAsts += callAst(elemAssignCall, Seq(indexAccessAst, handleVariableOccurrence(exprName, node)))
+      }
+
+      assignmentAsts += handleVariableOccurrence(arrayTmpName, node)
+      assignmentAsts.toSeq
     }
   }
 
@@ -276,6 +311,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     case _: RubyIdentifier | _: SelfIdentifier => true
     case _: LiteralExpr                        => true
     case _                                     => false
+  }
+
+  private def simpleExpressionName(expr: RubyExpression): String = expr match {
+    case _: SelfIdentifier => Defines.Self
+    case x: RubyIdentifier => x.span.text
+    case x: LiteralExpr    => x.span.text
+    case x                 => code(x)
   }
 
   // The evaluation of a MethodDeclaration returns its name in symbol form.

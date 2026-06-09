@@ -368,14 +368,30 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "create an explicit return of the LHS values as an array" in {
-      val arrayLiteral = cpg.method.name("f").methodReturn.toReturn.astChildren.isBlock.head
+      inside(cpg.method.name("f").methodReturn.toReturn.astChildren.isBlock.l) { case retBlock :: Nil =>
+        retBlock.code shouldBe "a, b = 1, 2"
 
-      arrayLiteral.code shouldBe "a, b = 1, 2"
+        inside(retBlock.astChildren.isCall.nameExact(Operators.assignment).l) {
+          case aAssign :: bAssign :: arrayAlloc :: arrayElem0 :: arrayElem1 :: Nil =>
+            aAssign.code shouldBe "a, b = 1, 2"
+            bAssign.code shouldBe "a, b = 1, 2"
 
-      val asgns = arrayLiteral.astChildren.assignment.where(_.target.isCall.nameExact(Operators.indexAccess)).l
-      inside(asgns.map(_.source)) { case (a: Identifier) :: (b: Identifier) :: Nil =>
-        a.code shouldBe "a"
-        b.code shouldBe "b"
+            arrayAlloc.code shouldBe s"<tmp-0> = ${Operators.alloc}"
+            arrayAlloc.argument(1).code shouldBe "<tmp-0>"
+            arrayAlloc.argument(2).code shouldBe Operators.alloc
+
+            arrayElem0.code shouldBe "<tmp-0>[0] = a"
+            arrayElem0.argument(1).code shouldBe "<tmp-0>[0]"
+            arrayElem0.argument(2).code shouldBe "a"
+
+            arrayElem1.code shouldBe "<tmp-0>[1] = b"
+            arrayElem1.argument(1).code shouldBe "<tmp-0>[1]"
+            arrayElem1.argument(2).code shouldBe "b"
+        }
+
+        inside(retBlock.astChildren.l.last) { case returnedArray: Identifier =>
+          returnedArray.code shouldBe "<tmp-0>"
+        }
       }
     }
 
@@ -389,20 +405,34 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "use temporary variables for the complex LHS expressions" in {
-      val retBlock = cpg.method.name("f").methodReturn.toReturn.astChildren.isBlock.head
-      retBlock.code shouldBe "arr[0], arr[1] = 1, 2"
+      inside(cpg.method.name("f").methodReturn.toReturn.astChildren.isBlock.l) { case retBlock :: Nil =>
+        retBlock.code shouldBe "arr[0], arr[1] = 1, 2"
 
-      val directAssignments = retBlock.astChildren.isCall.nameExact(Operators.assignment).l
-      directAssignments.size shouldBe 4
+        inside(retBlock.astChildren.isCall.nameExact(Operators.assignment).l) {
+          case rhsToTmp0 :: lhsFromTmp0 :: rhsToTmp1 :: lhsFromTmp1 :: arrayAlloc :: arrayElem0 :: arrayElem1 :: Nil =>
+            rhsToTmp0.code shouldBe "<tmp-0> = 1"
+            lhsFromTmp0.code shouldBe "arr[0] = <tmp-0>"
 
-      val tmpAssignments = directAssignments.filter(_.argument(1).code.startsWith("<tmp-"))
-      tmpAssignments.size shouldBe 2
-      tmpAssignments.map(_.code).toSet shouldBe Set("<tmp-0> = 1", "<tmp-1> = 2")
+            rhsToTmp1.code shouldBe "<tmp-1> = 2"
+            lhsFromTmp1.code shouldBe "arr[1] = <tmp-1>"
 
-      val lhsAssignments = directAssignments.filter(_.argument(2).code.startsWith("<tmp-"))
-      lhsAssignments.size shouldBe 2
-      lhsAssignments.map(_.code).toSet shouldBe Set("arr[0] = <tmp-0>", "arr[1] = <tmp-1>")
+            arrayAlloc.code shouldBe s"<tmp-2> = ${Operators.alloc}"
+            arrayAlloc.argument(1).code shouldBe "<tmp-2>"
+            arrayAlloc.argument(2).code shouldBe Operators.alloc
+
+            arrayElem0.code shouldBe "<tmp-2>[0] = <tmp-0>"
+            arrayElem0.argument(1).code shouldBe "<tmp-2>[0]"
+            arrayElem0.argument(2).code shouldBe "<tmp-0>"
+
+            arrayElem1.code shouldBe "<tmp-2>[1] = <tmp-1>"
+            arrayElem1.argument(1).code shouldBe "<tmp-2>[1]"
+            arrayElem1.argument(2).code shouldBe "<tmp-1>"
+        }
+
+        inside(retBlock.astChildren.l.last) { case returnedArray: Identifier =>
+          returnedArray.code shouldBe "<tmp-2>"
+        }
+      }
     }
   }
-
 }
