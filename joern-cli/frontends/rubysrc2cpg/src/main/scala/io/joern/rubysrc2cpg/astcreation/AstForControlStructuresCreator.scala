@@ -4,6 +4,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   ArrayLiteral,
   ArrayPattern,
   BinaryExpression,
+  Block,
   BreakExpression,
   CaseExpression,
   ControlFlowStatement,
@@ -14,6 +15,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   IfExpression,
   InClause,
   IndexAccess,
+  MandatoryParameter,
   MatchVariable,
   MemberCall,
   NextExpression,
@@ -35,7 +37,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
 }
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
-import io.joern.x2cpg.{Ast, ValidationMode}
+import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewFieldIdentifier, NewLiteral, NewLocal}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 
@@ -116,101 +118,22 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
   }
 
   private def astForForExpression(node: ForExpression): Ast = {
-    val forEachNode = controlStructureNode(node, ControlStructureTypes.FOR, code(node))
+    val blockParam   = MandatoryParameter(node.forVariable.span.text)(node.forVariable.span)
+    val closureBlock = Block(parameters = List(blockParam), body = node.doBlock)(node.span)
+    val typeRefAst   = astForDoBlock(closureBlock).head
 
-    def collectionAst  = astForExpression(node.iterableVariable)
-    val collectionNode = node.iterableVariable
+    val baseForReceiver = astForExpression(node.iterableVariable)
+    val fieldAccessCode = s"${code(node.iterableVariable)}.each"
+    val fieldAccess =
+      callNode(node, fieldAccessCode, Operators.fieldAccess, Operators.fieldAccess, DispatchTypes.STATIC_DISPATCH)
+    val eachFieldIdent = fieldIdentifierNode(node, "each", "each")
+    val receiverAst    = callAst(fieldAccess, List(baseForReceiver, Ast(eachFieldIdent)))
 
-    val iterIdentifier =
-      identifierNode(
-        node = node.forVariable,
-        name = node.forVariable.span.text,
-        code = node.forVariable.span.text,
-        typeFullName = Defines.Any
-      )
-    val iterVarLocal = NewLocal().name(node.forVariable.span.text).code(node.forVariable.span.text)
-    scope.addToScope(node.forVariable.span.text, iterVarLocal)
+    val baseForCall = astForExpression(node.iterableVariable)
+    val eachCall =
+      callNode(node, code(node), "each", Defines.prefixAsCoreType(Defines.Array), DispatchTypes.STATIC_DISPATCH)
 
-    val idxName  = "_idx_"
-    val idxLocal = NewLocal().name(idxName).code(idxName).typeFullName(Defines.prefixAsCoreType(Defines.Integer))
-    val idxIdenAtAssign = identifierNode(
-      node = collectionNode,
-      name = idxName,
-      code = idxName,
-      typeFullName = Defines.prefixAsCoreType(Defines.Integer)
-    )
-
-    val idxAssignment =
-      callNode(node, s"$idxName = 0", Operators.assignment, Operators.assignment, DispatchTypes.STATIC_DISPATCH)
-    val idxAssignmentArgs =
-      List(Ast(idxIdenAtAssign), Ast(NewLiteral().code("0").typeFullName(Defines.prefixAsCoreType(Defines.Integer))))
-    val idxAssignmentAst = callAst(idxAssignment, idxAssignmentArgs)
-
-    val idxIdAtCond = idxIdenAtAssign.copy
-    val collectionCountAccess = callNode(
-      node,
-      s"${node.iterableVariable.span.text}.length",
-      Operators.fieldAccess,
-      Operators.fieldAccess,
-      DispatchTypes.STATIC_DISPATCH
-    )
-    val fieldAccessAst = callAst(
-      collectionCountAccess,
-      collectionAst :: Ast(NewFieldIdentifier().canonicalName("length").code("length")) :: Nil
-    )
-
-    val idxLt = callNode(
-      node,
-      s"$idxName < ${node.iterableVariable.span.text}.length",
-      Operators.lessThan,
-      Operators.lessThan,
-      DispatchTypes.STATIC_DISPATCH
-    )
-    val idxLtArgs  = List(Ast(idxIdAtCond), fieldAccessAst)
-    val ltCallCond = callAst(idxLt, idxLtArgs)
-
-    val idxIdAtCollAccess = idxIdenAtAssign.copy
-    val collectionIdxAccess = callNode(
-      node,
-      s"${node.iterableVariable.span.text}[$idxName++]",
-      Operators.indexAccess,
-      Operators.indexAccess,
-      DispatchTypes.STATIC_DISPATCH
-    )
-    val postIncrAst = callAst(
-      callNode(node, s"$idxName++", Operators.postIncrement, Operators.postIncrement, DispatchTypes.STATIC_DISPATCH),
-      Ast(idxIdAtCollAccess) :: Nil
-    )
-
-    val indexAccessAst = callAst(collectionIdxAccess, collectionAst :: postIncrAst :: Nil)
-    val iteratorAssignmentNode = callNode(
-      node,
-      s"${node.forVariable.span.text} = ${node.iterableVariable.span.text}[$idxName++]",
-      Operators.assignment,
-      Operators.assignment,
-      DispatchTypes.STATIC_DISPATCH
-    )
-    val iteratorAssignmentArgs = List(Ast(iterIdentifier), indexAccessAst)
-    val iteratorAssignmentAst  = callAst(iteratorAssignmentNode, iteratorAssignmentArgs)
-    val doBodyAst              = astsForStatement(node.doBlock)
-
-    val locals = Ast(idxLocal)
-      .withRefEdge(idxIdenAtAssign, idxLocal)
-      .withRefEdge(idxIdAtCond, idxLocal)
-      .withRefEdge(idxIdAtCollAccess, idxLocal) :: Ast(iterVarLocal).withRefEdge(iterIdentifier, iterVarLocal) :: Nil
-
-    val conditionAsts = ltCallCond :: Nil
-    val initAsts      = idxAssignmentAst :: Nil
-    val updateAsts    = iteratorAssignmentAst :: Nil
-
-    forAst(
-      forNode = forEachNode,
-      locals = locals,
-      initAsts = initAsts,
-      conditionAsts = conditionAsts,
-      updateAsts = updateAsts,
-      bodyAsts = doBodyAst
-    )
+    callAst(eachCall, List(typeRefAst), base = Some(baseForCall), receiver = Some(receiverAst))
   }
 
   protected def astsForCaseExpression(node: CaseExpression): Seq[Ast] = {
