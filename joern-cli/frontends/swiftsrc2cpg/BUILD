@@ -6,17 +6,17 @@ load("//bazel:filter_runfiles.bzl", "filter_runfiles")
 filegroup(
     name = "swiftsrc2cpg_astgen",
     srcs = select({
-        "//bazel/platform:all": [
+        "@bazel_tooling//platform:all": [
             "@swiftsrc2cpg_astgen_macos//file",
             "@swiftsrc2cpg_astgen_linux_x86//file",
             "@swiftsrc2cpg_astgen_linux_arm//file",
             "@swiftsrc2cpg_astgen_win_x86//file",
         ],
-        "//bazel/platform:macos-arm": ["@swiftsrc2cpg_astgen_macos//file"],
-        "//bazel/platform:macos-x86": ["@swiftsrc2cpg_astgen_macos//file"],
-        "//bazel/platform:linux-arm": ["@swiftsrc2cpg_astgen_linux_arm//file"],
-        "//bazel/platform:linux-x86": ["@swiftsrc2cpg_astgen_linux_x86//file"],
-        "//bazel/platform:win-x86": ["@swiftsrc2cpg_astgen_win_x86//file"],
+        "@bazel_tooling//platform:macos-arm": ["@swiftsrc2cpg_astgen_macos//file"],
+        "@bazel_tooling//platform:macos-x86": ["@swiftsrc2cpg_astgen_macos//file"],
+        "@bazel_tooling//platform:linux-arm": ["@swiftsrc2cpg_astgen_linux_arm//file"],
+        "@bazel_tooling//platform:linux-x86": ["@swiftsrc2cpg_astgen_linux_x86//file"],
+        "@bazel_tooling//platform:win-x86": ["@swiftsrc2cpg_astgen_win_x86//file"],
     }),
 )
 

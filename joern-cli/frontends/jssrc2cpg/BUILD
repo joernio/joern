@@ -5,18 +5,18 @@ load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
 filegroup(
     name = "jssrc2cpg_astgen",
     srcs = select({
-        "//bazel/platform:all": [
+        "@bazel_tooling//platform:all": [
             "@jssrc2cpg_astgen_macos_arm//file",
             "@jssrc2cpg_astgen_macos_x86//file",
             "@jssrc2cpg_astgen_linux_arm//file",
             "@jssrc2cpg_astgen_linux_x86//file",
             "@jssrc2cpg_astgen_win_x86//file",
             ],
-        "//bazel/platform:macos-arm": ["@jssrc2cpg_astgen_macos_arm//file"],
-        "//bazel/platform:macos-x86": ["@jssrc2cpg_astgen_macos_x86//file"],
-        "//bazel/platform:linux-arm": ["@jssrc2cpg_astgen_linux_arm//file"],
-        "//bazel/platform:linux-x86": ["@jssrc2cpg_astgen_linux_x86//file"],
-        "//bazel/platform:win-x86": ["@jssrc2cpg_astgen_win_x86//file"],
+        "@bazel_tooling//platform:macos-arm": ["@jssrc2cpg_astgen_macos_arm//file"],
+        "@bazel_tooling//platform:macos-x86": ["@jssrc2cpg_astgen_macos_x86//file"],
+        "@bazel_tooling//platform:linux-arm": ["@jssrc2cpg_astgen_linux_arm//file"],
+        "@bazel_tooling//platform:linux-x86": ["@jssrc2cpg_astgen_linux_x86//file"],
+        "@bazel_tooling//platform:win-x86": ["@jssrc2cpg_astgen_win_x86//file"],
       }),
 )
 

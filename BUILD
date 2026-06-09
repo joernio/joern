@@ -12,5 +12,5 @@ alias(
 
 alias(
     name = "all_platforms",
-    actual = "//bazel/platform:all_platforms_flag",
+    actual = "@bazel_tooling//platform:all_platforms_flag",
 )
