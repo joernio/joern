@@ -11,8 +11,7 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 // rust_ast_gen-provided methodFullName/typeFullName are always preferred.
 // The fallback is to rely on the current enclosing scope.
 trait RustFullNames { this: AstCreator =>
-
-  private val PathSep = "::"
+  import RustFullNames.PathSep
 
   protected def combineRustFullName(parent: String, child: String): String = {
     s"$parent$PathSep$child"
@@ -47,21 +46,11 @@ trait RustFullNames { this: AstCreator =>
     }
   }
 
-  private def rustAstGenMethodFullName(node: RustNode): Option[String] = {
-    // TODO: move this key into a constant in RustNodeSyntax, or provide the accessor there.
-    node.json.obj.get("methodFullName").flatMap(_.strOpt)
-  }
-
-  private def rustAstGenTypeFullName(node: RustNode): Option[String] = {
-    // TODO: move this key into a constant in RustNodeSyntax, or provide the accessor there.
-    node.json.obj.get("typeFullName").flatMap(_.strOpt)
-  }
-
   protected def methodFullNameForCallExpr(
     callExpr: RustNodeSyntax.CallExpr,
     nameRefs: Seq[RustNodeSyntax.NameRef]
   ): String = {
-    rustAstGenMethodFullName(callExpr).getOrElse {
+    callExpr.methodFullName.getOrElse {
       // TODO: take into account `use` (imports). We are incorrectly assuming here that an
       //  unresolved call e.g. `a::b::c()` has fullName `a::b::c`.
       nameRefs match {
@@ -72,45 +61,79 @@ trait RustFullNames { this: AstCreator =>
   }
 
   protected def methodFullNameForMethodCallExpr(methodCallExpr: RustNodeSyntax.MethodCallExpr): String = {
-    rustAstGenMethodFullName(methodCallExpr).getOrElse(Defines.DynamicCallUnknownFullName)
+    methodCallExpr.methodFullName.getOrElse(Defines.DynamicCallUnknownFullName)
   }
 
-  // TODO
   protected def typeFullNameForType(typ: RustNodeSyntax.Type): String = {
-    text(typ).getOrElse(Defines.Any)
+    typ match {
+      case pathType: RustNodeSyntax.PathType =>
+        typeFullNameForPath(pathType.path)
+      case refType: RustNodeSyntax.RefType =>
+        val mut = Option.when(refType.mutKwToken.isDefined)("mut ").getOrElse("")
+        s"&$mut${typeFullNameForType(refType.`type`)}"
+      case ptrType: RustNodeSyntax.PtrType =>
+        val qualifier = if (ptrType.constKwToken.isDefined) "const " else "mut "
+        s"*$qualifier${typeFullNameForType(ptrType.`type`)}"
+      case sliceType: RustNodeSyntax.SliceType =>
+        s"[${typeFullNameForType(sliceType.`type`)}]"
+      case arrayType: RustNodeSyntax.ArrayType =>
+        s"[${typeFullNameForType(arrayType.`type`)}; ${text(arrayType.constArg).getOrElse("")}]"
+      case tupleType: RustNodeSyntax.TupleType =>
+        s"(${tupleType.`type`.map(typeFullNameForType).mkString(", ")})"
+      case parenType: RustNodeSyntax.ParenType =>
+        typeFullNameForType(parenType.`type`)
+      case _: RustNodeSyntax.NeverType =>
+        "!"
+
+      // TODO: the following are not handled yet.
+      case io.joern.rust2cpg.parser.RustNodeSyntax.DynTraitType(_) =>
+        text(typ).getOrElse(Defines.Any)
+      case io.joern.rust2cpg.parser.RustNodeSyntax.FnPtrType(_) =>
+        text(typ).getOrElse(Defines.Any)
+      case io.joern.rust2cpg.parser.RustNodeSyntax.ForType(_) =>
+        text(typ).getOrElse(Defines.Any)
+      case io.joern.rust2cpg.parser.RustNodeSyntax.ImplTraitType(_) =>
+        text(typ).getOrElse(Defines.Any)
+      case io.joern.rust2cpg.parser.RustNodeSyntax.InferType(_) =>
+        // TODO(rust_ast_gen): is this typeFullName missing on purpose or by accident?
+        //  This corresponds to `_` in something like `let x: Vec<_>`. We currently don't have a
+        //  typeFullName for it, but we have for `x`.
+        text(typ).getOrElse(Defines.Any)
+      case io.joern.rust2cpg.parser.RustNodeSyntax.MacroType(_) =>
+        // TODO: pending macroExpansion from rust_ast_gen.
+        text(typ).getOrElse(Defines.Any)
+    }
   }
 
-  // TODO
   protected def typeFullNameForNameRef(nameRef: RustNodeSyntax.NameRef): String = {
-    Defines.Any
+    nameRef.typeFullName.getOrElse(Defines.Any)
   }
 
   protected def typeFullNameForPath(path: RustNodeSyntax.Path): String = {
-    rustAstGenTypeFullName(path)
-      .orElse(path.pathSegment.nameRef.flatMap(rustAstGenTypeFullName))
-      .getOrElse(Defines.Any)
+    // In a path, only the leaf (NameRef) has typeFullName set (by rust_ast_gen).
+    path.pathSegment.nameRef.flatMap(_.typeFullName).getOrElse(Defines.Any)
   }
 
   protected def typeFullNameForExpr(expr: RustNodeSyntax.Expr): String = {
-    rustAstGenTypeFullName(expr).getOrElse(Defines.Any)
+    expr.typeFullName.getOrElse(Defines.Any)
   }
 
   protected def typeFullNameForTupleExpr(tupleExpr: RustNodeSyntax.TupleExpr): String = {
-    rustAstGenTypeFullName(tupleExpr).getOrElse {
+    tupleExpr.typeFullName.getOrElse {
       val childTypes = tupleExpr.expr.map(typeFullNameForExpr)
       s"(${childTypes.mkString(", ")})"
     }
   }
 
   protected def typeFullNameForLiteral(lit: RustNodeSyntax.Literal): String = {
-    rustAstGenTypeFullName(lit).orElse(lit.value.map(typeFullNameForLiteralToken)).getOrElse(Defines.Any)
+    lit.typeFullName.orElse(lit.value.map(typeFullNameForLiteralToken)).getOrElse(Defines.Any)
   }
 
   protected def typeFullNameForIdentPat(identPat: RustNodeSyntax.IdentPat): String = {
-    rustAstGenTypeFullName(identPat).getOrElse(Defines.Any)
+    identPat.typeFullName.getOrElse(Defines.Any)
   }
 
-  protected def typeFullNameForLiteralToken(tok: RustNodeSyntax.RustToken): String = tok match {
+  private def typeFullNameForLiteralToken(tok: RustNodeSyntax.RustToken): String = tok match {
     case _: RustNodeSyntax.IntNumberToken   => "i32"
     case _: RustNodeSyntax.FloatNumberToken => "f64"
     case _: RustNodeSyntax.StringToken      => "&str"
@@ -123,4 +146,8 @@ trait RustFullNames { this: AstCreator =>
     case _                                  => Defines.Any
   }
 
+}
+
+object RustFullNames {
+  val PathSep = "::"
 }

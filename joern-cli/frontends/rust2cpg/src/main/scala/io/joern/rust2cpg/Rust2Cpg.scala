@@ -2,6 +2,7 @@ package io.joern.rust2cpg
 
 import io.joern.rust2cpg.astgen.RustAstGenRunner
 import io.joern.rust2cpg.passes.AstCreationPass
+import io.joern.rust2cpg.passes.RustTypeNodePass
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.passes.frontend.MetaDataPass
@@ -23,6 +24,7 @@ class Rust2Cpg extends X2CpgFrontend {
         val hash         = HashUtil.sha256(astGenResult.parsedFiles.map(Paths.get(_)))
         new MetaDataPass(cpg, Languages.RUST, config.inputPath, Option(hash)).createAndApply()
         new AstCreationPass(cpg, astGenResult.parsedFiles, config)(config.schemaValidation).createAndApply()
+        new RustTypeNodePass(cpg).createAndApply()
       }
     }
   }
