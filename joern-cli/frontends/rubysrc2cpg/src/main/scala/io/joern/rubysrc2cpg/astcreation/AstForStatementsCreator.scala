@@ -314,7 +314,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def simpleExpressionName(expr: RubyExpression): String = expr match {
-    case _: SelfIdentifier => Defines.Self
+    case _: SelfIdentifier    => Defines.Self
     case node: RubyIdentifier => node.span.text
     case node: LiteralExpr    => node.span.text
     case node                 => code(node)
