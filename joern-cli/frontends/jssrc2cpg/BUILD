@@ -1,6 +1,7 @@
 load("//bazel:scala.bzl", "scala_library", "scala_test")
 load("//bazel:java.bzl", "java_binary")
 load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
+load("//bazel:filter_runfiles.bzl", "filter_runfiles")
 
 filegroup(
     name = "jssrc2cpg_astgen",
@@ -61,9 +62,15 @@ java_binary(
   visibility = ["//visibility:public"],
 )
 
+filter_runfiles(
+    name = "jssrc2cpg-bin-filtered",
+    target = ":jssrc2cpg-bin",
+    exclude_prefixes = ["../rules_java++toolchains+"],
+)
+
 pkg_tar(
   name = "jssrc2cpg-dist",
-  srcs = [":jssrc2cpg-bin"],
+  srcs = [":jssrc2cpg-bin-filtered"],
   include_runfiles = True,
   visibility = ["//visibility:public"],
 )
