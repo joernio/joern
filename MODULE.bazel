@@ -72,9 +72,22 @@ maven.install(
 )
 use_repo(maven, "maven")
 
+maven.install(
+    name = "format_maven",
+    artifacts = [
+        "org.scalameta:scalafmt-cli_2.13:3.9.6",
+    ],
+    repositories = [
+        "https://repo1.maven.org/maven2",
+    ],
+    lock_file = "//:format_maven_install.json",
+)
+use_repo(maven, "format_maven")
+
 bazel_dep(name = "platforms", version = "1.1.0")
 bazel_dep(name = "bazel_skylib", version = "1.8.2")
 bazel_dep(name = "rules_pkg", version = "1.0.1")
+bazel_dep(name = "aspect_rules_lint", version = "2.5.2")
 
 http_file = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 
