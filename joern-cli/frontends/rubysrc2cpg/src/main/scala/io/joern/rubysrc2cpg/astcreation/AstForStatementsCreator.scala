@@ -315,9 +315,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def simpleExpressionName(expr: RubyExpression): String = expr match {
     case _: SelfIdentifier => Defines.Self
-    case x: RubyIdentifier => x.span.text
-    case x: LiteralExpr    => x.span.text
-    case x                 => code(x)
+    case node: RubyIdentifier => node.span.text
+    case node: LiteralExpr    => node.span.text
+    case node                 => code(node)
   }
 
   // The evaluation of a MethodDeclaration returns its name in symbol form.
