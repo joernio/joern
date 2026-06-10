@@ -477,7 +477,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
 
     "lower to an `each` call with a closure for an array iterable" in {
       inside(cpg.method("foo1").call.nameExact("each").l) { case eachCall :: Nil =>
-        eachCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH.toString
+        eachCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
         inside(eachCall.argument.l) { case (base: Identifier) :: (typeRef: TypeRef) :: Nil =>
           base.argumentIndex shouldBe 0
@@ -496,7 +496,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
 
     "lower to an `each` call with a closure for a range iterable" in {
       inside(cpg.method("foo2").call.nameExact("each").l) { case eachCall :: Nil =>
-        eachCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH.toString
+        eachCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
         inside(eachCall.argument.l) { case (base: Call) :: (typeRef: TypeRef) :: Nil =>
           base.argumentIndex shouldBe 0
@@ -721,7 +721,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
                      |""".stripMargin)
 
     inside(cpg.method.isModule.call.nameExact("each").l) { case eachCall :: Nil =>
-      eachCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH.toString
+      eachCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
       inside(eachCall.argument.l) { case (base: Identifier) :: (typeRef: TypeRef) :: Nil =>
         base.argumentIndex shouldBe 0
