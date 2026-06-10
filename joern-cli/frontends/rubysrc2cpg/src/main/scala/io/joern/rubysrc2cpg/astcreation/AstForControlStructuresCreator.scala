@@ -120,7 +120,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
   private def astForForExpression(node: ForExpression): Ast = {
     val blockParam   = MandatoryParameter(node.forVariable.span.text)(node.forVariable.span)
     val closureBlock = Block(parameters = List(blockParam), body = node.doBlock)(node.span)
-    val typeRefAst   = astForDoBlock(closureBlock).head
+    val typeRefAst   = astForDoBlock(closureBlock).typeRef
 
     val baseForReceiver = astForExpression(node.iterableVariable)
     val fieldAccessCode = s"${code(node.iterableVariable)}.each"

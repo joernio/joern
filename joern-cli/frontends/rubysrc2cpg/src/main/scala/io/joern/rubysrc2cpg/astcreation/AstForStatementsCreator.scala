@@ -112,12 +112,12 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     blockAst(block, statementAsts)
   }
 
-  protected def astForDoBlock(block: Block & RubyExpression): Seq[Ast] = {
+  protected def astForDoBlock(block: Block & RubyExpression): (typeRef: Ast, methodRef: Ast) = {
     if (closureToRefs.contains(block)) {
-      closureToRefs(block).map(x => Ast(x.copy))
+      val cached = closureToRefs(block).map(x => Ast(x.copy))
+      (typeRef = cached(0), methodRef = cached(1))
     } else {
       val methodName = scope.getNewClosureName
-      // Create closure structures: [TypeRef, MethodRef]
       val methodRefAsts = block.body match {
         case x: Block =>
           astForMethodDeclaration(x.toMethodDeclaration(methodName, Option(block.parameters)), isClosure = true)
@@ -125,7 +125,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           astForMethodDeclaration(block.toMethodDeclaration(methodName, Option(block.parameters)), isClosure = true)
       }
       closureToRefs.put(block, methodRefAsts.flatMap(_.root))
-      methodRefAsts
+      (typeRef = methodRefAsts(0), methodRef = methodRefAsts(1))
     }
   }
 
