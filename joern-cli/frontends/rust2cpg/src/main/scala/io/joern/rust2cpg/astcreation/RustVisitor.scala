@@ -74,7 +74,7 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
 
   @tailrec
   private def visitExpr(expr: Expr): Ast = expr match {
-    case x: ArrayExpr                   => notHandledYet(x)
+    case arrayExpr: ArrayExpr           => visitArrayExpr(arrayExpr)
     case x: AsmExpr                     => notHandledYet(x)
     case awaitExpr: AwaitExpr           => visitAwaitExpr(awaitExpr)
     case binExpr: BinExpr               => visitBinExpr(binExpr)
@@ -626,6 +626,23 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
       val argAsts      = tupleExpr.expr.map(visitExpr)
       callAst(callNode, argAsts)
     }
+  }
+
+  // ArrayExpr =
+  //  Attr* '[' (
+  //    (Expr (',' Expr)* ','?)?
+  //  | Expr ';' Expr
+  //  )']'
+  private def visitArrayExpr(arrayExpr: ArrayExpr): Ast = {
+    val typeFullName = typeFullNameForExpr(arrayExpr)
+    val callNode     = operatorCallNode(arrayExpr, code(arrayExpr), Operators.arrayInitializer, Some(typeFullName))
+
+    // In `[value; count]`, we drop `count`.
+    val isRepeatForm = arrayExpr.semicolonToken.isDefined
+    val elems        = if (isRepeatForm) arrayExpr.expr.take(1) else arrayExpr.expr
+    val elemAsts     = elems.map(visitExpr)
+
+    callAst(callNode, elemAsts)
   }
 
   // FieldExpr =
