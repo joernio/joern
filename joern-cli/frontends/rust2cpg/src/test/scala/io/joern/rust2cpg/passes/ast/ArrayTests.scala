@@ -1,5 +1,6 @@
 package io.joern.rust2cpg.passes.ast
 
+import io.joern.rust2cpg.astcreation.RustOperators
 import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -78,23 +79,28 @@ class ArrayTests extends Rust2CpgSuite(noSysRoot = true) {
         |}
         |""".stripMargin)
 
-    "lower to an arrayInitializer call" in {
-      inside(cpg.call.nameExact(Operators.arrayInitializer).l) { case array :: Nil =>
+    "lower to a repeatInArray call" in {
+      inside(cpg.call.nameExact(RustOperators.repeatInArray).l) { case array :: Nil =>
         array.code shouldBe "[0; 5]"
-        array.methodFullName shouldBe Operators.arrayInitializer
+        array.methodFullName shouldBe RustOperators.repeatInArray
         array.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       }
     }
 
-    "type the arrayInitializer as [i32; 5]" in {
-      cpg.call.nameExact(Operators.arrayInitializer).typeFullName.l shouldBe List("[i32; 5]")
+    "type the repeatInArray as [i32; 5]" in {
+      cpg.call.nameExact(RustOperators.repeatInArray).typeFullName.l shouldBe List("[i32; 5]")
     }
 
-    "have the repeated value as its only argument" in {
-      inside(cpg.call.nameExact(Operators.arrayInitializer).argument.l) { case (value: Literal) :: Nil =>
-        value.code shouldBe "0"
-        value.argumentIndex shouldBe 1
-        value.typeFullName shouldBe "i32"
+    "have the repeated value and the count as arguments" in {
+      inside(cpg.call.nameExact(RustOperators.repeatInArray).argument.l) {
+        case (value: Literal) :: (count: Literal) :: Nil =>
+          value.code shouldBe "0"
+          value.argumentIndex shouldBe 1
+          value.typeFullName shouldBe "i32"
+
+          count.code shouldBe "5"
+          count.argumentIndex shouldBe 2
+          count.typeFullName shouldBe "usize"
       }
     }
   }
