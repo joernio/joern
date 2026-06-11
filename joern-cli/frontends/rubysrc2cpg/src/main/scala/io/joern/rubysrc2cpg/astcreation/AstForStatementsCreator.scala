@@ -114,7 +114,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   protected def astForDoBlock(block: Block & RubyExpression): (typeRef: Ast, methodRef: Ast) = {
     if (closureToRefs.contains(block)) {
-      val cached = closureToRefs(block).map(x => Ast(x.copy))
+      val cached = closureToRefs(block).map(ref => Ast(ref.copy))
       (typeRef = cached(0), methodRef = cached(1))
     } else {
       val methodName = scope.getNewClosureName
