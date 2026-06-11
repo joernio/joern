@@ -129,9 +129,10 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     val eachFieldIdent = fieldIdentifierNode(node, "each", "each")
     val receiverAst    = callAst(fieldAccess, List(baseForReceiver, Ast(eachFieldIdent)))
 
-    val baseForCall = astForExpression(node.iterableVariable)
+    val baseForCall    = astForExpression(node.iterableVariable)
+    val methodFullName = s"${Defines.prefixAsCoreType(Defines.Array)}.each"
     val eachCall =
-      callNode(node, code(node), "each", Defines.prefixAsCoreType(Defines.Array), DispatchTypes.STATIC_DISPATCH)
+      callNode(node, code(node), "each", methodFullName, DispatchTypes.STATIC_DISPATCH)
 
     callAst(eachCall, List(typeRefAst), base = Some(baseForCall), receiver = Some(receiverAst))
   }
