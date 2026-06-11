@@ -1,6 +1,7 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.rubysrc2cpg.passes.Defines.Main
 import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -483,6 +484,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
           base.argumentIndex shouldBe 0
           base.name shouldBe "x"
           typeRef.argumentIndex shouldBe 1
+          typeRef.typeFullName shouldBe s"Test0.rb:$Main.foo1.<lambda>0&Proc"
         }
       }
 
@@ -501,6 +503,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
         inside(eachCall.argument.l) { case (base: Call) :: (typeRef: TypeRef) :: Nil =>
           base.argumentIndex shouldBe 0
           typeRef.argumentIndex shouldBe 1
+          typeRef.typeFullName shouldBe s"Test0.rb:$Main.foo2.<lambda>0&Proc"
         }
       }
 
@@ -727,6 +730,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
         base.argumentIndex shouldBe 0
         base.name shouldBe "fibNumbers"
         typeRef.argumentIndex shouldBe 1
+        typeRef.typeFullName shouldBe s"Test0.rb:$Main.<lambda>0&Proc"
       }
     }
 
