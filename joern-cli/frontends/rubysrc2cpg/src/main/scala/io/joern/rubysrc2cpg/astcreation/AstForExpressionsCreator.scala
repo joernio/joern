@@ -51,6 +51,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     case node: RubyCallWithBlock[_]             => astForCallWithBlock(node)
     case node: SelfIdentifier                   => astForSelfIdentifier(node)
     case node: StatementList                    => astForStatementList(node)
+    case node: DefaultMultipleAssignment        => astForDefaultMultipleAssignmentExpr(node)
     case node: MultipleAssignment               => blockAst(blockNode(node), astsForStatement(node).toList)
     case node: ReturnExpression                 => astForReturnExpression(node)
     case node: AccessModifier                   => astForSimpleIdentifier(node.toSimpleIdentifier)
@@ -59,8 +60,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     case node: DummyAst                         => node.ast
     case node: EmptyExpression                  => Ast()
     case node: Unknown                          => astForUnknown(node)
-    case x =>
-      logger.warn(s"Unhandled expression of type ${x.getClass.getSimpleName}")
+    case xs =>
+      logger.warn(s"Unhandled expression of type ${xs.getClass.getSimpleName}")
       astForUnknown(node)
   }
 

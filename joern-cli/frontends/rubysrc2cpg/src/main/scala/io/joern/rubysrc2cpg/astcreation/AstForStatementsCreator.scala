@@ -8,7 +8,15 @@ import io.joern.rubysrc2cpg.passes.Defines.prefixAsKernelDefined
 import io.joern.x2cpg.datastructures.MethodLike
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewControlStructure}
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, ModifierTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.{
+  ControlStructureTypes,
+  DispatchTypes,
+  ModifierTypes,
+  NodeTypes,
+  Operators
+}
+
+import scala.collection.mutable
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -27,6 +35,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case node: MethodDeclaration          => astForMethodDeclaration(node)
       case node: MethodAccessModifier       => astForMethodAccessModifier(node)
       case node: SingletonMethodDeclaration => astForSingletonMethodDeclaration(node)
+      case node: DefaultMultipleAssignment  => astForDefaultMultipleAssignment(node, isExpression = false)
       case node: MultipleAssignment         => node.assignments.map(astForExpression)
       case node: BreakExpression            => astForBreakExpression(node) :: Nil
       case node: SingletonStatementList     => astForSingletonStatementList(node)
@@ -173,8 +182,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           case x =>
             astsForStatement(transform(expr))
         }
-      case node: DefaultMultipleAssignment =>
-        astsForStatement(node) ++ astsForImplicitReturnStatement(ArrayLiteral(node.assignments.map(_.lhs))(node.span))
       case ret: ReturnExpression => astForReturnExpression(ret) :: Nil
       case node: (MethodDeclaration | SingletonMethodDeclaration) =>
         (astsForStatement(node) :+ astForReturnMethodDeclarationSymbolName(node)).toList
@@ -210,8 +217,107 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def returnAst(node: RubyExpression): Ast = {
-    val nodeAst = astsForStatement(node)
-    returnAst(returnNode(node, code(node)), nodeAst)
+    val nodeAst = astForExpression(node)
+    returnAst(returnNode(node, code(node)), nodeAst :: Nil)
+  }
+
+  protected def astForDefaultMultipleAssignmentExpr(node: DefaultMultipleAssignment): Ast = {
+    blockAst(
+      blockNode(node, code(node), Defines.Any),
+      astForDefaultMultipleAssignment(node, isExpression = true).toList
+    )
+  }
+
+  protected def astForDefaultMultipleAssignment(node: DefaultMultipleAssignment, isExpression: Boolean): Seq[Ast] = {
+    if (!isExpression) {
+      node.assignments.map(astForExpression)
+    } else {
+      val assignmentAsts  = mutable.ListBuffer.empty[Ast]
+      val returnExprNames = mutable.ListBuffer.empty[String]
+
+      node.assignments.foreach { assignment =>
+        if (isSimpleExpression(assignment.lhs)) {
+          assignmentAsts += astForExpression(assignment)
+          returnExprNames += simpleExpressionName(assignment.lhs)
+        } else {
+          val tmpName = scope.getNewVarTmp
+
+          val tmpLhsAst = handleVariableOccurrence(tmpName, assignment)
+          val rhsAst    = astForExpression(assignment.rhs)
+          val tmpAssignCall = callNode(
+            assignment,
+            s"$tmpName = ${code(assignment.rhs)}",
+            Operators.assignment,
+            Operators.assignment,
+            DispatchTypes.STATIC_DISPATCH
+          )
+          assignmentAsts += callAst(tmpAssignCall, Seq(tmpLhsAst, rhsAst))
+
+          val lhsAst    = astForExpression(assignment.lhs)
+          val tmpRhsAst = handleVariableOccurrence(tmpName, assignment)
+          val lhsAssignCall = callNode(
+            assignment,
+            s"${code(assignment.lhs)} = $tmpName",
+            Operators.assignment,
+            Operators.assignment,
+            DispatchTypes.STATIC_DISPATCH
+          )
+          assignmentAsts += callAst(lhsAssignCall, Seq(lhsAst, tmpRhsAst))
+
+          returnExprNames += tmpName
+        }
+      }
+      val arrayTmpName = scope.getNewVarTmp
+
+      val allocCall = callNode(node, Operators.alloc, Operators.alloc, Operators.alloc, DispatchTypes.STATIC_DISPATCH)
+      val arrayAssignCall = callNode(
+        node,
+        s"$arrayTmpName = ${Operators.alloc}",
+        Operators.assignment,
+        Operators.assignment,
+        DispatchTypes.STATIC_DISPATCH
+      )
+      assignmentAsts += callAst(arrayAssignCall, Seq(handleVariableOccurrence(arrayTmpName, node), callAst(allocCall)))
+
+      returnExprNames.toList.zipWithIndex.foreach { case (exprName, idx) =>
+        val idxLiteral = literalNode(node, idx.toString, Defines.prefixAsCoreType(Defines.Integer))
+        val indexAccessCall =
+          callNode(
+            node,
+            s"$arrayTmpName[$idx]",
+            Operators.indexAccess,
+            Operators.indexAccess,
+            DispatchTypes.STATIC_DISPATCH
+          )
+        val indexAccessAst =
+          callAst(indexAccessCall, Seq(handleVariableOccurrence(arrayTmpName, node), Ast(idxLiteral)))
+
+        val elemAssignCall = callNode(
+          node,
+          s"$arrayTmpName[$idx] = $exprName",
+          Operators.assignment,
+          Operators.assignment,
+          DispatchTypes.STATIC_DISPATCH
+        )
+        assignmentAsts += callAst(elemAssignCall, Seq(indexAccessAst, handleVariableOccurrence(exprName, node)))
+      }
+
+      assignmentAsts += handleVariableOccurrence(arrayTmpName, node)
+      assignmentAsts.toSeq
+    }
+  }
+
+  private def isSimpleExpression(expr: RubyExpression): Boolean = expr match {
+    case _: RubyIdentifier | _: SelfIdentifier => true
+    case _: LiteralExpr                        => true
+    case _                                     => false
+  }
+
+  private def simpleExpressionName(expr: RubyExpression): String = expr match {
+    case _: SelfIdentifier    => Defines.Self
+    case node: RubyIdentifier => node.span.text
+    case node: LiteralExpr    => node.span.text
+    case node                 => code(node)
   }
 
   // The evaluation of a MethodDeclaration returns its name in symbol form.

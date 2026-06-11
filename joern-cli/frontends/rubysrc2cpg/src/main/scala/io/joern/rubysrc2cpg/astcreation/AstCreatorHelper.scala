@@ -93,12 +93,9 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   protected def handleVariableOccurrence(node: RubyExpression): Ast = {
-    val name       = code(node)
-    val identifier = identifierNode(node, name, name, Defines.Any)
-    val typeRef    = scope.tryResolveTypeReference(name)
-
     node match {
       case fieldVariable: RubyFieldIdentifier =>
+        val name = code(node)
         scope.findFieldInScope(name) match {
           case None =>
             scope.pushField(FieldDecl(name, Defines.Any, false, false, fieldVariable))
@@ -107,25 +104,31 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
             astForFieldInstance(name, field.node)
         }
       case _ =>
-        scope.lookupVariable(name) match {
-          case None if typeRef.isDefined =>
-            Ast(identifier.typeFullName(typeRef.get.name))
-          case None =>
-            val local = localNode(node, name, name, Defines.Any)
-            scope.addToScope(name, local) match {
-              case BlockScope(block) => diffGraph.addEdge(block, local, EdgeTypes.AST)
-              case _                 =>
-            }
-            Ast(identifier).withRefEdge(identifier, local)
-          case Some(local) =>
-            local match {
-              case x: NewLocal             => identifier.dynamicTypeHintFullName(x.dynamicTypeHintFullName)
-              case x: NewMethodParameterIn => identifier.dynamicTypeHintFullName(x.dynamicTypeHintFullName)
-            }
-            Ast(identifier).withRefEdge(identifier, local)
-        }
+        handleVariableOccurrence(code(node), node)
     }
+  }
 
+  protected def handleVariableOccurrence(name: String, positionNode: RubyExpression): Ast = {
+    val identifier = identifierNode(positionNode, name, name, Defines.Any)
+    val typeRef    = scope.tryResolveTypeReference(name)
+
+    scope.lookupVariable(name) match {
+      case None if typeRef.isDefined =>
+        Ast(identifier.typeFullName(typeRef.get.name))
+      case None =>
+        val local = localNode(positionNode, name, name, Defines.Any)
+        scope.addToScope(name, local) match {
+          case BlockScope(block) => diffGraph.addEdge(block, local, EdgeTypes.AST)
+          case _                 =>
+        }
+        Ast(identifier).withRefEdge(identifier, local)
+      case Some(local) =>
+        local match {
+          case x: NewLocal             => identifier.dynamicTypeHintFullName(x.dynamicTypeHintFullName)
+          case x: NewMethodParameterIn => identifier.dynamicTypeHintFullName(x.dynamicTypeHintFullName)
+        }
+        Ast(identifier).withRefEdge(identifier, local)
+    }
   }
 
   protected def astForIfStatement(builder: (IfExpression, Ast, Ast, Option[Ast]) => Ast)(node: IfExpression): Ast = {
