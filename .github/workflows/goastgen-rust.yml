@@ -1,0 +1,56 @@
+name: goastgen rust
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/goastgen-rust.yml"
+      - "joern-cli/frontends/gosrc2cpg/rust/**"
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Test Rust goastgen
+        working-directory: joern-cli/frontends/gosrc2cpg/rust
+        run: cargo test
+
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact: goastgen-linux
+            binary: target/release/goastgen
+          - os: ubuntu-24.04-arm
+            artifact: goastgen-linux-arm64
+            binary: target/release/goastgen
+          - os: macos-13
+            artifact: goastgen-macos
+            binary: target/release/goastgen
+          - os: macos-14
+            artifact: goastgen-macos-arm64
+            binary: target/release/goastgen
+          - os: windows-latest
+            artifact: goastgen-windows.exe
+            binary: target/release/goastgen.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build Rust goastgen
+        working-directory: joern-cli/frontends/gosrc2cpg/rust
+        run: cargo build --release --bin goastgen
+      - name: Stage artifact
+        shell: bash
+        working-directory: joern-cli/frontends/gosrc2cpg/rust
+        run: |
+          mkdir -p dist
+          cp "${{ matrix.binary }}" "dist/${{ matrix.artifact }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: joern-cli/frontends/gosrc2cpg/rust/dist/${{ matrix.artifact }}

@@ -2,7 +2,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.sbt.packager.Keys.stagingDirectory
 import versionsort.VersionHelper
 
-import scala.sys.process.stringToProcess
+import scala.sys.process.{Process, stringToProcess}
 import scala.util.Try
 
 name := "gosrc2cpg"
@@ -72,6 +72,46 @@ goAstGenBinaryNames := {
         Seq(GoAstgenWin, GoAstgenLinux, GoAstgenLinuxArm, GoAstgenMac, GoAstgenMacArm)
     }
   }
+}
+
+lazy val goAstGenCurrentBinaryName = taskKey[String]("goastgen binary name for the current host")
+goAstGenCurrentBinaryName := {
+  Environment.operatingSystem match {
+    case Environment.OperatingSystemType.Windows =>
+      GoAstgenWin
+    case Environment.OperatingSystemType.Linux =>
+      Environment.architecture match {
+        case Environment.ArchitectureType.X86   => GoAstgenLinux
+        case Environment.ArchitectureType.ARMv8 => GoAstgenLinuxArm
+      }
+    case Environment.OperatingSystemType.Mac =>
+      Environment.architecture match {
+        case Environment.ArchitectureType.X86   => GoAstgenMac
+        case Environment.ArchitectureType.ARMv8 => GoAstgenMacArm
+      }
+    case Environment.OperatingSystemType.Unknown =>
+      GoAstgenLinux
+  }
+}
+
+lazy val goAstGenBuildRust = taskKey[File]("Build local Rust goastgen and install it under bin/astgen")
+goAstGenBuildRust := {
+  val rustRoot       = baseDirectory.value / "rust"
+  val rustBinaryName =
+    if (Environment.operatingSystem == Environment.OperatingSystemType.Windows) "goastgen.exe" else "goastgen"
+  val exitCode       = Process(Seq("cargo", "build", "--release", "--bin", "goastgen"), rustRoot).!
+  if (exitCode != 0) {
+    sys.error(s"cargo build failed with exit code $exitCode")
+  }
+
+  val builtBinary = rustRoot / "target" / "release" / rustBinaryName
+  val goAstGenDir = baseDirectory.value / "bin" / "astgen"
+  val targetFile  = goAstGenDir / goAstGenCurrentBinaryName.value
+  goAstGenDir.mkdirs()
+  IO.copyFile(builtBinary, targetFile, preserveLastModified = true)
+  targetFile.setExecutable(true, false)
+  streams.value.log.info(s"installed Rust goastgen to $targetFile")
+  targetFile
 }
 
 lazy val goAstGenDlTask = taskKey[Unit](s"Download goastgen binaries")
