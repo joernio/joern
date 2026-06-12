@@ -7,5 +7,8 @@ object UtilityConstants {
   val fileSeparateorPattern = Pattern.quote(File.separator)
 }
 object Operator {
-  val unknown = "<operator>.unknown"
+  val unknown     = "<operator>.unknown"
+  val channelSend = "<operator>.channelSend"
+  val deferCall   = "<operator>.defer"
+  val goRoutine   = "<operator>.go"
 }

@@ -15,14 +15,14 @@ pub fn parse_go_mod(path: &Path, content: &str) -> Result<Value> {
         }
 
         if let Some(rest) = line_without_comment.strip_prefix("module ") {
-            let name = rest.trim().to_string();
+            let name = unquote_module_path(rest.trim()).to_string();
             module = Some(json!({
               "Name": name,
               "node_type": "mod.Module",
               "node_line_no": line_number,
               "node_col_no": first_non_ws_col(raw_line),
               "node_line_no_end": line_number,
-              "node_col_no_end": raw_line.len() + 1,
+              "node_col_no_end": legacy_end_col(raw_line, line_without_comment),
             }));
             continue;
         }
@@ -46,14 +46,14 @@ pub fn parse_go_mod(path: &Path, content: &str) -> Result<Value> {
             let parts: Vec<_> = require_line.split_whitespace().collect();
             if parts.len() >= 2 {
                 dependencies.push(json!({
-                  "Module": parts[0],
+                  "Module": unquote_module_path(parts[0]),
                   "Version": parts[1],
                   "Indirect": raw_line.contains("// indirect"),
                   "node_type": "mod.Dependency",
                   "node_line_no": line_number,
                   "node_col_no": first_non_ws_col(raw_line),
                   "node_line_no_end": line_number,
-                  "node_col_no_end": raw_line.len() + 1,
+                  "node_col_no_end": legacy_end_col(raw_line, line_without_comment),
                 }));
             }
         }
@@ -76,4 +76,18 @@ fn first_non_ws_col(line: &str) -> usize {
         .position(|c| !c.is_whitespace())
         .map(|idx| idx + 1)
         .unwrap_or(1)
+}
+
+fn legacy_end_col(raw_line: &str, parsed_directive: &str) -> usize {
+    first_non_ws_col(raw_line) + parsed_directive.len()
+}
+
+fn unquote_module_path(path: &str) -> &str {
+    path.strip_prefix('"')
+        .and_then(|value| value.strip_suffix('"'))
+        .or_else(|| {
+            path.strip_prefix('`')
+                .and_then(|value| value.strip_suffix('`'))
+        })
+        .unwrap_or(path)
 }

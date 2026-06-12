@@ -35,12 +35,17 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case BranchStmt     => Seq(astForBranchStatement(statement))
       case BlockStmt      => Seq(astForBlockStatement(statement, argIndex))
       case CaseClause     => astForCaseClause(statement)
+      case CommClause     => astForCommClause(statement)
       case DeclStmt       => astForNode(statement.json(ParserKeys.Decl))
+      case DeferStmt      => Seq(astForCallWrapperStatement(statement, Operator.deferCall))
       case ExprStmt       => astsForExpression(createParserNodeInfo(statement.json(ParserKeys.X)))
       case ForStmt        => Seq(astForForStatement(statement))
+      case GoStmt         => Seq(astForCallWrapperStatement(statement, Operator.goRoutine))
       case IfStmt         => astForIfStatement(statement)
       case IncDecStmt     => Seq(astForIncDecStatement(statement))
       case RangeStmt      => Seq(astForRangeStatement(statement))
+      case SelectStmt     => Seq(astForSelectStatement(statement))
+      case SendStmt       => Seq(astForSendStatement(statement))
       case SwitchStmt     => Seq(astForSwitchStatement(statement))
       case TypeSwitchStmt => Seq(astForTypeSwitchStatement(statement))
       case ReturnStmt     => Seq(astForReturnStatement(statement))
@@ -121,6 +126,35 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     callAst(cNode, operand)
   }
 
+  private def astForCallWrapperStatement(statement: ParserNodeInfo, operator: String): Ast = {
+    val callAsts = Try(statement.json(ParserKeys.Call)).toOption.toSeq.flatMap(astForNode)
+    val cNode = callNode(
+      statement,
+      statement.code,
+      operator,
+      operator,
+      DispatchTypes.STATIC_DISPATCH,
+      None,
+      Some(Defines.anyTypeName)
+    )
+    callAst(cNode, callAsts)
+  }
+
+  private def astForSendStatement(sendStmt: ParserNodeInfo): Ast = {
+    val chanAst  = Try(sendStmt.json(ParserKeys.Chan)).toOption.toSeq.flatMap(astForNode)
+    val valueAst = Try(sendStmt.json(ParserKeys.Value)).toOption.toSeq.flatMap(astForNode)
+    val cNode = callNode(
+      sendStmt,
+      sendStmt.code,
+      Operator.channelSend,
+      Operator.channelSend,
+      DispatchTypes.STATIC_DISPATCH,
+      None,
+      Some(Defines.anyTypeName)
+    )
+    callAst(cNode, chanAst ++ valueAst)
+  }
+
   private def astForConditionExpression(condStmt: ParserNodeInfo, explicitArgumentIndex: Option[Int] = None): Ast = {
     val ast = condStmt.node match {
       case ParenExpr   => astForNode(condStmt.json(ParserKeys.X)).headOption.getOrElse(Ast())
@@ -180,6 +214,12 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     controlStructureAst(switchNode, conditionAst, stmtAsts)
   }
 
+  private def astForSelectStatement(selectStmt: ParserNodeInfo): Ast = {
+    val selectNode = controlStructureNode(selectStmt, ControlStructureTypes.SWITCH, "select")
+    val stmtAsts   = astsForStatement(createParserNodeInfo(selectStmt.json(ParserKeys.Body)))
+    controlStructureAst(selectNode, None, stmtAsts)
+  }
+
   private def astForTypeSwitchStatement(typeSwitchStmt: ParserNodeInfo): Ast = {
 
     val conditionParserNode = Try(createParserNodeInfo(typeSwitchStmt.json(ParserKeys.Assign)))
@@ -221,6 +261,21 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
     val caseBodyAst = caseStmt.json(ParserKeys.Body).arr.map(createParserNodeInfo).flatMap(astsForStatement(_)).toList
     caseClauseAst ++: caseBodyAst
+  }
+
+  private def astForCommClause(commStmt: ParserNodeInfo): Seq[Ast] = {
+    val commAst = Try(commStmt.json(ParserKeys.Comm)).toOption
+      .flatMap { comm =>
+        val commNode = createParserNodeInfo(comm)
+        val target   = jumpTargetNode(commStmt, "case", s"case ${commNode.code}")
+        Some(Ast(target) +: astsForStatement(commNode))
+      }
+      .getOrElse {
+        val target = jumpTargetNode(commStmt, "default", "default")
+        Seq(Ast(target))
+      }
+    val bodyAst = commStmt.json(ParserKeys.Body).arrOpt.getOrElse(Seq.empty).flatMap(astsForStatement).toSeq
+    commAst ++: bodyAst
   }
 
   private def astForForStatement(forStmt: ParserNodeInfo): Ast = {

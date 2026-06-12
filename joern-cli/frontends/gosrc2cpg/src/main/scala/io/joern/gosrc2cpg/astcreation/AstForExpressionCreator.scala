@@ -21,6 +21,8 @@ trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { t
       case SelectorExpr   => astForFieldAccess(expr)
       case KeyValueExpr   => astForNode(createParserNodeInfo(expr.json(ParserKeys.Value)))
       case IndexExpr      => astForIndexExpression(expr)
+      case IndexListExpr  => astForIndexListExpression(expr)
+      case SliceExpr      => astForSliceExpression(expr)
       case _              => Seq(Ast())
     }
   }
@@ -107,6 +109,30 @@ trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { t
     val callNode =
       createCallNodeForOperator(indexNode, Operators.indexAccess, typeFullName = Some(callNodeTypeFullName))
     Seq(callAst(callNode, indexIdentifier ++ indexAst))
+  }
+
+  private def astForIndexListExpression(indexNode: ParserNodeInfo): Seq[Ast] = {
+    val indexAsts = indexNode
+      .json(ParserKeys.Indices)
+      .arrOpt
+      .getOrElse(Seq.empty)
+      .flatMap(astForNode)
+      .toSeq
+    val (indexIdentifier, callNodeTypeFullName) = processIndexIdentifier(indexNode.json(ParserKeys.X))
+    val callNode =
+      createCallNodeForOperator(indexNode, Operators.indexAccess, typeFullName = Some(callNodeTypeFullName))
+    Seq(callAst(callNode, indexIdentifier ++ indexAsts))
+  }
+
+  private def astForSliceExpression(sliceNode: ParserNodeInfo): Seq[Ast] = {
+    val boundAsts = Seq(ParserKeys.Low, ParserKeys.High, ParserKeys.Max)
+      .flatMap { key =>
+        sliceNode.json.obj.get(key).filterNot(_.isNull).toSeq.flatMap(astForNode)
+      }
+    val (indexIdentifier, callNodeTypeFullName) = processIndexIdentifier(sliceNode.json(ParserKeys.X))
+    val callNode =
+      createCallNodeForOperator(sliceNode, Operators.indexAccess, typeFullName = Some(callNodeTypeFullName))
+    Seq(callAst(callNode, indexIdentifier ++ boundAsts))
   }
 
   private def processIndexIdentifier(identNode: Value): (Seq[Ast], String) = {

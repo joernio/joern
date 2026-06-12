@@ -576,4 +576,24 @@ class MethodCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
       val List(a, b, c) = cpg.call("bar").l
     }
   }
+
+  "Pointer type conversion call" should {
+    val cpg = code("""
+        |package main
+        |
+        |type MockDB struct{}
+        |
+        |func foo() {
+        |   var db = (*MockDB)(nil)
+        |   println(db)
+        |}
+        |""".stripMargin)
+
+    "create a call node for the conversion without dropping the pointer type callee" in {
+      val List(conversionCall) = cpg.call.codeExact("(*MockDB)(nil)").l
+      conversionCall.name shouldBe "*MockDB"
+      conversionCall.methodFullName shouldBe "*main.MockDB"
+      conversionCall.argument.code.l shouldBe List("nil")
+    }
+  }
 }

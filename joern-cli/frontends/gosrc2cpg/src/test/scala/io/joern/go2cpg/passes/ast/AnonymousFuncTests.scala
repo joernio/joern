@@ -2,6 +2,7 @@ package io.joern.go2cpg.passes.ast
 
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
 import io.joern.x2cpg.Defines
+import io.shiftleft.codepropertygraph.generated.nodes.MethodRef
 import io.shiftleft.semanticcpg.language.*
 
 import java.io.File
@@ -66,6 +67,67 @@ class AnonymousFuncTests extends GoCodeToCpgSuite {
 
     "traversal from TypeDecl to lambda method" in {
       cpg.typeDecl(s"${Defines.ClosurePrefix}0").method.fullName.l shouldBe List(s"main.main.${Defines.ClosurePrefix}0")
+    }
+  }
+
+  "Lambda expression capturing locals" should {
+    val cpg = code("""
+        |package main
+        |
+        |func main() {
+        |	secret := "token"
+        |	sink := func() {
+        |		println(secret)
+        |	}
+        |	sink()
+        |}
+        |""".stripMargin)
+
+    "create closure binding and captured local nodes" in {
+      val lambdaFullName = s"main.main.${Defines.ClosurePrefix}0"
+      val List(lambda)   = cpg.method.fullName(lambdaFullName).l
+      val List(outerSecret) = cpg
+        .method("main")
+        .local
+        .nameExact("secret")
+        .filter(_.closureBindingId.isEmpty)
+        .l
+      val List(capturedSecret) = lambda.local.nameExact("secret").l
+      val closureBindingId     = s"$lambdaFullName:secret"
+
+      capturedSecret.closureBindingId shouldBe Some(closureBindingId)
+
+      val List(closureBinding) = cpg.closureBinding.l
+      closureBinding.closureBindingId shouldBe Some(closureBindingId)
+      closureBinding._refOut.l shouldBe List(outerSecret)
+      closureBinding._captureIn.l.collect { case methodRef: MethodRef => methodRef.methodFullName } shouldBe List(
+        lambdaFullName
+      )
+    }
+
+    "reference captured locals from inside the lambda body" in {
+      val lambdaFullName       = s"main.main.${Defines.ClosurePrefix}0"
+      val List(lambda)         = cpg.method.fullName(lambdaFullName).l
+      val List(capturedSecret) = lambda.local.nameExact("secret").l
+
+      lambda.ast.isIdentifier.nameExact("secret").refsTo.l shouldBe List(capturedSecret)
+    }
+  }
+
+  "Lambda invocation through parenthesized callee" should {
+    val cpg = code("""
+        |package main
+        |
+        |func main() {
+        |	sink := func() {
+        |		println("ok")
+        |	}
+        |	(sink)()
+        |}
+        |""".stripMargin)
+
+    "resolve the parenthesized callee to the lambda method" in {
+      cpg.call.nameExact("sink").methodFullName.l shouldBe List(s"main.main.${Defines.ClosurePrefix}0")
     }
   }
 

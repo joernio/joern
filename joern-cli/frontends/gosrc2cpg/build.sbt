@@ -2,7 +2,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.sbt.packager.Keys.stagingDirectory
 import versionsort.VersionHelper
 
-import scala.sys.process.{Process, stringToProcess}
+import scala.sys.process.Process
 import scala.util.Try
 
 name := "gosrc2cpg"
@@ -38,22 +38,30 @@ lazy val GoAstgenMac      = "goastgen-macos"
 lazy val GoAstgenMacArm   = "goastgen-macos-arm64"
 
 lazy val goAstGenDlUrl = settingKey[String]("goastgen download url")
-goAstGenDlUrl := s"https://github.com/joernio/astgen-monorepo/releases/download/go-astgen/v${goAstGenVersion.value}/"
+goAstGenDlUrl := s"https://github.com/allsmog/joern/releases/download/go-astgen/v${goAstGenVersion.value}/"
 
-def hasCompatibleAstGenVersion(goAstGenVersion: String): Boolean = {
-  Try("goastgen -version".!!).toOption.map(_.strip()) match {
-    case Some(installedVersion) if installedVersion != "unknown" =>
-      VersionHelper.compare(installedVersion, goAstGenVersion) >= 0
-    case _ => false
+def isCompatibleAstGen(command: Seq[String], requiredVersion: String): Boolean =
+  Try(Process(command).!!.strip()).toOption.exists { installedVersion =>
+    val normalizedInstalledVersion = installedVersion.stripPrefix("v")
+    val normalizedRequiredVersion  = requiredVersion.stripPrefix("v")
+    installedVersion != "unknown" &&
+      VersionHelper.compare(normalizedInstalledVersion, normalizedRequiredVersion) >= 0
   }
-}
+
+def hasCompatibleAstGenVersion(goAstGenVersion: String): Boolean =
+  isCompatibleAstGen(Seq("goastgen", "-version"), goAstGenVersion)
 
 lazy val goAstGenBinaryNames = taskKey[Seq[String]]("goastgen binary names")
 goAstGenBinaryNames := {
-  if (hasCompatibleAstGenVersion(goAstGenVersion.value)) {
+  val requiredVersion      = goAstGenVersion.value
+  val allPlatforms         = sys.props.get("ALL_PLATFORMS").contains("TRUE")
+  val bundledCurrentAstgen = baseDirectory.value / "bin" / "astgen" / goAstGenCurrentBinaryName.value
+  if (hasCompatibleAstGenVersion(requiredVersion)) {
     Seq.empty
-  } else if (sys.props.get("ALL_PLATFORMS").contains("TRUE")) {
+  } else if (allPlatforms) {
     Seq(GoAstgenWin, GoAstgenLinux, GoAstgenLinuxArm, GoAstgenMac, GoAstgenMacArm)
+  } else if (isCompatibleAstGen(Seq(bundledCurrentAstgen.getAbsolutePath, "-version"), requiredVersion)) {
+    Seq.empty
   } else {
     Environment.operatingSystem match {
       case Environment.OperatingSystemType.Windows =>

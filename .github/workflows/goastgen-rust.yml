@@ -1,23 +1,66 @@
 name: goastgen rust
 
 on:
+  push:
+    tags:
+      - "go-astgen/v*"
   pull_request:
     paths:
       - ".github/workflows/goastgen-rust.yml"
+      - "joern-cli/frontends/gosrc2cpg/build.sbt"
+      - "joern-cli/frontends/gosrc2cpg/src/main/resources/application.conf"
       - "joern-cli/frontends/gosrc2cpg/rust/**"
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
+      - name: Check formatting
+        working-directory: joern-cli/frontends/gosrc2cpg/rust
+        run: cargo fmt --check
       - name: Test Rust goastgen
         working-directory: joern-cli/frontends/gosrc2cpg/rust
         run: cargo test
+      - name: Lint Rust goastgen
+        working-directory: joern-cli/frontends/gosrc2cpg/rust
+        run: cargo clippy --all-targets -- -D warnings
+      - name: Download legacy reference goastgen
+        run: |
+          curl -L --fail -o /tmp/goastgen-legacy \
+            https://github.com/joernio/astgen-monorepo/releases/download/go-astgen/v0.1.0/goastgen-linux
+          chmod +x /tmp/goastgen-legacy
+          /tmp/goastgen-legacy -version
+      - name: Differential JSON test against legacy goastgen
+        working-directory: joern-cli/frontends/gosrc2cpg/rust
+        run: GOASTGEN_REFERENCE=/tmp/goastgen-legacy cargo test -p goastgen --test differential_json -- --nocapture
+
+  scala-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: sbt
+      - uses: sbt/setup-sbt@v1
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Run gosrc2cpg tests with Rust goastgen
+        run: sbt "gosrc2cpg/goAstGenBuildRust" "gosrc2cpg/test"
 
   build:
+    needs:
+      - test
     strategy:
       fail-fast: false
       matrix:
@@ -39,8 +82,14 @@ jobs:
             binary: target/release/goastgen.exe
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
+      - name: Check goastgen version
+        shell: bash
+        working-directory: joern-cli/frontends/gosrc2cpg/rust
+        run: |
+          cargo run --quiet -p goastgen -- -version | tee /tmp/goastgen-version
+          test "$(cat /tmp/goastgen-version)" = "v0.2.0"
       - name: Build Rust goastgen
         working-directory: joern-cli/frontends/gosrc2cpg/rust
         run: cargo build --release --bin goastgen
@@ -50,7 +99,47 @@ jobs:
         run: |
           mkdir -p dist
           cp "${{ matrix.binary }}" "dist/${{ matrix.artifact }}"
+      - name: Smoke staged artifact
+        shell: bash
+        working-directory: joern-cli/frontends/gosrc2cpg/rust
+        run: |
+          artifact="dist/${{ matrix.artifact }}"
+          "$artifact" -version | tee /tmp/goastgen-built-version
+          test "$(cat /tmp/goastgen-built-version)" = "v0.2.0"
+
+          smoke_dir="$(mktemp -d)"
+          mkdir -p "$smoke_dir/src" "$smoke_dir/out"
+          printf 'package main\nfunc main() {}\n' > "$smoke_dir/src/main.go"
+          "$artifact" -out "$smoke_dir/out" "$smoke_dir/src"
+          test -s "$smoke_dir/out/main.go.json"
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
           path: joern-cli/frontends/gosrc2cpg/rust/dist/${{ matrix.artifact }}
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/go-astgen/v')
+    needs:
+      - test
+      - scala-integration
+      - build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: Prepare release assets
+        run: |
+          mkdir -p release
+          find dist -type f -name 'goastgen*' -exec cp {} release/ \;
+          cd release
+          sha256sum goastgen-* > SHA256SUMS
+          ls -la
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          files: release/*

@@ -254,7 +254,7 @@ dependencies = [
 
 [[package]]
 name = "goastgen"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -268,7 +268,7 @@ dependencies = [
 
 [[package]]
 name = "goastgen-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "regex",

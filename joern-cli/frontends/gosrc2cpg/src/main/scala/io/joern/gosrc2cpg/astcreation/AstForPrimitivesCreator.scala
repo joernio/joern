@@ -67,11 +67,13 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
   private def astForIdentifier(ident: ParserNodeInfo): Ast = {
     val identifierName = ident.json(ParserKeys.Name).str
     if (identifierName != "_") {
-      val variableOption = scope.lookupVariable(identifierName)
+      val variableOption = scope.lookupVariableWithDeclaringMethod(identifierName)
       variableOption match {
-        case Some((variable, variableTypeName)) =>
+        case Some(((variable, variableTypeName), declaringMethod)) =>
           val node = identifierNode(ident, identifierName, ident.code, variableTypeName)
-          Ast(node).withRefEdge(node, variable)
+          val referencedVariable =
+            targetForIdentifierReference(identifierName, variable, variableTypeName, declaringMethod, ident)
+          Ast(node).withRefEdge(node, referencedVariable)
         case _ =>
           // If its not local node then check if its global member variable of package TypeDecl
           goGlobal.getStructTypeMemberType(fullyQualifiedPackage, identifierName) match {

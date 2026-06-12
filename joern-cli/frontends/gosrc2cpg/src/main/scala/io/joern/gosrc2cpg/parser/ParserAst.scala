@@ -34,6 +34,8 @@ object ParserAst {
   object CallExpr            extends BaseExpr
   object StructType          extends BaseExpr
   object IndexExpr           extends BaseExpr
+  object IndexListExpr       extends BaseExpr
+  object SliceExpr           extends BaseExpr
   sealed trait BaseStmt      extends ParserNode
   object BlockStmt           extends BaseStmt
   object DeclStmt            extends BaseStmt
@@ -47,6 +49,10 @@ object ParserAst {
   object ForStmt             extends BaseStmt
   object RangeStmt           extends BaseStmt
   object BranchStmt          extends BaseStmt
+  object DeferStmt           extends BaseStmt
+  object GoStmt              extends BaseStmt
+  object SelectStmt          extends BaseStmt
+  object SendStmt            extends BaseStmt
   object LabeledStmt         extends BaseStmt
   sealed trait BasePrimitive extends ParserNode
   object BasicLit            extends BasePrimitive
@@ -59,6 +65,8 @@ object ParserAst {
   object FuncDecl            extends ParserNode
   object ValueSpec           extends ParserNode
   object CaseClause          extends ParserNode
+  object CommClause          extends ParserNode
+  object Field               extends ParserNode
   object InterfaceType       extends ParserNode
   object FuncType            extends ParserNode
   object Ellipsis            extends ParserNode
@@ -74,6 +82,9 @@ object ParserKeys {
 
   val Assign          = "Assign"
   val Body            = "Body"
+  val Call            = "Call"
+  val Chan            = "Chan"
+  val Comm            = "Comm"
   val Cond            = "Cond"
   val Decl            = "Decl"
   val Decls           = "Decls"
@@ -82,10 +93,13 @@ object ParserKeys {
   val Key             = "Key"
   val Kind            = "Kind"
   val Label           = "Label"
+  val Low             = "Low"
   val List            = "List"
   val Lhs             = "Lhs"
+  val High            = "High"
   val Name            = "Name"
   val Names           = "Names"
+  val Max             = "Max"
   val NodeColNo       = "node_col_no"
   val NodeColEndNo    = "node_col_no_end"
   val NodeFileName    = "node_filename"
@@ -111,6 +125,7 @@ object ParserKeys {
   val Params          = "Params"
   val Elt             = "Elt"
   val Sel             = "Sel"
+  val Slice3          = "Slice3"
   val Elts            = "Elts"
   val Fun             = "Fun"
   val Fields          = "Fields"
@@ -118,4 +133,5 @@ object ParserKeys {
   val Args            = "Args"
   val Recv            = "Recv"
   val Index           = "Index"
+  val Indices         = "Indices"
 }

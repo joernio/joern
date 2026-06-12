@@ -22,13 +22,22 @@ trait AstForLambdaCreator(implicit withSchemaValidation: ValidationMode) { this:
     val LambdaFunctionMetaData(signature, returnTypeStr, methodReturn, params, genericTypeMethodMap) =
       generateLambdaSignature(createParserNodeInfo(funcLiteral.json(ParserKeys.Type)))
     val methodNode_ = methodNode(funcLiteral, lambdaName, funcLiteral.code, fullName, Some(signature), relPathFileName)
+    val methodRefNode_ = methodRefNode(funcLiteral, funcLiteral.code, fullName, fullName)
+    val captureContext = LambdaCaptureContext(methodNode_, methodRefNode_, fullName)
     methodAstParentStack.push(methodNode_)
     scope.pushNewScope(methodNode_)
+    val parameterAsts = astForMethodParameter(params, genericTypeMethodMap)
+    lambdaCaptureStack.push(captureContext)
+    val methodBody = astForMethodBody(funcLiteral.json(ParserKeys.Body))
+    lambdaCaptureStack.pop()
+    val methodBodyWithCapturedLocals = methodBody.withChildren(
+      captureContext.capturedVariables.values.map(capturedVariable => Ast(capturedVariable.local)).toSeq
+    )
     val astForMethod =
       methodAst(
         methodNode_,
-        astForMethodParameter(params, genericTypeMethodMap),
-        astForMethodBody(funcLiteral.json(ParserKeys.Body)),
+        parameterAsts,
+        methodBodyWithCapturedLocals,
         methodReturn,
         modifierNode(funcLiteral, ModifierTypes.LAMBDA) :: Nil
       )
@@ -52,7 +61,10 @@ trait AstForLambdaCreator(implicit withSchemaValidation: ValidationMode) { this:
       Ast.storeInDiffGraph(astForMethod, diffGraph)
     }
     goGlobal.recordMethodMetadata(baseFullName, lambdaName, MethodCacheMetaData(returnTypeStr, signature))
-    Seq(Ast(methodRefNode(funcLiteral, funcLiteral.code, fullName, fullName)))
+    val methodRefAst = captureContext.capturedVariables.values
+      .map(_.bindingAst)
+      .foldLeft(Ast(methodRefNode_)) { case (methodRefAst, captureAst) => methodRefAst.merge(captureAst) }
+    Seq(methodRefAst)
   }
 
   protected def generateLambdaSignature(funcType: ParserNodeInfo): LambdaFunctionMetaData = {

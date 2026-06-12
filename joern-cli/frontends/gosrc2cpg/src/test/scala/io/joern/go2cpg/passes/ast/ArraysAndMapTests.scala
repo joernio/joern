@@ -591,6 +591,28 @@ class ArraysAndMapTests extends GoCodeToCpgSuite {
     }
   }
 
+  "be correct when array slice uses bounds" should {
+    val cpg = code("""
+        |package main
+        |func main() {
+        | var myArray []int = []int{1, 2}
+        | value := myArray[:1]
+        |}
+        |""".stripMargin)
+
+    "be correct for slice indexAccess call node" in {
+      val List(indexCall) = cpg.call.name(Operators.indexAccess).l
+      indexCall.code shouldBe "myArray[:1]"
+      indexCall.methodFullName shouldBe Operators.indexAccess
+      indexCall.typeFullName shouldBe "int"
+
+      val List(indexIdentifier: Identifier, highLiteral: Literal) = indexCall.argument.l: @unchecked
+      indexIdentifier.code shouldBe "myArray"
+      indexIdentifier.typeFullName shouldBe "[]int"
+      highLiteral.code shouldBe "1"
+    }
+  }
+
   "be correct when array of pointer access using variable having single index" should {
     val cpg = code("""
         |package main

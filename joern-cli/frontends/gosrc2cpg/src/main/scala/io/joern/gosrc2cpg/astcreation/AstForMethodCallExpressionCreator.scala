@@ -49,6 +49,15 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
       case SelectorExpr =>
         val xNode = createParserNodeInfo(funcDetails.json(ParserKeys.X))
         (Some(xNode), funcDetails.json(ParserKeys.Sel)(ParserKeys.Name).str)
+      case ParenExpr =>
+        return preReqForCallNode(createParserNodeInfo(funcDetails.json(ParserKeys.X)))
+      case StarExpr =>
+        return preReqForTypeConversionCall(funcDetails)
+      case IndexExpr | IndexListExpr =>
+        return preReqForCallNode(createParserNodeInfo(funcDetails.json(ParserKeys.X)))
+      case FuncLit =>
+        val lambdaAst = astForNode(funcDetails)
+        return ("<lambda>", Defines.empty, "<lambda>", Defines.anyTypeName, lambdaAst)
       case x =>
         logger.warn(
           s"Unhandled class ${x.getClass} under astForCallExpression! file -> ${parserResult.fullPath} -> Line no -> ${funcDetails.lineNumber.get}"
@@ -56,6 +65,13 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
         (None, "")
     }
     callMethodFullNameTypeFullNameAndSignature(methodName, aliasOpt)
+  }
+
+  private def preReqForTypeConversionCall(typeNode: ParserNodeInfo): (String, String, String, String, Seq[Ast]) = {
+    val (typeFullName, typeNameForCode, _, _) = processTypeInfo(typeNode)
+    val methodName = if (typeNameForCode == Defines.anyTypeName) typeNode.code else typeNameForCode
+    val fullName   = if (typeFullName == Defines.anyTypeName) methodName else typeFullName
+    (methodName, Defines.empty, fullName, typeFullName, Seq.empty)
   }
 
   private def astForStructureDeclarationArgument(args: Value): Seq[Ast] = {

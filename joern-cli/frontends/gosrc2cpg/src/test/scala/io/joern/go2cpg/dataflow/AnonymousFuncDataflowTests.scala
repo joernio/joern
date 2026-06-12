@@ -45,6 +45,26 @@ class AnonymousFuncDataflowTests extends GoCodeToCpgSuite(withOssDataflow = true
     }
   }
 
+  "Lambda expression capturing local dataflow" should {
+    val cpg = code("""
+        |package main
+        |
+        |func main() {
+        |	secret := "token"
+        |	sink := func() {
+        |		println(secret)
+        |	}
+        |	sink()
+        |}
+        |""".stripMargin)
+
+    "work dataflow from captured local into lambda sink" in {
+      val source = cpg.literal("\"token\"")
+      val sink   = cpg.call("println")
+      sink.reachableByFlows(source).size shouldBe 1
+    }
+  }
+
   "Simple Lambda expression defined in package dataflow" should {
     val cpg = code("""
         |package main
