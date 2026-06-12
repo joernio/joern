@@ -38,7 +38,7 @@ lazy val GoAstgenMac      = "goastgen-macos"
 lazy val GoAstgenMacArm   = "goastgen-macos-arm64"
 
 lazy val goAstGenDlUrl = settingKey[String]("goastgen download url")
-goAstGenDlUrl := s"https://github.com/allsmog/joern/releases/download/go-astgen/v${goAstGenVersion.value}/"
+goAstGenDlUrl := s"https://github.com/allsmog/oxidized-joern/releases/download/go-astgen/v${goAstGenVersion.value}/"
 
 def isCompatibleAstGen(command: Seq[String], requiredVersion: String): Boolean =
   Try(Process(command).!!.strip()).toOption.exists { installedVersion =>

@@ -73,7 +73,7 @@ Publish Rust builds with those exact names under this fork's release URL
 pattern:
 
 ```text
-https://github.com/allsmog/joern/releases/download/go-astgen/v<version>/<artifact>
+https://github.com/allsmog/oxidized-joern/releases/download/go-astgen/v<version>/<artifact>
 ```
 
 The `.github/workflows/goastgen-rust.yml` workflow publishes these artifacts

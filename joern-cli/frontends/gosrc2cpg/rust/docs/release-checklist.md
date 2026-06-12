@@ -11,7 +11,7 @@ Use this checklist before publishing a fork release such as
 - `joern-cli/frontends/gosrc2cpg/build.sbt` downloads artifacts from:
 
 ```text
-https://github.com/allsmog/joern/releases/download/go-astgen/v0.2.0/
+https://github.com/allsmog/oxidized-joern/releases/download/go-astgen/v0.2.0/
 ```
 
 ## Required Local Gates
@@ -76,7 +76,7 @@ After pushing the tag and waiting for the release workflow:
 
 ```bash
 curl -L --fail -o /tmp/goastgen \
-  https://github.com/allsmog/joern/releases/download/go-astgen/v0.2.0/goastgen-macos-arm64
+  https://github.com/allsmog/oxidized-joern/releases/download/go-astgen/v0.2.0/goastgen-macos-arm64
 chmod +x /tmp/goastgen
 /tmp/goastgen -version
 ```
