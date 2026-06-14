@@ -4,6 +4,7 @@ import io.joern.javasrc2cpg.jartypereader.model.*
 import io.joern.javasrc2cpg.jartypereader.model.TypeArgument.{BoundWildcard, SimpleTypeArgument, UnboundWildcard}
 import io.joern.javasrc2cpg.jartypereader.JarTypeReader.ObjectTypeSignature
 import io.joern.javasrc2cpg.jartypereader.model.Bound.{BoundAbove, BoundBelow}
+import io.joern.x2cpg.utils.JoernRunfilesLocator
 import io.shiftleft.utils.ProjectRoot
 import org.scalatest.Inside.inside
 import org.scalatest.freespec.AnyFreeSpec
@@ -221,8 +222,13 @@ class JarTypeReaderTests extends AnyFreeSpec with Matchers {
   }
 
   private def getTypes(name: String): List[ResolvedTypeDecl] = {
-    val path      = Paths.get("joern-cli", "frontends", "javasrc2cpg", "target", "testjars", s"$name.jar")
-    val inputPath = ProjectRoot.relativise(path.toString)
+    val bazelPath = JoernRunfilesLocator.resolve(
+      s"joern/joern-cli/frontends/javasrc2cpg/src/test/java/io/joern/javasrc2cpg/jartypereader/testcode/$name/lib$name.jar"
+    )
+    val inputPath = bazelPath.getOrElse {
+      val path = Paths.get("joern-cli", "frontends", "javasrc2cpg", "target", "testjars", s"$name.jar")
+      ProjectRoot.relativise(path.toString)
+    }
     JarTypeReader.getTypes(inputPath)
   }
 }

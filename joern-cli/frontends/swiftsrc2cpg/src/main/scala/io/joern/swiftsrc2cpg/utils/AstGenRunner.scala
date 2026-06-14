@@ -2,6 +2,8 @@ package io.joern.swiftsrc2cpg.utils
 
 import io.joern.swiftsrc2cpg.Config
 import io.joern.x2cpg.astgen.AstGenRunner.AstGenProgramMetaData
+import io.joern.x2cpg.utils.Environment
+import io.joern.x2cpg.utils.Environment.{ArchitectureType, OperatingSystemType}
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Path
@@ -39,6 +41,13 @@ class AstGenRunner(config: Config) extends io.joern.x2cpg.astgen.AstGenRunner(As
   override val MacX86: String   = "mac"
   override val MacArm: String   = "mac"
   override val LinuxArm: String = "linux-arm64"
+
+  override val bazelRuleSuffixes = bazelRuleSuffixDefaults.concat(
+    Map(
+      (OperatingSystemType.Mac, ArchitectureType.X86)   -> "_macos",
+      (OperatingSystemType.Mac, ArchitectureType.ARMv8) -> "_macos"
+    )
+  )
 
   override protected def skippedFiles(in: Path, astGenOut: List[String]): List[String] = {
     val skipped = astGenOut.collect {
