@@ -1,6 +1,10 @@
 # Important information about Bazel
 The Bazel build is currently experimental and intended for developement purposes.
-It is not use in CI or for artifact releases.
+It is not used in CI or for artifact releases.
+Currenlty only a subset of the entire repository can be build with Bazel.
+E.g. only a subset of the frontends are included. Check for the
+existence joern-cli/frontends/<frontend>/BUILD file to check if a frontend is already
+included.
 
 ## Prerequisits
 - Bazelisk - This is a frontend to Bazel which makes sure you have the right version
@@ -88,7 +92,3 @@ libraries. So we do not even have Scala code and can directly use `java_binary`.
      `(cached)` indication. This is cool if everything works but check if that is really
      what you want.
   5. Scalafix integration is still TBD
-  6. Currenlty only a subset of the entire repository can be build with Bazel.
-     E.g. only a subset of the frontends are included. Check for the
-     existence joern-cli/frontends/<frontend>/BUILD to check if a frontend is already
-     included.
