@@ -48,7 +48,7 @@ class SwiftSrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeA
           val input  = projectUnderTest.toAbsolutePath.toString
           val output = cpgOutFile.toString
           val client = FrontendHTTPClient(port)
-          val req    = client.buildRequest(Array(s"input=$input", s"output=$output"))
+          val req    = client.buildRequest("input" -> Some(input), "output" -> Some(output))
           client.sendRequest(req) match {
             case Failure(exception) => fail(exception.getMessage)
             case Success(out) =>
@@ -68,7 +68,7 @@ class SwiftSrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeA
             val input  = projectUnderTest.toAbsolutePath.toString
             val output = cpgOutFile.toString
             val client = FrontendHTTPClient(port)
-            val req    = client.buildRequest(Array(s"input=$input", s"output=$output"))
+            val req    = client.buildRequest("input" -> Some(input), "output" -> Some(output))
             client.sendRequest(req) match {
               case Failure(exception) => fail(exception.getMessage)
               case Success(out) =>
