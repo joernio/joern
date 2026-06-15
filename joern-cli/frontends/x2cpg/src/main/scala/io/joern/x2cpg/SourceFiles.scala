@@ -294,10 +294,12 @@ object SourceFiles {
     absolutePath.normalize().toString
   }
 
-  /** Constructs a relative path against rootPath. If the given path is not inside rootPath, path is returned unaltered.
-    * Otherwise, the path relative to rootPath is returned.
+  /** Constructs a relative path against rootPath. If the given path is not inside rootPath, path is returned unaltered
+    * — unless `allowParentTraversal` is true, in which case the path is still relativised and the result may include
+    * `..` segments (e.g. `../sibling/foo.kt`). This is necessary for javasrc and kotlin subproject scans which may
+    * include sources from the subprojects dependencies.
     */
-  def toRelativePath(path: String, rootPath: String): String = {
+  def toRelativePath(path: String, rootPath: String, allowParentTraversal: Boolean = false): String = {
     // Helper to resolve path, using toRealPath() if file exists (which resolves Windows 8.3 short names),
     // otherwise fall back to toAbsolutePath.normalize()
     def resolvePath(p: String): Path = {
@@ -313,7 +315,7 @@ object SourceFiles {
     // - Case-insensitive filesystems (Windows, macOS)
     // - Proper path component boundaries
     // - OS-specific path handling
-    if (absolutePath.startsWith(projectPath)) {
+    if (absolutePath.startsWith(projectPath) || allowParentTraversal) {
       if (absolutePath.equals(projectPath)) {
         absolutePath.fileName
       } else {
