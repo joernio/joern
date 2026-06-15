@@ -1,0 +1,674 @@
+import java.nio.file.Path
+import java.nio.file.Files
+
+// =============================================================================
+// TODO: composite-build (included-build) support
+//
+// An earlier implementation attempted to fetch dependency info from every
+// project in every included build of the composite, qualifying project paths
+// with the build path (e.g. ":build-tools:reaper"), and wiring the main
+// aggregator to each included build's aggregator.
+//
+// That layer was removed because it interacts badly with Gradle's lifecycle
+// (lazy task wiring across builds is fiddly), so for now this script handles
+// the main build only.
+//
+// Project-typed dependencies from included builds (e.g. ":test:test-clusters"
+// depending on the build-tools/reaper subproject of an included build) will
+// not appear in `sourceDependencies`, with no corresponding depInfo entry.
+//
+// To revisit: walking pluginManagement.includedBuilds, qualifying paths,
+// wiring aggregators across builds, and the broken-included-build try/catch.
+// =============================================================================
+
+abstract class FetchDependencies extends DefaultTask {
+
+
+  /**
+   * Resolves a ProjectDependency to its target project name — Gradle's
+   * `path` (e.g. `:a:b:c`). Gradle 8.11+ exposes `getPath()` directly;
+   * older releases need `getDependencyProject().getPath()` (which 8.11
+   * deprecated). Returns null if both lookups fail.
+   */
+  static String projectDependencyName(ProjectDependency pd) {
+    try {
+      return pd.path
+    } catch (Throwable t) {
+      try {
+        return pd.dependencyProject.path
+      } catch (Throwable ignored) {
+        System.err.println("Could not get name for project dependency ${pd}")
+        return null
+      }
+    }
+  }
+
+  /**
+   * Filters a ConfigurationContainer down to the resolvable configurations
+   * whose name matches `configurationNameOverrides`, or — when no override is
+   * set — matches the default classpath set for the configured Android
+   * variant.
+   *
+   * Default classpaths (no override):
+   *   - `compileClasspath` / `runtimeClasspath` — plain JVM / KMP projects.
+   *   - `${variant}CompileClasspath` / `${variant}RuntimeClasspath` — AGP
+   *     variant classpaths. The compile one is needed for `compileOnly` deps
+   *     (e.g. view-binding stubs) that don't reach runtimeClasspath.
+   *
+   * `androidVariant` defaults to "release" — overridable via the
+   * AndroidVariant config key.
+   */
+  static List<Configuration> validConfigurations(
+    ConfigurationContainer configurations,
+    Set<String> configurationNameOverrides,
+    String androidVariant
+  ) {
+    def defaultNames = [
+      "compileClasspath",
+      "runtimeClasspath",
+      "${androidVariant}CompileClasspath".toString(),
+      "${androidVariant}RuntimeClasspath".toString()
+    ] as Set
+    def result = []
+    for (configuration in configurations) {
+      if (!configuration.canBeResolved) continue
+      def name = configuration.name
+      if (configurationNameOverrides.isEmpty()) {
+        if (defaultNames.contains(name)) result << configuration
+      } else if (configurationNameOverrides.contains(name)) {
+        result << configuration
+      }
+    }
+    return result
+  }
+
+  FetchDependencies() {
+    outputs.upToDateWhen { false }
+  }
+
+  @Input
+  abstract SetProperty<String> getConfigurationNameOverrides()
+
+  /**
+   * Selects which AGP variant's compile/runtime classpaths the default
+   * configuration predicate picks up (e.g. "release", "debug"). Ignored when
+   * `configurationNameOverrides` is non-empty.
+   */
+  @Input
+  abstract Property<String> getAndroidVariant()
+
+  @OutputDirectory
+  abstract Property<String> getDestinationDirString()
+
+  // The following are captured at task-registration time. Per the
+  // configuration-cache contract, the @TaskAction must not call getProject()
+  // or otherwise reach back into the project model — anything derived from
+  // the model is read once at registration and frozen in.
+
+  @Input
+  abstract Property<String> getProjectName()
+
+  @Input
+  abstract ListProperty<String> getSourceRoots()
+
+  /**
+   * Source-dependency project paths discovered at registration time outside
+   * the resolvable-config walk. Used to plumb in KMP source-set project
+   * dependencies (e.g. `commonMain.dependencies { implementation(project(":x")) }`),
+   * whose declarations live on `<sourceSet>Implementation` configurations and
+   * do not flow up to the resolvable classpath configurations that
+   * `validConfigurations` filters to. Merged with what `collectSourceDeps`
+   * finds at execution time.
+   */
+  @Input
+  abstract SetProperty<String> getExtraSourceDependencies()
+
+  /**
+   * Returns the set of external module displayNames declared directly on
+   * `configurationName` (i.e. the rootVariant's immediate children only — no
+   * transitive recursion). Project-typed components are intentionally excluded
+   * — they are reported via `sourceDependencies`, not as fetchable artifacts.
+   *
+   * Direct-only on purpose: each project's depInfo carries only its own
+   * externals; the Scala consumer unions them by walking source-dep edges.
+   *
+   * Modified version of an example from the docs (without the rootVariant
+   * parameter, which is not supported in Gradle 7).
+   * See https://docs.gradle.org/current/userguide/dependency_graph_resolution.html
+   */
+  HashSet<String> getExternalDependencyNames(
+    ResolvedComponentResult rootComponent,
+    String configurationName
+  ) {
+    Set<String> externalDependencyNames = new HashSet<>()
+    def maybeRootVariant =
+      rootComponent.getVariants().stream()
+        .filter(variant -> variant.getDisplayName() == configurationName)
+        .findFirst()
+
+    if (maybeRootVariant.isPresent() && maybeRootVariant.get() != null) {
+      def rootVariant = maybeRootVariant.get()
+
+      for (dependency in rootComponent.getDependenciesForVariant(rootVariant)) {
+        if (dependency instanceof UnresolvedDependencyResult) {
+          System.err.println("Unresolved dependency $dependency")
+          continue
+        }
+        if ((!(dependency instanceof ResolvedDependencyResult))) {
+          System.err.println("Unknown dependency type: $dependency")
+          continue
+        }
+
+        def resolved = dependency as ResolvedDependencyResult
+        if (dependency.constraint) continue
+        def toVariant = resolved.resolvedVariant
+        if (toVariant == null) {
+          System.err.println("Found null toVariant for ${dependency}")
+          continue
+        }
+        def variantId = toVariant.owner.displayName
+        if (!(variantId.startsWith("project") || variantId.startsWith("root project"))) {
+          externalDependencyNames.add(variantId)
+        }
+      }
+    }
+
+    return externalDependencyNames
+  }
+
+  /**
+   * Best-effort classifier extraction from the artifact filename. Returns
+   * null when the filename does not encode a classifier or when name/version
+   * are missing.
+   */
+  String extractClassifier(String fileName, String name, String version) {
+    if (fileName == null || name == null || version == null) return null
+    // \Q...\E matches name-version literally
+    // (.+) captures the classifier
+    // \.[^.]+ captures the extension, but assumes it's a single segment (e.g. .jar instead of .tar.gz).
+    // Given a name like foo-1.0-sources.tar.gz, this regex will return "sources.tar". This is not relevant for now
+    // since we only consider `.jar` and `.aar` archives, but should be updated if this changes.
+    def pattern = ~/^\Q$name-$version\E-(.+)\.[^.]+$/
+    def m = pattern.matcher(fileName)
+    return m.matches() ? m.group(1) : null
+  }
+
+  String extractExtension(String fileName) {
+    if (fileName == null) return null
+    def lastDot = fileName.lastIndexOf('.')
+    if (lastDot < 0) return null
+    return fileName.substring(lastDot + 1).toLowerCase()
+  }
+
+  /**
+   * Records the project names of each direct `ProjectDependency` declared on
+   * `configuration`. Transitive project-typed components reached through the
+   * resolution graph are intentionally NOT collected — only what this project
+   * declares itself. The full source-dependency graph is reconstructed by the
+   * Scala consumer from each project's depInfo file.
+   *
+   * Does NOT materialize artifacts — that would force the producing project's
+   * Jar/processResources/compileJava chain.
+   */
+  void collectSourceDeps(Configuration configuration, Set<String> sourceDeps) {
+    def selfName = projectName.get()
+    // `allDependencies` includes declarations inherited via `extendsFrom`
+    // (e.g. runtimeClasspath inheriting from implementation). `dependencies`
+    // alone would miss them, since project-dep declarations almost never sit
+    // directly on the resolvable classpath configurations.
+    configuration.allDependencies.withType(ProjectDependency).each { pd ->
+      try {
+        def projName = projectDependencyName(pd)
+        if (projName == null || projName == selfName) return
+        sourceDeps.add(projName)
+      } catch (Throwable t) {
+        System.err.println("Could not read project name for ${pd}: ${t.message}")
+      }
+    }
+  }
+
+  /**
+   * Resolves external (non-project) artifacts via a lenient artifact view and
+   * appends a structured entry per surviving artifact to `artifactDeps`.
+   *
+   * Skips any extension that is not jar/aar and uses `lenient = true` plus the
+   * per-artifact try/catch absorb resolution failures so a single failure
+   * does not crash the whole project's dependency handling.
+   */
+  void collectArtifactDeps(Configuration configuration, List<Map> externalDeps) {
+    def externalDependencyNames = getExternalDependencyNames(
+      configuration.incoming.resolutionResult.rootComponent.get(),
+      configuration.name
+    )
+
+    def externalArtifactView = configuration.incoming.artifactView {
+      lenient = true
+      componentFilter { id ->
+        !(id instanceof ProjectComponentIdentifier) &&
+        externalDependencyNames.contains(id.toString())
+      }
+    }
+
+    externalArtifactView.artifacts.each { art ->
+      try {
+        def cid = art.id.componentIdentifier
+        def file = art.file
+        def fileName = file.name
+        def ext = extractExtension(fileName)
+        if (ext != 'jar' && ext != 'aar') {
+          return
+        }
+        if (cid instanceof ModuleComponentIdentifier) {
+          externalDeps << [
+            path: file.absolutePath,
+            group: cid.group,
+            name: cid.module,
+            version: cid.version,
+            classifier: extractClassifier(fileName, cid.module, cid.version),
+            extension: ext
+          ]
+        } else {
+          // OpaqueComponentIdentifier and friends: jar/aar content is still
+          // useful but coordinates are unknown.
+          externalDeps << [
+            path: file.absolutePath,
+            group: null,
+            name: null,
+            version: null,
+            classifier: null,
+            extension: ext
+          ]
+        }
+      } catch (Throwable t) {
+        System.err.println("Skipping artifact in ${configuration.name}: ${t.message}")
+      }
+    }
+  }
+
+  /**
+   * Returns the Android boot classpath for an Android project (typically
+   * `android.jar` plus any `useLibrary` additions), or null when the project
+   * is not Android. Returns an empty list when the project IS Android but the
+   * SDK could not be resolved.
+   *
+   * Prefers the documented `android.bootClasspath` API (resolves through
+   * AGP's SDK locator and so reflects `compileSdk` + `ANDROID_HOME` /
+   * `sdk.dir`). Falls back to the internal `androidApis` configuration —
+   * which the legacy fetcher used — when the public API is unavailable.
+   */
+  static List<File> androidBootClasspathFiles(Project project) {
+    def androidIds = ['com.android.application',
+                      'com.android.library',
+                      'com.android.dynamic-feature']
+    if (!androidIds.any { project.plugins.hasPlugin(it) }) return null
+
+    try {
+      def android = project.extensions.findByName('android')
+      def bc = android?.bootClasspath
+      if (bc != null) {
+        def files = bc.toList()
+        if (!files.isEmpty()) return files
+      }
+    } catch (Throwable t) {
+      System.err.println("android.bootClasspath read failed for ${project.path}: ${t.message}")
+    }
+    try {
+      def cfg = project.configurations.findByName("androidApis")
+      if (cfg != null) return cfg.files.toList()
+    } catch (Throwable t) {
+      System.err.println("androidApis resolution failed for ${project.path}: ${t.message}")
+    }
+    return []
+  }
+
+  /**
+   * Android-only: emits one artifact-dep entry per boot-classpath file
+   * (typically `android.jar`). These files carry no Maven coordinates, so all
+   * metadata fields are reported as null. No-ops on non-Android projects.
+   */
+  static void collectAndroidApis(Project project, List<Map> externalDeps) {
+    def files = androidBootClasspathFiles(project)
+    if (files == null) return
+    if (files.isEmpty()) {
+      System.err.println(
+        "collectAndroidApis: ${project.path} is Android but boot classpath is empty — " +
+        "is ANDROID_HOME / sdk.dir pointing at an SDK with platforms/android-N installed?"
+      )
+      return
+    }
+    files.each { file ->
+      try {
+        def fileName = file.name
+        def ext = fileName.contains('.') ? fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase() : null
+        if (ext != 'jar' && ext != 'aar') return
+        externalDeps << [
+          path: file.absolutePath,
+          group: null,
+          name: null,
+          version: null,
+          classifier: null,
+          extension: ext
+        ]
+      } catch (Throwable t) {
+        System.err.println("Skipping boot classpath file ${file}: ${t.message}")
+      }
+    }
+  }
+
+  /**
+   * Sanitizes a project name into a filesystem-safe filename stem.
+   * Replaces ':' with '__'; strips path separators and leading dots; handles
+   * the root case as '_root_'. Used to create unique filenames for the json
+   * outputs of each project.
+   */
+  static String safeName(String projectName) {
+    if (projectName == null) return '_root_'
+    def cleaned = projectName.replaceAll('[\\\\/]', '_').replaceAll('^\\.+', '_')
+    if (cleaned.isEmpty() || cleaned == ':') {
+      return '_root_'
+    }
+    return cleaned.replace(':', '__')
+  }
+
+  /**
+   * Collects source roots for Java + Kotlin/JVM: KGP applies the `java` plugin, so kotlin
+   * sources under src/main/kotlin/ surface through allSource as well.
+   */
+  static void collectJvmSourceRoots(Project project, Set<String> roots) {
+    if (!project.plugins.hasPlugin('java-base')) return
+    try {
+      project.sourceSets.main.allSource.srcDirs
+        .findAll { !it.toString().endsWith('resources') && it.exists() }
+        .each { roots << it.absolutePath }
+    } catch (Throwable t) {
+      project.logger.info("No JVM source roots for ${project.path}: ${t.message}")
+    }
+  }
+
+  /**
+   * Collects source roots for Android (Java or Kotlin): com.android.application / library /
+   * dynamic-feature do NOT apply `java-base`. Source roots live under the
+   * `android` extension's sourceSets["main"].
+   */
+  static void collectAndroidSourceRoots(Project project, Set<String> roots) {
+    def androidIds = ['com.android.application',
+                      'com.android.library',
+                      'com.android.dynamic-feature']
+    if (!androidIds.any { project.plugins.hasPlugin(it) }) return
+    try {
+      def android = project.extensions.findByName('android')
+      def main    = android?.sourceSets?.findByName('main')
+      main?.java?.srcDirs?.findAll { it.exists() }?.each   { roots << it.absolutePath }
+      main?.kotlin?.srcDirs?.findAll { it.exists() }?.each { roots << it.absolutePath }
+    } catch (Throwable t) {
+      project.logger.info("No Android source roots for ${project.path}: ${t.message}")
+    }
+  }
+
+  /**
+   * Collects sources for Kotlin Multiplatform / Kotlin/Native: sources live under the
+   * `kotlin` extension's sourceSets — every source set, not just main.
+   * KMP also wires project dependencies through per-source-set declaration
+   * configurations (e.g. `commonMainImplementation`) that do NOT propagate to
+   * the resolvable classpath configurations the @TaskAction walks. Capture
+   * those project deps here so they end up in the depInfo file and in the
+   * cross-project task wiring below.
+   */
+  static void collectKmpSourceRootsAndDeps(
+    Project project, Set<String> roots, Set<String> kmpProjectDeps
+  ) {
+    if (!(project.plugins.hasPlugin('org.jetbrains.kotlin.multiplatform') ||
+          project.plugins.hasPlugin('org.jetbrains.kotlin.native'))) return
+    def selfName = project.path
+    try {
+      def kotlin = project.extensions.findByName('kotlin')
+      kotlin?.sourceSets?.each { ss ->
+        try {
+          ss.kotlin?.srcDirs?.findAll { it.exists() }?.each { roots << it.absolutePath }
+        } catch (Throwable ignored) {}
+
+        // Skip test source sets — their project deps should not appear in
+        // the main source-dep graph (matches `validConfigurations` excluding
+        // `testRuntimeClasspath` etc).
+        def ssName = ss.name?.toLowerCase() ?: ""
+        if (ssName.contains("test")) return
+
+        // KotlinSourceSet exposes the names of its backing declaration
+        // configurations. These hold project-dep declarations at
+        // registration time, independent of any plugin's afterEvaluate.
+        def configNames = []
+        ['implementationConfigurationName',
+         'apiConfigurationName',
+         'compileOnlyConfigurationName',
+         'runtimeOnlyConfigurationName'].each { prop ->
+          try {
+            def n = ss."${prop}"
+            if (n != null) configNames << n
+          } catch (Throwable ignored) {}
+        }
+        configNames.each { cfgName ->
+          try {
+            def cfg = project.configurations.findByName(cfgName)
+            cfg?.dependencies?.withType(ProjectDependency)?.each { pd ->
+              def depName = FetchDependencies.projectDependencyName(pd)
+              if (depName != null && depName != selfName) {
+                kmpProjectDeps.add(depName)
+              }
+            }
+          } catch (Throwable ignored) {}
+        }
+      }
+    } catch (Throwable t) {
+      project.logger.info("No Kotlin MPP source roots for ${selfName}: ${t.message}")
+    }
+  }
+
+  void writeDependencyInfo(String name, List<String> sourceDeps, List<Map> artifactDeps) {
+    try {
+      def roots = sourceRoots.get()
+      def out = [
+        projectName: name,
+        sourceRoots: roots,
+        sourceDependencies: sourceDeps,
+        artifactDependencies: artifactDeps
+      ]
+      def dependencyInfoDir = Path.of(destinationDirString.get(), 'dependencyInfo')
+      Files.createDirectories(dependencyInfoDir)
+      def file = dependencyInfoDir.resolve(safeName(name) + '.json')
+      file.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(out))
+    } catch (Throwable t) {
+      System.err.println("Failed to write dependency info for ${name}: ${t.message}")
+    }
+  }
+
+  @TaskAction
+  void fetch() {
+    // Resolve the project name defensively — if even this fails we can't
+    // write a meaningful entry, so log and bail. Every other step below must
+    // not be allowed to fail the task, so that downstream projects whose
+    // tasks depend on this one continue to run.
+    def name
+    try {
+      name = projectName.get()
+    } catch (Throwable t) {
+      System.err.println("FetchDependencies: could not read projectName: ${t.message}")
+      return
+    }
+    println("FetchDependencies: ${name}")
+
+    def sourceDeps = new LinkedHashSet<String>()
+    def artifactDeps = []
+
+    try {
+      // TODO(configuration-cache): touching `this.project` from @TaskAction
+      // violates configuration-cache rules. Capturing Configuration handles at
+      // registration time is a follow-up; for now this matches the existing
+      // pre-redesign behavior.
+      def configurations
+      try {
+        configurations = validConfigurations(
+          this.project.configurations, configurationNameOverrides.get(), androidVariant.get()
+        )
+      } catch (Throwable t) {
+        System.err.println("Could not enumerate configurations for ${name}: ${t.message}")
+        configurations = []
+      }
+
+      for (configuration in configurations) {
+        try {
+          collectSourceDeps(configuration, sourceDeps)
+        } catch (Throwable t) {
+          System.err.println("collectSourceDeps failed for ${name}:${configuration.name}: ${t.message}")
+        }
+        try {
+          collectArtifactDeps(configuration, artifactDeps)
+        } catch (Throwable t) {
+          System.err.println("collectArtifactDeps failed for ${name}:${configuration.name}: ${t.message}")
+        }
+      }
+
+      // Fold in source-deps captured at registration time (e.g. KMP source-set
+      // project deps that don't flow through `extendsFrom`).
+      try {
+        def selfName = projectName.get()
+        extraSourceDependencies.get().each { dep ->
+          if (dep != null && dep != selfName) sourceDeps.add(dep)
+        }
+      } catch (Throwable t) {
+        System.err.println("Could not merge extraSourceDependencies for ${name}: ${t.message}")
+      }
+
+      // Android only: include `android.jar` (and any other files surfaced by
+      // the `androidApis` configuration) as an artifact dep. AGP creates this
+      // configuration when one of the Android plugins is applied; it carries
+      // no Maven coordinates, so coordinates fields land as null.
+      try {
+        collectAndroidApis(this.project, artifactDeps)
+      } catch (Throwable t) {
+        System.err.println("collectAndroidApis failed for ${name}: ${t.message}")
+      }
+    } catch (Throwable t) {
+      // Last-line catch: anything not handled above still gets a (possibly
+      // partial) depInfo entry below, and the task SUCCEEDs so dependents
+      // still run.
+      System.err.println("FetchDependencies for ${name} hit unexpected error: ${t.message}")
+    }
+
+    writeDependencyInfo(name, sourceDeps.toList(), artifactDeps)
+  }
+}
+
+allprojects { project ->
+  // Uncomment the below defs for manual debugging
+  // From the project directory, gradle can then be invoked with
+  // `./gradlew -I /path/to/joern/joern-cli/frontends/x2cpg/src/main/resources/io/joern/x2cpg/utils/dependency/dependency-fetcher-init-v2.gradle fetchDependencies
+  // Fetched dependencies can then be checked by, for example, `find /tmp/gradleDependencies -name "*.jar"`
+  //
+   // def __configurationNameOverrides__ = []
+   // def __taskNameString__ = "fetchDependencies"
+   // def __destinationDirString__ = "/tmp/gradleDependencies"
+   // def __androidVariant__ = "release"
+  // end debug block
+
+  def taskName = __taskNameString__
+  def compileDepsCopyTaskName = taskName + "_compileDeps"
+  def destinationDir = __destinationDirString__
+  Set<String> configurationNameOverrides_ = __configurationNameOverrides__
+  def androidVariant_ = __androidVariant__
+
+  // Capture everything derived from the project model at registration time.
+  // The @TaskAction must not reach back into project / project.gradle /
+  // project.sourceSets to maintain configuration cache compatibility with gradle >= 7.6
+  def projectName_ = project.path
+
+  // Replace this with tasks.create for debugging with gradle < 5.1
+  def fetchDepsProvider = tasks.register(compileDepsCopyTaskName, FetchDependencies) {
+    configurationNameOverrides = configurationNameOverrides_
+    androidVariant             = androidVariant_
+    destinationDirString       = destinationDir
+    projectName                = projectName_
+    sourceRoots                = []
+    extraSourceDependencies    = []
+  }
+
+  // Source roots can only be read after the project's own build.gradle has
+  // applied its plugins — init-script allprojects callbacks fire BEFORE
+  // project evaluation, so `project.plugins.hasPlugin(...)` is false here.
+  // Defer the read into afterEvaluate and update the lazy property.
+  project.afterEvaluate { evaluatedProject ->
+    def roots = new LinkedHashSet<String>()
+    // kmpProjectDeps stays declared in the outer closure because the nested
+    // afterEvaluate below folds it into the cross-project task wiring.
+    def kmpProjectDeps = new LinkedHashSet<String>()
+    FetchDependencies.collectJvmSourceRoots(evaluatedProject, roots)
+    FetchDependencies.collectAndroidSourceRoots(evaluatedProject, roots)
+    FetchDependencies.collectKmpSourceRootsAndDeps(evaluatedProject, roots, kmpProjectDeps)
+
+    if (!roots.isEmpty()) {
+      def captured = roots.toList()
+      fetchDepsProvider.configure { it.sourceRoots = captured }
+    }
+    if (!kmpProjectDeps.isEmpty()) {
+      def capturedDeps = kmpProjectDeps.toList()
+      fetchDepsProvider.configure { it.extraSourceDependencies = capturedDeps }
+    }
+
+    // Wire each project's compileDeps task to the same task in projects it
+    // directly project-depends on. Walking the dependency graph by following
+    // these task edges then triggers a depInfo file for every transitively
+    // reachable project — even when the user runs Gradle from a subproject
+    // and never touches the root aggregator.
+    //
+    // Nested inside a second afterEvaluate so this runs AFTER plugins that
+    // wire their own configurations in afterEvaluate (notably AGP, which
+    // hooks `releaseImplementationDependenciesMetadata extendsFrom
+    // implementation` from its own afterEvaluate callback). Callbacks added
+    // during the outer afterEvaluate are appended to the queue and run after
+    // the currently-iterating callbacks complete, so the resolvable configs
+    // we filter to have their extendsFrom chain established by then.
+    evaluatedProject.afterEvaluate { reEvaluatedProject ->
+      def directProjectDeps = new LinkedHashSet<Project>()
+      def directConfigs = FetchDependencies.validConfigurations(
+        reEvaluatedProject.configurations, configurationNameOverrides_, androidVariant_
+      )
+      directConfigs.each { configuration ->
+        configuration.allDependencies.withType(ProjectDependency).each { pd ->
+          try {
+            def depName = FetchDependencies.projectDependencyName(pd)
+            if (depName == null) return
+            def depProject = reEvaluatedProject.rootProject.findProject(depName)
+            if (depProject != null && depProject != reEvaluatedProject) {
+              directProjectDeps.add(depProject)
+            }
+          } catch (Throwable t) {
+            reEvaluatedProject.logger.info("Could not resolve project dep ${pd}: ${t.message}")
+          }
+        }
+      }
+      // Fold in KMP source-set project deps captured in branch (c) — they are
+      // not reachable via the resolvable-config walk above.
+      kmpProjectDeps.each { depName ->
+        try {
+          def depProject = reEvaluatedProject.rootProject.findProject(depName)
+          if (depProject != null && depProject != reEvaluatedProject) {
+            directProjectDeps.add(depProject)
+          }
+        } catch (Throwable ignored) {}
+      }
+      if (!directProjectDeps.isEmpty()) {
+        fetchDepsProvider.configure { task ->
+          directProjectDeps.each { dep ->
+            task.dependsOn dep.tasks.named(compileDepsCopyTaskName)
+          }
+        }
+      }
+    }
+  }
+
+  if (project == project.rootProject) {
+    // Replace this with tasks.create for debugging with gradle < 5.1
+    tasks.register(taskName) {
+        dependsOn project.getTasksByName(compileDepsCopyTaskName, true)
+    }
+  }
+}
