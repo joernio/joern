@@ -107,7 +107,10 @@ object GradleDependencies {
 
   private[dependency] def makeConnection(projectDir: JFile): ProjectConnection = {
     val connector = GradleConnector.newConnector().forProjectDirectory(projectDir)
-    getGradleHome.foreach(gradleHome => connector.useInstallation(gradleHome))
+    getGradleHome.foreach { gradleHome =>
+      logger.info(s"Using gradle distribution from GRADLE_HOME at ${gradleHome.getAbsolutePath}")
+      connector.useInstallation(gradleHome)
+    }
     connector.connect()
   }
 
