@@ -35,6 +35,14 @@ object GradleDependencies {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
+  private def getGradleHome: Option[JFile] = {
+    sys.env
+      .get("GRADLE_HOME")
+      .filterNot(_.isBlank)
+      .map(new JFile(_))
+      .filter(gradleHome => gradleHome.exists && gradleHome.isDirectory)
+  }
+
   // works with Gradle 5.1+ because the script makes use of `task.register`:
   //   https://docs.gradle.org/current/userguide/task_configuration_avoidance.html
   private def getInitScriptContent(
@@ -98,7 +106,9 @@ object GradleDependencies {
   }
 
   private[dependency] def makeConnection(projectDir: JFile): ProjectConnection = {
-    GradleConnector.newConnector().forProjectDirectory(projectDir).connect()
+    val connector = GradleConnector.newConnector().forProjectDirectory(projectDir)
+    getGradleHome.foreach(gradleHome => connector.useInstallation(gradleHome))
+    connector.connect()
   }
 
   private def dependencyMapFromOutputDir(outputDir: Path): List[(String, List[String])] = {
