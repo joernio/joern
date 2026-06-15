@@ -152,6 +152,7 @@ class FrontendHTTPServer(executor: ExecutorService, handleRequest: Array[String]
         case (key, anything) =>
           logger.warn("Ignoring HTTP request argument {} with unsupported json type {}", key, anything.getClass)
           None
+      }
     }
 
     private def sendResponse(exchange: HttpExchange, statusCode: Int, body: String): Unit = {
