@@ -47,29 +47,38 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   }
 
   private def visitItem(item: Item): Seq[Ast] = item match {
-    case const: Const   => visitConst(const)
-    case x: Enum        => notHandledYet(x) :: Nil
-    case x: ExternBlock => notHandledYet(x) :: Nil
-    case x: ExternCrate => notHandledYet(x) :: Nil
-    case fn: Fn         => visitFn(fn) :: Nil
-    case x: Impl        => notHandledYet(x) :: Nil
-    case x: MacroCall   => notHandledYet(x) :: Nil
-    case x: MacroRules  => notHandledYet(x) :: Nil
-    case x: MacroDef    => notHandledYet(x) :: Nil
-    case module: Module => visitModule(module)
-    case x: Static      => notHandledYet(x) :: Nil
-    case struct: Struct => visitStruct(struct) :: Nil
-    case x: Trait       => notHandledYet(x) :: Nil
-    case x: TypeAlias   => notHandledYet(x) :: Nil
-    case x: Union       => notHandledYet(x) :: Nil
-    case x: Use         => notHandledYet(x) :: Nil
-    case x: AsmExpr     => notHandledYet(x) :: Nil
+    case const: Const           => visitConst(const)
+    case x: Enum                => notHandledYet(x) :: Nil
+    case x: ExternBlock         => notHandledYet(x) :: Nil
+    case x: ExternCrate         => notHandledYet(x) :: Nil
+    case fn: Fn                 => visitFn(fn) :: Nil
+    case x: Impl                => notHandledYet(x) :: Nil
+    case macroCall: MacroCall   => visitMacroCall(macroCall)
+    case macroRules: MacroRules => visitMacroRules(macroRules)
+    case macroDef: MacroDef     => visitMacroDef(macroDef)
+    case module: Module         => visitModule(module)
+    case x: Static              => notHandledYet(x) :: Nil
+    case struct: Struct         => visitStruct(struct) :: Nil
+    case x: Trait               => notHandledYet(x) :: Nil
+    case x: TypeAlias           => notHandledYet(x) :: Nil
+    case x: Union               => notHandledYet(x) :: Nil
+    case x: Use                 => notHandledYet(x) :: Nil
+    case x: AsmExpr             => notHandledYet(x) :: Nil
   }
 
   private def visitStmt(stmt: Stmt): Seq[Ast] = stmt match {
-    case exprStmt: ExprStmt => visitExpr(exprStmt.expr) :: Nil
+    case exprStmt: ExprStmt => visitExprStmt(exprStmt)
     case item: Item         => visitItem(item)
     case letStmt: LetStmt   => visitLetStmt(letStmt)
+  }
+
+  // ExprStmt =
+  //  Expr ';'?
+  private def visitExprStmt(exprStmt: ExprStmt): Seq[Ast] = exprStmt.expr match {
+    // MacroExprs in this context may expand into multiple statements, which
+    // should be flattened into the enclosing block.
+    case macroExpr: MacroExpr => visitMacroCall(macroExpr.macroCall)
+    case expr                 => visitExpr(expr) :: Nil
   }
 
   @tailrec
@@ -86,12 +95,12 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     case continueExpr: ContinueExpr     => visitContinueExpr(continueExpr)
     case fieldExpr: FieldExpr           => visitFieldExpr(fieldExpr)
     case forExpr: ForExpr               => visitForExpr(forExpr)
-    case x: FormatArgsExpr              => notHandledYet(x)
+    case formatArgsExpr: FormatArgsExpr => visitFormatArgsExpr(formatArgsExpr)
     case ifExpr: IfExpr                 => visitIfExpr(ifExpr)
     case indexExpr: IndexExpr           => visitIndexExpr(indexExpr)
     case literal: Literal               => visitLiteral(literal)
     case loopExpr: LoopExpr             => visitLoopExpr(loopExpr)
-    case x: MacroExpr                   => notHandledYet(x)
+    case macroExpr: MacroExpr           => visitMacroExpr(macroExpr)
     case x: MatchExpr                   => notHandledYet(x)
     case methodCallExpr: MethodCallExpr => visitMethodCallExpr(methodCallExpr)
     case x: OffsetOfExpr                => notHandledYet(x)
@@ -717,6 +726,71 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   //  Type
   private def visitTupleField(tupleField: TupleField, index: Int): Ast = {
     Ast(memberNode(tupleField, index.toString, code(tupleField), typeFullNameForType(tupleField.typ)))
+  }
+
+  // Nil on purpose: we don't have a suitable CPG representation for macro declarations.
+  // Instead, we rely on rust_ast_gen to expand them and we inline their expansion while visiting MacroCalls.
+  private def visitMacroRules(macroRules: MacroRules): Seq[Ast] = Nil
+  private def visitMacroDef(macroDef: MacroDef): Seq[Ast]       = Nil
+
+  // MacroExpr =
+  //  MacroCall
+  private def visitMacroExpr(macroExpr: MacroExpr): Ast = {
+    // Even though it wraps a MacroCall, in this context it should always be a single expression, i.e.
+    // no MacroStmts/MacroItems. Logging just in case.
+    visitMacroCall(macroExpr.macroCall) match {
+      case exprAst :: Nil => exprAst
+      case _              => notHandledYet(macroExpr.macroCall)
+    }
+  }
+
+  // MacroCall =
+  //  Attr* Path '!' TokenTree ';'?
+  private def visitMacroCall(macroCall: MacroCall): Seq[Ast] = macroCall.macroExpansion match {
+    case None                         => macroNotExpanded(macroCall) :: Nil
+    case Some(macroItems: MacroItems) => visitMacroItems(macroItems)
+    case Some(macroStmts: MacroStmts) => visitMacroStmts(macroStmts)
+    case Some(expr: Expr)             => visitExpr(expr) :: Nil
+    case Some(other)                  => notHandledYet(other) :: Nil
+  }
+
+  // MacroStmts =
+  //  statements:Stmt*
+  //  Expr?
+  private def visitMacroStmts(macroStmts: MacroStmts): Seq[Ast] = {
+    macroStmts.stmt.flatMap(visitStmt) ++ macroStmts.expr.map(visitExpr).toList
+  }
+
+  // MacroItems =
+  //  Item*
+  private def visitMacroItems(macroItems: MacroItems): Seq[Ast] = {
+    macroItems.item.flatMap(visitItem)
+  }
+
+  // FormatArgsExpr =
+  //  Attr* 'builtin' '#' 'format_args' '('
+  //  template:Expr
+  //  (',' args:(FormatArgsArg (',' FormatArgsArg)* ','?)? )?
+  //  ')'
+  // The result of expanding `format!("...", args...)`.
+  // Lowered as formatString("...", formattedValue(arg0), ..., formattedValue(arg_n)).
+  private def visitFormatArgsExpr(formatArgsExpr: FormatArgsExpr): Ast = {
+    val typeFullName = typeFullNameForExpr(formatArgsExpr)
+    val callNode    = operatorCallNode(formatArgsExpr, code(formatArgsExpr), Operators.formatString, Some(typeFullName))
+    val templateAst = visitExpr(formatArgsExpr.expr)
+    val argAsts     = formatArgsExpr.formatArgsArg.map(visitFormatArgsArg)
+
+    callAst(callNode, templateAst +: argAsts)
+  }
+
+  // FormatArgsArg =
+  //  arg_name:FormatArgsArgName? Expr
+  private def visitFormatArgsArg(formatArgsArg: FormatArgsArg): Ast = {
+    val typeFullName = typeFullNameForExpr(formatArgsArg.expr)
+    val callNode = operatorCallNode(formatArgsArg, code(formatArgsArg), Operators.formattedValue, Some(typeFullName))
+    val argAst   = visitExpr(formatArgsArg.expr)
+
+    callAst(callNode, Seq(argAst))
   }
 
 }

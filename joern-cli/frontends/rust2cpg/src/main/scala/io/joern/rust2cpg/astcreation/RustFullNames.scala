@@ -84,6 +84,11 @@ trait RustFullNames { this: AstCreator =>
         typeFullNameForType(parenType.typ)
       case _: RustNodeSyntax.NeverType =>
         "!"
+      case macroType: RustNodeSyntax.MacroType =>
+        macroType.macroCall.macroExpansion match {
+          case Some(expanded: RustNodeSyntax.Type) => typeFullNameForType(expanded)
+          case _                                   => text(typ).getOrElse(Defines.Any)
+        }
 
       // TODO: the following are not handled yet.
       case io.joern.rust2cpg.parser.RustNodeSyntax.DynTraitType(_) =>
@@ -98,9 +103,6 @@ trait RustFullNames { this: AstCreator =>
         // TODO(rust_ast_gen): is this typeFullName missing on purpose or by accident?
         //  This corresponds to `_` in something like `let x: Vec<_>`. We currently don't have a
         //  typeFullName for it, but we have for `x`.
-        text(typ).getOrElse(Defines.Any)
-      case io.joern.rust2cpg.parser.RustNodeSyntax.MacroType(_) =>
-        // TODO: pending macroExpansion from rust_ast_gen.
         text(typ).getOrElse(Defines.Any)
     }
   }
