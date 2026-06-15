@@ -16,27 +16,27 @@
     "com.michaelpollmeier:versionsort": 605653562,
     "com.squareup.tools.build:maven-archeologist": 943047605,
     "com.typesafe:config": 324143406,
-    "io.shiftleft:codepropertygraph_3": -905169632,
+    "io.shiftleft:codepropertygraph_3": -654345414,
     "net.java.dev.javacc:javacc": -1966826500,
     "net.lingala.zip4j:zip4j": 967189992,
     "org.antlr:antlr4": 1718243761,
     "org.antlr:antlr4-runtime": 1843802748,
     "org.apache.commons:commons-exec": -1728178411,
-    "org.apache.commons:commons-lang3": -375486971,
-    "org.apache.commons:commons-text": 792100473,
-    "org.apache.logging.log4j:log4j-slf4j2-impl": -468948732,
+    "org.apache.commons:commons-lang3": 994877980,
+    "org.apache.commons:commons-text": -790607260,
+    "org.apache.logging.log4j:log4j-slf4j2-impl": -1860574784,
     "org.gradle:gradle-tooling-api": -180447171,
     "org.jetbrains.kotlin:kotlin-allopen": -987286154,
     "org.jetbrains.kotlin:kotlin-compiler-embeddable": -1393709058,
     "org.jetbrains.kotlin:kotlin-stdlib": 181930543,
     "org.jetbrains.kotlin:kotlin-stdlib-jdk8": 1654605853,
-    "org.json4s:json4s-native_3": 1421532977,
+    "org.json4s:json4s-native_3": -1513317579,
     "org.ow2.asm:asm": 1206815935,
     "org.projectlombok:lombok": -1238622139,
     "org.scala-lang.modules:scala-parallel-collections_3": -115965401,
     "org.scala-lang.modules:scala-parser-combinators_3": -1229494994,
-    "org.scala-lang.modules:scala-xml_3": -1340734140,
-    "org.slf4j:slf4j-api": -197708565,
+    "org.scala-lang.modules:scala-xml_3": -2041798718,
+    "org.slf4j:slf4j-api": 587728310,
     "repositories": 1380688576
   },
   "__RESOLVED_ARTIFACTS_HASH": {
@@ -107,20 +107,20 @@
     "com.thoughtworks.paranamer:paranamer:jar:sources": 1185138559,
     "com.typesafe:config": 1422037420,
     "com.typesafe:config:jar:sources": 1794326800,
-    "io.joern:flatgraph-core_3": -445731353,
-    "io.joern:flatgraph-core_3:jar:sources": -755678090,
-    "io.joern:flatgraph-formats_3": -821329734,
-    "io.joern:flatgraph-formats_3:jar:sources": -2127961868,
-    "io.joern:flatgraph-help_3": -672110233,
-    "io.joern:flatgraph-help_3:jar:sources": -1070617857,
-    "io.joern:flatgraph-odb-convert_3": 1841142374,
-    "io.joern:flatgraph-odb-convert_3:jar:sources": 793830638,
-    "io.shiftleft:codepropertygraph-domain-classes_3": -395025664,
-    "io.shiftleft:codepropertygraph-domain-classes_3:jar:sources": 1803727911,
-    "io.shiftleft:codepropertygraph-protos_3": 1435692355,
-    "io.shiftleft:codepropertygraph-protos_3:jar:sources": 638093796,
-    "io.shiftleft:codepropertygraph_3": -417284307,
-    "io.shiftleft:codepropertygraph_3:jar:sources": 1286648401,
+    "io.joern:flatgraph-core_3": -1124218583,
+    "io.joern:flatgraph-core_3:jar:sources": -353561467,
+    "io.joern:flatgraph-formats_3": -20891640,
+    "io.joern:flatgraph-formats_3:jar:sources": 1177602871,
+    "io.joern:flatgraph-help_3": 231487949,
+    "io.joern:flatgraph-help_3:jar:sources": -45666947,
+    "io.joern:flatgraph-odb-convert_3": -618988788,
+    "io.joern:flatgraph-odb-convert_3:jar:sources": -1707489562,
+    "io.shiftleft:codepropertygraph-domain-classes_3": -1096538913,
+    "io.shiftleft:codepropertygraph-domain-classes_3:jar:sources": -2007593206,
+    "io.shiftleft:codepropertygraph-protos_3": -159030545,
+    "io.shiftleft:codepropertygraph-protos_3:jar:sources": -1389727909,
+    "io.shiftleft:codepropertygraph_3": 2013292434,
+    "io.shiftleft:codepropertygraph_3:jar:sources": -550398619,
     "io.shiftleft:overflowdb-core_3": -2146004891,
     "io.shiftleft:overflowdb-core_3:jar:sources": 422126785,
     "io.spray:spray-json_3": -1381838919,
@@ -153,12 +153,12 @@
     "org.apache.commons:commons-lang3:jar:sources": 1080182012,
     "org.apache.commons:commons-text": 875846394,
     "org.apache.commons:commons-text:jar:sources": 318262210,
-    "org.apache.logging.log4j:log4j-api": 194897650,
-    "org.apache.logging.log4j:log4j-api:jar:sources": -1115891673,
-    "org.apache.logging.log4j:log4j-core": 622809444,
-    "org.apache.logging.log4j:log4j-core:jar:sources": -559785722,
-    "org.apache.logging.log4j:log4j-slf4j2-impl": -160864694,
-    "org.apache.logging.log4j:log4j-slf4j2-impl:jar:sources": -951254069,
+    "org.apache.logging.log4j:log4j-api": 1835983467,
+    "org.apache.logging.log4j:log4j-api:jar:sources": -1497958,
+    "org.apache.logging.log4j:log4j-core": -1403687611,
+    "org.apache.logging.log4j:log4j-core:jar:sources": -688874552,
+    "org.apache.logging.log4j:log4j-slf4j2-impl": -584341295,
+    "org.apache.logging.log4j:log4j-slf4j2-impl:jar:sources": 692707354,
     "org.apache.maven:maven-artifact": 438131318,
     "org.apache.maven:maven-artifact:jar:sources": -490842635,
     "org.apache.maven:maven-builder-support": -2075777895,
@@ -223,16 +223,16 @@
     "org.jline:jline-terminal-jni": 1664706541,
     "org.jline:jline-terminal-jni:jar:sources": -1668611295,
     "org.jline:jline-terminal:jar:sources": -214275357,
-    "org.json4s:json4s-ast_3": -427286955,
-    "org.json4s:json4s-ast_3:jar:sources": 140325100,
-    "org.json4s:json4s-core_3": 196035548,
-    "org.json4s:json4s-core_3:jar:sources": -2043024428,
-    "org.json4s:json4s-native-core_3": -702657829,
-    "org.json4s:json4s-native-core_3:jar:sources": -1913200314,
-    "org.json4s:json4s-native_3": 1754207190,
-    "org.json4s:json4s-native_3:jar:sources": 650512086,
-    "org.json4s:json4s-scalap_3": 1553625989,
-    "org.json4s:json4s-scalap_3:jar:sources": -763259858,
+    "org.json4s:json4s-ast_3": 2140402885,
+    "org.json4s:json4s-ast_3:jar:sources": 2122540071,
+    "org.json4s:json4s-core_3": -2076411236,
+    "org.json4s:json4s-core_3:jar:sources": 2040071554,
+    "org.json4s:json4s-native-core_3": -701276423,
+    "org.json4s:json4s-native-core_3:jar:sources": 2061583826,
+    "org.json4s:json4s-native_3": 1824356623,
+    "org.json4s:json4s-native_3:jar:sources": 735918075,
+    "org.json4s:json4s-scalap_3": -592834336,
+    "org.json4s:json4s-scalap_3:jar:sources": -1220218122,
     "org.jspecify:jspecify": 117231129,
     "org.jspecify:jspecify:jar:sources": -2134060298,
     "org.msgpack:msgpack-core": -1705007667,
@@ -247,8 +247,8 @@
     "org.scala-lang.modules:scala-parallel-collections_3:jar:sources": 1784693268,
     "org.scala-lang.modules:scala-parser-combinators_3": -1628125065,
     "org.scala-lang.modules:scala-parser-combinators_3:jar:sources": -1426101912,
-    "org.scala-lang.modules:scala-xml_3": 1352408061,
-    "org.scala-lang.modules:scala-xml_3:jar:sources": -1176012239,
+    "org.scala-lang.modules:scala-xml_3": 1977037784,
+    "org.scala-lang.modules:scala-xml_3:jar:sources": 1267522254,
     "org.scala-lang:scala-library": -1079389784,
     "org.scala-lang:scala-library:jar:sources": 9987806,
     "org.scala-lang:scala3-compiler_3": 795841343,
@@ -271,8 +271,10 @@
     "com.google.guava:guava:32.0.1-jre": "com.google.guava:guava:33.5.0-jre",
     "com.google.j2objc:j2objc-annotations:2.8": "com.google.j2objc:j2objc-annotations:3.1",
     "com.lihaoyi:ujson_3:4.0.2": "com.lihaoyi:ujson_3:4.1.0",
-    "org.apache.commons:commons-lang3:3.8": "org.apache.commons:commons-lang3:3.17.0",
-    "org.apache.commons:commons-text:1.6": "org.apache.commons:commons-text:1.13.0"
+    "org.apache.commons:commons-lang3:3.14.0": "org.apache.commons:commons-lang3:3.17.0",
+    "org.apache.commons:commons-text:1.12.0": "org.apache.commons:commons-text:1.13.0",
+    "org.scala-lang.modules:scala-xml_3:2.2.0": "org.scala-lang.modules:scala-xml_3:2.3.0",
+    "org.slf4j:slf4j-api:2.0.7": "org.slf4j:slf4j-api:2.0.17"
   },
   "artifacts": {
     "com.github.javaparser:javaparser-core": {
@@ -514,52 +516,52 @@
     },
     "io.joern:flatgraph-core_3": {
       "shasums": {
-        "jar": "aaee2aa044223e2225ac6d67e1cba8c6628961638e94bf2faffbb6be406d9885",
-        "sources": "4440b7804c08d4e2bed1e7166736ddf778878c04de5fa64b2e9a58ae6945e439"
+        "jar": "13c99870907a35115be3af6e9f415e712f42e4f970ad3489624dc30f024c1ab0",
+        "sources": "e4c81ece9df28236e5d1a1fd5f44ccd73547377683467e2bca835ae96e23af80"
       },
-      "version": "0.1.31"
+      "version": "0.1.32"
     },
     "io.joern:flatgraph-formats_3": {
       "shasums": {
-        "jar": "887e25b7100f2c83ec284c2ec8c9b2493587c8b4f89dd5a7ee9f0bd268710940",
-        "sources": "679a7e68649f6fd3ae62d9f9bfaef25adb0baaa92d360ba83b2887720fe42e86"
+        "jar": "9616ab31473bd39d049ec99746d16a9933e0c1f295e406405ba48ca94d6d445f",
+        "sources": "195d864fddd066537bdc2feb50b5bdff4a7927a5cf317bf63ff965b3c5697b24"
       },
-      "version": "0.1.31"
+      "version": "0.1.32"
     },
     "io.joern:flatgraph-help_3": {
       "shasums": {
-        "jar": "3e1ff963cc9a87ff100a6311a4ef753d954340c3e600b6d580682616504229f8",
-        "sources": "7d8ea575fe7ad98af7e660e592a8348167dfe7cbf82a85f1ada72b159b210622"
+        "jar": "13c92bc1774c7fde55f093b4dc1119d57ace7cc0b6fd52d029ef45b5f52fea7b",
+        "sources": "d78eb23d7fd85f805616ab0c986cf5d94680a6c8e7e1f3ba1815230f8c2c9532"
       },
-      "version": "0.1.31"
+      "version": "0.1.32"
     },
     "io.joern:flatgraph-odb-convert_3": {
       "shasums": {
-        "jar": "99512d443f609a5028ec1c1e060f8a997bae1c2dbbcb203b1880c87a16326944",
-        "sources": "0af913bac0c502ed4d615cd85c9f77abda6d7ceaf30ae8e5bd6c9aacc6222ba3"
+        "jar": "d74f2c74ab9ec71b34e6a98ce2b320db025a87d087496edeaae6b3c0588edd46",
+        "sources": "f64ec8310a480f75ae3917a43b0e74cf7fb1b65cd1cdfd521ea6287baa637329"
       },
-      "version": "0.1.31"
+      "version": "0.1.32"
     },
     "io.shiftleft:codepropertygraph-domain-classes_3": {
       "shasums": {
-        "jar": "68a4aa17f957d45737af5a1e90c9fbec9bf6eee1c0ae24f22fea8baaa6e83f3a",
-        "sources": "eb140da5b37ff2cb046dcae208846d84e0a0c0ada006996f07af31a302ebe150"
+        "jar": "8a76b66f8d3efa144f1eb54ac36a8bd8b7d9858f9f7aa0ddb0b5709fc1e9c3db",
+        "sources": "497f85d2767969eff4e9bd82fc97d4c55c8e365ed763ecc450661b8d32dc590b"
       },
-      "version": "1.7.65"
+      "version": "1.7.70"
     },
     "io.shiftleft:codepropertygraph-protos_3": {
       "shasums": {
-        "jar": "dbded8ab5aece5a80aa5e6005825de42cdf382e6d197f394a1f4d911c32b6c58",
-        "sources": "05640b1b336fcb8f3676d4d13ac1a5f8f8771f47e1f554c4a93eea774a00ea04"
+        "jar": "54a954c4bf65ee334a9c34cfe15287cdbbba84a88b29aa91e982290ac6f70c69",
+        "sources": "cdd9ceff57af23b98ac983ed1eb6d24b02c23739be5205a1b561eca26f637167"
       },
-      "version": "1.7.65"
+      "version": "1.7.70"
     },
     "io.shiftleft:codepropertygraph_3": {
       "shasums": {
-        "jar": "e95bedc7ef27d2e25addb1348e3f8423c3790fe1c4da510e7d18860d89728006",
-        "sources": "c963412d41844bb8458e193a9b2903d187ba1747b1753eb23250e311807161e0"
+        "jar": "6f7fea5a0feeab64cd69fd1afa45b1e230b5922416e35f8da2f087bfc713578e",
+        "sources": "769b421790a17a7ae550ff09621ed104a25656b45a0ce2f9316bf335c9c4594c"
       },
-      "version": "1.7.65"
+      "version": "1.7.70"
     },
     "io.shiftleft:overflowdb-core_3": {
       "shasums": {
@@ -675,24 +677,24 @@
     },
     "org.apache.logging.log4j:log4j-api": {
       "shasums": {
-        "jar": "92ec1fd36ab3bc09de6198d2d7c0914685c0f7127ea931acc32fd2ecdd82ea89",
-        "sources": "d5cf646b25ee4ee16b27aea90d919aa0b35846feae811abc8cb389331420a059"
+        "jar": "2f43eea679ea66f14ca0f13fec2a8600ac124f5a5231dcb4df8393eddcb97550",
+        "sources": "54b4514536902d4d677192928b6a661c3a301c5da47b8e8b18a9bc8d7238f301"
       },
-      "version": "2.23.1"
+      "version": "2.20.0"
     },
     "org.apache.logging.log4j:log4j-core": {
       "shasums": {
-        "jar": "7079368005fc34f56248f57f8a8a53361c3a53e9007d556dbc66fc669df081b5",
-        "sources": "3da91ab04815b5506efa7b7ec3bca6f8dacc398a8f25329ff8e8c734e98d1678"
+        "jar": "6137df848cdaed9f4d5076f75513c6c85da80b953f4e7acca38098b770763f55",
+        "sources": "54384495f789c691d481bc8a275f570afe77b87e49dcb086db0b232b0da93f83"
       },
-      "version": "2.23.1"
+      "version": "2.20.0"
     },
     "org.apache.logging.log4j:log4j-slf4j2-impl": {
       "shasums": {
-        "jar": "fcc0f68d71152112ce7ca9bf2388dc6d735beee9b699da230a94deef7f4c81c8",
-        "sources": "e7d8bff523aedb054c21248ab73d16e07bc6dc6ac35dbcbf7c26a5259a4a269c"
+        "jar": "b8dd3e4ea9cffa18db5f301cd8c539158662e691efd4701aa87b4d09961bd8b0",
+        "sources": "a97b23d6b705b0632699550eff12dd35998511733b8ec744d8fd97612ff6f473"
       },
-      "version": "2.23.1"
+      "version": "2.20.0"
     },
     "org.apache.maven:maven-artifact": {
       "shasums": {
@@ -920,38 +922,38 @@
     },
     "org.json4s:json4s-ast_3": {
       "shasums": {
-        "jar": "9abf57acf0912ea87ee25950c2e717b1953c9fbd50e512005d4782ba7a014ec5",
-        "sources": "9a941cc22a939cadcd78fa50378bbb6f3ab09421a61af882ee8aa82257b5db4d"
+        "jar": "6140e538e53c2c55db445645a65ffe26f73577d0000f0890076b066ca55f2b25",
+        "sources": "6afdb88eabf6130abef60ccf061f8e5c1b0487cea48f79d87818309b0090bc3b"
       },
-      "version": "4.0.3"
+      "version": "4.0.7"
     },
     "org.json4s:json4s-core_3": {
       "shasums": {
-        "jar": "02b5324658e08bc837a58800ee5863fb890df21b68db6c84391fa9b6d2558d1e",
-        "sources": "dd7784db655e6b5d41fffa9afe4bf8901a74a18785771fb404afa6109a8dd616"
+        "jar": "bdb869db56d60c10a0760a98a3d53ecb632841fa8f1a5001e7c1a0d91877493a",
+        "sources": "c1451c1793bd12e1f57b8844a20c05a71b9ff5e7c443a44f18339ea34ebe5c19"
       },
-      "version": "4.0.3"
+      "version": "4.0.7"
     },
     "org.json4s:json4s-native-core_3": {
       "shasums": {
-        "jar": "e68cfc8f0c0c6a53778e6ab660d45264a8e3dc63d63c42aa9a612697583f92d9",
-        "sources": "80244e1308ce21e132b747be0d01ff26566a4d5082fc8ca913d86f5f3fd8d389"
+        "jar": "d79432d86ab353840807cbcc8a7e9e48160efa67680db1fe26db6765b778362e",
+        "sources": "8e356b77f167e3c4d35fd1be40697f8cbfb5c434a4be896cb2fdcf1f116282ae"
       },
-      "version": "4.0.3"
+      "version": "4.0.7"
     },
     "org.json4s:json4s-native_3": {
       "shasums": {
-        "jar": "678cbb3ee67453c7043c3784beb869bbfd51fcc66d425a4434ff100d52263dcb",
-        "sources": "7fc51eb72ce0b9af6bd07d14fffcb5f31ee1e5be2d7b6e6f18fc69515c503e6f"
+        "jar": "bd2222e623f020b6d036f1328b306f983365527d2d93eab7c205db223e5c09bf",
+        "sources": "ec5234fba91239c29473ca28299c9b7aafd377fa370ce97d23c040b2ea542622"
       },
-      "version": "4.0.3"
+      "version": "4.0.7"
     },
     "org.json4s:json4s-scalap_3": {
       "shasums": {
-        "jar": "9177935bb5f908fa5bc9a195391bffe6e822734ca711de579275bfd1922baee6",
-        "sources": "7abf8faab46fcaafd124dc3f4eadc4f31482dad1ff99758deb1752824ff45123"
+        "jar": "dc2269e32e3d9cdd296151deb5f61d108d3d4fe99e220de5679dbaf6fb8e140a",
+        "sources": "a1d28f289e861a8ecb356e091861bb6365210428c57926c4ddea242cd8e542e2"
       },
-      "version": "4.0.3"
+      "version": "4.0.7"
     },
     "org.jspecify:jspecify": {
       "shasums": {
@@ -1004,10 +1006,10 @@
     },
     "org.scala-lang.modules:scala-xml_3": {
       "shasums": {
-        "jar": "b53971b771240b24161890e4083064ff23bc2f4800a013c9618bf46d2234177f",
-        "sources": "b4c5c924ec06b1478d4a42b112570a0db31aee7380db797ecb74a94fac3ea13f"
+        "jar": "3220723238102107ab83182468e5dbe351b081a0601386710ef46c81a95d38d0",
+        "sources": "d76b5646ed58104dfbc9705d70031c35b3aad49c23f652e9d83a45398e9292f2"
       },
-      "version": "2.4.0"
+      "version": "2.3.0"
     },
     "org.scala-lang:scala-library": {
       "shasums": {
@@ -3897,7 +3899,27 @@
         "org.apache.logging.log4j.util.SystemPropertiesPropertySource"
       ]
     },
+    "org.apache.logging.log4j:log4j-api:jar:sources": {
+      "org.apache.logging.log4j.util.PropertySource": [
+        "org.apache.logging.log4j.util.EnvironmentPropertySource",
+        "org.apache.logging.log4j.util.SystemPropertiesPropertySource"
+      ]
+    },
     "org.apache.logging.log4j:log4j-core": {
+      "javax.annotation.processing.Processor": [
+        "org.apache.logging.log4j.core.config.plugins.processor.PluginProcessor"
+      ],
+      "org.apache.logging.log4j.core.util.ContextDataProvider": [
+        "org.apache.logging.log4j.core.impl.ThreadContextDataProvider"
+      ],
+      "org.apache.logging.log4j.message.ThreadDumpMessage$ThreadInfoFactory": [
+        "org.apache.logging.log4j.core.message.ExtendedThreadInfoFactory"
+      ],
+      "org.apache.logging.log4j.spi.Provider": [
+        "org.apache.logging.log4j.core.impl.Log4jProvider"
+      ]
+    },
+    "org.apache.logging.log4j:log4j-core:jar:sources": {
       "javax.annotation.processing.Processor": [
         "org.apache.logging.log4j.core.config.plugins.processor.PluginProcessor"
       ],
