@@ -4,6 +4,11 @@
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout pattern="%d{yyy-MM-dd HH:mm:ss.SSS} %highlight{%-5p} %msg%n" noConsoleNoAnsi="true" />
         </Console>
+        <SystemPropertyArbiter propertyName="SL_LOGGING_FILE">
+            <File name="LogFile" fileName="${sys:SL_LOGGING_FILE}" append="false">
+                <PatternLayout pattern="[%-5p] %m%n" />
+            </File>
+        </SystemPropertyArbiter>
     </Appenders>
     <Loggers>
         <Logger name="io.grpc" level="error"/>
@@ -11,6 +16,9 @@
 
         <Root level="trace">
             <AppenderRef ref="Console" level="${env:SL_LOGGING_LEVEL:-info}"/>
+            <SystemPropertyArbiter propertyName="SL_LOGGING_FILE">
+                <AppenderRef ref="LogFile"/>
+            </SystemPropertyArbiter>
         </Root>
     </Loggers>
 </Configuration>

@@ -100,9 +100,12 @@ object GradleDependencies {
   private[dependency] def makeConnection(projectDir: JFile): ProjectConnection = {
     GradleConnector.newConnector().forProjectDirectory(projectDir).connect()
   }
+  
+  type DepOutType = (jarDeps: List[(String, List[String])], srcDeps: List[(String, List[String])])
 
-  private def dependencyMapFromOutputDir(outputDir: Path): List[(String, List[String])] = {
-    val dependencyMap = mutable.Map.empty[String, List[String]]
+  private def dependenciesFromOutputDir(outputDir: Path): DepOutType = {
+    val jarDeps = mutable.Map.empty[String, List[String]]
+    val srcDeps = mutable.Map.empty[String, List[String]]
 
     Try(Files.walk(outputDir)) match {
       case Success(fileStreamResource) =>
@@ -113,8 +116,14 @@ object GradleDependencies {
             .groupBy(path => path.getParent.toString)
             .foreach { case (parentStr, paths) =>
               paths.foreach {
-                case path if !Files.isDirectory(path) =>
-                  dependencyMap.put(parentStr, path.toAbsolutePath.toString :: dependencyMap.getOrElse(parentStr, Nil))
+                case path if !Files.isDirectory(path) && path.`extension`().contains(".jar") =>
+                  jarDeps.put(parentStr, path.toAbsolutePath.toString :: jarDeps.getOrElse(parentStr, Nil))
+                case path if path.endsWith("srcRoots.json") =>
+                  ujson.read(path).obj.foreach { 
+                    case (key, ujson.Arr(values)) =>
+                      srcDeps.addOne(key, values.map(_.str).toList)
+                    case _ =>
+                  }
                 case _ =>
               }
             }
@@ -123,7 +132,7 @@ object GradleDependencies {
         logger.warn(s"Encountered exception while walking dependency fetcher output: ${e.getMessage}")
     }
 
-    dependencyMap.toList.sortBy(_._1)
+    (jarDeps.toList.sortBy(_._1), srcDeps.toList.sortBy(_._1))
   }
 
   private def runGradleTask(
@@ -131,7 +140,7 @@ object GradleDependencies {
     taskName: String,
     destinationDir: Path,
     initScriptPath: String
-  ): List[(String, List[String])] = {
+  ): DepOutType = {
     Using.resources(new ByteArrayOutputStream, new ByteArrayOutputStream) { case (stdoutStream, stderrStream) =>
       Option(System.getenv("ANDROID_HOME")) match {
         case Some(androidHome) => logger.debug(s"Found ANDROID_HOME set to $androidHome")
@@ -153,10 +162,11 @@ object GradleDependencies {
           .run()
       ) match {
         case Success(_) =>
-          val result          = dependencyMapFromOutputDir(destinationDir)
-          val dependencyCount = result.flatMap(_._2).size
-          logger.info(s"Task $taskName resolved `$dependencyCount` dependency files.")
-          result
+          val (jarDeps, srcDeps) = dependenciesFromOutputDir(destinationDir)
+          val distinctJarDepsCount = jarDeps.flatMap(_._2).distinct.size
+          val distinctSrcDepsCount = srcDeps.flatMap(_._2).distinct.size
+          logger.info(s"Task $taskName resolved $distinctJarDepsCount distinct jar dependencies and $distinctSrcDepsCount distinct src dependency roots.")
+          (jarDeps, srcDeps)
         case Failure(ex) =>
           logger.warn(s"Caught exception while executing Gradle task: ${ex.getMessage}", ex)
           val androidSdkError = "Define a valid SDK location with an ANDROID_HOME environment variable"
@@ -173,7 +183,7 @@ object GradleDependencies {
           }
           logger.debug(s"Gradle task execution stdout: \n$stdoutStream")
           logger.debug(s"Gradle task execution stderr: \n$stderrStream")
-          List.empty
+          (List.empty, List.empty)
       }
     }
   }
@@ -218,7 +228,7 @@ object GradleDependencies {
     projectDir: Path,
     projectNameOverride: Option[String],
     configurationNameOverride: Option[String]
-  ): List[(String, collection.Seq[String])] = {
+  ): DepOutType = {
     logger.info(s"Fetching Gradle project information at path `$projectDir`.")
     Try(Files.createTempDirectory(tempDirPrefix)) match {
       case Success(destinationDir) =>
@@ -233,7 +243,8 @@ object GradleDependencies {
                   val initScript =
                     makeInitScript(destinationDir, gradleVersion, projectNameOverride, configurationNameOverride)
                   Files.writeString(initScriptFile, initScript.contents)
-                  runGradleTask(c, initScript.taskName, destinationDir, initScriptFile.toString).map {
+                  val (jarDeps, srcDeps) = runGradleTask(c, initScript.taskName, destinationDir, initScriptFile.toString)
+                  val depMapExtracted = jarDeps.map {
                     case (projectName, dependencies) =>
                       projectName -> dependencies.map { dependency =>
                         if (!dependency.endsWith(aarFileExtension))
@@ -245,21 +256,22 @@ object GradleDependencies {
                           }
                       }
                   }
+                  (depMapExtracted, srcDeps)
                 }
               case Failure(ex) =>
                 logger.warn(s"Caught exception while trying to establish a Gradle connection: ${ex.getMessage}")
                 logger.debug(s"Full exception: ", ex)
-                List.empty
+                (List.empty, List.empty)
             }
           case Failure(ex) =>
             logger.warn(s"Could not create temporary file for Gradle init script: ${ex.getMessage}")
             logger.debug(s"Full exception: ", ex)
-            List.empty
+            (List.empty, List.empty)
         }
       case Failure(ex) =>
         logger.warn(s"Could not create temporary directory for saving dependency files: ${ex.getMessage}")
         logger.debug("Full exception: ", ex)
-        List.empty
+        (List.empty, List.empty)
     }
   }
 }

@@ -7,6 +7,25 @@ import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 
 class NewTypeDeclTests extends JavaSrcCode2CpgFixture {
+  "foo" in {
+    val cpg = code("""
+                     | enum TestEnum {
+                     |   A, B, C;
+                     |
+                     | }
+                     |""".stripMargin)
+      .moreCode(
+        """
+          |
+          |class Foo {
+          |  void bar() {
+          |    TestEnum xxx = TestEnum.A;
+          |  }
+          |}""".stripMargin)
+    cpg.typeDecl.l
+
+  }
+
   "a Java 25 compact class declaration" should {
     val cpg = code("""
         |String s = "hello";

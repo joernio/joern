@@ -79,6 +79,27 @@ object DependencyResolver {
       dependencies
     }
   }
+  
+  def getDependencies2(
+                       projectDir: Path,
+                       params: DependencyResolverParams = new DependencyResolverParams
+                     ): GradleDependencies.DepOutType = {
+    val buildFile = findSupportedBuildFiles(projectDir).head
+    if (isGradleBuildFile(buildFile)) {
+      getDepsForGradleProject2(params, buildFile.getParent)
+    } else {
+      (List.empty, List.empty) 
+    }
+  }
+  
+  def getDepsForGradleProject2(
+                                       params: DependencyResolverParams,
+                                       projectDir: Path
+                                     ): GradleDependencies.DepOutType = {
+    val maybeProjectNameOverride   = params.forGradle.get(GradleConfigKeys.ProjectName)
+    val maybeConfigurationOverride = params.forGradle.get(GradleConfigKeys.ConfigurationName)
+    GradleDependencies.get(projectDir, maybeProjectNameOverride, maybeConfigurationOverride)
+  }
 
   private def getDepsForGradleProject(
     params: DependencyResolverParams,
@@ -88,8 +109,8 @@ object DependencyResolver {
     val maybeProjectNameOverride   = params.forGradle.get(GradleConfigKeys.ProjectName)
     val maybeConfigurationOverride = params.forGradle.get(GradleConfigKeys.ConfigurationName)
     GradleDependencies.get(projectDir, maybeProjectNameOverride, maybeConfigurationOverride) match {
-      case dependencies if dependencies.exists(_._2.nonEmpty) =>
-        val allDependencies = dependencies.flatMap(_._2)
+      case (jarDeps, _) if jarDeps.exists(_._2.nonEmpty) =>
+        val allDependencies = jarDeps.flatMap(_._2)
         Option(allDependencies.distinctBy(path => new java.io.File(path).getName))
       case _ =>
         logger.warn(s"Could not download Gradle dependencies for project at path `$projectDir`")

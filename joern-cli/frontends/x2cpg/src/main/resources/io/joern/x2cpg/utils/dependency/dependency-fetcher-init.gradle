@@ -52,7 +52,7 @@ abstract class FetchDependencies extends DefaultTask {
         def variant = entry.v1
         def component = entry.v2
         def variantId = variant.owner.displayName
-        if (!(variantId.startsWith("project") || variantId.startsWith("root project"))) {
+        if (true || !(variantId.startsWith("project") || variantId.startsWith("root project"))) {
           artifactsToFetch.add(variantId)
         }
 
@@ -137,18 +137,45 @@ abstract class FetchDependencies extends DefaultTask {
 
   // See https://docs.gradle.org/current/userguide/artifact_views.html
   // See https://docs.gradle.org/current/userguide/artifact_resolution.html#artifact-resolution for more information
-  void fetchArtifactsForConfiguration(Configuration configuration, Path destinationDir) {
+  void fetchArtifactsForConfiguration(Configuration configuration, Path destinationDir, Project rootProject) {
     for (resolvedArtifacts in configuration.incoming.getResolutionResult()) {
       def artifactsToFetch = getExternalDependencyNames(
         resolvedArtifacts.rootComponent.get(),
         configuration.name
       )
+      println("### artifactsToFetch")
+      println(artifactsToFetch)
+
+      println("### config")
+      def projectToSources = [:]
+      configuration.incoming.resolutionResult.allComponents.each {
+        def id = it.id
+        if (id instanceof ProjectComponentIdentifier) {
+          def depProject = rootProject.project(id.projectPath)
+          println(it)
+          println(depProject.sourceSets.main.kotlin.srcDirs)
+          projectToSources[id.projectName] = depProject.sourceSets.main.kotlin.srcDirs.absolutePath
+        }
+      }
+
+
+      def json = groovy.json.JsonOutput.toJson(
+              projectToSources.sort { it.key })
+
+      def jsonPath = destinationDir.resolve("srcRoots.json")
+      println("jsonPath ")
+      println(jsonPath)
+      jsonPath.text = groovy.json.JsonOutput.prettyPrint(json)
 
       def filteredArtifacts = configuration.incoming.artifactView {
         componentFilter {
-          artifactsToFetch.contains(it.toString())
+          def res = artifactsToFetch.contains(it.toString()) && !(it instanceof ProjectComponentIdentifier)
+          println(it.toString() + " " + res)
+          res
         }
       }
+
+      println("### filteredArtifacts")
 
       for (artifactFile in filteredArtifacts.files) {
         linkOrCopyFileToDestination(artifactFile, destinationDir)
@@ -169,6 +196,9 @@ abstract class FetchDependencies extends DefaultTask {
     def project_ = project
     def projectFullName = getProjectFullName(project_)
 
+    println("#################")
+    println("XXX " + projectFullName)
+
     if (shouldFetchDependencies(projectFullName)) {
       def validConfigurations = getValidConfigurations(project_)
 
@@ -177,7 +207,7 @@ abstract class FetchDependencies extends DefaultTask {
           projectFullName.isEmpty() ? Path.of(destinationDirString.get()) : Path.of(destinationDirString.get(), projectFullName.replace(':', '/'))
         Files.createDirectories(destinationDir)
 
-        validConfigurations.forEach { fetchArtifactsForConfiguration(it, destinationDir) }
+        validConfigurations.forEach { fetchArtifactsForConfiguration(it, destinationDir, project) }
       }
     }
   }
@@ -189,11 +219,12 @@ allprojects { project ->
   // `./gradlew -I /path/to/joern/joern-cli/frontends/x2cpg/src/main/resources/io/joern/x2cpg/utils/dependency/dependency-fetcher-init.gradle fetchDependencies
   // Fetched dependencies can then be checked by, for example, `find /tmp/gradleDependencies -name "*.jar"`
   //
-  // def __projectNameOverrides__ = []
-  // def __configurationNameOverrides__ = []
-  // def __taskNameString__ = "fetchDependencies"
-  // def __destinationDirString__ = "/tmp/gradleDependencies"
-  // def __defaultProjectNameString__ = "app"
+   //def __projectNameOverrides__ = ["submodule-b"]
+   // def __projectNameOverrides__ = []
+   // def __configurationNameOverrides__ = []
+   // def __taskNameString__ = "fetchDependencies"
+   // def __destinationDirString__ = "/tmp/gradleDependencies"
+   // def __defaultProjectNameString__ = "app"
   // end debug block
 
   def taskName = __taskNameString__

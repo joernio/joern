@@ -13,17 +13,18 @@ import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.passes.frontend.TypeNodePass
-import io.joern.x2cpg.utils.dependency.DependencyResolver
-import io.joern.x2cpg.utils.dependency.DependencyResolverParams
-import io.joern.x2cpg.utils.dependency.GradleConfigKeys
+import io.joern.x2cpg.utils.dependency.{DependencyResolver, DependencyResolverParams, GradleConfigKeys, GradleDependencies}
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.joern.x2cpg.SourceFiles.filterFile
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.utils.IOUtils
-import org.jetbrains.kotlin.cli.jvm.compiler.{KotlinCoreEnvironment, KotlinToJVMBytecodeCompiler}
+import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
+import org.jetbrains.kotlin.cli.common.config.KotlinSourceRoot
+import org.jetbrains.kotlin.cli.jvm.compiler.{CoreEnvironmentUtilsKt, KotlinCoreEnvironment, KotlinToJVMBytecodeCompiler}
 import org.jetbrains.kotlin.com.intellij.openapi.util.Disposer
+import org.jetbrains.kotlin.config.{CommonConfigurationKeys, CompilerConfiguration}
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.slf4j.LoggerFactory
@@ -132,7 +133,8 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
         logger.trace(s"Found imports: `$importNames`")
         dependenciesFromService(jar4ImportServiceOpt.get, importNames)
       } else if (config.downloadDependencies) {
-        downloadDependencies(sourceDir, config)
+        //downloadDependencies(sourceDir, config)
+        Seq()
       } else {
         logger.info(s"Not downloading any dependencies.")
         Seq()
@@ -217,20 +219,70 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
       checkSourceDir(sourceDir)
       logMaxHeapSize()
 
-      val filesWithJavaExtension  = gatherFilesWithJavaExtension(sourceDir, config)
-      val mavenCoordinates        = gatherMavenCoordinates(sourceDir, config)
-      val stdlibJars              = gatherJarsFromStdLib(config)
-      val classPathJars           = gatherJarsFromConfigClassPath(config)
-      val dependencyJars          = gatherJarsOfDependencies(sourceDir, config, filesWithJavaExtension)
+      logger.info("P0")
+      val filesWithJavaExtension = gatherFilesWithJavaExtension(sourceDir, config)
+      logger.info("P1")
+      val mavenCoordinates = gatherMavenCoordinates(sourceDir, config)
+      logger.info("P2")
+      val stdlibJars = gatherJarsFromStdLib(config)
+      logger.info("P3")
+      val classPathJars = gatherJarsFromConfigClassPath(config)
+      logger.info("P4")
+      val dependencyJars = gatherJarsOfDependencies(sourceDir, config, filesWithJavaExtension)
+      val (jarDeps, srcDeps) = downloadDependencies(sourceDir, config)
+      logger.info("P5")
       val dirsForSourcesToCompile = gatherDirsForSourcesToCompile(sourceDir)
-      val dependencyContentRoots  = stdlibJars ++ classPathJars ++ dependencyJars
+      logger.info("P6")
+      val dependencyContentRoots = stdlibJars ++ classPathJars ++ dependencyJars
+      logger.info("P7")
 
+      logger.info("Pre env create")
       val environment = CompilerAPI.makeEnvironment(
-        dirsForSourcesToCompile,
+        dirsForSourcesToCompile ++ srcDeps.flatMap(_._2),
         filesWithJavaExtension,
         dependencyContentRoots,
         new ErrorLoggingMessageCollector
       )
+      logger.info("Post env create")
+
+      // if (false) {
+      //  val dirsForSourcesToCompile2 = ContentSourcesPicker.dirsForRoot2(sourceDir)
+      //  val dirsForSourcesToCompile3 = ContentSourcesPicker.dirsForRoot3(sourceDir)
+
+      //  val intersection = dirsForSourcesToCompile2.intersect(dirsForSourcesToCompile3)
+      //  val missing = dirsForSourcesToCompile2.toSet.removedAll(intersection)
+
+      //  logger.info(s"Missing from root2:")
+      //  missing.foreach(logger.info)
+      //
+      //  val config2 = new CompilerConfiguration()
+      //  val messageCollector = new ErrorLoggingMessageCollector
+      //  config2.put(CommonConfigurationKeys.MESSAGE_COLLECTOR_KEY, messageCollector)
+      //  dirsForSourcesToCompile2.foreach { p =>
+      //    config2.add(CLIConfigurationKeys.CONTENT_ROOTS, new KotlinSourceRoot(p, true, null))
+      //  }
+
+      //  val sourceRoots2 = CoreEnvironmentUtilsKt.getSourceRootsCheckingForDuplicates(config2, messageCollector)
+      //  val x2 = CoreEnvironmentUtilsKt.createSourceFilesFromSourceRoots(config2, environment.getProject, sourceRoots2, null)
+      //
+      //  val config3 = new CompilerConfiguration()
+      //  config3.put(CommonConfigurationKeys.MESSAGE_COLLECTOR_KEY, messageCollector)
+      //  dirsForSourcesToCompile3.foreach { p =>
+      //    config3.add(CLIConfigurationKeys.CONTENT_ROOTS, new KotlinSourceRoot(p, true, null))
+      //  }
+
+      //  val sourceRoots3 = CoreEnvironmentUtilsKt.getSourceRootsCheckingForDuplicates(config3, messageCollector)
+      //  val x3 = CoreEnvironmentUtilsKt.createSourceFilesFromSourceRoots(config3, environment.getProject, sourceRoots3, null)
+      //
+      //  val x2Set = x2.asScala.map(_.getVirtualFilePath).toSet
+      //  val x3Set = x3.asScala.map(_.getVirtualFilePath).toSet
+      //
+      //  val diff = x2Set.diff(x3Set)
+      //  diff.foreach(println)
+      //
+      //
+      //  println("hier")
+      // }
 
       val sourceFiles = gatherSourceFiles(sourceDir, config, environment)
       val configFiles = entriesForConfigFiles(SourceFilesPicker.configFiles(sourceDir), sourceDir)
@@ -298,18 +350,18 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
     ).collect { case (key, Some(value)) => (key, value) }
   }
 
-  private def downloadDependencies(sourceDir: String, config: Config): Seq[String] = {
+  private def downloadDependencies(sourceDir: String, config: Config): GradleDependencies.DepOutType = {
     val gradleParams   = gatherGradleParams(config)
     val resolverParams = DependencyResolverParams(Map.empty, gradleParams)
 
-    DependencyResolver.getDependencies(Paths.get(sourceDir), resolverParams) match {
-      case Some(deps) =>
-        logger.info(s"Using ${deps.size} dependency jars.")
-        deps
-      case None =>
+    DependencyResolver.getDependencies2(Paths.get(sourceDir), resolverParams) match {
+      case (jarDeps, srcDeps) =>
+        logger.info(s"Using ${jarDeps.size} dependency jars.")
+        (jarDeps, srcDeps)
+      case _ =>
         logger.warn(s"Could not fetch dependencies for project at path $sourceDir")
         println("Could not fetch dependencies when explicitly asked to.")
-        Seq()
+        (List.empty, List.empty)
     }
   }
 

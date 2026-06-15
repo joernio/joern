@@ -5,7 +5,7 @@ import io.joern.kotlin2cpg.DefaultContentRootJarPath
 import java.io.{File, FileOutputStream}
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.cli.common.config.KotlinSourceRoot
-import org.jetbrains.kotlin.cli.jvm.compiler.{EnvironmentConfigFiles, KotlinCoreEnvironment}
+import org.jetbrains.kotlin.cli.jvm.compiler.{CoreEnvironmentUtilsKt, EnvironmentConfigFiles, KotlinCoreEnvironment}
 import org.jetbrains.kotlin.cli.jvm.config.{JavaSourceRoot, JvmClasspathRoot}
 import org.jetbrains.kotlin.config.{CommonConfigurationKeys, CompilerConfiguration, JVMConfigurationKeys}
 import org.jetbrains.kotlin.metadata.jvm.deserialization.JvmProtoBufUtil
@@ -29,14 +29,17 @@ object CompilerAPI {
   ): KotlinCoreEnvironment = {
     Logger.setFactory(classOf[NoAssertionErrorLoggerFactory])
 
+    logger.info("L0")
     val config = new CompilerConfiguration()
     config.put(CommonConfigurationKeys.MESSAGE_COLLECTOR_KEY, messageCollector)
     forDirectories.foreach { p =>
       config.add(CLIConfigurationKeys.CONTENT_ROOTS, new KotlinSourceRoot(p, true, null))
     }
+    logger.info("L1")
 
     val javaHome = File(System.getProperty("java.home"))
     config.put(JVMConfigurationKeys.JDK_HOME, javaHome)
+    logger.info("L2")
 
     defaultContentRootJarPaths.foreach { path =>
       if (!path.isResource) {
@@ -72,18 +75,23 @@ object CompilerAPI {
         }
       }
     }
+    logger.info("L3")
 
     javaSourceRoots.foreach { source =>
       val f = new File(source)
       config.add(CLIConfigurationKeys.CONTENT_ROOTS, new JavaSourceRoot(f, ""))
     }
+    logger.info("L4")
 
     config.put(CommonConfigurationKeys.MODULE_NAME, JvmProtoBufUtil.DEFAULT_MODULE_NAME)
 
     val configFiles = EnvironmentConfigFiles.JVM_CONFIG_FILES
     val disposable  = Disposer.newDisposable()
 
+    logger.info("L5")
     val environment = KotlinCoreEnvironment.createForProduction(disposable, config, configFiles)
+    logger.info("L6")
+
     environment
   }
 }
@@ -96,7 +104,7 @@ class ErrorLoggingMessageCollector extends MessageCollector {
     s: String,
     compilerMessageSourceLocation: CompilerMessageSourceLocation
   ): Unit = {
-    if (compilerMessageSeverity.isError) {
+    if (compilerMessageSeverity.isError || compilerMessageSeverity.isWarning || true) {
       logger.debug(s"Received error from Kotlin compiler: `$s`.")
     }
   }
@@ -107,18 +115,20 @@ class ErrorLoggingMessageCollector extends MessageCollector {
 
 class NoAssertionErrorLogger(category: String)
     extends org.jetbrains.kotlin.com.intellij.openapi.diagnostic.DefaultLogger(category) {
+  private val logger = LoggerFactory.getLogger(getClass)
 
   override def error(message: String, throwable: Throwable, details: String*): Unit = {
     try {
       super.error(message, throwable, details*)
     } catch {
-      case _: AssertionError =>
-      // The DefaultLogger throws an AssertionError on error log messages.
-      // We do not want that and rather want to try to continue the analyis on best effort
-      // base.
-      // As far as I understand this, error logs are only created for internal errors and
-      // not for errors in the analyzed code and thus we can basically ignore them unless
-      // we want to fix the compiler code.
+      case error: AssertionError =>
+        // The DefaultLogger throws an AssertionError on error log messages.
+        // We do not want that and rather want to try to continue the analyis on best effort
+        // base.
+        // As far as I understand this, error logs are only created for internal errors and
+        // not for errors in the analyzed code and thus we can basically ignore them unless
+        // we want to fix the compiler code.
+        logger.warn("hier")
     }
   }
 }
