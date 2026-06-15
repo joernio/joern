@@ -56,12 +56,12 @@ class CallTests extends Rust2CpgSuite(noSysRoot = true) {
         |}
         |""".stripMargin)
 
-    "have DynamicCallUnknownFullName for the inner method call" in {
-      cpg.call.nameExact("chain").methodFullName.l shouldBe List(Defines.DynamicCallUnknownFullName)
+    "have an unresolved-namespace methodFullName for the inner method call" in {
+      cpg.call.nameExact("chain").methodFullName.l shouldBe List(s"${Defines.UnresolvedNamespace}::chain")
     }
 
-    "have DynamicCallUnknownFullName for the outer method call" in {
-      cpg.call.nameExact("tail").methodFullName.l shouldBe List(Defines.DynamicCallUnknownFullName)
+    "have an unresolved-namespace methodFullName for the outer method call" in {
+      cpg.call.nameExact("tail").methodFullName.l shouldBe List(s"${Defines.UnresolvedNamespace}::tail")
     }
 
     "have an unresolved-namespace methodFullName for the function call" in {
@@ -72,12 +72,25 @@ class CallTests extends Rust2CpgSuite(noSysRoot = true) {
       cpg.call.nameExact("external").dispatchType.l shouldBe List(DispatchTypes.STATIC_DISPATCH)
     }
 
-    "have DYNAMIC_DISPATCH for each method call in the chain" in {
-      cpg.call.nameExact("chain", "tail").dispatchType.toSet shouldBe Set(DispatchTypes.DYNAMIC_DISPATCH)
+    "have STATIC_DISPATCH for each method call in the chain" in {
+      cpg.call.nameExact("chain", "tail").dispatchType.toSet shouldBe Set(DispatchTypes.STATIC_DISPATCH)
     }
 
     "have Any as typeFullName for each call in the chain" in {
       cpg.call.nameExact("external", "chain", "tail").typeFullName.toSet shouldBe Set(Defines.Any)
+    }
+
+    "create an external method stub for each call" in {
+      cpg.method.fullNameExact(s"${Defines.UnresolvedNamespace}::external").isExternal.l shouldBe List(true)
+      cpg.method.fullNameExact(s"${Defines.UnresolvedNamespace}::chain").isExternal.l shouldBe List(true)
+      cpg.method.fullNameExact(s"${Defines.UnresolvedNamespace}::tail").isExternal.l shouldBe List(true)
+    }
+
+    "resolve the unknown call type to an external TYPE_DECL" in {
+      inside(cpg.call.nameExact("chain").typ.referencedTypeDecl.l) { case typeDecl :: Nil =>
+        typeDecl.fullName shouldBe Defines.Any
+        typeDecl.isExternal shouldBe true
+      }
     }
   }
 
@@ -99,11 +112,11 @@ class CallTests extends Rust2CpgSuite(noSysRoot = true) {
         |}
         |""".stripMargin)
 
-    "have DynamicCallUnknownFullName as methodFullName" in {
+    "have an unresolved-namespace methodFullName" in {
       inside(cpg.call.nameExact("push").l) { case push :: Nil =>
         push.code shouldBe "xs.push(1)"
-        push.methodFullName shouldBe Defines.DynamicCallUnknownFullName
-        push.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        push.methodFullName shouldBe s"${Defines.UnresolvedNamespace}::push"
+        push.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         push.typeFullName shouldBe Defines.Any
       }
     }
@@ -137,9 +150,9 @@ class CallTests extends Rust2CpgSuite(noSysRoot = true) {
     "lower `trim` as a method call on the result of `from`" in {
       inside(cpg.call.nameExact("trim").l) { case trim :: Nil =>
         trim.code shouldBe """String::from(" hello ").trim()"""
-        trim.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        trim.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         trim.arguments(1) shouldBe empty
-        trim.methodFullName shouldBe Defines.DynamicCallUnknownFullName
+        trim.methodFullName shouldBe s"${Defines.UnresolvedNamespace}::trim"
 
         inside(trim.receiver.l) { case (from: Call) :: Nil =>
           from.name shouldBe "from"
@@ -152,9 +165,9 @@ class CallTests extends Rust2CpgSuite(noSysRoot = true) {
     "lower `to_string` as a method call on the result of `trim`" in {
       inside(cpg.call.nameExact("to_string").l) { case toString :: Nil =>
         toString.code shouldBe """String::from(" hello ").trim().to_string()"""
-        toString.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        toString.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         toString.arguments(1) shouldBe empty
-        toString.methodFullName shouldBe Defines.DynamicCallUnknownFullName
+        toString.methodFullName shouldBe s"${Defines.UnresolvedNamespace}::to_string"
 
         inside(toString.receiver.l) { case (trim: Call) :: Nil =>
           trim.name shouldBe "trim"
@@ -162,6 +175,33 @@ class CallTests extends Rust2CpgSuite(noSysRoot = true) {
           trim.argumentIndex shouldBe 0
         }
       }
+    }
+  }
+
+  "a method call through a `&dyn Trait` receiver" should {
+    val cpg = code("""
+        |trait Greet { fn hello(&self) -> i32; }
+        |fn run(g: &dyn Greet) { g.hello(); }
+        |""".stripMargin)
+
+    "have DYNAMIC_DISPATCH and a resolved methodFullName" in {
+      inside(cpg.call.nameExact("hello").l) { case hello :: Nil =>
+        hello.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        hello.methodFullName shouldBe "rust2cpgtest::Greet::hello"
+      }
+    }
+
+    "have the trait object as receiver" in {
+      inside(cpg.call.nameExact("hello").receiver.l) { case (receiver: Identifier) :: Nil =>
+        receiver.name shouldBe "g"
+        receiver.code shouldBe "g"
+        receiver.argumentIndex shouldBe 0
+        receiver.typeFullName shouldBe "&dyn Greet + 'static"
+      }
+    }
+
+    "have the receiver as its only argument" in {
+      cpg.call.nameExact("hello").argument.l shouldBe cpg.call.nameExact("hello").receiver.l
     }
   }
 }

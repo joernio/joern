@@ -61,7 +61,9 @@ trait RustFullNames { this: AstCreator =>
   }
 
   protected def methodFullNameForMethodCallExpr(methodCallExpr: RustNodeSyntax.MethodCallExpr): String = {
-    methodCallExpr.methodFullName.getOrElse(Defines.DynamicCallUnknownFullName)
+    methodCallExpr.methodFullName.getOrElse(
+      combineRustFullName(Defines.UnresolvedNamespace, code(methodCallExpr.nameRef))
+    )
   }
 
   protected def typeFullNameForType(typ: RustNodeSyntax.Type): String = {
