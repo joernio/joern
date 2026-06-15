@@ -17,9 +17,15 @@ scala_deps = use_extension(
 scala_deps.scala()
 scala_deps.scalatest()
 
-# Ignore the version. Since bazel_tooling is in the same repository,
-# we override it in .bazelrc and use the in tree version.
-bazel_dep(name = "bazel_tooling", version = "0.1.0")
+# We always want to keep bazel_tooling in sync with the main Joern
+# module. The only reason this is even its on module is that we have
+# the same access patterns to its exported symbols and targets in Joern
+# as in other upstream projects.
+bazel_dep(name = "bazel_tooling")
+local_path_override(
+  module_name = "bazel_tooling",
+  path = "bazel/tooling",
+)
 
 register_toolchains("@bazel_tooling//scala_toolchain:plus_one_toolchain")
 

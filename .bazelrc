@@ -6,9 +6,4 @@ common --java_runtime_version=remotejdk_21
 # network traffic on loopback interface which we need for some tests.
 #common --sandbox_default_allow_network=false
 
-# We have the module override here instead of user.bazelrc
-# because we do not want to have the main Joern build rely
-# on a private registry.
-common --override_module=bazel_tooling=bazel/tooling
-
 try-import user.bazelrc
