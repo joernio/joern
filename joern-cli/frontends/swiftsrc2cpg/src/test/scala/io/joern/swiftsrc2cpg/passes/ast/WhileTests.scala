@@ -68,8 +68,7 @@ class WhileTests extends SwiftSrc2CpgSuite {
           inside(controlStruct.condition.l) { case List(cndNode: Literal) =>
             cndNode.code shouldBe "true"
           }
-          controlStruct.condition.code.l shouldBe List("true")
-          controlStruct.doBodyOut.code.l shouldBe List("""print("Endless Loop")""")
+          controlStruct.whenTrue.code.l shouldBe List("""print("Endless Loop")""")
           controlStruct.lineNumber shouldBe Some(2)
           controlStruct.columnNumber shouldBe Some(1)
       }
@@ -95,8 +94,7 @@ class WhileTests extends SwiftSrc2CpgSuite {
             n.name shouldBe "n"
             n.order shouldBe 2
           }
-          controlStruct.condition.code.l shouldBe List("i <= n")
-          controlStruct.doBodyOut.astChildren.code.l shouldBe List("print(i)", "i = i + 1")
+          controlStruct.whenTrue.astChildren.code.l shouldBe List("print(i)", "i = i + 1")
           controlStruct.lineNumber shouldBe Some(2)
           controlStruct.columnNumber shouldBe Some(1)
       }

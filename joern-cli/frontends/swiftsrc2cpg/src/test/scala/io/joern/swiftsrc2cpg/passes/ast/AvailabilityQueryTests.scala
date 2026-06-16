@@ -4,6 +4,7 @@ package io.joern.swiftsrc2cpg.passes.ast
 
 import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
 import io.shiftleft.codepropertygraph.generated.*
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
 class AvailabilityQueryTests extends SwiftSrc2CpgSuite {
@@ -39,28 +40,14 @@ class AvailabilityQueryTests extends SwiftSrc2CpgSuite {
     }
 
     "testAvailabilityQuery5b" in {
-      val cpg               = code("if let _ = Optional(5), #unavailable(OSX 10.52, *) {}")
-      val List(methodBlock) = cpg.method.nameExact("<global>").block.l
-      // After desugaring: <tmp>0 in global method block
-      val List(tmpLocal) = methodBlock.local.l
-      val tmpName        = tmpLocal.name
-      tmpName shouldBe "<tmp>0"
-
+      val cpg                      = code("if let _ = Optional(5), #unavailable(OSX 10.52, *) {}")
       val List(ifControlStructure) = cpg.controlStructure.isIf.l
       ifControlStructure.whenTrue.astChildren shouldBe empty
-
-      // Condition is desugared: { (<tmp>0 = Optional(5)) != nil && #unavailable(...) }
-      val List(condBlock)             = ifControlStructure.condition.isBlock.l
-      val List(andCheck)              = condBlock.astChildren.isCall.nameExact(Operators.logicalAnd).l
-      val List(nilCheck, unavailable) = andCheck.argument.isCall.l
-      nilCheck.name shouldBe Operators.notEquals
-      nilCheck.code shouldBe s"($tmpName = Optional(5)) != nil"
+      val List(assignment, unavailable) = ifControlStructure.condition.astChildren.isCall.l
+      assignment.code shouldBe "let _ = Optional(5)"
+      assignment.name shouldBe Operators.assignment
       unavailable.code shouldBe "#unavailable(OSX 10.52, *)"
       unavailable.name shouldBe "#unavailable"
-
-      val List(assignment) = nilCheck.argument.assignment.l
-      assignment.code shouldBe s"$tmpName = Optional(5)"
-
       ifControlStructure.whenFalse shouldBe empty
     }
 

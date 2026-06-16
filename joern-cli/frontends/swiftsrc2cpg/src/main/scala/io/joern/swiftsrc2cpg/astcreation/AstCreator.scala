@@ -58,8 +58,9 @@ class AstCreator(
     fileContent.foreach(fileNode.content(_))
     val namespaceBlock = globalNamespaceBlock()
     methodAstParentStack.push(namespaceBlock)
-    val astForFakeMethod = astInFakeMethod(namespaceBlock.fullName, parserResult.filename, parserResult.ast)
-    val ast              = Ast(fileNode).withChild(Ast(namespaceBlock).withChild(astForFakeMethod))
+    val astForFakeMethod =
+      astInFakeMethod(namespaceBlock.fullName, parserResult.filename, parserResult.ast)
+    val ast = Ast(fileNode).withChild(Ast(namespaceBlock).withChild(astForFakeMethod))
     Ast.storeInDiffGraph(ast, diffGraph)
     scope.createVariableReferenceLinks(diffGraph, parserResult.filename)
     diffGraph
@@ -124,5 +125,4 @@ class AstCreator(
       case _             => shortenCode(new String(code)).stripLineEnd
     }
   }
-
 }
