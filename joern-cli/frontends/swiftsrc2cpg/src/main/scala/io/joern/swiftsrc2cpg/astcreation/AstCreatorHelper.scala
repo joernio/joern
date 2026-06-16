@@ -9,6 +9,8 @@ import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.apache.commons.lang3.StringUtils
 
+import scala.collection.mutable
+
 object AstCreatorHelper {
 
   private val TagsToKeepInFullName = List("<anonymous>", "<lambda>", "<global>", "<type>", "<extension>", "<wildcard>")
@@ -122,6 +124,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   import AstCreatorHelper.*
 
+  private val optionalBindingNames: mutable.HashMap[String, String] = mutable.HashMap.empty
+
   protected def notHandledYet(node: SwiftNode): Ast = {
     val text =
       s"""Node type '${node.toString}' not handled yet!
@@ -155,8 +159,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
       // Apply optional binding desugaring for guard let
       // Create the block that will hold the unwrapped variables (blockNode argument is only used for location info)
-      val thenBlockNode =
-        if (elementsAfterGuard.nonEmpty) blockNode(elementsAfterGuard.head) else blockNode(guardStmt)
+      val thenBlockNode = if (elementsAfterGuard.nonEmpty) blockNode(elementsAfterGuard.head) else blockNode(guardStmt)
 
       val (conditionAst, unwrapAsts) = handleOptionalBindingConditions(
         guardStmt.conditions.children,
@@ -222,14 +225,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       scope.popScope()
       localAstParentStack.pop()
 
-      val thenAst = allThenChildren match {
-        case Nil =>
-          blockAst(thenBlockNode, List.empty)
-        case blockElement :: Nil if unwrapAsts.isEmpty =>
-          blockElement
-        case blockChildren =>
-          blockAst(thenBlockNode, blockChildren)
-      }
+      val thenAst = blockAst(thenBlockNode, allThenChildren)
       val elseAst = astForNode(guardStmt.body)
 
       val ifAst = ifThenElseAst(ifNode, Option(conditionAst), thenAst, Option(elseAst))
@@ -244,6 +240,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   /** Creates the AST for an identifier expression. Resolves the identifier to one of:
+    *   - A variable used during optional binding de-sugaring
     *   - A `Self` type reference (enclosing type).
     *   - An implicit `self.member` field access when the identifier is a member of the enclosing type declaration.
     *   - An implicit `self.member` field access inferred from compiler metadata (swift-build mode only).
@@ -256,12 +253,23 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     val isUnresolved   = variableOption.isEmpty
 
     identifierName match {
+      case _ if optionalBindingNames.contains(identifierName) =>
+        val name      = optionalBindingNames(identifierName)
+        val identNode = identifierNode(node, name)
+        val tpe = variableOption match {
+          case Some((_, variableTypeName)) if variableTypeName != Defines.Any => variableTypeName
+          case None if identNode.typeFullName != Defines.Any                  => identNode.typeFullName
+          case _                                                              => Defines.Any
+        }
+        identNode.typeFullName = tpe
+        scope.addVariableReference(name, identNode, tpe, EvaluationStrategies.BY_REFERENCE)
+        Ast(identNode)
       // `Self` always refers to the enclosing type.
       case "Self" =>
         Ast(typeRefNode(node, "Self", fullNameOfEnclosingTypeDecl()))
       // Identifier found as a member of the surrounding type decl.
       // Swift does not allow accessing members of an outer class instance,
-      // so we synthesise an implicit `self.<member>` (or `Self.<member>` in static contexts).
+      // so we synthesize an implicit `self.<member>` (or `Self.<member>` in static contexts).
       case name if scope.variableIsInTypeDeclScope(name) =>
         val tpe     = scope.typeDeclFullNameForMember(name).getOrElse(fullNameOfEnclosingTypeDecl())
         val callTpe = variableOption.map(_._2).getOrElse(Defines.Any)
@@ -623,6 +631,9 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         case _                              => (scopeLocalUniqueName("wildcard"), true)
       }
       val tmpName = binding.initializer.map(_ => scopeLocalUniqueName("tmp"))
+      if (!isWildcard && tmpName.isDefined) {
+        optionalBindingNames.put(localName, tmpName.get)
+      }
       BindingInfo(localName, tmpName, binding, isWildcard)
     }
   }
@@ -705,7 +716,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   ): Ast = {
     val hasAnyInitializer = bindingInfos.exists(_.tmpName.isDefined)
 
-    if (hasAnyInitializer) {
+    val conditionAst = if (hasAnyInitializer) {
       bindingInfos.foreach { info =>
         info.tmpName.foreach { tmpName =>
           val tmpLocalNode = localNode(info.binding, tmpName, tmpName, Defines.Any).order(0)
@@ -728,19 +739,18 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
               info.binding,
               Ast(tmpIdentNode),
               initAst,
-              s"$tmpName = ${code(info.binding.initializer.get.value)}"
+              s"$tmpName = ${codeOf(initAst.root.get)}"
             )
 
             val nilNode = literalNode(info.binding, "nil", Option(Defines.Nil))
             val checkCallNode = createStaticCallNode(
               info.binding,
-              s"($tmpName = ${code(info.binding.initializer.get.value)}) != nil",
+              s"($tmpName = ${codeOf(initAst.root.get)}) != nil",
               Operators.notEquals,
               Operators.notEquals,
               Defines.Bool
             )
             callAst(checkCallNode, List(assignAst, Ast(nilNode)))
-
           case None =>
             val patternAst = astForNode(info.binding.pattern)
             val nilNode    = literalNode(info.binding, "nil", Option(Defines.Nil))
@@ -781,6 +791,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       val allChecks               = nilCheckAsts ++ additionalConditionAsts
       combineNilChecksWithAnd(node, allChecks)
     }
+    optionalBindingNames.clear()
+    conditionAst
   }
 
   /** Builds the body AST with optional unwrapping assignments prepended. For bindings with initializers, creates locals

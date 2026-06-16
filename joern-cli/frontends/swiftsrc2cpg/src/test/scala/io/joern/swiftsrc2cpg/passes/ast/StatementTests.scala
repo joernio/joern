@@ -48,6 +48,91 @@ class StatementTests extends SwiftSrc2CpgSuite {
       thenAssign.argument(2).code shouldBe tmpName
     }
 
+    "testIfLetAfterWildcardGuard" in {
+      val cpg = code("""
+      |func foo(_ x: Int?) {
+      |  guard let _ = x else { return }
+      |  if let y = x.first {
+      |    bar(y)
+      |  }
+      |}
+      |""".stripMargin)
+      val List(methodBlock)   = cpg.method.nameExact("foo").block.l
+      val List(guardTmpLocal) = methodBlock.astChildren.isLocal.nameNot("self").l
+      guardTmpLocal.name shouldBe "<tmp>0"
+
+      val List(guardIf) = methodBlock.astChildren.isControlStructure.l
+      guardIf.code shouldBe "guard let _ = x else { return }"
+
+      val List(guardThenBlock) = guardIf.whenTrue.isBlock.l
+      val List(ifLetTmpLocal)  = guardThenBlock.astChildren.isLocal.l
+      ifLetTmpLocal.name shouldBe "<tmp>1"
+
+      val List(ifLet) = guardThenBlock.astChildren.isControlStructure.l
+      ifLet.code should startWith("if let y = x.first")
+
+      val List(ifLetThenBlock) = ifLet.whenTrue.isBlock.l
+      val List(yLocal)         = ifLetThenBlock.astChildren.isLocal.l
+      yLocal.name shouldBe "y"
+
+      val List(unwrapY, barCall) = ifLetThenBlock.astChildren.isCall.l
+      unwrapY.name shouldBe Operators.assignment
+      unwrapY.code shouldBe "y = <tmp>1"
+      barCall.code shouldBe "bar(y)"
+    }
+
+    "testNestedIfLet" in {
+      val cpg = code("""
+      |func foo(_ a: URL) -> String? {
+      |  if let c = Components(url: a), let params = c.items {
+      |    if let value = params.first {
+      |      return value
+      |    }
+      |  }
+      |  return nil
+      |}
+      |""".stripMargin)
+      val List(methodBlock) = cpg.method.nameExact("foo").block.l
+      methodBlock.astChildren.isLocal.name.l should contain allOf ("<tmp>0", "<tmp>1")
+
+      val List(outerIf) = methodBlock.astChildren.isControlStructure.l
+      outerIf.code should startWith("if let c = Components(url: a), let params = c.items")
+
+      val List(condBlock) = outerIf.condition.isBlock.l
+      condBlock.ast.isCall.code.l shouldBe List(
+        "((<tmp>0 = Components(url: a)) != nil) && ((<tmp>1 = <tmp>0.items) != nil)",
+        "(<tmp>0 = Components(url: a)) != nil",
+        "<tmp>0 = Components(url: a)",
+        "Components(url: a)",
+        "(<tmp>1 = <tmp>0.items) != nil",
+        "<tmp>1 = <tmp>0.items",
+        "<tmp>0.items"
+      )
+
+      val List(outerThenBlock)                              = outerIf.whenTrue.isBlock.l
+      val List(componentsLocal, paramsLocal, innerTmpLocal) = outerThenBlock.astChildren.isLocal.l
+      componentsLocal.name shouldBe "c"
+      paramsLocal.name shouldBe "params"
+      innerTmpLocal.name shouldBe "<tmp>2"
+
+      val List(unwrapComponents, unwrapParams) = outerThenBlock.astChildren.isCall.nameExact(Operators.assignment).l
+      unwrapComponents.code shouldBe "c = <tmp>0"
+      unwrapParams.code shouldBe "params = <tmp>1"
+
+      val List(innerIf) = outerThenBlock.astChildren.isControlStructure.l
+      innerIf.code should startWith("if let value = params.first")
+
+      val List(innerThenBlock) = innerIf.whenTrue.isBlock.l
+      val List(valueLocal)     = innerThenBlock.astChildren.isLocal.l
+      valueLocal.name shouldBe "value"
+
+      val List(unwrapValue) = innerThenBlock.astChildren.isCall.nameExact(Operators.assignment).l
+      unwrapValue.code shouldBe "value = <tmp>2"
+
+      val List(returnValue) = innerThenBlock.astChildren.isReturn.l
+      returnValue.code shouldBe "return value"
+    }
+
     "testDoCatch" in {
       val cpg = code("""
       |do {
