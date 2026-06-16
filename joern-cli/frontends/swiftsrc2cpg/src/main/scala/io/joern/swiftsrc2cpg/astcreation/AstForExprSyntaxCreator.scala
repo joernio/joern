@@ -8,7 +8,7 @@ import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
-import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall}
+import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall, NewControlStructure}
 
 import scala.annotation.{tailrec, unused}
 
@@ -498,15 +498,114 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForIfExprSyntax(node: IfExprSyntax): Ast = {
-    val code            = this.code(node)
-    val ifNode          = controlStructureNode(node, ControlStructureTypes.IF, code)
-    val conditionAstRaw = astForNode(node.conditions)
-    val conditionAst = conditionAstRaw.root match {
-      case Some(_) => conditionAstRaw
-      case None    => blockAst(blockNode(node.conditions), List.empty)
-    }
-    val thenAst = astForNode(node.body)
-    val elseAst = node.elseBody.map(astForNode)
+    val code   = this.code(node)
+    val ifNode = controlStructureNode(node, ControlStructureTypes.IF, code)
+
+    handleOptionalBindingConditions(
+      node.conditions.children,
+      onAllSimple = simpleBindings => astForIfLetExprSyntax(node, ifNode, simpleBindings, node.body, node.elseBody),
+      onMixed = (simpleBindings, tupleBindings) =>
+        astForIfLetExprSyntaxMixed(node, ifNode, simpleBindings, tupleBindings, node.body, node.elseBody),
+      onPartial = (simpleBindings, tupleBindings, otherConditions) =>
+        astForIfLetExprSyntaxPartial(
+          node,
+          ifNode,
+          simpleBindings,
+          tupleBindings,
+          otherConditions,
+          node.body,
+          node.elseBody
+        ),
+      onStandard = () => {
+        val conditionAst = astForNode(node.conditions)
+        val thenAst      = astForNode(node.body)
+        val elseAst      = node.elseBody.map(astForNode)
+        ifThenElseAst(ifNode, Option(conditionAst), thenAst, elseAst)
+      }
+    )
+  }
+
+  /** Handles Swift optional binding (if-let) constructs.
+    *
+    * De-sugars `if let baz = foo() { body }` into:
+    *
+    * Condition: { (<tmp>0 = foo()) != nil }
+    *
+    * Then block: { let baz = <tmp>0; body }
+    *
+    * For multiple bindings `if let a = foo(), let b = bar() { body }`:
+    *
+    * Condition: { (<tmp>0 = foo()) != nil && (<tmp>1 = bar()) != nil }
+    *
+    * Then block: { a = <tmp>0; b = <tmp>1; body }
+    *
+    * For mixed cases with/without initializers `if let a = foo(), let b { body }`:
+    *
+    * Condition: { (<tmp>0 = foo()) != nil && b != nil }
+    *
+    * Then block: { a = <tmp>0; body }
+    */
+  private def astForIfLetExprSyntax(
+    node: IfExprSyntax,
+    ifNode: NewControlStructure,
+    optionalBindings: Seq[OptionalBindingConditionSyntax],
+    thenBody: CodeBlockSyntax,
+    elseBody: Option[IfExprSyntax | CodeBlockSyntax]
+  ): Ast = {
+    val bindingInfos = collectBindingInfos(optionalBindings)
+    val conditionAst = buildOptionalBindingCondition(node, bindingInfos)
+    val thenAst      = buildBodyWithUnwrapping(thenBody, thenBody.statements.children, bindingInfos)
+    val elseAst      = elseBody.map(astForNode)
+
+    ifThenElseAst(ifNode, Option(conditionAst), thenAst, elseAst)
+  }
+
+  /** Handles mixed optional binding constructs with both simple and tuple patterns.
+    *
+    * De-sugars `if let a = foo(), let (b, c) = bar() { body }` into:
+    *
+    * Condition: { (<tmp>0 = foo()) != nil }
+    *
+    * Then block: { let a = <tmp>0; let (b, c) = bar(); body }
+    */
+  private def astForIfLetExprSyntaxMixed(
+    node: IfExprSyntax,
+    ifNode: NewControlStructure,
+    simpleBindings: Seq[OptionalBindingConditionSyntax],
+    tupleBindings: Seq[OptionalBindingConditionSyntax],
+    thenBody: CodeBlockSyntax,
+    elseBody: Option[IfExprSyntax | CodeBlockSyntax]
+  ): Ast = {
+    val bindingInfos = collectBindingInfos(simpleBindings)
+    val conditionAst = buildOptionalBindingCondition(node, bindingInfos)
+    val thenAst      = buildBodyWithUnwrapping(thenBody, tupleBindings ++ thenBody.statements.children, bindingInfos)
+    val elseAst      = elseBody.map(astForNode)
+
+    ifThenElseAst(ifNode, Option(conditionAst), thenAst, elseAst)
+  }
+
+  /** Handles partial optional binding desugaring with other conditions.
+    *
+    * De-sugars `if let a = foo(), #unavailable(...) { body }` into:
+    *
+    * Condition: { ((<tmp>0 = foo()) != nil) && #unavailable(...) }
+    *
+    * Then block: { let a = <tmp>0; body }
+    */
+  private def astForIfLetExprSyntaxPartial(
+    node: IfExprSyntax,
+    ifNode: NewControlStructure,
+    simpleBindings: Seq[OptionalBindingConditionSyntax],
+    tupleBindings: Seq[OptionalBindingConditionSyntax],
+    otherConditions: Seq[ConditionElementSyntax],
+    thenBody: CodeBlockSyntax,
+    elseBody: Option[IfExprSyntax | CodeBlockSyntax]
+  ): Ast = {
+    val bindingInfos = collectBindingInfos(simpleBindings)
+    val conditionAst = buildOptionalBindingCondition(node, bindingInfos, otherConditions)
+    val thenAst      = buildBodyWithUnwrapping(thenBody, tupleBindings ++ thenBody.statements.children, bindingInfos)
+    val elseAst      = elseBody.map(astForNode)
+
     ifThenElseAst(ifNode, Option(conditionAst), thenAst, elseAst)
   }
 
@@ -723,7 +822,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     * identifier/field-identifier nodes so the resulting AST can be safely used as an argument without node-sharing
     * issues.
     */
-  protected def createFieldAccessChain(baseName: String, fields: List[String], node: SwiftNode): Ast = {
+  private def createFieldAccessChain(baseName: String, fields: List[String], node: SwiftNode): Ast = {
     val baseAst = Ast(identifierNode(node, baseName))
     fields.foldLeft(baseAst) { (accAst, field) =>
       createFieldAccessCallAst(node, accAst, fieldIdentifierNode(node, field, field))
@@ -826,7 +925,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     */
 
   /** Creates an instanceOf check for an IsTypePatternSyntax against a subject field access. */
-  protected def astForIsTypePatternInTupleContext(
+  private def astForIsTypePatternInTupleContext(
     isType: IsTypePatternSyntax,
     subjectAst: Ast,
     subjectCode: String,
@@ -843,7 +942,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   /** Creates an equality check for an expression pattern against a subject field access. */
-  protected def astForExpressionPatternInTupleContext(
+  private def astForExpressionPatternInTupleContext(
     ep: ExpressionPatternSyntax,
     subjectAst: Ast,
     subjectCode: String,
@@ -856,7 +955,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   /** Creates a variable binding assignment for a pattern element against a subject field access. */
-  protected def astForBindingInTupleContext(
+  private def astForBindingInTupleContext(
     varName: String,
     subjectAst: Ast,
     subjectCode: String,
@@ -903,7 +1002,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   /** Determines whether an expression inside a tuple represents a binding (let/var pattern). */
-  protected def isBindingExpression(expr: ExprSyntax): Boolean = expr match {
+  private def isBindingExpression(expr: ExprSyntax): Boolean = expr match {
     case p: PatternExprSyntax =>
       p.pattern match {
         case _: ValueBindingPatternSyntax => true
@@ -914,7 +1013,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   /** Dispatches a PatternSyntax inside a tuple context to the appropriate de-sugaring. */
-  protected def astsForPatternInTupleContext(
+  private def astsForPatternInTupleContext(
     pattern: PatternSyntax,
     subjectAst: Ast,
     subjectCode: String,
@@ -967,7 +1066,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     *   - `DeclReferenceExprSyntax` (`a` in `case let (a, b):`)
     *   - `PatternExprSyntax(ValueBindingPatternSyntax(IdentifierPatternSyntax))` (`var a` in `case (var a, var b):`)
     */
-  protected def extractBindingName(expr: ExprSyntax): String = {
+  private def extractBindingName(expr: ExprSyntax): String = {
     expr match {
       case d: DeclReferenceExprSyntax => code(d)
       case p: PatternExprSyntax =>
@@ -1056,7 +1155,6 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       val condIdentNode = identifierNode(node, subjectTmpName, subjectTmpName, Defines.Tuple)
       scope.addVariableReference(subjectTmpName, condIdentNode, Defines.Tuple, EvaluationStrategies.BY_REFERENCE)
       val condAst = Ast(condIdentNode)
-      setOrderExplicitly(condAst, 1)
 
       val switchBlockNode = blockNode(node).order(2)
       scope.pushNewBlockScope(switchBlockNode)
@@ -1073,15 +1171,10 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
       blockAst(outerBlockNode, List(subjectAssignAst, switchAstResult))
     } else {
-      // The semantics of switch statement children is partially defined by their order value.
-      // The blockAst must have order == 2. Only to avoid collision we set switchExpressionAst to 1
-      // because the semantics of it is already indicated via the condition edge.
-      val switchNode = controlStructureNode(node, ControlStructureTypes.SWITCH, code(node))
-
+      val switchNode          = controlStructureNode(node, ControlStructureTypes.SWITCH, code(node))
       val switchExpressionAst = astForNode(node.subject)
-      setOrderExplicitly(switchExpressionAst, 1)
 
-      val blockNode_ = blockNode(node).order(2)
+      val blockNode_ = blockNode(node)
       scope.pushNewBlockScope(blockNode_)
       localAstParentStack.push(blockNode_)
       val casesAsts = cases.flatMap(astsForSwitchCase(_, None))
