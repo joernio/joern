@@ -2,11 +2,11 @@ package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.x2cpg
-import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
-import io.shiftleft.codepropertygraph.generated.nodes.{NewControlStructure, NewJumpLabel}
+import io.shiftleft.codepropertygraph.generated.nodes.NewJumpLabel
 
 import scala.annotation.unused
 
@@ -558,111 +558,6 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForGuardStmtSyntax(node: GuardStmtSyntax): Ast = {
     // This is already handled in AstCreatorHelper.astsForBlockElements
     Ast()
-  }
-
-  /** Handles Swift optional binding (guard-let) constructs.
-    *
-    * De-sugars `guard let x = foo() else { exit }` into:
-    *
-    * Condition: { (<tmp>0 = foo()) != nil }
-    *
-    * Then block: { let x = <tmp>0 }
-    *
-    * Else block: { exit }
-    *
-    * For multiple bindings `guard let a = foo(), let b = bar() else { exit }`:
-    *
-    * Condition: { ((<tmp>0 = foo()) != nil) && ((<tmp>1 = bar()) != nil) }
-    *
-    * Then block: { a = <tmp>0; b = <tmp>1 }
-    *
-    * For mixed cases with/without initializers `guard let a = foo(), let b else { exit }`:
-    *
-    * Condition: { ((<tmp>0 = foo()) != nil) && (b != nil) }
-    *
-    * Then block: { a = <tmp>0 }
-    */
-  private def astForGuardLetStmtSyntax(
-    node: GuardStmtSyntax,
-    ifNode: NewControlStructure,
-    optionalBindings: Seq[OptionalBindingConditionSyntax]
-  ): Ast = {
-    val bindingInfos = collectBindingInfos(optionalBindings)
-    val conditionAst = buildOptionalBindingCondition(node, bindingInfos)
-
-    // For guard, the then block contains the unwrapped bindings in the parent scope
-    val thenBlockNode = blockNode(node)
-    scope.pushNewBlockScope(thenBlockNode)
-    localAstParentStack.push(thenBlockNode)
-    val unwrapAsts = buildUnwrapAssignments(bindingInfos)
-    scope.popScope()
-    localAstParentStack.pop()
-    val thenAst = blockAst(thenBlockNode, unwrapAsts)
-
-    val elseAst = astForNode(node.body)
-
-    ifThenElseAst(ifNode, Option(conditionAst), thenAst, Option(elseAst))
-  }
-
-  /** Handles mixed optional binding constructs with both simple and tuple patterns.
-    *
-    * De-sugars `guard let a = foo(), let (b, c) = bar() else { exit }` into:
-    *
-    * Condition: { (<tmp>0 = foo()) != nil }
-    *
-    * Then block: { let a = <tmp>0; let (b, c) = bar() }
-    */
-  private def astForGuardLetStmtSyntaxMixed(
-    node: GuardStmtSyntax,
-    ifNode: NewControlStructure,
-    simpleBindings: Seq[OptionalBindingConditionSyntax],
-    tupleBindings: Seq[OptionalBindingConditionSyntax]
-  ): Ast = {
-    val bindingInfos = collectBindingInfos(simpleBindings)
-    val conditionAst = buildOptionalBindingCondition(node, bindingInfos)
-
-    val thenBlockNode = blockNode(node)
-    scope.pushNewBlockScope(thenBlockNode)
-    localAstParentStack.push(thenBlockNode)
-    val unwrapAsts = buildUnwrapAssignments(bindingInfos) ++ tupleBindings.map(astForNode)
-    scope.popScope()
-    localAstParentStack.pop()
-    val thenAst = blockAst(thenBlockNode, unwrapAsts)
-
-    val elseAst = astForNode(node.body)
-
-    ifThenElseAst(ifNode, Option(conditionAst), thenAst, Option(elseAst))
-  }
-
-  /** Handles partial optional binding desugaring with other conditions.
-    *
-    * De-sugars `guard let a = foo(), someCondition else { exit }` into:
-    *
-    * Condition: { ((<tmp>0 = foo()) != nil) && someCondition }
-    *
-    * Then block: { let a = <tmp>0 }
-    */
-  private def astForGuardLetStmtSyntaxPartial(
-    node: GuardStmtSyntax,
-    ifNode: NewControlStructure,
-    simpleBindings: Seq[OptionalBindingConditionSyntax],
-    tupleBindings: Seq[OptionalBindingConditionSyntax],
-    otherConditions: Seq[ConditionElementSyntax]
-  ): Ast = {
-    val bindingInfos = collectBindingInfos(simpleBindings)
-    val conditionAst = buildOptionalBindingCondition(node, bindingInfos, otherConditions)
-
-    val thenBlockNode = blockNode(node)
-    scope.pushNewBlockScope(thenBlockNode)
-    localAstParentStack.push(thenBlockNode)
-    val unwrapAsts = buildUnwrapAssignments(bindingInfos) ++ tupleBindings.map(astForNode)
-    scope.popScope()
-    localAstParentStack.pop()
-    val thenAst = blockAst(thenBlockNode, unwrapAsts)
-
-    val elseAst = astForNode(node.body)
-
-    ifThenElseAst(ifNode, Option(conditionAst), thenAst, Option(elseAst))
   }
 
   private def astForLabeledStmtSyntax(node: LabeledStmtSyntax): Ast = {

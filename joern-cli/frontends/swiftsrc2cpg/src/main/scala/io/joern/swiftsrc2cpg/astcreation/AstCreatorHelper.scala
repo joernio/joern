@@ -160,6 +160,20 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
       val (conditionAst, unwrapAsts) = handleOptionalBindingConditions(
         guardStmt.conditions.children,
+        // Handles Swift optional binding (guard-let) constructs.
+        //
+        // De-sugars `guard let x = foo() else { exit }` into:
+        //   Condition:  { (<tmp>0 = foo()) != nil }
+        //   Then block: { let x = <tmp>0 }
+        //   Else block: { exit }
+        //
+        // For multiple bindings `guard let a = foo(), let b = bar() else { exit }`:
+        //   Condition:  { ((<tmp>0 = foo()) != nil) && ((<tmp>1 = bar()) != nil) }
+        //   Then block: { a = <tmp>0; b = <tmp>1 }
+        //
+        // For mixed cases with/without initializers `guard let a = foo(), let b else { exit }`:
+        //   Condition:  { ((<tmp>0 = foo()) != nil) && (b != nil) }
+        //   Then block: { a = <tmp>0 }
         onAllSimple = simpleBindings => {
           val bindingInfos = collectBindingInfos(simpleBindings)
           val condAst      = buildOptionalBindingCondition(guardStmt, bindingInfos)
@@ -168,6 +182,11 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
           val unwraps = buildUnwrapAssignments(bindingInfos)
           (condAst, unwraps)
         },
+        // Handles mixed optional binding constructs with both simple and tuple patterns.
+        //
+        // De-sugars `guard let a = foo(), let (b, c) = bar() else { exit }` into:
+        //   Condition:  { (<tmp>0 = foo()) != nil }
+        //   Then block: { let a = <tmp>0; let (b, c) = bar() }
         onMixed = (simpleBindings, tupleBindings) => {
           val bindingInfos = collectBindingInfos(simpleBindings)
           val condAst      = buildOptionalBindingCondition(guardStmt, bindingInfos)
@@ -176,6 +195,11 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
           val unwraps = buildUnwrapAssignments(bindingInfos) ++ tupleBindings.map(astForNode)
           (condAst, unwraps)
         },
+        // Handles partial optional binding desugaring with other conditions.
+        //
+        // De-sugars `guard let a = foo(), someCondition else { exit }` into:
+        //   Condition:  { ((<tmp>0 = foo()) != nil) && someCondition }
+        //   Then block: { let a = <tmp>0 }
         onPartial = (simpleBindings, tupleBindings, otherConditions) => {
           val bindingInfos = collectBindingInfos(simpleBindings)
           val condAst      = buildOptionalBindingCondition(guardStmt, bindingInfos, otherConditions)
@@ -663,7 +687,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   /** Builds the condition AST for optional binding constructs (if-let/while-let). If any binding has an initializer,
-    * creates a block with temp variable assignments and nil checks. Otherwise creates a simple combined nil check.
+    * creates a block with temp variable assignments and nil checks. Otherwise, creates a simple combined nil check.
     *
     * @param node
     *   The control structure node (IfExprSyntax or WhileStmtSyntax)
@@ -808,13 +832,12 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         createAssignmentCallAst(binding, Ast(localIdentNode), Ast(tmpIdent), s"${info.localName} = $tmpName")
       }
 
-      val bodyAsts = bodyStatements.map(astForNode).toList
+      val bodyAsts = astsForBlockElements(bodyStatements.toList)
 
       scope.popScope()
       localAstParentStack.pop()
 
       if (unwrapAsts.isEmpty && bodyAsts.isEmpty) {
-        // Empty body - return empty block without creating a nested block
         Ast(bodyBlockNode)
       } else {
         blockAst(bodyBlockNode, unwrapAsts.toList ++ bodyAsts)
@@ -824,7 +847,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }
   }
 
-  protected def buildUnwrapAssignments(bindingInfos: Seq[BindingInfo]): List[Ast] = {
+  private def buildUnwrapAssignments(bindingInfos: Seq[BindingInfo]): List[Ast] = {
     val bindingsWithInitializer = bindingInfos.filter(info => info.tmpName.isDefined && !info.isWildcard)
 
     bindingsWithInitializer.map { info =>

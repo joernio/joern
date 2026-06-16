@@ -475,6 +475,56 @@ class StatementTests extends SwiftSrc2CpgSuite {
       barAssignment.code should include("bar()")
     }
 
+    "testGuardLetNestedInIfLetBody" in {
+      val cpg = code("""
+      |func test(optionalValue: Int?) {
+      |  if let sql = optionalValue {
+      |    guard let user = bar() else {
+      |      return
+      |    }
+      |    print(user)
+      |  }
+      |}
+      |""".stripMargin)
+      val List(ifNode)    = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).code(".*if let sql.*").l
+      val List(thenBlock) = ifNode.whenTrue.isBlock.l
+
+      val List(sqlLocal, guardTmpLocal) = thenBlock.astChildren.isLocal.l
+      sqlLocal.name shouldBe "sql"
+      val guardTmpName = guardTmpLocal.name
+      guardTmpName shouldBe "<tmp>1"
+
+      val List(guardIf) = thenBlock.astChildren.isControlStructure.controlStructureType(ControlStructureTypes.IF).l
+      guardIf.code should startWith("guard let user = bar()")
+
+      val List(condBlock) = guardIf.condition.isBlock.l
+      val List(condCheck) = condBlock.astChildren.isCall.nameExact(Operators.notEquals).l
+      condCheck.code shouldBe s"($guardTmpName = bar()) != nil"
+
+      val List(condAssign) = condCheck.argument.isCall.nameExact(Operators.assignment).l
+      condAssign.code shouldBe s"$guardTmpName = bar()"
+      condAssign.argument(1).code shouldBe guardTmpName
+      condAssign.argument(2).code shouldBe "bar()"
+
+      val List(condNil) = condCheck.argument.isLiteral.l
+      condNil.code shouldBe "nil"
+
+      val List(guardThenBlock) = guardIf.whenTrue.isBlock.l
+      val List(userLocal)      = guardThenBlock.astChildren.isLocal.l
+      userLocal.name shouldBe "user"
+
+      val List(unwrapUser, printCall) = guardThenBlock.astChildren.isCall.l
+      unwrapUser.name shouldBe Operators.assignment
+      unwrapUser.code shouldBe s"user = $guardTmpName"
+      unwrapUser.argument(1).code shouldBe "user"
+      unwrapUser.argument(2).code shouldBe guardTmpName
+      printCall.name shouldBe "print"
+      printCall.code shouldBe "print(user)"
+
+      val List(elseReturn) = guardIf.whenFalse.isReturn.l
+      elseReturn.code shouldBe "return"
+    }
+
   }
 
 }
