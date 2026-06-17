@@ -41,6 +41,11 @@ alias(
 )
 
 alias(
+    name = "rust2cpg",
+    actual = "//joern-cli/frontends/rust2cpg:rust2cpg-bin",
+)
+
+alias(
     name = "swiftsrc2cpg",
     actual = "//joern-cli/frontends/swiftsrc2cpg:swiftsrc2cpg-bin",
 )

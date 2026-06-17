@@ -179,3 +179,58 @@ http_file(
     sha256 = "1b14a87a5e2080bf22b83b7af76805b621f2d959cf21a35b7b21f207f53e755d",
     url = "https://github.com/joernio/joern-type-stubs/releases/download/v0.6.0/rubysrc_builtin_types.zip",
 )
+
+#rust2cpg astgen binary imports
+http_file(
+    name = "rust2cpg_astgen_macos_arm",
+    executable = True,
+    # TODO add sha256 for now we skip this as the frontend is in early developemnt and we do not want
+    # to update this all the time.
+    sha256 = "",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv0.8.2/rust_ast_gen-macos-arm",
+)
+
+http_file(
+    name = "rust2cpg_astgen_macos_x86",
+    executable = True,
+    # TODO add sha256 for now we skip this as the frontend is in early developemnt and we do not want
+    # to update this all the time.
+    sha256 = "",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv0.8.2/rust_ast_gen-macos",
+)
+
+http_file(
+    name = "rust2cpg_astgen_linux_arm",
+    executable = True,
+    # TODO add sha256 for now we skip this as the frontend is in early developemnt and we do not want
+    # to update this all the time.
+    sha256 = "",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv0.8.2/rust_ast_gen-linux-arm",
+)
+
+http_file(
+    name = "rust2cpg_astgen_linux_x86",
+    executable = True,
+    # TODO add sha256 for now we skip this as the frontend is in early developemnt and we do not want
+    # to update this all the time.
+    sha256 = "",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv0.8.2/rust_ast_gen-linux",
+)
+
+http_file(
+    name = "rust2cpg_astgen_win_arm",
+    executable = True,
+    # TODO add sha256 for now we skip this as the frontend is in early developemnt and we do not want
+    # to update this all the time.
+    sha256 = "",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv0.8.2/rust_ast_gen-win-arm.exe",
+)
+
+http_file(
+    name = "rust2cpg_astgen_win_x86",
+    executable = True,
+    # TODO add sha256 for now we skip this as the frontend is in early developemnt and we do not want
+    # to update this all the time.
+    sha256 = "",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv0.8.2/rust_ast_gen-win.exe",
+)
