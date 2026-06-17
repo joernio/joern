@@ -37,6 +37,15 @@ config_setting(
 )
 
 config_setting(
+    name = "win-arm",
+    constraint_values = [
+        "@platforms//os:windows",
+        "@platforms//cpu:arm64",
+    ],
+    flag_values = {":all_platforms_flag": "false"},
+)
+
+config_setting(
     name = "win-x86",
     constraint_values = [
         "@platforms//os:windows",
