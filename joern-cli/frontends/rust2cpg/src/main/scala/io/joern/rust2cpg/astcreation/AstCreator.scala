@@ -146,6 +146,27 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     )
   }
 
+  protected def typeDeclForImpl(impl: RustNodeSyntax.Impl): NewTypeDecl = {
+    val implType = typeFullNameForType(impl.typ.last)
+    val name     = implType.split(RustFullNames.PathSep).lastOption.getOrElse(implType)
+    val parent   = methodAstParentStack.head
+    typeDeclNode(
+      node = impl,
+      name = name,
+      fullName = implType,
+      filename = parseResult.filename,
+      code = code(impl),
+      astParentType = parent.label,
+      astParentFullName = parent.properties(PropertyNames.FullName).toString
+    )
+  }
+
+  protected def enclosingTypeDeclFullName: Option[String] = {
+    methodAstParentStack.collectFirst { case typeDecl: NewTypeDecl =>
+      typeDecl.properties(PropertyNames.FullName).toString
+    }
+  }
+
   protected def operatorNameFor(binExpr: RustNodeSyntax.BinExpr): Option[String] = binExpr.op match {
     case Some(_: RustNodeSyntax.Pipe2Token)     => Some(Operators.logicalOr)
     case Some(_: RustNodeSyntax.Amp2Token)      => Some(Operators.logicalAnd)
