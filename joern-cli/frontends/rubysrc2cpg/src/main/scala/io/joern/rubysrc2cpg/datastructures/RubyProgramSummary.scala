@@ -51,7 +51,9 @@ object RubyProgramSummary {
 
             typeStubDir
               .walk()
-              .filter(f => Files.isRegularFile(f) && f.fileName.startsWith("rubysrc") && f.extension().contains(".zip"))
+              .filter(file =>
+                Files.isRegularFile(file) && file.fileName.startsWith("rubysrc") && file.extension().contains(".zip")
+              )
               .toSeq
           }
 
