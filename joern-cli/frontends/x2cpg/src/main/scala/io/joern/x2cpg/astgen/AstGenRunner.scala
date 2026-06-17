@@ -2,13 +2,14 @@ package io.joern.x2cpg.astgen
 
 import com.typesafe.config.ConfigFactory
 import io.joern.x2cpg.astgen.AstGenRunner.AstGenProgramMetaData
-import io.joern.x2cpg.utils.Environment
+import io.joern.x2cpg.utils.{Environment, JoernRunfilesLocator}
 import io.joern.x2cpg.utils.Environment.{ArchitectureType, OperatingSystemType}
 import io.joern.x2cpg.{SourceFiles, X2CpgConfig}
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 import versionsort.VersionHelper
 
+import java.io.FileNotFoundException
 import java.net.URL
 import java.nio.file.{Files, Path, Paths}
 import scala.util.{Failure, Success, Try}
@@ -92,6 +93,17 @@ abstract class AstGenRunner(metaData: AstGenProgramMetaData, config: X2CpgConfig
   protected val MacX86   = "macos"
   protected val MacArm   = "macos-arm"
 
+  protected val bazelRuleSuffixDefaults = Map(
+    (OperatingSystemType.Windows, ArchitectureType.X86)   -> "_win_x86",
+    (OperatingSystemType.Windows, ArchitectureType.ARMv8) -> "_win_arm",
+    (OperatingSystemType.Linux, ArchitectureType.X86)     -> "_linux_x86",
+    (OperatingSystemType.Linux, ArchitectureType.ARMv8)   -> "_linux_arm",
+    (OperatingSystemType.Mac, ArchitectureType.X86)       -> "_macos_x86",
+    (OperatingSystemType.Mac, ArchitectureType.ARMv8)     -> "_macos_arm"
+  )
+
+  protected val bazelRuleSuffixes = bazelRuleSuffixDefaults
+
   /** All the supported combinations of architectures.
     */
   protected val SupportedBinaries: Set[(OperatingSystemType, ArchitectureType)] = Set(
@@ -102,6 +114,17 @@ abstract class AstGenRunner(metaData: AstGenProgramMetaData, config: X2CpgConfig
     Environment.OperatingSystemType.Mac     -> Environment.ArchitectureType.X86,
     Environment.OperatingSystemType.Mac     -> Environment.ArchitectureType.ARMv8
   )
+
+  protected def bazelRunfileRepo(frontendName: String): String = {
+    val suffix = bazelRuleSuffixes.getOrElse(
+      (Environment.operatingSystem, Environment.architecture), {
+        throw new UnsupportedOperationException(
+          s"No compatible astgen binary for your operating system and architecture!"
+        )
+      }
+    )
+    s"${frontendName}_astgen$suffix"
+  }
 
   /** Determines the name of the executable to run, based on the host system. Usually, AST GEN binaries support three
     * operating systems, and two architectures. Some binaries are multiplatform, in which case the suffix for x86 is
@@ -166,7 +189,7 @@ abstract class AstGenRunner(metaData: AstGenProgramMetaData, config: X2CpgConfig
     val astGenVersion = conf.getString(metaData.resolvedVersionConfigKey)
     val resolvedPath  = resolveAstGenPath(astGenVersion)
     logger.info(s"Using ${metaData.name} from '$resolvedPath'")
-    resolvedPath
+    Paths.get(resolvedPath).toAbsolutePath.toString
   }
 
   /** Resolution order:
@@ -179,6 +202,11 @@ abstract class AstGenRunner(metaData: AstGenProgramMetaData, config: X2CpgConfig
     binFromEnvVar
       .filter(path => hasCompatibleAstGenVersion(astGenVersion, Option(path)))
       .orElse(Option.when(hasCompatibleAstGenVersion(astGenVersion, None))(metaData.name))
+      .orElse {
+        val runfileRepo = bazelRunfileRepo(metaData.configPrefix)
+        val path        = JoernRunfilesLocator.resolve(s"$runfileRepo/file/downloaded")
+        path
+      }
       .getOrElse {
         val localPath = s"$executableDir/$executableName"
         if (AstGenRunner.isExecutableFile(localPath)) {

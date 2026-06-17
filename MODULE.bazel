@@ -1,0 +1,181 @@
+module(name = "joern")
+
+bazel_dep(name = "rules_scala", version = "7.2.4")
+
+scala_config = use_extension(
+    "@rules_scala//scala/extensions:config.bzl",
+    "scala_config",
+)
+scala_config.settings(
+    scala_version = "3.7.4",
+)
+
+scala_deps = use_extension(
+    "@rules_scala//scala/extensions:deps.bzl",
+    "scala_deps",
+)
+scala_deps.scala()
+scala_deps.scalatest()
+
+# We always want to keep bazel_tooling in sync with the main Joern
+# module. The only reason this is even its on module is that we have
+# the same access patterns to its exported symbols and targets in Joern
+# as in other upstream projects.
+bazel_dep(name = "bazel_tooling")
+local_path_override(
+    module_name = "bazel_tooling",
+    path = "bazel/tooling",
+)
+
+register_toolchains("@bazel_tooling//scala_toolchain:plus_one_toolchain")
+
+bazel_dep(name = "rules_jvm_external", version = "7.0")
+
+maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
+maven.install(
+    name = "maven",
+    artifacts = [
+        "io.shiftleft:codepropertygraph_3:1.7.70",
+        "org.slf4j:slf4j-api:2.0.7",
+        "com.github.javaparser:javaparser-symbol-solver-core:3.28.0",
+        "org.ow2.asm:asm:9.9.1",
+        "org.projectlombok:lombok:1.18.42",
+        "net.lingala.zip4j:zip4j:2.11.5",
+        "org.gradle:gradle-tooling-api:8.3",
+        "com.lihaoyi:ujson_3:4.0.2",
+        "com.lihaoyi:upickle_3:4.0.2",
+        "org.json4s:json4s-native_3:4.0.7",
+        "com.michaelpollmeier:scala-repl-pp_3.3.6:0.6.3",
+        "org.apache.commons:commons-lang3:3.14.0",
+        "org.apache.commons:commons-text:1.12.0",
+        "org.apache.commons:commons-exec:1.4.0",
+        "org.apache.commons:commons-compress:1.26.2",
+        "org.scala-lang.modules:scala-xml_3:2.2.0",
+        "com.typesafe:config:1.4.3",
+        "com.michaelpollmeier:versionsort:1.0.11",
+        "org.scala-lang.modules:scala-parser-combinators_3:2.4.0",
+        "org.scala-lang.modules:scala-parallel-collections_3:1.0.4",
+        "net.java.dev.javacc:javacc:7.0.12",
+        "org.antlr:antlr4:4.7.2",
+        "org.antlr:antlr4-runtime:4.7.2",
+        "com.github.scopt:scopt_3:4.1.0",
+        "org.apache.logging.log4j:log4j-slf4j2-impl:2.20.0",
+        "com.google.code.gson:gson:2.13.1",
+        "com.googlecode.plist:dd-plist:1.28",
+        "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.3.21",
+        "org.jetbrains.kotlin:kotlin-stdlib:2.3.21",
+        "org.jetbrains.kotlin:kotlin-compiler-embeddable:2.3.21",
+        "org.jetbrains.kotlin:kotlin-allopen:2.3.21",
+        "org.jruby:jruby-complete:9.4.9.0",
+        # TODO remove dependencies below this. They do not have production quality.
+        "com.squareup.tools.build:maven-archeologist:0.0.10",
+        "com.lihaoyi:requests_3:0.8.0",
+    ],
+    fetch_sources = True,
+    lock_file = "//:maven_install.json",
+    repositories = [
+        "https://repo1.maven.org/maven2",
+        "https://repo.gradle.org/gradle/libs-releases/",
+    ],
+)
+use_repo(maven, "maven")
+
+maven.install(
+    name = "format_maven",
+    artifacts = [
+        "org.scalameta:scalafmt-cli_2.13:3.9.6",
+    ],
+    lock_file = "//:format_maven_install.json",
+    repositories = [
+        "https://repo1.maven.org/maven2",
+    ],
+)
+use_repo(maven, "format_maven")
+
+bazel_dep(name = "rules_pkg", version = "1.0.1")
+bazel_dep(name = "aspect_rules_lint", version = "2.5.2")
+bazel_dep(name = "buildifier_prebuilt", version = "8.5.1.2")
+bazel_dep(name = "rules_java", version = "9.6.1")
+
+http_file = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
+
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+# jssrc2cpg astgen binary imports
+http_file(
+    name = "jssrc2cpg_astgen_macos_arm",
+    executable = True,
+    sha256 = "530494524a94a2ef64ac2217290b8d1feaae59ec39be4433008b950a6f512a06",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2Fv3.46.0/astgen-macos-arm",
+)
+
+http_file(
+    name = "jssrc2cpg_astgen_macos_x86",
+    executable = True,
+    sha256 = "ce07e0266938d17c559d48a1e70bd2f7b4b431d505571133db4a5566fd2c19d5",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2Fv3.46.0/astgen-macos",
+)
+
+http_file(
+    name = "jssrc2cpg_astgen_linux_arm",
+    executable = True,
+    sha256 = "eaed227be1674c03418db3784e6da0d0c88bc8112a8835cc82260d62e20c986c",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2fv3.46.0/astgen-linux-arm",
+)
+
+http_file(
+    name = "jssrc2cpg_astgen_linux_x86",
+    executable = True,
+    sha256 = "8c54c044d5e759cb49f4bf06e6c08721ba882ca4a3f1d4b479706f1aa3d1603b",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2Fv3.46.0/astgen-linux",
+)
+
+http_file(
+    name = "jssrc2cpg_astgen_win_x86",
+    executable = True,
+    sha256 = "ee4ddc128fe30749868e44e04c39bd50f72f8cc7a5a72d7d0cc4994a8c781840",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2Fv3.46.0/astgen-win.exe",
+)
+
+#swiftsrc2cpg astgen binary imports
+http_file(
+    name = "swiftsrc2cpg_astgen_macos",
+    executable = True,
+    sha256 = "2ea737b2fb7e3e87a6e930753bb69601fc37bcb7ed36ac39cfdd29560d5810c3",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/swift-astgen%2Fv0.4.2/SwiftAstGen-mac",
+)
+
+http_file(
+    name = "swiftsrc2cpg_astgen_linux_arm",
+    executable = True,
+    sha256 = "49da64aa0ebb3ef1ddd00742fb378081adc2e972d97b6766ac25208510e3503b",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/swift-astgen%2Fv0.4.2/SwiftAstGen-linux-arm64",
+)
+
+http_file(
+    name = "swiftsrc2cpg_astgen_linux_x86",
+    executable = True,
+    sha256 = "1697e43e720768480d32468e02625129817ac770b58f536273f78378c064832e",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/swift-astgen%2Fv0.4.2/SwiftAstGen-linux",
+)
+
+http_file(
+    name = "swiftsrc2cpg_astgen_win_x86",
+    executable = True,
+    sha256 = "f7d0e15f69c971a169b27819166ff01201e59908fa440f4d61a0ec7dc77f1f65",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/swift-astgen%2Fv0.4.2/SwiftAstGen-win.exe",
+)
+
+#rubysrc2cpg astgen zip
+http_archive(
+    name = "rubysrc2cpg_astgen",
+    build_file = "//joern-cli/frontends/rubysrc2cpg:rubysrc2cpg_astgen.BUILD",
+    sha256 = "66a2a61e822b1a4e391f86571b4a796c01c75b53c105fe544733b222843d06c7",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/ruby-astgen%2Fv0.58.0/ruby_ast_gen_v0.58.0.zip",
+)
+
+http_file(
+    name = "rubysrc2cpg_type_stubs",
+    sha256 = "1b14a87a5e2080bf22b83b7af76805b621f2d959cf21a35b7b21f207f53e755d",
+    url = "https://github.com/joernio/joern-type-stubs/releases/download/v0.6.0/rubysrc_builtin_types.zip",
+)

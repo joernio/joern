@@ -1,12 +1,13 @@
 package io.joern.rubysrc2cpg.datastructures
 
+import io.joern.rubysrc2cpg.Config
 import io.joern.x2cpg.Defines as XDefines
 import io.joern.x2cpg.datastructures.{FieldLike, MethodLike, ProgramSummary, StubbedType, TypeLike}
-import io.joern.x2cpg.typestub.{TypeStubMetaData, TypeStubUtil}
+import io.joern.x2cpg.typestub.{TypeStubUtil}
 import io.shiftleft.semanticcpg.utils.FileUtil.*
 import org.slf4j.LoggerFactory
 import io.joern.rubysrc2cpg.passes.Defines
-import io.shiftleft.semanticcpg.utils.FileUtil
+import io.joern.x2cpg.utils.JoernRunfilesLocator
 import upickle.default.*
 
 import java.io.{ByteArrayInputStream, FileInputStream, InputStream}
@@ -39,13 +40,25 @@ class RubyProgramSummary(
 object RubyProgramSummary {
   private val logger = LoggerFactory.getLogger(getClass)
 
-  def BuiltinTypes(implicit typeStubMetaData: TypeStubMetaData): NamespaceToTypeMap = {
-    val typeStubDir = Paths.get(typeStubMetaData.packagePath.toURI)
-    if (!Files.exists(typeStubDir) || !Files.isDirectory(typeStubDir)) {
-      logger.warn("No builtin type stubs provided, continuing with types provided by the project")
-      mutable.Map.empty
-    } else if (typeStubMetaData.useTypeStubs) {
-      mpkZipToInitialMapping(mergeBuiltinMpkZip) match {
+  def BuiltinTypes(config: Config): NamespaceToTypeMap = {
+    if (config.useTypeStubs) {
+      val typeStubFiles =
+        JoernRunfilesLocator
+          .resolve("rubysrc2cpg_type_stubs/file/downloaded")
+          .map(path => Path.of(path) :: Nil)
+          .getOrElse {
+            val codeSourceLocation = getClass.getProtectionDomain.getCodeSource.getLocation.toString
+            val typeStubDir        = TypeStubUtil.typeStubDir(codeSourceLocation)
+
+            typeStubDir
+              .walk()
+              .filter(file =>
+                Files.isRegularFile(file) && file.fileName.startsWith("rubysrc") && file.extension().contains(".zip")
+              )
+              .toSeq
+          }
+
+      mpkZipToInitialMapping(mergeBuiltinMpkZip(typeStubFiles)) match {
         case Failure(exception) => logger.warn("Unable to parse builtin types", exception); mutable.Map.empty
         case Success(mapping)   => mapping
       }
@@ -58,18 +71,9 @@ object RubyProgramSummary {
     Try(readBinary[NamespaceToTypeMap](inputStream.readAllBytes()))
   }
 
-  private def mergeBuiltinMpkZip(implicit typeStubMetaData: TypeStubMetaData): InputStream = {
-    val classLoader = getClass.getClassLoader
-    val typeStubDir = TypeStubUtil.typeStubDir
-
-    val typeStubFiles: Seq[Path] =
-      typeStubDir
-        .walk()
-        .filter(f => Files.isRegularFile(f) && f.fileName.startsWith("rubysrc") && f.extension().contains(".zip"))
-        .toSeq
-
+  private def mergeBuiltinMpkZip(typeStubFiles: Seq[Path]): InputStream = {
     if (typeStubFiles.isEmpty) {
-      logger.warn("No ZIP files found.")
+      logger.warn("No builtin type stubs provided, continuing with types provided by the project")
       InputStream.nullInputStream()
     } else {
       val mergedMpksObj = ListBuffer[collection.mutable.Map[String, Set[RubyStubbedType]]]()

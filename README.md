@@ -74,6 +74,8 @@ python -m pip install requests pexpect # wexpect on Windows
 python -u ./testDistro.py
 ```
 
+There is an experimental partial Bazel build setup. Check bazel.md for further details.
+
 ## Docker based execution
 
 ```
