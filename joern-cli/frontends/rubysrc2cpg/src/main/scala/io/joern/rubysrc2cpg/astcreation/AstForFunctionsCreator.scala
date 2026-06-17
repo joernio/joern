@@ -3,6 +3,7 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{ConstructorScope, MethodScope}
 import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.x2cpg.AstNodeBuilder.{bindingNode, closureBindingNode}
 import io.joern.x2cpg.{Ast, AstEdge, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -194,28 +195,30 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   protected def astForMethodAccessModifier(node: MethodAccessModifier): Seq[Ast] = {
+    val (operatorName, expr) = node match {
+      case x: PrivateMethodModifier => (RubyOperators.privateClassMethod, x: RubyExpression)
+      case x: PublicMethodModifier  => (RubyOperators.publicClassMethod, x: RubyExpression)
+    }
+
     val originalAccessModifier = currentAccessModifier
     popAccessModifier()
 
     node match {
-      case _: PrivateMethodModifier =>
-        pushAccessModifier(ModifierTypes.PRIVATE)
-      case _: PublicMethodModifier =>
-        pushAccessModifier(ModifierTypes.PUBLIC)
+      case _: PrivateMethodModifier => pushAccessModifier(ModifierTypes.PRIVATE)
+      case _: PublicMethodModifier  => pushAccessModifier(ModifierTypes.PUBLIC)
     }
 
-    val methodAst = node.method match {
+    val methodAsts = node.arguments.flatMap {
       case m: ProcedureDeclaration => astsForStatement(m)
-      case x                       =>
-        // Not sure how we should represent dynamically setting access modifiers based on method refs
-        logger.debug(s"Unhandled method reference from AST type ${x.getClass}")
-        Nil
+      case _                       => Nil
     }
 
     popAccessModifier()
     pushAccessModifier(originalAccessModifier)
 
-    methodAst
+    val argAsts = node.arguments.map(astForExpression)
+    val call    = callNode(expr, code(expr), operatorName, operatorName, DispatchTypes.STATIC_DISPATCH)
+    methodAsts :+ callAst(call, argAsts)
   }
 
   private def transformAsClosureBody(originNode: RubyExpression, refs: List[Ast], baseStmtBlockAst: Ast): Ast = {

@@ -54,7 +54,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     case node: DefaultMultipleAssignment        => astForDefaultMultipleAssignmentExpr(node)
     case node: MultipleAssignment               => blockAst(blockNode(node), astsForStatement(node).toList)
     case node: ReturnExpression                 => astForReturnExpression(node)
-    case node: AccessModifier                   => astForSimpleIdentifier(node.toSimpleIdentifier)
+    case node: AccessModifier                   => astForAccessModifierCall(node)
+    case node: MethodAccessModifier             => astForMethodAccessModifierExpr(node)
     case node: ArrayPattern                     => astForArrayPattern(node)
     case node: DummyNode                        => Ast(node.node)
     case node: DummyAst                         => node.ast
@@ -671,6 +672,21 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   protected def astForMandatoryParameter(node: RubyExpression): Ast = handleVariableOccurrence(node)
+
+  protected def astForAccessModifierCall(node: RubyExpression & AccessModifier): Ast = {
+    val operatorName = node match {
+      case _: PublicModifier    => RubyOperators.publicModifier
+      case _: PrivateModifier   => RubyOperators.privateModifier
+      case _: ProtectedModifier => RubyOperators.protectedModifier
+    }
+    val argAsts = node.arguments.map(astForExpression)
+    val call    = callNode(node, code(node), operatorName, operatorName, DispatchTypes.STATIC_DISPATCH)
+    callAst(call, argAsts)
+  }
+
+  protected def astForMethodAccessModifierExpr(node: RubyExpression & MethodAccessModifier): Ast = {
+    blockAst(blockNode(node), astForMethodAccessModifier(node).toList)
+  }
 
   protected def astForSimpleCall(node: SimpleCall): Ast = {
     node.target match {
