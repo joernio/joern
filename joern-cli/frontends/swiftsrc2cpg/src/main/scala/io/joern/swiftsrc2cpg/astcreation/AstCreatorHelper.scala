@@ -185,19 +185,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
           val unwraps = buildUnwrapAssignments(bindingInfos)
           (condAst, unwraps)
         },
-        // Handles mixed optional binding constructs with both simple and tuple patterns.
-        //
-        // De-sugars `guard let a = foo(), let (b, c) = bar() else { exit }` into:
-        //   Condition:  { (<tmp>0 = foo()) != nil }
-        //   Then block: { let a = <tmp>0; let (b, c) = bar() }
-        onMixed = (simpleBindings, tupleBindings) => {
-          val bindingInfos = collectBindingInfos(simpleBindings)
-          val condAst      = buildOptionalBindingCondition(guardStmt, bindingInfos)
-          scope.pushNewBlockScope(thenBlockNode)
-          localAstParentStack.push(thenBlockNode)
-          val unwraps = buildUnwrapAssignments(bindingInfos) ++ tupleBindings.map(astForNode)
-          (condAst, unwraps)
-        },
         // Handles partial optional binding desugaring with other conditions.
         //
         // De-sugars `guard let a = foo(), someCondition else { exit }` into:
@@ -729,7 +716,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def handleOptionalBindingConditions[T](
     conditions: Iterable[ConditionElementSyntax],
     onAllSimple: Seq[OptionalBindingConditionSyntax] => T,
-    onMixed: (Seq[OptionalBindingConditionSyntax], Seq[OptionalBindingConditionSyntax]) => T,
     onPartial: (
       Seq[OptionalBindingConditionSyntax],
       Seq[OptionalBindingConditionSyntax],

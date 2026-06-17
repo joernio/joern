@@ -504,8 +504,6 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     handleOptionalBindingConditions(
       node.conditions.children,
       onAllSimple = simpleBindings => astForIfLetExprSyntax(node, ifNode, simpleBindings, node.body, node.elseBody),
-      onMixed = (simpleBindings, tupleBindings) =>
-        astForIfLetExprSyntaxMixed(node, ifNode, simpleBindings, tupleBindings, node.body, node.elseBody),
       onPartial = (simpleBindings, tupleBindings, otherConditions) =>
         astForIfLetExprSyntaxPartial(
           node,
@@ -555,30 +553,6 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val bindingInfos = collectBindingInfos(optionalBindings)
     val conditionAst = buildOptionalBindingCondition(node, bindingInfos)
     val thenAst      = buildBodyWithUnwrapping(thenBody, thenBody.statements.children, bindingInfos)
-    val elseAst      = elseBody.map(astForNode)
-
-    ifThenElseAst(ifNode, Option(conditionAst), thenAst, elseAst)
-  }
-
-  /** Handles mixed optional binding constructs with both simple and tuple patterns.
-    *
-    * De-sugars `if let a = foo(), let (b, c) = bar() { body }` into:
-    *
-    * Condition: { (<tmp>0 = foo()) != nil }
-    *
-    * Then block: { let a = <tmp>0; let (b, c) = bar(); body }
-    */
-  private def astForIfLetExprSyntaxMixed(
-    node: IfExprSyntax,
-    ifNode: NewControlStructure,
-    simpleBindings: Seq[OptionalBindingConditionSyntax],
-    tupleBindings: Seq[OptionalBindingConditionSyntax],
-    thenBody: CodeBlockSyntax,
-    elseBody: Option[IfExprSyntax | CodeBlockSyntax]
-  ): Ast = {
-    val bindingInfos = collectBindingInfos(simpleBindings)
-    val conditionAst = buildOptionalBindingCondition(node, bindingInfos)
-    val thenAst      = buildBodyWithUnwrapping(thenBody, tupleBindings ++ thenBody.statements.children, bindingInfos)
     val elseAst      = elseBody.map(astForNode)
 
     ifThenElseAst(ifNode, Option(conditionAst), thenAst, elseAst)
