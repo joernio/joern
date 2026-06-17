@@ -822,8 +822,10 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     * identifier/field-identifier nodes so the resulting AST can be safely used as an argument without node-sharing
     * issues.
     */
-  private def createFieldAccessChain(baseName: String, fields: List[String], node: SwiftNode): Ast = {
-    val baseAst = Ast(identifierNode(node, baseName))
+  protected def createFieldAccessChain(baseName: String, fields: List[String], node: SwiftNode): Ast = {
+    val baseNode = identifierNode(node, baseName)
+    val baseAst  = Ast(baseNode)
+    scope.addVariableReference(baseName, baseNode, baseNode.typeFullName, EvaluationStrategies.BY_REFERENCE)
     fields.foldLeft(baseAst) { (accAst, field) =>
       createFieldAccessCallAst(node, accAst, fieldIdentifierNode(node, field, field))
     }
