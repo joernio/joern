@@ -40,7 +40,9 @@ scala_library(
 scala_test(
     name = "tests",
     srcs = glob(["src/test/scala/**/*.scala"]),
-    resources = glob(["src/main/resources/log4j2.xml"]),
+    resources = [
+        "src/main/resources/log4j2.xml",
+    ],
     deps = [
         ":jssrc2cpg",
         "//bazel/reexports:io_shiftleft_codepropertygraph_with_deps",

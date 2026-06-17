@@ -23,8 +23,8 @@ scala_deps.scalatest()
 # as in other upstream projects.
 bazel_dep(name = "bazel_tooling")
 local_path_override(
-  module_name = "bazel_tooling",
-  path = "bazel/tooling",
+    module_name = "bazel_tooling",
+    path = "bazel/tooling",
 )
 
 register_toolchains("@bazel_tooling//scala_toolchain:plus_one_toolchain")
@@ -49,6 +49,7 @@ maven.install(
         "org.apache.commons:commons-lang3:3.14.0",
         "org.apache.commons:commons-text:1.12.0",
         "org.apache.commons:commons-exec:1.4.0",
+        "org.apache.commons:commons-compress:1.26.2",
         "org.scala-lang.modules:scala-xml_3:2.2.0",
         "com.typesafe:config:1.4.3",
         "com.michaelpollmeier:versionsort:1.0.11",
@@ -65,6 +66,7 @@ maven.install(
         "org.jetbrains.kotlin:kotlin-stdlib:2.3.21",
         "org.jetbrains.kotlin:kotlin-compiler-embeddable:2.3.21",
         "org.jetbrains.kotlin:kotlin-allopen:2.3.21",
+        "org.jruby:jruby-complete:9.4.9.0",
         # TODO remove dependencies below this. They do not have production quality.
         "com.squareup.tools.build:maven-archeologist:0.0.10",
         "com.lihaoyi:requests_3:0.8.0",
@@ -96,6 +98,8 @@ bazel_dep(name = "buildifier_prebuilt", version = "8.5.1.2")
 bazel_dep(name = "rules_java", version = "9.6.1")
 
 http_file = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
+
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 # jssrc2cpg astgen binary imports
 http_file(
@@ -160,4 +164,18 @@ http_file(
     executable = True,
     sha256 = "f7d0e15f69c971a169b27819166ff01201e59908fa440f4d61a0ec7dc77f1f65",
     url = "https://github.com/joernio/astgen-monorepo/releases/download/swift-astgen%2Fv0.4.2/SwiftAstGen-win.exe",
+)
+
+#rubysrc2cpg astgen zip
+http_archive(
+    name = "rubysrc2cpg_astgen",
+    build_file = "//joern-cli/frontends/rubysrc2cpg:rubysrc2cpg_astgen.BUILD",
+    sha256 = "66a2a61e822b1a4e391f86571b4a796c01c75b53c105fe544733b222843d06c7",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/ruby-astgen%2Fv0.58.0/ruby_ast_gen_v0.58.0.zip",
+)
+
+http_file(
+    name = "rubysrc2cpg_type_stubs",
+    sha256 = "1b14a87a5e2080bf22b83b7af76805b621f2d959cf21a35b7b21f207f53e755d",
+    url = "https://github.com/joernio/joern-type-stubs/releases/download/v0.6.0/rubysrc_builtin_types.zip",
 )

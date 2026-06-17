@@ -37,6 +37,9 @@ scala_test(
     env = {
         "JAVA_HOME": "$(JAVABASE_ROOTPATH)",
     },
+    resources = [
+        "src/main/resources/log4j2.xml",
+    ],
     toolchains = ["@bazel_tools//tools/jdk:current_java_runtime"],
     deps = [
         ":javasrc2cpg",

@@ -40,7 +40,9 @@ scala_library(
 scala_test(
     name = "tests",
     srcs = glob(["src/test/scala/**/*.scala"]),
-    resources = glob(["src/main/resources/log4j2.xml"]),
+    resources = [
+        "src/main/resources/log4j2.xml",
+    ],
     # We cannot sandbox the test because the swift compiler uses a sandbox itself
     # and sandboxes cannot be nested (at least no those initialized with sandbox-exec).
     tags = ["no-sandbox"],

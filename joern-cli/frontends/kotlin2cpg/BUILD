@@ -35,7 +35,9 @@ scala_test(
         "FILE_IN_PROJECT_ROOT": "joern-cli/frontends/kotlin2cpg",
     },
     jvm_flags = ["-ea"],
-    resources = glob(["src/main/resources/log4j2.xml"]),
+    resources = [
+        "src/main/resources/log4j2.xml",
+    ],
     toolchains = ["@bazel_tools//tools/jdk:current_java_runtime"],
     deps = [
         ":kotlin2cpg",
