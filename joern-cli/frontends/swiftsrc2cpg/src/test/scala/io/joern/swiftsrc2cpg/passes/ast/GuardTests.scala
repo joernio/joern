@@ -79,7 +79,7 @@ class GuardTests extends SwiftSrc2CpgSuite {
       val List(condition) = guardIf.condition.l
       condition.code shouldBe "number % 2 == 0"
 
-      val List(thenPrint) = guardIf.whenTrue.isCall.l
+      val List(thenPrint) = guardIf.whenTrue.astChildren.isCall.l
       thenPrint.code shouldBe "print(\"Even Number\")"
 
       val List(elsePrint) = guardIf.whenFalse.astChildren.isCall.l
@@ -111,7 +111,7 @@ class GuardTests extends SwiftSrc2CpgSuite {
       cond1.code shouldBe "age >= 18"
       cond2.code shouldBe "age <= 40"
 
-      val List(thenPrint) = guardIf.whenTrue.isCall.l
+      val List(thenPrint) = guardIf.whenTrue.astChildren.isCall.l
       thenPrint.code shouldBe "print(\"You are eligible for this job\")"
 
       val List(elsePrint) = guardIf.whenFalse.astChildren.isCall.l
@@ -219,7 +219,7 @@ class GuardTests extends SwiftSrc2CpgSuite {
       val List(condB) = guardIfB.condition.l
       condB.code shouldBe "b"
 
-      val List(thenPrintB) = guardIfB.whenTrue.isCall.l
+      val List(thenPrintB) = guardIfB.whenTrue.astChildren.isCall.l
       thenPrintB.code shouldBe "print(\"b\")"
 
       val List(elsePrintB) = guardIfB.whenFalse.astChildren.isCall.l
@@ -257,7 +257,7 @@ class GuardTests extends SwiftSrc2CpgSuite {
       val List(condA) = guardIfA.condition.l
       condA.code shouldBe "a"
 
-      val List(thenPrintA) = guardIfA.whenTrue.isCall.l
+      val List(thenPrintA) = guardIfA.whenTrue.astChildren.isCall.l
       thenPrintA.code shouldBe "print(\"a\")"
 
       val List(elsePrintA) = guardIfA.whenFalse.astChildren.isCall.l
