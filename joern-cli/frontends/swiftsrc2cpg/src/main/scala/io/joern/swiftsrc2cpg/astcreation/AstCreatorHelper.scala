@@ -253,31 +253,23 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     val isUnresolved   = variableOption.isEmpty
 
     identifierName match {
-      case _ if optionalBindingNames.contains(identifierName) =>
-        val name      = optionalBindingNames(identifierName)
-        val identNode = identifierNode(node, name)
-        val tpe = variableOption match {
-          case Some((_, variableTypeName)) if variableTypeName != Defines.Any => variableTypeName
-          case None if identNode.typeFullName != Defines.Any                  => identNode.typeFullName
-          case _                                                              => Defines.Any
-        }
-        identNode.typeFullName = tpe
-        scope.addVariableReference(name, identNode, tpe, EvaluationStrategies.BY_REFERENCE)
-        Ast(identNode)
       // `Self` always refers to the enclosing type.
       case "Self" =>
         Ast(typeRefNode(node, "Self", fullNameOfEnclosingTypeDecl()))
       // Identifier found as a member of the surrounding type decl.
       // Swift does not allow accessing members of an outer class instance,
       // so we synthesize an implicit `self.<member>` (or `Self.<member>` in static contexts).
-      case name if scope.variableIsInTypeDeclScope(name) =>
+      case name if scope.variableIsInTypeDeclScope(name) && !optionalBindingNames.contains(identifierName) =>
         val tpe     = scope.typeDeclFullNameForMember(name).getOrElse(fullNameOfEnclosingTypeDecl())
         val callTpe = variableOption.map(_._2).getOrElse(Defines.Any)
         fieldAccessAstForSelf(node, name, tpe, callTpe)
       // In swift-build mode the compiler may know this identifier is a member even though
       // it is not yet visible in our scope. If the identifier is unresolved locally but
       // the compiler provides a declaration full name, treat it as an implicit self-access.
-      case name if config.swiftBuild && isUnresolved && fullnameProvider.declFullname(node).nonEmpty =>
+      case name
+          if config.swiftBuild && isUnresolved &&
+            fullnameProvider.declFullname(node).nonEmpty &&
+            !optionalBindingNames.contains(identifierName) =>
         val tpe     = fullNameOfEnclosingTypeDecl()
         val callTpe = fullnameProvider.typeFullname(node).getOrElse(Defines.Any)
         registerType(callTpe)
@@ -286,20 +278,25 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       // with `.Type` is a reference to a type (e.g. `MyStruct` used as a value).
       case name
           if config.swiftBuild && isUnresolved &&
-            fullnameProvider.typeFullnameRaw(node).exists(_.endsWith(".Type")) =>
+            fullnameProvider.typeFullnameRaw(node).exists(_.endsWith(".Type"))
+            && !optionalBindingNames.contains(identifierName) =>
         val tpe = fullnameProvider.typeFullname(node).get
         registerType(tpe)
         Ast(typeRefNode(node, name, tpe))
       // Fallback: a regular variable or a captured variable from an outer scope.
       case name =>
-        val identNode = identifierNode(node, name)
+        // For the de-sugaring of condition ASTs during `buildOptionalBindingCondition`,
+        // we replace the identifier names of dependent optional binding variables to model
+        // dependencies through the generated &&- and nil-check chain.
+        val identName = optionalBindingNames.getOrElse(name, name)
+        val identNode = identifierNode(node, identName)
         val tpe = variableOption match {
           case Some((_, variableTypeName)) if variableTypeName != Defines.Any => variableTypeName
           case None if identNode.typeFullName != Defines.Any                  => identNode.typeFullName
           case _                                                              => Defines.Any
         }
         identNode.typeFullName = tpe
-        scope.addVariableReference(name, identNode, tpe, EvaluationStrategies.BY_REFERENCE)
+        scope.addVariableReference(identName, identNode, tpe, EvaluationStrategies.BY_REFERENCE)
         Ast(identNode)
     }
   }
