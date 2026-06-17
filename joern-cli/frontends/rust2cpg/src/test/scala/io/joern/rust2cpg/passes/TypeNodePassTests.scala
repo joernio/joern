@@ -1,6 +1,7 @@
 package io.joern.rust2cpg.passes
 
 import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
+import io.joern.x2cpg.Defines
 import io.shiftleft.semanticcpg.language.*
 
 class TypeNodePassTests extends Rust2CpgSuite(noSysRoot = true) {
@@ -21,6 +22,19 @@ class TypeNodePassTests extends Rust2CpgSuite(noSysRoot = true) {
           typ.fullName shouldBe "usize"
           typ.isExternal shouldBe true
         }
+      }
+    }
+
+    "create the ANY TYPE_DECL" in {
+      val cpg = code("""
+          |fn foo() {
+          | let x = bar();
+          |}
+          |""".stripMargin)
+      inside(cpg.method.name("foo").block.local.name("x").typ.referencedTypeDecl.l) { case typ :: Nil =>
+        typ.name shouldBe Defines.Any
+        typ.fullName shouldBe Defines.Any
+        typ.isExternal shouldBe true
       }
     }
 

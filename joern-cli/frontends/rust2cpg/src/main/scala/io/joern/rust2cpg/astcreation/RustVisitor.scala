@@ -667,16 +667,20 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     val methodName     = code(methodCallExpr.nameRef)
     val methodFullName = methodFullNameForMethodCallExpr(methodCallExpr)
     val typeFullName   = typeFullNameForExpr(methodCallExpr)
-    // TODO: should also be DYNAMIC_DISPATCH when the type is `dyn`.
-    val dispatch =
-      if (methodFullName == Defines.DynamicCallUnknownFullName) DispatchTypes.DYNAMIC_DISPATCH
-      else DispatchTypes.STATIC_DISPATCH
+    val receiverType   = typeFullNameForExpr(methodCallExpr.expr)
+    val dispatch = if (isTraitObject(receiverType)) DispatchTypes.DYNAMIC_DISPATCH else DispatchTypes.STATIC_DISPATCH
     val call =
       callNode(methodCallExpr, code(methodCallExpr), methodName, methodFullName, dispatch, None, Some(typeFullName))
     val receiverAst = visitExpr(methodCallExpr.expr)
     val args        = methodCallExpr.argList.expr.map(visitExpr)
     callAst(call, args, base = Some(receiverAst))
   }
+
+  // TODO: not accounting for the Deref trait. Depending on how it gets supported, this might need to change.
+  // Currently, only `dyn` are considered dynamically dispatched. We may want to extend rust_ast_gen with semantic
+  // information later.
+  private def isTraitObject(receiverType: String): Boolean =
+    receiverType.stripPrefix("&").stripPrefix("mut ").startsWith("dyn ")
 
   // AwaitExpr =
   //  Attr* Expr '.' 'await'

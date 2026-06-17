@@ -1,8 +1,7 @@
 package io.joern.rust2cpg
 
 import io.joern.rust2cpg.astgen.RustAstGenRunner
-import io.joern.rust2cpg.passes.AstCreationPass
-import io.joern.rust2cpg.passes.RustTypeNodePass
+import io.joern.rust2cpg.passes.{AstCreationPass, RustTypeNodePass}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.passes.frontend.MetaDataPass
