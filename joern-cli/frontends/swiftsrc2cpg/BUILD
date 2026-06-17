@@ -57,7 +57,7 @@ scala_test(
 java_binary(
     name = "swiftsrc2cpg-bin",
     main_class = "io.joern.swiftsrc2cpg.Main",
-    resources = glob(["src/main/resources/log4j2.xml"]),
+    resources = ["src/main/resources/log4j2.xml"],
     visibility = ["//visibility:public"],
     runtime_deps = [
         ":swiftsrc2cpg",

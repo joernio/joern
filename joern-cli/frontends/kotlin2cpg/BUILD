@@ -51,7 +51,7 @@ scala_test(
 java_binary(
     name = "kotlin2cpg-bin",
     main_class = "io.joern.kotlin2cpg.Main",
-    resources = glob(["src/main/resources/log4j2.xml"]),
+    resources = ["src/main/resources/log4j2.xml"],
     visibility = ["//visibility:public"],
     runtime_deps = [
         ":kotlin2cpg",

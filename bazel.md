@@ -29,6 +29,10 @@ included.
   `bazel run formatCheck`.
 - To build all code belonging to the root project, use `bazel build //...`.
 - To run all tests belonging to the root project, use `bazel test //...`.
+- To build and run a frontend in one step, use `bazel run <frontendName> -- <args>`.
+  E.g. `bazel run javasrc2cpg -- /tmp/someJavaCodebase -o /tmp/myJava.cpg`.
+  This is so fast that there is no need for a separate starter script for a
+  staged version in the development cycle.
 - In Intellij Idea you find a Bazel navigation bar on the right side which lets
   you build/run/test all the targets in the root project.
 

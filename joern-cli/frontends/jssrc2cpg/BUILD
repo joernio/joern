@@ -55,7 +55,7 @@ scala_test(
 java_binary(
     name = "jssrc2cpg-bin",
     main_class = "io.joern.jssrc2cpg.Main",
-    resources = glob(["src/main/resources/log4j2.xml"]),
+    resources = ["src/main/resources/log4j2.xml"],
     visibility = ["//visibility:public"],
     runtime_deps = [
         ":jssrc2cpg",

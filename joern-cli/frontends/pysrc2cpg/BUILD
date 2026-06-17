@@ -1,3 +1,4 @@
+load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
 load("//bazel:java.bzl", "java_binary")
 load("//bazel:scala.bzl", "scala_library", "scala_test")
 
@@ -53,4 +54,24 @@ scala_test(
         "//semanticcpg",
         "@maven//:org_scala_lang_modules_scala_parallel_collections_3",
     ],
+)
+
+java_binary(
+    name = "pysrc2cpg-bin",
+    main_class = "io.joern.pysrc2cpg.NewMain",
+    resources = [
+        "src/main/resources/log4j2.xml",
+    ],
+    visibility = ["//visibility:public"],
+    runtime_deps = [
+        ":pysrc2cpg",
+        "@maven//:org_apache_logging_log4j_log4j_slf4j2_impl",
+    ],
+)
+
+pkg_tar(
+    name = "pysrc2cpg-dist",
+    srcs = [":pysrc2cpg-bin"],
+    include_runfiles = True,
+    visibility = ["//visibility:public"],
 )
