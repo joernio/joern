@@ -47,7 +47,8 @@ object RubyProgramSummary {
           .resolve("rubysrc2cpg_type_stubs/file/downloaded")
           .map(path => Path.of(path) :: Nil)
           .getOrElse {
-            val typeStubDir = TypeStubUtil.typeStubDir()
+            val codeSourceLocation = getClass.getProtectionDomain.getCodeSource.getLocation.toString
+            val typeStubDir        = TypeStubUtil.typeStubDir(codeSourceLocation)
 
             typeStubDir
               .walk()
