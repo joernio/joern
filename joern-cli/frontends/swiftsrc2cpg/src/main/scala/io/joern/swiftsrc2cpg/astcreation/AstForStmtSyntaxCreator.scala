@@ -613,12 +613,9 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForWhileStmtSyntax(node: WhileStmtSyntax): Ast = {
-    val code = this.code(node)
-
     handleOptionalBindingConditions(
       node.conditions.children,
       onAllSimple = simpleBindings => astForWhileLetStmtSyntax(node, simpleBindings),
-      onMixed = (simpleBindings, tupleBindings) => astForWhileLetStmtSyntaxMixed(node, simpleBindings, tupleBindings),
       onPartial = (simpleBindings, tupleBindings, otherConditions) =>
         astForWhileLetStmtSyntaxPartial(node, simpleBindings, tupleBindings, otherConditions),
       onStandard = () => {
@@ -627,7 +624,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         whileAst(
           Option(conditionAst),
           Seq(bodyAst),
-          code = Option(code),
+          code = Option(code(node)),
           lineNumber = line(node),
           columnNumber = column(node)
         )
@@ -662,33 +659,6 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val bindingInfos = collectBindingInfos(optionalBindings)
     val conditionAst = buildOptionalBindingCondition(node, bindingInfos)
     val bodyAst      = buildBodyWithUnwrapping(node.body, node.body.statements.children, bindingInfos)
-
-    whileAst(
-      Option(conditionAst),
-      Seq(bodyAst),
-      code = Option(code(node)),
-      lineNumber = line(node),
-      columnNumber = column(node)
-    )
-  }
-
-  /** Handles mixed optional binding constructs with both simple and tuple patterns.
-    *
-    * De-sugars `while let a = foo(), let (b, c) = bar() { body }` into:
-    *
-    * Condition: { (<tmp>0 = foo()) != nil }
-    *
-    * Loop body: { let a = <tmp>0; let (b, c) = bar(); body }
-    */
-  private def astForWhileLetStmtSyntaxMixed(
-    node: WhileStmtSyntax,
-    simpleBindings: Seq[OptionalBindingConditionSyntax],
-    tupleBindings: Seq[OptionalBindingConditionSyntax]
-  ): Ast = {
-    val bindingInfos = collectBindingInfos(simpleBindings)
-    val conditionAst = buildOptionalBindingCondition(node, bindingInfos)
-    val bodyAst      = buildBodyWithUnwrapping(node.body, tupleBindings ++ node.body.statements.children, bindingInfos)
-
     whileAst(
       Option(conditionAst),
       Seq(bodyAst),

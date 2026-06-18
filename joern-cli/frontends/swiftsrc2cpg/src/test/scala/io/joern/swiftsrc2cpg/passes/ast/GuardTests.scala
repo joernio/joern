@@ -544,6 +544,147 @@ class GuardTests extends SwiftSrc2CpgSuite {
       elseReturn.code shouldBe "return"
     }
 
+    "testGuardLetPureTuple" in {
+      val cpg = code("""
+      |func test() {
+      |  guard let (a, b) = foo() else { return }
+      |  print(a, b)
+      |}
+      |""".stripMargin)
+      val List(methodBlock) = cpg.method.nameExact("test").block.l
+
+      val List(tmpLocal) = methodBlock.local.nameNot("self", "a", "b").l
+      val tmpName        = tmpLocal.name
+      tmpName shouldBe "<tmp>0"
+
+      val List(guardIf) = methodBlock.astChildren.isControlStructure.controlStructureType(ControlStructureTypes.IF).l
+
+      // Condition: { (<tmp>0 = foo()) != nil }
+      val List(condBlock) = guardIf.condition.isBlock.l
+      val List(condCheck) = condBlock.astChildren.isCall.nameExact(Operators.notEquals).l
+      condCheck.code shouldBe s"($tmpName = foo()) != nil"
+
+      // Then block contains a = <tmp>0.0 and b = <tmp>0.1
+      val List(thenBlock) = guardIf.whenTrue.isBlock.l
+
+      val List(aAssign) = thenBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact(s"a = $tmpName.0").l
+      aAssign.argument(1).code shouldBe "a"
+      aAssign.argument(2).code shouldBe s"$tmpName.0"
+
+      val List(bAssign) = thenBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact(s"b = $tmpName.1").l
+      bAssign.argument(1).code shouldBe "b"
+      bAssign.argument(2).code shouldBe s"$tmpName.1"
+
+      val List(printCall) = thenBlock.astChildren.isCall.nameExact("print").l
+      printCall.code shouldBe "print(a, b)"
+
+      val List(returnNode) = guardIf.whenFalse.isReturn.l
+      returnNode.code shouldBe "return"
+    }
+
+    "testGuardLetMixedWithTuplePattern" in {
+      val cpg = code("""
+      |func test() {
+      |  guard let a = foo(), let (b, c) = bar() else { return }
+      |  print(a, b, c)
+      |}
+      |""".stripMargin)
+      val List(methodBlock) = cpg.method.nameExact("test").block.l
+
+      val List(tmp0Local, tmp1Local) = methodBlock.local.nameNot("self", "a", "b", "c").l
+      val tmp0Name                   = tmp0Local.name
+      val tmp1Name                   = tmp1Local.name
+      tmp0Name shouldBe "<tmp>0"
+      tmp1Name shouldBe "<tmp>1"
+
+      val List(guardIf) = methodBlock.astChildren.isControlStructure.controlStructureType(ControlStructureTypes.IF).l
+
+      // Condition: { (<tmp>0 = foo()) != nil && (<tmp>1 = bar()) != nil }
+      val List(condBlock) = guardIf.condition.isBlock.l
+      val List(andCheck)  = condBlock.astChildren.isCall.nameExact(Operators.logicalAnd).l
+      andCheck.argument(1).code shouldBe s"($tmp0Name = foo()) != nil"
+      andCheck.argument(2).code shouldBe s"($tmp1Name = bar()) != nil"
+
+      // Then block: { a = <tmp>0; b = <tmp>1.0; c = <tmp>1.1; print(a, b, c) }
+      val List(thenBlock) = guardIf.whenTrue.isBlock.l
+
+      val List(aLocal) = thenBlock.astChildren.isLocal.nameExact("a").l
+      aLocal.name shouldBe "a"
+
+      val List(unwrapA) = thenBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact(s"a = $tmp0Name").l
+      unwrapA.argument(1).code shouldBe "a"
+      unwrapA.argument(2).code shouldBe tmp0Name
+
+      val List(bAssign) = thenBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact(s"b = $tmp1Name.0").l
+      bAssign.argument(1).code shouldBe "b"
+      bAssign.argument(2).code shouldBe s"$tmp1Name.0"
+
+      val List(cAssign) = thenBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact(s"c = $tmp1Name.1").l
+      cAssign.argument(1).code shouldBe "c"
+      cAssign.argument(2).code shouldBe s"$tmp1Name.1"
+
+      val List(printCall) = thenBlock.astChildren.isCall.nameExact("print").l
+      printCall.code shouldBe "print(a, b, c)"
+
+      val List(returnNode) = guardIf.whenFalse.isReturn.l
+      returnNode.code shouldBe "return"
+    }
+
+    "testGuardLetTupleWithDependentBinding" in {
+      val cpg = code("""
+      |func test() {
+      |  guard let (a, b) = foo(), let c = a.bar() else { return }
+      |  print(a, b, c)
+      |}
+      |""".stripMargin)
+      val List(methodBlock) = cpg.method.nameExact("test").block.l
+
+      // <tmp>0 is allocated for a.bar(), <tmp>1 for the tuple binding foo()
+      val List(cTmpLocal, tupleTmpLocal) = methodBlock.local.nameNot("self", "a", "b", "c").l
+      cTmpLocal.name shouldBe "<tmp>0"
+      tupleTmpLocal.name shouldBe "<tmp>1"
+
+      val List(guardIf)   = methodBlock.astChildren.isControlStructure.controlStructureType(ControlStructureTypes.IF).l
+      val List(condBlock) = guardIf.condition.isBlock.l
+
+      // Condition: { (<tmp>0 = a.bar()) != nil && (<tmp>1 = foo()) != nil }
+      // where a.bar() structurally uses <tmp>1.0 as the receiver
+      val List(andCheck) = condBlock.astChildren.isCall.nameExact(Operators.logicalAnd).l
+      andCheck.argument(1).code shouldBe "(<tmp>0 = a.bar()) != nil"
+      andCheck.argument(2).code shouldBe "(<tmp>1 = foo()) != nil"
+
+      // The receiver of bar() in the condition is <tmp>1.0 (tuple field access), not a plain 'a'
+      val List(barCall) = condBlock.ast.isCall.nameExact("bar").l
+      barCall.code shouldBe "a.bar()"
+      val List(barReceiver) = barCall.receiver.isCall.nameExact(Operators.fieldAccess).l
+      barReceiver.code shouldBe "<tmp>1.0"
+      barReceiver.argumentIndex shouldBe 0
+      barCall.argument(0).code shouldBe "<tmp>1.0"
+
+      // Then block: { c = <tmp>0; a = <tmp>1.0; b = <tmp>1.1; print(a, b, c) }
+      val List(thenBlock) = guardIf.whenTrue.isBlock.l
+
+      thenBlock.astChildren.isLocal.name.sorted shouldBe Seq("a", "b", "c")
+
+      val List(cAssign) = thenBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact("c = <tmp>0").l
+      cAssign.argument(1).code shouldBe "c"
+      cAssign.argument(2).code shouldBe "<tmp>0"
+
+      val List(aAssign) = thenBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact("a = <tmp>1.0").l
+      aAssign.argument(1).code shouldBe "a"
+      aAssign.argument(2).code shouldBe "<tmp>1.0"
+
+      val List(bAssign) = thenBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact("b = <tmp>1.1").l
+      bAssign.argument(1).code shouldBe "b"
+      bAssign.argument(2).code shouldBe "<tmp>1.1"
+
+      val List(printCall) = thenBlock.astChildren.isCall.nameExact("print").l
+      printCall.code shouldBe "print(a, b, c)"
+
+      val List(returnNode) = guardIf.whenFalse.isReturn.l
+      returnNode.code shouldBe "return"
+    }
+
     "testGuardLetWithOtherConditions" in {
       val cpg = code("""
       |func test(flag: Bool) {
@@ -593,6 +734,48 @@ class GuardTests extends SwiftSrc2CpgSuite {
 
       val List(elseReturn) = guardIf.whenFalse.l
       elseReturn.code shouldBe "return"
+    }
+
+    "testGuardLetNestedTuple" in {
+      val cpg = code("""
+      |func test() {
+      |  guard let ((a, b), c) = foo() else { return }
+      |  print(a, b, c)
+      |}
+      |""".stripMargin)
+      val List(methodBlock) = cpg.method.nameExact("test").block.l
+
+      val List(tmpLocal) = methodBlock.local.nameNot("self", "a", "b", "c").l
+      tmpLocal.name shouldBe "<tmp>0"
+
+      val List(guardIf)   = methodBlock.astChildren.isControlStructure.controlStructureType(ControlStructureTypes.IF).l
+      val List(condBlock) = guardIf.condition.isBlock.l
+
+      // Condition: { (<tmp>0 = foo()) != nil }
+      val List(nilCheck) = condBlock.astChildren.isCall.nameExact(Operators.notEquals).l
+      nilCheck.code shouldBe "(<tmp>0 = foo()) != nil"
+
+      // Then block: { a = <tmp>0.0.0; b = <tmp>0.0.1; c = <tmp>0.1; print(a, b, c) }
+      val List(thenBlock) = guardIf.whenTrue.isBlock.l
+      thenBlock.astChildren.isLocal.name.sorted shouldBe Seq("a", "b", "c")
+
+      val List(aAssign) = thenBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact("a = <tmp>0.0.0").l
+      aAssign.argument(1).code shouldBe "a"
+      aAssign.argument(2).code shouldBe "<tmp>0.0.0"
+
+      val List(bAssign) = thenBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact("b = <tmp>0.0.1").l
+      bAssign.argument(1).code shouldBe "b"
+      bAssign.argument(2).code shouldBe "<tmp>0.0.1"
+
+      val List(cAssign) = thenBlock.astChildren.isCall.nameExact(Operators.assignment).codeExact("c = <tmp>0.1").l
+      cAssign.argument(1).code shouldBe "c"
+      cAssign.argument(2).code shouldBe "<tmp>0.1"
+
+      val List(printCall) = thenBlock.astChildren.isCall.nameExact("print").l
+      printCall.code shouldBe "print(a, b, c)"
+
+      val List(returnNode) = guardIf.whenFalse.isReturn.l
+      returnNode.code shouldBe "return"
     }
 
   }
