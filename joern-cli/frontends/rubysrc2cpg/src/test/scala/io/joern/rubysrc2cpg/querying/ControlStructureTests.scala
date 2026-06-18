@@ -467,13 +467,6 @@ class ControlStructureTests extends RubyCode2CpgFixture {
                      |   puts x - i
                      | end
                      |end
-                     |
-                     |def foo2
-                     | x = 3
-                     | for i in 1..x do
-                     |   puts x + i
-                     | end
-                     |end
                      |""".stripMargin)
 
     "lower to an `each` call with a closure for an array iterable" in {
