@@ -459,7 +459,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     }
   }
 
-  "`for .. in` control structure" should {
+  "`for .. in` control structure with a literal iterable" should {
     val cpg = code("""
                      |def foo1
                      | x = [1, 2, 3]
@@ -483,6 +483,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
         inside(eachCall.argument.l) { case (base: Identifier) :: (typeRef: TypeRef) :: Nil =>
           base.argumentIndex shouldBe 0
           base.name shouldBe "x"
+
           typeRef.argumentIndex shouldBe 1
           typeRef.typeFullName shouldBe s"Test0.rb:$Main.foo1.<lambda>0&Proc"
         }
@@ -493,8 +494,23 @@ class ControlStructureTests extends RubyCode2CpgFixture {
           iParam.name shouldBe "i"
         }
         closureMethod.call.nameExact("puts").size shouldBe 1
+
+        inside(closureMethod.local.nameExact("x").l) { case xLocal :: Nil =>
+          xLocal.closureBindingId shouldBe Some(s"Test0.rb:$Main.foo1.x")
+        }
       }
     }
+  }
+
+  "`for .. in` control structure with a range iterable" should {
+    val cpg = code("""
+        |def foo2
+        | x = 3
+        | for i in 1..x do
+        |   puts x + i
+        | end
+        |end
+        |""".stripMargin)
 
     "lower to an `each` call with a closure for a range iterable" in {
       inside(cpg.method("foo2").call.nameExact("each").l) { case eachCall :: Nil =>
@@ -502,6 +518,9 @@ class ControlStructureTests extends RubyCode2CpgFixture {
 
         inside(eachCall.argument.l) { case (base: Call) :: (typeRef: TypeRef) :: Nil =>
           base.argumentIndex shouldBe 0
+          base.methodFullName shouldBe Operators.range
+          base.code shouldBe "1..x"
+
           typeRef.argumentIndex shouldBe 1
           typeRef.typeFullName shouldBe s"Test0.rb:$Main.foo2.<lambda>0&Proc"
         }
@@ -512,6 +531,10 @@ class ControlStructureTests extends RubyCode2CpgFixture {
           iParam.name shouldBe "i"
         }
         closureMethod.call.nameExact("puts").size shouldBe 1
+
+        inside(closureMethod.local.nameExact("x").l) { case xLocal :: Nil =>
+          xLocal.closureBindingId shouldBe Some(s"Test0.rb:$Main.foo2.x")
+        }
       }
     }
   }
