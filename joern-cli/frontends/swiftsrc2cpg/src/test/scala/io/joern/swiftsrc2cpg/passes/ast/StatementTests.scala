@@ -646,8 +646,10 @@ class StatementTests extends SwiftSrc2CpgSuite {
       // The receiver of bar() in the condition is <tmp>1.0 (tuple field access), not a plain 'a'
       val List(barCall) = condBlock.ast.isCall.nameExact("bar").l
       barCall.code shouldBe "a.bar()"
-      val List(barReceiver) = barCall.argument.isCall.nameExact(Operators.fieldAccess).l
+      val List(barReceiver) = barCall.receiver.isCall.nameExact(Operators.fieldAccess).l
       barReceiver.code shouldBe "<tmp>1.0"
+      barReceiver.argumentIndex shouldBe 0
+      barCall.argument(0).code shouldBe "<tmp>1.0"
 
       // Then block: { c = <tmp>0; a = <tmp>1.0; b = <tmp>1.1; print(a, b, c) }
       val List(thenBlock) = ifNode.whenTrue.isBlock.l

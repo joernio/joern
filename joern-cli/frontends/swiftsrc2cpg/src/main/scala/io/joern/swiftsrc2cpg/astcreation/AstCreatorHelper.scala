@@ -124,7 +124,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   import AstCreatorHelper.*
 
-  private val optionalBindingNames: mutable.HashMap[String, (String, List[String])] = mutable.HashMap.empty
+  private val optionalBindingNames: mutable.HashMap[String, (baseName: String, fieldPath: List[String])] =
+    mutable.HashMap.empty
 
   protected def notHandledYet(node: SwiftNode): Ast = {
     val text =
@@ -279,7 +280,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
           case Some((baseName, fieldPath)) if fieldPath.nonEmpty =>
             createFieldAccessChain(baseName, fieldPath, node)
           case other =>
-            val resolvedName = other.map(_._1).getOrElse(name)
+            val resolvedName = other.map(_.baseName).getOrElse(name)
             val identNode    = identifierNode(node, resolvedName)
             val tpe = variableOption match {
               case Some((_, variableTypeName)) if variableTypeName != Defines.Any => variableTypeName
@@ -662,10 +663,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         tuplePat.elements.children.zipWithIndex.foreach { case (elem, idx) =>
           walkPattern(elem.pattern, currentPath :+ idx.toString)
         }
-      case ep: ExpressionPatternSyntax if ep.expression.isInstanceOf[TupleExprSyntax] =>
-        ep.expression.asInstanceOf[TupleExprSyntax].elements.children.zipWithIndex.foreach { case (elem, idx) =>
-          walkExpr(elem.expression, currentPath :+ idx.toString)
-        }
       case ep: ExpressionPatternSyntax =>
         walkExpr(ep.expression, currentPath)
       case ident: IdentifierPatternSyntax =>
@@ -679,7 +676,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         }
       case _: WildcardPatternSyntax =>
       // skip wildcards
-      case _ =>
+      case other =>
+        logger.debug(s"Unhandled pattern type in tuple binding: ${other.getClass.getSimpleName}")
     }
 
     walkPattern(pattern, fieldPath)
@@ -739,7 +737,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       // No optional bindings at all — standard handling
       onStandard()
     } else if (otherConditions.isEmpty) {
-      // All conditions are optional bindings (simple + tuple merged)
+      // All conditions are optional bindings (simple and tuple-like)
       onAllSimple(allBindings)
     } else {
       // Optional bindings plus other conditions (e.g. boolean guards)
@@ -896,42 +894,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       localAstParentStack.push(bodyBlockNode)
 
       val unwrapAsts = bindingInfos.filter(_.tmpName.isDefined).flatMap { info =>
-        info.tuplePattern match {
-          case Some(tp: TuplePatternSyntax) =>
-            astsForBindingTuplePattern(tp, info.tmpName.get, List.empty, info.binding)
-          case Some(ep: ExpressionPatternSyntax) if ep.expression.isInstanceOf[TupleExprSyntax] =>
-            astsForBindingTupleExpr(
-              ep.expression.asInstanceOf[TupleExprSyntax],
-              info.tmpName.get,
-              List.empty,
-              info.binding
-            )
-          case _ if !info.isWildcard =>
-            val binding = info.binding
-            val tmpName = info.tmpName.get
-
-            val typeFullName =
-              binding.typeAnnotation.fold(Defines.Any)(typeAnn => AstCreatorHelper.cleanType(code(typeAnn.`type`)))
-            val kind = code(binding.bindingSpecifier)
-            val scopeType =
-              if (kind == "let") VariableScopeManager.ScopeType.BlockScope
-              else VariableScopeManager.ScopeType.MethodScope
-
-            val tpeFromTypeMap = fullnameProvider.typeFullname(binding.pattern).getOrElse(typeFullName)
-            registerType(tpeFromTypeMap)
-            val localNode_ = localNode(binding, info.localName, info.localName, tpeFromTypeMap).order(0)
-            scope.addVariable(info.localName, localNode_, tpeFromTypeMap, scopeType)
-            diffGraph.addEdge(bodyBlockNode, localNode_, EdgeTypes.AST)
-
-            val localIdentNode = identifierNode(binding, info.localName, info.localName, tpeFromTypeMap)
-            scope
-              .addVariableReference(info.localName, localIdentNode, tpeFromTypeMap, EvaluationStrategies.BY_REFERENCE)
-
-            val tmpIdent = identifierNode(binding, tmpName, tmpName, Defines.Any)
-            scope.addVariableReference(tmpName, tmpIdent, Defines.Any, EvaluationStrategies.BY_REFERENCE)
-            List(createAssignmentCallAst(binding, Ast(localIdentNode), Ast(tmpIdent), s"${info.localName} = $tmpName"))
-          case _ => List.empty
-        }
+        unwrapAssignmentsForBindingInfo(info, bodyBlockNode)
       }
 
       val bodyAsts = astsForBlockElements(bodyStatements.toList)
@@ -952,49 +915,41 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   private def buildUnwrapAssignments(bindingInfos: Seq[BindingInfo]): List[Ast] = {
     bindingInfos
       .filter(_.tmpName.isDefined)
-      .flatMap { info =>
-        info.tuplePattern match {
-          case Some(tp: TuplePatternSyntax) =>
-            astsForBindingTuplePattern(tp, info.tmpName.get, List.empty, info.binding)
-          case Some(ep: ExpressionPatternSyntax) if ep.expression.isInstanceOf[TupleExprSyntax] =>
-            astsForBindingTupleExpr(
-              ep.expression.asInstanceOf[TupleExprSyntax],
-              info.tmpName.get,
-              List.empty,
-              info.binding
-            )
-          case _ if !info.isWildcard =>
-            val binding = info.binding
-            val tmpName = info.tmpName.get
-
-            val typeFullName =
-              binding.typeAnnotation.fold(Defines.Any)(typeAnn => AstCreatorHelper.cleanType(code(typeAnn.`type`)))
-            val kind = code(binding.bindingSpecifier)
-            val scopeType =
-              if (kind == "let") VariableScopeManager.ScopeType.BlockScope
-              else VariableScopeManager.ScopeType.MethodScope
-
-            val tpeFromTypeMap = fullnameProvider.typeFullname(binding.pattern).getOrElse(typeFullName)
-            registerType(tpeFromTypeMap)
-            val localNode_ = localNode(binding, info.localName, info.localName, tpeFromTypeMap).order(0)
-            scope.addVariable(info.localName, localNode_, tpeFromTypeMap, scopeType)
-            diffGraph.addEdge(localAstParentStack.head, localNode_, EdgeTypes.AST)
-
-            val localIdentNode = identifierNode(binding, info.localName, info.localName, tpeFromTypeMap)
-            scope.addVariableReference(
-              info.localName,
-              localIdentNode,
-              tpeFromTypeMap,
-              EvaluationStrategies.BY_REFERENCE
-            )
-
-            val tmpIdent = identifierNode(binding, tmpName, tmpName, Defines.Any)
-            scope.addVariableReference(tmpName, tmpIdent, Defines.Any, EvaluationStrategies.BY_REFERENCE)
-            List(createAssignmentCallAst(binding, Ast(localIdentNode), Ast(tmpIdent), s"${info.localName} = $tmpName"))
-          case _ => List.empty
-        }
-      }
+      .flatMap(info => unwrapAssignmentsForBindingInfo(info, localAstParentStack.head))
       .toList
+  }
+
+  private def unwrapAssignmentsForBindingInfo(info: BindingInfo, localParent: NewBlock): List[Ast] = {
+    info.tuplePattern match {
+      case Some(tp: TuplePatternSyntax) =>
+        astsForBindingTuplePattern(tp, info.tmpName.get, List.empty, info.binding)
+      case Some(ep: ExpressionPatternSyntax) if ep.expression.isInstanceOf[TupleExprSyntax] =>
+        astsForBindingTupleExpr(ep.expression.asInstanceOf[TupleExprSyntax], info.tmpName.get, List.empty, info.binding)
+      case _ if !info.isWildcard =>
+        val binding = info.binding
+        val tmpName = info.tmpName.get
+
+        val typeFullName =
+          binding.typeAnnotation.map(typeAnn => AstCreatorHelper.cleanType(code(typeAnn.`type`))).getOrElse(Defines.Any)
+        val kind = code(binding.bindingSpecifier)
+        val scopeType =
+          if (kind == "let") VariableScopeManager.ScopeType.BlockScope
+          else VariableScopeManager.ScopeType.MethodScope
+
+        val tpeFromTypeMap = fullnameProvider.typeFullname(binding.pattern).getOrElse(typeFullName)
+        registerType(tpeFromTypeMap)
+        val localNode_ = localNode(binding, info.localName, info.localName, tpeFromTypeMap).order(0)
+        scope.addVariable(info.localName, localNode_, tpeFromTypeMap, scopeType)
+        diffGraph.addEdge(localParent, localNode_, EdgeTypes.AST)
+
+        val localIdentNode = identifierNode(binding, info.localName, info.localName, tpeFromTypeMap)
+        scope.addVariableReference(info.localName, localIdentNode, tpeFromTypeMap, EvaluationStrategies.BY_REFERENCE)
+
+        val tmpIdent = identifierNode(binding, tmpName, tmpName, Defines.Any)
+        scope.addVariableReference(tmpName, tmpIdent, Defines.Any, EvaluationStrategies.BY_REFERENCE)
+        List(createAssignmentCallAst(binding, Ast(localIdentNode), Ast(tmpIdent), s"${info.localName} = $tmpName"))
+      case _ => List.empty
+    }
   }
 
 }
