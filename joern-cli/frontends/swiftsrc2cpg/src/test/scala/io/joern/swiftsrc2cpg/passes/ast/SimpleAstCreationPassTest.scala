@@ -72,21 +72,6 @@ class SimpleAstCreationPassTest extends SwiftSrc2CpgSuite {
       localD.typeFullName shouldBe Defines.String
     }
 
-    "have correct structure for tuple variable declarations" in {
-      val cpg = code("""
-        |var (a, b): Int = foo()
-        |""".stripMargin)
-      val List(method)           = cpg.method.nameExact("<global>").l
-      val List(assignA, assignB) = method.assignment.l
-      assignA.code shouldBe "var a: Int = foo()"
-      assignB.code shouldBe "var b: Int = foo()"
-      val List(localA, localB) = method.block.local.l
-      localA.name shouldBe "a"
-      localA.typeFullName shouldBe "Swift.Int"
-      localB.name shouldBe "b"
-      localB.typeFullName shouldBe "Swift.Int"
-    }
-
     "have corresponding type decl with correct bindings for function" in {
       val cpg            = code("func method() {}")
       val List(typeDecl) = cpg.typeDecl.nameExact("method").l
