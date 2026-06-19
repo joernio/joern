@@ -84,9 +84,9 @@ object RubyProgramSummary {
   private def mergeBuiltinMpkZip(typeStubFiles: Seq[Path]): InputStream = {
     assert(typeStubFiles.nonEmpty)
     val mergedMpksObj = ListBuffer[collection.mutable.Map[String, Set[RubyStubbedType]]]()
-    typeStubFiles.foreach { f =>
+    typeStubFiles.foreach { file =>
       Using.Manager { use =>
-        val fis = use(new FileInputStream(new java.io.File(f.absolutePathAsString)))
+        val fis = use(new FileInputStream(new java.io.File(file.absolutePathAsString)))
         val zis = use(new ZipInputStream(fis))
 
         LazyList.continually(zis.getNextEntry).takeWhile(_ != null).foreach { file =>
@@ -101,8 +101,8 @@ object RubyProgramSummary {
       .reduceOption((prev, curr) => {
         curr.keys.foreach { key =>
           prev.updateWith(key) {
-            case Some(x) =>
-              Option(x ++ curr(key))
+            case Some(value) =>
+              Option(value ++ curr(key))
             case None =>
               Option(curr(key))
           }
