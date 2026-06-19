@@ -156,5 +156,39 @@ class VarLetTupleTests extends SwiftSrc2CpgSuite {
       methodBlock.ast.isCall.nameExact(Operators.assignment).l shouldBe List.empty
     }
 
+    "testSingleWildcard" in {
+      val cpg = code("""
+      |func test() {
+      |  let _ = foo()
+      |}
+      |""".stripMargin)
+      val List(methodBlock) = cpg.method.nameExact("test").block.l
+      // A synthetic local is created for the wildcard binding
+      methodBlock.local.nameNot("self").name.loneElement shouldBe "<wildcard>0"
+      // The foo() call is not dropped
+      val List(wildcardAssign) = methodBlock.astChildren.isCall.nameExact(Operators.assignment).l
+      wildcardAssign.argument(1).code shouldBe "<wildcard>0"
+      val fooCall = wildcardAssign.argument(2)
+      fooCall.isCall shouldBe true
+      fooCall.code shouldBe "foo()"
+    }
+
+    "testAllWildcardTuple" in {
+      val cpg = code("""
+      |func test() {
+      |  let (_, _) = foo()
+      |}
+      |""".stripMargin)
+      val List(methodBlock) = cpg.method.nameExact("test").block.l
+      // Only <tmp>0 — no locals for wildcards
+      methodBlock.local.nameNot("self").name.loneElement shouldBe "<tmp>0"
+      // The foo() call is not dropped
+      val List(tmpAssign) = methodBlock.astChildren.isCall.nameExact(Operators.assignment).l
+      tmpAssign.argument(1).code shouldBe "<tmp>0"
+      val fooCall = tmpAssign.argument(2)
+      fooCall.isCall shouldBe true
+      fooCall.code shouldBe "foo()"
+    }
+
   }
 }
