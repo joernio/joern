@@ -1249,6 +1249,9 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     else { VariableScopeManager.ScopeType.MethodScope }
 
     val bindingAsts = variableDecl.bindings.children.flatMap { binding =>
+      // Detect a tuple pattern at the binding root.
+      // All non-tuple cases (IdentifierPattern, WildcardPattern, etc.) return None and are
+      // handled by the fallthrough `case _` branch below.
       val maybeTuplePattern: Option[TuplePatternSyntax] = binding.pattern match {
         case tp: TuplePatternSyntax => Some(tp)
         case vb: ValueBindingPatternSyntax =>
