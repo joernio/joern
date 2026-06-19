@@ -9,7 +9,6 @@ scala_library(
     ]),
     data = [
         "@rubysrc2cpg_astgen//:files",
-        "@rubysrc2cpg_type_stubs//file",
     ],
     visibility = ["//visibility:public"],
     deps = [
@@ -25,6 +24,11 @@ scala_library(
 scala_test(
     name = "tests",
     srcs = glob(["src/test/scala/**/*.scala"]),
+    # We on purpose do not bring in the type stubs in the library target
+    # to not force downstream dependencies to incorporate it.
+    data = [
+        "@rubysrc2cpg_type_stubs//file",
+    ],
     resources = [
         "src/main/resources/log4j2.xml",
     ],
@@ -40,6 +44,11 @@ scala_test(
 
 java_binary(
     name = "rubysrc2cpg-bin",
+    # We on purpose do not bring in the type stubs in the library target
+    # to not force downstream dependencies to incorporate it.
+    data = [
+        "@rubysrc2cpg_type_stubs//file",
+    ],
     main_class = "io.joern.rubysrc2cpg.Main",
     resources = [
         "src/main/resources/log4j2.xml",

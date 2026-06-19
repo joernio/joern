@@ -49,18 +49,28 @@ object RubyProgramSummary {
           .getOrElse {
             val codeSourceLocation = getClass.getProtectionDomain.getCodeSource.getLocation.toString
             val typeStubDir        = TypeStubUtil.typeStubDir(codeSourceLocation)
-
-            typeStubDir
-              .walk()
-              .filter(file =>
-                Files.isRegularFile(file) && file.fileName.startsWith("rubysrc") && file.extension().contains(".zip")
-              )
-              .toSeq
+            if (!Files.exists(typeStubDir)) {
+              Nil
+            } else {
+              typeStubDir
+                .walk()
+                .filter(file =>
+                  Files.isRegularFile(file) && file.fileName.startsWith("rubysrc") && file.extension().contains(".zip")
+                )
+                .toSeq
+            }
           }
-
-      mpkZipToInitialMapping(mergeBuiltinMpkZip(typeStubFiles)) match {
-        case Failure(exception) => logger.warn("Unable to parse builtin types", exception); mutable.Map.empty
-        case Success(mapping)   => mapping
+      if (typeStubFiles.isEmpty) {
+        logger.info("No builtin type stubs provided.")
+        mutable.Map.empty
+      } else {
+        mpkZipToInitialMapping(mergeBuiltinMpkZip(typeStubFiles)) match {
+          case Failure(exception) =>
+            logger.warn("Unable to parse builtin types", exception)
+            mutable.Map.empty
+          case Success(mapping) =>
+            mapping
+        }
       }
     } else {
       mutable.Map.empty
@@ -72,40 +82,36 @@ object RubyProgramSummary {
   }
 
   private def mergeBuiltinMpkZip(typeStubFiles: Seq[Path]): InputStream = {
-    if (typeStubFiles.isEmpty) {
-      logger.warn("No builtin type stubs provided, continuing with types provided by the project")
-      InputStream.nullInputStream()
-    } else {
-      val mergedMpksObj = ListBuffer[collection.mutable.Map[String, Set[RubyStubbedType]]]()
-      typeStubFiles.foreach { f =>
-        Using.Manager { use =>
-          val fis = use(new FileInputStream(new java.io.File(f.absolutePathAsString)))
-          val zis = use(new ZipInputStream(fis))
+    assert(typeStubFiles.nonEmpty)
+    val mergedMpksObj = ListBuffer[collection.mutable.Map[String, Set[RubyStubbedType]]]()
+    typeStubFiles.foreach { file =>
+      Using.Manager { use =>
+        val fis = use(new FileInputStream(new java.io.File(file.absolutePathAsString)))
+        val zis = use(new ZipInputStream(fis))
 
-          LazyList.continually(zis.getNextEntry).takeWhile(_ != null).foreach { file =>
-            val mpkObj =
-              upickle.default.readBinary[collection.mutable.Map[String, Set[RubyStubbedType]]](zis.readAllBytes())
-            mergedMpksObj.addOne(mpkObj)
-          }
+        LazyList.continually(zis.getNextEntry).takeWhile(_ != null).foreach { file =>
+          val mpkObj =
+            upickle.default.readBinary[collection.mutable.Map[String, Set[RubyStubbedType]]](zis.readAllBytes())
+          mergedMpksObj.addOne(mpkObj)
         }
       }
-
-      val mergedMpks = mergedMpksObj
-        .reduceOption((prev, curr) => {
-          curr.keys.foreach { key =>
-            prev.updateWith(key) {
-              case Some(x) =>
-                Option(x ++ curr(key))
-              case None =>
-                Option(curr(key))
-            }
-          }
-          prev
-        })
-        .getOrElse(collection.mutable.Map[String, Set[RubyStubbedType]]())
-
-      new ByteArrayInputStream(upickle.default.writeBinary(mergedMpks))
     }
+
+    val mergedMpks = mergedMpksObj
+      .reduceOption((prev, curr) => {
+        curr.keys.foreach { key =>
+          prev.updateWith(key) {
+            case Some(value) =>
+              Option(value ++ curr(key))
+            case None =>
+              Option(curr(key))
+          }
+        }
+        prev
+      })
+      .getOrElse(collection.mutable.Map[String, Set[RubyStubbedType]]())
+
+    new ByteArrayInputStream(upickle.default.writeBinary(mergedMpks))
   }
 }
 
