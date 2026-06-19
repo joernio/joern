@@ -1,8 +1,6 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
 import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
-import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
-
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
@@ -578,7 +576,7 @@ class ExpressionTests extends SwiftSrc2CpgSuite {
           |let (ids, (actions, tracking)) = state.withCriticalRegion { ($0.valueObservers(for: keyPath), $0.didSet(keyPath: keyPath)) }
           |""".stripMargin)
       val closureMethods = cpg.method.name("<lambda>.*").l
-      closureMethods.name.l shouldBe List("<lambda>0", "<lambda>1")
+      closureMethods.name.l shouldBe List("<lambda>0")
       cpg.identifier.name.toSet should contain("$0")
     }
 
