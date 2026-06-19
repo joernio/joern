@@ -36,25 +36,35 @@ included.
 - In Intellij Idea you find a Bazel navigation bar on the right side which lets
   you build/run/test all the targets in the root project.
 
+## Bazel configuration
+Bazel look for config file in a multitude of places. Most important for us is the
+`.bazelrc` file which contained the shared and checked in project specific configuration.
+Additionally Bazel looks `~/.bazelrc` for user specific configuration. As per our
+`.bazelrc` Bazel also load `user.bazelrc` and that is where the user specific and project
+specific configuration goes. The config file lookup order is as follow where the later
+overrides the former: `.bazelrc`, `~/.bazelrc`, `user.bazelrc`.
+
+### Important configuration options
+Examples for often used configurtion options that go into one of the bazelrc files.
+- Configure environment variable for tests: `test --test_env=...`
+- Configure JVM options for tests: `test --test_env=JAVA_TOOL_OPTIONS=...`
+
 ## Update maven dependencies
 To add or update maven dependencies the MODULE.bazel file needs to be modified.
 Additionally the command `REPIN=1 bazel run @maven//:pin` needs to be run in the
 repository root directory to regenerate the `maven_install.json` lock file.
 
-## Release Joern
-Clone `https://git0.harness.io/l7B_kbSEQD2wjrM7PShm5w/PROD/Qwiet_AI/bazel-registry.git`.
-Run:
-- `release-module.sh --module <joernRepo>/MODULE.bazel --version <version> --commit <commit>`.
-- `release-module.sh --module <joernRepo>/bazel/tooling/MODULE.bazel --version <version> --commit <commit>`.
+## Multi-platform build
+Some of our targets are platform dependend. This is most often the case if a frontend brings
+in platform dependend AST generator components. By default the targets are build for the platform
+which executes the build. A platform independend target build is created with the command line
+flag `--//:all_platforms=true`. This packs binaries for all platforms into the resulting artifact.
 
-The script modifies the `modules` directory in your checkout of `bazel-registry`. Commit those changes and
-create a PR. Once the are on master, they are fully released and can be consumed by the CS build.
+## Bazel build development notes
 
 ## Scalac options
 Scalac options must not be provided in the double minus form (--) but instead only
 with a single minus (-) or otherwise the compiler parameter parsing breaks.
-
-## Bazel build development notes
 
 ### Scala and Java rules
 We do not directly use scala_library, scala_binary and scala_test from rules_scala
