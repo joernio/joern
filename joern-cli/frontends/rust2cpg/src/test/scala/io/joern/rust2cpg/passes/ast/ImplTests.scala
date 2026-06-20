@@ -67,6 +67,24 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "an inherent method with a by-value `self` receiver" should {
+    val cpg = code("""
+        |struct Foo;
+        |impl Foo {
+        |  fn bar(self) {}
+        |}
+        |""".stripMargin)
+
+    "have correct self properties" in {
+      inside(cpg.method.nameExact("bar").parameter.nameExact("self").l) { case self :: Nil =>
+        self.index shouldBe 0
+        self.order shouldBe 0
+        self.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
+        self.typeFullName shouldBe "rust2cpgtest::Foo"
+      }
+    }
+  }
+
   "an associated function without a receiver" should {
     val cpg = code("""
         |struct Foo;

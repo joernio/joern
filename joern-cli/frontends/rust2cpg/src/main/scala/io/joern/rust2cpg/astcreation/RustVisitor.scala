@@ -470,13 +470,15 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
         s"&$mut$enclosingType"
       case None => enclosingType
     }
+    val evaluationStrategy =
+      if (selfParam.ampToken.isDefined) EvaluationStrategies.BY_SHARING else EvaluationStrategies.BY_VALUE
     val paramNode = parameterInNode(
       node = selfParam,
       name = code(selfParam.name),
       code = code(selfParam),
       index = 0,
       isVariadic = false,
-      evaluationStrategy = EvaluationStrategies.BY_SHARING,
+      evaluationStrategy = evaluationStrategy,
       typeFullName = typeFullName
     )
     Ast(paramNode)
