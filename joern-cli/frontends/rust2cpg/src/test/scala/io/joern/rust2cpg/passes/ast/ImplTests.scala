@@ -4,6 +4,9 @@ import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.utils.FileUtil.PathExt
+
+import java.nio.file.Paths
 
 class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
 
@@ -129,6 +132,41 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
         |  fn b(&self) {}
         |}
         |""".stripMargin)
+
+    "merge all methods under the same TYPE_DECL" in {
+      cpg.typeDecl.nameExact("Foo").method.fullName.sorted.l shouldBe List(
+        "rust2cpgtest::Foo::a",
+        "rust2cpgtest::Foo::b"
+      )
+    }
+
+    "not create a duplicate TYPE_DECL" in {
+      cpg.typeDecl.fullNameExact("rust2cpgtest::Foo").size shouldBe 1
+    }
+  }
+
+  "multiple impl blocks for the same type spread across files" should {
+    val cpg = code(
+      """
+        |struct Foo;
+        |mod a;
+        |mod b;
+        |""".stripMargin,
+      fileName = (Paths.get("src") / "lib.rs").toString
+    ).moreCode(
+      """
+          |impl crate::Foo {
+          | fn a(&self) {}
+          |}
+          |""".stripMargin,
+      fileName = (Paths.get("src") / "a.rs").toString
+    ).moreCode(
+      """
+        |impl crate::Foo {
+        | fn b(&self) {}
+        |}""".stripMargin,
+      fileName = (Paths.get("src") / "b.rs").toString
+    )
 
     "merge all methods under the same TYPE_DECL" in {
       cpg.typeDecl.nameExact("Foo").method.fullName.sorted.l shouldBe List(
