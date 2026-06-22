@@ -158,7 +158,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       // <main> functions are private functions on the Object class
       else if (isSurroundedByProgramScope) ModifierTypes.PRIVATE
       // Else, use whatever modifier has been user-defined (or is default for current scope)
-      else currentAccessModifier
+      else scope.visibilityForMethod(methodName).getOrElse(currentAccessModifier)
     val modifiers = mutable.Buffer(ModifierTypes.VIRTUAL, accessModifier)
     if (isClosure) modifiers.addOne(ModifierTypes.LAMBDA)
     if (isConstructor) modifiers.addOne(ModifierTypes.CONSTRUCTOR)
@@ -200,21 +200,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case x: PublicMethodModifier  => (RubyOperators.publicClassMethod, x: RubyExpression)
     }
 
-    val originalAccessModifier = currentAccessModifier
-    popAccessModifier()
-
-    node match {
-      case _: PrivateMethodModifier => pushAccessModifier(ModifierTypes.PRIVATE)
-      case _: PublicMethodModifier  => pushAccessModifier(ModifierTypes.PUBLIC)
-    }
-
     val methodAsts = node.arguments.flatMap {
       case m: ProcedureDeclaration => astsForStatement(m)
       case _                       => Nil
     }
-
-    popAccessModifier()
-    pushAccessModifier(originalAccessModifier)
 
     val argAsts = node.arguments.map(astForExpression)
     val call    = callNode(expr, code(expr), operatorName, operatorName, DispatchTypes.STATIC_DISPATCH)
@@ -489,7 +478,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
             parameterAsts ++ anonProcParam,
             stmtBlockAst,
             methodReturnNode(node, Defines.Any),
-            modifierNode(node, ModifierTypes.VIRTUAL) :: modifierNode(node, currentAccessModifier) :: Nil
+            modifierNode(node, ModifierTypes.VIRTUAL) :: modifierNode(
+              node,
+              scope.visibilityForMethod(node.methodName).getOrElse(currentAccessModifier)
+            ) :: Nil
           )
 
         _methodAst :: methodTypeDeclAst :: Nil foreach (Ast.storeInDiffGraph(_, diffGraph))

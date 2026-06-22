@@ -514,12 +514,12 @@ object RubyIntermediateAst {
       extends RubyExpression(span)
       with RubyCall
 
-  sealed trait AccessModifier extends AllowedTypeDeclarationChild {
+  sealed trait AccessModifier {
     def toSimpleIdentifier: SimpleIdentifier
     def arguments: List[RubyExpression]
   }
 
-  sealed trait MethodAccessModifier extends AllowedTypeDeclarationChild {
+  sealed trait MethodAccessModifier {
     def toSimpleIdentifier: SimpleIdentifier
     def arguments: List[RubyExpression]
   }

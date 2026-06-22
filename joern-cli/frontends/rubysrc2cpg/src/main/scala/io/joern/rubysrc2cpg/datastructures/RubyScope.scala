@@ -88,8 +88,8 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
 
   def pushField(field: FieldDecl): Unit = {
     popScope().foreach {
-      case TypeScope(fullName, fields) =>
-        pushNewScope(TypeScope(fullName, fields :+ field))
+      case TypeScope(fullName, fields, visMap) =>
+        pushNewScope(TypeScope(fullName, fields :+ field, visMap))
       case x =>
         pushField(field)
         pushNewScope(x)
@@ -97,7 +97,7 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
   }
 
   def getFieldsInScope: List[FieldDecl] =
-    stack.collect { case ScopeElement(TypeScope(_, fields), _) => fields }.flatten
+    stack.collect { case ScopeElement(TypeScope(_, fields, _), _) => fields }.flatten
 
   def findFieldInScope(fieldName: String): Option[FieldDecl] = {
     getFieldsInScope.find(_.name == fieldName)
@@ -112,7 +112,7 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
       case n: ProgramScope =>
         typesInScope.addAll(summary.typesUnderNamespace(n.fullName))
         n
-      case TypeScope(name, _) =>
+      case TypeScope(name, _, _) =>
         typesInScope.addAll(summary.matchingTypes(name))
         scopeNode
       case _ => scopeNode
@@ -328,6 +328,11 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
 
   def surroundingTypeFullName: Option[String] = stack.collectFirst { case ScopeElement(x: TypeLikeScope, _) =>
     x.fullName
+  }
+
+  def visibilityForMethod(methodName: String): Option[String] = stack.collectFirst {
+    case ScopeElement(x: TypeScope, _) if x.visibilityMap.contains(methodName)   => x.visibilityMap(methodName)
+    case ScopeElement(x: ModuleScope, _) if x.visibilityMap.contains(methodName) => x.visibilityMap(methodName)
   }
 
   /** Searches the surrounding classes for a class that matches the given value. Returns it if found.
