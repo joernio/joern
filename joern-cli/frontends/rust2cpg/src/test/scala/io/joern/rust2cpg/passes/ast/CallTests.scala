@@ -2,7 +2,7 @@ package io.joern.rust2cpg.passes.ast
 
 import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -191,12 +191,24 @@ class CallTests extends Rust2CpgSuite(noSysRoot = true) {
       }
     }
 
-    "have the trait object as receiver" in {
-      inside(cpg.call.nameExact("hello").receiver.l) { case (receiver: Identifier) :: Nil =>
-        receiver.name shouldBe "g"
-        receiver.code shouldBe "g"
+    "have the adjusted trait object as receiver" in {
+      inside(cpg.call.nameExact("hello").receiver.l) { case (receiver: Call) :: Nil =>
+        receiver.name shouldBe Operators.addressOf
+        receiver.code shouldBe "&*g"
         receiver.argumentIndex shouldBe 0
         receiver.typeFullName shouldBe "&dyn Greet + 'static"
+
+        inside(receiver.argument.l) { case (deref: Call) :: Nil =>
+          deref.name shouldBe Operators.indirection
+          deref.code shouldBe "*g"
+          deref.typeFullName shouldBe "dyn Greet + 'static"
+
+          inside(deref.argument.l) { case (ident: Identifier) :: Nil =>
+            ident.name shouldBe "g"
+            ident.code shouldBe "g"
+            ident.typeFullName shouldBe "&dyn Greet + 'static"
+          }
+        }
       }
     }
 
@@ -238,12 +250,11 @@ class CallTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
         |}
         |""".stripMargin)
 
-    // TODO: we would expect the typeFullName to be `String`, not `&str`.
-    //  Need to confirm if that's from rust-analyzer or rust_ast_gen.
     "resolve `from` to core::convert::From" in {
       inside(cpg.call.nameExact("from").l) { case from :: Nil =>
         from.methodFullName shouldBe "core::convert::From<T>::from"
-        from.typeFullName shouldBe "&str"
+        from.typeFullName shouldBe "alloc::string::String"
+        from.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       }
     }
 
@@ -259,6 +270,35 @@ class CallTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
       inside(cpg.call.nameExact("to_string").l) { case toString :: Nil =>
         toString.methodFullName shouldBe "<T as alloc::string::ToString>::to_string"
         toString.typeFullName shouldBe "alloc::string::String"
+      }
+    }
+
+    "have the adjusted `from` result as the `trim` receiver" in {
+      inside(cpg.call.nameExact("trim").receiver.l) { case (receiver: Call) :: Nil =>
+        receiver.name shouldBe Operators.addressOf
+        receiver.code shouldBe """&String::from(" hello ").deref()"""
+        receiver.typeFullName shouldBe "&str"
+
+        inside(receiver.argument.l) { case (deref: Call) :: Nil =>
+          deref.name shouldBe "deref"
+          deref.code shouldBe """String::from(" hello ").deref()"""
+          deref.methodFullName shouldBe "<alloc::string::String as core::ops::deref::Deref>::deref"
+          deref.typeFullName shouldBe "str"
+        }
+      }
+    }
+
+    "have the adjusted `trim` result as the `to_string` receiver" in {
+      inside(cpg.call.nameExact("to_string").receiver.l) { case (receiver: Call) :: Nil =>
+        receiver.name shouldBe Operators.addressOf
+        receiver.code shouldBe """&*String::from(" hello ").trim()"""
+        receiver.typeFullName shouldBe "&str"
+
+        inside(receiver.argument.l) { case (deref: Call) :: Nil =>
+          deref.name shouldBe Operators.indirection
+          deref.code shouldBe """*String::from(" hello ").trim()"""
+          deref.typeFullName shouldBe "str"
+        }
       }
     }
   }

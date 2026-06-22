@@ -3,6 +3,7 @@ package io.joern.rust2cpg.astcreation
 import io.joern.rust2cpg.parser.RustNodeSyntax.*
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
+import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
   DispatchTypes,
@@ -11,8 +12,6 @@ import io.shiftleft.codepropertygraph.generated.{
   Operators
 }
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewModifier, NewNamespaceBlock}
-
-import scala.annotation.tailrec
 
 trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreator =>
 
@@ -81,8 +80,13 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     case expr                 => visitExpr(expr) :: Nil
   }
 
-  @tailrec
-  private def visitExpr(expr: Expr): Ast = expr match {
+  private def visitExpr(expr: Expr): Ast = {
+    val adjustments = expr.adjustments.getOrElse(Nil)
+    val exprAst     = dispatchVisitExpr(expr)
+    adjustments.foldLeft(exprAst)(lowerAdjustment(expr, _, _))
+  }
+
+  private def dispatchVisitExpr(expr: Expr): Ast = expr match {
     case arrayExpr: ArrayExpr           => visitArrayExpr(arrayExpr)
     case x: AsmExpr                     => notHandledYet(x)
     case awaitExpr: AwaitExpr           => visitAwaitExpr(awaitExpr)
@@ -119,6 +123,55 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     case x: YeetExpr                    => notHandledYet(x)
     case x: LetExpr                     => notHandledYet(x)
     case x: UnderscoreExpr              => notHandledYet(x)
+  }
+
+  private def lowerAdjustment(expr: Expr, exprAst: Ast, adjustment: Adjustment) = adjustment match {
+    case deref: Deref                     => lowerDerefAdjustment(expr, exprAst, deref)
+    case borrow: Borrow                   => lowerBorrowAdjustment(expr, exprAst, borrow)
+    case cast: Cast                       => lowerCastAdjustment(expr, exprAst, cast)
+    case overloadedDeref: OverloadedDeref => lowerOverloadedDerefAdjustment(expr, exprAst, overloadedDeref)
+  }
+
+  private def lowerDerefAdjustment(expr: Expr, exprAst: Ast, deref: Deref) = {
+    val exprCode     = exprAst.rootCodeOrEmpty
+    val typeFullName = deref.target
+    callAst(operatorCallNode(expr, s"*$exprCode", Operators.indirection, Some(typeFullName)), Seq(exprAst))
+  }
+
+  private def lowerBorrowAdjustment(expr: Expr, exprAst: Ast, borrow: Borrow) = {
+    val exprCode     = exprAst.rootCodeOrEmpty
+    val typeFullName = borrow.target
+    callAst(operatorCallNode(expr, s"&$exprCode", Operators.addressOf, Some(typeFullName)), Seq(exprAst))
+  }
+
+  private def lowerCastAdjustment(expr: Expr, exprAst: Ast, cast: Cast) = {
+    val exprCode     = exprAst.rootCodeOrEmpty
+    val typeFullName = cast.target
+    val castNode     = operatorCallNode(expr, s"$exprCode as $typeFullName", Operators.cast, Some(typeFullName))
+    val typeRefAst   = Ast(typeRefNode(expr, typeFullName, typeFullName))
+    callAst(castNode, Seq(typeRefAst, exprAst))
+  }
+
+  private def lowerOverloadedDerefAdjustment(expr: Expr, exprAst: Ast, overloadedDeref: OverloadedDeref) = {
+    val exprCode     = exprAst.rootCodeOrEmpty
+    val typeFullName = overloadedDeref.target
+    overloadedDeref.methodFullName match {
+      case Some(methodFullName) =>
+        val name = methodFullName.split(RustFullNames.PathSep).last
+        val call =
+          callNode(
+            expr,
+            s"$exprCode.$name()",
+            name,
+            methodFullName,
+            DispatchTypes.STATIC_DISPATCH,
+            None,
+            Some(typeFullName)
+          )
+        callAst(call, arguments = Nil, base = Some(exprAst))
+      case None =>
+        callAst(operatorCallNode(expr, s"*$exprCode", Operators.indirection, Some(typeFullName)), Seq(exprAst))
+    }
   }
 
   private def visitType(typ: Type): Ast = typ match {
