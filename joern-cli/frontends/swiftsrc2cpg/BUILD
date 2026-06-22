@@ -46,6 +46,10 @@ scala_test(
     # We cannot sandbox the test because the swift compiler uses a sandbox itself
     # and sandboxes cannot be nested (at least no those initialized with sandbox-exec).
     tags = ["no-sandbox"],
+    # TODO Make hermetic
+    # Use system path instead of the restrict PATH that Bazel usually uses when running.
+    # That way external swift toolchain calls work.
+    env_inherit = ["PATH"],
     deps = [
         ":swiftsrc2cpg",
         "//bazel/reexports:io_shiftleft_codepropertygraph_with_deps",
