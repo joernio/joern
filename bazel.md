@@ -37,17 +37,31 @@ included.
   you build/run/test all the targets in the root project.
 
 ## Bazel configuration
-Bazel look for config file in a multitude of places. Most important for us is the
-`.bazelrc` file which contained the shared and checked in project specific configuration.
-Additionally Bazel looks `~/.bazelrc` for user specific configuration. As per our
-`.bazelrc` Bazel also load `user.bazelrc` and that is where the user specific and project
+Bazel looks for config files in a multitude of places. Most important for us is the
+`.bazelrc` file which contains the shared and checked in project specific configuration.
+Additionally Bazel looks at `~/.bazelrc` for user specific configuration. As per our
+`.bazelrc` it also loads `user.bazelrc` and that is where the user specific and project
 specific configuration goes. The config file lookup order is as follow where the later
-overrides the former: `.bazelrc`, `~/.bazelrc`, `user.bazelrc`.
+overrides the former: `.bazelrc`, `user.bazelrc`, `~/.bazelrc`.
+
+The bazelrc files start with a selector followed by the configuration flag.
+The selector specifies to which bazel command the flag is applied to. The most common are:
+- `build` applies to bazel build
+- `test` applies to bazel test
+- `run` applies to bazel run
+- `common` applies to all bazel commands
+
+The following flags are the the same as you would otherwise pass on the a single CLI invocation.
 
 ### Important configuration options
-Examples for often used configurtion options that go into one of the bazelrc files.
-- Configure environment variable for tests: `test --test_env=...`
-- Configure JVM options for tests: `test --test_env=JAVA_TOOL_OPTIONS=...`
+Examples for often used configuration options that go into one of the bazelrc files.
+- Configure environment variable for tests: `<selector> --test_env=...`
+
+  Important note for Intellij users: Running a test fixture is a `bazel test` command,
+  so `test` selector must be used. Debugging a test fixture is a `bazel run` command,
+  so `run` selector must be used. To avoid duplication `common` can be used as selector.
+
+- Configure JVM options for tests: `<selector> --test_env=JAVA_TOOL_OPTIONS=...`
 
 ## Update maven dependencies
 To add or update maven dependencies the MODULE.bazel file needs to be modified.
