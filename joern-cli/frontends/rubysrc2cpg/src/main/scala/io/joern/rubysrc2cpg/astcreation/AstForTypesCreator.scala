@@ -362,8 +362,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         node.arguments.foreach {
           case proc: ProcedureDeclaration => visibilityMap.put(proc.methodName, modifier)
           case lit: StaticLiteral         => visibilityMap.put(lit.span.text.stripPrefix(":"), modifier)
-          case arr: ArrayLiteral => arr.elements.foreach(e => visibilityMap.put(e.span.text.stripPrefix(":"), modifier))
-          case _                 =>
+          case arr: ArrayLiteral =>
+            arr.elements.foreach(el => visibilityMap.put(el.span.text.stripPrefix(":"), modifier))
+          case _ =>
         }
       case node: ProcedureDeclaration if !visibilityMap.contains(node.methodName) =>
         visibilityMap.put(node.methodName, currentModifier)

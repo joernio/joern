@@ -90,9 +90,9 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     popScope().foreach {
       case TypeScope(fullName, fields, visMap) =>
         pushNewScope(TypeScope(fullName, fields :+ field, visMap))
-      case x =>
+      case scope =>
         pushField(field)
-        pushNewScope(x)
+        pushNewScope(scope)
     }
   }
 
