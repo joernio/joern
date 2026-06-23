@@ -1,10 +1,11 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.rubysrc2cpg.passes.Defines.Main
 import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
 class ControlStructureTests extends RubyCode2CpgFixture {
@@ -458,7 +459,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     }
   }
 
-  "`for .. in` control structure" should {
+  "`for .. in` control structure with a literal iterable" should {
     val cpg = code("""
                      |def foo1
                      | x = [1, 2, 3]
@@ -466,83 +467,67 @@ class ControlStructureTests extends RubyCode2CpgFixture {
                      |   puts x - i
                      | end
                      |end
-                     |
-                     |def foo2
-                     | x = 3
-                     | for i in 1..x do
-                     |   puts x + i
-                     | end
-                     |end
                      |""".stripMargin)
 
-    "create a FOR control structure node with body with an array iterable" in {
-      inside(cpg.method("foo1").controlStructure.l) { case forEachNode :: Nil =>
-        forEachNode.controlStructureType shouldBe ControlStructureTypes.FOR
+    "lower to an `each` call with a closure for an array iterable" in {
+      inside(cpg.method("foo1").call.nameExact("each").l) { case eachCall :: Nil =>
+        eachCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-        inside(forEachNode.astChildren.l) {
-          case (idxLocal: Local) :: (iVarLocal: Local) :: (initAssign: Call) :: (cond: Call) :: (update: Call) :: (forBlock: Block) :: Nil =>
-            idxLocal.name shouldBe "_idx_"
-            idxLocal.typeFullName shouldBe Defines.prefixAsCoreType(Defines.Integer)
+        inside(eachCall.argument.l) { case (base: Identifier) :: (typeRef: TypeRef) :: Nil =>
+          base.argumentIndex shouldBe 0
+          base.name shouldBe "x"
 
-            iVarLocal.name shouldBe "i"
-
-            initAssign.code shouldBe "_idx_ = 0"
-            initAssign.name shouldBe Operators.assignment
-            initAssign.methodFullName shouldBe Operators.assignment
-
-            cond.code shouldBe "_idx_ < x.length"
-            cond.name shouldBe Operators.lessThan
-            cond.methodFullName shouldBe Operators.lessThan
-
-            update.code shouldBe "i = x[_idx_++]"
-            update.name shouldBe Operators.assignment
-            update.methodFullName shouldBe Operators.assignment
-
+          typeRef.argumentIndex shouldBe 1
+          typeRef.typeFullName shouldBe s"Test0.rb:$Main.foo1.<lambda>0&Proc"
         }
+      }
 
-        inside(forEachNode.astChildren.isBlock.l) { case blockNode :: Nil =>
-          val List(puts) = blockNode.ast.isCall.nameExact("puts").l
-          puts.parentBlock.head shouldBe blockNode
+      inside(cpg.method("foo1").astChildren.collectAll[Method].isLambda.l) { case closureMethod :: Nil =>
+        inside(closureMethod.parameter.indexGt(0).l) { case iParam :: Nil =>
+          iParam.name shouldBe "i"
         }
+        closureMethod.call.nameExact("puts").size shouldBe 1
 
+        inside(closureMethod.local.nameExact("x").l) { case xLocal :: Nil =>
+          xLocal.closureBindingId shouldBe Some(s"Test0.rb:$Main.foo1.x")
+        }
       }
     }
+  }
 
-    "create a FOR control structure node with body with a 'range' iterable" in {
-      inside(cpg.method("foo2").controlStructure.l) { case forEachNode :: Nil =>
-        forEachNode.controlStructureType shouldBe ControlStructureTypes.FOR
+  "`for .. in` control structure with a range iterable" should {
+    val cpg = code("""
+        |def foo2
+        | x = 3
+        | for i in 1..x do
+        |   puts x + i
+        | end
+        |end
+        |""".stripMargin)
 
-        inside(forEachNode.astChildren.l) {
-          case (idxLocal: Local) :: (iVarLocal: Local) :: (initAssign: Call) :: (cond: Call) :: (update: Call) :: (forBlock: Block) :: Nil =>
-            idxLocal.name shouldBe "_idx_"
-            idxLocal.typeFullName shouldBe Defines.prefixAsCoreType(Defines.Integer)
+    "lower to an `each` call with a closure for a range iterable" in {
+      inside(cpg.method("foo2").call.nameExact("each").l) { case eachCall :: Nil =>
+        eachCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-            iVarLocal.name shouldBe "i"
+        inside(eachCall.argument.l) { case (base: Call) :: (typeRef: TypeRef) :: Nil =>
+          base.argumentIndex shouldBe 0
+          base.methodFullName shouldBe Operators.range
+          base.code shouldBe "1..x"
 
-            initAssign.code shouldBe "_idx_ = 0"
-            initAssign.name shouldBe Operators.assignment
-            initAssign.methodFullName shouldBe Operators.assignment
-
-            cond.code shouldBe "_idx_ < 1..x.length"
-            cond.name shouldBe Operators.lessThan
-            cond.methodFullName shouldBe Operators.lessThan
-
-            update.code shouldBe "i = 1..x[_idx_++]"
-            update.name shouldBe Operators.assignment
-            update.methodFullName shouldBe Operators.assignment
-
+          typeRef.argumentIndex shouldBe 1
+          typeRef.typeFullName shouldBe s"Test0.rb:$Main.foo2.<lambda>0&Proc"
         }
-
       }
-    }
 
-    "connect for-loop and body branches via FOR_BODY edges" in {
-      inside(cpg.method("foo1").controlStructure.l) { case List(forNode: ControlStructure) =>
-        forNode.code shouldBe "for i in x do\n   puts x - i\n end"
+      inside(cpg.method("foo2").astChildren.collectAll[Method].isLambda.l) { case closureMethod :: Nil =>
+        inside(closureMethod.parameter.indexGt(0).l) { case iParam :: Nil =>
+          iParam.name shouldBe "i"
+        }
+        closureMethod.call.nameExact("puts").size shouldBe 1
 
-        forNode.forInitOut.code.l shouldBe List("_idx_ = 0")
-        forNode.forUpdateOut.code.l shouldBe List("i = x[_idx_++]")
-        forNode.forBodyOut.isBlock.astChildren.code.l shouldBe List("puts x - i")
+        inside(closureMethod.local.nameExact("x").l) { case xLocal :: Nil =>
+          xLocal.closureBindingId shouldBe Some(s"Test0.rb:$Main.foo2.x")
+        }
       }
     }
   }
@@ -754,32 +739,23 @@ class ControlStructureTests extends RubyCode2CpgFixture {
                      |end
                      |""".stripMargin)
 
-    inside(cpg.method.isModule.controlStructure.l) { case forEachNode :: Nil =>
-      forEachNode.controlStructureType shouldBe ControlStructureTypes.FOR
+    inside(cpg.method.isModule.call.nameExact("each").l) { case eachCall :: Nil =>
+      eachCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-      inside(forEachNode.astChildren.l) {
-        case (idxLocal: Local) :: (numLocal: Local) :: (initAssign: Call) :: (cond: Call) :: (update: Call) :: (forBlock: Block) :: Nil =>
-          idxLocal.name shouldBe "_idx_"
-          idxLocal.typeFullName shouldBe Defines.prefixAsCoreType(Defines.Integer)
-
-          numLocal.name shouldBe "num"
-
-          initAssign.code shouldBe "_idx_ = 0"
-          initAssign.name shouldBe Operators.assignment
-          initAssign.methodFullName shouldBe Operators.assignment
-
-          cond.code shouldBe "_idx_ < fibNumbers.length"
-          cond.name shouldBe Operators.lessThan
-          cond.methodFullName shouldBe Operators.lessThan
-
-          update.code shouldBe "num = fibNumbers[_idx_++]"
-          update.name shouldBe Operators.assignment
-          update.methodFullName shouldBe Operators.assignment
-
-          val List(putsCall) = cpg.call.nameExact("puts").l
-          putsCall.astParent shouldBe forBlock
-
+      inside(eachCall.argument.l) { case (base: Identifier) :: (typeRef: TypeRef) :: Nil =>
+        base.argumentIndex shouldBe 0
+        base.name shouldBe "fibNumbers"
+        typeRef.argumentIndex shouldBe 1
+        typeRef.typeFullName shouldBe s"Test0.rb:$Main.<lambda>0&Proc"
       }
+    }
+
+    inside(cpg.method.isModule.astChildren.collectAll[Method].isLambda.l) { case closureMethod :: Nil =>
+      inside(closureMethod.parameter.indexGt(0).l) { case numParam :: Nil =>
+        numParam.name shouldBe "num"
+      }
+      val List(putsCall) = closureMethod.call.nameExact("puts").l
+      putsCall.code shouldBe "puts num"
     }
   }
 }

@@ -408,7 +408,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
    * ```
    */
   protected def astForCallWithBlock[C <: RubyCall](node: RubyExpression & RubyCallWithBlock[C]): Ast = {
-    val Seq(typeRef, _)  = astForDoBlock(node.block): @unchecked
+    val typeRef          = astForDoBlock(node.block).typeRef
     val typeRefDummyNode = typeRef.root.map(DummyNode(_)(node.span)).toList
 
     // Create call with argument referencing the MethodRef
@@ -472,7 +472,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val argumentAsts = node match {
       case x: SimpleObjectInstantiation => x.arguments.map(astForMethodCallArgument)
       case x: ObjectInstantiationWithBlock =>
-        val Seq(typeRef, _) = astForDoBlock(x.block): @unchecked
+        val typeRef = astForDoBlock(x.block).typeRef
         x.arguments.map(astForMethodCallArgument) :+ typeRef
     }
 
@@ -1035,8 +1035,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForProcOrLambdaExpr(node: ProcOrLambdaExpr): Ast = {
-    val Seq(typeRef, _) = astForDoBlock(node.block): @unchecked
-    typeRef
+    astForDoBlock(node.block).typeRef
   }
 
   private def astForSingletonObjectMethodDeclaration(node: SingletonObjectMethodDeclaration): Ast = {
@@ -1058,11 +1057,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       // Associations in method calls are keyword arguments
       case assoc: Association => astForKeywordArgument(assoc)
       case block: RubyBlock =>
-        val Seq(methodDecl, typeDecl, typeRef, _) = astForDoBlock(block)
-        Ast.storeInDiffGraph(methodDecl, diffGraph)
-        Ast.storeInDiffGraph(typeDecl, diffGraph)
-
-        typeRef
+        astForDoBlock(block).typeRef
       case selfMethod: SingletonMethodDeclaration =>
         // Last element is the method declaration, the prefix methods would be `foo = def foo (...)` pointers in other
         // contexts, but this would be empty as a method call argument
