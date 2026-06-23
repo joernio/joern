@@ -528,15 +528,11 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     else astForTryAsExpression(expr, argIdx, argNameMaybe, annotations)
   }
 
-  def astForBreak(expr: KtBreakExpression): Ast = {
-    val node = controlStructureNode(expr, ControlStructureTypes.BREAK, code(expr))
-    Ast(node)
-  }
+  def astForBreak(expr: KtBreakExpression): Ast =
+    breakAst(expr, code(expr), Option(expr.getLabelName))
 
-  def astForContinue(expr: KtContinueExpression): Ast = {
-    val node = controlStructureNode(expr, ControlStructureTypes.CONTINUE, code(expr))
-    Ast(node)
-  }
+  def astForContinue(expr: KtContinueExpression): Ast =
+    continueAst(expr, code(expr), Option(expr.getLabelName))
 
   def astForThrowExpression(
     expr: KtThrowExpression,

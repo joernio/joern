@@ -257,6 +257,103 @@ abstract class AstCreatorBase[Node, NodeProcessor](filename: String)(implicit wi
     }
   }
 
+  /** Creates an AST for a break statement. When `labelName` is present a `JumpLabel` child is created at order 1 and
+    * connected to the break node via a `JUMP_ARGUMENT` edge.
+    */
+  def breakAst(node: Node, codeStr: String, labelName: Option[String]): Ast =
+    labeledJumpAst(node, ControlStructureTypes.BREAK, codeStr, labelName)
+
+  /** Creates an AST for a break statement. When `labelNumber` is present a `Literal` child is created at order 1 and
+    * connected to the break node via a `JUMP_ARGUMENT` edge.
+    */
+  def breakAst(node: Node, codeStr: String, labelNumber: Option[Int])(implicit dummy: DummyImplicit): Ast =
+    integerJumpAst(node, ControlStructureTypes.BREAK, codeStr, labelNumber)
+
+  /** Creates an AST for a break statement without a jump argument. */
+  def breakAst(node: Node, codeStr: String): Ast =
+    jumpAst(node, ControlStructureTypes.BREAK, codeStr)
+
+  /** Creates an AST for a continue statement. When `labelName` is present a `JumpLabel` child is created at order 1 and
+    * connected to the continue node via a `JUMP_ARGUMENT` edge.
+    */
+  def continueAst(node: Node, codeStr: String, labelName: Option[String]): Ast =
+    labeledJumpAst(node, ControlStructureTypes.CONTINUE, codeStr, labelName)
+
+  /** Creates an AST for a continue statement. When `labelNumber` is present a `Literal` child is created at order 1 and
+    * connected to the continue node via a `JUMP_ARGUMENT` edge.
+    */
+  def continueAst(node: Node, codeStr: String, labelNumber: Option[Int])(implicit dummy: DummyImplicit): Ast =
+    integerJumpAst(node, ControlStructureTypes.CONTINUE, codeStr, labelNumber)
+
+  /** Creates an AST for a continue statement without a jump argument. */
+  def continueAst(node: Node, codeStr: String): Ast =
+    jumpAst(node, ControlStructureTypes.CONTINUE, codeStr)
+
+  def labeledJumpAst(node: Node, jumpType: String, codeStr: String, labelNumber: Option[Int])(implicit
+    dummy: DummyImplicit
+  ): Ast =
+    integerJumpAst(node, jumpType, codeStr, labelNumber)
+
+  def labeledJumpAst(node: Node, jumpType: String, codeStr: String): Ast =
+    jumpAst(node, jumpType, codeStr)
+
+  def labeledJumpAst(node: Node, jumpType: String, codeStr: String, labelName: Option[String]): Ast = {
+    val jumpNode = NewControlStructure()
+      .parserTypeName(node.getClass.getSimpleName)
+      .controlStructureType(jumpType)
+      .code(codeStr)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+    labelName match {
+      case Some(name) =>
+        val jumpLabelNode = NewJumpLabel()
+          .parserTypeName(node.getClass.getSimpleName)
+          .name(name)
+          .code(name)
+          .lineNumber(line(node))
+          .columnNumber(column(node))
+          .order(1)
+        Ast(jumpNode)
+          .withChild(Ast(jumpLabelNode))
+          .withJumpArgumentEdge(jumpNode, jumpLabelNode)
+      case None =>
+        Ast(jumpNode)
+    }
+  }
+
+  def integerJumpAst(node: Node, jumpType: String, codeStr: String, labelNumber: Option[Int]): Ast = {
+    val jumpNode = NewControlStructure()
+      .parserTypeName(node.getClass.getSimpleName)
+      .controlStructureType(jumpType)
+      .code(codeStr)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+    labelNumber match {
+      case Some(number) =>
+        val integerJump = NewLiteral()
+          .code(number.toString)
+          .typeFullName(Defines.Any)
+          .lineNumber(line(node))
+          .columnNumber(column(node))
+          .order(1)
+        Ast(jumpNode)
+          .withChild(Ast(integerJump))
+          .withJumpArgumentEdge(jumpNode, integerJump)
+      case None =>
+        Ast(jumpNode)
+    }
+  }
+
+  private def jumpAst(node: Node, jumpType: String, codeStr: String): Ast =
+    Ast(
+      NewControlStructure()
+        .parserTypeName(node.getClass.getSimpleName)
+        .controlStructureType(jumpType)
+        .code(codeStr)
+        .lineNumber(line(node))
+        .columnNumber(column(node))
+    )
+
   /** For the given try body, catch ASTs and finally AST, create a try-catch-finally AST with orders set correctly for
     * the ossdataflow engine.
     */
