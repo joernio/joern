@@ -181,13 +181,15 @@ http_file(
 )
 
 #rust2cpg astgen binary imports
+RUST2CPG_ASTGEN_VERSION = "0.8.2"
+
 http_file(
     name = "rust2cpg_astgen_macos_arm",
     executable = True,
     # TODO add sha256 for now we skip this as the frontend is in early developemnt and we do not want
     # to update this all the time.
     sha256 = "",
-    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv0.8.2/rust_ast_gen-macos-arm",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv{}/rust_ast_gen-macos-arm".format(RUST2CPG_ASTGEN_VERSION),
 )
 
 http_file(
@@ -196,7 +198,7 @@ http_file(
     # TODO add sha256 for now we skip this as the frontend is in early developemnt and we do not want
     # to update this all the time.
     sha256 = "",
-    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv0.8.2/rust_ast_gen-macos",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv{}/rust_ast_gen-macos-arm".format(RUST2CPG_ASTGEN_VERSION),
 )
 
 http_file(
@@ -205,7 +207,7 @@ http_file(
     # TODO add sha256 for now we skip this as the frontend is in early developemnt and we do not want
     # to update this all the time.
     sha256 = "",
-    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv0.8.2/rust_ast_gen-linux-arm",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv{}/rust_ast_gen-macos-arm".format(RUST2CPG_ASTGEN_VERSION),
 )
 
 http_file(
@@ -214,7 +216,7 @@ http_file(
     # TODO add sha256 for now we skip this as the frontend is in early developemnt and we do not want
     # to update this all the time.
     sha256 = "",
-    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv0.8.2/rust_ast_gen-linux",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv{}/rust_ast_gen-macos-arm".format(RUST2CPG_ASTGEN_VERSION),
 )
 
 http_file(
@@ -223,7 +225,7 @@ http_file(
     # TODO add sha256 for now we skip this as the frontend is in early developemnt and we do not want
     # to update this all the time.
     sha256 = "",
-    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv0.8.2/rust_ast_gen-win-arm.exe",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv{}/rust_ast_gen-macos-arm".format(RUST2CPG_ASTGEN_VERSION),
 )
 
 http_file(
@@ -232,5 +234,5 @@ http_file(
     # TODO add sha256 for now we skip this as the frontend is in early developemnt and we do not want
     # to update this all the time.
     sha256 = "",
-    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv0.8.2/rust_ast_gen-win.exe",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv{}/rust_ast_gen-macos-arm".format(RUST2CPG_ASTGEN_VERSION),
 )
