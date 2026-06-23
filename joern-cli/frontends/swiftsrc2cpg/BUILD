@@ -40,16 +40,16 @@ scala_library(
 scala_test(
     name = "tests",
     srcs = glob(["src/test/scala/**/*.scala"]),
+    # TODO Make hermetic
+    # Use system path instead of the restrict PATH that Bazel usually uses when running.
+    # That way external swift toolchain calls work.
+    env_inherit = ["PATH"],
     resources = [
         "src/main/resources/log4j2.xml",
     ],
     # We cannot sandbox the test because the swift compiler uses a sandbox itself
     # and sandboxes cannot be nested (at least no those initialized with sandbox-exec).
     tags = ["no-sandbox"],
-    # TODO Make hermetic
-    # Use system path instead of the restrict PATH that Bazel usually uses when running.
-    # That way external swift toolchain calls work.
-    env_inherit = ["PATH"],
     deps = [
         ":swiftsrc2cpg",
         "//bazel/reexports:io_shiftleft_codepropertygraph_with_deps",

@@ -97,44 +97,55 @@ bazel_dep(name = "aspect_rules_lint", version = "2.5.2")
 bazel_dep(name = "buildifier_prebuilt", version = "8.5.1.2")
 bazel_dep(name = "rules_java", version = "9.6.1")
 
+# ASTGEN dependency section
 http_file = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 
 http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+JSSRC2CPG_ASTGEN_VERSION = "3.46.0"
+
+SWIFTSRC2CPG_ASTGEN_VERSION = "0.4.2"
+
+RUBYSRC2CPG_ASTGEN_VERSION = "0.58.0"
+
+RUBYSRC2CPG_TYPE_STUBS_VERSION = "0.6.0"
+
+RUST2CPG_ASTGEN_VERSION = "0.8.6"
 
 # jssrc2cpg astgen binary imports
 http_file(
     name = "jssrc2cpg_astgen_macos_arm",
     executable = True,
     sha256 = "530494524a94a2ef64ac2217290b8d1feaae59ec39be4433008b950a6f512a06",
-    url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2Fv3.46.0/astgen-macos-arm",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2Fv{}/astgen-macos-arm".format(JSSRC2CPG_ASTGEN_VERSION),
 )
 
 http_file(
     name = "jssrc2cpg_astgen_macos_x86",
     executable = True,
     sha256 = "ce07e0266938d17c559d48a1e70bd2f7b4b431d505571133db4a5566fd2c19d5",
-    url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2Fv3.46.0/astgen-macos",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2Fv{}/astgen-macos".format(JSSRC2CPG_ASTGEN_VERSION),
 )
 
 http_file(
     name = "jssrc2cpg_astgen_linux_arm",
     executable = True,
     sha256 = "eaed227be1674c03418db3784e6da0d0c88bc8112a8835cc82260d62e20c986c",
-    url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2fv3.46.0/astgen-linux-arm",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2fv{}/astgen-linux-arm".format(JSSRC2CPG_ASTGEN_VERSION),
 )
 
 http_file(
     name = "jssrc2cpg_astgen_linux_x86",
     executable = True,
     sha256 = "8c54c044d5e759cb49f4bf06e6c08721ba882ca4a3f1d4b479706f1aa3d1603b",
-    url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2Fv3.46.0/astgen-linux",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2Fv{}/astgen-linux".format(JSSRC2CPG_ASTGEN_VERSION),
 )
 
 http_file(
     name = "jssrc2cpg_astgen_win_x86",
     executable = True,
     sha256 = "ee4ddc128fe30749868e44e04c39bd50f72f8cc7a5a72d7d0cc4994a8c781840",
-    url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2Fv3.46.0/astgen-win.exe",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/javascript-astgen%2Fv{}/astgen-win.exe".format(JSSRC2CPG_ASTGEN_VERSION),
 )
 
 #swiftsrc2cpg astgen binary imports
@@ -142,28 +153,28 @@ http_file(
     name = "swiftsrc2cpg_astgen_macos",
     executable = True,
     sha256 = "2ea737b2fb7e3e87a6e930753bb69601fc37bcb7ed36ac39cfdd29560d5810c3",
-    url = "https://github.com/joernio/astgen-monorepo/releases/download/swift-astgen%2Fv0.4.2/SwiftAstGen-mac",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/swift-astgen%2Fv{}/SwiftAstGen-mac".format(SWIFTSRC2CPG_ASTGEN_VERSION),
 )
 
 http_file(
     name = "swiftsrc2cpg_astgen_linux_arm",
     executable = True,
     sha256 = "49da64aa0ebb3ef1ddd00742fb378081adc2e972d97b6766ac25208510e3503b",
-    url = "https://github.com/joernio/astgen-monorepo/releases/download/swift-astgen%2Fv0.4.2/SwiftAstGen-linux-arm64",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/swift-astgen%2Fv{}/SwiftAstGen-linux-arm64".format(SWIFTSRC2CPG_ASTGEN_VERSION),
 )
 
 http_file(
     name = "swiftsrc2cpg_astgen_linux_x86",
     executable = True,
     sha256 = "1697e43e720768480d32468e02625129817ac770b58f536273f78378c064832e",
-    url = "https://github.com/joernio/astgen-monorepo/releases/download/swift-astgen%2Fv0.4.2/SwiftAstGen-linux",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/swift-astgen%2Fv{}/SwiftAstGen-linux".format(SWIFTSRC2CPG_ASTGEN_VERSION),
 )
 
 http_file(
     name = "swiftsrc2cpg_astgen_win_x86",
     executable = True,
     sha256 = "f7d0e15f69c971a169b27819166ff01201e59908fa440f4d61a0ec7dc77f1f65",
-    url = "https://github.com/joernio/astgen-monorepo/releases/download/swift-astgen%2Fv0.4.2/SwiftAstGen-win.exe",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/swift-astgen%2Fv{}/SwiftAstGen-win.exe".format(SWIFTSRC2CPG_ASTGEN_VERSION),
 )
 
 #rubysrc2cpg astgen zip
@@ -171,17 +182,16 @@ http_archive(
     name = "rubysrc2cpg_astgen",
     build_file = "//joern-cli/frontends/rubysrc2cpg:rubysrc2cpg_astgen.BUILD",
     sha256 = "66a2a61e822b1a4e391f86571b4a796c01c75b53c105fe544733b222843d06c7",
-    url = "https://github.com/joernio/astgen-monorepo/releases/download/ruby-astgen%2Fv0.58.0/ruby_ast_gen_v0.58.0.zip",
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/ruby-astgen%2Fv{}/ruby_ast_gen_v{}.zip".format(RUBYSRC2CPG_ASTGEN_VERSION, RUBYSRC2CPG_ASTGEN_VERSION),
 )
 
 http_file(
     name = "rubysrc2cpg_type_stubs",
     sha256 = "1b14a87a5e2080bf22b83b7af76805b621f2d959cf21a35b7b21f207f53e755d",
-    url = "https://github.com/joernio/joern-type-stubs/releases/download/v0.6.0/rubysrc_builtin_types.zip",
+    url = "https://github.com/joernio/joern-type-stubs/releases/download/v{}/rubysrc_builtin_types.zip".format(RUBYSRC2CPG_TYPE_STUBS_VERSION),
 )
 
 #rust2cpg astgen binary imports
-RUST2CPG_ASTGEN_VERSION = "0.8.2"
 
 http_file(
     name = "rust2cpg_astgen_macos_arm",
@@ -198,7 +208,7 @@ http_file(
     # TODO add sha256 for now we skip this as the frontend is in early developemnt and we do not want
     # to update this all the time.
     sha256 = "",
-    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv{}/rust_ast_gen-macos-arm".format(RUST2CPG_ASTGEN_VERSION),
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv{}/rust_ast_gen-macos".format(RUST2CPG_ASTGEN_VERSION),
 )
 
 http_file(
@@ -207,7 +217,7 @@ http_file(
     # TODO add sha256 for now we skip this as the frontend is in early developemnt and we do not want
     # to update this all the time.
     sha256 = "",
-    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv{}/rust_ast_gen-macos-arm".format(RUST2CPG_ASTGEN_VERSION),
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv{}/rust_ast_gen-linux-arm".format(RUST2CPG_ASTGEN_VERSION),
 )
 
 http_file(
@@ -216,7 +226,7 @@ http_file(
     # TODO add sha256 for now we skip this as the frontend is in early developemnt and we do not want
     # to update this all the time.
     sha256 = "",
-    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv{}/rust_ast_gen-macos-arm".format(RUST2CPG_ASTGEN_VERSION),
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv{}/rust_ast_gen-linux".format(RUST2CPG_ASTGEN_VERSION),
 )
 
 http_file(
@@ -225,7 +235,7 @@ http_file(
     # TODO add sha256 for now we skip this as the frontend is in early developemnt and we do not want
     # to update this all the time.
     sha256 = "",
-    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv{}/rust_ast_gen-macos-arm".format(RUST2CPG_ASTGEN_VERSION),
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv{}/rust_ast_gen-win-arm.exe".format(RUST2CPG_ASTGEN_VERSION),
 )
 
 http_file(
@@ -234,5 +244,5 @@ http_file(
     # TODO add sha256 for now we skip this as the frontend is in early developemnt and we do not want
     # to update this all the time.
     sha256 = "",
-    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv{}/rust_ast_gen-macos-arm".format(RUST2CPG_ASTGEN_VERSION),
+    url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv{}/rust_ast_gen-win.exe".format(RUST2CPG_ASTGEN_VERSION),
 )
