@@ -32,22 +32,22 @@ object ContentSourcesPicker {
 
     // For each .kts file, mark all ancestor dirs (within rootDir) as containing .kts
     val ktsFiles = allPaths
-      .filter(p => p.hasExtension && p.toString.endsWith(".kts"))
+      .filter(path => path.hasExtension && path.toString.endsWith(".kts"))
     val dirsWithKts: Set[java.nio.file.Path] = ktsFiles.flatMap { kts =>
       val dirs =
         Iterator
           .iterate(kts.getParent)(_.getParent)
-          .takeWhile(p => p != null && p.startsWith(dir))
+          .takeWhile(parent => parent != null && parent.startsWith(dir))
           .toSeq
 
       dirs
     }.toSet
 
-    allDirs.flatMap { f =>
-      val subDirs    = dirsByParent.getOrElse(f, Seq.empty)
+    allDirs.flatMap { dir =>
+      val subDirs    = dirsByParent.getOrElse(dir, Seq.empty)
       val dirsPicked = subDirs.filterNot(dirsWithKts.contains)
-      if (dirsWithKts.contains(f)) dirsPicked.map(_.toString)
-      else Seq(f.toString)
+      if (dirsWithKts.contains(dir)) dirsPicked.map(_.toString)
+      else Seq(dir.toString)
     }
   }
 }
