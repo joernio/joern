@@ -4,5 +4,6 @@ object RustOperators {
 
   val tupleLiteral  = "<operator>.tupleLiteral"
   val repeatInArray = "<operator>.repeatInArray"
+  val await         = "<operator>.await"
 
 }
