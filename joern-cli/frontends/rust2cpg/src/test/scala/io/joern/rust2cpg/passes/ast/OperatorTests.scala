@@ -163,6 +163,76 @@ class OperatorTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "a shared reference expression" should {
+    val cpg = code("""
+        |fn main(x: i32) {
+        | let r = &x;
+        |}
+        |""".stripMargin)
+
+    "lower `&x` as an addressOf call with &i32 typeFullName" in {
+      inside(cpg.call.nameExact(Operators.addressOf).l) { case addressOf :: Nil =>
+        addressOf.code shouldBe "&x"
+        addressOf.methodFullName shouldBe Operators.addressOf
+        addressOf.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        addressOf.typeFullName shouldBe "&i32"
+      }
+    }
+
+    "have correct arguments in `&x`" in {
+      inside(cpg.call.nameExact(Operators.addressOf).argument.l) { case (ident: Identifier) :: Nil =>
+        ident.name shouldBe "x"
+        ident.typeFullName shouldBe "i32"
+      }
+    }
+  }
+
+  "a mutable reference expression" should {
+    val cpg = code("""
+        |fn main(mut x: i32) {
+        | let m = &mut x;
+        |}
+        |""".stripMargin)
+
+    "lower `&mut x` as an addressOf call with &mut i32 typeFullName" in {
+      inside(cpg.call.nameExact(Operators.addressOf).l) { case addressOf :: Nil =>
+        addressOf.code shouldBe "&mut x"
+        addressOf.methodFullName shouldBe Operators.addressOf
+        addressOf.typeFullName shouldBe "&mut i32"
+      }
+    }
+
+    "have correct arguments in `&mut x`" in {
+      inside(cpg.call.nameExact(Operators.addressOf).argument.l) { case (ident: Identifier) :: Nil =>
+        ident.name shouldBe "x"
+        ident.typeFullName shouldBe "i32"
+      }
+    }
+  }
+
+  "a raw reference expression" should {
+    val cpg = code("""
+        |fn main(x: i32) {
+        | let p = &raw const x;
+        |}
+        |""".stripMargin)
+
+    "lower `&raw const x` as an addressOf call with *const i32 typeFullName" in {
+      inside(cpg.call.nameExact(Operators.addressOf).l) { case addressOf :: Nil =>
+        addressOf.code shouldBe "&raw const x"
+        addressOf.methodFullName shouldBe Operators.addressOf
+        addressOf.typeFullName shouldBe "*const i32"
+      }
+    }
+
+    "have correct arguments in `&raw const x`" in {
+      inside(cpg.call.nameExact(Operators.addressOf).argument.l) { case (ident: Identifier) :: Nil =>
+        ident.name shouldBe "x"
+        ident.typeFullName shouldBe "i32"
+      }
+    }
+  }
+
   "nested arithmetic and comparison operators" should {
     val cpg = code("""
         |fn main(x: i32, y: i32) -> bool {
