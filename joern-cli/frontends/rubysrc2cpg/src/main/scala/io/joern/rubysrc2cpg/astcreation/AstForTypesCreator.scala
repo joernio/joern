@@ -349,9 +349,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       case node: AccessModifier =>
         val modifier = accessModifierType(node)
         node.arguments.foreach {
-          case lit: StaticLiteral => visibilityMap.put(lit.span.text.stripPrefix(":"), modifier)
+          case lit: StaticLiteral => visibilityMap.put(symbolName(lit), modifier)
           case arr: ArrayLiteral =>
-            arr.elements.foreach(el => visibilityMap.put(el.span.text.stripPrefix(":"), modifier))
+            arr.elements.foreach(el => visibilityMap.put(symbolName(el), modifier))
           case _ =>
         }
       case node: MethodAccessModifier =>
@@ -361,9 +361,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         }
         node.arguments.foreach {
           case proc: ProcedureDeclaration => visibilityMap.put(proc.methodName, modifier)
-          case lit: StaticLiteral         => visibilityMap.put(lit.span.text.stripPrefix(":"), modifier)
+          case lit: StaticLiteral         => visibilityMap.put(symbolName(lit), modifier)
           case arr: ArrayLiteral =>
-            arr.elements.foreach(el => visibilityMap.put(el.span.text.stripPrefix(":"), modifier))
+            arr.elements.foreach(el => visibilityMap.put(symbolName(el), modifier))
           case _ =>
         }
       case node: ProcedureDeclaration if !visibilityMap.contains(node.methodName) =>
