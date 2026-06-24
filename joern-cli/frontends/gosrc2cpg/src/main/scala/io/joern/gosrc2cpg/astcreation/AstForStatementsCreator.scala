@@ -8,7 +8,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewIdentif
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
 import ujson.Value
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
   def astForBlockStatement(blockStmt: ParserNodeInfo, order: Int = -1): Ast = {
@@ -182,24 +182,28 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def astForTypeSwitchStatement(typeSwitchStmt: ParserNodeInfo): Ast = {
 
-    val conditionParserNode = Try(createParserNodeInfo(typeSwitchStmt.json(ParserKeys.Assign)))
-    val (code, conditionAst) = conditionParserNode.toOption match {
+    val conditionParserNodeOpt = Try(createParserNodeInfo(typeSwitchStmt.json(ParserKeys.Assign))).toOption
+    val (code, conditionAst) = conditionParserNodeOpt match {
       case Some(node) => (node.code, astForNode(node))
-      case _          => ("", Seq.empty)
+      case _          =>
+        logger.warn(s"Cannot get switch condition ast at filename ${parserResult.fullPath} line ${typeSwitchStmt.lineNumber}")
+        ("", Seq.empty)
     }
     val switchNode = controlStructureNode(typeSwitchStmt, ControlStructureTypes.SWITCH, s"switch $code")
     val stmtAsts   = astsForStatement(createParserNodeInfo(typeSwitchStmt.json(ParserKeys.Body)))
-    val id = conditionAst
-      .flatMap(_.root)
-      .collectFirst {
-        case x: NewIdentifier => identifierNode(conditionParserNode.get, x.name, x.code, x.typeFullName)
-        case x: NewLocal      => identifierNode(conditionParserNode.get, x.name, x.code, x.typeFullName)
+
+    val condition: Option[Ast] = conditionParserNodeOpt.flatMap { pNode =>
+      conditionAst.flatMap(_.root).collectFirst {
+        case x: NewIdentifier =>
+          val idNode = identifierNode(pNode, x.name, x.code, x.typeFullName)
+          val isOp = callNode(pNode, s"${idNode.name}.(type)", Operators.is, Operators.is, DispatchTypes.STATIC_DISPATCH)
+          callAst(isOp, Seq(Ast(idNode)))
+        case x: NewLocal =>
+          val idNode = identifierNode(pNode, x.name, x.code, x.typeFullName)
+          val isOp = callNode(pNode, s"${idNode.name}.(type)", Operators.is, Operators.is, DispatchTypes.STATIC_DISPATCH)
+          callAst(isOp, Seq(Ast(idNode)))
       }
-      .get
-    val identifier = Ast(id)
-    val isOp =
-      callNode(conditionParserNode.get, s"${id.name}.(type)", Operators.is, Operators.is, DispatchTypes.STATIC_DISPATCH)
-    val condition = Option(callAst(isOp, Seq(identifier)))
+    }
 
     val newStmtAst = stmtAsts // TODO: Push conditionAst to the front of the block
     controlStructureAst(switchNode, condition, newStmtAst)
@@ -219,7 +223,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         Seq(Ast(target))
     }
 
-    val caseBodyAst = caseStmt.json(ParserKeys.Body).arr.map(createParserNodeInfo).flatMap(astsForStatement(_)).toList
+    val caseBodyAst = Try(caseStmt.json(ParserKeys.Body).arr.map(createParserNodeInfo).flatMap(astsForStatement(_)).toList) match {
+      case Success(value) =>
+        value
+      case Failure(_) =>
+        logger.warn(s"Cannot get case body ast at filename ${parserResult.fullPath} line ${caseStmt.lineNumber}")
+        Seq.empty[Ast]
+    }
     caseClauseAst ++: caseBodyAst
   }
 
@@ -249,7 +259,12 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     rangeStmt.json.obj.contains(ParserKeys.Key) match {
       case true =>
         val keyParserNode  = createParserNodeInfo(rangeStmt.json(ParserKeys.Key))
-        val declParserNode = createParserNodeInfo(keyParserNode.json(ParserKeys.Obj)(ParserKeys.Decl))
+        val declParserNode = Try(createParserNodeInfo(keyParserNode.json(ParserKeys.Obj)(ParserKeys.Decl))) match {
+          case Failure(exception) => 
+            logger.warn(s"Empty range declaration node in filename ${parserResult.fullPath} line ${keyParserNode.lineNumber}")
+            nullSafeCreateParserNodeInfo(None)
+          case Success(value) => value
+        }
         val code           = s"for ${declParserNode.code}"
         val forNode        = controlStructureNode(rangeStmt, ControlStructureTypes.FOR, code)
         val declAst        = astsForStatement(declParserNode)
