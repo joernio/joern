@@ -15,10 +15,12 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
   def astForFuncDecl(funcDecl: ParserNodeInfo): Seq[Ast] = {
     val methodMetadata = processFuncDecl(funcDecl.json)
-    // TODO: handle multiple return type or tuple (int, int)
-    val (returnTypeStr, returnTypeInfo) =
-      getReturnType(funcDecl.json(ParserKeys.Type), methodMetadata.genericTypeMethodMap).headOption
-        .getOrElse((Defines.voidTypeName, funcDecl))
+    val returnTypes    = getReturnType(funcDecl.json(ParserKeys.Type), methodMetadata.genericTypeMethodMap)
+    val (returnTypeStr, returnTypeInfo) = returnTypes match {
+      case Seq()                    => (Defines.voidTypeName, funcDecl)
+      case Seq(single)             => single
+      case multiple                => (s"(${multiple.map(_._1).mkString(", ")})", multiple.head._2)
+    }
     val methodReturn = methodReturnNode(returnTypeInfo, returnTypeStr)
     val methodNode_ = methodNode(
       funcDecl,

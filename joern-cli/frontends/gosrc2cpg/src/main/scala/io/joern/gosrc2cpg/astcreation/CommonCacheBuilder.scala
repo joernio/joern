@@ -83,11 +83,13 @@ trait CommonCacheBuilder(implicit withSchemaValidation: ValidationMode) { this: 
         case _ =>
           (s"$fullyQualifiedPackage.$name", fullyQualifiedPackage)
       }
-      // TODO: handle multiple return type or tuple (int, int)
       val genericTypeMethodMap = processTypeParams(funcDeclVal(ParserKeys.Type))
-      val (returnTypeStr, _) =
-        getReturnType(funcDeclVal(ParserKeys.Type), genericTypeMethodMap).headOption
-          .getOrElse((Defines.voidTypeName, null))
+      val returnTypes = getReturnType(funcDeclVal(ParserKeys.Type), genericTypeMethodMap)
+      val returnTypeStr = returnTypes match {
+        case Seq()    => Defines.voidTypeName
+        case Seq(one) => one._1
+        case multiple => s"(${multiple.map(_._1).mkString(", ")})"
+      }
       val params = funcDeclVal(ParserKeys.Type)(ParserKeys.Params)(ParserKeys.List)
       val signature =
         s"$methodFullname(${parameterSignature(params, genericTypeMethodMap)})${
