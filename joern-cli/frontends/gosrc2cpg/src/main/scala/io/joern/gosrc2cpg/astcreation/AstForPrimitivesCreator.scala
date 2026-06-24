@@ -107,12 +107,11 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def getTypeOfToken(basicLit: ParserNodeInfo): String = {
-    // TODO need to add more primitive types
     Try(basicLit.json(ParserKeys.Kind).str match {
       case "INT"    => "int"
-      case "FLOAT"  => "float32"
-      case "IMAG"   => "imag"
-      case "CHAR"   => "char"
+      case "FLOAT"  => "float64"
+      case "IMAG"   => "complex128"
+      case "CHAR"   => "int32"
       case "STRING" => "string"
       case _        => Defines.anyTypeName
     }).toOption.getOrElse(Defines.anyTypeName)

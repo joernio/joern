@@ -52,7 +52,7 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
     "check for LITERAL nodes types" in {
       val List(a, b, c, d, e, _, _) = cpg.literal.l
       a.typeFullName shouldBe "int"
-      b.typeFullName shouldBe "float32"
+      b.typeFullName shouldBe "float64"
       c.typeFullName shouldBe "string"
       d.typeFullName shouldBe "bool"
       e.typeFullName shouldBe "bool"
@@ -66,7 +66,7 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
     "Check for local nodes" in {
       val List(a, b, c, d, e, f) = cpg.local.l
       a.typeFullName shouldBe "int"
-      b.typeFullName shouldBe "float32"
+      b.typeFullName shouldBe "float64"
       c.typeFullName shouldBe "string"
       d.typeFullName shouldBe "bool"
       e.typeFullName shouldBe "bool"
@@ -76,7 +76,7 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
     "check for identifier nodes" in {
       val List(a, b, c, d, e, f) = cpg.identifier.l
       a.typeFullName shouldBe "int"
-      b.typeFullName shouldBe "float32"
+      b.typeFullName shouldBe "float64"
       c.typeFullName shouldBe "string"
       d.typeFullName shouldBe "bool"
       e.typeFullName shouldBe "bool"
@@ -527,19 +527,19 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
 
     "Check for local nodes" in {
       val List(typefullname) = cpg.local.typeFullName.dedup.l
-      typefullname shouldBe "float32"
+      typefullname shouldBe "float64"
     }
 
     "check for identifier nodes" in {
       val List(typefullname) = cpg.identifier.typeFullName.dedup.l
-      typefullname shouldBe "float32"
+      typefullname shouldBe "float64"
     }
 
     "Operator += call node type check" in {
       val List(a, b, c) = cpg.call(Operators.assignmentPlus).l
-      a.typeFullName shouldBe "float32"
-      b.typeFullName shouldBe "float32"
-      c.typeFullName shouldBe "float32"
+      a.typeFullName shouldBe "float64"
+      b.typeFullName shouldBe "float64"
+      c.typeFullName shouldBe "float64"
     }
   }
 

@@ -167,6 +167,14 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
     val callMethodFullName = s"$receiverTypeFullName.$methodName"
     val MethodCacheMetaData(returnTypeFullNameCache, signatureCache) = goGlobal
       .getMethodMetadata(receiverTypeFullName, methodName)
+      .orElse {
+        // Fallback: check if receiverTypeFullName is an interface with this method
+        goGlobal.getInterfaceMethods(receiverTypeFullName).flatMap { methods =>
+          if (methods.contains(methodName)) {
+            goGlobal.getMethodMetadata(receiverTypeFullName, methodName)
+          } else None
+        }
+      }
       .getOrElse(
         MethodCacheMetaData(
           s"$receiverTypeFullName.$methodName.${Defines.ReturnType}.${XDefines.Unknown}",
