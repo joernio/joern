@@ -5,7 +5,9 @@ import FileUtil.*
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{Files, Path}
+import scala.collection.mutable
 import scala.util.{Failure, Success}
+import scala.jdk.CollectionConverters.*
 
 enum GradleConfigKeys {
   case ProjectName, ConfigurationName
@@ -106,7 +108,27 @@ object DependencyResolver {
     file.toString.endsWith("pom.xml")
   }
 
-  private def findSupportedBuildFiles(currentDir: Path, depth: Int = 0): List[Path] = {
+  private def findSupportedBuildFiles(dir: Path, maxDepth: Int = MaxSearchDepth): List[Path] = {
+    val buildFiles = Files.walk(dir, maxDepth).iterator.asScala.filter { file =>
+      (!Files.isDirectory(file)) && (isGradleBuildFile(file) || isMavenBuildFile(file))
+    }.toList
+
+    if (buildFiles.isEmpty) {
+      logger.info("findSupportedBuildFiles reached max depth before finding build files")
+    }
+
+    val old = findSupportedBuildFilesOld(dir)
+
+    if (old.sorted != buildFiles.sorted) {
+      throw new RuntimeException(s"Unequal results: old $old\nnew $buildFiles")
+    }
+
+    logger.info(s"Found $buildFiles")
+
+    buildFiles.toList
+  }
+
+  private def findSupportedBuildFilesOld(currentDir: Path, depth: Int = 0): List[Path] = {
     if (depth >= MaxSearchDepth) {
       logger.info("findSupportedBuildFiles reached max depth before finding build files")
       Nil
