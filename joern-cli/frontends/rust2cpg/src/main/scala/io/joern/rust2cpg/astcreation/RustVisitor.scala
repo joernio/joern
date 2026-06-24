@@ -56,7 +56,7 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     case macroRules: MacroRules => visitMacroRules(macroRules)
     case macroDef: MacroDef     => visitMacroDef(macroDef)
     case module: Module         => visitModule(module)
-    case x: Static              => notHandledYet(x) :: Nil
+    case static: Static         => visitStatic(static)
     case struct: Struct         => visitStruct(struct) :: Nil
     case x: Trait               => notHandledYet(x) :: Nil
     case x: TypeAlias           => notHandledYet(x) :: Nil
@@ -227,6 +227,19 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
         val typeFullName = typeFullNameForType(const.typ)
         lowerIdentifierDecl(identToken, rhsExpr, typeFullName, code(const))
       case _ => notHandledYet(const) :: Nil
+    }
+  }
+
+  // Static =
+  //  Attr* Visibility?
+  //  'unsafe'? 'safe'? 'static' 'mut'? Name ':' Type
+  //  ('=' Expr)? ';'
+  private def visitStatic(static: Static): Seq[Ast] = {
+    (static.name.identToken, static.expr) match {
+      case (Some(identToken), Some(rhsExpr)) =>
+        val typeFullName = typeFullNameForType(static.typ)
+        lowerIdentifierDecl(identToken, rhsExpr, typeFullName, code(static))
+      case _ => notHandledYet(static) :: Nil
     }
   }
 
