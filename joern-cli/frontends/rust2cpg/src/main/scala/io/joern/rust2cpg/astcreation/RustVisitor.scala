@@ -113,7 +113,7 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     case prefixExpr: PrefixExpr         => visitPrefixExpr(prefixExpr)
     case x: RangeExpr                   => notHandledYet(x)
     case x: RecordExpr                  => notHandledYet(x)
-    case x: RefExpr                     => notHandledYet(x)
+    case refExpr: RefExpr               => visitRefExpr(refExpr)
     case returnExpr: ReturnExpr         => visitReturnExpr(returnExpr)
     case x: BecomeExpr                  => notHandledYet(x)
     case x: TryExpr                     => notHandledYet(x)
@@ -571,6 +571,15 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
       prefixExpr.minusToken
         .orElse(prefixExpr.bangToken)
         .orElse(prefixExpr.starToken)
+  }
+
+  // RefExpr =
+  //  Attr* '&' ('raw' 'const' | 'raw' 'mut' | 'mut')? Expr
+  private def visitRefExpr(refExpr: RefExpr): Ast = {
+    val typeFullName = typeFullNameForExpr(refExpr)
+    val callNode     = operatorCallNode(refExpr, code(refExpr), Operators.addressOf, Some(typeFullName))
+    val exprAst      = visitExpr(refExpr.expr)
+    callAst(callNode, Seq(exprAst))
   }
 
   // IfExpr =
