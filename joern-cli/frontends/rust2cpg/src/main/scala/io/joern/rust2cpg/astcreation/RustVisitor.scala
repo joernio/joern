@@ -112,7 +112,7 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     case pathExpr: PathExpr             => visitPathExpr(pathExpr)
     case prefixExpr: PrefixExpr         => visitPrefixExpr(prefixExpr)
     case x: RangeExpr                   => notHandledYet(x)
-    case x: RecordExpr                  => notHandledYet(x)
+    case recordExpr: RecordExpr         => visitRecordExpr(recordExpr)
     case refExpr: RefExpr               => visitRefExpr(refExpr)
     case returnExpr: ReturnExpr         => visitReturnExpr(returnExpr)
     case x: BecomeExpr                  => notHandledYet(x)
@@ -268,7 +268,7 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     val local = localNode(lhsToken, lhsName, code(lhsToken), typeFullName)
     val ident = identifierNode(lhsToken, lhsName, code(lhsToken), typeFullName)
 
-    val lhsAst        = Ast(ident).withRefEdge(ident, local)
+    val lhsAst        = Ast(ident).withRefEdge(ident, local) // TODO: remove once ref linker is in.
     val rhsAst        = visitExpr(rhsExpr)
     val localAst      = Ast(local)
     val assignmentAst = callAst(assignmentNode(lhsToken, declCode), Seq(lhsAst, rhsAst))
@@ -697,6 +697,60 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
       val argAsts      = tupleExpr.expr.map(visitExpr)
       callAst(callNode, argAsts)
     }
+  }
+
+  // RecordExpr =
+  //  Attr* Path RecordExprFieldList
+  // Lowers a record expression e.g. `Foo { x: 1, y: 2 }` into an alloc-followed-by-field-assignments-block:
+  // BLOCK
+  //   LOCAL tmp
+  //   tmp = <operator>.alloc
+  //   tmp.x = 1
+  //   tmp.y = 2
+  //   tmp
+  // In case of spreads e.g. `Foo { x: y, ..bar }` we include the assignment `tmp = bar` for flow purposes.
+  private def visitRecordExpr(recordExpr: RecordExpr): Ast = {
+    // LOCAL tmp
+    val structType = typeFullNameForExpr(recordExpr)
+    val fieldList  = recordExpr.recordExprFieldList
+    val tmpName    = "tmp"
+    val local      = localNode(recordExpr, tmpName, tmpName, structType)
+
+    // tmp = <operator>.alloc
+    val allocAssignAst = {
+      val tmp       = identifierNode(recordExpr, tmpName, tmpName, structType)
+      val tmpAst    = Ast(tmp).withRefEdge(tmp, local) // TODO: remove once ref linker is in.
+      val allocCall = operatorCallNode(recordExpr, Operators.alloc, Operators.alloc, Some(structType))
+      callAst(assignmentNode(recordExpr, s"$tmpName = ${Operators.alloc}"), Seq(tmpAst, Ast(allocCall)))
+    }
+
+    // tmp = base
+    val spreadAssignAst = fieldList.expr.map { base =>
+      val tmp    = identifierNode(recordExpr, tmpName, tmpName, structType)
+      val tmpAst = Ast(tmp).withRefEdge(tmp, local) // TODO: remove once ref linker is in.
+      callAst(assignmentNode(recordExpr, s"$tmpName = ${code(base)}"), Seq(tmpAst, visitExpr(base)))
+    }.toSeq
+
+    // tmp.x = 1; tmp.y = 2; etc.
+    val fieldAssignAsts = fieldList.recordExprField.map { field =>
+      val fieldNameRef = field.nameRef.orElse(viewExprAsNameRef(field.expr)).get
+      val fieldName    = code(fieldNameRef)
+      val fieldType    = typeFullNameForExpr(field.expr)
+      val tmp          = identifierNode(field, tmpName, tmpName, structType)
+      val baseAst      = Ast(tmp).withRefEdge(tmp, local) // TODO: remove once ref linker is in.
+      val lhs = fieldAccessAst(fieldNameRef, fieldNameRef, baseAst, s"$tmpName.$fieldName", fieldName, fieldType)
+      callAst(assignmentNode(field, s"$tmpName.$fieldName = ${code(field.expr)}"), Seq(lhs, visitExpr(field.expr)))
+    }
+
+    // tmp
+    val retAst = {
+      val tmp = identifierNode(recordExpr, tmpName, tmpName, structType)
+      Ast(tmp).withRefEdge(tmp, local) // TODO: remove once ref linker is in.
+    }
+
+    // BLOCK { ... }
+    val block = blockNode(recordExpr, code(recordExpr), structType)
+    Ast(block).withChildren(Seq(Ast(local), allocAssignAst) ++ spreadAssignAst ++ fieldAssignAsts ++ Seq(retAst))
   }
 
   // ArrayExpr =
