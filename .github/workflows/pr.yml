@@ -46,7 +46,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest, macos-15]
     steps:
       - uses: actions/checkout@v6
         with:
@@ -59,7 +59,7 @@ jobs:
           cache: sbt
       - uses: sbt/setup-sbt@v1
       - name: Install php
-        if: matrix.os == 'macos-latest'
+        if: matrix.os == 'macos-15'
         run: brew install php
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -80,7 +80,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest, macos-15]
     steps:
       - uses: actions/checkout@v6
         with:
@@ -93,13 +93,13 @@ jobs:
           cache: sbt
       - uses: sbt/setup-sbt@v1
       - name: Install coreutils
-        if: matrix.os == 'macos-latest'
+        if: matrix.os == 'macos-15'
         run: brew install coreutils
       - name: Install php
-        if: matrix.os == 'macos-latest'
+        if: matrix.os == 'macos-15'
         run: brew install php
       - name: Install Python dependencies for distribution test (Linux, MacOS)
-        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-15'
         run: |
           python -m pip install requests pexpect
       - name: Install Python dependencies for distribution test (Windows)
