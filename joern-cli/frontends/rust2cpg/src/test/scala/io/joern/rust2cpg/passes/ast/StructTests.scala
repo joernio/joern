@@ -204,6 +204,186 @@ class StructTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "an internal named-field record expression" should {
+    val cpg = code("""
+        |struct Foo { x: i32, y: i32 }
+        |fn main() {
+        | Foo { x: 1, y: 2 };
+        |}
+        |""".stripMargin)
+
+    "lower into a block with appropriate type and number of children" in {
+      inside(cpg.method.name("main").body.astChildren.isBlock.l) { case block :: Nil =>
+        block.code shouldBe "Foo { x: 1, y: 2 }"
+        block.typeFullName shouldBe "rust2cpgtest::Foo"
+        block.astChildren.size shouldBe 5 // 1 (local) + 1 (.alloc) + 2 (tmp.x = v) + 1 (ident)
+      }
+    }
+
+    "the block's first child is a LOCAL declaration" in {
+      inside(cpg.block.codeExact("Foo { x: 1, y: 2 }").astChildren.order(1).l) { case (local: Local) :: Nil =>
+        local.name shouldBe "tmp"
+        local.typeFullName shouldBe "rust2cpgtest::Foo"
+      }
+    }
+
+    "the block's second child is an alloc assignment" in {
+      inside(cpg.block.codeExact("Foo { x: 1, y: 2 }").astChildren.order(2).l) { case (assign: Call) :: Nil =>
+        assign.code shouldBe s"tmp = ${Operators.alloc}"
+
+        inside(assign.argument(1)) { case tmp: Identifier =>
+          tmp.typeFullName shouldBe "rust2cpgtest::Foo"
+          tmp.name shouldBe "tmp"
+          tmp.code shouldBe "tmp"
+        }
+
+        inside(assign.argument(2)) { case alloc: Call =>
+          alloc.methodFullName shouldBe Operators.alloc
+          alloc.name shouldBe Operators.alloc
+          alloc.argument shouldBe empty
+        }
+      }
+    }
+
+    "the block's third child is a field assignment" in {
+      inside(cpg.block.codeExact("Foo { x: 1, y: 2 }").astChildren.order(3).l) { case (assign: Call) :: Nil =>
+        assign.code shouldBe "tmp.x = 1"
+
+        inside(assign.argument(1)) { case fieldAccess: Call =>
+          fieldAccess.code shouldBe "tmp.x"
+          fieldAccess.methodFullName shouldBe Operators.fieldAccess
+          fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+          inside(fieldAccess.argument(1)) { case tmp: Identifier =>
+            tmp.code shouldBe "tmp"
+            tmp.typeFullName shouldBe "rust2cpgtest::Foo"
+          }
+
+          inside(fieldAccess.argument(2)) { case fieldIdent: FieldIdentifier =>
+            fieldIdent.code shouldBe "x"
+            fieldIdent.canonicalName shouldBe "x"
+          }
+        }
+
+        inside(assign.argument(2)) { case lit: Literal =>
+          lit.code shouldBe "1"
+          lit.typeFullName shouldBe "i32"
+        }
+      }
+    }
+
+    "the block's fourth child is a field assignment" in {
+      inside(cpg.block.codeExact("Foo { x: 1, y: 2 }").astChildren.order(4).l) { case (assign: Call) :: Nil =>
+        assign.code shouldBe "tmp.y = 2"
+
+        inside(assign.argument(1)) { case fieldAccess: Call =>
+          fieldAccess.code shouldBe "tmp.y"
+          fieldAccess.methodFullName shouldBe Operators.fieldAccess
+          fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+          inside(fieldAccess.argument(1)) { case tmp: Identifier =>
+            tmp.code shouldBe "tmp"
+            tmp.typeFullName shouldBe "rust2cpgtest::Foo"
+          }
+
+          inside(fieldAccess.argument(2)) { case fieldIdent: FieldIdentifier =>
+            fieldIdent.code shouldBe "y"
+            fieldIdent.canonicalName shouldBe "y"
+          }
+        }
+
+        inside(assign.argument(2)) { case lit: Literal =>
+          lit.code shouldBe "2"
+          lit.typeFullName shouldBe "i32"
+        }
+      }
+    }
+
+    "the block's fifth child is an identifier" in {
+      inside(cpg.block.codeExact("Foo { x: 1, y: 2 }").astChildren.order(5).l) { case (ident: Identifier) :: Nil =>
+        ident.name shouldBe "tmp"
+        ident.typeFullName shouldBe "rust2cpgtest::Foo"
+      }
+    }
+  }
+
+  "an internal record expression with a shorthand field" should {
+    val cpg = code("""
+        |struct Foo { x: i32, y: i32 }
+        |fn main(x: i32) {
+        | Foo { x, y: 2 };
+        |}
+        |""".stripMargin)
+
+    "source the shorthand field write from the in-scope identifier" in {
+      inside(cpg.block.codeExact("Foo { x, y: 2 }").astChildren.order(3).l) { case (assign: Call) :: Nil =>
+        assign.code shouldBe "tmp.x = x"
+
+        inside(assign.argument(1)) { case fieldAccess: Call =>
+          fieldAccess.code shouldBe "tmp.x"
+          fieldAccess.methodFullName shouldBe Operators.fieldAccess
+
+          inside(fieldAccess.argument(2)) { case fieldIdent: FieldIdentifier =>
+            fieldIdent.code shouldBe "x"
+            fieldIdent.canonicalName shouldBe "x"
+          }
+        }
+
+        inside(assign.argument(2)) { case ident: Identifier =>
+          ident.name shouldBe "x"
+        }
+      }
+    }
+  }
+
+  "an internal record expression with a spread base" should {
+    val cpg = code("""
+        |struct Foo { x: i32, y: i32 }
+        |fn main(base: Foo) {
+        | Foo { x: 9, ..base };
+        |}
+        |""".stripMargin)
+
+    "lower into a block with appropriate type and number of children" in {
+      inside(cpg.method.name("main").body.astChildren.isBlock.l) { case block :: Nil =>
+        block.code shouldBe "Foo { x: 9, ..base }"
+        block.typeFullName shouldBe "rust2cpgtest::Foo"
+        block.astChildren.size shouldBe 5 // 1 (local) + 1 (.alloc) + 1 (tmp = base) + 1 (tmp.x = v) + 1 (ident)
+      }
+    }
+
+    "the block's third child is a base-copy assignment" in {
+      inside(cpg.block.codeExact("Foo { x: 9, ..base }").astChildren.order(3).l) { case (assign: Call) :: Nil =>
+        assign.code shouldBe "tmp = base"
+
+        inside(assign.argument(1)) { case tmp: Identifier =>
+          tmp.name shouldBe "tmp"
+          tmp.typeFullName shouldBe "rust2cpgtest::Foo"
+        }
+
+        inside(assign.argument(2)) { case base: Identifier =>
+          base.name shouldBe "base"
+        }
+      }
+    }
+
+    "the block's fourth child is a field assignment" in {
+      inside(cpg.block.codeExact("Foo { x: 9, ..base }").astChildren.order(4).l) { case (assign: Call) :: Nil =>
+        assign.code shouldBe "tmp.x = 9"
+
+        inside(assign.argument(1)) { case fieldAccess: Call =>
+          fieldAccess.code shouldBe "tmp.x"
+          fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        }
+
+        inside(assign.argument(2)) { case lit: Literal =>
+          lit.code shouldBe "9"
+          lit.typeFullName shouldBe "i32"
+        }
+      }
+    }
+  }
+
   "a tuple-struct positional field access" should {
     val cpg = code("""
         |struct Pair(i32, bool);
