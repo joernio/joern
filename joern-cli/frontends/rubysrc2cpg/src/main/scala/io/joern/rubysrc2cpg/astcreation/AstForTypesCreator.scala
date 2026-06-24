@@ -338,7 +338,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
           m.body.asInstanceOf[StatementList].statements
         case other => other :: Nil
       }
-      .sortBy(_.line.getOrElse(0))
+      .sortBy(el => (el.line.getOrElse(0), el.column.getOrElse(0)))
 
     var currentModifier = ModifierTypes.PUBLIC
     val visibilityMap   = mutable.LinkedHashMap.empty[String, String]

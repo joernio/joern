@@ -105,13 +105,28 @@ class AccessModifierTests extends RubyCode2CpgFixture {
     indexAccess.code shouldBe "<tmp-0>[:private]"
   }
 
-  // TODO: enable and fix once method definitions correctly return symbols
-  "a bare access modifier at type level should create an operator call" ignore {
+  "a bare access modifier at type level should create an operator call" in {
     val cpg = code("""
         |class Foo
         | private
         |
         | def bar
+        | end
+        |end
+        |""".stripMargin)
+
+    inside(cpg.call.nameExact(RubyOperators.privateModifier).l) { case modifierCall :: Nil =>
+      modifierCall.methodFullName shouldBe RubyOperators.privateModifier
+      modifierCall.code shouldBe "private"
+    }
+
+    cpg.method("bar").head.isPrivate.size shouldBe 1
+  }
+
+  "a bare access modifier at type level and on the same line as a method decl should create an operator call" in {
+    val cpg = code("""
+        |class Foo
+        | private; def bar
         | end
         |end
         |""".stripMargin)
