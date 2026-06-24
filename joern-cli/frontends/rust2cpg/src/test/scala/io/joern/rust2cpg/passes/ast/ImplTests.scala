@@ -1,7 +1,7 @@
 package io.joern.rust2cpg.passes.ast
 
 import io.joern.rust2cpg.testfixtures.Rust2CpgSuite
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.utils.FileUtil.PathExt
@@ -197,10 +197,15 @@ class ImplTests extends Rust2CpgSuite(noSysRoot = true) {
     }
 
     "have correct arguments" in {
-      inside(cpg.call.nameExact("bar").argument.l) { case (base: Identifier) :: Nil =>
-        base.name shouldBe "f"
+      inside(cpg.call.nameExact("bar").argument.l) { case (base: Call) :: Nil =>
+        base.name shouldBe Operators.addressOf
+        base.code shouldBe "&f"
         base.argumentIndex shouldBe 0
         base.typeFullName shouldBe "&rust2cpgtest::Foo"
+        inside(base.argument.l) { case (inner: Identifier) :: Nil =>
+          inner.name shouldBe "f"
+          inner.typeFullName shouldBe "rust2cpgtest::Foo"
+        }
       }
     }
 
