@@ -22,7 +22,7 @@ class AbapAstGenRunner(config: Config) extends AstGenRunner(AbapAstGenRunner.ast
   // abapgen-linux, abapgen-linux-arm, abapgen-macos, abapgen-macos-arm, abapgen-win.exe
 
   // abapgen has no --version flag, so always use the bundled binary
-  override def hasCompatibleAstGenVersion(compatibleVersion: String): Boolean = false
+  override def hasCompatibleAstGenVersion(compatibleVersion: String, path: Option[String]): Boolean = false
 
   override def skippedFiles(in: Path, astGenOut: List[String]): List[String] = {
     astGenOut.collect {
