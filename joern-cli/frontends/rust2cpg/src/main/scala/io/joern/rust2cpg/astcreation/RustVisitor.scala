@@ -51,7 +51,7 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     case x: ExternBlock         => notHandledYet(x) :: Nil
     case x: ExternCrate         => notHandledYet(x) :: Nil
     case fn: Fn                 => visitFn(fn) :: Nil
-    case x: Impl                => notHandledYet(x) :: Nil
+    case impl: Impl             => visitImpl(impl)
     case macroCall: MacroCall   => visitMacroCall(macroCall)
     case macroRules: MacroRules => visitMacroRules(macroRules)
     case macroDef: MacroDef     => visitMacroDef(macroDef)
@@ -341,6 +341,24 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
     returnAst(ret, Seq(exprAst))
   }
 
+  // Impl =
+  //  Attr* Visibility?
+  //  'default'? 'unsafe'?
+  //  'impl' GenericParamList? ('const'? '!'? Type 'for')? Type WhereClause?
+  //  AssocItemList
+  // TODO: support `impl X for Y` and remove the side-effects (storeInDiffGraph).
+  private def visitImpl(impl: Impl): Seq[Ast] = {
+    if (impl.forKwToken.isDefined) {
+      Nil
+    } else {
+      methodAstParentStack.push(typeDeclForImpl(impl))
+      val methodAsts = impl.assocItemList.assocItem.collect { case fn: Fn => visitFn(fn) }
+      methodAstParentStack.pop()
+      methodAsts.foreach(Ast.storeInDiffGraph(_, diffGraph))
+      Nil
+    }
+  }
+
   // BlockExpr =
   //  Attr* Label? (TryBlockModifier | 'unsafe' | ('async' 'move'?) | ('gen' 'move'?) | 'const') StmtList
   private def visitBlockExpr(blockExpr: BlockExpr): Ast = {
@@ -417,7 +435,8 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   //  )')'
   // | '|' (Param (',' Param)* ','?)? '|'
   private def visitParamList(paramList: ParamList): Seq[Ast] = {
-    paramList.param.zipWithIndex.map { case (param, paramIdx) =>
+    val selfParamAst = paramList.selfParam.map(visitSelfParam).toList
+    val paramAsts = paramList.param.zipWithIndex.map { case (param, paramIdx) =>
       val paramName         = param.pat.collect { case x: IdentPat => x }
       val paramTypeFullName = param.typ.map(typeFullNameForType)
 
@@ -436,6 +455,33 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
         case _ => notHandledYet(param)
       }
     }
+
+    selfParamAst ++ paramAsts
+  }
+
+  // SelfParam =
+  //  Attr* ( ('&' Lifetime?)? 'mut'? Name | 'mut'? Name ':' Type )
+  private def visitSelfParam(selfParam: SelfParam): Ast = {
+    val enclosingType = enclosingTypeDeclFullName.getOrElse(Defines.Any)
+    val typeFullName = selfParam.typ match {
+      case Some(typ) => typeFullNameForType(typ)
+      case None if selfParam.ampToken.isDefined =>
+        val mut = Option.when(selfParam.mutKwToken.isDefined)("mut ").getOrElse("")
+        s"&$mut$enclosingType"
+      case None => enclosingType
+    }
+    val evaluationStrategy =
+      if (selfParam.ampToken.isDefined) EvaluationStrategies.BY_SHARING else EvaluationStrategies.BY_VALUE
+    val paramNode = parameterInNode(
+      node = selfParam,
+      name = code(selfParam.name),
+      code = code(selfParam),
+      index = 0,
+      isVariadic = false,
+      evaluationStrategy = evaluationStrategy,
+      typeFullName = typeFullName
+    )
+    Ast(paramNode)
   }
 
   // Param =
