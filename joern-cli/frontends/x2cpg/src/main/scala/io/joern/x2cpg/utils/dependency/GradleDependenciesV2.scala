@@ -149,7 +149,7 @@ object GradleDependenciesV2 {
       stream
         .iterator()
         .asScala
-        .filter(p => !Files.isDirectory(p) && p.toString.endsWith(".json"))
+        .filter(path => !Files.isDirectory(path) && path.toString.endsWith(".json"))
         .toArray
     }
   }
@@ -193,13 +193,13 @@ object GradleDependenciesV2 {
                 emptyGraph(dependencyInfoDir)
 
               case Success(connection) =>
-                Using.resource(connection) { c =>
+                Using.resource(connection) { conn =>
                   val gradleVersion  = getGradleVersionMajorMinor(connection)
                   val androidVariant = androidVariantOverride.getOrElse(DefaultAndroidVariant)
                   val initScript =
                     makeInitScript(destinationDir, gradleVersion, configurationNameOverride, androidVariant)
                   Files.writeString(initScriptFile, initScript.contents)
-                  val ranOk = runGradleTask(c, initScript.taskName, initScriptFile.toString)
+                  val ranOk = runGradleTask(conn, initScript.taskName, initScriptFile.toString)
                   if (!ranOk) {
                     logger.info(
                       s"Gradle dependency fetch did not complete cleanly for $projectDir; returning partial graph."

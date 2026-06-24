@@ -93,7 +93,7 @@ object DependencyResolverV2 {
   private def isContainedIn(candidate: Path, parent: Path): Boolean = {
     // Resolve symlinks before comparing — gradle reports real paths but the input may have
     // arrived through a symlinked tree (common in test setups).
-    def realPath(p: Path): Path = Try(p.toRealPath()).getOrElse(p.toAbsolutePath.normalize())
+    def realPath(path: Path): Path = Try(path.toRealPath()).getOrElse(path.toAbsolutePath.normalize())
     realPath(candidate).startsWith(realPath(parent))
   }
 }

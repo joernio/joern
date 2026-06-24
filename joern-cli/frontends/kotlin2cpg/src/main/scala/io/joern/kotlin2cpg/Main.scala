@@ -106,7 +106,7 @@ private object Frontend {
           "use the new (experimental) dependency resolver pipeline; can also be enabled via the " +
             s"${DependencyResolverV2.EnableEnvVar} environment variable."
         )
-        .action((_, c) => c.withEnableDependencyResolverV2(true)),
+        .action((_, conf) => conf.withEnableDependencyResolverV2(true)),
       opt[Unit]("keep-type-arguments")
         .hidden()
         .action((_, c) => c.withKeepTypeArguments(true))

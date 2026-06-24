@@ -64,8 +64,8 @@ private[joern] case class DependencyGraph(
 
     // Resolve through symlinks before comparing — the input path may have been built relative
     // to e.g. a symlinked source root, while Gradle always reports the real path.
-    def realPath(p: Path): Path =
-      Try(p.toRealPath()).getOrElse(p.toAbsolutePath.normalize())
+    def realPath(path: Path): Path =
+      Try(path.toRealPath()).getOrElse(path.toAbsolutePath.normalize())
 
     val resolvedInputDir = realPath(inputDir)
     nodes.valuesIterator
@@ -104,7 +104,7 @@ private[joern] object DependencyGraph {
   // The init script writes the optional fields as JSON null when unknown (e.g. the
   // classifier). Treat null as absent.
   private def optStr(obj: ujson.Obj, key: String): Option[String] = {
-    obj.value.get(key).flatMap(v => if (v.isNull) None else Some(v.str))
+    obj.value.get(key).flatMap(value => if (value.isNull) None else Some(value.str))
   }
 
   private def parseJson(path: Path): Option[ProjectNode] = {

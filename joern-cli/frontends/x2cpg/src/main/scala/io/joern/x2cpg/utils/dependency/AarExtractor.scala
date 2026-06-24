@@ -95,7 +95,7 @@ private[joern] object AarExtractor {
     val hash = MessageDigest
       .getInstance("SHA-1")
       .digest(absolute.getBytes(StandardCharsets.UTF_8))
-    val hex  = hash.take(4).map(b => f"${b & 0xff}%02x").mkString
+    val hex  = hash.take(4).map(byteVal => f"${byteVal & 0xff}%02x").mkString
     val stem = aar.fileName.stripSuffix("." + aarExtension)
     s"$stem-$hex.jar"
   }
