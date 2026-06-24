@@ -77,6 +77,77 @@ class DeclarationTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "a top-level static" should {
+    val cpg = code("static BAR: usize = 42;")
+
+    "create a LOCAL with the annotated type" in {
+      cpg.local.name("BAR").typeFullName.l shouldBe List("usize")
+    }
+
+    "lower the initializer into an assignment" in {
+      inside(cpg.assignment.l) { case assignment :: Nil =>
+        assignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        assignment.code shouldBe "static BAR: usize = 42;"
+        assignment.typeFullName shouldBe Defines.Any
+        assignment.methodFullName shouldBe Operators.assignment
+      }
+    }
+
+    "have an Identifier as the assignment's first argument" in {
+      inside(cpg.assignment.argument(1).l) { case (lhs: Identifier) :: Nil =>
+        lhs.name shouldBe "BAR"
+        lhs.typeFullName shouldBe "usize"
+        lhs.code shouldBe "BAR"
+      }
+    }
+
+    "have a Literal as the assignment's second argument" in {
+      inside(cpg.assignment.argument(2).l) { case (rhs: Literal) :: Nil =>
+        rhs.code shouldBe "42"
+        rhs.typeFullName shouldBe "usize"
+      }
+    }
+  }
+
+  "a static inside a function body" should {
+    val cpg = code("""
+        |fn main() {
+        | static FOO: i32 = 0;
+        |}
+        |""".stripMargin)
+
+    "create a LOCAL with the annotated type" in {
+      inside(cpg.method.name("main").block.local.name("FOO").l) { case local :: Nil =>
+        local.typeFullName shouldBe "i32"
+        local.code shouldBe "FOO"
+      }
+    }
+
+    "lower the initializer into an assignment" in {
+      inside(cpg.method.name("main").block.assignment.l) { case assignment :: Nil =>
+        assignment.code shouldBe "static FOO: i32 = 0;"
+        assignment.lineNumber shouldBe Some(3)
+      }
+    }
+  }
+
+  "a mutable static" should {
+    val cpg = code("static mut BAZ: u32 = 0;")
+
+    "create a LOCAL with the annotated type" in {
+      inside(cpg.local.name("BAZ").l) { case local :: Nil =>
+        local.typeFullName shouldBe "u32"
+        local.code shouldBe "BAZ"
+      }
+    }
+
+    "lower the initializer into an assignment" in {
+      inside(cpg.assignment.l) { case assignment :: Nil =>
+        assignment.code shouldBe "static mut BAZ: u32 = 0;"
+      }
+    }
+  }
+
   "an untyped let bound to an integer literal" should {
     val cpg = code("""
         |fn main() {
