@@ -68,6 +68,10 @@ maven.install(
         "org.jetbrains.kotlin:kotlin-allopen:2.3.21",
         "org.jruby:jruby-complete:9.4.9.0",
         "com.github.albfernandez:juniversalchardet:2.5.0",
+        "io.joern:eclipse-cdt-core:9.2.100.202507101054+1",
+        "org.eclipse.platform:org.eclipse.core.resources:3.23.0",
+        "org.eclipse.platform:org.eclipse.text:3.14.400",
+        "org.jline:jline:3.27.1",
         # TODO remove dependencies below this. They do not have production quality.
         "com.squareup.tools.build:maven-archeologist:0.0.10",
         "com.lihaoyi:requests_3:0.8.0",
