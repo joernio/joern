@@ -107,7 +107,9 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
     }
   }
 
-  "V2 dependency resolver against gradle-android-test" should {
+  // These tests need the correct combination of JDK, Gradle version and Android SDK available.
+  // Un-ignore for local testing
+  "V2 dependency resolver against gradle-android-test" ignore {
     val projectDir: Path =
       Paths
         .get(ProjectRoot.relativise("joern-cli/frontends/x2cpg/src/test/resources/code/gradle-android-test"))
@@ -144,8 +146,8 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
     // local.properties) to point at a real SDK with platforms/android-N
     // installed. The test relies on whichever environment the suite is run in
     // supplying that; with no SDK available the bootClasspath comes back
-    // empty and this case fails fast, so it is ignored by default.
-    "include android.jar from the Android boot classpath in the app's artifact deps" ignore {
+    // empty and this case fails fast
+    "include android.jar from the Android boot classpath in the app's artifact deps" in {
       val graph       = graphFor(projectDir.resolve("app"))
       val appNode     = graph.nodes(":app")
       val androidJars = appNode.artifactDependencies.filter(_.path.getFileName.toString == "android.jar")
