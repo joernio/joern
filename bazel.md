@@ -35,6 +35,7 @@ included.
   staged version in the development cycle.
 - In Intellij Idea you find a Bazel navigation bar on the right side which lets
   you build/run/test all the targets in the root project.
+- Check trouble shooting section
 
 ## Bazel configuration
 Bazel looks for config files in a multitude of places. Most important for us is the
@@ -73,6 +74,16 @@ Some of our targets are platform dependend. This is most often the case if a fro
 in platform dependend AST generator components. By default the targets are build for the platform
 which executes the build. A platform independend target build is created with the command line
 flag `--//:all_platforms=true`. This packs binaries for all platforms into the resulting artifact.
+
+## Trouble shooting
+### Unresolved/Red symbols in Intellij
+After loading the project for the first time in Intellij with `Open ...' there might be lots of
+unresolved/red symbols especially around our semantic cpg language DSL. To fix this you need
+to uncomment `import_ijars: true` in `.bazelbsp/.bazelproject` and resync the project. If
+the mentioned line is already uncommented, comment it out and resync. It seems more important
+that its status changes then the actual comment in/out status.
+What can also help is cache invalidation: Go to `File -> Invalidate Caches...` and select
+`Clear file system cache and Local History` as well as `Invalidate downloaded shared indexes`.
 
 ## Bazel build development notes
 

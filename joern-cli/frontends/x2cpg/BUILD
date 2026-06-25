@@ -18,6 +18,15 @@ scala_library(
     srcs = glob(["src/main/scala/**/*.scala"]),
     scalacopts = [
     ],
+    resources = [
+        # TODO This should not be here but it is mimicking what the SBT
+        # build does. This is just the most convienent position for this
+        # file as resource because via x2cpg it ends up in the php2cpg
+        # tests and in joern cli and it is need in both. Of course this
+        # is a big no no since that way it gets distributed with each
+        # and every frontend.
+        "src/main/resources/php_known_function_signatures.txt",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         ":x2cpg_java",

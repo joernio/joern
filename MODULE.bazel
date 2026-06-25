@@ -67,9 +67,15 @@ maven.install(
         "org.jetbrains.kotlin:kotlin-compiler-embeddable:2.3.21",
         "org.jetbrains.kotlin:kotlin-allopen:2.3.21",
         "org.jruby:jruby-complete:9.4.9.0",
+        "com.github.albfernandez:juniversalchardet:2.5.0",
+        "io.joern:eclipse-cdt-core:9.2.100.202507101054+1",
+        "org.eclipse.platform:org.eclipse.core.resources:3.23.0",
+        "org.eclipse.platform:org.eclipse.text:3.14.400",
+        "org.jline:jline:3.27.1",
         # TODO remove dependencies below this. They do not have production quality.
         "com.squareup.tools.build:maven-archeologist:0.0.10",
         "com.lihaoyi:requests_3:0.8.0",
+        "com.github.sh4869:semver-parser-scala_3:0.0.6",
     ],
     fetch_sources = True,
     lock_file = "//:maven_install.json",
@@ -111,6 +117,8 @@ RUBYSRC2CPG_ASTGEN_VERSION = "0.58.0"
 RUBYSRC2CPG_TYPE_STUBS_VERSION = "0.6.0"
 
 RUST2CPG_ASTGEN_VERSION = "0.8.6"
+
+PHP_PARSER_VERSION = "4.15.10"
 
 # jssrc2cpg astgen binary imports
 http_file(
@@ -245,4 +253,12 @@ http_file(
     # to update this all the time.
     sha256 = "",
     url = "https://github.com/joernio/astgen-monorepo/releases/download/rust-astgen%2Fv{}/rust_ast_gen-win.exe".format(RUST2CPG_ASTGEN_VERSION),
+)
+
+#php parser artefact
+http_file(
+    name = "php-parser",
+    executable = True,
+    sha256 = "9e33ef03889717059ee6fccb00f47ef05831599c10065ecc762d5d32ddd8b931",
+    url = "https://github.com/joernio/PHP-Parser/releases/download/v{}/php-parser.phar".format(PHP_PARSER_VERSION),
 )
