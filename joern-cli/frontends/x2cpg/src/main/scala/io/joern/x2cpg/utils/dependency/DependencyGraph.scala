@@ -1,6 +1,7 @@
 package io.joern.x2cpg.utils.dependency
 
 import io.joern.x2cpg.utils.dependency.DependencyGraph.logger
+import org.apache.maven.artifact.versioning.ComparableVersion
 import org.slf4j.LoggerFactory
 import ujson.Value
 
@@ -22,22 +23,11 @@ case class MavenArtifactDependency(
   extension: String
 ) {
 
-  override def hashCode(): Int = (group, name, version, classifier, extension).hashCode()
-
-  override def equals(other: Any): Boolean = {
-    other match {
-      case otherDep: MavenArtifactDependency =>
-        (
-          name,
-          group,
-          version,
-          classifier,
-          extension
-        ) == (otherDep.name, otherDep.group, otherDep.version, otherDep.classifier, otherDep.extension)
-
-      case _ => false
-    }
-  }
+  /** Identity excluding version — used to dedupe the same artifact pulled in at different versions
+    * by different subprojects.
+    */
+  private[dependency] def identity: DependencyGraph.ArtifactIdentity =
+    (group, name, classifier, extension)
 }
 
 private[dependency] type ProjectNode = (
@@ -57,10 +47,10 @@ private[joern] case class DependencyGraph(
 ) {
 
   private[joern] def transitiveDependenciesForProjectsInDir(inputDir: Path): DependencyResult = {
-    val checked       = mutable.Set[String]()
-    val toCheck       = mutable.Stack[String]()
-    val sourcePaths   = mutable.Set[Path]()
-    val artifactPaths = mutable.Set[Path]()
+    val checked     = mutable.Set[String]()
+    val toCheck     = mutable.Stack[String]()
+    val sourcePaths = mutable.Set[Path]()
+    val artifacts   = mutable.Map[DependencyGraph.ArtifactIdentity, MavenArtifactDependency]()
 
     // Resolve through symlinks before comparing — the input path may have been built relative
     // to e.g. a symlinked source root, while Gradle always reports the real path.
@@ -83,7 +73,7 @@ private[joern] case class DependencyGraph(
         nodes.get(projectName) match {
           case Some(project) =>
             sourcePaths.addAll(project.sourcePaths)
-            artifactPaths.addAll(project.artifactDependencies.map(_.path))
+            project.artifactDependencies.foreach(DependencyGraph.mergeArtifact(artifacts, _))
             project.sourceDependencies.foreach(toCheck.push)
 
           case None =>
@@ -92,6 +82,7 @@ private[joern] case class DependencyGraph(
       }
     }
 
+    val artifactPaths = artifacts.valuesIterator.map(_.path).toSet
     (AarExtractor.materializeJars(artifactPaths, cacheDir), sourcePaths.toSet)
   }
 
@@ -100,6 +91,36 @@ private[joern] case class DependencyGraph(
 private[joern] object DependencyGraph {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
+
+  private[dependency] type ArtifactIdentity = (Option[String], String, Option[String], String)
+
+  /** Insert `next` into `acc`, keeping the higher Maven version when an artifact with the same
+    * identity is already present. A missing version loses to any present version; if both are
+    * missing, the existing entry wins.
+    */
+  private def mergeArtifact(
+    acc: mutable.Map[ArtifactIdentity, MavenArtifactDependency],
+    next: MavenArtifactDependency
+  ): Unit = {
+    acc.get(next.identity) match {
+      case None => acc.put(next.identity, next)
+      case Some(existing) if isNewer(next.version, existing.version) =>
+        logger.debug(
+          s"Replacing ${existing.group.getOrElse("?")}:${existing.name}:${existing.version.getOrElse("?")} " +
+            s"with version ${next.version.getOrElse("?")}"
+        )
+        acc.put(next.identity, next)
+      case _ => ()
+    }
+  }
+
+  private def isNewer(candidate: Option[String], current: Option[String]): Boolean = {
+    (candidate, current) match {
+      case (Some(c), Some(e)) => new ComparableVersion(c).compareTo(new ComparableVersion(e)) > 0
+      case (Some(_), None)    => true
+      case _                  => false
+    }
+  }
 
   // The init script writes the optional fields as JSON null when unknown (e.g. the
   // classifier). Treat null as absent.
