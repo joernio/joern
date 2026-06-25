@@ -119,8 +119,6 @@ object GradleDependenciesV2 {
           .run()
       ) match {
         case Success(_) =>
-          logger.debug(s"Gradle task execution stdout: \n$stdoutStream")
-          logger.debug(s"Gradle task execution stderr: \n$stderrStream")
           true
         case Failure(ex) =>
           logger.warn(s"Caught exception while executing Gradle task: ${ex.getMessage}", ex)

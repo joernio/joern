@@ -22,8 +22,7 @@ object DependencyResolverV2 {
   val EnableEnvVar: String = "ENABLE_DEPENDENCY_RESOLVER_V2"
 
   /** Outcome of a V2 dependency resolution. `sourceDirs` is the set of directories returned by the graph's transitive
-    * walk, validated to be non-empty and to include at least one entry that is equal to or contained within the
-    * original input path. `artifactJars` is the AAR-materialized jar set for the same walk.
+    * walk, validated to be non-empty. `artifactJars` is the AAR-materialized jar set for the same walk.
     */
   type DependencyResolutionV2Result = (sourceDirs: Set[Path], artifactJars: Set[Path])
 
@@ -47,12 +46,6 @@ object DependencyResolverV2 {
         val (artifacts, sources) = graph.transitiveDependenciesForProjectsInDir(projectDir)
         if (sources.isEmpty) {
           logger.warn(s"V2 dependency fetcher: no source directories resolved for $inputPath. Falling back.")
-          None
-        } else if (!sources.exists(isContainedIn(_, projectDir))) {
-          logger.warn(
-            s"V2 dependency fetcher: none of the ${sources.size} resolved source dirs are within $inputPath. " +
-              "This usually means inputDir does not match any project's sourceSet. Falling back."
-          )
           None
         } else {
           logger.info(
