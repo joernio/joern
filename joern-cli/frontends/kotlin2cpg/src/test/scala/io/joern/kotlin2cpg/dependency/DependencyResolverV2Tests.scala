@@ -17,7 +17,7 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
     "handling a project with a nested structure" should {
       val projectDir: Path =
         Paths
-          .get(ProjectRoot.relativise("joern-cli/frontends/x2cpg/src/test/resources/code/gradle_nested_module_test"))
+          .get(ProjectRoot.relativise("joern-cli/frontends/x2cpg/src/test/resources/code/gradle-nested-module-test"))
           .toAbsolutePath
           .normalize()
 
@@ -59,7 +59,7 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
     "handling a project with a flat structure" should {
       val projectDir: Path =
         Paths
-          .get(ProjectRoot.relativise("joern-cli/frontends/x2cpg/src/test/resources/code/gradle_test_project"))
+          .get(ProjectRoot.relativise("joern-cli/frontends/x2cpg/src/test/resources/code/gradle-test-project"))
           .toAbsolutePath
           .normalize()
 

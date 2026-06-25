@@ -7,7 +7,7 @@ import org.scalatest.wordspec.AnyWordSpec
 
 import java.nio.file.{Path, Paths}
 
-/** In-depth tests of the V2 dependency fetcher and source-dir override logic against the `gradle_test_project` fixture.
+/** In-depth tests of the V2 dependency fetcher and source-dir override logic against the `gradle-test-project` fixture.
   * Each test fans the gradle init script out, parses the resulting depInfo JSONs, and asserts the source roots returned
   * for a given input path.
   */
@@ -18,10 +18,10 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
       .getDependencyGraph(inputPath)
       .getOrElse(fail(s"V2 dependency resolver returned no graph for $inputPath"))
 
-  "V2 dependency fetcher against the gradle_test_project" should {
+  "V2 dependency fetcher against the gradle-test-project" should {
     val projectDir: Path =
       Paths
-        .get(ProjectRoot.relativise("joern-cli/frontends/x2cpg/src/test/resources/code/gradle_test_project"))
+        .get(ProjectRoot.relativise("joern-cli/frontends/x2cpg/src/test/resources/code/gradle-test-project"))
         .toAbsolutePath
         .normalize()
 
@@ -30,7 +30,7 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
       val allModules =
         Set("sharedUtils", "core", "lib", "testLib", "clientCore", "client", "server", "emptyModule", "mixedSources")
       sourceDirs.toList.flatMap { p =>
-        // sourceDirs are absolute paths like .../gradle_test_project/core/src/main/kotlin
+        // sourceDirs are absolute paths like .../gradle-test-project/core/src/main/kotlin
         val s = p.toAbsolutePath.normalize().toString
         allModules.find(m => s.contains(s"/$m/src/"))
       }.sorted
@@ -160,10 +160,10 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
     }
   }
 
-  "V2 dependency resolver against gradle_nested_module_test" should {
+  "V2 dependency resolver against gradle-nested-module-test" should {
     val projectDir: Path =
       Paths
-        .get(ProjectRoot.relativise("joern-cli/frontends/x2cpg/src/test/resources/code/gradle_nested_module_test"))
+        .get(ProjectRoot.relativise("joern-cli/frontends/x2cpg/src/test/resources/code/gradle-nested-module-test"))
         .toAbsolutePath
         .normalize()
 
