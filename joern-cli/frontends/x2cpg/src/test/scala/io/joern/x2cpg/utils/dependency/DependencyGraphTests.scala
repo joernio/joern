@@ -68,9 +68,7 @@ class DependencyGraphTests extends AnyWordSpec with Matchers {
       val main    = artifact("com.example", "lib", "1.0.0", classifier = None)
       val sources = artifact("com.example", "lib", "1.0.0", classifier = Some("sources"))
 
-      val graph = buildGraph(
-        project("a", sourcePath = "/repo/a", artifacts = Set(main, sources))
-      )
+      val graph = buildGraph(project("a", sourcePath = "/repo/a", artifacts = Set(main, sources)))
 
       val (artifacts, _) = graph.transitiveDependenciesForProjectsInDir(Paths.get("/repo"))
       artifacts shouldBe Set(main.path, sources.path)
@@ -82,9 +80,7 @@ class DependencyGraphTests extends AnyWordSpec with Matchers {
       val jar = artifact("com.example", "lib", "1.0.0", extension = "jar")
       val pom = artifact("com.example", "lib", "1.0.0", extension = "pom")
 
-      val graph = buildGraph(
-        project("a", sourcePath = "/repo/a", artifacts = Set(jar, pom))
-      )
+      val graph = buildGraph(project("a", sourcePath = "/repo/a", artifacts = Set(jar, pom)))
 
       val (artifacts, _) = graph.transitiveDependenciesForProjectsInDir(Paths.get("/repo"))
       artifacts shouldBe Set(jar.path, pom.path)
@@ -94,20 +90,15 @@ class DependencyGraphTests extends AnyWordSpec with Matchers {
       val foo = artifact("com.example", "lib", "1.0.0")
       val bar = artifact("org.other", "lib", "1.0.0")
 
-      val graph = buildGraph(
-        project("a", sourcePath = "/repo/a", artifacts = Set(foo, bar))
-      )
+      val graph = buildGraph(project("a", sourcePath = "/repo/a", artifacts = Set(foo, bar)))
 
       val (artifacts, _) = graph.transitiveDependenciesForProjectsInDir(Paths.get("/repo"))
       artifacts shouldBe Set(foo.path, bar.path)
     }
 
     "prefer a present version over a missing one" in {
-      val versioned = artifact("com.example", "lib", "1.0.0")
-      val unversioned = versioned.copy(
-        path = Paths.get("/cache/unknown/lib.jar"),
-        version = None
-      )
+      val versioned   = artifact("com.example", "lib", "1.0.0")
+      val unversioned = versioned.copy(path = Paths.get("/cache/unknown/lib.jar"), version = None)
 
       val graph = buildGraph(
         project("a", sourcePath = "/repo/a", artifacts = Set(unversioned)),
@@ -123,8 +114,8 @@ class DependencyGraphTests extends AnyWordSpec with Matchers {
 
 private object DependencyGraphTests {
 
-  /** Build a synthetic MavenArtifactDependency with a path derived from coordinates so distinct
-    * versions get distinct paths (matching real cache layout).
+  /** Build a synthetic MavenArtifactDependency with a path derived from coordinates so distinct versions get distinct
+    * paths (matching real cache layout).
     */
   def artifact(
     group: String,
@@ -134,7 +125,7 @@ private object DependencyGraphTests {
     extension: String = "jar"
   ): MavenArtifactDependency = {
     val classifierSuffix = classifier.map("-" + _).getOrElse("")
-    val path = Paths.get(s"/cache/$group/$name/$version/$name-$version$classifierSuffix.$extension")
+    val path             = Paths.get(s"/cache/$group/$name/$version/$name-$version$classifierSuffix.$extension")
     MavenArtifactDependency(path, Some(group), name, Some(version), classifier, extension)
   }
 

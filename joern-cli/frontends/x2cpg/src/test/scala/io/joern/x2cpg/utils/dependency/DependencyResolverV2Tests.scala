@@ -172,15 +172,11 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
 
       val coreNode = graph.nodes(":core")
       coreNode.sourceDependencies shouldBe Set()
-      coreNode.sourcePaths shouldBe Set(
-        projectDir.resolve("core/src/main/kotlin")
-      )
+      coreNode.sourcePaths shouldBe Set(projectDir.resolve("core/src/main/kotlin"))
 
       val libNode = graph.nodes(":core:lib")
       libNode.sourceDependencies shouldBe Set(":core")
-      libNode.sourcePaths shouldBe Set(
-        projectDir.resolve("core/lib/src/main/kotlin")
-      )
+      libNode.sourcePaths shouldBe Set(projectDir.resolve("core/lib/src/main/kotlin"))
 
       graph.nodes.keys should contain theSameElementsAs List(":core", ":core:lib")
     }

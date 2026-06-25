@@ -23,8 +23,8 @@ case class MavenArtifactDependency(
   extension: String
 ) {
 
-  /** Identity excluding version — used to dedupe the same artifact pulled in at different versions
-    * by different subprojects.
+  /** Identity excluding version — used to dedupe the same artifact pulled in at different versions by different
+    * subprojects.
     */
   private[dependency] def identity: DependencyGraph.ArtifactIdentity =
     (group, name, classifier, extension)
@@ -94,9 +94,8 @@ private[joern] object DependencyGraph {
 
   private[dependency] type ArtifactIdentity = (Option[String], String, Option[String], String)
 
-  /** Insert `next` into `acc`, keeping the higher Maven version when an artifact with the same
-    * identity is already present. A missing version loses to any present version; if both are
-    * missing, the existing entry wins.
+  /** Insert `next` into `acc`, keeping the higher Maven version when an artifact with the same identity is already
+    * present. A missing version loses to any present version; if both are missing, the existing entry wins.
     */
   private def mergeArtifact(
     acc: mutable.Map[ArtifactIdentity, MavenArtifactDependency],

@@ -11,7 +11,6 @@ import scala.util.{Failure, Success}
 
 class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
 
-
   "kotlin2cpg when using the dependency fetcher V2" when {
 
     "handling a project with a nested structure" should {
@@ -30,7 +29,7 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
           case Success(cpg) =>
             cpg.file.name.map(Path.of(_)).toSet shouldBe Set(
               "src/main/kotlin/com/example/core/lib/CoreLib.kt",
-              "../src/main/kotlin/com/example/core/CoreService.kt",
+              "../src/main/kotlin/com/example/core/CoreService.kt"
             ).map(Path.of(_))
 
           case Failure(ex) =>
@@ -47,7 +46,7 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
           case Success(cpg) =>
             cpg.file.name.map(Path.of(_)).toSet shouldBe Set(
               "lib/src/main/kotlin/com/example/core/lib/CoreLib.kt",
-              "src/main/kotlin/com/example/core/CoreService.kt",
+              "src/main/kotlin/com/example/core/CoreService.kt"
             ).map(Path.of(_))
 
           case Failure(ex) =>
