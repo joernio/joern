@@ -31,6 +31,8 @@ class ContextStack {
     val astParent: nodes.NewNode
     val order: AutoIncIndex
     val variables: mutable.Map[String, nodes.NewNode]
+    val reservedNames: mutable.Set[String]
+    val tmpCounters: mutable.Map[String, Int]
     var lambdaCounter: Int
     val methodCounter: mutable.Map[String, Int]
   }
@@ -43,6 +45,8 @@ class ContextStack {
     val methodBlockNode: Option[nodes.NewBlock] = None,
     val methodRefNode: Option[nodes.NewMethodRef] = None,
     val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
+    val reservedNames: mutable.Set[String] = mutable.Set.empty,
+    val tmpCounters: mutable.Map[String, Int] = mutable.Map.empty,
     val globalVariables: mutable.Set[String] = mutable.Set.empty,
     val nonLocalVariables: mutable.Set[String] = mutable.Set.empty,
     var lambdaCounter: Int = 0,
@@ -54,6 +58,8 @@ class ContextStack {
     val astParent: nodes.NewNode,
     val order: AutoIncIndex,
     val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
+    val reservedNames: mutable.Set[String] = mutable.Set.empty,
+    val tmpCounters: mutable.Map[String, Int] = mutable.Map.empty,
     var lambdaCounter: Int = 0,
     val methodCounter: mutable.Map[String, Int] = mutable.Map.empty
   ) extends Context {}
@@ -72,6 +78,8 @@ class ContextStack {
     val astParent: nodes.NewNode,
     val order: AutoIncIndex,
     val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
+    val reservedNames: mutable.Set[String] = mutable.Set.empty,
+    val tmpCounters: mutable.Map[String, Int] = mutable.Map.empty,
     var lambdaCounter: Int = 0,
     val methodCounter: mutable.Map[String, Int] = mutable.Map.empty
   ) extends Context {}
@@ -101,7 +109,8 @@ class ContextStack {
     scopeName: Option[String],
     methodNode: nodes.NewMethod,
     methodBlockNode: nodes.NewBlock,
-    methodRefNode: Option[nodes.NewMethodRef]
+    methodRefNode: Option[nodes.NewMethodRef],
+    reservedNames: Iterable[String] = Nil
   ): Unit = {
     val isClassBodyMethod = stack.headOption.exists(_.isInstanceOf[ClassContext])
 
@@ -112,7 +121,8 @@ class ContextStack {
         new AutoIncIndex(1),
         isClassBodyMethod,
         Some(methodBlockNode),
-        methodRefNode
+        methodRefNode,
+        reservedNames = mutable.Set.from(reservedNames)
       )
     if (moduleMethodContext.isEmpty) {
       moduleMethodContext = Some(methodContext)
@@ -120,13 +130,23 @@ class ContextStack {
     push(methodContext)
   }
 
-  def pushClass(scopeName: Option[String], classNode: nodes.NewTypeDecl): Unit = {
-    push(new ClassContext(scopeName, classNode, new AutoIncIndex(1)))
+  def pushClass(
+    scopeName: Option[String],
+    classNode: nodes.NewTypeDecl,
+    reservedNames: Iterable[String] = Nil
+  ): Unit = {
+    push(new ClassContext(scopeName, classNode, new AutoIncIndex(1), reservedNames = mutable.Set.from(reservedNames)))
   }
 
-  def pushSpecialContext(): Unit = {
+  def pushSpecialContext(reservedNames: Iterable[String] = Nil): Unit = {
     val methodContext = findEnclosingMethodContext(stack)
-    push(new SpecialBlockContext(methodContext.astParent, methodContext.order))
+    push(
+      new SpecialBlockContext(
+        methodContext.astParent,
+        methodContext.order,
+        reservedNames = mutable.Set.from(reservedNames)
+      )
+    )
   }
 
   def pop(): Unit = {
@@ -144,6 +164,32 @@ class ContextStack {
   def getAndIncLambdaCounter(): Int = {
     val result = stack.head.lambdaCounter
     stack.head.lambdaCounter += 1
+    result
+  }
+
+  def getUnusedName(prefix: Option[String] = None): String = {
+    val context = stack.head
+    // Temporary stores in special contexts are materialized as locals in the
+    // enclosing method, so their names must be allocated from that method's
+    // shared counter and reservation set.
+    val enclosingMethodContext = context match {
+      case _: SpecialBlockContext => Some(findEnclosingMethodContext(stack))
+      case _                      => None
+    }
+    val allocationContext = enclosingMethodContext.getOrElse(context)
+    val nameBase          = prefix.map(prefix_value => s"${prefix_value}_tmp").getOrElse("tmp")
+    val isReserved = (name: String) =>
+      context.reservedNames.contains(name) || enclosingMethodContext.exists(_.reservedNames.contains(name))
+
+    var result: String = ""
+    while (result == "" || isReserved(result)) {
+      val counter = allocationContext.tmpCounters.getOrElse(nameBase, 0)
+      result = s"$nameBase$counter"
+      allocationContext.tmpCounters.update(nameBase, counter + 1)
+    }
+
+    context.reservedNames.add(result)
+    enclosingMethodContext.foreach(_.reservedNames.add(result))
     result
   }
 
