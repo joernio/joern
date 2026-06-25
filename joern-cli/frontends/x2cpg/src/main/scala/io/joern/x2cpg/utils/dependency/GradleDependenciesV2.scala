@@ -2,6 +2,7 @@ package io.joern.x2cpg.utils.dependency
 
 import io.shiftleft.semanticcpg.utils.FileUtil
 import io.shiftleft.semanticcpg.utils.FileUtil.*
+import org.apache.commons.text.StringEscapeUtils
 import org.gradle.tooling.GradleConnector
 import org.gradle.tooling.ProjectConnection
 import org.gradle.tooling.model.build.BuildEnvironment
@@ -47,7 +48,10 @@ object GradleDependenciesV2 {
       case _                                                       => "tasks.create"
     }
 
-    def addSurroundingQuotes(input: String): String = s"\"$input\""
+    // Emits a Groovy double-quoted string literal. Groovy accepts the same escape vocabulary
+    // as Java, so `escapeJava` is the right tool — without it, backslashes in Windows paths
+    // (e.g. `C:\Users\RUNNER~1\...`) would blow up Groovy's escape-sequence parser.
+    def addSurroundingQuotes(input: String): String = s"\"${StringEscapeUtils.escapeJava(input)}\""
     val configurationNameOverrideString = s"[${configurationNameOverride.map(addSurroundingQuotes).getOrElse("")}]"
 
     // `replace` (CharSequence overload) is a literal substitution. `replaceAll` interprets the
