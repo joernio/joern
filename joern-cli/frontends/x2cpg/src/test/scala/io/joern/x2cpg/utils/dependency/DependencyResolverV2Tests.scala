@@ -160,6 +160,32 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
     }
   }
 
+  "V2 dependency resolver against gradle_nested_module_test" should {
+    val projectDir: Path =
+      Paths
+        .get(ProjectRoot.relativise("joern-cli/frontends/x2cpg/src/test/resources/code/gradle_nested_module_test"))
+        .toAbsolutePath
+        .normalize()
+
+    "find :core and :core:lib when resolving from core" in {
+      val graph = graphFor(projectDir.resolve("core"))
+
+      val coreNode = graph.nodes(":core")
+      coreNode.sourceDependencies shouldBe Set()
+      coreNode.sourcePaths shouldBe Set(
+        projectDir.resolve("core/src/main/kotlin")
+      )
+
+      val libNode = graph.nodes(":core:lib")
+      libNode.sourceDependencies shouldBe Set(":core")
+      libNode.sourcePaths shouldBe Set(
+        projectDir.resolve("core/lib/src/main/kotlin")
+      )
+
+      graph.nodes.keys should contain theSameElementsAs List(":core", ":core:lib")
+    }
+  }
+
   "V2 dependency resolver against gradle-kmp-test" should {
     val projectDir: Path =
       Paths
