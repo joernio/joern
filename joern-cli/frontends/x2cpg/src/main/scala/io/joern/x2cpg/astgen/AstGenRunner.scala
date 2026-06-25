@@ -2,14 +2,13 @@ package io.joern.x2cpg.astgen
 
 import com.typesafe.config.ConfigFactory
 import io.joern.x2cpg.astgen.AstGenRunner.AstGenProgramMetaData
-import io.joern.x2cpg.utils.{Environment, JoernRunfilesLocator}
 import io.joern.x2cpg.utils.Environment.{ArchitectureType, OperatingSystemType}
+import io.joern.x2cpg.utils.{Environment, JoernRunfilesLocator}
 import io.joern.x2cpg.{SourceFiles, X2CpgConfig}
 import io.shiftleft.semanticcpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 import versionsort.VersionHelper
 
-import java.io.FileNotFoundException
 import java.net.URL
 import java.nio.file.{Files, Path, Paths}
 import scala.util.{Failure, Success, Try}
@@ -251,19 +250,20 @@ abstract class AstGenRunner(metaData: AstGenProgramMetaData, config: X2CpgConfig
   }
 
   def executableDir: String =
-    ExternalCommand
-      .executableDir(Paths.get(metaData.packagePath.toURI))
-      .resolve("astgen")
-      .toString
-
-  def hasCompatibleAstGenVersion(compatibleVersion: String): Boolean =
-    hasCompatibleAstGenVersion(compatibleVersion, None)
+    ExternalCommand.executableDir(Paths.get(metaData.packagePath.toURI)).resolve("astgen").toString
 
   def hasCompatibleAstGenVersion(compatibleVersion: String, path: Option[String]): Boolean = {
     val command      = path.getOrElse(metaData.name)
     val workingDir   = path.flatMap(binPath => Option(Paths.get(binPath).getParent))
     val debugMsgPath = path.getOrElse("PATH")
-    ExternalCommand.run(Seq(command, metaData.versionFlag), workingDir).successOption match {
+    ExternalCommand
+      .run(
+        Seq(command, metaData.versionFlag),
+        workingDir,
+        additionalContext =
+          s"version probe for ${metaData.name} at '$debugMsgPath' - failure is expected if binary is not available there"
+      )
+      .successOption match {
       case Some(_) if metaData.skipVersionComparison =>
         logger.debug(s"Using ${metaData.name} from '$debugMsgPath'")
         true
