@@ -50,15 +50,18 @@ object GradleDependenciesV2 {
     def addSurroundingQuotes(input: String): String = s"\"$input\""
     val configurationNameOverrideString = s"[${configurationNameOverride.map(addSurroundingQuotes).getOrElse("")}]"
 
+    // `replace` (CharSequence overload) is a literal substitution. `replaceAll` interprets the
+    // replacement as a regex replacement string, which would consume backslashes in Windows
+    // paths (e.g. `C:\Users\...` → `C:Users...`) and corrupt the generated init script.
     Source
       .fromResource("io/joern/x2cpg/utils/dependency/dependency-fetcher-init-v2.gradle")
       .getLines()
       .mkString(System.lineSeparator())
-      .replaceAll("__configurationNameOverrides__", configurationNameOverrideString)
-      .replaceAll("__taskNameString__", addSurroundingQuotes(taskName))
-      .replaceAll("__destinationDirString__", addSurroundingQuotes(destinationDir))
-      .replaceAll("__androidVariant__", addSurroundingQuotes(androidVariant))
-      .replaceAll("tasks.register", taskCreationFunction)
+      .replace("__configurationNameOverrides__", configurationNameOverrideString)
+      .replace("__taskNameString__", addSurroundingQuotes(taskName))
+      .replace("__destinationDirString__", addSurroundingQuotes(destinationDir))
+      .replace("__androidVariant__", addSurroundingQuotes(androidVariant))
+      .replace("tasks.register", taskCreationFunction)
   }
 
   private def getGradleVersionMajorMinor(connection: ProjectConnection): GradleVersion = {
