@@ -130,23 +130,23 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       .fullName(s"$classFullName<class>")
       .inheritsFromTypeFullName(inheritsFrom.map(x => s"$x<class>"))
 
+    val classBody     = node.body.asInstanceOf[StatementList]
+    val visibilityMap = computeVisibilityMap(classBody)
+
     val (classModifiers, singletonModifiers) = node match {
       case _: ModuleDeclaration =>
-        scope.pushNewScope(ModuleScope(classFullName))
+        scope.pushNewScope(ModuleScope(classFullName, visibilityMap))
         (
           ModifierTypes.VIRTUAL :: Nil map (modifierNode(node, _)) map Ast.apply,
           ModifierTypes.VIRTUAL :: ModifierTypes.FINAL :: Nil map (modifierNode(node, _)) map Ast.apply
         )
       case _: TypeDeclaration =>
-        scope.pushNewScope(TypeScope(classFullName, List.empty))
+        scope.pushNewScope(TypeScope(classFullName, List.empty, visibilityMap))
         (
           ModifierTypes.VIRTUAL :: Nil map (modifierNode(node, _)) map Ast.apply,
           ModifierTypes.VIRTUAL :: Nil map (modifierNode(node, _)) map Ast.apply
         )
     }
-
-    val classBody =
-      node.body.asInstanceOf[StatementList] // for now (bodyStatement is a superset of stmtList)
 
     val statementsToForwardUpTheAst = mutable.ArrayBuffer.empty[Ast]
     def separateStatementsFromBody(ss: List[RubyExpression]) = {
@@ -323,6 +323,54 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       StatementList(assignment :: Nil)(node.span.spanStart(s"return $fieldName"))
     )(node.span.spanStart(code))
     astForMethodDeclaration(methodDecl, useSurroundingTypeFullName = true)
+  }
+
+  private def computeVisibilityMap(classBody: StatementList): Map[String, String] = {
+    def accessModifierType(node: AccessModifier): String = node match {
+      case _: PublicModifier    => ModifierTypes.PUBLIC
+      case _: PrivateModifier   => ModifierTypes.PRIVATE
+      case _: ProtectedModifier => ModifierTypes.PROTECTED
+    }
+
+    val allStatements = classBody.statements
+      .flatMap {
+        case m: MethodDeclaration if m.methodName == Defines.TypeDeclBody =>
+          m.body.asInstanceOf[StatementList].statements
+        case other => other :: Nil
+      }
+      .sortBy(el => (el.line.getOrElse(0), el.column.getOrElse(0)))
+
+    var currentModifier = ModifierTypes.PUBLIC
+    val visibilityMap   = mutable.LinkedHashMap.empty[String, String]
+
+    allStatements.foreach {
+      case node: AccessModifier if node.arguments.isEmpty =>
+        currentModifier = accessModifierType(node)
+      case node: AccessModifier =>
+        val modifier = accessModifierType(node)
+        node.arguments.foreach {
+          case lit: StaticLiteral => visibilityMap.put(symbolName(lit), modifier)
+          case arr: ArrayLiteral =>
+            arr.elements.foreach(el => visibilityMap.put(symbolName(el), modifier))
+          case _ =>
+        }
+      case node: MethodAccessModifier =>
+        val modifier = node match {
+          case _: PrivateMethodModifier => ModifierTypes.PRIVATE
+          case _: PublicMethodModifier  => ModifierTypes.PUBLIC
+        }
+        node.arguments.foreach {
+          case proc: ProcedureDeclaration => visibilityMap.put(proc.methodName, modifier)
+          case lit: StaticLiteral         => visibilityMap.put(symbolName(lit), modifier)
+          case arr: ArrayLiteral =>
+            arr.elements.foreach(el => visibilityMap.put(symbolName(el), modifier))
+          case _ =>
+        }
+      case node: ProcedureDeclaration if !visibilityMap.contains(node.methodName) =>
+        visibilityMap.put(node.methodName, currentModifier)
+      case _ =>
+    }
+    visibilityMap.toMap
   }
 
 }

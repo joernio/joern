@@ -179,10 +179,13 @@ class RubyJsonToNodeCreator(
   }
 
   private def visitAccessModifier(obj: Obj): RubyExpression = {
+    val args =
+      if (obj.contains(ParserKeys.Arguments)) obj.visitArray(ParserKeys.Arguments)
+      else Nil
     obj(ParserKeys.Name).str match {
-      case "public"    => PublicModifier()(obj.toTextSpan)
-      case "private"   => PrivateModifier()(obj.toTextSpan)
-      case "protected" => ProtectedModifier()(obj.toTextSpan)
+      case "public"    => PublicModifier(args)(obj.toTextSpan)
+      case "private"   => PrivateModifier(args)(obj.toTextSpan)
+      case "protected" => ProtectedModifier(args)(obj.toTextSpan)
       case modifierName =>
         logger.warn(s"Unknown modifier type $modifierName")
         defaultResult(Option(obj.toTextSpan))
@@ -697,16 +700,11 @@ class RubyJsonToNodeCreator(
   }
 
   private def visitMethodAccessModifier(obj: Obj): RubyExpression = {
-    val body = obj.visitArray(ParserKeys.Arguments) match {
-      case head :: Nil => head
-      case xs          => xs.head
-    }
+    val args = obj.visitArray(ParserKeys.Arguments)
 
     obj(ParserKeys.Name).str match {
-      case "public_class_method" =>
-        PublicMethodModifier(body)(obj.toTextSpan)
-      case "private_class_method" =>
-        PrivateMethodModifier(body)(obj.toTextSpan)
+      case "public_class_method"  => PublicMethodModifier(args)(obj.toTextSpan)
+      case "private_class_method" => PrivateMethodModifier(args)(obj.toTextSpan)
       case modifierName =>
         logger.warn(s"Unknown modifier type $modifierName")
         defaultResult(Option(obj.toTextSpan))
