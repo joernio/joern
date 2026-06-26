@@ -209,11 +209,11 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
     }
   }
 
-  private def withCodeInTmpFile(str: String, filename: String)(f: Path => Cpg): Try[Cpg] = {
+  private def withCodeInTmpFile(str: String, filename: String)(callback: Path => Cpg): Try[Cpg] = {
     FileUtil.usingTemporaryDirectory("console") { dir =>
       Try {
         Files.writeString((dir / filename), str)
-        f(dir)
+        callback(dir)
       }
     }
   }
