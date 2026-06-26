@@ -19,10 +19,14 @@ def make_scala_rules(
         )
 
     def scala_test(scalacopts = [], runtime_deps = [], **kwargs):
+        if "visibility" in kwargs:
+            fail("Setting visibility attribute is forbidden. " +
+                 "We always use private visibility to avoid people writting rules that depend on scala_test targets as much as possible.")
         _scala_test(
             scalacopts = common_scalacopts + scalacopts,
             scala_version = scala_version,
             runtime_deps = common_scalatest_runtime_deps + runtime_deps,
+            visibility = ["//visibility:private"],
             **kwargs
         )
 
