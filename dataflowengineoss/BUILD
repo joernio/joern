@@ -42,10 +42,8 @@ scala_test(
     srcs = glob(["src/test/scala/**/*.scala"]),
     scalacopts = [
     ],
-    visibility = ["//visibility:public"],
     deps = [
         ":dataflowengineoss",
         "//bazel/reexports:io_shiftleft_codepropertygraph_with_deps",
-        "//joern-cli/frontends/x2cpg:tests",
     ],
 )

@@ -40,8 +40,8 @@ scala_test(
     deps = [
         ":php2cpg",
         "//bazel/reexports:io_shiftleft_codepropertygraph_with_deps",
-        "//dataflowengineoss:tests",
-        "//joern-cli/frontends/x2cpg:tests",
+        "//dataflowengineoss/src/test/scala/io/joern/dataflowengineoss/testfixtures",
+        "//joern-cli/frontends/x2cpg/src/test/scala/io/joern/x2cpg/testfixtures",
         "//semanticcpg",
         "@maven//:com_github_scopt_scopt_3",
         "@maven//:org_scala_lang_modules_scala_parallel_collections_3",

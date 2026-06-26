@@ -16,8 +16,6 @@ java_library(
 scala_library(
     name = "x2cpg",
     srcs = glob(["src/main/scala/**/*.scala"]),
-    scalacopts = [
-    ],
     resources = [
         # TODO This should not be here but it is mimicking what the SBT
         # build does. This is just the most convienent position for this
@@ -26,6 +24,8 @@ scala_library(
         # is a big no no since that way it gets distributed with each
         # and every frontend.
         "src/main/resources/php_known_function_signatures.txt",
+    ],
+    scalacopts = [
     ],
     visibility = ["//visibility:public"],
     deps = [
@@ -54,10 +54,10 @@ scala_test(
     },
     scalacopts = [
     ],
-    visibility = ["//visibility:public"],
     deps = [
         ":x2cpg",
         "//bazel/reexports:io_shiftleft_codepropertygraph_with_deps",
+        "//joern-cli/frontends/x2cpg/src/test/scala/io/joern/x2cpg/testfixtures",
         "@maven//:com_google_protobuf_protobuf_java",
         "@maven//:org_apache_commons_commons_lang3",
     ],

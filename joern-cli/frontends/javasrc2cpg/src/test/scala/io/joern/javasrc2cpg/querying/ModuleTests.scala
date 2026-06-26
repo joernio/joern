@@ -1,7 +1,8 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
-import io.joern.x2cpg.utils.{HttpArtifact, NetworkTest}
+import io.joern.x2cpg.testfixtures.NetworkTest
+import io.joern.x2cpg.utils.HttpArtifact
 import io.shiftleft.semanticcpg.language.*
 
 class ModuleTests extends JavaSrcCode2CpgFixture {

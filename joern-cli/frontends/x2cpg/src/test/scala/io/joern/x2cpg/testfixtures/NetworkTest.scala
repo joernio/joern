@@ -1,4 +1,4 @@
-package io.joern.x2cpg.utils
+package io.joern.x2cpg.testfixtures
 
 import org.scalatest.Tag
 
