@@ -49,7 +49,7 @@ scala_test(
     deps = [
         ":rust2cpg",
         "//bazel/reexports:io_shiftleft_codepropertygraph_with_deps",
-        "//joern-cli/frontends/x2cpg:tests",
+        "//dataflowengineoss/src/test/scala/io/joern/dataflowengineoss/testfixtures",
         "//semanticcpg",
         "@maven//:com_lihaoyi_geny_3",
         "@maven//:com_lihaoyi_ujson_3",

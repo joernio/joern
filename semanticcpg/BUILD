@@ -22,7 +22,6 @@ scala_library(
 scala_test(
     name = "tests",
     srcs = glob(["src/test/scala/**/*.scala"]),
-    visibility = ["//visibility:public"],
     deps = [
         ":semanticcpg",
         "//bazel/reexports:io_shiftleft_codepropertygraph_with_deps",

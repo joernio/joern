@@ -53,7 +53,7 @@ scala_test(
     deps = [
         ":swiftsrc2cpg",
         "//bazel/reexports:io_shiftleft_codepropertygraph_with_deps",
-        "//dataflowengineoss:tests",
+        "//dataflowengineoss/src/test/scala/io/joern/dataflowengineoss/testfixtures",
         "//semanticcpg",
     ],
 )

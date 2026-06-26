@@ -44,9 +44,7 @@ scala_test(
     deps = [
         ":javasrc2cpg",
         "//bazel/reexports:io_shiftleft_codepropertygraph_with_deps",
-        "//dataflowengineoss",
-        "//dataflowengineoss:tests",
-        "//joern-cli/frontends/x2cpg:tests",
+        "//dataflowengineoss/src/test/scala/io/joern/dataflowengineoss/testfixtures",
         "//semanticcpg",
         "@maven//:com_github_javaparser_javaparser_symbol_solver_core",
         "@maven//:com_github_scopt_scopt_3",
