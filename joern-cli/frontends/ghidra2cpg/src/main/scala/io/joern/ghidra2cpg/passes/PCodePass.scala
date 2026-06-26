@@ -1,7 +1,7 @@
 package io.joern.ghidra2cpg.passes
 
 import ghidra.program.model.listing.{Function, Program}
-import ghidra.program.util.DefinedDataIterator
+import ghidra.program.util.DefinedStringIterator
 import io.joern.ghidra2cpg.*
 import io.joern.ghidra2cpg.utils.Utils.*
 import io.joern.ghidra2cpg.utils.{Decompiler, PCodeMapper}
@@ -15,8 +15,8 @@ import scala.language.implicitConversions
 class PCodePass(currentProgram: Program, fileName: String, functions: List[Function], cpg: Cpg, decompiler: Decompiler)
     extends ForkJoinParallelCpgPass[Function](cpg) {
 
-  val address2Literals: Map[Long, String] = DefinedDataIterator
-    .definedStrings(currentProgram)
+  val address2Literals: Map[Long, String] = DefinedStringIterator
+    .forProgram(currentProgram)
     .iterator()
     .asScala
     .toList
