@@ -13,7 +13,7 @@ import io.shiftleft.codepropertygraph.generated.{
 }
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewModifier, NewNamespaceBlock}
 
-trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreator =>
+trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   // SourceFile =
   //  '#shebang'?

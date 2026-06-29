@@ -1,37 +1,24 @@
 package io.joern.javasrc2cpg.passes
 
-import com.github.javaparser.{JavaParser, ParserConfiguration}
-import com.github.javaparser.ParserConfiguration.LanguageLevel
-import com.github.javaparser.ast.CompilationUnit
-import com.github.javaparser.ast.Node.Parsedness
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
 import com.github.javaparser.symbolsolver.javaparsermodel.JavaParserFacade
-import com.github.javaparser.symbolsolver.resolution.typesolvers.{ClassLoaderTypeSolver, ReflectionTypeSolver}
+import io.joern.javasrc2cpg.Config
 import io.joern.javasrc2cpg.JavaSrc2Cpg.JavaSrcEnvVar
 import io.joern.javasrc2cpg.astcreation.AstCreator
 import io.joern.javasrc2cpg.passes.AstCreationPass.*
 import io.joern.javasrc2cpg.typesolvers.{EagerSourceTypeSolver, JarTypeSolver, SimpleCombinedTypeSolver}
-import io.joern.javasrc2cpg.util.Delombok.DelombokMode
-import io.joern.javasrc2cpg.util.Delombok.DelombokMode.*
-import io.joern.javasrc2cpg.util.{Delombok, SourceParser}
-import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
-import io.joern.x2cpg.SourceFiles
-import io.shiftleft.semanticcpg.utils.FileUtil.*
-import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
+import io.joern.javasrc2cpg.util.SourceParser
 import io.joern.x2cpg.utils.dependency.DependencyResolver
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPassWithAccumulator
 import io.shiftleft.semanticcpg.utils.FileUtil
+import io.shiftleft.semanticcpg.utils.FileUtil.*
 import org.slf4j.LoggerFactory
 
-import java.net.URLClassLoader
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Files, Paths}
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
-import scala.collection.parallel.CollectionConverters.*
-import scala.collection.concurrent
 import scala.jdk.CollectionConverters.*
-import scala.jdk.OptionConverters.RichOptional
 import scala.util.{Failure, Success, Try}
 
 class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[String]] = None)

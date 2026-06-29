@@ -6,16 +6,15 @@ import io.joern.abap2cpg.astcreation.expressions.AstForExpressionsCreator
 import io.joern.abap2cpg.astcreation.statements.AstForStatementsCreator
 import io.joern.abap2cpg.parser.AbapIntermediateAst
 import io.joern.abap2cpg.parser.AbapIntermediateAst.*
-import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
-import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.datastructures.VariableScopeManager
+import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 /** Creates CPG from ABAP intermediate representation using Ast builder pattern
   */
-class AstCreator(val program: ProgramRoot, filename: String)(implicit val withSchemaValidation: ValidationMode)
+class AstCreator(val program: ProgramRoot, filename: String)(implicit withSchemaValidation: ValidationMode)
     extends AstCreatorBase[AbapNode, AstCreator](filename)
     with AstHelpers
     with AstForParametersCreator

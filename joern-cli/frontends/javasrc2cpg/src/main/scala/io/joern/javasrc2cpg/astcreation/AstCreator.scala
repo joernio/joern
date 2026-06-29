@@ -1,35 +1,20 @@
 package io.joern.javasrc2cpg.astcreation
 
 import com.github.javaparser.ast.`type`.Type
-import com.github.javaparser.ast.expr.{
-  AnnotationExpr,
-  BooleanLiteralExpr,
-  CharLiteralExpr,
-  DoubleLiteralExpr,
-  Expression,
-  IntegerLiteralExpr,
-  LongLiteralExpr,
-  MethodCallExpr,
-  NullLiteralExpr,
-  StringLiteralExpr,
-  TextBlockLiteralExpr
-}
+import com.github.javaparser.ast.expr.*
 import com.github.javaparser.ast.nodeTypes.{NodeWithName, NodeWithSimpleName}
 import com.github.javaparser.ast.{CompilationUnit, ImportDeclaration, Node, PackageDeclaration}
 import com.github.javaparser.printer.configuration.DefaultPrinterConfiguration.ConfigOption
 import com.github.javaparser.printer.configuration.{DefaultConfigurationOption, DefaultPrinterConfiguration}
 import com.github.javaparser.resolution.UnsolvedSymbolException
-import com.github.javaparser.resolution.declarations.{
-  ResolvedMethodDeclaration,
-  ResolvedMethodLikeDeclaration,
-  ResolvedReferenceTypeDeclaration
-}
+import com.github.javaparser.resolution.declarations.{ResolvedMethodLikeDeclaration, ResolvedReferenceTypeDeclaration}
 import com.github.javaparser.resolution.types.ResolvedType
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
 import io.joern.javasrc2cpg.astcreation.declarations.{AstForDeclarationsCreator, BinarySignatureCalculator}
 import io.joern.javasrc2cpg.astcreation.expressions.AstForExpressionsCreator
 import io.joern.javasrc2cpg.astcreation.statements.AstForStatementsCreator
+import io.joern.javasrc2cpg.passes.AstCreationPass
 import io.joern.javasrc2cpg.scope.Scope
 import io.joern.javasrc2cpg.scope.Scope.*
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator
@@ -40,24 +25,13 @@ import io.joern.javasrc2cpg.util.MultiBindingTableAdapterForJavaparser.{
   JavaparserBindingDeclType,
   RegularClassDeclaration
 }
-import io.joern.javasrc2cpg.util.{
-  BindingTable,
-  BindingTableAdapterForJavaparser,
-  CaptureUseFinder,
-  MultiBindingTableAdapterForJavaparser,
-  NameConstants,
-  TemporaryNameProvider,
-  Util
-}
-import io.joern.javasrc2cpg.passes.AstCreationPass
+import io.joern.javasrc2cpg.util.*
 import io.joern.x2cpg.utils.OffsetUtils
-import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.joern.x2cpg.{Ast, AstCreatorBase, Defines, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import io.shiftleft.codepropertygraph.generated.nodes.{NewClosureBinding, NewFile, NewImport, NewNamespaceBlock}
 import org.slf4j.LoggerFactory
-import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 
-import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
@@ -94,7 +68,7 @@ class AstCreator(
   val symbolSolver: JavaSymbolSolver,
   protected val keepTypeArguments: Boolean,
   val loggedExceptionCounts: scala.collection.concurrent.Map[Class[?], Int]
-)(implicit val withSchemaValidation: ValidationMode, val disableTypeFallback: Boolean)
+)(implicit withSchemaValidation: ValidationMode, disableTypeFallback: Boolean)
     extends AstCreatorBase[Node, AstCreator](filename)
     with AstForDeclarationsCreator
     with AstForExpressionsCreator
