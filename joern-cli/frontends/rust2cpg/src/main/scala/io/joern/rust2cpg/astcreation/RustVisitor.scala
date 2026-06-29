@@ -860,8 +860,10 @@ trait RustVisitor(implicit withValidationMode: ValidationMode) { this: AstCreato
   // AwaitExpr =
   //  Attr* Expr '.' 'await'
   private def visitAwaitExpr(awaitExpr: AwaitExpr): Ast = {
-    notHandledYet(awaitExpr)
-    visitExpr(awaitExpr.expr)
+    val typeFullName = typeFullNameForExpr(awaitExpr)
+    val callNode     = operatorCallNode(awaitExpr, code(awaitExpr), RustOperators.await, Some(typeFullName))
+    val exprAst      = visitExpr(awaitExpr.expr)
+    callAst(callNode, Seq(exprAst))
   }
 
   // Struct =
