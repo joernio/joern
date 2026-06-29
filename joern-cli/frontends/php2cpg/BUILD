@@ -21,7 +21,6 @@ scala_library(
         "//joern-cli/frontends/x2cpg",
         "@maven//:com_github_albfernandez_juniversalchardet",
         "@maven//:com_github_sh4869_semver_parser_scala_3",
-        "@maven//:com_google_protobuf_protobuf_java",
     ],
 )
 

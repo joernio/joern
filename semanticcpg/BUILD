@@ -6,7 +6,6 @@ scala_library(
     visibility = ["//visibility:public"],
     deps = [
         "//bazel/reexports:io_shiftleft_codepropertygraph_with_deps",
-        "@maven//:com_google_protobuf_protobuf_java",
         "@maven//:com_michaelpollmeier_scala_repl_pp_3_3_6",
         "@maven//:org_apache_commons_commons_lang3",
         "@maven//:org_apache_commons_commons_text",

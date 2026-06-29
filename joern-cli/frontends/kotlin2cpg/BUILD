@@ -11,7 +11,6 @@ scala_library(
         "//bazel/reexports:io_shiftleft_codepropertygraph_with_deps",
         "//joern-cli/frontends/javasrc2cpg",
         "//joern-cli/frontends/x2cpg",
-        "@maven//:com_google_protobuf_protobuf_java",
         "@maven//:com_lihaoyi_requests_3",
         "@maven//:com_lihaoyi_ujson_3",
         "@maven//:com_squareup_tools_build_maven_archeologist",

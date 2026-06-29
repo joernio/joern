@@ -10,7 +10,6 @@ scala_library(
         "//bazel/reexports:io_shiftleft_codepropertygraph_with_deps",
         "//joern-cli/frontends/x2cpg",
         "@maven//:com_github_javaparser_javaparser_symbol_solver_core",
-        "@maven//:com_google_protobuf_protobuf_java",
         "@maven//:net_lingala_zip4j_zip4j",
         "@maven//:org_gradle_gradle_tooling_api",
         "@maven//:org_ow2_asm_asm",
