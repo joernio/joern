@@ -185,8 +185,9 @@ class AstCreationPass(
           try {
             val languageSuffix = suffixFromLanguage(relPath, language)
             val localDiff =
-              new AstCreator(relPath, accumulator, config, translationUnit, headerFileFinder, languageSuffix)
-                .createAst()
+              new AstCreator(relPath, accumulator, config, translationUnit, headerFileFinder, languageSuffix)(
+                config.schemaValidation
+              ).createAst()
             diffGraph.absorb(localDiff)
             logger.debug(s"Generated a CPG for: '$relPath'")
             true

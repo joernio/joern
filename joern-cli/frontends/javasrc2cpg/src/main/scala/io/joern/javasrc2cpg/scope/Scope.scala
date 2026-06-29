@@ -24,7 +24,7 @@ case class NodeTypeInfo(
   isField: Boolean = false,
   isStatic: Boolean = false
 )
-class Scope(implicit val withSchemaValidation: ValidationMode, val disableTypeFallback: Boolean) {
+class Scope(implicit withSchemaValidation: ValidationMode, disableTypeFallback: Boolean) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   private var scopeStack: List[JavaScopeElement] = Nil

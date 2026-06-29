@@ -3,18 +3,14 @@ package io.joern.c2cpg.astcreation
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.parser.HeaderFileFinder
 import io.joern.c2cpg.passes.AstCreationPass
-import io.joern.x2cpg.Ast
-import io.joern.x2cpg.AstCreatorBase
-import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.datastructures.VariableScopeManager
-import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, NodeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, NodeTypes}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.eclipse.cdt.core.dom.ast.{IASTNode, IASTTranslationUnit}
 import org.slf4j.{Logger, LoggerFactory}
-
-import scala.collection.mutable
 
 /** Translates the Eclipse CDT AST into a CPG AST. */
 class AstCreator(
@@ -24,7 +20,8 @@ class AstCreator(
   val cdtAst: IASTTranslationUnit,
   val headerFileFinder: HeaderFileFinder,
   val languageSuffix: String = ""
-) extends AstCreatorBase[IASTNode, AstCreator](filename)(config.schemaValidation)
+)(implicit withSchemaValidation: ValidationMode)
+    extends AstCreatorBase[IASTNode, AstCreator](filename)
     with AstForTypesCreator
     with AstForFunctionsCreator
     with AstForPrimitivesCreator
@@ -35,8 +32,6 @@ class AstCreator(
     with FullNameProvider
     with TypeNameProvider
     with MacroHandler {
-
-  protected implicit val schemaValidation: ValidationMode = config.schemaValidation
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
 

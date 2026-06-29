@@ -1,10 +1,9 @@
 package io.joern.x2cpg.passes
 
 import io.joern.x2cpg.layers.Base
-import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewMember, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewMember, NewTypeDecl}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import io.shiftleft.semanticcpg.testing.MockCpg
