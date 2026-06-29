@@ -15,7 +15,6 @@ scala_library(
     deps = [
         "//bazel/reexports:io_shiftleft_codepropertygraph_with_deps",
         "//joern-cli/frontends/x2cpg",
-        "@maven//:com_google_protobuf_protobuf_java",
         "@maven//:com_lihaoyi_ujson_3",
         "@maven//:io_joern_eclipse_cdt_core",
         "@maven//:org_apache_commons_commons_lang3",
