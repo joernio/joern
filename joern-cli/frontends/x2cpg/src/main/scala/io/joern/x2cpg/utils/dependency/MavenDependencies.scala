@@ -1,6 +1,6 @@
 package io.joern.x2cpg.utils.dependency
 
-import io.shiftleft.semanticcpg.utils.ExternalCommand
+import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import org.slf4j.LoggerFactory
 
 import java.io.File
@@ -89,6 +89,7 @@ object MavenDependencies {
     */
   private[dependency] def getGraph(projectDir: Path): DependencyGraph = {
     val cacheDir = Files.createTempDirectory("x2cpgMavenDeps")
+    FileUtil.deleteOnExit(cacheDir)
     val artifacts = get(projectDir)
       .getOrElse(Nil)
       .map { pathStr =>

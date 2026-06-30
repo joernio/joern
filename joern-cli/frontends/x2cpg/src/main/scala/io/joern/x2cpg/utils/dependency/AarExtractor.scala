@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.utils.FileUtil.*
 import org.slf4j.LoggerFactory
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.{FileAlreadyExistsException, Files, Path}
+import java.nio.file.{FileAlreadyExistsException, Files, Path, StandardCopyOption}
 import java.security.MessageDigest
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
@@ -68,7 +68,10 @@ private[joern] object AarExtractor {
               // rather than discarding the AAR.
               classesJarCandidates match {
                 case classesJar :: Nil =>
-                  try classesJar.copyTo(outFile)
+                  // Atomic move so concurrent readers never observe a partial file via the
+                  // `Files.exists(outFile)` short-circuit above. `scratch` is created under
+                  // `cacheDir` (same filesystem), so ATOMIC_MOVE is safe.
+                  try Files.move(classesJar, outFile, StandardCopyOption.ATOMIC_MOVE)
                   catch {
                     case _: FileAlreadyExistsException =>
                     // Another caller raced us to the same cache slot — fine, the
@@ -106,7 +109,7 @@ private[joern] object AarExtractor {
     val hash = MessageDigest
       .getInstance("SHA-1")
       .digest(absolute.getBytes(StandardCharsets.UTF_8))
-    val hex  = hash.take(4).map(byteVal => f"${byteVal & 0xff}%02x").mkString
+    val hex  = hash.take(16).map(byteVal => f"${byteVal & 0xff}%02x").mkString
     val stem = aar.fileName.stripSuffix("." + aarExtension)
     s"$stem-$hex.jar"
   }
