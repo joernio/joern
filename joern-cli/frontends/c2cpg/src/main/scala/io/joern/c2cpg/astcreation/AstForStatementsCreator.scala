@@ -250,9 +250,6 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   private def astForSwitchStatement(switchStmt: IASTSwitchStatement): Seq[Ast] = {
-    val codeString = code(switchStmt)
-    val switchNode = controlStructureNode(switchStmt, ControlStructureTypes.SWITCH, codeString)
-
     val initAsts = switchStmt match {
       case s: ICPPASTSwitchStatement =>
         nullSafeAst(s.getInitializerStatement) ++ nullSafeAst(s.getControllerDeclaration)
@@ -261,7 +258,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     }
     val conditionAst = astForConditionExpression(switchStmt.getControllerExpression)
     val stmtAsts     = nullSafeAst(switchStmt.getBody)
-    initAsts :+ switchAst(switchNode, conditionAst, stmtAsts)
+    initAsts :+ switchAst(switchStmt, conditionAst, stmtAsts)
   }
 
   private def astsForCaseStatement(caseStmt: IASTCaseStatement): Seq[Ast] = {
@@ -276,7 +273,6 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   private def astForTryStatement(tryStmt: ICPPASTTryBlockStatement): Ast = {
-    val tryNode = controlStructureNode(tryStmt, ControlStructureTypes.TRY, "try")
     val bodyAst = tryStmt.getTryBody match {
       case block: IASTCompoundStatement =>
         astForBlockStatement(block, blockNode(block))
@@ -289,7 +285,7 @@ trait AstForStatementsCreator { this: AstCreator =>
       case _ => Ast()
     }
     val catchAsts = tryStmt.getCatchHandlers.toSeq.map(astForCatchHandler)
-    tryCatchAst(tryNode, bodyAst, catchAsts, None)
+    tryCatchAst(tryStmt, bodyAst, catchAsts, None)
   }
 
   private def astForCatchHandler(catchHandler: ICPPASTCatchHandler): Ast = {
@@ -332,11 +328,12 @@ trait AstForStatementsCreator { this: AstCreator =>
     val codeInit = nullSafeCode(forStmt.getInitializerStatement)
     val codeCond = nullSafeCode(forStmt.getConditionExpression)
     val codeIter = nullSafeCode(forStmt.getIterationExpression)
+    val code     = s"for ($codeInit$codeCond;$codeIter)"
 
-    val code    = s"for ($codeInit$codeCond;$codeIter)"
-    val forNode = controlStructureNode(forStmt, ControlStructureTypes.FOR, code)
+    // surrounding block:
+    val scopeBlockNode = blockNode(forStmt)
+    scope.pushNewBlockScope(scopeBlockNode)
 
-    scope.pushNewBlockScope(forNode)
     val (localAsts, initAsts) =
       nullSafeAst(forStmt.getInitializerStatement).partition(_.root.exists(_.isInstanceOf[NewLocal]))
     setArgumentIndices(initAsts)
@@ -344,8 +341,13 @@ trait AstForStatementsCreator { this: AstCreator =>
       wrapInNullComparison(forStmt.getConditionExpression, astForConditionExpression(forStmt.getConditionExpression))
     val updateAst = nullSafeAst(forStmt.getIterationExpression)
     val bodyAsts  = nullSafeAst(forStmt.getBody)
+
+    // end surrounding block:
     scope.popScope()
-    forAst(forNode, localAsts, initAsts, Seq(compareAst), Seq(updateAst), bodyAsts)
+
+    Ast(scopeBlockNode).withChild(
+      forAst(forStmt, localAsts, initAsts, Seq(compareAst), Seq(updateAst), bodyAsts, Some(code))
+    )
   }
 
   private def astForRangedFor(forStmt: ICPPASTRangeBasedForStatement): Ast = {
@@ -362,14 +364,22 @@ trait AstForStatementsCreator { this: AstCreator =>
     val codeDecl = nullSafeCode(forStmt.getDeclaration)
     val codeInit = nullSafeCode(forStmt.getInitializerClause)
     val code     = s"for ($codeDecl:$codeInit)"
-    val forNode  = controlStructureNode(forStmt, ControlStructureTypes.FOR, code)
-    scope.pushNewBlockScope(forNode)
+
+    // surrounding block:
+    val scopeBlockNode = blockNode(forStmt)
+    scope.pushNewBlockScope(scopeBlockNode)
+
     val (localAsts, initAsts) = astsForStructuredBindingDeclaration(declaration, Some(forStmt.getInitializerClause))
       .partition(_.root.exists(_.isInstanceOf[NewLocal]))
     setArgumentIndices(initAsts)
     val bodyAst = nullSafeAst(forStmt.getBody)
+
+    // end surrounding block:
     scope.popScope()
-    forAst(forNode, localAsts, initAsts.filterNot(_.nodes.isEmpty), Seq.empty, Seq.empty, bodyAst)
+
+    Ast(scopeBlockNode).withChild(
+      forAst(forStmt, localAsts, initAsts.filterNot(_.nodes.isEmpty), Seq.empty, Seq.empty, bodyAst, Some(code))
+    )
   }
 
   /** De-sugaring from:
@@ -439,7 +449,6 @@ trait AstForStatementsCreator { this: AstCreator =>
     val codeDecl      = code(forStmt.getDeclaration)
     val codeInit      = code(forStmt.getInitializerClause)
     val whileLoopCode = s"for ($codeDecl:$codeInit)"
-    val whileLoopNode = controlStructureNode(forStmt, ControlStructureTypes.WHILE, whileLoopCode)
 
     // while loop test:
     val testCallNode =
@@ -507,16 +516,8 @@ trait AstForStatementsCreator { this: AstCreator =>
     // end surrounding block:
     scope.popScope()
 
-    val whileLoopAst = whileAst(
-      Option(testAst),
-      List(whileLoopBlockAst),
-      code = Option(whileLoopCode),
-      lineNumber = line(forStmt),
-      columnNumber = column(forStmt)
-    )
-
-    val blockChildren =
-      List(iteratorAssignmentAst, Ast(loopVariableLocalNode), whileLoopAst)
+    val whileLoopAst  = whileAst(forStmt, Option(testAst), List(whileLoopBlockAst), code = Option(whileLoopCode))
+    val blockChildren = List(iteratorAssignmentAst, Ast(loopVariableLocalNode), whileLoopAst)
     blockAst(blockNode, blockChildren)
   }
 
@@ -524,13 +525,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val code       = s"while (${nullSafeCode(whileStmt.getCondition)})"
     val compareAst = wrapInNullComparison(whileStmt.getCondition, astForConditionExpression(whileStmt.getCondition))
     val bodyAst    = nullSafeAst(whileStmt.getBody)
-    whileAst(
-      Option(compareAst),
-      bodyAst,
-      code = Option(code),
-      lineNumber = line(whileStmt),
-      columnNumber = column(whileStmt)
-    )
+    whileAst(whileStmt, Option(compareAst), bodyAst, code = Option(code))
   }
 
   private def wrapInNullComparison(node: IASTNode, conditionAst: Ast): Ast = {
@@ -599,18 +594,15 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     val elseAst = ifStmt.getElseClause match {
       case block: IASTCompoundStatement =>
-        val elseNode = controlStructureNode(ifStmt.getElseClause, ControlStructureTypes.ELSE, "else")
-        val elseAst  = astForBlockStatement(block, blockNode(block))
-        Some(Ast(elseNode).withChild(elseAst))
+        Some(astForBlockStatement(block, blockNode(block)))
       case other if other != null =>
-        val elseNode  = controlStructureNode(ifStmt.getElseClause, ControlStructureTypes.ELSE, "else")
         val elseBlock = blockNode(other)
         scope.pushNewBlockScope(elseBlock)
         val statementAsts = astsForStatement(other)
         scope.popScope()
-        Some(Ast(elseNode).withChild(blockAst(elseBlock, statementAsts.toList)))
+        Some(blockAst(elseBlock, statementAsts.toList))
       case _ => None
     }
-    initAsts :+ ifThenElseAst(ifNode, Option(conditionAst), thenAst, elseAst)
+    initAsts :+ ifThenElseAst(ifStmt, Option(ifStmt.getElseClause), Option(conditionAst), thenAst, elseAst)
   }
 }
