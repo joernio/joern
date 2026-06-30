@@ -207,12 +207,4 @@ class AstCreator(val config: Config, val parseResult: ParseResult)(implicit with
     case _                                  => None
   }
 
-  protected def whileBodyAst(whileNode: NewControlStructure, conditionAst: Ast, bodyAst: Ast): Ast = {
-    val ast = controlStructureAst(whileNode, Some(conditionAst), Seq(bodyAst))
-    bodyAst.root match {
-      case Some(bodyRoot) => ast.withTrueBodyEdge(whileNode, bodyRoot)
-      case None           => ast
-    }
-  }
-
 }
