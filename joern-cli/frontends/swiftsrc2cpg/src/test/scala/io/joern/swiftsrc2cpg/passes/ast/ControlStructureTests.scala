@@ -24,7 +24,13 @@ class ControlStructureTests extends SwiftSrc2CpgSuite {
       case List(ifNode: ControlStructure) =>
         ifNode.condition.code.l shouldBe List("x > 0")
         ifNode.trueBodyOut.astChildren.code.l shouldBe List("sinkThen(x)", "sinkThen2(x)")
-        ifNode.falseBodyOut.astChildren.code.l shouldBe List("sinkElse(x)", "sinkElse2(x)")
+
+        inside(ifNode.falseBodyOut.l) { case List(elseNode: ControlStructure) =>
+          elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
+          inside(elseNode.astChildren.l) { case List(elseBlock: Block) =>
+            elseBlock.astChildren.code.l shouldBe List("sinkElse(x)", "sinkElse2(x)")
+          }
+        }
     }
   }
 
@@ -48,11 +54,21 @@ class ControlStructureTests extends SwiftSrc2CpgSuite {
       case List(ifOne: ControlStructure, ifTwo: ControlStructure) =>
         ifOne.condition.code.l shouldBe List("c > 10")
         ifOne.trueBodyOut.astChildren.code.l shouldBe List("sinkA(c)", "sinkA2(c)")
-        ifOne.falseBodyOut.l shouldBe List(ifTwo)
+
+        inside(ifOne.falseBodyOut.l) { case List(elseNode: ControlStructure) =>
+          elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
+          elseNode.astChildren.l shouldBe List(ifTwo)
+        }
 
         ifTwo.condition.code.l shouldBe List("c < 10")
         ifTwo.trueBodyOut.astChildren.code.l shouldBe List("sinkB(c)", "sinkB2(c)")
-        ifTwo.falseBodyOut.astChildren.code.l shouldBe List("sinkC(c)", "sinkC2(c)")
+
+        inside(ifTwo.falseBodyOut.l.l) { case List(elseNode: ControlStructure) =>
+          elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
+          inside(elseNode.astChildren.l) { case List(elseBlock: Block) =>
+            elseBlock.astChildren.code.l shouldBe List("sinkC(c)", "sinkC2(c)")
+          }
+        }
     }
   }
 
