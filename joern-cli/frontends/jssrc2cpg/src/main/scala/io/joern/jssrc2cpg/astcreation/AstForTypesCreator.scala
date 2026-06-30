@@ -377,16 +377,16 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     )
     localAstParentStack.push(blockNode)
 
-    val initAsts = staticMemberInits.map(astForClassMember(_, typeDeclNode))
-      ++ staticMemberBlocks.map(astForNodeWithFunctionReference)
-    val body = blockAst(NewBlock().typeFullName(Defines.Any), initAsts)
+    val initAsts = staticMemberInits.map(astForClassMember(_, typeDeclNode)) ++ staticMemberBlocks.map(
+      astForNodeWithFunctionReference
+    )
 
     methodAstParentStack.pop()
     localAstParentStack.pop()
     scope.popScope()
 
     val methodReturn = methodReturnNode(node, returnType)
-    methodAst(methodNode_, Nil, body, methodReturn, modifiers)
+    methodAst(methodNode_, Nil, Ast(blockNode).withChildren(initAsts), methodReturn, modifiers)
   }
 
   private def staticEnumInitMethodAst(
@@ -414,14 +414,13 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val (calls, members) = initAsts.partition(_.nodes.headOption.exists(_.isInstanceOf[NewCall]))
 
     members.foreach(m => diffGraph.addEdge(typeDeclNode, m.root.get, EdgeTypes.AST))
-    val body = blockAst(NewBlock().typeFullName(Defines.Any), calls)
 
     methodAstParentStack.pop()
     localAstParentStack.pop()
     scope.popScope()
 
     val methodReturn = methodReturnNode(node, returnType)
-    methodAst(methodNode_, Nil, body, methodReturn, modifiers)
+    methodAst(methodNode_, Nil, Ast(blockNode).withChildren(calls), methodReturn, modifiers)
   }
 
   protected def astForClass(clazz: BabelNodeInfo, shouldCreateAssignmentCall: Boolean = false): Ast = {
