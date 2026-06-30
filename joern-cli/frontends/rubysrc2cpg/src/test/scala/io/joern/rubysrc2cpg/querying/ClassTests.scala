@@ -1121,14 +1121,12 @@ class ClassTests extends RubyCode2CpgFixture {
     inside(cpg.typeDecl.name("Foo").astChildren.isMethod.l) { case lambdaMethod :: _ :: _ :: _ :: Nil =>
       val List(lambdaReturn) = lambdaMethod.body.astChildren.isReturn.l
 
-      lambdaReturn.code shouldBe "private_class_method :case_sensitive_find_by"
+      val List(modifierCall) = lambdaReturn.ast.isCall.nameExact(RubyDefines.RubyOperators.privateClassMethod).l
+      modifierCall.methodFullName shouldBe RubyDefines.RubyOperators.privateClassMethod
+      modifierCall.code shouldBe "private_class_method :case_sensitive_find_by"
 
-      val List(returnCall) = lambdaReturn.astChildren.isCall.l
-      returnCall.code shouldBe "private_class_method :case_sensitive_find_by"
-
-      val List(_, methodNameArg) = returnCall.argument.l
-      methodNameArg.code shouldBe "self.:case_sensitive_find_by"
-
+      val List(methodNameArg) = modifierCall.argument.l
+      methodNameArg.code shouldBe ":case_sensitive_find_by"
     }
   }
 
@@ -1172,7 +1170,11 @@ class ClassTests extends RubyCode2CpgFixture {
         |
         |""".stripMargin)
 
-    cpg.typeDecl("Foo").astChildren.whereNot(_.or(_.isMethod, _.isModifier, _.isTypeDecl, _.isMember)).size shouldBe 0
+    cpg
+      .typeDecl("Foo")
+      .astChildren
+      .whereNot(_.or(_.isMethod, _.isModifier, _.isTypeDecl, _.isMember, _.isCall))
+      .size shouldBe 0
   }
 
   "Proc-param in method with instance field assignment and instance field argument" in {

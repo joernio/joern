@@ -49,15 +49,20 @@ object Defines {
   }
 
   object RubyOperators {
-    val backticks: String = "<operator>.backticks"
-    val hashInitializer   = "<operator>.hashInitializer"
-    val association       = "<operator>.association"
-    val splat             = "<operator>.splat"
-    val regexpMatch       = "=~"
-    val regexpNotMatch    = "!~"
-    val templateOutRaw    = "<operator>.templateOutRaw"
-    val templateOutEscape = "<operator>.templateOutEscape"
-    val bufferAppend      = "<operator>.joernBufferAppend"
+    val backticks: String  = "<operator>.backticks"
+    val hashInitializer    = "<operator>.hashInitializer"
+    val association        = "<operator>.association"
+    val splat              = "<operator>.splat"
+    val regexpMatch        = "=~"
+    val regexpNotMatch     = "!~"
+    val templateOutRaw     = "<operator>.templateOutRaw"
+    val templateOutEscape  = "<operator>.templateOutEscape"
+    val bufferAppend       = "<operator>.joernBufferAppend"
+    val publicModifier     = "<operator>.publicModifier"
+    val privateModifier    = "<operator>.privateModifier"
+    val protectedModifier  = "<operator>.protectedModifier"
+    val privateClassMethod = "<operator>.privateClassMethod"
+    val publicClassMethod  = "<operator>.publicClassMethod"
 
     val regexMethods = Set("match") // TODO: Figure out how to model these, "sub", "gsub")
   }

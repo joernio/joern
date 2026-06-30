@@ -993,17 +993,23 @@ class MethodTests extends RubyCode2CpgFixture {
         |    end
         |""".stripMargin)
 
-    inside(cpg.method.name("notifiable").body.astChildren.isReturn.astChildren.isCall.name("public").l) {
-      case publicCall :: Nil =>
-        publicCall.code shouldBe "public"
-
-        val List(selfArg) = publicCall.argument.l
+    inside(
+      cpg.method
+        .name("notifiable")
+        .body
+        .astChildren
+        .isReturn
+        .astChildren
+        .isCall
+        .name(RubyOperators.publicModifier)
+        .l
+    ) { case publicCall :: Nil =>
+      publicCall.code shouldBe "public"
     }
 
-    inside(cpg.method.name("not_notifiable").body.astChildren.isCall.name("public").l) { case publicCall :: Nil =>
-      publicCall.code shouldBe "public"
-
-      val List(selfArg) = publicCall.argument.l
+    inside(cpg.method.name("not_notifiable").body.astChildren.isCall.name(RubyOperators.publicModifier).l) {
+      case publicCall :: Nil =>
+        publicCall.code shouldBe "public"
     }
   }
 

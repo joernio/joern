@@ -2,12 +2,10 @@ package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.BlockScope
-import io.joern.rubysrc2cpg.parser.RubyJsonHelpers
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.rubysrc2cpg.passes.Defines.prefixAsKernelDefined
-import io.joern.x2cpg.datastructures.MethodLike
+import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewControlStructure}
+import io.shiftleft.codepropertygraph.generated.nodes.NewControlStructure
 import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
   DispatchTypes,
@@ -50,22 +48,30 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astForAccessModifier(node: AccessModifier): Seq[Ast] = {
-    scope.surroundingAstLabel match {
-      case Some(x) if x == NodeTypes.METHOD =>
-        val simpleIdent = node.toSimpleIdentifier
-        astForSimpleCall(SimpleCall(simpleIdent, List.empty)(simpleIdent.span)) :: Nil
-      case _ =>
-        registerAccessModifier(node)
+    val (operatorName, expr) = node match {
+      case x: PublicModifier    => (RubyOperators.publicModifier, x: RubyExpression)
+      case x: PrivateModifier   => (RubyOperators.privateModifier, x: RubyExpression)
+      case x: ProtectedModifier => (RubyOperators.protectedModifier, x: RubyExpression)
     }
+
+    scope.surroundingAstLabel match {
+      case Some(x) if x == NodeTypes.METHOD => // no scope state change inside a method
+      case _ if node.arguments.nonEmpty     => // targeted modifier, no scope change
+      case _                                => registerAccessModifier(node)
+    }
+
+    val argAsts = node.arguments.map(astForExpression)
+    val call    = callNode(expr, code(expr), operatorName, operatorName, DispatchTypes.STATIC_DISPATCH)
+    callAst(call, argAsts) :: Nil
   }
 
   /** Registers the currently set access modifier for the current type (until it is reset later).
     */
   private def registerAccessModifier(node: AccessModifier): Seq[Ast] = {
     val modifier = node match {
-      case PrivateModifier()   => ModifierTypes.PRIVATE
-      case ProtectedModifier() => ModifierTypes.PROTECTED
-      case PublicModifier()    => ModifierTypes.PUBLIC
+      case _: PrivateModifier   => ModifierTypes.PRIVATE
+      case _: ProtectedModifier => ModifierTypes.PROTECTED
+      case _: PublicModifier    => ModifierTypes.PUBLIC
     }
     popAccessModifier()          // pop off the current modifier in scope
     pushAccessModifier(modifier) // push new one on
@@ -185,23 +191,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case ret: ReturnExpression => astForReturnExpression(ret) :: Nil
       case node: (MethodDeclaration | SingletonMethodDeclaration) =>
         (astsForStatement(node) :+ astForReturnMethodDeclarationSymbolName(node)).toList
-      case node: MethodAccessModifier =>
-        val simpleIdent = node.toSimpleIdentifier
-
-        val methodIdentName = node.method match {
-          case x: StaticLiteral     => x.span.text
-          case x: MethodDeclaration => x.methodName
-          case x =>
-            logger.warn(s"Unknown node type for method identifier name: ${x.getClass} (${this.relativeFileName})")
-            x.span.text
-        }
-
-        val methodIdent = SimpleIdentifier(None)(simpleIdent.span.spanStart(methodIdentName))
-
-        val simpleCall = SimpleCall(simpleIdent, List(methodIdent))(
-          simpleIdent.span.spanStart(s"${simpleIdent.span.text} ${methodIdent.span.text}")
-        )
-        astForReturnExpression(ReturnExpression(List(simpleCall))(node.span)) :: Nil
       case node: FieldsDeclaration =>
         val nilReturnSpan    = node.span.spanStart("return nil")
         val nilReturnLiteral = StaticLiteral(Defines.prefixAsCoreType(Defines.NilClass))(nilReturnSpan)
