@@ -49,24 +49,13 @@ trait AstForForLoopsCreator { this: AstCreator =>
   def astsForFor(stmt: ForStmt): List[Ast] = {
     val forContext       = new ForStatementContext(stmt, new CombinedTypeSolver())
     val patternPartition = partitionPatternAstsByScope(stmt)
+    val forCode          = getForCode(stmt)
 
-    val forNode =
-      NewControlStructure()
-        .controlStructureType(ControlStructureTypes.FOR)
-        .code(getForCode(stmt))
-        .lineNumber(line(stmt))
-        .columnNumber(column(stmt))
-
-    val initAsts =
-      stmt.getInitialization.asScala.flatMap(astsForExpression(_, expectedType = ExpectedType.empty))
-
-    val compareAsts = stmt.getCompare.toScala.toList.flatMap {
-      astsForExpression(_, ExpectedType.Boolean)
-    }
+    val initAsts    = stmt.getInitialization.asScala.flatMap(astsForExpression(_, expectedType = ExpectedType.empty))
+    val compareAsts = stmt.getCompare.toScala.toList.flatMap(astsForExpression(_, ExpectedType.Boolean))
 
     val updateAsts = stmt.getUpdate.asScala.toList match {
       case Nil => Nil
-
       case expressions =>
         scope.pushBlockScope()
         scope.addLocalsForPatternsToEnclosingBlock(
@@ -86,8 +75,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
 
     scope.addLocalsForPatternsToEnclosingBlock(patternPartition.patternsIntroducedByStatement)
 
-    val ast = forAst(forNode, Nil, initAsts.toSeq, compareAsts, updateAsts, bodyAst)
-
+    val ast = forAst(stmt, Nil, initAsts.toSeq, compareAsts, updateAsts, Seq(bodyAst), Some(forCode))
     patternLocals :+ ast
   }
 
