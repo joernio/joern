@@ -88,7 +88,7 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
 
     "fall back (return None) when invoked from `ghostModule`'s directory" in {
       val ghostDir = projectDir.resolve("ghostModule")
-      val result   = DependencyResolverV2.resolve(ghostDir.toString, flagFromConfig = true)
+      val result   = DependencyResolverV2.resolve(ghostDir.toString)
       // ghostModule is not part of the Gradle build, so the fetcher resolves a graph that
       // does not contain ghostModule, no source dir is contained within `ghostDir`, and the
       // helper returns None to trigger the frontend fallback.
@@ -97,7 +97,7 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
 
     "fall back when invoked from `emptyModule` (no sources for the input path)" in {
       val emptyDir = projectDir.resolve("emptyModule")
-      val result   = DependencyResolverV2.resolve(emptyDir.toString, flagFromConfig = true)
+      val result   = DependencyResolverV2.resolve(emptyDir.toString)
       result shouldBe None
     }
 

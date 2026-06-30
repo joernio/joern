@@ -28,7 +28,6 @@ object DependencyResolverV2 {
 
   def resolve(
     inputPath: String,
-    flagFromConfig: Boolean,
     params: DependencyResolverParams = new DependencyResolverParams
   ): Option[DependencyResolutionV2Result] = {
     val projectDir = Paths.get(inputPath).toAbsolutePath
@@ -81,12 +80,5 @@ object DependencyResolverV2 {
         None
       }
     }
-  }
-
-  private def isContainedIn(candidate: Path, parent: Path): Boolean = {
-    // Resolve symlinks before comparing — gradle reports real paths but the input may have
-    // arrived through a symlinked tree (common in test setups).
-    def realPath(path: Path): Path = Try(path.toRealPath()).getOrElse(path.toAbsolutePath.normalize())
-    realPath(candidate).startsWith(realPath(parent))
   }
 }

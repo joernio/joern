@@ -144,10 +144,6 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
         val importNames          = importNamesForFilesAtPaths(filesWithKtExtension ++ filesWithJavaExtension)
         logger.trace(s"Found imports: `$importNames`")
         dependenciesFromService(jar4ImportServiceOpt.get, importNames)
-      } else if (config.enableDependencyResolverV2) {
-        // If the dependencyResolverV2 is enabled, jars are fetched alongside the source roots earlier on
-        logger.debug(s"Skipping dependency fetching in gatherJarsOfDependencies since dependencyResolverV2 is enabled.")
-        Seq()
       } else if (config.downloadDependencies) {
         downloadDependencies(sourceDir, config)
       } else {
@@ -250,7 +246,7 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
 
       val resolutionV2Result = Option
         .when(enableDependencyResolverV2) {
-          DependencyResolverV2.resolve(sourceDir, true, DependencyResolverParams(Map.empty, gatherGradleParams(config)))
+          DependencyResolverV2.resolve(sourceDir, DependencyResolverParams(Map.empty, gatherGradleParams(config)))
         }
         .flatten
 
@@ -264,7 +260,6 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
           val filesWithJavaExtension = gatherFilesWithJavaExtension(sourceRootsList, config)
           val jarsAsContentRootPaths =
             dependencyJars.map(jarPath => DefaultContentRootJarPath(jarPath.absolutePathAsString, false))
-          // TODO Aar extraction
           (jarsAsContentRootPaths, sourceRootsList, filesWithJavaExtension)
 
         case None =>
