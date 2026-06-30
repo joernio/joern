@@ -33,6 +33,7 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
       .lineNumber(line(node))
       .columnNumber(column(node))
       .code(code.getOrElse(this.code(node)))
+    setOffset(node, whileNode)
     val astWithChildren = controlStructureAst(whileNode, condition, body)
     body.headOption.flatMap(_.root) match {
       case Some(bodyRoot) => astWithChildren.withTrueBodyEdge(whileNode, bodyRoot)
@@ -46,6 +47,7 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
       .lineNumber(line(node))
       .columnNumber(column(node))
       .code(code.getOrElse(this.code(node)))
+    setOffset(node, doWhileNode)
     val astWithChildren = controlStructureAst(doWhileNode, condition, body, placeConditionLast = true)
     body.headOption.flatMap(_.root) match {
       case Some(doBodyRoot) => astWithChildren.withDoBodyEdge(doWhileNode, doBodyRoot)
@@ -59,6 +61,7 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
       .lineNumber(line(node))
       .columnNumber(column(node))
       .code(code.getOrElse(this.code(node)))
+    setOffset(node, switchNode)
     val astWithChildren = controlStructureAst(switchNode, Option(condition), body)
     body.headOption.flatMap(_.root) match {
       case Some(bodyRoot) => astWithChildren.withTrueBodyEdge(switchNode, bodyRoot)
@@ -80,6 +83,7 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
       .lineNumber(line(node))
       .columnNumber(column(node))
       .code(code.getOrElse(this.code(node)))
+    setOffset(node, forNode)
     val lineNumber     = forNode.lineNumber
     val numOfLocals    = locals.size
     val initBlock      = setOrderExplicitly(wrapMultipleInBlock(initAsts, lineNumber), numOfLocals + 1)
@@ -157,6 +161,7 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
       .code(codeStr)
       .lineNumber(line(node))
       .columnNumber(column(node))
+    setOffset(node, jumpNode)
     labelName match {
       case Some(name) =>
         val jumpLabelNode = NewJumpLabel()
@@ -181,6 +186,7 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
       .code(codeStr)
       .lineNumber(line(node))
       .columnNumber(column(node))
+    setOffset(node, jumpNode)
     labelNumber match {
       case Some(number) =>
         val integerJump = NewLiteral()
@@ -211,6 +217,7 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
       .lineNumber(line(node))
       .columnNumber(column(node))
       .code(code.getOrElse(this.code(node)))
+    setOffset(node, tryNode)
 
     setArgumentIndices(tryBodyAst +: (catchAsts ++ finallyAst.toSeq))
     val astWithChildren = Ast(tryNode)
@@ -244,9 +251,11 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
       .lineNumber(line(node))
       .columnNumber(column(node))
       .code(code.getOrElse(this.code(node)))
+    setOffset(node, ifNode)
 
     val elseAstWithElseNodes = elseAst.map { elseAstElement =>
       val elseControlStructureNode = controlStructureNode(elseNode.get, ControlStructureTypes.ELSE, "else")
+      setOffset(elseNode.get, elseControlStructureNode)
       Ast(elseControlStructureNode).withChild(elseAstElement)
     }
 
@@ -262,14 +271,14 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
   }
 
   private def jumpAst(node: Node, jumpType: String, codeStr: String): Ast = {
-    Ast(
-      NewControlStructure()
-        .parserTypeName(node.getClass.getSimpleName)
-        .controlStructureType(jumpType)
-        .code(codeStr)
-        .lineNumber(line(node))
-        .columnNumber(column(node))
-    )
+    val jumpNode = NewControlStructure()
+      .parserTypeName(node.getClass.getSimpleName)
+      .controlStructureType(jumpType)
+      .code(codeStr)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+    setOffset(node, jumpNode)
+    Ast(jumpNode)
   }
 
   private def setOrderExplicitly(ast: Ast, order: Int): Ast = {
