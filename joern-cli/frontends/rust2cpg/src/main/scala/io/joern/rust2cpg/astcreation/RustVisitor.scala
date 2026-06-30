@@ -116,7 +116,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     case refExpr: RefExpr               => visitRefExpr(refExpr)
     case returnExpr: ReturnExpr         => visitReturnExpr(returnExpr)
     case x: BecomeExpr                  => notHandledYet(x)
-    case x: TryExpr                     => notHandledYet(x)
+    case tryExpr: TryExpr               => visitTryExpr(tryExpr)
     case tupleExpr: TupleExpr           => visitTupleExpr(tupleExpr)
     case whileExpr: WhileExpr           => visitWhileExpr(whileExpr)
     case x: YieldExpr                   => notHandledYet(x)
@@ -863,6 +863,15 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     val typeFullName = typeFullNameForExpr(awaitExpr)
     val callNode     = operatorCallNode(awaitExpr, code(awaitExpr), RustOperators.await, Some(typeFullName))
     val exprAst      = visitExpr(awaitExpr.expr)
+    callAst(callNode, Seq(exprAst))
+  }
+
+  // TryExpr =
+  //  Attr* Expr '?'
+  private def visitTryExpr(tryExpr: TryExpr): Ast = {
+    val typeFullName = typeFullNameForExpr(tryExpr)
+    val callNode     = operatorCallNode(tryExpr, code(tryExpr), RustOperators.tryUnwrap, Some(typeFullName))
+    val exprAst      = visitExpr(tryExpr.expr)
     callAst(callNode, Seq(exprAst))
   }
 
