@@ -22,7 +22,10 @@ class ControlStructureTests extends JsSrc2CpgSuite {
       case List(ifNode: ControlStructure) =>
         ifNode.condition.code.l shouldBe List("x > 0")
         ifNode.trueBodyOut.astChildren.code.l shouldBe List("y = 0")
-        ifNode.falseBodyOut.astChildren.code.l shouldBe List("y = 1")
+        inside(ifNode.falseBodyOut.l) { case List(elseStructure: ControlStructure) =>
+          elseStructure.controlStructureType shouldBe ControlStructureTypes.ELSE
+          elseStructure.astChildren.isBlock.astChildren.code.l shouldBe List("y = 1")
+        }
     }
   }
 
@@ -43,11 +46,19 @@ class ControlStructureTests extends JsSrc2CpgSuite {
       case List(ifOne: ControlStructure, ifTwo: ControlStructure) =>
         ifOne.condition.code.l shouldBe List("c > 10")
         ifOne.trueBodyOut.astChildren.code.l shouldBe List("c -= 10")
-        ifOne.falseBodyOut.l shouldBe List(ifTwo)
+
+        inside(ifOne.falseBodyOut.l) { case List(elseOne: ControlStructure) =>
+          elseOne.controlStructureType shouldBe ControlStructureTypes.ELSE
+          elseOne.astChildren.l shouldBe List(ifTwo)
+        }
 
         ifTwo.condition.code.l shouldBe List("c < 10")
         ifTwo.trueBodyOut.astChildren.code.l shouldBe List("c += 10")
-        ifTwo.falseBodyOut.astChildren.code.l shouldBe List("c = 10")
+
+        inside(ifTwo.falseBodyOut.l) { case List(elseTwo: ControlStructure) =>
+          elseTwo.controlStructureType shouldBe ControlStructureTypes.ELSE
+          elseTwo.astChildren.isBlock.astChildren.code.l shouldBe List("c = 10")
+        }
     }
   }
 
