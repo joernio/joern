@@ -27,20 +27,12 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     }
   }
 
-  def whileAst(
-    condition: Option[Ast],
-    body: Seq[Ast],
-    code: Option[String] = None,
-    lineNumber: Option[Int] = None,
-    columnNumber: Option[Int] = None
-  ): Ast = {
-    var whileNode = NewControlStructure()
+  def whileAst(node: Node, condition: Option[Ast], body: Seq[Ast], code: Option[String] = None): Ast = {
+    val whileNode = NewControlStructure()
       .controlStructureType(ControlStructureTypes.WHILE)
-      .lineNumber(lineNumber)
-      .columnNumber(columnNumber)
-    if (code.isDefined) {
-      whileNode = whileNode.code(code.get)
-    }
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+      .code(code.getOrElse(this.code(node)))
     val astWithChildren = controlStructureAst(whileNode, condition, body)
     body.headOption.flatMap(_.root) match {
       case Some(bodyRoot) => astWithChildren.withTrueBodyEdge(whileNode, bodyRoot)
@@ -48,20 +40,12 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     }
   }
 
-  def doWhileAst(
-    condition: Option[Ast],
-    body: Seq[Ast],
-    code: Option[String] = None,
-    lineNumber: Option[Int] = None,
-    columnNumber: Option[Int] = None
-  ): Ast = {
-    var doWhileNode = NewControlStructure()
+  def doWhileAst(node: Node, condition: Option[Ast], body: Seq[Ast], code: Option[String] = None): Ast = {
+    val doWhileNode = NewControlStructure()
       .controlStructureType(ControlStructureTypes.DO)
-      .lineNumber(lineNumber)
-      .columnNumber(columnNumber)
-    if (code.isDefined) {
-      doWhileNode = doWhileNode.code(code.get)
-    }
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+      .code(code.getOrElse(this.code(node)))
     val astWithChildren = controlStructureAst(doWhileNode, condition, body, placeConditionLast = true)
     body.headOption.flatMap(_.root) match {
       case Some(doBodyRoot) => astWithChildren.withDoBodyEdge(doWhileNode, doBodyRoot)
@@ -69,7 +53,12 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     }
   }
 
-  def switchAst(switchNode: NewControlStructure, condition: Ast, body: Seq[Ast]): Ast = {
+  def switchAst(node: Node, condition: Ast, body: Seq[Ast], code: Option[String] = None): Ast = {
+    val switchNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.SWITCH)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+      .code(code.getOrElse(this.code(node)))
     val astWithChildren = controlStructureAst(switchNode, Option(condition), body)
     body.headOption.flatMap(_.root) match {
       case Some(bodyRoot) => astWithChildren.withTrueBodyEdge(switchNode, bodyRoot)
@@ -78,23 +67,19 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
   }
 
   def forAst(
-    forNode: NewControlStructure,
+    node: Node,
     locals: Seq[Ast],
     initAsts: Seq[Ast],
     conditionAsts: Seq[Ast],
     updateAsts: Seq[Ast],
-    bodyAst: Ast
-  ): Ast =
-    forAst(forNode, locals, initAsts, conditionAsts, updateAsts, Seq(bodyAst))
-
-  def forAst(
-    forNode: NewControlStructure,
-    locals: Seq[Ast],
-    initAsts: Seq[Ast],
-    conditionAsts: Seq[Ast],
-    updateAsts: Seq[Ast],
-    bodyAsts: Seq[Ast]
+    bodyAsts: Seq[Ast],
+    code: Option[String] = None
   ): Ast = {
+    val forNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.FOR)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+      .code(code.getOrElse(this.code(node)))
     val lineNumber     = forNode.lineNumber
     val numOfLocals    = locals.size
     val initBlock      = setOrderExplicitly(wrapMultipleInBlock(initAsts, lineNumber), numOfLocals + 1)
@@ -160,8 +145,7 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
 
   def labeledJumpAst(node: Node, jumpType: String, codeStr: String, labelNumber: Option[Int])(implicit
     dummy: DummyImplicit
-  ): Ast =
-    integerJumpAst(node, jumpType, codeStr, labelNumber)
+  ): Ast = integerJumpAst(node, jumpType, codeStr, labelNumber)
 
   def labeledJumpAst(node: Node, jumpType: String, codeStr: String): Ast =
     jumpAst(node, jumpType, codeStr)
@@ -215,7 +199,19 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
 
   /** For the given try body, catch ASTs, and finally AST, create a try-catch-finally AST.
     */
-  def tryCatchAst(tryNode: NewControlStructure, tryBodyAst: Ast, catchAsts: Seq[Ast], finallyAst: Option[Ast]): Ast = {
+  def tryCatchAst(
+    node: Node,
+    tryBodyAst: Ast,
+    catchAsts: Seq[Ast],
+    finallyAst: Option[Ast],
+    code: Option[String] = None
+  ): Ast = {
+    val tryNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.TRY)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+      .code(code.getOrElse(this.code(node)))
+
     setArgumentIndices(tryBodyAst +: (catchAsts ++ finallyAst.toSeq))
     val astWithChildren = Ast(tryNode)
       .withChild(tryBodyAst)
@@ -235,19 +231,37 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     }
   }
 
-  def ifThenElseAst(ifNode: NewControlStructure, conditionAst: Option[Ast], thenAst: Ast, elseAst: Option[Ast]): Ast = {
-    val astWithChildren = controlStructureAst(ifNode, conditionAst, thenAst :: elseAst.toList)
+  def ifThenElseAst(
+    node: Node,
+    elseNode: Option[Node],
+    conditionAst: Option[Ast],
+    thenAst: Ast,
+    elseAst: Option[Ast],
+    code: Option[String] = None
+  ): Ast = {
+    val ifNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.IF)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+      .code(code.getOrElse(this.code(node)))
+
+    val elseAstWithElseNodes = elseAst.map { elseAstElement =>
+      val elseControlStructureNode = controlStructureNode(elseNode.get, ControlStructureTypes.ELSE, "else")
+      Ast(elseControlStructureNode).withChild(elseAstElement)
+    }
+
+    val astWithChildren = controlStructureAst(ifNode, conditionAst, thenAst :: elseAstWithElseNodes.toList)
     val astWithTrueBody = thenAst.root match {
       case Some(thenRoot) => astWithChildren.withTrueBodyEdge(ifNode, thenRoot)
       case None           => astWithChildren
     }
-    elseAst.flatMap(_.root) match {
+    elseAstWithElseNodes.flatMap(_.root) match {
       case Some(elseRoot) => astWithTrueBody.withFalseBodyEdge(ifNode, elseRoot)
       case None           => astWithTrueBody
     }
   }
 
-  private def jumpAst(node: Node, jumpType: String, codeStr: String): Ast =
+  private def jumpAst(node: Node, jumpType: String, codeStr: String): Ast = {
     Ast(
       NewControlStructure()
         .parserTypeName(node.getClass.getSimpleName)
@@ -256,6 +270,7 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
         .lineNumber(line(node))
         .columnNumber(column(node))
     )
+  }
 
   private def setOrderExplicitly(ast: Ast, order: Int): Ast = {
     ast.root match {
