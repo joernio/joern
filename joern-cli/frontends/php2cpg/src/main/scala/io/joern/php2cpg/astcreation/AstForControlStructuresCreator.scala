@@ -29,21 +29,17 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
   }
 
   protected def astForWhileStmt(whileStmt: PhpWhileStmt): Ast = {
-    val condition  = astForExpr(whileStmt.cond)
-    val lineNumber = line(whileStmt)
-    val code       = s"while (${condition.rootCodeOrEmpty})"
-    val body       = stmtBodyBlockAst(whileStmt)
-
-    whileAst(Option(condition), List(body), Option(code), lineNumber)
+    val condition = astForExpr(whileStmt.cond)
+    val body      = stmtBodyBlockAst(whileStmt)
+    val code      = s"while (${condition.rootCodeOrEmpty})"
+    whileAst(whileStmt, Option(condition), List(body), Option(code))
   }
 
   protected def astForDoStmt(doStmt: PhpDoStmt): Ast = {
-    val condition  = astForExpr(doStmt.cond)
-    val lineNumber = line(doStmt)
-    val code       = s"do {...} while (${condition.rootCodeOrEmpty})"
-    val body       = stmtBodyBlockAst(doStmt)
-
-    doWhileAst(Option(condition), List(body), Option(code), lineNumber)
+    val condition = astForExpr(doStmt.cond)
+    val body      = stmtBodyBlockAst(doStmt)
+    val code      = s"do {...} while (${condition.rootCodeOrEmpty})"
+    doWhileAst(doStmt, Option(condition), List(body), Option(code))
   }
 
   protected def astForForStmt(stmt: PhpForStmt): Ast = {
@@ -57,51 +53,38 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     val conditionCode = conditionAsts.map(_.rootCodeOrEmpty).mkString(",")
     val loopExprCode  = loopExprAsts.map(_.rootCodeOrEmpty).mkString(",")
     val forCode       = s"for ($initCode;$conditionCode;$loopExprCode)"
-
-    val forNode = controlStructureNode(stmt, ControlStructureTypes.FOR, forCode)
-    forAst(forNode, Nil, initAsts, conditionAsts, loopExprAsts, bodyAst)
+    forAst(stmt, Nil, initAsts, conditionAsts, loopExprAsts, Seq(bodyAst), Some(forCode))
   }
 
   protected def astForIfStmt(ifStmt: PhpIfStmt): Ast = {
     val condition = astForExpr(ifStmt.cond)
+    val thenAst   = stmtBodyBlockAst(ifStmt)
 
-    val thenAst = stmtBodyBlockAst(ifStmt)
+    val elseNode = ifStmt.elseIfs match {
+      case Nil         => ifStmt.elseStmt
+      case elseIf :: _ => Option(elseIf)
+    }
 
     val elseAst = ifStmt.elseIfs match {
-      case Nil => ifStmt.elseStmt.map(els => stmtBodyBlockAst(els)).toList
-
+      case Nil =>
+        ifStmt.elseStmt.map(els => stmtBodyBlockAst(els))
       case elseIf :: rest =>
         val newIfStmt     = PhpIfStmt(elseIf.cond, elseIf.stmts, rest, ifStmt.elseStmt, elseIf.attributes)
         val wrappingBlock = blockNode(elseIf)
-        val wrappedAst    = Ast(wrappingBlock).withChild(astForIfStmt(newIfStmt)) :: Nil
-        wrappedAst
+        val wrappedAst    = Ast(wrappingBlock).withChild(astForIfStmt(newIfStmt))
+        Some(wrappedAst)
     }
 
-    val conditionCode   = condition.rootCodeOrEmpty
-    val ifNode          = controlStructureNode(ifStmt, ControlStructureTypes.IF, s"if ($conditionCode)")
-    val astWithChildren = controlStructureAst(ifNode, Option(condition), thenAst :: elseAst)
-    val astWithTrueBody = thenAst.root match {
-      case Some(thenRoot) => astWithChildren.withTrueBodyEdge(ifNode, thenRoot)
-      case None           => astWithChildren
-    }
-
-    elseAst.headOption.flatMap(_.root) match {
-      case Some(elseRoot) => astWithTrueBody.withFalseBodyEdge(ifNode, elseRoot)
-      case None           => astWithTrueBody
-    }
+    val code = s"if (${condition.rootCodeOrEmpty})"
+    ifThenElseAst(ifStmt, elseNode, Option(condition), thenAst, elseAst, Some(code))
   }
 
   protected def astForSwitchStmt(stmt: PhpSwitchStmt): Ast = {
-    val conditionAst = astForExpr(stmt.condition)
-
-    val switchNode =
-      controlStructureNode(stmt, ControlStructureTypes.SWITCH, s"switch (${conditionAst.rootCodeOrEmpty})")
-
+    val conditionAst    = astForExpr(stmt.condition)
     val switchBodyBlock = blockNode(stmt)
     val entryAsts       = stmt.cases.flatMap(astsForSwitchCase)
     val switchBody      = Ast(switchBodyBlock).withChildren(entryAsts)
-
-    controlStructureAst(switchNode, Option(conditionAst), switchBody :: Nil)
+    switchAst(stmt, conditionAst, Seq(switchBody), Some(s"switch (${conditionAst.rootCodeOrEmpty})"))
   }
 
   private def astsForSwitchCase(caseStmt: PhpCaseStmt): List[Ast] = {
@@ -148,8 +131,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
       Ast(finallyNode).withChild(stmtBodyBlockAst(fin))
     }
 
-    val tryNode = controlStructureNode(stmt, ControlStructureTypes.TRY, "try { ... }")
-    tryCatchAst(tryNode, tryBody, catches, finallyBody)
+    tryCatchAst(stmt, tryBody, catches, finallyBody, Some("try { ... }"))
   }
 
   private def astForCatchStmt(catchLocalVariableAst: Ast, stmt: PhpCatchStmt): Ast = {
@@ -261,13 +243,10 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
 
     val ampPrefix   = if (stmt.assignByRef) "&" else ""
     val foreachCode = s"foreach (${iterValue.rootCodeOrEmpty} as $ampPrefix${assignItemTargetString})"
-    val foreachNode = controlStructureNode(stmt, ControlStructureTypes.FOR, foreachCode)
-    Ast(foreachNode)
-      .withChild(wrapMultipleInBlock(iteratorAssignAst :: itemInitAst :: Nil, line(stmt)))
-      .withChild(conditionAst)
-      .withChild(wrapMultipleInBlock(nextCallAst :: itemUpdateAst :: Nil, line(stmt)))
-      .withChild(bodyAst)
-      .withConditionEdges(foreachNode, conditionAst.root.toList)
+
+    val initAsts   = Seq(iteratorAssignAst, itemInitAst)
+    val updateAsts = Seq(nextCallAst, itemUpdateAst)
+    forAst(stmt, Seq.empty, initAsts, Seq(conditionAst), updateAsts, Seq(bodyAst), Some(foreachCode))
   }
 
   private def getItemAssignAstForForeach(stmt: PhpForeachStmt, iteratorIdentifier: NewIdentifier): Ast = {

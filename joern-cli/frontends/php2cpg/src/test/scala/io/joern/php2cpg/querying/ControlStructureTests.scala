@@ -204,35 +204,35 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       val cpg = code("""<?php
         |if ($a) { $b; } else { $c; };
         |""".stripMargin)
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l) { case List(ifAst) =>
+        ifAst.code shouldBe "if ($a)"
+        ifAst.lineNumber shouldBe Some(2)
 
-      val ifAst = inside(cpg.controlStructure.l) { case List(ast) =>
-        ast.controlStructureType shouldBe ControlStructureTypes.IF
-        ast
-      }
-
-      ifAst.code shouldBe "if ($a)"
-      ifAst.lineNumber shouldBe Some(2)
-
-      inside(ifAst.condition.l) { case List(aIdent: Identifier) =>
-        aIdent.name shouldBe "a"
-        aIdent.code shouldBe "$a"
-        aIdent.lineNumber shouldBe Some(2)
-      }
-
-      inside(ifAst.astChildren.l) { case List(_, thenBlock: Block, elseBlock: Block) =>
-        thenBlock.lineNumber shouldBe Some(2)
-        elseBlock.lineNumber shouldBe Some(2)
-
-        inside(thenBlock.astChildren.l) { case List(bIdentifier: Identifier) =>
-          bIdentifier.name shouldBe "b"
-          bIdentifier.code shouldBe "$b"
-          bIdentifier.lineNumber shouldBe Some(2)
+        inside(ifAst.condition.l) { case List(aIdent: Identifier) =>
+          aIdent.name shouldBe "a"
+          aIdent.code shouldBe "$a"
+          aIdent.lineNumber shouldBe Some(2)
         }
 
-        inside(elseBlock.astChildren.l) { case List(cIdentifier: Identifier) =>
-          cIdentifier.name shouldBe "c"
-          cIdentifier.code shouldBe "$c"
-          cIdentifier.lineNumber shouldBe Some(2)
+        inside(ifAst.astChildren.l) { case List(_, thenBlock: Block, elseAst: ControlStructure) =>
+          elseAst.controlStructureType shouldBe ControlStructureTypes.ELSE
+
+          val List(elseBlock) = elseAst.astChildren.isBlock.l
+
+          thenBlock.lineNumber shouldBe Some(2)
+          elseBlock.lineNumber shouldBe Some(2)
+
+          inside(thenBlock.astChildren.l) { case List(bIdentifier: Identifier) =>
+            bIdentifier.name shouldBe "b"
+            bIdentifier.code shouldBe "$b"
+            bIdentifier.lineNumber shouldBe Some(2)
+          }
+
+          inside(elseBlock.astChildren.l) { case List(cIdentifier: Identifier) =>
+            cIdentifier.name shouldBe "c"
+            cIdentifier.code shouldBe "$c"
+            cIdentifier.lineNumber shouldBe Some(2)
+          }
         }
       }
     }
@@ -258,14 +258,15 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         condition1.lineNumber shouldBe Some(2)
       }
 
-      val elseif1 = inside(ifAst.astChildren.l) { case List(_, thenBlock: Block, elseBlock: Block) =>
+      val elseif1 = inside(ifAst.astChildren.l) { case List(_, thenBlock: Block, elseAst: ControlStructure) =>
         inside(thenBlock.astChildren.l) { case List(body1: Identifier) =>
           body1.name shouldBe "body1"
           body1.code shouldBe "$body1"
           body1.lineNumber shouldBe Some(3)
         }
 
-        inside(elseBlock.astChildren.l) { case List(elseStructure: ControlStructure) =>
+        elseAst.controlStructureType shouldBe ControlStructureTypes.ELSE
+        inside(elseAst.astChildren.isBlock.astChildren.l) { case List(elseStructure: ControlStructure) =>
           elseStructure
         }
       }
@@ -278,14 +279,16 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         condition2.lineNumber shouldBe Some(4)
       }
 
-      val elseif2 = inside(elseif1.astChildren.l) { case List(_, thenBlock: Block, elseBlock: Block) =>
+      val elseif2 = inside(elseif1.astChildren.l) { case List(_, thenBlock: Block, elseAst: ControlStructure) =>
+        elseAst.controlStructureType shouldBe ControlStructureTypes.ELSE
+
         inside(thenBlock.astChildren.l) { case List(body2: Identifier) =>
           body2.name shouldBe "body2"
           body2.code shouldBe "$body2"
           body2.lineNumber shouldBe Some(5)
         }
 
-        inside(elseBlock.astChildren.l) { case List(elseStructure: ControlStructure) =>
+        inside(elseAst.astChildren.isBlock.astChildren.l) { case List(elseStructure: ControlStructure) =>
           elseStructure
         }
       }
@@ -298,8 +301,12 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         condition3.lineNumber shouldBe Some(6)
       }
 
-      inside(elseif2.astChildren.l) { case List(_, thenBlock: Block, elseBlock: Block) =>
+      inside(elseif2.astChildren.l) { case List(_, thenBlock: Block, elseAst: ControlStructure) =>
+        elseAst.controlStructureType shouldBe ControlStructureTypes.ELSE
+
         thenBlock.lineNumber shouldBe Some(6)
+
+        val List(elseBlock) = elseAst.astChildren.isBlock.l
         elseBlock.lineNumber shouldBe Some(8)
 
         inside(thenBlock.astChildren.l) { case List(body3: Identifier) =>
@@ -335,12 +342,15 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         condition1.name shouldBe "cond1"
       }
 
-      val elseif1 = inside(ifAst.astChildren.l) { case List(_, thenBlock: Block, elseBlock: Block) =>
+      val elseif1 = inside(ifAst.astChildren.l) { case List(_, thenBlock: Block, elseAst: ControlStructure) =>
         inside(thenBlock.astChildren.l) { case List(body1: Identifier) =>
           body1.name shouldBe "body1"
         }
 
+        elseAst.controlStructureType shouldBe ControlStructureTypes.ELSE
+        val List(elseBlock) = elseAst.astChildren.isBlock.l
         inside(elseBlock.astChildren.l) { case List(elseStructure: ControlStructure) =>
+          elseStructure.controlStructureType shouldBe ControlStructureTypes.IF
           elseStructure
         }
       }
@@ -349,12 +359,15 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         condition2.name shouldBe "cond2"
       }
 
-      val elseif2 = inside(elseif1.astChildren.l) { case List(_, thenBlock: Block, elseBlock: Block) =>
+      val elseif2 = inside(elseif1.astChildren.l) { case List(_, thenBlock: Block, elseAst: ControlStructure) =>
         inside(thenBlock.astChildren.l) { case List(body2: Identifier) =>
           body2.name shouldBe "body2"
         }
 
+        elseAst.controlStructureType shouldBe ControlStructureTypes.ELSE
+        val List(elseBlock) = elseAst.astChildren.isBlock.l
         inside(elseBlock.astChildren.l) { case List(elseStructure: ControlStructure) =>
+          elseStructure.controlStructureType shouldBe ControlStructureTypes.IF
           elseStructure
         }
       }
@@ -363,11 +376,13 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         condition3.name shouldBe "cond3"
       }
 
-      inside(elseif2.astChildren.l) { case List(_, thenBlock: Block, elseBlock: Block) =>
+      inside(elseif2.astChildren.l) { case List(_, thenBlock: Block, elseAst: ControlStructure) =>
         inside(thenBlock.astChildren.l) { case List(body3: Identifier) =>
           body3.name shouldBe "body3"
         }
 
+        elseAst.controlStructureType shouldBe ControlStructureTypes.ELSE
+        val List(elseBlock) = elseAst.astChildren.isBlock.l
         inside(elseBlock.astChildren.l) { case List(body4: Identifier) =>
           body4.name shouldBe "body4"
         }
@@ -393,12 +408,15 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         condition1.name shouldBe "cond1"
       }
 
-      val elseif1 = inside(ifAst.astChildren.l) { case List(_, thenBlock: Block, elseBlock: Block) =>
+      val elseif1 = inside(ifAst.astChildren.l) { case List(_, thenBlock: Block, elseAst: ControlStructure) =>
         inside(thenBlock.astChildren.l) { case List(body1: Identifier) =>
           body1.name shouldBe "body1"
         }
 
+        elseAst.controlStructureType shouldBe ControlStructureTypes.ELSE
+        val List(elseBlock) = elseAst.astChildren.isBlock.l
         inside(elseBlock.astChildren.l) { case List(elseStructure: ControlStructure) =>
+          elseStructure.controlStructureType shouldBe ControlStructureTypes.IF
           elseStructure
         }
       }
@@ -407,12 +425,15 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         condition2.name shouldBe "cond2"
       }
 
-      val elseif2 = inside(elseif1.astChildren.l) { case List(_, thenBlock: Block, elseBlock: Block) =>
+      val elseif2 = inside(elseif1.astChildren.l) { case List(_, thenBlock: Block, elseAst: ControlStructure) =>
         inside(thenBlock.astChildren.l) { case List(body2: Identifier) =>
           body2.name shouldBe "body2"
         }
 
+        elseAst.controlStructureType shouldBe ControlStructureTypes.ELSE
+        val List(elseBlock) = elseAst.astChildren.isBlock.l
         inside(elseBlock.astChildren.l) { case List(elseStructure: ControlStructure) =>
+          elseStructure.controlStructureType shouldBe ControlStructureTypes.IF
           elseStructure
         }
       }
@@ -421,11 +442,13 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         condition3.name shouldBe "cond3"
       }
 
-      inside(elseif2.astChildren.l) { case List(_, thenBlock: Block, elseBlock: Block) =>
+      inside(elseif2.astChildren.l) { case List(_, thenBlock: Block, elseAst: ControlStructure) =>
         inside(thenBlock.astChildren.l) { case List(body3: Identifier) =>
           body3.name shouldBe "body3"
         }
 
+        elseAst.controlStructureType shouldBe ControlStructureTypes.ELSE
+        val List(elseBlock) = elseAst.astChildren.isBlock.l
         inside(elseBlock.astChildren.l) { case List(body4: Identifier) =>
           body4.name shouldBe "body4"
         }
@@ -447,9 +470,17 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         case List(ifControl: ControlStructure) =>
           ifControl.trueBodyOut.astChildren.code.l shouldBe List("$body1")
 
-          inside(ifControl.falseBodyOut.astChildren.l) { case List(elseIfControl: ControlStructure) =>
-            elseIfControl.trueBodyOut.astChildren.code.l shouldBe List("$body2")
-            elseIfControl.falseBodyOut.astChildren.code.l shouldBe List("$body3")
+          inside(ifControl.falseBodyOut.astChildren.l) { case List(elseIfBlock: Block) =>
+            inside(elseIfBlock.astChildren.l) { case List(elseIfControl: ControlStructure) =>
+              elseIfControl.controlStructureType shouldBe ControlStructureTypes.IF
+              elseIfControl.trueBodyOut.astChildren.code.l shouldBe List("$body2")
+
+              val List(elseControl) = elseIfControl.falseBodyOut.isControlStructure.l
+              elseControl.controlStructureType shouldBe ControlStructureTypes.ELSE
+              inside(elseControl.astChildren.l) { case List(elseIfControlFalseBody: Block) =>
+                elseIfControlFalseBody.astChildren.code.l shouldBe List("$body3")
+              }
+            }
           }
       }
     }
