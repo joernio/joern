@@ -21,6 +21,24 @@ object DependencyResolverV2 {
 
   val EnableEnvVar: String = "ENABLE_DEPENDENCY_RESOLVER_V2"
 
+  /** Returns true when V2 should be attempted — either the per-frontend CLI flag is set, or
+    * [[EnableEnvVar]] is present in the environment. Logs the decision (CLI flag / env var / neither)
+    * at info so each frontend doesn't have to duplicate the same three log lines.
+    */
+  def isRequested(cliFlag: Boolean): Boolean = {
+    val envVarSet = sys.env.contains(EnableEnvVar)
+    if (cliFlag) {
+      logger.info("Enabling dependency resolver v2 as CLI flag is set")
+    } else if (envVarSet) {
+      logger.info(s"Enabling dependency resolver v2 as $EnableEnvVar env var is set")
+    } else {
+      logger.info(
+        "Using dependency resolver v1 (if dependency resolution is enabled) as neither the CLI flag nor env var enabling v2 are set"
+      )
+    }
+    cliFlag || envVarSet
+  }
+
   /** Env-var override for the Android build variant used during Gradle resolution. V2 intentionally does not honour
     * [[GradleConfigKeys.ProjectName]] (it resolves every reachable project), but the Android variant has no CLI flag,
     * so we plumb it through this env var. When set, it is forwarded as [[GradleConfigKeys.AndroidVariant]] in the

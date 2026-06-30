@@ -57,11 +57,21 @@ private[joern] case class DependencyGraph(
       Try(path.toRealPath()).getOrElse(path.toAbsolutePath.normalize())
 
     val resolvedInputDir = realPath(inputDir)
-    nodes.valuesIterator
-      .filter { project =>
-        project.sourcePaths.exists(sourcePath => realPath(sourcePath).startsWith(resolvedInputDir))
+    val matchedProjects = nodes.valuesIterator.filter { project =>
+      project.sourcePaths.exists(sourcePath => realPath(sourcePath).startsWith(resolvedInputDir))
+    }.toList
+
+    val seedProjects =
+      if (matchedProjects.nonEmpty) matchedProjects
+      else {
+        logger.info(
+          s"No project's source paths fell under $resolvedInputDir; seeding from every project in the graph " +
+            s"(${nodes.size} nodes). This covers shared source directories wired by relative path and KMP " +
+            s"`dependsOn` cross-build links, where recorded source paths may live outside the input dir."
+        )
+        nodes.valuesIterator.toList
       }
-      .foreach(project => toCheck.push(project.projectName))
+    seedProjects.foreach(project => toCheck.push(project.projectName))
 
     while (toCheck.nonEmpty) {
       val projectName = toCheck.pop

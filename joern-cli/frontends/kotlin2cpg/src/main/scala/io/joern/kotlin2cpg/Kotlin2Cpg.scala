@@ -234,45 +234,8 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
       checkSourceDir(sourceDir)
       logMaxHeapSize()
 
-      val enableDependencyResolverV2 = if (config.enableDependencyResolverV2) {
-        logger.info(s"Enabling dependency resolver v2 as CLI flag is set")
-        true
-      } else if (sys.env.contains(DependencyResolverV2.EnableEnvVar)) {
-        logger.info(s"Enabling dependency resolver v2 as ${DependencyResolverV2.EnableEnvVar} env var is set")
-        true
-      } else {
-        logger.info(s"Using dependency resolver v1 (if dependency resolution is enabled) as neither the CLI flag nor env var enabling v2 are set")
-        false
-      }
-
-      val resolutionV2Result = Option
-        .when(enableDependencyResolverV2) {
-          DependencyResolverV2.resolve(sourceDir, DependencyResolverParams(Map.empty, gatherGradleParams(config)))
-        }
-        .flatten
-
-      // When DependencyFetchingV2 is enabled (via config OR an env var) and successful, expose
-      // the transitively-reachable source dirs so every source-gathering step below works on
-      // the unioned set. On any failure (empty graph, no in-range sources, etc.) the helper
-      // returns None and we fall back to the original sourceDir behaviour.
-      val (dependencyJars, sourceRoots, filesWithJavaExtension) = resolutionV2Result match {
-        case Some((sourceRoots, dependencyJars)) =>
-          val sourceRootsList        = sourceRoots.map(_.absolutePathAsString).toList
-          val filesWithJavaExtension = gatherFilesWithJavaExtension(sourceRootsList, config)
-          val jarsAsContentRootPaths =
-            dependencyJars.map(jarPath => DefaultContentRootJarPath(jarPath.absolutePathAsString, isResource = false))
-          (jarsAsContentRootPaths, sourceRootsList, filesWithJavaExtension)
-
-        case None =>
-          if (enableDependencyResolverV2) {
-            logger.warn(s"Falling back to dependency resolver v1 as v2 could not resolve correctly")
-          }
-
-          val filesWithJavaExtension = gatherFilesWithJavaExtension(List(sourceDir), config)
-          val dependencyJars         = gatherJarsOfDependencies(sourceDir, config, filesWithJavaExtension, enableDependencyResolverV2 || config.downloadDependencies)
-
-          (dependencyJars, List(sourceDir), filesWithJavaExtension)
-      }
+      val (dependencyJars, sourceRoots, filesWithJavaExtension, v2Active) =
+        resolveDependencies(sourceDir, config)
 
       val mavenCoordinates        = gatherMavenCoordinates(sourceDir, config)
       val stdlibJars              = gatherJarsFromStdLib(config)
@@ -287,7 +250,7 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
         new ErrorLoggingMessageCollector
       )
 
-      val sourceFiles = gatherSourceFiles(sourceDir, config, environment, enableDependencyResolverV2)
+      val sourceFiles = gatherSourceFiles(sourceDir, config, environment, v2Active)
       val configFiles = entriesForConfigFiles(SourceFilesPicker.configFiles(sourceDir), sourceDir)
 
       new MetaDataPass(cpg, Languages.KOTLIN, config.inputPath).createAndApply()
@@ -343,6 +306,44 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
     paths.flatMap { x =>
       val file = Paths.get(x)
       Files.lines(file).filter(_.startsWith("import")).toScala(Seq).map(ImportPattern.replaceAllIn(_, "$1").trim)
+    }
+  }
+
+  // Owns the V2-enablement decision, the V2 invocation, and the V1 fallback. Returns
+  // (dependencyJars, sourceRoots, filesWithJavaExtension, v2Active) so the caller can
+  // proceed straight to CPG construction without further branching on V2 state. This will
+  // eventually be moved into DependencyResolverV2 when it is clear what can be shared
+  // with javasrc2cpg and what is kotlin-specific.
+  private def resolveDependencies(
+    sourceDir: String,
+    config: Config
+  ): (Seq[DefaultContentRootJarPath], List[String], List[String], Boolean) = {
+    val v2Requested = DependencyResolverV2.isRequested(config.enableDependencyResolverV2)
+
+    val v2Result = Option
+      .when(v2Requested) {
+        DependencyResolverV2.resolve(sourceDir, DependencyResolverParams(Map.empty, gatherGradleParams(config)))
+      }
+      .flatten
+
+    v2Result match {
+      case Some((v2SourceRoots, v2DependencyJars)) =>
+        val sourceRootsList = v2SourceRoots.map(_.absolutePathAsString).toList
+        val javaFiles       = gatherFilesWithJavaExtension(sourceRootsList, config)
+        val jarContentRoots =
+          v2DependencyJars
+            .map(jarPath => DefaultContentRootJarPath(jarPath.absolutePathAsString, isResource = false))
+            .toSeq
+        (jarContentRoots, sourceRootsList, javaFiles, true)
+
+      case None =>
+        if (v2Requested) {
+          logger.warn(s"Falling back to dependency resolver v1 as v2 could not resolve correctly")
+        }
+        val javaFiles = gatherFilesWithJavaExtension(List(sourceDir), config)
+        val dependencyJars =
+          gatherJarsOfDependencies(sourceDir, config, javaFiles, v2Requested || config.downloadDependencies)
+        (dependencyJars, List(sourceDir), javaFiles, false)
     }
   }
 

@@ -324,6 +324,21 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
     }
   }
 
+  "V2 dependency resolver against gradle-shared-source-test" should {
+    val projectDir: Path = projectRoot("gradle-shared-source-test")
+
+    // proj/build.gradle.kts wires its kotlin source root to ../shared/src/main/kotlin —
+    // a location that lives outside the Gradle build root (`proj/`). The seed filter in
+    // `transitiveDependenciesForProjectsInDir` rejects every project whose recorded
+    // sourcePaths fall outside the input dir, so with the empty-filter fallback the
+    // walk seeds from every project in the graph and surfaces the shared source root.
+    "include shared source roots that resolve outside the input directory" in {
+      val projDir = projectDir.resolve("proj")
+      val sources = sourcesFor(projDir)
+      sources should contain(projectDir.resolve("shared/src/main/kotlin"))
+    }
+  }
+
   "V2 dependency resolver against gradle-peer-builds-test" should {
     val projectDir: Path = projectRoot("gradle-peer-builds-test")
 

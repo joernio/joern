@@ -167,6 +167,28 @@ object GradleDependenciesV2 {
     }
   }
 
+  // Acquire the two resources `get` needs — the init-script temp file and the Gradle connection.
+  // `Try`'s for-comprehension short-circuits on the first Failure, so the connection is only
+  // opened when the temp file was created successfully. Failures are logged once here; the caller
+  // just checks Success/Failure.
+  private def acquireInitTmpFileAndConn(projectDir: Path): Try[(Path, ProjectConnection)] = {
+    def attempt[T](stage: String)(thunk: => T): Try[T] =
+      Try(thunk).recoverWith { case ex =>
+        logger.warn(s"$stage failed: ${ex.getMessage}")
+        logger.debug("Full exception: ", ex)
+        Failure(ex)
+      }
+
+    for {
+      initScriptFile <- attempt("Creating Gradle init script temp file") {
+        val f = Files.createTempFile(initScriptPrefix, "")
+        FileUtil.deleteOnExit(f)
+        f
+      }
+      connection <- attempt("Establishing Gradle connection")(makeConnection(projectDir.toFile))
+    } yield (initScriptFile, connection)
+  }
+
   // fetch the gradle project information by invoking a newly-defined gradle task that writes one
   // depInfo JSON per project under `<destinationDir>/dependencyInfo/`. The caller owns
   // `destinationDir` (and its `deleteOnExit` registration) so it can be shared across multiple
@@ -179,35 +201,22 @@ object GradleDependenciesV2 {
     androidVariantOverride: Option[String] = None
   ): Boolean = {
     logger.info(s"Fetching Gradle project information at path `$projectDir`.")
-    Try(Files.createTempFile(initScriptPrefix, "")) match {
-      case Failure(ex) =>
-        logger.warn(s"Could not create temporary file for Gradle init script: ${ex.getMessage}")
-        logger.debug(s"Full exception: ", ex)
-        false
-
-      case Success(initScriptFile) =>
-        FileUtil.deleteOnExit(initScriptFile)
-        Try(makeConnection(projectDir.toFile)) match {
-          case Failure(ex) =>
-            logger.warn(s"Caught exception while trying to establish a Gradle connection: ${ex.getMessage}")
-            logger.debug(s"Full exception: ", ex)
-            false
-
-          case Success(connection) =>
-            Using.resource(connection) { conn =>
-              val gradleVersion  = getGradleVersionMajorMinor(connection)
-              val androidVariant = androidVariantOverride.getOrElse(DefaultAndroidVariant)
-              val initScript =
-                makeInitScript(destinationDir, gradleVersion, configurationNameOverride, androidVariant)
-              Files.writeString(initScriptFile, initScript.contents)
-              val ranOk = runGradleTask(conn, initScript.taskName, initScriptFile.toString)
-              if (!ranOk) {
-                logger.info(
-                  s"Gradle dependency fetch did not complete cleanly for $projectDir; any JSONs written so far still contribute."
-                )
-              }
-              ranOk
-            }
+    acquireInitTmpFileAndConn(projectDir) match {
+      case Failure(_) => false
+      case Success((initScriptFile, connection)) =>
+        Using.resource(connection) { conn =>
+          val gradleVersion  = getGradleVersionMajorMinor(conn)
+          val androidVariant = androidVariantOverride.getOrElse(DefaultAndroidVariant)
+          val initScript =
+            makeInitScript(destinationDir, gradleVersion, configurationNameOverride, androidVariant)
+          Files.writeString(initScriptFile, initScript.contents)
+          val ranOk = runGradleTask(conn, initScript.taskName, initScriptFile.toString)
+          if (!ranOk) {
+            logger.info(
+              s"Gradle dependency fetch did not complete cleanly for $projectDir; any JSONs written so far still contribute."
+            )
+          }
+          ranOk
         }
     }
   }
