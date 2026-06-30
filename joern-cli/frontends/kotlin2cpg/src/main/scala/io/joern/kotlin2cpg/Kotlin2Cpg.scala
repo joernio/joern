@@ -349,7 +349,8 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
   private def gatherGradleParams(config: Config) = {
     Map(
       GradleConfigKeys.ProjectName       -> config.gradleProjectName,
-      GradleConfigKeys.ConfigurationName -> config.gradleConfigurationName
+      GradleConfigKeys.ConfigurationName -> config.gradleConfigurationName,
+      GradleConfigKeys.AndroidVariant    -> sys.env.get(DependencyResolverV2.AndroidVariantEnvVar)
     ).collect { case (key, Some(value)) => (key, value) }
   }
 

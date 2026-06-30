@@ -20,6 +20,13 @@ object DependencyResolverV2 {
 
   val EnableEnvVar: String = "ENABLE_DEPENDENCY_RESOLVER_V2"
 
+  /** Env-var override for the Android build variant used during Gradle resolution. V2 intentionally does not honour
+    * [[GradleConfigKeys.ProjectName]] (it resolves every reachable project), but the Android variant has no CLI flag,
+    * so we plumb it through this env var. When set, it is forwarded as [[GradleConfigKeys.AndroidVariant]] in the
+    * resolver params.
+    */
+  val AndroidVariantEnvVar: String = "SL_ANDROID_VARIANT"
+
   /** Outcome of a V2 dependency resolution. `sourceDirs` is the set of directories returned by the graph's transitive
     * walk, validated to be non-empty. `artifactJars` is the AAR-materialized jar set for the same walk.
     */
