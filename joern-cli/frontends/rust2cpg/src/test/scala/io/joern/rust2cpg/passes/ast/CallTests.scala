@@ -216,9 +216,80 @@ class CallTests extends Rust2CpgSuite(noSysRoot = true) {
       cpg.call.nameExact("hello").argument.l shouldBe cpg.call.nameExact("hello").receiver.l
     }
   }
+
+  "an inherent method called through receiver and fully-qualified syntax" should {
+    val cpg = code("""
+        |struct Circle {
+        |    radius: f64,
+        |}
+        |impl Circle {
+        |    fn area(&self) -> f64 {
+        |        std::f64::consts::PI * self.radius * self.radius
+        |    }
+        |}
+        |fn main() {
+        |    let my_circle = Circle { radius: 5.0 };
+        |    let area1 = my_circle.area();
+        |    let area2 = Circle::area(&my_circle);
+        |}
+        |""".stripMargin)
+
+    "have same dispatch type and methodFullName" in {
+      inside(cpg.call.codeExact("my_circle.area()").l) { case methodCall :: Nil =>
+        methodCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        methodCall.methodFullName shouldBe "rust2cpgtest::Circle::area"
+        inside(cpg.call.codeExact("Circle::area(&my_circle)").l) { case call :: Nil =>
+          call.dispatchType shouldBe methodCall.dispatchType
+          call.methodFullName shouldBe methodCall.methodFullName
+        }
+      }
+    }
+
+    "have the adjusted receivers at argument index 0" in {
+      inside(cpg.call.codeExact("my_circle.area()").receiver.l) { case (recv: Call) :: Nil =>
+        recv.code shouldBe "&my_circle"
+        recv.argumentIndex shouldBe 0
+      }
+      inside(cpg.call.codeExact("Circle::area(&my_circle)").receiver.l) { case (recv: Call) :: Nil =>
+        recv.code shouldBe "&*&my_circle"
+        recv.argumentIndex shouldBe 0
+      }
+    }
+  }
 }
 
 class CallTestsWithSysroot extends Rust2CpgSuite(noSysRoot = false) {
+
+  "a call to `Vec::push` through receiver and fully-qualified syntax" should {
+    val cpg = code("""
+        |fn f(mut xs: Vec<i32>) {
+        | xs.push(1);
+        | Vec::push(&mut xs, 2);
+        |}
+        |""".stripMargin)
+
+    "have same dispatch type and methodFullName" in {
+      inside(cpg.call.codeExact("xs.push(1)").l) { case methodCall :: Nil =>
+        methodCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        methodCall.methodFullName shouldBe "alloc::vec::Vec<T, A>::push"
+        inside(cpg.call.codeExact("Vec::push(&mut xs, 2)").l) { case call :: Nil =>
+          call.dispatchType shouldBe methodCall.dispatchType
+          call.methodFullName shouldBe methodCall.methodFullName
+        }
+      }
+    }
+
+    "have the adjusted receivers at argument index 0" in {
+      inside(cpg.call.codeExact("xs.push(1)").receiver.l) { case (recv: Call) :: Nil =>
+        recv.code shouldBe "&xs"
+        recv.argumentIndex shouldBe 0
+      }
+      inside(cpg.call.codeExact("Vec::push(&mut xs, 2)").receiver.l) { case (recv: Call) :: Nil =>
+        recv.code shouldBe "&*&mut xs"
+        recv.argumentIndex shouldBe 0
+      }
+    }
+  }
 
   "a `Vec` method call resolved against the sysroot" should {
     val cpg = code("""
