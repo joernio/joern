@@ -8,7 +8,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewId
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators}
 
 import scala.::
-import scala.util.{Try, Success, Failure}
+import scala.util.Try
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -44,18 +44,17 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def astForIfStatement(ifStmt: DotNetNodeInfo): Seq[Ast] = {
     val conditionNode                                   = createDotNetNodeInfo(ifStmt.json(ParserKeys.Condition))
+    val ifCode                                          = s"if (${conditionNode.code})"
     val ConditionAstResult(conditionAst, prependIfBody) = astForConditionNode(conditionNode)
-
-    val thenNode     = createDotNetNodeInfo(ifStmt.json(ParserKeys.Statement))
-    val thenAst: Ast = astForBlock(thenNode, prefixAsts = prependIfBody)
-    val ifNode =
-      controlStructureNode(ifStmt, ControlStructureTypes.IF, s"if (${conditionNode.code})")
-    val elseAst = ifStmt.json(ParserKeys.Else) match {
-      case elseStmt: ujson.Obj => astForElseStatement(createDotNetNodeInfo(elseStmt))
-      case _                   => Ast()
+    val thenNode                                        = createDotNetNodeInfo(ifStmt.json(ParserKeys.Statement))
+    val thenAst                                         = astForBlock(thenNode, prefixAsts = prependIfBody)
+    val elseNode = ifStmt.json(ParserKeys.Else) match {
+      case elseStmt: ujson.Obj => Some(createDotNetNodeInfo(elseStmt))
+      case _                   => None
     }
+    val elseAst = elseNode.map(astForElseStatement)
 
-    Seq(controlStructureAst(ifNode, Some(conditionAst), Seq(thenAst, elseAst)))
+    Seq(ifThenElseAst(ifStmt, elseNode, Some(conditionAst), thenAst, elseAst, Some(ifCode)))
   }
 
   protected def astForStatement(nodeInfo: DotNetNodeInfo): Seq[Ast] = {
@@ -170,8 +169,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astForForEachStatement(forEachStmt: DotNetNodeInfo): Seq[Ast] = {
-    val int32Tfn    = BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
-    val forEachNode = controlStructureNode(forEachStmt, ControlStructureTypes.FOR, forEachStmt.code)
+    val int32Tfn = BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
     // Create the collection AST
     def newCollectionAst = astForNode(forEachStmt.json(ParserKeys.Expression))
     val collectionNode   = createDotNetNodeInfo(forEachStmt.json(ParserKeys.Expression))
@@ -254,28 +252,26 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val forEachBlockAst = astForBlock(createDotNetNodeInfo(forEachStmt.json(ParserKeys.Statement)))
 
     forAst(
-      forNode = forEachNode,
+      node = forEachStmt,
       locals = Ast(idxLocal)
         .withRefEdge(idxIdenAtAssign, idxLocal)
         .withRefEdge(idxIdAtCond, idxLocal)
         .withRefEdge(idxIdAtCollAccess, idxLocal) :: Ast(iterVarLocal).withRefEdge(iterIdentifier, iterVarLocal) :: Nil,
-      conditionAsts = ltCallCond :: Nil,
       initAsts = idxAssignmentAst :: Nil,
+      conditionAsts = ltCallCond :: Nil,
       updateAsts = iteratorAssignmentAst :: Nil,
-      bodyAst = forEachBlockAst
+      bodyAsts = Seq(forEachBlockAst)
     ) :: Nil
   }
 
   private def astForElseStatement(elseParserNode: DotNetNodeInfo): Ast = {
-    val elseNode = controlStructureNode(elseParserNode, ControlStructureTypes.ELSE, "else")
-
     Option(elseParserNode.json(ParserKeys.Statement)) match {
       case Some(elseStmt: ujson.Value) if createDotNetNodeInfo(elseStmt).node == Block =>
-        val blockAst: Ast = astForBlock(createDotNetNodeInfo(elseParserNode.json(ParserKeys.Statement)))
-        Ast(elseNode).withChild(blockAst)
+        astForBlock(createDotNetNodeInfo(elseParserNode.json(ParserKeys.Statement)))
       case Some(elseStmt) =>
         astForNode(createDotNetNodeInfo(elseParserNode.json(ParserKeys.Statement))).headOption.getOrElse(Ast())
-      case None => Ast()
+      case None =>
+        Ast()
     }
   }
 
@@ -330,7 +326,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def astForTryStatement(tryStmt: DotNetNodeInfo): Seq[Ast] = {
-    val tryNode          = controlStructureNode(tryStmt, ControlStructureTypes.TRY, code(tryStmt))
     val tryBlockNodeInfo = createDotNetNodeInfo(tryStmt.json(ParserKeys.Block))
     val tryAst           = astForBlock(tryBlockNodeInfo, Option(code(tryBlockNodeInfo)))
 
@@ -352,8 +347,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       Ast(finallyNode).withChildren(finallyClauseAst)
     }
 
-    val controlStructureAst = tryCatchAst(tryNode, tryAst, catchAsts, finallyAst)
-    Seq(controlStructureAst)
+    Seq(tryCatchAst(tryStmt, tryAst, catchAsts, finallyAst))
   }
 
   protected def astForFinallyClause(finallyClause: DotNetNodeInfo): Seq[Ast] = {
@@ -367,7 +361,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     * Thus, this is lowered as a try-finally, with finally making a call to `Dispose` on the declared variable.
     */
   private def astForUsingStatement(usingStmt: DotNetNodeInfo): Seq[Ast] = {
-    val tryNode = controlStructureNode(usingStmt, ControlStructureTypes.TRY, code(usingStmt))
     val declAst =
       Try(createDotNetNodeInfo(usingStmt.json(ParserKeys.Declaration))).map(astForNode).getOrElse(scala.Seq.empty[Ast])
     val tryNodeInfo = createDotNetNodeInfo(usingStmt.json(ParserKeys.Statement))
@@ -391,7 +384,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       Ast(finallyNode).withChild(childrenAst)
     }
 
-    declAst :+ tryCatchAst(tryNode, tryAst, Seq.empty, finallyAst)
+    declAst :+ tryCatchAst(usingStmt, tryAst, Seq.empty, finallyAst)
   }
 
   protected def astForCatchClause(catchClause: DotNetNodeInfo): Seq[Ast] = {
