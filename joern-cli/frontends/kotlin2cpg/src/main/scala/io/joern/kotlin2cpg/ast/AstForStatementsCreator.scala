@@ -326,23 +326,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   def astForWhile(expr: KtWhileExpression, annotations: Seq[KtAnnotationEntry] = Seq()): Ast = {
     val conditionAst = astsForExpression(expr.getCondition, None).headOption
     val stmtAsts     = astsForExpression(expr.getBody, None)
-    val code_        = Option(code(expr))
-    val lineNumber   = line(expr)
-    val columnNumber = column(expr)
-
-    whileAst(conditionAst, stmtAsts, code_, lineNumber, columnNumber)
-      .withChildren(annotations.map(astForAnnotationEntry))
+    whileAst(expr, conditionAst, stmtAsts).withChildren(annotations.map(astForAnnotationEntry))
   }
 
   def astForDoWhile(expr: KtDoWhileExpression, annotations: Seq[KtAnnotationEntry] = Seq()): Ast = {
     val conditionAst = astsForExpression(expr.getCondition, None).headOption
     val stmtAsts     = astsForExpression(expr.getBody, None)
-    val code_        = Option(code(expr))
-    val lineNumber   = line(expr)
-    val columnNumber = column(expr)
-
-    doWhileAst(conditionAst, stmtAsts, code_, lineNumber, columnNumber)
-      .withChildren(annotations.map(astForAnnotationEntry))
+    doWhileAst(expr, conditionAst, stmtAsts).withChildren(annotations.map(astForAnnotationEntry))
   }
 
   private def astForWhenAsStatement(expr: KtWhenExpression, argIdx: Option[Int]): Ast = {
@@ -491,8 +481,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
         val childrenAsts = astsForExpression(finallyBlock, None)
         Ast(finallyNode).withChildren(childrenAsts)
       }
-    val tryNode = controlStructureNode(expr, ControlStructureTypes.TRY, code(expr))
-    tryCatchAst(tryNode, tryAst, clauseAsts, finallyAst)
+    tryCatchAst(expr, tryAst, clauseAsts, finallyAst)
   }
 
   private def astForTryAsExpression(
