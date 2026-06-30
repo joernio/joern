@@ -7,11 +7,11 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewAnnotationParameterAssign
 }
 
+/** Mixin that provides helpers for building annotation ASTs. */
 private[x2cpg] trait AnnotationAstBuilder[Node, NodeProcessor] {
   this: AstCreatorBase[Node, NodeProcessor] =>
 
-  /** Creates an AST that represents an annotation, including its content (annotation parameter assignments).
-    */
+  /** Creates an AST that represents an annotation, including its content (annotation parameter assignments). */
   def annotationAst(annotation: NewAnnotation, children: Seq[Ast]): Ast = {
     val annotationAst = Ast(annotation)
     annotationAst.withChildren(children)
