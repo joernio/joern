@@ -19,7 +19,8 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
       .getOrElse(fail(s"V2 dependency resolver returned no graph for $inputPath"))
 
   private def projectRoot(name: String): Path =
-    Paths.get(ProjectRoot.relativise(s"joern-cli/frontends/x2cpg/src/test/resources/code/$name"))
+    Paths
+      .get(ProjectRoot.relativise(s"joern-cli/frontends/x2cpg/src/test/resources/code/$name"))
       .toAbsolutePath
       .normalize()
 

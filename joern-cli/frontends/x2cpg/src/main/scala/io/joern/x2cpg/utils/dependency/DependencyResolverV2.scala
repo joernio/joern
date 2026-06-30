@@ -1,10 +1,6 @@
 package io.joern.x2cpg.utils.dependency
 
-import io.joern.x2cpg.utils.dependency.DependencyResolver.{
-  findSupportedBuildFiles,
-  isGradleBuildFile,
-  isMavenBuildFile
-}
+import io.joern.x2cpg.utils.dependency.DependencyResolver.{findSupportedBuildFiles, isGradleBuildFile, isMavenBuildFile}
 import io.shiftleft.semanticcpg.utils.FileUtil
 import org.slf4j.LoggerFactory
 
@@ -21,9 +17,9 @@ object DependencyResolverV2 {
 
   val EnableEnvVar: String = "ENABLE_DEPENDENCY_RESOLVER_V2"
 
-  /** Returns true when V2 should be attempted — either the per-frontend CLI flag is set, or
-    * [[EnableEnvVar]] is present in the environment. Logs the decision (CLI flag / env var / neither)
-    * at info so each frontend doesn't have to duplicate the same three log lines.
+  /** Returns true when V2 should be attempted — either the per-frontend CLI flag is set, or [[EnableEnvVar]] is present
+    * in the environment. Logs the decision (CLI flag / env var / neither) at info so each frontend doesn't have to
+    * duplicate the same three log lines.
     */
   def isRequested(cliFlag: Boolean): Boolean = {
     val envVarSet = sys.env.contains(EnableEnvVar)

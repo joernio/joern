@@ -193,7 +193,7 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
     environment: KotlinCoreEnvironment,
     allowParentTraversal: Boolean
   ): Iterable[KtFileWithMeta] = {
-    val sourceEntries        = entriesForSources(environment.getSourceFiles.asScala, sourceDir, allowParentTraversal)
+    val sourceEntries = entriesForSources(environment.getSourceFiles.asScala, sourceDir, allowParentTraversal)
     val sourceFiles = sourceEntries.filter(entry =>
       SourceFiles.filterFile(
         entry.filename,

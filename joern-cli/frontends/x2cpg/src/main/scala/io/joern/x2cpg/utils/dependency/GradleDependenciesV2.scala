@@ -181,9 +181,9 @@ object GradleDependenciesV2 {
 
     for {
       initScriptFile <- attempt("Creating Gradle init script temp file") {
-        val f = Files.createTempFile(initScriptPrefix, "")
-        FileUtil.deleteOnExit(f)
-        f
+        val tempFile = Files.createTempFile(initScriptPrefix, "")
+        FileUtil.deleteOnExit(tempFile)
+        tempFile
       }
       connection <- attempt("Establishing Gradle connection")(makeConnection(projectDir.toFile))
     } yield (initScriptFile, connection)
