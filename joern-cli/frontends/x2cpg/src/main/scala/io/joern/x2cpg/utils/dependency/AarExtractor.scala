@@ -18,6 +18,11 @@ import scala.util.{Failure, Success, Try}
   * if the jar already exists, it is returned without re-unzipping. The original .aar file is never touched.
   */
 private[joern] object AarExtractor {
+  // TODO: `GradleDependencies.extractClassesJarFromAar` (V1) implements the same algorithm and
+  // duplicates the `aarExtension` / `jarInsideAar` constants under different names
+  // (`aarFileExtension` / `jarInsideAarFileName`). Kept duplicated until V1 is deleted; at that
+  // point V1's call site should route through `AarExtractor.extractClassesJar` rather than the
+  // extractor being removed wholesale.
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -30,49 +35,55 @@ private[joern] object AarExtractor {
   def extractClassesJar(aar: Path, cacheDir: Path): Option[Path] = {
     if (!aar.toString.endsWith("." + aarExtension)) {
       logger.debug(s"Refusing to extract non-aar path: $aar")
-      return None
-    }
-
-    Files.createDirectories(cacheDir)
-    val outFile = cacheDir.resolve(cacheKey(aar))
-    if (Files.exists(outFile)) {
-      logger.trace(s"Reusing previously-extracted classes.jar at $outFile for $aar")
-      return Some(outFile)
-    }
-
-    val scratch = Files.createTempDirectory(cacheDir, "scratch-")
-    try {
-      Try(aar.unzipTo(scratch)) match {
-        case Failure(ex) =>
-          logger.warn(s"Failed to unzip aar at $aar: ${ex.getMessage}")
-          None
-        case Success(_) =>
-          val classesJarCandidates = Try {
-            Files
-              .walk(scratch)
-              .iterator()
-              .asScala
-              .filterNot(_ == scratch)
-              .filter(_.fileName == jarInsideAar)
-              .toList
-          }.getOrElse(Nil)
-
-          classesJarCandidates match {
-            case classesJar :: Nil =>
-              try classesJar.copyTo(outFile)
-              catch {
-                case _: FileAlreadyExistsException =>
-                // Another caller raced us to the same cache slot — fine, the
-                // existing file is the same content.
-              }
-              Some(outFile)
-            case _ =>
-              logger.debug(s"Found aar file without exactly one `classes.jar` inside at $aar")
+      None
+    } else {
+      Files.createDirectories(cacheDir)
+      val outFile = cacheDir.resolve(cacheKey(aar))
+      if (Files.exists(outFile)) {
+        logger.trace(s"Reusing previously-extracted classes.jar at $outFile for $aar")
+        Some(outFile)
+      } else {
+        val scratch = Files.createTempDirectory(cacheDir, "scratch-")
+        try {
+          Try(aar.unzipTo(scratch)) match {
+            case Failure(ex) =>
+              logger.warn(s"Failed to unzip aar at $aar: ${ex.getMessage}")
               None
+            case Success(_) =>
+              val classesJarCandidates = Try {
+                Files
+                  .walk(scratch)
+                  .iterator()
+                  .asScala
+                  .filterNot(_ == scratch)
+                  .filter(_.fileName == jarInsideAar)
+                  .toList
+              }.getOrElse(Nil)
+
+              // TODO: This drops the AAR entirely if multiple classes.jar files are found
+              // (e.g. an AAR that bundles libs/classes.jar alongside the root classes.jar).
+              // This matches the V1 behaviour in GradleDependencies.extractClassesJarFromAar
+              // but is likely incorrect — the canonical classes.jar lives at the AAR root
+              // (scratch.resolve(jarInsideAar)), so we should probably prefer it when present
+              // rather than discarding the AAR.
+              classesJarCandidates match {
+                case classesJar :: Nil =>
+                  try classesJar.copyTo(outFile)
+                  catch {
+                    case _: FileAlreadyExistsException =>
+                    // Another caller raced us to the same cache slot — fine, the
+                    // existing file is the same content.
+                  }
+                  Some(outFile)
+                case _ =>
+                  logger.debug(s"Found aar file without exactly one `classes.jar` inside at $aar")
+                  None
+              }
           }
+        } finally {
+          if (Files.exists(scratch)) FileUtil.delete(scratch)
+        }
       }
-    } finally {
-      if (Files.exists(scratch)) FileUtil.delete(scratch)
     }
   }
 

@@ -3,7 +3,6 @@ package io.joern.x2cpg.utils.dependency
 import io.joern.x2cpg.utils.dependency.DependencyGraph.logger
 import org.apache.maven.artifact.versioning.ComparableVersion
 import org.slf4j.LoggerFactory
-import ujson.Value
 
 import java.nio.file.Path
 import scala.collection.mutable
@@ -168,7 +167,6 @@ private[joern] object DependencyGraph {
     val nodes        = mutable.Map[String, ProjectNode]()
     val dependents   = mutable.Map[String, Set[String]]()
     val dependencies = mutable.Map[String, Set[String]]()
-    val jsonObjMap   = mutable.Map[String, Value]()
 
     jsonPaths.flatMap(parseJson).foreach { project =>
       val projectName = project.projectName

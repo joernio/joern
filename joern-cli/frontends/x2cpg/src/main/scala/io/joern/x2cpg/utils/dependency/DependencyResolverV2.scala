@@ -3,8 +3,7 @@ package io.joern.x2cpg.utils.dependency
 import io.joern.x2cpg.utils.dependency.DependencyResolver.{
   findSupportedBuildFiles,
   isGradleBuildFile,
-  isMavenBuildFile,
-  logger
+  isMavenBuildFile
 }
 import org.slf4j.LoggerFactory
 
@@ -12,8 +11,8 @@ import java.nio.file.{Path, Paths}
 import scala.util.Try
 
 /** Shared entry point for the V2 dependency-fetching pipeline. Decides whether to invoke V2 (based on the per-frontend
-  * Config flag OR the ENABLE_DEPENDENCY_FETCHER_V2 env var), resolves the graph, validates it, and exposes the
-  * transitive source directories so each frontend can override its own source-file discovery.
+  * Config flag OR the [[EnableEnvVar]] env var), resolves the graph, validates it, and exposes the transitive source
+  * directories so each frontend can override its own source-file discovery.
   */
 object DependencyResolverV2 {
 

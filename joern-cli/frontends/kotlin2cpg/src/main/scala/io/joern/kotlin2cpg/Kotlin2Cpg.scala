@@ -135,7 +135,8 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
   private def gatherJarsOfDependencies(
     sourceDir: String,
     config: Config,
-    filesWithJavaExtension: List[String]
+    filesWithJavaExtension: List[String],
+    enableX2cpgDependencies: Boolean
   ): Seq[DefaultContentRootJarPath] = {
     val jar4ImportServiceOpt = config.jar4importServiceUrl.flatMap(reachableServiceMaybe)
     val dependencies = {
@@ -144,7 +145,7 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
         val importNames          = importNamesForFilesAtPaths(filesWithKtExtension ++ filesWithJavaExtension)
         logger.trace(s"Found imports: `$importNames`")
         dependenciesFromService(jar4ImportServiceOpt.get, importNames)
-      } else if (config.downloadDependencies) {
+      } else if (enableX2cpgDependencies) {
         downloadDependencies(sourceDir, config)
       } else {
         logger.info(s"Not downloading any dependencies.")
@@ -189,9 +190,9 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
   private def gatherSourceFiles(
     sourceDir: String,
     config: Config,
-    environment: KotlinCoreEnvironment
+    environment: KotlinCoreEnvironment,
+    allowParentTraversal: Boolean
   ): Iterable[KtFileWithMeta] = {
-    val allowParentTraversal = config.enableDependencyResolverV2
     val sourceEntries        = entriesForSources(environment.getSourceFiles.asScala, sourceDir, allowParentTraversal)
     val sourceFiles = sourceEntries.filter(entry =>
       SourceFiles.filterFile(
@@ -240,7 +241,7 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
         logger.info(s"Enabling dependency resolver v2 as ${DependencyResolverV2.EnableEnvVar} env var is set")
         true
       } else {
-        logger.info(s"Using dependency resolver v1 as neither the CLI flag nor env var enabling v2 are set")
+        logger.info(s"Using dependency resolver v1 (if dependency resolution is enabled) as neither the CLI flag nor env var enabling v2 are set")
         false
       }
 
@@ -259,7 +260,7 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
           val sourceRootsList        = sourceRoots.map(_.absolutePathAsString).toList
           val filesWithJavaExtension = gatherFilesWithJavaExtension(sourceRootsList, config)
           val jarsAsContentRootPaths =
-            dependencyJars.map(jarPath => DefaultContentRootJarPath(jarPath.absolutePathAsString, false))
+            dependencyJars.map(jarPath => DefaultContentRootJarPath(jarPath.absolutePathAsString, isResource = false))
           (jarsAsContentRootPaths, sourceRootsList, filesWithJavaExtension)
 
         case None =>
@@ -268,7 +269,7 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
           }
 
           val filesWithJavaExtension = gatherFilesWithJavaExtension(List(sourceDir), config)
-          val dependencyJars         = gatherJarsOfDependencies(sourceDir, config, filesWithJavaExtension)
+          val dependencyJars         = gatherJarsOfDependencies(sourceDir, config, filesWithJavaExtension, enableDependencyResolverV2 || config.downloadDependencies)
 
           (dependencyJars, List(sourceDir), filesWithJavaExtension)
       }
@@ -286,7 +287,7 @@ class Kotlin2Cpg extends X2CpgFrontend with UsesService {
         new ErrorLoggingMessageCollector
       )
 
-      val sourceFiles = gatherSourceFiles(sourceDir, config, environment)
+      val sourceFiles = gatherSourceFiles(sourceDir, config, environment, enableDependencyResolverV2)
       val configFiles = entriesForConfigFiles(SourceFilesPicker.configFiles(sourceDir), sourceDir)
 
       new MetaDataPass(cpg, Languages.KOTLIN, config.inputPath).createAndApply()

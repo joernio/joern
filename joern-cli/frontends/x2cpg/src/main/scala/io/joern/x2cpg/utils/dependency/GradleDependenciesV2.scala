@@ -17,6 +17,12 @@ import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Random, Success, Try, Using}
 
 object GradleDependenciesV2 {
+  // TODO: Several private members below are duplicated verbatim from `GradleDependencies` (V1):
+  // `getGradleHome`, `getGradleVersionMajorMinor`, `makeConnection`, the three prefix constants
+  // (`initScriptPrefix`, `taskNamePrefix`, `tempDirPrefix`), the random task-name generator,
+  // `runGradleTask`, and the replace-pipeline shape inside `getInitScriptContent`. The duplication
+  // is intentional during the V2 rollout so V1 stays untouched; once V1 is deleted we should
+  // consolidate these into a shared `GradleToolingApi` helper.
   private val initScriptPrefix     = "x2cpg.init.gradle"
   private val taskNamePrefix       = "x2cpgCopyDeps"
   private val tempDirPrefix        = "x2cpgDependencies"
@@ -149,13 +155,15 @@ object GradleDependenciesV2 {
   }
 
   private def listDependencyInfoFiles(dependencyInfoDir: Path): Array[Path] = {
-    if (!Files.isDirectory(dependencyInfoDir)) return Array.empty
-    Using.resource(Files.list(dependencyInfoDir)) { stream =>
-      stream
-        .iterator()
-        .asScala
-        .filter(path => !Files.isDirectory(path) && path.toString.endsWith(".json"))
-        .toArray
+    if (!Files.isDirectory(dependencyInfoDir)) Array.empty
+    else {
+      Using.resource(Files.list(dependencyInfoDir)) { stream =>
+        stream
+          .iterator()
+          .asScala
+          .filter(path => !Files.isDirectory(path) && path.toString.endsWith(".json"))
+          .toArray
+      }
     }
   }
 

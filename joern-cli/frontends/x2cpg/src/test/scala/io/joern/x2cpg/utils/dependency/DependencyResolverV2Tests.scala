@@ -18,16 +18,19 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
       .getDependencyGraph(inputPath)
       .getOrElse(fail(s"V2 dependency resolver returned no graph for $inputPath"))
 
+  private def projectRoot(name: String): Path =
+    Paths.get(ProjectRoot.relativise(s"joern-cli/frontends/x2cpg/src/test/resources/code/$name"))
+      .toAbsolutePath
+      .normalize()
+
+  private def sourcesFor(inputDir: Path): Set[Path] =
+    graphFor(inputDir).transitiveDependenciesForProjectsInDir(inputDir).sources
+
   "V2 dependency fetcher against the gradle-test-project" should {
-    val projectDir: Path =
-      Paths
-        .get(ProjectRoot.relativise("joern-cli/frontends/x2cpg/src/test/resources/code/gradle-test-project"))
-        .toAbsolutePath
-        .normalize()
+    val projectDir: Path = projectRoot("gradle-test-project")
 
     "include every settings.gradle.kts subproject when invoked from the root" in {
-      val graph        = graphFor(projectDir)
-      val (_, sources) = graph.transitiveDependenciesForProjectsInDir(projectDir)
+      val sources = sourcesFor(projectDir)
       // emptyModule has no src/ dir, so it won't surface in sources.
       // mixedSources contributes two roots — one for kotlin, one for java.
       // ghostModule is absent from settings.gradle.kts, so it must not appear.
@@ -45,9 +48,8 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
     }
 
     "from the `client` subproject include only client → clientCore → core → sharedUtils" in {
-      val clientDir    = projectDir.resolve("client")
-      val graph        = graphFor(clientDir)
-      val (_, sources) = graph.transitiveDependenciesForProjectsInDir(clientDir)
+      val clientDir = projectDir.resolve("client")
+      val sources   = sourcesFor(clientDir)
       sources should contain theSameElementsAs Set(
         projectDir.resolve("client/src/main/kotlin"),
         projectDir.resolve("clientCore/src/main/kotlin"),
@@ -57,9 +59,8 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
     }
 
     "from the `server` diamond produce a deduplicated closure" in {
-      val serverDir    = projectDir.resolve("server")
-      val graph        = graphFor(serverDir)
-      val (_, sources) = graph.transitiveDependenciesForProjectsInDir(serverDir)
+      val serverDir = projectDir.resolve("server")
+      val sources   = sourcesFor(serverDir)
       // server → core → sharedUtils
       // server → lib  → sharedUtils  (the diamond bottom)
       // server → testLib(test) → lib (only at test scope, so testLib should not be picked up)
@@ -72,9 +73,8 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
     }
 
     "from `mixedSources` expose both kotlin and java source roots" in {
-      val mixedDir     = projectDir.resolve("mixedSources")
-      val graph        = graphFor(mixedDir)
-      val (_, sources) = graph.transitiveDependenciesForProjectsInDir(mixedDir)
+      val mixedDir = projectDir.resolve("mixedSources")
+      val sources  = sourcesFor(mixedDir)
       sources should contain(projectDir.resolve("mixedSources/src/main/kotlin"))
       sources should contain(projectDir.resolve("mixedSources/src/main/java"))
     }
@@ -167,16 +167,11 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
   // These tests need the correct combination of JDK, Gradle version and Android SDK available.
   // Un-ignore for local testing
   "V2 dependency resolver against gradle-android-test" ignore {
-    val projectDir: Path =
-      Paths
-        .get(ProjectRoot.relativise("joern-cli/frontends/x2cpg/src/test/resources/code/gradle-android-test"))
-        .toAbsolutePath
-        .normalize()
+    val projectDir: Path = projectRoot("gradle-android-test")
 
     "from the `app` subproject pull in app and used-lib (but not unused-lib)" in {
-      val appDir       = projectDir.resolve("app")
-      val graph        = graphFor(appDir)
-      val (_, sources) = graph.transitiveDependenciesForProjectsInDir(appDir)
+      val appDir  = projectDir.resolve("app")
+      val sources = sourcesFor(appDir)
       sources should contain theSameElementsAs Set(
         projectDir.resolve("app/src/main/java"),
         projectDir.resolve("app/src/main/kotlin"),
@@ -186,8 +181,7 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
     }
 
     "from the project root include every subproject's source roots" in {
-      val graph        = graphFor(projectDir)
-      val (_, sources) = graph.transitiveDependenciesForProjectsInDir(projectDir)
+      val sources = sourcesFor(projectDir)
       sources should contain theSameElementsAs Set(
         projectDir.resolve("app/src/main/java"),
         projectDir.resolve("app/src/main/kotlin"),
@@ -249,16 +243,11 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
   }
 
   "V2 dependency resolver against gradle-nested-module-test" should {
-    val projectDir: Path =
-      Paths
-        .get(ProjectRoot.relativise("joern-cli/frontends/x2cpg/src/test/resources/code/gradle-nested-module-test"))
-        .toAbsolutePath
-        .normalize()
+    val projectDir: Path = projectRoot("gradle-nested-module-test")
 
     "from `core` pull in :core and the nested :core:lib subproject" in {
-      val coreDir      = projectDir.resolve("core")
-      val graph        = graphFor(coreDir)
-      val (_, sources) = graph.transitiveDependenciesForProjectsInDir(coreDir)
+      val coreDir = projectDir.resolve("core")
+      val sources = sourcesFor(coreDir)
       sources should contain theSameElementsAs Set(
         projectDir.resolve("core/src/main/kotlin"),
         projectDir.resolve("core/lib/src/main/kotlin")
@@ -289,16 +278,11 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
   }
 
   "V2 dependency resolver against gradle-kmp-test" should {
-    val projectDir: Path =
-      Paths
-        .get(ProjectRoot.relativise("joern-cli/frontends/x2cpg/src/test/resources/code/gradle-kmp-test"))
-        .toAbsolutePath
-        .normalize()
+    val projectDir: Path = projectRoot("gradle-kmp-test")
 
     "from the `used-lib` subproject expose its KMP source roots only" in {
-      val usedLibDir   = projectDir.resolve("used-lib")
-      val graph        = graphFor(usedLibDir)
-      val (_, sources) = graph.transitiveDependenciesForProjectsInDir(usedLibDir)
+      val usedLibDir = projectDir.resolve("used-lib")
+      val sources    = sourcesFor(usedLibDir)
       sources should contain theSameElementsAs Set(
         projectDir.resolve("used-lib/src/commonMain/kotlin"),
         projectDir.resolve("used-lib/src/jvmMain/kotlin"),
@@ -307,8 +291,7 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
     }
 
     "from the project root include every subproject's KMP source roots" in {
-      val graph        = graphFor(projectDir)
-      val (_, sources) = graph.transitiveDependenciesForProjectsInDir(projectDir)
+      val sources = sourcesFor(projectDir)
       sources should contain theSameElementsAs Set(
         projectDir.resolve("src/commonMain/kotlin"),
         projectDir.resolve("src/jvmMain/kotlin"),
