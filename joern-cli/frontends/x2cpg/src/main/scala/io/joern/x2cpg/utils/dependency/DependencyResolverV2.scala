@@ -5,10 +5,11 @@ import io.joern.x2cpg.utils.dependency.DependencyResolver.{
   isGradleBuildFile,
   isMavenBuildFile
 }
+import io.shiftleft.semanticcpg.utils.FileUtil
 import org.slf4j.LoggerFactory
 
-import java.nio.file.{Path, Paths}
-import scala.util.Try
+import java.nio.file.{Files, Path, Paths}
+import scala.util.{Failure, Success, Try}
 
 /** Shared entry point for the V2 dependency-fetching pipeline. Decides whether to invoke V2 (based on the per-frontend
   * Config flag OR the [[EnableEnvVar]] env var), resolves the graph, validates it, and exposes the transitive source
@@ -74,17 +75,43 @@ object DependencyResolverV2 {
     projectDir: Path,
     params: DependencyResolverParams = new DependencyResolverParams
   ): Option[DependencyGraph] = {
-    findSupportedBuildFiles(projectDir).headOption.flatMap { buildFile =>
-      if (isGradleBuildFile(buildFile)) {
-        val maybeConfigurationOverride = params.forGradle.get(GradleConfigKeys.ConfigurationName)
-        val maybeAndroidVariant        = params.forGradle.get(GradleConfigKeys.AndroidVariant)
-        Some(GradleDependenciesV2.get(buildFile.getParent, maybeConfigurationOverride, maybeAndroidVariant))
-      } else if (isMavenBuildFile(buildFile)) {
-        Some(MavenDependencies.getGraph(buildFile.getParent))
-      } else {
-        logger.warn(s"Found unsupported build file $buildFile")
-        None
+    val buildFiles                     = findSupportedBuildFiles(projectDir)
+    val (gradleBuildFiles, otherFiles) = buildFiles.partition(isGradleBuildFile)
+    val mavenBuildFiles                = otherFiles.filter(isMavenBuildFile)
+    otherFiles.filterNot(isMavenBuildFile).foreach { unsupported =>
+      logger.warn(s"Found unsupported build file $unsupported")
+    }
+
+    if (gradleBuildFiles.nonEmpty) {
+      if (mavenBuildFiles.nonEmpty) {
+        logger.warn(
+          s"V2 dependency fetcher: ${mavenBuildFiles.size} Maven build file(s) coexist with Gradle peers; skipping Maven."
+        )
       }
+      val maybeConfigurationOverride = params.forGradle.get(GradleConfigKeys.ConfigurationName)
+      val maybeAndroidVariant        = params.forGradle.get(GradleConfigKeys.AndroidVariant)
+      Try(Files.createTempDirectory(GradleDependenciesV2.tempDirPrefix)) match {
+        case Failure(ex) =>
+          logger.warn(s"Could not create temporary directory for saving dependency files: ${ex.getMessage}")
+          logger.debug("Full exception: ", ex)
+          None
+        case Success(destinationDir) =>
+          FileUtil.deleteOnExit(destinationDir)
+          val dependencyInfoDir = destinationDir.resolve(GradleDependenciesV2.dependencyInfoSubdir)
+          gradleBuildFiles.foreach { buildFile =>
+            GradleDependenciesV2.get(
+              buildFile.getParent,
+              destinationDir,
+              maybeConfigurationOverride,
+              maybeAndroidVariant
+            )
+          }
+          val jsonPaths = GradleDependenciesV2.listDependencyInfoFiles(dependencyInfoDir)
+          logger.info(s"Loaded ${jsonPaths.length} project dependency info files from $dependencyInfoDir.")
+          Some(DependencyGraph.fromJson(destinationDir, jsonPaths))
+      }
+    } else {
+      mavenBuildFiles.headOption.map(buildFile => MavenDependencies.getGraph(buildFile.getParent))
     }
   }
 }

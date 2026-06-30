@@ -23,10 +23,10 @@ object GradleDependenciesV2 {
   // `runGradleTask`, and the replace-pipeline shape inside `getInitScriptContent`. The duplication
   // is intentional during the V2 rollout so V1 stays untouched; once V1 is deleted we should
   // consolidate these into a shared `GradleToolingApi` helper.
-  private val initScriptPrefix     = "x2cpg.init.gradle"
-  private val taskNamePrefix       = "x2cpgCopyDeps"
-  private val tempDirPrefix        = "x2cpgDependencies"
-  private val dependencyInfoSubdir = "dependencyInfo"
+  private val initScriptPrefix                 = "x2cpg.init.gradle"
+  private val taskNamePrefix                   = "x2cpgCopyDeps"
+  private[dependency] val tempDirPrefix        = "x2cpgDependencies"
+  private[dependency] val dependencyInfoSubdir = "dependencyInfo"
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -154,7 +154,7 @@ object GradleDependenciesV2 {
     }
   }
 
-  private def listDependencyInfoFiles(dependencyInfoDir: Path): Array[Path] = {
+  private[dependency] def listDependencyInfoFiles(dependencyInfoDir: Path): Array[Path] = {
     if (!Files.isDirectory(dependencyInfoDir)) Array.empty
     else {
       Using.resource(Files.list(dependencyInfoDir)) { stream =>
@@ -167,61 +167,46 @@ object GradleDependenciesV2 {
     }
   }
 
-  private def emptyGraph(cacheDir: Path): DependencyGraph =
-    DependencyGraph(Map.empty, Map.empty, Map.empty, cacheDir)
-
-  // fetch the gradle project information first, then invoke a newly-defined gradle task that
-  // writes one depInfo JSON per project under `<destinationDir>/dependencyInfo/`. The JSON dir
-  // is then loaded into a DependencyGraph; it also doubles as the cache directory used for lazy
+  // fetch the gradle project information by invoking a newly-defined gradle task that writes one
+  // depInfo JSON per project under `<destinationDir>/dependencyInfo/`. The caller owns
+  // `destinationDir` (and its `deleteOnExit` registration) so it can be shared across multiple
+  // peer-build invocations; the same directory doubles as the cache root used for lazy
   // .aar → classes.jar extraction at consumption time.
   private[dependency] def get(
     projectDir: Path,
+    destinationDir: Path,
     configurationNameOverride: Option[String],
     androidVariantOverride: Option[String] = None
-  ): DependencyGraph = {
+  ): Boolean = {
     logger.info(s"Fetching Gradle project information at path `$projectDir`.")
-    Try(Files.createTempDirectory(tempDirPrefix)) match {
+    Try(Files.createTempFile(initScriptPrefix, "")) match {
       case Failure(ex) =>
-        logger.warn(s"Could not create temporary directory for saving dependency files: ${ex.getMessage}")
-        logger.debug("Full exception: ", ex)
-        // No persistent location to lazy-extract aars into either, so fall back to the system tmp dir.
-        emptyGraph(Paths.get(System.getProperty("java.io.tmpdir")))
+        logger.warn(s"Could not create temporary file for Gradle init script: ${ex.getMessage}")
+        logger.debug(s"Full exception: ", ex)
+        false
 
-      case Success(destinationDir) =>
-        FileUtil.deleteOnExit(destinationDir)
-        val dependencyInfoDir = destinationDir.resolve(dependencyInfoSubdir)
-
-        Try(Files.createTempFile(initScriptPrefix, "")) match {
+      case Success(initScriptFile) =>
+        FileUtil.deleteOnExit(initScriptFile)
+        Try(makeConnection(projectDir.toFile)) match {
           case Failure(ex) =>
-            logger.warn(s"Could not create temporary file for Gradle init script: ${ex.getMessage}")
+            logger.warn(s"Caught exception while trying to establish a Gradle connection: ${ex.getMessage}")
             logger.debug(s"Full exception: ", ex)
-            emptyGraph(dependencyInfoDir)
+            false
 
-          case Success(initScriptFile) =>
-            FileUtil.deleteOnExit(initScriptFile)
-            Try(makeConnection(projectDir.toFile)) match {
-              case Failure(ex) =>
-                logger.warn(s"Caught exception while trying to establish a Gradle connection: ${ex.getMessage}")
-                logger.debug(s"Full exception: ", ex)
-                emptyGraph(dependencyInfoDir)
-
-              case Success(connection) =>
-                Using.resource(connection) { conn =>
-                  val gradleVersion  = getGradleVersionMajorMinor(connection)
-                  val androidVariant = androidVariantOverride.getOrElse(DefaultAndroidVariant)
-                  val initScript =
-                    makeInitScript(destinationDir, gradleVersion, configurationNameOverride, androidVariant)
-                  Files.writeString(initScriptFile, initScript.contents)
-                  val ranOk = runGradleTask(conn, initScript.taskName, initScriptFile.toString)
-                  if (!ranOk) {
-                    logger.info(
-                      s"Gradle dependency fetch did not complete cleanly for $projectDir; returning partial graph."
-                    )
-                  }
-                  val jsonPaths = listDependencyInfoFiles(dependencyInfoDir)
-                  logger.info(s"Loaded ${jsonPaths.length} project dependency info files from $dependencyInfoDir.")
-                  DependencyGraph.fromJson(dependencyInfoDir, jsonPaths)
-                }
+          case Success(connection) =>
+            Using.resource(connection) { conn =>
+              val gradleVersion  = getGradleVersionMajorMinor(connection)
+              val androidVariant = androidVariantOverride.getOrElse(DefaultAndroidVariant)
+              val initScript =
+                makeInitScript(destinationDir, gradleVersion, configurationNameOverride, androidVariant)
+              Files.writeString(initScriptFile, initScript.contents)
+              val ranOk = runGradleTask(conn, initScript.taskName, initScriptFile.toString)
+              if (!ranOk) {
+                logger.info(
+                  s"Gradle dependency fetch did not complete cleanly for $projectDir; any JSONs written so far still contribute."
+                )
+              }
+              ranOk
             }
         }
     }

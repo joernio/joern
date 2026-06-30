@@ -323,4 +323,22 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
       graph.nodes(":unused-lib").sourceDependencies shouldBe Set.empty[String]
     }
   }
+
+  "V2 dependency resolver against gradle-peer-builds-test" should {
+    val projectDir: Path = projectRoot("gradle-peer-builds-test")
+
+    // Layout: /repo/proj-a/{settings,build}.gradle.kts + /repo/proj-b/{settings,build}.gradle.kts,
+    // no root build file at /repo. `findSupportedBuildFiles(/repo)` returns both peers' build
+    // files, and getDependencyGraph fans both Gradle invocations into a single destinationDir,
+    // then loads all per-project JSONs in one shot.
+    "fan two peer Gradle builds into a single unified graph" in {
+      val graph = graphFor(projectDir)
+
+      graph.nodes.keys should contain allOf (":impl-a", ":impl-b")
+
+      val sources = sourcesFor(projectDir)
+      sources should contain(projectDir.resolve("proj-a/impl-a/src/main/kotlin"))
+      sources should contain(projectDir.resolve("proj-b/impl-b/src/main/kotlin"))
+    }
+  }
 }
