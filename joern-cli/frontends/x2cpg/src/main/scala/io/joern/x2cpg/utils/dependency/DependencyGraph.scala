@@ -36,8 +36,6 @@ private[dependency] type ProjectNode = (
   artifactDependencies: Set[MavenArtifactDependency]
 )
 
-private[joern] type DependencyResult = (artifacts: Set[Path], sources: Set[Path])
-
 private[joern] case class DependencyGraph(
   nodes: Map[ProjectName, ProjectNode],
   dependents: Map[ProjectName, Set[ProjectName]],
@@ -45,7 +43,9 @@ private[joern] case class DependencyGraph(
   cacheDir: Path
 ) {
 
-  private[joern] def transitiveDependenciesForProjectsInDir(inputDir: Path): DependencyResult = {
+  private[joern] def transitiveDependenciesForProjectsInDir(
+    inputDir: Path
+  ): DependencyResolverV2.DependencyResolutionResult = {
     val checked     = mutable.Set[String]()
     val toCheck     = mutable.Stack[String]()
     val sourcePaths = mutable.Set[Path]()
@@ -82,7 +82,7 @@ private[joern] case class DependencyGraph(
     }
 
     val artifactPaths = artifacts.valuesIterator.map(_.path).toSet
-    (AarExtractor.materializeJars(artifactPaths, cacheDir), sourcePaths.toSet)
+    (sourcePaths.toSet, AarExtractor.materializeJars(artifactPaths, cacheDir))
   }
 
 }

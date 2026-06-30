@@ -23,12 +23,12 @@ object DependencyResolverV2 {
   /** Outcome of a V2 dependency resolution. `sourceDirs` is the set of directories returned by the graph's transitive
     * walk, validated to be non-empty. `artifactJars` is the AAR-materialized jar set for the same walk.
     */
-  type DependencyResolutionV2Result = (sourceDirs: Set[Path], artifactJars: Set[Path])
+  type DependencyResolutionResult = (sourceDirs: Set[Path], artifactJars: Set[Path])
 
   def resolve(
     inputPath: String,
     params: DependencyResolverParams = new DependencyResolverParams
-  ): Option[DependencyResolutionV2Result] = {
+  ): Option[DependencyResolutionResult] = {
     val projectDir = Paths.get(inputPath).toAbsolutePath
 
     getDependencyGraph(projectDir, params) match {
@@ -41,16 +41,16 @@ object DependencyResolverV2 {
         None
 
       case Some(graph) =>
-        val (artifacts, sources) = graph.transitiveDependenciesForProjectsInDir(projectDir)
-        if (sources.isEmpty) {
+        val result = graph.transitiveDependenciesForProjectsInDir(projectDir)
+        if (result.sourceDirs.isEmpty) {
           logger.warn(s"V2 dependency fetcher: no source directories resolved for $inputPath. Falling back.")
           None
         } else {
           logger.info(
-            s"V2 dependency fetcher: using ${sources.size} source directories and ${artifacts.size} artifacts " +
-              s"for $inputPath."
+            s"V2 dependency fetcher: using ${result.sourceDirs.size} source directories and " +
+              s"${result.artifactJars.size} artifacts for $inputPath."
           )
-          Some((sources, artifacts))
+          Some(result)
         }
     }
   }

@@ -24,7 +24,7 @@ class DependencyResolverV2Tests extends AnyWordSpec with Matchers {
       .normalize()
 
   private def sourcesFor(inputDir: Path): Set[Path] =
-    graphFor(inputDir).transitiveDependenciesForProjectsInDir(inputDir).sources
+    graphFor(inputDir).transitiveDependenciesForProjectsInDir(inputDir).sourceDirs
 
   "V2 dependency fetcher against the gradle-test-project" should {
     val projectDir: Path = projectRoot("gradle-test-project")

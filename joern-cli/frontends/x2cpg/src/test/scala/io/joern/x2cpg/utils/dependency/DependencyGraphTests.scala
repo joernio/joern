@@ -20,7 +20,7 @@ class DependencyGraphTests extends AnyWordSpec with Matchers {
         project("b", sourcePath = "/repo/b", artifacts = Set(newer))
       )
 
-      val (artifacts, _) = graph.transitiveDependenciesForProjectsInDir(Paths.get("/repo"))
+      val (_, artifacts) = graph.transitiveDependenciesForProjectsInDir(Paths.get("/repo"))
       artifacts shouldBe Set(newer.path)
     }
 
@@ -34,7 +34,7 @@ class DependencyGraphTests extends AnyWordSpec with Matchers {
         project("b", sourcePath = "/repo/b", artifacts = Set(older))
       )
 
-      val (artifacts, _) = graph.transitiveDependenciesForProjectsInDir(Paths.get("/repo"))
+      val (_, artifacts) = graph.transitiveDependenciesForProjectsInDir(Paths.get("/repo"))
       artifacts shouldBe Set(newer.path)
     }
 
@@ -47,7 +47,7 @@ class DependencyGraphTests extends AnyWordSpec with Matchers {
         project("b", sourcePath = "/repo/b", artifacts = Set(v110))
       )
 
-      val (artifacts, _) = graph.transitiveDependenciesForProjectsInDir(Paths.get("/repo"))
+      val (_, artifacts) = graph.transitiveDependenciesForProjectsInDir(Paths.get("/repo"))
       artifacts shouldBe Set(v110.path)
     }
 
@@ -60,7 +60,7 @@ class DependencyGraphTests extends AnyWordSpec with Matchers {
         project("b", sourcePath = "/repo/b", artifacts = Set(release))
       )
 
-      val (artifacts, _) = graph.transitiveDependenciesForProjectsInDir(Paths.get("/repo"))
+      val (_, artifacts) = graph.transitiveDependenciesForProjectsInDir(Paths.get("/repo"))
       artifacts shouldBe Set(release.path)
     }
 
@@ -70,7 +70,7 @@ class DependencyGraphTests extends AnyWordSpec with Matchers {
 
       val graph = buildGraph(project("a", sourcePath = "/repo/a", artifacts = Set(main, sources)))
 
-      val (artifacts, _) = graph.transitiveDependenciesForProjectsInDir(Paths.get("/repo"))
+      val (_, artifacts) = graph.transitiveDependenciesForProjectsInDir(Paths.get("/repo"))
       artifacts shouldBe Set(main.path, sources.path)
     }
 
@@ -82,7 +82,7 @@ class DependencyGraphTests extends AnyWordSpec with Matchers {
 
       val graph = buildGraph(project("a", sourcePath = "/repo/a", artifacts = Set(jar, pom)))
 
-      val (artifacts, _) = graph.transitiveDependenciesForProjectsInDir(Paths.get("/repo"))
+      val (_, artifacts) = graph.transitiveDependenciesForProjectsInDir(Paths.get("/repo"))
       artifacts shouldBe Set(jar.path, pom.path)
     }
 
@@ -92,7 +92,7 @@ class DependencyGraphTests extends AnyWordSpec with Matchers {
 
       val graph = buildGraph(project("a", sourcePath = "/repo/a", artifacts = Set(foo, bar)))
 
-      val (artifacts, _) = graph.transitiveDependenciesForProjectsInDir(Paths.get("/repo"))
+      val (_, artifacts) = graph.transitiveDependenciesForProjectsInDir(Paths.get("/repo"))
       artifacts shouldBe Set(foo.path, bar.path)
     }
 
@@ -105,7 +105,7 @@ class DependencyGraphTests extends AnyWordSpec with Matchers {
         project("b", sourcePath = "/repo/b", artifacts = Set(versioned))
       )
 
-      val (artifacts, _) = graph.transitiveDependenciesForProjectsInDir(Paths.get("/repo"))
+      val (_, artifacts) = graph.transitiveDependenciesForProjectsInDir(Paths.get("/repo"))
       artifacts shouldBe Set(versioned.path)
     }
 
