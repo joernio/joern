@@ -107,6 +107,48 @@ class OperatorTests extends Rust2CpgSuite(noSysRoot = true) {
     }
   }
 
+  "a field access on `self`" should {
+    val cpg = code("""
+        |struct Foo {
+        | bar: i32,
+        |}
+        |impl Foo {
+        | fn get_bar(&self) -> i32 {
+        |   self.bar
+        | }
+        |}
+        |""".stripMargin)
+
+    "lower to a fieldAccess call" in {
+      inside(cpg.call.nameExact(Operators.fieldAccess).l) { case fieldAccess :: Nil =>
+        fieldAccess.code shouldBe "self.bar"
+        fieldAccess.methodFullName shouldBe Operators.fieldAccess
+        fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        fieldAccess.typeFullName shouldBe "i32"
+      }
+    }
+
+    "have the lhs as the first argument" in {
+      inside(cpg.call.nameExact(Operators.fieldAccess).argument(1).l) { case (deref: Call) :: Nil =>
+        deref.name shouldBe Operators.indirection
+        deref.code shouldBe "*self"
+        deref.typeFullName shouldBe "rust2cpgtest::Foo"
+        inside(deref.argument.l) { case (self: Identifier) :: Nil =>
+          self.name shouldBe "self"
+          self.code shouldBe "self"
+          self.typeFullName shouldBe "&rust2cpgtest::Foo"
+        }
+      }
+    }
+
+    "have the field as the second argument" in {
+      inside(cpg.call.nameExact(Operators.fieldAccess).argument(2).l) { case (field: FieldIdentifier) :: Nil =>
+        field.code shouldBe "bar"
+        field.canonicalName shouldBe "bar"
+      }
+    }
+  }
+
   "unary operators" should {
     val cpg = code("""
         |fn main(x: i32, b: bool, p: *const i32) {

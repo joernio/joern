@@ -38,6 +38,7 @@ scala_library(
         "@maven//:com_typesafe_config",
         "@maven//:org_apache_commons_commons_exec",
         "@maven//:org_gradle_gradle_tooling_api",
+        "@maven//:org_apache_maven_maven_artifact",
     ],
 )
 
