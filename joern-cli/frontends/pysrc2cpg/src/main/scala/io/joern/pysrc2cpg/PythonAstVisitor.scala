@@ -45,6 +45,7 @@ class PythonAstVisitor(
   protected val contextStack = new ContextStack()
 
   private var memOpMap: AstNodeToMemoryOperationMap = scala.compiletime.uninitialized
+  private var scopeNames: ScopeNameCollection       = scala.compiletime.uninitialized
 
   private val members = mutable.Map.empty[NewTypeDecl, List[String]]
 
@@ -81,6 +82,7 @@ class PythonAstVisitor(
     val memOpCalculator = new MemoryOperationCalculator()
     module.accept(memOpCalculator)
     memOpMap = memOpCalculator.astNodeToMemOp
+    scopeNames = memOpCalculator.scopeNames
 
     val contentOption = if (enableFileContent) Some(nodeToCode.content) else None
     val fileNode      = nodeBuilder.fileNode(relFileName, contentOption)
@@ -116,7 +118,8 @@ class PythonAstVisitor(
         isAsync = false,
         methodRefNode = None,
         returnTypeHint = None,
-        LineAndColumn(line, column, endLine, endColumn, offset, endOffset)
+        LineAndColumn(line, column, endLine, endColumn, offset, endOffset),
+        reservedNames = scopeNames.namesInScope(module)
       )
 
     createIdentifierLinks()
@@ -274,7 +277,8 @@ class PythonAstVisitor(
       () => body.map(convert),
       returns,
       isAsync,
-      lineAndColOf(functionDef)
+      lineAndColOf(functionDef),
+      reservedNames = scopeNames.namesInScope(functionDef)
     )
     functionDefToMethod.put(functionDef, methodNode)
 
@@ -340,7 +344,8 @@ class PythonAstVisitor(
     returns: Option[ast.iexpr],
     isAsync: Boolean,
     lineAndColumn: LineAndColumn,
-    additionalModifiers: List[String] = List.empty
+    additionalModifiers: List[String] = List.empty,
+    reservedNames: Iterable[String]
   ): (nodes.NewMethod, nodes.NewMethodRef) = {
     val suffix =
       contextStack.methodCounter.get(methodName) match {
@@ -366,7 +371,8 @@ class PythonAstVisitor(
         isAsync = true,
         Some(methodRefNode),
         returnTypeHint = None,
-        lineAndColumn
+        lineAndColumn,
+        reservedNames
       )
 
     contextStack.methodCounter.updateWith(methodName) {
@@ -391,7 +397,8 @@ class PythonAstVisitor(
     isAsync: Boolean,
     methodRefNode: Option[nodes.NewMethodRef],
     returnTypeHint: Option[String],
-    lineAndColumn: LineAndColumn
+    lineAndColumn: LineAndColumn,
+    reservedNames: Iterable[String]
   ): nodes.NewMethod = {
     val methodNode = nodeBuilder.methodNode(name, fullName, relFileName, lineAndColumn)
     edgeBuilder.astEdge(methodNode, contextStack.astParent, contextStack.order.getAndInc)
@@ -399,7 +406,7 @@ class PythonAstVisitor(
     val blockNode = nodeBuilder.blockNode("", lineAndColumn)
     edgeBuilder.astEdge(blockNode, methodNode, 1)
 
-    contextStack.pushMethod(scopeName, methodNode, blockNode, methodRefNode)
+    contextStack.pushMethod(scopeName, methodNode, blockNode, methodRefNode, reservedNames)
 
     var order = 0
     for (modifier <- modifiers) {
@@ -497,7 +504,7 @@ class PythonAstVisitor(
     edgeBuilder.astEdge(instanceTypeDecl, contextStack.astParent, contextStack.order.getAndInc)
 
     // Create <body> function which contains the code defining the class
-    contextStack.pushClass(Some(classDef.name), instanceTypeDecl)
+    contextStack.pushClass(Some(classDef.name), instanceTypeDecl, scopeNames.namesInScope(classDef))
     val classBodyFunctionName = "<body>"
     val (_, methodRefNode) = createMethodAndMethodRef(
       classBodyFunctionName,
@@ -510,12 +517,13 @@ class PythonAstVisitor(
       bodyProvider = () => classDef.body.map(convert),
       None,
       isAsync = false,
-      lineAndColOf(classDef)
+      lineAndColOf(classDef),
+      reservedNames = scopeNames.namesInScope(classDef)
     )
 
     contextStack.pop()
 
-    contextStack.pushClass(Some(classDef.name), metaTypeDeclNode)
+    contextStack.pushClass(Some(classDef.name), metaTypeDeclNode, scopeNames.namesInScope(classDef))
 
     // Create meta class call handling method and bind it to meta class type.
     val functions = classDef.body.collect { case func: ast.FunctionDef => func }
@@ -680,7 +688,8 @@ class PythonAstVisitor(
       isAsync = false,
       methodRefNode = None,
       returnTypeHint = None,
-      lineAndColumn
+      lineAndColumn,
+      reservedNames = Nil
     )
   }
 
@@ -782,7 +791,8 @@ class PythonAstVisitor(
       isAsync = false,
       methodRefNode = None,
       returnTypeHint = Some(instanceTypeDeclFullName),
-      lineAndColumn
+      lineAndColumn,
+      reservedNames = Nil
     )
   }
 
@@ -843,7 +853,8 @@ class PythonAstVisitor(
       isAsync = false,
       methodRefNode = None,
       returnTypeHint = None,
-      lineAndColumn
+      lineAndColumn,
+      reservedNames = Nil
     )
   }
 
@@ -1511,7 +1522,8 @@ class PythonAstVisitor(
       returns = None,
       isAsync = false,
       lineAndColOf(lambda),
-      ModifierTypes.LAMBDA :: Nil
+      ModifierTypes.LAMBDA :: Nil,
+      reservedNames = scopeNames.namesInScope(lambda)
     )
     methodRefNode
   }
@@ -1598,7 +1610,7 @@ class PythonAstVisitor(
     */
   // TODO test
   def convert(listComp: ast.ListComp): NewNode = {
-    contextStack.pushSpecialContext()
+    contextStack.pushSpecialContext(scopeNames.namesInScope(listComp))
     val tmpVariableName = getUnusedName()
 
     // Create tmp = list()
@@ -1635,7 +1647,7 @@ class PythonAstVisitor(
     */
   // TODO test
   def convert(setComp: ast.SetComp): NewNode = {
-    contextStack.pushSpecialContext()
+    contextStack.pushSpecialContext(scopeNames.namesInScope(setComp))
     val tmpVariableName = getUnusedName()
 
     val setOperatorCall =
@@ -1671,7 +1683,7 @@ class PythonAstVisitor(
     */
   // TODO test
   def convert(dictComp: ast.DictComp): NewNode = {
-    contextStack.pushSpecialContext()
+    contextStack.pushSpecialContext(scopeNames.namesInScope(dictComp))
     val tmpVariableName = getUnusedName()
 
     val dictOperatorCall =
@@ -1709,7 +1721,7 @@ class PythonAstVisitor(
     */
   // TODO test
   def convert(generatorExp: ast.GeneratorExp): NewNode = {
-    contextStack.pushSpecialContext()
+    contextStack.pushSpecialContext(scopeNames.namesInScope(generatorExp))
     val tmpVariableName = getUnusedName()
 
     // Create tmp = list()
@@ -2110,7 +2122,7 @@ class PythonAstVisitor(
   // is right and that we convert the exception handler body.
   // TODO tests
   def convert(exceptHandler: ast.ExceptHandler): NewNode = {
-    contextStack.pushSpecialContext()
+    contextStack.pushSpecialContext(scopeNames.namesInScope(exceptHandler))
     val specialTargetLocals = mutable.ArrayBuffer.empty[nodes.NewLocal]
     if (exceptHandler.name.isDefined) {
       val localNode = nodeBuilder.localNode(exceptHandler.name.get, None)
