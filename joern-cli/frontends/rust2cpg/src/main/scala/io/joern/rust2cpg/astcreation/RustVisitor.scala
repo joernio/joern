@@ -712,15 +712,14 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // ContinueExpr =
   //  Attr* 'continue' Lifetime?
   private def visitContinueExpr(continueExpr: ContinueExpr): Ast = {
-    Ast(controlStructureNode(continueExpr, ControlStructureTypes.CONTINUE, code(continueExpr)))
+    continueAst(continueExpr, code(continueExpr))
   }
 
   // BreakExpr =
   //  Attr* 'break' Lifetime? Expr?
   private def visitBreakExpr(breakExpr: BreakExpr): Ast = {
     // TODO: break expr is meant to return expr
-    val breakNode = controlStructureNode(breakExpr, ControlStructureTypes.BREAK, code(breakExpr))
-    controlStructureAst(breakNode, None, Nil)
+    breakAst(breakExpr, code(breakExpr))
   }
 
   // IndexExpr =
