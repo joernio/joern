@@ -110,7 +110,7 @@ class ContextStack {
     methodNode: nodes.NewMethod,
     methodBlockNode: nodes.NewBlock,
     methodRefNode: Option[nodes.NewMethodRef],
-    reservedNames: Iterable[String] = Nil
+    reservedNames: Iterable[String]
   ): Unit = {
     val isClassBodyMethod = stack.headOption.exists(_.isInstanceOf[ClassContext])
 
@@ -130,21 +130,17 @@ class ContextStack {
     push(methodContext)
   }
 
-  def pushClass(
-    scopeName: Option[String],
-    classNode: nodes.NewTypeDecl,
-    reservedNames: Iterable[String] = Nil
-  ): Unit = {
+  def pushClass(scopeName: Option[String], classNode: nodes.NewTypeDecl, reservedNames: Iterable[String]): Unit = {
     push(new ClassContext(scopeName, classNode, new AutoIncIndex(1), reservedNames = mutable.Set.from(reservedNames)))
   }
 
-  def pushSpecialContext(reservedNames: Iterable[String] = Nil): Unit = {
+  def pushSpecialContext(reservedNames: Iterable[String]): Unit = {
     val methodContext = findEnclosingMethodContext(stack)
     push(
       new SpecialBlockContext(
         methodContext.astParent,
         methodContext.order,
-        reservedNames = mutable.Set.from(reservedNames)
+        reservedNames = mutable.Set.from(methodContext.reservedNames ++ reservedNames)
       )
     )
   }
@@ -177,12 +173,10 @@ class ContextStack {
       case _                      => None
     }
     val allocationContext = enclosingMethodContext.getOrElse(context)
-    val nameBase          = prefix.map(prefix_value => s"${prefix_value}_tmp").getOrElse("tmp")
-    val isReserved = (name: String) =>
-      context.reservedNames.contains(name) || enclosingMethodContext.exists(_.reservedNames.contains(name))
+    val nameBase          = prefix.map(prefixValue => s"${prefixValue}_tmp").getOrElse("tmp")
 
     var result: String = ""
-    while (result == "" || isReserved(result)) {
+    while (result == "" || context.reservedNames.contains(result)) {
       val counter = allocationContext.tmpCounters.getOrElse(nameBase, 0)
       result = s"$nameBase$counter"
       allocationContext.tmpCounters.update(nameBase, counter + 1)

@@ -345,7 +345,7 @@ class PythonAstVisitor(
     isAsync: Boolean,
     lineAndColumn: LineAndColumn,
     additionalModifiers: List[String] = List.empty,
-    reservedNames: Iterable[String] = Nil
+    reservedNames: Iterable[String]
   ): (nodes.NewMethod, nodes.NewMethodRef) = {
     val suffix =
       contextStack.methodCounter.get(methodName) match {
@@ -398,7 +398,7 @@ class PythonAstVisitor(
     methodRefNode: Option[nodes.NewMethodRef],
     returnTypeHint: Option[String],
     lineAndColumn: LineAndColumn,
-    reservedNames: Iterable[String] = Nil
+    reservedNames: Iterable[String]
   ): nodes.NewMethod = {
     val methodNode = nodeBuilder.methodNode(name, fullName, relFileName, lineAndColumn)
     edgeBuilder.astEdge(methodNode, contextStack.astParent, contextStack.order.getAndInc)
@@ -688,7 +688,8 @@ class PythonAstVisitor(
       isAsync = false,
       methodRefNode = None,
       returnTypeHint = None,
-      lineAndColumn
+      lineAndColumn,
+      reservedNames = Nil
     )
   }
 
@@ -790,7 +791,8 @@ class PythonAstVisitor(
       isAsync = false,
       methodRefNode = None,
       returnTypeHint = Some(instanceTypeDeclFullName),
-      lineAndColumn
+      lineAndColumn,
+      reservedNames = Nil
     )
   }
 
@@ -851,7 +853,8 @@ class PythonAstVisitor(
       isAsync = false,
       methodRefNode = None,
       returnTypeHint = None,
-      lineAndColumn
+      lineAndColumn,
+      reservedNames = Nil
     )
   }
 
