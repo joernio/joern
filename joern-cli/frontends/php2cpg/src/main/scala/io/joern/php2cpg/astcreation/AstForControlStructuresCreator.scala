@@ -11,21 +11,15 @@ import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Dispatch
 trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForBreakStmt(breakStmt: PhpBreakStmt): Ast = {
-    // TODO: use io.joern.x2cpg.internal.ControlStructureAstBuilder.breakAst
-    // This is generating proper jump argument edges, but does not handle the literal as argument correctly.
-    val code      = breakStmt.num.map(num => s"break($num)").getOrElse("break")
-    val breakNode = controlStructureNode(breakStmt, ControlStructureTypes.BREAK, code)
-    val argument  = breakStmt.num.map(intToLiteralAst)
-    controlStructureAst(breakNode, None, argument.toList)
+    val code     = breakStmt.num.map(num => s"break($num)").getOrElse("break")
+    val argument = breakStmt.num.map(intToLiteralAst)
+    breakAst(breakStmt, code, argument)
   }
 
   protected def astForContinueStmt(continueStmt: PhpContinueStmt): Ast = {
-    // TODO: use io.joern.x2cpg.internal.ControlStructureAstBuilder.breakAst
-    // This is generating proper jump argument edges, but does not handle the literal as argument correctly.
-    val code         = continueStmt.num.map(num => s"continue($num)").getOrElse("continue")
-    val continueNode = controlStructureNode(continueStmt, ControlStructureTypes.CONTINUE, code)
-    val argument     = continueStmt.num.map(intToLiteralAst)
-    controlStructureAst(continueNode, None, argument.toList)
+    val code     = continueStmt.num.map(num => s"continue($num)").getOrElse("continue")
+    val argument = continueStmt.num.map(intToLiteralAst)
+    continueAst(continueStmt, code, argument)
   }
 
   protected def astForWhileStmt(whileStmt: PhpWhileStmt): Ast = {
@@ -329,15 +323,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
   protected def astForGotoStmt(stmt: PhpGotoStmt): Ast = {
     val label = stmt.label.name
     val code  = s"goto $label"
-
-    val gotoNode = controlStructureNode(stmt, ControlStructureTypes.GOTO, code)
-
-    val jumpLabel = NewJumpLabel()
-      .name(label)
-      .code(label)
-      .lineNumber(line(stmt))
-
-    controlStructureAst(gotoNode, condition = None, children = Ast(jumpLabel) :: Nil)
+    gotoAst(stmt, code, label)
   }
 
   protected def astForLabelStmt(stmt: PhpLabelStmt): Ast = {

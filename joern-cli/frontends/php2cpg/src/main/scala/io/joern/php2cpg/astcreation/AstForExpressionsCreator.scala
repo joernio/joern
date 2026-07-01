@@ -8,7 +8,7 @@ import io.joern.php2cpg.utils.BlockScope
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import scala.annotation.tailrec
@@ -955,13 +955,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   private def astForMatchExpr(expr: PhpMatchExpr): Ast = {
     val conditionAst = astForExpr(expr.condition)
 
-    val matchNode = controlStructureNode(expr, ControlStructureTypes.MATCH, s"match (${conditionAst.rootCodeOrEmpty})")
-
     val matchBodyBlock = blockNode(expr)
     val armsAsts       = expr.matchArms.flatMap(astsForMatchArm)
     val matchBody      = Ast(matchBodyBlock).withChildren(armsAsts)
 
-    controlStructureAst(matchNode, Option(conditionAst), matchBody :: Nil)
+    matchAst(expr, Option(conditionAst), matchBody :: Nil, Some(s"match (${conditionAst.rootCodeOrEmpty})"))
   }
 
   private def astsForMatchArm(matchArm: PhpMatchArm): List[Ast] = {
