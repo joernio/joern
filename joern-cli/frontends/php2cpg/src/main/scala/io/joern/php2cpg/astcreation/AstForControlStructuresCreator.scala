@@ -11,20 +11,20 @@ import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Dispatch
 trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForBreakStmt(breakStmt: PhpBreakStmt): Ast = {
+    // TODO: use io.joern.x2cpg.internal.ControlStructureAstBuilder.breakAst
+    // This is generating proper jump argument edges, but does not handle the literal as argument correctly.
     val code      = breakStmt.num.map(num => s"break($num)").getOrElse("break")
     val breakNode = controlStructureNode(breakStmt, ControlStructureTypes.BREAK, code)
-
-    val argument = breakStmt.num.map(intToLiteralAst)
-
+    val argument  = breakStmt.num.map(intToLiteralAst)
     controlStructureAst(breakNode, None, argument.toList)
   }
 
   protected def astForContinueStmt(continueStmt: PhpContinueStmt): Ast = {
+    // TODO: use io.joern.x2cpg.internal.ControlStructureAstBuilder.breakAst
+    // This is generating proper jump argument edges, but does not handle the literal as argument correctly.
     val code         = continueStmt.num.map(num => s"continue($num)").getOrElse("continue")
     val continueNode = controlStructureNode(continueStmt, ControlStructureTypes.CONTINUE, code)
-
-    val argument = continueStmt.num.map(intToLiteralAst)
-
+    val argument     = continueStmt.num.map(intToLiteralAst)
     controlStructureAst(continueNode, None, argument.toList)
   }
 
