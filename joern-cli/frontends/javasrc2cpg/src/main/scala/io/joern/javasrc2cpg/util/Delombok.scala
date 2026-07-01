@@ -149,8 +149,7 @@ object Delombok {
         DelombokRunResult(inputPath, false)
 
       case Success(tempDir) =>
-        // FileUtil.deleteOnExit(tempDir)
-        println(s"delombok dir : $tempDir")
+        FileUtil.deleteOnExit(tempDir)
         val packageRoots  = PackageRootFinder.packageRootsFromFiles(inputPath, fileInfo)
         val absoluteRoots = packageRoots.map(inputPath.resolve)
         val fqnIndex      = DelombokStderrFilter.FqnIndex.build(inputPath, fileInfo, packageRoots)
