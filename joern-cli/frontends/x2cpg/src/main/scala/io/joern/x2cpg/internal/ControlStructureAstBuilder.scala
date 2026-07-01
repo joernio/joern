@@ -57,6 +57,7 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     */
   def whileAst(node: Node, condition: Option[Ast], body: Seq[Ast], code: Option[String] = None): Ast = {
     val whileNode = NewControlStructure()
+      .parserTypeName(node.getClass.getSimpleName)
       .controlStructureType(ControlStructureTypes.WHILE)
       .lineNumber(line(node))
       .columnNumber(column(node))
@@ -85,6 +86,7 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     */
   def doWhileAst(node: Node, condition: Option[Ast], body: Seq[Ast], code: Option[String] = None): Ast = {
     val doWhileNode = NewControlStructure()
+      .parserTypeName(node.getClass.getSimpleName)
       .controlStructureType(ControlStructureTypes.DO)
       .lineNumber(line(node))
       .columnNumber(column(node))
@@ -112,6 +114,7 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     */
   def switchAst(node: Node, condition: Option[Ast], body: Seq[Ast], code: Option[String] = None): Ast = {
     val switchNode = NewControlStructure()
+      .parserTypeName(node.getClass.getSimpleName)
       .controlStructureType(ControlStructureTypes.SWITCH)
       .lineNumber(line(node))
       .columnNumber(column(node))
@@ -156,6 +159,7 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     code: Option[String] = None
   ): Ast = {
     val forNode = NewControlStructure()
+      .parserTypeName(node.getClass.getSimpleName)
       .controlStructureType(ControlStructureTypes.FOR)
       .lineNumber(line(node))
       .columnNumber(column(node))
@@ -401,6 +405,7 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     code: Option[String] = None
   ): Ast = {
     val tryNode = NewControlStructure()
+      .parserTypeName(node.getClass.getSimpleName)
       .controlStructureType(ControlStructureTypes.TRY)
       .lineNumber(line(node))
       .columnNumber(column(node))
@@ -454,6 +459,7 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     code: Option[String] = None
   ): Ast = {
     val ifNode = NewControlStructure()
+      .parserTypeName(node.getClass.getSimpleName)
       .controlStructureType(ControlStructureTypes.IF)
       .lineNumber(line(node))
       .columnNumber(column(node))
