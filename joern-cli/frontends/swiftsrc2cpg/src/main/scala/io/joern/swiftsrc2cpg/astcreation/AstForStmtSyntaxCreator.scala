@@ -549,16 +549,10 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForMissingStmtSyntax(@unused node: MissingStmtSyntax): Ast = Ast()
 
   private def astForRepeatStmtSyntax(node: RepeatStmtSyntax): Ast = {
-    val code = this.code(node)
+    val conditionAst = astForNode(node.condition)
+    val bodyAst      = astForNode(node.body)
     // In Swift, a repeat-while loop is semantically the same as a C do-while loop
-    val doNode          = controlStructureNode(node, ControlStructureTypes.DO, code)
-    val conditionAst    = astForNode(node.condition)
-    val bodyAst         = astForNode(node.body)
-    val astWithChildren = controlStructureAst(doNode, Option(conditionAst), Seq(bodyAst), placeConditionLast = true)
-    bodyAst.root match {
-      case Some(bodyRoot) => astWithChildren.withDoBodyEdge(doNode, bodyRoot)
-      case None           => astWithChildren
-    }
+    doWhileAst(node, Option(conditionAst), Seq(bodyAst))
   }
 
   private def astForReturnStmtSyntax(node: ReturnStmtSyntax): Ast = {
