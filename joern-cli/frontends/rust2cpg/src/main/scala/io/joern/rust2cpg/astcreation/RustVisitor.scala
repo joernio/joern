@@ -400,7 +400,11 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
         val call =
           callNode(callExpr, code(callExpr), name, methodFullName, dispatch, None, Some(typeFullName))
         val args = callExpr.argList.expr.map(visitExpr)
-        callAst(call, args)
+        if (callExpr.hasSelfReceiver.isDefined && args.nonEmpty) {
+          callAst(call, args.tail, base = Some(args.head))
+        } else {
+          callAst(call, args)
+        }
       case None => notHandledYet(callExpr)
     }
   }

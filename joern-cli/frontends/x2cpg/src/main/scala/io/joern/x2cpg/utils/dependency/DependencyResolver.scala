@@ -8,7 +8,7 @@ import java.nio.file.{Files, Path}
 import scala.util.{Failure, Success}
 
 enum GradleConfigKeys {
-  case ProjectName, ConfigurationName
+  case ProjectName, ConfigurationName, AndroidVariant
 }
 
 case class DependencyResolverParams(
@@ -97,16 +97,16 @@ object DependencyResolver {
     }
   }
 
-  private def isGradleBuildFile(file: Path): Boolean = {
+  private[dependency] def isGradleBuildFile(file: Path): Boolean = {
     val pathString = file.toString
     pathString.endsWith(".gradle") || pathString.endsWith(".gradle.kts")
   }
 
-  private def isMavenBuildFile(file: Path): Boolean = {
+  private[dependency] def isMavenBuildFile(file: Path): Boolean = {
     file.toString.endsWith("pom.xml")
   }
 
-  private def findSupportedBuildFiles(currentDir: Path, depth: Int = 0): List[Path] = {
+  private[dependency] def findSupportedBuildFiles(currentDir: Path, depth: Int = 0): List[Path] = {
     if (depth >= MaxSearchDepth) {
       logger.info("findSupportedBuildFiles reached max depth before finding build files")
       Nil
