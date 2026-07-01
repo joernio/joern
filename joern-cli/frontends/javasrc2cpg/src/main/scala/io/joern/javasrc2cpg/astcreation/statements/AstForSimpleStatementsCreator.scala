@@ -334,21 +334,15 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
 
         case Some(guard) =>
           val bodyAst = wrapInBlockWithPrefix(Nil, entry.getStatements.asScala.toList)
-
-          val ifNode = controlStructureNode(
-            entry.getGuard.get(),
-            ControlStructureTypes.IF,
-            s"if (${guard.headOption.flatMap(_.rootCode).getOrElse("")})"
-          )
-
-          controlStructureAst(ifNode, guard.headOption, bodyAst :: Nil)
+          val ifCode  = s"if (${guard.headOption.flatMap(_.rootCode).getOrElse("")})"
+          ifThenElseAst(entry.getGuard.get(), None, guard.headOption, bodyAst, None, Some(ifCode))
       }
       scope.popBlockScope()
 
       val ifInstanceOfAst = instanceOfAst
         .map { instanceOfAst =>
-          val ifNode = controlStructureNode(entry, ControlStructureTypes.IF, s"if (${instanceOfAst.rootCodeOrEmpty})")
-          controlStructureAst(ifNode, Option(instanceOfAst), statementsAst :: Nil)
+          val ifCode = s"if (${instanceOfAst.rootCodeOrEmpty})"
+          ifThenElseAst(entry, None, Option(instanceOfAst), statementsAst, None, Some(ifCode))
         }
         .getOrElse(statementsAst)
 

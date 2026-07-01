@@ -9,19 +9,10 @@ import io.joern.javasrc2cpg.scope.NodeTypeInfo
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.NameConstants
 import io.joern.javasrc2cpg.util.Util.composeMethodFullName
-import io.joern.x2cpg.{Ast, Defines}
 import io.joern.x2cpg.utils.IntervalKeyPool
-import io.shiftleft.codepropertygraph.generated.PropertyDefaults
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewBlock,
-  NewControlStructure,
-  NewLiteral,
-  NewLocal,
-  NewMember,
-  NewMethodParameterIn,
-  NewNode
-}
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
+import io.joern.x2cpg.{Ast, Defines}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyDefaults}
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.*
@@ -118,16 +109,8 @@ trait AstForForLoopsCreator { this: AstCreator =>
           .withChildren(bodyStmtAsts)
     }
 
-    val forNode =
-      NewControlStructure()
-        .controlStructureType(ControlStructureTypes.WHILE)
-        .code(ControlStructureTypes.FOR)
-        .lineNumber(lineNo)
-        .columnNumber(column(stmt))
-
-    val forAst = controlStructureAst(forNode, Some(iteratorHasNextCallAst), List(bodyAst))
-
-    Seq(Ast(iteratorLocalNode), iteratorAssignAst, forAst)
+    val forAst_ = whileAst(stmt, Some(iteratorHasNextCallAst), Seq(bodyAst), Some(ControlStructureTypes.FOR))
+    Seq(Ast(iteratorLocalNode), iteratorAssignAst, forAst_)
   }
 
   private def astForIterableForEachItemAssign(
