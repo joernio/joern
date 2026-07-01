@@ -89,7 +89,9 @@ object Delombok {
     delombokTempDir: Path,
     analysisJavaHome: Option[String],
     dependencies: Seq[String],
-    peerSourceRoots: Seq[Path]
+    peerSourceRoots: Seq[Path],
+    currentRootAbsolute: Path,
+    fqnIndex: DelombokStderrFilter.FqnIndex
   ): Try[String] = {
     val rootIsFile = Files.isRegularFile(projectDir.resolve(relativePackageRoot))
     val relativeOutputPath =
@@ -100,11 +102,31 @@ object Delombok {
     val childPath = (delombokTempDir / relativeOutputPath).toAbsolutePath.normalize()
 
     Try(childPath.createWithParentsIfNotExists(asDirectory = true)).flatMap { packageOutputDir =>
-      ExternalCommand
-        .run(delombokToTempDirCommand(inputDir, packageOutputDir, analysisJavaHome, dependencies, peerSourceRoots))
-        .logAlways()
-        .toTry
-        .map(_ => delombokTempDir.absolutePathAsString)
+      val result =
+        ExternalCommand.run(
+          delombokToTempDirCommand(inputDir, packageOutputDir, analysisJavaHome, dependencies, peerSourceRoots)
+        )
+      if (!result.successful) {
+        // Always log the stdout/stderr if delombok exited with a non-zero code
+        result.logIfFailed()
+      } else {
+        // Exit 0: filter out `cannot find symbol` records that reference peer roots (false
+        // positives for this invocation), then log the remainder as a WARN if non-empty. Fail-open:
+        // if the filter itself throws, fall back to logging the original stderr.
+        val filteredStdErr =
+          Try(DelombokStderrFilter.filter(currentRootAbsolute, peerSourceRoots, fqnIndex, result.stdErr)) match {
+            case Success(filtered) => filtered
+            case Failure(err) =>
+              logger.warn("DelombokStderrFilter threw; falling back to unfiltered stderr", err)
+              result.stdErr
+          }
+        if (filteredStdErr.nonEmpty) {
+          logger.warn(s"Delombok emitted diagnostics for $inputDir:\n${filteredStdErr.mkString("\n")}")
+        }
+      }
+      // Call `toTry` on the original result so the failure message (used downstream) still
+      // contains the full unfiltered stderr.
+      result.toTry.map(_ => delombokTempDir.absolutePathAsString)
     }
   }
 
@@ -131,9 +153,20 @@ object Delombok {
         println(s"delombok dir : $tempDir")
         val packageRoots  = PackageRootFinder.packageRootsFromFiles(inputPath, fileInfo)
         val absoluteRoots = packageRoots.map(inputPath.resolve)
+        val fqnIndex      = DelombokStderrFilter.FqnIndex.build(inputPath, fileInfo, packageRoots)
         packageRoots.zip(absoluteRoots).par.foreach { case (relativeRoot, absoluteRoot) =>
-          val peerRoots = absoluteRoots.filterNot(_ == absoluteRoot)
-          delombokPackageRoot(inputPath, relativeRoot, tempDir, analysisJavaHome, dependencies, peerRoots)
+          val absoluteRootNormalised = absoluteRoot.toAbsolutePath.normalize()
+          val peerRoots              = absoluteRoots.filterNot(_ == absoluteRoot).map(_.toAbsolutePath.normalize())
+          delombokPackageRoot(
+            inputPath,
+            relativeRoot,
+            tempDir,
+            analysisJavaHome,
+            dependencies,
+            peerRoots,
+            absoluteRootNormalised,
+            fqnIndex
+          )
         }
         DelombokRunResult(tempDir, true)
     }
