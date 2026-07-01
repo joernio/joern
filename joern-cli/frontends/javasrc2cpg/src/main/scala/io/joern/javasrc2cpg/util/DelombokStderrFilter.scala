@@ -1,7 +1,5 @@
 package io.joern.javasrc2cpg.util
 
-import org.slf4j.LoggerFactory
-
 import java.nio.file.Path
 import scala.util.matching.Regex
 
@@ -14,8 +12,6 @@ import scala.util.matching.Regex
   */
 object DelombokStderrFilter {
 
-  private val logger = LoggerFactory.getLogger(this.getClass)
-
   /** Index that maps top-level Java FQNs (and inner-class prefixes) to the absolute package roots they belong to, plus
     * the ordered list of absolute roots so file paths can be mapped to a root.
     *
@@ -26,6 +22,7 @@ object DelombokStderrFilter {
     *   absolute, normalised package roots in original ordering.
     */
   case class FqnIndex(fqnToRoots: Map[String, Set[Path]], absoluteRoots: Seq[Path]) {
+    private val rootsByDepth: Seq[Path] = absoluteRoots.sortBy(-_.getNameCount)
 
     /** Longest dotted-prefix match on the given FQN. So `com.example.UserRecord.InnerClass` matches an entry
       * `com.example.UserRecord`. Returns the empty set if no match.
@@ -43,10 +40,7 @@ object DelombokStderrFilter {
     /** Which package root (if any) contains this absolute file path. Returns the longest matching root. */
     def rootForFile(absPath: Path): Option[Path] = {
       val normalised = absPath.toAbsolutePath.normalize()
-      absoluteRoots
-        .filter(root => normalised.startsWith(root))
-        .sortBy(-_.getNameCount)
-        .headOption
+      rootsByDepth.find(normalised.startsWith)
     }
   }
 
@@ -105,7 +99,12 @@ object DelombokStderrFilter {
   /** `symbol:` line marker. */
   private val SymbolRegex: Regex = raw"^\s*symbol:\s*.*$$".r
 
-  /** A parsed `cannot find symbol` record. */
+  /** A parsed `cannot find symbol` record.
+    *
+    * @param locationFqn
+    *   dotted FQN as extracted from the `location:` line. `$` (from inner-class names in javac output) is preserved
+    *   as-is here; normalisation to dots happens at lookup time in [[FqnIndex.rootsFor]].
+    */
   private case class Record(lines: Seq[String], file: Path, locationFqn: Option[String])
 
   /** Result of streaming stderr into records and unclassified passthrough lines, preserving their original order.
@@ -132,8 +131,10 @@ object DelombokStderrFilter {
         // Drop only when every possible originating root is a peer — if the FQN could also
         // resolve to the current root, keep the record (fail-open, may log a false positive).
         val locInPeer     = locationRoots.nonEmpty && locationRoots.forall(peerRoots.contains)
-        if (fileInPeer || locInPeer) Seq.empty
-        else record.lines
+        if (fileInPeer || locInPeer)
+          Seq.empty
+        else
+          record.lines
     }
   }
 
