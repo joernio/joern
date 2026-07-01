@@ -30,22 +30,6 @@ case class ExternalCommandResult(
     this
   }
 
-  /** Same as [[logIfFailed]] for non-zero exits, but also logs the command's output at debug level when it succeeded.
-    * Useful for tools that exit 0 even when they did nothing useful (e.g. delombok writing files back unchanged).
-    */
-  def logAlways(): this.type = {
-    if (exitCode != 0) {
-      logIfFailed()
-    } else {
-      logger.debug(s"""Process exited with code 0.
-           |${additionalContext.getOrElse("")}
-           |Input: $input
-           |Output: ${stdOutAndError.mkString("\n")}
-           |""".stripMargin)
-    }
-    this
-  }
-
   /** convenience method: verify that the result is a success, throws an exception otherwise */
   def verifySuccess(): this.type = {
     toTry.get
