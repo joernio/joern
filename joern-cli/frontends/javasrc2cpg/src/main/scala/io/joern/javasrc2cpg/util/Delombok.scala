@@ -5,6 +5,7 @@ import io.shiftleft.semanticcpg.utils.FileUtil.*
 import io.shiftleft.semanticcpg.utils.{ExternalCommand, FileUtil}
 import org.slf4j.LoggerFactory
 
+import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import scala.util.Failure
 import scala.util.Success
@@ -57,7 +58,7 @@ object Delombok {
     val ownClasspath = System.getProperty("java.class.path")
     val fullClasspath =
       if (dependencies.isEmpty) ownClasspath
-      else (dependencies :+ ownClasspath).mkString(java.io.File.pathSeparator)
+      else (dependencies :+ ownClasspath).mkString(File.pathSeparator)
     val classPathArg = Try(FileUtil.newTemporaryFile("classpath")) match {
       case Success(file) =>
         FileUtil.deleteOnExit(file)
@@ -77,7 +78,7 @@ object Delombok {
       else
         Seq(
           "--sourcepath",
-          peerSourceRoots.map(_.toString).mkString(java.io.File.pathSeparator)
+          peerSourceRoots.map(_.toString).mkString(File.pathSeparator)
         )
     val command =
       Seq(
@@ -144,8 +145,9 @@ object Delombok {
     if (dependencies.isEmpty) {
       logger.warn(
         "Running delombok without any project dependencies on the classpath. Delombok may fail to resolve " +
-          "symbols from third-party libraries used in Lombok-annotated code. Re-run with --fetch-dependencies " +
-          "to make project dependencies available to delombok."
+          "symbols from third-party libraries used in Lombok-annotated code. If you did not pass " +
+          "--fetch-dependencies, re-run with it. If you did, dependency resolution may have failed silently — " +
+          "check earlier logs."
       )
     }
     Try(Files.createTempDirectory("delombok")) match {
