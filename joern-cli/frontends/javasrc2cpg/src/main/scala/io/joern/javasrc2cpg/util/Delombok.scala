@@ -37,13 +37,23 @@ object Delombok {
       .getOrElse("java")
   }
 
-  private def delombokToTempDirCommand(inputPath: Path, outputDir: Path, analysisJavaHome: Option[String]) = {
-    val javaPath = analysisJavaHome.getOrElse(systemJavaPath)
+  private def delombokToTempDirCommand(
+    inputPath: Path,
+    outputDir: Path,
+    analysisJavaHome: Option[String],
+    dependencies: Seq[String],
+    peerSourceRoots: Seq[Path]
+  ) = {
+    val javaPath     = analysisJavaHome.getOrElse(systemJavaPath)
+    val ownClasspath = System.getProperty("java.class.path")
+    val fullClasspath =
+      if (dependencies.isEmpty) ownClasspath
+      else (ownClasspath +: dependencies).mkString(java.io.File.pathSeparator)
     val classPathArg = Try(FileUtil.newTemporaryFile("classpath")) match {
       case Success(file) =>
         FileUtil.deleteOnExit(file)
         // Write classpath to a file to work around Windows length limits.
-        Files.writeString(file, System.getProperty("java.class.path"))
+        Files.writeString(file, fullClasspath)
         s"@${file.absolutePathAsString}"
 
       case Failure(t) =>
@@ -51,8 +61,15 @@ object Delombok {
           s"Failed to create classpath file for delombok execution. Results may be missing on Windows systems",
           t
         )
-        System.getProperty("java.class.path")
+        fullClasspath
     }
+    val sourcepathArgs =
+      if (peerSourceRoots.isEmpty) Nil
+      else
+        Seq(
+          "--sourcepath",
+          peerSourceRoots.map(_.toAbsolutePath.normalize().toString).mkString(java.io.File.pathSeparator)
+        )
     val command =
       Seq(
         javaPath,
@@ -60,10 +77,8 @@ object Delombok {
         classPathArg,
         "lombok.launch.Main",
         "delombok",
-        inputPath.absolutePathAsString,
-        "-d",
-        outputDir.absolutePathAsString
-      )
+        inputPath.absolutePathAsString
+      ) ++ sourcepathArgs ++ Seq("-d", outputDir.absolutePathAsString)
     logger.debug(s"Executing delombok with command ${command.mkString(" ")}")
     command
   }
@@ -72,7 +87,9 @@ object Delombok {
     projectDir: Path,
     relativePackageRoot: Path,
     delombokTempDir: Path,
-    analysisJavaHome: Option[String]
+    analysisJavaHome: Option[String],
+    dependencies: Seq[String],
+    peerSourceRoots: Seq[Path]
   ): Try[String] = {
     val rootIsFile = Files.isRegularFile(projectDir.resolve(relativePackageRoot))
     val relativeOutputPath =
@@ -84,7 +101,7 @@ object Delombok {
 
     Try(childPath.createWithParentsIfNotExists(asDirectory = true)).flatMap { packageOutputDir =>
       ExternalCommand
-        .run(delombokToTempDirCommand(inputDir, packageOutputDir, analysisJavaHome))
+        .run(delombokToTempDirCommand(inputDir, packageOutputDir, analysisJavaHome, dependencies, peerSourceRoots))
         .logAlways()
         .toTry
         .map(_ => delombokTempDir.absolutePathAsString)
@@ -94,19 +111,30 @@ object Delombok {
   def run(
     inputPath: Path,
     fileInfo: List[SourceParser.FileInfo],
-    analysisJavaHome: Option[String]
+    analysisJavaHome: Option[String],
+    dependencies: Seq[String]
   ): DelombokRunResult = {
+    if (dependencies.isEmpty) {
+      logger.warn(
+        "Running delombok without any project dependencies on the classpath. Delombok may fail to resolve " +
+          "symbols from third-party libraries used in Lombok-annotated code. Re-run with --fetch-dependencies " +
+          "to make project dependencies available to delombok."
+      )
+    }
     Try(Files.createTempDirectory("delombok")) match {
       case Failure(_) =>
         logger.warn(s"Could not create temporary directory for delombok output. Scanning original sources instead")
         DelombokRunResult(inputPath, false)
 
       case Success(tempDir) =>
-        FileUtil.deleteOnExit(tempDir)
-        PackageRootFinder
-          .packageRootsFromFiles(inputPath, fileInfo)
-          .par
-          .foreach(delombokPackageRoot(inputPath, _, tempDir, analysisJavaHome))
+        // FileUtil.deleteOnExit(tempDir)
+        println(s"delombok dir : $tempDir")
+        val packageRoots  = PackageRootFinder.packageRootsFromFiles(inputPath, fileInfo)
+        val absoluteRoots = packageRoots.map(inputPath.resolve)
+        packageRoots.zip(absoluteRoots).par.foreach { case (relativeRoot, absoluteRoot) =>
+          val peerRoots = absoluteRoots.filterNot(_ == absoluteRoot)
+          delombokPackageRoot(inputPath, relativeRoot, tempDir, analysisJavaHome, dependencies, peerRoots)
+        }
         DelombokRunResult(tempDir, true)
     }
   }

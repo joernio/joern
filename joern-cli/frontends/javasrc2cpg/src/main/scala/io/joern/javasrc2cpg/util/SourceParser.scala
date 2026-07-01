@@ -138,7 +138,7 @@ object SourceParser {
     checkExists(file)
   }
 
-  def apply(config: Config, filenamesOverride: Option[List[String]]): SourceParser = {
+  def apply(config: Config, filenamesOverride: Option[List[String]], dependencies: Seq[String] = Nil): SourceParser = {
     val inputPath = Path.of(config.inputPath)
 
     val fileInfo = filenamesOverride
@@ -156,7 +156,7 @@ object SourceParser {
     val usesLombok = fileInfo.exists(_.usesLombok)
 
     var dirToDelete: Option[Path] = None
-    lazy val delombokResult       = Delombok.run(inputPath, fileInfo, config.delombokJavaHome)
+    lazy val delombokResult       = Delombok.run(inputPath, fileInfo, config.delombokJavaHome, dependencies)
     lazy val delombokDir = {
       dirToDelete = Option.when(delombokResult.isDelombokedPath)(delombokResult.path)
       delombokResult.path
