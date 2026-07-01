@@ -9,6 +9,7 @@ _rules = make_scala_rules(
         "-old-syntax",
         "-Wshadow:type-parameter-shadow",
         "-deprecation",
+        "-language:implicitConversions",
         "-Wconf:msg=Implicit parameters should be provided with a `using` clause:s",
     ],
     common_scalatest_runtime_deps = [
