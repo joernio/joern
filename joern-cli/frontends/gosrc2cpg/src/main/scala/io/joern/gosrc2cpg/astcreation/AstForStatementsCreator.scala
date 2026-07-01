@@ -154,36 +154,32 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case Some(elseStmt) =>
         val elseBlock = blockNode(elseStmt, Defines.empty, Defines.voidTypeName)
         scope.pushNewScope(elseBlock)
-        val a = astsForStatement(elseStmt)
-        setArgumentIndices(a)
+        val statementAsts = astsForStatement(elseStmt)
+        setArgumentIndices(statementAsts)
         scope.popScope()
-        Some(blockAst(elseBlock, a.toList))
+        Some(blockAst(elseBlock, statementAsts.toList))
       case _ => None
     }
     Seq(initAst, ifThenElseAst(ifStmt, elseNode, Some(conditionAst), thenAst, elseAst, Some(ifCode)))
   }
 
   private def astForSwitchStatement(switchStmt: ParserNodeInfo): Ast = {
-
     val conditionParserNode = Try(createParserNodeInfo(switchStmt.json(ParserKeys.Tag)))
     val (code, conditionAst) = conditionParserNode.toOption match {
       case Some(node) => (node.code, Some(astForConditionExpression(node)))
       case _          => ("", None)
     }
-    val switchNode = controlStructureNode(switchStmt, ControlStructureTypes.SWITCH, s"switch $code")
-    val stmtAsts   = astsForStatement(createParserNodeInfo(switchStmt.json(ParserKeys.Body)))
-    controlStructureAst(switchNode, conditionAst, stmtAsts)
+    val stmtAsts = astsForStatement(createParserNodeInfo(switchStmt.json(ParserKeys.Body)))
+    switchAst(switchStmt, conditionAst, stmtAsts, Some(s"switch $code"))
   }
 
   private def astForTypeSwitchStatement(typeSwitchStmt: ParserNodeInfo): Ast = {
-
     val conditionParserNode = Try(createParserNodeInfo(typeSwitchStmt.json(ParserKeys.Assign)))
     val (code, conditionAst) = conditionParserNode.toOption match {
       case Some(node) => (node.code, astForNode(node))
       case _          => ("", Seq.empty)
     }
-    val switchNode = controlStructureNode(typeSwitchStmt, ControlStructureTypes.SWITCH, s"switch $code")
-    val stmtAsts   = astsForStatement(createParserNodeInfo(typeSwitchStmt.json(ParserKeys.Body)))
+    val stmtAsts = astsForStatement(createParserNodeInfo(typeSwitchStmt.json(ParserKeys.Body)))
     val id = conditionAst
       .flatMap(_.root)
       .collectFirst {
@@ -197,7 +193,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val condition = Option(callAst(isOp, Seq(identifier)))
 
     val newStmtAst = stmtAsts // TODO: Push conditionAst to the front of the block
-    controlStructureAst(switchNode, condition, newStmtAst)
+    switchAst(typeSwitchStmt, condition, newStmtAst, Some(s"switch $code"))
   }
 
   private def astForCaseClause(caseStmt: ParserNodeInfo): Seq[Ast] = {
@@ -237,23 +233,20 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astForRangeStatement(rangeStmt: ParserNodeInfo): Ast = {
-
     rangeStmt.json.obj.contains(ParserKeys.Key) match {
       case true =>
         val keyParserNode  = createParserNodeInfo(rangeStmt.json(ParserKeys.Key))
         val declParserNode = createParserNodeInfo(keyParserNode.json(ParserKeys.Obj)(ParserKeys.Decl))
         val code           = s"for ${declParserNode.code}"
-        val forNode        = controlStructureNode(rangeStmt, ControlStructureTypes.FOR, code)
         val declAst        = astsForStatement(declParserNode)
         val initAst        = astForNode(rangeStmt.json(ParserKeys.X))
         val stmtAst        = astsForStatement(rangeStmt.json(ParserKeys.Body))
-        controlStructureAst(forNode, None, initAst ++ declAst ++ stmtAst)
+        forAst(rangeStmt, Nil, initAst, Nil, declAst, stmtAst, Some(code))
       case false =>
         val initAst = astForNode(rangeStmt.json(ParserKeys.X))
         val code    = s"for range ${createParserNodeInfo(rangeStmt.json(ParserKeys.X)).code}"
-        val forNode = controlStructureNode(rangeStmt, ControlStructureTypes.FOR, code)
         val stmtAst = astsForStatement(rangeStmt.json(ParserKeys.Body))
-        controlStructureAst(forNode, None, initAst ++ stmtAst)
+        forAst(rangeStmt, Nil, initAst, Nil, Nil, stmtAst, Some(code))
     }
   }
 

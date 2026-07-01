@@ -258,7 +258,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     }
     val conditionAst = astForConditionExpression(switchStmt.getControllerExpression)
     val stmtAsts     = nullSafeAst(switchStmt.getBody)
-    initAsts :+ switchAst(switchStmt, conditionAst, stmtAsts)
+    initAsts :+ switchAst(switchStmt, Some(conditionAst), stmtAsts)
   }
 
   private def astsForCaseStatement(caseStmt: IASTCaseStatement): Seq[Ast] = {

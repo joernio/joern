@@ -1122,7 +1122,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       localAstParentStack.pop()
 
       val switchBlockAst  = blockAst(switchBlockNode, casesAsts)
-      val switchAstResult = switchAst(node, condAst, Seq(switchBlockAst))
+      val switchAstResult = switchAst(node, Some(condAst), Seq(switchBlockAst))
 
       scope.popScope()
       localAstParentStack.pop()
@@ -1139,7 +1139,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       localAstParentStack.pop()
 
       val switchBlockAst = blockAst(blockNode_, casesAsts)
-      switchAst(node, switchExpressionAst, Seq(switchBlockAst))
+      switchAst(node, Some(switchExpressionAst), Seq(switchBlockAst))
     }
   }
 

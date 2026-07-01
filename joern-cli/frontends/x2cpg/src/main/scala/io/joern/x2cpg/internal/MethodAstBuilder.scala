@@ -73,8 +73,7 @@ private[x2cpg] trait MethodAstBuilder[Node, NodeProcessor] {
     * @param returnType
     *   fully-qualified return type name
     * @param fileName
-    *   optional source file name; defaults to
-    *   [[io.shiftleft.codepropertygraph.generated.PropertyDefaults.Filename]]
+    *   optional source file name; defaults to [[io.shiftleft.codepropertygraph.generated.PropertyDefaults.Filename]]
     */
   def staticInitMethodAst(
     node: Node,

@@ -229,7 +229,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     localAstParentStack.pop()
 
     val switchBlockAst = blockAst(blockNode_, casesAsts.toList)
-    switchAst(switchStmt, switchExpressionAst, Seq(switchBlockAst))
+    switchAst(switchStmt, Some(switchExpressionAst), Seq(switchBlockAst))
   }
 
   /** De-sugaring from:

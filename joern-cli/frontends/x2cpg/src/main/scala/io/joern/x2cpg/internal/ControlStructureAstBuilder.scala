@@ -104,20 +104,20 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     * @param node
     *   the source AST node representing the `switch` statement (used for position and code)
     * @param condition
-    *   the switch discriminant expression AST
+    *   the optional switch discriminant expression AST
     * @param body
     *   ordered sequence of case/body ASTs
     * @param code
     *   explicit source-code string; falls back to `this.code(node)` when absent
     */
-  def switchAst(node: Node, condition: Ast, body: Seq[Ast], code: Option[String] = None): Ast = {
+  def switchAst(node: Node, condition: Option[Ast], body: Seq[Ast], code: Option[String] = None): Ast = {
     val switchNode = NewControlStructure()
       .controlStructureType(ControlStructureTypes.SWITCH)
       .lineNumber(line(node))
       .columnNumber(column(node))
       .code(code.getOrElse(this.code(node)))
     setOffset(node, switchNode)
-    val astWithChildren = controlStructureAst(switchNode, Option(condition), body)
+    val astWithChildren = controlStructureAst(switchNode, condition, body)
     body.headOption.flatMap(_.root) match {
       case Some(bodyRoot) => astWithChildren.withTrueBodyEdge(switchNode, bodyRoot)
       case None           => astWithChildren

@@ -84,7 +84,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     val switchBodyBlock = blockNode(stmt)
     val entryAsts       = stmt.cases.flatMap(astsForSwitchCase)
     val switchBody      = Ast(switchBodyBlock).withChildren(entryAsts)
-    switchAst(stmt, conditionAst, Seq(switchBody), Some(s"switch (${conditionAst.rootCodeOrEmpty})"))
+    switchAst(stmt, Some(conditionAst), Seq(switchBody), Some(s"switch (${conditionAst.rootCodeOrEmpty})"))
   }
 
   private def astsForSwitchCase(caseStmt: PhpCaseStmt): List[Ast] = {
