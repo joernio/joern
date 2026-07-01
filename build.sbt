@@ -25,6 +25,7 @@ lazy val swiftsrc2cpg      = Projects.swiftsrc2cpg
 lazy val csharpsrc2cpg     = Projects.csharpsrc2cpg
 lazy val abap2cpg          = Projects.abap2cpg
 lazy val rust2cpg          = Projects.rust2cpg
+lazy val lua2cpg           = Projects.lua2cpg
 lazy val linterRules       = Projects.linterRules
 
 lazy val root = project
@@ -51,6 +52,7 @@ lazy val root = project
     csharpsrc2cpg,
     abap2cpg,
     rust2cpg,
+    lua2cpg,
     linterRules
   )
   .dependsOn(linterRules % ScalafixConfig)
