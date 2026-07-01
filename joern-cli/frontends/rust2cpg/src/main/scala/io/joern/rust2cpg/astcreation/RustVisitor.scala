@@ -526,13 +526,8 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // TODO
   private def lowerPathAsFieldAccess(path: Path): Ast = {
     val lhs = path.path.map(lowerPathAsFieldAccess)
-    val rhs = visitPathSegment(path.pathSegment)
-
-    val name         = code(path.pathSegment)
-    val typeFullName = typeFullNameForPath(path)
-
     lhs match {
-      case None      => Ast(identifierNode(path.pathSegment, name, code(path), typeFullName))
+      case None      => visitPathSegment(path.pathSegment)
       case Some(lhs) => notHandledYet(path)
     }
   }
@@ -553,13 +548,23 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // NameRef =
   //  '#ident' | '@int_number' | 'self' | 'super' | 'crate' | 'Self'
   private def visitNameRef(nameRef: NameRef): Ast = {
-    nameRef.identToken match {
-      case Some(ident) =>
-        val typeFullName = typeFullNameForNameRef(nameRef)
-        val name         = code(ident)
-        Ast(identifierNode(nameRef, name, code(nameRef), typeFullName))
-      case None => notHandledYet(nameRef)
+    nameRef.token match {
+      case Some(ident: IdentToken) =>
+        Ast(identifierNode(nameRef, code(ident), code(nameRef), typeFullNameForNameRef(nameRef)))
+      case Some(selfKw: SelfKwToken) =>
+        Ast(identifierNode(nameRef, code(selfKw), code(nameRef), typeFullNameForNameRef(nameRef)))
+      case _ => notHandledYet(nameRef)
     }
+  }
+
+  extension (nameRef: NameRef) {
+    private def token: Option[RustToken] =
+      nameRef.identToken
+        .orElse(nameRef.intNumberToken)
+        .orElse(nameRef.selfKwToken)
+        .orElse(nameRef.superKwToken)
+        .orElse(nameRef.crateKwToken)
+        .orElse(nameRef.selfTypeKwToken)
   }
 
   // BinExpr =
