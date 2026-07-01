@@ -11,7 +11,9 @@ class ScopeNameCollection {
 
   private[memop] def pushScope(scope: ast.iast): Unit = {
     scopeStack.push(scope)
-    namesByScope.put(scope, mutable.Set.empty)
+    if (!namesByScope.containsKey(scope)) {
+      namesByScope.put(scope, mutable.Set.empty)
+    }
   }
 
   private[memop] def popScope(): Unit = {
@@ -20,6 +22,13 @@ class ScopeNameCollection {
 
   private[memop] def addName(name: String): Unit = {
     namesByScope.get(scopeStack.head).add(name)
+  }
+
+  private[memop] def addName(scope: ast.iast, name: String): Unit = {
+    if (!namesByScope.containsKey(scope)) {
+      namesByScope.put(scope, mutable.Set.empty)
+    }
+    namesByScope.get(scope).add(name)
   }
 
   def namesInScope(scope: ast.iast): collection.Set[String] = {

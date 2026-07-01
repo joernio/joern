@@ -110,7 +110,7 @@ class ContextStack {
     methodNode: nodes.NewMethod,
     methodBlockNode: nodes.NewBlock,
     methodRefNode: Option[nodes.NewMethodRef],
-    reservedNames: Iterable[String] = Nil
+    reservedNames: Iterable[String]
   ): Unit = {
     val isClassBodyMethod = stack.headOption.exists(_.isInstanceOf[ClassContext])
 
@@ -130,21 +130,19 @@ class ContextStack {
     push(methodContext)
   }
 
-  def pushClass(
-    scopeName: Option[String],
-    classNode: nodes.NewTypeDecl,
-    reservedNames: Iterable[String] = Nil
-  ): Unit = {
+  def pushClass(scopeName: Option[String], classNode: nodes.NewTypeDecl, reservedNames: Iterable[String]): Unit = {
     push(new ClassContext(scopeName, classNode, new AutoIncIndex(1), reservedNames = mutable.Set.from(reservedNames)))
   }
 
-  def pushSpecialContext(reservedNames: Iterable[String] = Nil): Unit = {
+  def pushSpecialContext(reservedNames: Iterable[String]): Unit = {
     val methodContext = findEnclosingMethodContext(stack)
+    methodContext.reservedNames.addAll(reservedNames)
     push(
       new SpecialBlockContext(
         methodContext.astParent,
         methodContext.order,
-        reservedNames = mutable.Set.from(reservedNames)
+        reservedNames = methodContext.reservedNames,
+        tmpCounters = methodContext.tmpCounters
       )
     )
   }
@@ -168,28 +166,17 @@ class ContextStack {
   }
 
   def getUnusedName(prefix: Option[String] = None): String = {
-    val context = stack.head
-    // Temporary stores in special contexts are materialized as locals in the
-    // enclosing method, so their names must be allocated from that method's
-    // shared counter and reservation set.
-    val enclosingMethodContext = context match {
-      case _: SpecialBlockContext => Some(findEnclosingMethodContext(stack))
-      case _                      => None
-    }
-    val allocationContext = enclosingMethodContext.getOrElse(context)
-    val nameBase          = prefix.map(prefix_value => s"${prefix_value}_tmp").getOrElse("tmp")
-    val isReserved = (name: String) =>
-      context.reservedNames.contains(name) || enclosingMethodContext.exists(_.reservedNames.contains(name))
+    val context  = stack.head
+    val nameBase = prefix.map(prefixValue => s"${prefixValue}_tmp").getOrElse("tmp")
 
     var result: String = ""
-    while (result == "" || isReserved(result)) {
-      val counter = allocationContext.tmpCounters.getOrElse(nameBase, 0)
+    while (result == "" || context.reservedNames.contains(result)) {
+      val counter = context.tmpCounters.getOrElse(nameBase, 0)
       result = s"$nameBase$counter"
-      allocationContext.tmpCounters.update(nameBase, counter + 1)
+      context.tmpCounters.update(nameBase, counter + 1)
     }
 
     context.reservedNames.add(result)
-    enclosingMethodContext.foreach(_.reservedNames.add(result))
     result
   }
 

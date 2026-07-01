@@ -24,10 +24,11 @@ import MemoryOperation.{Del, Load, Store}
 import scala.collection.mutable
 
 class MemoryOperationCalculator extends AstVisitor[Unit] {
-  private val stack  = mutable.Stack.empty[MemoryOperation]
-  val astNodeToMemOp = new AstNodeToMemoryOperationMap()
-  val names          = mutable.Set.empty[String]
-  val scopeNames     = new ScopeNameCollection()
+  private val stack             = mutable.Stack.empty[MemoryOperation]
+  val astNodeToMemOp            = new AstNodeToMemoryOperationMap()
+  val names                     = mutable.Set.empty[String]
+  val scopeNames                = new ScopeNameCollection()
+  private var argumentNameScope = Option.empty[ast.iast]
 
   private def accept(astNode: ast.iast): Unit = {
     astNode.accept(this)
@@ -57,6 +58,23 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
     scopeNames.addName(name)
   }
 
+  private def addArgumentName(name: String): Unit = {
+    argumentNameScope match {
+      case Some(scope) => scopeNames.addName(scope, name)
+      case None        => addName(name)
+    }
+  }
+
+  private def acceptArgumentsInScope(arguments: ast.Arguments, scope: ast.iast): Unit = {
+    val previousArgumentNameScope = argumentNameScope
+    argumentNameScope = Some(scope)
+    try {
+      accept(arguments)
+    } finally {
+      argumentNameScope = previousArgumentNameScope
+    }
+  }
+
   override def visit(astNode: ast.iast): Unit = ???
 
   override def visit(mod: ast.imod): Unit = ???
@@ -73,15 +91,10 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
     addName(functionDef.name)
     push(Load)
     accept(functionDef.decorator_list)
-    accept(functionDef.args)
+    acceptArgumentsInScope(functionDef.args, functionDef)
     accept(functionDef.returns)
     pop()
     pushScope(functionDef)
-    functionDef.args.posonlyargs.foreach(arg => addName(arg.arg))
-    functionDef.args.args.foreach(arg => addName(arg.arg))
-    functionDef.args.vararg.foreach(arg => addName(arg.arg))
-    functionDef.args.kwonlyargs.foreach(arg => addName(arg.arg))
-    functionDef.args.kw_arg.foreach(arg => addName(arg.arg))
     accept(functionDef.body)
     popScope()
   }
@@ -90,15 +103,10 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
     addName(functionDef.name)
     push(Load)
     accept(functionDef.decorator_list)
-    accept(functionDef.args)
+    acceptArgumentsInScope(functionDef.args, functionDef)
     accept(functionDef.returns)
     pop()
     pushScope(functionDef)
-    functionDef.args.posonlyargs.foreach(arg => addName(arg.arg))
-    functionDef.args.args.foreach(arg => addName(arg.arg))
-    functionDef.args.vararg.foreach(arg => addName(arg.arg))
-    functionDef.args.kwonlyargs.foreach(arg => addName(arg.arg))
-    functionDef.args.kw_arg.foreach(arg => addName(arg.arg))
     accept(functionDef.body)
     popScope()
   }
@@ -287,14 +295,9 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
 
   override def visit(lambda: ast.Lambda): Unit = {
     push(Load)
-    accept(lambda.args)
+    acceptArgumentsInScope(lambda.args, lambda)
     pop()
     pushScope(lambda)
-    lambda.args.posonlyargs.foreach(arg => addName(arg.arg))
-    lambda.args.args.foreach(arg => addName(arg.arg))
-    lambda.args.vararg.foreach(arg => addName(arg.arg))
-    lambda.args.kwonlyargs.foreach(arg => addName(arg.arg))
-    lambda.args.kw_arg.foreach(arg => addName(arg.arg))
     accept(lambda.body)
     popScope()
   }
@@ -513,6 +516,11 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
   }
 
   override def visit(arguments: ast.Arguments): Unit = {
+    arguments.posonlyargs.foreach(arg => addArgumentName(arg.arg))
+    arguments.args.foreach(arg => addArgumentName(arg.arg))
+    arguments.vararg.foreach(arg => addArgumentName(arg.arg))
+    arguments.kwonlyargs.foreach(arg => addArgumentName(arg.arg))
+    arguments.kw_arg.foreach(arg => addArgumentName(arg.arg))
     accept(arguments.posonlyargs)
     accept(arguments.args)
     accept(arguments.vararg)
