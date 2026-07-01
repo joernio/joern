@@ -16,27 +16,28 @@ object DelombokStderrFilter {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  /** Index that maps top-level Java FQNs (and inner-class prefixes) to the absolute package root they belong to, plus
+  /** Index that maps top-level Java FQNs (and inner-class prefixes) to the absolute package roots they belong to, plus
     * the ordered list of absolute roots so file paths can be mapped to a root.
     *
-    * @param fqnToRoot
-    *   top-level class FQN (dotted) to absolute package root.
+    * @param fqnToRoots
+    *   top-level class FQN (dotted) to the set of absolute package roots declaring that FQN. Multiple roots per FQN
+    *   are possible when peer source trees declare the same class name — callers must treat this as ambiguous.
     * @param absoluteRoots
     *   absolute, normalised package roots in original ordering.
     */
-  case class FqnIndex(fqnToRoot: Map[String, Path], absoluteRoots: Seq[Path]) {
+  case class FqnIndex(fqnToRoots: Map[String, Set[Path]], absoluteRoots: Seq[Path]) {
 
     /** Longest dotted-prefix match on the given FQN. So `com.example.UserRecord.InnerClass` matches an entry
-      * `com.example.UserRecord`. Returns `None` if no match.
+      * `com.example.UserRecord`. Returns the empty set if no match.
       */
-    def rootFor(fqn: String): Option[Path] = {
+    def rootsFor(fqn: String): Set[Path] = {
       val prefixes = Iterator
         .iterate(fqn.replace('$', '.')) { candidate =>
           val dot = candidate.lastIndexOf('.')
           if (dot < 0) "" else candidate.substring(0, dot)
         }
         .takeWhile(_.nonEmpty)
-      prefixes.flatMap(fqnToRoot.get).nextOption()
+      prefixes.flatMap(fqnToRoots.get).nextOption().getOrElse(Set.empty)
     }
 
     /** Which package root (if any) contains this absolute file path. Returns the longest matching root. */
@@ -68,7 +69,7 @@ object DelombokStderrFilter {
       val rootsByNameCount =
         packageRoots.zip(absoluteRoots).sortBy { case (rel, _) => -rel.getNameCount }
 
-      val fqnToRoot: Map[String, Path] = fileInfo.iterator.flatMap { info =>
+      val fqnToRoots: Map[String, Set[Path]] = fileInfo.iterator.flatMap { info =>
         val stem = {
           val fileName = info.relativePath.getFileName.toString
           if (fileName.endsWith(".java")) fileName.dropRight(".java".length) else fileName
@@ -82,17 +83,17 @@ object DelombokStderrFilter {
           case (rel, abs) if info.relativePath.startsWith(rel) => abs
         }
         matchingRoot.map(root => fqn -> root)
-      }.toMap
+      }.toList.groupMap(_._1)(_._2).view.mapValues(_.toSet).toMap
 
-      FqnIndex(fqnToRoot, absoluteRoots)
+      FqnIndex(fqnToRoots, absoluteRoots)
     }
   }
 
   /** Regex for the header line of a `cannot find symbol` diagnostic record: `<absolute file path>:<line>: error:
-    * <msg>`. The path may contain colons on Windows drive letters, but on the platforms we run delombok on it starts
-    * with `/`.
+    * <msg>`. Matches POSIX absolute paths (`/…`) as well as Windows drive-letter paths (`C:\…` / `C:/…`).
     */
-  private val HeaderRegex: Regex = raw"^(/[^:]+):(\d+):\s*error:\s*(.*)$$".r
+  private val HeaderRegex: Regex =
+    raw"^((?:/|[A-Za-z]:[\\/])[^:]+):(\d+):\s*error:\s*(.*)$$".r
 
   /** `location:` line, class/interface/enum form. */
   private val LocationClassRegex: Regex = raw"^\s*location:\s*(?:class|interface|enum)\s+([A-Za-z0-9_.$$]+)\s*$$".r
@@ -123,10 +124,12 @@ object DelombokStderrFilter {
     elements.flatMap {
       case PassthroughLine(line) => Seq(line)
       case RecordElement(record) =>
-        val fileRoot     = index.rootForFile(record.file)
-        val locationRoot = record.locationFqn.flatMap(index.rootFor)
-        val fileInPeer   = fileRoot.exists(normalisedPeerRoots.contains)
-        val locInPeer    = locationRoot.exists(normalisedPeerRoots.contains)
+        val fileRoot      = index.rootForFile(record.file)
+        val locationRoots = record.locationFqn.map(index.rootsFor).getOrElse(Set.empty)
+        val fileInPeer    = fileRoot.exists(normalisedPeerRoots.contains)
+        // Drop only when every possible originating root is a peer — if the FQN could also
+        // resolve to the current root, keep the record (fail-open, may log a false positive).
+        val locInPeer     = locationRoots.nonEmpty && locationRoots.forall(normalisedPeerRoots.contains)
         if (fileInPeer || locInPeer) Seq.empty
         else record.lines
     }

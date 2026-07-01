@@ -4,6 +4,7 @@ import io.joern.javasrc2cpg.util.DelombokStderrFilter.FqnIndex
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import java.io.File
 import java.nio.file.{Path, Paths}
 
 class DelombokStderrFilterTests extends AnyWordSpec with Matchers {
@@ -139,6 +140,64 @@ class DelombokStderrFilterTests extends AnyWordSpec with Matchers {
       )
 
       val filtered = DelombokStderrFilter.filter(absoluteRootB, Seq(absoluteRootA), index, stderr)
+
+      filtered shouldBe empty
+    }
+
+    "keep records when the location FQN is declared in both current and peer roots (fail-open)" in {
+      // Two file infos declaring the SAME FQN `com.example.Shared` from two different roots. When delomboking
+      // root-b, an error whose location is `com.example.Shared` could originate from either root — keep it.
+      val sharedRelativeA: Path = relativeRootA.resolve("com/example/Shared.java")
+      val sharedRelativeB: Path = relativeRootB.resolve("com/example/Shared.java")
+      val absSharedInB: Path    = absoluteRootB.resolve("com/example/Shared.java")
+      val collidingFileInfo = List(
+        SourceParser.FileInfo(sharedRelativeA, Some("com.example"), usesLombok = true),
+        SourceParser.FileInfo(sharedRelativeB, Some("com.example"), usesLombok = true)
+      )
+      val collidingIndex = FqnIndex.build(inputPath, collidingFileInfo, packageRoots)
+
+      val stderr = Seq(
+        s"$absSharedInB:19: error: cannot find symbol",
+        "        doSomething();",
+        "        ^",
+        "  symbol:   method doSomething()",
+        "  location: class com.example.Shared"
+      )
+
+      val filtered = DelombokStderrFilter.filter(absoluteRootB, Seq(absoluteRootA), collidingIndex, stderr)
+
+      filtered shouldBe stderr
+    }
+
+    "parse Windows-style diagnostic headers and drop peer-root records" in {
+      // Path.of/Paths.get with a Windows drive-letter string only produces a proper absolute path on
+      // Windows; on POSIX it becomes a relative fragment. Skip on non-Windows platforms.
+      assume(File.separatorChar == '\\')
+      // Synthetic setup with drive-letter absolute roots. The filter should parse the header and route the
+      // location FQN through the index to conclude the record is a peer-root false positive.
+      val winInput: Path        = Paths.get("C:\\repo\\proj").toAbsolutePath.normalize()
+      val winRelRootA: Path     = Path.of("src/main/java")
+      val winRelRootB: Path     = Path.of("src/main/java-report")
+      val winAbsRootA: Path     = winInput.resolve(winRelRootA).toAbsolutePath.normalize()
+      val winAbsRootB: Path     = winInput.resolve(winRelRootB).toAbsolutePath.normalize()
+      val winRecordRel: Path    = winRelRootA.resolve("com/example/UserRecord.java")
+      val winReportRel: Path    = winRelRootB.resolve("com/example/report/UserReport.java")
+      val winAbsReport: Path    = winAbsRootB.resolve("com/example/report/UserReport.java")
+      val winFileInfo = List(
+        SourceParser.FileInfo(winRecordRel, Some("com.example"), usesLombok = true),
+        SourceParser.FileInfo(winReportRel, Some("com.example.report"), usesLombok = true)
+      )
+      val winIndex = FqnIndex.build(winInput, winFileInfo, List(winRelRootA, winRelRootB))
+
+      val stderr = Seq(
+        s"$winAbsReport:19: error: cannot find symbol",
+        "        UserRecord u = UserRecord.builder().build();",
+        "                                 ^",
+        "  symbol:   method builder()",
+        "  location: class com.example.UserRecord"
+      )
+
+      val filtered = DelombokStderrFilter.filter(winAbsRootB, Seq(winAbsRootA), winIndex, stderr)
 
       filtered shouldBe empty
     }

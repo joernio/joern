@@ -48,7 +48,7 @@ object Delombok {
     val ownClasspath = System.getProperty("java.class.path")
     val fullClasspath =
       if (dependencies.isEmpty) ownClasspath
-      else (ownClasspath +: dependencies).mkString(java.io.File.pathSeparator)
+      else (dependencies :+ ownClasspath).mkString(java.io.File.pathSeparator)
     val classPathArg = Try(FileUtil.newTemporaryFile("classpath")) match {
       case Success(file) =>
         FileUtil.deleteOnExit(file)
