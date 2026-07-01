@@ -8,7 +8,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewControl
 private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
   this: AstCreatorBase[Node, NodeProcessor] =>
 
-  /** Creates an AST rooted at `controlStructureNode`, wiring `condition` via a `CONDITION` edge.
+  /** Creates an AST rooted at `controlStructureNode`, wiring `condition` via a `CONDITION` edge. This function is
+    * private. Actual control structure AST construction should always happen via the public creator functions below.
     *
     * @param controlStructureNode
     *   the pre-built control-structure CPG node
@@ -20,7 +21,7 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     * @param placeConditionLast
     *   when `true` the condition AST is appended after `children` instead of prepended (used for `do-while`)
     */
-  def controlStructureAst(
+  private def controlStructureAst(
     controlStructureNode: NewControlStructure,
     condition: Option[Ast],
     children: Seq[Ast] = Seq(),
