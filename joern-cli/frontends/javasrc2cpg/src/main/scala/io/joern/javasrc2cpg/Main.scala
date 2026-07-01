@@ -111,7 +111,11 @@ private object Frontend {
         .text(s"extra jars used only for type information (comma-separated list of paths)")
         .action((paths, c) => c.withInferenceJarPaths(c.inferenceJarPaths ++ paths)),
       opt[Unit]("fetch-dependencies")
-        .text("attempt to fetch dependencies jars for extra type information")
+        .text(
+          "attempt to fetch dependencies jars for extra type information. Recommended when scanning Lombok " +
+            "projects: delombok resolves symbols against these jars, so without this flag delombok will fail on " +
+            "any Lombok-annotated code that references third-party libraries."
+        )
         .action((_, c) => c.withFetchDependencies(true)),
       opt[String]("delombok-java-home")
         .text("Optional override to set java home used to run Delombok. Java 17 is recommended for the best results.")
