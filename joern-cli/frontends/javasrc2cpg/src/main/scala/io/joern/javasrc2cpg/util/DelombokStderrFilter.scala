@@ -116,20 +116,22 @@ object DelombokStderrFilter {
 
   /** Filter the given stderr lines: drop `cannot find symbol` records that reference peer roots; keep everything else
     * verbatim. Order is preserved.
+    *
+    * @param peerRoots
+    *   absolute, normalised peer package roots (callers must pre-normalise; matched by exact equality).
     */
-  def filter(currentRoot: Path, peerRoots: Seq[Path], index: FqnIndex, stderrLines: Seq[String]): Seq[String] = {
-    val normalisedPeerRoots = peerRoots.map(_.toAbsolutePath.normalize()).toSet
-    val elements            = splitIntoElements(stderrLines)
+  def filter(peerRoots: Set[Path], index: FqnIndex, stderrLines: Seq[String]): Seq[String] = {
+    val elements = splitIntoElements(stderrLines)
 
     elements.flatMap {
       case PassthroughLine(line) => Seq(line)
       case RecordElement(record) =>
         val fileRoot      = index.rootForFile(record.file)
         val locationRoots = record.locationFqn.map(index.rootsFor).getOrElse(Set.empty)
-        val fileInPeer    = fileRoot.exists(normalisedPeerRoots.contains)
+        val fileInPeer    = fileRoot.exists(peerRoots.contains)
         // Drop only when every possible originating root is a peer — if the FQN could also
         // resolve to the current root, keep the record (fail-open, may log a false positive).
-        val locInPeer     = locationRoots.nonEmpty && locationRoots.forall(normalisedPeerRoots.contains)
+        val locInPeer     = locationRoots.nonEmpty && locationRoots.forall(peerRoots.contains)
         if (fileInPeer || locInPeer) Seq.empty
         else record.lines
     }

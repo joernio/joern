@@ -79,7 +79,7 @@ class DelombokStderrFilterTests extends AnyWordSpec with Matchers {
         "  location: class com.example.UserRecord"
       )
 
-      val filtered = DelombokStderrFilter.filter(absoluteRootB, Seq(absoluteRootA), index, stderr)
+      val filtered = DelombokStderrFilter.filter(Set(absoluteRootA), index, stderr)
 
       filtered shouldBe Seq(
         "WARNING: A restricted method in java.lang.System has been called",
@@ -99,7 +99,7 @@ class DelombokStderrFilterTests extends AnyWordSpec with Matchers {
         "  location: class com.example.UserRecord"
       )
 
-      val filtered = DelombokStderrFilter.filter(absoluteRootA, Seq(absoluteRootB), index, stderr)
+      val filtered = DelombokStderrFilter.filter(Set(absoluteRootB), index, stderr)
 
       filtered shouldBe stderr
     }
@@ -111,7 +111,7 @@ class DelombokStderrFilterTests extends AnyWordSpec with Matchers {
         "an entirely freeform line"
       )
 
-      val filtered = DelombokStderrFilter.filter(absoluteRootB, Seq(absoluteRootA), index, stderr)
+      val filtered = DelombokStderrFilter.filter(Set(absoluteRootA), index, stderr)
 
       filtered shouldBe stderr
     }
@@ -125,7 +125,7 @@ class DelombokStderrFilterTests extends AnyWordSpec with Matchers {
         "  location: class com.example.UserRecord.Builder"
       )
 
-      val filtered = DelombokStderrFilter.filter(absoluteRootB, Seq(absoluteRootA), index, stderr)
+      val filtered = DelombokStderrFilter.filter(Set(absoluteRootA), index, stderr)
 
       filtered shouldBe empty
     }
@@ -139,7 +139,7 @@ class DelombokStderrFilterTests extends AnyWordSpec with Matchers {
         "  location: variable subject of type com.example.UserRecord"
       )
 
-      val filtered = DelombokStderrFilter.filter(absoluteRootB, Seq(absoluteRootA), index, stderr)
+      val filtered = DelombokStderrFilter.filter(Set(absoluteRootA), index, stderr)
 
       filtered shouldBe empty
     }
@@ -164,7 +164,7 @@ class DelombokStderrFilterTests extends AnyWordSpec with Matchers {
         "  location: class com.example.Shared"
       )
 
-      val filtered = DelombokStderrFilter.filter(absoluteRootB, Seq(absoluteRootA), collidingIndex, stderr)
+      val filtered = DelombokStderrFilter.filter(Set(absoluteRootA), collidingIndex, stderr)
 
       filtered shouldBe stderr
     }
@@ -197,7 +197,7 @@ class DelombokStderrFilterTests extends AnyWordSpec with Matchers {
         "  location: class com.example.UserRecord"
       )
 
-      val filtered = DelombokStderrFilter.filter(winAbsRootB, Seq(winAbsRootA), winIndex, stderr)
+      val filtered = DelombokStderrFilter.filter(Set(winAbsRootA), winIndex, stderr)
 
       filtered shouldBe empty
     }

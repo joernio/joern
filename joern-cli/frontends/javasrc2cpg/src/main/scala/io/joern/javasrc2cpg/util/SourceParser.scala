@@ -138,7 +138,7 @@ object SourceParser {
     checkExists(file)
   }
 
-  def apply(config: Config, filenamesOverride: Option[List[String]], dependencies: Seq[String] = Nil): SourceParser = {
+  def apply(config: Config, filenamesOverride: Option[List[String]], dependencies: List[String] = Nil): SourceParser = {
     val inputPath = Path.of(config.inputPath)
 
     val fileInfo = filenamesOverride

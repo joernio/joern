@@ -22,6 +22,15 @@ object Delombok {
 
   case class DelombokRunResult(path: Path, isDelombokedPath: Boolean)
 
+  /** Per-invocation inputs for [[delombokPackageRoot]]. All absolute paths are already normalised. */
+  case class DelombokInvocation(
+    projectDir: Path,
+    relativePackageRoot: Path,
+    absRoot: Path,
+    absPeerRoots: Seq[Path],
+    fqnIndex: DelombokStderrFilter.FqnIndex
+  )
+
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   private def systemJavaPath: String = {
@@ -41,7 +50,7 @@ object Delombok {
     inputPath: Path,
     outputDir: Path,
     analysisJavaHome: Option[String],
-    dependencies: Seq[String],
+    dependencies: List[String],
     peerSourceRoots: Seq[Path]
   ) = {
     val javaPath     = analysisJavaHome.getOrElse(systemJavaPath)
@@ -68,7 +77,7 @@ object Delombok {
       else
         Seq(
           "--sourcepath",
-          peerSourceRoots.map(_.toAbsolutePath.normalize().toString).mkString(java.io.File.pathSeparator)
+          peerSourceRoots.map(_.toString).mkString(java.io.File.pathSeparator)
         )
     val command =
       Seq(
@@ -84,27 +93,23 @@ object Delombok {
   }
 
   def delombokPackageRoot(
-    projectDir: Path,
-    relativePackageRoot: Path,
+    inv: DelombokInvocation,
     delombokTempDir: Path,
     analysisJavaHome: Option[String],
-    dependencies: Seq[String],
-    peerSourceRoots: Seq[Path],
-    currentRootAbsolute: Path,
-    fqnIndex: DelombokStderrFilter.FqnIndex
+    dependencies: List[String]
   ): Try[String] = {
-    val rootIsFile = Files.isRegularFile(projectDir.resolve(relativePackageRoot))
+    val rootIsFile = Files.isRegularFile(inv.projectDir.resolve(inv.relativePackageRoot))
     val relativeOutputPath =
-      if (rootIsFile) Option(relativePackageRoot.getParent).map(_.toString).getOrElse(".")
-      else relativePackageRoot.toString
-    val inputDir = projectDir.resolve(relativePackageRoot)
+      if (rootIsFile) Option(inv.relativePackageRoot.getParent).map(_.toString).getOrElse(".")
+      else inv.relativePackageRoot.toString
+    val inputDir = inv.projectDir.resolve(inv.relativePackageRoot)
 
     val childPath = (delombokTempDir / relativeOutputPath).toAbsolutePath.normalize()
 
     Try(childPath.createWithParentsIfNotExists(asDirectory = true)).flatMap { packageOutputDir =>
       val result =
         ExternalCommand.run(
-          delombokToTempDirCommand(inputDir, packageOutputDir, analysisJavaHome, dependencies, peerSourceRoots)
+          delombokToTempDirCommand(inputDir, packageOutputDir, analysisJavaHome, dependencies, inv.absPeerRoots)
         )
       if (!result.successful) {
         // Always log the stdout/stderr if delombok exited with a non-zero code
@@ -114,7 +119,7 @@ object Delombok {
         // positives for this invocation), then log the remainder as a WARN if non-empty. Fail-open:
         // if the filter itself throws, fall back to logging the original stderr.
         val filteredStdErr =
-          Try(DelombokStderrFilter.filter(currentRootAbsolute, peerSourceRoots, fqnIndex, result.stdErr)) match {
+          Try(DelombokStderrFilter.filter(inv.absPeerRoots.toSet, inv.fqnIndex, result.stdErr)) match {
             case Success(filtered) => filtered
             case Failure(err) =>
               logger.warn("DelombokStderrFilter threw; falling back to unfiltered stderr", err)
@@ -134,7 +139,7 @@ object Delombok {
     inputPath: Path,
     fileInfo: List[SourceParser.FileInfo],
     analysisJavaHome: Option[String],
-    dependencies: Seq[String]
+    dependencies: List[String]
   ): DelombokRunResult = {
     if (dependencies.isEmpty) {
       logger.warn(
@@ -150,21 +155,16 @@ object Delombok {
 
       case Success(tempDir) =>
         FileUtil.deleteOnExit(tempDir)
-        val packageRoots  = PackageRootFinder.packageRootsFromFiles(inputPath, fileInfo)
-        val absoluteRoots = packageRoots.map(inputPath.resolve)
-        val fqnIndex      = DelombokStderrFilter.FqnIndex.build(inputPath, fileInfo, packageRoots)
-        packageRoots.zip(absoluteRoots).par.foreach { case (relativeRoot, absoluteRoot) =>
-          val absoluteRootNormalised = absoluteRoot.toAbsolutePath.normalize()
-          val peerRoots              = absoluteRoots.filterNot(_ == absoluteRoot).map(_.toAbsolutePath.normalize())
+        val packageRoots = PackageRootFinder.packageRootsFromFiles(inputPath, fileInfo).distinct
+        val fqnIndex     = DelombokStderrFilter.FqnIndex.build(inputPath, fileInfo, packageRoots)
+        val absRoots     = fqnIndex.absoluteRoots
+        packageRoots.zip(absRoots).par.foreach { case (relativeRoot, absRoot) =>
+          val absPeerRoots = absRoots.filterNot(_ == absRoot)
           delombokPackageRoot(
-            inputPath,
-            relativeRoot,
+            DelombokInvocation(inputPath, relativeRoot, absRoot, absPeerRoots, fqnIndex),
             tempDir,
             analysisJavaHome,
-            dependencies,
-            peerRoots,
-            absoluteRootNormalised,
-            fqnIndex
+            dependencies
           )
         }
         DelombokRunResult(tempDir, true)
