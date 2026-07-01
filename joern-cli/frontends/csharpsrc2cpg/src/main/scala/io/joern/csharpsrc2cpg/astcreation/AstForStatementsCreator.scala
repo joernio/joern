@@ -95,8 +95,12 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astForSwitchStatement(switchStmt: DotNetNodeInfo): Seq[Ast] = {
-    val comparatorNode    = createDotNetNodeInfo(switchStmt.json(ParserKeys.Expression))
-    val comparatorNodeAst = astForExpression(comparatorNode).headOption
+    val comparatorNode = createDotNetNodeInfo(switchStmt.json(ParserKeys.Expression))
+
+    // Switch statement selector expression are mandatory:
+    // https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/statements#1383-the-switch-statement
+    // Due to the way csharpsrc2cpg handles this here we have to use .headOption with a safe fallback (which should never be reached anyway).
+    val comparatorNodeAst = astForExpression(comparatorNode).headOption.getOrElse(notHandledYet(switchStmt).head)
 
     val switchBodyAsts: Seq[Ast] = switchStmt
       .json(ParserKeys.Sections)
@@ -112,8 +116,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       }
       .toSeq
 
-    val switchNode = controlStructureNode(switchStmt, ControlStructureTypes.SWITCH, s"switch (${comparatorNode.code})")
-    Seq(controlStructureAst(switchNode, comparatorNodeAst, switchBodyAsts))
+    Seq(switchAst(switchStmt, comparatorNodeAst, switchBodyAsts, Some(s"switch (${comparatorNode.code})")))
   }
 
   private def astForWhileStatement(whileStmt: DotNetNodeInfo): Seq[Ast] = {
