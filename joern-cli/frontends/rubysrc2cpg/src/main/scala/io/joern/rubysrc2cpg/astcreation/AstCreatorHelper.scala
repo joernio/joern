@@ -164,27 +164,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     thenAst: Ast,
     elseAst: Option[Ast]
   ): Ast = {
-    // NOTE: This intentionally uses the lower-level `controlStructureAst` helper instead of
-    // `io.joern.x2cpg.internal.ControlStructureAstBuilder.ifThenElseAst`. Ruby's `else` branch AST is
-    // already fully built (see `astForElseClause`) as a plain statement-list block and is passed in here as
-    // `elseAst` without the originating `else` source node. `ifThenElseAst` would additionally wrap that
-    // branch in a synthetic `ELSE` control-structure node (and needs the `else` node for its position), which
-    // would change Ruby's CPG shape (`IF -FALSE_BODY-> ELSE -> Block` instead of `IF -FALSE_BODY-> Block`) and
-    // break the elsif-folding done by `astsForElseClauses`. Migrating would therefore be a behavior change, not
-    // a refactoring, so Ruby deliberately keeps this direct usage until that normalization is done on purpose.
-    // This is also why `controlStructureAst` cannot yet be made private (php2cpg has similar remaining usages).
-    // TODO: fix the elsif-folding in elsif-folding and this here.
-    //  Get rid of the `astForIfStatement(builder: (IfExpression, Ast, Ast, Option[Ast]) => Ast) style.`
-    val ifNode          = controlStructureNode(node, ControlStructureTypes.IF, code(node))
-    val astWithChildren = controlStructureAst(ifNode, Some(conditionAst), thenAst :: elseAst.toList)
-    val astWithTrueBody = thenAst.root match {
-      case Some(thenRoot) => astWithChildren.withTrueBodyEdge(ifNode, thenRoot)
-      case None           => astWithChildren
-    }
-    elseAst.flatMap(_.root) match {
-      case Some(elseRoot) => astWithTrueBody.withFalseBodyEdge(ifNode, elseRoot)
-      case None           => astWithTrueBody
-    }
+    // A present `else` branch is wrapped by `ifThenElseAst` in a synthetic `ELSE` control-structure node
+    // (`IF -FALSE_BODY-> ELSE -> <else branch>`), consistent with the other frontends. Ruby's `else` branch AST
+    // is already built (see `astForElseClause` / `astsForElseClauses`) without a dedicated `else` source node, so
+    // we position the `ELSE` node at `node` (the enclosing `if`/`unless`) and derive `elseNode` via
+    // `elseAst.map(_ => node)` so it is `Some` exactly when `elseAst` is present. The `elsif`-folding in
+    // `astsForElseClauses` (shared with the ternary lowering in `astForIfExpression`) is intentionally left as is.
+    ifThenElseAst(node, elseAst.map(_ => node), Some(conditionAst), thenAst, elseAst)
   }
 
   protected def astForAssignment(
