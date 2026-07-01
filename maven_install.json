@@ -29,6 +29,7 @@
     "org.apache.commons:commons-lang3": 994877980,
     "org.apache.commons:commons-text": -790607260,
     "org.apache.logging.log4j:log4j-slf4j2-impl": -1860574784,
+    "org.apache.maven:maven-artifact": -848193960,
     "org.eclipse.platform:org.eclipse.core.resources": 1305449157,
     "org.eclipse.platform:org.eclipse.text": -296592382,
     "org.gradle:gradle-tooling-api": -180447171,
@@ -113,7 +114,7 @@
     "com.squareup.okhttp3:okhttp:jar:sources": -41812588,
     "com.squareup.okio:okio": 895544967,
     "com.squareup.okio:okio:jar:sources": -2122820827,
-    "com.squareup.tools.build:maven-archeologist": 1272510522,
+    "com.squareup.tools.build:maven-archeologist": 828402239,
     "com.squareup.tools.build:maven-archeologist:jar:sources": 1440014015,
     "com.thoughtworks.paranamer:paranamer": 216030769,
     "com.thoughtworks.paranamer:paranamer:jar:sources": 1185138559,
@@ -183,20 +184,20 @@
     "org.apache.logging.log4j:log4j-core:jar:sources": -688874552,
     "org.apache.logging.log4j:log4j-slf4j2-impl": -584341295,
     "org.apache.logging.log4j:log4j-slf4j2-impl:jar:sources": 692707354,
-    "org.apache.maven:maven-artifact": 438131318,
-    "org.apache.maven:maven-artifact:jar:sources": -490842635,
+    "org.apache.maven:maven-artifact": 282064033,
+    "org.apache.maven:maven-artifact:jar:sources": -832045351,
     "org.apache.maven:maven-builder-support": -2075777895,
     "org.apache.maven:maven-builder-support:jar:sources": 675140607,
-    "org.apache.maven:maven-model": 1652693328,
-    "org.apache.maven:maven-model-builder": -1482371566,
+    "org.apache.maven:maven-model": 1019967688,
+    "org.apache.maven:maven-model-builder": 694235046,
     "org.apache.maven:maven-model-builder:jar:sources": 1025709396,
     "org.apache.maven:maven-model:jar:sources": 974121022,
     "org.checkerframework:checker-qual": -1521111878,
     "org.checkerframework:checker-qual:jar:sources": -705637224,
     "org.codehaus.plexus:plexus-interpolation": -1690598598,
     "org.codehaus.plexus:plexus-interpolation:jar:sources": 1852263677,
-    "org.codehaus.plexus:plexus-utils": 155109099,
-    "org.codehaus.plexus:plexus-utils:jar:sources": 1996742112,
+    "org.codehaus.plexus:plexus-utils": -519732315,
+    "org.codehaus.plexus:plexus-utils:jar:sources": -2142154509,
     "org.eclipse.platform:org.eclipse.core.commands": -1156747088,
     "org.eclipse.platform:org.eclipse.core.commands:jar:sources": 2118764350,
     "org.eclipse.platform:org.eclipse.core.contenttype": 1762283547,
@@ -812,10 +813,10 @@
     },
     "org.apache.maven:maven-artifact": {
       "shasums": {
-        "jar": "61b20da4e1e3db837630d0810a6a7a5ac9fb7ea31b0a55638062aad6e479c09c",
-        "sources": "fdf0640de549faa785d8616e9e4f8963c798dabc4a52ae3f0f01390fde0df1ac"
+        "jar": "54cc1c1ef932e3d4a903352111b42b4d3c3ed8e7a1d0de73b625309d9c3ad3e8",
+        "sources": "2f371e3df38790afdef942b244da7ec3d85ae1adee6b8f86aa4a296f25103ddc"
       },
-      "version": "3.6.3"
+      "version": "3.9.16"
     },
     "org.apache.maven:maven-builder-support": {
       "shasums": {
@@ -854,10 +855,10 @@
     },
     "org.codehaus.plexus:plexus-utils": {
       "shasums": {
-        "jar": "8d07b497bb8deb167ee5329cae87ef2043833bf52e4f15a5a9379cec447a5b2b",
-        "sources": "f21bd1c5f6fe712f55f28e67540a60040875424d162a15608bda0a1b46aac1e4"
+        "jar": "05a63effd67e2d6b9d610cc82e2bd7473289d34802e57a529b28110f28af5679",
+        "sources": "f9b0daa4d3728acf62a90f07136b56790b677dd42644d169855b9f9ec410a27d"
       },
-      "version": "3.2.1"
+      "version": "3.6.1"
     },
     "org.eclipse.platform:org.eclipse.core.commands": {
       "shasums": {
@@ -1489,7 +1490,6 @@
       "org.slf4j:slf4j-api"
     ],
     "org.apache.maven:maven-artifact": [
-      "org.apache.commons:commons-lang3",
       "org.codehaus.plexus:plexus-utils"
     ],
     "org.apache.maven:maven-model": [
