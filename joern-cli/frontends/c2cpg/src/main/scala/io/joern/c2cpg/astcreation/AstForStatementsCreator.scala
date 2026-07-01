@@ -236,17 +236,17 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   private def astForDoStatement(doStmt: IASTDoStatement): Ast = {
-    val codeString = code(doStmt)
-    val doNode     = controlStructureNode(doStmt, ControlStructureTypes.DO, codeString)
-    scope.pushNewBlockScope(doNode)
+    // surrounding block:
+    val scopeBlockNode = blockNode(doStmt)
+    scope.pushNewBlockScope(scopeBlockNode)
+
     val conditionAst = wrapInNullComparison(doStmt.getCondition, astForConditionExpression(doStmt.getCondition))
     val bodyAst      = nullSafeAst(doStmt.getBody)
+
+    // end surrounding block:
     scope.popScope()
-    val astWithChildren = controlStructureAst(doNode, Option(conditionAst), bodyAst, placeConditionLast = true)
-    bodyAst.headOption.flatMap(_.root) match {
-      case Some(bodyRoot) => astWithChildren.withDoBodyEdge(doNode, bodyRoot)
-      case None           => astWithChildren
-    }
+
+    Ast(scopeBlockNode).withChild(doWhileAst(doStmt, Option(conditionAst), bodyAst))
   }
 
   private def astForSwitchStatement(switchStmt: IASTSwitchStatement): Seq[Ast] = {
