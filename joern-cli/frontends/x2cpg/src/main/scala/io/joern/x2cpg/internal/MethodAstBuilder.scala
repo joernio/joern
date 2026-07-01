@@ -4,6 +4,13 @@ import io.joern.x2cpg.{Ast, AstCreatorBase, Defines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, PropertyDefaults}
 
+/** Mixin that provides helpers for building method ASTs.
+  *
+  * Covers full method bodies, method stubs, static initialisers, and return statements.
+  *
+  * Mixed into [[io.joern.x2cpg.AstCreatorBase]] via the `internal` package; not intended for direct use outside
+  * `x2cpg`.
+  */
 private[x2cpg] trait MethodAstBuilder[Node, NodeProcessor] {
   this: AstCreatorBase[Node, NodeProcessor] =>
 
@@ -50,6 +57,24 @@ private[x2cpg] trait MethodAstBuilder[Node, NodeProcessor] {
       .withChildren(modifiers.map(Ast(_)))
       .withChild(Ast(methodReturn))
 
+  /** Creates an AST for a static initialiser method (e.g. a class-level `static { … }` block or module-level init).
+    *
+    * The method is given the [[io.joern.x2cpg.Defines.StaticInitMethodName]] name and a `STATIC` modifier. Its body
+    * wraps `initAsts` in a block.
+    *
+    * @param node
+    *   the source AST node that triggered the static init (used for position)
+    * @param initAsts
+    *   ordered list of statement ASTs that form the initialiser body
+    * @param fullName
+    *   fully-qualified name of the synthesised method
+    * @param signature
+    *   optional method signature; defaults to [[io.shiftleft.codepropertygraph.generated.PropertyDefaults.Signature]]
+    * @param returnType
+    *   fully-qualified return type name
+    * @param fileName
+    *   optional source file name; defaults to [[io.shiftleft.codepropertygraph.generated.PropertyDefaults.Filename]]
+    */
   def staticInitMethodAst(
     node: Node,
     initAsts: List[Ast],

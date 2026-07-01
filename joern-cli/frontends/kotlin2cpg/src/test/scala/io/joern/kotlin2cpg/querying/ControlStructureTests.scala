@@ -28,7 +28,7 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
     "should connect then and else branches via TRUE_BODY/FALSE_BODY edges" in {
       val List(controlStructure) = cpg.controlStructure.isIf.l
       controlStructure.trueBodyOut.code.l shouldBe List("return 1")
-      controlStructure.falseBodyOut.code.l shouldBe List("return 0")
+      controlStructure.falseBodyOut.isControlStructure.isElse.astChildren.code.l shouldBe List("return 0")
     }
   }
 
@@ -103,7 +103,14 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
       val List(iwt) = cpg.controlStructure.where(_.condition.code("x > 1")).whenTrue.isExpression.l
       iwt.code shouldBe "println(\"> than 1\")"
 
-      val List(iwf) = cpg.controlStructure.where(_.condition.code("x > 1")).whenFalse.isExpression.l
+      val List(iwf) = cpg.controlStructure
+        .where(_.condition.code("x > 1"))
+        .whenFalse
+        .isControlStructure
+        .isElse
+        .astChildren
+        .isExpression
+        .l
       iwf.code shouldBe "println(\"<= than 1\")"
     }
 

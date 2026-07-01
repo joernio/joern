@@ -4,6 +4,7 @@ import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 
+/** Mixin that provides helpers for building call ASTs. */
 private[x2cpg] trait CallAstBuilder[Node, NodeProcessor] {
   this: AstCreatorBase[Node, NodeProcessor] =>
 
@@ -60,6 +61,25 @@ private[x2cpg] trait CallAstBuilder[Node, NodeProcessor] {
       .withReceiverEdges(callNode, receiverRoot)
   }
 
+  /** Creates an AST for a field-access expression (`base.fieldName`).
+    *
+    * Emits a [[io.shiftleft.codepropertygraph.generated.Operators.fieldAccess]] call node with `base` as the first
+    * argument and a [[io.shiftleft.codepropertygraph.generated.nodes.NewFieldIdentifier]] for `fieldName` as the second
+    * argument.
+    *
+    * @param originNode
+    *   the source AST node that represents the entire field-access expression
+    * @param fieldIdentifierOrigin
+    *   the source AST node that represents the field name (used for position information)
+    * @param base
+    *   AST of the object whose field is accessed
+    * @param code
+    *   source code string of the whole expression
+    * @param fieldName
+    *   the name of the field being accessed
+    * @param fieldTypeFullName
+    *   fully-qualified type of the accessed field
+    */
   def fieldAccessAst(
     originNode: Node,
     fieldIdentifierOrigin: Node,

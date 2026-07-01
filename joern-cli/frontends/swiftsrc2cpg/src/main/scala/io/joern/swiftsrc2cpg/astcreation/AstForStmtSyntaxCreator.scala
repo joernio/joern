@@ -52,10 +52,9 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForDiscardStmtSyntax(node: DiscardStmtSyntax): Ast = notHandledYet(node)
 
   private def astForDoStmtSyntax(node: DoStmtSyntax): Ast = {
-    val tryNode   = controlStructureNode(node, ControlStructureTypes.TRY, code(node))
     val bodyAst   = astForNode(node.body)
     val catchAsts = node.catchClauses.children.map(astForCatchHandler)
-    tryCatchAst(tryNode, bodyAst, catchAsts, None)
+    tryCatchAst(node, bodyAst, catchAsts, None)
   }
 
   private def astForCatchHandler(catchClause: CatchClauseSyntax): Ast = {
@@ -86,14 +85,13 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForForStmtBody(node: ForStmtSyntax): Ast = {
     node.whereClause match {
       case Some(whereClause: WhereClauseSyntax) =>
-        val ifNode = controlStructureNode(whereClause.condition, ControlStructureTypes.IF, code(whereClause.condition))
         val testAstRaw = astForNode(whereClause)
         val testAst = testAstRaw.root match {
           case Some(_) => testAstRaw
           case None    => blockAst(blockNode(whereClause), List.empty)
         }
         val thenAst = astForNode(node.body)
-        ifThenElseAst(ifNode, Option(testAst), thenAst, None)
+        ifThenElseAst(whereClause.condition, None, Option(testAst), thenAst, None)
       case None => astForNode(node.body)
     }
   }
@@ -101,8 +99,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForForStmtSyntaxWithWildcard(node: ForStmtSyntax): Ast = {
     val initAsts = Seq(astForNode(node.sequence))
     val bodyAst  = astForForStmtBody(node)
-    val forNode  = controlStructureNode(node, ControlStructureTypes.FOR, code(node))
-    forAst(forNode, Nil, initAsts, Nil, Nil, bodyAst)
+    forAst(node, Nil, initAsts, Nil, Nil, Seq(bodyAst))
   }
 
   /** De-sugaring from:
@@ -237,16 +234,8 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     scope.popScope()
     localAstParentStack.pop()
 
-    val whileLoopAst = whileAst(
-      Option(testCallAst),
-      List(whileLoopBlockAst),
-      code = Option(code(node)),
-      lineNumber = line(node),
-      columnNumber = column(node)
-    )
-
-    val blockChildren =
-      List(iteratorAssignmentAst, Ast(resultNode), Ast(loopVariableNode), whileLoopAst)
+    val whileLoopAst  = whileAst(node, Option(testCallAst), List(whileLoopBlockAst))
+    val blockChildren = List(iteratorAssignmentAst, Ast(resultNode), Ast(loopVariableNode), whileLoopAst)
     blockAst(blockNode_, blockChildren)
   }
 
@@ -375,14 +364,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     scope.popScope()
     localAstParentStack.pop()
 
-    val whileLoopAst = whileAst(
-      Option(testCallAst),
-      List(whileLoopBlockAst),
-      code = Option(code(node)),
-      lineNumber = line(node),
-      columnNumber = column(node)
-    )
-
+    val whileLoopAst  = whileAst(node, Option(testCallAst), List(whileLoopBlockAst))
     val blockChildren = List(iteratorAssignmentAst, Ast(resultNode), whileLoopAst)
     blockAst(blockNode_, blockChildren)
   }
@@ -524,14 +506,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     scope.popScope()
     localAstParentStack.pop()
 
-    val whileLoopAst = whileAst(
-      Option(testCallAst),
-      List(whileLoopBlockAst),
-      code = Option(code(node)),
-      lineNumber = line(node),
-      columnNumber = column(node)
-    )
-
+    val whileLoopAst = whileAst(node, Option(testCallAst), List(whileLoopBlockAst))
     val blockNodeChildren =
       List(iteratorAssignmentAst, Ast(resultNode)) ++ loopVariableNodes.map(Ast(_)) :+ whileLoopAst
     blockAst(blockNode_, blockNodeChildren)
@@ -574,16 +549,10 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForMissingStmtSyntax(@unused node: MissingStmtSyntax): Ast = Ast()
 
   private def astForRepeatStmtSyntax(node: RepeatStmtSyntax): Ast = {
-    val code = this.code(node)
+    val conditionAst = astForNode(node.condition)
+    val bodyAst      = astForNode(node.body)
     // In Swift, a repeat-while loop is semantically the same as a C do-while loop
-    val doNode          = controlStructureNode(node, ControlStructureTypes.DO, code)
-    val conditionAst    = astForNode(node.condition)
-    val bodyAst         = astForNode(node.body)
-    val astWithChildren = controlStructureAst(doNode, Option(conditionAst), Seq(bodyAst), placeConditionLast = true)
-    bodyAst.root match {
-      case Some(bodyRoot) => astWithChildren.withDoBodyEdge(doNode, bodyRoot)
-      case None           => astWithChildren
-    }
+    doWhileAst(node, Option(conditionAst), Seq(bodyAst))
   }
 
   private def astForReturnStmtSyntax(node: ReturnStmtSyntax): Ast = {
@@ -621,13 +590,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       onStandard = () => {
         val conditionAst = astForNode(node.conditions)
         val bodyAst      = astForNode(node.body)
-        whileAst(
-          Option(conditionAst),
-          Seq(bodyAst),
-          code = Option(code(node)),
-          lineNumber = line(node),
-          columnNumber = column(node)
-        )
+        whileAst(node, Option(conditionAst), Seq(bodyAst))
       }
     )
   }
@@ -659,13 +622,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val bindingInfos = collectBindingInfos(optionalBindings)
     val conditionAst = buildOptionalBindingCondition(node, bindingInfos)
     val bodyAst      = buildBodyWithUnwrapping(node.body, node.body.statements.children, bindingInfos)
-    whileAst(
-      Option(conditionAst),
-      Seq(bodyAst),
-      code = Option(code(node)),
-      lineNumber = line(node),
-      columnNumber = column(node)
-    )
+    whileAst(node, Option(conditionAst), Seq(bodyAst))
   }
 
   /** Handles partial optional binding desugaring with other conditions.
@@ -685,14 +642,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val bindingInfos = collectBindingInfos(simpleBindings)
     val conditionAst = buildOptionalBindingCondition(node, bindingInfos, otherConditions)
     val bodyAst      = buildBodyWithUnwrapping(node.body, tupleBindings ++ node.body.statements.children, bindingInfos)
-
-    whileAst(
-      Option(conditionAst),
-      Seq(bodyAst),
-      code = Option(code(node)),
-      lineNumber = line(node),
-      columnNumber = column(node)
-    )
+    whileAst(node, Option(conditionAst), Seq(bodyAst))
   }
 
   private def astForYieldStmtSyntax(node: YieldStmtSyntax): Ast = {

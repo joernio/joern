@@ -89,7 +89,7 @@ class ConditionalTests extends CSharpCode2CpgFixture {
           |""".stripMargin))
 
       inside(cpg.method("Main").controlStructure.sortBy(_.lineNumber).l) {
-        case ifNode :: elseIfNode :: elseNode :: Nil =>
+        case ifNode :: elseNodeA :: elseIfNode :: elseNodeB :: Nil =>
           ifNode.code shouldBe "if (a < 5)"
           ifNode.controlStructureType shouldBe ControlStructureTypes.IF
           inside(ifNode.condition.l) { case List(cndNode) =>
@@ -99,6 +99,12 @@ class ConditionalTests extends CSharpCode2CpgFixture {
             val List(incCall) = blockNode.ast.isCall.l
             incCall.code shouldBe "a++"
             incCall.astParent shouldBe blockNode
+          }
+
+          elseNodeA.code shouldBe "else"
+          elseNodeA.controlStructureType shouldBe ControlStructureTypes.ELSE
+          inside(elseNodeA.astChildren.l) { case ifNode :: Nil =>
+            ifNode shouldBe elseIfNode
           }
 
           elseIfNode.code shouldBe "if (a > 5)"
@@ -112,15 +118,13 @@ class ConditionalTests extends CSharpCode2CpgFixture {
             decCall.astParent shouldBe blockNode
           }
 
-          elseNode.code shouldBe "else"
-          elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-          inside(elseNode.astChildren.isBlock.l) { case blockNode :: Nil =>
+          elseNodeB.code shouldBe "else"
+          elseNodeB.controlStructureType shouldBe ControlStructureTypes.ELSE
+          inside(elseNodeB.astChildren.isBlock.l) { case blockNode :: Nil =>
             val List(plusEqualsCall) = blockNode.ast.isCall.l
             plusEqualsCall.code shouldBe "a += 2"
             plusEqualsCall.astParent shouldBe blockNode
-
           }
-
       }
     }
 

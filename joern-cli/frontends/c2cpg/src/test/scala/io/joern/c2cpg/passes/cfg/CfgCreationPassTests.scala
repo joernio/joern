@@ -180,17 +180,20 @@ class CfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg) {
       succOf("y = 2") should contain theSameElementsAs expected(("x", AlwaysEdge))
       succOf("x") should contain theSameElementsAs expected(("1", AlwaysEdge))
       succOf("1") should contain theSameElementsAs expected(("x < 1", AlwaysEdge))
-      succOf("x < 1") should contain theSameElementsAs expected(("y", TrueEdge), ("RET", FalseEdge))
+      succOf("x < 1") should contain theSameElementsAs expected(("y", TrueEdge), ("<empty>", FalseEdge))
+      succOf("<empty>") should contain theSameElementsAs expected(("RET", AlwaysEdge))
     }
 
     "be correct with break" in {
       implicit val cpg: Cpg = code("do { break; y; } while (x < 1);")
       succOf("func") should contain theSameElementsAs expected(("break;", AlwaysEdge))
-      succOf("break;") should contain theSameElementsAs expected(("RET", AlwaysEdge))
+      succOf("break;") should contain theSameElementsAs expected(("<empty>", AlwaysEdge))
+      succOf("<empty>") should contain theSameElementsAs expected(("RET", AlwaysEdge))
       succOf("y") should contain theSameElementsAs expected(("x", AlwaysEdge))
       succOf("x") should contain theSameElementsAs expected(("1", AlwaysEdge))
       succOf("1") should contain theSameElementsAs expected(("x < 1", AlwaysEdge))
-      succOf("x < 1") should contain theSameElementsAs expected(("break;", TrueEdge), ("RET", FalseEdge))
+      succOf("x < 1") should contain theSameElementsAs expected(("break;", TrueEdge), ("<empty>", 1, FalseEdge))
+      succOf("<empty>", 1) should contain theSameElementsAs expected(("RET", AlwaysEdge))
     }
 
     "be correct with continue" in {
@@ -200,7 +203,8 @@ class CfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg) {
       succOf("y") should contain theSameElementsAs expected(("x", AlwaysEdge))
       succOf("x") should contain theSameElementsAs expected(("1", AlwaysEdge))
       succOf("1") should contain theSameElementsAs expected(("x < 1", AlwaysEdge))
-      succOf("x < 1") should contain theSameElementsAs expected(("continue;", TrueEdge), ("RET", FalseEdge))
+      succOf("x < 1") should contain theSameElementsAs expected(("continue;", TrueEdge), ("<empty>", FalseEdge))
+      succOf("<empty>") should contain theSameElementsAs expected(("RET", AlwaysEdge))
     }
 
     "be correct with nested do-while-loop" in {
@@ -209,17 +213,24 @@ class CfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg) {
       succOf("x") should contain theSameElementsAs expected(("y", AlwaysEdge))
       succOf("y") should contain theSameElementsAs expected(("0", AlwaysEdge))
       succOf("0") should contain theSameElementsAs expected(("y != 0", AlwaysEdge))
-      succOf("y != 0") should contain theSameElementsAs expected(("x", TrueEdge), ("z", FalseEdge))
+      succOf("y != 0") should contain theSameElementsAs expected(("x", TrueEdge), ("<empty>", FalseEdge))
+      succOf("<empty>") should contain theSameElementsAs expected(("RET", AlwaysEdge))
       succOf("z") should contain theSameElementsAs expected(("0", AlwaysEdge))
       succOf("0", 1) should contain theSameElementsAs expected(("z != 0", AlwaysEdge))
-      succOf("z != 0") should contain theSameElementsAs expected(("x", TrueEdge), ("RET", FalseEdge))
+      succOf("z != 0") should contain theSameElementsAs expected(("x", TrueEdge), ("<empty>", 1, FalseEdge))
+      succOf("<empty>", 1) should contain theSameElementsAs expected(("z", 1, AlwaysEdge))
+      succOf("z", 1) should contain theSameElementsAs expected(("0", AlwaysEdge))
+      succOf("0", 1) should contain theSameElementsAs expected(("z != 0", 1, AlwaysEdge))
+      succOf("z != 0", 1) should contain theSameElementsAs expected(("x", AlwaysEdge), ("<empty>", 2, FalseEdge))
+      succOf("<empty>", 2) should contain theSameElementsAs expected(("RET", AlwaysEdge))
     }
 
     "be correct for do-while-loop with empty body" in {
       implicit val cpg: Cpg = code("do { } while(x > 1);")
       succOf("func") should contain theSameElementsAs expected(("x", AlwaysEdge))
       succOf("1") should contain theSameElementsAs expected(("x > 1", AlwaysEdge))
-      succOf("x > 1") should contain theSameElementsAs expected(("x", TrueEdge), ("RET", FalseEdge))
+      succOf("x > 1") should contain theSameElementsAs expected(("x", TrueEdge), ("<empty>", FalseEdge))
+      succOf("<empty>") should contain theSameElementsAs expected(("RET", AlwaysEdge))
     }
 
     "be correct with multiple macro calls" in {
@@ -255,7 +266,8 @@ class CfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg) {
       succOf("x = 0") should contain theSameElementsAs expected(("y", AlwaysEdge))
       succOf("y") should contain theSameElementsAs expected(("1", AlwaysEdge))
       succOf("1") should contain theSameElementsAs expected(("y < 1", AlwaysEdge))
-      succOf("y < 1") should contain theSameElementsAs expected(("a", TrueEdge), ("RET", FalseEdge))
+      succOf("y < 1") should contain theSameElementsAs expected(("a", TrueEdge), ("<empty>", FalseEdge))
+      succOf("<empty>") should contain theSameElementsAs expected(("RET", AlwaysEdge))
       succOf("a") should contain theSameElementsAs expected(("3", AlwaysEdge))
       succOf("3") should contain theSameElementsAs expected(("a = 3", AlwaysEdge))
       succOf("a = 3") should contain theSameElementsAs expected(("z", AlwaysEdge))
@@ -271,8 +283,10 @@ class CfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg) {
       succOf("x = 0") should contain theSameElementsAs expected(("y", AlwaysEdge))
       succOf("y") should contain theSameElementsAs expected(("1", AlwaysEdge))
       succOf("1") should contain theSameElementsAs expected(("y < 1", AlwaysEdge))
-      succOf("y < 1") should contain theSameElementsAs expected(("break;", TrueEdge), ("RET", FalseEdge))
-      succOf("break;") should contain theSameElementsAs expected(("RET", AlwaysEdge))
+      succOf("y < 1") should contain theSameElementsAs expected(("break;", TrueEdge), ("<empty>", FalseEdge))
+      succOf("<empty>") should contain theSameElementsAs expected(("RET", AlwaysEdge))
+      succOf("break;") should contain theSameElementsAs expected(("<empty>", 1, AlwaysEdge))
+      succOf("<empty>", 1) should contain theSameElementsAs expected(("RET", AlwaysEdge))
       succOf("a") should contain theSameElementsAs expected(("3", AlwaysEdge))
       succOf("3") should contain theSameElementsAs expected(("a = 3", AlwaysEdge))
       succOf("a = 3") should contain theSameElementsAs expected(("z", AlwaysEdge))
@@ -289,7 +303,8 @@ class CfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg) {
       succOf("x = 0") should contain theSameElementsAs expected(("y", AlwaysEdge))
       succOf("y") should contain theSameElementsAs expected(("1", AlwaysEdge))
       succOf("1") should contain theSameElementsAs expected(("y < 1", AlwaysEdge))
-      succOf("y < 1") should contain theSameElementsAs expected(("continue;", TrueEdge), ("RET", FalseEdge))
+      succOf("y < 1") should contain theSameElementsAs expected(("continue;", TrueEdge), ("<empty>", FalseEdge))
+      succOf("<empty>") should contain theSameElementsAs expected(("RET", AlwaysEdge))
       succOf("continue;") should contain theSameElementsAs expected(("z", AlwaysEdge))
       succOf("a") should contain theSameElementsAs expected(("3", AlwaysEdge))
       succOf("3") should contain theSameElementsAs expected(("a = 3", AlwaysEdge))
@@ -305,12 +320,19 @@ class CfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg) {
       succOf("x") should contain theSameElementsAs expected(("y", AlwaysEdge))
       succOf("y") should contain theSameElementsAs expected(("0", AlwaysEdge))
       succOf("0") should contain theSameElementsAs expected(("y != 0", AlwaysEdge))
-      succOf("y != 0") should contain theSameElementsAs expected(("a", TrueEdge), ("RET", FalseEdge))
+      succOf("y != 0") should contain theSameElementsAs expected(("a", TrueEdge), ("<empty>", FalseEdge))
+      succOf("<empty>") should contain theSameElementsAs expected(("RET", AlwaysEdge))
       succOf("z") should contain theSameElementsAs expected(("y", AlwaysEdge))
       succOf("a") should contain theSameElementsAs expected(("b", AlwaysEdge))
       succOf("b") should contain theSameElementsAs expected(("0", AlwaysEdge))
       succOf("0", 1) should contain theSameElementsAs expected(("b != 0", AlwaysEdge))
-      succOf("b != 0") should contain theSameElementsAs expected(("u", TrueEdge), ("z", FalseEdge))
+      succOf("b != 0") should contain theSameElementsAs expected(("u", TrueEdge), ("<empty>", 1, FalseEdge))
+      succOf("<empty>", 1) should contain theSameElementsAs expected(("z", AlwaysEdge))
+      succOf("z") should contain theSameElementsAs expected(("y", 1, AlwaysEdge))
+      succOf("y", 1) should contain theSameElementsAs expected(("0", 1, AlwaysEdge))
+      succOf("0", 1) should contain theSameElementsAs expected(("b != 0", 1, AlwaysEdge))
+      succOf("b != 0", 1) should contain theSameElementsAs expected(("u", TrueEdge), ("<empty>", 2, FalseEdge))
+      succOf("<empty>", 2) should contain theSameElementsAs expected(("RET", AlwaysEdge))
       succOf("c") should contain theSameElementsAs expected(("b", AlwaysEdge))
       succOf("u") should contain theSameElementsAs expected(("c", AlwaysEdge))
     }
@@ -326,7 +348,8 @@ class CfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg) {
     "be correct with empty condition with break" in {
       implicit val cpg: Cpg = code("for (;;) { break; }")
       succOf("func") should contain theSameElementsAs expected(("break;", AlwaysEdge))
-      succOf("break;") should contain theSameElementsAs expected(("RET", AlwaysEdge))
+      succOf("break;") should contain theSameElementsAs expected(("<empty>", AlwaysEdge))
+      succOf("<empty>") should contain theSameElementsAs expected(("RET", AlwaysEdge))
     }
 
     "be correct with empty condition with continue" in {
@@ -344,12 +367,14 @@ class CfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg) {
 
     "be correct with empty condition with empty block" in {
       implicit val cpg: Cpg = code("for (;;) ;")
-      succOf("func") should contain theSameElementsAs expected(("RET", AlwaysEdge))
+      succOf("func") should contain theSameElementsAs expected(("<empty>", AlwaysEdge))
+      succOf("<empty>") should contain theSameElementsAs expected(("RET", AlwaysEdge))
     }
 
     "be correct when empty for-loop is skipped" in {
       implicit val cpg: Cpg = code("for (;;) {}; return;")
-      succOf("func") should contain theSameElementsAs expected(("return;", AlwaysEdge))
+      succOf("func") should contain theSameElementsAs expected(("<empty>", AlwaysEdge))
+      succOf("<empty>") should contain theSameElementsAs expected(("return;", AlwaysEdge))
       succOf("return;") should contain theSameElementsAs expected(("RET", AlwaysEdge))
     }
 
@@ -357,7 +382,8 @@ class CfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg) {
       implicit val cpg: Cpg = code("for (; x(1);) ;")
       succOf("func") should contain theSameElementsAs expected(("1", AlwaysEdge))
       succOf("1") should contain theSameElementsAs expected(("x(1)", AlwaysEdge))
-      succOf("x(1)") should contain theSameElementsAs expected(("1", TrueEdge), ("RET", FalseEdge))
+      succOf("x(1)") should contain theSameElementsAs expected(("1", TrueEdge), ("<empty>", FalseEdge))
+      succOf("<empty>") should contain theSameElementsAs expected(("RET", AlwaysEdge))
     }
   }
 

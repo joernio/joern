@@ -128,6 +128,9 @@ class ErbTests extends RubyCode2CpgFixture {
         cpg.controlStructure
           .controlStructureType(ControlStructureTypes.IF)
           .whenFalse
+          .isControlStructure
+          .isElse
+          .astChildren
           .isBlock
           .astChildren
           .isControlStructure

@@ -31,8 +31,9 @@ class CaseTests extends RubyCode2CpgFixture {
     List(lhs).isIdentifier.name.l shouldBe List("<tmp-0>")
     List(rhs).isLiteral.code.l shouldBe List("0")
 
-    val headIf @ List(_)           = block.astChildren.isControlStructure.l
-    val ifStmts @ List(_, _, _, _) = headIf.repeat(_.astChildren.order(3).astChildren.isControlStructure)(_.emit).l
+    val headIf @ List(_) = block.astChildren.isControlStructure.l
+    val ifStmts @ List(_, _, _, _) =
+      headIf.repeat(_.whenFalse.astChildren.isBlock.astChildren.isControlStructure)(_.emit).l
     val conds: List[List[String]] = ifStmts.condition.map { cond =>
       val orConds = List(cond)
         .repeat(_.isCall.where(_.name(Operators.logicalOr)).argument)(
@@ -52,7 +53,8 @@ class CaseTests extends RubyCode2CpgFixture {
     }.l
 
     conds shouldBe List(List("expr:0"), List("expr:1", "expr:2"), List("expr:3", "splat:[4,5]"), List("splat:[6]"))
-    val matchResults = ifStmts.astChildren.order(2).astChildren ++ ifStmts.last.astChildren.order(3).astChildren
+    val matchResults =
+      ifStmts.whenTrue.astChildren ++ ifStmts.last.whenFalse.astChildren.isBlock.astChildren
     matchResults.code.l shouldBe List("0", "1", "2", "3", "4")
 
     // It's not ideal, but we choose the smallest containing text span that we have easily acesssible
@@ -72,8 +74,9 @@ class CaseTests extends RubyCode2CpgFixture {
 
     val block @ List(_) = cpg.method.isModule.block.astChildren.isBlock.l
 
-    val headIf @ List(_)           = block.astChildren.isControlStructure.l
-    val ifStmts @ List(_, _, _, _) = headIf.repeat(_.astChildren.order(3).astChildren.isControlStructure)(_.emit).l;
+    val headIf @ List(_) = block.astChildren.isControlStructure.l
+    val ifStmts @ List(_, _, _, _) =
+      headIf.repeat(_.whenFalse.astChildren.isBlock.astChildren.isControlStructure)(_.emit).l;
     val conds: List[List[String]] = ifStmts.condition.map { cond =>
       val orConds = List(cond)
         .repeat(_.isCall.where(_.name(Operators.logicalOr)).argument)(
@@ -95,10 +98,10 @@ class CaseTests extends RubyCode2CpgFixture {
       List("splat:[false,true]")
     )
 
-    val matchResults = ifStmts.astChildren.order(2).astChildren.l
+    val matchResults = ifStmts.whenTrue.astChildren.l
     matchResults.code.l shouldBe List("0", "1", "2", "3")
 
-    ifStmts.last.astChildren.order(3).l shouldBe List()
+    ifStmts.last.whenFalse.l shouldBe List()
   }
 
   "An array pattern match statement" in {
@@ -124,8 +127,9 @@ class CaseTests extends RubyCode2CpgFixture {
     lhs.start.isIdentifier.name.l shouldBe List("<tmp-0>")
     rhs.start.isBlock.code.l shouldBe List("[type, location]") // array lowering
 
-    val headIf @ List(_)        = block.astChildren.isControlStructure.l
-    val ifStmts @ List(_, _, _) = headIf.repeat(_.astChildren.order(3).astChildren.isControlStructure)(_.emit).l;
+    val headIf @ List(_) = block.astChildren.isControlStructure.l
+    val ifStmts @ List(_, _, _) =
+      headIf.repeat(_.whenFalse.astChildren.isBlock.astChildren.isControlStructure)(_.emit).l;
 
     val conds: List[List[String]] = ifStmts.condition.map { cond =>
       val orConds = List(cond)
@@ -174,8 +178,9 @@ class CaseTests extends RubyCode2CpgFixture {
     lhs.start.isIdentifier.name.l shouldBe List("<tmp-0>")
     rhs.start.isBlock.code.l shouldBe List("[type, location]") // where the array lowering happens
 
-    val headIf @ List(_)     = block.astChildren.isControlStructure.l
-    val ifStmts @ List(_, _) = headIf.repeat(_.astChildren.order(3).astChildren.isControlStructure)(_.emit).l;
+    val headIf @ List(_) = block.astChildren.isControlStructure.l
+    val ifStmts @ List(_, _) =
+      headIf.repeat(_.whenFalse.astChildren.isBlock.astChildren.isControlStructure)(_.emit).l;
 
     val conds: List[List[String]] = ifStmts.condition.map { cond =>
       val orConds = List(cond)

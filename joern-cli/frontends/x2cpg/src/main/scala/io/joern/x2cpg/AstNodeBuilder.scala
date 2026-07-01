@@ -20,7 +20,7 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
   private lazy val maxCodeLength: Int =
     sys.env.get("JOERN_MAX_CODE_LENGTH").flatMap(_.toIntOption).getOrElse(DefaultMaxCodeLength)
 
-  private def setOffset[T <: AstNodeNew](node: Node, astNode: T): T = {
+  protected def setOffset[T <: AstNodeNew](node: Node, astNode: T): T = {
     offset(node).foreach { case (offset, offsetEnd) =>
       astNode.offset(offset).offsetEnd(offsetEnd)
     }

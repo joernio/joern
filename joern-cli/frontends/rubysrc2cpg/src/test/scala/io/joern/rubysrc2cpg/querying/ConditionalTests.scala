@@ -12,7 +12,7 @@ class ConditionalTests extends RubyCode2CpgFixture {
                      |x ? y : z
                      |""".stripMargin)
 
-    inside(cpg.controlStructure.l) { case ifStmt :: Nil =>
+    inside(cpg.controlStructure.isIf.l) { case ifStmt :: Nil =>
       ifStmt.code shouldBe "x ? y : z"
       ifStmt.lineNumber shouldBe Some(2)
 
@@ -21,14 +21,15 @@ class ConditionalTests extends RubyCode2CpgFixture {
         x.lineNumber shouldBe Some(2)
       }
 
-      inside(ifStmt.astChildren.isBlock.l) { case ifBlock :: elseBlock :: Nil =>
-        val (y: Identifier) :: Nil = ifBlock.astChildren.l: @unchecked
+      inside(ifStmt.whenTrue.isBlock.astChildren.l) { case (y: Identifier) :: Nil =>
         y.name shouldBe "y"
         y.lineNumber shouldBe Some(2)
+      }
 
-        val (z: Identifier) :: Nil = elseBlock.astChildren.l: @unchecked
-        z.name shouldBe "z"
-        z.lineNumber shouldBe Some(2)
+      inside(ifStmt.whenFalse.isControlStructure.isElse.astChildren.isBlock.astChildren.l) {
+        case (z: Identifier) :: Nil =>
+          z.name shouldBe "z"
+          z.lineNumber shouldBe Some(2)
       }
     }
   }

@@ -155,9 +155,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         otherElements(indexOfGuardStmt).asInstanceOf[CodeBlockItemSyntax].item.asInstanceOf[GuardStmtSyntax]
       val elementsAfterGuard = otherElements.slice(indexOfGuardStmt + 1, otherElements.size)
 
-      val code   = this.code(guardStmt)
-      val ifNode = controlStructureNode(guardStmt, ControlStructureTypes.IF, code)
-
       // Apply optional binding desugaring for guard let
       // Create the block that will hold the unwrapped variables (blockNode argument is only used for location info)
       val thenBlockNode = if (elementsAfterGuard.nonEmpty) blockNode(elementsAfterGuard.head) else blockNode(guardStmt)
@@ -216,7 +213,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       val thenAst = blockAst(thenBlockNode, allThenChildren)
       val elseAst = astForNode(guardStmt.body)
 
-      val ifAst = ifThenElseAst(ifNode, Option(conditionAst), thenAst, Option(elseAst))
+      val ifAst = ifThenElseAst(guardStmt, Option(guardStmt.body), Option(conditionAst), thenAst, Option(elseAst))
       astsForBlockElements(elementsBeforeGuard) :+ ifAst
     }
   }

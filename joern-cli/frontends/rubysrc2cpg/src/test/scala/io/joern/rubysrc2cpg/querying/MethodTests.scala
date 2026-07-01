@@ -466,10 +466,12 @@ class MethodTests extends RubyCode2CpgFixture {
       inside(cpg.method.name("foo").l) { case fooMethod :: Nil =>
         inside(fooMethod.astChildren.isMethod.name("<lambda>0").l) { case loopMethod :: Nil =>
           inside(loopMethod.block.astChildren.isControlStructure.l) { case ifStruct :: Nil =>
-            inside(ifStruct.astChildren.isBlock.l) { case nilBlock :: breakBlock :: Nil =>
-              inside(breakBlock.astChildren.isControlStructure.l) { case breakStruct :: Nil =>
+            inside(ifStruct.whenTrue.isBlock.astChildren.isReturn.l) { case nilReturn :: Nil =>
+              nilReturn.code shouldBe "return nil"
+            }
+            inside(ifStruct.whenFalse.isControlStructure.isElse.astChildren.isBlock.astChildren.isControlStructure.l) {
+              case breakStruct :: Nil =>
                 breakStruct.code shouldBe "break"
-              }
             }
           }
 

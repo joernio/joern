@@ -31,10 +31,15 @@ class LabelTests extends SwiftSrc2CpgSuite {
       continue.code shouldBe "continue loop"
       continue.controlStructureType shouldBe ControlStructureTypes.CONTINUE
       continue.astChildren.collectAll[JumpLabel].name.l shouldBe List("loop")
-      val List(break) = ifBlock.whenFalse.isControlStructure.l
-      break.code shouldBe "break loop"
-      break.controlStructureType shouldBe ControlStructureTypes.BREAK
-      break.astChildren.collectAll[JumpLabel].name.l shouldBe List("loop")
+
+      inside(ifBlock.whenFalse.l) { case List(elseNode: ControlStructure) =>
+        elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
+        val List(break) = elseNode.astChildren.isControlStructure.l
+        break.code shouldBe "break loop"
+        break.controlStructureType shouldBe ControlStructureTypes.BREAK
+        break.astChildren.collectAll[JumpLabel].name.l shouldBe List("loop")
+      }
+
     }
 
   }

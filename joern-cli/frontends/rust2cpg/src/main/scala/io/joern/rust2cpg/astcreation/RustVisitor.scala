@@ -654,18 +654,11 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  Attr* 'if' condition:Expr then_branch:BlockExpr
   //  ('else' else_branch:(IfExpr | BlockExpr))?
   private def visitIfExpr(ifExpr: IfExpr): Ast = {
-    val ifNode       = controlStructureNode(ifExpr, ControlStructureTypes.IF, code(ifExpr))
     val conditionAst = visitExpr(ifExpr.expr)
     val thenAst      = visitBlockExpr(ifExpr.thenBranch)
-    val elseAst      = ifExpr.elseBranch.map(visitElseBranch)
-
-    ifThenElseAst(ifNode, Some(conditionAst), thenAst, elseAst)
-  }
-
-  private def visitElseBranch(elseBranch: IfExpr | BlockExpr): Ast = {
-    val elseNode = controlStructureNode(elseBranch, ControlStructureTypes.ELSE, "else")
-    val bodyAst  = visitExpr(elseBranch)
-    Ast(elseNode).withChild(bodyAst)
+    val elseNode     = ifExpr.elseBranch
+    val elseAst      = elseNode.map(visitExpr)
+    ifThenElseAst(ifExpr, elseNode, Some(conditionAst), thenAst, elseAst)
   }
 
   extension (ifExpr: IfExpr) {
@@ -698,22 +691,18 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  Attr* Label? 'while' condition:Expr
   //  loop_body:BlockExpr
   private def visitWhileExpr(whileExpr: WhileExpr): Ast = {
-    val whileNode    = controlStructureNode(whileExpr, ControlStructureTypes.WHILE, code(whileExpr))
     val conditionAst = visitExpr(whileExpr.expr)
     val bodyAst      = visitBlockExpr(whileExpr.blockExpr)
-
-    whileBodyAst(whileNode, conditionAst, bodyAst)
+    whileAst(whileExpr, Option(conditionAst), Seq(bodyAst))
   }
 
   // LoopExpr =
   //  Attr* Label? 'loop'
   //  loop_body:BlockExpr
   private def visitLoopExpr(loopExpr: LoopExpr): Ast = {
-    val loopNode     = controlStructureNode(loopExpr, ControlStructureTypes.WHILE, code(loopExpr))
     val conditionAst = Ast(literalNode(loopExpr.loopKwToken, "true", "bool"))
     val bodyAst      = visitBlockExpr(loopExpr.blockExpr)
-
-    whileBodyAst(loopNode, conditionAst, bodyAst)
+    whileAst(loopExpr, Option(conditionAst), Seq(bodyAst))
   }
 
   // ForExpr =
@@ -728,15 +717,14 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   // ContinueExpr =
   //  Attr* 'continue' Lifetime?
   private def visitContinueExpr(continueExpr: ContinueExpr): Ast = {
-    Ast(controlStructureNode(continueExpr, ControlStructureTypes.CONTINUE, code(continueExpr)))
+    continueAst(continueExpr, code(continueExpr))
   }
 
   // BreakExpr =
   //  Attr* 'break' Lifetime? Expr?
   private def visitBreakExpr(breakExpr: BreakExpr): Ast = {
     // TODO: break expr is meant to return expr
-    val breakNode = controlStructureNode(breakExpr, ControlStructureTypes.BREAK, code(breakExpr))
-    controlStructureAst(breakNode, None, Nil)
+    breakAst(breakExpr, code(breakExpr))
   }
 
   // IndexExpr =

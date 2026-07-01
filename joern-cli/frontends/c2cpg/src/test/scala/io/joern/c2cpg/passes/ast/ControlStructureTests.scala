@@ -44,7 +44,7 @@ class ControlStructureTests extends C2CpgSuite(FileDefaults.CppExt) {
         |""".stripMargin)
 
     "should identify `try` block" in {
-      cpg.method("foo").tryBlock.code.l shouldBe List("try")
+      cpg.method("foo").tryBlock.code.loneElement should startWith("try {")
     }
 
     "should identify `if` block" in {

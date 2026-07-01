@@ -498,27 +498,16 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForIfExprSyntax(node: IfExprSyntax): Ast = {
-    val code   = this.code(node)
-    val ifNode = controlStructureNode(node, ControlStructureTypes.IF, code)
-
     handleOptionalBindingConditions(
       node.conditions.children,
-      onAllSimple = simpleBindings => astForIfLetExprSyntax(node, ifNode, simpleBindings, node.body, node.elseBody),
+      onAllSimple = simpleBindings => astForIfLetExprSyntax(node, simpleBindings, node.body, node.elseBody),
       onPartial = (simpleBindings, tupleBindings, otherConditions) =>
-        astForIfLetExprSyntaxPartial(
-          node,
-          ifNode,
-          simpleBindings,
-          tupleBindings,
-          otherConditions,
-          node.body,
-          node.elseBody
-        ),
+        astForIfLetExprSyntaxPartial(node, simpleBindings, tupleBindings, otherConditions, node.body, node.elseBody),
       onStandard = () => {
         val conditionAst = astForNode(node.conditions)
         val thenAst      = astForNode(node.body)
         val elseAst      = node.elseBody.map(astForNode)
-        ifThenElseAst(ifNode, Option(conditionAst), thenAst, elseAst)
+        ifThenElseAst(node, node.elseBody, Option(conditionAst), thenAst, elseAst)
       }
     )
   }
@@ -545,7 +534,6 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     */
   private def astForIfLetExprSyntax(
     node: IfExprSyntax,
-    ifNode: NewControlStructure,
     optionalBindings: Seq[OptionalBindingConditionSyntax],
     thenBody: CodeBlockSyntax,
     elseBody: Option[IfExprSyntax | CodeBlockSyntax]
@@ -554,8 +542,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val conditionAst = buildOptionalBindingCondition(node, bindingInfos)
     val thenAst      = buildBodyWithUnwrapping(thenBody, thenBody.statements.children, bindingInfos)
     val elseAst      = elseBody.map(astForNode)
-
-    ifThenElseAst(ifNode, Option(conditionAst), thenAst, elseAst)
+    ifThenElseAst(node, elseBody, Option(conditionAst), thenAst, elseAst)
   }
 
   /** Handles partial optional binding desugaring with other conditions.
@@ -568,7 +555,6 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     */
   private def astForIfLetExprSyntaxPartial(
     node: IfExprSyntax,
-    ifNode: NewControlStructure,
     simpleBindings: Seq[OptionalBindingConditionSyntax],
     tupleBindings: Seq[OptionalBindingConditionSyntax],
     otherConditions: Seq[ConditionElementSyntax],
@@ -579,8 +565,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val conditionAst = buildOptionalBindingCondition(node, bindingInfos, otherConditions)
     val thenAst      = buildBodyWithUnwrapping(thenBody, tupleBindings ++ thenBody.statements.children, bindingInfos)
     val elseAst      = elseBody.map(astForNode)
-
-    ifThenElseAst(ifNode, Option(conditionAst), thenAst, elseAst)
+    ifThenElseAst(node, elseBody, Option(conditionAst), thenAst, elseAst)
   }
 
   private def astForInOutExprSyntax(node: InOutExprSyntax): Ast = {
@@ -1068,9 +1053,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
             val childrenFlowAsts = children.collect {
               case child if child.whereClause.isDefined =>
                 val whereClause = child.whereClause.get
-                val ifNode =
-                  controlStructureNode(whereClause.condition, ControlStructureTypes.IF, code(whereClause.condition))
-                val whereAst = astForNode(whereClause)
+                val whereAst    = astForNode(whereClause)
 
                 val op = Operators.logicalNot
                 val whereClauseCallNode =
@@ -1086,7 +1069,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
                 val testAst = callAst(whereClauseCallNode, argAsts)
                 val consequentAst =
                   Ast(controlStructureNode(whereClause.condition, ControlStructureTypes.CONTINUE, "continue"))
-                ifThenElseAst(ifNode, Option(testAst), consequentAst, None)
+                ifThenElseAst(whereClause, None, Option(testAst), consequentAst, None)
             }
             (childrenTestAsts, childrenFlowAsts)
           case other => (List(astForNode(other)), List.empty)
@@ -1127,7 +1110,6 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       val subjectAssignAst =
         createAssignmentCallAst(node, Ast(subjectIdentNode), subjectExprAst, s"$subjectTmpName = ${code(node.subject)}")
 
-      val switchNode    = controlStructureNode(node, ControlStructureTypes.SWITCH, code(node))
       val condIdentNode = identifierNode(node, subjectTmpName, subjectTmpName, Defines.Tuple)
       scope.addVariableReference(subjectTmpName, condIdentNode, Defines.Tuple, EvaluationStrategies.BY_REFERENCE)
       val condAst = Ast(condIdentNode)
@@ -1140,14 +1122,13 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       localAstParentStack.pop()
 
       val switchBlockAst  = blockAst(switchBlockNode, casesAsts)
-      val switchAstResult = switchAst(switchNode, condAst, Seq(switchBlockAst))
+      val switchAstResult = switchAst(node, Some(condAst), Seq(switchBlockAst))
 
       scope.popScope()
       localAstParentStack.pop()
 
       blockAst(outerBlockNode, List(subjectAssignAst, switchAstResult))
     } else {
-      val switchNode          = controlStructureNode(node, ControlStructureTypes.SWITCH, code(node))
       val switchExpressionAst = astForNode(node.subject)
 
       val blockNode_ = blockNode(node)
@@ -1158,7 +1139,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       localAstParentStack.pop()
 
       val switchBlockAst = blockAst(blockNode_, casesAsts)
-      switchAst(switchNode, switchExpressionAst, Seq(switchBlockAst))
+      switchAst(node, Some(switchExpressionAst), Seq(switchBlockAst))
     }
   }
 

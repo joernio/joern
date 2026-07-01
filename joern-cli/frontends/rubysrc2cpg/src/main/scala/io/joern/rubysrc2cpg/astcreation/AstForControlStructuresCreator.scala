@@ -1,45 +1,11 @@
 package io.joern.rubysrc2cpg.astcreation
 
-import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
-  ArrayLiteral,
-  ArrayPattern,
-  BinaryExpression,
-  Block,
-  BreakExpression,
-  CaseExpression,
-  ControlFlowStatement,
-  DoWhileExpression,
-  DummyAst,
-  ElseClause,
-  ForExpression,
-  IfExpression,
-  InClause,
-  IndexAccess,
-  MandatoryParameter,
-  MatchVariable,
-  MemberCall,
-  NextExpression,
-  OperatorAssignment,
-  RegexMatchMemberCall,
-  RescueExpression,
-  RubyExpression,
-  SimpleIdentifier,
-  SingleAssignment,
-  SplattingRubyNode,
-  StatementList,
-  StaticLiteral,
-  UnaryExpression,
-  Unknown,
-  UnlessExpression,
-  UntilExpression,
-  WhenClause,
-  WhileExpression
-}
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
-import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewFieldIdentifier, NewLiteral, NewLocal}
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
+import io.joern.x2cpg.{Ast, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 
 trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -60,20 +26,20 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
   private def astForWhileStatement(node: WhileExpression): Ast = {
     val conditionAst = astForExpression(node.condition)
     val bodyAsts     = astsForStatement(node.body)
-    whileAst(Some(conditionAst), bodyAsts, Option(code(node)), line(node), column(node))
+    whileAst(node, Some(conditionAst), bodyAsts)
   }
 
   private def astForDoWhileStatement(node: DoWhileExpression): Ast = {
     val conditionAst = astForExpression(node.condition)
     val bodyAsts     = astsForStatement(node.body)
-    doWhileAst(Some(conditionAst), bodyAsts, Option(code(node)), line(node), column(node))
+    doWhileAst(node, Some(conditionAst), bodyAsts)
   }
 
   // `until T do B` is lowered as `while !T do B`
   private def astForUntilStatement(node: UntilExpression): Ast = {
     val notCondition = astForExpression(UnaryExpression("!", node.condition)(node.condition.span))
     val bodyAsts     = astsForStatement(node.body)
-    whileAst(Some(notCondition), bodyAsts, Option(code(node)), line(node), column(node))
+    whileAst(node, Some(notCondition), bodyAsts)
   }
 
   // Recursively lowers into a ternary conditional call

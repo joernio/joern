@@ -63,7 +63,10 @@ class GuardTopLevelTests extends SwiftSrc2CpgSuite {
       val List(bArg) = printCall.argument.l
       bArg.code shouldBe "b"
 
-      guardIf.whenFalse.astChildren shouldBe empty
+      inside(guardIf.whenFalse.l) { case List(elseNode: ControlStructure) =>
+        elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
+        elseNode.astChildren.isBlock.astChildren shouldBe empty
+      }
     }
   }
 
