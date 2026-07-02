@@ -160,7 +160,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         Some(blockAst(elseBlock, statementAsts.toList))
       case _ => None
     }
-    Seq(initAst, ifThenElseAst(ifStmt, elseNode, Some(conditionAst), thenAst, elseAst, Some(ifCode)))
+    Seq(initAst, ifThenElseAst(ifStmt, Some(conditionAst), thenAst, elseAst, Some(ifCode)))
   }
 
   private def astForSwitchStatement(switchStmt: ParserNodeInfo): Ast = {
