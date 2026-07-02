@@ -199,7 +199,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
     scope.popBlockAndHoistPatternVariables()
     scope.addLocalsForPatternsToEnclosingBlock(patternPartition.patternsIntroducedByStatement)
 
-    val astWithBodies = ifThenElseAst(stmt, elseNode, conditionAst, thenAst, elseAst, Some(ifCode))
+    val astWithBodies = ifThenElseAst(stmt, conditionAst, thenAst, elseAst, Some(ifCode))
     patternLocals :+ astWithBodies
   }
 
@@ -335,14 +335,14 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
         case Some(guard) =>
           val bodyAst = wrapInBlockWithPrefix(Nil, entry.getStatements.asScala.toList)
           val ifCode  = s"if (${guard.headOption.flatMap(_.rootCode).getOrElse("")})"
-          ifThenElseAst(entry.getGuard.get(), None, guard.headOption, bodyAst, None, Some(ifCode))
+          ifThenElseAst(entry.getGuard.get(), guard.headOption, bodyAst, None, Some(ifCode))
       }
       scope.popBlockScope()
 
       val ifInstanceOfAst = instanceOfAst
         .map { instanceOfAst =>
           val ifCode = s"if (${instanceOfAst.rootCodeOrEmpty})"
-          ifThenElseAst(entry, None, Option(instanceOfAst), statementsAst, None, Some(ifCode))
+          ifThenElseAst(entry, Some(instanceOfAst), statementsAst, None, Some(ifCode))
         }
         .getOrElse(statementsAst)
 

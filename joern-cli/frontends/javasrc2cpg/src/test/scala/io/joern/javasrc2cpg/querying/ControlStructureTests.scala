@@ -694,16 +694,14 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
         case List(ifOne: ControlStructure, ifTwo: ControlStructure) =>
           ifOne.condition.code.l shouldBe List("c > 10")
           ifOne.trueBodyOut.astChildren.code.l shouldBe List("c -= 10")
-          inside(ifOne.falseBodyOut.l) { case List(elseNode: ControlStructure) =>
-            elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-            elseNode.astChildren.isBlock.astChildren.l shouldBe List(ifTwo)
+          inside(ifOne.falseBodyOut.l) { case List(elseBlock: Block) =>
+            elseBlock.astChildren.l shouldBe List(ifTwo)
           }
 
           ifTwo.condition.code.l shouldBe List("c < 10")
           ifTwo.trueBodyOut.astChildren.code.l shouldBe List("c += 10")
-          inside(ifTwo.falseBodyOut.l) { case List(elseNode: ControlStructure) =>
-            elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-            elseNode.astChildren.isBlock.astChildren.code.l shouldBe List("c = 10")
+          inside(ifTwo.falseBodyOut.l) { case List(elseBlock: Block) =>
+            elseBlock.astChildren.code.l shouldBe List("c = 10")
           }
       }
     }
@@ -893,7 +891,7 @@ class ControlStructureTests extends JavaSrcCode2CpgFixture {
   "should identify an else block" in {
     val ifBlock = cpg.method.name("elseTest").ifBlock.head
     ifBlock.code shouldBe "if (b)"
-    val List(condition: Identifier, thenBlock: Block, elseBlock: ControlStructure) = ifBlock.astChildren.l: @unchecked
+    val List(condition: Identifier, thenBlock: Block, elseBlock: Block) = ifBlock.astChildren.l: @unchecked
     condition.code shouldBe "b"
     condition.order shouldBe 1
 
@@ -904,10 +902,8 @@ class ControlStructureTests extends JavaSrcCode2CpgFixture {
     thenBody.argument.l.tail.head.code shouldBe "42"
     thenBody.order shouldBe 1
 
-    elseBlock.code shouldBe "else"
-    elseBlock.controlStructureType shouldBe "ELSE"
     elseBlock.order shouldBe 3
-    val elseAssign = elseBlock.astChildren.head.astChildren.head.asInstanceOf[Call]
+    val elseAssign = elseBlock.astChildren.head.asInstanceOf[Call]
     elseAssign.order shouldBe 1
     elseAssign.code shouldBe "x = 39"
   }
