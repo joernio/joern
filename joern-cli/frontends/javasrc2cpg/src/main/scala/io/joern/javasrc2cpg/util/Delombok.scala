@@ -24,13 +24,7 @@ object Delombok {
   case class DelombokRunResult(path: Path, isDelombokedPath: Boolean)
 
   /** Per-invocation inputs for [[delombokPackageRoot]]. All absolute paths are already normalised. */
-  case class DelombokInvocation(
-    projectDir: Path,
-    relativePackageRoot: Path,
-    absRoot: Path,
-    absPeerRoots: Seq[Path],
-    fqnIndex: DelombokStderrFilter.FqnIndex
-  )
+  case class DelombokInvocation(projectDir: Path, relativePackageRoot: Path, absRoot: Path, absPeerRoots: Seq[Path])
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -76,10 +70,7 @@ object Delombok {
     val sourcepathArgs =
       if (peerSourceRoots.isEmpty) Nil
       else
-        Seq(
-          "--sourcepath",
-          peerSourceRoots.map(_.toString).mkString(File.pathSeparator)
-        )
+        Seq("--sourcepath", peerSourceRoots.map(_.toString).mkString(File.pathSeparator))
     val command =
       Seq(
         javaPath,
@@ -87,47 +78,47 @@ object Delombok {
         classPathArg,
         "lombok.launch.Main",
         "delombok",
-        inputPath.absolutePathAsString
+        inputPath.absolutePathAsString,
+        "--verbose"
       ) ++ sourcepathArgs ++ Seq("-d", outputDir.absolutePathAsString)
     logger.debug(s"Executing delombok with command ${command.mkString(" ")}")
     command
   }
 
   def delombokPackageRoot(
-    inv: DelombokInvocation,
+    delombokInvocation: DelombokInvocation,
     delombokTempDir: Path,
     analysisJavaHome: Option[String],
     dependencies: List[String]
   ): Try[String] = {
-    val rootIsFile = Files.isRegularFile(inv.projectDir.resolve(inv.relativePackageRoot))
+    val rootIsFile = Files.isRegularFile(delombokInvocation.projectDir.resolve(delombokInvocation.relativePackageRoot))
     val relativeOutputPath =
-      if (rootIsFile) Option(inv.relativePackageRoot.getParent).map(_.toString).getOrElse(".")
-      else inv.relativePackageRoot.toString
-    val inputDir = inv.projectDir.resolve(inv.relativePackageRoot)
+      if (rootIsFile) Option(delombokInvocation.relativePackageRoot.getParent).map(_.toString).getOrElse(".")
+      else delombokInvocation.relativePackageRoot.toString
+    val inputDir = delombokInvocation.projectDir.resolve(delombokInvocation.relativePackageRoot)
 
     val childPath = (delombokTempDir / relativeOutputPath).toAbsolutePath.normalize()
 
     Try(childPath.createWithParentsIfNotExists(asDirectory = true)).flatMap { packageOutputDir =>
       val result =
         ExternalCommand.run(
-          delombokToTempDirCommand(inputDir, packageOutputDir, analysisJavaHome, dependencies, inv.absPeerRoots)
+          delombokToTempDirCommand(
+            inputDir,
+            packageOutputDir,
+            analysisJavaHome,
+            dependencies,
+            delombokInvocation.absPeerRoots
+          )
         )
       if (!result.successful) {
-        // Always log the stdout/stderr if delombok exited with a non-zero code
+        // Always log the unfiltered stdout/stderr if delombok exited with a non-zero code
         result.logIfFailed()
       } else {
-        // Exit 0: filter out `cannot find symbol` records that reference peer roots (false
-        // positives for this invocation), then log the remainder as a WARN if non-empty. Fail-open:
-        // if the filter itself throws, fall back to logging the original stderr.
-        val filteredStdErr =
-          Try(DelombokStderrFilter.filter(inv.absPeerRoots.toSet, inv.fqnIndex, result.stdErr)) match {
-            case Success(filtered) => filtered
-            case Failure(err) =>
-              logger.warn("DelombokStderrFilter threw; falling back to unfiltered stderr", err)
-              result.stdErr
-          }
+        // Exit 0: filter out error logs that reference peer roots (these will be logged anyways when the peer is
+        // delomboked), then log the remainder as a DEBUG if non-empty.
+        val filteredStdErr = DelombokStderrFilter.filter(delombokInvocation.absRoot, result.stdErr)
         if (filteredStdErr.nonEmpty) {
-          logger.warn(s"Delombok emitted diagnostics for $inputDir:\n${filteredStdErr.mkString("\n")}")
+          logger.debug(s"Delombok emitted diagnostics for $inputDir:\n${filteredStdErr.mkString("\n")}")
         }
       }
       // Call `toTry` on the original result so the failure message (used downstream) still
@@ -146,7 +137,7 @@ object Delombok {
       logger.warn(
         "Running delombok without any project dependencies on the classpath. Delombok may fail to resolve " +
           "symbols from third-party libraries used in Lombok-annotated code. If you did not pass " +
-          "--fetch-dependencies, re-run with it. If you did, dependency resolution may have failed silently — " +
+          "--fetch-dependencies, re-run with it. If you did, dependency resolution may have failed — " +
           "check earlier logs."
       )
     }
@@ -157,13 +148,13 @@ object Delombok {
 
       case Success(tempDir) =>
         FileUtil.deleteOnExit(tempDir)
-        val packageRoots = PackageRootFinder.packageRootsFromFiles(inputPath, fileInfo).distinct
-        val fqnIndex     = DelombokStderrFilter.FqnIndex.build(inputPath, fileInfo, packageRoots)
-        val absRoots     = fqnIndex.absoluteRoots
-        packageRoots.zip(absRoots).par.foreach { case (relativeRoot, absRoot) =>
-          val absPeerRoots = absRoots.filterNot(_ == absRoot)
+        val packageRoots         = PackageRootFinder.packageRootsFromFiles(inputPath, fileInfo).distinct
+        val absolutePackageRoots = packageRoots.map(_.toAbsolutePath)
+        packageRoots.par.foreach { case relativeRoot =>
+          val absoluteRoot      = relativeRoot.toAbsolutePath
+          val absolutePeerRoots = absolutePackageRoots.filterNot(_ == absoluteRoot)
           delombokPackageRoot(
-            DelombokInvocation(inputPath, relativeRoot, absRoot, absPeerRoots, fqnIndex),
+            DelombokInvocation(inputPath, relativeRoot, absoluteRoot, absolutePeerRoots),
             tempDir,
             analysisJavaHome,
             dependencies
