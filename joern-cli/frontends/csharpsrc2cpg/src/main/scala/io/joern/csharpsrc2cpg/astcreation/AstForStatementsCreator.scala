@@ -54,7 +54,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     }
     val elseAst = elseNode.map(astForElseStatement)
 
-    Seq(ifThenElseAst(ifStmt, elseNode, Some(conditionAst), thenAst, elseAst, Some(ifCode)))
+    Seq(ifThenElseAst(ifStmt, Some(conditionAst), thenAst, elseAst, Some(ifCode)))
   }
 
   protected def astForStatement(nodeInfo: DotNetNodeInfo): Seq[Ast] = {
