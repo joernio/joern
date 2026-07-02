@@ -11,29 +11,27 @@ import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Dispatch
 trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForBreakStmt(breakStmt: PhpBreakStmt): Ast = {
-    val code     = breakStmt.num.map(num => s"break($num)").getOrElse("break")
-    val argument = breakStmt.num.map(intToLiteralAst)
-    breakAst(breakStmt, code, argument)
+    val code = breakStmt.num.map(num => s"break($num)").getOrElse("break")
+    breakAst(breakStmt, code, breakStmt.num, TypeConstants.Int)
   }
 
   protected def astForContinueStmt(continueStmt: PhpContinueStmt): Ast = {
-    val code     = continueStmt.num.map(num => s"continue($num)").getOrElse("continue")
-    val argument = continueStmt.num.map(intToLiteralAst)
-    continueAst(continueStmt, code, argument)
+    val code = continueStmt.num.map(num => s"continue($num)").getOrElse("continue")
+    continueAst(continueStmt, code, continueStmt.num, TypeConstants.Int)
   }
 
   protected def astForWhileStmt(whileStmt: PhpWhileStmt): Ast = {
     val condition = astForExpr(whileStmt.cond)
     val body      = stmtBodyBlockAst(whileStmt)
     val code      = s"while (${condition.rootCodeOrEmpty})"
-    whileAst(whileStmt, Option(condition), List(body), Option(code))
+    whileAst(whileStmt, Some(condition), List(body), Some(code))
   }
 
   protected def astForDoStmt(doStmt: PhpDoStmt): Ast = {
     val condition = astForExpr(doStmt.cond)
     val body      = stmtBodyBlockAst(doStmt)
     val code      = s"do {...} while (${condition.rootCodeOrEmpty})"
-    doWhileAst(doStmt, Option(condition), List(body), Option(code))
+    doWhileAst(doStmt, Some(condition), List(body), Some(code))
   }
 
   protected def astForForStmt(stmt: PhpForStmt): Ast = {
@@ -54,11 +52,6 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     val condition = astForExpr(ifStmt.cond)
     val thenAst   = stmtBodyBlockAst(ifStmt)
 
-    val elseNode = ifStmt.elseIfs match {
-      case Nil         => ifStmt.elseStmt
-      case elseIf :: _ => Option(elseIf)
-    }
-
     val elseAst = ifStmt.elseIfs match {
       case Nil =>
         ifStmt.elseStmt.map(els => stmtBodyBlockAst(els))
@@ -70,7 +63,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     }
 
     val code = s"if (${condition.rootCodeOrEmpty})"
-    ifThenElseAst(ifStmt, elseNode, Option(condition), thenAst, elseAst, Some(code))
+    ifThenElseAst(ifStmt, Some(condition), thenAst, elseAst, Some(code))
   }
 
   protected def astForSwitchStmt(stmt: PhpSwitchStmt): Ast = {

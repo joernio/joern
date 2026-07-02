@@ -959,7 +959,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val armsAsts       = expr.matchArms.flatMap(astsForMatchArm)
     val matchBody      = Ast(matchBodyBlock).withChildren(armsAsts)
 
-    matchAst(expr, Option(conditionAst), matchBody :: Nil, Some(s"match (${conditionAst.rootCodeOrEmpty})"))
+    matchAst(expr, Some(conditionAst), matchBody :: Nil, Some(s"match (${conditionAst.rootCodeOrEmpty})"))
   }
 
   private def astsForMatchArm(matchArm: PhpMatchArm): List[Ast] = {
