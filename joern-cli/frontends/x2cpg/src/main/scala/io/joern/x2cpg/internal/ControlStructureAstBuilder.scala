@@ -2,7 +2,7 @@ package io.joern.x2cpg.internal
 
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewControlStructure, NewJumpLabel}
+import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewControlStructure, NewJumpLabel, NewLiteral}
 
 /** Mixin that provides helpers for building control-structure ASTs. */
 private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
@@ -72,7 +72,21 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     * @param code
     *   explicit source-code string; falls back to `this.code(node)` when absent
     */
-  def doWhileAst(node: Node, condition: Option[Ast], body: Seq[Ast], code: Option[String] = None): Ast = {
+  def doWhileAst(node: Node, condition: Option[Ast], body: Seq[Ast], code: Option[String] = None): Ast =
+    doWhileAstFinish(doWhileAstInit(node, code), condition, body)
+
+  /** Creates the `NewControlStructure` node for a `do-while` loop, without wiring any children.
+    *
+    * This is the "split" counterpart to [[doWhileAst]] for callers that need the `do` node before its body ASTs are
+    * built — e.g. to push it as a block scope so that body-local declarations resolve against it. Pass the returned
+    * node to [[doWhileAstFinish]] once the child ASTs are available.
+    *
+    * @param node
+    *   the source AST node representing the `do-while` statement (used for position and code)
+    * @param code
+    *   explicit source-code string; falls back to `this.code(node)` when absent
+    */
+  def doWhileAstInit(node: Node, code: Option[String] = None): NewControlStructure = {
     val doWhileNode = NewControlStructure()
       .parserTypeName(node.getClass.getSimpleName)
       .controlStructureType(ControlStructureTypes.DO)
@@ -80,6 +94,22 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
       .columnNumber(column(node))
       .code(code.getOrElse(this.code(node)))
     setOffset(node, doWhileNode)
+    doWhileNode
+  }
+
+  /** Wires the condition and body of a `do-while` loop onto a `doWhileNode` created by [[doWhileAstInit]].
+    *
+    * The condition AST is placed after the body (`placeConditionLast = true`) and connected via a `CONDITION` edge. The
+    * first body child is connected via a `DO_BODY` edge.
+    *
+    * @param doWhileNode
+    *   the `do` control-structure node created by [[doWhileAstInit]]
+    * @param condition
+    *   optional condition expression AST
+    * @param body
+    *   ordered sequence of body statement ASTs
+    */
+  def doWhileAstFinish(doWhileNode: NewControlStructure, condition: Option[Ast], body: Seq[Ast]): Ast = {
     val astWithChildren = controlStructureAst(doWhileNode, condition, body, placeConditionLast = true)
     body.headOption.flatMap(_.root) match {
       case Some(doBodyRoot) => astWithChildren.withDoBodyEdge(doWhileNode, doBodyRoot)
@@ -185,7 +215,21 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     updateAsts: Seq[Ast],
     bodyAsts: Seq[Ast],
     code: Option[String] = None
-  ): Ast = {
+  ): Ast =
+    forAstFinish(forAstInit(node, code), locals, initAsts, conditionAsts, updateAsts, bodyAsts)
+
+  /** Creates the `NewControlStructure` node for a C-style `for` loop, without wiring any children.
+    *
+    * This is the "split" counterpart to [[forAst]] for callers that need the `for` node before its body ASTs are built
+    * — e.g. to push it as a block scope so that header-local declarations resolve against it. Pass the returned node to
+    * [[forAstFinish]] once the child ASTs are available.
+    *
+    * @param node
+    *   the source AST node representing the `for` statement (used for position and code)
+    * @param code
+    *   explicit source-code string; falls back to `this.code(node)` when absent
+    */
+  def forAstInit(node: Node, code: Option[String] = None): NewControlStructure = {
     val forNode = NewControlStructure()
       .parserTypeName(node.getClass.getSimpleName)
       .controlStructureType(ControlStructureTypes.FOR)
@@ -193,6 +237,37 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
       .columnNumber(column(node))
       .code(code.getOrElse(this.code(node)))
     setOffset(node, forNode)
+    forNode
+  }
+
+  /** Wires the children of a C-style `for` loop onto a `forNode` created by [[forAstInit]].
+    *
+    * Multiple init, condition, or update expressions are each wrapped in a synthetic block. The resulting blocks and
+    * body are placed at explicit orders so that [[io.joern.x2cpg.passes.cfg.CfgCreator]] can reconstruct the correct
+    * CFG edges. Condition, init, update, and body roots receive the corresponding CFG-typed edges (`CONDITION`,
+    * `FOR_INIT`, `FOR_UPDATE`, `FOR_BODY`).
+    *
+    * @param forNode
+    *   the `for` control-structure node created by [[forAstInit]]
+    * @param locals
+    *   variable declarations inside the `for` header (placed at the lowest orders)
+    * @param initAsts
+    *   initialiser expression ASTs
+    * @param conditionAsts
+    *   loop-condition expression ASTs
+    * @param updateAsts
+    *   per-iteration update expression ASTs
+    * @param bodyAsts
+    *   ordered sequence of loop-body statement ASTs
+    */
+  def forAstFinish(
+    forNode: NewControlStructure,
+    locals: Seq[Ast],
+    initAsts: Seq[Ast],
+    conditionAsts: Seq[Ast],
+    updateAsts: Seq[Ast],
+    bodyAsts: Seq[Ast]
+  ): Ast = {
     val lineNumber     = forNode.lineNumber
     val numOfLocals    = locals.size
     val initBlock      = setOrderExplicitly(wrapMultipleInBlock(initAsts, lineNumber), numOfLocals + 1)
@@ -236,24 +311,25 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     *   optional string name of the target label
     */
   def breakAst(node: Node, codeStr: String, labelName: Option[String]): Ast =
-    labeledJumpAst(node, ControlStructureTypes.BREAK, codeStr, labelName)
+    jumpAst(node, ControlStructureTypes.BREAK, codeStr, labelName)
 
-  /** Creates an AST for a `break` statement carrying a pre-built jump argument (e.g. an integer literal encoding how
-    * many loop/switch levels the break applies to).
+  /** Creates an AST for a `break` statement carrying a numeric jump argument (e.g. `break 2`, encoding how many
+    * loop/switch levels the break applies to).
     *
-    * When `argument` is [[Some]], its root is connected via a `JUMP_ARGUMENT` edge; the caller controls the argument
-    * node (and thus its `typeFullName`). The `DummyImplicit` witness disambiguates this overload from the
-    * [[String]]-label variant at the call site.
+    * When `labelNumber` is [[Some]], a `Literal` child with the given `typeFullName` is created at order 1 and
+    * connected via a `JUMP_ARGUMENT` edge.
     *
     * @param node
     *   the source AST node (used for position)
     * @param codeStr
     *   source-code string for the break statement
-    * @param argument
-    *   optional pre-built jump-argument AST
+    * @param labelNumber
+    *   optional numeric jump target (loop/switch nesting level)
+    * @param typeFullName
+    *   the `typeFullName` for the generated literal
     */
-  def breakAst(node: Node, codeStr: String, argument: Option[Ast])(implicit dummy: DummyImplicit): Ast =
-    jumpAst(node, ControlStructureTypes.BREAK, codeStr, argument)
+  def breakAst(node: Node, codeStr: String, labelNumber: Option[Int], typeFullName: String): Ast =
+    jumpAst(node, ControlStructureTypes.BREAK, codeStr, labelNumber, typeFullName)
 
   /** Creates an AST for a `break` statement without a jump argument.
     *
@@ -277,24 +353,25 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     *   optional string name of the target label
     */
   def continueAst(node: Node, codeStr: String, labelName: Option[String]): Ast =
-    labeledJumpAst(node, ControlStructureTypes.CONTINUE, codeStr, labelName)
+    jumpAst(node, ControlStructureTypes.CONTINUE, codeStr, labelName)
 
-  /** Creates an AST for a `continue` statement carrying a pre-built jump argument (e.g. an integer literal encoding how
-    * many loop levels the continue applies to).
+  /** Creates an AST for a `continue` statement carrying a numeric jump argument (e.g. `continue 2`, encoding how many
+    * loop levels the continue applies to).
     *
-    * When `argument` is [[Some]], its root is connected via a `JUMP_ARGUMENT` edge; the caller controls the argument
-    * node (and thus its `typeFullName`). The `DummyImplicit` witness disambiguates this overload from the
-    * [[String]]-label variant at the call site.
+    * When `labelNumber` is [[Some]], a `Literal` child with the given `typeFullName` is created at order 1 and
+    * connected via a `JUMP_ARGUMENT` edge.
     *
     * @param node
     *   the source AST node (used for position)
     * @param codeStr
     *   source-code string for the continue statement
-    * @param argument
-    *   optional pre-built jump-argument AST
+    * @param labelNumber
+    *   optional numeric jump target (loop nesting level)
+    * @param typeFullName
+    *   the `typeFullName` for the generated literal
     */
-  def continueAst(node: Node, codeStr: String, argument: Option[Ast])(implicit dummy: DummyImplicit): Ast =
-    jumpAst(node, ControlStructureTypes.CONTINUE, codeStr, argument)
+  def continueAst(node: Node, codeStr: String, labelNumber: Option[Int], typeFullName: String): Ast =
+    jumpAst(node, ControlStructureTypes.CONTINUE, codeStr, labelNumber, typeFullName)
 
   /** Creates an AST for a `continue` statement without a jump argument.
     *
@@ -320,46 +397,7 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     *   name of the target label
     */
   def gotoAst(node: Node, codeStr: String, labelName: String): Ast =
-    labeledJumpAst(node, ControlStructureTypes.GOTO, codeStr, Option(labelName))
-
-  /** Creates an AST for a jump statement with an optional string label target (e.g. `break outerLoop` or `goto label`).
-    *
-    * When `labelName` is [[Some]], a [[io.shiftleft.codepropertygraph.generated.nodes.NewJumpLabel]] child is created
-    * at order 1 and connected via a `JUMP_ARGUMENT` edge. When it is [[None]], a bare jump node is returned.
-    *
-    * @param node
-    *   the source AST node (used for position)
-    * @param jumpType
-    *   the [[io.shiftleft.codepropertygraph.generated.ControlStructureTypes]] constant
-    * @param codeStr
-    *   source-code string for the jump statement
-    * @param labelName
-    *   optional string name of the target label
-    */
-  private def labeledJumpAst(node: Node, jumpType: String, codeStr: String, labelName: Option[String]): Ast = {
-    val jumpNode = NewControlStructure()
-      .parserTypeName(node.getClass.getSimpleName)
-      .controlStructureType(jumpType)
-      .code(codeStr)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-    setOffset(node, jumpNode)
-    labelName match {
-      case Some(name) =>
-        val jumpLabelNode = NewJumpLabel()
-          .parserTypeName(node.getClass.getSimpleName)
-          .name(name)
-          .code(name)
-          .lineNumber(line(node))
-          .columnNumber(column(node))
-          .order(1)
-        Ast(jumpNode)
-          .withChild(Ast(jumpLabelNode))
-          .withJumpArgumentEdge(jumpNode, jumpLabelNode)
-      case None =>
-        Ast(jumpNode)
-    }
-  }
+    jumpAst(node, ControlStructureTypes.GOTO, codeStr, Option(labelName))
 
   /** Creates an AST for a `try-catch-finally` statement.
     *
@@ -414,14 +452,11 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
 
   /** Creates an AST for an `if-then-else` expression or statement.
     *
-    * When `elseAst` is present, a synthetic `ELSE` control-structure node wraps it, and the whole subtree is connected
-    * via a `FALSE_BODY` edge. The `then` branch is connected via a `TRUE_BODY` edge and the condition via a `CONDITION`
-    * edge.
+    * The `then` branch is connected via a `TRUE_BODY` edge, a present `else` branch via a `FALSE_BODY` edge, and the
+    * condition via a `CONDITION` edge.
     *
     * @param node
     *   the source AST node representing the `if` keyword/expression (used for position and code)
-    * @param elseNode
-    *   the source AST node representing the `else` keyword; required when `elseAst` is [[Some]]
     * @param conditionAst
     *   optional condition expression AST
     * @param thenAst
@@ -433,7 +468,6 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     */
   def ifThenElseAst(
     node: Node,
-    elseNode: Option[Node],
     conditionAst: Option[Ast],
     thenAst: Ast,
     elseAst: Option[Ast],
@@ -447,35 +481,71 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
       .code(code.getOrElse(this.code(node)))
     setOffset(node, ifNode)
 
-    val elseAstWithElseNodes = elseAst.map { elseAstElement =>
-      val elseControlStructureNode = controlStructureNode(elseNode.get, ControlStructureTypes.ELSE, "else")
-      setOffset(elseNode.get, elseControlStructureNode)
-      Ast(elseControlStructureNode).withChild(elseAstElement)
-    }
-
-    val astWithChildren = controlStructureAst(ifNode, conditionAst, thenAst :: elseAstWithElseNodes.toList)
+    val astWithChildren = controlStructureAst(ifNode, conditionAst, thenAst :: elseAst.toList)
     val astWithTrueBody = thenAst.root match {
       case Some(thenRoot) => astWithChildren.withTrueBodyEdge(ifNode, thenRoot)
       case None           => astWithChildren
     }
-    elseAstWithElseNodes.flatMap(_.root) match {
+    elseAst.flatMap(_.root) match {
       case Some(elseRoot) => astWithTrueBody.withFalseBodyEdge(ifNode, elseRoot)
       case None           => astWithTrueBody
     }
   }
 
-  private def jumpAst(node: Node, jumpType: String, codeStr: String): Ast = {
-    val jumpNode = NewControlStructure()
-      .parserTypeName(node.getClass.getSimpleName)
-      .controlStructureType(jumpType)
-      .code(codeStr)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-    setOffset(node, jumpNode)
-    Ast(jumpNode)
+  /** Creates a bare jump node (`break`, `continue`, `goto`) without a jump argument. */
+  private def jumpAst(node: Node, jumpType: String, codeStr: String): Ast =
+    Ast(jumpNode(node, jumpType, codeStr))
+
+  /** Creates a jump node with an optional string label target (e.g. `break outerLoop` or `goto label`). When
+    * `labelName` is [[Some]], a `JumpLabel` child is created at order 1 and connected via a `JUMP_ARGUMENT` edge.
+    */
+  private def jumpAst(node: Node, jumpType: String, codeStr: String, labelName: Option[String]): Ast = {
+    val jump = jumpNode(node, jumpType, codeStr)
+    labelName match {
+      case Some(name) =>
+        val jumpLabelNode = NewJumpLabel()
+          .parserTypeName(node.getClass.getSimpleName)
+          .name(name)
+          .code(name)
+          .lineNumber(line(node))
+          .columnNumber(column(node))
+          .order(1)
+        Ast(jump)
+          .withChild(Ast(jumpLabelNode))
+          .withJumpArgumentEdge(jump, jumpLabelNode)
+      case None =>
+        Ast(jump)
+    }
   }
 
-  private def jumpAst(node: Node, jumpType: String, codeStr: String, argument: Option[Ast]): Ast = {
+  /** Creates a jump node with an optional numeric jump argument (e.g. `break 2`). When `labelNumber` is [[Some]], a
+    * `Literal` child with the given `typeFullName` is created at order 1 and connected via a `JUMP_ARGUMENT` edge.
+    */
+  private def jumpAst(
+    node: Node,
+    jumpType: String,
+    codeStr: String,
+    labelNumber: Option[Int],
+    typeFullName: String
+  ): Ast = {
+    val jump = jumpNode(node, jumpType, codeStr)
+    labelNumber match {
+      case Some(number) =>
+        val literal = NewLiteral()
+          .code(number.toString)
+          .typeFullName(typeFullName)
+          .lineNumber(line(node))
+          .columnNumber(column(node))
+          .order(1)
+        Ast(jump)
+          .withChild(Ast(literal))
+          .withJumpArgumentEdge(jump, literal)
+      case None =>
+        Ast(jump)
+    }
+  }
+
+  private def jumpNode(node: Node, jumpType: String, codeStr: String): NewControlStructure = {
     val jumpNode = NewControlStructure()
       .parserTypeName(node.getClass.getSimpleName)
       .controlStructureType(jumpType)
@@ -483,14 +553,7 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
       .lineNumber(line(node))
       .columnNumber(column(node))
     setOffset(node, jumpNode)
-    argument.flatMap(_.root) match {
-      case Some(argumentRoot) =>
-        Ast(jumpNode)
-          .withChild(argument.get)
-          .withJumpArgumentEdge(jumpNode, argumentRoot)
-      case None =>
-        Ast(jumpNode)
-    }
+    jumpNode
   }
 
   private def setOrderExplicitly(ast: Ast, order: Int): Ast = {
