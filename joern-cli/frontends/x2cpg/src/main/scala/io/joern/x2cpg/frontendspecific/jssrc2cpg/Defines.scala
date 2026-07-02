@@ -3,25 +3,28 @@ package io.joern.x2cpg.frontendspecific.jssrc2cpg
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 object Defines {
-  val Any: String               = "ANY"
-  val Array: String             = "__ecma.Array"
-  val Number: String            = "__ecma.Number"
-  val String: String            = "__ecma.String"
-  val Boolean: String           = "__ecma.Boolean"
-  val Null: String              = "__ecma.Null"
-  val Math: String              = "__ecma.Math"
-  val Symbol: String            = "__ecma.Symbol"
-  val Console: String           = "__whatwg.console"
-  val Object: String            = "__ecma.Object"
-  val BigInt: String            = "__ecma.BigInt"
-  val Unknown: String           = Any
-  val Void: String              = Any
-  val Never: String             = Any
-  val Undefined: String         = Any
-  val NodeModulesFolder: String = "node_modules"
-  val Program: String           = ":program"
-  val GlobalNamespace: String   = NamespaceTraversal.globalNamespaceName
-  val OperatorsNew: String      = "<operator>.new" // TODO: place "<operator>.new" into the schema
+  val Any: String                 = "ANY"
+  val Array: String               = "__ecma.Array"
+  val Number: String              = "__ecma.Number"
+  val String: String              = "__ecma.String"
+  val Boolean: String             = "__ecma.Boolean"
+  val Null: String                = "__ecma.Null"
+  val Math: String                = "__ecma.Math"
+  val Symbol: String              = "__ecma.Symbol"
+  val Console: String             = "__whatwg.console"
+  val Object: String              = "__ecma.Object"
+  val BigInt: String              = "__ecma.BigInt"
+  val Unknown: String             = Any
+  val Void: String                = Any
+  val Never: String               = Any
+  val Undefined: String           = Any
+  val NodeModulesFolder: String   = "node_modules"
+  val Program: String             = ":program"
+  val GlobalNamespace: String     = NamespaceTraversal.globalNamespaceName
+  val OperatorsNew: String        = "<operator>.new" // TODO: place "<operator>.new" into the schema
+  val EscapedOutputName: String   = "escapeFn"       // EJS <%= %> escaped output, modeled as a call for sink detection
+  val UnescapedOutputName: String = "__append"       // EJS <%- %> unescaped (raw) output, modeled as a call
+  val EjsOutputTagPrefix: String  = "<%"             // first two bytes of an EJS output tag in the original source
 
   val JsTypes: List[String] =
     List(
