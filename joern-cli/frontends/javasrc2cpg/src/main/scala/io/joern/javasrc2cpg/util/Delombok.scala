@@ -50,9 +50,22 @@ object Delombok {
   ) = {
     val javaPath     = analysisJavaHome.getOrElse(systemJavaPath)
     val ownClasspath = System.getProperty("java.class.path")
-    val fullClasspath =
-      if (dependencies.isEmpty) ownClasspath
-      else (dependencies :+ ownClasspath).mkString(File.pathSeparator)
+    val ownEntries   = ownClasspath.split(File.pathSeparator).toList
+    // Locate joern's bundled lombok jar by filename so we can force it to be resolved before any
+    // project-supplied lombok that might be incompatible with the analysis JDK.
+    val (lombokEntries, otherEntries) = ownEntries.partition { entry =>
+      val name = Paths.get(entry).getFileName.toString.toLowerCase
+      name.startsWith("lombok-") && name.endsWith(".jar")
+    }
+    if (lombokEntries.isEmpty) {
+      logger.warn(
+        "Could not locate joern's bundled lombok jar on the classpath. If a project dependency supplies a " +
+          "lombok version incompatible with the analysis JDK, delombok may fail."
+      )
+    }
+    // Prepend the bundled lombok so the classloader resolves it before any project-supplied lombok in
+    // `dependencies`. Order: bundled lombok, project dependencies, everything else from ownClasspath.
+    val fullClasspath = (lombokEntries ++ dependencies ++ otherEntries).mkString(File.pathSeparator)
     val classPathArg = Try(FileUtil.newTemporaryFile("classpath")) match {
       case Success(file) =>
         FileUtil.deleteOnExit(file)
@@ -67,10 +80,27 @@ object Delombok {
         )
         fullClasspath
     }
+    // `--sourcepath` can grow past Windows' command-length limit on large projects, so route it through
+    // a `@argfile` the same way we do for `-cp`. The java launcher expands `@file` before dispatching
+    // to `lombok.launch.Main`, so delombok itself sees an already-tokenised `--sourcepath <paths>`.
     val sourcepathArgs =
       if (peerSourceRoots.isEmpty) Nil
-      else
-        Seq("--sourcepath", peerSourceRoots.map(_.toString).mkString(File.pathSeparator))
+      else {
+        val fullSourcePath = peerSourceRoots.map(_.toString).mkString(File.pathSeparator)
+        Try(FileUtil.newTemporaryFile("sourcepath")) match {
+          case Success(file) =>
+            FileUtil.deleteOnExit(file)
+            Files.writeString(file, s"--sourcepath\n$fullSourcePath")
+            Seq(s"@${file.absolutePathAsString}")
+
+          case Failure(t) =>
+            logger.warn(
+              s"Failed to create sourcepath file for delombok execution. Results may be missing on Windows systems",
+              t
+            )
+            Seq("--sourcepath", fullSourcePath)
+        }
+      }
     val command =
       Seq(
         javaPath,
