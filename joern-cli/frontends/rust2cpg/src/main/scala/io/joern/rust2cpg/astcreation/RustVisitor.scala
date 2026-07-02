@@ -2,16 +2,10 @@ package io.joern.rust2cpg.astcreation
 
 import io.joern.rust2cpg.parser.RustNodeSyntax.*
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
-import io.shiftleft.codepropertygraph.generated.{
-  ControlStructureTypes,
-  DispatchTypes,
-  EvaluationStrategies,
-  ModifierTypes,
-  Operators
-}
+import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewModifier, NewNamespaceBlock}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, ModifierTypes, Operators}
 
 trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -656,9 +650,8 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   private def visitIfExpr(ifExpr: IfExpr): Ast = {
     val conditionAst = visitExpr(ifExpr.expr)
     val thenAst      = visitBlockExpr(ifExpr.thenBranch)
-    val elseNode     = ifExpr.elseBranch
-    val elseAst      = elseNode.map(visitExpr)
-    ifThenElseAst(ifExpr, elseNode, Some(conditionAst), thenAst, elseAst)
+    val elseAst      = ifExpr.elseBranch.map(visitExpr)
+    ifThenElseAst(ifExpr, Some(conditionAst), thenAst, elseAst)
   }
 
   extension (ifExpr: IfExpr) {
@@ -693,7 +686,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   private def visitWhileExpr(whileExpr: WhileExpr): Ast = {
     val conditionAst = visitExpr(whileExpr.expr)
     val bodyAst      = visitBlockExpr(whileExpr.blockExpr)
-    whileAst(whileExpr, Option(conditionAst), Seq(bodyAst))
+    whileAst(whileExpr, Some(conditionAst), Seq(bodyAst))
   }
 
   // LoopExpr =
@@ -702,7 +695,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   private def visitLoopExpr(loopExpr: LoopExpr): Ast = {
     val conditionAst = Ast(literalNode(loopExpr.loopKwToken, "true", "bool"))
     val bodyAst      = visitBlockExpr(loopExpr.blockExpr)
-    whileAst(loopExpr, Option(conditionAst), Seq(bodyAst))
+    whileAst(loopExpr, Some(conditionAst), Seq(bodyAst))
   }
 
   // ForExpr =
