@@ -284,7 +284,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     val elseAst =
       Option(expr.getElse).map(elseExpr => wrapMultipleInBlock(astsForExpression(elseExpr, None), line(elseExpr)))
 
-    val ifAst = ifThenElseAst(expr, Option(expr.getElse), conditionAst, thenAst, elseAst)
+    val ifAst = ifThenElseAst(expr, conditionAst, thenAst, elseAst)
     ifAst.withChildren(annotations.map(astForAnnotationEntry))
   }
 
