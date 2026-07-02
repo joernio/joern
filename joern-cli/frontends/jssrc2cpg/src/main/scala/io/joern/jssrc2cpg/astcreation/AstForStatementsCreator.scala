@@ -112,23 +112,22 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   def astForIfStatement(ifStmt: BabelNodeInfo): Ast = {
-    val testAst       = astForNodeWithFunctionReference(ifStmt.json("test"))
-    val consequentAst = astForNodeWithFunctionReference(ifStmt.json("consequent"))
-    val thenNode      = safeObj(ifStmt.json, "alternate").map(alternate => createBabelNodeInfo(Obj(alternate)))
-    val thenAst       = thenNode.map(node => astForNodeWithFunctionReference(node.json))
-    ifThenElseAst(ifStmt, thenNode, Option(testAst), consequentAst, thenAst)
+    val conditionAst = astForNodeWithFunctionReference(ifStmt.json("test"))
+    val thenAst      = astForNodeWithFunctionReference(ifStmt.json("consequent"))
+    val elseAst = safeObj(ifStmt.json, "alternate").map(alternate => astForNodeWithFunctionReference(Obj(alternate)))
+    ifThenElseAst(ifStmt, Some(conditionAst), thenAst, elseAst)
   }
 
   protected def astForDoWhileStatement(doWhileStmt: BabelNodeInfo): Ast = {
     val testAst = astForNodeWithFunctionReference(doWhileStmt.json("test"))
     val bodyAst = astForNodeWithFunctionReference(doWhileStmt.json("body"))
-    doWhileAst(doWhileStmt, Option(testAst), Seq(bodyAst))
+    doWhileAst(doWhileStmt, Some(testAst), Seq(bodyAst))
   }
 
   protected def astForWhileStatement(whileStmt: BabelNodeInfo): Ast = {
     val testAst = astForNodeWithFunctionReference(whileStmt.json("test"))
     val bodyAst = astForNodeWithFunctionReference(whileStmt.json("body"))
-    whileAst(whileStmt, Option(testAst), Seq(bodyAst))
+    whileAst(whileStmt, Some(testAst), Seq(bodyAst))
   }
 
   protected def astForForStatement(forStmt: BabelNodeInfo): Ast = {
@@ -372,7 +371,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.popScope()
     localAstParentStack.pop()
 
-    val whileLoopAst  = whileAst(forInOfStmt, Option(testCallAst), List(whileLoopBlockAst))
+    val whileLoopAst  = whileAst(forInOfStmt, Some(testCallAst), List(whileLoopBlockAst))
     val blockChildren = List(iteratorAssignmentAst, Ast(resultNode), Ast(loopVariableNode), whileLoopAst)
     blockAst(blockNode_, blockChildren)
   }
@@ -509,7 +508,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.popScope()
     localAstParentStack.pop()
 
-    val whileLoopAst  = whileAst(forInOfStmt, Option(testCallAst), List(whileLoopBlockAst))
+    val whileLoopAst  = whileAst(forInOfStmt, Some(testCallAst), List(whileLoopBlockAst))
     val blockChildren = List(iteratorAssignmentAst, Ast(resultNode), whileLoopAst)
     blockAst(blockNode_, blockChildren)
   }
@@ -654,7 +653,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.popScope()
     localAstParentStack.pop()
 
-    val whileLoopAst = whileAst(forInOfStmt, Option(testCallAst), List(whileLoopBlockAst))
+    val whileLoopAst = whileAst(forInOfStmt, Some(testCallAst), List(whileLoopBlockAst))
     val blockNodeChildren =
       List(iteratorAssignmentAst, Ast(resultNode)) ++ loopVariableNodes.map(Ast(_)) :+ whileLoopAst
     blockAst(blockNode_, blockNodeChildren)
@@ -799,7 +798,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.popScope()
     localAstParentStack.pop()
 
-    val whileLoopAst = whileAst(forInOfStmt, Option(testCallAst), List(whileLoopBlockAst))
+    val whileLoopAst = whileAst(forInOfStmt, Some(testCallAst), List(whileLoopBlockAst))
     val blockNodeChildren =
       List(iteratorAssignmentAst, Ast(resultNode)) ++ loopVariableNodes.map(Ast(_)) :+ whileLoopAst
     blockAst(blockNode_, blockNodeChildren)

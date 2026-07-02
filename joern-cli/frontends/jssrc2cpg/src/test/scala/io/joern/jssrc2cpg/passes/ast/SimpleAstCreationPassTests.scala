@@ -1168,9 +1168,8 @@ class SimpleAstCreationPassTests extends JsSrc2CpgSuite {
       ifBlockAssign.code shouldBe "y = 0"
       ifBlockAssign.order shouldBe 1
 
-      val List(elseStructure) = ifNode.astChildren.isControlStructure.order(3).l
-      elseStructure.controlStructureType shouldBe ControlStructureTypes.ELSE
-      val List(elseBlockAssign) = elseStructure.astChildren.isBlock.astChildren.isCall.l
+      val List(elseBlock)       = ifNode.astChildren.isBlock.order(3).l
+      val List(elseBlockAssign) = elseBlock.astChildren.isCall.l
       elseBlockAssign.code shouldBe "y = 1"
       elseBlockAssign.order shouldBe 1
     }
