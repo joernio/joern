@@ -412,8 +412,7 @@ class MethodReturnTests extends RubyCode2CpgFixture {
 
       ret2.code shouldBe "return"
       ret2.astChildren.size shouldBe 0
-      // ret2 is the true branch of the lowered `unless`, now wrapped in a synthetic ELSE control structure
-      ret2.astParent.astParent.astParent.code shouldBe "return unless baz()"
+      ret2.astParent.astParent.code shouldBe "return unless baz()"
 
       ret3.code shouldBe "bar()"
     }
@@ -452,8 +451,7 @@ class MethodReturnTests extends RubyCode2CpgFixture {
       val List(successCall: Call) = ifNode.condition.l: @unchecked
       successCall.code shouldBe "self.success"
 
-      val List(ifReturnFalse: Return) =
-        ifNode.whenFalse.isControlStructure.isElse.astChildren.isBlock.astChildren.isReturn.l
+      val List(ifReturnFalse: Return) = ifNode.whenFalse.isBlock.astChildren.isReturn.l
       ifReturnFalse.code shouldBe "return render json: {}, status: :internal_server_error"
 
       val List(_, jsonArg: Block, statusArg: Literal) = ifReturnFalse.astChildren.isCall.argument.l: @unchecked

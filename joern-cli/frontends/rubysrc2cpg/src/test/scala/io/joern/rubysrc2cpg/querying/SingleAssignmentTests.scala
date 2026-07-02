@@ -50,7 +50,7 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    inside(cpg.method.name("foo").controlStructure.isIf.l) { case ifStruct :: Nil =>
+    inside(cpg.method.name("foo").controlStructure.l) { case ifStruct :: Nil =>
       ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
       ifStruct.condition.code.l shouldBe List("!x")
 
@@ -71,7 +71,7 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    inside(cpg.method.name("foo").controlStructure.isIf.l) { case ifStruct :: Nil =>
+    inside(cpg.method.name("foo").controlStructure.l) { case ifStruct :: Nil =>
       ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
       ifStruct.condition.code.l shouldBe List("x")
 
@@ -290,7 +290,7 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
         |  hash[:id] ||= s[:id]
         |end
         |""".stripMargin)
-    inside(cpg.method.name("foo").controlStructure.isIf.l) { case ifStruct :: Nil =>
+    inside(cpg.method.name("foo").controlStructure.l) { case ifStruct :: Nil =>
       ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
       ifStruct.condition.code.l shouldBe List("!hash[:id]")
 
@@ -326,7 +326,7 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
                      |  hash[:id] &&= s[:id]
                      |end
                      |""".stripMargin)
-    inside(cpg.method.name("foo").controlStructure.isIf.l) { case ifStruct :: Nil =>
+    inside(cpg.method.name("foo").controlStructure.l) { case ifStruct :: Nil =>
       ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
       ifStruct.condition.code.l shouldBe List("hash[:id]")
 
@@ -363,7 +363,7 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    inside(cpg.method.name("foo").controlStructure.isIf.l) { case ifStruct :: Nil =>
+    inside(cpg.method.name("foo").controlStructure.l) { case ifStruct :: Nil =>
       ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
       ifStruct.condition.code.l shouldBe List("!A.B")
 
@@ -387,7 +387,7 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
                      |end
                      |""".stripMargin)
 
-    inside(cpg.method.name("foo").controlStructure.isIf.l) { case ifStruct :: Nil =>
+    inside(cpg.method.name("foo").controlStructure.l) { case ifStruct :: Nil =>
       ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
       ifStruct.condition.code.l shouldBe List("A.B")
 

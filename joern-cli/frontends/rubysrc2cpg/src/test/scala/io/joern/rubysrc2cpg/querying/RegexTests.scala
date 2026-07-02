@@ -26,7 +26,7 @@ class RegexTests extends RubyCode2CpgFixture(withPostProcessing = false) {
       tmpSource.argument(0).asInstanceOf[Literal].dynamicTypeHintFullName shouldBe "__core.Regexp" :: Nil
 
       // Now test for the lowered global variable assignments
-      val ifStmt = cpg.controlStructure.isIf.last
+      val ifStmt = cpg.controlStructure.last
       inside(ifStmt.whenTrue.assignment.l) { case tildeAsgn :: amperAsgn :: match1Asgn :: Nil =>
         tildeAsgn.code shouldBe s"$$~ = <tmp-$tmpNo>"
         val taSource = tildeAsgn.source.asInstanceOf[Identifier]

@@ -134,7 +134,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     val List(ifNode)  = cpg.ifBlock.l
     val List(ifCond)  = ifNode.condition.isCall.l
     val List(thenStr) = ifNode.whenTrue.isBlock.astChildren.isLiteral.l
-    val List(elseStr) = ifNode.whenFalse.isControlStructure.isElse.astChildren.isBlock.astChildren.isLiteral.l
+    val List(elseStr) = ifNode.whenFalse.isBlock.astChildren.isLiteral.l
 
     ifCond.code shouldBe "__LINE__ > 1"
     ifCond.methodFullName shouldBe Operators.greaterThan
@@ -167,8 +167,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     thenStr.code shouldBe "'= 0'"
     thenStr.lineNumber shouldBe Some(3)
 
-    val List(elsIfNode) =
-      ifNode.whenFalse.isControlStructure.isElse.astChildren.isBlock.astChildren.isControlStructure.l
+    val List(elsIfNode) = ifNode.whenFalse.isBlock.astChildren.isControlStructure.l
     val List(elsIfCond) = elsIfNode.condition.isCall.l
     val List(elsIfStr)  = elsIfNode.whenTrue.isBlock.astChildren.isLiteral.l
 
@@ -195,12 +194,9 @@ class ControlStructureTests extends RubyCode2CpgFixture {
       case List(ifControl: ControlStructure) =>
         ifControl.trueBodyOut.astChildren.code.l shouldBe List("'= 0'")
 
-        inside(ifControl.falseBodyOut.isControlStructure.isElse.astChildren.isBlock.astChildren.l) {
-          case List(elseIfControl: ControlStructure) =>
-            elseIfControl.trueBodyOut.astChildren.code.l shouldBe List("'> 0'")
-            elseIfControl.falseBodyOut.isControlStructure.isElse.astChildren.isBlock.astChildren.code.l shouldBe List(
-              "'< 0'"
-            )
+        inside(ifControl.falseBodyOut.astChildren.l) { case List(elseIfControl: ControlStructure) =>
+          elseIfControl.trueBodyOut.astChildren.code.l shouldBe List("'> 0'")
+          elseIfControl.falseBodyOut.astChildren.code.l shouldBe List("'< 0'")
         }
     }
   }
@@ -217,9 +213,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).headOption.l) {
       case List(ifControl: ControlStructure) =>
         ifControl.trueBodyOut.astChildren.code.l shouldBe List("'= 0'")
-        ifControl.falseBodyOut.isControlStructure.isElse.astChildren.isBlock.astChildren.code.l shouldBe List(
-          "'< 0 || > 0'"
-        )
+        ifControl.falseBodyOut.astChildren.code.l shouldBe List("'< 0 || > 0'")
     }
   }
 
@@ -280,9 +274,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).headOption.l) {
       case List(ifControl: ControlStructure) =>
         ifControl.trueBodyOut.astChildren.code.l shouldBe List("x = '= 0'")
-        ifControl.falseBodyOut.isControlStructure.isElse.astChildren.isBlock.astChildren.code.l shouldBe List(
-          "x = '!= 0'"
-        )
+        ifControl.falseBodyOut.astChildren.code.l shouldBe List("x = '!= 0'")
     }
   }
 
@@ -293,7 +285,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
 
     val List(unlessNode)  = cpg.ifBlock.l
     val List(unlessCond)  = unlessNode.condition.isLiteral.l
-    val List(thenLiteral) = unlessNode.whenFalse.isControlStructure.isElse.astChildren.isBlock.astChildren.isLiteral.l
+    val List(thenLiteral) = unlessNode.whenFalse.isBlock.astChildren.isLiteral.l
 
     unlessCond.code shouldBe "false"
     unlessCond.lineNumber shouldBe Some(2)
@@ -569,18 +561,16 @@ class ControlStructureTests extends RubyCode2CpgFixture {
           call.code shouldBe "a = '= 0'"
         }
 
-        inside(ifControl.falseBodyOut.isControlStructure.isElse.astChildren.isBlock.astChildren.l) {
-          case List(elseIfControl: ControlStructure) =>
-            elseIfControl.code shouldBe "elsif __LINE__ > 0 then '> 0' else '< 0'"
-            inside(elseIfControl.trueBodyOut.astChildren.l) { case List(call: Call) =>
-              call.name shouldBe Operators.assignment
-              call.code shouldBe "a = '> 0'"
-            }
-            inside(elseIfControl.falseBodyOut.isControlStructure.isElse.astChildren.isBlock.astChildren.l) {
-              case List(call: Call) =>
-                call.name shouldBe Operators.assignment
-                call.code shouldBe "a = '< 0'"
-            }
+        inside(ifControl.falseBodyOut.astChildren.l) { case List(elseIfControl: ControlStructure) =>
+          elseIfControl.code shouldBe "elsif __LINE__ > 0 then '> 0' else '< 0'"
+          inside(elseIfControl.trueBodyOut.astChildren.l) { case List(call: Call) =>
+            call.name shouldBe Operators.assignment
+            call.code shouldBe "a = '> 0'"
+          }
+          inside(elseIfControl.falseBodyOut.astChildren.l) { case List(call: Call) =>
+            call.name shouldBe Operators.assignment
+            call.code shouldBe "a = '< 0'"
+          }
         }
     }
   }
@@ -715,7 +705,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
                      |end
                      |""".stripMargin)
 
-    inside(cpg.method.name("foo").controlStructure.isIf.l) { case ifStruct :: Nil =>
+    inside(cpg.method.name("foo").controlStructure.l) { case ifStruct :: Nil =>
       ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
 
       val List(_: Call, returnCall: Return) = ifStruct.condition.isBlock.astChildren.isCall.argument.l: @unchecked
@@ -733,7 +723,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
                      |end
                      |""".stripMargin)
 
-    inside(cpg.method.name("foo").controlStructure.isIf.l) { case orIfStruct :: Nil =>
+    inside(cpg.method.name("foo").controlStructure.l) { case orIfStruct :: Nil =>
       orIfStruct.controlStructureType shouldBe ControlStructureTypes.IF
 
       val List(_: Call, returnCall: Return) = orIfStruct.condition.isBlock.astChildren.isCall.argument.l: @unchecked

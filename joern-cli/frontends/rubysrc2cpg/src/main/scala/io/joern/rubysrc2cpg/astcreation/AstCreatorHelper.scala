@@ -164,13 +164,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     thenAst: Ast,
     elseAst: Option[Ast]
   ): Ast = {
-    // A present `else` branch is wrapped by `ifThenElseAst` in a synthetic `ELSE` control-structure node
-    // (`IF -FALSE_BODY-> ELSE -> <else branch>`), consistent with the other frontends. Ruby's `else` branch AST
-    // is already built (see `astForElseClause` / `astsForElseClauses`) without a dedicated `else` source node, so
-    // we position the `ELSE` node at `node` (the enclosing `if`/`unless`) and derive `elseNode` via
-    // `elseAst.map(_ => node)` so it is `Some` exactly when `elseAst` is present. The `elsif`-folding in
-    // `astsForElseClauses` (shared with the ternary lowering in `astForIfExpression`) is intentionally left as is.
-    ifThenElseAst(node, elseAst.map(_ => node), Some(conditionAst), thenAst, elseAst)
+    ifThenElseAst(node, Some(conditionAst), thenAst, elseAst)
   }
 
   protected def astForAssignment(
