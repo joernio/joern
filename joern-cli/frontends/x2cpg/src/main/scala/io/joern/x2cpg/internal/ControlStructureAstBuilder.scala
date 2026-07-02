@@ -55,20 +55,8 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     * @param code
     *   explicit source-code string; falls back to `this.code(node)` when absent
     */
-  def whileAst(node: Node, condition: Option[Ast], body: Seq[Ast], code: Option[String] = None): Ast = {
-    val whileNode = NewControlStructure()
-      .parserTypeName(node.getClass.getSimpleName)
-      .controlStructureType(ControlStructureTypes.WHILE)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-      .code(code.getOrElse(this.code(node)))
-    setOffset(node, whileNode)
-    val astWithChildren = controlStructureAst(whileNode, condition, body)
-    body.headOption.flatMap(_.root) match {
-      case Some(bodyRoot) => astWithChildren.withTrueBodyEdge(whileNode, bodyRoot)
-      case None           => astWithChildren
-    }
-  }
+  def whileAst(node: Node, condition: Option[Ast], body: Seq[Ast], code: Option[String] = None): Ast =
+    conditionalBodyAst(node, ControlStructureTypes.WHILE, condition, body, code)
 
   /** Creates an AST for a `do-while` loop.
     *
@@ -112,20 +100,8 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     * @param code
     *   explicit source-code string; falls back to `this.code(node)` when absent
     */
-  def switchAst(node: Node, condition: Option[Ast], body: Seq[Ast], code: Option[String] = None): Ast = {
-    val switchNode = NewControlStructure()
-      .parserTypeName(node.getClass.getSimpleName)
-      .controlStructureType(ControlStructureTypes.SWITCH)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-      .code(code.getOrElse(this.code(node)))
-    setOffset(node, switchNode)
-    val astWithChildren = controlStructureAst(switchNode, condition, body)
-    body.headOption.flatMap(_.root) match {
-      case Some(bodyRoot) => astWithChildren.withTrueBodyEdge(switchNode, bodyRoot)
-      case None           => astWithChildren
-    }
-  }
+  def switchAst(node: Node, condition: Option[Ast], body: Seq[Ast], code: Option[String] = None): Ast =
+    conditionalBodyAst(node, ControlStructureTypes.SWITCH, condition, body, code)
 
   /** Creates an AST for a `match` expression (e.g. PHP's `match`).
     *
@@ -141,17 +117,40 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     * @param code
     *   explicit source-code string; falls back to `this.code(node)` when absent
     */
-  def matchAst(node: Node, condition: Option[Ast], body: Seq[Ast], code: Option[String] = None): Ast = {
-    val matchNode = NewControlStructure()
+  def matchAst(node: Node, condition: Option[Ast], body: Seq[Ast], code: Option[String] = None): Ast =
+    conditionalBodyAst(node, ControlStructureTypes.MATCH, condition, body, code)
+
+  /** Shared implementation for control structures consisting of a condition and a body whose first child is reached via
+    * a `TRUE_BODY` edge (`while`, `switch`, `match`).
+    *
+    * @param node
+    *   the source AST node representing the control structure (used for position and code)
+    * @param controlStructureType
+    *   the [[io.shiftleft.codepropertygraph.generated.ControlStructureTypes]] constant
+    * @param condition
+    *   optional condition expression AST connected via a `CONDITION` edge
+    * @param body
+    *   ordered sequence of body ASTs; the first child is connected via a `TRUE_BODY` edge
+    * @param code
+    *   explicit source-code string; falls back to `this.code(node)` when absent
+    */
+  private def conditionalBodyAst(
+    node: Node,
+    controlStructureType: String,
+    condition: Option[Ast],
+    body: Seq[Ast],
+    code: Option[String]
+  ): Ast = {
+    val structureNode = NewControlStructure()
       .parserTypeName(node.getClass.getSimpleName)
-      .controlStructureType(ControlStructureTypes.MATCH)
+      .controlStructureType(controlStructureType)
       .lineNumber(line(node))
       .columnNumber(column(node))
       .code(code.getOrElse(this.code(node)))
-    setOffset(node, matchNode)
-    val astWithChildren = controlStructureAst(matchNode, condition, body)
+    setOffset(node, structureNode)
+    val astWithChildren = controlStructureAst(structureNode, condition, body)
     body.headOption.flatMap(_.root) match {
-      case Some(bodyRoot) => astWithChildren.withTrueBodyEdge(matchNode, bodyRoot)
+      case Some(bodyRoot) => astWithChildren.withTrueBodyEdge(structureNode, bodyRoot)
       case None           => astWithChildren
     }
   }
