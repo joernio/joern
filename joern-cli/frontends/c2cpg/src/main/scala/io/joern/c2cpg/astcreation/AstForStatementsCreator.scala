@@ -236,17 +236,12 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   private def astForDoStatement(doStmt: IASTDoStatement): Ast = {
-    // surrounding block:
-    val scopeBlockNode = blockNode(doStmt)
-    scope.pushNewBlockScope(scopeBlockNode)
-
+    val doNode = doWhileAstInit(doStmt)
+    scope.pushNewBlockScope(doNode)
     val conditionAst = wrapInNullComparison(doStmt.getCondition, astForConditionExpression(doStmt.getCondition))
     val bodyAst      = nullSafeAst(doStmt.getBody)
-
-    // end surrounding block:
     scope.popScope()
-
-    Ast(scopeBlockNode).withChild(doWhileAst(doStmt, Option(conditionAst), bodyAst))
+    doWhileAstFinish(doNode, Some(conditionAst), bodyAst)
   }
 
   private def astForSwitchStatement(switchStmt: IASTSwitchStatement): Seq[Ast] = {
@@ -329,11 +324,9 @@ trait AstForStatementsCreator { this: AstCreator =>
     val codeCond = nullSafeCode(forStmt.getConditionExpression)
     val codeIter = nullSafeCode(forStmt.getIterationExpression)
     val code     = s"for ($codeInit$codeCond;$codeIter)"
+    val forNode  = forAstInit(forStmt, Some(code))
 
-    // surrounding block:
-    val scopeBlockNode = blockNode(forStmt)
-    scope.pushNewBlockScope(scopeBlockNode)
-
+    scope.pushNewBlockScope(forNode)
     val (localAsts, initAsts) =
       nullSafeAst(forStmt.getInitializerStatement).partition(_.root.exists(_.isInstanceOf[NewLocal]))
     setArgumentIndices(initAsts)
@@ -341,13 +334,9 @@ trait AstForStatementsCreator { this: AstCreator =>
       wrapInNullComparison(forStmt.getConditionExpression, astForConditionExpression(forStmt.getConditionExpression))
     val updateAst = nullSafeAst(forStmt.getIterationExpression)
     val bodyAsts  = nullSafeAst(forStmt.getBody)
-
-    // end surrounding block:
     scope.popScope()
 
-    Ast(scopeBlockNode).withChild(
-      forAst(forStmt, localAsts, initAsts, Seq(compareAst), Seq(updateAst), bodyAsts, Some(code))
-    )
+    forAstFinish(forNode, localAsts, initAsts, Seq(compareAst), Seq(updateAst), bodyAsts)
   }
 
   private def astForRangedFor(forStmt: ICPPASTRangeBasedForStatement): Ast = {
@@ -364,22 +353,16 @@ trait AstForStatementsCreator { this: AstCreator =>
     val codeDecl = nullSafeCode(forStmt.getDeclaration)
     val codeInit = nullSafeCode(forStmt.getInitializerClause)
     val code     = s"for ($codeDecl:$codeInit)"
+    val forNode  = forAstInit(forStmt, Some(code))
 
-    // surrounding block:
-    val scopeBlockNode = blockNode(forStmt)
-    scope.pushNewBlockScope(scopeBlockNode)
-
+    scope.pushNewBlockScope(forNode)
     val (localAsts, initAsts) = astsForStructuredBindingDeclaration(declaration, Some(forStmt.getInitializerClause))
       .partition(_.root.exists(_.isInstanceOf[NewLocal]))
     setArgumentIndices(initAsts)
     val bodyAst = nullSafeAst(forStmt.getBody)
-
-    // end surrounding block:
     scope.popScope()
 
-    Ast(scopeBlockNode).withChild(
-      forAst(forStmt, localAsts, initAsts.filterNot(_.nodes.isEmpty), Seq.empty, Seq.empty, bodyAst, Some(code))
-    )
+    forAstFinish(forNode, localAsts, initAsts.filterNot(_.nodes.isEmpty), Seq.empty, Seq.empty, bodyAst)
   }
 
   /** De-sugaring from:
@@ -516,7 +499,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     // end surrounding block:
     scope.popScope()
 
-    val whileLoopAst  = whileAst(forStmt, Option(testAst), List(whileLoopBlockAst), code = Option(whileLoopCode))
+    val whileLoopAst  = whileAst(forStmt, Some(testAst), List(whileLoopBlockAst), Some(whileLoopCode))
     val blockChildren = List(iteratorAssignmentAst, Ast(loopVariableLocalNode), whileLoopAst)
     blockAst(blockNode, blockChildren)
   }
@@ -525,7 +508,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     val code       = s"while (${nullSafeCode(whileStmt.getCondition)})"
     val compareAst = wrapInNullComparison(whileStmt.getCondition, astForConditionExpression(whileStmt.getCondition))
     val bodyAst    = nullSafeAst(whileStmt.getBody)
-    whileAst(whileStmt, Option(compareAst), bodyAst, code = Option(code))
+    whileAst(whileStmt, Some(compareAst), bodyAst, Some(code))
   }
 
   private def wrapInNullComparison(node: IASTNode, conditionAst: Ast): Ast = {
@@ -603,6 +586,6 @@ trait AstForStatementsCreator { this: AstCreator =>
         Some(blockAst(elseBlock, statementAsts.toList))
       case _ => None
     }
-    initAsts :+ ifThenElseAst(ifStmt, Option(ifStmt.getElseClause), Option(conditionAst), thenAst, elseAst)
+    initAsts :+ ifThenElseAst(ifStmt, Some(conditionAst), thenAst, elseAst)
   }
 }

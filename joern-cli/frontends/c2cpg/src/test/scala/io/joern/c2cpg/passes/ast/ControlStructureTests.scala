@@ -254,16 +254,14 @@ class ControlStructureTests extends C2CpgSuite(FileDefaults.CppExt) {
         case List(ifOne: ControlStructure, ifTwo: ControlStructure) =>
           ifOne.condition.code.l shouldBe List("c > 10")
           ifOne.trueBodyOut.astChildren.code.l shouldBe List("c -= 10")
-          inside(ifOne.falseBodyOut.l) { case List(elseNode: ControlStructure) =>
-            elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-            elseNode.astChildren.isBlock.astChildren.l shouldBe List(ifTwo)
+          inside(ifOne.falseBodyOut.l) { case List(elseBlock: Block) =>
+            elseBlock.astChildren.l shouldBe List(ifTwo)
           }
 
           ifTwo.condition.code.l shouldBe List("c < 10")
           ifTwo.trueBodyOut.astChildren.code.l shouldBe List("c += 10")
-          inside(ifTwo.falseBodyOut.l) { case List(elseNode: ControlStructure) =>
-            elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-            elseNode.astChildren.isBlock.astChildren.code.l shouldBe List("c = 10")
+          inside(ifTwo.falseBodyOut.l) { case List(elseBlock: Block) =>
+            elseBlock.astChildren.code.l shouldBe List("c = 10")
           }
       }
     }

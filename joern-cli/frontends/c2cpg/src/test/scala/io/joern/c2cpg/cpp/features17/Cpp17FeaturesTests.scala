@@ -576,8 +576,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |static_assert(isIntegral<S>() == false);
           |""".stripMargin)
       cpg.method.nameExact("isIntegral").controlStructure.code.map(StringUtils.normalizeSpace).l shouldBe List(
-        "if constexpr (std::is_integral<T>::value) { return true; } else { return false; }",
-        "else"
+        "if constexpr (std::is_integral<T>::value) { return true; } else { return false; }"
       )
     }
 
