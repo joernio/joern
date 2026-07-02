@@ -91,7 +91,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           case None    => blockAst(blockNode(whereClause), List.empty)
         }
         val thenAst = astForNode(node.body)
-        ifThenElseAst(whereClause.condition, None, Option(testAst), thenAst, None)
+        ifThenElseAst(whereClause.condition, Some(testAst), thenAst, None)
       case None => astForNode(node.body)
     }
   }
@@ -234,7 +234,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     scope.popScope()
     localAstParentStack.pop()
 
-    val whileLoopAst  = whileAst(node, Option(testCallAst), List(whileLoopBlockAst))
+    val whileLoopAst  = whileAst(node, Some(testCallAst), List(whileLoopBlockAst))
     val blockChildren = List(iteratorAssignmentAst, Ast(resultNode), Ast(loopVariableNode), whileLoopAst)
     blockAst(blockNode_, blockChildren)
   }
@@ -364,7 +364,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     scope.popScope()
     localAstParentStack.pop()
 
-    val whileLoopAst  = whileAst(node, Option(testCallAst), List(whileLoopBlockAst))
+    val whileLoopAst  = whileAst(node, Some(testCallAst), List(whileLoopBlockAst))
     val blockChildren = List(iteratorAssignmentAst, Ast(resultNode), whileLoopAst)
     blockAst(blockNode_, blockChildren)
   }
@@ -506,7 +506,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     scope.popScope()
     localAstParentStack.pop()
 
-    val whileLoopAst = whileAst(node, Option(testCallAst), List(whileLoopBlockAst))
+    val whileLoopAst = whileAst(node, Some(testCallAst), List(whileLoopBlockAst))
     val blockNodeChildren =
       List(iteratorAssignmentAst, Ast(resultNode)) ++ loopVariableNodes.map(Ast(_)) :+ whileLoopAst
     blockAst(blockNode_, blockNodeChildren)
@@ -552,7 +552,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val conditionAst = astForNode(node.condition)
     val bodyAst      = astForNode(node.body)
     // In Swift, a repeat-while loop is semantically the same as a C do-while loop
-    doWhileAst(node, Option(conditionAst), Seq(bodyAst))
+    doWhileAst(node, Some(conditionAst), Seq(bodyAst))
   }
 
   private def astForReturnStmtSyntax(node: ReturnStmtSyntax): Ast = {
@@ -590,7 +590,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       onStandard = () => {
         val conditionAst = astForNode(node.conditions)
         val bodyAst      = astForNode(node.body)
-        whileAst(node, Option(conditionAst), Seq(bodyAst))
+        whileAst(node, Some(conditionAst), Seq(bodyAst))
       }
     )
   }
@@ -622,7 +622,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val bindingInfos = collectBindingInfos(optionalBindings)
     val conditionAst = buildOptionalBindingCondition(node, bindingInfos)
     val bodyAst      = buildBodyWithUnwrapping(node.body, node.body.statements.children, bindingInfos)
-    whileAst(node, Option(conditionAst), Seq(bodyAst))
+    whileAst(node, Some(conditionAst), Seq(bodyAst))
   }
 
   /** Handles partial optional binding desugaring with other conditions.
@@ -642,7 +642,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val bindingInfos = collectBindingInfos(simpleBindings)
     val conditionAst = buildOptionalBindingCondition(node, bindingInfos, otherConditions)
     val bodyAst      = buildBodyWithUnwrapping(node.body, tupleBindings ++ node.body.statements.children, bindingInfos)
-    whileAst(node, Option(conditionAst), Seq(bodyAst))
+    whileAst(node, Some(conditionAst), Seq(bodyAst))
   }
 
   private def astForYieldStmtSyntax(node: YieldStmtSyntax): Ast = {

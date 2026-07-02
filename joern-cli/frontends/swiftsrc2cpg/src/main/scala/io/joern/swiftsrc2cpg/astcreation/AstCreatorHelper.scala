@@ -213,7 +213,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       val thenAst = blockAst(thenBlockNode, allThenChildren)
       val elseAst = astForNode(guardStmt.body)
 
-      val ifAst = ifThenElseAst(guardStmt, Option(guardStmt.body), Option(conditionAst), thenAst, Option(elseAst))
+      val ifAst = ifThenElseAst(guardStmt, Some(conditionAst), thenAst, Some(elseAst))
       astsForBlockElements(elementsBeforeGuard) :+ ifAst
     }
   }

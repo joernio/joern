@@ -2,7 +2,6 @@ package io.joern.swiftsrc2cpg.passes.ast
 
 import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
 import io.shiftleft.codepropertygraph.generated.*
-import io.shiftleft.codepropertygraph.generated.nodes.{ControlStructure, Return}
 import io.shiftleft.semanticcpg.language.*
 
 class StatementTests extends SwiftSrc2CpgSuite {
@@ -781,12 +780,8 @@ class StatementTests extends SwiftSrc2CpgSuite {
       printCall.name shouldBe "print"
       printCall.code shouldBe "print(user)"
 
-      inside(guardIf.whenFalse.l) { case List(elseNode: ControlStructure) =>
-        elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-        inside(elseNode.astChildren.l) { case List(ret: Return) =>
-          ret.code shouldBe "return"
-        }
-      }
+      val List(elseReturn) = guardIf.whenFalse.isReturn.l
+      elseReturn.code shouldBe "return"
     }
 
   }

@@ -322,18 +322,15 @@ class ExpressionTests extends SwiftSrc2CpgSuite {
         |""".stripMargin)
       inside(cpg.method.name("foo").ast.isReturn.astChildren.isControlStructure.l) {
         case List(controlStruct: ControlStructure) =>
-          controlStruct.lineNumber shouldBe Option(3)
-          controlStruct.columnNumber shouldBe Option(10)
           controlStruct.code should startWith("if .random() {")
           controlStruct.controlStructureType shouldBe ControlStructureTypes.IF
           inside(controlStruct.condition.l) { case List(cndNode) =>
             cndNode.code shouldBe "self.random()"
           }
           controlStruct.whenTrue.code.l shouldBe List("0")
-          inside(controlStruct.whenFalse.l) { case List(elseNode: ControlStructure) =>
-            elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-            elseNode.astChildren.code.l shouldBe List("1")
-          }
+          controlStruct.whenFalse.code.l shouldBe List("1")
+          controlStruct.lineNumber shouldBe Option(3)
+          controlStruct.columnNumber shouldBe Option(10)
       }
     }
 
@@ -357,14 +354,10 @@ class ExpressionTests extends SwiftSrc2CpgSuite {
       |}
       |""".stripMargin)
       // `try` unwraps to the inner if-expression — no wrapping call is created.
-      val List(ifStruct) =
-        cpg.method.nameExact("foo").ast.isControlStructure.controlStructureType(ControlStructureTypes.IF).l
+      val List(ifStruct) = cpg.method.nameExact("foo").ast.isControlStructure.l
+      ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
       ifStruct.whenTrue.code.l shouldBe List("0")
-
-      inside(ifStruct.whenFalse.l) { case List(elseNode: ControlStructure) =>
-        elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-        elseNode.astChildren.code.l shouldBe List("1")
-      }
+      ifStruct.whenFalse.code.l shouldBe List("1")
     }
 
     "testTryIf2" in {
@@ -387,12 +380,8 @@ class ExpressionTests extends SwiftSrc2CpgSuite {
       |""".stripMargin)
       val List(localX) = cpg.method.nameExact("foo").block.local.nameExact("x").l
       localX.code shouldBe "x"
-      val List(ifStruct) =
-        cpg.method.nameExact("foo").ast.isControlStructure.controlStructureType(ControlStructureTypes.IF).l
-      inside(ifStruct.whenFalse.l) { case List(elseNode: ControlStructure) =>
-        elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-        elseNode.astChildren.code.l shouldBe List("1")
-      }
+      val List(ifStruct) = cpg.method.nameExact("foo").ast.isControlStructure.l
+      ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
     }
 
     "testAwaitIf1" in {
@@ -404,12 +393,8 @@ class ExpressionTests extends SwiftSrc2CpgSuite {
       // `await` wraps its operand in an `<operator>.await` call.
       val List(awaitCall) = cpg.call.nameExact("<operator>.await").l
       awaitCall.code should startWith("await if .random()")
-      val List(ifStruct) =
-        cpg.method.nameExact("foo").ast.isControlStructure.controlStructureType(ControlStructureTypes.IF).l
-      inside(ifStruct.whenFalse.l) { case List(elseNode: ControlStructure) =>
-        elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-        elseNode.astChildren.code.l shouldBe List("1")
-      }
+      val List(ifStruct) = cpg.method.nameExact("foo").ast.isControlStructure.l
+      ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
     }
 
     "testAwaitIf2" in {

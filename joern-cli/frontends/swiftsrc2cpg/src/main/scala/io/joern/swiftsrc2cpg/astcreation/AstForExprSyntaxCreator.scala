@@ -507,7 +507,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         val conditionAst = astForNode(node.conditions)
         val thenAst      = astForNode(node.body)
         val elseAst      = node.elseBody.map(astForNode)
-        ifThenElseAst(node, node.elseBody, Option(conditionAst), thenAst, elseAst)
+        ifThenElseAst(node, Some(conditionAst), thenAst, elseAst)
       }
     )
   }
@@ -542,7 +542,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val conditionAst = buildOptionalBindingCondition(node, bindingInfos)
     val thenAst      = buildBodyWithUnwrapping(thenBody, thenBody.statements.children, bindingInfos)
     val elseAst      = elseBody.map(astForNode)
-    ifThenElseAst(node, elseBody, Option(conditionAst), thenAst, elseAst)
+    ifThenElseAst(node, Some(conditionAst), thenAst, elseAst)
   }
 
   /** Handles partial optional binding desugaring with other conditions.
@@ -565,7 +565,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val conditionAst = buildOptionalBindingCondition(node, bindingInfos, otherConditions)
     val thenAst      = buildBodyWithUnwrapping(thenBody, tupleBindings ++ thenBody.statements.children, bindingInfos)
     val elseAst      = elseBody.map(astForNode)
-    ifThenElseAst(node, elseBody, Option(conditionAst), thenAst, elseAst)
+    ifThenElseAst(node, Some(conditionAst), thenAst, elseAst)
   }
 
   private def astForInOutExprSyntax(node: InOutExprSyntax): Ast = {
@@ -1069,7 +1069,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
                 val testAst = callAst(whereClauseCallNode, argAsts)
                 val consequentAst =
                   Ast(controlStructureNode(whereClause.condition, ControlStructureTypes.CONTINUE, "continue"))
-                ifThenElseAst(whereClause, None, Option(testAst), consequentAst, None)
+                ifThenElseAst(whereClause, Some(testAst), consequentAst, None)
             }
             (childrenTestAsts, childrenFlowAsts)
           case other => (List(astForNode(other)), List.empty)

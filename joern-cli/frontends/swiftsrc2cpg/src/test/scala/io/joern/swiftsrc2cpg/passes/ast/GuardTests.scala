@@ -23,11 +23,7 @@ class GuardTests extends SwiftSrc2CpgSuite {
       guardIf.controlStructureType shouldBe ControlStructureTypes.IF
       guardIf.condition.code.l shouldBe List("<lambda>0")
       guardIf.whenTrue.astChildren shouldBe empty
-
-      inside(guardIf.whenFalse.l) { case List(elseNode: ControlStructure) =>
-        elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-        elseNode.astChildren.isBlock.astChildren shouldBe empty
-      }
+      methodBlock.astChildren.isControlStructure.whenFalse.astChildren shouldBe empty
     }
 
     "testGuard2" in {
@@ -54,17 +50,12 @@ class GuardTests extends SwiftSrc2CpgSuite {
       thenAssign.name shouldBe Operators.assignment
       thenAssign.code shouldBe "i = i + 1"
 
-      inside(guardIf.whenFalse.l) { case List(elseNode: ControlStructure) =>
-        elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-        val List(elseBlock) = elseNode.astChildren.isBlock.l
+      val List(elseAssign) = guardIf.whenFalse.astChildren.isCall.l
+      elseAssign.name shouldBe Operators.assignment
+      elseAssign.code shouldBe "i = i + 1"
 
-        val List(elseAssign) = elseBlock.astChildren.isCall.l
-        elseAssign.name shouldBe Operators.assignment
-        elseAssign.code shouldBe "i = i + 1"
-
-        val List(elseContinue) = elseBlock.astChildren.isControlStructure.l
-        elseContinue.code shouldBe "continue"
-      }
+      val List(elseContinue) = guardIf.whenFalse.astChildren.isControlStructure.l
+      elseContinue.code shouldBe "continue"
     }
 
     "testGuard3" in {
@@ -91,17 +82,11 @@ class GuardTests extends SwiftSrc2CpgSuite {
       val List(thenPrint) = guardIf.whenTrue.astChildren.isCall.l
       thenPrint.code shouldBe "print(\"Even Number\")"
 
-      inside(guardIf.whenFalse.l) { case List(elseNode: ControlStructure) =>
-        elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-        val List(elseBlock) = elseNode.astChildren.isBlock.l
+      val List(elsePrint) = guardIf.whenFalse.astChildren.isCall.l
+      elsePrint.code shouldBe "print(\"Odd Number\")"
 
-        val List(elsePrint) = elseBlock.astChildren.isCall.l
-        elsePrint.code shouldBe "print(\"Odd Number\")"
-
-        val List(elseReturn) = elseBlock.astChildren.isReturn.l
-        elseReturn.code shouldBe "return"
-      }
-
+      val List(elseReturn) = guardIf.whenFalse.astChildren.isReturn.l
+      elseReturn.code shouldBe "return"
     }
 
     "testGuard4" in {
@@ -129,16 +114,11 @@ class GuardTests extends SwiftSrc2CpgSuite {
       val List(thenPrint) = guardIf.whenTrue.astChildren.isCall.l
       thenPrint.code shouldBe "print(\"You are eligible for this job\")"
 
-      inside(guardIf.whenFalse.l) { case List(elseNode: ControlStructure) =>
-        elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-        val List(elseBlock) = elseNode.astChildren.isBlock.l
+      val List(elsePrint) = guardIf.whenFalse.astChildren.isCall.l
+      elsePrint.code shouldBe "print(\"Not Eligible for Job\")"
 
-        val List(elsePrint) = elseBlock.astChildren.isCall.l
-        elsePrint.code shouldBe "print(\"Not Eligible for Job\")"
-
-        val List(elseReturn) = elseBlock.astChildren.isReturn.l
-        elseReturn.code shouldBe "return"
-      }
+      val List(elseReturn) = guardIf.whenFalse.astChildren.isReturn.l
+      elseReturn.code shouldBe "return"
     }
 
     "testGuard5" in {
@@ -188,17 +168,12 @@ class GuardTests extends SwiftSrc2CpgSuite {
       myAgeAssign.code shouldBe s"myAge = $tmpName"
       printCall.code shouldBe "print(\"My age is \\(myAge)\")"
 
-      inside(guardIf.whenFalse.l) { case List(elseNode: ControlStructure) =>
-        elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-        val List(elseBlock) = elseNode.astChildren.isBlock.l
+      val List(elsePrint) = guardIf.whenFalse.astChildren.isCall.l
+      elsePrint.name shouldBe "print"
+      elsePrint.code shouldBe "print(\"Age is undefined\")"
 
-        val List(elsePrint) = elseBlock.astChildren.isCall.l
-        elsePrint.name shouldBe "print"
-        elsePrint.code shouldBe "print(\"Age is undefined\")"
-
-        val List(elseReturn) = elseBlock.astChildren.isReturn.l
-        elseReturn.code shouldBe "return"
-      }
+      val List(elseReturn) = guardIf.whenFalse.astChildren.isReturn.l
+      elseReturn.code shouldBe "return"
     }
 
     "testGuard6" in {
@@ -229,16 +204,11 @@ class GuardTests extends SwiftSrc2CpgSuite {
       val List(condA) = guardIfA.condition.l
       condA.code shouldBe "a"
 
-      inside(guardIfA.whenFalse.l) { case List(elseNode: ControlStructure) =>
-        elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-        val List(elseBlock) = elseNode.astChildren.isBlock.l
+      val List(elsePrintA) = guardIfA.whenFalse.astChildren.isCall.l
+      elsePrintA.code shouldBe "print(\"else a\")"
 
-        val List(elsePrintA) = elseBlock.astChildren.isCall.l
-        elsePrintA.code shouldBe "print(\"else a\")"
-
-        val List(elseReturnA) = elseBlock.astChildren.isReturn.l
-        elseReturnA.code shouldBe "return"
-      }
+      val List(elseReturnA) = guardIfA.whenFalse.astChildren.isReturn.l
+      elseReturnA.code shouldBe "return"
 
       val List(thenPrintA) = guardIfA.whenTrue.astChildren.isCall.l
       thenPrintA.code shouldBe "print(\"a\")"
@@ -252,16 +222,11 @@ class GuardTests extends SwiftSrc2CpgSuite {
       val List(thenPrintB) = guardIfB.whenTrue.astChildren.isCall.l
       thenPrintB.code shouldBe "print(\"b\")"
 
-      inside(guardIfB.whenFalse.l) { case List(elseNode: ControlStructure) =>
-        elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-        val List(elseBlock) = elseNode.astChildren.isBlock.l
+      val List(elsePrintB) = guardIfB.whenFalse.astChildren.isCall.l
+      elsePrintB.code shouldBe "print(\"else b\")"
 
-        val List(elsePrintB) = elseBlock.astChildren.isCall.l
-        elsePrintB.code shouldBe "print(\"else b\")"
-
-        val List(elseReturnB) = elseBlock.astChildren.isReturn.l
-        elseReturnB.code shouldBe "return"
-      }
+      val List(elseReturnB) = guardIfB.whenFalse.astChildren.isReturn.l
+      elseReturnB.code shouldBe "return"
     }
 
     "testGuard7" in {
@@ -295,36 +260,26 @@ class GuardTests extends SwiftSrc2CpgSuite {
       val List(thenPrintA) = guardIfA.whenTrue.astChildren.isCall.l
       thenPrintA.code shouldBe "print(\"a\")"
 
-      inside(guardIfA.whenFalse.l) { case List(elseNode: ControlStructure) =>
-        elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-        val List(elseBlock) = elseNode.astChildren.isBlock.l
+      val List(elsePrintA) = guardIfA.whenFalse.astChildren.isCall.l
+      elsePrintA.code shouldBe "print(\"else a\")"
 
-        val List(elsePrintA) = elseBlock.astChildren.isCall.l
-        elsePrintA.code shouldBe "print(\"else a\")"
+      val List(guardIfB) = guardIfA.whenFalse.astChildren.isControlStructure.l
+      guardIfB.controlStructureType shouldBe ControlStructureTypes.IF
 
-        val List(guardIfB) = elseBlock.astChildren.isControlStructure.l
-        guardIfB.controlStructureType shouldBe ControlStructureTypes.IF
+      val List(condB) = guardIfB.condition.l
+      condB.code shouldBe "b"
 
-        val List(condB) = guardIfB.condition.l
-        condB.code shouldBe "b"
+      val List(thenPrintB) = guardIfB.whenTrue.astChildren.isCall.l
+      thenPrintB.code shouldBe "print(\"b\")"
 
-        val List(thenPrintB) = guardIfB.whenTrue.astChildren.isCall.l
-        thenPrintB.code shouldBe "print(\"b\")"
+      val List(thenReturnB) = guardIfB.whenTrue.astChildren.isReturn.l
+      thenReturnB.code shouldBe "return"
 
-        val List(thenReturnB) = guardIfB.whenTrue.astChildren.isReturn.l
-        thenReturnB.code shouldBe "return"
+      val List(nestedElsePrintB) = guardIfB.whenFalse.astChildren.isCall.l
+      nestedElsePrintB.code shouldBe "print(\"else b\")"
 
-        inside(guardIfB.whenFalse.l) { case List(elseNode: ControlStructure) =>
-          elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-          val List(elseBlock) = elseNode.astChildren.isBlock.l
-
-          val List(nestedElsePrintB) = elseBlock.astChildren.isCall.l
-          nestedElsePrintB.code shouldBe "print(\"else b\")"
-
-          val List(nestedElseReturnB) = elseBlock.astChildren.isReturn.l
-          nestedElseReturnB.code shouldBe "return"
-        }
-      }
+      val List(nestedElseReturnB) = guardIfB.whenFalse.astChildren.isReturn.l
+      nestedElseReturnB.code shouldBe "return"
     }
 
     "testGuardLet" in {
@@ -376,12 +331,8 @@ class GuardTests extends SwiftSrc2CpgSuite {
       valueArg.code shouldBe "value"
       tmpRefArg.code shouldBe tmpName
 
-      inside(guardIf.whenFalse.l) { case List(elseNode: ControlStructure) =>
-        elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-        val List(elseReturn) = elseNode.astChildren.isReturn.l
-        elseReturn.code shouldBe "return"
-      }
-
+      val List(elseReturn) = guardIf.whenFalse.l
+      elseReturn.code shouldBe "return"
     }
 
     "testGuardLetWithoutInitializer" in {
@@ -471,11 +422,8 @@ class GuardTests extends SwiftSrc2CpgSuite {
       bAssignment.code shouldBe s"b = $tmp1Name"
       printCall.code shouldBe "print(a, b)"
 
-      inside(guardIf.whenFalse.l) { case List(elseNode: ControlStructure) =>
-        elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-        val List(elseReturn) = elseNode.astChildren.isReturn.l
-        elseReturn.code shouldBe "return"
-      }
+      val List(elseReturn) = guardIf.whenFalse.l
+      elseReturn.code shouldBe "return"
     }
 
     "testGuardLetThreeBindings" in {
@@ -592,11 +540,8 @@ class GuardTests extends SwiftSrc2CpgSuite {
       thenAssign.code shouldBe s"a = $tmpName"
       printCall.code shouldBe "print(a, existing)"
 
-      inside(guardIf.whenFalse.l) { case List(elseNode: ControlStructure) =>
-        elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-        val List(elseReturn) = elseNode.astChildren.isReturn.l
-        elseReturn.code shouldBe "return"
-      }
+      val List(elseReturn) = guardIf.whenFalse.l
+      elseReturn.code shouldBe "return"
     }
 
     "testGuardLetPureTuple" in {
@@ -633,11 +578,8 @@ class GuardTests extends SwiftSrc2CpgSuite {
       val List(printCall) = thenBlock.astChildren.isCall.nameExact("print").l
       printCall.code shouldBe "print(a, b)"
 
-      inside(guardIf.whenFalse.l) { case List(elseNode: ControlStructure) =>
-        elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-        val List(elseReturn) = elseNode.astChildren.isReturn.l
-        elseReturn.code shouldBe "return"
-      }
+      val List(returnNode) = guardIf.whenFalse.isReturn.l
+      returnNode.code shouldBe "return"
     }
 
     "testGuardLetMixedWithTuplePattern" in {
@@ -684,11 +626,8 @@ class GuardTests extends SwiftSrc2CpgSuite {
       val List(printCall) = thenBlock.astChildren.isCall.nameExact("print").l
       printCall.code shouldBe "print(a, b, c)"
 
-      inside(guardIf.whenFalse.l) { case List(elseNode: ControlStructure) =>
-        elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-        val List(elseReturn) = elseNode.astChildren.isReturn.l
-        elseReturn.code shouldBe "return"
-      }
+      val List(returnNode) = guardIf.whenFalse.isReturn.l
+      returnNode.code shouldBe "return"
     }
 
     "testGuardLetTupleWithDependentBinding" in {
@@ -742,11 +681,8 @@ class GuardTests extends SwiftSrc2CpgSuite {
       val List(printCall) = thenBlock.astChildren.isCall.nameExact("print").l
       printCall.code shouldBe "print(a, b, c)"
 
-      inside(guardIf.whenFalse.l) { case List(elseNode: ControlStructure) =>
-        elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-        val List(elseReturn) = elseNode.astChildren.isReturn.l
-        elseReturn.code shouldBe "return"
-      }
+      val List(returnNode) = guardIf.whenFalse.isReturn.l
+      returnNode.code shouldBe "return"
     }
 
     "testGuardLetWithOtherConditions" in {
@@ -796,11 +732,8 @@ class GuardTests extends SwiftSrc2CpgSuite {
       printCall.name shouldBe "print"
       printCall.code shouldBe "print(a)"
 
-      inside(guardIf.whenFalse.l) { case List(elseNode: ControlStructure) =>
-        elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-        val List(elseReturn) = elseNode.astChildren.isReturn.l
-        elseReturn.code shouldBe "return"
-      }
+      val List(elseReturn) = guardIf.whenFalse.l
+      elseReturn.code shouldBe "return"
     }
 
     "testGuardLetNestedTuple" in {
@@ -841,11 +774,8 @@ class GuardTests extends SwiftSrc2CpgSuite {
       val List(printCall) = thenBlock.astChildren.isCall.nameExact("print").l
       printCall.code shouldBe "print(a, b, c)"
 
-      inside(guardIf.whenFalse.l) { case List(elseNode: ControlStructure) =>
-        elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
-        val List(elseReturn) = elseNode.astChildren.isReturn.l
-        elseReturn.code shouldBe "return"
-      }
+      val List(returnNode) = guardIf.whenFalse.isReturn.l
+      returnNode.code shouldBe "return"
     }
 
   }
