@@ -17,6 +17,10 @@ trait RustFullNames { this: AstCreator =>
     s"$parent$PathSep$child"
   }
 
+  protected def traitImplFullName(implTypeFullName: String, traitTypeFullName: String): String = {
+    s"<$implTypeFullName as $traitTypeFullName>"
+  }
+
   private def crateName: String = {
     parseResult.crateName.getOrElse(Defines.UnresolvedNamespace)
   }

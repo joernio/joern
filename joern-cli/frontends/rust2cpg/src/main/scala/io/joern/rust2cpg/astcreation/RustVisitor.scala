@@ -353,14 +353,18 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
   //  'default'? 'unsafe'?
   //  'impl' GenericParamList? ('const'? '!'? Type 'for')? Type WhereClause?
   //  AssocItemList
-  // TODO: support `impl X for Y` and remove the side-effects (storeInDiffGraph).
   private def visitImpl(impl: Impl): Seq[Ast] = {
     if (impl.forKwToken.isDefined) {
-      Nil
+      val typeDecl = typeDeclForTraitImpl(impl)
+      methodAstParentStack.push(typeDecl)
+      val methodAsts = impl.assocItemList.assocItem.collect { case fn: Fn => visitFn(fn) }
+      methodAstParentStack.pop()
+      Ast(typeDecl).withChildren(methodAsts) :: Nil
     } else {
       methodAstParentStack.push(typeDeclForImpl(impl))
       val methodAsts = impl.assocItemList.assocItem.collect { case fn: Fn => visitFn(fn) }
       methodAstParentStack.pop()
+      // TODO: remove this side-effect once ref-linker/scope is in.
       methodAsts.foreach(Ast.storeInDiffGraph(_, diffGraph))
       Nil
     }
