@@ -1,7 +1,22 @@
 package io.shiftleft.semanticcpg.validation
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, EdgeTypes, nodes}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  AstNode,
+  File,
+  Member,
+  MetaData,
+  Method,
+  NamespaceBlock,
+  TypeDecl
+}
+import io.shiftleft.codepropertygraph.generated.{
+  ControlStructureTypes,
+  EdgeTypes,
+  PropertyDefaults,
+  PropertyNames,
+  nodes
+}
 import io.shiftleft.passes.CpgPass
 
 import scala.collection.mutable
@@ -15,6 +30,7 @@ enum ValidationLevel(val value: Int) extends Ordered[ValidationLevel] {
   case V0 extends ValidationLevel(0)
   case V1 extends ValidationLevel(1)
   case V2 extends ValidationLevel(2)
+  case V3 extends ValidationLevel(3)
 
   override def compare(that: ValidationLevel): Int = this.value.compareTo(that.value)
 }
@@ -52,7 +68,7 @@ abstract class AbstractValidator(cpg: Cpg) extends CpgPass(cpg) {
 object PostFrontendValidator {
   private val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  /** Newly added error types should have an `addedInLevel` one level higher than the highest (currently V2) */
+  /** Newly added error types should have an `addedInLevel` one level higher than the highest */
   enum ErrorType(val addedInLevel: ValidationLevel) {
     case FULLNAME_UNIQUE_METHOD                    extends ErrorType(ValidationLevel.V1)
     case FULLNAME_UNIQUE_TYPE                      extends ErrorType(ValidationLevel.V1)
@@ -68,6 +84,7 @@ object PostFrontendValidator {
     case CTRL_EDGE_CONTROL_STRUCTURE_TYPE_MISMATCH extends ErrorType(ValidationLevel.V2)
     case CTRL_EDGE_USING_LEGACY                    extends ErrorType(ValidationLevel.V2)
     case CTRL_EDGE_REQUIRED_MISSING                extends ErrorType(ValidationLevel.V2)
+    case DANGLING_AST_NODE                         extends ErrorType(ValidationLevel.V3)
   }
 }
 
@@ -229,10 +246,27 @@ class PostFrontendValidator(cpg: Cpg, fatalValidationLevel: ValidationLevel) ext
     case _ => // Do nothing: other nodes worth checking?
   }
 
-  /** Ensure a node has at most one incoming AST edge. */
+  /** Ensure all AST nodes have exactly one AST parent. */
   private def checkAstIn(node: nodes.StoredNode): Unit = {
     if (node._astIn.size > 1) {
       registerViolation(MULTI_AST_IN, s"Node $node should have at most one incoming AST edge")
+    }
+
+    node match {
+      // root of the hierarchy
+      case _: File =>
+      // none of the frontends have historically added these below a file, so it seems this acts as alternative root of the hierarchy
+      case namespaceBlock: NamespaceBlock if namespaceBlock.fullName == "<global>" =>
+
+      // handled after the frontend in AstLinkerPass
+      case astNode: (Method | TypeDecl | Member)
+          if astNode.astParentFullName != PropertyDefaults.AstParentFullName &&
+            astNode.astParentType != PropertyDefaults.AstParentType =>
+
+      case astNode: AstNode if node._astIn.isEmpty =>
+        registerViolation(DANGLING_AST_NODE, s"Node $node has no AST parent")
+
+      case _ =>
     }
   }
 
