@@ -7,6 +7,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   IfExpression,
   IndexAccess,
   InstanceFieldIdentifier,
+  LiteralExpr,
   MemberAccess,
   MemberCall,
   RubyExpression,
@@ -302,6 +303,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
     StatementList(tmpAssignment :: ifStmt :: Nil)(originSpan)
   }
+
+  def symbolName(expr: RubyExpression): String = expr.text.stripPrefix(":")
 
   protected def isErbCall(callName: String): Boolean = ErbTemplateCallNames.contains(callName)
 
