@@ -367,6 +367,38 @@ class CallTests extends PhpCode2CpgFixture {
     lambdaRef.methodFullName shouldBe "Foo.bar.<lambda>0"
   }
 
+  "a call with a named argument should set the argumentName on that argument" in {
+    val cpg = code("""<?php
+        |foo(bar: $x);
+        |""".stripMargin)
+
+    inside(cpg.call.nameExact("foo").argument.l) { case List(xArg: Identifier) =>
+      xArg.name shouldBe "x"
+      xArg.code shouldBe "$x"
+      xArg.argumentName shouldBe Some("bar")
+    }
+  }
+
+  "a call with mixed positional and named arguments should only set argumentName on named ones" in {
+    val cpg = code("""<?php
+        |foo($a, name: $b, $c);
+        |""".stripMargin)
+
+    inside(cpg.call.nameExact("foo").argument.l) { case List(aArg: Identifier, bArg: Identifier, cArg: Identifier) =>
+      aArg.name shouldBe "a"
+      aArg.code shouldBe "$a"
+      aArg.argumentName shouldBe None
+
+      bArg.name shouldBe "b"
+      bArg.code shouldBe "$b"
+      bArg.argumentName shouldBe Some("name")
+
+      cArg.name shouldBe "c"
+      cArg.code shouldBe "$c"
+      cArg.argumentName shouldBe None
+    }
+  }
+
   "a call to a constructor should be static and have a correctly inferred method full name" in {
     val cpg = code("""
         |<?php
