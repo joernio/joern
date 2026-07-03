@@ -62,7 +62,7 @@ object Delombok {
     }.toOption
     val (lombokEntries, otherEntries) = bundledLombokEntry match {
       case Some(entry) =>
-        ownEntries.partition(e => Paths.get(e).toAbsolutePath.normalize.toString == entry)
+        ownEntries.partition(ent => Paths.get(ent).toAbsolutePath.normalize.toString == entry)
       case None => (Nil, ownEntries)
     }
     if (lombokEntries.isEmpty) {
