@@ -4,7 +4,13 @@ import io.joern.x2cpg.{Ast, Defines as X2CpgDefines}
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.datastructures.VariableScopeManager
 import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EvaluationStrategies, Operators}
+import io.shiftleft.codepropertygraph.generated.{
+  ControlStructureTypes,
+  DispatchTypes,
+  EdgeTypes,
+  EvaluationStrategies,
+  Operators
+}
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast
 import org.eclipse.cdt.core.dom.ast.*
@@ -524,10 +530,9 @@ trait AstForExpressionsCreator { this: AstCreator =>
     val blockNode_ = blockNode(node, constructorCallCode, Defines.Any)
     scope.pushNewBlockScope(blockNode_)
 
-    val tmpNodeName  = scopeLocalUniqueName("tmp")
-    val tmpNode      = identifierNode(node, tmpNodeName, tmpNodeName, typeFullName)
-    val localTmpNode = localNode(node, tmpNodeName, tmpNodeName, typeFullName)
-    scope.addVariable(tmpNodeName, localTmpNode, typeFullName, VariableScopeManager.ScopeType.BlockScope)
+    val tmpNodeName = scopeLocalUniqueName("tmp")
+    val tmpNode     = identifierNode(node, tmpNodeName, tmpNodeName, typeFullName)
+    scope.addVariableReference(tmpNodeName, tmpNode, typeFullName, EvaluationStrategies.BY_SHARING)
 
     val allocOp          = Operators.alloc
     val allocCallNode    = callNode(node, allocOp, allocOp, allocOp, DispatchTypes.STATIC_DISPATCH)
