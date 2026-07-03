@@ -13,7 +13,7 @@ trait Rust2CpgFrontend extends LanguageFrontend {
   override def execute(sourceCodePath: File): Cpg = {
     val config = getConfig().getOrElse(Config()).withInputPath(sourceCodePath.getAbsolutePath)
     val cpg    = Rust2Cpg().createCpg(config).get
-    PostFrontendValidator(cpg, ValidationLevel.V1).run()
+    PostFrontendValidator(cpg, ValidationLevel.V3).run()
     cpg
   }
 
