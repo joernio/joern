@@ -252,12 +252,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def astForBranchStatement(branchStmt: ParserNodeInfo): Ast = {
     branchStmt.json(ParserKeys.Tok).str match {
-      case "break"    => Ast(controlStructureNode(branchStmt, ControlStructureTypes.BREAK, branchStmt.code))
-      case "continue" => Ast(controlStructureNode(branchStmt, ControlStructureTypes.CONTINUE, branchStmt.code))
+      case "break"    => breakAst(branchStmt, branchStmt.code)
+      case "continue" => continueAst(branchStmt, branchStmt.code)
       case "goto"     =>
         // To update the cache of parserNode with the labelled statement
         Try(createParserNodeInfo(branchStmt.json(ParserKeys.Label)(ParserKeys.Obj)(ParserKeys.Decl)))
-        Ast(controlStructureNode(branchStmt, ControlStructureTypes.GOTO, branchStmt.code))
+        val labelName = branchStmt.json(ParserKeys.Label)(ParserKeys.Name).str
+        gotoAst(branchStmt, branchStmt.code, labelName)
       case "fallthrough" => // TODO handling for FALLTHROUGH
         Ast()
     }
