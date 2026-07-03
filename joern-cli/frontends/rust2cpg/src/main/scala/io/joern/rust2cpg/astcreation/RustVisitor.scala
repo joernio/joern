@@ -58,7 +58,7 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
     case module: Module         => visitModule(module)
     case static: Static         => visitStatic(static)
     case struct: Struct         => visitStruct(struct) :: Nil
-    case x: Trait               => notHandledYet(x) :: Nil
+    case trait_ : Trait         => visitTrait(trait_) :: Nil
     case x: TypeAlias           => notHandledYet(x) :: Nil
     case x: Union               => notHandledYet(x) :: Nil
     case x: Use                 => notHandledYet(x) :: Nil
@@ -370,6 +370,28 @@ trait RustVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCrea
       methodAsts.foreach(Ast.storeInDiffGraph(_, diffGraph))
       Nil
     }
+  }
+
+  // Trait =
+  //  Attr* Visibility?
+  //  'unsafe'? 'auto'?
+  //  ImplRestriction?
+  //  'trait' Name GenericParamList?
+  //  (((':' TypeBoundList?)? WhereClause? AssocItemList) |
+  //  ('=' TypeBoundList? WhereClause? ';'))
+  private def visitTrait(trait_ : Trait): Ast = {
+    val name = code(trait_.name)
+    val typeDecl = typeDeclNode(
+      node = trait_,
+      name = name,
+      fullName = composeRustFullName(name),
+      filename = parseResult.filename,
+      code = code(trait_)
+    )
+    methodAstParentStack.push(typeDecl)
+    val methodAsts = trait_.assocItemList.toSeq.flatMap(_.assocItem).collect { case fn: Fn => visitFn(fn) }
+    methodAstParentStack.pop()
+    Ast(typeDecl).withChildren(methodAsts)
   }
 
   // BlockExpr =
