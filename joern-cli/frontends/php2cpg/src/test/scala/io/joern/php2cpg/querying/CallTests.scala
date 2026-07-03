@@ -379,9 +379,9 @@ class CallTests extends PhpCode2CpgFixture {
     }
   }
 
-  "a call with mixed positional and named arguments should only set argumentName on named ones" in {
+  "a call with positional and named arguments should only set argumentName on named ones" in {
     val cpg = code("""<?php
-        |foo($a, name: $b, $c);
+        |foo($a, nameA: $b, nameB: $c);
         |""".stripMargin)
 
     inside(cpg.call.nameExact("foo").argument.l) { case List(aArg: Identifier, bArg: Identifier, cArg: Identifier) =>
@@ -391,11 +391,11 @@ class CallTests extends PhpCode2CpgFixture {
 
       bArg.name shouldBe "b"
       bArg.code shouldBe "$b"
-      bArg.argumentName shouldBe Some("name")
+      bArg.argumentName shouldBe Some("nameA")
 
       cArg.name shouldBe "c"
       cArg.code shouldBe "$c"
-      cArg.argumentName shouldBe None
+      cArg.argumentName shouldBe Some("nameB")
     }
   }
 
