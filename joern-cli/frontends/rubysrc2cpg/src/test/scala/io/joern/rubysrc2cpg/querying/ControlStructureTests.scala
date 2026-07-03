@@ -98,6 +98,9 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     val List(breakNode) = cpg.break.l
     breakNode.code shouldBe "break"
     breakNode.lineNumber shouldBe Some(8)
+    breakNode.parserTypeName shouldBe "BreakExpression"
+    // Ruby has no labeled break, so no JUMP_ARGUMENT edge / JumpLabel child is emitted
+    breakNode.astChildren.collectAll[JumpLabel].l shouldBe empty
     // todo: investigate
     // `loop` is lowered as a do-while loop with a true condition
     cpg.controlStructure.condition("true").size shouldBe 1
@@ -633,6 +636,9 @@ class ControlStructureTests extends RubyCode2CpgFixture {
 
     inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.CONTINUE).l) { case nextControl :: Nil =>
       nextControl.code shouldBe "next"
+      nextControl.parserTypeName shouldBe "NextExpression"
+      // Ruby has no labeled next, so no JUMP_ARGUMENT edge / JumpLabel child is emitted
+      nextControl.astChildren.collectAll[JumpLabel].l shouldBe empty
     }
   }
 

@@ -5,14 +5,7 @@ import io.joern.rubysrc2cpg.datastructures.BlockScope
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.NewControlStructure
-import io.shiftleft.codepropertygraph.generated.{
-  ControlStructureTypes,
-  DispatchTypes,
-  ModifierTypes,
-  NodeTypes,
-  Operators
-}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, NodeTypes, Operators}
 
 import scala.collection.mutable
 
@@ -142,12 +135,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def astForNextExpression(node: NextExpression): Ast = {
-    val nextNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.CONTINUE)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-      .code(code(node))
-    Ast(nextNode)
+    // Ruby has no labeled `next`, so no jump argument is emitted.
+    continueAst(node, code(node))
   }
 
   protected def astForStatementListReturningLastExpression(node: StatementList): Ast = {
@@ -318,12 +307,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def astForBreakExpression(node: BreakExpression): Ast = {
-    val _node = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.BREAK)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-      .code(code(node))
-    Ast(_node)
+    // Ruby has no labeled `break`, so no jump argument is emitted.
+    breakAst(node, code(node))
   }
 
   protected def astForSingletonStatementList(list: SingletonStatementList): Seq[Ast] = {
