@@ -41,6 +41,21 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     }
   }
 
+  private def controlStructureFromNode(
+    node: Node,
+    controlStructureType: String,
+    code: Option[String] = None
+  ): NewControlStructure = {
+    val structureNode = NewControlStructure()
+      .parserTypeName(node.getClass.getSimpleName)
+      .controlStructureType(controlStructureType)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+      .code(code.getOrElse(this.code(node)))
+    setOffset(node, structureNode)
+    structureNode
+  }
+
   /** Creates an AST for a `while` loop.
     *
     * The condition AST is placed before the body and connected via a `CONDITION` edge. The first body child is
@@ -86,16 +101,8 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     * @param code
     *   explicit source-code string; falls back to `this.code(node)` when absent
     */
-  def doWhileAstInit(node: Node, code: Option[String] = None): NewControlStructure = {
-    val doWhileNode = NewControlStructure()
-      .parserTypeName(node.getClass.getSimpleName)
-      .controlStructureType(ControlStructureTypes.DO)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-      .code(code.getOrElse(this.code(node)))
-    setOffset(node, doWhileNode)
-    doWhileNode
-  }
+  def doWhileAstInit(node: Node, code: Option[String] = None): NewControlStructure =
+    controlStructureFromNode(node, ControlStructureTypes.DO, code)
 
   /** Wires the condition and body of a `do-while` loop onto a `doWhileNode` created by [[doWhileAstInit]].
     *
@@ -171,13 +178,7 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     body: Seq[Ast],
     code: Option[String]
   ): Ast = {
-    val structureNode = NewControlStructure()
-      .parserTypeName(node.getClass.getSimpleName)
-      .controlStructureType(controlStructureType)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-      .code(code.getOrElse(this.code(node)))
-    setOffset(node, structureNode)
+    val structureNode   = controlStructureFromNode(node, controlStructureType, code)
     val astWithChildren = controlStructureAst(structureNode, condition, body)
     body.headOption.flatMap(_.root) match {
       case Some(bodyRoot) => astWithChildren.withTrueBodyEdge(structureNode, bodyRoot)
@@ -229,16 +230,8 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     * @param code
     *   explicit source-code string; falls back to `this.code(node)` when absent
     */
-  def forAstInit(node: Node, code: Option[String] = None): NewControlStructure = {
-    val forNode = NewControlStructure()
-      .parserTypeName(node.getClass.getSimpleName)
-      .controlStructureType(ControlStructureTypes.FOR)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-      .code(code.getOrElse(this.code(node)))
-    setOffset(node, forNode)
-    forNode
-  }
+  def forAstInit(node: Node, code: Option[String] = None): NewControlStructure =
+    controlStructureFromNode(node, ControlStructureTypes.FOR, code)
 
   /** Wires the children of a C-style `for` loop onto a `forNode` created by [[forAstInit]].
     *
@@ -423,13 +416,7 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     finallyAst: Option[Ast],
     code: Option[String] = None
   ): Ast = {
-    val tryNode = NewControlStructure()
-      .parserTypeName(node.getClass.getSimpleName)
-      .controlStructureType(ControlStructureTypes.TRY)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-      .code(code.getOrElse(this.code(node)))
-    setOffset(node, tryNode)
+    val tryNode = controlStructureFromNode(node, ControlStructureTypes.TRY, code)
 
     setArgumentIndices(tryBodyAst +: (catchAsts ++ finallyAst.toSeq))
     val astWithChildren = Ast(tryNode)
@@ -473,13 +460,7 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     elseAst: Option[Ast],
     code: Option[String] = None
   ): Ast = {
-    val ifNode = NewControlStructure()
-      .parserTypeName(node.getClass.getSimpleName)
-      .controlStructureType(ControlStructureTypes.IF)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-      .code(code.getOrElse(this.code(node)))
-    setOffset(node, ifNode)
+    val ifNode = controlStructureFromNode(node, ControlStructureTypes.IF, code)
 
     val astWithChildren = controlStructureAst(ifNode, conditionAst, thenAst :: elseAst.toList)
     val astWithTrueBody = thenAst.root match {
@@ -545,16 +526,8 @@ private[x2cpg] trait ControlStructureAstBuilder[Node, NodeProcessor] {
     }
   }
 
-  private def jumpNode(node: Node, jumpType: String, codeStr: String): NewControlStructure = {
-    val jumpNode = NewControlStructure()
-      .parserTypeName(node.getClass.getSimpleName)
-      .controlStructureType(jumpType)
-      .code(codeStr)
-      .lineNumber(line(node))
-      .columnNumber(column(node))
-    setOffset(node, jumpNode)
-    jumpNode
-  }
+  private def jumpNode(node: Node, jumpType: String, codeStr: String): NewControlStructure =
+    controlStructureFromNode(node, jumpType, Some(codeStr))
 
   private def setOrderExplicitly(ast: Ast, order: Int): Ast = {
     ast.root match {
