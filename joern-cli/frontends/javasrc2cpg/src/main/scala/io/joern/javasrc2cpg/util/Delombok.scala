@@ -51,11 +51,19 @@ object Delombok {
     val javaPath     = analysisJavaHome.getOrElse(systemJavaPath)
     val ownClasspath = System.getProperty("java.class.path")
     val ownEntries   = ownClasspath.split(File.pathSeparator).toList
-    // Locate joern's bundled lombok jar by filename so we can force it to be resolved before any
-    // project-supplied lombok that might be incompatible with the analysis JDK.
-    val (lombokEntries, otherEntries) = ownEntries.partition { entry =>
-      val name = Paths.get(entry).getFileName.toString.toLowerCase
-      name.startsWith("lombok-") && name.endsWith(".jar")
+    // Ask the classloader where lombok.launch.Main came from — this is more robust than a filename
+    // heuristic, which breaks under packaging layouts that rename jars (e.g. sbt-native-packager's
+    // `org.projectlombok.lombok-<version>.jar`) or fat-jar setups. `Class.forName` is used because
+    // `lombok.launch.Main` is package-private and can't be referenced with `classOf`.
+    val bundledLombokEntry: Option[String] = Try {
+      val cls      = Class.forName("lombok.launch.Main")
+      val location = cls.getProtectionDomain.getCodeSource.getLocation
+      Paths.get(location.toURI).toAbsolutePath.normalize.toString
+    }.toOption
+    val (lombokEntries, otherEntries) = bundledLombokEntry match {
+      case Some(entry) =>
+        ownEntries.partition(ent => Paths.get(ent).toAbsolutePath.normalize.toString == entry)
+      case None => (Nil, ownEntries)
     }
     if (lombokEntries.isEmpty) {
       logger.warn(
