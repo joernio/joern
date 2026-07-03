@@ -6,44 +6,17 @@ import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
-import io.shiftleft.codepropertygraph.generated.nodes.NewJumpLabel
 
 import scala.annotation.unused
 
 trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
-  private def astForBreakStmtSyntax(node: BreakStmtSyntax): Ast = {
-    val labelAst = node.label.fold(Ast())(l => {
-      val labelCode = code(l)
-      Ast(
-        NewJumpLabel()
-          .parserTypeName(node.toString)
-          .name(labelCode)
-          .code(labelCode)
-          .lineNumber(line(node))
-          .columnNumber(column(node))
-          .order(1)
-      )
-    })
-    Ast(controlStructureNode(node, ControlStructureTypes.BREAK, code(node))).withChild(labelAst)
-  }
+  private def astForBreakStmtSyntax(node: BreakStmtSyntax): Ast =
+    breakAst(node, code(node), node.label.map(code))
 
-  private def astForContinueStmtSyntax(node: ContinueStmtSyntax): Ast = {
-    val labelAst = node.label.fold(Ast())(l => {
-      val labelCode = code(l)
-      Ast(
-        NewJumpLabel()
-          .parserTypeName(node.toString)
-          .name(labelCode)
-          .code(labelCode)
-          .lineNumber(line(node))
-          .columnNumber(column(node))
-          .order(1)
-      )
-    })
-    Ast(controlStructureNode(node, ControlStructureTypes.CONTINUE, code(node))).withChild(labelAst)
-  }
+  private def astForContinueStmtSyntax(node: ContinueStmtSyntax): Ast =
+    continueAst(node, code(node), node.label.map(code))
 
   private def astForDeferStmtSyntax(node: DeferStmtSyntax): Ast = {
     astForNode(node.body)
@@ -69,7 +42,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForFallThroughStmtSyntax(node: FallThroughStmtSyntax): Ast = {
-    Ast(controlStructureNode(node, ControlStructureTypes.CONTINUE, code(node)))
+    continueAst(node, code(node))
   }
 
   private def extractLoopVariableNodeInfo(binding: ValueBindingPatternSyntax): Option[PatternSyntax] = {
@@ -156,9 +129,6 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val loopVariableNode      = identifierNode(node, loopVariableName)
     diffGraph.addEdge(localAstParentStack.head, loopVariableLocalNode, EdgeTypes.AST)
     scope.addVariableReference(loopVariableName, loopVariableNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
-
-    // while loop:
-    val whileLoopNode = controlStructureNode(node, ControlStructureTypes.WHILE, code(node))
 
     // while loop test:
     op = Operators.logicalNot
@@ -285,9 +255,6 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val resultNode      = identifierNode(node, resultName)
     diffGraph.addEdge(localAstParentStack.head, resultLocalNode, EdgeTypes.AST)
     scope.addVariableReference(resultName, resultNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
-
-    // while loop:
-    val whileLoopNode = controlStructureNode(node, ControlStructureTypes.WHILE, code(node))
 
     // while loop test:
     op = Operators.logicalNot
@@ -425,9 +392,6 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     loopVariableNames.zip(loopVariableNodes).foreach { case (loopVariableName, loopVariableNode) =>
       scope.addVariableReference(loopVariableName, loopVariableNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
     }
-
-    // while loop:
-    val whileLoopNode = controlStructureNode(node, ControlStructureTypes.WHILE, code(node))
 
     // while loop test:
     op = Operators.logicalNot

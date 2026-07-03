@@ -1067,9 +1067,8 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
                 val argAsts = List(whereAst)
                 val testAst = callAst(whereClauseCallNode, argAsts)
-                val consequentAst =
-                  Ast(controlStructureNode(whereClause.condition, ControlStructureTypes.CONTINUE, "continue"))
-                ifThenElseAst(whereClause, Some(testAst), consequentAst, None)
+                val thenAst = continueAst(whereClause.condition, "continue")
+                ifThenElseAst(whereClause, Some(testAst), thenAst, None)
             }
             (childrenTestAsts, childrenFlowAsts)
           case other => (List(astForNode(other)), List.empty)
@@ -1078,7 +1077,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         val statementsAsts      = if (s.statements.children.isEmpty) List.empty else List(astForNode(s.statements))
         val asts                = flowAst ++ statementsAsts
         val cAsts = if (needsSyntheticBreak) {
-          asts :+ Ast(controlStructureNode(s, ControlStructureTypes.BREAK, "break"))
+          asts :+ breakAst(s, "break")
         } else asts
         (tAsts, cAsts.toList)
       case i: IfConfigDeclSyntax =>
