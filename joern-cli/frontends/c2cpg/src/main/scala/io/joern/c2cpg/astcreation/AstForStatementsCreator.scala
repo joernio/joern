@@ -203,17 +203,15 @@ trait AstForStatementsCreator { this: AstCreator =>
     }
   }
 
-  private def astForBreakStatement(br: IASTBreakStatement): Ast = {
-    Ast(controlStructureNode(br, ControlStructureTypes.BREAK, code(br)))
-  }
+  private def astForBreakStatement(br: IASTBreakStatement): Ast =
+    breakAst(br, code(br))
 
-  private def astForContinueStatement(cont: IASTContinueStatement): Ast = {
-    Ast(controlStructureNode(cont, ControlStructureTypes.CONTINUE, code(cont)))
-  }
+  private def astForContinueStatement(cont: IASTContinueStatement): Ast =
+    continueAst(cont, code(cont))
 
   private def astForGotoStatement(goto: IASTGotoStatement): Ast = {
-    val code = s"goto ${ASTStringUtil.getSimpleName(goto.getName)};"
-    Ast(controlStructureNode(goto, ControlStructureTypes.GOTO, code))
+    val labelName = ASTStringUtil.getSimpleName(goto.getName)
+    gotoAst(goto, s"goto $labelName;", labelName)
   }
 
   private def astsForGnuGotoStatement(goto: IGNUASTGotoStatement): Seq[Ast] = {
@@ -545,8 +543,6 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   private def astForIf(ifStmt: IASTIfStatement): Seq[Ast] = {
-    val ifNode = controlStructureNode(ifStmt, ControlStructureTypes.IF, code(ifStmt))
-
     val initAsts = ifStmt match {
       case s: ICPPASTIfStatement => nullSafeAst(s.getInitializerStatement)
       case _                     => Seq.empty
