@@ -38,10 +38,6 @@ trait AstCreatorHelper(disableFileContent: Boolean)(implicit withSchemaValidatio
     }
   }
 
-  protected def intToLiteralAst(num: Int): Ast = {
-    Ast(NewLiteral().code(num.toString).typeFullName(TypeConstants.Int))
-  }
-
   protected def getTmpIdentifier(
     originNode: PhpNode,
     maybeTypeFullName: Option[String],

@@ -745,11 +745,9 @@ class AstCreationPassTests extends AstC2CpgSuite {
         |  if (x > 0) { y = 0; } else { y = 1; }
         |}
       """.stripMargin)
-      inside(cpg.method.nameExact("method").controlStructure.l) { case List(ifStmt, elseStmt) =>
+      inside(cpg.method.nameExact("method").controlStructure.l) { case List(ifStmt) =>
         ifStmt.controlStructureType shouldBe ControlStructureTypes.IF
         ifStmt.code shouldBe "if (x > 0) { y = 0; } else { y = 1; }"
-        elseStmt.controlStructureType shouldBe ControlStructureTypes.ELSE
-        elseStmt.code shouldBe "else"
 
         inside(ifStmt.condition.l) { case List(cndNode) =>
           cndNode.code shouldBe "x > 0"

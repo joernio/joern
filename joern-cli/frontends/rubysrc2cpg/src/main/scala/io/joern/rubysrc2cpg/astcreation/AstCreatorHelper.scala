@@ -21,10 +21,9 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   UnaryExpression
 }
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, FieldDecl}
-import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
-import io.joern.rubysrc2cpg.passes.GlobalTypes
-import io.joern.rubysrc2cpg.passes.GlobalTypes.{kernelFunctions, kernelPrefix}
+import io.joern.rubysrc2cpg.passes.{Defines, GlobalTypes}
+import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelFunctions
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg.Constants
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -166,16 +165,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     thenAst: Ast,
     elseAst: Option[Ast]
   ): Ast = {
-    val ifNode          = controlStructureNode(node, ControlStructureTypes.IF, code(node))
-    val astWithChildren = controlStructureAst(ifNode, Some(conditionAst), thenAst :: elseAst.toList)
-    val astWithTrueBody = thenAst.root match {
-      case Some(thenRoot) => astWithChildren.withTrueBodyEdge(ifNode, thenRoot)
-      case None           => astWithChildren
-    }
-    elseAst.flatMap(_.root) match {
-      case Some(elseRoot) => astWithTrueBody.withFalseBodyEdge(ifNode, elseRoot)
-      case None           => astWithTrueBody
-    }
+    ifThenElseAst(node, Some(conditionAst), thenAst, elseAst)
   }
 
   protected def astForAssignment(

@@ -978,8 +978,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       Ast(astForEnsureClause).withChild(astForStatementList(x.thenClause.asStatementList))
     }
 
-    val tryNode = controlStructureNode(node.body.asStatementList, ControlStructureTypes.TRY, "try")
-    tryCatchAst(tryNode, tryAst, rescueAsts ++ elseAst, ensureAst)
+    tryCatchAst(node.body.asStatementList, tryAst, rescueAsts ++ elseAst, ensureAst, Some("try"))
   }
 
   private def astForSelfIdentifier(node: SelfIdentifier): Ast = {

@@ -9,19 +9,10 @@ import io.joern.javasrc2cpg.scope.NodeTypeInfo
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.NameConstants
 import io.joern.javasrc2cpg.util.Util.composeMethodFullName
-import io.joern.x2cpg.{Ast, Defines}
 import io.joern.x2cpg.utils.IntervalKeyPool
-import io.shiftleft.codepropertygraph.generated.PropertyDefaults
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewBlock,
-  NewControlStructure,
-  NewLiteral,
-  NewLocal,
-  NewMember,
-  NewMethodParameterIn,
-  NewNode
-}
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
+import io.joern.x2cpg.{Ast, Defines}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyDefaults}
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.*
@@ -49,24 +40,13 @@ trait AstForForLoopsCreator { this: AstCreator =>
   def astsForFor(stmt: ForStmt): List[Ast] = {
     val forContext       = new ForStatementContext(stmt, new CombinedTypeSolver())
     val patternPartition = partitionPatternAstsByScope(stmt)
+    val forCode          = getForCode(stmt)
 
-    val forNode =
-      NewControlStructure()
-        .controlStructureType(ControlStructureTypes.FOR)
-        .code(getForCode(stmt))
-        .lineNumber(line(stmt))
-        .columnNumber(column(stmt))
-
-    val initAsts =
-      stmt.getInitialization.asScala.flatMap(astsForExpression(_, expectedType = ExpectedType.empty))
-
-    val compareAsts = stmt.getCompare.toScala.toList.flatMap {
-      astsForExpression(_, ExpectedType.Boolean)
-    }
+    val initAsts    = stmt.getInitialization.asScala.flatMap(astsForExpression(_, expectedType = ExpectedType.empty))
+    val compareAsts = stmt.getCompare.toScala.toList.flatMap(astsForExpression(_, ExpectedType.Boolean))
 
     val updateAsts = stmt.getUpdate.asScala.toList match {
       case Nil => Nil
-
       case expressions =>
         scope.pushBlockScope()
         scope.addLocalsForPatternsToEnclosingBlock(
@@ -86,8 +66,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
 
     scope.addLocalsForPatternsToEnclosingBlock(patternPartition.patternsIntroducedByStatement)
 
-    val ast = forAst(forNode, Nil, initAsts.toSeq, compareAsts, updateAsts, bodyAst)
-
+    val ast = forAst(stmt, Nil, initAsts.toSeq, compareAsts, updateAsts, Seq(bodyAst), Some(forCode))
     patternLocals :+ ast
   }
 
@@ -130,16 +109,8 @@ trait AstForForLoopsCreator { this: AstCreator =>
           .withChildren(bodyStmtAsts)
     }
 
-    val forNode =
-      NewControlStructure()
-        .controlStructureType(ControlStructureTypes.WHILE)
-        .code(ControlStructureTypes.FOR)
-        .lineNumber(lineNo)
-        .columnNumber(column(stmt))
-
-    val forAst = controlStructureAst(forNode, Some(iteratorHasNextCallAst), List(bodyAst))
-
-    Seq(Ast(iteratorLocalNode), iteratorAssignAst, forAst)
+    val forAst_ = whileAst(stmt, Some(iteratorHasNextCallAst), Seq(bodyAst), Some(ControlStructureTypes.FOR))
+    Seq(Ast(iteratorLocalNode), iteratorAssignAst, forAst_)
   }
 
   private def astForIterableForEachItemAssign(
