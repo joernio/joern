@@ -519,6 +519,15 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
         item.refOut.toSet should contain(itemLocal)
       }
     }
+
+    "connect the desugared FOR init, update and body via control structure edges" in {
+      val List(forNode) = cpg.controlStructure.controlStructureType(ControlStructureTypes.FOR).l
+      forNode.forInitOut.code.l shouldBe List("int $idx0 = 0")
+      forNode.forUpdateOut.code.l shouldBe List("$idx0++")
+      inside(forNode.forBodyOut.l) { case List(body: Block) =>
+        body.astChildren.isCall.name.l shouldBe List(Operators.assignment, "sink")
+      }
+    }
   }
 
   "foreach loops over collections" should {

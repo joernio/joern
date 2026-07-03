@@ -162,27 +162,17 @@ trait AstForForLoopsCreator { this: AstCreator =>
       case iterableExpr => iterableAssignAstsForNativeForEach(iterableExpr, iterableType)
     }
 
-    val forNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.FOR)
-
-    val lineNo = line(stmt)
-
-    val idxLocal          = nativeForEachIdxLocalNode(lineNo)
+    val idxLocal          = nativeForEachIdxLocalNode(lineNo = line(stmt))
     val idxInitializerAst = nativeForEachIdxInitializerAst(stmt, idxLocal)
     // TODO next: pass NodeTypeInfo around
     val compareAst   = nativeForEachCompareAst(stmt, iterableSource, idxLocal)
     val incrementAst = nativeForEachIncrementAst(stmt, idxLocal)
     val bodyAst      = nativeForEachBodyAst(stmt, idxLocal, iterableSource)
 
-    val forAst = Ast(forNode)
-      .withChild(Ast(idxLocal))
-      .withChild(idxInitializerAst)
-      .withChild(compareAst)
-      .withChild(incrementAst)
-      .withChild(bodyAst)
-      .withConditionEdges(forNode, compareAst.root.toList)
+    val forLoopAst =
+      forAst(stmt, Seq(Ast(idxLocal)), Seq(idxInitializerAst), Seq(compareAst), Seq(incrementAst), Seq(bodyAst))
 
-    tempIterableInitAsts ++ Seq(forAst)
+    tempIterableInitAsts ++ Seq(forLoopAst)
   }
 
   private def iterableAssignAstsForNativeForEach(
