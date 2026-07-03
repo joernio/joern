@@ -120,13 +120,11 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val whileBlockAst = astForBlock(whileBlock)
 
     val condition    = createDotNetNodeInfo(whileStmt.json(ParserKeys.Condition))
-    val conditionAst = astForNode(condition)
+    val conditionAst = wrapMultipleInBlock(astForNode(condition), condition.lineNumber)
 
     val code = s"while (${condition.code})"
 
-    val whileNode = controlStructureNode(whileStmt, ControlStructureTypes.WHILE, code)
-
-    Seq(Ast(whileNode).withChild(whileBlockAst).withChildren(conditionAst))
+    Seq(whileAst(whileStmt, Some(conditionAst), Seq(whileBlockAst), Some(code)))
   }
 
   private def astForDoStatement(doStmt: DotNetNodeInfo): Seq[Ast] = {
@@ -134,12 +132,11 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val doBlockAst = astForBlock(doBlock)
 
     val condition    = createDotNetNodeInfo(doStmt.json(ParserKeys.Condition))
-    val conditionAst = astForNode(condition)
+    val conditionAst = wrapMultipleInBlock(astForNode(condition), condition.lineNumber)
 
-    val code        = s"do {...} while (${condition.code})"
-    val doBlockNode = controlStructureNode(doStmt, ControlStructureTypes.DO, code)
+    val code = s"do {...} while (${condition.code})"
 
-    Seq(Ast(doBlockNode).withChild(doBlockAst).withChildren(conditionAst))
+    Seq(doWhileAst(doStmt, Some(conditionAst), Seq(doBlockAst), Some(code)))
   }
 
   private def astForForStatement(forStmt: DotNetNodeInfo): Seq[Ast] = {
@@ -150,21 +147,12 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val forBodyAst = astForBlock(createDotNetNodeInfo(forStmt.json(ParserKeys.Statement)))
 
     val code = s"for (${initNode.code};${conditionNode.code};${incrementorNode.code})"
-    val forNode =
-      controlStructureNode(forStmt, ControlStructureTypes.FOR, code);
 
-    val initNodeAst    = astForNode(initNode)
-    val conditionAst   = astForNode(conditionNode)
-    val incrementorAst = astForNode(incrementorNode)
+    val (localAsts, initAsts) = astForNode(initNode).partition(_.root.exists(_.isInstanceOf[NewLocal]))
+    val conditionAsts         = astForNode(conditionNode)
+    val updateAsts            = astForNode(incrementorNode)
 
-    val _forAst = Ast(forNode)
-      .withChildren(initNodeAst)
-      .withChildren(conditionAst)
-      .withChildren(incrementorAst)
-      .withChild(forBodyAst)
-      .withConditionEdges(forNode, conditionAst.flatMap(_.root).toList)
-
-    Seq(_forAst)
+    Seq(forAst(forStmt, localAsts, initAsts, conditionAsts, updateAsts, Seq(forBodyAst), Some(code)))
   }
 
   private def astForForEachStatement(forEachStmt: DotNetNodeInfo): Seq[Ast] = {
@@ -287,8 +275,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def astForJumpStatement(jumpStmt: DotNetNodeInfo): Seq[Ast] = {
     jumpStmt.node match {
-      case BreakStatement    => Seq(Ast(controlStructureNode(jumpStmt, ControlStructureTypes.BREAK, jumpStmt.code)))
-      case ContinueStatement => Seq(Ast(controlStructureNode(jumpStmt, ControlStructureTypes.CONTINUE, jumpStmt.code)))
+      case BreakStatement    => Seq(breakAst(jumpStmt, jumpStmt.code))
+      case ContinueStatement => Seq(continueAst(jumpStmt, jumpStmt.code))
       case GotoStatement     => astForGotoStatement(jumpStmt)
       case ReturnStatement   => astForReturnStatement(jumpStmt)
       case _                 => Seq.empty
@@ -296,14 +284,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astForGotoStatement(gotoStmt: DotNetNodeInfo): Seq[Ast] = {
-    val identifierAst = Option(gotoStmt.json(ParserKeys.Expression)) match {
-      case Some(value: ujson.Obj) => astForNode(createDotNetNodeInfo(value))
-      case _                      => Seq.empty
-    }
-
-    val gotoAst = Ast(controlStructureNode(gotoStmt, ControlStructureTypes.GOTO, gotoStmt.code))
-
-    identifierAst :+ gotoAst
+    val labelName = nameFromNode(createDotNetNodeInfo(gotoStmt.json(ParserKeys.Expression)))
+    Seq(gotoAst(gotoStmt, gotoStmt.code, labelName))
   }
 
   private def astForReturnStatement(returnStmt: DotNetNodeInfo): Seq[Ast] = {
