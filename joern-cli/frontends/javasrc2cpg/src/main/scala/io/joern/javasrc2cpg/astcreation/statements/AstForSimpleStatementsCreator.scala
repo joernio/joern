@@ -28,7 +28,7 @@ import io.joern.javasrc2cpg.astcreation.expressions.PatternInitAndRefAsts
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.util.NameConstants
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewControlStructure, NewJumpTarget, NewReturn}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewJumpTarget, NewReturn}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes}
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 
@@ -116,23 +116,11 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
     callAst(callNode, args)
   }
 
-  private[statements] def astForBreakStatement(stmt: BreakStmt): Ast = {
-    val node = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.BREAK)
-      .lineNumber(line(stmt))
-      .columnNumber(column(stmt))
-      .code(code(stmt))
-    Ast(node)
-  }
+  private[statements] def astForBreakStatement(stmt: BreakStmt): Ast =
+    breakAst(stmt, code(stmt), stmt.getLabel.toScala.map(_.getIdentifier))
 
-  private[statements] def astForContinueStatement(stmt: ContinueStmt): Ast = {
-    val node = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.CONTINUE)
-      .lineNumber(line(stmt))
-      .columnNumber(column(stmt))
-      .code(code(stmt))
-    Ast(node)
-  }
+  private[statements] def astForContinueStatement(stmt: ContinueStmt): Ast =
+    continueAst(stmt, code(stmt), stmt.getLabel.toScala.map(_.getIdentifier))
 
   private[statements] def astsForDo(stmt: DoStmt): Seq[Ast] = {
     val code         = s"do {...} while (${stmt.getCondition.toString})"
@@ -204,29 +192,16 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
   }
 
   private[statements] def astForSwitchStatement(stmt: SwitchStmt): Ast = {
-    astForSwitch(stmt, stmt.getSelector, stmt.getEntries, ControlStructureTypes.SWITCH)
+    astForSwitch(stmt, stmt.getSelector, stmt.getEntries)
   }
 
-  private[astcreation] def astForSwitch(
-    node: Node,
-    selector: Expression,
-    entries: NodeList[SwitchEntry],
-    controlStructureType: String
-  ): Ast = {
-    val switchNode = controlStructureNode(node, controlStructureType, s"switch(${code(selector)})")
-
+  private[astcreation] def astForSwitch(node: Node, selector: Expression, entries: NodeList[SwitchEntry]): Ast = {
     val (selectorAst, selectorReferenceAst) = astForSwitchSelector(selector, entries)
-    val selectorNode                        = selectorAst.root.get
-
-    val switchBodyAst = astForSwitchBody(node, entries, selectorReferenceAst)
-
-    Ast(switchNode)
-      .withChild(selectorAst)
-      .withChild(switchBodyAst)
-      .withConditionEdge(switchNode, selectorNode)
+    val switchBodyAst                       = astForSwitchBody(node, entries, selectorReferenceAst)
+    switchAst(node, Some(selectorAst), Seq(switchBodyAst), Some(s"switch(${code(selector)})"))
   }
 
-  private def astForSwitchSelector(
+  protected def astForSwitchSelector(
     selector: Expression,
     entries: NodeList[SwitchEntry]
   ): (Ast, Option[PatternInitAndRefAsts]) = {
@@ -252,7 +227,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
     }
   }
 
-  private def astForSwitchBody(
+  protected def astForSwitchBody(
     node: Node,
     entries: NodeList[SwitchEntry],
     selectorReferenceAst: Option[PatternInitAndRefAsts]
