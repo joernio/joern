@@ -258,6 +258,24 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     if (hasKey(classNode.json, "id") && !classNode.json("id").isNull) code(classNode.json("id"))
     else nextAnonClassName()
 
+  /** If `nodeInfo` is the callee of a fake EJS output call, its source bytes are exactly the EJS output-tag prefix
+    * `<%`; the character right after (the tag's third char) selects escaped (`=`) vs. unescaped (`-`) output. Returns
+    * the CPG call name to use, or None for every ordinary node. The `<%` guard is safe: a bare `<%` is never the full
+    * source text of a real JS/TS identifier.
+    */
+  protected def ejsOutputCallName(nodeInfo: BabelNodeInfo): Option[String] = {
+    val fileContent = parserResult.fileContent
+    end(nodeInfo.json) match {
+      case Some(endOffset) if nodeInfo.code == Defines.EjsOutputTagPrefix && endOffset < fileContent.length =>
+        fileContent.charAt(endOffset) match {
+          case '=' => Some(Defines.EscapedOutputName)
+          case '-' => Some(Defines.UnescapedOutputName)
+          case _   => None
+        }
+      case _ => None
+    }
+  }
+
   protected def code(node: Value): String = {
     nodeOffsets(node) match {
       case Some((startOffset, endOffset)) =>

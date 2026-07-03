@@ -82,7 +82,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         val receiverAst = astForNodeWithFunctionReference(callLike.json)
         val thisNode    = identifierNode(callLike, "this").dynamicTypeHintFullName(typeHintForThisExpression())
         scope.addVariableReference(thisNode.name, thisNode, Defines.Any, EvaluationStrategies.BY_REFERENCE)
-        CallExpressionInfo(receiverAst, thisNode, callLike.code)
+        val callName = ejsOutputCallName(callLike).getOrElse(callLike.code)
+        CallExpressionInfo(receiverAst, thisNode, callName)
     }
   }
 

@@ -9,7 +9,7 @@ import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForIdentifier(ident: BabelNodeInfo, maybePossibleType: Option[String] = None): Ast = {
-    val name      = ident.json("name").str
+    val name      = ejsOutputCallName(ident).getOrElse(ident.json("name").str)
     val identNode = identifierNode(ident, name)
     val possibleType = maybePossibleType match {
       case None              => typeFor(ident)
