@@ -68,7 +68,7 @@ abstract class AbstractValidator(cpg: Cpg) extends CpgPass(cpg) {
 object PostFrontendValidator {
   private val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  /** Newly added error types should have an `addedInLevel` one level higher than the highest (currently V2) */
+  /** Newly added error types should have an `addedInLevel` one level higher than the highest */
   enum ErrorType(val addedInLevel: ValidationLevel) {
     case FULLNAME_UNIQUE_METHOD                    extends ErrorType(ValidationLevel.V1)
     case FULLNAME_UNIQUE_TYPE                      extends ErrorType(ValidationLevel.V1)
