@@ -10,7 +10,6 @@ import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.NewJumpLabel
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import ujson.Obj
 import ujson.Value
@@ -164,38 +163,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def astForBreakStatement(breakStmt: BabelNodeInfo): Ast = {
-    val labelAst = safeObj(breakStmt.json, "label").toList.map { label =>
-      val labelNode = Obj(label)
-      val labelCode = code(labelNode)
-      Ast(
-        NewJumpLabel()
-          .parserTypeName(breakStmt.node.toString)
-          .name(labelCode)
-          .code(labelCode)
-          .lineNumber(breakStmt.lineNumber)
-          .columnNumber(breakStmt.columnNumber)
-          .order(1)
-      )
-    }
-    Ast(controlStructureNode(breakStmt, ControlStructureTypes.BREAK, code(breakStmt))).withChildren(labelAst)
+    val labelName = safeObj(breakStmt.json, "label").map(label => code(Obj(label)))
+    breakAst(breakStmt, code(breakStmt), labelName)
   }
 
   protected def astForContinueStatement(continueStmt: BabelNodeInfo): Ast = {
-    val labelAst = safeObj(continueStmt.json, "label").toList
-      .map { label =>
-        val labelNode = Obj(label)
-        val labelCode = code(labelNode)
-        Ast(
-          NewJumpLabel()
-            .parserTypeName(continueStmt.node.toString)
-            .name(labelCode)
-            .code(labelCode)
-            .lineNumber(continueStmt.lineNumber)
-            .columnNumber(continueStmt.columnNumber)
-            .order(1)
-        )
-      }
-    Ast(controlStructureNode(continueStmt, ControlStructureTypes.CONTINUE, code(continueStmt))).withChildren(labelAst)
+    val labelName = safeObj(continueStmt.json, "label").map(label => code(Obj(label)))
+    continueAst(continueStmt, code(continueStmt), labelName)
   }
 
   protected def astForThrowStatement(throwStmt: BabelNodeInfo): Ast = {
