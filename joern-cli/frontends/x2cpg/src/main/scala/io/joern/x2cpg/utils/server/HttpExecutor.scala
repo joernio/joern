@@ -1,17 +1,13 @@
 package io.joern.x2cpg.utils.server
 
-import java.io.File
+import java.nio.file.Path
 import java.util.concurrent.{CompletableFuture, TimeUnit, TimeoutException}
 import scala.sys.process.{Process, ProcessLogger}
 import scala.util.{Failure, Success}
 import org.slf4j.LoggerFactory
 
-class HttpServerExecutor(
-  locator: ExecutableLocator,
-  cpgFormat: CpgFormat,
-  defaultArgs: Seq[String] = Nil,
-  prepareInput: File => File = identity
-) extends FrontendExecutor {
+class HttpExecutor(locator: ExecutableLocator, defaultArgs: Seq[String] = Nil, prepareInput: Path => Path = identity)
+    extends FrontendExecutor {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -57,23 +53,22 @@ class HttpServerExecutor(
   }
 
   private def parseArguments(args: Seq[String]): Seq[(String, Option[String])] = {
-    args.toList match {
-      case Nil => Seq.empty
-      case argument :: value :: rest if argument.startsWith("--") && !value.startsWith("-") =>
+    args match {
+      case Seq() => Seq.empty
+      case argument +: value +: rest if argument.startsWith("--") && !value.startsWith("-") =>
         (argument.stripPrefix("--") -> Some(value)) +: parseArguments(rest)
-      case argument :: rest =>
+      case argument +: rest =>
         (argument.stripPrefix("--") -> None) +: parseArguments(rest)
     }
   }
 
-  override def execute(sourceCodeDir: File, extraArgs: String*): File = {
+  override def execute(sourceCodeDir: Path, cpgOutputPath: Path, extraArgs: String*): Unit = {
     start()
 
-    val cpgFile = FrontendExecutor.newTemporaryCpgOutputFile("cpg", cpgFormat.fileSuffix)
     val arguments =
       Seq(
         "input"                        -> Some(prepareInput(sourceCodeDir).toString),
-        "output"                       -> Some(cpgFile.getAbsolutePath),
+        "output"                       -> Some(cpgOutputPath.toString),
         "enable-early-schema-checking" -> None
       ) ++ parseArguments(defaultArgs ++ extraArgs)
 
@@ -81,7 +76,7 @@ class HttpServerExecutor(
     val request = client.buildRequest(arguments*)
     client.sendRequest(request) match {
       case Failure(exception) => throw new RuntimeException(exception.getMessage, exception)
-      case Success(_)         => cpgFile
+      case Success(_)         => ()
     }
   }
 }
